@@ -7,6 +7,8 @@
 
 #include "GenericThread.hpp"
 
+#include <unistd.h>
+
 namespace unisim {
 namespace service {
 namespace pim {

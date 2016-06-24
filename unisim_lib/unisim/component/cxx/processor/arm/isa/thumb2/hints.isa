@@ -50,7 +50,7 @@ nopw.disasm = {
 };
 
 nopw.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 };
 
 /*
@@ -94,7 +94,7 @@ dmb.disasm = {
 };
 
 dmb.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 };
 
 /* DSB instruction */
@@ -107,7 +107,7 @@ dsb.disasm = {
 };
 
 dsb.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 };
 
 /* ISB instruction */
@@ -120,7 +120,7 @@ isb.disasm = {
 };
 
 isb.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
 };
 
@@ -132,8 +132,20 @@ wfe.disasm = {
 
 { ARCH::Config::insns7 }:                               \
 op wfi( 0b1011111100110000[16] );
+
 wfi.disasm = {
   buffer << "wfi";
+};
+
+wfi.execute = {
+  // if (HaveVirtExt() and not IsSecure() and not CurrentModeIsHyp() and HCR.TWI) {
+  //   HSRString = Zeros(25);
+  //   HSRString<0> = '0';
+  //   WriteHSR('000001', HSRString);
+  //   TakeHypTrapException();
+  // } else
+  
+  cpu.WaitForInterrupt();
 };
 
 { ARCH::Config::insns7 }:                               \
@@ -154,7 +166,18 @@ wfi_w.disasm = {
   buffer << "wfi.w";
 };
 
-{ ARCH::Config::insns7 }:                               \
+wfi_w.execute = {
+  // if (HaveVirtExt() and not IsSecure() and not CurrentModeIsHyp() and HCR.TWI) {
+  //   HSRString = Zeros(25);
+  //   HSRString<0> = '0';
+  //   WriteHSR('000001', HSRString);
+  //   TakeHypTrapException();
+  // } else
+  
+  cpu.WaitForInterrupt();
+};
+
+{ ARCH::Config::insns7 }:                                     \
 op sev_w( 0b1111001110101111[16]:> <: 0b1000000000000100[16] );
 sev_w.disasm = {
   buffer << "sev.w";

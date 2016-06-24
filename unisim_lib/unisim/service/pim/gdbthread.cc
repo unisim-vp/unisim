@@ -45,8 +45,8 @@ std::ostream& operator << (std::ostream& os, DBGData& data) {
 		case DBGData::DBG_ERROR_MALFORMED_REQUEST: { os << "DBG_ERROR_MALFORMED_REQUEST"; } break;
 		case DBGData::DBG_ERROR_READING_DATA_EPERM: { os << "DBG_ERROR_READING_DATA_EPERM"; } break;
 		case DBGData::DBG_UNKNOWN: { os << "DBG_UNKNOWN"; } break;
-		case DBGData::DBG_CONTINUE: { os << "DBG_CONTINUE"; } break;
-		case DBGData::DBG_SUSPEND: { os << "DBG_SUSPEND"; } break;
+		case DBGData::DBG_CONTINUE_ACTION: { os << "DBG_CONTINUE"; } break;
+		case DBGData::DBG_SUSPEND_ACTION: { os << "DBG_SUSPEND"; } break;
 		case DBGData::DBG_VERBOSE_RESUME_ACTIONS: { os << "DBG_VERBOSE_RESUME_ACTIONS"; } break;
 		case DBGData::DBG_VERBOSE_RESUME_CONTINUE: { os << "DBG_VERBOSE_RESUME_CONTINUE"; } break;
 		case DBGData::DBG_VERBOSE_RESUME_STEP: { os << "DBG_VERBOSE_RESUME_STEP"; } break;
@@ -126,8 +126,8 @@ DBGData::DBGData(DBGCOMMANDS _command, double _simTime) : command(_command), sim
 	setSlave(DBGData::DEFAULT_SLAVE);
 }
 
-DBGData::DBGData(DBGCOMMANDS _name, double _simTime, string _masterSite, string _master, string _slaveSite, string _slave) :
-	command(_name), simTime(_simTime), masterSite(_masterSite), master(_master), slaveSite(_slaveSite), slave(_slave) {
+DBGData::DBGData(DBGCOMMANDS _command, double _simTime, string _masterSite, string _master, string _slaveSite, string _slave) :
+	command(_command), simTime(_simTime), masterSite(_masterSite), master(_master), slaveSite(_slaveSite), slave(_slave) {
 
 }
 
@@ -235,10 +235,10 @@ GDBThread::GDBThread(const char *_name, Object *_parent):
 
 GDBThread::~GDBThread() {
 
-	delete receiver; receiver = NULL;
-	delete sender; sender = NULL;
-	delete receiveDataQueue; receiveDataQueue = NULL;
-	delete sendDataQueue; sendDataQueue = NULL;
+	if (receiver) { delete receiver; receiver = NULL; }
+	if (sender) { delete sender; sender = NULL; }
+	if (receiveDataQueue) { delete receiveDataQueue; receiveDataQueue = NULL; }
+	if (sendDataQueue) { delete sendDataQueue; sendDataQueue = NULL; }
 }
 
 bool GDBThread::isData() {
@@ -304,7 +304,7 @@ void GDBThread::ReceiveThread::run(){
 			} else {
 
 				if (buf_str.compare("DBG_SUSPEND") == 0) {
-					DBGData *request = new DBGData(DBGData::DBG_SUSPEND);
+					DBGData *request = new DBGData(DBGData::DBG_SUSPEND_ACTION);
 					dataQueue->add(request);
 				}
 				else {
@@ -409,7 +409,7 @@ void GDBThread::ReceiveThread::run(){
 							break;
 
 						case 'c': {
-							DBGData *request = new DBGData(DBGData::DBG_CONTINUE);
+							DBGData *request = new DBGData(DBGData::DBG_CONTINUE_ACTION);
 
 							unsigned int addr;
 							if(ParseHex(buf_str, pos, addr)) {

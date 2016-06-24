@@ -35,6 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXTENSION_REGISTER_BANK_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXTENSION_REGISTER_BANK_HH__
 
+#include <stdexcept>
 #include <cstring>
 #include <inttypes.h>
 
@@ -107,19 +108,19 @@ namespace arm {
   
     void Do( Invalidate& inval )
     {
-      if (inval.start % inval.size) throw 0;
+      if (inval.start % inval.size) throw std::logic_error("Misaligned extended register manipulation");
       unsigned idx = inval.start / regsize;
       if (idx >= countT) return;
       if (inval.size >= regsize)
         {
-          if (inval.size % regsize) throw 0;
+          if (inval.size % regsize) throw std::logic_error("Misaligned extended register manipulation");
           unsigned end = idx + (inval.size / regsize);
-          if (end > countT) throw 0;
+          if (end > countT) throw std::logic_error("Misaligned extended register manipulation");
           while (idx < end) { state[idx] = invalid; ++idx; }
         }
       else
         {
-          if (regsize % inval.size) throw 0;
+          if (regsize % inval.size) throw std::logic_error("Misaligned extended register manipulation");
           if (state[idx] == invalid) return;
           state[idx] = invalid;
           if (inval.bufsize >= regsize) return;
@@ -130,7 +131,7 @@ namespace arm {
   
     void Do( Copy& copy )
     {
-      if (copy.start % copy.size) throw 0;
+      if (copy.start % copy.size) throw std::logic_error("Misaligned extended register manipulation");
       unsigned idx = copy.start / regsize;
       if (idx >= countT) return;
       if (copy.size == regsize)
@@ -143,9 +144,9 @@ namespace arm {
         }
       else if (copy.size > regsize)
         {
-          if (copy.size % regsize) throw 0;
+          if (copy.size % regsize) throw std::logic_error("Misaligned extended register manipulation");
           unsigned end = idx + (copy.size / regsize);
-          if (end > countT) throw 0;
+          if (end > countT) throw std::logic_error("Misaligned extended register manipulation");
           unsigned mask = ((1 << regsize) - 1);
           for (uint8_t* ptr = copy.buffer; idx < end; ++idx, ptr += regsize, mask <<= regsize) {
             if (state[idx] == invalid) continue;
@@ -158,7 +159,7 @@ namespace arm {
         }
       else
         {
-          if (regsize % copy.size) throw 0;
+          if (regsize % copy.size) throw std::logic_error("Misaligned extended register manipulation");
           if (state[idx] == invalid) return;
           state[idx] = valid;
           if (not copy.buffer) return;

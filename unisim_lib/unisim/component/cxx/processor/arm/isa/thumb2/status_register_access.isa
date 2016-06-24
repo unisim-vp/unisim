@@ -50,7 +50,7 @@ mrs.disasm = {
 };
 
 mrs.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   switch (sr) {
   default: cpu.UnpredictableInsnBehaviour(); break;
@@ -161,7 +161,7 @@ msr_reg_psr.disasm = {
 };
 
 msr_reg_psr.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   if (write_spsr) {
@@ -169,8 +169,9 @@ msr_reg_psr.execute = {
   } else {
     CPSRWriteByInstr( cpu, cpu.GetGPR(rn), mask, false ); // Does not affect execution state bits other than E
     // Cannot return to Hyp mode and ThumbEE state
-    cpu.Assert( (cpu.CPSR().Get(M) != U32(cpu.HYPERVISOR_MODE)) or
-                (cpu.CPSR().Get(J) == U32(0)) or (cpu.CPSR().Get(T) == U32(0)));
+    if (cpu.Cond( (cpu.CPSR().Get(M) != U32(cpu.HYPERVISOR_MODE)) or
+                  (cpu.CPSR().Get(J) == U32(0)) or (cpu.CPSR().Get(T) == U32(0)) ))
+      cpu.UnpredictableInsnBehaviour();
   }
 };
 

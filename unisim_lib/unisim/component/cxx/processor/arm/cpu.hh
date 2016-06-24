@@ -36,9 +36,11 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 
 #include <unisim/component/cxx/processor/arm/extregbank.hh>
+#include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/component/cxx/processor/arm/psr.hh>
 #include <unisim/component/cxx/processor/arm/cp15.hh>
 #include <unisim/component/cxx/processor/arm/hostfloat.hh>
+#include <unisim/component/cxx/processor/arm/simfloat.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/kernel/logger/logger.hh>
@@ -48,6 +50,7 @@
 #include <unisim/service/interfaces/register.hh>
 #include <map>
 #include <set>
+#include <stdexcept>
 #include <inttypes.h>
 
 namespace unisim {
@@ -69,10 +72,9 @@ struct CPU
   , public unisim::kernel::service::Service<unisim::service::interfaces::Registers>
 {
   typedef CONFIG Config;
-  typedef unisim::component::cxx::processor::arm::hostfloat::FPSCR fpscr_type;
-  typedef unisim::component::cxx::processor::arm::PSR psr_type;
-  typedef double   F64;
-  typedef float    F32;
+  typedef hostfloat::FP FP;
+  typedef FP::F64  F64;
+  typedef FP::F32  F32;
   typedef uint8_t  U8;
   typedef uint16_t U16;
   typedef uint32_t U32;
@@ -137,8 +139,8 @@ struct CPU
     virtual ~Mode() {}
     virtual bool     HasBR( unsigned index ) { return false; }
     virtual bool     HasSPSR() { return false; }
-    virtual void     SetSPSR(uint32_t value ) { throw 0; };
-    virtual uint32_t GetSPSR() { throw 0; return 0; };
+    virtual void     SetSPSR(uint32_t value ) { throw std::logic_error("No SPSR for this mode"); };
+    virtual uint32_t GetSPSR() { throw std::logic_error("No SPSR for this mode"); return 0; };
     virtual void     Swap( CPU& cpu ) {};
   };
   
@@ -214,20 +216,26 @@ struct CPU
     this->Branch( target );
   }
 	
-  /** Sets the PC (and preserve mode)
+  /** Sets the PC (fixing alignment and preserving mode)
    *
    * @param val the value to set PC
    */
   void Branch(uint32_t target)
   {
-    this->next_pc = target & (this->cpsr.Get( T ) ? -2 : -4);
+    this->next_insn_addr = target & (this->cpsr.Get( T ) ? -2 : -4);
   }
 	
-  /** Gets the updated PC value (next PC as currently computed)
+  /** Gets the current instruction address
    *
    */
-  uint32_t GetNPC()
-  { return this->next_pc; }
+  uint32_t GetCIA()
+  { return this->current_insn_addr; }
+	
+  /** Gets the next instruction address (as currently computed)
+   *
+   */
+  uint32_t GetNIA()
+  { return this->next_insn_addr; }
 	
   /******************************************/
   /* Program Status Register access methods */
@@ -280,10 +288,11 @@ struct CPU
   Mode& GetMode(uint8_t mode)
   {
     typename ModeMap::iterator itr = modes.find(mode);
-    if (itr == modes.end()) throw 0;
+    if (itr == modes.end()) UnpredictableInsnBehaviour();
     return *(itr->second);
   }
   
+  unsigned GetPL();
   void RequiresPL(unsigned rpl);
   
   Mode& CurrentMode() { return GetMode(cpsr.Get(M)); }
@@ -334,24 +343,25 @@ struct CPU
   /************************************************************************/
 
 public:
+  bool     Cond( bool cond ) { return cond; }
   void     UnpredictableInsnBehaviour();
-  void     Assert( bool condition ) { if (not condition) UnpredictableInsnBehaviour(); }
   void     CallSupervisor( uint16_t imm );
   bool     IntegerZeroDivide( bool zero_div ) { return zero_div; }
+  virtual void WaitForInterrupt() {}; // Implementation-defined
   
 protected:
-  void     HandleSynchronousException();
-
-  uint32_t HandleAsynchronousException( uint32_t );
-  void     TakeReset();
-  void     TakePhysicalFIQorIRQException( bool isIRQ );
-  void     TakeSVCException();
+  uint32_t     HandleAsynchronousException( uint32_t );
+  uint32_t     ExcVectorBase();
+  void         TakeReset();
+  void         TakePhysicalFIQorIRQException( bool isIRQ );
+  virtual void BranchToFIQorIRQvector( bool isIRQ );
+  void         TakeSVCException();
+  void         TakeDataOrPrefetchAbortException( bool isdata );
   
   /************************************************************************/
   /* Exception handling                                               END */
   /************************************************************************/
 
-  
   /**************************/
   /* CP15 Interface   START */
   /**************************/
@@ -366,8 +376,15 @@ protected:
   {
     virtual            ~CP15Reg() {}
     virtual unsigned    RequiredPL() { return 1; }
-    virtual void        Write( CPU& cpu, uint32_t value ) { cpu.UnpredictableInsnBehaviour(); }
-    virtual uint32_t    Read( CPU& cpu ) { cpu.UnpredictableInsnBehaviour(); return 0; }
+    virtual void        Write( CPU& cpu, uint32_t value ) {
+      cpu.logger << unisim::kernel::logger::DebugWarning << "Writing " << Describe() << unisim::kernel::logger::EndDebugWarning;
+      cpu.UnpredictableInsnBehaviour();
+    }
+    virtual uint32_t    Read( CPU& cpu ) {
+      cpu.logger << unisim::kernel::logger::DebugWarning << "Reading " << Describe() << unisim::kernel::logger::EndDebugWarning;
+      cpu.UnpredictableInsnBehaviour();
+      return 0;
+    }
     virtual char const* Describe() = 0;
   };
   
@@ -389,20 +406,40 @@ protected:
   
   /** Storage for the logical registers */
   uint32_t gpr[num_log_gprs];
-  uint32_t current_pc, next_pc;
+  uint32_t current_insn_addr, next_insn_addr;
   
   /** PSR registers */
   PSR      cpsr;
   
-  // /** CP15 */
-  // CP15 cp15;
-  uint32_t midr; /*< MIDR, Main ID Register */
-  uint32_t sctlr; 
+  /***********************************/
+  /* System control registers  START */
+  /***********************************/
+
+  uint32_t SCTLR; //< System Control Register
+  uint32_t CPACR; //< CPACR, Coprocessor Access Control Register
+  
+  /***********************************/
+  /* System control registers   END  */
+  /***********************************/
+  
+  /****************************************************/
+  /* Process, context and thread ID registers   START */
+  /****************************************************/
+  
+  uint32_t CONTEXTIDR; //< Context ID Register
+  uint32_t TPIDRURW; //< User Read/Write Thread ID Register
+  uint32_t TPIDRURO; //< User Read-Only Thread ID Register
+  uint32_t TPIDRPRW; //< PL1 only Thread ID Register
+  
+  /****************************************************/
+  /* Process, context and thread ID registers    END  */
+  /****************************************************/
 
 public:
   // VFP/NEON registers
-  fpscr_type fpscr;
-  fpscr_type& FPSCR() { return fpscr; }
+  FPSCReg fpscr;
+  FPSCReg& FPSCR() { return fpscr; }
+  U32 FPEXC;
 
   struct ExtRegBank
   {
@@ -446,8 +483,6 @@ protected:
   typedef std::map<std::string, unisim::service::interfaces::Register*> RegistersRegistry;
   RegistersRegistry registers_registry;
   
-  typedef std::set<unisim::service::interfaces::Register*> DebugRegisterPool;
-  DebugRegisterPool debug_register_pool;
   typedef std::set<unisim::kernel::service::VariableBase*> VariableRegisterPool;
   VariableRegisterPool variable_register_pool;
   
@@ -455,7 +490,7 @@ protected:
   /* Debug Registers              END  */
   /*************************************/
   
-  
+  virtual void Sync() = 0;
 };
 	
 } // end of namespace arm

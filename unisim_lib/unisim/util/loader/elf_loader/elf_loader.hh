@@ -53,7 +53,7 @@ namespace util {
 namespace loader {
 namespace elf_loader {
 
-using namespace std;
+// using namespace std;
 using namespace unisim::util::endian;
 using unisim::util::debug::Statement;
 using unisim::util::debug::Symbol;
@@ -118,7 +118,7 @@ public:
 	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
 private:
 	unisim::kernel::logger::Logger& logger;
-	string filename;
+	std::string filename;
 	MEMORY_ADDR base_addr;
 	bool force_base_addr;
 	bool force_use_virtual_address;
@@ -129,9 +129,9 @@ private:
 	unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	unisim::service::interfaces::Registers *regs_if;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
-	string dwarf_to_html_output_directory;
-	string dwarf_to_xml_output_filename;
-	string dwarf_register_number_mapping_filename;
+	std::string dwarf_to_html_output_directory;
+	std::string dwarf_to_xml_output_filename;
+	std::string dwarf_register_number_mapping_filename;
 	bool verbose;
 	endian_type endianness;
 	bool parse_dwarf;
@@ -144,29 +144,29 @@ private:
 	void AdjustElfHeader(Elf_Ehdr *hdr);
 	void AdjustProgramHeader(const Elf_Ehdr *hdr, Elf_Phdr *phdr);
 	void AdjustSectionHeader(const Elf_Ehdr *hdr, Elf_Shdr *shdr);
-	Elf_Ehdr *ReadElfHeader(istream& is);
-	Elf_Phdr *ReadProgramHeaders(const Elf_Ehdr *hdr, istream& is);
-	Elf_Shdr *ReadSectionHeaders(const Elf_Ehdr *hdr, istream& is);
+	Elf_Ehdr *ReadElfHeader(std::istream& is);
+	Elf_Phdr *ReadProgramHeaders(const Elf_Ehdr *hdr, std::istream& is);
+	Elf_Shdr *ReadSectionHeaders(const Elf_Ehdr *hdr, std::istream& is);
 	const Elf_Shdr *GetNextSectionHeader(const Elf_Ehdr *hdr, const Elf_Shdr *shdr);
-	char *LoadSectionHeaderStringTable(const Elf_Ehdr *hdr, const Elf_Shdr *shdr_table, istream& is);
-	void DumpElfHeader(const Elf_Ehdr *hdr, ostream& os);
-	void DumpProgramHeader(const Elf_Phdr *phdr, ostream& os);
-	void DumpSectionHeader(const Elf_Shdr *shdr, const char *string_table, ostream& os);
-	void DumpSymbol(const Elf_Sym *sym, const char *string_table, ostream& os);
-	void DumpSymbolTable(const Elf_Shdr *shdr, const char *content, const char *string_table, ostream& os);
+	char *LoadSectionHeaderStringTable(const Elf_Ehdr *hdr, const Elf_Shdr *shdr_table, std::istream& is);
+	void DumpElfHeader(const Elf_Ehdr *hdr, std::ostream& os);
+	void DumpProgramHeader(const Elf_Phdr *phdr, std::ostream& os);
+	void DumpSectionHeader(const Elf_Shdr *shdr, const char *string_table, std::ostream& os);
+	void DumpSymbol(const Elf_Sym *sym, const char *string_table, std::ostream& os);
+	void DumpSymbolTable(const Elf_Shdr *shdr, const char *content, const char *string_table, std::ostream& os);
 	MEMORY_ADDR GetSectionSize(const Elf_Shdr *shdr);
 	MEMORY_ADDR GetSectionAddr(const Elf_Shdr *shdr);
 	MEMORY_ADDR GetSectionType(const Elf_Shdr *shdr);
 	MEMORY_ADDR GetSectionAlignment(const Elf_Shdr *shdr);
 	MEMORY_ADDR GetSectionLink(const Elf_Shdr *shdr);
-	bool LoadSection(const Elf_Ehdr *hdr, const Elf_Shdr *shdr, void *buffer, istream& is);
+	bool LoadSection(const Elf_Ehdr *hdr, const Elf_Shdr *shdr, void *buffer, std::istream& is);
 	MEMORY_ADDR GetSegmentType(const Elf_Phdr *phdr);
 	MEMORY_ADDR GetSegmentFlags(const Elf_Phdr *phdr);
 	MEMORY_ADDR GetSegmentMemSize(const Elf_Phdr *phdr);
 	MEMORY_ADDR GetSegmentFileSize(const Elf_Phdr *phdr);
 	MEMORY_ADDR GetSegmentAddr(const Elf_Phdr *phdr);
 	MEMORY_ADDR GetSegmentAlignment(const Elf_Phdr *phdr);
-	bool LoadSegment(const Elf_Ehdr *hdr, const Elf_Phdr *phdr, void *buffer, istream& is);
+	bool LoadSegment(const Elf_Ehdr *hdr, const Elf_Phdr *phdr, void *buffer, std::istream& is);
 	MEMORY_ADDR GetSectionFlags(const Elf_Shdr *shdr);
 	const char *GetSectionName(const Elf_Shdr *shdr, const char *string_table);
 	void DumpRawData(const void *content, MEMORY_ADDR size);

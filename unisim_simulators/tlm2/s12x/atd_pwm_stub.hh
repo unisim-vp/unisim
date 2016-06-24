@@ -106,6 +106,7 @@ public:
 	virtual bool Setup(ServiceExportBase *srv_export);
 	virtual bool EndSetup();
 
+	virtual void Stop(int exit_status);
 
 	// Slave methods
 	virtual bool get_direct_mem_ptr( PWM_Payload<PWM_SIZE>& payload, tlm_dmi&  dmi_data);
@@ -119,12 +120,16 @@ public:
 	virtual void invalidate_direct_mem_ptr( sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 
 	// Implementation
-	void input(bool pwmValue[PWM_SIZE]);
+//	void input(bool pwmValue[PWM_SIZE]);
+	void input(bool (*pwmValue)[PWM_SIZE]);
 	void output_ATD1(double anValue[ATD1_SIZE]);
 	void output_ATD0(double anValue[ATD0_SIZE]);
 
-//	virtual void ProcessATD();
-//	virtual void ProcessPWM();
+	virtual void Inject_ATD0(double anValue[8]) {}
+	virtual void Inject_ATD1(double anValue[16]) {}
+	virtual void Get_PWM(bool (*pwmValue)[PWM_SIZE]) {}
+
+	bool isTerminated() { return terminated; }
 
 protected:
 	double	anx_stimulus_period;
@@ -133,14 +138,10 @@ protected:
 	double	pwm_fetch_period;
 	sc_time *pwm_fetch_period_sc;
 
+	sc_event atd0_bw_event, atd1_bw_event;
+
 	bool trace_enable;
 	Parameter<bool> param_trace_enable;
-
-	bool	atd0_stub_enabled;
-	Parameter<bool>		param_atd0_stub_enabled;
-
-	bool	atd1_stub_enabled;
-	Parameter<bool>		param_atd1_stub_enabled;
 
 	tlm_quantumkeeper atd0_quantumkeeper;
 	tlm_quantumkeeper atd1_quantumkeeper;
@@ -167,6 +168,8 @@ private:
 	ofstream atd0_output_file;
 	ofstream atd1_output_file;
 	ofstream pwm_output_file;
+
+	bool terminated;
 
 };
 

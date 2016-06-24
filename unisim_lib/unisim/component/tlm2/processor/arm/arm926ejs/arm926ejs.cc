@@ -129,7 +129,6 @@ ARM926EJS::ARM926EJS(const sc_module_name& name, Object *parent)
   : unisim::kernel::service::Object(name, parent)
   , sc_module(name)
   , unisim::component::cxx::processor::arm::arm926ejs::CPU(name, parent)
-  , unisim::kernel::service::VariableBaseListener()
   , master_socket("master_socket")
   , nirq("nirq_port")
   , nfiq("nfiq_port")
@@ -145,9 +144,10 @@ ARM926EJS::ARM926EJS(const sc_module_name& name, Object *parent)
   , bus_cycle_time(62500.0, SC_PS)
   , nice_time(1.0, SC_MS)
   , ipc(1.0)
+  , time_per_instruction(cpu_cycle_time/ipc)
   , stat_cpu_time("cpu-time", this, cpu_time, "The cpu consumed time.")
   , stat_bus_time("bus-time", this, bus_time, "The bus consumed time.")
-  , param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time, "The processor cycle time.")
+  , param_cpu_cycle_time("cpu-cycle-time", this, *this, "The processor cycle time.")
   , param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time, "The processor bus cycle time.")
   , param_nice_time("nice-time", this, nice_time, "Maximum time between systemc waits in picoseconds.")
   , param_ipc("ipc", this, ipc, "Instructions per cycle performance.")
@@ -155,8 +155,6 @@ ARM926EJS::ARM926EJS(const sc_module_name& name, Object *parent)
   , param_verbose_tlm("verbose_tlm", this, verbose_tlm, "Display TLM information")
 {
   inherited::param_cpu_cycle_time_ps.SetVisible(false);
-  param_cpu_cycle_time.AddListener(this);
-  param_cpu_cycle_time.NotifyListeners();
 
   master_socket.bind(*this);
   
@@ -169,15 +167,14 @@ ARM926EJS::ARM926EJS(const sc_module_name& name, Object *parent)
 
 ARM926EJS::~ARM926EJS()
 {
-  param_cpu_cycle_time.RemoveListener(this);
 }
 
 void
-ARM926EJS::VariableBaseNotify(const unisim::kernel::service::VariableBase *var)
+ARM926EJS::SetCycleTime( sc_core::sc_time const&  )
 {
-  // no need to check the variable, the only variable with notify
-  //   activated is the cpu_cycle_time
-  uint64_t cycle_time_ps = cpu_cycle_time.value();
+  cpu_cycle_time = cycle_time;
+  time_per_instruction = cycle_time / ipc;
+  uint64_t cycle_time_ps = cycle_time.value();
   uint64_t ps = sc_time(1.0, SC_PS).value();
   cycle_time_ps = cycle_time_ps * ps;
   (*this)["cpu-cycle-time-ps"] = cycle_time_ps;
@@ -298,7 +295,6 @@ ARM926EJS::Run()
   missed_fiqs = nfiq ? 0 : -1;
   
   /* compute the average time of each instruction */
-  sc_time time_per_instruction = cpu_cycle_time * ipc;
   for (;;)
   {
     uint32_t unmasked_interrupts = CPSR().bits();

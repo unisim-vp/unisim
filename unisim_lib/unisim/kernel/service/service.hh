@@ -39,6 +39,7 @@
 #include <iostream>
 #include <string>
 #include <list>
+#include <set>
 #include <queue>
 #include <map>
 #include <vector>
@@ -219,7 +220,7 @@ public:
 
 	void AddListener(VariableBaseListener *listener);
 	void RemoveListener(VariableBaseListener *listener);
- 	void NotifyListeners();
+	void NotifyListeners();
 
 private:
 	string name;
@@ -234,7 +235,7 @@ private:
 	bool is_visible;
 	bool is_serializable;
 	bool is_modified;
-	list<VariableBaseListener *> listener_list;
+	std::set<VariableBaseListener*> listener_set;
 };
 
 //=============================================================================
@@ -458,50 +459,7 @@ public:
 };
 
 //=============================================================================
-//=                  CallBackObject and  TCallBack<TYPE>                      =
-//=============================================================================
-
-class CallBackObject {
-public:
-	virtual ~CallBackObject() {}
-
-	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length) {
-		return (false);
-	}
-
-	virtual bool write(unsigned int offset, const void *buffer, unsigned int data_length) {
-		return (false);
-	}
-
-	typedef bool (CallBackObject::*cbwrite)(unsigned int offset, const void*, unsigned int size);
-	typedef bool (CallBackObject::*cbread)(unsigned int offset, const void*, unsigned int size);
-
-};
-
-template <typename DataType> class TCallBack : public CallBackObject {
-private:
-	CallBackObject *m_owner;
-	unsigned int m_offset;
-
-	cbwrite write;
-	cbwrite read;
-
-public:
-	TCallBack(CallBackObject *owner, unsigned int offset, cbwrite _write, cbwrite _read) :
-		m_owner(owner), m_offset(offset), write(_write), read(_read) {}
-
-	bool Write(DataType storage) {
-		return ((write != NULL)? (m_owner->*write)(m_offset, &storage, sizeof(DataType)) : false);
-	}
-
-	bool Read(DataType& storage) {
-		return ((read != NULL)? (m_owner->*read)(m_offset, &storage, sizeof(DataType)) : false);
-	}
-
-};
-
-//=============================================================================
-//=                            Variable<TYPE>                                =
+//=                            Variable<TYPE>                                 =
 //=============================================================================
 
 template <class TYPE>
@@ -510,10 +468,6 @@ class Variable : public VariableBase
 public:
 	typedef VariableBase::Type Type;
 	Variable(const char *name, Object *owner, TYPE& storage, VariableBase::Type type, const char *description = NULL);
-
-	void setCallBack(CallBackObject *owner, unsigned int offset, bool (CallBackObject::*_write)(unsigned int, const void*, unsigned int), bool (CallBackObject::*_read)(unsigned int, const void*, unsigned int)) {
-		m_callback.reset(new TCallBack<TYPE>(owner, offset, _write, _read));
-	}
 
 	virtual const char *GetDataTypeName() const;
 	virtual unsigned int GetBitSize() const;
@@ -527,36 +481,22 @@ public:
 	virtual VariableBase& operator = (unsigned long long value);
 	virtual VariableBase& operator = (double value);
 	virtual VariableBase& operator = (const char * value);
-
-protected:
-
-	bool WriteBack(TYPE storage) {
-
-		CallBackObject *cb = m_callback.get();
-		if (cb != NULL) {
-			return (((TCallBack<TYPE>&) *m_callback).Write(storage));
-		}
-
-		return (false);
-	}
-
-	bool ReadBack(TYPE& storage) const {
-
-		CallBackObject *cb = m_callback.get();
-		if (cb != NULL) {
-			return (((TCallBack<TYPE>&) *m_callback).Read(storage));
-		}
-
-		return (false);
-	}
-
-	const CallBackObject& callback() const { return (*m_callback); }
-	CallBackObject& scallback() { return (*m_callback); }
+	
+	virtual void Set( TYPE const& value );
+	virtual TYPE Get() const { return *storage; }
 
 private:
 	TYPE *storage;
-	std::auto_ptr<CallBackObject> m_callback;
 };
+
+template <class TYPE>
+void
+Variable<TYPE>::Set( TYPE const& value )
+{
+	SetModified(*storage != value);
+	*storage = value;
+	NotifyListeners();
+}
 
 template <class TYPE>
 class Parameter : public Variable<TYPE>
@@ -572,12 +512,57 @@ public:
 	Statistic(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_STATISTIC, description) { VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC); }
 };
 
+//=============================================================================
+//=                  CallBackObject and  TCallBack<TYPE>                      =
+//=============================================================================
+
+struct CallBackObject
+{
+	virtual ~CallBackObject() {}
+
+	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length) { return false; }
+
+	virtual bool write(unsigned int offset, const void *buffer, unsigned int data_length) {	return false; }
+
+};
+
+template <typename TYPE>
+class TCallBack
+{
+public:
+	typedef bool (CallBackObject::*cbwrite)(unsigned int offset, const void*, unsigned int size);
+	typedef bool (CallBackObject::*cbread)(unsigned int offset, const void*, unsigned int size);
+	
+	TCallBack(CallBackObject *owner, unsigned int offset, cbwrite _write, cbread _read)
+          : m_owner(owner), m_offset(offset), write(_write), read(_read)
+	{}
+
+	bool Write(TYPE const& storage) { return write and (m_owner->*write)(m_offset, &storage, sizeof (TYPE)); }
+
+	bool Read(TYPE& storage) { return read and (m_owner->*read)(m_offset, &storage, sizeof (TYPE)); }
+private:
+	CallBackObject *m_owner;
+	unsigned int m_offset;
+
+	cbwrite write;
+	cbread read;
+};
+
 template <class TYPE>
 class Register : public Variable<TYPE>
 {
 public:
+	Register(const char *name, Object *owner, TYPE& storage, const char *description = NULL)
+	  : Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description) {}
+	
+	typedef TCallBack<TYPE> TCB;
+	void setCallBack(CallBackObject *owner, unsigned int offset, typename TCB::cbwrite _write, typename TCB::cbread _read)
+	{
+		m_callback.reset(new TCB(owner, offset, _write, _read));
+	}
 
-	Register(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description) {}
+	virtual void Set( TYPE const& value ) { if (not WriteBack(value)) Variable<TYPE>::Set( value ); }
+	virtual TYPE Get() const { TYPE value; if (not ReadBack(value)) return Variable<TYPE>::Get(); return value; }
 
 //	using Variable<TYPE>::operator=;
 
@@ -587,6 +572,21 @@ public:
 	VariableBase& operator = (double value) { return (Variable<TYPE>::operator = (value)); }
 	VariableBase& operator = (const char * value) { return (Variable<TYPE>::operator = (value)); }
 
+protected:
+	bool WriteBack(TYPE const& storage)
+	{
+		bool status = m_callback.get() and m_callback->Write(storage);
+		if (status) this->NotifyListeners();
+		return status;
+	}
+
+	bool ReadBack(TYPE& storage) const
+	{
+		return (m_callback.get() and m_callback->Read(storage));
+	}
+
+private:
+	std::auto_ptr<TCB> m_callback;
 };
 
 template <class TYPE>

@@ -109,12 +109,12 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 
 	char channelName[20];
 
-	for (uint8_t i=0; i<4; i++) {
+	for (unsigned int i=0; i<4; i++) {
 		sprintf (channelName, "pa%d", i);
 		pc8bit[i] = new PulseAccumulator8Bit(this, i, &pacn_register[i], &paxh_registers[i]);
 	}
 
-	for (uint8_t i=0; i<8; i++) {
+	for (unsigned int i=0; i<8; i++) {
 
 //		portt_pin[i] = false;
 		portt_pin_reg[i] = false;
@@ -155,7 +155,7 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	pacB = new PulseAccumulatorB("PACB", this, &portt_pin[0], pc8bit[1], pc8bit[0]);
 	portt_pin_reg[0].AddListener(pacB);
 
-//	Reset();
+	Reset();
 
 	xint_payload = xint_payload_fabric.allocate();
 
@@ -194,12 +194,17 @@ void ECT::runBuildinSignalGenerator() {
 	if (builtin_signal_generator) {
 		while (true) {
 
-			for (uint8_t i=0; i<8; i++) {
+			for (unsigned int i=0; i<8; i++) {
 				/* generate signal code */
-				bool signalValue = (1 == (uint8_t) rand() % 2);
+				bool signalValue = (1 == rand() % 2);
 
 				if (portt_pin[i] != signalValue) {
 					portt_pin_reg[i] = signalValue;
+
+					// if edge sharing is enabled then channels [4,7] have been respectively stimulated by channels [0,3].
+					if ((i < 4) && isSharingEdgeEnabled(1 << (i+4))) {
+						portt_pin_reg[i+4] = signalValue;
+					}
 				}
 			}
 
@@ -354,51 +359,52 @@ void ECT::runDownCounter() {
 }
 
 void ECT::runOutputCompare() {
-	for (uint8_t i=0; i<8; i++) {
+	for (unsigned int i=0; i<8; i++) {
 		if (!isInputCapture(i)) {
 			ioc_channel[i]->runOutputCompare();
 		}
 	}
 }
 
-void ECT::assertInterrupt(uint8_t interrupt_offset) {
+void ECT::assertInterrupt(unsigned int interrupt_offset) {
 
-	if ((interrupt_offset >= (offset_channel0_interrupt - 0xE)) && (interrupt_offset <= offset_channel0_interrupt ) && !isInputOutputInterruptEnabled((offset_channel0_interrupt - interrupt_offset)/2)) return;
-	if ((interrupt_offset == offset_timer_overflow_interrupt) && !isTimerOverflowinterruptEnabled()) return;
-	if ((interrupt_offset == pulse_accumulatorA_overflow_interrupt) && ((pactl_register & 0x02) == 0)) return;
-	if ((interrupt_offset == pulse_accumulatorB_overflow_interrupt) && ((pbctl_register & 0x02) == 0)) return;
-	if ((interrupt_offset == pulse_accumulatorA_input_edge_interrupt) && ((pactl_register & 0x01) == 0)) return;
-	if ((interrupt_offset == modulus_counter_interrupt) && (mcctl_register & 0x80) == 0) return;
-
-	tlm_phase phase = BEGIN_REQ;
-
-	xint_payload->acquire();
-
-	xint_payload->setInterruptOffset(interrupt_offset);
-
-	sc_time local_time = quantumkeeper.get_local_time();
-
-	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*xint_payload, phase, local_time);
-
-	xint_payload->release();
-
-	switch(ret)
+	if ( ((interrupt_offset >= (offset_channel0_interrupt - 0xE)) && (interrupt_offset <= offset_channel0_interrupt ) && isInputOutputInterruptEnabled((offset_channel0_interrupt - interrupt_offset)/2))
+		|| ((interrupt_offset == offset_timer_overflow_interrupt) && isTimerOverflowinterruptEnabled())
+		|| ((interrupt_offset == pulse_accumulatorA_overflow_interrupt) && ((pactl_register & 0x02) != 0))
+		|| ((interrupt_offset == pulse_accumulatorB_overflow_interrupt) && ((pbctl_register & 0x02) != 0))
+		|| ((interrupt_offset == pulse_accumulatorA_input_edge_interrupt) && ((pactl_register & 0x01) != 0))
+		|| ((interrupt_offset == modulus_counter_interrupt) && (mcctl_register & 0x80) != 0) )
 	{
-		case TLM_ACCEPTED:
-			// neither payload, nor phase and local_time have been modified by the callee
-			quantumkeeper.sync(); // synchronize to leave control to the callee
-			break;
-		case TLM_UPDATED:
-			// the callee may have modified 'payload', 'phase' and 'local_time'
-			quantumkeeper.set(local_time); // increase the time
-			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+		tlm_phase phase = BEGIN_REQ;
 
-			break;
-		case TLM_COMPLETED:
-			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
-			quantumkeeper.set(local_time); // increase the time
-			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
-			break;
+		xint_payload->acquire();
+
+		xint_payload->setInterruptOffset(interrupt_offset);
+
+		sc_time local_time = quantumkeeper.get_local_time();
+
+		tlm_sync_enum ret = interrupt_request->nb_transport_fw(*xint_payload, phase, local_time);
+
+		xint_payload->release();
+
+		switch(ret)
+		{
+			case TLM_ACCEPTED:
+				// neither payload, nor phase and local_time have been modified by the callee
+				quantumkeeper.sync(); // synchronize to leave control to the callee
+				break;
+			case TLM_UPDATED:
+				// the callee may have modified 'payload', 'phase' and 'local_time'
+				quantumkeeper.set(local_time); // increase the time
+				if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+
+				break;
+			case TLM_COMPLETED:
+				// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
+				quantumkeeper.set(local_time); // increase the time
+				if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+				break;
+		}
 	}
 
 }
@@ -428,7 +434,7 @@ void ECT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	if ((address >= baseAddress) && (address < (baseAddress + 64))) {
+	if ((address >= baseAddress) && (address < (baseAddress + (unsigned int) MEMORY_MAP_SIZE))) {
 
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);
@@ -683,6 +689,10 @@ bool ECT::read(unsigned int offset, const void *buffer, unsigned int data_length
 }
 
 bool ECT::write(unsigned int offset, const void *buffer, unsigned int data_length) {
+
+	if (debug_enabled) {
+		std::cout << sc_time_stamp() << "  " << sc_object::name() << ":: write at " << std::dec << offset << "  value 0x" << std::hex << ((data_length==2)? BigEndian2Host(*((uint16_t*) buffer)): *((uint8_t*) buffer)) << std::dec << std::endl;
+	}
 
 	switch (offset) {
 		case TIOS: {
@@ -1016,7 +1026,7 @@ bool ECT::write(unsigned int offset, const void *buffer, unsigned int data_lengt
 				 */
 				if ((mccnt_register == 0x0000) && (old_mccnt_register != 0)) {
 					if ((icsys_register & 0x03) == 0x03) {
-						for (uint8_t i=0; i < 3; i++) {
+						for (unsigned int i=0; i < 3; i++) {
 							ioc_channel[i]->latchToHoldingRegisters();
 						}
 
@@ -1178,7 +1188,7 @@ void ECT::PulseAccumulator16Bit::latchToHoldingRegisters() {
 
 ECT::PulseAccumulatorA::PulseAccumulatorA(const sc_module_name& name, ECT *parent, bool* pinLogic, PulseAccumulator8Bit *pacn_high, PulseAccumulator8Bit *pacn_low) :
 	ECT::PulseAccumulator16Bit::PulseAccumulator16Bit(name, parent, pinLogic, pacn_high, pacn_low)
-	, isGatedTimeMode(false)
+	, isGatedTimeMode(false), valideEdge(0)
 {
 
 }
@@ -1310,7 +1320,7 @@ inline void ECT::latchToHoldingRegisters() {
 
 	// is latch mode enabled (ICSYS::LATQ=1 and ICSYS::BUFFEN=1)
 	if (isLatchMode() && isBufferEnabled()) {
-		for (uint8_t i=0; i<4; i++) {
+		for (unsigned int i=0; i<4; i++) {
 			ioc_channel[i]->latchToHoldingRegisters();
 		}
 	}
@@ -1405,8 +1415,11 @@ void ECT::IOC_Channel_t::runInputCapture() {
 			if (!ectParent->isNoInputCaptureOverWrite(ioc_index) || (*tc_register_ptr == 0x0000)) {
 				*tc_register_ptr = ectParent->getMainTimerValue();
 				// set the TFLG1::CxF to show that input capture occurs
-				ectParent->setTimerInterruptFlag(ioc_index);
-				ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
+				if (ectParent->isInputOutputInterruptEnabled(ioc_index)) {
+					std::cout << sc_time_stamp() << "  " << sc_object::name() << " runInputCapture (1) 0x" << std::hex << ectParent->getInterruptOffsetChannel0() - (ioc_index * 2) << std::endl;
+					ectParent->setTimerInterruptFlag(ioc_index);
+					ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
+				}
 			}
 		}
 		else //  buffered IC Channels
@@ -1430,8 +1443,11 @@ void ECT::IOC_Channel_t::runInputCapture() {
 				 *                 when a valid input capture transition on the corresponding port pin occurs.
 				 *  ICSYS::LATQ=1  : If the queue mode is not engaged, the timer flags C3F–C0F are set the same way as for TFMOD = 0.
 				 */
-				ectParent->setTimerInterruptFlag(ioc_index);
-				ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
+				if (ectParent->isInputOutputInterruptEnabled(ioc_index)) {
+					std::cout << sc_time_stamp() << "  " << sc_object::name() << " runInputCapture (2) 0x" << std::hex << ectParent->getInterruptOffsetChannel0() - (ioc_index * 2) <<  std::endl;
+					ectParent->setTimerInterruptFlag(ioc_index);
+					ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
+				}
 
 			}
 			else // IC Queue Mode (ICSYS::LATQ=0)
@@ -1446,8 +1462,11 @@ void ECT::IOC_Channel_t::runInputCapture() {
 						 */
 
 						if (ectParent->isTimerFlagSettingModeSet() && (*tch_register_ptr != 0x0000)) {
-							ectParent->setTimerInterruptFlag(ioc_index);
-							ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
+							if (ectParent->isInputOutputInterruptEnabled(ioc_index)) {
+								std::cout << sc_time_stamp() << "  " << sc_object::name() << " runInputCapture (3) 0x" << std::hex << ectParent->getInterruptOffsetChannel0() - (ioc_index * 2) <<  std::endl;
+								ectParent->setTimerInterruptFlag(ioc_index);
+								ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
+							}
 						}
 					}
 					*tc_register_ptr = ectParent->getMainTimerValue();
@@ -1480,8 +1499,11 @@ void ECT::IOC_Channel_t::runOutputCompare() {
 	if (result) {
 		ectParent->runChannelOutputCompareAction(ioc_index);
 		// set the TFLG1::CxF to show that output compare is detected
-		ectParent->setTimerInterruptFlag(ioc_index);
-		ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
+		if (ectParent->isInputOutputInterruptEnabled(ioc_index)) {
+			std::cout << sc_time_stamp() << "  " << sc_object::name() << " ioc_index " << (unsigned int) ioc_index << " runOutputCompare (1) 0x" << std::hex << ectParent->getInterruptOffsetChannel0() - (ioc_index * 2) << std::endl;
+			ectParent->setTimerInterruptFlag(ioc_index);
+			ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
+		}
 
 		/**
 		 * if TSCR2::TCRE=1, then the timer counter is reset by a successful channel 7 output compare.
@@ -1896,10 +1918,10 @@ void ECT::Reset() {
 	tscr2_register = 0x00;
 	tflg1_register = 0x00;
 	tflg2_register = 0x00;
-	for (uint8_t i=0; i<8; i++) { tc_registers[i] = 0x0000; }
+	for (unsigned int i=0; i<8; i++) { tc_registers[i] = 0x0000; }
 	pactl_register = 0x00;
 	paflg_register = 0x00;
-	for (uint8_t i=0; i<4; i++) { pacn_register[i] = 0x00; }
+	for (unsigned int i=0; i<4; i++) { pacn_register[i] = 0x00; }
 	mcctl_register = 0x00;
 	mcflg_register = 0x00;
 	icpar_register = 0x00;
@@ -1911,9 +1933,9 @@ void ECT::Reset() {
 	ptmcpsr_register = 0x00;
 	pbctl_register = 0x00;
 	pbflg_register = 0x00;
-	for (uint8_t i=0; i<4; i++) { paxh_registers[i] = 0x00; }
+	for (unsigned int i=0; i<4; i++) { paxh_registers[i] = 0x00; }
 	mccnt_register = 0xFFFF;
-	for (uint8_t i=0; i<4; i++) { tcxh_registers[i] = 0x0000; }
+	for (unsigned int i=0; i<4; i++) { tcxh_registers[i] = 0x0000; }
 
 	prnt_write = false;
 	icsys_write = false;
@@ -1921,7 +1943,7 @@ void ECT::Reset() {
 	down_counter_enabled = false;
 	delay_counter_enabled = false;
 
-	for (uint8_t i=0; i<8; i++) {
+	for (unsigned int i=0; i<8; i++) {
 		portt_pin_reg[i] = false;
 	}
 
@@ -1981,7 +2003,7 @@ void ECT::updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 
 bool ECT::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr <= (baseAddress+TC3H_LOW))) {
+	if ((addr >= baseAddress) && (addr <= (baseAddress + (unsigned int) TC3H_LOW))) {
 
 		physical_address_t offset = addr-baseAddress;
 
@@ -2193,7 +2215,7 @@ bool ECT::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
 bool ECT::WriteMemory(physical_address_t addr, const void *value, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr <= (baseAddress+TC3H_LOW))) {
+	if ((addr >= baseAddress) && (addr <= (baseAddress + (unsigned int) TC3H_LOW))) {
 
 		if (size == 0) {
 			return (true);

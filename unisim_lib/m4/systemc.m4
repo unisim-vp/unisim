@@ -76,9 +76,44 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
 		esac
 		export PKG_CONFIG_PATH="${with_systemc}/lib-${SYSTEMC_TARGET_ARCH}/pkgconfig${sep}${with_systemc}/lib/pkgconfig${sep}${PKG_CONFIG_PATH}"
     fi
+    
+	PKG_CHECK_MODULES(SystemC, systemc, pkgconfig_found_systemc=yes, pkgconfig_found_systemc=no)
 
-	PKG_CHECK_MODULES(SystemC, systemc, AC_MSG_NOTICE([SystemC found]), AC_MSG_ERROR([SystemC not found]))
+	if test "x$pkgconfig_found_systemc" = "xyes"; then
+		AC_MSG_NOTICE([SystemC found])
+		CXXFLAGS="${CXXFLAGS} ${SystemC_CFLAGS}"
+		LIBS="${LIBS} ${SystemC_LIBS}"
+	else
+		CPPFLAGS=${CPPFLAGS}" -DSC_INCLUDE_DYNAMIC_PROCESSES"
+		LDFLAGS="${LDFLAGS} -L$with_systemc/lib-${SYSTEMC_TARGET_ARCH}"
+		CPPFLAGS="${CPPFLAGS} -I$with_systemc/include"
 	
-	CXXFLAGS="${CXXFLAGS} ${SystemC_CFLAGS}"
-	LIBS="${LIBS} ${SystemC_LIBS}"
+		# Check for systemc.h
+		AC_CHECK_HEADER(systemc.h,, AC_MSG_ERROR([systemc.h not found. Please install the SystemC library (version >= 2.3.0). Use --with-systemc=<path> to overload default search path.]))
+
+		# Check for function 'sc_start' in libsystemc.a
+		unisim_check_systemc_save_LIBS="${LIBS}"
+		LIBS="-lsystemc ${LIBS}"
+		AC_MSG_CHECKING([for sc_start in -lsystemc])
+		AC_LINK_IFELSE([AC_LANG_SOURCE([[
+#include <systemc.h>
+int sc_main(int argc, char **argv)
+{
+	sc_start();
+	return 0;
+}
+extern "C"
+int main(int argc, char *argv[])
+{
+	return sc_core::sc_elab_and_sim(argc, argv);
+}]])],
+		LIBS="${unisim_check_systemc_save_LIBS}"; AC_MSG_RESULT([yes]); [broken_systemc=no],
+		LIBS="${unisim_check_systemc_save_LIBS}"; AC_MSG_RESULT([no]); [broken_systemc=yes])
+
+		if test "$broken_systemc" == "yes"; then
+			AC_MSG_ERROR([installed SystemC is broken. Please install the SystemC library (version > 2.3.0). Use --with-systemc=<path> to overload default search path.])
+		else
+			LIBS="-lsystemc ${LIBS}"
+		fi
+	fi
 ])

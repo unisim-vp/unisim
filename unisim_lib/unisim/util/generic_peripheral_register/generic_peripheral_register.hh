@@ -89,7 +89,8 @@ public:
 	{
 		peripheral->SetPeripheralRegister(addr, value);
 	};
-
+	
+	bool operator != (GenericPeripheralRegister<TYPE> const& gpr) const { return true; }
 private:
 	GenericPeripheralRegisterInterface<TYPE> *peripheral;
 	uint64_t addr;

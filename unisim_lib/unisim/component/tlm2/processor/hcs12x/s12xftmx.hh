@@ -88,7 +88,7 @@ using unisim::component::cxx::processor::hcs12x::CONFIG;
 
 template <unsigned int BUSWIDTH = DEFAULT_BUSWIDTH, class ADDRESS = DEFAULT_ADDRESS, unsigned int BURST_LENGTH = DEFAULT_BURST_LENGTH, uint32_t PAGE_SIZE = DEFAULT_PAGE_SIZE, bool DEBUG = DEFAULT_DEBUG>
 class S12XFTMX :
-	public unisim::component::tlm2::memory::ram::Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>
+	  public unisim::component::tlm2::memory::ram::Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>
 	, public CallBackObject
 	, public Service<Registers>
 	, virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>
@@ -216,8 +216,8 @@ public:
 	//=             memory interface methods                              =
 	//=====================================================================
 
-	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(ADDRESS physical_addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(ADDRESS physical_addr, const void *buffer, uint32_t size);
 
 	//=====================================================================
 	//=             FLASH Registers Interface interface methods               =
@@ -230,6 +230,11 @@ public:
 	 * @return A pointer to the RegisterInterface corresponding to name.
 	 */
     virtual Register *GetRegister(const char *name);
+
+    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+    {
+    	// TODO
+    }
 
 	//=====================================================================
 	//=             registers setters and getters                         =

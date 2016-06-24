@@ -484,6 +484,19 @@ GetRegister(const char *name)
 	return (reg_iter != registers_registry.end()) ? (*reg_iter).second : 0;
 }
 
+  /**
+   * Provide Available Registers
+   *
+   * @param scanner  the registry where registers are declared
+   */
+
+template<class CONFIG, bool DEBUG>
+void
+CPU<CONFIG, DEBUG>::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+{
+  // TODO
+}
+
 //===============================================================
 //= CPURegistersInterface interface methods                STOP =
 //===============================================================

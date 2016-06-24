@@ -36,10 +36,12 @@
 #define __UNISIM_UTIL_OS_LINUX_ARM_HH__
 
 #include <unisim/util/likely/likely.hh>
-
 #include <unisim/util/os/linux_os/errno.hh>
-#include <errno.h>
-#include <stdlib.h>
+#include <unisim/component/cxx/processor/arm/cp15.hh>
+
+#include <stdexcept>
+#include <cerrno>
+#include <cstdlib>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <process.h>
@@ -109,6 +111,7 @@ namespace linux_os {
     typedef typename LINUX::UTSName UTSName;
     using LINUX::TargetSystem::SetRegister;
     using LINUX::TargetSystem::GetRegister;
+    using LINUX::TargetSystem::ClearRegister;
     using LINUX::TargetSystem::lin;
     using LINUX::TargetSystem::name;
     
@@ -204,11 +207,44 @@ namespace linux_os {
     {
       // Reset all target registers
       {
-        struct : public unisim::service::interfaces::RegisterScanner {
-          void Append( unisim::service::interfaces::Register* reg ) { reg->Clear(); }
-        } clear_regs;
-        this->RegsIF().ScanRegisters( clear_regs );
+        char const* clear_registers[] = {
+          "r0",  "r1", "r2", "r3", "r4", "r5", "r6", "r7",
+          "r8",  "r9", "sl", "fp", "ip", "sp", "lr"
+        };
+        for (int idx = sizeof(clear_registers)/sizeof(clear_registers[0]); --idx >= 0;)
+          if (not ClearRegister(lin, clear_registers[idx]))
+            return false;
+      } 
+      
+      /*** Program Status Register (PSR) ***/
+      // NZCVQ <- 0
+      // J <- 0
+      // ITState <- 0
+      // GE <- 0
+      // E <- 0
+      // AIF <- 0
+      // T <- 0 (will be overwritten as a side effect of PC assignment, below)
+      // M <- 0b10000 /* USER_MODE */
+      if (not SetRegister(lin, "cpsr", 0x00000010))
+        return false;
+      
+      /* We need to set SCTLR and CPACR as a standard linux would have done. We
+       * only affects flags that impact a Linux OS emulation (others
+       * are unaffected).
+       */
+      {
+        uint32_t sctlr;
+        if (not GetRegister(lin, "sctlr", &sctlr))
+          return false;
+        unisim::component::cxx::processor::arm::sctlr::I.Set( sctlr, 1 ); // Instruction Cache enable
+        unisim::component::cxx::processor::arm::sctlr::C.Set( sctlr, 1 ); // Cache enable
+        unisim::component::cxx::processor::arm::sctlr::A.Set( sctlr, 0 ); // Alignment check enable
+        if (not SetRegister(lin, "sctlr", sctlr))
+          return false;
+        if (not SetRegister(lin, "cpacr", 0x00f00000))
+          return false;
       }
+      
       // Set PC to the program entry point
       if (not SetRegister(lin, kARM_pc, lin.GetEntryPoint()))
         return false;
@@ -250,8 +286,7 @@ namespace linux_os {
       case 4: GetRegister(_lin, kARM_r4, &val); break;
       case 5: GetRegister(_lin, kARM_r5, &val); break;
       case 6: GetRegister(_lin, kARM_r6, &val); break;
-      default: throw id;
-        break;
+      default: throw std::logic_error("internal_error");
       }
           
       return val;
@@ -924,6 +959,11 @@ namespace linux_os {
         {
           static struct : public SysCall {
             char const* GetName() const { return "times"; }
+            void Describe( LINUX& lin, std::ostream& sink ) const
+            {
+              address_type buf_addr = GetSystemCallParam(lin, 0);
+              sink << "(struct tms *buf=" << std::hex << buf_addr << std::dec << ")";
+            }
             void Execute( LINUX& lin, int syscall_id ) const
             {
               int ret;
@@ -957,6 +997,13 @@ namespace linux_os {
         {
           static struct : public SysCall {
             char const* GetName() const { return "gettimeofday"; }
+            void Describe( LINUX& lin, std::ostream& sink ) const
+            {
+              address_type tv = GetSystemCallParam(lin, 0);
+              address_type tz = GetSystemCallParam(lin, 1);
+              sink << "(struct timeval *tv=" << std::hex << tv << std::dec
+                   << ", struct timezone *tz=" << std::hex << tz << std::dec << ")";
+            }
             void Execute( LINUX& lin, int syscall_id ) const
             {
               int ret = -1;
@@ -1002,6 +1049,12 @@ namespace linux_os {
         {
           static struct : public SysCall {
             char const* GetName() const { return "fstat"; }
+            void Describe( LINUX& lin, std::ostream& sink ) const
+            {
+              int32_t fd = GetSystemCallParam(lin, 0);
+              address_type buf = GetSystemCallParam(lin, 1);
+              sink << "(int fd=" << std::dec << fd << ", struct stat *buf=" << std::hex << buf << ")";
+            }
             void Execute( LINUX& lin, int syscall_id ) const
             {
               int ret;
@@ -1044,6 +1097,11 @@ namespace linux_os {
         {
           static struct : public SysCall {
             char const* GetName() const { return "uname"; }
+            void Describe( LINUX& lin, std::ostream& sink ) const
+            {
+              address_type buf_addr = GetSystemCallParam(lin, 0);
+              sink << "(struct utsname *buf=" << std::hex << buf_addr << std::dec << ")";
+            }
             void Execute( LINUX& lin, int syscall_id ) const
             {
               int ret;
@@ -1072,6 +1130,13 @@ namespace linux_os {
         {
           static struct : public SysCall {
             char const* GetName() const { return "stat64"; }
+            void Describe( LINUX& lin, std::ostream& sink ) const
+            {
+              uint32_t path = GetSystemCallParam(lin, 0);
+              address_type buf = GetSystemCallParam(lin, 1);
+              sink << "(const char *pathname=" << std::hex << path
+                   << ", struct stat *buf=" << std::hex << buf << ")";
+            }
             void Execute( LINUX& lin, int syscall_id ) const
             {
               int ret;
@@ -1109,6 +1174,12 @@ namespace linux_os {
         {
           static struct : public SysCall {
             char const* GetName() const { return "fstat64"; }
+            void Describe( LINUX& lin, std::ostream& sink ) const
+            {
+              int32_t fd = GetSystemCallParam(lin, 0);
+              address_type buf = GetSystemCallParam(lin, 1);
+              sink << "(int fd=" << std::dec << fd << ", struct stat *buf=" << std::hex << buf << ")";
+            }
             void Execute( LINUX& lin, int syscall_id ) const
             {
               int ret;
@@ -1153,6 +1224,7 @@ namespace linux_os {
       case 983041: {
         static struct : public SysCall {
           char const* GetName() const { return "breakpoint"; }
+          void Describe( LINUX& lin, std::ostream& sink ) const { sink << "(...)"; }
           void Execute( LINUX& lin, int syscall_id ) const { SetARMSystemCallStatus(lin, (parameter_type)(-EINVAL), true); }
         } sc;
         return &sc;
@@ -1161,6 +1233,7 @@ namespace linux_os {
       case 983042: {
         static struct : public SysCall {
           char const* GetName() const { return "cacheflush"; }
+          void Describe( LINUX& lin, std::ostream& sink ) const { sink << "(...)"; }
           void Execute( LINUX& lin, int syscall_id ) const { SetARMSystemCallStatus(lin, (parameter_type)(-EINVAL), true); }
         } sc;
         return &sc;
@@ -1169,6 +1242,7 @@ namespace linux_os {
       case 983043: {
         static struct : public SysCall {
           char const* GetName() const { return "usr26"; }
+          void Describe( LINUX& lin, std::ostream& sink ) const { sink << "(...)"; }
           void Execute( LINUX& lin, int syscall_id ) const { SetARMSystemCallStatus(lin, (parameter_type)(-EINVAL), true); }
         } sc;
         return &sc;
@@ -1177,6 +1251,7 @@ namespace linux_os {
       case 983044: {
         static struct : public SysCall {
           char const* GetName() const { return "usr32"; }
+          void Describe( LINUX& lin, std::ostream& sink ) const { sink << "(...)"; }
           void Execute( LINUX& lin, int syscall_id ) const { SetARMSystemCallStatus(lin, (parameter_type)(-EINVAL), true); }
         } sc;
         return &sc;
@@ -1185,6 +1260,12 @@ namespace linux_os {
       case 983045: {
         static struct : public SysCall {
           char const* GetName() const { return "set_tls"; }
+          void Describe( LINUX& lin, std::ostream& sink ) const
+          {
+            uint32_t addr = GetSystemCallParam(lin, 0);
+            address_type buf = GetSystemCallParam(lin, 1);
+            sink << "(void *tls_addr=" << std::hex << addr << std::dec << ")";
+          }
           void Execute( LINUX& lin, int syscall_id ) const
           {
             uint32_t r0 = Host2Target(lin.GetEndianness(), GetSystemCallParam(lin, 0));

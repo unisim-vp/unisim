@@ -75,12 +75,12 @@ action {void} post_execute({std::ostream&} {sink}) {
 //	sink << "asm(\"NOP\");\n";
 }
 
-action {uint8_t} getCycles () {
+action {inline uint8_t} getCycles () {
 
 	return 0; 
 }
 
-action {void} execute({XGATE *} {cpu}) {
+action {uint8_t} execute({XGATE *} {cpu}) {
 	std::cerr << "Unknown instruction" << std::endl;
 
 /**
@@ -97,6 +97,9 @@ action {void} execute({XGATE *} {cpu}) {
 
 	cpu->Stop(-1);
 //	cpu->terminateCurrentThread();
+
+	return getCycles();
+
 }
 
 // Return to Scheduler and others
@@ -165,6 +168,7 @@ return_scheduler.execute = {
 	} break;
 	}
 
+	return getCycles();
 }
 
 // Semaphore Instructions
@@ -230,6 +234,7 @@ semaphore.execute = {
 	} break;
 	}
 
+	return getCycles();
 }
 
 // Single Register Instructions
@@ -314,6 +319,7 @@ single_register.execute = {
 	} break;
 	}
 
+	return getCycles();
 }
 
 // Special Move instructions
@@ -368,6 +374,7 @@ special_move.execute = {
 	case 3: /* not used */ break;
 	}
 
+	return getCycles();
 }
 
 // Shift instructions Dyadic
@@ -596,6 +603,7 @@ shift_dyadic.execute = {
 	} break;
 	}
 
+	return getCycles();
 }
 
 // Shift instructions immediate
@@ -794,6 +802,7 @@ shift_imm4.execute = {
 	} break;
 	}
 
+	return getCycles();
 }
 
 // Logical Triadic
@@ -875,6 +884,7 @@ logical_triadic.execute = {
 		} break;
 		}
 
+	return getCycles();
 }
 
 // Arithmetic Triadic
@@ -1001,6 +1011,7 @@ arithmetic_triadic.execute = {
 	} break;
 	}
 
+	return getCycles();
 }
 
 // Branches
@@ -1204,6 +1215,7 @@ branches.execute = {
 			}
 		}
 
+	return getCycles();
 }
 
 // load and store using offset 5-bits
@@ -1268,6 +1280,7 @@ ld_st_offs5.execute = {
 	} break;
 	}
 
+	return getCycles();
 }
 
 op ldb(0b01100[5]:reg1[3]:reg2[3]:reg3[3]:b[2])
@@ -1358,6 +1371,7 @@ ldb.execute = {
 	} break;
 	}
 
+	return getCycles();
 }
 
 op ldw(0b01101[5]:reg1[3]:reg2[3]:reg3[3]:b[2])
@@ -1451,6 +1465,7 @@ ldw.execute = {
 	} break;
 	}
 
+	return getCycles();
 }
 
 op stb(0b01110[5]:reg1[3]:reg2[3]:reg3[3]:b[2])
@@ -1542,6 +1557,7 @@ stb.execute = {
 	} break;
 	}
 
+	return getCycles();
 }
 
 op stw(0b01111[5]:reg1[3]:reg2[3]:reg3[3]:b[2])
@@ -1641,6 +1657,7 @@ stw.execute = {
 	} break;
 	}
 
+	return getCycles();
 }
 
 // Logic Immediate
@@ -1796,6 +1813,7 @@ logic_imm8.execute = {
 	} break;
 	}
 
+	return getCycles();
 }
 
 // Arithmetic Immediate
@@ -1975,4 +1993,5 @@ arithmetic_imm8.execute = {
 	} break;
 	}
 
+	return getCycles();
 }

@@ -318,7 +318,7 @@ bool MMC::ReadMemory(physical_address_t paged_addr, void *buffer, uint32_t size)
 	addr = getCPU12XPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
 
 	if (addr <= REG_HIGH_OFFSET) {
-		for (uint8_t i=0; i<MMC_MEMMAP_SIZE; i++) {
+		for (unsigned int i=0; i<MMC_MEMMAP_SIZE; i++) {
 			if (MMC_REGS_ADDRESSES[i] == addr) {
 				return (read(addr, buffer, 1));
 			}

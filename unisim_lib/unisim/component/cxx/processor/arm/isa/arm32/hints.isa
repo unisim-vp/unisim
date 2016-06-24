@@ -49,7 +49,7 @@ nop.disasm = {
 };
 
 nop.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 };
 
 /*
@@ -92,6 +92,17 @@ op wfi( cond[4]: 0b0011[4]: 0b0010[4]: 0b0000[4]: 0b1111[4]: 0b0000[4]: 0b000000
 
 wfi.disasm = {
   buffer << "wfi" << DisasmCondition(cond);
+};
+
+wfi.execute = {
+  // if (HaveVirtExt() and not IsSecure() and not CurrentModeIsHyp() and HCR.TWI) {
+  //   HSRString = Zeros(25);
+  //   HSRString<0> = '0';
+  //   WriteHSR('000001', HSRString);
+  //   TakeHypTrapException();
+  // } else
+  
+  cpu.WaitForInterrupt();
 };
 
 /*

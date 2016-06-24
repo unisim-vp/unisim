@@ -69,6 +69,7 @@
 #include <unisim/util/converter/convert.hh>
 
 #include <unisim/service/pim/gdbthread.hh>
+#include <unisim/service/interfaces/monitor_if.hh>
 
 namespace unisim {
 namespace service {
@@ -89,6 +90,7 @@ using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Time;
 using unisim::service::interfaces::StatementLookup;
+using unisim::service::interfaces::Monitor_if;
 
 using unisim::util::debug::BreakpointRegistry;
 using unisim::util::debug::WatchpointRegistry;
@@ -130,6 +132,8 @@ class PIMServer :
 	, public Service<DebugEventListener<ADDRESS> >
 	, public Client<DebugEventTrigger<ADDRESS> >
 
+	, public Client<Monitor_if<ADDRESS> >
+
 	, public VariableBaseListener
 
 {
@@ -147,6 +151,8 @@ public:
 	ServiceImport<Disassembly<ADDRESS> > disasm_import;
 	ServiceImport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
 	ServiceImport<StatementLookup<ADDRESS> > stmt_lookup_import;
+
+	ServiceImport<Monitor_if<ADDRESS> > monitor_import;
 
 	PIMServer(const char *name, Object *parent = 0);
 	virtual ~PIMServer();
@@ -246,6 +252,7 @@ private:
 	Parameter<bool> param_verbose;
 	Parameter<string> param_host;
 
+	double local_time;
 };
 
 } // end of namespace pim

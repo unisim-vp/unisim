@@ -407,6 +407,7 @@ unisim/util/xml/xml.hh \
 unisim/util/endian/endian.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/arithmetic/arithmetic.hh \
+unisim/util/truth_table/truth_table.hh \
 unisim/util/random/random.hh \
 unisim/util/hash_table/hash_table.hh \
 unisim/util/queue/queue.hh \
@@ -525,7 +526,6 @@ m4/bsd_sockets.m4 \
 m4/curses.m4 \
 m4/libedit.m4 \
 m4/systemc.m4 \
-m4/tlm20.m4 \
 m4/with_boost.m4 \
 m4/cacti.m4 \
 m4/check_lib.m4 \
@@ -534,9 +534,7 @@ m4/real_path.m4 \
 m4/pthread.m4"
 
 UNISIM_LIB_ARM926EJS_DATA_FILES="\
-unisim/service/debug/gdb_server/gdb_armv5l.xml \
-unisim/service/debug/gdb_server/gdb_armv4l.xml \
-unisim/service/debug/gdb_server/gdb_armv5b.xml \
+unisim/service/debug/gdb_server/gdb_arm_with_fpa.xml \
 unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml \
 "
 
@@ -747,8 +745,7 @@ Requirements:
   - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
   - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
   - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
-  - Core SystemC Language >= 2.1 (http://www.systemc.org)
-  - TLM Transaction Level Modeling Library, Release >= 2.0 (http://www.systemc.org)
+  - Core SystemC Language >= 2.3.0 (http://www.systemc.org)
 
 Building instructions:
   $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-tlm20=<path-to-TLM-library-install-dir>
@@ -1047,7 +1044,6 @@ if [ "${has_to_build_arm926ejs_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${ARM926EJS_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${ARM926EJS_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${ARM926EJS_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TLM20" >> "${ARM926EJS_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${ARM926EJS_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${ARM926EJS_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-arm926ejs-${ARM926EJS_VERSION}\"], [path of shared data relative to bin directory])" >> "${ARM926EJS_CONFIGURE_AC}"

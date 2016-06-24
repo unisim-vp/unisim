@@ -49,11 +49,13 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <map>
 
 #include <stdlib.h>
 
+#include <unisim/service/interfaces/loader.hh>
 #include "unisim/service/interfaces/trap_reporting.hh"
 #include "unisim/service/interfaces/debug_control.hh"
 #include "unisim/service/interfaces/disassembly.hh"
@@ -92,6 +94,7 @@ using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
 using unisim::kernel::service::CallBackObject;
 
+using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::MemoryAccessReporting;
@@ -153,7 +156,7 @@ public:
 	EBLB(CPU *cpu) { this->cpu = cpu; }
 	~EBLB() { cpu = NULL; }
 
-	inline static string getRegName(uint8_t num) {
+	inline static string getRegName(unsigned int num) {
 		switch (num) {
 		case EBLBRegs::A: return ("A");
 		case EBLBRegs::B: return ("B");
@@ -172,7 +175,7 @@ public:
 		}
 	}
 
-	inline static uint8_t getRegSize(uint8_t num) {
+	inline static unsigned int getRegSize(unsigned int num) {
 		switch (num) {
 		case EBLBRegs::A: return (8);
 		case EBLBRegs::B: return (8);
@@ -197,9 +200,9 @@ public:
 	 * 0x30:TMP1; 0x31:TMP2; 0x32:TMP3;
 	 * 0x04:D; 0x05:X; 0x06:Y; 0x07:SP
 	 */
-	template <class T>	void setter(uint8_t rr, T val); // setter function
-	template <class T>	T getter(uint8_t rr); // getter function
-	template <class T> void exchange(uint8_t rrSrc, uint8_t rrDst);
+	template <class T>	void setter(unsigned int rr, T val); // setter function
+	template <class T>	T getter(unsigned int rr); // getter function
+	template <class T> void exchange(unsigned int rrSrc, unsigned int rrDst);
 
 private:
 	CPU *cpu;
@@ -209,6 +212,7 @@ private:
 
 class CPU :
 		public Decoder,
+		public Client<Loader>,
 		public Client<DebugControl<physical_address_t> >,
 		public Client<MemoryAccessReporting<physical_address_t> >,
 		public Service<MemoryAccessReportingControl>,
@@ -225,12 +229,12 @@ public:
 	enum REGS_OFFSETS {X, D, Y, SP, PC, A, B, CCRL, CCRH, CCR};
 
 	//#define MAX_INS_SIZE	CodeType::maxsize;
-	static const uint8_t MAX_INS_SIZE = 8;
-	static const uint8_t QUEUE_SIZE = MAX_INS_SIZE;
+	static const unsigned int MAX_INS_SIZE = 8;
+	static const unsigned int QUEUE_SIZE = MAX_INS_SIZE;
 
 
-	inline void queueFlush(uint8_t nByte); // flush is called after prefetch() to advance the queue cursor (first pointer)
-	inline uint8_t* queueFetch(address_t addr, uint8_t* ins, uint8_t nByte);
+	inline void queueFlush(unsigned int nByte); // flush is called after prefetch() to advance the queue cursor (first pointer)
+	inline uint8_t* queueFetch(address_t addr, uint8_t* ins, unsigned int nByte);
 
 private:
 	address_t	queueCurrentAddress;
@@ -238,7 +242,7 @@ private:
 
 	int		queueFirst, queueNElement;
 
-	inline void queueFill(address_t addr, int position, uint8_t nByte);
+	inline void queueFill(address_t addr, int position, unsigned int nByte);
 
 public:
 
@@ -246,6 +250,7 @@ public:
 	//=                  public service imports/exports                   =
 	//=====================================================================
 
+	ServiceImport<Loader> loader_import;
 	ServiceExport<Disassembly<physical_address_t> > disasm_export;
 	ServiceExport<Registers> registers_export;
 	ServiceExport<Memory<physical_address_t> > memory_export;
@@ -284,7 +289,7 @@ public:
 	//=                    execution handling methods                     =
 	//=====================================================================
 
-	uint8_t step();	// Return the number of cpu cycles consumed by the operation
+	unsigned int step();	// Return the number of cpu cycles consumed by the operation
 	virtual void Sync();
 
 	enum STATES {RUNNING, WAIT, STOP};
@@ -422,8 +427,8 @@ public:
 	inline void    setRegPC(uint16_t val);
 	inline uint16_t getRegPC();
 
-	inline void    setRegTMP(uint8_t index, uint16_t val);
-	inline uint16_t getRegTMP(uint8_t index);
+	inline void    setRegTMP(unsigned int index, uint16_t val);
+	inline uint16_t getRegTMP(unsigned int index);
 
 	bool read(unsigned int offset, const void *buffer, unsigned int data_length);
 	bool write(unsigned int offset, const void *buffer, unsigned int data_length);
@@ -431,7 +436,7 @@ public:
 	/********************************************************************
 	 * *******  Used for Indexed Operations XB: Postbyte Code  **********
 	 * ******************************************************************/
-	inline static string xb_getAddrRegLabel(uint8_t rr) {
+	inline static string xb_getAddrRegLabel(unsigned int rr) {
 		switch (rr) {
 		case 0:
 			return ("X");
@@ -445,7 +450,7 @@ public:
 		return ("unknown");
 	}
 
-	inline static string xb_getAccRegLabel(uint8_t rr) {
+	inline static string xb_getAccRegLabel(unsigned int rr) {
 		switch (rr) {
 		case 0:
 			return ("A");
@@ -457,10 +462,10 @@ public:
 		return ("unknown"); // rr=11 see accumulator D offset indexed-indirect
 	}
 
-	inline uint16_t xb_getAddrRegValue(uint8_t rr);
-	inline void xb_setAddrRegValue(uint8_t rr,uint16_t val);
+	inline uint16_t xb_getAddrRegValue(unsigned int rr);
+	inline void xb_setAddrRegValue(unsigned int rr,uint16_t val);
 
-	inline uint16_t xb_getAccRegValue(uint8_t rr);
+	inline uint16_t xb_getAccRegValue(unsigned int rr);
 	/*************  END  XB  ***************/
 
 	//=====================================================================
@@ -511,6 +516,11 @@ public:
 	 */
 	virtual Register *GetRegister(const char *name);
 
+    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+    {
+    	// TODO
+    }
+
 	//=====================================================================
 	//=                   DebugDisasmInterface methods                    =
 	//=====================================================================
@@ -536,6 +546,8 @@ public:
 
 	inline address_t getLastPC() {return (lastPC); }
 
+	inline bool isDebuggerConnect() { return (debug_control_import); }
+
 	//protected:
 	class CCR_t *ccr;
 	class EBLB	*eblb;
@@ -546,7 +558,7 @@ protected:
 	//=====================================================================
 
 //	uint64_t cpu_cycle_time; //!< CPU cycle time in ps
-	uint64_t voltage;        //!< CPU voltage in mV
+//	uint64_t voltage;        //!< CPU voltage in mV
 //	uint64_t bus_cycle_time; //!< Front side bus cycle time in ps
 	uint64_t cpu_cycle;      //!< Number of cpu cycles
 	uint64_t bus_cycle;      //!< Number of front side bus cycles
@@ -565,8 +577,12 @@ protected:
 	bool verbose_exception;
 	Parameter<bool> param_verbose_exception;
 
-	bool trace_enable;
-	Parameter<bool> param_trace_enable;
+	bool enable_trace;
+	Parameter<bool> param_enable_trace;
+
+	std::ofstream trace;
+	bool enable_file_trace;
+	Parameter<bool> param_enable_file_trace;
 
 	uint64_t periodic_trap;
 	Parameter<uint64_t> param_periodic_trap;
@@ -753,7 +769,7 @@ inline void CPU::memWrite16(address_t logicalAddress,uint16_t data, ADDRESS::MOD
 //=                  Registers Acces Routines                          =
 //======================================================================
 
-uint16_t CPU::xb_getAddrRegValue(uint8_t rr) {
+uint16_t CPU::xb_getAddrRegValue(unsigned int rr) {
 	switch (rr) {
 	case 0:
 		return (getRegX());
@@ -767,7 +783,7 @@ uint16_t CPU::xb_getAddrRegValue(uint8_t rr) {
 	throw std::runtime_error("Internal error");
 }
 
-void CPU::xb_setAddrRegValue(uint8_t rr,uint16_t val) {
+void CPU::xb_setAddrRegValue(unsigned int rr,uint16_t val) {
 	switch (rr) {
 	case 0:
 		(setRegX(val)); break;
@@ -783,7 +799,7 @@ void CPU::xb_setAddrRegValue(uint8_t rr,uint16_t val) {
 }
 
 
-uint16_t CPU::xb_getAccRegValue(uint8_t rr) {
+uint16_t CPU::xb_getAccRegValue(unsigned int rr) {
 	switch (rr) {
 	case 0:
 		return (getRegA());
@@ -827,11 +843,18 @@ uint16_t CPU::getRegY() { return (regY); }
 void CPU::setRegSP(uint16_t val) { regSP = val; }
 uint16_t CPU::getRegSP() { return (regSP); }
 
-void CPU::setRegPC(uint16_t val) { regPC = val; }
+void CPU::setRegPC(uint16_t val) {
+	if (val == 0) {
+		reportTrap("Try to set PC to 0x0000");
+	} else {
+		regPC = val;
+	}
+
+}
 uint16_t CPU::getRegPC() { return (regPC); }
 
-void CPU::setRegTMP(uint8_t index, uint16_t val) { regTMP[index] = val; }
-uint16_t CPU::getRegTMP(uint8_t index) { return (regTMP[index]); }
+void CPU::setRegTMP(unsigned int index, uint16_t val) { regTMP[index] = val; }
+uint16_t CPU::getRegTMP(unsigned int index) { return (regTMP[index]); }
 
 
 } // end of namespace hcs12x

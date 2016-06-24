@@ -53,7 +53,7 @@ bl_h1.disasm = {
 };
 
 bl_h1.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.SetGPR( 14, cpu.GetGPR( 15 ) + imm1 );
 };
@@ -78,10 +78,10 @@ bl_h2.disasm = {
 };
 
 bl_h2.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   uint32_t address = cpu.GetGPR(cpu.LR_reg) + imm0;
-  cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() | 1 );
+  cpu.SetGPR( cpu.LR_reg, cpu.GetNIA() | 1 );
   cpu.Branch( address );
 };
 
@@ -106,10 +106,10 @@ blx_h3.disasm = {
 };
 
 blx_h3.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   uint32_t address = (cpu.GetGPR(cpu.LR_reg) + imm0) & -4;
-  cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() | 1 );
+  cpu.SetGPR( cpu.LR_reg, cpu.GetNIA() | 1 );
   cpu.BranchExchange( address );
 };
 

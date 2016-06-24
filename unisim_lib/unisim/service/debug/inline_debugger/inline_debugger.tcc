@@ -307,12 +307,15 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 		}
 	}
 
-	int nparms = 0;
-
 	PrintTrackedDataObjects(cia);
 	
 	Disasm(cia, 1, next_addr);
 
+	if ((running_mode == INLINE_DEBUGGER_MODE_TRAVERSE) && IsVisited(cia))
+	{
+		return DebugControl<ADDRESS>::DBG_STEP;
+	}
+	
 	while(1)
 	{
 		trap = false;
@@ -332,7 +335,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 		
 		parm.clear();
 		Tokenize(line, parm);
-		nparms = parm.size();
+		int nparms = parm.size();
 	
 		recognized = false;
 
@@ -384,6 +387,13 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				if(IsStepInstructionCommand(parm[0].c_str()))
 				{
 					running_mode = INLINE_DEBUGGER_MODE_STEP_INSTRUCTION;
+					if(interactive) last_line = line;
+					return DebugControl<ADDRESS>::DBG_STEP;
+				}
+
+				if(IsTraverseCommand(parm[0].c_str()))
+				{
+					running_mode = INLINE_DEBUGGER_MODE_TRAVERSE;
 					if(interactive) last_line = line;
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
@@ -1037,7 +1047,9 @@ void InlineDebugger<ADDRESS>::Help()
 	(*std_output_stream) << "<s | step>" << endl;
 	(*std_output_stream) << "    continue executing instructions until control reaches a different source line" << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<ni | nexti>" << endl;
+	(*std_output_stream) << "<traverse>" << endl;
+	(*std_output_stream) << "    step continuously until control reaches an unvisited instruction" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << 	(*std_output_stream) << "<ni | nexti>" << endl;
 	(*std_output_stream) << "    continue to execute instructions until the processor reaches" << endl;
 	(*std_output_stream) << "    next contiguous instruction, a breakpoint or a watchpoint" << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
@@ -3233,7 +3245,7 @@ bool InlineDebugger<ADDRESS>::IsBlankLine(const std::string& line) const
 	unsigned int i;
 	for(i = 0; i < n; i++)
 	{
-		if(line[i] != ' ') return false;
+		if ((line[i] != ' ') && (line[i] != '\t') && (line[i] != '\n') && (line[i] != '\r')) return false;
 	}
 	return true;
 }
@@ -3249,6 +3261,12 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::IsStepInstructionCommand(const char *cmd) const
 {
 	return strcmp(cmd, "si") == 0 || strcmp(cmd, "stepi") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsTraverseCommand(const char *cmd) const
+{
+  return strcmp(cmd, "traverse") == 0;
 }
 
 template <class ADDRESS>
@@ -3496,6 +3514,39 @@ bool InlineDebugger<ADDRESS>::IsInfoSubProgramCommand(const char *cmd) const
 {
 	return strcmp(cmd, "info") == 0;
 }
+
+template <class ADDRESS>
+InlineDebugger<ADDRESS>::VisitedInstructionPage::VisitedInstructionPage()
+{
+	std::fill_n(flags,WORD_COUNT,0);
+}
+
+template <class ADDRESS>
+bool
+InlineDebugger<ADDRESS>::VisitedInstructionPage::Get(ADDRESS cia)
+{
+	uint32_t mask = uint32_t(1) << (cia % BITS_PER_WORD);
+	unsigned idx = (cia / BITS_PER_WORD) % WORD_COUNT;
+	bool visited( flags[idx] & mask );
+	flags[idx] |= mask;
+	return visited;
+}
+
+template <class ADDRESS>
+ADDRESS
+InlineDebugger<ADDRESS>::VisitedInstructionPage::MaskLowerBits(ADDRESS cia)
+{
+  return cia & -(ADDRESS(1) << OFFSET_BITS);
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsVisited(ADDRESS cia)
+{
+	ADDRESS hi_address = VisitedInstructionPage::MaskLowerBits(cia);
+	VisitedInstructionPage& vip = visited_instructions[hi_address];
+	return vip.Get(cia);
+}
+
 
 } // end of namespace inline_debugger
 } // end of namespace debug

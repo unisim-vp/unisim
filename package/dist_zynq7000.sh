@@ -145,14 +145,10 @@ unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
 unisim/service/debug/debugger/debugger32.cc \
 unisim/service/profiling/addr_profiler/profiler32.cc \
-unisim/service/power/cache_profile.cc \
-unisim/service/power/cache_dynamic_power.cc \
-unisim/service/power/cache_leakage_power.cc \
-unisim/service/power/cache_power_estimator.cc \
-unisim/service/power/cache_dynamic_energy.cc \
 unisim/service/os/linux_os/linux.cc \
 unisim/service/trap_handler/trap_handler.cc \
 unisim/service/trap_handler/trap_handler_identifier.cc \
+unisim/service/telnet/telnet.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
 unisim/util/debug/symbol_table_64.cc \
@@ -201,16 +197,15 @@ unisim/util/endian/endian.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/random/random.cc \
 unisim/util/queue/queue.cc \
-unisim/component/tlm2/processor/arm/armemu/armemu.cc \
+unisim/component/tlm2/processor/arm/cortex_a9/cpu.cc \
 unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/cxx/processor/arm/disasm.cc \
-unisim/component/cxx/processor/arm/cache.cc \
-unisim/component/cxx/processor/arm/armemu/cpu.cc \
-unisim/component/cxx/processor/arm/armemu/isa_arm32.cc \
-unisim/component/cxx/processor/arm/armemu/isa_thumb.cc \
-unisim/component/cxx/processor/arm/memory_op.cc \
+unisim/component/cxx/processor/arm/simfloat.cc \
+unisim/component/cxx/processor/arm/vmsav7/cpu.cc \
+unisim/component/cxx/processor/arm/vmsav7/isa_arm32.cc \
+unisim/component/cxx/processor/arm/vmsav7/isa_thumb.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 "
@@ -291,15 +286,11 @@ unisim/service/debug/sim_debugger/sim_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
 unisim/service/profiling/addr_profiler/profiler.hh \
-unisim/service/power/cache_power_estimator.hh \
-unisim/service/power/cache_profile.hh \
-unisim/service/power/cache_dynamic_power.hh \
-unisim/service/power/cache_leakage_power.hh \
-unisim/service/power/cache_dynamic_energy.hh \
 unisim/service/os/linux_os/linux.hh \
 unisim/service/trap_handler/trap_handler.hh \
 unisim/service/trap_handler/trap_handler_identifier.hh \
 unisim/service/trap_handler/trap_handler_identifier_interface.hh \
+unisim/service/telnet/telnet.hh \
 unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
@@ -311,7 +302,6 @@ unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/time.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/disassembly.hh \
-unisim/service/interfaces/cache_power_estimator.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/os.hh \
 unisim/service/interfaces/linux_os.hh \
@@ -322,6 +312,7 @@ unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \
 unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/interfaces/subprogram_lookup.hh \
+unisim/service/interfaces/char_io.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
 unisim/util/likely/likely.hh \
@@ -367,7 +358,7 @@ unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
 unisim/util/debug/stmt.hh \
 unisim/util/debug/breakpoint_registry.hh \
-unisim/util/debug/register.hh \
+unisim/service/interfaces/register.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/debug/breakpoint.hh \
@@ -402,6 +393,7 @@ unisim/util/xml/xml.hh \
 unisim/util/endian/endian.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/arithmetic/arithmetic.hh \
+unisim/util/truth_table/truth_table.hh \
 unisim/util/random/random.hh \
 unisim/util/hash_table/hash_table.hh \
 unisim/util/queue/queue.hh \
@@ -410,22 +402,21 @@ unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/host_floating.hh \
 unisim/util/ieee754/ieee754.hh \
 unisim/util/inlining/inlining.hh \
-unisim/component/tlm2/processor/arm/armemu/armemu.hh \
+unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh \
 unisim/component/tlm2/interconnect/generic_router/router.hh \
 unisim/component/cxx/processor/arm/psr.hh \
 unisim/component/cxx/processor/arm/register_field.hh \
 unisim/component/cxx/processor/arm/cpu.hh \
-unisim/component/cxx/processor/arm/armemu/cpu.hh \
-unisim/component/cxx/processor/arm/cache.hh \
+unisim/component/cxx/processor/arm/vmsav7/cpu.hh \
 unisim/component/cxx/processor/arm/cp15.hh \
-unisim/component/cxx/processor/arm/armemu/cp15.hh \
-unisim/component/cxx/processor/arm/memory_op.hh \
+unisim/component/cxx/processor/arm/vmsav7/cp15.hh \
 unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \
 unisim/component/cxx/processor/arm/models.hh \
 unisim/component/cxx/processor/arm/disasm.hh \
+unisim/component/cxx/processor/arm/simfloat.hh \
 unisim/component/cxx/processor/arm/extregbank.hh \
 unisim/component/cxx/processor/arm/hostfloat.hh \
 unisim/component/cxx/memory/ram/memory.hh \
@@ -512,7 +503,6 @@ m4/bsd_sockets.m4 \
 m4/curses.m4 \
 m4/libedit.m4 \
 m4/systemc.m4 \
-m4/tlm20.m4 \
 m4/with_boost.m4 \
 m4/cacti.m4 \
 m4/check_lib.m4 \
@@ -521,8 +511,8 @@ m4/real_path.m4 \
 m4/pthread.m4"
 
 UNISIM_LIB_ZYNQ7000_DATA_FILES="\
-unisim/service/debug/gdb_server/gdb_armv5l.xml \
-unisim/service/debug/gdb_server/gdb_armv7l.xml \
+unisim/service/debug/gdb_server/gdb_arm_with_fpa.xml \
+unisim/service/debug/gdb_server/gdb_arm_with_neon.xml \
 unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml \
 "
 
@@ -732,8 +722,8 @@ Requirements:
   - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
   - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
   - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
-  - Core SystemC Language >= 2.1 (http://www.systemc.org)
-  - TLM Transaction Level Modeling Library, Release >= 2.0 (http://www.systemc.org)
+  - Core SystemC Language >= 2.3.0 (http://www.systemc.org)
+
 
 Building instructions:
   $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-tlm20=<path-to-TLM-library-install-dir>
@@ -1032,7 +1022,6 @@ if [ "${has_to_build_zynq7000_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${ZYNQ7000_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${ZYNQ7000_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${ZYNQ7000_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TLM20" >> "${ZYNQ7000_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${ZYNQ7000_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${ZYNQ7000_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-zynq7000-${ZYNQ7000_VERSION}\"], [path of shared data relative to bin directory])" >> "${ZYNQ7000_CONFIGURE_AC}"

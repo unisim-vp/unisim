@@ -35,8 +35,9 @@
 #define __UNISIM_UTIL_OS_LINUX_I386_HH__
 
 #include <unisim/util/likely/likely.hh>
-
 #include <unisim/util/os/linux_os/errno.hh>
+#include <stdexcept>
+#include <cerrno>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
 #include <process.h>
@@ -91,6 +92,7 @@ namespace linux_os {
     typedef typename LINUX::UTSName UTSName;
     using LINUX::TargetSystem::SetRegister;
     using LINUX::TargetSystem::GetRegister;
+    using LINUX::TargetSystem::ClearRegister;
     using LINUX::TargetSystem::lin;
     using LINUX::TargetSystem::name;
     
@@ -164,17 +166,20 @@ namespace linux_os {
       if (unisim::service::interfaces::Register* reg = this->RegsIF().GetRegister(segname))
         reg->SetValue(&value);
       else
-        throw 0;
+        throw std::logic_error("internal_error");
     }
         
     bool SetupTarget() const
     {
       // Reset all target registers
       {
-        struct : public unisim::service::interfaces::RegisterScanner {
-          void Append( unisim::service::interfaces::Register* reg ) { reg->Clear(); }
-        } clear_regs;
-        this->RegsIF().ScanRegisters( clear_regs );
+        char const* clear_registers[] = {
+          "%eax", "%ecx", "%edx", "%ebx", "%ebp", "%esi", "%edi",
+          "%st", "%st(1)", "%st(2)", "%st(3)", "%st(4)", "%st(5)", "%st(6)", "%st(7)"
+        };
+        for (int idx = sizeof(clear_registers)/sizeof(clear_registers[0]); --idx >= 0;)
+          if (not ClearRegister(lin, clear_registers[idx]))
+            return false;
       }
       // Set EIP to the program entry point
       if (not SetRegister(lin, kI386_eip, lin.GetEntryPoint()))
@@ -336,7 +341,7 @@ namespace linux_os {
       case 3: GetRegister(lin, kI386_esi, &val); break;
       case 4: GetRegister(lin, kI386_edi, &val); break;
       case 5: GetRegister(lin, kI386_ebp, &val); break;
-      default: throw id;
+      default: throw std::logic_error("internal error");
       }
           
       return val;
@@ -711,6 +716,11 @@ namespace linux_os {
         {
           static struct : public SysCall {
             char const* GetName() const { return "uname"; }
+            void Describe( LINUX& lin, std::ostream& sink ) const
+            {
+              address_type buf_addr = GetSystemCallParam(lin, 0);
+              sink << "(struct utsname *buf=" << std::hex << buf_addr << std::dec << ")";
+            }
             void Execute( LINUX& lin, int syscall_id ) const
             {
               int ret;
@@ -739,6 +749,12 @@ namespace linux_os {
         {
           static struct : public SysCall {
             char const* GetName() const { return "fstat64"; }
+            void Describe( LINUX& lin, std::ostream& sink ) const
+            {
+              int32_t fd = GetSystemCallParam(lin, 0);
+              address_type buf = GetSystemCallParam(lin, 1);
+              sink << "(int fd=" << std::dec << fd << ", struct stat *buf=" << std::hex << buf << ")";
+            }
             void Execute( LINUX& lin, int syscall_id ) const
             {
               int ret;
@@ -780,6 +796,11 @@ namespace linux_os {
         {
           static struct : public SysCall {
             char const* GetName() const { return "set_thread_area"; }
+            void Describe( LINUX& lin, std::ostream& sink ) const
+            {
+              uint32_t user_desc_ptr = GetSystemCallParam(lin, 0);
+              sink << "(struct user_desc *u_info=" << std::hex << user_desc_ptr << std::dec << ")";
+            }
             void Execute( LINUX& lin, int syscall_id ) const
             {
               uint32_t user_desc_ptr = GetSystemCallParam(lin, 0);
@@ -796,7 +817,7 @@ namespace linux_os {
               attributes   = unisim::util::endian::Target2Host( lin.GetEndianness(), attributes );
                   
               if (entry_number != -1)
-                throw 0;
+                throw std::logic_error("internal error in i686 segment descriptors");
                   
               set_tls_base( lin, base_addr );
                   

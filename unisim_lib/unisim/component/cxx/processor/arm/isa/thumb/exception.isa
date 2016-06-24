@@ -50,7 +50,7 @@ swi.disasm = {
 };
 
 swi.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.CallSupervisor( imm );
 };
@@ -72,7 +72,7 @@ bkpt.disasm = {
 };
 
 bkpt.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.BKPT( imm );
 };
@@ -91,15 +91,17 @@ cps.disasm = {
 };
 
 cps.execute = {
-  if (GetNativeValue(cpu.CPSR().Get(M)) != cpu.USER_MODE)
-    return;
-  typename ARCH::psr_type cpsr_val = cpu.CPSR();
   typedef typename ARCH::U32 U32;
-  if (a)     cpsr_val.Set( A, U32(dis) );
-  if (i)     cpsr_val.Set( I, U32(dis) );
-  if (f)     cpsr_val.Set( F, U32(dis) );
+  
+  if (cpu.Cond( cpu.CPSR().Get(M) == U32(cpu.USER_MODE) ))
+    return;
+  
+  U32 cpsr_val = cpu.CPSR().bits(), disable( dis );
+  if (a) A.Set( cpsr_val, disable );
+  if (i) I.Set( cpsr_val, disable );
+  if (f) F.Set( cpsr_val, disable );
   
   // CPSRWriteByInstr() checks for illegal mode changes
-  CPSRWriteByInstr( cpu, cpsr_val.bits(), 0b1111, false );
+  CPSRWriteByInstr( cpu, cpsr_val, 0b1111, false );
 };
 

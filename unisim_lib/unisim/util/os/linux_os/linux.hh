@@ -99,9 +99,11 @@ struct Linux
 	struct SysCall
 	{
 		virtual ~SysCall() {}
-		virtual void Execute( Linux& lin, int syscall_id ) const = 0;
+		virtual void Execute( Linux& lin, int syscall_id ) const;
+		virtual void Describe( Linux& lin, std::ostream& sink ) const = 0;
 		virtual char const* GetName() const = 0;
 		virtual void Release() {}
+		std::string TraceCall( Linux& lin ) const;
         protected:
 		// SysCall Friend accessing methods
 		static bool ReadMem(Linux& lin, ADDRESS_TYPE addr, uint8_t * const buffer, uint32_t size);
@@ -144,6 +146,7 @@ struct Linux
 		SysCall* GetSysCall( std::string name ) const { return lin.GetSysCall( name ); }
 		static bool GetRegister( Linux& lin, char const* regname, PARAMETER_TYPE * const value );
 		static bool SetRegister( Linux& lin, char const* regname, PARAMETER_TYPE value );
+		static bool ClearRegister( Linux& lin, char const* regname );
 		std::string name;
 		Linux& lin;
 	};
@@ -259,6 +262,8 @@ struct Linux
 	// Executes the given system call id depending on the architecture the linux
 	// emulation is working on.
 	void ExecuteSystemCall(int id, bool& terminated, int& return_status);
+	
+	void LogSystemCall(int id);
 
 	UTSName const& GetUTSName() const { return utsname; }
 	

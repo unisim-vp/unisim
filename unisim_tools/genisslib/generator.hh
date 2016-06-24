@@ -40,6 +40,7 @@ struct OpCode_t {
   ConstStr_t                  m_symbol;
   
   OpCode_t( ConstStr_t _symbol ) : m_abovecount( 0 ), m_symbol( _symbol ) {}
+  virtual ~OpCode_t() {}
   
   virtual std::ostream&       details( std::ostream& _sink ) const = 0;
   friend std::ostream&        operator << ( std::ostream& _sink, OpCode_t const& _oc );

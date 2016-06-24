@@ -82,7 +82,7 @@ mov_wri.var reject : {Reject} = {(rd == 13) or (rd == 15)};
 mov_wri.disasm = { buffer << "mov" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmI(imm); };
 
 mov_wri.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 res = U32(imm);
@@ -105,7 +105,7 @@ mov_w.disasm = {
 };
 
 mov_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), res = ComputeImmShift( cpu, rmval, shift, imm );
@@ -120,7 +120,7 @@ movt.var reject : {Reject} = {(rsd == 13) or (rsd == 15)};
 movt.disasm = { buffer << "movt\t" << DisasmRegister(rsd) << ", " << DisasmI(imm); };
 
 movt.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   cpu.SetGPR( rsd, (cpu.GetGPR( rsd ) & U32(0xffff)) | (U32(imm << 16)) );
@@ -133,7 +133,7 @@ movw.var reject : {Reject} = {(rd == 13) or (rd == 15)};
 movw.disasm = { buffer << "movw\t" << DisasmRegister(rd) << ", " << DisasmI(imm); };
 
 movw.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   cpu.SetGPR( rd, U32(imm) );
@@ -151,7 +151,7 @@ mvn_w.disasm = {
 };
 
 mvn_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), res = ~(ComputeImmShift( cpu, rmval, shift, imm ));
@@ -166,7 +166,7 @@ mvn_wri.var reject : {Reject} = {(rd == 13) or (rd == 15)};
 mvn_wri.disasm = { buffer << "mvn" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmI(imm); };
 
 mvn_wri.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 res = U32(~imm);
@@ -190,7 +190,7 @@ shift_w.disasm = {
 };
 
 shift_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 rnval = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
@@ -214,7 +214,7 @@ sub_w.disasm = {
 };
 
 sub_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32
@@ -233,7 +233,7 @@ sub_wrri.var reject : {Reject} = {(rd == 15) or (rn == 15) or ((rd == 13) and (r
 sub_wrri.disasm = { buffer << "sub" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 sub_wrri.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 - op2;
@@ -251,7 +251,7 @@ subw.disasm = {
 };
 
 subw.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   cpu.SetGPR( rd, cpu.GetGPR(rn) - U32(imm) );
@@ -266,7 +266,7 @@ adr_subw.disasm = {
 };
 
 adr_subw.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   cpu.SetGPR( rd, (cpu.GetGPR( 15 ) & U32(-4)) - U32(imm) );
@@ -288,7 +288,7 @@ sbc_w.disasm = {
 };
 
 sbc_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32
@@ -306,7 +306,7 @@ sbc_wrri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn 
 sbc_wrri.disasm = { buffer << "sbc" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 sbc_wrri.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 - op2 - (cpu.CPSR().Get( C ) ^ U32(1));
@@ -326,7 +326,7 @@ rsb.disasm = {
 };
 
 rsb.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
@@ -345,7 +345,7 @@ rsb_rri.disasm = {
 };
 
 rsb_rri.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 op1 = U32(imm), op2 = cpu.GetGPR( rn ), res = op1 - op2;
@@ -368,7 +368,7 @@ add_w.disasm = {
 };
 
 add_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32
@@ -387,7 +387,7 @@ add_wrri.var reject : {Reject} = {(rd == 15) or (rn == 15) or ((rd == 13) and (r
 add_wrri.disasm = { buffer << "add" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 add_wrri.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 + op2;
@@ -405,7 +405,7 @@ addw.disasm = {
 };
 
 addw.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   cpu.SetGPR( rd, cpu.GetGPR(rn) + U32(imm) );
@@ -420,7 +420,7 @@ adr_addw.disasm = {
 };
 
 adr_addw.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   cpu.SetGPR( rd, (cpu.GetGPR( 15 ) & U32(-4)) + U32(imm) );
@@ -442,7 +442,7 @@ adc_w.disasm = {
 };
 
 adc_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
@@ -459,7 +459,7 @@ adc_wrri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn 
 adc_wrri.disasm = { buffer << "adc" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 adc_wrri.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 + op2 + cpu.CPSR().Get( C );
@@ -478,7 +478,7 @@ eor_w.disasm = {
 };
 
 eor_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
@@ -495,7 +495,7 @@ eor_wrri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn 
 eor_wrri.disasm = { buffer << "eor" << (s?"s":"") << ".w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 eor_wrri.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 ^ op2;
@@ -521,7 +521,7 @@ orn.disasm = {
 };
 
 orn.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32
@@ -539,7 +539,7 @@ orn_rri.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rn == 13) or (rn =
 orn_rri.disasm = { buffer << "orn" << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 orn_rri.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 | ~op2;
@@ -566,7 +566,7 @@ orr_w.disasm = {
 };
 
 orr_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32
@@ -586,7 +586,7 @@ orr_wrri.disasm = {
 };
 
 orr_wrri.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 | op2;
@@ -614,7 +614,7 @@ bic_w.disasm = {
 };
 
 bic_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
@@ -633,7 +633,7 @@ bic_wrri.disasm = {
 };
 
 bic_wrri.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 & ~op2;
@@ -659,7 +659,7 @@ and_w.disasm = {
 };
 
 and_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
@@ -678,7 +678,7 @@ and_wrri.disasm = {
 };
 
 and_wrri.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 & op2;
@@ -703,7 +703,7 @@ cmp_w.disasm = {
 };
 
 cmp_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32
@@ -722,7 +722,7 @@ cmp_wri.disasm = {
 };
 
 cmp_wri.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 - op2;
@@ -740,7 +740,7 @@ cmn_w.disasm = {
 };
 
 cmn_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32
@@ -759,7 +759,7 @@ cmn_wri.disasm = {
 };
 
 cmn_wri.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 + op2;
@@ -783,7 +783,7 @@ teq.disasm = {
 };
 
 teq.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
@@ -799,7 +799,7 @@ teq_wri.var reject : {Reject} = {(rn == 13) or (rn == 15)};
 teq_wri.disasm = { buffer << "teq\t" << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 teq_wri.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 ^ op2;
@@ -829,7 +829,7 @@ tst_w.disasm = {
 };
 
 tst_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
@@ -845,7 +845,7 @@ tst_wri.var reject : {Reject} = {(rn == 13) or (rn == 15)};
 tst_wri.disasm = { buffer << "tst.w\t" << DisasmRegister(rn) << ", " << DisasmI(imm); };
 
 tst_wri.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 & op2;
@@ -867,7 +867,7 @@ clz.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 15
 clz.disasm = { buffer << "clz\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
 
 clz.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   // TODO: Use a portable function...
   cpu.SetGPR( rd, CountLeadingZeros( cpu.GetGPR( rm ) ) );
@@ -894,7 +894,7 @@ uxtab16.disasm = {
 };
 
 uxtab16.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U16 U16;
@@ -929,7 +929,7 @@ uxtab.disasm = {
 };
 
 uxtab.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U8  U8;
@@ -951,7 +951,7 @@ uxtah.disasm = {
 };
 
 uxtah.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U16 U16;
@@ -978,7 +978,7 @@ uxtb16.disasm = {
 };
 
 uxtb16.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 rmval = RotateRight( cpu.GetGPR( rm ), ror );
@@ -999,7 +999,7 @@ uxtb_w.disasm = {
 };
 
 uxtb_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U8 U8;
@@ -1017,7 +1017,7 @@ uxth_w.disasm = {
 };
 
 uxth_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U16 U16;
@@ -1046,7 +1046,7 @@ sxtab16.disasm = {
 };
 
 sxtab16.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U16 U16;
@@ -1083,7 +1083,7 @@ sxtab.disasm = {
 };
 
 sxtab.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -1117,7 +1117,7 @@ sxtah.disasm = {
 };
 
 sxtah.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -1149,7 +1149,7 @@ sxtb16.disasm = {
 };
 
 sxtb16.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U16 U16;
@@ -1182,7 +1182,7 @@ sxtb_w.disasm = {
 };
 
 sxtb_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -1209,7 +1209,7 @@ sxth_w.disasm = {
 };
 
 sxth_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -1233,7 +1233,7 @@ ubfx.disasm = {
 };
 
 ubfx.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.SetGPR( rd, (cpu.GetGPR( rn ) << (32 - width - lsb)) >> (32 - width) );
 };
@@ -1249,7 +1249,7 @@ sbfx.disasm = {
 };
 
 sbfx.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;
@@ -1269,7 +1269,7 @@ sbfx.execute = {
 op bfi( 0b111100110110[12]: rn[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: msb[5] );
 bfi.var lsb : {uint8_t} = {lsb1|lsb0};
 bfi.var width : {uint32_t} = {msb-lsb+1};
-bfi.var clear : {uint32_t} = {~(((1 << width)-1) << lsb)};
+bfi.var clear : {uint32_t} = {~(((uint64_t(1) << width)-1) << lsb)};
 bfi.var reject : {Reject} = {msb < lsb};
 
 bfi.disasm = {
@@ -1277,7 +1277,7 @@ bfi.disasm = {
 };
 
 bfi.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   // if (msb < lsb) UNPREDICTABLE
   typedef typename ARCH::U32 U32;
@@ -1298,7 +1298,7 @@ bfi.execute = {
 op bfc( 0b111100110110[12]: 0b1111[4]:> <: 0b0[1]: shl<2> lsb1[3]: rd[4]: lsb0[2]: 0b0[1]: msb[5] );
 bfc.var lsb : {uint32_t} = {lsb1|lsb0};
 bfc.var width : {uint32_t} = {msb-lsb+1};
-bfc.var clear : {uint32_t} = {~(((1 << width)-1) << lsb)};
+bfc.var clear : {uint32_t} = {~(((uint64_t(1) << width)-1) << lsb)};
 bfc.var reject : {Reject} = {msb < lsb};
 
 bfc.disasm = {
@@ -1306,7 +1306,7 @@ bfc.disasm = {
 };
 
 bfc.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   // if (msb < lsb) UNPREDICTABLE
   typedef typename ARCH::U32 U32;
@@ -1327,7 +1327,7 @@ rbit.disasm = {
 };
 
 rbit.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 src = cpu.GetGPR( rm ), dst = U32(0);
@@ -1347,7 +1347,7 @@ rev_w.var reject : {Reject} = {(rd == 13) or (rd == 15) or (rm == 13) or (rm == 
 rev_w.disasm = { buffer << "rev.w\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
 
 rev_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), rdval = ByteSwap( rmval );
@@ -1375,7 +1375,7 @@ rev16_w.disasm = {
 };
 
 rev16_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
 
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), rdval = ByteSwap( RotateRight( rmval, 16 ) );
@@ -1402,7 +1402,7 @@ revsh_w.disasm = {
 };
 
 revsh_w.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::S32 S32;

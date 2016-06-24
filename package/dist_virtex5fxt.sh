@@ -285,7 +285,6 @@ unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/breakpoint.hh \
 unisim/util/debug/event.hh \
 unisim/util/debug/profile.hh \
-unisim/util/debug/register.hh \
 unisim/util/debug/symbol.hh \
 unisim/util/debug/stmt.hh \
 unisim/util/debug/simple_register.hh \
@@ -378,6 +377,7 @@ unisim/service/interfaces/stmt_lookup.hh \
 unisim/service/interfaces/time.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/profiling.hh \
+unisim/service/interfaces/register.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/linux_os.hh \
 unisim/service/interfaces/cache_power_estimator.hh \
@@ -577,10 +577,7 @@ m4/real_path.m4 \
 m4/pthread.m4"
 
 UNISIM_LIB_VIRTEX5FXT_DATA_FILES="\
-unisim/service/debug/gdb_server/gdb_powerpc.xml \
-unisim/service/debug/gdb_server/gdb_powerpc_405.xml \
-unisim/service/debug/gdb_server/gdb_powerpc_750.xml \
-unisim/service/debug/gdb_server/gdb_powerpc_7400.xml \
+unisim/service/debug/gdb_server/gdb_powerpc_32.xml \
 unisim/util/debug/dwarf/powerpc_eabi_dwarf_register_number_mapping.xml \
 unisim/util/debug/dwarf/powerpc_eabi_gcc_dwarf_register_number_mapping.xml"
 

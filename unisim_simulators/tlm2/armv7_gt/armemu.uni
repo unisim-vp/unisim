@@ -53,7 +53,7 @@
       <dep>osci_systemc</dep>
       <dep>unisim::uapi</dep>
       <dep>unisim::kernel::service</dep>
-      <dep>unisim::component::tlm2::processor::arm::armemu</dep>
+      <dep>unisim::component::tlm2::processor::arm::cortex_a9</dep>
       <dep>unisim::component::tlm2::memory::ram</dep>
       <dep>unisim::service::pim</dep>
       <dep>unisim::service::pim::network</dep>

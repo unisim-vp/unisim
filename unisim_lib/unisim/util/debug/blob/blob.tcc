@@ -58,6 +58,7 @@ Blob<MEMORY_ADDR>::Blob()
 	, memory_atom_size(1)
 	, elf_phoff(0)
 	, elf_phent(0)
+	, elf_phnum(0)
 	, elf_flags(0)
 	, blobs()
 	, sections()
@@ -81,6 +82,7 @@ Blob<MEMORY_ADDR>::Blob(const Blob<MEMORY_ADDR>& _blob)
 	, memory_atom_size(_blob.memory_atom_size)
 	, elf_phoff(_blob.elf_phoff)
 	, elf_phent(_blob.elf_phent)
+	, elf_phnum(_blob.elf_phnum)
 	, elf_flags(_blob.elf_flags)
 	, blobs()
 	, sections()
@@ -217,6 +219,13 @@ void Blob<MEMORY_ADDR>::SetELF_PHENT(unsigned int _elf_phent)
 {
 	elf_phent = _elf_phent;
 	capability = (Capability)(capability | CAP_ELF_PHENT);
+}
+
+template <class MEMORY_ADDR>
+void Blob<MEMORY_ADDR>::SetELF_PHNUM(unsigned int _elf_phnum)
+{
+	elf_phnum = _elf_phnum;
+	capability = (Capability)(capability | CAP_ELF_PHNUM);
 }
 
 template <class MEMORY_ADDR>
@@ -363,6 +372,12 @@ template <class MEMORY_ADDR>
 unsigned int Blob<MEMORY_ADDR>::GetELF_PHENT() const
 {
 	return (capability & CAP_ELF_PHENT) ? elf_phent : 0;
+}
+
+template <class MEMORY_ADDR>
+unsigned int Blob<MEMORY_ADDR>::GetELF_PHNUM() const
+{
+	return (capability & CAP_ELF_PHNUM) ? elf_phnum : 0;
 }
 
 template <class MEMORY_ADDR>
