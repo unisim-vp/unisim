@@ -40,6 +40,7 @@
 #include <unisim/component/cxx/processor/arm/psr.hh>
 #include <unisim/component/cxx/processor/arm/cp15.hh>
 #include <unisim/component/cxx/processor/arm/hostfloat.hh>
+#include <unisim/component/cxx/processor/arm/simfloat.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/kernel/logger/logger.hh>
@@ -71,10 +72,9 @@ struct CPU
   , public unisim::kernel::service::Service<unisim::service::interfaces::Registers>
 {
   typedef CONFIG Config;
-  typedef unisim::component::cxx::processor::arm::hostfloat::FPSCR fpscr_type;
-  typedef unisim::component::cxx::processor::arm::PSR psr_type;
-  typedef double   F64;
-  typedef float    F32;
+  typedef hostfloat::FP FP;
+  typedef FP::F64  F64;
+  typedef FP::F32  F32;
   typedef uint8_t  U8;
   typedef uint16_t U16;
   typedef uint32_t U32;
@@ -343,8 +343,8 @@ struct CPU
   /************************************************************************/
 
 public:
+  bool     Cond( bool cond ) { return cond; }
   void     UnpredictableInsnBehaviour();
-  void     UnpredictableIf( bool condition ) { if (not condition) UnpredictableInsnBehaviour(); }
   void     CallSupervisor( uint16_t imm );
   bool     IntegerZeroDivide( bool zero_div ) { return zero_div; }
   virtual void WaitForInterrupt() {}; // Implementation-defined
@@ -437,9 +437,9 @@ protected:
 
 public:
   // VFP/NEON registers
-  fpscr_type fpscr;
-  fpscr_type& FPSCR() { return fpscr; }
-  FieldRegister<uint32_t> FPEXC;
+  FPSCReg fpscr;
+  FPSCReg& FPSCR() { return fpscr; }
+  U32 FPEXC;
 
   struct ExtRegBank
   {

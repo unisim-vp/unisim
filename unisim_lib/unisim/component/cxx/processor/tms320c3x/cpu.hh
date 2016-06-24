@@ -230,6 +230,8 @@ public:
 	 */
 	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
 
+	virtual void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner );
+
     //===============================================================
 	//= CPURegistersInterface interface methods                STOP =
 	//===============================================================

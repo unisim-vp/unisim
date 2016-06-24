@@ -135,8 +135,9 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent)
 	, param_work_around_sdl_mouse_motion_coordinates_bug("work-around-sdl-mouse-motion-coordinates-bug", this, work_around_sdl_mouse_motion_coordinates_bug, "enable/disable work around SDL mouse motion coordinates bug")
 #endif
 {
+#if defined(HAVE_SDL)
 	param_refresh_period.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-
+#endif
 	video_export.SetupDependsOn(memory_import);
 	keyboard_export.SetupDependsOn(memory_import);
 	mouse_export.SetupDependsOn(memory_import);
@@ -565,10 +566,10 @@ bool SDL<ADDRESS>::SetupSDL()
 		alive = false;
 		return false;
 	}
-#else
-	logger << DebugWarning << "No host video output nor input devices available" << EndDebugWarning;
-#endif
 	
+#else
+       logger << DebugWarning << "No host video output nor input devices available" << EndDebugWarning;
+#endif
 	return true;
 }
 
@@ -629,7 +630,9 @@ void SDL<ADDRESS>::SetTypematicDelay(unsigned int delay_us, unsigned int interva
 {
 	if(delay_us) typematic_delay_us = delay_us;
 	if(interval_us) typematic_interval_us = interval_us;
+#if defined(HAVE_SDL)
 	SDL_EnableKeyRepeat(typematic_delay_us, typematic_interval_us);
+#endif
 }
 
 template <class ADDRESS>

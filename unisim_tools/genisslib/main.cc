@@ -234,7 +234,7 @@ GIL_MAIN (int argc, char** argv, char** envp) {
       cerr << GENISSLIB ": compilation aborted.\n";
       throw CLI::Exit_t( 1 );
     }
-  } catch( CLI::Exit_t _code ) {
+  } catch( CLI::Exit_t& _code ) {
     return _code.m_value;
   }
   

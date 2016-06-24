@@ -70,35 +70,38 @@ namespace arm {
    * @return true if the condition matches CPSR, false otherwise
    */
   template <typename coreT>
-  bool
+  typename coreT::BOOL
   CheckCondition( coreT& core, uint32_t cond )
   {
     util::truth_table::InBit<uint16_t,3> const N;
     util::truth_table::InBit<uint16_t,2> const Z;
     util::truth_table::InBit<uint16_t,1> const C;
     util::truth_table::InBit<uint16_t,0> const V;
+    
+    typedef typename coreT::U16 U16;
+    typedef typename coreT::U32 U32;
 
-    static uint16_t const condition_truth_tables[] = {
-      (                  Z).tt, // eq; equal
-      (              not Z).tt, // ne; not equal
-      (                  C).tt, // cs/hs; unsigned higuer or same
-      (              not C).tt, // cc/lo; unsigned lower
-      (                  N).tt, // mi; negative
-      (              not N).tt, // pl; positive or zero
-      (                  V).tt, // vs; overflow set
-      (              not V).tt, // vc; overflow clear
-      (   not (not C or Z)).tt, // hi; unsigned higher
-      (       (not C or Z)).tt, // ls; unsigned lower or same
-      (      not (N xor V)).tt, // ge; signed greater than or equal
-      (          (N xor V)).tt, // lt; signed less than
-      (not(Z or (N xor V))).tt, // gt; signed greater than
-      (   (Z or (N xor V))).tt, // le; signed less than or equal
-      (   uint16_t(0xffff)),    // al; always
-      (   uint16_t(0x0000)),    // <und>; never (illegal)
+    static U16 const condition_truth_tables[] = {
+      U16((                  Z).tt), // eq; equal
+      U16((              not Z).tt), // ne; not equal
+      U16((                  C).tt), // cs/hs; unsigned higuer or same
+      U16((              not C).tt), // cc/lo; unsigned lower
+      U16((                  N).tt), // mi; negative
+      U16((              not N).tt), // pl; positive or zero
+      U16((                  V).tt), // vs; overflow set
+      U16((              not V).tt), // vc; overflow clear
+      U16((   not (not C or Z)).tt), // hi; unsigned higher
+      U16((       (not C or Z)).tt), // ls; unsigned lower or same
+      U16((      not (N xor V)).tt), // ge; signed greater than or equal
+      U16((          (N xor V)).tt), // lt; signed less than
+      U16((not(Z or (N xor V))).tt), // gt; signed greater than
+      U16((   (Z or (N xor V))).tt), // le; signed less than or equal
+      U16(                  0xffff),    // al; always
+      U16(                  0x0000),    // <und>; never (illegal)
     };
     if (cond >= 15) throw std::logic_error("invalid condition code");
-    uint32_t nzcv = GetNativeValue( core.CPSR().Get( NZCV ) );
-    return ((condition_truth_tables[cond] >> nzcv) & 1);
+    U32 nzcv = core.CPSR().Get( NZCV );
+    return ((condition_truth_tables[cond] >> nzcv) & U16(1)) != U16(0);
   }
   
   template <typename coreT>
@@ -308,7 +311,9 @@ namespace arm {
                    ((mask & 4 ? 0xff : 0) << 16) |
                    ((mask & 8 ? 0xff : 0) << 24));
     
-    core.UnpredictableIf( (value & write_mask & U32(core.PSR_UNALLOC_MASK)) == U32(0) );
+    if (core.Cond( (value & write_mask & U32(core.PSR_UNALLOC_MASK)) == U32(0) ))
+      core.UnpredictableInsnBehaviour();
+
     
     BOOL const is_secure( true ); // IsSecure()
     BOOL const nmfi( false ); // Non Maskable FIQ (SCTLR.NMFI == '1');
@@ -402,8 +407,8 @@ namespace arm {
     uint8_t e : 3;
     uint8_t s : 1;
     
-    VFPExpandImm( uint8_t n, uint8_t exp, uint8_t man )
-      : m( man ), e( exp ^ 4 ), s( n ) {}
+    VFPExpandImm( uint8_t neg, uint8_t exp, uint8_t man )
+      : m( man ), e( exp ^ 4 ), s( neg ) {}
     
     template <typename T>
     T toFP() { return (s?-1:1) * (T( ((1 << 4) | m) << e ) / 128); }
@@ -411,19 +416,19 @@ namespace arm {
     operator double () { return this->toFP<double>(); }
     
     template <unsigned bcT>
-    void toBytes( uint8_t (&bytes)[bcT] )
+    void toBytes( uint8_t (&bytes)[bcT] ) const
     {
-      int32_t exponent = (int8_t((e^4) << 4)) >> 4;
+      int32_t exp = (int8_t((e^4) << 4)) >> 4;
       if (bcT == 4) {
         uint32_t bits = 0;
         bits |= uint32_t( m ) << 19;                   /* inserting mantissa */
-        bits |= (uint32_t((e & 0xff) ^ 0x80) << 23);   /* inserting exponent */
+        bits |= (uint32_t((exp & 0xff) ^ 0x80) << 23);   /* inserting exponent */
         bits |= uint32_t( s ) << 31;                   /* inserting sign */
         for (unsigned byte = 0, bit = 0; byte < bcT; byte += 1, bit += 8) bytes[byte] = bits >> bit;
       } else if (bcT == 8) {
         uint64_t bits = 0;
         bits |= uint64_t( m ) << 48;                   /* inserting mantissa */
-        bits |= (uint64_t((e & 0x7ff) ^ 0x400) << 52); /* inserting exponent */
+        bits |= (uint64_t((exp & 0x7ff) ^ 0x400) << 52); /* inserting exponent */
         bits |= uint64_t( s ) << 63;                   /* inserting sign */
         for (unsigned byte = 0, bit = 0; byte < bcT; byte += 1, bit += 8) bytes[byte] = bits >> bit;
       } else throw std::logic_error("unexpected FP size");
@@ -433,38 +438,44 @@ namespace arm {
   enum FPExc { InvalidOp=0, DivideByZero=1, Overflow=2, Underflow=3,
                Inexact=4, InputDenorm=7 };
 
-  template <typename fpscrT>
-  void FPProcessException( FPExc exception, fpscrT& fpscr )
+  template <typename ARCH, typename fpscrT>
+  void FPProcessException( FPExc exception, ARCH& arch, fpscrT& fpscr )
   {
+    typedef typename ARCH::U32 U32;
+    
     switch (exception) {
-    case InvalidOp:    if (fpscr.Get( IOE )) throw exception; else fpscr.Set( IOC, 1 ); break;
-    case DivideByZero: if (fpscr.Get( DZE )) throw exception; else fpscr.Set( DZC, 1 ); break;
-    case Overflow:     if (fpscr.Get( OFE )) throw exception; else fpscr.Set( OFC, 1 ); break;
-    case Underflow:    if (fpscr.Get( UFE )) throw exception; else fpscr.Set( UFC, 1 ); break;
-    case Inexact:      if (fpscr.Get( IXE )) throw exception; else fpscr.Set( IXC, 1 ); break;
-    case InputDenorm:  if (fpscr.Get( IDE )) throw exception; else fpscr.Set( IDC, 1 ); break;
+    case InvalidOp:    if (arch.Cond( fpscr.Get( IOE ) )) throw exception; else fpscr.Set( IOC, U32(1) ); break;
+    case DivideByZero: if (arch.Cond( fpscr.Get( DZE ) )) throw exception; else fpscr.Set( DZC, U32(1) ); break;
+    case Overflow:     if (arch.Cond( fpscr.Get( OFE ) )) throw exception; else fpscr.Set( OFC, U32(1) ); break;
+    case Underflow:    if (arch.Cond( fpscr.Get( UFE ) )) throw exception; else fpscr.Set( UFC, U32(1) ); break;
+    case Inexact:      if (arch.Cond( fpscr.Get( IXE ) )) throw exception; else fpscr.Set( IXC, U32(1) ); break;
+    case InputDenorm:  if (arch.Cond( fpscr.Get( IDE ) )) throw exception; else fpscr.Set( IDC, U32(1) ); break;
     }
   }
 
-  template <typename operT, typename fpscrT>
+  template <typename operT, typename ARCH, typename fpscrT>
   struct __FPProcessNaN__
   {
     operT& result;
+    ARCH& arch;
     fpscrT& fpscr;
     operT const* firstSNaN;
     operT const* firstQNaN;
+    
   
-    __FPProcessNaN__( operT& res, fpscrT& _fpscr )
-      : result( res ), fpscr( _fpscr ), firstSNaN(), firstQNaN()
+    __FPProcessNaN__( operT& res, ARCH& _arch, fpscrT& _fpscr )
+      : result( res ), arch( _arch ), fpscr( _fpscr ), firstSNaN(), firstQNaN()
     {}
   
     __FPProcessNaN__&
     operator << ( operT const& op )
     {
+      typedef typename ARCH::BOOL BOOL;
+      
       if (not firstSNaN)
         {
-          if (FloatIsSNaN( op, fpscr ))                         firstSNaN = &op;
-          else if (not firstQNaN and FloatIsQNaN( op, fpscr ))  firstQNaN = &op;
+          if      (arch.Cond( ARCH::FP::IsSNaN( op, fpscr ) ))                        firstSNaN = &op;
+          else if (arch.Cond( BOOL(not firstQNaN) and ARCH::FP::IsQNaN( op, fpscr ))) firstQNaN = &op;
         }
       return *this;
     }
@@ -477,125 +488,131 @@ namespace arm {
       }
       else /* hasSNaN*/ {
         result = *firstSNaN;
-        FloatSetQuietBit( result, fpscr );
-        FPProcessException( InvalidOp, fpscr );
+        ARCH::FP::SetQuietBit( result, fpscr );
+        FPProcessException( InvalidOp, arch, fpscr );
       }
-      if (fpscr.Get( DN )) {
-        FloatSetDefaultNan( result, fpscr );
+      if (arch.Cond( fpscr.Get( DN ) )) {
+        ARCH::FP::SetDefaultNan( result, fpscr );
       } 
       return true;
     }
   };
 
-  template <typename operT, typename fpscrT>
-  __FPProcessNaN__<operT, fpscrT>
-  FPProcessNaN( operT& res, fpscrT& fpscr )
-  { return __FPProcessNaN__<operT, fpscrT>( res, fpscr ); }
+  template <typename operT, typename ARCH, typename fpscrT>
+  __FPProcessNaN__<operT, ARCH, fpscrT>
+  FPProcessNaN( operT& res, ARCH& arch, fpscrT& fpscr )
+  { return __FPProcessNaN__<operT, ARCH, fpscrT>( res, arch, fpscr ); }
 
-  template <typename operT, typename fpscrT>
+  template <typename operT, typename ARCH, typename fpscrT>
   void
-  FPFlushToZero( operT& op, fpscrT& fpscr )
+  FPFlushToZero( operT& op, ARCH& arch, fpscrT& fpscr )
   {
-    if (FloatFlushToZero( op, fpscr ))
-      FPProcessException( InputDenorm, fpscr );
+    if (ARCH::FP::FlushToZero( op, fpscr ))
+      FPProcessException( InputDenorm, arch, fpscr );
   }
 
-  template <typename operT, typename fpscrT>
-  void FPAdd( operT& result, operT& op1, operT& op2, fpscrT& fpscr )
+  template <typename operT, typename ARCH, typename fpscrT>
+  void FPAdd( operT& result, operT& op1, operT& op2, ARCH& arch, fpscrT& fpscr )
   {
-    if (fpscr.Get( FZ )) {
-      FPFlushToZero( op1, fpscr );
-      FPFlushToZero( op2, fpscr );
+    if (arch.Cond( fpscr.Get( FZ ) )) {
+      FPFlushToZero( op1, arch, fpscr );
+      FPFlushToZero( op2, arch, fpscr );
     }
-    if (FPProcessNaN( result, fpscr ) << op1 << op2) return;
+    if (FPProcessNaN( result, arch, fpscr ) << op1 << op2) return;
     
-    FloatAdd( result, op1, op2, fpscr );
+    ARCH::FP::Add( result, op1, op2, fpscr );
   }
   
-  template <typename operT, typename fpscrT>
-  void FPSub( operT& result, operT& op1, operT& op2, fpscrT& fpscr )
+  template <typename operT, typename ARCH, typename fpscrT>
+  void FPSub( operT& result, operT& op1, operT& op2, ARCH& arch, fpscrT& fpscr )
   {
-    if (fpscr.Get( FZ )) {
-      FPFlushToZero( op1, fpscr );
-      FPFlushToZero( op2, fpscr );
+    if (arch.Cond( fpscr.Get( FZ ) )) {
+      FPFlushToZero( op1, arch, fpscr );
+      FPFlushToZero( op2, arch, fpscr );
     }
-    if (FPProcessNaN( result, fpscr ) << op1 << op2) return;
+    if (FPProcessNaN( result, arch, fpscr ) << op1 << op2) return;
     
-    FloatSub( result, op1, op2, fpscr );
+    ARCH::FP::Sub( result, op1, op2, fpscr );
   }
 
-  template <typename operT, typename fpscrT>
-  void FPDiv( operT& result, operT& op1, operT& op2, fpscrT& fpscr )
+  template <typename operT, typename ARCH, typename fpscrT>
+  void FPDiv( operT& result, operT& op1, operT& op2, ARCH& arch, fpscrT& fpscr )
   {
-    if (fpscr.Get( FZ )) {
-      FPFlushToZero( op1, fpscr );
-      FPFlushToZero( op2, fpscr );
+    if (arch.Cond( fpscr.Get( FZ ) )) {
+      FPFlushToZero( op1, arch, fpscr );
+      FPFlushToZero( op2, arch, fpscr );
     }
-    if (FPProcessNaN( result, fpscr ) << op1 << op2) return;
+    if (FPProcessNaN( result, arch, fpscr ) << op1 << op2) return;
     
-    FloatDiv( result, op1, op2, fpscr );
+    ARCH::FP::Div( result, op1, op2, fpscr );
   }
   
-  template <typename operT, typename fpscrT>
-  void FPMul( operT& result, operT& op1, operT& op2, fpscrT& fpscr )
+  template <typename operT, typename ARCH, typename fpscrT>
+  void FPMul( operT& result, operT& op1, operT& op2, ARCH& arch, fpscrT& fpscr )
   {
-    if (fpscr.Get( FZ )) {
-      FPFlushToZero( op1, fpscr );
-      FPFlushToZero( op2, fpscr );
+    if (arch.Cond( fpscr.Get( FZ ) )) {
+      FPFlushToZero( op1, arch, fpscr );
+      FPFlushToZero( op2, arch, fpscr );
     }
-    if (FPProcessNaN( result, fpscr ) << op1 << op2) return;
+    if (FPProcessNaN( result, arch, fpscr ) << op1 << op2) return;
     
-    FloatMul( result, op1, op2, fpscr );
+    ARCH::FP::Mul( result, op1, op2, fpscr );
   }
   
-  template <typename operT, typename fpscrT>
-  void FPMulAdd( operT& acc, operT& op1, operT& op2, fpscrT& fpscr )
+  template <typename operT, typename ARCH, typename fpscrT>
+  void FPMulAdd( operT& acc, operT& op1, operT& op2, ARCH& arch, fpscrT& fpscr )
   {
-    if (fpscr.Get( FZ )) {
-      FPFlushToZero( op1, fpscr );
-      FPFlushToZero( op2, fpscr );
-      FPFlushToZero( acc, fpscr );
+    if (arch.Cond( fpscr.Get( FZ ) )) {
+      FPFlushToZero( op1, arch, fpscr );
+      FPFlushToZero( op2, arch, fpscr );
+      FPFlushToZero( acc, arch, fpscr );
     }
-    if (FPProcessNaN( acc, fpscr ) << acc << op1 << op2) return;
+    if (FPProcessNaN( acc, arch, fpscr ) << acc << op1 << op2) return;
     
     // TODO: Process the (QNaN + 0*inf) case
-    FloatMulAdd( acc, op1, op2, fpscr );
+    ARCH::FP::MulAdd( acc, op1, op2, fpscr );
   }
   
-  template <typename operT, typename fpscrT>
-  void FPSqrt( operT& result, operT& op, fpscrT& fpscr )
+  template <typename operT, typename ARCH, typename fpscrT>
+  void FPSqrt( operT& result, operT& op, ARCH& arch, fpscrT& fpscr )
   {
-    if (fpscr.Get( FZ )) {
-      FPFlushToZero( op, fpscr );
+    if (arch.Cond( fpscr.Get( FZ ) )) {
+      FPFlushToZero( op, arch, fpscr );
     }
-    if (FPProcessNaN( result, fpscr ) << op) return;
+    if (FPProcessNaN( result, arch, fpscr ) << op) return;
     
-    FloatSqrt( result, op, fpscr );
+    ARCH::FP::Sqrt( result, op, fpscr );
   }
   
   
-  template <typename operT, typename fpscrT>
-  void FPCompare( operT& op1, operT& op2, bool quiet_nan_exc, fpscrT& fpscr )
+  template <typename operT, typename ARCH, typename fpscrT>
+  void FPCompare( operT& op1, operT& op2, bool quiet_nan_exc, ARCH& arch, fpscrT& fpscr )
   {
-    if (fpscr.Get( FZ )) {
-      FPFlushToZero( op1, fpscr );
-      FPFlushToZero( op2, fpscr );
+    typedef typename ARCH::BOOL BOOL;
+    typedef typename ARCH::S32 S32;
+    typedef typename ARCH::U32 U32;
+    
+    if (arch.Cond( fpscr.Get( FZ ) )) {
+      FPFlushToZero( op1, arch, fpscr );
+      FPFlushToZero( op2, arch, fpscr );
     }
-    bool hasSNaN = FloatIsSNaN( op1, fpscr ) or FloatIsSNaN( op2, fpscr );
-    bool hasQNaN = FloatIsQNaN( op1, fpscr ) or FloatIsQNaN( op2, fpscr );
-    if (hasSNaN or hasQNaN) {
-      fpscr.Set( NZCV, 3 ); /* N=0,Z=0,C=1,V=1 */
-      if (hasSNaN or quiet_nan_exc)
-        FPProcessException( InvalidOp, fpscr );
+    BOOL hasSNaN = ARCH::FP::IsSNaN( op1, fpscr ) or ARCH::FP::IsSNaN( op2, fpscr );
+    BOOL hasQNaN = ARCH::FP::IsQNaN( op1, fpscr ) or ARCH::FP::IsQNaN( op2, fpscr );
+    if (arch.Cond(hasSNaN or hasQNaN)) {
+      fpscr.Set( NZCV, U32(3) ); /* N=0,Z=0,C=1,V=1 */
+      if (arch.Cond(hasSNaN or BOOL(quiet_nan_exc)))
+        FPProcessException( InvalidOp, arch, fpscr );
     }
     else {
-      int fc = FloatCompare( op1, op2, fpscr );
-      if      (fc == 0)
-        fpscr.Set( NZCV, 6 ); /* N=0,Z=1,C=1,V=0 */
-      else if (fc < 0)
-        fpscr.Set( NZCV, 8 ); /* N=1,Z=0,C=0,V=0 */
-      else  /* fc > 0 */
-        fpscr.Set( NZCV, 2 ); /* N=0,Z=0,C=1,V=0 */
+      S32 fc = ARCH::FP::Compare( op1, op2, fpscr );
+      S32 const zero(0);
+      
+      if      (arch.Cond( fc == zero ))
+        fpscr.Set( NZCV, U32(6) ); /* N=0,Z=1,C=1,V=0 */
+      else if (arch.Cond( fc < zero ))
+        fpscr.Set( NZCV, U32(8) ); /* N=1,Z=0,C=0,V=0 */
+      else  /* fc > zero */
+        fpscr.Set( NZCV, U32(2) ); /* N=0,Z=0,C=1,V=0 */
     }
   }
 

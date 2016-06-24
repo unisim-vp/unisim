@@ -172,7 +172,7 @@ const int CONTEXT_INITIAL = 0;
 const int CONTEXT_COMMENT = 1;
 
 Parser::Parser(unisim::kernel::logger::Logger& _logger)
-	: logger(_logger)
+	: logger(_logger), root_node(NULL), current_lineno(0), look_ahead_token(0)
 {
 }
 

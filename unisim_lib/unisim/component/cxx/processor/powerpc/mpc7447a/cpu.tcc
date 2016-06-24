@@ -2293,6 +2293,45 @@ unisim::service::interfaces::Register *CPU<CONFIG>::GetRegister(const char *name
 }
 
 template <class CONFIG>
+void CPU<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+  scanner.Append(this->GetRegister("r0"));
+  scanner.Append(this->GetRegister("r1"));
+  scanner.Append(this->GetRegister("r2"));
+  scanner.Append(this->GetRegister("r3"));
+  scanner.Append(this->GetRegister("r4"));
+  scanner.Append(this->GetRegister("r5"));
+  scanner.Append(this->GetRegister("r6"));
+  scanner.Append(this->GetRegister("r7"));
+  scanner.Append(this->GetRegister("r8"));
+  scanner.Append(this->GetRegister("r9"));
+  scanner.Append(this->GetRegister("r10"));
+  scanner.Append(this->GetRegister("r11"));
+  scanner.Append(this->GetRegister("r12"));
+  scanner.Append(this->GetRegister("r13"));
+  scanner.Append(this->GetRegister("r14"));
+  scanner.Append(this->GetRegister("r15"));
+  scanner.Append(this->GetRegister("r16"));
+  scanner.Append(this->GetRegister("r17"));
+  scanner.Append(this->GetRegister("r18"));
+  scanner.Append(this->GetRegister("r19"));
+  scanner.Append(this->GetRegister("r20"));
+  scanner.Append(this->GetRegister("r21"));
+  scanner.Append(this->GetRegister("r22"));
+  scanner.Append(this->GetRegister("r23"));
+  scanner.Append(this->GetRegister("r24"));
+  scanner.Append(this->GetRegister("r25"));
+  scanner.Append(this->GetRegister("r26"));
+  scanner.Append(this->GetRegister("r27"));
+  scanner.Append(this->GetRegister("r28"));
+  scanner.Append(this->GetRegister("r29"));
+  scanner.Append(this->GetRegister("r30"));
+  scanner.Append(this->GetRegister("r31"));
+  scanner.Append(this->GetRegister("cr"));
+  scanner.Append(this->GetRegister("cia"));
+}
+
+template <class CONFIG>
 const char *CPU<CONFIG>::GetArchitectureName() const
 {
 	return "powerpc";

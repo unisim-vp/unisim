@@ -52,7 +52,6 @@ class ARM926EJS
 	: public sc_module
 	, public tlm::tlm_bw_transport_if<>
 	, public unisim::component::cxx::processor::arm::arm926ejs::CPU
-	, public unisim::kernel::service::VariableBaseListener
 {
 public:
 	typedef tlm::tlm_base_protocol_types::tlm_payload_type  transaction_type;
@@ -111,7 +110,7 @@ public:
 	virtual ~ARM926EJS();
 
 private:
-	virtual void VariableBaseNotify(const unisim::kernel::service::VariableBase *var);
+	virtual void SetCycleTime();
 
 public:
 	virtual void Stop(int ret);
@@ -158,9 +157,20 @@ private:
 	sc_time bus_cycle_time;
 	sc_time nice_time;
 	double ipc;
+	sc_time time_per_instruction;
 
 	unisim::kernel::service::Statistic<sc_time> stat_cpu_time;
 	unisim::kernel::service::Statistic<sc_time> stat_bus_time;
+	
+	struct CpuCycleTimeParam : public unisim::kernel::service::Parameter<sc_time>
+	{
+		CpuCycleTimeParam(char const* name, Object *owner, CPU& _cpu, const char *description)
+		  : unisim::kernel::service::Parameter<sc_time>(name, owner, _cpu.cpu_cycle_time, description), cpu(_cpu)
+		{}
+		void Set( sc_time const& value ) { cpu.SetCycleTime( value ); }
+		CPU& cpu;
+	} param_cpu_cycle_time;
+  
 	unisim::kernel::service::Parameter<sc_time> param_cpu_cycle_time;
 	unisim::kernel::service::Parameter<sc_time> param_bus_cycle_time;
 	unisim::kernel::service::Parameter<sc_time> param_nice_time;

@@ -206,6 +206,7 @@ unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/cxx/processor/arm/disasm.cc \
+unisim/component/cxx/processor/arm/simfloat.cc \
 unisim/component/cxx/processor/arm/cache.cc \
 unisim/component/cxx/processor/arm/vmsav7/cpu.cc \
 unisim/component/cxx/processor/arm/vmsav7/isa_arm32.cc \
@@ -427,6 +428,7 @@ unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \
 unisim/component/cxx/processor/arm/models.hh \
 unisim/component/cxx/processor/arm/disasm.hh \
+unisim/component/cxx/processor/arm/simfloat.hh \
 unisim/component/cxx/processor/arm/extregbank.hh \
 unisim/component/cxx/processor/arm/hostfloat.hh \
 unisim/component/cxx/memory/ram/memory.hh \

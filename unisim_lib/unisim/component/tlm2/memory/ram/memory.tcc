@@ -59,6 +59,9 @@ Memory(const sc_module_name& name, Object *parent)
 	: Object(name, parent, "this module implements a memory")
 	, sc_module(name)
 	, unisim::component::cxx::memory::ram::Memory<ADDRESS, PAGE_SIZE>(name, parent)
+
+	, unisim::kernel::service::Service<unisim::service::interfaces::Memory<ADDRESS> >(name, parent)
+
 	, slave_sock("slave-sock")
 	, logger(*this)
 	, read_counter(0)

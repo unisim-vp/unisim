@@ -55,6 +55,8 @@ S12SCI::S12SCI(const sc_module_name& name, Object *parent) :
 
 	, txd(true)
 	, txd_output_pin("TXD", this, txd, "TXD output")
+	, txd_pin_enable(true)
+	, param_txd_pin_enable("txd-pin-enable", this, txd_pin_enable, "param txd pin enable")
 	, rxd(true)
 	, rxd_input_pin("RXD", this, rxd, "RXD input")
 
@@ -69,6 +71,9 @@ S12SCI::S12SCI(const sc_module_name& name, Object *parent) :
 	, scisr2_register(0x00)
 	, scidrh_register(0x00)
 	, scidrl_register(0x00)
+
+	, tx_shift_register(0x0000)
+	, rx_shift_register(0x0000)
 
 	, telnet_enabled(false)
 	, param_telnet_enabled("telnet-enabled", this, telnet_enabled)
@@ -552,18 +557,21 @@ inline void S12SCI::txShiftOut(SCIMSG msgType)
 			} break;
 			case SCIIDLE: {
 
-				TelnetSendString("\r\nIDLE\r\n");
+				TelnetSendString((const unsigned char*) "\r\nIDLE\r\n");
 
 			} break;
 			case SCIBREAK: {
 
-				TelnetSendString("\r\nBREAK\r\n");
+				TelnetSendString((const unsigned char*) "\r\nBREAK\r\n");
 
 			} break;
 			default: break;
 		}
 
-	} else {
+	}
+//	else
+	if (txd_pin_enable)
+	{
 
 		uint8_t length = 0;
 		switch (msgType) {
@@ -625,7 +633,7 @@ void S12SCI::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	if ((address >= baseAddress) && (address < (baseAddress + 8))) {
+	if ((address >= baseAddress) && (address < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);
@@ -1146,7 +1154,7 @@ bool S12SCI::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 	// SCIBDH, SCIBDL, SCICR1 registers are accessible if the AMAP bit in the SCISR2 register is set to zero.
 	// SCIASR1, SCIACR1, SCIACR2 registers are accessible if the AMAP bit in the SCISR2 register is set to one.
 
-	if ((addr >= baseAddress) && (addr < (baseAddress+8))) {
+	if ((addr >= baseAddress) && (addr < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		physical_address_t offset = addr-baseAddress;
 
@@ -1215,7 +1223,7 @@ bool S12SCI::WriteMemory(physical_address_t addr, const void *buffer, uint32_t s
 	// SCIBDH, SCIBDL, SCICR1 registers are accessible if the AMAP bit in the SCISR2 register is set to zero.
 	// SCIASR1, SCIACR1, SCIACR2 registers are accessible if the AMAP bit in the SCISR2 register is set to one.
 
-	if ((addr >= baseAddress) && (addr < (baseAddress+8))) {
+	if ((addr >= baseAddress) && (addr < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		if (size == 0) {
 			return (true);

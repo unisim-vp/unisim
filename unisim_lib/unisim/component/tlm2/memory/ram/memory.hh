@@ -97,7 +97,7 @@ public:
 	/** BeginSetup
 	 * Initializes the service interface. */
 	virtual bool BeginSetup();
-	
+
 	/**
 	 * TLM2 Slave methods
 	 */

@@ -149,6 +149,8 @@ public:
 
 	enum SCIMSG {SCIDATA, SCIIDLE, SCIBREAK};
 
+	static const unsigned int MEMORY_MAP_SIZE = 8;
+
 	//=========================================================
 	//=                REGISTERS OFFSETS                      =
 	//=========================================================
@@ -241,6 +243,11 @@ public:
 	 */
     virtual Register *GetRegister(const char *name);
 
+    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+    {
+    	// TODO
+    }
+
 	//=====================================================================
 	//=             registers setters and getters                         =
 	//=====================================================================
@@ -291,6 +298,8 @@ private:
 
 	bool txd;
 	Signal<bool> txd_output_pin;
+	bool txd_pin_enable;
+	Parameter<bool> param_txd_pin_enable;
 
 	bool rxd;
 	Signal<bool> rxd_input_pin;
@@ -481,7 +490,7 @@ private:
 	std::queue<uint8_t> telnet_tx_fifo;
 	sc_event telnet_rx_event, telnet_tx_event;
 
-	inline void add(std::queue<uint8_t> &buffer_queue, uint8_t data, sc_event &event) {
+	inline void add(std::queue<uint8_t> &buffer_queue, const uint8_t& data, sc_event &event) {
 	    buffer_queue.push(data);
 	    event.notify();
 	}
@@ -508,7 +517,7 @@ private:
 	    return (buffer_queue.size());
 	}
 
-	inline void TelnetSendString(const char *msg) {
+	inline void TelnetSendString(const unsigned char *msg) {
 
 		while (*msg != 0)
 			add(telnet_tx_fifo, *msg++, telnet_tx_event) ;
@@ -580,7 +589,6 @@ private:
 			logger << DebugInfo << "Telnet not connected to " << sc_object::name() << EndDebugInfo;
 		}
 	}
-
 
 
 }; /* end class S12SCI */

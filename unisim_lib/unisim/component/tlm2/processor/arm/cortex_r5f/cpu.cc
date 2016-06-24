@@ -148,9 +148,10 @@ CPU::CPU( sc_module_name const& name, Object* parent )
   , bus_cycle_time(62500.0, SC_PS)
   , nice_time(1.0, SC_MS)
   , ipc(1.0)
+  , time_per_instruction(cpu_cycle_time/ipc)
   , enable_dmi(false)
   , stat_cpu_time("cpu-time", this, cpu_time, "The processor time")
-  , param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time, "The processor cycle time.")
+  , param_cpu_cycle_time("cpu-cycle-time", this, *this, "The processor cycle time.")
   , param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time, "The processor bus cycle time.")
   , param_nice_time("nice-time", this, nice_time,  "Maximum time between SystemC waits.")
   , param_ipc("ipc", this, ipc, "Instructions per cycle performance.")
@@ -187,8 +188,6 @@ CPU::CPU( sc_module_name const& name, Object* parent )
   , CFLR(0)
 {
   PCPU::param_cpu_cycle_time_ps.SetVisible(false);
-  param_cpu_cycle_time.AddListener(this);
-  param_cpu_cycle_time.NotifyListeners();
 
   master_socket.bind(*this);
   
@@ -203,18 +202,15 @@ CPU::CPU( sc_module_name const& name, Object* parent )
 
 CPU::~CPU()
 {
-  param_cpu_cycle_time.RemoveListener(this);
 }
 
 void
-CPU::VariableBaseNotify(const unisim::kernel::service::VariableBase *var)
+CPU::SetCycleTime(sc_core::sc_time const& cycle_time)
 {
-  // no need to check the name, the only variable with notify
-  //   activated is the cpu_cycle_time
-  uint64_t cycle_time_ps = cpu_cycle_time.value();
-  uint64_t ps = sc_time(1.0, SC_PS).value();
-  cycle_time_ps = cycle_time_ps * ps;
-  (*this)["cpu-cycle-time-ps"] = cycle_time_ps;
+  /* Setting main cpu clock */
+  cpu_cycle_time = cycle_time;
+  /* compute the average time of each instruction */
+  time_per_instruction = cycle_time / ipc;
 }
 
 /** Initialization of the module

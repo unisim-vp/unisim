@@ -71,9 +71,6 @@ impl {
 #include <iostream>
 #include <iomanip>
 
-// TODO: this should really goes in a <types.hh> header
-template <typename VALTYPE> VALTYPE GetNativeValue( VALTYPE x ) { return x; }
-
 // using unisim::util::arithmetic::CountLeadingZeros;
 using unisim::util::endian::ByteSwap;
 using unisim::util::arithmetic::RotateRight;

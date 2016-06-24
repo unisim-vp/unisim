@@ -247,6 +247,19 @@ unisim::service::interfaces::Register *CPU::GetRegister(const char *name)
 	return 0;
 }
 
+/** Scan available registers for the Registers interface
+ * 
+ *  Allows clients of the Registers interface to scan available
+ * register by providing a suitable RegisterScanner interface.
+ */
+void
+CPU::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+{
+  // TODO:
+}
+
+
+
 } // end of namespace risc16
 } // end of namespace processor
 } // end of namespace cxx

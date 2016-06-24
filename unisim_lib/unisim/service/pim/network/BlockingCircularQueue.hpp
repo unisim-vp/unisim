@@ -6,11 +6,12 @@
  */
 
 #ifndef _BLOCKINGCIRCULARQUEUE_HPP__
-#define _BLOCKINGCIRCULARQUEUE__
+#define _BLOCKINGCIRCULARQUEUE_HPP__
 
 #include<pthread.h>
 #include<iostream>
 #include<cstdlib>
+#include <cmath>
 
 namespace unisim {
 namespace service {
@@ -40,7 +41,7 @@ public:
 		alive = true;
 	    head = 0;
 		tail = 0;
-
+		length = 0;
 	}
 
 	~BlockingCircularQueue() {
@@ -70,6 +71,7 @@ public:
 	    pthread_mutex_lock( &queue_mutex );
 
 	    item[tail] = data;
+	    length++;
 	    tail = (tail+1) % MAX_SIZE;
 
 	    pthread_mutex_unlock( &queue_mutex );
@@ -96,6 +98,7 @@ public:
 	    pthread_mutex_lock( &queue_mutex );
 
 	    temp = item[head];
+	    length--;
 	    head = (head+1) % MAX_SIZE;
 
 	    pthread_mutex_unlock( &queue_mutex );
@@ -113,7 +116,7 @@ public:
 
 	    pthread_mutex_lock( &queue_mutex );
 
-	    result = (abs(head == tail));
+	    result = (length == 0);
 
 	    pthread_mutex_unlock( &queue_mutex );
 
@@ -126,7 +129,7 @@ public:
 
 	    pthread_mutex_lock( &queue_mutex );
 
-	    result = (head== ((tail+1) % MAX_SIZE));
+	    result = (length == MAX_SIZE);
 
 	    pthread_mutex_unlock( &queue_mutex );
 
@@ -139,7 +142,7 @@ public:
 
 	    pthread_mutex_lock( &queue_mutex );
 
-	    size = (tail - head);
+	    size = length;
 
 	    pthread_mutex_unlock( &queue_mutex );
 
@@ -172,6 +175,7 @@ private:
 	T item[MAX_SIZE];
     unsigned int head;
     unsigned int tail;
+    unsigned int length;
 
 	bool alive;
 

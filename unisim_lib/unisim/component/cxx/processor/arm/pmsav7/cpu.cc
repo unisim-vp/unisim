@@ -802,20 +802,20 @@ CPU::UndefinedInstruction( isa::thumb2::Operation<CPU>* insn )
 void
 CPU::DataAbort( uint32_t va, mem_acc_type_t mat, DAbort type )
 {
-  uint32_t& FSR = (mat == mat_exec) ? IFSR : DFSR;
-  uint32_t& FAR = (mat == mat_exec) ? IFAR : DFAR;
+  uint32_t& UFSR = (mat == mat_exec) ? IFSR : DFSR;
+  uint32_t& UFAR = (mat == mat_exec) ? IFAR : DFAR;
   
   //DFSR = bits(32) UNKNOWN;
   //DFAR = bits(32) UNKNOWN;
   
   switch (type) {
-  default: FAR = va; break;
+  default: UFAR = va; break;
   case DAbort_AsyncParity: case DAbort_AsyncExternal: break;
   }
   
   if ((type != DAbort_SyncExternal) and (type != DAbort_AsyncExternal))
-    RegisterField<12,1>().Set( FSR, 0 );
-  RegisterField<11,1>().Set( FSR, (mat == mat_write) ? 1 : 0 );
+    RegisterField<12,1>().Set( UFSR, 0 );
+  RegisterField<11,1>().Set( UFSR, (mat == mat_write) ? 1 : 0 );
   
   struct FS {
     FS( uint32_t& _dfsr ) : dfsr( _dfsr ) {} uint32_t& dfsr;
@@ -823,7 +823,7 @@ CPU::DataAbort( uint32_t va, mem_acc_type_t mat, DAbort type )
       RegisterField<10,1>().Set( dfsr, value >> 4 );
       RegisterField<0,4>() .Set( dfsr, value >> 0 );
     }
-  } fault_status( FSR );
+  } fault_status( UFSR );
   switch (type) {
   case DAbort_Alignment:          fault_status.Set( 0b00001 ); break;
   case DAbort_Permission:         fault_status.Set( 0b01101 ); break;

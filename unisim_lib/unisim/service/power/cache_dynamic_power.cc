@@ -55,7 +55,7 @@ CacheDynamicPower ::
 
 double
 CacheDynamicPower ::
-GetDynamicPower()
+GetDynamicPower() const
 {
 	double dyn_energy = GetDynamicEnergy(); // in J
 	double total_time = (*time_import)->GetTime(); // in seconds

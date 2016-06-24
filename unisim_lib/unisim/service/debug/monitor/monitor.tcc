@@ -205,7 +205,6 @@ DataObjectWatchpoint<ADDRESS>::~DataObjectWatchpoint()
 	if(hw_watchpoint)
 	{
 		debug_event_trigger_if->Unlisten(hw_watchpoint);
-		delete hw_watchpoint;
 	}
 }
 
@@ -406,7 +405,6 @@ int Monitor<ADDRESS>::SetBreakpoint(const char *info, void (*callback)(int))
 template <typename ADDRESS>
 int Monitor<ADDRESS>::SetWatchpoint(const char *info, void (*callback)(int))
 {
-	std::cerr << "int Monitor<ADDRESS>::SetWatchpoint(...)" << std::endl;
 	int handle = data_object_watchpoints.size() + 1;
 	DataObjectWatchpoint<ADDRESS> *data_object_watchpoint = new DataObjectWatchpoint<ADDRESS>(info, debug_event_trigger_import, symbol_table_lookup_import, handle, callback);
 	

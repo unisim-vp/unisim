@@ -125,6 +125,8 @@ public:
 	enum REGS_OFFSETS {SYNR, REFDV, CTFLG, CRGFLG, CRGINT, CLKSEL, PLLCTL, RTICTL,
 					COPCTL, FORBYP, CTCTL, ARMCOP};
 
+	static const unsigned int MEMORY_MAP_SIZE = 12;
+
 	ServiceImport<TrapReporting > trap_reporting_import;
 
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
@@ -146,7 +148,7 @@ public:
 	void runCOP();
 	void runClockMonitor();
 
-	void assertInterrupt(uint8_t interrupt_offset);
+	void assertInterrupt(unsigned int interrupt_offset);
 
     //================================================================
     //=                    tlm2 Interface                            =
@@ -186,6 +188,11 @@ public:
 	 * @return A pointer to the RegisterInterface corresponding to name.
 	 */
     virtual Register *GetRegister(const char *name);
+
+    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+    {
+    	// TODO
+    }
 
 	//=====================================================================
 	//=             registers setters and getters                         =
@@ -257,14 +264,14 @@ private:
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
 
-	uint8_t interrupt_offset_rti;
-	Parameter<uint8_t> param_interrupt_offset_rti;
+	unsigned int interrupt_offset_rti;
+	Parameter<unsigned int> param_interrupt_offset_rti;
 
-	uint8_t interrupt_offset_pll_lock;
-	Parameter<uint8_t> param_interrupt_offset_pll_lock;
+	unsigned int interrupt_offset_pll_lock;
+	Parameter<unsigned int> param_interrupt_offset_pll_lock;
 
-	uint8_t interrupt_offset_self_clock_mode;
-	Parameter<uint8_t> param_interrupt_offset_self_clock_mode;
+	unsigned int interrupt_offset_self_clock_mode;
+	Parameter<unsigned int> param_interrupt_offset_self_clock_mode;
 
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;

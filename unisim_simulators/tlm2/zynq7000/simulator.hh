@@ -178,11 +178,14 @@ struct MPCore : public MMDevice
   uint32_t ReadGICC_IAR();
 };
 
+struct Simulator;
+
 struct SLCR : public MMDevice
 {
-  SLCR( sc_module_name const& name, unisim::kernel::service::Object* parent = 0 );
+  SLCR( sc_module_name const& name, Simulator& _simulator, unisim::kernel::service::Object* parent = 0 );
   
-  uint32_t ARM_PLL_CTRL, DDR_PLL_CTRL, IO_PLL_CTRL, ARM_CLK_CTRL, CLK_621_TRUE, UART_CLK_CTRL;
+  Simulator& simulator;
+  uint32_t ARM_PLL_CTRL, DDR_PLL_CTRL, IO_PLL_CTRL, ARM_CLK_CTRL, DDR_CLK_CTRL, CLK_621_TRUE, UART_CLK_CTRL;
   
   bool AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time );
 };
@@ -252,6 +255,7 @@ struct PS_UART : public MMDevice, public unisim::kernel::service::Client<unisim:
   void GetChar( Data const& d );
   
   sc_dt::uint64 rx_timeout_ticks() const { return (RXTOUT*4+3); }
+  void reload_rxtout( sc_core::sc_time const& );
   
   void ExchangeProcess();
 };
@@ -289,6 +293,7 @@ struct Simulator : public unisim::kernel::service::Simulator
   virtual unisim::kernel::service::Simulator::SetupStatus Setup();
   virtual void Stop(unisim::kernel::service::Object *object, int exit_status, bool asynchronous = false);
   int GetExitStatus() const;
+  void UpdateClocks();
 
  private:
   static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
@@ -308,6 +313,7 @@ struct Simulator : public unisim::kernel::service::Simulator
   typedef unisim::service::time::host_time::HostTime HostTime;
   typedef unisim::service::telnet::Telnet Telnet;
   
+  sc_core::sc_time             ps_clk_period;
   CPU                          cpu;
   ZynqRouter                   router;
   MPCore                       mpcore;

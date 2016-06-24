@@ -55,63 +55,62 @@ using namespace std;
 using namespace unisim::kernel::logger;
 
 template<class T>
-LinuxLoader<T>::LinuxLoader(const char *name, Object *parent) :
-Object(name, parent),
-Client<Loader>(name, parent),
-Client<Blob<T> >(name, parent),
-Client<Memory<T> >(name, parent),
-Service<Loader>(name, parent),
-Service<Blob<T> >(name, parent),
-unisim::kernel::service::VariableBaseListener(),
-loader_import("loader_import", this),
-blob_import("blob_import", this),
-memory_import("memory_import", this),
-loader_export("loader_export", this),
-blob_export("blob_export", this),
-endianness(E_LITTLE_ENDIAN),
-stack_base(0x4000000UL),
-stack_size(0x800000UL),
-max_environ(0),
-memory_page_size(4096),
-argc(0),
-argv(),
-apply_host_environ(true),
-envc(0),
-envp(),
-target_envp(),
-blob(0),
-stack_blob(0),
-verbose(false),
-endianness_string("little-endian"),
-param_endian("endianness", this, endianness_string,
-		"The endianness of the binary loaded. Available values are:"
-		" little-endian and big-endian."),
-param_stack_base("stack-base", this, stack_base,
-		"The stack base address used for the load and execution of the "
-		"linux application"),
-param_stack_size("stack-size", this, stack_size,
-		"The stack size used for the load and execution of the linux "
-		"application. The top of the stack will be stack-base + stack-size."),
-param_max_environ("max-environ", this, max_environ,
-		"The maximum size of the program environment during its execution."),
-param_argc("argc", this, argc,
-		"Number of commands in the program execution line (usually at least one"
+LinuxLoader<T>::LinuxLoader(const char *name, Object *parent)
+  : Object(name, parent)
+  , Client<Loader>(name, parent)
+  , Client<Blob<T> >(name, parent)
+  , Client<Memory<T> >(name, parent)
+  , Service<Loader>(name, parent)
+  , Service<Blob<T> >(name, parent)
+  , loader_import("loader_import", this)
+  , blob_import("blob_import", this)
+  , memory_import("memory_import", this)
+  , loader_export("loader_export", this)
+  , blob_export("blob_export", this)
+  , endianness(E_LITTLE_ENDIAN)
+  , stack_base(0x4000000UL)
+  , stack_size(0x800000UL)
+  , max_environ(0)
+  , memory_page_size(4096)
+  , argc(0)
+  , argv()
+  , apply_host_environ(true)
+  , envc(0)
+  , envp()
+  , target_envp()
+  , blob(0)
+  , stack_blob(0)
+  , verbose(false)
+  , endianness_string("little-endian")
+  , param_endian("endianness", this, endianness_string
+  , 		"The endianness of the binary loaded. Available values are:"
+		" little-endian and big-endian.")
+  , param_stack_base("stack-base", this, stack_base
+  , 		"The stack base address used for the load and execution of the "
+		"linux application")
+  , param_stack_size("stack-size", this, stack_size
+  , 		"The stack size used for the load and execution of the linux "
+		"application. The top of the stack will be stack-base + stack-size.")
+  , param_max_environ("max-environ", this, max_environ
+  , 		"The maximum size of the program environment during its execution.")
+  , param_argc("argc", this, argc
+  , 		"Number of commands in the program execution line (usually at least one"
 		" which is the name of the program executed). The different tokens"
 		" can be set up with the parameters argv[<n>] where <n> can go up to"
-		" argc - 1."),
-param_argv(),
-param_apply_host_environ("apply-host-environ", this, apply_host_environ,
-		"Wether to apply the host environment on the target simulator or use"
-		" the provided envc and envp."),
-param_envc("envc", this, envc,
-		"Number of environment variables defined for the program execution."
+		" argc - 1.")
+  , param_argv()
+  , param_apply_host_environ("apply-host-environ", this, apply_host_environ
+  , 		"Wether to apply the host environment on the target simulator or use"
+		" the provided envc and envp.")
+  , param_envc("envc", this, envc
+  , 		"Number of environment variables defined for the program execution."
 		" The different variables can be set up with the parameters envp[<n>]"
-		" where <n> can go up to envc - 1."),
-param_envp(),
-param_memory_page_size("memory-page-size", this, memory_page_size,
-		"The memory page size to use."),
-param_verbose("verbose", this, verbose, "Display verbose information"),
-logger(*this)
+		" where <n> can go up to envc - 1.")
+  , param_envp()
+  , param_memory_page_size("memory-page-size", this, memory_page_size
+  , 		"The memory page size to use.")
+  , param_verbose("verbose", this, verbose, "Display verbose information")
+  , logger(*this)
 {
 	param_max_environ.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_argc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -129,9 +128,8 @@ logger(*this)
 						*(argv[i]), argv_desc.str().c_str()));
 		}
 	}
-	param_argc.AddListener(this);
-	param_argc.NotifyListeners();
-
+	SetupArgsAndEnvs();
+	
 	param_envc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	if ( envc )
 	{
@@ -147,8 +145,7 @@ logger(*this)
 						*(envp[i]), envp_desc.str().c_str()));
 		}
 	}
-	param_envc.AddListener(this);
-	param_envc.NotifyListeners();
+	SetupArgsAndEnvs();
 
 	loader_export.SetupDependsOn(memory_import);
 	loader_export.SetupDependsOn(loader_import);
@@ -855,8 +852,7 @@ Log(T addr, const uint8_t *value, uint32_t size)
 
 template<class T>
 void
-LinuxLoader<T>::
-VariableBaseNotify(const unisim::kernel::service::VariableBase *var)
+LinuxLoader<T>::SetupArgsAndEnvs()
 {
 	if ( argc != argv.size() )
 	{
