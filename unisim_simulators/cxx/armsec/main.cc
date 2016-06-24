@@ -60,6 +60,48 @@ namespace armsec
   struct PathNode
   {
     PathNode( PathNode* _previous=0 ) : expr(), previous( _previous ), true_nxt(), false_nxt(), complete(false) {}
+    
+    PathNode* proceed( Expr const& cond, bool& result )
+    {
+      if (not expr.node) {
+        expr = cond;
+        false_nxt = new PathNode( this );
+        true_nxt = new PathNode( this );
+        result = false;
+        return false_nxt;
+      }
+      
+      if (expr != cond)
+        throw std::logic_error( "unexpected condition" );
+      
+      if (not false_nxt->complete) {
+        result = false;
+        return false_nxt;
+      }
+      
+      if (true_nxt->complete)
+        throw std::logic_error( "unexpected condition" );
+      
+      result = true;
+      return true_nxt;
+    }
+    
+    bool close()
+    {
+      complete = true;
+      if (not previous)
+        return true;
+      if (previous->true_nxt == this)
+        return previous->close();
+      return false;
+    }
+    
+    void Dump( std::ostream& sink )
+    {
+      sink << ((previous->true_nxt != this) ? "not " : "    ");
+      previous->expr->Repr( sink );
+    }
+    
     Expr expr;
     PathNode* previous;
     PathNode* true_nxt;
@@ -86,21 +128,9 @@ namespace armsec
     template <typename T>
     bool Cond( SmartValue<T> const& cond )
     {
-      if (not path->expr.node) {
-        path->expr = cond.expr;
-        path->false_nxt = new PathNode( path );
-        path = path->false_nxt;
-        return false;
-      }
-      if (path->expr != cond.expr)
-        throw std::logic_error( "unexpected condition" );
-      
-      if (not path->false_nxt->complete) {
-        path = path->false_nxt;
-        return false;
-      }
-      
-      return true;
+      bool result;
+      path = path->proceed( cond.expr, result );
+      return result;
     }
     
     struct Config
@@ -240,7 +270,7 @@ namespace armsec
     
     State( PathNode& _path, bool is_thumb, unsigned insn_length )
       : path( &_path )
-      , current_insn_addr( new SourceCIA )
+      , current_insn_addr( armsec::from_node, new SourceCIA )
       , next_insn_addr()
       , cpsr( new SourceCPSR )
       , spsr( new SourceSPSR )
@@ -439,9 +469,14 @@ struct Decoder
   {
     typename ISA::Operation* op = isa.NCDecode( addr, ISA::mkcode( code ) );
     armsec::PathNode path;
-    armsec::State state( path, isa.is_thumb, op->GetLength() );
-    op->execute( state );
-    state.dump();
+    for (bool end = false; not end;) {
+      armsec::State state( path, isa.is_thumb, op->GetLength() );
+      op->execute( state );
+      end = state.path->close();
+      char const* sep = "if    ";
+      for (armsec::PathNode* pn = state.path; pn->previous; pn = pn->previous, sep = "  and ")
+        { std::cout << sep; pn->Dump( std::cout ); std::cout << std::endl; }
+    }
   }
   void  do_arm( uint32_t addr, uint32_t code ) { do_isa( armisa, addr, code ); }
   void  do_thumb( uint32_t addr, uint32_t code ) { do_isa( thumbisa, addr, code ); }
