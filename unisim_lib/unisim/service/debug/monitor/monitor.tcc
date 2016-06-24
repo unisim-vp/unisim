@@ -346,8 +346,11 @@ Monitor<ADDRESS>::~Monitor()
 	{
 		SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint = source_code_breakpoints[source_code_breakpoint_num];
 		
-		source_code_breakpoint->Invalidate();
-		delete source_code_breakpoint;
+		if(source_code_breakpoint)
+		{
+			source_code_breakpoint->Invalidate();
+			delete source_code_breakpoint;
+		}
 	}
 
 	typename std::vector<DataObjectWatchpoint<ADDRESS> *>::size_type num_data_object_watchpoints = data_object_watchpoints.size();
@@ -357,8 +360,11 @@ Monitor<ADDRESS>::~Monitor()
 	{
 		DataObjectWatchpoint<ADDRESS> *data_object_watchpoint = data_object_watchpoints[data_object_watchpoint_num];
 		
-		data_object_watchpoint->Invalidate();
-		delete data_object_watchpoint;
+		if(data_object_watchpoint)
+		{
+			data_object_watchpoint->Invalidate();
+			delete data_object_watchpoint;
+		}
 	}
 
 	typename std::vector<DataObject<ADDRESS> *>::size_type num_tracked_data_objects = tracked_data_objects.size();
