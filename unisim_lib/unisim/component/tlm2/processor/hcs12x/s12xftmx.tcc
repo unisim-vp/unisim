@@ -34,7 +34,6 @@ S12XFTMX(const sc_module_name& name, Object *parent) :
 	, unisim::component::tlm2::memory::ram::Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>(name, parent)
 	, unisim::kernel::service::Service<Registers>(name, parent)
 
-	, unisim::kernel::service::Service<unisim::service::interfaces::Memory<ADDRESS> >(name, parent)
 	, registers_export("registers_export", this)
 
 	, bus_clock_socket("Bus-Clock")
@@ -1766,6 +1765,8 @@ bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ReadMemory(ADD
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(ADDRESS addr, const void *buffer, uint32_t size)
 {
+
+	std::cout << "CocoRico I am FTM" << std::endl;
 
 	if ((addr >= baseAddress) && (addr < (baseAddress+REGISTERS_BANK_SIZE))) {
 

@@ -34,7 +34,6 @@ S12XEETX(const sc_module_name& name, Object *parent) :
 	, unisim::component::tlm2::memory::ram::Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>(name, parent)
 	, unisim::kernel::service::Service<Registers>(name, parent)
 
-	, unisim::kernel::service::Service<unisim::service::interfaces::Memory<ADDRESS> >(name, parent)
 	, registers_export("registers_export", this)
 
 	, bus_clock_socket("Bus-Clock")
