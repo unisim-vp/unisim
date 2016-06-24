@@ -113,6 +113,17 @@ void BreakpointRegistry<ADDRESS>::Reset()
 			hash_table[index] = 0;
 		}
 	}
+	
+	typename std::list<const Breakpoint<ADDRESS> *>::const_iterator breakpoint_it;
+
+	for(breakpoint_it = breakpoints.begin(); breakpoint_it != breakpoints.end(); breakpoint_it++)
+	{
+		const Breakpoint<ADDRESS> *breakpoint = *breakpoint_it;
+		if(breakpoint)
+		{
+			delete breakpoint;
+		}
+	}
 }
 
 template <class ADDRESS>

@@ -185,6 +185,16 @@ void WatchpointRegistry<ADDRESS>::Reset()
 			}
 		}
 	}
+	typename std::list<const Watchpoint<ADDRESS> *>::const_iterator watchpoint_it;
+
+	for(watchpoint_it = watchpoints.begin(); watchpoint_it != watchpoints.end(); watchpoint_it++)
+	{
+		const Watchpoint<ADDRESS> *watchpoint = *watchpoint_it;
+		if(watchpoint)
+		{
+			delete watchpoint;
+		}
+	}
 }
 
 template <class ADDRESS>

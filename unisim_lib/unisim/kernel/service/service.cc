@@ -2121,7 +2121,12 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					bool match = false;
 					for(cmd_opt_iter = command_line_options.begin(); !match && cmd_opt_iter != command_line_options.end(); cmd_opt_iter++)
 					{
-						if(*cmd_opt_iter == *arg)
+						if(strcmp(*arg, "--") == 0)
+						{
+							arg++;
+							arg_num++;
+						}
+						else if(*cmd_opt_iter == *arg)
 						{
 							// match
 							match=true;
@@ -2274,7 +2279,12 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					bool match = false;
 					for(cmd_opt_iter = command_line_options.begin(); !match && cmd_opt_iter != command_line_options.end(); cmd_opt_iter++)
 					{
-						if(*cmd_opt_iter == *arg)
+						if(strcmp(*arg, "--") == 0)
+						{
+							arg++;
+							arg_num++;
+						}
+						else if(*cmd_opt_iter == *arg)
 						{
 							// match
 							match=true;

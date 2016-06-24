@@ -175,7 +175,7 @@ void SourceCodeBreakpoint<ADDRESS>::Invalidate()
 
 template <typename ADDRESS>
 DataObjectWatchpoint<ADDRESS>::DataObjectWatchpoint(const char *data_location, typename unisim::service::interfaces::DebugEventTrigger<ADDRESS> *_debug_event_trigger_if, typename unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if, int _handle, void (*callback)(int))
-	: handle(handle)
+	: handle(_handle)
 	, debug_event_trigger_if(_debug_event_trigger_if)
 	, hw_watchpoint(0)
 {
@@ -287,17 +287,17 @@ bool DataObject<ADDRESS>::GetValue(void *value) const
 				}
 				else
 				{
-					std::cerr << unisim::kernel::logger::DebugWarning << "data object \"" << data_object->GetName() << "\" can't be fetched" << std::endl;
+					std::cerr << "data object \"" << data_object->GetName() << "\" can't be fetched" << std::endl;
 				}
 			}
 			else
 			{
-				std::cerr << unisim::kernel::logger::DebugWarning << "data object \"" << data_object->GetName() << "\" is optimized out" << std::endl;
+				std::cerr << "data object \"" << data_object->GetName() << "\" is optimized out" << std::endl;
 			}
 		}
 		else
 		{
-			std::cerr << unisim::kernel::logger::DebugWarning << "after seeking (PC change) data object \"" << data_object->GetName() << "\" no longer exists in current context" << std::endl;
+			std::cerr << "after seeking (PC change) data object \"" << data_object->GetName() << "\" no longer exists in current context" << std::endl;
 		}
 	}
 	
@@ -435,7 +435,7 @@ int Monitor<ADDRESS>::DeleteBreakpoint(int handle)
 	{
 		int idx = handle - 1;
 	
-		if(idx < source_code_breakpoints.size())
+		if((typename std::vector<SourceCodeBreakpoint<ADDRESS> *>::size_type) idx < source_code_breakpoints.size())
 		{
 			SourceCodeBreakpoint<ADDRESS> *source_code_breakpoint = source_code_breakpoints[idx];
 			
@@ -458,7 +458,7 @@ int Monitor<ADDRESS>::DeleteWatchpoint(int handle)
 	{
 		int idx = handle - 1;
 	
-		if(idx < data_object_watchpoints.size())
+		if((typename std::vector<DataObjectWatchpoint<ADDRESS> *>::size_type) idx < data_object_watchpoints.size())
 		{
 			DataObjectWatchpoint<ADDRESS> *data_object_watchpoint = data_object_watchpoints[idx];
 			
@@ -505,7 +505,7 @@ int Monitor<ADDRESS>::GetDataObjectValue(int handle, void *value)
 	{
 		int idx = handle - 1;
 	
-		if(idx < tracked_data_objects.size())
+		if((typename std::vector<DataObject<ADDRESS> *>::size_type) idx < tracked_data_objects.size())
 		{
 			DataObject<ADDRESS> *tracked_data_object = tracked_data_objects[idx];
 			
