@@ -9,18 +9,6 @@
 
 namespace armsec
 {
-  struct BaseNotFound {};
-  struct NotAnOffset {};
-  
-  struct Variables { virtual ~Variables() {} };
-  
-  struct RelTrans
-  {
-    void negate() {}
-    void add( uint32_t offset ) {}
-    void sub( uint32_t offset ) {}
-  };
-  
   struct ExprNode
   {
     virtual ~ExprNode() {}
@@ -38,17 +26,44 @@ namespace armsec
     virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); }
     virtual void Repr( std::ostream& sink ) const = 0;
     virtual intptr_t cmp( ExprNode const& ) const = 0;
+    virtual ExprNode* GetConstNode() = 0;
   };
   
-  enum  from_node_t { from_node };
+  struct ConstNodeBase : public ExprNode
+  {
+    virtual ConstNodeBase* bop( std::string op, ConstNodeBase& cnb ) { return 0; }
+    ExprNode* GetConstNode() { return this; };
+  };
+  
+  template <typename VALUE_TYPE>
+  struct ConstNode : public ConstNodeBase
+  {
+    ConstNode( VALUE_TYPE _value ) : value( _value ) {} VALUE_TYPE value;
+    virtual void Repr( std::ostream& sink ) const { sink << "0x" << std::hex << value << std::dec; }
+    intptr_t cmp( ExprNode const& brhs ) const
+    {
+      ConstNode<VALUE_TYPE> const& rhs = dynamic_cast<ConstNode<VALUE_TYPE> const&>( brhs );
+      return (value < rhs.value) ? -1 : (value > rhs.value) ? +1 : 0;
+    }
+    ConstNodeBase*
+    bop( std::string op, ConstNodeBase& cnb )
+    {
+      static std::string const _xor_("Xor");
+      if (op == _xor_) {
+        ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
+        return new ConstNode<VALUE_TYPE>( value ^ rop.value );
+      }
+      std::cerr << "Unhandled BOP operation: " << op << std::endl;
+      return 0;
+    }
+  };
   
   struct Expr
   {
     Expr() : node() {} ExprNode* node;
     Expr( Expr const& expr ) : node( expr.node ) { node->Retain(); }
     Expr( ExprNode* const& _node ) : node( _node ) { node->Retain(); }
-    Expr&  operator = ( Expr const& expr ) { expr.node->Retain(); if (node) node->Release(); node = expr.node; return *this; }
-    void clear() { }
+    Expr&  operator = ( Expr const& expr ) { if (expr.node) expr.node->Retain(); if (node) node->Release(); node = expr.node; return *this; }
     ~Expr() { if (node) node->Release(); }
     ExprNode const* operator->() const { return node; }
     ExprNode* operator->() { return node; }
@@ -66,17 +81,13 @@ namespace armsec
     bool operator == ( Expr const& rhs ) const { return cmp( rhs ) == 0; }
     bool operator  < ( Expr const& rhs ) const { return cmp( rhs )  < 0; }
     bool operator  > ( Expr const& rhs ) const { return cmp( rhs )  > 0; }
-  };
-  
-  template <typename VALUE_TYPE>
-  struct ConstNode : public ExprNode
-  {
-    ConstNode( VALUE_TYPE _value ) : value( _value ) {} VALUE_TYPE value;
-    virtual void Repr( std::ostream& sink ) const { sink << "0x" << std::hex << value << std::dec; }
-    intptr_t cmp( ExprNode const& brhs ) const
+    bool MakeConst()
     {
-      ConstNode<VALUE_TYPE> const& rhs = dynamic_cast<ConstNode<VALUE_TYPE> const&>( brhs );
-      return (value < rhs.value) ? -1 : (value > rhs.value) ? +1 : 0;
+      if (ExprNode* cn = node->GetConstNode()) {
+        *this = Expr( cn );
+        return true;
+      }
+      return false;
     }
   };
   
@@ -121,7 +132,6 @@ namespace armsec
     { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
     virtual void Repr( std::ostream& sink ) const
     { sink << name << "( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-    std::string name; Expr left; Expr right;
     intptr_t cmp( ExprNode const& brhs ) const
     {
       BONode const& rhs = dynamic_cast<BONode const&>( brhs );
@@ -129,6 +139,13 @@ namespace armsec
       if (intptr_t delta = left.cmp( rhs.left )) return delta;
       return right.cmp( rhs.right );
     }
+    virtual ExprNode* GetConstNode()
+    {
+      if (left.MakeConst() and right.MakeConst())
+        return dynamic_cast<ConstNodeBase&>( *left.node ).bop( name, dynamic_cast<ConstNodeBase&>( *right.node ) );
+      return 0;
+    }
+    std::string name; Expr left; Expr right;
   };
   
   template <typename Bool> struct AssertBool {};
@@ -231,7 +248,6 @@ namespace armsec
     
     SmartValue<bool> operator || ( SmartValue<bool> const& other ) const
     { AssertBool<value_type>::check(); return SmartValue<bool>( Expr( new  BONode( "Or", expr, other.expr ) ) ); }
-
   };
   
   template <typename UTP>
@@ -257,6 +273,7 @@ namespace armsec
         DefaultNaNNode const& rhs = dynamic_cast<DefaultNaNNode const&>( brhs );
         return fsz - rhs.fsz;
       }
+      ExprNode* GetConstNode() { return 0; };
     };
     
     template <typename fpscrT> static
@@ -298,6 +315,7 @@ namespace armsec
         if (intptr_t delta = src.cmp( rhs.src )) return delta;
         return int(signaling) - int(rhs.signaling);
       }
+      ExprNode* GetConstNode() { return 0; };
     };
     
     template <typename FLOAT, typename fpscrT> static
@@ -352,6 +370,7 @@ namespace armsec
         if (intptr_t delta = right.cmp( rhs.right )) return delta;
         return acc.cmp( rhs.acc );
       }
+      ExprNode* GetConstNode() { return 0; };
     };
     
     template <typename FLOAT, typename fpscrT> static
@@ -380,6 +399,7 @@ namespace armsec
         if (intptr_t delta = ssz - rhs.ssz) return delta;
         return dsz - rhs.dsz;
       }
+      ExprNode* GetConstNode() { return 0; };
     };
     
     template <typename ofpT, typename ifpT, typename fpscrT> static
@@ -403,6 +423,7 @@ namespace armsec
         if (intptr_t delta = fsz - rhs.fsz) return delta;
         return fb - rhs.fb;
       }
+      ExprNode* GetConstNode() { return 0; };
     };
 
     template <typename intT, typename fpT, typename fpscrT> static
@@ -426,6 +447,7 @@ namespace armsec
         if (intptr_t delta = fsz - rhs.fsz) return delta;
         return fb - rhs.fb;
       }
+      ExprNode* GetConstNode() { return 0; };
     };
     
     template <typename fpT, typename intT, typename fpscrT> static
