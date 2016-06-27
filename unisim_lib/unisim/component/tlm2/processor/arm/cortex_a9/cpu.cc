@@ -351,7 +351,7 @@ CPU::Run()
   {
     if (GetExternalEvent()) {
       if (not nRESETm) {
-        Wait( nRESETm.negedge_event() );
+        Wait( nRESETm.posedge_event() );
         this->TakeReset();
       }
       if (not nIRQm or not nFIQm) {
