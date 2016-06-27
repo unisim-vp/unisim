@@ -270,14 +270,14 @@ namespace armsec
     
     State( PathNode& _path, bool is_thumb, unsigned insn_length )
       : path( &_path )
-      , current_insn_addr( armsec::from_node, new SourceCIA )
+      , current_insn_addr( armsec::Expr( new SourceCIA ) )
       , next_insn_addr()
-      , cpsr( new SourceCPSR )
-      , spsr( new SourceSPSR )
-      , fpscr( new SourceFPSCR )
+      , cpsr( armsec::Expr( new SourceCPSR ) )
+      , spsr( armsec::Expr( new SourceSPSR ) )
+      , fpscr( armsec::Expr( new SourceFPSCR ) )
     {
       for (unsigned reg = 0; reg < 15; ++reg)
-        reg_values[reg] = U32( new SourceReg( reg ) );
+        reg_values[reg] = U32( armsec::Expr( new SourceReg( reg ) ) );
       reg_values[15] = current_insn_addr + U32( is_thumb ? 4 : 8 );
       if ((insn_length != 32) and ((insn_length != 16) or not is_thumb))
         throw std::logic_error( "Bad instruction length" );
@@ -355,11 +355,11 @@ namespace armsec
     
     std::vector<Expr> stores;
     
-    U32  MemURead32( U32 const& addr ) { return U32( new Load( addr.expr, 4, false ) ); }
-    U32  MemURead16( U32 const& addr ) { return U32( new Load( addr.expr, 2, false ) ); }
-    U32  MemRead32( U32 const& addr ) { return U32( new Load( addr.expr, 4, true ) ); }
-    U32  MemRead16( U32 const& addr ) { return U32( new Load( addr.expr, 2, true ) ); }
-    U32  MemRead8( U32 const& addr ) { return U32( new Load( addr.expr, 1, false ) ); }
+    U32  MemURead32( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 4, false ) ) ); }
+    U32  MemURead16( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 2, false ) ) ); }
+    U32  MemRead32( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 4, true ) ) ); }
+    U32  MemRead16( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 2, true ) ) ); }
+    U32  MemRead8( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 1, false ) ) ); }
     
     void MemUWrite32( U32 const& addr, U32 const& value ) { stores.push_back( new Store( addr.expr, 4, false, value.expr ) ); }
     void MemUWrite16( U32 const& addr, U16 const& value ) { stores.push_back( new Store( addr.expr, 2, false, value.expr ) ); }
@@ -383,13 +383,13 @@ namespace armsec
     void CallSupervisor( uint16_t imm ) { not_implemented(); }
     bool IntegerZeroDivide( BOOL const& condition ) { return false; }
 
-    U32  GetVU32( unsigned idx ) { return U32( 0 ); }
+    U32  GetVU32( unsigned idx ) { return U32(); }
     void SetVU32( unsigned idx, U32 val ) {}
-    U64  GetVU64( unsigned idx ) { return U64( 0 ); }
+    U64  GetVU64( unsigned idx ) { return U64(); }
     void SetVU64( unsigned idx, U64 val ) {}
-    F32  GetVSR( unsigned idx ) { return F32( 0 ); }
+    F32  GetVSR( unsigned idx ) { return F32(); }
     void SetVSR( unsigned idx, F32 val ) {}
-    F64  GetVDR( unsigned idx ) { return F64( 0 ); }
+    F64  GetVDR( unsigned idx ) { return F64(); }
     void SetVDR( unsigned idx, F64 val ) {}
   
     fpscr_type& FPSCR() { return fpscr; }
@@ -414,17 +414,17 @@ namespace armsec
       bool     HasBR( unsigned index ) { return false; }
       bool     HasSPSR() { return false; }
       void     SetSPSR(U32 value) {};
-      U32      GetSPSR() { return U32(0); };
+      U32      GetSPSR() { return U32(); };
       void     Swap( State& ) {};
       
     } mode;
     
     Mode&  CurrentMode() { not_implemented(); return mode; }
     Mode&  GetMode(uint8_t) { not_implemented(); return mode; }
-    U32  GetBankedRegister( uint8_t foreign_mode, uint32_t idx ) { not_implemented(); return U32(0); }
+    U32  GetBankedRegister( uint8_t foreign_mode, uint32_t idx ) { not_implemented(); return U32(); }
     void SetBankedRegister( uint8_t foreign_mode, uint32_t idx, U32 value ) { not_implemented(); }
     
-    U32         CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { not_implemented(); return U32(0); }
+    U32         CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { not_implemented(); return U32(); }
     void        CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, U32 const& value ) { not_implemented(); }
     char const* CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { not_implemented(); return ""; }
     
