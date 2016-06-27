@@ -78,7 +78,10 @@ template <> struct ModeInfo<0> { static uint32_t const count = 0; };
 template <class CORE, uint32_t MAPPED>
 struct BankedMode : public CORE::Mode
 {
-  BankedMode( char const* _suffix ) : CORE::Mode( _suffix ) {}
+  BankedMode( char const* _suffix )
+    : CORE::Mode( _suffix ), banked_regs(), spsr()
+  {
+  }
   uint32_t banked_regs[ModeInfo<MAPPED>::count];
   uint32_t spsr;
 
@@ -111,6 +114,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   , Service<Registers>(name, parent)
   , logger(*this)
   , verbose(false)
+  , m_isit(false)
   , SCTLR()
   , CPACR()
   , TPIDRURW()

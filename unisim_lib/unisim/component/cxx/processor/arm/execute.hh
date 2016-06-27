@@ -311,7 +311,7 @@ namespace arm {
                    ((mask & 4 ? 0xff : 0) << 16) |
                    ((mask & 8 ? 0xff : 0) << 24));
     
-    if (core.Cond( (value & write_mask & U32(core.PSR_UNALLOC_MASK)) == U32(0) ))
+    if (core.Cond( (value & write_mask & U32(core.PSR_UNALLOC_MASK)) != U32(0) ))
       core.UnpredictableInsnBehaviour();
 
     
