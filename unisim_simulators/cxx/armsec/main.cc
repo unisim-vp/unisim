@@ -477,13 +477,21 @@ struct Decoder
   {
     typename ISA::Operation* op = isa.NCDecode( addr, ISA::mkcode( code ) );
     armsec::PathNode path;
+    std::cout << std::hex << addr << std::dec << ": ";
+    {
+      armsec::State for_disasm_purpose( path, isa.is_thumb, op->GetLength() );
+      op->disasm( for_disasm_purpose, std::cout );
+    }
+    std::cout << std::endl;
     for (bool end = false; not end;) {
       armsec::State state( path, isa.is_thumb, op->GetLength() );
       op->execute( state );
       end = state.path->close();
       char const* sep = "if    ";
       for (armsec::PathNode* pn = state.path; pn->previous; pn = pn->previous, sep = "  and ")
-        { std::cout << sep; pn->Dump( std::cout ); std::cout << std::endl; }
+        {
+          std::cout << sep; pn->Dump( std::cout ); std::cout << std::endl;
+        }
     }
   }
   void  do_arm( uint32_t addr, uint32_t code ) { do_isa( armisa, addr, code ); }

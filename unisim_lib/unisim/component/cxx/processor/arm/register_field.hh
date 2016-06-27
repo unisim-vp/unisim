@@ -61,28 +61,28 @@ namespace arm {
     template <typename T>
     T Get( T const& reg ) const
     {
-      T const mask = ((T(2) << (size-1))-T(1)) << pos;
-      return (reg & mask) >> pos;
+      T const mask = ((T(2) << int(size-1))-T(1)) << int(pos);
+      return (reg & mask) >> int(pos);
     }
     template <typename T>
     T Mask( T const& reg ) const
     {
-      T const mask = ((T(2) << (size-1))-T(1)) << pos;
+      T const mask = ((T(2) << int(size-1))-T(1)) << int(pos);
       return reg & mask;
     }
     template <typename T>
     void Set( T& reg, T const& value ) const
     {
-      T const mask = ((T(2) << (size-1))-T(1)) << pos;
-      reg = (reg & ~mask) | ((value << pos) & mask);
+      T const mask = ((T(2) << int(size-1))-T(1)) << int(pos);
+      reg = (reg & ~mask) | ((value << int(pos)) & mask);
     }
     template <typename T> void Set( T& reg, bool ones ) const { this->Set( reg, ones ? ~T( 0 ) : T( 0 )); }
     template <typename T>
     T Swap( T& reg, T const& value ) const
     {
-      T const mask = ((T(2) << (size-1))-T(1)) << pos;
-      T res = (reg & mask) >> pos;
-      reg = (reg & ~mask) | ((value << pos) & mask);
+      T const mask = ((T(2) << int(size-1))-T(1)) << int(pos);
+      T res = (reg & mask) >> int(pos);
+      reg = (reg & ~mask) | ((value << int(pos)) & mask);
       return res;
     }
   };
