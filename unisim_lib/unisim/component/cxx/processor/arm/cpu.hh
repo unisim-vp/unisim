@@ -72,7 +72,7 @@ struct CPU
   , public unisim::kernel::service::Service<unisim::service::interfaces::Registers>
 {
   typedef CONFIG Config;
-  typedef hostfloat::FP FP;
+  typedef simfloat::FP FP;
   typedef FP::F64  F64;
   typedef FP::F32  F32;
   typedef uint8_t  U8;
@@ -439,25 +439,21 @@ public:
   // VFP/NEON registers
   virtual void FPTrap( unsigned fpx ) { throw std::logic_error("unimplemented FP trap"); }
   
-  struct FPSCReg
+  struct FPSCReg : public FieldRegister<U32>
   {
-    FPSCReg( CPU& _cpu ) : value( 0x03000000 ), cpu(_cpu) {}
+    FPSCReg( CPU& _cpu ) : FieldRegister<U32>( 0x03000000 ), cpu(_cpu) {}
     
-    template <typename RF> uint32_t Get( RF const& rf ) const { return rf.Get( value ); }
-    template <typename RF> void Set( RF const& rf, uint32_t bits ) { return rf.Set( value, bits ); }
     template <unsigned posT>
     void ProcessException( RegisterField<posT,1> const& rf )
     {
       RegisterField<posT+8,1> const enable;
-      if (enable.Get( value ))
+      if (enable.Get( m_value ))
         cpu.FPTrap( posT );
       else
-        rf.Set( value, 1u );
+        rf.Set( m_value, 1u );
     }
-    uint32_t& bits() { return value; }
     
   private:
-    uint32_t value;
     CPU& cpu;
   } fpscr;
   
@@ -481,14 +477,14 @@ public:
     }
   } erb;
 
-  U32  GetVU32( unsigned idx ) { return erb.eu32.GetReg( erb, idx ); }
-  void SetVU32( unsigned idx, U32 val ) { erb.eu32.SetReg( erb, idx, val ); }
-  U64  GetVU64( unsigned idx ) { return erb.eu64.GetReg( erb, idx ); }
-  void SetVU64( unsigned idx, U64 val ) { erb.eu64.SetReg( erb, idx, val ); }
-  F32  GetVSR( unsigned idx ) { return erb.ef32.GetReg( erb, idx ); }
-  void SetVSR( unsigned idx, F32 val )    { erb.ef32.SetReg( erb, idx, val ); }
-  F64  GetVDR( unsigned idx ) { return erb.ef64.GetReg( erb, idx ); }
-  void SetVDR( unsigned idx, F64 val )   { erb.ef64.SetReg( erb, idx, val ); }
+  U32 const&  GetVU32( unsigned idx )                 { return erb.eu32.GetReg( erb, idx ); }
+  void        SetVU32( unsigned idx, U32 const& val ) { erb.eu32.SetReg( erb, idx, val ); }
+  U64 const&  GetVU64( unsigned idx )                 { return erb.eu64.GetReg( erb, idx ); }
+  void        SetVU64( unsigned idx, U64 const& val ) { erb.eu64.SetReg( erb, idx, val ); }
+  F32 const&  GetVSR(  unsigned idx )                 { return erb.ef32.GetReg( erb, idx ); }
+  void        SetVSR(  unsigned idx, F32 const& val ) { erb.ef32.SetReg( erb, idx, val ); }
+  F64 const&  GetVDR(  unsigned idx )                 { return erb.ef64.GetReg( erb, idx ); }
+  void        SetVDR(  unsigned idx, F64 const& val ) { erb.ef64.SetReg( erb, idx, val ); }
 
   /*************************************/
   /* Debug Registers             START */

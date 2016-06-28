@@ -48,37 +48,37 @@ namespace hostfloat {
     }
     
     template <typename operT, typename fpscrT> static
-    void Add( operT& res, operT op1, operT op2, fpscrT& fpscr ) { res = op1 + op2; }
+    void Add( operT& acc, operT op2, fpscrT& fpscr ) { acc += op2; }
   
     template <typename operT, typename fpscrT> static
-    void Sub( operT& res, operT op1, operT op2, fpscrT& fpscr ) { res = op1 - op2; }
+    void Sub( operT& acc, operT op2, fpscrT& fpscr ) { acc -= op2; }
   
     template <typename operT, typename fpscrT> static
-    void Div( operT& res, operT op1, operT op2, fpscrT& fpscr ) { res = op1 / op2; }
+    void Div( operT& acc, operT op2, fpscrT& fpscr ) { acc /= op2; }
     
     template <typename operT, typename fpscrT> static
-    void Mul( operT& res, operT op1, operT op2, fpscrT& fpscr ) { res = op1 * op2; }
+    void Mul( operT& acc, operT op2, fpscrT& fpscr ) { acc *= op2; }
   
     template <typename operT, typename fpscrT> static
-    void MulAdd( operT& acc, operT op1, operT op2, fpscrT& fpscr ) { acc = acc + (op1 * op2); }
+    void MulAdd( operT& acc, operT op1, operT op2, fpscrT& fpscr ) { acc += (op1 * op2); }
   
     template <typename operT, typename fpscrT> static
-    void Neg( operT& res, operT op, fpscrT& fpscr ) { res = -op; }
+    void Neg( operT& acc, fpscrT& fpscr ) { acc = -acc; }
   
     template <typename fpT, typename intT, typename fpscrT> static
-    void ItoF( fpT& res, intT op, int fracbits, fpscrT& fpscr ) { res = fpT( op ) / fpT(1 << fracbits); }
+    void ItoF( fpT& dst, intT src, int fracbits, fpscrT& fpscr ) { dst = fpT( src ) / fpT(1 << fracbits); }
   
     template <typename intT, typename fpT, typename fpscrT> static
-    void FtoI( intT& res, fpT op, int fracbits, fpscrT& fpscr ) { res = intT( op * fpT(1 << fracbits) ); }
+    void FtoI( intT& dst, fpT src, int fracbits, fpscrT& fpscr ) { dst = intT( src * fpT(1 << fracbits) ); }
   
     template <typename ofpT, typename ifpT, typename fpscrT> static
-    void FtoF( ofpT& res, ifpT op, fpscrT& fpscr ) { res = ofpT( op ); }
+    void FtoF( ofpT& dst, ifpT src, fpscrT& fpscr ) { dst = ofpT( src ); }
   
     template <typename fpscrT> static
-    void Abs( double& res, double op, fpscrT& fpscr ) { res = fabs( op ); }
+    void Abs( double& acc, fpscrT& fpscr ) { acc = fabs( acc ); }
   
     template <typename fpscrT> static
-    void Abs( float& res, float op, fpscrT& fpscr ) { res = fabsf( op ); }
+    void Abs( float& acc, fpscrT& fpscr ) { acc = fabsf( acc ); }
   
     template <typename operT, typename fpscrT> static
     bool IsSNaN( operT op, fpscrT const& fpscr ) { return std::isnan( op ) and issignaling( op ); }
@@ -127,7 +127,7 @@ namespace hostfloat {
     { result = (float(0) / float(0)); }
   
     template <typename operT, typename fpscrT> static
-    void Sqrt( operT& res, operT const& op, fpscrT& fpscr ) { res = sqrt( op ); }
+    void Sqrt( operT& acc, fpscrT& fpscr ) { acc = sqrt( acc ); }
   
     template <typename operT, typename fpscrT> static
     int Compare( operT op1, operT op2, fpscrT& fpscr )

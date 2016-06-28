@@ -106,7 +106,7 @@ namespace armsec
     enum Code {
       NA=0,
       BSwp, CLZ,
-      FSQB, FFZ, FNeg, FSqrt, FAbs
+      FSQB, FFZ, FNeg, FSqrt, FAbs, FDen
     };
     
     template <class SCANNER>
@@ -120,6 +120,7 @@ namespace armsec
       { static std::string const _("FNeg");  if (ops( _, FNeg)) return; }
       { static std::string const _("FSqrt"); if (ops( _, FSqrt)) return; }
       { static std::string const _("FAbs");  if (ops( _, FAbs)) return; }
+      { static std::string const _("FDen");  if (ops( _, FDen)) return; }
     }
     
     UnaryOp( Code _code ) : code(_code) {}
@@ -257,6 +258,7 @@ namespace armsec
         case UnaryOp::FNeg: break;
         case UnaryOp::FSqrt: break;
         case UnaryOp::FAbs: break;
+        case UnaryOp::FDen: break;
         case UnaryOp::NA: throw std::logic_error("???");
           
         }
@@ -530,15 +532,15 @@ namespace armsec
     template <typename FLOAT, typename fpscrT> static
     void SetQuietBit( FLOAT& op, fpscrT const& fpscr )
     {
-      op = FLOAT( new UONode( "FSQB", op.expr ) );
+      op = FLOAT( Expr( new UONode( "FSQB", op.expr ) ) );
     }
 
     template <typename FLOAT, typename fpscrT> static
-    bool
+    SmartValue<bool>
     FlushToZero( FLOAT& op, fpscrT& fpscr )
     {
-      op = FLOAT( new UONode( "FFZ", op.expr ) );
-      return false;
+      op = FLOAT( Expr( new UONode( "FFZ", op.expr ) ) );
+      return SmartValue<bool>( Expr( new UONode( "FDen", op.expr ) ) );
     }
 
     template <typename FLOAT, typename fpscrT> static
@@ -565,38 +567,38 @@ namespace armsec
     SmartValue<bool>
     IsSNaN( FLOAT const& op, fpscrT const& fpscr )
     {
-      return SmartValue<bool>( Expr( new IsNaNNode( op.expr, false ) ) );
+      return SmartValue<bool>( Expr( new IsNaNNode( op.expr, true ) ) );
     }
     
     template <typename FLOAT, typename fpscrT> static
     SmartValue<bool>
     IsQNaN( FLOAT const& op, fpscrT const& fpscr )
     {
-      return SmartValue<bool>( Expr( new IsNaNNode( op.expr, true ) ) );
+      return SmartValue<bool>( Expr( new IsNaNNode( op.expr, false ) ) );
     }
     
     template <typename FLOAT, typename fpscrT> static
-    void Add( FLOAT& res, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
+    void Add( FLOAT& acc, FLOAT const& op2, fpscrT& fpscr )
     {
-      res = FLOAT( new BONode( "Add", op1.expr, op2.expr ) );
+      acc = FLOAT( Expr( new BONode( "Add", acc.expr, op2.expr ) ) );
     }
 
     template <typename FLOAT, typename fpscrT> static
-    void Sub( FLOAT& res, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
+    void Sub( FLOAT& acc, FLOAT const& op2, fpscrT& fpscr )
     {
-      res = FLOAT( new BONode( "Sub", op1.expr, op2.expr ) );
+      acc = FLOAT( Expr( new BONode( "Sub", acc.expr, op2.expr ) ) );
     }
 
     template <typename FLOAT, typename fpscrT> static
-    void Div( FLOAT& res, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
+    void Div( FLOAT& acc, FLOAT const& op2, fpscrT& fpscr )
     {
-      res = FLOAT( new BONode( "Div", op1.expr, op2.expr ) );
+      acc = FLOAT( Expr( new BONode( "Div", acc.expr, op2.expr ) ) );
     }
 
     template <typename FLOAT, typename fpscrT> static
-    void Mul( FLOAT& res, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
+    void Mul( FLOAT& acc, FLOAT const& op2, fpscrT& fpscr )
     {
-      res = FLOAT( new BONode( "Mul", op1.expr, op2.expr ) );
+      acc = FLOAT( Expr( new BONode( "Mul", acc.expr, op2.expr ) ) );
     }
 
     struct MulAddNode : public ExprNode
@@ -619,14 +621,17 @@ namespace armsec
     template <typename FLOAT, typename fpscrT> static
     void MulAdd( FLOAT& acc, FLOAT const& op1, FLOAT const& op2, fpscrT& fpscr )
     {
-      acc = FLOAT( new MulAddNode( acc.expr, op1.expr, op2.expr ) );
+      acc = FLOAT( Expr( new MulAddNode( acc.expr, op1.expr, op2.expr ) ) );
     }
 
     template <typename FLOAT, typename fpscrT> static
-    void Neg( FLOAT& res, FLOAT const& op, fpscrT& fpscr ) { res = FLOAT( new UONode( "FNeg", op.expr ) ); }
+    void Neg( FLOAT& acc, fpscrT& fpscr ) { acc = FLOAT( Expr( new UONode( "FNeg", acc.expr ) ) ); }
 
     template <typename FLOAT, typename fpscrT> static
-    void Sqrt( FLOAT& res, FLOAT const& op, fpscrT& fpscr ) { res = FLOAT( new UONode( "FSqrt", op.expr ) ); }
+    void Abs( FLOAT& acc, fpscrT& fpscr ) { acc = FLOAT( Expr( new UONode( "FAbs", acc.expr ) ) ); }
+    
+    template <typename FLOAT, typename fpscrT> static
+    void Sqrt( FLOAT& acc, fpscrT& fpscr ) { acc = FLOAT( Expr( new UONode( "FSqrt", acc.expr ) ) ); }
 
     struct FtoFNode : public ExprNode
     {
@@ -646,9 +651,9 @@ namespace armsec
     };
     
     template <typename ofpT, typename ifpT, typename fpscrT> static
-    void FtoF( SmartValue<ofpT>& res, SmartValue<ifpT> const& op, fpscrT& fpscr )
+    void FtoF( SmartValue<ofpT>& dst, SmartValue<ifpT> const& src, fpscrT& fpscr )
     {
-      res = SmartValue<ofpT>( Expr( new FtoFNode( op.expr, 8*sizeof (ifpT), 8*sizeof (ofpT) ) ) );
+      dst = SmartValue<ofpT>( Expr( new FtoFNode( src.expr, 8*sizeof (ifpT), 8*sizeof (ofpT) ) ) );
     }
 
     struct FtoINode : public ExprNode
@@ -670,9 +675,9 @@ namespace armsec
     };
 
     template <typename intT, typename fpT, typename fpscrT> static
-    void FtoI( SmartValue<intT>& res, SmartValue<fpT> const& op, int fracbits, fpscrT& fpscr )
+    void FtoI( SmartValue<intT>& dst, SmartValue<fpT> const& src, int fracbits, fpscrT& fpscr )
     {
-      res = SmartValue<intT>( Expr( new FtoINode( op.expr, 8*sizeof (fpT), 8*sizeof (intT), fracbits) ) );
+      dst = SmartValue<intT>( Expr( new FtoINode( src.expr, 8*sizeof (fpT), 8*sizeof (intT), fracbits) ) );
     }
 
     struct ItoFNode : public ExprNode
@@ -694,15 +699,9 @@ namespace armsec
     };
     
     template <typename fpT, typename intT, typename fpscrT> static
-    void ItoF( SmartValue<fpT>& res, SmartValue<intT> const& op, int fracbits, fpscrT& fpscr )
+    void ItoF( SmartValue<fpT>& dst, SmartValue<intT> const& src, int fracbits, fpscrT& fpscr )
     {
-      res = SmartValue<fpT>( Expr( new ItoFNode( op.expr, 8*sizeof (intT), 8*sizeof (fpT), fracbits ) ) );
-    }
-    
-    template <typename FLOAT, typename fpscrT> static
-    void Abs( FLOAT& res, FLOAT const& op, fpscrT& fpscr )
-    {
-      res = FLOAT( new UONode( "FAbs", op.expr ) );
+      dst = SmartValue<fpT>( Expr( new ItoFNode( src.expr, 8*sizeof (intT), 8*sizeof (fpT), fracbits ) ) );
     }
     
   };

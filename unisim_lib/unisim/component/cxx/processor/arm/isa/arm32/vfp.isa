@@ -53,9 +53,9 @@ vabs_f32.disasm = {
 vabs_f32.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F32 op = cpu.GetVSR( vm ), res;
+  typename ARCH::F32 res = cpu.GetVSR( vm );
   
-  ARCH::FP::Abs( res, op, cpu.FPSCR() );
+  ARCH::FP::Abs( res, cpu.FPSCR() );
   
   cpu.SetVSR( vd, res );
 };
@@ -70,9 +70,9 @@ vabs_f64.disasm = {
 vabs_f64.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
   
-  typename ARCH::F64 op = cpu.GetVDR( vm ), res;
+  typename ARCH::F64 res = cpu.GetVDR( vm );
   
-  ARCH::FP::Abs( res, op, cpu.FPSCR() );
+  ARCH::FP::Abs( res, cpu.FPSCR() );
   
   cpu.SetVDR( vd, res );
 };
@@ -91,9 +91,9 @@ vadd_f32.disasm = {
 vadd_f32.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
+  typename ARCH::F32 res = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm );
   
-  FPAdd( res, op1, op2, cpu, cpu.FPSCR() );
+  FPAdd( res, op2, cpu, cpu.FPSCR() );
   
   cpu.SetVSR( vd, res );
 };
@@ -108,9 +108,9 @@ vadd_f64.disasm = {
 vadd_f64.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
   
-  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
+  typename ARCH::F64 res = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm );
   
-  FPAdd( res, op1, op2, cpu, cpu.FPSCR() );
+  FPAdd( res, op2, cpu, cpu.FPSCR() );
   
   cpu.SetVDR( vd, res );
 };
@@ -397,7 +397,7 @@ vcvtr_s32f64.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
   
   typename ARCH::F64 op = cpu.GetVDR( vm );
-  typename ARCH::S32 res;
+  typename ARCH::S32 res; // TODO: uninitialized
   
   // TODO: Rounding
   ARCH::FP::FtoI( res, op, 0, cpu.FPSCR() );
@@ -761,9 +761,9 @@ vdiv_f32.disasm = {
 vdiv_f32.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
   
-  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
+  typename ARCH::F32 res = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm );
   
-  FPDiv( res, op1, op2, cpu, cpu.FPSCR() );
+  FPDiv( res, op2, cpu, cpu.FPSCR() );
 
   cpu.SetVSR( vd, res );
 };
@@ -778,9 +778,9 @@ vdiv_f64.disasm = {
 vdiv_f64.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
   
-  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
+  typename ARCH::F64 res = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm );
   
-  FPDiv( res, op1, op2, cpu, cpu.FPSCR() );
+  FPDiv( res, op2, cpu, cpu.FPSCR() );
   
   cpu.SetVDR( vd, res );
 };
@@ -797,7 +797,7 @@ vfma_f32.disasm = {
 vfma_f32.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
+  typename ARCH::F32 acc = cpu.GetVSR( vd ), op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm );
   
   FPMulAdd( acc, op1, op2, cpu, cpu.FPSCR() );
   
@@ -814,7 +814,7 @@ vfma_f64.disasm = {
 vfma_f64.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd );
+  typename ARCH::F64 acc = cpu.GetVDR( vd ), op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm );
   
   FPMulAdd( acc, op1, op2, cpu, cpu.FPSCR() );
   
@@ -831,9 +831,9 @@ vfms_f32.disasm = {
 vfms_f32.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
+  typename ARCH::F32 acc = cpu.GetVSR( vd ), op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm );
   
-  ARCH::FP::Neg( op1, op1, cpu.FPSCR() );
+  ARCH::FP::Neg( op1, cpu.FPSCR() );
   FPMulAdd( acc, op1, op2, cpu, cpu.FPSCR() );
   
   cpu.SetVSR( vd, acc );
@@ -849,9 +849,9 @@ vfms_f64.disasm = {
 vfms_f64.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd );
+  typename ARCH::F64 acc = cpu.GetVDR( vd ), op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm );
   
-  ARCH::FP::Neg( op1, op1, cpu.FPSCR() );
+  ARCH::FP::Neg( op1, cpu.FPSCR() );
   FPMulAdd( acc, op1, op2, cpu, cpu.FPSCR() );
   
   cpu.SetVDR( vd, acc );
@@ -869,9 +869,9 @@ vfnma_f32.disasm = {
 vfnma_f32.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
+  typename ARCH::F32 acc = cpu.GetVSR( vd ), op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm );
   
-  ARCH::FP::Neg( acc, acc, cpu.FPSCR() );
+  ARCH::FP::Neg( acc, cpu.FPSCR() );
   FPMulAdd( acc, op1, op2, cpu, cpu.FPSCR() );
   
   cpu.SetVSR( vd, acc );
@@ -887,9 +887,9 @@ vfnma_f64.disasm = {
 vfnma_f64.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd );
+  typename ARCH::F64 acc = cpu.GetVDR( vd ), op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm );
   
-  ARCH::FP::Neg( acc, acc, cpu.FPSCR() );
+  ARCH::FP::Neg( acc, cpu.FPSCR() );
   FPMulAdd( acc, op1, op2, cpu, cpu.FPSCR() );
   
   cpu.SetVDR( vd, acc );
@@ -905,10 +905,10 @@ vfnms_f32.disasm = {
 vfnms_f32.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd );
+  typename ARCH::F32 acc = cpu.GetVSR( vd ), op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm );
   
-  ARCH::FP::Neg( acc, acc, cpu.FPSCR() );
-  ARCH::FP::Neg( op1, op1, cpu.FPSCR() );
+  ARCH::FP::Neg( acc, cpu.FPSCR() );
+  ARCH::FP::Neg( op1, cpu.FPSCR() );
   FPMulAdd( acc, op1, op2, cpu, cpu.FPSCR() );
   
   cpu.SetVSR( vd, acc );
@@ -924,10 +924,10 @@ vfnms_f64.disasm = {
 vfnms_f64.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd );
+  typename ARCH::F64 acc = cpu.GetVDR( vd ), op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm );
   
-  ARCH::FP::Neg( acc, acc, cpu.FPSCR() );
-  ARCH::FP::Neg( op1, op1, cpu.FPSCR() );
+  ARCH::FP::Neg( acc, cpu.FPSCR() );
+  ARCH::FP::Neg( op1, cpu.FPSCR() );
   FPMulAdd( acc, op1, op2, cpu, cpu.FPSCR() );
   
   cpu.SetVDR( vd, acc );
@@ -1095,10 +1095,10 @@ vmla_f32.disasm = {
 vmla_f32.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
+  typename ARCH::F32 acc = cpu.GetVSR( vd ), product = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm );
   
-  FPMul( product, op1, op2, cpu, cpu.FPSCR() );
-  FPAdd( acc, acc, product, cpu, cpu.FPSCR() );
+  FPMul( product, op2, cpu, cpu.FPSCR() );
+  FPAdd( acc, product, cpu, cpu.FPSCR() );
   
   cpu.SetVSR( vd, acc );
 };
@@ -1113,10 +1113,10 @@ vmla_f64.disasm = {
 vmla_f64.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd ), product;
+  typename ARCH::F64 acc = cpu.GetVDR( vd ), product = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm );
   
-  FPMul( product, op1, op2, cpu, cpu.FPSCR() );
-  FPAdd( acc, acc, product, cpu, cpu.FPSCR() );
+  FPMul( product, op2, cpu, cpu.FPSCR() );
+  FPAdd( acc, product, cpu, cpu.FPSCR() );
   
   cpu.SetVDR( vd, acc );
 };
@@ -1131,11 +1131,11 @@ vmls_f32.disasm = {
 vmls_f32.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
+  typename ARCH::F32 acc = cpu.GetVSR( vd ), product = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm );
   
-  FPMul( product, op1, op2, cpu, cpu.FPSCR() );
-  ARCH::FP::Neg( product, product, cpu.FPSCR() );
-  FPAdd( acc, acc, product, cpu, cpu.FPSCR() );
+  FPMul( product, op2, cpu, cpu.FPSCR() );
+  ARCH::FP::Neg( product, cpu.FPSCR() );
+  FPAdd( acc, product, cpu, cpu.FPSCR() );
   
   cpu.SetVSR( vd, acc );
 };
@@ -1150,11 +1150,11 @@ vmls_f64.disasm = {
 vmls_f64.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd ), product;
+  typename ARCH::F64 acc = cpu.GetVDR( vd ), product = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm );
   
-  FPMul( product, op1, op2, cpu, cpu.FPSCR() );
-  ARCH::FP::Neg( product, product, cpu.FPSCR() );
-  FPAdd( acc, acc, product, cpu, cpu.FPSCR() );
+  FPMul( product, op2, cpu, cpu.FPSCR() );
+  ARCH::FP::Neg( product, cpu.FPSCR() );
+  FPAdd( acc, product, cpu, cpu.FPSCR() );
   
   cpu.SetVDR( vd, acc );
 };
@@ -1175,12 +1175,12 @@ vnmla_f32.disasm = {
 vnmla_f32.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
+  typename ARCH::F32 acc = cpu.GetVSR( vd ), product = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm );
   
-  FPMul( product, op1, op2, cpu, cpu.FPSCR() );
-  ARCH::FP::Neg( product, product, cpu.FPSCR() );
-  ARCH::FP::Neg( acc, acc, cpu.FPSCR() );
-  FPAdd( acc, acc, product, cpu, cpu.FPSCR() );
+  FPMul( product, op2, cpu, cpu.FPSCR() );
+  ARCH::FP::Neg( product, cpu.FPSCR() );
+  ARCH::FP::Neg( acc, cpu.FPSCR() );
+  FPAdd( acc, product, cpu, cpu.FPSCR() );
   
   cpu.SetVSR( vd, acc );
 };
@@ -1195,12 +1195,12 @@ vnmla_f64.disasm = {
 vnmla_f64.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd ), product;
+  typename ARCH::F64 acc = cpu.GetVDR( vd ), product = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm );
   
-  FPMul( product, op1, op2, cpu, cpu.FPSCR() );
-  ARCH::FP::Neg( product, product, cpu.FPSCR() );
-  ARCH::FP::Neg( acc, acc, cpu.FPSCR() );
-  FPAdd( acc, acc, product, cpu, cpu.FPSCR() );
+  FPMul( product, op2, cpu, cpu.FPSCR() );
+  ARCH::FP::Neg( product, cpu.FPSCR() );
+  ARCH::FP::Neg( acc, cpu.FPSCR() );
+  FPAdd( acc, product, cpu, cpu.FPSCR() );
   
   cpu.SetVDR( vd, acc );
 };
@@ -1221,11 +1221,11 @@ vnmls_f32.disasm = {
 vnmls_f32.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), acc = cpu.GetVSR( vd ), product;
+  typename ARCH::F32 acc = cpu.GetVSR( vd ), product = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm );
   
-  FPMul( product, op1, op2, cpu, cpu.FPSCR() );
-  ARCH::FP::Neg( acc, acc, cpu.FPSCR() );
-  FPAdd( acc, acc, product, cpu, cpu.FPSCR() );
+  FPMul( product, op2, cpu, cpu.FPSCR() );
+  ARCH::FP::Neg( acc, cpu.FPSCR() );
+  FPAdd( acc, product, cpu, cpu.FPSCR() );
   
   cpu.SetVSR( vd, acc );
 };
@@ -1240,11 +1240,11 @@ vnmls_f64.disasm = {
 vnmls_f64.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), acc = cpu.GetVDR( vd ), product;
+  typename ARCH::F64 acc = cpu.GetVDR( vd ), product = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm );
   
-  FPMul( product, op1, op2, cpu, cpu.FPSCR() );
-  ARCH::FP::Neg( acc, acc, cpu.FPSCR() );
-  FPAdd( acc, acc, product, cpu, cpu.FPSCR() );
+  FPMul( product, op2, cpu, cpu.FPSCR() );
+  ARCH::FP::Neg( acc, cpu.FPSCR() );
+  FPAdd( acc, product, cpu, cpu.FPSCR() );
   
   cpu.SetVDR( vd, acc );
 };
@@ -1501,9 +1501,9 @@ vmul_f32.disasm = {
 vmul_f32.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
+  typename ARCH::F32 res = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm );
   
-  FPMul( res, op1, op2, cpu, cpu.FPSCR() );
+  FPMul( res, op2, cpu, cpu.FPSCR() );
   
   cpu.SetVSR( vd, res );
 };
@@ -1518,9 +1518,9 @@ vmul_f64.disasm = {
 vmul_f64.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
   
-  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
+  typename ARCH::F64 res = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm );
   
-  FPMul( res, op1, op2, cpu, cpu.FPSCR() );
+  FPMul( res, op2, cpu, cpu.FPSCR() );
   
   cpu.SetVDR( vd, res );
 };
@@ -1539,10 +1539,10 @@ vnmul_f32.disasm = {
 vnmul_f32.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
+  typename ARCH::F32 res = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm );
   
-  FPMul( res, op1, op2, cpu, cpu.FPSCR() );
-  ARCH::FP::Neg( res, res, cpu.FPSCR() );
+  FPMul( res, op2, cpu, cpu.FPSCR() );
+  ARCH::FP::Neg( res, cpu.FPSCR() );
   
   cpu.SetVSR( vd, res );
 };
@@ -1557,10 +1557,10 @@ vnmul_f64.disasm = {
 vnmul_f64.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
   
-  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
+  typename ARCH::F64 res = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm );
   
-  FPMul( res, op1, op2, cpu, cpu.FPSCR() );
-  ARCH::FP::Neg( res, res, cpu.FPSCR() );
+  FPMul( res, op2, cpu, cpu.FPSCR() );
+  ARCH::FP::Neg( res, cpu.FPSCR() );
   
   cpu.SetVDR( vd, res );
 };
@@ -1577,9 +1577,9 @@ vneg_f32.disasm = {
 vneg_f32.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F32 op = cpu.GetVSR( vm ), res;
+  typename ARCH::F32 res = cpu.GetVSR( vm );
   
-  ARCH::FP::Neg( res, op, cpu.FPSCR() );
+  ARCH::FP::Neg( res, cpu.FPSCR() );
   
   cpu.SetVSR( vd, res );
 };
@@ -1594,9 +1594,9 @@ vneg_f64.disasm = {
 vneg_f64.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
   
-  typename ARCH::F64 op = cpu.GetVDR( vm ), res;
+  typename ARCH::F64 res = cpu.GetVDR( vm );
   
-  ARCH::FP::Neg( res, op, cpu.FPSCR() );
+  ARCH::FP::Neg( res, cpu.FPSCR() );
   
   cpu.SetVDR( vd, res );
 };
@@ -1613,9 +1613,9 @@ vsqrt_f32s.disasm = {
 vsqrt_f32s.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F32 op = cpu.GetVSR( vm ), res;
+  typename ARCH::F32 res = cpu.GetVSR( vm );
   
-  FPSqrt( res, op, cpu, cpu.FPSCR() );
+  FPSqrt( res, cpu, cpu.FPSCR() );
   
   cpu.SetVSR( vd, res );
 };
@@ -1630,9 +1630,9 @@ vsqrt_f64d.disasm = {
 vsqrt_f64d.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
   
-  typename ARCH::F64 op = cpu.GetVDR( vm ), res;
+  typename ARCH::F64 res = cpu.GetVDR( vm );
   
-  FPSqrt( res, op, cpu, cpu.FPSCR() );
+  FPSqrt( res, cpu, cpu.FPSCR() );
   
   cpu.SetVDR( vd, res );
 };
@@ -1798,9 +1798,9 @@ vsub_f32.disasm = {
 vsub_f32.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
-  typename ARCH::F32 op1 = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm ), res;
+  typename ARCH::F32 res = cpu.GetVSR( vn ), op2 = cpu.GetVSR( vm );
   
-  FPSub( res, op1, op2, cpu, cpu.FPSCR() );
+  FPSub( res, op2, cpu, cpu.FPSCR() );
   
   cpu.SetVSR( vd, res );
 };
@@ -1815,9 +1815,9 @@ vsub_f64.disasm = {
 vsub_f64.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
   
-  typename ARCH::F64 op1 = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm ), res;
+  typename ARCH::F64 res = cpu.GetVDR( vn ), op2 = cpu.GetVDR( vm );
   
-  FPSub( res, op1, op2, cpu, cpu.FPSCR() );
+  FPSub( res, op2, cpu, cpu.FPSCR() );
   
   cpu.SetVDR( vd, res );
 };

@@ -7,44 +7,6 @@
 
 namespace armsec
 {
-  template <typename operT, typename fpscrT> void FloatFlushToZero( operT& op, fpscrT& fpscr ) {}
-
-  template <typename operT, typename fpscrT> void FloatAdd( operT& res, operT op1, operT op2, fpscrT& fpscr ) {}
-
-  template <typename operT, typename fpscrT> void FloatSub( operT& res, operT op1, operT op2, fpscrT& fpscr ) {}
-
-  template <typename operT, typename fpscrT> void FloatDiv( operT& res, operT op1, operT op2, fpscrT& fpscr ) {}
-
-  template <typename operT, typename fpscrT> void FloatMul( operT& res, operT op1, operT op2, fpscrT& fpscr ) {}
-
-  template <typename operT, typename fpscrT> void FloatMulAdd( operT& acc, operT op1, operT op2, fpscrT& fpscr ) {}
-
-  template <typename operT, typename fpscrT> void FloatNeg( operT& res, operT op, fpscrT& fpscr ) {}
-
-  template <typename fpT, typename intT, typename fpscrT> void FloatItoF( fpT& res, intT op, int fracbits, fpscrT& fpscr ) {}
-
-  template <typename intT, typename fpT, typename fpscrT> void FloatFtoI( intT& res, fpT op, int fracbits, fpscrT& fpscr ) {}
-
-  template <typename ofpT, typename ifpT, typename fpscrT> void FloatFtoF( ofpT& res, ifpT op, fpscrT& fpscr ) {}
-
-  template <typename fpscrT> void FloatAbs( double& res, double op, fpscrT& fpscr ) {}
-
-  template <typename fpscrT> void FloatAbs( float& res, float op, fpscrT& fpscr ) {}
-
-  template <typename operT, typename fpscrT> bool FloatIsSNaN( operT op, fpscrT const& fpscr ) { return false; }
-
-  template <typename operT, typename fpscrT> bool FloatIsQNaN( operT op, fpscrT const& fpscr ) { return false; }
-
-  template <typename operT, typename fpscrT> void FloatSetQuietBit( operT& op, fpscrT const& fpscr ) {}
-
-  template <typename fpscrT> void FloatSetDefaultNan( double& result, fpscrT const& fpscr ) {}
-
-  template <typename fpscrT> void FloatSetDefaultNan( float& result, fpscrT const& fpscr ) {}
-
-  template <typename operT, typename fpscrT> void FloatSqrt( operT& res, operT const& op, fpscrT& fpscr ) {}
-
-  template <typename operT, typename fpscrT> int FloatCompare( operT op1, operT op2, fpscrT& fpscr ) { return 0; }
-
   typedef SmartValue<double>   F64;
   typedef SmartValue<float>    F32;
   typedef SmartValue<bool>     BOOL;
@@ -237,10 +199,32 @@ namespace armsec
       ExprNode* GetConstNode() { return 0; };
     };
     
-    struct psr_type : public unisim::component::cxx::processor::arm::FieldRegister<U32>
+    
+    State( PathNode& _path, bool is_thumb, unsigned insn_length )
+      : path( &_path )
+      , current_insn_addr( Expr( new SourceCIA ) )
+      , next_insn_addr()
+      , cpsr( Expr( new SourceCPSR ) )
+      , spsr( Expr( new SourceSPSR ) )
+      , fpscr( *this, Expr( new SourceFPSCR ) )
+    {
+      for (unsigned reg = 0; reg < 15; ++reg)
+        reg_values[reg] = U32( armsec::Expr( new SourceReg( reg ) ) );
+      reg_values[15] = current_insn_addr + U32( is_thumb ? 4 : 8 );
+      if ((insn_length != 32) and ((insn_length != 16) or not is_thumb))
+        throw std::logic_error( "Bad instruction length" );
+      next_insn_addr = current_insn_addr + U32( insn_length / 8 );
+    }
+    
+    PathNode* path;
+    
+    U32 reg_values[16];
+    U32 current_insn_addr, next_insn_addr;
+    typedef unisim::component::cxx::processor::arm::FieldRegister<U32> FieldRegisterU32;
+    struct psr_type : public FieldRegisterU32
     {
       psr_type( Expr const& expr )
-        : unisim::component::cxx::processor::arm::FieldRegister<U32>( expr )
+        : FieldRegisterU32( expr )
       {}
       // void ITSetState( uint32_t cond, uint32_t mask )
       // {
@@ -267,35 +251,30 @@ namespace armsec
       //   RegisterField<10,6>().Set( m_value, state >> 2 );
       //   RegisterField<25,2>().Set( m_value, state & 3 );
       // }
-    };
+    } cpsr, spsr;
     
-    struct fpscr_type : public unisim::component::cxx::processor::arm::FieldRegister<U32>
+    void FPTrap( unsigned exc )
     {
-      fpscr_type( Expr const& expr ) { m_value = expr; }
-    };
-    
-    State( PathNode& _path, bool is_thumb, unsigned insn_length )
-      : path( &_path )
-      , current_insn_addr( Expr( new SourceCIA ) )
-      , next_insn_addr()
-      , cpsr( Expr( new SourceCPSR ) )
-      , spsr( Expr( new SourceSPSR ) )
-      , fpscr( Expr( new SourceFPSCR ) )
-    {
-      for (unsigned reg = 0; reg < 15; ++reg)
-        reg_values[reg] = U32( armsec::Expr( new SourceReg( reg ) ) );
-      reg_values[15] = current_insn_addr + U32( is_thumb ? 4 : 8 );
-      if ((insn_length != 32) and ((insn_length != 16) or not is_thumb))
-        throw std::logic_error( "Bad instruction length" );
-      next_insn_addr = current_insn_addr + U32( insn_length / 8 );
+      throw std::logic_error("unimplemented");
     }
     
-    PathNode* path;
-    
-    U32 reg_values[16];
-    U32 current_insn_addr, next_insn_addr;
-    psr_type cpsr, spsr;
-    fpscr_type fpscr;
+    struct fpscr_type : public FieldRegisterU32
+    {
+      fpscr_type( State& _state, Expr const& expr )
+        : FieldRegisterU32( expr )
+        , state(_state)
+      {}
+      template <unsigned posT>
+      void ProcessException( unisim::component::cxx::processor::arm::RegisterField<posT,1> const& rf )
+      {
+        unisim::component::cxx::processor::arm::RegisterField<posT+8,1> const enable;
+        if (state.Cond(enable.Get( m_value )))
+          state.FPTrap( posT );
+        else
+          rf.Set( m_value, U32(1u) );
+      }
+      State& state;
+    } fpscr;
     U32 FPEXC;
     
     void not_implemented() { throw std::logic_error( "not implemented" ); }
