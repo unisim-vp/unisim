@@ -39,10 +39,14 @@ namespace sc_core {
 
 sc_method_process::sc_method_process(const char *_name, sc_process_owner *_process_owner, sc_process_owner_method_ptr _process_owner_method_ptr, const sc_spawn_options *spawn_options)
 	: sc_process(_name, _process_owner, _process_owner_method_ptr, SC_METHOD_PROC_, spawn_options)
+	, flag_killed(false)
+	, flag_reset(false)
 	, flag_is_unwinding(false)
+	, flag_throw_it(false)
 	, method_process_terminated(false)
 	, method_process_terminated_event(__LIBIEEE1666_KERNEL_PREFIX__ "_terminated_event")
 	, method_process_reset_event(__LIBIEEE1666_KERNEL_PREFIX__ "_reset_event")
+	, user_exception(0)
 	, next_trigger_type(NEXT_TRIGGER_DEFAULT)
 	, next_trigger_event(0)
 	, next_trigger_event_list(0)
@@ -70,8 +74,43 @@ void sc_method_process::run()
 			flag_is_unwinding = false;
 			if(exc.is_reset()) continue;
 		}
+		catch(std::exception& exc)
+		{
+			std::cerr << "unhandled exception: " << exc.what() << std::endl;
+		}
+		catch(sc_user_exception& exc)
+		{
+			std::cerr << "unhandled user exception" << std::endl;
+		}
+		catch(...)
+		{
+			std::cerr << "unhandled exception" << std::endl;
+		}
 		
 		break;
+	}
+}
+
+void sc_method_process::check_exceptions()
+{
+	if(flag_is_unwinding) return;
+	
+	if(flag_killed)
+	{
+		flag_killed = false;
+		flag_is_unwinding = true;
+		throw sc_unwind_exception(SC_UNWIND_EXCEPTION_KILL);
+	}
+	else if(flag_reset)
+	{
+		flag_reset = false;
+		flag_is_unwinding = true;
+		throw sc_unwind_exception(SC_UNWIND_EXCEPTION_RESET);
+	}
+	else if(flag_throw_it)
+	{
+		flag_throw_it = false;
+		user_exception->throw_it();
 	}
 }
 
@@ -387,7 +426,7 @@ void sc_method_process::kill()
 		{
 			// suicide
 			flag_is_unwinding = true;
-			throw sc_unwind_exception(false);
+			throw sc_unwind_exception(SC_UNWIND_EXCEPTION_KILL);
 		}
 		else
 		{
@@ -403,31 +442,39 @@ void sc_method_process::reset(bool async)
 {
 	next_trigger_type = NEXT_TRIGGER_DEFAULT; // restore static sensitivity
 
+	// immediate notification of reset
+	method_process_reset_event.notify();
+
 	if(!method_process_terminated)
 	{
+		// deschedule target process
+		kernel->untrigger(this);
+
 		if(kernel->get_current_method_process() == this)
 		{
 			// self reset
 			flag_is_unwinding = true;
-			throw sc_unwind_exception(true);
+			throw sc_unwind_exception(SC_UNWIND_EXCEPTION_RESET);
 		}
 		else
 		{
-			// reset by another process
+			kernel->reset_method_process(this);
 		}
 	}
 }
 
-void sc_method_process::throw_it(const sc_user_exception& user_exception)
+void sc_method_process::throw_it(const sc_user_exception& _user_exception)
 {
 	next_trigger_type = NEXT_TRIGGER_DEFAULT; // restore static sensitivity
 
 	if(!method_process_terminated)
 	{
-		if(kernel->get_current_method_process() == this)
+		sc_method_process *current_method_process = kernel->get_current_method_process();
+		
+		if(current_method_process == this)
 		{
 			// self throw
-			user_exception.throw_it();
+			_user_exception.throw_it();
 		}
 		else
 		{

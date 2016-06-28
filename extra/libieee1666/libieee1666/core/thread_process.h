@@ -89,7 +89,6 @@ private:
 	bool flag_is_unwinding;
 	bool flag_throw_it;
 	bool thread_process_terminated;
-	bool freed;
 	sc_event thread_process_terminated_event;
 	sc_event thread_process_reset_event;
 	const sc_user_exception *user_exception;

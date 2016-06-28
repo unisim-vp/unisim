@@ -129,6 +129,12 @@ enum sc_starvation_policy
 	SC_EXIT_ON_STARVATION
 };
 
+enum sc_unwind_exception_type
+{
+	SC_UNWIND_EXCEPTION_RESET,
+	SC_UNWIND_EXCEPTION_KILL
+};
+
 class sc_attr_base;
 template <class T> class sc_attribute;
 class sc_attr_cltn;

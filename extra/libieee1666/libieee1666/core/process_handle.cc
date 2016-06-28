@@ -41,26 +41,33 @@ namespace sc_core {
 
 const char* sc_unwind_exception::what() const throw()
 {
-	return reset ? "reset" : "kill";
+	switch(type)
+	{
+		case SC_UNWIND_EXCEPTION_RESET:
+			return "reset";
+		case SC_UNWIND_EXCEPTION_KILL:
+			return "kill";
+	}
+	return "";
 }
 
 bool sc_unwind_exception::is_reset() const
 {
-	return reset;
+	return type == SC_UNWIND_EXCEPTION_RESET;
 }
 
 sc_unwind_exception::sc_unwind_exception()
-	: reset(false)
+	: type(SC_UNWIND_EXCEPTION_KILL)
 {
 }
 
-sc_unwind_exception::sc_unwind_exception(bool _reset)
-	: reset(_reset)
+sc_unwind_exception::sc_unwind_exception(sc_unwind_exception_type _type)
+	: type(_type)
 {
 }
 
 sc_unwind_exception::sc_unwind_exception(const sc_unwind_exception& exc)
-	: reset(exc.reset)
+	: type(exc.type)
 {
 }
 

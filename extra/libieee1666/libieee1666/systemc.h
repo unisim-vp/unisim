@@ -38,5 +38,6 @@
 #include <systemc>
 
 using namespace ::sc_core;
+using ::sc_core::wait;
 
 #endif

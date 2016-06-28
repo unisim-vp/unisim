@@ -534,6 +534,10 @@ void sc_kernel::initialize()
 	status = SC_START_OF_SIMULATION;
 	report_start_of_simulation();
 
+	// update phase
+	do_update_phase();
+	
+	// make all method processes runnable except those that are 'dont_initialize'
 	num_method_processes = method_process_table.size();
 	for(i = 0; i < num_method_processes; i++)
 	{
@@ -545,7 +549,7 @@ void sc_kernel::initialize()
 		}
 	}
 
-	// initialize thread processes
+	// make all thread processes runnable except those that are 'dont_initialize'
 	num_thread_processes = thread_process_table.size();
 	for(i = 0; i < num_thread_processes; i++)
 	{
@@ -557,6 +561,7 @@ void sc_kernel::initialize()
 		}
 	}
 	
+#if 0
 	// initial wake-up of all SC_METHOD processes
 	if(runnable_method_processes.size())
 	{
@@ -568,23 +573,17 @@ void sc_kernel::initialize()
 			runnable_method_processes.pop_back();
 			method_process->trigger_requested = false;
 			
-			current_object = method_process;
-			current_writer = method_process;
-			current_method_process = method_process;
-// 					std::cerr << current_time_stamp << ": /\\/ " << method_process->name() << std::endl;
+			set_current_method_process(method_process);
+			std::cerr << current_time_stamp << ": /\\/ " << method_process->name() << std::endl;
 			method_process->run();
 			method_process->commit_next_trigger();
 			stop_immediate = user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE);
 		}
 		while(!stop_immediate && runnable_method_processes.size());
-		current_object = 0;
-		current_writer = 0;
-		current_method_process = 0;
+		set_current_method_process(0);
 		if(stop_immediate) return;
 	}
-	current_object = 0;
-	current_writer = 0;
-	current_method_process = 0;
+	set_current_method_process(0);
 	
 
 	// initial wake-up of all SC_THREAD/SC_CTHREAD processes
@@ -593,20 +592,120 @@ void sc_kernel::initialize()
 		sc_thread_process *thread_process = runnable_thread_processes.back();
 		runnable_thread_processes.pop_back();
 		thread_process->trigger_requested = false;
-		current_object = thread_process;
-		current_writer = thread_process;
-		current_thread_process = thread_process;
-//		std::cerr << current_time_stamp << ": /\\/ " << thread_process->name() << std::endl;
+		set_current_thread_process(thread_process);
+		std::cerr << current_time_stamp << ": /\\/ " << thread_process->name() << std::endl;
 		main_coroutine->yield(thread_process->coroutine);
 	}
-	current_object = 0;
-	current_writer = 0;
-	current_thread_process = 0;
+	set_current_thread_process(0);
 	
 	release_terminated_method_processes();
 	release_terminated_thread_processes();
+#endif
+	do_evaluation_phase();
 
+	// delta notification phase
+	do_delta_notification_phase();
+	
 	initialized = true;
+}
+
+void sc_kernel::do_evaluation_phase()
+{
+	// evaluation phase
+	unsigned int eval_flag = 0; // 0 = no evaluation, 1 = at least one evaluation
+
+	do
+	{
+		// wake up SC_METHOD processes
+		if(runnable_method_processes.size())
+		{
+			bool stop_immediate = false;
+			
+			do
+			{
+				sc_method_process *method_process = runnable_method_processes.back();
+				runnable_method_processes.pop_back();
+				method_process->trigger_requested = false;
+				
+				set_current_method_process(method_process);
+				eval_flag = 1;
+//				std::cerr << current_time_stamp << ": /\\/ " << method_process->name() << std::endl;
+				method_process->run();
+				method_process->commit_next_trigger();
+				stop_immediate = user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE);
+			}
+			while(!stop_immediate && runnable_method_processes.size());
+			set_current_method_process(0);
+			if(stop_immediate) return;
+		}
+
+		// wake up SC_THREAD/SC_CTHREAD processes
+		if(runnable_thread_processes.size())
+		{
+			eval_flag = 1;
+			sc_thread_process *thread_process = runnable_thread_processes.back();
+			runnable_thread_processes.pop_back();
+			thread_process->trigger_requested = false;
+			set_current_thread_process(thread_process);
+//			std::cerr << current_time_stamp << ": /\\/ " << thread_process->name() << std::endl;
+			main_coroutine->yield(thread_process->coroutine);
+			set_current_thread_process(0);
+		}
+	}
+	while(runnable_thread_processes.size() || runnable_method_processes.size());
+
+	release_terminated_method_processes();
+	release_terminated_thread_processes();
+
+	if(user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE)) return;
+	
+	delta_count += eval_flag;
+}
+
+void sc_kernel::do_update_phase()
+{
+	// update phase
+	
+	std::vector<sc_prim_channel *>::size_type num_updatable_prim_channels = updatable_prim_channels.size();
+	if(num_updatable_prim_channels)
+	{
+		std::vector<sc_prim_channel *>::size_type i;
+		for(i = 0; i < num_updatable_prim_channels; i++)
+		{
+			sc_prim_channel *prim_channel = updatable_prim_channels[i];
+			prim_channel->update_requested = false;
+			
+			prim_channel->update();
+		}
+		
+		updatable_prim_channels.clear();
+	}
+}
+
+void sc_kernel::do_delta_notification_phase()
+{
+	// delta notification phase
+	
+	std::vector<sc_kernel_event *>::size_type num_delta_events = delta_events.size();
+	if(num_delta_events)
+	{
+		std::vector<sc_kernel_event *>::size_type i;
+		for(i = 0; i < num_delta_events; i++)
+		{
+			sc_kernel_event *kernel_event = delta_events[i];
+			
+			sc_event *e = kernel_event->get_event();
+			
+			if(e)
+			{
+				e->trigger();
+			}
+			
+			kernel_events_allocator.free(kernel_event);
+		}
+		
+		delta_events.clear();
+	}
 }
 
 void sc_kernel::do_delta_steps(bool once)
@@ -614,112 +713,26 @@ void sc_kernel::do_delta_steps(bool once)
 	do
 	{
 		// evaluation phase
-		unsigned int eval_flag = 0; // 0 = no evaluation, 1 = at least one evaluation
-
-		do
-		{
-			// wake up SC_METHOD processes
-			if(runnable_method_processes.size())
-			{
-				bool stop_immediate = false;
-				
-				do
-				{
-					sc_method_process *method_process = runnable_method_processes.back();
-					runnable_method_processes.pop_back();
-					method_process->trigger_requested = false;
-					
-					current_object = method_process;
-					current_writer = method_process;
-					current_method_process = method_process;
-					eval_flag = 1;
-// 					std::cerr << current_time_stamp << ": /\\/ " << method_process->name() << std::endl;
-					method_process->run();
-					method_process->commit_next_trigger();
-					stop_immediate = user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE);
-				}
-				while(!stop_immediate && runnable_method_processes.size());
-				current_object = 0;
-				current_writer = 0;
-				current_method_process = 0;
-				if(stop_immediate) return;
-			}
-
-			// wake up SC_THREAD/SC_CTHREAD processes
-			if(runnable_thread_processes.size())
-			{
-				eval_flag = 1;
-				sc_thread_process *thread_process = runnable_thread_processes.back();
-				runnable_thread_processes.pop_back();
-				thread_process->trigger_requested = false;
-				current_object = thread_process;
-				current_writer = thread_process;
-				current_thread_process = thread_process;
-//				std::cerr << current_time_stamp << ": /\\/ " << thread_process->name() << std::endl;
-				main_coroutine->yield(thread_process->coroutine);
-				current_object = 0;
-				current_writer = 0;
-				current_thread_process = 0;
-			}
-		}
-		while(runnable_thread_processes.size() || runnable_method_processes.size());
-
-		release_terminated_method_processes();
-		release_terminated_thread_processes();
+		do_evaluation_phase();
 
 		if(user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE)) return;
 		
-		delta_count += eval_flag;
-
 		// update phase
-		
-		std::vector<sc_prim_channel *>::size_type num_updatable_prim_channels = updatable_prim_channels.size();
-		if(num_updatable_prim_channels)
-		{
-			std::vector<sc_prim_channel *>::size_type i;
-			for(i = 0; i < num_updatable_prim_channels; i++)
-			{
-				sc_prim_channel *prim_channel = updatable_prim_channels[i];
-				prim_channel->update_requested = false;
-				
-				prim_channel->update();
-			}
-			
-			updatable_prim_channels.clear();
-		}
+		do_update_phase();
 		
 		if(user_requested_stop) return;
 		
 		// delta notification phase
-		
-		std::vector<sc_kernel_event *>::size_type num_delta_events = delta_events.size();
-		if(num_delta_events)
-		{
-			std::vector<sc_kernel_event *>::size_type i;
-			for(i = 0; i < num_delta_events; i++)
-			{
-				sc_kernel_event *kernel_event = delta_events[i];
-				
-				sc_event *e = kernel_event->get_event();
-				
-				if(e)
-				{
-					e->trigger();
-				}
-				
-				kernel_events_allocator.free(kernel_event);
-			}
-			
-			delta_events.clear();
-		}
+		do_delta_notification_phase();
 		
 		if(user_requested_pause) break;
 	}
 	while(!once && (runnable_thread_processes.size() || runnable_method_processes.size()));
 }
 
-bool sc_kernel::do_timed_step()
+bool sc_kernel::do_timed_notification_phase()
 {
+	// timed notification phase
 	std::multimap<sc_time, sc_timed_kernel_event *>::iterator it = schedule.begin();
 
 	if(it == schedule.end()) return false;
@@ -766,7 +779,7 @@ void sc_kernel::simulate(const sc_time& duration)
 		{
 			do_delta_steps(false);
 			if(user_requested_stop || user_requested_pause) break;
-			pending_timed_notifications_exist = do_timed_step();
+			pending_timed_notifications_exist = do_timed_notification_phase();
 			if(user_requested_stop) break;
 		}
 		while((current_time_stamp < until_time) && (pending_timed_notifications_exist || runnable_thread_processes.size() || runnable_method_processes.size()));
@@ -1051,24 +1064,8 @@ void sc_kernel::disconnect_thread_process(sc_thread_process *thread_process)
 		event->remove_dynamically_sensitive_thread_process(thread_process);
 		event->remove_statically_sensitive_thread_process(thread_process);
 	}
-	
-	std::vector<sc_thread_process *>::size_type num_runnable_thread_processes = runnable_thread_processes.size();
-	if(num_runnable_thread_processes > 1)
-	{
-		std::vector<sc_thread_process *>::size_type runnable_thread_process_num;
-		for(runnable_thread_process_num = 0; runnable_thread_process_num < num_runnable_thread_processes; runnable_thread_process_num++)
-		{
-			if(runnable_thread_processes[runnable_thread_process_num] == thread_process)
-			{
-				runnable_thread_processes[runnable_thread_process_num] = runnable_thread_processes[runnable_thread_processes.size() - 1];
-				break;
-			}
-		}
-	}
-	else
-	{
-		runnable_thread_processes.clear();
-	}
+
+	untrigger(thread_process);
 }
 
 void sc_kernel::disconnect_method_process(sc_method_process *method_process)
@@ -1082,24 +1079,8 @@ void sc_kernel::disconnect_method_process(sc_method_process *method_process)
 		event->remove_dynamically_sensitive_method_process(method_process);
 		event->remove_statically_sensitive_method_process(method_process);
 	}
-	
-	std::vector<sc_method_process *>::size_type num_runnable_method_processes = runnable_method_processes.size();
-	if(num_runnable_method_processes > 1)
-	{
-		std::vector<sc_method_process *>::size_type runnable_method_process_num;
-		for(runnable_method_process_num = 0; runnable_method_process_num < num_runnable_method_processes; runnable_method_process_num++)
-		{
-			if(runnable_method_processes[runnable_method_process_num] == method_process)
-			{
-				runnable_method_processes[runnable_method_process_num] = runnable_method_processes[runnable_method_processes.size() - 1];
-				break;
-			}
-		}
-	}
-	else
-	{
-		runnable_method_processes.clear();
-	}
+
+	untrigger(method_process);
 }
 
 void sc_kernel::release_terminated_thread_processes()
@@ -1156,6 +1137,81 @@ void sc_kernel::release_terminated_method_processes()
 	}
 	
 	terminated_method_processes.clear();
+}
+
+void sc_kernel::reset_thread_process(sc_thread_process *target_thread_process)
+{
+	if(current_thread_process && (current_thread_process != target_thread_process))
+	{
+		// reset requested by another thread process
+
+		// before yielding to target thread being reset, reschedule the calling process
+		trigger(current_thread_process);
+		
+		// switch to thread being reset and let thread reset (throw)
+		set_current_thread_process(target_thread_process);
+		current_thread_process->coroutine->yield(target_thread_process->coroutine);
+	}
+	else if(current_method_process)
+	{
+		// reset requested by another method process
+		
+		// switch to target thread being reset and let target thread reset (throw)
+		set_current_method_process(0);
+		set_current_thread_process(target_thread_process);
+		main_coroutine->yield(target_thread_process->coroutine);
+		set_current_method_process(current_method_process);
+
+		// check if method process got an exception in the meantime
+		current_method_process->check_exceptions();
+	}
+	else
+	{
+		throw std::runtime_error("Internal error!");
+	}
+}
+
+void sc_kernel::reset_method_process(sc_method_process *target_method_process)
+{
+	if(current_thread_process)
+	{
+		// reset requested by a thread process
+
+		// immediately run the target method process being reset
+		sc_thread_process *calling_thread_process = current_thread_process;
+		set_current_thread_process(0);
+		set_current_method_process(target_method_process);
+		target_method_process->run();
+		set_current_thread_process(calling_thread_process);
+	}
+	else if(current_method_process && (current_method_process != target_method_process))
+	{
+		// reset by another method process
+	}
+	else
+	{
+		throw std::runtime_error("Internal error!");
+	}
+}
+
+void sc_kernel::kill_thread_process(sc_thread_process *target_thread_process)
+{
+	if(current_thread_process)
+	{
+		// kill requested by another thread process
+
+		// before yielding to target thread being reset, reschedule the calling process
+		trigger(current_thread_process);
+		
+		// switch to thread being reset and let thread reset (throw)
+		set_current_thread_process(target_thread_process);
+		current_thread_process->coroutine->yield(target_thread_process->coroutine);
+	}
+	else
+	{
+		// kill requested by another method process or kernel
+		main_coroutine->yield(target_thread_process->coroutine);  // switch to thread being killed and let thread die (throw)
+	}
 }
 
 void sc_kernel::set_time_resolution(double v, sc_time_unit tu, bool user)
@@ -1278,6 +1334,36 @@ sc_time sc_kernel::get_time_resolution() const
 const sc_time& sc_kernel::get_max_time() const
 {
 	return max_time;
+}
+
+void sc_kernel::untrigger(sc_thread_process *thread_process)
+{
+	std::vector<sc_thread_process *>::size_type num_runnable_thread_processes = runnable_thread_processes.size();
+	std::vector<sc_thread_process *>::size_type runnable_thread_process_num;
+	for(runnable_thread_process_num = 0; runnable_thread_process_num < num_runnable_thread_processes; runnable_thread_process_num++)
+	{
+		if(runnable_thread_processes[runnable_thread_process_num] == thread_process)
+		{
+			runnable_thread_processes[runnable_thread_process_num] = runnable_thread_processes[runnable_thread_processes.size() - 1];
+			runnable_thread_processes.pop_back();
+			break;
+		}
+	}
+}
+
+void sc_kernel::untrigger(sc_method_process *method_process)
+{
+	std::vector<sc_method_process *>::size_type num_runnable_method_processes = runnable_method_processes.size();
+	std::vector<sc_method_process *>::size_type runnable_method_process_num;
+	for(runnable_method_process_num = 0; runnable_method_process_num < num_runnable_method_processes; runnable_method_process_num++)
+	{
+		if(runnable_method_processes[runnable_method_process_num] == method_process)
+		{
+			runnable_method_processes[runnable_method_process_num] = runnable_method_processes[runnable_method_processes.size() - 1];
+			runnable_method_processes.pop_back();
+			break;
+		}
+	}
 }
 
 sc_process_handle sc_kernel::get_current_process_handle() const

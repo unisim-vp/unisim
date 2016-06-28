@@ -92,8 +92,11 @@ public:
 	sc_process_handle create_method_process(const char *name, sc_process_owner *process_owner, sc_process_owner_method_ptr process_owner_method_ptr, const sc_spawn_options *);
 	
 	void initialize();
+	void do_evaluation_phase();
+	void do_update_phase();
+	void do_delta_notification_phase();
 	void do_delta_steps(bool once);
-	bool do_timed_step();
+	bool do_timed_notification_phase();
 	void simulate(const sc_time& duration);
 	void start(const sc_time& duration, sc_starvation_policy p = SC_RUN_TO_TIME);
 	
@@ -121,6 +124,11 @@ public:
 	void disconnect_method_process(sc_method_process *method_process);
 	void release_terminated_thread_processes();
 	void release_terminated_method_processes();
+	
+	void reset_thread_process(sc_thread_process *thread_process);
+	void reset_method_process(sc_method_process *method_process);
+	void kill_thread_process(sc_thread_process *thread_process);
+	void kill_method_process(sc_method_process *method_process);
 	
 	// time resolution management
 	void set_time_resolution(double v, sc_time_unit tu, bool user);
@@ -158,6 +166,10 @@ public:
 	// processes
 	inline void trigger(sc_thread_process *thread_process) ALWAYS_INLINE;
 	inline void trigger(sc_method_process *method_process) ALWAYS_INLINE;
+	void untrigger(sc_thread_process *thread_process);
+	void untrigger(sc_method_process *method_process);
+	inline void set_current_thread_process(sc_thread_process *thread_process) ALWAYS_INLINE;
+	inline void set_current_method_process(sc_method_process *method_process) ALWAYS_INLINE;
 	
 	// primitive channels
 	inline void request_update(sc_prim_channel *prim_channel) ALWAYS_INLINE;
@@ -334,6 +346,7 @@ inline sc_coroutine *sc_kernel::get_next_coroutine()
 	current_writer = thread_process;
 	current_thread_process = thread_process;
 	
+//	std::cerr << current_time_stamp << ": /\\/ " << thread_process->name() << std::endl;
 	return thread_process->coroutine;
 }
 
@@ -476,6 +489,20 @@ inline void sc_kernel::trigger(sc_method_process *method_process)
 		runnable_method_processes.push_back(method_process);
 		method_process->trigger_requested = true;
 	}
+}
+
+inline void sc_kernel::set_current_thread_process(sc_thread_process *thread_process)
+{
+	current_object = thread_process;
+	current_writer = thread_process;
+	current_thread_process = thread_process;
+}
+
+inline void sc_kernel::set_current_method_process(sc_method_process *method_process)
+{
+	current_object = method_process;
+	current_writer = method_process;
+	current_method_process = method_process;
 }
 
 inline void sc_kernel::request_update(sc_prim_channel *prim_channel)

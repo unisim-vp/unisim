@@ -201,3 +201,15 @@ uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(sharedir) || true)
 	(rmdir $(libdir) || true)
+
+if LIBIEEE1666_ENABLE_ACCELLERA_INSTALL_LAYOUT
+install-exec-hook:
+	(test -e $(includedir)/systemc || (cd $(includedir) && $(LN_S) libieee1666/systemc systemc))
+	(test -e $(includedir)/systemc.h || (cd $(includedir) && $(LN_S) libieee1666/systemc.h systemc.h))
+	(test -e $(includedir)/tlm || (cd $(includedir) && $(LN_S) libieee1666/tlm tlm))
+	(test -e $(includedir)/tlm.h || (cd $(includedir) && $(LN_S) libieee1666/tlm.h tlm.h))
+	(test -e $(includedir)/tlm_utils || (cd $(includedir) && $(LN_S) libieee1666/tlm_utils tlm_utils))
+	(test -e $(libdir)/libsystemc.a || (cd $(libdir) && $(LN_S) libieee1666.a libsystemc.a))
+	(test -e $(libdir)/libsystemc.so || (cd $(libdir) && $(LN_S) libieee1666.so libsystemc.so))
+	(test -z $(TARGET_ARCH) || test -e $(prefix)/lib-$(TARGET_ARCH) || (cd $(prefix) && $(LN_S) lib lib-$(TARGET_ARCH)))
+endif
