@@ -114,14 +114,12 @@ CPU::CPU(const char *name, Object *parent)
   , instruction_counter(0)
   , trap_on_instruction_counter(0)
   , ipb_base_address( -1 )
-  , param_cpu_cycle_time_ps("cpu-cycle-time-ps", this, cpu_cycle_time_ps, "The processor cycle time in picoseconds.")
   , param_verbose("verbose", this, this->PCPU::verbose, "Activate the verbose system (0 = inactive, different than 0 = active).")
   , param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter,
                                       "Produce a trap when the given instruction count is reached.")
   , stat_instruction_counter("instruction-counter", this, instruction_counter, "Number of instructions executed.")
 {
   // Set the right format for various of the variables
-  param_cpu_cycle_time_ps.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
   param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
   stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 }
@@ -142,13 +140,6 @@ CPU::BeginSetup()
 {
   if (verbose)
     logger << DebugInfo << "CPU::BeginSetup(): Verbose activated." << EndDebugInfo;
-
-  if (cpu_cycle_time_ps == 0)
-    {
-      // We can't (don't want to) provide a default valid cycle time
-      logger << DebugError << "cpu-cycle-time should be strictly positive" << EndDebugError;
-      return false;
-    }
 
   return true;
 }
@@ -180,9 +171,6 @@ CPU::EndSetup()
   
   if (verbose)
     logger << DebugInfo << "Initial pc set to 0x" << std::hex << GetNIA() << std::dec << EndDebugInfo;
-  
-  if (verbose)
-    logger << DebugInfo << "Setting cpu cycle time to " << cpu_cycle_time_ps << " ps." << EndDebugInfo;
   
   /* If the memory access reporting import is not connected remove the
    *   need of reporting memory accesses and finished instruction.
@@ -261,7 +249,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
   }
   
   uint32_t write_addr = addr & ~lo_mask;
-  //CheckPermissions( write_addr, cpsr.Get(M) != USER_MODE, mat_write, size );
+  CheckPermissions( write_addr, cpsr.Get(M) != USER_MODE, mat_write, size );
                     
   // There is no data cache or data should not be cached.
   // Just send the request to the memory interface
@@ -314,7 +302,7 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
   }
   
   uint32_t read_addr = addr & ~lo_mask;
-  //CheckPermissions( read_addr, cpsr.Get(M) != USER_MODE, mat_read, size );
+  CheckPermissions( read_addr, cpsr.Get(M) != USER_MODE, mat_read, size );
   
   uint8_t data[4];
 
@@ -694,7 +682,7 @@ CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
 {
   this->ipb_base_address = base_address;
   
-  //CheckPermissions( base_address, cpsr.Get(M) != USER_MODE, mat_exec, size );
+  CheckPermissions( base_address, cpsr.Get(M) != USER_MODE, mat_exec, IPB_LINE_SIZE );
   
   if (not PrRead(base_address, &this->ipb_bytes[0], IPB_LINE_SIZE)) {
     DataAbort( base_address, mat_exec, DAbort_SyncExternal );
@@ -935,8 +923,9 @@ CPU::CheckPermissions( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned si
      (AP111)).tt;
   
   uint32_t xabort = unsigned(mat == mat_exec) & RegisterField<12,1>().Get( access_control );
+  uint32_t  abort = (perm_table >> sel);
   
-  if (unlikely(((perm_table >> sel) | xabort) & 1))
+  if (unlikely((abort | xabort) & 1))
     DataAbort( va, mat, DAbort_Permission );
 }
 
