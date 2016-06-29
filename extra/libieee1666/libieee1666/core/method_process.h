@@ -50,6 +50,7 @@ public:
 	virtual ~sc_method_process();
 
 	void run();
+	void check_exceptions();
 	
 	void trigger_dynamically(const sc_event *e);
 	void trigger_statically();
@@ -93,9 +94,13 @@ private:
 	};
 	
 	bool method_process_terminated;
+	bool flag_killed;
+	bool flag_reset;
 	bool flag_is_unwinding;
+	bool flag_throw_it;
 	sc_event method_process_terminated_event;
 	sc_event method_process_reset_event;
+	const sc_user_exception *user_exception;
 	
 	// next trigger
 	next_trigger_type_t next_trigger_type;

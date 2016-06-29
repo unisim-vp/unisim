@@ -34,7 +34,7 @@ Static libraries you can use to develop SystemC modules and simulators.
 %autosetup
 
 %build
-%configure
+%configure --disable-accellera-install-layout
 make
 
 %install

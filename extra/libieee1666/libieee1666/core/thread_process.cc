@@ -50,9 +50,9 @@ sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_proce
 	, flag_is_unwinding(false)
 	, flag_throw_it(false)
 	, thread_process_terminated(false)
-	, freed(false)
 	, thread_process_terminated_event(__LIBIEEE1666_KERNEL_PREFIX__ "_terminated_event")
 	, thread_process_reset_event(__LIBIEEE1666_KERNEL_PREFIX__ "_reset_event")
+	, user_exception(0)
 	, wait_type(WAIT_DEFAULT)
 	, wait_count(0)
 	, wait_event(0)
@@ -85,13 +85,13 @@ void sc_thread_process::yield(sc_coroutine *next_coroutine)
 	{
 		flag_killed = false;
 		flag_is_unwinding = true;
-		throw sc_unwind_exception(false);
+		throw sc_unwind_exception(SC_UNWIND_EXCEPTION_KILL);
 	}
 	else if(flag_reset)
 	{
-		flag_reset = true;
+		flag_reset = false;
 		flag_is_unwinding = true;
-		throw sc_unwind_exception(true);
+		throw sc_unwind_exception(SC_UNWIND_EXCEPTION_RESET);
 	}
 	else if(flag_throw_it)
 	{
@@ -102,6 +102,7 @@ void sc_thread_process::yield(sc_coroutine *next_coroutine)
 
 void sc_thread_process::yield(sc_thread_process *next_thread_process)
 {
+	kernel->set_current_thread_process(next_thread_process);
 	yield(next_thread_process->coroutine);
 }
 
@@ -246,6 +247,7 @@ void sc_thread_process::trigger_dynamically(const sc_event *triggered_event)
 void sc_thread_process::wait()
 {
 	wait_type = WAIT_DEFAULT;
+//	std::cerr << name() << "::wait()" << std::endl;
 	yield();
 }
 
@@ -255,6 +257,7 @@ void sc_thread_process::wait(int n)
 	
 	wait_type = WAIT_DEFAULT;
 	wait_count = n - 1;
+//	std::cerr << name() << "::wait(" << n << ")" << std::endl;
 	yield();
 }
 
@@ -263,6 +266,7 @@ void sc_thread_process::wait(const sc_event& e)
 	wait_type = WAIT_EVENT;
 	wait_event = &e;
 	wait_event->add_dynamically_sensitive_thread_process(this);
+//	std::cerr << name() << "::wait(" << e.name() << ")" << std::endl;
 	yield();
 }
 
@@ -273,6 +277,7 @@ void sc_thread_process::wait(const sc_event_and_list& el)
 	wait_event_list->acquire();
 	wait_event_list->add_dynamically_sensitive_thread_process(this);
 	wait_and_event_list_remaining_count = wait_event_list->size();
+//	std::cerr << name() << "::wait(and_list)" << std::endl;
 	yield();
 }
 
@@ -283,6 +288,7 @@ void sc_thread_process::wait(const sc_event_or_list& el)
 	wait_event_list->acquire();
 	wait_event_list->add_dynamically_sensitive_thread_process(this);
 	yield();
+//	std::cerr << name() << "::wait(or_list)" << std::endl;
 }
 
 void sc_thread_process::wait(const sc_time& t)
@@ -291,6 +297,7 @@ void sc_thread_process::wait(const sc_time& t)
 	wait_time_out = t;
 	wait_time_out_event.add_dynamically_sensitive_thread_process(this);
 	wait_time_out_event.notify(wait_time_out);
+//	std::cerr << name() << "::wait(" << t << ")" << std::endl;
 	yield();
 }
 
@@ -302,6 +309,7 @@ void sc_thread_process::wait(const sc_time& t, const sc_event& e)
 	wait_time_out_event.notify(wait_time_out);
 	wait_event = &e;
 	wait_event->add_dynamically_sensitive_thread_process(this);
+//	std::cerr << name() << "::wait(" << t << ", " << e.name() << ")" << std::endl;
 	yield();
 }
 
@@ -315,6 +323,7 @@ void sc_thread_process::wait(const sc_time& t, const sc_event_and_list& el)
 	wait_event_list->acquire();
 	wait_event_list->add_dynamically_sensitive_thread_process(this);
 	yield();
+//	std::cerr << name() << "::wait(" << t << ", and_list)" << std::endl;
 }
 
 void sc_thread_process::wait(const sc_time& t, const sc_event_or_list& el)
@@ -327,6 +336,7 @@ void sc_thread_process::wait(const sc_time& t, const sc_event_or_list& el)
 	wait_event_list->acquire();
 	wait_event_list->add_dynamically_sensitive_thread_process(this);
 	yield();
+//	std::cerr << name() << "::wait(" << t << ", or_list)" << std::endl;
 }
 
 void sc_thread_process::terminate()
@@ -355,6 +365,18 @@ void sc_thread_process::coroutine_work(intptr_t _self)
 		{
 			self->flag_is_unwinding = false;
 			if(exc.is_reset()) continue;
+		}
+		catch(std::exception& exc)
+		{
+			std::cerr << "unhandled exception: " << exc.what() << std::endl;
+		}
+		catch(sc_user_exception& exc)
+		{
+			std::cerr << "unhandled user exception" << std::endl;
+		}
+		catch(...)
+		{
+			std::cerr << "unhandled exception" << std::endl;
 		}
 		
 		break;
@@ -420,23 +442,19 @@ void sc_thread_process::kill()
 		{
 			flag_killed = true;
 			
-			sc_thread_process *current_thread_process = kernel->get_current_thread_process();
-			
-			if(current_thread_process == this)
+			// deschedule target process
+			kernel->untrigger(this);
+
+			if(kernel->get_current_thread_process() == this)
 			{
 				// suicide
 				flag_is_unwinding = true;
-				throw sc_unwind_exception(false);
-			}
-			else if(current_thread_process)
-			{
-				// kill requested by another thread process
-				current_thread_process->yield(this); // switch to thread being killed and let thread die (throw)
+				throw sc_unwind_exception(SC_UNWIND_EXCEPTION_KILL);
 			}
 			else
 			{
 				// kill requested by another method process or kernel
-				kernel->get_coroutine_system()->get_main_coroutine()->yield(coroutine);  // switch to thread being killed and let thread die (throw)
+				kernel->kill_thread_process(this);
 			}
 		}
 		started = false;
@@ -447,29 +465,27 @@ void sc_thread_process::reset(bool async)
 {
 	wait_type = WAIT_DEFAULT; // restore static sensitivity
 	
+	// immediate notification of reset
+	thread_process_reset_event.notify();
+
 	flag_reset = true;
 	
 	if(started)
 	{
 		if(!thread_process_terminated)
 		{
-			sc_thread_process *current_thread_process = kernel->get_current_thread_process();
-			
-			if(current_thread_process == this)
+			// deschedule target process
+			kernel->untrigger(this);
+
+			if(kernel->get_current_thread_process() == this)
 			{
 				// self reset
 				flag_is_unwinding = true;
-				throw sc_unwind_exception(true);
-			}
-			else if(current_thread_process)
-			{
-				// reset requested by another thread process
-				current_thread_process->yield(this); // switch to thread being reset and let thread reset (throw)
+				throw sc_unwind_exception(SC_UNWIND_EXCEPTION_RESET);
 			}
 			else
 			{
-				// reset requested by another method process or kernel
-				kernel->get_coroutine_system()->get_main_coroutine()->yield(coroutine);  // switch to thread being reset and let thread reset (throw)
+				kernel->reset_thread_process(this);
 			}
 		}
 	}

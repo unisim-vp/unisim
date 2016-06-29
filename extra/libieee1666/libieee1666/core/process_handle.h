@@ -50,14 +50,14 @@ public:
 	virtual bool is_reset() const;
 protected:
 	sc_unwind_exception();
-	sc_unwind_exception(bool reset);
+	sc_unwind_exception(sc_unwind_exception_type type);
 	sc_unwind_exception( const sc_unwind_exception& );
 	virtual ~sc_unwind_exception() throw();
 private:
 	friend class sc_method_process;
 	friend class sc_thread_process;
-	
-	bool reset;
+
+	sc_unwind_exception_type type;
 };
 
 class sc_process_handle

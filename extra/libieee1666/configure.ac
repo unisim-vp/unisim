@@ -24,6 +24,11 @@ AC_LANG([C++])
 
 ########################################### configure options  ###############################################
 
+AC_ARG_ENABLE([accellera-install-layout],
+	AS_HELP_STRING([--enable-accellera-install-layout], [Accellera install layout [default=yes]]), , enable_accellera_install_layout=yes)
+
+AM_CONDITIONAL([LIBIEEE1666_ENABLE_ACCELLERA_INSTALL_LAYOUT], [test "x${enable_accellera_install_layout}" = "xyes"])
+
 AC_ARG_ENABLE([posix-guarded-stack],
 	AS_HELP_STRING([--enable-posix-guarded-stack], [guarded stack support for POSIX [default=yes]]), , enable_posix_guarded_stack=yes)
 
@@ -104,6 +109,90 @@ if test "x${enable_unwind_sjlj}" = "xyes"; then
 else
 	LIBIEEE1666_ENABLE_UNWIND_SJLJ=0
 fi
+
+########## Mimics the behavior of SystemC configure to guess where libsystemc.a is installed ###############
+
+TARGET_ARCH=
+CXX_COMP=$(set ${CXX}; basename $1)
+
+case "${target}" in
+	*-apple-*)
+		case "${target_cpu}" in
+			x86_64)
+				TARGET_ARCH="macosx64"
+				;;
+			x386 | i386)
+				TARGET_ARCH="macosx"
+				;;
+			powerpc)
+				TARGET_ARCH="macosxppc"
+				;;
+			powerpc64)
+				TARGET_ARCH="macosxppc64"
+				;;
+		esac
+		;;
+	sparc-sun-solaris*) 
+		if test x$GXX = xyes ; then
+			TARGET_ARCH="gccsparcOS5"
+		else
+			if test "x${CXX_COMP}" = "xCC" ; then
+				TARGET_ARCH="sparcOS5"
+			fi
+		fi
+		;;
+	*linux*)
+		case "${target_cpu}" in
+			x86_64 | amd64)
+				TARGET_ARCH="linux64"
+				;;
+			i*86)
+				TARGET_ARCH="linux"
+				;;
+		esac
+		;;
+	*freebsd* | dragonfly* | *netbsd* | openbsd*)
+		case "${target_cpu}" in
+			x86_64 | amd64)
+				TARGET_ARCH="bsd64"
+				;;
+			i*86)
+				TARGET_ARCH="bsd"
+				;;
+		esac
+		;;
+	*cygwin*)
+		case "${target_cpu}" in
+			x86_64 | amd64)
+				TARGET_ARCH="cygwin64"
+				;;
+			i*86)
+				TARGET_ARCH="cygwin"
+				;;
+		esac
+		;;
+	*mingw*)
+		case "${target_cpu}" in
+			x86_64 | amd64)
+				TARGET_ARCH="mingw64"
+				;;
+			i*86)
+				TARGET_ARCH="mingw"
+				;;
+		esac
+		;;
+	*hpux11*)
+		if test "x{$GXX}" = "xyes" ; then
+			TARGET_ARCH="gcchpux11"
+		else
+			if test "${CXX_COMP}" = "aCC" ; then
+				TARGET_ARCH="hpux11"
+			fi
+		fi
+		;;
+esac
+
+AC_SUBST(TARGET_ARCH)
 
 ####################################### helper macro for testing a function ###################################
 
