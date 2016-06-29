@@ -578,7 +578,13 @@ AC_MSG_NOTICE([                Configuration summary of ${PACKAGE}              
 AC_MSG_NOTICE([-------------------------------------------------------------------])
 AC_MSG_NOTICE([Building system: ${build}])
 AC_MSG_NOTICE([Target system: ${host}])
-!
+
+if test "x${enable_accellera_install_layout}" = "xyes"; then
+	AC_MSG_NOTICE([Accellera install layout: yes])
+else
+	AC_MSG_NOTICE([Accellera install layout: no])
+fi
+
 if test ${LIBIEEE1666_PTHREAD} -eq 1; then
 	AC_MSG_NOTICE([POSIX thread coroutine system support: yes])
 else
