@@ -3,6 +3,7 @@
 
 #include <limits>       // std::numeric_limits
 #include <ostream>
+#include <stdexcept>
 #include <stdint.h>
 #include <typeinfo>
 // #include <cmath>
@@ -147,36 +148,37 @@ namespace armsec
     virtual int16_t GetS16() const = 0;
     virtual int32_t GetS32() const = 0;
     virtual int64_t GetS64() const = 0;
+    static std::ostream& warn();
   };
   
   template <typename VALUE_TYPE>
   VALUE_TYPE BinaryXor( VALUE_TYPE l, VALUE_TYPE r ) { return l ^ r; }
-  double BinaryXor( double l, double r ) { throw std::logic_error( "No ^ for double." ); }
-  float BinaryXor( float l, float r ) { throw std::logic_error( "No ^ for float." ); }
+  double BinaryXor( double l, double r );
+  float BinaryXor( float l, float r );
   template <typename VALUE_TYPE>
   VALUE_TYPE BinaryAnd( VALUE_TYPE l, VALUE_TYPE r ) { return l & r; }
-  double BinaryAnd( double l, double r ) { throw std::logic_error( "No & for double." ); }
-  float BinaryAnd( float l, float r ) { throw std::logic_error( "No & for float." ); }
+  double BinaryAnd( double l, double r );
+  float BinaryAnd( float l, float r );
   template <typename VALUE_TYPE>
   VALUE_TYPE BinaryOr( VALUE_TYPE l, VALUE_TYPE r ) { return l | r; }
-  double BinaryOr( double l, double r ) { throw std::logic_error( "No | for double." ); }
-  float BinaryOr( float l, float r ) { throw std::logic_error( "No | for float." ); }
+  double BinaryOr( double l, double r );
+  float BinaryOr( float l, float r );
   // template <typename VALUE_TYPE>
   // VALUE_TYPE BinaryROR( VALUE_TYPE l, uint8_t shift ) { return rotate_right( l, shift ); }
-  // double BinaryROR( double, uint8_t ) { throw std::logic_error( "No ^ for double." ); }
-  // float BinaryROR( float, uint8_t ) { throw std::logic_error( "No ^ for float." ); }
+  // double BinaryROR( double, uint8_t );
+  // float BinaryROR( float, uint8_t );
   template <typename VALUE_TYPE>
   VALUE_TYPE BinarySHL( VALUE_TYPE l, uint8_t shift ) { return l << shift; }
-  double BinarySHL( double, uint8_t ) { throw std::logic_error( "No << for double." ); }
-  float BinarySHL( float, uint8_t ) { throw std::logic_error( "No << for float." ); }
+  double BinarySHL( double, uint8_t );
+  float BinarySHL( float, uint8_t );
   template <typename VALUE_TYPE>
   VALUE_TYPE BinarySHR( VALUE_TYPE l, uint8_t shift ) { return l >> shift; }
-  double BinarySHR( double, uint8_t ) { throw std::logic_error( "No >> for double." ); }
-  float BinarySHR( float, uint8_t ) { throw std::logic_error( "No >> for float." ); }
+  double BinarySHR( double, uint8_t );
+  float BinarySHR( float, uint8_t );
   template <typename VALUE_TYPE>
   VALUE_TYPE BSwp( VALUE_TYPE v ) { throw std::logic_error( "No ByteSwap for this type" ); }
-  uint32_t BSwp( uint32_t v ) { return unisim::util::endian::ByteSwap( v ); }
-  uint16_t BSwp( uint16_t v ) { return unisim::util::endian::ByteSwap( v ); }
+  uint32_t BSwp( uint32_t v );
+  uint16_t BSwp( uint16_t v );
   
   template <typename VALUE_TYPE>
   struct ConstNode : public ConstNodeBase
@@ -242,7 +244,7 @@ namespace armsec
         case BinaryOp::NA: throw std::logic_error("???");
         }
       
-      std::cerr << "Unhandled binary operation: " << op.ToString() << std::endl;
+      warn() << "Unhandled binary operation: " << op.ToString() << std::endl;
       return 0;
     }
     ConstNodeBase*
@@ -263,7 +265,7 @@ namespace armsec
           
         }
       
-      std::cerr << "Unhandled unary operation: " << op.ToString() << std::endl;
+      warn() << "Unhandled unary operation: " << op.ToString() << std::endl;
       return 0;
     }
     float GetFloat() const { return value; }
@@ -291,8 +293,8 @@ namespace armsec
   struct Expr
   {
     Expr() : node() {} ExprNode* node;
-    Expr( Expr const& expr ) : node( expr.node ) { node->Retain(); }
-    Expr( ExprNode* const& _node ) : node( _node ) { node->Retain(); }
+    Expr( Expr const& expr ) : node( expr.node ) { if (node) node->Retain(); }
+    Expr( ExprNode* const& _node ) : node( _node ) { if (node) node->Retain(); }
     Expr&  operator = ( Expr const& expr ) { if (expr.node) expr.node->Retain(); if (node) node->Release(); node = expr.node; return *this; }
     ~Expr() { if (node) node->Release(); }
     ExprNode const* operator->() const { return node; }
@@ -319,7 +321,10 @@ namespace armsec
       }
       return false;
     }
+    operator bool () const { return node; }
   };
+  
+  std::ostream& operator << (std::ostream&, Expr const&);
   
   template <typename VALUE_TYPE>
   Expr make_const( VALUE_TYPE value ) { return Expr( new ConstNode<VALUE_TYPE>( value ) ); }
@@ -369,7 +374,7 @@ namespace armsec
     virtual void Traverse( Visitor& visitor ) const
     { visitor.Process( this ); src->Traverse( visitor ); }
     virtual void Repr( std::ostream& sink ) const
-    { sink << unop.ToString() << "( "; src->Repr( sink ); sink << " )"; }
+    { sink << unop.ToString() << "( " << src << " )"; }
     intptr_t cmp( ExprNode const& brhs ) const
     {
       UONode const& rhs = dynamic_cast<UONode const&>( brhs );
@@ -393,7 +398,7 @@ namespace armsec
     virtual void Traverse( Visitor& visitor ) const
     { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
     virtual void Repr( std::ostream& sink ) const
-    { sink << binop.ToString() << "( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
+    { sink << binop.ToString() << "( " << left << ", " << right << " )"; }
     intptr_t cmp( ExprNode const& brhs ) const
     {
       BONode const& rhs = dynamic_cast<BONode const&>( brhs );
@@ -553,7 +558,7 @@ namespace armsec
     {
       IsNaNNode( Expr const& _src, bool _signaling ) : src(_src), signaling(_signaling) {} Expr src; bool signaling;
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "Is" << (signaling?'S':'Q') << "NaN( "; src->Repr( sink ); sink << " )"; }
+      virtual void Repr( std::ostream& sink ) const { sink << "Is" << (signaling?'S':'Q') << "NaN( " << src << " )"; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         IsNaNNode const& rhs = dynamic_cast<IsNaNNode const&>( brhs );
@@ -607,7 +612,7 @@ namespace armsec
         : acc( _acc ), left( _left ), right( _right ) {}
       Expr acc; Expr left; Expr right;
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); acc->Traverse( visitor ); left->Traverse( visitor ); right->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "FMulAdd( "; acc->Repr( sink ); sink << ", "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
+      virtual void Repr( std::ostream& sink ) const { sink << "FMulAdd( " << acc << ", " << left << ", " << right << " )"; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         MulAddNode const& rhs = dynamic_cast<MulAddNode const&>( brhs );
@@ -639,7 +644,7 @@ namespace armsec
         : src( _src ), ssz( _ssz ), dsz( _dsz )
       {} Expr src; int ssz; int dsz;
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "F" << ssz << "2F" << dsz << "( "; src->Repr( sink ); sink << " )"; }
+      virtual void Repr( std::ostream& sink ) const { sink << "F" << ssz << "2F" << dsz << "( " << src << " )"; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         FtoFNode const& rhs = dynamic_cast<FtoFNode const&>( brhs );
@@ -662,7 +667,7 @@ namespace armsec
         : src( _src ), fsz( _fsz ), isz( _isz ), fb( _fb )
       {} Expr src; int fsz; int isz; int fb; 
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "F" << fsz << "2I" << isz << "( "; src->Repr( sink ); sink << ", " << fb << " )"; }
+      virtual void Repr( std::ostream& sink ) const { sink << "F" << fsz << "2I" << isz << "( " << src << ", " << fb << " )"; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         FtoINode const& rhs = dynamic_cast<FtoINode const&>( brhs );
@@ -686,7 +691,7 @@ namespace armsec
         : src( _src ), isz( _isz ), fsz( _fsz ), fb( _fb )
       {} Expr src; int isz; int fsz; int fb;
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "I" << isz << "2F" << fsz << "( "; src->Repr( sink ); sink << ", " << fb << " )"; }
+      virtual void Repr( std::ostream& sink ) const { sink << "I" << isz << "2F" << fsz << "( " << src << ", " << fb << " )"; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         ItoFNode const& rhs = dynamic_cast<ItoFNode const&>( brhs );

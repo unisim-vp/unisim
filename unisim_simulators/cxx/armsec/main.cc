@@ -2,8 +2,10 @@
 #include <top_thumb.tcc>
 #include <smart_types.hh>
 
+#include <algorithm>
 #include <iostream>
 #include <cstdlib>
+#include <set>
 
 namespace armsec
 {
@@ -21,19 +23,21 @@ namespace armsec
   
   struct PathNode
   {
-    PathNode( PathNode* _previous=0 ) : expr(), previous( _previous ), true_nxt(), false_nxt(), complete(false) {}
+    PathNode( PathNode* _previous=0 )
+      : cond(), sinks(), previous( _previous ), true_nxt(), false_nxt(), complete(false)
+    {}
     
-    PathNode* proceed( Expr const& cond, bool& result )
+    PathNode* proceed( Expr const& _cond, bool& result )
     {
-      if (not expr.node) {
-        expr = cond;
+      if (not cond.node) {
+        cond = _cond;
         false_nxt = new PathNode( this );
         true_nxt = new PathNode( this );
         result = false;
         return false_nxt;
       }
       
-      if (expr != cond)
+      if (cond != _cond)
         throw std::logic_error( "unexpected condition" );
       
       if (not false_nxt->complete) {
@@ -58,13 +62,83 @@ namespace armsec
       return false;
     }
     
-    void Dump( std::ostream& sink )
+    bool remove_dead_paths()
     {
-      sink << ((previous->true_nxt != this) ? "not " : "    ");
-      previous->expr->Repr( sink );
+      if (cond) {
+        bool leaf = true;
+        if (false_nxt) {
+          if (false_nxt->remove_dead_paths()) {
+            delete false_nxt;
+            false_nxt = 0;
+          } else
+            leaf = false;
+        }
+        if (true_nxt) {
+          if (true_nxt->remove_dead_paths()) {
+            delete true_nxt;
+            true_nxt = 0;
+          } else
+            leaf = false;
+        }
+        if (not leaf)
+          return false;
+      }
+      // This is a leaf; if no local sinks, signal dead path to parent
+      return sinks.size() == 0;
     }
     
-    Expr expr;
+    void factorize()
+    {
+      if (not cond)
+        return;
+      
+      false_nxt->factorize();
+      true_nxt->factorize();
+      
+      std::vector<Expr> isect;
+      {
+        isect.resize( std::max( false_nxt->sinks.size(), true_nxt->sinks.size() ) );
+        std::vector<Expr>::iterator end =
+          std::set_intersection( false_nxt->sinks.begin(), false_nxt->sinks.end(),
+                                 true_nxt->sinks.begin(), true_nxt->sinks.end(),
+                                 isect.begin() );
+        isect.resize( end - isect.begin() );
+      }
+      
+      for (std::vector<Expr>::const_iterator itr = isect.begin(), end = isect.end(); itr != end; ++itr) {
+        sinks.insert( *itr );
+        false_nxt->sinks.erase( *itr );
+        true_nxt->sinks.erase( *itr );
+      }
+    }
+    
+    void Dump( std::ostream& sink, std::string indent ) const
+    {
+      for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
+        sink << indent << *itr << '\n';
+      
+      if (not cond) {
+        if (sinks.size() == 0)
+          sink << indent << "pass\n";
+        return;
+      }
+      
+      if (true_nxt) {
+        sink << "if " << cond << ":\n";
+        true_nxt->Dump( sink, indent + "    " );
+      }
+      
+      if (false_nxt) {
+        if (true_nxt)
+          sink << "else:\n";
+        else
+          sink << "if not " << cond << ":\n";
+        false_nxt->Dump( sink, indent + "    " );
+      }
+    }
+    
+    Expr cond;
+    std::set<Expr> sinks;
     PathNode* previous;
     PathNode* true_nxt;
     PathNode* false_nxt;
@@ -154,7 +228,7 @@ namespace armsec
           NA = 0,
           r0,r1,r2,r3,r4,r5,r6,r7,
           r8,r9,sl,fp,ip,sp,lr,
-          cia, cpsr, spsr,
+          cia, nia, cpsr, spsr,
           fpscr, fpexc
         };
     
@@ -178,6 +252,7 @@ namespace armsec
         { static std::string const _("sp");    if (ops( _, sp))    return; }
         { static std::string const _("lr");    if (ops( _, lr))    return; }
         { static std::string const _("cia");   if (ops( _, cia))   return; }
+        { static std::string const _("nia");   if (ops( _, nia))   return; }
         { static std::string const _("cpsr");  if (ops( _, cpsr))  return; }
         { static std::string const _("spsr");  if (ops( _, spsr))  return; }
         { static std::string const _("fpscr"); if (ops( _, fpscr)) return; }
@@ -198,7 +273,7 @@ namespace armsec
     {
       Source( SourceID _id ) : id( _id ) {}
       Source( char const* name ) : id( name ) {}
-      virtual void Repr( std::ostream& sink ) const { sink << "Source(" << id.ToString() << ")"; }
+      virtual void Repr( std::ostream& sink ) const { sink << "Get(" << id.ToString() << ")"; }
       virtual intptr_t cmp( ExprNode const& brhs ) const {
         Source const& rhs = dynamic_cast<Source const&>( brhs );
         return id - rhs.id;
@@ -208,9 +283,25 @@ namespace armsec
       SourceID id;
     };
     
-    State( PathNode& _path, bool is_thumb, unsigned insn_length )
+    struct Sink : public ExprNode
+    {
+      Sink( SourceID _id, Expr const& _expr ) : id( _id ), expr( _expr ) {}
+      Sink( char const* name, Expr const& _expr ) : id( name ), expr( _expr ) {}
+      virtual void Repr( std::ostream& sink ) const { sink << id.ToString() << " := " << expr; }
+      virtual intptr_t cmp( ExprNode const& brhs ) const {
+        Sink const& rhs = dynamic_cast<Sink const&>( brhs );
+        if (intptr_t delta = id - rhs.id) return delta;
+        return expr.cmp( rhs.expr );
+      }
+      virtual ExprNode* GetConstNode() { return 0; };
+      
+      SourceID id;
+      Expr expr;
+    };
+    
+    State( PathNode& _path )
       : path( &_path )
-      , current_insn_addr( Expr( new Source("cia") ) )
+      , current_insn_addr()
       , next_insn_addr()
       , cpsr( Expr( new Source("cpsr") ) )
       , spsr( Expr( new Source("spsr") ) )
@@ -218,9 +309,14 @@ namespace armsec
     {
       for (unsigned reg = 0; reg < 15; ++reg)
         reg_values[reg] = U32( armsec::Expr( new Source( SourceID("r0") + reg ) ) );
-      reg_values[15] = current_insn_addr + U32( is_thumb ? 4 : 8 );
+    }
+    
+    void SetInsnProps( Expr const& _expr, bool is_thumb, unsigned insn_length )
+    {
       if ((insn_length != 32) and ((insn_length != 16) or not is_thumb))
         throw std::logic_error( "Bad instruction length" );
+      current_insn_addr = _expr;
+      reg_values[15] = current_insn_addr + U32( is_thumb ? 4 : 8 );
       next_insn_addr = current_insn_addr + U32( insn_length / 8 );
     }
     
@@ -312,7 +408,7 @@ namespace armsec
       {}
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); addr->Traverse( visitor ); }
       virtual void Repr( std::ostream& sink ) const {
-        sink << "Load" << (aligned ? "A" : "") << size << "( "; addr->Repr( sink ); sink << " )";
+        sink << "Load" << (aligned ? "A" : "") << size << "( " << addr << " )";
       }
       intptr_t cmp( ExprNode const& brhs ) const
       {
@@ -332,7 +428,7 @@ namespace armsec
       Store( Expr const& _addr, unsigned _size, bool _aligned, Expr const& _value )
         : addr( _addr ), size( _size ), aligned( _aligned ), value( _value )
       {}
-      virtual void Repr( std::ostream& sink ) const { sink << "Store( "; addr->Repr( sink ); sink << " )"; }
+      virtual void Repr( std::ostream& sink ) const { sink << "Store( " << addr << " )"; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         Store const& rhs = dynamic_cast<Store const&>( brhs );
@@ -348,7 +444,7 @@ namespace armsec
       Expr value;
     };
     
-    std::vector<Expr> stores;
+    std::set<Expr> stores;
     
     U32  MemURead32( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 4, false ) ) ); }
     U32  MemURead16( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 2, false ) ) ); }
@@ -356,11 +452,11 @@ namespace armsec
     U32  MemRead16( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 2, true ) ) ); }
     U32  MemRead8( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 1, false ) ) ); }
     
-    void MemUWrite32( U32 const& addr, U32 const& value ) { stores.push_back( new Store( addr.expr, 4, false, value.expr ) ); }
-    void MemUWrite16( U32 const& addr, U16 const& value ) { stores.push_back( new Store( addr.expr, 2, false, value.expr ) ); }
-    void MemWrite32( U32 const& addr, U32 const& value ) { stores.push_back( new Store( addr.expr, 4, true, value.expr ) ); }
-    void MemWrite16( U32 const& addr, U16 const& value ) { stores.push_back( new Store( addr.expr, 2, true, value.expr ) ); }
-    void MemWrite8( U32 const& addr, U8 const& value ) { stores.push_back( new Store( addr.expr, 1, false, value.expr ) ); }
+    void MemUWrite32( U32 const& addr, U32 const& value ) { stores.insert( new Store( addr.expr, 4, false, value.expr ) ); }
+    void MemUWrite16( U32 const& addr, U16 const& value ) { stores.insert( new Store( addr.expr, 2, false, value.expr ) ); }
+    void MemWrite32( U32 const& addr, U32 const& value ) { stores.insert( new Store( addr.expr, 4, true, value.expr ) ); }
+    void MemWrite16( U32 const& addr, U16 const& value ) { stores.insert( new Store( addr.expr, 2, true, value.expr ) ); }
+    void MemWrite8( U32 const& addr, U8 const& value ) { stores.insert( new Store( addr.expr, 1, false, value.expr ) ); }
     
     void SetExclusiveMonitors( U32 const& address, unsigned size ) { not_implemented(); }
     bool ExclusiveMonitorsPass( U32 const& address, unsigned size ) { not_implemented(); return false; }
@@ -423,25 +519,27 @@ namespace armsec
     void        CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, U32 const& value ) { not_implemented(); }
     char const* CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { not_implemented(); return ""; }
     
-    void Dump( std::ostream& sink, State const& ref )
+    bool
+    close( State const& ref )
     {
-      sink <<     "    nia   := "; next_insn_addr.expr->Repr( sink ); sink << std::endl;
+      bool complete = path->close();
+      path->sinks.insert( Expr( new Sink( "nia", next_insn_addr.expr ) ) );
       if (cpsr.m_value.expr != ref.cpsr.m_value.expr)
-        { sink << "    cpsr  := "; cpsr.m_value.expr->Repr( sink ); sink << std::endl; }
+        path->sinks.insert( Expr( new Sink( "cpsr", cpsr.m_value.expr ) ) );
       if (spsr.m_value.expr != ref.spsr.m_value.expr)
-        { sink << "    spsr  := "; spsr.m_value.expr->Repr( sink ); sink << std::endl; }
+        path->sinks.insert( Expr( new Sink( "spsr", spsr.m_value.expr ) ) );
       if (fpscr.m_value.expr != ref.fpscr.m_value.expr)
-        { sink << "    fpscr := "; fpscr.m_value.expr->Repr( sink ); sink << std::endl; }
+        path->sinks.insert( Expr( new Sink( "fpscr", fpscr.m_value.expr ) ) );
       for (unsigned reg = 0; reg < 15; ++reg) {
-        if (reg_values[reg].expr == ref.reg_values[reg].expr)
-          continue;
-        sink <<   "    " << (SourceID("r0") + reg).ToString()
-             <<         "    := "; reg_values[reg].expr->Repr( sink ); sink << std::endl;
+        if (reg_values[reg].expr != ref.reg_values[reg].expr)
+          path->sinks.insert( Expr( new Sink( SourceID("r0") + reg, reg_values[reg].expr ) ) );
       }
+      for (std::set<Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
+        path->sinks.insert( *itr );
+      return complete;
     }
-  
   };
-
+  
 }
 
 struct ARMISA : public unisim::component::cxx::processor::arm::isa::arm32::Decoder<armsec::State>
@@ -475,22 +573,27 @@ struct Decoder
   do_isa( ISA& isa, uint32_t addr, uint32_t code )
   {
     typename ISA::Operation* op = isa.NCDecode( addr, ISA::mkcode( code ) );
+    
+    armsec::Expr insn_addr( new armsec::State::Source("cia") ); //<if instruction address shall a remain variable
+    // armsec::Expr insn_addr( armsec::make_const( addr ) ); //<if instruction address shall be known
+    
     armsec::PathNode path;
     std::cout << std::hex << addr << std::dec << ": ";
-    armsec::State reference( path, isa.is_thumb, op->GetLength() );
+    
+    armsec::State reference( path );
+    reference.SetInsnProps( insn_addr, isa.is_thumb, op->GetLength() );
+      
     op->disasm( reference, std::cout );
     std::cout << std::endl;
     for (bool end = false; not end;) {
-      armsec::State state( path, isa.is_thumb, op->GetLength() );
+      armsec::State state( path );
+      state.SetInsnProps( insn_addr, isa.is_thumb, op->GetLength() );
       op->execute( state );
-      end = state.path->close();
-      char const* sep = "if    ";
-      for (armsec::PathNode* pn = state.path; pn->previous; pn = pn->previous, sep = "  and ")
-        {
-          std::cout << sep; pn->Dump( std::cout ); std::cout << std::endl;
-          state.Dump( std::cout, reference );
-        }
+      end = state.close( reference );
     }
+    path.factorize();
+    path.remove_dead_paths();
+    path.Dump( std::cout, "" );
   }
   void  do_arm( uint32_t addr, uint32_t code ) { do_isa( armisa, addr, code ); }
   void  do_thumb( uint32_t addr, uint32_t code ) { do_isa( thumbisa, addr, code ); }
