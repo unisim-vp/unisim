@@ -4,6 +4,9 @@ ACLOCAL_AMFLAGS=-I m4
 AM_CPPFLAGS=-I$(top_srcdir)/libieee1666 -I$(top_builddir)/libieee1666
 AM_CXXFLAGS = -fPIC
 sharedir = $(prefix)/share/libieee1666
+LIBTOOL_DEPS = @LIBTOOL_DEPS@
+libtool: $(LIBTOOL_DEPS)
+	$(SHELL) ./config.status libtool
 
 nobase_include_HEADERS = \
 libieee1666/systemc \
