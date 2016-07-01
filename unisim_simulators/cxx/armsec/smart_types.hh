@@ -628,7 +628,31 @@ namespace armsec
     {
       acc = FLOAT( Expr( new MulAddNode( acc.expr, op1.expr, op2.expr ) ) );
     }
-
+    
+    struct IsInvalidMulAddNode : public ExprNode
+    {
+      IsInvalidMulAddNode( Expr const& _acc, Expr const& _left, Expr const& _right )
+        : acc( _acc ), left( _left ), right( _right ) {}
+      Expr acc; Expr left; Expr right;
+      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); acc->Traverse( visitor ); left->Traverse( visitor ); right->Traverse( visitor ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "FIsInvalidMulAdd( " << acc << ", " << left << ", " << right << " )"; }
+      intptr_t cmp( ExprNode const& brhs ) const
+      {
+        IsInvalidMulAddNode const& rhs = dynamic_cast<IsInvalidMulAddNode const&>( brhs );
+        if (intptr_t delta = left.cmp( rhs.left )) return delta;
+        if (intptr_t delta = right.cmp( rhs.right )) return delta;
+        return acc.cmp( rhs.acc );
+      }
+      ExprNode* GetConstNode() { return 0; };
+    };
+    
+    template <typename SOFTDBL, typename fpscrT> static
+    SmartValue<bool>
+    IsInvalidMulAdd( SOFTDBL const& acc, SOFTDBL const& op1, SOFTDBL const& op2, fpscrT& fpscr )
+    {
+      return SmartValue<bool>( Expr( new IsInvalidMulAddNode( acc.expr, op1.expr, op2.expr ) ) );
+    }
+    
     template <typename FLOAT, typename fpscrT> static
     void Neg( FLOAT& acc, fpscrT& fpscr ) { acc = FLOAT( Expr( new UONode( "FNeg", acc.expr ) ) ); }
 
