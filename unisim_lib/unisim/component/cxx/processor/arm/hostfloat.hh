@@ -59,6 +59,9 @@ namespace hostfloat {
     template <typename operT, typename fpscrT> static
     void Mul( operT& acc, operT op2, fpscrT& fpscr ) { acc *= op2; }
   
+    template <typename SOFTDBL, typename fpscrT> static
+    bool IsInvalidMulAdd( SOFTDBL& acc, SOFTDBL const& op1, SOFTDBL const& op2, fpscrT& fpscr ) { return false; }
+    
     template <typename operT, typename fpscrT> static
     void MulAdd( operT& acc, operT op1, operT op2, fpscrT& fpscr ) { acc += (op1 * op2); }
   

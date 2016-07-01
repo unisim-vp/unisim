@@ -560,9 +560,15 @@ namespace arm {
       FPFlushToZero( op1, arch, fpscr );
       FPFlushToZero( op2, arch, fpscr );
     }
-    if (FPProcessNaN( arch, fpscr, acc ) << op1 << op2) return;
+    bool done = (FPProcessNaN( arch, fpscr, acc ) << op1 << op2);
+    // Process the (QNaN + 0*inf) case which sets result to DefaultNan unconditionally
+    if (arch.Cond( ARCH::FP::IsInvalidMulAdd( acc, op1, op2, fpscr ) )) {
+      ARCH::FP::SetDefaultNan( acc, fpscr );
+      fpscr.ProcessException( IOC /* InvalidOp */ );
+    }
+                   
+    if (done) return;
     
-    // TODO: Process the (QNaN + 0*inf) case
     ARCH::FP::MulAdd( acc, op1, op2, fpscr );
   }
   

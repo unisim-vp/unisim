@@ -41,6 +41,7 @@
 #include <unisim/kernel/service/service.hh>
 #include <unisim/service/interfaces/register.hh>
 
+#include <limits>
 #include <inttypes.h>
 #include <string>
 
@@ -417,7 +418,7 @@ namespace simfloat {
       flags.setRoundingMode( fpscr.Get( RMode ) );
       acc.plusAssign(op2, flags);
       // Process exceptions (Underflow, Overflow, InvalidOp, Inexact)
-      if (fpscr.Get( FZ ) and FlushToZero( acc, fpscr )) {
+      if (fpscr.Get( FZ ) and (flags.isUnderflow() or FlushToZero( acc, fpscr ))) {
         fpscr.Set( UFC, 1u );
         return;
       }
@@ -439,7 +440,7 @@ namespace simfloat {
       flags.setRoundingMode( fpscr.Get( RMode ) );
       acc.minusAssign(op2, flags);
       // Process exceptions (Underflow, Overflow, InvalidOp, Inexact)
-      if (fpscr.Get( FZ ) and FlushToZero( acc, fpscr )) {
+      if (fpscr.Get( FZ ) and (flags.isUnderflow() or FlushToZero( acc, fpscr ))) {
         fpscr.Set( UFC, 1u );
         return;
       }
@@ -461,7 +462,7 @@ namespace simfloat {
       flags.setRoundingMode( fpscr.Get( RMode ) );
       acc.divAssign(op2, flags);
       // Process exceptions (Underflow, Overflow, InvalidOp, Inexact)
-      if (fpscr.Get( FZ ) and FlushToZero( acc, fpscr )) {
+      if (fpscr.Get( FZ ) and (flags.isUnderflow() or FlushToZero( acc, fpscr ))) {
         fpscr.Set( UFC, 1u );
         return;
       }
@@ -483,7 +484,7 @@ namespace simfloat {
       flags.setRoundingMode( fpscr.Get( RMode ) );
       acc.multAssign(op2, flags);
       // Process exceptions (Underflow, Overflow, InvalidOp, Inexact)
-      if (fpscr.Get( FZ ) and FlushToZero( acc, fpscr )) {
+      if (fpscr.Get( FZ ) and (flags.isUnderflow() or FlushToZero( acc, fpscr ))) {
         fpscr.Set( UFC, 1u );
         return;
       }
@@ -497,6 +498,12 @@ namespace simfloat {
         fpscr.ProcessException( IXC );
       }
     }
+    
+    template <typename SOFTDBL, typename fpscrT> static
+    bool IsInvalidMulAdd( SOFTDBL& acc, SOFTDBL const& op1, SOFTDBL const& op2, fpscrT& fpscr )
+    {
+      return acc.isQNaN() and ((op1.isZero() and op2.isInfty()) or (op1.isInfty() and op2.isZero()));
+    }
 
     template <typename SOFTDBL, typename fpscrT> static
     void MulAdd( SOFTDBL& acc, SOFTDBL const& op1, SOFTDBL const& op2, fpscrT& fpscr )
@@ -508,7 +515,7 @@ namespace simfloat {
       res.multAndAddAssign(op2, acc, flags);
       acc = res;
       // Process exceptions (Underflow, Overflow, InvalidOp, Inexact)
-      if (fpscr.Get( FZ ) and FlushToZero( acc, fpscr )) {
+      if (fpscr.Get( FZ ) and (flags.isUnderflow() or FlushToZero( acc, fpscr ))) {
         fpscr.Set( UFC, 1u );
         return;
       }
@@ -563,7 +570,7 @@ namespace simfloat {
     {
       // At this point "src" should not be any NaN
       int32_t exp = 0;
-      int64_t man = 0;
+      int64_t res = 0;
       
       {
         typename SOFTDBL::Exponent biExp = src.queryExponent();
@@ -577,44 +584,67 @@ namespace simfloat {
       if (src.queryBasicExponent().isZero()) {
         exp += 1;
       } else {
-        man = 1;
+        res = 1;
       }
       
       {
         typename SOFTDBL::Mantissa biMan = src.queryMantissa();
         for (unsigned pos = src.bitSizeMantissa(); pos-- > 0;) {
-          man = (man << 1) | int64_t(biMan.cbitArray(pos));
+          res = (res << 1) | int64_t(biMan.cbitArray(pos));
           exp -= 1;
         }
       }
       
       if (src.isNegative())
-        man = -man;
+        res = -res;
       
       // getting fraction bits of requested fixed point
       exp += fracbits;
       // position of the integer part is given by -exp
-      // Computing integer part and the 2 msb of error 
-      unsigned error = 0;
+      // Computing integer part and the error 
+      uint64_t error = 0;
       if (exp <= 0) {
         for (;exp < 0;exp+=1)
           {
-            unsigned bit = (man & 1);
-            man >>= 1;
+            uint64_t bit = (res & 1);
+            res >>= 1;
             error >>= 1;
-            error |= (bit << 1);
+            error |= (bit << 63);
           }
       } else {
         for (;exp > 0;exp-=1)
           {
-            int64_t nman = man << 1;
-            if ((nman ^ man) >> 63) {
-              man = ~((man >> 63) ^ (int64_t(1) << 63));
+            int64_t nres = res << 1;
+            if ((nres ^ res) >> 63) {
+              res = ~((res >> 63) ^ (int64_t(1) << 63));
               break;
             }
-            man = nman;
+            res = nres;
           }
       }
+      int64_t round_up = 0;
+      uint64_t const halfway = uint64_t(1) << 63;
+      switch (fpscr.Get( RMode )) {
+      case 0b00: // Round to Nearest (rounding to even if exactly halfway)
+        round_up = ((error > halfway) or (error == halfway and (res & 1)));
+        break;
+      case 0b01: // Round towards Plus Infinity
+        round_up = (error != 0);
+        break;
+      case 0b10: // Round towards Minus Infinity
+        round_up = 0;
+        break;
+      case 0b11: // Round towards Zero
+        round_up = ((error != 0) and (res < 0));
+        break;
+      }
+      res += round_up;
+      
+      int64_t int_max = std::numeric_limits<INT>::max();
+      int64_t int_min = std::numeric_limits<INT>::min();
+      if (res < int_min) res = int_min;
+      if (res > int_max) res = int_max;
+      dst = res;
     }
 
     template <typename INT, typename fpscrT> static
