@@ -558,16 +558,63 @@ namespace simfloat {
     }
 
     
-    template <typename INT, typename fpscrT> static
-    void FtoI( INT& dst, SoftDouble const& src, int fracbits, fpscrT& fpscr )
+    template <typename INT, typename SOFTDBL, typename fpscrT> static
+    void FtoI( INT& dst, SOFTDBL const& src, int fracbits, fpscrT& fpscr )
     {
-      throw std::logic_error("TODO: ftoi");
-    }
-
-    template <typename INT, typename fpscrT> static
-    void FtoI( INT& dst, SoftFloat const& src, int fracbits, fpscrT& fpscr )
-    {
-      throw std::logic_error("TODO: ftoi");
+      // At this point "src" should not be any NaN
+      int32_t exp = 0;
+      int64_t man = 0;
+      
+      {
+        typename SOFTDBL::Exponent biExp = src.queryExponent();
+        for (unsigned pos = src.bitSizeExponent(); pos-- > 0;)
+          exp = (exp << 1) | int32_t(biExp.cbitArray(pos));
+      }
+      
+      if (src.hasNegativeExponent())
+        exp = -exp;
+      
+      if (src.queryBasicExponent().isZero()) {
+        exp += 1;
+      } else {
+        man = 1;
+      }
+      
+      {
+        typename SOFTDBL::Mantissa biMan = src.queryMantissa();
+        for (unsigned pos = src.bitSizeMantissa(); pos-- > 0;) {
+          man = (man << 1) | int64_t(biMan.cbitArray(pos));
+          exp -= 1;
+        }
+      }
+      
+      if (src.isNegative())
+        man = -man;
+      
+      // getting fraction bits of requested fixed point
+      exp += fracbits;
+      // position of the integer part is given by -exp
+      // Computing integer part and the 2 msb of error 
+      unsigned error = 0;
+      if (exp <= 0) {
+        for (;exp < 0;exp+=1)
+          {
+            unsigned bit = (man & 1);
+            man >>= 1;
+            error >>= 1;
+            error |= (bit << 1);
+          }
+      } else {
+        for (;exp > 0;exp-=1)
+          {
+            int64_t nman = man << 1;
+            if ((nman ^ man) >> 63) {
+              man = ~((man >> 63) ^ (int64_t(1) << 63));
+              break;
+            }
+            man = nman;
+          }
+      }
     }
 
     template <typename INT, typename fpscrT> static
