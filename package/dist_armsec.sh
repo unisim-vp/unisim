@@ -498,6 +498,8 @@ smart_types.hh \
 
 UNISIM_SIMULATOR_ARMSEC_EXTRA_FILES="\
 config.h.in \
+thumb2plan.sh \
+arm32plan.sh \
 "
 
 UNISIM_SIMULATOR_ARMSEC_TEMPLATE_FILES=

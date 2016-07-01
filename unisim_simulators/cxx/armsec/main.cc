@@ -110,6 +110,14 @@ namespace armsec
         false_nxt->sinks.erase( *itr );
         true_nxt->sinks.erase( *itr );
       }
+      
+      // If condition begins with a logical not, remove the not and
+      //   swap if then else branches
+      if (armsec::UONode* uon = dynamic_cast<armsec::UONode*>( cond.node ))
+        if (uon->unop.cmp( armsec::UnaryOp("Not") ) == 0) {
+          cond = uon->src;
+          std::swap( false_nxt, true_nxt );
+        }
     }
     
     void Dump( std::ostream& sink, std::string indent ) const
@@ -408,7 +416,7 @@ namespace armsec
       {}
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); addr->Traverse( visitor ); }
       virtual void Repr( std::ostream& sink ) const {
-        sink << "Load" << (aligned ? "A" : "") << size << "( " << addr << " )";
+        sink << "Load" << (aligned ? "A" : "") << 8*size << "( " << addr << " )";
       }
       intptr_t cmp( ExprNode const& brhs ) const
       {
@@ -428,7 +436,10 @@ namespace armsec
       Store( Expr const& _addr, unsigned _size, bool _aligned, Expr const& _value )
         : addr( _addr ), size( _size ), aligned( _aligned ), value( _value )
       {}
-      virtual void Repr( std::ostream& sink ) const { sink << "Store( " << addr << " )"; }
+      virtual void Repr( std::ostream& sink ) const
+      {
+        sink << "Store" << (aligned ? "A" : "") << 8*size << "( " << addr << ", " << value <<  " )";
+      }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         Store const& rhs = dynamic_cast<Store const&>( brhs );
@@ -578,7 +589,7 @@ struct Decoder
     // armsec::Expr insn_addr( armsec::make_const( addr ) ); //<if instruction address shall be known
     
     armsec::PathNode path;
-    std::cout << std::hex << addr << std::dec << ": ";
+    std::cout << '@' << std::hex << addr << ',' << op->GetEncoding() << std::dec << ": ";
     
     armsec::State reference( path );
     reference.SetInsnProps( insn_addr, isa.is_thumb, op->GetLength() );

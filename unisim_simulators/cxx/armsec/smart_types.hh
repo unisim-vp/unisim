@@ -106,7 +106,7 @@ namespace armsec
   {
     enum Code {
       NA=0,
-      BSwp, CLZ,
+      BSwp, CLZ, Not,
       FSQB, FFZ, FNeg, FSqrt, FAbs, FDen
     };
     
@@ -116,6 +116,7 @@ namespace armsec
     {
       { static std::string const _("BSwp");  if (ops( _, BSwp)) return; }
       { static std::string const _("CLZ");   if (ops( _, CLZ)) return; }
+      { static std::string const _("Not");   if (ops( _, Not)) return; }
       { static std::string const _("FSQB");  if (ops( _, FSQB)) return; }
       { static std::string const _("FFZ");   if (ops( _, FFZ)) return; }
       { static std::string const _("FNeg");  if (ops( _, FNeg)) return; }
@@ -231,15 +232,39 @@ namespace armsec
           ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
           return new ConstNode<VALUE_TYPE>( value / rop.value );
         }
+
+        case BinaryOp::Teq: {
+          ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
+          return new ConstNode<bool>( value == rop.value );
+        }
+        
+        case BinaryOp::Tne: {
+          ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
+          return new ConstNode<bool>( value != rop.value );
+        }
+        
+        case BinaryOp::Tle: {
+          ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
+          return new ConstNode<bool>( value <= rop.value );
+        }
+        
+        case BinaryOp::Tlt: {
+          ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
+          return new ConstNode<bool>( value < rop.value );
+        }
+        
+        case BinaryOp::Tge: {
+          ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
+          return new ConstNode<bool>( value >= rop.value );
+        }
+        
+        case BinaryOp::Tgt: {
+          ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
+          return new ConstNode<bool>( value > rop.value );
+        }
         
         case BinaryOp::ROR: break;
         case BinaryOp::Mod: break;
-        case BinaryOp::Teq: break;
-        case BinaryOp::Tge: break;
-        case BinaryOp::Tgt: break;
-        case BinaryOp::Tle: break;
-        case BinaryOp::Tlt: break;
-        case BinaryOp::Tne: break;
         case BinaryOp::FCmp: break;
         case BinaryOp::NA: throw std::logic_error("???");
         }
@@ -254,6 +279,8 @@ namespace armsec
         {
         case UnaryOp::BSwp:
           return new ConstNode<VALUE_TYPE>( BSwp( value ) );
+        case UnaryOp::Not:
+          return new ConstNode<bool>( not value );
         case UnaryOp::CLZ: break;
         case UnaryOp::FSQB: break;
         case UnaryOp::FFZ: break;
@@ -463,7 +490,7 @@ namespace armsec
     SmartValue<value_type> operator >> ( SmartValue<SHIFT_TYPE> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "SHR", expr, other.expr ) ) ); }
     
     SmartValue<value_type> operator - () const { return SmartValue<value_type>( Expr( new BONode( "Sub", make_const( value_type( 0 ) ), expr ) ) ); }
-    SmartValue<value_type> operator ~ () const { return SmartValue<value_type>( Expr( new BONode( "Xor", make_const( ~value_type( 0 ) ), expr ) ) ); }
+    SmartValue<value_type> operator ~ () const { return SmartValue<value_type>( Expr( new BONode( "Xor", make_const( value_type(~value_type(0)) ), expr ) ) ); }
     
     SmartValue<value_type>& operator += ( SmartValue<value_type> const& other ) { expr = new BONode( "Add", expr, other.expr ); return *this; }
     SmartValue<value_type>& operator -= ( SmartValue<value_type> const& other ) { expr = new BONode( "Sub", expr, other.expr ); return *this; }
@@ -491,7 +518,7 @@ namespace armsec
     SmartValue<bool> operator > ( SmartValue<value_type> const& other ) const  { return SmartValue<bool>( Expr( new BONode( "Tgt", expr, other.expr ) ) ); }
 
     SmartValue<bool> operator ! () const
-    { AssertBool<value_type>::check(); return SmartValue<bool>( Expr( new BONode( "Xor", make_const( true ), expr ) ) ); }
+    { AssertBool<value_type>::check(); return SmartValue<bool>( Expr( new UONode( "Not", expr ) ) ); }
 
     SmartValue<bool> operator && ( SmartValue<bool> const& other ) const
     { AssertBool<value_type>::check(); return SmartValue<bool>( Expr( new BONode( "And", expr, other.expr ) ) ); }
