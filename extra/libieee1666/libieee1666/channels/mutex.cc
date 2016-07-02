@@ -32,6 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+#include "core/kernel.h"
 #include "channels/mutex.h"
 
 namespace sc_core {
@@ -39,27 +40,63 @@ namespace sc_core {
 /////////////////////////////////// sc_mutex /////////////////////////////////////////////
 
 sc_mutex::sc_mutex()
+	: sc_object(__LIBIEEE1666_KERNEL_PREFIX__ "_mutex")
+	, granted_process(0)
+	, unlocked_event(__LIBIEEE1666_KERNEL_PREFIX__ "_mutex_unlocked_event")
 {
 }
 
-sc_mutex::sc_mutex( const char* )
+sc_mutex::sc_mutex(const char* _name)
+	: sc_object(_name)
+	, granted_process(0)
+	, unlocked_event((std::string(__LIBIEEE1666_KERNEL_PREFIX__) + _name + "_mutex_unlocked_event").c_str())
 {
 }
 
 int sc_mutex::lock()
 {
+	sc_process *current_process = kernel->get_current_process();
+	if(granted_process == current_process) return 0; // already locked by calling process
+	
+	if(granted_process)
+	{
+		do
+		{
+			kernel->wait(unlocked_event);
+		}
+		while(granted_process);
+	}
+	granted_process = current_process;
+	return 0;
 }
 
 int sc_mutex::trylock()
 {
+	sc_process *current_process = kernel->get_current_process();
+	if(granted_process == current_process) return 0; // already locked by calling process
+	
+	if(granted_process)
+	{
+		return -1;
+	}
+	granted_process = current_process;
+	return 0;
 }
 
 int sc_mutex::unlock()
 {
+	sc_process *current_process = kernel->get_current_process();
+	if(granted_process != current_process) return -1; // not locked by calling process
+	
+	granted_process = 0;
+	unlocked_event.notify(sc_core::SC_ZERO_TIME);
+	
+	return 0;
 }
 
 const char* sc_mutex::kind() const
 {
+	return "sc_mutex";
 }
 
 // Disabled

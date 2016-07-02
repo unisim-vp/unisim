@@ -36,6 +36,8 @@
 #define __LIBIEEE1666_CHANNELS_MUTEX_H__
 
 #include "core/object.h"
+#include "core/event.h"
+#include "core/process.h"
 #include "channels/fwd.h"
 #include "channels/mutex_if.h"
 
@@ -54,6 +56,11 @@ private:
 	// Disabled
 	sc_mutex( const sc_mutex& );
 	sc_mutex& operator= ( const sc_mutex& );
+	
+	/////////////////////////////
+	
+	sc_process *granted_process;
+	sc_event unlocked_event;
 };
 
 } // end of namespace sc_core

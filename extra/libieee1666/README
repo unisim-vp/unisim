@@ -26,7 +26,7 @@ While Windows Fibers and POSIX threads coroutine systems provide stack allocatio
 When using the later, libieee1666 allocates coroutine stacks in the heap, and can optionnally protect heap and other stacks from a coroutine stack overflow using a guarded stack.
 A guarded stack has one extra mapped page for which any access will result in a page access violation error.
 
-Coroutine system is selectable before program startup by setting the following values into LIBIEEE1666_COROUTINE_SYSTEM environment variable:
+Coroutine system is selectable before program startup by setting one of the following values into LIBIEEE1666_COROUTINE_SYSTEM environment variable:
  - UCONTEXT for ucontext
  - FCONTEXT for Boost::Context (fcontext)
  - WINDOWS_FIBER for Windows Fiber
@@ -42,7 +42,7 @@ If LIBIEEE1666_COROUTINE_SYSTEM environment variable is not set, one of the foll
      2. Windows Fiber
      3. POSIX threads
  
-Stack system is selectable before program startup by setting the following values into LIBIEEE1666_STACK_SYSTEM environment variable:
+Stack system is selectable before program startup by setting one of the following values into LIBIEEE1666_STACK_SYSTEM environment variable:
  - POSIX_GUARDED for a guarded stack on POSIX systems (to be used with Boost::Context and ucontext)
  - WINDOWS_GUARDED for a guarded stack on Windows systems (to be used with Boost::Context)
  - SIMPLE for a simple ungarded stack (to be used with Boost::Context and ucontext)
