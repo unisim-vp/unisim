@@ -132,7 +132,17 @@ sc_kernel::sc_kernel()
 	, end_of_simulation_invoked(false)
 	, start_of_simulation_invoked(false)
 	, delta_count(0)
+	, debug(false)
 {
+	char *libieee1666_debug = getenv("LIBIEEE1666_DEBUG");
+
+	if((strcmp(libieee1666_debug, "yes") == 0) ||
+	   (strcmp(libieee1666_debug, "y") == 0) ||
+	   (strcmp(libieee1666_debug, "1") == 0))
+	{
+		debug = true;
+	}
+	
 	char *libieee1666_stack_system = getenv("LIBIEEE1666_STACK_SYSTEM");
 	
 	do
@@ -487,6 +497,10 @@ void sc_kernel::initialize()
 {
 	unsigned int i;
 	
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":before end of elaboration" << std::endl;
+	}
 	status = SC_BEFORE_END_OF_ELABORATION;
 	report_before_end_of_elaboration();
 	
@@ -518,6 +532,10 @@ void sc_kernel::initialize()
 		method_process->finalize_elaboration();
 	}
 
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":end of elaboration" << std::endl;
+	}
 	status = SC_END_OF_ELABORATION;
 	report_end_of_elaboration();
 	
@@ -531,6 +549,10 @@ void sc_kernel::initialize()
 	// time resolution can no longer change
 	time_resolution_fixed = true;
 
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":start of simulation" << std::endl;
+	}
 	status = SC_START_OF_SIMULATION;
 	report_start_of_simulation();
 
@@ -561,46 +583,6 @@ void sc_kernel::initialize()
 		}
 	}
 	
-#if 0
-	// initial wake-up of all SC_METHOD processes
-	if(runnable_method_processes.size())
-	{
-		bool stop_immediate = false;
-		
-		do
-		{
-			sc_method_process *method_process = runnable_method_processes.back();
-			runnable_method_processes.pop_back();
-			method_process->trigger_requested = false;
-			
-			set_current_method_process(method_process);
-			std::cerr << current_time_stamp << ": /\\/ " << method_process->name() << std::endl;
-			method_process->run();
-			method_process->commit_next_trigger();
-			stop_immediate = user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE);
-		}
-		while(!stop_immediate && runnable_method_processes.size());
-		set_current_method_process(0);
-		if(stop_immediate) return;
-	}
-	set_current_method_process(0);
-	
-
-	// initial wake-up of all SC_THREAD/SC_CTHREAD processes
-	if(runnable_thread_processes.size())
-	{
-		sc_thread_process *thread_process = runnable_thread_processes.back();
-		runnable_thread_processes.pop_back();
-		thread_process->trigger_requested = false;
-		set_current_thread_process(thread_process);
-		std::cerr << current_time_stamp << ": /\\/ " << thread_process->name() << std::endl;
-		main_coroutine->yield(thread_process->coroutine);
-	}
-	set_current_thread_process(0);
-	
-	release_terminated_method_processes();
-	release_terminated_thread_processes();
-#endif
 	do_evaluation_phase();
 
 	// delta notification phase
@@ -612,6 +594,10 @@ void sc_kernel::initialize()
 void sc_kernel::do_evaluation_phase()
 {
 	// evaluation phase
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":evaluation phase" << std::endl;
+	}
 	unsigned int eval_flag = 0; // 0 = no evaluation, 1 = at least one evaluation
 
 	do
@@ -629,7 +615,10 @@ void sc_kernel::do_evaluation_phase()
 				
 				set_current_method_process(method_process);
 				eval_flag = 1;
-//				std::cerr << current_time_stamp << ": /\\/ " << method_process->name() << std::endl;
+				if(__LIBIEEE1666_UNLIKELY__(debug))
+				{
+					std::cerr << current_time_stamp << ":invoking " << method_process->name() << std::endl;
+				}
 				method_process->run();
 				method_process->commit_next_trigger();
 				stop_immediate = user_requested_stop && (stop_mode == SC_STOP_IMMEDIATE);
@@ -647,7 +636,10 @@ void sc_kernel::do_evaluation_phase()
 			runnable_thread_processes.pop_back();
 			thread_process->trigger_requested = false;
 			set_current_thread_process(thread_process);
-//			std::cerr << current_time_stamp << ": /\\/ " << thread_process->name() << std::endl;
+			if(__LIBIEEE1666_UNLIKELY__(debug))
+			{
+				std::cerr << current_time_stamp << ":yield to " << thread_process->name() << std::endl;
+			}
 			main_coroutine->yield(thread_process->coroutine);
 			set_current_thread_process(0);
 		}
@@ -665,6 +657,10 @@ void sc_kernel::do_evaluation_phase()
 void sc_kernel::do_update_phase()
 {
 	// update phase
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":update phase" << std::endl;
+	}
 	
 	std::vector<sc_prim_channel *>::size_type num_updatable_prim_channels = updatable_prim_channels.size();
 	if(num_updatable_prim_channels)
@@ -675,6 +671,10 @@ void sc_kernel::do_update_phase()
 			sc_prim_channel *prim_channel = updatable_prim_channels[i];
 			prim_channel->update_requested = false;
 			
+			if(__LIBIEEE1666_UNLIKELY__(debug))
+			{
+				std::cerr << current_time_stamp << ":" << prim_channel->name() << ".update()" << std::endl;
+			}
 			prim_channel->update();
 		}
 		
@@ -685,6 +685,10 @@ void sc_kernel::do_update_phase()
 void sc_kernel::do_delta_notification_phase()
 {
 	// delta notification phase
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":delta notifitication phase" << std::endl;
+	}
 	
 	std::vector<sc_kernel_event *>::size_type num_delta_events = delta_events.size();
 	if(num_delta_events)
@@ -698,6 +702,10 @@ void sc_kernel::do_delta_notification_phase()
 			
 			if(e)
 			{
+				if(__LIBIEEE1666_UNLIKELY__(debug))
+				{
+					std::cerr << current_time_stamp << ":" << e->name() << ".trigger()" << std::endl;
+				}
 				e->trigger();
 			}
 			
@@ -733,6 +741,10 @@ void sc_kernel::do_delta_steps(bool once)
 bool sc_kernel::do_timed_notification_phase()
 {
 	// timed notification phase
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":timed notification phase" << std::endl;
+	}
 	std::multimap<sc_time, sc_timed_kernel_event *>::iterator it = schedule.begin();
 
 	if(it == schedule.end()) return false;
@@ -747,6 +759,10 @@ bool sc_kernel::do_timed_notification_phase()
 		
 		if(e)
 		{
+			if(__LIBIEEE1666_UNLIKELY__(debug))
+			{
+				std::cerr << current_time_stamp << ":" << e->name() << ".trigger()" << std::endl;
+			}
 			e->trigger();
 		}
 		
@@ -1396,6 +1412,10 @@ void sc_kernel::stop()
 	
 	if(status == SC_PAUSED)
 	{
+		if(__LIBIEEE1666_UNLIKELY__(debug))
+		{
+			std::cerr << current_time_stamp << ":end of simulation" << std::endl;
+		}
 		status = SC_END_OF_SIMULATION;
 		report_end_of_simulation();
 	}

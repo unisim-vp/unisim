@@ -60,6 +60,22 @@
 
 extern "C" int ___LIBIEEE1666_DLL_EXPORT__ sc_main(int argc, char *argv[]);
 
+#if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
+#if defined(__LIBIEEE1666_LIKELY__)
+#undef __LIBIEEE1666_LIKELY__
+#endif
+
+#if defined(__LIBIEEE1666_UNLIKELY__)
+#undef __LIBIEEE1666_UNLIKELY__
+#endif
+
+#define __LIBIEEE1666_LIKELY__(x)       __builtin_expect(!!(x),1)
+#define __LIBIEEE1666_UNLIKELY__(x)     __builtin_expect(!!(x),0)
+#else
+#define __LIBIEEE1666_LIKELY__(x) (x)
+#define __LIBIEEE1666_UNLIKELY__(x) (x)
+#endif
+
 namespace sc_core {
 
 extern "C" int sc_elab_and_sim(int argc, char* argv[]);
@@ -266,6 +282,7 @@ private:
 	bool end_of_simulation_invoked;
 	bool start_of_simulation_invoked;
 	sc_dt::uint64 delta_count;
+	bool debug;
 	
 	void report_before_end_of_elaboration();
 	void report_end_of_elaboration();
@@ -346,13 +363,19 @@ inline sc_coroutine *sc_kernel::get_next_coroutine()
 	current_writer = thread_process;
 	current_thread_process = thread_process;
 	
-//	std::cerr << current_time_stamp << ": /\\/ " << thread_process->name() << std::endl;
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":yield to " << thread_process->name() << std::endl;
+	}
 	return thread_process->coroutine;
 }
 
 inline sc_kernel_event *sc_kernel::notify(sc_event *e)
 {
-// 	std::cerr << "sc_kernel::notify(" << e->name() << ")" << std::endl;
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << e->name() << ".notify(sc_core::SC_ZERO_TIME)" << std::endl;
+	}
 	sc_kernel_event *kernel_event = kernel_events_allocator.allocate();
 	kernel_event->initialize(e);
 	delta_events.push_back(kernel_event);
@@ -361,7 +384,10 @@ inline sc_kernel_event *sc_kernel::notify(sc_event *e)
 
 inline sc_timed_kernel_event *sc_kernel::notify(sc_event *e, const sc_time& t)
 {
-// 	std::cerr << "sc_kernel::notify(" << e->name() << ", " << t << ")" << std::endl;
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << e->name() << ".notify(" << t  << ")" << std::endl;
+	}
 	sc_time kernel_event_time = current_time_stamp;
 	kernel_event_time += t;
 	sc_timed_kernel_event *timed_kernel_event = timed_kernel_events_allocator.allocate();
@@ -373,107 +399,180 @@ inline sc_timed_kernel_event *sc_kernel::notify(sc_event *e, const sc_time& t)
 inline void sc_kernel::wait()
 {
 	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << current_thread_process->name() << ":wait()" << std::endl;
+	}
 	current_thread_process->wait();
 }
 
 inline void sc_kernel::wait(int n)
 {
 	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << current_thread_process->name() << ":wait(" << n << ")" << std::endl;
+	}
 	current_thread_process->wait(n);
 }
 
 inline void sc_kernel::wait(const sc_event& e)
 {
 	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << current_thread_process->name() << ":wait(" << e.name() << ")" << std::endl;
+	}
 	current_thread_process->wait(e);
 }
 
 inline void sc_kernel::wait(const sc_event_and_list& el)
 {
 	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << current_thread_process->name() << ":wait(sc_event_and_list)" << std::endl;
+	}
 	current_thread_process->wait(el);
 }
 
 inline void sc_kernel::wait(const sc_event_or_list& el)
 {
 	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << current_thread_process->name() << ":wait(sc_event_or_list)" << std::endl;
+	}
 	current_thread_process->wait(el);
 }
 
 inline void sc_kernel::wait(const sc_time& t)
 {
 	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << current_thread_process->name() << ":wait(" << t << ")" << std::endl;
+	}
 	current_thread_process->wait(t);
 }
 
 inline void sc_kernel::wait(const sc_time& t, const sc_event& e)
 {
 	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << current_thread_process->name() << ":wait(" << t << ", " << e.name() << ")" << std::endl;
+	}
 	current_thread_process->wait(t, e);
 }
 
 inline void sc_kernel::wait(const sc_time& t, const sc_event_and_list& el)
 {
 	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << current_thread_process->name() << ":wait(" << t << ", sc_event_and_list)" << std::endl;
+	}
 	current_thread_process->wait(t, el);
 }
 
 inline void sc_kernel::wait(const sc_time& t, const sc_event_or_list& el)
 {
 	if(!current_thread_process) throw std::runtime_error("calling wait from something not an SC_THREAD/SC_CTHREAD process");
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << current_thread_process->name() << ":wait(" << t << ", sc_event_or_list)" << std::endl;
+	}
 	current_thread_process->wait(t, el);
 }
 
 inline void sc_kernel::next_trigger()
 {
 	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << current_method_process->name() << ":next_trigger()" << std::endl;
+	}
 	current_method_process->next_trigger();
 }
 
 inline void sc_kernel::next_trigger(const sc_event& e)
 {
 	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << current_method_process->name() << ":next_trigger(" << e.name() << ")" << std::endl;
+	}
 	current_method_process->next_trigger(e);
 }
 
 inline void sc_kernel::next_trigger(const sc_event_and_list& el)
 {
 	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << current_method_process->name() << ":next_trigger(sc_event_and_list)" << std::endl;
+	}
 	current_method_process->next_trigger(el);
 }
 
 inline void sc_kernel::next_trigger(const sc_event_or_list& el)
 {
 	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << current_method_process->name() << ":next_trigger(sc_event_or_list)" << std::endl;
+	}
 	current_method_process->next_trigger(el);
 }
 
 inline void sc_kernel::next_trigger(const sc_time& t)
 {
 	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << current_method_process->name() << ":next_trigger(" << t << ")" << std::endl;
+	}
 	current_method_process->next_trigger(t);
 }
 
 inline void sc_kernel::next_trigger(const sc_time& t, const sc_event& e)
 {
 	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << current_method_process->name() << ":next_trigger(" << t << ", " << e.name() << ")" << std::endl;
+	}
 	current_method_process->next_trigger(t, e);
 }
 
 inline void sc_kernel::next_trigger(const sc_time& t, const sc_event_and_list& el)
 {
 	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << current_method_process->name() << ":next_trigger(" << t << ", sc_event_and_list)" << std::endl;
+	}
 	current_method_process->next_trigger(t, el);
 }
 
 inline void sc_kernel::next_trigger(const sc_time& t, const sc_event_or_list& el)
 {
 	if(!current_method_process) throw std::runtime_error("calling next_trigger from something not an SC_METHOD process");
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << current_method_process->name() << ":next_trigger(" << t << ", sc_event_or_list)" << std::endl;
+	}
 	current_method_process->next_trigger(t, el);
 }
 
 inline void sc_kernel::trigger(sc_thread_process *thread_process)
 {
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << thread_process->name() << " is runnable" << std::endl;
+	}
+
 	if(!thread_process->trigger_requested)
 	{
 		runnable_thread_processes.push_back(thread_process);
@@ -483,7 +582,10 @@ inline void sc_kernel::trigger(sc_thread_process *thread_process)
 
 inline void sc_kernel::trigger(sc_method_process *method_process)
 {
-// 	std::cerr << method_process->name() << " is runnable" << std::endl;
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << method_process->name() << " is runnable" << std::endl;
+	}
 	if(!method_process->trigger_requested)
 	{
 		runnable_method_processes.push_back(method_process);
@@ -507,6 +609,10 @@ inline void sc_kernel::set_current_method_process(sc_method_process *method_proc
 
 inline void sc_kernel::request_update(sc_prim_channel *prim_channel)
 {
+	if(__LIBIEEE1666_UNLIKELY__(debug))
+	{
+		std::cerr << current_time_stamp << ":" << prim_channel->name() << ".request_update()" << std::endl;
+	}
 	if(!prim_channel->update_requested)
 	{
 		updatable_prim_channels.push_back(prim_channel);
