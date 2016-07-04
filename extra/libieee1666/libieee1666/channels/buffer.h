@@ -46,63 +46,80 @@ class sc_buffer : public sc_signal<T,WRITER_POLICY>
 {
 public:
 	sc_buffer();
-	explicit sc_buffer( const char* );
-	virtual void write( const T& );
-	sc_buffer<T,WRITER_POLICY>& operator= ( const T& );
-	sc_buffer<T,WRITER_POLICY>& operator= ( const sc_signal<T,WRITER_POLICY>& );
-	sc_buffer<T,WRITER_POLICY>& operator= ( const sc_buffer<T,WRITER_POLICY>& );
-	virtual const char* kind() const;
+	explicit sc_buffer(const char *);
+	virtual void write(const T&);
+	sc_buffer<T,WRITER_POLICY>& operator = (const T&);
+	sc_buffer<T,WRITER_POLICY>& operator = (const sc_signal<T,WRITER_POLICY>&);
+	sc_buffer<T,WRITER_POLICY>& operator = (const sc_buffer<T,WRITER_POLICY>&);
+	virtual const char *kind() const;
 protected:
 	virtual void update();
 private:
 	// Disabled
-	sc_buffer( const sc_buffer<T,WRITER_POLICY>& );
+	sc_buffer(const sc_buffer<T,WRITER_POLICY>&);
 };
 
 //////////////////////////////////// sc_buffer<> /////////////////////////////////////////////
 
 template <class T, sc_writer_policy WRITER_POLICY>
 sc_buffer<T, WRITER_POLICY>::sc_buffer()
+	: sc_signal<T, WRITER_POLICY>(sc_gen_unique_name("buffer"))
 {
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
-sc_buffer<T, WRITER_POLICY>::sc_buffer( const char* )
+sc_buffer<T, WRITER_POLICY>::sc_buffer(const char *_name)
+	: sc_signal<T, WRITER_POLICY>(_name)
 {
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
-void sc_buffer<T, WRITER_POLICY>::write( const T& )
+void sc_buffer<T, WRITER_POLICY>::write(const T& v)
 {
+	if(!sc_signal<T,WRITER_POLICY>::check_write())
+	{
+		throw std::runtime_error("sc_buffer<T, SC_ONE_WRITER> with multiple writers");
+	}
+	
+	sc_signal<T,WRITER_POLICY>::new_value() = v;
+	sc_signal<T,WRITER_POLICY>::request_update();
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
-sc_buffer<T,WRITER_POLICY>& sc_buffer<T, WRITER_POLICY>::operator= ( const T& )
+sc_buffer<T,WRITER_POLICY>& sc_buffer<T, WRITER_POLICY>::operator = (const T& arg)
 {
+	write(arg);
+	return *this;
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
-sc_buffer<T,WRITER_POLICY>& sc_buffer<T, WRITER_POLICY>::operator= ( const sc_signal<T,WRITER_POLICY>& )
+sc_buffer<T,WRITER_POLICY>& sc_buffer<T, WRITER_POLICY>::operator = (const sc_signal<T,WRITER_POLICY>& arg)
 {
+	write(arg.read());
+	return *this;
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
-sc_buffer<T,WRITER_POLICY>& sc_buffer<T, WRITER_POLICY>::operator= ( const sc_buffer<T,WRITER_POLICY>& )
+sc_buffer<T,WRITER_POLICY>& sc_buffer<T, WRITER_POLICY>::operator = (const sc_buffer<T,WRITER_POLICY>& arg)
 {
+	write(arg.read());
+	return *this;
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
 const char* sc_buffer<T, WRITER_POLICY>::kind() const
 {
+	return "sc_buffer";
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
 void sc_buffer<T, WRITER_POLICY>::update()
 {
+	sc_signal<T,WRITER_POLICY>::do_update();
 }
 
 template <class T, sc_writer_policy WRITER_POLICY>
-sc_buffer<T, WRITER_POLICY>::sc_buffer( const sc_buffer<T,WRITER_POLICY>& )
+sc_buffer<T, WRITER_POLICY>::sc_buffer(const sc_buffer<T,WRITER_POLICY>&)
 {
 }
 

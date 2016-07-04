@@ -44,8 +44,8 @@ namespace sc_core {
 class sc_semaphore : public sc_semaphore_if, public sc_object
 {
 public:
-	explicit sc_semaphore( int );
-	sc_semaphore( const char*, int );
+	explicit sc_semaphore(int value);
+	sc_semaphore(const char *name, int value);
 	virtual int wait();
 	virtual int trywait();
 	virtual int post();
@@ -55,6 +55,9 @@ private:
 	// Disabled
 	sc_semaphore( const sc_semaphore& );
 	sc_semaphore& operator= ( const sc_semaphore& );
+	
+	int value;
+	sc_event value_incremented_event;
 };
 
 } // end of namespace sc_core

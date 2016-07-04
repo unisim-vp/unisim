@@ -89,7 +89,8 @@ protected:
 	const T& new_value() const;
 	T& new_value();
 	void toggle_value();
-	
+	bool check_write();
+	void do_update();
 };
 
 template <sc_writer_policy WRITER_POLICY>
@@ -143,7 +144,8 @@ protected:
 	const bool& new_value() const;
 	bool& new_value();
 	void toggle_value();
-
+	bool check_write();
+	void do_update();
 };
 
 // template <sc_writer_policy WRITER_POLICY>
@@ -290,14 +292,9 @@ void sc_signal<T, WRITER_POLICY>::write(const T& v)
 	
 	if(value_changed)
 	{
-		if(WRITER_POLICY == SC_ONE_WRITER)
+		if(!check_write())
 		{
-			if(!writer) writer = kernel->get_current_writer();
-			
-			if(writer != kernel->get_current_writer())
-			{
-				throw std::runtime_error("sc_signal<T, SC_ONE_WRITER> with multiple writers");
-			}
+			throw std::runtime_error("sc_signal<T, SC_ONE_WRITER> with multiple writers");
 		}
 		
 		request_update();
@@ -361,10 +358,32 @@ void sc_signal<T, WRITER_POLICY>::update()
 	
 	if(value_changed)
 	{
-		toggle_value();
-		signal_value_changed_delta_cycle = kernel->get_delta_count();
-		signal_value_changed_event.notify(SC_ZERO_TIME);
+		do_update();
 	}
+}
+
+template <class T, sc_writer_policy WRITER_POLICY>
+bool sc_signal<T, WRITER_POLICY>::check_write()
+{
+	if(WRITER_POLICY == SC_ONE_WRITER)
+	{
+		if(!writer) writer = kernel->get_current_writer();
+		
+		if(writer != kernel->get_current_writer())
+		{
+			return false;
+		}
+	}
+	
+	return true;
+}
+
+template <class T, sc_writer_policy WRITER_POLICY>
+void sc_signal<T, WRITER_POLICY>::do_update()
+{
+	toggle_value();
+	signal_value_changed_delta_cycle = kernel->get_delta_count();
+	signal_value_changed_event.notify(SC_ZERO_TIME);
 }
 
 // disabled
@@ -490,14 +509,9 @@ void sc_signal<bool, WRITER_POLICY>::write(const bool& v)
 
 	if(value_changed)
 	{
-		if(WRITER_POLICY == SC_ONE_WRITER)
+		if(!check_write())
 		{
-			if(!writer) writer = kernel->get_current_writer();
-			
-			if(writer != kernel->get_current_writer())
-			{
-				throw std::runtime_error("sc_signal<T, SC_ONE_WRITER> with multiple writers");
-			}
+			throw std::runtime_error("sc_signal<T, SC_ONE_WRITER> with multiple writers");
 		}
 		
 		request_update();
@@ -585,28 +599,49 @@ void sc_signal<bool, WRITER_POLICY>::update()
 	
 	if(value_changed)
 	{
-		toggle_value();
-		signal_value_changed_delta_cycle = kernel->get_delta_count();
-		signal_value_changed_event.notify(SC_ZERO_TIME);
-		if(current_value())
-		{
-			signal_posedge_event.notify(SC_ZERO_TIME);
-		}
-		else
-		{
-			signal_negedge_event.notify(SC_ZERO_TIME);
-		}
+		do_update();
+	}
+}
+
+template <sc_writer_policy WRITER_POLICY>
+bool sc_signal<bool, WRITER_POLICY>::check_write()
+{
+	if(WRITER_POLICY == SC_ONE_WRITER)
+	{
+		if(!writer) writer = kernel->get_current_writer();
 		
-		unsigned int num_process_resets = process_resets.size();
-		if(num_process_resets)
+		if(writer != kernel->get_current_writer())
 		{
-			unsigned int i;
-			for(i = 0; i < num_process_resets; i++)
-			{
-				const sc_process_reset& process_reset = process_resets[i];
-				
-				process_reset.reset_signal_value_changed(current_value());
-			}
+			return false;
+		}
+	}
+	return true;
+}
+
+template <sc_writer_policy WRITER_POLICY>
+void sc_signal<bool, WRITER_POLICY>::do_update()
+{
+	toggle_value();
+	signal_value_changed_delta_cycle = kernel->get_delta_count();
+	signal_value_changed_event.notify(SC_ZERO_TIME);
+	if(current_value())
+	{
+		signal_posedge_event.notify(SC_ZERO_TIME);
+	}
+	else
+	{
+		signal_negedge_event.notify(SC_ZERO_TIME);
+	}
+	
+	unsigned int num_process_resets = process_resets.size();
+	if(num_process_resets)
+	{
+		unsigned int i;
+		for(i = 0; i < num_process_resets; i++)
+		{
+			const sc_process_reset& process_reset = process_resets[i];
+			
+			process_reset.reset_signal_value_changed(current_value());
 		}
 	}
 }

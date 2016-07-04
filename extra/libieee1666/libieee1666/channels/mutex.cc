@@ -40,9 +40,9 @@ namespace sc_core {
 /////////////////////////////////// sc_mutex /////////////////////////////////////////////
 
 sc_mutex::sc_mutex()
-	: sc_object(__LIBIEEE1666_KERNEL_PREFIX__ "_mutex")
+	: sc_object(sc_gen_unique_name("mutex"))
 	, granted_process(0)
-	, unlocked_event(__LIBIEEE1666_KERNEL_PREFIX__ "_mutex_unlocked_event")
+	, unlocked_event((std::string(__LIBIEEE1666_KERNEL_PREFIX__) + "_mutex_unlocked_event").c_str())
 {
 }
 

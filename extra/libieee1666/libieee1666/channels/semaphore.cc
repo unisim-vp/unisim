@@ -32,38 +32,71 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+#include "core/kernel.h"
 #include "channels/semaphore.h"
+#include <stdexcept>
 
 namespace sc_core {
 
 //////////////////////////////// sc_semaphore ////////////////////////////////////////
 	
-sc_semaphore::sc_semaphore( int )
+sc_semaphore::sc_semaphore(int _value)
+	: sc_object(sc_gen_unique_name("semaphore"))
+	, value(_value)
+	, value_incremented_event((std::string(__LIBIEEE1666_KERNEL_PREFIX__) + "_semaphore_value_incremented_event").c_str())
 {
+	if(value < 0) throw std::runtime_error("semaphore value shall be non-negative");
 }
 
-sc_semaphore::sc_semaphore( const char*, int )
+sc_semaphore::sc_semaphore(const char *_name, int _value)
+	: sc_object(_name)
+	, value(_value)
+	, value_incremented_event((std::string(__LIBIEEE1666_KERNEL_PREFIX__) + _name + "_semaphore_value_incremented_event").c_str())
 {
+	if(value < 0) throw std::runtime_error("semaphore value shall be non-negative");
 }
 
 int sc_semaphore::wait()
 {
+	if(value <= 0)
+	{
+		do
+		{
+			kernel->wait(value_incremented_event);
+		}
+		while(value <= 0);
+	}
+	--value;
+	
+	return 0;
 }
 
 int sc_semaphore::trywait()
 {
+	if(value <= 0)
+	{
+		return -1;
+	}
+	
+	--value;
+	return 0;
 }
 
 int sc_semaphore::post()
 {
+	++value;
+	value_incremented_event.notify(); // immediate notification
+	return 0;
 }
 
 int sc_semaphore::get_value() const
 {
+	return value;
 }
 
 const char* sc_semaphore::kind() const
 {
+	return "sc_semaphore";
 }
 
 // Disabled
