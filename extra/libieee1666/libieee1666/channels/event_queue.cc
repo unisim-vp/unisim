@@ -33,13 +33,21 @@
  */
 
 #include "channels/event_queue.h"
+#include <string>
 
 namespace sc_core {
 
 //////////////////////////////////// sc_event_queue /////////////////////////////////////////////
 
-sc_event_queue::sc_event_queue( sc_module_name name_ )
+sc_event_queue::sc_event_queue(sc_module_name _name)
+	: sc_module(_name)
+	, notification_time_queue()
+	, event("event")
 {
+	SC_HAS_PROCESS(sc_event_queue);
+	
+	SC_METHOD(scheduling_process);
+	sensitive << event;
 }
 
 sc_event_queue::~sc_event_queue()
@@ -51,20 +59,56 @@ const char* sc_event_queue::kind() const
 	return "sc_event_queue";
 }
 
-void sc_event_queue::notify( double , sc_time_unit )
+void sc_event_queue::notify(double d, sc_time_unit u)
 {
+	sc_time t(d, u);
+	notify(t);
 }
 
-void sc_event_queue::notify( const sc_time& )
+void sc_event_queue::notify(const sc_time& t)
 {
+	if(notification_time_queue.empty())
+	{
+		event.notify(t);
+	}
+	else
+	{
+		std::set<sc_time>::iterator it = notification_time_queue.begin();
+			
+		sc_time notification_delay(*it);
+		notification_time_queue.erase(it);
+		notification_delay -= sc_time_stamp();
+		event.notify(notification_delay);
+	}
+	
+	sc_time notification_time(sc_time_stamp());
+	notification_time += t;
+	notification_time_queue.insert(notification_time);
 }
 
 void sc_event_queue::cancel_all()
 {
+	notification_time_queue.clear();
+	event.cancel();
 }
 
 const sc_event& sc_event_queue::default_event() const
 {
+	return event;
 }
+
+void sc_event_queue::scheduling_process()
+{
+	if(!notification_time_queue.empty())
+	{
+		std::set<sc_time>::iterator it = notification_time_queue.begin();
+		
+		sc_time notification_delay(*it);
+		notification_time_queue.erase(it);
+		notification_delay -= sc_time_stamp();
+		event.notify(notification_delay);
+	}
+}
+
 
 } // end of namespace sc_core

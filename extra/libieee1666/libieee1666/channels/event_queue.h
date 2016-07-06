@@ -42,20 +42,26 @@
 #include "core/event.h"
 #include "channels/event_queue_if.h"
 #include "core/kernel.h"
+#include <set>
 
 namespace sc_core {
 
-class sc_event_queue : public sc_event_queue_if , public sc_module
+class sc_event_queue : public sc_event_queue_if, public sc_module
 {
 public:
-	sc_event_queue( sc_module_name name_=
-	sc_module_name(sc_gen_unique_name("event_queue")));
+	sc_event_queue(sc_module_name name_= sc_module_name(sc_gen_unique_name("event_queue")));
 	~sc_event_queue();
 	virtual const char* kind() const;
 	virtual void notify( double , sc_time_unit );
 	virtual void notify( const sc_time& );
 	virtual void cancel_all();
 	virtual const sc_event& default_event() const;
+	///////////////////////////////////
+private:
+	void scheduling_process();
+	
+	std::set<sc_time> notification_time_queue;
+	sc_event event;
 };
 
 } // end of namespace sc_core
