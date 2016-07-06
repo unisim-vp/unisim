@@ -99,15 +99,28 @@ const sc_event& sc_event_queue::default_event() const
 
 void sc_event_queue::scheduling_process()
 {
-	if(!notification_time_queue.empty())
+	if(!notification_time_queue.empty()) return;
+	
+	std::set<sc_time>::iterator it = notification_time_queue.begin();
+
+	const sc_time& time_stamp = sc_time_stamp();
+
+	do
 	{
-		std::set<sc_time>::iterator it = notification_time_queue.begin();
-		
-		sc_time notification_delay(*it);
+		sc_time notification_time(*it);
 		notification_time_queue.erase(it);
-		notification_delay -= sc_time_stamp();
-		event.notify(notification_delay);
+		if(notification_time > time_stamp)
+		{
+			notification_time -= sc_time_stamp();
+			event.notify(notification_time);
+			return;
+		}
+		
+		if(notification_time_queue.empty()) return;
+		
+		it = notification_time_queue.begin();
 	}
+	while(true);
 }
 
 
