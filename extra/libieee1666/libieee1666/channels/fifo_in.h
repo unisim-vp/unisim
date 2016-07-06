@@ -60,68 +60,87 @@ private:
 	// Disabled
 	sc_fifo_in( const sc_fifo_in<T>& );
 	sc_fifo_in<T>& operator= ( const sc_fifo_in<T>& );
+	////////////////////////////////////////////
+	sc_event_finder_t<sc_fifo_in_if<T> > *data_written_event_finder;
 };
 
 //////////////////////////////////// sc_fifo_in<> /////////////////////////////////////////////
 
 template <class T>
 sc_fifo_in<T>::sc_fifo_in()
+	: sc_port<sc_fifo_in_if<T>,0>()
+	, data_written_event_finder(0)
 {
+	data_written_event_finder = new sc_event_finder_t<sc_fifo_in_if<T> >(*this, &sc_fifo_in_if<T>::data_written_event);
 }
 
 template <class T>
-sc_fifo_in<T>::sc_fifo_in( const char* )
+sc_fifo_in<T>::sc_fifo_in(const char *_name)
+	: sc_port<sc_fifo_in_if<T>,0>(_name)
+	, data_written_event_finder(0)
 {
+	data_written_event_finder = new sc_event_finder_t<sc_fifo_in_if<T> >(*this, &sc_fifo_in_if<T>::data_written_event);
 }
 
 template <class T>
 sc_fifo_in<T>::~sc_fifo_in()
 {
+	delete data_written_event_finder;
 }
 
 template <class T>
-void sc_fifo_in<T>::read( T& )
+void sc_fifo_in<T>::read(T& v)
 {
+	(*this)->read(v);
 }
 
 template <class T>
 T sc_fifo_in<T>::read()
 {
+	return (*this)->read();
 }
 
 template <class T>
-bool sc_fifo_in<T>::nb_read( T& )
+bool sc_fifo_in<T>::nb_read(T& v)
 {
+	return (*this)->nb_read(v);
 }
 
 template <class T>
 const sc_event& sc_fifo_in<T>::data_written_event() const
 {
+	return (*this)->data_written_event();
 }
 
 template <class T>
 sc_event_finder& sc_fifo_in<T>::data_written() const
 {
+	return data_written_event_finder;
 }
 
 template <class T>
 int sc_fifo_in<T>::num_available() const
 {
+	return (*this)->num_available();
 }
 
 template <class T>
 const char* sc_fifo_in<T>::kind() const
 {
+	return "sc_fifo_in";
 }
 
+// disabled
 template <class T>
-sc_fifo_in<T>::sc_fifo_in( const sc_fifo_in<T>& )
+sc_fifo_in<T>::sc_fifo_in(const sc_fifo_in<T>&)
 {
 }
 
+// disabled
 template <class T>
-sc_fifo_in<T>& sc_fifo_in<T>::operator= ( const sc_fifo_in<T>& )
+sc_fifo_in<T>& sc_fifo_in<T>::operator = (const sc_fifo_in<T>&)
 {
+	return *this;
 }
 
 } // end of namespace sc_core

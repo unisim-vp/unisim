@@ -60,63 +60,81 @@ private:
 	// Disabled
 	sc_fifo_out( const sc_fifo_out<T>& );
 	sc_fifo_out<T>& operator= ( const sc_fifo_out<T>& );
+	////////////////////////////////////////////
+	sc_event_finder_t<sc_fifo_out_if<T> > *data_read_event_finder;
 };
 
 //////////////////////////////////// sc_fifo_out<> /////////////////////////////////////////////
 
 template <class T>
 sc_fifo_out<T>::sc_fifo_out()
+	: sc_port<sc_fifo_out_if<T>,0>()
+	, data_read_event_finder(0)
 {
+	data_read_event_finder = new sc_event_finder_t<sc_fifo_out_if<T> >(*this, &sc_fifo_out_if<T>::data_read_event);
 }
 
 template <class T>
-sc_fifo_out<T>::sc_fifo_out( const char* )
+sc_fifo_out<T>::sc_fifo_out(const char *_name)
+	: sc_port<sc_fifo_out_if<T>,0>(_name)
+	, data_read_event_finder(0)
 {
+	data_read_event_finder = new sc_event_finder_t<sc_fifo_out_if<T> >(*this, &sc_fifo_out_if<T>::data_read_event);
 }
 
 template <class T>
 sc_fifo_out<T>::~sc_fifo_out()
 {
+	delete data_read_event_finder;
 }
 
 template <class T>
-void sc_fifo_out<T>::write( const T& )
+void sc_fifo_out<T>::write(const T& v)
 {
+	(*this)->write(v);
 }
 
 template <class T>
-bool sc_fifo_out<T>::nb_write( const T& )
+bool sc_fifo_out<T>::nb_write(const T& v)
 {
+	return (*this)->nb_write(v);
 }
 
 template <class T>
 const sc_event& sc_fifo_out<T>::data_read_event() const
 {
+	return (*this)->data_read_event();
 }
 
 template <class T>
 sc_event_finder& sc_fifo_out<T>::data_read() const
 {
+	return *data_read_event_finder;
 }
 
 template <class T>
 int sc_fifo_out<T>::num_free() const
 {
+	(*this)->num_free();
 }
 
 template <class T>
 const char* sc_fifo_out<T>::kind() const
 {
+	return "sc_fifo_out";
 }
 
+// disabled
 template <class T>
-sc_fifo_out<T>::sc_fifo_out( const sc_fifo_out<T>& )
+sc_fifo_out<T>::sc_fifo_out(const sc_fifo_out<T>&)
 {
 }
 
+// disabled
 template <class T>
-sc_fifo_out<T>& sc_fifo_out<T>::operator= ( const sc_fifo_out<T>& )
+sc_fifo_out<T>& sc_fifo_out<T>::operator = (const sc_fifo_out<T>&)
 {
+	return *this;
 }
 
 } // end of namespace sc_core
