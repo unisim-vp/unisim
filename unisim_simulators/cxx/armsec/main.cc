@@ -6,6 +6,21 @@
 #include <iostream>
 #include <cstdlib>
 #include <set>
+#if __cplusplus >= 201103L
+#include <memory>
+#else
+#include <tr1/memory>
+namespace std {
+
+template< class T > class shared_ptr : public tr1::shared_ptr<T> {
+public:
+  shared_ptr() {}
+  shared_ptr( T* ptr ) : tr1::shared_ptr<T>(ptr) {}
+  shared_ptr( const shared_ptr& r ) : tr1::shared_ptr<T>(r) {}
+};
+
+} // end of namespace std
+#endif
 
 namespace armsec
 {
@@ -27,29 +42,33 @@ namespace armsec
       : cond(), sinks(), previous( _previous ), true_nxt(), false_nxt(), complete(false)
     {}
     
-    PathNode* proceed( Expr const& _cond, bool& result )
+    static void proceed( std::shared_ptr<PathNode>& this_node,
+      Expr const& _cond, bool& result )
     {
-      if (not cond.node) {
-        cond = _cond;
-        false_nxt = new PathNode( this );
-        true_nxt = new PathNode( this );
+      if (not this_node->cond.node) {
+        PathNode* previous = this_node.get();
+        previous->cond = _cond;
+        previous->false_nxt.reset(new PathNode(previous));
+        previous->true_nxt.reset(new PathNode(previous));
         result = false;
-        return false_nxt;
+        this_node = previous->false_nxt;
+        return;
       }
       
-      if (cond != _cond)
+      if (this_node->cond != _cond)
         throw std::logic_error( "unexpected condition" );
       
-      if (not false_nxt->complete) {
+      if (not this_node->false_nxt->complete) {
         result = false;
-        return false_nxt;
+        this_node = this_node->false_nxt;
+        return;
       }
       
-      if (true_nxt->complete)
+      if (this_node->true_nxt->complete)
         throw std::logic_error( "unexpected condition" );
       
       result = true;
-      return true_nxt;
+      this_node = this_node->true_nxt;
     }
     
     bool close()
@@ -57,7 +76,7 @@ namespace armsec
       complete = true;
       if (not previous)
         return true;
-      if (previous->true_nxt == this)
+      if (previous->true_nxt.get() == this)
         return previous->close();
       return false;
     }
@@ -68,15 +87,13 @@ namespace armsec
         bool leaf = true;
         if (false_nxt) {
           if (false_nxt->remove_dead_paths()) {
-            delete false_nxt;
-            false_nxt = 0;
+            false_nxt.reset();
           } else
             leaf = false;
         }
         if (true_nxt) {
           if (true_nxt->remove_dead_paths()) {
-            delete true_nxt;
-            true_nxt = 0;
+            true_nxt.reset();
           } else
             leaf = false;
         }
@@ -148,8 +165,8 @@ namespace armsec
     Expr cond;
     std::set<Expr> sinks;
     PathNode* previous;
-    PathNode* true_nxt;
-    PathNode* false_nxt;
+    std::shared_ptr<PathNode> true_nxt;
+    std::shared_ptr<PathNode> false_nxt;
     bool complete;
   };
   
@@ -173,7 +190,7 @@ namespace armsec
     bool Cond( SmartValue<T> const& cond )
     {
       bool result;
-      path = path->proceed( cond.expr, result );
+      PathNode::proceed( path, cond.expr, result );
       return result;
     }
     
@@ -307,8 +324,8 @@ namespace armsec
       Expr expr;
     };
     
-    State( PathNode& _path )
-      : path( &_path )
+    State( std::shared_ptr<PathNode> _path )
+      : path( _path )
       , current_insn_addr()
       , next_insn_addr()
       , cpsr( Expr( new Source("cpsr") ) )
@@ -328,7 +345,7 @@ namespace armsec
       next_insn_addr = current_insn_addr + U32( insn_length / 8 );
     }
     
-    PathNode* path;
+    std::shared_ptr<PathNode> path;
     
     U32 reg_values[16];
     U32 current_insn_addr, next_insn_addr;
@@ -583,12 +600,17 @@ struct Decoder
   void
   do_isa( ISA& isa, uint32_t addr, uint32_t code )
   {
-    typename ISA::Operation* op = isa.NCDecode( addr, ISA::mkcode( code ) );
+#if __cplusplus >= 201103L
+    std::unique_ptr
+#else
+    std::auto_ptr
+#endif
+      <typename ISA::Operation> op(isa.NCDecode( addr, ISA::mkcode( code ) ) );
     
     armsec::Expr insn_addr( new armsec::State::Source("cia") ); //<if instruction address shall a remain variable
     // armsec::Expr insn_addr( armsec::make_const( addr ) ); //<if instruction address shall be known
     
-    armsec::PathNode path;
+    std::shared_ptr<armsec::PathNode> path ( new armsec::PathNode );
     std::cout << '@' << std::hex << addr << ',' << op->GetEncoding() << std::dec << ": ";
     
     armsec::State reference( path );
@@ -602,9 +624,9 @@ struct Decoder
       op->execute( state );
       end = state.close( reference );
     }
-    path.factorize();
-    path.remove_dead_paths();
-    path.Dump( std::cout, "" );
+    path->factorize();
+    path->remove_dead_paths();
+    path->Dump( std::cout, "" );
   }
   void  do_arm( uint32_t addr, uint32_t code ) { do_isa( armisa, addr, code ); }
   void  do_thumb( uint32_t addr, uint32_t code ) { do_isa( thumbisa, addr, code ); }

@@ -322,7 +322,13 @@ namespace armsec
     Expr() : node() {} ExprNode* node;
     Expr( Expr const& expr ) : node( expr.node ) { if (node) node->Retain(); }
     Expr( ExprNode* const& _node ) : node( _node ) { if (node) node->Retain(); }
-    Expr&  operator = ( Expr const& expr ) { if (expr.node) expr.node->Retain(); if (node) node->Release(); node = expr.node; return *this; }
+    Expr&  operator = ( Expr const& expr )
+      { if (expr.node) expr.node->Retain();
+        ExprNode* old_node = node;
+        node = expr.node;
+        if (old_node) old_node->Release();
+        return *this;
+      }
     ~Expr() { if (node) node->Release(); }
     ExprNode const* operator->() const { return node; }
     ExprNode* operator->() { return node; }
