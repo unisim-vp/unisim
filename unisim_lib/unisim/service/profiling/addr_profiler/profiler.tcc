@@ -155,7 +155,7 @@ void Profiler<ADDRESS>::ReportMemoryAccess(unisim::util::debug::MemoryAccessType
 }
 
 template <class ADDRESS>
-void Profiler<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
+void Profiler<ADDRESS>::ReportCommitInstruction(ADDRESS addr)
 {
 	if(enable_prof[unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_EXEC])
 	{
@@ -165,6 +165,11 @@ void Profiler<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_add
 			profile[unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_EXEC].Accumulate(addr, 1);
 		}
 	}
+}
+
+template <class ADDRESS>
+void Profiler<ADDRESS>::ReportFetchInstruction(ADDRESS next_addr)
+{
 }
 
 template <class ADDRESS>

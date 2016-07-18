@@ -378,8 +378,6 @@ CPU::Run()
         if (exception_taken) {
           if (exception_trap_reporting_import)
             exception_trap_reporting_import->ReportTrap(*this,"irq or fiq");
-          if (requires_finished_instruction_reporting and memory_access_reporting_import)
-            memory_access_reporting_import->ReportFinishedInstruction(this->current_insn_addr, this->next_insn_addr);
         }
       }
     }

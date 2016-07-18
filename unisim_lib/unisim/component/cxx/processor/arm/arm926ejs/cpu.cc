@@ -327,7 +327,13 @@ CPU::StepInstruction()
 
   cur_instruction_address = insn_addr;
 
-  if (debug_control_import) 
+  if (unlikely(instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
+    instruction_counter_trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
+  
+  if (unlikely(memory_access_reporting_import))
+    memory_access_reporting_import->ReportFetchInstruction(this->current_pc);
+  
+  if (debug_control_import)
     {
       DebugControl<uint64_t>::DebugCommand dbg_cmd;
 
@@ -405,15 +411,11 @@ CPU::StepInstruction()
     }
   
     if (requires_finished_instruction_reporting && memory_access_reporting_import)
-      memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
+      memory_access_reporting_import->ReportCommitInstruction(this->current_pc);
   
     instruction_counter++;
-    
     stat_instruction_counter.NotifyListeners();
   
-    if ( unlikely((trap_on_instruction_counter == instruction_counter) && instruction_counter_trap_reporting_import) )
-      instruction_counter_trap_reporting_import->ReportTrap(*this);
-
   }
   
   catch (SVCException const& svexc) {
@@ -421,11 +423,10 @@ CPU::StepInstruction()
      * requested from regular instructions. ITState will be updated by
      * TakeSVCException (as done in the ARM spec). */
     if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
-      memory_access_reporting_import->ReportFinishedInstruction(this->current_pc, this->next_pc);
+      memory_access_reporting_import->ReportCommitInstruction(this->current_pc);
 
     instruction_counter++;
-    if (unlikely( instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter) ))
-      instruction_counter_trap_reporting_import->ReportTrap(*this);
+    stat_instruction_counter.NotifyListeners();
     
     this->TakeSVCException();
     
