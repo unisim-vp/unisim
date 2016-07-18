@@ -78,16 +78,16 @@ public:
 	bool SetWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
 	bool RemoveWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
 	bool HasWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size) const;
-	bool SetWatchpoint(const Watchpoint<ADDRESS>& wp);
-	bool RemoveWatchpoint(const Watchpoint<ADDRESS>& wp);
-	bool HasWatchpoint(const Watchpoint<ADDRESS>& wp) const;
+	bool SetWatchpoint(const Watchpoint<ADDRESS> *wp);
+	bool RemoveWatchpoint(const Watchpoint<ADDRESS> *wp);
+	bool HasWatchpoint(const Watchpoint<ADDRESS> *wp) const;
 	bool HasWatchpoints() const;
 	const Watchpoint<ADDRESS> *FindWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size) const;
-	const list<Watchpoint<ADDRESS> >& GetWatchpoints() const;
+	const std::list<const Watchpoint<ADDRESS> *>& GetWatchpoints() const;
 
 private:
 	bool has_watchpoints;
-	list<Watchpoint<ADDRESS> > watchpoints;
+	std::list<const Watchpoint<ADDRESS> *> watchpoints;
 	WatchpointMapPage<ADDRESS> *hash_table[2][NUM_HASH_TABLE_ENTRIES];
 
 	void AllocatePage(unisim::util::debug::MemoryType mt, ADDRESS addr);

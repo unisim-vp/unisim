@@ -38,6 +38,8 @@ bool debug_enabled;
 
 using namespace std;
 
+bool Simulator::enable_monitor = false;
+
 Simulator::Simulator(int argc, char **argv)
   : unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
   , cpu(0)
@@ -59,6 +61,11 @@ Simulator::Simulator(int argc, char **argv)
   , param_enable_inline_debugger(0)
   , exit_status(0)
 {
+  if(enable_monitor)
+  {
+    enable_inline_debugger = false;
+    enable_gdb_server = false;
+  }
   cpu = new CPU("cpu");
   memory = new MEMORY("memory");
   time = new unisim::service::time::sc_time::ScTime("time");
@@ -80,6 +87,8 @@ Simulator::Simulator(int argc, char **argv)
   
   //  - debugger
   debugger = new DEBUGGER("debugger");
+  //  - monitor
+  monitor = enable_monitor ? new MONITOR("monitor") : 0;
   //  - profiler
   profiler = enable_inline_debugger ? new PROFILER("profiler") : 0;
   //  - Tee Memory Access Reporting
@@ -156,6 +165,19 @@ Simulator::Simulator(int argc, char **argv)
     gdb_server->memory_import >> debugger->memory_export;
     gdb_server->registers_import >> debugger->registers_export;
   }
+  else if(enable_monitor)
+  {
+    debugger->debug_event_listener_import >> monitor->debug_event_listener_export;
+    monitor->debug_event_trigger_import >> debugger->debug_event_trigger_export;
+    monitor->memory_import >> debugger->memory_export;
+    monitor->registers_import >> debugger->registers_export;
+    monitor->stmt_lookup_import >> debugger->stmt_lookup_export;
+    monitor->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
+    monitor->backtrace_import >> debugger->backtrace_export;
+    monitor->debug_info_loading_import >> debugger->debug_info_loading_export;
+	monitor->data_object_lookup_import >> debugger->data_object_lookup_export;
+	monitor->subprogram_lookup_import >> debugger->subprogram_lookup_export;
+  }
 
   // Connect everything
   cpu->linux_os_import >> linux_os->linux_os_export_;
@@ -189,6 +211,7 @@ Simulator::~Simulator()
   if ( debugger ) delete debugger;
   if ( profiler ) delete profiler;
   if ( tee_memory_access_reporting ) delete tee_memory_access_reporting;
+  if ( monitor ) delete monitor;
 }
 
 int
@@ -333,7 +356,7 @@ SimulationFinished() const
 
 unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 {
-	if(enable_inline_debugger)
+	if(enable_inline_debugger || enable_monitor)
 	{
 		SetVariable("debugger.parse-dwarf", true);
 	}
@@ -514,3 +537,9 @@ void Simulator::SigIntHandler(int signum)
 	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
 }
 #endif
+
+void Simulator::EnableMonitor(int (*_monitor_callback)(void))
+{
+	enable_monitor = true;
+	unisim::service::debug::monitor::MonitorBase::SetCallback(_monitor_callback);
+}

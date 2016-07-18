@@ -56,6 +56,7 @@
 #include "unisim/service/debug/gdb_server/gdb_server.hh"
 #include "unisim/service/debug/inline_debugger/inline_debugger.hh"
 #include "unisim/service/debug/debugger/debugger.hh"
+#include "unisim/service/debug/monitor/monitor.hh"
 #include "unisim/service/profiling/addr_profiler/profiler.hh"
 #include "unisim/service/tee/memory_access_reporting/tee.hh"
 
@@ -82,6 +83,7 @@ class Simulator
   virtual unisim::kernel::service::Simulator::SetupStatus Setup();
   virtual void Stop(unisim::kernel::service::Object *object, int exit_status, bool asynchronous = false);
   int GetExitStatus() const;
+  static void EnableMonitor(int (*monitor_callback)(void));
 
  protected:
  private:
@@ -93,6 +95,7 @@ class Simulator
   typedef unisim::service::debug::gdb_server::GDBServer<uint32_t> GDB_SERVER;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<uint32_t> INLINE_DEBUGGER;
   typedef unisim::service::debug::debugger::Debugger<uint32_t> DEBUGGER;
+  typedef unisim::service::debug::monitor::Monitor<uint32_t> MONITOR;
   typedef unisim::service::profiling::addr_profiler::Profiler<uint32_t> PROFILER;
   typedef unisim::service::tee::memory_access_reporting::Tee<uint32_t> TEE_MEMORY_ACCESS_REPORTING;
 
@@ -112,18 +115,20 @@ class Simulator
   GDB_SERVER *gdb_server;
   INLINE_DEBUGGER *inline_debugger;
   DEBUGGER *debugger;
+  MONITOR *monitor;
   PROFILER *profiler;
   bool enable_gdb_server;
   unisim::kernel::service::Parameter<bool> *param_enable_gdb_server;
   bool enable_inline_debugger;
   unisim::kernel::service::Parameter<bool> *param_enable_inline_debugger;
-
+  
   int exit_status;
 #ifdef WIN32
   static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
 #else
   static void SigIntHandler(int signum);
 #endif
+  static bool enable_monitor;
 };
 
 #endif /* SIMULATOR_HH_ */

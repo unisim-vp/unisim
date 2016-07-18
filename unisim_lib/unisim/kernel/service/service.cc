@@ -724,13 +724,50 @@ template <class TYPE> VariableBase& Variable<TYPE>::operator = (double value)
 }
 
 //=============================================================================
+//=                           FormulaOperator                                 =
+//=============================================================================
+
+FormulaOperator::FormulaOperator(const char *name)
+{
+	if((strcmp(name, "+") == 0) || (strcmp(name, "add") == 0) || (strcmp(name, "ADD") == 0)) op = OP_ADD;
+	else if((strcmp(name, "-") == 0) || (strcmp(name, "sub") == 0) || (strcmp(name, "SUB") == 0)) op = OP_SUB;
+	else if((strcmp(name, "*") == 0) || (strcmp(name, "mul") == 0) || (strcmp(name, "MUL") == 0)) op = OP_MUL;
+	else if((strcmp(name, "/") == 0) || (strcmp(name, "div") == 0) || (strcmp(name, "DIV") == 0)) op = OP_DIV;
+	else if((strcmp(name, "<") == 0) || (strcmp(name, "lt") == 0) || (strcmp(name, "LT") == 0)) op = OP_LT;
+	else if((strcmp(name, "<=") == 0) || (strcmp(name, "=<") == 0) || (strcmp(name, "lte") == 0) || (strcmp(name, "LTE") == 0)) op = OP_LTE;
+	else if((strcmp(name, ">") == 0) || (strcmp(name, "gt") == 0) || (strcmp(name, "GT") == 0)) op = OP_GT;
+	else if((strcmp(name, ">=") == 0) || (strcmp(name, "=>") == 0) || (strcmp(name, "gte") == 0)) op = OP_GTE;
+	else if((strcmp(name, "==") == 0) || (strcmp(name, "=") == 0) || (strcmp(name, "eq") == 0) || (strcmp(name, "EQ") == 0)) op = OP_EQ;
+	else if((strcmp(name, "?") == 0) || (strcmp(name, "sel") == 0) || (strcmp(name, "SEL") == 0)) op = OP_SEL;
+	else if((strcmp(name, "neg") == 0) || (strcmp(name, "NEG") == 0)) op = OP_NEG;
+	else if((strcmp(name, "abs") == 0) || (strcmp(name, "ABS") == 0)) op = OP_ABS;
+	else if((strcmp(name, "min") == 0) || (strcmp(name, "MIN") == 0)) op = OP_MIN;
+	else if((strcmp(name, "max") == 0) || (strcmp(name, "MAX") == 0)) op = OP_MAX;
+	else if((strcmp(name, "&") == 0) || (strcmp(name, "and") == 0) || (strcmp(name, "AND") == 0)) op = OP_AND;
+	else if((strcmp(name, "|") == 0) || (strcmp(name, "or") == 0) || (strcmp(name, "OR") == 0)) op = OP_OR;
+	else if((strcmp(name, "!=") == 0) || (strcmp(name, "<>") == 0) || (strcmp(name, "ne") == 0) || (strcmp(name, "NE") == 0)) op = OP_NEQ;
+	else if((strcmp(name, "!") == 0) || (strcmp(name, "~") == 0) || (strcmp(name, "not") == 0) || (strcmp(name, "NOT") == 0)) op = OP_NOT;
+	else op = OP_UNKNOWN;
+}
+
+FormulaOperator::FormulaOperator(Operator _op)
+	: op(_op)
+{
+}
+
+FormulaOperator::operator FormulaOperator::Operator() const
+{
+	return op;
+}
+
+//=============================================================================
 //=                             Formula<TYPE>                                 =
 //=============================================================================
 
 template <class TYPE>
-Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, VariableBase *child1, VariableBase *child2, VariableBase *child3, const char *_description)
+Formula<TYPE>::Formula(const char *_name, Object *_owner, FormulaOperator _formula_op, VariableBase *child1, VariableBase *child2, VariableBase *child3, const char *_description)
 	: VariableBase(_name, _owner, VAR_FORMULA, _description)
-	, op(_op)
+	, op(_formula_op)
 {
 	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	childs[0] = child1;
@@ -743,9 +780,9 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, Variable
 }
 
 template <class TYPE>
-Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, VariableBase *child1, VariableBase *child2, const char *_description)
+Formula<TYPE>::Formula(const char *_name, Object *_owner, FormulaOperator _formula_op, VariableBase *child1, VariableBase *child2, const char *_description)
 	: VariableBase(_name, _owner, VAR_FORMULA, _description)
-	, op(_op)
+	, op(_formula_op)
 {
 	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	childs[0] = child1;
@@ -758,9 +795,9 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, Variable
 }
 
 template <class TYPE>
-Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, VariableBase *child, const char *_description)
+Formula<TYPE>::Formula(const char *_name, Object *_owner, FormulaOperator _formula_op, VariableBase *child, const char *_description)
 	: VariableBase(_name, _owner, VAR_FORMULA, _description)
-	, op(_op)
+	, op(_formula_op)
 {
 	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	childs[0] = child;
@@ -777,26 +814,28 @@ bool Formula<TYPE>::IsValid() const
 {
 	switch(op)
 	{
-		case OP_NEG:
-		case OP_ABS:
-		case OP_NOT:
+		case FormulaOperator::OP_UNKNOWN:
+			return false;
+		case FormulaOperator::OP_NEG:
+		case FormulaOperator::OP_ABS:
+		case FormulaOperator::OP_NOT:
 			return childs[0] != 0;
-		case OP_ADD:
-		case OP_SUB:
-		case OP_MUL:
-		case OP_DIV:
-		case OP_LT:
-		case OP_LTE:
-		case OP_GT:
-		case OP_GTE:
-		case OP_EQ:
-		case OP_MIN:
-		case OP_MAX:
-		case OP_AND:
-		case OP_OR:
-		case OP_NEQ:
+		case FormulaOperator::OP_ADD:
+		case FormulaOperator::OP_SUB:
+		case FormulaOperator::OP_MUL:
+		case FormulaOperator::OP_DIV:
+		case FormulaOperator::OP_LT:
+		case FormulaOperator::OP_LTE:
+		case FormulaOperator::OP_GT:
+		case FormulaOperator::OP_GTE:
+		case FormulaOperator::OP_EQ:
+		case FormulaOperator::OP_MIN:
+		case FormulaOperator::OP_MAX:
+		case FormulaOperator::OP_AND:
+		case FormulaOperator::OP_OR:
+		case FormulaOperator::OP_NEQ:
 			return (childs[0] != 0) && (childs[1] != 0);
-		case OP_SEL:
+		case FormulaOperator::OP_SEL:
 			return (childs[0] != 0) && (childs[1] != 0) && (childs[2] != 0);
 	}
 	return false;
@@ -834,24 +873,25 @@ TYPE Formula<TYPE>::Compute() const
 {
 	switch(op)
 	{
-		case OP_ADD: return (TYPE)(childs[0] ? *childs[0] : TYPE()) + (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_SUB: return (TYPE)(childs[0] ? *childs[0] : TYPE()) - (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_MUL: return (TYPE)(childs[0] ? *childs[0] : TYPE()) * (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_DIV: return (TYPE)(childs[0] ? *childs[0] : TYPE()) / (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_LT: return (TYPE)(childs[0] ? *childs[0] : TYPE()) < (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_LTE: return (TYPE)(childs[0] ? *childs[0] : TYPE()) <= (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_GT: return (TYPE)(childs[0] ? *childs[0] : TYPE()) > (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_GTE: return (TYPE)(childs[0] ? *childs[0] : TYPE()) >= (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_EQ: return (TYPE)(childs[0] ? *childs[0] : TYPE()) == (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_SEL: return (TYPE)(childs[0] ? *childs[0] : TYPE()) ? (TYPE)(childs[1] ? *childs[1] : TYPE()) : (TYPE)(childs[2] ? *childs[2] : TYPE());
-		case OP_NEG: return -(TYPE)(childs[0] ? *childs[0] : TYPE());
-		case OP_ABS: return (TYPE)(childs[0] ? *childs[0] : TYPE()) >= 0 ? (TYPE)(childs[0] ? *childs[0] : TYPE()) : -(TYPE)(childs[0] ? *childs[0] : TYPE());
-		case OP_MIN: return (TYPE)(childs[0] ? *childs[0] : TYPE()) < (TYPE)(childs[1] ? *childs[1] : TYPE()) ? (TYPE)(childs[0] ? *childs[0] : TYPE()) : (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_MAX: return (TYPE)(childs[0] ? *childs[0] : TYPE()) > (TYPE)(childs[1] ? *childs[1] : TYPE()) ? (TYPE)(childs[0] ? *childs[0] : TYPE()) : (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_AND: return (TYPE)(childs[0] ? *childs[0] : TYPE()) && (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_OR: return (TYPE)(childs[0] ? *childs[0] : TYPE()) || (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_NEQ: return (TYPE)(childs[0] ? *childs[0] : TYPE()) != (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_NOT: return !(TYPE)(childs[0] ? *childs[0] : TYPE());
+		case FormulaOperator::OP_UNKNOWN: return TYPE();
+		case FormulaOperator::OP_ADD: return (TYPE)(childs[0] ? *childs[0] : TYPE()) + (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_SUB: return (TYPE)(childs[0] ? *childs[0] : TYPE()) - (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_MUL: return (TYPE)(childs[0] ? *childs[0] : TYPE()) * (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_DIV: return (TYPE)(childs[0] ? *childs[0] : TYPE()) / (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_LT: return (TYPE)(childs[0] ? *childs[0] : TYPE()) < (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_LTE: return (TYPE)(childs[0] ? *childs[0] : TYPE()) <= (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_GT: return (TYPE)(childs[0] ? *childs[0] : TYPE()) > (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_GTE: return (TYPE)(childs[0] ? *childs[0] : TYPE()) >= (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_EQ: return (TYPE)(childs[0] ? *childs[0] : TYPE()) == (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_SEL: return (TYPE)(childs[0] ? *childs[0] : TYPE()) ? (TYPE)(childs[1] ? *childs[1] : TYPE()) : (TYPE)(childs[2] ? *childs[2] : TYPE());
+		case FormulaOperator::OP_NEG: return -(TYPE)(childs[0] ? *childs[0] : TYPE());
+		case FormulaOperator::OP_ABS: return (TYPE)(childs[0] ? *childs[0] : TYPE()) >= 0 ? (TYPE)(childs[0] ? *childs[0] : TYPE()) : -(TYPE)(childs[0] ? *childs[0] : TYPE());
+		case FormulaOperator::OP_MIN: return (TYPE)(childs[0] ? *childs[0] : TYPE()) < (TYPE)(childs[1] ? *childs[1] : TYPE()) ? (TYPE)(childs[0] ? *childs[0] : TYPE()) : (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_MAX: return (TYPE)(childs[0] ? *childs[0] : TYPE()) > (TYPE)(childs[1] ? *childs[1] : TYPE()) ? (TYPE)(childs[0] ? *childs[0] : TYPE()) : (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_AND: return (TYPE)(childs[0] ? *childs[0] : TYPE()) && (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_OR: return (TYPE)(childs[0] ? *childs[0] : TYPE()) || (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_NEQ: return (TYPE)(childs[0] ? *childs[0] : TYPE()) != (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_NOT: return !(TYPE)(childs[0] ? *childs[0] : TYPE());
 	}
 	return 0;
 }
@@ -862,14 +902,17 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 	std::stringstream sstr;
 	switch(op)
 	{
-		case Formula<TYPE>::OP_NEG:
+		case FormulaOperator::OP_UNKNOWN:
+			sstr << "unknown";
+			break;
+		case FormulaOperator::OP_NEG:
 			sstr << "-";
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_ABS:
+		case FormulaOperator::OP_ABS:
 			sstr << "ABS(";
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
@@ -877,14 +920,14 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 				sstr << TYPE();
 			sstr << ")";
 			break;
-		case Formula<TYPE>::OP_NOT:
+		case FormulaOperator::OP_NOT:
 			sstr << "!";
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_ADD:
+		case FormulaOperator::OP_ADD:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -895,7 +938,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_SUB:
+		case FormulaOperator::OP_SUB:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -906,7 +949,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_MUL:
+		case FormulaOperator::OP_MUL:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -917,7 +960,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_DIV:
+		case FormulaOperator::OP_DIV:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -928,7 +971,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_LT:
+		case FormulaOperator::OP_LT:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -939,7 +982,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_LTE:
+		case FormulaOperator::OP_LTE:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -950,7 +993,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_GT:
+		case FormulaOperator::OP_GT:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -961,7 +1004,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_GTE:
+		case FormulaOperator::OP_GTE:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -972,7 +1015,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_EQ:
+		case FormulaOperator::OP_EQ:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -983,7 +1026,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_MIN:
+		case FormulaOperator::OP_MIN:
 			sstr << "MIN(";
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
@@ -996,7 +1039,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 				sstr << TYPE();
 			sstr << ")";
 			break;
-		case Formula<TYPE>::OP_MAX:
+		case FormulaOperator::OP_MAX:
 			sstr << "MAX(";
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
@@ -1009,7 +1052,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 				sstr << TYPE();
 			sstr << ")";
 			break;
-		case Formula<TYPE>::OP_AND:
+		case FormulaOperator::OP_AND:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -1020,7 +1063,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_OR:
+		case FormulaOperator::OP_OR:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -1031,7 +1074,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_NEQ:
+		case FormulaOperator::OP_NEQ:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -1042,7 +1085,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_SEL:
+		case FormulaOperator::OP_SEL:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -2078,7 +2121,12 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					bool match = false;
 					for(cmd_opt_iter = command_line_options.begin(); !match && cmd_opt_iter != command_line_options.end(); cmd_opt_iter++)
 					{
-						if(*cmd_opt_iter == *arg)
+						if(strcmp(*arg, "--") == 0)
+						{
+							arg++;
+							arg_num++;
+						}
+						else if(*cmd_opt_iter == *arg)
 						{
 							// match
 							match=true;
@@ -2231,7 +2279,12 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					bool match = false;
 					for(cmd_opt_iter = command_line_options.begin(); !match && cmd_opt_iter != command_line_options.end(); cmd_opt_iter++)
 					{
-						if(*cmd_opt_iter == *arg)
+						if(strcmp(*arg, "--") == 0)
+						{
+							arg++;
+							arg_num++;
+						}
+						else if(*cmd_opt_iter == *arg)
 						{
 							// match
 							match=true;
