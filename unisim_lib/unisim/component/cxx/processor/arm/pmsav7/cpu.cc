@@ -410,12 +410,16 @@ CPU::StepInstruction()
       //op->profile(profile);
     }
     
+#if 0
     if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
       memory_access_reporting_import->ReportFinishedInstruction(this->current_insn_addr, this->next_insn_addr);
+#endif
     
     instruction_counter++;
+#if 0
     if (unlikely( instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter) ))
       instruction_counter_trap_reporting_import->ReportTrap(*this);
+#endif
   
   }
   
@@ -423,12 +427,16 @@ CPU::StepInstruction()
     /* Resuming execution, since SVC exceptions are explicitly
      * requested from regular instructions. ITState will be updated by
      * TakeSVCException (as done in the ARM spec). */
+#if 0
     if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
       memory_access_reporting_import->ReportFinishedInstruction(this->current_insn_addr, this->next_insn_addr);
+#endif
 
     instruction_counter++;
+#if 0
     if (unlikely( instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter) ))
       instruction_counter_trap_reporting_import->ReportTrap(*this);
+#endif
     
     this->TakeSVCException();
   }
@@ -468,6 +476,14 @@ CPU::StepInstruction()
            << EndDebugError;
     this->Stop(-1);
   }
+#if 1
+
+  if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
+    memory_access_reporting_import->ReportFinishedInstruction(this->current_insn_addr, this->next_insn_addr);
+
+  if (unlikely( instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter) ))
+    instruction_counter_trap_reporting_import->ReportTrap(*this);
+#endif
 }
 
 /** Inject an intrusive read memory operation.
