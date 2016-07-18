@@ -141,7 +141,8 @@ public:
 	virtual bool WriteMemory(ADDRESS physical_addr, const void *buffer, uint32_t size);
 	virtual bool ReadMemory(ADDRESS physical_addr, void *buffer, uint32_t size);
 	virtual void ReportMemoryAccess(typename unisim::util::debug::MemoryAccessType mat, typename unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
-	virtual void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr);
+	virtual void ReportCommitInstruction(ADDRESS addr);
+	virtual void ReportFetchInstruction(ADDRESS next_addr);
 	virtual void Trap();
 private:
 	BreakpointRegistry<ADDRESS> breakpoint_registry;

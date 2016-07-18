@@ -370,7 +370,12 @@ void Debugger<ADDRESS>::ReportMemoryAccess(unisim::util::debug::MemoryAccessType
 }
 
 template <class ADDRESS>
-void Debugger<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
+void Debugger<ADDRESS>::ReportCommitInstruction(ADDRESS addr)
+{
+}
+
+template <class ADDRESS>
+void Debugger<ADDRESS>::ReportFetchInstruction(ADDRESS next_addr)
 {
 	if(breakpoint_registry.HasBreakpoint(next_addr))
 	{
