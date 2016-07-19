@@ -418,17 +418,15 @@ namespace simfloat {
       flags.setRoundingMode( fpscr.Get( RMode ) );
       acc.plusAssign(op2, flags);
       // Process exceptions (Underflow, Overflow, InvalidOp, Inexact)
-      if (fpscr.Get( FZ ) and (FlushToZero( acc, fpscr ) or flags.isUnderflow())) {
+      if (fpscr.Get( FZ ) and (FlushToZero( acc, fpscr ) or (acc.isZero() and flags.isApproximate()))) {
         fpscr.Set( UFC, 1u );
         return;
       }
       if (flags.hasQNaNResult())
         fpscr.ProcessException( IOC );
       if (flags.isApproximate()) {
-        if (flags.hasFlowException()) {
-          if      (flags.isOverflow())     fpscr.ProcessException( OFC );
-          else if (flags.isUnderflow())    fpscr.ProcessException( UFC );
-        }
+        if      (flags.isOverflow())     fpscr.ProcessException( OFC );
+        else if (flags.isUnderflow())    fpscr.ProcessException( UFC );
         fpscr.ProcessException( IXC );
       }
     }
@@ -440,17 +438,15 @@ namespace simfloat {
       flags.setRoundingMode( fpscr.Get( RMode ) );
       acc.minusAssign(op2, flags);
       // Process exceptions (Underflow, Overflow, InvalidOp, Inexact)
-      if (fpscr.Get( FZ ) and (FlushToZero( acc, fpscr ) or flags.isUnderflow())) {
+      if (fpscr.Get( FZ ) and (FlushToZero( acc, fpscr ) or (acc.isZero() and flags.isApproximate()))) {
         fpscr.Set( UFC, 1u );
         return;
       }
       if (flags.hasQNaNResult())
         fpscr.ProcessException( IOC );
       if (flags.isApproximate()) {
-        if (flags.hasFlowException()) {
-          if      (flags.isOverflow())     fpscr.ProcessException( OFC );
-          else if (flags.isUnderflow())    fpscr.ProcessException( UFC );
-        }
+        if      (flags.isOverflow())     fpscr.ProcessException( OFC );
+        else if (flags.isUnderflow())    fpscr.ProcessException( UFC );
         fpscr.ProcessException( IXC );
       }
     }
@@ -462,17 +458,15 @@ namespace simfloat {
       flags.setRoundingMode( fpscr.Get( RMode ) );
       acc.divAssign(op2, flags);
       // Process exceptions (Underflow, Overflow, InvalidOp, Inexact)
-      if (fpscr.Get( FZ ) and (FlushToZero( acc, fpscr ) or flags.isUnderflow())) {
+      if (fpscr.Get( FZ ) and (FlushToZero( acc, fpscr ) or (acc.isZero() and flags.isApproximate()))) {
         fpscr.Set( UFC, 1u );
         return;
       }
       if (flags.hasQNaNResult())
         fpscr.ProcessException( IOC );
       if (flags.isApproximate()) {
-        if (flags.hasFlowException()) {
-          if      (flags.isOverflow())     fpscr.ProcessException( OFC );
-          else if (flags.isUnderflow())    fpscr.ProcessException( UFC );
-        }
+        if      (flags.isOverflow())     fpscr.ProcessException( OFC );
+        else if (flags.isUnderflow())    fpscr.ProcessException( UFC );
         fpscr.ProcessException( IXC );
       }
     }
@@ -484,17 +478,15 @@ namespace simfloat {
       flags.setRoundingMode( fpscr.Get( RMode ) );
       acc.multAssign(op2, flags);
       // Process exceptions (Underflow, Overflow, InvalidOp, Inexact)
-      if (fpscr.Get( FZ ) and (FlushToZero( acc, fpscr ) or flags.isUnderflow())) {
+      if (fpscr.Get( FZ ) and (FlushToZero( acc, fpscr ) or (acc.isZero() and flags.isApproximate()))) {
         fpscr.Set( UFC, 1u );
         return;
       }
       if (flags.hasQNaNResult())
         fpscr.ProcessException( IOC );
       if (flags.isApproximate()) {
-        if (flags.hasFlowException()) {
-          if      (flags.isOverflow())     fpscr.ProcessException( OFC );
-          else if (flags.isUnderflow())    fpscr.ProcessException( UFC );
-        }
+        if      (flags.isOverflow())     fpscr.ProcessException( OFC );
+        else if (flags.isUnderflow())    fpscr.ProcessException( UFC );
         fpscr.ProcessException( IXC );
       }
     }
@@ -515,17 +507,15 @@ namespace simfloat {
       res.multAndAddAssign(op2, acc, flags);
       acc = res;
       // Process exceptions (Underflow, Overflow, InvalidOp, Inexact)
-      if (fpscr.Get( FZ ) and (FlushToZero( acc, fpscr ) or flags.isUnderflow())) {
+      if (fpscr.Get( FZ ) and (FlushToZero( acc, fpscr ) or (acc.isZero() and flags.isApproximate()))) {
         fpscr.Set( UFC, 1u );
         return;
       }
       if (flags.hasQNaNResult())
         fpscr.ProcessException( IOC );
       if (flags.isApproximate()) {
-        if (flags.hasFlowException()) {
-          if      (flags.isOverflow())     fpscr.ProcessException( OFC );
-          else if (flags.isUnderflow())    fpscr.ProcessException( UFC );
-        }
+        if      (flags.isOverflow())     fpscr.ProcessException( OFC );
+        else if (flags.isUnderflow())    fpscr.ProcessException( UFC );
         fpscr.ProcessException( IXC );
       }
     }
