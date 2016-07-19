@@ -75,7 +75,7 @@ private:
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE = 1024 * 1024>
 class Memory
-		: public virtual Service<unisim::service::interfaces::Memory<PHYSICAL_ADDR> >
+		: public Service<unisim::service::interfaces::Memory<PHYSICAL_ADDR> >
 
 {
 public:
