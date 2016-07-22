@@ -353,8 +353,20 @@ namespace simfloat {
     typedef SoftDouble F64;
     typedef SoftFloat  F32;
     
-    template <typename SOFTDBL, typename fpscrT> static
-    void SetDefaultNan( SOFTDBL& result, fpscrT const& fpscr )
+    template <typename SOFTDBL> static
+    void Abs( SOFTDBL& acc )
+    {
+      acc.setNegative(false);
+    }
+    
+    template <typename SOFTDBL> static
+    void Neg( SOFTDBL& acc )
+    {
+      acc.opposite();
+    }
+
+    template <typename SOFTDBL> static
+    void SetDefaultNan( SOFTDBL& result )
     {
       result.setNegative(false);
       result.querySBasicExponent() = result.getInftyExponent();
@@ -362,26 +374,26 @@ namespace simfloat {
       result.querySMantissa().setTrueBitArray(result.bitSizeMantissa()-1);
     }
     
-    template <typename SOFTDBL, typename fpscrT> static
-    void SetQuietBit( SOFTDBL& op, fpscrT const& fpscr )
+    template <typename SOFTDBL> static
+    void SetQuietBit( SOFTDBL& op )
     {
       op.querySMantissa().setTrueBitArray(op.bitSizeMantissa()-1);
     } 
-
-    template <typename fpscrT> static
-    void Sqrt( SoftDouble& acc, fpscrT& fpscr )
+    
+    static inline
+    void Sqrt( SoftDouble& acc, uint32_t fpscr_val )
     {
       throw std::logic_error("TODO: sqrt");
     }
 
-    template <typename fpscrT> static
-    void Sqrt( SoftFloat& acc, fpscrT& fpscr )
+    static inline
+    void Sqrt( SoftFloat& acc, uint32_t fpscr_val )
     {
       throw std::logic_error("TODO: sqrt");
     }
 
-    template <typename SOFTDBL, typename fpscrT> static
-    int Compare( SOFTDBL const& op1, SOFTDBL const& op2, fpscrT& fpscr )
+    template <typename SOFTDBL> static
+    int Compare( SOFTDBL const& op1, SOFTDBL const& op2, uint32_t fpscr_val )
     {
       typename SOFTDBL::ComparisonResult cmp = op1.compare( op2 );
       if      (cmp == SOFTDBL::CRLess)    return -1;
@@ -389,20 +401,20 @@ namespace simfloat {
       return 0;
     }
     
-    template <typename SOFTDBL, typename fpscrT> static
-    bool IsSNaN( SOFTDBL const& op, fpscrT const& fpscr )
+    template <typename SOFTDBL> static
+    bool IsSNaN( SOFTDBL const& op )
     {
       return op.isSNaN();
     }
 
-    template <typename SOFTDBL, typename fpscrT> static
-    bool IsQNaN( SOFTDBL const& op, fpscrT const& fpscr )
+    template <typename SOFTDBL> static
+    bool IsQNaN( SOFTDBL const& op )
     {
       return op.isQNaN();
     }
 
-    template <typename SOFTDBL, typename fpscrT> static
-    bool FlushToZero( SOFTDBL& op, fpscrT& fpscr )
+    template <typename SOFTDBL> static
+    bool FlushToZero( SOFTDBL& op, uint32_t fpscr_val )
     {
       if (op.isDenormalized()) {
         op.querySMantissa().clear();
@@ -411,154 +423,147 @@ namespace simfloat {
       return false;
     }
 
-    template <typename SOFTDBL, typename fpscrT> static
-    void Add( SOFTDBL& acc, SOFTDBL const& op2, fpscrT& fpscr )
+    template <typename SOFTDBL, class ARCH> static
+    void Add( SOFTDBL& acc, SOFTDBL const& op2, ARCH& arch, uint32_t fpscr_val )
     {
       Flags flags;
-      flags.setRoundingMode( fpscr.Get( RMode ) );
+      flags.setRoundingMode( RMode.Get( fpscr_val ) );
       acc.plusAssign(op2, flags);
       // Process exceptions (Underflow, Overflow, InvalidOp, Inexact)
-      if (fpscr.Get( FZ ) and (FlushToZero( acc, fpscr ) or (acc.isZero() and flags.isApproximate()))) {
-        fpscr.Set( UFC, 1u );
+      if (FZ.Get( fpscr_val ) and (FlushToZero( acc, fpscr_val ) or (acc.isZero() and flags.isApproximate()))) {
+        FPProcessException( arch, UFC, 0 );
         return;
       }
       if (flags.hasQNaNResult())
-        fpscr.ProcessException( IOC );
+        FPProcessException( arch, IOC, fpscr_val );
       if (flags.isApproximate()) {
-        if      (flags.isOverflow())     fpscr.ProcessException( OFC );
-        else if (flags.isUnderflow())    fpscr.ProcessException( UFC );
-        fpscr.ProcessException( IXC );
+        if      (flags.isOverflow())     FPProcessException( arch, OFC, fpscr_val );
+        else if (flags.isUnderflow())    FPProcessException( arch, UFC, fpscr_val );
+        FPProcessException( arch, IXC, fpscr_val );
       }
     }
     
-    template <typename SOFTDBL, typename fpscrT> static
-    void Sub( SOFTDBL& acc, SOFTDBL const& op2, fpscrT& fpscr )
+    template <typename SOFTDBL, class ARCH> static
+    void Sub( SOFTDBL& acc, SOFTDBL const& op2, ARCH& arch, uint32_t fpscr_val )
     {
       Flags flags;
-      flags.setRoundingMode( fpscr.Get( RMode ) );
+      flags.setRoundingMode( RMode.Get( fpscr_val ) );
       acc.minusAssign(op2, flags);
       // Process exceptions (Underflow, Overflow, InvalidOp, Inexact)
-      if (fpscr.Get( FZ ) and (FlushToZero( acc, fpscr ) or (acc.isZero() and flags.isApproximate()))) {
-        fpscr.Set( UFC, 1u );
+      if (FZ.Get( fpscr_val ) and (FlushToZero( acc, fpscr_val ) or (acc.isZero() and flags.isApproximate()))) {
+        FPProcessException( arch, UFC, 0 );
         return;
       }
       if (flags.hasQNaNResult())
-        fpscr.ProcessException( IOC );
+        FPProcessException( arch, IOC, fpscr_val );
       if (flags.isApproximate()) {
-        if      (flags.isOverflow())     fpscr.ProcessException( OFC );
-        else if (flags.isUnderflow())    fpscr.ProcessException( UFC );
-        fpscr.ProcessException( IXC );
+        if      (flags.isOverflow())     FPProcessException( arch, OFC, fpscr_val );
+        else if (flags.isUnderflow())    FPProcessException( arch, UFC, fpscr_val );
+        FPProcessException( arch, IXC, fpscr_val );
       }
     }
 
-    template <typename SOFTDBL, typename fpscrT> static
-    void Div( SOFTDBL& acc, SOFTDBL const& op2, fpscrT& fpscr )
+    template <typename SOFTDBL, class ARCH> static
+    void Div( SOFTDBL& acc, SOFTDBL const& op2, ARCH& arch, uint32_t fpscr_val )
     {
+      bool divide_by_zero = not acc.isInfty() and not acc.isZero() and op2.isZero();
       Flags flags;
-      flags.setRoundingMode( fpscr.Get( RMode ) );
+      flags.setRoundingMode( RMode.Get( fpscr_val ) );
       acc.divAssign(op2, flags);
       // Process exceptions (Underflow, Overflow, InvalidOp, Inexact)
-      if (fpscr.Get( FZ ) and (FlushToZero( acc, fpscr ) or (acc.isZero() and flags.isApproximate()))) {
-        fpscr.Set( UFC, 1u );
+      if (FZ.Get( fpscr_val ) and (FlushToZero( acc, fpscr_val ) or (acc.isZero() and flags.isApproximate()))) {
+        FPProcessException( arch, UFC, 0 );
         return;
       }
       if (flags.hasQNaNResult())
-        fpscr.ProcessException( IOC );
+        FPProcessException( arch, IOC, fpscr_val );
       if (flags.isApproximate()) {
-        if      (flags.isOverflow())     fpscr.ProcessException( OFC );
-        else if (flags.isUnderflow())    fpscr.ProcessException( UFC );
-        fpscr.ProcessException( IXC );
+        if      (flags.isOverflow())     FPProcessException( arch, OFC, fpscr_val );
+        else if (flags.isUnderflow())    FPProcessException( arch, UFC, fpscr_val );
+        FPProcessException( arch, IXC, fpscr_val );
       }
+      if (divide_by_zero)
+        FPProcessException( arch, DZC, fpscr_val );
     }
 
-    template <typename SOFTDBL, typename fpscrT> static
-    void Mul( SOFTDBL& acc, SOFTDBL const& op2, fpscrT& fpscr )
+    template <typename SOFTDBL, class ARCH> static
+    void Mul( SOFTDBL& acc, SOFTDBL const& op2, ARCH& arch, uint32_t fpscr_val )
     {
       Flags flags;
-      flags.setRoundingMode( fpscr.Get( RMode ) );
+      flags.setRoundingMode( RMode.Get( fpscr_val ) );
       acc.multAssign(op2, flags);
       // Process exceptions (Underflow, Overflow, InvalidOp, Inexact)
-      if (fpscr.Get( FZ ) and (FlushToZero( acc, fpscr ) or (acc.isZero() and flags.isApproximate()))) {
-        fpscr.Set( UFC, 1u );
+      if (FZ.Get( fpscr_val ) and (FlushToZero( acc, fpscr_val ) or (acc.isZero() and flags.isApproximate()))) {
+        FPProcessException( arch, UFC, 0 );
         return;
       }
       if (flags.hasQNaNResult())
-        fpscr.ProcessException( IOC );
+        FPProcessException( arch, IOC, fpscr_val );
       if (flags.isApproximate()) {
-        if      (flags.isOverflow())     fpscr.ProcessException( OFC );
-        else if (flags.isUnderflow())    fpscr.ProcessException( UFC );
-        fpscr.ProcessException( IXC );
+        if      (flags.isOverflow())     FPProcessException( arch, OFC, fpscr_val );
+        else if (flags.isUnderflow())    FPProcessException( arch, UFC, fpscr_val );
+        FPProcessException( arch, IXC, fpscr_val );
       }
     }
     
-    template <typename SOFTDBL, typename fpscrT> static
-    bool IsInvalidMulAdd( SOFTDBL& acc, SOFTDBL const& op1, SOFTDBL const& op2, fpscrT& fpscr )
+    template <typename SOFTDBL> static
+    bool IsInvalidMulAdd( SOFTDBL& acc, SOFTDBL const& op1, SOFTDBL const& op2, uint32_t fpscr_val )
     {
       return acc.isQNaN() and ((op1.isZero() and op2.isInfty()) or (op1.isInfty() and op2.isZero()));
     }
 
-    template <typename SOFTDBL, typename fpscrT> static
-    void MulAdd( SOFTDBL& acc, SOFTDBL const& op1, SOFTDBL const& op2, fpscrT& fpscr )
+    template <typename SOFTDBL, class ARCH> static
+    void MulAdd( SOFTDBL& acc, SOFTDBL const& op1, SOFTDBL const& op2, ARCH& arch, uint32_t fpscr_val )
     {
       Flags flags;
-      flags.setRoundingMode( fpscr.Get( RMode ) );
+      flags.setRoundingMode( RMode.Get( fpscr_val ) );
       
       SOFTDBL res( op1 );
       res.multAndAddAssign(op2, acc, flags);
       acc = res;
       // Process exceptions (Underflow, Overflow, InvalidOp, Inexact)
-      if (fpscr.Get( FZ ) and (FlushToZero( acc, fpscr ) or (acc.isZero() and flags.isApproximate()))) {
-        fpscr.Set( UFC, 1u );
+      if (FZ.Get( fpscr_val ) and (FlushToZero( acc, fpscr_val ) or (acc.isZero() and flags.isApproximate()))) {
+        FPProcessException( arch, UFC, 0 );
         return;
       }
       if (flags.hasQNaNResult())
-        fpscr.ProcessException( IOC );
+        FPProcessException( arch, IOC, fpscr_val );
       if (flags.isApproximate()) {
-        if      (flags.isOverflow())     fpscr.ProcessException( OFC );
-        else if (flags.isUnderflow())    fpscr.ProcessException( UFC );
-        fpscr.ProcessException( IXC );
+        if      (flags.isOverflow())     FPProcessException( arch, OFC, fpscr_val );
+        else if (flags.isUnderflow())    FPProcessException( arch, UFC, fpscr_val );
+        FPProcessException( arch, IXC, fpscr_val );
       }
     }
     
-    template <typename SOFTDBL, typename fpscrT> static
-    void Abs( SOFTDBL& acc, fpscrT& fpscr )
+    template <class FPDST, class FPSRC, class ARCH> static
+    void FtoF( FPDST& dst, FPSRC const& src, ARCH& arch, uint32_t fpscr_val )
     {
-      acc.setNegative(false);
+      Flags flags;
+      flags.setRoundingMode( RMode.Get( fpscr_val ) );
+      flags.clearKeepSignalingConversion();
+      flags.setUpApproximateInfty();
+      
+      dst.assign(src, flags);
+      // Process exceptions (Underflow, Overflow, InvalidOp, Inexact)
+      if (FZ.Get( fpscr_val ) and (FlushToZero( dst, fpscr_val ) or (dst.isZero() and flags.isApproximate()))) {
+        FPProcessException( arch, UFC, 0 );
+        return;
+      }
+      if (flags.hasQNaNResult())
+        FPProcessException( arch, IOC, fpscr_val );
+      if (flags.isApproximate()) {
+        if      (flags.isOverflow())     FPProcessException( arch, OFC, fpscr_val );
+        else if (flags.isUnderflow())    FPProcessException( arch, UFC, fpscr_val );
+        FPProcessException( arch, IXC, fpscr_val );
+      }
     }
     
-    template <typename SOFTDBL, typename fpscrT> static
-    void Neg( SOFTDBL& acc, fpscrT& fpscr )
+    template <typename INT, typename SOFTDBL, class ARCH> static
+    void FtoI( INT& dst, SOFTDBL const& src, int fracbits, ARCH& arch, uint32_t fpscr_val )
     {
-      acc.opposite();
-    }
-
-    template <typename fpscrT> static
-    void FtoF( SoftDouble& dst, SoftFloat const& src, fpscrT& fpscr )
-    {
-      Flags flags_conv;
-      flags_conv.setRoundingMode( fpscr.Get( RMode ) );
-      flags_conv.clearKeepSignalingConversion();
-      flags_conv.setUpApproximateInfty();
-      
-      dst.assign(src, flags_conv);
-    }
-
-    template <typename fpscrT> static
-    void FtoF( SoftFloat& dst, SoftDouble const& src, fpscrT& fpscr )
-    {
-      Flags flags_conv;
-      flags_conv.setRoundingMode( fpscr.Get( RMode ) );
-      flags_conv.clearKeepSignalingConversion();
-      flags_conv.setUpApproximateInfty();
-      
-      dst.assign(src, flags_conv);
-    }
-
-    
-    template <typename INT, typename SOFTDBL, typename fpscrT> static
-    void FtoI( INT& dst, SOFTDBL const& src, int fracbits, fpscrT& fpscr )
-    {
-      // At this point "src" should not be any NaN
+      // At this point "src" should not be any NaN, and Inf are
+      // treated as if the were normalized since their normalized
+      // equivalent is way beyond what any Integer can encode
       int32_t exp = 0;
       int64_t res = 0;
       
@@ -592,29 +597,32 @@ namespace simfloat {
       exp += fracbits;
       // position of the integer part is given by -exp
       // Computing integer part and the error 
-      uint64_t error = 0;
+      bool error_msb = false, error_tail = false, overflow = false;
+      
       if (exp <= 0) {
         for (;exp < 0;exp+=1)
           {
-            uint64_t bit = (res & 1);
+            error_tail |= error_msb;
+            error_msb = res & 1;
             res >>= 1;
-            error >>= 1;
-            error |= (bit << 63);
           }
       } else {
         for (;exp > 0;exp-=1)
           {
             int64_t nres = res << 1;
             if ((nres ^ res) >> 63) {
+              overflow = true;
               res = ~((res >> 63) ^ (int64_t(1) << 63));
               break;
             }
             res = nres;
           }
       }
+      enum {zero = 0, close_to_zero, halfway, close_to_one }
+      error = error_msb ? error_tail ? close_to_one : halfway : error_tail ? close_to_zero : zero;
+      
       int64_t round_up = 0;
-      uint64_t const halfway = uint64_t(1) << 63;
-      switch (fpscr.Get( RMode )) {
+      switch (RMode.Get( fpscr_val )) {
       case 0b00: // Round to Nearest (rounding to even if exactly halfway)
         round_up = ((error > halfway) or (error == halfway and (res & 1)));
         break;
@@ -630,23 +638,47 @@ namespace simfloat {
       }
       res += round_up;
       
-      int64_t int_max = std::numeric_limits<INT>::max();
-      int64_t int_min = std::numeric_limits<INT>::min();
-      if (res < int_min) res = int_min;
-      if (res > int_max) res = int_max;
+      int64_t const int_max = std::numeric_limits<INT>::max();
+      int64_t const int_min = std::numeric_limits<INT>::min();
+      if (res < int_min) { overflow = true; res = int_min; }
+      if (res > int_max) { overflow = true; res = int_max; }
       dst = res;
+      
+      if (overflow)
+        FPProcessException( arch, IOC, fpscr_val );
+      else if (error)
+        FPProcessException( arch, IXC, fpscr_val );
     }
 
-    template <typename INT, typename fpscrT> static
-    void ItoF( SoftDouble& dst, INT const& src, int fracbits, fpscrT& fpscr )
-    { 
-      throw std::logic_error("TODO: itof");
-    }
-    
-    template <typename INT, typename fpscrT> static
-    void ItoF( SoftFloat& dst, INT const& src, int fracbits, fpscrT& fpscr )
+    template <typename SOFTDBL, class ARCH> static
+    void ItoF( SOFTDBL& dst, int64_t src, int fracbits, ARCH& arch, uint32_t fpscr_val )
     {
-      throw std::logic_error("TODO: itof");
+      dst.clear();
+      
+      if (src == 0)
+        return;
+      
+      SOFTDBL const two( VFPExpandImm( 0, 0, 0 ) );
+      SOFTDBL const one( VFPExpandImm( 0, 7, 0 ) );
+      
+      Flags flags;
+      
+      bool negative = (src < 0);
+      if (negative)
+        src = -src;
+      
+      while (src)
+        {
+          if (src & 1)
+            dst.plusAssign( one, flags );
+          dst.multAssign( two, flags );
+          src >>= 1;
+        }
+      
+      while (fracbits)
+        {
+          dst.divAssign( two, flags );
+        }
     }
   };
 

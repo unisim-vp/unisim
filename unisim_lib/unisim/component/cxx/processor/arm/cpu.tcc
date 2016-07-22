@@ -119,7 +119,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   , CPACR()
   , TPIDRURW()
   , TPIDRURO()
-  , fpscr(*this)
+  , FPSCR( 0x03000000 )
+  , FPEXC( 0 )
   , registers_export("registers-export", this)
 {
   // Initialize general purpose registers
@@ -329,9 +330,9 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 
     
     // Handling the FPSCR register
-    dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "fpscr", &fpscr.bits() );
+    dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "fpscr", &this->FPSCR );
     registers_registry["fpscr"] = dbg_reg;
-    var_reg = new unisim::kernel::service::Register<uint32_t>( "fpscr", this, this->fpscr.bits(), "Current Program Status Register" );
+    var_reg = new unisim::kernel::service::Register<uint32_t>( "fpscr", this, this->FPSCR, "Current Program Status Register" );
     variable_register_pool.insert( var_reg );
   }
     

@@ -330,7 +330,8 @@ namespace armsec
       , next_insn_addr()
       , cpsr( Expr( new Source("cpsr") ) )
       , spsr( Expr( new Source("spsr") ) )
-      , fpscr( *this, Expr( new Source("fpscr") ) )
+      , FPSCR( Expr( new Source("fpscr") ) )
+      , FPEXC( Expr( new Source("fpexc") ) )
     {
       for (unsigned reg = 0; reg < 15; ++reg)
         reg_values[reg] = U32( armsec::Expr( new Source( SourceID("r0") + reg ) ) );
@@ -387,24 +388,12 @@ namespace armsec
       throw std::logic_error("unimplemented");
     }
     
-    struct fpscr_type : public FieldRegisterU32
+    U32 FPSCR, FPEXC;
+    
+    U32 RoundTowardsZeroFPSCR() const
     {
-      fpscr_type( State& _state, Expr const& expr )
-        : FieldRegisterU32( expr )
-        , state(_state)
-      {}
-      template <unsigned posT>
-      void ProcessException( unisim::component::cxx::processor::arm::RegisterField<posT,1> const& rf )
-      {
-        unisim::component::cxx::processor::arm::RegisterField<posT+8,1> const enable;
-        if (state.Cond(enable.Get( m_value )))
-          state.FPTrap( posT );
-        else
-          rf.Set( m_value, U32(1u) );
-      }
-      State& state;
-    } fpscr;
-    U32 FPEXC;
+      return unisim::component::cxx::processor::arm::RMode.Insert( FPSCR, U32(unisim::component::cxx::processor::arm::RoundTowardsZero) );
+    }
     
     void not_implemented() { throw std::logic_error( "not implemented" ); }
 
@@ -511,8 +500,6 @@ namespace armsec
     F64  GetVDR( unsigned idx ) { return F64(); }
     void SetVDR( unsigned idx, F64 val ) {}
   
-    fpscr_type& FPSCR() { return fpscr; }
-  
     uint32_t itcond() const { return this->COND_AL; }
     bool itblock() { return false; }
     void ITSetState( uint32_t cond, uint32_t mask ) { not_implemented(); }
@@ -556,8 +543,8 @@ namespace armsec
         path->sinks.insert( Expr( new Sink( "cpsr", cpsr.m_value.expr ) ) );
       if (spsr.m_value.expr != ref.spsr.m_value.expr)
         path->sinks.insert( Expr( new Sink( "spsr", spsr.m_value.expr ) ) );
-      if (fpscr.m_value.expr != ref.fpscr.m_value.expr)
-        path->sinks.insert( Expr( new Sink( "fpscr", fpscr.m_value.expr ) ) );
+      if (FPSCR.expr != ref.FPSCR.expr)
+        path->sinks.insert( Expr( new Sink( "fpscr", FPSCR.expr ) ) );
       for (unsigned reg = 0; reg < 15; ++reg) {
         if (reg_values[reg].expr != ref.reg_values[reg].expr)
           path->sinks.insert( Expr( new Sink( SourceID("r0") + reg, reg_values[reg].expr ) ) );

@@ -439,27 +439,11 @@ public:
   // VFP/NEON registers
   virtual void FPTrap( unsigned fpx ) { throw std::logic_error("unimplemented FP trap"); }
   
-  struct FPSCReg : public FieldRegister<U32>
-  {
-    FPSCReg( CPU& _cpu ) : FieldRegister<U32>( 0x03000000 ), cpu(_cpu) {}
-    
-    template <unsigned posT>
-    void ProcessException( RegisterField<posT,1> const& rf )
-    {
-      RegisterField<posT+8,1> const enable;
-      if (enable.Get( m_value ))
-        cpu.FPTrap( posT );
-      else
-        rf.Set( m_value, 1u );
-    }
-    
-  private:
-    CPU& cpu;
-  } fpscr;
-  
-  FPSCReg& FPSCR() { return fpscr; }
-  U32 FPEXC;
+  U32 FPSCR, FPEXC;
 
+  U32 RoundTowardsZeroFPSCR() const { return RMode.Insert( FPSCR, U32(RoundTowardsZero) ); }
+  U32 StandardValuedFPSCR() const   { return AHP.Mask( FPSCR ) | 0x03000000; }
+  
   struct ExtRegBank
   {
     ExtRegCache<U32,64> eu32;
