@@ -606,19 +606,12 @@ public:
 
 };
 
-template <class TYPE>
-class Formula;
-
-template <class TYPE>
-std::ostream& operator << (std::ostream& os, const Formula<TYPE>& formula);
-
-template <class TYPE>
-class Formula : public VariableBase
+class FormulaOperator
 {
 public:
-	typedef VariableBase::Type Type;
 	typedef enum
 	{
+		OP_UNKNOWN,
 		OP_ADD,
 		OP_SUB,
 		OP_MUL,
@@ -638,10 +631,30 @@ public:
 		OP_NEQ,
 		OP_NOT
 	} Operator;
+
+	FormulaOperator(const char *name);
+	FormulaOperator(Operator op);
+	operator Operator() const;
+private:
+	Operator op;
+};
+
+template <class TYPE>
+class Formula;
+
+template <class TYPE>
+std::ostream& operator << (std::ostream& os, const Formula<TYPE>& formula);
+
+template <class TYPE>
+class Formula : public VariableBase
+{
+public:
+	typedef VariableBase::Type Type;
+	typedef FormulaOperator Operator;
 	
-	Formula(const char *name, Object *owner, Operator op, VariableBase *child1, VariableBase *child2, VariableBase *child3, const char *description = 0);
-	Formula(const char *name, Object *owner, Operator op, VariableBase *child1, VariableBase *child2, const char *description = 0);
-	Formula(const char *name, Object *owner, Operator op, VariableBase *child, const char *description = 0);
+	Formula(const char *name, Object *owner, FormulaOperator op, VariableBase *child1, VariableBase *child2, VariableBase *child3, const char *description = 0);
+	Formula(const char *name, Object *owner, FormulaOperator op, VariableBase *child1, VariableBase *child2, const char *description = 0);
+	Formula(const char *name, Object *owner, FormulaOperator op, VariableBase *child, const char *description = 0);
 	
 	virtual const char *GetDataTypeName() const;
 	virtual operator bool () const;

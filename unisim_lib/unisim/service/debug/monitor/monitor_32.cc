@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012,
+ *  Copyright (c) 2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,36 +31,18 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#ifndef __UNISIM_SERVICE_INTERFACES_DEBUG_EVENT_HH__
-#define __UNISIM_SERVICE_INTERFACES_DEBUG_EVENT_HH__
 
-#include <unisim/kernel/service/service.hh>
-#include <unisim/util/debug/event.hh>
+#include <unisim/service/debug/monitor/monitor.hh>
+#include <unisim/service/debug/monitor/monitor.tcc>
 
 namespace unisim {
 namespace service {
-namespace interfaces {
+namespace debug {
+namespace monitor {
 
-template <class ADDRESS>
-class DebugEventTrigger : public unisim::kernel::service::ServiceInterface
-{
-public:
-	virtual bool Listen(const unisim::util::debug::Event<ADDRESS> *event) = 0;
-	virtual bool Unlisten(const unisim::util::debug::Event<ADDRESS> *event) = 0;
-	virtual bool IsEventListened(const unisim::util::debug::Event<ADDRESS> *event) const = 0;
-	virtual void EnumerateListenedEvents(std::list<const unisim::util::debug::Event<ADDRESS> *>& lst, typename unisim::util::debug::Event<ADDRESS>::Type ev_type = unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN) const = 0;
-};
+template class Monitor<uint32_t>;
 
-template <class ADDRESS>
-class DebugEventListener : public unisim::kernel::service::ServiceInterface
-{
-public:
-	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event) = 0;
-};
-
-} // end of namespace interfaces
+} // end of namespace monitor
+} // end of namespace debug
 } // end of namespace service
 } // end of namespace unisim
-
-#endif

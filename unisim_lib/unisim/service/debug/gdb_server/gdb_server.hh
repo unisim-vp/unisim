@@ -181,7 +181,7 @@ public:
 	GDBServer(const char *name, Object *parent = 0);
 	virtual ~GDBServer();
 
-	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event);
+	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event);
 	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
 	virtual void ReportTrap();
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj);

@@ -456,8 +456,12 @@ SimDebugger<ADDRESS>::
 SetBreakpoint(uint64_t addr)
 {
 	bool set = false;
-	if ( !breakpoint_registry.SetBreakpoint(addr) )
+	unisim::util::debug::Breakpoint<ADDRESS> *brkp = new unisim::util::debug::Breakpoint<ADDRESS>(addr);
+	if ( !breakpoint_registry.SetBreakpoint(brkp) )
+	{
 		cout << "Can't set breakpoint at 0x" << hex << addr << dec << endl;
+		delete brkp;
+	}
 	else
 		set = true;
 
@@ -713,12 +717,12 @@ void
 SimDebugger<ADDRESS>::
 DumpBreakpoints()
 {
-	const list<Breakpoint<ADDRESS> >& breakpoints = breakpoint_registry.GetBreakpoints();
-	typename list<Breakpoint<ADDRESS> >::const_iterator iter;
+	const list<const Breakpoint<ADDRESS> *>& breakpoints = breakpoint_registry.GetBreakpoints();
+	typename list<const Breakpoint<ADDRESS> *>::const_iterator iter;
 
 	for ( iter = breakpoints.begin(); iter != breakpoints.end(); iter++ )
 	{
-		ADDRESS addr = iter->GetAddress();
+		ADDRESS addr = (*iter)->GetAddress();
 
 		cout << "*0x" << hex << (addr / memory_atom_size) << dec << " (";
 
@@ -782,17 +786,17 @@ void
 SimDebugger<ADDRESS>::
 DumpWatchpoints()
 {
-	const list<Watchpoint<ADDRESS> >& watchpoints = watchpoint_registry.GetWatchpoints();
-	typename list<Watchpoint<ADDRESS> >::const_iterator iter;
+	const std::list<const Watchpoint<ADDRESS> *>& watchpoints = watchpoint_registry.GetWatchpoints();
+	typename std::list<const Watchpoint<ADDRESS> *>::const_iterator iter;
 
 	for ( iter = watchpoints.begin(); iter != watchpoints.end(); iter++ )
 	{
-		ADDRESS addr = iter->GetAddress();
-		uint32_t size = iter->GetSize();
-		//typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat = iter->GetMemoryAccessType();
-		//typename MemoryAccessReporting<ADDRESS>::MemoryType mt = iter->GetMemoryType();
-		typename unisim::util::debug::MemoryAccessType mat = iter->GetMemoryAccessType();
-		typename unisim::util::debug::MemoryType mt = iter->GetMemoryType();
+		ADDRESS addr = (*iter)->GetAddress();
+		uint32_t size = (*iter)->GetSize();
+		//typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat = (*iter)->GetMemoryAccessType();
+		//typename MemoryAccessReporting<ADDRESS>::MemoryType mt = (*iter)->GetMemoryType();
+		typename unisim::util::debug::MemoryAccessType mat = (*iter)->GetMemoryAccessType();
+		typename unisim::util::debug::MemoryType mt = (*iter)->GetMemoryType();
 
 		switch ( mt )
 		{

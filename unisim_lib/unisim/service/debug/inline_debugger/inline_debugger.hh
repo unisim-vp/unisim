@@ -190,7 +190,7 @@ public:
 	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
 	
 	// DebugEventListener
-	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event);
+	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event);
 
 	virtual bool EndSetup();
 	virtual void OnDisconnect();
