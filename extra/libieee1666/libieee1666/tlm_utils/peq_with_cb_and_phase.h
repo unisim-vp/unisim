@@ -105,7 +105,7 @@ void peq_with_cb_and_phase<OWNER, TYPES>::initialize()
 	spawn_options.dont_initialize();
 	spawn_options.spawn_method();
 	
-	sc_core::sc_spawn(sc_bind(&caller_process, this), spawn_options);
+	sc_core::sc_spawn(sc_bind(&caller_process, this), &spawn_options);
 }
 
 template<typename OWNER, typename TYPES>

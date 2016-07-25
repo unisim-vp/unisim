@@ -37,7 +37,6 @@
 
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/os/linux_os/errno.hh>
-#include <unisim/component/cxx/processor/arm/cp15.hh>
 
 #include <stdexcept>
 #include <cerrno>
@@ -236,10 +235,7 @@ namespace linux_os {
         uint32_t sctlr;
         if (not GetRegister(lin, "sctlr", &sctlr))
           return false;
-        unisim::component::cxx::processor::arm::sctlr::I.Set( sctlr, 1 ); // Instruction Cache enable
-        unisim::component::cxx::processor::arm::sctlr::C.Set( sctlr, 1 ); // Cache enable
-        unisim::component::cxx::processor::arm::sctlr::A.Set( sctlr, 0 ); // Alignment check enable
-        if (not SetRegister(lin, "sctlr", sctlr))
+        if (not SetRegister(lin, "sctlr", 0x00001006)) // Instruction Cache enable, Cache enable, Alignment check enable
           return false;
         if (not SetRegister(lin, "cpacr", 0x00f00000))
           return false;

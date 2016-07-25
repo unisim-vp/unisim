@@ -232,7 +232,7 @@ CachePowerEstimator::CachePowerEstimator(const char *name, Object *parent) :
 	stat_dynamic_power("dynamic-power", this, dynamic_power, "cache dynamic power (in W)"),
 	stat_leakage_power("leakage-power", this, leakage_power, "cache leakage power (in W)"),
 	formula_total_power("total-power", this,
-			Formula<double>::OP_ADD, &stat_dynamic_power, &stat_leakage_power, 0,
+			"+", &stat_dynamic_power, &stat_leakage_power, 0,
 			"cache total (dynamic+leakage) power (in W)"),
 	Ndwl(0),
 	Ndbl(0),
