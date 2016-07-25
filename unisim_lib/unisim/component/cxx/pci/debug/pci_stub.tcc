@@ -607,7 +607,12 @@ void PCIStub<ADDRESS>::ReportMemoryAccess(typename unisim::util::debug::MemoryAc
 }
 
 template <class ADDRESS>
-void PCIStub<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
+void PCIStub<ADDRESS>::ReportCommitInstruction(ADDRESS addr)
+{
+}
+
+template <class ADDRESS>
+void PCIStub<ADDRESS>::ReportFetchInstruction(ADDRESS next_addr)
 {
 	if(!breakpoint_registry.HasBreakpoints()) return;
 	if(breakpoint_registry.HasBreakpoint(next_addr))

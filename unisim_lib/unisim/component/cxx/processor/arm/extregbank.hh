@@ -171,7 +171,7 @@ namespace arm {
     }
   
     template <typename dirT>
-    valT
+    valT const&
     GetReg( dirT& dir, unsigned idx )
     {
       // Force validity
@@ -187,7 +187,7 @@ namespace arm {
   
     template <typename dirT>
     void
-    SetReg( dirT& dir, unsigned idx, valT value )
+    SetReg( dirT& dir, unsigned idx, valT const& value )
     {
       // Force exclusivity
       if (state[idx] != exclusive) {

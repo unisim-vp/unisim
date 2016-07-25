@@ -78,7 +78,10 @@ template <> struct ModeInfo<0> { static uint32_t const count = 0; };
 template <class CORE, uint32_t MAPPED>
 struct BankedMode : public CORE::Mode
 {
-  BankedMode( char const* _suffix ) : CORE::Mode( _suffix ), banked_regs(), spsr(0) {}
+  BankedMode( char const* _suffix )
+    : CORE::Mode( _suffix ), banked_regs(), spsr()
+  {
+  }
   uint32_t banked_regs[ModeInfo<MAPPED>::count];
   uint32_t spsr;
 
@@ -116,6 +119,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   , CPACR()
   , TPIDRURW()
   , TPIDRURO()
+  , FPSCR( 0x03000000 )
+  , FPEXC( 0 )
   , registers_export("registers-export", this)
 {
   // Initialize general purpose registers
@@ -325,9 +330,9 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 
     
     // Handling the FPSCR register
-    dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "fpscr", &fpscr.m_value );
+    dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "fpscr", &this->FPSCR );
     registers_registry["fpscr"] = dbg_reg;
-    var_reg = new unisim::kernel::service::Register<uint32_t>( "fpscr", this, this->fpscr.m_value, "Current Program Status Register" );
+    var_reg = new unisim::kernel::service::Register<uint32_t>( "fpscr", this, this->FPSCR, "Current Program Status Register" );
     variable_register_pool.insert( var_reg );
   }
     

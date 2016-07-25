@@ -235,7 +235,16 @@ namespace linux_os {
         uint32_t sctlr;
         if (not GetRegister(lin, "sctlr", &sctlr))
           return false;
-        if (not SetRegister(lin, "sctlr", 0x00001006)) // Instruction Cache enable, Cache enable, Alignment check enable
+        {
+          uint32_t const I = 1<<12;
+          uint32_t const C = 1<< 2;
+          uint32_t const A = 1<< 1;
+          
+          sctlr |=  I; // Instruction Cache enable
+          sctlr |=  C; // Cache enable
+          sctlr &= ~A; // Alignment check disable
+        }
+        if (not SetRegister(lin, "sctlr", sctlr))
           return false;
         if (not SetRegister(lin, "cpacr", 0x00f00000))
           return false;

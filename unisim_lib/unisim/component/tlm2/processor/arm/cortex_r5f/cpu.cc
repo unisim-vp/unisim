@@ -187,8 +187,6 @@ CPU::CPU( sc_module_name const& name, Object* parent )
   , AIFSR(0)
   , CFLR(0)
 {
-  PCPU::param_cpu_cycle_time_ps.SetVisible(false);
-
   master_socket.bind(*this);
   
   SC_THREAD(Run);
@@ -367,7 +365,7 @@ CPU::Run()
   {
     if (GetExternalEvent()) {
       if (not nRESETm) {
-        Wait( nRESETm.negedge_event() );
+        Wait( nRESETm.posedge_event() );
         this->TakeReset();
         IRQACKm = false;
       }
@@ -380,8 +378,6 @@ CPU::Run()
         if (exception_taken) {
           if (exception_trap_reporting_import)
             exception_trap_reporting_import->ReportTrap(*this,"irq or fiq");
-          if (requires_finished_instruction_reporting and memory_access_reporting_import)
-            memory_access_reporting_import->ReportFinishedInstruction(this->current_insn_addr, this->next_insn_addr);
         }
       }
     }

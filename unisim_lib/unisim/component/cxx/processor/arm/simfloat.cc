@@ -203,10 +203,22 @@ namespace simfloat {
       }
     return *this;
   }
-
+  
 } // end of namespace simfloat
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
-} // end of namespace unisim
+
+namespace util {
+namespace simfloat {
+namespace Numerics {
+namespace Double {
+  template class TBuiltDouble<component::cxx::processor::arm::simfloat::BuiltFloatTraits>;
+  template class TBuiltDouble<component::cxx::processor::arm::simfloat::BuiltDoubleTraits>;
+} // end of namespace Double
+} // end of namespace Numerics
+} // end of namespace simfloat
+} // end of namespace util
+
+} // end of } // end of namespace unisim

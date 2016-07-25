@@ -232,7 +232,16 @@ ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat
 template <class ADDRESS>
 void
 SimDebugger<ADDRESS>::
-ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
+ReportCommitInstruction(ADDRESS addr)
+{
+	// if(unlikely(profile))
+  program_profile.Accumulate(addr, 1);
+}
+
+template <class ADDRESS>
+void
+SimDebugger<ADDRESS>::
+ReportFetchInstruction(ADDRESS next_addr)
 {
 	if(breakpoint_registry.HasBreakpoint(next_addr))
 	{
@@ -243,8 +252,6 @@ ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
 		
     std::cout << "-> Reached " << (*breakpoint) << std::endl;
 	}
-	// if(unlikely(profile))
-  program_profile.Accumulate(addr, 1);
 }
 
 template <class ADDRESS>

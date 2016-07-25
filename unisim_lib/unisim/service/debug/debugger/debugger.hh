@@ -161,7 +161,8 @@ public:
 	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 	
 	virtual void ReportMemoryAccess(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
-	virtual void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr);
+	virtual void ReportCommitInstruction(ADDRESS addr);
+	virtual void ReportFetchInstruction(ADDRESS next_addr);
 	
 	virtual void ReportTrap();
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj);

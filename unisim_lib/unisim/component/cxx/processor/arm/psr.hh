@@ -78,6 +78,12 @@ namespace arm {
   RegisterField<25,1> const DN;     /* Default NaN mode */
   RegisterField<24,1> const FZ;     /* Flush-to-zero mode */
   RegisterField<22,2> const RMode;  /* Rounding Mode (0b00:to nearest, 0b01:towards +inf, 0b10:towards -inf, 0b11: towards 0) */
+  enum RMode_enum {
+    RoundToNearest = 0b00,
+    RoundTowardsPlusInfinity = 0b01,
+    RoundTowardsMinusInfinity = 0b10,
+    RoundTowardsZero = 0b11
+  };
   /* RegisterField<20,2> */         /* Stride; ARM deprecates use of nonzero value (older VFP implementations) */
   /* RegisterField<19,1> */         /* Reserved, UNK/SBZP */
   /* RegisterField<16,3> */         /* Len; ARM deprecates use of nonzero value (older VFP implementations) */
@@ -95,11 +101,6 @@ namespace arm {
   RegisterField< 2,1> const OFC;    /* Overflow cumulative exception bit */
   RegisterField< 1,1> const DZC;    /* Division by Zero cumulative exception bit */
   RegisterField< 0,1> const IOC;    /* Invalid Operation cumulative exception bit */
-  
-  struct FPSCReg : public FieldRegister<uint32_t>
-  {
-    FPSCReg() : FieldRegister<uint32_t>( 0x03000000 ) {}
-  };
   
   struct PSR : public FieldRegister<uint32_t>
   {
