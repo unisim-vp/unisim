@@ -132,15 +132,19 @@ class PayloadFabric : public tlm::tlm_mm_interface
 {
 public:
 	PayloadFabric()
+		: free_list()
+		, pool()
 	{
 	}
 
 	~PayloadFabric()
 	{
-		while(!free_list.empty())
+		typename std::vector<PAYLOAD *>::size_type num_payloads = pool.size();
+		typename std::vector<PAYLOAD *>::size_type i;
+		
+		for(i = 0; i < num_payloads; i++)
 		{
-			PAYLOAD *payload = free_list.top();
-			free_list.pop();
+			PAYLOAD *payload = pool[i];
 			delete payload;
 		}
 	}
@@ -149,17 +153,19 @@ public:
 	{
 		PAYLOAD *payload;
 
-		if(!free_list.empty())
+		if(free_list.empty())
+		{
+			payload = new PAYLOAD();
+			pool.push_back(payload);
+			payload->set_mm(this);
+		}
+		else
 		{
 			payload = free_list.top();
 			free_list.pop();
 			assert(payload->get_ref_count() == 0);
-			payload->acquire();
-			return payload;
 		}
 
-		payload = new PAYLOAD();
-		payload->set_mm(this);
 		payload->acquire();
 		return payload;
 	}
@@ -172,6 +178,7 @@ public:
 	}
 private:
 	std::stack<PAYLOAD *, std::vector<PAYLOAD *> > free_list;
+	std::vector<PAYLOAD *> pool;
 };
 
 template <class T>

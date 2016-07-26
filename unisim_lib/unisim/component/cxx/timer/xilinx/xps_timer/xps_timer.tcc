@@ -94,8 +94,8 @@ XPS_Timer<CONFIG>::XPS_Timer(const char *name, Object *parent)
 	, stat_num_timer1_old_capture_losses("num-timer1-old-capture-losses", this, num_timer1_old_capture_losses, "Number of timer 1 old capture losses")
 	, stat_num_timer0_new_capture_losses("num-timer0-new-capture-losses", this, num_timer0_new_capture_losses, "Number of timer 0 new capture losses")
 	, stat_num_timer1_new_capture_losses("num-timer1-new-capture-losses", this, num_timer1_new_capture_losses, "Number of timer 1 new capture losses")
-	, formula_num_timer0_capture_losses("num-timer0-capture-losses", this, Formula<uint64_t>::OP_ADD, &stat_num_timer0_old_capture_losses, &stat_num_timer0_new_capture_losses, "Number of timer 0 capture losses")
-	, formula_num_timer1_capture_losses("num-timer1-capture-losses", this, Formula<uint64_t>::OP_ADD, &stat_num_timer1_old_capture_losses, &stat_num_timer1_new_capture_losses, "Number of timer 1 capture losses")
+	, formula_num_timer0_capture_losses("num-timer0-capture-losses", this, "+", &stat_num_timer0_old_capture_losses, &stat_num_timer0_new_capture_losses, "Number of timer 0 capture losses")
+	, formula_num_timer1_capture_losses("num-timer1-capture-losses", this, "+", &stat_num_timer1_old_capture_losses, &stat_num_timer1_new_capture_losses, "Number of timer 1 capture losses")
 {
 	param_c_baseaddr.SetMutable(false);
 	param_c_highaddr.SetMutable(false);

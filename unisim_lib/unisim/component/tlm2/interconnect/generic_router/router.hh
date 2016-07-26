@@ -38,8 +38,7 @@
 #include <systemc.h>
 #include <tlm.h>
 #include <tlm_utils/simple_initiator_socket.h>
-//#include <tlm_utils/passthrough_target_socket.h>
-#include <tlm_utils/simple_target_socket.h>
+#include <tlm_utils/passthrough_target_socket.h>
 #include <inttypes.h>
 #include <queue>
 #include <vector>
@@ -157,8 +156,7 @@ private:
 	static const bool VERBOSE = CONFIG::VERBOSE;
 
 	typedef tlm_utils::simple_initiator_socket_tagged<Router, BUSWIDTH, TYPES> InitSocket;
-	//typedef tlm_utils::passthrough_target_socket_tagged<Router, BUSWIDTH, TYPES> TargSocket;
-	typedef tlm_utils::simple_target_socket_tagged<Router, BUSWIDTH, TYPES> TargSocket;
+	typedef tlm_utils::passthrough_target_socket_tagged<Router, BUSWIDTH, TYPES> TargSocket;
 
 public:
 	SC_HAS_PROCESS(Router);

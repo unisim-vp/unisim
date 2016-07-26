@@ -61,7 +61,6 @@ sc_thread_process::sc_thread_process(const char *_name, sc_process_owner *_proce
 	, wait_time_out_event(__LIBIEEE1666_KERNEL_PREFIX__ "_wait_time_out_event")
 {
 	coroutine = kernel->get_coroutine_system()->create_coroutine(stack_size, &sc_thread_process::coroutine_work, reinterpret_cast<intptr_t>(this));
-	started = true;
 	kernel->register_thread_process(this);
 }
 
@@ -353,6 +352,7 @@ void sc_thread_process::terminate()
 void sc_thread_process::coroutine_work(intptr_t _self)
 {
 	sc_thread_process *self = reinterpret_cast<sc_thread_process *>(_self);
+	self->started = true;
 	
 	// SC_THREAD/SC_CTHREAD process method is run once unless process is reset
 	while(true)
@@ -434,35 +434,37 @@ void sc_thread_process::enable()
 
 void sc_thread_process::kill()
 {
+	if(!started) return;
+	
 	enabled = false;
 	
-	if(started)
+	if(!thread_process_terminated)
 	{
-		if(!thread_process_terminated)
-		{
-			flag_killed = true;
-			
-			// deschedule target process
-			kernel->untrigger(this);
+		flag_killed = true;
+		
+		// deschedule target process
+		kernel->untrigger(this);
 
-			if(kernel->get_current_thread_process() == this)
-			{
-				// suicide
-				flag_is_unwinding = true;
-				throw sc_unwind_exception(SC_UNWIND_EXCEPTION_KILL);
-			}
-			else
-			{
-				// kill requested by another method process or kernel
-				kernel->kill_thread_process(this);
-			}
+		if(kernel->get_current_thread_process() == this)
+		{
+			// suicide
+			flag_is_unwinding = true;
+			throw sc_unwind_exception(SC_UNWIND_EXCEPTION_KILL);
 		}
-		started = false;
+		else
+		{
+			// kill requested by another method process or kernel
+			kernel->kill_thread_process(this);
+		}
 	}
+	
+	started = false;
 }
 
 void sc_thread_process::reset(bool async)
 {
+	if(!started) return;
+	
 	wait_type = WAIT_DEFAULT; // restore static sensitivity
 	
 	// immediate notification of reset

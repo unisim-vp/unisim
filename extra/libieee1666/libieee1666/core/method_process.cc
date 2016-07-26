@@ -39,6 +39,7 @@ namespace sc_core {
 
 sc_method_process::sc_method_process(const char *_name, sc_process_owner *_process_owner, sc_process_owner_method_ptr _process_owner_method_ptr, const sc_spawn_options *spawn_options)
 	: sc_process(_name, _process_owner, _process_owner_method_ptr, SC_METHOD_PROC_, spawn_options)
+	, started(false)
 	, flag_killed(false)
 	, flag_reset(false)
 	, flag_is_unwinding(false)
@@ -63,6 +64,8 @@ sc_method_process::~sc_method_process()
 
 void sc_method_process::run()
 {
+	started = true;
+
 	while(true)
 	{
 		try
@@ -418,6 +421,8 @@ void sc_method_process::enable()
 
 void sc_method_process::kill()
 {
+	if(!started) return;
+	
 	enabled = false;
 
 	if(!method_process_terminated)
@@ -436,10 +441,14 @@ void sc_method_process::kill()
 	method_process_terminated = true;
 	method_process_terminated_event.notify();
 	kernel->terminate_method_process(this);
+	
+	started = false;
 }
 
 void sc_method_process::reset(bool async)
 {
+	if(!started) return;
+	
 	next_trigger_type = NEXT_TRIGGER_DEFAULT; // restore static sensitivity
 
 	// immediate notification of reset

@@ -136,11 +136,15 @@ sc_kernel::sc_kernel()
 {
 	char *libieee1666_debug = getenv("LIBIEEE1666_DEBUG");
 
-	if((strcmp(libieee1666_debug, "yes") == 0) ||
-	   (strcmp(libieee1666_debug, "y") == 0) ||
-	   (strcmp(libieee1666_debug, "1") == 0))
+	if(libieee1666_debug)
 	{
-		debug = true;
+		if((strcmp(libieee1666_debug, "yes") == 0) ||
+		   (strcmp(libieee1666_debug, "y") == 0) ||
+		   (strcmp(libieee1666_debug, "1") == 0))
+		{
+			std::cerr << "libieee1666: enabling debug messages" << std::endl;
+			debug = true;
+		}
 	}
 	
 	char *libieee1666_stack_system = getenv("LIBIEEE1666_STACK_SYSTEM");
@@ -152,6 +156,7 @@ sc_kernel::sc_kernel()
 #if __LIBIEEE1666_POSIX_GUARDED_STACK__
 			if(strcmp(libieee1666_stack_system, "POSIX_GUARDED") == 0)
 			{
+				std::cerr << "using POSIX guarded stack system as requested by user" << std::endl;
 				stack_system = new sc_posix_guarded_stack_system();
 				break;
 			}
@@ -159,12 +164,14 @@ sc_kernel::sc_kernel()
 #if __LIBIEEE1666_WINDOWS_GUARDED_STACK__
 			if(strcmp(libieee1666_stack_system, "WINDOWS_GUARDED") == 0)
 			{
+				std::cerr << "using Windows guarded stack system as requested by user" << std::endl;
 				stack_system = new sc_windows_guarded_stack_system();
 				break;
 			}
 #endif
 			if(strcmp(libieee1666_stack_system, "SIMPLE") == 0)
 			{
+				std::cerr << "using simple stack system as requested by user" << std::endl;
 				stack_system = new sc_simple_stack_system();
 				break;
 			}

@@ -52,7 +52,6 @@ public:
 	typedef tlm::tlm_sync_enum sync_enum_type;
 
 	simple_target_socket();
-	virtual ~simple_target_socket();
 	
 	explicit simple_target_socket(const char *n);
 	tlm::tlm_bw_transport_if<TYPES> *operator -> ();
@@ -65,7 +64,8 @@ private:
 		: public tlm::tlm_fw_transport_if<TYPES>
 		, public tlm::tlm_mm_interface
 	{
-		fw_transport_impl_s(simple_target_socket *socket);
+		fw_transport_impl_s(simple_target_socket<MODULE, BUSWIDTH, TYPES> *socket);
+		~fw_transport_impl_s();
 		
 		virtual tlm::tlm_sync_enum nb_transport_fw(transaction_type& trans, phase_type& phase, sc_core::sc_time& t);
 		virtual void b_transport(transaction_type& trans, sc_core::sc_time& t);
@@ -73,7 +73,7 @@ private:
 		virtual unsigned int transport_dbg(transaction_type& trans);
 		virtual bool get_direct_mem_ptr(transaction_type& trans, tlm::tlm_dmi& dmi_data);
 
-		simple_target_socket *socket;
+		simple_target_socket<MODULE, BUSWIDTH, TYPES> *socket;
 		MODULE *mod;
 		sync_enum_type (MODULE::*nb_transport_fw_cb)(transaction_type&, phase_type&, sc_core::sc_time&);
 		void (MODULE::*b_transport_cb)(transaction_type&, sc_core::sc_time&);
@@ -84,9 +84,9 @@ private:
 		{
 			nb_to_b_transport_process_s(fw_transport_impl_s *owner);
 			
-			sc_event begin_req_event;
+			sc_core::sc_event begin_req_event;
 			transaction_type *trans;
-			sc_process_handle process_handle;
+			sc_core::sc_process_handle process_handle;
 			fw_transport_impl_s *owner;
 		};
 		
@@ -94,7 +94,7 @@ private:
 		std::vector<nb_to_b_transport_process_s *> nb_to_b_transport_process_pool;
 		
 		peq_with_get<transaction_type> b_transport_peq;
-		std::map<transaction_type *, sc_event *> pending_payload_freed;
+		std::map<transaction_type *, sc_core::sc_event *> pending_payload_freed;
 		
 		void b_to_nb_transport_process();
 		void nb_to_b_transport_process(nb_to_b_transport_process_s *self);
@@ -106,7 +106,7 @@ private:
 	
 	struct bw_transport_impl_s : public tlm::tlm_bw_transport_if<TYPES>
 	{
-		bw_transport_impl_s();
+		bw_transport_impl_s(simple_target_socket<MODULE, BUSWIDTH, TYPES> *socket);
 		
 		virtual tlm::tlm_sync_enum nb_transport_bw(transaction_type&, phase_type&, sc_core::sc_time&);
 		virtual void invalidate_direct_mem_ptr(sc_dt::uint64, sc_dt::uint64);
@@ -119,9 +119,9 @@ private:
 
 	fw_transport_impl_s fw_transport_impl;
 	bw_transport_impl_s bw_transport_impl;
-	std::map<tlm_payload_type *, sc_event *> pending_b_to_nb_transport_end_resp;
-	std::map<tlm_payload_type *, sc_event *> pending_b_to_nb_transport_end_req;
-	std::map<transaction_type *, sc_event *> pending_nb_to_b_transport_end_resp;
+	std::map<transaction_type *, sc_core::sc_event *> pending_b_to_nb_transport_end_resp;
+	std::map<transaction_type *, sc_core::sc_event *> pending_b_to_nb_transport_end_req;
+	std::map<transaction_type *, sc_core::sc_event *> pending_nb_to_b_transport_end_resp;
 };
 
 template <typename MODULE, unsigned int BUSWIDTH = 32, typename TYPES = tlm::tlm_base_protocol_types>
@@ -146,7 +146,8 @@ private:
 		: public tlm::tlm_fw_transport_if<TYPES>
 		, public tlm::tlm_mm_interface
 	{
-		fw_transport_impl_s(simple_target_socket *socket);
+		fw_transport_impl_s(simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES> *socket);
+		~fw_transport_impl_s();
 		
 		virtual tlm::tlm_sync_enum nb_transport_fw(transaction_type& trans, phase_type& phase, sc_core::sc_time& t);
 		virtual void b_transport(transaction_type& trans, sc_core::sc_time& t);
@@ -154,7 +155,7 @@ private:
 		virtual unsigned int transport_dbg(transaction_type& trans);
 		virtual bool get_direct_mem_ptr(transaction_type& trans, tlm::tlm_dmi& dmi_data);
 
-		simple_target_socket *socket;
+		simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES> *socket;
 		MODULE *mod;
 		sync_enum_type (MODULE::*nb_transport_fw_cb)(int, transaction_type&, phase_type&, sc_core::sc_time&);
 		int nb_transport_fw_id;
@@ -169,9 +170,9 @@ private:
 		{
 			nb_to_b_transport_process_s(fw_transport_impl_s *owner);
 			
-			sc_event begin_req_event;
+			sc_core::sc_event begin_req_event;
 			transaction_type *trans;
-			sc_process_handle process_handle;
+			sc_core::sc_process_handle process_handle;
 			fw_transport_impl_s *owner;
 		};
 		
@@ -179,7 +180,7 @@ private:
 		std::vector<nb_to_b_transport_process_s *> nb_to_b_transport_process_pool;
 		
 		peq_with_get<transaction_type> b_transport_peq;
-		std::map<transaction_type *, sc_event *> pending_payload_freed;
+		std::map<transaction_type *, sc_core::sc_event *> pending_payload_freed;
 		
 		void b_to_nb_transport_process();
 		void nb_to_b_transport_process(nb_to_b_transport_process_s *self);
@@ -191,7 +192,7 @@ private:
 	
 	struct bw_transport_impl_s : public tlm::tlm_bw_transport_if<TYPES>
 	{
-		bw_transport_impl_s();
+		bw_transport_impl_s(simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES> *socket);
 		
 		virtual tlm::tlm_sync_enum nb_transport_bw(transaction_type&, phase_type&, sc_core::sc_time&);
 		virtual void invalidate_direct_mem_ptr(sc_dt::uint64, sc_dt::uint64);
@@ -204,9 +205,9 @@ private:
 
 	fw_transport_impl_s fw_transport_impl;
 	bw_transport_impl_s bw_transport_impl;
-	std::map<tlm_payload_type *, sc_event *> pending_b_to_nb_transport_end_resp;
-	std::map<tlm_payload_type *, sc_event *> pending_b_to_nb_transport_end_req;
-	std::map<transaction_type *, sc_event *> pending_nb_to_b_transport_end_resp;
+	std::map<transaction_type *, sc_core::sc_event *> pending_b_to_nb_transport_end_resp;
+	std::map<transaction_type *, sc_core::sc_event *> pending_b_to_nb_transport_end_req;
+	std::map<transaction_type *, sc_core::sc_event *> pending_nb_to_b_transport_end_resp;
 };
 
 ////////////////////////////////////////// simple_target_socket<> /////////////////////////////////////////////
@@ -214,6 +215,11 @@ private:
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 simple_target_socket<MODULE, BUSWIDTH, TYPES>::simple_target_socket()
 	: tlm::tlm_target_socket<BUSWIDTH, TYPES>(sc_core::sc_gen_unique_name("simple_target_socket"))
+	, fw_transport_impl(this)
+	, bw_transport_impl(this)
+	, pending_b_to_nb_transport_end_resp()
+	, pending_b_to_nb_transport_end_req()
+	, pending_nb_to_b_transport_end_resp()
 {
 	this->bind(fw_transport_impl);
 }
@@ -221,22 +227,13 @@ simple_target_socket<MODULE, BUSWIDTH, TYPES>::simple_target_socket()
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 simple_target_socket<MODULE, BUSWIDTH, TYPES>::simple_target_socket(const char *n)
 	: tlm::tlm_target_socket<BUSWIDTH, TYPES>(n)
+	, fw_transport_impl(this)
+	, bw_transport_impl(this)
+	, pending_b_to_nb_transport_end_resp()
+	, pending_b_to_nb_transport_end_req()
+	, pending_nb_to_b_transport_end_resp()
 {
 	this->bind(fw_transport_impl);
-}
-
-template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
-simple_target_socket<MODULE, BUSWIDTH, TYPES>::~simple_target_socket()
-{
-	typename std::vector<process *>::size_type num_processes = nb_to_b_transport_process_pool.size();
-	typename std::vector<process *>::size_type process_num;
-	
-	for(process_num = 0; process_num < num_processes; process_num++)
-	{
-		process *p = nb_to_b_transport_process_pool[process_num];
-		
-		delete p;
-	}
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
@@ -248,7 +245,7 @@ tlm::tlm_bw_transport_if<TYPES> *simple_target_socket<MODULE, BUSWIDTH, TYPES>::
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void simple_target_socket<MODULE, BUSWIDTH, TYPES>::register_nb_transport_fw(MODULE* mod, sync_enum_type (MODULE::*cb)(transaction_type&, phase_type&, sc_core::sc_time&))
 {
-	if(fw_transport_impl.mod && (fw_transport_impl.mod != mod)) throw "tlm_utils::simple_target_socket: a module is already registered";
+	if(fw_transport_impl.mod && (fw_transport_impl.mod != mod)) throw std::runtime_error("tlm_utils::simple_target_socket: a module is already registered");
 	fw_transport_impl.mod = mod;
 	fw_transport_impl.nb_transport_fw_cb = cb;
 }
@@ -256,7 +253,7 @@ void simple_target_socket<MODULE, BUSWIDTH, TYPES>::register_nb_transport_fw(MOD
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void simple_target_socket<MODULE, BUSWIDTH, TYPES>::register_b_transport(MODULE* mod, void (MODULE::*cb)(transaction_type&, sc_core::sc_time&))
 {
-	if(fw_transport_impl.mod && (fw_transport_impl.mod != mod)) throw "tlm_utils::simple_target_socket: a module is already registered";
+	if(fw_transport_impl.mod && (fw_transport_impl.mod != mod)) throw std::runtime_error("tlm_utils::simple_target_socket: a module is already registered");
 	fw_transport_impl.mod = mod;
 	fw_transport_impl.b_transport_cb = cb;
 }
@@ -264,7 +261,7 @@ void simple_target_socket<MODULE, BUSWIDTH, TYPES>::register_b_transport(MODULE*
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void simple_target_socket<MODULE, BUSWIDTH, TYPES>::register_transport_dbg(MODULE* mod, unsigned int (MODULE::*cb)(transaction_type&))
 {
-	if(fw_transport_impl.mod && (fw_transport_impl.mod != mod)) throw "tlm_utils::simple_target_socket: a module is already registered";
+	if(fw_transport_impl.mod && (fw_transport_impl.mod != mod)) throw std::runtime_error("tlm_utils::simple_target_socket: a module is already registered");
 	fw_transport_impl.mod = mod;
 	fw_transport_impl.transport_dbg_cb = cb;
 }
@@ -272,20 +269,38 @@ void simple_target_socket<MODULE, BUSWIDTH, TYPES>::register_transport_dbg(MODUL
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void simple_target_socket<MODULE, BUSWIDTH, TYPES>::register_get_direct_mem_ptr(MODULE* mod, bool (MODULE::*cb)(transaction_type&, tlm::tlm_dmi&))
 {
-	if(fw_transport_impl.mod && (fw_transport_impl.mod != mod)) throw "tlm_utils::simple_target_socket: a module is already registered";
+	if(fw_transport_impl.mod && (fw_transport_impl.mod != mod)) throw std::runtime_error("tlm_utils::simple_target_socket: a module is already registered");
 	fw_transport_impl.mod = mod;
 	fw_transport_impl.get_direct_mem_ptr_cb = cb;
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
-simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::fw_transport_impl_s(simple_target_socket *_socket)
+simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::fw_transport_impl_s(simple_target_socket<MODULE, BUSWIDTH, TYPES> *_socket)
 	: socket(_socket)
 	, mod(0)
 	, nb_transport_fw_cb(0)
 	, b_transport_cb(0)
 	, transport_dbg_cb(0)
 	, get_direct_mem_ptr_cb(0)
+	, free_nb_to_b_transport_process_pool()
+	, nb_to_b_transport_process_pool()
+	, b_transport_peq(sc_core::sc_gen_unique_name("b_transport_peq"))
+	, pending_payload_freed()
 {
+}
+
+template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
+simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::~fw_transport_impl_s()
+{
+	typename std::vector<nb_to_b_transport_process_s *>::size_type num_processes = nb_to_b_transport_process_pool.size();
+	typename std::vector<nb_to_b_transport_process_s *>::size_type process_num;
+	
+	for(process_num = 0; process_num < num_processes; process_num++)
+	{
+		nb_to_b_transport_process_s *p = nb_to_b_transport_process_pool[process_num];
+		
+		delete p;
+	}
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
@@ -299,32 +314,33 @@ tlm::tlm_sync_enum simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_i
 	
 	switch(phase)
 	{
-		case BEGIN_REQ:
+		case tlm::BEGIN_REQ:
 			if(b_transport_cb)
 			{
 				spawn_nb_to_b_process(&trans, t);
-				return TLM_ACCEPTED;
+				return tlm::TLM_ACCEPTED;
 			}
 			throw std::runtime_error("no b_transport callback registered");
 			break;
-		case END_RESP:
+		case tlm::END_RESP:
 			{
-				std::map<transaction_type *, sc_event *>::iterator it = pending_nb_to_b_transport_end_resp.find(&trans);
+				typename std::map<transaction_type *, sc_core::sc_event *>::iterator it = socket->pending_nb_to_b_transport_end_resp.find(&trans);
 				
-				if(it != pending_end_resp.end())
+				if(it != socket->pending_nb_to_b_transport_end_resp.end())
 				{
-					sc_event *nb_to_b_transport_end_resp_event = (*it).second;
-					pending_nb_to_b_transport_end_resp.erase(it);
+					sc_core::sc_event *nb_to_b_transport_end_resp_event = (*it).second;
+					socket->pending_nb_to_b_transport_end_resp.erase(it);
 					
 					nb_to_b_transport_end_resp_event->notify(t);
 					
-					return TLM_COMPLETED;
+					return tlm::TLM_COMPLETED;
 				}
 				throw std::runtime_error("no such payload");
 			}
 			break;
 		default:
 			// unexpected phase
+			break;
 	}
 
 	throw std::runtime_error("base protocol error: unexpected phase");
@@ -340,7 +356,7 @@ void simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::b_trans
 	}
 	else
 	{
-		if(!nb_transport_fw) throw "tlm_utils::simple_target_socket: no nb_transport_fw callback registered";
+		if(!nb_transport_fw_cb) throw std::runtime_error("tlm_utils::simple_target_socket: no nb_transport_fw callback registered");
 
 		if(trans.has_mm())
 		{
@@ -348,11 +364,11 @@ void simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::b_trans
 		}
 		else
 		{
-			sc_event payload_freed_event;
+			sc_core::sc_event payload_freed_event;
 			
 			trans.set_mm(this);
 			trans.acquire();
-			pending_payload_free[&trans] = &payload_freed_event;
+			pending_payload_freed[&trans] = &payload_freed_event;
 			
 			b_to_nb_transport(trans, t);
 			
@@ -369,7 +385,7 @@ void simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::b_trans
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::b_to_nb_transport(transaction_type& trans, sc_core::sc_time& t)
 {
-	sc_event b_to_nb_transport_end_resp_event;
+	sc_core::sc_event b_to_nb_transport_end_resp_event;
 	
 	socket->pending_b_to_nb_transport_end_resp[&trans] = &b_to_nb_transport_end_resp_event;
 	b_transport_peq.notify(trans, t);
@@ -412,18 +428,18 @@ void simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::b_to_nb
 			case tlm::TLM_UPDATED:
 				if(phase == tlm::BEGIN_REQ)
 				{
-					sc_event b_to_nb_transport_end_req_event;
+					sc_core::sc_event b_to_nb_transport_end_req_event;
 					socket->pending_b_to_nb_transport_end_req[trans] = &b_to_nb_transport_end_req_event;
 					sc_core::wait(b_to_nb_transport_end_req_event);
 				}
 				break;
 			case tlm::TLM_COMPLETED:
 				{
-					std::map<tlm_payload_type *, sc_event *>::iterator it = socket->pending_b_to_nb_transport_end_resp.find(trans);
+					typename std::map<transaction_type *, sc_core::sc_event *>::iterator it = socket->pending_b_to_nb_transport_end_resp.find(trans);
 					
-					if(it != pending_b_to_nb_transport_end_resp.end())
+					if(it != socket->pending_b_to_nb_transport_end_resp.end())
 					{
-						sc_event *b_to_nb_transport_end_resp_event = (*it).second;
+						sc_core::sc_event *b_to_nb_transport_end_resp_event = (*it).second;
 						socket->pending_b_to_nb_transport_end_resp.erase(it);
 						
 						b_to_nb_transport_end_resp_event->notify(t);
@@ -449,7 +465,7 @@ void simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::nb_to_b
 		
 		typename tlm::tlm_phase phase = tlm::BEGIN_RESP;
 		
-		tlm::tlm_sync_enum sync = (*socket)->tlm::tlm_target_socket<BUSWIDTH, TYPES>::nb_transport_bw(self->trans, phase, t);
+		tlm::tlm_sync_enum sync = (socket->tlm::tlm_target_socket<BUSWIDTH, TYPES>::operator -> ())->nb_transport_bw(*self->trans, phase, t);
 		
 		switch(sync)
 		{
@@ -468,20 +484,20 @@ void simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::nb_to_b
 				break;
 		}
 		
-		owner->reuse_nb_to_b_process(self);
+		reuse_nb_to_b_process(self);
 		sc_core::wait();
 	}
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
-typename simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::nb_to_b_transport_process_s *simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::spawn_nb_to_b_process(transaction_type *trans, sc_core::sc_time& t)
+void simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::spawn_nb_to_b_process(transaction_type *trans, sc_core::sc_time& t)
 {
-	process *p = 0;
+	nb_to_b_transport_process_s *p = 0;
 	
 	if(free_nb_to_b_transport_process_pool.empty())
 	{
-		p = new nb_to_b_transport_process_s();
-		nb_to_b_transport_process_pool.push(p);
+		p = new nb_to_b_transport_process_s(this);
+		nb_to_b_transport_process_pool.push_back(p);
 	}
 	else
 	{
@@ -491,7 +507,6 @@ typename simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::nb_
 	
 	p->trans = trans;
 	p->begin_req_event.notify(t);
-	return p;
 }
 	
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
@@ -501,26 +516,27 @@ void simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::reuse_n
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
-simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::nb_to_b_transport_process_s(fw_transport_impl_s *owner)
-	: begin_req_event(sc_gen_unique_name("begin_req_event")
-	, payload(0)
+simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::nb_to_b_transport_process_s::nb_to_b_transport_process_s(fw_transport_impl_s *_owner)
+	: begin_req_event(sc_core::sc_gen_unique_name("begin_req_event"))
+	, trans(0)
 	, process_handle()
+	, owner(_owner)
 {
 	sc_core::sc_spawn_options spawn_options;
 	spawn_options.dont_initialize();
 	spawn_options.set_sensitivity(&begin_req_event);
 	
-	process_handle = sc_core::sc_spawn(sc_bind(&fw_transport_impl_s::nb_to_b_transport_process, owner, this), &spawn_options);
+	process_handle = sc_core::sc_spawn(sc_bind(&fw_transport_impl_s::nb_to_b_transport_process, owner, this), sc_core::sc_gen_unique_name("nb_to_b_transport_process"), &spawn_options);
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::free(tlm::tlm_generic_payload *trans)
 {
-	std::map<transaction_type *, sc_event *>::iterator it = pending_payload_freed.find(trans);
+	typename std::map<transaction_type *, sc_core::sc_event *>::iterator it = pending_payload_freed.find(trans);
 	
 	if(it != pending_payload_freed.end())
 	{
-		sc_event *payload_freed_event = (*it).second;
+		sc_core::sc_event *payload_freed_event = (*it).second;
 		pending_payload_freed.erase(it);
 		
 		payload_freed_event->notify();
@@ -528,17 +544,23 @@ void simple_target_socket<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::free(tl
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
+simple_target_socket<MODULE, BUSWIDTH, TYPES>::bw_transport_impl_s::bw_transport_impl_s(simple_target_socket<MODULE, BUSWIDTH, TYPES> *_socket)
+	: socket(_socket)
+{
+}
+
+template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 tlm::tlm_sync_enum simple_target_socket<MODULE, BUSWIDTH, TYPES>::bw_transport_impl_s::nb_transport_bw(transaction_type& trans, phase_type& phase, sc_core::sc_time& t)
 {
 	switch(phase)
 	{
-		tlm::END_REQ:
+		case tlm::END_REQ:
 			{
-				std::map<transaction_type *, sc_event *>::iterator it = socket->pending_b_to_nb_transport_end_req.find(&trans);
+				typename std::map<transaction_type *, sc_core::sc_event *>::iterator it = socket->pending_b_to_nb_transport_end_req.find(&trans);
 				
 				if(it != socket->pending_b_to_nb_transport_end_req.end())
 				{
-					sc_event *b_to_nb_transport_end_req_event = (*it).second;
+					sc_core::sc_event *b_to_nb_transport_end_req_event = (*it).second;
 					socket->pending_b_to_nb_transport_end_req.erase(it);
 					b_to_nb_transport_end_req_event->notify(t);
 					
@@ -546,13 +568,13 @@ tlm::tlm_sync_enum simple_target_socket<MODULE, BUSWIDTH, TYPES>::bw_transport_i
 				}
 			}
 			break;
-		tlm::BEGIN_RESP:
+		case tlm::BEGIN_RESP:
 			{
-				std::map<transaction_type *, sc_event *>::iterator it = socket->pending_b_to_nb_transport_end_resp.find(&trans);
+				typename std::map<transaction_type *, sc_core::sc_event *>::iterator it = socket->pending_b_to_nb_transport_end_resp.find(&trans);
 				
 				if(it != socket->pending_b_to_nb_transport_end_resp.end())
 				{
-					sc_event *b_to_nb_transport_end_resp_event = (*it).second;
+					sc_core::sc_event *b_to_nb_transport_end_resp_event = (*it).second;
 					socket->pending_b_to_nb_transport_end_resp.erase(it);
 					
 					b_to_nb_transport_end_resp_event->notify(t);
@@ -561,9 +583,9 @@ tlm::tlm_sync_enum simple_target_socket<MODULE, BUSWIDTH, TYPES>::bw_transport_i
 				}
 			}
 			break;
-		tlm::END_RESP:
+		case tlm::END_RESP:
 			{
-				std::map<transaction_type *, sc_event *>::iterator it = socket->pending_nb_to_b_transport_end_resp.find(&trans);
+				typename std::map<transaction_type *, sc_core::sc_event *>::iterator it = socket->pending_nb_to_b_transport_end_resp.find(&trans);
 				
 				if(it != socket->pending_nb_to_b_transport_end_resp.end())
 				{
@@ -577,14 +599,14 @@ tlm::tlm_sync_enum simple_target_socket<MODULE, BUSWIDTH, TYPES>::bw_transport_i
 			break;
 	}
 	
-	return (*socket)->tlm::tlm_target_socket<BUSWIDTH, TYPES>::nb_transport_bw(trans, phase, t);
+	return (socket->tlm::tlm_target_socket<BUSWIDTH, TYPES>::operator -> ())->nb_transport_bw(trans, phase, t);
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void simple_target_socket<MODULE, BUSWIDTH, TYPES>::bw_transport_impl_s::invalidate_direct_mem_ptr(sc_dt::uint64 start_addr, sc_dt::uint64 end_addr)
 {
 	// passthrough
-	return (*socket)->tlm::tlm_target_socket<BUSWIDTH, TYPES>::invalidate_direct_mem_ptr(start_addr, end_addr);
+	return (socket->tlm::tlm_target_socket<BUSWIDTH, TYPES>::operator -> ())->invalidate_direct_mem_ptr(start_addr, end_addr);
 }
 
 ////////////////////////////////////// simple_target_socket_tagged<> /////////////////////////////////////////////
@@ -592,6 +614,11 @@ void simple_target_socket<MODULE, BUSWIDTH, TYPES>::bw_transport_impl_s::invalid
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::simple_target_socket_tagged()
 	: tlm::tlm_target_socket<BUSWIDTH, TYPES>(sc_core::sc_gen_unique_name("simple_target_socket_tagged"))
+	, fw_transport_impl(this)
+	, bw_transport_impl(this)
+	, pending_b_to_nb_transport_end_resp()
+	, pending_b_to_nb_transport_end_req()
+	, pending_nb_to_b_transport_end_resp()
 {
 	this->bind(fw_transport_impl);
 }
@@ -599,22 +626,13 @@ simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::simple_target_socket_tagge
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::simple_target_socket_tagged(const char *n)
 	: tlm::tlm_target_socket<BUSWIDTH, TYPES>(n)
+	, fw_transport_impl(this)
+	, bw_transport_impl(this)
+	, pending_b_to_nb_transport_end_resp()
+	, pending_b_to_nb_transport_end_req()
+	, pending_nb_to_b_transport_end_resp()
 {
 	this->bind(fw_transport_impl);
-}
-
-template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
-simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::~simple_target_socket_tagged()
-{
-	typename std::vector<process *>::size_type num_processes = nb_to_b_transport_process_pool.size();
-	typename std::vector<process *>::size_type process_num;
-	
-	for(process_num = 0; process_num < num_processes; process_num++)
-	{
-		process *p = nb_to_b_transport_process_pool[process_num];
-		
-		delete p;
-	}
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
@@ -626,7 +644,7 @@ tlm::tlm_bw_transport_if<TYPES> *simple_target_socket_tagged<MODULE, BUSWIDTH, T
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::register_nb_transport_fw(MODULE* mod, sync_enum_type (MODULE::*cb)(int, transaction_type&, phase_type&, sc_core::sc_time&), int id)
 {
-	if(fw_transport_impl.mod && (fw_transport_impl.mod != mod)) throw "tlm_utils::simple_target_socket_tagged: a module is already registered";
+	if(fw_transport_impl.mod && (fw_transport_impl.mod != mod)) throw std::runtime_error("tlm_utils::simple_target_socket_tagged: a module is already registered");
 	fw_transport_impl.mod = mod;
 	fw_transport_impl.nb_transport_fw_cb = cb;
 	fw_transport_impl.nb_transport_fw_id = id;
@@ -635,7 +653,7 @@ void simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::register_nb_transport
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::register_b_transport(MODULE* mod, void (MODULE::*cb)(int, transaction_type&, sc_core::sc_time&), int id)
 {
-	if(fw_transport_impl.mod && (fw_transport_impl.mod != mod)) throw "tlm_utils::simple_target_socket_tagged: a module is already registered";
+	if(fw_transport_impl.mod && (fw_transport_impl.mod != mod)) throw std::runtime_error("tlm_utils::simple_target_socket_tagged: a module is already registered");
 	fw_transport_impl.mod = mod;
 	fw_transport_impl.b_transport_cb = cb;
 	fw_transport_impl.b_transport_id = id;
@@ -644,7 +662,7 @@ void simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::register_b_transport(
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::register_transport_dbg(MODULE* mod, unsigned int (MODULE::*cb)(int, transaction_type&), int id)
 {
-	if(fw_transport_impl.mod && (fw_transport_impl.mod != mod)) throw "tlm_utils::simple_target_socket_tagged: a module is already registered";
+	if(fw_transport_impl.mod && (fw_transport_impl.mod != mod)) throw std::runtime_error("tlm_utils::simple_target_socket_tagged: a module is already registered");
 	fw_transport_impl.mod = mod;
 	fw_transport_impl.transport_dbg_cb = cb;
 	fw_transport_impl.transport_dbg_id = id;
@@ -653,14 +671,14 @@ void simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::register_transport_db
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::register_get_direct_mem_ptr(MODULE* mod, bool (MODULE::*cb)(int, transaction_type&, tlm::tlm_dmi&), int id)
 {
-	if(fw_transport_impl.mod && (fw_transport_impl.mod != mod)) throw "tlm_utils::simple_target_socket_tagged: a module is already registered";
+	if(fw_transport_impl.mod && (fw_transport_impl.mod != mod)) throw std::runtime_error("tlm_utils::simple_target_socket_tagged: a module is already registered");
 	fw_transport_impl.mod = mod;
 	fw_transport_impl.get_direct_mem_ptr_cb = cb;
 	fw_transport_impl.get_direct_mem_ptr_id = id;
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
-simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::fw_transport_impl_s(simple_target_socket_tagged *_socket)
+simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::fw_transport_impl_s(simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES> *_socket)
 	: socket(_socket)
 	, mod(0)
 	, nb_transport_fw_cb(0)
@@ -671,7 +689,25 @@ simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::fw_tr
 	, transport_dbg_id(0)
 	, get_direct_mem_ptr_cb(0)
 	, get_direct_mem_ptr_id(0)
+	, free_nb_to_b_transport_process_pool()
+	, nb_to_b_transport_process_pool()
+	, b_transport_peq(sc_core::sc_gen_unique_name("b_transport_peq"))
+	, pending_payload_freed()
 {
+}
+
+template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
+simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::~fw_transport_impl_s()
+{
+	typename std::vector<nb_to_b_transport_process_s *>::size_type num_processes = nb_to_b_transport_process_pool.size();
+	typename std::vector<nb_to_b_transport_process_s *>::size_type process_num;
+	
+	for(process_num = 0; process_num < num_processes; process_num++)
+	{
+		nb_to_b_transport_process_s *p = nb_to_b_transport_process_pool[process_num];
+		
+		delete p;
+	}
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
@@ -685,32 +721,33 @@ tlm::tlm_sync_enum simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_tran
 	
 	switch(phase)
 	{
-		case BEGIN_REQ:
+		case tlm::BEGIN_REQ:
 			if(b_transport_cb)
 			{
 				spawn_nb_to_b_process(&trans, t);
-				return TLM_ACCEPTED;
+				return tlm::TLM_ACCEPTED;
 			}
 			throw std::runtime_error("no b_transport callback registered");
 			break;
-		case END_RESP:
+		case tlm::END_RESP:
 			{
-				std::map<transaction_type *, sc_event *>::iterator it = pending_nb_to_b_transport_end_resp.find(&trans);
+				typename std::map<transaction_type *, sc_core::sc_event *>::iterator it = socket->pending_nb_to_b_transport_end_resp.find(&trans);
 				
-				if(it != pending_end_resp.end())
+				if(it != socket->pending_nb_to_b_transport_end_resp.end())
 				{
-					sc_event *nb_to_b_transport_end_resp_event = (*it).second;
-					pending_nb_to_b_transport_end_resp.erase(it);
+					sc_core::sc_event *nb_to_b_transport_end_resp_event = (*it).second;
+					socket->pending_nb_to_b_transport_end_resp.erase(it);
 					
 					nb_to_b_transport_end_resp_event->notify(t);
 					
-					return TLM_COMPLETED;
+					return tlm::TLM_COMPLETED;
 				}
 				throw std::runtime_error("no such payload");
 			}
 			break;
 		default:
 			// unexpected phase
+			break;
 	}
 
 	throw std::runtime_error("base protocol error: unexpected phase");
@@ -726,7 +763,7 @@ void simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::
 	}
 	else
 	{
-		if(!nb_transport_fw) throw "tlm_utils::simple_target_socket_tagged: no nb_transport_fw callback registered";
+		if(!nb_transport_fw_cb) throw std::runtime_error("tlm_utils::simple_target_socket_tagged: no nb_transport_fw callback registered");
 
 		if(trans.has_mm())
 		{
@@ -734,11 +771,11 @@ void simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::
 		}
 		else
 		{
-			sc_event payload_freed_event;
+			sc_core::sc_event payload_freed_event;
 			
 			trans.set_mm(this);
 			trans.acquire();
-			pending_payload_free[&trans] = &payload_freed_event;
+			pending_payload_freed[&trans] = &payload_freed_event;
 			
 			b_to_nb_transport(trans, t);
 			
@@ -755,7 +792,7 @@ void simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::b_to_nb_transport(transaction_type& trans, sc_core::sc_time& t)
 {
-	sc_event b_to_nb_transport_end_resp_event;
+	sc_core::sc_event b_to_nb_transport_end_resp_event;
 	
 	socket->pending_b_to_nb_transport_end_resp[&trans] = &b_to_nb_transport_end_resp_event;
 	b_transport_peq.notify(trans, t);
@@ -798,18 +835,18 @@ void simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::
 			case tlm::TLM_UPDATED:
 				if(phase == tlm::BEGIN_REQ)
 				{
-					sc_event b_to_nb_transport_end_req_event;
+					sc_core::sc_event b_to_nb_transport_end_req_event;
 					socket->pending_b_to_nb_transport_end_req[trans] = &b_to_nb_transport_end_req_event;
 					sc_core::wait(b_to_nb_transport_end_req_event);
 				}
 				break;
 			case tlm::TLM_COMPLETED:
 				{
-					std::map<tlm_payload_type *, sc_event *>::iterator it = socket->pending_b_to_nb_transport_end_resp.find(trans);
+					typename std::map<transaction_type *, sc_core::sc_event *>::iterator it = socket->pending_b_to_nb_transport_end_resp.find(trans);
 					
-					if(it != pending_b_to_nb_transport_end_resp.end())
+					if(it != socket->pending_b_to_nb_transport_end_resp.end())
 					{
-						sc_event *b_to_nb_transport_end_resp_event = (*it).second;
+						sc_core::sc_event *b_to_nb_transport_end_resp_event = (*it).second;
 						socket->pending_b_to_nb_transport_end_resp.erase(it);
 						
 						b_to_nb_transport_end_resp_event->notify(t);
@@ -835,7 +872,7 @@ void simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::
 		
 		typename tlm::tlm_phase phase = tlm::BEGIN_RESP;
 		
-		tlm::tlm_sync_enum sync = (*socket)->tlm::tlm_target_socket<BUSWIDTH, TYPES>::nb_transport_bw(self->trans, phase, t);
+		tlm::tlm_sync_enum sync = (socket->tlm::tlm_target_socket<BUSWIDTH, TYPES>::operator -> ())->nb_transport_bw(*self->trans, phase, t);
 		
 		switch(sync)
 		{
@@ -854,20 +891,20 @@ void simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::
 				break;
 		}
 		
-		owner->reuse_nb_to_b_process(self);
+		reuse_nb_to_b_process(self);
 		sc_core::wait();
 	}
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
-typename simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::nb_to_b_transport_process_s *simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::spawn_nb_to_b_process(transaction_type *trans, sc_core::sc_time& t)
+void simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::spawn_nb_to_b_process(transaction_type *trans, sc_core::sc_time& t)
 {
-	process *p = 0;
+	nb_to_b_transport_process_s *p = 0;
 	
 	if(free_nb_to_b_transport_process_pool.empty())
 	{
-		p = new nb_to_b_transport_process_s();
-		nb_to_b_transport_process_pool.push(p);
+		p = new nb_to_b_transport_process_s(this);
+		nb_to_b_transport_process_pool.push_back(p);
 	}
 	else
 	{
@@ -877,7 +914,6 @@ typename simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl
 	
 	p->trans = trans;
 	p->begin_req_event.notify(t);
-	return p;
 }
 	
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
@@ -887,26 +923,27 @@ void simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
-simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::nb_to_b_transport_process_s(fw_transport_impl_s *owner)
-	: begin_req_event(sc_gen_unique_name("begin_req_event")
-	, payload(0)
+simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::nb_to_b_transport_process_s::nb_to_b_transport_process_s(fw_transport_impl_s *_owner)
+	: begin_req_event(sc_core::sc_gen_unique_name("begin_req_event"))
+	, trans(0)
 	, process_handle()
+	, owner(_owner)
 {
 	sc_core::sc_spawn_options spawn_options;
 	spawn_options.dont_initialize();
 	spawn_options.set_sensitivity(&begin_req_event);
 	
-	process_handle = sc_core::sc_spawn(sc_bind(&fw_transport_impl_s::nb_to_b_transport_process, owner, this), &spawn_options);
+	process_handle = sc_core::sc_spawn(sc_bind(&fw_transport_impl_s::nb_to_b_transport_process, owner, this), sc_core::sc_gen_unique_name("nb_to_b_transport_process"), &spawn_options);
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::free(tlm::tlm_generic_payload *trans)
 {
-	std::map<transaction_type *, sc_event *>::iterator it = pending_payload_freed.find(trans);
+	typename std::map<transaction_type *, sc_core::sc_event *>::iterator it = pending_payload_freed.find(trans);
 	
 	if(it != pending_payload_freed.end())
 	{
-		sc_event *payload_freed_event = (*it).second;
+		sc_core::sc_event *payload_freed_event = (*it).second;
 		pending_payload_freed.erase(it);
 		
 		payload_freed_event->notify();
@@ -914,17 +951,23 @@ void simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::fw_transport_impl_s::
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
+simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::bw_transport_impl_s::bw_transport_impl_s(simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES> *_socket)
+	: socket(_socket)
+{
+}
+
+template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 tlm::tlm_sync_enum simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::bw_transport_impl_s::nb_transport_bw(transaction_type& trans, phase_type& phase, sc_core::sc_time& t)
 {
 	switch(phase)
 	{
-		tlm::END_REQ:
+		case tlm::END_REQ:
 			{
-				std::map<transaction_type *, sc_event *>::iterator it = socket->pending_b_to_nb_transport_end_req.find(&trans);
+				typename std::map<transaction_type *, sc_core::sc_event *>::iterator it = socket->pending_b_to_nb_transport_end_req.find(&trans);
 				
 				if(it != socket->pending_b_to_nb_transport_end_req.end())
 				{
-					sc_event *b_to_nb_transport_end_req_event = (*it).second;
+					sc_core::sc_event *b_to_nb_transport_end_req_event = (*it).second;
 					socket->pending_b_to_nb_transport_end_req.erase(it);
 					b_to_nb_transport_end_req_event->notify(t);
 					
@@ -932,13 +975,13 @@ tlm::tlm_sync_enum simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::bw_tran
 				}
 			}
 			break;
-		tlm::BEGIN_RESP:
+		case tlm::BEGIN_RESP:
 			{
-				std::map<transaction_type *, sc_event *>::iterator it = socket->pending_b_to_nb_transport_end_resp.find(&trans);
+				typename std::map<transaction_type *, sc_core::sc_event *>::iterator it = socket->pending_b_to_nb_transport_end_resp.find(&trans);
 				
 				if(it != socket->pending_b_to_nb_transport_end_resp.end())
 				{
-					sc_event *b_to_nb_transport_end_resp_event = (*it).second;
+					sc_core::sc_event *b_to_nb_transport_end_resp_event = (*it).second;
 					socket->pending_b_to_nb_transport_end_resp.erase(it);
 					
 					b_to_nb_transport_end_resp_event->notify(t);
@@ -947,9 +990,9 @@ tlm::tlm_sync_enum simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::bw_tran
 				}
 			}
 			break;
-		tlm::END_RESP:
+		case tlm::END_RESP:
 			{
-				std::map<transaction_type *, sc_event *>::iterator it = socket->pending_nb_to_b_transport_end_resp.find(&trans);
+				typename std::map<transaction_type *, sc_core::sc_event *>::iterator it = socket->pending_nb_to_b_transport_end_resp.find(&trans);
 				
 				if(it != socket->pending_nb_to_b_transport_end_resp.end())
 				{
@@ -963,14 +1006,14 @@ tlm::tlm_sync_enum simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::bw_tran
 			break;
 	}
 	
-	return (*socket)->tlm::tlm_target_socket<BUSWIDTH, TYPES>::nb_transport_bw(trans, phase, t);
+	return (socket->tlm::tlm_target_socket<BUSWIDTH, TYPES>::operator -> ())->nb_transport_bw(trans, phase, t);
 }
 
 template <typename MODULE, unsigned int BUSWIDTH, typename TYPES>
 void simple_target_socket_tagged<MODULE, BUSWIDTH, TYPES>::bw_transport_impl_s::invalidate_direct_mem_ptr(sc_dt::uint64 start_addr, sc_dt::uint64 end_addr)
 {
 	// passthrough
-	return (*socket)->tlm::tlm_target_socket<BUSWIDTH, TYPES>::invalidate_direct_mem_ptr(start_addr, end_addr);
+	return (socket->tlm::tlm_target_socket<BUSWIDTH, TYPES>::operator -> ())->invalidate_direct_mem_ptr(start_addr, end_addr);
 }
 
 } // end of namespace tlm_utils

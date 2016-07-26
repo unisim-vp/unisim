@@ -93,11 +93,12 @@ private:
 		NEXT_TRIGGER_TIME_OUT_OR_EVENT_OR_LIST   // next_trigger(t, e1 | ... | en)
 	};
 	
-	bool method_process_terminated;
+	bool started;
 	bool flag_killed;
 	bool flag_reset;
 	bool flag_is_unwinding;
 	bool flag_throw_it;
+	bool method_process_terminated;
 	sc_event method_process_terminated_event;
 	sc_event method_process_reset_event;
 	const sc_user_exception *user_exception;
