@@ -395,6 +395,11 @@ namespace armsec
       return unisim::component::cxx::processor::arm::RMode.Insert( FPSCR, U32(unisim::component::cxx::processor::arm::RoundTowardsZero) );
     }
     
+    U32 RoundToNearestFPSCR() const
+    {
+      return unisim::component::cxx::processor::arm::RMode.Insert( FPSCR, U32(unisim::component::cxx::processor::arm::RoundToNearest) );
+    }
+    
     void not_implemented() { throw std::logic_error( "not implemented" ); }
 
     U32  GetGPR_usr( uint32_t id ) { /* Only work in system mode instruction */ not_implemented(); return U32(); }
@@ -569,11 +574,7 @@ struct THUMBISA : public unisim::component::cxx::processor::arm::isa::thumb2::De
 {
   typedef unisim::component::cxx::processor::arm::isa::thumb2::CodeType CodeType;
   typedef unisim::component::cxx::processor::arm::isa::thumb2::Operation<armsec::State> Operation;
-  static CodeType mkcode( uint32_t code ) {
-    if ((code >> 28) == 15)
-      return CodeType( code );
-    return CodeType( (0x0fffffff & code) | 0xe0000000 );
-  }
+  static CodeType mkcode( uint32_t code ) { return CodeType( code ); }
   static bool const is_thumb = true;
 };
 
@@ -598,7 +599,8 @@ struct Decoder
     // armsec::Expr insn_addr( armsec::make_const( addr ) ); //<if instruction address shall be known
     
     std::shared_ptr<armsec::PathNode> path ( new armsec::PathNode );
-    std::cout << '@' << std::hex << addr << ',' << op->GetEncoding() << std::dec << ": ";
+    std::cout << op->GetName() << std::endl;
+    std::cout << '@' << std::hex << addr << ',' << op->GetEncoding() << std::dec <<": ";
     
     armsec::State reference( path );
     reference.SetInsnProps( insn_addr, isa.is_thumb, op->GetLength() );

@@ -573,16 +573,16 @@ namespace armsec
       op = FLOAT( Expr( new UONode( "FSQB", op.expr ) ) );
     }
 
-    template <typename FLOAT, typename fpscrT> static
+    template <typename FLOAT> static
     SmartValue<bool>
-    FlushToZero( FLOAT& op, fpscrT& fpscr )
+    FlushToZero( FLOAT& op, SmartValue<uint32_t> const& fpscr_val )
     {
       op = FLOAT( Expr( new UONode( "FFZ", op.expr ) ) );
       return SmartValue<bool>( Expr( new UONode( "FDen", op.expr ) ) );
     }
 
-    template <typename FLOAT, typename fpscrT> static
-    SmartValue<int32_t> Compare( FLOAT op1, FLOAT op2, fpscrT& fpscr )
+    template <typename FLOAT> static
+    SmartValue<int32_t> Compare( FLOAT op1, FLOAT op2, SmartValue<uint32_t> const& fpscr_val )
     {
       return SmartValue<int32_t>( Expr( new BONode( "FCmp", op1.expr, op2.expr ) ) );
     }
@@ -615,26 +615,26 @@ namespace armsec
       return SmartValue<bool>( Expr( new IsNaNNode( op.expr, false ) ) );
     }
     
-    template <typename FLOAT, class ARCH, typename fpscrT> static
-    void Add( FLOAT& acc, FLOAT const& op2, ARCH& arch, fpscrT& fpscr )
+    template <typename FLOAT, class ARCH> static
+    void Add( FLOAT& acc, FLOAT const& op2, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
       acc = FLOAT( Expr( new BONode( "Add", acc.expr, op2.expr ) ) );
     }
 
-    template <typename FLOAT, class ARCH, typename fpscrT> static
-    void Sub( FLOAT& acc, FLOAT const& op2, ARCH& arch, fpscrT& fpscr )
+    template <typename FLOAT, class ARCH> static
+    void Sub( FLOAT& acc, FLOAT const& op2, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
       acc = FLOAT( Expr( new BONode( "Sub", acc.expr, op2.expr ) ) );
     }
 
-    template <typename FLOAT, class ARCH, typename fpscrT> static
-    void Div( FLOAT& acc, FLOAT const& op2, ARCH& arch, fpscrT& fpscr )
+    template <typename FLOAT, class ARCH> static
+    void Div( FLOAT& acc, FLOAT const& op2, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
       acc = FLOAT( Expr( new BONode( "Div", acc.expr, op2.expr ) ) );
     }
 
-    template <typename FLOAT, class ARCH, typename fpscrT> static
-    void Mul( FLOAT& acc, FLOAT const& op2, ARCH& arch, fpscrT& fpscr )
+    template <typename FLOAT, class ARCH> static
+    void Mul( FLOAT& acc, FLOAT const& op2, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
       acc = FLOAT( Expr( new BONode( "Mul", acc.expr, op2.expr ) ) );
     }
@@ -656,8 +656,8 @@ namespace armsec
       ExprNode* GetConstNode() { return 0; };
     };
     
-    template <typename FLOAT, class ARCH, typename fpscrT> static
-    void MulAdd( FLOAT& acc, FLOAT const& op1, FLOAT const& op2, ARCH& arch, fpscrT& fpscr )
+    template <typename FLOAT, class ARCH> static
+    void MulAdd( FLOAT& acc, FLOAT const& op1, FLOAT const& op2, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
       acc = FLOAT( Expr( new MulAddNode( acc.expr, op1.expr, op2.expr ) ) );
     }
@@ -679,9 +679,9 @@ namespace armsec
       ExprNode* GetConstNode() { return 0; };
     };
     
-    template <typename SOFTDBL, typename fpscrT> static
+    template <typename SOFTDBL> static
     SmartValue<bool>
-    IsInvalidMulAdd( SOFTDBL const& acc, SOFTDBL const& op1, SOFTDBL const& op2, fpscrT& fpscr )
+    IsInvalidMulAdd( SOFTDBL const& acc, SOFTDBL const& op1, SOFTDBL const& op2, SmartValue<uint32_t> const& fpscr_val )
     {
       return SmartValue<bool>( Expr( new IsInvalidMulAddNode( acc.expr, op1.expr, op2.expr ) ) );
     }
@@ -692,8 +692,8 @@ namespace armsec
     template <typename FLOAT> static
     void Abs( FLOAT& acc ) { acc = FLOAT( Expr( new UONode( "FAbs", acc.expr ) ) ); }
     
-    template <typename FLOAT, typename fpscrT> static
-    void Sqrt( FLOAT& acc, fpscrT& fpscr ) { acc = FLOAT( Expr( new UONode( "FSqrt", acc.expr ) ) ); }
+    template <typename FLOAT> static
+    void Sqrt( FLOAT& acc, SmartValue<uint32_t> const& fpscr_val ) { acc = FLOAT( Expr( new UONode( "FSqrt", acc.expr ) ) ); }
 
     struct FtoFNode : public ExprNode
     {
@@ -712,8 +712,8 @@ namespace armsec
       ExprNode* GetConstNode() { return 0; };
     };
     
-    template <typename ofpT, typename ifpT, class ARCH, typename fpscrT> static
-    void FtoF( SmartValue<ofpT>& dst, SmartValue<ifpT> const& src, ARCH& arch, fpscrT& fpscr )
+    template <typename ofpT, typename ifpT, class ARCH> static
+    void FtoF( SmartValue<ofpT>& dst, SmartValue<ifpT> const& src, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
       dst = SmartValue<ofpT>( Expr( new FtoFNode( src.expr, 8*sizeof (ifpT), 8*sizeof (ofpT) ) ) );
     }
@@ -736,8 +736,8 @@ namespace armsec
       ExprNode* GetConstNode() { return 0; };
     };
 
-    template <typename intT, typename fpT, class ARCH, typename fpscrT> static
-    void FtoI( SmartValue<intT>& dst, SmartValue<fpT> const& src, int fracbits, ARCH& arch, fpscrT& fpscr )
+    template <typename intT, typename fpT, class ARCH> static
+    void FtoI( SmartValue<intT>& dst, SmartValue<fpT> const& src, int fracbits, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
       dst = SmartValue<intT>( Expr( new FtoINode( src.expr, 8*sizeof (fpT), 8*sizeof (intT), fracbits) ) );
     }
@@ -760,8 +760,8 @@ namespace armsec
       ExprNode* GetConstNode() { return 0; };
     };
     
-    template <typename fpT, typename intT, class ARCH, typename fpscrT> static
-    void ItoF( SmartValue<fpT>& dst, SmartValue<intT> const& src, int fracbits, ARCH& arch, fpscrT& fpscr )
+    template <typename fpT, typename intT, class ARCH> static
+    void ItoF( SmartValue<fpT>& dst, SmartValue<intT> const& src, int fracbits, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
       dst = SmartValue<fpT>( Expr( new ItoFNode( src.expr, 8*sizeof (intT), 8*sizeof (fpT), fracbits ) ) );
     }

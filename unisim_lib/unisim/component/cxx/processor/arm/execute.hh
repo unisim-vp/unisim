@@ -597,7 +597,7 @@ namespace arm {
     }
     if (FPProcessNaN( arch, fpscr_val, acc )) return;
     
-    ARCH::FP::Sqrt( acc, fpscr_val );
+    ARCH::FP::Sqrt( acc, arch, fpscr_val );
   }
   
   template <typename INT, typename FPT, typename ARCH, typename FPCTRL>
