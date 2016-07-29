@@ -1766,8 +1766,6 @@ template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint3
 bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(ADDRESS addr, const void *buffer, uint32_t size)
 {
 
-	std::cout << "CocoRico I am FTM" << std::endl;
-
 	if ((addr >= baseAddress) && (addr < (baseAddress+REGISTERS_BANK_SIZE))) {
 
 		if (size == 0) {
