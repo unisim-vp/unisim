@@ -1,7 +1,8 @@
 // TODO: cpuid should be handled be the architecture
-struct CpuID : public Operation
+template <class ARCH>
+struct CpuID : public Operation<ARCH>
 {
-  CpuID( OpBase const& opbase ) : Operation( opbase ) {}
+  CpuID( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "cpuid"; }
   void execute( Arch& arch ) const
   {
@@ -167,18 +168,19 @@ struct CpuID : public Operation
   }
 };
 
-template <> Operation* decode<CPUID>( CodeBase const& cb )
+template <class ARCH> struct DC<ARCH,CPUID> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (cb.lock_f0) return 0;
+  if (ic.lock_f0) return 0;
   
-  if (auto _ = match( cb, opcode( "\x0f\xa2" ) )) return new CpuID( _.opbase() );
+  if (auto _ = match( ic, opcode( "\x0f\xa2" ) )) return new CpuID<ARCH>( _.opbase() );
   
   return 0;
-}
+}};
 
-struct RdTSC : public Operation
+template <class ARCH>
+struct RdTSC : public Operation<ARCH>
 {
-  RdTSC( OpBase const& opbase ) : Operation( opbase ) {}
+  RdTSC( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   
   void disasm( std::ostream& sink ) const { sink << "rdtsc"; }
   
@@ -189,14 +191,14 @@ struct RdTSC : public Operation
   }
 };
 
-template <> Operation* decode<RDTSC>( CodeBase const& cb )
+template <class ARCH> struct DC<ARCH,RDTSC> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (cb.lock_f0) return 0;
+  if (ic.lock_f0) return 0;
   
-  if (auto _ = match( cb, opcode( "\x0f\x31" ) )) return new RdTSC( _.opbase() );
+  if (auto _ = match( ic, opcode( "\x0f\x31" ) )) return new RdTSC<ARCH>( _.opbase() );
   
   return 0;
-}
+}};
 
 // 
 // op wrmsr( 0x0f[8]:> <:0x30[8] );

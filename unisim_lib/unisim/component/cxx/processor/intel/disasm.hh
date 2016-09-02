@@ -36,7 +36,6 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_DISASM_HH__
 
 #include <unisim/component/cxx/processor/intel/segments.hh>
-#include <unisim/component/cxx/processor/intel/fwd.hh>
 #include <unisim/component/cxx/processor/intel/tmp.hh>
 #include <stdint.h>
 #include <iosfwd>
@@ -54,55 +53,6 @@ namespace intel {
   };
   
   std::ostream& operator << ( std::ostream& sink, DisasmObject const& dobj );
-  
-  /* ModRM disassembly */
-  struct DisasmRoM : public DisasmObject
-  {
-    DisasmRoM( MOp const* _mop ) : mop( _mop ) {} MOp const* mop;
-    void operator() ( std::ostream& sink ) const;
-    virtual void disasm_register( std::ostream& sink, unsigned reg ) const = 0;
-  };
-  struct DisasmEb : public DisasmRoM
-  {
-    DisasmEb( MOp const* _mop ) : DisasmRoM( _mop ) {}
-    void disasm_register( std::ostream& sink, unsigned reg ) const;
-  };
-  struct DisasmEw : public DisasmRoM
-  {
-    DisasmEw( MOp const* _mop ) : DisasmRoM( _mop ) {}
-    void disasm_register( std::ostream& sink, unsigned reg ) const;
-  };
-  struct DisasmEd : public DisasmRoM
-  {
-    DisasmEd( MOp const* _mop ) : DisasmRoM( _mop ) {}
-    void disasm_register( std::ostream& sink, unsigned reg ) const;
-  };
-  template <unsigned OPSIZE>
-  struct DisasmE : public DisasmObject
-  {
-    DisasmE( MOp const* _mop ) : mop( _mop ) {} MOp const* mop;
-    void operator() ( std::ostream& sink ) const {
-      if      (OPSIZE == 8)  sink << DisasmEb( mop );
-      else if (OPSIZE == 16) sink << DisasmEw( mop );
-      else if (OPSIZE == 32) sink << DisasmEd( mop );
-      else throw 0;
-    }
-  };
-  struct DisasmQq : public DisasmRoM
-  {
-    DisasmQq( MOp const* _mop ) : DisasmRoM( _mop ) {}
-    void disasm_register( std::ostream& sink, unsigned reg ) const;
-  };
-  struct DisasmWdq : public DisasmRoM
-  {
-    DisasmWdq( MOp const* _mop ) : DisasmRoM( _mop ) {}
-    void disasm_register( std::ostream& sink, unsigned reg ) const;
-  };
-  struct DisasmM : public DisasmRoM
-  {
-    DisasmM( MOp const* _mop ) : DisasmRoM( _mop ) {}
-    void disasm_register( std::ostream& sink, unsigned reg ) const;
-  };
   
   /* General purpose registers */
   struct DisasmRb : public DisasmObject
@@ -172,6 +122,61 @@ namespace intel {
     void operator () ( std::ostream& sink ) const;
   };
   
+  /* ModRM disassembly */
+  // struct DisasmRoM : public DisasmObject
+  // {
+  //   DisasmRoM( BaseMOp const* _mop ) : mop( _mop ) {} BaseMOp const* mop;
+  //   void operator() ( std::ostream& sink ) const;
+  //   virtual void disasm_register( std::ostream& sink, unsigned reg ) const = 0;
+  // };
+  
+  template <class ARCH> struct RMOp;
+  
+  template <class ARCH, class REGDIS>
+  struct DisasmRegOrMem : public DisasmObject
+  {
+    DisasmRegOrMem( RMOp<ARCH> const& _rmop ) : rmop( _rmop ) {}
+
+    
+    void operator() ( std::ostream& sink ) const
+    {
+      typedef REGDIS DisasmReg;
+      
+      if (rmop.is_memory_operand())   rmop->disasm_memory_operand( sink );
+      else                            sink << DisasmReg( rmop.ereg() );
+    }
+    
+    RMOp<ARCH> const& rmop;    
+  };
+  
+  template <class ARCH>
+  DisasmRegOrMem<ARCH,DisasmRb>  DisasmEb( RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmRb>( rmop ); }
+  
+  template <class ARCH>
+  DisasmRegOrMem<ARCH,DisasmRw>  DisasmEw( RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmRw>( rmop ); }
+
+  template <class ARCH>
+  DisasmRegOrMem<ARCH,DisasmRd>  DisasmEd( RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmRd>( rmop ); }
+  
+  
+  template <class ARCH,unsigned OPSIZE>
+  DisasmRegOrMem<ARCH,DisasmR<OPSIZE> > DisasmE( UI<OPSIZE> const&, RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmR<OPSIZE> >( rmop ); }
+  
+  template <class ARCH>
+  DisasmRegOrMem<ARCH,DisasmRq>  DisasmQq( RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmRq>( rmop ); }
+  
+  template <class ARCH>
+  DisasmRegOrMem<ARCH,DisasmRdq> DisasmWdq( RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmRdq>( rmop ); }
+
+  struct DisasmBadReg : public DisasmObject
+  {
+    DisasmBadReg( unsigned _reg ) {}
+    void operator() ( std::ostream& sink ) const;
+  };
+  
+  template <class ARCH>
+  DisasmRegOrMem<ARCH,DisasmBadReg> DisasmM( RMOp<ARCH> const& rmop ) { return DisasmRegOrMem<ARCH,DisasmBadReg>( rmop ); }
+  
   void PutString( std::ostream& sink, char const* string );
   void PutChar( std::ostream& sink, char chr );
   
@@ -213,13 +218,10 @@ namespace intel {
     
   };
 
-  bool has_implicit_size( MOp const* _mop );
-  
   template <unsigned OPSIZE>
   struct DisasmMnemonic : public DisasmObject
   {
-    DisasmMnemonic( char const* _mnemonic, MOp const* _mop ) : mnemonic( _mnemonic ), implicit_size( has_implicit_size( _mop ) ) {}
-    DisasmMnemonic( char const* _mnemonic ) : mnemonic( _mnemonic ), implicit_size( false ) {}
+    DisasmMnemonic( char const* _mnemonic, bool _implicit_size = false ) : mnemonic( _mnemonic ), implicit_size( _implicit_size ) {}
     char const* mnemonic;
     bool implicit_size;
     

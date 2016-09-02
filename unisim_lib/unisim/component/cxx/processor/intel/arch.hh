@@ -39,7 +39,6 @@
 #include <unisim/component/cxx/processor/intel/segments.hh>
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/vectorbank.hh>
-#include <unisim/component/cxx/processor/intel/fwd.hh>
 #include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/endian/endian.hh>
@@ -60,6 +59,8 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace intel {
+  
+  template <class ARCH> struct Operation;
 
   enum flag_t { 
     CF = 0, PF,     AF,     ZF,     SF,     DF,     OF,
@@ -83,6 +84,11 @@ namespace intel {
     typedef bool     mkbool;
     typedef int      mkint;
     
+    struct OpHeader
+    {
+       OpHeader( uint32_t _address ) : address( _address ) {} uint32_t address;
+    };
+    
     // CONSTRUCTORS/DESTRUCTORS
     Arch();
   
@@ -90,11 +96,11 @@ namespace intel {
     bool                        m_running;      ///< Processors on/off
     int64_t                     m_instcount;    ///< Instruction count from the start
     bool                        m_disasm;       ///< Instruction disassembly on/off
-    Operation*                  m_latest_insn;  ///< latest (current) instruction
+    Operation<Arch>*            m_latest_insn;  ///< latest (current) instruction
     
     void                        stop() { m_running = false; }
 
-    Operation*                  fetch();
+    Operation<Arch>*            fetch();
     
     virtual unisim::service::interfaces::LinuxOS* GetLinuxOS() { return 0; };
     
@@ -328,7 +334,7 @@ namespace intel {
     
     template <unsigned OPSIZE>
     typename TypeFor<OPSIZE>::f
-    frmread( _RMOp rmop )
+    frmread( RMOp<Arch> const& rmop )
     {
       typedef typename TypeFor<OPSIZE>::f f_type;
       if (not rmop.is_memory_operand()) return f_type( fread( rmop.ereg() ) );
@@ -409,7 +415,7 @@ namespace intel {
 
     template <unsigned OPSIZE>
     void
-    frmwrite( _RMOp rmop, typename TypeFor<OPSIZE>::f value )
+    frmwrite( RMOp<Arch> const& rmop, typename TypeFor<OPSIZE>::f value )
     {
       if (not rmop.is_memory_operand()) return fwrite( rmop.ereg(), f64_t( value ) );
       
@@ -462,7 +468,7 @@ namespace intel {
     
     template <unsigned OPSIZE>
     typename TypeFor<OPSIZE>::u
-    rmread( _RMOp rmop )
+    rmread( RMOp<Arch> const& rmop )
     {
       if (not rmop.is_memory_operand())
         return regread<OPSIZE>( rmop.ereg() );
@@ -472,7 +478,7 @@ namespace intel {
     
     template <unsigned OPSIZE>
     void
-    rmwrite( _RMOp rmop, typename TypeFor<OPSIZE>::u value )
+    rmwrite( RMOp<Arch> const& rmop, typename TypeFor<OPSIZE>::u value )
     {
       if (not rmop.is_memory_operand())
         return regwrite<OPSIZE>( rmop.ereg(), value );
@@ -731,7 +737,7 @@ namespace intel {
     
     template<unsigned OPSIZE>
     typename TypeFor<OPSIZE>::u
-    xmm_uread( _RMOp rmop, unsigned sub )
+    xmm_uread( RMOp<Arch> const& rmop, unsigned sub )
     {
       if (not rmop.is_memory_operand()) return xmm_uread<OPSIZE>( rmop.ereg(), sub );
       return memread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8) );
@@ -739,7 +745,7 @@ namespace intel {
     
     template<unsigned OPSIZE>
     void
-    xmm_uwrite( _RMOp rmop, unsigned sub, typename TypeFor<OPSIZE>::u val )
+    xmm_uwrite( RMOp<Arch> const& rmop, unsigned sub, typename TypeFor<OPSIZE>::u val )
     {
       if (not rmop.is_memory_operand()) return xmm_uwrite<OPSIZE>( rmop.ereg(), sub, val );
       return memwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8), val );

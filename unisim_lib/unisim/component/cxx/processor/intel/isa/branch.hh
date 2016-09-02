@@ -4,12 +4,12 @@
  * - some branch struct offsets should depend on operand size
  * - the dissambly of non-default targetting mode needs a suffix
  */
-template <unsigned OPSIZE>
-struct NearCallJ : public Operation
+template <class ARCH, unsigned OPSIZE>
+struct NearCallJ : public Operation<ARCH>
 {
-  NearCallJ( OpBase const& opbase, int32_t _offset ) : Operation( opbase ), offset( _offset ) {} uint32_t offset;
+  NearCallJ( OpBase<ARCH> const& opbase, int32_t _offset ) : Operation<ARCH>( opbase ), offset( _offset ) {} uint32_t offset;
     
-  void disasm( std::ostream& sink ) const { sink << "call " << "0x" << std::hex << (address + length + offset); };
+  void disasm( std::ostream& sink ) const { sink << "call " << "0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); };
     
   void execute( Arch& arch ) const
   {
@@ -19,12 +19,12 @@ struct NearCallJ : public Operation
   }
 };
   
-template <unsigned OPSIZE>
-struct NearCallE : public Operation
+template <class ARCH, unsigned OPSIZE>
+struct NearCallE : public Operation<ARCH>
 {
-  NearCallE( OpBase const& opbase, MOp* _rmop ) : Operation( opbase ), rmop( _rmop ) {} RMOp rmop;
+  NearCallE( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
     
-  void disasm( std::ostream& sink ) const { sink << "call *" << DisasmE<OPSIZE>( rmop ); }
+  void disasm( std::ostream& sink ) const { sink << "call *" << DisasmE( UI<OPSIZE>(), rmop ); }
     
   void execute( Arch& arch ) const
   {
@@ -35,66 +35,66 @@ struct NearCallE : public Operation
   }
 };
   
-template <unsigned OPSIZE>
-struct FarCallA : public Operation
+template <class ARCH, unsigned OPSIZE>
+struct FarCallA : public Operation<ARCH>
 {
-  FarCallA( OpBase const& opbase, int32_t _offset, int16_t _seg ) : Operation( opbase ), offset( _offset ), mseg( _seg ) {} int32_t offset; int16_t mseg;
+  FarCallA( OpBase<ARCH> const& opbase, int32_t _offset, int16_t _seg ) : Operation<ARCH>( opbase ), offset( _offset ), mseg( _seg ) {} int32_t offset; int16_t mseg;
     
-  void disasm( std::ostream& sink ) const { sink << "lcall " << "0x" << std::hex << (address + length + offset); };
+  void disasm( std::ostream& sink ) const { sink << "lcall " << "0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); };
 };
   
-template <unsigned OPSIZE>
-struct FarCallE : public Operation
+template <class ARCH, unsigned OPSIZE>
+struct FarCallE : public Operation<ARCH>
 {
-  FarCallE( OpBase const& opbase, MOp* _rmop ) : Operation( opbase ), rmop( _rmop ) {} RMOp rmop;
+  FarCallE( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   
   void disasm( std::ostream& sink ) const { sink << "lcall " << '*' << DisasmM( rmop ); }
 };
-  
-template <> Operation* decode<CALL>( CodeBase const& cb )
+
+template <class ARCH> struct DC<ARCH,CALL> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (cb.adsz_67 or (cb.rep != 0)) return 0;
+  if (ic.adsz_67 or (ic.rep != 0)) return 0;
     
-  if (auto _ = match( cb, OpSize<16>() & opcode( "\xe8" ) & Imm<16>() ))
+  if (auto _ = match( ic, OpSize<16>() & opcode( "\xe8" ) & Imm<16>() ))
     
-    return new NearCallJ<16>( _.opbase(), _.imm<int32_t>() );
+    return new NearCallJ<ARCH,16>( _.opbase(), _.i( int32_t() ) );
     
-  if (auto _ = match( cb, OpSize<32>() & opcode( "\xe8" ) & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<32>() & opcode( "\xe8" ) & Imm<32>() ))
     
-    return new NearCallJ<32>( _.opbase(), _.imm<int32_t>() );
+    return new NearCallJ<ARCH,32>( _.opbase(), _.i( int32_t() ) );
     
-  if (auto _ = match( cb, opcode( "\xff", 2 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xff", 2 ) & RM() ))
     {
-      if      (cb.opsize() == 16) return new NearCallE<16>( _.opbase(), _.rmop() );
-      else if (cb.opsize() == 32) return new NearCallE<32>( _.opbase(), _.rmop() );
+      if      (ic.opsize() == 16) return new NearCallE<ARCH,16>( _.opbase(), _.rmop() );
+      else if (ic.opsize() == 32) return new NearCallE<ARCH,32>( _.opbase(), _.rmop() );
       else return 0;
     }
     
-  if (auto _ = match( cb, OpSize<16>() & opcode( "\x9a" ) & Imm<16>() & Imm<16>() ))
+  if (auto _ = match( ic, OpSize<16>() & opcode( "\x9a" ) & Imm<16>() & Imm<16>() ))
     
-    return new FarCallA<16>( _.opbase(), _.imm<int32_t>( 0 ), _.imm<int16_t>( 1 ) );
+    return new FarCallA<ARCH,16>( _.opbase(), _.i( int32_t(), 0 ), _.i( int16_t(), 1 ) );
     
-  if (auto _ = match( cb, OpSize<32>() & opcode( "\x9a" ) & Imm<32>() & Imm<16>() ))
+  if (auto _ = match( ic, OpSize<32>() & opcode( "\x9a" ) & Imm<32>() & Imm<16>() ))
     
-    return new FarCallA<32>( _.opbase(), _.imm<int32_t>( 0 ), _.imm<int16_t>( 1 ) );
+    return new FarCallA<ARCH,32>( _.opbase(), _.i( int32_t(), 0 ), _.i( int16_t(), 1 ) );
     
-  if (auto _ = match( cb, opcode( "\xff", 3 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xff", 3 ) & RM() ))
     {
-      if      (cb.opsize() == 16) return new FarCallE<16>( _.opbase(), _.rmop() );
-      else if (cb.opsize() == 32) return new FarCallE<32>( _.opbase(), _.rmop() );
-      else if (cb.opsize() == 64) return new FarCallE<64>( _.opbase(), _.rmop() );
+      if      (ic.opsize() == 16) return new FarCallE<ARCH,16>( _.opbase(), _.rmop() );
+      else if (ic.opsize() == 32) return new FarCallE<ARCH,32>( _.opbase(), _.rmop() );
+      else if (ic.opsize() == 64) return new FarCallE<ARCH,64>( _.opbase(), _.rmop() );
       else return 0;
     }
     
   return 0;
-}
+}};
 
-template <unsigned OPSIZE>
-struct JccJ : public Operation
+template <class ARCH, unsigned OPSIZE>
+struct JccJ : public Operation<ARCH>
 {
-  JccJ( OpBase const& opbase, uint8_t _cond, int32_t _offset ) : Operation( opbase ), offset( _offset ), cond( _cond ) {} int32_t offset; uint8_t cond;
+  JccJ( OpBase<ARCH> const& opbase, uint8_t _cond, int32_t _offset ) : Operation<ARCH>( opbase ), offset( _offset ), cond( _cond ) {} int32_t offset; uint8_t cond;
     
-  void disasm( std::ostream& sink ) const { sink << 'j' << DisasmCond( cond ) << " 0x" << std::hex << (address + length + offset); }
+  void disasm( std::ostream& sink ) const { sink << 'j' << DisasmCond( cond ) << " 0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); }
     
   void execute( Arch& arch ) const
   {
@@ -103,37 +103,37 @@ struct JccJ : public Operation
   }
 };
   
-template <> Operation* decode<JCC>( CodeBase const& cb )
+template <class ARCH> struct DC<ARCH,JCC> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( cb, VarByte<0x70,0xF0>() & Imm<8>() ))
+  if (auto _ = match( ic, VarByte<0x70,0xF0>() & Imm<8>() ))
     
     {
-      if      (cb.opsize() == 16) return new JccJ<16>( _.opbase(), _.vbval(), _.imm<int32_t>() );
-      else if (cb.opsize() == 32) return new JccJ<32>( _.opbase(), _.vbval(), _.imm<int32_t>() );
+      if      (ic.opsize() == 16) return new JccJ<ARCH,16>( _.opbase(), _.vbval(), _.i( int32_t() ) );
+      else if (ic.opsize() == 32) return new JccJ<ARCH,32>( _.opbase(), _.vbval(), _.i( int32_t() ) );
       else return 0;
     }
     
-  if (auto _ = match( cb, OpSize<16>() & opcode( "\x0f" ) & VarByte<0x80,0xf0>() & Imm<16>() ))
+  if (auto _ = match( ic, OpSize<16>() & opcode( "\x0f" ) & VarByte<0x80,0xf0>() & Imm<16>() ))
     
-    return new JccJ<16>( _.opbase(), _.vbval(), _.imm<int32_t>() );
+    return new JccJ<ARCH,16>( _.opbase(), _.vbval(), _.i( int32_t() ) );
     
-  if (auto _ = match( cb, OpSize<32>() & opcode( "\x0f" ) & VarByte<0x80,0xf0>() & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<32>() & opcode( "\x0f" ) & VarByte<0x80,0xf0>() & Imm<32>() ))
     
-    return new JccJ<32>( _.opbase(), _.vbval(), _.imm<int32_t>() );
+    return new JccJ<ARCH,32>( _.opbase(), _.vbval(), _.i( int32_t() ) );
     
   return 0;
-}
+}};
 
-template <unsigned MOD>
-struct Loop : public Operation
+template <class ARCH, unsigned MOD>
+struct Loop : public Operation<ARCH>
 {
   int32_t offset;
     
-  Loop( OpBase const& opbase, int32_t _offset )
-    : Operation( opbase ), offset( _offset )
+  Loop( OpBase<ARCH> const& opbase, int32_t _offset )
+    : Operation<ARCH>( opbase ), offset( _offset )
   {}
     
-  void disasm( std::ostream& sink ) const { sink << "loop" << (&"ne\0e\0\0"[MOD*3]) << " 0x" << std::hex << (address + length + offset); };
+  void disasm( std::ostream& sink ) const { sink << "loop" << (&"ne\0e\0\0"[MOD*3]) << " 0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); };
     
   void execute( Arch& arch ) const
   {
@@ -151,138 +151,138 @@ struct Loop : public Operation
   }
 };
   
-template <> Operation* decode<LOOP>( CodeBase const& cb )
+template <class ARCH> struct DC<ARCH,LOOP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( cb, opcode( "\xe0" ) & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xe0" ) & Imm<8>() ))
     
-    return new Loop<0>( _.opbase(), _.imm<int32_t>() );
+    return new Loop<ARCH,0>( _.opbase(), _.i( int32_t() ) );
     
-  if (auto _ = match( cb, opcode( "\xe1" ) & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xe1" ) & Imm<8>() ))
     
-    return new Loop<1>( _.opbase(), _.imm<int32_t>() );
+    return new Loop<ARCH,1>( _.opbase(), _.i( int32_t() ) );
     
-  if (auto _ = match( cb, opcode( "\xe2" ) & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xe2" ) & Imm<8>() ))
     
-    return new Loop<2>( _.opbase(), _.imm<int32_t>() );
+    return new Loop<ARCH,2>( _.opbase(), _.i( int32_t() ) );
     
   return 0;
-}
+}};
 
-template <unsigned ADDRSZ>
-struct Jcxz : public Operation
+template <class ARCH, unsigned ADDRSZ>
+struct Jcxz : public Operation<ARCH>
 {
   int32_t offset;
     
-  Jcxz( OpBase const& opbase, int32_t _offset ) : Operation( opbase ), offset( _offset ) {}
+  Jcxz( OpBase<ARCH> const& opbase, int32_t _offset ) : Operation<ARCH>( opbase ), offset( _offset ) {}
     
-  void disasm( std::ostream& sink ) const { sink << 'j' << (&"\0\0e\0\0\0r"[(ADDRSZ/16)-1]) << "cxz 0x" << std::hex << (address + length + offset); };
+  void disasm( std::ostream& sink ) const { sink << 'j' << (&"\0\0e\0\0\0r"[(ADDRSZ/16)-1]) << "cxz 0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); };
     
   void execute( Arch& arch ) const { if (ADDRSZ != 32) throw 0; if (mkbool( arch.regread32( 1 ) == u32_t( 0 ) )) arch.addeip( u32_t( offset ) ); }
 };
   
-template <> Operation* decode<JCXZ>( CodeBase const& cb )
+template <class ARCH> struct DC<ARCH,JCXZ> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( cb, AddrSize<16>() & opcode( "\xe3" ) & Imm<8>() ))
+  if (auto _ = match( ic, AddrSize<16>() & opcode( "\xe3" ) & Imm<8>() ))
     
-    return new Jcxz<16>( _.opbase(), _.imm<int32_t>() );
+    return new Jcxz<ARCH,16>( _.opbase(), _.i( int32_t() ) );
     
-  if (auto _ = match( cb, AddrSize<32>() & opcode( "\xe3" ) & Imm<8>() ))
+  if (auto _ = match( ic, AddrSize<32>() & opcode( "\xe3" ) & Imm<8>() ))
     
-    return new Jcxz<32>( _.opbase(), _.imm<int32_t>() );
+    return new Jcxz<ARCH,32>( _.opbase(), _.i( int32_t() ) );
     
-  if (auto _ = match( cb, AddrSize<64>() & opcode( "\xe3" ) & Imm<8>() ))
+  if (auto _ = match( ic, AddrSize<64>() & opcode( "\xe3" ) & Imm<8>() ))
     
-    return new Jcxz<64>( _.opbase(), _.imm<int32_t>() );
+    return new Jcxz<ARCH,64>( _.opbase(), _.i( int32_t() ) );
     
   return 0;
-}
+}};
   
-template <unsigned OPSIZE>
-struct JmpE : public Operation
+template <class ARCH, unsigned OPSIZE>
+struct JmpE : public Operation<ARCH>
 {
-  JmpE( OpBase const& opbase, MOp* _rmop ) : Operation( opbase ), rmop( _rmop ) {} RMOp rmop;
+  JmpE( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
     
-  void disasm( std::ostream& sink ) const { sink << "jmp " << '*' << DisasmE<OPSIZE>( rmop ); }
+  void disasm( std::ostream& sink ) const { sink << "jmp " << '*' << DisasmE( UI<OPSIZE>(), rmop ); }
      
   void execute( Arch& arch ) const { if (OPSIZE != 32) throw 0; arch.seteip( arch.rmread<32>( rmop ) ); }
 };
 
-template <unsigned OPSIZE>
-struct JmpJ : public Operation
+template <class ARCH, unsigned OPSIZE>
+struct JmpJ : public Operation<ARCH>
 {
-  JmpJ( OpBase const& opbase, int32_t _offset ) : Operation( opbase ), offset( _offset ) {} int32_t offset;
+  JmpJ( OpBase<ARCH> const& opbase, int32_t _offset ) : Operation<ARCH>( opbase ), offset( _offset ) {} int32_t offset;
   
-  void disasm( std::ostream& sink ) const { sink << "jmp 0x" << std::hex << (address + length + offset); }
+  void disasm( std::ostream& sink ) const { sink << "jmp 0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); }
      
   void execute( Arch& arch ) const { if (OPSIZE != 32) throw 0; arch.addeip( u32_t( offset ) ); }
 };
   
-template <unsigned OPSIZE>
-struct JmpA : public Operation
+template <class ARCH, unsigned OPSIZE>
+struct JmpA : public Operation<ARCH>
 {
-  JmpA( OpBase const& opbase, int32_t _offset, int16_t _seg ) : Operation( opbase ), offset( _offset ), mseg( _seg ) {} int32_t offset; int16_t mseg;
+  JmpA( OpBase<ARCH> const& opbase, int32_t _offset, int16_t _seg ) : Operation<ARCH>( opbase ), offset( _offset ), mseg( _seg ) {} int32_t offset; int16_t mseg;
   
   void disasm( std::ostream& sink ) const { sink << "ljmp " << DisasmI( mseg ) << ',' << DisasmI( offset ); }
 };
   
-template <unsigned OPSIZE>
-struct JmpM : public Operation
+template <class ARCH, unsigned OPSIZE>
+struct JmpM : public Operation<ARCH>
 {
-  JmpM( OpBase const& opbase, MOp* _rmop ) : Operation( opbase ), rmop( _rmop ) {} RMOp rmop;
+  JmpM( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
     
   void disasm( std::ostream& sink ) const { sink << "ljmp " << '*' << DisasmM( rmop ); }
 };
   
-template <> Operation* decode<JMP>( CodeBase const& cb )
+template <class ARCH> struct DC<ARCH,JMP> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( cb, opcode( "\xff", 4 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xff", 4 ) & RM() ))
     
     {
-      if      (cb.opsize() == 16) return new JmpE<16>( _.opbase(), _.rmop() );
-      else if (cb.opsize() == 32) return new JmpE<32>( _.opbase(), _.rmop() );
-      else if (cb.opsize() == 64) return new JmpE<64>( _.opbase(), _.rmop() );
+      if      (ic.opsize() == 16) return new JmpE<ARCH,16>( _.opbase(), _.rmop() );
+      else if (ic.opsize() == 32) return new JmpE<ARCH,32>( _.opbase(), _.rmop() );
+      else if (ic.opsize() == 64) return new JmpE<ARCH,64>( _.opbase(), _.rmop() );
       else return 0;
     }
     
-  if (auto _ = match( cb, opcode( "\xeb" ) & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xeb" ) & Imm<8>() ))
     
     {
-      if      (cb.opsize() == 16) return new JmpJ<16>( _.opbase(), _.imm<int32_t>() );
-      else if (cb.opsize() == 32) return new JmpJ<32>( _.opbase(), _.imm<int32_t>() );
+      if      (ic.opsize() == 16) return new JmpJ<ARCH,16>( _.opbase(), _.i( int32_t() ) );
+      else if (ic.opsize() == 32) return new JmpJ<ARCH,32>( _.opbase(), _.i( int32_t() ) );
       else return 0;
     }
     
-  if (auto _ = match( cb, OpSize<16>() & opcode( "\xe9" ) & Imm<16>() ))
+  if (auto _ = match( ic, OpSize<16>() & opcode( "\xe9" ) & Imm<16>() ))
     
-    return new JmpJ<16>( _.opbase(), _.imm<int32_t>() );
+    return new JmpJ<ARCH,16>( _.opbase(), _.i( int32_t() ) );
     
-  if (auto _ = match( cb, OpSize<32>() & opcode( "\xe9" ) & Imm<32>() ))
+  if (auto _ = match( ic, OpSize<32>() & opcode( "\xe9" ) & Imm<32>() ))
     
-    return new JmpJ<32>( _.opbase(), _.imm<int32_t>() );
+    return new JmpJ<ARCH,32>( _.opbase(), _.i( int32_t() ) );
     
-  if (auto _ = match( cb, OpSize<16>() & opcode( "\xea" ) & Imm<16>() & Imm<16>() ))
+  if (auto _ = match( ic, OpSize<16>() & opcode( "\xea" ) & Imm<16>() & Imm<16>() ))
     
-    return new JmpA<16>( _.opbase(), _.imm<int32_t>(), _.imm<int16_t>() );
+    return new JmpA<ARCH,16>( _.opbase(), _.i( int32_t() ), _.i( int16_t() ) );
     
-  if (auto _ = match( cb, OpSize<32>() & opcode( "\xea" ) & Imm<32>() & Imm<16>() ))
+  if (auto _ = match( ic, OpSize<32>() & opcode( "\xea" ) & Imm<32>() & Imm<16>() ))
     
-    return new JmpA<32>( _.opbase(), _.imm<int32_t>(), _.imm<int16_t>() );
+    return new JmpA<ARCH,32>( _.opbase(), _.i( int32_t() ), _.i( int16_t() ) );
     
-  if (auto _ = match( cb, opcode( "\xff", 5 ) & RM() ))
+  if (auto _ = match( ic, opcode( "\xff", 5 ) & RM() ))
     
     {
-      if      (cb.opsize() == 16) return new JmpM<16>( _.opbase(), _.rmop() );
-      else if (cb.opsize() == 32) return new JmpM<32>( _.opbase(), _.rmop() );
+      if      (ic.opsize() == 16) return new JmpM<ARCH,16>( _.opbase(), _.rmop() );
+      else if (ic.opsize() == 32) return new JmpM<ARCH,32>( _.opbase(), _.rmop() );
       else return 0;
     }
     
   return 0;
-}
+}};
   
-template <unsigned OPSIZE>
-struct NearReturn : public Operation
+template <class ARCH, unsigned OPSIZE>
+struct NearReturn : public Operation<ARCH>
 {
-  NearReturn( OpBase const& opbase ) : Operation( opbase ) {}
+  NearReturn( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
     
   void disasm( std::ostream& sink ) const { sink << "ret"; }
 
@@ -295,10 +295,10 @@ struct NearReturn : public Operation
   }
 };
   
-template <unsigned OPSIZE>
-struct NearParamReturn : public Operation
+template <class ARCH, unsigned OPSIZE>
+struct NearParamReturn : public Operation<ARCH>
 {
-  NearParamReturn( OpBase const& opbase, uint16_t _paramsize ) : Operation( opbase ), paramsize( _paramsize ) {} uint16_t paramsize;
+  NearParamReturn( OpBase<ARCH> const& opbase, uint16_t _paramsize ) : Operation<ARCH>( opbase ), paramsize( _paramsize ) {} uint16_t paramsize;
 
   void disasm( std::ostream& sink ) const { sink << "ret " << DisasmI( paramsize ); }
 
@@ -311,137 +311,140 @@ struct NearParamReturn : public Operation
   }
 };
   
-template <unsigned OPSIZE>
-struct FarReturn : public Operation
+template <class ARCH, unsigned OPSIZE>
+struct FarReturn : public Operation<ARCH>
 {
-  FarReturn( OpBase const& opbase ) : Operation( opbase ) {}
+  FarReturn( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
     
   void disasm( std::ostream& sink ) const { sink << "lret "; }
 };
   
-template <unsigned OPSIZE>
-struct FarParamReturn : public Operation
+template <class ARCH, unsigned OPSIZE>
+struct FarParamReturn : public Operation<ARCH>
 {
-  FarParamReturn( OpBase const& opbase, uint16_t _paramsize ) : Operation( opbase ), paramsize( _paramsize ) {} uint16_t paramsize;
+  FarParamReturn( OpBase<ARCH> const& opbase, uint16_t _paramsize ) : Operation<ARCH>( opbase ), paramsize( _paramsize ) {} uint16_t paramsize;
 
   void disasm( std::ostream& sink ) const { sink << "lret " << DisasmI( paramsize ); }
 };
   
-template <> Operation* decode<RETURN>( CodeBase const& cb )
+template <class ARCH> struct DC<ARCH,RETURN> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( cb, opcode( "\xc3" ) ))
+  if (auto _ = match( ic, opcode( "\xc3" ) ))
     
     {
-      if      (cb.opsize() == 16) return new NearReturn<16>( _.opbase() );
-      else if (cb.opsize() == 32) return new NearReturn<32>( _.opbase() );
-      else if (cb.opsize() == 64) return new NearReturn<64>( _.opbase() );
+      if      (ic.opsize() == 16) return new NearReturn<ARCH,16>( _.opbase() );
+      else if (ic.opsize() == 32) return new NearReturn<ARCH,32>( _.opbase() );
+      else if (ic.opsize() == 64) return new NearReturn<ARCH,64>( _.opbase() );
       else return 0;
     }
     
-  if (auto _ = match( cb, opcode( "\xc2" ) & Imm<16>() ))
+  if (auto _ = match( ic, opcode( "\xc2" ) & Imm<16>() ))
     
     {
-      if      (cb.opsize() == 16) return new NearParamReturn<16>( _.opbase(), _.imm<uint16_t>() );
-      else if (cb.opsize() == 32) return new NearParamReturn<32>( _.opbase(), _.imm<uint16_t>() );
-      else if (cb.opsize() == 64) return new NearParamReturn<64>( _.opbase(), _.imm<uint16_t>() );
+      if      (ic.opsize() == 16) return new NearParamReturn<ARCH,16>( _.opbase(), _.i( uint16_t() ) );
+      else if (ic.opsize() == 32) return new NearParamReturn<ARCH,32>( _.opbase(), _.i( uint16_t() ) );
+      else if (ic.opsize() == 64) return new NearParamReturn<ARCH,64>( _.opbase(), _.i( uint16_t() ) );
     }
     
-  if (auto _ = match( cb, opcode( "\xcb" ) ))
+  if (auto _ = match( ic, opcode( "\xcb" ) ))
     
     {
-      if      (cb.opsize() == 16) return new FarReturn<16>( _.opbase() );
-      else if (cb.opsize() == 32) return new FarReturn<32>( _.opbase() );
-      else if (cb.opsize() == 64) return new FarReturn<64>( _.opbase() );
+      if      (ic.opsize() == 16) return new FarReturn<ARCH,16>( _.opbase() );
+      else if (ic.opsize() == 32) return new FarReturn<ARCH,32>( _.opbase() );
+      else if (ic.opsize() == 64) return new FarReturn<ARCH,64>( _.opbase() );
       else return 0;
     }
     
-  if (auto _ = match( cb, opcode( "\xca" ) & Imm<16>() ))
+  if (auto _ = match( ic, opcode( "\xca" ) & Imm<16>() ))
     
     {
-      if      (cb.opsize() == 16) return new FarParamReturn<16>( _.opbase(), _.imm<uint16_t>() );
-      else if (cb.opsize() == 32) return new FarParamReturn<32>( _.opbase(), _.imm<uint16_t>() );
-      else if (cb.opsize() == 64) return new FarParamReturn<64>( _.opbase(), _.imm<uint16_t>() );
+      if      (ic.opsize() == 16) return new FarParamReturn<ARCH,16>( _.opbase(), _.i( uint16_t() ) );
+      else if (ic.opsize() == 32) return new FarParamReturn<ARCH,32>( _.opbase(), _.i( uint16_t() ) );
+      else if (ic.opsize() == 64) return new FarParamReturn<ARCH,64>( _.opbase(), _.i( uint16_t() ) );
     }
     
   return 0;
-}
+}};
 
-template <unsigned OPSIZE>
-struct InterruptReturn : public Operation
+template <class ARCH, unsigned OPSIZE>
+struct InterruptReturn : public Operation<ARCH>
 {
-  InterruptReturn( OpBase const& opbase ) : Operation( opbase ) {}
+  InterruptReturn( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
 
   void disasm( std::ostream& sink ) const { sink << "iret "; }
 };
 
-template <> Operation* decode<INTRETURN>( CodeBase const& cb )
+template <class ARCH> struct DC<ARCH,INTRETURN> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( cb, opcode( "\xcf" ) ))
+  if (auto _ = match( ic, opcode( "\xcf" ) ))
 
     {
-      if      (cb.opsize() == 16) return new InterruptReturn<16>( _.opbase() );
-      else if (cb.opsize() == 32) return new InterruptReturn<32>( _.opbase() );
-      else if (cb.opsize() == 64) return new InterruptReturn<64>( _.opbase() );
+      if      (ic.opsize() == 16) return new InterruptReturn<ARCH,16>( _.opbase() );
+      else if (ic.opsize() == 32) return new InterruptReturn<ARCH,32>( _.opbase() );
+      else if (ic.opsize() == 64) return new InterruptReturn<ARCH,64>( _.opbase() );
       else return 0;
     }
     
   return 0;
-}
+}};
 
-struct Interrupt : public Operation
+template <class ARCH>
+struct Interrupt : public Operation<ARCH>
 {
-  Interrupt( OpBase const& opbase, uint8_t _num ) : Operation( opbase ), vector_number( _num ) {} uint8_t vector_number;
+  Interrupt( OpBase<ARCH> const& opbase, uint8_t _num ) : Operation<ARCH>( opbase ), vector_number( _num ) {} uint8_t vector_number;
 
   void disasm( std::ostream& sink ) const { sink << "int " << DisasmI( vector_number ); }
 
   void execute( Arch& arch ) const { arch.interrupt( vector_number ); }
 };
 
-struct Interrupt3 : public Operation
+template <class ARCH>
+struct Interrupt3 : public Operation<ARCH>
 {
-  Interrupt3( OpBase const& opbase ) : Operation( opbase ) {}
+  Interrupt3( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
 
   void disasm( std::ostream& sink ) const { sink << "int3"; }
 };
 
-struct InterruptOF : public Operation
+template <class ARCH>
+struct InterruptOF : public Operation<ARCH>
 {
-  InterruptOF( OpBase const& opbase ) : Operation( opbase ) {}
+  InterruptOF( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
 
   void disasm( std::ostream& sink ) const { sink << "into"; }
 };
 
-template <> Operation* decode<INTERRUPT>( CodeBase const& cb )
+template <class ARCH> struct DC<ARCH,INTERRUPT> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( cb, opcode( "\xcc" ) ))
+  if (auto _ = match( ic, opcode( "\xcc" ) ))
   
-    return new Interrupt3( _.opbase() );
+    return new Interrupt3<ARCH>( _.opbase() );
   
-  if (auto _ = match( cb, opcode( "\xcd" ) & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xcd" ) & Imm<8>() ))
   
-    return new Interrupt( _.opbase(), _.imm<uint8_t>() );
+    return new Interrupt<ARCH>( _.opbase(), _.i( uint8_t() ) );
   
-  if (auto _ = match( cb, opcode( "\xce" ) ))
+  if (auto _ = match( ic, opcode( "\xce" ) ))
   
-    return new Interrupt3( _.opbase() );
+    return new Interrupt3<ARCH>( _.opbase() );
   
   return 0;
-}
+}};
 
-template <unsigned OPSIZE>
-struct Enter : public Operation
+template <class ARCH, unsigned OPSIZE>
+struct Enter : public Operation<ARCH>
 {
   uint16_t allocsize; uint8_t nestinglevel;
-  Enter( OpBase const& opbase, uint16_t _allocsize, uint8_t _nestinglevel )
-    : Operation( opbase ), allocsize( _allocsize ), nestinglevel( _nestinglevel ) {}
+  Enter( OpBase<ARCH> const& opbase, uint16_t _allocsize, uint8_t _nestinglevel )
+    : Operation<ARCH>( opbase ), allocsize( _allocsize ), nestinglevel( _nestinglevel ) {}
 
   void disasm( std::ostream& sink ) const { sink << "enter " << DisasmI( allocsize ) << ',' << DisasmI( nestinglevel ); }
 };
 
-template <unsigned OPSIZE/*, unsigned SPSIZE*/>
-struct Leave : public Operation
+template <class ARCH, unsigned OPSIZE/*, unsigned SPSIZE*/>
+struct Leave : public Operation<ARCH>
 {
-  Leave( OpBase const& opbase ) : Operation( opbase ) {}
+  Leave( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   
   void disasm( std::ostream& sink ) const { sink << "leave"; }
   
@@ -455,24 +458,24 @@ struct Leave : public Operation
   }
 };
 
-template <> Operation* decode<ENTER_LEAVE>( CodeBase const& cb )
+template <class ARCH> struct DC<ARCH,ENTER_LEAVE> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (auto _ = match( cb, opcode( "\xc8" ) & Imm<16>() & Imm<8>() ))
+  if (auto _ = match( ic, opcode( "\xc8" ) & Imm<16>() & Imm<8>() ))
   
     {
-      if      (cb.opsize() == 16) return new Enter<16>( _.opbase(), _.imm<uint16_t>(), _.imm<uint8_t>() );
-      else if (cb.opsize() == 32) return new Enter<32>( _.opbase(), _.imm<uint16_t>(), _.imm<uint8_t>() );
-      else if (cb.opsize() == 64) return new Enter<64>( _.opbase(), _.imm<uint16_t>(), _.imm<uint8_t>() );
+      if      (ic.opsize() == 16) return new Enter<ARCH,16>( _.opbase(), _.i( uint16_t() ), _.i( uint8_t() ) );
+      else if (ic.opsize() == 32) return new Enter<ARCH,32>( _.opbase(), _.i( uint16_t() ), _.i( uint8_t() ) );
+      else if (ic.opsize() == 64) return new Enter<ARCH,64>( _.opbase(), _.i( uint16_t() ), _.i( uint8_t() ) );
       else return 0;
     }
   
-  if (auto _ = match( cb, opcode( "\xc9" ) ))
+  if (auto _ = match( ic, opcode( "\xc9" ) ))
   
     {
-      if      (cb.opsize() == 16) return new Leave<16>( _.opbase() );
-      else if (cb.opsize() == 32) return new Leave<32>( _.opbase() );
-      else if (cb.opsize() == 64) return new Leave<64>( _.opbase() );
+      if      (ic.opsize() == 16) return new Leave<ARCH,16>( _.opbase() );
+      else if (ic.opsize() == 32) return new Leave<ARCH,32>( _.opbase() );
+      else if (ic.opsize() == 64) return new Leave<ARCH,64>( _.opbase() );
     }
   return 0;
-}
+}};
   

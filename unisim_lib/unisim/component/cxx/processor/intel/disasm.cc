@@ -49,22 +49,17 @@ namespace intel {
     return sink;
   }
   
-  void
-  DisasmRoM::operator() ( std::ostream& sink ) const
-  {
-    _RMOp rmop( mop );
-    if (rmop.is_memory_operand())   rmop->disasm_memory_operand( sink );
-    else                            disasm_register( sink, rmop.ereg() );
-  }
+  void DisasmBadReg::operator() ( std::ostream& sink ) const { sink << "(bad)"; }
   
-  void DisasmEb:: disasm_register( std::ostream& sink, unsigned reg ) const { sink << DisasmRb(  reg ); }
-  void DisasmEw:: disasm_register( std::ostream& sink, unsigned reg ) const { sink << DisasmRw(  reg ); }
-  void DisasmEd:: disasm_register( std::ostream& sink, unsigned reg ) const { sink << DisasmRd(  reg ); }
-  void DisasmQq:: disasm_register( std::ostream& sink, unsigned reg ) const { sink << DisasmRq(  reg ); }
-  void DisasmWdq::disasm_register( std::ostream& sink, unsigned reg ) const { sink << DisasmRdq( reg ); }
-
-  void DisasmM::  disasm_register( std::ostream& sink, unsigned reg ) const { sink << "(bad)"; }
-
+  // void
+  // DisasmR::operator() ( std::ostream& sink ) const
+  // {
+  //   if      (osz == 8)  sink << DisasmRb( reg );
+  //   else if (osz == 16) sink << DisasmRw( reg );
+  //   else if (osz == 32) sink << DisasmRd( reg );
+  //   else throw 0;
+  // }
+  
   void DisasmRb::operator()  ( std::ostream& sink ) const { sink << (&"%al\0%cl\0%dl\0%bl\0%ah\0%ch\0%dh\0%bh"[(reg % 8)*4]); }
   void DisasmRw::operator()  ( std::ostream& sink ) const { sink << (&"%ax\0%cx\0%dx\0%bx\0%sp\0%bp\0%si\0%di"[(reg % 8)*4]); }
   void DisasmRd::operator()  ( std::ostream& sink ) const { sink << (&"%eax\0%ecx\0%edx\0%ebx\0%esp\0%ebp\0%esi\0%edi"[(reg % 8)*5]); }
@@ -89,8 +84,6 @@ namespace intel {
     if (segment == DS) return;
     sink << DisasmS( segment ) << ':';
   }
-  
-  bool has_implicit_size( MOp const* mop ) { return not _RMOp( mop ).is_memory_operand(); }
   
   void PutString( std::ostream& sink, char const* string ) { sink << string; }
   void PutChar( std::ostream& sink, char chr ) { sink << chr; }
