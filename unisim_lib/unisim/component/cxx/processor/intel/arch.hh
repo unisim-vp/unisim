@@ -62,12 +62,6 @@ namespace intel {
   
   template <class ARCH> struct Operation;
 
-  enum flag_t { 
-    CF = 0, PF,     AF,     ZF,     SF,     DF,     OF,
-    C0,     C1,     C2,     C3,
-    flag_upperbound
-  };
-  
   struct Arch
   {
     typedef uint8_t  u8_t;
@@ -130,13 +124,20 @@ namespace intel {
     // INTEGER STATE
     // EFLAGS
     // bool m_ID, m_VIP, m_VIF, m_AC, m_VM, m_RF, m_NT, m_IOPL, m_IF, m_TF;
+    
+    enum flag_t { 
+      CF = 0, PF,     AF,     ZF,     SF,     DF,     OF,
+      C0,     C1,     C2,     C3,
+      flag_upperbound
+    };
+    
   protected:
-    bool                        m_flags[intel::flag_upperbound];
+    bool                        m_flags[flag_upperbound];
     
   public:
-    bit_t                       flagread( intel::flag_t flag )
+    bit_t                       flagread( flag_t flag )
     { return m_flags[flag]; }
-    void                        flagwrite( intel::flag_t flag, bit_t fval )
+    void                        flagwrite( flag_t flag, bit_t fval )
     { m_flags[flag] = fval; }
     
     // Registers
@@ -600,33 +601,33 @@ namespace intel {
     {
       double val = this->fread( 0 );
       
-      flagwrite( intel::C1, __signbit( val ) );
+      flagwrite( C1, __signbit( val ) );
       
       switch (__fpclassify( val )) {
       case FP_NAN:
-        flagwrite( intel::C3, 0 );
-        flagwrite( intel::C2, 0 );
-        flagwrite( intel::C0, 1 );
+        flagwrite( C3, 0 );
+        flagwrite( C2, 0 );
+        flagwrite( C0, 1 );
         break;
       case FP_NORMAL:
-        flagwrite( intel::C3, 0 );
-        flagwrite( intel::C2, 1 );
-        flagwrite( intel::C0, 0 );
+        flagwrite( C3, 0 );
+        flagwrite( C2, 1 );
+        flagwrite( C0, 0 );
         break;
       case FP_INFINITE:
-        flagwrite( intel::C3, 0 );
-        flagwrite( intel::C2, 1 );
-        flagwrite( intel::C0, 1 );
+        flagwrite( C3, 0 );
+        flagwrite( C2, 1 );
+        flagwrite( C0, 1 );
         break;
       case FP_ZERO:
-        flagwrite( intel::C3, 1 );
-        flagwrite( intel::C2, 0 );
-        flagwrite( intel::C0, 0 );
+        flagwrite( C3, 1 );
+        flagwrite( C2, 0 );
+        flagwrite( C0, 0 );
         break;
       case FP_SUBNORMAL:
-        flagwrite( intel::C3, 1 );
-        flagwrite( intel::C2, 1 );
-        flagwrite( intel::C0, 0 );
+        flagwrite( C3, 1 );
+        flagwrite( C2, 1 );
+        flagwrite( C0, 0 );
         break;
       }
     }

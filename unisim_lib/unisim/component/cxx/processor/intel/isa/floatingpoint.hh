@@ -3,7 +3,7 @@ struct F2xm1 : public Operation<ARCH>
 {
   F2xm1( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "f2xm1"; }
-  void execute( Arch& arch ) const { arch.fwrite( 0, power( f64_t( 2.0 ), arch.fread( 0 ) ) - f64_t( 1.0 ) ); }
+  void execute( ARCH& arch ) const { arch.fwrite( 0, power( f64_t( 2.0 ), arch.fread( 0 ) ) - f64_t( 1.0 ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,F2XM1> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -21,7 +21,7 @@ struct Fabs : public Operation<ARCH>
 {
   Fabs( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fabs"; }
-  void execute( Arch& arch ) const {
+  void execute( ARCH& arch ) const {
     f64_t val = arch.fread( 0 );
     if (mkbool( val < f64_t( 0.0 ) ))
       val = -val;
@@ -44,7 +44,7 @@ struct Fadd : public Operation<ARCH>
 {
   Fadd( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   void disasm( std::ostream& sink ) const { sink << "fadd" << ((OPSIZE==32) ? "s " : "l ") << DisasmM( rmop ); }
-  void execute( Arch& arch ) const { arch.fwrite( 0, arch.fread( 0 ) + f64_t( arch.frmread<OPSIZE>( rmop ) ) ); }
+  void execute( ARCH& arch ) const { arch.fwrite( 0, arch.fread( 0 ) + f64_t( arch.template frmread<OPSIZE>( rmop ) ) ); }
 };
 
 template <class ARCH, bool P>
@@ -52,7 +52,7 @@ struct FaddReg : public Operation<ARCH>
 {
   FaddReg( OpBase<ARCH> const& opbase, uint8_t _src, uint8_t _dst ) : Operation<ARCH>( opbase ), src( _src ), dst( _dst ) {} uint8_t src, dst;
   void disasm( std::ostream& sink ) const { sink << "fadd" << (P ? "p " : " ") << DisasmFPR(src) << ',' << DisasmFPR(dst); }
-  void execute( Arch& arch ) const { arch.fwrite( dst, arch.fread( dst ) + arch.fread( src ) ); if (P) arch.fpop(); }
+  void execute( ARCH& arch ) const { arch.fwrite( dst, arch.fread( dst ) + arch.fread( src ) ); if (P) arch.fpop(); }
 };
 
 template <class ARCH, unsigned OPSIZE>
@@ -61,7 +61,7 @@ struct Fiadd : public Operation<ARCH>
   Fiadd( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   void disasm( std::ostream& sink ) const { sink << "fiadd" << ((OPSIZE==32) ? "l " : " ") << DisasmM( rmop ); }
   typedef typename TypeFor<OPSIZE>::s s_type;
-  void execute( Arch& arch ) const { arch.fwrite( 0, arch.fread( 0 ) + f64_t( s_type( arch.rmread<OPSIZE>( rmop ) ) ) ); }
+  void execute( ARCH& arch ) const { arch.fwrite( 0, arch.fread( 0 ) + f64_t( s_type( arch.template rmread<OPSIZE>( rmop ) ) ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,FADD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -134,7 +134,7 @@ struct Fchs : public Operation<ARCH>
 {
   Fchs( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fchs"; }
-  void execute( Arch& arch ) const { arch.fwrite( 0, - arch.fread( 0 ) ); }
+  void execute( ARCH& arch ) const { arch.fwrite( 0, - arch.fread( 0 ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,FCHS> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -167,18 +167,18 @@ struct Fcmovcc : public Operation<ARCH>
 {
   Fcmovcc( OpBase<ARCH> const& opbase, uint8_t _stidx ) : Operation<ARCH>( opbase ), stidx( _stidx ) {} uint8_t stidx;
   void disasm( std::ostream& sink ) const { sink << "fcmov" << (COND & 1 ? "n" : "") << (&"b\0\0e\0\0be\0u"[3*(COND >> 1)]) << " %st(" << unsigned(stidx) << "),%st";}
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
     bit_t ok( false );
     switch (COND) {
-    case 0: ok = arch.flagread( CF ); break; // fcmovb
-    case 1: ok = not arch.flagread( CF ); break; // fcmovnb
-    case 2: ok = arch.flagread( ZF ); break; // fcmove
-    case 3: ok = not arch.flagread( ZF ); break; // fcmovne
-    case 4: ok = arch.flagread( CF ) or arch.flagread( ZF ); break; // fcmovbe
-    case 5: ok = not arch.flagread( CF ) and not arch.flagread( ZF ); break; // fcmovnbe
-    case 6: ok = arch.flagread( PF ); break; // fcmovu
-    case 7: ok = not arch.flagread( PF ); break; // fcmovnu
+    case 0: ok = arch.flagread( ARCH::CF ); break; // fcmovb
+    case 1: ok = not arch.flagread( ARCH::CF ); break; // fcmovnb
+    case 2: ok = arch.flagread( ARCH::ZF ); break; // fcmove
+    case 3: ok = not arch.flagread( ARCH::ZF ); break; // fcmovne
+    case 4: ok = arch.flagread( ARCH::CF ) or arch.flagread( ARCH::ZF ); break; // fcmovbe
+    case 5: ok = not arch.flagread( ARCH::CF ) and not arch.flagread( ARCH::ZF ); break; // fcmovnbe
+    case 6: ok = arch.flagread( ARCH::PF ); break; // fcmovu
+    case 7: ok = not arch.flagread( ARCH::PF ); break; // fcmovnu
     }
     if (mkbool( ok ))
       arch.fwrite( 0, arch.fread( stidx ) );
@@ -229,16 +229,16 @@ struct Fcom_m32 : public Operation<ARCH>
 {
   Fcom_m32( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   void disasm( std::ostream& sink ) const { sink << "fcom" << (P?"p":"") << "s " << DisasmM( rmop ); }
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
     f64_t a = arch.fread( 0 );
-    f64_t b = f64_t( arch.frmread<32>( rmop ) );
+    f64_t b = f64_t( arch.template frmread<32>( rmop ) );
     bit_t notle = not (a <= b);
     bit_t notge = not (a >= b);
     
-    arch.flagwrite( C3, notge == notle );
-    arch.flagwrite( C2, notge and notle );
-    arch.flagwrite( C0, notge );
+    arch.flagwrite( ARCH::C3, notge == notle );
+    arch.flagwrite( ARCH::C2, notge and notle );
+    arch.flagwrite( ARCH::C0, notge );
     if (P) arch.fpop();
   }
 };
@@ -248,16 +248,16 @@ struct Fcom_m64 : public Operation<ARCH>
 {
   Fcom_m64( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   void disasm( std::ostream& sink ) const { sink << "fcom" << (P?"p":"") << "l " << DisasmM( rmop ); }
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
     f64_t a = arch.fread( 0 );
-    f64_t b = arch.frmread<64>( rmop );
+    f64_t b = arch.template frmread<64>( rmop );
     bit_t notle = not (a <= b);
     bit_t notge = not (a >= b);
 
-    arch.flagwrite( C3, notge == notle );
-    arch.flagwrite( C2, notge and notle );
-    arch.flagwrite( C0, notge );
+    arch.flagwrite( ARCH::C3, notge == notle );
+    arch.flagwrite( ARCH::C2, notge and notle );
+    arch.flagwrite( ARCH::C0, notge );
     if (P) arch.fpop();
   }
 };
@@ -267,15 +267,15 @@ struct Fcom_stn_st0 : public Operation<ARCH>
 {
   Fcom_stn_st0( OpBase<ARCH> const& opbase, uint8_t _stidx ) : Operation<ARCH>( opbase ), stidx( _stidx ) {} uint8_t stidx;
   void disasm( std::ostream& sink ) const { sink << "fcom" << (P?"p":"") << " %st(" << unsigned(stidx) << ")"; }
-  void execute( Arch& arch ) const {
+  void execute( ARCH& arch ) const {
     f64_t a = arch.fread( 0 );
     f64_t b = arch.fread( stidx );
     bit_t notle = not (a <= b);
     bit_t notge = not (a >= b);
 
-    arch.flagwrite( C3, notge == notle );
-    arch.flagwrite( C2, notge and notle );
-    arch.flagwrite( C0, notge );
+    arch.flagwrite( ARCH::C3, notge == notle );
+    arch.flagwrite( ARCH::C2, notge and notle );
+    arch.flagwrite( ARCH::C0, notge );
     if (P) arch.fpop();
   }
 };
@@ -285,15 +285,15 @@ struct Fcompp : public Operation<ARCH>
 {
   Fcompp( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fcompp"; }
-  void execute( Arch& arch ) const {
+  void execute( ARCH& arch ) const {
     f64_t a = arch.fpop();
     f64_t b = arch.fpop();
     bit_t notle = not (a <= b);
     bit_t notge = not (a >= b);
 
-    arch.flagwrite( C3, notge == notle );
-    arch.flagwrite( C2, notge and notle );
-    arch.flagwrite( C0, notge );
+    arch.flagwrite( ARCH::C3, notge == notle );
+    arch.flagwrite( ARCH::C2, notge and notle );
+    arch.flagwrite( ARCH::C0, notge );
   }
 };
 
@@ -337,15 +337,15 @@ struct Fcomi_st0_stn : public Operation<ARCH>
 {
   Fcomi_st0_stn( OpBase<ARCH> const& opbase, uint8_t _stidx ) : Operation<ARCH>( opbase ), stidx( _stidx ) {} uint8_t stidx;
   void disasm( std::ostream& sink ) const { sink << "fcomi" << (P?"p":"") << " %st(" << unsigned(stidx) << "),%st"; }
-  void execute( Arch& arch ) const {
+  void execute( ARCH& arch ) const {
     f64_t a = arch.fread( 0 );
     f64_t b = arch.fread( stidx );
     bit_t notle = not (a <= b);
     bit_t notge = not (a >= b);
 
-    arch.flagwrite( ZF, notge == notle );
-    arch.flagwrite( PF, notge and notle );
-    arch.flagwrite( CF, notge );
+    arch.flagwrite( ARCH::ZF, notge == notle );
+    arch.flagwrite( ARCH::PF, notge and notle );
+    arch.flagwrite( ARCH::CF, notge );
     if (P) arch.fpop();
   }
 };
@@ -355,15 +355,15 @@ struct Fucomi_st0_stn : public Operation<ARCH>
 {
   Fucomi_st0_stn( OpBase<ARCH> const& opbase, uint8_t _stidx ) : Operation<ARCH>( opbase ), stidx( _stidx ) {} uint8_t stidx;
   void disasm( std::ostream& sink ) const { sink << "fucomi" << (P?"p":"") << " %st(" << unsigned(stidx) << "),%st"; }
-  void execute( Arch& arch ) const {
+  void execute( ARCH& arch ) const {
     f64_t a = arch.fread( 0 );
     f64_t b = arch.fread( stidx );
     bit_t notle = not (a <= b);
     bit_t notge = not (a >= b);
 
-    arch.flagwrite( ZF, notge == notle );
-    arch.flagwrite( PF, notge and notle );
-    arch.flagwrite( CF, notge );
+    arch.flagwrite( ARCH::ZF, notge == notle );
+    arch.flagwrite( ARCH::PF, notge and notle );
+    arch.flagwrite( ARCH::CF, notge );
     if (P) arch.fpop();
   }
 };
@@ -423,7 +423,7 @@ struct Fdiv : public Operation<ARCH>
 {
   Fdiv( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   void disasm( std::ostream& sink ) const { sink << "fdiv" << ((OPSIZE==32) ? "s " : "l ") << DisasmM( rmop ); }
-  // void execute( Arch& arch ) const { arch.fwrite( 0, arch.fread( 0 ) / f64_t( arch.frmread<OPSIZE>( rmop ) ) ); }
+  // void execute( ARCH& arch ) const { arch.fwrite( 0, arch.fread( 0 ) / f64_t( arch.template frmread<OPSIZE>( rmop ) ) ); }
 };
 
 template <class ARCH, bool P>
@@ -431,7 +431,7 @@ struct FdivReg : public Operation<ARCH>
 {
   FdivReg( OpBase<ARCH> const& opbase, uint8_t _src, uint8_t _dst ) : Operation<ARCH>( opbase ), src( _src ), dst( _dst ) {} uint8_t src, dst;
   void disasm( std::ostream& sink ) const { sink << "fdiv" << (P ? "p " : " ") << DisasmFPR(src) << ',' << DisasmFPR(dst); }
-  void execute( Arch& arch ) const { arch.fwrite( dst, arch.fread( dst ) / arch.fread( src ) ); if (P) arch.fpop(); }
+  void execute( ARCH& arch ) const { arch.fwrite( dst, arch.fread( dst ) / arch.fread( src ) ); if (P) arch.fpop(); }
 };
 
 template <class ARCH, unsigned OPSIZE>
@@ -440,7 +440,7 @@ struct Fidiv : public Operation<ARCH>
   Fidiv( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   void disasm( std::ostream& sink ) const { sink << "fidiv " << DisasmM( rmop ); }
   typedef typename TypeFor<OPSIZE>::s s_type;
-  void execute( Arch& arch ) const { arch.fwrite( 0, arch.fread( 0 ) / f64_t( s_type( arch.rmread<OPSIZE>( rmop ) ) ) ); }
+  void execute( ARCH& arch ) const { arch.fwrite( 0, arch.fread( 0 ) / f64_t( s_type( arch.template rmread<OPSIZE>( rmop ) ) ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,FDIV> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -483,7 +483,7 @@ struct Fdivr : public Operation<ARCH>
 {
   Fdivr( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   void disasm( std::ostream& sink ) const { sink << "fdivr" << ((OPSIZE==32) ? "s " : "l ") << DisasmM( rmop ); }
-  void execute( Arch& arch ) const { arch.fwrite( 0, f64_t( arch.frmread<OPSIZE>( rmop ) ) / arch.fread( 0 ) ); }
+  void execute( ARCH& arch ) const { arch.fwrite( 0, f64_t( arch.template frmread<OPSIZE>( rmop ) ) / arch.fread( 0 ) ); }
 };
 
 template <class ARCH, bool P>
@@ -491,7 +491,7 @@ struct FdivrReg : public Operation<ARCH>
 {
   FdivrReg( OpBase<ARCH> const& opbase, uint8_t _src, uint8_t _dst ) : Operation<ARCH>( opbase ), src( _src ), dst( _dst ) {} uint8_t src, dst;
   void disasm( std::ostream& sink ) const { sink << "fdivr" << (P ? "p " : " ") << DisasmFPR(src) << ',' << DisasmFPR(dst); }
-  void execute( Arch& arch ) const { arch.fwrite( dst, arch.fread( src ) / arch.fread( dst ) ); if (P) arch.fpop(); }
+  void execute( ARCH& arch ) const { arch.fwrite( dst, arch.fread( src ) / arch.fread( dst ) ); if (P) arch.fpop(); }
 };
 
 template <class ARCH, unsigned OPSIZE>
@@ -500,7 +500,7 @@ struct Fidivr : public Operation<ARCH>
   Fidivr( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   void disasm( std::ostream& sink ) const { sink << "fidivr" << ((OPSIZE==32) ? "l " : " ") << DisasmM( rmop ); }
   typedef typename TypeFor<OPSIZE>::s s_type;
-  void execute( Arch& arch ) const { arch.fwrite( 0, f64_t( s_type( arch.rmread<OPSIZE>( rmop ) ) ) / arch.fread( 0 ) ); }
+  void execute( ARCH& arch ) const { arch.fwrite( 0, f64_t( s_type( arch.template rmread<OPSIZE>( rmop ) ) ) / arch.fread( 0 ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,FDIVR> { Operation<ARCH>* get( InputCode<ARCH> const& ic ) 
@@ -599,7 +599,7 @@ struct Fild : public Operation<ARCH>
   Fild( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   
   void disasm( std::ostream& sink ) const { sink << "fild" << (&"ll "[2-SB<OPSIZE/16>::begin]) << DisasmM( rmop ); }
-  void execute( Arch& arch ) const { arch.fpush( f64_t( typename TypeFor<OPSIZE>::s( arch.rmread<OPSIZE>( rmop ) ) ) ); }
+  void execute( ARCH& arch ) const { arch.fpush( f64_t( typename TypeFor<OPSIZE>::s( arch.template rmread<OPSIZE>( rmop ) ) ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,FILD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -646,7 +646,7 @@ struct Fist : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << "fist" << (&"ll "[2-SB<OPSIZE/16>::begin]) << DisasmM( rmop ); }
   typedef typename TypeFor<OPSIZE>::s s_type;
   typedef typename TypeFor<OPSIZE>::u u_type;
-  // void execute( Arch& arch ) const { rmop->write_e<OPSIZE>( arch, u_type( s_type( firound( arch.fread( 0 ), arch.fcwreadRC() ) ) ) ); if (P) arch.fpop(); }
+  // void execute( ARCH& arch ) const { rmop->write_e<OPSIZE>( arch, u_type( s_type( firound( arch.fread( 0 ), arch.fcwreadRC() ) ) ) ); if (P) arch.fpop(); }
 };
 
 template <class ARCH> struct DC<ARCH,FIST> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -707,7 +707,7 @@ struct Fld : public Operation<ARCH>
 {
   Fld( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   void disasm( std::ostream& sink ) const { sink << "fld" << ((OPSIZE==32) ? "s " : (OPSIZE==64) ? "l " : "t ") << DisasmM( rmop ); }
-  void execute( Arch& arch ) const { arch.fpush( f64_t( arch.frmread<OPSIZE>( rmop ) ) ); }
+  void execute( ARCH& arch ) const { arch.fpush( f64_t( arch.template frmread<OPSIZE>( rmop ) ) ); }
 };
 
 template <class ARCH>
@@ -715,7 +715,7 @@ struct Fld_stn : public Operation<ARCH>
 {
   Fld_stn( OpBase<ARCH> const& opbase, uint8_t _stidx ) : Operation<ARCH>( opbase ), stidx( _stidx ) {} uint8_t stidx;
   void disasm( std::ostream& sink ) const { sink << "fld %st(" << unsigned(stidx) << ")"; }
-  void execute( Arch& arch ) const { arch.fpush( arch.fread( stidx ) ); }
+  void execute( ARCH& arch ) const { arch.fpush( arch.fread( stidx ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,FLD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -760,7 +760,7 @@ struct FldConst : public Operation<ARCH>
     case FLDZ:   sink << "fldz";   break;
     }
   }
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
     switch (FLDCONST) {
     default: throw 0;
@@ -813,7 +813,7 @@ struct FldCW : public Operation<ARCH>
 {
   FldCW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   void disasm( std::ostream& sink ) const { sink << "fldcw " << DisasmM( rmop ); }
-  void execute( Arch& arch ) const { arch.fcwwrite( arch.rmread<16>( rmop ) ); }
+  void execute( ARCH& arch ) const { arch.fcwwrite( arch.template rmread<16>( rmop ) ); }
 };
 
 template <class ARCH>
@@ -821,7 +821,7 @@ struct FstCW : public Operation<ARCH>
 {
   FstCW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   void disasm( std::ostream& sink ) const { sink << "fnstcw " << DisasmEd( rmop ); }
-  void execute( Arch& arch ) const { arch.rmwrite<16>( rmop, arch.fcwread() ); }
+  void execute( ARCH& arch ) const { arch.template rmwrite<16>( rmop, arch.fcwread() ); }
 };
 
 template <class ARCH> struct DC<ARCH,FLSCW> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -873,7 +873,7 @@ struct Fmul : public Operation<ARCH>
 {
   Fmul( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   void disasm( std::ostream& sink ) const { sink << "fmul" << ((OPSIZE==32) ? "s " : "l ") << DisasmM( rmop ); }
-  void execute( Arch& arch ) const { arch.fpush( arch.fpop() * arch.frmread<OPSIZE>( rmop ) ); }
+  void execute( ARCH& arch ) const { arch.fpush( arch.fpop() * arch.template frmread<OPSIZE>( rmop ) ); }
 };
 
 template <class ARCH, bool P>
@@ -881,7 +881,7 @@ struct FmulReg : public Operation<ARCH>
 {
   FmulReg( OpBase<ARCH> const& opbase, uint8_t _src, uint8_t _dst ) : Operation<ARCH>( opbase ), src( _src ), dst( _dst ) {} uint8_t src, dst;
   void disasm( std::ostream& sink ) const { sink << "fmul" << (P ? "p " : " ") << DisasmFPR( src ) << ',' << DisasmFPR( dst ); }
-  void execute( Arch& arch ) const { arch.fwrite( dst, arch.fread( dst ) * arch.fread( src ) ); if (P) arch.fpop(); }
+  void execute( ARCH& arch ) const { arch.fwrite( dst, arch.fread( dst ) * arch.fread( src ) ); if (P) arch.fpop(); }
 };
 
 template <class ARCH, unsigned OPSIZE>
@@ -889,7 +889,7 @@ struct Fimul : public Operation<ARCH>
 {
   Fimul( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   void disasm( std::ostream& sink ) const { sink << "fimul " << DisasmM( rmop ); }
-  void execute( Arch& arch ) const { arch.fwrite( 0, arch.fread( 0 ) * f64_t( typename TypeFor<OPSIZE>::s( arch.rmread<OPSIZE>( rmop ) ) ) ); }
+  void execute( ARCH& arch ) const { arch.fwrite( 0, arch.fread( 0 ) * f64_t( typename TypeFor<OPSIZE>::s( arch.template rmread<OPSIZE>( rmop ) ) ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,FMUL> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -948,7 +948,7 @@ struct Fsin : public Operation<ARCH>
 {
   Fsin( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fsin"; }
-  // void execute( Arch& arch ) const {
+  // void execute( ARCH& arch ) const {
   //   f64_t angle = arch.fpop();
   //   arch.fpush( sine( angle ) );
   // }
@@ -959,7 +959,7 @@ struct Fcos : public Operation<ARCH>
 {
   Fcos( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fcos"; }
-  // void execute( Arch& arch ) const {
+  // void execute( ARCH& arch ) const {
   //   f64_t angle = arch.fpop();
   //   arch.fpush( cosine( angle ) );
   // }
@@ -970,7 +970,7 @@ struct Fsincos : public Operation<ARCH>
 {
   Fsincos( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fsincos"; }
-  // void execute( Arch& arch ) const
+  // void execute( ARCH& arch ) const
   // {
   //   f64_t angle = arch.fpop();
   //   arch.fpush( sine( angle ) );
@@ -983,7 +983,7 @@ struct Fpatan : public Operation<ARCH>
 {
   Fpatan( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fpatan"; }
-  // void execute( Arch& arch ) const
+  // void execute( ARCH& arch ) const
   // {
   //   f64_t y = arch.fread( 1 );
   //   f64_t x = arch.fread( 0 );
@@ -1002,7 +1002,7 @@ struct Fpatan : public Operation<ARCH>
   //         r += f64_t( 3.14159265358979323846 );
   //     }
   //   }
-  //   arch.flagwrite( C0, bit_t( 0 ) );
+  //   arch.flagwrite( ARCH::C0, bit_t( 0 ) );
   //   arch.fwrite( 1, r );
   //   arch.fpop();
   // }
@@ -1013,11 +1013,11 @@ struct Fptan : public Operation<ARCH>
 {
   Fptan( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fptan"; }
-  // void execute( Arch& arch ) const
+  // void execute( ARCH& arch ) const
   // {
   //   arch.fwrite( 1, tangent( arch.fread( 0 ) ) );
   //   arch.fpush( f64_t( 1.0 ) );
-  //   arch.flagwrite( C2, bit_t( 0 ) );
+  //   arch.flagwrite( ARCH::C2, bit_t( 0 ) );
   // }
 };
 
@@ -1026,7 +1026,7 @@ struct Fsqrt : public Operation<ARCH>
 {
   Fsqrt( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fsqrt"; }
-  // void execute( Arch& arch ) const { arch.fwrite( 0, square_root( arch.fread( 0 ) ) ); }
+  // void execute( ARCH& arch ) const { arch.fwrite( 0, square_root( arch.fread( 0 ) ) ); }
 };
 
 template <class ARCH>
@@ -1034,7 +1034,7 @@ struct Fyl2x : public Operation<ARCH>
 {
   Fyl2x( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fyl2x"; }
-  // void execute( Arch& arch ) const
+  // void execute( ARCH& arch ) const
   // {
   //   f64_t y = arch.fread( 1 );
   //   f64_t x = arch.fread( 0 );
@@ -1103,7 +1103,7 @@ struct Fprem1 : public Operation<ARCH>
 {
   Fprem1( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fprem1"; }
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
     f64_t dividend = arch.fread( 0 );
     f64_t modulus = arch.fread( 1 );
@@ -1112,16 +1112,16 @@ struct Fprem1 : public Operation<ARCH>
       f64_t quotient = firound( dividend / modulus, intel::x87frnd_nearest );
       arch.fwrite( 0, fmodulo( dividend, modulus ) );
       u64_t uq = (mkbool( quotient < f64_t( 0.0 ) )) ? u64_t( -quotient ) : u64_t( quotient );
-      arch.flagwrite( C2, bit_t( false ) );
-      arch.flagwrite( C0, bit_t( (uq >> 2) & u64_t( 1 ) ) );
-      arch.flagwrite( C3, bit_t( (uq >> 1) & u64_t( 1 ) ) );
-      arch.flagwrite( C1, bit_t( (uq >> 0) & u64_t( 1 ) ) );
+      arch.flagwrite( ARCH::C2, bit_t( false ) );
+      arch.flagwrite( ARCH::C0, bit_t( (uq >> 2) & u64_t( 1 ) ) );
+      arch.flagwrite( ARCH::C3, bit_t( (uq >> 1) & u64_t( 1 ) ) );
+      arch.flagwrite( ARCH::C1, bit_t( (uq >> 0) & u64_t( 1 ) ) );
     } else {
       f64_t const step = power( f64_t( 2. ), f64_t( 32. ) ); // should be 2**32
       f64_t pmodulus = modulus;
       while (mkbool( (pmodulus *step) <= dividend )) pmodulus = pmodulus * f64_t( 2. );
       arch.fwrite( 0, fmodulo( dividend, pmodulus ) );
-      arch.flagwrite( C2, bit_t( true ) );
+      arch.flagwrite( ARCH::C2, bit_t( true ) );
     }
   }
 };
@@ -1131,7 +1131,7 @@ struct Fprem : public Operation<ARCH>
 {
   Fprem( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fprem"; }
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
     f64_t dividend = arch.fread( 0 );
     f64_t modulus = arch.fread( 1 );
@@ -1140,16 +1140,16 @@ struct Fprem : public Operation<ARCH>
       f64_t quotient = firound( dividend / modulus, intel::x87frnd_toward0 );
       arch.fwrite( 0, fmodulo( dividend, modulus ) );
       u64_t uq = (mkbool( quotient < f64_t( 0.0 ) )) ? u64_t( -quotient ) : u64_t( quotient );
-      arch.flagwrite( C2, bit_t( false ) );
-      arch.flagwrite( C0, bit_t( (uq >> 2) & u64_t( 1 ) ) );
-      arch.flagwrite( C3, bit_t( (uq >> 1) & u64_t( 1 ) ) );
-      arch.flagwrite( C1, bit_t( (uq >> 0) & u64_t( 1 ) ) );
+      arch.flagwrite( ARCH::C2, bit_t( false ) );
+      arch.flagwrite( ARCH::C0, bit_t( (uq >> 2) & u64_t( 1 ) ) );
+      arch.flagwrite( ARCH::C3, bit_t( (uq >> 1) & u64_t( 1 ) ) );
+      arch.flagwrite( ARCH::C1, bit_t( (uq >> 0) & u64_t( 1 ) ) );
     } else {
       f64_t const step = power( f64_t( 2. ), f64_t( 32. ) ); // should be 2**32
       f64_t pmodulus = modulus;
       while (mkbool( (pmodulus *step) <= dividend )) pmodulus = pmodulus * f64_t( 2. );
       arch.fwrite( 0, fmodulo( dividend, pmodulus ) );
-      arch.flagwrite( C2, bit_t( true ) );
+      arch.flagwrite( ARCH::C2, bit_t( true ) );
     }
   }
 };
@@ -1174,7 +1174,7 @@ struct Frndint : public Operation<ARCH>
 {
   Frndint( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "frndint"; }
-  void execute( Arch& arch ) const {
+  void execute( ARCH& arch ) const {
     f64_t value = arch.fread( 0 );
     value = firound( value, intel::x87frnd_mode_t( arch.fcwreadRC() ) );
     arch.fwrite( 0, value );
@@ -1226,7 +1226,7 @@ struct Fscale : public Operation<ARCH>
 {
   Fscale( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fscale"; }
-  void execute( Arch& arch ) const { arch.fwrite( 0, arch.fread( 0 ) * power( f64_t( 2 ), firound( arch.fread( 1 ), intel::x87frnd_toward0 ) ) ); }
+  void execute( ARCH& arch ) const { arch.fwrite( 0, arch.fread( 0 ) * power( f64_t( 2 ), firound( arch.fread( 1 ), intel::x87frnd_toward0 ) ) ); }
 };
 
 template <class ARCH>
@@ -1254,7 +1254,7 @@ struct Fst : public Operation<ARCH>
 {
   Fst( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   void disasm( std::ostream& sink ) const { sink << "fst" << (P?"p":"") << ((OPSIZE==32) ? "s " : (OPSIZE==64) ? "l " : "t ") << DisasmM( rmop ); }
-  void execute( Arch& arch ) const { arch.frmwrite<OPSIZE>( rmop, typename TypeFor<OPSIZE>::f( arch.fread( 0 ) ) ); if (P) arch.fpop(); }
+  void execute( ARCH& arch ) const { arch.template frmwrite<OPSIZE>( rmop, typename TypeFor<OPSIZE>::f( arch.fread( 0 ) ) ); if (P) arch.fpop(); }
 };
 
 template <class ARCH, bool P>
@@ -1262,7 +1262,7 @@ struct Fst_stn_st0 : public Operation<ARCH>
 {
   Fst_stn_st0( OpBase<ARCH> const& opbase, uint8_t _stidx ) : Operation<ARCH>( opbase ), stidx( _stidx ) {} uint8_t stidx;
   void disasm( std::ostream& sink ) const { sink << "fst" << (P?"p":"") << " %st(" << unsigned(stidx) << ")"; }
-  void execute( Arch& arch ) const { arch.fwrite( stidx, arch.fread( 0 ) ); if (P) arch.fpop(); }
+  void execute( ARCH& arch ) const { arch.fwrite( stidx, arch.fread( 0 ) ); if (P) arch.fpop(); }
 };
 
 template <class ARCH> struct DC<ARCH,FST> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -1304,7 +1304,7 @@ struct Fnstsw : public Operation<ARCH>
 {
   Fnstsw( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   void disasm( std::ostream& sink ) const { sink << "fnstsw " << DisasmEd( rmop ); }
-  void execute( Arch& arch ) const { arch.rmwrite<16>( rmop, fswread( arch ) ); }
+  void execute( ARCH& arch ) const { arch.template rmwrite<16>( rmop, fswread( arch ) ); }
 };
 
 template <class ARCH>
@@ -1312,7 +1312,7 @@ struct Fnstsw_ax : public Operation<ARCH>
 {
   Fnstsw_ax( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fnstsw %ax"; }
-  void execute( Arch& arch ) const { arch.regwrite<16>( 0, fswread( arch ) ); }
+  void execute( ARCH& arch ) const { arch.template regwrite<16>( 0, fswread( arch ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,FSTSW> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -1333,7 +1333,7 @@ struct Fsub : public Operation<ARCH>
 {
   Fsub( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   void disasm( std::ostream& sink ) const { sink << "fsub" << ((OPSIZE==32) ? "s " : "l ") << DisasmM( rmop ); }
-  void execute( Arch& arch ) const { arch.fwrite( 0, arch.fread( 0 ) - f64_t( arch.frmread<OPSIZE>( rmop ) ) ); }
+  void execute( ARCH& arch ) const { arch.fwrite( 0, arch.fread( 0 ) - f64_t( arch.template frmread<OPSIZE>( rmop ) ) ); }
 };
 
 template <class ARCH, bool P>
@@ -1341,7 +1341,7 @@ struct FsubReg : public Operation<ARCH>
 {
   FsubReg( OpBase<ARCH> const& opbase, uint8_t _src, uint8_t _dst ) : Operation<ARCH>( opbase ), src( _src ), dst( _dst ) {} uint8_t src, dst;
   void disasm( std::ostream& sink ) const { sink << "fsub" << (P ? "p " : " ") << DisasmFPR( src ) << ',' << DisasmFPR( dst ); }
-  void execute( Arch& arch ) const { arch.fwrite( dst, arch.fread( dst ) - arch.fread( src ) ); if (P) arch.fpop(); }
+  void execute( ARCH& arch ) const { arch.fwrite( dst, arch.fread( dst ) - arch.fread( src ) ); if (P) arch.fpop(); }
 };
 
 template <class ARCH, unsigned OPSIZE>
@@ -1350,7 +1350,7 @@ struct Fisub : public Operation<ARCH>
   Fisub( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   void disasm( std::ostream& sink ) const { sink << "fisub" << ((OPSIZE==32) ? "l " : " ") << DisasmM( rmop ); }
   typedef typename TypeFor<OPSIZE>::s s_type;
-  void execute( Arch& arch ) const { arch.fwrite( 0, arch.fread( 0 ) - f64_t( s_type( arch.rmread<OPSIZE>( rmop ) ) ) ); }
+  void execute( ARCH& arch ) const { arch.fwrite( 0, arch.fread( 0 ) - f64_t( s_type( arch.template rmread<OPSIZE>( rmop ) ) ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,FSUB> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -1392,7 +1392,7 @@ struct Fsubr : public Operation<ARCH>
 {
   Fsubr( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
   void disasm( std::ostream& sink ) const { sink << "fsubr" << ((OPSIZE==32) ? "s " : "l ") << DisasmM( rmop ); }
-  void execute( Arch& arch ) const { arch.fwrite( 0, f64_t( arch.frmread<OPSIZE>( rmop ) ) - arch.fread( 0 ) ); }
+  void execute( ARCH& arch ) const { arch.fwrite( 0, f64_t( arch.template frmread<OPSIZE>( rmop ) ) - arch.fread( 0 ) ); }
 };
 
 template <class ARCH, bool P>
@@ -1400,7 +1400,7 @@ struct FsubrReg : public Operation<ARCH>
 {
   FsubrReg( OpBase<ARCH> const& opbase, uint8_t _src, uint8_t _dst ) : Operation<ARCH>( opbase ), src( _src ), dst( _dst ) {} uint8_t src, dst;
   void disasm( std::ostream& sink ) const { sink << "fsubr" << (P ? "p " : " ") << DisasmFPR(src) << ',' << DisasmFPR(dst); }
-  void execute( Arch& arch ) const { arch.fwrite( dst, arch.fread( src ) - arch.fread( dst ) ); if (P) arch.fpop(); }
+  void execute( ARCH& arch ) const { arch.fwrite( dst, arch.fread( src ) - arch.fread( dst ) ); if (P) arch.fpop(); }
 };
 
 template <class ARCH, unsigned OPSIZE>
@@ -1464,15 +1464,15 @@ struct Fucom_st0_stn : public Operation<ARCH>
 {
   Fucom_st0_stn( OpBase<ARCH> const& opbase, uint8_t _stidx ) : Operation<ARCH>( opbase ), stidx( _stidx ) {} uint8_t stidx;
   void disasm( std::ostream& sink ) const { sink << "fucom" << (P?"p":"") << " %st(" << unsigned(stidx) << ")"; }
-  // void execute( Arch& arch ) const {
+  // void execute( ARCH& arch ) const {
   //   f64_t a = arch.fread( 0 );
   //   f64_t b = arch.fread( stidx );
   //   bit_t notle = not (a <= b);
   //   bit_t notge = not (a >= b);
 
-  //   arch.flagwrite( C3, notge == notle );
-  //   arch.flagwrite( C2, notge and notle );
-  //   arch.flagwrite( C0, notge );
+  //   arch.flagwrite( ARCH::C3, notge == notle );
+  //   arch.flagwrite( ARCH::C2, notge and notle );
+  //   arch.flagwrite( ARCH::C0, notge );
   //   if (P) arch.fpop();
   // }
 };
@@ -1482,15 +1482,15 @@ struct Fucompp : public Operation<ARCH>
 {
   Fucompp( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fucompp"; }
-  // void execute( Arch& arch ) const {
+  // void execute( ARCH& arch ) const {
   //   f64_t a = arch.fpop();
   //   f64_t b = arch.fpop();
   //   bit_t notle = not (a <= b);
   //   bit_t notge = not (a >= b);
 
-  //   arch.flagwrite( C3, notge == notle );
-  //   arch.flagwrite( C2, notge and notle );
-  //   arch.flagwrite( C0, notge );
+  //   arch.flagwrite( ARCH::C3, notge == notle );
+  //   arch.flagwrite( ARCH::C2, notge and notle );
+  //   arch.flagwrite( ARCH::C0, notge );
   // }
 };
 
@@ -1516,7 +1516,7 @@ struct Fxam : public Operation<ARCH>
 {
   Fxam( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fxam"; }
-  void execute( Arch& arch ) const { arch.fxam(); }
+  void execute( ARCH& arch ) const { arch.fxam(); }
 };
 
 template <class ARCH> struct DC<ARCH,FXAM> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -1533,7 +1533,7 @@ struct Fxch : public Operation<ARCH>
 {
   Fxch( OpBase<ARCH> const& opbase, uint8_t _stidx ) : Operation<ARCH>( opbase ), stidx( _stidx ) {} uint8_t stidx;
   void disasm( std::ostream& sink ) const { sink << "fxch %st(" << unsigned(stidx) << ")"; }
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
     f64_t a = arch.fread( 0 );
     f64_t b = arch.fread( stidx );
@@ -1556,7 +1556,7 @@ struct Fwait : public Operation<ARCH>
 {
   Fwait( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fwait"; }
-  void execute( Arch& arch ) const {}
+  void execute( ARCH& arch ) const {}
 };
 
 template <class ARCH> struct DC<ARCH,FWAIT> { Operation<ARCH>* get( InputCode<ARCH> const& ic )

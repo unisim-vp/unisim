@@ -7,20 +7,20 @@
 //   SrtOp( uint8_t _segment, uint8_t _reg ) : segment( _segment ), reg( _reg ) {} uint8_t segment; uint8_t reg;
 //   virtual ~MOp() {}
 //   virtual void  disasm_memory_operand( std::ostream& _sink ) const { throw 0; };
-//   virtual u32_t effective_address( Arch& _arch ) const { throw 0; return u32_t( 0 ); };
+//   virtual u32_t effective_address( ARCH& _arch ) const { throw 0; return u32_t( 0 ); };
 // };
 
 template <class ARCH>
 struct StringEngine
 {
-  virtual bool tstcounter( Arch& arch ) const = 0;
-  virtual void deccounter( Arch& arch ) const = 0;
+  virtual bool tstcounter( ARCH& arch ) const = 0;
+  virtual void deccounter( ARCH& arch ) const = 0;
   
   virtual MOp<ARCH> const* getdst() const = 0;
   virtual MOp<ARCH> const* getsrc( uint8_t segment ) const = 0;
   
-  virtual void addsrc( Arch& arch, int step ) const = 0;
-  virtual void adddst( Arch& arch, int step ) const = 0;
+  virtual void addsrc( ARCH& arch, int step ) const = 0;
+  virtual void adddst( ARCH& arch, int step ) const = 0;
   
   virtual ~StringEngine() {};
 };
@@ -33,14 +33,14 @@ struct _StringEngine : public StringEngine<ARCH>
   ModBase<ARCH,ADDRSIZE> dst, src[6];
   _StringEngine() : dst( ES, 7 ), src{{0, 6}, {1, 6}, {2, 6}, {3, 6}, {4, 6}, {5, 6}} {}
   
-  bool tstcounter( Arch& arch ) const { return mkbool( arch.regread<ADDRSIZE>( 1 ) != uaddr_type( 0 )); }
-  void deccounter( Arch& arch ) const { arch.regwrite<ADDRSIZE>( 1, arch.regread<ADDRSIZE>( 1 ) - uaddr_type( 1 ) ); }
+  bool tstcounter( ARCH& arch ) const { return mkbool( arch.template regread<ADDRSIZE>( 1 ) != uaddr_type( 0 )); }
+  void deccounter( ARCH& arch ) const { arch.template regwrite<ADDRSIZE>( 1, arch.template regread<ADDRSIZE>( 1 ) - uaddr_type( 1 ) ); }
   
   MOp<ARCH> const* getdst() const { return &dst; }
   MOp<ARCH> const* getsrc( uint8_t segment ) const { return &src[segment]; }
   
-  void addsrc( Arch& arch, int step ) const { arch.regwrite<ADDRSIZE>( 6, arch.regread<ADDRSIZE>( 6 ) + uaddr_type( saddr_type( step ) ) ); }
-  void adddst( Arch& arch, int step ) const { arch.regwrite<ADDRSIZE>( 7, arch.regread<ADDRSIZE>( 7 ) + uaddr_type( saddr_type( step ) ) ); }
+  void addsrc( ARCH& arch, int step ) const { arch.template regwrite<ADDRSIZE>( 6, arch.template regread<ADDRSIZE>( 6 ) + uaddr_type( saddr_type( step ) ) ); }
+  void adddst( ARCH& arch, int step ) const { arch.template regwrite<ADDRSIZE>( 7, arch.template regread<ADDRSIZE>( 7 ) + uaddr_type( saddr_type( step ) ) ); }
 };
 
 namespace {
@@ -69,13 +69,13 @@ struct Movs : public Operation<ARCH>
     _sink << (REP?"rep ":"") << DisasmMnemonic<OPSIZE>( "movs" ) << DisasmS( segment ) << ":(" << DisasmRd( 6 ) << ")," << DisasmS( 0 ) << ":(" << DisasmRd( 7 ) << ")";
   }
   
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
     if (REP and not str->tstcounter( arch )) return;
     
-    arch.rmwrite<OPSIZE>( str->getdst(), arch.rmread<OPSIZE>( str->getsrc( segment ) ) );
+    arch.template rmwrite<OPSIZE>( str->getdst(), arch.template rmread<OPSIZE>( str->getsrc( segment ) ) );
     
-    int32_t step = mkbool( arch.flagread( DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
+    int32_t step = mkbool( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
     str->addsrc( arch, step );
     str->adddst( arch, step );
     
@@ -114,13 +114,13 @@ struct Stos : public Operation<ARCH>
   
   void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << "stos " << DisasmR<OPSIZE>( 0 ) << ',' << DisasmS( 0 ) << ":(" << DisasmRd( 7 ) << ")"; }
   
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
     if (REP and not str->tstcounter( arch )) return;
     
-    arch.rmwrite<OPSIZE>( str->getdst(), arch.regread<OPSIZE>( 0 ) );
+    arch.template rmwrite<OPSIZE>( str->getdst(), arch.template regread<OPSIZE>( 0 ) );
 
-    int32_t step = mkbool( arch.flagread( DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
+    int32_t step = mkbool( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
     str->adddst( arch, step );
     
     if (REP) {
@@ -162,19 +162,19 @@ struct Cmps : public Operation<ARCH>
           << DisasmS( segment ) << ":(" << DisasmRd( 6 ) << ")";
   }
   
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
     if (REP and not str->tstcounter( arch )) return;
     
-    eval_sub( arch, arch.rmread<OPSIZE>( str->getsrc( segment ) ), arch.rmread<OPSIZE>( str->getdst() ) );
+    eval_sub( arch, arch.template rmread<OPSIZE>( str->getsrc( segment ) ), arch.template rmread<OPSIZE>( str->getdst() ) );
     
-    int32_t step = mkbool( arch.flagread( DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
+    int32_t step = mkbool( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
     str->adddst( arch, step );
     str->addsrc( arch, step );
     
     if (REP) {
       str->deccounter( arch );
-      if (mkbool( bit_t( REP&1 ) ^ arch.flagread( ZF ) )) return;
+      if (mkbool( bit_t( REP&1 ) ^ arch.flagread( ARCH::ZF ) )) return;
       arch.seteip( u32_t( Operation<ARCH>::address ) );
     }
   }
@@ -222,18 +222,18 @@ struct Scas : public Operation<ARCH>
   
   void disasm( std::ostream& _sink ) const { _sink << "scas " << DisasmS( ES ) << ":(" << DisasmRd( 7 ) << ")," << DisasmR<OPSIZE>( 0 ); }
   
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
     if (REP and not str->tstcounter( arch )) return;
     
-    eval_sub( arch, arch.rmread<OPSIZE>( str->getdst() ), arch.regread<OPSIZE>( 0 ) );
+    eval_sub( arch, arch.template rmread<OPSIZE>( str->getdst() ), arch.template regread<OPSIZE>( 0 ) );
 
-    int32_t step = mkbool( arch.flagread( DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
+    int32_t step = mkbool( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
     str->adddst( arch, step );
     
     if (REP) {
       str->deccounter( arch );
-      if (mkbool( bit_t( REP&1 ) ^arch.flagread( ZF ) )) return;
+      if (mkbool( bit_t( REP&1 ) ^arch.flagread( ARCH::ZF ) )) return;
       arch.seteip( u32_t( Operation<ARCH>::address ) );
     }
   }
@@ -281,13 +281,13 @@ struct Lods : public Operation<ARCH>
   
   void disasm( std::ostream& _sink ) const { _sink << (REP?"rep ":"") << "lods " << DisasmS( segment ) << ":(" << DisasmRd( 6 ) << ")," << DisasmRb( 0 ); }
   
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
     if (REP and str->tstcounter( arch )) return;
     
-    arch.regwrite<OPSIZE>( 0, arch.rmread<OPSIZE>( str->getsrc( segment ) ) );
+    arch.template regwrite<OPSIZE>( 0, arch.template rmread<OPSIZE>( str->getsrc( segment ) ) );
     
-    int32_t step = mkbool( arch.flagread( DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
+    int32_t step = mkbool( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
     str->addsrc( arch, step );
     
     if (REP) {

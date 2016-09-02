@@ -63,8 +63,23 @@ namespace intel {
   template <> struct tpinfo<s16_t> { typedef s16_t stype; typedef u16_t utype; typedef s32_t twice; enum { is_signed = 1, bitsize = 16 }; };
   template <> struct tpinfo<u32_t> { typedef s32_t stype; typedef u32_t utype; typedef u64_t twice; enum { is_signed = 0, bitsize = 32 }; };
   template <> struct tpinfo<s32_t> { typedef s32_t stype; typedef u32_t utype; typedef s64_t twice; enum { is_signed = 1, bitsize = 32 }; };
-  template <> struct tpinfo<u64_t> { typedef s64_t stype; typedef u64_t utype;                      enum { is_signed = 0, bitsize = 64 }; };
-  template <> struct tpinfo<s64_t> { typedef s64_t stype; typedef u64_t utype;                      enum { is_signed = 1, bitsize = 64 }; };
+  // TODO: should handle twice of 64-bit types
+  template <typename T>
+  struct Twice
+  {
+    Twice() {}
+    Twice( T const& val ) {}
+    template <typename X>
+    Twice operator << (X) { return Twice(); }
+    template <typename X>
+    Twice operator >> (X) { return Twice(); }
+    Twice operator | (Twice const& val) { return Twice(); }
+    
+    Twice& operator |= (Twice const& val) { return *this; }
+    operator T () { return T(); }
+  };
+  template <> struct tpinfo<u64_t> { typedef s64_t stype; typedef u64_t utype; typedef Twice<u64_t> twice; enum { is_signed = 0, bitsize = 64 }; };
+  template <> struct tpinfo<s64_t> { typedef s64_t stype; typedef u64_t utype; typedef Twice<s64_t> twice; enum { is_signed = 1, bitsize = 64 }; };
 
   template <unsigned OPSIZE> struct TypeFor {};
   template <> struct TypeFor<8> { typedef int8_t s; typedef uint8_t u; };

@@ -255,7 +255,7 @@ namespace intel {
 
     void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << '(' << DisasmR<ADDRSIZE>( rm ) << ')'; };
     
-    u32_t effective_address( Arch& arch ) const { return u32_t( arch.regread<ADDRSIZE>( rm ) ); }
+    u32_t effective_address( ARCH& arch ) const { return u32_t( arch.template regread<ADDRSIZE>( rm ) ); }
   };
   
   template <class ARCH>
@@ -271,7 +271,7 @@ namespace intel {
       sink << ')';
     }
 
-    u32_t effective_address( Arch& arch ) const { return arch.regread32( base ) + ((index != 4) ? (arch.regread32( index ) * u32_t( 1 << scale )) : u32_t( 0 )); }
+    u32_t effective_address( ARCH& arch ) const { return arch.regread32( base ) + ((index != 4) ? (arch.regread32( index ) * u32_t( 1 << scale )) : u32_t( 0 )); }
   };
   
   template <class ARCH>
@@ -281,7 +281,7 @@ namespace intel {
     
     void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << "0x" << std::hex << disp << std::dec; };
     
-    u32_t effective_address( Arch& arch ) const { return u32_t( disp ); };
+    u32_t effective_address( ARCH& arch ) const { return u32_t( disp ); };
   };
   
   template <class ARCH>
@@ -298,7 +298,7 @@ namespace intel {
       sink << ',' << (1 << scale) << ')';
     }
 
-    u32_t effective_address( Arch& arch ) const { return u32_t( disp ) + ((index != 4) ? (arch.regread32( index ) * u32_t( 1 << scale )) : u32_t( 0 )); }
+    u32_t effective_address( ARCH& arch ) const { return u32_t( disp ) + ((index != 4) ? (arch.regread32( index ) * u32_t( 1 << scale )) : u32_t( 0 )); }
   };
   
   template <class ARCH,typename DISP>
@@ -315,7 +315,7 @@ namespace intel {
       sink << ')';
     };
 
-    u32_t effective_address( Arch& arch ) const { return arch.regread32( base ) + u32_t( disp ) + ((index != 4) ? (arch.regread32( index ) * u32_t( 1 << scale )) : u32_t( 0 ) ); };
+    u32_t effective_address( ARCH& arch ) const { return arch.regread32( base ) + u32_t( disp ) + ((index != 4) ? (arch.regread32( index ) * u32_t( 1 << scale )) : u32_t( 0 ) ); };
   };
   
   template <class ARCH,typename DISP>
@@ -328,7 +328,7 @@ namespace intel {
       sink << DisasmMS( MOp<ARCH>::segment ) << (disp < 0 ? "-0x" : "0x") << std::hex << (disp < 0 ? -disp : disp) << std::dec << '(' << DisasmRd( rm ) << ')';
     };
 
-    u32_t effective_address( Arch& arch ) const { return arch.regread32( rm ) + u32_t( disp ); };
+    u32_t effective_address( ARCH& arch ) const { return arch.regread32( rm ) + u32_t( disp ); };
   };
   
   struct RM

@@ -393,10 +393,10 @@ struct MovdquVW : public Operation<ARCH>
 {
   MovdquVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   void disasm( std::ostream& sink ) const { sink << "movdqu " << DisasmWdq( rmop ) << ',' << DisasmRdq( gn ); }
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
-    arch.xmm_uwrite<64>( gn, 0,  arch.xmm_uread<64>( rmop, 0 ) );
-    arch.xmm_uwrite<64>( gn, 1,  arch.xmm_uread<64>( rmop, 1 ) );
+    arch.template xmm_uwrite<64>( gn, 0,  arch.template xmm_uread<64>( rmop, 0 ) );
+    arch.template xmm_uwrite<64>( gn, 1,  arch.template xmm_uread<64>( rmop, 1 ) );
   }
 };
 
@@ -405,10 +405,10 @@ struct MovdquWV : public Operation<ARCH>
 {
   MovdquWV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   void disasm( std::ostream& sink ) const { sink << "movdqu " << DisasmRdq( gn ) << ',' << DisasmWdq( rmop ); }
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
-    arch.xmm_uwrite<64>( rmop, 0,  arch.xmm_uread<64>( gn, 0 ) );
-    arch.xmm_uwrite<64>( rmop, 1,  arch.xmm_uread<64>( gn, 1 ) );
+    arch.template xmm_uwrite<64>( rmop, 0,  arch.template xmm_uread<64>( gn, 0 ) );
+    arch.template xmm_uwrite<64>( rmop, 1,  arch.template xmm_uread<64>( gn, 1 ) );
   }
 };
 
@@ -555,11 +555,11 @@ struct Movsd : public Operation<ARCH>
 {
   Movsd( OpBase<ARCH> const& opbase, MOp<ARCH> const* _dst, MOp<ARCH> const* _src ) : Operation<ARCH>( opbase ), dst( _dst ), src( _src ) {} RMOp<ARCH> dst; RMOp<ARCH> src;
   void disasm( std::ostream& sink ) const { sink << "movsd " << DisasmWdq( src ) << ',' << DisasmWdq( dst ); }
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
-    arch.xmm_uwrite<64>( dst, 0,  arch.xmm_uread<64>( src, 0 ) );
+    arch.template xmm_uwrite<64>( dst, 0,  arch.template xmm_uread<64>( src, 0 ) );
     if (not dst.is_memory_operand())
-      arch.xmm_uwrite<64>( dst, 1, 0 );
+      arch.template xmm_uwrite<64>( dst, 1, 0 );
   }
 };
 
@@ -856,16 +856,16 @@ struct PCmpEqVW : public Operation<ARCH>
   void disasm( std::ostream& sink ) const {
     sink << "pcmpeq" << ("bwdq"[SB<OPSIZE/8>::begin]) << ' ' << DisasmWdq( rmop ) << ',' << DisasmRdq( gn );
   }
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
     typedef typename TypeFor<OPSIZE>::u utype;
     u64_t const cmpout[2] = { u64_t(utype(~utype(0))), u64_t(utype(0)) };
     
     for (unsigned sub = 0; sub < 2; ++sub) {
-      u64_t cmp = arch.xmm_uread<64>( gn, sub ) ^ arch.xmm_uread<64>( rmop, sub ), res = 0;
+      u64_t cmp = arch.template xmm_uread<64>( gn, sub ) ^ arch.template xmm_uread<64>( rmop, sub ), res = 0;
       for (unsigned pos = 0; pos < 64; pos += OPSIZE)
         res |= (cmpout[bool(utype(cmp>>pos))]) << pos;
-      arch.xmm_uwrite<64>( gn, sub, res );
+      arch.template xmm_uwrite<64>( gn, sub, res );
     }
   }
 };
@@ -1149,15 +1149,15 @@ struct PMovMskBRV : public Operation<ARCH>
 {
   PMovMskBRV( OpBase<ARCH> const& opbase, uint8_t _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} uint8_t rm; uint8_t gn;
   void disasm( std::ostream& sink ) const { sink << "pmovmskb " << DisasmRdq( rm ) << ',' << DisasmRd( gn ); }
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
     u32_t res = 0;
     for (unsigned sub = 0; sub < 2; ++sub) {
-      u64_t op = arch.xmm_uread<64>( rm, sub );
+      u64_t op = arch.template xmm_uread<64>( rm, sub );
       for (unsigned byte = 0; byte < 8; ++byte)
         res |= (((op >> (8*byte+7))&1) << (8*sub+byte));
     }
-    arch.regwrite<32>( gn, res );
+    arch.template regwrite<32>( gn, res );
   }
 };
 
@@ -1637,10 +1637,10 @@ struct PXorVW : public Operation<ARCH>
 {
   PXorVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   void disasm( std::ostream& sink ) const { sink << "pxor " << DisasmWdq( rmop ) << ',' << DisasmRdq( gn ); }
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
-    arch.xmm_uwrite<64>( gn, 0,  arch.xmm_uread<64>( gn, 0 ) ^ arch.xmm_uread<64>( rmop, 0 ) );
-    arch.xmm_uwrite<64>( gn, 1,  arch.xmm_uread<64>( gn, 1 ) ^ arch.xmm_uread<64>( rmop, 1 ) );
+    arch.template xmm_uwrite<64>( gn, 0,  arch.template xmm_uread<64>( gn, 0 ) ^ arch.template xmm_uread<64>( rmop, 0 ) );
+    arch.template xmm_uwrite<64>( gn, 1,  arch.template xmm_uread<64>( gn, 1 ) ^ arch.template xmm_uread<64>( rmop, 1 ) );
   }
 };
 

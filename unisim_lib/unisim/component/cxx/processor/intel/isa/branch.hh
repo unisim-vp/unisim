@@ -11,10 +11,10 @@ struct NearCallJ : public Operation<ARCH>
     
   void disasm( std::ostream& sink ) const { sink << "call " << "0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); };
     
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
     if (OPSIZE != 32) throw 0;
-    arch.push<32>( arch.geteip() );
+    arch.template push<32>( arch.geteip() );
     arch.addeip( u32_t( offset ) );
   }
 };
@@ -26,11 +26,11 @@ struct NearCallE : public Operation<ARCH>
     
   void disasm( std::ostream& sink ) const { sink << "call *" << DisasmE( UI<OPSIZE>(), rmop ); }
     
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
     if (OPSIZE != 32) throw 0;
-    u32_t target = arch.rmread<32>( rmop );
-    arch.push<32>( arch.geteip() );
+    u32_t target = arch.template rmread<32>( rmop );
+    arch.template push<32>( arch.geteip() );
     arch.seteip( target );
   }
 };
@@ -96,7 +96,7 @@ struct JccJ : public Operation<ARCH>
     
   void disasm( std::ostream& sink ) const { sink << 'j' << DisasmCond( cond ) << " 0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); }
     
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
     if (OPSIZE != 32) throw 0;
     if (mkbool( eval_cond( arch, cond ) )) arch.addeip( u32_t( offset ) ); 
@@ -135,7 +135,7 @@ struct Loop : public Operation<ARCH>
     
   void disasm( std::ostream& sink ) const { sink << "loop" << (&"ne\0e\0\0"[MOD*3]) << " 0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); };
     
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
     // Decrement count register
     u32_t count = arch.regread32( 1 ) - u32_t( 1 );
@@ -143,9 +143,9 @@ struct Loop : public Operation<ARCH>
     // Stop if count is zero
     if (mkbool(count == u32_t(0))) return;
     // or ZF is set (loopne)
-    if ((MOD == 0) and (arch.flagread( ZF ) == bit_t( 1 ))) return;
+    if ((MOD == 0) and (arch.flagread( ARCH::ZF ) == bit_t( 1 ))) return;
     // or ZF is cleared (loope)
-    if ((MOD == 1) and (arch.flagread( ZF ) == bit_t( 0 ))) return;
+    if ((MOD == 1) and (arch.flagread( ARCH::ZF ) == bit_t( 0 ))) return;
     // else jump short
     arch.addeip( u32_t( offset ) );
   }
@@ -177,7 +177,7 @@ struct Jcxz : public Operation<ARCH>
     
   void disasm( std::ostream& sink ) const { sink << 'j' << (&"\0\0e\0\0\0r"[(ADDRSZ/16)-1]) << "cxz 0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); };
     
-  void execute( Arch& arch ) const { if (ADDRSZ != 32) throw 0; if (mkbool( arch.regread32( 1 ) == u32_t( 0 ) )) arch.addeip( u32_t( offset ) ); }
+  void execute( ARCH& arch ) const { if (ADDRSZ != 32) throw 0; if (mkbool( arch.regread32( 1 ) == u32_t( 0 ) )) arch.addeip( u32_t( offset ) ); }
 };
   
 template <class ARCH> struct DC<ARCH,JCXZ> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -204,7 +204,7 @@ struct JmpE : public Operation<ARCH>
     
   void disasm( std::ostream& sink ) const { sink << "jmp " << '*' << DisasmE( UI<OPSIZE>(), rmop ); }
      
-  void execute( Arch& arch ) const { if (OPSIZE != 32) throw 0; arch.seteip( arch.rmread<32>( rmop ) ); }
+  void execute( ARCH& arch ) const { if (OPSIZE != 32) throw 0; arch.seteip( arch.template rmread<32>( rmop ) ); }
 };
 
 template <class ARCH, unsigned OPSIZE>
@@ -214,7 +214,7 @@ struct JmpJ : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << "jmp 0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); }
      
-  void execute( Arch& arch ) const { if (OPSIZE != 32) throw 0; arch.addeip( u32_t( offset ) ); }
+  void execute( ARCH& arch ) const { if (OPSIZE != 32) throw 0; arch.addeip( u32_t( offset ) ); }
 };
   
 template <class ARCH, unsigned OPSIZE>
@@ -286,7 +286,7 @@ struct NearReturn : public Operation<ARCH>
     
   void disasm( std::ostream& sink ) const { sink << "ret"; }
 
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
     if (OPSIZE != 32) throw 0;
     u32_t src = arch.regread32( 4 );
@@ -302,7 +302,7 @@ struct NearParamReturn : public Operation<ARCH>
 
   void disasm( std::ostream& sink ) const { sink << "ret " << DisasmI( paramsize ); }
 
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
     if (OPSIZE != 32) throw 0;
     u32_t src = arch.regread32( 4 );
@@ -395,7 +395,7 @@ struct Interrupt : public Operation<ARCH>
 
   void disasm( std::ostream& sink ) const { sink << "int " << DisasmI( vector_number ); }
 
-  void execute( Arch& arch ) const { arch.interrupt( vector_number ); }
+  void execute( ARCH& arch ) const { arch.interrupt( vector_number ); }
 };
 
 template <class ARCH>
@@ -448,7 +448,7 @@ struct Leave : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << "leave"; }
   
-  void execute( Arch& arch ) const {
+  void execute( ARCH& arch ) const {
     /* TODO: STACKSIZE */
     if (OPSIZE != 32) throw 0;
     arch.regwrite32( 4, arch.regread32( 5 ) );
