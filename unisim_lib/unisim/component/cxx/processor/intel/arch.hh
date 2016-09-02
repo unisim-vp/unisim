@@ -247,15 +247,6 @@ namespace intel {
     }
     
   public:
-    u8_t                        memread8( unsigned int _seg, u32_t const& _addr )
-    { return memread<8>( _seg, _addr ); }
-    u16_t                       memread16( unsigned int _seg, u32_t const& _addr )
-    { return memread<16>( _seg, _addr ); }
-    u32_t                       memread32( unsigned int _seg, u32_t const& _addr )
-    { return memread<32>( _seg, _addr ); }
-    u64_t                       memread64( unsigned int _seg, u32_t const& _addr )
-    { return memread<64>( _seg, _addr ); }
-    
     f32_t                       fmemread32( unsigned int _seg, u32_t _addr )
     {
       union IEEE754_t { float as_f; uint32_t as_u; } word;
@@ -347,14 +338,6 @@ namespace intel {
       return f_type();
     }
 
-    void                        memwrite8( unsigned int _seg, u32_t _addr, u8_t _val )
-    { memwrite<8>( _seg, _addr, _val ); }
-    void                        memwrite16( unsigned int _seg, u32_t _addr, u16_t _val )
-    { memwrite<16>( _seg, _addr, _val ); }
-    void                        memwrite32( unsigned int _seg, u32_t _addr, u32_t _val )
-    { memwrite<32>( _seg, _addr, _val ); }
-    void                        memwrite64( unsigned int _seg, u32_t _addr, u64_t _val )
-    { memwrite<64>( _seg, _addr, _val ); }
     void                        fmemwrite32( unsigned int _seg, u32_t _addr, f32_t _val )
     {
       union IEEE754_t { float as_f; uint32_t as_u; } word;
@@ -676,6 +659,8 @@ namespace intel {
                     << " value: " << field_val << ".\n";
         }
     }
+    
+    u64_t tscread() { return m_instcount; }
     
     // void                        fpdump()
     // {

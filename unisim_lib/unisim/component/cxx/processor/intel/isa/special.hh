@@ -186,8 +186,9 @@ struct RdTSC : public Operation<ARCH>
   
   void execute( ARCH& arch ) const
   {
-    arch.template regwrite<32>( 0, u32_t( arch.m_instcount >> 0 ) );
-    arch.template regwrite<32>( 2, u32_t( arch.m_instcount >> 32 ) );
+    u64_t tsc = arch.tscread();
+    arch.template regwrite<32>( 0, u32_t( tsc >> 0 ) );
+    arch.template regwrite<32>( 2, u32_t( tsc >> 32 ) );
   }
 };
 

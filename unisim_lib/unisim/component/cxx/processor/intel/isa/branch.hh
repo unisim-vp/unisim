@@ -291,7 +291,7 @@ struct NearReturn : public Operation<ARCH>
     if (OPSIZE != 32) throw 0;
     u32_t src = arch.regread32( 4 );
     arch.regwrite32( 4, src + u32_t( 4 ) );
-    arch.seteip( arch.memread32( SS, src ) );
+    arch.seteip( arch.template memread<32>( SS, src ) );
   }
 };
   
@@ -307,7 +307,7 @@ struct NearParamReturn : public Operation<ARCH>
     if (OPSIZE != 32) throw 0;
     u32_t src = arch.regread32( 4 );
     arch.regwrite32( 4, src + u32_t( 4 + paramsize ) );
-    arch.seteip( arch.memread32( SS, src ) );
+    arch.seteip( arch.template memread<32>( SS, src ) );
   }
 };
   
@@ -454,7 +454,7 @@ struct Leave : public Operation<ARCH>
     arch.regwrite32( 4, arch.regread32( 5 ) );
     u32_t src = arch.regread32( 4 );
     arch.regwrite32( 4, src + u32_t( 4 ) );
-    arch.regwrite32( 5, arch.memread32( SS, src ) );
+    arch.regwrite32( 5, arch.template memread<32>( SS, src ) );
   }
 };
 
