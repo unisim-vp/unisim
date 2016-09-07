@@ -63,7 +63,7 @@ namespace intel {
       static unsigned const NUM_OPERATIONS_PER_PAGE = 0x1000;
       Page* next;
       uint32_t key;
-      Operation* operations[NUM_OPERATIONS_PER_PAGE];
+      Operation<Arch>* operations[NUM_OPERATIONS_PER_PAGE];
       uint8_t bytes[NUM_OPERATIONS_PER_PAGE+15];
       
       Page( Page* _next, uint32_t _key ) : next( _next ), key( _key ) { memset( operations, 0, sizeof (operations) ); }
@@ -84,11 +84,11 @@ namespace intel {
         delete hash_table[idx];
     }
     
-    Operation*  Get( Mode mode, uint32_t address, uint8_t* bytes )
+    Operation<Arch>*  Get( Mode mode, uint32_t address, uint8_t* bytes )
     {
       uint32_t offset;
       Page* page = GetPage( address, offset );
-      Operation* operation = page->operations[offset];
+      Operation<Arch>* operation = page->operations[offset];
       
       if (operation) {
         if ((operation->mode == mode) and (memcmp( &bytes[0], &page->bytes[offset], operation->length ) == 0))
@@ -133,9 +133,9 @@ namespace intel {
 
   struct Decoder
   {
-    Operation* Decode( Mode mode, uint32_t address, uint8_t* bytes )
+    Operation<Arch>* Decode( Mode mode, uint32_t address, uint8_t* bytes )
     {
-      if (Operation* op = getoperation( CodeBase( mode, address, bytes ) ))
+      if (Operation<Arch>* op = getoperation( InputCode<Arch>( mode, bytes, Arch::OpHeader( address ) ) ))
         return op;
       
       std::cerr << "No decoding for " << DisasmBytes( bytes, 16 ) << " @" << std::hex << address << std::endl;
@@ -145,7 +145,7 @@ namespace intel {
   };
   
 
-  Operation*
+  Operation<Arch>*
   Arch::fetch()
   {
     static ICache<Decoder> icache;
@@ -154,7 +154,7 @@ namespace intel {
     lla_memcpy( decbuf, eip, sizeof (decbuf) );
     Mode mode( 0, 1, 1 );
     
-    Operation* operation = icache.Get( mode, eip, &decbuf[0] );
+    Operation<Arch>* operation = icache.Get( mode, eip, &decbuf[0] );
     
     m_EIP = eip + operation->length;
     

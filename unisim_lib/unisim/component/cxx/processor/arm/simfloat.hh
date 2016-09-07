@@ -270,6 +270,10 @@ namespace simfloat {
       
     WorkFP input_value( xconv, xflags );
     WorkFP series_value( input_value );
+    // Initial guess by halving exponent
+    series_value.querySBasicExponent() >>= 1;
+    series_value.querySBasicExponent().plusAssign(series_value.getZeroExponent() >>= 1);
+    
     WorkFP half;
     half.querySBasicExponent() = half.getMinusOneExponent();
     
@@ -277,7 +281,10 @@ namespace simfloat {
       {
         WorkFP next( input_value );
         xflags.clear();
-        xflags.setRoundingMode( arm::RoundTowardsZero );
+        // We need to use Round Towards Zero (default would be round
+        // to nearest) because we need to have exact values of
+        // mantissa bits rather than good quality approximation
+        xflags.setRoundingMode( arm::RoundTowardsZero ); 
         next.divAssign( series_value, xflags );
         next.plusAssign( series_value, xflags );
         next.multAssign( half, xflags );
@@ -299,6 +306,7 @@ namespace simfloat {
         }
         unsigned lm0 = lm[0], nm0 = nm[0], diff = lm0 > nm0 ? (lm0 - nm0) : (nm0 - lm0);
         if (diff >= 4) { ttl = 3; continue; }
+        if (diff == 0) break;
         ttl -= 1;
       }
     

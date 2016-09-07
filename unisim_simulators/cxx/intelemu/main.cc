@@ -120,6 +120,8 @@ struct Arch
 
 {
   typedef unisim::component::cxx::processor::intel::Arch::f64_t f64_t;
+  typedef unisim::component::cxx::processor::intel::Arch BaseArch;
+  typedef unisim::component::cxx::processor::intel::Operation<BaseArch> Operation;
   
   Arch()
     : unisim::component::cxx::processor::intel::Arch()
@@ -305,12 +307,11 @@ main( int argc, char *argv[] )
   // Loading image
   std::cerr << "*** Loading elf image: " << simargs[0] << " ***" << std::endl;
   
-  typedef unisim::component::cxx::processor::intel::Operation Operation;
   std::cerr << "\n*** Run ***" << std::endl;
   
   while (not linux32.exited)
     {
-      Operation* op = cpu.fetch();
+      Arch::Operation* op = cpu.fetch();
       // op->disasm( std::cerr );
       // std::cerr << std::endl;
       asm volatile ("operation_execute:");

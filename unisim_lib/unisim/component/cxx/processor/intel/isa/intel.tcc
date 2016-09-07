@@ -38,10 +38,11 @@
 #include <unisim/component/cxx/processor/intel/isa/intel.hh>
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/execute.hh>
-#include <unisim/component/cxx/processor/intel/arch.hh>
 #include <unisim/component/cxx/processor/intel/math.hh>
 #include <unisim/component/cxx/processor/intel/types.hh>
 #include <unisim/component/cxx/processor/intel/tmp.hh>
+
+#include <iostream>
 
 namespace unisim {
 namespace component {
@@ -62,8 +63,17 @@ namespace intel {
                      MOVS, STOS, CMPS, SCAS, LODS, OUTS, INS, CPUID, RDTSC, 
                      PXOR, MOVDQU, PCMPEQ, PMOVMSKB, VMOVSD,
                      operation_count };
+
+  template <class ARCH>
+  void
+  Operation<ARCH>::execute( ARCH& arch ) const
+  {
+    std::cerr << "error: no execute method for `";
+    this->disasm( std::cerr );
+    std::cerr << "' in " << (typeid(*this).name()) << "\n";
+    throw 0;
+  };
   
-  template <operation_t operation> Operation* decode( CodeBase const& cb ) { return 0; }
   
   template <typename INT>
   struct ImmValue { int index; INT value; ImmValue( int idx ) : index( idx ), value() {} };
@@ -72,42 +82,6 @@ namespace intel {
 
   struct GReg { uint8_t idx; GReg() : idx() {} };
   struct EReg { uint8_t idx; EReg() : idx() {} };
-  
-  template <typename PATTERN>
-  struct Match
-  {
-    Match( CodeBase const& _cb, PATTERN const& _pattern, bool _good ) : cb( _cb ), pattern( _pattern ), good( _good ) {} CodeBase const& cb; PATTERN pattern; bool good;
-    
-    operator bool () const { return good; }
-    
-    // TODO: following functions should be const
-    
-    OpBase opbase()
-    {
-      struct GetLength {} getlength;
-      unsigned length = (pattern.get( getlength, &cb.bytes[cb.opc_idx] ) - &cb.bytes[0]);
-      return OpBase( cb.address, cb.mode, length );
-    }
-    
-    template <typename INT>
-    INT imm( unsigned idx = 0 ) { ImmValue<INT> res( idx ); pattern.get( res, &cb.bytes[cb.opc_idx] ); return res.value; }
-
-    MOp* rmop() { MOp* res = 0; pattern.get( res, &cb.bytes[cb.opc_idx] ); return res; }
-    
-    uint8_t vbval( int idx = 0 ) { VBValue res( idx ); pattern.get( res, &cb.bytes[cb.opc_idx] ); return res.value; }
-    
-    uint8_t greg() { GReg res; pattern.get( res, &cb.bytes[cb.opc_idx] ); return res.idx; }
-    
-    uint8_t ereg() { EReg res; pattern.get( res, &cb.bytes[cb.opc_idx] ); return res.idx; }
-  };
-  
-  template <typename PATTERN>
-  Match<PATTERN> match( CodeBase const& cb, PATTERN const& _pattern )
-  {
-    PATTERN pattern( _pattern );
-    bool good = bool( pattern.get( cb, &cb.bytes[cb.opc_idx] ) );
-    return Match<PATTERN>( cb, pattern, good );
-  }
   
   template <typename LEFT, typename RIGHT>
   struct AndSeq
@@ -122,11 +96,11 @@ namespace intel {
     AndSeq( LEFT const& _left, RIGHT const& _right ) : left( _left ), right( _right ) {}
     
     template <typename PROPERTY>
-    uint8_t const* get( PROPERTY& out, uint8_t const* code )
+    uint8_t const* get( PROPERTY& out, uint8_t const* bytes )
     {
-      if ((code = left.get( out, code )))
-        code = right.get( out, code );
-      return code;
+      if ((bytes = left.get( out, bytes )))
+        bytes = right.get( out, bytes );
+      return bytes;
     }
   };
 
@@ -137,9 +111,9 @@ namespace intel {
     template <typename RHS>
     AndSeq<this_type, RHS> operator & ( RHS const& rhs ) { return AndSeq<this_type, RHS>( *this, rhs ); }
     
-    template <typename PROPERTY> uint8_t const* get( PROPERTY& value, uint8_t const* code ) { return code; }
+    template <typename PROPERTY> uint8_t const* get( PROPERTY& value, uint8_t const* bytes ) { return bytes; }
     
-    uint8_t const* get( CodeBase const& cb, uint8_t const* code ) { return (cb.opsize() != SIZE) ? 0 : code; }
+    uint8_t const* get( CodeBase const& cb, uint8_t const* bytes ) { return (cb.opsize() != SIZE) ? 0 : bytes; }
   };
   
   template <uint8_t REP>
@@ -149,9 +123,9 @@ namespace intel {
     template <typename RHS>
     AndSeq<this_type, RHS> operator & ( RHS const& rhs ) { return AndSeq<this_type, RHS>( *this, rhs ); }
     
-    template <typename PROPERTY> uint8_t const* get( PROPERTY& value, uint8_t const* code ) { return code; }
+    template <typename PROPERTY> uint8_t const* get( PROPERTY& value, uint8_t const* bytes ) { return bytes; }
     
-    uint8_t const* get( CodeBase const& cb, uint8_t const* code ) { return (cb.rep != REP) ? 0 : code; }
+    uint8_t const* get( CodeBase const& cb, uint8_t const* bytes ) { return (cb.rep != REP) ? 0 : bytes; }
   };
   
   typedef RP<0> RP_;
@@ -165,9 +139,9 @@ namespace intel {
     template <typename RHS>
     AndSeq<this_type, RHS> operator & ( RHS const& rhs ) { return AndSeq<this_type, RHS>( *this, rhs ); }
 
-    template <typename PROPERTY> uint8_t const* get( PROPERTY& value, uint8_t const* code ) { return code; }
+    template <typename PROPERTY> uint8_t const* get( PROPERTY& value, uint8_t const* bytes ) { return bytes; }
 
-    uint8_t const* get( CodeBase const& cb, uint8_t const* code ) { return (cb.opsz_66 != _66) ? 0 : code; }
+    uint8_t const* get( CodeBase const& cb, uint8_t const* bytes ) { return (cb.opsz_66 != _66) ? 0 : bytes; }
   };
   
   typedef OP<0> OP_;
@@ -180,9 +154,9 @@ namespace intel {
     template <typename RHS>
     AndSeq<this_type, RHS> operator & ( RHS const& rhs ) { return AndSeq<this_type, RHS>( *this, rhs ); }
     
-    template <typename PROPERTY> uint8_t const* get( PROPERTY& value, uint8_t const* code ) { return code; }
+    template <typename PROPERTY> uint8_t const* get( PROPERTY& value, uint8_t const* bytes ) { return bytes; }
     
-    uint8_t const* get( CodeBase const& cb, uint8_t const* code ) { return (cb.addrsize() != SIZE) ? 0 : code; }
+    uint8_t const* get( CodeBase const& cb, uint8_t const* bytes ) { return (cb.addrsize() != SIZE) ? 0 : bytes; }
   };
   
   template <typename intT, unsigned BYTECOUNT>
@@ -205,153 +179,156 @@ namespace intel {
     template <typename RHS>
     AndSeq<this_type, RHS> operator & ( RHS const& rhs ) { return AndSeq<this_type, RHS>( *this, rhs ); }
     
-    template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* code ) { return code + (SIZE/8); }
+    template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* bytes ) { return bytes + (SIZE/8); }
     
     template <typename INT>
-    uint8_t const* get( ImmValue<INT>& out, uint8_t const* code )
+    uint8_t const* get( ImmValue<INT>& out, uint8_t const* bytes )
     {
       if (out.index == 0)
         {
           out.index = -1;
-          out.value = INT( getimm<typename CTypeFor<SIZE>::s,SIZE/8>( code ) );
+          out.value = INT( getimm<typename CTypeFor<SIZE>::s,SIZE/8>( bytes ) );
           return 0;
         }
       if (out.index > 0) 
         out.index -= 1;
-      return code + (SIZE/8);
+      return bytes + (SIZE/8);
     }
   };
   
-  template <uint8_t CODE,  uint8_t MASK>
+  template <uint8_t BYTE,  uint8_t MASK>
   struct VarByte
   {
-    typedef VarByte<CODE,MASK> this_type;
+    typedef VarByte<BYTE,MASK> this_type;
     template <typename RHS>
     AndSeq<this_type, RHS> operator & ( RHS const& rhs ) { return AndSeq<this_type, RHS>( *this, rhs ); }
     
-    template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* code ) { return code + 1; }
+    template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* bytes ) { return bytes + 1; }
     
-    uint8_t const* get( VBValue& out, uint8_t const* code )
+    uint8_t const* get( VBValue& out, uint8_t const* bytes )
     {
       if (out.index == 0)
         {
           out.index = -1;
-          out.value = (*code) & ~MASK;
+          out.value = (*bytes) & ~MASK;
           return 0;
         }
       if (out.index > 0) 
         out.index -= 1;
-      return code + 1;
+      return bytes + 1;
     }
     
-    uint8_t const* get( CodeBase const& out, uint8_t const* code ) { return ((*code & MASK) == CODE) ? code + 1 : 0; }
+    uint8_t const* get( CodeBase const& out, uint8_t const* bytes ) { return ((*bytes & MASK) == BYTE) ? bytes + 1 : 0; }
   };
   
-  template <unsigned BYTES>
+  template <unsigned LENGTH>
   struct OpCode
   {
-    typedef OpCode<BYTES> this_type;
+    typedef OpCode<LENGTH> this_type;
     template <typename RHS>
     AndSeq<this_type, RHS> operator & ( RHS const& rhs ) { return AndSeq<this_type, RHS>( *this, rhs ); }
     
-    uint8_t bytes[BYTES];
+    uint8_t ref[LENGTH];
     uint8_t post;
-    OpCode( uint8_t const* _bytes, uint8_t _post ) : post( _post ) { for (unsigned idx = 0; idx < BYTES; ++idx ) bytes[idx] = _bytes[idx]; }
+    OpCode( uint8_t const* _ref, uint8_t _post ) : post( _post ) { for (unsigned idx = 0; idx < LENGTH; ++idx ) ref[idx] = _ref[idx]; }
     
-    template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* code ) { return code + BYTES; }
+    template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* bytes ) { return bytes + LENGTH; }
     
     uint8_t const*
-    get( CodeBase const& cb, uint8_t const* code )
+    get( CodeBase const& cb, uint8_t const* bytes )
     {
-      for (unsigned idx = 0; idx < BYTES; ++idx)
-        if (bytes[idx] != code[idx]) return 0;
-      if ((post != 0xff) and (((code[BYTES] >> 3) & 7) != post)) return 0;
-      return code + BYTES;
+      for (unsigned idx = 0; idx < LENGTH; ++idx)
+        if (ref[idx] != bytes[idx]) return 0;
+      if ((post != 0xff) and (((bytes[LENGTH] >> 3) & 7) != post)) return 0;
+      return bytes + LENGTH;
     }
   };
   
-  template <unsigned BYTES>
-  OpCode<BYTES-1> opcode( char const (&bytes)[BYTES], uint8_t post = 0xff )
-  { return OpCode<BYTES-1>( reinterpret_cast<uint8_t const*>( &bytes[0] ), post ); }
+  template <unsigned LENGTH>
+  OpCode<LENGTH-1> opcode( char const (&ref)[LENGTH], uint8_t post = 0xff )
+  { return OpCode<LENGTH-1>( reinterpret_cast<uint8_t const*>( &ref[0] ), post ); }
   
-  template <unsigned ADDRSIZE>
-  struct ModBase : public MOp
+  template <class ARCH,unsigned ADDRSIZE>
+  struct ModBase : public MOp<ARCH>
   {
-    ModBase( uint8_t _seg, uint8_t _rm ) : MOp( _seg ), rm( _rm ) {} uint8_t rm;
+    ModBase( uint8_t _seg, uint8_t _rm ) : MOp<ARCH>( _seg ), rm( _rm ) {} uint8_t rm;
 
-    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( segment ) << '(' << DisasmR<ADDRSIZE>( rm ) << ')'; };
+    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << '(' << DisasmR<ADDRSIZE>( rm ) << ')'; };
     
-    u32_t effective_address( Arch& arch ) const { return u32_t( arch.regread<ADDRSIZE>( rm ) ); }
+    u32_t effective_address( ARCH& arch ) const { return u32_t( arch.template regread<ADDRSIZE>( rm ) ); }
   };
   
-  struct Mod32Sib : public MOp
+  template <class ARCH>
+  struct Mod32Sib : public MOp<ARCH>
   {
-    Mod32Sib( uint8_t _seg, uint8_t _scale, uint8_t _index, uint8_t _base ) : MOp( _seg ), scale( _scale ), index( _index ), base( _base ) {} uint8_t scale, index, base;
+    Mod32Sib( uint8_t _seg, uint8_t _scale, uint8_t _index, uint8_t _base ) : MOp<ARCH>( _seg ), scale( _scale ), index( _index ), base( _base ) {} uint8_t scale, index, base;
     
     void disasm_memory_operand( std::ostream& sink ) const
     {
-      sink << DisasmMS( segment ) << '(' << DisasmRd( base );
+      sink << DisasmMS( MOp<ARCH>::segment ) << '(' << DisasmRd( base );
       if                       (index != 4) sink << ',' << DisasmRd( index ) << ',' << (1 << scale);
       else if ((base != 4) or (scale != 0)) sink << ',' << "%eiz" << ',' << (1 << scale);
       sink << ')';
     }
 
-    u32_t effective_address( Arch& arch ) const { return arch.regread32( base ) + ((index != 4) ? (arch.regread32( index ) * u32_t( 1 << scale )) : u32_t( 0 )); }
+    u32_t effective_address( ARCH& arch ) const { return arch.regread32( base ) + ((index != 4) ? (arch.regread32( index ) * u32_t( 1 << scale )) : u32_t( 0 )); }
   };
   
-  struct Mod32Disp : public MOp
+  template <class ARCH>
+  struct Mod32Disp : public MOp<ARCH>
   {
-    Mod32Disp( uint8_t _seg, int32_t _disp ) : MOp( _seg ), disp( _disp ) {} int32_t disp;
+    Mod32Disp( uint8_t _seg, int32_t _disp ) : MOp<ARCH>( _seg ), disp( _disp ) {} int32_t disp;
     
-    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( segment ) << "0x" << std::hex << disp << std::dec; };
+    void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << "0x" << std::hex << disp << std::dec; };
     
-    u32_t effective_address( Arch& arch ) const { return u32_t( disp ); };
+    u32_t effective_address( ARCH& arch ) const { return u32_t( disp ); };
   };
   
-  struct Mod32SiDisp : public MOp
+  template <class ARCH>
+  struct Mod32SiDisp : public MOp<ARCH>
   {
-    Mod32SiDisp( uint8_t _seg, uint8_t _scale, uint8_t _index, int32_t _disp ) : MOp( _seg ), scale( _scale ), index( _index ), disp( _disp ) {}
+    Mod32SiDisp( uint8_t _seg, uint8_t _scale, uint8_t _index, int32_t _disp ) : MOp<ARCH>( _seg ), scale( _scale ), index( _index ), disp( _disp ) {}
     uint8_t scale, index; int32_t disp;
     
     void disasm_memory_operand( std::ostream& sink ) const
     {
-      sink << DisasmMS( segment ) << (disp < 0 ? "-0x" : "0x") << std::hex << (disp < 0 ? -disp : disp) << "(,";
+      sink << DisasmMS( MOp<ARCH>::segment ) << (disp < 0 ? "-0x" : "0x") << std::hex << (disp < 0 ? -disp : disp) << "(,";
       if (index != 4) sink << DisasmRd( index );
       else            sink << "%eiz";
       sink << ',' << (1 << scale) << ')';
     }
 
-    u32_t effective_address( Arch& arch ) const { return u32_t( disp ) + ((index != 4) ? (arch.regread32( index ) * u32_t( 1 << scale )) : u32_t( 0 )); }
+    u32_t effective_address( ARCH& arch ) const { return u32_t( disp ) + ((index != 4) ? (arch.regread32( index ) * u32_t( 1 << scale )) : u32_t( 0 )); }
   };
   
-  template <typename DISP>
-  struct Mod32SibDisp : public MOp
+  template <class ARCH,typename DISP>
+  struct Mod32SibDisp : public MOp<ARCH>
   {
-    Mod32SibDisp( uint8_t _seg, uint8_t _scale, uint8_t _index, uint8_t _base, DISP _disp ) : MOp( _seg ), disp( _disp ), scale( _scale ), index( _index ), base( _base ) {}
+    Mod32SibDisp( uint8_t _seg, uint8_t _scale, uint8_t _index, uint8_t _base, DISP _disp ) : MOp<ARCH>( _seg ), disp( _disp ), scale( _scale ), index( _index ), base( _base ) {}
     DISP disp; uint8_t scale, index, base;
     
     void disasm_memory_operand( std::ostream& sink ) const
     {
-      sink << DisasmMS( segment ) << (disp < 0 ? "-0x" : "0x") << std::hex << (disp < 0 ? -disp : disp) << '(' << DisasmRd( base );
+      sink << DisasmMS( MOp<ARCH>::segment ) << (disp < 0 ? "-0x" : "0x") << std::hex << (disp < 0 ? -disp : disp) << '(' << DisasmRd( base );
       if (index != 4) sink << ',' << DisasmRd( index ) << ',' << (1 << scale);
       else if ((base != 4) or (scale != 0)) sink << ',' << "%eiz" << ',' << (1 << scale);
       sink << ')';
     };
 
-    u32_t effective_address( Arch& arch ) const { return arch.regread32( base ) + u32_t( disp ) + ((index != 4) ? (arch.regread32( index ) * u32_t( 1 << scale )) : u32_t( 0 ) ); };
+    u32_t effective_address( ARCH& arch ) const { return arch.regread32( base ) + u32_t( disp ) + ((index != 4) ? (arch.regread32( index ) * u32_t( 1 << scale )) : u32_t( 0 ) ); };
   };
   
-  template <typename DISP>
-  struct Mod32BaseDisp : public MOp
+  template <class ARCH,typename DISP>
+  struct Mod32BaseDisp : public MOp<ARCH>
   {
-    Mod32BaseDisp( uint8_t _seg, uint8_t _rm, DISP _disp ) : MOp( _seg ), rm( _rm ), disp( _disp ) {} uint8_t rm; DISP disp;
+    Mod32BaseDisp( uint8_t _seg, uint8_t _rm, DISP _disp ) : MOp<ARCH>( _seg ), rm( _rm ), disp( _disp ) {} uint8_t rm; DISP disp;
     
     void disasm_memory_operand( std::ostream& sink ) const
     {
-      sink << DisasmMS( segment ) << (disp < 0 ? "-0x" : "0x") << std::hex << (disp < 0 ? -disp : disp) << std::dec << '(' << DisasmRd( rm ) << ')';
+      sink << DisasmMS( MOp<ARCH>::segment ) << (disp < 0 ? "-0x" : "0x") << std::hex << (disp < 0 ? -disp : disp) << std::dec << '(' << DisasmRd( rm ) << ')';
     };
 
-    u32_t effective_address( Arch& arch ) const { return arch.regread32( rm ) + u32_t( disp ); };
+    u32_t effective_address( ARCH& arch ) const { return arch.regread32( rm ) + u32_t( disp ); };
   };
   
   struct RM
@@ -382,63 +359,85 @@ namespace intel {
     uint8_t index : 3;
     uint8_t base  : 3;
     
-    template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* code ) { return code + len; }
+    RM()
+      : type(), len(), seg()
+      , mod(), gn(), rm()
+      , scale(), index(), base()
+    {}
     
-    uint8_t const* get( CodeBase const& cb, uint8_t const* code )
+    template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* bytes ) { return bytes + len; }
+    
+    uint8_t const* get( CodeBase const& cb, uint8_t const* bytes )
     {
+      if (cb.addrsize() != 32)
+        throw 0; // Not implemented
+
       seg = cb.segment;
-      mod = (*code >> 6) & 3;
-      gn =  (*code >> 3) & 7;
-      rm =  (*code >> 0) & 7;
-      code += 1;
+      mod = (*bytes >> 6) & 3;
+      gn =  (*bytes >> 3) & 7;
+      rm =  (*bytes >> 0) & 7;
+      bytes += 1;
       
-      if (mod == 3) { type = mod_reg; len = 1; return code; }
+      if (mod == 3) { type = mod_reg; len = 1; return bytes; }
       
       if (rm == 4) {
-        scale = (*code >> 6) & 3;
-        index = (*code >> 3) & 7;
-        base =  (*code >> 0) & 7;
-        code += 1;
-        if (mod == 2) { type = mod32_sib_addr2; len = 6; return code + 4; }
-        if (mod == 1) { type = mod32_sib_addr1; len = 3; return code + 1; }
+        scale = (*bytes >> 6) & 3;
+        index = (*bytes >> 3) & 7;
+        base =  (*bytes >> 0) & 7;
+        bytes += 1;
+        if (mod == 2) { type = mod32_sib_addr2; len = 6; return bytes + 4; }
+        if (mod == 1) { type = mod32_sib_addr1; len = 3; return bytes + 1; }
         /* mod == 0*/
-        if (base == 5) { type = mod32_sib_disp; len = 6; return code + 4; }
+        if (base == 5) { type = mod32_sib_disp; len = 6; return bytes + 4; }
         type = mod32_sib_addr0; len = 2;
-        return code;
+        return bytes;
       }
       
-      if (mod == 1) { type = mod32_addr1; len = 2; return code + 1; }
-      if (mod == 2) { type = mod32_addr2; len = 5; return code + 4; }
+      if (mod == 1) { type = mod32_addr1; len = 2; return bytes + 1; }
+      if (mod == 2) { type = mod32_addr2; len = 5; return bytes + 4; }
       /* mod == 0 */
-      if (rm == 5) { type = mod32_disp; len = 5; return code + 4; };
+      if (rm == 5) { type = mod32_disp; len = 5; return bytes + 4; };
       type = mod32_addr0; len = 1;
-      return code;
+      return bytes;
     }
     
-    static MOp* MkReg( unsigned reg ) { return (MOp*)( uintptr_t( reg ) ); }
-    
-    uint8_t const* get( MOp*& out, uint8_t const* code )
+    struct Ref
     {
-      switch (type) {
-      case mod32_addr0: out = new ModBase<32>( seg, rm ); return 0;
-      case mod32_sib_addr0: out = new Mod32Sib( seg, scale, index, base ); return 0;
-      case mod32_sib_disp: out = new Mod32SiDisp( seg, scale, index, getimm<int32_t,4>( &code[2] ) ); return 0;
-      case mod32_disp: out = new Mod32Disp( seg, getimm<int32_t,4>( &code[1] ) ); return 0;
-      case mod32_addr1: out = new Mod32BaseDisp<int8_t>( seg, rm, getimm<int8_t,1>( &code[1] ) ); return 0;
-      case mod32_sib_addr1: out = new Mod32SibDisp<int8_t>( seg, scale, index, base, getimm<int8_t,1>( &code[2] ) ); return 0;
-      case mod32_addr2: out = new Mod32BaseDisp<int32_t>( seg, rm, getimm<int32_t,4>( &code[1] ) ); return 0;
-      case mod32_sib_addr2: out = new Mod32SibDisp<int32_t>( seg, scale, index, base, getimm<int32_t,4>( &code[2] ) ); return 0;
-      case mod_reg: out = MkReg( rm ); return 0;
-      }
-      out = 0; return 0;
-    }
+      Ref(RM& _code) : code(_code), bytes() {}
+      
+      RM&            code;
+      uint8_t const* bytes;
+    };
     
-    uint8_t const* get( GReg& gr, uint8_t const* code ) { gr.idx = gn; return 0; }
+    uint8_t const* get( Ref& out, uint8_t const* bytes ) { out.code = *this; out.bytes = bytes; return 0; }
     
-    uint8_t const* get( EReg& er, uint8_t const* code ) { if (type != mod_reg) throw 0; er.idx = rm; return 0; }
+    uint8_t const* get( GReg& gr, uint8_t const* bytes ) { gr.idx = gn; return 0; }
+    
+    uint8_t const* get( EReg& er, uint8_t const* bytes ) { if (type != mod_reg) throw 0; er.idx = rm; return 0; }
   };
   
+  template <class ARCH>
+  MOp<ARCH>* make_rop( unsigned reg )  { return (MOp<ARCH>*)( uintptr_t( reg ) ); }
   
+  template <class ARCH>
+  MOp<ARCH>*
+  get_rmop( RM const& code, uint8_t const* bytes )
+  {
+    switch (code.type) {
+    case RM::mod32_addr0: return new ModBase<ARCH,32>( code.seg, code.rm ); return 0;
+    case RM::mod32_sib_addr0: return new Mod32Sib<ARCH>( code.seg, code.scale, code.index, code.base ); return 0;
+    case RM::mod32_sib_disp: return new Mod32SiDisp<ARCH>( code.seg, code.scale, code.index, getimm<int32_t,4>( &bytes[2] ) ); return 0;
+    case RM::mod32_disp: return new Mod32Disp<ARCH>( code.seg, getimm<int32_t,4>( &bytes[1] ) ); return 0;
+    case RM::mod32_addr1: return new Mod32BaseDisp<ARCH,int8_t>( code.seg, code.rm, getimm<int8_t,1>( &bytes[1] ) ); return 0;
+    case RM::mod32_sib_addr1: return new Mod32SibDisp<ARCH,int8_t>( code.seg, code.scale, code.index, code.base, getimm<int8_t,1>( &bytes[2] ) ); return 0;
+    case RM::mod32_addr2: return new Mod32BaseDisp<ARCH,int32_t>( code.seg, code.rm, getimm<int32_t,4>( &bytes[1] ) ); return 0;
+    case RM::mod32_sib_addr2: return new Mod32SibDisp<ARCH,int32_t>( code.seg, code.scale, code.index, code.base, getimm<int32_t,4>( &bytes[2] ) ); return 0;
+    case RM::mod_reg: return make_rop<ARCH>( code.rm ); return 0;
+    }
+    throw 0;
+    return 0;
+  }
+
   struct Moffs
   {
     typedef Moffs this_type;
@@ -449,19 +448,22 @@ namespace intel {
     
     Moffs() : length() {}
     
-    template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* code ) { return code + length; }
+    template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* bytes ) { return bytes + length; }
     
-    uint8_t const* get( CodeBase const& cb, uint8_t const* code )
+    uint8_t const* get( CodeBase const& cb, uint8_t const* bytes )
     {
       length = cb.addrsize() / 8;
       if (length != 4) throw 0;
       segment = cb.segment;
-      return code + length;
+      return bytes + length;
     }
     
-    uint8_t const* get( MOp*& out, uint8_t const* code )
+    uint8_t const* get( RM::Ref& out, uint8_t const* bytes )
     {
-      out = new Mod32Disp( segment, getimm<int32_t,4>( &code[0] ) ); return 0;
+      out.code = RM();
+      out.code.type = RM::mod32_disp;
+      out.code.seg = segment;
+      out.bytes = &bytes[-1];
       return 0;
     }
   };
@@ -475,18 +477,66 @@ namespace intel {
     
     RM memRM;
 
-    template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* code ) { return memRM.get( out, code ); }
-    uint8_t const* get( CodeBase const& cb, uint8_t const* code )
+    template <typename PROPERTY> uint8_t const* get( PROPERTY& out, uint8_t const* bytes ) { return memRM.get( out, bytes ); }
+    uint8_t const* get( CodeBase const& cb, uint8_t const* bytes )
     {
-      code = memRM.get( cb, code );
-      if (code and ((memRM.type == RM::mod_reg) xor (REGONLY))) return 0;
-      return code;
+      bytes = memRM.get( cb, bytes );
+      if (bytes and ((memRM.type == RM::mod_reg) xor (REGONLY))) return 0;
+      return bytes;
     }
   };
   
   typedef RM_RegOrMem<true>  RM_reg;
   typedef RM_RegOrMem<false> RM_mem;
     
+  template <class ARCH, typename PATTERN>
+  struct Match
+  {
+    Match( InputCode<ARCH> const& _ic, PATTERN const& _pattern, bool _good )
+      : ic( _ic ), pattern( _pattern ), good( _good ) {}
+    
+    operator bool () const { return good; }
+    
+    // TODO: following functions should be const
+    
+    OpBase<ARCH> opbase()
+    {
+      struct GetLength {} getlength;
+      unsigned length = (pattern.get( getlength, &ic.bytes[ic.opc_idx] ) - &ic.bytes[0]);
+      return OpBase<ARCH>( ic.header, ic.mode, length );
+    }
+    
+    template <typename INT>
+    INT imm( unsigned idx = 0 ) { ImmValue<INT> res( idx ); pattern.get( res, &ic.bytes[ic.opc_idx] ); return res.value; }
+    
+    template <typename INT>
+    int32_t i( INT it, unsigned idx = 0 ) { ImmValue<int32_t> res( idx ); pattern.get( res, &ic.bytes[ic.opc_idx] ); return res.value; }
+    
+    MOp<ARCH>* rmop() { RM code; RM::Ref ref(code); pattern.get( ref, &ic.bytes[ic.opc_idx] ); return get_rmop<ARCH>( code, ref.bytes ); }
+    
+    uint8_t vbval( int idx = 0 ) { VBValue res( idx ); pattern.get( res, &ic.bytes[ic.opc_idx] ); return res.value; }
+    
+    uint8_t greg() { GReg res; pattern.get( res, &ic.bytes[ic.opc_idx] ); return res.idx; }
+    
+    uint8_t ereg() { EReg res; pattern.get( res, &ic.bytes[ic.opc_idx] ); return res.idx; }
+    
+    InputCode<ARCH> const& ic;
+    PATTERN pattern;
+    bool good;
+  };
+  
+  template <class ARCH, typename PATTERN>
+  Match<ARCH,PATTERN> match( InputCode<ARCH> const& ic, PATTERN const& _pattern )
+  {
+    PATTERN pattern( _pattern );
+    bool good = bool( pattern.get( static_cast<CodeBase const&>( ic ), &ic.bytes[ic.opc_idx] ) );
+    return Match<ARCH,PATTERN>( ic, pattern, good );
+  }
+  
+  // Empty template for decoding tables
+  template <class ARCH, operation_t IDX> struct DC {};
+  
+  // Decoding tables and behavioral description
 #include <unisim/component/cxx/processor/intel/isa/branch.hh>
 #include <unisim/component/cxx/processor/intel/isa/integer.hh>
 #include <unisim/component/cxx/processor/intel/isa/floatingpoint.hh>
@@ -494,21 +544,33 @@ namespace intel {
 #include <unisim/component/cxx/processor/intel/isa/string.hh>
 #include <unisim/component/cxx/processor/intel/isa/special.hh>
 #include <unisim/component/cxx/processor/intel/isa/simd.hh>
-
-  template <unsigned COUNT>
-  Operation* decode_all( CodeBase const& cb )
-  {
-    Operation* op = decode<operation_t(COUNT-1)>( cb );
-    return op ? op : decode_all<operation_t(COUNT-1)>( cb );
-  }
   
-  template <>
-  Operation* decode_all<0>( CodeBase const& cb )
+  // Recursive decoding structure
+  template <class ARCH, operation_t IDX>
+  struct DR
   {
-    return 0;
-  }
+    Operation<ARCH>*
+    get( InputCode<ARCH> const& ic )
+    {
+      DC<ARCH,operation_t(IDX-1)> dc; if (Operation<ARCH>* op = dc.get( ic )) return op;
+      DR<ARCH,operation_t(IDX-1)> dr; return dr.get( ic );
+    }
+  };
   
-  Operation* getoperation( CodeBase const& cb ) { return decode_all<operation_count>( cb ); }
+  // Recursion stop
+  template <class ARCH>
+  struct DR<ARCH,operation_t(0)>
+  {
+    Operation<ARCH>* get( InputCode<ARCH> const& ) { return 0; }
+  };
+  
+  template <class ARCH>
+  Operation<ARCH>*
+  getoperation( InputCode<ARCH> const& ic )
+  {
+    DR<ARCH,operation_count> dr;
+    return dr.get( ic );
+  }
 
 } // end of namespace intel
 } // end of namespace processor

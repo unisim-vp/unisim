@@ -39,7 +39,6 @@
 #include <unisim/component/cxx/processor/intel/segments.hh>
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/vectorbank.hh>
-#include <unisim/component/cxx/processor/intel/fwd.hh>
 #include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/endian/endian.hh>
@@ -60,13 +59,9 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace intel {
-
-  enum flag_t { 
-    CF = 0, PF,     AF,     ZF,     SF,     DF,     OF,
-    C0,     C1,     C2,     C3,
-    flag_upperbound
-  };
   
+  template <class ARCH> struct Operation;
+
   struct Arch
   {
     typedef uint8_t  u8_t;
@@ -83,6 +78,11 @@ namespace intel {
     typedef bool     mkbool;
     typedef int      mkint;
     
+    struct OpHeader
+    {
+       OpHeader( uint32_t _address ) : address( _address ) {} uint32_t address;
+    };
+    
     // CONSTRUCTORS/DESTRUCTORS
     Arch();
   
@@ -90,11 +90,11 @@ namespace intel {
     bool                        m_running;      ///< Processors on/off
     int64_t                     m_instcount;    ///< Instruction count from the start
     bool                        m_disasm;       ///< Instruction disassembly on/off
-    Operation*                  m_latest_insn;  ///< latest (current) instruction
+    Operation<Arch>*            m_latest_insn;  ///< latest (current) instruction
     
     void                        stop() { m_running = false; }
 
-    Operation*                  fetch();
+    Operation<Arch>*            fetch();
     
     virtual unisim::service::interfaces::LinuxOS* GetLinuxOS() { return 0; };
     
@@ -124,13 +124,20 @@ namespace intel {
     // INTEGER STATE
     // EFLAGS
     // bool m_ID, m_VIP, m_VIF, m_AC, m_VM, m_RF, m_NT, m_IOPL, m_IF, m_TF;
+    
+    enum flag_t { 
+      CF = 0, PF,     AF,     ZF,     SF,     DF,     OF,
+      C0,     C1,     C2,     C3,
+      flag_upperbound
+    };
+    
   protected:
-    bool                        m_flags[intel::flag_upperbound];
+    bool                        m_flags[flag_upperbound];
     
   public:
-    bit_t                       flagread( intel::flag_t flag )
+    bit_t                       flagread( flag_t flag )
     { return m_flags[flag]; }
-    void                        flagwrite( intel::flag_t flag, bit_t fval )
+    void                        flagwrite( flag_t flag, bit_t fval )
     { m_flags[flag] = fval; }
     
     // Registers
@@ -240,15 +247,6 @@ namespace intel {
     }
     
   public:
-    u8_t                        memread8( unsigned int _seg, u32_t const& _addr )
-    { return memread<8>( _seg, _addr ); }
-    u16_t                       memread16( unsigned int _seg, u32_t const& _addr )
-    { return memread<16>( _seg, _addr ); }
-    u32_t                       memread32( unsigned int _seg, u32_t const& _addr )
-    { return memread<32>( _seg, _addr ); }
-    u64_t                       memread64( unsigned int _seg, u32_t const& _addr )
-    { return memread<64>( _seg, _addr ); }
-    
     f32_t                       fmemread32( unsigned int _seg, u32_t _addr )
     {
       union IEEE754_t { float as_f; uint32_t as_u; } word;
@@ -328,7 +326,7 @@ namespace intel {
     
     template <unsigned OPSIZE>
     typename TypeFor<OPSIZE>::f
-    frmread( _RMOp rmop )
+    frmread( RMOp<Arch> const& rmop )
     {
       typedef typename TypeFor<OPSIZE>::f f_type;
       if (not rmop.is_memory_operand()) return f_type( fread( rmop.ereg() ) );
@@ -340,14 +338,6 @@ namespace intel {
       return f_type();
     }
 
-    void                        memwrite8( unsigned int _seg, u32_t _addr, u8_t _val )
-    { memwrite<8>( _seg, _addr, _val ); }
-    void                        memwrite16( unsigned int _seg, u32_t _addr, u16_t _val )
-    { memwrite<16>( _seg, _addr, _val ); }
-    void                        memwrite32( unsigned int _seg, u32_t _addr, u32_t _val )
-    { memwrite<32>( _seg, _addr, _val ); }
-    void                        memwrite64( unsigned int _seg, u32_t _addr, u64_t _val )
-    { memwrite<64>( _seg, _addr, _val ); }
     void                        fmemwrite32( unsigned int _seg, u32_t _addr, f32_t _val )
     {
       union IEEE754_t { float as_f; uint32_t as_u; } word;
@@ -409,7 +399,7 @@ namespace intel {
 
     template <unsigned OPSIZE>
     void
-    frmwrite( _RMOp rmop, typename TypeFor<OPSIZE>::f value )
+    frmwrite( RMOp<Arch> const& rmop, typename TypeFor<OPSIZE>::f value )
     {
       if (not rmop.is_memory_operand()) return fwrite( rmop.ereg(), f64_t( value ) );
       
@@ -462,7 +452,7 @@ namespace intel {
     
     template <unsigned OPSIZE>
     typename TypeFor<OPSIZE>::u
-    rmread( _RMOp rmop )
+    rmread( RMOp<Arch> const& rmop )
     {
       if (not rmop.is_memory_operand())
         return regread<OPSIZE>( rmop.ereg() );
@@ -472,7 +462,7 @@ namespace intel {
     
     template <unsigned OPSIZE>
     void
-    rmwrite( _RMOp rmop, typename TypeFor<OPSIZE>::u value )
+    rmwrite( RMOp<Arch> const& rmop, typename TypeFor<OPSIZE>::u value )
     {
       if (not rmop.is_memory_operand())
         return regwrite<OPSIZE>( rmop.ereg(), value );
@@ -594,33 +584,33 @@ namespace intel {
     {
       double val = this->fread( 0 );
       
-      flagwrite( intel::C1, __signbit( val ) );
+      flagwrite( C1, __signbit( val ) );
       
       switch (__fpclassify( val )) {
       case FP_NAN:
-        flagwrite( intel::C3, 0 );
-        flagwrite( intel::C2, 0 );
-        flagwrite( intel::C0, 1 );
+        flagwrite( C3, 0 );
+        flagwrite( C2, 0 );
+        flagwrite( C0, 1 );
         break;
       case FP_NORMAL:
-        flagwrite( intel::C3, 0 );
-        flagwrite( intel::C2, 1 );
-        flagwrite( intel::C0, 0 );
+        flagwrite( C3, 0 );
+        flagwrite( C2, 1 );
+        flagwrite( C0, 0 );
         break;
       case FP_INFINITE:
-        flagwrite( intel::C3, 0 );
-        flagwrite( intel::C2, 1 );
-        flagwrite( intel::C0, 1 );
+        flagwrite( C3, 0 );
+        flagwrite( C2, 1 );
+        flagwrite( C0, 1 );
         break;
       case FP_ZERO:
-        flagwrite( intel::C3, 1 );
-        flagwrite( intel::C2, 0 );
-        flagwrite( intel::C0, 0 );
+        flagwrite( C3, 1 );
+        flagwrite( C2, 0 );
+        flagwrite( C0, 0 );
         break;
       case FP_SUBNORMAL:
-        flagwrite( intel::C3, 1 );
-        flagwrite( intel::C2, 1 );
-        flagwrite( intel::C0, 0 );
+        flagwrite( C3, 1 );
+        flagwrite( C2, 1 );
+        flagwrite( C0, 0 );
         break;
       }
     }
@@ -669,6 +659,8 @@ namespace intel {
                     << " value: " << field_val << ".\n";
         }
     }
+    
+    u64_t tscread() { return m_instcount; }
     
     // void                        fpdump()
     // {
@@ -731,7 +723,7 @@ namespace intel {
     
     template<unsigned OPSIZE>
     typename TypeFor<OPSIZE>::u
-    xmm_uread( _RMOp rmop, unsigned sub )
+    xmm_uread( RMOp<Arch> const& rmop, unsigned sub )
     {
       if (not rmop.is_memory_operand()) return xmm_uread<OPSIZE>( rmop.ereg(), sub );
       return memread<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8) );
@@ -739,7 +731,7 @@ namespace intel {
     
     template<unsigned OPSIZE>
     void
-    xmm_uwrite( _RMOp rmop, unsigned sub, typename TypeFor<OPSIZE>::u val )
+    xmm_uwrite( RMOp<Arch> const& rmop, unsigned sub, typename TypeFor<OPSIZE>::u val )
     {
       if (not rmop.is_memory_operand()) return xmm_uwrite<OPSIZE>( rmop.ereg(), sub, val );
       return memwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8), val );
