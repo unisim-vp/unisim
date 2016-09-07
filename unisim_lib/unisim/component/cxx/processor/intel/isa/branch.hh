@@ -7,6 +7,7 @@
 template <class ARCH, unsigned OPSIZE>
 struct NearCallJ : public Operation<ARCH>
 {
+  typedef typename ARCH::u32_t u32_t;
   NearCallJ( OpBase<ARCH> const& opbase, int32_t _offset ) : Operation<ARCH>( opbase ), offset( _offset ) {} uint32_t offset;
     
   void disasm( std::ostream& sink ) const { sink << "call " << "0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); };
@@ -22,6 +23,7 @@ struct NearCallJ : public Operation<ARCH>
 template <class ARCH, unsigned OPSIZE>
 struct NearCallE : public Operation<ARCH>
 {
+  typedef typename ARCH::u32_t u32_t;
   NearCallE( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop ) : Operation<ARCH>( opbase ), rmop( _rmop ) {} RMOp<ARCH> rmop;
     
   void disasm( std::ostream& sink ) const { sink << "call *" << DisasmE( UI<OPSIZE>(), rmop ); }
@@ -92,6 +94,7 @@ template <class ARCH> struct DC<ARCH,CALL> { Operation<ARCH>* get( InputCode<ARC
 template <class ARCH, unsigned OPSIZE>
 struct JccJ : public Operation<ARCH>
 {
+  typedef typename ARCH::u32_t u32_t;
   JccJ( OpBase<ARCH> const& opbase, uint8_t _cond, int32_t _offset ) : Operation<ARCH>( opbase ), offset( _offset ), cond( _cond ) {} int32_t offset; uint8_t cond;
     
   void disasm( std::ostream& sink ) const { sink << 'j' << DisasmCond( cond ) << " 0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); }
@@ -99,7 +102,7 @@ struct JccJ : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     if (OPSIZE != 32) throw 0;
-    if (mkbool( eval_cond( arch, cond ) )) arch.addeip( u32_t( offset ) ); 
+    if (arch.Cond( eval_cond( arch, cond ) )) arch.addeip( u32_t( offset ) ); 
   }
 };
   
@@ -137,11 +140,14 @@ struct Loop : public Operation<ARCH>
     
   void execute( ARCH& arch ) const
   {
+    typedef typename ARCH::u32_t u32_t;
+    typedef typename ARCH::bit_t bit_t;
+    
     // Decrement count register
     u32_t count = arch.regread32( 1 ) - u32_t( 1 );
     arch.regwrite32( 1, count );
     // Stop if count is zero
-    if (mkbool(count == u32_t(0))) return;
+    if (arch.Cond( count == u32_t(0) )) return;
     // or ZF is set (loopne)
     if ((MOD == 0) and (arch.flagread( ARCH::ZF ) == bit_t( 1 ))) return;
     // or ZF is cleared (loope)
@@ -177,7 +183,14 @@ struct Jcxz : public Operation<ARCH>
     
   void disasm( std::ostream& sink ) const { sink << 'j' << (&"\0\0e\0\0\0r"[(ADDRSZ/16)-1]) << "cxz 0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); };
     
-  void execute( ARCH& arch ) const { if (ADDRSZ != 32) throw 0; if (mkbool( arch.regread32( 1 ) == u32_t( 0 ) )) arch.addeip( u32_t( offset ) ); }
+  void execute( ARCH& arch ) const
+  {
+    typedef typename ARCH::u32_t u32_t;
+    
+    if (ADDRSZ != 32) throw 0;
+    if (arch.Cond( arch.regread32( 1 ) == u32_t( 0 ) ))
+      arch.addeip( u32_t( offset ) );
+  }
 };
   
 template <class ARCH> struct DC<ARCH,JCXZ> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -210,6 +223,7 @@ struct JmpE : public Operation<ARCH>
 template <class ARCH, unsigned OPSIZE>
 struct JmpJ : public Operation<ARCH>
 {
+  typedef typename ARCH::u32_t u32_t;
   JmpJ( OpBase<ARCH> const& opbase, int32_t _offset ) : Operation<ARCH>( opbase ), offset( _offset ) {} int32_t offset;
   
   void disasm( std::ostream& sink ) const { sink << "jmp 0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); }
@@ -282,6 +296,7 @@ template <class ARCH> struct DC<ARCH,JMP> { Operation<ARCH>* get( InputCode<ARCH
 template <class ARCH, unsigned OPSIZE>
 struct NearReturn : public Operation<ARCH>
 {
+  typedef typename ARCH::u32_t u32_t;
   NearReturn( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
     
   void disasm( std::ostream& sink ) const { sink << "ret"; }
@@ -298,6 +313,7 @@ struct NearReturn : public Operation<ARCH>
 template <class ARCH, unsigned OPSIZE>
 struct NearParamReturn : public Operation<ARCH>
 {
+  typedef typename ARCH::u32_t u32_t;
   NearParamReturn( OpBase<ARCH> const& opbase, uint16_t _paramsize ) : Operation<ARCH>( opbase ), paramsize( _paramsize ) {} uint16_t paramsize;
 
   void disasm( std::ostream& sink ) const { sink << "ret " << DisasmI( paramsize ); }
@@ -444,6 +460,7 @@ struct Enter : public Operation<ARCH>
 template <class ARCH, unsigned OPSIZE/*, unsigned SPSIZE*/>
 struct Leave : public Operation<ARCH>
 {
+  typedef typename ARCH::u32_t u32_t;
   Leave( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   
   void disasm( std::ostream& sink ) const { sink << "leave"; }

@@ -299,7 +299,10 @@ struct MovSeg : public Operation<ARCH>
     if (STOE) sink << "mov " << DisasmS( seg ) << ',' << DisasmE( UI<OPSIZE>(), rmop );
     else      sink << "mov " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmS( seg );
   }
-  void execute( ARCH& arch ) const {
+  void execute( ARCH& arch ) const
+  {
+    typedef typename ARCH::u16_t u16_t;
+    
     if (STOE) arch.template rmwrite<OPSIZE>( rmop, typename TypeFor<OPSIZE>::u( arch.segregread( seg ) ) );
     else      arch.segregwrite( seg, u16_t( arch.template rmread<OPSIZE>( rmop ) ) );
   }
@@ -491,7 +494,7 @@ struct WriteDF : public Operation<ARCH>
 {
   WriteDF( OpBase<ARCH> const& opbase, uint8_t _df ) : Operation<ARCH>( opbase ), df( _df ) {} uint8_t df;
   void disasm( std::ostream& sink ) const { sink << (df ? "std" : "cld"); }
-  void execute( ARCH& arch ) const { arch.flagwrite( ARCH::DF, bit_t( df ) ); }
+  void execute( ARCH& arch ) const { arch.flagwrite( ARCH::DF, typename ARCH::bit_t( df ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,STD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -526,9 +529,9 @@ struct CmpXchg : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     typename TypeFor<OPSIZE>::u mem_operand = arch.template rmread<OPSIZE>( rmop );
-    bit_t equal = (arch.template regread<OPSIZE>( 0 ) == mem_operand);
+    typename ARCH::bit_t equal = (arch.template regread<OPSIZE>( 0 ) == mem_operand);
     arch.flagwrite( ARCH::ZF, equal );
-    if (mkbool( equal )) arch.template rmwrite<OPSIZE>( rmop, arch.template regread<OPSIZE>( gn ) );
+    if (arch.Cond( equal )) arch.template rmwrite<OPSIZE>( rmop, arch.template regread<OPSIZE>( gn ) );
     else                 arch.template regwrite<OPSIZE>( 0, mem_operand );
   }
 };
@@ -689,7 +692,12 @@ struct Cmovcc : public Operation<ARCH>
   Cmovcc( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn, uint8_t _cc )
     : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ), cc( _cc ) {} RMOp<ARCH> rmop; uint8_t gn; uint8_t cc; 
   void disasm( std::ostream& sink ) const { sink << "cmov" << DisasmCond( cc ) << ' ' << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn ); }
-  void execute( ARCH& arch ) const { if (mkbool( eval_cond( arch, cc ) )) { arch.template regwrite<OPSIZE>( gn, arch.template rmread<OPSIZE>( rmop ) ); } }
+  void execute( ARCH& arch ) const
+  {
+    if (arch.Cond( eval_cond( arch, cc ) )) {
+      arch.template regwrite<OPSIZE> ( gn, arch.template rmread<OPSIZE>( rmop ) );
+    }
+  }
 };
 
 template <class ARCH> struct DC<ARCH,CMOVCC> { Operation<ARCH>* get( InputCode<ARCH> const& ic )

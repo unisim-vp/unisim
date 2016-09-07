@@ -43,7 +43,7 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace intel {
-
+  
   Arch::Arch()
     : m_running( true ), m_instcount( 0 ), m_disasm( false ), m_latest_insn( 0 )
     , m_EIP( 0 ), m_ftop( 0 ), m_fcw( 0x23f )
@@ -172,18 +172,182 @@ namespace intel {
     ++m_instcount;
     return operation;
   }
+  
+  void
+  Arch::cpuid()
+  {
+    switch (this->regread32( 0 )) {
+    case 0: {
+      this->regwrite32( 0, u32_t( 1 ) );
+  
+      char const* name = "GenuineIntel";
+      { uint32_t word = 0;
+        int idx = 12;
+        while (--idx >= 0) {
+          word = (word << 8) | name[idx];
+          if (idx % 4) continue;
+          this->regwrite32( 3 - (idx/4), u32_t( word ) );
+          word = 0;
+        }
+      }
+    } break;
+    case 1: {
+      uint32_t const eax =
+        (6  << 0 /* stepping id */) |
+        (0  << 4 /* model */) |
+        (15 << 8 /* family */) |
+        (0  << 12 /* processor type */) |
+        (0  << 16 /* extended model */) |
+        (0  << 20 /* extended family */);
+      this->regwrite32( 0, u32_t( eax ) );
+    
+      uint32_t const ebx =
+        (0 <<  0 /* Brand index */) |
+        (4 <<  8 /* Cache line size (/ 64bits) */) |
+        (1 << 16 /* Maximum number of addressable IDs for logical processors in this physical package* */) |
+        (0 << 24 /* Initial APIC ID */);
+      this->regwrite32( 3, u32_t( ebx ) );
+    
+      uint32_t const ecx =
+        (0 << 0x00 /* Streaming SIMD Extensions 3 (SSE3) */) |
+        (0 << 0x01 /* PCLMULQDQ Available */) |
+        (0 << 0x02 /* 64-bit DS Area */) |
+        (0 << 0x03 /* MONITOR/MWAIT */) |
+        (0 << 0x04 /* CPL Qualified Debug Store */) |
+        (0 << 0x05 /* Virtual Machine Extensions */) |
+        (0 << 0x06 /* Safer Mode Extensions */) |
+        (0 << 0x07 /* Enhanced Intel SpeedStep® technology */) |
+        (0 << 0x08 /* Thermal Monitor 2 */) |
+        (0 << 0x09 /* Supplemental Streaming SIMD Extensions 3 (SSSE3) */) |
+        (0 << 0x0a /* L1 Context ID */) |
+        (0 << 0x0b /* Reserved */) |
+        (0 << 0x0c /* FMA */) |
+        (0 << 0x0d /* CMPXCHG16B Available */) |
+        (0 << 0x0e /* xTPR Update Control */) |
+        (0 << 0x0f /* Perfmon and Debug Capability */) |
+        (0 << 0x10 /* Reserved */) |
+        (0 << 0x11 /* Process-context identifiers */) |
+        (0 << 0x12 /* DCA */) |
+        (0 << 0x13 /* SSE4.1 */) |
+        (0 << 0x14 /* SSE4.2 */) |
+        (0 << 0x15 /* x2APIC */) |
+        (1 << 0x16 /* MOVBE Available */) |
+        (1 << 0x17 /* POPCNT Available */) |
+        (0 << 0x18 /* TSC-Deadline */) |
+        (0 << 0x19 /* AESNI */) |
+        (0 << 0x1a /* XSAVE */) |
+        (0 << 0x1b /* OSXSAVE */) |
+        (0 << 0x1c /* AVX */) |
+        (1 << 0x1d /* F16C */) |
+        (1 << 0x1e /* RDRAND Available */) |
+        (1 << 0x1f /* Is virtual machine */);
+      this->regwrite32( 1, u32_t( ecx ) );
+    
+      uint32_t const edx =
+        (1 << 0x00 /* Floating Point Unit On-Chip */) |
+        (0 << 0x01 /* Virtual 8086 Mode Enhancements */) |
+        (0 << 0x02 /* Debugging Extensions */) |
+        (0 << 0x03 /* Page Size Extension */) |
+        (0 << 0x04 /* Time Stamp Counter */) |
+        (0 << 0x05 /* Model Specific Registers RDMSR and WRMSR Instructions */) |
+        (0 << 0x06 /* Physical Address Extension */) |
+        (0 << 0x07 /* Machine Check Exception */) |
+        (0 << 0x08 /* CMPXCHG8B Available */) |
+        (0 << 0x09 /* APIC On-Chip */) |
+        (0 << 0x0a /* Reserved */) |
+        (0 << 0x0b /* SYSENTER and SYSEXIT Instructions */) |
+        (0 << 0x0c /* Memory Type Range Registers */) |
+        (0 << 0x0d /* Page Global Bit */) |
+        (0 << 0x0e /* Machine Check ARCHitecture */) |
+        (1 << 0x0f /* Conditional Move Instructions */) |
+        (0 << 0x10 /* Page Attribute Table */) |
+        (0 << 0x11 /* 36-Bit Page Size Extension */) |
+        (0 << 0x12 /* Processor Serial Number */) |
+        (0 << 0x13 /* CLFLUSH Instruction */) |
+        (0 << 0x14 /* Reserved */) |
+        (0 << 0x15 /* Debug Store */) |
+        (0 << 0x16 /* Thermal Monitor and Software Controlled Clock Facilities */) |
+        (0 << 0x17 /* Intel MMX Technology */) |
+        (0 << 0x18 /* FXSAVE and FXRSTOR Instructions */) |
+        (0 << 0x19 /* SSE */) |
+        (0 << 0x1a /* SSE2 */) |
+        (0 << 0x1b /* Self Snoop */) |
+        (0 << 0x1c /* Max APIC IDs reserved field is Valid */) |
+        (0 << 0x1d /* Thermal Monitor */) |
+        (0 << 0x1e /* Resrved */) |
+        (0 << 0x1f /* Pending Break Enable */);
+      this->regwrite32( 2, u32_t( edx ) );
+    
+    } break;
+    case 2: {
+      this->regwrite32( 0, u32_t( 0 ) );
+      this->regwrite32( 3, u32_t( 0 ) );
+      this->regwrite32( 1, u32_t( 0 ) );
+      this->regwrite32( 2, u32_t( 0 ) );
+    } break;
+    case 4: {
+      // Small cache config
+      switch (this->regread32( 1 )) { // %ecx holds requested cache id
+      case 0: { // L1 D-CACHE
+        this->regwrite32( 0, u32_t( (1 << 26) | (0 << 14) | (1 << 8) | (1 << 5) | (1 << 0) ) ); // 0x4000121
+        this->regwrite32( 3, u32_t( (0 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x1c0003f
+        this->regwrite32( 1, u32_t( (0 << 22) | (0x03f << 0) ) ); // 0x000003f
+        this->regwrite32( 2, u32_t( 0x0000001 ) ); // 0x0000001
+      } break;
+      case 1: { // L1 I-CACHE
+        this->regwrite32( 0, u32_t( (1 << 26) | (0 << 14) | (1 << 8) | (1 << 5) | (2 << 0) ) ); // 0x4000122
+        this->regwrite32( 3, u32_t( (0 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x1c0003f
+        this->regwrite32( 1, u32_t( (0 << 22) | (0x03f << 0) ) ); // 0x000003f
+        this->regwrite32( 2, u32_t( 0x0000001 ) ); // 0x0000001
+      } break;
+      case 2: { // L2 U-CACHE
+        this->regwrite32( 0, u32_t( (1 << 26) | (1 << 14) | (1 << 8) | (2 << 5) | (3 << 0) ) ); // 0x4000143
+        this->regwrite32( 3, u32_t( (1 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x5c0003f
+        this->regwrite32( 1, u32_t( (0 << 22) | (0xfff << 0) ) ); // 0x0000fff
+        this->regwrite32( 2, u32_t( 0x0000001 ) ); // 0x0000001
+      } break;
+      case 3: { // TERMINATING NULL ENTRY
+        // 0, 0, 0, 0
+        this->regwrite32( 0, u32_t( 0 ) );
+        this->regwrite32( 3, u32_t( 0 ) );
+        this->regwrite32( 1, u32_t( 0 ) );
+        this->regwrite32( 2, u32_t( 0 ) );
+      } break;
+      }
+    } break;
+  
+    case 0x80000000: {
+      this->regwrite32( 0, u32_t( 0x80000001 ) );
+      this->regwrite32( 3, u32_t( 0 ) );
+      this->regwrite32( 1, u32_t( 0 ) );
+      this->regwrite32( 2, u32_t( 0 ) );
+    } break;
+    case 0x80000001: {
+      this->regwrite32( 0, u32_t( 0 ) );
+      this->regwrite32( 3, u32_t( 0 ) );
+      this->regwrite32( 1, u32_t( 0 ) );
+      this->regwrite32( 2, u32_t( 0 ) );
+    } break;
+    default:
+      std::cerr << "Unknown cmd for cpuid, " << std::hex
+                << "%eax=0x" << this->regread32( 0 ) << ", "
+                << "%eip=0x" << m_latest_insn->address << "\n";
+      throw "not implemented";
+      break;
+    }
+  }
 
-  f64_t sine( f64_t angle ) { return sin( angle ); }
+  Arch::f64_t sine( Arch::f64_t angle ) { return sin( angle ); }
 
-  f64_t cosine( f64_t angle ) { return cos( angle ); }
+  Arch::f64_t cosine( Arch::f64_t angle ) { return cos( angle ); }
 
-  f64_t tangent( f64_t angle ) { return tan( angle ); }
+  Arch::f64_t tangent( Arch::f64_t angle ) { return tan( angle ); }
 
-  f64_t arctan( f64_t angle ) { return atan( angle ); }
+  Arch::f64_t arctan( Arch::f64_t angle ) { return atan( angle ); }
 
-  f64_t fmodulo( f64_t dividend, f64_t modulus ) { return fmod( dividend, modulus ); }
+  Arch::f64_t fmodulo( Arch::f64_t dividend, Arch::f64_t modulus ) { return fmod( dividend, modulus ); }
 
-  f64_t firound( f64_t value, int x87frnd_mode )
+  Arch::f64_t firound( Arch::f64_t value, int x87frnd_mode )
   {
     // double floor_res = floor( value );                                                                                                                                                     
     double result = intel::x87frnd( value, intel::x87frnd_mode_t( x87frnd_mode ) );
@@ -194,11 +358,11 @@ namespace intel {
     return result;
   }
 
-  f64_t power( f64_t exponent, f64_t value ) { return pow( exponent, value ); }
+  Arch::f64_t power( Arch::f64_t exponent, Arch::f64_t value ) { return pow( exponent, value ); }
 
-  f64_t logarithm( f64_t value ) { return log2( value ); }
+  Arch::f64_t logarithm( Arch::f64_t value ) { return log2( value ); }
 
-  f64_t square_root( f64_t value ) { return sqrt( value ); }
+  Arch::f64_t square_root( Arch::f64_t value ) { return sqrt( value ); }
 
 } // end of namespace intel
 } // end of namespace processor

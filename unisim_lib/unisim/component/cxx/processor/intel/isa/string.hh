@@ -33,7 +33,7 @@ struct _StringEngine : public StringEngine<ARCH>
   ModBase<ARCH,ADDRSIZE> dst, src[6];
   _StringEngine() : dst( ES, 7 ), src{{0, 6}, {1, 6}, {2, 6}, {3, 6}, {4, 6}, {5, 6}} {}
   
-  bool tstcounter( ARCH& arch ) const { return mkbool( arch.template regread<ADDRSIZE>( 1 ) != uaddr_type( 0 )); }
+  bool tstcounter( ARCH& arch ) const { return arch.Cond( arch.template regread<ADDRSIZE>( 1 ) != uaddr_type( 0 )); }
   void deccounter( ARCH& arch ) const { arch.template regwrite<ADDRSIZE>( 1, arch.template regread<ADDRSIZE>( 1 ) - uaddr_type( 1 ) ); }
   
   MOp<ARCH> const* getdst() const { return &dst; }
@@ -71,11 +71,13 @@ struct Movs : public Operation<ARCH>
   
   void execute( ARCH& arch ) const
   {
+    typedef typename ARCH::u32_t u32_t;
+    
     if (REP and not str->tstcounter( arch )) return;
     
     arch.template rmwrite<OPSIZE>( str->getdst(), arch.template rmread<OPSIZE>( str->getsrc( segment ) ) );
     
-    int32_t step = mkbool( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
+    int32_t step = arch.Cond( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
     str->addsrc( arch, step );
     str->adddst( arch, step );
     
@@ -116,11 +118,13 @@ struct Stos : public Operation<ARCH>
   
   void execute( ARCH& arch ) const
   {
+    typedef typename ARCH::u32_t u32_t;
+    
     if (REP and not str->tstcounter( arch )) return;
     
     arch.template rmwrite<OPSIZE>( str->getdst(), arch.template regread<OPSIZE>( 0 ) );
 
-    int32_t step = mkbool( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
+    int32_t step = arch.Cond( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
     str->adddst( arch, step );
     
     if (REP) {
@@ -164,17 +168,20 @@ struct Cmps : public Operation<ARCH>
   
   void execute( ARCH& arch ) const
   {
+    typedef typename ARCH::bit_t bit_t;
+    typedef typename ARCH::u32_t u32_t;
+    
     if (REP and not str->tstcounter( arch )) return;
     
     eval_sub( arch, arch.template rmread<OPSIZE>( str->getsrc( segment ) ), arch.template rmread<OPSIZE>( str->getdst() ) );
     
-    int32_t step = mkbool( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
+    int32_t step = arch.Cond( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
     str->adddst( arch, step );
     str->addsrc( arch, step );
     
     if (REP) {
       str->deccounter( arch );
-      if (mkbool( bit_t( REP&1 ) ^ arch.flagread( ARCH::ZF ) )) return;
+      if (arch.Cond( bit_t( REP&1 ) ^ arch.flagread( ARCH::ZF ) )) return;
       arch.seteip( u32_t( Operation<ARCH>::address ) );
     }
   }
@@ -224,16 +231,19 @@ struct Scas : public Operation<ARCH>
   
   void execute( ARCH& arch ) const
   {
+    typedef typename ARCH::bit_t bit_t;
+    typedef typename ARCH::u32_t u32_t;
+    
     if (REP and not str->tstcounter( arch )) return;
     
     eval_sub( arch, arch.template rmread<OPSIZE>( str->getdst() ), arch.template regread<OPSIZE>( 0 ) );
 
-    int32_t step = mkbool( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
+    int32_t step = arch.Cond( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
     str->adddst( arch, step );
     
     if (REP) {
       str->deccounter( arch );
-      if (mkbool( bit_t( REP&1 ) ^arch.flagread( ARCH::ZF ) )) return;
+      if (arch.Cond( bit_t( REP&1 ) ^arch.flagread( ARCH::ZF ) )) return;
       arch.seteip( u32_t( Operation<ARCH>::address ) );
     }
   }
@@ -283,11 +293,13 @@ struct Lods : public Operation<ARCH>
   
   void execute( ARCH& arch ) const
   {
+    typedef typename ARCH::u32_t u32_t;
+    
     if (REP and str->tstcounter( arch )) return;
     
     arch.template regwrite<OPSIZE>( 0, arch.template rmread<OPSIZE>( str->getsrc( segment ) ) );
     
-    int32_t step = mkbool( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
+    int32_t step = arch.Cond( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
     str->addsrc( arch, step );
     
     if (REP) {

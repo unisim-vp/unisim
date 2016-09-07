@@ -61,26 +61,45 @@ namespace processor {
 namespace intel {
   
   template <class ARCH> struct Operation;
+  
+  // TODO: should handle twice of 64-bit types
+  template <typename T>
+  struct Twice
+  {
+    struct Error {};
+    Twice() {}
+    Twice( T const& val ) {}
+    template <typename X>
+    Twice operator << (X) { throw Error(); return Twice(); }
+    template <typename X>
+    Twice operator >> (X) { throw Error(); return Twice(); }
+    Twice operator | (Twice const& val) { throw Error(); return Twice(); }
+    
+    Twice& operator |= (Twice const& val) { return *this; }
+    operator T () { throw Error(); return T(); }
+    void unimplented();
+  };
 
   struct Arch
   {
-    typedef uint8_t  u8_t;
-    typedef uint16_t u16_t;
-    typedef uint32_t u32_t;
-    typedef uint64_t u64_t;
-    typedef int8_t   s8_t;
-    typedef int16_t  s16_t;
-    typedef int32_t  s32_t;
-    typedef int64_t  s64_t;
-    typedef bool     bit_t;
-    typedef float    f32_t;
-    typedef double   f64_t;
-    typedef bool     mkbool;
-    typedef int      mkint;
+    typedef uint8_t      u8_t;
+    typedef uint16_t     u16_t;
+    typedef uint32_t     u32_t;
+    typedef uint64_t     u64_t;
+    typedef Twice<u64_t> u128_t;
+    typedef int8_t       s8_t;
+    typedef int16_t      s16_t;
+    typedef int32_t      s32_t;
+    typedef int64_t      s64_t;
+    typedef Twice<s64_t> s128_t;
+    typedef bool         bit_t;
+    
+    typedef float        f32_t;
+    typedef double       f64_t;
     
     struct OpHeader
     {
-       OpHeader( uint32_t _address ) : address( _address ) {} uint32_t address;
+      OpHeader( uint32_t _address ) : address( _address ) {} uint32_t address;
     };
     
     // CONSTRUCTORS/DESTRUCTORS
@@ -662,6 +681,7 @@ namespace intel {
     
     u64_t tscread() { return m_instcount; }
     
+    void  cpuid();
     // void                        fpdump()
     // {
     //   std::cerr << ": #insn: " << std::dec << m_instcount
@@ -676,6 +696,8 @@ namespace intel {
     //     dtlib::osprintf( std::cerr, "st(%d): %f\n", reg, this->fread( reg ) );
     //   }
     // }
+    
+    bool Cond( bool b ) const { return b; }
     
     // Debug methods
   protected:
@@ -743,15 +765,15 @@ namespace intel {
 
   struct FPException : public std::exception {};
 
-  f64_t sine( f64_t );
-  f64_t cosine( f64_t );
-  f64_t tangent( f64_t );
-  f64_t arctan( f64_t angle );
-  f64_t fmodulo( f64_t, f64_t );
-  f64_t firound( f64_t, int x87frnd_mode );
-  f64_t power( f64_t, f64_t );
-  f64_t logarithm( f64_t );
-  f64_t square_root( f64_t );
+  Arch::f64_t sine( Arch::f64_t );
+  Arch::f64_t cosine( Arch::f64_t );
+  Arch::f64_t tangent( Arch::f64_t );
+  Arch::f64_t arctan( Arch::f64_t angle );
+  Arch::f64_t fmodulo( Arch::f64_t, Arch::f64_t );
+  Arch::f64_t firound( Arch::f64_t, int x87frnd_mode );
+  Arch::f64_t power( Arch::f64_t, Arch::f64_t );
+  Arch::f64_t logarithm( Arch::f64_t );
+  Arch::f64_t square_root( Arch::f64_t );
 
 } // end of namespace intel
 } // end of namespace processor

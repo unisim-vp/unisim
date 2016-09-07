@@ -859,6 +859,7 @@ struct PCmpEqVW : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     typedef typename TypeFor<OPSIZE>::u utype;
+    typedef typename ARCH::u64_t u64_t;
     u64_t const cmpout[2] = { u64_t(utype(~utype(0))), u64_t(utype(0)) };
     
     for (unsigned sub = 0; sub < 2; ++sub) {
@@ -1151,6 +1152,8 @@ struct PMovMskBRV : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << "pmovmskb " << DisasmRdq( rm ) << ',' << DisasmRd( gn ); }
   void execute( ARCH& arch ) const
   {
+    typedef typename ARCH::u32_t u32_t;
+    typedef typename ARCH::u64_t u64_t;
     u32_t res = 0;
     for (unsigned sub = 0; sub < 2; ++sub) {
       u64_t op = arch.template xmm_uread<64>( rm, sub );

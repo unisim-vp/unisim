@@ -251,6 +251,7 @@ namespace intel {
   template <class ARCH,unsigned ADDRSIZE>
   struct ModBase : public MOp<ARCH>
   {
+    typedef typename ARCH::u32_t u32_t;
     ModBase( uint8_t _seg, uint8_t _rm ) : MOp<ARCH>( _seg ), rm( _rm ) {} uint8_t rm;
 
     void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << '(' << DisasmR<ADDRSIZE>( rm ) << ')'; };
@@ -261,6 +262,7 @@ namespace intel {
   template <class ARCH>
   struct Mod32Sib : public MOp<ARCH>
   {
+    typedef typename ARCH::u32_t u32_t;
     Mod32Sib( uint8_t _seg, uint8_t _scale, uint8_t _index, uint8_t _base ) : MOp<ARCH>( _seg ), scale( _scale ), index( _index ), base( _base ) {} uint8_t scale, index, base;
     
     void disasm_memory_operand( std::ostream& sink ) const
@@ -277,6 +279,7 @@ namespace intel {
   template <class ARCH>
   struct Mod32Disp : public MOp<ARCH>
   {
+    typedef typename ARCH::u32_t u32_t;
     Mod32Disp( uint8_t _seg, int32_t _disp ) : MOp<ARCH>( _seg ), disp( _disp ) {} int32_t disp;
     
     void disasm_memory_operand( std::ostream& sink ) const { sink << DisasmMS( MOp<ARCH>::segment ) << "0x" << std::hex << disp << std::dec; };
@@ -287,6 +290,7 @@ namespace intel {
   template <class ARCH>
   struct Mod32SiDisp : public MOp<ARCH>
   {
+    typedef typename ARCH::u32_t u32_t;
     Mod32SiDisp( uint8_t _seg, uint8_t _scale, uint8_t _index, int32_t _disp ) : MOp<ARCH>( _seg ), scale( _scale ), index( _index ), disp( _disp ) {}
     uint8_t scale, index; int32_t disp;
     
@@ -304,6 +308,7 @@ namespace intel {
   template <class ARCH,typename DISP>
   struct Mod32SibDisp : public MOp<ARCH>
   {
+    typedef typename ARCH::u32_t u32_t;
     Mod32SibDisp( uint8_t _seg, uint8_t _scale, uint8_t _index, uint8_t _base, DISP _disp ) : MOp<ARCH>( _seg ), disp( _disp ), scale( _scale ), index( _index ), base( _base ) {}
     DISP disp; uint8_t scale, index, base;
     
@@ -321,6 +326,7 @@ namespace intel {
   template <class ARCH,typename DISP>
   struct Mod32BaseDisp : public MOp<ARCH>
   {
+    typedef typename ARCH::u32_t u32_t;
     Mod32BaseDisp( uint8_t _seg, uint8_t _rm, DISP _disp ) : MOp<ARCH>( _seg ), rm( _rm ), disp( _disp ) {} uint8_t rm; DISP disp;
     
     void disasm_memory_operand( std::ostream& sink ) const
