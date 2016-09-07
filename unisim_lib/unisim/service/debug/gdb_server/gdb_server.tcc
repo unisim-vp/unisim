@@ -1327,10 +1327,11 @@ bool GDBServer<ADDRESS>::OutputText(const char *s, int count)
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::ReadRegisters()
 {
+	unsigned int reg_num;
 	string packet;
 	vector<GDBRegister *>::const_iterator gdb_reg_iter;
 
-	for(gdb_reg_iter = gdb_registers.begin(); gdb_reg_iter != gdb_registers.end(); gdb_reg_iter++)
+	for(reg_num = 0, gdb_reg_iter = gdb_registers.begin(); gdb_reg_iter != gdb_registers.end(); reg_num++, gdb_reg_iter++)
 	{
 		GDBRegister *gdb_reg = *gdb_reg_iter;
 		if(gdb_reg) // there are some holes in the register map
@@ -1339,7 +1340,7 @@ bool GDBServer<ADDRESS>::ReadRegisters()
 			gdb_reg->GetValue(hex);
 			if(verbose)
 			{
-				logger << DebugInfo << gdb_reg->GetName() << "=" << hex << EndDebugInfo;
+				logger << DebugInfo << "reg #" << reg_num << ":" << gdb_reg->GetName() << "=" << hex << EndDebugInfo;
 			}
 			packet += hex;
 		}
@@ -1385,11 +1386,11 @@ bool GDBServer<ADDRESS>::ReadRegister(unsigned int regnum)
 		string packet;
 		if(gdb_reg->GetValue(packet))
 		{
-			logger << DebugError << "Failed to read Register #" << regnum << EndDebugError;
 			return PutPacket(packet);
 		}
 		else
 		{
+			logger << DebugError << "Failed to read Register #" << regnum << EndDebugError;
 			return PutPacket("E00");
 		}
 	}
