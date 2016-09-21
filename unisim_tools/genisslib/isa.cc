@@ -221,17 +221,19 @@ Isa::expand( ostream& _sink ) const
     _sink << *(*op) << '\n';
 }
 
-auto_ptr<Generator>
+Generator*
 Isa::generator() const
 {
-  switch( m_decoder ) {
-  case RiscDecoder: return auto_ptr<Generator>( new RiscGenerator() );
-  case CiscDecoder: return auto_ptr<Generator>( new CiscGenerator() );
-    // case VliwDecoder: return new VliwGenerator( this ); break;
-  default: break;
-  }
+  switch (m_decoder)
+    {
+    case RiscDecoder: return new RiscGenerator();
+    case CiscDecoder: return new CiscGenerator();
+      // case VliwDecoder: return new VliwGenerator( this ); break;
+    default: break;
+    }
+  
   assert( false );
-  return auto_ptr<Generator>( 0 );
+  return 0;
 }
 
 bool

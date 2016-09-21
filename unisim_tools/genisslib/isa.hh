@@ -73,7 +73,7 @@ struct Isa
   SDClass_t const*              sdclass( std::vector<ConstStr_t>& _namespace ) const;
   SDInstance_t const*           sdinstance( ConstStr_t _symbol ) const;
 
-  std::auto_ptr<Generator>      generator() const;
+  Generator*                    generator() const;
   
   void                          expand( std::ostream& _sink ) const;
   void                          deps( std::ostream& _sink, char const* _prefix ) const;
