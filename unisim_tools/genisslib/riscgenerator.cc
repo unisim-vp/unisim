@@ -163,7 +163,7 @@ RiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, ch
       }
     else if (OperandBitField_t const* opbf = dynamic_cast<OperandBitField_t const*>( &fi.item() ))
       {
-        int opsize = std::max( least_ctype_size( opbf->dstsize() ), m_minwordsize );
+        int opsize = membersize( *opbf );
         ConstStr_t shiftedop;
         if      (opbf->m_shift > 0)
           shiftedop = Str::fmt( "(uint%d_t( %s ) << %u)", opsize, opbf->m_symbol.str(), +opbf->m_shift );
@@ -206,39 +206,39 @@ RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
       }
     }
     
-    else if (OperandBitField_t const* opbf = dynamic_cast<OperandBitField_t const*>( &fi.item() )) {
-      _product.code( "%s = ", opbf->m_symbol.str() );
+    else if (OperandBitField_t const* opbf = dynamic_cast<OperandBitField_t const*>( &fi.item() ))
+      {
+        _product.code( "%s = ", opbf->m_symbol.str() );
+
+        int opsize = membersize( *opbf );
       
-      if( opbf->m_sext ) {
-        int opsize = std::max( least_ctype_size( opbf->dstsize() ), m_minwordsize );
-        int sext_shift = opsize - opbf->m_size;
-        if( fi.pos() ) {
-          _product.code( "((int%d_t)(((%s >> %u) & 0x%llx) << %u) >> %u)",
-                         opsize, _codename, fi.pos(),
-                         opbf->mask(), sext_shift, sext_shift );
+        if (opbf->m_sext) {
+          int sext_shift = opsize - opbf->m_size;
+          if( fi.pos() ) {
+            _product.code( "((int%d_t)(((%s >> %u) & 0x%llx) << %u) >> %u)",
+                           opsize, _codename, fi.pos(),
+                           opbf->mask(), sext_shift, sext_shift );
+          }
+          else {
+            _product.code( "((int%d_t)((%s & 0x%llx) << %u) >> %u)",
+                           opsize, _codename,
+                           opbf->mask(), sext_shift, sext_shift );
+          }
+        } else {
+          if (fi.pos()) {
+            _product.code( "uint%d_t((%s >> %u) & 0x%llx)", opsize, _codename, fi.pos(), opbf->mask() );
+          }
+          else {
+            _product.code( "uint%d_t(%s & 0x%llx)", opsize, _codename, opbf->mask() );
+          }
         }
-        else {
-          _product.code( "((int%d_t)((%s & 0x%llx) << %u) >> %u)",
-                         opsize, _codename,
-                         opbf->mask(), sext_shift, sext_shift );
-        }
-      } else {
-        // FIXME: a cast from the instruction type to the operand type
-        // may be wiser...
-        if( fi.pos() ) {
-          _product.code( "((%s >> %u) & 0x%llx)", _codename, fi.pos(), opbf->mask() );
-        }
-        else {
-          _product.code( "(%s & 0x%llx)", _codename, opbf->mask() );
-        }
-      }
     
-      if( opbf->m_shift > 0 )
-        _product.code( " >> %u", +opbf->m_shift );
-      if( opbf->m_shift < 0 )
-        _product.code( " << %u", -opbf->m_shift );
-      _product.code( ";\n" );
-    }
+        if( opbf->m_shift > 0 )
+          _product.code( " >> %u", +opbf->m_shift );
+        if( opbf->m_shift < 0 )
+          _product.code( " << %u", -opbf->m_shift );
+        _product.code( ";\n" );
+      }
   }
 }
 

@@ -774,6 +774,14 @@ Generator::operation_decl( Product_t& _product ) const {
   _product.code( "};\n\n" );
 }
 
+unsigned
+Generator::membersize( unsigned size ) const
+{
+  // Operand's C type size is determined by 1/ the least C type
+  // required by the ISA operand itself and 2/ the minimal C type
+  // required for all operands.
+  return std::max( least_ctype_size( size ), m_minwordsize );
+}
 
 void
 Generator::isa_operations_decl( Product_t& _product ) const
@@ -797,15 +805,13 @@ Generator::isa_operations_decl( Product_t& _product ) const
       {
         if      (OperandBitField_t const* opbf = dynamic_cast<OperandBitField_t const*>( &**bf ))
           {
-            int dstsize = std::max( m_minwordsize, least_ctype_size( opbf->dstsize() ) );
-            _product.code( "%sint%d_t %s;\n", (opbf->m_sext ? "" : "u"), dstsize, opbf->m_symbol.str() );
+            _product.code( "%sint%d_t %s;\n", (opbf->m_sext ? "" : "u"), membersize( *opbf ), opbf->m_symbol.str() );
           }
         else if (SpOperandBitField_t const* sopbf = dynamic_cast<SpOperandBitField_t const*>( &**bf ))
           {
             ConstStr_t constval = sopbf->constval();
-            int dstsize = std::max( m_minwordsize, least_ctype_size( sopbf->dstsize() ) );
             _product.code( "static %sint%d_t const %s = %s;\n",
-                           (sopbf->m_sext ? "" : "u"), dstsize, sopbf->m_symbol.str(), sopbf->constval().str() );
+                           (sopbf->m_sext ? "" : "u"), membersize( *sopbf ), sopbf->m_symbol.str(), sopbf->constval().str() );
           }
         else if (SubOpBitField_t const* sobf = dynamic_cast<SubOpBitField_t const*>( &**bf ))
           {

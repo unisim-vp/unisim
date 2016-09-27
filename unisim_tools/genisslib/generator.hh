@@ -107,6 +107,10 @@ struct Generator
   
   static unsigned int                 least_ctype_size( unsigned int bits );
   
+  unsigned                            membersize( unsigned size ) const;
+  template <typename T>
+  unsigned                            membersize( T const& op ) const { return this->membersize( unsigned( op.dstsize() ) ); }
+  
   std::ostream&                       log( unsigned int level ) const;
 };
 

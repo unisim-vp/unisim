@@ -85,7 +85,8 @@ operator<<( std::ostream& _sink, Specialization_t const& _var ) {
 }
 
 Operation_t*
-Specialization_t::newop() {
+Specialization_t::newop()
+{
   ConstStr_t symbol; // The symbol of the operation
   {
     std::string buffer;
@@ -105,15 +106,16 @@ Specialization_t::newop() {
   // Generating new bitfield.
   Vect_t<BitField_t>& bflist = m_operation->m_bitfields;
   
-  for( Vect_t<BitField_t>::const_iterator bf = bflist.begin(); bf < bflist.end(); ++ bf ) {
-    OperandBitField_t const* opbf;
-    Constraint_t* expr;
-    if ((opbf = dynamic_cast<OperandBitField_t const*>( &**bf )) and (expr = constraint( (**bf).symbol() )) ) {
-      res->m_bitfields.push_back( new SpOperandBitField_t( *opbf, expr->m_value ) );
-    } else {
-      res->m_bitfields.push_back( *bf );
+  for (Vect_t<BitField_t>::const_iterator bf = bflist.begin(); bf < bflist.end(); ++ bf )
+    {
+      OperandBitField_t const* opbf;
+      Constraint_t* expr;
+      if ((opbf = dynamic_cast<OperandBitField_t const*>( &**bf )) and (expr = constraint( (**bf).symbol() )) ) {
+        res->m_bitfields.push_back( new SpOperandBitField_t( *opbf, expr->m_value ) );
+      } else {
+        res->m_bitfields.push_back( *bf );
+      }
     }
-  }
   
   return res;
 }

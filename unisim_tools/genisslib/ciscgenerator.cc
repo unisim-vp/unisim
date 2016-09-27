@@ -424,36 +424,40 @@ CiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, ch
   
   bool little_endian = isa().m_little_endian;
   
-  for (FieldIterator fi( little_endian, _op.m_bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
-    if (dynamic_cast<SubOpBitField_t const*>( &fi.item() )) {
-      _product.code( "assert( \"Encode method does not work with sub-operations.\" and false );\n" );
-    }
+  for (FieldIterator fi( little_endian, _op.m_bitfields, (*m_insnsizes.rbegin()) ); fi.next(); )
+    {
     
-    else if (OperandBitField_t const* opbf = dynamic_cast<OperandBitField_t const*>( &fi.item() )) {
-      unsigned int opsize = std::max( least_ctype_size( opbf->dstsize() ), m_minwordsize );
-      ConstStr_t shiftedop;
-      if      (opbf->m_shift > 0)
-        shiftedop = Str::fmt( "(uint%u_t( %s ) << %u)", opsize, opbf->m_symbol.str(), +opbf->m_shift );
-      else if (opbf->m_shift < 0)
-        shiftedop = Str::fmt( "(uint%u_t( %s ) >> %u)", opsize, opbf->m_symbol.str(), -opbf->m_shift );
-      else
-        shiftedop = Str::fmt( "uint%u_t( %s )", opsize, opbf->m_symbol.str() );
-      
-      for (unsigned int end = fi.insn_size(), start = end - fi.m_size,
-             substart = start, subend; substart < end; substart = subend)
+      if (dynamic_cast<SubOpBitField_t const*>( &fi.item() ))
         {
-          subend = std::min( (substart + 8) & -8, end);
-          unsigned int
-            bound = 1 << (subend - substart),
-            pos = little_endian ? (substart % 8) : ((-subend) % 8),
-            bytepos = substart / 8,
-            srcpos = little_endian ? (substart - start) : (end - subend);
+          _product.code( "assert( \"Encode method does not work with sub-operations.\" and false );\n" );
+        }
+    
+      else if (OperandBitField_t const* opbf = dynamic_cast<OperandBitField_t const*>( &fi.item() ))
+        {
+          unsigned int opsize = membersize( *opbf );
+          ConstStr_t shiftedop;
+          if      (opbf->m_shift > 0)
+            shiftedop = Str::fmt( "(uint%u_t( %s ) << %u)", opsize, opbf->m_symbol.str(), +opbf->m_shift );
+          else if (opbf->m_shift < 0)
+            shiftedop = Str::fmt( "(uint%u_t( %s ) >> %u)", opsize, opbf->m_symbol.str(), -opbf->m_shift );
+          else
+            shiftedop = Str::fmt( "uint%u_t( %s )", opsize, opbf->m_symbol.str() );
+      
+          for (unsigned int end = fi.insn_size(), start = end - fi.m_size,
+                 substart = start, subend; substart < end; substart = subend)
+            {
+              subend = std::min( (substart + 8) & -8, end);
+              unsigned int
+                bound = 1 << (subend - substart),
+                pos = little_endian ? (substart % 8) : ((-subend) % 8),
+                bytepos = substart / 8,
+                srcpos = little_endian ? (substart - start) : (end - subend);
           
-          _product.code( "%s.str[%u] |= (((%s >> %u) %% %u) << %u);\n",
-                         _codename, bytepos, shiftedop.str(), srcpos, bound, pos );
+              _product.code( "%s.str[%u] |= (((%s >> %u) %% %u) << %u);\n",
+                             _codename, bytepos, shiftedop.str(), srcpos, bound, pos );
+            }
         }
     }
-  }
 }
 
 void
@@ -472,93 +476,96 @@ CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
   char const* dsh = little_endian ? ">>" : "<<";
   char const* ash = little_endian ? "<<" : ">>";
   
-  for (FieldIterator fi( little_endian, _op.m_bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
-    if (SubOpBitField_t const* sobf = dynamic_cast<SubOpBitField_t const*>( &fi.item() )) {
-      SDInstance_t const* sdinstance = sobf->m_sdinstance;
-      SDClass_t const* sdclass = sdinstance->m_sdclass;
-      SourceCode_t const* tpscheme =  sdinstance->m_template_scheme;
-      
-      _product.code( "{\n" );
-      _product.code( "%s::CodeType _subcode_;\n", sdclass->qd_namespace().str() );
-      _product.code( "_subcode_.size = %u;\n", sdclass->maxsize() );
-      
-      unsigned int shift = fi.insn_size() - fi.m_size;
-      unsigned int byteshift = shift / 8;
-      shift = shift % 8;
-      unsigned int subbytes = (sdclass->maxsize() + 7) / 8;
-      
-      for (unsigned int idx = 0; idx < subbytes; ++idx) {
-        unsigned int didx = idx + byteshift;
-        _product.code( "_subcode_.str[%u] = ", idx );
-        _product.code( "uint8_t( %s.str[%u] %s %u )", _codename, didx, dsh, shift );
-        if (shift > 0 and (didx + 1) < m_code_capacity)
-          _product.code( "| uint8_t( %s.str[%u] %s %u )", _codename, didx + 1, ash, 8 - shift );
-        _product.code( ";\n" );
-      }
-      
-      _product.code( "%s = %s::sub_decode", sobf->m_symbol.str(), sdclass->qd_namespace().str() );
-      if( tpscheme )
-        _product.usercode( tpscheme->m_fileloc, "< %s >", tpscheme->m_content.str() );
-      _product.code( "( %s, _subcode_ );\n", _addrname );
-      _product.code( "unsigned int shortening = %u - %s->GetLength();\n",
-                     sdclass->maxsize(), sobf->m_symbol.str() );
-      _product.code( "this->encoding.size -= shortening;\n" );
-      _product.code( "%s.stretch_front( shortening );\n", _codename );
-      _product.code( "}\n" );
-    }
-    
-    else if (OperandBitField_t const* opbf = dynamic_cast<OperandBitField_t const*>( &fi.item() )) {
-      _product.code( "%s = ", opbf->m_symbol.str() );
-      unsigned int opsize = std::max( least_ctype_size( opbf->dstsize() ), m_minwordsize );
-      char const* sep = "";
-      
-      for (unsigned int end = fi.insn_size(), start = end - fi.m_size,
-             substart = start, subend; substart < end; substart = subend)
+  for (FieldIterator fi( little_endian, _op.m_bitfields, (*m_insnsizes.rbegin()) ); fi.next(); )
+    {
+      if (SubOpBitField_t const* sobf = dynamic_cast<SubOpBitField_t const*>( &fi.item() ))
         {
-          subend = std::min( (substart + 8) & -8, end);
-          unsigned int
-            bound = 1 << (subend - substart),
-            pos = little_endian ? (substart % 8) : ((-subend) % 8),
-            bytepos = substart / 8,
-            dstpos = little_endian ? (substart - start) : (end - subend),
-            mask = bound - 1;
-          
-          if( mask ) {
-            if(pos) {
-              if(dstpos) {
-                _product.code( "%s(((uint%u_t( %s.str[%u] ) >> %u) & 0x%x) << %u)", sep, opsize, _codename, bytepos, pos, mask, dstpos );
-              }
-              else {
-                _product.code( "%s((uint%u_t( %s.str[%u] ) >> %u) & 0x%x)", sep, opsize, _codename, bytepos, pos, mask );
-              }
-            }
-            else {
-              if(dstpos) {
-                _product.code( "%s((uint%u_t( %s.str[%u] ) & 0x%x) << %u)", sep, opsize, _codename, bytepos, mask, dstpos );
-              }
-              else {
-                _product.code( "%s(uint%u_t( %s.str[%u] ) & 0x%x)", sep, opsize, _codename, bytepos, mask );
-              }
-            }
-          }
-          else {
-            _product.code( "%s(uint%u_t( 0x0 ))", sep, opsize);
-          }
-          sep = " | ";
-        }
-      _product.code( ";\n" );
+          SDInstance_t const* sdinstance = sobf->m_sdinstance;
+          SDClass_t const* sdclass = sdinstance->m_sdclass;
+          SourceCode_t const* tpscheme =  sdinstance->m_template_scheme;
       
-      if( opbf->m_sext ) {
-        int sext_shift = opsize - opbf->m_size;
-        _product.code( "%s = (int%u_t)(%s << %u) >> %u;\n", opbf->m_symbol.str(), opsize, opbf->m_symbol.str(), sext_shift, sext_shift );
-      }
+          _product.code( "{\n" );
+          _product.code( "%s::CodeType _subcode_;\n", sdclass->qd_namespace().str() );
+          _product.code( "_subcode_.size = %u;\n", sdclass->maxsize() );
+      
+          unsigned int shift = fi.insn_size() - fi.m_size;
+          unsigned int byteshift = shift / 8;
+          shift = shift % 8;
+          unsigned int subbytes = (sdclass->maxsize() + 7) / 8;
+      
+          for (unsigned int idx = 0; idx < subbytes; ++idx) {
+            unsigned int didx = idx + byteshift;
+            _product.code( "_subcode_.str[%u] = ", idx );
+            _product.code( "uint8_t( %s.str[%u] %s %u )", _codename, didx, dsh, shift );
+            if (shift > 0 and (didx + 1) < m_code_capacity)
+              _product.code( "| uint8_t( %s.str[%u] %s %u )", _codename, didx + 1, ash, 8 - shift );
+            _product.code( ";\n" );
+          }
+      
+          _product.code( "%s = %s::sub_decode", sobf->m_symbol.str(), sdclass->qd_namespace().str() );
+          if( tpscheme )
+            _product.usercode( tpscheme->m_fileloc, "< %s >", tpscheme->m_content.str() );
+          _product.code( "( %s, _subcode_ );\n", _addrname );
+          _product.code( "unsigned int shortening = %u - %s->GetLength();\n",
+                         sdclass->maxsize(), sobf->m_symbol.str() );
+          _product.code( "this->encoding.size -= shortening;\n" );
+          _product.code( "%s.stretch_front( shortening );\n", _codename );
+          _product.code( "}\n" );
+        }
     
-      if( opbf->m_shift > 0 )
-        _product.code( "%s >>= %u;\n", opbf->m_symbol.str(), +opbf->m_shift );
-      if( opbf->m_shift < 0 )
-        _product.code( "%s <<= %u;\n", opbf->m_symbol.str(), -opbf->m_shift );
+      else if (OperandBitField_t const* opbf = dynamic_cast<OperandBitField_t const*>( &fi.item() ))
+        {
+          _product.code( "%s = ", opbf->m_symbol.str() );
+          unsigned int opsize = membersize( *opbf );
+          char const* sep = "";
+      
+          for (unsigned int end = fi.insn_size(), start = end - fi.m_size,
+                 substart = start, subend; substart < end; substart = subend)
+            {
+              subend = std::min( (substart + 8) & -8, end);
+              unsigned int
+                bound = 1 << (subend - substart),
+                pos = little_endian ? (substart % 8) : ((-subend) % 8),
+                bytepos = substart / 8,
+                dstpos = little_endian ? (substart - start) : (end - subend),
+                mask = bound - 1;
+          
+              if( mask ) {
+                if(pos) {
+                  if(dstpos) {
+                    _product.code( "%s(((uint%u_t( %s.str[%u] ) >> %u) & 0x%x) << %u)", sep, opsize, _codename, bytepos, pos, mask, dstpos );
+                  }
+                  else {
+                    _product.code( "%s((uint%u_t( %s.str[%u] ) >> %u) & 0x%x)", sep, opsize, _codename, bytepos, pos, mask );
+                  }
+                }
+                else {
+                  if(dstpos) {
+                    _product.code( "%s((uint%u_t( %s.str[%u] ) & 0x%x) << %u)", sep, opsize, _codename, bytepos, mask, dstpos );
+                  }
+                  else {
+                    _product.code( "%s(uint%u_t( %s.str[%u] ) & 0x%x)", sep, opsize, _codename, bytepos, mask );
+                  }
+                }
+              }
+              else {
+                _product.code( "%s(uint%u_t( 0x0 ))", sep, opsize);
+              }
+              sep = " | ";
+            }
+          _product.code( ";\n" );
+      
+          if (opbf->m_sext) {
+            int sext_shift = opsize - opbf->m_size;
+            _product.code( "%s = (int%u_t)(%s << %u) >> %u;\n", opbf->m_symbol.str(), opsize, opbf->m_symbol.str(), sext_shift, sext_shift );
+          }
+    
+          if (opbf->m_shift > 0)
+            _product.code( "%s >>= %u;\n", opbf->m_symbol.str(), +opbf->m_shift );
+          if (opbf->m_shift < 0)
+            _product.code( "%s <<= %u;\n", opbf->m_symbol.str(), -opbf->m_shift );
+        }
     }
-  }
 }
 
 void

@@ -87,7 +87,8 @@ OperandBitField_t::fills( ostream& _sink ) const {
     @return the size (in bits) of the target word encoded by this field.
 */
 unsigned int
-OperandBitField_t::dstsize() const {
+OperandBitField_t::dstsize() const
+{
   return std::max( (unsigned int)(m_size + ((m_shift < 0) ? -m_shift : 0)), m_size_modifier );
 }
 
