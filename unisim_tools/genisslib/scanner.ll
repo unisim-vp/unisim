@@ -36,7 +36,7 @@ FileLoc_t                Scanner::fileloc;
 FileLoc_t                Scanner::fileloc_mlt;
 int                      Scanner::bracecount = 0;
 std::vector<int>         Scanner::scs;
-Vect_t<Comment_t>        Scanner::comments;
+Vector<Comment>        Scanner::comments;
 Isa*                     Scanner::s_isa = 0;
 ConstStr::Pool           Scanner::symbols;
 std::vector<ConstStr>    Scanner::s_lookupdirs;
@@ -87,7 +87,7 @@ decimal_number [0-9]+
 <source_code_context>\n { Scanner::strbuf().append( yytext, yyleng ); Scanner::fileloc.newline(); }
 <source_code_context>\} {
   if (Scanner::sc_leave()) {
-    yylval.sourcecode = new SourceCode_t( Scanner::strbuf().c_str(), Scanner::fileloc_mlt );
+    yylval.sourcecode = new SourceCode( Scanner::strbuf().c_str(), Scanner::fileloc_mlt );
     return TOK_SOURCE_CODE;
   }
 }
@@ -105,7 +105,7 @@ decimal_number [0-9]+
 <c_like_comment_context>"*"+"/" {
   if( Scanner::sc_leave() ) {
     Scanner::strbuf().append( yytext, yyleng );
-    Scanner::comments.append( new Comment_t( Scanner::strbuf().c_str(), Scanner::fileloc_mlt ) );
+    Scanner::comments.append( new Comment( Scanner::strbuf().c_str(), Scanner::fileloc_mlt ) );
   }
 }
 
@@ -113,7 +113,7 @@ decimal_number [0-9]+
 <cpp_like_comment_context>[^\n] { Scanner::strbuf().append( yytext, yyleng ); }
 <cpp_like_comment_context>\n {
   if( Scanner::sc_leave() ) {
-    Scanner::comments.append( new Comment_t( Scanner::strbuf().c_str(), Scanner::fileloc_mlt ) );
+    Scanner::comments.append( new Comment( Scanner::strbuf().c_str(), Scanner::fileloc_mlt ) );
   }
   Scanner::fileloc.newline();
 }
@@ -123,7 +123,7 @@ decimal_number [0-9]+
 {decimal_number} { sscanf(yytext, "%u", &yylval.uinteger); return TOK_INTEGER; }
 {identifier} {
   int token = Scanner::token( yytext );
-  if( token == TOK_IDENT )
+  if (token == TOK_IDENT)
     yylval.persistent_string = ConstStr( yytext, Scanner::symbols ).str();
   return token;
 }
@@ -183,11 +183,11 @@ bool
 Scanner::pop() {
   Include_t* tail = include_stack;
   
-  if( not tail ) return false;
+  if (not tail) return false;
   YY_BUFFER_STATE state;
   tail->restore( &state, sizeof( YY_BUFFER_STATE ) );
   yy_delete_buffer( YY_CURRENT_BUFFER );
-  if( yyin ) fclose( yyin );
+  if (yyin) fclose( yyin );
   yy_switch_to_buffer( state );
   
   fileloc = tail->m_fileloc;
@@ -218,7 +218,7 @@ Scanner::Include_t::restore( void* _state, intptr_t _size ) {
 bool
 Scanner::parse( char const* _filename, Isa& _isa ) {
   s_isa = &_isa;
-  if( not Scanner::open( ConstStr( _filename ) ) )
+  if (not Scanner::open( ConstStr( _filename) ) )
     return false;
   bracecount = 0;
   scs.clear();
@@ -235,7 +235,7 @@ Scanner::parse( char const* _filename, Isa& _isa ) {
   aborted_scanning = false;
   int error = yyparse();
   
-  if( yyin ) {
+  if (yyin) {
     fclose( yyin );
     yyin = 0;
   }
@@ -266,7 +266,7 @@ Scanner::include( char const* _filename ) {
   
   Scanner::push();
 
-  if( not Scanner::open( filename ))
+  if (not Scanner::open( filename))
     return false;
 
   yy_switch_to_buffer( yy_create_buffer( yyin, YY_BUF_SIZE ) );
@@ -279,7 +279,7 @@ parse_binary_number( char const* binstr, int length, unsigned int *value ) {
   unsigned int res = 0;
   unsigned int mask = 1;
   for( char const* ptr = binstr + length; (--ptr) >= binstr and *ptr != 'b'; ) {
-    if( *ptr != '0' ) res |= mask;
+    if (*ptr != '0') res |= mask;
     mask <<= 1;
   }
   *value = res;
@@ -318,7 +318,7 @@ Scanner::Token_t Scanner::s_tokens[] = {
 int
 Scanner::token( char const* _text ) {
   for( int idx = 0; s_tokens[idx].m_name; ++ idx )
-    if( strcmp( s_tokens[idx].m_name, _text ) == 0 )
+    if (strcmp( s_tokens[idx].m_name, _text) == 0 )
       return s_tokens[idx].m_token;
 
   return TOK_IDENT;
@@ -335,7 +335,7 @@ Scanner::charname( char _char ) {
   default: break;
   }
   
-  if( _char < 32 or _char >= 126 )
+  if (_char < 32 or _char >= 126)
     return Str::fmt( "char #%d", _char );
 
   return Str::fmt( "'%c'", _char );
@@ -349,7 +349,7 @@ ConstStr
 Scanner::tokenname( int _token ) {
   /* search into the token table */
   for( int idx = 0; s_tokens[idx].m_name; ++ idx )
-    if( s_tokens[idx].m_token == _token )
+    if (s_tokens[idx].m_token == _token)
       return s_tokens[idx].m_name;
   
   /* return a string for the token not in the token table */
@@ -372,7 +372,7 @@ Scanner::tokenname( int _token ) {
   }
 
   /* return a string for a character token */
-  if( _token < 256 )
+  if (_token < 256)
     return charname( _token );
   
   /* don't know which token it is ! */
@@ -397,7 +397,7 @@ Scanner::add_lookupdir( char const* _dir ) {
      s_lookupdirs.push_back( cv_dir );
   }
 #else
-  if( *_dir == '/' )
+  if (*_dir == '/')
   {
     s_lookupdirs.push_back( _dir );
     return;
@@ -408,7 +408,7 @@ Scanner::add_lookupdir( char const* _dir ) {
   for (intptr_t capacity = 128; true; capacity *= 2) {
     char storage[capacity];
     if (not getcwd( storage, capacity )) {
-      if( errno != ERANGE ) throw CWDError;
+      if (errno != ERANGE) throw CWDError;
       continue; 
     }
 #ifdef WIN32
@@ -458,13 +458,13 @@ Scanner::locate( char const* _name )
 void
 Scanner::sc_enter( int _condition ) {
   int sc = YY_START;
-  if( sc == INITIAL ) {
+  if (sc == INITIAL) {
     fileloc_mlt = fileloc;
     strbuf().clear();
   }
-  if( _condition == source_code_context ) {
-    if( sc == source_code_context ) { bracecount += 1; return; }
-    else if( sc == INITIAL ) bracecount = 1;
+  if (_condition == source_code_context) {
+    if (sc == source_code_context) { bracecount += 1; return; }
+    else if (sc == INITIAL) bracecount = 1;
     else assert( false );
   }
   scs.push_back( sc );
@@ -484,7 +484,7 @@ Scanner::sc_leave()
     BEGIN( newsc );
   }
 
-  if( newsc == INITIAL ) return true;
+  if (newsc == INITIAL) return true;
   strbuf().append( yytext, yyleng );
   return false;
 }

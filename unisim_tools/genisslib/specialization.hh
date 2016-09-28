@@ -25,31 +25,31 @@
 #include <referencecounting.hh>
 #include <vect.hh>
 
-struct Constraint_t : virtual ReferenceCounter
+struct Constraint : virtual ReferenceCounter
 {
-  ConstStr             m_symbol; /**< The specialization symbol */
+  ConstStr               m_symbol; /**< The specialization symbol */
   unsigned int           m_value;  /**< The specialization value */
   
-  Constraint_t( ConstStr _symbol, unsigned int _value );
-  ~Constraint_t();
+  Constraint( ConstStr _symbol, unsigned int _value );
+  ~Constraint();
 };
 
-std::ostream& operator<<( std::ostream& _sink, Constraint_t const& _var );
+std::ostream& operator<<( std::ostream& _sink, Constraint const& _var );
 
 /** A specialization object */
-struct Specialization_t : virtual ReferenceCounter
+struct Specialization : virtual ReferenceCounter
 {
-  Ptr_t<Operation_t>     m_operation; /**< The operation wich is specialized */
-  Vect_t<Constraint_t>   m_constraints; /**< The list of variables associated with the specialization */
+  Ptr<Operation>         m_operation; /**< The operation wich is specialized */
+  Vector<Constraint>   m_constraints; /**< The list of variables associated with the specialization */
 
-  Specialization_t( Operation_t* _operation, Vect_t<Constraint_t>& _variables );
-  ~Specialization_t();
+  Specialization( Operation* _operation, Vector<Constraint>& _variables );
+  ~Specialization();
   
-  Operation_t*           newop();
+  Operation*             newop();
   
-  Constraint_t*          constraint( ConstStr _symbol );
+  Constraint*          constraint( ConstStr _symbol );
 };
 
-std::ostream& operator<<( std::ostream& _sink, Specialization_t const& _var );
+std::ostream& operator<<( std::ostream& _sink, Specialization const& _var );
 
 #endif // __SPECIALIZATION_HH__

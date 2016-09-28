@@ -40,11 +40,11 @@ int yyerror( char const* _err );
 
 static
 void
-create_action( Operation_t* _operation, ActionProto const* _actionproto, SourceCode_t* _actioncode )
+create_action( Operation* _operation, ActionProto const* _actionproto, SourceCode* _actioncode )
 {
   Action const* prev_action = _operation->action( _actionproto );
 
-  if( prev_action ) {
+  if (prev_action) {
     Scanner::fileloc.err( "error: action `%s.%s' redefined",
                           _operation->m_symbol.str(), _actionproto->m_symbol.str() );
     
@@ -156,7 +156,7 @@ declaration_list: | declaration_list declaration {}
 namespace_list:
       TOK_IDENT
 {
-  $$ = new StringVect_t( $1 );
+  $$ = new StringVector( $1 );
 }
   | namespace_list TOK_QUAD_DOT TOK_IDENT
 {
@@ -167,9 +167,9 @@ namespace_list:
 subdecoder_instance:
   TOK_SUBDECODER namespace_list TOK_IDENT template_scheme
 {
-  StringVect_t* nmspc_in = $2;
+  StringVector* nmspc_in = $2;
   ConstStr symbol = ConstStr( $3, Scanner::symbols );
-  SourceCode_t* template_scheme = $4;
+  SourceCode* template_scheme = $4;
   
   std::vector<ConstStr> nmspc( nmspc_in->size(), ConstStr() );
   for( intptr_t idx = nmspc_in->size(); (--idx) >= 0; )
@@ -177,13 +177,13 @@ subdecoder_instance:
   delete nmspc_in;
   
   SDClass_t const* sdclass = Scanner::isa().sdclass( nmspc );
-  if( not sdclass ) {
+  if (not sdclass) {
     Scanner::fileloc.err( "error: subdecoder has not been declared" );
     YYABORT;
   }
   
   SDInstance_t const* sdinstance = Scanner::isa().sdinstance( symbol );
-  if( sdinstance ) {
+  if (sdinstance) {
     Scanner::fileloc.err( "error: subdecoder instance `%s' redefined", symbol.str() );
     sdinstance->m_fileloc.err( "subdecoder instance `%s' previously defined here", symbol.str() );
     YYABORT;
@@ -206,7 +206,7 @@ template_scheme:
 uinteger_list:
   TOK_INTEGER
 {
-  $$ = new UIntVect_t( $1 );
+  $$ = new UIntVector( $1 );
 }
   | uinteger_list ',' TOK_INTEGER
 {
@@ -218,8 +218,8 @@ uinteger_list:
 subdecoder_class:
   TOK_SUBDECODER namespace_list '[' uinteger_list ']'
 {
-  StringVect_t* nmspc_in = $2;
-  UIntVect_t* insnsizes = $4;
+  StringVector* nmspc_in = $2;
+  UIntVector* insnsizes = $4;
   
   std::vector<ConstStr> nmspc( nmspc_in->size(), ConstStr() );
   for( intptr_t idx = nmspc_in->size(); (--idx) >= 0; )
@@ -228,7 +228,7 @@ subdecoder_class:
   
   SDClass_t const* sdclass = Scanner::isa().sdclass( nmspc );
   
-  if( sdclass ) {
+  if (sdclass) {
     Scanner::fileloc.err( "error: subdecoder class redeclared." );
     sdclass->m_fileloc.err( "subdecoder class previously declared here." );
     YYABORT;
@@ -255,7 +255,7 @@ global_ident_parameter: TOK_SET TOK_IDENT TOK_IDENT
 global_sourcecode_parameter: TOK_SET TOK_IDENT TOK_SOURCE_CODE
 {
   ConstStr key( $2, Scanner::symbols );
-  SourceCode_t* val = $3;
+  SourceCode* val = $3;
   try {
     Scanner::isa().setparam( key, val );
   } catch (Isa::UnknownIdent ui) {
@@ -349,9 +349,9 @@ declaration:
 
 namespace_declaration: TOK_NAMESPACE namespace_list
 {
-  StringVect_t* nmspc = $2;
+  StringVector* nmspc = $2;
   
-  for( StringVect_t::const_iterator ident = nmspc->begin(); ident != nmspc->end(); ++ident ) {
+  for( StringVector::const_iterator ident = nmspc->begin(); ident != nmspc->end(); ++ident ) {
     Scanner::isa().m_namespace.push_back( ConstStr( *ident, Scanner::symbols ) );
   }
   
@@ -399,26 +399,26 @@ op_condition: TOK_SOURCE_CODE ':'
 
 operation_declaration : op_condition TOK_OP TOK_IDENT bitfield_list_decl
 {
-  SourceCode_t*       op_cond = $1;
+  SourceCode*       op_cond = $1;
   ConstStr          symbol = ConstStr( $3, Scanner::symbols );
-  Vect_t<BitField>* bitfields = $4;
+  Vector<BitField>* bitfields = $4;
   
   {
-    Operation_t const* prev_op = Scanner::isa().operation( symbol );
-    if( prev_op ) {
+    Operation const* prev_op = Scanner::isa().operation( symbol );
+    if (prev_op) {
       Scanner::fileloc.err( "error: operation `%s' redefined", symbol.str() );
       prev_op->m_fileloc.err( "operation `%s' previously defined here", symbol.str() );
       YYABORT;
     }
     
-    Group_t const* prev_grp = Scanner::isa().group( symbol );
-    if( prev_grp ) {
+    Group const* prev_grp = Scanner::isa().group( symbol );
+    if (prev_grp) {
       Scanner::fileloc.err( "error: operation `%s' redefined", symbol.str() );
       prev_grp->m_fileloc.err( "group `%s' previously defined here", symbol.str() );
     }
   }
 
-  Operation_t* operation = new Operation_t( symbol, *bitfields, Scanner::comments, op_cond, Scanner::fileloc );
+  Operation* operation = new Operation( symbol, *bitfields, Scanner::comments, op_cond, Scanner::fileloc );
   delete bitfields;
   Scanner::comments.clear();
 
@@ -428,7 +428,7 @@ operation_declaration : op_condition TOK_OP TOK_IDENT bitfield_list_decl
 
 bitfield_list : bitfield
 {
-  $$ = new Vect_t<BitField>( $1 );
+  $$ = new Vector<BitField>( $1 );
 }
   | bitfield_list ':' bitfield
 {
@@ -454,7 +454,7 @@ bitfield: TOK_INTEGER '[' TOK_INTEGER ']'
   ConstStr sdinstance_symbol = ConstStr( $4, Scanner::symbols );
   SDInstance_t const* sdinstance = Scanner::isa().sdinstance( sdinstance_symbol );
   
-  if( not sdinstance ) {
+  if (not sdinstance) {
     Scanner::fileloc.err( "error: subdecoder instance `%s' not declared", sdinstance_symbol.str() );
     YYABORT;
   }
@@ -512,29 +512,29 @@ size_modifier:
 global_inheritance_declaration:
 TOK_INHERITANCE TOK_SOURCE_CODE TOK_SOURCE_CODE '=' TOK_SOURCE_CODE
 {
-  $$ = new Inheritance_t( $2, $3, $5 );
+  $$ = new Inheritance( $2, $3, $5 );
 }
 | TOK_INHERITANCE TOK_SOURCE_CODE TOK_SOURCE_CODE
 {
-  $$ = new Inheritance_t( $2, $3, 0 );
+  $$ = new Inheritance( $2, $3, 0 );
 }
 ;
 
 op_var_list_declaration: TOK_IDENT '.' TOK_VAR var_list
 {
   ConstStr    target_symbol = ConstStr( $1, Scanner::symbols );
-  Vect_t<Variable_t>* var_list = $4;
+  Vector<Variable>* var_list = $4;
   
   /* Target symbol points to either an operation or a group */
-  Operation_t* operation = Scanner::isa().operation( target_symbol );
-  if( operation ) {
+  Operation* operation = Scanner::isa().operation( target_symbol );
+  if (operation) {
     /* Target symbol points to an operation */
     operation->m_variables.append( *var_list );
   } else {
-    Group_t* group = Scanner::isa().group( target_symbol );
-    if( group ) {
+    Group* group = Scanner::isa().group( target_symbol );
+    if (group) {
       /* Target symbol points to a group */
-      for( Vect_t<Operation_t>::iterator gop = group->m_operations.begin(); gop < group->m_operations.end(); ++ gop )
+      for( Vector<Operation>::iterator gop = group->m_operations.begin(); gop < group->m_operations.end(); ++ gop )
         (**gop).m_variables.append( *var_list );
     } else {
       /* Target symbol doesn't point to anything */
@@ -554,7 +554,7 @@ global_var_list_declaration: TOK_VAR var_list
 
 var_list: var
 {
-  $$ = new Vect_t<Variable_t>( $1 );
+  $$ = new Vector<Variable>( $1 );
 }
   | var_list ',' var
 {
@@ -575,47 +575,47 @@ var_init:
 var: TOK_IDENT ':' TOK_SOURCE_CODE var_init
 {
   ConstStr     symbol = ConstStr( $1, Scanner::symbols );
-  SourceCode_t*  c_type = $3;
-  SourceCode_t*  c_init = $4;
+  SourceCode*  c_type = $3;
+  SourceCode*  c_init = $4;
   
-  $$ = new Variable_t( symbol, c_type, c_init );
+  $$ = new Variable( symbol, c_type, c_init );
 }
 ;
 
 action_proto_declaration: action_proto_type TOK_ACTION returns TOK_IDENT '(' param_list ')' constness TOK_SOURCE_CODE
 {
   ActionProto::type_t action_proto_type = ActionProto::type_t( $1 );
-  SourceCode_t*         returns = $3;
+  SourceCode*         returns = $3;
   ConstStr            symbol = ConstStr( $4, Scanner::symbols );
-  Vect_t<CodePair_t>*   param_list = $6;
-  SourceCode_t*         default_sourcecode = $9;
+  Vector<CodePair>*   param_list = $6;
+  SourceCode*         default_sourcecode = $9;
 
   { /* action protype name should be unique */
     ActionProto const*  prev_proto = Scanner::isa().actionproto( symbol );
-    if( prev_proto ) {
+    if (prev_proto) {
       Scanner::fileloc.err( "error: action prototype `%s' redefined", prev_proto->m_symbol.str() );
       prev_proto->m_fileloc.err( "action prototype `%s' previously defined here", prev_proto->m_symbol.str() );
       YYABORT;
     }
   }
     
-  if( returns ) {
+  if (returns) {
     switch( action_proto_type ) {
     case ActionProto::Constructor:
       Scanner::fileloc.err( "error: constructor action prototype `%s' must not have a return type (%s)",
-                symbol.str(), returns->m_content.str() );
+                symbol.str(), returns->content.str() );
       YYABORT;
       break;
     case ActionProto::Destructor:
       Scanner::fileloc.err( "error: destructor action prototype `%s' must not have a return type (%s)",
-                symbol.str(), returns->m_content.str() );
+                symbol.str(), returns->content.str() );
       YYABORT;
       break;
     default: break;
     }
   }
   
-  if( param_list )
+  if (param_list)
   {
     switch( action_proto_type ) {
     case ActionProto::Constructor:
@@ -664,9 +664,9 @@ constness:
 
 param: TOK_SOURCE_CODE TOK_SOURCE_CODE
 {
-  SourceCode_t *c_type = $1;
-  SourceCode_t *c_symbol = $2;
-  $$ = new CodePair_t( c_type, c_symbol );
+  SourceCode *c_type = $1;
+  SourceCode *c_symbol = $2;
+  $$ = new CodePair( c_type, c_symbol );
 }
 ;
 
@@ -676,7 +676,7 @@ param_list:
 }
   | param
 {
-  $$ = new Vect_t<CodePair_t>( $1 );
+  $$ = new Vector<CodePair>( $1 );
 }
   | param_list ',' param
 {
@@ -706,26 +706,26 @@ action_declaration: TOK_IDENT '.' TOK_IDENT '=' TOK_SOURCE_CODE
 {
   ConstStr    target_symbol = ConstStr( $1, Scanner::symbols );
   ConstStr    action_proto_symbol = ConstStr( $3, Scanner::symbols );
-  SourceCode_t* actioncode = $5;
+  SourceCode* actioncode = $5;
   
   /* Actions belongs to an action prototype */
   ActionProto const* actionproto = Scanner::isa().actionproto( action_proto_symbol );
 
-  if( not actionproto ) {
+  if (not actionproto) {
     Scanner::fileloc.err( "error: undefined action prototype `%s'", action_proto_symbol.str() );
     YYABORT;
   }
   
   /* Target symbol points to either an operation or a group */
-  Operation_t* operation = Scanner::isa().operation( target_symbol );
-  if( operation ) {
+  Operation* operation = Scanner::isa().operation( target_symbol );
+  if (operation) {
     /* Target symbol points to an operation */
     create_action( operation, actionproto, actioncode );
   } else {
-    Group_t* group = Scanner::isa().group( target_symbol );
-    if( group ) {
+    Group* group = Scanner::isa().group( target_symbol );
+    if (group) {
       /* Target symbol points to a group */
-      for( Vect_t<Operation_t>::iterator gop = group->m_operations.begin(); gop < group->m_operations.end(); ++ gop )
+      for( Vector<Operation>::iterator gop = group->m_operations.begin(); gop < group->m_operations.end(); ++ gop )
         create_action( *gop, actionproto, actioncode );
     } else {
       /* Target symbol doesn't point to anything */
@@ -741,27 +741,27 @@ action_declaration: TOK_IDENT '.' TOK_IDENT '=' TOK_SOURCE_CODE
 specialization: TOK_SPECIALIZE TOK_IDENT '(' constraint_list ')'
 {
   ConstStr            symbol = ConstStr( $2, Scanner::symbols );
-  Vect_t<Constraint_t>* constraint_list = $4;
-  Operation_t*          operation = Scanner::isa().operation( symbol );
-  if( not operation ) {
+  Vector<Constraint>* constraint_list = $4;
+  Operation*          operation = Scanner::isa().operation( symbol );
+  if (not operation) {
     Scanner::fileloc.err( "error: operation `%s' not defined", symbol.str() );
     YYABORT;
   }
   
-  $$ = new Specialization_t( operation, *constraint_list );
+  $$ = new Specialization( operation, *constraint_list );
   delete constraint_list;
 }
 ;
 
 user_specialization: TOK_IDENT '.' TOK_SPECIALIZE '(' operation_list ')'
 {
-  StringVect_t const* oplist = $5;
+  StringVector const* oplist = $5;
   Scanner::isa().m_user_orderings.push_back( Isa::Ordering() );
   Isa::Ordering& order = Scanner::isa().m_user_orderings.back();
   order.fileloc = Scanner::fileloc;
   order.symbols.reserve( oplist->size() + 1 );
   order.symbols.push_back( ConstStr( $1, Scanner::symbols ) );
-  for (StringVect_t::const_iterator itr = oplist->begin(), end = oplist->end(); itr != end; ++itr)
+  for (StringVector::const_iterator itr = oplist->begin(), end = oplist->end(); itr != end; ++itr)
     { order.symbols.push_back( ConstStr( *itr, Scanner::symbols ) ); }
   delete oplist;
 }
@@ -770,7 +770,7 @@ user_specialization: TOK_IDENT '.' TOK_SPECIALIZE '(' operation_list ')'
 constraint_list:
   constraint
 {
-  $$ = new Vect_t<Constraint_t>( $1 );
+  $$ = new Vector<Constraint>( $1 );
 }
   | constraint_list ',' constraint
 {
@@ -780,13 +780,13 @@ constraint_list:
 
 constraint: TOK_IDENT '=' TOK_INTEGER
 {
-  $$ = new Constraint_t( ConstStr( $1, Scanner::symbols ), $3 );
+  $$ = new Constraint( ConstStr( $1, Scanner::symbols ), $3 );
 }
 ;
 
 include : TOK_INCLUDE TOK_STRING
 {
-  if( not Scanner::include( $2 ) )
+  if (not Scanner::include( $2) )
     YYABORT;
 }
 ;
@@ -806,17 +806,17 @@ group_environment: TOK_GROUP TOK_IDENT TOK_IDENT
 group_declaration: TOK_GROUP TOK_IDENT '(' operation_list ')'
 {
   ConstStr           group_symbol = ConstStr( $2, Scanner::symbols );
-  StringVect_t*        oplist = $4;
+  StringVector*        oplist = $4;
   
   { /* Operations and groups name should not conflict */
-    Operation_t* prev_op = Scanner::isa().operation( group_symbol );
+    Operation* prev_op = Scanner::isa().operation( group_symbol );
     if (prev_op) {
       Scanner::fileloc.err( "error: group name conflicts with operation `%s'", group_symbol.str() );
       prev_op->m_fileloc.err( "operation `%s' previously defined here", group_symbol.str() );
       YYABORT;
     }
     
-    Group_t* prev_grp = Scanner::isa().group( group_symbol );
+    Group* prev_grp = Scanner::isa().group( group_symbol );
     if (prev_grp) {
       Scanner::fileloc.err( "error: group `%s' redefined", group_symbol.str() );
       prev_grp->m_fileloc.err( "group `%s' previously defined here", group_symbol.str() );
@@ -824,8 +824,8 @@ group_declaration: TOK_GROUP TOK_IDENT '(' operation_list ')'
     }
   }
   
-  Group_t* res = new Group_t( group_symbol, Scanner::fileloc );
-  for (StringVect_t::const_iterator itr = oplist->begin(), end = oplist->end(); itr != end; ++itr) {
+  Group* res = new Group( group_symbol, Scanner::fileloc );
+  for (StringVector::const_iterator itr = oplist->begin(), end = oplist->end(); itr != end; ++itr) {
     ConstStr symbol( *itr, Scanner::symbols );
     if (not Scanner::isa().operations( symbol, res->m_operations ))
       {
@@ -842,7 +842,7 @@ group_declaration: TOK_GROUP TOK_IDENT '(' operation_list ')'
 operation_list:
   TOK_IDENT
 {
-  $$ = new StringVect_t( $1 );
+  $$ = new StringVector( $1 );
 }
   | operation_list ',' TOK_IDENT
 {

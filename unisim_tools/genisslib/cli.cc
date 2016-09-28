@@ -36,7 +36,7 @@ struct Pattern {
   bool        next() {
     char const* end = m_end;
     while( *end != '\0' and *end != ',' ) ++end;
-    if( m_end == end ) return false;
+    if (m_end == end) return false;
     m_begin = m_end; m_end = end; return true;
   }
 
@@ -48,7 +48,7 @@ struct Pattern {
   }
   bool        operator!=( char const* _string ) const {
     uintptr_t size = length();
-    if( strncmp( m_begin, _string, size ) != 0 ) return true;
+    if (strncmp( m_begin, _string, size) != 0 ) return true;
     return _string[size] != '\0';
   }
 };
@@ -65,7 +65,7 @@ struct InfoArgs_t : public CLI::Args_t
     intptr_t value = 0;
     for( Pattern pattern( _patterns ); pattern.next(); ) { value += 2 + pattern.length(); }
     value += 1 + strlen( _shortdesc );
-    if( value > m_cli.m_opt_tabstop ) m_cli.m_opt_tabstop = value;
+    if (value > m_cli.m_opt_tabstop) m_cli.m_opt_tabstop = value;
     return false;
   }
 };
@@ -122,19 +122,19 @@ struct Screen_t
   
   Screen_t& flush() {
     for( char const* ptr = m_buffer.c_str(); *ptr; ++ptr )
-      if( *ptr > ' ' ) return write( '\n' );
+      if (*ptr > ' ') return write( '\n' );
     return *this;
   }
   
   Screen_t& write( char ch ) {
     intptr_t index = m_buffer.size();
     m_buffer += ch;
-    if( ch == '\n' ) {
+    if (ch == '\n') {
       std::cerr << m_buffer.c_str();
       reset();
       return tab();
-    } else if( ch <= ' ' ) { // considered as blank
-      if( not m_lastwasblank ) { m_lastblank = index; m_lastwasblank = true; }
+    } else if (ch <= ' ') { // considered as blank
+      if (not m_lastwasblank) { m_lastblank = index; m_lastwasblank = true; }
     } else {
       m_lastwasblank = false;
     }
@@ -209,7 +209,7 @@ struct ValueArgs_t : public CLI::Args_t {
   }
   
   bool match( bool _active, char const* _shortdesc, char const* _longdesc ) {
-    if( not _active or m_subarg[1] ) return false;
+    if (not _active or m_subarg[1]) return false;
     m_matched = front();
     assert( not m_matched.empty() );
     return true;
@@ -219,29 +219,29 @@ struct ValueArgs_t : public CLI::Args_t {
     char const* arg = front();
     assert( arg );
     for( Pattern pattern( _patterns ); pattern.next(); ) {
-      if( pattern != arg ) continue;
+      if (pattern != arg) continue;
       m_matched = pop_front();
       return true;
     }
     // Checking for condensed short option form
-    if( arg[0] != '-' or arg[1] == '-' or arg[1] == '\0' or arg[2] == '\0' ) return false;
+    if (arg[0] != '-' or arg[1] == '-' or arg[1] == '\0' or arg[2] == '\0') return false;
     m_subarg[1] = arg[1];
     m_subrem = &arg[2];
     // replay
     bool short_match = this->match( _patterns, _shortdesc, _longdesc );
     m_subarg[1] = '\0';
-    if( short_match ) return true;
+    if (short_match) return true;
     m_subrem = 0;
     return false;
   }
   
   char const* pop_front() {
-    if( m_subarg[1] ) {
+    if (m_subarg[1]) {
       m_tmp = m_subarg;
       m_subarg[1] = '\0';
       return m_tmp.c_str();
     }
-    if( m_subrem ) {
+    if (m_subrem) {
       char const* tmp = m_subrem;
       m_subrem = 0;
       m_argidx++;
@@ -251,18 +251,18 @@ struct ValueArgs_t : public CLI::Args_t {
   }
   
   char const* front() const {
-    if( m_subarg[1] )       return m_subarg;
-    if( m_subrem )          return m_subrem;
-    if( m_argidx < m_argc ) return m_argvals[m_argidx];
+    if (m_subarg[1])       return m_subarg;
+    if (m_subrem)          return m_subrem;
+    if (m_argidx < m_argc) return m_argvals[m_argidx];
     return 0;
   }
   
   bool        next() {
     m_matched.clear();
     assert( m_subarg[1] == '\0' );
-    if( m_subrem ) {
+    if (m_subrem) {
       m_subarg[1] = *m_subrem++;
-      if( *m_subrem == '\0' ) m_subrem = 0;
+      if (*m_subrem == '\0') m_subrem = 0;
       return true;
     }
     return m_argidx < m_argc;
@@ -272,7 +272,7 @@ struct ValueArgs_t : public CLI::Args_t {
 void
 CLI::process( intptr_t _argc, char** _argv ) {
   for( intptr_t idx = _argc; (--idx) >= 0; ) {
-    if( strcmp( _argv[idx], "--help" ) == 0 or  strcmp( _argv[idx], "-h" ) == 0 ) {
+    if (strcmp( _argv[idx], "--help") == 0 or  strcmp( _argv[idx], "-h" ) == 0 ) {
       help();
       throw Exit_t( 0 );
     }

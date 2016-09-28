@@ -27,35 +27,35 @@
 #include <iosfwd>
 
 /** An operation object */
-struct Operation_t : virtual ReferenceCounter
+struct Operation : virtual ReferenceCounter
 {
   ConstStr                      m_symbol;            /**< The associated symbol */
-  Vect_t<BitField>            m_bitfields;         /**< The bit field list of the operation */
-  Vect_t<Action>                m_actions;           /**< The list of actions of the operation */
-  Vect_t<Comment_t>             m_comments;          /**< The list of the C comment associated with the operation */
-  Vect_t<Variable_t>            m_variables;         /**< The list of variables associated with the operation */
-  Ptr_t<SourceCode_t>           m_condition;         /**< The condition associated with the operation */
+  Vector<BitField>            m_bitfields;         /**< The bit field list of the operation */
+  Vector<Action>                m_actions;           /**< The list of actions of the operation */
+  Vector<Comment>             m_comments;          /**< The list of the C comment associated with the operation */
+  Vector<Variable>            m_variables;         /**< The list of variables associated with the operation */
+  Ptr<SourceCode>           m_condition;         /**< The condition associated with the operation */
   FileLoc_t                     m_fileloc;           /**< The file location where the operation was declared */
   
-  Operation_t( ConstStr _symbol, Vect_t<BitField>& _bitfields, Vect_t<Comment_t>& _comments,
-               SourceCode_t* _op_condition, FileLoc_t const& _fileloc );
-  ~Operation_t();
+  Operation( ConstStr _symbol, Vector<BitField>& _bitfields, Vector<Comment>& _comments,
+               SourceCode* _op_condition, FileLoc_t const& _fileloc );
+  ~Operation();
   
   void                          add( Action* _action );
   Action const*                 action( ActionProto const* _actionproto ) const;
 };
 
-std::ostream& operator<<( std::ostream& _sink, Operation_t const& _op );
+std::ostream& operator<<( std::ostream& _sink, Operation const& _op );
 
 /** A group object */
-struct Group_t : virtual ReferenceCounter
+struct Group : virtual ReferenceCounter
 {
   ConstStr                    m_symbol;         /**< The associated symbol */
-  Vect_t<Operation_t>           m_operations;     /**< an operation node list object containing the operations of the group */
+  Vector<Operation>           m_operations;     /**< an operation node list object containing the operations of the group */
   FileLoc_t                     m_fileloc;        /**< The file location where the group was declared */
 
-  Group_t( ConstStr _symbol, Vect_t<Operation_t>& _operations, FileLoc_t const& _fileloc );
-  Group_t( ConstStr _symbol, FileLoc_t const& _fileloc );
+  Group( ConstStr _symbol, Vector<Operation>& _operations, FileLoc_t const& _fileloc );
+  Group( ConstStr _symbol, FileLoc_t const& _fileloc );
 };
 
 #endif // __OPERATION_HH__

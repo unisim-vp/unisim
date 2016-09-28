@@ -46,11 +46,11 @@ struct SDClass_t :  virtual ReferenceCounter
 /** A SubDecoder instance object */
 struct SDInstance_t : virtual ReferenceCounter {
   ConstStr                    m_symbol;            /**< The name of the subdecoder instance */
-  ConstPtr_t<SourceCode_t>      m_template_scheme;   /**< The template scheme associated with the instance */
-  ConstPtr_t<SDClass_t>         m_sdclass;           /**< The subdecoder class associated of the instance */
+  ConstPtr<SourceCode>      m_template_scheme;   /**< The template scheme associated with the instance */
+  ConstPtr<SDClass_t>         m_sdclass;           /**< The subdecoder class associated of the instance */
   FileLoc_t                     m_fileloc;           /**< The file location where subdecoder was instanciated */
   
-  SDInstance_t( ConstStr _symbol, SourceCode_t const* _template_scheme, SDClass_t const* _sdclass, FileLoc_t const& _fileloc );
+  SDInstance_t( ConstStr _symbol, SourceCode const* _template_scheme, SDClass_t const* _sdclass, FileLoc_t const& _fileloc );
   ~SDInstance_t();
   
 };

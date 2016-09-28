@@ -94,8 +94,8 @@ CiscOpCode::locate( OpCode const& _oc ) const
 
   for( unsigned int idx = 0; idx < maxsize; ++ idx ) {
     uint8_t amask, abits, bmask, bbits;
-    if( idx < abytesize ) { amask = this->m_mask[idx]; abits = this->m_bits[idx]; } else { amask = 0; abits = 0; }
-    if( idx < bbytesize ) { bmask = _that.m_mask[idx]; bbits = _that.m_bits[idx]; } else { bmask = 0; bbits = 0; }
+    if (idx < abytesize) { amask = this->m_mask[idx]; abits = this->m_bits[idx]; } else { amask = 0; abits = 0; }
+    if (idx < bbytesize) { bmask = _that.m_mask[idx]; bbits = _that.m_bits[idx]; } else { bmask = 0; bbits = 0; }
     
     if( (((amask) & (bmask)) & ((abits) ^ (bbits))) != 0 ) return Outside;
     if( ~(amask) & (bmask) ) some_a_outside_B = true;
@@ -148,11 +148,11 @@ CiscOpCode::details( std::ostream& _sink ) const
  */
 
 struct BFWordIterator {
-  Vect_t<BitField>::const_iterator m_left, m_right, m_end;
+  Vector<BitField>::const_iterator m_left, m_right, m_end;
   unsigned int                       m_count, m_minsize, m_maxsize;
   bool                               m_rewind, m_has_operand, m_has_subop;
   
-  BFWordIterator( Vect_t<BitField> const& _bitfields )
+  BFWordIterator( Vector<BitField> const& _bitfields )
     : m_right( _bitfields.begin() - 1 ), m_end( _bitfields.end() ),
       m_count( 0 ), m_minsize( 0 ), m_maxsize( 0 ), m_rewind( false ),
       m_has_operand( false ), m_has_subop( false )
@@ -161,7 +161,7 @@ struct BFWordIterator {
   bool
   next() {
     m_left = m_right + 1;
-    if( m_left >= m_end ) return false;
+    if (m_left >= m_end) return false;
     m_count = 0; m_minsize = 0; m_maxsize = 0;
     m_has_operand = false; m_has_subop = false;
     for (m_right = m_left; (m_right < m_end) and (not dynamic_cast<SeparatorBitField const*>( &**m_right )); ++m_right)
@@ -191,10 +191,10 @@ CiscGenerator::finalize()
   // Finalize size information
   m_code_capacity = ((*m_insnsizes.rbegin()) + 7) / 8;
   
-  Vect_t<Operation_t> const& operations = source.m_operations;
+  Vector<Operation> const& operations = source.m_operations;
   
   // Process the opcodes needed by the decoder
-  for (Vect_t<Operation_t>::const_iterator op = operations.begin(); op < operations.end(); ++ op) {
+  for (Vector<Operation>::const_iterator op = operations.begin(); op < operations.end(); ++ op) {
     // compute prefix size
     unsigned int prefixsize = 0, insn_size = 0;
     bool vlen = false, outprefix = false, vword = false;
@@ -372,7 +372,7 @@ CiscGenerator::codetype_impl( Product_t& _product ) const {
 }
 
 void
-CiscGenerator::insn_bits_code( Product_t& _product, Operation_t const& _op ) const
+CiscGenerator::insn_bits_code( Product_t& _product, Operation const& _op ) const
 {
   CiscOpCode const& oc = ciscopcode( &_op );
   _product.code( "CodeType( (uint8_t*)( \"" );
@@ -383,7 +383,7 @@ CiscGenerator::insn_bits_code( Product_t& _product, Operation_t const& _op ) con
 }
 
 void
-CiscGenerator::insn_mask_code( Product_t& _product, Operation_t const& _op ) const
+CiscGenerator::insn_mask_code( Product_t& _product, Operation const& _op ) const
 {
   CiscOpCode const& oc = ciscopcode( &_op );
   _product.code( "CodeType( (uint8_t*)( \"" );
@@ -400,7 +400,7 @@ CiscGenerator::insn_match_ifexpr( Product_t& _product, char const* _code, char c
 }
 
 void
-CiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, char const* _codename ) const
+CiscGenerator::insn_encode_impl( Product_t& _product, Operation const& _op, char const* _codename ) const
 {
   CiscOpCode const& oc = ciscopcode( &_op );
   
@@ -459,7 +459,7 @@ CiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, ch
 }
 
 void
-CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const
+CiscGenerator::insn_decode_impl( Product_t& _product, Operation const& _op, char const* _codename, char const* _addrname ) const
 {
   CiscOpCode const& oc = ciscopcode( &_op );
   _product.code( "if (this->encoding.size < %u) throw CodeType::NotEnoughBytes;\n", oc.m_fullsize );
@@ -480,7 +480,7 @@ CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
         {
           SDInstance_t const* sdinstance = sobf->m_sdinstance;
           SDClass_t const* sdclass = sdinstance->m_sdclass;
-          SourceCode_t const* tpscheme =  sdinstance->m_template_scheme;
+          SourceCode const* tpscheme =  sdinstance->m_template_scheme;
       
           _product.code( "{\n" );
           _product.code( "%s::CodeType _subcode_;\n", sdclass->qd_namespace().str() );
@@ -501,8 +501,8 @@ CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
           }
       
           _product.code( "%s = %s::sub_decode", sobf->m_symbol.str(), sdclass->qd_namespace().str() );
-          if( tpscheme )
-            _product.usercode( tpscheme->m_fileloc, "< %s >", tpscheme->m_content.str() );
+          if (tpscheme)
+            _product.usercode( tpscheme->fileloc, "< %s >", tpscheme->content.str() );
           _product.code( "( %s, _subcode_ );\n", _addrname );
           _product.code( "unsigned int shortening = %u - %s->GetLength();\n",
                          sdclass->maxsize(), sobf->m_symbol.str() );
@@ -528,7 +528,7 @@ CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
                 dstpos = little_endian ? (substart - start) : (end - subend),
                 mask = bound - 1;
           
-              if( mask ) {
+              if (mask) {
                 if(pos) {
                   if(dstpos) {
                     _product.code( "%s(((uint%u_t( %s.str[%u] ) >> %u) & 0x%x) << %u)", sep, opsize, _codename, bytepos, pos, mask, dstpos );
@@ -573,26 +573,26 @@ CiscGenerator::insn_unchanged_expr( Product_t& _product, char const* _ref, char 
 }
 
 void
-CiscGenerator::insn_destructor_decl( Product_t& _product, Operation_t const& _op ) const
+CiscGenerator::insn_destructor_decl( Product_t& _product, Operation const& _op ) const
 {
   bool subops = false;
-  Vect_t<BitField> const& bfs = _op.m_bitfields;
+  Vector<BitField> const& bfs = _op.m_bitfields;
   
-  for( Vect_t<BitField>::const_iterator bf = bfs.begin(); bf < bfs.end(); ++bf ) {
+  for( Vector<BitField>::const_iterator bf = bfs.begin(); bf < bfs.end(); ++bf ) {
     if (dynamic_cast<SubOpBitField const*>( &**bf )) { subops = true; break; }
   }
   
-  if( not subops ) return;
+  if (not subops) return;
   _product.code( "~Op%s();\n", Str::capitalize( _op.m_symbol.str() ).str() );
 }
 
 void
-CiscGenerator::insn_destructor_impl( Product_t& _product, Operation_t const& _op ) const
+CiscGenerator::insn_destructor_impl( Product_t& _product, Operation const& _op ) const
 {
   std::vector<ConstStr> subops;
-  Vect_t<BitField> const& bfs = _op.m_bitfields;
+  Vector<BitField> const& bfs = _op.m_bitfields;
   
-  for( Vect_t<BitField>::const_iterator bf = bfs.begin(); bf < bfs.end(); ++bf ) {
+  for( Vector<BitField>::const_iterator bf = bfs.begin(); bf < bfs.end(); ++bf ) {
     if (SubOpBitField const* sobf = dynamic_cast<SubOpBitField const*>( &**bf ))
       subops.push_back( sobf->m_symbol );
   }

@@ -26,27 +26,30 @@
 #include <vector>
 
 /** A variable object */
-struct Variable_t : virtual ReferenceCounter
+struct Variable
+  : virtual ReferenceCounter
 {
-  ConstStr             m_symbol; /**< the symbol object representing the variable */
-  Ptr_t<SourceCode_t>    m_ctype; /**< the C type of the variable */
-  Ptr_t<SourceCode_t>    m_cinit; /**< the C expression used to initialized the variable */
+  Variable( ConstStr _symbol, SourceCode* _ctype, SourceCode* _cinit );
+  Variable( Variable const& _variable );
+  ~Variable();
 
-  Variable_t( ConstStr _symbol, SourceCode_t* _ctype, SourceCode_t* _cinit );
-  Variable_t( Variable_t const& _variable );
-  ~Variable_t();
+  ConstStr               symbol; /**< the symbol object representing the variable */
+  Ptr<SourceCode>    ctype; /**< the C type of the variable */
+  Ptr<SourceCode>    cinit; /**< the C expression used to initialized the variable */
 };
 
-std::ostream& operator<<( std::ostream& _sink, Variable_t const& _var );
+std::ostream& operator<<( std::ostream& sink, Variable const& _var );
 
-struct Inheritance_t : virtual ReferenceCounter {
-  Ptr_t<SourceCode_t>           m_modifier;
-  Ptr_t<SourceCode_t>           m_typename;
-  Ptr_t<SourceCode_t>           m_initargs;
+struct Inheritance
+  : virtual ReferenceCounter
+{
+  Inheritance( SourceCode* _modifier, SourceCode* _typename, SourceCode* _initargs );
+  Inheritance( Inheritance const& _variable );
+  ~Inheritance();
   
-  Inheritance_t( SourceCode_t* _modifier, SourceCode_t* _typename, SourceCode_t* _initargs );
-  Inheritance_t( Inheritance_t const& _variable );
-  ~Inheritance_t();
+  Ptr<SourceCode>           modifier;
+  Ptr<SourceCode>           ctypename;
+  Ptr<SourceCode>           initargs;
 };
 
 #endif // __VARIABLE_HH__

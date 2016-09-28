@@ -53,20 +53,20 @@ Isa::~Isa() {}
     @param operation_symbol a symbol object representing the operation
     @return the matching operation object, null if no operation object matches
 */
-Operation_t*
+Operation*
 Isa::operation( ConstStr _symbol )
 {
-  for( Vect_t<Operation_t>::iterator op = m_operations.begin(); op < m_operations.end(); ++ op )
+  for( Vector<Operation>::iterator op = m_operations.begin(); op < m_operations.end(); ++ op )
     if( (*op)->m_symbol == _symbol ) return *op;
   
   return 0;
 }
 
 static void
-oplist_insert_unique( Vect_t<Operation_t>& _oplist, Operation_t* _op )
+oplist_insert_unique( Vector<Operation>& _oplist, Operation* _op )
 {
   // Check for duplicates
-  for (Vect_t<Operation_t>::const_iterator node = _oplist.begin(); node < _oplist.end(); ++ node)
+  for (Vector<Operation>::const_iterator node = _oplist.begin(); node < _oplist.end(); ++ node)
     { if ((**node).m_symbol == _op->m_symbol) return; }
   _oplist.append( _op );
 }
@@ -78,21 +78,21 @@ oplist_insert_unique( Vect_t<Operation_t>& _oplist, Operation_t* _op )
     @param _opvec an operation vector that will receive the corresponding operations
 */
 bool
-Isa::operations( ConstStr _symbol, Vect_t<Operation_t>& _oplist )
+Isa::operations( ConstStr _symbol, Vector<Operation>& _oplist )
 {
   /* Symbol points to either an operation or a group.
    */
-  if (Operation_t* operation = this->operation( _symbol ))
+  if (Operation* operation = this->operation( _symbol ))
     {
       /* Symbol points to an operation */
       oplist_insert_unique( _oplist, operation );
       return true;
     }
   
-  if (Group_t* group = Scanner::isa().group( _symbol ))
+  if (Group* group = Scanner::isa().group( _symbol ))
     {
       /* Symbol points to a group */
-      for( Vect_t<Operation_t>::iterator gop = group->m_operations.begin(); gop < group->m_operations.end(); ++ gop )
+      for( Vector<Operation>::iterator gop = group->m_operations.begin(); gop < group->m_operations.end(); ++ gop )
         oplist_insert_unique( _oplist, *gop );
       return true;
     }
@@ -105,10 +105,10 @@ Isa::operations( ConstStr _symbol, Vect_t<Operation_t>& _oplist )
     @param operation the operation object to remove
 */
 void
-Isa::remove( Operation_t* _op )
+Isa::remove( Operation* _op )
 {
-  for( Vect_t<Operation_t>::iterator iter = m_operations.begin(); iter < m_operations.end(); ++ iter ) {
-    if( *iter != _op ) continue;
+  for( Vector<Operation>::iterator iter = m_operations.begin(); iter < m_operations.end(); ++ iter ) {
+    if (*iter != _op) continue;
     m_operations.erase( iter );
     return;
   }
@@ -119,7 +119,7 @@ Isa::remove( Operation_t* _op )
     @param operation the operation object to add
 */
 void
-Isa::add( Operation_t* _op )
+Isa::add( Operation* _op )
 {
   m_operations.append( _op );
   for (GroupAccumulators::iterator itr = m_group_accs.begin(), end = m_group_accs.end(); itr != end; ++itr)
@@ -130,10 +130,10 @@ Isa::add( Operation_t* _op )
     @param _symbol the group symbol looked for
     @return the found group
 */
-Group_t*
+Group*
 Isa::group( ConstStr _symbol )
 {
-  for( Vect_t<Group_t>::iterator group = m_groups.begin(); group < m_groups.end(); ++ group )
+  for( Vector<Group>::iterator group = m_groups.begin(); group < m_groups.end(); ++ group )
     if( (*group)->m_symbol == _symbol ) return *group;
   
   return 0;
@@ -146,7 +146,7 @@ Isa::group( ConstStr _symbol )
 ActionProto const*
 Isa::actionproto( ConstStr _symbol ) const
 {
-  for( Vect_t<ActionProto>::const_iterator proto = m_actionprotos.begin(); proto < m_actionprotos.end(); ++ proto )
+  for( Vector<ActionProto>::const_iterator proto = m_actionprotos.begin(); proto < m_actionprotos.end(); ++ proto )
     if( (*proto)->m_symbol == _symbol ) return *proto;
 
   return 0;
@@ -158,8 +158,8 @@ Isa::actionproto( ConstStr _symbol ) const
 void
 Isa::remove( ActionProto const* _ap )
 {
-  for( Vect_t<ActionProto>::iterator iter = m_actionprotos.begin(); iter < m_actionprotos.end(); ++ iter ) {
-    if( *iter != _ap ) continue;
+  for( Vector<ActionProto>::iterator iter = m_actionprotos.begin(); iter < m_actionprotos.end(); ++ iter ) {
+    if (*iter != _ap) continue;
     m_actionprotos.erase( iter );
     return;
   }
@@ -185,7 +185,7 @@ Isa::expand( std::ostream& _sink ) const
   if( not m_tparams.empty() ) {
     _sink << "template <";
     char const* sep = "";
-    for( Vect_t<CodePair_t>::const_iterator iter = m_tparams.begin(); iter < m_tparams.end(); sep = ", ", ++ iter )
+    for( Vector<CodePair>::const_iterator iter = m_tparams.begin(); iter < m_tparams.end(); sep = ", ", ++ iter )
       _sink << sep << *(*iter);
     _sink << ">\n";
   }
@@ -195,27 +195,27 @@ Isa::expand( std::ostream& _sink ) const
   _sink << "set endianness " << (m_little_endian ? "little" : "big") << "\n";
   _sink << "set addressclass {" << m_addrtype << "}\n";
   
-  for( Vect_t<SourceCode_t>::const_iterator srccode = m_decl_srccodes.begin(); srccode < m_decl_srccodes.end(); ++ srccode )
+  for( Vector<SourceCode>::const_iterator srccode = m_decl_srccodes.begin(); srccode < m_decl_srccodes.end(); ++ srccode )
     _sink << "decl " << *(*srccode) << "\n\n";
-  for( Vect_t<SourceCode_t>::const_iterator srccode = m_impl_srccodes.begin(); srccode < m_impl_srccodes.end(); ++ srccode )
+  for( Vector<SourceCode>::const_iterator srccode = m_impl_srccodes.begin(); srccode < m_impl_srccodes.end(); ++ srccode )
     _sink << "impl " << *(*srccode) << "\n\n";
   _sink << '\n';
 
   if( not m_vars.empty() ) {
     _sink << "var ";
     char const* sep = "";
-    for( Vect_t<Variable_t>::const_iterator var = m_vars.begin(); var < m_vars.end(); sep = ", ", ++ var )
+    for( Vector<Variable>::const_iterator var = m_vars.begin(); var < m_vars.end(); sep = ", ", ++ var )
       _sink << sep << *(*var);
     _sink << '\n';
   }
   _sink << '\n';
   
-  for( Vect_t<ActionProto>::const_iterator ap = m_actionprotos.begin(); ap < m_actionprotos.end(); ++ap )
+  for( Vector<ActionProto>::const_iterator ap = m_actionprotos.begin(); ap < m_actionprotos.end(); ++ap )
     _sink << *(*ap) << '\n';
   
   _sink << '\n';
   
-  for( Vect_t<Operation_t>::const_iterator op = m_operations.begin(); op < m_operations.end(); ++ op )
+  for( Vector<Operation>::const_iterator op = m_operations.begin(); op < m_operations.end(); ++ op )
     _sink << *(*op) << '\n';
 }
 
@@ -245,37 +245,37 @@ Isa::sanity_checks() const
     }
   
   // Checking operations
-  for( Vect_t<Operation_t>::const_iterator op = m_operations.begin(); op < m_operations.end(); ++ op ) {
+  for( Vector<Operation>::const_iterator op = m_operations.begin(); op < m_operations.end(); ++ op ) {
     // Looking for bitfield conflicts
-    for( Vect_t<BitField>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
+    for( Vector<BitField>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
       ConstStr bf_symbol = (**bf).symbol();
       if (not bf_symbol.str()) continue;
-      for( Vect_t<BitField>::const_iterator pbf = (**op).m_bitfields.begin(); pbf < bf; ++ pbf ) {
+      for( Vector<BitField>::const_iterator pbf = (**op).m_bitfields.begin(); pbf < bf; ++ pbf ) {
         ConstStr pbf_symbol = (**pbf).symbol();
-        if( pbf_symbol != bf_symbol ) continue;
+        if (pbf_symbol != bf_symbol) continue;
         (**op).m_fileloc.err( "error: duplicated bit field `%s' in operation `%s'", bf_symbol.str(), (**op).m_symbol.str() );
         return false;
       }
     }
     // Looking for variable conflicts
     if( not (**op).m_variables.empty() ) {
-      for( Vect_t<Variable_t>::const_iterator checked = (**op).m_variables.begin(); checked < (**op).m_variables.end(); ++ checked ) {
-        Vect_t<Variable_t>::const_iterator found;
-        for( found = m_vars.begin(); found < m_vars.end(); ++ found )
-          if( (**found).m_symbol == (**checked).m_symbol ) break;
+      for( Vector<Variable>::const_iterator checked = (**op).m_variables.begin(); checked < (**op).m_variables.end(); ++ checked ) {
+        Vector<Variable>::const_iterator found;
+        for (found = m_vars.begin(); found < m_vars.end(); ++ found)
+          if ((**found).symbol == (**checked).symbol) break;
         
         if( (found < m_vars.end()) ) {
-          (**checked).m_ctype->m_fileloc.err( "error: in operation `%s', variable `%s' is already defined as global",
-                                              (**op).m_symbol.str(), (**checked).m_symbol.str() );
-          (**found).m_ctype->m_fileloc.err( "variable `%s' previously defined here", (**found).m_symbol.str() );
+          (**checked).ctype->fileloc.err( "error: in operation `%s', variable `%s' is already defined as global",
+                                              (**op).m_symbol.str(), (**checked).symbol.str() );
+          (**found).ctype->fileloc.err( "variable `%s' previously defined here", (**found).symbol.str() );
           return false;
         }
         
         for( found = (**op).m_variables.begin(); found < checked; ++ found )
-          if( (**found).m_symbol == (**checked).m_symbol ) break;
+          if( (**found).symbol == (**checked).symbol ) break;
 
-        if( found < checked ) {
-          (**checked).m_ctype->m_fileloc.err( "error: in operation `%s', variable `%s' is defined several times", (**op).m_symbol.str(), (**checked).m_symbol.str() );
+        if (found < checked) {
+          (**checked).ctype->fileloc.err( "error: in operation `%s', variable `%s' is defined several times", (**op).m_symbol.str(), (**checked).symbol.str() );
           return false;
         }
       }
@@ -286,7 +286,7 @@ Isa::sanity_checks() const
 
 // SubDecoder_t const*
 // Isa::subdecoder( ConstStr _symbol ) const {
-//   for( Vect_t<SubDecoder_t>::const_iterator sd = m_subdecoders.begin(); sd < m_subdecoders.end(); ++ sd )
+//   for( Vector<SubDecoder_t>::const_iterator sd = m_subdecoders.begin(); sd < m_subdecoders.end(); ++ sd )
 //     if( (**sd).m_symbol == _symbol ) return *sd;
 //   return 0;
 // }
@@ -311,7 +311,7 @@ Isa::deps( std::ostream& _sink, char const* _prefix ) const
 void
 Isa::specialize()
 {
-  for( Vect_t<Specialization_t>::iterator spec = m_specializations.begin(); spec < m_specializations.end(); ++ spec ) {
+  for( Vector<Specialization>::iterator spec = m_specializations.begin(); spec < m_specializations.end(); ++ spec ) {
     m_operations.push_back( (**spec).newop() );
   }
 }
@@ -380,16 +380,16 @@ Isa::setparam( ConstStr key, ConstStr value )
 }
 
 void
-Isa::setparam( ConstStr key, SourceCode_t* value )
+Isa::setparam( ConstStr key, SourceCode* value )
 {
   static ConstStr  addressclass( "addressclass",  Scanner::symbols );
   static ConstStr codetypeclass( "codetypeclass", Scanner::symbols );
   
   if        (key == addressclass) {
-    m_addrtype = value->m_content;
+    m_addrtype = value->content;
     delete value;
   } else if (key == codetypeclass) {
-    //m_codetype = value->m_content;
+    //m_codetype = value->content;
     delete value;
   }
   
@@ -411,7 +411,7 @@ Isa::setparam( ConstStr key, unsigned int value )
 SDClass_t const*
 Isa::sdclass( std::vector<ConstStr>& _namespace ) const
 {
-  for( Vect_t<SDClass_t>::const_iterator sdc = m_sdclasses.begin(); sdc != m_sdclasses.end(); ++ sdc ) {
+  for( Vector<SDClass_t>::const_iterator sdc = m_sdclasses.begin(); sdc != m_sdclasses.end(); ++ sdc ) {
     if( (**sdc).m_namespace == _namespace ) return *sdc;
   }
   return 0;
@@ -420,7 +420,7 @@ Isa::sdclass( std::vector<ConstStr>& _namespace ) const
 SDInstance_t const*
 Isa::sdinstance( ConstStr _symbol ) const
 {
-  for( Vect_t<SDInstance_t>::const_iterator sdi = m_sdinstances.begin(); sdi != m_sdinstances.end(); ++ sdi ) {
+  for( Vector<SDInstance_t>::const_iterator sdi = m_sdinstances.begin(); sdi != m_sdinstances.end(); ++ sdi ) {
     if( (**sdi).m_symbol == _symbol ) return *sdi;
   }
   return 0;
@@ -434,7 +434,7 @@ Isa::group_command( ConstStr group_symbol, ConstStr _command, FileLoc_t const& f
   
   if (_command == group_begin)
     {
-      m_group_accs[group_symbol] = new Group_t( group_symbol, fl );
+      m_group_accs[group_symbol] = new Group( group_symbol, fl );
     }
   else if (_command == group_end)
     {
@@ -449,14 +449,14 @@ Isa::group_command( ConstStr group_symbol, ConstStr _command, FileLoc_t const& f
         }
       
         /* Operations and groups name should not conflict */
-        Operation_t* prev_op = Scanner::isa().operation( group_symbol );
+        Operation* prev_op = Scanner::isa().operation( group_symbol );
         if (prev_op) {
           fl.err( "error: group name conflicts with operation `%s'", group_symbol.str() );
           prev_op->m_fileloc.err( "operation `%s' previously defined here", group_symbol.str() );
           throw ParseError();
         }
 
-        Group_t* prev_grp = Scanner::isa().group( group_symbol );
+        Group* prev_grp = Scanner::isa().group( group_symbol );
         if (prev_grp) {
           fl.err( "conflicting group `%s' redefined", group_symbol.str() );
           prev_grp->m_fileloc.err( "group `%s' previously defined here", group_symbol.str() );

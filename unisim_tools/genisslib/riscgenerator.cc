@@ -101,11 +101,11 @@ RiscGenerator::finalize() {
   default: m_insn_cpostfix = "";
   }
   
-  Vect_t<Operation_t> const& operations = source.m_operations;
+  Vector<Operation> const& operations = source.m_operations;
   
   // Process the opcodes needed by the decoder
-  for( Vect_t<Operation_t>::const_iterator op = operations.begin(); op < operations.end(); ++ op ) {
-    Vect_t<BitField> const& bitfields = (**op).m_bitfields;
+  for( Vector<Operation>::const_iterator op = operations.begin(); op < operations.end(); ++ op ) {
+    Vector<BitField> const& bitfields = (**op).m_bitfields;
     
     bool vlen = false, outprefix = false, vword = false;
     unsigned int insn_size = 0;
@@ -144,7 +144,7 @@ RiscGenerator::codetype_decl( Product_t& _product ) const {
 }
 
 void
-RiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, char const* _codename ) const
+RiscGenerator::insn_encode_impl( Product_t& _product, Operation const& _op, char const* _codename ) const
 {
   RiscOpCode const& oc = riscopcode( &_op );
   
@@ -176,7 +176,7 @@ RiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, ch
 }
 
 void
-RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const
+RiscGenerator::insn_decode_impl( Product_t& _product, Operation const& _op, char const* _codename, char const* _addrname ) const
 {
   RiscOpCode const& oc = riscopcode( &_op );
   
@@ -188,11 +188,11 @@ RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
     if (SubOpBitField const* sobf = dynamic_cast<SubOpBitField const*>( &fi.item() )) {
       SDInstance_t const* sdinstance = sobf->m_sdinstance;
       SDClass_t const* sdclass = sdinstance->m_sdclass;
-      SourceCode_t const* tpscheme =  sdinstance->m_template_scheme;
+      SourceCode const* tpscheme =  sdinstance->m_template_scheme;
       
       _product.code( "%s = %s::sub_decode", sobf->m_symbol.str(), sdclass->qd_namespace().str() );
       if (tpscheme)
-        _product.usercode( tpscheme->m_fileloc, "< %s >", tpscheme->m_content.str() );
+        _product.usercode( tpscheme->fileloc, "< %s >", tpscheme->content.str() );
       _product.code( "( %s, ((%s >> %u) & 0x%llx) );\n",
                      _addrname, _codename, fi.pos(), sobf->mask() );
 
@@ -231,9 +231,9 @@ RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
           }
         }
     
-        if( opbf->m_shift > 0 )
+        if (opbf->m_shift > 0)
           _product.code( " >> %u", +opbf->m_shift );
-        if( opbf->m_shift < 0 )
+        if (opbf->m_shift < 0)
           _product.code( " << %u", -opbf->m_shift );
         _product.code( ";\n" );
       }
@@ -241,12 +241,12 @@ RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
 }
 
 void
-RiscGenerator::insn_bits_code( Product_t& _product, Operation_t const& _op ) const {
+RiscGenerator::insn_bits_code( Product_t& _product, Operation const& _op ) const {
   _product.code( "0x%llx%s", riscopcode( &_op ).m_bits, m_insn_cpostfix.str() );
 }
 
 void
-RiscGenerator::insn_mask_code( Product_t& _product, Operation_t const& _op ) const {
+RiscGenerator::insn_mask_code( Product_t& _product, Operation const& _op ) const {
   _product.code( "0x%llx%s", riscopcode( &_op ).m_mask, m_insn_cpostfix.str() );
 }
 
@@ -277,7 +277,7 @@ RiscGenerator::op_getlen_decl( Product_t& _product ) const {
 }
 
 void
-RiscGenerator::insn_getlen_decl( Product_t& _product, Operation_t const& _op ) const {
+RiscGenerator::insn_getlen_decl( Product_t& _product, Operation const& _op ) const {
   if ((*m_insnsizes.begin()) == (*m_insnsizes.rbegin()))
     return;
   

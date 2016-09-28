@@ -64,7 +64,7 @@ struct Generator
   
   unsigned int                        m_minwordsize;
   std::set<unsigned int>              m_insnsizes;
-  typedef std::map<Operation_t const*,OpCode*> OpCodeMap;
+  typedef std::map<Operation const*,OpCode*> OpCodeMap;
   OpCodeMap                           m_opcodes;
   
   Generator( Isa& _source, Opts const& _options );
@@ -73,8 +73,8 @@ struct Generator
   Generator&                          init( unsigned int verblevel );
   virtual void                        finalize() = 0;
   
-  OpCode const&                       opcode( Operation_t const* _op ) const;
-  OpCode&                             opcode( Operation_t const* _op );
+  OpCode const&                       opcode( Operation const* _op ) const;
+  OpCode&                             opcode( Operation const* _op );
   
   void                                toposort();
   void                                isastats();
@@ -97,20 +97,20 @@ struct Generator
   virtual ConstStr                  codetype_name() const = 0;
   virtual ConstStr                  codetype_ref() const = 0;
   virtual ConstStr                  codetype_constref() const = 0;
-  virtual void                        insn_bits_code( Product_t& _product, Operation_t const& _op ) const = 0;
-  virtual void                        insn_mask_code( Product_t& _product, Operation_t const& _op ) const = 0;
+  virtual void                        insn_bits_code( Product_t& _product, Operation const& _op ) const = 0;
+  virtual void                        insn_mask_code( Product_t& _product, Operation const& _op ) const = 0;
   virtual ConstStr                  insn_id_expr( char const* _addrname ) const = 0;
   virtual void                        insn_match_ifexpr( Product_t& _product, char const* _code, char const* _mask, char const* _bits ) const = 0;
   virtual void                        insn_unchanged_expr( Product_t& _product, char const* _old, char const* _new ) const = 0;
-  virtual void                        insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const = 0;
-  virtual void                        insn_encode_impl( Product_t& _product, Operation_t const& _op, char const* _codename ) const = 0;
+  virtual void                        insn_decode_impl( Product_t& _product, Operation const& _op, char const* _codename, char const* _addrname ) const = 0;
+  virtual void                        insn_encode_impl( Product_t& _product, Operation const& _op, char const* _codename ) const = 0;
   virtual void                        additional_impl_includes( Product_t& _product ) const = 0;
   virtual void                        additional_decl_includes( Product_t& _product ) const = 0;
   
-  virtual void                        insn_destructor_decl( Product_t& _product, Operation_t const& _op ) const = 0;
-  virtual void                        insn_destructor_impl( Product_t& _product, Operation_t const& _op ) const = 0;
+  virtual void                        insn_destructor_decl( Product_t& _product, Operation const& _op ) const = 0;
+  virtual void                        insn_destructor_impl( Product_t& _product, Operation const& _op ) const = 0;
   virtual void                        op_getlen_decl( Product_t& _product ) const = 0;
-  virtual void                        insn_getlen_decl( Product_t& _product, Operation_t const& _op ) const = 0;
+  virtual void                        insn_getlen_decl( Product_t& _product, Operation const& _op ) const = 0;
   
   static unsigned int                 least_ctype_size( unsigned int bits );
   
@@ -122,13 +122,13 @@ struct Generator
 };
 
 struct FieldIterator {
-  Vect_t<BitField> const& m_bitfields;
+  Vector<BitField> const& m_bitfields;
   unsigned int              m_idx;
   unsigned int              m_ref;
   unsigned int              m_pos, m_size;
   unsigned int              m_chkpt_pos, m_chkpt_size;
   
-  FieldIterator( bool little_endian, Vect_t<BitField> const& bitfields, unsigned int maxsize );
+  FieldIterator( bool little_endian, Vector<BitField> const& bitfields, unsigned int maxsize );
   
   unsigned int      pos() { return m_pos; }
   unsigned int      insn_size() { return (m_ref == 0) ? m_pos + m_size : m_ref - m_pos; }

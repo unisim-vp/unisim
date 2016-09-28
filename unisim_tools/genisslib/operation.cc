@@ -36,8 +36,8 @@
     @param lineno a line number where the operation was found
     @return an operation object
 */
-Operation_t::Operation_t( ConstStr _symbol, Vect_t<BitField>& _bitfields, Vect_t<Comment_t>& _comments,
-                          SourceCode_t* _op_condition, FileLoc_t const& _fileloc )
+Operation::Operation( ConstStr _symbol, Vector<BitField>& _bitfields, Vector<Comment>& _comments,
+                          SourceCode* _op_condition, FileLoc_t const& _fileloc )
   : m_symbol( _symbol ), m_bitfields( _bitfields ), m_comments( _comments ),
     m_condition( _op_condition ), m_fileloc( _fileloc )
 {
@@ -46,13 +46,13 @@ Operation_t::Operation_t( ConstStr _symbol, Vect_t<BitField>& _bitfields, Vect_t
 /** Delete an operation object
     @param operation an operation object to delete
 */
-Operation_t::~Operation_t() {}
+Operation::~Operation() {}
 
 /** Create a group object
     @param operation_list the list of the operation of the group
     @returns a group list object
 */
-Group_t::Group_t( ConstStr _symbol, Vect_t<Operation_t>& _oplist, FileLoc_t const& _fileloc )
+Group::Group( ConstStr _symbol, Vector<Operation>& _oplist, FileLoc_t const& _fileloc )
   : m_symbol( _symbol ), m_operations( _oplist ), m_fileloc( _fileloc )
 {}
 
@@ -61,7 +61,7 @@ Group_t::Group_t( ConstStr _symbol, Vect_t<Operation_t>& _oplist, FileLoc_t cons
     @param _fileloc the source file location of the group declaration
     @returns a group list object
 */
-Group_t::Group_t( ConstStr _symbol, FileLoc_t const& _fileloc )
+Group::Group( ConstStr _symbol, FileLoc_t const& _fileloc )
   : m_symbol( _symbol ), m_fileloc( _fileloc )
 {}
 
@@ -70,15 +70,15 @@ Group_t::Group_t( ConstStr _symbol, FileLoc_t const& _fileloc )
     @return the matching action object, null if no action object matches
 */
 Action const*
-Operation_t::action( ActionProto const* _actionproto ) const {
-  for( Vect_t<Action>::const_iterator iter = m_actions.begin(); iter < m_actions.end(); ++ iter )
+Operation::action( ActionProto const* _actionproto ) const {
+  for( Vector<Action>::const_iterator iter = m_actions.begin(); iter < m_actions.end(); ++ iter )
     if( (*iter)->m_actionproto == _actionproto ) return *iter;
   
   return 0;
 }
 
 void
-Operation_t::add( Action* _action ) {
+Operation::add( Action* _action ) {
   m_actions.push_back( _action );
   assert( not _action->m_operation );
   _action->m_operation = this;
@@ -90,27 +90,27 @@ Operation_t::add( Action* _action ) {
 */
 
 std::ostream&
-operator<<( std::ostream& _sink, Operation_t const& _op )
+operator<<( std::ostream& _sink, Operation const& _op )
 {
   _sink << "op " << _op.m_symbol << "( ";
   
   char const* sep = "";
-  for (Vect_t<BitField>::const_iterator bf = _op.m_bitfields.begin(); bf < _op.m_bitfields.end(); sep = " : ", ++ bf)
+  for (Vector<BitField>::const_iterator bf = _op.m_bitfields.begin(); bf < _op.m_bitfields.end(); sep = " : ", ++ bf)
     _sink << sep << (**bf);
   
-  _sink << " );\n";
+  _sink << " )\n";
   
   if (not _op.m_variables.empty())
     {
       _sink << _op.m_symbol << ".var ";
       sep = "";
-      for( Vect_t<Variable_t>::const_iterator var = _op.m_variables.begin(); var < _op.m_variables.end(); sep = ", ", ++ var )
+      for( Vector<Variable>::const_iterator var = _op.m_variables.begin(); var < _op.m_variables.end(); sep = ", ", ++ var )
         _sink << sep << *(*var);
     }
-  _sink << ";\n\n";
+  _sink << "\n\n";
   
-  for( Vect_t<Action>::const_iterator action = _op.m_actions.begin(); action < _op.m_actions.end(); ++ action )
-    _sink << *(*action) << '\n';
+  for( Vector<Action>::const_iterator action = _op.m_actions.begin(); action < _op.m_actions.end(); ++ action )
+    _sink << *(*action) << "\n\n";
   
   return _sink;
 }

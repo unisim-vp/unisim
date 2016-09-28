@@ -196,14 +196,14 @@ GIL_MAIN (int argc, char** argv, char** envp)
   try {
     gil.process( argc-1, argv+1 );
     
-    if( not gil.inputname ) {
+    if (not gil.inputname) {
       std::cerr << GENISSLIB ": no input file.\n";
       gil.help();
       throw CLI::Exit_t( 1 );
     }
     
     Isa isa;
-    if( not Scanner::parse( gil.inputname, isa ) )
+    if (not Scanner::parse( gil.inputname, isa) )
       throw CLI::Exit_t( 1 );
   
     if (gil.expandname) {

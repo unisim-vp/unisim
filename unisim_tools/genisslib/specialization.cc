@@ -31,7 +31,7 @@
  *
  */
 
-Constraint_t::Constraint_t( ConstStr _symbol, unsigned int _value )
+Constraint::Constraint( ConstStr _symbol, unsigned int _value )
   : m_symbol( _symbol ), m_value( _value )
 {}
 
@@ -40,13 +40,13 @@ Constraint_t::Constraint_t( ConstStr _symbol, unsigned int _value )
  *
  */
 
-Constraint_t::~Constraint_t() {}
+Constraint::~Constraint() {}
 
 /** Dump the specialization object into a stream
     @param stream a stream
 */
 std::ostream&
-operator<<( std::ostream& _sink, Constraint_t const& _var ) {
+operator<<( std::ostream& _sink, Constraint const& _var ) {
   return (_sink << _var.m_symbol << " = " << _var.m_value);
 }
 
@@ -58,7 +58,7 @@ operator<<( std::ostream& _sink, Constraint_t const& _var ) {
  *
  */
 
-Specialization_t::Specialization_t( Operation_t* _operation, Vect_t<Constraint_t>& _constraints )
+Specialization::Specialization( Operation* _operation, Vector<Constraint>& _constraints )
   : m_operation( _operation ), m_constraints( _constraints )
 {}
 
@@ -67,47 +67,47 @@ Specialization_t::Specialization_t( Operation_t* _operation, Vect_t<Constraint_t
  *
  */
 
-Specialization_t::~Specialization_t() {};
+Specialization::~Specialization() {};
 
 /** Dump the specialization object into a stream
     @param stream a stream
 */
 std::ostream&
-operator<<( std::ostream& _sink, Specialization_t const& _var ) {
+operator<<( std::ostream& _sink, Specialization const& _var ) {
   _sink << _var.m_operation->m_symbol << " ( ";
   char const* sep = "";
-  for( Vect_t<Constraint_t>::const_iterator node = _var.m_constraints.begin(); node < _var.m_constraints.end(); ++node, sep = ", " )
+  for( Vector<Constraint>::const_iterator node = _var.m_constraints.begin(); node < _var.m_constraints.end(); ++node, sep = ", " )
     _sink << sep << (**node);
   _sink << " )";
   return _sink;
 }
 
-Operation_t*
-Specialization_t::newop()
+Operation*
+Specialization::newop()
 {
   ConstStr symbol; // The symbol of the operation
   {
     std::string buffer;
     buffer.append( "__spec__" ).append( m_operation->m_symbol.str() );
-    for( Vect_t<Constraint_t>::const_iterator expr = m_constraints.begin(); expr < m_constraints.end(); ++ expr )
+    for( Vector<Constraint>::const_iterator expr = m_constraints.begin(); expr < m_constraints.end(); ++ expr )
       buffer+= Str::fmt( "_%s_%x", (**expr).m_symbol.str(), (**expr).m_value ).str();
     symbol = Str::tokenize( buffer.c_str() );
   }
 
   //  Actions, comments, variables, conditions, and fileloc are
   //  duplicated.
-  Operation_t* res = new Operation_t( symbol, *static_cast<Vect_t<BitField>*>( 0 ), m_operation->m_comments,
+  Operation* res = new Operation( symbol, *static_cast<Vector<BitField>*>( 0 ), m_operation->m_comments,
                                       m_operation->m_condition, m_operation->m_fileloc );
   
   res->m_variables = m_operation->m_variables;
   res->m_actions = m_operation->m_actions;
   // Generating new bitfield.
-  Vect_t<BitField>& bflist = m_operation->m_bitfields;
+  Vector<BitField>& bflist = m_operation->m_bitfields;
   
-  for (Vect_t<BitField>::const_iterator bf = bflist.begin(); bf < bflist.end(); ++ bf )
+  for (Vector<BitField>::const_iterator bf = bflist.begin(); bf < bflist.end(); ++ bf )
     {
       OperandBitField const* opbf;
-      Constraint_t* expr;
+      Constraint* expr;
       if ((opbf = dynamic_cast<OperandBitField const*>( &**bf )) and (expr = constraint( (**bf).symbol() )) ) {
         res->m_bitfields.push_back( new SpOperandBitField( *opbf, expr->m_value ) );
       } else {
@@ -118,9 +118,9 @@ Specialization_t::newop()
   return res;
 }
 
-Constraint_t*
-Specialization_t::constraint( ConstStr _symbol ) {
-  for( Vect_t<Constraint_t>::iterator expr = m_constraints.begin(); expr < m_constraints.end(); ++ expr )
+Constraint*
+Specialization::constraint( ConstStr _symbol ) {
+  for( Vector<Constraint>::iterator expr = m_constraints.begin(); expr < m_constraints.end(); ++ expr )
     if( (**expr).m_symbol == _symbol ) return *expr;
   return 0;
 }

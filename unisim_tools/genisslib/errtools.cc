@@ -33,7 +33,7 @@ FileLoc_t::err( char const* _fmt, ... ) const {
     size = vsnprintf( storage, capacity, _fmt, args );
     va_end( args );
     /* If it didn't work, retry */
-    if( size < 0 or size >= capacity ) continue;
+    if (size < 0 or size >= capacity) continue;
     
     /* Now storage is ok... */
     this->loc( std::cerr ) << storage << std::endl;

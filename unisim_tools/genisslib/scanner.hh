@@ -33,7 +33,7 @@ struct Scanner
   static int                      bracecount;       ///< Global opened braces count
   static std::vector<int>         scs;
   static ConstStr::Pool           symbols;          ///< The symbol database
-  static Vect_t<Comment_t>        comments;         ///< Comments accumulator;
+  static Vector<Comment>        comments;         ///< Comments accumulator;
   static Isa*                     s_isa;
   static std::vector<ConstStr>    s_lookupdirs;     ///< Directory searched when opening files
   

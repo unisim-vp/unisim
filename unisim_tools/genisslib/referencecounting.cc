@@ -20,7 +20,7 @@
 
 void
 ReferenceCounter::const_check() const {
-  if( not this or m_count > 1 ) {
+  if (not this or m_count > 1) {
     asm volatile( "shared_object_modification:" );
     std::cerr << "Modifying a shared object...\n";
   }

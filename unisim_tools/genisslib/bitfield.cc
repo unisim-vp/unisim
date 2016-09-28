@@ -206,12 +206,12 @@ SpOperandBitField::dstsize() const
 ConstStr
 SpOperandBitField::constval() const
 {
-  if( not m_sext )
+  if (not m_sext)
     return Str::fmt( "%#x", m_value );
   
   assert( m_size <= 32 );
   int32_t val = (int32_t( m_value ) << (32-m_size)) >> (32-m_size);
-  if( val < 0 )
+  if (val < 0)
     return Str::fmt( "-%#x", uint32_t( -val ) );
   
   return Str::fmt( "%#x", uint32_t( m_value ) );

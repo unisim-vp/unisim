@@ -40,7 +40,7 @@ namespace
   {
     std::set<unsigned int> m_insnsizes;
     typedef std::vector<unsigned int> insnsizes_t;
-    typedef Vect_t<BitField>::const_iterator bfiter_t;
+    typedef Vector<BitField>::const_iterator bfiter_t;
   
   
     void
@@ -71,9 +71,9 @@ namespace
       }
     }
   
-    OpProperties( Operation_t const& op )
+    OpProperties( Operation const& op )
     {
-      Vect_t<BitField> const& bitfields = op.m_bitfields;
+      Vector<BitField> const& bitfields = op.m_bitfields;
       dig( 0, 0, 0, bitfields.begin(), bitfields.end() );
     }
   };
@@ -91,8 +91,8 @@ Generator::Generator( Isa& _source, Opts const& _options )
     bool rev_forder = source.m_asc_forder xor source.m_little_endian;
   
     if (source.m_asc_worder xor source.m_little_endian) {
-      for( Vect_t<Operation_t>::iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
-        Vect_t<BitField>& bitfields = (**op).m_bitfields;
+      for( Vector<Operation>::iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
+        Vector<BitField>& bitfields = (**op).m_bitfields;
         uintptr_t lo = 0, hi = bitfields.size();
         if (hi == 0) continue;
       
@@ -105,8 +105,8 @@ Generator::Generator( Isa& _source, Opts const& _options )
     }
   
     if (rev_forder) {
-      for( Vect_t<Operation_t>::iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
-        Vect_t<BitField>& bitfields = (**op).m_bitfields;
+      for( Vector<Operation>::iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
+        Vector<BitField>& bitfields = (**op).m_bitfields;
       
         uintptr_t fbeg = 0, fend = 0, fmax = bitfields.size();
         for ( ; fbeg < fmax; fbeg = fend = fend + 1) {
@@ -124,7 +124,7 @@ Generator::Generator( Isa& _source, Opts const& _options )
   
   // Compute min/max sizes
   m_insnsizes.clear();
-  for( Vect_t<Operation_t>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
+  for( Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
     OpProperties opprops( **op );
     m_insnsizes.insert( opprops.m_insnsizes.begin(), opprops.m_insnsizes.end() );
   }
@@ -253,7 +253,7 @@ std::ostream& operator<<( std::ostream& _sink, OpCode const& _oc ) { return _oc.
 void
 Generator::toposort()
 {
-  Vect_t<Operation_t>& operations = source.m_operations;
+  Vector<Operation>& operations = source.m_operations;
   
   // Finalizing ordering graph
   
@@ -295,7 +295,7 @@ Generator::toposort()
   for (Isa::Orderings::iterator itr = source.m_user_orderings.begin(), end = source.m_user_orderings.end(); itr != end; ++itr) {
     // Unrolling specialization relations
     std::vector<ConstStr>::const_iterator symitr = itr->symbols.begin(), symend = itr->symbols.end();
-    typedef Vect_t<Operation_t> OpV;
+    typedef Vector<Operation> OpV;
     OpV aboves;
     if (not source.operations( *symitr, aboves ))
       {
@@ -357,7 +357,7 @@ Generator::toposort()
   // Topological sort to fix potential precedence problems
   {
     intptr_t opcount = operations.size();
-    Vect_t<Operation_t> noperations( opcount );
+    Vector<Operation> noperations( opcount );
     intptr_t
       sopidx = opcount, // operation source table index
       dopidx = opcount, // operation destination table index
@@ -365,7 +365,7 @@ Generator::toposort()
     
     while( dopidx > 0 ) {
       sopidx = (sopidx + opcount - 1) % opcount;
-      Operation_t* op = operations[sopidx];
+      Operation* op = operations[sopidx];
       if (not op) continue;
       
       OpCode& oc = opcode( op );
@@ -413,9 +413,9 @@ Generator::isastats()
     log(3) << "Operations (actions details):\n";
     typedef std::map<ActionProto const*,uint64_t> ActionCount;
     ActionCount actioncount;
-    for (Vect_t<Operation_t>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op) {
+    for (Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op) {
       log(3) << "  " << (**op).m_symbol.str() << ':';
-      for (Vect_t<Action>::const_iterator action = (**op).m_actions.begin(); action < (**op).m_actions.end(); ++ action) {
+      for (Vector<Action>::const_iterator action = (**op).m_actions.begin(); action < (**op).m_actions.end(); ++ action) {
         ActionProto const* ap = (**action).m_actionproto;
         log(3) << " ." << ap->m_symbol.str();
         actioncount[ap] += 1;
@@ -485,7 +485,7 @@ Generator::iss( char const* prefix, bool sourcelines ) const
   
     sink.ns_leave( source.m_namespace );
 
-    for( Vect_t<SourceCode_t>::const_iterator srccode = source.m_decl_srccodes.begin(); srccode < source.m_decl_srccodes.end(); ++ srccode ) {
+    for( Vector<SourceCode>::const_iterator srccode = source.m_decl_srccodes.begin(); srccode < source.m_decl_srccodes.end(); ++ srccode ) {
       sink.usercode( **srccode );
     }
   
@@ -518,7 +518,7 @@ Generator::iss( char const* prefix, bool sourcelines ) const
     //                  "#include <cstring>\n\n\n\n" );
     additional_impl_includes( sink );
   
-    for( Vect_t<SourceCode_t>::const_iterator srccode = source.m_impl_srccodes.begin(); srccode < source.m_impl_srccodes.end(); ++ srccode ) {
+    for( Vector<SourceCode>::const_iterator srccode = source.m_impl_srccodes.begin(); srccode < source.m_impl_srccodes.end(); ++ srccode ) {
       sink.usercode( **srccode );
     }
   
@@ -575,17 +575,17 @@ Generator::iss( char const* prefix, bool sourcelines ) const
 */
 char const*
 get_type_format( int size, int is_signed_type ) {
-  if( is_signed_type ) {
-    if( size <= 8 )  return "%\" PRIi8 \"";
-    if( size <= 16 ) return "%\" PRIi16 \"";
-    if( size <= 32 ) return "%\" PRIi32 \"";
-    if( size <= 64 ) return "%\" PRIi64 \"";
+  if (is_signed_type) {
+    if (size <= 8)  return "%\" PRIi8 \"";
+    if (size <= 16) return "%\" PRIi16 \"";
+    if (size <= 32) return "%\" PRIi32 \"";
+    if (size <= 64) return "%\" PRIi64 \"";
   }
   else {
-    if( size <= 8 )  return "%\" PRIu8 \"";
-    if( size <= 16 ) return "%\" PRIu16 \"";
-    if( size <= 32 ) return "%\" PRIu32 \"";
-    if( size <= 64 ) return "%\" PRIu64 \"";
+    if (size <= 8)  return "%\" PRIu8 \"";
+    if (size <= 16) return "%\" PRIu16 \"";
+    if (size <= 32) return "%\" PRIu32 \"";
+    if (size <= 64) return "%\" PRIu64 \"";
   }
   return 0;
 }
@@ -595,7 +595,7 @@ Generator::decoder_decl( Product_t& _product ) const {
   _product.template_signature( source.m_tparams );
   _product.code( "class Operation;\n" );
   
-  if( not source.m_is_subdecoder ) {
+  if (not source.m_is_subdecoder) {
     _product.code( "const unsigned int NUM_OPERATIONS_PER_PAGE = 4096;\n" );
     _product.template_signature( source.m_tparams );
     _product.code( "class DecodeMapPage\n" );
@@ -634,7 +634,7 @@ Generator::decoder_decl( Product_t& _product ) const {
   _product.code( " Decoder();\n" );
   _product.code( " virtual ~Decoder();\n" );
   _product.code( "\n" );
-  if( not source.m_is_subdecoder ) {
+  if (not source.m_is_subdecoder) {
     _product.code( " Operation" );
     _product.template_abbrev( source.m_tparams );
     _product.code( "*NCDecode(%s addr);\n", source.m_addrtype.str() );
@@ -642,7 +642,7 @@ Generator::decoder_decl( Product_t& _product ) const {
   _product.code( " Operation" );
   _product.template_abbrev( source.m_tparams );
   _product.code( " *NCDecode(%s addr, %s code);\n", source.m_addrtype.str(), codetype_constref().str() );
-  if( not source.m_is_subdecoder ) {
+  if (not source.m_is_subdecoder) {
     _product.code( " Operation" );
     _product.template_abbrev( source.m_tparams );
     _product.code( " *Decode(%s addr, %s insn);\n", source.m_addrtype.str(), codetype_constref().str() );
@@ -658,7 +658,7 @@ Generator::decoder_decl( Product_t& _product ) const {
   _product.code( " std::vector<DecodeTableEntry" );
   _product.template_abbrev( source.m_tparams );
   _product.code( " > decode_table;\n" );
-  if( not source.m_is_subdecoder ) {
+  if (not source.m_is_subdecoder) {
     _product.code( " DecodeMapPage" );
     _product.template_abbrev( source.m_tparams );
     _product.code( " *mru_page;\n" );
@@ -674,7 +674,7 @@ Generator::decoder_decl( Product_t& _product ) const {
     _product.code( " ;\n" );
   }
   _product.code( "};\n\n" );
-  if( source.m_is_subdecoder ) {
+  if (source.m_is_subdecoder) {
     if( not source.m_tparams.empty() ) {
       _product.template_signature( source.m_tparams );
     } else {
@@ -695,8 +695,8 @@ Generator::operation_decl( Product_t& _product ) const {
   _product.code( "class Operation\n" );
   if( source.m_inheritances.size() > 0 ) {
     char const* sep = ": ";
-    for( Vect_t<Inheritance_t>::const_iterator inh = source.m_inheritances.begin(); inh != source.m_inheritances.end(); ++inh ) {
-      _product.code( sep ).usercode( *(**inh).m_modifier ).code( " " ).usercode( *(**inh).m_typename ).code( "\n" );
+    for( Vector<Inheritance>::const_iterator inh = source.m_inheritances.begin(); inh != source.m_inheritances.end(); ++inh ) {
+      _product.code( sep ).usercode( *(**inh).modifier ).code( " " ).usercode( *(**inh).ctypename ).code( "\n" );
       sep = ", ";
     }
   }
@@ -716,13 +716,13 @@ Generator::operation_decl( Product_t& _product ) const {
   _product.code( " static unsigned int const minsize = %d;\n", (*m_insnsizes.begin()) );
   _product.code( " static unsigned int const maxsize = %d;\n", (*m_insnsizes.rbegin()) );
   
-  for( Vect_t<Variable_t>::const_iterator var = source.m_vars.begin(); var < source.m_vars.end(); ++ var ) {
-    _product.usercode( (**var).m_ctype->m_fileloc, " %s %s;", (**var).m_ctype->m_content.str(), (**var).m_symbol.str() );
+  for( Vector<Variable>::const_iterator var = source.m_vars.begin(); var < source.m_vars.end(); ++ var ) {
+    _product.usercode( (**var).ctype->fileloc, " %s %s;", (**var).ctype->content.str(), (**var).symbol.str() );
   }
   
   for( intptr_t idx = source.m_actionprotos.size(); (--idx) >= 0; ) {
-    if( source.m_actionprotos[idx]->m_type != ActionProto::Static or not source.m_actionprotos[idx]->m_returns ) continue;
-    _product.code( " %s %s_result;\n", source.m_actionprotos[idx]->m_returns->m_content.str(), source.m_actionprotos[idx]->m_symbol.str() );
+    if (source.m_actionprotos[idx]->m_type != ActionProto::Static or not source.m_actionprotos[idx]->m_returns) continue;
+    _product.code( " %s %s_result;\n", source.m_actionprotos[idx]->m_returns->content.str(), source.m_actionprotos[idx]->m_symbol.str() );
   }
   
   if (source.m_withsource) {
@@ -734,13 +734,13 @@ Generator::operation_decl( Product_t& _product ) const {
   }
   
   for( intptr_t idx = source.m_actionprotos.size(); (--idx) >= 0; ) {
-    if( source.m_withsource ) {
+    if (source.m_withsource) {
       /* base declaration for user-defined code introspection
        * methods */
       _product.code( " virtual char const* %s_text() const;\n", source.m_actionprotos[idx]->m_symbol.str() );
     }
     _product.code( " virtual " );
-    if( source.m_actionprotos[idx]->m_returns ) {
+    if (source.m_actionprotos[idx]->m_returns) {
       _product.usercode( *(source.m_actionprotos[idx]->m_returns) );
     } else {
       _product.code( "void" );
@@ -750,10 +750,10 @@ Generator::operation_decl( Product_t& _product ) const {
 
     if( not source.m_actionprotos[idx]->m_params.empty() ) {
       char const* sep = " ";
-      for( Vect_t<CodePair_t>::const_iterator param = source.m_actionprotos[idx]->m_params.begin();
+      for( Vector<CodePair>::const_iterator param = source.m_actionprotos[idx]->m_params.begin();
            param < source.m_actionprotos[idx]->m_params.end(); ++ param, sep = ",\n" )
         {
-          _product.code( sep ).usercode( *(**param).m_ctype ).code( " " ).usercode( *(**param).m_csymbol );
+          _product.code( sep ).usercode( *(**param).ctype ).code( " " ).usercode( *(**param).csymbol );
         }
     }
 
@@ -781,7 +781,7 @@ Generator::membersize( unsigned size ) const
 void
 Generator::isa_operations_decl( Product_t& _product ) const
 {
-  for( Vect_t<Operation_t>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
+  for( Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
     _product.template_signature( source.m_tparams );
     _product.code( "class Op%s : public Operation", Str::capitalize( (**op).m_symbol.str() ).str() );
     _product.template_abbrev( source.m_tparams );
@@ -796,7 +796,7 @@ Generator::isa_operations_decl( Product_t& _product ) const
     if (source.m_withencode)
       _product.code( " void Encode(%s code) const;\n", codetype_ref().str() );
     
-    for( Vect_t<BitField>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf )
+    for( Vector<BitField>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf )
       {
         if      (OperandBitField const* opbf = dynamic_cast<OperandBitField const*>( &**bf ))
           {
@@ -811,20 +811,20 @@ Generator::isa_operations_decl( Product_t& _product ) const
           {
             SDInstance_t const* sdinstance = sobf->m_sdinstance;
             SDClass_t const* sdclass = sdinstance->m_sdclass;
-            SourceCode_t const* tpscheme =  sdinstance->m_template_scheme;
+            SourceCode const* tpscheme =  sdinstance->m_template_scheme;
         
             _product.usercode( sdclass->m_fileloc, " %s::Operation", sdclass->qd_namespace().str() );
-            if( tpscheme )
+            if (tpscheme)
               _product.usercode( *tpscheme, "< %s >" );
             _product.code( "* %s;\n", sobf->m_symbol.str() );
           }
       }
 
-    if( not (**op).m_variables.empty() ) {
-      for( Vect_t<Variable_t>::const_iterator var = (**op).m_variables.begin(); var < (**op).m_variables.end(); ++ var ) {
-        _product.usercode( (**var).m_ctype->m_fileloc, "   %s %s;", (**var).m_ctype->m_content.str(), (**var).m_symbol.str() );
+    if (not (**op).m_variables.empty())
+      {
+        for (Vector<Variable>::const_iterator var = (**op).m_variables.begin(); var < (**op).m_variables.end(); ++ var)
+          _product.usercode( (**var).ctype->fileloc, "   %s %s;", (**var).ctype->content.str(), (**var).symbol.str() );
       }
-    }
     
     if (source.m_withsource) {
       /* insn declaration for internal encoding and decoding code
@@ -835,22 +835,22 @@ Generator::isa_operations_decl( Product_t& _product ) const
     }
 
 
-    for( Vect_t<Action>::const_iterator action = (**op).m_actions.begin(); action < (**op).m_actions.end(); ++ action ) {
+    for( Vector<Action>::const_iterator action = (**op).m_actions.begin(); action < (**op).m_actions.end(); ++ action ) {
       ActionProto const* actionproto = (**action).m_actionproto;
       
       if( not actionproto->m_comments.empty() ) {
-        for( Vect_t<Comment_t>::const_iterator comm = actionproto->m_comments.begin(); comm < actionproto->m_comments.end(); ++ comm )
+        for( Vector<Comment>::const_iterator comm = actionproto->m_comments.begin(); comm < actionproto->m_comments.end(); ++ comm )
           _product.code( " %s\n", (**comm).m_content.str() );
       }
       
-      if( source.m_withsource ) {
+      if (source.m_withsource) {
         // for cstring version of the action
         _product.code( " virtual char const* %s_text() const;\n", actionproto->m_symbol.str() );
       }
 
       _product.code( " virtual\n " );
 
-      if( actionproto->m_returns ) {
+      if (actionproto->m_returns) {
         _product.usercode( *actionproto->m_returns );
       } else {
         _product.code( "void\n" );
@@ -860,10 +860,10 @@ Generator::isa_operations_decl( Product_t& _product ) const
 
       if( not actionproto->m_params.empty() ) {
         char const* sep = " ";
-        for( Vect_t<CodePair_t>::const_iterator param = actionproto->m_params.begin();
+        for( Vector<CodePair>::const_iterator param = actionproto->m_params.begin();
              param < actionproto->m_params.end(); ++ param, sep = ",\n" )
           {
-            _product.code( sep ).usercode( *(**param).m_ctype ).code( " " ).usercode( *(**param).m_csymbol );
+            _product.code( sep ).usercode( *(**param).ctype ).code( " " ).usercode( *(**param).csymbol );
           }
         _product.code( " " );
       }
@@ -885,14 +885,14 @@ Generator::operation_impl( Product_t& _product ) const {
   _product.code( "::Operation(%s _code, %s _addr, const char *_name)\n", codetype_constref().str(), source.m_addrtype.str() );
   _product.code( ": \n");
   
-  for( Vect_t<Inheritance_t>::const_iterator inh = source.m_inheritances.begin(); inh != source.m_inheritances.end(); ++ inh ) {
-    if( not (**inh).m_initargs ) continue;
-    _product.usercode( *(**inh).m_typename ).code( "( " ).usercode( *(**inh).m_initargs ).code( " ),\n" );
+  for( Vector<Inheritance>::const_iterator inh = source.m_inheritances.begin(); inh != source.m_inheritances.end(); ++ inh ) {
+    if (not (**inh).initargs) continue;
+    _product.usercode( *(**inh).ctypename ).code( "( " ).usercode( *(**inh).initargs ).code( " ),\n" );
   }
 
-  for( Vect_t<Variable_t>::const_iterator var = source.m_vars.begin(); var < source.m_vars.end(); ++ var ) {
-    if( not (**var).m_cinit ) continue;
-    _product.code( " %s(", (**var).m_symbol.str() ).usercode( *(**var).m_cinit ).code( "),\n" );
+  for( Vector<Variable>::const_iterator var = source.m_vars.begin(); var < source.m_vars.end(); ++ var ) {
+    if (not (**var).cinit) continue;
+    _product.code( " %s(", (**var).symbol.str() ).usercode( *(**var).cinit ).code( "),\n" );
   }
 
   _product.code( " encoding(_code),\n" );
@@ -907,7 +907,7 @@ Generator::operation_impl( Product_t& _product ) const {
   _product.code( "{\n" );
   
   for( intptr_t idx = source.m_actionprotos.size(); (--idx) >= 0; ) {
-    if( source.m_actionprotos[idx]->m_type != ActionProto::Destructor ) continue;
+    if (source.m_actionprotos[idx]->m_type != ActionProto::Destructor) continue;
     _product.code( " %s();\n", source.m_actionprotos[idx]->m_symbol.str() );
   }
   _product.code( "}\n\n" );
@@ -926,13 +926,13 @@ Generator::operation_impl( Product_t& _product ) const {
   }
   
   for( intptr_t idx = source.m_actionprotos.size(); (--idx) >= 0; ) {
-    if( source.m_withsource ) {
+    if (source.m_withsource) {
       // for cstring version of the method
       _product.template_signature( source.m_tparams );
       _product.code( " char const* Operation" );
       _product.template_abbrev( source.m_tparams );
       _product.code( "::%s_text() const\n", source.m_actionprotos[idx]->m_symbol.str() );
-      _product.code( " { return %s; }", Str::dqcstring( source.m_actionprotos[idx]->m_defaultcode->m_content.str() ).str() );
+      _product.code( " { return %s; }", Str::dqcstring( source.m_actionprotos[idx]->m_defaultcode->content.str() ).str() );
     }
     
     _product.template_signature( source.m_tparams );
@@ -950,10 +950,10 @@ Generator::operation_impl( Product_t& _product ) const {
 
     if( not source.m_actionprotos[idx]->m_params.empty() ) {
       char const* sep = " ";
-      for( Vect_t<CodePair_t>::const_iterator param = source.m_actionprotos[idx]->m_params.begin();
+      for( Vector<CodePair>::const_iterator param = source.m_actionprotos[idx]->m_params.begin();
            param < source.m_actionprotos[idx]->m_params.end(); ++ param, sep = ",\n" )
         {
-          _product.code( sep ).usercode( *(**param).m_ctype ).code( " " ).usercode( *(**param).m_csymbol );
+          _product.code( sep ).usercode( *(**param).ctype ).code( " " ).usercode( *(**param).csymbol );
         }
     }
 
@@ -965,14 +965,14 @@ Generator::operation_impl( Product_t& _product ) const {
 
 void
 Generator::isa_operations_methods( Product_t& _product ) const {
-  for( Vect_t<Operation_t>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
+  for( Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
     if( not (**op).m_comments.empty() ) {
-      for( Vect_t<Comment_t>::const_iterator comm = (**op).m_comments.begin(); comm < (**op).m_comments.end(); ++ comm )
+      for( Vector<Comment>::const_iterator comm = (**op).m_comments.begin(); comm < (**op).m_comments.end(); ++ comm )
         _product.code( "%s\n", (**comm).m_content.str() );
     }
     
-    if( source.m_withsource ) {
-      /* insn implemantation for internal encoding and decoding code
+    if (source.m_withsource) {
+      /* insn implementation for internal encoding and decoding code
        * introspection methods */
       char const* xxcode[2] = {"Encode", "Decode"};
       for (int step = 0; step < 2; ++step) {
@@ -990,26 +990,26 @@ Generator::isa_operations_methods( Product_t& _product ) const {
       }
     }
     
-    for( Vect_t<Action>::const_iterator action = (**op).m_actions.begin(); action < (**op).m_actions.end(); ++ action ) {
+    for (Vector<Action>::const_iterator action = (**op).m_actions.begin(); action < (**op).m_actions.end(); ++ action) {
       ActionProto const* actionproto = (**action).m_actionproto;
 
       if( not (**action).m_comments.empty() ) {
-        for( Vect_t<Comment_t>::const_iterator comm = (**action).m_comments.begin(); comm < (**action).m_comments.end(); ++ comm )
+        for( Vector<Comment>::const_iterator comm = (**action).m_comments.begin(); comm < (**action).m_comments.end(); ++ comm )
           _product.code( "%s\n", (**comm).m_content.str() );
       }
 
-      if( source.m_withsource ) {
+      if (source.m_withsource) {
         // for cstring version of the method
         _product.template_signature( source.m_tparams );
         _product.code( " char const* Op%s", Str::capitalize( (**op).m_symbol.str() ).str() );
         _product.template_abbrev( source.m_tparams );
         _product.code( "::%s_text() const\n", actionproto->m_symbol.str() );
-        _product.code( " { return %s; }", Str::dqcstring( (**action).m_source_code->m_content.str() ).str() );
+        _product.code( " { return %s; }", Str::dqcstring( (**action).m_source_code->content.str() ).str() );
       }
 
       _product.template_signature( source.m_tparams );
 
-      if( actionproto->m_returns ) {
+      if (actionproto->m_returns) {
         _product.usercode( *actionproto->m_returns );
       }
       else {
@@ -1022,10 +1022,10 @@ Generator::isa_operations_methods( Product_t& _product ) const {
 
       if( not actionproto->m_params.empty() ) {
         char const* sep = " ";
-        for( Vect_t<CodePair_t>::const_iterator param = actionproto->m_params.begin();
+        for( Vector<CodePair>::const_iterator param = actionproto->m_params.begin();
              param < actionproto->m_params.end(); ++ param, sep = ",\n" )
           {
-            _product.code( sep ).usercode( *(**param).m_ctype ).code( " " ).usercode( *(**param).m_csymbol );
+            _product.code( sep ).usercode( *(**param).ctype ).code( " " ).usercode( *(**param).csymbol );
           }
       }
 
@@ -1051,7 +1051,7 @@ Generator::isa_operations_methods( Product_t& _product ) const {
 
 void
 Generator::isa_operations_ctors( Product_t& _product ) const {
-  for( Vect_t<Operation_t>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
+  for( Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
     _product.template_signature( source.m_tparams );
     _product.code( "Op%s", Str::capitalize( (**op).m_symbol.str() ).str() );
     _product.template_abbrev( source.m_tparams );
@@ -1065,10 +1065,10 @@ Generator::isa_operations_ctors( Product_t& _product ) const {
     
     insn_decode_impl( _product, **op, "code", "addr" );
 
-    if( not (**op).m_variables.empty() ) {
-      for( Vect_t<Variable_t>::const_iterator var = (**op).m_variables.begin(); var < (**op).m_variables.end(); ++ var ) {
-        if( (**var).m_cinit ) {
-          _product.code( "%s = ", (**var).m_symbol.str() ).usercode( *(**var).m_cinit ).code( ";\n" );
+    if (not (**op).m_variables.empty()) {
+      for( Vector<Variable>::const_iterator var = (**op).m_variables.begin(); var < (**op).m_variables.end(); ++ var ) {
+        if ((**var).cinit) {
+          _product.code( "%s = ", (**var).symbol.str() ).usercode( *(**var).cinit ).code( ";\n" );
         }
       }
     }
@@ -1081,7 +1081,7 @@ Generator::isa_operations_ctors( Product_t& _product ) const {
 
 void
 Generator::isa_operations_encoders( Product_t& _product ) const {
-  for( Vect_t<Operation_t>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
+  for( Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
     _product.template_signature( source.m_tparams );
     _product.code( "void Op%s", Str::capitalize( (**op).m_symbol.str() ).str() );
     _product.template_abbrev( source.m_tparams );
@@ -1097,7 +1097,7 @@ Generator::isa_operations_encoders( Product_t& _product ) const {
 
 void
 Generator::decoder_impl( Product_t& _product ) const {
-  if( not source.m_is_subdecoder ) {
+  if (not source.m_is_subdecoder) {
     _product.template_signature( source.m_tparams );
     _product.code( "DecodeMapPage" );
     _product.template_abbrev( source.m_tparams );
@@ -1142,10 +1142,10 @@ Generator::decoder_impl( Product_t& _product ) const {
       member_init_separator = ", ";
     }
   _product.code( "\n{\n" );
-  if( not source.m_is_subdecoder )
+  if (not source.m_is_subdecoder)
     _product.code( " memset(decode_hash_table, 0, sizeof(decode_hash_table));\n" );
   
-  for( Vect_t<Operation_t>::const_reverse_iterator op = source.m_operations.rbegin(); op < source.m_operations.rend(); ++ op ) {
+  for( Vector<Operation>::const_reverse_iterator op = source.m_operations.rbegin(); op < source.m_operations.rend(); ++ op ) {
     if( (**op).m_condition ) {
       _product.code( "if(" ).usercode( *(**op).m_condition ).code( ")" );
     }
@@ -1166,7 +1166,7 @@ Generator::decoder_impl( Product_t& _product ) const {
   _product.template_abbrev( source.m_tparams );
   _product.code( "::~Decoder()\n" );
   _product.code( "{\n" );
-  if( not source.m_is_subdecoder ) {
+  if (not source.m_is_subdecoder) {
     _product.code( " InvalidateDecodingCache();\n" );
   }
   _product.code( "}\n\n" );
@@ -1198,7 +1198,7 @@ Generator::decoder_impl( Product_t& _product ) const {
         
     case ActionProto::Static:
       _product.code( "   " );
-      if( source.m_actionprotos[idx]->m_returns )
+      if (source.m_actionprotos[idx]->m_returns)
         _product.code( "operation->%s_result = ", source.m_actionprotos[idx]->m_symbol.str() );
       _product.code( "operation->%s();\n", source.m_actionprotos[idx]->m_symbol.str() );
       break;
@@ -1223,7 +1223,7 @@ Generator::decoder_impl( Product_t& _product ) const {
       break;
     case ActionProto::Static:
       _product.code( " " );
-      if( source.m_actionprotos[idx]->m_returns )
+      if (source.m_actionprotos[idx]->m_returns)
         _product.code( "operation->%s_result = ", source.m_actionprotos[idx]->m_symbol.str() );
       _product.code( "operation->%s();\n", source.m_actionprotos[idx]->m_symbol.str() );
       break;
@@ -1234,7 +1234,7 @@ Generator::decoder_impl( Product_t& _product ) const {
   _product.code( " return operation;\n" );
   _product.code( "}\n\n" );
   
-  if( not source.m_is_subdecoder ) {
+  if (not source.m_is_subdecoder) {
     /*** InvalidateDecodingCache() ***/
     _product.template_signature( source.m_tparams );
     _product.code( "void Decoder" );
@@ -1400,7 +1400,7 @@ Generator::least_ctype_size( unsigned int bits ) {
   return size;
 }
 
-FieldIterator::FieldIterator( bool little_endian, Vect_t<BitField> const& bitfields, unsigned int maxsize )
+FieldIterator::FieldIterator( bool little_endian, Vector<BitField> const& bitfields, unsigned int maxsize )
   : m_bitfields( bitfields ), m_idx( (unsigned int)(-1) ),
     m_ref( little_endian ? 0 : maxsize ),
     m_pos( m_ref ), m_size( 0 ),
@@ -1426,7 +1426,7 @@ FieldIterator::next() {
 }
 
 OpCode const&
-Generator::opcode( Operation_t const* _op ) const
+Generator::opcode( Operation const* _op ) const
 {
   OpCodeMap::const_iterator res = m_opcodes.find( _op );
   assert( res != m_opcodes.end() );
@@ -1434,7 +1434,7 @@ Generator::opcode( Operation_t const* _op ) const
 }
 
 OpCode&
-Generator::opcode( Operation_t const* _op )
+Generator::opcode( Operation const* _op )
 {
   OpCodeMap::iterator res = m_opcodes.find( _op );
   assert( res != m_opcodes.end() );

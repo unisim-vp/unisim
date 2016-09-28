@@ -40,21 +40,21 @@ struct Isa
   bool                          m_asc_worder;      /**< words ordering (false: descending)*/
   unsigned int                  m_minwordsize;     /**< minimum C type size for operand fields */
   std::vector<ConstStr>       m_namespace;       /**< Encapsulating namespace of the iss */
-  Vect_t<CodePair_t>            m_tparams;         /**< Template parameters of the iss */
-  Vect_t<Variable_t>            m_vars;            /**< Global variables used by the iss */
-  Vect_t<ActionProto>           m_actionprotos;    /**< Action prototypes of operations */
-  Vect_t<Operation_t>           m_operations;      /**< Defined instructions */
-  Vect_t<Group_t>               m_groups;          /**< Defined groups */
-  Vect_t<SDClass_t>             m_sdclasses;       /**< Defined subdecoder classes */
-  Vect_t<SDInstance_t>          m_sdinstances;     /**< Defined subdecoder instances */
-  Vect_t<SourceCode_t>          m_decl_srccodes;   /**< Code to insert in header file */
-  Vect_t<SourceCode_t>          m_impl_srccodes;   /**< Code to insert in source file */
+  Vector<CodePair>            m_tparams;         /**< Template parameters of the iss */
+  Vector<Variable>            m_vars;            /**< Global variables used by the iss */
+  Vector<ActionProto>           m_actionprotos;    /**< Action prototypes of operations */
+  Vector<Operation>           m_operations;      /**< Defined instructions */
+  Vector<Group>               m_groups;          /**< Defined groups */
+  Vector<SDClass_t>             m_sdclasses;       /**< Defined subdecoder classes */
+  Vector<SDInstance_t>          m_sdinstances;     /**< Defined subdecoder instances */
+  Vector<SourceCode>          m_decl_srccodes;   /**< Code to insert in header file */
+  Vector<SourceCode>          m_impl_srccodes;   /**< Code to insert in source file */
   ConstStr                    m_addrtype;        /**< C type for instructions addresses */
   std::vector<ConstStr>       m_includes;        /**< files included by the isa main file */
-  Vect_t<Specialization_t>      m_specializations; /**< Requested specializations */
-  Vect_t<Inheritance_t>         m_inheritances;    /**< Defined inheritances for operation class */
+  Vector<Specialization>      m_specializations; /**< Requested specializations */
+  Vector<Inheritance>         m_inheritances;    /**< Defined inheritances for operation class */
   
-  typedef std::map<ConstStr,Group_t*> GroupAccumulators;
+  typedef std::map<ConstStr,Group*> GroupAccumulators;
   GroupAccumulators             m_group_accs;      /**< Active group accumulators */
   
   struct Ordering { FileLoc_t fileloc; std::vector<ConstStr> symbols; };
@@ -64,12 +64,12 @@ struct Isa
   Isa();
   ~Isa();
   
-  void                          remove( Operation_t* _op );
-  void                          add( Operation_t* _op );
+  void                          remove( Operation* _op );
+  void                          add( Operation* _op );
   void                          remove( ActionProto const* _ap );
-  Operation_t*                  operation( ConstStr _symbol );
-  bool                          operations( ConstStr _symbol, Vect_t<Operation_t>& _opvec );
-  Group_t*                      group( ConstStr _symbol );
+  Operation*                  operation( ConstStr _symbol );
+  bool                          operations( ConstStr _symbol, Vector<Operation>& _opvec );
+  Group*                      group( ConstStr _symbol );
   ActionProto const*            actionproto( ConstStr _symbol ) const;
   SDClass_t const*              sdclass( std::vector<ConstStr>& _namespace ) const;
   SDInstance_t const*           sdinstance( ConstStr _symbol ) const;
@@ -88,7 +88,7 @@ struct Isa
   };
   
   void                          setparam( ConstStr key, ConstStr value );
-  void                          setparam( ConstStr key, SourceCode_t* value );
+  void                          setparam( ConstStr key, SourceCode* value );
   void                          setparam( ConstStr key, unsigned int value );
   
   struct ParseError {};

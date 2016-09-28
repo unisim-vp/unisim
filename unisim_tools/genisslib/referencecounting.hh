@@ -30,7 +30,7 @@ struct ReferenceCounter
 };
   
 template <class Object_t>
-class Ptr_t
+class Ptr
 {
   Object_t*             m_object;
   
@@ -38,35 +38,35 @@ class Ptr_t
   intptr_t              release() { return -- (m_object->ReferenceCounter::m_count); }
   
 public:
-  Ptr_t() : m_object( 0 ) {}
-  Ptr_t( Object_t* _object ) : m_object( _object ) { if( m_object ) retain(); }
-  Ptr_t( Ptr_t const& _ref ) : m_object( _ref.m_object ) { if( m_object ) retain(); }
+  Ptr() : m_object( 0 ) {}
+  Ptr( Object_t* _object ) : m_object( _object ) { if (m_object) retain(); }
+  Ptr( Ptr const& _ref ) : m_object( _ref.m_object ) { if (m_object) retain(); }
   
-  Ptr_t&                operator=( Ptr_t const& _ref ) {
-    if( m_object ) release();
+  Ptr&                operator=( Ptr const& _ref ) {
+    if (m_object) release();
     if( (m_object = _ref.m_object) ) retain();
     return *this;
   }
     
-  ~Ptr_t() { if( not m_object or release() > 0 ) return; delete m_object; }
+  ~Ptr() { if( not m_object or release() > 0 ) return; delete m_object; }
     
-  operator Object_t const* () const { if( not m_object ) return 0; return m_object; }
+  operator Object_t const* () const { if (not m_object) return 0; return m_object; }
   operator Object_t* () {
-    if( not m_object ) return 0;
+    if (not m_object) return 0;
     // m_object->ReferenceCounter::const_check();
     return m_object;
   }
     
-  Object_t const*       operator->() const { if( not m_object ) return 0; return m_object; }
+  Object_t const*       operator->() const { if (not m_object) return 0; return m_object; }
   Object_t*             operator->() {
-    if( not m_object ) return 0;
+    if (not m_object) return 0;
     // m_object->ReferenceCounter::const_check();
     return m_object;
   }
 };
 
 template <class Object_t>
-class ConstPtr_t {
+class ConstPtr {
   Object_t const*       m_object;
   
   typedef ReferenceCounter const* ConstRCP_t;
@@ -77,27 +77,27 @@ class ConstPtr_t {
   intptr_t              release() { return -- (refcounter()->m_count); }
   
 public:
-  ConstPtr_t() : m_object( 0 ) {}
-  ConstPtr_t( Object_t const* _object ) : m_object( _object ) { if( m_object ) retain(); }
-  ConstPtr_t( ConstPtr_t const& _ref ) : m_object( _ref.m_object ) { if( m_object ) retain(); }
-  ConstPtr_t( Ptr_t<Object_t> const& _ref ) : m_object( _ref.m_object ) { if( m_object ) retain(); }
+  ConstPtr() : m_object( 0 ) {}
+  ConstPtr( Object_t const* _object ) : m_object( _object ) { if (m_object) retain(); }
+  ConstPtr( ConstPtr const& _ref ) : m_object( _ref.m_object ) { if (m_object) retain(); }
+  ConstPtr( Ptr<Object_t> const& _ref ) : m_object( _ref.m_object ) { if (m_object) retain(); }
   
-  ConstPtr_t&                operator=( ConstPtr_t const& _ref ) {
-    if( m_object ) release();
+  ConstPtr&                operator=( ConstPtr const& _ref ) {
+    if (m_object) release();
     if( (m_object = _ref.m_object) ) retain();
     return *this;
   }
   
-  ConstPtr_t&                operator=( Ptr_t<Object_t> const& _ref ) {
-    if( m_object ) release();
+  ConstPtr&                operator=( Ptr<Object_t> const& _ref ) {
+    if (m_object) release();
     if( (m_object = _ref.m_object) ) retain();
     return *this;
   }
   
-  ~ConstPtr_t() { if( not m_object or release() > 0 ) return; delete m_object; }
+  ~ConstPtr() { if( not m_object or release() > 0 ) return; delete m_object; }
     
-  operator Object_t const* () const { if( not m_object ) return 0; return m_object; }
-  Object_t const*       operator->() const { if( not m_object ) return 0; return m_object; }
+  operator Object_t const* () const { if (not m_object) return 0; return m_object; }
+  Object_t const*       operator->() const { if (not m_object) return 0; return m_object; }
 };
 
 #endif // __REFERENCECOUNTING_HH__

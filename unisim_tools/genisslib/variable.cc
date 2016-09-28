@@ -20,30 +20,36 @@
 #include <strtools.hh>
 #include <iostream>
 
-Variable_t::Variable_t( ConstStr _symbol, SourceCode_t* _ctype, SourceCode_t* _cinit )
-  : m_symbol( _symbol ), m_ctype( _ctype ), m_cinit( _cinit )
+Variable::Variable( ConstStr _symbol, SourceCode* _ctype, SourceCode* _cinit )
+  : symbol( _symbol ), ctype( _ctype ), cinit( _cinit )
 {}
 
-Variable_t::Variable_t( Variable_t const& _variable )
-  : m_symbol( _variable.m_symbol ), m_ctype( _variable.m_ctype ), m_cinit( _variable.m_cinit )
+Variable::Variable( Variable const& _variable )
+  : symbol( _variable.symbol ), ctype( _variable.ctype ), cinit( _variable.cinit )
 {}
 
-Variable_t::~Variable_t() {};
+Variable::~Variable() {};
 
 /** Dump the variable object into a stream
     @param stream a stream
 */
 std::ostream&
-operator<<( std::ostream& _sink, Variable_t const& _var ) {
-  return (_sink << _var.m_symbol << " : " << (*_var.m_ctype));
+operator<<( std::ostream& sink, Variable const& var )
+{
+  sink << var.symbol << " : " << *var.ctype;
+  
+  if (var.cinit)
+    sink << " = " << *var.cinit;
+  
+  return sink;
 }
 
-Inheritance_t::Inheritance_t( SourceCode_t* _modifier, SourceCode_t* _typename, SourceCode_t* _initargs )
-  : m_modifier( _modifier ), m_typename( _typename ), m_initargs( _initargs )
+Inheritance::Inheritance( SourceCode* _modifier, SourceCode* _typename, SourceCode* _initargs )
+  : modifier( _modifier ), ctypename( _typename ), initargs( _initargs )
 {}
 
-Inheritance_t::Inheritance_t( Inheritance_t const& _inh )
-  : m_modifier( _inh.m_modifier ), m_typename( _inh.m_typename ), m_initargs( _inh.m_initargs )
+Inheritance::Inheritance( Inheritance const& _inh )
+  : modifier( _inh.modifier ), ctypename( _inh.ctypename ), initargs( _inh.initargs )
 {}
 
-Inheritance_t::~Inheritance_t() {};
+Inheritance::~Inheritance() {};

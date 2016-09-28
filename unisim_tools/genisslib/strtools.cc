@@ -39,7 +39,7 @@ namespace Str
       size = vsnprintf( storage, capacity, _fmt, ap );
       va_end( ap );
       /* If it worked, return */
-      if( size >= 0 and size < capacity )
+      if (size >= 0 and size < capacity)
         return ConstStr( storage );
     }
     assert( false );
@@ -104,7 +104,7 @@ namespace Str
       case '\\': buffer += "\\\\"; break;
       default:
         {
-          if( ch >= 127 or ch < 32 ) {
+          if (ch >= 127 or ch < 32) {
             buffer += "\\x";
             buffer += hextab[unsigned( ch ) / 256];
             buffer += hextab[unsigned( ch ) % 256];

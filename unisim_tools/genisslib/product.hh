@@ -28,7 +28,7 @@
 
 struct Product_t
 {
-  ConstStr          m_filename;
+  ConstStr            m_filename;
   std::string         m_line;
   unsigned int        m_lineno;
   std::vector<int>    m_indentations;
@@ -38,11 +38,11 @@ struct Product_t
   virtual ~Product_t() {};
   
   Product_t&          usercode( FileLoc_t const& _fileloc, char const* _format, ... );
-  Product_t&          usercode( SourceCode_t const& _source );
-  Product_t&          usercode( SourceCode_t const& _source, char const* _fmt );
+  Product_t&          usercode( SourceCode const& _source );
+  Product_t&          usercode( SourceCode const& _source, char const* _fmt );
   Product_t&          code( char const* _format, ... );
-  Product_t&          template_signature( Vect_t<CodePair_t> const& _tparams );
-  Product_t&          template_abbrev( Vect_t<CodePair_t> const& _tparams );
+  Product_t&          template_signature( Vector<CodePair> const& _tparams );
+  Product_t&          template_abbrev( Vector<CodePair> const& _tparams );
   Product_t&          ns_enter( std::vector<ConstStr> const& _namespace );
   Product_t&          ns_leave( std::vector<ConstStr> const& _namespace );
   Product_t&          require_newline();

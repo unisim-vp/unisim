@@ -18,15 +18,15 @@
 #ifndef __FWD_HH__
 #define __FWD_HH__
 
-struct SourceCode_t;
-struct Operation_t;
+struct SourceCode;
+struct Operation;
 struct ActionProto;
-struct Comment_t;
-struct CodePair_t;
+struct Comment;
+struct CodePair;
 struct Action;
-struct Group_t;
-struct Variable_t;
-struct Inheritance_t;
+struct Group;
+struct Variable;
+struct Inheritance;
 struct BitField;
 struct Isa;
 struct Product_t;
@@ -36,10 +36,10 @@ struct Generator;
 struct Product_t;
 struct SDClass_t;
 struct SDInstance_t;
-struct Specialization_t;
-struct Constraint_t;
-template <class Type_t> struct Vect_t;
-struct StringVect_t;
-struct UIntVect_t;
+struct Specialization;
+struct Constraint;
+template <class Type_t> struct Vector;
+struct StringVector;
+struct UIntVector;
 
 #endif // __FWD_HH__

@@ -54,8 +54,8 @@ struct RiscGenerator : public Generator
   RiscGenerator( Isa& _source, Opts const& _options );
   ~RiscGenerator() {};
   
-  RiscOpCode const&           riscopcode( Operation_t const* _op ) const { return dynamic_cast<RiscOpCode const&>( opcode( _op ) ); }
-  RiscOpCode&                 riscopcode( Operation_t const* _op ) { return dynamic_cast<RiscOpCode&>( opcode( _op ) ); };
+  RiscOpCode const&           riscopcode( Operation const* _op ) const { return dynamic_cast<RiscOpCode const&>( opcode( _op ) ); }
+  RiscOpCode&                 riscopcode( Operation const* _op ) { return dynamic_cast<RiscOpCode&>( opcode( _op ) ); };
   
   /* Risc specific Utilities */
   void                          finalize();
@@ -64,21 +64,21 @@ struct RiscGenerator : public Generator
   ConstStr                    codetype_name() const { return "CodeType"; }
   ConstStr                    codetype_ref() const { return "CodeType&"; }
   ConstStr                    codetype_constref() const { return "CodeType"; }
-  void                          insn_bits_code( Product_t& _product, Operation_t const& _op ) const;
-  void                          insn_mask_code( Product_t& _product, Operation_t const& _op ) const;
+  void                          insn_bits_code( Product_t& _product, Operation const& _op ) const;
+  void                          insn_mask_code( Product_t& _product, Operation const& _op ) const;
   ConstStr                    insn_id_expr( char const* _addrname ) const;
   void                          insn_match_ifexpr( Product_t& _product, char const* _code, char const* _mask, char const* _bits ) const;
   void                          insn_unchanged_expr( Product_t& _product, char const* _old, char const* _new ) const;
-  void                          insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const;
-  void                          insn_encode_impl( Product_t& _product, Operation_t const& _op, char const* _codename ) const;
+  void                          insn_decode_impl( Product_t& _product, Operation const& _op, char const* _codename, char const* _addrname ) const;
+  void                          insn_encode_impl( Product_t& _product, Operation const& _op, char const* _codename ) const;
   void                          additional_impl_includes( Product_t& _product ) const {}
   void                          additional_decl_includes( Product_t& _product ) const {}
   
-  void                          insn_destructor_decl( Product_t& _product, Operation_t const& _op ) const {};
-  void                          insn_destructor_impl( Product_t& _product, Operation_t const& _op ) const {};
+  void                          insn_destructor_decl( Product_t& _product, Operation const& _op ) const {};
+  void                          insn_destructor_impl( Product_t& _product, Operation const& _op ) const {};
   
   void                          op_getlen_decl( Product_t& _product ) const;
-  void                          insn_getlen_decl( Product_t& _product, Operation_t const& _op ) const;
+  void                          insn_getlen_decl( Product_t& _product, Operation const& _op ) const;
 };
 
 #endif // __RISCGENERATOR_HH__

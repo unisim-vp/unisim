@@ -43,7 +43,7 @@ SDClass_t::qd_namespace() const {
   return ConstStr( buffer.c_str() );
 }
 
-SDInstance_t::SDInstance_t( ConstStr _symbol, SourceCode_t const* _template_scheme, SDClass_t const* _sdclass, FileLoc_t const& _fileloc )
+SDInstance_t::SDInstance_t( ConstStr _symbol, SourceCode const* _template_scheme, SDClass_t const* _sdclass, FileLoc_t const& _fileloc )
   : m_symbol( _symbol ), m_template_scheme( _template_scheme ), m_sdclass( _sdclass ), m_fileloc( _fileloc )
 {}
 
@@ -57,7 +57,7 @@ SDInstance_t::~SDInstance_t() {}
 // ostream&
 // operator<<( ostream& _sink, SubDecoder_t const& _sd ) {
 //   _sink << "subdecoder " << _sd.m_symbol << '{' << (*_sd.m_namespace) << '}' << ' ';
-//   if( _sd.m_minsize == _sd.m_maxsize )
+//   if (_sd.m_minsize == _sd.m_maxsize)
 //     _sink << '[' << _sd.m_maxsize << ']';
 //   else
 //     _sink << '[' << _sd.m_minsize << ';' << _sd.m_maxsize << ']';

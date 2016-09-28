@@ -28,19 +28,19 @@
 /** An action implementation object */
 struct Action : virtual ReferenceCounter
 {
-  Operation_t const*       m_operation;    /**< The associated operation  */
+  Operation const*       m_operation;    /**< The associated operation  */
   ActionProto const*       m_actionproto;  /**< The associated action prototype */
-  Ptr_t<SourceCode_t>      m_source_code;  /**< The C implementation of the action */
-  Vect_t<Comment_t>        m_comments;     /**< The list of the C comment associated with the action */
+  Ptr<SourceCode>      m_source_code;  /**< The C implementation of the action */
+  Vector<Comment>        m_comments;     /**< The list of the C comment associated with the action */
   FileLoc_t                m_fileloc;      /**< File location of the declaration */
   //  Action*                m_base;
 
-  Action( ActionProto const* _actionproto, SourceCode_t* _source_code,
-            Vect_t<Comment_t>& _comments, FileLoc_t const& _fileloc );
+  Action( ActionProto const* _actionproto, SourceCode* _source_code,
+            Vector<Comment>& _comments, FileLoc_t const& _fileloc );
   ~Action();
 };
 
-std::ostream& operator<<( std::ostream& _sink, Action const& _act );
+std::ostream& operator<<( std::ostream& sink, Action const& _act );
 
 /** An action prototype object */
 struct ActionProto : virtual ReferenceCounter
@@ -49,20 +49,20 @@ struct ActionProto : virtual ReferenceCounter
   
   type_t                   m_type;                /**< The type of the action prototype */
   ConstStr               m_symbol;              /**< The associated symbol */
-  Ptr_t<SourceCode_t>      m_returns;             /**< The C return type of the action */
-  Vect_t<CodePair_t>       m_params;              /**< The C parameters of the action */
+  Ptr<SourceCode>      m_returns;             /**< The C return type of the action */
+  Vector<CodePair>       m_params;              /**< The C parameters of the action */
   bool                     m_constness;           /**< The constness of the action */
-  Ptr_t<SourceCode_t>      m_defaultcode;         /**< The default C implementation of the action */
-  Vect_t<Comment_t>        m_comments;            /**< The list of the C comment associated with the action prototype */
+  Ptr<SourceCode>      m_defaultcode;         /**< The default C implementation of the action */
+  Vector<Comment>        m_comments;            /**< The list of the C comment associated with the action prototype */
   FileLoc_t                m_fileloc;             /**< The file location where the action prototype was declared */
   
-  ActionProto( type_t _type, ConstStr _symbol, SourceCode_t* _returns, Vect_t<CodePair_t>& _params,
-               bool _constness, SourceCode_t* _defaultcode, Vect_t<Comment_t>& _comments, FileLoc_t const& _fileloc );
+  ActionProto( type_t _type, ConstStr _symbol, SourceCode* _returns, Vector<CodePair>& _params,
+               bool _constness, SourceCode* _defaultcode, Vector<Comment>& _comments, FileLoc_t const& _fileloc );
   ~ActionProto();
   
   char const*              returntype() const;
 };
 
-std::ostream& operator<<( std::ostream& _sink, ActionProto const& _ap );
+std::ostream& operator<<( std::ostream& sink, ActionProto const& _ap );
 
 #endif // __ACTION_HH__

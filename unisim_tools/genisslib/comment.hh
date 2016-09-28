@@ -25,14 +25,14 @@
 #include <vector>
 
 /** A C/C++ comment object */
-struct Comment_t : virtual ReferenceCounter
+struct Comment : virtual ReferenceCounter
 {
   ConstStr              m_content;
   FileLoc_t               m_fileloc;
   
-  Comment_t( ConstStr _content, FileLoc_t const& _fileloc );
-  Comment_t( Comment_t const& _comment );
-  ~Comment_t();
+  Comment( ConstStr _content, FileLoc_t const& _fileloc );
+  Comment( Comment const& _comment );
+  ~Comment();
 };
 
 #endif // __COMMENT_HH__

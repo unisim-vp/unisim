@@ -56,8 +56,9 @@ FProduct_t::~FProduct_t() { delete m_sink; }
     @param _source the ScourceCode_t object to dump
  */
 Product_t&
-Product_t::usercode( SourceCode_t const& _source ) {
-  return usercode( _source.m_fileloc, "%s", _source.m_content.str() );
+Product_t::usercode( SourceCode const& source )
+{
+  return usercode( source.fileloc, "%s", source.content.str() );
 }
 
 /** Output source code with surrounding braces into the output file
@@ -65,8 +66,9 @@ Product_t::usercode( SourceCode_t const& _source ) {
     @param _source the ScourceCode_t object to dump
  */
 Product_t&
-Product_t::usercode( SourceCode_t const& _source, char const* _fmt ) {
-  return usercode( _source.m_fileloc, _fmt, _source.m_content.str() );
+Product_t::usercode( SourceCode const& source, char const* fmt )
+{
+  return usercode( source.fileloc, fmt, source.content.str() );
 }
 
 /** Output source code into the output file
@@ -77,7 +79,7 @@ Product_t::usercode( SourceCode_t const& _source, char const* _fmt ) {
 */
 Product_t&
 Product_t::usercode( FileLoc_t const& _fileloc, char const* _fmt, ... ) {
-  if( m_sourcelines ) {
+  if (m_sourcelines) {
     require_newline();
     code( "#line %u \"%s\"\n", _fileloc.getline(), _fileloc.getname().str() );
   }
@@ -90,14 +92,14 @@ Product_t::usercode( FileLoc_t const& _fileloc, char const* _fmt, ... ) {
     size = vsnprintf( storage, capacity, _fmt, args );
     va_end( args );
     /* If it didn't work, retry */
-    if( size < 0 or size >= capacity ) continue;
+    if (size < 0 or size >= capacity) continue;
     
     /* Now storage is ok... */
     write( storage );
     break;
   }
   
-  if( m_sourcelines ) {
+  if (m_sourcelines) {
     require_newline();
     code( "#line %u \"%s\"\n", m_lineno + 1, m_filename.str() );
   }
@@ -119,7 +121,7 @@ Product_t::code( char const* _fmt, ... ) {
     size = vsnprintf( storage, capacity, _fmt, args );
     va_end( args );
     /* If it didn't work, retry */
-    if( size < 0 or size >= capacity ) continue;
+    if (size < 0 or size >= capacity) continue;
     
     /* Now storage is ok... */
     write( storage );
@@ -155,16 +157,16 @@ Product_t::ns_enter( std::vector<ConstStr> const& _namespace ) {
 }
 
 Product_t&
-Product_t::template_signature( Vect_t<CodePair_t> const& _tparams ) {
+Product_t::template_signature( Vector<CodePair> const& _tparams ) {
   if( _tparams.empty() ) return *this;
 
   code( "template <" );
   
   bool intra = false;
-  for( Vect_t<CodePair_t>::const_iterator tp = _tparams.begin(); tp < _tparams.end(); ++ tp ) {
-    if( intra ) code( "," ); else intra = true;
-    usercode( (**tp).m_ctype->m_fileloc, "\t%s", (**tp).m_ctype->m_content.str() );
-    usercode( (**tp).m_csymbol->m_fileloc, "\t%s", (**tp).m_csymbol->m_content.str() );
+  for( Vector<CodePair>::const_iterator tp = _tparams.begin(); tp < _tparams.end(); ++ tp ) {
+    if (intra) code( "," ); else intra = true;
+    usercode( (**tp).ctype->fileloc, "\t%s", (**tp).ctype->content.str() );
+    usercode( (**tp).csymbol->fileloc, "\t%s", (**tp).csymbol->content.str() );
   }
   
   code( ">\n" );
@@ -173,15 +175,15 @@ Product_t::template_signature( Vect_t<CodePair_t> const& _tparams ) {
 
 
 Product_t&
-Product_t::template_abbrev( Vect_t<CodePair_t> const& _tparams ) {
+Product_t::template_abbrev( Vector<CodePair> const& _tparams ) {
   if( _tparams.empty() ) return *this;
 
   code( "<" );
 
   bool intra = false;
-  for( Vect_t<CodePair_t>::const_iterator tp = _tparams.begin(); tp < _tparams.end(); ++ tp ) {
-    if( intra ) code( "," ); else intra = true;
-    usercode( (**tp).m_csymbol->m_fileloc, "\t%s", (**tp).m_csymbol->m_content.str() );
+  for( Vector<CodePair>::const_iterator tp = _tparams.begin(); tp < _tparams.end(); ++ tp ) {
+    if (intra) code( "," ); else intra = true;
+    usercode( (**tp).csymbol->fileloc, "\t%s", (**tp).csymbol->content.str() );
   }
   
   code( ">" );
@@ -222,7 +224,7 @@ Product_t::write( char const* _ptr )
     return *this;
   
   for( char chr = *_ptr; chr; chr = *++_ptr ) {
-    if( chr == '\n' ) {
+    if (chr == '\n') {
       int current_indentation = m_indentations.back();
       int braces = 0;
       // Computing brace depth and right stripping blank characters.
@@ -232,19 +234,19 @@ Product_t::write( char const* _ptr )
         for (uintptr_t ridx = 0; lbuf[ridx]; ++ridx ) {
           if (lbuf[ridx] <= ' ') continue;
           rstrip = ridx + 1;
-          if(      lbuf[ridx] == '{' ) ++braces;
-          else if( lbuf[ridx] == '}' ) --braces;
+          if (     lbuf[ridx] == '{') ++braces;
+          else if (lbuf[ridx] == '}') --braces;
         }
         m_line = m_line.substr( 0, rstrip );
       }
       if (m_line.empty()) { xwrite( "\n" ); m_lineno += 1; continue; }
       
-      if( braces > 0 ) {
+      if (braces > 0) {
         while( (--braces) > 0) m_indentations.push_back( current_indentation );
         m_indentations.push_back( current_indentation + 1 );
-      } else if( braces < 0 ) {
+      } else if (braces < 0) {
         int nlength = m_indentations.size() + braces;
-        if( nlength > 0 ) {
+        if (nlength > 0) {
           m_indentations.resize( nlength );
         } else {
           std::cerr << "Indentation error (line " << m_lineno << ").\n";
@@ -255,8 +257,8 @@ Product_t::write( char const* _ptr )
       
       char first_char = *m_line.begin(), last_char = *m_line.rbegin();
       if (first_char == '#') current_indentation = 0;
-      else if( /*'{'*/ first_char == '}' ) current_indentation = m_indentations.back();
-      else if( last_char == ':' ) --current_indentation;
+      else if (/*'{'*/ first_char == '}') current_indentation = m_indentations.back();
+      else if (last_char == ':') --current_indentation;
       
       while( (--current_indentation) >= 0 ) xwrite( "\t" );
       xwrite( m_line.c_str() );
