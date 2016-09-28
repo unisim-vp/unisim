@@ -40,13 +40,13 @@ struct BitField : virtual ReferenceCounter
   BitField() {}
   virtual ~BitField() {}
 
-  virtual ConstStr    symbol() const { return ConstStr(); }
+  virtual ConstStr      getsymbol() const { return ConstStr(); }
   
   virtual bool          hasopcode() const { return false; }
   virtual uint64_t      bits() const { throw InternalError; return 0; }
   virtual uint64_t      mask() const { throw InternalError; return 0; };
   
-  virtual BitField*   clone() const = 0;
+  virtual BitField*     clone() const = 0;
   virtual void          fills( std::ostream& _sink ) const = 0;
   
   virtual uintptr_t     sizes() const = 0;
@@ -60,17 +60,17 @@ operator<<( std::ostream& _sink, BitField const& _bf );
 
 struct FixedSizeBitField : public BitField
 {
-  unsigned int          m_size;
+  unsigned int          size;
   
-  FixedSizeBitField( unsigned int _size ) : m_size( _size ) {}
+  FixedSizeBitField( unsigned int _size ) : size( _size ) {}
   virtual ~FixedSizeBitField() {}
 
-  uint64_t              mask() const { return (0xffffffffffffffffULL >> (64-m_size)); }
+  uint64_t              mask() const { return (0xffffffffffffffffULL >> (64-size)); }
   
   uintptr_t             sizes() const { return 1; }
-  void                  sizes( unsigned int* _sizes ) const { _sizes[0] = m_size; }
-  unsigned int          minsize() const { return m_size; }
-  unsigned int          maxsize() const { return m_size; }
+  void                  sizes( unsigned int* _sizes ) const { _sizes[0] = size; }
+  unsigned int          minsize() const { return size; }
+  unsigned int          maxsize() const { return size; }
 };
 
 
@@ -83,15 +83,15 @@ struct FixedSizeBitField : public BitField
 
 struct OpcodeBitField : public FixedSizeBitField
 {
-  unsigned int          m_value;
+  unsigned int          value;
   
   OpcodeBitField( unsigned int _size, unsigned int _value );
   OpcodeBitField( OpcodeBitField const& _src );
   
   bool                  hasopcode() const { return true; }
-  uint64_t              bits() const { return m_value; };
+  uint64_t              bits() const { return value; };
   
-  OpcodeBitField*     clone() const { return new OpcodeBitField( *this ); }
+  OpcodeBitField*       clone() const { return new OpcodeBitField( *this ); }
   void                  fills( std::ostream& _sink ) const;
 };
 
@@ -105,19 +105,19 @@ struct OpcodeBitField : public FixedSizeBitField
 
 struct OperandBitField : public FixedSizeBitField
 {
-  ConstStr            m_symbol;
-  int                   m_shift;
-  unsigned int          m_size_modifier;
-  bool                  m_sext;
+  ConstStr              symbol;
+  int                   shift;
+  unsigned int          size_modifier;
+  bool                  sext;
   
   OperandBitField( unsigned int _size, ConstStr _symbol, int _shift, unsigned int _size_modifier, bool _sext );
   OperandBitField( OperandBitField const& _src );
 
   unsigned int          dstsize() const;
   
-  ConstStr            symbol() const { return m_symbol; };
+  ConstStr              getsymbol() const { return symbol; };
   
-  OperandBitField*    clone() const { return new OperandBitField( *this ); }
+  OperandBitField*      clone() const { return new OperandBitField( *this ); }
   void                  fills( std::ostream& _sink ) const;
 };
 
@@ -134,7 +134,7 @@ struct UnusedBitField : public FixedSizeBitField
   UnusedBitField( unsigned int _size );
   UnusedBitField( UnusedBitField const& _src );
   
-  UnusedBitField*     clone() const { return new UnusedBitField( *this ); }
+  UnusedBitField*       clone() const { return new UnusedBitField( *this ); }
   void                  fills( std::ostream& _sink ) const;
 };
 
@@ -149,12 +149,12 @@ struct UnusedBitField : public FixedSizeBitField
 
 struct SeparatorBitField : public BitField
 {
-  bool                  m_rewind;
+  bool                  rewind;
   
   SeparatorBitField( bool _rewind );
   SeparatorBitField( SeparatorBitField const& _src );
   
-  SeparatorBitField*  clone() const { return new SeparatorBitField( *this ); }
+  SeparatorBitField*    clone() const { return new SeparatorBitField( *this ); }
   void                  fills( std::ostream& _sink ) const;
 
   uintptr_t             sizes() const { return 1; }
@@ -175,15 +175,15 @@ struct SeparatorBitField : public BitField
 
 struct SubOpBitField : public BitField
 {
-  ConstStr            m_symbol;
-  SDInstance_t const*   m_sdinstance;
+  ConstStr              symbol;
+  SDInstance const*   sdinstance;
   
-  SubOpBitField( ConstStr _symbol, SDInstance_t const* _sdinstance );
+  SubOpBitField( ConstStr _symbol, SDInstance const* _sdinstance );
   SubOpBitField( SubOpBitField const& _src );
 
-  ConstStr            symbol() const { return m_symbol; };
+  ConstStr              getsymbol() const { return symbol; };
   
-  SubOpBitField*      clone() const { return new SubOpBitField( *this ); }
+  SubOpBitField*        clone() const { return new SubOpBitField( *this ); }
   void                  fills( std::ostream& _sink ) const;
   
   uintptr_t             sizes() const;
@@ -208,24 +208,24 @@ struct SubOpBitField : public BitField
 
 struct SpOperandBitField : public FixedSizeBitField
 {
-  ConstStr            m_symbol;
-  int                   m_shift;
-  unsigned int          m_size_modifier;
-  bool                  m_sext;
-  unsigned int          m_value;
+  ConstStr              symbol;
+  int                   shift;
+  unsigned int          size_modifier;
+  bool                  sext;
+  unsigned int          value;
   
   SpOperandBitField( OperandBitField const& _src, unsigned int _value );
   SpOperandBitField( SpOperandBitField const& _src );
 
   unsigned int          dstsize() const;
-  ConstStr            constval() const;
+  ConstStr              constval() const;
   
-  ConstStr            symbol() const { return m_symbol; };
+  ConstStr              getsymbol() const { return symbol; };
 
   bool                  hasopcode() const { return true; }
-  uint64_t              bits() const { return m_value; };
+  uint64_t              bits() const { return value; };
   
-  SpOperandBitField*  clone() const { return new SpOperandBitField( *this ); }
+  SpOperandBitField*    clone() const { return new SpOperandBitField( *this ); }
   void                  fills( std::ostream& _sink ) const { throw InternalError; }
 };
 

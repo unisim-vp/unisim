@@ -108,7 +108,7 @@ Specialization::newop()
     {
       OperandBitField const* opbf;
       Constraint* expr;
-      if ((opbf = dynamic_cast<OperandBitField const*>( &**bf )) and (expr = constraint( (**bf).symbol() )) ) {
+      if ((opbf = dynamic_cast<OperandBitField const*>( &**bf )) and (expr = constraint( (**bf).getsymbol() )) ) {
         res->m_bitfields.push_back( new SpOperandBitField( *opbf, expr->m_value ) );
       } else {
         res->m_bitfields.push_back( *bf );

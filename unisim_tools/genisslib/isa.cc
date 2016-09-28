@@ -248,10 +248,10 @@ Isa::sanity_checks() const
   for( Vector<Operation>::const_iterator op = m_operations.begin(); op < m_operations.end(); ++ op ) {
     // Looking for bitfield conflicts
     for( Vector<BitField>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
-      ConstStr bf_symbol = (**bf).symbol();
+      ConstStr bf_symbol = (**bf).getsymbol();
       if (not bf_symbol.str()) continue;
       for( Vector<BitField>::const_iterator pbf = (**op).m_bitfields.begin(); pbf < bf; ++ pbf ) {
-        ConstStr pbf_symbol = (**pbf).symbol();
+        ConstStr pbf_symbol = (**pbf).getsymbol();
         if (pbf_symbol != bf_symbol) continue;
         (**op).m_fileloc.err( "error: duplicated bit field `%s' in operation `%s'", bf_symbol.str(), (**op).m_symbol.str() );
         return false;
@@ -408,19 +408,19 @@ Isa::setparam( ConstStr key, unsigned int value )
   else throw UnknownIdent( key );
 }
 
-SDClass_t const*
+SDClass const*
 Isa::sdclass( std::vector<ConstStr>& _namespace ) const
 {
-  for( Vector<SDClass_t>::const_iterator sdc = m_sdclasses.begin(); sdc != m_sdclasses.end(); ++ sdc ) {
+  for( Vector<SDClass>::const_iterator sdc = m_sdclasses.begin(); sdc != m_sdclasses.end(); ++ sdc ) {
     if( (**sdc).m_namespace == _namespace ) return *sdc;
   }
   return 0;
 }
 
-SDInstance_t const*
+SDInstance const*
 Isa::sdinstance( ConstStr _symbol ) const
 {
-  for( Vector<SDInstance_t>::const_iterator sdi = m_sdinstances.begin(); sdi != m_sdinstances.end(); ++ sdi ) {
+  for( Vector<SDInstance>::const_iterator sdi = m_sdinstances.begin(); sdi != m_sdinstances.end(); ++ sdi ) {
     if( (**sdi).m_symbol == _symbol ) return *sdi;
   }
   return 0;

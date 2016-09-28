@@ -176,20 +176,20 @@ subdecoder_instance:
     nmspc[idx] = ConstStr( (*nmspc_in)[idx], Scanner::symbols );
   delete nmspc_in;
   
-  SDClass_t const* sdclass = Scanner::isa().sdclass( nmspc );
+  SDClass const* sdclass = Scanner::isa().sdclass( nmspc );
   if (not sdclass) {
     Scanner::fileloc.err( "error: subdecoder has not been declared" );
     YYABORT;
   }
   
-  SDInstance_t const* sdinstance = Scanner::isa().sdinstance( symbol );
+  SDInstance const* sdinstance = Scanner::isa().sdinstance( symbol );
   if (sdinstance) {
     Scanner::fileloc.err( "error: subdecoder instance `%s' redefined", symbol.str() );
     sdinstance->m_fileloc.err( "subdecoder instance `%s' previously defined here", symbol.str() );
     YYABORT;
   }
   
-  Scanner::isa().m_sdinstances.append( new SDInstance_t( symbol, template_scheme, sdclass, Scanner::fileloc ) );
+  Scanner::isa().m_sdinstances.append( new SDInstance( symbol, template_scheme, sdclass, Scanner::fileloc ) );
 }
 ;
 
@@ -226,7 +226,7 @@ subdecoder_class:
     nmspc[idx] = ConstStr( (*nmspc_in)[idx], Scanner::symbols );
   delete nmspc_in;
   
-  SDClass_t const* sdclass = Scanner::isa().sdclass( nmspc );
+  SDClass const* sdclass = Scanner::isa().sdclass( nmspc );
   
   if (sdclass) {
     Scanner::fileloc.err( "error: subdecoder class redeclared." );
@@ -234,7 +234,7 @@ subdecoder_class:
     YYABORT;
   }
   
-  Scanner::isa().m_sdclasses.append( new SDClass_t( nmspc, insnsizes->begin(), insnsizes->end(), Scanner::fileloc ) );
+  Scanner::isa().m_sdclasses.append( new SDClass( nmspc, insnsizes->begin(), insnsizes->end(), Scanner::fileloc ) );
   delete insnsizes;
 }
 ;
@@ -452,7 +452,7 @@ bitfield: TOK_INTEGER '[' TOK_INTEGER ']'
 {
   ConstStr symbol = ConstStr( $2, Scanner::symbols );
   ConstStr sdinstance_symbol = ConstStr( $4, Scanner::symbols );
-  SDInstance_t const* sdinstance = Scanner::isa().sdinstance( sdinstance_symbol );
+  SDInstance const* sdinstance = Scanner::isa().sdinstance( sdinstance_symbol );
   
   if (not sdinstance) {
     Scanner::fileloc.err( "error: subdecoder instance `%s' not declared", sdinstance_symbol.str() );

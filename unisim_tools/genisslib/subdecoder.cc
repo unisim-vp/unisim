@@ -30,10 +30,10 @@
 
 /** Delete a subdecoder object
 */
-SDClass_t::~SDClass_t() {}
+SDClass::~SDClass() {}
 
 ConstStr
-SDClass_t::qd_namespace() const {
+SDClass::qd_namespace() const {
   std::string buffer;
   std::string sep;
 
@@ -43,11 +43,11 @@ SDClass_t::qd_namespace() const {
   return ConstStr( buffer.c_str() );
 }
 
-SDInstance_t::SDInstance_t( ConstStr _symbol, SourceCode const* _template_scheme, SDClass_t const* _sdclass, FileLoc_t const& _fileloc )
+SDInstance::SDInstance( ConstStr _symbol, SourceCode const* _template_scheme, SDClass const* _sdclass, FileLoc_t const& _fileloc )
   : m_symbol( _symbol ), m_template_scheme( _template_scheme ), m_sdclass( _sdclass ), m_fileloc( _fileloc )
 {}
 
-SDInstance_t::~SDInstance_t() {}
+SDInstance::~SDInstance() {}
 
 // /** Dump an subdecoder object into a stream
 //     @param subdecoder an subdecoder object to dump

@@ -45,8 +45,8 @@ struct Isa
   Vector<ActionProto>           m_actionprotos;    /**< Action prototypes of operations */
   Vector<Operation>           m_operations;      /**< Defined instructions */
   Vector<Group>               m_groups;          /**< Defined groups */
-  Vector<SDClass_t>             m_sdclasses;       /**< Defined subdecoder classes */
-  Vector<SDInstance_t>          m_sdinstances;     /**< Defined subdecoder instances */
+  Vector<SDClass>             m_sdclasses;       /**< Defined subdecoder classes */
+  Vector<SDInstance>          m_sdinstances;     /**< Defined subdecoder instances */
   Vector<SourceCode>          m_decl_srccodes;   /**< Code to insert in header file */
   Vector<SourceCode>          m_impl_srccodes;   /**< Code to insert in source file */
   ConstStr                    m_addrtype;        /**< C type for instructions addresses */
@@ -71,8 +71,8 @@ struct Isa
   bool                          operations( ConstStr _symbol, Vector<Operation>& _opvec );
   Group*                      group( ConstStr _symbol );
   ActionProto const*            actionproto( ConstStr _symbol ) const;
-  SDClass_t const*              sdclass( std::vector<ConstStr>& _namespace ) const;
-  SDInstance_t const*           sdinstance( ConstStr _symbol ) const;
+  SDClass const*              sdclass( std::vector<ConstStr>& _namespace ) const;
+  SDInstance const*           sdinstance( ConstStr _symbol ) const;
 
   Generator*                    generator( Isa& _source, Opts const& _options ) const;
   

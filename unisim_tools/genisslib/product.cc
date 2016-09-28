@@ -27,7 +27,7 @@
 /** Constructor: Create a Product object
     @param _filename the filename attached to the output code
 */
-Product_t::Product_t( ConstStr filename, bool sourcelines )
+Product::Product( ConstStr filename, bool sourcelines )
   : m_filename( filename ), m_lineno( 1 ), m_sourcelines( sourcelines )
 {
   m_indentations.push_back( 0 );
@@ -36,27 +36,27 @@ Product_t::Product_t( ConstStr filename, bool sourcelines )
 /** Constructor: Create a FProduct object
     @param _prefix the filename prefix attached to the output code
 */
-FProduct_t::FProduct_t( char const* prefix, char const* suffix, bool sourcelines )
-  : Product_t( Str::fmt( "%s%s", prefix, suffix ), sourcelines ),
+FProduct::FProduct( char const* prefix, char const* suffix, bool sourcelines )
+  : Product( Str::fmt( "%s%s", prefix, suffix ), sourcelines ),
     m_sink( new std::ofstream( m_filename.str() ) )
 {}
 
 /** Constructor: Create a SProduct object
     @param _prefix the filename prefix attached to the output code
 */
-SProduct_t::SProduct_t( ConstStr _filename, bool _sourcelines )
-  : Product_t( _filename, _sourcelines )
+SProduct::SProduct( ConstStr _filename, bool _sourcelines )
+  : Product( _filename, _sourcelines )
 {}
 
 /** Destructor: Close the Product object */
-FProduct_t::~FProduct_t() { delete m_sink; }
+FProduct::~FProduct() { delete m_sink; }
 
 /** Output source code into the output file
     Also generate #line in the output file to link the C compiler error to the original source code
     @param _source the ScourceCode_t object to dump
  */
-Product_t&
-Product_t::usercode( SourceCode const& source )
+Product&
+Product::usercode( SourceCode const& source )
 {
   return usercode( source.fileloc, "%s", source.content.str() );
 }
@@ -65,8 +65,8 @@ Product_t::usercode( SourceCode const& source )
     Also generate #line in the output file to link the C compiler error to the original source code
     @param _source the ScourceCode_t object to dump
  */
-Product_t&
-Product_t::usercode( SourceCode const& source, char const* fmt )
+Product&
+Product::usercode( SourceCode const& source, char const* fmt )
 {
   return usercode( source.fileloc, fmt, source.content.str() );
 }
@@ -77,8 +77,8 @@ Product_t::usercode( SourceCode const& source, char const* fmt )
     @param lineno the line number where source code was found
     @param format a C string with format specifier (like in printf), referenced arguments in the format string must follow
 */
-Product_t&
-Product_t::usercode( FileLoc_t const& _fileloc, char const* _fmt, ... ) {
+Product&
+Product::usercode( FileLoc_t const& _fileloc, char const* _fmt, ... ) {
   if (m_sourcelines) {
     require_newline();
     code( "#line %u \"%s\"\n", _fileloc.getline(), _fileloc.getname().str() );
@@ -110,8 +110,8 @@ Product_t::usercode( FileLoc_t const& _fileloc, char const* _fmt, ... ) {
     @param format a C string with format specifier (like in printf), referenced arguments in the format string must follow
 */
 
-Product_t&
-Product_t::code( char const* _fmt, ... ) {
+Product&
+Product::code( char const* _fmt, ... ) {
   va_list args;
   for( intptr_t capacity = 128, size; true; capacity = (size > -1) ? size + 1 : capacity * 2 ) {
     /* stack allocation */
@@ -130,23 +130,23 @@ Product_t::code( char const* _fmt, ... ) {
   return *this;
 }
 
-Product_t&
-Product_t::require_newline() {
+Product&
+Product::require_newline() {
   if( m_line.empty() ) return *this;
   write( "\n" );
   return *this;
 }
 
-Product_t&
-Product_t::ns_leave( std::vector<ConstStr> const& _namespace ) {
+Product&
+Product::ns_leave( std::vector<ConstStr> const& _namespace ) {
   for( intptr_t idx = _namespace.size(); (--idx) >= 0; )
     code( "} " );
   code( "\n" );
   return *this;
 }
 
-Product_t&
-Product_t::ns_enter( std::vector<ConstStr> const& _namespace ) {
+Product&
+Product::ns_enter( std::vector<ConstStr> const& _namespace ) {
   char const* sep = "";
   for( std::vector<ConstStr>::const_iterator ns = _namespace.begin(); ns < _namespace.end(); sep = " ", ++ ns ) {
     code( "%snamespace %s {", sep, (*ns).str() );
@@ -156,8 +156,8 @@ Product_t::ns_enter( std::vector<ConstStr> const& _namespace ) {
   return *this;
 }
 
-Product_t&
-Product_t::template_signature( Vector<CodePair> const& _tparams ) {
+Product&
+Product::template_signature( Vector<CodePair> const& _tparams ) {
   if( _tparams.empty() ) return *this;
 
   code( "template <" );
@@ -174,8 +174,8 @@ Product_t::template_signature( Vector<CodePair> const& _tparams ) {
 }
 
 
-Product_t&
-Product_t::template_abbrev( Vector<CodePair> const& _tparams ) {
+Product&
+Product::template_abbrev( Vector<CodePair> const& _tparams ) {
   if( _tparams.empty() ) return *this;
 
   code( "<" );
@@ -190,8 +190,8 @@ Product_t::template_abbrev( Vector<CodePair> const& _tparams ) {
   return *this;
 }
 
-Product_t&
-Product_t::flatten_indentation()
+Product&
+Product::flatten_indentation()
 {
   if (m_indentations.empty())
     return *this;
@@ -217,8 +217,8 @@ Product_t::flatten_indentation()
 }
 
 
-Product_t&
-Product_t::write( char const* _ptr )
+Product&
+Product::write( char const* _ptr )
 {
   if (not _ptr)
     return *this;
@@ -276,10 +276,10 @@ Product_t::write( char const* _ptr )
 /** \brief flush the line buffer
  *
  */
-void Product_t::flush() { if( not m_line.empty() ) write( "\n" ); }
+void Product::flush() { if( not m_line.empty() ) write( "\n" ); }
 
-void FProduct_t::xwrite( char const* _ptr ) { (*m_sink) << _ptr; }
+void FProduct::xwrite( char const* _ptr ) { (*m_sink) << _ptr; }
 
-bool FProduct_t::good() const { return m_sink->good(); };
+bool FProduct::good() const { return m_sink->good(); };
 
-void SProduct_t::xwrite( char const* _ptr ) { m_content += _ptr; }
+void SProduct::xwrite( char const* _ptr ) { m_content += _ptr; }

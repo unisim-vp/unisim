@@ -55,7 +55,7 @@ namespace
         BitField const& bitfield = **bfitr;
         if (SeparatorBitField const* sbf = dynamic_cast<SeparatorBitField const*>( &bitfield ))
           {
-            if (not sbf->m_rewind) { rwdsize = cursize; continue; }
+            if (not sbf->rewind) { rwdsize = cursize; continue; }
             if (minsize < cursize) minsize = cursize;
             cursize = rwdsize;
           }
@@ -441,7 +441,7 @@ Generator::iss( char const* prefix, bool sourcelines ) const
   /*** Header file ***/
   /*******************/
   {
-    FProduct_t sink( prefix, ".hh", sourcelines );
+    FProduct sink( prefix, ".hh", sourcelines );
     if (not sink.good()) {
       std::cerr << GENISSLIB << ": can't open header file '" << sink.m_filename.str() << "'.\n";
       throw GenerationError;
@@ -504,7 +504,7 @@ Generator::iss( char const* prefix, bool sourcelines ) const
   /*** Source file ***/
   /*******************/
   {
-    FProduct_t sink( prefix, source.m_tparams.empty() ? ".cc" : ".tcc", sourcelines );
+    FProduct sink( prefix, source.m_tparams.empty() ? ".cc" : ".tcc", sourcelines );
     if (not sink.good()) {
       std::cerr << GENISSLIB << ": can't open header file '" << sink.m_filename.str() << "'.\n";
       throw GenerationError;
@@ -544,7 +544,7 @@ Generator::iss( char const* prefix, bool sourcelines ) const
   /*** Subdecoder header file ***/
   /******************************/
   if (source.m_is_subdecoder) {
-    FProduct_t sink( prefix, "_sub.isa", sourcelines );
+    FProduct sink( prefix, "_sub.isa", sourcelines );
     if (not sink.good()) {
       std::cerr << GENISSLIB << ": can't open header file '" << sink.m_filename.str() << "'.\n";
       throw GenerationError;
@@ -591,7 +591,7 @@ get_type_format( int size, int is_signed_type ) {
 }
 
 void
-Generator::decoder_decl( Product_t& _product ) const {
+Generator::decoder_decl( Product& _product ) const {
   _product.template_signature( source.m_tparams );
   _product.code( "class Operation;\n" );
   
@@ -690,7 +690,7 @@ Generator::decoder_decl( Product_t& _product ) const {
 }
 
 void
-Generator::operation_decl( Product_t& _product ) const {
+Generator::operation_decl( Product& _product ) const {
   _product.template_signature( source.m_tparams );
   _product.code( "class Operation\n" );
   if( source.m_inheritances.size() > 0 ) {
@@ -779,7 +779,7 @@ Generator::membersize( unsigned size ) const
 }
 
 void
-Generator::isa_operations_decl( Product_t& _product ) const
+Generator::isa_operations_decl( Product& _product ) const
 {
   for( Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
     _product.template_signature( source.m_tparams );
@@ -800,23 +800,23 @@ Generator::isa_operations_decl( Product_t& _product ) const
       {
         if      (OperandBitField const* opbf = dynamic_cast<OperandBitField const*>( &**bf ))
           {
-            _product.code( "%sint%d_t %s;\n", (opbf->m_sext ? "" : "u"), membersize( *opbf ), opbf->m_symbol.str() );
+            _product.code( "%sint%d_t %s;\n", (opbf->sext ? "" : "u"), membersize( *opbf ), opbf->symbol.str() );
           }
         else if (SpOperandBitField const* sopbf = dynamic_cast<SpOperandBitField const*>( &**bf ))
           {
             _product.code( "static %sint%d_t const %s = %s;\n",
-                           (sopbf->m_sext ? "" : "u"), membersize( *sopbf ), sopbf->m_symbol.str(), sopbf->constval().str() );
+                           (sopbf->sext ? "" : "u"), membersize( *sopbf ), sopbf->symbol.str(), sopbf->constval().str() );
           }
         else if (SubOpBitField const* sobf = dynamic_cast<SubOpBitField const*>( &**bf ))
           {
-            SDInstance_t const* sdinstance = sobf->m_sdinstance;
-            SDClass_t const* sdclass = sdinstance->m_sdclass;
+            SDInstance const* sdinstance = sobf->sdinstance;
+            SDClass const* sdclass = sdinstance->m_sdclass;
             SourceCode const* tpscheme =  sdinstance->m_template_scheme;
         
             _product.usercode( sdclass->m_fileloc, " %s::Operation", sdclass->qd_namespace().str() );
             if (tpscheme)
               _product.usercode( *tpscheme, "< %s >" );
-            _product.code( "* %s;\n", sobf->m_symbol.str() );
+            _product.code( "* %s;\n", sobf->symbol.str() );
           }
       }
 
@@ -878,7 +878,7 @@ Generator::isa_operations_decl( Product_t& _product ) const
 }
 
 void
-Generator::operation_impl( Product_t& _product ) const {
+Generator::operation_impl( Product& _product ) const {
   _product.template_signature( source.m_tparams );
   _product.code( "Operation" );
   _product.template_abbrev( source.m_tparams );
@@ -964,7 +964,7 @@ Generator::operation_impl( Product_t& _product ) const {
 }
 
 void
-Generator::isa_operations_methods( Product_t& _product ) const {
+Generator::isa_operations_methods( Product& _product ) const {
   for( Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
     if( not (**op).m_comments.empty() ) {
       for( Vector<Comment>::const_iterator comm = (**op).m_comments.begin(); comm < (**op).m_comments.end(); ++ comm )
@@ -977,7 +977,7 @@ Generator::isa_operations_methods( Product_t& _product ) const {
       char const* xxcode[2] = {"Encode", "Decode"};
       for (int step = 0; step < 2; ++step) {
         if (step == 0 and not source.m_withencode) continue;
-        SProduct_t xxcode_text( _product.m_filename, _product.m_sourcelines );
+        SProduct xxcode_text( _product.m_filename, _product.m_sourcelines );
         switch (step) {
         case 0: insn_decode_impl( xxcode_text, **op, "code", "addr" ); break;
         case 1: insn_encode_impl( xxcode_text, **op, "code" ); break;
@@ -1050,7 +1050,7 @@ Generator::isa_operations_methods( Product_t& _product ) const {
 }
 
 void
-Generator::isa_operations_ctors( Product_t& _product ) const {
+Generator::isa_operations_ctors( Product& _product ) const {
   for( Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
     _product.template_signature( source.m_tparams );
     _product.code( "Op%s", Str::capitalize( (**op).m_symbol.str() ).str() );
@@ -1080,7 +1080,7 @@ Generator::isa_operations_ctors( Product_t& _product ) const {
 }
 
 void
-Generator::isa_operations_encoders( Product_t& _product ) const {
+Generator::isa_operations_encoders( Product& _product ) const {
   for( Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
     _product.template_signature( source.m_tparams );
     _product.code( "void Op%s", Str::capitalize( (**op).m_symbol.str() ).str() );
@@ -1096,7 +1096,7 @@ Generator::isa_operations_encoders( Product_t& _product ) const {
 }
 
 void
-Generator::decoder_impl( Product_t& _product ) const {
+Generator::decoder_impl( Product& _product ) const {
   if (not source.m_is_subdecoder) {
     _product.template_signature( source.m_tparams );
     _product.code( "DecodeMapPage" );
@@ -1418,8 +1418,8 @@ FieldIterator::next() {
   else            m_pos -= field.maxsize();
   m_size = field.maxsize();
   if (SeparatorBitField const* sbf = dynamic_cast<SeparatorBitField const*>( &field )) {
-    if (sbf->m_rewind) { m_pos = m_chkpt_pos; m_size = m_chkpt_size; }
-    else               { m_chkpt_pos = m_pos; m_chkpt_size = m_size; }
+    if (sbf->rewind) { m_pos = m_chkpt_pos; m_size = m_chkpt_size; }
+    else             { m_chkpt_pos = m_pos; m_chkpt_size = m_size; }
   }
   
   return true;
