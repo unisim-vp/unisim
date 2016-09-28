@@ -23,7 +23,7 @@
     @param _filename the filename object where the C/C++ comment was found
     @param _lineno the line number where the C/C++ comment was found
 */
-Comment_t::Comment_t( ConstStr_t _content, FileLoc_t const& _fileloc )
+Comment_t::Comment_t( ConstStr _content, FileLoc_t const& _fileloc )
   : m_content( _content ), m_fileloc( _fileloc )
 {}
 

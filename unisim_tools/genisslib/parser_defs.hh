@@ -21,7 +21,8 @@
 #include <fwd.hh>
 
 /** The type of the token, either terminal or not terminal */
-union  yylval_t {
+union  yylval_t
+{
   char const*                  volatile_string;        /**< a volatile C-String */
   char const*                  persistent_string;      /**< a persistent C-String */
   StringVect_t*                string_list;            /**< a C-String list */
@@ -34,8 +35,8 @@ union  yylval_t {
   Operation_t*                 operation;              /**< An operation */
   Vect_t<Operation_t>*         operation_list;         /**< An operation node list object */
   Group_t*                     group;                  /**< A group object */
-  ActionProto_t*               actionproto;            /**< An action prototype */
-  Action_t*                    action;                 /**< An action */
+  ActionProto*                 actionproto;            /**< An action prototype */
+  Action*                      action;                 /**< An action */
   BitField_t*                  bitfield;               /**< A bit field */
   Vect_t<BitField_t>*          bitfield_list;          /**< A bit field list */
   Variable_t*                  variable;               /**< A variable object */

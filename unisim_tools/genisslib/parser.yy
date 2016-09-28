@@ -40,8 +40,9 @@ int yyerror( char const* _err );
 
 static
 void
-create_action( Operation_t* _operation, ActionProto_t const* _actionproto, SourceCode_t* _actioncode ) {
-  Action_t const* prev_action = _operation->action( _actionproto );
+create_action( Operation_t* _operation, ActionProto const* _actionproto, SourceCode_t* _actioncode )
+{
+  Action const* prev_action = _operation->action( _actionproto );
 
   if( prev_action ) {
     Scanner::fileloc.err( "error: action `%s.%s' redefined",
@@ -52,7 +53,7 @@ create_action( Operation_t* _operation, ActionProto_t const* _actionproto, Sourc
     exit( -1 );
   }
   
-  _operation->add( new Action_t( _actionproto, _actioncode, Scanner::comments, Scanner::fileloc ) );
+  _operation->add( new Action( _actionproto, _actioncode, Scanner::comments, Scanner::fileloc ) );
 }
 
 %}
@@ -167,12 +168,12 @@ subdecoder_instance:
   TOK_SUBDECODER namespace_list TOK_IDENT template_scheme
 {
   StringVect_t* nmspc_in = $2;
-  ConstStr_t symbol = ConstStr_t( $3, Scanner::symbols );
+  ConstStr symbol = ConstStr( $3, Scanner::symbols );
   SourceCode_t* template_scheme = $4;
   
-  std::vector<ConstStr_t> nmspc( nmspc_in->size(), ConstStr_t() );
+  std::vector<ConstStr> nmspc( nmspc_in->size(), ConstStr() );
   for( intptr_t idx = nmspc_in->size(); (--idx) >= 0; )
-    nmspc[idx] = ConstStr_t( (*nmspc_in)[idx], Scanner::symbols );
+    nmspc[idx] = ConstStr( (*nmspc_in)[idx], Scanner::symbols );
   delete nmspc_in;
   
   SDClass_t const* sdclass = Scanner::isa().sdclass( nmspc );
@@ -220,9 +221,9 @@ subdecoder_class:
   StringVect_t* nmspc_in = $2;
   UIntVect_t* insnsizes = $4;
   
-  std::vector<ConstStr_t> nmspc( nmspc_in->size(), ConstStr_t() );
+  std::vector<ConstStr> nmspc( nmspc_in->size(), ConstStr() );
   for( intptr_t idx = nmspc_in->size(); (--idx) >= 0; )
-    nmspc[idx] = ConstStr_t( (*nmspc_in)[idx], Scanner::symbols );
+    nmspc[idx] = ConstStr( (*nmspc_in)[idx], Scanner::symbols );
   delete nmspc_in;
   
   SDClass_t const* sdclass = Scanner::isa().sdclass( nmspc );
@@ -240,8 +241,8 @@ subdecoder_class:
 
 global_ident_parameter: TOK_SET TOK_IDENT TOK_IDENT
 {
-  ConstStr_t key( $2, Scanner::symbols );
-  ConstStr_t val( $3, Scanner::symbols );
+  ConstStr key( $2, Scanner::symbols );
+  ConstStr val( $3, Scanner::symbols );
   
   try {
     Scanner::isa().setparam( key, val );
@@ -253,7 +254,7 @@ global_ident_parameter: TOK_SET TOK_IDENT TOK_IDENT
 
 global_sourcecode_parameter: TOK_SET TOK_IDENT TOK_SOURCE_CODE
 {
-  ConstStr_t key( $2, Scanner::symbols );
+  ConstStr key( $2, Scanner::symbols );
   SourceCode_t* val = $3;
   try {
     Scanner::isa().setparam( key, val );
@@ -265,7 +266,7 @@ global_sourcecode_parameter: TOK_SET TOK_IDENT TOK_SOURCE_CODE
 
 global_uinteger_parameter: TOK_SET TOK_IDENT TOK_INTEGER
 {
-  ConstStr_t key( $2, Scanner::symbols );
+  ConstStr key( $2, Scanner::symbols );
   unsigned int val = $3;
   try {
     Scanner::isa().setparam( key, val );
@@ -351,7 +352,7 @@ namespace_declaration: TOK_NAMESPACE namespace_list
   StringVect_t* nmspc = $2;
   
   for( StringVect_t::const_iterator ident = nmspc->begin(); ident != nmspc->end(); ++ident ) {
-    Scanner::isa().m_namespace.push_back( ConstStr_t( *ident, Scanner::symbols ) );
+    Scanner::isa().m_namespace.push_back( ConstStr( *ident, Scanner::symbols ) );
   }
   
   delete nmspc;
@@ -399,7 +400,7 @@ op_condition: TOK_SOURCE_CODE ':'
 operation_declaration : op_condition TOK_OP TOK_IDENT bitfield_list_decl
 {
   SourceCode_t*       op_cond = $1;
-  ConstStr_t          symbol = ConstStr_t( $3, Scanner::symbols );
+  ConstStr          symbol = ConstStr( $3, Scanner::symbols );
   Vect_t<BitField_t>* bitfields = $4;
   
   {
@@ -441,7 +442,7 @@ bitfield: TOK_INTEGER '[' TOK_INTEGER ']'
 }
   | shift sext size_modifier TOK_IDENT '[' TOK_INTEGER ']'
 {
-  $$ = new OperandBitField_t( $6, ConstStr_t( $4, Scanner::symbols ), $1, $3, $2 );
+  $$ = new OperandBitField_t( $6, ConstStr( $4, Scanner::symbols ), $1, $3, $2 );
 }
   | '?' '[' TOK_INTEGER ']'
 {
@@ -449,8 +450,8 @@ bitfield: TOK_INTEGER '[' TOK_INTEGER ']'
 }
   | '*' TOK_IDENT '[' TOK_IDENT ']'
 {
-  ConstStr_t symbol = ConstStr_t( $2, Scanner::symbols );
-  ConstStr_t sdinstance_symbol = ConstStr_t( $4, Scanner::symbols );
+  ConstStr symbol = ConstStr( $2, Scanner::symbols );
+  ConstStr sdinstance_symbol = ConstStr( $4, Scanner::symbols );
   SDInstance_t const* sdinstance = Scanner::isa().sdinstance( sdinstance_symbol );
   
   if( not sdinstance ) {
@@ -521,7 +522,7 @@ TOK_INHERITANCE TOK_SOURCE_CODE TOK_SOURCE_CODE '=' TOK_SOURCE_CODE
 
 op_var_list_declaration: TOK_IDENT '.' TOK_VAR var_list
 {
-  ConstStr_t    target_symbol = ConstStr_t( $1, Scanner::symbols );
+  ConstStr    target_symbol = ConstStr( $1, Scanner::symbols );
   Vect_t<Variable_t>* var_list = $4;
   
   /* Target symbol points to either an operation or a group */
@@ -573,7 +574,7 @@ var_init:
 
 var: TOK_IDENT ':' TOK_SOURCE_CODE var_init
 {
-  ConstStr_t     symbol = ConstStr_t( $1, Scanner::symbols );
+  ConstStr     symbol = ConstStr( $1, Scanner::symbols );
   SourceCode_t*  c_type = $3;
   SourceCode_t*  c_init = $4;
   
@@ -583,14 +584,14 @@ var: TOK_IDENT ':' TOK_SOURCE_CODE var_init
 
 action_proto_declaration: action_proto_type TOK_ACTION returns TOK_IDENT '(' param_list ')' constness TOK_SOURCE_CODE
 {
-  ActionProto_t::type_t action_proto_type = ActionProto_t::type_t( $1 );
+  ActionProto::type_t action_proto_type = ActionProto::type_t( $1 );
   SourceCode_t*         returns = $3;
-  ConstStr_t            symbol = ConstStr_t( $4, Scanner::symbols );
+  ConstStr            symbol = ConstStr( $4, Scanner::symbols );
   Vect_t<CodePair_t>*   param_list = $6;
   SourceCode_t*         default_sourcecode = $9;
 
   { /* action protype name should be unique */
-    ActionProto_t const*  prev_proto = Scanner::isa().actionproto( symbol );
+    ActionProto const*  prev_proto = Scanner::isa().actionproto( symbol );
     if( prev_proto ) {
       Scanner::fileloc.err( "error: action prototype `%s' redefined", prev_proto->m_symbol.str() );
       prev_proto->m_fileloc.err( "action prototype `%s' previously defined here", prev_proto->m_symbol.str() );
@@ -600,12 +601,12 @@ action_proto_declaration: action_proto_type TOK_ACTION returns TOK_IDENT '(' par
     
   if( returns ) {
     switch( action_proto_type ) {
-    case ActionProto_t::Constructor:
+    case ActionProto::Constructor:
       Scanner::fileloc.err( "error: constructor action prototype `%s' must not have a return type (%s)",
                 symbol.str(), returns->m_content.str() );
       YYABORT;
       break;
-    case ActionProto_t::Destructor:
+    case ActionProto::Destructor:
       Scanner::fileloc.err( "error: destructor action prototype `%s' must not have a return type (%s)",
                 symbol.str(), returns->m_content.str() );
       YYABORT;
@@ -617,15 +618,15 @@ action_proto_declaration: action_proto_type TOK_ACTION returns TOK_IDENT '(' par
   if( param_list )
   {
     switch( action_proto_type ) {
-    case ActionProto_t::Constructor:
+    case ActionProto::Constructor:
       Scanner::fileloc.err( "error: constructor action prototype `%s' must not take any arguments", symbol.str() );
       YYABORT;
       break;
-    case ActionProto_t::Static:
+    case ActionProto::Static:
       Scanner::fileloc.err( "error: static action prototype `%s' must not take any arguments", symbol.str() );
       YYABORT;
       break;
-    case ActionProto_t::Destructor:
+    case ActionProto::Destructor:
       Scanner::fileloc.err( "error: destructor action prototype `%s' must not take any arguments", symbol.str() );
       YYABORT;
       break;
@@ -633,8 +634,8 @@ action_proto_declaration: action_proto_type TOK_ACTION returns TOK_IDENT '(' par
     }
   }
   
-  ActionProto_t* actionproto =
-    new ActionProto_t( action_proto_type, symbol, returns, *param_list, $8, default_sourcecode, Scanner::comments, Scanner::fileloc );
+  ActionProto* actionproto =
+    new ActionProto( action_proto_type, symbol, returns, *param_list, $8, default_sourcecode, Scanner::comments, Scanner::fileloc );
   Scanner::comments.clear();
   delete param_list;
   $$ = actionproto;
@@ -685,30 +686,30 @@ param_list:
 
 action_proto_type:
 {
-  $$ = ActionProto_t::Common;
+  $$ = ActionProto::Common;
 }
   | TOK_CONSTRUCTOR
 {
-  $$ = ActionProto_t::Constructor;
+  $$ = ActionProto::Constructor;
 }
   | TOK_DESTRUCTOR
 {
-  $$ = ActionProto_t::Destructor;
+  $$ = ActionProto::Destructor;
 }
   | TOK_STATIC
 {
-  $$ = ActionProto_t::Static;
+  $$ = ActionProto::Static;
 }
 ;
 
 action_declaration: TOK_IDENT '.' TOK_IDENT '=' TOK_SOURCE_CODE
 {
-  ConstStr_t    target_symbol = ConstStr_t( $1, Scanner::symbols );
-  ConstStr_t    action_proto_symbol = ConstStr_t( $3, Scanner::symbols );
+  ConstStr    target_symbol = ConstStr( $1, Scanner::symbols );
+  ConstStr    action_proto_symbol = ConstStr( $3, Scanner::symbols );
   SourceCode_t* actioncode = $5;
   
   /* Actions belongs to an action prototype */
-  ActionProto_t const* actionproto = Scanner::isa().actionproto( action_proto_symbol );
+  ActionProto const* actionproto = Scanner::isa().actionproto( action_proto_symbol );
 
   if( not actionproto ) {
     Scanner::fileloc.err( "error: undefined action prototype `%s'", action_proto_symbol.str() );
@@ -739,7 +740,7 @@ action_declaration: TOK_IDENT '.' TOK_IDENT '=' TOK_SOURCE_CODE
 
 specialization: TOK_SPECIALIZE TOK_IDENT '(' constraint_list ')'
 {
-  ConstStr_t            symbol = ConstStr_t( $2, Scanner::symbols );
+  ConstStr            symbol = ConstStr( $2, Scanner::symbols );
   Vect_t<Constraint_t>* constraint_list = $4;
   Operation_t*          operation = Scanner::isa().operation( symbol );
   if( not operation ) {
@@ -759,9 +760,9 @@ user_specialization: TOK_IDENT '.' TOK_SPECIALIZE '(' operation_list ')'
   Isa::Ordering& order = Scanner::isa().m_user_orderings.back();
   order.fileloc = Scanner::fileloc;
   order.symbols.reserve( oplist->size() + 1 );
-  order.symbols.push_back( ConstStr_t( $1, Scanner::symbols ) );
+  order.symbols.push_back( ConstStr( $1, Scanner::symbols ) );
   for (StringVect_t::const_iterator itr = oplist->begin(), end = oplist->end(); itr != end; ++itr)
-    { order.symbols.push_back( ConstStr_t( *itr, Scanner::symbols ) ); }
+    { order.symbols.push_back( ConstStr( *itr, Scanner::symbols ) ); }
   delete oplist;
 }
 ;
@@ -779,7 +780,7 @@ constraint_list:
 
 constraint: TOK_IDENT '=' TOK_INTEGER
 {
-  $$ = new Constraint_t( ConstStr_t( $1, Scanner::symbols ), $3 );
+  $$ = new Constraint_t( ConstStr( $1, Scanner::symbols ), $3 );
 }
 ;
 
@@ -792,8 +793,8 @@ include : TOK_INCLUDE TOK_STRING
 
 group_environment: TOK_GROUP TOK_IDENT TOK_IDENT
 {
-  ConstStr_t group_symbol = ConstStr_t( $2, Scanner::symbols );
-  ConstStr_t command( $3, Scanner::symbols );
+  ConstStr group_symbol = ConstStr( $2, Scanner::symbols );
+  ConstStr command( $3, Scanner::symbols );
   
   try {
     Scanner::isa().group_command( group_symbol, command, Scanner::fileloc );
@@ -804,7 +805,7 @@ group_environment: TOK_GROUP TOK_IDENT TOK_IDENT
 
 group_declaration: TOK_GROUP TOK_IDENT '(' operation_list ')'
 {
-  ConstStr_t           group_symbol = ConstStr_t( $2, Scanner::symbols );
+  ConstStr           group_symbol = ConstStr( $2, Scanner::symbols );
   StringVect_t*        oplist = $4;
   
   { /* Operations and groups name should not conflict */
@@ -825,7 +826,7 @@ group_declaration: TOK_GROUP TOK_IDENT '(' operation_list ')'
   
   Group_t* res = new Group_t( group_symbol, Scanner::fileloc );
   for (StringVect_t::const_iterator itr = oplist->begin(), end = oplist->end(); itr != end; ++itr) {
-    ConstStr_t symbol( *itr, Scanner::symbols );
+    ConstStr symbol( *itr, Scanner::symbols );
     if (not Scanner::isa().operations( symbol, res->m_operations ))
       {
         Scanner::fileloc.err( "error: undefined operation or group `%s'", symbol.str() );

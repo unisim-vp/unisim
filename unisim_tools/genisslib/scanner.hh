@@ -25,16 +25,17 @@
 #include <vect.hh>
 #include <string>
 
-struct Scanner {
+struct Scanner
+{
   static bool                     aborted_scanning; ///< true if scanning was aborted, false otherwise
   static FileLoc_t                fileloc;          ///< file location in scanned file
   static FileLoc_t                fileloc_mlt;      ///< Starting line number of multi-line tokens
   static int                      bracecount;       ///< Global opened braces count
   static std::vector<int>         scs;
-  static ConstStr_t::Set          symbols;          ///< The symbol database
+  static ConstStr::Pool           symbols;          ///< The symbol database
   static Vect_t<Comment_t>        comments;         ///< Comments accumulator;
   static Isa*                     s_isa;
-  static std::vector<ConstStr_t>  s_lookupdirs;     ///< Directory searched when opening files
+  static std::vector<ConstStr>    s_lookupdirs;     ///< Directory searched when opening files
   
   struct Include_t {
     uint8_t*                      m_state_backup;
@@ -61,20 +62,20 @@ struct Scanner {
   static bool                     pop();
   
   static bool                     include( char const* _filename );
-  static bool                     open( ConstStr_t _filename );
+  static bool                     open( ConstStr _filename );
   static bool                     parse( char const* _filename, Isa& _isa );
   static std::string&             strbuf();
   static Isa&                     isa() { return *s_isa; }
   static int                      token( char const* _text );
-  static ConstStr_t               charname( char _ch );
-  static ConstStr_t               tokenname( int _token );
-  static ConstStr_t               locate( char const* _name );
+  static ConstStr               charname( char _ch );
+  static ConstStr               tokenname( int _token );
+  static ConstStr               locate( char const* _name );
   static void                     add_lookupdir( char const* _dir );
   static void                     sc_enter( int _condition );
   static bool                     sc_leave();
   
   /* Special symbols */
-  ConstStr_t                      all_operations();
+  ConstStr                      all_operations();
 };
 
 

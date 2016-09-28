@@ -20,9 +20,7 @@
 #include <strtools.hh>
 #include <iostream>
 
-using namespace std;
-
-Variable_t::Variable_t( ConstStr_t _symbol, SourceCode_t* _ctype, SourceCode_t* _cinit )
+Variable_t::Variable_t( ConstStr _symbol, SourceCode_t* _ctype, SourceCode_t* _cinit )
   : m_symbol( _symbol ), m_ctype( _ctype ), m_cinit( _cinit )
 {}
 

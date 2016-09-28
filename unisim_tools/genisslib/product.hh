@@ -26,14 +26,15 @@
 #include <vector>
 #include <string>
 
-struct Product_t {
-  ConstStr_t          m_filename;
+struct Product_t
+{
+  ConstStr          m_filename;
   std::string         m_line;
   unsigned int        m_lineno;
   std::vector<int>    m_indentations;
   bool                m_sourcelines;
   
-  Product_t( ConstStr_t _filename, bool _sourcelines );
+  Product_t( ConstStr _filename, bool _sourcelines );
   virtual ~Product_t() {};
   
   Product_t&          usercode( FileLoc_t const& _fileloc, char const* _format, ... );
@@ -42,8 +43,8 @@ struct Product_t {
   Product_t&          code( char const* _format, ... );
   Product_t&          template_signature( Vect_t<CodePair_t> const& _tparams );
   Product_t&          template_abbrev( Vect_t<CodePair_t> const& _tparams );
-  Product_t&          ns_enter( std::vector<ConstStr_t> const& _namespace );
-  Product_t&          ns_leave( std::vector<ConstStr_t> const& _namespace );
+  Product_t&          ns_enter( std::vector<ConstStr> const& _namespace );
+  Product_t&          ns_leave( std::vector<ConstStr> const& _namespace );
   Product_t&          require_newline();
   Product_t&          write( char const* _chars );
   void                flush();
@@ -52,7 +53,8 @@ struct Product_t {
   virtual void        xwrite( char const* chrs ) = 0;
 };
 
-struct FProduct_t : public Product_t {
+struct FProduct_t : public Product_t
+{
   std::ostream*       m_sink;
   
   FProduct_t( char const* prefix, char const* suffix, bool sourcelines );
@@ -65,7 +67,7 @@ struct FProduct_t : public Product_t {
 struct SProduct_t : public Product_t {
   std::string         m_content;
   
-  SProduct_t( ConstStr_t _prefix, bool _sourcelines );
+  SProduct_t( ConstStr _prefix, bool _sourcelines );
   
   void                xwrite( char const* chrs );
 };

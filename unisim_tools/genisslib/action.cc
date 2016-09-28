@@ -22,8 +22,6 @@
 #include <strtools.hh>
 #include <iostream>
 
-using namespace std;
-
 /** Constructor
     @param operation an operation object to which belong the action
     @param actionproto an action prototype object which is the prototype of this action
@@ -32,7 +30,7 @@ using namespace std;
     @param filename a filename object where the action was found
     @param lineno a line number where the action was found
 */
-Action_t::Action_t( ActionProto_t const* _actionproto, SourceCode_t* _source_code,
+Action::Action( ActionProto const* _actionproto, SourceCode_t* _source_code,
                     Vect_t<Comment_t>& _comments, FileLoc_t const& _fileloc )
   : m_operation( 0 ), m_actionproto( _actionproto ), m_source_code( _source_code ),
     m_comments( _comments ), m_fileloc( _fileloc )
@@ -40,14 +38,14 @@ Action_t::Action_t( ActionProto_t const* _actionproto, SourceCode_t* _source_cod
 
 /** Destructor
 */
-Action_t::~Action_t() {}
+Action::~Action() {}
 
 /** Dump an action object into a stream
     @param action an action object to dump
     @param _sink a stream
 */
 std::ostream&
-operator<<( std::ostream& _sink, Action_t const& _act ) {
+operator<<( std::ostream& _sink, Action const& _act ) {
   return (_sink << _act.m_operation->m_symbol << '.' << _act.m_actionproto->m_symbol << " = " << (*_act.m_source_code) << '\n');
 }
 
@@ -62,7 +60,7 @@ operator<<( std::ostream& _sink, Action_t const& _act ) {
     @param filename a filename object where the action prototype was found
     @param lineno a line number where the action prototype was found
 */
-ActionProto_t::ActionProto_t( ActionProto_t::type_t _type, ConstStr_t _symbol, SourceCode_t* _returns,
+ActionProto::ActionProto( ActionProto::type_t _type, ConstStr _symbol, SourceCode_t* _returns,
                               Vect_t<CodePair_t>& _params, bool _constness, SourceCode_t* _defaultcode,
                               Vect_t<Comment_t>& _comments, FileLoc_t const& _fileloc )
   : m_type( _type ), m_symbol( _symbol ), m_returns( _returns ),
@@ -74,12 +72,12 @@ ActionProto_t::ActionProto_t( ActionProto_t::type_t _type, ConstStr_t _symbol, S
     @param _sink a stream
 */
 std::ostream&
-operator<<( std::ostream& _sink, ActionProto_t const& _ap ) {
+operator<<( std::ostream& _sink, ActionProto const& _ap ) {
   switch( _ap.m_type ) {
-  case ActionProto_t::Constructor:  _sink << "constructor "; break;
-  case ActionProto_t::Static:       _sink << "static "; break;
-  case ActionProto_t::Destructor:   _sink << "destructor "; break;
-  case ActionProto_t::Common:       /* do nothing */ break;
+  case ActionProto::Constructor:  _sink << "constructor "; break;
+  case ActionProto::Static:       _sink << "static "; break;
+  case ActionProto::Destructor:   _sink << "destructor "; break;
+  case ActionProto::Common:       /* do nothing */ break;
   }
   
   _sink << "action ";
@@ -95,10 +93,10 @@ operator<<( std::ostream& _sink, ActionProto_t const& _ap ) {
   return _sink;
 }
 
-ActionProto_t::~ActionProto_t() {}
+ActionProto::~ActionProto() {}
 
 char const*
-ActionProto_t::returntype() const {
+ActionProto::returntype() const {
   if( m_returns ) return m_returns->m_content.str();
   return "void";
 }

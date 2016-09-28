@@ -27,16 +27,17 @@
 #include <set>
 
 /** A SubDecoder class object */
-struct SDClass_t :  virtual ReferenceCounter {
-  std::vector<ConstStr_t>       m_namespace;         /**< The namespace in which the decoder is defined */
+struct SDClass_t :  virtual ReferenceCounter
+{
+  std::vector<ConstStr>       m_namespace;         /**< The namespace in which the decoder is defined */
   std::set<unsigned int>        m_insnsizes;         /**< instructions size set (in bytes) of the decoder's operations */
   FileLoc_t                     m_fileloc;           /**< The file location where subdecoder was declared */
 
   template<typename _InputIterator>
-  SDClass_t( std::vector<ConstStr_t>& _namespace, _InputIterator szbeg, _InputIterator szend, FileLoc_t const& _fileloc );
+  SDClass_t( std::vector<ConstStr>& _namespace, _InputIterator szbeg, _InputIterator szend, FileLoc_t const& _fileloc );
   ~SDClass_t();
 
-  ConstStr_t                    qd_namespace() const;
+  ConstStr                    qd_namespace() const;
   
   unsigned int                  maxsize() const { return *m_insnsizes.rbegin(); }
   unsigned int                  minsize() const { return *m_insnsizes.begin(); }
@@ -44,12 +45,12 @@ struct SDClass_t :  virtual ReferenceCounter {
 
 /** A SubDecoder instance object */
 struct SDInstance_t : virtual ReferenceCounter {
-  ConstStr_t                    m_symbol;            /**< The name of the subdecoder instance */
+  ConstStr                    m_symbol;            /**< The name of the subdecoder instance */
   ConstPtr_t<SourceCode_t>      m_template_scheme;   /**< The template scheme associated with the instance */
   ConstPtr_t<SDClass_t>         m_sdclass;           /**< The subdecoder class associated of the instance */
   FileLoc_t                     m_fileloc;           /**< The file location where subdecoder was instanciated */
   
-  SDInstance_t( ConstStr_t _symbol, SourceCode_t const* _template_scheme, SDClass_t const* _sdclass, FileLoc_t const& _fileloc );
+  SDInstance_t( ConstStr _symbol, SourceCode_t const* _template_scheme, SDClass_t const* _sdclass, FileLoc_t const& _fileloc );
   ~SDInstance_t();
   
 };
@@ -63,7 +64,7 @@ struct SDInstance_t : virtual ReferenceCounter {
     @param _fileloc a fileloc pointing at the subdecoder declaration
 */
 template<typename _InputIterator>
-SDClass_t::SDClass_t( std::vector<ConstStr_t>& _namespace, _InputIterator szbeg, _InputIterator szend, FileLoc_t const& _fileloc )
+SDClass_t::SDClass_t( std::vector<ConstStr>& _namespace, _InputIterator szbeg, _InputIterator szend, FileLoc_t const& _fileloc )
   : m_namespace( _namespace ), m_insnsizes( szbeg, szend ), m_fileloc( _fileloc )
 {}
 

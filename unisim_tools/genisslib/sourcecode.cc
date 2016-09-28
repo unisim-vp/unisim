@@ -17,7 +17,6 @@
 
 #include <sourcecode.hh>
 #include <ostream>
-using namespace std;
 
 SourceCode_t const* SourceCode_t::s_last_srccode = 0;
 
@@ -27,7 +26,7 @@ SourceCode_t const* SourceCode_t::s_last_srccode = 0;
     @param lineno a line number where was found the C source code
     @return a C source code object
 */
-SourceCode_t::SourceCode_t( ConstStr_t _content, FileLoc_t const& _fileloc )
+SourceCode_t::SourceCode_t( ConstStr _content, FileLoc_t const& _fileloc )
   : m_content( _content ), m_fileloc( _fileloc )
 {
   s_last_srccode = this;

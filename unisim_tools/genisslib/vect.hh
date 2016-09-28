@@ -23,7 +23,8 @@
 #include <referencecounting.hh>
 
 template <class Type_t>
-struct Vect_t : std::vector<Ptr_t<Type_t> > {
+struct Vect_t : std::vector<Ptr_t<Type_t> >
+{
   Vect_t() {}
   Vect_t( Type_t* _item ) : std::vector<Ptr_t<Type_t> >( 1,_item ) {}
   Vect_t( Vect_t<Type_t>& _src ) {
@@ -47,7 +48,8 @@ struct Vect_t : std::vector<Ptr_t<Type_t> > {
   Vect_t<Type_t>* append( Type_t* _item ) { this->push_back( _item ); return this; }
 };
 
-struct StringVect_t : std::vector<char const*> {
+struct StringVect_t : std::vector<char const*>
+{
   StringVect_t() {}
   StringVect_t( char const* _item ) : std::vector<char const*>( 1,_item ) {}
   StringVect_t( StringVect_t& _src ) {

@@ -27,8 +27,6 @@
 #include <cassert>
 #include <ostream>
 
-using namespace std;
-
 /** Create an operation object
     @param symbol a symbol object representing the operation
     @param bitfield_list a bit field list object containing the bit fields of the operation
@@ -38,7 +36,7 @@ using namespace std;
     @param lineno a line number where the operation was found
     @return an operation object
 */
-Operation_t::Operation_t( ConstStr_t _symbol, Vect_t<BitField_t>& _bitfields, Vect_t<Comment_t>& _comments,
+Operation_t::Operation_t( ConstStr _symbol, Vect_t<BitField_t>& _bitfields, Vect_t<Comment_t>& _comments,
                           SourceCode_t* _op_condition, FileLoc_t const& _fileloc )
   : m_symbol( _symbol ), m_bitfields( _bitfields ), m_comments( _comments ),
     m_condition( _op_condition ), m_fileloc( _fileloc )
@@ -54,7 +52,7 @@ Operation_t::~Operation_t() {}
     @param operation_list the list of the operation of the group
     @returns a group list object
 */
-Group_t::Group_t( ConstStr_t _symbol, Vect_t<Operation_t>& _oplist, FileLoc_t const& _fileloc )
+Group_t::Group_t( ConstStr _symbol, Vect_t<Operation_t>& _oplist, FileLoc_t const& _fileloc )
   : m_symbol( _symbol ), m_operations( _oplist ), m_fileloc( _fileloc )
 {}
 
@@ -63,7 +61,7 @@ Group_t::Group_t( ConstStr_t _symbol, Vect_t<Operation_t>& _oplist, FileLoc_t co
     @param _fileloc the source file location of the group declaration
     @returns a group list object
 */
-Group_t::Group_t( ConstStr_t _symbol, FileLoc_t const& _fileloc )
+Group_t::Group_t( ConstStr _symbol, FileLoc_t const& _fileloc )
   : m_symbol( _symbol ), m_fileloc( _fileloc )
 {}
 
@@ -71,16 +69,16 @@ Group_t::Group_t( ConstStr_t _symbol, FileLoc_t const& _fileloc )
     @param actionproto an action prototype object
     @return the matching action object, null if no action object matches
 */
-Action_t const*
-Operation_t::action( ActionProto_t const* _actionproto ) const {
-  for( Vect_t<Action_t>::const_iterator iter = m_actions.begin(); iter < m_actions.end(); ++ iter )
+Action const*
+Operation_t::action( ActionProto const* _actionproto ) const {
+  for( Vect_t<Action>::const_iterator iter = m_actions.begin(); iter < m_actions.end(); ++ iter )
     if( (*iter)->m_actionproto == _actionproto ) return *iter;
   
   return 0;
 }
 
 void
-Operation_t::add( Action_t* _action ) {
+Operation_t::add( Action* _action ) {
   m_actions.push_back( _action );
   assert( not _action->m_operation );
   _action->m_operation = this;
@@ -91,8 +89,8 @@ Operation_t::add( Action_t* _action ) {
     @param _sink a stream
 */
 
-ostream&
-operator<<( ostream& _sink, Operation_t const& _op ) {
+std::ostream&
+operator<<( std::ostream& _sink, Operation_t const& _op ) {
   _sink << "op " << _op.m_symbol << '(';
   
   char const* sep = "";
@@ -109,7 +107,7 @@ operator<<( ostream& _sink, Operation_t const& _op ) {
   }
   _sink << "\n\n";
   
-  for( Vect_t<Action_t>::const_iterator action = _op.m_actions.begin(); action < _op.m_actions.end(); ++ action )
+  for( Vect_t<Action>::const_iterator action = _op.m_actions.begin(); action < _op.m_actions.end(); ++ action )
     _sink << *(*action) << '\n';
   
   return _sink;

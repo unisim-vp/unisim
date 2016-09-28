@@ -18,53 +18,63 @@
 #ifndef __GENERATOR_HH__
 #define __GENERATOR_HH__
 
+#include <main.hh>
 #include <fwd.hh>
 #include <conststr.hh>
+#include <map>
 #include <set>
 #include <iosfwd>
 #include <inttypes.h>
 
-struct OpCode_t {
+struct OpCode
+{
   // Topology methods
-  enum Location_t { Outside, Overlaps, Inside, Contains, Equal };
-  virtual Location_t          locate( OpCode_t const& _oc ) const = 0;
-  void                        setbelow( OpCode_t* _below );
-  void                        forcebelow( OpCode_t* _below );
+  enum location_t { Outside, Overlaps, Inside, Contains, Equal };
+  
+  OpCode( ConstStr _symbol ) : m_abovecount( 0 ), m_symbol( _symbol ) {}
+  
+  virtual ~OpCode() {}
+  virtual location_t          locate( OpCode const& _oc ) const = 0;
+  virtual std::ostream&       details( std::ostream& _sink ) const = 0;
+  
+  void                        setbelow( OpCode* _below );
+  void                        forcebelow( OpCode* _below );
   void                        unsetbelow();
-  bool                        above( OpCode_t* below );
+  bool                        above( OpCode* below );
+  
   // Topology information
-  typedef std::set<OpCode_t*> BelowList;
+  typedef std::set<OpCode*> BelowList;
+  
   BelowList                   m_belowlist;
   intptr_t                    m_abovecount;
+  
   // Debugging information
-  ConstStr_t                  m_symbol;
+  ConstStr                  m_symbol;
   
-  OpCode_t( ConstStr_t _symbol ) : m_abovecount( 0 ), m_symbol( _symbol ) {}
-  virtual ~OpCode_t() {}
   
-  virtual std::ostream&       details( std::ostream& _sink ) const = 0;
-  friend std::ostream&        operator << ( std::ostream& _sink, OpCode_t const& _oc );
+  friend std::ostream&        operator << ( std::ostream& _sink, OpCode const& _oc );
 };
 
 struct Generator
 {
-  enum Exception_t { GenerationError };
+  enum Error { GenerationError };
   
-  Isa*                                m_isa;
+  Isa&                                source;
+  Opts const&                         options;
+  
   unsigned int                        m_minwordsize;
   std::set<unsigned int>              m_insnsizes;
-  unsigned int                        m_verblevel;
-  typedef std::map<Operation_t const*,OpCode_t*> OpCodeMap;
+  typedef std::map<Operation_t const*,OpCode*> OpCodeMap;
   OpCodeMap                           m_opcodes;
   
-  Generator();
+  Generator( Isa& _source, Opts const& _options );
   virtual ~Generator() {};
   
-  Generator&                          init( Isa& _isa, unsigned int verblevel );
+  Generator&                          init( unsigned int verblevel );
   virtual void                        finalize() = 0;
   
-  OpCode_t const&                     opcode( Operation_t const* _op ) const;
-  OpCode_t&                           opcode( Operation_t const* _op );
+  OpCode const&                       opcode( Operation_t const* _op ) const;
+  OpCode&                             opcode( Operation_t const* _op );
   
   void                                toposort();
   void                                isastats();
@@ -80,19 +90,16 @@ struct Generator
   void                                isa_operations_encoders( Product_t& _product ) const;
   void                                isa_operations_methods( Product_t& _product ) const;
   
-  Isa const&                          isa() const { return *m_isa; }
-  Isa&                                isa() { return *m_isa; }
-  
   unsigned int                        gcd() const;
   
   virtual void                        codetype_decl( Product_t& _product ) const = 0;
   virtual void                        codetype_impl( Product_t& _product ) const = 0;
-  virtual ConstStr_t                  codetype_name() const = 0;
-  virtual ConstStr_t                  codetype_ref() const = 0;
-  virtual ConstStr_t                  codetype_constref() const = 0;
+  virtual ConstStr                  codetype_name() const = 0;
+  virtual ConstStr                  codetype_ref() const = 0;
+  virtual ConstStr                  codetype_constref() const = 0;
   virtual void                        insn_bits_code( Product_t& _product, Operation_t const& _op ) const = 0;
   virtual void                        insn_mask_code( Product_t& _product, Operation_t const& _op ) const = 0;
-  virtual ConstStr_t                  insn_id_expr( char const* _addrname ) const = 0;
+  virtual ConstStr                  insn_id_expr( char const* _addrname ) const = 0;
   virtual void                        insn_match_ifexpr( Product_t& _product, char const* _code, char const* _mask, char const* _bits ) const = 0;
   virtual void                        insn_unchanged_expr( Product_t& _product, char const* _old, char const* _new ) const = 0;
   virtual void                        insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const = 0;

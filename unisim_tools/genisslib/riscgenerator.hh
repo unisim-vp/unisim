@@ -23,24 +23,24 @@
 #include <conststr.hh>
 #include <map>
 
-struct RiscOpCode_t : public OpCode_t
+struct RiscOpCode : public OpCode
 {
   uint64_t                    m_mask;
   uint64_t                    m_bits;
   unsigned int                m_size;
   bool                        m_vlen;
     
-  // RiscOpCode_t()
-  //   : OpCode_t( ConstStr_t() ), m_mask( 0 ), m_bits( 0 ), m_size( 0 ), m_vlen( false )
+  // RiscOpCode()
+  //   : OpCode( ConstStr() ), m_mask( 0 ), m_bits( 0 ), m_size( 0 ), m_vlen( false )
   // {}
-  RiscOpCode_t( ConstStr_t _symbol, uint64_t mask, uint64_t bits, unsigned int size, bool vlen )
-    : OpCode_t( _symbol ), m_mask( mask ), m_bits( bits ), m_size( size ), m_vlen( vlen )
+  RiscOpCode( ConstStr _symbol, uint64_t mask, uint64_t bits, unsigned int size, bool vlen )
+    : OpCode( _symbol ), m_mask( mask ), m_bits( bits ), m_size( size ), m_vlen( vlen )
   {}
 
-  virtual ~RiscOpCode_t() {}
+  virtual ~RiscOpCode() {}
 
   // Topology methods
-  Location_t                  locate( OpCode_t const& _oc ) const;
+  location_t                  locate( OpCode const& _oc ) const;
   
   std::ostream&               details( std::ostream& _sink ) const;
 };
@@ -48,25 +48,25 @@ struct RiscOpCode_t : public OpCode_t
 struct RiscGenerator : public Generator
 {
   unsigned int                  m_insn_ctypesize;
-  ConstStr_t                    m_insn_ctype;
-  ConstStr_t                    m_insn_cpostfix;
+  ConstStr                    m_insn_ctype;
+  ConstStr                    m_insn_cpostfix;
   
-  RiscGenerator();
+  RiscGenerator( Isa& _source, Opts const& _options );
   ~RiscGenerator() {};
   
-  RiscOpCode_t const&           riscopcode( Operation_t const* _op ) const { return dynamic_cast<RiscOpCode_t const&>( opcode( _op ) ); }
-  RiscOpCode_t&                 riscopcode( Operation_t const* _op ) { return dynamic_cast<RiscOpCode_t&>( opcode( _op ) ); };
+  RiscOpCode const&           riscopcode( Operation_t const* _op ) const { return dynamic_cast<RiscOpCode const&>( opcode( _op ) ); }
+  RiscOpCode&                 riscopcode( Operation_t const* _op ) { return dynamic_cast<RiscOpCode&>( opcode( _op ) ); };
   
   /* Risc specific Utilities */
   void                          finalize();
   void                          codetype_decl( Product_t& _product ) const;
   void                          codetype_impl( Product_t& _product ) const {}
-  ConstStr_t                    codetype_name() const { return "CodeType"; }
-  ConstStr_t                    codetype_ref() const { return "CodeType&"; }
-  ConstStr_t                    codetype_constref() const { return "CodeType"; }
+  ConstStr                    codetype_name() const { return "CodeType"; }
+  ConstStr                    codetype_ref() const { return "CodeType&"; }
+  ConstStr                    codetype_constref() const { return "CodeType"; }
   void                          insn_bits_code( Product_t& _product, Operation_t const& _op ) const;
   void                          insn_mask_code( Product_t& _product, Operation_t const& _op ) const;
-  ConstStr_t                    insn_id_expr( char const* _addrname ) const;
+  ConstStr                    insn_id_expr( char const* _addrname ) const;
   void                          insn_match_ifexpr( Product_t& _product, char const* _code, char const* _mask, char const* _bits ) const;
   void                          insn_unchanged_expr( Product_t& _product, char const* _old, char const* _new ) const;
   void                          insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const;

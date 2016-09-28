@@ -35,8 +35,6 @@
 #include <riscgenerator.hh>
 #include <ciscgenerator.hh>
 
-using namespace std;
-
 /** Constructor of Isa instance 
  */
 Isa::Isa()
@@ -56,7 +54,7 @@ Isa::~Isa() {}
     @return the matching operation object, null if no operation object matches
 */
 Operation_t*
-Isa::operation( ConstStr_t _symbol )
+Isa::operation( ConstStr _symbol )
 {
   for( Vect_t<Operation_t>::iterator op = m_operations.begin(); op < m_operations.end(); ++ op )
     if( (*op)->m_symbol == _symbol ) return *op;
@@ -80,7 +78,7 @@ oplist_insert_unique( Vect_t<Operation_t>& _oplist, Operation_t* _op )
     @param _opvec an operation vector that will receive the corresponding operations
 */
 bool
-Isa::operations( ConstStr_t _symbol, Vect_t<Operation_t>& _oplist )
+Isa::operations( ConstStr _symbol, Vect_t<Operation_t>& _oplist )
 {
   /* Symbol points to either an operation or a group.
    */
@@ -133,7 +131,7 @@ Isa::add( Operation_t* _op )
     @return the found group
 */
 Group_t*
-Isa::group( ConstStr_t _symbol )
+Isa::group( ConstStr _symbol )
 {
   for( Vect_t<Group_t>::iterator group = m_groups.begin(); group < m_groups.end(); ++ group )
     if( (*group)->m_symbol == _symbol ) return *group;
@@ -145,10 +143,10 @@ Isa::group( ConstStr_t _symbol )
     @param action_proto_symbol a symbol object representing the action prototype
     @return the matching action prototype object, null if no action prototype object matches
 */
-ActionProto_t const*
-Isa::actionproto( ConstStr_t _symbol ) const
+ActionProto const*
+Isa::actionproto( ConstStr _symbol ) const
 {
-  for( Vect_t<ActionProto_t>::const_iterator proto = m_actionprotos.begin(); proto < m_actionprotos.end(); ++ proto )
+  for( Vect_t<ActionProto>::const_iterator proto = m_actionprotos.begin(); proto < m_actionprotos.end(); ++ proto )
     if( (*proto)->m_symbol == _symbol ) return *proto;
 
   return 0;
@@ -158,9 +156,9 @@ Isa::actionproto( ConstStr_t _symbol ) const
     @param actionproto the action prototype object to remove
 */
 void
-Isa::remove( ActionProto_t const* _ap )
+Isa::remove( ActionProto const* _ap )
 {
-  for( Vect_t<ActionProto_t>::iterator iter = m_actionprotos.begin(); iter < m_actionprotos.end(); ++ iter ) {
+  for( Vect_t<ActionProto>::iterator iter = m_actionprotos.begin(); iter < m_actionprotos.end(); ++ iter ) {
     if( *iter != _ap ) continue;
     m_actionprotos.erase( iter );
     return;
@@ -172,13 +170,13 @@ Isa::remove( ActionProto_t const* _ap )
     @param _sink a stream
 */
 void
-Isa::expand( ostream& _sink ) const
+Isa::expand( std::ostream& _sink ) const
 {
   // dumping namespace
   if( not m_namespace.empty() ) {
     _sink << "namespace ";
     char const* sep = "";
-    for( std::vector<ConstStr_t>::const_iterator piece = m_namespace.begin(); piece < m_namespace.end(); sep = "::", ++ piece )
+    for( std::vector<ConstStr>::const_iterator piece = m_namespace.begin(); piece < m_namespace.end(); sep = "::", ++ piece )
       _sink << sep << (*piece);
     _sink << '\n';
   }
@@ -212,7 +210,7 @@ Isa::expand( ostream& _sink ) const
   }
   _sink << '\n';
   
-  for( Vect_t<ActionProto_t>::const_iterator ap = m_actionprotos.begin(); ap < m_actionprotos.end(); ++ap )
+  for( Vect_t<ActionProto>::const_iterator ap = m_actionprotos.begin(); ap < m_actionprotos.end(); ++ap )
     _sink << *(*ap) << '\n';
   
   _sink << '\n';
@@ -222,38 +220,38 @@ Isa::expand( ostream& _sink ) const
 }
 
 Generator*
-Isa::generator() const
+Isa::generator( Isa& _source, Opts const& _options ) const
 {
   switch (m_decoder)
     {
-    case RiscDecoder: return new RiscGenerator();
-    case CiscDecoder: return new CiscGenerator();
+    case RiscDecoder: return new RiscGenerator( _source, _options );
+    case CiscDecoder: return new CiscGenerator( _source, _options );
       // case VliwDecoder: return new VliwGenerator( this ); break;
     default: break;
     }
   
   assert( false );
+  
   return 0;
 }
 
 bool
 Isa::sanity_checks() const
 {
-  if( not m_addrtype ) {
-    // FIXME: Downgraded warning to error (default pointer size for
-    // target architecture is nonsense)
-    cerr << "error: no architecture address type found." << endl;
-    return false;
-  }
+  if (not m_addrtype.str())
+    {
+      std::cerr << "error: no architecture address type found." << std::endl;
+      return false;
+    }
   
   // Checking operations
   for( Vect_t<Operation_t>::const_iterator op = m_operations.begin(); op < m_operations.end(); ++ op ) {
     // Looking for bitfield conflicts
     for( Vect_t<BitField_t>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
-      ConstStr_t bf_symbol = (**bf).symbol();
-      if( not bf_symbol ) continue;
+      ConstStr bf_symbol = (**bf).symbol();
+      if (not bf_symbol.str()) continue;
       for( Vect_t<BitField_t>::const_iterator pbf = (**op).m_bitfields.begin(); pbf < bf; ++ pbf ) {
-        ConstStr_t pbf_symbol = (**pbf).symbol();
+        ConstStr pbf_symbol = (**pbf).symbol();
         if( pbf_symbol != bf_symbol ) continue;
         (**op).m_fileloc.err( "error: duplicated bit field `%s' in operation `%s'", bf_symbol.str(), (**op).m_symbol.str() );
         return false;
@@ -287,7 +285,7 @@ Isa::sanity_checks() const
 }
 
 // SubDecoder_t const*
-// Isa::subdecoder( ConstStr_t _symbol ) const {
+// Isa::subdecoder( ConstStr _symbol ) const {
 //   for( Vect_t<SubDecoder_t>::const_iterator sd = m_subdecoders.begin(); sd < m_subdecoders.end(); ++ sd )
 //     if( (**sd).m_symbol == _symbol ) return *sd;
 //   return 0;
@@ -298,14 +296,14 @@ Isa::sanity_checks() const
     @param _sink a stream
 */
 void
-Isa::deps( ostream& _sink, char const* _prefix ) const
+Isa::deps( std::ostream& _sink, char const* _prefix ) const
 {
   if( m_tparams.empty() ) {
     _sink << _prefix << ".cc " << _prefix << ".hh:";
   } else {
     _sink << _prefix << ".tcc " << _prefix << ".hh:";
   }
-  for( std::vector<ConstStr_t>::const_iterator inc = m_includes.begin(); inc < m_includes.end(); ++ inc )
+  for( std::vector<ConstStr>::const_iterator inc = m_includes.begin(); inc < m_includes.end(); ++ inc )
     _sink << " \\\n " << *inc;
   _sink << "\n\n";
 }
@@ -319,23 +317,23 @@ Isa::specialize()
 }
 
 void
-Isa::setparam( ConstStr_t key, ConstStr_t value )
+Isa::setparam( ConstStr key, ConstStr value )
 {
-  static ConstStr_t   codetype( "codetype",        Scanner::symbols );
-  static ConstStr_t     scalar( "scalar",          Scanner::symbols );
-  static ConstStr_t     buffer( "buffer",          Scanner::symbols );
-  static ConstStr_t subdecoder( "subdecoder_p",    Scanner::symbols );
-  static ConstStr_t withsource( "withsource_p",    Scanner::symbols );
-  static ConstStr_t withencode( "withencode_p",    Scanner::symbols );
-  static ConstStr_t     istrue( "true",            Scanner::symbols );
-  static ConstStr_t    isfalse( "false",           Scanner::symbols );
-  static ConstStr_t endianness( "endianness",      Scanner::symbols );
-  static ConstStr_t      isbig( "big",             Scanner::symbols );
-  static ConstStr_t   islittle( "little",          Scanner::symbols );
-  static ConstStr_t     forder( "fields_order",    Scanner::symbols );
-  static ConstStr_t     worder( "words_order",     Scanner::symbols );
-  static ConstStr_t     isdesc( "descending",      Scanner::symbols );
-  static ConstStr_t      isasc( "ascending",       Scanner::symbols );
+  static ConstStr   codetype( "codetype",        Scanner::symbols );
+  static ConstStr     scalar( "scalar",          Scanner::symbols );
+  static ConstStr     buffer( "buffer",          Scanner::symbols );
+  static ConstStr subdecoder( "subdecoder_p",    Scanner::symbols );
+  static ConstStr withsource( "withsource_p",    Scanner::symbols );
+  static ConstStr withencode( "withencode_p",    Scanner::symbols );
+  static ConstStr     istrue( "true",            Scanner::symbols );
+  static ConstStr    isfalse( "false",           Scanner::symbols );
+  static ConstStr endianness( "endianness",      Scanner::symbols );
+  static ConstStr      isbig( "big",             Scanner::symbols );
+  static ConstStr   islittle( "little",          Scanner::symbols );
+  static ConstStr     forder( "fields_order",    Scanner::symbols );
+  static ConstStr     worder( "words_order",     Scanner::symbols );
+  static ConstStr     isdesc( "descending",      Scanner::symbols );
+  static ConstStr      isasc( "ascending",       Scanner::symbols );
   
   if      (key == codetype) {
     if      (value == scalar) m_decoder = RiscDecoder;
@@ -382,10 +380,10 @@ Isa::setparam( ConstStr_t key, ConstStr_t value )
 }
 
 void
-Isa::setparam( ConstStr_t key, SourceCode_t* value )
+Isa::setparam( ConstStr key, SourceCode_t* value )
 {
-  static ConstStr_t  addressclass( "addressclass",  Scanner::symbols );
-  static ConstStr_t codetypeclass( "codetypeclass", Scanner::symbols );
+  static ConstStr  addressclass( "addressclass",  Scanner::symbols );
+  static ConstStr codetypeclass( "codetypeclass", Scanner::symbols );
   
   if        (key == addressclass) {
     m_addrtype = value->m_content;
@@ -399,9 +397,9 @@ Isa::setparam( ConstStr_t key, SourceCode_t* value )
 }
 
 void
-Isa::setparam( ConstStr_t key, unsigned int value )
+Isa::setparam( ConstStr key, unsigned int value )
 {
-  static ConstStr_t  minwordsize( "minwordsize", Scanner::symbols );
+  static ConstStr  minwordsize( "minwordsize", Scanner::symbols );
   
   if        (key == minwordsize) {
     m_minwordsize = value;
@@ -411,7 +409,7 @@ Isa::setparam( ConstStr_t key, unsigned int value )
 }
 
 SDClass_t const*
-Isa::sdclass( std::vector<ConstStr_t>& _namespace ) const
+Isa::sdclass( std::vector<ConstStr>& _namespace ) const
 {
   for( Vect_t<SDClass_t>::const_iterator sdc = m_sdclasses.begin(); sdc != m_sdclasses.end(); ++ sdc ) {
     if( (**sdc).m_namespace == _namespace ) return *sdc;
@@ -420,7 +418,7 @@ Isa::sdclass( std::vector<ConstStr_t>& _namespace ) const
 }
 
 SDInstance_t const*
-Isa::sdinstance( ConstStr_t _symbol ) const
+Isa::sdinstance( ConstStr _symbol ) const
 {
   for( Vect_t<SDInstance_t>::const_iterator sdi = m_sdinstances.begin(); sdi != m_sdinstances.end(); ++ sdi ) {
     if( (**sdi).m_symbol == _symbol ) return *sdi;
@@ -429,10 +427,10 @@ Isa::sdinstance( ConstStr_t _symbol ) const
 }
 
 void
-Isa::group_command( ConstStr_t group_symbol, ConstStr_t _command, FileLoc_t const& fl )
+Isa::group_command( ConstStr group_symbol, ConstStr _command, FileLoc_t const& fl )
 {
-  static ConstStr_t  group_begin( "begin",  Scanner::symbols );
-  static ConstStr_t  group_end  ( "end",    Scanner::symbols );
+  static ConstStr  group_begin( "begin",  Scanner::symbols );
+  static ConstStr  group_end  ( "end",    Scanner::symbols );
   
   if (_command == group_begin)
     {

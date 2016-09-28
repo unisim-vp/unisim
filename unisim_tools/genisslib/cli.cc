@@ -23,8 +23,6 @@
 #include <iostream>
 #include <cstring>
 
-using namespace std;
-
 CLI::CLI()
   : m_displayname( 0 ), m_callname( 0 ), m_opt_tabstop( 0 )
 {}
@@ -55,7 +53,8 @@ struct Pattern {
   }
 };
 
-struct InfoArgs_t : public CLI::Args_t {
+struct InfoArgs_t : public CLI::Args_t
+{
   CLI&                   m_cli;
 
   InfoArgs_t( CLI& _cli ) : m_cli( _cli ) {}
@@ -72,7 +71,8 @@ struct InfoArgs_t : public CLI::Args_t {
 };
 
 void
-CLI::set( char const* _displayname, char const* _callname ) {
+CLI::set( char const* _displayname, char const* _callname )
+{
   m_displayname = _displayname;
   m_callname = _callname;
   InfoArgs_t args( *this );
@@ -81,18 +81,20 @@ CLI::set( char const* _displayname, char const* _callname ) {
 
 struct Proto_t : public CLI::Args_t {
   bool match( char const* _patterns, char const* _shortdesc, char const* _longdesc ) { return false; }
-  bool match( bool _active, char const* _shortdesc, char const* _longdesc ) {
-    cerr << ' ' << _shortdesc;
+  bool match( bool _active, char const* _shortdesc, char const* _longdesc )
+  {
+    std::cerr << ' ' << _shortdesc;
     return false;
   }
 };
 
 void
-CLI::prototype() {
-  cerr << "Usage: " << m_callname;
+CLI::prototype()
+{
+  std::cerr << "Usage: " << m_callname;
   Proto_t proto;
   parse( proto );
-  cerr << endl;
+  std::cerr << std::endl;
 }
 
 struct Screen_t
@@ -128,7 +130,7 @@ struct Screen_t
     intptr_t index = m_buffer.size();
     m_buffer += ch;
     if( ch == '\n' ) {
-      cerr << m_buffer.c_str();
+      std::cerr << m_buffer.c_str();
       reset();
       return tab();
     } else if( ch <= ' ' ) { // considered as blank
@@ -141,7 +143,7 @@ struct Screen_t
       char flushbuf[m_buffer.size() + 1];
       memcpy( flushbuf, m_buffer.c_str(), m_lastblank );
       flushbuf[m_lastblank] = '\0';
-      cerr << flushbuf << endl;
+      std::cerr << flushbuf << std::endl;
       char const* remainder = m_buffer.c_str() + m_lastblank;
       while( *remainder != '\0' and *remainder <= ' ' ) remainder++;
       strcpy( flushbuf, remainder );
@@ -179,7 +181,7 @@ struct Opts_t : public CLI::Args_t {
 
 void
 CLI::options() {
-  cerr << "options:\n";
+  std::cerr << "options:\n";
   Opts_t opts( m_opt_tabstop );
   parse( opts );
 }
@@ -280,11 +282,11 @@ CLI::process( intptr_t _argc, char** _argv ) {
     for( ValueArgs_t args( _argc, _argv ); args.next(); ) {
       parse( args );
       if( not args.m_matched.empty() ) continue;
-      cerr << m_displayname << ": unexpected argument: " << args.front() << "\n";
+      std::cerr << m_displayname << ": unexpected argument: " << args.front() << "\n";
       throw Exit_t( 1 );
     }
-  } catch( ConstStr_t& _error ) {
-    cerr << m_displayname << ": " << _error.str();
+  } catch( ConstStr& _error ) {
+    std::cerr << m_displayname << ": " << _error.str();
     help();
     throw Exit_t( 1 );
   }

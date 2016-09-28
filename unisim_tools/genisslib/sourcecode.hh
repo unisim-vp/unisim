@@ -25,11 +25,12 @@
 #include <iosfwd>
 
 /** A C source code object */
-struct SourceCode_t : virtual ReferenceCounter {
-  ConstStr_t                  m_content;    /**< the string containing the C source code */
+struct SourceCode_t : virtual ReferenceCounter
+{
+  ConstStr                  m_content;    /**< the string containing the C source code */
   FileLoc_t                   m_fileloc;    /**< the file location where was found the C source code */
   
-  SourceCode_t( ConstStr_t _content, FileLoc_t const& _fileloc );
+  SourceCode_t( ConstStr _content, FileLoc_t const& _fileloc );
   
   static SourceCode_t const*  s_last_srccode;
 };
@@ -37,7 +38,8 @@ struct SourceCode_t : virtual ReferenceCounter {
 std::ostream& operator<<( std::ostream& _sink, SourceCode_t const& _sc );
 
 /** A C/C++ Code object object */
-struct CodePair_t : virtual ReferenceCounter {
+struct CodePair_t : virtual ReferenceCounter
+{
   Ptr_t<SourceCode_t>        m_ctype;        /**< The C type of the parameter */
   Ptr_t<SourceCode_t>        m_csymbol;      /**< The C symbol of the parameter */
   

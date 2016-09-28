@@ -25,18 +25,20 @@
 #include <referencecounting.hh>
 #include <vect.hh>
 
-struct Constraint_t : virtual ReferenceCounter {
-  ConstStr_t             m_symbol; /**< The specialization symbol */
+struct Constraint_t : virtual ReferenceCounter
+{
+  ConstStr             m_symbol; /**< The specialization symbol */
   unsigned int           m_value;  /**< The specialization value */
   
-  Constraint_t( ConstStr_t _symbol, unsigned int _value );
+  Constraint_t( ConstStr _symbol, unsigned int _value );
   ~Constraint_t();
 };
 
 std::ostream& operator<<( std::ostream& _sink, Constraint_t const& _var );
 
 /** A specialization object */
-struct Specialization_t : virtual ReferenceCounter {
+struct Specialization_t : virtual ReferenceCounter
+{
   Ptr_t<Operation_t>     m_operation; /**< The operation wich is specialized */
   Vect_t<Constraint_t>   m_constraints; /**< The list of variables associated with the specialization */
 
@@ -45,7 +47,7 @@ struct Specialization_t : virtual ReferenceCounter {
   
   Operation_t*           newop();
   
-  Constraint_t*          constraint( ConstStr_t _symbol );
+  Constraint_t*          constraint( ConstStr _symbol );
 };
 
 std::ostream& operator<<( std::ostream& _sink, Specialization_t const& _var );

@@ -23,8 +23,6 @@
 #include <bitfield.hh>
 #include <iostream>
 
-using namespace std;
-
 /** 
  *  @brief constraint object constructor
  *
@@ -33,7 +31,7 @@ using namespace std;
  *
  */
 
-Constraint_t::Constraint_t( ConstStr_t _symbol, unsigned int _value )
+Constraint_t::Constraint_t( ConstStr _symbol, unsigned int _value )
   : m_symbol( _symbol ), m_value( _value )
 {}
 
@@ -87,10 +85,10 @@ operator<<( std::ostream& _sink, Specialization_t const& _var ) {
 Operation_t*
 Specialization_t::newop()
 {
-  ConstStr_t symbol; // The symbol of the operation
+  ConstStr symbol; // The symbol of the operation
   {
     std::string buffer;
-    buffer.append( "__spec__" ).append( m_operation->m_symbol );
+    buffer.append( "__spec__" ).append( m_operation->m_symbol.str() );
     for( Vect_t<Constraint_t>::const_iterator expr = m_constraints.begin(); expr < m_constraints.end(); ++ expr )
       buffer+= Str::fmt( "_%s_%x", (**expr).m_symbol.str(), (**expr).m_value ).str();
     symbol = Str::tokenize( buffer.c_str() );
@@ -121,7 +119,7 @@ Specialization_t::newop()
 }
 
 Constraint_t*
-Specialization_t::constraint( ConstStr_t _symbol ) {
+Specialization_t::constraint( ConstStr _symbol ) {
   for( Vect_t<Constraint_t>::iterator expr = m_constraints.begin(); expr < m_constraints.end(); ++ expr )
     if( (**expr).m_symbol == _symbol ) return *expr;
   return 0;

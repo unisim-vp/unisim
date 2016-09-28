@@ -28,24 +28,22 @@
 #include <cassert>
 #include <ostream>
 
-using namespace std;
-
 /** Delete a subdecoder object
 */
 SDClass_t::~SDClass_t() {}
 
-ConstStr_t
+ConstStr
 SDClass_t::qd_namespace() const {
   std::string buffer;
   std::string sep;
 
-  for( std::vector<ConstStr_t>::const_iterator node = m_namespace.begin(); node != m_namespace.end(); ++ node, sep = "::" )
+  for( std::vector<ConstStr>::const_iterator node = m_namespace.begin(); node != m_namespace.end(); ++ node, sep = "::" )
     buffer += sep + node->str();
   
-  return ConstStr_t( buffer.c_str() );
+  return ConstStr( buffer.c_str() );
 }
 
-SDInstance_t::SDInstance_t( ConstStr_t _symbol, SourceCode_t const* _template_scheme, SDClass_t const* _sdclass, FileLoc_t const& _fileloc )
+SDInstance_t::SDInstance_t( ConstStr _symbol, SourceCode_t const* _template_scheme, SDClass_t const* _sdclass, FileLoc_t const& _fileloc )
   : m_symbol( _symbol ), m_template_scheme( _template_scheme ), m_sdclass( _sdclass ), m_fileloc( _fileloc )
 {}
 

@@ -31,8 +31,6 @@
 #define YY_NEVER_INTERACTIVE 1
 #endif
 
-using namespace std;
-
 bool                     Scanner::aborted_scanning = false;
 FileLoc_t                Scanner::fileloc;
 FileLoc_t                Scanner::fileloc_mlt;
@@ -40,8 +38,8 @@ int                      Scanner::bracecount = 0;
 std::vector<int>         Scanner::scs;
 Vect_t<Comment_t>        Scanner::comments;
 Isa*                     Scanner::s_isa = 0;
-ConstStr_t::Set          Scanner::symbols;
-std::vector<ConstStr_t>  Scanner::s_lookupdirs;
+ConstStr::Pool           Scanner::symbols;
+std::vector<ConstStr>    Scanner::s_lookupdirs;
 
 void parse_binary_number( char const* s, int length, unsigned int *value );
 
@@ -88,7 +86,7 @@ decimal_number [0-9]+
 <source_code_context>\" { Scanner::sc_enter( string_context ); Scanner::strbuf().append( yytext, yyleng ); }
 <source_code_context>\n { Scanner::strbuf().append( yytext, yyleng ); Scanner::fileloc.newline(); }
 <source_code_context>\} {
-  if( Scanner::sc_leave() ) {
+  if (Scanner::sc_leave()) {
     yylval.sourcecode = new SourceCode_t( Scanner::strbuf().c_str(), Scanner::fileloc_mlt );
     return TOK_SOURCE_CODE;
   }
@@ -126,7 +124,7 @@ decimal_number [0-9]+
 {identifier} {
   int token = Scanner::token( yytext );
   if( token == TOK_IDENT )
-    yylval.persistent_string = ConstStr_t( yytext, Scanner::symbols );
+    yylval.persistent_string = ConstStr( yytext, Scanner::symbols ).str();
   return token;
 }
 \\\n { Scanner::fileloc.newline(); }
@@ -220,7 +218,7 @@ Scanner::Include_t::restore( void* _state, intptr_t _size ) {
 bool
 Scanner::parse( char const* _filename, Isa& _isa ) {
   s_isa = &_isa;
-  if( not Scanner::open( ConstStr_t( _filename ) ) )
+  if( not Scanner::open( ConstStr( _filename ) ) )
     return false;
   bracecount = 0;
   scs.clear();
@@ -247,11 +245,12 @@ Scanner::parse( char const* _filename, Isa& _isa ) {
 }
 
 bool
-Scanner::open( ConstStr_t _filename ) {
+Scanner::open( ConstStr _filename )
+{
   fprintf( stderr, "Opening %s\n", _filename.str() );
-  yyin = fopen( _filename, "r" );
-
-  if( not yyin ) {
+  yyin = fopen( _filename.str(), "r" );
+  
+  if (not yyin) {
     fileloc.err( "error: can't open file `%s'", _filename.str() );
     return false;
   }
@@ -263,7 +262,7 @@ Scanner::open( ConstStr_t _filename ) {
 
 bool
 Scanner::include( char const* _filename ) {
-  ConstStr_t filename = Scanner::locate( _filename );
+  ConstStr filename = Scanner::locate( _filename );
   
   Scanner::push();
 
@@ -326,7 +325,7 @@ Scanner::token( char const* _text ) {
 }
 
 
-ConstStr_t
+ConstStr
 Scanner::charname( char _char ) {
   switch( _char ) {
   case '\t': return "tab char";
@@ -346,7 +345,7 @@ Scanner::charname( char _char ) {
     @param token the token
     @return the name of the token
 */
-ConstStr_t
+ConstStr
 Scanner::tokenname( int _token ) {
   /* search into the token table */
   for( int idx = 0; s_tokens[idx].m_name; ++ idx )
@@ -444,10 +443,10 @@ Scanner::add_lookupdir( char const* _dir ) {
   
 }
 
-ConstStr_t
+ConstStr
 Scanner::locate( char const* _name )
 {
-  for (std::vector<ConstStr_t>::iterator iter = s_lookupdirs.begin(); iter != s_lookupdirs.end(); iter++)
+  for (std::vector<ConstStr>::iterator iter = s_lookupdirs.begin(); iter != s_lookupdirs.end(); iter++)
     {
       std::string buffer = std::string() + iter->str() + "/" + _name;
       if (access( buffer.c_str(), R_OK ) != 0) continue;
@@ -473,7 +472,8 @@ Scanner::sc_enter( int _condition ) {
 }
 
 bool
-Scanner::sc_leave() {
+Scanner::sc_leave()
+{
   int oldsc = YY_START;
   int newsc = Scanner::scs.back();
   
@@ -489,13 +489,11 @@ Scanner::sc_leave() {
   return false;
 }
 
-ConstStr_t
-Scanner::all_operations() {
-  static ConstStr_t all_ops;
+ConstStr
+Scanner::all_operations()
+{
+  static ConstStr all_ops( "all_operations", symbols );
   
-  if( not all_ops ) {
-    all_ops = ConstStr_t( "all_operations", Scanner::symbols );
-  }
   return all_ops;
 }
 

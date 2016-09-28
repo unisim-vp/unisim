@@ -23,8 +23,6 @@
 #include <parser_defs.hh>
 #include <cassert>
 
-using namespace std;
-
 /** Create an opcode bitfield object
     @param _size size in bits
     @param _value value of the opcode
@@ -44,7 +42,8 @@ OpcodeBitField_t::OpcodeBitField_t( OpcodeBitField_t const& _src )
     @param _sink a stream
 */
 void
-OpcodeBitField_t::fills( ostream& _sink ) const {
+OpcodeBitField_t::fills( std::ostream& _sink ) const
+{
   _sink << Str::fmt( "0x%x[%u]", m_value, m_size );
 }
 
@@ -55,7 +54,7 @@ OpcodeBitField_t::fills( ostream& _sink ) const {
     @param _size_modifier minimum bit size for holding the operand bitfield
     @param _sext true if a sign extension is required
 */
-OperandBitField_t::OperandBitField_t( unsigned int _size, ConstStr_t _symbol, int _shift, unsigned int _size_modifier, bool _sext )
+OperandBitField_t::OperandBitField_t( unsigned int _size, ConstStr _symbol, int _shift, unsigned int _size_modifier, bool _sext )
   : FixedSizeBitField_t( _size ), m_symbol( _symbol ), m_shift( _shift ), m_size_modifier( _size_modifier ), m_sext( _sext )
 {}
 
@@ -71,7 +70,7 @@ OperandBitField_t::OperandBitField_t( OperandBitField_t const& _src )
     @param _sink a stream
 */
 void
-OperandBitField_t::fills( ostream& _sink ) const {
+OperandBitField_t::fills( std::ostream& _sink ) const {
   _sink << ( m_sext ? "sext" : "" );
   
   if( m_size_modifier )
@@ -110,7 +109,7 @@ UnusedBitField_t::UnusedBitField_t( UnusedBitField_t const& _src )
     @param _sink a stream
 */
 void
-UnusedBitField_t::fills( ostream& _sink ) const {
+UnusedBitField_t::fills( std::ostream& _sink ) const {
   _sink << "?[" << m_size << "]";
 }
 
@@ -137,7 +136,7 @@ operator<<( std::ostream& _sink, BitField_t const& _bf ) {
   return _sink;
 }
 
-SubOpBitField_t::SubOpBitField_t( ConstStr_t _symbol, SDInstance_t const* _sdinstance )
+SubOpBitField_t::SubOpBitField_t( ConstStr _symbol, SDInstance_t const* _sdinstance )
   : m_symbol( _symbol ), m_sdinstance( _sdinstance )
 {}
 
@@ -198,7 +197,7 @@ SpOperandBitField_t::dstsize() const {
 /**
  *  Return the c constant string corresponding to the value encoded.
  */
-ConstStr_t
+ConstStr
 SpOperandBitField_t::constval() const {
   if( not m_sext )
     return Str::fmt( "%#x", m_value );

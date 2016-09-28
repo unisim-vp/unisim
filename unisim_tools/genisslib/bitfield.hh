@@ -40,7 +40,7 @@ struct BitField_t : virtual ReferenceCounter
   BitField_t() {}
   virtual ~BitField_t() {}
 
-  virtual ConstStr_t    symbol() const { return 0; }
+  virtual ConstStr    symbol() const { return ConstStr(); }
   
   virtual bool          hasopcode() const { return false; }
   virtual uint64_t      bits() const { throw InternalError; return 0; }
@@ -105,17 +105,17 @@ struct OpcodeBitField_t : public FixedSizeBitField_t
 
 struct OperandBitField_t : public FixedSizeBitField_t
 {
-  ConstStr_t            m_symbol;
+  ConstStr            m_symbol;
   int                   m_shift;
   unsigned int          m_size_modifier;
   bool                  m_sext;
   
-  OperandBitField_t( unsigned int _size, ConstStr_t _symbol, int _shift, unsigned int _size_modifier, bool _sext );
+  OperandBitField_t( unsigned int _size, ConstStr _symbol, int _shift, unsigned int _size_modifier, bool _sext );
   OperandBitField_t( OperandBitField_t const& _src );
 
   unsigned int          dstsize() const;
   
-  ConstStr_t            symbol() const { return m_symbol; };
+  ConstStr            symbol() const { return m_symbol; };
   
   OperandBitField_t*    clone() const { return new OperandBitField_t( *this ); }
   void                  fills( std::ostream& _sink ) const;
@@ -175,13 +175,13 @@ struct SeparatorBitField_t : public BitField_t
 
 struct SubOpBitField_t : public BitField_t
 {
-  ConstStr_t            m_symbol;
+  ConstStr            m_symbol;
   SDInstance_t const*   m_sdinstance;
   
-  SubOpBitField_t( ConstStr_t _symbol, SDInstance_t const* _sdinstance );
+  SubOpBitField_t( ConstStr _symbol, SDInstance_t const* _sdinstance );
   SubOpBitField_t( SubOpBitField_t const& _src );
 
-  ConstStr_t            symbol() const { return m_symbol; };
+  ConstStr            symbol() const { return m_symbol; };
   
   SubOpBitField_t*      clone() const { return new SubOpBitField_t( *this ); }
   void                  fills( std::ostream& _sink ) const;
@@ -208,7 +208,7 @@ struct SubOpBitField_t : public BitField_t
 
 struct SpOperandBitField_t : public FixedSizeBitField_t
 {
-  ConstStr_t            m_symbol;
+  ConstStr            m_symbol;
   int                   m_shift;
   unsigned int          m_size_modifier;
   bool                  m_sext;
@@ -218,9 +218,9 @@ struct SpOperandBitField_t : public FixedSizeBitField_t
   SpOperandBitField_t( SpOperandBitField_t const& _src );
 
   unsigned int          dstsize() const;
-  ConstStr_t            constval() const;
+  ConstStr            constval() const;
   
-  ConstStr_t            symbol() const { return m_symbol; };
+  ConstStr            symbol() const { return m_symbol; };
 
   bool                  hasopcode() const { return true; }
   uint64_t              bits() const { return m_value; };

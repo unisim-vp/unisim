@@ -24,12 +24,10 @@
 #include <fstream>
 #include <iostream>
 
-using namespace std;
-
 /** Constructor: Create a Product object
     @param _filename the filename attached to the output code
 */
-Product_t::Product_t( ConstStr_t filename, bool sourcelines )
+Product_t::Product_t( ConstStr filename, bool sourcelines )
   : m_filename( filename ), m_lineno( 1 ), m_sourcelines( sourcelines )
 {
   m_indentations.push_back( 0 );
@@ -40,13 +38,13 @@ Product_t::Product_t( ConstStr_t filename, bool sourcelines )
 */
 FProduct_t::FProduct_t( char const* prefix, char const* suffix, bool sourcelines )
   : Product_t( Str::fmt( "%s%s", prefix, suffix ), sourcelines ),
-    m_sink( new std::ofstream( m_filename ) )
+    m_sink( new std::ofstream( m_filename.str() ) )
 {}
 
 /** Constructor: Create a SProduct object
     @param _prefix the filename prefix attached to the output code
 */
-SProduct_t::SProduct_t( ConstStr_t _filename, bool _sourcelines )
+SProduct_t::SProduct_t( ConstStr _filename, bool _sourcelines )
   : Product_t( _filename, _sourcelines )
 {}
 
@@ -138,7 +136,7 @@ Product_t::require_newline() {
 }
 
 Product_t&
-Product_t::ns_leave( std::vector<ConstStr_t> const& _namespace ) {
+Product_t::ns_leave( std::vector<ConstStr> const& _namespace ) {
   for( intptr_t idx = _namespace.size(); (--idx) >= 0; )
     code( "} " );
   code( "\n" );
@@ -146,9 +144,9 @@ Product_t::ns_leave( std::vector<ConstStr_t> const& _namespace ) {
 }
 
 Product_t&
-Product_t::ns_enter( std::vector<ConstStr_t> const& _namespace ) {
+Product_t::ns_enter( std::vector<ConstStr> const& _namespace ) {
   char const* sep = "";
-  for( std::vector<ConstStr_t>::const_iterator ns = _namespace.begin(); ns < _namespace.end(); sep = " ", ++ ns ) {
+  for( std::vector<ConstStr>::const_iterator ns = _namespace.begin(); ns < _namespace.end(); sep = " ", ++ ns ) {
     code( "%snamespace %s {", sep, (*ns).str() );
   }
   code( "\n" );
@@ -191,25 +189,38 @@ Product_t::template_abbrev( Vect_t<CodePair_t> const& _tparams ) {
 }
 
 Product_t&
-Product_t::flatten_indentation() {
-  if( m_indentations.empty() ) return *this;
+Product_t::flatten_indentation()
+{
+  if (m_indentations.empty())
+    return *this;
+  
   int indentation = m_indentations.back();
-  vector<int>::reverse_iterator prev = m_indentations.rbegin();
-  for( vector<int>::reverse_iterator ind = m_indentations.rbegin(); ind < m_indentations.rend(); ++ind ) {
-    if( *ind == indentation ) continue;
-    prev = ind;
-    break;
-  }
+  
+  typedef std::vector<int>::reverse_iterator RI;
+  RI prev = m_indentations.rbegin();
+  
+  for (RI ind = m_indentations.rbegin(), istop = m_indentations.rend(); ind != istop; ++ind)
+    {
+      if (*ind == indentation) continue;
+      prev = ind;
+      break;
+    }
+  
   indentation = *prev;
-  for( vector<int>::reverse_iterator ind = m_indentations.rbegin(); ind < prev; ++ind )
+  
+  for (RI ind = m_indentations.rbegin(); ind != prev; ++ind )
     *ind = indentation;
+  
   return *this;
 }
 
 
 Product_t&
-Product_t::write( char const* _ptr ) {
-  if( not _ptr ) return *this;
+Product_t::write( char const* _ptr )
+{
+  if (not _ptr)
+    return *this;
+  
   for( char chr = *_ptr; chr; chr = *++_ptr ) {
     if( chr == '\n' ) {
       int current_indentation = m_indentations.back();
@@ -236,7 +247,7 @@ Product_t::write( char const* _ptr ) {
         if( nlength > 0 ) {
           m_indentations.resize( nlength );
         } else {
-          cerr << "Indentation error (line " << m_lineno << ").\n";
+          std::cerr << "Indentation error (line " << m_lineno << ").\n";
           m_indentations.clear();
           m_indentations.push_back( 0 );
         }

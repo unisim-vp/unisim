@@ -20,7 +20,8 @@
 
 #include <inttypes.h>
 
-struct ReferenceCounter {
+struct ReferenceCounter
+{
   intptr_t              m_count;
   
   ReferenceCounter() : m_count( 0 ) {}
@@ -29,7 +30,8 @@ struct ReferenceCounter {
 };
   
 template <class Object_t>
-class Ptr_t {
+class Ptr_t
+{
   Object_t*             m_object;
   
   void                  retain() { ++ (m_object->ReferenceCounter::m_count); }

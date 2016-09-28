@@ -20,10 +20,10 @@
 
 struct SourceCode_t;
 struct Operation_t;
-struct ActionProto_t;
+struct ActionProto;
 struct Comment_t;
 struct CodePair_t;
-struct Action_t;
+struct Action;
 struct Group_t;
 struct Variable_t;
 struct Inheritance_t;
@@ -31,7 +31,7 @@ struct BitField_t;
 struct Isa;
 struct Product_t;
 struct FProduct_t;
-struct ConstStr_t;
+struct ConstStr;
 struct Generator;
 struct Product_t;
 struct SDClass_t;
