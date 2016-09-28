@@ -96,20 +96,20 @@ Specialization_t::newop()
 
   //  Actions, comments, variables, conditions, and fileloc are
   //  duplicated.
-  Operation_t* res = new Operation_t( symbol, *static_cast<Vect_t<BitField_t>*>( 0 ), m_operation->m_comments,
+  Operation_t* res = new Operation_t( symbol, *static_cast<Vect_t<BitField>*>( 0 ), m_operation->m_comments,
                                       m_operation->m_condition, m_operation->m_fileloc );
   
   res->m_variables = m_operation->m_variables;
   res->m_actions = m_operation->m_actions;
   // Generating new bitfield.
-  Vect_t<BitField_t>& bflist = m_operation->m_bitfields;
+  Vect_t<BitField>& bflist = m_operation->m_bitfields;
   
-  for (Vect_t<BitField_t>::const_iterator bf = bflist.begin(); bf < bflist.end(); ++ bf )
+  for (Vect_t<BitField>::const_iterator bf = bflist.begin(); bf < bflist.end(); ++ bf )
     {
-      OperandBitField_t const* opbf;
+      OperandBitField const* opbf;
       Constraint_t* expr;
-      if ((opbf = dynamic_cast<OperandBitField_t const*>( &**bf )) and (expr = constraint( (**bf).symbol() )) ) {
-        res->m_bitfields.push_back( new SpOperandBitField_t( *opbf, expr->m_value ) );
+      if ((opbf = dynamic_cast<OperandBitField const*>( &**bf )) and (expr = constraint( (**bf).symbol() )) ) {
+        res->m_bitfields.push_back( new SpOperandBitField( *opbf, expr->m_value ) );
       } else {
         res->m_bitfields.push_back( *bf );
       }

@@ -405,7 +405,15 @@ namespace armsec
     U32  GetGPR_usr( uint32_t id ) { /* Only work in system mode instruction */ not_implemented(); return U32(); }
     U32  GetGPR( uint32_t id ) { return reg_values[id]; }
     void SetGPR_usr( uint32_t id, U32 const& value ) { /* Only work in system mode instruction */ not_implemented(); }
-    void SetGPR_mem( uint32_t id, U32 const& value ) { reg_values[id] = value; }
+    
+    // TODO: interworking branches are not correctly handled
+    void SetGPR_mem( uint32_t id, U32 const& value )
+    {
+      if (id != 15)
+        reg_values[id] = value;
+      else
+        next_insn_addr = value;
+    }
     void SetGPR( uint32_t id, U32 const& value ) {
       if (id != 15)
         reg_values[id] = value;

@@ -105,14 +105,14 @@ RiscGenerator::finalize() {
   
   // Process the opcodes needed by the decoder
   for( Vect_t<Operation_t>::const_iterator op = operations.begin(); op < operations.end(); ++ op ) {
-    Vect_t<BitField_t> const& bitfields = (**op).m_bitfields;
+    Vect_t<BitField> const& bitfields = (**op).m_bitfields;
     
     bool vlen = false, outprefix = false, vword = false;
     unsigned int insn_size = 0;
     uint64_t mask = 0, bits = 0;
     
     for (FieldIterator fi( source.m_little_endian, bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
-      if (SeparatorBitField_t const* sbf = dynamic_cast<SeparatorBitField_t const*>( &(fi.item()) )) {
+      if (SeparatorBitField const* sbf = dynamic_cast<SeparatorBitField const*>( &(fi.item()) )) {
         if (sbf->m_rewind and vword) {
           (**op).m_fileloc.err( "error: operation `%s' rewinds a variable length word.", (**op).m_symbol.str() );
           throw GenerationError;
@@ -155,11 +155,11 @@ RiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, ch
   _product.code( "%s = 0x%llx%s;\n", _codename, oc.m_bits, m_insn_cpostfix.str() );
   
   for (FieldIterator fi( source.m_little_endian, _op.m_bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
-    if      (dynamic_cast<SubOpBitField_t const*>( &fi.item() ))
+    if      (dynamic_cast<SubOpBitField const*>( &fi.item() ))
       {
         _product.code( "assert( \"Encode method does not work with sub-operations.\" and false );\n" );
       }
-    else if (OperandBitField_t const* opbf = dynamic_cast<OperandBitField_t const*>( &fi.item() ))
+    else if (OperandBitField const* opbf = dynamic_cast<OperandBitField const*>( &fi.item() ))
       {
         int opsize = membersize( *opbf );
         ConstStr shiftedop;
@@ -185,7 +185,7 @@ RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
   }
   
   for (FieldIterator fi( source.m_little_endian, _op.m_bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
-    if (SubOpBitField_t const* sobf = dynamic_cast<SubOpBitField_t const*>( &fi.item() )) {
+    if (SubOpBitField const* sobf = dynamic_cast<SubOpBitField const*>( &fi.item() )) {
       SDInstance_t const* sdinstance = sobf->m_sdinstance;
       SDClass_t const* sdclass = sdinstance->m_sdclass;
       SourceCode_t const* tpscheme =  sdinstance->m_template_scheme;
@@ -204,7 +204,7 @@ RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
       }
     }
     
-    else if (OperandBitField_t const* opbf = dynamic_cast<OperandBitField_t const*>( &fi.item() ))
+    else if (OperandBitField const* opbf = dynamic_cast<OperandBitField const*>( &fi.item() ))
       {
         _product.code( "%s = ", opbf->m_symbol.str() );
 

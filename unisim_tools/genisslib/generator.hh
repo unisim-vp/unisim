@@ -122,17 +122,17 @@ struct Generator
 };
 
 struct FieldIterator {
-  Vect_t<BitField_t> const& m_bitfields;
+  Vect_t<BitField> const& m_bitfields;
   unsigned int              m_idx;
   unsigned int              m_ref;
   unsigned int              m_pos, m_size;
   unsigned int              m_chkpt_pos, m_chkpt_size;
   
-  FieldIterator( bool little_endian, Vect_t<BitField_t> const& bitfields, unsigned int maxsize );
+  FieldIterator( bool little_endian, Vect_t<BitField> const& bitfields, unsigned int maxsize );
   
   unsigned int      pos() { return m_pos; }
   unsigned int      insn_size() { return (m_ref == 0) ? m_pos + m_size : m_ref - m_pos; }
-  BitField_t const& item();
+  BitField const& item();
   bool              next();
 };
 

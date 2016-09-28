@@ -27,7 +27,7 @@ struct Action;
 struct Group_t;
 struct Variable_t;
 struct Inheritance_t;
-struct BitField_t;
+struct BitField;
 struct Isa;
 struct Product_t;
 struct FProduct_t;

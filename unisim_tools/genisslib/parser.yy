@@ -401,7 +401,7 @@ operation_declaration : op_condition TOK_OP TOK_IDENT bitfield_list_decl
 {
   SourceCode_t*       op_cond = $1;
   ConstStr          symbol = ConstStr( $3, Scanner::symbols );
-  Vect_t<BitField_t>* bitfields = $4;
+  Vect_t<BitField>* bitfields = $4;
   
   {
     Operation_t const* prev_op = Scanner::isa().operation( symbol );
@@ -428,7 +428,7 @@ operation_declaration : op_condition TOK_OP TOK_IDENT bitfield_list_decl
 
 bitfield_list : bitfield
 {
-  $$ = new Vect_t<BitField_t>( $1 );
+  $$ = new Vect_t<BitField>( $1 );
 }
   | bitfield_list ':' bitfield
 {
@@ -438,15 +438,15 @@ bitfield_list : bitfield
 
 bitfield: TOK_INTEGER '[' TOK_INTEGER ']'
 {
-  $$ = new OpcodeBitField_t( $3, $1 );
+  $$ = new OpcodeBitField( $3, $1 );
 }
   | shift sext size_modifier TOK_IDENT '[' TOK_INTEGER ']'
 {
-  $$ = new OperandBitField_t( $6, ConstStr( $4, Scanner::symbols ), $1, $3, $2 );
+  $$ = new OperandBitField( $6, ConstStr( $4, Scanner::symbols ), $1, $3, $2 );
 }
   | '?' '[' TOK_INTEGER ']'
 {
-  $$ = new UnusedBitField_t( $3 );
+  $$ = new UnusedBitField( $3 );
 }
   | '*' TOK_IDENT '[' TOK_IDENT ']'
 {
@@ -459,15 +459,15 @@ bitfield: TOK_INTEGER '[' TOK_INTEGER ']'
     YYABORT;
   }
   
-  $$ = new SubOpBitField_t( symbol, sdinstance );
+  $$ = new SubOpBitField( symbol, sdinstance );
 }
   | '>' '<'
 {
-  $$ = new SeparatorBitField_t( false );
+  $$ = new SeparatorBitField( false );
 }
   | '>' TOK_REWIND '<'
 {
-  $$ = new SeparatorBitField_t( true );
+  $$ = new SeparatorBitField( true );
 }
 ;
 

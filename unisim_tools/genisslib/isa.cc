@@ -247,10 +247,10 @@ Isa::sanity_checks() const
   // Checking operations
   for( Vect_t<Operation_t>::const_iterator op = m_operations.begin(); op < m_operations.end(); ++ op ) {
     // Looking for bitfield conflicts
-    for( Vect_t<BitField_t>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
+    for( Vect_t<BitField>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
       ConstStr bf_symbol = (**bf).symbol();
       if (not bf_symbol.str()) continue;
-      for( Vect_t<BitField_t>::const_iterator pbf = (**op).m_bitfields.begin(); pbf < bf; ++ pbf ) {
+      for( Vect_t<BitField>::const_iterator pbf = (**op).m_bitfields.begin(); pbf < bf; ++ pbf ) {
         ConstStr pbf_symbol = (**pbf).symbol();
         if( pbf_symbol != bf_symbol ) continue;
         (**op).m_fileloc.err( "error: duplicated bit field `%s' in operation `%s'", bf_symbol.str(), (**op).m_symbol.str() );

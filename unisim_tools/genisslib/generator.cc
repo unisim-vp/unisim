@@ -40,7 +40,7 @@ namespace
   {
     std::set<unsigned int> m_insnsizes;
     typedef std::vector<unsigned int> insnsizes_t;
-    typedef Vect_t<BitField_t>::const_iterator bfiter_t;
+    typedef Vect_t<BitField>::const_iterator bfiter_t;
   
   
     void
@@ -52,8 +52,8 @@ namespace
           return;
         }
       
-        BitField_t const& bitfield = **bfitr;
-        if (SeparatorBitField_t const* sbf = dynamic_cast<SeparatorBitField_t const*>( &bitfield ))
+        BitField const& bitfield = **bfitr;
+        if (SeparatorBitField const* sbf = dynamic_cast<SeparatorBitField const*>( &bitfield ))
           {
             if (not sbf->m_rewind) { rwdsize = cursize; continue; }
             if (minsize < cursize) minsize = cursize;
@@ -73,7 +73,7 @@ namespace
   
     OpProperties( Operation_t const& op )
     {
-      Vect_t<BitField_t> const& bitfields = op.m_bitfields;
+      Vect_t<BitField> const& bitfields = op.m_bitfields;
       dig( 0, 0, 0, bitfields.begin(), bitfields.end() );
     }
   };
@@ -92,7 +92,7 @@ Generator::Generator( Isa& _source, Opts const& _options )
   
     if (source.m_asc_worder xor source.m_little_endian) {
       for( Vect_t<Operation_t>::iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
-        Vect_t<BitField_t>& bitfields = (**op).m_bitfields;
+        Vect_t<BitField>& bitfields = (**op).m_bitfields;
         uintptr_t lo = 0, hi = bitfields.size();
         if (hi == 0) continue;
       
@@ -106,11 +106,11 @@ Generator::Generator( Isa& _source, Opts const& _options )
   
     if (rev_forder) {
       for( Vect_t<Operation_t>::iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
-        Vect_t<BitField_t>& bitfields = (**op).m_bitfields;
+        Vect_t<BitField>& bitfields = (**op).m_bitfields;
       
         uintptr_t fbeg = 0, fend = 0, fmax = bitfields.size();
         for ( ; fbeg < fmax; fbeg = fend = fend + 1) {
-          while ((fend < fmax) and (not dynamic_cast<SeparatorBitField_t const*>( &*bitfields[fend] ))) fend += 1;
+          while ((fend < fmax) and (not dynamic_cast<SeparatorBitField const*>( &*bitfields[fend] ))) fend += 1;
           if ((fend - fbeg) < 2) continue;
           uintptr_t lo = fbeg, hi = fend - 1;
         
@@ -796,18 +796,18 @@ Generator::isa_operations_decl( Product_t& _product ) const
     if (source.m_withencode)
       _product.code( " void Encode(%s code) const;\n", codetype_ref().str() );
     
-    for( Vect_t<BitField_t>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf )
+    for( Vect_t<BitField>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf )
       {
-        if      (OperandBitField_t const* opbf = dynamic_cast<OperandBitField_t const*>( &**bf ))
+        if      (OperandBitField const* opbf = dynamic_cast<OperandBitField const*>( &**bf ))
           {
             _product.code( "%sint%d_t %s;\n", (opbf->m_sext ? "" : "u"), membersize( *opbf ), opbf->m_symbol.str() );
           }
-        else if (SpOperandBitField_t const* sopbf = dynamic_cast<SpOperandBitField_t const*>( &**bf ))
+        else if (SpOperandBitField const* sopbf = dynamic_cast<SpOperandBitField const*>( &**bf ))
           {
             _product.code( "static %sint%d_t const %s = %s;\n",
                            (sopbf->m_sext ? "" : "u"), membersize( *sopbf ), sopbf->m_symbol.str(), sopbf->constval().str() );
           }
-        else if (SubOpBitField_t const* sobf = dynamic_cast<SubOpBitField_t const*>( &**bf ))
+        else if (SubOpBitField const* sobf = dynamic_cast<SubOpBitField const*>( &**bf ))
           {
             SDInstance_t const* sdinstance = sobf->m_sdinstance;
             SDClass_t const* sdclass = sdinstance->m_sdclass;
@@ -1400,24 +1400,24 @@ Generator::least_ctype_size( unsigned int bits ) {
   return size;
 }
 
-FieldIterator::FieldIterator( bool little_endian, Vect_t<BitField_t> const& bitfields, unsigned int maxsize )
+FieldIterator::FieldIterator( bool little_endian, Vect_t<BitField> const& bitfields, unsigned int maxsize )
   : m_bitfields( bitfields ), m_idx( (unsigned int)(-1) ),
     m_ref( little_endian ? 0 : maxsize ),
     m_pos( m_ref ), m_size( 0 ),
     m_chkpt_pos( m_pos ), m_chkpt_size( m_size )
 {}
   
-BitField_t const& FieldIterator::item() { return *(m_bitfields[m_idx]); }
+BitField const& FieldIterator::item() { return *(m_bitfields[m_idx]); }
 
 bool
 FieldIterator::next() {
   if ((m_idx+1) >= m_bitfields.size()) return false;
   m_idx += 1;
-  BitField_t const& field = *(m_bitfields[m_idx]);
+  BitField const& field = *(m_bitfields[m_idx]);
   if (m_ref == 0) m_pos += m_size;
   else            m_pos -= field.maxsize();
   m_size = field.maxsize();
-  if (SeparatorBitField_t const* sbf = dynamic_cast<SeparatorBitField_t const*>( &field )) {
+  if (SeparatorBitField const* sbf = dynamic_cast<SeparatorBitField const*>( &field )) {
     if (sbf->m_rewind) { m_pos = m_chkpt_pos; m_size = m_chkpt_size; }
     else               { m_chkpt_pos = m_pos; m_chkpt_size = m_size; }
   }

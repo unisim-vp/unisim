@@ -148,11 +148,11 @@ CiscOpCode::details( std::ostream& _sink ) const
  */
 
 struct BFWordIterator {
-  Vect_t<BitField_t>::const_iterator m_left, m_right, m_end;
+  Vect_t<BitField>::const_iterator m_left, m_right, m_end;
   unsigned int                       m_count, m_minsize, m_maxsize;
   bool                               m_rewind, m_has_operand, m_has_subop;
   
-  BFWordIterator( Vect_t<BitField_t> const& _bitfields )
+  BFWordIterator( Vect_t<BitField> const& _bitfields )
     : m_right( _bitfields.begin() - 1 ), m_end( _bitfields.end() ),
       m_count( 0 ), m_minsize( 0 ), m_maxsize( 0 ), m_rewind( false ),
       m_has_operand( false ), m_has_subop( false )
@@ -164,15 +164,15 @@ struct BFWordIterator {
     if( m_left >= m_end ) return false;
     m_count = 0; m_minsize = 0; m_maxsize = 0;
     m_has_operand = false; m_has_subop = false;
-    for (m_right = m_left; (m_right < m_end) and (not dynamic_cast<SeparatorBitField_t const*>( &**m_right )); ++m_right)
+    for (m_right = m_left; (m_right < m_end) and (not dynamic_cast<SeparatorBitField const*>( &**m_right )); ++m_right)
       {
         m_count += 1;
         m_minsize += (**m_right).minsize();
         m_maxsize += (**m_right).maxsize();
-        if      (dynamic_cast<OperandBitField_t const*>(&**m_right)) m_has_operand = true;
-        else if (dynamic_cast<SubOpBitField_t const*>(&**m_right))   m_has_subop = true;
+        if      (dynamic_cast<OperandBitField const*>(&**m_right)) m_has_operand = true;
+        else if (dynamic_cast<SubOpBitField const*>(&**m_right))   m_has_subop = true;
       }
-    SeparatorBitField_t const* sepbf = dynamic_cast<SeparatorBitField_t const*>( &**m_right );
+    SeparatorBitField const* sepbf = dynamic_cast<SeparatorBitField const*>( &**m_right );
     if ((m_right < m_end) and sepbf) {
       m_rewind = sepbf->m_rewind;
     } else
@@ -200,7 +200,7 @@ CiscGenerator::finalize()
     bool vlen = false, outprefix = false, vword = false;
     
     for (FieldIterator fi( source.m_little_endian, (**op).m_bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
-      if (SeparatorBitField_t const* sbf = dynamic_cast<SeparatorBitField_t const*>( &fi.item() )) {
+      if (SeparatorBitField const* sbf = dynamic_cast<SeparatorBitField const*>( &fi.item() )) {
         if (sbf->m_rewind and vword) {
           (**op).m_fileloc.err( "error: operation `%s' rewinds a variable length word.", (**op).m_symbol.str() );
           throw GenerationError;
@@ -425,12 +425,12 @@ CiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, ch
   for (FieldIterator fi( little_endian, _op.m_bitfields, (*m_insnsizes.rbegin()) ); fi.next(); )
     {
     
-      if (dynamic_cast<SubOpBitField_t const*>( &fi.item() ))
+      if (dynamic_cast<SubOpBitField const*>( &fi.item() ))
         {
           _product.code( "assert( \"Encode method does not work with sub-operations.\" and false );\n" );
         }
     
-      else if (OperandBitField_t const* opbf = dynamic_cast<OperandBitField_t const*>( &fi.item() ))
+      else if (OperandBitField const* opbf = dynamic_cast<OperandBitField const*>( &fi.item() ))
         {
           unsigned int opsize = membersize( *opbf );
           ConstStr shiftedop;
@@ -476,7 +476,7 @@ CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
   
   for (FieldIterator fi( little_endian, _op.m_bitfields, (*m_insnsizes.rbegin()) ); fi.next(); )
     {
-      if (SubOpBitField_t const* sobf = dynamic_cast<SubOpBitField_t const*>( &fi.item() ))
+      if (SubOpBitField const* sobf = dynamic_cast<SubOpBitField const*>( &fi.item() ))
         {
           SDInstance_t const* sdinstance = sobf->m_sdinstance;
           SDClass_t const* sdclass = sdinstance->m_sdclass;
@@ -511,7 +511,7 @@ CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
           _product.code( "}\n" );
         }
     
-      else if (OperandBitField_t const* opbf = dynamic_cast<OperandBitField_t const*>( &fi.item() ))
+      else if (OperandBitField const* opbf = dynamic_cast<OperandBitField const*>( &fi.item() ))
         {
           _product.code( "%s = ", opbf->m_symbol.str() );
           unsigned int opsize = membersize( *opbf );
@@ -576,10 +576,10 @@ void
 CiscGenerator::insn_destructor_decl( Product_t& _product, Operation_t const& _op ) const
 {
   bool subops = false;
-  Vect_t<BitField_t> const& bfs = _op.m_bitfields;
+  Vect_t<BitField> const& bfs = _op.m_bitfields;
   
-  for( Vect_t<BitField_t>::const_iterator bf = bfs.begin(); bf < bfs.end(); ++bf ) {
-    if (dynamic_cast<SubOpBitField_t const*>( &**bf )) { subops = true; break; }
+  for( Vect_t<BitField>::const_iterator bf = bfs.begin(); bf < bfs.end(); ++bf ) {
+    if (dynamic_cast<SubOpBitField const*>( &**bf )) { subops = true; break; }
   }
   
   if( not subops ) return;
@@ -590,10 +590,10 @@ void
 CiscGenerator::insn_destructor_impl( Product_t& _product, Operation_t const& _op ) const
 {
   std::vector<ConstStr> subops;
-  Vect_t<BitField_t> const& bfs = _op.m_bitfields;
+  Vect_t<BitField> const& bfs = _op.m_bitfields;
   
-  for( Vect_t<BitField_t>::const_iterator bf = bfs.begin(); bf < bfs.end(); ++bf ) {
-    if (SubOpBitField_t const* sobf = dynamic_cast<SubOpBitField_t const*>( &**bf ))
+  for( Vect_t<BitField>::const_iterator bf = bfs.begin(); bf < bfs.end(); ++bf ) {
+    if (SubOpBitField const* sobf = dynamic_cast<SubOpBitField const*>( &**bf ))
       subops.push_back( sobf->m_symbol );
   }
   

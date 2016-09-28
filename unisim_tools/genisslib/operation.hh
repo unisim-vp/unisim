@@ -29,15 +29,15 @@
 /** An operation object */
 struct Operation_t : virtual ReferenceCounter
 {
-  ConstStr                    m_symbol;            /**< The associated symbol */
-  Vect_t<BitField_t>            m_bitfields;         /**< The bit field list of the operation */
+  ConstStr                      m_symbol;            /**< The associated symbol */
+  Vect_t<BitField>            m_bitfields;         /**< The bit field list of the operation */
   Vect_t<Action>                m_actions;           /**< The list of actions of the operation */
   Vect_t<Comment_t>             m_comments;          /**< The list of the C comment associated with the operation */
   Vect_t<Variable_t>            m_variables;         /**< The list of variables associated with the operation */
   Ptr_t<SourceCode_t>           m_condition;         /**< The condition associated with the operation */
   FileLoc_t                     m_fileloc;           /**< The file location where the operation was declared */
   
-  Operation_t( ConstStr _symbol, Vect_t<BitField_t>& _bitfields, Vect_t<Comment_t>& _comments,
+  Operation_t( ConstStr _symbol, Vect_t<BitField>& _bitfields, Vect_t<Comment_t>& _comments,
                SourceCode_t* _op_condition, FileLoc_t const& _fileloc );
   ~Operation_t();
   

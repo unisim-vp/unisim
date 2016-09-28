@@ -36,7 +36,7 @@
     @param lineno a line number where the operation was found
     @return an operation object
 */
-Operation_t::Operation_t( ConstStr _symbol, Vect_t<BitField_t>& _bitfields, Vect_t<Comment_t>& _comments,
+Operation_t::Operation_t( ConstStr _symbol, Vect_t<BitField>& _bitfields, Vect_t<Comment_t>& _comments,
                           SourceCode_t* _op_condition, FileLoc_t const& _fileloc )
   : m_symbol( _symbol ), m_bitfields( _bitfields ), m_comments( _comments ),
     m_condition( _op_condition ), m_fileloc( _fileloc )
@@ -90,22 +90,24 @@ Operation_t::add( Action* _action ) {
 */
 
 std::ostream&
-operator<<( std::ostream& _sink, Operation_t const& _op ) {
-  _sink << "op " << _op.m_symbol << '(';
+operator<<( std::ostream& _sink, Operation_t const& _op )
+{
+  _sink << "op " << _op.m_symbol << "( ";
   
   char const* sep = "";
-  for( Vect_t<BitField_t>::const_iterator bf = _op.m_bitfields.begin(); bf < _op.m_bitfields.end(); ++ bf, sep = ":" )
+  for (Vect_t<BitField>::const_iterator bf = _op.m_bitfields.begin(); bf < _op.m_bitfields.end(); sep = " : ", ++ bf)
     _sink << sep << (**bf);
   
-  _sink << ')';
+  _sink << " );\n";
   
-  if( not _op.m_variables.empty() ) {
-    _sink << " var ";
-    sep = "";
-    for( Vect_t<Variable_t>::const_iterator var = _op.m_variables.begin(); var < _op.m_variables.end(); sep = ", ", ++ var )
-      _sink << sep << *(*var);
-  }
-  _sink << "\n\n";
+  if (not _op.m_variables.empty())
+    {
+      _sink << _op.m_symbol << ".var ";
+      sep = "";
+      for( Vect_t<Variable_t>::const_iterator var = _op.m_variables.begin(); var < _op.m_variables.end(); sep = ", ", ++ var )
+        _sink << sep << *(*var);
+    }
+  _sink << ";\n\n";
   
   for( Vect_t<Action>::const_iterator action = _op.m_actions.begin(); action < _op.m_actions.end(); ++ action )
     _sink << *(*action) << '\n';

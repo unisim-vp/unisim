@@ -37,8 +37,8 @@ union  yylval_t
   Group_t*                     group;                  /**< A group object */
   ActionProto*                 actionproto;            /**< An action prototype */
   Action*                      action;                 /**< An action */
-  BitField_t*                  bitfield;               /**< A bit field */
-  Vect_t<BitField_t>*          bitfield_list;          /**< A bit field list */
+  BitField*                  bitfield;               /**< A bit field */
+  Vect_t<BitField>*          bitfield_list;          /**< A bit field list */
   Variable_t*                  variable;               /**< A variable object */
   Vect_t<Variable_t>*          variable_list;          /**< A variable list object */
   Constraint_t*                constraint;             /**< A constraint object */
