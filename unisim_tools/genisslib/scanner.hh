@@ -28,8 +28,8 @@
 struct Scanner
 {
   static bool                     aborted_scanning; ///< true if scanning was aborted, false otherwise
-  static FileLoc_t                fileloc;          ///< file location in scanned file
-  static FileLoc_t                fileloc_mlt;      ///< Starting line number of multi-line tokens
+  static FileLoc                fileloc;          ///< file location in scanned file
+  static FileLoc                fileloc_mlt;      ///< Starting line number of multi-line tokens
   static int                      bracecount;       ///< Global opened braces count
   static std::vector<int>         scs;
   static ConstStr::Pool           symbols;          ///< The symbol database
@@ -39,10 +39,10 @@ struct Scanner
   
   struct Include_t {
     uint8_t*                      m_state_backup;
-    FileLoc_t                     m_fileloc;
+    FileLoc                     m_fileloc;
     Include_t*                    m_next;
     
-    Include_t( void const* _state, intptr_t _size, FileLoc_t const& _fileloc, Include_t* _next );
+    Include_t( void const* _state, intptr_t _size, FileLoc const& _fileloc, Include_t* _next );
     ~Include_t();
     void                          restore( void* _state, intptr_t _size );
   };

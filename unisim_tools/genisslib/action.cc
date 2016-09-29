@@ -31,7 +31,7 @@
     @param lineno a line number where the action was found
 */
 Action::Action( ActionProto const* _actionproto, SourceCode* _source_code,
-                    Vector<Comment>& _comments, FileLoc_t const& _fileloc )
+                    Vector<Comment>& _comments, FileLoc const& _fileloc )
   : m_operation( 0 ), m_actionproto( _actionproto ), m_source_code( _source_code ),
     m_comments( _comments ), m_fileloc( _fileloc )
 {}
@@ -47,7 +47,7 @@ Action::~Action() {}
 std::ostream&
 operator<<( std::ostream& sink, Action const& action )
 {
-  sink << action.m_operation->m_symbol << '.' << action.m_actionproto->m_symbol << " = " << (*action.m_source_code);
+  sink << action.m_operation->symbol << '.' << action.m_actionproto->m_symbol << " = " << (*action.m_source_code);
   
   return sink;
 }
@@ -65,7 +65,7 @@ operator<<( std::ostream& sink, Action const& action )
 */
 ActionProto::ActionProto( ActionProto::type_t _type, ConstStr _symbol, SourceCode* _returns,
                               Vector<CodePair>& _params, bool _constness, SourceCode* _defaultcode,
-                              Vector<Comment>& _comments, FileLoc_t const& _fileloc )
+                              Vector<Comment>& _comments, FileLoc const& _fileloc )
   : m_type( _type ), m_symbol( _symbol ), m_returns( _returns ),
     m_params( _params ), m_constness( _constness ), m_defaultcode( _defaultcode ),
     m_comments( _comments ), m_fileloc( _fileloc )

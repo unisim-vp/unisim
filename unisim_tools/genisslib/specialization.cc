@@ -74,7 +74,7 @@ Specialization::~Specialization() {};
 */
 std::ostream&
 operator<<( std::ostream& _sink, Specialization const& _var ) {
-  _sink << _var.m_operation->m_symbol << " ( ";
+  _sink << _var.m_operation->symbol << " ( ";
   char const* sep = "";
   for( Vector<Constraint>::const_iterator node = _var.m_constraints.begin(); node < _var.m_constraints.end(); ++node, sep = ", " )
     _sink << sep << (**node);
@@ -88,7 +88,7 @@ Specialization::newop()
   ConstStr symbol; // The symbol of the operation
   {
     std::string buffer;
-    buffer.append( "__spec__" ).append( m_operation->m_symbol.str() );
+    buffer.append( "__spec__" ).append( m_operation->symbol.str() );
     for( Vector<Constraint>::const_iterator expr = m_constraints.begin(); expr < m_constraints.end(); ++ expr )
       buffer+= Str::fmt( "_%s_%x", (**expr).m_symbol.str(), (**expr).m_value ).str();
     symbol = Str::tokenize( buffer.c_str() );
@@ -96,22 +96,22 @@ Specialization::newop()
 
   //  Actions, comments, variables, conditions, and fileloc are
   //  duplicated.
-  Operation* res = new Operation( symbol, *static_cast<Vector<BitField>*>( 0 ), m_operation->m_comments,
-                                      m_operation->m_condition, m_operation->m_fileloc );
+  Operation* res = new Operation( symbol, *static_cast<Vector<BitField>*>( 0 ), m_operation->comments,
+                                      m_operation->condition, m_operation->fileloc );
   
-  res->m_variables = m_operation->m_variables;
-  res->m_actions = m_operation->m_actions;
+  res->variables = m_operation->variables;
+  res->actions = m_operation->actions;
   // Generating new bitfield.
-  Vector<BitField>& bflist = m_operation->m_bitfields;
+  Vector<BitField>& bflist = m_operation->bitfields;
   
   for (Vector<BitField>::const_iterator bf = bflist.begin(); bf < bflist.end(); ++ bf )
     {
       OperandBitField const* opbf;
       Constraint* expr;
       if ((opbf = dynamic_cast<OperandBitField const*>( &**bf )) and (expr = constraint( (**bf).getsymbol() )) ) {
-        res->m_bitfields.push_back( new SpOperandBitField( *opbf, expr->m_value ) );
+        res->bitfields.push_back( new SpOperandBitField( *opbf, expr->m_value ) );
       } else {
-        res->m_bitfields.push_back( *bf );
+        res->bitfields.push_back( *bf );
       }
     }
   

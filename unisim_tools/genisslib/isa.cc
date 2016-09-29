@@ -56,8 +56,8 @@ Isa::~Isa() {}
 Operation*
 Isa::operation( ConstStr _symbol )
 {
-  for( Vector<Operation>::iterator op = m_operations.begin(); op < m_operations.end(); ++ op )
-    if( (*op)->m_symbol == _symbol ) return *op;
+  for (Vector<Operation>::iterator op = m_operations.begin(); op < m_operations.end(); ++ op)
+    if ((**op).symbol == _symbol) return *op;
   
   return 0;
 }
@@ -67,7 +67,7 @@ oplist_insert_unique( Vector<Operation>& _oplist, Operation* _op )
 {
   // Check for duplicates
   for (Vector<Operation>::const_iterator node = _oplist.begin(); node < _oplist.end(); ++ node)
-    { if ((**node).m_symbol == _op->m_symbol) return; }
+    { if ((**node).symbol == _op->symbol) return; }
   _oplist.append( _op );
 }
 
@@ -92,7 +92,7 @@ Isa::operations( ConstStr _symbol, Vector<Operation>& _oplist )
   if (Group* group = Scanner::isa().group( _symbol ))
     {
       /* Symbol points to a group */
-      for( Vector<Operation>::iterator gop = group->m_operations.begin(); gop < group->m_operations.end(); ++ gop )
+      for (Vector<Operation>::iterator gop = group->operations.begin(); gop < group->operations.end(); ++ gop)
         oplist_insert_unique( _oplist, *gop );
       return true;
     }
@@ -107,7 +107,7 @@ Isa::operations( ConstStr _symbol, Vector<Operation>& _oplist )
 void
 Isa::remove( Operation* _op )
 {
-  for( Vector<Operation>::iterator iter = m_operations.begin(); iter < m_operations.end(); ++ iter ) {
+  for (Vector<Operation>::iterator iter = m_operations.begin(); iter < m_operations.end(); ++ iter) {
     if (*iter != _op) continue;
     m_operations.erase( iter );
     return;
@@ -123,7 +123,7 @@ Isa::add( Operation* _op )
 {
   m_operations.append( _op );
   for (GroupAccumulators::iterator itr = m_group_accs.begin(), end = m_group_accs.end(); itr != end; ++itr)
-    oplist_insert_unique( itr->second->m_operations, _op );
+    oplist_insert_unique( itr->second->operations, _op );
 }
 
 /** Search the global group lists for the given symbol
@@ -133,8 +133,8 @@ Isa::add( Operation* _op )
 Group*
 Isa::group( ConstStr _symbol )
 {
-  for( Vector<Group>::iterator group = m_groups.begin(); group < m_groups.end(); ++ group )
-    if( (*group)->m_symbol == _symbol ) return *group;
+  for (Vector<Group>::iterator group = m_groups.begin(); group < m_groups.end(); ++ group)
+    if ((*group)->symbol == _symbol) return *group;
   
   return 0;
 }
@@ -146,7 +146,7 @@ Isa::group( ConstStr _symbol )
 ActionProto const*
 Isa::actionproto( ConstStr _symbol ) const
 {
-  for( Vector<ActionProto>::const_iterator proto = m_actionprotos.begin(); proto < m_actionprotos.end(); ++ proto )
+  for (Vector<ActionProto>::const_iterator proto = m_actionprotos.begin(); proto < m_actionprotos.end(); ++ proto)
     if( (*proto)->m_symbol == _symbol ) return *proto;
 
   return 0;
@@ -158,7 +158,7 @@ Isa::actionproto( ConstStr _symbol ) const
 void
 Isa::remove( ActionProto const* _ap )
 {
-  for( Vector<ActionProto>::iterator iter = m_actionprotos.begin(); iter < m_actionprotos.end(); ++ iter ) {
+  for (Vector<ActionProto>::iterator iter = m_actionprotos.begin(); iter < m_actionprotos.end(); ++ iter) {
     if (*iter != _ap) continue;
     m_actionprotos.erase( iter );
     return;
@@ -176,7 +176,7 @@ Isa::expand( std::ostream& _sink ) const
   if( not m_namespace.empty() ) {
     _sink << "namespace ";
     char const* sep = "";
-    for( std::vector<ConstStr>::const_iterator piece = m_namespace.begin(); piece < m_namespace.end(); sep = "::", ++ piece )
+    for (std::vector<ConstStr>::const_iterator piece = m_namespace.begin(); piece < m_namespace.end(); sep = "::", ++ piece)
       _sink << sep << (*piece);
     _sink << '\n';
   }
@@ -185,7 +185,7 @@ Isa::expand( std::ostream& _sink ) const
   if( not m_tparams.empty() ) {
     _sink << "template <";
     char const* sep = "";
-    for( Vector<CodePair>::const_iterator iter = m_tparams.begin(); iter < m_tparams.end(); sep = ", ", ++ iter )
+    for (Vector<CodePair>::const_iterator iter = m_tparams.begin(); iter < m_tparams.end(); sep = ", ", ++ iter)
       _sink << sep << *(*iter);
     _sink << ">\n";
   }
@@ -195,27 +195,27 @@ Isa::expand( std::ostream& _sink ) const
   _sink << "set endianness " << (m_little_endian ? "little" : "big") << "\n";
   _sink << "set addressclass {" << m_addrtype << "}\n";
   
-  for( Vector<SourceCode>::const_iterator srccode = m_decl_srccodes.begin(); srccode < m_decl_srccodes.end(); ++ srccode )
+  for (Vector<SourceCode>::const_iterator srccode = m_decl_srccodes.begin(); srccode < m_decl_srccodes.end(); ++ srccode)
     _sink << "decl " << *(*srccode) << "\n\n";
-  for( Vector<SourceCode>::const_iterator srccode = m_impl_srccodes.begin(); srccode < m_impl_srccodes.end(); ++ srccode )
+  for (Vector<SourceCode>::const_iterator srccode = m_impl_srccodes.begin(); srccode < m_impl_srccodes.end(); ++ srccode)
     _sink << "impl " << *(*srccode) << "\n\n";
   _sink << '\n';
 
   if( not m_vars.empty() ) {
     _sink << "var ";
     char const* sep = "";
-    for( Vector<Variable>::const_iterator var = m_vars.begin(); var < m_vars.end(); sep = ", ", ++ var )
+    for (Vector<Variable>::const_iterator var = m_vars.begin(); var < m_vars.end(); sep = ", ", ++ var)
       _sink << sep << *(*var);
     _sink << '\n';
   }
   _sink << '\n';
   
-  for( Vector<ActionProto>::const_iterator ap = m_actionprotos.begin(); ap < m_actionprotos.end(); ++ap )
+  for (Vector<ActionProto>::const_iterator ap = m_actionprotos.begin(); ap < m_actionprotos.end(); ++ap)
     _sink << *(*ap) << '\n';
   
   _sink << '\n';
   
-  for( Vector<Operation>::const_iterator op = m_operations.begin(); op < m_operations.end(); ++ op )
+  for (Vector<Operation>::const_iterator op = m_operations.begin(); op < m_operations.end(); ++ op)
     _sink << *(*op) << '\n';
 }
 
@@ -245,37 +245,37 @@ Isa::sanity_checks() const
     }
   
   // Checking operations
-  for( Vector<Operation>::const_iterator op = m_operations.begin(); op < m_operations.end(); ++ op ) {
+  for (Vector<Operation>::const_iterator op = m_operations.begin(); op < m_operations.end(); ++ op) {
     // Looking for bitfield conflicts
-    for( Vector<BitField>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
+    for (Vector<BitField>::const_iterator bf = (**op).bitfields.begin(); bf < (**op).bitfields.end(); ++ bf) {
       ConstStr bf_symbol = (**bf).getsymbol();
       if (not bf_symbol.str()) continue;
-      for( Vector<BitField>::const_iterator pbf = (**op).m_bitfields.begin(); pbf < bf; ++ pbf ) {
+      for (Vector<BitField>::const_iterator pbf = (**op).bitfields.begin(); pbf < bf; ++ pbf) {
         ConstStr pbf_symbol = (**pbf).getsymbol();
         if (pbf_symbol != bf_symbol) continue;
-        (**op).m_fileloc.err( "error: duplicated bit field `%s' in operation `%s'", bf_symbol.str(), (**op).m_symbol.str() );
+        (**op).fileloc.err( "error: duplicated bit field `%s' in operation `%s'", bf_symbol.str(), (**op).symbol.str() );
         return false;
       }
     }
     // Looking for variable conflicts
-    if( not (**op).m_variables.empty() ) {
-      for( Vector<Variable>::const_iterator checked = (**op).m_variables.begin(); checked < (**op).m_variables.end(); ++ checked ) {
+    if( not (**op).variables.empty() ) {
+      for (Vector<Variable>::const_iterator checked = (**op).variables.begin(); checked < (**op).variables.end(); ++ checked) {
         Vector<Variable>::const_iterator found;
         for (found = m_vars.begin(); found < m_vars.end(); ++ found)
           if ((**found).symbol == (**checked).symbol) break;
         
         if( (found < m_vars.end()) ) {
           (**checked).ctype->fileloc.err( "error: in operation `%s', variable `%s' is already defined as global",
-                                              (**op).m_symbol.str(), (**checked).symbol.str() );
+                                              (**op).symbol.str(), (**checked).symbol.str() );
           (**found).ctype->fileloc.err( "variable `%s' previously defined here", (**found).symbol.str() );
           return false;
         }
         
-        for( found = (**op).m_variables.begin(); found < checked; ++ found )
+        for (found = (**op).variables.begin(); found < checked; ++ found)
           if( (**found).symbol == (**checked).symbol ) break;
 
         if (found < checked) {
-          (**checked).ctype->fileloc.err( "error: in operation `%s', variable `%s' is defined several times", (**op).m_symbol.str(), (**checked).symbol.str() );
+          (**checked).ctype->fileloc.err( "error: in operation `%s', variable `%s' is defined several times", (**op).symbol.str(), (**checked).symbol.str() );
           return false;
         }
       }
@@ -286,7 +286,7 @@ Isa::sanity_checks() const
 
 // SubDecoder_t const*
 // Isa::subdecoder( ConstStr _symbol ) const {
-//   for( Vector<SubDecoder_t>::const_iterator sd = m_subdecoders.begin(); sd < m_subdecoders.end(); ++ sd )
+//   for (Vector<SubDecoder_t>::const_iterator sd = m_subdecoders.begin(); sd < m_subdecoders.end(); ++ sd)
 //     if( (**sd).m_symbol == _symbol ) return *sd;
 //   return 0;
 // }
@@ -303,7 +303,7 @@ Isa::deps( std::ostream& _sink, char const* _prefix ) const
   } else {
     _sink << _prefix << ".tcc " << _prefix << ".hh:";
   }
-  for( std::vector<ConstStr>::const_iterator inc = m_includes.begin(); inc < m_includes.end(); ++ inc )
+  for (std::vector<ConstStr>::const_iterator inc = m_includes.begin(); inc < m_includes.end(); ++ inc)
     _sink << " \\\n " << *inc;
   _sink << "\n\n";
 }
@@ -311,7 +311,7 @@ Isa::deps( std::ostream& _sink, char const* _prefix ) const
 void
 Isa::specialize()
 {
-  for( Vector<Specialization>::iterator spec = m_specializations.begin(); spec < m_specializations.end(); ++ spec ) {
+  for (Vector<Specialization>::iterator spec = m_specializations.begin(); spec < m_specializations.end(); ++ spec) {
     m_operations.push_back( (**spec).newop() );
   }
 }
@@ -411,7 +411,7 @@ Isa::setparam( ConstStr key, unsigned int value )
 SDClass const*
 Isa::sdclass( std::vector<ConstStr>& _namespace ) const
 {
-  for( Vector<SDClass>::const_iterator sdc = m_sdclasses.begin(); sdc != m_sdclasses.end(); ++ sdc ) {
+  for (Vector<SDClass>::const_iterator sdc = m_sdclasses.begin(); sdc != m_sdclasses.end(); ++ sdc) {
     if( (**sdc).m_namespace == _namespace ) return *sdc;
   }
   return 0;
@@ -420,14 +420,14 @@ Isa::sdclass( std::vector<ConstStr>& _namespace ) const
 SDInstance const*
 Isa::sdinstance( ConstStr _symbol ) const
 {
-  for( Vector<SDInstance>::const_iterator sdi = m_sdinstances.begin(); sdi != m_sdinstances.end(); ++ sdi ) {
+  for (Vector<SDInstance>::const_iterator sdi = m_sdinstances.begin(); sdi != m_sdinstances.end(); ++ sdi) {
     if( (**sdi).m_symbol == _symbol ) return *sdi;
   }
   return 0;
 }
 
 void
-Isa::group_command( ConstStr group_symbol, ConstStr _command, FileLoc_t const& fl )
+Isa::group_command( ConstStr group_symbol, ConstStr _command, FileLoc const& fl )
 {
   static ConstStr  group_begin( "begin",  Scanner::symbols );
   static ConstStr  group_end  ( "end",    Scanner::symbols );
@@ -452,14 +452,14 @@ Isa::group_command( ConstStr group_symbol, ConstStr _command, FileLoc_t const& f
         Operation* prev_op = Scanner::isa().operation( group_symbol );
         if (prev_op) {
           fl.err( "error: group name conflicts with operation `%s'", group_symbol.str() );
-          prev_op->m_fileloc.err( "operation `%s' previously defined here", group_symbol.str() );
+          prev_op->fileloc.err( "operation `%s' previously defined here", group_symbol.str() );
           throw ParseError();
         }
 
         Group* prev_grp = Scanner::isa().group( group_symbol );
         if (prev_grp) {
           fl.err( "conflicting group `%s' redefined", group_symbol.str() );
-          prev_grp->m_fileloc.err( "group `%s' previously defined here", group_symbol.str() );
+          prev_grp->fileloc.err( "group `%s' previously defined here", group_symbol.str() );
           throw ParseError();
         }
       }

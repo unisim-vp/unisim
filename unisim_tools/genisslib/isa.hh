@@ -57,7 +57,7 @@ struct Isa
   typedef std::map<ConstStr,Group*> GroupAccumulators;
   GroupAccumulators             m_group_accs;      /**< Active group accumulators */
   
-  struct Ordering { FileLoc_t fileloc; std::vector<ConstStr> symbols; };
+  struct Ordering { FileLoc fileloc; std::vector<ConstStr> symbols; };
   typedef std::vector<Ordering> Orderings;
   Orderings                     m_user_orderings;
 
@@ -93,7 +93,7 @@ struct Isa
   
   struct ParseError {};
   
-  void                          group_command( ConstStr _symbol, ConstStr _command, FileLoc_t const& fl );
+  void                          group_command( ConstStr _symbol, ConstStr _command, FileLoc const& fl );
 };
 
 #endif // __ISA_HH__

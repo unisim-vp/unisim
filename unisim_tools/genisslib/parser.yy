@@ -46,10 +46,10 @@ create_action( Operation* _operation, ActionProto const* _actionproto, SourceCod
 
   if (prev_action) {
     Scanner::fileloc.err( "error: action `%s.%s' redefined",
-                          _operation->m_symbol.str(), _actionproto->m_symbol.str() );
+                          _operation->symbol.str(), _actionproto->m_symbol.str() );
     
     prev_action->m_fileloc.err( "action `%s.%s' previously defined here",
-                                _operation->m_symbol.str(), _actionproto->m_symbol.str() );
+                                _operation->symbol.str(), _actionproto->m_symbol.str() );
     exit( -1 );
   }
   
@@ -172,7 +172,7 @@ subdecoder_instance:
   SourceCode* template_scheme = $4;
   
   std::vector<ConstStr> nmspc( nmspc_in->size(), ConstStr() );
-  for( intptr_t idx = nmspc_in->size(); (--idx) >= 0; )
+  for (intptr_t idx = nmspc_in->size(); (--idx) >= 0;)
     nmspc[idx] = ConstStr( (*nmspc_in)[idx], Scanner::symbols );
   delete nmspc_in;
   
@@ -222,7 +222,7 @@ subdecoder_class:
   UIntVector* insnsizes = $4;
   
   std::vector<ConstStr> nmspc( nmspc_in->size(), ConstStr() );
-  for( intptr_t idx = nmspc_in->size(); (--idx) >= 0; )
+  for (intptr_t idx = nmspc_in->size(); (--idx) >= 0;)
     nmspc[idx] = ConstStr( (*nmspc_in)[idx], Scanner::symbols );
   delete nmspc_in;
   
@@ -351,7 +351,7 @@ namespace_declaration: TOK_NAMESPACE namespace_list
 {
   StringVector* nmspc = $2;
   
-  for( StringVector::const_iterator ident = nmspc->begin(); ident != nmspc->end(); ++ident ) {
+  for (StringVector::const_iterator ident = nmspc->begin(); ident != nmspc->end(); ++ident) {
     Scanner::isa().m_namespace.push_back( ConstStr( *ident, Scanner::symbols ) );
   }
   
@@ -407,14 +407,14 @@ operation_declaration : op_condition TOK_OP TOK_IDENT bitfield_list_decl
     Operation const* prev_op = Scanner::isa().operation( symbol );
     if (prev_op) {
       Scanner::fileloc.err( "error: operation `%s' redefined", symbol.str() );
-      prev_op->m_fileloc.err( "operation `%s' previously defined here", symbol.str() );
+      prev_op->fileloc.err( "operation `%s' previously defined here", symbol.str() );
       YYABORT;
     }
     
     Group const* prev_grp = Scanner::isa().group( symbol );
     if (prev_grp) {
       Scanner::fileloc.err( "error: operation `%s' redefined", symbol.str() );
-      prev_grp->m_fileloc.err( "group `%s' previously defined here", symbol.str() );
+      prev_grp->fileloc.err( "group `%s' previously defined here", symbol.str() );
     }
   }
 
@@ -529,13 +529,13 @@ op_var_list_declaration: TOK_IDENT '.' TOK_VAR var_list
   Operation* operation = Scanner::isa().operation( target_symbol );
   if (operation) {
     /* Target symbol points to an operation */
-    operation->m_variables.append( *var_list );
+    operation->variables.append( *var_list );
   } else {
     Group* group = Scanner::isa().group( target_symbol );
     if (group) {
       /* Target symbol points to a group */
-      for( Vector<Operation>::iterator gop = group->m_operations.begin(); gop < group->m_operations.end(); ++ gop )
-        (**gop).m_variables.append( *var_list );
+      for (Vector<Operation>::iterator gop = group->operations.begin(); gop < group->operations.end(); ++ gop)
+        (**gop).variables.append( *var_list );
     } else {
       /* Target symbol doesn't point to anything */
       Scanner::fileloc.err( "error: undefined operation or group `%s'", target_symbol.str() );
@@ -725,7 +725,7 @@ action_declaration: TOK_IDENT '.' TOK_IDENT '=' TOK_SOURCE_CODE
     Group* group = Scanner::isa().group( target_symbol );
     if (group) {
       /* Target symbol points to a group */
-      for( Vector<Operation>::iterator gop = group->m_operations.begin(); gop < group->m_operations.end(); ++ gop )
+      for (Vector<Operation>::iterator gop = group->operations.begin(); gop < group->operations.end(); ++ gop)
         create_action( *gop, actionproto, actioncode );
     } else {
       /* Target symbol doesn't point to anything */
@@ -812,14 +812,14 @@ group_declaration: TOK_GROUP TOK_IDENT '(' operation_list ')'
     Operation* prev_op = Scanner::isa().operation( group_symbol );
     if (prev_op) {
       Scanner::fileloc.err( "error: group name conflicts with operation `%s'", group_symbol.str() );
-      prev_op->m_fileloc.err( "operation `%s' previously defined here", group_symbol.str() );
+      prev_op->fileloc.err( "operation `%s' previously defined here", group_symbol.str() );
       YYABORT;
     }
     
     Group* prev_grp = Scanner::isa().group( group_symbol );
     if (prev_grp) {
       Scanner::fileloc.err( "error: group `%s' redefined", group_symbol.str() );
-      prev_grp->m_fileloc.err( "group `%s' previously defined here", group_symbol.str() );
+      prev_grp->fileloc.err( "group `%s' previously defined here", group_symbol.str() );
       YYABORT;
     }
   }
@@ -827,7 +827,7 @@ group_declaration: TOK_GROUP TOK_IDENT '(' operation_list ')'
   Group* res = new Group( group_symbol, Scanner::fileloc );
   for (StringVector::const_iterator itr = oplist->begin(), end = oplist->end(); itr != end; ++itr) {
     ConstStr symbol( *itr, Scanner::symbols );
-    if (not Scanner::isa().operations( symbol, res->m_operations ))
+    if (not Scanner::isa().operations( symbol, res->operations ))
       {
         Scanner::fileloc.err( "error: undefined operation or group `%s'", symbol.str() );
         YYABORT;

@@ -28,9 +28,9 @@
 struct Comment : virtual ReferenceCounter
 {
   ConstStr              m_content;
-  FileLoc_t               m_fileloc;
+  FileLoc               m_fileloc;
   
-  Comment( ConstStr _content, FileLoc_t const& _fileloc );
+  Comment( ConstStr _content, FileLoc const& _fileloc );
   Comment( Comment const& _comment );
   ~Comment();
 };

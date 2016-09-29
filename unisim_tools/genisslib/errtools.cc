@@ -23,7 +23,7 @@
 #include <iostream>
 
 void
-FileLoc_t::err( char const* _fmt, ... ) const {
+FileLoc::err( char const* _fmt, ... ) const {
   va_list args;
   for( intptr_t capacity = 128, size; true; capacity = (size > -1) ? size + 1 : capacity * 2 ) {
     /* stack allocation */
@@ -42,7 +42,7 @@ FileLoc_t::err( char const* _fmt, ... ) const {
 }
 
 std::ostream&
-FileLoc_t::loc( std::ostream& _sink ) const
+FileLoc::loc( std::ostream& _sink ) const
 {
   _sink << m_name << ':' << m_line << ':' << m_column << ": ";
   return _sink;

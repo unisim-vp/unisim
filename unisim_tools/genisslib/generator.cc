@@ -73,7 +73,7 @@ namespace
   
     OpProperties( Operation const& op )
     {
-      Vector<BitField> const& bitfields = op.m_bitfields;
+      Vector<BitField> const& bitfields = op.bitfields;
       dig( 0, 0, 0, bitfields.begin(), bitfields.end() );
     }
   };
@@ -92,7 +92,7 @@ Generator::Generator( Isa& _source, Opts const& _options )
   
     if (source.m_asc_worder xor source.m_little_endian) {
       for( Vector<Operation>::iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
-        Vector<BitField>& bitfields = (**op).m_bitfields;
+        Vector<BitField>& bitfields = (**op).bitfields;
         uintptr_t lo = 0, hi = bitfields.size();
         if (hi == 0) continue;
       
@@ -106,7 +106,7 @@ Generator::Generator( Isa& _source, Opts const& _options )
   
     if (rev_forder) {
       for( Vector<Operation>::iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
-        Vector<BitField>& bitfields = (**op).m_bitfields;
+        Vector<BitField>& bitfields = (**op).bitfields;
       
         uintptr_t fbeg = 0, fend = 0, fmax = bitfields.size();
         for ( ; fbeg < fmax; fbeg = fend = fend + 1) {
@@ -265,10 +265,10 @@ Generator::toposort()
       switch (opcode1.locate( opcode2 )) {
       default: break;
       case OpCode::Equal:
-        oitr1->first->m_fileloc.err( "error: operation `%s' duplicates operation `%s'", oitr1->first->m_symbol.str(), oitr2->first->m_symbol.str() );
-        oitr2->first->m_fileloc.err( "operation `%s' was declared here", oitr2->first->m_symbol.str() );
-        std::cerr << oitr1->first->m_symbol.str() << ": " << opcode1 << std::endl;
-        std::cerr << oitr2->first->m_symbol.str() << ": " << opcode2 << std::endl;
+        oitr1->first->fileloc.err( "error: operation `%s' duplicates operation `%s'", oitr1->first->symbol.str(), oitr2->first->symbol.str() );
+        oitr2->first->fileloc.err( "operation `%s' was declared here", oitr2->first->symbol.str() );
+        std::cerr << oitr1->first->symbol.str() << ": " << opcode1 << std::endl;
+        std::cerr << oitr2->first->symbol.str() << ": " << opcode2 << std::endl;
         throw GenerationError;
         break;
       case OpCode::Contains: opcode1.setbelow( &opcode2 ); break;
@@ -319,21 +319,21 @@ Generator::toposort()
         switch (opcode1.locate( opcode2 )) {
         default: break;
         case OpCode::Outside:
-          itr->fileloc.loc( log(2) ) << "warning: specializing `" << (**boitr).m_symbol.str() << "'"
-                                     << " with `" << (**aoitr).m_symbol.str() << "' as no effect (no relationship).\n";
+          itr->fileloc.loc( log(2) ) << "warning: specializing `" << (**boitr).symbol.str() << "'"
+                                     << " with `" << (**aoitr).symbol.str() << "' as no effect (no relationship).\n";
           break;
         case OpCode::Contains:
-          itr->fileloc.loc( log(2) ) << "warning: specializing `" << (**boitr).m_symbol.str() << "'"
-                                     << " with `" << (**aoitr).m_symbol.str() << "' as no effect (implicit specialization).\n";
+          itr->fileloc.loc( log(2) ) << "warning: specializing `" << (**boitr).symbol.str() << "'"
+                                     << " with `" << (**aoitr).symbol.str() << "' as no effect (implicit specialization).\n";
           break;
         case OpCode::Inside:
-          itr->fileloc.loc( std::cerr ) << "error: cant specialize `" << (**boitr).m_symbol.str() << "'"
-                                        << " with `" << (**aoitr).m_symbol.str() << "' (would hide the former).\n";
+          itr->fileloc.loc( std::cerr ) << "error: cant specialize `" << (**boitr).symbol.str() << "'"
+                                        << " with `" << (**aoitr).symbol.str() << "' (would hide the former).\n";
           throw GenerationError;
           break;
         case OpCode::Overlaps:
           opcode1.forcebelow( &opcode2 );
-          log(2) << "operation `" << (**aoitr).m_symbol.str() << "' is a forced specialization of operation `" << (**boitr).m_symbol.str() << "'" << std::endl;
+          log(2) << "operation `" << (**aoitr).symbol.str() << "' is a forced specialization of operation `" << (**boitr).symbol.str() << "'" << std::endl;
           break;
         }          
       }
@@ -346,10 +346,10 @@ Generator::toposort()
       if (oitr1->second->locate( *oitr2->second ) != OpCode::Overlaps) continue;
       if (oitr1->second->above( oitr2->second )) continue;
       if (oitr2->second->above( oitr1->second )) continue;
-      oitr1->first->m_fileloc.err( "error: operation `%s' conflicts with operation `%s'", oitr1->first->m_symbol.str(), oitr2->first->m_symbol.str() );
-      oitr2->first->m_fileloc.err( "operation `%s' was declared here", oitr2->first->m_symbol.str() );
-      std::cerr << oitr1->first->m_symbol.str() << ": " << (*oitr1->second) << std::endl;
-      std::cerr << oitr2->first->m_symbol.str() << ": " << (*oitr2->second) << std::endl;
+      oitr1->first->fileloc.err( "error: operation `%s' conflicts with operation `%s'", oitr1->first->symbol.str(), oitr2->first->symbol.str() );
+      oitr2->first->fileloc.err( "operation `%s' was declared here", oitr2->first->symbol.str() );
+      std::cerr << oitr1->first->symbol.str() << ": " << (*oitr1->second) << std::endl;
+      std::cerr << oitr2->first->symbol.str() << ": " << (*oitr2->second) << std::endl;
       throw GenerationError;
     }
   }
@@ -414,8 +414,8 @@ Generator::isastats()
     typedef std::map<ActionProto const*,uint64_t> ActionCount;
     ActionCount actioncount;
     for (Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op) {
-      log(3) << "  " << (**op).m_symbol.str() << ':';
-      for (Vector<Action>::const_iterator action = (**op).m_actions.begin(); action < (**op).m_actions.end(); ++ action) {
+      log(3) << "  " << (**op).symbol.str() << ':';
+      for (Vector<Action>::const_iterator action = (**op).actions.begin(); action < (**op).actions.end(); ++ action) {
         ActionProto const* ap = (**action).m_actionproto;
         log(3) << " ." << ap->m_symbol.str();
         actioncount[ap] += 1;
@@ -783,20 +783,20 @@ Generator::isa_operations_decl( Product& _product ) const
 {
   for( Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
     _product.template_signature( source.m_tparams );
-    _product.code( "class Op%s : public Operation", Str::capitalize( (**op).m_symbol.str() ).str() );
+    _product.code( "class Op%s : public Operation", Str::capitalize( (**op).symbol.str() ).str() );
     _product.template_abbrev( source.m_tparams );
     _product.code( "\n" );
 
     _product.code( "{\n" );
     _product.code( "public:\n" );
-    _product.code( " Op%s(%s code, %s addr);\n", Str::capitalize( (**op).m_symbol.str() ).str(),
+    _product.code( " Op%s(%s code, %s addr);\n", Str::capitalize( (**op).symbol.str() ).str(),
                    codetype_constref().str(), source.m_addrtype.str() );
     insn_destructor_decl( _product, **op );
     insn_getlen_decl( _product, **op );
     if (source.m_withencode)
       _product.code( " void Encode(%s code) const;\n", codetype_ref().str() );
     
-    for( Vector<BitField>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf )
+    for( Vector<BitField>::const_iterator bf = (**op).bitfields.begin(); bf < (**op).bitfields.end(); ++ bf )
       {
         if      (OperandBitField const* opbf = dynamic_cast<OperandBitField const*>( &**bf ))
           {
@@ -820,9 +820,9 @@ Generator::isa_operations_decl( Product& _product ) const
           }
       }
 
-    if (not (**op).m_variables.empty())
+    if (not (**op).variables.empty())
       {
-        for (Vector<Variable>::const_iterator var = (**op).m_variables.begin(); var < (**op).m_variables.end(); ++ var)
+        for (Vector<Variable>::const_iterator var = (**op).variables.begin(); var < (**op).variables.end(); ++ var)
           _product.usercode( (**var).ctype->fileloc, "   %s %s;", (**var).ctype->content.str(), (**var).symbol.str() );
       }
     
@@ -835,7 +835,7 @@ Generator::isa_operations_decl( Product& _product ) const
     }
 
 
-    for( Vector<Action>::const_iterator action = (**op).m_actions.begin(); action < (**op).m_actions.end(); ++ action ) {
+    for( Vector<Action>::const_iterator action = (**op).actions.begin(); action < (**op).actions.end(); ++ action ) {
       ActionProto const* actionproto = (**action).m_actionproto;
       
       if( not actionproto->m_comments.empty() ) {
@@ -966,8 +966,8 @@ Generator::operation_impl( Product& _product ) const {
 void
 Generator::isa_operations_methods( Product& _product ) const {
   for( Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
-    if( not (**op).m_comments.empty() ) {
-      for( Vector<Comment>::const_iterator comm = (**op).m_comments.begin(); comm < (**op).m_comments.end(); ++ comm )
+    if( not (**op).comments.empty() ) {
+      for( Vector<Comment>::const_iterator comm = (**op).comments.begin(); comm < (**op).comments.end(); ++ comm )
         _product.code( "%s\n", (**comm).m_content.str() );
     }
     
@@ -983,14 +983,14 @@ Generator::isa_operations_methods( Product& _product ) const {
         case 1: insn_encode_impl( xxcode_text, **op, "code" ); break;
         }
         _product.template_signature( source.m_tparams );
-        _product.code( " char const* Op%s", Str::capitalize( (**op).m_symbol.str() ).str() );
+        _product.code( " char const* Op%s", Str::capitalize( (**op).symbol.str() ).str() );
         _product.template_abbrev( source.m_tparams );
         _product.code( "::%s_text() const\n", xxcode[step] );
         _product.code( " { return %s; }\n", Str::dqcstring( xxcode_text.m_content.c_str() ).str() );
       }
     }
     
-    for (Vector<Action>::const_iterator action = (**op).m_actions.begin(); action < (**op).m_actions.end(); ++ action) {
+    for (Vector<Action>::const_iterator action = (**op).actions.begin(); action < (**op).actions.end(); ++ action) {
       ActionProto const* actionproto = (**action).m_actionproto;
 
       if( not (**action).m_comments.empty() ) {
@@ -1001,7 +1001,7 @@ Generator::isa_operations_methods( Product& _product ) const {
       if (source.m_withsource) {
         // for cstring version of the method
         _product.template_signature( source.m_tparams );
-        _product.code( " char const* Op%s", Str::capitalize( (**op).m_symbol.str() ).str() );
+        _product.code( " char const* Op%s", Str::capitalize( (**op).symbol.str() ).str() );
         _product.template_abbrev( source.m_tparams );
         _product.code( "::%s_text() const\n", actionproto->m_symbol.str() );
         _product.code( " { return %s; }", Str::dqcstring( (**action).m_source_code->content.str() ).str() );
@@ -1016,7 +1016,7 @@ Generator::isa_operations_methods( Product& _product ) const {
         _product.code( "\nvoid\n" );
       }
 
-      _product.code( " Op%s", Str::capitalize( (**op).m_symbol.str() ).str() );
+      _product.code( " Op%s", Str::capitalize( (**op).symbol.str() ).str() );
       _product.template_abbrev( source.m_tparams );
       _product.code( "::%s(", actionproto->m_symbol.str() );
 
@@ -1039,10 +1039,10 @@ Generator::isa_operations_methods( Product& _product ) const {
     _product.template_signature( source.m_tparams );
     _product.code( "static Operation" );
     _product.template_abbrev( source.m_tparams );
-    _product.code( " *DecodeOp%s(", Str::capitalize( (**op).m_symbol.str() ).str() );
+    _product.code( " *DecodeOp%s(", Str::capitalize( (**op).symbol.str() ).str() );
     _product.code( "%s code, %s addr)\n", codetype_constref().str(), source.m_addrtype.str() );
     _product.code( "{\n" );
-    _product.code( " return new Op%s", Str::capitalize( (**op).m_symbol.str() ).str() );
+    _product.code( " return new Op%s", Str::capitalize( (**op).symbol.str() ).str() );
     _product.template_abbrev( source.m_tparams );
     _product.code( "(code, addr);\n" );
     _product.code( "}\n\n" );
@@ -1053,20 +1053,20 @@ void
 Generator::isa_operations_ctors( Product& _product ) const {
   for( Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
     _product.template_signature( source.m_tparams );
-    _product.code( "Op%s", Str::capitalize( (**op).m_symbol.str() ).str() );
+    _product.code( "Op%s", Str::capitalize( (**op).symbol.str() ).str() );
     _product.template_abbrev( source.m_tparams );
-    _product.code( "::Op%s(%s code, %s addr) : Operation", Str::capitalize( (**op).m_symbol.str() ).str(),
+    _product.code( "::Op%s(%s code, %s addr) : Operation", Str::capitalize( (**op).symbol.str() ).str(),
                    codetype_constref().str(), source.m_addrtype.str() );
     _product.template_abbrev( source.m_tparams );
     _product.code( "(code, addr, \"%s\")\n",
-                   (**op).m_symbol.str() );
+                   (**op).symbol.str() );
 
     _product.code( "{\n" );
     
     insn_decode_impl( _product, **op, "code", "addr" );
 
-    if (not (**op).m_variables.empty()) {
-      for( Vector<Variable>::const_iterator var = (**op).m_variables.begin(); var < (**op).m_variables.end(); ++ var ) {
+    if (not (**op).variables.empty()) {
+      for( Vector<Variable>::const_iterator var = (**op).variables.begin(); var < (**op).variables.end(); ++ var ) {
         if ((**var).cinit) {
           _product.code( "%s = ", (**var).symbol.str() ).usercode( *(**var).cinit ).code( ";\n" );
         }
@@ -1083,7 +1083,7 @@ void
 Generator::isa_operations_encoders( Product& _product ) const {
   for( Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
     _product.template_signature( source.m_tparams );
-    _product.code( "void Op%s", Str::capitalize( (**op).m_symbol.str() ).str() );
+    _product.code( "void Op%s", Str::capitalize( (**op).symbol.str() ).str() );
     _product.template_abbrev( source.m_tparams );
     _product.code( "::Encode(%s code) const\n", codetype_ref().str() );
 
@@ -1146,8 +1146,8 @@ Generator::decoder_impl( Product& _product ) const {
     _product.code( " memset(decode_hash_table, 0, sizeof(decode_hash_table));\n" );
   
   for( Vector<Operation>::const_reverse_iterator op = source.m_operations.rbegin(); op < source.m_operations.rend(); ++ op ) {
-    if( (**op).m_condition ) {
-      _product.code( "if(" ).usercode( *(**op).m_condition ).code( ")" );
+    if( (**op).condition ) {
+      _product.code( "if(" ).usercode( *(**op).condition ).code( ")" );
     }
     _product.code( " decode_table.push_back(DecodeTableEntry" );
     _product.template_abbrev( source.m_tparams );
@@ -1155,7 +1155,7 @@ Generator::decoder_impl( Product& _product ) const {
     insn_bits_code( _product, **op );
     _product.code( ", " );
     insn_mask_code( _product, **op );
-    _product.code( ", DecodeOp%s", Str::capitalize( (**op).m_symbol.str() ).str() );
+    _product.code( ", DecodeOp%s", Str::capitalize( (**op).symbol.str() ).str() );
     _product.template_abbrev( source.m_tparams );
     _product.code( "));\n" );
   }

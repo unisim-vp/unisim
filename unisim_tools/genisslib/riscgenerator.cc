@@ -105,7 +105,7 @@ RiscGenerator::finalize() {
   
   // Process the opcodes needed by the decoder
   for( Vector<Operation>::const_iterator op = operations.begin(); op < operations.end(); ++ op ) {
-    Vector<BitField> const& bitfields = (**op).m_bitfields;
+    Vector<BitField> const& bitfields = (**op).bitfields;
     
     bool vlen = false, outprefix = false, vword = false;
     unsigned int insn_size = 0;
@@ -115,7 +115,7 @@ RiscGenerator::finalize() {
       if (SeparatorBitField const* sbf = dynamic_cast<SeparatorBitField const*>( &(fi.item()) )) {
         if (sbf->rewind and vword)
           {
-            (**op).m_fileloc.err( "error: operation `%s' rewinds a variable length word.", (**op).m_symbol.str() );
+            (**op).fileloc.err( "error: operation `%s' rewinds a variable length word.", (**op).symbol.str() );
             throw GenerationError;
           }
         vword = false;
@@ -133,7 +133,7 @@ RiscGenerator::finalize() {
       bits |= fi.item().bits() << fi.pos();
       mask |= fi.item().mask() << fi.pos();
     }
-    m_opcodes[*op] = new RiscOpCode( (**op).m_symbol, mask, bits, insn_size, vlen );
+    m_opcodes[*op] = new RiscOpCode( (**op).symbol, mask, bits, insn_size, vlen );
   }
   
   this->toposort();
@@ -155,7 +155,7 @@ RiscGenerator::insn_encode_impl( Product& _product, Operation const& _op, char c
   
   _product.code( "%s = 0x%llx%s;\n", _codename, oc.m_bits, m_insn_cpostfix.str() );
   
-  for (FieldIterator fi( source.m_little_endian, _op.m_bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
+  for (FieldIterator fi( source.m_little_endian, _op.bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
     if      (dynamic_cast<SubOpBitField const*>( &fi.item() ))
       {
         _product.code( "assert( \"Encode method does not work with sub-operations.\" and false );\n" );
@@ -185,7 +185,7 @@ RiscGenerator::insn_decode_impl( Product& _product, Operation const& _op, char c
     _product.code( "this->gil_length = %u;\n", oc.m_size );
   }
   
-  for (FieldIterator fi( source.m_little_endian, _op.m_bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
+  for (FieldIterator fi( source.m_little_endian, _op.bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
     if (SubOpBitField const* sobf = dynamic_cast<SubOpBitField const*>( &fi.item() )) {
       SDInstance const* sdinstance = sobf->sdinstance;
       SDClass const* sdclass = sdinstance->m_sdclass;

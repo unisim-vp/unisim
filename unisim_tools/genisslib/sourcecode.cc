@@ -26,7 +26,7 @@ SourceCode const* SourceCode::s_last_srccode = 0;
     @param lineno a line number where was found the C source code
     @return a C source code object
 */
-SourceCode::SourceCode( ConstStr _content, FileLoc_t const& _fileloc )
+SourceCode::SourceCode( ConstStr _content, FileLoc const& _fileloc )
   : content( _content ), fileloc( _fileloc )
 {
   s_last_srccode = this;

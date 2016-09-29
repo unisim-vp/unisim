@@ -24,19 +24,19 @@
 #include <inttypes.h>
 #include <conststr.hh>
 
-struct FileLoc_t
+struct FileLoc
 {
-  FileLoc_t() : m_line( 0 ), m_nxtcol( 0 ), m_column( 0 ) {}
-  FileLoc_t( ConstStr _name, intptr_t _line, intptr_t _column )
+  FileLoc() : m_line( 0 ), m_nxtcol( 0 ), m_column( 0 ) {}
+  FileLoc( ConstStr _name, intptr_t _line, intptr_t _column )
     : m_name( _name ), m_line( _line ), m_nxtcol( 0 ), m_column( _column )
   {}
-  FileLoc_t( FileLoc_t const& _fl )
+  FileLoc( FileLoc const& _fl )
     : m_name( _fl.m_name ), m_line( _fl.m_line ), m_nxtcol( _fl.m_nxtcol ), m_column( _fl.m_column )
   {}
   
-  FileLoc_t& operator=( FileLoc_t const& _fl )
+  FileLoc& operator=( FileLoc const& _fl )
   { m_name = _fl.m_name; m_line = _fl.m_line; m_nxtcol = _fl.m_nxtcol; m_column = _fl.m_column; return *this; }
-  FileLoc_t& assign( ConstStr _name, intptr_t _line, intptr_t _nxtcol )
+  FileLoc& assign( ConstStr _name, intptr_t _line, intptr_t _nxtcol )
   { m_name = _name; m_line = _line; m_nxtcol = _nxtcol; m_column = _nxtcol; return *this; }
   
   void       err( char const* _fmt, ... ) const;

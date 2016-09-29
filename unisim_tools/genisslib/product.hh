@@ -37,7 +37,7 @@ struct Product
   Product( ConstStr _filename, bool _sourcelines );
   virtual ~Product() {};
   
-  Product&          usercode( FileLoc_t const& _fileloc, char const* _format, ... );
+  Product&          usercode( FileLoc const& _fileloc, char const* _format, ... );
   Product&          usercode( SourceCode const& _source );
   Product&          usercode( SourceCode const& _source, char const* _fmt );
   Product&          code( char const* _format, ... );

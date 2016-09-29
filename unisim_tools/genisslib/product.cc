@@ -78,7 +78,7 @@ Product::usercode( SourceCode const& source, char const* fmt )
     @param format a C string with format specifier (like in printf), referenced arguments in the format string must follow
 */
 Product&
-Product::usercode( FileLoc_t const& _fileloc, char const* _fmt, ... ) {
+Product::usercode( FileLoc const& _fileloc, char const* _fmt, ... ) {
   if (m_sourcelines) {
     require_newline();
     code( "#line %u \"%s\"\n", _fileloc.getline(), _fileloc.getname().str() );

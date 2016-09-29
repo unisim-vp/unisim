@@ -32,8 +32,8 @@
 #endif
 
 bool                     Scanner::aborted_scanning = false;
-FileLoc_t                Scanner::fileloc;
-FileLoc_t                Scanner::fileloc_mlt;
+FileLoc                Scanner::fileloc;
+FileLoc                Scanner::fileloc_mlt;
 int                      Scanner::bracecount = 0;
 std::vector<int>         Scanner::scs;
 Vector<Comment>        Scanner::comments;
@@ -199,7 +199,7 @@ Scanner::pop() {
   return true;
 }
 
-Scanner::Include_t::Include_t( void const* _state, intptr_t _size, FileLoc_t const& _fileloc, Include_t* _next )
+Scanner::Include_t::Include_t( void const* _state, intptr_t _size, FileLoc const& _fileloc, Include_t* _next )
   : m_state_backup( 0 ), m_fileloc( _fileloc ), m_next( _next )
 {
   m_state_backup = new uint8_t[_size];

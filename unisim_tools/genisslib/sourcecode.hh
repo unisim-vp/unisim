@@ -28,9 +28,9 @@
 struct SourceCode : virtual ReferenceCounter
 {
   ConstStr               content;    /**< the string containing the C source code */
-  FileLoc_t              fileloc;    /**< the file location where was found the C source code */
+  FileLoc              fileloc;    /**< the file location where was found the C source code */
   
-  SourceCode( ConstStr _content, FileLoc_t const& _fileloc );
+  SourceCode( ConstStr _content, FileLoc const& _fileloc );
   
   static SourceCode const*  s_last_srccode;
 };

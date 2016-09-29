@@ -43,7 +43,7 @@ SDClass::qd_namespace() const {
   return ConstStr( buffer.c_str() );
 }
 
-SDInstance::SDInstance( ConstStr _symbol, SourceCode const* _template_scheme, SDClass const* _sdclass, FileLoc_t const& _fileloc )
+SDInstance::SDInstance( ConstStr _symbol, SourceCode const* _template_scheme, SDClass const* _sdclass, FileLoc const& _fileloc )
   : m_symbol( _symbol ), m_template_scheme( _template_scheme ), m_sdclass( _sdclass ), m_fileloc( _fileloc )
 {}
 

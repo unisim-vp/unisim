@@ -29,20 +29,21 @@
 /** An operation object */
 struct Operation : virtual ReferenceCounter
 {
-  ConstStr                      m_symbol;            /**< The associated symbol */
-  Vector<BitField>            m_bitfields;         /**< The bit field list of the operation */
-  Vector<Action>                m_actions;           /**< The list of actions of the operation */
-  Vector<Comment>             m_comments;          /**< The list of the C comment associated with the operation */
-  Vector<Variable>            m_variables;         /**< The list of variables associated with the operation */
-  Ptr<SourceCode>           m_condition;         /**< The condition associated with the operation */
-  FileLoc_t                     m_fileloc;           /**< The file location where the operation was declared */
-  
-  Operation( ConstStr _symbol, Vector<BitField>& _bitfields, Vector<Comment>& _comments,
-               SourceCode* _op_condition, FileLoc_t const& _fileloc );
+  Operation( ConstStr _symbol,
+             Vector<BitField>& _bitfields, Vector<Comment>& _comments,
+             SourceCode* _op_condition, FileLoc const& _fileloc );
   ~Operation();
   
-  void                          add( Action* _action );
-  Action const*                 action( ActionProto const* _actionproto ) const;
+  void                        add( Action* _action );
+  Action const*               action( ActionProto const* _actionproto ) const;
+
+  ConstStr                    symbol;            /**< The associated symbol */
+  Vector<BitField>            bitfields;         /**< The bit field list of the operation */
+  Vector<Action>              actions;           /**< The list of actions of the operation */
+  Vector<Comment>             comments;          /**< The list of the C comment associated with the operation */
+  Vector<Variable>            variables;         /**< The list of variables associated with the operation */
+  Ptr<SourceCode>             condition;         /**< The condition associated with the operation */
+  FileLoc                   fileloc;           /**< The file location where the operation was declared */
 };
 
 std::ostream& operator<<( std::ostream& _sink, Operation const& _op );
@@ -50,12 +51,12 @@ std::ostream& operator<<( std::ostream& _sink, Operation const& _op );
 /** A group object */
 struct Group : virtual ReferenceCounter
 {
-  ConstStr                    m_symbol;         /**< The associated symbol */
-  Vector<Operation>           m_operations;     /**< an operation node list object containing the operations of the group */
-  FileLoc_t                     m_fileloc;        /**< The file location where the group was declared */
+  Group( ConstStr _symbol, Vector<Operation>& _operations, FileLoc const& _fileloc );
+  Group( ConstStr _symbol, FileLoc const& _fileloc );
 
-  Group( ConstStr _symbol, Vector<Operation>& _operations, FileLoc_t const& _fileloc );
-  Group( ConstStr _symbol, FileLoc_t const& _fileloc );
+  ConstStr                    symbol;         /**< The associated symbol */
+  Vector<Operation>           operations;     /**< an operation node list object containing the operations of the group */
+  FileLoc                   fileloc;        /**< The file location where the group was declared */
 };
 
 #endif // __OPERATION_HH__

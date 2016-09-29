@@ -199,10 +199,10 @@ CiscGenerator::finalize()
     unsigned int prefixsize = 0, insn_size = 0;
     bool vlen = false, outprefix = false, vword = false;
     
-    for (FieldIterator fi( source.m_little_endian, (**op).m_bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
+    for (FieldIterator fi( source.m_little_endian, (**op).bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
       if (SeparatorBitField const* sbf = dynamic_cast<SeparatorBitField const*>( &fi.item() )) {
         if (sbf->rewind and vword) {
-          (**op).m_fileloc.err( "error: operation `%s' rewinds a variable length word.", (**op).m_symbol.str() );
+          (**op).fileloc.err( "error: operation `%s' rewinds a variable length word.", (**op).symbol.str() );
           throw GenerationError;
         }
         vword = false;
@@ -219,11 +219,11 @@ CiscGenerator::finalize()
       if (prefixsize < fi.insn_size()) prefixsize = fi.insn_size();
     }
     
-    m_opcodes[*op] = new CiscOpCode( (**op).m_symbol, prefixsize, insn_size, vlen );
+    m_opcodes[*op] = new CiscOpCode( (**op).symbol, prefixsize, insn_size, vlen );
     CiscOpCode& oc = ciscopcode( *op );
     
     // compute opcode
-    for (FieldIterator fi( source.m_little_endian, (**op).m_bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
+    for (FieldIterator fi( source.m_little_endian, (**op).bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
       if (fi.item().sizes() != 1) break;
       if (not fi.item().hasopcode()) continue;
       uint64_t mask = fi.item().mask(), bits = fi.item().bits();
@@ -422,7 +422,7 @@ CiscGenerator::insn_encode_impl( Product& _product, Operation const& _op, char c
   
   bool little_endian = source.m_little_endian;
   
-  for (FieldIterator fi( little_endian, _op.m_bitfields, (*m_insnsizes.rbegin()) ); fi.next(); )
+  for (FieldIterator fi( little_endian, _op.bitfields, (*m_insnsizes.rbegin()) ); fi.next(); )
     {
     
       if (dynamic_cast<SubOpBitField const*>( &fi.item() ))
@@ -474,7 +474,7 @@ CiscGenerator::insn_decode_impl( Product& _product, Operation const& _op, char c
   char const* dsh = little_endian ? ">>" : "<<";
   char const* ash = little_endian ? "<<" : ">>";
   
-  for (FieldIterator fi( little_endian, _op.m_bitfields, (*m_insnsizes.rbegin()) ); fi.next(); )
+  for (FieldIterator fi( little_endian, _op.bitfields, (*m_insnsizes.rbegin()) ); fi.next(); )
     {
       if (SubOpBitField const* sobf = dynamic_cast<SubOpBitField const*>( &fi.item() ))
         {
@@ -576,21 +576,21 @@ void
 CiscGenerator::insn_destructor_decl( Product& _product, Operation const& _op ) const
 {
   bool subops = false;
-  Vector<BitField> const& bfs = _op.m_bitfields;
+  Vector<BitField> const& bfs = _op.bitfields;
   
   for( Vector<BitField>::const_iterator bf = bfs.begin(); bf < bfs.end(); ++bf ) {
     if (dynamic_cast<SubOpBitField const*>( &**bf )) { subops = true; break; }
   }
   
   if (not subops) return;
-  _product.code( "~Op%s();\n", Str::capitalize( _op.m_symbol.str() ).str() );
+  _product.code( "~Op%s();\n", Str::capitalize( _op.symbol.str() ).str() );
 }
 
 void
 CiscGenerator::insn_destructor_impl( Product& _product, Operation const& _op ) const
 {
   std::vector<ConstStr> subops;
-  Vector<BitField> const& bfs = _op.m_bitfields;
+  Vector<BitField> const& bfs = _op.bitfields;
   
   for( Vector<BitField>::const_iterator bf = bfs.begin(); bf < bfs.end(); ++bf ) {
     if (SubOpBitField const* sobf = dynamic_cast<SubOpBitField const*>( &**bf ))
@@ -600,9 +600,9 @@ CiscGenerator::insn_destructor_impl( Product& _product, Operation const& _op ) c
   if( subops.size() == 0 ) return;
   
   _product.template_signature( source.m_tparams );
-  _product.code( "Op%s", Str::capitalize( _op.m_symbol.str() ).str() );
+  _product.code( "Op%s", Str::capitalize( _op.symbol.str() ).str() );
   _product.template_abbrev( source.m_tparams );
-  _product.code( "::~Op%s()\n", Str::capitalize( _op.m_symbol.str() ).str() );
+  _product.code( "::~Op%s()\n", Str::capitalize( _op.symbol.str() ).str() );
   
   _product.code( "{\n" );
   for( std::vector<ConstStr>::const_iterator name = subops.begin(); name != subops.end(); ++name ) {

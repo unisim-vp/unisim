@@ -32,11 +32,11 @@ struct Action : virtual ReferenceCounter
   ActionProto const*       m_actionproto;  /**< The associated action prototype */
   Ptr<SourceCode>      m_source_code;  /**< The C implementation of the action */
   Vector<Comment>        m_comments;     /**< The list of the C comment associated with the action */
-  FileLoc_t                m_fileloc;      /**< File location of the declaration */
+  FileLoc                m_fileloc;      /**< File location of the declaration */
   //  Action*                m_base;
 
   Action( ActionProto const* _actionproto, SourceCode* _source_code,
-            Vector<Comment>& _comments, FileLoc_t const& _fileloc );
+            Vector<Comment>& _comments, FileLoc const& _fileloc );
   ~Action();
 };
 
@@ -54,10 +54,10 @@ struct ActionProto : virtual ReferenceCounter
   bool                     m_constness;           /**< The constness of the action */
   Ptr<SourceCode>      m_defaultcode;         /**< The default C implementation of the action */
   Vector<Comment>        m_comments;            /**< The list of the C comment associated with the action prototype */
-  FileLoc_t                m_fileloc;             /**< The file location where the action prototype was declared */
+  FileLoc                m_fileloc;             /**< The file location where the action prototype was declared */
   
   ActionProto( type_t _type, ConstStr _symbol, SourceCode* _returns, Vector<CodePair>& _params,
-               bool _constness, SourceCode* _defaultcode, Vector<Comment>& _comments, FileLoc_t const& _fileloc );
+               bool _constness, SourceCode* _defaultcode, Vector<Comment>& _comments, FileLoc const& _fileloc );
   ~ActionProto();
   
   char const*              returntype() const;

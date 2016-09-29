@@ -31,10 +31,10 @@ struct SDClass :  virtual ReferenceCounter
 {
   std::vector<ConstStr>       m_namespace;         /**< The namespace in which the decoder is defined */
   std::set<unsigned int>        m_insnsizes;         /**< instructions size set (in bytes) of the decoder's operations */
-  FileLoc_t                     m_fileloc;           /**< The file location where subdecoder was declared */
+  FileLoc                     m_fileloc;           /**< The file location where subdecoder was declared */
 
   template<typename _InputIterator>
-  SDClass( std::vector<ConstStr>& _namespace, _InputIterator szbeg, _InputIterator szend, FileLoc_t const& _fileloc );
+  SDClass( std::vector<ConstStr>& _namespace, _InputIterator szbeg, _InputIterator szend, FileLoc const& _fileloc );
   ~SDClass();
 
   ConstStr                    qd_namespace() const;
@@ -48,9 +48,9 @@ struct SDInstance : virtual ReferenceCounter {
   ConstStr                    m_symbol;            /**< The name of the subdecoder instance */
   ConstPtr<SourceCode>      m_template_scheme;   /**< The template scheme associated with the instance */
   ConstPtr<SDClass>         m_sdclass;           /**< The subdecoder class associated of the instance */
-  FileLoc_t                     m_fileloc;           /**< The file location where subdecoder was instanciated */
+  FileLoc                     m_fileloc;           /**< The file location where subdecoder was instanciated */
   
-  SDInstance( ConstStr _symbol, SourceCode const* _template_scheme, SDClass const* _sdclass, FileLoc_t const& _fileloc );
+  SDInstance( ConstStr _symbol, SourceCode const* _template_scheme, SDClass const* _sdclass, FileLoc const& _fileloc );
   ~SDInstance();
   
 };
@@ -64,7 +64,7 @@ struct SDInstance : virtual ReferenceCounter {
     @param _fileloc a fileloc pointing at the subdecoder declaration
 */
 template<typename _InputIterator>
-SDClass::SDClass( std::vector<ConstStr>& _namespace, _InputIterator szbeg, _InputIterator szend, FileLoc_t const& _fileloc )
+SDClass::SDClass( std::vector<ConstStr>& _namespace, _InputIterator szbeg, _InputIterator szend, FileLoc const& _fileloc )
   : m_namespace( _namespace ), m_insnsizes( szbeg, szend ), m_fileloc( _fileloc )
 {}
 
