@@ -91,7 +91,7 @@ struct GIL : public CLI, public Opts
     return true;
   }
   
-  void parse( CLI::Args_t& _args )
+  void parse( CLI::Args& _args )
   {
     if (_args.match( "-I", "<directory>", "Adds the directory <directory> "
                      "to the search paths for include directives." ))

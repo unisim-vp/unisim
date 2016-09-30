@@ -26,7 +26,7 @@
 #include <vect.hh>
 #include <set>
 
-/** A SubDecoder class object */
+/** A Sub Decoder class object */
 struct SDClass :  virtual ReferenceCounter
 {
   std::vector<ConstStr>       m_namespace;         /**< The namespace in which the decoder is defined */
@@ -43,7 +43,7 @@ struct SDClass :  virtual ReferenceCounter
   unsigned int                  minsize() const { return *m_insnsizes.begin(); }
 };
 
-/** A SubDecoder instance object */
+/** A Sub Decoder instance object */
 struct SDInstance : virtual ReferenceCounter {
   ConstStr                    m_symbol;            /**< The name of the subdecoder instance */
   ConstPtr<SourceCode>      m_template_scheme;   /**< The template scheme associated with the instance */
@@ -54,8 +54,6 @@ struct SDInstance : virtual ReferenceCounter {
   ~SDInstance();
   
 };
-
-// std::ostream& operator<<( std::ostream& _sink, SubDecoder_t const& _op );
 
 /** Create a subdecoder class object
     @param _namespace a namespace in which the decoder is defined

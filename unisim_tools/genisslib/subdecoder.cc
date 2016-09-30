@@ -48,21 +48,3 @@ SDInstance::SDInstance( ConstStr _symbol, SourceCode const* _template_scheme, SD
 {}
 
 SDInstance::~SDInstance() {}
-
-// /** Dump an subdecoder object into a stream
-//     @param subdecoder an subdecoder object to dump
-//     @param _sink a stream
-// */
-
-// ostream&
-// operator<<( ostream& _sink, SubDecoder_t const& _sd ) {
-//   _sink << "subdecoder " << _sd.m_symbol << '{' << (*_sd.m_namespace) << '}' << ' ';
-//   if (_sd.m_minsize == _sd.m_maxsize)
-//     _sink << '[' << _sd.m_maxsize << ']';
-//   else
-//     _sink << '[' << _sd.m_minsize << ';' << _sd.m_maxsize << ']';
-//   _sink << '\n';
-
-//   return _sink;
-// }
-

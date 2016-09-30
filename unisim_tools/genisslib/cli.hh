@@ -28,9 +28,9 @@ struct CLI
   
   struct Exit_t { int m_value; Exit_t( int _value ) : m_value( _value ) {} };
   
-  struct Args_t
+  struct Args
   {
-    virtual ~Args_t() {};
+    virtual ~Args() {};
     virtual bool         match( char const* _patterns, char const* _shortdesc, char const* _longdesc ) = 0;
     virtual bool         match( bool _active, char const* _shortdesc, char const* _longdesc ) = 0;
     virtual char const*  pop_front();
@@ -48,7 +48,7 @@ struct CLI
   virtual void           prototype();
   virtual void           options();
 
-  virtual void           parse( Args_t& _args ) = 0;
+  virtual void           parse( Args& _args ) = 0;
   virtual void           description() = 0;
 };
 

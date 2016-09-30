@@ -53,7 +53,7 @@ FProduct::~FProduct() { delete m_sink; }
 
 /** Output source code into the output file
     Also generate #line in the output file to link the C compiler error to the original source code
-    @param _source the ScourceCode_t object to dump
+    @param _source the SourceCode object to dump
  */
 Product&
 Product::usercode( SourceCode const& source )
@@ -63,7 +63,7 @@ Product::usercode( SourceCode const& source )
 
 /** Output source code with surrounding braces into the output file
     Also generate #line in the output file to link the C compiler error to the original source code
-    @param _source the ScourceCode_t object to dump
+    @param _source the SourceCode object to dump
  */
 Product&
 Product::usercode( SourceCode const& source, char const* fmt )

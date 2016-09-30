@@ -284,14 +284,6 @@ Isa::sanity_checks() const
   return true;
 }
 
-// SubDecoder_t const*
-// Isa::subdecoder( ConstStr _symbol ) const {
-//   for (Vector<SubDecoder_t>::const_iterator sd = m_subdecoders.begin(); sd < m_subdecoders.end(); ++ sd)
-//     if( (**sd).m_symbol == _symbol ) return *sd;
-//   return 0;
-// }
-
-
 /** Output a rule file (<filename>) suitable for make describing the dependencies of the main source file.
     @param _sink a stream
 */

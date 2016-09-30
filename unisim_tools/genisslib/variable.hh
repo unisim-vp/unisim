@@ -34,8 +34,8 @@ struct Variable
   ~Variable();
 
   ConstStr               symbol; /**< the symbol object representing the variable */
-  Ptr<SourceCode>    ctype; /**< the C type of the variable */
-  Ptr<SourceCode>    cinit; /**< the C expression used to initialized the variable */
+  Ptr<SourceCode>        ctype; /**< the C type of the variable */
+  Ptr<SourceCode>        cinit; /**< the C expression used to initialized the variable */
 };
 
 std::ostream& operator<<( std::ostream& sink, Variable const& _var );

@@ -22,39 +22,41 @@
 #include <vector>
 #include <referencecounting.hh>
 
-template <class Type_t>
-struct Vector : std::vector<Ptr<Type_t> >
+template <class TP>
+struct Vector : std::vector<Ptr<TP> >
 {
   Vector() {}
-  Vector( Type_t* _item ) : std::vector<Ptr<Type_t> >( 1,_item ) {}
-  Vector( Vector<Type_t>& _src ) {
+  Vector( TP* _item ) : std::vector<Ptr<TP> >( 1,_item ) {}
+  Vector( Vector<TP>& _src ) {
     if (not &_src) return;
     *this = _src;
   }
-  Vector( uintptr_t _size ) : std::vector<Ptr<Type_t> >( _size, 0 ) {}
+  Vector( uintptr_t _size ) : std::vector<Ptr<TP> >( _size, 0 ) {}
   
-  Vector<Type_t>& operator=( Vector<Type_t>& _src )
+  Vector<TP>& operator=( Vector<TP>& _src )
   {
     if (not &_src) return *this;
-    this->std::vector<Ptr<Type_t> >::operator=( _src );
+    this->std::vector<Ptr<TP> >::operator=( _src );
     return *this;
   }
-  Vector<Type_t>& append( Vector<Type_t>& _src )
+  Vector<TP>& append( Vector<TP>& _src )
   {
     if (not &_src) return *this;
     this->reserve( this->size() + _src.size() );
-    typedef typename Vector<Type_t>::const_iterator iter_t;
-    for( iter_t iter = _src.begin(); iter < _src.end(); ++ iter ) this->push_back( *iter );
+    typedef typename std::vector<Ptr<TP> >::const_iterator const_iterator;
+    for (const_iterator iter = _src.begin(); iter != _src.end(); ++ iter)
+      this->push_back( *iter );
     return *this;
   }
-  Vector<Type_t>* append( Type_t* _item ) { this->push_back( _item ); return this; }
+  Vector<TP>* append( TP* _item ) { this->push_back( _item ); return this; }
 };
 
 struct StringVector : std::vector<char const*>
 {
   StringVector() {}
   StringVector( char const* _item ) : std::vector<char const*>( 1,_item ) {}
-  StringVector( StringVector& _src ) {
+  StringVector( StringVector& _src )
+  {
     if (not &_src) return;
     *this = _src;
   }
@@ -70,8 +72,8 @@ struct StringVector : std::vector<char const*>
   {
     if (not &_src) return *this;
     this->reserve( this->size() + _src.size() );
-    typedef StringVector::const_iterator iter_t;
-    for (iter_t iter = _src.begin(); iter < _src.end(); ++ iter) push_back( *iter );
+    typedef typename std::vector<char const*>::const_iterator const_iterator;
+    for (const_iterator iter = _src.begin(); iter != _src.end(); ++ iter) push_back( *iter );
     return *this;
   }
   StringVector* append( char const* _item ) { this->push_back( _item ); return this; }

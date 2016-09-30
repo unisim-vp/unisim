@@ -53,11 +53,11 @@ struct Pattern {
   }
 };
 
-struct InfoArgs_t : public CLI::Args_t
+struct InfoArgs : public CLI::Args
 {
   CLI&                   m_cli;
 
-  InfoArgs_t( CLI& _cli ) : m_cli( _cli ) {}
+  InfoArgs( CLI& _cli ) : m_cli( _cli ) {}
   
   bool match( bool _active, char const* _shortdesc, char const* _longdesc ) { return false; }
   
@@ -75,11 +75,11 @@ CLI::set( char const* _displayname, char const* _callname )
 {
   m_displayname = _displayname;
   m_callname = _callname;
-  InfoArgs_t args( *this );
+  InfoArgs args( *this );
   parse( args );
 }
 
-struct Proto_t : public CLI::Args_t {
+struct Proto_t : public CLI::Args {
   bool match( char const* _patterns, char const* _shortdesc, char const* _longdesc ) { return false; }
   bool match( bool _active, char const* _shortdesc, char const* _longdesc )
   {
@@ -97,36 +97,36 @@ CLI::prototype()
   std::cerr << std::endl;
 }
 
-struct Screen_t
+struct Screen
 {
   uintptr_t    m_tabstop, m_width;
   std::string  m_buffer;
   uintptr_t    m_lastblank;
   bool         m_lastwasblank;
   
-  Screen_t( uintptr_t _tabstop, uintptr_t _width )
+  Screen( uintptr_t _tabstop, uintptr_t _width )
     : m_tabstop( _tabstop ), m_width( _width ), m_lastblank( std::string::npos ), m_lastwasblank( true ) {}
   
-  Screen_t& tab() {
+  Screen& tab() {
     if( m_buffer.size() >= m_tabstop) return write( '\n' );
     while( m_buffer.size() < m_tabstop ) m_buffer += ' ';
     return *this;
   }
   
-  Screen_t& reset() {
+  Screen& reset() {
     m_buffer.clear();
     m_lastblank = std::string::npos;
     m_lastwasblank = true;
     return *this;
   }
   
-  Screen_t& flush() {
+  Screen& flush() {
     for( char const* ptr = m_buffer.c_str(); *ptr; ++ptr )
       if (*ptr > ' ') return write( '\n' );
     return *this;
   }
   
-  Screen_t& write( char ch ) {
+  Screen& write( char ch ) {
     intptr_t index = m_buffer.size();
     m_buffer += ch;
     if (ch == '\n') {
@@ -154,11 +154,11 @@ struct Screen_t
     return *this;
   }
   
-  Screen_t& write( char const* _str ) { while( *_str ) write( *_str++ ); return *this; }
-  Screen_t& write( char const* _beg, char const* _end ) { while( _beg < _end ) write( *_beg++ ); return *this; }
+  Screen& write( char const* _str ) { while( *_str ) write( *_str++ ); return *this; }
+  Screen& write( char const* _beg, char const* _end ) { while( _beg < _end ) write( *_beg++ ); return *this; }
 };
   
-struct Opts_t : public CLI::Args_t {
+struct Opts_t : public CLI::Args {
   intptr_t m_align;
   
   Opts_t( intptr_t _align ) : m_align( _align + 2 ) {}
@@ -166,7 +166,7 @@ struct Opts_t : public CLI::Args_t {
   bool match( bool _active, char const* _shortdesc, char const* _longdesc ) { return false; }
   
   bool match( char const* _patterns, char const* _shortdesc, char const* _longdesc ) {
-    Screen_t screen( m_align, 96 );
+    Screen screen( m_align, 96 );
     
     char const* sep = "  ";
     for( Pattern pattern( _patterns ); pattern.next(); ) {
@@ -193,7 +193,7 @@ CLI::help() {
   options();
 }
 
-struct ValueArgs_t : public CLI::Args_t {
+struct ValueArgs : public CLI::Args {
   intptr_t    m_argidx, m_argc;
   char**      m_argvals;
   char const* m_subrem;
@@ -202,7 +202,7 @@ struct ValueArgs_t : public CLI::Args_t {
   std::string m_matched;
   std::string m_tmp;
   
-  ValueArgs_t( intptr_t _argc, char** _argvals )
+  ValueArgs( intptr_t _argc, char** _argvals )
     : m_argidx( 0 ), m_argc( _argc ), m_argvals( _argvals ), m_subrem( 0 )
   {
     memcpy( m_subarg, "-\0", 3 );
@@ -279,7 +279,7 @@ CLI::process( intptr_t _argc, char** _argv ) {
   }
 
   try {
-    for( ValueArgs_t args( _argc, _argv ); args.next(); ) {
+    for( ValueArgs args( _argc, _argv ); args.next(); ) {
       parse( args );
       if( not args.m_matched.empty() ) continue;
       std::cerr << m_displayname << ": unexpected argument: " << args.front() << "\n";
@@ -292,6 +292,6 @@ CLI::process( intptr_t _argc, char** _argv ) {
   }
 }
 
-char const* CLI::Args_t::pop_front() { assert( false ); return 0; }
-char const* CLI::Args_t::front() const { assert( false ); return 0; }
+char const* CLI::Args::pop_front() { assert( false ); return 0; }
+char const* CLI::Args::front() const { assert( false ); return 0; }
 

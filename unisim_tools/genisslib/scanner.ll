@@ -75,7 +75,7 @@ decimal_number [0-9]+
 <string_context>[^\"\n] { Scanner::strbuf().append( yytext, yyleng ); }
 <string_context>\n { Scanner::strbuf().append( yytext, yyleng ); Scanner::fileloc.newline(); }
 <string_context>\\\" { Scanner::strbuf().append( yytext, yyleng ); }
-<string_context>\" { if( Scanner::sc_leave() ) { yylval.volatile_string = Scanner::strbuf().c_str(); return TOK_STRING; }
+<string_context>\" { if (Scanner::sc_leave()) { yylval.volatile_string = Scanner::strbuf().c_str(); return TOK_STRING; }
 }
 
 \{ { Scanner::sc_enter( source_code_context ); }
@@ -103,7 +103,7 @@ decimal_number [0-9]+
 <c_like_comment_context>"*"+\n { Scanner::strbuf().append( yytext, yyleng ); Scanner::fileloc.newline(); }
 <c_like_comment_context>\n { Scanner::strbuf().append( yytext, yyleng ); Scanner::fileloc.newline(); }
 <c_like_comment_context>"*"+"/" {
-  if( Scanner::sc_leave() ) {
+  if (Scanner::sc_leave()) {
     Scanner::strbuf().append( yytext, yyleng );
     Scanner::comments.append( new Comment( Scanner::strbuf().c_str(), Scanner::fileloc_mlt ) );
   }
@@ -112,7 +112,7 @@ decimal_number [0-9]+
 <INITIAL,source_code_context>"//" { Scanner::sc_enter( cpp_like_comment_context ); Scanner::strbuf().append( yytext, yyleng ); }
 <cpp_like_comment_context>[^\n] { Scanner::strbuf().append( yytext, yyleng ); }
 <cpp_like_comment_context>\n {
-  if( Scanner::sc_leave() ) {
+  if (Scanner::sc_leave()) {
     Scanner::comments.append( new Comment( Scanner::strbuf().c_str(), Scanner::fileloc_mlt ) );
   }
   Scanner::fileloc.newline();
@@ -146,7 +146,7 @@ decimal_number [0-9]+
 "::" { return TOK_QUAD_DOT; }
 " " { }
 \t { }
-<INITIAL><<EOF>> { if( not Scanner::pop() ) yyterminate(); }
+<INITIAL><<EOF>> { if (not Scanner::pop()) yyterminate(); }
 <string_context,char_context,c_like_comment_context,cpp_like_comment_context,source_code_context><<EOF>> {
   Scanner::fileloc.err( "error: unexpected end of file" );
   Scanner::aborted_scanning = true;
@@ -168,20 +168,22 @@ decimal_number [0-9]+
 #include <cassert>
 #include <isa.hh>
 
-Scanner::Include_t* Scanner::include_stack = 0;
+Scanner::Inclusion* Scanner::include_stack = 0;
 
 std::string& Scanner::strbuf() { static std::string s_buffer; return s_buffer; }
 
 void
-Scanner::push() {
+Scanner::push()
+{
   YY_BUFFER_STATE state = YY_CURRENT_BUFFER;
   
-  include_stack = new Include_t( &state, sizeof( YY_BUFFER_STATE ), fileloc, include_stack );
+  include_stack = new Inclusion( &state, sizeof( YY_BUFFER_STATE ), fileloc, include_stack );
 }
 
 bool
-Scanner::pop() {
-  Include_t* tail = include_stack;
+Scanner::pop()
+{
+  Inclusion* tail = include_stack;
   
   if (not tail) return false;
   YY_BUFFER_STATE state;
@@ -190,33 +192,36 @@ Scanner::pop() {
   if (yyin) fclose( yyin );
   yy_switch_to_buffer( state );
   
-  fileloc = tail->m_fileloc;
+  fileloc = tail->fileloc;
   
-  include_stack = tail->m_next;
-  tail->m_next = 0;
+  include_stack = tail->next;
+  tail->next = 0;
   delete tail;
   
   return true;
 }
 
-Scanner::Include_t::Include_t( void const* _state, intptr_t _size, FileLoc const& _fileloc, Include_t* _next )
-  : m_state_backup( 0 ), m_fileloc( _fileloc ), m_next( _next )
+Scanner::Inclusion::Inclusion( void const* _state, intptr_t _size, FileLoc const& _fileloc, Inclusion* _next )
+  : state_backup( 0 ), fileloc( _fileloc ), next( _next )
 {
-  m_state_backup = new uint8_t[_size];
-  memcpy( m_state_backup, _state, _size );
+  state_backup = new uint8_t[_size];
+  memcpy( state_backup, _state, _size );
 }
 
-Scanner::Include_t::~Include_t() {
-  delete [] m_state_backup;
+Scanner::Inclusion::~Inclusion()
+{
+  delete [] state_backup;
 }
 
 void
-Scanner::Include_t::restore( void* _state, intptr_t _size ) {
-  memcpy( _state, m_state_backup, _size );
+Scanner::Inclusion::restore( void* _state, intptr_t _size )
+{
+  memcpy( _state, state_backup, _size );
 }
 
 bool
-Scanner::parse( char const* _filename, Isa& _isa ) {
+Scanner::parse( char const* _filename, Isa& _isa )
+{
   s_isa = &_isa;
   if (not Scanner::open( ConstStr( _filename) ) )
     return false;
@@ -261,7 +266,8 @@ Scanner::open( ConstStr _filename )
 }
 
 bool
-Scanner::include( char const* _filename ) {
+Scanner::include( char const* _filename )
+{
   ConstStr filename = Scanner::locate( _filename );
   
   Scanner::push();
@@ -275,17 +281,18 @@ Scanner::include( char const* _filename ) {
 }
 
 void
-parse_binary_number( char const* binstr, int length, unsigned int *value ) {
+parse_binary_number( char const* binstr, int length, unsigned int *value )
+{
   unsigned int res = 0;
   unsigned int mask = 1;
-  for( char const* ptr = binstr + length; (--ptr) >= binstr and *ptr != 'b'; ) {
+  for (char const* ptr = binstr + length; (--ptr) >= binstr and *ptr != 'b';) {
     if (*ptr != '0') res |= mask;
     mask <<= 1;
   }
   *value = res;
 }
 
-Scanner::Token_t Scanner::s_tokens[] = {
+Scanner::Token Scanner::s_tokens[] = {
   {"action", TOK_ACTION},
   {"const", TOK_CONST},
   {"constructor", TOK_CONSTRUCTOR},
@@ -316,17 +323,19 @@ Scanner::Token_t Scanner::s_tokens[] = {
     @return the token
 */
 int
-Scanner::token( char const* _text ) {
-  for( int idx = 0; s_tokens[idx].m_name; ++ idx )
-    if (strcmp( s_tokens[idx].m_name, _text) == 0 )
-      return s_tokens[idx].m_token;
+Scanner::token( char const* _text )
+{
+  for (int idx = 0; s_tokens[idx].name; ++ idx)
+    if (strcmp( s_tokens[idx].name, _text) == 0 )
+      return s_tokens[idx].token;
 
   return TOK_IDENT;
 }
 
 
 ConstStr
-Scanner::charname( char _char ) {
+Scanner::charname( char _char )
+{
   switch( _char ) {
   case '\t': return "tab char";
   case '\n': return "return char";
@@ -346,11 +355,12 @@ Scanner::charname( char _char ) {
     @return the name of the token
 */
 ConstStr
-Scanner::tokenname( int _token ) {
+Scanner::tokenname( int _token )
+{
   /* search into the token table */
-  for( int idx = 0; s_tokens[idx].m_name; ++ idx )
-    if (s_tokens[idx].m_token == _token)
-      return s_tokens[idx].m_name;
+  for (int idx = 0; s_tokens[idx].name; ++ idx)
+    if (s_tokens[idx].token == _token)
+      return s_tokens[idx].name;
   
   /* return a string for the token not in the token table */
   switch( _token ) {
@@ -380,9 +390,10 @@ Scanner::tokenname( int _token ) {
 }
 
 void
-Scanner::add_lookupdir( char const* _dir ) {
+Scanner::add_lookupdir( char const* _dir )
+{
 #ifdef WIN32
-  if((((_dir[0] >= 'a' && _dir[0] <= 'z') || (_dir[0] >= 'A' && _dir[0] <= 'Z')) && (_dir[1] == ':') && ((_dir[2] == '\\') || (_dir[2] == '/'))) || (*_dir == '/'))
+  if ((((_dir[0] >= 'a' && _dir[0] <= 'z') || (_dir[0] >= 'A' && _dir[0] <= 'Z')) && (_dir[1] == ':') && ((_dir[2] == '\\') || (_dir[2] == '/'))) || (*_dir == '/'))
   {
      // convert '\' into '/' to have a UNIX friendly path as gcc doesn't like '\' in filenames in #line directives
      int len = strlen(_dir);
@@ -456,7 +467,8 @@ Scanner::locate( char const* _name )
 }
 
 void
-Scanner::sc_enter( int _condition ) {
+Scanner::sc_enter( int _condition )
+{
   int sc = YY_START;
   if (sc == INITIAL) {
     fileloc_mlt = fileloc;
@@ -477,7 +489,7 @@ Scanner::sc_leave()
   int oldsc = YY_START;
   int newsc = Scanner::scs.back();
   
-  if( oldsc == source_code_context and ((--bracecount) > 0) ) {
+  if (oldsc == source_code_context and ((--bracecount) > 0)) {
     newsc = source_code_context;
   } else {
     Scanner::scs.pop_back();

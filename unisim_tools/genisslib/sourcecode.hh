@@ -27,8 +27,8 @@
 /** A C source code object */
 struct SourceCode : virtual ReferenceCounter
 {
-  ConstStr               content;    /**< the string containing the C source code */
-  FileLoc              fileloc;    /**< the file location where was found the C source code */
+  ConstStr              content;    /**< the string containing the C source code */
+  FileLoc               fileloc;    /**< the file location where was found the C source code */
   
   SourceCode( ConstStr _content, FileLoc const& _fileloc );
   
@@ -40,12 +40,13 @@ std::ostream& operator<<( std::ostream& _sink, SourceCode const& _sc );
 /** A C/C++ Code object object */
 struct CodePair : virtual ReferenceCounter
 {
-  Ptr<SourceCode>        ctype;        /**< The C type of the parameter */
-  Ptr<SourceCode>        csymbol;      /**< The C symbol of the parameter */
+  Ptr<SourceCode>       ctype;        /**< The C type of the parameter */
+  Ptr<SourceCode>       csymbol;      /**< The C symbol of the parameter */
   
   CodePair( SourceCode* _ctype, SourceCode* _csymbol );
   ~CodePair();
 };
 
 std::ostream& operator<<( std::ostream& _sink, CodePair const& _cp );
+
 #endif // __SOURCECODE_HH__
