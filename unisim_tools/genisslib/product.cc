@@ -24,12 +24,10 @@
 #include <fstream>
 #include <iostream>
 
-using namespace std;
-
 /** Constructor: Create a Product object
     @param _filename the filename attached to the output code
 */
-Product_t::Product_t( ConstStr_t filename, bool sourcelines )
+Product::Product( ConstStr filename, bool sourcelines )
   : m_filename( filename ), m_lineno( 1 ), m_sourcelines( sourcelines )
 {
   m_indentations.push_back( 0 );
@@ -38,37 +36,39 @@ Product_t::Product_t( ConstStr_t filename, bool sourcelines )
 /** Constructor: Create a FProduct object
     @param _prefix the filename prefix attached to the output code
 */
-FProduct_t::FProduct_t( char const* prefix, char const* suffix, bool sourcelines )
-  : Product_t( Str::fmt( "%s%s", prefix, suffix ), sourcelines ),
-    m_sink( new std::ofstream( m_filename ) )
+FProduct::FProduct( char const* prefix, char const* suffix, bool sourcelines )
+  : Product( Str::fmt( "%s%s", prefix, suffix ), sourcelines ),
+    m_sink( new std::ofstream( m_filename.str() ) )
 {}
 
 /** Constructor: Create a SProduct object
     @param _prefix the filename prefix attached to the output code
 */
-SProduct_t::SProduct_t( ConstStr_t _filename, bool _sourcelines )
-  : Product_t( _filename, _sourcelines )
+SProduct::SProduct( ConstStr _filename, bool _sourcelines )
+  : Product( _filename, _sourcelines )
 {}
 
 /** Destructor: Close the Product object */
-FProduct_t::~FProduct_t() { delete m_sink; }
+FProduct::~FProduct() { delete m_sink; }
 
 /** Output source code into the output file
     Also generate #line in the output file to link the C compiler error to the original source code
-    @param _source the ScourceCode_t object to dump
+    @param _source the SourceCode object to dump
  */
-Product_t&
-Product_t::usercode( SourceCode_t const& _source ) {
-  return usercode( _source.m_fileloc, "%s", _source.m_content.str() );
+Product&
+Product::usercode( SourceCode const& source )
+{
+  return usercode( source.fileloc, "%s", source.content.str() );
 }
 
 /** Output source code with surrounding braces into the output file
     Also generate #line in the output file to link the C compiler error to the original source code
-    @param _source the ScourceCode_t object to dump
+    @param _source the SourceCode object to dump
  */
-Product_t&
-Product_t::usercode( SourceCode_t const& _source, char const* _fmt ) {
-  return usercode( _source.m_fileloc, _fmt, _source.m_content.str() );
+Product&
+Product::usercode( SourceCode const& source, char const* fmt )
+{
+  return usercode( source.fileloc, fmt, source.content.str() );
 }
 
 /** Output source code into the output file
@@ -77,9 +77,9 @@ Product_t::usercode( SourceCode_t const& _source, char const* _fmt ) {
     @param lineno the line number where source code was found
     @param format a C string with format specifier (like in printf), referenced arguments in the format string must follow
 */
-Product_t&
-Product_t::usercode( FileLoc_t const& _fileloc, char const* _fmt, ... ) {
-  if( m_sourcelines ) {
+Product&
+Product::usercode( FileLoc const& _fileloc, char const* _fmt, ... ) {
+  if (m_sourcelines) {
     require_newline();
     code( "#line %u \"%s\"\n", _fileloc.getline(), _fileloc.getname().str() );
   }
@@ -92,14 +92,14 @@ Product_t::usercode( FileLoc_t const& _fileloc, char const* _fmt, ... ) {
     size = vsnprintf( storage, capacity, _fmt, args );
     va_end( args );
     /* If it didn't work, retry */
-    if( size < 0 or size >= capacity ) continue;
+    if (size < 0 or size >= capacity) continue;
     
     /* Now storage is ok... */
     write( storage );
     break;
   }
   
-  if( m_sourcelines ) {
+  if (m_sourcelines) {
     require_newline();
     code( "#line %u \"%s\"\n", m_lineno + 1, m_filename.str() );
   }
@@ -110,8 +110,8 @@ Product_t::usercode( FileLoc_t const& _fileloc, char const* _fmt, ... ) {
     @param format a C string with format specifier (like in printf), referenced arguments in the format string must follow
 */
 
-Product_t&
-Product_t::code( char const* _fmt, ... ) {
+Product&
+Product::code( char const* _fmt, ... ) {
   va_list args;
   for( intptr_t capacity = 128, size; true; capacity = (size > -1) ? size + 1 : capacity * 2 ) {
     /* stack allocation */
@@ -121,7 +121,7 @@ Product_t::code( char const* _fmt, ... ) {
     size = vsnprintf( storage, capacity, _fmt, args );
     va_end( args );
     /* If it didn't work, retry */
-    if( size < 0 or size >= capacity ) continue;
+    if (size < 0 or size >= capacity) continue;
     
     /* Now storage is ok... */
     write( storage );
@@ -130,25 +130,25 @@ Product_t::code( char const* _fmt, ... ) {
   return *this;
 }
 
-Product_t&
-Product_t::require_newline() {
+Product&
+Product::require_newline() {
   if( m_line.empty() ) return *this;
   write( "\n" );
   return *this;
 }
 
-Product_t&
-Product_t::ns_leave( std::vector<ConstStr_t> const& _namespace ) {
+Product&
+Product::ns_leave( std::vector<ConstStr> const& _namespace ) {
   for( intptr_t idx = _namespace.size(); (--idx) >= 0; )
     code( "} " );
   code( "\n" );
   return *this;
 }
 
-Product_t&
-Product_t::ns_enter( std::vector<ConstStr_t> const& _namespace ) {
+Product&
+Product::ns_enter( std::vector<ConstStr> const& _namespace ) {
   char const* sep = "";
-  for( std::vector<ConstStr_t>::const_iterator ns = _namespace.begin(); ns < _namespace.end(); sep = " ", ++ ns ) {
+  for( std::vector<ConstStr>::const_iterator ns = _namespace.begin(); ns < _namespace.end(); sep = " ", ++ ns ) {
     code( "%snamespace %s {", sep, (*ns).str() );
   }
   code( "\n" );
@@ -156,17 +156,17 @@ Product_t::ns_enter( std::vector<ConstStr_t> const& _namespace ) {
   return *this;
 }
 
-Product_t&
-Product_t::template_signature( Vect_t<CodePair_t> const& _tparams ) {
+Product&
+Product::template_signature( Vector<CodePair> const& _tparams ) {
   if( _tparams.empty() ) return *this;
 
   code( "template <" );
   
   bool intra = false;
-  for( Vect_t<CodePair_t>::const_iterator tp = _tparams.begin(); tp < _tparams.end(); ++ tp ) {
-    if( intra ) code( "," ); else intra = true;
-    usercode( (**tp).m_ctype->m_fileloc, "\t%s", (**tp).m_ctype->m_content.str() );
-    usercode( (**tp).m_csymbol->m_fileloc, "\t%s", (**tp).m_csymbol->m_content.str() );
+  for( Vector<CodePair>::const_iterator tp = _tparams.begin(); tp < _tparams.end(); ++ tp ) {
+    if (intra) code( "," ); else intra = true;
+    usercode( (**tp).ctype->fileloc, "\t%s", (**tp).ctype->content.str() );
+    usercode( (**tp).csymbol->fileloc, "\t%s", (**tp).csymbol->content.str() );
   }
   
   code( ">\n" );
@@ -174,44 +174,57 @@ Product_t::template_signature( Vect_t<CodePair_t> const& _tparams ) {
 }
 
 
-Product_t&
-Product_t::template_abbrev( Vect_t<CodePair_t> const& _tparams ) {
+Product&
+Product::template_abbrev( Vector<CodePair> const& _tparams ) {
   if( _tparams.empty() ) return *this;
 
   code( "<" );
 
   bool intra = false;
-  for( Vect_t<CodePair_t>::const_iterator tp = _tparams.begin(); tp < _tparams.end(); ++ tp ) {
-    if( intra ) code( "," ); else intra = true;
-    usercode( (**tp).m_csymbol->m_fileloc, "\t%s", (**tp).m_csymbol->m_content.str() );
+  for( Vector<CodePair>::const_iterator tp = _tparams.begin(); tp < _tparams.end(); ++ tp ) {
+    if (intra) code( "," ); else intra = true;
+    usercode( (**tp).csymbol->fileloc, "\t%s", (**tp).csymbol->content.str() );
   }
   
   code( ">" );
   return *this;
 }
 
-Product_t&
-Product_t::flatten_indentation() {
-  if( m_indentations.empty() ) return *this;
+Product&
+Product::flatten_indentation()
+{
+  if (m_indentations.empty())
+    return *this;
+  
   int indentation = m_indentations.back();
-  vector<int>::reverse_iterator prev = m_indentations.rbegin();
-  for( vector<int>::reverse_iterator ind = m_indentations.rbegin(); ind < m_indentations.rend(); ++ind ) {
-    if( *ind == indentation ) continue;
-    prev = ind;
-    break;
-  }
+  
+  typedef std::vector<int>::reverse_iterator RI;
+  RI prev = m_indentations.rbegin();
+  
+  for (RI ind = m_indentations.rbegin(), istop = m_indentations.rend(); ind != istop; ++ind)
+    {
+      if (*ind == indentation) continue;
+      prev = ind;
+      break;
+    }
+  
   indentation = *prev;
-  for( vector<int>::reverse_iterator ind = m_indentations.rbegin(); ind < prev; ++ind )
+  
+  for (RI ind = m_indentations.rbegin(); ind != prev; ++ind )
     *ind = indentation;
+  
   return *this;
 }
 
 
-Product_t&
-Product_t::write( char const* _ptr ) {
-  if( not _ptr ) return *this;
+Product&
+Product::write( char const* _ptr )
+{
+  if (not _ptr)
+    return *this;
+  
   for( char chr = *_ptr; chr; chr = *++_ptr ) {
-    if( chr == '\n' ) {
+    if (chr == '\n') {
       int current_indentation = m_indentations.back();
       int braces = 0;
       // Computing brace depth and right stripping blank characters.
@@ -221,22 +234,22 @@ Product_t::write( char const* _ptr ) {
         for (uintptr_t ridx = 0; lbuf[ridx]; ++ridx ) {
           if (lbuf[ridx] <= ' ') continue;
           rstrip = ridx + 1;
-          if(      lbuf[ridx] == '{' ) ++braces;
-          else if( lbuf[ridx] == '}' ) --braces;
+          if (     lbuf[ridx] == '{') ++braces;
+          else if (lbuf[ridx] == '}') --braces;
         }
         m_line = m_line.substr( 0, rstrip );
       }
       if (m_line.empty()) { xwrite( "\n" ); m_lineno += 1; continue; }
       
-      if( braces > 0 ) {
+      if (braces > 0) {
         while( (--braces) > 0) m_indentations.push_back( current_indentation );
         m_indentations.push_back( current_indentation + 1 );
-      } else if( braces < 0 ) {
+      } else if (braces < 0) {
         int nlength = m_indentations.size() + braces;
-        if( nlength > 0 ) {
+        if (nlength > 0) {
           m_indentations.resize( nlength );
         } else {
-          cerr << "Indentation error (line " << m_lineno << ").\n";
+          std::cerr << "Indentation error (line " << m_lineno << ").\n";
           m_indentations.clear();
           m_indentations.push_back( 0 );
         }
@@ -244,8 +257,8 @@ Product_t::write( char const* _ptr ) {
       
       char first_char = *m_line.begin(), last_char = *m_line.rbegin();
       if (first_char == '#') current_indentation = 0;
-      else if( /*'{'*/ first_char == '}' ) current_indentation = m_indentations.back();
-      else if( last_char == ':' ) --current_indentation;
+      else if (/*'{'*/ first_char == '}') current_indentation = m_indentations.back();
+      else if (last_char == ':') --current_indentation;
       
       while( (--current_indentation) >= 0 ) xwrite( "\t" );
       xwrite( m_line.c_str() );
@@ -263,10 +276,10 @@ Product_t::write( char const* _ptr ) {
 /** \brief flush the line buffer
  *
  */
-void Product_t::flush() { if( not m_line.empty() ) write( "\n" ); }
+void Product::flush() { if( not m_line.empty() ) write( "\n" ); }
 
-void FProduct_t::xwrite( char const* _ptr ) { (*m_sink) << _ptr; }
+void FProduct::xwrite( char const* _ptr ) { (*m_sink) << _ptr; }
 
-bool FProduct_t::good() const { return m_sink->good(); };
+bool FProduct::good() const { return m_sink->good(); };
 
-void SProduct_t::xwrite( char const* _ptr ) { m_content += _ptr; }
+void SProduct::xwrite( char const* _ptr ) { m_content += _ptr; }

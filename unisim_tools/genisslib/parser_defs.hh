@@ -21,30 +21,31 @@
 #include <fwd.hh>
 
 /** The type of the token, either terminal or not terminal */
-union  yylval_t {
+union  yylval_t
+{
   char const*                  volatile_string;        /**< a volatile C-String */
   char const*                  persistent_string;      /**< a persistent C-String */
-  StringVect_t*                string_list;            /**< a C-String list */
+  StringVector*                string_list;            /**< a C-String list */
   signed int                   sinteger;               /**< A signed integer value */
   unsigned int                 uinteger;               /**< An unsigned integer value */
   bool                         boolean;                /**< A boolean value */
-  SourceCode_t*                sourcecode;             /**< A C source code */
-  CodePair_t*                  param;                  /**< A parameter object */
-  Vect_t<CodePair_t>*          param_list;             /**< A parameter list object */
-  Operation_t*                 operation;              /**< An operation */
-  Vect_t<Operation_t>*         operation_list;         /**< An operation node list object */
-  Group_t*                     group;                  /**< A group object */
-  ActionProto_t*               actionproto;            /**< An action prototype */
-  Action_t*                    action;                 /**< An action */
-  BitField_t*                  bitfield;               /**< A bit field */
-  Vect_t<BitField_t>*          bitfield_list;          /**< A bit field list */
-  Variable_t*                  variable;               /**< A variable object */
-  Vect_t<Variable_t>*          variable_list;          /**< A variable list object */
-  Constraint_t*                constraint;             /**< A constraint object */
-  Vect_t<Constraint_t>*        constraint_list;        /**< A constraint list object */
-  Specialization_t*            specialization;         /**< A specialization object */
-  Inheritance_t*               inheritance;            /**< An inheritance descriptor */
-  UIntVect_t*                  uint_list;              /**< A unsigned integer list object */
+  SourceCode*                sourcecode;             /**< A C source code */
+  CodePair*                  param;                  /**< A parameter object */
+  Vector<CodePair>*          param_list;             /**< A parameter list object */
+  Operation*                 operation;              /**< An operation */
+  Vector<Operation>*         operation_list;         /**< An operation node list object */
+  Group*                     group;                  /**< A group object */
+  ActionProto*                 actionproto;            /**< An action prototype */
+  Action*                      action;                 /**< An action */
+  BitField*                  bitfield;               /**< A bit field */
+  Vector<BitField>*          bitfield_list;          /**< A bit field list */
+  Variable*                  variable;               /**< A variable object */
+  Vector<Variable>*          variable_list;          /**< A variable list object */
+  Constraint*                constraint;             /**< A constraint object */
+  Vector<Constraint>*        constraint_list;        /**< A constraint list object */
+  Specialization*            specialization;         /**< A specialization object */
+  Inheritance*               inheritance;            /**< An inheritance descriptor */
+  UIntVector*                  uint_list;              /**< A unsigned integer list object */
 };
 
 /* define the type of yylval */

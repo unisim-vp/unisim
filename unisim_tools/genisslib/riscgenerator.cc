@@ -28,8 +28,6 @@
 #include <cassert>
 #include <limits>
 
-using namespace std;
-
 /**
  *  @brief  Locate argument opcode from the subject opcode point of view.
  *  @param  _that the opcode to locate
@@ -44,10 +42,10 @@ using namespace std;
  *    - Equal
  */
 
-OpCode_t::Location_t
-RiscOpCode_t::locate( OpCode_t const& _oc ) const
+OpCode::location_t
+RiscOpCode::locate( OpCode const& _oc ) const
 {
-  RiscOpCode_t const& _that = dynamic_cast<RiscOpCode_t const&>( _oc );
+  RiscOpCode const& _that = dynamic_cast<RiscOpCode const&>( _oc );
   /* this is named A and _that is named B */
   bool some_a_outside_B = false, some_b_outside_A = false;
 
@@ -60,7 +58,7 @@ RiscOpCode_t::locate( OpCode_t const& _oc ) const
   if( (this->m_mask) & ~(_that.m_mask) )
     some_b_outside_A = true;
   
-  Location_t table[] = {Equal, Inside, Contains, Overlaps};
+  location_t table[] = {Equal, Inside, Contains, Overlaps};
   
   return table[(some_a_outside_B ? 1 : 0) | (some_b_outside_A ? 2 : 0)];
 }
@@ -70,7 +68,7 @@ RiscOpCode_t::locate( OpCode_t const& _oc ) const
     @return a reference to the ostream
 */
 std::ostream&
-RiscOpCode_t::details( std::ostream& _sink ) const
+RiscOpCode::details( std::ostream& _sink ) const
 {
   _sink << "{size: " << std::dec << this->m_size << ", mask: 0x" << std::hex << this->m_mask << ", bits: 0x" << this->m_bits << "}";
   return _sink;
@@ -79,8 +77,8 @@ RiscOpCode_t::details( std::ostream& _sink ) const
 /**
  *  @brief  Default constructor, create a RiscGenerator.
  */
-RiscGenerator::RiscGenerator()
-  : m_insn_ctypesize( 0 )
+RiscGenerator::RiscGenerator( Isa& _source, Opts const& _options )
+  : Generator( _source, _options ), m_insn_ctypesize( 0 )
 {};
 
 /** Process the isa structure and computes RISC specific data 
@@ -103,22 +101,23 @@ RiscGenerator::finalize() {
   default: m_insn_cpostfix = "";
   }
   
-  Vect_t<Operation_t> const& operations = isa().m_operations;
+  Vector<Operation> const& operations = source.m_operations;
   
   // Process the opcodes needed by the decoder
-  for( Vect_t<Operation_t>::const_iterator op = operations.begin(); op < operations.end(); ++ op ) {
-    Vect_t<BitField_t> const& bitfields = (**op).m_bitfields;
+  for( Vector<Operation>::const_iterator op = operations.begin(); op < operations.end(); ++ op ) {
+    Vector<BitField> const& bitfields = (**op).bitfields;
     
     bool vlen = false, outprefix = false, vword = false;
     unsigned int insn_size = 0;
     uint64_t mask = 0, bits = 0;
     
-    for (FieldIterator fi( isa().m_little_endian, bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
-      if (SeparatorBitField_t const* sbf = dynamic_cast<SeparatorBitField_t const*>( &(fi.item()) )) {
-        if (sbf->m_rewind and vword) {
-          (**op).m_fileloc.err( "error: operation `%s' rewinds a variable length word.", (**op).m_symbol.str() );
-          throw GenerationError;
-        }
+    for (FieldIterator fi( source.m_little_endian, bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
+      if (SeparatorBitField const* sbf = dynamic_cast<SeparatorBitField const*>( &(fi.item()) )) {
+        if (sbf->rewind and vword)
+          {
+            (**op).fileloc.err( "error: operation `%s' rewinds a variable length word.", (**op).symbol.str() );
+            throw GenerationError;
+          }
         vword = false;
       }
       
@@ -134,21 +133,21 @@ RiscGenerator::finalize() {
       bits |= fi.item().bits() << fi.pos();
       mask |= fi.item().mask() << fi.pos();
     }
-    m_opcodes[*op] = new RiscOpCode_t( (**op).m_symbol, mask, bits, insn_size, vlen );
+    m_opcodes[*op] = new RiscOpCode( (**op).symbol, mask, bits, insn_size, vlen );
   }
   
   this->toposort();
 }
 
 void
-RiscGenerator::codetype_decl( Product_t& _product ) const {
+RiscGenerator::codetype_decl( Product& _product ) const {
   _product.code( "typedef %s CodeType;\n\n", m_insn_ctype.str() );
 }
 
 void
-RiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, char const* _codename ) const
+RiscGenerator::insn_encode_impl( Product& _product, Operation const& _op, char const* _codename ) const
 {
-  RiscOpCode_t const& oc = riscopcode( &_op );
+  RiscOpCode const& oc = riscopcode( &_op );
   
   if (oc.m_vlen) {
     _product.code( "assert( \"Encode method does not work with variable length operations.\" and false );\n" );
@@ -156,21 +155,21 @@ RiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, ch
   
   _product.code( "%s = 0x%llx%s;\n", _codename, oc.m_bits, m_insn_cpostfix.str() );
   
-  for (FieldIterator fi( isa().m_little_endian, _op.m_bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
-    if      (dynamic_cast<SubOpBitField_t const*>( &fi.item() ))
+  for (FieldIterator fi( source.m_little_endian, _op.bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
+    if      (dynamic_cast<SubOpBitField const*>( &fi.item() ))
       {
         _product.code( "assert( \"Encode method does not work with sub-operations.\" and false );\n" );
       }
-    else if (OperandBitField_t const* opbf = dynamic_cast<OperandBitField_t const*>( &fi.item() ))
+    else if (OperandBitField const* opbf = dynamic_cast<OperandBitField const*>( &fi.item() ))
       {
-        int opsize = std::max( least_ctype_size( opbf->dstsize() ), m_minwordsize );
-        ConstStr_t shiftedop;
-        if      (opbf->m_shift > 0)
-          shiftedop = Str::fmt( "(uint%d_t( %s ) << %u)", opsize, opbf->m_symbol.str(), +opbf->m_shift );
-        else if (opbf->m_shift < 0)
-          shiftedop = Str::fmt( "(uint%d_t( %s ) >> %u)", opsize, opbf->m_symbol.str(), -opbf->m_shift );
+        int opsize = membersize( *opbf );
+        ConstStr shiftedop;
+        if      (opbf->shift > 0)
+          shiftedop = Str::fmt( "(uint%d_t( %s ) << %u)", opsize, opbf->symbol.str(), +opbf->shift );
+        else if (opbf->shift < 0)
+          shiftedop = Str::fmt( "(uint%d_t( %s ) >> %u)", opsize, opbf->symbol.str(), -opbf->shift );
         else
-          shiftedop = Str::fmt( "uint%d_t( %s )", opsize, opbf->m_symbol.str() );
+          shiftedop = Str::fmt( "uint%d_t( %s )", opsize, opbf->symbol.str() );
         
         _product.code( "%s |= ((%s & 0x%llx) << %u);\n", _codename, shiftedop.str(), opbf->mask(), fi.pos() );
       }
@@ -178,81 +177,81 @@ RiscGenerator::insn_encode_impl( Product_t& _product, Operation_t const& _op, ch
 }
 
 void
-RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const
+RiscGenerator::insn_decode_impl( Product& _product, Operation const& _op, char const* _codename, char const* _addrname ) const
 {
-  RiscOpCode_t const& oc = riscopcode( &_op );
+  RiscOpCode const& oc = riscopcode( &_op );
   
   if (oc.m_vlen) {
     _product.code( "this->gil_length = %u;\n", oc.m_size );
   }
   
-  for (FieldIterator fi( isa().m_little_endian, _op.m_bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
-    if (SubOpBitField_t const* sobf = dynamic_cast<SubOpBitField_t const*>( &fi.item() )) {
-      SDInstance_t const* sdinstance = sobf->m_sdinstance;
-      SDClass_t const* sdclass = sdinstance->m_sdclass;
-      SourceCode_t const* tpscheme =  sdinstance->m_template_scheme;
+  for (FieldIterator fi( source.m_little_endian, _op.bitfields, (*m_insnsizes.rbegin()) ); fi.next(); ) {
+    if (SubOpBitField const* sobf = dynamic_cast<SubOpBitField const*>( &fi.item() )) {
+      SDInstance const* sdinstance = sobf->sdinstance;
+      SDClass const* sdclass = sdinstance->m_sdclass;
+      SourceCode const* tpscheme =  sdinstance->m_template_scheme;
       
-      _product.code( "%s = %s::sub_decode", sobf->m_symbol.str(), sdclass->qd_namespace().str() );
+      _product.code( "%s = %s::sub_decode", sobf->symbol.str(), sdclass->qd_namespace().str() );
       if (tpscheme)
-        _product.usercode( tpscheme->m_fileloc, "< %s >", tpscheme->m_content.str() );
+        _product.usercode( tpscheme->fileloc, "< %s >", tpscheme->content.str() );
       _product.code( "( %s, ((%s >> %u) & 0x%llx) );\n",
                      _addrname, _codename, fi.pos(), sobf->mask() );
 
       if (sdclass->minsize() != sdclass->maxsize()) {
         _product.code( "{\nunsigned int shortening = %u - %s->GetLength();\n",
-                       sdclass->maxsize(), sobf->m_symbol.str() );
+                       sdclass->maxsize(), sobf->symbol.str() );
         _product.code( "this->gil_length -= shortening;\n" );
-        _product.code( "%s %s= shortening;\n}\n", _codename, (isa().m_little_endian ? "<<" : ">>") );
+        _product.code( "%s %s= shortening;\n}\n", _codename, (source.m_little_endian ? "<<" : ">>") );
       }
     }
     
-    else if (OperandBitField_t const* opbf = dynamic_cast<OperandBitField_t const*>( &fi.item() )) {
-      _product.code( "%s = ", opbf->m_symbol.str() );
+    else if (OperandBitField const* opbf = dynamic_cast<OperandBitField const*>( &fi.item() ))
+      {
+        _product.code( "%s = ", opbf->symbol.str() );
+
+        int opsize = membersize( *opbf );
       
-      if( opbf->m_sext ) {
-        int opsize = std::max( least_ctype_size( opbf->dstsize() ), m_minwordsize );
-        int sext_shift = opsize - opbf->m_size;
-        if( fi.pos() ) {
-          _product.code( "((int%d_t)(((%s >> %u) & 0x%llx) << %u) >> %u)",
-                         opsize, _codename, fi.pos(),
-                         opbf->mask(), sext_shift, sext_shift );
+        if (opbf->sext) {
+          int sext_shift = opsize - opbf->size;
+          if( fi.pos() ) {
+            _product.code( "((int%d_t)(((%s >> %u) & 0x%llx) << %u) >> %u)",
+                           opsize, _codename, fi.pos(),
+                           opbf->mask(), sext_shift, sext_shift );
+          }
+          else {
+            _product.code( "((int%d_t)((%s & 0x%llx) << %u) >> %u)",
+                           opsize, _codename,
+                           opbf->mask(), sext_shift, sext_shift );
+          }
+        } else {
+          if (fi.pos()) {
+            _product.code( "uint%d_t((%s >> %u) & 0x%llx)", opsize, _codename, fi.pos(), opbf->mask() );
+          }
+          else {
+            _product.code( "uint%d_t(%s & 0x%llx)", opsize, _codename, opbf->mask() );
+          }
         }
-        else {
-          _product.code( "((int%d_t)((%s & 0x%llx) << %u) >> %u)",
-                         opsize, _codename,
-                         opbf->mask(), sext_shift, sext_shift );
-        }
-      } else {
-        // FIXME: a cast from the instruction type to the operand type
-        // may be wiser...
-        if( fi.pos() ) {
-          _product.code( "((%s >> %u) & 0x%llx)", _codename, fi.pos(), opbf->mask() );
-        }
-        else {
-          _product.code( "(%s & 0x%llx)", _codename, opbf->mask() );
-        }
-      }
     
-      if( opbf->m_shift > 0 )
-        _product.code( " >> %u", +opbf->m_shift );
-      if( opbf->m_shift < 0 )
-        _product.code( " << %u", -opbf->m_shift );
-      _product.code( ";\n" );
-    }
+        if (opbf->shift > 0)
+          _product.code( " >> %u", +opbf->shift );
+        if (opbf->shift < 0)
+          _product.code( " << %u", -opbf->shift );
+        _product.code( ";\n" );
+      }
   }
 }
 
 void
-RiscGenerator::insn_bits_code( Product_t& _product, Operation_t const& _op ) const {
+RiscGenerator::insn_bits_code( Product& _product, Operation const& _op ) const {
   _product.code( "0x%llx%s", riscopcode( &_op ).m_bits, m_insn_cpostfix.str() );
 }
 
 void
-RiscGenerator::insn_mask_code( Product_t& _product, Operation_t const& _op ) const {
+RiscGenerator::insn_mask_code( Product& _product, Operation const& _op ) const {
   _product.code( "0x%llx%s", riscopcode( &_op ).m_mask, m_insn_cpostfix.str() );
 }
 
-ConstStr_t
+ConstStr
 RiscGenerator::insn_id_expr( char const* _addrname ) const {
   if ((*m_insnsizes.rbegin()) != (*m_insnsizes.begin()))
     return _addrname;
@@ -260,17 +259,17 @@ RiscGenerator::insn_id_expr( char const* _addrname ) const {
 }
 
 void
-RiscGenerator::insn_match_ifexpr( Product_t& _product, char const* _code, char const* _mask, char const* _bits ) const {
+RiscGenerator::insn_match_ifexpr( Product& _product, char const* _code, char const* _mask, char const* _bits ) const {
   _product.code( "if((%s & %s) == %s)\n", _code, _mask, _bits );
 }
 
 void
-RiscGenerator::insn_unchanged_expr( Product_t& _product, char const* _old, char const* _new ) const {
+RiscGenerator::insn_unchanged_expr( Product& _product, char const* _old, char const* _new ) const {
   _product.code( "%s == %s", _old, _new );
 }
 
 void
-RiscGenerator::op_getlen_decl( Product_t& _product ) const {
+RiscGenerator::op_getlen_decl( Product& _product ) const {
   if ((*m_insnsizes.begin()) == (*m_insnsizes.rbegin())) {
     _product.code( "inline unsigned int GetLength() const { return %d; }\n", (*m_insnsizes.rbegin()) );
   } else {
@@ -279,11 +278,11 @@ RiscGenerator::op_getlen_decl( Product_t& _product ) const {
 }
 
 void
-RiscGenerator::insn_getlen_decl( Product_t& _product, Operation_t const& _op ) const {
+RiscGenerator::insn_getlen_decl( Product& _product, Operation const& _op ) const {
   if ((*m_insnsizes.begin()) == (*m_insnsizes.rbegin()))
     return;
   
-  RiscOpCode_t const& oc = riscopcode( &_op );
+  RiscOpCode const& oc = riscopcode( &_op );
   
   if (oc.m_vlen) {
     _product.code( "unsigned int gil_length;\n" );

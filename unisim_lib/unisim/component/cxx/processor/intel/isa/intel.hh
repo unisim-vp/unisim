@@ -38,6 +38,8 @@
 #include <typeinfo>
 #include <inttypes.h>
 
+#include <iosfwd>
+
 namespace unisim {
 namespace component {
 namespace cxx {
