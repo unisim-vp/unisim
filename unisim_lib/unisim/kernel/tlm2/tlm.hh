@@ -316,6 +316,8 @@ public:
 		: schedule()
 		, free_list()
 		, kernel_event("schedule_kernel_event")
+		, paused(false)
+		, pause_time_stamp(sc_core::SC_ZERO_TIME)
 	{
 	}
 	
@@ -343,7 +345,6 @@ public:
 		schedule.insert(std::pair<typename EVENT::Key, EVENT *>(event->GetKey(), event));
 		sc_time t(time_stamp);
 		t -= sc_time_stamp();
-//		std::cerr << "notify(" << t << ") from" << std::endl << unisim::kernel::debug::BackTrace() << std::endl;
 		kernel_event.notify(t);
 	}
 	
@@ -407,12 +408,63 @@ public:
 		}
 		schedule.clear();
 		kernel_event.cancel();
+		paused = false;
 	}
 
+	void Pause()
+	{
+		if(schedule.empty()) return;
+		
+		kernel_event.cancel();
+		
+		pause_time_stamp = sc_core::sc_time_stamp();
+		paused = true;
+	}
+	
+	void Unpause()
+	{
+		if(!paused) return;
+		
+		if(schedule.empty()) return;
+
+		sc_core::sc_time unpause_time_stamp = sc_core::sc_time_stamp();
+		
+		sc_core::sc_time time_shift(unpause_time_stamp);
+		time_shift -= pause_time_stamp;
+		
+		typename std::multimap<typename EVENT::Key, EVENT *>::iterator it = schedule.begin();
+		
+		do
+		{
+			EVENT *event = (*it).second;
+			
+			sc_core::sc_time shifted_time_stamp(event->GetTimeStamp());
+			shifted_time_stamp += time_shift;
+			event->SetTimeStamp(shifted_time_stamp);
+			schedule.insert(std::pair<typename EVENT::Key, EVENT *>(event->GetKey(), event));
+			
+			typename std::multimap<typename EVENT::Key, EVENT *>::iterator erase_it = it++;
+			schedule.erase(erase_it);
+		}
+		while(it != schedule.end());
+
+		it = schedule.begin();
+		
+		const sc_time& event_time_stamp = (*it).first.GetTimeStamp();
+		
+		sc_time t(event_time_stamp);
+		t -= unpause_time_stamp;
+		
+		kernel_event.notify(t);
+		
+		paused = false;
+	}
 private:
 	std::multimap<typename EVENT::Key, EVENT *> schedule;
 	std::stack<EVENT *, std::vector<EVENT *> > free_list;
 	sc_event kernel_event;
+	bool paused;
+	sc_time pause_time_stamp;
 };
 
 template <unsigned int BUSWIDTH = 32, class TYPES = tlm::tlm_base_protocol_types>

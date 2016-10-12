@@ -779,42 +779,45 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 	ADDRESS reg_num;
 	ADDRESS type;
 
-	if(running_mode == GDBSERVER_MODE_CONTINUE && !trap)
+	if(running_mode != GDBSERVER_MODE_WAITING_GDB_CLIENT)
 	{
-		if(--counter > 0)
+		if(running_mode == GDBSERVER_MODE_CONTINUE && !trap)
 		{
-			return DebugControl<ADDRESS>::DBG_STEP;
-		}
-
-		counter = period;
-
-		char c;
-
-		if(GetChar(c, false))
-		{
-			if(c == 0x03)
+			if(--counter > 0)
 			{
-				running_mode = GDBSERVER_MODE_WAITING_GDB_CLIENT;
-				ReportTracePointTrap();
+				return DebugControl<ADDRESS>::DBG_STEP;
+			}
+
+			counter = period;
+
+			char c;
+
+			if(GetChar(c, false))
+			{
+				if(c == 0x03)
+				{
+					running_mode = GDBSERVER_MODE_WAITING_GDB_CLIENT;
+					ReportTracePointTrap();
+				}
+			}
+			else
+			{
+				return DebugControl<ADDRESS>::DBG_STEP;
 			}
 		}
-		else
+
+		if((trap || running_mode == GDBSERVER_MODE_STEP) && !synched)
 		{
-			return DebugControl<ADDRESS>::DBG_STEP;
+			synched = true;
+			return DebugControl<ADDRESS>::DBG_SYNC;
 		}
-	}
 
-	if((trap || running_mode == GDBSERVER_MODE_STEP) && !synched)
-	{
-		synched = true;
-		return DebugControl<ADDRESS>::DBG_SYNC;
-	}
-
-	if(trap || running_mode == GDBSERVER_MODE_STEP)
-	{
-		ReportTracePointTrap();
-		running_mode = GDBSERVER_MODE_WAITING_GDB_CLIENT;
-		trap = false;
+		if(trap || running_mode == GDBSERVER_MODE_STEP)
+		{
+			ReportTracePointTrap();
+			running_mode = GDBSERVER_MODE_WAITING_GDB_CLIENT;
+			trap = false;
+		}
 	}
 
 	string packet;

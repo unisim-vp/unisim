@@ -112,7 +112,7 @@ CPU::CPU(const char *name, Object *parent)
   , IFAR(0)
   , mpu()
   , instruction_counter(0)
-  , trap_on_instruction_counter(0)
+  , trap_on_instruction_counter((uint64_t) -1)
   , ipb_base_address( -1 )
   , param_verbose("verbose", this, this->PCPU::verbose, "Activate the verbose system (0 = inactive, different than 0 = active).")
   , param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter,
