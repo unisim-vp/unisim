@@ -1488,222 +1488,265 @@ void N25Q<CONFIG>::ProcessEvent(Event *event)
 	{
 		tlm_qspi_extension *qspi_ext = payload->get_extension<tlm_qspi_extension>();
 		
-		if(qspi_ext)
+		unsigned int streaming_width = payload->get_streaming_width();
+		unsigned int data_length = payload->get_data_length();
+		unsigned char *byte_enable_ptr = payload->get_byte_enable_ptr();
+		sc_dt::uint64 addr = payload->get_address();
+		sc_dt::uint64 end_addr = addr + ((streaming_width > data_length) ? data_length : streaming_width) - 1;
+		
+		bool command_has_addr = !qspi_ext || tlm_qspi_command_has_address(qspi_ext->get_command());
+		bool command_has_data = !qspi_ext || tlm_qspi_command_has_data(qspi_ext->get_command());
+		
+		if(command_has_data && !data_length)
 		{
-			// custom QSPI protocol
-			
-			tlm_qspi_command qspi_cmd = qspi_ext->get_command();
-			sc_dt::uint64 addr = payload->get_address();
-			
-			// TODO: check address range
-			if(!tlm_qspi_command_has_address(qspi_cmd) || (addr >= CONFIG::SIZE))
-			{
-				// address is not valid
-				logger << DebugWarning << "address for " << qspi_cmd << " is out-of-range" << EndDebugWarning;
-				payload->set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
-			}
+			// command needs data but data length is not valid (this is an error)
+			logger << DebugError << "data length range for ";
+			if(qspi_ext)
+				logger << qspi_ext->get_command();
 			else
-			{
-				// address is valid
+				logger << "TLM-2.0 GP READ/WRITE command ";
+			logger << " is invalid" << EndDebugError;
+			Object::Stop(-1);
+		}
+		else if(command_has_data && byte_enable_ptr)
+		{
+			// byte enable is unsupported
+			logger << DebugWarning << "byte enable for ";
+			if(qspi_ext)
+				logger << qspi_ext->get_command();
+			else
+				logger << "TLM-2.0 GP READ/WRITE command ";
+			logger << " is unsupported" << EndDebugWarning;
+			payload->set_response_status(tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE);
+		}
+		else if(command_has_data && (streaming_width < data_length))
+		{
+			// streaming is unsupported
+			logger << DebugWarning << "streaming for ";
+			if(qspi_ext)
+				logger << qspi_ext->get_command();
+			else
+				logger << "TLM-2.0 GP READ/WRITE command ";
+			logger << " is unsupported" << EndDebugWarning;
+			payload->set_response_status(tlm::TLM_BURST_ERROR_RESPONSE);
+		}
+		else if(command_has_addr && ((addr >= CONFIG::SIZE) || (end_addr >= CONFIG::SIZE)))
+		{
+			// command needs an address but address is not valid
+			logger << DebugWarning << "address range for ";
+			if(qspi_ext)
+				logger << qspi_ext->get_command();
+			else
+				logger << "TLM-2.0 GP READ/WRITE command ";
+			logger << " is out-of-range" << EndDebugWarning;
+			payload->set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
+		}
+		else if(qspi_ext)
+		{
+			// address is valid or QSPI command does not need an address
+			
+			// custom QSPI protocol
 				
-				switch(qspi_mode)
-				{
-					case TLM_QSPI_STD_MODE:
-						// Standard mode
-						
-						switch(cmd)
-						{
-							case tlm::TLM_READ_COMMAND:
-								switch(qspi_cmd)
-								{
-									// IDENTIFICATION Operations
-									case TLM_QSPI_READ_ID_COMMAND:
-										ReadID(event);
-										break;
-										
-									case TLM_QSPI_MULTIPLE_IO_READ_ID_COMMAND:
-										MultipleIOReadID(event);
-										break;
-										
-									case TLM_QSPI_READ_SERIAL_FLASH_DISCOVERY_PARAMETER_COMMAND:
-										ReadSFDP(event);
-										break;
-										
-									// READ Operations
-									case TLM_QSPI_READ_COMMAND:
-										Read(event);
-										break;
-										
-									case TLM_QSPI_FAST_READ_COMMAND:
-									case TLM_QSPI_DUAL_OUTPUT_FAST_READ_COMMAND:
-									case TLM_QSPI_DUAL_INPUT_OUTPUT_FAST_READ_COMMAND:
-									case TLM_QSPI_QUAD_OUTPUT_FAST_READ_COMMAND:
-									case TLM_QSPI_QUAD_INPUT_OUTPUT_FAST_READ_COMMAND:
-										Read(event);
-										
-										if(((CONFIG::XIP_F == CONFIG::BASIC_XIP) || !VCR.XIP) && !qspi_ext->get_xip_confirmation_bit()) // XIP=0 and Xb=0
-										{
-											qspi_mode = TLM_QSPI_XIP_MODE;
-											qspi_xip_cmd = qspi_cmd;
-										}
-										break;
-
-									// REGISTER Operations
-									case TLM_QSPI_READ_STATUS_REGISTER_COMMAND:
-										ReadStatusRegister(event);
-										break;
-										
-									case TLM_QSPI_READ_LOCK_REGISTER_COMMAND:
-										ReadLockRegister(event);
-										break;
-										
-									case TLM_QSPI_READ_FLAG_STATUS_REGISTER_COMMAND:
-										ReadFlagStatusRegister(event);
-										break;
-										
-									case TLM_QSPI_READ_NONVOLATILE_CONFIGURATION_REGISTER_COMMAND:
-										ReadNonVolatileConfigurationRegister(event);
-										break;
-										
-									case TLM_QSPI_READ_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
-										ReadVolatileConfigurationRegister(event);
-										break;
-										
-									case TLM_QSPI_WRITE_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
-										WriteVolatileConfigurationRegister(event);
-										break;
-										
-									case TLM_QSPI_READ_ENHANCED_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
-										ReadEnhancedVolatileConfigurationRegister(event);
-										break;
-										
-									case TLM_QSPI_WRITE_ENHANCED_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
-										WriteEnhancedVolatileConfigurationRegister(event);
-										break;
-										
-									// ONE-TIME PROGRAMMABLE (OTP) Operations
-									case TLM_QSPI_READ_OTP_ARRAY_COMMAND:
-										ReadOTPArray(event);
-										break;
-										
-									default:
-										payload->set_response_status(tlm::TLM_COMMAND_ERROR_RESPONSE);
-										// bad combination
-										break;
-								}
-								break;
-							case tlm::TLM_WRITE_COMMAND:
-								switch(qspi_cmd)
-								{
-									// WRITE Operations
-									case TLM_QSPI_WRITE_ENABLE_COMMAND:
-										WriteEnable();
-										break;
-										
-									case TLM_QSPI_WRITE_DISABLE_COMMAND:
-										WriteDisable();
-										break;
-										
-									case TLM_QSPI_WRITE_STATUS_REGISTER_COMMAND:
-										WriteStatusRegister(event);
-										break;
-										
-									case TLM_QSPI_WRITE_LOCK_REGISTER_COMMAND:
-										WriteLockRegister(event);
-										break;
-										
-									case TLM_QSPI_CLEAR_FLAG_STATUS_REGISTER_COMMAND:
-										ClearFlagStatusRegister();
-										break;
-										
-									case TLM_QSPI_WRITE_NONVOLATILE_CONFIGURATION_REGISTER_COMMAND:
-										WriteNonVolatileConfigurationRegister(event);
-										break;
-										
-									case TLM_QSPI_WRITE_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
-										WriteVolatileConfigurationRegister(event);
-										break;
-										
-									case TLM_QSPI_WRITE_ENHANCED_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
-										WriteEnhancedVolatileConfigurationRegister(event);
-										break;
-										
-									// PROGRAM Operations
-									case TLM_QSPI_PAGE_PROGRAM_COMMAND:
-									case TLM_QSPI_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-									case TLM_QSPI_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-									case TLM_QSPI_QUAD_INPUT_FAST_PROGRAM_COMMAND:
-									case TLM_QSPI_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
-										Program(event);
-										break;
-										
-									// ERASE Operations
-									case TLM_QSPI_SUBSECTOR_ERASE_COMMAND:
-										SubSectorErase(event);
-										break;
-									case TLM_QSPI_SECTOR_ERASE_COMMAND:
-										SectorErase(event);
-										break;
-									case TLM_QSPI_BULK_ERASE_COMMAND:
-										BulkErase(event);
-										break;
-									case TLM_QSPI_PROGRAM_ERASE_RESUME_COMMAND:
-										ProgramEraseResume(event);
-										break;
-									case TLM_QSPI_PROGRAM_ERASE_SUSPEND_COMMAND:
-										ProgramEraseSuspend(event);
-										break;
-										
-									// ONE-TIME PROGRAMMABLE (OTP) Operations
-									case TLM_QSPI_PROGRAM_OTP_ARRAY_COMMAND:
-										ProgramOTPArray(event);
-										break;
-										
-									default:
-										// bad combination
-										payload->set_response_status(tlm::TLM_COMMAND_ERROR_RESPONSE);
-										break;
-								}
-								break;
-								
-							case tlm::TLM_IGNORE_COMMAND:
-								break;
-						}
-						break;
-						
-					case TLM_QSPI_XIP_MODE:
-						// XIP mode
-						
-						switch(cmd)
-						{
-							case tlm::TLM_READ_COMMAND:
-								// Note: QSPI command in the payload extension is ignored when in XIP mode
-								
-								Read(event);
-								
-								if(qspi_ext->get_xip_confirmation_bit()) // XIP confirmation bit=1
-								{
-									// XIP is terminated by driving the XIP confirmation bit to 1.
-									qspi_mode = TLM_QSPI_STD_MODE;
+			tlm_qspi_command qspi_cmd = qspi_ext->get_command();
+				
+			switch(qspi_mode)
+			{
+				case TLM_QSPI_STD_MODE:
+					// Standard mode
+					
+					switch(cmd)
+					{
+						case tlm::TLM_READ_COMMAND:
+							switch(qspi_cmd)
+							{
+								// IDENTIFICATION Operations
+								case TLM_QSPI_READ_ID_COMMAND:
+									ReadID(event);
+									break;
 									
-									// The device automatically resets volatile configuration register bit 3 to 1.
-									VCR.XIP = 1;
-								}
-								break;
+								case TLM_QSPI_MULTIPLE_IO_READ_ID_COMMAND:
+									MultipleIOReadID(event);
+									break;
+									
+								case TLM_QSPI_READ_SERIAL_FLASH_DISCOVERY_PARAMETER_COMMAND:
+									ReadSFDP(event);
+									break;
+									
+								// READ Operations
+								case TLM_QSPI_READ_COMMAND:
+									Read(event);
+									break;
+									
+								case TLM_QSPI_FAST_READ_COMMAND:
+								case TLM_QSPI_DUAL_OUTPUT_FAST_READ_COMMAND:
+								case TLM_QSPI_DUAL_INPUT_OUTPUT_FAST_READ_COMMAND:
+								case TLM_QSPI_QUAD_OUTPUT_FAST_READ_COMMAND:
+								case TLM_QSPI_QUAD_INPUT_OUTPUT_FAST_READ_COMMAND:
+									Read(event);
+									
+									if(((CONFIG::XIP_F == CONFIG::BASIC_XIP) || !VCR.XIP) && !qspi_ext->get_xip_confirmation_bit()) // XIP=0 and Xb=0
+									{
+										qspi_mode = TLM_QSPI_XIP_MODE;
+										qspi_xip_cmd = qspi_cmd;
+									}
+									break;
+
+								// REGISTER Operations
+								case TLM_QSPI_READ_STATUS_REGISTER_COMMAND:
+									ReadStatusRegister(event);
+									break;
+									
+								case TLM_QSPI_READ_LOCK_REGISTER_COMMAND:
+									ReadLockRegister(event);
+									break;
+									
+								case TLM_QSPI_READ_FLAG_STATUS_REGISTER_COMMAND:
+									ReadFlagStatusRegister(event);
+									break;
+									
+								case TLM_QSPI_READ_NONVOLATILE_CONFIGURATION_REGISTER_COMMAND:
+									ReadNonVolatileConfigurationRegister(event);
+									break;
+									
+								case TLM_QSPI_READ_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
+									ReadVolatileConfigurationRegister(event);
+									break;
+									
+								case TLM_QSPI_WRITE_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
+									WriteVolatileConfigurationRegister(event);
+									break;
+									
+								case TLM_QSPI_READ_ENHANCED_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
+									ReadEnhancedVolatileConfigurationRegister(event);
+									break;
+									
+								case TLM_QSPI_WRITE_ENHANCED_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
+									WriteEnhancedVolatileConfigurationRegister(event);
+									break;
+									
+								// ONE-TIME PROGRAMMABLE (OTP) Operations
+								case TLM_QSPI_READ_OTP_ARRAY_COMMAND:
+									ReadOTPArray(event);
+									break;
+									
+								default:
+									payload->set_response_status(tlm::TLM_COMMAND_ERROR_RESPONSE);
+									// bad combination
+									break;
+							}
+							break;
+						case tlm::TLM_WRITE_COMMAND:
+							switch(qspi_cmd)
+							{
+								// WRITE Operations
+								case TLM_QSPI_WRITE_ENABLE_COMMAND:
+									WriteEnable();
+									break;
+									
+								case TLM_QSPI_WRITE_DISABLE_COMMAND:
+									WriteDisable();
+									break;
+									
+								case TLM_QSPI_WRITE_STATUS_REGISTER_COMMAND:
+									WriteStatusRegister(event);
+									break;
+									
+								case TLM_QSPI_WRITE_LOCK_REGISTER_COMMAND:
+									WriteLockRegister(event);
+									break;
+									
+								case TLM_QSPI_CLEAR_FLAG_STATUS_REGISTER_COMMAND:
+									ClearFlagStatusRegister();
+									break;
+									
+								case TLM_QSPI_WRITE_NONVOLATILE_CONFIGURATION_REGISTER_COMMAND:
+									WriteNonVolatileConfigurationRegister(event);
+									break;
+									
+								case TLM_QSPI_WRITE_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
+									WriteVolatileConfigurationRegister(event);
+									break;
+									
+								case TLM_QSPI_WRITE_ENHANCED_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
+									WriteEnhancedVolatileConfigurationRegister(event);
+									break;
+									
+								// PROGRAM Operations
+								case TLM_QSPI_PAGE_PROGRAM_COMMAND:
+								case TLM_QSPI_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+								case TLM_QSPI_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+								case TLM_QSPI_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+								case TLM_QSPI_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+									Program(event);
+									break;
+									
+								// ERASE Operations
+								case TLM_QSPI_SUBSECTOR_ERASE_COMMAND:
+									SubSectorErase(event);
+									break;
+								case TLM_QSPI_SECTOR_ERASE_COMMAND:
+									SectorErase(event);
+									break;
+								case TLM_QSPI_BULK_ERASE_COMMAND:
+									BulkErase(event);
+									break;
+								case TLM_QSPI_PROGRAM_ERASE_RESUME_COMMAND:
+									ProgramEraseResume(event);
+									break;
+								case TLM_QSPI_PROGRAM_ERASE_SUSPEND_COMMAND:
+									ProgramEraseSuspend(event);
+									break;
+									
+								// ONE-TIME PROGRAMMABLE (OTP) Operations
+								case TLM_QSPI_PROGRAM_OTP_ARRAY_COMMAND:
+									ProgramOTPArray(event);
+									break;
+									
+								default:
+									// bad combination
+									payload->set_response_status(tlm::TLM_COMMAND_ERROR_RESPONSE);
+									break;
+							}
+							break;
+							
+						case tlm::TLM_IGNORE_COMMAND:
+							break;
+					}
+					break;
+					
+				case TLM_QSPI_XIP_MODE:
+					// XIP mode
+					
+					switch(cmd)
+					{
+						case tlm::TLM_READ_COMMAND:
+							// Note: QSPI command in the payload extension is ignored when in XIP mode
+							
+							Read(event);
+							
+							if(qspi_ext->get_xip_confirmation_bit()) // XIP confirmation bit=1
+							{
+								// XIP is terminated by driving the XIP confirmation bit to 1.
+								qspi_mode = TLM_QSPI_STD_MODE;
 								
-							case tlm::TLM_WRITE_COMMAND:
-								// write not allowed in XIP mode
-								payload->set_response_status(tlm::TLM_COMMAND_ERROR_RESPONSE);
-								break;
-								
-							case tlm::TLM_IGNORE_COMMAND:
-								break;
-						}
-				}
+								// The device automatically resets volatile configuration register bit 3 to 1.
+								VCR.XIP = 1;
+							}
+							break;
+							
+						case tlm::TLM_WRITE_COMMAND:
+							// write not allowed in XIP mode
+							payload->set_response_status(tlm::TLM_COMMAND_ERROR_RESPONSE);
+							break;
+							
+						case tlm::TLM_IGNORE_COMMAND:
+							break;
+					}
 			}
 		}
 		else
 		{
+			// address is valid
 			// TLM-2.0 base protocol
 			switch(cmd)
 			{
