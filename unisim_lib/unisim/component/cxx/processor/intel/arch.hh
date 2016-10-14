@@ -708,21 +708,39 @@ namespace intel {
     uint32_t                    pop_dirtfregs() { uint32_t r = m_dirtfregs; m_dirtfregs = 0; return r; }
     
     
-  public:
+  public: 
+    static unsigned const VREGCOUNT = 16;
+    static unsigned const VREGSIZE = 16;
+    
     struct
     {
-      VectorBankCache<u64_t,16,16> u64regs;
-      VectorBankCache<f32_t,16,16> f32regs;
-      VectorBankCache<f64_t,16,16> f64regs;
+      
+      VectorBankCache< u8_t,VREGCOUNT,VREGSIZE>   u8regs;
+      VectorBankCache<u16_t,VREGCOUNT,VREGSIZE>  u16regs;
+      VectorBankCache<u32_t,VREGCOUNT,VREGSIZE>  u32regs;
+      VectorBankCache<u64_t,VREGCOUNT,VREGSIZE>  u64regs;
+      VectorBankCache<f32_t,VREGCOUNT,VREGSIZE>  f32regs;
+      VectorBankCache<f64_t,VREGCOUNT,VREGSIZE>  f64regs;
       
       template <typename CMD>
       void DoAll( CMD& cmd )
       {
+        u8regs.Do( cmd );
+        u16regs.Do( cmd );
+        u32regs.Do( cmd );
         u64regs.Do( cmd );
         f32regs.Do( cmd );
         f64regs.Do( cmd );
       }
+      
+      u8_t*  GetStorage( unsigned idx, u8_t )  { return  u8regs.GetStorage(*this,idx); }
+      u16_t* GetStorage( unsigned idx, u16_t ) { return u16regs.GetStorage(*this,idx); }
+      u32_t* GetStorage( unsigned idx, u32_t ) { return u32regs.GetStorage(*this,idx); }
+      u64_t* GetStorage( unsigned idx, u64_t ) { return u64regs.GetStorage(*this,idx); }
+      f32_t* GetStorage( unsigned idx, f32_t ) { return f32regs.GetStorage(*this,idx); }
+      f64_t* GetStorage( unsigned idx, f64_t ) { return f64regs.GetStorage(*this,idx); }
     } vect;
+    
     
     template<unsigned OPSIZE>
     typename TypeFor<Arch,OPSIZE>::u
