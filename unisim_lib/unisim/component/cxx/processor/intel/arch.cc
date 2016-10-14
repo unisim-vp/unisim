@@ -33,6 +33,14 @@
  */
 
 #include <unisim/component/cxx/processor/intel/arch.hh>
+
+
+#include <unisim/util/arithmetic/arithmetic.hh>
+namespace unisim { namespace component { namespace cxx { namespace processor { namespace intel {
+using unisim::util::arithmetic::BitScanForward;
+using unisim::util::arithmetic::BitScanReverse;
+}}}}}
+
 #include <unisim/component/cxx/processor/intel/isa/intel.tcc>
 #include <unisim/component/cxx/processor/intel/math.hh>
 #include <iomanip>

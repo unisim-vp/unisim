@@ -9,7 +9,7 @@ struct AddRM : public Operation<ARCH>
     else      sink << "add " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn );
   }
   
-  typedef typename TypeFor<OPSIZE>::u u_type;
+  typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
   
   void execute( ARCH& arch ) const
   {
@@ -26,13 +26,13 @@ struct AddRM : public Operation<ARCH>
 template <class ARCH, unsigned OPSIZE>
 struct AddRMI : public Operation<ARCH>
 {
-  typedef typename TypeFor<OPSIZE>::s s_type;
-  typedef typename TypeFor<OPSIZE>::u u_type;
-  AddRMI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, s_type _imm ) : Operation<ARCH>( opbase ), rmop( _rmop ), imm( u_type( _imm ) ) {} RMOp<ARCH> rmop; u_type imm;
+  typedef typename CTypeFor<OPSIZE>::s imm_type;
+  typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
+  AddRMI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, imm_type _imm ) : Operation<ARCH>( opbase ), rmop( _rmop ), imm( _imm ) {} RMOp<ARCH> rmop; imm_type imm;
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic<OPSIZE>( "add", rmop.isreg() ) << DisasmI( imm ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
 
-  void execute( ARCH& arch ) const { arch.template rmwrite<OPSIZE>( rmop, eval_add( arch, arch.template rmread<OPSIZE>( rmop ), imm ) ); }
+  void execute( ARCH& arch ) const { arch.template rmwrite<OPSIZE>( rmop, eval_add( arch, arch.template rmread<OPSIZE>( rmop ), u_type( imm ) ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,ADD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -103,7 +103,7 @@ struct OrRM : public Operation<ARCH>
     else      sink << "or " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn );
   }
   
-  typedef typename TypeFor<OPSIZE>::u u_type;
+  typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
   
   void execute( ARCH& arch ) const
   {
@@ -120,13 +120,13 @@ struct OrRM : public Operation<ARCH>
 template <class ARCH, unsigned OPSIZE>
 struct OrRMI : public Operation<ARCH>
 {
-  typedef typename TypeFor<OPSIZE>::s s_type;
-  typedef typename TypeFor<OPSIZE>::u u_type;
-  OrRMI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, s_type _imm ) : Operation<ARCH>( opbase ), rmop( _rmop ), imm( u_type( _imm ) ) {} RMOp<ARCH> rmop; u_type imm;
+  typedef typename CTypeFor<OPSIZE>::s imm_type;
+  typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
+  OrRMI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, imm_type _imm ) : Operation<ARCH>( opbase ), rmop( _rmop ), imm( _imm ) {} RMOp<ARCH> rmop; imm_type imm;
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic<OPSIZE>( "or", rmop.isreg() ) << DisasmI( imm ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
 
-  void execute( ARCH& arch ) const { arch.template rmwrite<OPSIZE>( rmop, eval_or( arch, arch.template rmread<OPSIZE>( rmop ), imm ) ); }
+  void execute( ARCH& arch ) const { arch.template rmwrite<OPSIZE>( rmop, eval_or( arch, arch.template rmread<OPSIZE>( rmop ), u_type( imm ) ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,OR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -197,7 +197,7 @@ struct AdcRM : public Operation<ARCH>
     else      sink << "adc " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn );
   }
   
-  typedef typename TypeFor<OPSIZE>::u u_type;
+  typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
   
   void execute( ARCH& arch ) const
   {
@@ -214,9 +214,9 @@ struct AdcRM : public Operation<ARCH>
 template <class ARCH, unsigned OPSIZE>
 struct AdcRMI : public Operation<ARCH>
 {
-  typedef typename TypeFor<OPSIZE>::s s_type;
-  typedef typename TypeFor<OPSIZE>::u u_type;
-  AdcRMI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, s_type _imm ) : Operation<ARCH>( opbase ), rmop( _rmop ), imm( u_type( _imm ) ) {} RMOp<ARCH> rmop; u_type imm;
+  typedef typename CTypeFor<OPSIZE>::s imm_type;
+  typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
+  AdcRMI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, imm_type _imm ) : Operation<ARCH>( opbase ), rmop( _rmop ), imm( u_type( _imm ) ) {} RMOp<ARCH> rmop; u_type imm;
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic<OPSIZE>( "adc", rmop.isreg() ) << DisasmI( imm ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
 
@@ -291,7 +291,7 @@ struct SbbRM : public Operation<ARCH>
     else      sink << "sbb " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn );
   }
   
-  typedef typename TypeFor<OPSIZE>::u u_type;
+  typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
   
   void execute( ARCH& arch ) const
   {
@@ -308,9 +308,9 @@ struct SbbRM : public Operation<ARCH>
 template <class ARCH, unsigned OPSIZE>
 struct SbbRMI : public Operation<ARCH>
 {
-  typedef typename TypeFor<OPSIZE>::s s_type;
-  typedef typename TypeFor<OPSIZE>::u u_type;
-  SbbRMI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, s_type _imm ) : Operation<ARCH>( opbase ), rmop( _rmop ), imm( u_type( _imm ) ) {} RMOp<ARCH> rmop; u_type imm;
+  typedef typename CTypeFor<OPSIZE>::s imm_type;
+  typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
+  SbbRMI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, imm_type _imm ) : Operation<ARCH>( opbase ), rmop( _rmop ), imm( u_type( _imm ) ) {} RMOp<ARCH> rmop; u_type imm;
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic<OPSIZE>( "sbb", rmop.isreg() ) << DisasmI( imm ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
 
@@ -385,7 +385,7 @@ struct AndRM : public Operation<ARCH>
     else      sink << "and " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn );
   }
   
-  typedef typename TypeFor<OPSIZE>::u u_type;
+  typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
   
   void execute( ARCH& arch ) const
   {
@@ -402,9 +402,9 @@ struct AndRM : public Operation<ARCH>
 template <class ARCH, unsigned OPSIZE>
 struct AndRMI : public Operation<ARCH>
 {
-  typedef typename TypeFor<OPSIZE>::s s_type;
-  typedef typename TypeFor<OPSIZE>::u u_type;
-  AndRMI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, s_type _imm ) : Operation<ARCH>( opbase ), rmop( _rmop ), imm( u_type( _imm ) ) {} RMOp<ARCH> rmop; u_type imm;
+  typedef typename CTypeFor<OPSIZE>::s imm_type;
+  typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
+  AndRMI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, imm_type _imm ) : Operation<ARCH>( opbase ), rmop( _rmop ), imm( u_type( _imm ) ) {} RMOp<ARCH> rmop; u_type imm;
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic<OPSIZE>( "and", rmop.isreg() ) << DisasmI( imm ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
   
@@ -479,7 +479,7 @@ struct SubRM : public Operation<ARCH>
     else      sink << "sub " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn );
   }
   
-  typedef typename TypeFor<OPSIZE>::u u_type;
+  typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
   
   void execute( ARCH& arch ) const
   {
@@ -496,9 +496,9 @@ struct SubRM : public Operation<ARCH>
 template <class ARCH, unsigned OPSIZE>
 struct SubRMI : public Operation<ARCH>
 {
-  typedef typename TypeFor<OPSIZE>::s s_type;
-  typedef typename TypeFor<OPSIZE>::u u_type;
-  SubRMI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, s_type _imm ) : Operation<ARCH>( opbase ), rmop( _rmop ), imm( u_type( _imm ) ) {} RMOp<ARCH> rmop; u_type imm;
+  typedef typename CTypeFor<OPSIZE>::s imm_type;
+  typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
+  SubRMI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, imm_type _imm ) : Operation<ARCH>( opbase ), rmop( _rmop ), imm( u_type( _imm ) ) {} RMOp<ARCH> rmop; u_type imm;
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic<OPSIZE>( "sub", rmop.isreg() ) << DisasmI( imm ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
   
@@ -573,7 +573,7 @@ struct XorRM : public Operation<ARCH>
     else      sink << "xor " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn );
   }
   
-  typedef typename TypeFor<OPSIZE>::u u_type;
+  typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
   
   void execute( ARCH& arch ) const
   {
@@ -590,9 +590,9 @@ struct XorRM : public Operation<ARCH>
 template <class ARCH, unsigned OPSIZE>
 struct XorRMI : public Operation<ARCH>
 {
-  typedef typename TypeFor<OPSIZE>::s s_type;
-  typedef typename TypeFor<OPSIZE>::u u_type;
-  XorRMI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, s_type _imm ) : Operation<ARCH>( opbase ), rmop( _rmop ), imm( u_type( _imm ) ) {} RMOp<ARCH> rmop; u_type imm;
+  typedef typename CTypeFor<OPSIZE>::s imm_type;
+  typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
+  XorRMI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, imm_type _imm ) : Operation<ARCH>( opbase ), rmop( _rmop ), imm( u_type( _imm ) ) {} RMOp<ARCH> rmop; u_type imm;
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic<OPSIZE>( "xor", rmop.isreg() ) << DisasmI( imm ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
   
@@ -667,7 +667,7 @@ struct CmpRM : public Operation<ARCH>
     else      sink << "cmp " << DisasmE( UI<OPSIZE>(), rmop ) << ',' << DisasmR<OPSIZE>( gn );
   }
   
-  typedef typename TypeFor<OPSIZE>::u u_type;
+  typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
   
   void execute( ARCH& arch ) const
   {
@@ -679,9 +679,9 @@ struct CmpRM : public Operation<ARCH>
 template <class ARCH, unsigned OPSIZE>
 struct CmpRMI : public Operation<ARCH>
 {
-  typedef typename TypeFor<OPSIZE>::s s_type;
-  typedef typename TypeFor<OPSIZE>::u u_type;
-  CmpRMI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, s_type _imm ) : Operation<ARCH>( opbase ), rmop( _rmop ), imm( u_type( _imm ) ) {} RMOp<ARCH> rmop; u_type imm;
+  typedef typename CTypeFor<OPSIZE>::s imm_type;
+  typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
+  CmpRMI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, imm_type _imm ) : Operation<ARCH>( opbase ), rmop( _rmop ), imm( u_type( _imm ) ) {} RMOp<ARCH> rmop; u_type imm;
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic<OPSIZE>( "cmp", rmop.isreg() ) << DisasmI( imm ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
 
@@ -1228,9 +1228,9 @@ struct TestRMG : public Operation<ARCH>
 template <class ARCH, unsigned OPSIZE>
 struct TestRMI : public Operation<ARCH>
 {
-  typedef typename TypeFor<OPSIZE>::s s_type;
-  typedef typename TypeFor<OPSIZE>::u u_type;
-  TestRMI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, s_type _imm ) : Operation<ARCH>( opbase ), rmop( _rmop ), imm( u_type( _imm ) ) {} RMOp<ARCH> rmop; u_type imm;
+  typedef typename CTypeFor<OPSIZE>::s imm_type;
+  typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
+  TestRMI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, imm_type _imm ) : Operation<ARCH>( opbase ), rmop( _rmop ), imm( u_type( _imm ) ) {} RMOp<ARCH> rmop; u_type imm;
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic<OPSIZE>( "test", rmop.isreg() ) << DisasmI( imm ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
   
@@ -1322,7 +1322,7 @@ struct NegRM : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic<OPSIZE>( "neg", rmop.isreg() ) << DisasmE( UI<OPSIZE>(), rmop ); }
   
-  void execute( ARCH& arch ) const { arch.template rmwrite<OPSIZE>( rmop, eval_sub( arch, typename TypeFor<OPSIZE>::u( 0 ), arch.template rmread<OPSIZE>( rmop ) ) ); }
+  void execute( ARCH& arch ) const { arch.template rmwrite<OPSIZE>( rmop, eval_sub( arch, typename TypeFor<ARCH,OPSIZE>::u( 0 ), arch.template rmread<OPSIZE>( rmop ) ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,NEG> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -1353,7 +1353,7 @@ struct DivE : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     unsigned const hidx = (OPSIZE == 8) ? 4 : 2;
-    typedef typename TypeFor<OPSIZE>::u u_type;
+    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
     u_type hi = arch.template regread<OPSIZE>( hidx ), lo = arch.template regread<OPSIZE>( 0 );
     eval_div( arch, hi, lo, arch.template rmread<OPSIZE>( rmop ) );
     arch.template regwrite<OPSIZE>( hidx, hi );
@@ -1386,10 +1386,11 @@ struct IDivE : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic<OPSIZE>( "idiv", rmop.isreg() ) << DisasmE( UI<OPSIZE>(), rmop ); }
   
-  void execute( ARCH& arch ) const {
+  void execute( ARCH& arch ) const
+  {
     unsigned const hidx = (OPSIZE == 8) ? 4 : 2;
-    typedef typename TypeFor<OPSIZE>::s s_type;
-    typedef typename TypeFor<OPSIZE>::u u_type;
+    typedef typename TypeFor<ARCH,OPSIZE>::s s_type;
+    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
     s_type hi = s_type( arch.template regread<OPSIZE>( hidx ) ), lo = s_type( arch.template regread<OPSIZE>( 0 ) );
     eval_div( arch, hi, lo, s_type( arch.template rmread<OPSIZE>( rmop ) ) );
     arch.template regwrite<OPSIZE>( hidx, u_type( hi ) );
@@ -1425,7 +1426,7 @@ struct MulE : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     unsigned const hidx = (OPSIZE == 8) ? 4 : 2;
-    typename TypeFor<OPSIZE>::u hi, lo = arch.template regread<OPSIZE>( 0 );
+    typename TypeFor<ARCH,OPSIZE>::u hi, lo = arch.template regread<OPSIZE>( 0 );
     eval_mul( arch, hi, lo, arch.template rmread<OPSIZE>( rmop ) );
     arch.template regwrite<OPSIZE>( hidx, hi );
     arch.template regwrite<OPSIZE>( 0, lo );
@@ -1460,8 +1461,8 @@ struct IMulE : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     unsigned const hidx = (OPSIZE == 8) ? 4 : 2;
-    typedef typename TypeFor<OPSIZE>::s s_type;
-    typedef typename TypeFor<OPSIZE>::u u_type;
+    typedef typename TypeFor<ARCH,OPSIZE>::s s_type;
+    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
     s_type hi, lo = s_type( arch.template regread<OPSIZE>( 0 ) );
     eval_mul( arch, hi, lo, s_type( arch.template rmread<OPSIZE>( rmop ) ) );
     arch.template regwrite<OPSIZE>( hidx, u_type( hi ) );
@@ -1482,20 +1483,22 @@ struct IMulGE : public Operation<ARCH>
 template <class ARCH, unsigned OPSIZE>
 struct IMulGEI : public Operation<ARCH>
 {
-  typedef typename TypeFor<OPSIZE>::s s_type;
+  typedef typename CTypeFor<OPSIZE>::s imm_type;
   
-  IMulGEI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn, s_type _imm )
-    : Operation<ARCH>( opbase ), rmop( _rmop ), imm( _imm ), gn( _gn ) {} RMOp<ARCH> rmop; s_type imm; uint8_t gn;
+  IMulGEI( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn, imm_type _imm )
+    : Operation<ARCH>( opbase ), rmop( _rmop ), imm( _imm ), gn( _gn ) {} RMOp<ARCH> rmop; imm_type imm; uint8_t gn;
   
   void disasm( std::ostream& sink ) const { sink << "imul" << DisasmI( imm ) << ',' << DisasmE( UI<OPSIZE>(), rmop )  << ',' << DisasmR<OPSIZE>( gn ); }
   
   void execute( ARCH& arch ) const
   {
+    typedef typename TypeFor<ARCH,OPSIZE>::s s_type;
+    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
     typedef typename atpinfo<ARCH,s_type>::twice twice;
     typedef typename ARCH::bit_t bit_t;
     
     twice res  = twice( imm ) * twice( s_type( arch.template rmread<OPSIZE>( rmop ) ) );
-    arch.template rmwrite<OPSIZE>( rmop, s_type( res ) );
+    arch.template rmwrite<OPSIZE>( rmop, u_type( res ) );
     bit_t flag = res != twice( s_type( res ) );
     arch.flagwrite( ARCH::OF, flag );
     arch.flagwrite( ARCH::CF, flag );
@@ -1557,7 +1560,7 @@ struct Lea : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << "lea " << DisasmM( rmop ) << ',' << DisasmR<OPSIZE>( gn ); }
   
-  void execute( ARCH& arch ) const { arch.template regwrite<OPSIZE>( gn, typename TypeFor<OPSIZE>::u( rmop->effective_address( arch ) ) ); }
+  void execute( ARCH& arch ) const { arch.template regwrite<OPSIZE>( gn, typename TypeFor<ARCH,OPSIZE>::u( rmop->effective_address( arch ) ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,LEA> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -1581,7 +1584,7 @@ struct Inc : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic<OPSIZE>( "inc", rmop.isreg() ) << DisasmE( UI<OPSIZE>(), rmop ); }
   
-  typedef typename TypeFor<OPSIZE>::u u_type;
+  typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
   void execute( ARCH& arch ) const
   {
     typedef typename ARCH::bit_t bit_t;
@@ -1599,7 +1602,7 @@ struct Dec : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << DisasmMnemonic<OPSIZE>( "dec", rmop.isreg() ) << DisasmE( UI<OPSIZE>(), rmop ); }
   
-  typedef typename TypeFor<OPSIZE>::u u_type;
+  typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
   void execute( ARCH& arch ) const
   {
     typedef typename ARCH::bit_t bit_t;
@@ -1682,14 +1685,14 @@ struct ShldIM : public Operation<ARCH>
 {
   typedef typename ARCH::u8_t u8_t;
   ShldIM( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn, uint8_t _sh )
-    : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ), sh( _sh ) {} RMOp<ARCH> rmop; uint8_t gn; uint8_t sh;
+    : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ), shift( _sh & 0b11111 ) {} RMOp<ARCH> rmop; uint8_t gn; uint8_t shift;
+  /* TODO: shouldn't shift be truncated according to OPSIZE (especially in 64bit) */
   
-  void disasm( std::ostream& sink ) const { sink << "shld " << DisasmI( sh ) << ',' << DisasmR<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
+  void disasm( std::ostream& sink ) const { sink << "shld " << DisasmI( shift ) << ',' << DisasmR<OPSIZE>( gn ) << ',' << DisasmE( UI<OPSIZE>(), rmop ); }
 
   void execute( ARCH& arch ) const
   {
-    u8_t shift = sh & 0x1f;
-    typename TypeFor<OPSIZE>::u result = eval_shl( arch, arch.template rmread<OPSIZE>( rmop ), shift ) | (arch.template regread<OPSIZE>( gn ) >> (u8_t( OPSIZE ) - shift));
+    typename TypeFor<ARCH,OPSIZE>::u result = eval_shl( arch, arch.template rmread<OPSIZE>( rmop ), u8_t( shift ) ) | (arch.template regread<OPSIZE>( gn ) >> (OPSIZE - shift));
     arch.template rmwrite<OPSIZE>( rmop, result );
   }
 };
@@ -1706,7 +1709,7 @@ struct ShldCL : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     u8_t shift = arch.template regread<8>( 1 ) & u8_t( 0x1f );
-    typename TypeFor<OPSIZE>::u result = eval_shl( arch, arch.template rmread<OPSIZE>( rmop ), shift ) | (arch.template regread<OPSIZE>( gn ) >> (u8_t( OPSIZE ) - shift));
+    typename TypeFor<ARCH,OPSIZE>::u result = eval_shl( arch, arch.template rmread<OPSIZE>( rmop ), shift ) | (arch.template regread<OPSIZE>( gn ) >> (u8_t(OPSIZE) - shift));
     arch.template rmwrite<OPSIZE>( rmop, result );
   }
 };
@@ -1722,8 +1725,8 @@ struct ShrdIM : public Operation<ARCH>
 
   void execute( ARCH& arch ) const
   {
-    u8_t shift = sh & 0x1f;
-    typename TypeFor<OPSIZE>::u result = eval_shr( arch, arch.template rmread<OPSIZE>( rmop ), shift ) | (arch.template regread<OPSIZE>( gn ) << (u8_t( OPSIZE ) - shift));
+    u8_t shift = u8_t( sh & 0b11111 );
+    typename TypeFor<ARCH,OPSIZE>::u result = eval_shr( arch, arch.template rmread<OPSIZE>( rmop ), shift ) | (arch.template regread<OPSIZE>( gn ) << (u8_t( OPSIZE ) - shift));
     arch.template rmwrite<OPSIZE>( rmop, result );
   }
 };
@@ -1740,7 +1743,7 @@ struct ShrdCL : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     u8_t shift = arch.template regread<8>( 1 ) & u8_t( 0x1f );
-    typename TypeFor<OPSIZE>::u result = eval_shr( arch, arch.template rmread<OPSIZE>( rmop ), shift ) | (arch.template regread<OPSIZE>( gn ) << (u8_t( OPSIZE ) - shift));
+    typename TypeFor<ARCH,OPSIZE>::u result = eval_shr( arch, arch.template rmread<OPSIZE>( rmop ), shift ) | (arch.template regread<OPSIZE>( gn ) << (u8_t( OPSIZE ) - shift));
     arch.template rmwrite<OPSIZE>( rmop, result );
   }
 };
@@ -1795,21 +1798,16 @@ struct BitScan : public Operation<ARCH>
   
   void execute( ARCH& arch ) const
   {
-    typedef typename TypeFor<OPSIZE>::u u_type;
+    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
     typedef typename ARCH::bit_t bit_t;
     u_type src = arch.template rmread<OPSIZE>( rmop );
     
-    bit_t zero = (src == u_type( 0 ));
-    arch.flagwrite( ARCH::ZF, zero );
-    if (arch.Cond( zero )) return;
+    bit_t src_is_zero = (src == u_type( 0 ));
+    arch.flagwrite( ARCH::ZF, src_is_zero );
+    if (arch.Cond( src_is_zero )) return;
     
-    u_type res = LEAD ? u_type( OPSIZE-1 ) : u_type( 0 ), mask = u_type(1) << res;
+    u_type res = LEAD ? (BitScanReverse( src )) : BitScanForward( src );
     
-    while ((src & mask) != mask)
-      {
-        if (LEAD) { res -= 1; mask >>= 1; }
-        else      { res += 1; mask <<= 1; }
-      }
     arch.template regwrite<OPSIZE>( gn, res );
   }
 };
@@ -1823,18 +1821,21 @@ struct CountZeros : public Operation<ARCH>
   
   void execute( ARCH& arch ) const
   {
-    typedef typename TypeFor<OPSIZE>::u u_type;
-    u_type const end = u_type( OPSIZE ), mask = LEAD ? (u_type(1) << (OPSIZE-1)) : u_type(1), zero = u_type( 0 );
-    u_type src = arch.template rmread<OPSIZE>( rmop ), res = u_type( 0 );
+    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
+    typedef typename ARCH::bit_t bit_t;
+    u_type src = arch.template rmread<OPSIZE>( rmop ), res;
     
-    while ((res < end) and ((src & mask) == zero))
-      {
-        src = LEAD ? (src << 1) : (src >> 1);
-        res += 1;
-      }
+    bit_t src_is_zero = (src == u_type( 0 ));
+    arch.flagwrite( ARCH::CF, src_is_zero );
     
-    arch.flagwrite( ARCH::CF, res == end );
-    arch.flagwrite( ARCH::ZF, res == zero );
+    if (arch.Cond( src_is_zero )) {
+      res = u_type( OPSIZE );
+      arch.flagwrite( ARCH::ZF, bit_t(0) );
+    }
+    else {
+      res = LEAD ? (u_type(OPSIZE-1) - BitScanReverse( src )) : BitScanForward( src );
+      arch.flagwrite( ARCH::ZF, res == u_type(0) );
+    }
     
     arch.template regwrite<OPSIZE>( gn, res );
   }
@@ -1884,7 +1885,7 @@ struct Popcnt : public Operation<ARCH>
   
   // void execute( ARCH& arch ) const
   // {
-  //   typedef typename TypeFor<OPSIZE>::u op_type;
+  //   typedef typename TypeFor<ARCH,OPSIZE>::u op_type;
   //   op_type const zero = op_type( 0 ), lsb = op_type( 1 );
   //   op_type tmp = rmop->read_e<OPSIZE>( arch ), cnt = op_type( 0 );
     
@@ -1992,8 +1993,8 @@ struct Csxe : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << 'c' << (&"btw\0wtl\0ltq\0"[4*SB<OPSIZE/16>::begin]); }
   void execute( ARCH& arch ) const
   {
-    typedef typename TypeFor<OPSIZE>::s sop_type;
-    typedef typename TypeFor<OPSIZE>::u uop_type;
+    typedef typename TypeFor<ARCH,OPSIZE>::s sop_type;
+    typedef typename TypeFor<ARCH,OPSIZE>::u uop_type;
     arch.template regwrite<OPSIZE>( 0, uop_type( sop_type( arch.template regread<OPSIZE>( 0 )  << (OPSIZE / 2) ) >> (OPSIZE / 2) ) );
   }
 };
@@ -2005,8 +2006,8 @@ struct Csx : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << 'c' << (&"wtd\0ltd\0qtd\0"[4*SB<OPSIZE/16>::begin]); }
   // void execute( ARCH& arch ) const
   // {
-  //   typedef typename TypeFor<OPSIZE>::s sop_type;
-  //   typedef typename TypeFor<OPSIZE>::u uop_type;
+  //   typedef typename TypeFor<ARCH,OPSIZE>::s sop_type;
+  //   typedef typename TypeFor<ARCH,OPSIZE>::u uop_type;
   //   arch.template regwrite<OPSIZE>( 2, uop_type( sop_type( arch.template regread<OPSIZE>( 0 )  << (OPSIZE - 1) ) >> (OPSIZE - 1) ) );
   // }
 };
@@ -2041,7 +2042,7 @@ struct Xlat : public Operation<ARCH>
   void disasm( std::ostream& sink ) const { sink << "xlat"; }
   // void execute( ARCH& arch ) const
   // {
-  //   typedef typename TypeFor<ADDRSIZE>::u addr_type;
+  //   typedef typename TypeFor<ARCH,ADDRSIZE>::u addr_type;
   //   arch.template regwrite<8>( 0, arch.template memread<8>( segment, arch.template regread<ADDRSIZE>( 3 ) + addr_type( arch.template regread<8>( 0 ) ) ) );
   // }
 };

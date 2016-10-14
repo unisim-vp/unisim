@@ -41,6 +41,7 @@
 
 #include <inttypes.h>
 #include <unisim/util/inlining/inlining.hh>
+#include <limits>
 
 namespace unisim {
 namespace util {
@@ -126,6 +127,18 @@ inline bool BitScanForward(unsigned int& n, uint64_t v) ALWAYS_INLINE;
 
 inline bool BitScanReverse(unsigned int& n, uint32_t v) ALWAYS_INLINE;
 inline bool BitScanReverse(unsigned int& n, uint64_t v) ALWAYS_INLINE;
+
+inline int BitScanForward(unsigned char n) ALWAYS_INLINE;
+inline int BitScanForward(unsigned short n) ALWAYS_INLINE;
+inline int BitScanForward(unsigned n) ALWAYS_INLINE;
+inline int BitScanForward(unsigned long n) ALWAYS_INLINE;
+inline int BitScanForward(unsigned long long n) ALWAYS_INLINE;
+
+inline int BitScanReverse(unsigned char n) ALWAYS_INLINE;
+inline int BitScanReverse(unsigned short n) ALWAYS_INLINE;
+inline int BitScanReverse(unsigned n) ALWAYS_INLINE;
+inline int BitScanReverse(unsigned long n) ALWAYS_INLINE;
+inline int BitScanReverse(unsigned long long n) ALWAYS_INLINE;
 
 inline unsigned int CountLeadingZeros(uint32_t v) ALWAYS_INLINE;
 inline unsigned int CountLeadingZeros(uint64_t v) ALWAYS_INLINE;
@@ -1412,6 +1425,63 @@ inline bool BitScanReverse(unsigned int& n, uint64_t v)
 	}
 	return false;
 }
+
+#ifdef __GNUC__
+
+inline int BitScanForward(unsigned char n) { return __builtin_ctz(n); }
+inline int BitScanForward(unsigned short n) { return __builtin_ctz(n); }
+inline int BitScanForward(unsigned n) { return __builtin_ctz(n); }
+inline int BitScanForward(unsigned long n) { return __builtin_ctzl(n); }
+inline int BitScanForward(unsigned long long n) { return __builtin_ctzll(n); }
+
+inline int BitScanReverse(unsigned char n) { return std::numeric_limits<unsigned>::digits - 1 - __builtin_clz(n); }
+inline int BitScanReverse(unsigned short n) { return std::numeric_limits<unsigned>::digits - 1 - __builtin_clz(n); }
+inline int BitScanReverse(unsigned n) { return std::numeric_limits<unsigned>::digits - 1 - __builtin_clz(n); }
+inline int BitScanReverse(unsigned long n) { return std::numeric_limits<unsigned long>::digits - 1 - __builtin_clzl(n); }
+inline int BitScanReverse(unsigned long long n) { return std::numeric_limits<unsigned long long>::digits - 1 - __builtin_clzll(n); }
+
+#else
+
+template <typename INT>
+int
+BitScanForward_C(INT value)
+{
+  if (value)
+    for (int bit = 0; ; ++bit, value >>= 1)
+      if (value & 1)
+        return bit;
+  
+  return -1;
+}
+
+template <typename INT>
+int
+BitScanReverse_C(INT value)
+{
+  int bsr = -1;
+  
+  for (int bit = 0; value; ++bit, value >>= 1)
+    if (value & 1)
+      bsr = bit;
+  
+  return bsr;
+}
+
+inline int BitScanForward(unsigned char n) { return BitScanForward_C(n); }
+inline int BitScanForward(unsigned short n) { return BitScanForward_C(n); }
+inline int BitScanForward(unsigned n) { return BitScanForward_C(n); }
+inline int BitScanForward(unsigned long n) { return BitScanForward_C(n); }
+inline int BitScanForward(unsigned long long n) { return BitScanForward_C(n); }
+
+inline int BitScanReverse(unsigned char n) { return BitScanReverse_C(n); }
+inline int BitScanReverse(unsigned short n) { return BitScanReverse_C(n); }
+inline int BitScanReverse(unsigned n) { return BitScanReverse_C(n); }
+inline int BitScanReverse(unsigned long n) { return BitScanReverse_C(n); }
+inline int BitScanReverse(unsigned long long n) { return BitScanReverse_C(n); }
+
+#endif
+
+
 
 inline unsigned int CountLeadingZeros(uint32_t v)
 {

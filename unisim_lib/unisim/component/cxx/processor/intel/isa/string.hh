@@ -16,8 +16,15 @@ struct StringEngine
   virtual bool tstcounter( ARCH& arch ) const = 0;
   virtual void deccounter( ARCH& arch ) const = 0;
   
-  virtual MOp<ARCH> const* getdst() const = 0;
-  virtual MOp<ARCH> const* getsrc( uint8_t segment ) const = 0;
+  struct StrOp : public RMOp<ARCH>
+  {
+    StrOp( MOp<ARCH> const* _mop ) : RMOp<ARCH>(_mop) {}
+    StrOp( StrOp const& _strop ) : RMOp<ARCH>(_strop.RMOp<ARCH>::mop) {}
+    ~StrOp() { RMOp<ARCH>::mop = 0; /*prevent deletion*/ }
+  };
+  
+  virtual StrOp getdst() const = 0;
+  virtual StrOp getsrc( uint8_t segment ) const = 0;
   
   virtual void addsrc( ARCH& arch, int step ) const = 0;
   virtual void adddst( ARCH& arch, int step ) const = 0;
@@ -28,16 +35,18 @@ struct StringEngine
 template <class ARCH, unsigned ADDRSIZE>
 struct _StringEngine : public StringEngine<ARCH>
 {
-  typedef typename TypeFor<ADDRSIZE>::u uaddr_type;
-  typedef typename TypeFor<ADDRSIZE>::s saddr_type;
+  typedef typename TypeFor<ARCH,ADDRSIZE>::u uaddr_type;
+  typedef typename TypeFor<ARCH,ADDRSIZE>::s saddr_type;
+  typedef typename StringEngine<ARCH>::StrOp StrOp;
+  
   ModBase<ARCH,ADDRSIZE> dst, src[6];
   _StringEngine() : dst( ES, 7 ), src{{0, 6}, {1, 6}, {2, 6}, {3, 6}, {4, 6}, {5, 6}} {}
   
   bool tstcounter( ARCH& arch ) const { return arch.Cond( arch.template regread<ADDRSIZE>( 1 ) != uaddr_type( 0 )); }
   void deccounter( ARCH& arch ) const { arch.template regwrite<ADDRSIZE>( 1, arch.template regread<ADDRSIZE>( 1 ) - uaddr_type( 1 ) ); }
   
-  MOp<ARCH> const* getdst() const { return &dst; }
-  MOp<ARCH> const* getsrc( uint8_t segment ) const { return &src[segment]; }
+  StrOp getdst() const { return StrOp( &dst ); }
+  StrOp getsrc( uint8_t segment ) const { return StrOp( &src[segment] ); }
   
   void addsrc( ARCH& arch, int step ) const { arch.template regwrite<ADDRSIZE>( 6, arch.template regread<ADDRSIZE>( 6 ) + uaddr_type( saddr_type( step ) ) ); }
   void adddst( ARCH& arch, int step ) const { arch.template regwrite<ADDRSIZE>( 7, arch.template regread<ADDRSIZE>( 7 ) + uaddr_type( saddr_type( step ) ) ); }

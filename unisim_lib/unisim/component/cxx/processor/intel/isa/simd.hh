@@ -858,12 +858,12 @@ struct PCmpEqVW : public Operation<ARCH>
   }
   void execute( ARCH& arch ) const
   {
-    typedef typename TypeFor<OPSIZE>::u utype;
+    typedef typename TypeFor<ARCH,OPSIZE>::u utype;
     typedef typename ARCH::u64_t u64_t;
     u64_t const cmpout[2] = { u64_t(utype(~utype(0))), u64_t(utype(0)) };
     
     for (unsigned sub = 0; sub < 2; ++sub) {
-      u64_t cmp = arch.template xmm_uread<64>( gn, sub ) ^ arch.template xmm_uread<64>( rmop, sub ), res = 0;
+      u64_t cmp = arch.template xmm_uread<64>( gn, sub ) ^ arch.template xmm_uread<64>( rmop, sub ), res = u64_t(0);
       for (unsigned pos = 0; pos < 64; pos += OPSIZE)
         res |= (cmpout[bool(utype(cmp>>pos))]) << pos;
       arch.template xmm_uwrite<64>( gn, sub, res );

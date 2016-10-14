@@ -41,14 +41,16 @@ namespace cxx {
 namespace processor {
 namespace intel {
 
-  template <unsigned OPSIZE> struct TypeFor {};
-  template <> struct TypeFor<8> { typedef int8_t s; typedef uint8_t u; };
-  template <> struct TypeFor<16> { typedef int16_t s; typedef uint16_t u; };
-  template <> struct TypeFor<32> { typedef int32_t s; typedef uint32_t u; typedef float f; };
-  template <> struct TypeFor<64> { typedef int64_t s; typedef uint64_t u; typedef double f; };
-  template <> struct TypeFor<80> { typedef long double f; };
+  template <typename ARCH, unsigned OPSIZE> struct TypeFor {};
+  
+  template <typename ARCH> struct TypeFor<ARCH, 8> { typedef typename ARCH:: s8_t s; typedef typename ARCH:: u8_t u; };
+  template <typename ARCH> struct TypeFor<ARCH,16> { typedef typename ARCH::s16_t s; typedef typename ARCH::u16_t u; };
+  template <typename ARCH> struct TypeFor<ARCH,32> { typedef typename ARCH::s32_t s; typedef typename ARCH::u32_t u; typedef typename ARCH::f32_t f; };
+  template <typename ARCH> struct TypeFor<ARCH,64> { typedef typename ARCH::s64_t s; typedef typename ARCH::u64_t u; typedef typename ARCH::f64_t f; };
+  template <typename ARCH> struct TypeFor<ARCH,80> { typedef typename ARCH::f80_t f; };
 
   template <unsigned SIZE> struct CTypeFor {};
+  
   template <> struct CTypeFor<8> { typedef int8_t s; typedef uint8_t u; };
   template <> struct CTypeFor<16> { typedef int16_t s; typedef uint16_t u; };
   template <> struct CTypeFor<32> { typedef int32_t s; typedef uint32_t u; typedef float f; };

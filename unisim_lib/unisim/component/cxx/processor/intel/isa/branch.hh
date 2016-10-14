@@ -149,9 +149,9 @@ struct Loop : public Operation<ARCH>
     // Stop if count is zero
     if (arch.Cond( count == u32_t(0) )) return;
     // or ZF is set (loopne)
-    if ((MOD == 0) and (arch.flagread( ARCH::ZF ) == bit_t( 1 ))) return;
+    if ((MOD == 0) and arch.Cond(arch.flagread( ARCH::ZF ) == bit_t( 1 ))) return;
     // or ZF is cleared (loope)
-    if ((MOD == 1) and (arch.flagread( ARCH::ZF ) == bit_t( 0 ))) return;
+    if ((MOD == 1) and arch.Cond(arch.flagread( ARCH::ZF ) == bit_t( 0 ))) return;
     // else jump short
     arch.addeip( u32_t( offset ) );
   }
