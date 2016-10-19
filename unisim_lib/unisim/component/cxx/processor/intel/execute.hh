@@ -54,21 +54,21 @@ namespace intel {
 
   template <typename ARCH, typename T> struct atpinfo {};
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH:: u8_t>
-  { typedef typename ARCH:: s8_t stype; typedef typename ARCH:: u8_t utype; typedef typename ARCH:: u16_t twice; enum { is_signed = 0, bitsize =  8 }; };
+  { typedef typename ARCH:: s8_t stype; typedef typename ARCH:: u8_t utype; typedef typename ARCH:: u16_t twice; enum nfo { /*is_signed = 0*/ bitsize =  8 }; };
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH:: s8_t>
-  { typedef typename ARCH:: s8_t stype; typedef typename ARCH:: u8_t utype; typedef typename ARCH:: s16_t twice; enum { is_signed = 1, bitsize =  8 }; };
+  { typedef typename ARCH:: s8_t stype; typedef typename ARCH:: u8_t utype; typedef typename ARCH:: s16_t twice; enum nfo { /*is_signed = 1*/ bitsize =  8 }; };
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::u16_t>
-  { typedef typename ARCH::s16_t stype; typedef typename ARCH::u16_t utype; typedef typename ARCH:: u32_t twice; enum { is_signed = 0, bitsize = 16 }; };
+  { typedef typename ARCH::s16_t stype; typedef typename ARCH::u16_t utype; typedef typename ARCH:: u32_t twice; enum nfo { /*is_signed = 0*/ bitsize = 16 }; };
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::s16_t>
-  { typedef typename ARCH::s16_t stype; typedef typename ARCH::u16_t utype; typedef typename ARCH:: s32_t twice; enum { is_signed = 1, bitsize = 16 }; };
+  { typedef typename ARCH::s16_t stype; typedef typename ARCH::u16_t utype; typedef typename ARCH:: s32_t twice; enum nfo { /*is_signed = 1*/ bitsize = 16 }; };
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::u32_t>
-  { typedef typename ARCH::s32_t stype; typedef typename ARCH::u32_t utype; typedef typename ARCH:: u64_t twice; enum { is_signed = 0, bitsize = 32 }; };
+  { typedef typename ARCH::s32_t stype; typedef typename ARCH::u32_t utype; typedef typename ARCH:: u64_t twice; enum nfo { /*is_signed = 0*/ bitsize = 32 }; };
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::s32_t>
-  { typedef typename ARCH::s32_t stype; typedef typename ARCH::u32_t utype; typedef typename ARCH:: s64_t twice; enum { is_signed = 1, bitsize = 32 }; };
+  { typedef typename ARCH::s32_t stype; typedef typename ARCH::u32_t utype; typedef typename ARCH:: s64_t twice; enum nfo { /*is_signed = 1*/ bitsize = 32 }; };
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::u64_t>
-  { typedef typename ARCH::s64_t stype; typedef typename ARCH::u64_t utype; typedef typename ARCH::u128_t twice; enum { is_signed = 0, bitsize = 64 }; };
+  { typedef typename ARCH::s64_t stype; typedef typename ARCH::u64_t utype; typedef typename ARCH::u128_t twice; enum nfo { /*is_signed = 0*/ bitsize = 64 }; };
   template <typename ARCH> struct atpinfo<ARCH,typename ARCH::s64_t>
-  { typedef typename ARCH::s64_t stype; typedef typename ARCH::u64_t utype; typedef typename ARCH::s128_t twice; enum { is_signed = 1, bitsize = 64 }; };
+  { typedef typename ARCH::s64_t stype; typedef typename ARCH::u64_t utype; typedef typename ARCH::s128_t twice; enum nfo { /*is_signed = 1*/ bitsize = 64 }; };
   
   template <class ARCH, typename INT>
   void
@@ -390,11 +390,11 @@ namespace intel {
   {
     typedef typename atpinfo<ARCH,INT>::utype utype;
     typedef typename atpinfo<ARCH,INT>::twice twice;
-    twice dividend = (twice( hi ) << (atpinfo<ARCH,INT>::bitsize)) | twice( utype( lo ) );
-    twice result = dividend / divisor;
+    twice dividend = (twice( hi ) << int(atpinfo<ARCH,INT>::bitsize)) | twice( utype( lo ) );
+    twice result = twice( dividend ) / twice( divisor );
     //if (twice( INT( result ) ) != result) arch.DivError();
     lo = INT( result );
-    hi = dividend % divisor;
+    hi = INT( twice( dividend ) % twice( divisor ) );
   }
   
   /* TODO: need to implement very large divisions */
@@ -408,7 +408,7 @@ namespace intel {
     // typedef typename atpinfo<ARCH,INT>::utype utype;
     typedef typename atpinfo<ARCH,INT>::twice twice;
     twice result = twice( lo ) * twice( multiplier );
-    hi = INT( result >> atpinfo<ARCH,INT>::bitsize );
+    hi = INT( result >> int(atpinfo<ARCH,INT>::bitsize) );
     INT lores = INT( result );
     lo = lores;
     bit_t flag = twice( lores ) == result;

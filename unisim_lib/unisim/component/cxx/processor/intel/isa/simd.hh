@@ -559,7 +559,7 @@ struct Movsd : public Operation<ARCH>
   {
     arch.template xmm_uwrite<64>( dst, 0,  arch.template xmm_uread<64>( src, 0 ) );
     if (not dst.is_memory_operand())
-      arch.template xmm_uwrite<64>( dst, 1, 0 );
+      arch.template xmm_uwrite<64>( dst, 1, typename ARCH::u64_t(0) );
   }
 };
 
@@ -858,16 +858,13 @@ struct PCmpEqVW : public Operation<ARCH>
   }
   void execute( ARCH& arch ) const
   {
-    typedef typename TypeFor<ARCH,OPSIZE>::u utype;
-    typedef typename ARCH::u64_t u64_t;
-    u64_t const cmpout[2] = { u64_t(utype(~utype(0))), u64_t(utype(0)) };
+    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
     
-    for (unsigned sub = 0; sub < 2; ++sub) {
-      u64_t cmp = arch.template xmm_uread<64>( gn, sub ) ^ arch.template xmm_uread<64>( rmop, sub ), res = u64_t(0);
-      for (unsigned pos = 0; pos < 64; pos += OPSIZE)
-        res |= (cmpout[bool(utype(cmp>>pos))]) << pos;
-      arch.template xmm_uwrite<64>( gn, sub, res );
-    }
+    for (unsigned sub = 0; sub < (128/OPSIZE); ++sub)
+      {
+        u_type msk = u_type(arch.template xmm_uread<OPSIZE>( gn, sub ) != arch.template xmm_uread<OPSIZE>( rmop, sub )) - u_type(1);
+        arch.template xmm_uwrite<OPSIZE>( gn, sub, msk );
+      }
   }
 };
 
@@ -1153,13 +1150,12 @@ struct PMovMskBRV : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     typedef typename ARCH::u32_t u32_t;
-    typedef typename ARCH::u64_t u64_t;
-    u32_t res = 0;
-    for (unsigned sub = 0; sub < 2; ++sub) {
-      u64_t op = arch.template xmm_uread<64>( rm, sub );
-      for (unsigned byte = 0; byte < 8; ++byte)
-        res |= (((op >> (8*byte+7))&1) << (8*sub+byte));
-    }
+    
+    u32_t res = u32_t(0);
+    
+    for (unsigned sub = 0; sub < 16; ++sub)
+      res |= u32_t(arch.template xmm_uread<8>( rm, sub ) >> 7) << sub;
+    
     arch.template regwrite<32>( gn, res );
   }
 };

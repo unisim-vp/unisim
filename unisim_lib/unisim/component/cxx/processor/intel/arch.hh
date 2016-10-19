@@ -709,57 +709,72 @@ namespace intel {
     
     
   public: 
-    static unsigned const VREGCOUNT = 16;
-    static unsigned const VREGSIZE = 16;
-    
-    struct
+    struct VUnion
     {
+      static unsigned const BYTECOUNT = 16;
       
-      VectorBankCache< u8_t,VREGCOUNT,VREGSIZE>   u8regs;
-      VectorBankCache<u16_t,VREGCOUNT,VREGSIZE>  u16regs;
-      VectorBankCache<u32_t,VREGCOUNT,VREGSIZE>  u32regs;
-      VectorBankCache<u64_t,VREGCOUNT,VREGSIZE>  u64regs;
-      VectorBankCache<f32_t,VREGCOUNT,VREGSIZE>  f32regs;
-      VectorBankCache<f64_t,VREGCOUNT,VREGSIZE>  f64regs;
-      
-      template <typename CMD>
-      void DoAll( CMD& cmd )
+      typedef void (*arrangement_t)( uint8_t* storage );
+      arrangement_t arrangement;
+
+      template <typename T>
+      static unsigned ItemCount() { return BYTECOUNT / VectorTypeInfo<T>::bytecount; }
+
+      template <typename T>
+      static void ToBytes( uint8_t* storage )
       {
-        u8regs.Do( cmd );
-        u16regs.Do( cmd );
-        u32regs.Do( cmd );
-        u64regs.Do( cmd );
-        f32regs.Do( cmd );
-        f64regs.Do( cmd );
+        T const* vec = reinterpret_cast<T const*>( storage );
+
+        for (unsigned idx = 0, stop = ItemCount<T>(); idx < stop; ++idx) {
+          T val = vec[idx]; 
+          VectorTypeInfo<T>::ToBytes( &storage[idx*VectorTypeInfo<T>::bytecount], val );
+        }
+      }
+
+      template <typename T>
+      T*
+      GetStorage( uint8_t* storage )
+      {
+        T* res = reinterpret_cast<T*>( storage );
+
+        arrangement_t current = &ToBytes<T>;
+        if (arrangement != current) {
+          arrangement( storage );   
+          for (int idx = ItemCount<T>(); --idx >= 0;) {
+            T val;
+            VectorTypeInfo<T>::FromBytes( val, &storage[idx*VectorTypeInfo<T>::bytecount] );
+            res[idx] = val;
+          }
+          arrangement = current;
+        }  
+     
+        return res;
       }
       
-      u8_t*  GetStorage( unsigned idx, u8_t )  { return  u8regs.GetStorage(*this,idx); }
-      u16_t* GetStorage( unsigned idx, u16_t ) { return u16regs.GetStorage(*this,idx); }
-      u32_t* GetStorage( unsigned idx, u32_t ) { return u32regs.GetStorage(*this,idx); }
-      u64_t* GetStorage( unsigned idx, u64_t ) { return u64regs.GetStorage(*this,idx); }
-      f32_t* GetStorage( unsigned idx, f32_t ) { return f32regs.GetStorage(*this,idx); }
-      f64_t* GetStorage( unsigned idx, f64_t ) { return f64regs.GetStorage(*this,idx); }
-    } vect;
-    
+      VUnion() : arrangement( &ToBytes<uint8_t> ) {}
+    } umms[16];
+
+    uint8_t vmm_storage[16][16];
     
     template<unsigned OPSIZE>
     typename TypeFor<Arch,OPSIZE>::u
     xmm_uread( unsigned reg, unsigned sub )
     {
-      unsigned regbit = OPSIZE*sub, blocsub = regbit/64, blocbit = regbit%64;
-      u64_t bloc = vect.u64regs.GetReg(vect, reg, blocsub);
-      return typename TypeFor<Arch,OPSIZE>::u(bloc >> blocbit);
+      typedef typename TypeFor<Arch,OPSIZE>::u u_type;
+      
+      u_type* u_array = umms[reg].GetStorage<u_type>( &vmm_storage[reg][0] );
+      
+      return u_array[sub];
     }
     
     template<unsigned OPSIZE>
     void
     xmm_uwrite( unsigned reg, unsigned sub, typename TypeFor<Arch,OPSIZE>::u val )
     {
-      typedef typename TypeFor<Arch,OPSIZE>::u utype;
-      unsigned regbit = OPSIZE*sub, blocsub = regbit/64, blocbit = regbit%64;
-      u64_t bloc = vect.u64regs.GetReg(vect, reg, blocsub);
-      bloc = (bloc & ~(u64_t(~utype(0)) << blocbit)) | (u64_t( val ) << blocbit);
-      vect.u64regs.SetReg(vect, reg, blocsub, bloc);
+      typedef typename TypeFor<Arch,OPSIZE>::u u_type;
+      
+      u_type* u_array = umms[reg].GetStorage<u_type>( &vmm_storage[reg][0] );
+      
+      u_array[sub] = val;
     }
     
     template<unsigned OPSIZE>
@@ -777,8 +792,6 @@ namespace intel {
       if (not rmop.is_memory_operand()) return xmm_uwrite<OPSIZE>( rmop.ereg(), sub, val );
       return memwrite<OPSIZE>( rmop->segment, rmop->effective_address( *this ) + (sub*OPSIZE/8), val );
     }
-    
-
   };
   
 
