@@ -1,3 +1,4 @@
+#include <unisim/component/cxx/processor/arm/disasm.hh>
 #include <top_arm32.tcc>
 #include <top_thumb.tcc>
 #include <smart_types.hh>
@@ -187,8 +188,15 @@ namespace armsec
     typedef armsec::FP   FP;
     
     template <typename T>
-    bool Cond( SmartValue<T> const& cond )
+    bool Cond( SmartValue<T> cond )
     {
+      if (not cond.expr.node)
+        throw std::logic_error( "Not a cond" );
+      
+      if (ExprNode* enode = cond.expr->GetConstNode())
+        if (ConstNodeBase* cnode = dynamic_cast<ConstNodeBase*>( enode ))
+          return cnode->GetU8();
+      
       bool result;
       PathNode::proceed( path, cond.expr, result );
       return result;
@@ -567,8 +575,77 @@ namespace armsec
       return complete;
     }
   };
+
+  struct ConditionTest : public ExprNode
+  {
+    ConditionTest( unsigned _cond ) : cond( _cond ) {} unsigned cond;
+    virtual void Repr( std::ostream& sink ) const { sink << "CTST_" << unisim::component::cxx::processor::arm::DisasmCondition(cond) << "(flags)"; }
+    virtual intptr_t cmp( ExprNode const& brhs ) const {
+      ConditionTest const& rhs = dynamic_cast<ConditionTest const&>( brhs );
+      return int(cond) - int(rhs.cond);
+    }
+    virtual ExprNode* GetConstNode() { return 0; };
+  };
+
+  BOOL
+  CheckCondition( State& state, unsigned cond )
+  {
+    if (cond == 14) return make_const( true );
+    return BOOL( Expr( new ConditionTest( cond ) ) );
+  }
   
+  struct GenFlagsID
+  {
+    enum Code { NA = 0, Sub };
+    
+    template <class SCANNER>
+    static void
+    ScanOp( SCANNER const& ops )
+    {
+      { static std::string const _("Sub");   if (ops( _, Sub))    return; }
+    }
+    
+    GenFlagsID( Code _code ) : code(_code) {}
+    GenFlagsID( std::string _code ) : code(NA) { ScanOp( Str2Enum<Code>( _code, code ) ); }
+    GenFlagsID( char const* _code ) : code(NA) { ScanOp( Str2Enum<Code>( _code, code ) ); }
+    std::string ToString() const { std::string res("NA"); ScanOp( Enum2Str<Code>( code, res ) ); return res; }
+    GenFlagsID operator + ( int offset ) const { return GenFlagsID( Code(int(code) + offset) ); }
+    int operator - ( GenFlagsID rid ) const { return int(code) - int(rid.code); }
+      
+    Code code;
+  };
+  
+  struct GenFlags : public ExprNode
+  {
+    GenFlags( GenFlagsID _id, Expr const& _ipsr, Expr const& _lhs, Expr const& _rhs )
+      : id(_id), ipsr(_ipsr), lhs(_lhs), rhs(_rhs) {}
+    
+    virtual void Repr( std::ostream& sink ) const
+    {
+      sink << "GenFlags(" << id.ToString() << ", " << ipsr << ", " << lhs << ", " << rhs << ")";
+    }
+    virtual intptr_t cmp( ExprNode const& bright ) const
+    {
+      GenFlags const& right = dynamic_cast<GenFlags const&>( bright );
+      if (int delta = id - right.id) return delta;
+      if (intptr_t delta = ipsr.cmp(right.ipsr)) return delta;
+      if (intptr_t delta = lhs.cmp(right.lhs)) return delta;
+      return rhs.cmp(right.rhs);
+    }
+    virtual ExprNode* GetConstNode() { return 0; };
+    GenFlagsID id;
+    Expr ipsr, lhs, rhs;
+  };
+
+  
+  void
+  UpdateStatusSub( State& state, U32 const& lhs, U32 const& rhs )
+  {
+    state.cpsr.m_value.expr = Expr( new GenFlags( "Sub", state.cpsr.m_value.expr, lhs.expr, rhs.expr ) );
+  }
+
 }
+
 
 struct ARMISA : public unisim::component::cxx::processor::arm::isa::arm32::Decoder<armsec::State>
 {

@@ -692,8 +692,8 @@ namespace armsec
     template <typename FLOAT> static
     void Abs( FLOAT& acc ) { acc = FLOAT( Expr( new UONode( "FAbs", acc.expr ) ) ); }
     
-    template <typename FLOAT> static
-    void Sqrt( FLOAT& acc, SmartValue<uint32_t> const& fpscr_val ) { acc = FLOAT( Expr( new UONode( "FSqrt", acc.expr ) ) ); }
+    template <typename FLOAT, class ARCH> static
+    void Sqrt( FLOAT& acc, ARCH& arch, SmartValue<uint32_t> const& fpscr_val ) { acc = FLOAT( Expr( new UONode( "FSqrt", acc.expr ) ) ); }
 
     struct FtoFNode : public ExprNode
     {
