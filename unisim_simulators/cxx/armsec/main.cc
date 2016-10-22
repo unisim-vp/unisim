@@ -639,7 +639,7 @@ namespace armsec
 
   
   void
-  UpdateStatusSub( State& state, U32 const& lhs, U32 const& rhs )
+  UpdateStatusSub( State& state, U32 const& res, U32 const& lhs, U32 const& rhs )
   {
     state.cpsr.m_value.expr = Expr( new GenFlags( "Sub", state.cpsr.m_value.expr, lhs.expr, rhs.expr ) );
   }

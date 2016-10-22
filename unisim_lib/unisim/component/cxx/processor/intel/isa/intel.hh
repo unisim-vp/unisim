@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_ISA_INTEL_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_ISA_INTEL_HH__
 
-#include <typeinfo>
+//#include <typeinfo>
 #include <inttypes.h>
 
 #include <iosfwd>
