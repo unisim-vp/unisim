@@ -5,8 +5,10 @@
 
 #include <algorithm>
 #include <iostream>
+#include <sstream>
 #include <cstdlib>
 #include <set>
+
 #if __cplusplus >= 201103L
 #include <memory>
 #else
@@ -37,11 +39,7 @@ namespace armsec
   typedef SmartValue<int32_t>  S32;
   typedef SmartValue<int64_t>  S64;
   
-  struct CodeFactory
-  {
-    virtual ~CodeFactory() {}
-    virtual void emit( Expr const& ) = 0;
-  };
+  struct Label;
   
   struct PathNode
   {
@@ -143,6 +141,10 @@ namespace armsec
           std::swap( false_nxt, true_nxt );
         }
     }
+  
+    typedef std::vector<armsec::Expr> ExprStack;
+
+    void GenCode( std::ostream&, Label const&, Label const&, ExprStack& ) const;
     
     Expr cond;
     std::set<Expr> sinks;
@@ -276,6 +278,7 @@ namespace armsec
       char const* c_str() const { return enum2cstr( *this, "NA" ); }
       RegID operator + ( int offset ) const { return RegID( Code(int(code) + offset) ); }
       int operator - ( RegID rid ) const { return int(code) - int(rid.code); }
+      bool operator == ( RegID rid ) const { return code == rid.code; }
       
       Code code;
     };
@@ -626,6 +629,133 @@ namespace armsec
   {
     state.cpsr.m_value.expr = Expr( new GenFlags( "Add", state.cpsr.m_value.expr, lhs.expr, rhs.expr ) );
   }
+  
+  struct Label
+  {
+    Label() : id(-1) {}
+    
+    static int gid;
+    
+    struct Statement
+    {
+      Statement( uint32_t _addr, int _id ) : addr(_addr), id(_id) {} uint32_t addr; int id;
+      friend std::ostream& operator << ( std::ostream& sink, Statement const& stmt )
+      { sink << "(0x" << std::hex << stmt.addr << ',' << std::dec << stmt.id << ") "; return sink; }
+    };
+    
+    Statement statement( uint32_t addr ) const { return Statement( addr, id ); }
+    int next() { id = gid++; return id; }
+    bool valid() const { return id >= 0; }
+    static Label get() { Label r; r.next(); return r; }
+    
+    int id;
+  };
+  
+  int Label::gid = 0;
+  
+  void
+  PathNode::GenCode( std::ostream& sink, Label const& start, Label const& after, ExprStack& pending ) const
+  {
+    struct F
+    {
+      F( ExprStack& _p ) : p(_p), s(p.size()) {}
+      ~F() { p.resize(s); }
+      ExprStack& p; uintptr_t s;
+    } frame( pending );
+    
+    armsec::Expr nia;
+    
+    Label current( start );
+    
+    for (std::set<armsec::Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr) {
+      if (armsec::State::RegWrite* rw = dynamic_cast<armsec::State::RegWrite*>( itr->node ))
+        {
+          armsec::Expr wb;
+          armsec::State::RegID rid = rw->id;
+          
+          if (rw->value.MakeConst()) {
+            wb = *itr;
+          }
+          
+          else {
+            struct TmpVar : public armsec::ExprNode
+            {
+              TmpVar( std::string const& _id ) : id(_id) {} std::string id;
+              virtual void Repr( std::ostream& sink ) const { sink << id; }
+              virtual intptr_t cmp( ExprNode const& rhs ) const { return id.compare( dynamic_cast<TmpVar const&>( rhs ).id ); }
+              virtual ExprNode* GetConstNode() { return 0; };
+            } *tmp = new TmpVar( std::string( "n_" ) + rid.c_str() );
+            
+            sink << current.statement(0x0) << tmp->id << " := " << rw->value;
+            sink << "; goto " << current.next() << '\n';
+            wb = new armsec::State::RegWrite( rid, tmp );
+          }
+          
+          if (rid == armsec::State::RegID::nia)
+            nia = dynamic_cast<armsec::State::RegWrite&>( *wb.node ).value;
+          else
+            pending.push_back( wb );
+        }
+      else
+        {
+          sink << current.statement(0x0) << *itr;
+          sink << "; goto " << current.next() << '\n';
+        }
+    }
+    
+    if (not cond)
+      {
+        if (sinks.size() == 0)
+          throw std::logic_error( "empty leaf" );
+      }
+    else
+      {
+        sink << current.statement(0x0) << "if (" << cond << ") ";
+    
+        current = after;
+        if (nia or (after.valid() and (pending.size() > frame.s)))
+          current.next();
+    
+        if (not false_nxt) {
+          Label ifthen;
+          sink << " goto " << ifthen.next() << " else goto " << current.id << '\n';
+          true_nxt->GenCode( sink, ifthen, current, pending );
+        } else if (not true_nxt) {
+          Label ifelse;
+          sink << " goto " << current.id << " else goto " << ifelse.next() << '\n';
+          false_nxt->GenCode( sink, ifelse, current, pending );
+        } else {
+          Label ifthen, ifelse;
+          sink << " goto " << ifthen.next() << " else goto " << ifelse.next() << '\n';
+          true_nxt->GenCode( sink, ifthen, current, pending );
+          false_nxt->GenCode( sink, ifelse, current, pending );
+        }
+      }
+    
+    int step = 0;
+    uintptr_t idx = pending.size();
+    while (idx > frame.s)
+      {
+        idx -= 1;
+        if (step++>0) sink << "; goto " << current.next() << '\n';
+        sink << current.statement(0x0) << pending[idx];
+      }
+    
+    if (not nia) {
+      if (step>0) sink << "; goto " << after.id << "\n";
+      return;
+    }
+    
+    while (idx > 0)
+      {
+        idx -= 1;
+        if (step++>0) sink << "; goto " << current.next() << '\n';
+        sink << current.statement(0x0) << pending[idx];
+      }
+    
+    if (step>0) sink << "; goto " << current.next() << '\n';
+    sink << current.statement(0x0) << "goto (" << nia << ")\n";
+  }
 }
 
 
@@ -659,44 +789,6 @@ struct Decoder
     virtual ExprNode* GetConstNode() { return 0; };
   };
   
-  void GenCode( std::ostream& sink, armsec::PathNode* pn, armsec::Expr nia ) const
-  {
-    std::vector<armsec::Expr> products;
-    
-    for (std::set<armsec::Expr>::const_iterator itr = pn->sinks.begin(), end = pn->sinks.end(); itr != end; ++itr) {
-      if (armsec::State::RegWrite* rw = dynamic_cast<armsec::State::RegWrite*>( itr->node ))
-        {
-          if        (rw->id.code == armsec::State::RegID::nia) {
-            if (nia) throw std::logic_error( "multiple exit point" );
-            nia = rw->value;
-          } else {
-            sink << "n_" << *itr << '\n'; 
-          }
-        
-      } else
-        sink << *itr << '\n';
-    }
-      
-    if (not pn->cond) {
-      if (pn->sinks.size() == 0)
-        sink << "pass\n";
-      return;
-    }
-      
-    if (pn->true_nxt) {
-      sink << "if (" << pn->cond << "):\n";
-      GenCode( sink, pn->true_nxt.get(), nia );
-    }
-      
-    if (pn->false_nxt) {
-      if (pn->true_nxt)
-        sink << "else:\n";
-      else
-        sink << "if (not " << pn->cond << "):\n";
-      GenCode( sink, pn->false_nxt.get(), nia );
-    }
-  }
-
   template <class ISA>
   void
   do_isa( ISA& isa, uint32_t addr, uint32_t code )
@@ -728,7 +820,9 @@ struct Decoder
     }
     path->factorize();
     path->remove_dead_paths();
-    GenCode( std::cout, path.get(), armsec::Expr() );
+    
+    std::vector<armsec::Expr> init;
+    path->GenCode( std::cout, armsec::Label::get(), armsec::Label(), init );
   }
 
   void  do_arm( uint32_t addr, uint32_t code ) { do_isa( armisa, addr, code ); }
