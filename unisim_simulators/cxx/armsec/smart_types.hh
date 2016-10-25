@@ -4,6 +4,7 @@
 #include <limits>       // std::numeric_limits
 #include <ostream>
 #include <stdexcept>
+#include <cstring>
 #include <stdint.h>
 #include <typeinfo>
 // #include <cmath>
@@ -39,24 +40,38 @@ namespace armsec
     virtual ExprNode* GetConstNode() = 0;
   };
   
-  template <typename ENUM_TYPE>
-  struct Str2Enum
+  template <typename EnumCODE>
+  struct CS2EN
   {
-    Str2Enum( std::string _src, ENUM_TYPE& _dst ) : src(_src), dst(_dst) {}
-    std::string src; ENUM_TYPE& dst;
-    bool operator() ( std::string strcode, ENUM_TYPE numcode ) const
-    { if (strcode != src) return false; dst=numcode; return true; }
+    CS2EN( EnumCODE& _dst, char const* _src ) : dst(_dst), src(_src) {}
+    EnumCODE& dst; char const* src;
+    bool operator() ( char const* strcode, EnumCODE numcode ) const
+    { if (strcmp( strcode, src ) != 0) return false; dst=numcode; return true; }
   };
-    
-  template <class ENUM_TYPE>
-  struct Enum2Str
+
+  template <class EnumCLASS>
+  void cstr2enum( EnumCLASS& ecl, char const* src )
   {
-    Enum2Str( ENUM_TYPE _src, std::string& _dst ) : src(_src), dst(_dst) {}
-    ENUM_TYPE src; std::string& dst;
-    bool operator() ( std::string strcode, ENUM_TYPE numcode ) const
-    { if (numcode != src) return false; dst=strcode; return true; }
+    CS2EN<typename EnumCLASS::Code> cs2en( ecl.code, src );
+    EnumCLASS::Enumeration( cs2en );
+  }
+
+  template <class EnumCODE>
+  struct EN2CS
+  {
+    EN2CS( EnumCODE _src, char const* def ) : res(def), src(_src) {}
+    char const* res; EnumCODE src;
+    bool operator() ( char const* strcode, EnumCODE numcode )
+    { if (numcode != src) return false; res=strcode; return true; }
   };
-    
+
+  template <class EnumCLASS>
+  char const* enum2cstr( EnumCLASS const& ecl, char const* def )
+  {
+    EN2CS<typename EnumCLASS::Code> en2cs( ecl.code, def );
+    EnumCLASS::Enumeration( en2cs );
+    return en2cs.res;
+  }
   
   struct BinaryOp
   {
@@ -69,34 +84,33 @@ namespace armsec
       FCmp
     };
     
-    template <class SCANNER>
-    static void
-    ScanOp( SCANNER const& ops )
+    template <class E> static void
+    Enumeration( E& e )
     {
-      { static std::string const _("Xor"); if (ops( _, Xor)) return; }
-      { static std::string const _("And"); if (ops( _, And)) return; }
-      { static std::string const _( "Or"); if (ops( _,  Or)) return; }
-      { static std::string const _("Add"); if (ops(_, Add)) return; }
-      { static std::string const _("Sub"); if (ops(_, Sub)) return; }
-      { static std::string const _("Div"); if (ops(_, Div)) return; }
-      { static std::string const _("Mod"); if (ops(_, Mod)) return; }
-      { static std::string const _("Mul"); if (ops(_, Mul)) return; }
-      { static std::string const _("ROR"); if (ops(_, ROR)) return; }
-      { static std::string const _("SHL"); if (ops(_, SHL)) return; }
-      { static std::string const _("SHR"); if (ops(_, SHR)) return; }
-      { static std::string const _("Teq"); if (ops(_, Teq)) return; }
-      { static std::string const _("Tge"); if (ops(_, Tge)) return; }
-      { static std::string const _("Tgt"); if (ops(_, Tgt)) return; }
-      { static std::string const _("Tle"); if (ops(_, Tle)) return; }
-      { static std::string const _("Tlt"); if (ops(_, Tlt)) return; }
-      { static std::string const _("Tne"); if (ops(_, Tne)) return; }
-      { static std::string const _("FCmp"); if (ops(_, FCmp)) return; }
+      if (e(  "Xor", Xor  )) return;
+      if (e(  "And", And  )) return;
+      if (e(   "Or", Or   )) return;
+      if (e(  "Add", Add  )) return;
+      if (e(  "Sub", Sub  )) return;
+      if (e(  "Div", Div  )) return;
+      if (e(  "Mod", Mod  )) return;
+      if (e(  "Mul", Mul  )) return;
+      if (e(  "ROR", ROR  )) return;
+      if (e(  "SHL", SHL  )) return;
+      if (e(  "SHR", SHR  )) return;
+      if (e(  "Teq", Teq  )) return;
+      if (e(  "Tge", Tge  )) return;
+      if (e(  "Tgt", Tgt  )) return;
+      if (e(  "Tle", Tle  )) return;
+      if (e(  "Tlt", Tlt  )) return;
+      if (e(  "Tne", Tne  )) return;
+      if (e( "FCmp", FCmp )) return;
     }
     
     BinaryOp( Code _code ) : code(_code) {}
-    BinaryOp( std::string _code ) : code(NA) { ScanOp( Str2Enum<Code>( _code, code ) ); }
-    BinaryOp( char const* _code ) : code(NA) { ScanOp( Str2Enum<Code>( _code, code ) ); }
-    std::string ToString() const { std::string res("NA"); ScanOp( Enum2Str<Code>( code, res ) ); return res; }
+    BinaryOp( char const* _code ) : code(NA) { cstr2enum( *this, _code ); }
+    char const* c_str() const { return enum2cstr( *this, "NA" ); }
+    
     intptr_t cmp( BinaryOp rhs ) const { return intptr_t(code) - intptr_t(rhs.code); }
     
     Code code;
@@ -106,29 +120,29 @@ namespace armsec
   {
     enum Code {
       NA=0,
-      BSwp, CLZ, Not,
+      BSwp, BSR, BSF, Not,
       FSQB, FFZ, FNeg, FSqrt, FAbs, FDen
     };
     
-    template <class SCANNER>
-    static void
-    ScanOp( SCANNER const& ops )
+    template <class E> static void
+    Enumeration( E& e )
     {
-      { static std::string const _("BSwp");  if (ops( _, BSwp)) return; }
-      { static std::string const _("CLZ");   if (ops( _, CLZ)) return; }
-      { static std::string const _("Not");   if (ops( _, Not)) return; }
-      { static std::string const _("FSQB");  if (ops( _, FSQB)) return; }
-      { static std::string const _("FFZ");   if (ops( _, FFZ)) return; }
-      { static std::string const _("FNeg");  if (ops( _, FNeg)) return; }
-      { static std::string const _("FSqrt"); if (ops( _, FSqrt)) return; }
-      { static std::string const _("FAbs");  if (ops( _, FAbs)) return; }
-      { static std::string const _("FDen");  if (ops( _, FDen)) return; }
+      if (e(  "BSwp", BSwp  )) return;
+      if (e(   "BSR", BSR   )) return;
+      if (e(   "BSF", BSF   )) return;
+      if (e(   "Not", Not   )) return;
+      if (e(  "FSQB", FSQB  )) return;
+      if (e(   "FFZ", FFZ   )) return;
+      if (e(  "FNeg", FNeg  )) return;
+      if (e( "FSqrt", FSqrt )) return;
+      if (e(  "FAbs", FAbs  )) return;
+      if (e(  "FDen", FDen  )) return;
     }
     
     UnaryOp( Code _code ) : code(_code) {}
-    UnaryOp( std::string _code ) : code(NA) { ScanOp( Str2Enum<Code>( _code, code ) ); }
-    UnaryOp( char const* _code ) : code(NA) { ScanOp( Str2Enum<Code>( _code, code ) ); }
-    std::string ToString() const { std::string res("NA"); ScanOp( Enum2Str<Code>( code, res ) ); return res; }
+    UnaryOp( char const* _code ) : code(NA) { cstr2enum( *this, _code ); }
+    
+    char const* c_str() const { return enum2cstr( *this, "NA" ); }
     intptr_t cmp( UnaryOp rhs ) const { return intptr_t(code) - intptr_t(rhs.code); }
     
     Code code;
@@ -269,7 +283,7 @@ namespace armsec
         case BinaryOp::NA: throw std::logic_error("???");
         }
       
-      warn() << "Unhandled binary operation: " << op.ToString() << std::endl;
+      warn() << "Unhandled binary operation: " << op.c_str() << std::endl;
       return 0;
     }
     ConstNodeBase*
@@ -281,7 +295,8 @@ namespace armsec
           return new ConstNode<VALUE_TYPE>( BSwp( value ) );
         case UnaryOp::Not:
           return new ConstNode<bool>( not value );
-        case UnaryOp::CLZ: break;
+        case UnaryOp::BSR: break;
+        case UnaryOp::BSF: break;
         case UnaryOp::FSQB: break;
         case UnaryOp::FFZ: break;
         case UnaryOp::FNeg: break;
@@ -292,7 +307,7 @@ namespace armsec
           
         }
       
-      warn() << "Unhandled unary operation: " << op.ToString() << std::endl;
+      warn() << "Unhandled unary operation: " << op.c_str() << std::endl;
       return 0;
     }
     float GetFloat() const { return value; }
@@ -407,7 +422,7 @@ namespace armsec
     virtual void Traverse( Visitor& visitor ) const
     { visitor.Process( this ); src->Traverse( visitor ); }
     virtual void Repr( std::ostream& sink ) const
-    { sink << unop.ToString() << "( " << src << " )"; }
+    { sink << unop.c_str() << "( " << src << " )"; }
     intptr_t cmp( ExprNode const& brhs ) const
     {
       UONode const& rhs = dynamic_cast<UONode const&>( brhs );
@@ -430,8 +445,8 @@ namespace armsec
       : binop(_binop), left( _left ), right( _right ) {}
     virtual void Traverse( Visitor& visitor ) const
     { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const
-    { sink << binop.ToString() << "( " << left << ", " << right << " )"; }
+    virtual void Repr( std::ostream& sink ) const;
+
     intptr_t cmp( ExprNode const& brhs ) const
     {
       BONode const& rhs = dynamic_cast<BONode const&>( brhs );
@@ -542,7 +557,7 @@ namespace armsec
   UTP RotateRight( UTP const& value, UTP const& shift ) { return UTP( new BONode( "ROR", value.expr, shift.expr ) ); }
   
   template <typename UTP>
-  UTP CountLeadingZeros( UTP const& value ) { return UTP( new UONode( "CLZ", value.expr ) ); }
+  UTP BitScanReverse( UTP const& value ) { return UTP( new UONode( "BSR", value.expr ) ); }
   
   struct FP
   {

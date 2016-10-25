@@ -37,6 +37,12 @@ namespace armsec
   typedef SmartValue<int32_t>  S32;
   typedef SmartValue<int64_t>  S64;
   
+  struct CodeFactory
+  {
+    virtual ~CodeFactory() {}
+    virtual void emit( Expr const& ) = 0;
+  };
+  
   struct PathNode
   {
     PathNode( PathNode* _previous=0 )
@@ -138,31 +144,6 @@ namespace armsec
         }
     }
     
-    void Dump( std::ostream& sink, std::string indent ) const
-    {
-      for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
-        sink << indent << *itr << '\n';
-      
-      if (not cond) {
-        if (sinks.size() == 0)
-          sink << indent << "pass\n";
-        return;
-      }
-      
-      if (true_nxt) {
-        sink << "if " << cond << ":\n";
-        true_nxt->Dump( sink, indent + "    " );
-      }
-      
-      if (false_nxt) {
-        if (true_nxt)
-          sink << "else:\n";
-        else
-          sink << "if not " << cond << ":\n";
-        false_nxt->Dump( sink, indent + "    " );
-      }
-    }
-    
     Expr cond;
     std::set<Expr> sinks;
     PathNode* previous;
@@ -254,110 +235,106 @@ namespace armsec
     /* mask for valid bits in processor control and status registers */
     static uint32_t const PSR_UNALLOC_MASK = 0x00f00000;
     
-    struct SourceID
+    struct RegID
     {
       enum Code
         {
-          NA = 0,
-          r0,r1,r2,r3,r4,r5,r6,r7,
-          r8,r9,sl,fp,ip,sp,lr,
-          cia, nia, cpsr, spsr,
-          fpscr, fpexc
+          NA = 0
+          , r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr, nia
+          , cpsr, spsr
+          , fpscr, fpexc
         };
     
-      template <class SCANNER>
-      static void
-      ScanOp( SCANNER const& ops )
+      template <class E> static void
+      Enumeration( E& e )
       {
-        { static std::string const _("r0");    if (ops( _, r0))    return; }
-        { static std::string const _("r1");    if (ops( _, r1))    return; }
-        { static std::string const _("r2");    if (ops( _, r2))    return; }
-        { static std::string const _("r3");    if (ops( _, r3))    return; }
-        { static std::string const _("r4");    if (ops( _, r4))    return; }
-        { static std::string const _("r5");    if (ops( _, r5))    return; }
-        { static std::string const _("r6");    if (ops( _, r6))    return; }
-        { static std::string const _("r7");    if (ops( _, r7))    return; }
-        { static std::string const _("r8");    if (ops( _, r8))    return; }
-        { static std::string const _("r9");    if (ops( _, r9))    return; }
-        { static std::string const _("sl");    if (ops( _, sl))    return; }
-        { static std::string const _("fp");    if (ops( _, fp))    return; }
-        { static std::string const _("ip");    if (ops( _, ip))    return; }
-        { static std::string const _("sp");    if (ops( _, sp))    return; }
-        { static std::string const _("lr");    if (ops( _, lr))    return; }
-        { static std::string const _("cia");   if (ops( _, cia))   return; }
-        { static std::string const _("nia");   if (ops( _, nia))   return; }
-        { static std::string const _("cpsr");  if (ops( _, cpsr))  return; }
-        { static std::string const _("spsr");  if (ops( _, spsr))  return; }
-        { static std::string const _("fpscr"); if (ops( _, fpscr)) return; }
-        { static std::string const _("fpexc"); if (ops( _, fpexc)) return; }
+        if (e(     "r0", r0     )) return;
+        if (e(     "r1", r1     )) return;
+        if (e(     "r2", r2     )) return;
+        if (e(     "r3", r3     )) return;
+        if (e(     "r4", r4     )) return;
+        if (e(     "r5", r5     )) return;
+        if (e(     "r6", r6     )) return;
+        if (e(     "r7", r7     )) return;
+        if (e(     "r8", r8     )) return;
+        if (e(     "r9", r9     )) return;
+        if (e(     "sl", sl     )) return;
+        if (e(     "fp", fp     )) return;
+        if (e(     "ip", ip     )) return;
+        if (e(     "sp", sp     )) return;
+        if (e(     "lr", lr     )) return;
+        if (e(    "nia", nia    )) return;
+        if (e(   "cpsr", cpsr   )) return;
+        if (e(   "spsr", spsr   )) return;
+        if (e(  "fpscr", fpscr  )) return;
+        if (e(  "fpexc", fpexc  )) return;
       }
     
-      SourceID( Code _code ) : code(_code) {}
-      SourceID( std::string _code ) : code(NA) { ScanOp( Str2Enum<Code>( _code, code ) ); }
-      SourceID( char const* _code ) : code(NA) { ScanOp( Str2Enum<Code>( _code, code ) ); }
-      std::string ToString() const { std::string res("NA"); ScanOp( Enum2Str<Code>( code, res ) ); return res; }
-      SourceID operator + ( int offset ) const { return SourceID( Code(int(code) + offset) ); }
-      int operator - ( SourceID rid ) const { return int(code) - int(rid.code); }
+      RegID( Code _code ) : code(_code) {}
+      RegID( char const* _code ) : code(NA) { cstr2enum( *this, _code ); }
+      
+      char const* c_str() const { return enum2cstr( *this, "NA" ); }
+      RegID operator + ( int offset ) const { return RegID( Code(int(code) + offset) ); }
+      int operator - ( RegID rid ) const { return int(code) - int(rid.code); }
       
       Code code;
     };
     
-    struct Source : public ExprNode
+    struct RegRead : public ExprNode
     {
-      Source( SourceID _id ) : id( _id ) {}
-      Source( char const* name ) : id( name ) {}
-      virtual void Repr( std::ostream& sink ) const { sink << "Get(" << id.ToString() << ")"; }
+      RegRead( RegID _id ) : id( _id ) {}
+      RegRead( char const* name ) : id( name ) {}
+      virtual void Repr( std::ostream& sink ) const { sink << id.c_str(); }
       virtual intptr_t cmp( ExprNode const& brhs ) const {
-        Source const& rhs = dynamic_cast<Source const&>( brhs );
+        RegRead const& rhs = dynamic_cast<RegRead const&>( brhs );
         return id - rhs.id;
       }
       virtual ExprNode* GetConstNode() { return 0; };
       
-      SourceID id;
+      RegID id;
     };
     
-    struct Sink : public ExprNode
+    struct RegWrite : public ExprNode
     {
-      Sink( SourceID _id, Expr const& _expr ) : id( _id ), expr( _expr ) {}
-      Sink( char const* name, Expr const& _expr ) : id( name ), expr( _expr ) {}
-      virtual void Repr( std::ostream& sink ) const { sink << id.ToString() << " := " << expr; }
+      RegWrite( RegID _id, Expr const& _value ) : id( _id ), value( _value ) {}
+      RegWrite( char const* name, Expr const& _value ) : id( name ), value( _value ) {}
+      virtual void Repr( std::ostream& sink ) const { sink << id.c_str() << " := " << value; }
       virtual intptr_t cmp( ExprNode const& brhs ) const {
-        Sink const& rhs = dynamic_cast<Sink const&>( brhs );
+        RegWrite const& rhs = dynamic_cast<RegWrite const&>( brhs );
         if (intptr_t delta = id - rhs.id) return delta;
-        return expr.cmp( rhs.expr );
+        return value.cmp( rhs.value );
       }
       virtual ExprNode* GetConstNode() { return 0; };
       
-      SourceID id;
-      Expr expr;
+      RegID id;
+      Expr value;
     };
     
     State( std::shared_ptr<PathNode> _path )
       : path( _path )
-      , current_insn_addr()
       , next_insn_addr()
-      , cpsr( Expr( new Source("cpsr") ) )
-      , spsr( Expr( new Source("spsr") ) )
-      , FPSCR( Expr( new Source("fpscr") ) )
-      , FPEXC( Expr( new Source("fpexc") ) )
+      , cpsr( Expr( new RegRead("cpsr") ) )
+      , spsr( Expr( new RegRead("spsr") ) )
+      , FPSCR( Expr( new RegRead("fpscr") ) )
+      , FPEXC( Expr( new RegRead("fpexc") ) )
     {
       for (unsigned reg = 0; reg < 15; ++reg)
-        reg_values[reg] = U32( armsec::Expr( new Source( SourceID("r0") + reg ) ) );
+        reg_values[reg] = U32( armsec::Expr( new RegRead( RegID("r0") + reg ) ) );
     }
     
     void SetInsnProps( Expr const& _expr, bool is_thumb, unsigned insn_length )
     {
       if ((insn_length != 32) and ((insn_length != 16) or not is_thumb))
         throw std::logic_error( "Bad instruction length" );
-      current_insn_addr = _expr;
-      reg_values[15] = current_insn_addr + U32( is_thumb ? 4 : 8 );
-      next_insn_addr = current_insn_addr + U32( insn_length / 8 );
+      U32 insn_addr = _expr;
+      reg_values[15] = insn_addr + U32( is_thumb ? 4 : 8 );
+      next_insn_addr = insn_addr + U32( insn_length / 8 );
     }
     
     std::shared_ptr<PathNode> path;
     
     U32 reg_values[16];
-    U32 current_insn_addr, next_insn_addr;
+    U32 next_insn_addr;
     typedef unisim::component::cxx::processor::arm::FieldRegister<U32> FieldRegisterU32;
     struct psr_type : public FieldRegisterU32
     {
@@ -438,8 +415,8 @@ namespace armsec
     
     struct Load : public ExprNode
     {
-      Load( Expr const& _addr, unsigned _size, bool _aligned )
-        : addr( _addr ), size( _size ), aligned( _aligned )
+      Load( unsigned _size, bool _aligned, Expr const& _addr )
+        : addr(_addr), size( _size ), aligned(_aligned)
       {}
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); addr->Traverse( visitor ); }
       virtual void Repr( std::ostream& sink ) const {
@@ -460,41 +437,41 @@ namespace armsec
     
     struct Store : public ExprNode
     {
-      Store( Expr const& _addr, unsigned _size, bool _aligned, Expr const& _value )
-        : addr( _addr ), size( _size ), aligned( _aligned ), value( _value )
+      Store( unsigned _size, bool _aligned, Expr const& _addr, Expr const& _value )
+        : value(_value), addr(_addr), size(_size), aligned(_aligned)
       {}
-      virtual void Repr( std::ostream& sink ) const
-      {
-        sink << "Store" << (aligned ? "A" : "") << 8*size << "( " << addr << ", " << value <<  " )";
-      }
+      
+      virtual void Repr( std::ostream& sink ) const { sink << "@[" << addr << ",<-," << size << "] := " << value; }
+      
       intptr_t cmp( ExprNode const& brhs ) const
       {
         Store const& rhs = dynamic_cast<Store const&>( brhs );
-        if (intptr_t delta = addr.cmp( rhs.addr )) return delta;
         if (intptr_t delta = value.cmp( rhs.value )) return delta;
+        if (intptr_t delta = addr.cmp( rhs.addr )) return delta;
         if (intptr_t delta = int(size - rhs.size)) return delta;
         return (int(aligned) - int(rhs.aligned));
       }
+      
       ExprNode* GetConstNode() { return 0; };
-      Expr addr;
+      
+      Expr value, addr;
       unsigned size;
       bool aligned;
-      Expr value;
     };
     
     std::set<Expr> stores;
     
-    U32  MemURead32( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 4, false ) ) ); }
-    U32  MemURead16( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 2, false ) ) ); }
-    U32  MemRead32( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 4, true ) ) ); }
-    U32  MemRead16( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 2, true ) ) ); }
-    U32  MemRead8( U32 const& addr ) { return U32( Expr( new Load( addr.expr, 1, false ) ) ); }
+    U32  MemURead32( U32 const& addr ) { return U32( Expr( new Load( 4, false, addr.expr ) ) ); }
+    U32  MemURead16( U32 const& addr ) { return U32( Expr( new Load( 2, false, addr.expr ) ) ); }
+    U32  MemRead32( U32 const& addr ) { return U32( Expr( new Load( 4, true, addr.expr ) ) ); }
+    U32  MemRead16( U32 const& addr ) { return U32( Expr( new Load( 2, true, addr.expr ) ) ); }
+    U32  MemRead8( U32 const& addr ) { return U32( Expr( new Load( 1, false, addr.expr ) ) ); }
     
-    void MemUWrite32( U32 const& addr, U32 const& value ) { stores.insert( new Store( addr.expr, 4, false, value.expr ) ); }
-    void MemUWrite16( U32 const& addr, U16 const& value ) { stores.insert( new Store( addr.expr, 2, false, value.expr ) ); }
-    void MemWrite32( U32 const& addr, U32 const& value ) { stores.insert( new Store( addr.expr, 4, true, value.expr ) ); }
-    void MemWrite16( U32 const& addr, U16 const& value ) { stores.insert( new Store( addr.expr, 2, true, value.expr ) ); }
-    void MemWrite8( U32 const& addr, U8 const& value ) { stores.insert( new Store( addr.expr, 1, false, value.expr ) ); }
+    void MemUWrite32( U32 const& addr, U32 const& value ) { stores.insert( new Store( 4, false, addr.expr, value.expr ) ); }
+    void MemUWrite16( U32 const& addr, U16 const& value ) { stores.insert( new Store( 2, false, addr.expr, value.expr ) ); }
+    void MemWrite32( U32 const& addr, U32 const& value ) { stores.insert( new Store( 4, true, addr.expr, value.expr ) ); }
+    void MemWrite16( U32 const& addr, U16 const& value ) { stores.insert( new Store( 2, true, addr.expr, value.expr ) ); }
+    void MemWrite8( U32 const& addr, U8 const& value ) { stores.insert( new Store( 1, false, addr.expr, value.expr ) ); }
     
     void SetExclusiveMonitors( U32 const& address, unsigned size ) { not_implemented(); }
     bool ExclusiveMonitorsPass( U32 const& address, unsigned size ) { not_implemented(); return false; }
@@ -559,16 +536,16 @@ namespace armsec
     close( State const& ref )
     {
       bool complete = path->close();
-      path->sinks.insert( Expr( new Sink( "nia", next_insn_addr.expr ) ) );
+      path->sinks.insert( Expr( new RegWrite( "nia", next_insn_addr.expr ) ) );
       if (cpsr.m_value.expr != ref.cpsr.m_value.expr)
-        path->sinks.insert( Expr( new Sink( "cpsr", cpsr.m_value.expr ) ) );
+        path->sinks.insert( Expr( new RegWrite( "cpsr", cpsr.m_value.expr ) ) );
       if (spsr.m_value.expr != ref.spsr.m_value.expr)
-        path->sinks.insert( Expr( new Sink( "spsr", spsr.m_value.expr ) ) );
+        path->sinks.insert( Expr( new RegWrite( "spsr", spsr.m_value.expr ) ) );
       if (FPSCR.expr != ref.FPSCR.expr)
-        path->sinks.insert( Expr( new Sink( "fpscr", FPSCR.expr ) ) );
+        path->sinks.insert( Expr( new RegWrite( "fpscr", FPSCR.expr ) ) );
       for (unsigned reg = 0; reg < 15; ++reg) {
         if (reg_values[reg].expr != ref.reg_values[reg].expr)
-          path->sinks.insert( Expr( new Sink( SourceID("r0") + reg, reg_values[reg].expr ) ) );
+          path->sinks.insert( Expr( new RegWrite( RegID("r0") + reg, reg_values[reg].expr ) ) );
       }
       for (std::set<Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
         path->sinks.insert( *itr );
@@ -596,19 +573,19 @@ namespace armsec
   
   struct GenFlagsID
   {
-    enum Code { NA = 0, Sub };
+    enum Code { NA = 0, Sub, Add };
     
-    template <class SCANNER>
-    static void
-    ScanOp( SCANNER const& ops )
+    template <class E> static void
+    Enumeration( E& e )
     {
-      { static std::string const _("Sub");   if (ops( _, Sub))    return; }
+      if (e( "Sub", Sub )) return;
+      if (e( "Add", Add )) return;
     }
     
     GenFlagsID( Code _code ) : code(_code) {}
-    GenFlagsID( std::string _code ) : code(NA) { ScanOp( Str2Enum<Code>( _code, code ) ); }
-    GenFlagsID( char const* _code ) : code(NA) { ScanOp( Str2Enum<Code>( _code, code ) ); }
-    std::string ToString() const { std::string res("NA"); ScanOp( Enum2Str<Code>( code, res ) ); return res; }
+    GenFlagsID( char const* _code ) : code(NA) { cstr2enum( *this, _code ); }
+    
+    char const* c_str() const { return enum2cstr( *this, "NA" ); }
     GenFlagsID operator + ( int offset ) const { return GenFlagsID( Code(int(code) + offset) ); }
     int operator - ( GenFlagsID rid ) const { return int(code) - int(rid.code); }
       
@@ -622,7 +599,7 @@ namespace armsec
     
     virtual void Repr( std::ostream& sink ) const
     {
-      sink << "GenFlags(" << id.ToString() << ", " << ipsr << ", " << lhs << ", " << rhs << ")";
+      sink << "GenFlags(" << id.c_str() << ", " << ipsr << ", " << lhs << ", " << rhs << ")";
     }
     virtual intptr_t cmp( ExprNode const& bright ) const
     {
@@ -643,7 +620,12 @@ namespace armsec
   {
     state.cpsr.m_value.expr = Expr( new GenFlags( "Sub", state.cpsr.m_value.expr, lhs.expr, rhs.expr ) );
   }
-
+  
+  void
+  UpdateStatusAdd( State& state, U32 const& res, U32 const& lhs, U32 const& rhs )
+  {
+    state.cpsr.m_value.expr = Expr( new GenFlags( "Add", state.cpsr.m_value.expr, lhs.expr, rhs.expr ) );
+  }
 }
 
 
@@ -668,7 +650,53 @@ struct Decoder
 {
   ARMISA armisa;
   THUMBISA thumbisa;
+
+  struct InstructionAddress : public armsec::ExprNode
+  {
+    InstructionAddress() {}
+    virtual void Repr( std::ostream& sink ) const { sink << "insn_addr"; }
+    virtual intptr_t cmp( ExprNode const& brhs ) const { dynamic_cast<InstructionAddress const&>( brhs ); return 0; }
+    virtual ExprNode* GetConstNode() { return 0; };
+  };
   
+  void GenCode( std::ostream& sink, armsec::PathNode* pn, armsec::Expr nia ) const
+  {
+    std::vector<armsec::Expr> products;
+    
+    for (std::set<armsec::Expr>::const_iterator itr = pn->sinks.begin(), end = pn->sinks.end(); itr != end; ++itr) {
+      if (armsec::State::RegWrite* rw = dynamic_cast<armsec::State::RegWrite*>( itr->node ))
+        {
+          if        (rw->id.code == armsec::State::RegID::nia) {
+            if (nia) throw std::logic_error( "multiple exit point" );
+            nia = rw->value;
+          } else {
+            sink << "n_" << *itr << '\n'; 
+          }
+        
+      } else
+        sink << *itr << '\n';
+    }
+      
+    if (not pn->cond) {
+      if (pn->sinks.size() == 0)
+        sink << "pass\n";
+      return;
+    }
+      
+    if (pn->true_nxt) {
+      sink << "if (" << pn->cond << "):\n";
+      GenCode( sink, pn->true_nxt.get(), nia );
+    }
+      
+    if (pn->false_nxt) {
+      if (pn->true_nxt)
+        sink << "else:\n";
+      else
+        sink << "if (not " << pn->cond << "):\n";
+      GenCode( sink, pn->false_nxt.get(), nia );
+    }
+  }
+
   template <class ISA>
   void
   do_isa( ISA& isa, uint32_t addr, uint32_t code )
@@ -680,8 +708,8 @@ struct Decoder
 #endif
       <typename ISA::Operation> op(isa.NCDecode( addr, ISA::mkcode( code ) ) );
     
-    armsec::Expr insn_addr( new armsec::State::Source("cia") ); //<if instruction address shall a remain variable
-    // armsec::Expr insn_addr( armsec::make_const( addr ) ); //<if instruction address shall be known
+    // armsec::Expr insn_addr( new InstructionAddress() ); //<if instruction address shall a remain variable
+    armsec::Expr insn_addr( armsec::make_const( addr ) ); //<if instruction address shall be known
     
     std::shared_ptr<armsec::PathNode> path ( new armsec::PathNode );
     std::cout << op->GetName() << std::endl;
@@ -700,8 +728,9 @@ struct Decoder
     }
     path->factorize();
     path->remove_dead_paths();
-    path->Dump( std::cout, "" );
+    GenCode( std::cout, path.get(), armsec::Expr() );
   }
+
   void  do_arm( uint32_t addr, uint32_t code ) { do_isa( armisa, addr, code ); }
   void  do_thumb( uint32_t addr, uint32_t code ) { do_isa( thumbisa, addr, code ); }
 };

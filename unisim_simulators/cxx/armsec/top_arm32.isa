@@ -65,7 +65,7 @@ impl {
 #include <iostream>
 #include <iomanip>
 
-using unisim::util::arithmetic::CountLeadingZeros;
+using unisim::util::arithmetic::BitScanReverse;
 using unisim::util::endian::ByteSwap;
 using unisim::util::arithmetic::RotateRight;
 // using unisim::util::arithmetic::UnsignedAdd8;

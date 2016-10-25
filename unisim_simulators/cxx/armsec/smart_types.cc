@@ -31,4 +31,18 @@ namespace armsec
   uint32_t BSwp( uint32_t v ) { return unisim::util::endian::ByteSwap( v ); }
   uint16_t BSwp( uint16_t v ) { return unisim::util::endian::ByteSwap( v ); }
 
+
+  void
+  BONode::Repr( std::ostream& sink ) const
+  {
+    switch (binop.code)
+      {
+      default:                sink << binop.c_str() << "( " << left << ", " << right << " )"; break;
+        
+      case BinaryOp::Add:     sink << "(" << left << " + " << right << ")"; break;
+        
+      case BinaryOp::Sub:     sink << "(" << left << " - " << right << ")"; break;
+      }
+  }
+
 } // end of namespace armsec
