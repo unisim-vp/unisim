@@ -868,9 +868,15 @@ clz.disasm = { buffer << "clz\t" << DisasmRegister(rd) << ", " << DisasmRegister
 
 clz.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
+
+  typedef typename ARCH::U32 U32;
+  U32 val = cpu.GetGPR( rm );
+  if (cpu.Cond( val == U32(0) ))
+    val = U32(32);
+  else
+    val = U32(31) - BitScanReverse( cpu.GetGPR( rm ) );
   
-  // TODO: Use a portable function...
-  cpu.SetGPR( rd, CountLeadingZeros( cpu.GetGPR( rm ) ) );
+  cpu.SetGPR( rd, val );
 };
 
 /*******************************************************************

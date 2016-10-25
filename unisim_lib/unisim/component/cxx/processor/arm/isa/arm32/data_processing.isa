@@ -1079,7 +1079,14 @@ clz.disasm = {
 clz.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
   
-  cpu.SetGPR(rd, CountLeadingZeros( cpu.GetGPR(rm) ));
+  typedef typename ARCH::U32 U32;
+  U32 val = cpu.GetGPR( rm );
+  if (cpu.Cond( val == U32(0) ))
+    val = U32(32);
+  else
+    val = U32(31) - BitScanReverse( cpu.GetGPR( rm ) );
+  
+  cpu.SetGPR( rd, val );
 };
 
 /*
