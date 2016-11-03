@@ -80,7 +80,7 @@ namespace arm {
     static U16 const condition_truth_tables[] = {
       U16((                  Z).tt), // eq; equal
       U16((              not Z).tt), // ne; not equal
-      U16((                  C).tt), // cs/hs; unsigned higuer or same
+      U16((                  C).tt), // cs/hs; unsigned higher or same
       U16((              not C).tt), // cc/lo; unsigned lower
       U16((                  N).tt), // mi; negative
       U16((              not N).tt), // pl; positive or zero
@@ -342,7 +342,7 @@ namespace arm {
     // have reserved it. The definition of UNPREDICTABLE does not
     // permit the resulting behavior to be a security hole.
 
-    U32 new_cpsr = (core.CPSR().Get( ALL32 ) & ~write_mask) | (value & write_mask);
+    U32 new_cpsr = (core.CPSR().bits() & ~write_mask) | (value & write_mask);
     
     core.CurrentMode().Swap(core); // OUT
     core.CPSR().Set( ALL32, new_cpsr );

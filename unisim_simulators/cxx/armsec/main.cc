@@ -1,4 +1,5 @@
 #include <unisim/component/cxx/processor/arm/disasm.hh>
+#include <unisim/component/cxx/processor/arm/psr.hh>
 #include <top_arm32.tcc>
 #include <top_thumb.tcc>
 #include <smart_types.hh>
@@ -243,10 +244,11 @@ namespace armsec
         {
           NA = 0
           , r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr, nia
+          , n, z, c, v// , q, ge0, ge1, ge2, ge3
           , cpsr, spsr
           , fpscr, fpexc
         };
-    
+      
       template <class E> static void
       Enumeration( E& e )
       {
@@ -266,6 +268,10 @@ namespace armsec
         if (e(     "sp", sp     )) return;
         if (e(     "lr", lr     )) return;
         if (e(    "nia", nia    )) return;
+        if (e(      "n", n      )) return;
+        if (e(      "z", z      )) return;
+        if (e(      "c", c      )) return;
+        if (e(      "v", v      )) return;
         if (e(   "cpsr", cpsr   )) return;
         if (e(   "spsr", spsr   )) return;
         if (e(  "fpscr", fpscr  )) return;
@@ -316,7 +322,7 @@ namespace armsec
     State( std::shared_ptr<PathNode> _path )
       : path( _path )
       , next_insn_addr()
-      , cpsr( Expr( new RegRead("cpsr") ) )
+      , cpsr( Expr( new RegRead("n") ), Expr( new RegRead("z") ), Expr( new RegRead("c") ), Expr( new RegRead("v") ), Expr( new RegRead("cpsr") ) )
       , spsr( Expr( new RegRead("spsr") ) )
       , FPSCR( Expr( new RegRead("fpscr") ) )
       , FPEXC( Expr( new RegRead("fpexc") ) )
@@ -338,38 +344,86 @@ namespace armsec
     
     U32 reg_values[16];
     U32 next_insn_addr;
-    typedef unisim::component::cxx::processor::arm::FieldRegister<U32> FieldRegisterU32;
-    struct psr_type : public FieldRegisterU32
+    //typedef unisim::component::cxx::processor::arm::FieldRegister<U32> FieldRegisterU32;
+    //struct psr_type : public FieldRegisterU32
+    struct psr_type
     {
-      psr_type( Expr const& expr )
-        : FieldRegisterU32( expr )
+      psr_type( Expr const& _n, Expr const& _z, Expr const& _c, Expr const& _v, Expr const& _bg )
+        : n(_n), z(_z), c(_c), v(_v), bg(_bg)
       {}
-      // void ITSetState( uint32_t cond, uint32_t mask )
-      // {
-      //   RegisterField<12,4>().Set( m_value, cond );
-      //   RegisterField<10,2>().Set( m_value, (mask >> 2) & 3 );
-      //   RegisterField<25,2>().Set( m_value, (mask >> 0) & 3 );
-      // }
+      Expr n, z, c, v;
+      U32 bg;
+      
+      typedef unisim::component::cxx::processor::arm::RegisterField<31,1> NRF; /* Negative Integer Condition Flag */
+      typedef unisim::component::cxx::processor::arm::RegisterField<30,1> ZRF; /* Zero     Integer Condition Flag */
+      typedef unisim::component::cxx::processor::arm::RegisterField<29,1> CRF; /* Carry    Integer Condition Flag */
+      typedef unisim::component::cxx::processor::arm::RegisterField<28,1> VRF; /* Overflow Integer Condition Flag */
+      
+      typedef unisim::component::cxx::processor::arm::RegisterField<28,4> NZCVRF; /* Grouped Integer Condition Flags */
+      
+      typedef unisim::component::cxx::processor::arm::RegisterField<27,1> QRF; /* Cumulative saturation flag */
+      
+      typedef unisim::component::cxx::processor::arm::RegisterField< 9,1> ERF; /* Endianness execution state */
+      typedef unisim::component::cxx::processor::arm::RegisterField< 0,5> MRF; /* Mode field */
+      
+      typedef unisim::component::cxx::processor::arm::RegisterField< 0,32> ALL;
+      
+      template <typename RF>
+      U32 Set( RF const& _, U32 const& value )
+      {
+        StaticAssert<(RF::pos > 31) or ((RF::pos + RF::size) <= 28)>::check();
+        
+        return _.Get( bg );
+      }
+      
+      void Set( NRF const& _, U32 const& value ) { n = bit_expr( value ); }
+      void Set( ZRF const& _, U32 const& value ) { z = bit_expr( value ); }
+      void Set( CRF const& _, U32 const& value ) { c = bit_expr( value ); }
+      void Set( VRF const& _, U32 const& value ) { v = bit_expr( value ); }
+
+      void Set( QRF const& _, U32 const& value ) { _.Set( bg, value ); }
+      void Set( ERF const& _, U32 const& value ) { _.Set( bg, value ); }
+      
+      void Set( NZCVRF const& _, U32 const& value )
+      {
+        n = BOOL( unisim::component::cxx::processor::arm::RegisterField< 3,1>().Get( value ) ).expr;
+        z = BOOL( unisim::component::cxx::processor::arm::RegisterField< 2,1>().Get( value ) ).expr;
+        c = BOOL( unisim::component::cxx::processor::arm::RegisterField< 1,1>().Get( value ) ).expr;
+        v = BOOL( unisim::component::cxx::processor::arm::RegisterField< 0,1>().Get( value ) ).expr;
+      }
+      
+      void Set( ALL const& _, U32 const& value )
+      {
+        n = BOOL( NRF().Get( value ) ).expr;
+        z = BOOL( ZRF().Get( value ) ).expr;
+        c = BOOL( CRF().Get( value ) ).expr;
+        v = BOOL( VRF().Get( value ) ).expr;
+        
+        unisim::component::cxx::processor::arm::RegisterField<0,28>().Set( bg, value );
+      }
+      
+      template <typename RF>
+      U32 Get( RF const& _ )
+      {
+        StaticAssert<(RF::pos > 31) or ((RF::pos + RF::size) <= 28)>::check();
+        
+        return _.Get( bg );
+      }
+      
+      U32 Get( NRF const& _ ) { return U32(BOOL(n)); }
+      U32 Get( ZRF const& _ ) { return U32(BOOL(z)); }
+      U32 Get( CRF const& _ ) { return U32(BOOL(c)); }
+      U32 Get( VRF const& _ ) { return U32(BOOL(v)); }
+      
+      // U32 Get( ALL const& _ ) { return (U32(BOOL(n)) << 31) | (U32(BOOL(z)) << 30) | (U32(BOOL(c)) << 29) | (U32(BOOL(v)) << 28) | bg; }
+      
+      U32 bits() const { return (U32(BOOL(n)) << 31) | (U32(BOOL(z)) << 30) | (U32(BOOL(c)) << 29) | (U32(BOOL(v)) << 28) | bg; }
+      
+      Expr bit_expr( U32 const& value ) { return value.expr; }
+      
+    } cpsr;
     
-      // uint32_t ITGetState() const
-      // {
-      //   return (RegisterField<10,6>().Get( m_value ) << 2) | RegisterField<25,2>().Get( m_value );
-      // }
-  
-      // bool InITBlock() const
-      // { return RegisterField<10,2>().Get( m_value ) or RegisterField<25,2>().Get( m_value ); }
-  
-      // uint32_t ITGetCondition() const
-      // { return this->InITBlock() ? RegisterField<12,4>().Get( m_value ) : 14; }
-  
-      // void ITAdvance()
-      // {
-      //   uint32_t state = (RegisterField<10,6>().Get( m_value ) << 2) | RegisterField<25,2>().Get( m_value );
-      //   state = (state & 7) ? ((state & -32) | ((state << 1) & 31)) : 0;
-      //   RegisterField<10,6>().Set( m_value, state >> 2 );
-      //   RegisterField<25,2>().Set( m_value, state & 3 );
-      // }
-    } cpsr, spsr;
+    U32 spsr;
     
     void FPTrap( unsigned exc )
     {
@@ -412,7 +466,7 @@ namespace armsec
     U32 GetNIA() { return next_insn_addr; }
 
     psr_type& CPSR() { return cpsr; };
-    psr_type& SPSR() { not_implemented(); return spsr; };
+    U32& SPSR() { not_implemented(); return spsr; };
     
     void SetGPRMapping( uint32_t src_mode, uint32_t tar_mode ) { /* system related */ not_implemented(); }
     
@@ -540,10 +594,18 @@ namespace armsec
     {
       bool complete = path->close();
       path->sinks.insert( Expr( new RegWrite( "nia", next_insn_addr.expr ) ) );
-      if (cpsr.m_value.expr != ref.cpsr.m_value.expr)
-        path->sinks.insert( Expr( new RegWrite( "cpsr", cpsr.m_value.expr ) ) );
-      if (spsr.m_value.expr != ref.spsr.m_value.expr)
-        path->sinks.insert( Expr( new RegWrite( "spsr", spsr.m_value.expr ) ) );
+      if (cpsr.n != ref.cpsr.n)
+        path->sinks.insert( Expr( new RegWrite( "n", cpsr.n ) ) );
+      if (cpsr.z != ref.cpsr.z)
+        path->sinks.insert( Expr( new RegWrite( "z", cpsr.z ) ) );
+      if (cpsr.c != ref.cpsr.c)
+        path->sinks.insert( Expr( new RegWrite( "c", cpsr.c ) ) );
+      if (cpsr.v != ref.cpsr.v)
+        path->sinks.insert( Expr( new RegWrite( "v", cpsr.v ) ) );
+      if (cpsr.bg.expr != ref.cpsr.bg.expr)
+        path->sinks.insert( Expr( new RegWrite( "cpsr", cpsr.bg.expr ) ) );
+      if (spsr.expr != ref.spsr.expr)
+        path->sinks.insert( Expr( new RegWrite( "spsr", spsr.expr ) ) );
       if (FPSCR.expr != ref.FPSCR.expr)
         path->sinks.insert( Expr( new RegWrite( "fpscr", FPSCR.expr ) ) );
       for (unsigned reg = 0; reg < 15; ++reg) {
@@ -621,13 +683,17 @@ namespace armsec
   void
   UpdateStatusSub( State& state, U32 const& res, U32 const& lhs, U32 const& rhs )
   {
-    state.cpsr.m_value.expr = Expr( new GenFlags( "Sub", state.cpsr.m_value.expr, lhs.expr, rhs.expr ) );
+    BOOL neg = S32(res) < S32(0);
+    state.cpsr.n = neg.expr;
+    state.cpsr.z = ( lhs == rhs ).expr;
+    state.cpsr.c = ( lhs > rhs ).expr;
+    state.cpsr.v = ( neg xor (S32(lhs) < S32(rhs)) ).expr;
   }
   
   void
   UpdateStatusAdd( State& state, U32 const& res, U32 const& lhs, U32 const& rhs )
   {
-    state.cpsr.m_value.expr = Expr( new GenFlags( "Add", state.cpsr.m_value.expr, lhs.expr, rhs.expr ) );
+    UpdateStatusSub( state, res, lhs, -rhs );
   }
   
   struct Label

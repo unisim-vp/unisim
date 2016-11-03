@@ -14,6 +14,9 @@ namespace armsec
   template <typename Bool> struct AssertBool {};
   template <>              struct AssertBool<bool> { static void check() {} };
   
+  template <bool test> struct StaticAssert {};
+  template <> struct StaticAssert<true> { static void check() {}; };
+  
   template <class T, class U>
   struct CmpTypes { static bool const same = false; };
 
