@@ -42,7 +42,49 @@ namespace armsec
       case BinaryOp::Add:     sink << "(" << left << " + " << right << ")"; break;
         
       case BinaryOp::Sub:     sink << "(" << left << " - " << right << ")"; break;
+        
+      case BinaryOp::Xor:     sink << "(" << left << " xor " << right << ")"; break;
+      case BinaryOp::Or:      sink << "(" << left << " or " << right << ")"; break;
+      case BinaryOp::And:     sink << "(" << left << " and " << right << ")"; break;
+        
+      case BinaryOp::Teq:     sink << "(" << left << " = " << right << ")"; break;
+      case BinaryOp::Tne:     sink << "(" << left << " <> " << right << ")"; break;
+        
+      case BinaryOp::Tle:     sink << "(" << left << " <=s " << right << ")"; break;
+      case BinaryOp::Tleu:    sink << "(" << left << " <=u " << right << ")"; break;
+        
+      case BinaryOp::Tge:     sink << "(" << left << " >=s " << right << ")"; break;
+      case BinaryOp::Tgeu:    sink << "(" << left << " >=u " << right << ")"; break;
+        
+      case BinaryOp::Tlt:     sink << "(" << left << " <s " << right << ")"; break;
+      case BinaryOp::Tltu:    sink << "(" << left << " <u " << right << ")"; break;
+        
+      case BinaryOp::Tgt:     sink << "(" << left << " >s " << right << ")"; break;
+      case BinaryOp::Tgtu:    sink << "(" << left << " >u " << right << ")"; break;
+        
+        // case BinaryOp::SHL: break;
+        // case BinaryOp::SHR: break;
+        // case BinaryOp::ROR: break;
+        // case BinaryOp::Mod: break;
+        // case BinaryOp::Mul: break;
+        // case BinaryOp::Div: break;
       }
   }
+  
+  void
+  UONode::Repr( std::ostream& sink ) const
+  {
+    switch (unop.code)
+      {
+      default:                sink << unop.c_str() << "( " << src << " )"; break;
+        
+      case UnaryOp::Not:      sink << "(not " << src << ")"; break;
+        
+        // case UnaryOp::BSwp:  break;
+        // case UnaryOp::BSR:   break;
+        // case UnaryOp::BSF:   break;
+      }
+  }
+
 
 } // end of namespace armsec

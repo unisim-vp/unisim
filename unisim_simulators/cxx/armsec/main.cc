@@ -267,7 +267,7 @@ namespace armsec
         if (e(     "ip", ip     )) return;
         if (e(     "sp", sp     )) return;
         if (e(     "lr", lr     )) return;
-        if (e(    "nia", nia    )) return;
+        if (e(     "pc", nia    )) return;
         if (e(      "n", n      )) return;
         if (e(      "z", z      )) return;
         if (e(      "c", c      )) return;
@@ -593,7 +593,7 @@ namespace armsec
     close( State const& ref )
     {
       bool complete = path->close();
-      path->sinks.insert( Expr( new RegWrite( "nia", next_insn_addr.expr ) ) );
+      path->sinks.insert( Expr( new RegWrite( "pc", next_insn_addr.expr ) ) );
       if (cpsr.n != ref.cpsr.n)
         path->sinks.insert( Expr( new RegWrite( "n", cpsr.n ) ) );
       if (cpsr.z != ref.cpsr.z)
@@ -618,22 +618,47 @@ namespace armsec
     }
   };
 
-  struct ConditionTest : public ExprNode
-  {
-    ConditionTest( unsigned _cond ) : cond( _cond ) {} unsigned cond;
-    virtual void Repr( std::ostream& sink ) const { sink << "CTST_" << unisim::component::cxx::processor::arm::DisasmCondition(cond) << "(flags)"; }
-    virtual intptr_t cmp( ExprNode const& brhs ) const {
-      ConditionTest const& rhs = dynamic_cast<ConditionTest const&>( brhs );
-      return int(cond) - int(rhs.cond);
-    }
-    virtual ExprNode* GetConstNode() { return 0; };
-  };
+  // struct ConditionTest : public ExprNode
+  // {
+  //   ConditionTest( unsigned _cond ) : cond( _cond ) {} unsigned cond;
+  //   virtual void Repr( std::ostream& sink ) const
+  //   {
+      
+  //     sink << "CTST_" << unisim::component::cxx::processor::arm::DisasmCondition(cond) << "(flags)";
+  //   }
+  //   virtual intptr_t cmp( ExprNode const& brhs ) const {
+  //     ConditionTest const& rhs = dynamic_cast<ConditionTest const&>( brhs );
+  //     return int(cond) - int(rhs.cond);
+  //   }
+  //   virtual ExprNode* GetConstNode() { return 0; };
+  // };
 
   BOOL
   CheckCondition( State& state, unsigned cond )
   {
-    if (cond == 14) return make_const( true );
-    return BOOL( Expr( new ConditionTest( cond ) ) );
+    BOOL N = state.cpsr.n, Z = state.cpsr.z, C = state.cpsr.c, V = state.cpsr.v;
+    
+    switch (cond) {
+    case  0: return                   Z; // eq; equal
+    case  1: return               not Z; // ne; not equal
+    case  2: return                   C; // cs/hs; unsigned higher or same
+    case  3: return               not C; // cc/lo; unsigned lower
+    case  4: return                   N; // mi; negative
+    case  5: return               not N; // pl; positive or zero
+    case  6: return                   V; // vs; overflow set
+    case  7: return               not V; // vc; overflow clear
+    case  8: return    not (not C or Z); // hi; unsigned higher
+    case  9: return        (not C or Z); // ls; unsigned lower or same
+    case 10: return       not (N xor V); // ge; signed greater than or equal
+    case 11: return           (N xor V); // lt; signed less than
+    case 12: return not(Z or (N xor V)); // gt; signed greater than
+    case 13: return    (Z or (N xor V)); // le; signed less than or equal
+    case 14: return make_const( true ); // al; always
+    default: break;                     // nv; never (illegal)     
+    }
+    
+    throw std::logic_error( "undefined condition" );
+    return make_const( false );    
   }
   
   struct GenFlagsID
@@ -750,7 +775,7 @@ namespace armsec
               virtual void Repr( std::ostream& sink ) const { sink << id; }
               virtual intptr_t cmp( ExprNode const& rhs ) const { return id.compare( dynamic_cast<TmpVar const&>( rhs ).id ); }
               virtual ExprNode* GetConstNode() { return 0; };
-            } *tmp = new TmpVar( std::string( "n_" ) + rid.c_str() );
+            } *tmp = new TmpVar( std::string( "nxt_" ) + rid.c_str() );
             
             sink << current.statement(0x0) << tmp->id << " := " << rw->value;
             sink << "; goto " << current.next() << '\n';
@@ -776,7 +801,7 @@ namespace armsec
       }
     else
       {
-        sink << current.statement(0x0) << "if (" << cond << ") ";
+        sink << current.statement(0x0) << "if " << cond << " ";
     
         current = after;
         if (nia or (after.valid() and (pending.size() > frame.s)))

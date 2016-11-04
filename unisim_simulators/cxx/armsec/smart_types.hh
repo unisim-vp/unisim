@@ -7,6 +7,7 @@
 #include <cstring>
 #include <stdint.h>
 #include <typeinfo>
+
 // #include <cmath>
 
 namespace armsec
@@ -79,12 +80,12 @@ namespace armsec
   struct BinaryOp
   {
     enum Code {
-      NA=0,
-      Xor, And, Or,
-      ROR, SHL, SHR,
-      Add, Sub, Div, Mod, Mul,
-      Teq, Tge, Tgt, Tle, Tlt, Tne, 
-      FCmp
+      NA=0
+      , Xor, And, Or
+      , ROR, SHL, SHR
+      , Add, Sub, Div, Mod, Mul
+      , Teq, Tne, Tge, Tgt, Tle, Tlt, Tgeu, Tgtu, Tleu, Tltu
+      , FCmp
     };
     
     template <class E> static void
@@ -102,11 +103,15 @@ namespace armsec
       if (e(  "SHL", SHL  )) return;
       if (e(  "SHR", SHR  )) return;
       if (e(  "Teq", Teq  )) return;
+      if (e(  "Tne", Tne  )) return;
       if (e(  "Tge", Tge  )) return;
       if (e(  "Tgt", Tgt  )) return;
       if (e(  "Tle", Tle  )) return;
       if (e(  "Tlt", Tlt  )) return;
-      if (e(  "Tne", Tne  )) return;
+      if (e( "Tgeu", Tgeu )) return;
+      if (e( "Tgtu", Tgtu )) return;
+      if (e( "Tleu", Tleu )) return;
+      if (e( "Tltu", Tltu )) return;
       if (e( "FCmp", FCmp )) return;
     }
     
@@ -208,82 +213,42 @@ namespace armsec
       ConstNode<VALUE_TYPE> const& rhs = dynamic_cast<ConstNode<VALUE_TYPE> const&>( brhs );
       return (value < rhs.value) ? -1 : (value > rhs.value) ? +1 : 0;
     }
+    
+    static VALUE_TYPE
+    GetValue( ConstNodeBase const& cnb )
+    {
+      return dynamic_cast<ConstNode<VALUE_TYPE> const&>( cnb ).value;
+    }
+  
     ConstNodeBase*
     bop( BinaryOp op, ConstNodeBase& cnb ) const
     {
       switch (op.code)
         {
-        case BinaryOp::Xor: {
-          ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
-          return new ConstNode<VALUE_TYPE>( BinaryXor( value, rop.value ) );
-        }
-        case BinaryOp::And: {
-          ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
-          return new ConstNode<VALUE_TYPE>( BinaryAnd( value, rop.value ) );
-        }
-        case BinaryOp::Or: {
-          ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
-          return new ConstNode<VALUE_TYPE>( BinaryOr( value, rop.value ) );
-        }
-        case BinaryOp::SHL: {
-          ConstNodeBase& rop( dynamic_cast<ConstNodeBase&>( cnb ) );
-          return new ConstNode<VALUE_TYPE>( BinarySHL( value, rop.GetU8() ) );
-        }
-        case BinaryOp::SHR: {
-          ConstNodeBase& rop( dynamic_cast<ConstNodeBase&>( cnb ) );
-          return new ConstNode<VALUE_TYPE>( BinarySHR( value, rop.GetU8() ) );
-        }
-        case BinaryOp::Add: {
-          ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
-          return new ConstNode<VALUE_TYPE>( value + rop.value );
-        }
-        case BinaryOp::Sub: {
-          ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
-          return new ConstNode<VALUE_TYPE>( value - rop.value );
-        }
-        case BinaryOp::Mul: {
-          ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
-          return new ConstNode<VALUE_TYPE>( value * rop.value );
-        }
-        case BinaryOp::Div: {
-          ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
-          return new ConstNode<VALUE_TYPE>( value / rop.value );
-        }
-
-        case BinaryOp::Teq: {
-          ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
-          return new ConstNode<bool>( value == rop.value );
-        }
-        
-        case BinaryOp::Tne: {
-          ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
-          return new ConstNode<bool>( value != rop.value );
-        }
-        
-        case BinaryOp::Tle: {
-          ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
-          return new ConstNode<bool>( value <= rop.value );
-        }
-        
-        case BinaryOp::Tlt: {
-          ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
-          return new ConstNode<bool>( value < rop.value );
-        }
-        
-        case BinaryOp::Tge: {
-          ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
-          return new ConstNode<bool>( value >= rop.value );
-        }
-        
-        case BinaryOp::Tgt: {
-          ConstNode<VALUE_TYPE>& rop( dynamic_cast<ConstNode<VALUE_TYPE>&>( cnb ) );
-          return new ConstNode<bool>( value > rop.value );
-        }
-        
-        case BinaryOp::ROR: break;
-        case BinaryOp::Mod: break;
+        case BinaryOp::Xor:  return new ConstNode<VALUE_TYPE>( BinaryXor( value, GetValue( cnb ) ) );
+        case BinaryOp::And:  return new ConstNode<VALUE_TYPE>( BinaryAnd( value, GetValue( cnb ) ) );
+        case BinaryOp::Or:   return new ConstNode<VALUE_TYPE>( BinaryOr( value, GetValue( cnb ) ) );
+        case BinaryOp::SHL:  return new ConstNode<VALUE_TYPE>( BinarySHL( value, cnb.GetU8() ) );
+        case BinaryOp::SHR:  return new ConstNode<VALUE_TYPE>( BinarySHR( value, cnb.GetU8() ) );
+        case BinaryOp::Add:  return new ConstNode<VALUE_TYPE>( value + GetValue( cnb ) );
+        case BinaryOp::Sub:  return new ConstNode<VALUE_TYPE>( value - GetValue( cnb ) );
+        case BinaryOp::Mul:  return new ConstNode<VALUE_TYPE>( value * GetValue( cnb ) );
+        case BinaryOp::Div:  return new ConstNode<VALUE_TYPE>( value / GetValue( cnb ) );
+        case BinaryOp::Teq:  return new ConstNode   <bool>   ( value == GetValue( cnb ) );
+        case BinaryOp::Tne:  return new ConstNode   <bool>   ( value != GetValue( cnb ) );
+        case BinaryOp::Tleu:
+        case BinaryOp::Tle:  return new ConstNode   <bool>   ( value <= GetValue( cnb ) );
+        case BinaryOp::Tltu:
+        case BinaryOp::Tlt:  return new ConstNode   <bool>   ( value <  GetValue( cnb ) );
+        case BinaryOp::Tgeu:
+        case BinaryOp::Tge:  return new ConstNode   <bool>   ( value >= GetValue( cnb ) );
+        case BinaryOp::Tgtu:
+        case BinaryOp::Tgt:  return new ConstNode   <bool>   ( value >  GetValue( cnb ) );
+          
+        case BinaryOp::ROR:  break;
+        case BinaryOp::Mod:  break;
         case BinaryOp::FCmp: break;
-        case BinaryOp::NA: throw std::logic_error("???");
+        case BinaryOp::NA:   throw std::logic_error("???");
         }
       
       warn() << "Unhandled binary operation: " << op.c_str() << std::endl;
@@ -294,19 +259,17 @@ namespace armsec
     {
       switch (op.code)
         {
-        case UnaryOp::BSwp:
-          return new ConstNode<VALUE_TYPE>( BSwp( value ) );
-        case UnaryOp::Not:
-          return new ConstNode<bool>( not value );
-        case UnaryOp::BSR: break;
-        case UnaryOp::BSF: break;
-        case UnaryOp::FSQB: break;
-        case UnaryOp::FFZ: break;
-        case UnaryOp::FNeg: break;
+        case UnaryOp::BSwp:  return new ConstNode<VALUE_TYPE>( BSwp( value ) );
+        case UnaryOp::Not:   return new ConstNode<bool>( not value );
+        case UnaryOp::BSR:   break;
+        case UnaryOp::BSF:   break;
+        case UnaryOp::FSQB:  break;
+        case UnaryOp::FFZ:   break;
+        case UnaryOp::FNeg:  break;
         case UnaryOp::FSqrt: break;
-        case UnaryOp::FAbs: break;
-        case UnaryOp::FDen: break;
-        case UnaryOp::NA: throw std::logic_error("???");
+        case UnaryOp::FAbs:  break;
+        case UnaryOp::FDen:  break;
+        case UnaryOp::NA:    throw std::logic_error("???");
           
         }
       
@@ -328,11 +291,10 @@ namespace armsec
   template <typename VALUE_TYPE>
   struct TypeInfo
   {
-    static void name( std::ostream& sink )
-    { sink << (std::numeric_limits<VALUE_TYPE>::is_signed ? 'S' : 'U') << (8*sizeof(VALUE_TYPE)); }
+    static void name( std::ostream& sink ) { sink << (std::numeric_limits<VALUE_TYPE>::is_signed ? 'S' : 'U') << (8*sizeof(VALUE_TYPE)); };
   };
   
-  template <> struct TypeInfo<float> { static void name( std::ostream& sink ) { sink << "F32"; } };
+  template <> struct TypeInfo<float>  { static void name( std::ostream& sink ) { sink << "F32"; } };
   template <> struct TypeInfo<double> { static void name( std::ostream& sink ) { sink << "F64"; } };
   
   struct Expr
@@ -380,19 +342,42 @@ namespace armsec
   template <typename VALUE_TYPE>
   Expr make_const( VALUE_TYPE value ) { return Expr( new ConstNode<VALUE_TYPE>( value ) ); }
   
-  template <typename VALUE_TYPE>
+  template <typename DST_VALUE_TYPE, typename SRC_VALUE_TYPE>
   struct CastNode : public ExprNode
   {
     CastNode( Expr const& _src )
-      : src(_src) {}
+      : src(_src)
+    {}
     virtual void Repr( std::ostream& sink ) const
     {
-      TypeInfo<VALUE_TYPE>::name( sink );
-      sink << "( "; src->Repr( sink );sink << " )";
+      int dst_bit_size = 8*sizeof (DST_VALUE_TYPE), src_bit_size = 8*sizeof (SRC_VALUE_TYPE);
+      if (std::numeric_limits<DST_VALUE_TYPE>::is_integer and std::numeric_limits<SRC_VALUE_TYPE>::is_integer)
+        {
+          int extend = dst_bit_size - src_bit_size;
+          if      (extend > 0)
+            {
+              sink << (std::numeric_limits<SRC_VALUE_TYPE>::is_signed ? "exts " : "extu ");
+              src->Repr( sink );
+              sink << ' ' << dst_bit_size;
+            }
+          else
+            {
+              src->Repr( sink );
+              if  (extend < 0)
+                sink << " {0," << (dst_bit_size-1) << "}";
+            }
+        }
+      else
+        {
+          TypeInfo<DST_VALUE_TYPE>::name( sink );
+          sink << "( ";
+          src->Repr( sink );
+          sink << " )";
+        }
     }
     intptr_t cmp( ExprNode const& brhs ) const
     {
-      CastNode<VALUE_TYPE> const& rhs = dynamic_cast<CastNode<VALUE_TYPE> const&>( brhs );
+      CastNode<DST_VALUE_TYPE,SRC_VALUE_TYPE> const& rhs = dynamic_cast<CastNode<DST_VALUE_TYPE,SRC_VALUE_TYPE> const&>( brhs );
       return src.cmp( rhs.src );
     }
     void Traverse( Visitor& visitor ) const
@@ -401,16 +386,16 @@ namespace armsec
     {
       if (src.MakeConst()) {
         ConstNodeBase& const_src( dynamic_cast<ConstNodeBase&>( *src.node ) );
-        if (CmpTypes<VALUE_TYPE,   float>::same) return new ConstNode<   float>( const_src.GetFloat() );
-        if (CmpTypes<VALUE_TYPE,  double>::same) return new ConstNode<  double>( const_src.GetDouble() );
-        if (CmpTypes<VALUE_TYPE, uint8_t>::same) return new ConstNode< uint8_t>( const_src.GetU8() );
-        if (CmpTypes<VALUE_TYPE,uint16_t>::same) return new ConstNode<uint16_t>( const_src.GetU16() );
-        if (CmpTypes<VALUE_TYPE,uint32_t>::same) return new ConstNode<uint32_t>( const_src.GetU32() );
-        if (CmpTypes<VALUE_TYPE,uint64_t>::same) return new ConstNode<uint64_t>( const_src.GetU64() );
-        if (CmpTypes<VALUE_TYPE,  int8_t>::same) return new ConstNode<  int8_t>( const_src.GetS8() );
-        if (CmpTypes<VALUE_TYPE, int16_t>::same) return new ConstNode< int16_t>( const_src.GetS16() );
-        if (CmpTypes<VALUE_TYPE, int32_t>::same) return new ConstNode< int32_t>( const_src.GetS32() );
-        if (CmpTypes<VALUE_TYPE, int64_t>::same) return new ConstNode< int64_t>( const_src.GetS64() );
+        if (CmpTypes<DST_VALUE_TYPE,   float>::same) return new ConstNode<   float>( const_src.GetFloat() );
+        if (CmpTypes<DST_VALUE_TYPE,  double>::same) return new ConstNode<  double>( const_src.GetDouble() );
+        if (CmpTypes<DST_VALUE_TYPE, uint8_t>::same) return new ConstNode< uint8_t>( const_src.GetU8() );
+        if (CmpTypes<DST_VALUE_TYPE,uint16_t>::same) return new ConstNode<uint16_t>( const_src.GetU16() );
+        if (CmpTypes<DST_VALUE_TYPE,uint32_t>::same) return new ConstNode<uint32_t>( const_src.GetU32() );
+        if (CmpTypes<DST_VALUE_TYPE,uint64_t>::same) return new ConstNode<uint64_t>( const_src.GetU64() );
+        if (CmpTypes<DST_VALUE_TYPE,  int8_t>::same) return new ConstNode<  int8_t>( const_src.GetS8() );
+        if (CmpTypes<DST_VALUE_TYPE, int16_t>::same) return new ConstNode< int16_t>( const_src.GetS16() );
+        if (CmpTypes<DST_VALUE_TYPE, int32_t>::same) return new ConstNode< int32_t>( const_src.GetS32() );
+        if (CmpTypes<DST_VALUE_TYPE, int64_t>::same) return new ConstNode< int64_t>( const_src.GetS64() );
         throw std::logic_error("Unkown Type");
       }
       return 0;
@@ -424,8 +409,7 @@ namespace armsec
       : unop(_unop), src( _src ) {}
     virtual void Traverse( Visitor& visitor ) const
     { visitor.Process( this ); src->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const
-    { sink << unop.c_str() << "( " << src << " )"; }
+    virtual void Repr( std::ostream& sink ) const;
     intptr_t cmp( ExprNode const& brhs ) const
     {
       UONode const& rhs = dynamic_cast<UONode const&>( brhs );
@@ -491,18 +475,19 @@ namespace armsec
       if (CmpTypes<SRC_VALUE_TYPE,VALUE_TYPE>::same) {
         expr = other.expr;
       } else {
-        expr = new CastNode<VALUE_TYPE>( other.expr );
+        expr = new CastNode<VALUE_TYPE,SRC_VALUE_TYPE>( other.expr );
         expr.MakeConst();
       }
     }
+
+    static bool const is_signed = std::numeric_limits<value_type>::is_signed;
     
     SmartValue<value_type>& operator = ( SmartValue<value_type> const& other ) { expr = other.expr; return *this; }
     
     template <typename SHIFT_TYPE>
     SmartValue<value_type> operator << ( SHIFT_TYPE shift ) const { return SmartValue<value_type>( Expr( new BONode( "SHL", expr, make_const( shift ) ) ) ); }
     template <typename SHIFT_TYPE>
-    SmartValue<value_type> operator >> ( SHIFT_TYPE shift ) const { return SmartValue<value_type>( Expr( new BONode( "SHR", expr, make_const( shift ) ) ) );
-    }
+    SmartValue<value_type> operator >> ( SHIFT_TYPE shift ) const { return SmartValue<value_type>( Expr( new BONode( "SHR", expr, make_const( shift ) ) ) ); }
     template <typename SHIFT_TYPE>
     SmartValue<value_type>& operator <<= ( SHIFT_TYPE shift ) { expr = new BONode( "SHL", expr, make_const( shift ) ); return *this; }
     template <typename SHIFT_TYPE>
@@ -536,11 +521,11 @@ namespace armsec
     
     SmartValue<bool> operator == ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( Expr( new BONode( "Teq", expr, other.expr ) ) ); }
     SmartValue<bool> operator != ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( Expr( new BONode( "Tne", expr, other.expr ) ) ); }
-    SmartValue<bool> operator <= ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( Expr( new BONode( "Tle", expr, other.expr ) ) ); }
-    SmartValue<bool> operator >= ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( Expr( new BONode( "Tge", expr, other.expr ) ) ); }
-    SmartValue<bool> operator < ( SmartValue<value_type> const& other ) const  { return SmartValue<bool>( Expr( new BONode( "Tlt", expr, other.expr ) ) ); }
-    SmartValue<bool> operator > ( SmartValue<value_type> const& other ) const  { return SmartValue<bool>( Expr( new BONode( "Tgt", expr, other.expr ) ) ); }
-
+    SmartValue<bool> operator <= ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( Expr( new BONode( is_signed ? "Tle" : "Tleu", expr, other.expr ) ) ); }
+    SmartValue<bool> operator >= ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( Expr( new BONode( is_signed ? "Tge" : "Tgeu", expr, other.expr ) ) ); }
+    SmartValue<bool> operator < ( SmartValue<value_type> const& other ) const  { return SmartValue<bool>( Expr( new BONode( is_signed ? "Tlt" : "Tltu", expr, other.expr ) ) ); }
+    SmartValue<bool> operator > ( SmartValue<value_type> const& other ) const  { return SmartValue<bool>( Expr( new BONode( is_signed ? "Tgt" : "Tgtu", expr, other.expr ) ) ); }
+    
     SmartValue<bool> operator ! () const
     { AssertBool<value_type>::check(); return SmartValue<bool>( Expr( new UONode( "Not", expr ) ) ); }
 
