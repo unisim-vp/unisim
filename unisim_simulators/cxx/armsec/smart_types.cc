@@ -22,6 +22,9 @@ namespace armsec
   double BinaryOr( double l, double r ) { throw std::logic_error( "No | for double." ); }
   float BinaryOr( float l, float r ) { throw std::logic_error( "No | for float." ); }
   
+  double BinaryNot( double val ) { throw std::logic_error( "No ~ for double." ); }
+  float BinaryNot( float val ) { throw std::logic_error( "No ~ for float." ); }
+  
   double BinarySHL( double, uint8_t ) { throw std::logic_error( "No << for double." ); }
   float BinarySHL( float, uint8_t ) { throw std::logic_error( "No << for float." ); }
   
@@ -78,7 +81,9 @@ namespace armsec
       {
       default:                sink << unop.c_str() << "( " << src << " )"; break;
         
-      case UnaryOp::Not:      sink << "(not " << src << ")"; break;
+      case UnaryOp::Not:
+      case UnaryOp::BWNot:    sink << "(not " << src << ")"; break;
+      case UnaryOp::Neg:      sink << "(- " << src << ")"; break;
         
         // case UnaryOp::BSwp:  break;
         // case UnaryOp::BSR:   break;

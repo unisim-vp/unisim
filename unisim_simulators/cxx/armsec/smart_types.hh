@@ -128,7 +128,7 @@ namespace armsec
   {
     enum Code {
       NA=0,
-      BSwp, BSR, BSF, Not,
+      BSwp, BSR, BSF, Not, BWNot, Neg,
       FSQB, FFZ, FNeg, FSqrt, FAbs, FDen
     };
     
@@ -139,6 +139,8 @@ namespace armsec
       if (e(   "BSR", BSR   )) return;
       if (e(   "BSF", BSF   )) return;
       if (e(   "Not", Not   )) return;
+      if (e( "BWNot", BWNot )) return;
+      if (e(   "Neg", Neg   )) return;
       if (e(  "FSQB", FSQB  )) return;
       if (e(   "FFZ", FFZ   )) return;
       if (e(  "FNeg", FNeg  )) return;
@@ -186,6 +188,11 @@ namespace armsec
   VALUE_TYPE BinaryOr( VALUE_TYPE l, VALUE_TYPE r ) { return l | r; }
   double BinaryOr( double l, double r );
   float BinaryOr( float l, float r );
+  template <typename VALUE_TYPE>
+  VALUE_TYPE BinaryNot( VALUE_TYPE val ) { return ~val; }
+  double BinaryNot( double val );
+  float BinaryNot( float val );
+
   // template <typename VALUE_TYPE>
   // VALUE_TYPE BinaryROR( VALUE_TYPE l, uint8_t shift ) { return rotate_right( l, shift ); }
   // double BinaryROR( double, uint8_t );
@@ -261,6 +268,8 @@ namespace armsec
         {
         case UnaryOp::BSwp:  return new ConstNode<VALUE_TYPE>( BSwp( value ) );
         case UnaryOp::Not:   return new ConstNode<bool>( not value );
+        case UnaryOp::BWNot: return new ConstNode<VALUE_TYPE>( BinaryNot( value ) );
+        case UnaryOp::Neg:   return new ConstNode<VALUE_TYPE>( - value );
         case UnaryOp::BSR:   break;
         case UnaryOp::BSF:   break;
         case UnaryOp::FSQB:  break;
@@ -498,8 +507,8 @@ namespace armsec
     template <typename SHIFT_TYPE>
     SmartValue<value_type> operator >> ( SmartValue<SHIFT_TYPE> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "SHR", expr, other.expr ) ) ); }
     
-    SmartValue<value_type> operator - () const { return SmartValue<value_type>( Expr( new BONode( "Sub", make_const( value_type( 0 ) ), expr ) ) ); }
-    SmartValue<value_type> operator ~ () const { return SmartValue<value_type>( Expr( new BONode( "Xor", make_const( value_type(~value_type(0)) ), expr ) ) ); }
+    SmartValue<value_type> operator - () const { return SmartValue<value_type>( Expr( new UONode( "Neg", expr ) ) ); }
+    SmartValue<value_type> operator ~ () const { return SmartValue<value_type>( Expr( new UONode( "BWNot", expr ) ) ); }
     
     SmartValue<value_type>& operator += ( SmartValue<value_type> const& other ) { expr = new BONode( "Add", expr, other.expr ); return *this; }
     SmartValue<value_type>& operator -= ( SmartValue<value_type> const& other ) { expr = new BONode( "Sub", expr, other.expr ); return *this; }
