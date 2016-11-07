@@ -895,14 +895,18 @@ struct Decoder
     armsec::Expr insn_addr( armsec::make_const( addr ) ); //<if instruction address shall be known
     
     std::shared_ptr<armsec::PathNode> path ( new armsec::PathNode );
-    std::cout << op->GetName() << std::endl;
-    std::cout << '@' << std::hex << addr << ',' << op->GetEncoding() << std::dec <<": ";
+
+    std::cout << "(address,0x" << std::hex << addr << ")\n";
+    std::cout << "(opcode,0x" << std::hex << op->GetEncoding() << ")\n";
+    // std::cout << "(int_name,\"" << op->GetName() << "\")\n";
     
     armsec::State reference( path );
     reference.SetInsnProps( insn_addr, isa.is_thumb, op->GetLength() );
-      
+    
+    std::cout << "(mnemonic,\"";
     op->disasm( reference, std::cout );
-    std::cout << std::endl;
+    std::cout << "\")\n";
+    
     for (bool end = false; not end;) {
       armsec::State state( path );
       state.SetInsnProps( insn_addr, isa.is_thumb, op->GetLength() );
