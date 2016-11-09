@@ -3,10 +3,11 @@
 
 #include <limits>       // std::numeric_limits
 #include <ostream>
+#include <iomanip>
 #include <stdexcept>
 #include <cstring>
-#include <stdint.h>
 #include <typeinfo>
+#include <inttypes.h>
 
 // #include <cmath>
 
@@ -128,7 +129,7 @@ namespace armsec
   {
     enum Code {
       NA=0,
-      BSwp, BSR, BSF, Not, BWNot, Neg,
+      BSwp, BSR, BSF, Not, Neg,
       FSQB, FFZ, FNeg, FSqrt, FAbs, FDen
     };
     
@@ -139,7 +140,6 @@ namespace armsec
       if (e(   "BSR", BSR   )) return;
       if (e(   "BSF", BSF   )) return;
       if (e(   "Not", Not   )) return;
-      if (e( "BWNot", BWNot )) return;
       if (e(   "Neg", Neg   )) return;
       if (e(  "FSQB", FSQB  )) return;
       if (e(   "FFZ", FFZ   )) return;
@@ -190,6 +190,7 @@ namespace armsec
   float BinaryOr( float l, float r );
   template <typename VALUE_TYPE>
   VALUE_TYPE BinaryNot( VALUE_TYPE val ) { return ~val; }
+  bool BinaryNot( bool val );
   double BinaryNot( double val );
   float BinaryNot( float val );
 
@@ -211,10 +212,17 @@ namespace armsec
   uint16_t BSwp( uint16_t v );
   
   template <typename VALUE_TYPE>
+  void DumpConstant( std::ostream& sink, VALUE_TYPE v )
+  {
+    sink << "0x" << std::hex << std::setw(2*sizeof(v)) << std::setfill('0') << v;
+  }
+  unsigned DumpConstant( std::ostream& sink, bool v );
+  
+  template <typename VALUE_TYPE>
   struct ConstNode : public ConstNodeBase
   {
     ConstNode( VALUE_TYPE _value ) : value( _value ) {} VALUE_TYPE value;
-    virtual void Repr( std::ostream& sink ) const { sink << "0x" << std::hex << value << std::dec; }
+    virtual void Repr( std::ostream& sink ) const { DumpConstant( sink, value ); }
     intptr_t cmp( ExprNode const& brhs ) const
     {
       ConstNode<VALUE_TYPE> const& rhs = dynamic_cast<ConstNode<VALUE_TYPE> const&>( brhs );
@@ -267,8 +275,7 @@ namespace armsec
       switch (op.code)
         {
         case UnaryOp::BSwp:  return new ConstNode<VALUE_TYPE>( BSwp( value ) );
-        case UnaryOp::Not:   return new ConstNode<bool>( not value );
-        case UnaryOp::BWNot: return new ConstNode<VALUE_TYPE>( BinaryNot( value ) );
+        case UnaryOp::Not:   return new ConstNode<VALUE_TYPE>( BinaryNot( value ) );
         case UnaryOp::Neg:   return new ConstNode<VALUE_TYPE>( - value );
         case UnaryOp::BSR:   break;
         case UnaryOp::BSF:   break;
@@ -343,7 +350,7 @@ namespace armsec
       }
       return false;
     }
-    operator bool () const { return node; }
+    bool good() const { return node; }
   };
   
   std::ostream& operator << (std::ostream&, Expr const&);
@@ -508,7 +515,7 @@ namespace armsec
     SmartValue<value_type> operator >> ( SmartValue<SHIFT_TYPE> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "SHR", expr, other.expr ) ) ); }
     
     SmartValue<value_type> operator - () const { return SmartValue<value_type>( Expr( new UONode( "Neg", expr ) ) ); }
-    SmartValue<value_type> operator ~ () const { return SmartValue<value_type>( Expr( new UONode( "BWNot", expr ) ) ); }
+    SmartValue<value_type> operator ~ () const { return SmartValue<value_type>( Expr( new UONode( "Not", expr ) ) ); }
     
     SmartValue<value_type>& operator += ( SmartValue<value_type> const& other ) { expr = new BONode( "Add", expr, other.expr ); return *this; }
     SmartValue<value_type>& operator -= ( SmartValue<value_type> const& other ) { expr = new BONode( "Sub", expr, other.expr ); return *this; }

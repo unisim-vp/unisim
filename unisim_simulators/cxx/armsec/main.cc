@@ -89,7 +89,7 @@ namespace armsec
     
     bool remove_dead_paths()
     {
-      if (cond) {
+      if (cond.good()) {
         bool leaf = true;
         if (false_nxt) {
           if (false_nxt->remove_dead_paths()) {
@@ -112,7 +112,7 @@ namespace armsec
     
     void factorize()
     {
-      if (not cond)
+      if (not cond.good())
         return;
       
       false_nxt->factorize();
@@ -145,7 +145,7 @@ namespace armsec
   
     typedef std::vector<armsec::Expr> ExprStack;
 
-    void GenCode( std::ostream&, Label const&, Label const&, ExprStack& ) const;
+    void GenCode( std::ostream&, uint32_t, Label const&, Label const&, ExprStack& ) const;
     
     Expr cond;
     std::set<Expr> sinks;
@@ -291,9 +291,9 @@ namespace armsec
     
     struct RegRead : public ExprNode
     {
-      RegRead( RegID _id ) : id( _id ) {}
-      RegRead( char const* name ) : id( name ) {}
-      virtual void Repr( std::ostream& sink ) const { sink << id.c_str(); }
+      RegRead( RegID _id, unsigned _bitsize ) : id(_id), bitsize(_bitsize) {}
+      RegRead( char const* name, unsigned _bitsize ) : id( name ), bitsize(_bitsize) {}
+      virtual void Repr( std::ostream& sink ) const { sink << id.c_str() << "<" << bitsize << ">"; }
       virtual intptr_t cmp( ExprNode const& brhs ) const {
         RegRead const& rhs = dynamic_cast<RegRead const&>( brhs );
         return id - rhs.id;
@@ -301,14 +301,16 @@ namespace armsec
       virtual ExprNode* GetConstNode() { return 0; };
       
       RegID id;
+      unsigned bitsize;
     };
     
     struct RegWrite : public ExprNode
     {
-      RegWrite( RegID _id, Expr const& _value ) : id( _id ), value( _value ) {}
-      RegWrite( char const* name, Expr const& _value ) : id( name ), value( _value ) {}
+      RegWrite( RegID _id, Expr const& _value, unsigned _bitsize ) : id(_id), value(_value), bitsize(_bitsize) {}
+      RegWrite( char const* name, Expr const& _value, unsigned _bitsize ) : id(name), value(_value), bitsize(_bitsize) {}
       virtual void Repr( std::ostream& sink ) const { sink << id.c_str() << " := " << value; }
-      virtual intptr_t cmp( ExprNode const& brhs ) const {
+      virtual intptr_t cmp( ExprNode const& brhs ) const
+      {
         RegWrite const& rhs = dynamic_cast<RegWrite const&>( brhs );
         if (intptr_t delta = id - rhs.id) return delta;
         return value.cmp( rhs.value );
@@ -317,18 +319,19 @@ namespace armsec
       
       RegID id;
       Expr value;
+      unsigned bitsize;
     };
     
     State( std::shared_ptr<PathNode> _path )
       : path( _path )
       , next_insn_addr()
-      , cpsr( Expr( new RegRead("n") ), Expr( new RegRead("z") ), Expr( new RegRead("c") ), Expr( new RegRead("v") ), Expr( new RegRead("cpsr") ) )
-      , spsr( Expr( new RegRead("spsr") ) )
-      , FPSCR( Expr( new RegRead("fpscr") ) )
-      , FPEXC( Expr( new RegRead("fpexc") ) )
+      , cpsr( Expr( new RegRead("n",1) ), Expr( new RegRead("z",1) ), Expr( new RegRead("c",1) ), Expr( new RegRead("v",1) ), Expr( new RegRead("cpsr",32) ) )
+      , spsr( Expr( new RegRead("spsr",32) ) )
+      , FPSCR( Expr( new RegRead("fpscr",32) ) )
+      , FPEXC( Expr( new RegRead("fpexc",32) ) )
     {
       for (unsigned reg = 0; reg < 15; ++reg)
-        reg_values[reg] = U32( armsec::Expr( new RegRead( RegID("r0") + reg ) ) );
+        reg_values[reg] = U32( armsec::Expr( new RegRead( RegID("r0") + reg, 32 ) ) );
     }
     
     void SetInsnProps( Expr const& _expr, bool is_thumb, unsigned insn_length )
@@ -593,24 +596,24 @@ namespace armsec
     close( State const& ref )
     {
       bool complete = path->close();
-      path->sinks.insert( Expr( new RegWrite( "pc", next_insn_addr.expr ) ) );
+      path->sinks.insert( Expr( new RegWrite( "pc", next_insn_addr.expr, 32 ) ) );
       if (cpsr.n != ref.cpsr.n)
-        path->sinks.insert( Expr( new RegWrite( "n", cpsr.n ) ) );
+        path->sinks.insert( Expr( new RegWrite( "n", cpsr.n, 1 ) ) );
       if (cpsr.z != ref.cpsr.z)
-        path->sinks.insert( Expr( new RegWrite( "z", cpsr.z ) ) );
+        path->sinks.insert( Expr( new RegWrite( "z", cpsr.z, 1 ) ) );
       if (cpsr.c != ref.cpsr.c)
-        path->sinks.insert( Expr( new RegWrite( "c", cpsr.c ) ) );
+        path->sinks.insert( Expr( new RegWrite( "c", cpsr.c, 1 ) ) );
       if (cpsr.v != ref.cpsr.v)
-        path->sinks.insert( Expr( new RegWrite( "v", cpsr.v ) ) );
+        path->sinks.insert( Expr( new RegWrite( "v", cpsr.v, 1 ) ) );
       if (cpsr.bg.expr != ref.cpsr.bg.expr)
-        path->sinks.insert( Expr( new RegWrite( "cpsr", cpsr.bg.expr ) ) );
+        path->sinks.insert( Expr( new RegWrite( "cpsr", cpsr.bg.expr, 32 ) ) );
       if (spsr.expr != ref.spsr.expr)
-        path->sinks.insert( Expr( new RegWrite( "spsr", spsr.expr ) ) );
+        path->sinks.insert( Expr( new RegWrite( "spsr", spsr.expr, 32 ) ) );
       if (FPSCR.expr != ref.FPSCR.expr)
-        path->sinks.insert( Expr( new RegWrite( "fpscr", FPSCR.expr ) ) );
+        path->sinks.insert( Expr( new RegWrite( "fpscr", FPSCR.expr, 32 ) ) );
       for (unsigned reg = 0; reg < 15; ++reg) {
         if (reg_values[reg].expr != ref.reg_values[reg].expr)
-          path->sinks.insert( Expr( new RegWrite( RegID("r0") + reg, reg_values[reg].expr ) ) );
+          path->sinks.insert( Expr( new RegWrite( RegID("r0") + reg, reg_values[reg].expr, 32 ) ) );
       }
       for (std::set<Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
         path->sinks.insert( *itr );
@@ -745,7 +748,7 @@ namespace armsec
   int Label::gid = 0;
   
   void
-  PathNode::GenCode( std::ostream& sink, Label const& start, Label const& after, ExprStack& pending ) const
+  PathNode::GenCode( std::ostream& sink, uint32_t insn_addr, Label const& start, Label const& after, ExprStack& pending ) const
   {
     struct F
     {
@@ -763,6 +766,7 @@ namespace armsec
         {
           armsec::Expr wb;
           armsec::State::RegID rid = rw->id;
+          unsigned             rsz = rw->bitsize;
           
           if (rw->value.MakeConst()) {
             wb = *itr;
@@ -771,15 +775,17 @@ namespace armsec
           else {
             struct TmpVar : public armsec::ExprNode
             {
-              TmpVar( std::string const& _id ) : id(_id) {} std::string id;
-              virtual void Repr( std::ostream& sink ) const { sink << id; }
-              virtual intptr_t cmp( ExprNode const& rhs ) const { return id.compare( dynamic_cast<TmpVar const&>( rhs ).id ); }
+              TmpVar( armsec::State::RegID rid, unsigned rsz )
+              { std::ostringstream oss; oss << "nxt_" << rid.c_str() << "<" << rsz << ">"; ref = oss.str(); }
+              virtual void Repr( std::ostream& sink ) const { sink << ref; }
+              virtual intptr_t cmp( ExprNode const& rhs ) const { return ref.compare( dynamic_cast<TmpVar const&>( rhs ).ref ); }
               virtual ExprNode* GetConstNode() { return 0; };
-            } *tmp = new TmpVar( std::string( "nxt_" ) + rid.c_str() );
+              std::string ref;
+            } *tmp = new TmpVar( rid, rsz );
             
-            sink << current.statement(0x0) << tmp->id << " := " << rw->value;
+            sink << current.statement(insn_addr) << tmp->ref << " := " << rw->value;
             sink << "; goto " << current.next() << '\n';
-            wb = new armsec::State::RegWrite( rid, tmp );
+            wb = new armsec::State::RegWrite( rid, tmp, rsz );
           }
           
           if (rid == armsec::State::RegID::nia)
@@ -789,37 +795,37 @@ namespace armsec
         }
       else
         {
-          sink << current.statement(0x0) << *itr;
+          sink << current.statement(insn_addr) << *itr;
           sink << "; goto " << current.next() << '\n';
         }
     }
     
-    if (not cond)
+    if (not cond.good())
       {
         if (sinks.size() == 0)
           throw std::logic_error( "empty leaf" );
       }
     else
       {
-        sink << current.statement(0x0) << "if " << cond << " ";
+        sink << current.statement(insn_addr) << "if " << cond << " ";
     
         current = after;
-        if (nia or (after.valid() and (pending.size() > frame.s)))
+        if (nia.good() or (after.valid() and (pending.size() > frame.s)))
           current.next();
     
         if (not false_nxt) {
           Label ifthen;
           sink << " goto " << ifthen.next() << " else goto " << current.id << '\n';
-          true_nxt->GenCode( sink, ifthen, current, pending );
+          true_nxt->GenCode( sink, insn_addr, ifthen, current, pending );
         } else if (not true_nxt) {
           Label ifelse;
           sink << " goto " << current.id << " else goto " << ifelse.next() << '\n';
-          false_nxt->GenCode( sink, ifelse, current, pending );
+          false_nxt->GenCode( sink, insn_addr, ifelse, current, pending );
         } else {
           Label ifthen, ifelse;
           sink << " goto " << ifthen.next() << " else goto " << ifelse.next() << '\n';
-          true_nxt->GenCode( sink, ifthen, current, pending );
-          false_nxt->GenCode( sink, ifelse, current, pending );
+          true_nxt->GenCode( sink, insn_addr, ifthen, current, pending );
+          false_nxt->GenCode( sink, insn_addr, ifelse, current, pending );
         }
       }
     
@@ -829,10 +835,10 @@ namespace armsec
       {
         idx -= 1;
         if (step++>0) sink << "; goto " << current.next() << '\n';
-        sink << current.statement(0x0) << pending[idx];
+        sink << current.statement(insn_addr) << pending[idx];
       }
     
-    if (not nia) {
+    if (not nia.good()) {
       if (step>0) sink << "; goto " << after.id << "\n";
       return;
     }
@@ -841,11 +847,11 @@ namespace armsec
       {
         idx -= 1;
         if (step++>0) sink << "; goto " << current.next() << '\n';
-        sink << current.statement(0x0) << pending[idx];
+        sink << current.statement(insn_addr) << pending[idx];
       }
     
     if (step>0) sink << "; goto " << current.next() << '\n';
-    sink << current.statement(0x0) << "goto (" << nia << ")\n";
+    sink << current.statement(insn_addr) << "goto (" << nia << ")\n";
   }
 }
 
@@ -917,7 +923,7 @@ struct Decoder
     path->remove_dead_paths();
     
     std::vector<armsec::Expr> init;
-    path->GenCode( std::cout, armsec::Label::get(), armsec::Label(), init );
+    path->GenCode( std::cout, addr, armsec::Label::get(), armsec::Label(), init );
   }
 
   void  do_arm( uint32_t addr, uint32_t code ) { do_isa( armisa, addr, code ); }
