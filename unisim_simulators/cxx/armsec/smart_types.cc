@@ -34,8 +34,8 @@ namespace armsec
   
   uint32_t BSwp( uint32_t v ) { return unisim::util::endian::ByteSwap( v ); }
   uint16_t BSwp( uint16_t v ) { return unisim::util::endian::ByteSwap( v ); }
-
-  unsigned DumpConstant( std::ostream& sink, bool v ) { sink << int(v) << "<1>"; }
+  
+  void DumpConstant( std::ostream& sink, bool v ) { sink << int(v) << "<1>"; }
 
 
   void

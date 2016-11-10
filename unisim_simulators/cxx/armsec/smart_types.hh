@@ -211,18 +211,38 @@ namespace armsec
   uint32_t BSwp( uint32_t v );
   uint16_t BSwp( uint16_t v );
   
-  template <typename VALUE_TYPE>
-  void DumpConstant( std::ostream& sink, VALUE_TYPE v )
+  template <typename T>
+  struct DbaConstantDumper
   {
-    sink << "0x" << std::hex << std::setw(2*sizeof(v)) << std::setfill('0') << v;
-  }
-  unsigned DumpConstant( std::ostream& sink, bool v );
+    DbaConstantDumper( T v ) : value(v) {}
+    T value;
+    
+    friend std::ostream& operator << ( std::ostream& sink, DbaConstantDumper<T> const& cst )
+    {
+      sink << "0x" << std::hex << std::setw(2*sizeof(T)) << std::setfill('0') << cst.value << std::dec;
+      return sink;
+    }
+  };
+  
+  template <>
+  struct DbaConstantDumper<bool>
+  {
+    DbaConstantDumper<bool>( bool v ) : value(v) {}
+    bool value;
+    friend std::ostream& operator << ( std::ostream& sink, DbaConstantDumper<bool> const& cst )
+    {
+      sink << std::dec << int(cst.value) << "<1>";
+      return sink;
+    }
+  };
+  
+  template <typename T>  DbaConstantDumper<T> DumpConstant( T v ) { return DbaConstantDumper<T>( v ); }
   
   template <typename VALUE_TYPE>
   struct ConstNode : public ConstNodeBase
   {
     ConstNode( VALUE_TYPE _value ) : value( _value ) {} VALUE_TYPE value;
-    virtual void Repr( std::ostream& sink ) const { DumpConstant( sink, value ); }
+    virtual void Repr( std::ostream& sink ) const { sink << DumpConstant( value ); }
     intptr_t cmp( ExprNode const& brhs ) const
     {
       ConstNode<VALUE_TYPE> const& rhs = dynamic_cast<ConstNode<VALUE_TYPE> const&>( brhs );

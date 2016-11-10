@@ -308,7 +308,7 @@ namespace armsec
     {
       RegWrite( RegID _id, Expr const& _value, unsigned _bitsize ) : id(_id), value(_value), bitsize(_bitsize) {}
       RegWrite( char const* name, Expr const& _value, unsigned _bitsize ) : id(name), value(_value), bitsize(_bitsize) {}
-      virtual void Repr( std::ostream& sink ) const { sink << id.c_str() << " := " << value; }
+      virtual void Repr( std::ostream& sink ) const { sink << id.c_str() << "<" << std::dec << bitsize << "> := " << value; }
       virtual intptr_t cmp( ExprNode const& brhs ) const
       {
         RegWrite const& rhs = dynamic_cast<RegWrite const&>( brhs );
@@ -734,7 +734,7 @@ namespace armsec
     {
       Statement( uint32_t _addr, int _id ) : addr(_addr), id(_id) {} uint32_t addr; int id;
       friend std::ostream& operator << ( std::ostream& sink, Statement const& stmt )
-      { sink << "(0x" << std::hex << stmt.addr << ',' << std::dec << stmt.id << ") "; return sink; }
+      { sink << '(' << DumpConstant( stmt.addr ) << ',' << stmt.id << ") "; return sink; }
     };
     
     Statement statement( uint32_t addr ) const { return Statement( addr, id ); }
@@ -902,8 +902,8 @@ struct Decoder
     
     std::shared_ptr<armsec::PathNode> path ( new armsec::PathNode );
 
-    std::cout << "(address,0x" << std::hex << addr << ")\n";
-    std::cout << "(opcode,0x" << std::hex << op->GetEncoding() << ")\n";
+    std::cout << "(address," << armsec::DumpConstant( addr ) << ")\n";
+    std::cout << "(opcode," << armsec::DumpConstant( op->GetEncoding() ) << ")\n";
     // std::cout << "(int_name,\"" << op->GetName() << "\")\n";
     
     armsec::State reference( path );
