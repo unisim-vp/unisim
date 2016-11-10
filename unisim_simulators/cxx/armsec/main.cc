@@ -379,10 +379,10 @@ namespace armsec
         return _.Get( bg );
       }
       
-      void Set( NRF const& _, U32 const& value ) { n = bit_expr( value ); }
-      void Set( ZRF const& _, U32 const& value ) { z = bit_expr( value ); }
-      void Set( CRF const& _, U32 const& value ) { c = bit_expr( value ); }
-      void Set( VRF const& _, U32 const& value ) { v = bit_expr( value ); }
+      void Set( NRF const& _, BOOL const& value ) { n = value.expr; }
+      void Set( ZRF const& _, BOOL const& value ) { z = value.expr; }
+      void Set( CRF const& _, BOOL const& value ) { c = value.expr; }
+      void Set( VRF const& _, BOOL const& value ) { v = value.expr; }
 
       void Set( QRF const& _, U32 const& value ) { _.Set( bg, value ); }
       void Set( ERF const& _, U32 const& value ) { _.Set( bg, value ); }
@@ -421,9 +421,6 @@ namespace armsec
       // U32 Get( ALL const& _ ) { return (U32(BOOL(n)) << 31) | (U32(BOOL(z)) << 30) | (U32(BOOL(c)) << 29) | (U32(BOOL(v)) << 28) | bg; }
       
       U32 bits() const { return (U32(BOOL(n)) << 31) | (U32(BOOL(z)) << 30) | (U32(BOOL(c)) << 29) | (U32(BOOL(v)) << 28) | bg; }
-      
-      Expr bit_expr( U32 const& value ) { return value.expr; }
-      
     } cpsr;
     
     U32 spsr;

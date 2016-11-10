@@ -131,10 +131,14 @@ namespace arm {
   UpdateStatusImmShift( coreT& core, typename coreT::U32 const& res, typename coreT::U32 const& shift_lhs, unsigned shift, unsigned shift_rhs )
   {
     typedef typename coreT::U32 U32;
+    typedef typename coreT::S32 S32;
+    typedef typename coreT::BOOL BOOL;
+    
     U32 carry(0);
+    bool write_carry = true;
 
     if      ((shift_rhs == 0) and (shift == 0)) /* MOVS */
-      carry = core.CPSR().Get( C );
+      write_carry = false;
     else if ((shift_rhs == 0) and (shift == 3)) /* RRX */
       carry = (shift_lhs & U32(1));
     else if (shift == 0)                        /* LSL */
@@ -142,9 +146,10 @@ namespace arm {
     else                                        /* LSR, ASR, ROR */
       carry = (shift_lhs >> ((shift_rhs - 1) & 0x1f)) & U32(1);
 
-    core.CPSR().Set( N, (res >> 31) & U32(1) );
-    core.CPSR().Set( Z, U32(res == U32(0)) );
-    core.CPSR().Set( C, carry );
+    core.CPSR().Set( N, S32(res) < S32(0) );
+    core.CPSR().Set( Z,     res == U32(0) );
+    if (write_carry)
+      core.CPSR().Set( C, BOOL( carry ) );
     /* CPSR.V unaltered */
   }
 
@@ -175,6 +180,8 @@ namespace arm {
   {
     typedef typename coreT::U32 U32;
     typedef typename coreT::S32 S32;
+    typedef typename coreT::BOOL BOOL;
+    
     U32 shift8 = shift_val & U32(0xff);
     // Wether output carry is input carry
     U32 select_carry = U32(shift8 == U32(0));
@@ -193,9 +200,9 @@ namespace arm {
     
     carry = (carry & ~select_carry) | (core.CPSR().Get( C ) & select_carry);
 
-    core.CPSR().Set( N, (res >> 31) & U32(1) );
-    core.CPSR().Set( Z, U32(res == U32(0)) );
-    core.CPSR().Set( C, carry );
+    core.CPSR().Set( N, S32(res) < S32(0) );
+    core.CPSR().Set( Z,     res == U32(0) );
+    core.CPSR().Set( C, BOOL( carry ) );
     /* CPSR.V unaltered */
   }
   

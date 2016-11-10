@@ -85,14 +85,17 @@ mov_wri.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
   U32 res = U32(imm);
   cpu.SetGPR( rd, res );
+  
   if (s)
     {
-      cpu.CPSR().Set( N, (res >> 31) & U32(1) );
-      cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      cpu.CPSR().Set( N, S32(res) < S32(0) );
+      cpu.CPSR().Set( Z,     res == U32(0) );
       if (cfim)
-        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
+        cpu.CPSR().Set( C, S32(imm) < S32(0) );
     }
 };
 
@@ -169,14 +172,17 @@ mvn_wri.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
   U32 res = U32(~imm);
   cpu.SetGPR( rd, res );
+  
   if (s)
     {
-      cpu.CPSR().Set( N, (res >> 31) & U32(1) );
-      cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      cpu.CPSR().Set( N, S32(res) < S32(0) );
+      cpu.CPSR().Set( Z,     res == U32(0) );
       if (cfim)
-        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
+        cpu.CPSR().Set( C, S32(imm) < S32(0) );
     }
 };
 
@@ -498,14 +504,17 @@ eor_wrri.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 ^ op2;
   cpu.SetGPR( rd, res );
+  
   if (s)
     {
-      cpu.CPSR().Set( N, (res >> 31) & U32(1) );
-      cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      cpu.CPSR().Set( N, S32(res) < S32(0) );
+      cpu.CPSR().Set( Z,     res == U32(0) );
       if (cfim)
-        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
+        cpu.CPSR().Set( C, S32(imm) < S32(0) );
     }
 };
 
@@ -542,14 +551,17 @@ orn_rri.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 | ~op2;
   cpu.SetGPR( rd, res );
+  
   if (s)
     {
-      cpu.CPSR().Set( N, (res >> 31) & U32( 1 ) );
-      cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      cpu.CPSR().Set( N, S32(res) < S32(0) );
+      cpu.CPSR().Set( Z,     res == U32(0) );
       if (cfim)
-        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
+        cpu.CPSR().Set( C, S32(imm) < S32(0) );
     }
 };
 
@@ -589,14 +601,17 @@ orr_wrri.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 | op2;
   cpu.SetGPR( rd, res );
+  
   if (s)
     {
-      cpu.CPSR().Set( N, (res >> 31) & U32( 1 ) );
-      cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      cpu.CPSR().Set( N, S32(res) < S32(0) );
+      cpu.CPSR().Set( Z,     res == U32(0) );
       if (cfim)
-        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
+        cpu.CPSR().Set( C, S32(imm) < S32(0) );
     }
 };
 
@@ -636,14 +651,17 @@ bic_wrri.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 & ~op2;
   cpu.SetGPR( rd, res );
+  
   if (s)
     {
-      cpu.CPSR().Set( N, (res >> 31) & U32(1) );
-      cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      cpu.CPSR().Set( N, S32(res) < S32(0) );
+      cpu.CPSR().Set( Z,     res == U32(0) );
       if (cfim)
-        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
+        cpu.CPSR().Set( C, S32(imm) < S32(0) );
     }
 };
 
@@ -681,14 +699,17 @@ and_wrri.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 & op2;
   cpu.SetGPR( rd, res );
+  
   if (s)
     {
-      cpu.CPSR().Set( N, (res >> 31) & U32(1) );
-      cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      cpu.CPSR().Set( N, S32(res) < S32(0) );
+      cpu.CPSR().Set( Z,     res == U32(0) );
       if (cfim)
-        cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
+        cpu.CPSR().Set( C, S32(imm) < S32(0) );
     }
 };
 
@@ -802,11 +823,14 @@ teq_wri.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 ^ op2;
-  cpu.CPSR().Set( N, (res >> 31) & U32(1) );
-  cpu.CPSR().Set( Z, U32(res == U32(0)) );
+  
+  cpu.CPSR().Set( N, S32(res) < S32(0) );
+  cpu.CPSR().Set( Z,     res == U32(0) );
   if (cfim)
-    cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
+    cpu.CPSR().Set( C, S32(imm) < S32(0) );
 };
 
 /*
@@ -848,11 +872,14 @@ tst_wri.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 & op2;
-  cpu.CPSR().Set( N, (res >> 31) & U32(1) );
-  cpu.CPSR().Set( Z, U32(res == U32(0)) );
+  
+  cpu.CPSR().Set( N, S32(res) < S32(0) );
+  cpu.CPSR().Set( Z,     res == U32(0) );
   if (cfim)
-    cpu.CPSR().Set( C, U32((imm >> 31) & 1) );
+    cpu.CPSR().Set( C, S32(imm) < S32(0) );
 };
 
 /*

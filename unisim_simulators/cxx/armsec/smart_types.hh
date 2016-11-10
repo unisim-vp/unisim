@@ -330,10 +330,12 @@ namespace armsec
   struct TypeInfo
   {
     static void name( std::ostream& sink ) { sink << (std::numeric_limits<VALUE_TYPE>::is_signed ? 'S' : 'U') << (8*sizeof(VALUE_TYPE)); };
+    static unsigned bitsize() { return 8*sizeof(VALUE_TYPE); }
   };
   
-  template <> struct TypeInfo<float>  { static void name( std::ostream& sink ) { sink << "F32"; } };
-  template <> struct TypeInfo<double> { static void name( std::ostream& sink ) { sink << "F64"; } };
+  template <> struct TypeInfo<bool>   { static void name( std::ostream& sink ) { sink << "BOOL"; } static unsigned bitsize() { return 1; } };
+  template <> struct TypeInfo<float>  { static void name( std::ostream& sink ) { sink << "F32"; } static unsigned bitsize() { return 32; } };
+  template <> struct TypeInfo<double> { static void name( std::ostream& sink ) { sink << "F64"; } static unsigned bitsize() { return 64; } };
   
   struct Expr
   {
@@ -388,7 +390,8 @@ namespace armsec
     {}
     virtual void Repr( std::ostream& sink ) const
     {
-      int dst_bit_size = 8*sizeof (DST_VALUE_TYPE), src_bit_size = 8*sizeof (SRC_VALUE_TYPE);
+      int dst_bit_size = TypeInfo<DST_VALUE_TYPE>::bitsize(), src_bit_size = TypeInfo<SRC_VALUE_TYPE>::bitsize();
+      
       if (std::numeric_limits<DST_VALUE_TYPE>::is_integer and std::numeric_limits<SRC_VALUE_TYPE>::is_integer)
         {
           int extend = dst_bit_size - src_bit_size;
@@ -400,9 +403,14 @@ namespace armsec
             }
           else
             {
-              src->Repr( sink );
-              if  (extend < 0)
-                sink << " {0," << (dst_bit_size-1) << "}";
+              typedef CastNode<SRC_VALUE_TYPE,DST_VALUE_TYPE> ReverseCast;
+              if (ReverseCast* inv = dynamic_cast<ReverseCast*>( src.node )) {
+                inv->src->Repr( sink );
+              } else {
+                src->Repr( sink );
+                if  (extend < 0)
+                  sink << " {0," << (dst_bit_size-1) << "}";
+              }
             }
         }
       else
