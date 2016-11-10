@@ -83,7 +83,7 @@ namespace armsec
     enum Code {
       NA=0
       , Xor, And, Or
-      , ROR, SHL, SHR
+      , Ror, Lsl, Asr, Lsr
       , Add, Sub, Div, Mod, Mul
       , Teq, Tne, Tge, Tgt, Tle, Tlt, Tgeu, Tgtu, Tleu, Tltu
       , FCmp
@@ -100,9 +100,10 @@ namespace armsec
       if (e(  "Div", Div  )) return;
       if (e(  "Mod", Mod  )) return;
       if (e(  "Mul", Mul  )) return;
-      if (e(  "ROR", ROR  )) return;
-      if (e(  "SHL", SHL  )) return;
-      if (e(  "SHR", SHR  )) return;
+      if (e(  "Ror", Ror  )) return;
+      if (e(  "Lsl", Lsl  )) return;
+      if (e(  "Asr", Asr  )) return;
+      if (e(  "Lsr", Lsr  )) return;
       if (e(  "Teq", Teq  )) return;
       if (e(  "Tne", Tne  )) return;
       if (e(  "Tge", Tge  )) return;
@@ -263,8 +264,9 @@ namespace armsec
         case BinaryOp::Xor:  return new ConstNode<VALUE_TYPE>( BinaryXor( value, GetValue( cnb ) ) );
         case BinaryOp::And:  return new ConstNode<VALUE_TYPE>( BinaryAnd( value, GetValue( cnb ) ) );
         case BinaryOp::Or:   return new ConstNode<VALUE_TYPE>( BinaryOr( value, GetValue( cnb ) ) );
-        case BinaryOp::SHL:  return new ConstNode<VALUE_TYPE>( BinarySHL( value, cnb.GetU8() ) );
-        case BinaryOp::SHR:  return new ConstNode<VALUE_TYPE>( BinarySHR( value, cnb.GetU8() ) );
+        case BinaryOp::Lsl:  return new ConstNode<VALUE_TYPE>( BinarySHL( value, cnb.GetU8() ) );
+        case BinaryOp::Lsr:
+        case BinaryOp::Asr:  return new ConstNode<VALUE_TYPE>( BinarySHR( value, cnb.GetU8() ) );
         case BinaryOp::Add:  return new ConstNode<VALUE_TYPE>( value + GetValue( cnb ) );
         case BinaryOp::Sub:  return new ConstNode<VALUE_TYPE>( value - GetValue( cnb ) );
         case BinaryOp::Mul:  return new ConstNode<VALUE_TYPE>( value * GetValue( cnb ) );
@@ -280,7 +282,7 @@ namespace armsec
         case BinaryOp::Tgtu:
         case BinaryOp::Tgt:  return new ConstNode   <bool>   ( value >  GetValue( cnb ) );
           
-        case BinaryOp::ROR:  break;
+        case BinaryOp::Ror:  break;
         case BinaryOp::Mod:  break;
         case BinaryOp::FCmp: break;
         case BinaryOp::NA:   throw std::logic_error("???");
@@ -521,18 +523,18 @@ namespace armsec
     SmartValue<value_type>& operator = ( SmartValue<value_type> const& other ) { expr = other.expr; return *this; }
     
     template <typename SHIFT_TYPE>
-    SmartValue<value_type> operator << ( SHIFT_TYPE shift ) const { return SmartValue<value_type>( Expr( new BONode( "SHL", expr, make_const( shift ) ) ) ); }
+    SmartValue<value_type> operator << ( SHIFT_TYPE shift ) const { return SmartValue<value_type>( Expr( new BONode( "Lsl", expr, make_const( shift ) ) ) ); }
     template <typename SHIFT_TYPE>
-    SmartValue<value_type> operator >> ( SHIFT_TYPE shift ) const { return SmartValue<value_type>( Expr( new BONode( "SHR", expr, make_const( shift ) ) ) ); }
+    SmartValue<value_type> operator >> ( SHIFT_TYPE shift ) const { return SmartValue<value_type>( Expr( new BONode(is_signed?"Asr":"Lsr",expr,make_const(shift)) ) ); }
     template <typename SHIFT_TYPE>
-    SmartValue<value_type>& operator <<= ( SHIFT_TYPE shift ) { expr = new BONode( "SHL", expr, make_const( shift ) ); return *this; }
+    SmartValue<value_type>& operator <<= ( SHIFT_TYPE shift ) { expr = new BONode( "Lsl", expr, make_const( shift ) ); return *this; }
     template <typename SHIFT_TYPE>
-    SmartValue<value_type>& operator >>= ( SHIFT_TYPE shift ) { expr = new BONode( "SHR", expr, make_const( shift ) ); return *this; }
+    SmartValue<value_type>& operator >>= ( SHIFT_TYPE shift ) { expr = new BONode(is_signed?"Asr":"Lsr",expr,make_const(shift)); return *this; }
     
     template <typename SHIFT_TYPE>
-    SmartValue<value_type> operator << ( SmartValue<SHIFT_TYPE> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "SHL", expr, other.expr ) ) ); }
+    SmartValue<value_type> operator << ( SmartValue<SHIFT_TYPE> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "Lsl", expr, other.expr ) ) ); }
     template <typename SHIFT_TYPE>
-    SmartValue<value_type> operator >> ( SmartValue<SHIFT_TYPE> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "SHR", expr, other.expr ) ) ); }
+    SmartValue<value_type> operator >> ( SmartValue<SHIFT_TYPE> const& other ) const { return SmartValue<value_type>( Expr( new BONode(is_signed?"Asr":"Lsr",expr,other.expr) ) ); }
     
     SmartValue<value_type> operator - () const { return SmartValue<value_type>( Expr( new UONode( "Neg", expr ) ) ); }
     SmartValue<value_type> operator ~ () const { return SmartValue<value_type>( Expr( new UONode( "Not", expr ) ) ); }
@@ -576,9 +578,9 @@ namespace armsec
   UTP ByteSwap( UTP const& value ) { return UTP( new UONode( "BSwp", value.expr ) ); }
   
   template <typename UTP>
-  UTP RotateRight( UTP const& value, unsigned shift ) { return UTP( new BONode( "ROR", value.expr, make_const( shift ) ) ); }
+  UTP RotateRight( UTP const& value, unsigned shift ) { return UTP( new BONode( "Ror", value.expr, make_const( shift ) ) ); }
   template <typename UTP>
-  UTP RotateRight( UTP const& value, UTP const& shift ) { return UTP( new BONode( "ROR", value.expr, shift.expr ) ); }
+  UTP RotateRight( UTP const& value, UTP const& shift ) { return UTP( new BONode( "Ror", value.expr, shift.expr ) ); }
   
   template <typename UTP>
   UTP BitScanReverse( UTP const& value ) { return UTP( new UONode( "BSR", value.expr ) ); }

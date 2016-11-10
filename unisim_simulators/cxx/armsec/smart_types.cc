@@ -67,12 +67,13 @@ namespace armsec
         
       case BinaryOp::Tgt:     sink << "(" << left << " >s " << right << ")"; break;
       case BinaryOp::Tgtu:    sink << "(" << left << " >u " << right << ")"; break;
-        
-        // case BinaryOp::SHL: break;
-        // case BinaryOp::SHR: break;
-        // case BinaryOp::ROR: break;
+      
+      case BinaryOp::Lsl:     sink << "(" << left << " lshift " << right << ")"; break;
+      case BinaryOp::Asr:     sink << "(" << left << " rshifts " << right << ")"; break;
+      case BinaryOp::Lsr:     sink << "(" << left << " rshiftu " << right << ")"; break;
+      case BinaryOp::Ror:     sink << "(" << left << " rrotate " << right << ")"; break;
+      case BinaryOp::Mul:     sink << "(" << left << " multu " << right << ")"; break;
         // case BinaryOp::Mod: break;
-        // case BinaryOp::Mul: break;
         // case BinaryOp::Div: break;
       }
   }
