@@ -343,7 +343,7 @@ CPU::StepInstruction()
   if (unlikely(instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
     instruction_counter_trap_reporting_import->ReportTrap(*this);
   
-  if (unlikely(memory_access_reporting_import))
+  if (unlikely(requires_finished_instruction_reporting and memory_access_reporting_import))
     memory_access_reporting_import->ReportFetchInstruction(this->current_insn_addr);
 
   if (debug_control_import)
