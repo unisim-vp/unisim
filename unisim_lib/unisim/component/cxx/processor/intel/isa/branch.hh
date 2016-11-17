@@ -16,7 +16,7 @@ struct NearCallJ : public Operation<ARCH>
   {
     if (OPSIZE != 32) throw 0;
     arch.template push<32>( arch.geteip() );
-    arch.addeip( u32_t( offset ) );
+    arch.seteip( arch.geteip() + u32_t( offset ), ARCH::ipcall );
   }
 };
   
@@ -33,7 +33,7 @@ struct NearCallE : public Operation<ARCH>
     if (OPSIZE != 32) throw 0;
     u32_t target = arch.template rmread<32>( rmop );
     arch.template push<32>( arch.geteip() );
-    arch.seteip( target );
+    arch.seteip( target, ARCH::ipcall );
   }
 };
   
@@ -102,7 +102,7 @@ struct JccJ : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     if (OPSIZE != 32) throw 0;
-    if (arch.Cond( eval_cond( arch, cond ) )) arch.addeip( u32_t( offset ) ); 
+    if (arch.Cond( eval_cond( arch, cond ) )) arch.seteip( arch.geteip() + u32_t( offset ) ); 
   }
 };
   
@@ -153,7 +153,7 @@ struct Loop : public Operation<ARCH>
     // or ZF is cleared (loope)
     if ((MOD == 1) and arch.Cond(arch.flagread( ARCH::ZF ) == bit_t( 0 ))) return;
     // else jump short
-    arch.addeip( u32_t( offset ) );
+    arch.seteip( arch.geteip() + u32_t( offset ) );
   }
 };
   
@@ -189,7 +189,7 @@ struct Jcxz : public Operation<ARCH>
     
     if (ADDRSZ != 32) throw 0;
     if (arch.Cond( arch.regread32( 1 ) == u32_t( 0 ) ))
-      arch.addeip( u32_t( offset ) );
+      arch.seteip( arch.geteip() + u32_t( offset ) );
   }
 };
   
@@ -228,7 +228,7 @@ struct JmpJ : public Operation<ARCH>
   
   void disasm( std::ostream& sink ) const { sink << "jmp 0x" << std::hex << (Operation<ARCH>::address + Operation<ARCH>::length + offset); }
      
-  void execute( ARCH& arch ) const { if (OPSIZE != 32) throw 0; arch.addeip( u32_t( offset ) ); }
+  void execute( ARCH& arch ) const { if (OPSIZE != 32) throw 0; arch.seteip( arch.geteip() + u32_t( offset ) ); }
 };
   
 template <class ARCH, unsigned OPSIZE>
