@@ -397,6 +397,9 @@ CPU::Run()
     quantum_time += time_per_instruction;
     cpsr_cleared_bits &= ~(CPSR().bits());
     
+    /* In cortex R5F many FPSCR bits stick to 0 */
+    FPSCR &= 0xffc00090;
+    
     if ( unlikely(verbose_tlm) )
     {
       PCPU::logger << DebugInfo

@@ -435,12 +435,12 @@ CPU::StepInstruction()
   }
   
   catch (UndefInstrException const& undexc) {
-    logger << DebugError << "Undefined instruction"
-           << " pc: " << std::hex << current_insn_addr << std::dec
-           << ", cpsr: " << std::hex << cpsr.bits() << std::dec
-           << " (" << cpsr << ")"
-           << EndDebugError;
-    this->Stop(-1);
+    /* Abort execution, and take processor to undefined handler */
+    
+    if (unlikely( exception_trap_reporting_import))
+      exception_trap_reporting_import->ReportTrap( *this, "Undefined Exception" );
+    
+    this->TakeUndefInstrException();
   }
   
   catch (DataAbortException const& daexc) {

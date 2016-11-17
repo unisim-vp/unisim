@@ -670,12 +670,12 @@ CPU::StepInstruction()
   }
   
   catch (UndefInstrException const& undexc) {
-    logger << DebugError << "Undefined instruction"
-           << " pc: " << std::hex << current_insn_addr << std::dec
-           << ", cpsr: " << std::hex << cpsr.bits() << std::dec
-           << " (" << cpsr << ")"
-           << EndDebugError;
-    this->Stop(-1);
+    /* Abort execution, and take processor to undefined handler */
+    
+    if (unlikely( exception_trap_reporting_import))
+      exception_trap_reporting_import->ReportTrap( *this, "Undefined Exception" );
+    
+    this->TakeUndefInstrException();
   }
   
   catch (Exception const& exc) {
@@ -1051,7 +1051,10 @@ CPU::UndefinedInstruction( isa::arm32::Operation<CPU>* insn )
          << ": " << oss.str()
          << EndDebugWarning;
   
-  throw UndefInstrException();
+  if (linux_os_import)
+    this->Stop( -1 );
+  else
+    throw UndefInstrException();
 }
 
 void
@@ -1065,7 +1068,10 @@ CPU::UndefinedInstruction( isa::thumb2::Operation<CPU>* insn )
          << ": " << oss.str()
          << EndDebugWarning;
   
-  throw UndefInstrException();
+  if (linux_os_import)
+    this->Stop( -1 );
+  else
+    throw UndefInstrException();
 }
 
 void

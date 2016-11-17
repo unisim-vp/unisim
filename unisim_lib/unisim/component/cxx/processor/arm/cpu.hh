@@ -357,7 +357,8 @@ protected:
   virtual void BranchToFIQorIRQvector( bool isIRQ );
   void         TakeSVCException();
   void         TakeDataOrPrefetchAbortException( bool isdata );
-  
+  void         TakeUndefInstrException();
+
   /************************************************************************/
   /* Exception handling                                               END */
   /************************************************************************/
