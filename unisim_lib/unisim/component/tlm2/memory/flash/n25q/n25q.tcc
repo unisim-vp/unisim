@@ -746,7 +746,7 @@ typename N25Q<CONFIG>::Event *N25Q<CONFIG>::Decode(payload_type& payload, bool b
 	
 	if(verbose)
 	{
-		logger << DebugInfo << "Clock frequency is around " << (1.0 / (clock_period.to_seconds() * 1.0e6)) << " MHz" << EndDebugInfo;
+		logger << DebugInfo << "Clock frequency is around " << (1.0 / (clock_period.to_seconds() * 1.0e6)) << " MHz (exactly " << clock_period << " clock period)" << EndDebugInfo;
 	}
 	
 	unisim::kernel::tlm2::tlm_spi_com_mode com_mode = payload.get_com_mode();
