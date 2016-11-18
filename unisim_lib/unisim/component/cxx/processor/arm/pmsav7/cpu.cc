@@ -99,8 +99,8 @@ CPU::CPU(const char *name, Object *parent)
   , debug_control_import("debug-control-import", this)
   , exception_trap_reporting_import("exception-trap-reporting-import", this)
   , instruction_counter_trap_reporting_import("instruction-counter-trap-reporting-import", this)
-  , requires_finished_instruction_reporting(true)
-  , requires_memory_access_reporting(true)
+  , requires_finished_instruction_reporting(false)
+  , requires_memory_access_reporting(false)
   // , icache("icache", this)
   // , dcache("dcache", this)
   , arm32_decoder()
@@ -435,12 +435,12 @@ CPU::StepInstruction()
   }
   
   catch (UndefInstrException const& undexc) {
-    logger << DebugError << "Undefined instruction"
-           << " pc: " << std::hex << current_insn_addr << std::dec
-           << ", cpsr: " << std::hex << cpsr.bits() << std::dec
-           << " (" << cpsr << ")"
-           << EndDebugError;
-    this->Stop(-1);
+    /* Abort execution, and take processor to undefined handler */
+    
+    if (unlikely( exception_trap_reporting_import))
+      exception_trap_reporting_import->ReportTrap( *this, "Undefined Exception" );
+    
+    this->TakeUndefInstrException();
   }
   
   catch (DataAbortException const& daexc) {
