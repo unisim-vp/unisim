@@ -1212,7 +1212,7 @@ bool GDBServer<ADDRESS>::GetPacket(string& s, bool blocking)
 			if(verbose)
 			{
 				logger << DebugInfo << "receiving $";
-				// Note: packet may characters that can't be printed
+				// Note: packet may have characters that can't be printed
 				std::size_t length = s.length();
 				std::size_t pos;
 				for(pos = 0; pos < length; pos++)
@@ -1287,7 +1287,7 @@ bool GDBServer<ADDRESS>::PutPacket(const string& s)
 		if(verbose)
 		{
 			logger << DebugInfo << "sending $";
-			// Note: packet may characters that can't be printed
+			// Note: packet may have characters that can't be printed
 			std::size_t length = s.length();
 			std::size_t pos;
 			for(pos = 0; pos < length; pos++)

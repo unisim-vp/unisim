@@ -60,24 +60,31 @@ N25Q<CONFIG>::N25Q(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, HOLD_RESET_N("HOLD_RESET_N")
 	, W_N_VPP("W_N_VPP")
 	, logger(*this)
-	, payload_fabric()
+	, verbose(false)
+	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
+	, input_filename()
+	, param_input_filename("input-filename", this, input_filename, "Input filename")
+	, output_filename()
+	, param_output_filename("output-filename", this, output_filename, "output filename")
 	, schedule()
 	, suspend_stack()
 	, write_operation_in_progress_event(0)
 	, erase_resume_time_stamp(sc_core::SC_ZERO_TIME)
 	, program_resume_time_stamp(sc_core::SC_ZERO_TIME)
 	, subsector_erase_resume_time_stamp(sc_core::SC_ZERO_TIME)
-	, qspi_mode(TLM_QSPI_STD_MODE)
-	, qspi_xip_cmd(TLM_QSPI_UNKNOWN_COMMAND)
-	, SR("SR", "Status Register", this)
-	, NVCR("NVCR", "Nonvolatile Configuration Register")
-	, VCR("VCR", "Volatile Configuration Register")
-	, VECR("VECR", "Enhanced Volatile Configuration Register")
-	, FSR("FSR", "Flag Status Register")
-	, ICR("ICR", "Internal Configuration Register")
+	, n25q_mode(N25Q_STD_MODE)
+	, n25q_xip_cmd(N25Q_UNKNOWN_COMMAND)
+	, SR(this, "SR", "Status Register")
+	, NVCR(this, "NVCR", "Nonvolatile Configuration Register")
+	, VCR(this, "VCR", "Volatile Configuration Register")
+	, VECR(this, "VECR", "Enhanced Volatile Configuration Register")
+	, FSR(this, "FSR", "Flag Status Register")
+	, ICR(this, "ICR", "Internal Configuration Register")
 	, LR()
 	, storage(0)
 	, OTP(0)
+	, MIN_CLOCK_PERIOD(sc_core::sc_time(1000000.0 / CONFIG::MAX_FREQUENCY, sc_core::SC_PS))
+	, FAST_READ_MIN_CLOCK_PERIODS()
 	, tWNVCR(CONFIG::tWNVCR, sc_core::SC_SEC)
 	, tW(CONFIG::tW, sc_core::SC_MS)
 	, tCFSR(CONFIG::tCFSR, sc_core::SC_NS)
@@ -98,20 +105,31 @@ N25Q<CONFIG>::N25Q(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, suspend_latency_program(CONFIG::suspend_latency_program, sc_core::SC_US)
 	, suspend_latency_subsector_erase(CONFIG::suspend_latency_subsector_erase, sc_core::SC_US)
 	, suspend_latency_erase(CONFIG::suspend_latency_erase, sc_core::SC_US)
+	, output_file(0)
 {
+	qspi_slave_socket(*this); // bind interface
+	
+	unsigned int num_dummy_cycles;
 	unsigned int idx;
+	
+	for(num_dummy_cycles = 1; num_dummy_cycles <= 10; num_dummy_cycles++)
+	{
+		for(idx = 0; idx < 5; idx++)
+		{
+			FAST_READ_MIN_CLOCK_PERIODS[num_dummy_cycles - 1][idx] = sc_core::sc_time(1000000.0 / CONFIG::FAST_READ_MAX_FREQUENCIES[num_dummy_cycles - 1][idx], sc_core::SC_PS);
+		}
+	}
 	
 	for(idx = 0; idx < CONFIG::SIZE / CONFIG::SECTOR_SIZE; idx++)
 	{
 		std::stringstream lr_name_sstr;
 		lr_name_sstr << "LR_" << idx;
-		std::stringstream lr_long_name_sstr;
-		lr_long_name_sstr << "Lock Register #" << idx;
-		LR[idx] = new LockRegister(lr_name_sstr.str(), lr_long_name_sstr.str());
+		std::stringstream lr_friendly_name_sstr;
+		lr_friendly_name_sstr << "Lock Register #" << idx;
+		LR[idx] = new LockRegister(this, lr_name_sstr.str(), lr_friendly_name_sstr.str());
 	}
 	
 	storage = new uint8_t[CONFIG::SIZE];
-	memset(storage, 0xff, CONFIG::SIZE); // bits are all 1's
 	OTP = new uint8_t[CONFIG::OTP_ARRAY_SIZE + 1];
 	
 	Reset();
@@ -142,6 +160,12 @@ N25Q<CONFIG>::N25Q(const sc_core::sc_module_name& name, unisim::kernel::service:
 template <typename CONFIG>
 N25Q<CONFIG>::~N25Q()
 {
+	if(output_file)
+	{
+		DumpStorageToFile();
+		delete output_file;
+	}
+	
 	unsigned int idx;
 	
 	for(idx = 0; idx < CONFIG::SIZE / CONFIG::SECTOR_SIZE; idx++)
@@ -149,12 +173,12 @@ N25Q<CONFIG>::~N25Q()
 		delete LR[idx];
 	}
 	
-	delete storage;
-	delete OTP;
+	delete[] storage;
+	delete[] OTP;
 }
 
 template <typename CONFIG>
-void N25Q<CONFIG>::Reset()
+void N25Q<CONFIG>::HWReset()
 {
 	SR.Reset();
 	NVCR.Reset();
@@ -180,115 +204,361 @@ void N25Q<CONFIG>::Reset()
 	switch(NVCR.XIP_mode_at_power_on_reset)
 	{
 		case 0x0:
-			qspi_mode = TLM_QSPI_XIP_MODE;
-			qspi_xip_cmd = TLM_QSPI_FAST_READ_COMMAND;
+			n25q_mode = N25Q_XIP_MODE;
+			n25q_xip_cmd = N25Q_FAST_READ_COMMAND;
 			break;
 		case 0x1:
-			qspi_mode = TLM_QSPI_XIP_MODE;
-			qspi_xip_cmd = TLM_QSPI_DUAL_OUTPUT_FAST_READ_COMMAND;
+			n25q_mode = N25Q_XIP_MODE;
+			n25q_xip_cmd = N25Q_DUAL_OUTPUT_FAST_READ_COMMAND;
 			break;
 		case 0x2:
-			qspi_mode = TLM_QSPI_XIP_MODE;
-			qspi_xip_cmd = TLM_QSPI_DUAL_INPUT_OUTPUT_FAST_READ_COMMAND;
+			n25q_mode = N25Q_XIP_MODE;
+			n25q_xip_cmd = N25Q_DUAL_INPUT_OUTPUT_FAST_READ_COMMAND;
 			break;
 		case 0x3:
-			qspi_mode = TLM_QSPI_XIP_MODE;
-			qspi_xip_cmd = TLM_QSPI_QUAD_OUTPUT_FAST_READ_COMMAND;
+			n25q_mode = N25Q_XIP_MODE;
+			n25q_xip_cmd = N25Q_QUAD_OUTPUT_FAST_READ_COMMAND;
 			break;
 		case 0x4:
-			qspi_mode = TLM_QSPI_XIP_MODE;
-			qspi_xip_cmd = TLM_QSPI_QUAD_INPUT_OUTPUT_FAST_READ_COMMAND;
+			n25q_mode = N25Q_XIP_MODE;
+			n25q_xip_cmd = N25Q_QUAD_INPUT_OUTPUT_FAST_READ_COMMAND;
 			break;
 		default:
-			qspi_mode = TLM_QSPI_STD_MODE;
-			qspi_xip_cmd = TLM_QSPI_UNKNOWN_COMMAND;
+			n25q_mode = N25Q_STD_MODE;
+			n25q_xip_cmd = N25Q_UNKNOWN_COMMAND;
 			break;
 	}
 }
 
 template <typename CONFIG>
-bool N25Q<CONFIG>::get_direct_mem_ptr(tlm_payload_type& payload, tlm::tlm_dmi& dmi_data)
+unisim::kernel::tlm2::tlm_spi_sync_enum N25Q<CONFIG>::spi_nb_send(payload_type& payload)
 {
-	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
-	dmi_data.set_start_address(0);
-	dmi_data.set_end_address(CONFIG::SIZE - 1);
-	dmi_data.set_dmi_ptr(storage);
-	return true;
-}
-
-template <typename CONFIG>
-unsigned int N25Q<CONFIG>::transport_dbg(tlm_payload_type& payload)
-{
-	return 0;
-}
-
-template <typename CONFIG>
-tlm::tlm_sync_enum N25Q<CONFIG>::nb_transport_fw(tlm_payload_type& payload, tlm_phase_type& phase, sc_core::sc_time& t)
-{
-	switch(phase)
+	Event *event = Decode(payload);
+	if(event)
 	{
-		case tlm::BEGIN_REQ:
-			{
-				t += ComputeRequestTime(&payload);
-				
-				sc_time notify_time_stamp(sc_core::sc_time_stamp());
-				notify_time_stamp += t;
-				Event *event = schedule.AllocEvent();
-				event->SetPayload(&payload);
-				event->SetTimeStamp(notify_time_stamp);
-				schedule.Notify(event);
-				phase = tlm::END_REQ;
-				return tlm::TLM_UPDATED;
-			}
-			break;
-		case tlm::END_RESP:
-			return tlm::TLM_COMPLETED;
-		default:
-			logger << DebugError << "protocol error" << EndDebugError;
-			Object::Stop(-1);
-			break;
+		schedule.Notify(event);
+	}
+	payload.set_status(TLM_SPI_OK);
+	return unisim::kernel::tlm2::TLM_SPI_ACCEPTED;
+}
+
+template <typename CONFIG>
+void N25Q<CONFIG>::spi_b_send(payload_type& payload)
+{
+	if(verbose)
+	{
+		unsigned char *tx_data_ptr = payload.get_tx_data_ptr();
+		unsigned int tx_data_length = payload.get_tx_data_length();
+		unsigned int tx_width = payload.get_tx_width();
+		
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": QSPI Master TX/" << tx_width << ": ";
+		
+		unsigned int i;
+		for(i = 0; i < tx_data_length; i++)
+		{
+			if(i) logger << " ";
+			
+			logger << "0x" << std::hex << (unsigned int) tx_data_ptr[i] << std::dec;
+		}
+		logger << EndDebugInfo;
+	}
+	sc_core::sc_event completion_event;
+	Event *event = Decode(payload, true);
+	if(event)
+	{
+		event->SetCompletionEvent(&completion_event);
+		schedule.Notify(event);
+		sc_core::wait(completion_event);
 	}
 	
-	return tlm::TLM_COMPLETED;
-}
-
-template <typename CONFIG>
-void N25Q<CONFIG>::b_transport(tlm_payload_type& payload, sc_core::sc_time& t)
-{
-	sc_core::sc_event completion_event;
-	sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
-	notify_time_stamp += t;
-	Event *event = schedule.AllocEvent();
-	event->SetPayload(&payload);
-	event->SetTimeStamp(notify_time_stamp);
-	event->SetCompletionEvent(&completion_event);
-	schedule.Notify(event);
-	sc_core::wait(completion_event);
-	t = sc_core::SC_ZERO_TIME;
-}
-
-template <typename CONFIG>
-void N25Q<CONFIG>::Combine(uint8_t *dest, const uint8_t *source, uint32_t size)
-{
-	// Do a AND between destination (flash memory content) and source (data to be programmed)
-	// A 1 can be transformed into a 0, but a zero can't be transformed into a 1
-	if(size > 0)
+	if(verbose)
 	{
-		uint8_t *dst = dest;
-		const uint8_t *src = source;
-		do
+		unsigned char *rx_data_ptr = payload.get_rx_data_ptr();
+		unsigned int rx_data_length = payload.get_rx_data_length();
+		unsigned int rx_width = payload.get_rx_width();
+		
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": QSPI Master RX/" << rx_width << ": ";
+
+		unsigned int i;
+		for(i = 0; i < rx_data_length; i++)
 		{
-			*dst = (*dst) & (*src);
-		} while(++dst, ++src, --size);
+			if(i) logger << " ";
+			
+			logger << "0x" << std::hex << (unsigned int) rx_data_ptr[i] << std::dec;
+		}
+		logger << EndDebugInfo;
+	}
+	payload.set_status(TLM_SPI_OK);
+}
+
+template <typename CONFIG>
+void N25Q<CONFIG>::DumpStorageToFile(unsigned int offset, unsigned int length)
+{
+	if(output_file)
+	{
+		const char *buffer = (const char *)(storage + offset);
+		
+		output_file->seekp(offset, std::ios_base::beg);
+		
+		if(output_file->bad())
+		{
+			logger << DebugWarning << "I/O error while seeking in \"" << output_filename << "\"" << EndDebugWarning;
+			return;
+		}
+
+		if(verbose)
+		{
+			logger << DebugInfo << "Writing " << length << " bytes at offset 0x" << std::hex << offset << std::dec << " to \"" << output_filename << "\"" << EndDebugInfo;
+		}
+
+		output_file->write(buffer, length);
+		
+		if(output_file->bad())
+		{
+			logger << DebugWarning << "I/O error while writing to \"" << output_filename << "\"" << EndDebugWarning;
+			return;
+		}
+		
+		output_file->flush();
 	}
 }
 
 template <typename CONFIG>
-const tlm_qspi_protocol N25Q<CONFIG>::GetProtocol() const
+void N25Q<CONFIG>::Reset()
 {
-	if(ICR.Quad_IO_protocol == 0) return TLM_QSPI_QUAD_IO_PROTOCOL;
-	if(ICR.Dual_IO_protocol == 0) return TLM_QSPI_DUAL_IO_PROTOCOL;
-	return TLM_QSPI_EXTENDED_PROTOCOL;
+	if(output_file)
+	{
+		output_file->close();
+		delete output_file;
+	}
+	
+	memset(storage, 0xff, CONFIG::SIZE); // bits are all 1's
+	memset(OTP, 0x00, CONFIG::OTP_ARRAY_SIZE + 1); // bits are all 0's
+	
+	if(!input_filename.empty())
+	{
+		std::ifstream input_file(input_filename.c_str(), std::ios_base::binary);
+		
+		if(input_file.is_open())
+		{
+			if(verbose)
+			{
+				logger << DebugInfo << "Loading up to " << CONFIG::SIZE << " bytes from \"" << input_filename << "\"" << EndDebugInfo;
+			}
+			std::streamsize n = input_file.readsome((char *) storage, CONFIG::SIZE);
+			
+			if(input_file.bad())
+			{
+				logger << DebugWarning << "I/O error while reading from \"" << input_filename << "\"" << EndDebugWarning;
+			}
+			else if(verbose)
+			{
+				logger << DebugInfo << n << " bytes loaded from \"" << input_filename << "\"" << EndDebugInfo;
+			}
+		}
+		else
+		{
+			logger << DebugWarning << "Can't open for input \"" << input_filename << "\"" << EndDebugWarning;
+		}
+	}
+	
+	if(!output_filename.empty())
+	{
+		output_file = new std::ofstream(output_filename.c_str(), std::ios_base::binary);
+		
+		if(output_file->is_open())
+		{
+			DumpStorageToFile();
+		}
+		else
+		{
+			logger << DebugWarning << "Can't open for output \"" << output_filename << "\"" << EndDebugWarning;
+			delete output_file;
+			output_file = 0;
+			unisim::kernel::service::Object::Stop(-1);
+		}
+	}
+	
+	HWReset();
+}
+
+template <typename CONFIG>
+void N25Q<CONFIG>::Xfer(uint8_t *dst, unsigned int dst_bit_length, unsigned int dst_bit_offset, n25q_signal_type dst_signals, const uint8_t *src, unsigned int src_bit_length, unsigned int src_bit_offset, n25q_signal_type src_signals, bool program)
+{
+	unsigned int dst_width = n25q_signal_width(dst_signals);
+	unsigned int src_width = n25q_signal_width(src_signals);
+	
+	bool debug = true;
+	
+	if(verbose && debug)
+	{
+		logger << DebugInfo << "Xfer: " << dst_signals << " (/" << dst_width << ") <= " << src_signals << " (/" << src_width << ")" << EndDebugInfo;
+	}
+
+	bool warn_toggle_bits_to_one = false;
+	unsigned int i, j, k;
+	
+	if(dst_width > src_width)
+	{
+		unsigned int last_dst_k = n25q_last_signal_of(dst_signals);
+		
+		for(i = 0, j = 0; i < dst_bit_length;)
+		{
+			for(k = 0; (k < dst_width) && (i < dst_bit_length); k++, i++)
+			{
+				unsigned int dbio = dst_bit_offset + i;
+				unsigned int sbio = src_bit_offset + j;
+				unsigned int dbyo = dbio / 8;
+				unsigned int sbyo = sbio / 8;
+				unsigned int dsh = 7 - (dbio % 8);
+				unsigned int ssh = 7 - (sbio % 8);
+				uint8_t mask = 1 << dsh;
+				n25q_signal_type cur_signal = n25q_signal(last_dst_k - k);
+				bool has_signal = dst_signals & src_signals & cur_signal;
+				uint8_t s = (has_signal && (sbio >= src_bit_offset) && (sbio < src_bit_length)) ? ((src[sbyo] >> ssh) & 1) << dsh : 0;
+				uint8_t d = dst[dbyo] & mask; // old value
+				if(program && !d && s) warn_toggle_bits_to_one = true;
+				dst[dbyo] = program ? (dst[dbyo] & (~mask | s)) /* toggle 1->0 only */: ((dst[dbyo] & ~mask) | (s & mask)); /* copy bit */
+				
+				if(verbose && debug)
+				{
+					logger << DebugInfo << cur_signal << ": D" << dbio << " <- ";
+					if(has_signal && (sbio >= src_bit_offset) && (sbio < src_bit_length)) logger << DebugInfo << "S" << sbio; else logger << DebugInfo << "X";
+					logger << EndDebugInfo;
+				}
+
+				if(has_signal) j++;
+			}
+		}
+	}
+	else
+	{
+		unsigned int last_src_k = n25q_last_signal_of(src_signals);
+		
+		for(i = 0, j = 0; i < dst_bit_length;)
+		{
+			for(k = 0; (k < src_width) && (i < dst_bit_length); k++, j++)
+			{
+				unsigned int dbio = dst_bit_offset + i;
+				unsigned int sbio = src_bit_offset + j;
+				unsigned int dbyo = dbio / 8;
+				unsigned int sbyo = sbio / 8;
+				unsigned int dsh = 7 - (dbio % 8);
+				unsigned int ssh = 7 - (sbio % 8);
+				uint8_t mask = 1 << dsh;
+				n25q_signal_type cur_signal = n25q_signal(last_src_k - k);
+				bool has_signal = dst_signals & src_signals & cur_signal;
+				uint8_t s = ((sbio >= src_bit_offset) && (sbio < src_bit_length)) ? ((src[sbyo] >> ssh) & 1) << dsh : 0;
+				uint8_t d = dst[dbyo] & mask; // old value
+				if(has_signal)
+				{
+					if(program && !d && s) warn_toggle_bits_to_one = true;
+					dst[dbyo] = program ? (dst[dbyo] & (~mask | s)) /* toggle 1->0 only */: ((dst[dbyo] & ~mask) | (s & mask)); /* copy bit */
+					
+					if(verbose && debug)
+					{
+						logger << DebugInfo << cur_signal << ": D" << dbio << " <- ";
+						if((sbio >= src_bit_offset) && (sbio < src_bit_length)) logger << DebugInfo << "S" << sbio; else logger << DebugInfo << "X";
+						logger << EndDebugInfo;
+					}
+					
+					i++;
+				}
+			}
+		}
+	}
+	
+	if(program && warn_toggle_bits_to_one)
+	{
+		logger << DebugWarning << "Attempt to toggle some bits from 0 to 1 while programming." << EndDebugWarning;
+	}
+}
+
+template <typename CONFIG>
+void N25Q<CONFIG>::Zero(uint8_t *dst, unsigned int dst_bit_length, unsigned int dst_bit_offset)
+{
+	bool debug = true;
+	
+	if(dst_bit_length)
+	{
+		unsigned int l = dst_bit_length / 8;
+		memset(dst, 0, l); // zero first bytes
+		if(verbose && debug)
+		{
+			logger << DebugInfo << "D0-D" << ((8 * l) - 1) << " <- X" << EndDebugInfo;
+		}
+		
+		unsigned int i;
+		for(i = 8 * l; i < dst_bit_length; i++)
+		{
+			unsigned int dbio = dst_bit_offset + i;
+			unsigned int dbyo = dbio / 8;
+			unsigned int dsh = 7 - (dbio % 8);
+			uint8_t mask = 1 << dsh;
+			dst[dbyo] = dst[dbyo] & ~mask; // zero bit
+			
+			if(verbose && debug)
+			{
+				logger << DebugInfo << "D" << dbio << " <- X" << EndDebugInfo;
+			}
+		}
+	}
+}
+
+template <typename CONFIG>
+void N25Q<CONFIG>::Program(uint8_t *dst, unsigned int dst_bit_length, unsigned int dst_bit_offset, n25q_signal_type dst_signals, const uint8_t *src, unsigned int src_bit_length, unsigned int src_bit_offset, n25q_signal_type src_signals)
+{
+	Xfer(dst, dst_bit_length, dst_bit_offset, dst_signals, src, src_bit_length, src_bit_offset, src_signals, true);
+}
+
+template <typename CONFIG>
+void N25Q<CONFIG>::ProgramStorage(unsigned int dst_bit_length, unsigned int dst_bit_offset, n25q_signal_type dst_signals, const uint8_t *src, unsigned int src_bit_length, unsigned int src_bit_offset, n25q_signal_type src_signals)
+{
+	if(verbose)
+	{
+		logger << DebugInfo << "Programming " << dst_bit_length << " bits at bit offset 0x" << std::hex << dst_bit_offset << std::dec << EndDebugInfo;
+	}
+	
+	Program(storage, dst_bit_length, dst_bit_offset, dst_signals, src, src_bit_length, src_bit_offset, src_signals);
+	
+	if(output_file)
+	{
+		unsigned int first_byte_offset = dst_bit_offset / 8;
+		unsigned int last_byte_offset = (dst_bit_offset + dst_bit_length - 1) / 8;
+		unsigned int offset = first_byte_offset;
+		unsigned int length = last_byte_offset - first_byte_offset + 1;
+		DumpStorageToFile(offset, length);
+	}
+}
+
+template <typename CONFIG>
+void N25Q<CONFIG>::ProgramOTP(unsigned int dst_bit_length, unsigned int dst_bit_offset, n25q_signal_type dst_signals, const uint8_t *src, unsigned int src_bit_length, unsigned int src_bit_offset, n25q_signal_type src_signals)
+{
+	Program(OTP, dst_bit_length, dst_bit_offset, dst_signals, src, src_bit_length, src_bit_offset, src_signals);
+}
+
+template <typename CONFIG>
+void N25Q<CONFIG>::EraseStorage(unsigned int offset, unsigned int length)
+{
+	if(verbose)
+	{
+		logger << DebugInfo << "Erasing " << (8 * length) << " bits at bit offset 0x" << std::hex << (8 * offset) << std::dec << EndDebugInfo;
+	}
+	
+	memset(storage + offset, 0xff, length);
+	
+	if(output_file)
+	{
+		DumpStorageToFile(offset, length);
+	}
+}
+
+template <typename CONFIG>
+const n25q_protocol_type N25Q<CONFIG>::GetProtocol() const
+{
+	if(ICR.Quad_IO_protocol == 0) return N25Q_QUAD_IO_PROTOCOL;
+	if(ICR.Dual_IO_protocol == 0) return N25Q_DUAL_IO_PROTOCOL;
+	return N25Q_EXTENDED_PROTOCOL;
 }
 
 template <typename CONFIG>
@@ -301,7 +571,7 @@ uint32_t N25Q<CONFIG>::GetWrap() const
 }
 
 template <typename CONFIG>
-bool N25Q<CONFIG>::IsSectorProtected(sc_dt::uint64 addr)
+bool N25Q<CONFIG>::IsSectorProtected(uint32_t addr)
 {
 	if(LR[addr / CONFIG::SECTOR_SIZE]->Sector_write_lock != 0) return true;
 	
@@ -322,110 +592,451 @@ bool N25Q<CONFIG>::IsDeviceProtected()
 }
 
 template <typename CONFIG>
-sc_core::sc_time N25Q<CONFIG>::ComputeRequestTime(tlm::tlm_generic_payload *payload)
+bool N25Q<CONFIG>::IsProgramOrEraseSuspendedFor(uint32_t addr)
 {
-	tlm_qspi_extension *qspi_ext = payload->get_extension<tlm_qspi_extension>();
-	
-	if(qspi_ext)
+	typename std::vector<Event *>::size_type n = suspend_stack.size();
+	typename std::vector<Event *>::size_type i;
+
+	for(i = 0; i < n; i++)
 	{
-		tlm_qspi_protocol qspi_protocol = GetProtocol();
-		const sc_core::sc_time& cycle_period = qspi_ext->get_cycle_period();
+		Event *suspended_event = suspend_stack[i];
 		
-		tlm_qspi_command qspi_cmd = (qspi_mode == TLM_QSPI_XIP_MODE) ? qspi_xip_cmd : qspi_ext->get_command();
+		n25q_command_type n25q_cmd = suspended_event->GetCommand();
+		uint32_t program_or_erase_addr = suspended_event->GetAddress();
 		
-		sc_core::sc_time request_time(cycle_period);
-		
-		unsigned int qspi_command_cycles = tlm_qspi_command_cycles(qspi_cmd, qspi_protocol, qspi_mode);
-		unsigned int qspi_address_cycles = tlm_qspi_address_cycles(qspi_cmd, qspi_protocol, qspi_mode);
-		unsigned int request_cycles = qspi_command_cycles + qspi_address_cycles;
-		
-		if(payload->is_write())
+		switch(n25q_cmd)
 		{
-			unsigned int data_length = payload->get_data_length();
-			unsigned int qspi_data_cycles = data_length * tlm_qspi_data_cycles_per_byte(qspi_cmd, qspi_protocol, qspi_mode);
-			request_cycles += qspi_data_cycles;
+			case N25Q_PAGE_PROGRAM_COMMAND:
+			case N25Q_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+			case N25Q_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+			case N25Q_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+			case N25Q_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+			case N25Q_SUBSECTOR_ERASE_COMMAND:
+			case N25Q_SECTOR_ERASE_COMMAND:
+				return (program_or_erase_addr / CONFIG::SECTOR_SIZE) == (addr / CONFIG::SECTOR_SIZE);
+			case N25Q_BULK_ERASE_COMMAND:
+				return (addr < CONFIG::SIZE);
+			default:
+				break;
+		}
+	}
+	
+	return false;
+}
+
+template <typename CONFIG>
+bool N25Q<CONFIG>::IsProgramSuspended()
+{
+	typename std::vector<Event *>::size_type n = suspend_stack.size();
+	typename std::vector<Event *>::size_type i;
+
+	for(i = 0; i < n; i++)
+	{
+		Event *suspended_event = suspend_stack[i];
+		
+		n25q_command_type n25q_cmd = suspended_event->GetCommand();
+		
+		switch(n25q_cmd)
+		{
+			case N25Q_PAGE_PROGRAM_COMMAND:
+			case N25Q_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+			case N25Q_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+			case N25Q_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+			case N25Q_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+				return true;
+			default:
+				break;
+		}
+	}
+	
+	return false;
+}
+
+template <typename CONFIG>
+bool N25Q<CONFIG>::IsProgramSuspendedFor(uint32_t addr)
+{
+	typename std::vector<Event *>::size_type n = suspend_stack.size();
+	typename std::vector<Event *>::size_type i;
+
+	for(i = 0; i < n; i++)
+	{
+		Event *suspended_event = suspend_stack[i];
+		
+		n25q_command_type n25q_cmd = suspended_event->GetCommand();
+		uint32_t program_or_erase_addr = suspended_event->GetAddress();
+		
+		switch(n25q_cmd)
+		{
+			case N25Q_PAGE_PROGRAM_COMMAND:
+			case N25Q_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+			case N25Q_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+			case N25Q_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+			case N25Q_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+				return (program_or_erase_addr / CONFIG::SECTOR_SIZE) == (addr / CONFIG::SECTOR_SIZE);
+			default:
+				break;
+		}
+	}
+	
+	return false;
+}
+
+template <typename CONFIG>
+bool N25Q<CONFIG>::IsEraseSuspendedFor(uint32_t addr)
+{
+	typename std::vector<Event *>::size_type n = suspend_stack.size();
+	typename std::vector<Event *>::size_type i;
+
+	for(i = 0; i < n; i++)
+	{
+		Event *suspended_event = suspend_stack[i];
+		
+		n25q_command_type n25q_cmd = suspended_event->GetCommand();
+		uint32_t erase_addr = suspended_event->GetAddress();
+		
+		switch(n25q_cmd)
+		{
+			case N25Q_SUBSECTOR_ERASE_COMMAND:
+				return (erase_addr / CONFIG::SUBSECTOR_SIZE) == (addr / CONFIG::SUBSECTOR_SIZE);
+			case N25Q_SECTOR_ERASE_COMMAND:
+				return (erase_addr / CONFIG::SECTOR_SIZE) == (addr / CONFIG::SECTOR_SIZE);
+			case N25Q_BULK_ERASE_COMMAND:
+				return (addr < CONFIG::SIZE);
+			default:
+				break;
+		}
+	}
+	
+	return false;
+}
+
+template <typename CONFIG>
+bool N25Q<CONFIG>::CheckClock(const sc_core::sc_time& clock_period, n25q_command_type n25q_cmd, sc_core::sc_time *& min_clock_period)
+{
+	switch(n25q_cmd)
+	{
+		case N25Q_FAST_READ_COMMAND:
+		case N25Q_DUAL_OUTPUT_FAST_READ_COMMAND:
+		case N25Q_DUAL_INPUT_OUTPUT_FAST_READ_COMMAND:
+		case N25Q_QUAD_OUTPUT_FAST_READ_COMMAND:
+		case N25Q_QUAD_INPUT_OUTPUT_FAST_READ_COMMAND:
+			{
+				unsigned int i = DummyCycles(n25q_cmd);
+				unsigned int j = n25q_cmd - N25Q_FAST_READ_COMMAND;
+				
+				assert(i != 0);
+				assert(j < 5);
+				if(i > 10) i = 10;
+				
+				min_clock_period = &FAST_READ_MIN_CLOCK_PERIODS[j - 1][i];
+			}
+			break;
+		default:
+			min_clock_period = &MIN_CLOCK_PERIOD;
+			break;
+	}
+	
+	return clock_period >= (*min_clock_period);
+}
+
+template <typename CONFIG>
+typename N25Q<CONFIG>::Event *N25Q<CONFIG>::Decode(payload_type& payload, bool blocking_if)
+{
+	const sc_core::sc_time& clock_period = payload.get_clock();
+	
+	if(verbose)
+	{
+		logger << DebugInfo << "Clock frequency is around " << (1.0 / (clock_period.to_seconds() * 1.0e6)) << " MHz" << EndDebugInfo;
+	}
+	
+	unisim::kernel::tlm2::tlm_spi_com_mode com_mode = payload.get_com_mode();
+	
+	unsigned int tx_width = payload.get_tx_width();
+	
+	switch(tx_width)
+	{
+		case 1:
+			break;
+		case 2:
+		case 4:
+			if(com_mode == unisim::kernel::tlm2::TLM_SPI_FULL_DUPLEX)
+			{
+				logger << DebugWarning << sc_core::sc_time_stamp() << ": QSPI master is operating in full duplex communication mode while N25Q needs half duplex communication mode in dual or quad SPI protocol" << EndDebugWarning;
+			}
+			break;
+		default:
+			logger << DebugWarning << sc_core::sc_time_stamp() << ": N25Q only supports 1, 2, or 4 input pins" << EndDebugWarning;
+			return 0;
+	}
+	
+	n25q_signal_type tx_signals = n25q_input_signal(tx_width);
+
+	unsigned int rx_width = payload.get_rx_width();
+	switch(rx_width)
+	{
+		case 1:
+			break;
+		case 2:
+		case 4:
+			if(com_mode == unisim::kernel::tlm2::TLM_SPI_FULL_DUPLEX)
+			{
+				logger << DebugWarning << sc_core::sc_time_stamp() << ": QSPI master is operating in full duplex communication mode while N25Q needs half duplex communication mode in dual or quad SPI protocol" << EndDebugWarning;
+			}
+			break;
+		default:
+			logger << DebugWarning << sc_core::sc_time_stamp() << ": N25Q only supports 1, 2, or 4 output pins" << EndDebugWarning;
+			return 0;
+	}
+
+	n25q_protocol_type n25q_protocol = GetProtocol();
+
+	unsigned int tx_data_bit_length = payload.get_tx_data_bit_length();
+	unsigned int rx_data_bit_length = payload.get_rx_data_bit_length();
+	
+	if(tx_data_bit_length & (tx_width - 1))
+	{
+		logger << DebugWarning << sc_core::sc_time_stamp() << ": N25Q only supports TX data bit length multiple of number of pins" << EndDebugWarning;
+		return 0;
+	}
+	
+	if(rx_data_bit_length & (rx_width - 1))
+	{
+		logger << DebugWarning << sc_core::sc_time_stamp() << ": N25Q only supports RX data bit length multiple of number of pins" << EndDebugWarning;
+		return 0;
+	}
+
+	unsigned char *tx_data_ptr = payload.get_tx_data_ptr();
+	unsigned int tx_data_bit_offset = 0;
+	unsigned int rx_data_bit_offset = 0;
+	unsigned int read_data_bit_offset = 0;
+
+	n25q_command_type n25q_cmd = N25Q_UNKNOWN_COMMAND;
+	
+	if(n25q_mode == N25Q_STD_MODE)
+	{
+		unsigned int cmd_width = n25q_width(n25q_protocol);
+		n25q_signal_type cmd_signal = n25q_input_signal(cmd_width);
+		unsigned int cmd_cycles = 8 / cmd_width;
+		
+		if((tx_data_bit_offset + (cmd_cycles * tx_width)) > tx_data_bit_length)
+		{
+			logger << DebugWarning << sc_core::sc_time_stamp() << ": QSPI master did not send enough data bits for N25Q command byte" << EndDebugWarning;
+			return 0;
 		}
 		
-		request_time *= request_cycles;
+		uint8_t n25q_cmd_byte = 0;
 		
-		return request_time;
+		Xfer(&n25q_cmd_byte, 8, 0, cmd_signal, tx_data_ptr, tx_data_bit_length, tx_data_bit_offset, tx_signals);
+		n25q_cmd = n25q_decode_command_byte(n25q_cmd_byte, n25q_protocol);
+		tx_data_bit_offset += cmd_cycles * tx_width;
+	}
+	else
+	{
+		n25q_cmd = n25q_xip_cmd;
+	}
+	
+	if(n25q_cmd == N25Q_UNKNOWN_COMMAND)
+	{
+		logger << DebugWarning << sc_core::sc_time_stamp() << ": N25Q command byte is invalid" << EndDebugWarning;
+		return 0;
+	}
+	else if(verbose)
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": Receiving " << n25q_cmd << EndDebugInfo;
+	}
+	
+	sc_core::sc_time *min_clock_period;
+	
+	if(!CheckClock(clock_period, n25q_cmd, min_clock_period))
+	{
+		logger << DebugWarning << "Clock frequency (around " << (1.0 / (clock_period.to_seconds() * 1.0e6)) << " MHz) is too high for " << n25q_cmd << " (max. supported frequency is around " << (1.0 / (min_clock_period->to_seconds() * 1.0e6)) << " MHz)" << EndDebugWarning;
+	}
+
+	uint32_t n25q_addr = 0;
+	
+	if(n25q_command_has_address(n25q_cmd))
+	{
+		n25q_signal_type address_signal = n25q_address_signal(n25q_cmd, n25q_protocol, n25q_mode);
+		unsigned address_width = n25q_signal_width(address_signal); // either 1, 2 or 4
+		
+		if(address_width != tx_width)
+		{
+			logger << DebugWarning << sc_core::sc_time_stamp() << ": QSPI master sends address bytes using " << tx_width << " pin(s) (" << n25q_input_signal(tx_width) << ") while N25Q receives address bytes using " << address_width << " pin(s) (" << n25q_address_signal(n25q_cmd, n25q_protocol, n25q_mode) << ")" << EndDebugWarning;
+		}
+		
+		unsigned int address_byte_cycles = 8 / address_width;
+		unsigned int address_cycles = 3 * address_byte_cycles;
+		
+		if((tx_data_bit_offset + (address_cycles * tx_width)) > tx_data_bit_length)
+		{
+			logger << DebugWarning << sc_core::sc_time_stamp() << ": QSPI master did not send enough data bits for N25Q address bytes" << EndDebugWarning;
+			return 0;
+		}
+		
+		uint8_t address_bytes[3];
+		Xfer(address_bytes, 24, 0, address_signal, tx_data_ptr, tx_data_bit_length, tx_data_bit_offset, tx_signals);
+		tx_data_bit_offset += 3 * address_byte_cycles * tx_width;
+		
+		n25q_addr = ((uint32_t) address_bytes[0] << 16) | ((uint32_t) address_bytes[1] << 8) | (uint32_t) address_bytes[2];
+		
+		if(verbose)
+		{
+			logger << DebugInfo << sc_core::sc_time_stamp() << ": 3-byte address is 0x" << std::hex << n25q_addr << std::dec << EndDebugInfo;
+		}
+	}
+	
+	if(com_mode == unisim::kernel::tlm2::TLM_SPI_FULL_DUPLEX)
+	{
+		rx_data_bit_offset = tx_data_bit_offset;
+	}
+
+	if(n25q_command_has_input_data(n25q_cmd))
+	{
+		unsigned int data_width = n25q_data_width(n25q_cmd, n25q_protocol, n25q_mode);
+		
+		if(data_width != tx_width)
+		{
+			logger << DebugWarning << sc_core::sc_time_stamp() << ": QSPI master sends data bits using " << tx_width << " pin(s) (" << n25q_input_signal(tx_width) << ") while N25Q receives data bits using " << data_width << " pin(s) (" << n25q_data_signal(n25q_cmd, n25q_protocol, n25q_mode) << ") for " << n25q_cmd << EndDebugWarning;
+		}
+		
+		if(tx_data_bit_offset >= tx_data_bit_length)
+		{
+			logger << DebugWarning << sc_core::sc_time_stamp() << ": QSPI master did not send input data bits for " << n25q_cmd << EndDebugWarning;
+		}
+	}
+	else if(n25q_command_has_output_data(n25q_cmd))
+	{
+		unsigned int data_width = n25q_data_width(n25q_cmd, n25q_protocol, n25q_mode);
+		
+		if(data_width != tx_width)
+		{
+			logger << DebugWarning << sc_core::sc_time_stamp() << ": QSPI master receives data bits using " << tx_width << " pin(s) (" << n25q_output_signal(tx_width) << ") while N25Q sends data bits using " << data_width << " pin(s) (" << n25q_data_signal(n25q_cmd, n25q_protocol, n25q_mode) << ") for " << n25q_cmd << EndDebugWarning;
+		}
+		
+		unsigned int dummy_cycles = DummyCycles(n25q_cmd);
+		
+		if(verbose && dummy_cycles)
+		{
+			logger << DebugInfo << sc_core::sc_time_stamp() << ": " << n25q_cmd << " requires " << dummy_cycles << " dummy cycles (" << (dummy_cycles * tx_width) << " dummy bits from QSPI master)" << EndDebugInfo;
+		}
+		
+		switch(com_mode)
+		{
+			case unisim::kernel::tlm2::TLM_SPI_FULL_DUPLEX:
+				// In full duplex mode: TX and RX are simultaneous
+				rx_data_bit_offset += dummy_cycles * tx_width; // RX start after read latency
+				break;
+			case unisim::kernel::tlm2::TLM_SPI_HALF_DUPLEX:
+				// In half duplex mode: TX followed by RX: TX phase has dummy bits to account for read latency
+				if(tx_data_bit_offset + (dummy_cycles * tx_width) > tx_data_bit_length)
+				{
+					logger << DebugWarning << sc_core::sc_time_stamp() << ": QSPI master did not send enough dummy bits for " << n25q_cmd << " resulting in a truncated response and skewed data read" << EndDebugWarning;
+					
+					unsigned int lost_bits = tx_data_bit_offset + (dummy_cycles * tx_width) - tx_data_bit_length;
+					rx_data_bit_offset = (rx_data_bit_length > (rx_data_bit_offset + lost_bits)) ? (rx_data_bit_offset + lost_bits) : rx_data_bit_length;
+					read_data_bit_offset = 0;
+				}
+				else if(tx_data_bit_offset + (dummy_cycles * tx_width) < tx_data_bit_length)
+				{
+					logger << DebugWarning << sc_core::sc_time_stamp() << ": QSPI master did send too many dummy bits for " << n25q_cmd << " resulting in a truncated response and skewed data read" << EndDebugWarning;
+					
+					unsigned int lost_bits = tx_data_bit_length - (tx_data_bit_offset + (dummy_cycles * data_width));
+					rx_data_bit_offset = 0;
+					read_data_bit_offset = (rx_data_bit_length > (read_data_bit_offset + lost_bits)) ? (read_data_bit_offset + lost_bits) : rx_data_bit_length;
+				}
+				break;
+		}
+			
+		if(rx_data_bit_offset >= rx_data_bit_length)
+		{
+			logger << DebugWarning << sc_core::sc_time_stamp() << ": QSPI master has deselected N25Q too early to receive any input data bits" << EndDebugWarning;
+			return 0;
+		}
+	}
+	
+	if(rx_data_bit_offset > 0)
+	{
+		// beginning of RX data are don't care (zeroes at the moment)
+		unsigned char *rx_data_ptr = payload.get_rx_data_ptr();
+		Zero(rx_data_ptr, rx_data_bit_offset, 0);
+	}
+
+	sc_core::sc_time request_time(clock_period);
+	request_time *= payload.get_tx_cycles();
+	sc_time notify_time_stamp(sc_core::sc_time_stamp());
+	notify_time_stamp += request_time;
+
+	Event *event = schedule.AllocEvent();
+	
+	event->SetTimeStamp(notify_time_stamp);
+	if(blocking_if)
+	{
+		event->SetPayload(&payload);
+	}
+	else
+	{
+		if(payload.has_mm())
+		{
+			payload.acquire();
+			event->SetPayload(&payload, true);
+		}
+		else
+		{
+			payload_type *payload_clone = payload_fabric.allocate(); // payload is already acquired by allocate
+			unsigned char *data_ptr_clone = new unsigned char[payload.get_data_length()];
+			payload_clone->set_data_ptr(data_ptr_clone);
+			payload_clone->copy_from(payload);
+			event->SetPayload(payload_clone, true);
+		}
+	}
+	event->SetCommand(n25q_cmd);
+	event->SetAddress(n25q_addr);
+	event->SetTxDataBitOffset(tx_data_bit_offset);
+	event->SetRxDataBitOffset(rx_data_bit_offset);
+	event->SetReadDataBitOffset(read_data_bit_offset);
+	
+	return event;
+}
+
+template <typename CONFIG>
+const sc_core::sc_time N25Q<CONFIG>::ComputeWriteOperationTime(Event *event)
+{
+	payload_type *payload = event->GetPayload();
+	n25q_command_type n25q_cmd = event->GetCommand();
+		
+	switch(n25q_cmd)
+	{
+		case N25Q_WRITE_NONVOLATILE_CONFIGURATION_REGISTER_COMMAND: return tWNVCR;
+		case N25Q_WRITE_STATUS_REGISTER_COMMAND: return tW;
+		case N25Q_CLEAR_FLAG_STATUS_REGISTER_COMMAND: return tCFSR;
+		case N25Q_WRITE_VOLATILE_CONFIGURATION_REGISTER_COMMAND: return tWVCR;
+		case N25Q_WRITE_ENHANCED_VOLATILE_CONFIGURATION_REGISTER_COMMAND: return tWRVECR;
+		case N25Q_WRITE_LOCK_REGISTER_COMMAND: return tSHSL2;
+		case N25Q_PROGRAM_OTP_ARRAY_COMMAND: return tPOTP;
+		case N25Q_PAGE_PROGRAM_COMMAND:
+		case N25Q_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+		case N25Q_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+		case N25Q_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+		case N25Q_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND: return ceil(payload->get_tx_data_length() / 8) * (W_N_VPP ? tPP_VPP : tPP);
+		case N25Q_SUBSECTOR_ERASE_COMMAND: return tSSE;
+		case N25Q_SECTOR_ERASE_COMMAND: return W_N_VPP ? tSE_VPP : tSE;
+		case N25Q_BULK_ERASE_COMMAND: return W_N_VPP ? tBE_VPP : tBE;
+		default: return sc_core::SC_ZERO_TIME;
 	}
 	
 	return sc_core::SC_ZERO_TIME;
 }
 
 template <typename CONFIG>
-sc_core::sc_time N25Q<CONFIG>::ComputeResponseTime(tlm::tlm_generic_payload *payload)
+unsigned int N25Q<CONFIG>::DummyCycles(n25q_command_type n25q_cmd)
 {
-	if(payload->is_read())
+	switch(n25q_cmd)
 	{
-		tlm_qspi_extension *qspi_ext = payload->get_extension<tlm_qspi_extension>();
-		
-		if(qspi_ext)
-		{
-			tlm_qspi_protocol qspi_protocol = GetProtocol();
-			const sc_core::sc_time& cycle_period = qspi_ext->get_cycle_period();
-			tlm_qspi_command qspi_cmd = qspi_ext->get_command();
-			
-			sc_core::sc_time response_time(cycle_period);
-			
-			unsigned int data_length = payload->get_data_length();
-			
-			unsigned int qspi_dummy_cycles = DummyCycles(qspi_cmd);
-			unsigned int qspi_data_cycles = data_length * tlm_qspi_data_cycles_per_byte(qspi_cmd, qspi_protocol, qspi_mode);
-			unsigned int response_cycles = qspi_dummy_cycles + qspi_data_cycles;
-			response_time *= response_cycles;
-			
-			return response_time;
-		}
-	}
-	
-	return sc_core::SC_ZERO_TIME;
-}
-
-template <typename CONFIG>
-const sc_core::sc_time N25Q<CONFIG>::ComputeWriteOperationTime(tlm::tlm_generic_payload *payload)
-{
-	tlm_qspi_extension *qspi_ext = payload->get_extension<tlm_qspi_extension>();
-	
-	if(qspi_ext)
-	{
-		tlm_qspi_command qspi_cmd = qspi_ext->get_command();
-		
-		switch(qspi_cmd)
-		{
-			case TLM_QSPI_WRITE_NONVOLATILE_CONFIGURATION_REGISTER_COMMAND: return tWNVCR;
-			case TLM_QSPI_WRITE_STATUS_REGISTER_COMMAND: return tW;
-			case TLM_QSPI_CLEAR_FLAG_STATUS_REGISTER_COMMAND: return tCFSR;
-			case TLM_QSPI_WRITE_VOLATILE_CONFIGURATION_REGISTER_COMMAND: return tWVCR;
-			case TLM_QSPI_WRITE_ENHANCED_VOLATILE_CONFIGURATION_REGISTER_COMMAND: return tWRVECR;
-			case TLM_QSPI_WRITE_LOCK_REGISTER_COMMAND: return tSHSL2;
-			case TLM_QSPI_PROGRAM_OTP_ARRAY_COMMAND: return tPOTP;
-			case TLM_QSPI_PAGE_PROGRAM_COMMAND:
-			case TLM_QSPI_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-			case TLM_QSPI_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-			case TLM_QSPI_QUAD_INPUT_FAST_PROGRAM_COMMAND:
-			case TLM_QSPI_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND: return ceil(payload->get_data_length() / 8) * (W_N_VPP ? tPP_VPP : tPP);
-			case TLM_QSPI_SUBSECTOR_ERASE_COMMAND: return tSSE;
-			case TLM_QSPI_SECTOR_ERASE_COMMAND: return W_N_VPP ? tSE_VPP : tSE;
-			case TLM_QSPI_BULK_ERASE_COMMAND: return W_N_VPP ? tBE_VPP : tBE;
-			default: return sc_core::SC_ZERO_TIME;
-		}
-	}
-	
-	return sc_core::SC_ZERO_TIME;
-}
-
-template <typename CONFIG>
-unsigned int N25Q<CONFIG>::DummyCycles(tlm_qspi_command qspi_cmd)
-{
-	switch(qspi_cmd)
-	{
-		case TLM_QSPI_FAST_READ_COMMAND:
-		case TLM_QSPI_DUAL_OUTPUT_FAST_READ_COMMAND:
-		case TLM_QSPI_DUAL_INPUT_OUTPUT_FAST_READ_COMMAND:
-		case TLM_QSPI_QUAD_OUTPUT_FAST_READ_COMMAND:
-		case TLM_QSPI_QUAD_INPUT_OUTPUT_FAST_READ_COMMAND:
+		case N25Q_FAST_READ_COMMAND:
+		case N25Q_DUAL_OUTPUT_FAST_READ_COMMAND:
+		case N25Q_DUAL_INPUT_OUTPUT_FAST_READ_COMMAND:
+		case N25Q_QUAD_OUTPUT_FAST_READ_COMMAND:
+		case N25Q_QUAD_INPUT_OUTPUT_FAST_READ_COMMAND:
 			{
 				unsigned int number_of_dummy_clock_cycles = ICR.Number_of_dummy_clock_cycles;
 				if(number_of_dummy_clock_cycles != 0) return number_of_dummy_clock_cycles;
@@ -435,81 +1046,101 @@ unsigned int N25Q<CONFIG>::DummyCycles(tlm_qspi_command qspi_cmd)
 			break;
 	}
 	
-	tlm_qspi_protocol qspi_protocol = GetProtocol();
+	n25q_protocol_type qspi_protocol = GetProtocol();
 	
-	return tlm_qspi_dummy_cycles(qspi_cmd, qspi_protocol, qspi_mode);
+	return n25q_dummy_cycles(n25q_cmd, qspi_protocol, n25q_mode);
 }
 
 template <typename CONFIG>
-typename N25Q<CONFIG>::Event *N25Q<CONFIG>::PostEndOfWriteOperation(tlm::tlm_generic_payload *payload)
+typename N25Q<CONFIG>::Event *N25Q<CONFIG>::PostEndOfWriteOperation(Event *event)
 {
-	tlm_qspi_extension *qspi_ext = payload->get_extension<tlm_qspi_extension>();
+	payload_type *payload = event->GetPayload();
+	n25q_command_type n25q_cmd = event->GetCommand();
+	uint32_t n25q_addr = event->GetAddress();
+	unsigned int tx_data_bit_offset = event->GetTxDataBitOffset();
+	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
+	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
 	
-	if(qspi_ext)
-	{
-		Event *end_of_operation_event = schedule.AllocEvent();
-		
-		tlm::tlm_generic_payload *clone_payload = payload_fabric.allocate();
-		clone_payload->deep_copy_from(*payload);
-		
-		sc_core::sc_time operation_duration = ComputeWriteOperationTime(payload);
-		
-		sc_core::sc_time end_of_operation_time_stamp(sc_core::sc_time_stamp());
-		end_of_operation_time_stamp += operation_duration;
-
-		end_of_operation_event->SetTimeStamp(end_of_operation_time_stamp);
-		end_of_operation_event->SetPayload(clone_payload);
-		end_of_operation_event->SetStage(END_OF_OPERATION);
-		end_of_operation_event->SetPostTime(sc_core::sc_time_stamp());
-		
-		schedule.Notify(end_of_operation_event);
-		
-		return end_of_operation_event;
-	}
+	Event *end_of_operation_event = schedule.AllocEvent();
 	
-	return 0;
-}
+	sc_core::sc_time operation_duration = ComputeWriteOperationTime(event);
+	
+	sc_core::sc_time end_of_operation_time_stamp(sc_core::sc_time_stamp());
+	end_of_operation_time_stamp += operation_duration;
 
-template <typename CONFIG>
-void N25Q<CONFIG>::ReadID(Event *event) const
-{
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	unsigned int data_length = payload->get_data_length();
-	unsigned char *data_ptr = payload->get_data_ptr();
-
-	unsigned int data_to_copy = data_length;
-	if(data_to_copy > CONFIG::ID_SIZE) data_to_copy = CONFIG::ID_SIZE;
-	memcpy(data_ptr, CONFIG::ID, data_to_copy);
-	if(data_length > data_to_copy)
+	end_of_operation_event->SetTimeStamp(end_of_operation_time_stamp);
+	if(payload->has_mm())
 	{
-		memset(data_ptr + data_to_copy, 0, data_length - data_to_copy);
+		payload->acquire();
+		end_of_operation_event->SetPayload(payload, true);
 	}
-}
-
-template <typename CONFIG>
-void N25Q<CONFIG>::MultipleIOReadID(Event *event) const
-{
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	unsigned int data_length = payload->get_data_length();
-	unsigned char *data_ptr = payload->get_data_ptr();
-
-	unsigned int data_to_copy = data_length;
-	if(data_to_copy > 3) data_to_copy = 3; // Note: Multiple I/O READ ID command can only read first 3 bytes of ID
-	memcpy(data_ptr, CONFIG::ID, data_to_copy);
-	if(data_length > data_to_copy)
+	else
 	{
-		memset(data_ptr + data_to_copy, 0, data_length - data_to_copy);
+		payload_type *payload_clone = payload_fabric.allocate(); // payload is already acquired by allocate
+		unsigned char *data_ptr_clone = new unsigned char[payload->get_data_length()];
+		payload_clone->set_data_ptr(data_ptr_clone);
+		payload_clone->copy_from(*payload);
+		end_of_operation_event->SetPayload(payload_clone, true);
 	}
+	end_of_operation_event->SetCommand(n25q_cmd);
+	end_of_operation_event->SetAddress(n25q_addr);
+	end_of_operation_event->SetTxDataBitOffset(tx_data_bit_offset);
+	end_of_operation_event->SetRxDataBitOffset(rx_data_bit_offset);
+	end_of_operation_event->SetReadDataBitOffset(read_data_bit_offset);
+	end_of_operation_event->SetStage(END_OF_OPERATION);
+	end_of_operation_event->SetPostTime(sc_core::sc_time_stamp());
+	
+	schedule.Notify(end_of_operation_event);
+	
+	return end_of_operation_event;
 }
 
 template <typename CONFIG>
-void N25Q<CONFIG>::ReadSFDP(Event *event) const
+void N25Q<CONFIG>::ReadID(Event *event)
 {
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	sc_dt::uint64 addr = payload->get_address();
-	unsigned int data_length = payload->get_data_length();
-	unsigned char *data_ptr = payload->get_data_ptr();
+	payload_type *payload = event->GetPayload();
+	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
+	unsigned int rx_data_bit_length = payload->get_rx_data_bit_length();
+	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
+	unsigned char *rx_data_ptr = payload->get_rx_data_ptr();
+	unsigned int rx_width = payload->get_rx_width();
+	n25q_signal_type rx_signals = n25q_output_signal(rx_width);
+	n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
 
+	Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, CONFIG::ID, 8 * CONFIG::ID_SIZE, read_data_bit_offset, data_signals);
+}
+
+template <typename CONFIG>
+void N25Q<CONFIG>::MultipleIOReadID(Event *event)
+{
+	payload_type *payload = event->GetPayload();
+	unsigned int rx_data_bit_length = payload->get_rx_data_bit_length();
+	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
+	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
+	unsigned char *rx_data_ptr = payload->get_rx_data_ptr();
+	unsigned int rx_width = payload->get_rx_width();
+	n25q_signal_type rx_signals = n25q_output_signal(rx_width);
+	n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
+
+	Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, CONFIG::ID, 3 * 8, read_data_bit_offset, data_signals); // Note: Multiple I/O READ ID command can only read first 3 bytes of ID
+}
+
+template <typename CONFIG>
+void N25Q<CONFIG>::ReadSFDP(Event *event)
+{
+	payload_type *payload = event->GetPayload();
+	uint32_t addr = event->GetAddress();
+	unsigned int rx_data_bit_length = payload->get_rx_data_bit_length();
+	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
+	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
+	unsigned char *rx_data_ptr = payload->get_rx_data_ptr();
+	unsigned int rx_data_length = payload->get_rx_data_length();
+	unsigned int rx_width = payload->get_rx_width();
+	n25q_signal_type rx_signals = n25q_output_signal(rx_width);
+	n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
+
+	uint8_t tmp[rx_data_length];
+	
 	unsigned int offset;
 	unsigned int boundary = 2048; // When the 2048-byte boundary is reached,
 	                              // the data output wraps to address 0 of the serial
@@ -519,48 +1150,74 @@ void N25Q<CONFIG>::ReadSFDP(Event *event) const
 	
 	unsigned int moved = 0;
 	
-	for(offset = 0; offset < data_length; offset += moved)
+	for(offset = 0; offset < rx_data_length; offset += moved)
 	{
-		uint32_t data_to_copy = data_length - offset;
+		uint32_t data_to_copy = rx_data_length - offset;
 		uint32_t data_to_zero = 0;
 		if(data_to_copy > (CONFIG::SFDP_SIZE - addr))
 		{
-			data_to_zero = data_length - data_to_copy;
+			data_to_zero = rx_data_length - data_to_copy;
 			if(data_to_zero > (boundary - CONFIG::SFDP_SIZE)) data_to_zero = boundary - CONFIG::SFDP_SIZE;
 			data_to_copy = CONFIG::SFDP_SIZE - addr;
 		}
 		
-		memcpy(data_ptr + offset, CONFIG::SFDP + addr, data_to_copy);
+		memcpy(tmp + offset, CONFIG::SFDP + addr, data_to_copy);
 		if(data_to_zero)
 		{
-			memset(data_ptr + offset + data_to_copy, 0, data_to_zero);
+			memset(tmp + offset + data_to_copy, 0, data_to_zero);
 		}
 		
 		moved = data_to_copy + data_to_zero;
 	}
+
+	Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, rx_data_bit_length, read_data_bit_offset, data_signals);
 }
 
 template <typename CONFIG>
-void N25Q<CONFIG>::Read(Event *event) const
+void N25Q<CONFIG>::Read(Event *event)
 {
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	sc_dt::uint64 addr = payload->get_address();
-	unsigned int data_length = payload->get_data_length();
-	unsigned char *data_ptr = payload->get_data_ptr();
+	payload_type *payload = event->GetPayload();
+	uint32_t addr = event->GetAddress();
+	unsigned int rx_data_bit_length = payload->get_rx_data_bit_length();
+	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
+	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
+	unsigned char *rx_data_ptr = payload->get_rx_data_ptr();
+	unsigned int rx_width = payload->get_rx_width();
+	n25q_signal_type rx_signals = n25q_output_signal(rx_width);
+	n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
+	unsigned int data_width = n25q_signal_width(data_signals);
+	unsigned int data_cycles = (rx_data_bit_length - rx_data_bit_offset) / rx_width;
 
+	unsigned int read_bit_length = data_cycles * data_width;
+	unsigned int read_length = (read_bit_length + 7) / 8;
+	
+	uint8_t tmp[read_length];
+	
 	unsigned int offset = 0;
 	uint32_t wrap = GetWrap();
 	
 	unsigned int copied = 0;
 	
-	for(offset = 0; offset < data_length; offset += copied)
+	for(offset = 0; offset < read_length; offset += copied)
 	{
 		uint32_t wrapped_addr_offset = addr & (wrap - 1);
 		uint32_t size_to_copy = wrap - wrapped_addr_offset;
-		if(size_to_copy > (data_length - offset)) size_to_copy = data_length - offset;
+		if(size_to_copy > (read_length - offset)) size_to_copy = read_length - offset;
 		if(size_to_copy > (CONFIG::SIZE - addr)) size_to_copy = CONFIG::SIZE - addr;
 		
-		memcpy(data_ptr + offset, storage + addr, size_to_copy);
+		if(verbose)
+		{
+			logger << DebugInfo << "Reading " << (8 * size_to_copy) << " bits at bit offset 0x" << std::hex << (8 * addr) << std::dec << EndDebugInfo;
+		}
+		// During a PROGRAM SUSPEND operation, a READ operation is possible in any page except the one in a suspended state.
+		// Reading from a page that is in a suspended state will output indeterminate data.
+		// During an ERASE SUSPEND operation, a PROGRAM or READ operation is possible in any sector except the one in a suspended state.
+		// Reading from a sector that is in a suspended state will output indeterminate data.
+		if(IsProgramOrEraseSuspendedFor(addr))
+		{
+			logger << DebugWarning << "Attempt to read data at 0x" << addr << " from a page/sector that is in suspend state" << EndDebugWarning;
+		}
+		memcpy(tmp + offset, storage + addr, size_to_copy);
 		
 		copied = size_to_copy;
 		
@@ -568,6 +1225,68 @@ void N25Q<CONFIG>::Read(Event *event) const
 		{
 			addr += copied;
 		}
+	}
+	
+	Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, read_bit_length, read_data_bit_offset, data_signals);
+}
+
+template <typename CONFIG>
+void N25Q<CONFIG>::FastRead(Event *event)
+{
+	payload_type *payload = event->GetPayload();
+	n25q_command_type n25q_cmd = event->GetCommand();
+	unsigned int tx_data_bit_length = payload->get_tx_data_bit_length();
+	unsigned char *tx_data_ptr = payload->get_tx_data_ptr();
+	unsigned int tx_data_bit_offset = event->GetTxDataBitOffset();
+	
+	unsigned int tx_width = payload->get_tx_width();
+	n25q_signal_type tx_signals = n25q_input_signal(tx_width);
+
+	if((tx_data_bit_offset + (1 * tx_width)) > tx_data_bit_length)
+	{
+		std::stringstream sstr_cmd;
+		sstr_cmd << event->GetCommand();
+		logger << DebugWarning << "Not enough dummy bits for XIP confirmation bit of " << sstr_cmd.str() << EndDebugWarning;
+		return;
+	}
+	
+	uint8_t xip_confirmation_bit = 0;
+	Xfer(&xip_confirmation_bit, 1, 0, DQ0, tx_data_ptr, tx_data_bit_length, tx_data_bit_offset, tx_signals);
+
+	if(verbose)
+	{
+		logger << DebugInfo << "XIP confirmation bit is " << (unsigned int)((xip_confirmation_bit >> 7) & 1) << EndDebugInfo;
+	}
+
+	unsigned int dummy_cycles = DummyCycles(n25q_cmd);
+	
+	tx_data_bit_offset += dummy_cycles * tx_width;
+	
+	event->SetTxDataBitOffset(tx_data_bit_offset);
+	
+	Read(event);
+	
+	switch(n25q_mode)
+	{
+		case N25Q_STD_MODE:
+			// Standard mode
+			if(((CONFIG::XIP_F == CONFIG::BASIC_XIP) || !VCR.XIP) && !xip_confirmation_bit) // XIP=0 and Xb=0
+			{
+				n25q_mode = N25Q_XIP_MODE;
+				n25q_xip_cmd = event->GetCommand();
+			}
+			break;
+		case N25Q_XIP_MODE:
+			// XIP mode
+			if(xip_confirmation_bit) // XIP confirmation bit=1
+			{
+				// XIP is terminated by driving the XIP confirmation bit to 1.
+				n25q_mode = N25Q_STD_MODE;
+				
+				// The device automatically resets volatile configuration register bit 3 to 1.
+				VCR.XIP = 1;
+			}
+			break;
 	}
 }
 
@@ -584,145 +1303,241 @@ void N25Q<CONFIG>::WriteDisable()
 }
 
 template <typename CONFIG>
-void N25Q<CONFIG>::ReadStatusRegister(Event *event) const
+void N25Q<CONFIG>::ReadStatusRegister(Event *event)
 {
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	unsigned int data_length = payload->get_data_length();
-	unsigned char *data_ptr = payload->get_data_ptr();
+	payload_type *payload = event->GetPayload();
+	unsigned int rx_data_bit_length = payload->get_rx_data_bit_length();
+	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
+	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
+	unsigned char *rx_data_ptr = payload->get_rx_data_ptr();
+	unsigned int rx_data_length = payload->get_rx_data_length();
+	unsigned int rx_width = payload->get_rx_width();
+	n25q_signal_type rx_signals = n25q_output_signal(rx_width);
+	n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
 
+	uint8_t tmp[rx_data_length];
+	
 	uint8_t sr_value = SR;
-	memset(data_ptr, sr_value, data_length);
+	memset(tmp, sr_value, rx_data_length);
+	
+	Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, rx_data_bit_length, read_data_bit_offset, data_signals);
+
 }
 
 template <typename CONFIG>
-void N25Q<CONFIG>::ReadFlagStatusRegister(Event *event) const
+void N25Q<CONFIG>::ReadFlagStatusRegister(Event *event)
 {
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	unsigned int data_length = payload->get_data_length();
-	unsigned char *data_ptr = payload->get_data_ptr();
+	payload_type *payload = event->GetPayload();
+	unsigned int rx_data_bit_length = payload->get_rx_data_bit_length();
+	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
+	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
+	unsigned char *rx_data_ptr = payload->get_rx_data_ptr();
+	unsigned int rx_data_length = payload->get_rx_data_length();
+	unsigned int rx_width = payload->get_rx_width();
+	n25q_signal_type rx_signals = n25q_output_signal(rx_width);
+	n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
 
+	uint8_t tmp[rx_data_length];
+	
 	uint8_t fsr_value = FSR;
-	memset(data_ptr, fsr_value, data_length);
+	memset(tmp, fsr_value, rx_data_length);
+	
+	Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, rx_data_bit_length, read_data_bit_offset, data_signals);
 }
 
 template <typename CONFIG>
-void N25Q<CONFIG>::ReadNonVolatileConfigurationRegister(Event *event) const
+void N25Q<CONFIG>::ReadNonVolatileConfigurationRegister(Event *event)
 {
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	unsigned int data_length = payload->get_data_length();
-	unsigned char *data_ptr = payload->get_data_ptr();
+	payload_type *payload = event->GetPayload();
+	unsigned int rx_data_bit_length = payload->get_rx_data_bit_length();
+	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
+	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
+	unsigned char *rx_data_ptr = payload->get_rx_data_ptr();
+	unsigned int rx_data_length = payload->get_rx_data_length();
+	unsigned int rx_width = payload->get_rx_width();
+	n25q_signal_type rx_signals = n25q_output_signal(rx_width);
+	n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
 
-	uint16_t nvcr_value = NVCR;
-	if(data_length > 0) data_ptr[0] = nvcr_value;
-	if(data_length > 1) data_ptr[1] = nvcr_value >> 8;
-	if(data_length > 2) memset(data_ptr + 2, 0, data_length - 2);
+	uint8_t tmp[rx_data_length];
+	
+	uint16_t nvcr_value_value = FSR;
+	unsigned int i;
+	// continuously sends NVCR value (MSB followed by LSB)
+	for(i = 0; i < rx_data_length; i++)
+	{
+		tmp[i] = (i & 1) ? nvcr_value_value : (nvcr_value_value >> 8);
+	}
+	
+	Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, rx_data_bit_length, read_data_bit_offset, data_signals);
 }
 
 template <typename CONFIG>
-void N25Q<CONFIG>::ReadVolatileConfigurationRegister(Event *event) const
+void N25Q<CONFIG>::ReadVolatileConfigurationRegister(Event *event)
 {
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	unsigned int data_length = payload->get_data_length();
-	unsigned char *data_ptr = payload->get_data_ptr();
+	payload_type *payload = event->GetPayload();
+	unsigned int rx_data_bit_length = payload->get_rx_data_bit_length();
+	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
+	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
+	unsigned char *rx_data_ptr = payload->get_rx_data_ptr();
+	unsigned int rx_data_length = payload->get_rx_data_length();
+	unsigned int rx_width = payload->get_rx_width();
+	n25q_signal_type rx_signals = n25q_output_signal(rx_width);
+	n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
 
+	uint8_t tmp[rx_data_length];
+	
 	uint8_t vcr_value = VCR;
-	memset(data_ptr, vcr_value, data_length);
+	memset(tmp, vcr_value, rx_data_length);
+	
+	Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, rx_data_bit_length, read_data_bit_offset, data_signals);
 }
 
 template <typename CONFIG>
-void N25Q<CONFIG>::ReadEnhancedVolatileConfigurationRegister(Event *event) const
+void N25Q<CONFIG>::ReadEnhancedVolatileConfigurationRegister(Event *event)
 {
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	unsigned int data_length = payload->get_data_length();
-	unsigned char *data_ptr = payload->get_data_ptr();
+	payload_type *payload = event->GetPayload();
+	unsigned int rx_data_bit_length = payload->get_rx_data_bit_length();
+	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
+	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
+	unsigned char *rx_data_ptr = payload->get_rx_data_ptr();
+	unsigned int rx_data_length = payload->get_rx_data_length();
+	unsigned int rx_width = payload->get_rx_width();
+	n25q_signal_type rx_signals = n25q_output_signal(rx_width);
+	n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
 
+	uint8_t tmp[rx_data_length];
+	
 	uint8_t vecr_value = VECR;
-	memset(data_ptr, vecr_value, data_length);
+	memset(tmp, vecr_value, rx_data_length);
+	
+	Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, rx_data_bit_length, read_data_bit_offset, data_signals);
 }
 
 template <typename CONFIG>
-void N25Q<CONFIG>::ReadLockRegister(Event *event) const
+void N25Q<CONFIG>::ReadLockRegister(Event *event)
 {
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	sc_dt::uint64 addr = payload->get_address();
-	unsigned int data_length = payload->get_data_length();
-	unsigned char *data_ptr = payload->get_data_ptr();
+	payload_type *payload = event->GetPayload();
+	uint32_t addr = event->GetAddress();
+	unsigned int rx_data_bit_length = payload->get_rx_data_bit_length();
+	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
+	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
+	unsigned char *rx_data_ptr = payload->get_rx_data_ptr();
+	unsigned int rx_data_length = payload->get_rx_data_length();
+	unsigned int rx_width = payload->get_rx_width();
+	n25q_signal_type rx_signals = n25q_output_signal(rx_width);
+	n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
 
+	uint8_t tmp[rx_data_length];
+	
 	uint8_t lr_value = (addr < CONFIG::SIZE) ? (const uint8_t) *LR[addr / CONFIG::SECTOR_SIZE] : 0;
-	memset(data_ptr, lr_value, data_length);
+	unsigned int i;
+	for(i = 0; i < rx_data_length; i++)
+	{
+		tmp[i] = lr_value;
+	}
+	
+	Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, rx_data_bit_length, read_data_bit_offset, data_signals);
+
 }
 
 template <typename CONFIG>
-void N25Q<CONFIG>::ReadOTPArray(Event *event) const
+void N25Q<CONFIG>::ReadOTPArray(Event *event)
 {
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	sc_dt::uint64 addr = payload->get_address();
-	unsigned int data_length = payload->get_data_length();
-	unsigned char *data_ptr = payload->get_data_ptr();
+	payload_type *payload = event->GetPayload();
+	uint32_t addr = event->GetAddress();
+	unsigned int rx_data_bit_length = payload->get_rx_data_bit_length();
+	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
+	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
+	unsigned char *rx_data_ptr = payload->get_rx_data_ptr();
+	unsigned int rx_data_length = payload->get_rx_data_length();
+	unsigned int rx_width = payload->get_rx_width();
+	n25q_signal_type rx_signals = n25q_output_signal(rx_width);
+	n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
+
+	uint8_t tmp[rx_data_length];
 
 	if(addr < CONFIG::OTP_ARRAY_SIZE)
 	{
-		unsigned int data_to_copy = data_length;
+		unsigned int data_to_copy = rx_data_length;
 		if(data_to_copy > (CONFIG::OTP_ARRAY_SIZE - addr)) data_to_copy = CONFIG::OTP_ARRAY_SIZE - addr;
 		
-		memcpy(data_ptr, OTP + addr, data_to_copy);
+		memcpy(tmp, OTP + addr, data_to_copy);
 		
-		if(data_length > data_to_copy)
+		if(rx_data_length > data_to_copy)
 		{
-			unsigned int dup_length = data_length - data_to_copy;
-			memset(data_ptr + data_to_copy, OTP[CONFIG::OTP_ARRAY_SIZE - 1], dup_length);
+			unsigned int dup_length = rx_data_length - data_to_copy;
+			memset(tmp + data_to_copy, OTP[CONFIG::OTP_ARRAY_SIZE - 1], dup_length);
 		}
 	}
 	else
 	{
-		memset(data_ptr, 0, data_length);
+		memset(tmp, 0, rx_data_length);
 	}
+	
+	Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, rx_data_bit_length, read_data_bit_offset, data_signals);
 }
 
 template <typename CONFIG>
 void N25Q<CONFIG>::WriteNonVolatileConfigurationRegister(Event *event)
 {
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	unsigned int data_length = payload->get_data_length();
+	payload_type *payload = event->GetPayload();
 	
 	switch(event->GetStage())
 	{
 		case START_OF_OPERATION:
+			if(SR.Write_enable_latch)
 			{
-				if(data_length != 2)
+				if(FSR.Program_or_erase_controller) // ready
 				{
-					logger << DebugWarning << "data length for " << TLM_QSPI_WRITE_NONVOLATILE_CONFIGURATION_REGISTER_COMMAND << " should be 2" << EndDebugWarning;
-				}
-
-				if(SR.Write_enable_latch)
-				{
-					SR.Write_enable_latch = 0;
-					PostEndOfWriteOperation(payload);
+					PostEndOfWriteOperation(event);
 					// When the operation is in progress, the write in progress bit is set to 1.
 					SR.Write_in_progress = 1;
 					FSR.Program_or_erase_controller = 0; // busy
 				}
 				else
 				{
-					logger << DebugWarning << "Attempt to write " << NVCR.GetLongName() << " while " << SR.Write_enable_latch.GetName() << " = '0'" << EndDebugWarning;
+					logger << DebugWarning << "Attempt to write non volatile configuration register while program or erase controller is busy (PROGRAM, ERASE, WRITE STATUS REGISTER, or WRITE NON VOLATILE CONFIGURATION command cycle is in progress)" << EndDebugWarning;
 				}
+				// The write enable latch bit is cleared to 0, whether the operation is successful or not.
+				SR.Write_enable_latch = 0;
+			}
+			else
+			{
+				logger << DebugWarning << "Attempt to write " << NVCR.GetFriendlyName() << " while " << SR.Write_enable_latch.GetName() << " = '0'" << EndDebugWarning;
 			}
 			break;
 			
 		case END_OF_OPERATION:
 			{
-				unsigned char *data_ptr = payload->get_data_ptr();
+				unsigned char *tx_data_ptr = payload->get_tx_data_ptr();
+				unsigned int tx_data_bit_length = payload->get_tx_data_bit_length();
+				unsigned int tx_data_bit_offset = event->GetTxDataBitOffset();
 
-				if(!data_length)
+				unsigned int tx_width = payload->get_tx_width();
+				n25q_signal_type tx_signals = n25q_input_signal(tx_width);
+				n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
+				unsigned int data_width = n25q_signal_width(data_signals);
+				unsigned int data_cycles = 8 * 2 / data_width;
+
+				if((tx_data_bit_offset + (data_cycles * tx_width)) > tx_data_bit_length)
 				{
-					logger << DebugError << "data length for " << TLM_QSPI_WRITE_NONVOLATILE_CONFIGURATION_REGISTER_COMMAND << " shall be > 0" << EndDebugError;
-					Object::Stop(-1);
-					return;
+					logger << DebugWarning << "not enough data bits for " << N25Q_WRITE_NONVOLATILE_CONFIGURATION_REGISTER_COMMAND << EndDebugWarning;
 				}
-				
-				uint16_t new_nvcr_value = data_ptr[0];
-				if(data_length >= 2) new_nvcr_value |= ((uint16_t) data_ptr[1] << 8);
-				NVCR.Write(new_nvcr_value);
+				else if((tx_data_bit_offset + (data_cycles * tx_width)) < tx_data_bit_length)
+				{
+					logger << DebugWarning << "too many data bits for " << N25Q_WRITE_NONVOLATILE_CONFIGURATION_REGISTER_COMMAND << EndDebugWarning;
+				}
+				else
+				{
+					// A WRITE NONVOLATILE CONFIGURATION REGISTER operation requires data being sent
+					// starting from least significant byte.
+					uint8_t data_bytes[2];
+					Xfer(data_bytes, 16, 0, data_signals, tx_data_ptr, tx_data_bit_length, tx_data_bit_offset, tx_signals);
+					uint16_t new_nvcr_value = (uint16_t) data_bytes[0] | ((uint16_t) data_bytes[1] << 8);
+					NVCR.Write(new_nvcr_value);
+				}
+				// The write enable latch bit is cleared to 0, whether the operation is successful or not.
+				SR.Write_enable_latch = 0;
 				// When the operation completes, the write in progress bit is cleared to 0, whether the operation is successful or not.
 				SR.Write_in_progress = 0;
 				FSR.Program_or_erase_controller = 1; // ready
@@ -734,43 +1549,51 @@ void N25Q<CONFIG>::WriteNonVolatileConfigurationRegister(Event *event)
 template <typename CONFIG>
 void N25Q<CONFIG>::WriteVolatileConfigurationRegister(Event *event)
 {
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	unsigned int data_length = payload->get_data_length();
+	payload_type *payload = event->GetPayload();
 
 	switch(event->GetStage())
 	{
 		case START_OF_OPERATION:
+			if(SR.Write_enable_latch)
 			{
-				if(data_length != 1)
-				{
-					logger << DebugWarning << "data length for " << TLM_QSPI_WRITE_VOLATILE_CONFIGURATION_REGISTER_COMMAND << " should be 1" << EndDebugWarning;
-				}
-				
-				if(SR.Write_enable_latch)
-				{
-					PostEndOfWriteOperation(payload);
-				}
-				else
-				{
-					logger << DebugWarning << "Attempt to write " << VCR.GetLongName() << " while " << SR.Write_enable_latch.GetName() << " = '0'" << EndDebugWarning;
-				}
+				PostEndOfWriteOperation(event);
+				// Note: it is not specified whether SR.Write_enable_latch is cleared
+			}
+			else
+			{
+				logger << DebugWarning << "Attempt to write " << VCR.GetFriendlyName() << " while " << SR.Write_enable_latch.GetName() << " = '0'" << EndDebugWarning;
 			}
 			break;
 		case END_OF_OPERATION:
 			{
-				if(!data_length)
-				{
-					logger << DebugError << "data length for " << TLM_QSPI_WRITE_VOLATILE_CONFIGURATION_REGISTER_COMMAND << " shall be > 0" << EndDebugError;
-					Object::Stop(-1);
-					return;
-				}
+				unsigned char *tx_data_ptr = payload->get_tx_data_ptr();
+				unsigned int tx_data_bit_length = payload->get_tx_data_bit_length();
+				unsigned int tx_data_bit_offset = event->GetTxDataBitOffset();
 
-				unsigned char *data_ptr = payload->get_data_ptr();
-	
-				uint8_t new_vcr_value = *data_ptr;
-				VCR.Write(new_vcr_value);
-				ICR.Number_of_dummy_clock_cycles = VCR.Number_of_dummy_clock_cycles;
-				ICR.Wrap = VCR.Wrap;
+				unsigned int tx_width = payload->get_tx_width();
+				n25q_signal_type tx_signals = n25q_input_signal(tx_width);
+				n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
+				unsigned int data_width = n25q_signal_width(data_signals);
+				unsigned int data_cycles = 8 * 1 / data_width;
+
+				if((tx_data_bit_offset + (data_cycles * tx_width)) > tx_data_bit_length)
+				{
+					logger << DebugWarning << "not enough data bits for " << N25Q_WRITE_VOLATILE_CONFIGURATION_REGISTER_COMMAND << EndDebugWarning;
+				}
+				else if((tx_data_bit_offset + (data_cycles * tx_width)) < tx_data_bit_length)
+				{
+					logger << DebugWarning << "too many data bits for " << N25Q_WRITE_VOLATILE_CONFIGURATION_REGISTER_COMMAND << EndDebugWarning;
+				}
+				else
+				{
+					uint8_t data_byte;
+					Xfer(&data_byte, 8, 0, data_signals, tx_data_ptr, tx_data_bit_length, tx_data_bit_offset, tx_signals);
+					uint8_t new_vcr_value = data_byte;
+					
+					VCR.Write(new_vcr_value);
+					ICR.Number_of_dummy_clock_cycles = VCR.Number_of_dummy_clock_cycles;
+					ICR.Wrap = VCR.Wrap;
+				}
 			}
 			break;
 	}
@@ -779,47 +1602,55 @@ void N25Q<CONFIG>::WriteVolatileConfigurationRegister(Event *event)
 template <typename CONFIG>
 void N25Q<CONFIG>::WriteEnhancedVolatileConfigurationRegister(Event *event)
 {
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	unsigned int data_length = payload->get_data_length();
+	payload_type *payload = event->GetPayload();
 	
 	switch(event->GetStage())
 	{
 		case START_OF_OPERATION:
+			if(SR.Write_enable_latch)
 			{
-				if(data_length != 1)
-				{
-					logger << DebugWarning << "data length for " << TLM_QSPI_WRITE_ENHANCED_VOLATILE_CONFIGURATION_REGISTER_COMMAND << " should be 1" << EndDebugWarning;
-				}
-
-				if(SR.Write_enable_latch)
-				{
-					PostEndOfWriteOperation(payload);
-				}
-				else
-				{
-					logger << DebugWarning << "Attempt to write " << VECR.GetLongName() << " while " << SR.Write_enable_latch.GetName() << " = '0'" << EndDebugWarning;
-				}
+				PostEndOfWriteOperation(event);
+				// Note: it is not specified whether SR.Write_enable_latch is cleared
+			}
+			else
+			{
+				logger << DebugWarning << "Attempt to write " << VECR.GetFriendlyName() << " while " << SR.Write_enable_latch.GetName() << " = '0'" << EndDebugWarning;
 			}
 			break;
 			
 		case END_OF_OPERATION:
 			{
-				unsigned char *data_ptr = payload->get_data_ptr();
+				unsigned char *tx_data_ptr = payload->get_tx_data_ptr();
+				unsigned int tx_data_bit_length = payload->get_tx_data_bit_length();
+				unsigned int tx_data_bit_offset = event->GetTxDataBitOffset();
 
-				if(!data_length)
+				unsigned int tx_width = payload->get_tx_width();
+				n25q_signal_type tx_signals = n25q_input_signal(tx_width);
+				n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
+				unsigned int data_width = n25q_signal_width(data_signals);
+				unsigned int data_cycles = 8 * 1 / data_width;
+
+				if((tx_data_bit_offset + (data_cycles * tx_width)) > tx_data_bit_length)
 				{
-					logger << DebugError << "data length for " << TLM_QSPI_WRITE_ENHANCED_VOLATILE_CONFIGURATION_REGISTER_COMMAND << " shall be > 0" << EndDebugError;
-					Object::Stop(-1);
-					return;
+					logger << DebugWarning << "not enough data bits for " << N25Q_WRITE_ENHANCED_VOLATILE_CONFIGURATION_REGISTER_COMMAND << EndDebugWarning;
 				}
+				else if((tx_data_bit_offset + (data_cycles * tx_width)) < tx_data_bit_length)
+				{
+					logger << DebugWarning << "too many data bits for " << N25Q_WRITE_ENHANCED_VOLATILE_CONFIGURATION_REGISTER_COMMAND << EndDebugWarning;
+				}
+				else
+				{
+					uint8_t data_byte;
+					Xfer(&data_byte, 8, 0, data_signals, tx_data_ptr, tx_data_bit_length, tx_data_bit_offset, tx_signals);
+					uint8_t new_vecr_value = data_byte;
 	
-				uint8_t new_vecr_value = *data_ptr;
-				VECR.Write(new_vecr_value);
-				ICR.Output_driver_strength = VECR.Output_driver_strength;
-				ICR.VPP_accelerator = VECR.VPP_accelerator;
-				ICR.Reset_hold = VECR.Reset_hold;
-				ICR.Quad_IO_protocol = VECR.Quad_IO_protocol;
-				ICR.Dual_IO_protocol = VECR.Dual_IO_protocol;
+					VECR.Write(new_vecr_value);
+					ICR.Output_driver_strength = VECR.Output_driver_strength;
+					ICR.VPP_accelerator = VECR.VPP_accelerator;
+					ICR.Reset_hold = VECR.Reset_hold;
+					ICR.Quad_IO_protocol = VECR.Quad_IO_protocol;
+					ICR.Dual_IO_protocol = VECR.Dual_IO_protocol;
+				}
 			}
 			break;
 	}
@@ -828,49 +1659,68 @@ void N25Q<CONFIG>::WriteEnhancedVolatileConfigurationRegister(Event *event)
 template <typename CONFIG>
 void N25Q<CONFIG>::WriteStatusRegister(Event *event)
 {
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	unsigned int data_length = payload->get_data_length();
+	payload_type *payload = event->GetPayload();
 
 	switch(event->GetStage())
 	{
 		case START_OF_OPERATION:
+			if(SR.Write_enable_latch)
 			{
-				if(data_length != 1)
+				if(FSR.Program_or_erase_controller) // ready
 				{
-					logger << DebugWarning << "data length for " << TLM_QSPI_WRITE_STATUS_REGISTER_COMMAND << " should be 1" << EndDebugWarning;
-				}
-				
-				if(SR.Write_enable_latch)
-				{
-					// The write enable latch bit is cleared to 0, whether the operation is successful or not.
-					SR.Write_enable_latch = 0;
-					PostEndOfWriteOperation(payload);
+					PostEndOfWriteOperation(event);
 					// When the operation is in progress, the write in progress bit is set to 1.
 					SR.Write_in_progress = 1;
 					FSR.Program_or_erase_controller = 0; // busy
 				}
 				else
 				{
-					logger << DebugWarning << "Attempt to write " << SR.GetLongName() << " while " << SR.Write_enable_latch.GetName() << " = '0'" << EndDebugWarning;
+					logger << DebugWarning << "Attempt to write status register while program or erase controller is busy (PROGRAM, ERASE, WRITE STATUS REGISTER, or WRITE NON VOLATILE CONFIGURATION command cycle is in progress)" << EndDebugWarning;
+					// The write enable latch bit is cleared to 0, whether the operation is successful or not.
+					SR.Write_enable_latch = 0;
 				}
+			}
+			else
+			{
+				logger << DebugWarning << "Attempt to write " << SR.GetFriendlyName() << " while " << SR.Write_enable_latch.GetName() << " = '0'" << EndDebugWarning;
+				// The write enable latch bit is cleared to 0, whether the operation is successful or not.
+				SR.Write_enable_latch = 0;
 			}
 			break;
 		case END_OF_OPERATION:
 			{
-				if(!data_length)
-				{
-					logger << DebugError << "data length for " << TLM_QSPI_WRITE_STATUS_REGISTER_COMMAND << " shall be > 0" << EndDebugError;
-					Object::Stop(-1);
-					return;
-				}
-
-				unsigned char *data_ptr = payload->get_data_ptr();
-					
-				uint8_t new_sr_value = *data_ptr;
-				SR.Write(new_sr_value);
 				// When the operation completes, the write in progress bit is cleared to 0, whether the operation is successful or not.
 				SR.Write_in_progress = 0;
+				
+				unsigned char *tx_data_ptr = payload->get_tx_data_ptr();
+				unsigned int tx_data_bit_length = payload->get_tx_data_bit_length();
+				unsigned int tx_data_bit_offset = event->GetTxDataBitOffset();
+
+				unsigned int tx_width = payload->get_tx_width();
+				n25q_signal_type tx_signals = n25q_input_signal(tx_width);
+				n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
+				unsigned int data_width = n25q_signal_width(data_signals);
+				unsigned int data_cycles = 8 * 1 / data_width;
+
+				if((tx_data_bit_offset + (data_cycles * tx_width)) > tx_data_bit_length)
+				{
+					logger << DebugWarning << "not enough data bits for " << N25Q_WRITE_STATUS_REGISTER_COMMAND << EndDebugWarning;
+				}
+				else if((tx_data_bit_offset + (data_cycles * tx_width)) < tx_data_bit_length)
+				{
+					logger << DebugWarning << "too many data bits for " << N25Q_WRITE_STATUS_REGISTER_COMMAND << EndDebugWarning;
+				}
+				else
+				{
+					uint8_t data_byte;
+					Xfer(&data_byte, 8, 0, data_signals, tx_data_ptr, tx_data_bit_length, tx_data_bit_offset, tx_signals);
+					uint8_t new_sr_value = data_byte;
+					SR.Write(new_sr_value);
+				}
+				
 				FSR.Program_or_erase_controller = 1; // ready
+				// The write enable latch bit is cleared to 0, whether the operation is successful or not.
+				SR.Write_enable_latch = 0;
 			}
 			break;
 	}
@@ -883,37 +1733,51 @@ void N25Q<CONFIG>::WriteLockRegister(Event *event)
 	{
 		case START_OF_OPERATION:
 			{
-				tlm::tlm_generic_payload *payload = event->GetPayload();
-				sc_dt::uint64 addr = payload->get_address();
-				unsigned int data_length = payload->get_data_length();
-				unsigned char *data_ptr = payload->get_data_ptr();
+				payload_type *payload = event->GetPayload();
+				uint32_t addr = event->GetAddress();
+				unsigned int tx_data_bit_length = payload->get_tx_data_bit_length();
+				unsigned int tx_data_bit_offset = event->GetTxDataBitOffset();
+				unsigned char *tx_data_ptr = payload->get_tx_data_ptr();
 				
+				unsigned int tx_width = payload->get_tx_width();
+				n25q_signal_type tx_signals = n25q_input_signal(tx_width);
+				n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
+				unsigned int data_width = n25q_signal_width(data_signals);
+				unsigned int data_cycles = 8 * 1 / data_width;
+
 				LockRegister *lr = LR[addr / CONFIG::SECTOR_SIZE];
 
-				if(data_length != 2)
-				{
-					logger << DebugWarning << "data length for " << TLM_QSPI_WRITE_LOCK_REGISTER_COMMAND << " should be 1" << EndDebugWarning;
-				}
-				
 				if(SR.Write_enable_latch)
 				{
-					SR.Write_enable_latch = 0;
-					if(lr->Sector_lock_down)
+					if(!lr->Sector_lock_down)
 					{
 						// Because lock register bits are volatile, change to the bits is immediate.
-						uint8_t new_lr_value = *data_ptr;
-						lr->Write(new_lr_value);
+						if((tx_data_bit_offset + (data_cycles * tx_width)) > tx_data_bit_length)
+						{
+							logger << DebugWarning << "not enough data bits for " << N25Q_WRITE_LOCK_REGISTER_COMMAND << EndDebugWarning;
+						}
+						else if((tx_data_bit_offset + (data_cycles * tx_width)) < tx_data_bit_length)
+						{
+							logger << DebugWarning << "too many data bits for " << N25Q_WRITE_LOCK_REGISTER_COMMAND << EndDebugWarning;
+						}
+						else
+						{
+							uint8_t data_byte;
+							Xfer(&data_byte, 8, 0, data_signals, tx_data_ptr, tx_data_bit_length, tx_data_bit_offset, tx_signals);
+							uint8_t new_lr_value = data_byte;
+							lr->Write(new_lr_value);
+						}
 						
-						PostEndOfWriteOperation(payload);
+						PostEndOfWriteOperation(event);
 					}
 					else
 					{
-						logger << DebugWarning << "Attempt to write " << lr->GetLongName() << " while " << lr->Sector_lock_down.GetName() << " = '1'" << EndDebugWarning;
+						logger << DebugWarning << "Attempt to write " << lr->GetFriendlyName() << " while " << lr->Sector_lock_down.GetName() << " = '1'" << EndDebugWarning;
 					}
 				}
 				else
 				{
-					logger << DebugWarning << "Attempt to write " << lr->GetLongName() << " while " << SR.Write_enable_latch.GetName() << " = '0'" << EndDebugWarning;
+					logger << DebugWarning << "Attempt to write " << lr->GetFriendlyName() << " while " << SR.Write_enable_latch.GetName() << " = '0'" << EndDebugWarning;
 				}
 			}
 			break;
@@ -936,8 +1800,7 @@ void N25Q<CONFIG>::ClearFlagStatusRegister()
 template <typename CONFIG>
 void N25Q<CONFIG>::ProgramOTPArray(Event *event)
 {
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	unsigned int data_length = payload->get_data_length();
+	payload_type *payload = event->GetPayload();
 
 	switch(event->GetStage())
 	{
@@ -945,23 +1808,22 @@ void N25Q<CONFIG>::ProgramOTPArray(Event *event)
 			{
 				if(SR.Write_enable_latch)
 				{
-					// The write enable latch bit is cleared to 0, whether the operation is successful or not, and
-					// the status register and flag status register can be polled for the operation status.
-					SR.Write_enable_latch = 0;
-					
 					if(OTP[CONFIG::OTP_ARRAY_SIZE] & 1)
 					{
 						// unlocked
-						PostEndOfWriteOperation(payload);
+						PostEndOfWriteOperation(event);
 						
 						// When the operation is in progress, the write in progress bit is set to 1.
 						SR.Write_in_progress = 1;
+						FSR.Program_or_erase_controller = 0; // busy
 					}
 					else
 					{
 						// permanently locked
 						logger << DebugWarning << "Attempt to program permanently locked OTP Array" << EndDebugWarning;
 					}
+					// The write enable latch bit is cleared to 0, whether the operation is successful or not.
+					SR.Write_enable_latch = 0;
 				}
 				else
 				{
@@ -974,26 +1836,34 @@ void N25Q<CONFIG>::ProgramOTPArray(Event *event)
 			break;
 		case END_OF_OPERATION:
 			{
-				if(!data_length)
+				unsigned char *tx_data_ptr = payload->get_tx_data_ptr();
+				unsigned int tx_data_bit_length = payload->get_tx_data_bit_length();
+				unsigned int tx_data_bit_offset = event->GetTxDataBitOffset();
+				unsigned int tx_width = payload->get_tx_width();
+				n25q_signal_type tx_signals = n25q_input_signal(tx_width);
+				n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
+				uint32_t addr = event->GetAddress();
+
+				if(tx_data_bit_offset >= tx_data_bit_length)
 				{
-					logger << DebugError << "data length for " << TLM_QSPI_WRITE_STATUS_REGISTER_COMMAND << " shall be > 0" << EndDebugError;
-					Object::Stop(-1);
-					return;
+					logger << DebugWarning << "not data bits for " << N25Q_PROGRAM_OTP_ARRAY_COMMAND << EndDebugWarning;
 				}
-
-				sc_dt::uint64 addr = payload->get_address();
-				unsigned char *data_ptr = payload->get_data_ptr();
-
-				if(addr < 65)
+				else
 				{
-					unsigned int data_to_copy = data_length;
-					if(data_to_copy > (65 - addr)) data_to_copy = 65 - addr;
-					
-					memcpy(OTP + addr, data_ptr, data_to_copy);
+					if(addr <= CONFIG::OTP_ARRAY_SIZE)
+					{
+						unsigned int max_bytes_to_copy = CONFIG::OTP_ARRAY_SIZE + 1 - addr;
+						unsigned int max_bits_to_copy = 8 * max_bytes_to_copy;
+						unsigned int data_bits_to_copy = tx_data_bit_length - tx_data_bit_offset;
+						if(data_bits_to_copy > max_bits_to_copy) data_bits_to_copy = max_bits_to_copy;
+						
+						ProgramOTP(data_bits_to_copy, 8 * addr, data_signals, tx_data_ptr, tx_data_bit_length, tx_data_bit_offset, tx_signals);
+					}
 				}
 				
 				// When the operation completes, the write in progress bit is cleared to 0.
 				SR.Write_in_progress = 0;
+				FSR.Program_or_erase_controller = 1; // ready
 			}
 			break;
 	}
@@ -1002,9 +1872,8 @@ void N25Q<CONFIG>::ProgramOTPArray(Event *event)
 template <typename CONFIG>
 void N25Q<CONFIG>::Program(Event *event)
 {
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	sc_dt::uint64 addr = payload->get_address();
-	unsigned int data_length = payload->get_data_length();
+	payload_type *payload = event->GetPayload();
+	uint32_t addr = event->GetAddress();
 
 	switch(event->GetStage())
 	{
@@ -1012,27 +1881,46 @@ void N25Q<CONFIG>::Program(Event *event)
 			{
 				if(SR.Write_enable_latch)
 				{
-					if(!IsSectorProtected(addr))
+					if(FSR.Program_or_erase_controller) // ready
 					{
-						// The write enable latch bit is cleared to 0, whether the operation is successful or not.
-						SR.Write_enable_latch = 0;
-
-						Event *end_of_operation_event = PostEndOfWriteOperation(payload);
-						write_operation_in_progress_event = end_of_operation_event;
-						
-						// When the operation is in progress, the write in progress bit is set to 1.
-						SR.Write_in_progress = 1;
-						FSR.Program_or_erase_controller = 0; // busy
+						if(!IsEraseSuspendedFor(addr))
+						{
+							if(!IsSectorProtected(addr))
+							{
+								Event *end_of_operation_event = PostEndOfWriteOperation(event);
+								write_operation_in_progress_event = end_of_operation_event;
+								
+								// When the operation is in progress, the write in progress bit is set to 1.
+								SR.Write_in_progress = 1;
+								FSR.Program_or_erase_controller = 0; // busy
+							}
+							else
+							{
+								// When a command is applied to a protected sector,
+								// the command is not executed, the write enable latch bit remains
+								// set to 1, and flag status register bits 1 and 4 are set.
+								FSR.Protection = 1; // protection error
+								FSR.Program = 1; // protection error
+								logger << DebugWarning << "Attempt to program a page within a protected sector" << EndDebugWarning;
+							}
+						}
+						else
+						{
+							logger << DebugWarning << "Attempt to program a sector at 0x" << addr << " that is in ERASE SUSPEND state" << EndDebugWarning;
+							
+							// The device ignores a PROGRAM command to a sector that is in an ERASE SUSPEND state;
+							// it also sets the flag status register bit 4 to 1: program failure/protection error,
+							// and leaves the write enable latch bit unchanged.
+							FSR.Program = 1; // program failure
+						}
 					}
 					else
 					{
-						// When a command is applied to a protected sector,
-						// the command is not executed, the write enable latch bit remains
-						// set to 1, and flag status register bits 1 and 4 are set.
-						FSR.Protection = 1; // protection error
-						FSR.Program = 1; // protection error
-						logger << DebugWarning << "Attempt to program a page within a locked sector" << EndDebugWarning;
+						logger << DebugWarning << "Attempt to program a page while program or erase controller is busy (PROGRAM, ERASE, WRITE STATUS REGISTER, or WRITE NON VOLATILE CONFIGURATION command cycle is in progress)" << EndDebugWarning;
 					}
+					
+					// The write enable latch bit is cleared to 0, whether the operation is successful or not.
+					SR.Write_enable_latch = 0;
 				}
 				else
 				{
@@ -1043,37 +1931,55 @@ void N25Q<CONFIG>::Program(Event *event)
 			
 		case END_OF_OPERATION:
 			{
-				unsigned char *data_ptr = payload->get_data_ptr();
-				unsigned int data_offset = 0;
-
-				sc_dt::uint64 page_offset = addr & (CONFIG::PAGE_SIZE - 1);
-		
-				unsigned int data_to_program = data_length;
-				if(data_to_program > CONFIG::PAGE_SIZE)
-				{
-					// If the number of bytes sent to the device exceed the maximum page size,
-					// previously latched data is discarded and only the last maximum page size
-					// number of data bytes are guaranteed to be programmed correctly within the same page.
-					data_offset = data_length - CONFIG::PAGE_SIZE;
-					data_to_program = CONFIG::PAGE_SIZE;
-				}
+				unsigned char *tx_data_ptr = payload->get_tx_data_ptr();
+				unsigned int tx_data_bit_length = payload->get_tx_data_bit_length();
+				unsigned int tx_data_bit_offset = event->GetTxDataBitOffset();
+				unsigned int tx_width = payload->get_tx_width();
+				n25q_signal_type tx_signals = n25q_input_signal(tx_width);
+				n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
+				unsigned int data_width = n25q_signal_width(data_signals);
 				
-				sc_dt::uint64 size_to_page_boundary = CONFIG::PAGE_SIZE - page_offset;
-				
-				if(page_offset && (data_to_program > size_to_page_boundary))
+				if(tx_data_bit_offset >= tx_data_bit_length)
 				{
-					// If the bits of the least significant address, which is the starting address, are not all zero,
-					// all data transmitted beyond the end of the current page is programmed from the starting address of the same page.
-					sc_dt::uint64 page_base_addr = addr & ~(CONFIG::PAGE_SIZE - 1);
-					
-					Combine(storage + addr, data_ptr + data_offset, size_to_page_boundary);
-					Combine(storage + page_base_addr, data_ptr + data_offset + size_to_page_boundary, data_to_program - size_to_page_boundary);
+					logger << DebugWarning << "not data bits for " << event->GetCommand() << EndDebugWarning;
 				}
 				else
 				{
-					Combine(storage + addr, data_ptr + data_offset, data_to_program);
+					unsigned int data_cycles = (tx_data_bit_length - tx_data_bit_offset) / tx_width;
+					unsigned int data_bits_to_program = data_cycles * data_width;
+					
+					sc_dt::uint64 page_offset = addr & (CONFIG::PAGE_SIZE - 1);
+			
+					//unsigned int data_bits_to_program = tx_data_bit_length - tx_data_bit_offset;
+					if(data_bits_to_program > (8 * CONFIG::PAGE_SIZE))
+					{
+						// If the number of bytes sent to the device exceed the maximum page size,
+						// previously latched data is discarded and only the last maximum page size
+						// number of data bytes are guaranteed to be programmed correctly within the same page.
+						//tx_data_bit_offset = tx_data_bit_length - (8 * CONFIG::PAGE_SIZE); // dicarding first bytes
+						data_bits_to_program = 8 * CONFIG::PAGE_SIZE;
+						data_cycles = data_bits_to_program / data_width;
+						tx_data_bit_offset = tx_data_bit_length - (tx_width * data_cycles); // dicarding first bytes
+					}
+					
+					sc_dt::uint64 bitsize_to_page_boundary = 8 * (CONFIG::PAGE_SIZE - page_offset);
+					
+					if(page_offset && (data_bits_to_program > bitsize_to_page_boundary))
+					{
+						// If the bits of the least significant address, which is the starting address, are not all zero,
+						// all data transmitted beyond the end of the current page is programmed from the starting address of the same page.
+						sc_dt::uint64 page_base_addr = addr & ~(CONFIG::PAGE_SIZE - 1);
+						
+						unsigned int data_cycles_to_page_boundary = bitsize_to_page_boundary / data_width;
+						ProgramStorage(bitsize_to_page_boundary, 8 * addr, data_signals, tx_data_ptr, tx_data_bit_length, tx_data_bit_offset, tx_signals);
+						ProgramStorage(data_bits_to_program - bitsize_to_page_boundary, 8 * page_base_addr, data_signals, tx_data_ptr, tx_data_bit_length, tx_data_bit_offset + (data_cycles_to_page_boundary * tx_width), tx_signals);
+					}
+					else
+					{
+						ProgramStorage(data_bits_to_program, 8 * addr, data_signals, tx_data_ptr, tx_data_bit_length, tx_data_bit_offset, tx_signals);
+					}
 				}
-				
+					
 				// When the operation completes, the write in progress bit is cleared to 0.
 				SR.Write_in_progress = 0;
 				FSR.Program_or_erase_controller = 1; // ready
@@ -1085,9 +1991,7 @@ void N25Q<CONFIG>::Program(Event *event)
 template <typename CONFIG>
 void N25Q<CONFIG>::SubSectorErase(Event *event)
 {
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	sc_dt::uint64 addr = payload->get_address();
-	unsigned int data_length = payload->get_data_length();
+	uint32_t addr = event->GetAddress();
 	
 	switch(event->GetStage())
 	{
@@ -1095,30 +1999,43 @@ void N25Q<CONFIG>::SubSectorErase(Event *event)
 			{
 				if(SR.Write_enable_latch)
 				{
-					if(!IsSectorProtected(addr))
+					if(FSR.Program_or_erase_controller) // ready
 					{
-						// The write enable latch bit is cleared to 0, whether the operation is successful or not.
-						SR.Write_enable_latch = 0;
-						Event *end_of_operation_event = PostEndOfWriteOperation(payload);
-						write_operation_in_progress_event = end_of_operation_event;
-						// When the operation is in progress, the write in progress bit is set to 1. 
-						SR.Write_in_progress = 1;
-						FSR.Program_or_erase_controller = 0; // busy
+						if(IsProgramSuspendedFor(addr))
+						{
+							logger << DebugWarning << "Attempt to erase a subsector at 0x" << addr << " that is in PROGRAM SUSPEND state" << EndDebugWarning;
+						}
+						
+						if(!IsSectorProtected(addr))
+						{
+							Event *end_of_operation_event = PostEndOfWriteOperation(event);
+							write_operation_in_progress_event = end_of_operation_event;
+							// When the operation is in progress, the write in progress bit is set to 1. 
+							SR.Write_in_progress = 1;
+							FSR.Program_or_erase_controller = 0; // busy
+						}
+						else
+						{
+							// When a command is applied to a protected subsector, the command is not executed.
+							// Instead, the write enable latch bit remains set to 1, and flag status register bits 1 and 5 are set.
+							FSR.Protection = 1; // protection error
+							FSR.Erase = 1; // protection error
+							logger << DebugWarning << "Attempt to erase a subsector within a protected sector" << EndDebugWarning;
+						}
 					}
 					else
 					{
-						// When a command is applied to a protected subsector, the command is not executed.
-						// Instead, the write enable latch bit remains set to 1, and flag status register bits 1 and 5 are set.
-						FSR.Protection = 1; // protection error
-						FSR.Erase = 1; // protection error
-						logger << DebugWarning << "Attempt to erase a subsector within a locked sector" << EndDebugWarning;
+						logger << DebugWarning << "Attempt to erase a subsector while program or erase controller is busy (PROGRAM, ERASE, WRITE STATUS REGISTER, or WRITE NON VOLATILE CONFIGURATION command cycle is in progress)" << EndDebugWarning;
 					}
+					
+					// The write enable latch bit is cleared to 0, whether the operation is successful or not.
+					SR.Write_enable_latch = 0;
 				}
 				else
 				{
 					// If the write enable latch bit is not set, the device ignores the SUBSECTOR ERASE command
 					// and no error bits are set to indicate operation failure.
-					logger << DebugWarning << "Attempt to perform " << TLM_QSPI_SUBSECTOR_ERASE_COMMAND << " while " << SR.Write_enable_latch.GetName() << " = '0'" << EndDebugWarning;
+					logger << DebugWarning << "Attempt to perform " << N25Q_SUBSECTOR_ERASE_COMMAND << " while " << SR.Write_enable_latch.GetName() << " = '0'" << EndDebugWarning;
 				}
 			}
 			break;
@@ -1126,7 +2043,7 @@ void N25Q<CONFIG>::SubSectorErase(Event *event)
 		case END_OF_OPERATION:
 			{
 				sc_dt::uint64 sector_base_addr = addr & ~(CONFIG::SUBSECTOR_SIZE - 1);
-				memset(storage + sector_base_addr, 0xff, CONFIG::SUBSECTOR_SIZE);
+				EraseStorage(sector_base_addr, CONFIG::SUBSECTOR_SIZE);
 				FSR.Program_or_erase_controller = 1; // ready
 			}
 			break;
@@ -1136,8 +2053,7 @@ void N25Q<CONFIG>::SubSectorErase(Event *event)
 template <typename CONFIG>
 void N25Q<CONFIG>::SectorErase(Event *event)
 {
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	sc_dt::uint64 addr = payload->get_address();
+	uint32_t addr = event->GetAddress();
 	
 	switch(event->GetStage())
 	{
@@ -1145,30 +2061,43 @@ void N25Q<CONFIG>::SectorErase(Event *event)
 			{
 				if(SR.Write_enable_latch)
 				{
-					if(!IsSectorProtected(addr))
+					if(FSR.Program_or_erase_controller) // ready
 					{
-						// The write enable latch bit is cleared to 0, whether the operation is successful or not.
-						SR.Write_enable_latch = 0;
-						Event *end_of_operation_event = PostEndOfWriteOperation(payload);
-						write_operation_in_progress_event = end_of_operation_event;
-						// When the operation is in progress, the write in progress bit is set to 1. 
-						SR.Write_in_progress = 1;
-						FSR.Program_or_erase_controller = 0; // busy
+						if(IsProgramSuspendedFor(addr))
+						{
+							logger << DebugWarning << "Attempt to erase a sector at 0x" << addr << " that is in PROGRAM SUSPEND state" << EndDebugWarning;
+						}
+						
+						if(!IsSectorProtected(addr))
+						{
+							Event *end_of_operation_event = PostEndOfWriteOperation(event);
+							write_operation_in_progress_event = end_of_operation_event;
+							// When the operation is in progress, the write in progress bit is set to 1. 
+							SR.Write_in_progress = 1;
+							FSR.Program_or_erase_controller = 0; // busy
+						}
+						else
+						{
+							// When a command is applied to a protected subsector, the command is not executed.
+							// Instead, the write enable latch bit remains set to 1, and flag status register bits 1 and 5 are set.
+							FSR.Protection = 1; // protection error
+							FSR.Erase = 1; // protection error
+							logger << DebugWarning << "Attempt to erase a protected sector" << EndDebugWarning;
+						}
 					}
 					else
 					{
-						// When a command is applied to a protected subsector, the command is not executed.
-						// Instead, the write enable latch bit remains set to 1, and flag status register bits 1 and 5 are set.
-						FSR.Protection = 1; // protection error
-						FSR.Erase = 1; // protection error
-						logger << DebugWarning << "Attempt to erase a locked sector" << EndDebugWarning;
+						logger << DebugWarning << "Attempt to erase a sector while program or erase controller is busy (PROGRAM, ERASE, WRITE STATUS REGISTER, or WRITE NON VOLATILE CONFIGURATION command cycle is in progress)" << EndDebugWarning;
 					}
+					
+					// The write enable latch bit is cleared to 0, whether the operation is successful or not.
+					SR.Write_enable_latch = 0;
 				}
 				else
 				{
 					// If the write enable latch bit is not set, the device ignores the SECTOR ERASE command
 					// and no error bits are set to indicate operation failure.
-					logger << DebugWarning << "Attempt to perform " << TLM_QSPI_SECTOR_ERASE_COMMAND << " while " << SR.Write_enable_latch.GetName() << " = '0'" << EndDebugWarning;
+					logger << DebugWarning << "Attempt to perform " << N25Q_SECTOR_ERASE_COMMAND << " while " << SR.Write_enable_latch.GetName() << " = '0'" << EndDebugWarning;
 				}
 			}
 			break;
@@ -1176,7 +2105,7 @@ void N25Q<CONFIG>::SectorErase(Event *event)
 		case END_OF_OPERATION:
 			{
 				sc_dt::uint64 sector_base_addr = addr & ~(CONFIG::SECTOR_SIZE - 1);
-				memset(storage + sector_base_addr, 0xff, CONFIG::SECTOR_SIZE);
+				EraseStorage(sector_base_addr, CONFIG::SECTOR_SIZE);
 				FSR.Program_or_erase_controller = 1; // ready
 			}
 			break;
@@ -1186,45 +2115,56 @@ void N25Q<CONFIG>::SectorErase(Event *event)
 template <typename CONFIG>
 void N25Q<CONFIG>::BulkErase(Event *event)
 {
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	
 	switch(event->GetStage())
 	{
 		case START_OF_OPERATION:
 			{
 				if(SR.Write_enable_latch)
 				{
-					if(!IsDeviceProtected())
+					if(FSR.Program_or_erase_controller) // ready
 					{
-						// The write enable latch bit is cleared to 0, whether the operation is successful or not.
-						SR.Write_enable_latch = 0;
-						Event *end_of_operation_event = PostEndOfWriteOperation(payload);
-						write_operation_in_progress_event = end_of_operation_event;
-						// When the operation is in progress, the write in progress bit is set to 1. 
-						SR.Write_in_progress = 1;
-						FSR.Program_or_erase_controller = 0; // busy
+						if(IsProgramSuspended())
+						{
+							logger << DebugWarning << "Attempt to bulk erase while a page is in PROGRAM SUSPEND state" << EndDebugWarning;
+						}
+
+						if(!IsDeviceProtected())
+						{
+							Event *end_of_operation_event = PostEndOfWriteOperation(event);
+							write_operation_in_progress_event = end_of_operation_event;
+							// When the operation is in progress, the write in progress bit is set to 1. 
+							SR.Write_in_progress = 1;
+							FSR.Program_or_erase_controller = 0; // busy
+						}
+						else
+						{
+							// When a command is applied to a protected subsector, the command is not executed.
+							// Instead, the write enable latch bit remains set to 1, and flag status register bits 1 and 5 are set.
+							FSR.Protection = 1; // protection error
+							FSR.Erase = 1; // protection error
+							logger << DebugWarning << "Attempt to erase a protected sector during a bulk erase" << EndDebugWarning;
+						}
 					}
 					else
 					{
-						// When a command is applied to a protected subsector, the command is not executed.
-						// Instead, the write enable latch bit remains set to 1, and flag status register bits 1 and 5 are set.
-						FSR.Protection = 1; // protection error
-						FSR.Erase = 1; // protection error
-						logger << DebugWarning << "Attempt to erase a locked sector during a bulk erase" << EndDebugWarning;
+						logger << DebugWarning << "Attempt to erase a sector while program or erase controller is busy (PROGRAM, ERASE, WRITE STATUS REGISTER, or WRITE NON VOLATILE CONFIGURATION command cycle is in progress)" << EndDebugWarning;
 					}
+					
+					// The write enable latch bit is cleared to 0, whether the operation is successful or not.
+					SR.Write_enable_latch = 0;
 				}
 				else
 				{
 					// If the write enable latch bit is not set, the device ignores the BULK ERASE command
 					// and no error bits are set to indicate operation failure.
-					logger << DebugWarning << "Attempt to perform " << TLM_QSPI_BULK_ERASE_COMMAND << " while " << SR.Write_enable_latch.GetName() << " = '0'" << EndDebugWarning;
+					logger << DebugWarning << "Attempt to perform " << N25Q_BULK_ERASE_COMMAND << " while " << SR.Write_enable_latch.GetName() << " = '0'" << EndDebugWarning;
 				}
 			}
 			break;
 		
 		case END_OF_OPERATION:
 			{
-				memset(storage, 0xff, CONFIG::SIZE);
+				EraseStorage(0, CONFIG::SIZE);
 				FSR.Program_or_erase_controller = 1; // ready
 			}
 			break;
@@ -1251,18 +2191,15 @@ void N25Q<CONFIG>::ProgramEraseSuspend(Event *suspend_event)
 		return;
 	}
 	
-	tlm::tlm_generic_payload *payload = write_operation_in_progress_event->GetPayload();
-	tlm_qspi_extension *qspi_ext = payload->get_extension<tlm_qspi_extension>();
+	n25q_command_type n25q_cmd = write_operation_in_progress_event->GetCommand();
 	
-	tlm_qspi_command qspi_cmd = qspi_ext->get_command();
-	
-	switch(qspi_cmd)
+	switch(n25q_cmd)
 	{
-		case TLM_QSPI_PAGE_PROGRAM_COMMAND:
-		case TLM_QSPI_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-		case TLM_QSPI_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-		case TLM_QSPI_QUAD_INPUT_FAST_PROGRAM_COMMAND:
-		case TLM_QSPI_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+		case N25Q_PAGE_PROGRAM_COMMAND:
+		case N25Q_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+		case N25Q_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+		case N25Q_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+		case N25Q_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
 			// program operation
 			{
 				sc_core::sc_time time_since_last_program_resume(suspend_event->GetTimeStamp());
@@ -1275,8 +2212,8 @@ void N25Q<CONFIG>::ProgramEraseSuspend(Event *suspend_event)
 			}
 			break;
 		
-		case TLM_QSPI_SECTOR_ERASE_COMMAND:
-		case TLM_QSPI_BULK_ERASE_COMMAND:
+		case N25Q_SECTOR_ERASE_COMMAND:
+		case N25Q_BULK_ERASE_COMMAND:
 			// sector or bulk erase operation
 			{
 				sc_core::sc_time time_since_last_erase_resume(suspend_event->GetTimeStamp());
@@ -1288,7 +2225,7 @@ void N25Q<CONFIG>::ProgramEraseSuspend(Event *suspend_event)
 				}
 			}
 			break;
-		case TLM_QSPI_SUBSECTOR_ERASE_COMMAND:
+		case N25Q_SUBSECTOR_ERASE_COMMAND:
 			// subsector erase operation
 			{
 				sc_core::sc_time time_since_last_subsector_erase_resume(suspend_event->GetTimeStamp());
@@ -1303,7 +2240,8 @@ void N25Q<CONFIG>::ProgramEraseSuspend(Event *suspend_event)
 			
 		default:
 			// not a program/erase operation
-			break;
+			logger << DebugWarning << n25q_cmd << " can't be suspended" << EndDebugError;
+			return;
 	}
 	
 	write_operation_in_progress_event->UpdateElapsedTime(suspend_event->GetTimeStamp());
@@ -1316,48 +2254,54 @@ void N25Q<CONFIG>::ProgramEraseSuspend(Event *suspend_event)
 	sc_core::sc_time time_to_end_of_write_operation(write_operation_duration);
 	time_to_end_of_write_operation -= write_operation_elapsed_time;
 
-	switch(qspi_cmd)
+	switch(n25q_cmd)
 	{
-		case TLM_QSPI_PAGE_PROGRAM_COMMAND:
-		case TLM_QSPI_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-		case TLM_QSPI_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-		case TLM_QSPI_QUAD_INPUT_FAST_PROGRAM_COMMAND:
-		case TLM_QSPI_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+		case N25Q_PAGE_PROGRAM_COMMAND:
+		case N25Q_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+		case N25Q_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+		case N25Q_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+		case N25Q_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
 			if(suspend_latency_program <= time_to_end_of_write_operation)
 			{
 				do_suspend = false;
 			}
 			break;
-		case TLM_QSPI_SUBSECTOR_ERASE_COMMAND:
-		case TLM_QSPI_SECTOR_ERASE_COMMAND:
-		case TLM_QSPI_BULK_ERASE_COMMAND:
+		case N25Q_SUBSECTOR_ERASE_COMMAND:
+		case N25Q_SECTOR_ERASE_COMMAND:
+		case N25Q_BULK_ERASE_COMMAND:
 			if(suspend_latency_erase <= time_to_end_of_write_operation)
 			{
 				do_suspend = false;
 			}
+			break;
+		default:
+			do_suspend = false;
 			break;
 	}
 	
 	if(do_suspend)
 	{
 		write_operation_in_progress_event->Suspend();
-		suspend_stack.push(write_operation_in_progress_event);
+		suspend_stack.push_back(write_operation_in_progress_event);
 		write_operation_in_progress_event = 0;
-		switch(qspi_cmd)
+		switch(n25q_cmd)
 		{
-			case TLM_QSPI_PAGE_PROGRAM_COMMAND:
-			case TLM_QSPI_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-			case TLM_QSPI_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-			case TLM_QSPI_QUAD_INPUT_FAST_PROGRAM_COMMAND:
-			case TLM_QSPI_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
-				FSR.Program_suspend = 1;
+			case N25Q_PAGE_PROGRAM_COMMAND:
+			case N25Q_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+			case N25Q_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+			case N25Q_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+			case N25Q_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+				FSR.Program_suspend = 1; // In effect
 				break;
-			case TLM_QSPI_SUBSECTOR_ERASE_COMMAND:
-			case TLM_QSPI_SECTOR_ERASE_COMMAND:
-			case TLM_QSPI_BULK_ERASE_COMMAND:
-				FSR.Erase_suspend = 1;
+			case N25Q_SUBSECTOR_ERASE_COMMAND:
+			case N25Q_SECTOR_ERASE_COMMAND:
+			case N25Q_BULK_ERASE_COMMAND:
+				FSR.Erase_suspend = 1; // In effect
+				break;
+			default:
 				break;
 		}
+		FSR.Program_or_erase_controller = 1; // ready
 	}
 }
 
@@ -1366,31 +2310,34 @@ void N25Q<CONFIG>::ProgramEraseResume(Event *resume_event)
 {
 	if(suspend_stack.size())
 	{
-		Event *suspended_operation_event = suspend_stack.top();
-		suspend_stack.pop();
+		Event *suspended_operation_event = suspend_stack.back();
+		suspend_stack.pop_back();
 	
 		if(suspended_operation_event)
 		{
-			tlm::tlm_generic_payload *payload = suspended_operation_event->GetPayload();
-			tlm_qspi_extension *qspi_ext = payload->get_extension<tlm_qspi_extension>();
+			n25q_command_type n25q_cmd = suspended_operation_event->GetCommand();
 			
-			switch(qspi_ext->get_command())
+			switch(n25q_cmd)
 			{
-				case TLM_QSPI_PAGE_PROGRAM_COMMAND:
-				case TLM_QSPI_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-				case TLM_QSPI_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-				case TLM_QSPI_QUAD_INPUT_FAST_PROGRAM_COMMAND:
-				case TLM_QSPI_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+				case N25Q_PAGE_PROGRAM_COMMAND:
+				case N25Q_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+				case N25Q_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+				case N25Q_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+				case N25Q_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
 					program_resume_time_stamp = resume_event->GetTimeStamp();
 					break;
 				
-				case TLM_QSPI_SECTOR_ERASE_COMMAND:
-				case TLM_QSPI_BULK_ERASE_COMMAND:
+				case N25Q_SECTOR_ERASE_COMMAND:
+				case N25Q_BULK_ERASE_COMMAND:
 					erase_resume_time_stamp = resume_event->GetTimeStamp();
 					break;
-				case TLM_QSPI_SUBSECTOR_ERASE_COMMAND:
+				case N25Q_SUBSECTOR_ERASE_COMMAND:
 					subsector_erase_resume_time_stamp = resume_event->GetTimeStamp();
 					break;
+				default:
+					logger << DebugError << "Internal error! Unexpected " << n25q_cmd << " in suspend stack" << EndDebugError;
+					unisim::kernel::service::Object::Stop(-1);
+					return;
 			}
 			
 			suspended_operation_event->Resume();
@@ -1405,51 +2352,29 @@ void N25Q<CONFIG>::ProgramEraseResume(Event *resume_event)
 			
 			schedule.Notify(suspended_operation_event);
 			
-			switch(qspi_ext->get_command())
+			switch(n25q_cmd)
 			{
-				case TLM_QSPI_PAGE_PROGRAM_COMMAND:
-				case TLM_QSPI_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-				case TLM_QSPI_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-				case TLM_QSPI_QUAD_INPUT_FAST_PROGRAM_COMMAND:
-				case TLM_QSPI_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+				case N25Q_PAGE_PROGRAM_COMMAND:
+				case N25Q_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+				case N25Q_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+				case N25Q_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+				case N25Q_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
 					write_operation_in_progress_event = suspended_operation_event;
-					FSR.Program_suspend = 0;
+					FSR.Program_suspend = 0; // Not in effect
 					break;
 				
-				case TLM_QSPI_SECTOR_ERASE_COMMAND:
-				case TLM_QSPI_BULK_ERASE_COMMAND:
-				case TLM_QSPI_SUBSECTOR_ERASE_COMMAND:
+				case N25Q_SECTOR_ERASE_COMMAND:
+				case N25Q_BULK_ERASE_COMMAND:
+				case N25Q_SUBSECTOR_ERASE_COMMAND:
 					write_operation_in_progress_event = suspended_operation_event;
-					FSR.Erase_suspend = 0;
+					FSR.Erase_suspend = 0; // Not in effect
+				default:
+					break;
 			}
+			
+			FSR.Program_or_erase_controller = 1; // busy
 		}
 	}
-}
-
-template <typename CONFIG>
-void N25Q<CONFIG>::Read(tlm::tlm_generic_payload *payload)
-{
-	sc_dt::uint64 addr = payload->get_address();
-	unsigned int data_length = payload->get_data_length();
-	unsigned char *data_ptr = payload->get_data_ptr();
-
-	unsigned int data_size_to_copy = data_length;
-	if(data_size_to_copy > (CONFIG::SIZE - addr)) data_size_to_copy = CONFIG::SIZE - addr;
-
-	memcpy(data_ptr, storage + addr, data_size_to_copy);
-}
-
-template <typename CONFIG>
-void N25Q<CONFIG>::Write(tlm::tlm_generic_payload *payload)
-{
-	sc_dt::uint64 addr = payload->get_address();
-	unsigned int data_length = payload->get_data_length();
-	unsigned char *data_ptr = payload->get_data_ptr();
-
-	unsigned int data_size_to_copy = data_length;
-	if(data_size_to_copy > (CONFIG::SIZE - addr)) data_size_to_copy = CONFIG::SIZE - addr;
-
-	memcpy(storage + addr, data_ptr, data_size_to_copy);
 }
 
 template <typename CONFIG>
@@ -1465,7 +2390,7 @@ void N25Q<CONFIG>::ProcessEvents()
 			if(event->GetTimeStamp() != time_stamp)
 			{
 				logger << DebugError << "Internal error: unexpected event time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
-				Object::Stop(-1);
+				unisim::kernel::service::Object::Stop(-1);
 			}
 			
 			if(!event->Suspended())
@@ -1481,308 +2406,160 @@ void N25Q<CONFIG>::ProcessEvents()
 template <typename CONFIG>
 void N25Q<CONFIG>::ProcessEvent(Event *event)
 {
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	tlm::tlm_command cmd = payload->get_command();
-	
-	if(cmd != tlm::TLM_IGNORE_COMMAND)
+	if(verbose)
 	{
-		tlm_qspi_extension *qspi_ext = payload->get_extension<tlm_qspi_extension>();
-		
-		unsigned int streaming_width = payload->get_streaming_width();
-		unsigned int data_length = payload->get_data_length();
-		unsigned char *byte_enable_ptr = payload->get_byte_enable_ptr();
-		sc_dt::uint64 addr = payload->get_address();
-		sc_dt::uint64 end_addr = addr + ((streaming_width > data_length) ? data_length : streaming_width) - 1;
-		
-		bool command_has_addr = !qspi_ext || tlm_qspi_command_has_address(qspi_ext->get_command());
-		bool command_has_data = !qspi_ext || tlm_qspi_command_has_data(qspi_ext->get_command());
-		
-		if(command_has_data && !data_length)
-		{
-			// command needs data but data length is not valid (this is an error)
-			logger << DebugError << "data length range for ";
-			if(qspi_ext)
-				logger << qspi_ext->get_command();
-			else
-				logger << "TLM-2.0 GP READ/WRITE command ";
-			logger << " is invalid" << EndDebugError;
-			Object::Stop(-1);
-		}
-		else if(command_has_data && byte_enable_ptr)
-		{
-			// byte enable is unsupported
-			logger << DebugWarning << "byte enable for ";
-			if(qspi_ext)
-				logger << qspi_ext->get_command();
-			else
-				logger << "TLM-2.0 GP READ/WRITE command ";
-			logger << " is unsupported" << EndDebugWarning;
-			payload->set_response_status(tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE);
-		}
-		else if(command_has_data && (streaming_width < data_length))
-		{
-			// streaming is unsupported
-			logger << DebugWarning << "streaming for ";
-			if(qspi_ext)
-				logger << qspi_ext->get_command();
-			else
-				logger << "TLM-2.0 GP READ/WRITE command ";
-			logger << " is unsupported" << EndDebugWarning;
-			payload->set_response_status(tlm::TLM_BURST_ERROR_RESPONSE);
-		}
-		else if(command_has_addr && ((addr >= CONFIG::SIZE) || (end_addr >= CONFIG::SIZE)))
-		{
-			// command needs an address but address is not valid
-			logger << DebugWarning << "address range for ";
-			if(qspi_ext)
-				logger << qspi_ext->get_command();
-			else
-				logger << "TLM-2.0 GP READ/WRITE command ";
-			logger << " is out-of-range" << EndDebugWarning;
-			payload->set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
-		}
-		else if(qspi_ext)
-		{
-			// address is valid or QSPI command does not need an address
+		logger << DebugInfo << event->GetTimeStamp() << ": processing " << ((event->GetStage() == START_OF_OPERATION) ? "start of" : "end of") << " " << event->GetCommand() << EndDebugInfo;
+	}
+	
+	payload_type *payload = event->GetPayload();
+	n25q_command_type n25q_cmd = event->GetCommand();
+				
+	switch(n25q_mode)
+	{
+		case N25Q_STD_MODE:
+			// Standard mode
 			
-			// custom QSPI protocol
-				
-			tlm_qspi_command qspi_cmd = qspi_ext->get_command();
-				
-			switch(qspi_mode)
+			switch(n25q_cmd)
 			{
-				case TLM_QSPI_STD_MODE:
-					// Standard mode
+				case N25Q_UNKNOWN_COMMAND:
+					break;
+				
+				case N25Q_READ_ID_COMMAND:
+					ReadID(event);
+					break;
 					
-					switch(cmd)
-					{
-						case tlm::TLM_READ_COMMAND:
-							switch(qspi_cmd)
-							{
-								// IDENTIFICATION Operations
-								case TLM_QSPI_READ_ID_COMMAND:
-									ReadID(event);
-									break;
-									
-								case TLM_QSPI_MULTIPLE_IO_READ_ID_COMMAND:
-									MultipleIOReadID(event);
-									break;
-									
-								case TLM_QSPI_READ_SERIAL_FLASH_DISCOVERY_PARAMETER_COMMAND:
-									ReadSFDP(event);
-									break;
-									
-								// READ Operations
-								case TLM_QSPI_READ_COMMAND:
-									Read(event);
-									break;
-									
-								case TLM_QSPI_FAST_READ_COMMAND:
-								case TLM_QSPI_DUAL_OUTPUT_FAST_READ_COMMAND:
-								case TLM_QSPI_DUAL_INPUT_OUTPUT_FAST_READ_COMMAND:
-								case TLM_QSPI_QUAD_OUTPUT_FAST_READ_COMMAND:
-								case TLM_QSPI_QUAD_INPUT_OUTPUT_FAST_READ_COMMAND:
-									Read(event);
-									
-									if(((CONFIG::XIP_F == CONFIG::BASIC_XIP) || !VCR.XIP) && !qspi_ext->get_xip_confirmation_bit()) // XIP=0 and Xb=0
-									{
-										qspi_mode = TLM_QSPI_XIP_MODE;
-										qspi_xip_cmd = qspi_cmd;
-									}
-									break;
+				case N25Q_MULTIPLE_IO_READ_ID_COMMAND:
+					MultipleIOReadID(event);
+					break;
+					
+				case N25Q_READ_SERIAL_FLASH_DISCOVERY_PARAMETER_COMMAND:
+					ReadSFDP(event);
+					break;
+					
+				case N25Q_READ_COMMAND:
+					Read(event);
+					break;
+					
+				case N25Q_FAST_READ_COMMAND:
+				case N25Q_DUAL_OUTPUT_FAST_READ_COMMAND:
+				case N25Q_DUAL_INPUT_OUTPUT_FAST_READ_COMMAND:
+				case N25Q_QUAD_OUTPUT_FAST_READ_COMMAND:
+				case N25Q_QUAD_INPUT_OUTPUT_FAST_READ_COMMAND:
+					FastRead(event);
+					break;
 
-								// REGISTER Operations
-								case TLM_QSPI_READ_STATUS_REGISTER_COMMAND:
-									ReadStatusRegister(event);
-									break;
-									
-								case TLM_QSPI_READ_LOCK_REGISTER_COMMAND:
-									ReadLockRegister(event);
-									break;
-									
-								case TLM_QSPI_READ_FLAG_STATUS_REGISTER_COMMAND:
-									ReadFlagStatusRegister(event);
-									break;
-									
-								case TLM_QSPI_READ_NONVOLATILE_CONFIGURATION_REGISTER_COMMAND:
-									ReadNonVolatileConfigurationRegister(event);
-									break;
-									
-								case TLM_QSPI_READ_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
-									ReadVolatileConfigurationRegister(event);
-									break;
-									
-								case TLM_QSPI_WRITE_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
-									WriteVolatileConfigurationRegister(event);
-									break;
-									
-								case TLM_QSPI_READ_ENHANCED_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
-									ReadEnhancedVolatileConfigurationRegister(event);
-									break;
-									
-								case TLM_QSPI_WRITE_ENHANCED_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
-									WriteEnhancedVolatileConfigurationRegister(event);
-									break;
-									
-								// ONE-TIME PROGRAMMABLE (OTP) Operations
-								case TLM_QSPI_READ_OTP_ARRAY_COMMAND:
-									ReadOTPArray(event);
-									break;
-									
-								default:
-									payload->set_response_status(tlm::TLM_COMMAND_ERROR_RESPONSE);
-									// bad combination
-									break;
-							}
-							break;
-						case tlm::TLM_WRITE_COMMAND:
-							switch(qspi_cmd)
-							{
-								// WRITE Operations
-								case TLM_QSPI_WRITE_ENABLE_COMMAND:
-									WriteEnable();
-									break;
-									
-								case TLM_QSPI_WRITE_DISABLE_COMMAND:
-									WriteDisable();
-									break;
-									
-								case TLM_QSPI_WRITE_STATUS_REGISTER_COMMAND:
-									WriteStatusRegister(event);
-									break;
-									
-								case TLM_QSPI_WRITE_LOCK_REGISTER_COMMAND:
-									WriteLockRegister(event);
-									break;
-									
-								case TLM_QSPI_CLEAR_FLAG_STATUS_REGISTER_COMMAND:
-									ClearFlagStatusRegister();
-									break;
-									
-								case TLM_QSPI_WRITE_NONVOLATILE_CONFIGURATION_REGISTER_COMMAND:
-									WriteNonVolatileConfigurationRegister(event);
-									break;
-									
-								case TLM_QSPI_WRITE_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
-									WriteVolatileConfigurationRegister(event);
-									break;
-									
-								case TLM_QSPI_WRITE_ENHANCED_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
-									WriteEnhancedVolatileConfigurationRegister(event);
-									break;
-									
-								// PROGRAM Operations
-								case TLM_QSPI_PAGE_PROGRAM_COMMAND:
-								case TLM_QSPI_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-								case TLM_QSPI_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-								case TLM_QSPI_QUAD_INPUT_FAST_PROGRAM_COMMAND:
-								case TLM_QSPI_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
-									Program(event);
-									break;
-									
-								// ERASE Operations
-								case TLM_QSPI_SUBSECTOR_ERASE_COMMAND:
-									SubSectorErase(event);
-									break;
-								case TLM_QSPI_SECTOR_ERASE_COMMAND:
-									SectorErase(event);
-									break;
-								case TLM_QSPI_BULK_ERASE_COMMAND:
-									BulkErase(event);
-									break;
-								case TLM_QSPI_PROGRAM_ERASE_RESUME_COMMAND:
-									ProgramEraseResume(event);
-									break;
-								case TLM_QSPI_PROGRAM_ERASE_SUSPEND_COMMAND:
-									ProgramEraseSuspend(event);
-									break;
-									
-								// ONE-TIME PROGRAMMABLE (OTP) Operations
-								case TLM_QSPI_PROGRAM_OTP_ARRAY_COMMAND:
-									ProgramOTPArray(event);
-									break;
-									
-								default:
-									// bad combination
-									payload->set_response_status(tlm::TLM_COMMAND_ERROR_RESPONSE);
-									break;
-							}
-							break;
-							
-						case tlm::TLM_IGNORE_COMMAND:
-							break;
-					}
+				// REGISTER Operations
+				case N25Q_READ_STATUS_REGISTER_COMMAND:
+					ReadStatusRegister(event);
 					break;
 					
-				case TLM_QSPI_XIP_MODE:
-					// XIP mode
+				case N25Q_READ_LOCK_REGISTER_COMMAND:
+					ReadLockRegister(event);
+					break;
 					
-					switch(cmd)
-					{
-						case tlm::TLM_READ_COMMAND:
-							// Note: QSPI command in the payload extension is ignored when in XIP mode
-							
-							Read(event);
-							
-							if(qspi_ext->get_xip_confirmation_bit()) // XIP confirmation bit=1
-							{
-								// XIP is terminated by driving the XIP confirmation bit to 1.
-								qspi_mode = TLM_QSPI_STD_MODE;
-								
-								// The device automatically resets volatile configuration register bit 3 to 1.
-								VCR.XIP = 1;
-							}
-							break;
-							
-						case tlm::TLM_WRITE_COMMAND:
-							// write not allowed in XIP mode
-							payload->set_response_status(tlm::TLM_COMMAND_ERROR_RESPONSE);
-							break;
-							
-						case tlm::TLM_IGNORE_COMMAND:
-							break;
-					}
+				case N25Q_READ_FLAG_STATUS_REGISTER_COMMAND:
+					ReadFlagStatusRegister(event);
+					break;
+					
+				case N25Q_READ_NONVOLATILE_CONFIGURATION_REGISTER_COMMAND:
+					ReadNonVolatileConfigurationRegister(event);
+					break;
+					
+				case N25Q_READ_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
+					ReadVolatileConfigurationRegister(event);
+					break;
+					
+				case N25Q_READ_ENHANCED_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
+					ReadEnhancedVolatileConfigurationRegister(event);
+					break;
+					
+				case N25Q_READ_OTP_ARRAY_COMMAND:
+					ReadOTPArray(event);
+					break;
+					
+				case N25Q_WRITE_ENABLE_COMMAND:
+					WriteEnable();
+					break;
+					
+				case N25Q_WRITE_DISABLE_COMMAND:
+					WriteDisable();
+					break;
+					
+				case N25Q_WRITE_STATUS_REGISTER_COMMAND:
+					WriteStatusRegister(event);
+					break;
+					
+				case N25Q_WRITE_LOCK_REGISTER_COMMAND:
+					WriteLockRegister(event);
+					break;
+					
+				case N25Q_CLEAR_FLAG_STATUS_REGISTER_COMMAND:
+					ClearFlagStatusRegister();
+					break;
+					
+				case N25Q_WRITE_NONVOLATILE_CONFIGURATION_REGISTER_COMMAND:
+					WriteNonVolatileConfigurationRegister(event);
+					break;
+					
+				case N25Q_WRITE_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
+					WriteVolatileConfigurationRegister(event);
+					break;
+					
+				case N25Q_WRITE_ENHANCED_VOLATILE_CONFIGURATION_REGISTER_COMMAND:
+					WriteEnhancedVolatileConfigurationRegister(event);
+					break;
+					
+				case N25Q_PAGE_PROGRAM_COMMAND:
+				case N25Q_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+				case N25Q_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+				case N25Q_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+				case N25Q_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+					Program(event);
+					break;
+					
+				case N25Q_SUBSECTOR_ERASE_COMMAND:
+					SubSectorErase(event);
+					break;
+					
+				case N25Q_SECTOR_ERASE_COMMAND:
+					SectorErase(event);
+					break;
+					
+				case N25Q_BULK_ERASE_COMMAND:
+					BulkErase(event);
+					break;
+					
+				case N25Q_PROGRAM_ERASE_RESUME_COMMAND:
+					ProgramEraseResume(event);
+					break;
+					
+				case N25Q_PROGRAM_ERASE_SUSPEND_COMMAND:
+					ProgramEraseSuspend(event);
+					break;
+					
+				case N25Q_PROGRAM_OTP_ARRAY_COMMAND:
+					ProgramOTPArray(event);
+					break;
 			}
-		}
-		else
-		{
-			// address is valid
-			// TLM-2.0 base protocol
-			switch(cmd)
-			{
-				case tlm::TLM_READ_COMMAND:
-					Read(payload);
-					break;
-				case tlm::TLM_WRITE_COMMAND:
-					Write(payload);
-					break;
-				case tlm::TLM_IGNORE_COMMAND:
-					break;
-			}
-		}
+			break;
+			
+		case N25Q_XIP_MODE:
+			// XIP mode
+			FastRead(event);
+			break;
 	}
 
-	payload->set_dmi_allowed(true);
-	
-	sc_core::sc_time completion_time = ComputeResponseTime(payload);
 	sc_core::sc_event *completion_event = event->GetCompletionEvent();
 	
-	if(completion_event)
+	if(completion_event) // blocking ?
 	{
-		completion_event->notify(completion_time);
+		completion_event->notify(sc_core::SC_ZERO_TIME);
 	}
-	else
+	else // non blocking
 	{
-		tlm::tlm_phase phase = tlm::BEGIN_RESP;
-		
-		tlm::tlm_sync_enum sync = qspi_slave_socket->nb_transport_bw(*payload, phase, completion_time);
-		
-		switch(sync)
+		if(payload->get_rx_data_bit_length())
 		{
-			case tlm::TLM_UPDATED:
-				break;
-			case tlm::TLM_COMPLETED:
-				break;
+			qspi_slave_socket->spi_nb_receive(*payload);
 		}
 	}
 }
@@ -1808,16 +2585,16 @@ void N25Q<CONFIG>::Process()
 template <typename CONFIG>
 void N25Q<CONFIG>::RESET_N_Process()
 {
-	if((GetProtocol() != TLM_QSPI_QUAD_IO_PROTOCOL) && ICR.Reset_hold) // reset enabled
+	if((GetProtocol() != N25Q_QUAD_IO_PROTOCOL) && ICR.Reset_hold) // reset enabled
 	{
-		Reset();
+		HWReset();
 	}
 }
 
 template <typename CONFIG>
 void N25Q<CONFIG>::HOLD_N_Process()
 {
-	if((GetProtocol() != TLM_QSPI_QUAD_IO_PROTOCOL) && ICR.Reset_hold) // hold enabled
+	if((GetProtocol() != N25Q_QUAD_IO_PROTOCOL) && ICR.Reset_hold) // hold enabled
 	{
 		if(HOLD_RESET_N)
 			schedule.Unpause();
@@ -1825,7 +2602,6 @@ void N25Q<CONFIG>::HOLD_N_Process()
 			schedule.Pause();
 	}
 }
-
 
 } // end of namespace n25q
 } // end of namespace flash

@@ -31,8 +31,9 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include <unisim/component/tlm2/memory/flash/n25q/qspi_protocol.hh>
+
+#include <unisim/component/tlm2/memory/flash/n25q/n25q.hh>
+#include <unisim/component/tlm2/memory/flash/n25q/config.hh>
 
 namespace unisim {
 namespace component {
@@ -41,35 +42,10 @@ namespace memory {
 namespace flash {
 namespace n25q {
 
-tlm_qspi_extension::tlm_qspi_extension()
-	: qspi_cmd(TLM_QSPI_UNKNOWN_COMMAND)
-	, cycle_period(sc_core::SC_ZERO_TIME)
-	, xip_confirmation_bit(false)
-{
-}
-
-tlm_qspi_extension::tlm_qspi_extension(tlm_qspi_command _qspi_cmd, const sc_core::sc_time& _cycle_period, bool _xip_confirmation_bit)
-	: qspi_cmd(_qspi_cmd)
-	, cycle_period(_cycle_period)
-	, xip_confirmation_bit(_xip_confirmation_bit)
-{
-}
-
-tlm::tlm_extension_base *tlm_qspi_extension::clone() const
-{
-	tlm_qspi_extension *new_qspi_extension = new tlm_qspi_extension(qspi_cmd, cycle_period, xip_confirmation_bit);
-	
-	return new_qspi_extension;
-}
-
-void tlm_qspi_extension::copy_from(const tlm::tlm_extension_base& ext)
-{
-	const tlm_qspi_extension& from = static_cast<const tlm_qspi_extension&>(ext);
-	
-	qspi_cmd = from.qspi_cmd;
-	cycle_period = from.cycle_period;
-	xip_confirmation_bit = from.xip_confirmation_bit;
-}
+typedef N25Q<N25Q032A1_CONFIG32> N25Q032A1_32; typedef N25Q<N25Q032A1_CONFIG64> N25Q032A1_64; // 32 Mb, 65 nm, Byte addressability; HOLD pin; Micron XIP
+typedef N25Q<N25Q032A2_CONFIG32> N25Q032A2_32; typedef N25Q<N25Q032A2_CONFIG64> N25Q032A2_64; // 32 Mb, 65 nm, Byte addressability; HOLD pin; Basic XIP
+typedef N25Q<N25Q032A3_CONFIG32> N25Q032A3_32; typedef N25Q<N25Q032A3_CONFIG64> N25Q032A3_64; // 32 Mb, 65 nm, Byte addressability; RST# pin; Micron XIP
+typedef N25Q<N25Q032A4_CONFIG32> N25Q032A4_32; typedef N25Q<N25Q032A4_CONFIG64> N25Q032A4_64; // 32 Mb, 65 nm, Byte addressability; RST# pin; Basic XIP
 
 } // end of namespace n25q
 } // end of namespace flash

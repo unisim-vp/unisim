@@ -81,6 +81,7 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
 
 	if test "x$pkgconfig_found_systemc" = "xyes"; then
 		AC_MSG_NOTICE([SystemC found])
+		CPPFLAGS=${CPPFLAGS}" -DSC_INCLUDE_DYNAMIC_PROCESSES"
 		CXXFLAGS="${CXXFLAGS} ${SystemC_CFLAGS}"
 		LIBS="${LIBS} ${SystemC_LIBS}"
 	else

@@ -90,6 +90,14 @@ struct N25Q032A_CONFIG : N25Q_CONFIG
 		                  : addr >= (SIZE - protected_area_size); // protected area: upper area
 	}
 	
+	////////////////////////////// Max frequency /////////////////////////////////////
+	
+	static const double MAX_FREQUENCY = 108.0;             // MHz
+	
+	//////////////////// Max supported frequencies (Mhz) /////////////////////////////
+
+	static const double FAST_READ_MAX_FREQUENCIES[10][5];
+	
 	//////////////// Operating conditions (typical values at 25°C) /////////////////////
 	
 	// Write NONVOLATILE CONFIGURATION REGISTER cycle time
@@ -199,6 +207,46 @@ struct N25Q032A4_CONFIG : N25Q032A_CONFIG
 	////////////////////////// Device identification //////////////////////////////////
 	
 	static const uint8_t ID[ID_SIZE];
+};
+
+struct N25Q032A1_CONFIG32 : N25Q032A1_CONFIG
+{
+	typedef uint32_t ADDRESS;
+};
+
+struct N25Q032A2_CONFIG32 : N25Q032A2_CONFIG
+{
+	typedef uint32_t ADDRESS;
+};
+
+struct N25Q032A3_CONFIG32 : N25Q032A3_CONFIG
+{
+	typedef uint32_t ADDRESS;
+};
+
+struct N25Q032A4_CONFIG32 : N25Q032A4_CONFIG
+{
+	typedef uint32_t ADDRESS;
+};
+
+struct N25Q032A1_CONFIG64 : N25Q032A1_CONFIG
+{
+	typedef uint64_t ADDRESS;
+};
+
+struct N25Q032A2_CONFIG64 : N25Q032A2_CONFIG
+{
+	typedef uint64_t ADDRESS;
+};
+
+struct N25Q032A3_CONFIG64 : N25Q032A3_CONFIG
+{
+	typedef uint64_t ADDRESS;
+};
+
+struct N25Q032A4_CONFIG64 : N25Q032A4_CONFIG
+{
+	typedef uint64_t ADDRESS;
 };
 
 } // end of namespace n25q

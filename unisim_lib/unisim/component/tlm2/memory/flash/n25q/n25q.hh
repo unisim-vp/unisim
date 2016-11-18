@@ -38,8 +38,11 @@
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
-#include <unisim/component/tlm2/memory/flash/n25q/register.hh>
-#include <unisim/component/tlm2/memory/flash/n25q/qspi_protocol.hh>
+#include <unisim/kernel/tlm2/tlm_spi.hh>
+#include <unisim/util/reg/register.hh>
+#include <unisim/util/endian/endian.hh>
+#include <unisim/component/tlm2/memory/flash/n25q/n25q_defs.hh>
+#include <fstream>
 
 namespace unisim {
 namespace component {
@@ -47,6 +50,19 @@ namespace tlm2 {
 namespace memory {
 namespace flash {
 namespace n25q {
+
+using unisim::util::reg::Register;
+using unisim::util::reg::BitField;
+using unisim::util::endian::E_BIG_ENDIAN;
+using unisim::util::endian::E_LITTLE_ENDIAN;
+using unisim::util::reg::ACC_NONE;
+using unisim::util::reg::ACC_RO;
+using unisim::util::reg::ACC_WO;
+using unisim::util::reg::ACC_RW;
+
+using unisim::kernel::tlm2::TLM_SPI_HALF_DUPLEX;
+using unisim::kernel::tlm2::TLM_SPI_OK;
+using unisim::kernel::tlm2::TLM_SPI_ERROR;
 
 enum WrapMode
 {
@@ -60,29 +76,31 @@ template <typename CONFIG>
 class N25Q
 	: public unisim::kernel::service::Object
 	, public sc_core::sc_module
-	, public tlm::tlm_fw_transport_if<>
+	, public unisim::kernel::tlm2::tlm_spi_fw_if<unisim::kernel::tlm2::tlm_spi_protocol_types>
 {
 public:
 	static const bool threaded_model = false;
+	static const unsigned int BUSWIDTH = 4;
 
-	typedef tlm_qspi_protocol_types::tlm_payload_type tlm_payload_type;
-	typedef tlm_qspi_protocol_types::tlm_phase_type tlm_phase_type;
+	typedef unisim::kernel::tlm2::tlm_spi_protocol_types::tlm_payload_type payload_type;
+	typedef unisim::kernel::tlm2::tlm_spi_slave_socket<BUSWIDTH> socket_type;
 	
-	tlm::tlm_target_socket<4, tlm_qspi_protocol_types> qspi_slave_socket;
+	socket_type qspi_slave_socket;
 	sc_core::sc_in<bool> HOLD_RESET_N; // shared port: HOLD# or RESET#
 	sc_core::sc_in<bool> W_N_VPP;      // shared port: W# or WPP
 	
 	N25Q(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent = 0);
 	virtual ~N25Q();
 
-	virtual bool get_direct_mem_ptr(tlm_payload_type& payload, tlm::tlm_dmi& dmi_data);
-	virtual unsigned int transport_dbg(tlm_payload_type& payload);
-	virtual tlm::tlm_sync_enum nb_transport_fw(tlm_payload_type& payload, tlm_phase_type& phase, sc_core::sc_time& t);
-	virtual void b_transport(tlm_payload_type& payload, sc_core::sc_time& t);
+	virtual unisim::kernel::tlm2::tlm_spi_sync_enum spi_nb_send(payload_type& payload);
+	virtual void spi_b_send(payload_type& payload);
+	
+	void Reset();
+
 private:
-	struct StatusRegister : Register<8, ACC_RW, ACC_RW, BO_LITTLE_ENDIAN>
+	struct StatusRegister : Register<8, ACC_RW, ACC_RW, E_LITTLE_ENDIAN>
 	{
-		typedef Register<8, ACC_RW, ACC_RW, BO_LITTLE_ENDIAN> BaseType;
+		typedef Register<8, ACC_RW, ACC_RW, E_LITTLE_ENDIAN> BaseType;
 		
 		BitField<StatusRegister, ACC_RW, ACC_RW, 7>    Status_register_write_enable_disable;  // nonvolatile
 		BitField<StatusRegister, ACC_RW, ACC_RW, 5>    Top_bottom;                            // nonvolatile
@@ -90,13 +108,13 @@ private:
 		BitField<StatusRegister, ACC_RW, ACC_RO, 1>    Write_enable_latch;                    // volatile
 		BitField<StatusRegister, ACC_RW, ACC_RO, 0>    Write_in_progress;                     // volatile
 
-		StatusRegister(const std::string& name, const std::string& long_name, N25Q<CONFIG> *_n25q)
-			: BaseType(name, long_name, 0xfc)
-			, Status_register_write_enable_disable("Status_register_write_enable_disable", this, 0x1)
-			, Top_bottom("Top_bottom", this, 0x1)
-			, Block_protect_2_0("Block_protect_2_0", this, 0x7)
-			, Write_enable_latch("Write_enable_latch", this, 0x0)
-			, Write_in_progress("Write_in_progress", this, 0x0)
+		StatusRegister(N25Q<CONFIG> *_n25q, const std::string& name, const std::string& long_name)
+			: BaseType(_n25q, name, long_name, 0xfc)
+			, Status_register_write_enable_disable(this, "Status_register_write_enable_disable", 0x1)
+			, Top_bottom(this, "Top_bottom", 0x1)
+			, Block_protect_2_0(this, "Block_protect_2_0", 0x7)
+			, Write_enable_latch(this, "Write_enable_latch", 0x0)
+			, Write_in_progress(this, "Write_in_progress", 0x0)
 			, n25q(_n25q)
 		{
 		}
@@ -104,7 +122,7 @@ private:
 		using BaseType::operator const STORAGE_TYPE;
 		using BaseType::operator = ;
 		
-		bool Write(const STORAGE_TYPE& value)
+		virtual bool Write(const STORAGE_TYPE& value, const STORAGE_TYPE& byte_enable = STORAGE_TYPE(-1))
 		{
 			if(!BaseType::Write(value)) return false;
 			
@@ -134,9 +152,9 @@ private:
 		N25Q<CONFIG> *n25q;
 	};
 	
-	struct NonVolatileConfigurationRegister : Register<16, ACC_RW, ACC_RW, BO_LITTLE_ENDIAN>
+	struct NonVolatileConfigurationRegister : Register<16, ACC_RW, ACC_RW, E_LITTLE_ENDIAN>
 	{
-		typedef Register<16, ACC_RW, ACC_RW, BO_LITTLE_ENDIAN> BaseType;
+		typedef Register<16, ACC_RW, ACC_RW, E_LITTLE_ENDIAN> BaseType;
 		
 		BitField<NonVolatileConfigurationRegister, ACC_RW, ACC_RW, 15, 12> Number_of_dummy_clock_cycles;
 		BitField<NonVolatileConfigurationRegister, ACC_RW, ACC_RW, 11,  9> XIP_mode_at_power_on_reset;
@@ -145,14 +163,14 @@ private:
 		BitField<NonVolatileConfigurationRegister, ACC_RW, ACC_RW,  3>     Quad_IO_protocol;
 		BitField<NonVolatileConfigurationRegister, ACC_RW, ACC_RW,  2>     Dual_IO_protocol;
 		
-		NonVolatileConfigurationRegister(const std::string& name, const std::string& long_name)
-			: BaseType(name, long_name, 0xffff)
-			, Number_of_dummy_clock_cycles("Number_of_dummy_clock_cycles", this, 0xf)
-			, XIP_mode_at_power_on_reset("XIP_mode_at_power_on_reset", this, 0x7)
-			, Output_driver_strength("Output_driver_strength", this, 0x7)
-			, Reset_hold("Reset_hold", this, 0x1)
-			, Quad_IO_protocol("Quad_IO_protocol", this, 0x1)
-			, Dual_IO_protocol("Dual_IO_protocol", this, 0x1)
+		NonVolatileConfigurationRegister(N25Q<CONFIG> *_n25q, const std::string& name, const std::string& long_name)
+			: BaseType(_n25q, name, long_name, 0xffff)
+			, Number_of_dummy_clock_cycles(this, "Number_of_dummy_clock_cycles", 0xf)
+			, XIP_mode_at_power_on_reset(this, "XIP_mode_at_power_on_reset", 0x7)
+			, Output_driver_strength(this, "Output_driver_strength", 0x7)
+			, Reset_hold(this, "Reset_hold", 0x1)
+			, Quad_IO_protocol(this, "Quad_IO_protocol", 0x1)
+			, Dual_IO_protocol(this, "Dual_IO_protocol", 0x1)
 		{
 		}
 		
@@ -160,19 +178,19 @@ private:
 		using BaseType::operator = ;
 	};
 	
-	struct VolatileConfigurationRegister : Register<8, ACC_RW, ACC_RW, BO_LITTLE_ENDIAN>
+	struct VolatileConfigurationRegister : Register<8, ACC_RW, ACC_RW, E_LITTLE_ENDIAN>
 	{
-		typedef Register<8, ACC_RW, ACC_RW, BO_LITTLE_ENDIAN> BaseType;
+		typedef Register<8, ACC_RW, ACC_RW, E_LITTLE_ENDIAN> BaseType;
 		
 		BitField<VolatileConfigurationRegister, ACC_RW, ACC_RW, 7, 4> Number_of_dummy_clock_cycles;
 		BitField<VolatileConfigurationRegister, ACC_RW, ACC_RW, 3>    XIP;
 		BitField<VolatileConfigurationRegister, ACC_RW, ACC_RW, 1, 0> Wrap;
 		
-		VolatileConfigurationRegister(const std::string& name, const std::string& long_name)
-			: BaseType(name, long_name, 0x0)
-			, Number_of_dummy_clock_cycles("Number_of_dummy_clock_cycles", this, 0xf)
-			, XIP("XIP", this, 0x1)
-			, Wrap("Wrap", this, 0x3)
+		VolatileConfigurationRegister(N25Q<CONFIG> *_n25q, const std::string& name, const std::string& long_name)
+			: BaseType(_n25q, name, long_name, 0x0)
+			, Number_of_dummy_clock_cycles(this, "Number_of_dummy_clock_cycles", 0xf)
+			, XIP(this, "XIP", 0x1)
+			, Wrap(this, "Wrap", 0x3)
 		{
 		}
 		
@@ -182,9 +200,9 @@ private:
 		N25Q<CONFIG> *n25q;
 	};
 	
-	struct EnhancedVolatileConfigurationRegister : Register<8, ACC_RW, ACC_RW, BO_LITTLE_ENDIAN>
+	struct EnhancedVolatileConfigurationRegister : Register<8, ACC_RW, ACC_RW, E_LITTLE_ENDIAN>
 	{
-		typedef Register<8, ACC_RW, ACC_RW, BO_LITTLE_ENDIAN> BaseType;
+		typedef Register<8, ACC_RW, ACC_RW, E_LITTLE_ENDIAN> BaseType;
 		
 		BitField<EnhancedVolatileConfigurationRegister, ACC_RW, ACC_RW, 7>    Quad_IO_protocol;
 		BitField<EnhancedVolatileConfigurationRegister, ACC_RW, ACC_RW, 6>    Dual_IO_protocol;
@@ -192,13 +210,13 @@ private:
 		BitField<EnhancedVolatileConfigurationRegister, ACC_RW, ACC_RW, 3>    VPP_accelerator;
 		BitField<EnhancedVolatileConfigurationRegister, ACC_RW, ACC_RW, 2, 0> Output_driver_strength;
 		
-		EnhancedVolatileConfigurationRegister(const std::string& name, const std::string& long_name)
-			: BaseType(name, long_name, 0x0)
-			, Quad_IO_protocol("Quad_IO_protocol", this, 0x1)
-			, Dual_IO_protocol("Dual_IO_protocol", this, 0x1)
-			, Reset_hold("Reset_hold", this, 0x1)
-			, VPP_accelerator("VPP_accelerator", this, 0x1)
-			, Output_driver_strength("Output_driver_strength", this, 0x7)
+		EnhancedVolatileConfigurationRegister(N25Q<CONFIG> *_n25q, const std::string& name, const std::string& long_name)
+			: BaseType(_n25q, name, long_name, 0x0)
+			, Quad_IO_protocol(this, "Quad_IO_protocol", 0x1)
+			, Dual_IO_protocol(this, "Dual_IO_protocol", 0x1)
+			, Reset_hold(this, "Reset_hold", 0x1)
+			, VPP_accelerator(this, "VPP_accelerator", 0x1)
+			, Output_driver_strength(this, "Output_driver_strength", 0x7)
 		{
 		}
 		
@@ -206,9 +224,9 @@ private:
 		using BaseType::operator = ;
 	};
 	
-	struct FlagStatusRegister : Register<8, ACC_RW, ACC_RW, BO_LITTLE_ENDIAN>
+	struct FlagStatusRegister : Register<8, ACC_RW, ACC_RW, E_LITTLE_ENDIAN>
 	{
-		typedef Register<8, ACC_RW, ACC_RW, BO_LITTLE_ENDIAN> BaseType;
+		typedef Register<8, ACC_RW, ACC_RW, E_LITTLE_ENDIAN> BaseType;
 		
 		BitField<FlagStatusRegister, ACC_RW, ACC_RW, 7> Program_or_erase_controller;
 		BitField<FlagStatusRegister, ACC_RW, ACC_RW, 6> Erase_suspend;
@@ -218,15 +236,15 @@ private:
 		BitField<FlagStatusRegister, ACC_RW, ACC_RW, 2> Program_suspend;
 		BitField<FlagStatusRegister, ACC_RW, ACC_RW, 1> Protection;
 		
-		FlagStatusRegister(const std::string& name, const std::string& long_name)
-			: BaseType(name, long_name, 0xff)
-			, Program_or_erase_controller("Program_or_erase_controller", this, 0x1)
-			, Erase_suspend("Erase_suspend", this, 0x1)
-			, Erase("Erase", this, 0x1)
-			, Program("Program", this, 0x1)
-			, VPP("VPP", this, 0x1)
-			, Program_suspend("Program_suspend", this, 0x1)
-			, Protection("Protection", this, 0x1)
+		FlagStatusRegister(N25Q<CONFIG> *_n25q, const std::string& name, const std::string& long_name)
+			: BaseType(_n25q, name, long_name, 0xff)
+			, Program_or_erase_controller(this, "Program_or_erase_controller", 0x1)
+			, Erase_suspend(this, "Erase_suspend", 0x1)
+			, Erase(this, "Erase", 0x1)
+			, Program(this, "Program", 0x1)
+			, VPP(this, "VPP", 0x1)
+			, Program_suspend(this, "Program_suspend", 0x1)
+			, Protection(this, "Protection", 0x1)
 		{
 		}
 		
@@ -234,9 +252,9 @@ private:
 		using BaseType::operator = ;
 	};
 	
-	struct InternalConfigurationRegister : Register<16, ACC_RW, ACC_NONE, BO_LITTLE_ENDIAN>
+	struct InternalConfigurationRegister : Register<16, ACC_RW, ACC_NONE, E_LITTLE_ENDIAN>
 	{
-		typedef Register<16, ACC_RW, ACC_NONE, BO_LITTLE_ENDIAN> BaseType;
+		typedef Register<16, ACC_RW, ACC_NONE, E_LITTLE_ENDIAN> BaseType;
 		
 		BitField<InternalConfigurationRegister, ACC_RW, ACC_NONE, 15, 12> Number_of_dummy_clock_cycles;
 		BitField<InternalConfigurationRegister, ACC_RW, ACC_NONE,  8,  6> Output_driver_strength;
@@ -246,15 +264,15 @@ private:
 		BitField<InternalConfigurationRegister, ACC_RW, ACC_NONE,  2>     Dual_IO_protocol;
 		BitField<InternalConfigurationRegister, ACC_RW, ACC_NONE,  1, 0>  Wrap;
 		
-		InternalConfigurationRegister(const std::string& name, const std::string& long_name)
-			: BaseType(name, long_name, 0xffff)
-			, Number_of_dummy_clock_cycles("Number_of_dummy_clock_cycles", this, 0xf)
-			, Output_driver_strength("Output_driver_strength", this, 0x7)
-			, VPP_accelerator("VPP_accelerator", this, 0x1)
-			, Reset_hold("Reset_hold", this, 0x1)
-			, Quad_IO_protocol("Quad_IO_protocol", this, 0x1)
-			, Dual_IO_protocol("Dual_IO_protocol", this, 0x1)
-			, Wrap("Wrap", this, 0x3)
+		InternalConfigurationRegister(N25Q<CONFIG> *_n25q, const std::string& name, const std::string& long_name)
+			: BaseType(_n25q, name, long_name, 0xffff)
+			, Number_of_dummy_clock_cycles(this, "Number_of_dummy_clock_cycles", 0xf)
+			, Output_driver_strength(this, "Output_driver_strength", 0x7)
+			, VPP_accelerator(this, "VPP_accelerator", 0x1)
+			, Reset_hold(this, "Reset_hold", 0x1)
+			, Quad_IO_protocol(this, "Quad_IO_protocol", 0x1)
+			, Dual_IO_protocol(this, "Dual_IO_protocol", 0x1)
+			, Wrap(this, "Wrap", 0x3)
 		{
 		}
 
@@ -262,17 +280,17 @@ private:
 		using BaseType::operator = ;
 	};
 	
-	struct LockRegister : Register<2, ACC_RW, ACC_NONE, BO_LITTLE_ENDIAN>
+	struct LockRegister : Register<2, ACC_RW, ACC_RW, E_LITTLE_ENDIAN>
 	{
-		typedef Register<2, ACC_RW, ACC_NONE, BO_LITTLE_ENDIAN> BaseType;
+		typedef Register<2, ACC_RW, ACC_RW, E_LITTLE_ENDIAN> BaseType;
 		
-		BitField<LockRegister, ACC_RW, ACC_NONE, 1> Sector_lock_down;
-		BitField<LockRegister, ACC_RW, ACC_NONE, 0> Sector_write_lock;
+		BitField<LockRegister, ACC_RW, ACC_RW, 1> Sector_lock_down;
+		BitField<LockRegister, ACC_RW, ACC_RW, 0> Sector_write_lock;
 		
-		LockRegister(const std::string& name, const std::string& long_name)
-			: BaseType(name, long_name, 0x3)
-			, Sector_lock_down("Sector_lock_down", this, 0x1)
-			, Sector_write_lock("Sector_write_lock", this, 0x1)
+		LockRegister(N25Q<CONFIG> *_n25q, const std::string& name, const std::string& long_name)
+			: BaseType(_n25q, name, long_name, 0x0)
+			, Sector_lock_down(this, "Sector_lock_down", 0x0)
+			, Sector_write_lock(this, "Sector_write_lock", 0x0)
 		{
 		}
 		
@@ -329,6 +347,12 @@ private:
 		Event()
 			: key()
 			, payload(0)
+			, release_payload(false)
+			, n25q_cmd(N25Q_UNKNOWN_COMMAND)
+			, n25q_addr(0)
+			, tx_data_bit_offset(0)
+			, rx_data_bit_offset(0)
+			, read_data_bit_offset(0)
 			, stage(START_OF_OPERATION)
 			, post_time(sc_core::SC_ZERO_TIME)
 			, elapsed_time(sc_core::SC_ZERO_TIME)
@@ -345,15 +369,21 @@ private:
 		
 		void Clear()
 		{
-			if(payload) payload->release();
 			key.Clear();
+			if(release_payload && payload && payload->has_mm()) payload->release();
 			payload = 0;
+			release_payload = false;
+			n25q_cmd = N25Q_UNKNOWN_COMMAND;
+			n25q_addr = 0;
+			tx_data_bit_offset = 0;
+			rx_data_bit_offset = 0;
+			read_data_bit_offset = 0;
 			stage = START_OF_OPERATION;
 			post_time = sc_core::SC_ZERO_TIME;
 			elapsed_time = sc_core::SC_ZERO_TIME;
 			duration = sc_core::SC_ZERO_TIME;
 			suspended  = false;
-			completion_event  = 0;
+			completion_event = 0;
 		}
 		
 		void SetTimeStamp(const sc_core::sc_time& _time_stamp)
@@ -361,11 +391,31 @@ private:
 			key.SetTimeStamp(_time_stamp);
 		}
 		
-		void SetPayload(tlm::tlm_generic_payload *_payload)
+		void SetCommand(n25q_command_type _n25q_cmd)
 		{
-			payload = _payload;
+			n25q_cmd = _n25q_cmd;
 		}
 		
+		void SetAddress(uint32_t _addr)
+		{
+			n25q_addr = _addr;
+		}
+		
+		void SetTxDataBitOffset(unsigned int _tx_data_bit_offset)
+		{
+			tx_data_bit_offset = _tx_data_bit_offset;
+		}
+		
+		void SetRxDataBitOffset(unsigned int _rx_data_bit_offset)
+		{
+			rx_data_bit_offset = _rx_data_bit_offset;
+		}
+
+		void SetReadDataBitOffset(unsigned int _read_data_bit_offset)
+		{
+			read_data_bit_offset = _read_data_bit_offset;
+		}
+
 		void SetStage(Stage _stage)
 		{
 			stage = _stage;
@@ -401,20 +451,47 @@ private:
 		{
 			completion_event = _completion_event;
 		}
-
+		
 		const sc_core::sc_time& GetTimeStamp() const
 		{
 			return key.GetTimeStamp();
 		}
 
-		tlm::tlm_generic_payload *GetPayload() const
+		n25q_command_type GetCommand() const
 		{
-			return payload;
+			return n25q_cmd;
 		}
 		
+		uint32_t GetAddress() const
+		{
+			return n25q_addr;
+		}
+		
+		unsigned int GetTxDataBitOffset() const
+		{
+			return tx_data_bit_offset;
+		}
+		
+		unsigned int GetRxDataBitOffset() const
+		{
+			return rx_data_bit_offset;
+		}
+
+		unsigned int GetReadDataBitOffset() const
+		{
+			return read_data_bit_offset;
+		}
+
 		Stage GetStage() const
 		{
 			return stage;
+		}
+		
+		void SetPayload(payload_type *_payload, bool _release_payload = false)
+		{
+			if(release_payload && payload && payload->has_mm()) payload->release();
+			payload = _payload;
+			release_payload = _release_payload;
 		}
 		
 		const sc_core::sc_time& GetDuration() const
@@ -432,40 +509,58 @@ private:
 			return suspended;
 		}
 		
-		sc_core::sc_event *GetCompletionEvent() const
-		{
-			return completion_event;
-		}
-
 		const Key& GetKey() const
 		{
 			return key;
 		}
 		
+		payload_type *GetPayload() const
+		{
+			return payload;
+		}
+		
+		sc_core::sc_event *GetCompletionEvent() const
+		{
+			return completion_event;
+		}
+		
 	private:
 		Key key;
-		tlm::tlm_generic_payload *payload;
-		Stage stage;
+		payload_type *payload;                   // the payload
+		bool release_payload;                    // whether payload should be released when it becomes useless
+		n25q_command_type n25q_cmd;              // decoded command
+		uint32_t n25q_addr;                      // decoded address
+		unsigned int tx_data_bit_offset;         // bit offset in TX data array
+		unsigned int rx_data_bit_offset;         // bit offset in RX data array
+		unsigned int read_data_bit_offset;       // data bit offset for a read
+		Stage stage;                             // stage of operation: start or end
 		sc_core::sc_time post_time;              // the time when the event has been posted
 		sc_core::sc_time elapsed_time;           // elapsed time of command
 		sc_core::sc_time duration;               // duration of command
-		bool suspended;
-		sc_core::sc_event *completion_event;
+		bool suspended;                          // whether operation is in suspended state
+		sc_core::sc_event *completion_event;     // a SystemC event for blocking interface
 	};
 	
 	unisim::kernel::logger::Logger logger;
 	
-	unisim::kernel::tlm2::PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
+	bool verbose;
+	unisim::kernel::service::Parameter<bool> param_verbose;
+	std::string input_filename;
+	unisim::kernel::service::Parameter<std::string> param_input_filename;
+	std::string output_filename;
+	unisim::kernel::service::Parameter<std::string> param_output_filename;
+	
+	unisim::kernel::tlm2::PayloadFabric<payload_type> payload_fabric;
 	unisim::kernel::tlm2::Schedule<Event> schedule;
-	std::stack<Event *> suspend_stack;              // at most one program and one erase
+	std::vector<Event *> suspend_stack;              // at most one program and one erase
 	Event *write_operation_in_progress_event;       // write operation in progress event
 	
 	sc_core::sc_time erase_resume_time_stamp;       // sector or bulk erase resume time stamp
 	sc_core::sc_time program_resume_time_stamp;     // program resume time stamp
 	sc_core::sc_time subsector_erase_resume_time_stamp; // subsector erase resume time stamp
 	
-	tlm_qspi_mode qspi_mode;
-	tlm_qspi_command qspi_xip_cmd;               // QSPI FAST READ command that confirmed XIP mode
+	n25q_mode_type n25q_mode;
+	n25q_command_type n25q_xip_cmd;               // QSPI FAST READ command that confirmed XIP mode
 	
 	StatusRegister                        SR;    // status register
 	NonVolatileConfigurationRegister      NVCR;  // non volatile configuration register
@@ -478,6 +573,8 @@ private:
 	uint8_t *storage; // data array of CONFIG::SIZE bytes size
 	uint8_t *OTP; // OTP array of CONFIG::OTP_ARRAY_SIZE bytes + 1 OTP control byte
 	
+	sc_core::sc_time MIN_CLOCK_PERIOD;
+	sc_core::sc_time FAST_READ_MIN_CLOCK_PERIODS[10][5];
 	sc_core::sc_time tWNVCR;
 	sc_core::sc_time tW;
 	sc_core::sc_time tCFSR;
@@ -499,32 +596,47 @@ private:
 	sc_core::sc_time suspend_latency_subsector_erase;
 	sc_core::sc_time suspend_latency_erase;
 	
-	void Reset();
-	void Combine(uint8_t *dest, const uint8_t *source, uint32_t size);
+	std::ofstream *output_file;
 	
-	const tlm_qspi_protocol GetProtocol() const;
+	void DumpStorageToFile(unsigned int offset = 0, unsigned int length = CONFIG::SIZE);
+	void HWReset();
+	void Xfer(uint8_t *dst, unsigned int dst_bit_length, unsigned int dst_bit_offset, n25q_signal_type dst_signals, const uint8_t *src, unsigned int src_bit_length, unsigned int src_bit_offset, n25q_signal_type src_signals, bool program = false);
+	void Zero(uint8_t *dst, unsigned int dst_bit_length, unsigned int dst_bit_offset);
+	void Program(uint8_t *dst, unsigned int dst_bit_length, unsigned int dst_bit_offset, n25q_signal_type dst_signals, const uint8_t *src, unsigned int src_bit_length, unsigned int src_bit_offset, n25q_signal_type src_signals);
+	void ProgramStorage(unsigned int dst_bit_length, unsigned int dst_bit_offset, n25q_signal_type dst_signals, const uint8_t *src, unsigned int src_bit_length, unsigned int src_bit_offset, n25q_signal_type src_signals);
+	void ProgramOTP(unsigned int dst_bit_length, unsigned int dst_bit_offset, n25q_signal_type dst_signals, const uint8_t *src, unsigned int src_bit_length, unsigned int src_bit_offset, n25q_signal_type src_signals);
+	void EraseStorage(unsigned int offset, unsigned int length);
+	
+	const n25q_protocol_type GetProtocol() const;
 	uint32_t GetWrap() const;
-	bool IsSectorProtected(sc_dt::uint64 addr);
+	bool IsSectorProtected(uint32_t addr);
 	bool IsDeviceProtected();
-	sc_core::sc_time ComputeRequestTime(tlm::tlm_generic_payload *payload);
-	sc_core::sc_time ComputeResponseTime(tlm::tlm_generic_payload *payload);
-	const sc_core::sc_time ComputeWriteOperationTime(tlm::tlm_generic_payload *payload);
-	unsigned int DummyCycles(tlm_qspi_command qspi_cmd);
-	Event *PostEndOfWriteOperation(tlm::tlm_generic_payload *payload);
+	bool IsProgramOrEraseSuspendedFor(uint32_t addr);
+	bool IsProgramSuspended();
+	bool IsProgramSuspendedFor(uint32_t addr);
+	bool IsEraseSuspendedFor(uint32_t addr);
+	bool CheckClock(const sc_core::sc_time& clock, n25q_command_type n25q_cmd, sc_core::sc_time *& min_clock_period);
+	Event *Decode(payload_type& payload, bool blocking_if = false);
+	sc_core::sc_time ComputeRequestTime(Event *event);
+	sc_core::sc_time ComputeResponseTime(Event *event);
+	const sc_core::sc_time ComputeWriteOperationTime(Event *event);
+	unsigned int DummyCycles(n25q_command_type n25q_cmd);
+	Event *PostEndOfWriteOperation(Event *event);
 
-	void ReadID(Event *event) const;
-	void MultipleIOReadID(Event *event) const;
-	void ReadSFDP(Event *event) const;
-	void Read(Event *event) const;
+	void ReadID(Event *event);
+	void MultipleIOReadID(Event *event);
+	void ReadSFDP(Event *event);
+	void Read(Event *event);
+	void FastRead(Event *event);
 	void WriteEnable();
 	void WriteDisable();
-	void ReadStatusRegister(Event *event) const;
-	void ReadFlagStatusRegister(Event *event) const;
-	void ReadNonVolatileConfigurationRegister(Event *event) const;
-	void ReadVolatileConfigurationRegister(Event *event) const;
-	void ReadEnhancedVolatileConfigurationRegister(Event *event) const;
-	void ReadLockRegister(Event *event) const;
-	void ReadOTPArray(Event *event) const;
+	void ReadStatusRegister(Event *event);
+	void ReadFlagStatusRegister(Event *event);
+	void ReadNonVolatileConfigurationRegister(Event *event);
+	void ReadVolatileConfigurationRegister(Event *event);
+	void ReadEnhancedVolatileConfigurationRegister(Event *event);
+	void ReadLockRegister(Event *event);
+	void ReadOTPArray(Event *event);
 	
 	void WriteNonVolatileConfigurationRegister(Event *event);
 	void WriteVolatileConfigurationRegister(Event *event);
@@ -540,9 +652,6 @@ private:
 	void ProgramEraseSuspend(Event *suspend_event);
 	void ProgramEraseResume(Event *resume_event);
 
-	void Read(tlm::tlm_generic_payload *payload);
-	void Write(tlm::tlm_generic_payload *payload);
-	
 	void ProcessEvents();
 	void ProcessEvent(Event *event);
 	void Process();

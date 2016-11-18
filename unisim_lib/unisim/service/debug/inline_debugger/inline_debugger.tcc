@@ -1049,7 +1049,8 @@ void InlineDebugger<ADDRESS>::Help()
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
 	(*std_output_stream) << "<traverse>" << endl;
 	(*std_output_stream) << "    step continuously until control reaches an unvisited instruction" << endl;
-	(*std_output_stream) << "--------------------------------------------------------------------------------" << 	(*std_output_stream) << "<ni | nexti>" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<ni | nexti>" << endl;
 	(*std_output_stream) << "    continue to execute instructions until the processor reaches" << endl;
 	(*std_output_stream) << "    next contiguous instruction, a breakpoint or a watchpoint" << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
@@ -1152,6 +1153,18 @@ void InlineDebugger<ADDRESS>::Help()
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
 	(*std_output_stream) << "<setobject | setobj | sob> <data object name>" << endl;
 	(*std_output_stream) << "    set data object value in a programmer friendly manner" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<trackobject | trackobj | tob> <data object name>" << endl;
+	(*std_output_stream) << "    track data object and repeatedly print the data object value at each stepping" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<untrackobject | untrackobj | utob> <data object name>" << endl;
+	(*std_output_stream) << "    untrack data object" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<whatis> <data object name>" << endl;
+	(*std_output_stream) << "    print data object type" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<info> <subprogram name>" << endl;
+	(*std_output_stream) << "    print information about a subprogram" << endl;
 	(*std_output_stream) << "========================= BREAKPOINTS/WATCHPOINTS ==============================" << endl;
 	(*std_output_stream) << "<b | break> [<symbol | *address | filename:lineno>]" << endl;
 	(*std_output_stream) << "    set a breakpoint at 'symbol', 'address', or 'filename:lineno'. If 'symbol', 'address'," << endl;

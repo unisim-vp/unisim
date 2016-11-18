@@ -43,15 +43,14 @@ namespace memory {
 namespace flash {
 namespace n25q {
 
-template class N25Q<N25Q032A1_CONFIG>;
-template class N25Q<N25Q032A2_CONFIG>;
-template class N25Q<N25Q032A3_CONFIG>;
-template class N25Q<N25Q032A4_CONFIG>;
-
-typedef N25Q<N25Q032A1_CONFIG> N25Q032A1; // 32 Mb, 65 nm, Byte addressability; HOLD pin; Micron XIP
-typedef N25Q<N25Q032A2_CONFIG> N25Q032A2; // 32 Mb, 65 nm, Byte addressability; HOLD pin; Basic XIP
-typedef N25Q<N25Q032A3_CONFIG> N25Q032A3; // 32 Mb, 65 nm, Byte addressability; RST# pin; Micron XIP
-typedef N25Q<N25Q032A4_CONFIG> N25Q032A4; // 32 Mb, 65 nm, Byte addressability; RST# pin; Basic XIP
+template class N25Q<N25Q032A1_CONFIG32>;
+template class N25Q<N25Q032A2_CONFIG32>;
+template class N25Q<N25Q032A3_CONFIG32>;
+template class N25Q<N25Q032A4_CONFIG32>;
+template class N25Q<N25Q032A1_CONFIG64>;
+template class N25Q<N25Q032A2_CONFIG64>;
+template class N25Q<N25Q032A3_CONFIG64>;
+template class N25Q<N25Q032A4_CONFIG64>;
 
 } // end of namespace n25q
 } // end of namespace flash
