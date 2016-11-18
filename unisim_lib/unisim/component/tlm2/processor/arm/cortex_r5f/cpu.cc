@@ -398,7 +398,7 @@ CPU::Run()
     cpsr_cleared_bits &= ~(CPSR().bits());
     
     /* In cortex R5F many FPSCR bits stick to 0 */
-    FPSCR &= 0xffc00090;
+    FPSCR &= 0xffc0009f;
     
     if ( unlikely(verbose_tlm) )
     {
