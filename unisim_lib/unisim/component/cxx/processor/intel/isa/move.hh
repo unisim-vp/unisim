@@ -166,6 +166,7 @@ struct PopSeg : public Operation<ARCH>
 {
   PopSeg( OpBase<ARCH> const& opbase, uint8_t _seg ) : Operation<ARCH>( opbase ), seg( _seg ) {} uint8_t seg;
   void disasm( std::ostream& sink ) const { sink << "pop"  << ((OPSIZE==16) ? "w " : (OPSIZE==32) ? " " : "q ") << DisasmS( seg ); }
+  void execute( ARCH& arch ) const { arch.segregwrite( seg, typename ARCH::u16_t( arch.template pop<OPSIZE>() )  ); }
 };
 
 template <class ARCH>
