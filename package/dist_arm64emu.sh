@@ -17,10 +17,10 @@ DEST_DIR=$(cd $DEST_DIR; pwd)
 UNISIM_DIR=$(cd ${MY_DIR}/..; pwd)
 UNISIM_TOOLS_DIR=${UNISIM_DIR}/unisim_tools
 UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
-UNISIM_SIMULATOR_DIR=${UNISIM_DIR}/unisim_simulators/cxx/armsec
+UNISIM_SIMULATORS_DIR=${UNISIM_DIR}/unisim_simulators/tlm2/arm64emu
 
-ARMSEC_VERSION=$(cat ${UNISIM_SIMULATOR_DIR}/VERSION)
-GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-armsec-${ARMSEC_VERSION}
+ARM64EMU_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
+GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-arm64emu-${ARM64EMU_VERSION}
 
 if test -z "${DISTCOPY}"; then
     DISTCOPY=cp
@@ -104,13 +104,14 @@ ostream \
 unistd.h \
 vector"
 
-UNISIM_LIB_ARMSEC_SOURCE_FILES="\
+UNISIM_LIB_ARM64EMU_SOURCE_FILES="\
 unisim/kernel/debug/debug.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/kernel/api/api.cc \
 unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_helper.cc \
+unisim/kernel/tlm2/tlm.cc \
 unisim/api/debug/debug_api.cc \
 unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
@@ -123,11 +124,15 @@ unisim/service/debug/gdb_server/gdb_server.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
 unisim/service/debug/debugger/debugger32.cc \
+unisim/service/debug/monitor/monitor.cc \
+unisim/service/debug/monitor/monitor_32.cc \
+unisim/service/debug/monitor/monitor_64.cc \
 unisim/service/profiling/addr_profiler/profiler32.cc \
-unisim/service/os/linux_os/arm_linux32.cc \
+unisim/service/os/linux_os/arm_linux64.cc \
 unisim/service/trap_handler/trap_handler.cc \
 unisim/service/trap_handler/trap_handler_identifier.cc \
 unisim/service/time/host_time/time.cc \
+unisim/service/time/sc_time/time.cc \
 unisim/util/debug/symbol_table_64.cc \
 unisim/util/debug/symbol_table_32.cc \
 unisim/util/debug/dwarf/class.cc \
@@ -174,71 +179,40 @@ unisim/util/endian/endian.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/random/random.cc \
 unisim/util/queue/queue.cc \
-unisim/component/cxx/processor/arm/disasm.cc \
-"
+unisim/component/tlm2/memory/ram/memory.cc \
+unisim/component/tlm2/memory/ram/memory_debug.cc \
+unisim/component/tlm2/processor/arm/cortex_a53/cpu.cc \
+unisim/component/cxx/processor/arm/vmsav8/disasm.cc \
+unisim/component/cxx/processor/arm/vmsav8/isa_arm64.cc \
+unisim/component/cxx/memory/ram/memory_64.cc \
+unisim/component/cxx/memory/ram/memory_32.cc"
 
-UNISIM_LIB_ARMSEC_ISA_THUMB_FILES="\
-unisim/component/cxx/processor/arm/isa/thumb/exception.isa \
-unisim/component/cxx/processor/arm/isa/thumb/load_store.isa \
-unisim/component/cxx/processor/arm/isa/thumb/multiply.isa \
-unisim/component/cxx/processor/arm/isa/thumb/misc_arithmetic.isa \
-unisim/component/cxx/processor/arm/isa/thumb/branch.isa \
-unisim/component/cxx/processor/arm/isa/thumb/branch_T1.isa \
-unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa \
-unisim/component/cxx/processor/arm/isa/thumb/ordering.isa \
-unisim/component/cxx/processor/arm/isa/thumb/profiling.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/branch.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/coprocessor.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/data_processing.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/exception.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/hints.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/load_store.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/misc_arithmetic.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/multiply.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/neon.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/ordering.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/status_register_access.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/vfp.isa \
-unisim/component/cxx/processor/arm/isa/thumb2/xscale.isa"
+UNISIM_LIB_ARM64EMU_ISA_ARM64_FILES="\
+unisim/component/cxx/processor/arm/isa/arm64/base.isa \
+unisim/component/cxx/processor/arm/isa/arm64/simd_fp.isa \
+unisim/component/cxx/processor/arm/isa/arm64/arm64.isa"
 
-UNISIM_LIB_ARMSEC_ISA_ARM32_FILES="\
-unisim/component/cxx/processor/arm/isa/arm32/branch.isa \
-unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa \
-unisim/component/cxx/processor/arm/isa/arm32/data_processing.isa \
-unisim/component/cxx/processor/arm/isa/arm32/dependency.isa \
-unisim/component/cxx/processor/arm/isa/arm32/exception.isa \
-unisim/component/cxx/processor/arm/isa/arm32/execution_latency.isa \
-unisim/component/cxx/processor/arm/isa/arm32/hints.isa \
-unisim/component/cxx/processor/arm/isa/arm32/load_store.isa \
-unisim/component/cxx/processor/arm/isa/arm32/misc_arithmetic.isa \
-unisim/component/cxx/processor/arm/isa/arm32/multiply.isa \
-unisim/component/cxx/processor/arm/isa/arm32/neon.isa \
-unisim/component/cxx/processor/arm/isa/arm32/ordering.isa \
-unisim/component/cxx/processor/arm/isa/arm32/profiling.isa \
-unisim/component/cxx/processor/arm/isa/arm32/specialization.isa \
-unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa \
-unisim/component/cxx/processor/arm/isa/arm32/vfp.isa \
-unisim/component/cxx/processor/arm/isa/arm32/xscale.isa \
-"
+UNISIM_LIB_ARM64EMU_ISA_FILES="${UNISIM_LIB_ARM64EMU_ISA_ARM64_FILES}"
 
-UNISIM_LIB_ARMSEC_ISA_FILES="${UNISIM_LIB_ARMSEC_ISA_THUMB_FILES} ${UNISIM_LIB_ARMSEC_ISA_ARM32_FILES}"
-
-UNISIM_LIB_ARMSEC_HEADER_FILES="${UNISIM_LIB_ARMSEC_ISA_FILES} \
+UNISIM_LIB_ARM64EMU_HEADER_FILES="${UNISIM_LIB_ARM64EMU_ISA_FILES} \
 unisim/kernel/debug/debug.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/api/api.hh \
+unisim/kernel/tlm/tlm.hh \
 unisim/kernel/service/service.hh \
 unisim/kernel/service/xml_helper.hh \
+unisim/kernel/tlm2/tlm.hh \
 unisim/api/debug/debug_api.hh \
 unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/sim_debugger/sim_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
+unisim/service/debug/monitor/monitor.hh \
 unisim/service/profiling/addr_profiler/profiler.hh \
 unisim/service/os/linux_os/linux.hh \
-unisim/service/os/linux_os/arm_linux32.hh \
+unisim/service/os/linux_os/arm_linux64.hh \
 unisim/service/trap_handler/trap_handler.hh \
 unisim/service/trap_handler/trap_handler_identifier.hh \
 unisim/service/trap_handler/trap_handler_identifier_interface.hh \
@@ -265,6 +239,7 @@ unisim/service/interfaces/symbol_table_lookup.hh \
 unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/interfaces/subprogram_lookup.hh \
 unisim/service/time/host_time/time.hh \
+unisim/service/time/sc_time/time.hh \
 unisim/util/likely/likely.hh \
 unisim/util/debug/symbol.hh \
 unisim/util/debug/data_object.hh \
@@ -327,7 +302,7 @@ unisim/util/loader/elf_loader/elf32.h \
 unisim/util/loader/elf_loader/elf64.h \
 unisim/util/loader/coff_loader/coff_loader.hh \
 unisim/util/loader/coff_loader/ti/ti.hh \
-unisim/util/os/linux_os/arm.hh \
+unisim/util/os/linux_os/aarch64.hh \
 unisim/util/os/linux_os/aux_table.hh \
 unisim/util/os/linux_os/environment.hh \
 unisim/util/os/linux_os/files_flags.hh \
@@ -349,25 +324,26 @@ unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/host_floating.hh \
 unisim/util/ieee754/ieee754.hh \
 unisim/util/inlining/inlining.hh \
+unisim/component/tlm2/memory/ram/memory.hh \
+unisim/component/tlm2/processor/arm/cortex_a53/cpu.hh \
 unisim/component/cxx/processor/arm/psr.hh \
 unisim/component/cxx/processor/arm/register_field.hh \
-unisim/component/cxx/processor/arm/cp15.hh \
-unisim/component/cxx/processor/arm/vmsav7/cp15.hh \
+unisim/component/cxx/processor/arm/cpu.hh \
+unisim/component/cxx/processor/arm/vmsav8/cpu.hh \
 unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \
 unisim/component/cxx/processor/arm/models.hh \
-unisim/component/cxx/processor/arm/disasm.hh \
-unisim/component/cxx/processor/arm/extregbank.hh \
-unisim/component/cxx/processor/arm/hostfloat.hh \
+unisim/component/cxx/processor/arm/vmsav8/disasm.hh \
 unisim/component/cxx/memory/ram/memory.hh \
 "
 
-UNISIM_LIB_ARMSEC_TEMPLATE_FILES="\
+UNISIM_LIB_ARM64EMU_TEMPLATE_FILES="\
 unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/sim_debugger/sim_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \
+unisim/service/debug/monitor/monitor.tcc \
 unisim/service/profiling/addr_profiler/profiler.tcc \
 unisim/service/os/linux_os/linux.tcc \
 unisim/util/debug/profile.tcc \
@@ -413,10 +389,11 @@ unisim/util/dictionary/dictionary.tcc \
 unisim/util/lexer/lexer.tcc \
 unisim/util/parser/parser.tcc \
 unisim/util/queue/queue.tcc \
-unisim/component/cxx/processor/arm/cpu.tcc \
-"
+unisim/component/cxx/processor/arm/vmsav8/cpu.tcc \
+unisim/component/tlm2/memory/ram/memory.tcc \
+unisim/component/cxx/memory/ram/memory.tcc"
 
-UNISIM_LIB_ARMSEC_M4_FILES="\
+UNISIM_LIB_ARM64EMU_M4_FILES="\
 m4/times.m4 \
 m4/endian.m4 \
 m4/cxxabi.m4 \
@@ -426,6 +403,7 @@ m4/boost_graph.m4 \
 m4/bsd_sockets.m4 \
 m4/curses.m4 \
 m4/libedit.m4 \
+m4/systemc.m4 \
 m4/with_boost.m4 \
 m4/cacti.m4 \
 m4/check_lib.m4 \
@@ -433,13 +411,13 @@ m4/get_exec_path.m4 \
 m4/real_path.m4 \
 m4/pthread.m4"
 
-UNISIM_LIB_ARMSEC_DATA_FILES="\
+UNISIM_LIB_ARM64EMU_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_arm_with_fpa.xml \
 unisim/service/debug/gdb_server/gdb_arm_with_neon.xml \
 unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml \
 "
 
-ARMSEC_EXTERNAL_HEADERS="\
+ARM64EMU_EXTERNAL_HEADERS="\
 assert.h \
 ctype.h \
 cxxabi.h \
@@ -478,47 +456,33 @@ queue \
 vector \
 string"
 
-UNISIM_SIMULATOR_ARMSEC_ISA_THUMB_FILES="\
-top_thumb.isa \
-"
-UNISIM_SIMULATOR_ARMSEC_ISA_ARM32_FILES="\
-top_arm32.isa \
-"
-
-UNISIM_SIMULATOR_ARMSEC_ISA_FILES="${UNISIM_SIMULATOR_ARMSEC_ISA_THUMB_FILES} ${UNISIM_SIMULATOR_ARMSEC_ISA_ARM32_FILES}"
-
-UNISIM_SIMULATOR_ARMSEC_SOURCE_FILES="\
+UNISIM_SIMULATORS_ARM64EMU_SOURCE_FILES="\
 main.cc \
-smart_types.cc \
+simulator.cc \
 "
-UNISIM_SIMULATOR_ARMSEC_HEADER_FILES="${UNISIM_SIMULATOR_ARMSEC_ISA_FILES} \
-smart_types.hh \
+UNISIM_SIMULATORS_ARM64EMU_HEADER_FILES="\
+simulator.hh \
 "
 
-UNISIM_SIMULATOR_ARMSEC_EXTRA_FILES="\
+UNISIM_SIMULATORS_ARM64EMU_EXTRA_FILES="\
 config.h.in \
-thumb2plan.sh \
-arm32plan.sh \
 "
 
-UNISIM_SIMULATOR_ARMSEC_TEMPLATE_FILES=
-UNISIM_SIMULATOR_ARMSEC_DATA_FILES="\
+UNISIM_SIMULATORS_ARM64EMU_TEMPLATE_FILES=
+UNISIM_SIMULATORS_ARM64EMU_DATA_FILES="\
 COPYING \
 NEWS \
 ChangeLog \
 "
 
-UNISIM_SIMULATOR_ARMSEC_TESTBENCH_FILES=""
-
-UNISIM_ARMSEC_ISA_ARM32_FILES="${UNISIM_LIB_ARMSEC_ISA_ARM32_FILES} ${UNISIM_SIMULATOR_ARMSEC_ISA_ARM32_FILES}"
-UNISIM_ARMSEC_ISA_THUMB_FILES="${UNISIM_LIB_ARMSEC_ISA_THUMB_FILES} ${UNISIM_SIMULATOR_ARMSEC_ISA_THUMB_FILES}"
+UNISIM_SIMULATORS_ARM64EMU_TESTBENCH_FILES=""
 
 has_to_build_configure=no
 has_to_build_genisslib_configure=no
-has_to_build_armsec_configure=no
+has_to_build_arm64emu_configure=no
 
 mkdir -p ${DEST_DIR}/genisslib
-mkdir -p ${DEST_DIR}/armsec
+mkdir -p ${DEST_DIR}/arm64emu
 
 UNISIM_TOOLS_GENISSLIB_FILES="${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES} ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES} ${UNISIM_TOOLS_GENISSLIB_DATA_FILES}"
 
@@ -538,60 +502,60 @@ for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
 	fi
 done
 
-UNISIM_LIB_ARMSEC_FILES="${UNISIM_LIB_ARMSEC_SOURCE_FILES} ${UNISIM_LIB_ARMSEC_HEADER_FILES} ${UNISIM_LIB_ARMSEC_TEMPLATE_FILES} ${UNISIM_LIB_ARMSEC_DATA_FILES}"
+UNISIM_LIB_ARM64EMU_FILES="${UNISIM_LIB_ARM64EMU_SOURCE_FILES} ${UNISIM_LIB_ARM64EMU_HEADER_FILES} ${UNISIM_LIB_ARM64EMU_TEMPLATE_FILES} ${UNISIM_LIB_ARM64EMU_DATA_FILES}"
 
-for file in ${UNISIM_LIB_ARMSEC_FILES}; do
-	mkdir -p "${DEST_DIR}/armsec/$(dirname ${file})"
+for file in ${UNISIM_LIB_ARM64EMU_FILES}; do
+	mkdir -p "${DEST_DIR}/arm64emu/$(dirname ${file})"
 	has_to_copy=no
-	if [ -e "${DEST_DIR}/armsec/${file}" ]; then
-		if [ "${UNISIM_LIB_DIR}/${file}" -nt "${DEST_DIR}/armsec/${file}" ]; then
+	if [ -e "${DEST_DIR}/arm64emu/${file}" ]; then
+		if [ "${UNISIM_LIB_DIR}/${file}" -nt "${DEST_DIR}/arm64emu/${file}" ]; then
 			has_to_copy=yes
 		fi
 	else
 		has_to_copy=yes
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/armsec/${file}"
-		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/armsec/${file}" || exit
+		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/arm64emu/${file}"
+		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/arm64emu/${file}" || exit
 	fi
 done
 
-UNISIM_SIMULATOR_ARMSEC_FILES="${UNISIM_SIMULATOR_ARMSEC_SOURCE_FILES} ${UNISIM_SIMULATOR_ARMSEC_HEADER_FILES} ${UNISIM_SIMULATOR_ARMSEC_EXTRA_FILES} ${UNISIM_SIMULATOR_ARMSEC_TEMPLATE_FILES} ${UNISIM_SIMULATOR_ARMSEC_DATA_FILES} ${UNISIM_SIMULATOR_ARMSEC_TESTBENCH_FILES}"
+UNISIM_SIMULATORS_ARM64EMU_FILES="${UNISIM_SIMULATORS_ARM64EMU_MAIN_SOURCE_FILES} ${UNISIM_SIMULATORS_ARM64EMU_SOURCE_FILES} ${UNISIM_SIMULATORS_ARM64EMU_HEADER_FILES} ${UNISIM_SIMULATORS_ARM64EMU_EXTRA_FILES} ${UNISIM_SIMULATORS_ARM64EMU_TEMPLATE_FILES} ${UNISIM_SIMULATORS_ARM64EMU_DATA_FILES} ${UNISIM_SIMULATORS_ARM64EMU_TESTBENCH_FILES}"
 
-for file in ${UNISIM_SIMULATOR_ARMSEC_FILES}; do
+for file in ${UNISIM_SIMULATORS_ARM64EMU_FILES}; do
 	has_to_copy=no
-	if [ -e "${DEST_DIR}/armsec/${file}" ]; then
-		if [ "${UNISIM_SIMULATOR_DIR}/${file}" -nt "${DEST_DIR}/armsec/${file}" ]; then
+	if [ -e "${DEST_DIR}/arm64emu/${file}" ]; then
+		if [ "${UNISIM_SIMULATORS_DIR}/${file}" -nt "${DEST_DIR}/arm64emu/${file}" ]; then
 			has_to_copy=yes
 		fi
 	else
 		has_to_copy=yes
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_SIMULATOR_DIR}/${file} ==> ${DEST_DIR}/armsec/${file}"
-		${DISTCOPY} -f "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/armsec/${file}" || exit
+		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/arm64emu/${file}"
+		${DISTCOPY} -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/arm64emu/${file}" || exit
 	fi
 done
 
-for file in ${UNISIM_SIMULATOR_ARMSEC_DATA_FILES}; do
+for file in ${UNISIM_SIMULATORS_ARM64EMU_DATA_FILES}; do
 	has_to_copy=no
 	if [ -e "${DEST_DIR}/${file}" ]; then
-		if [ "${UNISIM_SIMULATOR_DIR}/${file}" -nt "${DEST_DIR}/${file}" ]; then
+		if [ "${UNISIM_SIMULATORS_DIR}/${file}" -nt "${DEST_DIR}/${file}" ]; then
 			has_to_copy=yes
 		fi
 	else
 		has_to_copy=yes
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_SIMULATOR_DIR}/${file} ==> ${DEST_DIR}/${file}"
-		${DISTCOPY} -f "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}" || exit
+		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/${file}"
+		${DISTCOPY} -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/${file}" || exit
 	fi
 done
 
 
 mkdir -p ${DEST_DIR}/config
-mkdir -p ${DEST_DIR}/armsec/config
-mkdir -p ${DEST_DIR}/armsec/m4
+mkdir -p ${DEST_DIR}/arm64emu/config
+mkdir -p ${DEST_DIR}/arm64emu/m4
 mkdir -p ${DEST_DIR}/genisslib/config
 mkdir -p ${DEST_DIR}/genisslib/m4
 
@@ -611,19 +575,19 @@ for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
 	fi
 done
 
-for file in ${UNISIM_LIB_ARMSEC_M4_FILES}; do
+for file in ${UNISIM_LIB_ARM64EMU_M4_FILES}; do
 	has_to_copy=no
-	if [ -e "${DEST_DIR}/armsec/${file}" ]; then
-		if [ "${UNISIM_LIB_DIR}/${file}" -nt  "${DEST_DIR}/armsec/${file}" ]; then
+	if [ -e "${DEST_DIR}/arm64emu/${file}" ]; then
+		if [ "${UNISIM_LIB_DIR}/${file}" -nt  "${DEST_DIR}/arm64emu/${file}" ]; then
 			has_to_copy=yes
 		fi
 	else
 		has_to_copy=yes
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/armsec/${file}"
-		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/armsec/${file}" || exit
-		has_to_build_armsec_configure=yes
+		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/arm64emu/${file}"
+		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/arm64emu/${file}" || exit
+		has_to_build_arm64emu_configure=yes
 	fi
 done
 
@@ -637,7 +601,7 @@ EOF
 
 cat << EOF > "${DEST_DIR}/README"
 This package contains:
-  - armsec: an ARM V5 user level simulator
+  - arm64emu: an ARM64 V5 user level simulator
   - GenISSLib (will not be installed): an instruction set simulator generator
 See INSTALL for installation instructions.
 EOF
@@ -659,10 +623,11 @@ Requirements:
   - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
   - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
   - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
+  - Core SystemC Language >= 2.3.0 (http://www.systemc.org)
 
 
 Building instructions:
-  $ ./configure
+  $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-tlm20=<path-to-TLM-library-install-dir>
   $ make
 
 Installing (optional):
@@ -699,7 +664,7 @@ fi
 
 if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "Generating configure.ac"
-	echo "AC_INIT([UNISIM Armsec Standalone simulator], [${ARMSEC_VERSION}], [Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Réda Nouacer <reda.nouacer@cea.fr>], [unisim-armsec])" > "${DEST_DIR}/configure.ac"
+	echo "AC_INIT([UNISIM ARM64emu Standalone simulator], [${ARM64EMU_VERSION}], [Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Réda Nouacer <reda.nouacer@cea.fr>], [unisim-arm64emu])" > "${DEST_DIR}/configure.ac"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${CONFIGURE_AC}"
@@ -709,12 +674,12 @@ if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "AC_PROG_INSTALL" >> "${CONFIGURE_AC}"
 	echo "AC_PROG_LN_S" >> "${CONFIGURE_AC}"
 	echo "AC_CONFIG_SUBDIRS([genisslib])"  >> "${CONFIGURE_AC}" 
-	echo "AC_CONFIG_SUBDIRS([armsec])"  >> "${CONFIGURE_AC}" 
+	echo "AC_CONFIG_SUBDIRS([arm64emu])"  >> "${CONFIGURE_AC}" 
 	echo "AC_CONFIG_FILES([Makefile])" >> "${CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${CONFIGURE_AC}"
 
 	echo "Generating Makefile.am"
-	echo "SUBDIRS=genisslib armsec" > "${MAKEFILE_AM}"
+	echo "SUBDIRS=genisslib arm64emu" > "${MAKEFILE_AM}"
 	echo "EXTRA_DIST = configure.cross" >> "${MAKEFILE_AM}"
 
 	echo "Building configure"
@@ -728,7 +693,7 @@ if [ "${has_to_build_configure_cross}" = "yes" ]; then
 HERE=\$(pwd)
 MY_DIR=\$(cd \$(dirname \$0); pwd)
 
-# remove --host, --with-zlib, --with-libxml2, --with-boost, --with-ncurses, --with-libedit from command line arguments
+# remove --host, --with-systemc, --with-tlm20, --with-zlib, --with-libxml2, --with-boost, --with-ncurses, --with-libedit from command line arguments
 host=""
 help=""
 i=0
@@ -739,7 +704,7 @@ do
 		--host=*)
 			host=\$(printf "%s" "\${arg}" | cut -f 2- -d '=')
 			;;
-		--with-zlib=* | --with-libxml2=* | --with-boost=* | --with-ncurses=* | --with-libedit=*)
+		--with-systemc=* | --with-tlm20=* | --with-zlib=* | --with-libxml2=* | --with-boost=* | --with-ncurses=* | --with-libedit=*)
 			;;
 		--help=* | --help)
 			help="yes"
@@ -779,17 +744,17 @@ if test \${STATUS} -ne 0; then
 fi
 
 if test "\${help}" = "yes"; then
-	echo "=== configure help for armsec"
+	echo "=== configure help for arm64emu"
 else
-	echo "=== configuring in armsec (\${HERE}/armsec) for \${host} host system type"
-	echo "\$(basename \$0): running \${MY_DIR}/armsec/configure \$@"
+	echo "=== configuring in arm64emu (\${HERE}/arm64emu) for \${host} host system type"
+	echo "\$(basename \$0): running \${MY_DIR}/arm64emu/configure \$@"
 fi
 
-if test ! -d \${HERE}/armsec; then
-	mkdir \${HERE}/armsec
+if test ! -d \${HERE}/arm64emu; then
+	mkdir \${HERE}/arm64emu
 fi
-cd \${HERE}/armsec
-\${MY_DIR}/armsec/configure "\$@"
+cd \${HERE}/arm64emu
+\${MY_DIR}/arm64emu/configure "\$@"
 STATUS="\$?"
 cd "\${HERE}"
 if test \${STATUS} -ne 0; then
@@ -803,26 +768,26 @@ fi
 echo "\$(basename \$0): creating Makefile.cross"
 cat << EOF_MAKEFILE_CROSS > Makefile.cross
 #!/usr/bin/make -f
-all: armsec-all
-clean: genisslib-clean armsec-clean
-distclean: genisslib-distclean armsec-distclean
+all: arm64emu-all
+clean: genisslib-clean arm64emu-clean
+distclean: genisslib-distclean arm64emu-distclean
 	rm -f \${HERE}/Makefile.cross
-install: armsec-install
+install: arm64emu-install
 
 genisslib-all:
 	@\\\$(MAKE) -C \${HERE}/genisslib all
-armsec-all: genisslib-all
-	@\\\$(MAKE) -C \${HERE}/armsec all
+arm64emu-all: genisslib-all
+	@\\\$(MAKE) -C \${HERE}/arm64emu all
 genisslib-clean:
 	@\\\$(MAKE) -C \${HERE}/genisslib clean
-armsec-clean:
-	@\\\$(MAKE) -C \${HERE}/armsec clean
+arm64emu-clean:
+	@\\\$(MAKE) -C \${HERE}/arm64emu clean
 genisslib-distclean:
 	@\\\$(MAKE) -C \${HERE}/genisslib distclean
-armsec-distclean:
-	@\\\$(MAKE) -C \${HERE}/armsec distclean
-armsec-install:
-	@\\\$(MAKE) -C \${HERE}/armsec install
+arm64emu-distclean:
+	@\\\$(MAKE) -C \${HERE}/arm64emu distclean
+arm64emu-install:
+	@\\\$(MAKE) -C \${HERE}/arm64emu install
 EOF_MAKEFILE_CROSS
 
 chmod +x Makefile.cross
@@ -903,159 +868,164 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 fi
 
 
-# armsec
+# arm64emu
 
-ARMSEC_CONFIGURE_AC="${DEST_DIR}/armsec/configure.ac"
-ARMSEC_MAKEFILE_AM="${DEST_DIR}/armsec/Makefile.am"
+ARM64EMU_CONFIGURE_AC="${DEST_DIR}/arm64emu/configure.ac"
+ARM64EMU_MAKEFILE_AM="${DEST_DIR}/arm64emu/Makefile.am"
 
 
-if [ ! -e "${ARMSEC_CONFIGURE_AC}" ]; then
-	has_to_build_armsec_configure=yes
+if [ ! -e "${ARM64EMU_CONFIGURE_AC}" ]; then
+	has_to_build_arm64emu_configure=yes
 else
-	if [ "$0" -nt "${ARMSEC_CONFIGURE_AC}" ]; then
-		has_to_build_armsec_configure=yes
+	if [ "$0" -nt "${ARM64EMU_CONFIGURE_AC}" ]; then
+		has_to_build_arm64emu_configure=yes
 	fi
 fi
 
-if [ ! -e "${ARMSEC_MAKEFILE_AM}" ]; then
-	has_to_build_armsec_configure=yes
+if [ ! -e "${ARM64EMU_MAKEFILE_AM}" ]; then
+	has_to_build_arm64emu_configure=yes
 else
-	if [ "$0" -nt "${ARMSEC_MAKEFILE_AM}" ]; then
-		has_to_build_armsec_configure=yes
+	if [ "$0" -nt "${ARM64EMU_MAKEFILE_AM}" ]; then
+		has_to_build_arm64emu_configure=yes
 	fi
 fi
 
-if [ "${has_to_build_armsec_configure}" = "yes" ]; then
-	echo "Generating armsec configure.ac"
-	echo "AC_INIT([UNISIM Armsec C++ simulator], [${ARMSEC_VERSION}], [Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Réda Nouacer <reda.nouacer@cea.fr>], [unisim-armsec-core])" > "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_CONFIG_AUX_DIR(config)" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_CONFIG_HEADERS([config.h])" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_CANONICAL_BUILD" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_CANONICAL_HOST" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_CANONICAL_TARGET" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_PATH_PROGS(SH, sh)" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_PROG_CXX" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_PROG_RANLIB" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_PROG_INSTALL" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_PROG_LN_S" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_LANG([C++])" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AM_PROG_CC_C_O" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_CHECK_HEADERS([${ARMSEC_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_PTHREAD(main)" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TIMES(main)" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ENDIAN(main)" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CURSES(main)" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBEDIT(main)" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BSD_SOCKETS(main)" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ZLIB(main)" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBXML2(main)" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CXXABI(main)" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "UNISIM_WITH_BOOST(main)" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CACTI(main)" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_SUBST(GENISSLIB_PATH)" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-armsec-${ARMSEC_VERSION}\"], [path of shared data relative to bin directory])" >> "${ARMSEC_CONFIGURE_AC}"
-	SIM_VERSION_MAJOR=$(printf "${ARMSEC_VERSION}" | cut -f 1 -d .)
-	SIM_VERSION_MINOR=$(printf "${ARMSEC_VERSION}" | cut -f 2 -d .)
-	SIM_VERSION_PATCH=$(printf "${ARMSEC_VERSION}" | cut -f 3 -d .)
-	SIM_VERSION="${ARMSEC_VERSION}"
+if [ "${has_to_build_arm64emu_configure}" = "yes" ]; then
+	echo "Generating arm64emu configure.ac"
+	echo "AC_INIT([UNISIM ARM64emu C++ simulator], [${ARM64EMU_VERSION}], [Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Réda Nouacer <reda.nouacer@cea.fr>], [unisim-arm64emu-core])" > "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_CONFIG_AUX_DIR(config)" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_CONFIG_HEADERS([config.h])" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_CANONICAL_BUILD" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_CANONICAL_HOST" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_CANONICAL_TARGET" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_PATH_PROGS(SH, sh)" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_PROG_CXX" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_PROG_INSTALL" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "LT_INIT" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_SUBST(LIBTOOL_DEPS)" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_PROG_LN_S" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_LANG([C++])" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AM_PROG_CC_C_O" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_CHECK_HEADERS([${ARM64EMU_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_PTHREAD(main)" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_TIMES(main)" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_ENDIAN(main)" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CURSES(main)" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_LIBEDIT(main)" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_BSD_SOCKETS(main)" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_ZLIB(main)" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_LIBXML2(main)" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CXXABI(main)" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "UNISIM_WITH_BOOST(main)" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CACTI(main)" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_SYSTEMC" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_SUBST(GENISSLIB_PATH)" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-arm64emu-${ARM64EMU_VERSION}\"], [path of shared data relative to bin directory])" >> "${ARM64EMU_CONFIGURE_AC}"
+	SIM_VERSION_MAJOR=$(printf "${ARM64EMU_VERSION}" | cut -f 1 -d .)
+	SIM_VERSION_MINOR=$(printf "${ARM64EMU_VERSION}" | cut -f 2 -d .)
+	SIM_VERSION_PATCH=$(printf "${ARM64EMU_VERSION}" | cut -f 3 -d .)
+	SIM_VERSION="${ARM64EMU_VERSION}"
 	SIM_VERSION_CODENAME="Triumphalis Tarraco"
 	SIM_AUTHOR="Daniel Gracia Perez (daniel.gracia-perez@cea.fr)"
-	SIM_PROGRAM_NAME="UNISIM Armsec"
+	SIM_PROGRAM_NAME="UNISIM ARM64Emu"
 	SIM_LICENSE="BSD (See file COPYING)"
 	SIM_COPYRIGHT="Copyright (C) 2007-2010, Commissariat a l'Energie Atomique"
-	SIM_DESCRIPTION="UNISIM ARMv5 User Level Simulator"
-	SIM_SCHEMATIC="armsec/fig_schematic.pdf"
-	echo "AC_DEFINE([SIM_VERSION_MAJOR], [${SIM_VERSION_MAJOR}], [Version major number])" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_VERSION_MINOR], [${SIM_VERSION_MINOR}], [Version minor number])" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_VERSION_PATCH], [${SIM_VERSION_PATCH}], [Version patch number])" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_VERSION], [\"${SIM_VERSION}\"], [Version])" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_VERSION_CODENAME], [\"${SIM_VERSION_CODENAME}\"], [Version code name])" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_AUTHOR], [\"${SIM_AUTHOR}\"], [Author])" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_PROGRAM_NAME], [\"${SIM_PROGRAM_NAME}\"], [Program name])" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_COPYRIGHT], [\"${SIM_COPYRIGHT}\"], [Copyright])" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_LICENSE], [\"${SIM_LICENSE}\"], [License])" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_DESCRIPTION], [\"${SIM_DESCRIPTION}\"], [Description])" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_SCHEMATIC], [\"${SIM_SCHEMATIC}\"], [Schematic])" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_CONFIG_FILES([Makefile])" >> "${ARMSEC_CONFIGURE_AC}"
-	echo "AC_OUTPUT" >> "${ARMSEC_CONFIGURE_AC}"
+	SIM_DESCRIPTION="UNISIM ARM64v5 User Level Simulator"
+	SIM_SCHEMATIC="arm64emu/fig_schematic.pdf"
+	echo "AC_DEFINE([SIM_VERSION_MAJOR], [${SIM_VERSION_MAJOR}], [Version major number])" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_VERSION_MINOR], [${SIM_VERSION_MINOR}], [Version minor number])" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_VERSION_PATCH], [${SIM_VERSION_PATCH}], [Version patch number])" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_VERSION], [\"${SIM_VERSION}\"], [Version])" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_VERSION_CODENAME], [\"${SIM_VERSION_CODENAME}\"], [Version code name])" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_AUTHOR], [\"${SIM_AUTHOR}\"], [Author])" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_PROGRAM_NAME], [\"${SIM_PROGRAM_NAME}\"], [Program name])" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_COPYRIGHT], [\"${SIM_COPYRIGHT}\"], [Copyright])" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_LICENSE], [\"${SIM_LICENSE}\"], [License])" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_DESCRIPTION], [\"${SIM_DESCRIPTION}\"], [Description])" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_SCHEMATIC], [\"${SIM_SCHEMATIC}\"], [Schematic])" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_CONFIG_FILES([Makefile])" >> "${ARM64EMU_CONFIGURE_AC}"
+	echo "AC_OUTPUT" >> "${ARM64EMU_CONFIGURE_AC}"
 
-	AM_ARMSEC_VERSION=$(printf ${ARMSEC_VERSION} | sed -e 's/\./_/g')
-	echo "Generating armsec Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${ARMSEC_MAKEFILE_AM}"
-	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${ARMSEC_MAKEFILE_AM}"
-	echo "noinst_LIBRARIES = libarmsec-${ARMSEC_VERSION}.a" >> "${ARMSEC_MAKEFILE_AM}"
-	echo "libarmsec_${AM_ARMSEC_VERSION}_a_SOURCES = ${UNISIM_LIB_ARMSEC_SOURCE_FILES}" >> "${ARMSEC_MAKEFILE_AM}"
-	echo "bin_PROGRAMS = unisim-armsec-${ARMSEC_VERSION}" >> "${ARMSEC_MAKEFILE_AM}"
-	echo "unisim_armsec_${AM_ARMSEC_VERSION}_SOURCES = ${UNISIM_SIMULATOR_ARMSEC_SOURCE_FILES}" >> "${ARMSEC_MAKEFILE_AM}"
-	echo "unisim_armsec_${AM_ARMSEC_VERSION}_CPPFLAGS = -DSIM_EXECUTABLE" >> "${ARMSEC_MAKEFILE_AM}"
-	echo "unisim_armsec_${AM_ARMSEC_VERSION}_LDADD = libarmsec-${ARMSEC_VERSION}.a" >> "${ARMSEC_MAKEFILE_AM}"
-
-	echo "noinst_HEADERS = ${UNISIM_LIB_ARMSEC_HEADER_FILES} ${UNISIM_LIB_ARMSEC_TEMPLATE_FILES} ${UNISIM_SIMULATOR_ARMSEC_HEADER_FILES} ${UNISIM_SIMULATOR_ARMSEC_TEMPLATE_FILES}" >> "${ARMSEC_MAKEFILE_AM}"
-	echo "EXTRA_DIST = ${UNISIM_LIB_ARMSEC_M4_FILES}" >> "${ARMSEC_MAKEFILE_AM}"
-	echo "sharedir = \$(prefix)/share/unisim-armsec-${ARMSEC_VERSION}" >> "${ARMSEC_MAKEFILE_AM}"
-	echo "dist_share_DATA = ${UNISIM_LIB_ARMSEC_DATA_FILES} ${UNISIM_SIMULATOR_ARMSEC_DATA_FILES}" >> "${ARMSEC_MAKEFILE_AM}"
-
-	echo -n "BUILT_SOURCES=" >> "${ARMSEC_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/top_arm32.hh " >> "${ARMSEC_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/top_arm32.tcc " >> "${ARMSEC_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/top_thumb.hh " >> "${ARMSEC_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/top_thumb.tcc " >> "${ARMSEC_MAKEFILE_AM}"
-	echo >> "${ARMSEC_MAKEFILE_AM}"
+	AM_ARM64EMU_VERSION=$(printf ${ARM64EMU_VERSION} | sed -e 's/\./_/g')
+	echo "Generating arm64emu Makefile.am"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${ARM64EMU_MAKEFILE_AM}"
+	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "LIBTOOL_DEPS = @LIBTOOL_DEPS@" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "libtool: \$(LIBTOOL_DEPS)" >> "${ARM64EMU_MAKEFILE_AM}"
+	printf "\t\$(SHELL) ./config.status libtool\n" >> "${ARM64EMU_MAKEFILE_AM}"
+	# arm64emu
+	echo "bin_PROGRAMS = unisim-arm64emu-${ARM64EMU_VERSION}" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "unisim_arm64emu_${AM_ARM64EMU_VERSION}_CPPFLAGS = -DSIM_EXECUTABLE" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "unisim_arm64emu_${AM_ARM64EMU_VERSION}_LDFLAGS = -DSIM_EXECUTABLE -static-libtool-libs" >> "${ARM64EMU_MAKEFILE_AM}"
+ 	echo "unisim_arm64emu_${AM_ARM64EMU_VERSION}_SOURCES = ${UNISIM_SIMULATORS_ARM64EMU_SOURCE_FILES}" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "unisim_arm64emu_${AM_ARM64EMU_VERSION}_LDADD = libunisim-arm64emu-${ARM64EMU_VERSION}.la" >> "${ARM64EMU_MAKEFILE_AM}"
+	# libunisim-arm64emu
+	echo "noinst_LTLIBRARIES = libunisim-arm64emu-${ARM64EMU_VERSION}.la" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "libunisim_arm64emu_${AM_ARM64EMU_VERSION}_la_SOURCES = ${UNISIM_LIB_ARM64EMU_SOURCE_FILES}" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "libunisim_arm64emu_${AM_ARM64EMU_VERSION}_la_LDFLAGS = -static" >> "${ARM64EMU_MAKEFILE_AM}"
+	# libunisim-arm64emu-plugin
+	echo "lib_LTLIBRARIES = libunisim-arm64emu-plugin-${ARM64EMU_VERSION}.la" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "libunisim_arm64emu_plugin_${AM_ARM64EMU_VERSION}_la_SOURCES = ${UNISIM_LIB_ARM64EMU_SOURCE_FILES} ${UNISIM_SIMULATORS_ARM64EMU_SOURCE_FILES}" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "libunisim_arm64emu_plugin_${AM_ARM64EMU_VERSION}_la_CPPFLAGS = -DSIM_PLUGIN" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "libunisim_arm64emu_plugin_${AM_ARM64EMU_VERSION}_la_LDFLAGS = -shared -no-undefined" >> "${ARM64EMU_MAKEFILE_AM}"
 	
-	echo -n "CLEANFILES=" >> "${ARMSEC_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/top_arm32.hh " >> "${ARMSEC_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/top_arm32.tcc " >> "${ARMSEC_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/top_thumb.hh " >> "${ARMSEC_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/top_thumb.tcc " >> "${ARMSEC_MAKEFILE_AM}"
-	echo >> "${ARMSEC_MAKEFILE_AM}"
+	echo "noinst_HEADERS = ${UNISIM_LIB_ARM64EMU_HEADER_FILES} ${UNISIM_LIB_ARM64EMU_TEMPLATE_FILES} ${UNISIM_SIMULATORS_ARM64EMU_HEADER_FILES} ${UNISIM_SIMULATORS_ARM64EMU_TEMPLATE_FILES}" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "EXTRA_DIST = ${UNISIM_LIB_ARM64EMU_M4_FILES}" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "sharedir = \$(prefix)/share/unisim-arm64emu-${ARM64EMU_VERSION}" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "dist_share_DATA = ${UNISIM_LIB_ARM64EMU_DATA_FILES} ${UNISIM_SIMULATORS_ARM64EMU_DATA_FILES}" >> "${ARM64EMU_MAKEFILE_AM}"
+
+	echo -n "BUILT_SOURCES=" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.hh " >> "${ARM64EMU_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.tcc " >> "${ARM64EMU_MAKEFILE_AM}"
+	echo >> "${ARM64EMU_MAKEFILE_AM}"
 	
-	echo "\$(top_builddir)/top_arm32.tcc: \$(top_builddir)/top_arm32.hh" >> "${ARMSEC_MAKEFILE_AM}"
-	echo "\$(top_builddir)/top_arm32.hh: ${UNISIM_ARMSEC_ISA_ARM32_FILES}" >> "${ARMSEC_MAKEFILE_AM}"
-	printf "\t" >> "${ARMSEC_MAKEFILE_AM}"
-	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/top_arm32 -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_arm32.isa" >> "${ARMSEC_MAKEFILE_AM}"
-
-	echo "\$(top_builddir)/top_thumb.tcc: \$(top_builddir)/top_thumb.hh" >> "${ARMSEC_MAKEFILE_AM}"
-	echo "\$(top_builddir)/top_thumb.hh: ${UNISIM_ARMSEC_ISA_THUMB_FILES}" >> "${ARMSEC_MAKEFILE_AM}"
-	printf "\t" >> "${ARMSEC_MAKEFILE_AM}"
-	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/top_thumb -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_thumb.isa" >> "${ARMSEC_MAKEFILE_AM}"
-
-	echo "all-local: all-local-bin all-local-share" >> "${ARMSEC_MAKEFILE_AM}"
-	echo "clean-local: clean-local-bin clean-local-share" >> "${ARMSEC_MAKEFILE_AM}"
-	echo "all-local-bin: \$(bin_PROGRAMS)" >> "${ARMSEC_MAKEFILE_AM}"
-	printf "\t@PROGRAMS='\$(bin_PROGRAMS)'; \\\\\n" >> "${ARMSEC_MAKEFILE_AM}"
-	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >> "${ARMSEC_MAKEFILE_AM}"
-	printf "\trm -f \"\$(top_builddir)/bin/\$\$(basename \$\${PROGRAM})\"; \\\\\n" >> "${ARMSEC_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >> "${ARMSEC_MAKEFILE_AM}"
-	printf "\tcp -f \"\$(top_builddir)/\$\${PROGRAM}\" \$(top_builddir)/bin/\$\$(basename \"\$\${PROGRAM}\"); \\\\\n" >> "${ARMSEC_MAKEFILE_AM}"
-	printf "\tdone\n" >> "${ARMSEC_MAKEFILE_AM}"
-	echo "clean-local-bin:" >> "${ARMSEC_MAKEFILE_AM}"
-	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >> "${ARMSEC_MAKEFILE_AM}"
-	printf "\trm -rf '\$(top_builddir)/bin'; \\\\\n" >> "${ARMSEC_MAKEFILE_AM}"
-	printf "\tfi\n" >> "${ARMSEC_MAKEFILE_AM}"
-	echo "all-local-share: \$(dist_share_DATA)" >> "${ARMSEC_MAKEFILE_AM}"
-	printf "\t@SHARED_DATAS='\$(dist_share_DATA)'; \\\\\n" >> "${ARMSEC_MAKEFILE_AM}"
-	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >> "${ARMSEC_MAKEFILE_AM}"
-	printf "\trm -f \"\$(top_builddir)/share/unisim-armsec-${ARMSEC_VERSION}/\$\$(basename \$\${SHARED_DATA})\"; \\\\\n" >> "${ARMSEC_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(top_builddir)/share/unisim-armsec-${ARMSEC_VERSION}'; \\\\\n" >> "${ARMSEC_MAKEFILE_AM}"
-	printf "\tcp -f \"\$(top_srcdir)/\$\${SHARED_DATA}\" \$(top_builddir)/share/unisim-armsec-${ARMSEC_VERSION}/\$\$(basename \"\$\${SHARED_DATA}\"); \\\\\n" >> "${ARMSEC_MAKEFILE_AM}"
-	printf "\tdone\n" >> "${ARMSEC_MAKEFILE_AM}"
-	echo "clean-local-share:" >> "${ARMSEC_MAKEFILE_AM}"
-	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >> "${ARMSEC_MAKEFILE_AM}"
-	printf "\trm -rf '\$(top_builddir)/share'; \\\\\n" >> "${ARMSEC_MAKEFILE_AM}"
-	printf "\tfi\n" >> "${ARMSEC_MAKEFILE_AM}"
-
-	${DISTCOPY} ${DEST_DIR}/INSTALL ${DEST_DIR}/armsec
-	${DISTCOPY} ${DEST_DIR}/README ${DEST_DIR}/armsec
-	${DISTCOPY} ${DEST_DIR}/AUTHORS ${DEST_DIR}/armsec
+	echo -n "CLEANFILES=" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.hh " >> "${ARM64EMU_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.tcc " >> "${ARM64EMU_MAKEFILE_AM}"
+	echo >> "${ARM64EMU_MAKEFILE_AM}"
 	
-	echo "Building armsec configure"
-	${SHELL} -c "cd ${DEST_DIR}/armsec && aclocal -I m4 && autoconf --force && automake -ac"
+	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.hh" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64.hh: ${UNISIM_LIB_ARM64EMU_ISA_ARM64_FILES}" >> "${ARM64EMU_MAKEFILE_AM}"
+	printf "\t" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm64 -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm64 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm64/arm64.isa" >> "${ARM64EMU_MAKEFILE_AM}"
+
+	echo "all-local: all-local-bin all-local-share" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "clean-local: clean-local-bin clean-local-share" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "all-local-bin: \$(bin_PROGRAMS)" >> "${ARM64EMU_MAKEFILE_AM}"
+	printf "\t@PROGRAMS='\$(bin_PROGRAMS)'; \\\\\n" >> "${ARM64EMU_MAKEFILE_AM}"
+	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >> "${ARM64EMU_MAKEFILE_AM}"
+	printf "\trm -f \"\$(top_builddir)/bin/\$\$(basename \$\${PROGRAM})\"; \\\\\n" >> "${ARM64EMU_MAKEFILE_AM}"
+	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >> "${ARM64EMU_MAKEFILE_AM}"
+	printf "\tcp -f \"\$(top_builddir)/\$\${PROGRAM}\" \$(top_builddir)/bin/\$\$(basename \"\$\${PROGRAM}\"); \\\\\n" >> "${ARM64EMU_MAKEFILE_AM}"
+	printf "\tdone\n" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "clean-local-bin:" >> "${ARM64EMU_MAKEFILE_AM}"
+	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >> "${ARM64EMU_MAKEFILE_AM}"
+	printf "\trm -rf '\$(top_builddir)/bin'; \\\\\n" >> "${ARM64EMU_MAKEFILE_AM}"
+	printf "\tfi\n" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "all-local-share: \$(dist_share_DATA)" >> "${ARM64EMU_MAKEFILE_AM}"
+	printf "\t@SHARED_DATAS='\$(dist_share_DATA)'; \\\\\n" >> "${ARM64EMU_MAKEFILE_AM}"
+	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >> "${ARM64EMU_MAKEFILE_AM}"
+	printf "\trm -f \"\$(top_builddir)/share/unisim-arm64emu-${ARM64EMU_VERSION}/\$\$(basename \$\${SHARED_DATA})\"; \\\\\n" >> "${ARM64EMU_MAKEFILE_AM}"
+	printf "\tmkdir -p '\$(top_builddir)/share/unisim-arm64emu-${ARM64EMU_VERSION}'; \\\\\n" >> "${ARM64EMU_MAKEFILE_AM}"
+	printf "\tcp -f \"\$(top_srcdir)/\$\${SHARED_DATA}\" \$(top_builddir)/share/unisim-arm64emu-${ARM64EMU_VERSION}/\$\$(basename \"\$\${SHARED_DATA}\"); \\\\\n" >> "${ARM64EMU_MAKEFILE_AM}"
+	printf "\tdone\n" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "clean-local-share:" >> "${ARM64EMU_MAKEFILE_AM}"
+	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >> "${ARM64EMU_MAKEFILE_AM}"
+	printf "\trm -rf '\$(top_builddir)/share'; \\\\\n" >> "${ARM64EMU_MAKEFILE_AM}"
+	printf "\tfi\n" >> "${ARM64EMU_MAKEFILE_AM}"
+
+	${DISTCOPY} ${DEST_DIR}/INSTALL ${DEST_DIR}/arm64emu
+	${DISTCOPY} ${DEST_DIR}/README ${DEST_DIR}/arm64emu
+	${DISTCOPY} ${DEST_DIR}/AUTHORS ${DEST_DIR}/arm64emu
+	
+	echo "Building arm64emu configure"
+	${SHELL} -c "cd ${DEST_DIR}/arm64emu && aclocal -I m4 && libtoolize --force && autoconf --force && automake -ac"
 fi
 
 echo "Distribution is up-to-date"

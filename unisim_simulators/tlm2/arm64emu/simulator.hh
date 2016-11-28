@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 #ifndef SIMULATOR_HH_
@@ -48,7 +48,7 @@
 #include "unisim/util/likely/likely.hh"
 #include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/time/host_time/time.hh"
-#include "unisim/service/os/linux_os/arm_linux32.hh"
+#include "unisim/service/os/linux_os/linux.hh"
 #include "unisim/service/trap_handler/trap_handler.hh"
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -69,10 +69,9 @@
 #include <signal.h>
 #endif
 
-class Simulator
+struct Simulator
   : public unisim::kernel::service::Simulator
 {
- public:
   Simulator(int argc, char **argv);
   virtual ~Simulator();
   int Run();
@@ -90,7 +89,7 @@ class Simulator
   static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
   typedef unisim::component::tlm2::processor::arm::cortex_a9::CPU CPU;
   typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> MEMORY;
-  typedef unisim::service::os::linux_os::ArmLinux32 ArmLinux32;
+  typedef unisim::service::os::linux_os::Linux<uint32_t, uint32_t> LINUX_OS;
 
   typedef unisim::service::debug::gdb_server::GDBServer<uint32_t> GDB_SERVER;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<uint32_t> INLINE_DEBUGGER;
@@ -103,7 +102,7 @@ class Simulator
   MEMORY *memory;
   unisim::service::time::sc_time::ScTime *time;
   unisim::service::time::host_time::HostTime *host_time;
-  ArmLinux32* linux_os;
+  LINUX_OS *linux_os;
   TEE_MEMORY_ACCESS_REPORTING *tee_memory_access_reporting;
 
   sc_signal<bool>              nirq_signal;

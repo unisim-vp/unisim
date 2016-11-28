@@ -1019,6 +1019,7 @@ CPU::CallSupervisor( uint16_t imm )
         {
           SetTargetSystem(new ArmTarget( "arm-eabi", *this ));
         }
+        ~ArmLinuxOS() { delete GetTargetSystem(); }
       } arm_linux_os( this );
     
       logger << DebugInfo << "PC: 0x" << std::hex << GetCIA() << EndDebugInfo;

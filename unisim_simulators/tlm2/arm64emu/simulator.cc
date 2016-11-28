@@ -36,8 +36,6 @@
 
 bool debug_enabled;
 
-using namespace std;
-
 bool Simulator::enable_monitor = false;
 
 Simulator::Simulator(int argc, char **argv)
@@ -46,7 +44,7 @@ Simulator::Simulator(int argc, char **argv)
   , memory(0)
   , time(0)
   , host_time(0)
-  , linux_os()
+  , linux_os(0)
   , tee_memory_access_reporting(0)
   , nirq_signal("nIRQm")
   , nfiq_signal("nFIQm")
@@ -70,7 +68,7 @@ Simulator::Simulator(int argc, char **argv)
   memory = new MEMORY("memory");
   time = new unisim::service::time::sc_time::ScTime("time");
   host_time = new unisim::service::time::host_time::HostTime("host-time");
-  linux_os = new ArmLinux32("linux-os");
+  linux_os = new LINUX_OS("linux-os");
 
   param_enable_gdb_server = new unisim::kernel::service::Parameter<bool>(
       "enable-gdb-server", 0,
@@ -243,8 +241,8 @@ Run()
   }
   catch(std::runtime_error& e)
   {
-    cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
-    cerr << e.what() << endl;
+    std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
+    std::cerr << e.what() << std::endl;
   }
 
   if ( !inline_debugger )
@@ -256,26 +254,26 @@ Run()
 #endif
   }
 
-  cerr << "Simulation finished" << endl;
+  std::cerr << "Simulation finished" << std::endl;
 
   double time_stop = host_time->GetTime();
   double spent_time = time_stop - time_start;
   simulation_spent_time += spent_time;
 
-  cerr << "Simulation run-time parameters:" << endl;
-  DumpParameters(cerr);
-  cerr << endl;
-  cerr << "Simulation formulas:" << endl;
-  DumpFormulas(cerr);
-  cerr << endl;
-  cerr << "Simulation statistics:" << endl;
-  DumpStatistics(cerr);
-  cerr << endl;
+  std::cerr << "Simulation run-time parameters:" << std::endl;
+  DumpParameters(std::cerr);
+  std::cerr << std::endl;
+  std::cerr << "Simulation formulas:" << std::endl;
+  DumpFormulas(std::cerr);
+  std::cerr << std::endl;
+  std::cerr << "Simulation statistics:" << std::endl;
+  DumpStatistics(std::cerr);
+  std::cerr << std::endl;
 
-  cerr << "simulation time: " << simulation_spent_time << " seconds" << endl;
-  cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-  cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
-  cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+  std::cerr << "simulation time: " << simulation_spent_time << " seconds" << std::endl;
+  std::cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << std::endl;
+  std::cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << std::endl;
+  std::cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
 
   return exit_status;
 }
@@ -309,8 +307,8 @@ Run(double time, sc_time_unit unit)
   }
   catch(std::runtime_error& e)
   {
-    cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
-    cerr << e.what() << endl;
+    std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
+    std::cerr << e.what() << std::endl;
   }
 
   if ( !inline_debugger )
@@ -326,9 +324,9 @@ Run(double time, sc_time_unit unit)
   double spent_time = time_stop - time_start;
   simulation_spent_time += spent_time;
 
-  cerr << "Simulation statistics:" << endl;
-  DumpStatistics(cerr);
-  cerr << endl;
+  std::cerr << "Simulation statistics:" << std::endl;
+  DumpStatistics(std::cerr);
+  std::cerr << std::endl;
 
   return exit_status;
 }
@@ -507,23 +505,23 @@ BOOL WINAPI Simulator::ConsoleCtrlHandler(DWORD dwCtrlType)
 	switch(dwCtrlType)
 	{
 		case CTRL_C_EVENT:
-			cerr << "Interrupted by Ctrl-C" << endl;
+			std::cerr << "Interrupted by Ctrl-C" << std::endl;
 			stop = true;
 			break;
 		case CTRL_BREAK_EVENT:
-			cerr << "Interrupted by Ctrl-Break" << endl;
+			std::cerr << "Interrupted by Ctrl-Break" << std::endl;
 			stop = true;
 			break;
 		case CTRL_CLOSE_EVENT:
-			cerr << "Interrupted by a console close" << endl;
+			std::cerr << "Interrupted by a console close" << std::endl;
 			stop = true;
 			break;
 		case CTRL_LOGOFF_EVENT:
-			cerr << "Interrupted because of logoff" << endl;
+			std::cerr << "Interrupted because of logoff" << std::endl;
 			stop = true;
 			break;
 		case CTRL_SHUTDOWN_EVENT:
-			cerr << "Interrupted because of shutdown" << endl;
+			std::cerr << "Interrupted because of shutdown" << std::endl;
 			stop = true;
 			break;
 	}
@@ -533,7 +531,7 @@ BOOL WINAPI Simulator::ConsoleCtrlHandler(DWORD dwCtrlType)
 #else
 void Simulator::SigIntHandler(int signum)
 {
-	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
+	std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
 	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
 }
 #endif

@@ -53,9 +53,6 @@
 
 #include "unisim/service/os/linux_os/linux.hh"
 #include "unisim/util/os/linux_os/linux.hh"
-#include "unisim/util/os/linux_os/arm.hh"
-#include "unisim/util/os/linux_os/ppc.hh"
-#include "unisim/util/os/linux_os/i386.hh"
 
 #define LOCATION 	" - location = " << __FUNCTION__ << ":unisim/service/os/linux_os/linux_os.tcc:" << __LINE__
 
@@ -110,9 +107,6 @@ Linux(const char *name, unisim::kernel::service::Object *parent)
     , param_stdout_pipe_filename("stdout-pipe-filename", this, stdout_pipe_filename, "stdout pipe filename")
     , param_stderr_pipe_filename("stderr-pipe-filename", this, stderr_pipe_filename, "stderr pipe filename")
     , linuxlib_(0)
-    , system_("")
-    , param_system_("system", this, system_, "Emulated system architecture "
-                   "available values are \"arm\", \"arm-eabi\", \"powerpc\" and \"i386\"")
     , endianness_(unisim::util::endian::E_LITTLE_ENDIAN)
     , param_endianness_("endianness", this, endianness_,
                    "The endianness of the binary loaded. Available values are:"
@@ -190,9 +184,9 @@ Linux(const char *name, unisim::kernel::service::Object *parent)
 
 /** Destructor. */
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux() {
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux()
+{
   delete linuxlib_;
-  delete target_system_;
 
   typename std::vector<std::string *>::iterator argv_it;
   for(argv_it = argv_.begin(); argv_it != argv_.end(); argv_it++) {
@@ -257,21 +251,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
     return false;
   }
 
-  // check that the given system is supported
-  // NOTE: This should not be done because the linux library is already doing it
-  if ((system_.compare("arm") != 0) &&
-      (system_.compare("arm-eabi") != 0) &&
-      (system_.compare("ppc") != 0))
-    {
-      logger_ << DebugError
-              << "Unsupported system (" << system_ << "), this service only supports"
-              << " arm and ppc systems" << std::endl
-              << LOCATION
-              << EndDebugError;
-      return false;
-    }
-
-  linuxlib_ = new unisim::util::os::linux_os::Linux<ADDRESS_TYPE, PARAMETER_TYPE>(logger_, registers_import_, memory_import_, memory_injection_import_);
+  linuxlib_ = new LinuxImpl(logger_, registers_import_, memory_import_, memory_injection_import_);
   
   // set up the different linuxlib parameters
   linuxlib_->SetVerbose(verbose_);
@@ -328,32 +308,30 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
     }
   }
 
-  // set the system type of the target simulator (should be the same than the
-  // binary)
-  {
-    typedef unisim::util::os::linux_os::Linux<ADDRESS_TYPE, PARAMETER_TYPE> linux_type;
-    
-    if      ((system_.compare("arm") == 0) or (system_.compare("arm-eabi") == 0))
-      {
-        target_system_ = new unisim::util::os::linux_os::ARMTS<linux_type>( system_, *linuxlib_ );
-      }
-    else if (system_.compare("ppc") == 0)
-      {
-        target_system_ = new unisim::util::os::linux_os::PPCTS<linux_type>( *linuxlib_ );
-      }
-    else if (system_.compare("i386") == 0)
-      {
-        target_system_ = new unisim::util::os::linux_os::I386TS<linux_type>( *linuxlib_ );
-      }
-    else {
-      logger_ << DebugError
-              << "System type not supported (\"" << system_ << "\")."
-              << EndDebugError;
-      return false;
-    }
-    
-    linuxlib_->SetTargetSystem(target_system_);
-  }
+  // setup target specific implementation
+  
+  this->SetupTargetSystem();
+  
+  // {
+  //   if      ((system_.compare("arm") == 0) or (system_.compare("arm-eabi") == 0))
+  //     {
+  //       target_system_ = new unisim::util::os::linux_os::ARMTS<linux_type>( system_, *linuxlib_ );
+  //     }
+  //   else if (system_.compare("ppc") == 0)
+  //     {
+  //       target_system_ = new unisim::util::os::linux_os::PPCTS<linux_type>( *linuxlib_ );
+  //     }
+  //   else if (system_.compare("i386") == 0)
+  //     {
+  //       target_system_ = new unisim::util::os::linux_os::I386TS<linux_type>( *linuxlib_ );
+  //     }
+  //   else {
+  //     logger_ << DebugError
+  //             << "System type not supported (\"" << system_ << "\")."
+  //             << EndDebugError;
+  //     return false;
+  //   }
+  // }
 
   // set the endianness of the target simulator
   linuxlib_->SetEndianness(endianness_);
