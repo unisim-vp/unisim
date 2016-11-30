@@ -309,15 +309,7 @@ namespace armsec
       RegWrite( RegID _id, Expr const& _value, unsigned _bitsize ) : id(_id), value(_value), bitsize(_bitsize) {}
       RegWrite( char const* name, Expr const& _value, unsigned _bitsize ) : id(name), value(_value), bitsize(_bitsize) {}
       virtual int GenCode( Label& label, std::ostream& sink ) const
-      {
-        std::ostringstream buffer;
-        buffer << id.c_str() << "<" << std::dec << bitsize << "> := ";
-        value->GenCode( label, buffer );
-        std::string& insn = label.insn();
-        buffer << "; goto " << label.next();
-        insn = buffer.str();
-        return 0;
-      }
+      { sink << id.c_str() << "<" << std::dec << bitsize << "> := " << value.InsCode(label); return 0; }
       virtual intptr_t cmp( ExprNode const& brhs ) const
       {
         RegWrite const& rhs = dynamic_cast<RegWrite const&>( brhs );
@@ -737,10 +729,6 @@ namespace armsec
     UpdateStatusSub( state, res, lhs, -rhs );
   }
   
-  struct NoStreamError {};
-  struct NoStreamBuffer : public std::streambuf { NoStreamBuffer() {} int overflow(int c) { throw NoStreamError(); } };  
-  struct NoStream : public std::ostream { NoStreamBuffer m_buf; NoStream() : std::ostream( 0 ), m_buf() { rdbuf( &m_buf ); } };
-
   void
   PathNode::GenCode( Label const& start, Label const& after, ExprStack& pending ) const
   {
@@ -782,7 +770,7 @@ namespace armsec
             std::ostringstream buffer;
             buffer << tmp->ref << " := ";
             rw->value->GenCode( current, buffer );
-            std::string& insn = current.insn();
+            Label insn( current );
             buffer << "; goto " << current.next();
             insn = buffer.str();
             
@@ -799,7 +787,7 @@ namespace armsec
           std::ostringstream buffer;
           int retsize = (*itr)->GenCode( current, buffer );
           if (retsize) throw 0;
-          std::string& insn = current.insn();
+          Label insn( current );
           buffer << "; goto " << current.next();
           insn = buffer.str();
         }
@@ -814,7 +802,7 @@ namespace armsec
       {
         std::ostringstream buffer;
         buffer << "if " << cond.InsCode(current) << " ";
-        std::string& ifinsn = current.insn();
+        Label ifinsn( current );
     
         current = after;
         if (nia.good() or (after.valid() and (pending.size() > frame.s)))
@@ -846,7 +834,7 @@ namespace armsec
         idx -= 1;
         std::ostringstream buffer;
         pending[idx]->GenCode(current, buffer);
-        std::string& insn = current.insn();
+        Label insn( current );
         int next = ((idx > frame.s) or nia.good()) ? current.next() : after.id;
         buffer << "; goto " << next;
         insn = buffer.str();
@@ -860,14 +848,14 @@ namespace armsec
         idx -= 1;
         std::ostringstream buffer;
         pending[idx]->GenCode(current, buffer);
-        std::string& insn = current.insn();
+        Label insn( current );
         buffer << "; goto " << current.next();
         insn = buffer.str();
       }
     
     std::ostringstream buffer;
     buffer << "goto (" << nia.InsCode(current) << ")";
-    std::string& insn = current.insn();
+    current = buffer.str();
   }
 }
 

@@ -21,11 +21,9 @@ namespace armsec
   template <bool test> struct StaticAssert {};
   template <> struct StaticAssert<true> { static void check() {}; };
   
-  template <class T, class U>
-  struct CmpTypes { static bool const same = false; };
+  template <class T, class U>  struct CmpTypes { static bool const same = false; };
 
-  template <class T>
-  struct CmpTypes<T,T> { static bool const same = true; };
+  template <class T>  struct CmpTypes<T,T> { static bool const same = true; };
   
   struct Label
   {
@@ -33,9 +31,9 @@ namespace armsec
     
     Label( Program& _program ) : program(&_program), id(-1) {}
     
-    std::string& insn() const { return program->at(id); }
-    int next() { id = program->size(); program->push_back(std::string()); return id; }
+    int next() { id = program->size(); program->push_back(""); return id; }
     bool valid() const { return id >= 0; }
+    void operator = (std::string const& src) { program->at(id) = src; }
     
     Program* program;
     int id;

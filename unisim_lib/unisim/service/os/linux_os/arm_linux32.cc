@@ -65,5 +65,3 @@ ArmLinux32::~ArmLinux32()
 } // end of os namespace
 } // end of service namespace
 } // end of unisim namespace
-
-template class unisim::service::os::linux_os::Linux<uint64_t, uint64_t>;
