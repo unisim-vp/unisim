@@ -729,6 +729,63 @@ namespace armsec
     UpdateStatusSub( state, res, lhs, -rhs );
   }
   
+  struct BSR : public ExprNode
+  {
+    BSR( Expr const& _src ) : src(_src) {}
+    
+    virtual int GenCode( Label& label, std::ostream& sink ) const
+    {
+      Label tail(label);
+      {
+        std::ostringstream buffer;
+        buffer << "bsr_in<32> := " << src.InsCode(tail);
+        Label insn( tail );
+        buffer << "; goto " << tail.next();
+        insn = buffer.str();
+      }
+      {
+        std::ostringstream code;
+        Label insn( tail );
+        code << "bsr_out<32> := 32<32> ; goto " << tail.next();
+        insn = code.str();
+      }
+      Label exit(tail);
+      exit.next();
+      {
+        std::ostringstream code;
+        Label insn( tail );
+        code << "if (bsr_in<32> = 0<32>) goto " << exit.id << " else goto " << tail.next();
+        insn = code.str();
+      }
+      Label loop(tail);
+      {
+        std::ostringstream code;
+        code << "bsr_out<32> := bsr_out<32> - 1<32> ; goto " << tail.next();
+        loop = code.str();
+      }
+      {
+        std::ostringstream code;
+        Label insn( tail );
+        code << "if ((bsr_in<32> >>u bsr_out<32>){0,0}) goto " << exit.id << " else goto " << loop.id;
+        insn = code.str();
+      }
+      label = exit;
+      
+      sink << "bsr_out<32>";
+      
+      return 32;
+    }
+    virtual intptr_t cmp( ExprNode const& rhs ) const { return src.cmp( dynamic_cast<BSR const&>( rhs ).src ); }
+    virtual ExprNode* GetConstNode() { return 0; }
+    
+    Expr src;
+  };
+  
+  U32 BitScanReverse( U32 const& value )
+  {
+    return U32( new BSR( value.expr ) );
+  }
+  
   void
   PathNode::GenCode( Label const& start, Label const& after, ExprStack& pending ) const
   {
@@ -858,7 +915,6 @@ namespace armsec
     current = buffer.str();
   }
 }
-
 
 struct ARMISA : public unisim::component::cxx::processor::arm::isa::arm32::Decoder<armsec::State>
 {

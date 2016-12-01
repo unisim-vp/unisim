@@ -625,9 +625,6 @@ namespace armsec
   template <typename UTP>
   UTP RotateRight( UTP const& value, UTP const& shift ) { return UTP( new BONode( "Ror", value.expr, shift.expr ) ); }
   
-  template <typename UTP>
-  UTP BitScanReverse( UTP const& value ) { return UTP( new UONode( "BSR", value.expr ) ); }
-  
   struct FP
   {
     struct DefaultNaNNode : public ExprNode
