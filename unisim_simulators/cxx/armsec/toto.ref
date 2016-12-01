@@ -18,8 +18,8 @@
 (opcode,0x2afffffd)
 (mnemonic,"bcs	0x8510")
 (0x00008514,0) if c<1>  goto 2 else goto 1
-(0x00008514,2) goto (0x00008510)
 (0x00008514,1) goto (0x00008518)
+(0x00008514,2) goto (0x00008510)
 ### 0x8518 0xe0901001
 (address,0x00008518)
 (opcode,0xe0901001)
@@ -47,8 +47,8 @@
 (opcode,0x1afffffa)
 (mnemonic,"bne	0x8510")
 (0x00008520,0) if (not z<1>)  goto 2 else goto 1
-(0x00008520,2) goto (0x00008510)
 (0x00008520,1) goto (0x00008524)
+(0x00008520,2) goto (0x00008510)
 ### 0x8524 0xe12fff1e
 (address,0x00008524)
 (opcode,0xe12fff1e)

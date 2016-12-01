@@ -185,7 +185,7 @@ unisim/service/tee/stmt_lookup/tee_32.cc \
 unisim/service/tee/backtrace/tee_32.cc \
 unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/service/telnet/telnet.cc \
-unisim/service/os/linux_os/linux.cc \
+unisim/service/os/linux_os/powerpc_linux32.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_wfpu.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_wommu_wfpu.cc \
 unisim/component/cxx/processor/powerpc/floating.cc \
@@ -354,13 +354,11 @@ unisim/util/loader/elf_loader/elf32_loader.hh \
 unisim/util/loader/elf_loader/elf64_loader.hh \
 unisim/util/loader/coff_loader/coff_loader.hh \
 unisim/util/loader/coff_loader/ti/ti.hh \
-unisim/util/os/linux_os/arm.hh \
 unisim/util/os/linux_os/aux_table.hh \
 unisim/util/os/linux_os/environment.hh \
 unisim/util/os/linux_os/files_flags.hh \
 unisim/util/os/linux_os/linux.hh \
 unisim/util/os/linux_os/ppc.hh \
-unisim/util/os/linux_os/i386.hh \
 unisim/util/os/linux_os/errno.hh \
 unisim/util/dictionary/dictionary.hh \
 unisim/util/lexer/lexer.hh \
@@ -418,6 +416,7 @@ unisim/service/tee/backtrace/tee.hh \
 unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/telnet/telnet.hh \
 unisim/service/os/linux_os/linux.hh \
+unisim/service/os/linux_os/powerpc_linux32.hh \
 unisim/component/cxx/memory/ram/memory.hh \
 unisim/component/cxx/processor/powerpc/floating.hh \
 unisim/component/cxx/processor/powerpc/config.hh \

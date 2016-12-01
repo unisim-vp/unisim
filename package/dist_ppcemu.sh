@@ -169,7 +169,7 @@ unisim/service/power/cache_dynamic_power.cc \
 unisim/service/power/cache_leakage_power.cc \
 unisim/service/power/cache_power_estimator.cc \
 unisim/service/power/cache_profile.cc \
-unisim/service/os/linux_os/linux.cc \
+unisim/service/os/linux_os/powerpc_linux32.cc \
 unisim/service/loader/elf_loader/elf32_loader.cc \
 unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/component/cxx/processor/powerpc/config.cc \
@@ -295,7 +295,6 @@ unisim/util/loader/elf_loader/elf32_loader.hh \
 unisim/util/loader/elf_loader/elf64_loader.hh \
 unisim/util/loader/coff_loader/coff_loader.hh \
 unisim/util/loader/coff_loader/ti/ti.hh \
-unisim/util/os/linux_os/arm.hh \
 unisim/util/os/linux_os/aux_table.hh \
 unisim/util/os/linux_os/environment.hh \
 unisim/util/os/linux_os/files_flags.hh \
@@ -343,6 +342,7 @@ unisim/service/power/cache_dynamic_energy.hh \
 unisim/service/power/cache_dynamic_power.hh \
 unisim/service/power/cache_leakage_power.hh \
 unisim/service/os/linux_os/linux.hh \
+unisim/service/os/linux_os/powerpc_linux32.hh \
 unisim/component/cxx/memory/ram/memory.hh \
 unisim/component/cxx/processor/powerpc/floating.hh \
 unisim/component/cxx/processor/powerpc/config.hh \
