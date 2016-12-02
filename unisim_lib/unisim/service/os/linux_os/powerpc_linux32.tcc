@@ -31,9 +31,41 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <unisim/service/os/linux_os/powerpc_linux32.hh>
-#include <unisim/service/os/linux_os/powerpc_linux32.tcc>
-#include <unisim/service/os/linux_os/linux.tcc>
+#ifndef __UNISIM_SERVICE_OS_LINUX_OS_POWERPC_LINUX32_TCC__
+#define __UNISIM_SERVICE_OS_LINUX_OS_POWERPC_LINUX32_TCC__
 
-template class unisim::service::os::linux_os::PowerPCLinux32<uint32_t, uint32_t>;
+#include <unisim/util/os/linux_os/ppc.hh>
+#include <inttypes.h>
 
+
+namespace unisim {
+namespace service {
+namespace os {
+namespace linux_os {
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+PowerPCLinux32<ADDRESS_TYPE,PARAMETER_TYPE>::PowerPCLinux32( const char* name, unisim::kernel::service::Object* parent )
+  : unisim::kernel::service::Object( name, parent )
+  , Linux<uint32_t, uint32_t>( name, parent )
+{
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+PowerPCLinux32<ADDRESS_TYPE,PARAMETER_TYPE>::SetupTargetSystem()
+{
+  Linux<ADDRESS_TYPE,PARAMETER_TYPE>::linuxlib_->SetTargetSystem( new unisim::util::os::linux_os::PPCTS<Linux<uint32_t, uint32_t>::LinuxImpl>( *Linux<ADDRESS_TYPE,PARAMETER_TYPE>::linuxlib_ ) );
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+PowerPCLinux32<ADDRESS_TYPE,PARAMETER_TYPE>::~PowerPCLinux32()
+{
+  delete Linux<ADDRESS_TYPE,PARAMETER_TYPE>::linuxlib_->GetTargetSystem();
+}
+
+} // end of linux_os namespace
+} // end of os namespace
+} // end of service namespace
+} // end of unisim namespace
+
+#endif // __UNISIM_SERVICE_OS_LINUX_OS_POWERPC_LINUX32_TCC__

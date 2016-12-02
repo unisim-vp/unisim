@@ -523,6 +523,7 @@ unisim/service/tee/stmt_lookup/tee.tcc \
 unisim/service/tee/backtrace/tee.tcc \
 unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/service/os/linux_os/linux.tcc \
+unisim/service/os/linux_os/powerpc_linux32.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_cache.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_debugging.tcc \

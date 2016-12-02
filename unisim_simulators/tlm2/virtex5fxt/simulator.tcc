@@ -228,7 +228,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	//  - Multiformat loader
 	loader = enable_linux_os ? 0 : new MultiFormatLoader<CPU_ADDRESS_TYPE>("loader");
 	//  - Linux loader and Linux ABI translator
-	linux_os = enable_linux_os ? new Linux<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE>("linux-os") : 0;
+	linux_os = enable_linux_os ? new unisim::service::os::linux_os::PowerPCLinux32<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE>("linux-os") : 0;
 	//  - debugger
 	debugger = (enable_linux_os || enable_inline_debugger || enable_gdb_server) ? new Debugger<CPU_ADDRESS_TYPE>("debugger") : 0;
 	//  - GDB server

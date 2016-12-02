@@ -43,7 +43,8 @@ namespace service {
 namespace os {
 namespace linux_os {
 
-struct PowerPCLinux32 : public Linux<uint32_t, uint32_t>
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+struct PowerPCLinux32 : public Linux<ADDRESS_TYPE, PARAMETER_TYPE>
 {
   PowerPCLinux32( const char* name, unisim::kernel::service::Object* parent = 0 );
   ~PowerPCLinux32();
