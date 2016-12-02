@@ -42,6 +42,15 @@
 #include <unisim/util/inlining/inlining.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/register.hh>
+#include <unisim/service/interfaces/debug_control.hh>
+#include <unisim/service/interfaces/symbol_table_lookup.hh>
+#include <unisim/service/interfaces/memory.hh>
+#include <unisim/service/interfaces/disassembly.hh>
+#include <unisim/service/interfaces/linux_os.hh>
+#include <unisim/service/interfaces/memory_injection.hh>
+// #include <unisim/service/interfaces/memory_access_reporting.hh>
+// #include <unisim/service/interfaces/debug_control.hh>
+// #include <unisim/service/interfaces/trap_reporting.hh>
 #include <map>
 #include <set>
 #include <stdexcept>
@@ -63,6 +72,16 @@ template <typename CONFIG>
 struct CPU
   : public virtual unisim::kernel::service::Object
   , public unisim::kernel::service::Service<unisim::service::interfaces::Registers>
+  // , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryAccessReportingControl>
+  // , public unisim::kernel::service::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t> >
+  // , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
+  // , public unisim::kernel::service::Client<unisim::service::interfaces::DebugControl<uint64_t> >
+  // , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
+  // , public unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<uint64_t> >
+  // , public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint64_t> >
+  // , public unisim::kernel::service::Client<unisim::service::interfaces::Memory<uint64_t> >
+  // , public unisim::kernel::service::Client<unisim::service::interfaces::LinuxOS>
+  // , public unisim::kernel::service::Client<unisim::service::interfaces::SymbolTableLookup<uint64_t> >
 {
   typedef CONFIG Config;
   // typedef simfloat::FP FP;
@@ -93,7 +112,29 @@ struct CPU
   unisim::kernel::logger::Logger logger;
   /** Verbosity of the CPU implementation */
   bool verbose;
-  
+
+  virtual unisim::service::interfaces::Register* GetRegister( const char* name );
+  virtual void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner );
+		
+  //=====================================================================
+  //=                  public service imports/exports                   =
+  //=====================================================================
+
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugControl<uint64_t> >          debug_control_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting>                    instruction_counter_trap_reporting_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint64_t> >     symbol_table_lookup_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<uint64_t> >                memory_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::LinuxOS>                          linux_os_import;
+  // unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting>                    exception_trap_reporting_import;
+
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers>                        registers_export;
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint64_t> >                memory_export;
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> >           disasm_export;
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl>     memory_access_reporting_control_export;
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryInjection<uint64_t> >       memory_injection_export;
+
+
 };
 
 } // end of namespace vmsav8

@@ -37,7 +37,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_CPU_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_CPU_TCC__
 
-#include <unisim/component/cxx/processor/arm/vmsav8/disasm.hh>
+#include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
@@ -70,6 +70,57 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   , Service<Registers>(name, parent)
   , logger(*this)
   , verbose(false)
+    /*Imports*/
+  , debug_control_import("debug-control-import", this)
+  , instruction_counter_trap_reporting_import("instruction-counter-trap-reporting-import", this)
+  , symbol_table_lookup_import("symbol-table-lookup-import", this)
+  , memory_import("memory-import", this)
+  , linux_os_import("linux-os-import", this)
+  , memory_access_reporting_import("memory-access-reporting-import", this)
+    /*Exports*/
+  , registers_export("registers-export", this)
+  , memory_export("memory-export", this)
+  , disasm_export("disasm-export", this)
+  , memory_access_reporting_control_export("memory-access-reporting-control-export", this)
+  , memory_injection_export("memory-injection-export", this)
+  // , Service<MemoryAccessReportingControl>(name, parent)
+  // , Client<MemoryAccessReporting<uint32_t> >(name, parent)
+  // , Service<MemoryInjection<uint32_t> >(name, parent)
+  // , Client<unisim::service::interfaces::DebugControl<uint32_t> >(name, parent)
+  // , Client<TrapReporting>(name, parent)
+  // , Service<Disassembly<uint32_t> >(name, parent)
+  // , Service< Memory<uint32_t> >(name, parent)
+  // , Client< Memory<uint32_t> >(name, parent)
+  // , Client<LinuxOS>(name, parent)
+  // , Client<SymbolTableLookup<uint32_t> >(name, parent)
+  // , exception_trap_reporting_import("exception-trap-reporting-import", this)
+  // , requires_finished_instruction_reporting(false)
+  // , requires_memory_access_reporting(false)
+  // // , icache("icache", this)
+  // // , dcache("dcache", this)
+  // , arm32_decoder()
+  // , thumb_decoder()
+  // , csselr(0)
+  // , DFSR()
+  // , IFSR()
+  // , DFAR()
+  // , IFAR()
+  // , mmu()
+  // , instruction_counter(0)
+  // , trap_on_instruction_counter(0)
+  // , ipb_base_address( -1 )
+  // , linux_printk_buf_addr( 0 )
+  // , linux_printk_buf_size( 0 )
+  // , linux_printk_snooping( false )
+  // , halt_on_addr( uint32_t(-1) )
+  // , halt_on_location()
+  // , param_verbose("verbose", this, this->PCPU::verbose, "Activate the verbose system.")
+  // , param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter,
+  //                                     "Produce a trap when the given instruction count is reached.")
+  // , param_linux_printk_snooping( "linux-printk-snooping", this, linux_printk_snooping, "Activate the printk snooping" )
+  // , param_halt_on_location( "halt-on-location", this, halt_on_location,
+  //                           "Tell the CPU to halt simulation on a specific instruction (address or symbol)." )
+  // , stat_instruction_counter("instruction-counter", this, instruction_counter, "Number of instructions executed.")
 {
 }
 
@@ -82,6 +133,54 @@ template <class CONFIG>
 CPU<CONFIG>::~CPU()
 {
 }
+
+/** Get a register by its name.
+ * Gets a register interface to the register specified by name.
+ *
+ * @param name the name of the requested register
+ *
+ * @return a pointer to the RegisterInterface corresponding to name
+ */
+template <class CONFIG>
+unisim::service::interfaces::Register*
+CPU<CONFIG>::GetRegister(const char *name)
+{
+  // RegistersRegistry::iterator itr = registers_registry.find( name );
+  // if (itr != registers_registry.end())
+  //   return itr->second;
+  // else
+    return 0;
+}
+
+/** Scan available registers for the Registers interface
+ * 
+ *  Allows clients of the Registers interface to scan available
+ * register by providing a suitable RegisterScanner interface.
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+{
+  scanner.Append( this->GetRegister( "r0" ) );
+  scanner.Append( this->GetRegister( "r1" ) );
+  scanner.Append( this->GetRegister( "r2" ) );
+  scanner.Append( this->GetRegister( "r3" ) );
+  scanner.Append( this->GetRegister( "r4" ) );
+  scanner.Append( this->GetRegister( "r5" ) );
+  scanner.Append( this->GetRegister( "r6" ) );
+  scanner.Append( this->GetRegister( "r7" ) );
+  scanner.Append( this->GetRegister( "r8" ) );
+  scanner.Append( this->GetRegister( "r9" ) );
+  scanner.Append( this->GetRegister( "r10" ) );
+  scanner.Append( this->GetRegister( "r11" ) );
+  scanner.Append( this->GetRegister( "r12" ) );
+  scanner.Append( this->GetRegister( "sp" ) );
+  scanner.Append( this->GetRegister( "lr" ) );
+  scanner.Append( this->GetRegister( "pc" ) );
+  // TODO: should expose CPSR (and most probably the APSR view)
+  // scanner.Append( this->GetRegister( "cpsr" ) );
+}
+
 
 } // end of namespace vmsav8
 } // end of namespace arm

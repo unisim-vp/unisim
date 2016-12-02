@@ -88,13 +88,43 @@ struct CPU
    **************************************************************************/
   
   SC_HAS_PROCESS(CPU);
-  CPU(sc_module_name const& name, Object* parent);
+  CPU( sc_module_name const& name, Object* parent=0 );
   virtual ~CPU();
   
   // Master port to the bus port
-  tlm::tlm_initiator_socket<32> master_socket;
+  tlm::tlm_initiator_socket<64> master_socket;
 	
   void Run();
+
+private:
+  // virtual method implementation to handle backward path of
+  //   transactions sent through the master_port
+  virtual sync_enum_type nb_transport_bw(transaction_type &trans, phase_type &phase, sc_core::sc_time &time);
+  // virtual method implementation to handle backward path of the dmi
+  //   mechanism
+  virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+
+  /**************************
+   * SystemC / TLM mechanic *
+   **************************/
+
+  sc_time cpu_time;
+  sc_time bus_time;
+  sc_time quantum_time;
+  sc_time cpu_cycle_time;
+  sc_time bus_cycle_time;
+  sc_time nice_time;
+  double ipc;
+  bool enable_dmi;
+  sc_time time_per_instruction;
+  
+  /** Event used to signalize the end of a read transaction.
+   * Method PrRead waits for this event once the read transaction has been 
+   *   sent, and the nb_transport_bw notifies on it when the read transaction 
+   *   is finished. 
+   */
+  sc_event end_read_rsp_event;
+  unisim::kernel::tlm2::DMIRegionCache dmi_region_cache;
 
 };
 

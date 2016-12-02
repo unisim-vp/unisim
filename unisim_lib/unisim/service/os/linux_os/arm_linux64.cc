@@ -32,7 +32,7 @@
  */
 
 #include <unisim/service/os/linux_os/arm_linux64.hh>
-#include <unisim/util/os/linux_os/arm64.hh>
+#include <unisim/util/os/linux_os/aarch64.hh>
 #include <inttypes.h>
 
 #include <unisim/service/os/linux_os/linux.tcc>

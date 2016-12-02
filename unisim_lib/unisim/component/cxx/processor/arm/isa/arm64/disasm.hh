@@ -39,7 +39,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_DISASM_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_DISASM_HH__
 
-#include <iosfwd>
+#include <iostream>
 #include <inttypes.h>
 
 namespace unisim {
@@ -47,13 +47,10 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
-
 namespace isa {
 namespace arm64 {
+
   struct FPImm;
-}
-}
-namespace vmsav8 {
 
   struct DisasmObject
   {
@@ -71,11 +68,7 @@ namespace vmsav8 {
   struct DisasmCond : public DisasmObject
   {
     DisasmCond( unsigned _rid ) : rid(_rid) {} unsigned rid;
-    void operator () ( std::ostream& sink ) const
-    {
-      char const* condnames[] = {"eq", "ne", "cs", "cc", "mi", "pl", "vs", "vc", "hi", "ls", "ge", "lt", "gt", "le", "al", "nv"};
-      sink << condnames[rid];
-    }
+    void operator () ( std::ostream& sink ) const;
   };
 
   struct DisasmGSXR : public DisasmObject
@@ -101,7 +94,7 @@ namespace vmsav8 {
     DisasmGZWR( unsigned _rid ) : rid(_rid) {} unsigned rid;
     void operator () ( std::ostream& sink ) const { if (rid != 31) sink << 'w' << rid; else sink << "wzr"; }
   };
-
+  
   template <typename INT>
   struct DisasmImmediate : public DisasmObject
   {
@@ -119,6 +112,7 @@ namespace vmsav8 {
 
       sink.flags(bkp);
     }
+  
   };
 
 
@@ -186,7 +180,7 @@ namespace vmsav8 {
   
   struct DisasmF : public DisasmObject
   {
-    DisasmF( isa::arm64::FPImm const& _imm ) : imm(_imm) {} isa::arm64::FPImm const& imm;
+    DisasmF( FPImm const& _imm ) : imm(_imm) {} FPImm const& imm;
     void operator () ( std::ostream& sink ) const;
   };
 
@@ -270,8 +264,8 @@ namespace vmsav8 {
     }
   };
   
-}
-  
+} // end of namespace arm64
+} // end of namespace isa
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx

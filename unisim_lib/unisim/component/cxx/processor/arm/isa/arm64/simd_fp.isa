@@ -6218,7 +6218,7 @@ op ldr_dlit( 0b01011100[8] : shl<2> sext imm[19] : rt[5] );
 ldr_dlit.var format : {char const*} = {"9"};
 
 ldr_dlit.disasm = {
-  sink << "ldr\t" << DisasmD(rt) << ", 0x" << std::hex << (GetAddr()+imm);
+  sink << "ldr\t" << DisasmD(rt) << ", 0x" << std::hex << (this->GetAddr()+imm);
 };
 
 op ldr_dsopost( 0b11111100010[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
@@ -6323,7 +6323,7 @@ op ldr_qlit( 0b10011100[8] : shl<2> sext imm[19] : rt[5] );
 ldr_qlit.var format : {char const*} = {"10"};
 
 ldr_qlit.disasm = {
-  sink << "ldr\t" << DisasmQ(rt) << ", 0x" << std::hex << (GetAddr()+imm);
+  sink << "ldr\t" << DisasmQ(rt) << ", 0x" << std::hex << (this->GetAddr()+imm);
 };
 
 op ldr_qsopost( 0b00111100110[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
@@ -6379,7 +6379,7 @@ op ldr_slit( 0b00011100[8] : shl<2> sext imm[19] : rt[5] );
 ldr_slit.var format : {char const*} = {"11"};
 
 ldr_slit.disasm = {
-  sink << "ldr\t" << DisasmS(rt) << ", 0x" << std::hex << (GetAddr()+imm);
+  sink << "ldr\t" << DisasmS(rt) << ", 0x" << std::hex << (this->GetAddr()+imm);
 };
 
 op ldr_ssopost( 0b10111100010[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );

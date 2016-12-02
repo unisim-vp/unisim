@@ -75,6 +75,126 @@ CPU::Run()
 {
 }
 
+/**
+ * Virtual method implementation to handle backward path of transactions sent 
+ * through the master_port
+ *
+ * @param trans the transcation to handle
+ * @param phase the state of the transaction to handle (should only be END_REQ
+ *        or BEGIN_RESP)
+ * @param time  the relative time at which the call is being done
+ *
+ * @return      the synchronization status
+ */
+tlm::tlm_sync_enum 
+CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_time& time)
+{
+  sync_enum_type ret = tlm::TLM_ACCEPTED;
+
+  if (trans.get_command() == tlm::TLM_IGNORE_COMMAND) 
+  {
+    PCPU::logger << DebugWarning << "Received nb_transport_bw on master socket" 
+                 << ", with an ignore, which the cpu doesn't know how to handle" 
+                 // << std::endl << TIME(time)
+                 // << std::endl << PHASE(phase)
+                 << std::endl;
+    //TRANS(PCPU::logger, trans);
+    PCPU::logger << EndDebug;
+    return ret;
+  }
+
+  switch(phase)
+  {
+    case tlm::BEGIN_REQ:
+    case tlm::END_RESP:
+      /* The cpu should not receive the BEGIN_REQ (as it is the cpu which 
+       * generates cpu requests), neither END_RESP (as it is the cpu which
+       * ends responses) */
+      PCPU::logger << DebugError << "Received nb_transport_bw on master_socket" 
+                   << ", with unexpected phase"
+                   // << std::endl << LOCATION
+                   // << std::endl << TIME(time)
+                   // << std::endl << PHASE(phase)
+                   << std::endl;
+      //TRANS(PCPU::logger, trans);
+      PCPU::logger << EndDebug;
+      Stop(-1);
+      break;
+    case tlm::END_REQ:
+      /* The request phase is finished.
+       * If the request was a write, then the request can be released, because we do not 
+       *   expect any answer. And we can send a TLM_COMPLETED for the same reason.
+       * If the request was a read, the request can not be released and TLM_ACCEPTED has to
+       *   be sent, and we should wait for the BEGIN_RESP phase. */
+      if (trans.is_write()) 
+      {
+        trans.release();
+        ret = tlm::TLM_COMPLETED;
+      }
+      else
+        ret = tlm::TLM_ACCEPTED;
+      return ret;
+      break;
+    case tlm::BEGIN_RESP:
+      /* Starting the response phase.
+       * If the request is a write report an error and stop, we should not have received it.
+       * The target has initiated the response to a read request, compute when the request can
+       *   be completely accepted and send a TLM_COMPLETED back. Send an event to the PrRead
+       *   method to unlock the thread that originated the read transaction (using the end_read_event).
+       */
+      trans.acquire();
+      if (trans.is_write())
+      {
+        PCPU::logger << DebugError << "Received nb_transport_bw on BEGIN_RESP phase, with unexpected write transaction"
+                     // << std::endl << LOCATION
+                     // << std::endl << TIME(time)
+                     // << std::endl << PHASE(phase)
+                     << std::endl;
+        //TRANS(PCPU::logger, trans);
+        PCPU::logger << EndDebug;
+        Stop(-1);
+        break;
+      }
+      sc_time tmp_time = sc_time_stamp();
+      tmp_time += time;
+      /* TODO: increase tmp_time depending on the size of the transaction. */
+      end_read_rsp_event.notify(time);
+      ret = tlm::TLM_COMPLETED;
+      trans.release();
+      return ret;
+      break;
+  }
+
+  /* this code should never be executed, if you are here something is wrong 
+   *   above :( */
+  PCPU::logger << DebugError 
+               << "Reached end of nb_transport_bw, THIS SHOULD NEVER HAPPEN"
+               // << std::endl << LOCATION
+               // << std::endl << TIME(time)
+               // << std::endl << PHASE(phase)
+               << std::endl;
+  //TRANS(PCPU::logger, trans);
+  PCPU::logger << EndDebug;
+  Stop(-1);
+  // useless return to avoid compiler warnings/errors
+  return ret;
+}
+
+/**
+ * Virtual method implementation to handle backward path of dmi requests sent through the
+ * master port.
+ * We do not use the dmi option in our simulator, so this method is unnecessary. However,
+ * we have to declare it in order to be able to compile the simulator.
+ *
+ * @param start_range the start address of the memory range to remove
+ * @param end_range   the end address of the memory range to remove
+ */
+void 
+CPU::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range) 
+{
+  dmi_region_cache.Invalidate(start_range, end_range);
+}
+
 } // end of namespace cortex_a53
 } // end of namespace arm
 } // end of namespace processor

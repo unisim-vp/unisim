@@ -36,7 +36,7 @@
 #include <iostream>
 #include <sstream>
 
-#include <unisim/component/cxx/processor/arm/vmsav8/disasm.hh>
+#include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
 #include <unisim/component/cxx/processor/arm/isa/arm64/decode.hh>
 
 namespace unisim {
@@ -44,7 +44,8 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
-namespace vmsav8 {
+namespace isa {
+namespace arm64 {
 
   std::ostream&
   operator << ( std::ostream& sink, DisasmObject const& dobj )
@@ -54,12 +55,20 @@ namespace vmsav8 {
   }
 
   void
+  DisasmCond::operator () ( std::ostream& sink ) const
+  {
+    char const* condnames[] = {"eq", "ne", "cs", "cc", "mi", "pl", "vs", "vc", "hi", "ls", "ge", "lt", "gt", "le", "al", "nv"};
+    sink << condnames[rid];
+  }
+
+  void
   DisasmF::operator () ( std::ostream& sink ) const
   {
     sink << "#" << float( imm );
   }
 
-} // end of namespace vmsav8
+} // end of namespace arm64
+} // end of namespace isa
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx

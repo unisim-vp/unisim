@@ -53,7 +53,9 @@ namespace unisim { namespace component { namespace cxx { namespace processor { n
 
 impl {
 #include <unisim/component/cxx/processor/arm/isa/arm64/decode.hh>
+#include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
 #include <iostream>
+  
 }
 
 action {void} execute({ARCH &} {cpu}) {
