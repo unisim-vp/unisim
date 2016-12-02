@@ -168,7 +168,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 template <class CONFIG>
 CPU<CONFIG>::~CPU()
 {
-	map<string, unisim::util::debug::Register *>::iterator reg_iter;
+	map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
 
 	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
 	{
@@ -788,15 +788,28 @@ string CPU<CONFIG>::GetFunctionFriendlyName(typename CONFIG::address_t addr)
 }
 
 template <class CONFIG>
-unisim::util::debug::Register *CPU<CONFIG>::GetRegister(const char *name)
+unisim::service::interfaces::Register *CPU<CONFIG>::GetRegister(const char *name)
 {
-	map<string, unisim::util::debug::Register *>::iterator reg_iter = registers_registry.find(name);
+	map<string, unisim::service::interfaces::Register *>::iterator reg_iter = registers_registry.find(name);
 	if(reg_iter != registers_registry.end())
 	{
 		return (*reg_iter).second;
 	}
 
 	return 0;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	std::map<std::string, unisim::service::interfaces::Register *>::iterator reg_iter;
+
+	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
+	{
+		unisim::service::interfaces::Register *reg = reg_iter->second;
+		
+		scanner.Append(reg);
+	}
 }
 
 /*

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
 /**********************************************
@@ -45,16 +45,18 @@
  */
 
 op b_1( 0b1101[4]: cond[4]: shl<1> sext<32> imm[8] );
+b_1.var reject : {Reject} = {cond == 0xe};
 
 b_1.disasm = {
-  if (cond == 0xe) { buffer << "<undefined>"; return; }
   buffer << "b" << DisasmCondition(cond) << ".n\t0x" << std::hex << ((this->GetAddr() + 4 + imm) & -2) << std::dec;
 };
 
 b_1.execute = {
-  if (not CheckCondition(cpu, cond)) return;
-	
-  cpu.Branch(cpu.GetGPR(cpu.PC_reg) + imm);
+  if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
+  // Note: according to specification, if InITBlock() then UNPREDICTABLE;
+  
+  typedef typename ARCH::U32 U32;
+  cpu.Branch(cpu.GetGPR( 15 ) + U32(imm));
 };
 
 op b_2( 0b11100[5]: shl<1> sext<32> imm[11] );
@@ -64,9 +66,10 @@ b_2.disasm = {
 };
 
 b_2.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.Branch(cpu.GetGPR(cpu.PC_reg) + imm);
+  typedef typename ARCH::U32 U32;
+  cpu.Branch(cpu.GetGPR( 15 ) + U32(imm));
 };
 
 /*
@@ -87,7 +90,7 @@ bx.disasm = {
 };
 
 bx.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.BranchExchange( cpu.GetGPR(rm) );
 };
@@ -103,7 +106,7 @@ bx.execute = {
  * specified by a register.
  */
 
-{ ARCH::insns5T }:                              \
+{ ARCH::Config::insns5T }:                              \
 op blx( 0b010001111[9]: rm[4]: 0b000[3] );
 
 blx.disasm = {
@@ -111,10 +114,11 @@ blx.disasm = {
 };
 
 blx.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  uint32_t address = cpu.GetGPR(rm);
-  cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() | 1 );
+  typedef typename ARCH::U32 U32;
+  U32 address = cpu.GetGPR(rm);
+  cpu.SetGPR( cpu.LR_reg, cpu.GetNIA() | U32(1) );
   cpu.BranchExchange( address );
 };
 

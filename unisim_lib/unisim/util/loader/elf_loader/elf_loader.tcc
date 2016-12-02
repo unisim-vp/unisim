@@ -260,7 +260,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		logger << DebugInfo << "Opening \"" << filename << "\"" << EndDebugInfo;
 	}
 
-	ifstream is(filename.c_str(), ifstream::in | ifstream::binary);
+	std::ifstream is(filename.c_str(), std::ifstream::in | std::ifstream::binary);
 	
 	if(is.fail())
 	{
@@ -327,18 +327,18 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 
 	if(dump_headers)
 	{
-		stringstream hdr_sstr;
+		std::stringstream hdr_sstr;
 		DumpElfHeader(hdr, hdr_sstr);
 		logger << DebugInfo << hdr_sstr.str() << EndDebugInfo;
 		for(i = 0, phdr = phdr_table; i < hdr->e_phnum; i++, phdr++)
 		{
-			stringstream phdr_sstr;
+			std::stringstream phdr_sstr;
 			DumpProgramHeader(phdr, phdr_sstr);
 			logger << DebugInfo << phdr_sstr.str() << EndDebugInfo;
 		}
 		for(i = 0, shdr = shdr_table; i < hdr->e_shnum; shdr = GetNextSectionHeader(hdr, shdr),i++)
 		{
-			stringstream shdr_sstr;
+			std::stringstream shdr_sstr;
 			DumpSectionHeader(shdr, sh_string_table, shdr_sstr);
 			logger << DebugInfo << shdr_sstr.str() << EndDebugInfo;
 		}
@@ -377,7 +377,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << "Program entry point at 0x" << hex << entry_point << dec << EndDebugInfo;
+		logger << DebugInfo << "Program entry point at 0x" << std::hex << entry_point << std::dec << EndDebugInfo;
 	}
 
 	blob = new typename unisim::util::debug::blob::Blob<MEMORY_ADDR>();
@@ -394,6 +394,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		blob->SetFileFormat(unisim::util::debug::blob::FFMT_ELF64);
 	blob->SetELF_PHOFF(hdr->e_phoff);
 	blob->SetELF_PHENT(sizeof(Elf_Phdr));
+        blob->SetELF_PHNUM(hdr->e_phnum);
 	blob->SetELF_Flags(flags);
 
 	if(shdr_table && sh_string_table)
@@ -445,7 +446,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			if((sh_type != SHT_NULL) && verbose)
 			{
 				logger << DebugInfo << "Loading section " << sh_name;
-				if(sh_flags & SHF_ALLOC) logger << " at 0x" << hex << sh_addr << dec;
+				if(sh_flags & SHF_ALLOC) logger << " at 0x" << std::hex << sh_addr << std::dec;
 				logger << " (" << sh_size << " bytes) ";
 				logger << EndDebugInfo;
 			}
@@ -478,7 +479,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 
 	for(i = 0, phdr = phdr_table; i < hdr->e_phnum; i++, phdr++)
 	{
-		//if((GetSegmentType(phdr) == PT_LOAD) || (GetSegmentType(phdr) == PT_TLS)) /* Loadable Program Segment */
+		if((GetSegmentType(phdr) == PT_LOAD) || (GetSegmentType(phdr) == PT_TLS)) /* Loadable Program Segment */
 		{
 			MEMORY_ADDR ph_type = GetSegmentType(phdr);
 			MEMORY_ADDR segment_addr = force_base_addr ? base_addr : GetSegmentAddr(phdr);
@@ -508,7 +509,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << "Loading segment at 0x" << hex << segment_addr << dec << " (" << segment_file_size << " bytes) " << EndDebugInfo;
+				logger << DebugInfo << "Loading segment at 0x" << std::hex << segment_addr << std::dec << " (" << segment_file_size << " bytes) " << EndDebugInfo;
 			}
 			
 			void *segment_data = calloc(segment_mem_size + 1, 1); // Allocate one additional byte for zero-terminated strings
@@ -760,9 +761,9 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-Elf_Ehdr *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ReadElfHeader(istream& is)
+Elf_Ehdr *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ReadElfHeader(std::istream& is)
 {
-	if(is.seekg(0, ios::beg).fail())
+	if(is.seekg(0, std::ios::beg).fail())
 	{
 		return 0;
 	}
@@ -791,7 +792,7 @@ Elf_Ehdr *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, El
 
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-Elf_Phdr *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ReadProgramHeaders(const Elf_Ehdr *hdr, istream& is)
+Elf_Phdr *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ReadProgramHeaders(const Elf_Ehdr *hdr, std::istream& is)
 {
 	if(hdr->e_phnum > 0)
 	{
@@ -799,7 +800,7 @@ Elf_Phdr *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, El
 		unsigned long sz;
 		Elf_Phdr *phdr;
 
-		if(is.seekg(hdr->e_phoff, ios::beg).fail())
+		if(is.seekg(hdr->e_phoff, std::ios::beg).fail())
 		{
 			return 0;
 		}
@@ -821,7 +822,7 @@ Elf_Phdr *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, El
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-Elf_Shdr *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ReadSectionHeaders(const Elf_Ehdr *hdr, istream& is)
+Elf_Shdr *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ReadSectionHeaders(const Elf_Ehdr *hdr, std::istream& is)
 {
 	int i;
 	if(hdr->e_shnum)
@@ -829,7 +830,7 @@ Elf_Shdr *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, El
 		unsigned long sz = hdr->e_shnum * hdr->e_shentsize;
 		Elf_Shdr *shdr = (Elf_Shdr *) malloc(sz);
 	
-		if(is.seekg(hdr->e_shoff, ios::beg).fail())
+		if(is.seekg(hdr->e_shoff, std::ios::beg).fail())
 		{
 			free(shdr);
 			return 0;
@@ -855,12 +856,12 @@ const Elf_Shdr *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Sh
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-char *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSectionHeaderStringTable(const Elf_Ehdr *hdr, const Elf_Shdr *shdr_table, istream& is)
+char *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSectionHeaderStringTable(const Elf_Ehdr *hdr, const Elf_Shdr *shdr_table, std::istream& is)
 {
 	const Elf_Shdr *shdr = (const Elf_Shdr *)((const char *) shdr_table + hdr->e_shentsize * hdr->e_shstrndx);
 	char *string_table;
 
-	if(is.seekg(shdr->sh_offset, ios::beg).fail())
+	if(is.seekg(shdr->sh_offset, std::ios::beg).fail())
 	{
 		return 0;
 	}
@@ -875,10 +876,10 @@ char *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sy
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpElfHeader(const Elf_Ehdr *hdr, ostream& os)
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpElfHeader(const Elf_Ehdr *hdr, std::ostream& os)
 {
 	os << "--- Elf Header ---";
-	os << endl << "File Class : ";
+	os << std::endl << "File Class : ";
 	switch(hdr->e_ident[EI_CLASS])
 	{
 		case ELFCLASSNONE : os << "Invalid class"; break;
@@ -887,7 +888,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		default : os << "?"; break;
 	}
 
-	os << endl << "Data encoding : ";
+	os << std::endl << "Data encoding : ";
 	switch(hdr->e_ident[EI_DATA])
 	{
 		case ELFDATANONE : os << "Invalid data encoding"; break;
@@ -896,9 +897,9 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		default: os << "Unknown (" << hdr->e_ident[EI_DATA] << ")"; break;
 	}
 
-	os << endl << "Version : " << (unsigned) hdr->e_ident[EI_VERSION];
+	os << std::endl << "Version : " << (unsigned) hdr->e_ident[EI_VERSION];
 
-	os << endl << "OS ABI identification : ";
+	os << std::endl << "OS ABI identification : ";
 	switch(hdr->e_ident[EI_OSABI])
 	{
 		case ELFOSABI_SYSV:os << "UNIX System V ABI"; break;
@@ -922,7 +923,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		default : os << "Unknown (" << hdr->e_ident[EI_OSABI] << ")"; break;
 	}
 
-	os << endl << "Object File Type : ";
+	os << std::endl << "Object File Type : ";
 
 	if(hdr->e_type == ET_NONE) os << "Unknown type"; else
 	if(hdr->e_type == ET_REL) os << "Relocatable"; else
@@ -932,7 +933,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	if(hdr->e_type >= ET_LOOS && hdr->e_type <= ET_HIOS) os << "OS-specific"; else
 	if(hdr->e_type >= ET_LOPROC) os << "Processor-specific"; else os << "Unknown (" << hdr->e_type << ")";
 
-	os << endl << "Target machine : ";
+	os << std::endl << "Target machine : ";
 
 	switch(hdr->e_machine)
 	{
@@ -1087,22 +1088,22 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case EM_OLD_AVR32: os << "Atmel Corporation 32-bit microprocessor family"; break;
 		default: os << "Unknown (" << hdr->e_machine << ")"; break;
 	}
-	os << endl;
-	os << endl << "Number of program headers : " << hdr->e_phnum;
+	os << std::endl;
+	os << std::endl << "Number of program headers : " << hdr->e_phnum;
 
-	os << endl << "Number of section headers : " << hdr->e_shnum;
+	os << std::endl << "Number of section headers : " << hdr->e_shnum;
 
-	os << endl << "section headers file offset : " << hdr->e_shoff;
-	os << endl << "section header size : " << hdr->e_shentsize << " bytes";
+	os << std::endl << "section headers file offset : " << hdr->e_shoff;
+	os << std::endl << "section header size : " << hdr->e_shentsize << " bytes";
 
-	os << endl;
+	os << std::endl;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpProgramHeader(const Elf_Phdr *phdr, ostream& os)
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpProgramHeader(const Elf_Phdr *phdr, std::ostream& os)
 {
 	os << "--- Program Header ---";
-	os << endl << "Segment type : ";
+	os << std::endl << "Segment type : ";
 	switch(phdr->p_type)
 	{
 		case PT_NULL: os << "Program header table entry unused"; break;
@@ -1121,12 +1122,12 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		default: os << "Unknown (" << phdr->p_type << ")"; break;
 	}
 
-	os << endl << "File offset : " << phdr->p_offset;
-	os << endl << "Virtual Address : 0x" << hex << phdr->p_vaddr;
-	os << endl << "Physical Address : 0x" << phdr->p_paddr << dec;
-	os << endl << "File size : " << phdr->p_filesz;
-	os << endl << "Memory size : " << phdr->p_memsz;
-	os << endl << "Segment flags (rwx) : ";
+	os << std::endl << "File offset : " << phdr->p_offset;
+	os << std::endl << "Virtual Address : 0x" << std::hex << phdr->p_vaddr;
+	os << std::endl << "Physical Address : 0x" << phdr->p_paddr << std::dec;
+	os << std::endl << "File size : " << phdr->p_filesz;
+	os << std::endl << "Memory size : " << phdr->p_memsz;
+	os << std::endl << "Segment flags (rwx) : ";
 	os << (phdr->p_flags & PF_R ? "r" : "-");
 	os << (phdr->p_flags & PF_W ? "w" : "-");
 	os << (phdr->p_flags & PF_X ? "x" : "-");
@@ -1134,17 +1135,17 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 //	os << (phdr->p_flags & PF_MASKOS ? " [OS-specific flags]" : "");
 //	os << (phdr->p_flags & PF_MASKPROC ? " [Processor-specific flags]" : "");
 
-	os << endl << "Memory/File alignment : " << phdr->p_align;
+	os << std::endl << "Memory/File alignment : " << phdr->p_align;
 
-	os << endl;
+	os << std::endl;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSectionHeader(const Elf_Shdr *shdr, const char *string_table, ostream& os)
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSectionHeader(const Elf_Shdr *shdr, const char *string_table, std::ostream& os)
 {
 	os << "--- Section header ---";
-	os << endl << "Section name : \"" << (string_table ? (string_table + shdr->sh_name) : "unknown")<< "\"";
-	os << endl << "Section type : ";
+	os << std::endl << "Section name : \"" << (string_table ? (string_table + shdr->sh_name) : "unknown")<< "\"";
+	os << std::endl << "Section type : ";
 
 	switch(shdr->sh_type)
 	{
@@ -1174,40 +1175,40 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		default : os << "Unknown"; break;
 	}
 
-	os << endl << "Link to section :" << shdr->sh_link;
+	os << std::endl << "Link to section :" << shdr->sh_link;
 	
-	os << endl << "Section flags : " << shdr->sh_flags;
+	os << std::endl << "Section flags : " << shdr->sh_flags;
 
 	if(!shdr->sh_flags) os << " (none)";
-	if(shdr->sh_flags & SHF_WRITE)	os << endl << "  - Writable";
-	if(shdr->sh_flags & SHF_ALLOC)	os << endl << "  - Occupies memory during execution";
-	if(shdr->sh_flags & SHF_EXECINSTR)	os << endl << "  - Executable";
-	if(shdr->sh_flags & SHF_MERGE)	os << endl << "  - Might be merged";
-	if(shdr->sh_flags & SHF_STRINGS)	os << endl << "  - Contains nul-terminated strings";
-	if(shdr->sh_flags & SHF_INFO_LINK)	os << endl << "  - `sh_info' contains SHT index";
-	if(shdr->sh_flags & SHF_LINK_ORDER)	os << endl << "  - Preserve order after combining";
-	if(shdr->sh_flags & SHF_OS_NONCONFORMING)	os << endl << "  - Non-standard OS specific handling required";
-	if(shdr->sh_flags & SHF_GROUP)	os << endl << "  - Section is member of a group.";
-	if(shdr->sh_flags & SHF_TLS)	os << endl << "  - Section hold thread-local data.";
-	if(shdr->sh_flags & SHF_MASKOS) os << endl << "  - OS-specific.";
-	if(shdr->sh_flags & SHF_MASKPROC) os << endl << "  - Processor-specific";
+	if(shdr->sh_flags & SHF_WRITE)	os << std::endl << "  - Writable";
+	if(shdr->sh_flags & SHF_ALLOC)	os << std::endl << "  - Occupies memory during execution";
+	if(shdr->sh_flags & SHF_EXECINSTR)	os << std::endl << "  - Executable";
+	if(shdr->sh_flags & SHF_MERGE)	os << std::endl << "  - Might be merged";
+	if(shdr->sh_flags & SHF_STRINGS)	os << std::endl << "  - Contains nul-terminated strings";
+	if(shdr->sh_flags & SHF_INFO_LINK)	os << std::endl << "  - `sh_info' contains SHT index";
+	if(shdr->sh_flags & SHF_LINK_ORDER)	os << std::endl << "  - Preserve order after combining";
+	if(shdr->sh_flags & SHF_OS_NONCONFORMING)	os << std::endl << "  - Non-standard OS specific handling required";
+	if(shdr->sh_flags & SHF_GROUP)	os << std::endl << "  - Section is member of a group.";
+	if(shdr->sh_flags & SHF_TLS)	os << std::endl << "  - Section hold thread-local data.";
+	if(shdr->sh_flags & SHF_MASKOS) os << std::endl << "  - OS-specific.";
+	if(shdr->sh_flags & SHF_MASKPROC) os << std::endl << "  - Processor-specific";
 
-	os << endl << "File offset : " << shdr->sh_offset;
-	os << endl << "Size : " << shdr->sh_size << " bytes";
-	os << endl << "Virtual Address : 0x" << hex << shdr->sh_addr << dec;
-	os << endl << "Section alignment : " << shdr->sh_addralign;
+	os << std::endl << "File offset : " << shdr->sh_offset;
+	os << std::endl << "Size : " << shdr->sh_size << " bytes";
+	os << std::endl << "Virtual Address : 0x" << std::hex << shdr->sh_addr << std::dec;
+	os << std::endl << "Section alignment : " << shdr->sh_addralign;
 
-	os << endl;
+	os << std::endl;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSymbol(const Elf_Sym *sym, const char *string_table, ostream& os)
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSymbol(const Elf_Sym *sym, const char *string_table, std::ostream& os)
 {
 	os << "---- Symbol ---";
-	os << endl << "Name : \"" << (string_table + sym->st_name) << "\"";
-	os << endl << "Value : 0x" << hex << sym->st_value << dec;
-	os << endl << "Size : " << sym->st_size;
-	os << endl << "Binding : ";
+	os << std::endl << "Name : \"" << (string_table + sym->st_name) << "\"";
+	os << std::endl << "Value : 0x" << std::hex << sym->st_value << std::dec;
+	os << std::endl << "Size : " << sym->st_size;
+	os << std::endl << "Binding : ";
 	switch(ELF32_ST_BIND(unisim::util::endian::Target2Host(endianness, sym->st_info)))
 	{
 		case STB_LOCAL: os << " Local symbol"; break;
@@ -1215,7 +1216,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case STB_WEAK: os << " Weak symbol"; break;
 		default: os << "Unknown"; break;
 	}
-	os << endl << "Type : ";
+	os << std::endl << "Type : ";
 	switch(ELF32_ST_TYPE(unisim::util::endian::Target2Host(endianness, sym->st_info)))
 	{
 		case STT_NOTYPE: os << "Symbol type is unspecified"; break;
@@ -1227,7 +1228,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case STT_TLS: os << "Symbol is thread-local data object"; break;
 		default: os << "Unknown"; break;
 	}
-	os << endl << "Visibility : ";
+	os << std::endl << "Visibility : ";
 	switch(ELF_ST_VISIBILITY(unisim::util::endian::Target2Host(endianness, sym->st_other)))
 	{
 		case STV_DEFAULT: os << "Default symbol visibility rules"; break;
@@ -1236,18 +1237,18 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case STV_PROTECTED: os << "Not preemptible, not exported"; break;
 		default: os << "Unknown"; break;
 	}
-	os << endl << "Section index : " << unisim::util::endian::Target2Host(endianness, sym->st_shndx);
-	os << endl;
+	os << std::endl << "Section index : " << unisim::util::endian::Target2Host(endianness, sym->st_shndx);
+	os << std::endl;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSymbolTable(const Elf_Shdr *shdr, const char *content, const char *string_table, ostream& os)
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSymbolTable(const Elf_Shdr *shdr, const char *content, const char *string_table, std::ostream& os)
 {
 	int nsymbols = shdr->sh_size / sizeof(Elf_Sym);
 	int i;
 	Elf_Sym *sym;
 
-	os << "---- Symbol Table Content ---" << endl;
+	os << "---- Symbol Table Content ---" << std::endl;
 	for(sym = (Elf_Sym *) content, i = 0; i < nsymbols; sym++, i++)
 		DumpSymbol(sym, string_table, os);
 }
@@ -1284,9 +1285,9 @@ MEMORY_ADDR ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, 
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSection(const Elf_Ehdr *hdr, const Elf_Shdr *shdr, void *buffer, istream& is)
+bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSection(const Elf_Ehdr *hdr, const Elf_Shdr *shdr, void *buffer, std::istream& is)
 {
-	if(is.seekg(shdr->sh_offset, ios::beg).fail()) return false;
+	if(is.seekg(shdr->sh_offset, std::ios::beg).fail()) return false;
 	if(is.read((char *) buffer, shdr->sh_size).fail()) return false;
 /*	if(shdr->sh_type == SHT_SYMTAB)
 	{
@@ -1332,9 +1333,9 @@ MEMORY_ADDR ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, 
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSegment(const Elf_Ehdr *hdr, const Elf_Phdr *phdr, void *buffer, istream& is)
+bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSegment(const Elf_Ehdr *hdr, const Elf_Phdr *phdr, void *buffer, std::istream& is)
 {
-	if(is.seekg(phdr->p_offset, ios::beg).fail()) return false;
+	if(is.seekg(phdr->p_offset, std::ios::beg).fail()) return false;
 	if(is.read((char *) buffer, phdr->p_filesz).fail()) return false;
 	return true;
 }
@@ -1356,52 +1357,52 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 {
 	int i, j;
 	MEMORY_ADDR offset = 0;
-	streamsize width = cout.width();
+	std::streamsize width = std::cout.width();
 
-	cout.fill(' ');
-	cout.width(2 * sizeof(offset));
-	cout << "offset" << hex;
-	cout.width(0);
+	std::cout.fill(' ');
+	std::cout.width(2 * sizeof(offset));
+	std::cout << "offset" << std::hex;
+	std::cout.width(0);
 	for(i = 0; i < 16; i++)
 	{
-		cout << "  " << i;
+		std::cout << "  " << i;
 	}
-	cout << endl;
+	std::cout << std::endl;
 	
 	while(offset < size)
 	{
-		cout << hex; cout.fill('0'); cout.width(2 * sizeof(offset)); cout << offset << " "; cout.fill(' ');
+		std::cout << std::hex; std::cout.fill('0'); std::cout.width(2 * sizeof(offset)); std::cout << offset << " "; std::cout.fill(' ');
 		for(j = 0; j < 16; j++, offset++)
 		{
 			if(offset < size)
 			{
 				uint8_t value = ((uint8_t *) content)[offset];
-				cout << (uint32_t)(value >> 4);
-				cout << (uint32_t)(value & 15);
+				std::cout << (uint32_t)(value >> 4);
+				std::cout << (uint32_t)(value & 15);
 			}
 			else
 			{
-				cout << "  ";
+				std::cout << "  ";
 			}
-			if(j < 15) cout << " ";
+			if(j < 15) std::cout << " ";
 		}
 		offset -= 16;
-		cout << dec << "  ";
+		std::cout << std::dec << "  ";
 		for(j = 0; j < 16; j++, offset++)
 		{
 			if(offset < size)
 			{
 				uint8_t value = ((uint8_t *) content)[offset];
-				cout << (char)((value >= ' ' && value < 128) ? value : '.');
+				std::cout << (char)((value >= ' ' && value < 128) ? value : '.');
 			}
 			else
 			{
-				cout << ' ';
+				std::cout << ' ';
 			}
 		}
-		cout << endl;
+		std::cout << std::endl;
 	}
-	cout.width(width);
+	std::cout.width(width);
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>

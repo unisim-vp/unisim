@@ -56,7 +56,7 @@ include_directories ( ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${OSCI_SYSTEMC_INC
 file ( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/resources/gdb_server )
 file ( 
 	COPY 
-		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_armv4l.xml 
+		${CMAKE_SOURCE_DIR}/unisim/service/debug/gdb_server/gdb_arm_with_fpa.xml 
 	DESTINATION 
 		${CMAKE_BINARY_DIR}/resources/gdb_server )
 

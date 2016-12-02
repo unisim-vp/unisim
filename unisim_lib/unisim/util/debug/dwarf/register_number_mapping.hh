@@ -56,16 +56,16 @@ public:
 	~DWARF_RegisterNumberMapping();
 	
 	bool Load(const char *filename, const char *architecture);
-	void Map(unsigned int dw_reg_num, unisim::util::debug::Register *arch_reg);
-	unisim::util::debug::Register *GetArchReg(unsigned int dw_reg_num);
-	const unisim::util::debug::Register *GetArchReg(unsigned int dw_reg_num) const;
+	void Map(unsigned int dw_reg_num, unisim::service::interfaces::Register *arch_reg);
+	unisim::service::interfaces::Register *GetArchReg(unsigned int dw_reg_num);
+	const unisim::service::interfaces::Register *GetArchReg(unsigned int dw_reg_num) const;
 	void EnumRegisterNumbers(std::set<unsigned int>& reg_num_set) const;
 	unsigned int GetSPRegNum() const;
 	friend std::ostream& operator << (std::ostream& os, const DWARF_RegisterNumberMapping& dw_reg_num_mapping);
 private:
 	unisim::kernel::logger::Logger& logger;
 	unisim::service::interfaces::Registers *regs_if;
-	std::map<unsigned int, unisim::util::debug::Register *> reg_num_mapping;
+	std::map<unsigned int, unisim::service::interfaces::Register *> reg_num_mapping;
 	unsigned int sp_reg_num;
 	
 	bool Load(unisim::util::xml::Node *xml_node);

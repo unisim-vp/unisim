@@ -49,29 +49,75 @@ AC_DEFUN([UNISIM_CHECK_LIBXML2], [
     # Check for some libxml2 headers
     AC_CHECK_HEADER(libxml/encoding.h, broken_incxml2=no, broken_incxml2=yes)
     AC_CHECK_HEADER(libxml/xmlwriter.h, , broken_incxml2=yes)
+    AC_CHECK_HEADER(libxml/xmlreader.h, , broken_incxml2=yes)
 	
     if test "$broken_incxml2" = "yes"; then
 		AC_MSG_ERROR([libxml2 includes not found (libxml/*.hh). Please use --with-libxml2=<path>])
     fi
 
     # Check for libxml2 functions
-    UNISIM_CHECK_LIB(xml2, xmlNewTextWriterFilename, $1,
-    UNISIM_CHECK_LIB(xml2, xmlTextWriterSetIndent, $1,
-    UNISIM_CHECK_LIB(xml2, xmlTextWriterStartDocument, $1,
-    UNISIM_CHECK_LIB(xml2, xmlTextWriterStartElement, $1,
-    UNISIM_CHECK_LIB(xml2, xmlTextWriterEndElement, $1,
-    UNISIM_CHECK_LIB(xml2, xmlFreeTextWriter, $1,
-    UNISIM_CHECK_LIB(xml2, xmlTextWriterWriteAttribute, $1,
-    UNISIM_CHECK_LIB(xml2, xmlTextWriterWriteFormatString, $1, broken_libxml2=no,
-    broken_libxml2=yes),
-    broken_libxml2=yes),
-    broken_libxml2=yes),
-    broken_libxml2=yes),
-    broken_libxml2=yes),
-    broken_libxml2=yes),
-    broken_libxml2=yes),
-    broken_libxml2=yes)
+    #UNISIM_CHECK_LIB(xml2, xmlNewTextWriterFilename, $1,
+    #UNISIM_CHECK_LIB(xml2, xmlTextWriterSetIndent, $1,
+    #UNISIM_CHECK_LIB(xml2, xmlTextWriterStartDocument, $1,
+    #UNISIM_CHECK_LIB(xml2, xmlTextWriterStartElement, $1,
+    #UNISIM_CHECK_LIB(xml2, xmlTextWriterEndElement, $1,
+    #UNISIM_CHECK_LIB(xml2, xmlFreeTextWriter, $1,
+    #UNISIM_CHECK_LIB(xml2, xmlTextWriterWriteAttribute, $1,
+    #UNISIM_CHECK_LIB(xml2, xmlTextWriterWriteFormatString, $1, broken_libxml2=no,
+    #broken_libxml2=yes),
+    #broken_libxml2=yes),
+    #broken_libxml2=yes),
+    #broken_libxml2=yes),
+    #broken_libxml2=yes),
+    #broken_libxml2=yes),
+    #broken_libxml2=yes),
+    #broken_libxml2=yes)
 	
+	UNISIM_CHECK_LIB(xml2, xmlCharStrdup, $1,
+	UNISIM_CHECK_LIB(xml2, xmlCleanupParser, $1,
+	UNISIM_CHECK_LIB(xml2, xmlFree, $1,
+	UNISIM_CHECK_LIB(xml2, xmlFreeTextReader, $1,
+	UNISIM_CHECK_LIB(xml2, xmlFreeTextWriter, $1,
+	UNISIM_CHECK_LIB(xml2, xmlInitParser, $1,
+	UNISIM_CHECK_LIB(xml2, xmlNewTextWriterFilename, $1,
+	UNISIM_CHECK_LIB(xml2, xmlReaderForFile, $1,
+	UNISIM_CHECK_LIB(xml2, xmlStrEqual, $1,
+	UNISIM_CHECK_LIB(xml2, xmlTextReaderConstName, $1,
+	UNISIM_CHECK_LIB(xml2, xmlTextReaderConstValue, $1,
+	UNISIM_CHECK_LIB(xml2, xmlTextReaderGetAttribute, $1,
+	UNISIM_CHECK_LIB(xml2, xmlTextReaderNodeType, $1,
+	UNISIM_CHECK_LIB(xml2, xmlTextReaderRead, $1,
+	UNISIM_CHECK_LIB(xml2, xmlTextWriterEndDocument, $1,
+	UNISIM_CHECK_LIB(xml2, xmlTextWriterEndElement, $1,
+	UNISIM_CHECK_LIB(xml2, xmlTextWriterSetIndent, $1,
+	UNISIM_CHECK_LIB(xml2, xmlTextWriterSetIndentString, $1,
+	UNISIM_CHECK_LIB(xml2, xmlTextWriterStartDocument, $1,
+	UNISIM_CHECK_LIB(xml2, xmlTextWriterStartElement, $1,
+	UNISIM_CHECK_LIB(xml2, xmlTextWriterWriteAttribute, $1,
+	UNISIM_CHECK_LIB(xml2, xmlTextWriterWriteFormatString, $1, broken_libxml2=no,
+	broken_libxml2=yes),
+	broken_libxml2=yes),
+	broken_libxml2=yes),
+	broken_libxml2=yes),
+	broken_libxml2=yes),
+	broken_libxml2=yes),
+	broken_libxml2=yes),
+	broken_libxml2=yes),
+	broken_libxml2=yes),
+	broken_libxml2=yes),
+	broken_libxml2=yes),
+	broken_libxml2=yes),
+	broken_libxml2=yes),
+	broken_libxml2=yes),
+	broken_libxml2=yes),
+	broken_libxml2=yes),
+	broken_libxml2=yes),
+	broken_libxml2=yes),
+	broken_libxml2=yes),
+	broken_libxml2=yes),
+	broken_libxml2=yes),
+	broken_libxml2=yes)
+
     if test "$broken_libxml2" = "yes"; then
 		AC_MSG_ERROR([installed xml2 Library is broken.])
     fi

@@ -80,7 +80,7 @@ DWARF_StatementVM<MEMORY_ADDR>::~DWARF_StatementVM()
 template <class MEMORY_ADDR>
 bool DWARF_StatementVM<MEMORY_ADDR>::IsAbsolutePath(const char *filename) const
 {
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	// filename starts with '/' or 'drive letter':\ or 'driver letter':/
 	return (((filename[0] >= 'a' && filename[0] <= 'z') || (filename[0] >= 'A' && filename[0] <= 'Z')) && (filename[1] == ':') && ((filename[2] == '\\') || (filename[2] == '/'))) || (*filename == '/');
 #else

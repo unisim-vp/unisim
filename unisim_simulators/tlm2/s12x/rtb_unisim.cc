@@ -230,7 +230,7 @@ void RTBStub::ProcessATD0() {
 
 	double atd0_anValue[ATD0_SIZE];
 
-	while(1)
+	while (!isTerminated()) {
 	{
 
 		Input_Cob2ATD0(atd0_anValue);
@@ -245,7 +245,7 @@ void RTBStub::ProcessATD1() {
 
 	double atd1_anValue[ATD1_SIZE];
 
-	while(1)
+	while (!isTerminated()) {
 	{
 
 		Input_Cob2ATD1(atd1_anValue);
@@ -261,7 +261,7 @@ void RTBStub::ProcessPWM() {
 
 	bool pwmValue[PWM_SIZE];
 
-	while(1)
+	while (!isTerminated()) {
 	{
 
 		Input(pwmValue);

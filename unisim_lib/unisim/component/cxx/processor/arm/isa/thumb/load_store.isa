@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2013,
+ *  Copyright (c) 2007-2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
 /**********************************************
@@ -50,9 +50,10 @@ ldr_1.disasm = {
 };
 
 ldr_1.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemRead32( cpu.GetGPR(rn) + imm ) );
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR_mem( rt, cpu.MemURead32( cpu.GetGPR(rn) + U32(imm) ) );
 };
 
 /*
@@ -70,9 +71,9 @@ ldr_2.disasm = {
 };
 
 ldr_2.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemRead32( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
+  cpu.SetGPR_mem( rt, cpu.MemURead32( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
 };
 
 /*
@@ -83,16 +84,17 @@ ldr_2.execute = {
  * ldr(3) (load word pc-relative) instruction
  */
 
-op ldr_3( 0b01001[5]: rt[3]: shl<2> imm[8] );
+op ldr_lit_s( 0b01001[5]: rt[3]: shl<2> imm[8] );
 
-ldr_3.disasm = {
+ldr_lit_s.disasm = {
   buffer << "ldr\t" << DisasmRegister(rt) << ", [pc, " << DisasmI(imm) << "]";
 };
 
-ldr_3.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+ldr_lit_s.execute = {
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemRead32( (cpu.GetGPR(cpu.PC_reg) & -4) + imm ) );
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR_mem( rt, cpu.MemURead32( (cpu.GetGPR( 15 ) & U32(-4)) + U32(imm) ) );
 };
 
 /*
@@ -110,9 +112,10 @@ ldr_4.disasm = {
 };
 
 ldr_4.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemRead32( cpu.GetGPR(cpu.SP_reg) + imm ) );
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR_mem( rt, cpu.MemURead32( cpu.GetGPR( 13 ) + U32(imm) ) );
 };
 
 /*
@@ -131,9 +134,10 @@ ldrb_1.disasm = {
 };
 
 ldrb_1.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemRead8( cpu.GetGPR(rn) + imm ) );
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR_mem( rt, cpu.MemRead8( cpu.GetGPR(rn) + U32(imm) ) );
 };
 
 /*
@@ -151,7 +155,7 @@ ldrb_2.disasm = {
 };
 
 ldrb_2.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.SetGPR_mem( rt, cpu.MemRead8( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
 };
@@ -172,9 +176,10 @@ ldrh_1.disasm = {
 };
 
 ldrh_1.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemRead16( cpu.GetGPR(rn) + imm ) );
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR_mem( rt, cpu.MemURead16( cpu.GetGPR(rn) + U32(imm) ) );
 };
 
 /*
@@ -192,9 +197,9 @@ ldrh_2.disasm = {
 };
 
 ldrh_2.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemRead16( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
+  cpu.SetGPR_mem( rt, cpu.MemURead16( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
 };
 
 /*
@@ -212,9 +217,12 @@ ldrsb.disasm = {
 };
 
 ldrsb.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemReadS8( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S8  S8;
+  cpu.SetGPR_mem( rt, U32( S32( S8( cpu.MemRead8( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) ) ) ) );
 };
 
 /*
@@ -232,9 +240,12 @@ ldrsh.disasm = {
 };
 
 ldrsh.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemReadS16( cpu.GetGPR( rn ) + cpu.GetGPR( rm ) ) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  cpu.SetGPR_mem( rt, U32( S32( S16( cpu.MemURead16( cpu.GetGPR( rn ) + cpu.GetGPR( rm ) ) ) ) ) );
 };
 
 /*
@@ -253,9 +264,10 @@ str_1.disasm = {
 };
 
 str_1.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.MemWrite32(cpu.GetGPR(rn) + imm, cpu.GetGPR(rt));
+  typedef typename ARCH::U32 U32;
+  cpu.MemUWrite32(cpu.GetGPR(rn) + U32(imm), cpu.GetGPR(rt));
 };
 
 /*
@@ -273,9 +285,9 @@ str_2.disasm = {
 };
 
 str_2.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.MemWrite32( cpu.GetGPR(rn) + cpu.GetGPR(rm), cpu.GetGPR(rt) );
+  cpu.MemUWrite32( cpu.GetGPR(rn) + cpu.GetGPR(rm), cpu.GetGPR(rt) );
 };
 
 /*
@@ -293,9 +305,10 @@ str_3.disasm = {
 };
 
 str_3.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.MemWrite32(cpu.GetGPR(cpu.SP_reg) + imm, cpu.GetGPR(rt));
+  typedef typename ARCH::U32 U32;
+  cpu.MemUWrite32(cpu.GetGPR(cpu.SP_reg) + U32(imm), cpu.GetGPR(rt));
 };
 
 /*
@@ -314,9 +327,11 @@ strb_1.disasm = {
 };
 
 strb_1.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.MemWrite8(cpu.GetGPR(rn) + imm, cpu.GetGPR(rt));
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U8  U8;
+  cpu.MemWrite8( cpu.GetGPR(rn) + U32(imm), U8(cpu.GetGPR(rt)) );
 };
 
 /*
@@ -334,9 +349,10 @@ strb_2.disasm = {
 };
 
 strb_2.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.MemWrite8(cpu.GetGPR(rn) + cpu.GetGPR(rm), cpu.GetGPR(rt));
+  typedef typename ARCH::U8  U8;
+  cpu.MemWrite8( cpu.GetGPR(rn) + cpu.GetGPR(rm), U8(cpu.GetGPR(rt)) );
 };
 
 /*
@@ -355,9 +371,11 @@ strh_1.disasm = {
 };
 
 strh_1.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.MemWrite16(cpu.GetGPR(rn) + imm, cpu.GetGPR(rt));
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 U16;
+  cpu.MemUWrite16( cpu.GetGPR(rn) + U32(imm), U16(cpu.GetGPR(rt)) );
 };
 
 /*
@@ -375,9 +393,10 @@ strh_2.disasm = {
 };
 
 strh_2.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.MemWrite16(cpu.GetGPR(rn) + cpu.GetGPR(rm), cpu.GetGPR(rt));
+  typedef typename ARCH::U16 U16;
+  cpu.MemUWrite16( cpu.GetGPR(rn) + cpu.GetGPR(rm), U16(cpu.GetGPR(rt)) );
 };
 
 /*
@@ -395,6 +414,7 @@ strh_2.execute = {
  */
 
 op ldmia( 0b11001[5]: rn[3]: <32> reglist[8] );
+ldmia.var reject : {Reject} = {(reglist == 0)};
 
 ldmia.disasm = {
   if ((reglist >> rn) & 1)
@@ -404,15 +424,17 @@ ldmia.disasm = {
 };
 
 ldmia.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  LSMIter itr(LSMIter::IA, reglist, cpu.GetGPR( rn ));
+  typedef typename ARCH::U32 U32;
+  U32 base = cpu.GetGPR( rn );
+  LSMIter itr(LSMIter::IA, reglist);
   while (itr.next()) {
-    cpu.SetGPR_mem( itr.reg(), cpu.MemRead32( itr.addr() ) );
+    cpu.SetGPR_mem( itr.reg(), cpu.MemRead32( base + U32(itr.offset()) ) );
   }
   
   bool overwritten = (reglist >> rn) & 1;
-  if (not overwritten) cpu.SetGPR( rn, itr.addr() );
+  if (not overwritten) cpu.SetGPR( rn, base + U32(itr.offset()) );
 };
 
 /*
@@ -425,21 +447,24 @@ ldmia.execute = {
 
 op pop( 0b1011110[7]: shl<15> reglist1[1]: reglist0[8] );
 pop.var reglist : {uint32_t} = {reglist1|reglist0};
+pop.var reject : {Reject} = {(reglist == 0)};
 
 pop.disasm = {
   buffer << "pop\t{" << DisasmRegList(reglist) << "}";
 };
 
 pop.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  LSMIter itr(LSMIter::IA, reglist, cpu.GetGPR( cpu.SP_reg ));
+  typedef typename ARCH::U32 U32;
+  U32 base = cpu.GetGPR( cpu.SP_reg );
+  LSMIter itr(LSMIter::IA, reglist);
   while (itr.next()) {
-    cpu.SetGPR_mem( itr.reg(), cpu.MemRead32( itr.addr() ) );
+    cpu.SetGPR_mem( itr.reg(), cpu.MemRead32( base + U32(itr.offset()) ) );
   }
   
   bool overwritten = (reglist >> cpu.SP_reg) & 1;
-  if (not overwritten) cpu.SetGPR( cpu.SP_reg, itr.addr() );
+  if (not overwritten) cpu.SetGPR( cpu.SP_reg, base + U32(itr.offset()) );
 };
 
 /*
@@ -452,20 +477,23 @@ pop.execute = {
 
 op push( 0b1011010[7]: shl<14> reglist1[1]: reglist0[8] );
 push.var reglist : {uint32_t} = {reglist1|reglist0};
+push.var reject : {Reject} = {(reglist == 0)};
 
 push.disasm = {
   buffer << "push\t{" << DisasmRegList(reglist) << "}";
 };
 
 push.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  LSMIter itr(LSMIter::DB, reglist, cpu.GetGPR( cpu.SP_reg ));
+  typedef typename ARCH::U32 U32;
+  U32 base = cpu.GetGPR( cpu.SP_reg );
+  LSMIter itr(LSMIter::DB, reglist);
   while (itr.next()) {
-    cpu.MemWrite32( itr.addr(), cpu.GetGPR( itr.reg() ) );
+    cpu.MemWrite32( base + U32(itr.offset()), cpu.GetGPR( itr.reg() ) );
   }
   
-  cpu.SetGPR( cpu.SP_reg, itr.addr() );
+  cpu.SetGPR( cpu.SP_reg, base + U32(itr.offset()) );
 };
 
 /*
@@ -477,20 +505,23 @@ push.execute = {
  */
 
 op stmia( 0b11000[5]: rn[3]: reglist[8] );
+stmia.var reject : {Reject} = {(reglist == 0) or (((reglist & (reglist-1)) >> rn) & 1)};
 
 stmia.disasm = {
   buffer << "stmia\t" << DisasmRegister(rn) << "!, {" << DisasmRegList(reglist) << "}";
 };
 
 stmia.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  LSMIter itr(LSMIter::IA, reglist, cpu.GetGPR( rn ));
+  typedef typename ARCH::U32 U32;
+  U32 base = cpu.GetGPR( rn );
+  LSMIter itr(LSMIter::IA, reglist);
   while (itr.next()) {
-    cpu.MemWrite32( itr.addr(), cpu.GetGPR( itr.reg() ) );
+    cpu.MemWrite32( base + U32(itr.offset()), cpu.GetGPR( itr.reg() ) );
   }
   
-  cpu.SetGPR( rn, itr.addr() );
+  cpu.SetGPR( rn, base + U32(itr.offset()) );
 };
 
 /*

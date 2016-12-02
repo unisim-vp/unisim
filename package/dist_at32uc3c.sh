@@ -413,7 +413,6 @@ m4/bsd_sockets.m4 \
 m4/curses.m4 \
 m4/libedit.m4 \
 m4/systemc.m4 \
-m4/tlm20.m4 \
 m4/with_boost.m4 \
 m4/check_lib.m4 \
 m4/get_exec_path.m4 \
@@ -642,8 +641,8 @@ Requirements:
   - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
   - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
   - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
-  - Core SystemC Language >= 2.1 (http://www.systemc.org)
-  - TLM Transaction Level Modeling Library, Release >= 2.0 (http://www.systemc.org)
+  - Core SystemC Language >= 2.3.0 (http://www.systemc.org)
+
 
 Building instructions:
   $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-tlm20=<path-to-TLM-library-install-dir>
@@ -950,7 +949,6 @@ if [ "${has_to_build_at32uc3c_configure}" = "yes" ]; then
 	echo "UNISIM_WITH_BOOST(main)" >> "${AT32UC3C_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${AT32UC3C_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${AT32UC3C_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TLM20" >> "${AT32UC3C_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${AT32UC3C_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${AT32UC3C_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-at32uc3c-${AT32UC3C_VERSION}\"], [path of shared data relative to bin directory])" >> "${AT32UC3C_CONFIGURE_AC}"

@@ -36,8 +36,6 @@
 #ifndef __UNISIM_SERVICE_DEBUG_GDB_SERVER_GDB_SERVER_TCC__
 #define __UNISIM_SERVICE_DEBUG_GDB_SERVER_GDB_SERVER_TCC__
 
-#include <unisim/util/xml/xml.hh>
-
 #include <iostream>
 #include <sstream>
 #include <list>
@@ -48,8 +46,9 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <stdexcept>
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 
 #include <winsock2.h>
 
@@ -118,6 +117,18 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, extended_mode(false)
 	, counter(0)
 	, period(50)
+	, gdb_client_feature_multiprocess(false)
+	, gdb_client_feature_xmlregisters(false)
+	, gdb_client_feature_qrelocinsn(false)
+	, gdb_client_feature_swbreak(false)
+	, gdb_client_feature_hwbreak(false)
+	, gdb_client_feature_fork_events(false)
+	, gdb_client_feature_vfork_events(false)
+	, gdb_client_feature_exec_events(false)
+	, gdb_client_feature_vcont(false)
+	, current_thread_id(0)
+	, no_ack_mode(false)
+	, arch_specific_breakpoint_kinds()
 	, disasm_addr(0)
 	, input_buffer_size(0)
 	, input_buffer_index(0)
@@ -130,8 +141,20 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 {
 	param_tcp_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_memory_atom_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
 	counter = period;
+	
+#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
+	// Loads the winsock2 dll
+	WORD wVersionRequested = MAKEWORD( 2, 2 );
+	WSADATA wsaData;
+	if(WSAStartup(wVersionRequested, &wsaData) != 0)
+	{
+		throw std::runtime_error("WSAStartup failed: Windows sockets not available");
+	}
+#endif
+
 }
 
 template <class ADDRESS>
@@ -141,12 +164,36 @@ GDBServer<ADDRESS>::~GDBServer()
 	{
 		string packet("W00");
 		PutPacket(packet);
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(sock);
 #else
 		close(sock);
 #endif
 		sock = -1;
+	}
+	
+#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
+	//releases the winsock2 resources
+	WSACleanup();
+#endif
+
+	unsigned int i;
+	for(i = 0; i < gdb_registers.size(); i++)
+	{
+		GDBRegister *gdb_reg = gdb_registers[i];
+		if(gdb_reg)
+		{
+			delete gdb_reg;
+		}
+	}
+
+	for(i = 0; i < gdb_features.size(); i++)
+	{
+		GDBFeature *gdb_feature = gdb_features[i];
+		if(gdb_feature)
+		{
+			delete gdb_feature;
+		}
 	}
 }
 
@@ -169,6 +216,8 @@ bool GDBServer<ADDRESS>::EndSetup()
 	input_buffer_index = 0;
 	output_buffer_size = 0;
 
+	gdb_arch_reg_num = 0;
+	
 	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser(logger);
 	unisim::util::xml::Node *root_node = parser->Parse(Object::GetSimulator()->SearchSharedDataFile(architecture_description_filename.c_str()));
 
@@ -178,220 +227,8 @@ bool GDBServer<ADDRESS>::EndSetup()
 	{
 		if(root_node->Name() == string("architecture"))
 		{
-			list<unisim::util::xml::Node *>::const_iterator xml_program_counter_node;
-
-			bool has_architecture_name = false;
-			bool has_architecture_endian = false;
-			GDBEndian endian = GDB_BIG_ENDIAN;
-
-			const list<unisim::util::xml::Property *> *root_node_properties = root_node->Properties();
-
-			list<unisim::util::xml::Property *>::const_iterator root_node_property;
-			for(root_node_property = root_node_properties->begin(); root_node_property != root_node_properties->end(); root_node_property++)
+			if(!VisitArchitecture(root_node))
 			{
-				if((*root_node_property)->Name() == string("name"))
-				{
-					/*
-					const string& architecture_name = (*root_node_property)->Value();
-					if(exp->GetArchitectureName() != architecture_name)
-					{
-						if(logger_import)
-						{
-							(*logger_import) << DebugError;
-							(*logger_import) << "CPU architecture (\"" << exp->GetArchitectureName() << "\") is not \"" << architecture_name << "\"" << Endl;
-							(*logger_import) << EndDebugError;
-						}
-						delete root_node;
-						return false;
-					}
-					*/
-					has_architecture_name = true;
-				}
-				else if((*root_node_property)->Name() == string("endian"))
-				{
-					const string& architecture_endian = (*root_node_property)->Value();
-					if(architecture_endian == "little")
-					{
-						endian = GDB_LITTLE_ENDIAN;
-						has_architecture_endian = true;
-					}
-					else if(architecture_endian == "big")
-					{
-						endian = GDB_BIG_ENDIAN;
-						has_architecture_endian = true;
-					}
-				}
-				else
-				{
-					logger << DebugWarning << (*root_node_property)->Filename() << ":" << (*root_node_property)->LineNo() << ":ignoring property '" << (*root_node_property)->Name() << "'" << EndDebugWarning;
-				}
-			}
-
-			if(!has_architecture_name)
-			{
-				logger << DebugWarning << root_node->Filename() << ":" << root_node->LineNo() << ":architecture has no property 'name'" << EndDebugWarning;
-				delete root_node;
-				return false;
-			}
-
-			if(!has_architecture_endian)
-			{
-				logger << DebugWarning << root_node->Filename() << ":" << root_node->LineNo() << ":assuming target architecture endian is big endian" << EndDebugWarning;
-			}
-
-			const list<unisim::util::xml::Node *> *xml_nodes = root_node->Childs();
-			list<unisim::util::xml::Node *>::const_iterator xml_node;
-			bool has_program_counter = false;
-			string program_counter_name;
-
-			int reg_num = 0;
-			for(xml_node = xml_nodes->begin(); xml_node != xml_nodes->end(); xml_node++)
-			{
-				if((*xml_node)->Name() == string("register"))
-				{
-					string reg_name;
-					bool has_reg_name = false;
-					int reg_bitsize = 0;
-					bool has_reg_bitsize = false;
-
-					const list<unisim::util::xml::Property *> *xml_node_properties = (*xml_node)->Properties();
-
-					list<unisim::util::xml::Property *>::const_iterator xml_node_property;
-					for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
-					{
-						if((*xml_node_property)->Name() == string("name"))
-						{
-							reg_name = (*xml_node_property)->Value();
-							has_reg_name = true;
-						}
-						else
-						{
-							if((*xml_node_property)->Name() == string("bitsize"))
-							{
-								reg_bitsize = atoi((*xml_node_property)->Value().c_str());
-								has_reg_bitsize = true;
-							}
-							else
-							{
-								if((*xml_node_property)->Name() == string("regnum"))
-								{
-									reg_num = atoi((*xml_node_property)->Value().c_str());
-								}
-								else
-								{
-									logger << DebugWarning << (*xml_node_property)->Filename() << ":" << (*xml_node_property)->LineNo() << ":ignoring property '" << (*xml_node_property)->Name() << "'" << EndDebugWarning;
-								}
-							}
-						}
-					}
-
-					if(has_reg_name && has_reg_bitsize)
-					{
-						bool cpu_has_reg = true;
-						bool cpu_has_right_reg_bitsize = true;
-
-						unisim::util::debug::Register *reg = 0;
-						
-						if(!reg_name.empty())
-						{
-							reg = registers_import->GetRegister(reg_name.c_str());
-
-							if(!reg)
-							{
-								cpu_has_reg = false;
-								if(verbose)
-								{
-									logger << DebugWarning << "CPU does not support register " << reg_name << EndDebugWarning;
-								}
-							}
-							else
-							{
-								if((8 * reg->GetSize()) != reg_bitsize)
-								{
-									cpu_has_right_reg_bitsize = false;
-									if(verbose)
-									{
-										logger << DebugWarning << ": register size (" << reg_bitsize << " bits) doesn't match with size (" << 8 * reg->GetSize() << " bits) reported by CPU" << EndDebugWarning;
-									}
-								}
-							}
-						}
-
-						if(reg_num >= gdb_registers.size())
-						{
-							gdb_registers.resize(reg_num + 1);
-						}
-						
-						if(cpu_has_reg && cpu_has_right_reg_bitsize)
-						{
-							gdb_registers[reg_num] = GDBRegister(reg, endian, reg_num);
-						}
-						else
-						{
-							gdb_registers[reg_num] = GDBRegister(reg_name, reg_bitsize, endian, reg_num);
-						}
-					}
-					else
-					{
-						logger << DebugWarning << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":node '" << (*xml_node)->Name() << "' has no 'name' or 'size' property" << EndDebugWarning;
-					}
-					
-					reg_num++;
-				}
-				else
-				{
-					if((*xml_node)->Name() == string("program_counter"))
-					{
-						xml_program_counter_node = xml_node;
-						has_program_counter = true;
-						bool has_program_counter_name = false;
-						const list<unisim::util::xml::Property *> *xml_node_properties = (*xml_node)->Properties();
-
-						list<unisim::util::xml::Property *>::const_iterator xml_node_property;
-						for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
-						{
-							if((*xml_node_property)->Name() == string("name"))
-							{
-								program_counter_name = (*xml_node_property)->Value();
-								has_program_counter_name = true;
-							}
-						}
-
-						if(!has_program_counter_name)
-						{
-							logger << DebugWarning << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":node '" << (*xml_node)->Name() << "' has no 'name'" << EndDebugWarning;
-							delete root_node;
-							return false;
-						}
-					}
-					else
-					{
-						logger << DebugWarning << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":ignoring tag '" << (*xml_node)->Name() << "'" << EndDebugWarning;
-					}
-				}
-			}
-
-			if(!has_program_counter)
-			{
-				logger << DebugError << root_node->Filename() << ":" << root_node->LineNo() << ":architecture has no program counter" << EndDebugError;
-				delete root_node;
-				return false;
-			}
-
-			vector<GDBRegister>::iterator reg_iter;
-
-			for(reg_iter = gdb_registers.begin(); reg_iter != gdb_registers.end(); reg_iter++)
-			{
-				if(reg_iter->GetName() == program_counter_name)
-				{
-					gdb_pc = &(*reg_iter);
-					break;
-				}
-			}
-
-			if(!gdb_pc)
-			{
-				logger << DebugError << (*xml_program_counter_node)->Filename() << ":" << (*xml_program_counter_node)->LineNo() << ":program counter does not belong to registers" << EndDebugError;
 				delete root_node;
 				return false;
 			}
@@ -439,7 +276,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 	if(bind(server_sock, (struct sockaddr *) &addr, sizeof(addr)) < 0)
 	{
 		logger << DebugError << "Bind failed. TCP Port #" << tcp_port << " may be already in use. Please specify another port in " << param_tcp_port.GetName() << EndDebugError;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(server_sock);
 #else
 		close(server_sock);
@@ -450,7 +287,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 	if(listen(server_sock, 1))
 	{
 		logger << DebugError << "Listen failed" << EndDebugError;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(server_sock);
 #else
 		close(server_sock);
@@ -458,7 +295,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 		return false;
 	}
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		int addr_len;
 #else
 		socklen_t addr_len;
@@ -471,7 +308,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 	if(sock < 0)
 	{
 		logger << DebugError << "accept failed" << EndDebugError;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(server_sock);
 #else
 		close(server_sock);
@@ -495,7 +332,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 	}
 
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	u_long NonBlock = 1;
 	if(ioctlsocket(sock, FIONBIO, &NonBlock) != 0)
 	{
@@ -528,12 +365,333 @@ bool GDBServer<ADDRESS>::EndSetup()
 	}
 #endif
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	closesocket(server_sock);
 #else
 	close(server_sock);
 #endif
 
+	return true;
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::VisitArchitecture(unisim::util::xml::Node *xml_node)
+{
+	bool has_architecture_name = false;
+	bool has_architecture_endian = false;
+	std::string architecture_name;
+	endian = GDB_BIG_ENDIAN;
+
+	const list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
+
+	list<unisim::util::xml::Property *>::const_iterator xml_node_property;
+	for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
+	{
+		if((*xml_node_property)->Name() == string("name"))
+		{
+			architecture_name = (*xml_node_property)->Value();
+			has_architecture_name = true;
+		}
+		else if((*xml_node_property)->Name() == string("endian"))
+		{
+			const string& architecture_endian = (*xml_node_property)->Value();
+			if(architecture_endian == "little")
+			{
+				endian = GDB_LITTLE_ENDIAN;
+				has_architecture_endian = true;
+			}
+			else if(architecture_endian == "big")
+			{
+				endian = GDB_BIG_ENDIAN;
+				has_architecture_endian = true;
+			}
+		}
+		else
+		{
+			logger << DebugWarning << (*xml_node_property)->Filename() << ":" << (*xml_node_property)->LineNo() << ":ignoring property '" << (*xml_node_property)->Name() << "'" << EndDebugWarning;
+		}
+	}
+
+	if(!has_architecture_name)
+	{
+		logger << DebugWarning << xml_node->Filename() << ":" << xml_node->LineNo() << ":architecture has no property 'name'" << EndDebugWarning;
+		return false;
+	}
+
+	if(!has_architecture_endian)
+	{
+		logger << DebugWarning << xml_node->Filename() << ":" << xml_node->LineNo() << ":assuming target architecture endian is big endian" << EndDebugWarning;
+	}
+	
+	list<unisim::util::xml::Node *>::const_iterator xml_program_counter_node;
+	const list<unisim::util::xml::Node *> *xml_child_nodes = xml_node->Childs();
+	list<unisim::util::xml::Node *>::const_iterator xml_child_node;
+	bool has_program_counter = false;
+
+	for(xml_child_node = xml_child_nodes->begin(); xml_child_node != xml_child_nodes->end(); xml_child_node++)
+	{
+		if((*xml_child_node)->Name() == std::string("feature"))
+		{
+			if(!VisitFeature(*xml_child_node)) return false;
+		}
+		else if((*xml_child_node)->Name() == std::string("program_counter"))
+		{
+			has_program_counter = true;
+			xml_program_counter_node = xml_child_node;
+			if(!VisitProgramCounter(*xml_child_node)) return false;
+		}
+		else if((*xml_child_node)->Name() == std::string("breakpoint_kind"))
+		{
+			if(!VisitBreakPointKind(*xml_child_node)) return false;
+		}
+		else
+		{
+			logger << DebugWarning << (*xml_child_node)->Filename() << ":" << (*xml_child_node)->LineNo() << ":ignoring tag '" << (*xml_child_node)->Name() << "'" << EndDebugWarning;
+		}
+	}
+	
+	if(!has_program_counter)
+	{
+		logger << DebugError << xml_node->Filename() << ":" << xml_node->LineNo() << ":architecture has no program counter" << EndDebugError;
+		return false;
+	}
+
+	vector<GDBRegister *>::iterator reg_iter;
+
+	for(reg_iter = gdb_registers.begin(); reg_iter != gdb_registers.end(); reg_iter++)
+	{
+		if((*reg_iter)->GetName() == program_counter_name)
+		{
+			gdb_pc = *reg_iter;
+			break;
+		}
+	}
+
+	if(!gdb_pc)
+	{
+		logger << DebugError << (*xml_program_counter_node)->Filename() << ":" << (*xml_program_counter_node)->LineNo() << ":program counter does not belong to registers" << EndDebugError;
+		return false;
+	}
+	
+	return true;
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::VisitFeature(unisim::util::xml::Node *xml_node)
+{
+	std::string feature_name;
+	
+	const list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
+
+	list<unisim::util::xml::Property *>::const_iterator xml_node_property;
+	for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
+	{
+		if((*xml_node_property)->Name() == string("name"))
+		{
+			feature_name = (*xml_node_property)->Value();
+		}
+		else
+		{
+			logger << DebugWarning << (*xml_node_property)->Filename() << ":" << (*xml_node_property)->LineNo() << ":ignoring property '" << (*xml_node_property)->Name() << "'" << EndDebugWarning;
+		}
+	}
+	
+	GDBFeature *gdb_feature = new GDBFeature(feature_name, gdb_features.size());
+	gdb_features.push_back(gdb_feature);
+	
+	const list<unisim::util::xml::Node *> *xml_child_nodes = xml_node->Childs();
+	list<unisim::util::xml::Node *>::const_iterator xml_child_node;
+	for(xml_child_node = xml_child_nodes->begin(); xml_child_node != xml_child_nodes->end(); xml_child_node++)
+	{
+		if((*xml_child_node)->Name() == std::string("register"))
+		{
+			if(!VisitRegister(*xml_child_node, gdb_feature)) return false;
+		}
+	}
+	
+	return true;
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::VisitBreakPointKind(unisim::util::xml::Node *xml_node)
+{
+	bool has_kind = false;
+	bool has_size = false;
+	uint32_t kind = 0;
+	uint32_t size = 0;
+	
+	const list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
+	
+	list<unisim::util::xml::Property *>::const_iterator xml_node_property;
+	for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
+	{
+		if((*xml_node_property)->Name() == string("kind"))
+		{
+			kind = atoi((*xml_node_property)->Value().c_str());
+			has_kind = true;
+		}
+		else if((*xml_node_property)->Name() == string("size"))
+		{
+			size = atoi((*xml_node_property)->Value().c_str());
+			has_size = true;
+		}
+	}
+	
+	if(!has_kind)
+	{
+		logger << DebugWarning << xml_node->Filename() << ":" << xml_node->LineNo() << ":node '" << xml_node->Name() << "' has no 'kind'" << EndDebugWarning;
+		return false;
+	}
+	if(!has_size)
+	{
+		logger << DebugWarning << xml_node->Filename() << ":" << xml_node->LineNo() << ":node '" << xml_node->Name() << "' has no 'size'" << EndDebugWarning;
+		return false;
+	}
+	
+	if(arch_specific_breakpoint_kinds.find(kind) != arch_specific_breakpoint_kinds.end())
+	{
+		logger << DebugWarning << xml_node->Filename() << ":" << xml_node->LineNo() << ":'kind' in node '" << xml_node->Name() << "' is already declared in a previous node" << EndDebugWarning;
+		return false;
+	}
+	
+	arch_specific_breakpoint_kinds[kind] = size;
+	
+	return true;
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::VisitRegister(unisim::util::xml::Node *xml_node, GDBFeature *gdb_feature)
+{
+	string reg_name;
+	bool has_reg_name = false;
+	int reg_bitsize = 0;
+	bool has_reg_bitsize = false;
+	std::string reg_type;
+	std::string reg_group;
+
+	const list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
+
+	list<unisim::util::xml::Property *>::const_iterator xml_node_property;
+	for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
+	{
+		if((*xml_node_property)->Name() == string("name"))
+		{
+			reg_name = (*xml_node_property)->Value();
+			has_reg_name = true;
+		}
+		else
+		{
+			if((*xml_node_property)->Name() == string("bitsize"))
+			{
+				reg_bitsize = atoi((*xml_node_property)->Value().c_str());
+				has_reg_bitsize = true;
+				if(reg_bitsize == 0)
+				{
+					logger << DebugWarning << (*xml_node_property)->Filename() << ":" << (*xml_node_property)->LineNo() << ": bitsize should not be 0" << EndDebugWarning;
+				}
+			}
+			else
+			{
+				if((*xml_node_property)->Name() == string("regnum"))
+				{
+					gdb_arch_reg_num = atoi((*xml_node_property)->Value().c_str());
+				}
+				else if((*xml_node_property)->Name() == string("type"))
+				{
+					reg_type = (*xml_node_property)->Value().c_str();
+				}
+				else if((*xml_node_property)->Name() == string("group"))
+				{
+					reg_group = (*xml_node_property)->Value().c_str();
+				}
+				else
+				{
+					logger << DebugWarning << (*xml_node_property)->Filename() << ":" << (*xml_node_property)->LineNo() << ":ignoring property '" << (*xml_node_property)->Name() << "'" << EndDebugWarning;
+				}
+			}
+		}
+	}
+
+	if(has_reg_name && has_reg_bitsize)
+	{
+		bool cpu_has_reg = true;
+		bool cpu_has_right_reg_bitsize = true;
+
+		unisim::service::interfaces::Register *reg = 0;
+		
+		if(!reg_name.empty())
+		{
+			reg = registers_import->GetRegister(reg_name.c_str());
+
+			if(!reg)
+			{
+				cpu_has_reg = false;
+				if(verbose)
+				{
+					logger << DebugWarning << "CPU does not support register " << reg_name << EndDebugWarning;
+				}
+			}
+			else
+			{
+				if((8 * reg->GetSize()) != reg_bitsize)
+				{
+					cpu_has_right_reg_bitsize = false;
+					if(verbose)
+					{
+						logger << DebugWarning << ": register size (" << reg_bitsize << " bits) doesn't match with size (" << 8 * reg->GetSize() << " bits) reported by CPU" << EndDebugWarning;
+					}
+				}
+			}
+		}
+
+		if(gdb_arch_reg_num >= gdb_registers.size())
+		{
+			gdb_registers.resize(gdb_arch_reg_num + 1);
+		}
+		
+		if(cpu_has_reg && cpu_has_right_reg_bitsize)
+		{
+			gdb_registers[gdb_arch_reg_num] = new GDBRegister(reg, reg_name, endian, gdb_arch_reg_num, reg_type, reg_group);
+		}
+		else
+		{
+			gdb_registers[gdb_arch_reg_num] = new GDBRegister(reg_name, reg_bitsize, endian, gdb_arch_reg_num, reg_type, reg_group);
+		}
+		
+		gdb_feature->AddRegister(gdb_registers[gdb_arch_reg_num]);
+	}
+	else
+	{
+		logger << DebugWarning << xml_node->Filename() << ":" << xml_node->LineNo() << ":node '" << xml_node->Name() << "' has no 'name' or 'bitsize' property" << EndDebugWarning;
+	}
+	
+	gdb_arch_reg_num++;
+	
+	return true;
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::VisitProgramCounter(unisim::util::xml::Node *xml_node)
+{
+	bool has_program_counter_name = false;
+	const list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
+
+	list<unisim::util::xml::Property *>::const_iterator xml_node_property;
+	for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
+	{
+		if((*xml_node_property)->Name() == string("name"))
+		{
+			program_counter_name = (*xml_node_property)->Value();
+			has_program_counter_name = true;
+		}
+	}
+
+	if(!has_program_counter_name)
+	{
+		logger << DebugWarning << xml_node->Filename() << ":" << xml_node->LineNo() << ":node '" << xml_node->Name() << "' has no 'name'" << EndDebugWarning;
+		return false;
+	}
+	
 	return true;
 }
 
@@ -563,9 +721,9 @@ bool GDBServer<ADDRESS>::ParseHex(const string& s, size_t& pos, ADDRESS& value)
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event)
+void GDBServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
 {
-	switch(event.GetType())
+	switch(event->GetType())
 	{
 		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
 			break;
@@ -621,42 +779,45 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 	ADDRESS reg_num;
 	ADDRESS type;
 
-	if(running_mode == GDBSERVER_MODE_CONTINUE && !trap)
+	if(running_mode != GDBSERVER_MODE_WAITING_GDB_CLIENT)
 	{
-		if(--counter > 0)
+		if(running_mode == GDBSERVER_MODE_CONTINUE && !trap)
 		{
-			return DebugControl<ADDRESS>::DBG_STEP;
-		}
-
-		counter = period;
-
-		char c;
-
-		if(GetChar(c, false))
-		{
-			if(c == 0x03)
+			if(--counter > 0)
 			{
-				running_mode = GDBSERVER_MODE_WAITING_GDB_CLIENT;
-				ReportTracePointTrap();
+				return DebugControl<ADDRESS>::DBG_STEP;
+			}
+
+			counter = period;
+
+			char c;
+
+			if(GetChar(c, false))
+			{
+				if(c == 0x03)
+				{
+					running_mode = GDBSERVER_MODE_WAITING_GDB_CLIENT;
+					ReportTracePointTrap();
+				}
+			}
+			else
+			{
+				return DebugControl<ADDRESS>::DBG_STEP;
 			}
 		}
-		else
+
+		if((trap || running_mode == GDBSERVER_MODE_STEP) && !synched)
 		{
-			return DebugControl<ADDRESS>::DBG_STEP;
+			synched = true;
+			return DebugControl<ADDRESS>::DBG_SYNC;
 		}
-	}
 
-	if((trap || running_mode == GDBSERVER_MODE_STEP) && !synched)
-	{
-		synched = true;
-		return DebugControl<ADDRESS>::DBG_SYNC;
-	}
-
-	if(trap || running_mode == GDBSERVER_MODE_STEP)
-	{
-		ReportTracePointTrap();
-		running_mode = GDBSERVER_MODE_WAITING_GDB_CLIENT;
-		trap = false;
+		if(trap || running_mode == GDBSERVER_MODE_STEP)
+		{
+			ReportTracePointTrap();
+			running_mode = GDBSERVER_MODE_WAITING_GDB_CLIENT;
+			trap = false;
+		}
 	}
 
 	string packet;
@@ -714,7 +875,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(pos != len) break;
-				if(!ReadMemory(addr * memory_atom_size, size))
+				if(!ReadMemoryHex(addr * memory_atom_size, size))
 				{
 					Object::Stop(0);
 					return DebugControl<ADDRESS>::DBG_KILL;
@@ -726,7 +887,19 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(packet[pos++] != ':') break;
-				if(!WriteMemory(addr * memory_atom_size, packet.substr(pos), size))
+				if(!WriteMemoryHex(addr * memory_atom_size, packet.substr(pos), size))
+				{
+					Object::Stop(0);
+					return DebugControl<ADDRESS>::DBG_KILL;
+				}
+				break;
+				
+			case 'X':
+				if(!ParseHex(packet, pos, addr)) break;
+				if(packet[pos++] != ',') break;
+				if(!ParseHex(packet, pos, size)) break;
+				if(packet[pos++] != ':') break;
+				if(!WriteMemoryBin(addr * memory_atom_size, packet.substr(pos), size))
 				{
 					Object::Stop(0);
 					return DebugControl<ADDRESS>::DBG_KILL;
@@ -847,9 +1020,46 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 					synched = false;
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
+				else if(packet.substr(0, 5) == "vKill")
+				{
+					Kill();
+					killed = true;
+				}
 				else if(packet.substr(0, 6) == "qRcmd,")
 				{
 					HandleQRcmd(packet.substr(6));
+				}
+				else if(packet.substr(0, 10) == "qSupported")
+				{
+					HandleQSupported(packet.substr(10));
+				}
+				else if(packet == "qC")
+				{
+					HandleQC();
+				}
+				else if(packet.substr(0, 9) == "qAttached")
+				{
+					HandleQAttached(packet.substr(9));
+				}
+				else if(packet.substr(0, 8) == "qTStatus")
+				{
+					HandleQTStatus();
+				}
+				else if(packet == "QStartNoAckMode")
+				{
+					HandleQStartNoAckMode();
+				}
+				else if(packet.substr(0, 20) == "qXfer:features:read:")
+				{
+					HandleQXferFeaturesRead(packet.substr(20));
+				}
+				else if(packet == "qfThreadInfo")
+				{
+					HandleQfThreadInfo();
+				}
+				else if(packet == "qsThreadInfo")
+				{
+					HandleQsThreadInfo();
 				}
 				else
 				{
@@ -873,7 +1083,7 @@ bool GDBServer<ADDRESS>::GetChar(char& c, bool blocking)
 	{
 		do
 		{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 			int r = recv(sock, input_buffer, sizeof(input_buffer), 0);
 			if(r == 0 || r == SOCKET_ERROR)
 #else
@@ -881,7 +1091,7 @@ bool GDBServer<ADDRESS>::GetChar(char& c, bool blocking)
 			if(r <= 0)
 #endif
 			{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 				if(r == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
 #else
 				if(r < 0 && errno == EAGAIN)
@@ -889,7 +1099,7 @@ bool GDBServer<ADDRESS>::GetChar(char& c, bool blocking)
 				{
 					if(blocking)
 					{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 						Sleep(1); // sleep for 10ms
 #else
 						usleep(1000); // sleep for 10ms
@@ -925,7 +1135,7 @@ bool GDBServer<ADDRESS>::FlushOutput()
 		unsigned int index = 0;
 		do
 		{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 			int r = send(sock, output_buffer + index, output_buffer_size, 0);
 			if(r == 0 || r == SOCKET_ERROR)
 #else
@@ -965,8 +1175,6 @@ bool GDBServer<ADDRESS>::GetPacket(string& s, bool blocking)
 	uint8_t checksum;
 	uint8_t received_checksum;
 	char c;
-	char ch[2];
-	ch[1] = 0;
 	s.erase();
 
 	while(1)
@@ -991,8 +1199,7 @@ bool GDBServer<ADDRESS>::GetPacket(string& s, bool blocking)
 
 			if(c == '#') break;
 			checksum = checksum + (uint8_t ) c;
-			ch[0] = c;
-			s += ch;
+			s.append(1, c); // Note: don't use += because null characters can't be appended this way to the string
 		}
 
 		if(c == '#')
@@ -1004,16 +1211,38 @@ bool GDBServer<ADDRESS>::GetPacket(string& s, bool blocking)
 
 			if(verbose)
 			{
-				logger << DebugInfo << "receiving $" << s << "#" << Nibble2HexChar((received_checksum >> 4) & 0xf) << Nibble2HexChar(received_checksum & 0xf) << EndDebugInfo;
+				logger << DebugInfo << "receiving $";
+				// Note: packet may have characters that can't be printed
+				std::size_t length = s.length();
+				std::size_t pos;
+				for(pos = 0; pos < length; pos++)
+				{
+					c = s[pos];
+					if((c >= 32) && (c != 127))
+					{
+						logger << c;
+					}
+					else
+					{
+						logger << ' ';
+					}
+				}
+				logger << "#" << Nibble2HexChar((received_checksum >> 4) & 0xf) << Nibble2HexChar(received_checksum & 0xf) << EndDebugInfo;
 			}
 			if(checksum != received_checksum)
 			{
-				if(!PutChar('-')) return false;
+				if(!no_ack_mode)
+				{
+					if(!PutChar('-')) return false;
+				}
 				if(!FlushOutput()) return false;
 			}
 			else
 			{
-				if(!PutChar('+')) return false;
+				if(!no_ack_mode)
+				{
+					if(!PutChar('+')) return false;
+				}
 				if(!FlushOutput()) return false;
 
 				if(s.length() >= 3 && s[2] == ':')
@@ -1057,10 +1286,26 @@ bool GDBServer<ADDRESS>::PutPacket(const string& s)
 		if(!PutChar(Nibble2HexChar(checksum & 0xf))) return false;
 		if(verbose)
 		{
-			logger << DebugInfo << "sending $" << s << "#" << Nibble2HexChar(checksum >> 4) << Nibble2HexChar(checksum & 0xf) << EndDebugInfo;
+			logger << DebugInfo << "sending $";
+			// Note: packet may have characters that can't be printed
+			std::size_t length = s.length();
+			std::size_t pos;
+			for(pos = 0; pos < length; pos++)
+			{
+				c = s[pos];
+				if((c >= 32) && (c != 127))
+				{
+					logger << c;
+				}
+				else
+				{
+					logger << ' ';
+				}
+			}
+			logger << "#" << Nibble2HexChar(checksum >> 4) << Nibble2HexChar(checksum & 0xf) << EndDebugInfo;
 		}
 		if(!FlushOutput()) return false;
-	} while(GetChar(c, true) && c != '+');
+	} while(!no_ack_mode && GetChar(c, true) && (c != '+'));
 	return true;
 }
 
@@ -1085,15 +1330,23 @@ bool GDBServer<ADDRESS>::OutputText(const char *s, int count)
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::ReadRegisters()
 {
+	unsigned int reg_num;
 	string packet;
-	vector<GDBRegister>::const_iterator gdb_reg;
+	vector<GDBRegister *>::const_iterator gdb_reg_iter;
 
-	for(gdb_reg = gdb_registers.begin(); gdb_reg != gdb_registers.end(); gdb_reg++)
+	for(reg_num = 0, gdb_reg_iter = gdb_registers.begin(); gdb_reg_iter != gdb_registers.end(); reg_num++, gdb_reg_iter++)
 	{
-		string hex;
-		gdb_reg->GetValue(hex);
-		//std::cerr << gdb_reg->GetName() << "=" << hex << std::endl;
-		packet += hex;
+		GDBRegister *gdb_reg = *gdb_reg_iter;
+		if(gdb_reg) // there are some holes in the register map
+		{
+			string hex;
+			gdb_reg->GetValue(hex);
+			if(verbose)
+			{
+				logger << DebugInfo << "reg #" << reg_num << ":" << gdb_reg->GetName() << "=" << hex << EndDebugInfo;
+			}
+			packet += hex;
+		}
 	}
 	return PutPacket(packet);
 }
@@ -1102,15 +1355,20 @@ template <class ADDRESS>
 bool GDBServer<ADDRESS>::WriteRegisters(const string& hex)
 {
 	bool write_error = false;
-	vector<GDBRegister>::iterator gdb_reg;
+	vector<GDBRegister *>::iterator gdb_reg_iter;
 	unsigned int pos = 0;
 
-	for(gdb_reg = gdb_registers.begin(); gdb_reg != gdb_registers.end(); pos += gdb_reg->GetHexLength(), gdb_reg++)
+	for(gdb_reg_iter = gdb_registers.begin(); gdb_reg_iter != gdb_registers.end(); gdb_reg_iter++)
 	{
-		if(!gdb_reg->SetValue(hex.substr(pos, gdb_reg->GetHexLength())))
+		GDBRegister *gdb_reg = *gdb_reg_iter;
+		if(gdb_reg) // there are some holes in the register map
 		{
-			write_error = true;
-			break;
+			if(!gdb_reg->SetValue(hex.substr(pos, gdb_reg->GetHexLength())))
+			{
+				write_error = true;
+				break;
+			}
+			pos += gdb_reg->GetHexLength();
 		}
 	}
 
@@ -1125,10 +1383,23 @@ bool GDBServer<ADDRESS>::ReadRegister(unsigned int regnum)
 		logger << DebugError << "Register #" << regnum << " can't be read because it is unknown" << EndDebugError;
 		return PutPacket("E00");
 	}
-	const GDBRegister& gdb_reg = gdb_registers[regnum];
-	string packet;
-	gdb_reg.GetValue(packet);
-	return PutPacket(packet);
+	const GDBRegister *gdb_reg = gdb_registers[regnum];
+	if(gdb_reg)
+	{
+		string packet;
+		if(gdb_reg->GetValue(packet))
+		{
+			return PutPacket(packet);
+		}
+		else
+		{
+			logger << DebugError << "Failed to read Register #" << regnum << EndDebugError;
+			return PutPacket("E00");
+		}
+	}
+
+	logger << DebugError << "Register #" << regnum << " can't be read because it is unknown" << EndDebugError;
+	return PutPacket("E00");
 }
 
 template <class ADDRESS>
@@ -1139,18 +1410,32 @@ bool GDBServer<ADDRESS>::WriteRegister(unsigned int regnum, const string& hex)
 		logger << DebugError << "Register #" << regnum << " can't be written because it is unknown" << EndDebugError;
 		return PutPacket("E00");
 	}
-	GDBRegister& gdb_reg = gdb_registers[regnum];
-	return gdb_reg.SetValue(hex) ? PutPacket("OK") : PutPacket("E00");
+	GDBRegister *gdb_reg = gdb_registers[regnum];
+	
+	if(gdb_reg)
+	{
+		if(gdb_reg->SetValue(hex))
+		{
+			return PutPacket("OK");
+		}
+		else
+		{
+			logger << DebugError << "Failed to write Register #" << regnum << EndDebugError;
+			return PutPacket("E00");
+		}
+	}
+	
+	logger << DebugError << "Register #" << regnum << " can't be written because it is unknown" << EndDebugError;
+	return PutPacket("E00");
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
+bool GDBServer<ADDRESS>::ReadMemoryHex(ADDRESS addr, uint32_t size)
 {
 	bool read_error = false;
 	bool overwrapping = false;
 	string packet;
-	char ch[2];
-	ch[1] = 0;
+	char c;
 
 	if(size > 0)
 	{
@@ -1165,10 +1450,10 @@ bool GDBServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
 					value = 0;
 				}
 			}
-			ch[0] = Nibble2HexChar(value >> 4);
-			packet += ch;
-			ch[0] = Nibble2HexChar(value & 0xf);
-			packet += ch;
+			c = Nibble2HexChar(value >> 4);
+			packet.append(1, c);
+			c = Nibble2HexChar(value & 0xf);
+			packet.append(1, c);
 			if((addr + 1) == 0) overwrapping = true;
 		} while(++addr, --size);
 	}
@@ -1185,7 +1470,7 @@ bool GDBServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::WriteMemory(ADDRESS addr, const string& hex, uint32_t size)
+bool GDBServer<ADDRESS>::WriteMemoryHex(ADDRESS addr, const string& hex, uint32_t size)
 {
 	bool write_error = false;
 	bool overwrapping = false;
@@ -1221,11 +1506,125 @@ bool GDBServer<ADDRESS>::WriteMemory(ADDRESS addr, const string& hex, uint32_t s
 }
 
 template <class ADDRESS>
+bool GDBServer<ADDRESS>::ReadMemoryBin(ADDRESS addr, uint32_t size)
+{
+	bool read_error = false;
+	bool overwrapping = false;
+	string packet;
+
+	if(size > 0)
+	{
+		do
+		{
+			char value = 0;
+			if(!overwrapping)
+			{
+				if(!memory_import->ReadMemory(addr, &value, 1))
+				{
+					read_error = true;
+					value = 0;
+				}
+			}
+			
+			switch(value)
+			{
+				case '#':
+				case '$':
+				case '}':
+				case '*':
+					packet += '}';   // escape
+					value = value ^ 0x20;
+					break;
+			}
+			
+			packet += value;
+			
+			if((addr + 1) == 0) overwrapping = true;
+		} while(++addr, --size);
+	}
+
+	if(read_error)
+	{
+		if(verbose)
+		{
+			logger << DebugWarning << memory_import.GetName() << "->ReadMemory has reported an error" << EndDebugWarning;
+		}
+	}
+
+	return /*read_error ? PutPacket("E00") : PutPacket(packet); */PutPacket(packet);
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::WriteMemoryBin(ADDRESS addr, const string& bin, uint32_t size)
+{
+	bool write_error = false;
+	bool malformed_binary_data = false;
+	bool overwrapping = false;
+	unsigned int repeat = 0;
+	std::size_t pos = 0;
+	std::size_t len = bin.length();
+
+	if(size > 0 && len > 0)
+	{
+		uint8_t value = 0;
+		char c = 0;
+		
+		do
+		{
+			if(repeat)
+			{
+				repeat--;
+			}
+			else
+			{
+				if(pos >= len)
+				{
+					malformed_binary_data = true;
+					break;
+				}
+				c = bin[pos++];
+		
+				if(c == '}')
+				{
+					if(pos >= len)
+					{
+						malformed_binary_data = true;
+						break;
+					}
+					c = bin[pos++];
+					value = (uint8_t) c ^ 0x20;
+				}
+				else
+				{
+					value = c;
+				}
+			}
+			
+			if(!overwrapping)
+			{
+				if(!memory_import->WriteMemory(addr, &value, 1))
+				{
+					write_error = true;
+				}
+			}
+		}
+		while(++addr, (--size));
+	}
+	
+	if(pos != len)
+	{
+		logger << DebugWarning << "X packet has extra data !" << EndDebugWarning;
+	}
+	
+	return (write_error || malformed_binary_data) ? PutPacket("E00") :  PutPacket("OK");
+}
+
+template <class ADDRESS>
 void GDBServer<ADDRESS>::Kill()
 {
 	if(sock >= 0)
 	{
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		closesocket(sock);
 #else
 		close(sock);
@@ -1271,65 +1670,21 @@ bool GDBServer<ADDRESS>::ReportTracePointTrap()
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size)
+bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t kind)
 {
-	uint32_t i;
-
-// 	cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
-// 	     << ": type = " << type
-// 	     << " address = 0x" << hex << addr << dec
-// 	     << " size = " << size << endl;
-
-	switch(type)
+	uint32_t size = 0;
+	
+	std::map<uint32_t, uint32_t>::const_iterator arch_specific_breakpoint_kind = arch_specific_breakpoint_kinds.find(kind);
+	
+	if(arch_specific_breakpoint_kind != arch_specific_breakpoint_kinds.end())
 	{
-		case 0:
-		case 1:
-			for(i = 0; i < size; i++)
-			{
-				if(!debug_event_trigger_import->Listen(unisim::util::debug::Breakpoint<ADDRESS>(addr + i))) return PutPacket("E00");
-			}
-			return PutPacket("OK");
-		case 2:
-			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
-			{
-				return PutPacket("OK");
-			}
-			else
-			{
-				return PutPacket("E00");
-			}
-		case 3:
-			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
-			{
-				return PutPacket("OK");
-			}
-			else
-			{
-				return PutPacket("E00");
-			}
-
-		case 4:
-			if(!debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
-			{
-				return PutPacket("E00");
-			}
-			
-			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
-			{
-				return PutPacket("OK");
-			}
-			else
-			{
-				debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size));
-				return PutPacket("E00");
-			}
+		size = (*arch_specific_breakpoint_kind).second;
 	}
-	return PutPacket("E00");
-}
-
-template <class ADDRESS>
-bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size)
-{
+	else
+	{
+		size = kind;
+	}
+	
 	uint32_t i;
 
 // 	cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
@@ -1341,209 +1696,456 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 	{
 		case 0:
 		case 1:
-			for(i = 0; i < size; i++)
 			{
-				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Breakpoint<ADDRESS>(addr + i))) return PutPacket("E00");
+				bool status = true;
+				for(i = 0; i < size; i++)
+				{
+					unisim::util::debug::Breakpoint<ADDRESS> *brkp = new unisim::util::debug::Breakpoint<ADDRESS>(addr + i);
+					if(!debug_event_trigger_import->Listen(brkp))
+					{
+						logger << DebugWarning << "Can't listen breakpoint event for address 0x" << std::hex << (addr + i) << std::dec << EndDebugWarning;
+						delete brkp;
+						//return PutPacket("E00");
+					}
+				}
+				if(!status)
+				{
+					//return PutPacket("E00");
+				}
+				return PutPacket("OK");
+			}
+		case 2:
+			{
+				unisim::util::debug::Watchpoint<ADDRESS> *wp = new unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
+				if(!debug_event_trigger_import->Listen(wp))
+				{
+					logger << DebugWarning << "Can't listen write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+					delete wp;
+					//return PutPacket("E00");
+				}
+			}
+			return PutPacket("OK");
+		case 3:
+			{
+				unisim::util::debug::Watchpoint<ADDRESS> *wp = new unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
+				if(!debug_event_trigger_import->Listen(wp))
+				{
+					logger << DebugWarning << "Can't listen read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+					delete wp;
+					//return PutPacket("E00");
+				}
 			}
 			return PutPacket("OK");
 
-		case 2:
-			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
-			{
-				return PutPacket("OK");
-			}
-			else
-			{
-				return PutPacket("E00");
-			}
-		case 3:
-			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
-			{
-				return PutPacket("OK");
-			}
-			else
-			{
-				return PutPacket("E00");
-			}
 		case 4:
 			{
 				bool status = true;
-				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))) status = false;
-				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))) status = false;
-				if(status)
+				unisim::util::debug::Watchpoint<ADDRESS> *wp_read = new unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
+				if(!debug_event_trigger_import->Listen(wp_read))
 				{
-					return PutPacket("OK");
+					status = false;
+					logger << DebugWarning << "Can't listen read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+					delete wp_read;
 				}
-				else
+				
+				unisim::util::debug::Watchpoint<ADDRESS> *wp_write = new unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
+				if(!debug_event_trigger_import->Listen(wp_write))
 				{
-					return PutPacket("E00");
+					status = false;
+					logger << DebugWarning << "Can't listen write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+					delete wp_write;
 				}
+			
+				if(!status)
+				{
+					//return PutPacket("E00");
+				}
+				return PutPacket("OK");
 			}
 	}
 	return PutPacket("E00");
 }
 
-// *** Start ************ REDA ADDED CODE ****************
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t kind)
+{
+	uint32_t size = 0;
+	
+	std::map<uint32_t, uint32_t>::const_iterator arch_specific_breakpoint_kind = arch_specific_breakpoint_kinds.find(kind);
+	
+	if(arch_specific_breakpoint_kind != arch_specific_breakpoint_kinds.end())
+	{
+		size = (*arch_specific_breakpoint_kind).second;
+	}
+	else
+	{
+		size = kind;
+	}
+
+	uint32_t i;
+
+// 	cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
+// 	     << ": type = " << type
+// 	     << " address = 0x" << hex << addr << dec
+// 	     << " size = " << size << endl;
+
+	switch(type)
+	{
+		case 0:
+		case 1:
+			{
+				bool status = true;
+				for(i = 0; i < size; i++)
+				{
+					unisim::util::debug::Breakpoint<ADDRESS> brkp = unisim::util::debug::Breakpoint<ADDRESS>(addr + i);
+					if(!debug_event_trigger_import->Unlisten(&brkp))
+					{
+						status = false;
+						logger << DebugWarning << "Can't unlisten breakpoint event for address 0x" << std::hex << (addr + i) << std::dec << EndDebugWarning;
+					}
+				}
+				
+				if(!status)
+				{
+					//return PutPacket("E00");
+				}
+				return PutPacket("OK");
+			}
+
+		case 2:
+			{
+				unisim::util::debug::Watchpoint<ADDRESS> wp = unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
+				if(!debug_event_trigger_import->Unlisten(&wp))
+				{
+					logger << DebugWarning << "Can't unlisten write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+					//return PutPacket("E00");
+				}
+			}
+			return PutPacket("OK");
+		case 3:
+			{
+				unisim::util::debug::Watchpoint<ADDRESS> wp = unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
+				if(!debug_event_trigger_import->Unlisten(&wp))
+				{
+					logger << DebugWarning << "Can't unlisten read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+					//return PutPacket("E00");
+				}
+			}
+			return PutPacket("OK");
+		case 4:
+			{
+				bool status = true;
+				unisim::util::debug::Watchpoint<ADDRESS> wp_read = unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
+				if(!debug_event_trigger_import->Unlisten(&wp_read))
+				{
+					logger << DebugWarning << "Can't unlisten read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+					status = false;
+				}
+				unisim::util::debug::Watchpoint<ADDRESS> wp_write = unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
+				if(!debug_event_trigger_import->Unlisten(&wp_write))
+				{
+					logger << DebugWarning << "Can't unlisten write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+					status = false;
+				}
+				if(!status)
+				{
+					//return PutPacket("E00");
+				}
+				return PutPacket("OK");
+			}
+	}
+	return PutPacket("E00");
+}
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::HandleQRcmd(string command) {
+void GDBServer<ADDRESS>::HandleQRcmd(string command)
+{
+	std::size_t pos = 0;
+	std::size_t len = command.length();
+	
+	char c;
+	string variable_name;
+	string variable_value;
+	// skip white characters
+	do
+	{
+		c = (HexChar2Nibble(command[pos]) << 4) | HexChar2Nibble(command[pos + 1]);
+		if(c != ' ') break;
+		pos += 2;
+	} while(pos < len);
 
-	size_t separator_index = command.find_first_of(':');
-	string cmdPrefix;
-	if (separator_index == string::npos) {
-		cmdPrefix = command;
-	} else {
-		cmdPrefix = command.substr(0, separator_index);
-	}
+	if(pos < len)
+	{
+		unisim::kernel::service::VariableBase *variable = 0;
 
-	if (cmdPrefix.compare("symboles") == 0) {
-
-		/**
-		 * command: qRcmd, symboles
-		 * return "symbName:symbAddress:symbSize:symbType"
-		 *
-		 * with: symbType in {"FUNCTION", "VARIABLE"}
-		 */
-		if(symbol_table_lookup_import)
+		// fill-in parameter name
+		do
 		{
-			list<const Symbol<ADDRESS> *> func_symbols;
-			symbol_table_lookup_import->GetSymbols(func_symbols, Symbol<ADDRESS>::SYM_FUNC);
+			c = (HexChar2Nibble(command[pos]) << 4) | HexChar2Nibble(command[pos + 1]);
+			pos += 2;
+			if(c == '=') break;
+			variable_name.append(1, c);
+		} while(pos < len);
 
-			if (!func_symbols.empty()) {
-
-				typename list<const Symbol<ADDRESS> *>::const_iterator symbol_iter;
-				std::stringstream strstm;
-
-				for(symbol_iter = func_symbols.begin(); symbol_iter != func_symbols.end(); symbol_iter++)
-				{
-					strstm << "O";
-					strstm << (*symbol_iter)->GetName();
-
-					strstm << ":" << std::hex;
-					strstm.width(8);
-					strstm << (*symbol_iter)->GetAddress();
-
-					strstm << ":" << std::dec << (*symbol_iter)->GetSize();
-
-					strstm << ":" << "FUNCTION";
-
-					PutPacket(strstm.str());
-
-					strstm.str(std::string());
-				}
-			}
-		
-			list<const Symbol<ADDRESS> *> obj_symbols;
-			symbol_table_lookup_import->GetSymbols(func_symbols, Symbol<ADDRESS>::SYM_OBJECT);
-		
-			if (!obj_symbols.empty()) {
-
-				typename list<const Symbol<ADDRESS> *>::const_iterator symbol_iter;
-				std::stringstream strstm;
-
-				for(symbol_iter = obj_symbols.begin(); symbol_iter != obj_symbols.end(); symbol_iter++)
-				{
-
-					strstm << "O";
-					strstm << (*symbol_iter)->GetName();
-
-					strstm << ":" << std::hex;
-					strstm.width(8);
-					strstm << (*symbol_iter)->GetAddress();
-
-					strstm << ":" << std::dec << (*symbol_iter)->GetSize();
-
-					strstm << ":" << "VARIABLE";
-
-					PutPacket(strstm.str());
-
-					strstm.str(std::string());
-
-				}
-			}
-
-			PutPacket("T05");
-
-		} else {
-			PutPacket("E00");
+		variable = Object::GetSimulator()->FindVariable(variable_name.c_str());
+		if(variable->IsVoid())
+		{
+			string msg("unknown variable\n");
+			OutputText(msg.c_str(), msg.length());
+			PutPacket("OK");
+			return;
 		}
 
-	}
-	else if (cmdPrefix.compare("disasm") == 0) {
-		/**
-		 * command: qRcmd, disasm:address:size
-		 *
-		 * return "O<next_address>
-         *        "O<disassembled code>"
-         *        "T05"
-		 *
-		 */
-
-		if (separator_index == string::npos) {
-			PutPacket("E00");
-		} else {
-			separator_index++;
-			ADDRESS symbol_address;
-			ADDRESS symbol_size = 0;
-			if(!ParseHex(command, separator_index, symbol_address)) {
-				PutPacket("E00");
-			} else if(command[separator_index++] != ':') {
-				PutPacket("E00");
-			} else if(!ParseHex(command, separator_index, symbol_size)) {
-				PutPacket("E00");
-			} else if(separator_index != command.length()) {
-				PutPacket("E00");
-			}
-
-			Disasm(symbol_address, symbol_size);
-
-			PutPacket("T05");
-
+		if(pos >= len)
+		{
+			// it's a get!
+			string msg(variable_name + "=" + ((string) *variable) + "\n");
+			OutputText(msg.c_str(), msg.length());
+			PutPacket("OK");
+			return;
 		}
 
+		// fill-in parameter value and remove trailing space
+		while(pos < len)
+		{
+			c = (HexChar2Nibble(command[pos]) << 4) | HexChar2Nibble(command[pos + 1]);
+			if(c == ' ') break;
+			pos += 2;
+			variable_value.append(1, c);
+		}
+
+		string msg(variable_name + "<-" + variable_value + "\n");
+		OutputText(msg.c_str(), msg.length());
+		*variable = variable_value.c_str();
+		PutPacket("OK");
+		return;
 	}
-	else {
+
+	PutPacket("E00");
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::SetGDBClientFeature(std::string gdb_client_feature)
+{
+	struct
+	{
+		const char *name;
+		bool *flag;
+	}
+	features[] = {
+		{ "multiprocess", &gdb_client_feature_multiprocess },
+		{ "xmlRegisters", &gdb_client_feature_xmlregisters },
+		{ "qRelocInsn", &gdb_client_feature_qrelocinsn },
+		{ "swbreak", &gdb_client_feature_swbreak },
+		{ "hwbreak", &gdb_client_feature_hwbreak },
+		{ "fork-events", &gdb_client_feature_fork_events },
+		{ "vfork-events", &gdb_client_feature_vfork_events },
+		{ "exec-events", &gdb_client_feature_exec_events },
+		{ "vContSupported", &gdb_client_feature_vcont }
+	};
+	
+	unsigned int n = sizeof(features) / sizeof(features[0]);
+	unsigned int i;
+	for(i = 0; i < n; i++)
+	{
+		std::size_t name_len = strlen(features[i].name);
+		if((gdb_client_feature.length() == (name_len + 1)) && gdb_client_feature.compare(0, name_len, features[i].name) == 0)
+		{
+			if(gdb_client_feature[name_len] == '+')
+			{
+				if(verbose)
+				{
+					logger << DebugInfo << "GDB client supports Feature \"" << features[i].name << "\": yes" << EndDebugInfo;
+				}
+				*features[i].flag = true;
+			}
+			else if(gdb_client_feature[name_len] == '-')
+			{
+				if(verbose)
+				{
+					logger << DebugInfo << "GDB client supports Feature \"" << features[i].name << "\": no" << EndDebugInfo;
+				}
+				*features[i].flag = false;
+			}
+			return;
+		}
+	}
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::HandleQSupported(std::string gdb_client_features)
+{
+	std::size_t pos = 0;
+
+	if((pos < gdb_client_features.length()) && (gdb_client_features[pos] == ':'))
+	{
+		pos++;
+	
+		std::size_t delim_pos = 0;
+		
+		do
+		{
+			delim_pos = gdb_client_features.find_first_of(';', pos);
+			
+			std::string gdb_client_feature((delim_pos != std::string::npos) ? gdb_client_features.substr(pos, delim_pos - pos) : gdb_client_features.substr(pos));
+			
+			SetGDBClientFeature(gdb_client_feature);
+			
+			pos = (delim_pos != std::string::npos) ? delim_pos + 1 : std::string::npos;
+		}
+		while(pos != std::string::npos);
+	}
+	
+	PutPacket("PacketSize=0fff;vContSupported+;QStartNoAckMode+;qXfer:features:read+");
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::HandleQC()
+{
+	std::stringstream sstr;
+	sstr << current_thread_id;
+	PutPacket(sstr.str());
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::HandleQTStatus()
+{
+	PutPacket("T0"); // there's no experiments running currently
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::HandleQAttached(std::string command)
+{
+	PutPacket("1"); // The remote server attached to an existing process
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::HandleQStartNoAckMode()
+{
+	PutPacket("OK");
+	no_ack_mode = true;
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::HandleQXferFeaturesRead(std::string command)
+{
+	std::size_t pos = 0;
+	std::size_t delim_pos = command.find_first_of(':');
+	
+	if(delim_pos == std::string::npos)
+	{
+		logger << DebugWarning << "malformed qXfer:features:read request (expecting annex)" << EndDebugWarning;
+		PutPacket("E00");
+	}
+	
+	std::string annex(command.substr(pos, delim_pos - pos));
+	
+	if(verbose)
+	{
+		logger << DebugInfo << "GDB client wants annex \"" << annex << "\"" << std::endl;
+	}
+	
+	pos = delim_pos + 1;
+	delim_pos = command.find_first_of(',', pos);
+	
+	if(delim_pos == std::string::npos)
+	{
+		logger << DebugWarning << "malformed qXfer:features:read request (expecting offset)" << EndDebugWarning;
 		PutPacket("E00");
 	}
 
+	std::stringstream offset_sstr(command.substr(pos, delim_pos - pos));
+	unsigned int offset;
+	offset_sstr >> std::hex >> offset;
+
+	if(verbose)
+	{
+		logger << DebugInfo << "GDB client wants annex from offset " << offset << std::endl;
+	}
+
+	pos = delim_pos + 1;
+
+	std::stringstream length_sstr(command.substr(pos));
+	unsigned int length;
+	length_sstr >> std::hex >> length;
+	
+	if(verbose)
+	{
+		logger << DebugInfo << "GDB client wants at most " << length << " characters from annex" << std::endl;
+	}
+
+	std::stringstream sstr;
+	
+	sstr << "<?xml version=\"1.0\"?>";
+	
+	if(annex == "target.xml")
+	{
+		sstr << "<!DOCTYPE target SYSTEM \"gdb-target.dtd\">";
+		sstr << "<target version=\"1.0\">" ;
+		unsigned int n_features = gdb_features.size();
+		unsigned int i;
+		for(i = 0; i < n_features; i++)
+		{
+			GDBFeature *gdb_feature = gdb_features[i];
+			sstr << "<xi:include href=\"feature" << gdb_feature->GetId() << ".xml\"/>";
+		}
+		sstr << "</target>";
+	}
+	else
+	{
+		unsigned int n_features = gdb_features.size();
+		unsigned int i;
+		for(i = 0; i < n_features; i++)
+		{
+			GDBFeature *gdb_feature = gdb_features[i];
+			gdb_feature->ToXML(sstr, annex);
+		}
+	}
+	
+	std::string packet("l");
+	packet.append(EscapeString(sstr.str()), offset, length);
+	
+	PutPacket(packet);
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::Disasm(ADDRESS symbol_address, unsigned int symbol_size)
+void GDBServer<ADDRESS>::HandleQfThreadInfo()
 {
-
-	ADDRESS current_address = symbol_address;
-	ADDRESS next_address = symbol_address;
-	ADDRESS disassembled_size = 0;
-	std::stringstream strstm;
-
-	while (disassembled_size < symbol_size) {
-
-		strstm.str(std::string());
-
-		std::string dis = disasm_import->Disasm(current_address, next_address);
-
-		if (current_address == next_address) {
-			break;
-		}
-
-		strstm << "O" << hex << current_address << ":";
-
-		strstm << hex;
-		strstm.width(8);
-		strstm << (current_address / memory_atom_size) << ":" << dec << dis << endl;
-		strstm.fill(' ');
-
-		PutPacket(strstm.str());
-
-		disassembled_size += next_address - current_address;
-		current_address = next_address;
-
-	}
-
+	PutPacket("m0"); // report one thread only
 }
 
-// *** End ************ REDA ADDED CODE ****************
+template <class ADDRESS>
+void GDBServer<ADDRESS>::HandleQsThreadInfo()
+{
+	PutPacket("l"); // report end of list
+}
+
+template <class ADDRESS>
+std::string GDBServer<ADDRESS>::EscapeString(const std::string& s) const
+{
+	std::string r;
+	std::size_t pos;
+	std::size_t len = s.length();
+	
+	for(pos = 0; pos < len; pos++)
+	{
+		char c = s[pos];
+		switch(c)
+		{
+			case '#':
+			case '$':
+			case '}':
+			case '*':
+				r.append(1, '}');   // escape
+				c = c ^ 0x20;
+				break;
+		}
+		
+		r.append(1, c);
+	}
+	
+	return r;
+}
 
 
 } // end of namespace gdb_server

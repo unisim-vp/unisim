@@ -26,46 +26,48 @@
 #include <vector>
 #include <string>
 
-struct Product_t {
-  ConstStr_t          m_filename;
+struct Product
+{
+  ConstStr            m_filename;
   std::string         m_line;
   unsigned int        m_lineno;
   std::vector<int>    m_indentations;
   bool                m_sourcelines;
   
-  Product_t( ConstStr_t _filename, bool _sourcelines );
-  virtual ~Product_t() {};
+  Product( ConstStr _filename, bool _sourcelines );
+  virtual ~Product() {};
   
-  Product_t&          usercode( FileLoc_t const& _fileloc, char const* _format, ... );
-  Product_t&          usercode( SourceCode_t const& _source );
-  Product_t&          usercode( SourceCode_t const& _source, char const* _fmt );
-  Product_t&          code( char const* _format, ... );
-  Product_t&          template_signature( Vect_t<CodePair_t> const& _tparams );
-  Product_t&          template_abbrev( Vect_t<CodePair_t> const& _tparams );
-  Product_t&          ns_enter( std::vector<ConstStr_t> const& _namespace );
-  Product_t&          ns_leave( std::vector<ConstStr_t> const& _namespace );
-  Product_t&          require_newline();
-  Product_t&          write( char const* _chars );
+  Product&          usercode( FileLoc const& _fileloc, char const* _format, ... );
+  Product&          usercode( SourceCode const& _source );
+  Product&          usercode( SourceCode const& _source, char const* _fmt );
+  Product&          code( char const* _format, ... );
+  Product&          template_signature( Vector<CodePair> const& _tparams );
+  Product&          template_abbrev( Vector<CodePair> const& _tparams );
+  Product&          ns_enter( std::vector<ConstStr> const& _namespace );
+  Product&          ns_leave( std::vector<ConstStr> const& _namespace );
+  Product&          require_newline();
+  Product&          write( char const* _chars );
   void                flush();
-  Product_t&          flatten_indentation();
+  Product&          flatten_indentation();
   
   virtual void        xwrite( char const* chrs ) = 0;
 };
 
-struct FProduct_t : public Product_t {
+struct FProduct : public Product
+{
   std::ostream*       m_sink;
   
-  FProduct_t( char const* prefix, char const* suffix, bool sourcelines );
-  ~FProduct_t();
+  FProduct( char const* prefix, char const* suffix, bool sourcelines );
+  ~FProduct();
   
   bool                good() const;
   void                xwrite( char const* chrs );
 };
 
-struct SProduct_t : public Product_t {
+struct SProduct : public Product {
   std::string         m_content;
   
-  SProduct_t( ConstStr_t _prefix, bool _sourcelines );
+  SProduct( ConstStr _prefix, bool _sourcelines );
   
   void                xwrite( char const* chrs );
 };

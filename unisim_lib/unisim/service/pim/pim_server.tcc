@@ -52,7 +52,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 
 #include <winsock2.h>
 
@@ -106,6 +106,9 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, unisim::kernel::service::Client<Registers>(_name, _parent)
 	, Service<DebugEventListener<ADDRESS> >(_name, _parent)
 	, unisim::kernel::service::Client<DebugEventTrigger<ADDRESS> >(_name, _parent)
+
+	, unisim::kernel::service::Client<Monitor_if<ADDRESS> > (_name, _parent)
+
 	, VariableBaseListener()
 
 	, debug_control_export("debug-control-export", this)
@@ -120,6 +123,8 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, symbol_table_lookup_import("symbol-table-lookup-import", this)
 	, stmt_lookup_import("stmt-lookup-import", this)
 
+	, monitor_import("monitor-import", this)
+
 	, socketServer(NULL)
 	, gdbThread(NULL)
 	, monitorThread(NULL)
@@ -127,6 +132,7 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, logger(*this)
 	, tcp_port(12345)
 	, architecture_description_filename()
+	, pc_reg_index(0)
 	, pc_reg(0)
 	, endian (GDB_BIG_ENDIAN)
 	, killed(false)
@@ -151,6 +157,8 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, param_host("host", this, fHost)
 
 //	, last_time_ratio(1e+9)
+
+	, local_time(0)
 
 {
 
@@ -387,7 +395,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 		if(gdbThread->isData())
 		{
 			DBGData* request = gdbThread->receiveData();
-			if(request->getCommand() == DBGData::DBG_SUSPEND)
+			if(request->getCommand() == DBGData::DBG_SUSPEND_ACTION)
 			{
 				running_mode = GDBSERVER_MODE_WAITING_GDB_CLIENT;
 				ReportTracePointTrap();
@@ -571,7 +579,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 			}
 				break;
 
-			case DBGData::DBG_CONTINUE: {
+			case DBGData::DBG_CONTINUE_ACTION: {
 				std::string addr_str = request->getAttribute(DBGData::ADDRESS_ATTR);
 				if (addr_str.empty()) {
 					running_mode = GDBSERVER_MODE_CONTINUE;
@@ -987,7 +995,7 @@ bool PIMServer<ADDRESS>::ReportProgramExit()
 	DBGData* response = new DBGData(DBGData::DBG_PROCESS_EXIT);
 	gdbThread->sendData(response);
 
-//#if defined(WIN32) || defined(WIN64)
+//#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 //			Sleep(1);
 //#else
 //			usleep(1000);
@@ -1017,6 +1025,55 @@ bool PIMServer<ADDRESS>::ReportTracePointTrap()
 
 	if (watchpoint_hit != NULL) {
 
+// *******************************
+
+//	if (monitor_import) {
+//		string name;
+//
+//		list<const Symbol<ADDRESS> *> symbol_registries;
+//
+//		if (symbol_table_lookup_import) {
+//			symbol_table_lookup_import->GetSymbols(symbol_registries, Symbol<ADDRESS>::SYM_OBJECT);
+//
+//		}
+//
+//		typename list<const Symbol<ADDRESS> *>::const_iterator symbol_iter;
+//
+//		string value;
+//
+//		for(symbol_iter = symbol_registries.begin(); symbol_iter != symbol_registries.end(); symbol_iter++)
+//		{
+//
+//			if ((*symbol_iter)->GetAddress() == watchpoint_hit->GetAddress()) {
+//
+//				name = (*symbol_iter)->GetName();
+//				value = "";
+//
+//				if(!InternalReadMemory((*symbol_iter)->GetAddress(), (*symbol_iter)->GetSize(), value))
+//				{
+//					if(verbose)
+//					{
+//						logger << DebugWarning << memory_import.GetName() << "->ReadSymbol has reported an error" << EndDebugWarning;
+//					}
+//				}
+//
+////				double d = convertTo<double>(value);
+//
+//				unsigned long d = 0;
+//				hexString2Number(value, &d, (*symbol_iter)->GetSize(), (endian == GDB_BIG_ENDIAN)? "big":"little");
+//
+////				std::cout << "res = " << d << "   at " << local_time << std::endl;
+//
+//				monitor_import->refresh_value(name.c_str(), (double) d, local_time++);
+//
+//				break;
+//			}
+//
+//		}
+//	} // end if(monitor)
+
+// *******************************
+
 		if (watchpoint_hit->GetMemoryAccessType() == unisim::util::debug::MAT_READ) {
 			response = new DBGData(DBGData::DBG_READ_WATCHPOINT);
 		} else {
@@ -1028,7 +1085,9 @@ bool PIMServer<ADDRESS>::ReportTracePointTrap()
 		response->addAttribute(DBGData::ADDRESS_ATTR, sstr.str());
 
 		sstr.str(std::string());
+
 		watchpoint_hit = NULL;
+
 	} else {
 		response = new DBGData(DBGData::DBG_REPORT_EXTENDED_STOP);
 	}

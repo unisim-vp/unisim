@@ -125,6 +125,7 @@ public:
 	const DWARF_Pub<MEMORY_ADDR> *FindPubType(const char *name) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByPubName(const char *name) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByPubType(const char *name) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindDIEByName(unsigned int dw_tag, const char *name, bool external) const;
 	const DWARF_CompilationUnit<MEMORY_ADDR> *FindCompilationUnitByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	const DWARF_CompilationUnit<MEMORY_ADDR> *FindCompilationUnitByName(const char *name) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramDIEByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;

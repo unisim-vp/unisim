@@ -304,6 +304,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 
 	registers_registry["cia"] = new unisim::util::debug::SimpleRegister<uint32_t>("cia", &cia);
 	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("cia", this, cia, "Current Instruction Address"));
+	registers_registry["pc"] = new unisim::util::debug::SimpleRegister<uint32_t>("pc", &cia);
+	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("pc", this, cia, "Program Counter"));
 
 	registers_registry["msr"] = new unisim::util::debug::SimpleRegister<uint32_t>("msr", &msr);
 	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("msr", this, msr, "Machine State Register"));
@@ -465,7 +467,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 template <class CONFIG>
 CPU<CONFIG>::~CPU()
 {
-	map<string, unisim::util::debug::Register *>::iterator reg_iter;
+	map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
 
 	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
 	{
@@ -2279,15 +2281,54 @@ string CPU<CONFIG>::GetFunctionFriendlyName(typename CONFIG::address_t addr)
 }
 
 template <class CONFIG>
-unisim::util::debug::Register *CPU<CONFIG>::GetRegister(const char *name)
+unisim::service::interfaces::Register *CPU<CONFIG>::GetRegister(const char *name)
 {
-	map<string, unisim::util::debug::Register *>::iterator reg_iter = registers_registry.find(name);
+	map<string, unisim::service::interfaces::Register *>::iterator reg_iter = registers_registry.find(name);
 	if(reg_iter != registers_registry.end())
 	{
 		return (*reg_iter).second;
 	}
 
 	return 0;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+  scanner.Append(this->GetRegister("r0"));
+  scanner.Append(this->GetRegister("r1"));
+  scanner.Append(this->GetRegister("r2"));
+  scanner.Append(this->GetRegister("r3"));
+  scanner.Append(this->GetRegister("r4"));
+  scanner.Append(this->GetRegister("r5"));
+  scanner.Append(this->GetRegister("r6"));
+  scanner.Append(this->GetRegister("r7"));
+  scanner.Append(this->GetRegister("r8"));
+  scanner.Append(this->GetRegister("r9"));
+  scanner.Append(this->GetRegister("r10"));
+  scanner.Append(this->GetRegister("r11"));
+  scanner.Append(this->GetRegister("r12"));
+  scanner.Append(this->GetRegister("r13"));
+  scanner.Append(this->GetRegister("r14"));
+  scanner.Append(this->GetRegister("r15"));
+  scanner.Append(this->GetRegister("r16"));
+  scanner.Append(this->GetRegister("r17"));
+  scanner.Append(this->GetRegister("r18"));
+  scanner.Append(this->GetRegister("r19"));
+  scanner.Append(this->GetRegister("r20"));
+  scanner.Append(this->GetRegister("r21"));
+  scanner.Append(this->GetRegister("r22"));
+  scanner.Append(this->GetRegister("r23"));
+  scanner.Append(this->GetRegister("r24"));
+  scanner.Append(this->GetRegister("r25"));
+  scanner.Append(this->GetRegister("r26"));
+  scanner.Append(this->GetRegister("r27"));
+  scanner.Append(this->GetRegister("r28"));
+  scanner.Append(this->GetRegister("r29"));
+  scanner.Append(this->GetRegister("r30"));
+  scanner.Append(this->GetRegister("r31"));
+  scanner.Append(this->GetRegister("cr"));
+  scanner.Append(this->GetRegister("cia"));
 }
 
 template <class CONFIG>

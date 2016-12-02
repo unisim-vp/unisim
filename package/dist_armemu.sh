@@ -109,7 +109,6 @@ unisim/kernel/debug/debug.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/kernel/api/api.cc \
-unisim/kernel/tlm/tlm.cc \
 unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
@@ -125,13 +124,11 @@ unisim/service/debug/gdb_server/gdb_server.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
 unisim/service/debug/debugger/debugger32.cc \
+unisim/service/debug/monitor/monitor.cc \
+unisim/service/debug/monitor/monitor_32.cc \
+unisim/service/debug/monitor/monitor_64.cc \
 unisim/service/profiling/addr_profiler/profiler32.cc \
-unisim/service/power/cache_profile.cc \
-unisim/service/power/cache_dynamic_power.cc \
-unisim/service/power/cache_leakage_power.cc \
-unisim/service/power/cache_power_estimator.cc \
-unisim/service/power/cache_dynamic_energy.cc \
-unisim/service/os/linux_os/linux.cc \
+unisim/service/os/linux_os/arm_linux32.cc \
 unisim/service/trap_handler/trap_handler.cc \
 unisim/service/trap_handler/trap_handler_identifier.cc \
 unisim/service/time/host_time/time.cc \
@@ -182,16 +179,14 @@ unisim/util/endian/endian.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/random/random.cc \
 unisim/util/queue/queue.cc \
-unisim/component/tlm2/processor/arm/armemu/armemu.cc \
+unisim/component/tlm2/processor/arm/cortex_a9/cpu.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/cxx/processor/arm/disasm.cc \
-unisim/component/cxx/processor/arm/armemu/cache.cc \
-unisim/component/cxx/processor/arm/armemu/cpu.cc \
-unisim/component/cxx/processor/arm/armemu/isa_arm32.cc \
-unisim/component/cxx/processor/arm/armemu/isa_thumb.cc \
-unisim/component/cxx/processor/arm/memory_op.cc \
-unisim/component/cxx/processor/arm/cpu.cc \
+unisim/component/cxx/processor/arm/simfloat.cc \
+unisim/component/cxx/processor/arm/vmsav7/cpu.cc \
+unisim/component/cxx/processor/arm/vmsav7/isa_arm32.cc \
+unisim/component/cxx/processor/arm/vmsav7/isa_thumb.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/cxx/memory/ram/memory_32.cc"
 
@@ -206,23 +201,39 @@ unisim/component/cxx/processor/arm/isa/thumb/branch_T1.isa \
 unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa \
 unisim/component/cxx/processor/arm/isa/thumb/ordering.isa \
 unisim/component/cxx/processor/arm/isa/thumb/profiling.isa \
-"
+unisim/component/cxx/processor/arm/isa/thumb2/branch.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/coprocessor.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/data_processing.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/exception.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/hints.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/load_store.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/misc_arithmetic.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/multiply.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/neon.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/ordering.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/status_register_access.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/thumb.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/vfp.isa \
+unisim/component/cxx/processor/arm/isa/thumb2/xscale.isa"
 
 UNISIM_LIB_ARMEMU_ISA_ARM32_FILES="\
-unisim/component/cxx/processor/arm/isa/arm32/specialization.isa \
-unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa \
-unisim/component/cxx/processor/arm/isa/arm32/exception.isa \
-unisim/component/cxx/processor/arm/isa/arm32/execution_latency.isa \
 unisim/component/cxx/processor/arm/isa/arm32/branch.isa \
+unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa \
 unisim/component/cxx/processor/arm/isa/arm32/data_processing.isa \
 unisim/component/cxx/processor/arm/isa/arm32/dependency.isa \
-unisim/component/cxx/processor/arm/isa/arm32/misc_arithmetic.isa \
+unisim/component/cxx/processor/arm/isa/arm32/exception.isa \
+unisim/component/cxx/processor/arm/isa/arm32/execution_latency.isa \
 unisim/component/cxx/processor/arm/isa/arm32/hints.isa \
+unisim/component/cxx/processor/arm/isa/arm32/load_store.isa \
+unisim/component/cxx/processor/arm/isa/arm32/misc_arithmetic.isa \
 unisim/component/cxx/processor/arm/isa/arm32/multiply.isa \
-unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa \
+unisim/component/cxx/processor/arm/isa/arm32/neon.isa \
 unisim/component/cxx/processor/arm/isa/arm32/ordering.isa \
 unisim/component/cxx/processor/arm/isa/arm32/profiling.isa \
-unisim/component/cxx/processor/arm/isa/arm32/load_store.isa \
+unisim/component/cxx/processor/arm/isa/arm32/specialization.isa \
+unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa \
+unisim/component/cxx/processor/arm/isa/arm32/vfp.isa \
+unisim/component/cxx/processor/arm/isa/arm32/xscale.isa \
 unisim/component/cxx/processor/arm/isa/arm32/arm32.isa"
 
 UNISIM_LIB_ARMEMU_ISA_FILES="${UNISIM_LIB_ARMEMU_ISA_THUMB_FILES} ${UNISIM_LIB_ARMEMU_ISA_ARM32_FILES}"
@@ -242,13 +253,10 @@ unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/sim_debugger/sim_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
+unisim/service/debug/monitor/monitor.hh \
 unisim/service/profiling/addr_profiler/profiler.hh \
-unisim/service/power/cache_power_estimator.hh \
-unisim/service/power/cache_profile.hh \
-unisim/service/power/cache_dynamic_power.hh \
-unisim/service/power/cache_leakage_power.hh \
-unisim/service/power/cache_dynamic_energy.hh \
 unisim/service/os/linux_os/linux.hh \
+unisim/service/os/linux_os/arm_linux32.hh \
 unisim/service/trap_handler/trap_handler.hh \
 unisim/service/trap_handler/trap_handler_identifier.hh \
 unisim/service/trap_handler/trap_handler_identifier_interface.hh \
@@ -263,13 +271,12 @@ unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/time.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/disassembly.hh \
-unisim/service/interfaces/cache_power_estimator.hh \
 unisim/service/interfaces/memory_injection.hh \
-unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/os.hh \
 unisim/service/interfaces/linux_os.hh \
 unisim/service/interfaces/stmt_lookup.hh \
 unisim/service/interfaces/loader.hh \
+unisim/service/interfaces/register.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \
@@ -320,7 +327,6 @@ unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
 unisim/util/debug/stmt.hh \
 unisim/util/debug/breakpoint_registry.hh \
-unisim/util/debug/register.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/debug/breakpoint.hh \
@@ -329,7 +335,6 @@ unisim/util/debug/simple_register.hh \
 unisim/util/debug/watchpoint.hh \
 unisim/util/debug/profile.hh \
 unisim/util/debug/watchpoint_registry.hh \
-unisim/util/debug/data_object.hh \
 unisim/util/debug/type.hh \
 unisim/util/debug/data_object_initializer.hh \
 unisim/util/debug/subprogram.hh \
@@ -346,7 +351,6 @@ unisim/util/os/linux_os/aux_table.hh \
 unisim/util/os/linux_os/environment.hh \
 unisim/util/os/linux_os/files_flags.hh \
 unisim/util/os/linux_os/linux.hh \
-unisim/util/os/linux_os/ppc.hh \
 unisim/util/os/linux_os/errno.hh \
 unisim/util/dictionary/dictionary.hh \
 unisim/util/lexer/lexer.hh \
@@ -355,6 +359,7 @@ unisim/util/xml/xml.hh \
 unisim/util/endian/endian.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/arithmetic/arithmetic.hh \
+unisim/util/truth_table/truth_table.hh \
 unisim/util/random/random.hh \
 unisim/util/hash_table/hash_table.hh \
 unisim/util/queue/queue.hh \
@@ -363,19 +368,23 @@ unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/host_floating.hh \
 unisim/util/ieee754/ieee754.hh \
 unisim/util/inlining/inlining.hh \
-unisim/component/tlm2/processor/arm/armemu/armemu.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
+unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh \
 unisim/component/cxx/processor/arm/psr.hh \
+unisim/component/cxx/processor/arm/register_field.hh \
 unisim/component/cxx/processor/arm/cpu.hh \
-unisim/component/cxx/processor/arm/coprocessor_interface.hh \
-unisim/component/cxx/processor/arm/armemu/cpu.hh \
-unisim/component/cxx/processor/arm/armemu/cache.hh \
-unisim/component/cxx/processor/arm/memory_op.hh \
+unisim/component/cxx/processor/arm/vmsav7/cpu.hh \
+unisim/component/cxx/processor/arm/cp15.hh \
+unisim/component/cxx/processor/arm/vmsav7/cp15.hh \
 unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \
 unisim/component/cxx/processor/arm/models.hh \
 unisim/component/cxx/processor/arm/disasm.hh \
-unisim/component/cxx/memory/ram/memory.hh"
+unisim/component/cxx/processor/arm/simfloat.hh \
+unisim/component/cxx/processor/arm/extregbank.hh \
+unisim/component/cxx/processor/arm/hostfloat.hh \
+unisim/component/cxx/memory/ram/memory.hh \
+"
 
 UNISIM_LIB_ARMEMU_TEMPLATE_FILES="\
 unisim/service/tee/memory_access_reporting/tee.tcc \
@@ -383,6 +392,7 @@ unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/sim_debugger/sim_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \
+unisim/service/debug/monitor/monitor.tcc \
 unisim/service/profiling/addr_profiler/profiler.tcc \
 unisim/service/os/linux_os/linux.tcc \
 unisim/util/debug/profile.tcc \
@@ -428,6 +438,7 @@ unisim/util/dictionary/dictionary.tcc \
 unisim/util/lexer/lexer.tcc \
 unisim/util/parser/parser.tcc \
 unisim/util/queue/queue.tcc \
+unisim/component/cxx/processor/arm/cpu.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/cxx/memory/ram/memory.tcc"
 
@@ -442,7 +453,6 @@ m4/bsd_sockets.m4 \
 m4/curses.m4 \
 m4/libedit.m4 \
 m4/systemc.m4 \
-m4/tlm20.m4 \
 m4/with_boost.m4 \
 m4/cacti.m4 \
 m4/check_lib.m4 \
@@ -451,9 +461,8 @@ m4/real_path.m4 \
 m4/pthread.m4"
 
 UNISIM_LIB_ARMEMU_DATA_FILES="\
-unisim/service/debug/gdb_server/gdb_armv5l.xml \
-unisim/service/debug/gdb_server/gdb_armv4l.xml \
-unisim/service/debug/gdb_server/gdb_armv5b.xml \
+unisim/service/debug/gdb_server/gdb_arm_with_fpa.xml \
+unisim/service/debug/gdb_server/gdb_arm_with_neon.xml \
 unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml \
 "
 
@@ -499,6 +508,7 @@ string"
 UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES="\
 main.cc \
 simulator.cc \
+api.cc \
 "
 UNISIM_SIMULATORS_ARMEMU_HEADER_FILES="\
 simulator.hh \
@@ -560,7 +570,7 @@ for file in ${UNISIM_LIB_ARMEMU_FILES}; do
 	fi
 done
 
-UNISIM_SIMULATORS_ARMEMU_FILES="${UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES} ${UNISIM_SIMULATORS_ARMEMU_HEADER_FILES} ${UNISIM_SIMULATORS_ARMEMU_EXTRA_FILES} ${UNISIM_SIMULATORS_ARMEMU_TEMPLATE_FILES} ${UNISIM_SIMULATORS_ARMEMU_DATA_FILES} ${UNISIM_SIMULATORS_ARMEMU_TESTBENCH_FILES}"
+UNISIM_SIMULATORS_ARMEMU_FILES="${UNISIM_SIMULATORS_ARMEMU_MAIN_SOURCE_FILES} ${UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES} ${UNISIM_SIMULATORS_ARMEMU_HEADER_FILES} ${UNISIM_SIMULATORS_ARMEMU_EXTRA_FILES} ${UNISIM_SIMULATORS_ARMEMU_TEMPLATE_FILES} ${UNISIM_SIMULATORS_ARMEMU_DATA_FILES} ${UNISIM_SIMULATORS_ARMEMU_TESTBENCH_FILES}"
 
 for file in ${UNISIM_SIMULATORS_ARMEMU_FILES}; do
 	has_to_copy=no
@@ -663,8 +673,8 @@ Requirements:
   - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
   - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
   - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
-  - Core SystemC Language >= 2.1 (http://www.systemc.org)
-  - TLM Transaction Level Modeling Library, Release >= 2.0 (http://www.systemc.org)
+  - Core SystemC Language >= 2.3.0 (http://www.systemc.org)
+
 
 Building instructions:
   $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-tlm20=<path-to-TLM-library-install-dir>
@@ -942,8 +952,9 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_PATH_PROGS(SH, sh)" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_PROG_CXX" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_PROG_RANLIB" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_PROG_INSTALL" >> "${ARMEMU_CONFIGURE_AC}"
+	echo "LT_INIT" >> "${ARMEMU_CONFIGURE_AC}"
+	echo "AC_SUBST(LIBTOOL_DEPS)" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_PROG_LN_S" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_LANG([C++])" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AM_PROG_CC_C_O" >> "${ARMEMU_CONFIGURE_AC}"
@@ -963,7 +974,6 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TLM20" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-armemu-${ARMEMU_VERSION}\"], [path of shared data relative to bin directory])" >> "${ARMEMU_CONFIGURE_AC}"
@@ -994,15 +1004,27 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 
 	AM_ARMEMU_VERSION=$(printf ${ARMEMU_VERSION} | sed -e 's/\./_/g')
 	echo "Generating armemu Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${ARMEMU_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${ARMEMU_MAKEFILE_AM}"
 	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "noinst_LIBRARIES = libarmemu-${ARMEMU_VERSION}.a" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "libarmemu_${AM_ARMEMU_VERSION}_a_SOURCES = ${UNISIM_LIB_ARMEMU_SOURCE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "LIBTOOL_DEPS = @LIBTOOL_DEPS@" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "libtool: \$(LIBTOOL_DEPS)" >> "${ARMEMU_MAKEFILE_AM}"
+	printf "\t\$(SHELL) ./config.status libtool\n" >> "${ARMEMU_MAKEFILE_AM}"
+	# armemu
 	echo "bin_PROGRAMS = unisim-armemu-${ARMEMU_VERSION}" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "unisim_armemu_${AM_ARMEMU_VERSION}_SOURCES = ${UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "unisim_armemu_${AM_ARMEMU_VERSION}_CPPFLAGS = -DSIM_EXECUTABLE" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "unisim_armemu_${AM_ARMEMU_VERSION}_LDADD = libarmemu-${ARMEMU_VERSION}.a" >> "${ARMEMU_MAKEFILE_AM}"
-
+	echo "unisim_armemu_${AM_ARMEMU_VERSION}_LDFLAGS = -DSIM_EXECUTABLE -static-libtool-libs" >> "${ARMEMU_MAKEFILE_AM}"
+ 	echo "unisim_armemu_${AM_ARMEMU_VERSION}_SOURCES = ${UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "unisim_armemu_${AM_ARMEMU_VERSION}_LDADD = libunisim-armemu-${ARMEMU_VERSION}.la" >> "${ARMEMU_MAKEFILE_AM}"
+	# libunisim-armemu
+	echo "noinst_LTLIBRARIES = libunisim-armemu-${ARMEMU_VERSION}.la" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "libunisim_armemu_${AM_ARMEMU_VERSION}_la_SOURCES = ${UNISIM_LIB_ARMEMU_SOURCE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "libunisim_armemu_${AM_ARMEMU_VERSION}_la_LDFLAGS = -static" >> "${ARMEMU_MAKEFILE_AM}"
+	# libunisim-armemu-plugin
+	echo "lib_LTLIBRARIES = libunisim-armemu-plugin-${ARMEMU_VERSION}.la" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "libunisim_armemu_plugin_${AM_ARMEMU_VERSION}_la_SOURCES = ${UNISIM_LIB_ARMEMU_SOURCE_FILES} ${UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "libunisim_armemu_plugin_${AM_ARMEMU_VERSION}_la_CPPFLAGS = -DSIM_PLUGIN" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "libunisim_armemu_plugin_${AM_ARMEMU_VERSION}_la_LDFLAGS = -shared -no-undefined" >> "${ARMEMU_MAKEFILE_AM}"
+	
 	echo "noinst_HEADERS = ${UNISIM_LIB_ARMEMU_HEADER_FILES} ${UNISIM_LIB_ARMEMU_TEMPLATE_FILES} ${UNISIM_SIMULATORS_ARMEMU_HEADER_FILES} ${UNISIM_SIMULATORS_ARMEMU_TEMPLATE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "EXTRA_DIST = ${UNISIM_LIB_ARMEMU_M4_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "sharedir = \$(prefix)/share/unisim-armemu-${ARMEMU_VERSION}" >> "${ARMEMU_MAKEFILE_AM}"
@@ -1030,7 +1052,7 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh: ${UNISIM_LIB_ARMEMU_ISA_THUMB_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
 	printf "\t" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb/thumb.isa" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb2 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb2/thumb.isa" >> "${ARMEMU_MAKEFILE_AM}"
 
 	echo "all-local: all-local-bin all-local-share" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "clean-local: clean-local-bin clean-local-share" >> "${ARMEMU_MAKEFILE_AM}"
@@ -1062,7 +1084,7 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 	${DISTCOPY} ${DEST_DIR}/AUTHORS ${DEST_DIR}/armemu
 	
 	echo "Building armemu configure"
-	${SHELL} -c "cd ${DEST_DIR}/armemu && aclocal -I m4 && autoconf --force && automake -ac"
+	${SHELL} -c "cd ${DEST_DIR}/armemu && aclocal -I m4 && libtoolize --force && autoconf --force && automake -ac"
 fi
 
 echo "Distribution is up-to-date"

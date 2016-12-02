@@ -43,7 +43,7 @@
 #include <libxml/xpath.h>
 #include <libxml/parser.h>
 
-#include "systemc"
+#include <systemc>
 
 #include <tlm.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
@@ -57,7 +57,7 @@
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
 
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
@@ -95,7 +95,7 @@ using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 
 using unisim::kernel::tlm2::PayloadFabric;
 
@@ -196,6 +196,9 @@ public:
 	 */
     virtual Register *GetRegister(const char *name);
 
+    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner ) {
+    	// TODO:
+    }
 	//=====================================================================
 	//=             registers setters and getters                         =
 	//=====================================================================
@@ -228,7 +231,7 @@ private:
 
 	bool conversionStop;
 	bool abortSequence;
-	uint8_t resultIndex;
+	unsigned int resultIndex;
 	bool isATDStarted;
 
 	bool isTriggerModeRunning;
@@ -237,8 +240,8 @@ private:
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
 
-	uint8_t interruptOffset;
-	Parameter<uint8_t> param_interruptOffset;
+	unsigned int interruptOffset;
+	Parameter<unsigned int> param_interruptOffset;
 
 	// A/D reference potentials
 	double vrl, vrh;
@@ -266,7 +269,7 @@ private:
 
 	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
 
-	void InputANx(double anValue[ATD_SIZE]);
+	void InputANx(double (*anValue)[ATD_SIZE]);
 	void abortConversion();
 	void abortAndStartNewConversion();
 	void sequenceComplete();

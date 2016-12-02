@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2013,
+ *  Copyright (c) 2007-2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
 /**********************************************
@@ -50,9 +50,9 @@ swi.disasm = {
 };
 
 swi.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.SWI( imm );
+  cpu.CallSupervisor( imm );
 };
 
 /*
@@ -72,7 +72,7 @@ bkpt.disasm = {
 };
 
 bkpt.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   cpu.BKPT( imm );
 };
@@ -81,21 +81,27 @@ bkpt.execute = {
  * end of bkpt (breakpoint) instruction
  *******************************************************************/
 
-{ ARCH::insns6 }:                               \
-op cpsid( 0b1011011001110[13]: bf[3] );
+{ ARCH::Config::insns6 }:                               \
+op cps( 0b10110110011[11]: dis[1]: 0[1]: a[1]: i[1]: f[1] );
+cps.var reject : {Reject} = {(not (a or i or f))};
+/* chmod = 0, chitm = 1, mode = 0 */
 
-cpsid.disasm = {
-  buffer << "cpsid" << (bf ? "\t" : "");
-  for (int bit = 3; --bit >= 0;)
-    if ((bf >> bit) & 1) buffer << ("fia"[bit]);
-}
+cps.disasm = {
+  buffer << "cps" << (dis?"id":"ie") << '\t' << (a?"a":"") << (i?"i":"") << (f?"f":"");
+};
 
-{ ARCH::insns6 }:                               \
-op cpsie( 0b1011011001100[13]: bf[3] );
-
-cpsie.disasm = {
-  buffer << "cpsie" << (bf ? "\t" : "");
-  for (int bit = 3; --bit >= 0;)
-    if ((bf >> bit) & 1) buffer << ("fia"[bit]);
-}
+cps.execute = {
+  typedef typename ARCH::U32 U32;
+  
+  if (cpu.Cond( cpu.CPSR().Get(M) == U32(cpu.USER_MODE) ))
+    return;
+  
+  U32 cpsr_val = cpu.CPSR().bits(), disable( dis );
+  if (a) A.Set( cpsr_val, disable );
+  if (i) I.Set( cpsr_val, disable );
+  if (f) F.Set( cpsr_val, disable );
+  
+  // CPSRWriteByInstr() checks for illegal mode changes
+  CPSRWriteByInstr( cpu, cpsr_val, 0b1111, false );
+};
 

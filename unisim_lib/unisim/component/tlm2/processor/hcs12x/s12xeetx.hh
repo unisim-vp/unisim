@@ -23,7 +23,7 @@
 
 #include "unisim/service/interfaces/registers.hh"
 
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 #include "unisim/util/debug/simple_register.hh"
 #include "unisim/util/endian/endian.hh"
 
@@ -69,7 +69,7 @@ using unisim::kernel::logger::EndDebugError;
 
 using unisim::service::interfaces::Registers;
 
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::Host2BigEndian;
@@ -169,8 +169,8 @@ public:
 	//=             memory interface methods                              =
 	//=====================================================================
 
-	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(ADDRESS addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(ADDRESS addr, const void *buffer, uint32_t size);
 
 	//=====================================================================
 	//=             EEPROM Registers Interface interface methods               =
@@ -183,6 +183,10 @@ public:
 	 * @return A pointer to the RegisterInterface corresponding to name.
 	 */
     virtual Register *GetRegister(const char *name);
+
+    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner ) {
+    	// TODO:
+    }
 
 	//=====================================================================
 	//=             registers setters and getters                         =

@@ -72,6 +72,8 @@ aba.execute = {
 	uint8_t _r3 = ~(result & 0x08);
 
 	if ((a3 & b3) | (b3 & _r3) | (_r3 & a3)) cpu->ccr->setH(); else cpu->ccr->clrH();
+
+	return getCycles();
 }
 
 // ABX  (X+B => X) 
@@ -99,7 +101,8 @@ abx.execute = {
 	UnsignedAdd16(result, carry_out, overflow, sign, (uint16_t) bVal, xVal, carry_in);
 	
 	cpu->setRegX(result);
-	
+
+	return getCycles();
 }
 
 // ABY (Y+B=>Y)
@@ -126,7 +129,8 @@ aby.execute = {
 	UnsignedAdd16(result, carry_out, overflow, sign, (uint16_t) bVal, yVal, carry_in);
 	
 	cpu->setRegY(result);
-	
+
+	return getCycles();
 }
 
 // ADCab IMM  (regAB + ii + carry => regAB) 
@@ -179,6 +183,8 @@ adc_ab_imm.execute = {
 	uint8_t _r3 = ~(result & 0x08);
 
 	if ((a3 & m3) | (m3 & _r3) | (_r3 & a3)) cpu->ccr->setH(); else cpu->ccr->clrH();	
+
+	return getCycles();
 }
 
 // ADCab DIR  (regAB + mem[regDirect:opr8a] + carry => regAB)
@@ -235,6 +241,7 @@ adc_ab_dir.execute = {
 
 	if ((a3 & m3) | (m3 & _r3) | (_r3 & a3)) cpu->ccr->setH(); else cpu->ccr->clrH();	
 
+	return getCycles();
 }
 
 // ADCab EXT (regAB + mem[opr16a] + carry => regAB)
@@ -290,7 +297,8 @@ adc_ab_ext.execute = {
 	uint8_t _r3 = ~(result & 0x08);
 
 	if ((a3 & m3) | (m3 & _r3) | (_r3 & a3)) cpu->ccr->setH(); else cpu->ccr->clrH();	
-	
+
+	return getCycles();
 }
 
 // ADCab IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regAB + mem[xb->addrE] + carry => regAB)
@@ -362,6 +370,7 @@ adc_ab_idx.execute = {
 
 	if ((a3 & m3) | (m3 & _r3) | (_r3 & a3)) cpu->ccr->setH(); else cpu->ccr->clrH();	
 
+	return getCycles();
 }
 
 // ADDab IMM (regAB + ii => regAB)
@@ -414,7 +423,8 @@ add_ab_imm.execute = {
 	uint8_t _r3 = ~(result & 0x08);
 
 	if ((a3 & m3) | (m3 & _r3) | (_r3 & a3)) cpu->ccr->setH(); else cpu->ccr->clrH();	
-	
+
+	return getCycles();
 }
 
 // ADDab DIR  (regAB + mem[regDirect:opr8a] => regAB)
@@ -471,6 +481,7 @@ add_ab_dir.execute = {
 
 	if ((a3 & m3) | (m3 & _r3) | (_r3 & a3)) cpu->ccr->setH(); else cpu->ccr->clrH();	
 
+	return getCycles();
 }
 
 // ADDab EXT  (regAB + mem[opr16a] => regAB)
@@ -526,7 +537,8 @@ add_ab_ext.execute = {
 	uint8_t _r3 = ~(result & 0x08);
 
 	if ((a3 & m3) | (m3 & _r3) | (_r3 & a3)) cpu->ccr->setH(); else cpu->ccr->clrH();	
-	
+
+	return getCycles();
 }
 
 // ADDab  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regAB + mem[xb->addrE] => regAB)
@@ -598,6 +610,7 @@ add_ab_idx.execute = {
 
 	if ((a3 & m3) | (m3 & _r3) | (_r3 & a3)) cpu->ccr->setH(); else cpu->ccr->clrH();	
 
+	return getCycles();
 }
 
 // ADED IMM  (regD + #opr16i + carry => regD) 
@@ -629,7 +642,8 @@ aded_imm.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
-	
+
+	return getCycles();
 }
 
 // ADED DIR  (regD + mem16[regDirect:opr8a] + carry => regD)
@@ -663,6 +677,8 @@ aded_dir.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // ADED EXT (regD + mem16[opr16a] + carry => regD)
@@ -698,7 +714,8 @@ aded_ext.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
-	
+
+	return getCycles();
 }
 
 // ADED IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regD + mem16[xb->addrE] + carry => regD)
@@ -747,6 +764,8 @@ aded_idx.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // ADExy IMM  (regXY + #opr16i + carry => regXY) 
@@ -792,7 +811,8 @@ ade_xy_imm.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
-	
+
+	return getCycles();
 }
 
 // ADExy DIR  (regXY + mem16[regDirect:opr8a] + carry => regXY)
@@ -841,6 +861,8 @@ ade_xy_dir.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // ADExy EXT (regXY + mem16[opr16a] + carry => regXY)
@@ -889,7 +911,8 @@ ade_xy_ext.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
-	
+
+	return getCycles();
 }
 
 // ADExy IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regXY + mem16[xb->addrE] + carry => regXY)
@@ -953,6 +976,8 @@ ade_xy_idx.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 
@@ -999,7 +1024,8 @@ add_xy_imm.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
-	
+
+	return getCycles();
 }
 
 // ADDxy DIR  (regXY + mem16[regDirect:opr8a] => regXY)
@@ -1048,6 +1074,8 @@ add_xy_dir.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // ADDxy EXT  (regXY + mem16[opr16a] => regXY)
@@ -1096,7 +1124,8 @@ add_xy_ext.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
-	
+
+	return getCycles();
 }
 
 // ADDxy  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regXY + mem16[xb->addrE] => regXY)
@@ -1160,6 +1189,8 @@ add_xy_idx.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 
@@ -1204,6 +1235,8 @@ add_sub_d_imm.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // SUBD DIR or ADDD DIR  (regD -+ mem[regDirect+opr8a]) 
@@ -1246,6 +1279,8 @@ add_sub_d_dir.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // SUBD EXT or ADDD EXT (regD -+ mem[opr16a]) => regD)
@@ -1291,6 +1326,8 @@ add_sub_d_ext.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // SUBD/ADDD  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regD -+ mem[xb->addrE] => regD) 
@@ -1348,6 +1385,8 @@ add_sub_d_idx.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 /* ****** Subtraction Instructions **** */
@@ -1381,6 +1420,8 @@ sba.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // SBCA/SBCB  IMM (regAB - ii - carry => regAB)
@@ -1425,6 +1466,8 @@ sbc_ab_imm.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // SBCA/SBCB  DIR  (regAB - mem[regDirect:opr8a] - carry => regAB)
@@ -1471,6 +1514,8 @@ sbc_ab_dir.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // SBCA/SBCB  EXT (regAB - mem[opr16a] - carry => regAB)
@@ -1518,6 +1563,8 @@ sbc_ab_ext.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // SBCA/SBCB IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regAB - mem[xb->addrE] - carry => regAB)
@@ -1580,6 +1627,8 @@ sbc_ab_idx.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // SBED  IMM (regD - #opr16i - carry => regD)
@@ -1611,6 +1660,8 @@ sbed_imm.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // SBED  DIR  (regD - mem16[regDirect:opr8a] - carry => regD)
@@ -1644,6 +1695,8 @@ sbed_dir.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // SBED  EXT (regD - mem16[opr16a] - carry => regD)
@@ -1679,6 +1732,8 @@ sbed_ext.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // SBED IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regD - mem16[xb->addrE] - carry => regD)
@@ -1727,6 +1782,8 @@ sbed_idx.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // SBEX/SBEY  IMM (regXY - #opr16i - carry => regXY)
@@ -1772,6 +1829,8 @@ sbe_xy_imm.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // SBEX/SBEY  DIR  (regXY - mem16[regDirect:opr8a] - carry => regXY)
@@ -1819,6 +1878,8 @@ sbe_xy_dir.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // SBEX/SBEY  EXT (regXY - mem16[opr16a] - carry => regXY)
@@ -1867,6 +1928,8 @@ sbe_xy_ext.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // SBEX/SBEY IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regXY - mem16[xb->addrE] - carry => regXY)
@@ -1930,6 +1993,8 @@ sbe_xy_idx.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // SUBA/SUBB  IMM (regAB - ii => regAB)
@@ -1974,7 +2039,8 @@ sub_ab_imm.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
-	
+
+	return getCycles();
 }
 
 // SUBA/SUBB  DIR  (regAB - mem[regDirect:opr8a] => regAB)
@@ -2022,6 +2088,8 @@ sub_ab_dir.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // SUBA/SUBB  EXT (regAB - mem[opr16a] => regAB)
@@ -2069,7 +2137,8 @@ sub_ab_ext.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
-	
+
+	return getCycles();
 }
 
 // SUBA/SUBB  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regAB - mem[xb->addrE] => regAB)
@@ -2132,6 +2201,8 @@ sub_ab_idx.execute = {
 	
 	if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
 	if ((result & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();}
+
+	return getCycles();
 }
 
 // ******************************
@@ -2179,7 +2250,8 @@ sub_xy_imm.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
-	
+
+	return getCycles();
 }
 
 // SUBX/SUBY  DIR  (regXY - mem16[regDirect:opr8a] => regXY)
@@ -2228,6 +2300,8 @@ sub_xy_dir.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // SUBX/SUBY  EXT (regXY - mem16[opr16a] => regXY)
@@ -2276,7 +2350,8 @@ sub_xy_ext.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
-	
+
+	return getCycles();
 }
 
 // SUBX/SUBY  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regXY - mem16[xb->addrE] => regXY)
@@ -2340,6 +2415,8 @@ sub_xy_idx.execute = {
 	
 	if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
 	if ((result & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN();}
+
+	return getCycles();
 }
 
 
@@ -2475,5 +2552,7 @@ daa.execute = {
 	
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	if (result == 0x00) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+
+	return getCycles();
 }
 

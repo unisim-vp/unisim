@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2013,
+ *  Copyright (c) 2007-2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
 /**********************************************
@@ -47,30 +47,42 @@ set endianness little;
 set words_order ascending;
 //set withencode_p true;
 
-template <{class} {ARCH}>
+template <{typename} {ARCH}>
 
 decl {
 #include <iosfwd>
 #include <stdint.h>
 } // end of decl
 
-impl {
-#include "unisim/component/cxx/processor/arm/models.hh"
-#include "unisim/component/cxx/processor/arm/execute.hh"
-#include "unisim/component/cxx/processor/arm/disasm.hh"
-#include "unisim/component/cxx/processor/arm/exception.hh"
-#include "unisim/util/arithmetic/arithmetic.hh"
-#include <iostream>
-#include <iomanip>
-} // end of impl
-
 action {void} execute({ARCH &} {cpu}) {
-  cpu.MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::UNDEFINED_INSN);
+  cpu.UndefinedInstruction( this );
 }
 
 action {void} disasm({ARCH &} {cpu}, {std::ostream &} {buffer}) {
-  buffer << "Unknown instruction";
+  buffer << "; Unknown THUMB instruction";
 }
+
+impl {
+#include <unisim/component/cxx/processor/arm/models.hh>
+#include <unisim/component/cxx/processor/arm/disasm.hh>
+#include <unisim/component/cxx/processor/arm/exception.hh>
+#include <unisim/util/endian/endian.hh>
+#include <unisim/util/arithmetic/arithmetic.hh>
+#include <iostream>
+#include <iomanip>
+
+using unisim::util::endian::ByteSwap;
+using unisim::util::arithmetic::RotateRight;
+// using unisim::util::arithmetic::UnsignedAdd8;
+// using unisim::util::arithmetic::SignedSatAdd32;
+// using unisim::util::arithmetic::SignedSatSub32;
+// using unisim::util::arithmetic::SignExtend;
+// using unisim::util::arithmetic::UnsignedSatSub8;
+// using unisim::util::arithmetic::RotateRight;
+// using unisim::util::arithmetic::UnsignedSub8;
+
+#include <unisim/component/cxx/processor/arm/execute.hh>
+} // end of impl
 
 include "data_processing.isa"
 include "load_store.isa"
@@ -81,5 +93,3 @@ include "branch_T1.isa"
 include "exception.isa"
 
 include "ordering.isa"
-
-include "profiling.isa"

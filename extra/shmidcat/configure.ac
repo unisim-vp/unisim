@@ -23,7 +23,7 @@ AC_LANG([C])
 # -----------------------------------
     # Check if JDK path has been overloaded
 AC_ARG_WITH(jdk,
-	AS_HELP_STRING([--with-jdk=<path>], [JDK home directory]))
+	[AS_HELP_STRING([--with-jdk=<path>], [JDK home directory])])
     if test "x$with_jdk" != "x"; then
 	AC_MSG_NOTICE([using JDK at $with_jdk])
 case $host in

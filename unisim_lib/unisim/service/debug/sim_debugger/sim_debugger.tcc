@@ -45,7 +45,7 @@
 #include <iostream>
 #include <stdexcept>
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <unistd.h>
 #endif
 
@@ -232,7 +232,16 @@ ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat
 template <class ADDRESS>
 void
 SimDebugger<ADDRESS>::
-ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
+ReportCommitInstruction(ADDRESS addr)
+{
+	// if(unlikely(profile))
+  program_profile.Accumulate(addr, 1);
+}
+
+template <class ADDRESS>
+void
+SimDebugger<ADDRESS>::
+ReportFetchInstruction(ADDRESS next_addr)
 {
 	if(breakpoint_registry.HasBreakpoint(next_addr))
 	{
@@ -243,8 +252,6 @@ ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
 		
     std::cout << "-> Reached " << (*breakpoint) << std::endl;
 	}
-	// if(unlikely(profile))
-  program_profile.Accumulate(addr, 1);
 }
 
 template <class ADDRESS>
@@ -449,8 +456,12 @@ SimDebugger<ADDRESS>::
 SetBreakpoint(uint64_t addr)
 {
 	bool set = false;
-	if ( !breakpoint_registry.SetBreakpoint(addr) )
+	unisim::util::debug::Breakpoint<ADDRESS> *brkp = new unisim::util::debug::Breakpoint<ADDRESS>(addr);
+	if ( !breakpoint_registry.SetBreakpoint(brkp) )
+	{
 		cout << "Can't set breakpoint at 0x" << hex << addr << dec << endl;
+		delete brkp;
+	}
 	else
 		set = true;
 
@@ -706,12 +717,12 @@ void
 SimDebugger<ADDRESS>::
 DumpBreakpoints()
 {
-	const list<Breakpoint<ADDRESS> >& breakpoints = breakpoint_registry.GetBreakpoints();
-	typename list<Breakpoint<ADDRESS> >::const_iterator iter;
+	const list<const Breakpoint<ADDRESS> *>& breakpoints = breakpoint_registry.GetBreakpoints();
+	typename list<const Breakpoint<ADDRESS> *>::const_iterator iter;
 
 	for ( iter = breakpoints.begin(); iter != breakpoints.end(); iter++ )
 	{
-		ADDRESS addr = iter->GetAddress();
+		ADDRESS addr = (*iter)->GetAddress();
 
 		cout << "*0x" << hex << (addr / memory_atom_size) << dec << " (";
 
@@ -775,17 +786,17 @@ void
 SimDebugger<ADDRESS>::
 DumpWatchpoints()
 {
-	const list<Watchpoint<ADDRESS> >& watchpoints = watchpoint_registry.GetWatchpoints();
-	typename list<Watchpoint<ADDRESS> >::const_iterator iter;
+	const std::list<const Watchpoint<ADDRESS> *>& watchpoints = watchpoint_registry.GetWatchpoints();
+	typename std::list<const Watchpoint<ADDRESS> *>::const_iterator iter;
 
 	for ( iter = watchpoints.begin(); iter != watchpoints.end(); iter++ )
 	{
-		ADDRESS addr = iter->GetAddress();
-		uint32_t size = iter->GetSize();
-		//typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat = iter->GetMemoryAccessType();
-		//typename MemoryAccessReporting<ADDRESS>::MemoryType mt = iter->GetMemoryType();
-		typename unisim::util::debug::MemoryAccessType mat = iter->GetMemoryAccessType();
-		typename unisim::util::debug::MemoryType mt = iter->GetMemoryType();
+		ADDRESS addr = (*iter)->GetAddress();
+		uint32_t size = (*iter)->GetSize();
+		//typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat = (*iter)->GetMemoryAccessType();
+		//typename MemoryAccessReporting<ADDRESS>::MemoryType mt = (*iter)->GetMemoryType();
+		typename unisim::util::debug::MemoryAccessType mat = (*iter)->GetMemoryAccessType();
+		typename unisim::util::debug::MemoryType mt = (*iter)->GetMemoryType();
 
 		switch ( mt )
 		{

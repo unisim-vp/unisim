@@ -24,9 +24,11 @@
 //#include <iostream>
 #include <cstdio>
 
-namespace Str {
-  ConstStr_t
-  fmt( char const* _fmt, ... ) {
+namespace Str
+{
+  ConstStr
+  fmt( char const* _fmt, ... )
+  {
     va_list ap;
 
     for( intptr_t capacity = 128, size; true; capacity = (size > -1) ? size + 1 : capacity * 2 ) {
@@ -37,13 +39,15 @@ namespace Str {
       size = vsnprintf( storage, capacity, _fmt, ap );
       va_end( ap );
       /* If it worked, return */
-      if( size >= 0 and size < capacity )
-        return ConstStr_t( storage );
+      if (size >= 0 and size < capacity)
+        return ConstStr( storage );
     }
     assert( false );
+
+    return ConstStr("");
   }
 
-  ConstStr_t
+  ConstStr
   upper( char const* _str )
   {
     std::string buffer( _str );
@@ -54,10 +58,10 @@ namespace Str {
           *itr = (ch - 'a' + 'A');
       }
     
-    return ConstStr_t( buffer.c_str() );
+    return ConstStr( buffer.c_str() );
   }
   
-  ConstStr_t
+  ConstStr
   capitalize( char const* _str )
   {
     std::string buffer( _str );
@@ -66,10 +70,10 @@ namespace Str {
     if (ch >= 'a' and ch <= 'z')
       ch = (ch - 'a' + 'A');
     
-    return ConstStr_t( buffer.c_str() );
+    return ConstStr( buffer.c_str() );
   }
   
-  ConstStr_t
+  ConstStr
   tokenize( char const* _str )
   {
     std::string buffer( _str );
@@ -80,10 +84,10 @@ namespace Str {
         *itr = isalnum( ch ) ? ch : '_';
       }
 
-    return ConstStr_t( buffer.c_str() );
+    return ConstStr( buffer.c_str() );
   }
 
-  ConstStr_t
+  ConstStr
   dqcstring( char const* _str )
   {
     std::string buffer( "\"" );
@@ -100,7 +104,7 @@ namespace Str {
       case '\\': buffer += "\\\\"; break;
       default:
         {
-          if( ch >= 127 or ch < 32 ) {
+          if (ch >= 127 or ch < 32) {
             buffer += "\\x";
             buffer += hextab[unsigned( ch ) / 256];
             buffer += hextab[unsigned( ch ) % 256];
@@ -113,7 +117,7 @@ namespace Str {
     }
     buffer += "\"";
     
-    return ConstStr_t( buffer.c_str() );
+    return ConstStr( buffer.c_str() );
   }
 
 } // end of namespace Str

@@ -62,6 +62,8 @@ XMLHelper(Simulator *_simulator) :
 	description_token(0),
 	_text_token(0)
 {
+	xmlInitParser();
+
 	name_token = xmlCharStrdup("name");
 	variables_token = xmlCharStrdup("variables");
 	object_token = xmlCharStrdup("object");
@@ -78,16 +80,18 @@ XMLHelper(Simulator *_simulator) :
 XMLHelper::
 ~XMLHelper()
 {
-	free(name_token); name_token = 0;
-	free(variables_token); variables_token = 0;
-	free(object_token); object_token = 0;
-	free(variable_token); variable_token = 0;
-	free(type_token); type_token = 0;
-	free(value_token); value_token = 0;
-	free(default_value_token); default_value_token = 0;
-	free(data_type_token); data_type_token = 0;
-	free(description_token); description_token = 0;
-	free(_text_token); _text_token = 0;
+	xmlFree(name_token); name_token = 0;
+	xmlFree(variables_token); variables_token = 0;
+	xmlFree(object_token); object_token = 0;
+	xmlFree(variable_token); variable_token = 0;
+	xmlFree(type_token); type_token = 0;
+	xmlFree(value_token); value_token = 0;
+	xmlFree(default_value_token); default_value_token = 0;
+	xmlFree(data_type_token); data_type_token = 0;
+	xmlFree(description_token); description_token = 0;
+	xmlFree(_text_token); _text_token = 0;
+	
+	xmlCleanupParser();
 }
 
 bool
@@ -247,7 +251,7 @@ XmlfyVariables(xmlTextWriterPtr writer,
 		xmlChar* obj_name = xmlCharStrdup(obj->GetName());
 
 		rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "name", obj_name);
-		free(obj_name); obj_name = 0;
+		xmlFree(obj_name); obj_name = 0;
 	}
 	if (rc < 0) return rc;
 
@@ -312,7 +316,7 @@ XmlfyVariable(xmlTextWriterPtr writer,
 	{
 		xmlChar* var_name = xmlCharStrdup(var->GetVarName());
 		rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "name", var_name);
-		free(var_name); var_name = 0;
+		xmlFree(var_name); var_name = 0;
 	}
 	if (rc < 0) return rc;
 
@@ -445,7 +449,7 @@ LoadXmlVariables(const char *_filename, VariableBase::Type type)
 			if(ProcessXmlVariableNode(reader, type))
 				ret = xmlTextReaderRead(reader);
 			else
-				return false;
+				ret = 0;
 		}
 		xmlFreeTextReader(reader);
 		if (ret != 0) {
@@ -493,7 +497,7 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 			}
 			cerr << " + object " << name_attr << endl;
 			cur_object.push_back(string((char *)name_attr));
-			free(name_attr);
+			xmlFree(name_attr);
 		}
 		if (xmlTextReaderNodeType(reader) == 15)
 		{
@@ -518,7 +522,7 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 				cur_var->name << cur_object.back() << "." << name_attr;
 			else 
 				cur_var->name << name_attr;
-			free(name_attr);
+			xmlFree(name_attr);
 		}
 		if (xmlTextReaderNodeType(reader) == 15)
 		{

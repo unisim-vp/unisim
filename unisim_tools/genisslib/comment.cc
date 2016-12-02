@@ -23,16 +23,16 @@
     @param _filename the filename object where the C/C++ comment was found
     @param _lineno the line number where the C/C++ comment was found
 */
-Comment_t::Comment_t( ConstStr_t _content, FileLoc_t const& _fileloc )
+Comment::Comment( ConstStr _content, FileLoc const& _fileloc )
   : m_content( _content ), m_fileloc( _fileloc )
 {}
 
-Comment_t::Comment_t( Comment_t const& _comment )
+Comment::Comment( Comment const& _comment )
   : m_content( _comment.m_content ), m_fileloc( _comment.m_fileloc )
 {}
 
 
 /** Destructor
 */
-Comment_t::~Comment_t() {}
+Comment::~Comment() {}
 

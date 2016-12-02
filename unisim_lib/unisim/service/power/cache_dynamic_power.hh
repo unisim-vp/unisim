@@ -55,7 +55,8 @@ public:
 			unisim::kernel::service::ServiceImport<unisim::service::interfaces::Time> *_time_import);
 	~CacheDynamicPower();
 
-	double GetDynamicPower();
+	double GetDynamicPower() const;
+	bool operator != ( CacheDynamicPower const& clp ) const { return GetDynamicPower() != clp.GetDynamicPower(); }
 
 private:
 	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Time> *time_import;

@@ -113,11 +113,23 @@ void BreakpointRegistry<ADDRESS>::Reset()
 			hash_table[index] = 0;
 		}
 	}
+	
+	typename std::list<const Breakpoint<ADDRESS> *>::const_iterator breakpoint_it;
+
+	for(breakpoint_it = breakpoints.begin(); breakpoint_it != breakpoints.end(); breakpoint_it++)
+	{
+		const Breakpoint<ADDRESS> *breakpoint = *breakpoint_it;
+		if(breakpoint)
+		{
+			delete breakpoint;
+		}
+	}
 }
 
 template <class ADDRESS>
-bool BreakpointRegistry<ADDRESS>::SetBreakpoint(ADDRESS addr)
+bool BreakpointRegistry<ADDRESS>::SetBreakpoint(const Breakpoint<ADDRESS> *brkp)
 {
+	ADDRESS addr = brkp->GetAddress();
 	if(!HasBreakpoint(addr))
 	{
 		AllocatePage(addr);
@@ -128,7 +140,7 @@ bool BreakpointRegistry<ADDRESS>::SetBreakpoint(ADDRESS addr)
 			return false;
 		}
 		page->SetBreakpoint(addr & (BreakpointMapPage<ADDRESS>::NUM_BREAKPOINTS_PER_PAGE - 1));
-		breakpoints.push_back(Breakpoint<ADDRESS>(addr));
+		breakpoints.push_back(brkp);
 		has_breakpoints = true;
 		return true;
 	}
@@ -136,9 +148,17 @@ bool BreakpointRegistry<ADDRESS>::SetBreakpoint(ADDRESS addr)
 }
 
 template <class ADDRESS>
-bool BreakpointRegistry<ADDRESS>::SetBreakpoint(const Breakpoint<ADDRESS>& brkp)
+bool BreakpointRegistry<ADDRESS>::SetBreakpoint(ADDRESS addr)
 {
-	return SetBreakpoint(brkp.GetAddress());
+	Breakpoint<ADDRESS> *brkp = new Breakpoint<ADDRESS>(addr);
+	
+	if(!SetBreakpoint(brkp))
+	{
+		delete brkp;
+		return false;
+	}
+	
+	return true;
 }
 
 template <class ADDRESS>
@@ -148,13 +168,15 @@ bool BreakpointRegistry<ADDRESS>::RemoveBreakpoint(ADDRESS addr)
 	if(!page) return false;
 	page->RemoveBreakpoint(addr & (BreakpointMapPage<ADDRESS>::NUM_BREAKPOINTS_PER_PAGE - 1));
 
-	typename list<Breakpoint<ADDRESS> >::iterator breakpoint;
+	typename std::list<const Breakpoint<ADDRESS> *>::iterator breakpoint_it;
 
-	for(breakpoint = breakpoints.begin(); breakpoint != breakpoints.end(); breakpoint++)
+	for(breakpoint_it = breakpoints.begin(); breakpoint_it != breakpoints.end(); breakpoint_it++)
 	{
+		const Breakpoint<ADDRESS> *breakpoint = *breakpoint_it;
 		if(breakpoint->GetAddress() == addr)
 		{
-			breakpoints.erase(breakpoint);
+			delete breakpoint;
+			breakpoints.erase(breakpoint_it);
 			if(breakpoints.empty())
 				has_breakpoints = false;
 			return true;
@@ -165,9 +187,9 @@ bool BreakpointRegistry<ADDRESS>::RemoveBreakpoint(ADDRESS addr)
 }
 
 template <class ADDRESS>
-bool BreakpointRegistry<ADDRESS>::RemoveBreakpoint(const Breakpoint<ADDRESS>& brkp)
+bool BreakpointRegistry<ADDRESS>::RemoveBreakpoint(const Breakpoint<ADDRESS> *brkp)
 {
-	return RemoveBreakpoint(brkp.GetAddress());
+	return RemoveBreakpoint(brkp->GetAddress());
 }
 
 template <class ADDRESS>
@@ -175,11 +197,12 @@ const Breakpoint<ADDRESS> *BreakpointRegistry<ADDRESS>::FindBreakpoint(ADDRESS a
 {
 	if(HasBreakpoint(addr))
 	{
-		typename list<Breakpoint<ADDRESS> >::const_iterator breakpoint;
+		typename std::list<const Breakpoint<ADDRESS> *>::const_iterator breakpoint_it;
 
-		for(breakpoint = breakpoints.begin(); breakpoint != breakpoints.end(); breakpoint++)
+		for(breakpoint_it = breakpoints.begin(); breakpoint_it != breakpoints.end(); breakpoint_it++)
 		{
-			if(breakpoint->GetAddress() == addr) return &(*breakpoint);
+			const Breakpoint<ADDRESS> *breakpoint = *breakpoint_it;
+			if(breakpoint->GetAddress() == addr) return breakpoint;
 		}
 	}
 	return 0;
@@ -195,9 +218,9 @@ bool BreakpointRegistry<ADDRESS>::HasBreakpoint(ADDRESS addr) const
 }
 
 template <class ADDRESS>
-bool BreakpointRegistry<ADDRESS>::HasBreakpoint(const Breakpoint<ADDRESS>& brkp) const
+bool BreakpointRegistry<ADDRESS>::HasBreakpoint(const Breakpoint<ADDRESS> *brkp) const
 {
-	return HasBreakpoint(brkp.GetAddress());
+	return HasBreakpoint(brkp->GetAddress());
 }
 
 template <class ADDRESS>
@@ -207,7 +230,7 @@ bool BreakpointRegistry<ADDRESS>::HasBreakpoints() const
 }
 
 template <class ADDRESS>
-const list<Breakpoint<ADDRESS> >& BreakpointRegistry<ADDRESS>::GetBreakpoints() const
+const std::list<const Breakpoint<ADDRESS> *>& BreakpointRegistry<ADDRESS>::GetBreakpoints() const
 {
 	return breakpoints;
 }

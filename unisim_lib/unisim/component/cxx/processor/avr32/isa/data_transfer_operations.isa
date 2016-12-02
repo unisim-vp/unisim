@@ -23,9 +23,9 @@ mov_a.disasm={
 	if(CONFIG::DISAMBIGUATE_DISASM) os << "\t\t/*imm8*/";
 }
 
-op mov_b(0b111[3]:imm_20_17[4]:0b0011[4]:imm_16[1]:rd[4]:><:imm_15_0[16])
+op mov_b(0b111[3]:shl<17>imm_20_17[4]:0b0011[4]:shl<16>imm_16[1]:rd[4]:><:imm_15_0[16])
 
-mov_b.var imm : {uint32_t} = {SignExtend(((uint32_t)imm_20_17<<17)|((uint32_t)imm_16<<16) | (uint32_t)imm_15_0,21)}
+mov_b.var imm : {uint32_t} = { SignExtend( imm_20_17 | imm_16 | imm_15_0, 21) }
 
 mov_b.execute={
 
@@ -743,14 +743,14 @@ ld_w_e.disasm={
 }
 
 
-op ld_w_f(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b111110[6]:x[1]:y[1]:rd[4])
+op ld_w_f(0b111[3]:rb[4]:0b00000[5]:ri[4]:><:0b0000[4]:0b111110[6]:shl<1>x[1]:y[1]:rd[4])
 
 // x=0, y=0 for bottom 
 // x=0, y=1 for lower
 // x=1, y=0 for upper
 // x=1, y=1 for top        
 
-ld_w_f.var part : {unsigned int}= {y| (x << 1)}
+ld_w_f.var part : {unsigned int}= { x | y }
 
 ld_w_f.execute={
 
@@ -1026,9 +1026,9 @@ ldswp_w.disasm={
 
 // LDDPC - load pc relative with displacement
 
-op lddpc(0b010[3]:0b01[2]:disp7[7]:rd[4])
+op lddpc(0b010[3]:0b01[2]:shl<2>disp7[7]:rd[4])
 
-lddpc.var lddpc_addr : {uint32_t}= { (Operation<CONFIG>::GetAddr() & 0xFFFFFFFC) + ((uint32_t)disp7 << 2)}
+lddpc.var lddpc_addr : {uint32_t}= { (Operation<CONFIG>::GetAddr() & 0xFFFFFFFC) + disp7 }
 
 lddpc.execute={
 	
@@ -1038,7 +1038,7 @@ lddpc.execute={
 
 lddpc.disasm={
 
-	os << "lddpc\t" << REG_NAME[rd] << ",[0x" << std::hex << ((uint32_t)disp7 << 2) << "] <" << cpu->GetObjectFriendlyName(lddpc_addr) << ">";
+	os << "lddpc\t" << REG_NAME[rd] << ",[0x" << std::hex << disp7 << "] <" << cpu->GetObjectFriendlyName(lddpc_addr) << ">";
 }
 
 // LDDSP - load sp relative with displacement
@@ -2691,56 +2691,50 @@ stmts.disasm={
 
 // MEMC - clear bit in memory
 
-op memc(0b111101100001[12]:bp_4_1[4]:><: bp_0[1]:sext<32>imm15[15])
+op memc(0b111101100001[12]:shl<1>bp_4_1[4]:><: bp_0[1]:shl<2>sext<32>imm15[15])
 
-memc.var bp: {uint8_t} ={(bp_4_1 << 1)| bp_0 }
+memc.var bp: {uint8_t} ={ bp_4_1 | bp_0 }
 
 memc.execute={
 
-	typename CONFIG::address_t addr =imm15<<2;
-	return cpu->MemoryBitAccess(addr,1,bp);
+	return cpu->MemoryBitAccess(imm15,1,bp);
 } 
 
 memc.disasm={
 
-	typename CONFIG::address_t addr =imm15<<2;
-	os << "memc\tr0x" << std::hex << addr  << ",0x" << std::dec <<(int) bp ;
+	os << "memc\tr0x" << std::hex << imm15  << ",0x" << std::dec <<(int) bp ;
 }
 
 // MEMS - set bit in memory
 
-op mems(0b111110000001[12]:bp_4_1[4]:><: bp_0[1]:sext<32>imm15[15])
+op mems(0b111110000001[12]:shl<1>bp_4_1[4]:><: bp_0[1]:shl<2>sext<32>imm15[15])
 
-mems.var bp: {uint8_t} ={(bp_4_1 << 1)| bp_0 } 
+mems.var bp: {uint8_t} ={ bp_4_1 | bp_0 } 
 
 mems.execute={
 	
-	typename CONFIG::address_t addr =imm15<<2;
-	return cpu->MemoryBitAccess(addr,2,bp);
+	return cpu->MemoryBitAccess(imm15,2,bp);
 }
 
 mems.disasm={
 
-	typename CONFIG::address_t addr =imm15<<2;
-	os << "mems\tr0x" << std::hex << addr << ",0x" << std::dec <<(int)bp;
+	os << "mems\tr0x" << std::hex << imm15 << ",0x" << std::dec <<(int)bp;
 }
 
 // MEMT - toggle bit in memory
 
-op memt(0b111110100001[12]:bp_4_1[4]:><: bp_0[1]:sext<32>imm15[15])
+op memt(0b111110100001[12]:shl<1>bp_4_1[4]:><: bp_0[1]:shl<2>sext<32>imm15[15])
 
-memt.var bp: {uint8_t} ={(bp_4_1 << 1)| bp_0 }
+memt.var bp: {uint8_t} ={ bp_4_1 | bp_0 }
 
 memt.execute={
 
-	typename CONFIG::address_t addr =imm15<<2;
-	return cpu->MemoryBitAccess(addr,3,bp);
+	return cpu->MemoryBitAccess(imm15,3,bp);
 } 
 
 memt.disasm={
 
-	typename CONFIG::address_t addr =imm15<<2;
-	os << "memt\tr0x" << std::hex << addr << ",0x" << std::dec<< (unsigned int) bp;
+	os << "memt\tr0x" << std::hex << imm15 << ",0x" << std::dec<< (unsigned int) bp;
 }
      
 

@@ -213,7 +213,7 @@ private:
 	
 	void MessageHandlerProcess(MessageHandler *handler) {
 		while(1) {
-			wait(handler->event);
+			sc_core::wait(handler->event);
 			handler->msg->PopResponseEvent();
 			ResponseReceived(handler->msg, *(handler->port));
 			handler->msg = 0;
@@ -278,7 +278,7 @@ private:
 	
 	void MessageHandlerProcess(MessageHandler *handler) {
 		while(1) {
-			wait(handler->event);
+			sc_core::wait(handler->event);
 			handler->msg->PopResponseEvent();
 			ResponseReceived(handler->msg, *(handler->port), 
 							handler->orig_msg, *(handler->who_port));
