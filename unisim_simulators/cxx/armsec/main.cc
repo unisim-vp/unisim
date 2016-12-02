@@ -911,7 +911,7 @@ namespace armsec
       }
     
     std::ostringstream buffer;
-    buffer << "goto (" << nia.InsCode(current) << ")";
+    buffer << "goto (" << nia.InsCode(current) << ",0)";
     current = buffer.str();
   }
 }

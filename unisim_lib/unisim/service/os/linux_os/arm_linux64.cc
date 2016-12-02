@@ -49,9 +49,9 @@ ArmLinux64::ArmLinux64( const char* name, unisim::kernel::service::Object* paren
 }
 
 void
-ArmLinux32::SetupTargetSystem()
+ArmLinux64::SetupTargetSystem()
 {
-  linuxlib_->SetTargetSystem( new unisim::util::os::linux_os::ARM64TS<Linux<uint32_t, uint32_t>::LinuxImpl>( *linuxlib_ ) );
+  linuxlib_->SetTargetSystem( new unisim::util::os::linux_os::ARM64TS<PLinux::LinuxImpl>( *linuxlib_ ) );
 }
 
 ArmLinux64::~ArmLinux64()

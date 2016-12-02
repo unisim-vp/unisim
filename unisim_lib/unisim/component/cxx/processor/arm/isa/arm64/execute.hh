@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015-2016,
+ *  Copyright (c) 2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,33 +32,27 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-/**************************************************************/
-/* Disassembling methods                                      */
-/**************************************************************/
-
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_DISASM_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_DISASM_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ISA_ARM64_EXECUTE_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ISA_ARM64_EXECUTE_HH__
 
 #include <inttypes.h>
-#include <iosfwd>
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
+namespace isa {
+namespace arm64 {
 
-  struct DisasmObject
-  {
-    virtual void operator() ( std::ostream& sink ) const = 0;
-    virtual ~DisasmObject() {};
-  };
-  std::ostream& operator << ( std::ostream& sink, DisasmObject const& dobj );
-  
+
+} // end of namespace arm64
+} // end of namespace isa
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-#endif /* __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_DISASM_HH__ */
+#endif /* __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ISA_ARM64_EXECUTE_HH__ */
+

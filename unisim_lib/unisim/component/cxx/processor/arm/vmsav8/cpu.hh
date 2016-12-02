@@ -65,9 +65,9 @@ struct CPU
   , public unisim::kernel::service::Service<unisim::service::interfaces::Registers>
 {
   typedef CONFIG Config;
-  typedef simfloat::FP FP;
-  typedef FP::F64  F64;
-  typedef FP::F32  F32;
+  // typedef simfloat::FP FP;
+  // typedef FP::F64  F64;
+  // typedef FP::F32  F32;
   typedef uint8_t  U8;
   typedef uint16_t U16;
   typedef uint32_t U32;

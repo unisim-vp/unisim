@@ -48,16 +48,37 @@ namespace processor {
 namespace arm {
 namespace cortex_a53 {
 
+struct ConfigCA53
+{
+  //=====================================================================
+  //=                  ARM architecture model description               =
+  //=====================================================================
+  
+  // Following a standard armv7 configuration
+  // static uint32_t const model = unisim::component::cxx::processor::arm::ARMV7;
+  static bool const     insns4T = true;
+  static bool const     insns5E = true;
+  static bool const     insns5J = true;
+  static bool const     insns5T = true;
+  static bool const     insns6  = true;
+  static bool const     insnsRM = true;
+  static bool const     insnsT2 = true;
+  static bool const     insns7  = true;
+  static bool const     hasVFP  = true;
+  static bool const     hasAdvSIMD = false;
+};
+
+
 struct CPU
   : public sc_module
   , public tlm::tlm_bw_transport_if<>
-  , public unisim::component::cxx::processor::arm::vmsav8::CPU
+  , public unisim::component::cxx::processor::arm::vmsav8::CPU<ConfigCA53>
 {
   typedef tlm::tlm_base_protocol_types::tlm_payload_type  transaction_type;
   typedef tlm::tlm_base_protocol_types::tlm_phase_type    phase_type;
   typedef tlm::tlm_sync_enum     sync_enum_type;
 	
-  typedef unisim::component::cxx::processor::arm::vmsav7::CPU PCPU;
+  typedef unisim::component::cxx::processor::arm::vmsav8::CPU<ConfigCA53> PCPU;
   // typedef PCPU::CP15CPU CP15CPU;
   // typedef PCPU::CP15Reg CP15Reg;
 
@@ -65,7 +86,11 @@ struct CPU
    * Port to the bus and its virtual methods to handle                START *
    *   incomming calls.                                                     *
    **************************************************************************/
-
+  
+  SC_HAS_PROCESS(CPU);
+  CPU(sc_module_name const& name, Object* parent);
+  virtual ~CPU();
+  
   // Master port to the bus port
   tlm::tlm_initiator_socket<32> master_socket;
 	

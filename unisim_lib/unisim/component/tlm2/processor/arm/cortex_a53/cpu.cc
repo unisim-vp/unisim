@@ -53,7 +53,7 @@ using namespace unisim::kernel::logger;
 CPU::CPU( sc_module_name const& name, Object* parent )
   : unisim::kernel::service::Object(name, parent)
   , sc_module(name)
-  , unisim::component::cxx::processor::arm::vmsav7::CPU(name, parent)
+  , unisim::component::cxx::processor::arm::vmsav8::CPU<ConfigCA53>(name, parent)
   , master_socket("master_socket")
 {
   master_socket.bind(*this);

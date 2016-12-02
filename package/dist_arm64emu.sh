@@ -331,7 +331,8 @@ unisim/component/cxx/processor/arm/register_field.hh \
 unisim/component/cxx/processor/arm/cpu.hh \
 unisim/component/cxx/processor/arm/vmsav8/cpu.hh \
 unisim/component/cxx/processor/arm/exception.hh \
-unisim/component/cxx/processor/arm/execute.hh \
+unisim/component/cxx/processor/arm/isa/arm64/execute.hh \
+unisim/component/cxx/processor/arm/isa/arm64/deocde.hh \
 unisim/component/cxx/processor/arm/models.hh \
 unisim/component/cxx/processor/arm/vmsav8/disasm.hh \
 unisim/component/cxx/memory/ram/memory.hh \

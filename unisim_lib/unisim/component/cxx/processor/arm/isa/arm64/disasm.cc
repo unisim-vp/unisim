@@ -36,14 +36,15 @@
 #include <iostream>
 #include <sstream>
 
-#include "unisim/component/cxx/processor/arm/disasm.hh"
-#include "unisim/component/cxx/processor/arm/psr.hh"
+#include <unisim/component/cxx/processor/arm/vmsav8/disasm.hh>
+#include <unisim/component/cxx/processor/arm/isa/arm64/decode.hh>
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
+namespace vmsav8 {
 
   std::ostream&
   operator << ( std::ostream& sink, DisasmObject const& dobj )
@@ -52,7 +53,13 @@ namespace arm {
     return sink;
   }
 
+  void
+  DisasmF::operator () ( std::ostream& sink ) const
+  {
+    sink << "#" << float( imm );
+  }
 
+} // end of namespace vmsav8
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
