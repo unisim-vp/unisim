@@ -23,7 +23,8 @@ struct Fabs : public Operation<ARCH>
   typedef typename ARCH::f64_t f64_t;
   Fabs( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fabs"; }
-  void execute( ARCH& arch ) const {
+  void execute( ARCH& arch ) const
+  {
     f64_t val = arch.fread( 0 );
     if (arch.Cond( val < f64_t( 0.0 ) ))
       val = -val;
@@ -670,6 +671,7 @@ struct Fninit : public Operation<ARCH>
   typedef typename ARCH::f64_t f64_t;
   Fninit( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fninit"; }
+  void execute( ARCH& arch ) const { /* XXX: FPU initialization */ }
 };
 
 template <class ARCH> struct DC<ARCH,FINIT> { Operation<ARCH>* get( InputCode<ARCH> const& ic )

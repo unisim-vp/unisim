@@ -145,7 +145,7 @@ namespace armsec
   
     typedef std::vector<armsec::Expr> ExprStack;
 
-    void GenCode( std::ostream&, uint32_t, Label const&, Label const&, ExprStack& ) const;
+    void GenCode( Label const&, Label const&, ExprStack& ) const;
     
     Expr cond;
     std::set<Expr> sinks;
@@ -293,7 +293,7 @@ namespace armsec
     {
       RegRead( RegID _id, unsigned _bitsize ) : id(_id), bitsize(_bitsize) {}
       RegRead( char const* name, unsigned _bitsize ) : id( name ), bitsize(_bitsize) {}
-      virtual void Repr( std::ostream& sink ) const { sink << id.c_str() << "<" << bitsize << ">"; }
+      virtual int GenCode( Label& label, std::ostream& sink ) const { sink << id.c_str() << "<" << bitsize << ">"; return bitsize; }
       virtual intptr_t cmp( ExprNode const& brhs ) const {
         RegRead const& rhs = dynamic_cast<RegRead const&>( brhs );
         return id - rhs.id;
@@ -308,7 +308,8 @@ namespace armsec
     {
       RegWrite( RegID _id, Expr const& _value, unsigned _bitsize ) : id(_id), value(_value), bitsize(_bitsize) {}
       RegWrite( char const* name, Expr const& _value, unsigned _bitsize ) : id(name), value(_value), bitsize(_bitsize) {}
-      virtual void Repr( std::ostream& sink ) const { sink << id.c_str() << "<" << std::dec << bitsize << "> := " << value; }
+      virtual int GenCode( Label& label, std::ostream& sink ) const
+      { sink << id.c_str() << "<" << std::dec << bitsize << "> := " << value.InsCode(label); return 0; }
       virtual intptr_t cmp( ExprNode const& brhs ) const
       {
         RegWrite const& rhs = dynamic_cast<RegWrite const&>( brhs );
@@ -476,8 +477,11 @@ namespace armsec
         : addr(_addr), size( _size ), aligned(_aligned)
       {}
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); addr->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const {
-        sink << "Load" << (aligned ? "A" : "") << 8*size << "( " << addr << " )";
+      virtual int GenCode( Label& label, std::ostream& sink ) const
+      {
+        int bitsize = 8*size;
+        sink << "Load" << (aligned ? "A" : "") << bitsize << "( " << addr.InsCode(label) << " )";
+        return bitsize;
       }
       intptr_t cmp( ExprNode const& brhs ) const
       {
@@ -498,7 +502,11 @@ namespace armsec
         : value(_value), addr(_addr), size(_size), aligned(_aligned)
       {}
       
-      virtual void Repr( std::ostream& sink ) const { sink << "@[" << addr << ",<-," << size << "] := " << value; }
+      virtual int GenCode( Label& label, std::ostream& sink ) const
+      {
+        sink << "@[" << addr.InsCode(label) << ",<-," << size << "] := " << value.InsCode(label);
+        return 0;
+      }
       
       intptr_t cmp( ExprNode const& brhs ) const
       {
@@ -661,48 +669,48 @@ namespace armsec
     return make_const( false );    
   }
   
-  struct GenFlagsID
-  {
-    enum Code { NA = 0, Sub, Add };
+  // struct GenFlagsID
+  // {
+  //   enum Code { NA = 0, Sub, Add };
     
-    template <class E> static void
-    Enumeration( E& e )
-    {
-      if (e( "Sub", Sub )) return;
-      if (e( "Add", Add )) return;
-    }
+  //   template <class E> static void
+  //   Enumeration( E& e )
+  //   {
+  //     if (e( "Sub", Sub )) return;
+  //     if (e( "Add", Add )) return;
+  //   }
     
-    GenFlagsID( Code _code ) : code(_code) {}
-    GenFlagsID( char const* _code ) : code(NA) { cstr2enum( *this, _code ); }
+  //   GenFlagsID( Code _code ) : code(_code) {}
+  //   GenFlagsID( char const* _code ) : code(NA) { cstr2enum( *this, _code ); }
     
-    char const* c_str() const { return enum2cstr( *this, "NA" ); }
-    GenFlagsID operator + ( int offset ) const { return GenFlagsID( Code(int(code) + offset) ); }
-    int operator - ( GenFlagsID rid ) const { return int(code) - int(rid.code); }
+  //   char const* c_str() const { return enum2cstr( *this, "NA" ); }
+  //   GenFlagsID operator + ( int offset ) const { return GenFlagsID( Code(int(code) + offset) ); }
+  //   int operator - ( GenFlagsID rid ) const { return int(code) - int(rid.code); }
       
-    Code code;
-  };
+  //   Code code;
+  // };
   
-  struct GenFlags : public ExprNode
-  {
-    GenFlags( GenFlagsID _id, Expr const& _ipsr, Expr const& _lhs, Expr const& _rhs )
-      : id(_id), ipsr(_ipsr), lhs(_lhs), rhs(_rhs) {}
+  // struct GenFlags : public ExprNode
+  // {
+  //   GenFlags( GenFlagsID _id, Expr const& _ipsr, Expr const& _lhs, Expr const& _rhs )
+  //     : id(_id), ipsr(_ipsr), lhs(_lhs), rhs(_rhs) {}
     
-    virtual void Repr( std::ostream& sink ) const
-    {
-      sink << "GenFlags(" << id.c_str() << ", " << ipsr << ", " << lhs << ", " << rhs << ")";
-    }
-    virtual intptr_t cmp( ExprNode const& bright ) const
-    {
-      GenFlags const& right = dynamic_cast<GenFlags const&>( bright );
-      if (int delta = id - right.id) return delta;
-      if (intptr_t delta = ipsr.cmp(right.ipsr)) return delta;
-      if (intptr_t delta = lhs.cmp(right.lhs)) return delta;
-      return rhs.cmp(right.rhs);
-    }
-    virtual ExprNode* GetConstNode() { return 0; };
-    GenFlagsID id;
-    Expr ipsr, lhs, rhs;
-  };
+  //   virtual void Repr( std::ostream& sink ) const
+  //   {
+  //     sink << "GenFlags(" << id.c_str() << ", " << ipsr << ", " << lhs << ", " << rhs << ")";
+  //   }
+  //   virtual intptr_t cmp( ExprNode const& bright ) const
+  //   {
+  //     GenFlags const& right = dynamic_cast<GenFlags const&>( bright );
+  //     if (int delta = id - right.id) return delta;
+  //     if (intptr_t delta = ipsr.cmp(right.ipsr)) return delta;
+  //     if (intptr_t delta = lhs.cmp(right.lhs)) return delta;
+  //     return rhs.cmp(right.rhs);
+  //   }
+  //   virtual ExprNode* GetConstNode() { return 0; };
+  //   GenFlagsID id;
+  //   Expr ipsr, lhs, rhs;
+  // };
 
   
   void
@@ -721,31 +729,65 @@ namespace armsec
     UpdateStatusSub( state, res, lhs, -rhs );
   }
   
-  struct Label
+  struct BSR : public ExprNode
   {
-    Label() : id(-1) {}
+    BSR( Expr const& _src ) : src(_src) {}
     
-    static int gid;
-    
-    struct Statement
+    virtual int GenCode( Label& label, std::ostream& sink ) const
     {
-      Statement( uint32_t _addr, int _id ) : addr(_addr), id(_id) {} uint32_t addr; int id;
-      friend std::ostream& operator << ( std::ostream& sink, Statement const& stmt )
-      { sink << '(' << DumpConstant( stmt.addr ) << ',' << stmt.id << ") "; return sink; }
-    };
+      Label tail(label);
+      {
+        std::ostringstream buffer;
+        buffer << "bsr_in<32> := " << src.InsCode(tail);
+        Label insn( tail );
+        buffer << "; goto " << tail.next();
+        insn = buffer.str();
+      }
+      {
+        std::ostringstream code;
+        Label insn( tail );
+        code << "bsr_out<32> := 32<32> ; goto " << tail.next();
+        insn = code.str();
+      }
+      Label exit(tail);
+      exit.next();
+      {
+        std::ostringstream code;
+        Label insn( tail );
+        code << "if (bsr_in<32> = 0<32>) goto " << exit.id << " else goto " << tail.next();
+        insn = code.str();
+      }
+      Label loop(tail);
+      {
+        std::ostringstream code;
+        code << "bsr_out<32> := bsr_out<32> - 1<32> ; goto " << tail.next();
+        loop = code.str();
+      }
+      {
+        std::ostringstream code;
+        Label insn( tail );
+        code << "if ((bsr_in<32> >>u bsr_out<32>){0,0}) goto " << exit.id << " else goto " << loop.id;
+        insn = code.str();
+      }
+      label = exit;
+      
+      sink << "bsr_out<32>";
+      
+      return 32;
+    }
+    virtual intptr_t cmp( ExprNode const& rhs ) const { return src.cmp( dynamic_cast<BSR const&>( rhs ).src ); }
+    virtual ExprNode* GetConstNode() { return 0; }
     
-    Statement statement( uint32_t addr ) const { return Statement( addr, id ); }
-    int next() { id = gid++; return id; }
-    bool valid() const { return id >= 0; }
-    static Label get() { Label r; r.next(); return r; }
-    
-    int id;
+    Expr src;
   };
   
-  int Label::gid = 0;
+  U32 BitScanReverse( U32 const& value )
+  {
+    return U32( new BSR( value.expr ) );
+  }
   
   void
-  PathNode::GenCode( std::ostream& sink, uint32_t insn_addr, Label const& start, Label const& after, ExprStack& pending ) const
+  PathNode::GenCode( Label const& start, Label const& after, ExprStack& pending ) const
   {
     struct F
     {
@@ -773,15 +815,22 @@ namespace armsec
             struct TmpVar : public armsec::ExprNode
             {
               TmpVar( armsec::State::RegID rid, unsigned rsz )
-              { std::ostringstream oss; oss << "nxt_" << rid.c_str() << "<" << rsz << ">"; ref = oss.str(); }
-              virtual void Repr( std::ostream& sink ) const { sink << ref; }
+                : dsz(rsz)
+              { std::ostringstream buffer; buffer << "nxt_" << rid.c_str() << "<" << rsz << ">"; ref = buffer.str(); }
+              virtual int GenCode( Label& label, std::ostream& sink ) const { sink << ref; return dsz; }
               virtual intptr_t cmp( ExprNode const& rhs ) const { return ref.compare( dynamic_cast<TmpVar const&>( rhs ).ref ); }
               virtual ExprNode* GetConstNode() { return 0; };
               std::string ref;
-            } *tmp = new TmpVar( rid, rsz );
+              int dsz;
+            }* tmp = new TmpVar( rid, rsz );
             
-            sink << current.statement(insn_addr) << tmp->ref << " := " << rw->value;
-            sink << "; goto " << current.next() << '\n';
+            std::ostringstream buffer;
+            buffer << tmp->ref << " := ";
+            rw->value->GenCode( current, buffer );
+            Label insn( current );
+            buffer << "; goto " << current.next();
+            insn = buffer.str();
+            
             wb = new armsec::State::RegWrite( rid, tmp, rsz );
           }
           
@@ -792,8 +841,12 @@ namespace armsec
         }
       else
         {
-          sink << current.statement(insn_addr) << *itr;
-          sink << "; goto " << current.next() << '\n';
+          std::ostringstream buffer;
+          int retsize = (*itr)->GenCode( current, buffer );
+          if (retsize) throw 0;
+          Label insn( current );
+          buffer << "; goto " << current.next();
+          insn = buffer.str();
         }
     }
     
@@ -804,54 +857,64 @@ namespace armsec
       }
     else
       {
-        sink << current.statement(insn_addr) << "if " << cond << " ";
+        std::ostringstream buffer;
+        buffer << "if " << cond.InsCode(current) << " ";
+        Label ifinsn( current );
     
         current = after;
         if (nia.good() or (after.valid() and (pending.size() > frame.s)))
           current.next();
     
         if (not false_nxt) {
-          Label ifthen;
-          sink << " goto " << ifthen.next() << " else goto " << current.id << '\n';
-          true_nxt->GenCode( sink, insn_addr, ifthen, current, pending );
+          Label ifthen(current);
+          buffer << " goto " << ifthen.next() << " else goto " << current.id;
+          ifinsn = buffer.str();
+          true_nxt->GenCode( ifthen, current, pending );
         } else if (not true_nxt) {
-          Label ifelse;
-          sink << " goto " << current.id << " else goto " << ifelse.next() << '\n';
-          false_nxt->GenCode( sink, insn_addr, ifelse, current, pending );
+          Label ifelse(current);
+          buffer << " goto " << current.id << " else goto " << ifelse.next();
+          ifinsn = buffer.str();
+          false_nxt->GenCode( ifelse, current, pending );
         } else {
-          Label ifthen, ifelse;
-          sink << " goto " << ifthen.next() << " else goto " << ifelse.next() << '\n';
-          true_nxt->GenCode( sink, insn_addr, ifthen, current, pending );
-          false_nxt->GenCode( sink, insn_addr, ifelse, current, pending );
+          Label ifthen(current), ifelse(current);
+          buffer << " goto " << ifthen.next() << " else goto " << ifelse.next();
+          ifinsn = buffer.str();
+          true_nxt->GenCode( ifthen, current, pending );
+          false_nxt->GenCode( ifelse, current, pending );
         }
       }
     
-    int step = 0;
     uintptr_t idx = pending.size();
+    
     while (idx > frame.s)
       {
         idx -= 1;
-        if (step++>0) sink << "; goto " << current.next() << '\n';
-        sink << current.statement(insn_addr) << pending[idx];
+        std::ostringstream buffer;
+        pending[idx]->GenCode(current, buffer);
+        Label insn( current );
+        int next = ((idx > frame.s) or nia.good()) ? current.next() : after.id;
+        buffer << "; goto " << next;
+        insn = buffer.str();
       }
     
-    if (not nia.good()) {
-      if (step>0) sink << "; goto " << after.id << "\n";
+    if (not nia.good())
       return;
-    }
     
     while (idx > 0)
       {
         idx -= 1;
-        if (step++>0) sink << "; goto " << current.next() << '\n';
-        sink << current.statement(insn_addr) << pending[idx];
+        std::ostringstream buffer;
+        pending[idx]->GenCode(current, buffer);
+        Label insn( current );
+        buffer << "; goto " << current.next();
+        insn = buffer.str();
       }
     
-    if (step>0) sink << "; goto " << current.next() << '\n';
-    sink << current.statement(insn_addr) << "goto (" << nia << ")\n";
+    std::ostringstream buffer;
+    buffer << "goto (" << nia.InsCode(current) << ",0)";
+    current = buffer.str();
   }
 }
-
 
 struct ARMISA : public unisim::component::cxx::processor::arm::isa::arm32::Decoder<armsec::State>
 {
@@ -920,7 +983,13 @@ struct Decoder
     path->remove_dead_paths();
     
     std::vector<armsec::Expr> init;
-    path->GenCode( std::cout, addr, armsec::Label::get(), armsec::Label(), init );
+    armsec::Label::Program program;
+    armsec::Label beglabel(program), endlabel(program);
+    beglabel.next();
+    path->GenCode( beglabel, endlabel, init );
+    
+    for (uintptr_t idx = 0; idx < program.size(); idx += 1)
+      std::cout << '(' << armsec::DumpConstant( addr ) << ',' << idx << ") " << program[idx] << std::endl;
   }
 
   void  do_arm( uint32_t addr, uint32_t code ) { do_isa( armisa, addr, code ); }

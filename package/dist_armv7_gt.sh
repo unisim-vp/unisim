@@ -150,7 +150,7 @@ unisim/service/power/cache_dynamic_power.cc \
 unisim/service/power/cache_leakage_power.cc \
 unisim/service/power/cache_power_estimator.cc \
 unisim/service/power/cache_dynamic_energy.cc \
-unisim/service/os/linux_os/linux.cc \
+unisim/service/os/linux_os/arm_linux32.cc \
 unisim/service/trap_handler/trap_handler.cc \
 unisim/service/trap_handler/trap_handler_identifier.cc \
 unisim/service/time/host_time/time.cc \
@@ -298,6 +298,7 @@ unisim/service/power/cache_dynamic_power.hh \
 unisim/service/power/cache_leakage_power.hh \
 unisim/service/power/cache_dynamic_energy.hh \
 unisim/service/os/linux_os/linux.hh \
+unisim/service/os/linux_os/arm_linux32.hh \
 unisim/service/trap_handler/trap_handler.hh \
 unisim/service/trap_handler/trap_handler_identifier.hh \
 unisim/service/trap_handler/trap_handler_identifier_interface.hh \
@@ -393,8 +394,6 @@ unisim/util/os/linux_os/aux_table.hh \
 unisim/util/os/linux_os/environment.hh \
 unisim/util/os/linux_os/files_flags.hh \
 unisim/util/os/linux_os/linux.hh \
-unisim/util/os/linux_os/ppc.hh \
-unisim/util/os/linux_os/i386.hh \
 unisim/util/os/linux_os/errno.hh \
 unisim/util/dictionary/dictionary.hh \
 unisim/util/lexer/lexer.hh \

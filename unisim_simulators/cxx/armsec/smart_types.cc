@@ -4,13 +4,6 @@
 
 namespace armsec
 {
-  std::ostream&
-  operator << (std::ostream& sink, Expr const& expr)
-  {
-    expr->Repr( sink );
-    return sink;
-  }
-  
   std::ostream& ConstNodeBase::warn() { return std::cerr; }
   
   double BinaryXor( double l, double r ) { throw std::logic_error( "No ^ for double." ); }
@@ -38,60 +31,71 @@ namespace armsec
   void DumpConstant( std::ostream& sink, bool v ) { sink << int(v) << "<1>"; }
 
 
-  void
-  BONode::Repr( std::ostream& sink ) const
+  int
+  BONode::GenCode( Label& label, std::ostream& sink ) const
   {
+    sink << '(';
+    int retsz = left->GenCode(label,sink);
+    
     switch (binop.code)
       {
-      default:                sink << binop.c_str() << "( " << left << ", " << right << " )"; break;
+      default:                sink << " [" << binop.c_str() << "] "; break;
         
-      case BinaryOp::Add:     sink << "(" << left << " + " << right << ")"; break;
+      case BinaryOp::Add:     sink << " + "; break;
         
-      case BinaryOp::Sub:     sink << "(" << left << " - " << right << ")"; break;
+      case BinaryOp::Sub:     sink << " - "; break;
         
-      case BinaryOp::Xor:     sink << "(" << left << " xor " << right << ")"; break;
-      case BinaryOp::Or:      sink << "(" << left << " or " << right << ")"; break;
-      case BinaryOp::And:     sink << "(" << left << " and " << right << ")"; break;
+      case BinaryOp::Xor:     sink << " xor "; break;
+      case BinaryOp::Or:      sink << " or "; break;
+      case BinaryOp::And:     sink << " and "; break;
         
-      case BinaryOp::Teq:     sink << "(" << left << " = " << right << ")"; break;
-      case BinaryOp::Tne:     sink << "(" << left << " <> " << right << ")"; break;
+      case BinaryOp::Teq:     sink << " = "; break;
+      case BinaryOp::Tne:     sink << " <> "; break;
         
-      case BinaryOp::Tle:     sink << "(" << left << " <=s " << right << ")"; break;
-      case BinaryOp::Tleu:    sink << "(" << left << " <=u " << right << ")"; break;
+      case BinaryOp::Tle:     sink << " <=s "; break;
+      case BinaryOp::Tleu:    sink << " <=u "; break;
         
-      case BinaryOp::Tge:     sink << "(" << left << " >=s " << right << ")"; break;
-      case BinaryOp::Tgeu:    sink << "(" << left << " >=u " << right << ")"; break;
+      case BinaryOp::Tge:     sink << " >=s "; break;
+      case BinaryOp::Tgeu:    sink << " >=u "; break;
         
-      case BinaryOp::Tlt:     sink << "(" << left << " <s " << right << ")"; break;
-      case BinaryOp::Tltu:    sink << "(" << left << " <u " << right << ")"; break;
+      case BinaryOp::Tlt:     sink << " <s "; break;
+      case BinaryOp::Tltu:    sink << " <u "; break;
         
-      case BinaryOp::Tgt:     sink << "(" << left << " >s " << right << ")"; break;
-      case BinaryOp::Tgtu:    sink << "(" << left << " >u " << right << ")"; break;
+      case BinaryOp::Tgt:     sink << " >s "; break;
+      case BinaryOp::Tgtu:    sink << " >u "; break;
       
-      case BinaryOp::Lsl:     sink << "(" << left << " lshift " << right << ")"; break;
-      case BinaryOp::Asr:     sink << "(" << left << " rshifts " << right << ")"; break;
-      case BinaryOp::Lsr:     sink << "(" << left << " rshiftu " << right << ")"; break;
-      case BinaryOp::Ror:     sink << "(" << left << " rrotate " << right << ")"; break;
-      case BinaryOp::Mul:     sink << "(" << left << " multu " << right << ")"; break;
+      case BinaryOp::Lsl:     sink << " lshift "; break;
+      case BinaryOp::Asr:     sink << " rshifts "; break;
+      case BinaryOp::Lsr:     sink << " rshiftu "; break;
+      case BinaryOp::Ror:     sink << " rrotate "; break;
+      case BinaryOp::Mul:     sink << " multu "; break;
         // case BinaryOp::Mod: break;
         // case BinaryOp::Div: break;
       }
+    
+    sink << right.InsCode(label) << ')';
+    return retsz;
   }
   
-  void
-  UONode::Repr( std::ostream& sink ) const
+  int
+  UONode::GenCode( Label& label, std::ostream& sink ) const
   {
+    sink << '(';
     switch (unop.code)
       {
-      default:                sink << unop.c_str() << "( " << src << " )"; break;
+      default:              sink << "[" << unop.c_str() << "] "; break;
         
-      case UnaryOp::Not:    sink << "(not " << src << ")"; break;
-      case UnaryOp::Neg:      sink << "(- " << src << ")"; break;
+      case UnaryOp::Not:    sink << "not "; break;
+      case UnaryOp::Neg:    sink << "- "; break;
         
         // case UnaryOp::BSwp:  break;
         // case UnaryOp::BSR:   break;
         // case UnaryOp::BSF:   break;
       }
+    
+    int retsz = src->GenCode(label,sink);
+    sink << ')';
+    return retsz;
   }
 
 

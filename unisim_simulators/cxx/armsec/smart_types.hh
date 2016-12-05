@@ -5,6 +5,8 @@
 #include <ostream>
 #include <iomanip>
 #include <stdexcept>
+#include <string>
+#include <vector>
 #include <cstring>
 #include <typeinfo>
 #include <inttypes.h>
@@ -19,12 +21,24 @@ namespace armsec
   template <bool test> struct StaticAssert {};
   template <> struct StaticAssert<true> { static void check() {}; };
   
-  template <class T, class U>
-  struct CmpTypes { static bool const same = false; };
+  template <class T, class U>  struct CmpTypes { static bool const same = false; };
 
-  template <class T>
-  struct CmpTypes<T,T> { static bool const same = true; };
-
+  template <class T>  struct CmpTypes<T,T> { static bool const same = true; };
+  
+  struct Label
+  {
+    typedef std::vector<std::string> Program;
+    
+    Label( Program& _program ) : program(&_program), id(-1) {}
+    
+    int next() { id = program->size(); program->push_back(""); return id; }
+    bool valid() const { return id >= 0; }
+    void operator = (std::string const& src) { program->at(id) = src; }
+    
+    Program* program;
+    int id;
+  };
+  
   struct ExprNode
   {
     virtual ~ExprNode() {}
@@ -40,9 +54,10 @@ namespace armsec
       virtual void Process( ExprNode const* ) = 0;
     };
     virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); }
-    virtual void Repr( std::ostream& sink ) const = 0;
     virtual intptr_t cmp( ExprNode const& ) const = 0;
     virtual ExprNode* GetConstNode() = 0;
+    
+    virtual int GenCode( Label& label, std::ostream& sink ) const = 0;
   };
   
   template <typename EnumCODE>
@@ -212,6 +227,21 @@ namespace armsec
   uint32_t BSwp( uint32_t v );
   uint16_t BSwp( uint16_t v );
   
+  template <typename VALUE_TYPE>
+  struct TypeInfo
+  {
+    static void name( std::ostream& sink )
+    { sink << (std::numeric_limits<VALUE_TYPE>::is_signed ? 'S' : 'U') << (8*sizeof(VALUE_TYPE)); };
+    static unsigned bitsize() { return 8*sizeof(VALUE_TYPE); }
+  };
+  
+  template <> struct TypeInfo<bool>
+  { static void name( std::ostream& sink ) { sink << "BOOL"; } static unsigned bitsize() { return 1; } };
+  template <> struct TypeInfo<float>
+  { static void name( std::ostream& sink ) { sink << "F32"; } static unsigned bitsize() { return 32; } };
+  template <> struct TypeInfo<double>
+  { static void name( std::ostream& sink ) { sink << "F64"; } static unsigned bitsize() { return 64; } };
+  
   template <typename T>
   struct DbaConstantDumper
   {
@@ -243,7 +273,9 @@ namespace armsec
   struct ConstNode : public ConstNodeBase
   {
     ConstNode( VALUE_TYPE _value ) : value( _value ) {} VALUE_TYPE value;
-    virtual void Repr( std::ostream& sink ) const { sink << DumpConstant( value ); }
+    virtual int GenCode( Label& label, std::ostream& sink ) const
+    { sink << DumpConstant( value ); return TypeInfo<VALUE_TYPE>::bitsize(); }
+    
     intptr_t cmp( ExprNode const& brhs ) const
     {
       ConstNode<VALUE_TYPE> const& rhs = dynamic_cast<ConstNode<VALUE_TYPE> const&>( brhs );
@@ -252,9 +284,7 @@ namespace armsec
     
     static VALUE_TYPE
     GetValue( ConstNodeBase const& cnb )
-    {
-      return dynamic_cast<ConstNode<VALUE_TYPE> const&>( cnb ).value;
-    }
+    { return dynamic_cast<ConstNode<VALUE_TYPE> const&>( cnb ).value; }
   
     ConstNodeBase*
     bop( BinaryOp op, ConstNodeBase& cnb ) const
@@ -326,17 +356,6 @@ namespace armsec
     int64_t GetS64() const { return value; }
   };
   
-  template <typename VALUE_TYPE>
-  struct TypeInfo
-  {
-    static void name( std::ostream& sink ) { sink << (std::numeric_limits<VALUE_TYPE>::is_signed ? 'S' : 'U') << (8*sizeof(VALUE_TYPE)); };
-    static unsigned bitsize() { return 8*sizeof(VALUE_TYPE); }
-  };
-  
-  template <> struct TypeInfo<bool>   { static void name( std::ostream& sink ) { sink << "BOOL"; } static unsigned bitsize() { return 1; } };
-  template <> struct TypeInfo<float>  { static void name( std::ostream& sink ) { sink << "F32"; } static unsigned bitsize() { return 32; } };
-  template <> struct TypeInfo<double> { static void name( std::ostream& sink ) { sink << "F64"; } static unsigned bitsize() { return 64; } };
-  
   struct Expr
   {
     Expr() : node() {} ExprNode* node;
@@ -375,9 +394,20 @@ namespace armsec
       return false;
     }
     bool good() const { return node; }
+    
+    struct Code
+    {
+      Code( Expr const& _expr, Label& _label ) : expr(_expr), label(_label) {}
+      friend std::ostream& operator << ( std::ostream& sink, Code const& code )
+      {
+        code.expr->GenCode( code.label, sink );
+        return sink;
+      }
+      Expr const& expr;
+      Label& label;
+    };
+    Code InsCode(Label& label) const { return Code(*this,label); }
   };
-  
-  std::ostream& operator << (std::ostream&, Expr const&);
   
   template <typename VALUE_TYPE>
   Expr make_const( VALUE_TYPE value ) { return Expr( new ConstNode<VALUE_TYPE>( value ) ); }
@@ -388,7 +418,7 @@ namespace armsec
     CastNode( Expr const& _src )
       : src(_src)
     {}
-    virtual void Repr( std::ostream& sink ) const
+    virtual int GenCode( Label& label, std::ostream& sink ) const
     {
       int dst_bit_size = TypeInfo<DST_VALUE_TYPE>::bitsize(), src_bit_size = TypeInfo<SRC_VALUE_TYPE>::bitsize();
       
@@ -398,16 +428,16 @@ namespace armsec
           if      (extend > 0)
             {
               sink << (std::numeric_limits<SRC_VALUE_TYPE>::is_signed ? "exts " : "extu ");
-              src->Repr( sink );
+              src->GenCode( label, sink );
               sink << ' ' << dst_bit_size;
             }
           else
             {
               typedef CastNode<SRC_VALUE_TYPE,DST_VALUE_TYPE> ReverseCast;
               if (ReverseCast* inv = dynamic_cast<ReverseCast*>( src.node )) {
-                inv->src->Repr( sink );
+                inv->src->GenCode( label, sink );
               } else {
-                src->Repr( sink );
+                src->GenCode( label, sink );
                 if  (extend < 0)
                   sink << " {0," << (dst_bit_size-1) << "}";
               }
@@ -417,17 +447,22 @@ namespace armsec
         {
           TypeInfo<DST_VALUE_TYPE>::name( sink );
           sink << "( ";
-          src->Repr( sink );
+          src->GenCode( label, sink );
           sink << " )";
         }
+      
+      return dst_bit_size;
     }
+    
     intptr_t cmp( ExprNode const& brhs ) const
     {
       CastNode<DST_VALUE_TYPE,SRC_VALUE_TYPE> const& rhs = dynamic_cast<CastNode<DST_VALUE_TYPE,SRC_VALUE_TYPE> const&>( brhs );
       return src.cmp( rhs.src );
     }
+    
     void Traverse( Visitor& visitor ) const
     { visitor.Process( this ); src->Traverse( visitor ); }
+    
     virtual ExprNode* GetConstNode()
     {
       if (src.MakeConst()) {
@@ -455,7 +490,7 @@ namespace armsec
       : unop(_unop), src( _src ) {}
     virtual void Traverse( Visitor& visitor ) const
     { visitor.Process( this ); src->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const;
+    virtual int GenCode( Label& label, std::ostream& sink ) const;
     intptr_t cmp( ExprNode const& brhs ) const
     {
       UONode const& rhs = dynamic_cast<UONode const&>( brhs );
@@ -478,7 +513,7 @@ namespace armsec
       : binop(_binop), left( _left ), right( _right ) {}
     virtual void Traverse( Visitor& visitor ) const
     { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
-    virtual void Repr( std::ostream& sink ) const;
+    virtual int GenCode( Label& label, std::ostream& sink ) const;
 
     intptr_t cmp( ExprNode const& brhs ) const
     {
@@ -590,16 +625,14 @@ namespace armsec
   template <typename UTP>
   UTP RotateRight( UTP const& value, UTP const& shift ) { return UTP( new BONode( "Ror", value.expr, shift.expr ) ); }
   
-  template <typename UTP>
-  UTP BitScanReverse( UTP const& value ) { return UTP( new UONode( "BSR", value.expr ) ); }
-  
   struct FP
   {
     struct DefaultNaNNode : public ExprNode
     {
       DefaultNaNNode( int _fsz ) : fsz( _fsz ) {} int fsz;
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "F" << fsz << "DefaultNaN()"; }
+      virtual int GenCode( Label& label, std::ostream& sink ) const
+      { sink << "F" << fsz << "DefaultNaN()"; return fsz; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         DefaultNaNNode const& rhs = dynamic_cast<DefaultNaNNode const&>( brhs );
@@ -640,7 +673,8 @@ namespace armsec
     {
       IsNaNNode( Expr const& _src, bool _signaling ) : src(_src), signaling(_signaling) {} Expr src; bool signaling;
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "Is" << (signaling?'S':'Q') << "NaN( " << src << " )"; }
+      virtual int GenCode( Label& label, std::ostream& sink ) const
+      { sink << "Is" << (signaling?'S':'Q') << "NaN( " << src.InsCode(label) << " )"; return 1; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         IsNaNNode const& rhs = dynamic_cast<IsNaNNode const&>( brhs );
@@ -692,9 +726,16 @@ namespace armsec
     {
       MulAddNode( Expr const& _acc, Expr const& _left, Expr const& _right )
         : acc( _acc ), left( _left ), right( _right ) {}
-      Expr acc; Expr left; Expr right;
+      Expr acc, left, right;
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); acc->Traverse( visitor ); left->Traverse( visitor ); right->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "FMulAdd( " << acc << ", " << left << ", " << right << " )"; }
+      virtual int GenCode( Label& label, std::ostream& sink ) const
+      {
+        sink << "FMulAdd( ";
+        int retsize = acc->GenCode(label,sink);
+        sink << ", " << left.InsCode(label) << ", " << right.InsCode(label) << " )";
+        return retsize;
+      }
+      
       intptr_t cmp( ExprNode const& brhs ) const
       {
         MulAddNode const& rhs = dynamic_cast<MulAddNode const&>( brhs );
@@ -715,9 +756,15 @@ namespace armsec
     {
       IsInvalidMulAddNode( Expr const& _acc, Expr const& _left, Expr const& _right )
         : acc( _acc ), left( _left ), right( _right ) {}
-      Expr acc; Expr left; Expr right;
+      Expr acc, left, right;
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); acc->Traverse( visitor ); left->Traverse( visitor ); right->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "FIsInvalidMulAdd( " << acc << ", " << left << ", " << right << " )"; }
+      virtual int GenCode( Label& label, std::ostream& sink ) const
+      {
+        sink << "FIsInvalidMulAdd( " << acc.InsCode(label)
+             << ", " << left.InsCode(label)
+             << ", " << right.InsCode(label) << " )";
+        return 1;
+      }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         IsInvalidMulAddNode const& rhs = dynamic_cast<IsInvalidMulAddNode const&>( brhs );
@@ -750,7 +797,11 @@ namespace armsec
         : src( _src ), ssz( _ssz ), dsz( _dsz )
       {} Expr src; int ssz; int dsz;
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "F" << ssz << "2F" << dsz << "( " << src << " )"; }
+      virtual int GenCode( Label& label, std::ostream& sink ) const
+      {
+        sink << "F" << ssz << "2F" << dsz << "( " << src.InsCode(label) << " )";
+        return dsz;
+      }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         FtoFNode const& rhs = dynamic_cast<FtoFNode const&>( brhs );
@@ -764,7 +815,7 @@ namespace armsec
     template <typename ofpT, typename ifpT, class ARCH> static
     void FtoF( SmartValue<ofpT>& dst, SmartValue<ifpT> const& src, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
-      dst = SmartValue<ofpT>( Expr( new FtoFNode( src.expr, 8*sizeof (ifpT), 8*sizeof (ofpT) ) ) );
+      dst = SmartValue<ofpT>( Expr( new FtoFNode( src.expr, TypeInfo<ifpT>::bitsize(), TypeInfo<ofpT>::bitsize() ) ) );
     }
 
     struct FtoINode : public ExprNode
@@ -773,7 +824,11 @@ namespace armsec
         : src( _src ), fsz( _fsz ), isz( _isz ), fb( _fb )
       {} Expr src; int fsz; int isz; int fb; 
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "F" << fsz << "2I" << isz << "( " << src << ", " << fb << " )"; }
+      virtual int GenCode( Label& label, std::ostream& sink ) const
+      {
+        sink << "F" << fsz << "2I" << isz << "( " << src.InsCode(label) << ", " << fb << " )";
+        return isz;
+      }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         FtoINode const& rhs = dynamic_cast<FtoINode const&>( brhs );
@@ -788,7 +843,7 @@ namespace armsec
     template <typename intT, typename fpT, class ARCH> static
     void FtoI( SmartValue<intT>& dst, SmartValue<fpT> const& src, int fracbits, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
-      dst = SmartValue<intT>( Expr( new FtoINode( src.expr, 8*sizeof (fpT), 8*sizeof (intT), fracbits) ) );
+      dst = SmartValue<intT>( Expr( new FtoINode( src.expr, TypeInfo<fpT>::bitsize(), TypeInfo<intT>::bitsize(), fracbits) ) );
     }
 
     struct ItoFNode : public ExprNode
@@ -797,7 +852,9 @@ namespace armsec
         : src( _src ), isz( _isz ), fsz( _fsz ), fb( _fb )
       {} Expr src; int isz; int fsz; int fb;
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
-      virtual void Repr( std::ostream& sink ) const { sink << "I" << isz << "2F" << fsz << "( " << src << ", " << fb << " )"; }
+      virtual int GenCode( Label& label, std::ostream& sink ) const
+      { sink << "I" << isz << "2F" << fsz << "( " << src.InsCode(label) << ", " << fb << " )"; return fsz; }
+      
       intptr_t cmp( ExprNode const& brhs ) const
       {
         ItoFNode const& rhs = dynamic_cast<ItoFNode const&>( brhs );
@@ -812,7 +869,7 @@ namespace armsec
     template <typename fpT, typename intT, class ARCH> static
     void ItoF( SmartValue<fpT>& dst, SmartValue<intT> const& src, int fracbits, ARCH& arch, SmartValue<uint32_t> const& fpscr_val )
     {
-      dst = SmartValue<fpT>( Expr( new ItoFNode( src.expr, 8*sizeof (intT), 8*sizeof (fpT), fracbits ) ) );
+      dst = SmartValue<fpT>( Expr( new ItoFNode( src.expr, TypeInfo<intT>::bitsize(), TypeInfo<fpT>::bitsize(), fracbits ) ) );
     }
     
   };

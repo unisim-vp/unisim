@@ -36,11 +36,13 @@
 #define __UNISIM_UTIL_OS_LINUX_PPC_HH__
 
 #include <unisim/util/likely/likely.hh>
-
 #include <unisim/util/os/linux_os/errno.hh>
-#include <errno.h>
 
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
+#include <stdexcept>
+#include <cerrno>
+#include <cstdlib>
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <process.h>
 #include <windows.h>
 #else

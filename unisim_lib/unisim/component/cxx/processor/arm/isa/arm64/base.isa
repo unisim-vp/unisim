@@ -438,14 +438,14 @@ op adr( 0b0[1] : imm0[2] : 0b10000[5] : sext imm1[19] : rd[5] );
 adr.var imm : {uint64_t} = {(int64_t(imm1)<<2)|imm0}, format : {char const*} = {"base,2"};
 
 adr.disasm = {
-  sink << "adr\t" << DisasmGZXR(rd) << ", 0x" << std::hex << (GetAddr()+imm);
+  sink << "adr\t" << DisasmGZXR(rd) << ", 0x" << std::hex << (this->GetAddr()+imm);
 };
 
 op adrp( 0b1[1] : shl<12> imm0[2] : 0b10000[5] : sext imm1[19] : rd[5] );
 adrp.var imm : {uint64_t} = {(int64_t(imm1)<<14)|imm0}, format : {char const*} = {"base,1"};
 
 adrp.disasm = {
-  sink << "adrp\t" << DisasmGZXR(rd) << ", 0x" << std::hex << ((GetAddr()+imm)&(-1ll<<12));
+  sink << "adrp\t" << DisasmGZXR(rd) << ", 0x" << std::hex << ((this->GetAddr()+imm)&(-1ll<<12));
 };
 
 op and_wasr( 0b00001010100[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
@@ -720,14 +720,14 @@ op b( 0b000101[6] : shl<2> sext imm[26] );
 b.var format : {char const*} = {"base,3"};
 
 b.disasm = {
-  sink << "b\t0x" << std::hex << (GetAddr()+imm);
+  sink << "b\t0x" << std::hex << (this->GetAddr()+imm);
 };
 
 op b_cond( 0b01010100[8] : shl<2> sext imm[19] : 0b0[1] : cond[4] );
 b_cond.var format : {char const*} = {"base,20"};
 
 b_cond.disasm = {
-  sink << "b." << DisasmCond(cond) << "\t0x" << std::hex << (GetAddr()+imm);
+  sink << "b." << DisasmCond(cond) << "\t0x" << std::hex << (this->GetAddr()+imm);
 };
 
 op bfm_w( 0b00110011000[11] : immr[5] : 0b0[1] : imms[5] : rn[5] : rd[5] );
@@ -866,7 +866,7 @@ op bl( 0b100101[6] : shl<2> sext imm[26] );
 bl.var format : {char const*} = {"base,4"};
 
 bl.disasm = {
-  sink << "bl\t0x" << std::hex << (GetAddr()+imm);
+  sink << "bl\t0x" << std::hex << (this->GetAddr()+imm);
 };
 
 op blr( 0b1101011000111111000000[22] : rn[5] : 0b00000[5] );
@@ -1062,28 +1062,28 @@ op cbnz_wlit( 0b00110101[8] : shl<2> sext imm[19] : rt[5] );
 cbnz_wlit.var format : {char const*} = {"base,12"};
 
 cbnz_wlit.disasm = {
-  sink << "cbnz\t" << DisasmGZWR(rt) << ", 0x" << std::hex << (GetAddr()+imm);
+  sink << "cbnz\t" << DisasmGZWR(rt) << ", 0x" << std::hex << (this->GetAddr()+imm);
 };
 
 op cbnz_xlit( 0b10110101[8] : shl<2> sext imm[19] : rt[5] );
 cbnz_xlit.var format : {char const*} = {"base,15"};
 
 cbnz_xlit.disasm = {
-  sink << "cbnz\t" << DisasmGZXR(rt) << ", 0x" << std::hex << (GetAddr()+imm);
+  sink << "cbnz\t" << DisasmGZXR(rt) << ", 0x" << std::hex << (this->GetAddr()+imm);
 };
 
 op cbz_wlit( 0b00110100[8] : shl<2> sext imm[19] : rt[5] );
 cbz_wlit.var format : {char const*} = {"base,13"};
 
 cbz_wlit.disasm = {
-  sink << "cbz\t" << DisasmGZWR(rt) << ", 0x" << std::hex << (GetAddr()+imm);
+  sink << "cbz\t" << DisasmGZWR(rt) << ", 0x" << std::hex << (this->GetAddr()+imm);
 };
 
 op cbz_xlit( 0b10110100[8] : shl<2> sext imm[19] : rt[5] );
 cbz_xlit.var format : {char const*} = {"base,16"};
 
 cbz_xlit.disasm = {
-  sink << "cbz\t" << DisasmGZXR(rt) << ", 0x" << std::hex << (GetAddr()+imm);
+  sink << "cbz\t" << DisasmGZXR(rt) << ", 0x" << std::hex << (this->GetAddr()+imm);
 };
 
 op ccmn_w( 0b00111010010[11] : rm[5] : cond[4] : 0b00[2] : rn[5] : 0b0[1] : nzcv[4] );
@@ -2099,7 +2099,7 @@ op ldr_wlit( 0b00011000[8] : shl<2> sext imm[19] : rt[5] );
 ldr_wlit.var format : {char const*} = {"base,14"};
 
 ldr_wlit.disasm = {
-  sink << "ldr\t" << DisasmGZWR(rt) << ", 0x" << std::hex << (GetAddr()+imm);
+  sink << "ldr\t" << DisasmGZWR(rt) << ", 0x" << std::hex << (this->GetAddr()+imm);
 };
 
 op ldr_wsopost( 0b10111000010[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
@@ -2155,7 +2155,7 @@ op ldr_xlit( 0b01011000[8] : shl<2> sext imm[19] : rt[5] );
 ldr_xlit.var format : {char const*} = {"base,17"};
 
 ldr_xlit.disasm = {
-  sink << "ldr\t" << DisasmGZXR(rt) << ", 0x" << std::hex << (GetAddr()+imm);
+  sink << "ldr\t" << DisasmGZXR(rt) << ", 0x" << std::hex << (this->GetAddr()+imm);
 };
 
 op ldr_xsopost( 0b11111000010[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
@@ -2505,7 +2505,7 @@ op ldrsw_xlit( 0b10011000[8] : shl<2> sext imm[19] : rt[5] );
 ldrsw_xlit.var format : {char const*} = {"base,18"};
 
 ldrsw_xlit.disasm = {
-  sink << "ldrsw\t" << DisasmGZXR(rt) << ", 0x" << std::hex << (GetAddr()+imm);
+  sink << "ldrsw\t" << DisasmGZXR(rt) << ", 0x" << std::hex << (this->GetAddr()+imm);
 };
 
 op ldrsw_xsopost( 0b10111000100[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
@@ -3593,7 +3593,7 @@ op prfm_lit( 0b11011000[8] : shl<2> sext imm[19] : rt[5] );
 prfm_lit.var format : {char const*} = {"base,8"};
 
 prfm_lit.disasm = {
-  sink << "prfm\t" << DisasmI(rt,16) << ", 0x" << std::hex << (GetAddr()+imm);
+  sink << "prfm\t" << DisasmI(rt,16) << ", 0x" << std::hex << (this->GetAddr()+imm);
 };
 
 op prfm_xi( 0b1111100110[10] : shl<3> imm[12] : rn[5] : rt[5] );
@@ -5298,9 +5298,9 @@ tbnz.var pos : {unsigned} = {pos1|pos0}, format : {char const*} = {"base,5"};
 
 tbnz.disasm = {
   if (not pos1)
-    sink << "tbnz\t" << DisasmGZWR(rt) << ", " << DisasmI(pos) << ", 0x" << std::hex << (GetAddr()+imm);
+    sink << "tbnz\t" << DisasmGZWR(rt) << ", " << DisasmI(pos) << ", 0x" << std::hex << (this->GetAddr()+imm);
   else
-    sink << "tbnz\t" << DisasmGZXR(rt) << ", " << DisasmI(pos) << ", 0x" << std::hex << (GetAddr()+imm);
+    sink << "tbnz\t" << DisasmGZXR(rt) << ", " << DisasmI(pos) << ", 0x" << std::hex << (this->GetAddr()+imm);
 };
 
 op tbz( shl<5> pos1[1] : 0b0110110[7] : pos0[5] : shl<2> sext imm[14] : rt[5] );
@@ -5308,9 +5308,9 @@ tbz.var pos : {unsigned} = {pos1|pos0}, format : {char const*} = {"base,6"};
 
 tbz.disasm = {
   if (not pos1)
-    sink << "tbz\t" << DisasmGZWR(rt) << ", " << DisasmI(pos) << ", 0x" << std::hex << (GetAddr()+imm);
+    sink << "tbz\t" << DisasmGZWR(rt) << ", " << DisasmI(pos) << ", 0x" << std::hex << (this->GetAddr()+imm);
   else
-    sink << "tbz\t" << DisasmGZXR(rt) << ", " << DisasmI(pos) << ", 0x" << std::hex << (GetAddr()+imm);
+    sink << "tbz\t" << DisasmGZXR(rt) << ", " << DisasmI(pos) << ", 0x" << std::hex << (this->GetAddr()+imm);
 };
 
 op tlbi_alle1( 0b110101010000110010000111100[27] : ?[5] );

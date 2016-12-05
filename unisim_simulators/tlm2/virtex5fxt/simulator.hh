@@ -73,7 +73,7 @@
 #include <unisim/service/translator/memory_address/memory/translator.hh>
 #include <unisim/service/tee/memory_access_reporting/tee.hh>
 #include <unisim/service/telnet/telnet.hh>
-#include <unisim/service/os/linux_os/linux.hh>
+#include <unisim/service/os/linux_os/powerpc_linux32.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 

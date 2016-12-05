@@ -169,7 +169,7 @@ unisim/service/power/cache_dynamic_power.cc \
 unisim/service/power/cache_leakage_power.cc \
 unisim/service/power/cache_power_estimator.cc \
 unisim/service/power/cache_profile.cc \
-unisim/service/os/linux_os/linux.cc \
+unisim/service/os/linux_os/powerpc_linux32.cc \
 unisim/service/loader/elf_loader/elf32_loader.cc \
 unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/component/cxx/processor/powerpc/config.cc \
@@ -225,7 +225,6 @@ unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/breakpoint.hh \
 unisim/util/debug/event.hh \
 unisim/util/debug/profile.hh \
-unisim/util/debug/register.hh \
 unisim/util/debug/symbol.hh \
 unisim/util/debug/stmt.hh \
 unisim/util/debug/simple_register.hh \
@@ -295,7 +294,6 @@ unisim/util/loader/elf_loader/elf32_loader.hh \
 unisim/util/loader/elf_loader/elf64_loader.hh \
 unisim/util/loader/coff_loader/coff_loader.hh \
 unisim/util/loader/coff_loader/ti/ti.hh \
-unisim/util/os/linux_os/arm.hh \
 unisim/util/os/linux_os/aux_table.hh \
 unisim/util/os/linux_os/environment.hh \
 unisim/util/os/linux_os/files_flags.hh \
@@ -328,6 +326,7 @@ unisim/service/interfaces/blob.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/interfaces/subprogram_lookup.hh \
+unisim/service/interfaces/register.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
@@ -343,6 +342,7 @@ unisim/service/power/cache_dynamic_energy.hh \
 unisim/service/power/cache_dynamic_power.hh \
 unisim/service/power/cache_leakage_power.hh \
 unisim/service/os/linux_os/linux.hh \
+unisim/service/os/linux_os/powerpc_linux32.hh \
 unisim/component/cxx/memory/ram/memory.hh \
 unisim/component/cxx/processor/powerpc/floating.hh \
 unisim/component/cxx/processor/powerpc/config.hh \
@@ -406,6 +406,7 @@ unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/elf_loader/elf32_loader.tcc \
 unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/service/os/linux_os/linux.tcc \
+unisim/service/os/linux_os/powerpc_linux32.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_cache.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debugging.tcc \
@@ -439,7 +440,7 @@ m4/real_path.m4 \
 m4/pthread.m4"
 
 UNISIM_LIB_PPCEMU_DATA_FILES="\
-unisim/service/debug/gdb_server/gdb_powerpc.xml \
+unisim/service/debug/gdb_server/gdb_powerpc_32.xml \
 unisim/util/debug/dwarf/powerpc_eabi_dwarf_register_number_mapping.xml \
 unisim/util/debug/dwarf/powerpc_eabi_gcc_dwarf_register_number_mapping.xml"
 

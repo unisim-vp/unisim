@@ -124,7 +124,7 @@ unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
 unisim/service/debug/debugger/debugger32.cc \
 unisim/service/profiling/addr_profiler/profiler32.cc \
-unisim/service/os/linux_os/linux.cc \
+unisim/service/os/linux_os/arm_linux32.cc \
 unisim/service/trap_handler/trap_handler.cc \
 unisim/service/trap_handler/trap_handler_identifier.cc \
 unisim/service/time/host_time/time.cc \
@@ -238,6 +238,7 @@ unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
 unisim/service/profiling/addr_profiler/profiler.hh \
 unisim/service/os/linux_os/linux.hh \
+unisim/service/os/linux_os/arm_linux32.hh \
 unisim/service/trap_handler/trap_handler.hh \
 unisim/service/trap_handler/trap_handler_identifier.hh \
 unisim/service/trap_handler/trap_handler_identifier_interface.hh \
@@ -330,9 +331,7 @@ unisim/util/os/linux_os/arm.hh \
 unisim/util/os/linux_os/aux_table.hh \
 unisim/util/os/linux_os/environment.hh \
 unisim/util/os/linux_os/files_flags.hh \
-unisim/util/os/linux_os/i386.hh \
 unisim/util/os/linux_os/linux.hh \
-unisim/util/os/linux_os/ppc.hh \
 unisim/util/os/linux_os/errno.hh \
 unisim/util/dictionary/dictionary.hh \
 unisim/util/lexer/lexer.hh \

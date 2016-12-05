@@ -48,7 +48,7 @@
 #include "unisim/util/likely/likely.hh"
 #include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/time/host_time/time.hh"
-#include "unisim/service/os/linux_os/linux.hh"
+#include "unisim/service/os/linux_os/arm_linux32.hh"
 #include "unisim/service/trap_handler/trap_handler.hh"
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -90,7 +90,7 @@ class Simulator
   static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
   typedef unisim::component::tlm2::processor::arm::cortex_a9::CPU CPU;
   typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> MEMORY;
-  typedef unisim::service::os::linux_os::Linux<uint32_t, uint32_t> LINUX_OS;
+  typedef unisim::service::os::linux_os::ArmLinux32 ArmLinux32;
 
   typedef unisim::service::debug::gdb_server::GDBServer<uint32_t> GDB_SERVER;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<uint32_t> INLINE_DEBUGGER;
@@ -103,7 +103,7 @@ class Simulator
   MEMORY *memory;
   unisim::service::time::sc_time::ScTime *time;
   unisim::service::time::host_time::HostTime *host_time;
-  LINUX_OS *linux_os;
+  ArmLinux32* linux_os;
   TEE_MEMORY_ACCESS_REPORTING *tee_memory_access_reporting;
 
   sc_signal<bool>              nirq_signal;

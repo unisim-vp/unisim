@@ -46,7 +46,7 @@ Simulator::Simulator(int argc, char **argv)
   , memory(0)
   , time(0)
   , host_time(0)
-  , linux_os(0)
+  , linux_os()
   , tee_memory_access_reporting(0)
   , nirq_signal("nIRQm")
   , nfiq_signal("nFIQm")
@@ -70,7 +70,7 @@ Simulator::Simulator(int argc, char **argv)
   memory = new MEMORY("memory");
   time = new unisim::service::time::sc_time::ScTime("time");
   host_time = new unisim::service::time::host_time::HostTime("host-time");
-  linux_os = new LINUX_OS("linux-os");
+  linux_os = new ArmLinux32("linux-os");
 
   param_enable_gdb_server = new unisim::kernel::service::Parameter<bool>(
       "enable-gdb-server", 0,
