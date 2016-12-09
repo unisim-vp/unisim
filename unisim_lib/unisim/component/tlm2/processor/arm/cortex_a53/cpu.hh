@@ -150,8 +150,12 @@ private:
   void         Wait( sc_event const& evt );
   void         BusSynchronize();
 
-  virtual bool PrWrite( uint64_t addr, uint8_t const* buffer, unsigned size );
-  virtual bool PrRead(  uint64_t addr, uint8_t*       buffer, unsigned size );
+  // Intrusive memory accesses
+  virtual bool              PrRead( uint64_t addr, uint8_t*       buffer, unsigned size );
+  virtual bool             PrWrite( uint64_t addr, uint8_t const* buffer, unsigned size );
+  // Non-itrusive memory accesses
+  virtual bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size );
+  virtual bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size );
 };
 
 } // end of namespace cortex_a53

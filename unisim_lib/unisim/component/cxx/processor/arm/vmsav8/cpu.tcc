@@ -237,6 +237,7 @@ template <class CONFIG>
 bool
 CPU<CONFIG>::ReadMemory( uint64_t addr, void* buffer, uint32_t size )
 {
+  throw 0;
   // uint8_t* rbuffer = (uint8_t*)buffer;
 
   // // No data cache, just send request to the memory subsystem
@@ -270,18 +271,9 @@ template <class CONFIG>
 bool
 CPU<CONFIG>::WriteMemory( uint64_t addr, void const* buffer, uint32_t size )
 {
-  // uint8_t const* wbuffer = (uint8_t const*)buffer;
-
-  // // No data cache, just send request to the memory subsystem
-  // for (uint32_t index = 0; size != 0; ++index, --size)
-  //   {
-  //     try {
-  //       uint32_t ef_addr = TranslateAddress<QuietAccess>( addr + index, true, mat_write, 1 );
-  //       if (not ExternalWriteMemory( ef_addr, &wbuffer[index], 1 ))
-  //         return false;
-  //     } catch (DataAbortException const& x)
-  //       { return false; }
-  //   }
+  uint8_t const* wbuffer = (uint8_t const*)buffer;
+  
+  ExternalWriteMemory( addr, &wbuffer[0], size );
   
   return true;
 }
@@ -299,6 +291,7 @@ template <class CONFIG>
 std::string 
 CPU<CONFIG>::Disasm(uint64_t addr, uint64_t& next_addr)
 {
+  throw 0;
   // std::stringstream buffer;
   // if (cpsr.Get( T ))
   //   {
@@ -396,6 +389,7 @@ template <class CONFIG>
 bool 
 CPU<CONFIG>::InjectReadMemory( uint64_t addr, void* buffer, uint32_t size )
 {
+  throw 0;
   // uint8_t* rbuffer = (uint8_t*)buffer;
 
   // // No data cache, just send request to the memory subsystem
@@ -421,6 +415,7 @@ template <class CONFIG>
 bool
 CPU<CONFIG>::InjectWriteMemory( uint64_t addr, void const* buffer, uint32_t size )
 {
+  throw 0;
   // uint8_t const* wbuffer = (uint8_t const*)buffer;
   
   // // No data cache, just send the request to the memory subsystem
@@ -488,6 +483,8 @@ CPU<CONFIG>::StepInstruction()
     /* fetch instruction word from memory */
     isa::arm64::CodeType insn;
     ReadInsn(insn_addr, insn);
+    
+    throw 0;
       
     // /* Decode current PC */
     // isa::arm32::Operation<CPU>* op;

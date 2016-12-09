@@ -125,8 +125,6 @@ struct CPU
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;
   virtual bool ReadMemory( uint64_t addr, void* buffer, uint32_t size );
   virtual bool WriteMemory( uint64_t addr, void const* buffer, uint32_t size );
-  // virtual bool ExternalReadMemory( uint64_t addr, void* buffer, uint32_t size ) = 0;
-  // virtual bool ExternalWriteMemory( uint64_t addr, void const* buffer, uint32_t size ) = 0;
 
   //=====================================================================
   //=                   Disassembly interface methods                   =
@@ -222,8 +220,12 @@ private:
   bool RefillInsnPrefetchBuffer( uint64_t base_address );
   void ReadInsn( uint64_t address, isa::arm64::CodeType& insn );
   
-  virtual bool PrWrite( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
-  virtual bool PrRead(  uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
+  // Intrusive memory accesses
+  virtual bool              PrRead( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
+  virtual bool             PrWrite( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
+  // Non-itrusive memory accesses
+  virtual bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
+  virtual bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
 };
 
 } // end of namespace vmsav8

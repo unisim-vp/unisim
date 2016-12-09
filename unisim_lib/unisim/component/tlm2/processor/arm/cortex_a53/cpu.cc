@@ -505,6 +505,72 @@ CPU::PrWrite( uint64_t addr, uint8_t const* buffer, unsigned size )
   return true;
 }
 
+/**
+ * Virtual method implementation to handle non intrusive reads performed by the inherited
+ * cpu to perform external memory accesses.
+ * It uses the TLM2 debugging interface to request the data.
+ *
+ * @param addr    the read base address
+ * @param buffer  the buffer to copy the data to the read
+ * @param size    the size of the read
+ */
+
+bool
+CPU::ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size )
+{
+  if(sc_core::sc_get_status() < sc_core::SC_END_OF_ELABORATION)
+  {
+    // operator -> of ports is not legal before end of elaboration because
+    // an implementation of SystemC can defer complete binding just before end of elaboration
+    // Using memory service interface instead
+    return PCPU::memory_import->ReadMemory(addr, buffer, size);
+  }
+
+  Transaction trans( payload_fabric );
+  trans->set_address(addr);
+  trans->set_data_length(size);
+  trans->set_data_ptr((uint8_t *)buffer);
+  trans->set_read();
+  trans->set_streaming_width(size);
+
+  unsigned read_size = master_socket->transport_dbg(*trans);
+
+  return (trans->is_response_ok() and read_size == size);
+}
+
+/**
+ * Virtual method implementation to handle non intrusive writes performed by the inherited
+ * cpu to perform external memory accesses.
+ * It uses the TLM2 debugging interface to request the data.
+ *
+ * @param addr    the write base address
+ * @param buffer  the buffer to write into the external memory
+ * @param size    the size of the write
+ */
+
+bool
+CPU::ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size )
+{
+  if(sc_core::sc_get_status() < sc_core::SC_END_OF_ELABORATION)
+  {
+    // operator -> of ports is not legal before end of elaboration because
+    // an implementation of SystemC can defer complete binding just before end of elaboration
+    // Using memory service interface instead
+    return PCPU::memory_import->WriteMemory(addr, buffer, size);
+  }
+
+  Transaction trans( payload_fabric );
+  trans->set_address(addr);
+  trans->set_data_length(size);
+  trans->set_data_ptr((uint8_t *)buffer);
+  trans->set_write();
+  trans->set_streaming_width(size);
+
+  unsigned write_size = master_socket->transport_dbg(*trans);
+
+  return (trans->is_response_ok() and (write_size == size));
+}
+
 } // end of namespace cortex_a53
 } // end of namespace arm
 } // end of namespace processor
