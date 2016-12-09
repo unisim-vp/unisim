@@ -325,7 +325,7 @@ bool Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::CheckWrite(const STORAGE_T
 		if((value & byte_enable & ~sw_write_mask_storage.value) != (old_value & byte_enable & ~sw_write_mask_storage.value)) // is write would modify read-only bits ?
 		{
 			// yes: attempt to modify reserved bits
-			std::cerr << "Software attempt to modify read-only bits in Register \"" << GetName() << "\"" << std::endl;
+			std::cerr << "Software attempt to modify read-only bits in Register \"" << GetName() << "\" (from value 0x" << std::hex << (unsigned long long) old_value << " to value 0x" << (unsigned long long) value << std::dec << ")" << std::endl;
 		}
 		
 		return true;

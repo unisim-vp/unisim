@@ -64,6 +64,13 @@ using unisim::kernel::tlm2::TLM_SPI_HALF_DUPLEX;
 using unisim::kernel::tlm2::TLM_SPI_OK;
 using unisim::kernel::tlm2::TLM_SPI_ERROR;
 
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugError;
+
 enum WrapMode
 {
 	WRAP_16B,
@@ -97,6 +104,10 @@ public:
 	
 	void Reset();
 
+protected:
+	unisim::kernel::logger::Logger logger;
+	bool verbose;
+	
 private:
 	struct StatusRegister : Register<8, ACC_RW, ACC_RW, E_LITTLE_ENDIAN>
 	{
@@ -120,7 +131,6 @@ private:
 		}
 		
 		using BaseType::operator const STORAGE_TYPE;
-		using BaseType::operator = ;
 		
 		virtual bool Write(const STORAGE_TYPE& value, const STORAGE_TYPE& byte_enable = STORAGE_TYPE(-1))
 		{
@@ -148,6 +158,33 @@ private:
 			return true;
 		}
 		
+		StatusRegister& operator = (const STORAGE_TYPE& value)
+		{
+			bool old_write_in_progress = Write_in_progress;
+			
+			BaseType::operator = (value);
+			
+			bool new_write_in_progress = Write_in_progress;
+			
+			if(!old_write_in_progress && new_write_in_progress)
+			{
+				if(n25q->verbose)
+				{
+					n25q->logger << DebugInfo << sc_core::sc_time_stamp() << ": Write in progress" << EndDebugInfo;
+				}
+			}
+			
+			if(old_write_in_progress && !new_write_in_progress)
+			{
+				if(n25q->verbose)
+				{
+					n25q->logger << DebugInfo << sc_core::sc_time_stamp() << ": No write in progress" << EndDebugInfo;
+				}
+			}
+
+			return *this;
+		}
+			
 	private:
 		N25Q<CONFIG> *n25q;
 	};
@@ -245,11 +282,40 @@ private:
 			, VPP(this, "VPP", 0x1)
 			, Program_suspend(this, "Program_suspend", 0x1)
 			, Protection(this, "Protection", 0x1)
+			, n25q(_n25q)
 		{
 		}
 		
+		FlagStatusRegister& operator = (const STORAGE_TYPE& value)
+		{
+			bool old_program_or_erase_controler = Program_or_erase_controller;
+			
+			BaseType::operator = (value);
+
+			bool new_program_or_erase_controler = Program_or_erase_controller;
+
+			if(!old_program_or_erase_controler && new_program_or_erase_controler)
+			{
+				if(n25q->verbose)
+				{
+					n25q->logger << DebugInfo << sc_core::sc_time_stamp() << ": Program or erase controller becomes ready" << EndDebugInfo;
+				}
+			}
+			
+			if(old_program_or_erase_controler && !new_program_or_erase_controler)
+			{
+				if(n25q->verbose)
+				{
+					n25q->logger << DebugInfo << sc_core::sc_time_stamp() << ": Program or erase controller becomes busy" << EndDebugInfo;
+				}
+			}
+			
+			return *this;
+		}
+		
 		using BaseType::operator const STORAGE_TYPE;
-		using BaseType::operator = ;
+	private:
+		N25Q<CONFIG> *n25q;
 	};
 	
 	struct InternalConfigurationRegister : Register<16, ACC_RW, ACC_NONE, E_LITTLE_ENDIAN>
@@ -348,6 +414,7 @@ private:
 			: key()
 			, payload(0)
 			, release_payload(false)
+			, free_data(false)
 			, n25q_cmd(N25Q_UNKNOWN_COMMAND)
 			, n25q_addr(0)
 			, tx_data_bit_offset(0)
@@ -370,9 +437,14 @@ private:
 		void Clear()
 		{
 			key.Clear();
-			if(release_payload && payload && payload->has_mm()) payload->release();
+			if(release_payload && payload && payload->has_mm())
+			{
+				if(free_data && (payload->get_ref_count() == 1)) delete[] payload->get_data_ptr();
+				payload->release();
+			}
 			payload = 0;
 			release_payload = false;
+			free_data = false;
 			n25q_cmd = N25Q_UNKNOWN_COMMAND;
 			n25q_addr = 0;
 			tx_data_bit_offset = 0;
@@ -487,11 +559,16 @@ private:
 			return stage;
 		}
 		
-		void SetPayload(payload_type *_payload, bool _release_payload = false)
+		void SetPayload(payload_type *_payload, bool _release_payload = false, bool _free_data = false)
 		{
-			if(release_payload && payload && payload->has_mm()) payload->release();
+			if(release_payload && payload && payload->has_mm())
+			{
+				if(free_data && (payload->get_ref_count() == 1)) delete[] payload->get_data_ptr();
+				payload->release();
+			}
 			payload = _payload;
 			release_payload = _release_payload;
+			free_data = _free_data;
 		}
 		
 		const sc_core::sc_time& GetDuration() const
@@ -528,6 +605,7 @@ private:
 		Key key;
 		payload_type *payload;                   // the payload
 		bool release_payload;                    // whether payload should be released when it becomes useless
+		bool free_data;                          // whether data should be freed when payload reference count reaches 0
 		n25q_command_type n25q_cmd;              // decoded command
 		uint32_t n25q_addr;                      // decoded address
 		unsigned int tx_data_bit_offset;         // bit offset in TX data array
@@ -541,9 +619,6 @@ private:
 		sc_core::sc_event *completion_event;     // a SystemC event for blocking interface
 	};
 	
-	unisim::kernel::logger::Logger logger;
-	
-	bool verbose;
 	unisim::kernel::service::Parameter<bool> param_verbose;
 	std::string input_filename;
 	unisim::kernel::service::Parameter<std::string> param_input_filename;
@@ -552,8 +627,9 @@ private:
 	
 	unisim::kernel::tlm2::PayloadFabric<payload_type> payload_fabric;
 	unisim::kernel::tlm2::Schedule<Event> schedule;
-	std::vector<Event *> suspend_stack;              // at most one program and one erase
-	Event *write_operation_in_progress_event;       // write operation in progress event
+	std::vector<Event *> suspend_stack;                   // at most one program and one erase
+	Event *program_or_erase_operation_in_progress_event;  // program or erase operation in progress event
+	Event *suspend_in_progress_event;                     // suspend operation in progress event
 	
 	sc_core::sc_time erase_resume_time_stamp;       // sector or bulk erase resume time stamp
 	sc_core::sc_time program_resume_time_stamp;     // program resume time stamp
@@ -615,13 +691,15 @@ private:
 	bool IsProgramSuspended();
 	bool IsProgramSuspendedFor(uint32_t addr);
 	bool IsEraseSuspendedFor(uint32_t addr);
+	bool IsEraseSuspended();
+	bool IsSubSectorEraseOrProgramSuspended();
 	bool CheckClock(const sc_core::sc_time& clock, n25q_command_type n25q_cmd, sc_core::sc_time *& min_clock_period);
 	Event *Decode(payload_type& payload, bool blocking_if = false);
 	sc_core::sc_time ComputeRequestTime(Event *event);
 	sc_core::sc_time ComputeResponseTime(Event *event);
 	const sc_core::sc_time ComputeWriteOperationTime(Event *event);
 	unsigned int DummyCycles(n25q_command_type n25q_cmd);
-	Event *PostEndOfWriteOperation(Event *event);
+	Event *PostEndOfWriteOperation(Event *event, const sc_core::sc_time& operation_duration);
 
 	void ReadID(Event *event);
 	void MultipleIOReadID(Event *event);
