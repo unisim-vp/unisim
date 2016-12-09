@@ -35,6 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_CPU_HH__
 
+#include <unisim/component/cxx/processor/arm/isa_arm64.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/kernel/logger/logger.hh>
@@ -71,17 +72,17 @@ namespace vmsav8 {
 template <typename CONFIG>
 struct CPU
   : public virtual unisim::kernel::service::Object
+  , public unisim::kernel::service::Client<unisim::service::interfaces::DebugControl<uint64_t> >
+  , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
+  , public unisim::kernel::service::Client<unisim::service::interfaces::SymbolTableLookup<uint64_t> >
+  , public unisim::kernel::service::Client<unisim::service::interfaces::Memory<uint64_t> >
+  , public unisim::kernel::service::Client<unisim::service::interfaces::LinuxOS>
+  , public unisim::kernel::service::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t> >
   , public unisim::kernel::service::Service<unisim::service::interfaces::Registers>
-  // , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryAccessReportingControl>
-  // , public unisim::kernel::service::Client<unisim::service::interfaces::MemoryAccessReporting<uint64_t> >
-  // , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
-  // , public unisim::kernel::service::Client<unisim::service::interfaces::DebugControl<uint64_t> >
-  // , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
-  // , public unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<uint64_t> >
-  // , public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint64_t> >
-  // , public unisim::kernel::service::Client<unisim::service::interfaces::Memory<uint64_t> >
-  // , public unisim::kernel::service::Client<unisim::service::interfaces::LinuxOS>
-  // , public unisim::kernel::service::Client<unisim::service::interfaces::SymbolTableLookup<uint64_t> >
+  , public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint64_t> >
+  , public unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<uint64_t> >
+  , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryAccessReportingControl>
+  , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryInjection<uint64_t> >
 {
   typedef CONFIG Config;
   // typedef simfloat::FP FP;
@@ -97,44 +98,132 @@ struct CPU
   typedef int64_t  S64;
   typedef bool     BOOL;
   
-  /*
-   * ARM architecture constants
-   */
+  /**********************************************************************
+   ***                   Constructors / Destructors                   ***
+   **********************************************************************/
     
   CPU(const char* name, Object* parent);
   ~CPU();
   
+  /**********************************************************************
+   ***                  Service methods and members                   ***
+   **********************************************************************/
+    
   //=====================================================================
-  //=                       Logger                                      =
+  //=                    Registers interface methods                    =
   //=====================================================================
-  
-  /** Unisim logging services. */
-  unisim::kernel::logger::Logger logger;
-  /** Verbosity of the CPU implementation */
-  bool verbose;
 
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers> registers_export;
   virtual unisim::service::interfaces::Register* GetRegister( const char* name );
   virtual void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner );
+
 		
   //=====================================================================
-  //=                  public service imports/exports                   =
+  //=              Memory interface methods (non intrusive)             =
+  //=====================================================================
+
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint64_t> > memory_export;
+  virtual bool ReadMemory( uint64_t addr, void* buffer, uint32_t size );
+  virtual bool WriteMemory( uint64_t addr, void const* buffer, uint32_t size );
+  // virtual bool ExternalReadMemory( uint64_t addr, void* buffer, uint32_t size ) = 0;
+  // virtual bool ExternalWriteMemory( uint64_t addr, void const* buffer, uint32_t size ) = 0;
+
+  //=====================================================================
+  //=                   Disassembly interface methods                   =
+  //=====================================================================
+
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> > disasm_export;
+  virtual std::string Disasm( uint64_t addr, uint64_t& next_addr );
+  
+  //=====================================================================
+  //=             Memory access reporting interface methods             =
+  //=====================================================================
+
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
+  virtual void RequiresFinishedInstructionReporting( bool report );
+  virtual void RequiresMemoryAccessReporting( bool report );
+  
+  //=====================================================================
+  //=                Memory injection interface methods                 =
+  //=====================================================================
+
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryInjection<uint64_t> > memory_injection_export;
+  virtual bool InjectReadMemory( uint64_t addr, void* buffer, uint32_t size );
+  virtual bool InjectWriteMemory( uint64_t addr, void const* buffer, uint32_t size );
+
+  //=====================================================================
+  //=                          Service imports                          =
   //=====================================================================
 
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugControl<uint64_t> >          debug_control_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting>                    instruction_counter_trap_reporting_import;
+  //unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting>                    exception_trap_reporting_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint64_t> >     symbol_table_lookup_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<uint64_t> >                memory_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::LinuxOS>                          linux_os_import;
-  // unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting>                    exception_trap_reporting_import;
 
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Registers>                        registers_export;
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint64_t> >                memory_export;
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<uint64_t> >           disasm_export;
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl>     memory_access_reporting_control_export;
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryInjection<uint64_t> >       memory_injection_export;
+  /**********************************************************************
+   ***                Functional methods and members                  ***
+   **********************************************************************/
+    
+  void StepInstruction();
 
+protected:
+  
+  /**********************************************************************
+   ***                   Non functional variables                     ***
+   **********************************************************************/
+  
+  //=====================================================================
+  //=                              Logger                               =
+  //=====================================================================
+  
+  /** Unisim logging services. */
+  unisim::kernel::logger::Logger logger;
+  
+  /** Verbosity of the CPU implementation */
+  bool verbose;
 
+  /** Indicates if the finished instructions require to be reported. */
+  bool requires_finished_instruction_reporting;
+  /** Indicates if the memory accesses require to be reported. */
+  bool requires_memory_access_reporting;
+  
+  //=====================================================================
+  //=                  Registers interface structures                   =
+  //=====================================================================
+  
+  /** The registers interface for debugging purpose */
+  typedef std::map<std::string, unisim::service::interfaces::Register*> RegistersRegistry;
+  RegistersRegistry registers_registry;
+  
+  typedef std::set<unisim::kernel::service::VariableBase*> VariableRegisterPool;
+  VariableRegisterPool variable_register_pool;
+  
+  /**********************************************************************
+   ***                       Architectural state                      ***
+   **********************************************************************/
+    
+  uint64_t gpr[32];
+  uint64_t current_insn_addr, next_insn_addr;
+
+private:
+  virtual void Sync() = 0;
+  
+  
+  //=====================================================================
+  //=                          Memory Accesses                          =
+  //=====================================================================
+  static unsigned const IPB_LINE_SIZE = 32; //< IPB: Instruction prefetch buffer
+  uint8_t ipb_bytes[IPB_LINE_SIZE];  //< The instruction prefetch buffer
+  uint32_t ipb_base_address;         //< base address of IPB content (cache line size aligned if valid)
+  
+  bool RefillInsnPrefetchBuffer( uint64_t base_address );
+  void ReadInsn( uint64_t address, isa::arm64::CodeType& insn );
+  
+  virtual bool PrWrite( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
+  virtual bool PrRead(  uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
 };
 
 } // end of namespace vmsav8

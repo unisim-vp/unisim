@@ -55,6 +55,19 @@ CPU::CPU( sc_module_name const& name, Object* parent )
   , sc_module(name)
   , unisim::component::cxx::processor::arm::vmsav8::CPU<ConfigCA53>(name, parent)
   , master_socket("master_socket")
+  , cpu_time(SC_ZERO_TIME)
+  , bus_time(SC_ZERO_TIME)
+  , quantum_time(SC_ZERO_TIME)
+  , cpu_cycle_time(62500.0, SC_PS)
+  , bus_cycle_time(62500.0, SC_PS)
+  , nice_time(1.0, SC_MS)
+  , time_per_instruction(62500.0, SC_PS)
+  , ipc(2.0)
+  , enable_dmi(true)
+  , verbose_tlm(true)
+  // , ipc(2.0)
+  // , enable_dmi(false)
+  // , verbose_tlm(false)
 {
   master_socket.bind(*this);
   
@@ -73,6 +86,14 @@ CPU::~CPU()
 void
 CPU::Run()
 {
+  for (;;)
+    {
+      StepInstruction();
+      
+      quantum_time += time_per_instruction;
+      if ( quantum_time > nice_time )
+        Sync();
+    }
 }
 
 /**
@@ -193,6 +214,295 @@ void
 CPU::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range) 
 {
   dmi_region_cache.Invalidate(start_range, end_range);
+}
+
+void 
+CPU::Reset()
+{
+}
+  
+/** Wait for a specific event and update CPU times
+ */
+
+void
+CPU::Wait( sc_event const& evt )
+{
+  //if (quantum_time != SC_ZERO_TIME)
+  // Sync();
+  wait( evt );
+  sc_core::sc_time delta( sc_core::sc_time_stamp() );
+  delta -= cpu_time;
+  if (delta > quantum_time) {
+    quantum_time = SC_ZERO_TIME;
+  } else {
+    quantum_time -= delta;
+  }
+  cpu_time = sc_core::sc_time_stamp();
+}
+
+/** Synchronization demanded from the CPU implementation.
+ * An example (an for the moment the only synchronization demanded by the CPU
+ * implmentation) is the a synchronization demanded by the debugger.
+ */
+void
+CPU::Sync()
+{
+  if ( unlikely(verbose_tlm) )
+  {
+    PCPU::logger << DebugInfo
+      << "Sync" << std::endl
+      << " - cpu_time     = " << cpu_time << std::endl
+      << " - quantum_time = " << quantum_time
+      << EndDebugInfo;
+  }
+  wait(quantum_time);
+  cpu_time = sc_time_stamp();
+  quantum_time = SC_ZERO_TIME;
+  
+  if (unlikely(verbose_tlm))
+    PCPU::logger << DebugInfo
+                      << "Resuming after wait" << std::endl
+                      << " - cpu_time     = " << cpu_time << std::endl
+                      << " - nice_time     = " << nice_time << std::endl
+                      << EndDebugInfo;
+}
+
+/** Updates the cpu time to the next bus cycle.
+ * Updates the cpu time to the next bus cycle. Additionally it updates the
+ * quantum time and if necessary synchronizes with the global SystemC clock.
+ */
+void 
+CPU::BusSynchronize() 
+{
+  if ( unlikely(verbose_tlm) )
+  {
+    PCPU::logger << DebugInfo
+      << "Bus Synchronize:" << std::endl
+      << " - bus_time     = " << bus_time << std::endl
+      << " - cpu_time     = " << cpu_time << std::endl
+      << " - quantum_time = " << quantum_time
+      << EndDebugInfo;
+  }
+  // Note: this needs to be better tested, but in order to avoid 
+  //   multiplications and divisions with sc_time we do a loop expecting
+  //   it will not loop too much. An idea of the operation to perform to
+  //   avoid the loop:
+  // quantum_time += 
+  //   ((((cpu_time + quantum_time) / bus_cycle_time) + 1) * bus_cycle_time) -
+  //   (cpu_time + quantum_time);
+  
+#if 0
+  sc_time deadline(cpu_time);
+  deadline += quantum_time;
+  while ( bus_time < deadline )
+    bus_time += bus_cycle_time;
+  quantum_time = bus_time;
+  quantum_time -= cpu_time;
+#else
+  quantum_time += 
+    ((((cpu_time + quantum_time) / bus_cycle_time) + 1) * bus_cycle_time) -
+    (cpu_time + quantum_time);
+#endif
+  
+  if (quantum_time > nice_time)
+    Sync();
+  if (unlikely(verbose_tlm))
+  {
+    PCPU::logger << DebugInfo
+      << "Bus is now Synchronized:" << std::endl
+      << " - bus_time     = " << bus_time << std::endl
+      << " - cpu_time     = " << cpu_time << std::endl
+      << " - quantum_time = " << quantum_time
+      << EndDebugInfo;
+  }
+  
+  return;
+}
+
+/**
+ * Virtual method implementation to handle memory read operations performed by 
+ * the ARM processor implementation.
+ * If working with a blocking (BLOCKING = TRUE) version of the ARM processor 
+ * this method synchronizes the  processor with the bus (increase local time) 
+ * and sends it. If a synchronization is necessary a SystemC synchronization is 
+ * performed.
+ * TODO: if working with a non-block
+ * 
+ * @param addr    the read base address
+ * @param buffer  the buffer to copy the data to read
+ * @param size    the size of the read
+ */
+bool
+CPU::PrRead( uint64_t addr, uint8_t* buffer, unsigned size )
+{
+  /* Use blocking transactions.
+   * Steps:
+   * 1 - check when the request can be send (synchronize with the bus)
+   * 2 - create the (auto-released) transaction
+   * 3 - send the transaction
+   * 4 - update DMI region cache
+   */
+  
+  // 1 - synchronize with the bus
+  BusSynchronize();
+
+  // pre2 - DMI access (if possible)
+  unisim::kernel::tlm2::DMIRegion* dmi_region = 0;
+  
+  if(likely(enable_dmi))
+  {
+    dmi_region = dmi_region_cache.Lookup(addr, size);
+    
+    if(likely(dmi_region))
+    {
+      if(likely(dmi_region->IsAllowed()))
+      {
+        tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
+        if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_READ) == tlm::tlm_dmi::DMI_ACCESS_READ))
+        {
+          memcpy(buffer, dmi_data->get_dmi_ptr() + (addr - dmi_data->get_start_address()), size);
+          quantum_time += dmi_region->GetReadLatency(size);
+          if (quantum_time > nice_time)
+            Sync();
+          return true;
+        }
+      }
+    }
+  }
+
+  // 2 - create the (auto-released) transaction
+  Transaction trans( payload_fabric );
+  
+  //uint32_t byte_enable = 0xffffffffUL;
+  trans->set_address(addr);
+  trans->set_read();
+  trans->set_data_ptr(buffer);
+  trans->set_data_length(size);
+  trans->set_streaming_width(size);
+  
+  // trans->set_byte_enable_ptr((unsigned char *) &byte_enable);
+  // trans->set_byte_enable_length(size);
+
+  // 3 - send the transaction and check response status
+  master_socket->b_transport(*trans, quantum_time);
+  if (not trans->is_response_ok())
+    return false;
+  
+  // cpu_time = sc_time_stamp() + quantum_time;
+  if (quantum_time > nice_time)
+    Sync();
+
+  // 4 - update DMI region cache
+  if(likely(enable_dmi))
+  {
+    if(likely(not dmi_region and trans->is_dmi_allowed()))
+    {
+      tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
+      trans->set_address(addr);
+      trans->set_data_length(size);
+      unisim::kernel::tlm2::DMIGrant dmi_grant = master_socket->get_direct_mem_ptr(*trans, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
+      
+      dmi_region_cache.Insert(dmi_grant, dmi_data);
+    }
+  }
+
+  if ( unlikely(verbose_tlm) )
+    PCPU::logger << DebugInfo
+      << "Finished PrRead:" << std::endl
+      << " - cpu_time     = " << cpu_time << std::endl
+      << " - quantum_time = " << quantum_time
+      << EndDebugInfo;
+
+  return true;
+}
+
+  
+
+bool
+CPU::PrWrite( uint64_t addr, uint8_t const* buffer, unsigned size )
+{
+  if ( unlikely(verbose_tlm) )
+    PCPU::logger << DebugInfo
+      << "Starting PrWrite:" << std::endl
+      << " - cpu_time     = " << cpu_time << std::endl
+      << " - quantum_time = " << quantum_time
+      << EndDebugInfo;
+
+  /* Use blocking transactions.
+   * Steps:
+   * 1 - check when the request can be send (synchronize with the bus)
+   * 2 - create the (auto-released) transaction
+   * 3 - send the transaction
+   */
+  // 1 - synchronize with the bus
+  BusSynchronize();
+
+  // pre2 - DMI access (if possible)
+  unisim::kernel::tlm2::DMIRegion* dmi_region = 0;
+  
+  if(likely(enable_dmi))
+  {
+    dmi_region = dmi_region_cache.Lookup(addr, size);
+    
+    if(likely(dmi_region))
+    {
+      if(likely(dmi_region->IsAllowed()))
+      {
+        tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
+        if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_WRITE) == tlm::tlm_dmi::DMI_ACCESS_WRITE))
+        {
+          memcpy(dmi_data->get_dmi_ptr() + (addr - dmi_data->get_start_address()), buffer, size);
+          quantum_time += dmi_region->GetWriteLatency(size);
+          if (quantum_time > nice_time)
+            Sync();
+          return true;
+        }
+      }
+    }
+  }
+  
+  // 2 - create the (auto-released) transaction
+  Transaction trans( payload_fabric );
+  
+  //uint32_t byte_enable = 0xffffffffUL;
+  trans->set_address(addr);
+  trans->set_write();
+  trans->set_data_ptr((unsigned char *)buffer);
+  trans->set_data_length(size);
+  trans->set_streaming_width(size);
+  // trans->set_byte_enable_ptr((unsigned char *) &byte_enable);
+  // trans->set_byte_enable_length(size);
+
+  // 3 - send the transaction and check response status
+  master_socket->b_transport(*trans, quantum_time);
+  if (not trans->is_response_ok())
+    return false;
+  
+  if (quantum_time > nice_time)
+    Sync();
+
+  // post3 - update DMI region cache
+  if (likely(enable_dmi))
+  {
+    if (likely(not dmi_region and trans->is_dmi_allowed()))
+    {
+      tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
+      trans->set_address(addr);
+      trans->set_data_length(size);
+      unisim::kernel::tlm2::DMIGrant dmi_grant = master_socket->get_direct_mem_ptr(*trans, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
+      
+      dmi_region_cache.Insert(dmi_grant, dmi_data);
+    }
+  }
+
+  if ( unlikely(verbose_tlm) )
+    PCPU::logger << DebugInfo
+      << "Finished PrWrite:" << std::endl
+      << " - cpu_time     = " << cpu_time << std::endl
+      << " - quantum_time = " << quantum_time
+      << EndDebugInfo;
+
+  return true;
 }
 
 } // end of namespace cortex_a53

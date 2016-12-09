@@ -202,7 +202,76 @@ namespace linux_os {
       hwcap = arm64_hwcap;
       return true;
     }
-    bool SetupTarget() const  {}
+    
+    bool SetupTarget() const
+    {
+      // Reset all target registers
+      for (int idx = 0; idx < 32; ++idx) {
+        std::ostringstream buf;
+        buf << 'x' << std::dec << idx;
+        if (not ClearRegister(lin, buf.str().c_str()))
+          return false;
+      }
+      
+      // // Program Status Register (PSR)
+      // // NZCVQ <- 0
+      // // J <- 0
+      // // ITState <- 0
+      // // GE <- 0
+      // // E <- 0
+      // // AIF <- 0
+      // // T <- 0 (will be overwritten as a side effect of PC assignment, below)
+      // // M <- 0b10000 /* USER_MODE */
+      // if (not SetRegister(lin, "cpsr", 0x00000010))
+      //   return false;
+      
+      // // We need to set SCTLR and CPACR as a standard linux would have done. We
+      // //  * only affects flags that impact a Linux OS emulation (others
+      // //  * are unaffected).
+      // {
+      //   uint32_t sctlr;
+      //   if (not GetRegister(lin, "sctlr", &sctlr))
+      //     return false;
+      //   {
+      //     uint32_t const I = 1<<12;
+      //     uint32_t const C = 1<< 2;
+      //     uint32_t const A = 1<< 1;
+          
+      //     sctlr |=  I; // Instruction Cache enable
+      //     sctlr |=  C; // Cache enable
+      //     sctlr &= ~A; // Alignment check disable
+      //   }
+      //   if (not SetRegister(lin, "sctlr", sctlr))
+      //     return false;
+      //   if (not SetRegister(lin, "cpacr", 0x00f00000))
+      //     return false;
+      // }
+      
+      // Set PC to the program entry point
+      if (not SetRegister(lin, "pc", lin.GetEntryPoint()))
+        return false;
+      
+      // Set SP to the base of the created stack
+      unisim::util::debug::blob::Section<address_type> const * sp_section =
+        lin.GetBlob()->FindSection(".unisim.linux_os.stack.stack_pointer");
+      if (sp_section == NULL) {
+        lin.Logger() << DebugError << "Could not find the stack pointer section." << EndDebugError;
+        return false;
+      }
+      if (not SetRegister(lin, "sp", sp_section->GetAddr()))
+        return false;
+      address_type par1_addr = sp_section->GetAddr() + 8;
+      address_type par2_addr = sp_section->GetAddr() + 16;
+      parameter_type par1 = 0;
+      parameter_type par2 = 0;
+      if (not this->MemIF().ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)) or
+          not this->MemIF().ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2)) or
+          not SetRegister(lin, "x1", Target2Host(lin.GetEndianness(), par1)) or
+          not SetRegister(lin, "x2", Target2Host(lin.GetEndianness(), par2)))
+        return false;
+          
+      return true;
+    }
     
     static void SetARM64SystemCallStatus(LINUX& _lin, int ret, bool error) { SetRegister(_lin, kARM64_r0, (parameter_type) ret); }
     

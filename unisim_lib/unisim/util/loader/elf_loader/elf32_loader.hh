@@ -57,6 +57,12 @@ Elf32Loader<MEMORY_ADDR>::Elf32Loader(unisim::kernel::logger::Logger& _logger, u
 {
 }
 
+template <class ADDRESS_TYPE>
+struct StdElf<ADDRESS_TYPE,uint32_t>
+{
+  typedef ElfLoaderImpl<ADDRESS_TYPE, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Loader;
+};
+
 } // end of namespace elf_loader
 } // end of namespace loader
 } // end of namespace util

@@ -174,6 +174,9 @@ private:
 	uint8_t GetAddressSize(const Elf_Ehdr *hdr) const;
 };
 
+// base template traits for standard ElfLoaderImpl declination
+template <class ADDRESS_TYPE, class PARAMETER_TYPE> struct StdElf {};
+
 } // end of namespace elf_loader
 } // end of namespace loader
 } // end of namespace util

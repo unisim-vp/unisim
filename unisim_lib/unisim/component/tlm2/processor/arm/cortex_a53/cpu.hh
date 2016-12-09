@@ -91,6 +91,8 @@ struct CPU
   CPU( sc_module_name const& name, Object* parent=0 );
   virtual ~CPU();
   
+  virtual void Reset();
+  
   // Master port to the bus port
   tlm::tlm_initiator_socket<64> master_socket;
 	
@@ -108,16 +110,6 @@ private:
    * SystemC / TLM mechanic *
    **************************/
 
-  sc_time cpu_time;
-  sc_time bus_time;
-  sc_time quantum_time;
-  sc_time cpu_cycle_time;
-  sc_time bus_cycle_time;
-  sc_time nice_time;
-  double ipc;
-  bool enable_dmi;
-  sc_time time_per_instruction;
-  
   /** Event used to signalize the end of a read transaction.
    * Method PrRead waits for this event once the read transaction has been 
    *   sent, and the nb_transport_bw notifies on it when the read transaction 
@@ -126,6 +118,40 @@ private:
   sc_event end_read_rsp_event;
   unisim::kernel::tlm2::DMIRegionCache dmi_region_cache;
 
+  typedef unisim::kernel::tlm2::PayloadFabric<tlm::tlm_generic_payload> PayloadFabric;
+  PayloadFabric payload_fabric;
+  
+  /** Transaction
+   * A transaction_type smart pointer with release() on destruction
+   */
+  struct Transaction
+  {
+    Transaction( PayloadFabric& pf ) : t( pf.allocate() ) {}
+    ~Transaction() { t->release(); }
+    transaction_type* operator -> () { return t; }
+    transaction_type& operator * () { return *t; }
+    transaction_type* t;
+  };
+  
+  sc_time cpu_time;
+  sc_time bus_time;
+  sc_time quantum_time;
+  sc_time cpu_cycle_time;
+  sc_time bus_cycle_time;
+  sc_time nice_time;
+  sc_time time_per_instruction;
+  double ipc;
+  bool enable_dmi;
+  
+  bool verbose_tlm;
+  //unisim::kernel::service::Parameter<bool> param_verbose_tlm;
+  
+  virtual void Sync();
+  void         Wait( sc_event const& evt );
+  void         BusSynchronize();
+
+  virtual bool PrWrite( uint64_t addr, uint8_t const* buffer, unsigned size );
+  virtual bool PrRead(  uint64_t addr, uint8_t*       buffer, unsigned size );
 };
 
 } // end of namespace cortex_a53

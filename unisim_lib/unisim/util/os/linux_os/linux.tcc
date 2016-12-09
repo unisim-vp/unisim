@@ -42,6 +42,7 @@
 #include <unisim/util/debug/blob/blob.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/loader/elf_loader/elf32_loader.hh>
+#include <unisim/util/loader/elf_loader/elf64_loader.hh>
 
 #if !defined(linux) && !defined(__linux) && !defined(__linux__) && !defined(__APPLE_CC__) && !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 #error "Unsupported host machine for Linux system call translation !"
@@ -240,46 +241,36 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(char const * const filenam
   }
 
   // check that the file exists and that the elf loader can create a blob from it
-  unisim::util::loader::elf_loader::Elf32Loader<ADDRESS_TYPE> *loader =
-      new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS_TYPE>(
-          logger_, regs_if_, mem_if_);
+  
+  typename unisim::util::loader::elf_loader::StdElf<ADDRESS_TYPE,PARAMETER_TYPE>::Loader loader(logger_, regs_if_, mem_if_);
+  
+  loader.SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose_);
+  loader.SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
+  loader.SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf_);
+  loader.SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf_);
+  loader.SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY, dwarf_to_html_output_directory_.c_str());
+  loader.SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_XML_OUTPUT_FILENAME, dwarf_to_xml_output_filename_.c_str());
 
-  if (loader == NULL) {
-    logger_ << DebugError
-        << "Could not create an elf loader."
-        << EndDebugError;
+  if (!loader.Load()) {
+    logger_ << DebugError << "Could not load the given file " << "\"" << filename << "\"" << EndDebugError;
     return false;
   }
 
-  loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose_);
-  loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
-  loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf_);
-  loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf_);
-  loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY, dwarf_to_html_output_directory_.c_str());
-  loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_XML_OUTPUT_FILENAME, dwarf_to_xml_output_filename_.c_str());
-
-  if (!loader->Load()) {
-    logger_ << DebugError
-        << "Could not load the given file "
-        << "\"" << filename << "\"" << EndDebugError;
-    delete loader;
-    return false;
-  }
-
-  unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const blob =
-      loader->GetBlob();
+  unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const blob = loader.GetBlob();
+  
   if (blob == NULL) {
-    logger_ << DebugError << "Could not create blob from"
-        << " requested file (" << filename << ")." << EndDebugError;
-    delete loader;
+    logger_ << DebugError << "Could not create blob from" << " requested file (" << filename << ")." << EndDebugError;
     return false;
   }
 
   blob->Catch();
+  
   std::string filename_str(filename);
-  if(load_files_.find(filename_str) != load_files_.end()) load_files_[filename_str]->Release();
+  
+  if(load_files_.find(filename_str) != load_files_.end())
+    load_files_[filename_str]->Release();
   load_files_[filename_str] = blob;
-  delete loader;
+  
   return true;
 }
 
@@ -416,13 +407,11 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 	unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob =
 	new unisim::util::debug::blob::Blob<ADDRESS_TYPE>();
 	blob->Catch();
-	blob->SetFileFormat(unisim::util::debug::blob::FFMT_ELF32);
 	
 	// load and add files to the blob
 	if(verbose_)
 	{
-		logger_ << DebugInfo
-			<< "Loading elf files." << EndDebugInfo;
+          logger_ << DebugInfo << "Loading elf files." << EndDebugInfo;
 	}
 	if(!LoadFiles(blob))
 	{
@@ -690,6 +679,9 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LoadFiles( unisim::util::debug::blob::
 
   if (main_blob == NULL) return false;
 
+  if (main_blob->GetCapability() & unisim::util::debug::blob::CAP_FILE_FORMAT) {
+    blob->SetFileFormat(main_blob->GetFileFormat());
+  }
   if(main_blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME) {
     blob->SetFilename(main_blob->GetFilename());
   }
