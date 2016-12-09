@@ -56,7 +56,7 @@ ArmLinux64::SetupTargetSystem()
 
 ArmLinux64::~ArmLinux64()
 {
-  delete linuxlib_->GetTargetSystem();
+  if (linuxlib_) delete linuxlib_->GetTargetSystem();
 }
 
 } // end of linux_os namespace
