@@ -37,6 +37,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_CPU_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_CPU_TCC__
 
+#include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
 #include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
@@ -237,22 +238,9 @@ template <class CONFIG>
 bool
 CPU<CONFIG>::ReadMemory( uint64_t addr, void* buffer, uint32_t size )
 {
-  throw 0;
-  // uint8_t* rbuffer = (uint8_t*)buffer;
+  uint8_t* rbuffer = (uint8_t*)buffer;
 
-  // // No data cache, just send request to the memory subsystem
-  // for (uint32_t index = 0; size != 0; ++index, --size)
-  //   {
-  //     try {
-  //       uint32_t ef_addr = TranslateAddress<QuietAccess>( addr + index, true, mat_read, 1 );
-  //       if (not ExternalReadMemory( ef_addr, &rbuffer[index], 1 ))
-  //         return false;
-  //     }
-  //     catch (DataAbortException const& x)
-  //       { return false; }
-  //   }
-
-  return true;
+  return ExternalReadMemory( addr, &rbuffer[0], size );
 }
 
 /** Perform a non intrusive write access.
@@ -273,9 +261,7 @@ CPU<CONFIG>::WriteMemory( uint64_t addr, void const* buffer, uint32_t size )
 {
   uint8_t const* wbuffer = (uint8_t const*)buffer;
   
-  ExternalWriteMemory( addr, &wbuffer[0], size );
-  
-  return true;
+  return ExternalWriteMemory( addr, &wbuffer[0], size );
 }
 
 /** Disasm an instruction address.
@@ -484,20 +470,20 @@ CPU<CONFIG>::StepInstruction()
     isa::arm64::CodeType insn;
     ReadInsn(insn_addr, insn);
     
+    /* Decode current PC */
+    isa::arm64::Operation<CPU>* op;
+    std::cerr << "0x" << std::hex << insn << std::endl;
+    op = decoder.Decode(insn_addr, insn);
+    
+    this->next_insn_addr += 4;
+    
+    /* Execute instruction */
+    asm volatile( "arm64_operation_execute:" );
+    op->execute( *this );
+    // //op->profile(profile);
+    
     throw 0;
       
-    // /* Decode current PC */
-    // isa::arm32::Operation<CPU>* op;
-    // op = arm32_decoder.Decode(insn_addr, insn);
-    
-    // /* update PC register value before execution */
-    // this->gpr[15] = this->next_insn_addr + 8;
-    // this->next_insn_addr += 4;
-    
-    // /* Execute instruction */
-    // asm volatile( "arm32_operation_execute:" );
-    // op->execute( *this );
-    // //op->profile(profile);
     
     // if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
     //   memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr);
@@ -608,6 +594,29 @@ CPU<CONFIG>::RefillInsnPrefetchBuffer(uint64_t base_address)
       ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, base_address, IPB_LINE_SIZE);
   
   return true;
+}
+
+/** Signal an undefined instruction
+ *
+ * This method allows an invalid instruction to signal the undefined
+ * instruction to the CPU.
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::UndefinedInstruction( isa::arm64::Operation<CPU>* insn )
+{
+  std::ostringstream oss;
+  insn->disasm( *this, oss );
+  
+  logger << DebugWarning << "Undefined instruction"
+         << " @" << std::hex << current_insn_addr << std::dec
+         << ": " << oss.str()
+         << EndDebugWarning;
+  
+  if (linux_os_import)
+    this->Stop( -1 );
+  else
+    throw 0;
 }
 
 } // end of namespace vmsav8

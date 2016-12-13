@@ -167,6 +167,8 @@ struct CPU
     
   void StepInstruction();
 
+  void UndefinedInstruction( isa::arm64::Operation<CPU>* insn );
+
 protected:
   
   /**********************************************************************
@@ -209,7 +211,6 @@ protected:
 private:
   virtual void Sync() = 0;
   
-  
   //=====================================================================
   //=                          Memory Accesses                          =
   //=====================================================================
@@ -219,6 +220,9 @@ private:
   
   bool RefillInsnPrefetchBuffer( uint64_t base_address );
   void ReadInsn( uint64_t address, isa::arm64::CodeType& insn );
+  
+  /** Decoder for the ARM32 instruction set. */
+  unisim::component::cxx::processor::arm::isa::arm64::Decoder<CPU> decoder;
   
   // Intrusive memory accesses
   virtual bool              PrRead( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;

@@ -59,11 +59,11 @@ impl {
 }
 
 action {void} execute({ARCH &} {cpu}) {
-  cpu.UndefinedInstruction( this );
+  cpu.UndefinedInstruction(this);
 }
 
 action {void} disasm({ARCH &} {cpu}, {std::ostream&} {sink}) {
-  sink << "; Unknown ARM instruction";
+  sink << "; Unknown AARCH64 instruction";
 }
 
 impl {
