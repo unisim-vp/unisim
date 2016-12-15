@@ -840,7 +840,7 @@ Generator::isa_operations_decl( Product& _product ) const
       
       if( not actionproto->m_comments.empty() ) {
         for( Vector<Comment>::const_iterator comm = actionproto->m_comments.begin(); comm < actionproto->m_comments.end(); ++ comm )
-          _product.code( " %s\n", (**comm).m_content.str() );
+          _product.code( " %s\n", (**comm).content.str() );
       }
       
       if (source.m_withsource) {
@@ -968,7 +968,7 @@ Generator::isa_operations_methods( Product& _product ) const {
   for( Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
     if( not (**op).comments.empty() ) {
       for( Vector<Comment>::const_iterator comm = (**op).comments.begin(); comm < (**op).comments.end(); ++ comm )
-        _product.code( "%s\n", (**comm).m_content.str() );
+        _product.code( "%s\n", (**comm).content.str() );
     }
     
     if (source.m_withsource) {
@@ -995,7 +995,7 @@ Generator::isa_operations_methods( Product& _product ) const {
 
       if( not (**action).m_comments.empty() ) {
         for( Vector<Comment>::const_iterator comm = (**action).m_comments.begin(); comm < (**action).m_comments.end(); ++ comm )
-          _product.code( "%s\n", (**comm).m_content.str() );
+          _product.code( "%s\n", (**comm).content.str() );
       }
 
       if (source.m_withsource) {
