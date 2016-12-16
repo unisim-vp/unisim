@@ -2249,11 +2249,26 @@ ldr_xuo.execute = {
  * end of LDR (immediate)
  *******************************************************************/
 
+/*******************************************************************
+ * LDR (literal)
+ *
+ * Load register (PC-relative literal)
+ */
+
 op ldr_wlit( 0b00011000[8] : shl<2> sext imm[19] : rt[5] );
 ldr_wlit.var format : {char const*} = {"base,14"};
 
 ldr_wlit.disasm = {
   sink << "ldr\t" << DisasmGZWR(rt) << ", 0x" << std::hex << (this->GetAddr()+imm);
+};
+
+ldr_wlit.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  U64 addr( cpu.GetPC() + U64(S64(imm)) );
+  U32 data( cpu.MemRead32(addr) );
+  cpu.SetGZR(rt, data);
 };
 
 op ldr_xlit( 0b01011000[8] : shl<2> sext imm[19] : rt[5] );
@@ -2262,6 +2277,18 @@ ldr_xlit.var format : {char const*} = {"base,17"};
 ldr_xlit.disasm = {
   sink << "ldr\t" << DisasmGZXR(rt) << ", 0x" << std::hex << (this->GetAddr()+imm);
 };
+
+ldr_xlit.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  U64 addr( cpu.GetPC() + U64(S64(imm)) );
+  U64 data( cpu.MemRead64(addr) );
+  cpu.SetGZR(rt, data);
+};
+
+/*
+ * end of LDR (literal)
+ *******************************************************************/
 
 op ldr_wxws( 0b10111000011[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 ldr_wxws.var shift : {uint8_t} = {s*2}, format : {char const*} = {"base,615"};

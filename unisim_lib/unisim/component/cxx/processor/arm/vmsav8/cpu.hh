@@ -213,6 +213,10 @@ struct CPU
     if (id != 31) gpr[id] = val;
   }
   
+  //=====================================================================
+  //=                 Special  Registers access methods                 =
+  //=====================================================================
+
   /** Set the value of PSTATE.<N,Z,C,V>
    *
    *  @param nzcv the value to be assignd to PSTATE.<N,Z,C,V>
@@ -222,6 +226,12 @@ struct CPU
     nzcv = (n << 3) | (z << 2) | (c << 1) | (v << 0);
   }
   
+  /** Get the current Program Counter */
+  uint64_t GetPC() { return current_insn_addr; }
+  
+  //=====================================================================
+  //=                       Memory access methods                       =
+  //=====================================================================
   
   template <typename T>
   T
