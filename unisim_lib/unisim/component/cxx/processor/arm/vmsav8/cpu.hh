@@ -221,6 +221,28 @@ struct CPU
   {
     nzcv = (n << 3) | (z << 2) | (c << 1) | (v << 0);
   }
+  
+  
+  template <typename T>
+  T
+  MemReadT(uint64_t addr)
+  {
+    unsigned const size = sizeof (T);
+    uint8_t buffer[size];
+    MemRead( &buffer[0], addr, size );
+    T res(0);
+    for (unsigned idx = size; --idx < size; )
+      res = (res << 8) | T(buffer[idx]);
+    return res;
+  }
+
+  uint64_t MemRead64(uint64_t addr) { return MemReadT<uint64_t>(addr); }
+  uint32_t MemRead32(uint64_t addr) { return MemReadT<uint32_t>(addr); }
+  uint16_t MemRead16(uint64_t addr) { return MemReadT<uint16_t>(addr); }
+  uint8_t  MemRead8 (uint64_t addr) { return MemReadT<uint8_t> (addr); }
+  
+  uint64_t MemRead( uint8_t* buffer, uint64_t addr, unsigned size );
+  
 protected:
   
   /**********************************************************************
@@ -237,11 +259,6 @@ protected:
   /** Verbosity of the CPU implementation */
   bool verbose;
 
-  /** Indicates if the finished instructions require to be reported. */
-  bool requires_finished_instruction_reporting;
-  /** Indicates if the memory accesses require to be reported. */
-  bool requires_memory_access_reporting;
-  
   //=====================================================================
   //=                  Registers interface structures                   =
   //=====================================================================
@@ -283,6 +300,18 @@ private:
   // Non-itrusive memory accesses
   virtual bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
   virtual bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
+
+  /** Indicates if the finished instructions require to be reported. */
+  bool requires_finished_instruction_reporting;
+  /** Indicates if the memory accesses require to be reported. */
+  bool requires_memory_access_reporting;
+  
+  void ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp,
+                           uint64_t addr, uint32_t size )
+  {
+    if (requires_memory_access_reporting and memory_access_reporting_import)
+      memory_access_reporting_import->ReportMemoryAccess(mat, mtp, addr, size);
+  }
 };
 
 } // end of namespace vmsav8

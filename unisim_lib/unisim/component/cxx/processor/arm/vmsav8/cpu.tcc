@@ -96,21 +96,11 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   /* privates */
   , logger(*this)
   , verbose(false)
+  , ipb_base_address( -1 )
   , requires_finished_instruction_reporting(false)
   , requires_memory_access_reporting(false)
-  // // , icache("icache", this)
-  // // , dcache("dcache", this)
-  // , arm32_decoder()
-  // , thumb_decoder()
-  // , csselr(0)
-  // , DFSR()
-  // , IFSR()
-  // , DFAR()
-  // , IFAR()
-  // , mmu()
   // , instruction_counter(0)
   // , trap_on_instruction_counter(0)
-  // , ipb_base_address( -1 )
   // , linux_printk_buf_addr( 0 )
   // , linux_printk_buf_size( 0 )
   // , linux_printk_snooping( false )
@@ -614,6 +604,27 @@ CPU<CONFIG>::UndefinedInstruction( isa::arm64::Operation<CPU>* insn )
   else
     throw 0;
 }
+
+/** Performs a memory read access.
+ *
+ * @param buffer the byte buffer to store bytes read from memory
+ * @param addr   the address of the memory read access
+ * @param size   the size of the memory read access
+ */
+template <class CONFIG>
+uint64_t
+CPU<CONFIG>::MemRead( uint8_t* buffer, uint64_t addr, unsigned size )
+{
+  // Over-simplistic read from memory system
+  if (not PrRead(addr, buffer, size))
+    {
+      throw 0;
+    }
+
+  /* report read memory access if necessary */
+  ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
+}
+
 
 } // end of namespace vmsav8
 } // end of namespace arm
