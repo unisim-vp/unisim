@@ -62,7 +62,7 @@ namespace arm64 {
   struct DisasmC : public DisasmObject
   {
     DisasmC( unsigned _rid ) : rid(_rid) {} unsigned rid;
-    void operator () ( std::ostream& sink ) const { sink << "C" << rid; }
+    void operator () ( std::ostream& sink ) const { sink << "C" << std::dec << rid; }
   };
 
   struct DisasmCond : public DisasmObject
@@ -74,25 +74,25 @@ namespace arm64 {
   struct DisasmGSXR : public DisasmObject
   {
     DisasmGSXR( unsigned _rid ) : rid(_rid) {} unsigned rid;
-    void operator () ( std::ostream& sink ) const { if (rid != 31) sink << 'x' << rid; else sink << "sp"; }
+    void operator () ( std::ostream& sink ) const { if (rid != 31) sink << 'x' << std::dec << rid; else sink << "sp"; }
   };
 
   struct DisasmGSWR : public DisasmObject
   {
     DisasmGSWR( unsigned _rid ) : rid(_rid) {} unsigned rid;
-    void operator () ( std::ostream& sink ) const { if (rid != 31) sink << 'w' << rid; else sink << "wsp"; }
+    void operator () ( std::ostream& sink ) const { if (rid != 31) sink << 'w' << std::dec << rid; else sink << "wsp"; }
   };
 
   struct DisasmGZXR : public DisasmObject
   {
     DisasmGZXR( unsigned _rid ) : rid(_rid) {} unsigned rid;
-    void operator () ( std::ostream& sink ) const { if (rid != 31) sink << 'x' << rid; else sink << "xzr"; }
+    void operator () ( std::ostream& sink ) const { if (rid != 31) sink << 'x' << std::dec << rid; else sink << "xzr"; }
   };
 
   struct DisasmGZWR : public DisasmObject
   {
     DisasmGZWR( unsigned _rid ) : rid(_rid) {} unsigned rid;
-    void operator () ( std::ostream& sink ) const { if (rid != 31) sink << 'w' << rid; else sink << "wzr"; }
+    void operator () ( std::ostream& sink ) const { if (rid != 31) sink << 'w' << std::dec << rid; else sink << "wzr"; }
   };
   
   template <typename INT>
@@ -187,35 +187,35 @@ namespace arm64 {
   struct DisasmB : public DisasmObject
   {
     DisasmB( unsigned _rid ) : rid(_rid) {} unsigned rid;
-    void operator () ( std::ostream& sink ) const { sink << "b" << rid; }
+    void operator () ( std::ostream& sink ) const { sink << "b" << std::dec << rid; }
   };
 
 
   struct DisasmH : public DisasmObject
   {
     DisasmH( unsigned _rid ) : rid(_rid) {} unsigned rid;
-    void operator () ( std::ostream& sink ) const { sink << "h" << rid; }
+    void operator () ( std::ostream& sink ) const { sink << "h" << std::dec << rid; }
   };
 
 
   struct DisasmS : public DisasmObject
   {
     DisasmS( unsigned _rid ) : rid(_rid) {} unsigned rid;
-    void operator () ( std::ostream& sink ) const { sink << "s" << rid; }
+    void operator () ( std::ostream& sink ) const { sink << "s" << std::dec << rid; }
   };
 
 
   struct DisasmD : public DisasmObject
   {
     DisasmD( unsigned _rid ) : rid(_rid) {} unsigned rid;
-    void operator () ( std::ostream& sink ) const { sink << "d" << rid; }
+    void operator () ( std::ostream& sink ) const { sink << "d" << std::dec << rid; }
   };
 
 
   struct DisasmQ : public DisasmObject
   {
     DisasmQ( unsigned _rid ) : rid(_rid) {} unsigned rid;
-    void operator () ( std::ostream& sink ) const { sink << "q" << rid; }
+    void operator () ( std::ostream& sink ) const { sink << "q" << std::dec << rid; }
   };
 
 
@@ -224,7 +224,7 @@ namespace arm64 {
     DisasmTV( unsigned _rid, unsigned _repeat, unsigned _scale ) : rid(_rid), repeat(_repeat), scale(_scale) {} unsigned rid, repeat, scale;
     void operator () ( std::ostream& sink ) const
     {
-      sink << 'v' << rid << '.';
+      sink << 'v' << std::dec << rid << '.';
       if (repeat)
         sink << repeat;
       sink << "bhsdq"[scale];

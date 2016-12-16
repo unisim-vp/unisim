@@ -3340,11 +3340,19 @@ mov_wi.disasm = {
   sink << "mov\t" << DisasmGZWR(rd) << ", " << DisasmI(imm,16);
 };
 
+mov_wi.execute = {
+  cpu.SetGZR( rd, typename ARCH::U64(imm) );
+};
+
 op mov_xi( 0b1[1] : sext n[1] : 0b0100101[7] : shl<4> shift[2] : imm0[16] : rd[5] );
 mov_xi.var imm : {uint64_t} = {(uint64_t(imm0) << shift)^~int64_t(n)}, format : {char const*} = {"base,7"};
 
 mov_xi.disasm = {
   sink << "mov\t" << DisasmGZXR(rd) << ", " << DisasmI(imm,16);
+};
+
+mov_xi.execute = {
+  cpu.SetGZR( rd, typename ARCH::U64(imm) );
 };
 
 op movk_w( 0b0111001010[10] : shl<4> shift[1] : imm[16] : rd[5] );

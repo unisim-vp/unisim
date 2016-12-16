@@ -181,12 +181,11 @@ Simulator::~Simulator()
 }
 
 int
-Simulator ::
-Run()
+Simulator::Run()
 {
   if ( unlikely(SimulationFinished()) ) return 0;
 
-  double time_start = host_time->GetTime();
+  //  double time_start = host_time->GetTime();
 
 #ifndef WIN32
   void (*prev_sig_int_handler)(int) = 0;
@@ -224,35 +223,34 @@ Run()
 
   std::cerr << "Simulation finished" << std::endl;
 
-  double time_stop = host_time->GetTime();
-  double spent_time = time_stop - time_start;
-  simulation_spent_time += spent_time;
+  // double time_stop = host_time->GetTime();
+  // double spent_time = time_stop - time_start;
+  // simulation_spent_time += spent_time;
 
-  std::cerr << "Simulation run-time parameters:" << std::endl;
-  DumpParameters(std::cerr);
-  std::cerr << std::endl;
-  std::cerr << "Simulation formulas:" << std::endl;
-  DumpFormulas(std::cerr);
-  std::cerr << std::endl;
-  std::cerr << "Simulation statistics:" << std::endl;
-  DumpStatistics(std::cerr);
-  std::cerr << std::endl;
+  // std::cerr << "Simulation run-time parameters:" << std::endl;
+  // DumpParameters(std::cerr);
+  // std::cerr << std::endl;
+  // std::cerr << "Simulation formulas:" << std::endl;
+  // DumpFormulas(std::cerr);
+  // std::cerr << std::endl;
+  // std::cerr << "Simulation statistics:" << std::endl;
+  // DumpStatistics(std::cerr);
+  // std::cerr << std::endl;
 
-  std::cerr << "simulation time: " << simulation_spent_time << " seconds" << std::endl;
-  std::cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << std::endl;
-  std::cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << std::endl;
-  std::cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
+  // std::cerr << "simulation time: " << simulation_spent_time << " seconds" << std::endl;
+  // std::cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << std::endl;
+  // std::cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << std::endl;
+  // std::cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
 
   return exit_status;
 }
 
 int
-Simulator ::
-Run(double time, sc_time_unit unit)
+Simulator::Run(double time, sc_time_unit unit)
 {
   if ( unlikely(SimulationFinished()) ) return 0;
 
-  double time_start = host_time->GetTime();
+  // double time_start = host_time->GetTime();
 
 #ifndef WIN32
   void (*prev_sig_int_handler)(int) = 0;
@@ -288,13 +286,13 @@ Run(double time, sc_time_unit unit)
 #endif
     }
 
-  double time_stop = host_time->GetTime();
-  double spent_time = time_stop - time_start;
-  simulation_spent_time += spent_time;
+  // double time_stop = host_time->GetTime();
+  // double spent_time = time_stop - time_start;
+  // simulation_spent_time += spent_time;
 
-  std::cerr << "Simulation statistics:" << std::endl;
-  DumpStatistics(std::cerr);
-  std::cerr << std::endl;
+  // std::cerr << "Simulation statistics:" << std::endl;
+  // DumpStatistics(std::cerr);
+  // std::cerr << std::endl;
 
   return exit_status;
 }

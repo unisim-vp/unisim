@@ -168,7 +168,51 @@ struct CPU
   void StepInstruction();
 
   void UndefinedInstruction( isa::arm64::Operation<CPU>* insn );
+  
+  //=====================================================================
+  //=             General Purpose Registers access methods              =
+  //=====================================================================
 
+  /** Get the value contained by a General-purpose or Stack Register.
+   *
+   * @param id the register index
+   * @return the value contained by the register
+   */
+  uint64_t GetGSR(unsigned id) const
+  {
+    return gpr[id];
+  }
+
+  /** Get the value contained by a General-purpose or Zero Register.
+   *
+   * @param id the register index
+   * @return the value contained by the register
+   */
+  uint64_t GetGZR(unsigned id) const
+  {
+    return (id != 31) ? gpr[id] : 0;
+  }
+
+  /** Set the value of a General-purpose or Stack Register
+   *
+   * @param id the register index
+   * @param val the value to set
+   */
+  void SetGSR(uint32_t id, uint32_t val)
+  {
+    gpr[id] = val;
+  }
+	
+  /** Set the value of a General-purpose or Zero Register
+   *
+   * @param id the register index
+   * @param val the value to set
+   */
+  void SetGZR(uint32_t id, uint32_t val)
+  {
+    if (id != 31) gpr[id] = val;
+  }
+	
 protected:
   
   /**********************************************************************

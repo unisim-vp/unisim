@@ -472,23 +472,21 @@ CPU<CONFIG>::StepInstruction()
     
     /* Decode current PC */
     isa::arm64::Operation<CPU>* op;
-    std::cerr << "0x" << std::hex << insn << std::endl;
     op = decoder.Decode(insn_addr, insn);
     
     this->next_insn_addr += 4;
     
+    std::cerr << "0x" << std::hex << insn << ": ";
+    op->disasm( *this, std::cerr );
+    std::cerr << std::endl;
     /* Execute instruction */
     asm volatile( "arm64_operation_execute:" );
     op->execute( *this );
-    // //op->profile(profile);
     
-    throw 0;
-      
+    if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
+      memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr);
     
-    // if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
-    //   memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr);
-    
-    // instruction_counter++; /* Instruction regularly finished */
+    //instruction_counter++; /* Instruction regularly finished */
   }
   
   // catch (SVCException const& svexc) {
@@ -608,10 +606,8 @@ CPU<CONFIG>::UndefinedInstruction( isa::arm64::Operation<CPU>* insn )
   std::ostringstream oss;
   insn->disasm( *this, oss );
   
-  logger << DebugWarning << "Undefined instruction"
-         << " @" << std::hex << current_insn_addr << std::dec
-         << ": " << oss.str()
-         << EndDebugWarning;
+  logger << DebugWarning << "Undefined instruction (" << insn->GetName() << ") @"
+         << std::hex << current_insn_addr << std::dec << ": " << oss.str() << EndDebugWarning;
   
   if (linux_os_import)
     this->Stop( -1 );
