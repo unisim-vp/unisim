@@ -612,7 +612,7 @@ CPU<CONFIG>::UndefinedInstruction( isa::arm64::Operation<CPU>* insn )
  * @param size   the size of the memory read access
  */
 template <class CONFIG>
-uint64_t
+void
 CPU<CONFIG>::MemRead( uint8_t* buffer, uint64_t addr, unsigned size )
 {
   // Over-simplistic read from memory system

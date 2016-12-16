@@ -241,7 +241,7 @@ struct CPU
   uint16_t MemRead16(uint64_t addr) { return MemReadT<uint16_t>(addr); }
   uint8_t  MemRead8 (uint64_t addr) { return MemReadT<uint8_t> (addr); }
   
-  uint64_t MemRead( uint8_t* buffer, uint64_t addr, unsigned size );
+  void MemRead( uint8_t* buffer, uint64_t addr, unsigned size );
   
 protected:
   
