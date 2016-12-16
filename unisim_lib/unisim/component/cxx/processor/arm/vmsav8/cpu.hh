@@ -212,7 +212,15 @@ struct CPU
   {
     if (id != 31) gpr[id] = val;
   }
-	
+  
+  /** Set the value of PSTATE.<N,Z,C,V>
+   *
+   *  @param nzcv the value to be assignd to PSTATE.<N,Z,C,V>
+   */
+  void SetNZCV( uint32_t n, uint32_t z, uint32_t c, uint32_t v )
+  {
+    nzcv = (n << 3) | (z << 2) | (c << 1) | (v << 0);
+  }
 protected:
   
   /**********************************************************************
@@ -250,6 +258,7 @@ protected:
    **********************************************************************/
     
   uint64_t gpr[32];
+  uint32_t nzcv;
   uint64_t current_insn_addr, next_insn_addr;
 
 private:

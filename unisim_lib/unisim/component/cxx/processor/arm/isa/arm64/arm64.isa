@@ -54,8 +54,12 @@ namespace unisim { namespace component { namespace cxx { namespace processor { n
 impl {
 #include <unisim/component/cxx/processor/arm/isa/arm64/decode.hh>
 #include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
+#include <unisim/component/cxx/processor/arm/isa/arm64/execute.hh>
+#include <unisim/util/arithmetic/arithmetic.hh>
 #include <iostream>
-  
+
+using unisim::util::arithmetic::RotateRight;
+
 }
 
 action {void} execute({ARCH &} {cpu}) {
