@@ -229,6 +229,12 @@ struct CPU
   /** Get the current Program Counter */
   uint64_t GetPC() { return current_insn_addr; }
   
+  /** Get the next Program Counter */
+  uint64_t GetNPC() { return next_insn_addr; }
+  
+  /** Set the next Program Counter */
+  void BranchTo( uint64_t addr ) { next_insn_addr = addr; }
+  
   //=====================================================================
   //=                       Memory access methods                       =
   //=====================================================================

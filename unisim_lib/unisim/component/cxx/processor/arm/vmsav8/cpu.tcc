@@ -466,7 +466,7 @@ CPU<CONFIG>::StepInstruction()
     
     this->next_insn_addr += 4;
     
-    std::cerr << "0x" << std::hex << insn << ": ";
+    std::cerr << "0x" << std::hex << insn_addr << ": " << std::hex << insn << "; ";
     op->disasm( *this, std::cerr );
     std::cerr << std::endl;
     /* Execute instruction */

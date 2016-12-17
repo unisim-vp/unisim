@@ -915,12 +915,31 @@ bics_xror.disasm = {
   sink << "bics\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", ror " << DisasmI(imm);
 };
 
+/*******************************************************************
+ * BL
+ *
+ * Branch with link, calls a subroutine at a PC-relative offset, setting register X30 to PC + 4
+ */
+
 op bl( 0b100101[6] : shl<2> sext imm[26] );
 bl.var format : {char const*} = {"base,4"};
 
 bl.disasm = {
-  sink << "bl\t0x" << std::hex << (this->GetAddr()+imm);
+  sink << "bl\t0x" << std::hex << (this->GetAddr()+int64_t(imm));
 };
+
+bl.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  U64 target_addr( cpu.GetPC() + U64(S64(imm)) );
+  U64 return_addr( cpu.GetNPC() );
+  cpu.SetGSR(30, return_addr);
+  cpu.BranchTo( target_addr );
+};
+
+/*
+ * end of BL
+ *******************************************************************/
 
 op blr( 0b1101011000111111000000[22] : rn[5] : 0b00000[5] );
 blr.var format : {char const*} = {"base,2886"};
