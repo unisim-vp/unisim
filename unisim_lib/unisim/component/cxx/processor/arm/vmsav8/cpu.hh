@@ -259,6 +259,23 @@ struct CPU
   
   void MemRead( uint8_t* buffer, uint64_t addr, unsigned size );
   
+  template <typename T>
+  void
+  MemWriteT(uint64_t addr, T val)
+  {
+    unsigned const size = sizeof (T);
+    uint8_t buffer[size];
+    for (unsigned idx = 0; idx < size; ++idx)
+      { buffer[idx] = val; val >>= 8; }
+    MemWrite( addr, &buffer[0], size );
+  }
+  
+  void MemWrite64(uint64_t addr, uint64_t val) { MemWriteT(addr, val); }
+  void MemWrite32(uint64_t addr, uint32_t val) { MemWriteT(addr, val); }
+  void MemWrite16(uint64_t addr, uint16_t val) { MemWriteT(addr, val); }
+  void MemWrite8 (uint64_t addr, uint8_t  val) { MemWriteT(addr, val); }
+  
+  void MemWrite( uint64_t addr, uint8_t const* buffer, unsigned size );
 protected:
   
   /**********************************************************************

@@ -625,6 +625,26 @@ CPU<CONFIG>::MemRead( uint8_t* buffer, uint64_t addr, unsigned size )
   ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
 }
 
+/** Performs a memory write access.
+ *
+ * @param addr   the address of the memory write access
+ * @param buffer the byte buffer from which bytes are written to memory
+ * @param size   the size of the memory write access
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::MemWrite( uint64_t addr, uint8_t const* buffer, unsigned size )
+{
+  // Over-simplistic read from memory system
+  if (not PrWrite( addr, buffer, size ))
+    {
+      throw 0;
+    }
+  
+  /* report read memory access if necessary */
+  ReportMemoryAccess( unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size );
+}
+
 
 } // end of namespace vmsav8
 } // end of namespace arm

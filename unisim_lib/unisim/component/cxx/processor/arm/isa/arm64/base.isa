@@ -487,6 +487,12 @@ adds_xuxtx.disasm = {
     sink << "adds\t" << DisasmGZXR(rd) << ", " << DisasmGSXR(rn) << ", " << DisasmGZXR(rm) << ", uxtx" << DisasmINZ(" ", imm);
 };
 
+/*******************************************************************
+ * ADR
+ *
+ * Address of label at a PC-relative offset
+ */
+
 op adr( 0b0[1] : imm0[2] : 0b10000[5] : sext imm1[19] : rd[5] );
 adr.var imm : {uint64_t} = {(int64_t(imm1)<<2)|imm0}, format : {char const*} = {"base,2"};
 
@@ -494,12 +500,36 @@ adr.disasm = {
   sink << "adr\t" << DisasmGZXR(rd) << ", 0x" << std::hex << (this->GetAddr()+imm);
 };
 
+adr.execute = {
+  typedef typename ARCH::U64 U64;
+  cpu.SetGZR(rd, cpu.GetPC() + U64(imm));
+};
+
+/*
+ * end of ADR
+ *******************************************************************/
+
+/*******************************************************************
+ * ADRP
+ *
+ * Address of 4KB page at a PC-relative offset
+ */
+
 op adrp( 0b1[1] : shl<12> imm0[2] : 0b10000[5] : sext imm1[19] : rd[5] );
 adrp.var imm : {uint64_t} = {(int64_t(imm1)<<14)|imm0}, format : {char const*} = {"base,1"};
 
 adrp.disasm = {
   sink << "adrp\t" << DisasmGZXR(rd) << ", 0x" << std::hex << ((this->GetAddr()+imm)&(-1ll<<12));
 };
+
+adrp.execute = {
+  typedef typename ARCH::U64 U64;
+  cpu.SetGZR(rd, (cpu.GetPC() + U64(imm)) & U64(-1ll<<12));
+};
+
+/*
+ * end of ADRP
+ *******************************************************************/
 
 op and_wasr( 0b00001010100[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
 and_wasr.var format : {char const*} = {"base,171"};
@@ -941,6 +971,11 @@ bl.execute = {
  * end of BL
  *******************************************************************/
 
+/*******************************************************************
+ * BLR
+ *
+ * Branch with link to register, calls a subroutine at an address in a register, setting register X30 to PC + 4
+ */
 op blr( 0b1101011000111111000000[22] : rn[5] : 0b00000[5] );
 blr.var format : {char const*} = {"base,2886"};
 
@@ -948,12 +983,40 @@ blr.disasm = {
   sink << "blr\t" << DisasmGZXR(rn);
 };
 
+blr.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 target_addr( cpu.GetGZR(rn) );
+  U64 return_addr( cpu.GetNPC() );
+  cpu.SetGSR(30, return_addr);
+  cpu.BranchTo( target_addr );
+};
+
+/*
+ * end of BLR
+ *******************************************************************/
+
+/*******************************************************************
+ * BR
+ *
+ * Branch to register, branches unconditionally to an address in a register, with a hint that this is not a subroutine return
+ */
+
 op br( 0b1101011000011111000000[22] : rn[5] : 0b00000[5] );
 br.var format : {char const*} = {"base,2887"};
 
 br.disasm = {
   sink << "br\t" << DisasmGZXR(rn);
 };
+
+br.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 target_addr( cpu.GetGZR(rn) );
+  cpu.BranchTo( target_addr );
+};
+
+/*
+ * end of BR
+ *******************************************************************/
 
 op brk( 0b11010100001[11] : imm[16] : 0b00000[5] );
 brk.var format : {char const*} = {"base,573"};
@@ -4311,6 +4374,12 @@ stnp_xo.disasm = {
   sink << "stnp\t" << DisasmGZXR(rt) << ", " << DisasmGZXR(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
 
+/*******************************************************************
+ * STP
+ * 
+ * Store pair of registers
+ */
+
 op stp_wo( 0b0010100100[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
 stp_wo.var format : {char const*} = {"base,77"};
 
@@ -4318,18 +4387,14 @@ stp_wo.disasm = {
   sink << "stp\t" << DisasmGZWR(rt) << ", " << DisasmGZWR(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
 
-op stp_wop( 0b0010100110[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_wop.var format : {char const*} = {"base,79"};
-
-stp_wop.disasm = {
-  sink << "stp\t" << DisasmGZWR(rt) << ", " << DisasmGZWR(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
-};
-
-op stp_wpo( 0b0010100010[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_wpo.var format : {char const*} = {"base,81"};
-
-stp_wpo.disasm = {
-  sink << "stp\t" << DisasmGZWR(rt) << ", " << DisasmGZWR(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
+stp_wo.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U32 data0( cpu.GetGZR(rt) ), data1( cpu.GetGZR(rt2) );
+  cpu.MemWrite32( addr + U64(0), data0 );
+  cpu.MemWrite32( addr + U64(4), data1 );
 };
 
 op stp_xo( 0b1010100100[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
@@ -4339,11 +4404,66 @@ stp_xo.disasm = {
   sink << "stp\t" << DisasmGZXR(rt) << ", " << DisasmGZXR(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
 
+stp_xo.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 data0( cpu.GetGZR(rt) ), data1( cpu.GetGZR(rt2) );
+  cpu.MemWrite32( addr + U64(0), data0 );
+  cpu.MemWrite32( addr + U64(8), data1 );
+};
+
+op stp_wop( 0b0010100110[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+stp_wop.var format : {char const*} = {"base,79"};
+
+stp_wop.disasm = {
+  sink << "stp\t" << DisasmGZWR(rt) << ", " << DisasmGZWR(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
+};
+
+stp_wop.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U32 data0( cpu.GetGZR(rt) ), data1( cpu.GetGZR(rt2) );
+  cpu.MemWrite32( addr + U64(0), data0 );
+  cpu.MemWrite32( addr + U64(4), data1 );
+  cpu.SetGSR(rn, addr);
+};
+
 op stp_xop( 0b1010100110[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
 stp_xop.var format : {char const*} = {"base,100"};
 
 stp_xop.disasm = {
   sink << "stp\t" << DisasmGZXR(rt) << ", " << DisasmGZXR(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
+};
+
+stp_xop.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 data0( cpu.GetGZR(rt) ), data1( cpu.GetGZR(rt2) );
+  cpu.MemWrite32( addr + U64(0), data0 );
+  cpu.MemWrite32( addr + U64(8), data1 );
+  cpu.SetGSR(rn, addr);
+};
+
+op stp_wpo( 0b0010100010[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+stp_wpo.var format : {char const*} = {"base,81"};
+
+stp_wpo.disasm = {
+  sink << "stp\t" << DisasmGZWR(rt) << ", " << DisasmGZWR(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
+};
+
+stp_wpo.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  U64 addr( cpu.GetGSR(rn) );
+  U32 data0( cpu.GetGZR(rt) ), data1( cpu.GetGZR(rt2) );
+  cpu.MemWrite32( addr + U64(0), data0 );
+  cpu.MemWrite32( addr + U64(4), data1 );
+  cpu.SetGSR(rn, addr + U64(S64(imm)));
 };
 
 op stp_xpo( 0b1010100010[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
@@ -4352,6 +4472,20 @@ stp_xpo.var format : {char const*} = {"base,103"};
 stp_xpo.disasm = {
   sink << "stp\t" << DisasmGZXR(rt) << ", " << DisasmGZXR(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
 };
+
+stp_xpo.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  U64 addr( cpu.GetGSR(rn) );
+  U64 data0( cpu.GetGZR(rt) ), data1( cpu.GetGZR(rt2) );
+  cpu.MemWrite32( addr + U64(0), data0 );
+  cpu.MemWrite32( addr + U64(8), data1 );
+  cpu.SetGSR(rn, addr + U64(S64(imm)));
+};
+
+/*
+ * end of STP
+ *******************************************************************/
 
 op str_wsopost( 0b10111000000[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
 str_wsopost.var format : {char const*} = {"base,324"};
