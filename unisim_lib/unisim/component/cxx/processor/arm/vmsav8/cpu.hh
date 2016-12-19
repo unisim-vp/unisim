@@ -169,6 +169,8 @@ struct CPU
 
   void UndefinedInstruction( isa::arm64::Operation<CPU>* insn );
   
+  bool Cond( bool cond ) { return cond; }
+  
   //=====================================================================
   //=             General Purpose Registers access methods              =
   //=====================================================================
@@ -233,7 +235,8 @@ struct CPU
   uint64_t GetNPC() { return next_insn_addr; }
   
   /** Set the next Program Counter */
-  void BranchTo( uint64_t addr ) { next_insn_addr = addr; }
+  enum branch_type_t { B_JMP = 0, B_CALL, B_RET } ;
+  void BranchTo( uint64_t addr, branch_type_t branch_type ) { next_insn_addr = addr; }
   
   //=====================================================================
   //=                       Memory access methods                       =
