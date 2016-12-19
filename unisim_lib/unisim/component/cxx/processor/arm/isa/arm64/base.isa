@@ -300,7 +300,6 @@ adds_xasr.disasm = {
     sink << "adds\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", asr " << DisasmI(imm);
 };
 
-
 /*******************************************************************
  * ADD (immediate)
  *
@@ -319,7 +318,7 @@ add_wi.execute = {
   
   U32 op1(cpu.GetGSR(rn)), op2(imm), res = op1 + op2;
   cpu.SetGSR( rd, res );
-}
+};
 
 op add_xi( 0b100100010[9] : shl12[1] : imm0[12] : rn[5] : rd[5] );
 add_xi.var imm : {uint32_t} = {shl12 ? (imm0 << 12) : imm0}, format : {char const*} = {"base,33"};
@@ -333,7 +332,7 @@ add_xi.execute = {
   
   U64 op1(cpu.GetGSR(rn)), op2(imm), res = op1 + op2;
   cpu.SetGSR( rd, res );
-}
+};
 
 /*
  * end of ADD (immediate)
@@ -362,7 +361,7 @@ adds_wi.execute = {
   U32 op1(cpu.GetGSR(rn)), op2(imm), res = op1 + op2;
   cpu.SetGSR( rd, res );
   cpu.SetNZCV( S32(res) < S32(0), op1 == op2, op1 > -op2, (S32(res) < S32(0)) xor (S32(op1) < S32(op2)) );
-}
+};
 
 op adds_xi( 0b101100010[9] : shl12[1] : imm0[12] : rn[5] : rd[5] );
 adds_xi.var imm : {uint32_t} = {shl12 ? (imm0 << 12) : imm0}, format : {char const*} = {"base,32"};
@@ -381,7 +380,7 @@ adds_xi.execute = {
   U64 op1(cpu.GetGSR(rn)), op2(imm), res = op1 + op2;
   cpu.SetGSR( rd, res );
   cpu.SetNZCV( S64(res) < S64(0), op1 == op2, op1 > -op2, (S64(res) < S64(0)) xor (S64(op1) < S64(op2)) );
-}
+};
 
 /*
  * end of ADDS (immediate)
@@ -993,6 +992,7 @@ bl.execute = {
  *
  * Branch with link to register, calls a subroutine at an address in a register, setting register X30 to PC + 4
  */
+
 op blr( 0b1101011000111111000000[22] : rn[5] : 0b00000[5] );
 blr.var format : {char const*} = {"base,2886"};
 
