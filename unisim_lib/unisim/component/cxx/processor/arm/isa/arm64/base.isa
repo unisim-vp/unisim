@@ -698,7 +698,7 @@ and_wror.disasm = {
 
 and_wror.execute = {
   typedef typename ARCH::U32 U32;
-  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & RotateRight(op2 , imm);
+  U32 op1( cpu.GetGZR(rn) ), op2( RotateRight(U32(cpu.GetGZR(rm)), imm) ), res = op1 & op2;
   cpu.SetGZR(rd, res);
 };
 
@@ -758,7 +758,7 @@ and_xror.disasm = {
 
 and_xror.execute = {
   typedef typename ARCH::U64 U64;
-  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & RotateRight(op2 , imm);
+  U64 op1( cpu.GetGZR(rn) ), op2( RotateRight(U64(cpu.GetGZR(rm)), imm) ), res = op1 & op2;
   cpu.SetGZR(rd, res);
 };
 
@@ -836,7 +836,7 @@ ands_wror.disasm = {
 
 ands_wror.execute = {
   typedef typename ARCH::U32 U32;
-  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & RotateRight(op2 , imm);
+  U32 op1( cpu.GetGZR(rn) ), op2( RotateRight(U32(cpu.GetGZR(rm)), imm) ), res = op1 & op2;
   cpu.SetGZR(rd, res);
   // XXX: set status flags
 };
@@ -915,7 +915,7 @@ ands_xror.disasm = {
 
 ands_xror.execute = {
   typedef typename ARCH::U64 U64;
-  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & RotateRight(op2 , imm);
+  U64 op1( cpu.GetGZR(rn) ), op2( RotateRight(U64(cpu.GetGZR(rm)), imm) ), res = op1 & op2;
   cpu.SetGZR(rd, res);
   // XXX: set status flags
 };
@@ -1118,7 +1118,7 @@ bic_wror.disasm = {
 
 bic_wror.execute = {
   typedef typename ARCH::U32 U32;
-  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & ~RotateRight(op2 , imm);
+  U32 op1( cpu.GetGZR(rn) ), op2( RotateRight(U32(cpu.GetGZR(rm)), imm) ), res = op1 & ~op2;
   cpu.SetGZR(rd, res);
 };
 
@@ -1171,7 +1171,7 @@ bic_xror.disasm = {
 
 bic_xror.execute = {
   typedef typename ARCH::U64 U64;
-  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & ~RotateRight(op2 , imm);
+  U64 op1( cpu.GetGZR(rn) ), op2( RotateRight(U64(cpu.GetGZR(rm)), imm) ), res = op1 & ~op2;
   cpu.SetGZR(rd, res);
 };
 
@@ -1227,7 +1227,7 @@ bics_wror.disasm = {
 
 bics_wror.execute = {
   typedef typename ARCH::U32 U32;
-  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & ~RotateRight(op2 , imm);
+  U32 op1( cpu.GetGZR(rn) ), op2( RotateRight(U32(cpu.GetGZR(rm)), imm) ), res = op1 & ~op2;
   cpu.SetGZR(rd, res);
   // XXX: set status flags
 };
@@ -1284,7 +1284,7 @@ bics_xror.disasm = {
 
 bics_xror.execute = {
   typedef typename ARCH::U64 U64;
-  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & ~RotateRight(op2 , imm);
+  U64 op1( cpu.GetGZR(rn) ), op2( RotateRight(U64(cpu.GetGZR(rm)), imm) ), res = op1 & ~op2;
   cpu.SetGZR(rd, res);
   // XXX: set status flags
 };
@@ -2001,7 +2001,7 @@ eon_wror.disasm = {
 
 eon_wror.execute = {
   typedef typename ARCH::U32 U32;
-  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 ^ ~RotateRight(op2 , imm);
+  U32 op1( cpu.GetGZR(rn) ), op2( RotateRight(U32(cpu.GetGZR(rm)), imm) ), res = op1 ^ ~op2;
   cpu.SetGZR(rd, res);
 };
 
@@ -2054,7 +2054,7 @@ eon_xror.disasm = {
 
 eon_xror.execute = {
   typedef typename ARCH::U64 U64;
-  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 ^ ~RotateRight(op2 , imm);
+  U64 op1( cpu.GetGZR(rn) ), op2( RotateRight(U64(cpu.GetGZR(rm)), imm) ), res = op1 ^ ~op2;
   cpu.SetGZR(rd, res);
 };
 
@@ -2114,7 +2114,7 @@ eor_wror.disasm = {
 
 eor_wror.execute = {
   typedef typename ARCH::U32 U32;
-  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 ^ RotateRight(op2 , imm);
+  U32 op1( cpu.GetGZR(rn) ), op2( RotateRight(U32(cpu.GetGZR(rm)), imm) ), res = op1 ^ op2;
   cpu.SetGZR(rd, res);
 };
 
@@ -2174,7 +2174,7 @@ eor_xror.disasm = {
 
 eor_xror.execute = {
   typedef typename ARCH::U64 U64;
-  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 ^ RotateRight(op2 , imm);
+  U64 op1( cpu.GetGZR(rn) ), op2( RotateRight(U64(cpu.GetGZR(rm)), imm) ), res = op1 ^ op2;
   cpu.SetGZR(rd, res);
 };
 
@@ -4459,7 +4459,7 @@ orn_wror.disasm = {
 
 orn_wror.execute = {
   typedef typename ARCH::U32 U32;
-  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 | ~RotateRight(op2 , imm);
+  U32 op1( cpu.GetGZR(rn) ), op2( RotateRight(U32(cpu.GetGZR(rm)), imm) ), res = op1 | ~op2;
   cpu.SetGZR(rd, res);
 };
 
@@ -4524,7 +4524,7 @@ orn_xror.disasm = {
 
 orn_xror.execute = {
   typedef typename ARCH::U64 U64;
-  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 | ~RotateRight(op2 , imm);
+  U64 op1( cpu.GetGZR(rn) ), op2( RotateRight(U64(cpu.GetGZR(rm)), imm) ), res = op1 | ~op2;
   cpu.SetGZR(rd, res);
 };
 
@@ -4654,7 +4654,7 @@ orr_wror.disasm = {
 
 orr_wror.execute = {
   typedef typename ARCH::U32 U32;
-  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 | RotateRight(op2 , imm);
+  U32 op1( cpu.GetGZR(rn) ), op2( RotateRight(U32(cpu.GetGZR(rm)), imm) ), res = op1 | op2;
   cpu.SetGZR(rd, res);
 };
 
@@ -4670,7 +4670,7 @@ orr_xror.disasm = {
 
 orr_xror.execute = {
   typedef typename ARCH::U64 U64;
-  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 | RotateRight(op2 , imm);
+  U64 op1( cpu.GetGZR(rn) ), op2( RotateRight(U64(cpu.GetGZR(rm)), imm) ), res = op1 | op2;
   cpu.SetGZR(rd, res);
 };
 
