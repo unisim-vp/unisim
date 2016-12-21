@@ -666,6 +666,12 @@ and_wror.disasm = {
   sink << "and\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", ror " << DisasmI(imm);
 };
 
+and_wror.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & RotateRight(op2 , imm);
+  cpu.SetGZR(rd, res);
+};
+
 op and_xasr( 0b10001010100[11] : rm[5] : imm[6] : rn[5] : rd[5] );
 and_xasr.var format : {char const*} = {"base,111"};
 
@@ -718,6 +724,12 @@ and_xror.var format : {char const*} = {"base,146"};
 
 and_xror.disasm = {
   sink << "and\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", ror " << DisasmI(imm);
+};
+
+and_xror.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & RotateRight(op2 , imm);
+  cpu.SetGZR(rd, res);
 };
 
 op ands_wasr( 0b01101010100[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
@@ -792,6 +804,13 @@ ands_wror.disasm = {
     sink << "ands\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", ror " << DisasmI(imm);
 };
 
+ands_wror.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & RotateRight(op2 , imm);
+  cpu.SetGZR(rd, res);
+  // XXX: set status flags
+};
+
 op ands_xasr( 0b11101010100[11] : rm[5] : imm[6] : rn[5] : rd[5] );
 ands_xasr.var format : {char const*} = {"base,121"};
 
@@ -862,6 +881,13 @@ ands_xror.disasm = {
     sink << "tst\t" << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", ror " << DisasmI(imm);
   else
     sink << "ands\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", ror " << DisasmI(imm);
+};
+
+ands_xror.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & RotateRight(op2 , imm);
+  cpu.SetGZR(rd, res);
+  // XXX: set status flags
 };
 
 op asr_www( 0b00011010110[11] : rm[5] : 0b001010[6] : rn[5] : rd[5] );
@@ -1060,6 +1086,12 @@ bic_wror.disasm = {
   sink << "bic\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", ror " << DisasmI(imm);
 };
 
+bic_wror.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & ~RotateRight(op2 , imm);
+  cpu.SetGZR(rd, res);
+};
+
 op bic_xasr( 0b10001010101[11] : rm[5] : imm[6] : rn[5] : rd[5] );
 bic_xasr.var format : {char const*} = {"base,112"};
 
@@ -1105,6 +1137,12 @@ bic_xror.var format : {char const*} = {"base,147"};
 
 bic_xror.disasm = {
   sink << "bic\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", ror " << DisasmI(imm);
+};
+
+bic_xror.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & ~RotateRight(op2 , imm);
+  cpu.SetGZR(rd, res);
 };
 
 op bics_wasr( 0b01101010101[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
@@ -1157,6 +1195,13 @@ bics_wror.disasm = {
   sink << "bics\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", ror " << DisasmI(imm);
 };
 
+bics_wror.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & ~RotateRight(op2 , imm);
+  cpu.SetGZR(rd, res);
+  // XXX: set status flags
+};
+
 op bics_xasr( 0b11101010101[11] : rm[5] : imm[6] : rn[5] : rd[5] );
 bics_xasr.var format : {char const*} = {"base,113"};
 
@@ -1205,6 +1250,13 @@ bics_xror.var format : {char const*} = {"base,148"};
 
 bics_xror.disasm = {
   sink << "bics\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", ror " << DisasmI(imm);
+};
+
+bics_xror.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & ~RotateRight(op2 , imm);
+  cpu.SetGZR(rd, res);
+  // XXX: set status flags
 };
 
 /*******************************************************************
@@ -1917,6 +1969,12 @@ eon_wror.disasm = {
   sink << "eon\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", ror " << DisasmI(imm);
 };
 
+eon_wror.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 ^ ~RotateRight(op2 , imm);
+  cpu.SetGZR(rd, res);
+};
+
 op eon_xasr( 0b11001010101[11] : rm[5] : imm[6] : rn[5] : rd[5] );
 eon_xasr.var format : {char const*} = {"base,114"};
 
@@ -1962,6 +2020,12 @@ eon_xror.var format : {char const*} = {"base,149"};
 
 eon_xror.disasm = {
   sink << "eon\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", ror " << DisasmI(imm);
+};
+
+eon_xror.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 ^ ~RotateRight(op2 , imm);
+  cpu.SetGZR(rd, res);
 };
 
 op eor_wasr( 0b01001010100[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
@@ -2018,6 +2082,12 @@ eor_wror.disasm = {
   sink << "eor\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", ror " << DisasmI(imm);
 };
 
+eor_wror.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 ^ RotateRight(op2 , imm);
+  cpu.SetGZR(rd, res);
+};
+
 op eor_xasr( 0b11001010100[11] : rm[5] : imm[6] : rn[5] : rd[5] );
 eor_xasr.var format : {char const*} = {"base,115"};
 
@@ -2070,6 +2140,12 @@ eor_xror.var format : {char const*} = {"base,150"};
 
 eor_xror.disasm = {
   sink << "eor\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", ror " << DisasmI(imm);
+};
+
+eor_xror.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 ^ RotateRight(op2 , imm);
+  cpu.SetGZR(rd, res);
 };
 
 op eret( 0b11010110100111110000001111100000[32] );
@@ -4351,6 +4427,12 @@ orn_wror.disasm = {
     sink << "orn\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", ror " << DisasmI(imm);
 };
 
+orn_wror.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 | ~RotateRight(op2 , imm);
+  cpu.SetGZR(rd, res);
+};
+
 op orn_xlsl( 0b10101010001[11] : rm[5] : imm[6] : rn[5] : rd[5] );
 orn_xlsl.var format : {char const*} = {"base,131"};
 
@@ -4408,6 +4490,12 @@ orn_xror.disasm = {
     sink << "mvn\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rm) << ", ror " << DisasmI(imm);
   else
     sink << "orn\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", ror " << DisasmI(imm);
+};
+
+orn_xror.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 | ~RotateRight(op2 , imm);
+  cpu.SetGZR(rd, res);
 };
 
 op orr_wi( 0b0011001000[10] : immr[6] : imms[6] : rn[5] : rd[5] );
@@ -4536,7 +4624,7 @@ orr_wror.disasm = {
 
 orr_wror.execute = {
   typedef typename ARCH::U32 U32;
-  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 | RotateRight( op2, imm );
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 | RotateRight(op2 , imm);
   cpu.SetGZR(rd, res);
 };
 
@@ -4552,7 +4640,7 @@ orr_xror.disasm = {
 
 orr_xror.execute = {
   typedef typename ARCH::U64 U64;
-  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 | RotateRight( op2, imm );
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 | RotateRight(op2 , imm);
   cpu.SetGZR(rd, res);
 };
 
