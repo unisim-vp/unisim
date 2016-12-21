@@ -54,6 +54,12 @@ add_wlsr.disasm = {
   sink << "add\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", lsr " << DisasmI(imm);
 };
 
+add_wlsr.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + (op2 >> imm);
+  cpu.SetGZR(rd, res);
+};
+
 op add_wsxtb( 0b00001011001[11] : rm[5] : 0b100[3] : imm[3] : rn[5] : rd[5] );
 add_wsxtb.var reject : {Reject} = {imm >= 5}, format : {char const*} = {"base,375"};
 
@@ -136,6 +142,12 @@ add_xlsr.var format : {char const*} = {"base,134"};
 
 add_xlsr.disasm = {
   sink << "add\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", lsr " << DisasmI(imm);
+};
+
+add_xlsr.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + (op2 >> imm);
+  cpu.SetGZR(rd, res);
 };
 
 op add_xsxtb( 0b10001011001[11] : rm[5] : 0b100[3] : imm[3] : rn[5] : rd[5] );
@@ -230,6 +242,13 @@ adds_wlsr.disasm = {
     sink << "cmn\t" << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", lsr " << DisasmI(imm);
   else
     sink << "adds\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", lsr " << DisasmI(imm);
+};
+
+adds_wlsr.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + (op2 >> imm);
+  cpu.SetGZR(rd, res);
+  // XXX: set status flags
 };
 
 op adds_wsxtb( 0b00101011001[11] : rm[5] : 0b100[3] : imm[3] : rn[5] : rd[5] );
@@ -436,6 +455,13 @@ adds_xlsr.disasm = {
     sink << "adds\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", lsr " << DisasmI(imm);
 };
 
+adds_xlsr.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + (op2 >> imm);
+  cpu.SetGZR(rd, res);
+  // XXX: set status flags
+};
+
 op adds_xsxtb( 0b10101011001[11] : rm[5] : 0b100[3] : imm[3] : rn[5] : rd[5] );
 adds_xsxtb.var reject : {Reject} = {imm >= 5}, format : {char const*} = {"base,408"};
 
@@ -595,6 +621,12 @@ and_wlsr.disasm = {
   sink << "and\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", lsr " << DisasmI(imm);
 };
 
+and_wlsr.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & (op2 >> imm);
+  cpu.SetGZR(rd, res);
+};
+
 op and_wror( 0b00001010110[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
 and_wror.var format : {char const*} = {"base,206"};
 
@@ -635,6 +667,12 @@ and_xlsr.var format : {char const*} = {"base,135"};
 
 and_xlsr.disasm = {
   sink << "and\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", lsr " << DisasmI(imm);
+};
+
+and_xlsr.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & (op2 >> imm);
+  cpu.SetGZR(rd, res);
 };
 
 op and_xror( 0b10001010110[11] : rm[5] : imm[6] : rn[5] : rd[5] );
@@ -690,6 +728,13 @@ ands_wlsr.disasm = {
     sink << "tst\t" << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", lsr " << DisasmI(imm);
   else
     sink << "ands\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", lsr " << DisasmI(imm);
+};
+
+ands_wlsr.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & (op2 >> imm);
+  cpu.SetGZR(rd, res);
+  // XXX: set status flags
 };
 
 op ands_wror( 0b01101010110[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
@@ -748,6 +793,13 @@ ands_xlsr.disasm = {
     sink << "tst\t" << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", lsr " << DisasmI(imm);
   else
     sink << "ands\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", lsr " << DisasmI(imm);
+};
+
+ands_xlsr.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & (op2 >> imm);
+  cpu.SetGZR(rd, res);
+  // XXX: set status flags
 };
 
 op ands_xror( 0b11101010110[11] : rm[5] : imm[6] : rn[5] : rd[5] );
@@ -937,6 +989,12 @@ bic_wlsr.disasm = {
   sink << "bic\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", lsr " << DisasmI(imm);
 };
 
+bic_wlsr.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & ~(op2 >> imm);
+  cpu.SetGZR(rd, res);
+};
+
 op bic_wror( 0b00001010111[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
 bic_wror.var format : {char const*} = {"base,207"};
 
@@ -970,6 +1028,12 @@ bic_xlsr.var format : {char const*} = {"base,136"};
 
 bic_xlsr.disasm = {
   sink << "bic\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", lsr " << DisasmI(imm);
+};
+
+bic_xlsr.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & ~(op2 >> imm);
+  cpu.SetGZR(rd, res);
 };
 
 op bic_xror( 0b10001010111[11] : rm[5] : imm[6] : rn[5] : rd[5] );
@@ -1008,6 +1072,13 @@ bics_wlsr.disasm = {
   sink << "bics\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", lsr " << DisasmI(imm);
 };
 
+bics_wlsr.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & ~(op2 >> imm);
+  cpu.SetGZR(rd, res);
+  // XXX: set status flags
+};
+
 op bics_wror( 0b01101010111[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
 bics_wror.var format : {char const*} = {"base,208"};
 
@@ -1042,6 +1113,13 @@ bics_xlsr.var format : {char const*} = {"base,137"};
 
 bics_xlsr.disasm = {
   sink << "bics\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", lsr " << DisasmI(imm);
+};
+
+bics_xlsr.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 & ~(op2 >> imm);
+  cpu.SetGZR(rd, res);
+  // XXX: set status flags
 };
 
 op bics_xror( 0b11101010111[11] : rm[5] : imm[6] : rn[5] : rd[5] );
@@ -1742,6 +1820,12 @@ eon_wlsr.disasm = {
   sink << "eon\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", lsr " << DisasmI(imm);
 };
 
+eon_wlsr.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 ^ ~(op2 >> imm);
+  cpu.SetGZR(rd, res);
+};
+
 op eon_wror( 0b01001010111[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
 eon_wror.var format : {char const*} = {"base,209"};
 
@@ -1775,6 +1859,12 @@ eon_xlsr.var format : {char const*} = {"base,138"};
 
 eon_xlsr.disasm = {
   sink << "eon\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", lsr " << DisasmI(imm);
+};
+
+eon_xlsr.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 ^ ~(op2 >> imm);
+  cpu.SetGZR(rd, res);
 };
 
 op eon_xror( 0b11001010111[11] : rm[5] : imm[6] : rn[5] : rd[5] );
@@ -1819,6 +1909,12 @@ eor_wlsr.disasm = {
   sink << "eor\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", lsr " << DisasmI(imm);
 };
 
+eor_wlsr.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 ^ (op2 >> imm);
+  cpu.SetGZR(rd, res);
+};
+
 op eor_wror( 0b01001010110[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
 eor_wror.var format : {char const*} = {"base,210"};
 
@@ -1859,6 +1955,12 @@ eor_xlsr.var format : {char const*} = {"base,139"};
 
 eor_xlsr.disasm = {
   sink << "eor\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", lsr " << DisasmI(imm);
+};
+
+eor_xlsr.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 ^ (op2 >> imm);
+  cpu.SetGZR(rd, res);
 };
 
 op eor_xror( 0b11001010110[11] : rm[5] : imm[6] : rn[5] : rd[5] );
@@ -4108,6 +4210,12 @@ orn_wlsr.disasm = {
     sink << "orn\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", lsr " << DisasmI(imm);
 };
 
+orn_wlsr.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 | ~(op2 >> imm);
+  cpu.SetGZR(rd, res);
+};
+
 op orn_wasr( 0b00101010101[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
 orn_wasr.var format : {char const*} = {"base,176"};
 
@@ -4153,6 +4261,12 @@ orn_xlsr.disasm = {
     sink << "mvn\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rm) << ", lsr " << DisasmI(imm);
   else
     sink << "orn\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", lsr " << DisasmI(imm);
+};
+
+orn_xlsr.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 | ~(op2 >> imm);
+  cpu.SetGZR(rd, res);
 };
 
 op orn_xasr( 0b10101010101[11] : rm[5] : imm[6] : rn[5] : rd[5] );
@@ -5628,6 +5742,12 @@ sub_wlsr.disasm = {
     sink << "sub\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", lsr " << DisasmI(imm);
 };
 
+sub_wlsr.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - (op2 >> imm);
+  cpu.SetGZR(rd, res);
+};
+
 op sub_wsxtb( 0b01001011001[11] : rm[5] : 0b100[3] : imm[3] : rn[5] : rd[5] );
 sub_wsxtb.var reject : {Reject} = {imm >= 5}, format : {char const*} = {"base,377"};
 
@@ -5728,6 +5848,12 @@ sub_xlsr.disasm = {
     sink << "sub\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", lsr " << DisasmI(imm);
 };
 
+sub_xlsr.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - (op2 >> imm);
+  cpu.SetGZR(rd, res);
+};
+
 op sub_xsxtb( 0b11001011001[11] : rm[5] : 0b100[3] : imm[3] : rn[5] : rd[5] );
 sub_xsxtb.var reject : {Reject} = {imm >= 5}, format : {char const*} = {"base,409"};
 
@@ -5826,6 +5952,13 @@ subs_wlsr.disasm = {
     sink << "negs\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rm) << ", lsr " << DisasmI(imm);
   else
     sink << "subs\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", lsr " << DisasmI(imm);
+};
+
+subs_wlsr.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - (op2 >> imm);
+  cpu.SetGZR(rd, res);
+  // XXX: set status flags
 };
 
 op subs_wasr( 0b01101011100[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
@@ -5950,6 +6083,13 @@ subs_xlsr.disasm = {
     sink << "negs\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rm) << ", lsr " << DisasmI(imm);
   else
     sink << "subs\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", lsr " << DisasmI(imm);
+};
+
+subs_xlsr.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - (op2 >> imm);
+  cpu.SetGZR(rd, res);
+  // XXX: set status flags
 };
 
 op subs_xasr( 0b11101011100[11] : rm[5] : imm[6] : rn[5] : rd[5] );
