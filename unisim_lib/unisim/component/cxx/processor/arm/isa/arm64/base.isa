@@ -129,6 +129,12 @@ add_wuxtw.disasm = {
   sink << "add\t" << DisasmGSWR(rd) << ", " << DisasmGSWR(rn) << ", " << DisasmGZWR(rm) << ", uxtw" << DisasmINZ(" ", imm);
 };
 
+add_wuxtw.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( U32(U32(cpu.GetGZR(rm))) << imm ), res = op1 + op2;
+  cpu.SetGZR(rd, res);
+};
+
 op add_wuxtx( 0b00001011001[11] : rm[5] : 0b011[3] : imm[3] : rn[5] : rd[5] );
 add_wuxtx.var reject : {Reject} = {imm >= 5}, format : {char const*} = {"base,403"};
 
@@ -237,6 +243,13 @@ add_xuxtw.var reject : {Reject} = {imm >= 5}, format : {char const*} = {"base,42
 
 add_xuxtw.disasm = {
   sink << "add\t" << DisasmGSXR(rd) << ", " << DisasmGSXR(rn) << ", " << DisasmGZWR(rm) << ", uxtw" << DisasmINZ(" ", imm);
+};
+
+add_xuxtw.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( U64(U32(cpu.GetGZR(rm))) << imm ), res = op1 + op2;
+  cpu.SetGZR(rd, res);
 };
 
 op add_xuxtx( 0b10001011001[11] : rm[5] : 0b011[3] : imm[3] : rn[5] : rd[5] );
@@ -382,6 +395,13 @@ adds_wuxtw.disasm = {
     sink << "cmn\t" << DisasmGSWR(rn) << ", " << DisasmGZWR(rm) << ", uxtw" << DisasmINZ(" ", imm);
   else
     sink << "adds\t" << DisasmGZWR(rd) << ", " << DisasmGSWR(rn) << ", " << DisasmGZWR(rm) << ", uxtw" << DisasmINZ(" ", imm);
+};
+
+adds_wuxtw.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( U32(U32(cpu.GetGZR(rm))) << imm ), res = op1 + op2;
+  cpu.SetGZR(rd, res);
+  // XXX: set status flags
 };
 
 op adds_wuxtx( 0b00101011001[11] : rm[5] : 0b011[3] : imm[3] : rn[5] : rd[5] );
@@ -616,6 +636,14 @@ adds_xuxtw.disasm = {
     sink << "cmn\t" << DisasmGSXR(rn) << ", " << DisasmGZWR(rm) << ", uxtw" << DisasmINZ(" ", imm);
   else
     sink << "adds\t" << DisasmGZXR(rd) << ", " << DisasmGSXR(rn) << ", " << DisasmGZWR(rm) << ", uxtw" << DisasmINZ(" ", imm);
+};
+
+adds_xuxtw.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( U64(U32(cpu.GetGZR(rm))) << imm ), res = op1 + op2;
+  cpu.SetGZR(rd, res);
+  // XXX: set status flags
 };
 
 op adds_xuxtx( 0b10101011001[11] : rm[5] : 0b011[3] : imm[3] : rn[5] : rd[5] );
@@ -6079,6 +6107,12 @@ sub_wuxtw.disasm = {
   sink << "sub\t" << DisasmGSWR(rd) << ", " << DisasmGSWR(rn) << ", " << DisasmGZWR(rm) << ", uxtw" << DisasmINZ(" ", imm);
 };
 
+sub_wuxtw.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( U32(U32(cpu.GetGZR(rm))) << imm ), res = op1 - op2;
+  cpu.SetGZR(rd, res);
+};
+
 op sub_wuxtx( 0b01001011001[11] : rm[5] : 0b011[3] : imm[3] : rn[5] : rd[5] );
 sub_wuxtx.var reject : {Reject} = {imm >= 5}, format : {char const*} = {"base,405"};
 
@@ -6203,6 +6237,13 @@ sub_xuxtw.var reject : {Reject} = {imm >= 5}, format : {char const*} = {"base,42
 
 sub_xuxtw.disasm = {
   sink << "sub\t" << DisasmGSXR(rd) << ", " << DisasmGSXR(rn) << ", " << DisasmGZWR(rm) << ", uxtw" << DisasmINZ(" ", imm);
+};
+
+sub_xuxtw.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( U64(U32(cpu.GetGZR(rm))) << imm ), res = op1 - op2;
+  cpu.SetGZR(rd, res);
 };
 
 op sub_xuxtx( 0b11001011001[11] : rm[5] : 0b011[3] : imm[3] : rn[5] : rd[5] );
@@ -6334,6 +6375,13 @@ subs_wuxtw.disasm = {
     sink << "cmp\t" << DisasmGSWR(rn) << ", " << DisasmGZWR(rm) << ", uxtw" << DisasmINZ(" ", imm);
   else
     sink << "subs\t" << DisasmGZWR(rd) << ", " << DisasmGSWR(rn) << ", " << DisasmGZWR(rm) << ", uxtw" << DisasmINZ(" ", imm);
+};
+
+subs_wuxtw.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 op1( cpu.GetGZR(rn) ), op2( U32(U32(cpu.GetGZR(rm))) << imm ), res = op1 - op2;
+  cpu.SetGZR(rd, res);
+  // XXX: set status flags
 };
 
 op subs_wuxtx( 0b01101011001[11] : rm[5] : 0b011[3] : imm[3] : rn[5] : rd[5] );
@@ -6488,6 +6536,14 @@ subs_xuxtw.disasm = {
     sink << "cmp\t" << DisasmGSXR(rn) << ", " << DisasmGZWR(rm) << ", uxtw" << DisasmINZ(" ", imm);
   else
     sink << "subs\t" << DisasmGZXR(rd) << ", " << DisasmGSXR(rn) << ", " << DisasmGZWR(rm) << ", uxtw" << DisasmINZ(" ", imm);
+};
+
+subs_xuxtw.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  U64 op1( cpu.GetGZR(rn) ), op2( U64(U32(cpu.GetGZR(rm))) << imm ), res = op1 - op2;
+  cpu.SetGZR(rd, res);
+  // XXX: set status flags
 };
 
 op subs_xuxtx( 0b11101011001[11] : rm[5] : 0b011[3] : imm[3] : rn[5] : rd[5] );
