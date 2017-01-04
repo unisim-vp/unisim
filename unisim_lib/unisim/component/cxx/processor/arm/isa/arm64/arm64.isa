@@ -74,4 +74,4 @@ impl {
 } // end of impl
 
 include "base.isa"
-include "simd_fp.isa"
+//include "simd_fp.isa"

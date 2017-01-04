@@ -2430,20 +2430,11 @@ dsb.disasm = {
   sink << "dsb\t" << DisasmBarrierOption(imm);
 };
 
-op eon_wasr( 0b01001010101[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
-eon_wasr.var format : {char const*} = {"base,174"};
-
-eon_wasr.disasm = {
-  sink << "eon\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", asr " << DisasmI(imm);
-};
-
-eon_wasr.execute = {
-  typedef typename ARCH::U32 U32;
-  typedef typename ARCH::S32 S32;
-  
-  U32 op1( cpu.GetGZR(rn) ), op2( S32(cpu.GetGZR(rm)) >> imm ), res = op1 ^ ~op2;
-  cpu.SetGZR(rd, res);
-};
+/*******************************************************************
+ * EON (shifted register)
+ *
+ * Bitwise exclusive OR NOT (shifted register): Rd = Rn EOR NOT shift(Rm, amount)
+ */
 
 op eon_wlsl( 0b01001010001[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
 eon_wlsl.var format : {char const*} = {"base,190"};
@@ -2473,6 +2464,21 @@ eon_wlsr.execute = {
   cpu.SetGZR(rd, res);
 };
 
+op eon_wasr( 0b01001010101[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
+eon_wasr.var format : {char const*} = {"base,174"};
+
+eon_wasr.disasm = {
+  sink << "eon\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", asr " << DisasmI(imm);
+};
+
+eon_wasr.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
+  U32 op1( cpu.GetGZR(rn) ), op2( S32(cpu.GetGZR(rm)) >> imm ), res = op1 ^ ~op2;
+  cpu.SetGZR(rd, res);
+};
+
 op eon_wror( 0b01001010111[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
 eon_wror.var format : {char const*} = {"base,209"};
 
@@ -2484,21 +2490,6 @@ eon_wror.execute = {
   typedef typename ARCH::U32 U32;
   
   U32 op1( cpu.GetGZR(rn) ), op2( RotateRight(U32(cpu.GetGZR(rm)), imm) ), res = op1 ^ ~op2;
-  cpu.SetGZR(rd, res);
-};
-
-op eon_xasr( 0b11001010101[11] : rm[5] : imm[6] : rn[5] : rd[5] );
-eon_xasr.var format : {char const*} = {"base,114"};
-
-eon_xasr.disasm = {
-  sink << "eon\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", asr " << DisasmI(imm);
-};
-
-eon_xasr.execute = {
-  typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
-  
-  U64 op1( cpu.GetGZR(rn) ), op2( S64(cpu.GetGZR(rm)) >> imm ), res = op1 ^ ~op2;
   cpu.SetGZR(rd, res);
 };
 
@@ -2530,6 +2521,21 @@ eon_xlsr.execute = {
   cpu.SetGZR(rd, res);
 };
 
+op eon_xasr( 0b11001010101[11] : rm[5] : imm[6] : rn[5] : rd[5] );
+eon_xasr.var format : {char const*} = {"base,114"};
+
+eon_xasr.disasm = {
+  sink << "eon\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", asr " << DisasmI(imm);
+};
+
+eon_xasr.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 op1( cpu.GetGZR(rn) ), op2( S64(cpu.GetGZR(rm)) >> imm ), res = op1 ^ ~op2;
+  cpu.SetGZR(rd, res);
+};
+
 op eon_xror( 0b11001010111[11] : rm[5] : imm[6] : rn[5] : rd[5] );
 eon_xror.var format : {char const*} = {"base,149"};
 
@@ -2544,20 +2550,15 @@ eon_xror.execute = {
   cpu.SetGZR(rd, res);
 };
 
-op eor_wasr( 0b01001010100[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
-eor_wasr.var format : {char const*} = {"base,175"};
+/*
+ * end of EON (shifted register)
+ *******************************************************************/
 
-eor_wasr.disasm = {
-  sink << "eor\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", asr " << DisasmI(imm);
-};
-
-eor_wasr.execute = {
-  typedef typename ARCH::U32 U32;
-  typedef typename ARCH::S32 S32;
-  
-  U32 op1( cpu.GetGZR(rn) ), op2( S32(cpu.GetGZR(rm)) >> imm ), res = op1 ^ op2;
-  cpu.SetGZR(rd, res);
-};
+/*******************************************************************
+ * EOR (immediate)
+ *
+ * Bitwise exclusive OR (immediate): Rd = Rn EOR imm
+ */
 
 op eor_wi( 0b0101001000[10] : immr[6] : imms[6] : rn[5] : rd[5] );
 eor_wi.var imm : {uint32_t} = {DecodeBitMasks(0,imms,immr).wmask}, format : {char const*} = {"base,72"};
@@ -2565,6 +2566,37 @@ eor_wi.var imm : {uint32_t} = {DecodeBitMasks(0,imms,immr).wmask}, format : {cha
 eor_wi.disasm = {
   sink << "eor\t" << DisasmGSWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmI(imm,16);
 };
+
+eor_wi.execute = {
+  typedef typename ARCH::U32 U32;
+  
+  U32 op1(cpu.GetGSR(rn)), op2(imm), res = op1 ^ op2;
+  cpu.SetGSR( rd, res );
+};
+
+op eor_xi( 0b110100100[9] : n[1] : immr[6] : imms[6] : rn[5] : rd[5] );
+eor_xi.var imm : {uint64_t} = {DecodeBitMasks(n,imms,immr).wmask}, format : {char const*} = {"base,27"};
+
+eor_xi.disasm = {
+  sink << "eor\t" << DisasmGSXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmI(imm,16);
+};
+
+eor_xi.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 op1(cpu.GetGSR(rn)), op2(imm), res = op1 ^ op2;
+  cpu.SetGSR( rd, res );
+};
+
+/*
+ * end of EOR (immediate)
+ *******************************************************************/
+
+/*******************************************************************
+ * EOR (shifted register)
+ *
+ * Bitwise exclusive OR (shifted register): Rd = Rn EOR shift(Rm, amount)
+ */
 
 op eor_wlsl( 0b01001010000[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
 eor_wlsl.var format : {char const*} = {"base,191"};
@@ -2594,6 +2626,21 @@ eor_wlsr.execute = {
   cpu.SetGZR(rd, res);
 };
 
+op eor_wasr( 0b01001010100[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
+eor_wasr.var format : {char const*} = {"base,175"};
+
+eor_wasr.disasm = {
+  sink << "eor\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", asr " << DisasmI(imm);
+};
+
+eor_wasr.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
+  U32 op1( cpu.GetGZR(rn) ), op2( S32(cpu.GetGZR(rm)) >> imm ), res = op1 ^ op2;
+  cpu.SetGZR(rd, res);
+};
+
 op eor_wror( 0b01001010110[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
 eor_wror.var format : {char const*} = {"base,210"};
 
@@ -2606,28 +2653,6 @@ eor_wror.execute = {
   
   U32 op1( cpu.GetGZR(rn) ), op2( RotateRight(U32(cpu.GetGZR(rm)), imm) ), res = op1 ^ op2;
   cpu.SetGZR(rd, res);
-};
-
-op eor_xasr( 0b11001010100[11] : rm[5] : imm[6] : rn[5] : rd[5] );
-eor_xasr.var format : {char const*} = {"base,115"};
-
-eor_xasr.disasm = {
-  sink << "eor\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", asr " << DisasmI(imm);
-};
-
-eor_xasr.execute = {
-  typedef typename ARCH::U64 U64;
-  typedef typename ARCH::S64 S64;
-  
-  U64 op1( cpu.GetGZR(rn) ), op2( S64(cpu.GetGZR(rm)) >> imm ), res = op1 ^ op2;
-  cpu.SetGZR(rd, res);
-};
-
-op eor_xi( 0b110100100[9] : n[1] : immr[6] : imms[6] : rn[5] : rd[5] );
-eor_xi.var imm : {uint64_t} = {DecodeBitMasks(n,imms,immr).wmask}, format : {char const*} = {"base,27"};
-
-eor_xi.disasm = {
-  sink << "eor\t" << DisasmGSXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmI(imm,16);
 };
 
 op eor_xlsl( 0b11001010000[11] : rm[5] : imm[6] : rn[5] : rd[5] );
@@ -2658,6 +2683,21 @@ eor_xlsr.execute = {
   cpu.SetGZR(rd, res);
 };
 
+op eor_xasr( 0b11001010100[11] : rm[5] : imm[6] : rn[5] : rd[5] );
+eor_xasr.var format : {char const*} = {"base,115"};
+
+eor_xasr.disasm = {
+  sink << "eor\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", asr " << DisasmI(imm);
+};
+
+eor_xasr.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 op1( cpu.GetGZR(rn) ), op2( S64(cpu.GetGZR(rm)) >> imm ), res = op1 ^ op2;
+  cpu.SetGZR(rd, res);
+};
+
 op eor_xror( 0b11001010110[11] : rm[5] : imm[6] : rn[5] : rd[5] );
 eor_xror.var format : {char const*} = {"base,150"};
 
@@ -2671,6 +2711,10 @@ eor_xror.execute = {
   U64 op1( cpu.GetGZR(rn) ), op2( RotateRight(U64(cpu.GetGZR(rm)), imm) ), res = op1 ^ op2;
   cpu.SetGZR(rd, res);
 };
+
+/*
+ * end of EOR (shifted register)
+ *******************************************************************/
 
 op eret( 0b11010110100111110000001111100000[32] );
 eret.var format : {char const*} = {"base,2947"};
@@ -4837,6 +4881,13 @@ madd_x.disasm = {
     sink << "madd\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", " << DisasmGZXR(ra);
 };
 
+/*******************************************************************
+ * MOV (immediate)
+ * MOVZ|MOVN compound
+ *
+ * Move immediate to register: Rd = imm
+ */
+
 op mov_wi( 0b0[1] : sext n[1] : 0b01001010[8] : shl<4> shift[1] : imm0[16] : rd[5] );
 mov_wi.var imm : {uint32_t} = {(uint32_t(imm0) << shift)^~int32_t(n)}, format : {char const*} = {"base,19"};
 
@@ -4858,6 +4909,10 @@ mov_xi.disasm = {
 mov_xi.execute = {
   cpu.SetGZR( rd, typename ARCH::U64(imm) );
 };
+
+/*
+ * end of MOV (immediate)
+ *******************************************************************/
 
 op movk_w( 0b0111001010[10] : shl<4> shift[1] : imm[16] : rd[5] );
 movk_w.var format : {char const*} = {"base,69"};
@@ -4920,6 +4975,12 @@ nop.var format : {char const*} = {"base,2948"};
 nop.disasm = {
   sink << "nop";
 };
+
+/*******************************************************************
+ * ORN (shifted register)
+ *
+ * Bitwise inclusive OR NOT (shifted register): Rd = Rn OR NOT shift(Rm, amount)
+ */
 
 op orn_wlsl( 0b00101010001[11] : rm[5] : 0b0[1] : imm[5] : rn[5] : rd[5] );
 orn_wlsl.var format : {char const*} = {"base,185"};
@@ -5059,6 +5120,16 @@ orn_xror.execute = {
   cpu.SetGZR(rd, res);
 };
 
+/*
+ * end of ORN (shifted register)
+ *******************************************************************/
+
+/*******************************************************************
+ * ORR (immediate)
+ *
+ * Bitwise inclusive OR (immediate): Rd = Rn OR imm
+ */
+
 op orr_wi( 0b0011001000[10] : immr[6] : imms[6] : rn[5] : rd[5] );
 orr_wi.var imm : {uint32_t} = {DecodeBitMasks(0,imms,immr).wmask}, format : {char const*} = {"base,70"};
 
@@ -5068,6 +5139,34 @@ orr_wi.disasm = {
   else
     sink << "orr\t" << DisasmGSWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmI(imm,16);
 };
+
+orr_wi.execute = {
+  typedef typename ARCH::U32 U32;
+  
+  U32 op1(cpu.GetGSR(rn)), op2(imm), res = op1 | op2;
+  cpu.SetGSR( rd, res );
+};
+
+op orr_xi( 0b101100100[9] : n[1] : immr[6] : imms[6] : rn[5] : rd[5] );
+orr_xi.var imm : {uint64_t} = {DecodeBitMasks(n,imms,immr).wmask}, format : {char const*} = {"base,28"};
+
+orr_xi.disasm = {
+  if (rn == 31)
+    sink << "mov\t" << DisasmGSXR(rd) << ", " << DisasmI(imm,16);
+  else
+    sink << "orr\t" << DisasmGSXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmI(imm,16);
+};
+
+orr_xi.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 op1(cpu.GetGSR(rn)), op2(imm), res = op1 | op2;
+  cpu.SetGSR( rd, res );
+};
+
+/*
+ * end of ORR (immediate)
+ *******************************************************************/
 
 /*******************************************************************
  * ORR (shifted register)
@@ -5216,16 +5315,6 @@ orr_xror.execute = {
 /*
  * end of ORR (shifted register)
  *******************************************************************/
-
-op orr_xi( 0b101100100[9] : n[1] : immr[6] : imms[6] : rn[5] : rd[5] );
-orr_xi.var imm : {uint64_t} = {DecodeBitMasks(n,imms,immr).wmask}, format : {char const*} = {"base,28"};
-
-orr_xi.disasm = {
-  if (rn == 31)
-    sink << "mov\t" << DisasmGSXR(rd) << ", " << DisasmI(imm,16);
-  else
-    sink << "orr\t" << DisasmGSXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmI(imm,16);
-};
 
 op prfm_lit( 0b11011000[8] : shl<2> sext imm[19] : rt[5] );
 prfm_lit.var format : {char const*} = {"base,8"};
