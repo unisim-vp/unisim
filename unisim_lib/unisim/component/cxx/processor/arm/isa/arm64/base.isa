@@ -1463,12 +1463,30 @@ b.execute = {
  * end of B
  *******************************************************************/
 
+/*******************************************************************
+ * B.cond
+ *
+ * Branch conditionally to a label at a PC-relative offset, with a hint that this is not a subroutine call or return
+ */
+
 op b_cond( 0b01010100[8] : shl<2> sext imm[19] : 0b0[1] : cond[4] );
 b_cond.var format : {char const*} = {"base,20"};
 
 b_cond.disasm = {
   sink << "b." << DisasmCond(cond) << "\t0x" << std::hex << (this->GetAddr()+imm);
 };
+
+b_cond.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  if (cpu.Cond( CheckCondition(cpu, cond) ))
+    cpu.BranchTo( cpu.GetPC() + U64(S64(imm)), ARCH::B_JMP );
+};
+
+/*
+ * end of B.cond
+ *******************************************************************/
 
 op bfm_w( 0b00110011000[11] : immr[5] : 0b0[1] : imms[5] : rn[5] : rd[5] );
 bfm_w.var format : {char const*} = {"base,162"};
