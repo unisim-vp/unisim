@@ -6053,7 +6053,7 @@ str_xuo.execute = {
 };
 
 /*
- * end of LDR (immediate)
+ * end of STR (immediate)
  *******************************************************************/
 
 op str_wxws( 0b10111000001[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
@@ -6112,11 +6112,27 @@ str_xxxs.disasm = {
   sink << "str\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << ",sxtx" << DisasmINZ(" ", shift) << "]";
 };
 
+/*******************************************************************
+ * STRB (immediate)
+ *
+ * Store register byte (immediate offset)
+ */
+
 op strb_wsopost( 0b00111000000[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
 strb_wsopost.var format : {char const*} = {"base,325"};
 
 strb_wsopost.disasm = {
   sink << "strb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
+};
+
+strb_wsopost.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  U8 data( cpu.GetGZR(rt) );
+  cpu.MemWrite8(addr, data);
+  cpu.SetGSR(rn, addr + U64(imm) );
 };
 
 op strb_wsopre( 0b00111000000[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
@@ -6126,12 +6142,35 @@ strb_wsopre.disasm = {
   sink << "strb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
 };
 
+strb_wsopre.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
+  U8 data( cpu.GetGZR(rt) );
+  cpu.MemWrite8(addr, data);
+  cpu.SetGSR(rn, addr);
+};
+
 op strb_wuo( 0b0011100100[10] : imm[12] : rn[5] : rt[5] );
 strb_wuo.var format : {char const*} = {"base,88"};
 
 strb_wuo.disasm = {
   sink << "strb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
+
+strb_wuo.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
+  U8 data( cpu.GetGZR(rt) );
+  cpu.MemWrite8(addr, data);
+};
+
+/*
+ * end of STRB (immediate)
+ *******************************************************************/
 
 op strb_wxws( 0b00111000001[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 strb_wxws.var shift : {uint8_t} = {s*0}, format : {char const*} = {"base,621"};
@@ -6161,11 +6200,27 @@ strb_wxxs.disasm = {
   sink << "strb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << ",sxtx" << DisasmINZ(" ", shift) << "]";
 };
 
+/*******************************************************************
+ * STRH (immediate)
+ *
+ * Store register halfword (immediate offset)
+ */
+
 op strh_wsopost( 0b01111000000[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
 strh_wsopost.var format : {char const*} = {"base,326"};
 
 strh_wsopost.disasm = {
   sink << "strh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
+};
+
+strh_wsopost.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  U16 data( cpu.GetGZR(rt) );
+  cpu.MemWrite16(addr, data);
+  cpu.SetGSR(rn, addr + U64(imm) );
 };
 
 op strh_wsopre( 0b01111000000[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
@@ -6175,12 +6230,35 @@ strh_wsopre.disasm = {
   sink << "strh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
 };
 
+strh_wsopre.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
+  U16 data( cpu.GetGZR(rt) );
+  cpu.MemWrite16(addr, data);
+  cpu.SetGSR(rn, addr);
+};
+
 op strh_wuo( 0b0111100100[10] : shl<1> imm[12] : rn[5] : rt[5] );
 strh_wuo.var format : {char const*} = {"base,89"};
 
 strh_wuo.disasm = {
   sink << "strh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
+
+strh_wuo.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
+  U16 data( cpu.GetGZR(rt) );
+  cpu.MemWrite16(addr, data);
+};
+
+/*
+ * end of STRH (immediate)
+ *******************************************************************/
 
 op strh_wxws( 0b01111000001[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 strh_wxws.var shift : {uint8_t} = {s*1}, format : {char const*} = {"base,622"};
