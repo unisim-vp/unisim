@@ -3443,6 +3443,12 @@ ldr_xlit.execute = {
  * end of LDR (literal)
  *******************************************************************/
 
+/*******************************************************************
+ * LDR (register)
+ *
+ * Load register (register offset)
+ */
+
 op ldr_wxwu( 0b10111000011[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 ldr_wxwu.var shift : {uint8_t} = {s*2}, format : {char const*} = {"base,623"};
 
@@ -3498,6 +3504,10 @@ ldr_xxxs.var shift : {uint8_t} = {s*3}, format : {char const*} = {"base,649"};
 ldr_xxxs.disasm = {
   sink << "ldr\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << ",sxtx" << DisasmINZ(" ", shift) << "]";
 };
+
+/*
+ * end of LDR (register)
+ *******************************************************************/
 
 /*******************************************************************
  * LDRB (immediate)
@@ -3559,6 +3569,12 @@ ldrb_wuo.execute = {
  * end of LDRB (immediate)
  *******************************************************************/
 
+/*******************************************************************
+ * LDRB (register)
+ *
+ * Load register byte (register offset)
+ */
+
 op ldrb_wxwu( 0b00111000011[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 ldrb_wxwu.var shift : {uint8_t} = {s*0}, format : {char const*} = {"base,624"};
 
@@ -3586,6 +3602,10 @@ ldrb_wxxs.var shift : {uint8_t} = {s*0}, format : {char const*} = {"base,632"};
 ldrb_wxxs.disasm = {
   sink << "ldrb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << ",sxtx" << DisasmINZ(" ", shift) << "]";
 };
+
+/*
+ * end of LDRB (register)
+ *******************************************************************/
 
 /*******************************************************************
  * LDRH (immediate)
@@ -3647,6 +3667,12 @@ ldrh_wuo.execute = {
  * end of LDRH (immediate)
  *******************************************************************/
 
+/*******************************************************************
+ * LDRH (register)
+ *
+ * Load register halfword (register offset)
+ */
+
 op ldrh_wxwu( 0b01111000011[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 ldrh_wxwu.var shift : {uint8_t} = {s*1}, format : {char const*} = {"base,625"};
 
@@ -3674,6 +3700,10 @@ ldrh_wxxs.var shift : {uint8_t} = {s*1}, format : {char const*} = {"base,633"};
 ldrh_wxxs.disasm = {
   sink << "ldrh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << ",sxtx" << DisasmINZ(" ", shift) << "]";
 };
+
+/*
+ * end of LDRH (register)
+ *******************************************************************/
 
 /*******************************************************************
  * LDRSB (immediate)
@@ -3794,6 +3824,12 @@ ldrsb_xuo.execute = {
  * end of LDRSB (immediate)
  *******************************************************************/
 
+/*******************************************************************
+ * LDRSB (register)
+ *
+ * Load register signed byte (register offset)
+ */
+
 op ldrsb_wxwu( 0b00111000111[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 ldrsb_wxwu.var shift : {uint8_t} = {s*0}, format : {char const*} = {"base,626"};
 
@@ -3849,6 +3885,10 @@ ldrsb_xxxs.var shift : {uint8_t} = {s*0}, format : {char const*} = {"base,650"};
 ldrsb_xxxs.disasm = {
   sink << "ldrsb\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << ",sxtx" << DisasmINZ(" ", shift) << "]";
 };
+
+/*
+ * end of LDRSB (register)
+ *******************************************************************/
 
 /*******************************************************************
  * LDRSH (immediate)
@@ -3969,6 +4009,12 @@ ldrsh_xuo.execute = {
  * end of LDRSH (immediate)
  *******************************************************************/
 
+/*******************************************************************
+ * LDRSH (register)
+ *
+ * Load register signed halfword (register offset)
+ */
+
 op ldrsh_wxwu( 0b01111000111[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 ldrsh_wxwu.var shift : {uint8_t} = {s*1}, format : {char const*} = {"base,627"};
 
@@ -4024,6 +4070,10 @@ ldrsh_xxxs.var shift : {uint8_t} = {s*1}, format : {char const*} = {"base,651"};
 ldrsh_xxxs.disasm = {
   sink << "ldrsh\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << ",sxtx" << DisasmINZ(" ", shift) << "]";
 };
+
+/*
+ * end of LDRSH (register)
+ *******************************************************************/
 
 op ldrsw_xlit( 0b10011000[8] : shl<2> sext imm[19] : rt[5] );
 ldrsw_xlit.var format : {char const*} = {"base,18"};
@@ -4095,6 +4145,12 @@ ldrsw_xuo.execute = {
  * end of LDRSW (immediate)
  *******************************************************************/
 
+/*******************************************************************
+ * LDRSW (register)
+ *
+ * Load register signed word (register offset)
+ */
+
 op ldrsw_xxwu( 0b10111000101[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 ldrsw_xxwu.var shift : {uint8_t} = {s*2}, format : {char const*} = {"base,647"};
 
@@ -4122,6 +4178,10 @@ ldrsw_xxxs.var shift : {uint8_t} = {s*2}, format : {char const*} = {"base,652"};
 ldrsw_xxxs.disasm = {
   sink << "ldrsw\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << ",sxtx" << DisasmINZ(" ", shift) << "]";
 };
+
+/*
+ * end of LDRSW (register)
+ *******************************************************************/
 
 op ldset_w( 0b10111000001[11] : rs[5] : 0b001100[6] : rn[5] : rt[5] );
 ldset_w.var reject : {Reject} = {rt==31}, format : {char const*} = {"base,1566"};
@@ -6056,6 +6116,12 @@ str_xuo.execute = {
  * end of STR (immediate)
  *******************************************************************/
 
+/*******************************************************************
+ * STR (register)
+ *
+ * Store register (register offset)
+ */
+
 op str_wxwu( 0b10111000001[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 str_wxwu.var shift : {uint8_t} = {s*2}, format : {char const*} = {"base,628"};
 
@@ -6111,6 +6177,10 @@ str_xxxs.var shift : {uint8_t} = {s*3}, format : {char const*} = {"base,653"};
 str_xxxs.disasm = {
   sink << "str\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << ",sxtx" << DisasmINZ(" ", shift) << "]";
 };
+
+/*
+ * end of STR (register)
+ *******************************************************************/
 
 /*******************************************************************
  * STRB (immediate)
@@ -6172,6 +6242,12 @@ strb_wuo.execute = {
  * end of STRB (immediate)
  *******************************************************************/
 
+/*******************************************************************
+ * STRB (register)
+ *
+ * Store register byte (register offset)
+ */
+
 op strb_wxwu( 0b00111000001[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 strb_wxwu.var shift : {uint8_t} = {s*0}, format : {char const*} = {"base,629"};
 
@@ -6199,6 +6275,10 @@ strb_wxxs.var shift : {uint8_t} = {s*0}, format : {char const*} = {"base,637"};
 strb_wxxs.disasm = {
   sink << "strb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << ",sxtx" << DisasmINZ(" ", shift) << "]";
 };
+
+/*
+ * end of STRB (register)
+ *******************************************************************/
 
 /*******************************************************************
  * STRH (immediate)
@@ -6260,6 +6340,12 @@ strh_wuo.execute = {
  * end of STRH (immediate)
  *******************************************************************/
 
+/*******************************************************************
+ * STRH (register)
+ *
+ * Store register halfword (register offset)
+ */
+
 op strh_wxwu( 0b01111000001[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 strh_wxwu.var shift : {uint8_t} = {s*1}, format : {char const*} = {"base,630"};
 
@@ -6287,6 +6373,10 @@ strh_wxxs.var shift : {uint8_t} = {s*1}, format : {char const*} = {"base,638"};
 strh_wxxs.disasm = {
   sink << "strh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << ",sxtx" << DisasmINZ(" ", shift) << "]";
 };
+
+/*
+ * end of STRH (register)
+ *******************************************************************/
 
 op stset_w( 0b10111000001[11] : rt[5] : 0b001100[6] : rn[5] : 0b11111[5] );
 stset_w.var format : {char const*} = {"base,2115"};
