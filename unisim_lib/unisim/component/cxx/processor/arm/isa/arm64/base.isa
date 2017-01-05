@@ -3450,6 +3450,7 @@ ldr_wsopost.disasm = {
 ldr_wsopost.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U32 data( cpu.MemRead32(addr) );
@@ -3466,6 +3467,7 @@ ldr_xsopost.disasm = {
 
 ldr_xsopost.execute = {
   typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U64 data( cpu.MemRead64(addr) );
@@ -3741,6 +3743,7 @@ ldrb_wsopost.disasm = {
 ldrb_wsopost.execute = {
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U8 data( cpu.MemRead8(addr) );
@@ -3878,6 +3881,7 @@ ldrh_wsopost.disasm = {
 ldrh_wsopost.execute = {
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U16 data( cpu.MemRead16(addr) );
@@ -4017,6 +4021,7 @@ ldrsb_wsopost.execute = {
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   S8 data( cpu.MemRead8(addr) );
@@ -4290,6 +4295,7 @@ ldrsh_wsopost.execute = {
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   S16 data( cpu.MemRead16(addr) );
@@ -6556,6 +6562,7 @@ str_wsopost.disasm = {
 str_wsopost.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U32 data( cpu.GetGZR(rt) );
@@ -6572,6 +6579,7 @@ str_xsopost.disasm = {
 
 str_xsopost.execute = {
   typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U64 data( cpu.GetGZR(rt) );
@@ -6804,6 +6812,7 @@ strb_wsopost.disasm = {
 strb_wsopost.execute = {
   typedef typename ARCH::U8 U8;
   typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U8 data( cpu.GetGZR(rt) );
@@ -6942,6 +6951,7 @@ strh_wsopost.disasm = {
 strh_wsopost.execute = {
   typedef typename ARCH::U16 U16;
   typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
   
   U64 addr( cpu.GetGSR(rn) );
   U16 data( cpu.GetGZR(rt) );
