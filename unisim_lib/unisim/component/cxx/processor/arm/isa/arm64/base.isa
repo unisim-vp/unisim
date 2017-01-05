@@ -3443,13 +3443,6 @@ ldr_xlit.execute = {
  * end of LDR (literal)
  *******************************************************************/
 
-op ldr_wxws( 0b10111000011[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
-ldr_wxws.var shift : {uint8_t} = {s*2}, format : {char const*} = {"base,615"};
-
-ldr_wxws.disasm = {
-  sink << "ldr\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
-};
-
 op ldr_wxwu( 0b10111000011[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 ldr_wxwu.var shift : {uint8_t} = {s*2}, format : {char const*} = {"base,623"};
 
@@ -3464,18 +3457,18 @@ ldr_wxxu.disasm = {
   sink << "ldr\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << DisasmINZ(",lsl ",shift) << "]";
 };
 
+op ldr_wxws( 0b10111000011[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
+ldr_wxws.var shift : {uint8_t} = {s*2}, format : {char const*} = {"base,615"};
+
+ldr_wxws.disasm = {
+  sink << "ldr\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
+};
+
 op ldr_wxxs( 0b10111000011[11] : rm[5] : 0b111[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 ldr_wxxs.var shift : {uint8_t} = {s*2}, format : {char const*} = {"base,631"};
 
 ldr_wxxs.disasm = {
   sink << "ldr\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << ",sxtx" << DisasmINZ(" ", shift) << "]";
-};
-
-op ldr_xxws( 0b11111000011[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
-ldr_xxws.var shift : {uint8_t} = {s*3}, format : {char const*} = {"base,639"};
-
-ldr_xxws.disasm = {
-  sink << "ldr\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
 };
 
 op ldr_xxwu( 0b11111000011[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
@@ -3490,6 +3483,13 @@ ldr_xxxu.var format : {char const*} = {"base,1661"}, shift : {uint8_t} = {s*3};
 
 ldr_xxxu.disasm = {
   sink << "ldr\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << DisasmINZ(",lsl ",shift) << "]";
+};
+
+op ldr_xxws( 0b11111000011[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
+ldr_xxws.var shift : {uint8_t} = {s*3}, format : {char const*} = {"base,639"};
+
+ldr_xxws.disasm = {
+  sink << "ldr\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
 };
 
 op ldr_xxxs( 0b11111000011[11] : rm[5] : 0b111[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
@@ -3559,13 +3559,6 @@ ldrb_wuo.execute = {
  * end of LDRB (immediate)
  *******************************************************************/
 
-op ldrb_wxws( 0b00111000011[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
-ldrb_wxws.var shift : {uint8_t} = {s*0}, format : {char const*} = {"base,616"};
-
-ldrb_wxws.disasm = {
-  sink << "ldrb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
-};
-
 op ldrb_wxwu( 0b00111000011[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 ldrb_wxwu.var shift : {uint8_t} = {s*0}, format : {char const*} = {"base,624"};
 
@@ -3578,6 +3571,13 @@ ldrb_wxxu.var format : {char const*} = {"base,1597"}, shift : {uint8_t} = {s*0};
 
 ldrb_wxxu.disasm = {
   sink << "ldrb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << DisasmINZ(",lsl ",shift) << "]";
+};
+
+op ldrb_wxws( 0b00111000011[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
+ldrb_wxws.var shift : {uint8_t} = {s*0}, format : {char const*} = {"base,616"};
+
+ldrb_wxws.disasm = {
+  sink << "ldrb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
 };
 
 op ldrb_wxxs( 0b00111000011[11] : rm[5] : 0b111[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
@@ -3647,13 +3647,6 @@ ldrh_wuo.execute = {
  * end of LDRH (immediate)
  *******************************************************************/
 
-op ldrh_wxws( 0b01111000011[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
-ldrh_wxws.var shift : {uint8_t} = {s*1}, format : {char const*} = {"base,617"};
-
-ldrh_wxws.disasm = {
-  sink << "ldrh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
-};
-
 op ldrh_wxwu( 0b01111000011[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 ldrh_wxwu.var shift : {uint8_t} = {s*1}, format : {char const*} = {"base,625"};
 
@@ -3666,6 +3659,13 @@ ldrh_wxxu.var format : {char const*} = {"base,1598"}, shift : {uint8_t} = {s*1};
 
 ldrh_wxxu.disasm = {
   sink << "ldrh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << DisasmINZ(",lsl ",shift) << "]";
+};
+
+op ldrh_wxws( 0b01111000011[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
+ldrh_wxws.var shift : {uint8_t} = {s*1}, format : {char const*} = {"base,617"};
+
+ldrh_wxws.disasm = {
+  sink << "ldrh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
 };
 
 op ldrh_wxxs( 0b01111000011[11] : rm[5] : 0b111[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
@@ -3794,13 +3794,6 @@ ldrsb_xuo.execute = {
  * end of LDRSB (immediate)
  *******************************************************************/
 
-op ldrsb_wxws( 0b00111000111[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
-ldrsb_wxws.var shift : {uint8_t} = {s*0}, format : {char const*} = {"base,618"};
-
-ldrsb_wxws.disasm = {
-  sink << "ldrsb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
-};
-
 op ldrsb_wxwu( 0b00111000111[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 ldrsb_wxwu.var shift : {uint8_t} = {s*0}, format : {char const*} = {"base,626"};
 
@@ -3815,18 +3808,18 @@ ldrsb_wxxu.disasm = {
   sink << "ldrsb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << DisasmINZ(",lsl ",shift) << "]";
 };
 
+op ldrsb_wxws( 0b00111000111[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
+ldrsb_wxws.var shift : {uint8_t} = {s*0}, format : {char const*} = {"base,618"};
+
+ldrsb_wxws.disasm = {
+  sink << "ldrsb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
+};
+
 op ldrsb_wxxs( 0b00111000111[11] : rm[5] : 0b111[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 ldrsb_wxxs.var shift : {uint8_t} = {s*0}, format : {char const*} = {"base,634"};
 
 ldrsb_wxxs.disasm = {
   sink << "ldrsb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << ",sxtx" << DisasmINZ(" ", shift) << "]";
-};
-
-op ldrsb_xxws( 0b00111000101[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
-ldrsb_xxws.var shift : {uint8_t} = {s*0}, format : {char const*} = {"base,640"};
-
-ldrsb_xxws.disasm = {
-  sink << "ldrsb\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
 };
 
 op ldrsb_xxwu( 0b00111000101[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
@@ -3841,6 +3834,13 @@ ldrsb_xxxu.var format : {char const*} = {"base,1662"}, shift : {uint8_t} = {s*0}
 
 ldrsb_xxxu.disasm = {
   sink << "ldrsb\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << DisasmINZ(",lsl ",shift) << "]";
+};
+
+op ldrsb_xxws( 0b00111000101[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
+ldrsb_xxws.var shift : {uint8_t} = {s*0}, format : {char const*} = {"base,640"};
+
+ldrsb_xxws.disasm = {
+  sink << "ldrsb\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
 };
 
 op ldrsb_xxxs( 0b00111000101[11] : rm[5] : 0b111[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
@@ -3969,13 +3969,6 @@ ldrsh_xuo.execute = {
  * end of LDRSH (immediate)
  *******************************************************************/
 
-op ldrsh_wxws( 0b01111000111[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
-ldrsh_wxws.var shift : {uint8_t} = {s*1}, format : {char const*} = {"base,619"};
-
-ldrsh_wxws.disasm = {
-  sink << "ldrsh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
-};
-
 op ldrsh_wxwu( 0b01111000111[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 ldrsh_wxwu.var shift : {uint8_t} = {s*1}, format : {char const*} = {"base,627"};
 
@@ -3990,18 +3983,18 @@ ldrsh_wxxu.disasm = {
   sink << "ldrsh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << DisasmINZ(",lsl ",shift) << "]";
 };
 
+op ldrsh_wxws( 0b01111000111[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
+ldrsh_wxws.var shift : {uint8_t} = {s*1}, format : {char const*} = {"base,619"};
+
+ldrsh_wxws.disasm = {
+  sink << "ldrsh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
+};
+
 op ldrsh_wxxs( 0b01111000111[11] : rm[5] : 0b111[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 ldrsh_wxxs.var shift : {uint8_t} = {s*1}, format : {char const*} = {"base,635"};
 
 ldrsh_wxxs.disasm = {
   sink << "ldrsh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << ",sxtx" << DisasmINZ(" ", shift) << "]";
-};
-
-op ldrsh_xxws( 0b01111000101[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
-ldrsh_xxws.var shift : {uint8_t} = {s*1}, format : {char const*} = {"base,641"};
-
-ldrsh_xxws.disasm = {
-  sink << "ldrsh\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
 };
 
 op ldrsh_xxwu( 0b01111000101[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
@@ -4016,6 +4009,13 @@ ldrsh_xxxu.var format : {char const*} = {"base,1663"}, shift : {uint8_t} = {s*1}
 
 ldrsh_xxxu.disasm = {
   sink << "ldrsh\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << DisasmINZ(",lsl ",shift) << "]";
+};
+
+op ldrsh_xxws( 0b01111000101[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
+ldrsh_xxws.var shift : {uint8_t} = {s*1}, format : {char const*} = {"base,641"};
+
+ldrsh_xxws.disasm = {
+  sink << "ldrsh\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
 };
 
 op ldrsh_xxxs( 0b01111000101[11] : rm[5] : 0b111[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
@@ -4095,13 +4095,6 @@ ldrsw_xuo.execute = {
  * end of LDRSW (immediate)
  *******************************************************************/
 
-op ldrsw_xxws( 0b10111000101[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
-ldrsw_xxws.var shift : {uint8_t} = {s*2}, format : {char const*} = {"base,642"};
-
-ldrsw_xxws.disasm = {
-  sink << "ldrsw\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
-};
-
 op ldrsw_xxwu( 0b10111000101[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 ldrsw_xxwu.var shift : {uint8_t} = {s*2}, format : {char const*} = {"base,647"};
 
@@ -4114,6 +4107,13 @@ ldrsw_xxxu.var format : {char const*} = {"base,1664"}, shift : {uint8_t} = {s*2}
 
 ldrsw_xxxu.disasm = {
   sink << "ldrsw\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << DisasmINZ(",lsl ",shift) << "]";
+};
+
+op ldrsw_xxws( 0b10111000101[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
+ldrsw_xxws.var shift : {uint8_t} = {s*2}, format : {char const*} = {"base,642"};
+
+ldrsw_xxws.disasm = {
+  sink << "ldrsw\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
 };
 
 op ldrsw_xxxs( 0b10111000101[11] : rm[5] : 0b111[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
@@ -6056,13 +6056,6 @@ str_xuo.execute = {
  * end of STR (immediate)
  *******************************************************************/
 
-op str_wxws( 0b10111000001[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
-str_wxws.var shift : {uint8_t} = {s*2}, format : {char const*} = {"base,620"};
-
-str_wxws.disasm = {
-  sink << "str\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
-};
-
 op str_wxwu( 0b10111000001[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 str_wxwu.var shift : {uint8_t} = {s*2}, format : {char const*} = {"base,628"};
 
@@ -6077,18 +6070,18 @@ str_wxxu.disasm = {
   sink << "str\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << DisasmINZ(",lsl ",shift) << "]";
 };
 
+op str_wxws( 0b10111000001[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
+str_wxws.var shift : {uint8_t} = {s*2}, format : {char const*} = {"base,620"};
+
+str_wxws.disasm = {
+  sink << "str\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
+};
+
 op str_wxxs( 0b10111000001[11] : rm[5] : 0b111[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 str_wxxs.var shift : {uint8_t} = {s*2}, format : {char const*} = {"base,636"};
 
 str_wxxs.disasm = {
   sink << "str\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << ",sxtx" << DisasmINZ(" ", shift) << "]";
-};
-
-op str_xxws( 0b11111000001[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
-str_xxws.var shift : {uint8_t} = {s*3}, format : {char const*} = {"base,643"};
-
-str_xxws.disasm = {
-  sink << "str\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
 };
 
 op str_xxwu( 0b11111000001[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
@@ -6103,6 +6096,13 @@ str_xxxu.var format : {char const*} = {"base,1665"}, shift : {uint8_t} = {s*3};
 
 str_xxxu.disasm = {
   sink << "str\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << DisasmINZ(",lsl ",shift) << "]";
+};
+
+op str_xxws( 0b11111000001[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
+str_xxws.var shift : {uint8_t} = {s*3}, format : {char const*} = {"base,643"};
+
+str_xxws.disasm = {
+  sink << "str\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
 };
 
 op str_xxxs( 0b11111000001[11] : rm[5] : 0b111[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
@@ -6172,13 +6172,6 @@ strb_wuo.execute = {
  * end of STRB (immediate)
  *******************************************************************/
 
-op strb_wxws( 0b00111000001[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
-strb_wxws.var shift : {uint8_t} = {s*0}, format : {char const*} = {"base,621"};
-
-strb_wxws.disasm = {
-  sink << "strb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
-};
-
 op strb_wxwu( 0b00111000001[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 strb_wxwu.var shift : {uint8_t} = {s*0}, format : {char const*} = {"base,629"};
 
@@ -6191,6 +6184,13 @@ strb_wxxu.var format : {char const*} = {"base,1602"}, shift : {uint8_t} = {s*0};
 
 strb_wxxu.disasm = {
   sink << "strb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << DisasmINZ(",lsl ",shift) << "]";
+};
+
+op strb_wxws( 0b00111000001[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
+strb_wxws.var shift : {uint8_t} = {s*0}, format : {char const*} = {"base,621"};
+
+strb_wxws.disasm = {
+  sink << "strb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
 };
 
 op strb_wxxs( 0b00111000001[11] : rm[5] : 0b111[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
@@ -6260,13 +6260,6 @@ strh_wuo.execute = {
  * end of STRH (immediate)
  *******************************************************************/
 
-op strh_wxws( 0b01111000001[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
-strh_wxws.var shift : {uint8_t} = {s*1}, format : {char const*} = {"base,622"};
-
-strh_wxws.disasm = {
-  sink << "strh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
-};
-
 op strh_wxwu( 0b01111000001[11] : rm[5] : 0b010[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
 strh_wxwu.var shift : {uint8_t} = {s*1}, format : {char const*} = {"base,630"};
 
@@ -6279,6 +6272,13 @@ strh_wxxu.var format : {char const*} = {"base,1603"}, shift : {uint8_t} = {s*1};
 
 strh_wxxu.disasm = {
   sink << "strh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZXR(rm) << DisasmINZ(",lsl ",shift) << "]";
+};
+
+op strh_wxws( 0b01111000001[11] : rm[5] : 0b110[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
+strh_wxws.var shift : {uint8_t} = {s*1}, format : {char const*} = {"base,622"};
+
+strh_wxws.disasm = {
+  sink << "strh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmGZWR(rm) << ",sxtw" << DisasmINZ(" ", shift) << "]";
 };
 
 op strh_wxxs( 0b01111000001[11] : rm[5] : 0b111[3] : s[1] : 0b10[2] : rn[5] : rt[5] );
