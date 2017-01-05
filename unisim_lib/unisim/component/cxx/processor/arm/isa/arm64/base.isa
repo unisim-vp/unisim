@@ -4404,12 +4404,32 @@ ldrsh_xxxs.execute = {
  * end of LDRSH (register)
  *******************************************************************/
 
+/*******************************************************************
+ * LDRSW (literal)
+ *
+ * Load register signed word (PC-relative literal)
+ */
+
 op ldrsw_xlit( 0b10011000[8] : shl<2> sext imm[19] : rt[5] );
 ldrsw_xlit.var format : {char const*} = {"base,18"};
 
 ldrsw_xlit.disasm = {
   sink << "ldrsw\t" << DisasmGZXR(rt) << ", 0x" << std::hex << (this->GetAddr()+imm);
 };
+
+ldrsw_xlit.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S64 S64;
+  
+  U64 addr( cpu.GetPC() + U64(S64(imm)) );
+  U64 data( S64(S32( cpu.MemRead32(addr))) );
+  cpu.SetGZR(rt, data);
+};
+
+/*
+ * end of LDRSW (literal)
+ *******************************************************************/
 
 /*******************************************************************
  * LDRSW (immediate)
