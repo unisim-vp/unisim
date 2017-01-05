@@ -3454,7 +3454,7 @@ ldr_wsopost.execute = {
   U64 addr( cpu.GetGSR(rn) );
   U32 data( cpu.MemRead32(addr) );
   cpu.SetGZR(rt, data);
-  cpu.SetGSR(rn, addr + U64(imm) );
+  cpu.SetGSR(rn, addr + U64(S64(imm)) );
 };
 
 op ldr_xsopost( 0b11111000010[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
@@ -3470,7 +3470,7 @@ ldr_xsopost.execute = {
   U64 addr( cpu.GetGSR(rn) );
   U64 data( cpu.MemRead64(addr) );
   cpu.SetGZR(rt, data);
-  cpu.SetGSR(rn, addr + U64(imm) );
+  cpu.SetGSR(rn, addr + U64(S64(imm)) );
 };
 
 op ldr_wsopre( 0b10111000010[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
@@ -3745,7 +3745,7 @@ ldrb_wsopost.execute = {
   U64 addr( cpu.GetGSR(rn) );
   U8 data( cpu.MemRead8(addr) );
   cpu.SetGZR(rt, data);
-  cpu.SetGSR(rn, addr + U64(imm) );
+  cpu.SetGSR(rn, addr + U64(S64(imm)) );
 };
 
 op ldrb_wsopre( 0b00111000010[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
@@ -3882,7 +3882,7 @@ ldrh_wsopost.execute = {
   U64 addr( cpu.GetGSR(rn) );
   U16 data( cpu.MemRead16(addr) );
   cpu.SetGZR(rt, data);
-  cpu.SetGSR(rn, addr + U64(imm) );
+  cpu.SetGSR(rn, addr + U64(S64(imm)) );
 };
 
 op ldrh_wsopre( 0b01111000010[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
@@ -4021,7 +4021,7 @@ ldrsb_wsopost.execute = {
   U64 addr( cpu.GetGSR(rn) );
   S8 data( cpu.MemRead8(addr) );
   cpu.SetGZR(rt, U32(S32(data)));
-  cpu.SetGSR(rn, addr + U64(imm) );
+  cpu.SetGSR(rn, addr + U64(S64(imm)) );
 };
 
 op ldrsb_xsopost( 0b00111000100[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
@@ -4039,7 +4039,7 @@ ldrsb_xsopost.execute = {
   U64 addr( cpu.GetGSR(rn) );
   S8 data( cpu.MemRead8(addr) );
   cpu.SetGZR(rt, U64(S64(data)));
-  cpu.SetGSR(rn, addr + U64(imm) );
+  cpu.SetGSR(rn, addr + U64(S64(imm)) );
 };
 
 op ldrsb_wsopre( 0b00111000110[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
@@ -4294,7 +4294,7 @@ ldrsh_wsopost.execute = {
   U64 addr( cpu.GetGSR(rn) );
   S16 data( cpu.MemRead16(addr) );
   cpu.SetGZR(rt, U32(S32(data)));
-  cpu.SetGSR(rn, addr + U64(imm) );
+  cpu.SetGSR(rn, addr + U64(S64(imm)) );
 };
 
 op ldrsh_xsopost( 0b01111000100[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
@@ -4312,7 +4312,7 @@ ldrsh_xsopost.execute = {
   U64 addr( cpu.GetGSR(rn) );
   S16 data( cpu.MemRead16(addr) );
   cpu.SetGZR(rt, U64(S64(data)));
-  cpu.SetGSR(rn, addr + U64(imm) );
+  cpu.SetGSR(rn, addr + U64(S64(imm)) );
 };
 
 op ldrsh_wsopre( 0b01111000110[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
@@ -4593,7 +4593,7 @@ ldrsw_xsopost.execute = {
   U64 addr( cpu.GetGSR(rn) );
   S32 data( cpu.MemRead32(addr) );
   cpu.SetGZR(rt, U64(S64(data)));
-  cpu.SetGSR(rn, addr + U64(imm) );
+  cpu.SetGSR(rn, addr + U64(S64(imm)) );
 };
 
 op ldrsw_xsopre( 0b10111000100[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
@@ -6560,7 +6560,7 @@ str_wsopost.execute = {
   U64 addr( cpu.GetGSR(rn) );
   U32 data( cpu.GetGZR(rt) );
   cpu.MemWrite32(addr, data);
-  cpu.SetGSR(rn, addr + U64(imm) );
+  cpu.SetGSR(rn, addr + U64(S64(imm)) );
 };
 
 op str_xsopost( 0b11111000000[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
@@ -6576,7 +6576,7 @@ str_xsopost.execute = {
   U64 addr( cpu.GetGSR(rn) );
   U64 data( cpu.GetGZR(rt) );
   cpu.MemWrite64(addr, data);
-  cpu.SetGSR(rn, addr + U64(imm) );
+  cpu.SetGSR(rn, addr + U64(S64(imm)) );
 };
 
 op str_wsopre( 0b10111000000[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
@@ -6808,7 +6808,7 @@ strb_wsopost.execute = {
   U64 addr( cpu.GetGSR(rn) );
   U8 data( cpu.GetGZR(rt) );
   cpu.MemWrite8(addr, data);
-  cpu.SetGSR(rn, addr + U64(imm) );
+  cpu.SetGSR(rn, addr + U64(S64(imm)) );
 };
 
 op strb_wsopre( 0b00111000000[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
@@ -6946,7 +6946,7 @@ strh_wsopost.execute = {
   U64 addr( cpu.GetGSR(rn) );
   U16 data( cpu.GetGZR(rt) );
   cpu.MemWrite16(addr, data);
-  cpu.SetGSR(rn, addr + U64(imm) );
+  cpu.SetGSR(rn, addr + U64(S64(imm)) );
 };
 
 op strh_wsopre( 0b01111000000[11] : sext imm[9] : 0b11[2] : rn[5] : rt[5] );
