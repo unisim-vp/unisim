@@ -2271,11 +2271,28 @@ crc32x_wwx.disasm = {
   sink << "crc32x\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZXR(rm);
 };
 
+/*******************************************************************
+ * CSEL
+ *
+ * Conditional select, returning the first or second input: Rd = if cond then Rn else Rm
+ */
+
 op csel_w( 0b00011010100[11] : rm[5] : cond[4] : 0b00[2] : rn[5] : rd[5] );
 csel_w.var format : {char const*} = {"base,291"};
 
 csel_w.disasm = {
   sink << "csel\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", " << DisasmCond(cond);
+};
+
+csel_w.execute = {
+  typedef typename ARCH::U32 U32;
+  
+  U32 res;
+  if (cpu.Cond( CheckCondition(cpu, cond) ))
+    res = U32(cpu.GetGZR(rn));
+  else
+    res = U32(cpu.GetGZR(rm));
+  cpu.SetGZR(rd, res);
 };
 
 op csel_x( 0b10011010100[11] : rm[5] : cond[4] : 0b00[2] : rn[5] : rd[5] );
@@ -2284,6 +2301,28 @@ csel_x.var format : {char const*} = {"base,327"};
 csel_x.disasm = {
   sink << "csel\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", " << DisasmCond(cond);
 };
+
+csel_x.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 res;
+  if (cpu.Cond( CheckCondition(cpu, cond) ))
+    res = cpu.GetGZR(rn);
+  else
+    res = cpu.GetGZR(rm);
+  cpu.SetGZR(rd, res);
+};
+
+/*
+ * end of CSEL
+ *******************************************************************/
+
+/*******************************************************************
+ * CSINC
+ *
+ * Conditional select increment, returning the first input or
+ * incremented second input: Rd = if cond then Rn else (Rm + 1)
+ */
 
 op csinc_w( 0b00011010100[11] : rm[5] : cond[4] : 0b01[2] : rn[5] : rd[5] );
 csinc_w.var format : {char const*} = {"base,292"};
@@ -2296,6 +2335,17 @@ csinc_w.disasm = {
       sink << "cset\t" << DisasmGZWR(rd) << ", " << DisasmCond(cond^1);
   else
     sink << "csinc\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", " << DisasmCond(cond);
+};
+
+csinc_w.execute = {
+  typedef typename ARCH::U32 U32;
+  
+  U32 res;
+  if (cpu.Cond( CheckCondition(cpu, cond) ))
+    res = U32(cpu.GetGZR(rn));
+  else
+    res = U32(cpu.GetGZR(rm)) + U32(1);
+  cpu.SetGZR(rd, res);
 };
 
 op csinc_x( 0b10011010100[11] : rm[5] : cond[4] : 0b01[2] : rn[5] : rd[5] );
@@ -2311,6 +2361,28 @@ csinc_x.disasm = {
     sink << "csinc\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", " << DisasmCond(cond);
 };
 
+csinc_x.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 res;
+  if (cpu.Cond( CheckCondition(cpu, cond) ))
+    res = cpu.GetGZR(rn);
+  else
+    res = cpu.GetGZR(rm) + U64(1);
+  cpu.SetGZR(rd, res);
+};
+
+/*
+ * end of CSINC
+ *******************************************************************/
+
+/*******************************************************************
+ * CSINV
+ *
+ * Conditional select inversion, returning the first input or inverted
+ * second input: Rd = if cond then Rn else NOT (Rm)
+ */
+
 op csinv_w( 0b01011010100[11] : rm[5] : cond[4] : 0b00[2] : rn[5] : rd[5] );
 csinv_w.var format : {char const*} = {"base,293"};
 
@@ -2322,6 +2394,17 @@ csinv_w.disasm = {
       sink << "csetm\t" << DisasmGZWR(rd) << ", " << DisasmCond(cond^1);
   else
     sink << "csinv\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", " << DisasmCond(cond);
+};
+
+csinv_w.execute = {
+  typedef typename ARCH::U32 U32;
+  
+  U32 res;
+  if (cpu.Cond( CheckCondition(cpu, cond) ))
+    res = U32(cpu.GetGZR(rn));
+  else
+    res = ~U32(cpu.GetGZR(rm));
+  cpu.SetGZR(rd, res);
 };
 
 op csinv_x( 0b11011010100[11] : rm[5] : cond[4] : 0b00[2] : rn[5] : rd[5] );
@@ -2337,6 +2420,28 @@ csinv_x.disasm = {
     sink << "csinv\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", " << DisasmCond(cond);
 };
 
+csinv_x.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 res;
+  if (cpu.Cond( CheckCondition(cpu, cond) ))
+    res = cpu.GetGZR(rn);
+  else
+    res = ~(cpu.GetGZR(rm));
+  cpu.SetGZR(rd, res);
+};
+
+/*
+ * end of CSINV
+ *******************************************************************/
+
+/*******************************************************************
+ * CSNEG
+ *
+ * Conditional select negation, returning the first input or negated
+ * second input: Rd = if cond then Rn else -Rm
+ */
+
 op csneg_w( 0b01011010100[11] : rm[5] : cond[4] : 0b01[2] : rn[5] : rd[5] );
 csneg_w.var format : {char const*} = {"base,294"};
 
@@ -2345,6 +2450,17 @@ csneg_w.disasm = {
     sink << "cneg\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmCond(cond^1);
   else
     sink << "csneg\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", " << DisasmCond(cond);
+};
+
+csneg_w.execute = {
+  typedef typename ARCH::U32 U32;
+  
+  U32 res;
+  if (cpu.Cond( CheckCondition(cpu, cond) ))
+    res = U32(cpu.GetGZR(rn));
+  else
+    res = -U32(cpu.GetGZR(rm));
+  cpu.SetGZR(rd, res);
 };
 
 op csneg_x( 0b11011010100[11] : rm[5] : cond[4] : 0b01[2] : rn[5] : rd[5] );
@@ -2356,6 +2472,21 @@ csneg_x.disasm = {
   else
     sink << "csneg\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", " << DisasmCond(cond);
 };
+
+csneg_x.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 res;
+  if (cpu.Cond( CheckCondition(cpu, cond) ))
+    res = cpu.GetGZR(rn);
+  else
+    res = -(cpu.GetGZR(rm));
+  cpu.SetGZR(rd, res);
+};
+
+/*
+ * end of CSNEG
+ *******************************************************************/
 
 op dc_cisw( 0b110101010000100001111110010[27] : rt[5] );
 dc_cisw.var format : {char const*} = {"base,2897"};
