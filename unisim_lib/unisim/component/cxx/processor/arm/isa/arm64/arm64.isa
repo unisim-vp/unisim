@@ -55,6 +55,7 @@ impl {
 #include <unisim/component/cxx/processor/arm/isa/arm64/decode.hh>
 #include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
 #include <unisim/component/cxx/processor/arm/isa/arm64/execute.hh>
+#include <unisim/component/cxx/processor/arm/execute.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <iostream>
 
@@ -74,4 +75,4 @@ impl {
 } // end of impl
 
 include "base.isa"
-include "simd_fp.isa"
+//include "simd_fp.isa"

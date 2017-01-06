@@ -228,6 +228,8 @@ struct CPU
     nzcv = (n << 3) | (z << 2) | (c << 1) | (v << 0);
   }
   
+  uint8_t GetNZCV() const { return nzcv; }
+  
   /** Get the current Program Counter */
   uint64_t GetPC() { return current_insn_addr; }
   
@@ -235,7 +237,7 @@ struct CPU
   uint64_t GetNPC() { return next_insn_addr; }
   
   /** Set the next Program Counter */
-  enum branch_type_t { B_JMP = 0, B_CALL, B_RET } ;
+  enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
   void BranchTo( uint64_t addr, branch_type_t branch_type ) { next_insn_addr = addr; }
   
   //=====================================================================

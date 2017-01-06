@@ -31,7 +31,7 @@ struct Vector : std::vector<Ptr<TP> >
     if (not &_src) return;
     *this = _src;
   }
-  Vector( uintptr_t _size ) : std::vector<Ptr<TP> >( _size, 0 ) {}
+  Vector( uintptr_t _size ) : std::vector<Ptr<TP> >( _size, (TP*)(0) ) {}
   
   Vector<TP>& operator=( Vector<TP>& _src )
   {
