@@ -79,10 +79,10 @@ struct DecodeBitMasks
 
     uint64_t welem = ((2ull<<S)-1ull);
     uint64_t telem = ((2ull<<D)-1ull);
-    // ROR(welem,R)                                                                                                                                                                                                                                                            
+    // ROR(welem,R)
     if (R)
       welem = ((welem >> R) | (welem << (esize-R))) & ((2ull<<levels)-1ull);
-    // Replicate                                                                                                                                                                                                                                                               
+    // Replicate
     for (unsigned size = esize; size < 64; size *= 2)
       {
         welem = (welem << size) | welem;

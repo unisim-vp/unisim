@@ -236,9 +236,15 @@ struct CPU
   /** Get the next Program Counter */
   uint64_t GetNPC() { return next_insn_addr; }
   
+  //=====================================================================
+  //=                      Control Transfer methods                     =
+  //=====================================================================
+  
   /** Set the next Program Counter */
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
   void BranchTo( uint64_t addr, branch_type_t branch_type ) { next_insn_addr = addr; }
+  
+  void CallSupervisor( uint16_t imm );
   
   //=====================================================================
   //=                       Memory access methods                       =
@@ -281,6 +287,7 @@ struct CPU
   void MemWrite8 (uint64_t addr, uint8_t  val) { MemWriteT(addr, val); }
   
   void MemWrite( uint64_t addr, uint8_t const* buffer, unsigned size );
+
 protected:
   
   /**********************************************************************

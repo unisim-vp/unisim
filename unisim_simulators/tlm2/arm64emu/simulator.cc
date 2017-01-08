@@ -431,7 +431,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 
   sim->SetVariable("gdb-server.architecture-description-filename", "gdb_arm_with_neon.xml");
   sim->SetVariable("debugger.parse-dwarf", false);
-  sim->SetVariable("debugger.dwarf-register-number-mapping-filename", "arm_eabi_dwarf_register_number_mapping.xml");
+  sim->SetVariable("debugger.dwarf-register-number-mapping-filename", "aarch64_eabi_dwarf_register_number_mapping.xml");
 
   sim->SetVariable("inline-debugger.num-loaders", 1);
   sim->SetVariable("inline-debugger.search-path", "");

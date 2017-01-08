@@ -405,7 +405,7 @@ m4/pthread.m4"
 UNISIM_LIB_ARM64EMU_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_arm_with_fpa.xml \
 unisim/service/debug/gdb_server/gdb_arm_with_neon.xml \
-unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml \
+unisim/util/debug/dwarf/aarch64_eabi_dwarf_register_number_mapping.xml \
 "
 
 ARM64EMU_EXTERNAL_HEADERS="\

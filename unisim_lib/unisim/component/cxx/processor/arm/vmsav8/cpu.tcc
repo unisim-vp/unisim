@@ -39,10 +39,12 @@
 
 #include <unisim/component/cxx/processor/arm/isa_arm64.tcc>
 #include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
+#include <unisim/component/cxx/processor/arm/exception.hh>
 #include <unisim/util/likely/likely.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/simple_register.hh>
+#include <iomanip>
 
 namespace unisim {
 namespace component {
@@ -267,65 +269,25 @@ template <class CONFIG>
 std::string 
 CPU<CONFIG>::Disasm(uint64_t addr, uint64_t& next_addr)
 {
-  throw 0;
-  // std::stringstream buffer;
-  // if (cpsr.Get( T ))
-  //   {
-  //     buffer << "[THUMB2]";
-    
-  //     uint8_t insn_bytes[4];
-  //     isa::thumb2::CodeType insn;
-  //     isa::thumb2::Operation<CPU> *op = 0;
-  //     if (not ReadMemory(addr, insn_bytes, 4))
-  //       {
-  //         buffer << "Could not read from memory";
-  //         return buffer.str();
-  //       }
+  std::stringstream buffer;
   
-  //     // Instruction fetch ignores "Endianness execution state bit"
-  //     insn.str[0] = insn_bytes[0];
-  //     insn.str[1] = insn_bytes[1];
-  //     insn.str[2] = insn_bytes[2];
-  //     insn.str[3] = insn_bytes[3];
-  //     insn.size = 32;
-    
-  //     op = thumb_decoder.Decode(addr, insn);
-  //     unsigned insn_length = op->GetLength();
-  //     if (insn_length % 16) throw std::logic_error("Bad T2 instruction size");
-    
-  //     buffer << "0x";
-  //     buffer << op->GetEncoding() << " ";
-  //     op->disasm(*this, buffer);
+  uint32_t insn;
+  if (not ReadMemory(addr, &insn, 4))
+    {
+      buffer << "Could not read from memory";
+      return buffer.str();
+    }
+  
+  insn = unisim::util::endian::LittleEndian2Host(insn);
+  
+  isa::arm64::Operation<CPU>* op = decoder.Decode(addr, insn);
+  
+  buffer << std::hex << std::setfill('0') << std::setw(8) << op->GetEncoding() << std::dec << " ";
+  op->disasm(*this, buffer);
+  
+  next_addr = addr + 4;
 
-  //     next_addr = addr + (insn_length / 8);
-  //   } 
-  // else 
-  //   {
-  //     buffer << "[ARM32]";
-    
-  //     isa::arm32::Operation<CPU> * op = NULL;
-  //     uint32_t insn;
-  //     if (not ReadMemory(addr, &insn, 4))
-  //       {
-  //         buffer << "Could not read from memory";
-  //         return buffer.str();
-  //       }
-  //     if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN)
-  //       insn = BigEndian2Host(insn);
-  //     else
-  //       insn = LittleEndian2Host(insn);
-
-  //     op = arm32_decoder.Decode(addr, insn);
-  //     buffer << "0x" << std::hex;
-  //     buffer.fill('0'); buffer.width(8); 
-  //     buffer << op->GetEncoding() << std::dec << " ";
-  //     op->disasm(*this, buffer);
-
-  //     next_addr = addr + 4;
-  //   }
-
-  // return buffer.str();
-  return "";
+  return buffer.str();
 }
 
 /** Set/unset the reporting of finishing instructions.
@@ -365,16 +327,15 @@ template <class CONFIG>
 bool 
 CPU<CONFIG>::InjectReadMemory( uint64_t addr, void* buffer, uint32_t size )
 {
-  throw 0;
-  // uint8_t* rbuffer = (uint8_t*)buffer;
+  uint8_t* rbuffer = (uint8_t*)buffer;
 
-  // // No data cache, just send request to the memory subsystem
-  // for (uint32_t index = 0; size != 0; ++index, --size)
-  //   {
-  //     uint32_t ef_addr = addr + index;
-  //     if (not PrRead(ef_addr, &rbuffer[index], 1))
-  //       return false;
-  //   }
+  // No data cache, just send request to the memory subsystem
+  for (uint32_t index = 0; size != 0; ++index, --size)
+    {
+      uint32_t ef_addr = addr + index;
+      if (not PrRead(ef_addr, &rbuffer[index], 1))
+        return false;
+    }
 
   return true;
 }
@@ -391,16 +352,15 @@ template <class CONFIG>
 bool
 CPU<CONFIG>::InjectWriteMemory( uint64_t addr, void const* buffer, uint32_t size )
 {
-  throw 0;
-  // uint8_t const* wbuffer = (uint8_t const*)buffer;
+  uint8_t const* wbuffer = (uint8_t const*)buffer;
   
-  // // No data cache, just send the request to the memory subsystem
-  // for (uint32_t index = 0; size != 0; ++index, --size)
-  //   {
-  //     uint32_t ef_addr = addr + index;
-  //     if (not PrWrite( ef_addr, &wbuffer[index], 1 ))
-  //       return false;
-  //   }
+  // No data cache, just send the request to the memory subsystem
+  for (uint32_t index = 0; size != 0; ++index, --size)
+    {
+      uint32_t ef_addr = addr + index;
+      if (not PrWrite( ef_addr, &wbuffer[index], 1 ))
+        return false;
+    }
 
   return true;
 }
@@ -466,12 +426,21 @@ CPU<CONFIG>::StepInstruction()
     
     this->next_insn_addr += 4;
     
-    std::cerr << "0x" << std::hex << insn_addr << ": " << std::hex << insn << "; ";
+    std::cerr << "@" << std::hex << insn_addr << ": " << std::hex << std::setfill('0') << std::setw(8) << insn << "; ";
     op->disasm( *this, std::cerr );
     std::cerr << std::endl;
+    
+    uint64_t oldspval = GetGSR(31);
+    
     /* Execute instruction */
     asm volatile( "arm64_operation_execute:" );
     op->execute( *this );
+    
+    uint64_t newspval = GetGSR(31);
+    
+    if (newspval != oldspval) {
+      std::cerr << std::hex  << "  SP: 0x" << oldspval << " => 0x" << newspval << std::endl;
+    }
     
     if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
       memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr);
@@ -643,6 +612,47 @@ CPU<CONFIG>::MemWrite( uint64_t addr, uint8_t const* buffer, unsigned size )
   
   /* report read memory access if necessary */
   ReportMemoryAccess( unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size );
+}
+
+/** CallSupervisor
+ * 
+ *  This method is called by SWI/SVC instructions to handle software interrupts.
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::CallSupervisor( uint16_t imm )
+{
+  if (linux_os_import) {
+    // we are executing on linux emulation mode, use linux_os_import
+    try {
+      linux_os_import->ExecuteSystemCall(imm);
+    }
+    catch (Exception const& e)
+      {
+        std::cerr << e.what() << std::endl;
+        this->Stop( -1 );
+      }
+  } else {
+    // if (verbose) {
+    //   static struct ArmLinuxOS : public unisim::util::os::linux_os::Linux<uint32_t, uint32_t>
+    //   {
+    //     typedef unisim::util::os::linux_os::ARMTS<unisim::util::os::linux_os::Linux<uint32_t,uint32_t> > ArmTarget;
+      
+    //     ArmLinuxOS( CPU* _cpu )
+    //       : unisim::util::os::linux_os::Linux<uint32_t, uint32_t>( _cpu->logger, _cpu, _cpu, _cpu )
+    //     {
+    //       SetTargetSystem(new ArmTarget( "arm-eabi", *this ));
+    //     }
+    //     ~ArmLinuxOS() { delete GetTargetSystem(); }
+    //   } arm_linux_os( this );
+    
+    //   logger << DebugInfo << "PC: 0x" << std::hex << GetCIA() << EndDebugInfo;
+    //   arm_linux_os.LogSystemCall( imm );
+    // }
+
+    // we are executing on full system mode
+    throw SVCException();
+  }
 }
 
 

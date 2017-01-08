@@ -99,8 +99,8 @@ class Simulator
   typedef unisim::service::profiling::addr_profiler::Profiler<uint32_t> PROFILER;
   typedef unisim::service::tee::memory_access_reporting::Tee<uint32_t> TEE_MEMORY_ACCESS_REPORTING;
 
-  CPU *cpu;
-  MEMORY *memory;
+  CPU* cpu;
+  MEMORY* memory;
   unisim::service::time::sc_time::ScTime *time;
   unisim::service::time::host_time::HostTime *host_time;
   ArmLinux32* linux_os;
