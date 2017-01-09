@@ -5256,12 +5256,47 @@ sbfm_x.execute = {
  * end of SBFM
  *******************************************************************/
 
+/*******************************************************************
+ * SDIV
+ *
+ * Signed divide: Rd = Rn / Rm
+ */
+
 op sdiv_www( 0b00011010110[11] : rm[5] : 0b000011[6] : rn[5] : rd[5] );
 sdiv_www.var format : {char const*} = {"base,1470"};
 
 sdiv_www.disasm = {
   sink << "sdiv\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
 };
+
+sdiv_www.execute = {
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::U32 U32;
+  
+  S32 const zero(0);
+  S32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = cpu.Cond(rm == zero) ? zero : (rn / rm);
+  cpu.SetGZR( rd, U32(res) );
+};
+
+op sdiv_xxx( 0b10011010110[11] : rm[5] : 0b000011[6] : rn[5] : rd[5] );
+sdiv_xxx.var format : {char const*} = {"base,1470"};
+
+sdiv_xxx.disasm = {
+  sink << "sdiv\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm);
+};
+
+sdiv_xxx.execute = {
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U64 U64;
+  
+  S64 const zero(0);
+  S64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = cpu.Cond(rm == zero) ? zero : (rn / rm);
+  cpu.SetGZR( rd, U64(res) );
+};
+
+/*
+ * end of SDIV
+ *******************************************************************/
 
 op sev( 0b11010101000000110010000010011111[32] );
 sev.var format : {char const*} = {"base,2949"};
@@ -7412,11 +7447,25 @@ ubfm_x.execute = {
  * end of UBFM
  *******************************************************************/
 
+/*******************************************************************
+ * UDIV
+ *
+ * Unsigned divide: Rd = Rn / Rm
+ */
+
 op udiv_www( 0b00011010110[11] : rm[5] : 0b000010[6] : rn[5] : rd[5] );
 udiv_www.var format : {char const*} = {"base,1471"};
 
 udiv_www.disasm = {
   sink << "udiv\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
+};
+
+udiv_www.execute = {
+  typedef typename ARCH::U32 U32;
+  
+  U32 const zero(0);
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = cpu.Cond(rm == zero) ? zero : (rn / rm);
+  cpu.SetGZR( rd, res );
 };
 
 op udiv_xxx( 0b10011010110[11] : rm[5] : 0b000010[6] : rn[5] : rd[5] );
@@ -7425,6 +7474,18 @@ udiv_xxx.var format : {char const*} = {"base,1618"};
 udiv_xxx.disasm = {
   sink << "udiv\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm);
 };
+
+udiv_xxx.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 const zero(0);
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = cpu.Cond(rm == zero) ? zero : (rn / rm);
+  cpu.SetGZR( rd, res );
+};
+
+/*
+ * end of UDIV
+ *******************************************************************/
 
 op umaddl_xw( 0b10011011101[11] : rm[5] : 0b0[1] : ra[5] : rn[5] : rd[5] );
 umaddl_xw.var format : {char const*} = {"base,237"};
