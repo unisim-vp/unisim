@@ -962,14 +962,14 @@ struct Decoder
     
     std::shared_ptr<armsec::PathNode> path ( new armsec::PathNode );
 
-    std::cout << "(address," << armsec::DumpConstant( addr ) << ")\n";
-    std::cout << "(opcode," << armsec::DumpConstant( op->GetEncoding() ) << ")\n";
+    std::cout << "(address . " << armsec::DumpConstant( addr ) << ")\n";
+    std::cout << "(opcode . " << armsec::DumpConstant( op->GetEncoding() ) << ")\n";
     // std::cout << "(int_name,\"" << op->GetName() << "\")\n";
     
     armsec::State reference( path );
     reference.SetInsnProps( insn_addr, isa.is_thumb, op->GetLength() );
     
-    std::cout << "(mnemonic,\"";
+    std::cout << "(mnemonic . \"";
     op->disasm( reference, std::cout );
     std::cout << "\")\n";
     
