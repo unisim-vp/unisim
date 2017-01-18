@@ -580,7 +580,7 @@ namespace linux_os {
       if (not SetRegister(_lin, kPPC_r3, val)) return;
     }
     
-    void SetSystemCallStatus(int ret, bool error) const { SetPPCSystemCallStatus(lin, ret, error); }
+    void SetSystemCallStatus(int64_t ret, bool error) const { SetPPCSystemCallStatus(lin, ret, error); }
 
     static parameter_type GetSystemCallParam(LINUX& lin, int id)
     {

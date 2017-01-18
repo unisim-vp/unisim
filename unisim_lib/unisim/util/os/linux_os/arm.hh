@@ -277,7 +277,7 @@ namespace linux_os {
     
     static void SetARMSystemCallStatus(LINUX& _lin, int ret, bool error) { SetRegister(_lin, kARM_r0, (parameter_type) ret); }
     
-    void SetSystemCallStatus(int ret, bool error) const { SetARMSystemCallStatus( lin, ret, error ); }
+    void SetSystemCallStatus(int64_t ret, bool error) const { SetARMSystemCallStatus( lin, ret, error ); }
     
     static parameter_type GetSystemCallParam( LINUX& _lin, int id )
     {

@@ -328,7 +328,7 @@ namespace linux_os {
     }
 
     static void SetI386SystemCallStatus(LINUX& lin, int ret, bool error) { SetRegister(lin, kI386_eax, (parameter_type) ret); }
-    void SetSystemCallStatus(int ret, bool error) const { SetI386SystemCallStatus( lin, ret, error ); }
+    void SetSystemCallStatus(int64_t ret, bool error) const { SetI386SystemCallStatus( lin, ret, error ); }
     
     static parameter_type GetSystemCallParam(LINUX& lin, int id)
     {
