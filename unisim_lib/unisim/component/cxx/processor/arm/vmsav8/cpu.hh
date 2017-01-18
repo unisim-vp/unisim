@@ -63,6 +63,38 @@ namespace cxx {
 namespace processor {
 namespace arm {
 namespace vmsav8 {
+  
+  template <typename T>
+  struct VectorTypeInfo
+  {
+    enum { bytecount = sizeof (T) };
+    static void ToBytes( uint8_t* dst, T src )
+    {
+      for (unsigned idx = 0; idx < sizeof (T); ++idx)
+        { dst[idx] = src & 0xff; src >>= 8; }
+    }
+    static void FromBytes( T& dst, uint8_t const* src )
+    {
+      T tmp = 0;
+      for (unsigned idx = sizeof (T); idx-- > 0;)
+        { tmp <<= 8; tmp |= uint32_t( src[idx] ); }
+      dst = tmp;
+    }
+  };
+
+  template <> struct VectorTypeInfo<float>
+  {
+    enum bytecount_t { bytecount = 4 };
+    static void ToBytes( uint8_t* dst, float const& src ) { VectorTypeInfo<uint32_t>::ToBytes( dst, reinterpret_cast<uint32_t const&>( src ) ); }
+    static void FromBytes( float& dst, uint8_t const* src ) { VectorTypeInfo<uint32_t>::FromBytes( reinterpret_cast<uint32_t&>( dst ), src ); }
+  };
+
+  template <> struct VectorTypeInfo<double>
+  {
+    enum bytecount_t { bytecount = 8 };
+    static void ToBytes( uint8_t* dst, double const& src ) { VectorTypeInfo<uint64_t>::ToBytes( dst, reinterpret_cast<uint64_t const&>( src ) ); }
+    static void FromBytes( double& dst, uint8_t const* src ) { VectorTypeInfo<uint64_t>::FromBytes( reinterpret_cast<uint64_t&>( dst ), src ); }
+  };
 
 /** Armv8 cpu
  *
@@ -402,26 +434,22 @@ protected:
 
   uint8_t vector_data[VECTORCOUNT][VUnion::BYTECOUNT];
     
-  template<unsigned OPSIZE>
-  typename TypeFor<Arch,OPSIZE>::u
-  xmm_uread( unsigned reg, unsigned sub )
+  template<typename T>
+  T
+  VectorRead( unsigned reg, unsigned sub )
   {
-    typedef typename TypeFor<Arch,OPSIZE>::u u_type;
+    T* vec = vector_view[reg].template GetStorage<T>( &vector_data[reg][0] );
       
-    u_type* u_array = vector_view[reg].GetStorage<u_type>( &vector_data[reg][0] );
-      
-    return u_array[sub];
+    return vec[sub];
   }
     
-  template<unsigned OPSIZE>
+  template<typename T>
   void
-  xmm_uwrite( unsigned reg, unsigned sub, typename TypeFor<Arch,OPSIZE>::u val )
+  VectorWrite( unsigned reg, unsigned sub, T val )
   {
-    typedef typename TypeFor<Arch,OPSIZE>::u u_type;
+    T* vec = vector_view[reg].template GetStorage<T>( &vector_data[reg][0] );
       
-    u_type* u_array = vector_view[reg].GetStorage<u_type>( &vector_data[reg][0] );
-      
-    u_array[sub] = val;
+    vec[sub] = val;
   }
     
 private:

@@ -32,6 +32,9 @@
  */
 
 #include <simulator.hh>
+#include <unisim/component/tlm2/memory/ram/memory.tcc>
+template class unisim::component::tlm2::memory::ram::Memory<64, uint64_t, 8, 1024 * 1024, true>;
+
 #include <string>
 #include <stdexcept>
 
