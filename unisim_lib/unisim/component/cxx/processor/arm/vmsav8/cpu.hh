@@ -237,6 +237,16 @@ struct CPU
   uint64_t GetNPC() { return next_insn_addr; }
   
   //=====================================================================
+  //=                  System Registers access methods                  =
+  //=====================================================================
+
+  void        CheckSystemAccess( uint8_t op1 );
+  uint64_t    ReadSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
+  void        WriteSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint64_t value );
+  char const* DescribeSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
+  char const* NameSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
+  
+  //=====================================================================
   //=                      Control Transfer methods                     =
   //=====================================================================
   
@@ -323,6 +333,97 @@ protected:
   uint32_t nzcv;
   uint64_t current_insn_addr, next_insn_addr;
 
+  uint64_t TPIDRURW; //< User Read/Write Thread ID Register
+  
+  struct SysReg
+  {
+    virtual            ~SysReg() {}
+    virtual void        Write( CPU& cpu, uint64_t value ) {
+      cpu.logger << unisim::kernel::logger::DebugWarning << "Writing " << Describe() << unisim::kernel::logger::EndDebugWarning;
+      throw 0; // cpu.UnpredictableInsnBehaviour();
+    }
+    virtual uint64_t    Read( CPU& cpu ) {
+      cpu.logger << unisim::kernel::logger::DebugWarning << "Reading " << Describe() << unisim::kernel::logger::EndDebugWarning;
+      throw 0; // cpu.UnpredictableInsnBehaviour();
+      return 0;
+    }
+    virtual char const* Describe() = 0;
+    virtual char const* Name() { return 0; }
+  };
+  
+  virtual SysReg&  GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
+  virtual void     ResetSystemRegisters();
+  
+  static unsigned const VECTORCOUNT = 32;
+  
+  struct VUnion
+  {
+    static unsigned const BYTECOUNT = 16;
+    
+    typedef void (*arrangement_t)( uint8_t* storage );
+    arrangement_t arrangement;
+    
+    template <typename T>
+    static unsigned ItemCount() { return BYTECOUNT / VectorTypeInfo<T>::bytecount; }
+    
+    template <typename T>
+    static void ToBytes( uint8_t* storage )
+    {
+      T const* vec = reinterpret_cast<T const*>( storage );
+      
+      for (unsigned idx = 0, stop = ItemCount<T>(); idx < stop; ++idx) {
+        T val = vec[idx]; 
+        VectorTypeInfo<T>::ToBytes( &storage[idx*VectorTypeInfo<T>::bytecount], val );
+      }
+    }
+
+    template <typename T>
+    T*
+    GetStorage( uint8_t* storage )
+    {
+      T* res = reinterpret_cast<T*>( storage );
+
+      arrangement_t current = &ToBytes<T>;
+      if (arrangement != current) {
+        arrangement( storage );   
+        for (int idx = ItemCount<T>(); --idx >= 0;) {
+          T val;
+          VectorTypeInfo<T>::FromBytes( val, &storage[idx*VectorTypeInfo<T>::bytecount] );
+          res[idx] = val;
+        }
+        arrangement = current;
+      }  
+     
+      return res;
+    }
+      
+    VUnion() : arrangement( &ToBytes<uint8_t> ) {}
+  } vector_view[VECTORCOUNT];
+
+  uint8_t vector_data[VECTORCOUNT][VUnion::BYTECOUNT];
+    
+  template<unsigned OPSIZE>
+  typename TypeFor<Arch,OPSIZE>::u
+  xmm_uread( unsigned reg, unsigned sub )
+  {
+    typedef typename TypeFor<Arch,OPSIZE>::u u_type;
+      
+    u_type* u_array = vector_view[reg].GetStorage<u_type>( &vector_data[reg][0] );
+      
+    return u_array[sub];
+  }
+    
+  template<unsigned OPSIZE>
+  void
+  xmm_uwrite( unsigned reg, unsigned sub, typename TypeFor<Arch,OPSIZE>::u val )
+  {
+    typedef typename TypeFor<Arch,OPSIZE>::u u_type;
+      
+    u_type* u_array = vector_view[reg].GetStorage<u_type>( &vector_data[reg][0] );
+      
+    u_array[sub] = val;
+  }
+    
 private:
   virtual void Sync() = 0;
   

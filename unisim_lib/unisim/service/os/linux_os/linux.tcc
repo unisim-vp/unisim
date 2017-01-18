@@ -175,7 +175,8 @@ Linux(const char *name, unisim::kernel::service::Object *parent)
                               " system call should return.")
   , hwcap_("")
   , param_hwcap_("hwcap", this, hwcap_,
-                 "CPU Hardware capabilities to enable (e.g. \"swp thumb fastmult vfp\".") {
+                 "CPU Hardware capabilities to enable (e.g. \"swp thumb fastmult vfp\".")
+{
   param_argc_.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
   
   linux_os_export_.SetupDependsOn(memory_import_);

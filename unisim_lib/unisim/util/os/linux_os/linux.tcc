@@ -622,7 +622,16 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::Execute( Linux& lin, int syscall_i
     lin.logger_ << DebugWarning << this->GetName() << " is not implemented" << EndDebugWarning;
     lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
   }
-  SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL),true);
+  lin.SetSystemCallStatus(-LINUX_EINVAL, true);
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemCallStatus(int64_t ret, bool error)
+{
+  if (unlikely(verbose_))
+    logger_ << DebugInfo << (error ? "err" : "ret") << " = 0x" << std::hex << ret << std::dec << EndDebugInfo;
+  
+  target_system->SetSystemCallStatus(ret, error);
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>

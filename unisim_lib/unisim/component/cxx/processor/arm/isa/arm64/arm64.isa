@@ -60,6 +60,7 @@ impl {
 #include <iostream>
 
 using unisim::util::arithmetic::RotateRight;
+using unisim::util::arithmetic::BitScanReverse;
 
 }
 
@@ -75,4 +76,4 @@ impl {
 } // end of impl
 
 include "base.isa"
-//include "simd_fp.isa"
+include "simd_fp.isa"

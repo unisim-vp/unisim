@@ -1340,11 +1340,25 @@ ands_xror.execute = {
  * end of ANDS (shifted register)
  *******************************************************************/
 
+/*******************************************************************
+ * ASR (register)
+ *
+ * Arithmetic shift right (register): Rd = ASR(Rn, Rm)
+ */
+
 op asr_www( 0b00011010110[11] : rm[5] : 0b001010[6] : rn[5] : rd[5] );
 asr_www.var format : {char const*} = {"base,1460"};
 
 asr_www.disasm = {
   sink << "asr\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
+};
+
+asr_www.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res( S32(op1) >> (op2 & U32(0b11111)) );
+  cpu.SetGZR(rd, res);
 };
 
 op asr_xxx( 0b10011010110[11] : rm[5] : 0b001010[6] : rn[5] : rd[5] );
@@ -1353,6 +1367,18 @@ asr_xxx.var format : {char const*} = {"base,1614"};
 asr_xxx.disasm = {
   sink << "asr\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm);
 };
+
+asr_xxx.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res( S64(op1) >> (op2 & U64(0b111111)) );
+  cpu.SetGZR(rd, res);
+};
+
+/*
+ * end of ASR (register)
+ *******************************************************************/
 
 op at_s12e0r( 0b110101010000110001111000110[27] : rt[5] );
 at_s12e0r.var format : {char const*} = {"base,2910"};
@@ -1984,12 +2010,14 @@ cbz_xlit.execute = {
  * end of CBZ
  *******************************************************************/
 
-op ccmn_w( 0b00111010010[11] : rm[5] : cond[4] : 0b00[2] : rn[5] : 0b0[1] : nzcv[4] );
-ccmn_w.var format : {char const*} = {"base,368"};
-
-ccmn_w.disasm = {
-  sink << "ccmn\t" << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", " << DisasmI(nzcv,16) << ", " << DisasmCond(cond);
-};
+/*******************************************************************
+ * CCMN (immediate)
+ *
+ * Conditional compare negative (immediate), setting condition flags
+ * to result of comparison or an immediate value:
+ *
+ * flags = if cond then compare(Rn, #-imm) else #nzcv
+ */
 
 op ccmn_wi( 0b00111010010[11] : imm[5] : cond[4] : 0b10[2] : rn[5] : 0b0[1] : nzcv[4] );
 ccmn_wi.var format : {char const*} = {"base,366"};
@@ -1998,11 +2026,15 @@ ccmn_wi.disasm = {
   sink << "ccmn\t" << DisasmGZWR(rn) << ", " << DisasmI(imm,16) << ", " << DisasmI(nzcv,16) << ", " << DisasmCond(cond);
 };
 
-op ccmn_x( 0b10111010010[11] : rm[5] : cond[4] : 0b00[2] : rn[5] : 0b0[1] : nzcv[4] );
-ccmn_x.var format : {char const*} = {"base,372"};
-
-ccmn_x.disasm = {
-  sink << "ccmn\t" << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", " << DisasmI(nzcv,16) << ", " << DisasmCond(cond);
+ccmn_wi.execute = {
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::U32 U32;
+  
+  if (not cpu.Cond( CheckCondition(cpu, cond) ))
+    return; // No flags affected
+  
+  U32 op1( cpu.GetGZR(rn) ), op2( imm ), res = op1 + op2;
+  cpu.SetNZCV( S32(res) < S32(0), res == U32(0), op1 > ~op2, (S32(res) < S32(0)) xor (S32(op1) <= S32(~op2)) );
 };
 
 op ccmn_xi( 0b10111010010[11] : imm[5] : cond[4] : 0b10[2] : rn[5] : 0b0[1] : nzcv[4] );
@@ -2012,6 +2044,128 @@ ccmn_xi.disasm = {
   sink << "ccmn\t" << DisasmGZXR(rn) << ", " << DisasmI(imm,16) << ", " << DisasmI(nzcv,16) << ", " << DisasmCond(cond);
 };
 
+ccmn_xi.execute = {
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U64 U64;
+  
+  if (not cpu.Cond( CheckCondition(cpu, cond) ))
+    return; // No flags affected
+  
+  U64 op1( cpu.GetGZR(rn) ), op2( imm ), res = op1 + op2;
+  cpu.SetNZCV( S64(res) < S64(0), res == U64(0), op1 > ~op2, (S64(res) < S64(0)) xor (S64(op1) <= S64(~op2)) );
+};
+
+/*
+ * end of CCMN (immediate)
+ *******************************************************************/
+
+/*******************************************************************
+ * CCMN (register)
+ *
+ * Conditional compare negative (register), setting condition flags to
+ * result of comparison or an immediate value:
+ *
+ * flags = if cond then compare(Rn, -Rm) else #nzcv
+ */
+
+op ccmn_w( 0b00111010010[11] : rm[5] : cond[4] : 0b00[2] : rn[5] : 0b0[1] : nzcv[4] );
+ccmn_w.var format : {char const*} = {"base,368"};
+
+ccmn_w.disasm = {
+  sink << "ccmn\t" << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", " << DisasmI(nzcv,16) << ", " << DisasmCond(cond);
+};
+
+ccmn_w.execute = {
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::U32 U32;
+  
+  if (not cpu.Cond( CheckCondition(cpu, cond) ))
+    return; // No flags affected
+  
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + op2;
+  cpu.SetNZCV( S32(res) < S32(0), res == U32(0), op1 > ~op2, (S32(res) < S32(0)) xor (S32(op1) <= S32(~op2)) );
+};
+
+op ccmn_x( 0b10111010010[11] : rm[5] : cond[4] : 0b00[2] : rn[5] : 0b0[1] : nzcv[4] );
+ccmn_x.var format : {char const*} = {"base,372"};
+
+ccmn_x.disasm = {
+  sink << "ccmn\t" << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", " << DisasmI(nzcv,16) << ", " << DisasmCond(cond);
+};
+
+ccmn_x.execute = {
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U64 U64;
+  
+  if (not cpu.Cond( CheckCondition(cpu, cond) ))
+    return; // No flags affected
+  
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + op2;
+  cpu.SetNZCV( S64(res) < S64(0), res == U64(0), op1 > ~op2, (S64(res) < S64(0)) xor (S64(op1) <= S64(~op2)) );
+};
+
+/*
+ * end of CCMN (register)
+ *******************************************************************/
+
+/*******************************************************************
+ * CCMP (immediate)
+ *
+ * Conditional compare (immediate), setting condition flags to result
+ * of comparison or an immediate value:
+ *
+ * flags = if cond then compare(Rn, #imm) else #nzcv
+ */
+
+op ccmp_wi( 0b01111010010[11] : imm[5] : cond[4] : 0b10[2] : rn[5] : 0b0[1] : nzcv[4] );
+ccmp_wi.var format : {char const*} = {"base,367"};
+
+ccmp_wi.disasm = {
+  sink << "ccmp\t" << DisasmGZWR(rn) << ", " << DisasmI(imm,16) << ", " << DisasmI(nzcv,16) << ", " << DisasmCond(cond);
+};
+
+ccmp_wi.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
+  if (not cpu.Cond( CheckCondition(cpu, cond) ))
+    return; // No flags affected
+  
+  U32 op1( cpu.GetGZR(rn) ), op2( imm ), res = op1 - op2;
+  cpu.SetNZCV( S32(res) < S32(0), op1 == op2, op1 >= op2, (S32(res) < S32(0)) xor (S32(op1) < S32(op2)) );
+};
+
+op ccmp_xi( 0b11111010010[11] : imm[5] : cond[4] : 0b10[2] : rn[5] : 0b0[1] : nzcv[4] );
+ccmp_xi.var format : {char const*} = {"base,371"};
+
+ccmp_xi.disasm = {
+  sink << "ccmp\t" << DisasmGZXR(rn) << ", " << DisasmI(imm,16) << ", " << DisasmI(nzcv,16) << ", " << DisasmCond(cond);
+};
+
+ccmp_xi.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  if (not cpu.Cond( CheckCondition(cpu, cond) ))
+    return; // No flags affected
+  
+  U64 op1( cpu.GetGZR(rn) ), op2( imm ), res = op1 - op2;
+  cpu.SetNZCV( S64(res) < S64(0), op1 == op2, op1 >= op2, (S64(res) < S64(0)) xor (S64(op1) < S64(op2)) );
+};
+
+/*
+ * end of CCMP (immediate)
+ *******************************************************************/
+
+/*******************************************************************
+ * CCMP (register)
+ *
+ * Conditional compare (register), setting condition flags to result
+ * of comparison or an immediate value:
+ *
+ * flags = if cond then compare(Rn, Rm) else #nzcv
+ */
+
 op ccmp_w( 0b01111010010[11] : rm[5] : cond[4] : 0b00[2] : rn[5] : 0b0[1] : nzcv[4] );
 ccmp_w.var format : {char const*} = {"base,369"};
 
@@ -2019,11 +2173,15 @@ ccmp_w.disasm = {
   sink << "ccmp\t" << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", " << DisasmI(nzcv,16) << ", " << DisasmCond(cond);
 };
 
-op ccmp_wi( 0b01111010010[11] : imm[5] : cond[4] : 0b10[2] : rn[5] : 0b0[1] : nzcv[4] );
-ccmp_wi.var format : {char const*} = {"base,367"};
-
-ccmp_wi.disasm = {
-  sink << "ccmp\t" << DisasmGZWR(rn) << ", " << DisasmI(imm,16) << ", " << DisasmI(nzcv,16) << ", " << DisasmCond(cond);
+ccmp_w.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
+  if (not cpu.Cond( CheckCondition(cpu, cond) ))
+    return; // No flags affected
+  
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2;
+  cpu.SetNZCV( S32(res) < S32(0), op1 == op2, op1 >= op2, (S32(res) < S32(0)) xor (S32(op1) < S32(op2)) );
 };
 
 op ccmp_x( 0b11111010010[11] : rm[5] : cond[4] : 0b00[2] : rn[5] : 0b0[1] : nzcv[4] );
@@ -2033,12 +2191,20 @@ ccmp_x.disasm = {
   sink << "ccmp\t" << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", " << DisasmI(nzcv,16) << ", " << DisasmCond(cond);
 };
 
-op ccmp_xi( 0b11111010010[11] : imm[5] : cond[4] : 0b10[2] : rn[5] : 0b0[1] : nzcv[4] );
-ccmp_xi.var format : {char const*} = {"base,371"};
-
-ccmp_xi.disasm = {
-  sink << "ccmp\t" << DisasmGZXR(rn) << ", " << DisasmI(imm,16) << ", " << DisasmI(nzcv,16) << ", " << DisasmCond(cond);
+ccmp_x.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  if (not cpu.Cond( CheckCondition(cpu, cond) ))
+    return; // No flags affected
+  
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2;
+  cpu.SetNZCV( S64(res) < S64(0), op1 == op2, op1 >= op2, (S64(res) < S64(0)) xor (S64(op1) < S64(op2)) );
 };
+
+/*
+ * end of CCMN (register)
+ *******************************************************************/
 
 op clrex( 0b11010101000000110011[20] : imm[4] : 0b01011111[8] );
 clrex.var format : {char const*} = {"base,2942"};
@@ -2061,11 +2227,30 @@ cls_x.disasm = {
   sink << "cls\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn);
 };
 
+
+/*******************************************************************
+ * CLZ
+ *
+ * Count leading zero bits: Rd = CLZ(Rn)
+ */
+
 op clz_w( 0b0101101011000000000100[22] : rn[5] : rd[5] );
 clz_w.var format : {char const*} = {"base,2616"};
 
 clz_w.disasm = {
   sink << "clz\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn);
+};
+
+clz_w.execute = {
+  typedef typename ARCH::U32 U32;
+  
+  U32 val( cpu.GetGZR( rn ) );
+  if (cpu.Cond( val == U32(0) ))
+    val = U32(32);
+  else
+    val = U32(31) - BitScanReverse( val );
+  
+  cpu.SetGZR( rd, val );
 };
 
 op clz_x( 0b1101101011000000000100[22] : rn[5] : rd[5] );
@@ -2074,6 +2259,22 @@ clz_x.var format : {char const*} = {"base,2654"};
 clz_x.disasm = {
   sink << "clz\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn);
 };
+
+clz_x.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 val( cpu.GetGZR( rn ) );
+  if (cpu.Cond( val == U64(0) ))
+    val = U64(64);
+  else
+    val = U64(63) - BitScanReverse( val );
+  
+  cpu.SetGZR( rd, val );
+};
+
+/*
+ * end of CLZ
+ *******************************************************************/
 
 /*******************************************************************
  * CSEL
@@ -2523,7 +2724,7 @@ eor_wi.disasm = {
 eor_wi.execute = {
   typedef typename ARCH::U32 U32;
   
-  U32 op1(cpu.GetGSR(rn)), op2(imm), res = op1 ^ op2;
+  U32 op1(cpu.GetGZR(rn)), op2(imm), res = op1 ^ op2;
   cpu.SetGSR( rd, res );
 };
 
@@ -2537,7 +2738,7 @@ eor_xi.disasm = {
 eor_xi.execute = {
   typedef typename ARCH::U64 U64;
   
-  U64 op1(cpu.GetGSR(rn)), op2(imm), res = op1 ^ op2;
+  U64 op1(cpu.GetGZR(rn)), op2(imm), res = op1 ^ op2;
   cpu.SetGSR( rd, res );
 };
 
@@ -4468,11 +4669,24 @@ ldxrh_wx.disasm = {
   sink << "ldxrh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+/*******************************************************************
+ * LSL (register)
+ *
+ * Logical shift left (register): Rd = LSL(Rn, Rm)
+ */
+
 op lsl_www( 0b00011010110[11] : rm[5] : 0b001000[6] : rn[5] : rd[5] );
 lsl_www.var format : {char const*} = {"base,1467"};
 
 lsl_www.disasm = {
   sink << "lsl\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
+};
+
+lsl_www.execute = {
+  typedef typename ARCH::U32 U32;
+  
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res( op1 << (op2 & U32(0b11111)) );
+  cpu.SetGZR(rd, res);
 };
 
 op lsl_xxx( 0b10011010110[11] : rm[5] : 0b001000[6] : rn[5] : rd[5] );
@@ -4482,11 +4696,35 @@ lsl_xxx.disasm = {
   sink << "lsl\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm);
 };
 
+lsl_xxx.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res( op1 << (op2 & U64(0b111111)) );
+  cpu.SetGZR(rd, res);
+};
+
+/*
+ * end of LSL (register)
+ *******************************************************************/
+
+/*******************************************************************
+ * LSR (register)
+ *
+ * Logical shift right (register) : Rd = LSR(Rn, Rm)
+ */
+
 op lsr_www( 0b00011010110[11] : rm[5] : 0b001001[6] : rn[5] : rd[5] );
 lsr_www.var format : {char const*} = {"base,1468"};
 
 lsr_www.disasm = {
   sink << "lsr\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
+};
+
+lsr_www.execute = {
+  typedef typename ARCH::U32 U32;
+  
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res( op1 >> (op2 & U32(0b11111)) );
+  cpu.SetGZR(rd, res);
 };
 
 op lsr_xxx( 0b10011010110[11] : rm[5] : 0b001001[6] : rn[5] : rd[5] );
@@ -4495,6 +4733,17 @@ lsr_xxx.var format : {char const*} = {"base,1616"};
 lsr_xxx.disasm = {
   sink << "lsr\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm);
 };
+
+lsr_xxx.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res( op1 >> (op2 & U64(0b111111)) );
+  cpu.SetGZR(rd, res);
+};
+
+/*
+ * end of LSR (register)
+ *******************************************************************/
 
 /*******************************************************************
  * MADD
@@ -4611,26 +4860,90 @@ movk_x.execute = {
  * end of MOVK
  *******************************************************************/
 
-op mrs_reg( 0b110101010011[12] : sysreg[15] : rt[5] );
+/*******************************************************************
+ * MRS
+ *
+ * Move from system register
+ */
+
+op mrs_reg( 0b110101010011[12] : o0[1] : op1[3] : crn[4] : crm[4] : op2[3] : rt[5] );
 mrs_reg.var format : {char const*} = {"base,249"};
 
 mrs_reg.disasm = {
-  sink << "mrs\t" << DisasmGZXR(rt) << ", " << DisasmI(sysreg,16);
+  char const* sys_reg_name = cpu.NameSystemRegister(2+o0, op1, crn, crm, op2);
+  if (sys_reg_name)
+    sink << "mrs\t" << DisasmGZXR(rt) << ", " << sys_reg_name << " ; " << cpu.DescribeSystemRegister(2+o0, op1, crn, crm, op2);
+  else {
+    uint32_t sys_reg_idx = 0;
+    sys_reg_idx = (sys_reg_idx << 1) | o0;
+    sys_reg_idx = (sys_reg_idx << 3) | op1;
+    sys_reg_idx = (sys_reg_idx << 4) | crn;
+    sys_reg_idx = (sys_reg_idx << 4) | crm;
+    sys_reg_idx = (sys_reg_idx << 3) | op2;
+    sink << "mrs\t" << DisasmGZXR(rt) << ", " << DisasmI(sys_reg_idx,16);
+  }
 };
 
-op msr_imm( 0b1101010100000[13] : ?[3] : 0b0100[4] : imm[4] : ?[8] );
+mrs_reg.execute = {
+  cpu.CheckSystemAccess(op1);
+  typename ARCH::U64 src( cpu.ReadSystemRegister( 2+o0, op1, crn, crm, op2 ) );
+  cpu.SetGZR(rt, src);
+};
+
+/*
+ * end of MRS
+ *******************************************************************/
+
+/*******************************************************************
+ * MSR (immediate)
+ *
+ * Move immediate to processor state field
+ */
+
+op msr_imm( 0b1101010100000[13] : op1[3] : 0b0100[4] : imm[4] : op2[3] : rt[5] );
 msr_imm.var format : {char const*} = {"base,1794"};
 
 msr_imm.disasm = {
   sink << "msr\t<pstatefield>" << DisasmI(imm);
 };
 
-op msr_reg( 0b110101010001[12] : sysreg[15] : rt[5] );
+/*
+ * end of MSR (immediate)
+ *******************************************************************/
+
+/*******************************************************************
+ * MSR (register)
+ *
+ * Move to system register
+ */
+
+op msr_reg( 0b110101010001[12] : o0[1] : op1[3] : crn[4] : crm[4] : op2[3] : rt[5] );
 msr_reg.var format : {char const*} = {"base,248"};
 
 msr_reg.disasm = {
-  sink << "msr\t" << DisasmI(sysreg,16) << ", " << DisasmGZXR(rt);
+  char const* sys_reg_name = cpu.NameSystemRegister( 2+o0, op1, crn, crm, op2 );
+  if (sys_reg_name)
+    sink << "msr\t" << sys_reg_name << ", " << DisasmGZXR(rt) << " ; " << cpu.DescribeSystemRegister(2+o0, op1, crn, crm, op2);
+  else {
+    uint32_t sys_reg_idx = 0;
+    sys_reg_idx = (sys_reg_idx << 1) | o0;
+    sys_reg_idx = (sys_reg_idx << 3) | op1;
+    sys_reg_idx = (sys_reg_idx << 4) | crn;
+    sys_reg_idx = (sys_reg_idx << 4) | crm;
+    sys_reg_idx = (sys_reg_idx << 3) | op2;
+    sink << "msr\t" << DisasmI(sys_reg_idx,16) << ", " << DisasmGZXR(rt);
+  } 
 };
+
+msr_reg.execute = {
+  cpu.CheckSystemAccess(op1);
+  typename ARCH::U64 src( cpu.GetGZR(rt) );
+  cpu.WriteSystemRegister( 2+o0, op1, crn, crm, op2, src );
+};
+
+/*
+ * end of MSR (register)
+ *******************************************************************/
 
 /*******************************************************************
  * MSUB
@@ -5104,6 +5417,46 @@ ret.execute = {
  * end of RET
  *******************************************************************/
 
+/*******************************************************************
+ * REV
+ *
+ * Reverse bytes
+ */
+
+op rev_w( 0b0101101011000000000010[22] : rn[5] : rd[5] );
+rev_w.var format : {char const*} = {"base,2618"};
+
+rev_w.disasm = {
+  sink << "rev\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn);
+};
+
+rev_w.execute = {
+  typedef typename ARCH::U32 U32;
+  
+  U32 const msk( 0xff );
+  U32 src( cpu.GetGZR(rn) ), res( ((src << 24) & (msk << 24)) | ((src << 8) & (msk << 16)) | ((src >> 8) & (msk << 8)) | ((src >> 24) & (msk << 0)) );
+  cpu.SetGZR(rd, res);
+};
+
+op rev_x( 0b1101101011000000000011[22] : rn[5] : rd[5] );
+rev_x.var format : {char const*} = {"base,2653"};
+
+rev_x.disasm = {
+  sink << "rev\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn);
+};
+
+rev_x.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 const msk( 0xff );
+  U64 src( cpu.GetGZR(rn) ), res( ((src << 56) & (msk << 56)) | ((src << 40) & (msk << 48)) | ((src << 24) & (msk << 40)) | ((src << 8) & (msk << 32)) | ((src >> 8) & (msk << 24)) | ((src >> 24) & (msk << 16)) | ((src >> 40) & (msk << 8)) | ((src >> 56) & (msk << 0)) );
+  cpu.SetGZR(rd, res);
+};
+
+/*
+ * end of REV
+ *******************************************************************/
+
 op rev16_w( 0b0101101011000000000001[22] : rn[5] : rd[5] );
 rev16_w.var format : {char const*} = {"base,2619"};
 
@@ -5125,19 +5478,11 @@ rev32_x.disasm = {
   sink << "rev32\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn);
 };
 
-op rev_w( 0b0101101011000000000010[22] : rn[5] : rd[5] );
-rev_w.var format : {char const*} = {"base,2618"};
-
-rev_w.disasm = {
-  sink << "rev\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn);
-};
-
-op rev_x( 0b1101101011000000000011[22] : rn[5] : rd[5] );
-rev_x.var format : {char const*} = {"base,2653"};
-
-rev_x.disasm = {
-  sink << "rev\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn);
-};
+/*******************************************************************
+ * ROR (register)
+ *
+ * Rotate right (register): Rd = ROR(Rn, Rm)
+ */
 
 op ror_www( 0b00011010110[11] : rm[5] : 0b001011[6] : rn[5] : rd[5] );
 ror_www.var format : {char const*} = {"base,1469"};
@@ -5146,12 +5491,30 @@ ror_www.disasm = {
   sink << "ror\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
 };
 
+ror_www.execute = {
+  typedef typename ARCH::U32 U32;
+  
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res( RotateRight(op1, op2 & U32(0b11111)) );
+  cpu.SetGZR(rd, res);
+};
+
 op ror_xxx( 0b10011010110[11] : rm[5] : 0b001011[6] : rn[5] : rd[5] );
 ror_xxx.var format : {char const*} = {"base,1617"};
 
 ror_xxx.disasm = {
   sink << "ror\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm);
 };
+
+ror_xxx.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res( RotateRight(op1, op2 & U64(0b111111)) );
+  cpu.SetGZR(rd, res);
+};
+
+/*
+ * end of ROR (register)
+ *******************************************************************/
 
 op sbc_www( 0b01011010000[11] : rm[5] : 0b000000[6] : rn[5] : rd[5] );
 sbc_www.var format : {char const*} = {"base,1472"};

@@ -275,7 +275,7 @@ namespace linux_os {
     
     static void SetAARCH64SystemCallStatus(LINUX& _lin, int64_t ret, bool error) { SetRegister(_lin, kAARCH64_x0, (parameter_type) ret); }
     
-    void SetSystemCallStatus(int ret, bool error) const { SetAARCH64SystemCallStatus( lin, ret, error ); }
+    void SetSystemCallStatus(int64_t ret, bool error) const { SetAARCH64SystemCallStatus( lin, ret, error ); }
     
     static parameter_type GetSystemCallParam( LINUX& _lin, int id )
     {
