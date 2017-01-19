@@ -339,6 +339,10 @@ struct CPU
   
   void MemWrite( uint64_t addr, uint8_t const* buffer, unsigned size );
 
+  void     SetExclusiveMonitors( uint64_t addr, unsigned size ) { /*TODO: MP support*/ }
+  bool     ExclusiveMonitorsPass( uint64_t addr, unsigned size ) { /*TODO: MP support*/ return true; }
+  void     ClearExclusiveLocal() {}
+  
 protected:
   
   /**********************************************************************

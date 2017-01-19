@@ -3168,6 +3168,12 @@ fmov_sw.disasm = {
   sink << "fmov\t" << DisasmS(rd) << ", " << DisasmGZWR(rn);
 };
 
+fmov_sw.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 data = cpu.GetGZR(rn);
+  cpu.SetVU32(rd,data);
+};
+
 op fmov_dw( 0b0001111001100111000000[22] : rn[5] : rd[5] );
 fmov_dw.var format : {char const*} = {"2230"};
 
@@ -3180,6 +3186,12 @@ fmov_ws.var format : {char const*} = {"2614"};
 
 fmov_ws.disasm = {
   sink << "fmov\t" << DisasmGZWR(rd) << ", " << DisasmS(rn);
+};
+
+fmov_ws.execute = {
+  typedef typename ARCH::U32 U32;
+  U32 data = cpu.GetVU32(rn,0);
+  cpu.SetGZR(rd,data);
 };
 
 op fmov_wd( 0b0001111001100110000000[22] : rn[5] : rd[5] );
@@ -3203,11 +3215,23 @@ fmov_dx.disasm = {
   sink << "fmov\t" << DisasmD(rd) << ", " << DisasmGZXR(rn);
 };
 
+fmov_dx.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 data = cpu.GetGZR(rn);
+  cpu.SetVU64(rd,data);
+};
+
 op fmov_dix( 0b1001111010101111000000[22] : rn[5] : rd[5] );
 fmov_dix.var format : {char const*} = {"2592"};
 
 fmov_dix.disasm = {
   sink << "fmov\t" << DisasmTV(rd,0,3) << "[1], " << DisasmGZXR(rn);
+};
+
+fmov_dix.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 data = cpu.GetGZR(rn);
+  cpu.SetVU64(rd,1,data);
 };
 
 op fmov_xs( 0b1001111000100110000000[22] : rn[5] : rd[5] );
@@ -3224,11 +3248,23 @@ fmov_xd.disasm = {
   sink << "fmov\t" << DisasmGZXR(rd) << ", " << DisasmD(rn);
 };
 
+fmov_xd.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 data = cpu.GetVU64(rn,0);
+  cpu.SetGZR(rd,data);
+};
+
 op fmov_xdi( 0b1001111010101110000000[22] : rn[5] : rd[5] );
 fmov_xdi.var format : {char const*} = {"2647"};
 
 fmov_xdi.disasm = {
   sink << "fmov\t" << DisasmGZXR(rd) << ", " << DisasmTV(rn,0,3) << "[1]";
+};
+
+fmov_xdi.execute = {
+  typedef typename ARCH::U64 U64;
+  U64 data = cpu.GetVU64(rn,1);
+  cpu.SetGZR(rd,data);
 };
 
 /*
