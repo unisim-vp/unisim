@@ -251,8 +251,14 @@ struct CPU
   //=                 Special  Registers access methods                 
   //====================================================================
 
-  U32 GetVU32( unsigned reg, unsigned sub ) { return VectorRead<U32>(reg, sub); }
-  U64 GetVU64( unsigned reg, unsigned sub ) { return VectorRead<U64>(reg, sub); }
+  U32 GetVU32( unsigned reg, unsigned sub ) { return VectorStorage<U32>(reg)[sub]; }
+  U64 GetVU64( unsigned reg, unsigned sub ) { return VectorStorage<U64>(reg)[sub]; }
+  
+  void SetVU32( unsigned reg, unsigned sub, U32 value ) { VectorStorage<U32>(reg)[sub] = value; }
+  void SetVU64( unsigned reg, unsigned sub, U64 value ) { VectorStorage<U64>(reg)[sub] = value; }
+  
+  void SetVU32( unsigned reg, U32 value ) { VectorZeroedStorage<U32>(reg)[0] = value; }
+  void SetVU64( unsigned reg, U64 value ) { VectorZeroedStorage<U64>(reg)[0] = value; }
   
   //=====================================================================
   //=              Special/System Registers access methods              =
@@ -432,30 +438,26 @@ protected:
       
       return res;
     }
+    
+    template <typename T>
+    T*
+    GetZeroedStorage( uint8_t* storage )
+    {
+      T* res = reinterpret_cast<T*>( storage );
+      arrangement = &ToBytes<T>;
+      for (int idx = ItemCount<T>(); --idx >= 0;)
+        res[idx] = T();
+      return res;
+    }
       
     VUnion() : arrangement( &ToBytes<uint8_t> ) {}
   } vector_view[VECTORCOUNT];
     
   uint8_t vector_data[VECTORCOUNT][VUnion::BYTECOUNT];
   
-  template<typename T>
-  T
-  VectorRead( unsigned reg, unsigned sub )
-  {
-    T* vec = vector_view[reg].template GetStorage<T>( &vector_data[reg][0] );
-      
-    return vec[sub];
-  }
-    
-  template<typename T>
-  void
-  VectorWrite( unsigned reg, unsigned sub, T val )
-  {
-    T* vec = vector_view[reg].template GetStorage<T>( &vector_data[reg][0] );
-      
-    vec[sub] = val;
-  }
-    
+  template <typename T> T* VectorStorage( unsigned reg ) { return vector_view[reg].template GetStorage<T>( &vector_data[reg][0] ); }
+  template <typename T> T* VectorZeroedStorage( unsigned reg ) { return vector_view[reg].template GetZeroedStorage<T>( &vector_data[reg][0] ); }
+  
 private:
   virtual void Sync() = 0;
   
