@@ -6102,18 +6102,17 @@ ldnp_so.disasm = {
   sink << "ldnp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
 
-op ldp_do( 0b0110110101[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_do.var format : {char const*} = {"38"};
+/*******************************************************************
+ * LDP (SIMD&FP)
+ *
+ * Load pair of SIMD&FP registers
+ */
 
-ldp_do.disasm = {
-  sink << "ldp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
+op ldp_spo( 0b0010110011[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+ldp_spo.var format : {char const*} = {"65"};
 
-op ldp_dop( 0b0110110111[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_dop.var format : {char const*} = {"41"};
-
-ldp_dop.disasm = {
-  sink << "ldp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
+ldp_spo.disasm = {
+  sink << "ldp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
 };
 
 op ldp_dpo( 0b0110110011[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
@@ -6123,32 +6122,11 @@ ldp_dpo.disasm = {
   sink << "ldp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
 };
 
-op ldp_qo( 0b1010110101[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_qo.var format : {char const*} = {"50"};
-
-ldp_qo.disasm = {
-  sink << "ldp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
-op ldp_qop( 0b1010110111[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_qop.var format : {char const*} = {"53"};
-
-ldp_qop.disasm = {
-  sink << "ldp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
-};
-
 op ldp_qpo( 0b1010110011[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
 ldp_qpo.var format : {char const*} = {"55"};
 
 ldp_qpo.disasm = {
   sink << "ldp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
-};
-
-op ldp_so( 0b0010110101[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_so.var format : {char const*} = {"60"};
-
-ldp_so.disasm = {
-  sink << "ldp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
 
 op ldp_sop( 0b0010110111[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
@@ -6158,12 +6136,44 @@ ldp_sop.disasm = {
   sink << "ldp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
 };
 
-op ldp_spo( 0b0010110011[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldp_spo.var format : {char const*} = {"65"};
+op ldp_dop( 0b0110110111[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+ldp_dop.var format : {char const*} = {"41"};
 
-ldp_spo.disasm = {
-  sink << "ldp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
+ldp_dop.disasm = {
+  sink << "ldp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
 };
+
+op ldp_qop( 0b1010110111[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+ldp_qop.var format : {char const*} = {"53"};
+
+ldp_qop.disasm = {
+  sink << "ldp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
+};
+
+op ldp_so( 0b0010110101[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+ldp_so.var format : {char const*} = {"60"};
+
+ldp_so.disasm = {
+  sink << "ldp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
+};
+
+op ldp_do( 0b0110110101[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+ldp_do.var format : {char const*} = {"38"};
+
+ldp_do.disasm = {
+  sink << "ldp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
+};
+
+op ldp_qo( 0b1010110101[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+ldp_qo.var format : {char const*} = {"50"};
+
+ldp_qo.disasm = {
+  sink << "ldp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
+};
+
+/*
+ * end of LDP (SIMD&FP)
+ *******************************************************************/
 
 op ldr_bsopost( 0b00111100010[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
 ldr_bsopost.var format : {char const*} = {"263"};
@@ -12058,18 +12068,29 @@ stnp_so.disasm = {
   sink << "stnp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
 
-op stp_do( 0b0110110100[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_do.var format : {char const*} = {"40"};
+/*******************************************************************
+ * STP (SIMD&FP)
+ *
+ * Store pair of SIMD&FP registers
+ */
 
-stp_do.disasm = {
-  sink << "stp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
+op stp_spo( 0b0010110010[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+stp_spo.var format : {char const*} = {"66"};
+
+stp_spo.disasm = {
+  sink << "stp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
 };
 
-op stp_dop( 0b0110110110[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_dop.var format : {char const*} = {"42"};
-
-stp_dop.disasm = {
-  sink << "stp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
+stp_spo.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  U32 data0( cpu.GetVU32(rt,0) ), data1( cpu.GetVU32(rt2,0) );
+  cpu.MemWrite32( addr + U64(0), data0 );
+  cpu.MemWrite32( addr + U64(4), data1 );
+  cpu.SetGSR(rn, addr + U64(S64(imm)));
 };
 
 op stp_dpo( 0b0110110010[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
@@ -12079,18 +12100,15 @@ stp_dpo.disasm = {
   sink << "stp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
 };
 
-op stp_qo( 0b1010110100[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_qo.var format : {char const*} = {"52"};
-
-stp_qo.disasm = {
-  sink << "stp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
-op stp_qop( 0b1010110110[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_qop.var format : {char const*} = {"54"};
-
-stp_qop.disasm = {
-  sink << "stp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
+stp_dpo.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  U64 data0( cpu.GetVU64(rt,0) ), data1( cpu.GetVU64(rt2,0) );
+  cpu.MemWrite64( addr + U64(0), data0 );
+  cpu.MemWrite64( addr + U64(8), data1 );
+  cpu.SetGSR(rn, addr + U64(S64(imm)));
 };
 
 op stp_qpo( 0b1010110010[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
@@ -12100,13 +12118,6 @@ stp_qpo.disasm = {
   sink << "stp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
 };
 
-op stp_so( 0b0010110100[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_so.var format : {char const*} = {"62"};
-
-stp_so.disasm = {
-  sink << "stp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
-};
-
 op stp_sop( 0b0010110110[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
 stp_sop.var format : {char const*} = {"64"};
 
@@ -12114,12 +12125,88 @@ stp_sop.disasm = {
   sink << "stp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
 };
 
-op stp_spo( 0b0010110010[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_spo.var format : {char const*} = {"66"};
-
-stp_spo.disasm = {
-  sink << "stp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
+stp_sop.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U32 data0( cpu.GetVU32(rt,0) ), data1( cpu.GetVU32(rt2,0) );
+  cpu.MemWrite32( addr + U64(0), data0 );
+  cpu.MemWrite32( addr + U64(4), data1 );
+  cpu.SetGSR(rn, addr);
 };
+
+op stp_dop( 0b0110110110[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+stp_dop.var format : {char const*} = {"42"};
+
+stp_dop.disasm = {
+  sink << "stp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
+};
+
+stp_dop.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 data0( cpu.GetVU64(rt,0) ), data1( cpu.GetVU64(rt2,0) );
+  cpu.MemWrite64( addr + U64(0), data0 );
+  cpu.MemWrite64( addr + U64(8), data1 );
+  cpu.SetGSR(rn, addr);
+};
+
+op stp_qop( 0b1010110110[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+stp_qop.var format : {char const*} = {"54"};
+
+stp_qop.disasm = {
+  sink << "stp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
+};
+
+op stp_so( 0b0010110100[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+stp_so.var format : {char const*} = {"62"};
+
+stp_so.disasm = {
+  sink << "stp\t" << DisasmS(rt) << ", " << DisasmS(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
+};
+
+stp_so.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U32 data0( cpu.GetVU32(rt,0) ), data1( cpu.GetVU32(rt2,0) );
+  cpu.MemWrite32( addr + U64(0), data0 );
+  cpu.MemWrite32( addr + U64(4), data1 );
+};
+
+op stp_do( 0b0110110100[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+stp_do.var format : {char const*} = {"40"};
+
+stp_do.disasm = {
+  sink << "stp\t" << DisasmD(rt) << ", " << DisasmD(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
+};
+
+stp_do.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 data0( cpu.GetVU64(rt,0) ), data1( cpu.GetVU64(rt2,0) );
+  cpu.MemWrite64( addr + U64(0), data0 );
+  cpu.MemWrite64( addr + U64(8), data1 );
+};
+
+op stp_qo( 0b1010110100[10] : shl<4> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+stp_qo.var format : {char const*} = {"52"};
+
+stp_qo.disasm = {
+  sink << "stp\t" << DisasmQ(rt) << ", " << DisasmQ(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
+};
+
+/*
+ * end of STP (SIMD&FP)
+ *******************************************************************/
 
 op str_bsopost( 0b00111100000[11] : sext imm[9] : 0b01[2] : rn[5] : rt[5] );
 str_bsopost.var format : {char const*} = {"264"};

@@ -3188,11 +3188,30 @@ ldp_xo.execute = {
  * end of LDP
  *******************************************************************/
 
-op ldpsw_xo( 0b0110100101[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldpsw_xo.var format : {char const*} = {"base,95"};
+/*******************************************************************
+ * LDPSW
+ *
+ * Load pair of registers signed word
+ */
 
-ldpsw_xo.disasm = {
-  sink << "ldpsw\t" << DisasmGZXR(rt) << ", " << DisasmGZXR(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
+op ldpsw_xpo( 0b0110100011[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+ldpsw_xpo.var format : {char const*} = {"base,102"};
+
+ldpsw_xpo.disasm = {
+  sink << "ldpsw\t" << DisasmGZXR(rt) << ", " << DisasmGZXR(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
+};
+
+ldpsw_xpo.execute = {
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 addr( cpu.GetGSR(rn) );
+  S32 data0( cpu.MemRead32( addr + U64(0) ) ),
+      data1( cpu.MemRead32( addr + U64(4) ) );
+  cpu.SetGZR( rt, U64(S64(data0)));
+  cpu.SetGZR(rt2, U64(S64(data1)));
+  cpu.SetGSR(rn, addr + U64(S64(imm)) );
 };
 
 op ldpsw_xop( 0b0110100111[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
@@ -3202,12 +3221,41 @@ ldpsw_xop.disasm = {
   sink << "ldpsw\t" << DisasmGZXR(rt) << ", " << DisasmGZXR(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]!";
 };
 
-op ldpsw_xpo( 0b0110100011[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-ldpsw_xpo.var format : {char const*} = {"base,102"};
-
-ldpsw_xpo.disasm = {
-  sink << "ldpsw\t" << DisasmGZXR(rt) << ", " << DisasmGZXR(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
+ldpsw_xop.execute = {
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  S32 data0( cpu.MemRead32( addr + U64(0) ) ),
+      data1( cpu.MemRead32( addr + U64(4) ) );
+  cpu.SetGZR( rt, U64(S64(data0)));
+  cpu.SetGZR(rt2, U64(S64(data1)));
+  cpu.SetGSR(rn, addr);
 };
+
+op ldpsw_xo( 0b0110100101[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+ldpsw_xo.var format : {char const*} = {"base,95"};
+
+ldpsw_xo.disasm = {
+  sink << "ldpsw\t" << DisasmGZXR(rt) << ", " << DisasmGZXR(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
+};
+
+ldpsw_xo.execute = {
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  S32 data0( cpu.MemRead32( addr + U64(0) ) ),
+      data1( cpu.MemRead32( addr + U64(4) ) );
+  cpu.SetGZR( rt, U64(S64(data0)));
+  cpu.SetGZR(rt2, U64(S64(data1)));
+};
+
+/*
+ * end of LDPSW
+ *******************************************************************/
 
 /*******************************************************************
  * LDR (immediate)
@@ -5799,39 +5847,41 @@ stnp_xo.disasm = {
  * Store pair of registers
  */
 
-op stp_wo( 0b0010100100[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_wo.var format : {char const*} = {"base,77"};
+op stp_wpo( 0b0010100010[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+stp_wpo.var format : {char const*} = {"base,81"};
 
-stp_wo.disasm = {
-  sink << "stp\t" << DisasmGZWR(rt) << ", " << DisasmGZWR(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
+stp_wpo.disasm = {
+  sink << "stp\t" << DisasmGZWR(rt) << ", " << DisasmGZWR(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
 };
 
-stp_wo.execute = {
+stp_wpo.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
   typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) );
   U32 data0( cpu.GetGZR(rt) ), data1( cpu.GetGZR(rt2) );
   cpu.MemWrite32( addr + U64(0), data0 );
   cpu.MemWrite32( addr + U64(4), data1 );
+  cpu.SetGSR(rn, addr + U64(S64(imm)));
 };
 
-op stp_xo( 0b1010100100[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_xo.var format : {char const*} = {"base,97"};
+op stp_xpo( 0b1010100010[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+stp_xpo.var format : {char const*} = {"base,103"};
 
-stp_xo.disasm = {
-  sink << "stp\t" << DisasmGZXR(rt) << ", " << DisasmGZXR(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
+stp_xpo.disasm = {
+  sink << "stp\t" << DisasmGZXR(rt) << ", " << DisasmGZXR(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
 };
 
-stp_xo.execute = {
+stp_xpo.execute = {
   typedef typename ARCH::U64 U64;
   typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 addr( cpu.GetGSR(rn) );
   U64 data0( cpu.GetGZR(rt) ), data1( cpu.GetGZR(rt2) );
   cpu.MemWrite64( addr + U64(0), data0 );
   cpu.MemWrite64( addr + U64(8), data1 );
+  cpu.SetGSR(rn, addr + U64(S64(imm)));
 };
 
 op stp_wop( 0b0010100110[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
@@ -5871,41 +5921,39 @@ stp_xop.execute = {
   cpu.SetGSR(rn, addr);
 };
 
-op stp_wpo( 0b0010100010[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_wpo.var format : {char const*} = {"base,81"};
+op stp_wo( 0b0010100100[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+stp_wo.var format : {char const*} = {"base,77"};
 
-stp_wpo.disasm = {
-  sink << "stp\t" << DisasmGZWR(rt) << ", " << DisasmGZWR(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
+stp_wo.disasm = {
+  sink << "stp\t" << DisasmGZWR(rt) << ", " << DisasmGZWR(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
 
-stp_wpo.execute = {
+stp_wo.execute = {
   typedef typename ARCH::U32 U32;
   typedef typename ARCH::U64 U64;
   typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) );
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
   U32 data0( cpu.GetGZR(rt) ), data1( cpu.GetGZR(rt2) );
   cpu.MemWrite32( addr + U64(0), data0 );
   cpu.MemWrite32( addr + U64(4), data1 );
-  cpu.SetGSR(rn, addr + U64(S64(imm)));
 };
 
-op stp_xpo( 0b1010100010[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
-stp_xpo.var format : {char const*} = {"base,103"};
+op stp_xo( 0b1010100100[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
+stp_xo.var format : {char const*} = {"base,97"};
 
-stp_xpo.disasm = {
-  sink << "stp\t" << DisasmGZXR(rt) << ", " << DisasmGZXR(rt2) << ", [" << DisasmGSXR(rn) << "]," << DisasmI(imm);
+stp_xo.disasm = {
+  sink << "stp\t" << DisasmGZXR(rt) << ", " << DisasmGZXR(rt2) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
 
-stp_xpo.execute = {
+stp_xo.execute = {
   typedef typename ARCH::U64 U64;
   typedef typename ARCH::S64 S64;
   
-  U64 addr( cpu.GetGSR(rn) );
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
   U64 data0( cpu.GetGZR(rt) ), data1( cpu.GetGZR(rt2) );
   cpu.MemWrite64( addr + U64(0), data0 );
   cpu.MemWrite64( addr + U64(8), data1 );
-  cpu.SetGSR(rn, addr + U64(S64(imm)));
 };
 
 /*

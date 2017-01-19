@@ -3,10 +3,10 @@
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without 
+ *  Redistribution and use in source and binary forms, with or withou
  *  modification, are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice, 
+ *   - Redistributions of source code must retain the above copyright notice
  *     this list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
@@ -14,19 +14,19 @@
  *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *     endorse or promote products derived from this software without specific 
+ *     endorse or promote products derived from this software without specifi
  *     prior written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, TH
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOS
  *  ARE DISCLAIMED.
- *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY 
- *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
- *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND 
- *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
- *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR AN
+ *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGE
+ *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AN
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TOR
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE O
  *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
@@ -247,8 +247,15 @@ struct CPU
     if (id != 31) gpr[id] = val;
   }
   
+  //====================================================================
+  //=                 Special  Registers access methods                 
+  //====================================================================
+
+  U32 GetVU32( unsigned reg, unsigned sub ) { return VectorRead<U32>(reg, sub); }
+  U64 GetVU64( unsigned reg, unsigned sub ) { return VectorRead<U64>(reg, sub); }
+  
   //=====================================================================
-  //=                 Special  Registers access methods                 =
+  //=              Special/System Registers access methods              =
   //=====================================================================
 
   /** Set the value of PSTATE.<N,Z,C,V>
@@ -268,10 +275,6 @@ struct CPU
   /** Get the next Program Counter */
   uint64_t GetNPC() { return next_insn_addr; }
   
-  //=====================================================================
-  //=                  System Registers access methods                  =
-  //=====================================================================
-
   void        CheckSystemAccess( uint8_t op1 );
   uint64_t    ReadSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
   void        WriteSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, uint64_t value );
@@ -404,7 +407,7 @@ protected:
       T const* vec = reinterpret_cast<T const*>( storage );
       
       for (unsigned idx = 0, stop = ItemCount<T>(); idx < stop; ++idx) {
-        T val = vec[idx]; 
+        T val = vec[idx];
         VectorTypeInfo<T>::ToBytes( &storage[idx*VectorTypeInfo<T>::bytecount], val );
       }
     }
@@ -417,23 +420,24 @@ protected:
 
       arrangement_t current = &ToBytes<T>;
       if (arrangement != current) {
-        arrangement( storage );   
+        arrangement( storage );
+        
         for (int idx = ItemCount<T>(); --idx >= 0;) {
           T val;
           VectorTypeInfo<T>::FromBytes( val, &storage[idx*VectorTypeInfo<T>::bytecount] );
           res[idx] = val;
         }
         arrangement = current;
-      }  
-     
+      }
+      
       return res;
     }
       
     VUnion() : arrangement( &ToBytes<uint8_t> ) {}
   } vector_view[VECTORCOUNT];
-
-  uint8_t vector_data[VECTORCOUNT][VUnion::BYTECOUNT];
     
+  uint8_t vector_data[VECTORCOUNT][VUnion::BYTECOUNT];
+  
   template<typename T>
   T
   VectorRead( unsigned reg, unsigned sub )
