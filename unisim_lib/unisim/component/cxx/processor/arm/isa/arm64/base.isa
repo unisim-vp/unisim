@@ -3028,6 +3028,12 @@ ldaxr_x.execute = {
  * end of LDAXR
  *******************************************************************/
 
+/*******************************************************************
+ * LDAXRB
+ *
+ * Load-acquire exclusive register byte
+ */
+
 op ldaxrb_wx( 0b00001000010[11] : rs[5] : 0b1[1] : rt2[5] : rn[5] : rt[5] );
 ldaxrb_wx.var format : {char const*} = {"base,227"};
 
@@ -3035,12 +3041,42 @@ ldaxrb_wx.disasm = {
   sink << "ldaxrb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ldaxrb_wx.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr = cpu.GetGSR( rn );
+  cpu.SetExclusiveMonitors( addr, 1 );
+  cpu.SetGZR( rt, U64(cpu.MemRead8( addr )) );
+};
+
+/*
+ * end of LDAXRB
+ *******************************************************************/
+
+/*******************************************************************
+ * LDAXRH
+ *
+ * Load-acquire exclusive register halfword
+ */
+
 op ldaxrh_wx( 0b01001000010[11] : rs[5] : 0b1[1] : rt2[5] : rn[5] : rt[5] );
 ldaxrh_wx.var format : {char const*} = {"base,228"};
 
 ldaxrh_wx.disasm = {
   sink << "ldaxrh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
 };
+
+ldaxrh_wx.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr = cpu.GetGSR( rn );
+  cpu.SetExclusiveMonitors( addr, 2 );
+  cpu.SetGZR( rt, U64(cpu.MemRead16( addr )) );
+};
+
+/*
+ * end of LDAXRH
+ *******************************************************************/
 
 /*******************************************************************
  * LDNP
@@ -4638,11 +4674,27 @@ ldtrsw_xbo.disasm = {
   sink << "ldtrsw\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
 
+/*******************************************************************
+ * LDUR
+ *
+ * Load register (unscaled offset)
+ */
+
 op ldur_wbo( 0b10111000010[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
 ldur_wbo.var format : {char const*} = {"base,295"};
 
 ldur_wbo.disasm = {
   sink << "ldr\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
+};
+
+ldur_wbo.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U32 data( cpu.MemRead32(addr) );
+  cpu.SetGZR(rt, data);
 };
 
 op ldur_xbo( 0b11111000010[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
@@ -4652,12 +4704,51 @@ ldur_xbo.disasm = {
   sink << "ldr\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
 
+ldur_xbo.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 data( cpu.MemRead64(addr) );
+  cpu.SetGZR(rt, data);
+};
+
+/*
+ * end of LDUR
+ *******************************************************************/
+
+/*******************************************************************
+ * LDURB
+ *
+ * Load register byte (unscaled offset)
+ */
+
 op ldurb_wbo( 0b00111000010[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
 ldurb_wbo.var format : {char const*} = {"base,305"};
 
 ldurb_wbo.disasm = {
   sink << "ldrb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
+
+ldurb_wbo.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U8 data( cpu.MemRead8(addr) );
+  cpu.SetGZR(rt, data);
+};
+
+/*
+ * end of LDURB
+ *******************************************************************/
+
+/*******************************************************************
+ * LDURH
+ *
+ * Load register halfword (unscaled offset)
+ */
 
 op ldurh_wbo( 0b01111000010[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
 ldurh_wbo.var format : {char const*} = {"base,308"};
@@ -4666,11 +4757,43 @@ ldurh_wbo.disasm = {
   sink << "ldrh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
 
+ldurh_wbo.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U16 data( cpu.MemRead16(addr) );
+  cpu.SetGZR(rt, data);
+};
+
+/*
+ * end of LDURH
+ *******************************************************************/
+
+/*******************************************************************
+ * LDURSB
+ *
+ * Load register signed byte (unscaled offset)
+ */
+
 op ldursb_wbo( 0b00111000110[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
 ldursb_wbo.var format : {char const*} = {"base,306"};
 
 ldursb_wbo.disasm = {
   sink << "ldrsb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
+};
+
+ldursb_wbo.execute = {
+  typedef typename ARCH::S8  S8;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  S8 data( cpu.MemRead8(addr) );
+  cpu.SetGZR(rt, U32(S32(data)));
 };
 
 op ldursb_xbo( 0b00111000100[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
@@ -4680,11 +4803,43 @@ ldursb_xbo.disasm = {
   sink << "ldrsb\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
 
+ldursb_xbo.execute = {
+  typedef typename ARCH::S8  S8;
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  S8 data( cpu.MemRead8(addr) );
+  cpu.SetGZR(rt, U64(S64(data)));
+};
+
+/*
+ * end of LDURSB
+ *******************************************************************/
+
+/*******************************************************************
+ * LDURSH
+ *
+ * Load register signed halfword (unscaled offset)
+ */
+
 op ldursh_wbo( 0b01111000110[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
 ldursh_wbo.var format : {char const*} = {"base,309"};
 
 ldursh_wbo.disasm = {
   sink << "ldrsh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
+};
+
+ldursh_wbo.execute = {
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  S16 data( cpu.MemRead16(addr) );
+  cpu.SetGZR(rt, U32(S32(data)));
 };
 
 op ldursh_xbo( 0b01111000100[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
@@ -4694,12 +4849,45 @@ ldursh_xbo.disasm = {
   sink << "ldrsh\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
 
+ldursh_xbo.execute = {
+  typedef typename ARCH::S16 S16;
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  S16 data( cpu.MemRead16(addr) );
+  cpu.SetGZR(rt, U64(S64(data)));
+};
+
+/*
+ * end of LDURSH
+ *******************************************************************/
+
+/*******************************************************************
+ * LDURSW
+ * Load register signed word (unscaled offset)
+ */
+
 op ldursw_xbo( 0b10111000100[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
 ldursw_xbo.var format : {char const*} = {"base,331"};
 
 ldursw_xbo.disasm = {
   sink << "ldrsw\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
+
+ldursw_xbo.execute = {
+  typedef typename ARCH::S32  S32;
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  S32 data( cpu.MemRead32(addr) );
+  cpu.SetGZR(rt, U64(S64(data)));
+};
+
+/*
+ * end of LDURSW
+ *******************************************************************/
 
 op ldxp_w( 0b10001000011[11] : rs[5] : 0b0[1] : rt2[5] : rn[5] : rt[5] );
 ldxp_w.var format : {char const*} = {"base,221"};
@@ -4715,11 +4903,25 @@ ldxp_x.disasm = {
   sink << "ldxp\t" << DisasmGZXR(rt) << ", " << DisasmGZXR(rt2) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+/*******************************************************************
+ * LDXR
+ *
+ * Load exclusive register
+ */
+
 op ldxr_wx( 0b10001000010[11] : rs[5] : 0b0[1] : rt2[5] : rn[5] : rt[5] );
 ldxr_wx.var format : {char const*} = {"base,229"};
 
 ldxr_wx.disasm = {
   sink << "ldxr\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ldxr_wx.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr = cpu.GetGSR( rn );
+  cpu.SetExclusiveMonitors( addr, 4 );
+  cpu.SetGZR( rt, cpu.MemRead32( addr ) );
 };
 
 op ldxr_x( 0b11001000010[11] : rs[5] : 0b0[1] : rt2[5] : rn[5] : rt[5] );
@@ -4729,6 +4931,23 @@ ldxr_x.disasm = {
   sink << "ldxr\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ldxr_x.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr = cpu.GetGSR( rn );
+  cpu.SetExclusiveMonitors( addr, 8 );
+  cpu.SetGZR( rt, cpu.MemRead64( addr ) );
+};
+
+/*
+ * end of LDXR
+ *******************************************************************/
+
+/*******************************************************************
+ * LDXRB
+ * Load exclusive register byte
+ */
+
 op ldxrb_wx( 0b00001000010[11] : rs[5] : 0b0[1] : rt2[5] : rn[5] : rt[5] );
 ldxrb_wx.var format : {char const*} = {"base,230"};
 
@@ -4736,12 +4955,42 @@ ldxrb_wx.disasm = {
   sink << "ldxrb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ldxrb_wx.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr = cpu.GetGSR( rn );
+  cpu.SetExclusiveMonitors( addr, 1 );
+  cpu.SetGZR( rt, U64(cpu.MemRead8( addr )) );
+};
+
+/*
+ * end of LDXRB
+ *******************************************************************/
+
+/*******************************************************************
+ * LDXRH
+ *
+ * Load exclusive register halfword
+ */
+
 op ldxrh_wx( 0b01001000010[11] : rs[5] : 0b0[1] : rt2[5] : rn[5] : rt[5] );
 ldxrh_wx.var format : {char const*} = {"base,231"};
 
 ldxrh_wx.disasm = {
   sink << "ldxrh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
 };
+
+ldxrh_wx.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr = cpu.GetGSR( rn );
+  cpu.SetExclusiveMonitors( addr, 2 );
+  cpu.SetGZR( rt, U64(cpu.MemRead16( addr )) );
+};
+
+/*
+ * end of LDXRH
+ *******************************************************************/
 
 /*******************************************************************
  * LSL (register)
@@ -5825,11 +6074,30 @@ stlxp_x.disasm = {
   sink << "stlxp\t" << DisasmGZWR(rs) << ", " << DisasmGZXR(rt) << ", " << DisasmGZXR(rt2) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+/*******************************************************************
+ * STLXR
+ *
+ * Store-release exclusive register, returning status
+ */
+
 op stlxr_w( 0b10001000000[11] : rs[5] : 0b1[1] : rt2[5] : rn[5] : rt[5] );
 stlxr_w.var format : {char const*} = {"base,214"};
 
 stlxr_w.disasm = {
   sink << "stlxr\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+stlxr_w.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr = cpu.GetGSR( rn );
+  if (cpu.ExclusiveMonitorsPass(addr, 4)) {
+    cpu.MemWrite32( addr, U32(cpu.GetGZR( rt )) );
+    cpu.SetGZR( rs, U64(0) );
+  } else {
+    cpu.SetGZR( rs, U64(1) );
+  }
 };
 
 op stlxr_x( 0b11001000000[11] : rs[5] : 0b1[1] : rt2[5] : rn[5] : rt[5] );
@@ -5839,6 +6107,28 @@ stlxr_x.disasm = {
   sink << "stlxr\t" << DisasmGZWR(rs) << ", " << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+stlxr_x.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr = cpu.GetGSR( rn );
+  if (cpu.ExclusiveMonitorsPass(addr, 8)) {
+    cpu.MemWrite64( addr, cpu.GetGZR( rt ) );
+    cpu.SetGZR( rs, U64(0) );
+  } else {
+    cpu.SetGZR( rs, U64(1) );
+  }
+};
+
+/*
+ * end of STLXR
+ *******************************************************************/
+
+/*******************************************************************
+ * STLXRB
+ *
+ * Store-release exclusive register byte, returning status
+ */
+
 op stlxrb_w( 0b00001000000[11] : rs[5] : 0b1[1] : rt2[5] : rn[5] : rt[5] );
 stlxrb_w.var format : {char const*} = {"base,215"};
 
@@ -5846,12 +6136,52 @@ stlxrb_w.disasm = {
   sink << "stlxrb\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+stlxrb_w.execute = {
+  typedef typename ARCH::U8  U8;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr = cpu.GetGSR( rn );
+  if (cpu.ExclusiveMonitorsPass(addr, 1)) {
+    cpu.MemWrite8( addr, U8(cpu.GetGZR( rt )) );
+    cpu.SetGZR( rs, U64(0) );
+  } else {
+    cpu.SetGZR( rs, U64(1) );
+  }
+};
+
+/*
+ * end of STLXRB
+ *******************************************************************/
+
+/*******************************************************************
+ * STLXRH
+ *
+ * Store-release exclusive register halfword, returning status
+ */
+
 op stlxrh_w( 0b01001000000[11] : rs[5] : 0b1[1] : rt2[5] : rn[5] : rt[5] );
 stlxrh_w.var format : {char const*} = {"base,216"};
 
 stlxrh_w.disasm = {
   sink << "stlxrh\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
 };
+
+stlxrh_w.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr = cpu.GetGSR( rn );
+  if (cpu.ExclusiveMonitorsPass(addr, 2)) {
+    cpu.MemWrite8( addr, U16(cpu.GetGZR( rt )) );
+    cpu.SetGZR( rs, U64(0) );
+  } else {
+    cpu.SetGZR( rs, U64(1) );
+  }
+};
+
+/*
+ * end of STLXRH
+ *******************************************************************/
 
 op stnp_wo( 0b0010100000[10] : shl<2> sext imm[7] : rt2[5] : rn[5] : rt[5] );
 stnp_wo.var format : {char const*} = {"base,76"};
@@ -6625,7 +6955,7 @@ stxr_x.execute = {
   typedef typename ARCH::U64 U64;
   
   U64 addr = cpu.GetGSR( rn );
-  if (cpu.ExclusiveMonitorsPass(addr, 4)) {
+  if (cpu.ExclusiveMonitorsPass(addr, 8)) {
     cpu.MemWrite64( addr, cpu.GetGZR( rt ) );
     cpu.SetGZR( rs, U64(0) );
   } else {
@@ -6637,6 +6967,12 @@ stxr_x.execute = {
  * end of STXR
  *******************************************************************/
 
+/*******************************************************************
+ * STXRB
+ *
+ * Store exclusive register byte, returning status
+ */
+
 op stxrb_w( 0b00001000000[11] : rs[5] : 0b0[1] : rt2[5] : rn[5] : rt[5] );
 stxrb_w.var format : {char const*} = {"base,218"};
 
@@ -6644,12 +6980,52 @@ stxrb_w.disasm = {
   sink << "stxrb\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+stxrb_w.execute = {
+  typedef typename ARCH::U8  U8;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr = cpu.GetGSR( rn );
+  if (cpu.ExclusiveMonitorsPass(addr, 1)) {
+    cpu.MemWrite32( addr, U8(cpu.GetGZR( rt )) );
+    cpu.SetGZR( rs, U64(0) );
+  } else {
+    cpu.SetGZR( rs, U64(1) );
+  }
+};
+
+/*
+ * end of STXRB
+ *******************************************************************/
+
+/*******************************************************************
+ * STXRH
+ *
+ * Store exclusive register halfword, returning status
+ */
+
 op stxrh_w( 0b01001000000[11] : rs[5] : 0b0[1] : rt2[5] : rn[5] : rt[5] );
 stxrh_w.var format : {char const*} = {"base,219"};
 
 stxrh_w.disasm = {
   sink << "stxrh\t" << DisasmGZWR(rs) << ", " << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
 };
+
+stxrh_w.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr = cpu.GetGSR( rn );
+  if (cpu.ExclusiveMonitorsPass(addr, 2)) {
+    cpu.MemWrite32( addr, U16(cpu.GetGZR( rt )) );
+    cpu.SetGZR( rs, U64(0) );
+  } else {
+    cpu.SetGZR( rs, U64(1) );
+  }
+};
+
+/*
+ * end of STXRH
+ *******************************************************************/
 
 /*******************************************************************
  * SUB (extended register)
@@ -7979,12 +8355,22 @@ umsubl_xw.disasm = {
     sink << "umsubl\t" << DisasmGZXR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", " << DisasmGZXR(ra);
 };
 
+/*******************************************************************
+ * UMULH
+ *
+ * Unsigned multiply high: Xd = bits<127:64> of Xn * Xm
+ */
+
 op umulh( 0b10011011110[11] : rm[5] : 0b0[1] : ra[5] : rn[5] : rd[5] );
 umulh.var format : {char const*} = {"base,240"};
 
 umulh.disasm = {
   sink << "umulh\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm);
 };
+
+/*
+ * end of 
+ *******************************************************************/
 
 op wfe( 0b11010101000000110010000001011111[32] );
 wfe.var format : {char const*} = {"base,2951"};
