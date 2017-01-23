@@ -45,6 +45,18 @@ namespace arm {
 namespace isa {
 namespace arm64 {
 
+template <class ARCH>
+typename ARCH::U64
+UnsignedMultiplyHigh64( ARCH&, typename ARCH::U64 opl, typename ARCH::U64 opr )
+{
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  
+  U64 lhi = opl >> 32, llo = U32(opl), rhi = opr >> 32, rlo = U32(opr);
+  U64 hihi( lhi*rhi ), hilo( lhi*rlo), lohi( llo*rhi ), lolo( llo*rlo );
+  return (((lolo >> 32) + U64(U32(hilo)) + U64(U32(lohi))) >> 32) + (hilo >> 32) + (lohi >> 32) + hihi;
+}
+
 
 } // end of namespace arm64
 } // end of namespace isa

@@ -8368,8 +8368,16 @@ umulh.disasm = {
   sink << "umulh\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm);
 };
 
+umulh.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res( UnsignedMultiplyHigh64( cpu, op1, op2 ) );
+  
+  cpu.SetGZR( rd, res );
+};
+
 /*
- * end of 
+ * end of UMULH
  *******************************************************************/
 
 op wfe( 0b11010101000000110010000001011111[32] );
