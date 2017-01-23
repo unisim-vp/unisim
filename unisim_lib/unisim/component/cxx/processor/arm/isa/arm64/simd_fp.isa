@@ -168,7 +168,7 @@ add_v2d.execute = {
 /*
  * end of ADD (vector)
  *******************************************************************/
- 
+
 op addhn2_v16bv8hv8h( 0b01001110001[11] : rm[5] : 0b010000[6] : rn[5] : rd[5] );
 addhn2_v16bv8hv8h.var format : {char const*} = {"880"};
 
@@ -4370,11 +4370,25 @@ ld1_q2d.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,2,3) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+op ld1_s8b_imm( 0b0000110011011111011100[22] : rn[5] : rt[5] );
+ld1_s8b_imm.var format : {char const*} = {"2853"};
+
+ld1_s8b_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,1,8,0) << ", [" << DisasmGSXR(rn) << "], #8";
+};
+
 op ld1_s8b_reg( 0b00001100110[11] : rm[5] : 0b011100[6] : rn[5] : rt[5] );
 ld1_s8b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1768"};
 
 ld1_s8b_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,8,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+op ld1_s16b_imm( 0b0100110011011111011100[22] : rn[5] : rt[5] );
+ld1_s16b_imm.var format : {char const*} = {"2685"};
+
+ld1_s16b_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,1,16,0) << ", [" << DisasmGSXR(rn) << "], #16";
 };
 
 op ld1_s16b_reg( 0b01001100110[11] : rm[5] : 0b011100[6] : rn[5] : rt[5] );
@@ -4384,11 +4398,25 @@ ld1_s16b_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,16,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+op ld1_s4h_imm( 0b0000110011011111011101[22] : rn[5] : rt[5] );
+ld1_s4h_imm.var format : {char const*} = {"2793"};
+
+ld1_s4h_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,1,4,1) << ", [" << DisasmGSXR(rn) << "], #8";
+};
+
 op ld1_s4h_reg( 0b00001100110[11] : rm[5] : 0b011101[6] : rn[5] : rt[5] );
 ld1_s4h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1738"};
 
 ld1_s4h_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,4,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+op ld1_s8h_imm( 0b0100110011011111011101[22] : rn[5] : rt[5] );
+ld1_s8h_imm.var format : {char const*} = {"2883"};
+
+ld1_s8h_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,1,8,1) << ", [" << DisasmGSXR(rn) << "], #16";
 };
 
 op ld1_s8h_reg( 0b01001100110[11] : rm[5] : 0b011101[6] : rn[5] : rt[5] );
@@ -4398,11 +4426,25 @@ ld1_s8h_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,8,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+op ld1_s2s_imm( 0b0000110011011111011110[22] : rn[5] : rt[5] );
+ld1_s2s_imm.var format : {char const*} = {"2763"};
+
+ld1_s2s_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,1,2,2) << ", [" << DisasmGSXR(rn) << "], #8";
+};
+
 op ld1_s2s_reg( 0b00001100110[11] : rm[5] : 0b011110[6] : rn[5] : rt[5] );
 ld1_s2s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1723"};
 
 ld1_s2s_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,2,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+op ld1_s4s_imm( 0b0100110011011111011110[22] : rn[5] : rt[5] );
+ld1_s4s_imm.var format : {char const*} = {"2823"};
+
+ld1_s4s_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,1,4,2) << ", [" << DisasmGSXR(rn) << "], #16";
 };
 
 op ld1_s4s_reg( 0b01001100110[11] : rm[5] : 0b011110[6] : rn[5] : rt[5] );
@@ -4412,11 +4454,25 @@ ld1_s4s_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,4,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+op ld1_s1d_imm( 0b0000110011011111011111[22] : rn[5] : rt[5] );
+ld1_s1d_imm.var format : {char const*} = {"2703"};
+
+ld1_s1d_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,1,1,3) << ", [" << DisasmGSXR(rn) << "], #8";
+};
+
 op ld1_s1d_reg( 0b00001100110[11] : rm[5] : 0b011111[6] : rn[5] : rt[5] );
 ld1_s1d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1693"};
 
 ld1_s1d_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,1,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+op ld1_s2d_imm( 0b0100110011011111011111[22] : rn[5] : rt[5] );
+ld1_s2d_imm.var format : {char const*} = {"2733"};
+
+ld1_s2d_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,1,2,3) << ", [" << DisasmGSXR(rn) << "], #16";
 };
 
 op ld1_s2d_reg( 0b01001100110[11] : rm[5] : 0b011111[6] : rn[5] : rt[5] );
@@ -4426,11 +4482,25 @@ ld1_s2d_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+op ld1_d8b_imm( 0b0000110011011111101000[22] : rn[5] : rt[5] );
+ld1_d8b_imm.var format : {char const*} = {"2847"};
+
+ld1_d8b_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,2,8,0) << ", [" << DisasmGSXR(rn) << "], #16";
+};
+
 op ld1_d8b_reg( 0b00001100110[11] : rm[5] : 0b101000[6] : rn[5] : rt[5] );
 ld1_d8b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1765"};
 
 ld1_d8b_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,8,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+op ld1_d16b_imm( 0b0100110011011111101000[22] : rn[5] : rt[5] );
+ld1_d16b_imm.var format : {char const*} = {"2679"};
+
+ld1_d16b_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,2,16,0) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
 op ld1_d16b_reg( 0b01001100110[11] : rm[5] : 0b101000[6] : rn[5] : rt[5] );
@@ -4440,11 +4510,25 @@ ld1_d16b_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,16,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+op ld1_d4h_imm( 0b0000110011011111101001[22] : rn[5] : rt[5] );
+ld1_d4h_imm.var format : {char const*} = {"2787"};
+
+ld1_d4h_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,2,4,1) << ", [" << DisasmGSXR(rn) << "], #16";
+};
+
 op ld1_d4h_reg( 0b00001100110[11] : rm[5] : 0b101001[6] : rn[5] : rt[5] );
 ld1_d4h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1735"};
 
 ld1_d4h_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,4,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+op ld1_d8h_imm( 0b0100110011011111101001[22] : rn[5] : rt[5] );
+ld1_d8h_imm.var format : {char const*} = {"2877"};
+
+ld1_d8h_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,2,8,1) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
 op ld1_d8h_reg( 0b01001100110[11] : rm[5] : 0b101001[6] : rn[5] : rt[5] );
@@ -4454,11 +4538,25 @@ ld1_d8h_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,8,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+op ld1_d2s_imm( 0b0000110011011111101010[22] : rn[5] : rt[5] );
+ld1_d2s_imm.var format : {char const*} = {"2757"};
+
+ld1_d2s_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,2,2,2) << ", [" << DisasmGSXR(rn) << "], #16";
+};
+
 op ld1_d2s_reg( 0b00001100110[11] : rm[5] : 0b101010[6] : rn[5] : rt[5] );
 ld1_d2s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1720"};
 
 ld1_d2s_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,2,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+op ld1_d4s_imm( 0b0100110011011111101010[22] : rn[5] : rt[5] );
+ld1_d4s_imm.var format : {char const*} = {"2817"};
+
+ld1_d4s_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,2,4,2) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
 op ld1_d4s_reg( 0b01001100110[11] : rm[5] : 0b101010[6] : rn[5] : rt[5] );
@@ -4468,11 +4566,25 @@ ld1_d4s_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,4,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+op ld1_d1d_imm( 0b0000110011011111101011[22] : rn[5] : rt[5] );
+ld1_d1d_imm.var format : {char const*} = {"2698"};
+
+ld1_d1d_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,2,1,3) << ", [" << DisasmGSXR(rn) << "], #16";
+};
+
 op ld1_d1d_reg( 0b00001100110[11] : rm[5] : 0b101011[6] : rn[5] : rt[5] );
 ld1_d1d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1691"};
 
 ld1_d1d_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,1,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+op ld1_d2d_imm( 0b0100110011011111101011[22] : rn[5] : rt[5] );
+ld1_d2d_imm.var format : {char const*} = {"2727"};
+
+ld1_d2d_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,2,2,3) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
 op ld1_d2d_reg( 0b01001100110[11] : rm[5] : 0b101011[6] : rn[5] : rt[5] );
@@ -4482,53 +4594,11 @@ ld1_d2d_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
-op ld1_t16b_reg( 0b01001100110[11] : rm[5] : 0b011000[6] : rn[5] : rt[5] );
-ld1_t16b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1677"};
+op ld1_t8b_imm( 0b0000110011011111011000[22] : rn[5] : rt[5] );
+ld1_t8b_imm.var format : {char const*} = {"2839"};
 
-ld1_t16b_reg.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,3,16,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
-};
-
-op ld1_t2d_reg( 0b01001100110[11] : rm[5] : 0b011011[6] : rn[5] : rt[5] );
-ld1_t2d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1701"};
-
-ld1_t2d_reg.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,3,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
-};
-
-op ld1_t4s_reg( 0b01001100110[11] : rm[5] : 0b011010[6] : rn[5] : rt[5] );
-ld1_t4s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1746"};
-
-ld1_t4s_reg.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,3,4,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
-};
-
-op ld1_t8h_reg( 0b01001100110[11] : rm[5] : 0b011001[6] : rn[5] : rt[5] );
-ld1_t8h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1776"};
-
-ld1_t8h_reg.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,3,8,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
-};
-
-op ld1_t1d_reg( 0b00001100110[11] : rm[5] : 0b011011[6] : rn[5] : rt[5] );
-ld1_t1d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1688"};
-
-ld1_t1d_reg.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,3,1,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
-};
-
-op ld1_t2s_reg( 0b00001100110[11] : rm[5] : 0b011010[6] : rn[5] : rt[5] );
-ld1_t2s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1716"};
-
-ld1_t2s_reg.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,3,2,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
-};
-
-op ld1_t4h_reg( 0b00001100110[11] : rm[5] : 0b011001[6] : rn[5] : rt[5] );
-ld1_t4h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1731"};
-
-ld1_t4h_reg.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,3,4,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+ld1_t8b_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,3,8,0) << ", [" << DisasmGSXR(rn) << "], #24";
 };
 
 op ld1_t8b_reg( 0b00001100110[11] : rm[5] : 0b011000[6] : rn[5] : rt[5] );
@@ -4538,6 +4608,125 @@ ld1_t8b_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,8,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+op ld1_t16b_imm( 0b0100110011011111011000[22] : rn[5] : rt[5] );
+ld1_t16b_imm.var format : {char const*} = {"2671"};
+
+ld1_t16b_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,3,16,0) << ", [" << DisasmGSXR(rn) << "], #48";
+};
+
+op ld1_t16b_reg( 0b01001100110[11] : rm[5] : 0b011000[6] : rn[5] : rt[5] );
+ld1_t16b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1677"};
+
+ld1_t16b_reg.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,3,16,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+op ld1_t4h_imm( 0b0000110011011111011001[22] : rn[5] : rt[5] );
+ld1_t4h_imm.var format : {char const*} = {"2779"};
+
+ld1_t4h_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,3,4,1) << ", [" << DisasmGSXR(rn) << "], #24";
+};
+
+op ld1_t4h_reg( 0b00001100110[11] : rm[5] : 0b011001[6] : rn[5] : rt[5] );
+ld1_t4h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1731"};
+
+ld1_t4h_reg.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,3,4,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+op ld1_t8h_imm( 0b0100110011011111011001[22] : rn[5] : rt[5] );
+ld1_t8h_imm.var format : {char const*} = {"2869"};
+
+ld1_t8h_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,3,8,1) << ", [" << DisasmGSXR(rn) << "], #48";
+};
+
+op ld1_t8h_reg( 0b01001100110[11] : rm[5] : 0b011001[6] : rn[5] : rt[5] );
+ld1_t8h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1776"};
+
+ld1_t8h_reg.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,3,8,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+op ld1_t2s_imm( 0b0000110011011111011010[22] : rn[5] : rt[5] );
+ld1_t2s_imm.var format : {char const*} = {"2749"};
+
+ld1_t2s_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,3,2,2) << ", [" << DisasmGSXR(rn) << "], #24";
+};
+
+op ld1_t2s_reg( 0b00001100110[11] : rm[5] : 0b011010[6] : rn[5] : rt[5] );
+ld1_t2s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1716"};
+
+ld1_t2s_reg.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,3,2,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+op ld1_t4s_imm( 0b0100110011011111011010[22] : rn[5] : rt[5] );
+ld1_t4s_imm.var format : {char const*} = {"2809"};
+
+ld1_t4s_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,3,4,2) << ", [" << DisasmGSXR(rn) << "], #48";
+};
+
+op ld1_t4s_reg( 0b01001100110[11] : rm[5] : 0b011010[6] : rn[5] : rt[5] );
+ld1_t4s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1746"};
+
+ld1_t4s_reg.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,3,4,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+op ld1_t1d_imm( 0b0000110011011111011011[22] : rn[5] : rt[5] );
+ld1_t1d_imm.var format : {char const*} = {"2693"};
+
+ld1_t1d_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,3,1,3) << ", [" << DisasmGSXR(rn) << "], #24";
+};
+
+op ld1_t1d_reg( 0b00001100110[11] : rm[5] : 0b011011[6] : rn[5] : rt[5] );
+ld1_t1d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1688"};
+
+ld1_t1d_reg.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,3,1,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+op ld1_t2d_imm( 0b0100110011011111011011[22] : rn[5] : rt[5] );
+ld1_t2d_imm.var format : {char const*} = {"2719"};
+
+ld1_t2d_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,3,2,3) << ", [" << DisasmGSXR(rn) << "], #48";
+};
+
+op ld1_t2d_reg( 0b01001100110[11] : rm[5] : 0b011011[6] : rn[5] : rt[5] );
+ld1_t2d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1701"};
+
+ld1_t2d_reg.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,3,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+op ld1_q8b_imm( 0b0000110011011111001000[22] : rn[5] : rt[5] );
+ld1_q8b_imm.var format : {char const*} = {"2831"};
+
+ld1_q8b_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,4,8,0) << ", [" << DisasmGSXR(rn) << "], #32";
+};
+
+op ld1_q8b_reg( 0b00001100110[11] : rm[5] : 0b001000[6] : rn[5] : rt[5] );
+ld1_q8b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1757"};
+
+ld1_q8b_reg.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,4,8,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+op ld1_q16b_imm( 0b0100110011011111001000[22] : rn[5] : rt[5] );
+ld1_q16b_imm.var format : {char const*} = {"2663"};
+
+ld1_q16b_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,4,16,0) << ", [" << DisasmGSXR(rn) << "], #64";
+};
+
 op ld1_q16b_reg( 0b01001100110[11] : rm[5] : 0b001000[6] : rn[5] : rt[5] );
 ld1_q16b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1673"};
 
@@ -4545,39 +4734,11 @@ ld1_q16b_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,16,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
-op ld1_q2d_reg( 0b01001100110[11] : rm[5] : 0b001011[6] : rn[5] : rt[5] );
-ld1_q2d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1697"};
+op ld1_q4h_imm( 0b0000110011011111001001[22] : rn[5] : rt[5] );
+ld1_q4h_imm.var format : {char const*} = {"2771"};
 
-ld1_q2d_reg.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,4,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
-};
-
-op ld1_q4s_reg( 0b01001100110[11] : rm[5] : 0b001010[6] : rn[5] : rt[5] );
-ld1_q4s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1742"};
-
-ld1_q4s_reg.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,4,4,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
-};
-
-op ld1_q8h_reg( 0b01001100110[11] : rm[5] : 0b001001[6] : rn[5] : rt[5] );
-ld1_q8h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1772"};
-
-ld1_q8h_reg.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,4,8,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
-};
-
-op ld1_q1d_reg( 0b00001100110[11] : rm[5] : 0b001011[6] : rn[5] : rt[5] );
-ld1_q1d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1686"};
-
-ld1_q1d_reg.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,4,1,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
-};
-
-op ld1_q2s_reg( 0b00001100110[11] : rm[5] : 0b001010[6] : rn[5] : rt[5] );
-ld1_q2s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1712"};
-
-ld1_q2s_reg.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,4,2,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+ld1_q4h_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,4,4,1) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
 op ld1_q4h_reg( 0b00001100110[11] : rm[5] : 0b001001[6] : rn[5] : rt[5] );
@@ -4587,11 +4748,74 @@ ld1_q4h_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,4,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
-op ld1_q8b_reg( 0b00001100110[11] : rm[5] : 0b001000[6] : rn[5] : rt[5] );
-ld1_q8b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1757"};
+op ld1_q8h_imm( 0b0100110011011111001001[22] : rn[5] : rt[5] );
+ld1_q8h_imm.var format : {char const*} = {"2861"};
 
-ld1_q8b_reg.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,4,8,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+ld1_q8h_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,4,8,1) << ", [" << DisasmGSXR(rn) << "], #64";
+};
+
+op ld1_q8h_reg( 0b01001100110[11] : rm[5] : 0b001001[6] : rn[5] : rt[5] );
+ld1_q8h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1772"};
+
+ld1_q8h_reg.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,4,8,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+op ld1_q2s_imm( 0b0000110011011111001010[22] : rn[5] : rt[5] );
+ld1_q2s_imm.var format : {char const*} = {"2741"};
+
+ld1_q2s_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,4,2,2) << ", [" << DisasmGSXR(rn) << "], #32";
+};
+
+op ld1_q2s_reg( 0b00001100110[11] : rm[5] : 0b001010[6] : rn[5] : rt[5] );
+ld1_q2s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1712"};
+
+ld1_q2s_reg.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,4,2,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+op ld1_q4s_imm( 0b0100110011011111001010[22] : rn[5] : rt[5] );
+ld1_q4s_imm.var format : {char const*} = {"2801"};
+
+ld1_q4s_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,4,4,2) << ", [" << DisasmGSXR(rn) << "], #64";
+};
+
+op ld1_q4s_reg( 0b01001100110[11] : rm[5] : 0b001010[6] : rn[5] : rt[5] );
+ld1_q4s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1742"};
+
+ld1_q4s_reg.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,4,4,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+op ld1_q1d_imm( 0b0000110011011111001011[22] : rn[5] : rt[5] );
+ld1_q1d_imm.var format : {char const*} = {"2689"};
+
+ld1_q1d_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,4,1,3) << ", [" << DisasmGSXR(rn) << "], #32";
+};
+
+op ld1_q1d_reg( 0b00001100110[11] : rm[5] : 0b001011[6] : rn[5] : rt[5] );
+ld1_q1d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1686"};
+
+ld1_q1d_reg.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,4,1,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+op ld1_q2d_imm( 0b0100110011011111001011[22] : rn[5] : rt[5] );
+ld1_q2d_imm.var format : {char const*} = {"2711"};
+
+ld1_q2d_imm.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,4,2,3) << ", [" << DisasmGSXR(rn) << "], #64";
+};
+
+op ld1_q2d_reg( 0b01001100110[11] : rm[5] : 0b001011[6] : rn[5] : rt[5] );
+ld1_q2d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1697"};
+
+ld1_q2d_reg.disasm = {
+  sink << "ld1\t" << DisasmBunch(rt,4,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
 /*
@@ -4869,230 +5093,6 @@ ld1r_s8h_reg.disasm = {
 /*
  * end of LD1R
  *******************************************************************/
-
-op ld1_d16b_imm( 0b0100110011011111101000[22] : rn[5] : rt[5] );
-ld1_d16b_imm.var format : {char const*} = {"2679"};
-
-ld1_d16b_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,2,16,0) << ", [" << DisasmGSXR(rn) << "], #32";
-};
-
-op ld1_d1d_imm( 0b0000110011011111101011[22] : rn[5] : rt[5] );
-ld1_d1d_imm.var format : {char const*} = {"2698"};
-
-ld1_d1d_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,2,1,3) << ", [" << DisasmGSXR(rn) << "], #16";
-};
-
-op ld1_d2d_imm( 0b0100110011011111101011[22] : rn[5] : rt[5] );
-ld1_d2d_imm.var format : {char const*} = {"2727"};
-
-ld1_d2d_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,2,2,3) << ", [" << DisasmGSXR(rn) << "], #32";
-};
-
-op ld1_d2s_imm( 0b0000110011011111101010[22] : rn[5] : rt[5] );
-ld1_d2s_imm.var format : {char const*} = {"2757"};
-
-ld1_d2s_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,2,2,2) << ", [" << DisasmGSXR(rn) << "], #16";
-};
-
-op ld1_d4h_imm( 0b0000110011011111101001[22] : rn[5] : rt[5] );
-ld1_d4h_imm.var format : {char const*} = {"2787"};
-
-ld1_d4h_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,2,4,1) << ", [" << DisasmGSXR(rn) << "], #16";
-};
-
-op ld1_d4s_imm( 0b0100110011011111101010[22] : rn[5] : rt[5] );
-ld1_d4s_imm.var format : {char const*} = {"2817"};
-
-ld1_d4s_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,2,4,2) << ", [" << DisasmGSXR(rn) << "], #32";
-};
-
-op ld1_d8b_imm( 0b0000110011011111101000[22] : rn[5] : rt[5] );
-ld1_d8b_imm.var format : {char const*} = {"2847"};
-
-ld1_d8b_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,2,8,0) << ", [" << DisasmGSXR(rn) << "], #16";
-};
-
-op ld1_d8h_imm( 0b0100110011011111101001[22] : rn[5] : rt[5] );
-ld1_d8h_imm.var format : {char const*} = {"2877"};
-
-ld1_d8h_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,2,8,1) << ", [" << DisasmGSXR(rn) << "], #32";
-};
-
-op ld1_q16b_imm( 0b0100110011011111001000[22] : rn[5] : rt[5] );
-ld1_q16b_imm.var format : {char const*} = {"2663"};
-
-ld1_q16b_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,4,16,0) << ", [" << DisasmGSXR(rn) << "], #64";
-};
-
-op ld1_q1d_imm( 0b0000110011011111001011[22] : rn[5] : rt[5] );
-ld1_q1d_imm.var format : {char const*} = {"2689"};
-
-ld1_q1d_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,4,1,3) << ", [" << DisasmGSXR(rn) << "], #32";
-};
-
-op ld1_q2d_imm( 0b0100110011011111001011[22] : rn[5] : rt[5] );
-ld1_q2d_imm.var format : {char const*} = {"2711"};
-
-ld1_q2d_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,4,2,3) << ", [" << DisasmGSXR(rn) << "], #64";
-};
-
-op ld1_q2s_imm( 0b0000110011011111001010[22] : rn[5] : rt[5] );
-ld1_q2s_imm.var format : {char const*} = {"2741"};
-
-ld1_q2s_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,4,2,2) << ", [" << DisasmGSXR(rn) << "], #32";
-};
-
-op ld1_q4h_imm( 0b0000110011011111001001[22] : rn[5] : rt[5] );
-ld1_q4h_imm.var format : {char const*} = {"2771"};
-
-ld1_q4h_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,4,4,1) << ", [" << DisasmGSXR(rn) << "], #32";
-};
-
-op ld1_q4s_imm( 0b0100110011011111001010[22] : rn[5] : rt[5] );
-ld1_q4s_imm.var format : {char const*} = {"2801"};
-
-ld1_q4s_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,4,4,2) << ", [" << DisasmGSXR(rn) << "], #64";
-};
-
-op ld1_q8b_imm( 0b0000110011011111001000[22] : rn[5] : rt[5] );
-ld1_q8b_imm.var format : {char const*} = {"2831"};
-
-ld1_q8b_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,4,8,0) << ", [" << DisasmGSXR(rn) << "], #32";
-};
-
-op ld1_q8h_imm( 0b0100110011011111001001[22] : rn[5] : rt[5] );
-ld1_q8h_imm.var format : {char const*} = {"2861"};
-
-ld1_q8h_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,4,8,1) << ", [" << DisasmGSXR(rn) << "], #64";
-};
-
-op ld1_s16b_imm( 0b0100110011011111011100[22] : rn[5] : rt[5] );
-ld1_s16b_imm.var format : {char const*} = {"2685"};
-
-ld1_s16b_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,1,16,0) << ", [" << DisasmGSXR(rn) << "], #16";
-};
-
-op ld1_s1d_imm( 0b0000110011011111011111[22] : rn[5] : rt[5] );
-ld1_s1d_imm.var format : {char const*} = {"2703"};
-
-ld1_s1d_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,1,1,3) << ", [" << DisasmGSXR(rn) << "], #8";
-};
-
-op ld1_s2d_imm( 0b0100110011011111011111[22] : rn[5] : rt[5] );
-ld1_s2d_imm.var format : {char const*} = {"2733"};
-
-ld1_s2d_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,1,2,3) << ", [" << DisasmGSXR(rn) << "], #16";
-};
-
-op ld1_s2s_imm( 0b0000110011011111011110[22] : rn[5] : rt[5] );
-ld1_s2s_imm.var format : {char const*} = {"2763"};
-
-ld1_s2s_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,1,2,2) << ", [" << DisasmGSXR(rn) << "], #8";
-};
-
-op ld1_s4h_imm( 0b0000110011011111011101[22] : rn[5] : rt[5] );
-ld1_s4h_imm.var format : {char const*} = {"2793"};
-
-ld1_s4h_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,1,4,1) << ", [" << DisasmGSXR(rn) << "], #8";
-};
-
-op ld1_s4s_imm( 0b0100110011011111011110[22] : rn[5] : rt[5] );
-ld1_s4s_imm.var format : {char const*} = {"2823"};
-
-ld1_s4s_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,1,4,2) << ", [" << DisasmGSXR(rn) << "], #16";
-};
-
-op ld1_s8b_imm( 0b0000110011011111011100[22] : rn[5] : rt[5] );
-ld1_s8b_imm.var format : {char const*} = {"2853"};
-
-ld1_s8b_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,1,8,0) << ", [" << DisasmGSXR(rn) << "], #8";
-};
-
-op ld1_s8h_imm( 0b0100110011011111011101[22] : rn[5] : rt[5] );
-ld1_s8h_imm.var format : {char const*} = {"2883"};
-
-ld1_s8h_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,1,8,1) << ", [" << DisasmGSXR(rn) << "], #16";
-};
-
-op ld1_t16b_imm( 0b0100110011011111011000[22] : rn[5] : rt[5] );
-ld1_t16b_imm.var format : {char const*} = {"2671"};
-
-ld1_t16b_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,3,16,0) << ", [" << DisasmGSXR(rn) << "], #48";
-};
-
-op ld1_t1d_imm( 0b0000110011011111011011[22] : rn[5] : rt[5] );
-ld1_t1d_imm.var format : {char const*} = {"2693"};
-
-ld1_t1d_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,3,1,3) << ", [" << DisasmGSXR(rn) << "], #24";
-};
-
-op ld1_t2d_imm( 0b0100110011011111011011[22] : rn[5] : rt[5] );
-ld1_t2d_imm.var format : {char const*} = {"2719"};
-
-ld1_t2d_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,3,2,3) << ", [" << DisasmGSXR(rn) << "], #48";
-};
-
-op ld1_t2s_imm( 0b0000110011011111011010[22] : rn[5] : rt[5] );
-ld1_t2s_imm.var format : {char const*} = {"2749"};
-
-ld1_t2s_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,3,2,2) << ", [" << DisasmGSXR(rn) << "], #24";
-};
-
-op ld1_t4h_imm( 0b0000110011011111011001[22] : rn[5] : rt[5] );
-ld1_t4h_imm.var format : {char const*} = {"2779"};
-
-ld1_t4h_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,3,4,1) << ", [" << DisasmGSXR(rn) << "], #24";
-};
-
-op ld1_t4s_imm( 0b0100110011011111011010[22] : rn[5] : rt[5] );
-ld1_t4s_imm.var format : {char const*} = {"2809"};
-
-ld1_t4s_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,3,4,2) << ", [" << DisasmGSXR(rn) << "], #48";
-};
-
-op ld1_t8b_imm( 0b0000110011011111011000[22] : rn[5] : rt[5] );
-ld1_t8b_imm.var format : {char const*} = {"2839"};
-
-ld1_t8b_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,3,8,0) << ", [" << DisasmGSXR(rn) << "], #24";
-};
-
-op ld1_t8h_imm( 0b0100110011011111011001[22] : rn[5] : rt[5] );
-ld1_t8h_imm.var format : {char const*} = {"2869"};
-
-ld1_t8h_imm.disasm = {
-  sink << "ld1\t" << DisasmBunch(rt,3,8,1) << ", [" << DisasmGSXR(rn) << "], #48";
-};
 
 op ld2_d16b( 0b0100110001000000100000[22] : rn[5] : rt[5] );
 ld2_d16b.var format : {char const*} = {"2674"};
@@ -6457,7 +6457,7 @@ ldp_qo.disasm = {
 /*
  * end of LDP (SIMD&FP)
  *******************************************************************/
- 
+
 /*******************************************************************
  * LDR (immediate, SIMD&FP)
  *
