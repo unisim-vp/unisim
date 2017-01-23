@@ -5524,6 +5524,12 @@ ld2r_d2d_reg.disasm = {
  * end of LD2R
  *******************************************************************/
 
+/*******************************************************************
+ * LD3 (multiple structures)
+ *
+ * Load multiple 3-element structures to three registers
+ */
+
 op ld3_t8b( 0b0000110001000000010000[22] : rn[5] : rt[5] );
 ld3_t8b.var format : {char const*} = {"2833"};
 
@@ -5671,6 +5677,16 @@ ld3_t2d_reg.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+/*
+ * end of LD3 (multiple structures)
+ *******************************************************************/
+
+/*******************************************************************
+ * LD3 (single structure)
+ *
+ * Load single 3-element structure to one lane of three registers)
+ */
+
 op ld3_tbi( 0b0[1] : shl<3> index1[1] : 0b00110101000000001[17] : index0[3] : rn[5] : rt[5] );
 ld3_tbi.var index : {unsigned} = {index1|index0}, format : {char const*} = {"1807"};
 
@@ -5754,6 +5770,16 @@ ld3_tdi_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"529"}
 ld3_tdi_reg.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,0,3) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
+
+/*
+ * end of LD3 (single structure)
+ *******************************************************************/
+
+/*******************************************************************
+ * LD3R
+ *
+ * Load single 3-element structure and replicate to all lanes of three registers
+ */
 
 op ld3r_t8b( 0b0000110101000000111[19] : ?[1] : 0b00[2] : rn[5] : rt[5] );
 ld3r_t8b.var format : {char const*} = {"2079"};
@@ -5923,6 +5949,16 @@ ld3r_t2d_reg.disasm = {
   sink << "ld3r\t" << DisasmBunch(rt,3,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+/*
+ * end of LD3R
+ *******************************************************************/
+
+/*******************************************************************
+ * LD4 (multiple structures)
+ *
+ * Load multiple 4-element structures to four registers
+ */
+
 op ld4_q8b( 0b0000110001000000000000[22] : rn[5] : rt[5] );
 ld4_q8b.var format : {char const*} = {"2827"};
 
@@ -6070,6 +6106,16 @@ ld4_q2d_reg.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+/*
+ * end of LD4 (multiple structures)
+ *******************************************************************/
+
+/*******************************************************************
+ * LD4 (single structure)
+ *
+ * Load single 4-element structure to one lane of four registers
+ */
+
 op ld4_qbi( 0b0[1] : shl<3> index1[1] : 0b00110101100000001[17] : index0[3] : rn[5] : rt[5] );
 ld4_qbi.var index : {unsigned} = {index1|index0}, format : {char const*} = {"1803"};
 
@@ -6153,6 +6199,17 @@ ld4_qdi_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"527"}
 ld4_qdi_reg.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,0,3) << DisasmSubscript(index) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
+
+/*
+ * end of LD4 (single structure)
+ *******************************************************************/
+
+/*******************************************************************
+ * LD4R
+ *
+ * Load single 4-element structure and replicate to all lanes of four
+ * registers
+ */
 
 op ld4r_q8b( 0b0000110101100000111[19] : ?[1] : 0b00[2] : rn[5] : rt[5] );
 ld4r_q8b.var format : {char const*} = {"2077"};
@@ -6321,6 +6378,10 @@ ld4r_q2d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"660"
 ld4r_q2d_reg.disasm = {
   sink << "ld4r\t" << DisasmBunch(rt,4,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
+
+/*
+ * end of LD4R
+ *******************************************************************/
 
 op ldnp_do( 0b0110110001[10] : shl<3> sext imm[7] : rt2[5] : rn[5] : rt[5] );
 ldnp_do.var format : {char const*} = {"37"};
