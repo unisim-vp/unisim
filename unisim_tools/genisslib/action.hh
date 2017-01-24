@@ -36,7 +36,7 @@ struct Action : virtual ReferenceCounter
   //  Action*            m_base;
 
   Action( ActionProto const* _actionproto, SourceCode* _source_code,
-            Vector<Comment>& _comments, FileLoc const& _fileloc );
+            Vector<Comment> const& _comments, FileLoc const& _fileloc );
   ~Action();
 };
 
