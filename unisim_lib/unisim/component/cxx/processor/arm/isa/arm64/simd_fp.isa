@@ -66,12 +66,10 @@ add_v8b.disasm = {
 };
 
 add_v8b.execute = {
-  typedef typename ARCH::U8 U8;
-  U8 zero(0);
+  cpu.UseVU8(rd,8);
+  
   for (unsigned idx = 0; idx < 8; ++idx)
     cpu.SetVU8(rd,idx,cpu.GetVU8(rn,idx) + cpu.GetVU8(rm,idx));
-  for (unsigned idx = 8; idx < 16; ++idx)
-    cpu.SetVU8(rd,idx,zero);
 };
 
 op add_v16b( 0b01001110001[11] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
@@ -94,12 +92,10 @@ add_v4h.disasm = {
 };
 
 add_v4h.execute = {
-  typedef typename ARCH::U16 U16;
-  U16 zero(0);
+  cpu.UseVU16(rd,4);
+  
   for (unsigned idx = 0; idx < 4; ++idx)
     cpu.SetVU16(rd,idx,cpu.GetVU16(rn,idx) + cpu.GetVU16(rm,idx));
-  for (unsigned idx = 4; idx < 8; ++idx)
-    cpu.SetVU16(rd,idx,zero);
 };
 
 op add_v8h( 0b01001110011[11] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
@@ -122,12 +118,10 @@ add_v2s.disasm = {
 };
 
 add_v2s.execute = {
-  typedef typename ARCH::U32 U32;
-  U32 zero(0);
+  cpu.UseVU32(rd,2);
+  
   for (unsigned idx = 0; idx < 2; ++idx)
     cpu.SetVU32(rd,idx,cpu.GetVU32(rn,idx) + cpu.GetVU32(rm,idx));
-  for (unsigned idx = 2; idx < 4; ++idx)
-    cpu.SetVU32(rd,idx,zero);
 };
 
 op add_v4s( 0b01001110101[11] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
@@ -1216,11 +1210,12 @@ dup_v8b.disasm = {
 
 dup_v8b.execute = {
   typedef typename ARCH::U8 U8;
-  U8 element( cpu.GetGZR(rn) ), zero(0);
+  
+  cpu.UseVU8(rd,8);
+  
+  U8 element( cpu.GetGZR(rn) );
   for (unsigned idx = 0; idx < 8; ++idx)
     cpu.SetVU8(rd,idx,element);
-  for (unsigned idx = 8; idx < 16; ++idx)
-    cpu.SetVU8(rd,idx,zero);
 };
 
 op dup_v16b( 0b01001110000[11] : ?[4] : 0b1000011[7] : rn[5] : rd[5] );
@@ -1246,11 +1241,12 @@ dup_v4h.disasm = {
 
 dup_v4h.execute = {
   typedef typename ARCH::U16 U16;
-  U16 element( cpu.GetGZR(rn) ), zero(0);
+  
+  cpu.UseVU16(rd,4);
+  
+  U16 element( cpu.GetGZR(rn) );
   for (unsigned idx = 0; idx < 4; ++idx)
     cpu.SetVU16(rd,idx,element);
-  for (unsigned idx = 4; idx < 8; ++idx)
-    cpu.SetVU16(rd,idx,zero);
 };
 
 op dup_v8h( 0b01001110000[11] : ?[3] : 0b10000011[8] : rn[5] : rd[5] );
@@ -1276,11 +1272,12 @@ dup_v2s.disasm = {
 
 dup_v2s.execute = {
   typedef typename ARCH::U32 U32;
-  U32 element( cpu.GetGZR(rn) ), zero(0);
+  
+  cpu.UseVU32(rd,2);
+  
+  U32 element( cpu.GetGZR(rn) );
   for (unsigned idx = 0; idx < 2; ++idx)
     cpu.SetVU32(rd,idx,element);
-  for (unsigned idx = 2; idx < 4; ++idx)
-    cpu.SetVU32(rd,idx,zero);
 };
 
 op dup_v4s( 0b01001110000[11] : ?[2] : 0b100000011[9] : rn[5] : rd[5] );
@@ -4153,11 +4150,39 @@ ld1_s8b.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,8,0) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld1_s8b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*1+s)*1) ));
+    }
+  }
+};
+
 op ld1_s16b( 0b0100110001000000011100[22] : rn[5] : rt[5] );
 ld1_s16b.var format : {char const*} = {"2681"};
 
 ld1_s16b.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,16,0) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld1_s16b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*1+s)*1) ));
+    }
+  }
 };
 
 op ld1_s4h( 0b0000110001000000011101[22] : rn[5] : rt[5] );
@@ -4167,11 +4192,39 @@ ld1_s4h.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,4,1) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld1_s4h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*1+s)*2) ));
+    }
+  }
+};
+
 op ld1_s8h( 0b0100110001000000011101[22] : rn[5] : rt[5] );
 ld1_s8h.var format : {char const*} = {"2879"};
 
 ld1_s8h.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,8,1) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld1_s8h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*1+s)*2) ));
+    }
+  }
 };
 
 op ld1_s2s( 0b0000110001000000011110[22] : rn[5] : rt[5] );
@@ -4181,11 +4234,39 @@ ld1_s2s.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,2,2) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld1_s2s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*1+s)*4) ));
+    }
+  }
+};
+
 op ld1_s4s( 0b0100110001000000011110[22] : rn[5] : rt[5] );
 ld1_s4s.var format : {char const*} = {"2819"};
 
 ld1_s4s.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,4,2) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld1_s4s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*1+s)*4) ));
+    }
+  }
 };
 
 op ld1_s1d( 0b0000110001000000011111[22] : rn[5] : rt[5] );
@@ -4195,11 +4276,39 @@ ld1_s1d.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,1,3) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld1_s1d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned e = 0; e < 1; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*1+s)*8) ));
+    }
+  }
+};
+
 op ld1_s2d( 0b0100110001000000011111[22] : rn[5] : rt[5] );
 ld1_s2d.var format : {char const*} = {"2729"};
 
 ld1_s2d.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,2,3) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld1_s2d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*1+s)*8) ));
+    }
+  }
 };
 
 op ld1_d8b( 0b0000110001000000101000[22] : rn[5] : rt[5] );
@@ -4209,11 +4318,39 @@ ld1_d8b.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,8,0) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld1_d8b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*8+e)*1) ));
+    }
+  }
+};
+
 op ld1_d16b( 0b0100110001000000101000[22] : rn[5] : rt[5] );
 ld1_d16b.var format : {char const*} = {"2673"};
 
 ld1_d16b.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,16,0) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld1_d16b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 16; ++e) {
+      cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*16+e)*1) ));
+    }
+  }
 };
 
 op ld1_d4h( 0b0000110001000000101001[22] : rn[5] : rt[5] );
@@ -4223,11 +4360,39 @@ ld1_d4h.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,4,1) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld1_d4h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*4+e)*2) ));
+    }
+  }
+};
+
 op ld1_d8h( 0b0100110001000000101001[22] : rn[5] : rt[5] );
 ld1_d8h.var format : {char const*} = {"2871"};
 
 ld1_d8h.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,8,1) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld1_d8h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*8+e)*2) ));
+    }
+  }
 };
 
 op ld1_d2s( 0b0000110001000000101010[22] : rn[5] : rt[5] );
@@ -4237,11 +4402,39 @@ ld1_d2s.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,2,2) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld1_d2s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*2+e)*4) ));
+    }
+  }
+};
+
 op ld1_d4s( 0b0100110001000000101010[22] : rn[5] : rt[5] );
 ld1_d4s.var format : {char const*} = {"2811"};
 
 ld1_d4s.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,4,2) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld1_d4s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*4+e)*4) ));
+    }
+  }
 };
 
 op ld1_d1d( 0b0000110001000000101011[22] : rn[5] : rt[5] );
@@ -4251,11 +4444,39 @@ ld1_d1d.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,1,3) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld1_d1d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 1; ++e) {
+      cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*1+e)*8) ));
+    }
+  }
+};
+
 op ld1_d2d( 0b0100110001000000101011[22] : rn[5] : rt[5] );
 ld1_d2d.var format : {char const*} = {"2721"};
 
 ld1_d2d.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,2,3) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld1_d2d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*2+e)*8) ));
+    }
+  }
 };
 
 op ld1_t8b( 0b0000110001000000011000[22] : rn[5] : rt[5] );
@@ -4265,11 +4486,39 @@ ld1_t8b.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,8,0) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld1_t8b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*8+e)*1) ));
+    }
+  }
+};
+
 op ld1_t16b( 0b0100110001000000011000[22] : rn[5] : rt[5] );
 ld1_t16b.var format : {char const*} = {"2667"};
 
 ld1_t16b.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,16,0) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld1_t16b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 16; ++e) {
+      cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*16+e)*1) ));
+    }
+  }
 };
 
 op ld1_t4h( 0b0000110001000000011001[22] : rn[5] : rt[5] );
@@ -4279,11 +4528,39 @@ ld1_t4h.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,4,1) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld1_t4h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*4+e)*2) ));
+    }
+  }
+};
+
 op ld1_t8h( 0b0100110001000000011001[22] : rn[5] : rt[5] );
 ld1_t8h.var format : {char const*} = {"2865"};
 
 ld1_t8h.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,8,1) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld1_t8h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*8+e)*2) ));
+    }
+  }
 };
 
 op ld1_t2s( 0b0000110001000000011010[22] : rn[5] : rt[5] );
@@ -4293,11 +4570,39 @@ ld1_t2s.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,2,2) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld1_t2s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*2+e)*4) ));
+    }
+  }
+};
+
 op ld1_t4s( 0b0100110001000000011010[22] : rn[5] : rt[5] );
 ld1_t4s.var format : {char const*} = {"2805"};
 
 ld1_t4s.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,4,2) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld1_t4s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*4+e)*4) ));
+    }
+  }
 };
 
 op ld1_t1d( 0b0000110001000000011011[22] : rn[5] : rt[5] );
@@ -4307,11 +4612,39 @@ ld1_t1d.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,1,3) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld1_t1d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 1; ++e) {
+      cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*1+e)*8) ));
+    }
+  }
+};
+
 op ld1_t2d( 0b0100110001000000011011[22] : rn[5] : rt[5] );
 ld1_t2d.var format : {char const*} = {"2715"};
 
 ld1_t2d.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,2,3) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld1_t2d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*2+e)*8) ));
+    }
+  }
 };
 
 op ld1_q8b( 0b0000110001000000001000[22] : rn[5] : rt[5] );
@@ -4321,11 +4654,39 @@ ld1_q8b.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,8,0) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld1_q8b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*8+e)*1) ));
+    }
+  }
+};
+
 op ld1_q16b( 0b0100110001000000001000[22] : rn[5] : rt[5] );
 ld1_q16b.var format : {char const*} = {"2657"};
 
 ld1_q16b.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,16,0) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld1_q16b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 16; ++e) {
+      cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*16+e)*1) ));
+    }
+  }
 };
 
 op ld1_q4h( 0b0000110001000000001001[22] : rn[5] : rt[5] );
@@ -4335,11 +4696,39 @@ ld1_q4h.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,4,1) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld1_q4h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*4+e)*2) ));
+    }
+  }
+};
+
 op ld1_q8h( 0b0100110001000000001001[22] : rn[5] : rt[5] );
 ld1_q8h.var format : {char const*} = {"2855"};
 
 ld1_q8h.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,8,1) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld1_q8h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*8+e)*2) ));
+    }
+  }
 };
 
 op ld1_q2s( 0b0000110001000000001010[22] : rn[5] : rt[5] );
@@ -4349,11 +4738,39 @@ ld1_q2s.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,2,2) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld1_q2s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*2+e)*4) ));
+    }
+  }
+};
+
 op ld1_q4s( 0b0100110001000000001010[22] : rn[5] : rt[5] );
 ld1_q4s.var format : {char const*} = {"2795"};
 
 ld1_q4s.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,4,2) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld1_q4s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*4+e)*4) ));
+    }
+  }
 };
 
 op ld1_q1d( 0b0000110001000000001011[22] : rn[5] : rt[5] );
@@ -4363,11 +4780,39 @@ ld1_q1d.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,1,3) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld1_q1d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 1; ++e) {
+      cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*1+e)*8) ));
+    }
+  }
+};
+
 op ld1_q2d( 0b0100110001000000001011[22] : rn[5] : rt[5] );
 ld1_q2d.var format : {char const*} = {"2705"};
 
 ld1_q2d.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,2,3) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld1_q2d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*2+e)*8) ));
+    }
+  }
 };
 
 op ld1_s8b_imm( 0b0000110011011111011100[22] : rn[5] : rt[5] );
@@ -4377,11 +4822,41 @@ ld1_s8b_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,8,0) << ", [" << DisasmGSXR(rn) << "], #8";
 };
 
+ld1_s8b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*1+s)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op ld1_s8b_reg( 0b00001100110[11] : rm[5] : 0b011100[6] : rn[5] : rt[5] );
 ld1_s8b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1768"};
 
 ld1_s8b_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,8,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_s8b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*1+s)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_s16b_imm( 0b0100110011011111011100[22] : rn[5] : rt[5] );
@@ -4391,11 +4866,41 @@ ld1_s16b_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,16,0) << ", [" << DisasmGSXR(rn) << "], #16";
 };
 
+ld1_s16b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*1+s)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op ld1_s16b_reg( 0b01001100110[11] : rm[5] : 0b011100[6] : rn[5] : rt[5] );
 ld1_s16b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1684"};
 
 ld1_s16b_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,16,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_s16b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*1+s)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_s4h_imm( 0b0000110011011111011101[22] : rn[5] : rt[5] );
@@ -4405,11 +4910,41 @@ ld1_s4h_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,4,1) << ", [" << DisasmGSXR(rn) << "], #8";
 };
 
+ld1_s4h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*1+s)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op ld1_s4h_reg( 0b00001100110[11] : rm[5] : 0b011101[6] : rn[5] : rt[5] );
 ld1_s4h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1738"};
 
 ld1_s4h_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,4,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_s4h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*1+s)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_s8h_imm( 0b0100110011011111011101[22] : rn[5] : rt[5] );
@@ -4419,11 +4954,41 @@ ld1_s8h_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,8,1) << ", [" << DisasmGSXR(rn) << "], #16";
 };
 
+ld1_s8h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*1+s)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op ld1_s8h_reg( 0b01001100110[11] : rm[5] : 0b011101[6] : rn[5] : rt[5] );
 ld1_s8h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1783"};
 
 ld1_s8h_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,8,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_s8h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*1+s)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_s2s_imm( 0b0000110011011111011110[22] : rn[5] : rt[5] );
@@ -4433,11 +4998,41 @@ ld1_s2s_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,2,2) << ", [" << DisasmGSXR(rn) << "], #8";
 };
 
+ld1_s2s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*1+s)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op ld1_s2s_reg( 0b00001100110[11] : rm[5] : 0b011110[6] : rn[5] : rt[5] );
 ld1_s2s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1723"};
 
 ld1_s2s_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,2,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_s2s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*1+s)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_s4s_imm( 0b0100110011011111011110[22] : rn[5] : rt[5] );
@@ -4447,11 +5042,41 @@ ld1_s4s_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,4,2) << ", [" << DisasmGSXR(rn) << "], #16";
 };
 
+ld1_s4s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*1+s)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op ld1_s4s_reg( 0b01001100110[11] : rm[5] : 0b011110[6] : rn[5] : rt[5] );
 ld1_s4s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1753"};
 
 ld1_s4s_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,4,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_s4s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*1+s)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_s1d_imm( 0b0000110011011111011111[22] : rn[5] : rt[5] );
@@ -4461,11 +5086,41 @@ ld1_s1d_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,1,3) << ", [" << DisasmGSXR(rn) << "], #8";
 };
 
+ld1_s1d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned e = 0; e < 1; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*1+s)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op ld1_s1d_reg( 0b00001100110[11] : rm[5] : 0b011111[6] : rn[5] : rt[5] );
 ld1_s1d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1693"};
 
 ld1_s1d_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,1,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_s1d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned e = 0; e < 1; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*1+s)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_s2d_imm( 0b0100110011011111011111[22] : rn[5] : rt[5] );
@@ -4475,11 +5130,41 @@ ld1_s2d_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,2,3) << ", [" << DisasmGSXR(rn) << "], #16";
 };
 
+ld1_s2d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*1+s)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op ld1_s2d_reg( 0b01001100110[11] : rm[5] : 0b011111[6] : rn[5] : rt[5] );
 ld1_s2d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1708"};
 
 ld1_s2d_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,1,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_s2d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*1+s)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_d8b_imm( 0b0000110011011111101000[22] : rn[5] : rt[5] );
@@ -4489,11 +5174,41 @@ ld1_d8b_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,8,0) << ", [" << DisasmGSXR(rn) << "], #16";
 };
 
+ld1_d8b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*8+e)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op ld1_d8b_reg( 0b00001100110[11] : rm[5] : 0b101000[6] : rn[5] : rt[5] );
 ld1_d8b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1765"};
 
 ld1_d8b_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,8,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_d8b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*8+e)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_d16b_imm( 0b0100110011011111101000[22] : rn[5] : rt[5] );
@@ -4503,11 +5218,41 @@ ld1_d16b_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,16,0) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
+ld1_d16b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 16; ++e) {
+      cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*16+e)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op ld1_d16b_reg( 0b01001100110[11] : rm[5] : 0b101000[6] : rn[5] : rt[5] );
 ld1_d16b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1681"};
 
 ld1_d16b_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,16,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_d16b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 16; ++e) {
+      cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*16+e)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_d4h_imm( 0b0000110011011111101001[22] : rn[5] : rt[5] );
@@ -4517,11 +5262,41 @@ ld1_d4h_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,4,1) << ", [" << DisasmGSXR(rn) << "], #16";
 };
 
+ld1_d4h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*4+e)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op ld1_d4h_reg( 0b00001100110[11] : rm[5] : 0b101001[6] : rn[5] : rt[5] );
 ld1_d4h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1735"};
 
 ld1_d4h_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,4,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_d4h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*4+e)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_d8h_imm( 0b0100110011011111101001[22] : rn[5] : rt[5] );
@@ -4531,11 +5306,41 @@ ld1_d8h_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,8,1) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
+ld1_d8h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*8+e)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op ld1_d8h_reg( 0b01001100110[11] : rm[5] : 0b101001[6] : rn[5] : rt[5] );
 ld1_d8h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1780"};
 
 ld1_d8h_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,8,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_d8h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*8+e)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_d2s_imm( 0b0000110011011111101010[22] : rn[5] : rt[5] );
@@ -4545,11 +5350,41 @@ ld1_d2s_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,2,2) << ", [" << DisasmGSXR(rn) << "], #16";
 };
 
+ld1_d2s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*2+e)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op ld1_d2s_reg( 0b00001100110[11] : rm[5] : 0b101010[6] : rn[5] : rt[5] );
 ld1_d2s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1720"};
 
 ld1_d2s_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,2,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_d2s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*2+e)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_d4s_imm( 0b0100110011011111101010[22] : rn[5] : rt[5] );
@@ -4559,11 +5394,41 @@ ld1_d4s_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,4,2) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
+ld1_d4s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*4+e)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op ld1_d4s_reg( 0b01001100110[11] : rm[5] : 0b101010[6] : rn[5] : rt[5] );
 ld1_d4s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1750"};
 
 ld1_d4s_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,4,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_d4s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*4+e)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_d1d_imm( 0b0000110011011111101011[22] : rn[5] : rt[5] );
@@ -4573,11 +5438,41 @@ ld1_d1d_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,1,3) << ", [" << DisasmGSXR(rn) << "], #16";
 };
 
+ld1_d1d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 1; ++e) {
+      cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*1+e)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op ld1_d1d_reg( 0b00001100110[11] : rm[5] : 0b101011[6] : rn[5] : rt[5] );
 ld1_d1d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1691"};
 
 ld1_d1d_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,1,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_d1d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 1; ++e) {
+      cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*1+e)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_d2d_imm( 0b0100110011011111101011[22] : rn[5] : rt[5] );
@@ -4587,11 +5482,41 @@ ld1_d2d_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,2,3) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
+ld1_d2d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*2+e)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op ld1_d2d_reg( 0b01001100110[11] : rm[5] : 0b101011[6] : rn[5] : rt[5] );
 ld1_d2d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1705"};
 
 ld1_d2d_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,2,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_d2d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*2+e)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_t8b_imm( 0b0000110011011111011000[22] : rn[5] : rt[5] );
@@ -4601,11 +5526,41 @@ ld1_t8b_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,8,0) << ", [" << DisasmGSXR(rn) << "], #24";
 };
 
+ld1_t8b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*8+e)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op ld1_t8b_reg( 0b00001100110[11] : rm[5] : 0b011000[6] : rn[5] : rt[5] );
 ld1_t8b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1761"};
 
 ld1_t8b_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,8,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_t8b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*8+e)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_t16b_imm( 0b0100110011011111011000[22] : rn[5] : rt[5] );
@@ -4615,11 +5570,41 @@ ld1_t16b_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,16,0) << ", [" << DisasmGSXR(rn) << "], #48";
 };
 
+ld1_t16b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 16; ++e) {
+      cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*16+e)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op ld1_t16b_reg( 0b01001100110[11] : rm[5] : 0b011000[6] : rn[5] : rt[5] );
 ld1_t16b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1677"};
 
 ld1_t16b_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,16,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_t16b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 16; ++e) {
+      cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*16+e)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_t4h_imm( 0b0000110011011111011001[22] : rn[5] : rt[5] );
@@ -4629,11 +5614,41 @@ ld1_t4h_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,4,1) << ", [" << DisasmGSXR(rn) << "], #24";
 };
 
+ld1_t4h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*4+e)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op ld1_t4h_reg( 0b00001100110[11] : rm[5] : 0b011001[6] : rn[5] : rt[5] );
 ld1_t4h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1731"};
 
 ld1_t4h_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,4,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_t4h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*4+e)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_t8h_imm( 0b0100110011011111011001[22] : rn[5] : rt[5] );
@@ -4643,11 +5658,41 @@ ld1_t8h_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,8,1) << ", [" << DisasmGSXR(rn) << "], #48";
 };
 
+ld1_t8h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*8+e)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op ld1_t8h_reg( 0b01001100110[11] : rm[5] : 0b011001[6] : rn[5] : rt[5] );
 ld1_t8h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1776"};
 
 ld1_t8h_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,8,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_t8h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*8+e)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_t2s_imm( 0b0000110011011111011010[22] : rn[5] : rt[5] );
@@ -4657,11 +5702,41 @@ ld1_t2s_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,2,2) << ", [" << DisasmGSXR(rn) << "], #24";
 };
 
+ld1_t2s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*2+e)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op ld1_t2s_reg( 0b00001100110[11] : rm[5] : 0b011010[6] : rn[5] : rt[5] );
 ld1_t2s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1716"};
 
 ld1_t2s_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,2,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_t2s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*2+e)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_t4s_imm( 0b0100110011011111011010[22] : rn[5] : rt[5] );
@@ -4671,11 +5746,41 @@ ld1_t4s_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,4,2) << ", [" << DisasmGSXR(rn) << "], #48";
 };
 
+ld1_t4s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*4+e)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op ld1_t4s_reg( 0b01001100110[11] : rm[5] : 0b011010[6] : rn[5] : rt[5] );
 ld1_t4s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1746"};
 
 ld1_t4s_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,4,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_t4s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*4+e)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_t1d_imm( 0b0000110011011111011011[22] : rn[5] : rt[5] );
@@ -4685,11 +5790,41 @@ ld1_t1d_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,1,3) << ", [" << DisasmGSXR(rn) << "], #24";
 };
 
+ld1_t1d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 1; ++e) {
+      cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*1+e)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op ld1_t1d_reg( 0b00001100110[11] : rm[5] : 0b011011[6] : rn[5] : rt[5] );
 ld1_t1d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1688"};
 
 ld1_t1d_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,1,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_t1d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 1; ++e) {
+      cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*1+e)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_t2d_imm( 0b0100110011011111011011[22] : rn[5] : rt[5] );
@@ -4699,11 +5834,41 @@ ld1_t2d_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,2,3) << ", [" << DisasmGSXR(rn) << "], #48";
 };
 
+ld1_t2d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*2+e)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op ld1_t2d_reg( 0b01001100110[11] : rm[5] : 0b011011[6] : rn[5] : rt[5] );
 ld1_t2d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1701"};
 
 ld1_t2d_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,3,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_t2d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*2+e)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_q8b_imm( 0b0000110011011111001000[22] : rn[5] : rt[5] );
@@ -4713,11 +5878,41 @@ ld1_q8b_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,8,0) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
+ld1_q8b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*8+e)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op ld1_q8b_reg( 0b00001100110[11] : rm[5] : 0b001000[6] : rn[5] : rt[5] );
 ld1_q8b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1757"};
 
 ld1_q8b_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,8,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_q8b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*8+e)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_q16b_imm( 0b0100110011011111001000[22] : rn[5] : rt[5] );
@@ -4727,11 +5922,41 @@ ld1_q16b_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,16,0) << ", [" << DisasmGSXR(rn) << "], #64";
 };
 
+ld1_q16b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 16; ++e) {
+      cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*16+e)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op ld1_q16b_reg( 0b01001100110[11] : rm[5] : 0b001000[6] : rn[5] : rt[5] );
 ld1_q16b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1673"};
 
 ld1_q16b_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,16,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_q16b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 16; ++e) {
+      cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*16+e)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_q4h_imm( 0b0000110011011111001001[22] : rn[5] : rt[5] );
@@ -4741,11 +5966,41 @@ ld1_q4h_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,4,1) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
+ld1_q4h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*4+e)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op ld1_q4h_reg( 0b00001100110[11] : rm[5] : 0b001001[6] : rn[5] : rt[5] );
 ld1_q4h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1727"};
 
 ld1_q4h_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,4,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_q4h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*4+e)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_q8h_imm( 0b0100110011011111001001[22] : rn[5] : rt[5] );
@@ -4755,11 +6010,41 @@ ld1_q8h_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,8,1) << ", [" << DisasmGSXR(rn) << "], #64";
 };
 
+ld1_q8h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*8+e)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op ld1_q8h_reg( 0b01001100110[11] : rm[5] : 0b001001[6] : rn[5] : rt[5] );
 ld1_q8h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1772"};
 
 ld1_q8h_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,8,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_q8h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*8+e)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_q2s_imm( 0b0000110011011111001010[22] : rn[5] : rt[5] );
@@ -4769,11 +6054,41 @@ ld1_q2s_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,2,2) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
+ld1_q2s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*2+e)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op ld1_q2s_reg( 0b00001100110[11] : rm[5] : 0b001010[6] : rn[5] : rt[5] );
 ld1_q2s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1712"};
 
 ld1_q2s_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,2,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_q2s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*2+e)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_q4s_imm( 0b0100110011011111001010[22] : rn[5] : rt[5] );
@@ -4783,11 +6098,41 @@ ld1_q4s_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,4,2) << ", [" << DisasmGSXR(rn) << "], #64";
 };
 
+ld1_q4s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*4+e)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op ld1_q4s_reg( 0b01001100110[11] : rm[5] : 0b001010[6] : rn[5] : rt[5] );
 ld1_q4s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1742"};
 
 ld1_q4s_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,4,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_q4s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*4+e)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_q1d_imm( 0b0000110011011111001011[22] : rn[5] : rt[5] );
@@ -4797,11 +6142,41 @@ ld1_q1d_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,1,3) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
+ld1_q1d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 1; ++e) {
+      cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*1+e)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op ld1_q1d_reg( 0b00001100110[11] : rm[5] : 0b001011[6] : rn[5] : rt[5] );
 ld1_q1d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1686"};
 
 ld1_q1d_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,1,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_q1d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 1; ++e) {
+      cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*1+e)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op ld1_q2d_imm( 0b0100110011011111001011[22] : rn[5] : rt[5] );
@@ -4811,11 +6186,41 @@ ld1_q2d_imm.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,2,3) << ", [" << DisasmGSXR(rn) << "], #64";
 };
 
+ld1_q2d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*2+e)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op ld1_q2d_reg( 0b01001100110[11] : rm[5] : 0b001011[6] : rn[5] : rt[5] );
 ld1_q2d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1697"};
 
 ld1_q2d_reg.disasm = {
   sink << "ld1\t" << DisasmBunch(rt,4,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld1_q2d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*2+e)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 /*
@@ -5107,11 +6512,39 @@ ld2_d8b.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,8,0) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld2_d8b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*2+s)*1) ));
+    }
+  }
+};
+
 op ld2_d16b( 0b0100110001000000100000[22] : rn[5] : rt[5] );
 ld2_d16b.var format : {char const*} = {"2674"};
 
 ld2_d16b.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,16,0) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld2_d16b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*2+s)*1) ));
+    }
+  }
 };
 
 op ld2_d4h( 0b0000110001000000100001[22] : rn[5] : rt[5] );
@@ -5121,11 +6554,39 @@ ld2_d4h.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,4,1) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld2_d4h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*2+s)*2) ));
+    }
+  }
+};
+
 op ld2_d8h( 0b0100110001000000100001[22] : rn[5] : rt[5] );
 ld2_d8h.var format : {char const*} = {"2872"};
 
 ld2_d8h.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,8,1) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld2_d8h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*2+s)*2) ));
+    }
+  }
 };
 
 op ld2_d2s( 0b0000110001000000100010[22] : rn[5] : rt[5] );
@@ -5135,11 +6596,39 @@ ld2_d2s.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,2,2) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld2_d2s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*2+s)*4) ));
+    }
+  }
+};
+
 op ld2_d4s( 0b0100110001000000100010[22] : rn[5] : rt[5] );
 ld2_d4s.var format : {char const*} = {"2812"};
 
 ld2_d4s.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,4,2) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld2_d4s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*2+s)*4) ));
+    }
+  }
 };
 
 op ld2_d2d( 0b0100110001000000100011[22] : rn[5] : rt[5] );
@@ -5149,11 +6638,40 @@ ld2_d2d.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,2,3) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld2_d2d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*2+s)*8) ));
+    }
+  }
+};
+
 op ld2_d8b_imm( 0b0000110011011111100000[22] : rn[5] : rt[5] );
 ld2_d8b_imm.var format : {char const*} = {"2848"};
 
 ld2_d8b_imm.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,8,0) << ", [" << DisasmGSXR(rn) << "], #16";
+};
+
+ld2_d8b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*2+s)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
 };
 
 op ld2_d8b_reg( 0b00001100110[11] : rm[5] : 0b100000[6] : rn[5] : rt[5] );
@@ -5163,11 +6681,41 @@ ld2_d8b_reg.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,8,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+ld2_d8b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*2+s)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op ld2_d16b_imm( 0b0100110011011111100000[22] : rn[5] : rt[5] );
 ld2_d16b_imm.var format : {char const*} = {"2680"};
 
 ld2_d16b_imm.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,16,0) << ", [" << DisasmGSXR(rn) << "], #32";
+};
+
+ld2_d16b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*2+s)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(32) );
 };
 
 op ld2_d16b_reg( 0b01001100110[11] : rm[5] : 0b100000[6] : rn[5] : rt[5] );
@@ -5177,11 +6725,41 @@ ld2_d16b_reg.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,16,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+ld2_d16b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*2+s)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op ld2_d4h_imm( 0b0000110011011111100001[22] : rn[5] : rt[5] );
 ld2_d4h_imm.var format : {char const*} = {"2788"};
 
 ld2_d4h_imm.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,4,1) << ", [" << DisasmGSXR(rn) << "], #16";
+};
+
+ld2_d4h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*2+s)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
 };
 
 op ld2_d4h_reg( 0b00001100110[11] : rm[5] : 0b100001[6] : rn[5] : rt[5] );
@@ -5191,11 +6769,41 @@ ld2_d4h_reg.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,4,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+ld2_d4h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*2+s)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op ld2_d8h_imm( 0b0100110011011111100001[22] : rn[5] : rt[5] );
 ld2_d8h_imm.var format : {char const*} = {"2878"};
 
 ld2_d8h_imm.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,8,1) << ", [" << DisasmGSXR(rn) << "], #32";
+};
+
+ld2_d8h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*2+s)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(32) );
 };
 
 op ld2_d8h_reg( 0b01001100110[11] : rm[5] : 0b100001[6] : rn[5] : rt[5] );
@@ -5205,11 +6813,41 @@ ld2_d8h_reg.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,8,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+ld2_d8h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*2+s)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op ld2_d2s_imm( 0b0000110011011111100010[22] : rn[5] : rt[5] );
 ld2_d2s_imm.var format : {char const*} = {"2758"};
 
 ld2_d2s_imm.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,2,2) << ", [" << DisasmGSXR(rn) << "], #16";
+};
+
+ld2_d2s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*2+s)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
 };
 
 op ld2_d2s_reg( 0b00001100110[11] : rm[5] : 0b100010[6] : rn[5] : rt[5] );
@@ -5219,11 +6857,41 @@ ld2_d2s_reg.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,2,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+ld2_d2s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*2+s)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op ld2_d4s_imm( 0b0100110011011111100010[22] : rn[5] : rt[5] );
 ld2_d4s_imm.var format : {char const*} = {"2818"};
 
 ld2_d4s_imm.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,4,2) << ", [" << DisasmGSXR(rn) << "], #32";
+};
+
+ld2_d4s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*2+s)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(32) );
 };
 
 op ld2_d4s_reg( 0b01001100110[11] : rm[5] : 0b100010[6] : rn[5] : rt[5] );
@@ -5233,6 +6901,21 @@ ld2_d4s_reg.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,4,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+ld2_d4s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*2+s)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op ld2_d2d_imm( 0b0100110011011111100011[22] : rn[5] : rt[5] );
 ld2_d2d_imm.var format : {char const*} = {"2728"};
 
@@ -5240,11 +6923,41 @@ ld2_d2d_imm.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,2,3) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
+ld2_d2d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*2+s)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(32) );
+};
+
 op ld2_d2d_reg( 0b01001100110[11] : rm[5] : 0b100011[6] : rn[5] : rt[5] );
 ld2_d2d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1706"};
 
 ld2_d2d_reg.disasm = {
   sink << "ld2\t" << DisasmBunch(rt,2,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld2_d2d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*2+s)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 /*
@@ -5537,11 +7250,39 @@ ld3_t8b.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,8,0) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld3_t8b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*3+s)*1) ));
+    }
+  }
+};
+
 op ld3_t16b( 0b0100110001000000010000[22] : rn[5] : rt[5] );
 ld3_t16b.var format : {char const*} = {"2665"};
 
 ld3_t16b.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,16,0) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld3_t16b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*3+s)*1) ));
+    }
+  }
 };
 
 op ld3_t4h( 0b0000110001000000010001[22] : rn[5] : rt[5] );
@@ -5551,11 +7292,39 @@ ld3_t4h.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,4,1) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld3_t4h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*3+s)*2) ));
+    }
+  }
+};
+
 op ld3_t8h( 0b0100110001000000010001[22] : rn[5] : rt[5] );
 ld3_t8h.var format : {char const*} = {"2863"};
 
 ld3_t8h.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,8,1) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld3_t8h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*3+s)*2) ));
+    }
+  }
 };
 
 op ld3_t2s( 0b0000110001000000010010[22] : rn[5] : rt[5] );
@@ -5565,11 +7334,39 @@ ld3_t2s.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,2,2) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld3_t2s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*3+s)*4) ));
+    }
+  }
+};
+
 op ld3_t4s( 0b0100110001000000010010[22] : rn[5] : rt[5] );
 ld3_t4s.var format : {char const*} = {"2803"};
 
 ld3_t4s.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,4,2) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld3_t4s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*3+s)*4) ));
+    }
+  }
 };
 
 op ld3_t2d( 0b0100110001000000010011[22] : rn[5] : rt[5] );
@@ -5579,11 +7376,40 @@ ld3_t2d.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,2,3) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld3_t2d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*3+s)*8) ));
+    }
+  }
+};
+
 op ld3_t8b_imm( 0b0000110011011111010000[22] : rn[5] : rt[5] );
 ld3_t8b_imm.var format : {char const*} = {"2837"};
 
 ld3_t8b_imm.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,8,0) << ", [" << DisasmGSXR(rn) << "], #24";
+};
+
+ld3_t8b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*3+s)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(24) );
 };
 
 op ld3_t8b_reg( 0b00001100110[11] : rm[5] : 0b010000[6] : rn[5] : rt[5] );
@@ -5593,11 +7419,41 @@ ld3_t8b_reg.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,8,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+ld3_t8b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*3+s)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op ld3_t16b_imm( 0b0100110011011111010000[22] : rn[5] : rt[5] );
 ld3_t16b_imm.var format : {char const*} = {"2669"};
 
 ld3_t16b_imm.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,16,0) << ", [" << DisasmGSXR(rn) << "], #48";
+};
+
+ld3_t16b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*3+s)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(48) );
 };
 
 op ld3_t16b_reg( 0b01001100110[11] : rm[5] : 0b010000[6] : rn[5] : rt[5] );
@@ -5607,11 +7463,41 @@ ld3_t16b_reg.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,16,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+ld3_t16b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*3+s)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op ld3_t4h_imm( 0b0000110011011111010001[22] : rn[5] : rt[5] );
 ld3_t4h_imm.var format : {char const*} = {"2777"};
 
 ld3_t4h_imm.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,4,1) << ", [" << DisasmGSXR(rn) << "], #24";
+};
+
+ld3_t4h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*3+s)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(24) );
 };
 
 op ld3_t4h_reg( 0b00001100110[11] : rm[5] : 0b010001[6] : rn[5] : rt[5] );
@@ -5621,11 +7507,41 @@ ld3_t4h_reg.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,4,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+ld3_t4h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*3+s)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op ld3_t8h_imm( 0b0100110011011111010001[22] : rn[5] : rt[5] );
 ld3_t8h_imm.var format : {char const*} = {"2867"};
 
 ld3_t8h_imm.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,8,1) << ", [" << DisasmGSXR(rn) << "], #48";
+};
+
+ld3_t8h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*3+s)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(48) );
 };
 
 op ld3_t8h_reg( 0b01001100110[11] : rm[5] : 0b010001[6] : rn[5] : rt[5] );
@@ -5635,11 +7551,41 @@ ld3_t8h_reg.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,8,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+ld3_t8h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*3+s)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op ld3_t2s_imm( 0b0000110011011111010010[22] : rn[5] : rt[5] );
 ld3_t2s_imm.var format : {char const*} = {"2747"};
 
 ld3_t2s_imm.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,2,2) << ", [" << DisasmGSXR(rn) << "], #24";
+};
+
+ld3_t2s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*3+s)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(24) );
 };
 
 op ld3_t2s_reg( 0b00001100110[11] : rm[5] : 0b010010[6] : rn[5] : rt[5] );
@@ -5649,11 +7595,41 @@ ld3_t2s_reg.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,2,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+ld3_t2s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*3+s)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op ld3_t4s_imm( 0b0100110011011111010010[22] : rn[5] : rt[5] );
 ld3_t4s_imm.var format : {char const*} = {"2807"};
 
 ld3_t4s_imm.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,4,2) << ", [" << DisasmGSXR(rn) << "], #48";
+};
+
+ld3_t4s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*3+s)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(48) );
 };
 
 op ld3_t4s_reg( 0b01001100110[11] : rm[5] : 0b010010[6] : rn[5] : rt[5] );
@@ -5663,6 +7639,21 @@ ld3_t4s_reg.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,4,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+ld3_t4s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*3+s)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op ld3_t2d_imm( 0b0100110011011111010011[22] : rn[5] : rt[5] );
 ld3_t2d_imm.var format : {char const*} = {"2717"};
 
@@ -5670,11 +7661,41 @@ ld3_t2d_imm.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,2,3) << ", [" << DisasmGSXR(rn) << "], #48";
 };
 
+ld3_t2d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*3+s)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(48) );
+};
+
 op ld3_t2d_reg( 0b01001100110[11] : rm[5] : 0b010011[6] : rn[5] : rt[5] );
 ld3_t2d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1699"};
 
 ld3_t2d_reg.disasm = {
   sink << "ld3\t" << DisasmBunch(rt,3,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld3_t2d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*3+s)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 /*
@@ -5966,11 +7987,39 @@ ld4_q8b.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,8,0) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld4_q8b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*4+s)*1) ));
+    }
+  }
+};
+
 op ld4_q16b( 0b0100110001000000000000[22] : rn[5] : rt[5] );
 ld4_q16b.var format : {char const*} = {"2659"};
 
 ld4_q16b.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,16,0) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld4_q16b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*4+s)*1) ));
+    }
+  }
 };
 
 op ld4_q4h( 0b0000110001000000000001[22] : rn[5] : rt[5] );
@@ -5980,11 +8029,39 @@ ld4_q4h.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,4,1) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld4_q4h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*4+s)*2) ));
+    }
+  }
+};
+
 op ld4_q8h( 0b0100110001000000000001[22] : rn[5] : rt[5] );
 ld4_q8h.var format : {char const*} = {"2857"};
 
 ld4_q8h.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,8,1) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld4_q8h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*4+s)*2) ));
+    }
+  }
 };
 
 op ld4_q2s( 0b0000110001000000000010[22] : rn[5] : rt[5] );
@@ -5994,11 +8071,39 @@ ld4_q2s.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,2,2) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld4_q2s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*4+s)*4) ));
+    }
+  }
+};
+
 op ld4_q4s( 0b0100110001000000000010[22] : rn[5] : rt[5] );
 ld4_q4s.var format : {char const*} = {"2797"};
 
 ld4_q4s.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,4,2) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+ld4_q4s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*4+s)*4) ));
+    }
+  }
 };
 
 op ld4_q2d( 0b0100110001000000000011[22] : rn[5] : rt[5] );
@@ -6008,11 +8113,40 @@ ld4_q2d.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,2,3) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+ld4_q2d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*4+s)*8) ));
+    }
+  }
+};
+
 op ld4_q8b_imm( 0b0000110011011111000000[22] : rn[5] : rt[5] );
 ld4_q8b_imm.var format : {char const*} = {"2829"};
 
 ld4_q8b_imm.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,8,0) << ", [" << DisasmGSXR(rn) << "], #32";
+};
+
+ld4_q8b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*4+s)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(32) );
 };
 
 op ld4_q8b_reg( 0b00001100110[11] : rm[5] : 0b000000[6] : rn[5] : rt[5] );
@@ -6022,11 +8156,41 @@ ld4_q8b_reg.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,8,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+ld4_q8b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*4+s)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op ld4_q16b_imm( 0b0100110011011111000000[22] : rn[5] : rt[5] );
 ld4_q16b_imm.var format : {char const*} = {"2661"};
 
 ld4_q16b_imm.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,16,0) << ", [" << DisasmGSXR(rn) << "], #64";
+};
+
+ld4_q16b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*4+s)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(64) );
 };
 
 op ld4_q16b_reg( 0b01001100110[11] : rm[5] : 0b000000[6] : rn[5] : rt[5] );
@@ -6036,11 +8200,41 @@ ld4_q16b_reg.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,16,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+ld4_q16b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*4+s)*1) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op ld4_q4h_imm( 0b0000110011011111000001[22] : rn[5] : rt[5] );
 ld4_q4h_imm.var format : {char const*} = {"2769"};
 
 ld4_q4h_imm.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,4,1) << ", [" << DisasmGSXR(rn) << "], #32";
+};
+
+ld4_q4h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*4+s)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(32) );
 };
 
 op ld4_q4h_reg( 0b00001100110[11] : rm[5] : 0b000001[6] : rn[5] : rt[5] );
@@ -6050,11 +8244,41 @@ ld4_q4h_reg.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,4,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+ld4_q4h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*4+s)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op ld4_q8h_imm( 0b0100110011011111000001[22] : rn[5] : rt[5] );
 ld4_q8h_imm.var format : {char const*} = {"2859"};
 
 ld4_q8h_imm.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,8,1) << ", [" << DisasmGSXR(rn) << "], #64";
+};
+
+ld4_q8h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*4+s)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(64) );
 };
 
 op ld4_q8h_reg( 0b01001100110[11] : rm[5] : 0b000001[6] : rn[5] : rt[5] );
@@ -6064,11 +8288,41 @@ ld4_q8h_reg.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,8,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+ld4_q8h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*4+s)*2) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op ld4_q2s_imm( 0b0000110011011111000010[22] : rn[5] : rt[5] );
 ld4_q2s_imm.var format : {char const*} = {"2739"};
 
 ld4_q2s_imm.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,2,2) << ", [" << DisasmGSXR(rn) << "], #32";
+};
+
+ld4_q2s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*4+s)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(32) );
 };
 
 op ld4_q2s_reg( 0b00001100110[11] : rm[5] : 0b000010[6] : rn[5] : rt[5] );
@@ -6078,11 +8332,41 @@ ld4_q2s_reg.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,2,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+ld4_q2s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*4+s)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op ld4_q4s_imm( 0b0100110011011111000010[22] : rn[5] : rt[5] );
 ld4_q4s_imm.var format : {char const*} = {"2799"};
 
 ld4_q4s_imm.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,4,2) << ", [" << DisasmGSXR(rn) << "], #64";
+};
+
+ld4_q4s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*4+s)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(64) );
 };
 
 op ld4_q4s_reg( 0b01001100110[11] : rm[5] : 0b000010[6] : rn[5] : rt[5] );
@@ -6092,6 +8376,21 @@ ld4_q4s_reg.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,4,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+ld4_q4s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*4+s)*4) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op ld4_q2d_imm( 0b0100110011011111000011[22] : rn[5] : rt[5] );
 ld4_q2d_imm.var format : {char const*} = {"2709"};
 
@@ -6099,11 +8398,41 @@ ld4_q2d_imm.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,2,3) << ", [" << DisasmGSXR(rn) << "], #64";
 };
 
+ld4_q2d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*4+s)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(64) );
+};
+
 op ld4_q2d_reg( 0b01001100110[11] : rm[5] : 0b000011[6] : rn[5] : rt[5] );
 ld4_q2d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1695"};
 
 ld4_q2d_reg.disasm = {
   sink << "ld4\t" << DisasmBunch(rt,4,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+ld4_q2d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*4+s)*8) ));
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 /*
@@ -11352,11 +13681,39 @@ st1_s8b.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,8,0) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st1_s8b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
+};
+
 op st1_s16b( 0b0100110000000000011100[22] : rn[5] : rt[5] );
 st1_s16b.var format : {char const*} = {"2683"};
 
 st1_s16b.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,16,0) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st1_s16b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
 };
 
 op st1_s4h( 0b0000110000000000011101[22] : rn[5] : rt[5] );
@@ -11366,11 +13723,39 @@ st1_s4h.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,4,1) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st1_s4h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
+};
+
 op st1_s8h( 0b0100110000000000011101[22] : rn[5] : rt[5] );
 st1_s8h.var format : {char const*} = {"2881"};
 
 st1_s8h.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,8,1) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st1_s8h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
 };
 
 op st1_s2s( 0b0000110000000000011110[22] : rn[5] : rt[5] );
@@ -11380,11 +13765,39 @@ st1_s2s.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,2,2) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st1_s2s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
+};
+
 op st1_s4s( 0b0100110000000000011110[22] : rn[5] : rt[5] );
 st1_s4s.var format : {char const*} = {"2821"};
 
 st1_s4s.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,4,2) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st1_s4s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
 };
 
 op st1_s1d( 0b0000110000000000011111[22] : rn[5] : rt[5] );
@@ -11394,11 +13807,39 @@ st1_s1d.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,1,3) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st1_s1d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned e = 0; e < 1; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*8), cpu.GetVU64((rt+s)%32, e) );
+    }
+  }
+};
+
 op st1_s2d( 0b0100110000000000011111[22] : rn[5] : rt[5] );
 st1_s2d.var format : {char const*} = {"2731"};
 
 st1_s2d.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,2,3) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st1_s2d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*8), cpu.GetVU64((rt+s)%32, e) );
+    }
+  }
 };
 
 op st1_d8b( 0b0000110000000000101000[22] : rn[5] : rt[5] );
@@ -11408,11 +13849,39 @@ st1_d8b.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,8,0) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st1_d8b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.MemWrite32( addr + U64((r*8+e)*1), cpu.GetVU8((rt+r)%32, e) );
+    }
+  }
+};
+
 op st1_d16b( 0b0100110000000000101000[22] : rn[5] : rt[5] );
 st1_d16b.var format : {char const*} = {"2675"};
 
 st1_d16b.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,16,0) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st1_d16b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 16; ++e) {
+      cpu.MemWrite32( addr + U64((r*16+e)*1), cpu.GetVU8((rt+r)%32, e) );
+    }
+  }
 };
 
 op st1_d4h( 0b0000110000000000101001[22] : rn[5] : rt[5] );
@@ -11422,11 +13891,39 @@ st1_d4h.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,4,1) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st1_d4h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.MemWrite32( addr + U64((r*4+e)*2), cpu.GetVU16((rt+r)%32, e) );
+    }
+  }
+};
+
 op st1_d8h( 0b0100110000000000101001[22] : rn[5] : rt[5] );
 st1_d8h.var format : {char const*} = {"2873"};
 
 st1_d8h.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,8,1) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st1_d8h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.MemWrite32( addr + U64((r*8+e)*2), cpu.GetVU16((rt+r)%32, e) );
+    }
+  }
 };
 
 op st1_d2s( 0b0000110000000000101010[22] : rn[5] : rt[5] );
@@ -11436,11 +13933,39 @@ st1_d2s.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,2,2) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st1_d2s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.MemWrite32( addr + U64((r*2+e)*4), cpu.GetVU32((rt+r)%32, e) );
+    }
+  }
+};
+
 op st1_d4s( 0b0100110000000000101010[22] : rn[5] : rt[5] );
 st1_d4s.var format : {char const*} = {"2813"};
 
 st1_d4s.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,4,2) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st1_d4s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.MemWrite32( addr + U64((r*4+e)*4), cpu.GetVU32((rt+r)%32, e) );
+    }
+  }
 };
 
 op st1_d1d( 0b0000110000000000101011[22] : rn[5] : rt[5] );
@@ -11450,11 +13975,39 @@ st1_d1d.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,1,3) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st1_d1d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 1; ++e) {
+      cpu.MemWrite32( addr + U64((r*1+e)*8), cpu.GetVU64((rt+r)%32, e) );
+    }
+  }
+};
+
 op st1_d2d( 0b0100110000000000101011[22] : rn[5] : rt[5] );
 st1_d2d.var format : {char const*} = {"2723"};
 
 st1_d2d.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,2,3) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st1_d2d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.MemWrite32( addr + U64((r*2+e)*8), cpu.GetVU64((rt+r)%32, e) );
+    }
+  }
 };
 
 op st1_t8b( 0b0000110000000000011000[22] : rn[5] : rt[5] );
@@ -11464,11 +14017,39 @@ st1_t8b.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,8,0) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st1_t8b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.MemWrite32( addr + U64((r*8+e)*1), cpu.GetVU8((rt+r)%32, e) );
+    }
+  }
+};
+
 op st1_t16b( 0b0100110000000000011000[22] : rn[5] : rt[5] );
 st1_t16b.var format : {char const*} = {"2668"};
 
 st1_t16b.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,16,0) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st1_t16b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 16; ++e) {
+      cpu.MemWrite32( addr + U64((r*16+e)*1), cpu.GetVU8((rt+r)%32, e) );
+    }
+  }
 };
 
 op st1_t4h( 0b0000110000000000011001[22] : rn[5] : rt[5] );
@@ -11478,11 +14059,39 @@ st1_t4h.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,4,1) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st1_t4h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.MemWrite32( addr + U64((r*4+e)*2), cpu.GetVU16((rt+r)%32, e) );
+    }
+  }
+};
+
 op st1_t8h( 0b0100110000000000011001[22] : rn[5] : rt[5] );
 st1_t8h.var format : {char const*} = {"2866"};
 
 st1_t8h.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,8,1) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st1_t8h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.MemWrite32( addr + U64((r*8+e)*2), cpu.GetVU16((rt+r)%32, e) );
+    }
+  }
 };
 
 op st1_t2s( 0b0000110000000000011010[22] : rn[5] : rt[5] );
@@ -11492,11 +14101,39 @@ st1_t2s.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,2,2) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st1_t2s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.MemWrite32( addr + U64((r*2+e)*4), cpu.GetVU32((rt+r)%32, e) );
+    }
+  }
+};
+
 op st1_t4s( 0b0100110000000000011010[22] : rn[5] : rt[5] );
 st1_t4s.var format : {char const*} = {"2806"};
 
 st1_t4s.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,4,2) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st1_t4s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.MemWrite32( addr + U64((r*4+e)*4), cpu.GetVU32((rt+r)%32, e) );
+    }
+  }
 };
 
 op st1_t1d( 0b0000110000000000011011[22] : rn[5] : rt[5] );
@@ -11506,11 +14143,39 @@ st1_t1d.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,1,3) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st1_t1d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 1; ++e) {
+      cpu.MemWrite32( addr + U64((r*1+e)*8), cpu.GetVU64((rt+r)%32, e) );
+    }
+  }
+};
+
 op st1_t2d( 0b0100110000000000011011[22] : rn[5] : rt[5] );
 st1_t2d.var format : {char const*} = {"2716"};
 
 st1_t2d.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,2,3) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st1_t2d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.MemWrite32( addr + U64((r*2+e)*8), cpu.GetVU64((rt+r)%32, e) );
+    }
+  }
 };
 
 op st1_q8b( 0b0000110000000000001000[22] : rn[5] : rt[5] );
@@ -11520,11 +14185,39 @@ st1_q8b.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,8,0) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st1_q8b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.MemWrite32( addr + U64((r*8+e)*1), cpu.GetVU8((rt+r)%32, e) );
+    }
+  }
+};
+
 op st1_q16b( 0b0100110000000000001000[22] : rn[5] : rt[5] );
 st1_q16b.var format : {char const*} = {"2658"};
 
 st1_q16b.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,16,0) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st1_q16b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 16; ++e) {
+      cpu.MemWrite32( addr + U64((r*16+e)*1), cpu.GetVU8((rt+r)%32, e) );
+    }
+  }
 };
 
 op st1_q4h( 0b0000110000000000001001[22] : rn[5] : rt[5] );
@@ -11534,11 +14227,39 @@ st1_q4h.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,4,1) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st1_q4h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.MemWrite32( addr + U64((r*4+e)*2), cpu.GetVU16((rt+r)%32, e) );
+    }
+  }
+};
+
 op st1_q8h( 0b0100110000000000001001[22] : rn[5] : rt[5] );
 st1_q8h.var format : {char const*} = {"2856"};
 
 st1_q8h.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,8,1) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st1_q8h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.MemWrite32( addr + U64((r*8+e)*2), cpu.GetVU16((rt+r)%32, e) );
+    }
+  }
 };
 
 op st1_q2s( 0b0000110000000000001010[22] : rn[5] : rt[5] );
@@ -11548,11 +14269,39 @@ st1_q2s.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,2,2) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st1_q2s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.MemWrite32( addr + U64((r*2+e)*4), cpu.GetVU32((rt+r)%32, e) );
+    }
+  }
+};
+
 op st1_q4s( 0b0100110000000000001010[22] : rn[5] : rt[5] );
 st1_q4s.var format : {char const*} = {"2796"};
 
 st1_q4s.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,4,2) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st1_q4s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.MemWrite32( addr + U64((r*4+e)*4), cpu.GetVU32((rt+r)%32, e) );
+    }
+  }
 };
 
 op st1_q1d( 0b0000110000000000001011[22] : rn[5] : rt[5] );
@@ -11562,11 +14311,39 @@ st1_q1d.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,1,3) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st1_q1d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 1; ++e) {
+      cpu.MemWrite32( addr + U64((r*1+e)*8), cpu.GetVU64((rt+r)%32, e) );
+    }
+  }
+};
+
 op st1_q2d( 0b0100110000000000001011[22] : rn[5] : rt[5] );
 st1_q2d.var format : {char const*} = {"2706"};
 
 st1_q2d.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,2,3) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st1_q2d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.MemWrite32( addr + U64((r*2+e)*8), cpu.GetVU64((rt+r)%32, e) );
+    }
+  }
 };
 
 op st1_s8b_imm( 0b0000110010011111011100[22] : rn[5] : rt[5] );
@@ -11576,11 +14353,41 @@ st1_s8b_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,8,0) << ", [" << DisasmGSXR(rn) << "], #8";
 };
 
+st1_s8b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op st1_s8b_reg( 0b00001100100[11] : rm[5] : 0b011100[6] : rn[5] : rt[5] );
 st1_s8b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1767"};
 
 st1_s8b_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,8,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_s8b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_s16b_imm( 0b0100110010011111011100[22] : rn[5] : rt[5] );
@@ -11590,11 +14397,41 @@ st1_s16b_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,16,0) << ", [" << DisasmGSXR(rn) << "], #16";
 };
 
+st1_s16b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op st1_s16b_reg( 0b01001100100[11] : rm[5] : 0b011100[6] : rn[5] : rt[5] );
 st1_s16b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1683"};
 
 st1_s16b_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,16,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_s16b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_s4h_imm( 0b0000110010011111011101[22] : rn[5] : rt[5] );
@@ -11604,11 +14441,41 @@ st1_s4h_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,4,1) << ", [" << DisasmGSXR(rn) << "], #8";
 };
 
+st1_s4h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op st1_s4h_reg( 0b00001100100[11] : rm[5] : 0b011101[6] : rn[5] : rt[5] );
 st1_s4h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1737"};
 
 st1_s4h_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,4,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_s4h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_s8h_imm( 0b0100110010011111011101[22] : rn[5] : rt[5] );
@@ -11618,11 +14485,41 @@ st1_s8h_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,8,1) << ", [" << DisasmGSXR(rn) << "], #16";
 };
 
+st1_s8h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op st1_s8h_reg( 0b01001100100[11] : rm[5] : 0b011101[6] : rn[5] : rt[5] );
 st1_s8h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1782"};
 
 st1_s8h_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,8,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_s8h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_s2s_imm( 0b0000110010011111011110[22] : rn[5] : rt[5] );
@@ -11632,11 +14529,41 @@ st1_s2s_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,2,2) << ", [" << DisasmGSXR(rn) << "], #8";
 };
 
+st1_s2s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op st1_s2s_reg( 0b00001100100[11] : rm[5] : 0b011110[6] : rn[5] : rt[5] );
 st1_s2s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1722"};
 
 st1_s2s_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,2,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_s2s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_s4s_imm( 0b0100110010011111011110[22] : rn[5] : rt[5] );
@@ -11646,11 +14573,41 @@ st1_s4s_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,4,2) << ", [" << DisasmGSXR(rn) << "], #16";
 };
 
+st1_s4s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op st1_s4s_reg( 0b01001100100[11] : rm[5] : 0b011110[6] : rn[5] : rt[5] );
 st1_s4s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1752"};
 
 st1_s4s_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,4,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_s4s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_s1d_imm( 0b0000110010011111011111[22] : rn[5] : rt[5] );
@@ -11660,11 +14617,41 @@ st1_s1d_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,1,3) << ", [" << DisasmGSXR(rn) << "], #8";
 };
 
+st1_s1d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned e = 0; e < 1; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*8), cpu.GetVU64((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op st1_s1d_reg( 0b00001100100[11] : rm[5] : 0b011111[6] : rn[5] : rt[5] );
 st1_s1d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1692"};
 
 st1_s1d_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,1,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_s1d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned e = 0; e < 1; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*8), cpu.GetVU64((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_s2d_imm( 0b0100110010011111011111[22] : rn[5] : rt[5] );
@@ -11674,11 +14661,41 @@ st1_s2d_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,2,3) << ", [" << DisasmGSXR(rn) << "], #16";
 };
 
+st1_s2d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*8), cpu.GetVU64((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op st1_s2d_reg( 0b01001100100[11] : rm[5] : 0b011111[6] : rn[5] : rt[5] );
 st1_s2d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1707"};
 
 st1_s2d_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,1,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_s2d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 1; ++s) {
+      cpu.MemWrite32( addr + U64((e*1+s)*8), cpu.GetVU64((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_d8b_imm( 0b0000110010011111101000[22] : rn[5] : rt[5] );
@@ -11688,11 +14705,41 @@ st1_d8b_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,8,0) << ", [" << DisasmGSXR(rn) << "], #16";
 };
 
+st1_d8b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.MemWrite32( addr + U64((r*8+e)*1), cpu.GetVU8((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op st1_d8b_reg( 0b00001100100[11] : rm[5] : 0b101000[6] : rn[5] : rt[5] );
 st1_d8b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1763"};
 
 st1_d8b_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,8,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_d8b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.MemWrite32( addr + U64((r*8+e)*1), cpu.GetVU8((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_d16b_imm( 0b0100110010011111101000[22] : rn[5] : rt[5] );
@@ -11702,11 +14749,41 @@ st1_d16b_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,16,0) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
+st1_d16b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 16; ++e) {
+      cpu.MemWrite32( addr + U64((r*16+e)*1), cpu.GetVU8((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op st1_d16b_reg( 0b01001100100[11] : rm[5] : 0b101000[6] : rn[5] : rt[5] );
 st1_d16b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1679"};
 
 st1_d16b_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,16,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_d16b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 16; ++e) {
+      cpu.MemWrite32( addr + U64((r*16+e)*1), cpu.GetVU8((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_d4h_imm( 0b0000110010011111101001[22] : rn[5] : rt[5] );
@@ -11716,11 +14793,41 @@ st1_d4h_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,4,1) << ", [" << DisasmGSXR(rn) << "], #16";
 };
 
+st1_d4h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.MemWrite32( addr + U64((r*4+e)*2), cpu.GetVU16((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op st1_d4h_reg( 0b00001100100[11] : rm[5] : 0b101001[6] : rn[5] : rt[5] );
 st1_d4h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1733"};
 
 st1_d4h_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,4,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_d4h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.MemWrite32( addr + U64((r*4+e)*2), cpu.GetVU16((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_d8h_imm( 0b0100110010011111101001[22] : rn[5] : rt[5] );
@@ -11730,11 +14837,41 @@ st1_d8h_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,8,1) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
+st1_d8h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.MemWrite32( addr + U64((r*8+e)*2), cpu.GetVU16((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op st1_d8h_reg( 0b01001100100[11] : rm[5] : 0b101001[6] : rn[5] : rt[5] );
 st1_d8h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1778"};
 
 st1_d8h_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,8,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_d8h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.MemWrite32( addr + U64((r*8+e)*2), cpu.GetVU16((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_d2s_imm( 0b0000110010011111101010[22] : rn[5] : rt[5] );
@@ -11744,11 +14881,41 @@ st1_d2s_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,2,2) << ", [" << DisasmGSXR(rn) << "], #16";
 };
 
+st1_d2s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.MemWrite32( addr + U64((r*2+e)*4), cpu.GetVU32((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op st1_d2s_reg( 0b00001100100[11] : rm[5] : 0b101010[6] : rn[5] : rt[5] );
 st1_d2s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1718"};
 
 st1_d2s_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,2,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_d2s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.MemWrite32( addr + U64((r*2+e)*4), cpu.GetVU32((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_d4s_imm( 0b0100110010011111101010[22] : rn[5] : rt[5] );
@@ -11758,11 +14925,41 @@ st1_d4s_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,4,2) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
+st1_d4s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.MemWrite32( addr + U64((r*4+e)*4), cpu.GetVU32((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op st1_d4s_reg( 0b01001100100[11] : rm[5] : 0b101010[6] : rn[5] : rt[5] );
 st1_d4s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1748"};
 
 st1_d4s_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,4,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_d4s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.MemWrite32( addr + U64((r*4+e)*4), cpu.GetVU32((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_d1d_imm( 0b0000110010011111101011[22] : rn[5] : rt[5] );
@@ -11772,11 +14969,41 @@ st1_d1d_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,1,3) << ", [" << DisasmGSXR(rn) << "], #16";
 };
 
+st1_d1d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 1; ++e) {
+      cpu.MemWrite32( addr + U64((r*1+e)*8), cpu.GetVU64((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op st1_d1d_reg( 0b00001100100[11] : rm[5] : 0b101011[6] : rn[5] : rt[5] );
 st1_d1d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1690"};
 
 st1_d1d_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,1,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_d1d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 1; ++e) {
+      cpu.MemWrite32( addr + U64((r*1+e)*8), cpu.GetVU64((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_d2d_imm( 0b0100110010011111101011[22] : rn[5] : rt[5] );
@@ -11786,11 +15013,41 @@ st1_d2d_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,2,3) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
+st1_d2d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.MemWrite32( addr + U64((r*2+e)*8), cpu.GetVU64((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op st1_d2d_reg( 0b01001100100[11] : rm[5] : 0b101011[6] : rn[5] : rt[5] );
 st1_d2d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1703"};
 
 st1_d2d_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,2,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_d2d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 2; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.MemWrite32( addr + U64((r*2+e)*8), cpu.GetVU64((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_t8b_imm( 0b0000110010011111011000[22] : rn[5] : rt[5] );
@@ -11800,11 +15057,41 @@ st1_t8b_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,8,0) << ", [" << DisasmGSXR(rn) << "], #24";
 };
 
+st1_t8b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.MemWrite32( addr + U64((r*8+e)*1), cpu.GetVU8((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op st1_t8b_reg( 0b00001100100[11] : rm[5] : 0b011000[6] : rn[5] : rt[5] );
 st1_t8b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1762"};
 
 st1_t8b_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,8,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_t8b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.MemWrite32( addr + U64((r*8+e)*1), cpu.GetVU8((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_t16b_imm( 0b0100110010011111011000[22] : rn[5] : rt[5] );
@@ -11814,11 +15101,41 @@ st1_t16b_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,16,0) << ", [" << DisasmGSXR(rn) << "], #48";
 };
 
+st1_t16b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 16; ++e) {
+      cpu.MemWrite32( addr + U64((r*16+e)*1), cpu.GetVU8((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op st1_t16b_reg( 0b01001100100[11] : rm[5] : 0b011000[6] : rn[5] : rt[5] );
 st1_t16b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1678"};
 
 st1_t16b_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,16,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_t16b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 16; ++e) {
+      cpu.MemWrite32( addr + U64((r*16+e)*1), cpu.GetVU8((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_t4h_imm( 0b0000110010011111011001[22] : rn[5] : rt[5] );
@@ -11828,11 +15145,41 @@ st1_t4h_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,4,1) << ", [" << DisasmGSXR(rn) << "], #24";
 };
 
+st1_t4h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.MemWrite32( addr + U64((r*4+e)*2), cpu.GetVU16((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op st1_t4h_reg( 0b00001100100[11] : rm[5] : 0b011001[6] : rn[5] : rt[5] );
 st1_t4h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1732"};
 
 st1_t4h_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,4,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_t4h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.MemWrite32( addr + U64((r*4+e)*2), cpu.GetVU16((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_t8h_imm( 0b0100110010011111011001[22] : rn[5] : rt[5] );
@@ -11842,11 +15189,41 @@ st1_t8h_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,8,1) << ", [" << DisasmGSXR(rn) << "], #48";
 };
 
+st1_t8h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.MemWrite32( addr + U64((r*8+e)*2), cpu.GetVU16((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op st1_t8h_reg( 0b01001100100[11] : rm[5] : 0b011001[6] : rn[5] : rt[5] );
 st1_t8h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1777"};
 
 st1_t8h_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,8,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_t8h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.MemWrite32( addr + U64((r*8+e)*2), cpu.GetVU16((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_t2s_imm( 0b0000110010011111011010[22] : rn[5] : rt[5] );
@@ -11856,11 +15233,41 @@ st1_t2s_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,2,2) << ", [" << DisasmGSXR(rn) << "], #24";
 };
 
+st1_t2s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.MemWrite32( addr + U64((r*2+e)*4), cpu.GetVU32((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op st1_t2s_reg( 0b00001100100[11] : rm[5] : 0b011010[6] : rn[5] : rt[5] );
 st1_t2s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1717"};
 
 st1_t2s_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,2,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_t2s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.MemWrite32( addr + U64((r*2+e)*4), cpu.GetVU32((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_t4s_imm( 0b0100110010011111011010[22] : rn[5] : rt[5] );
@@ -11870,11 +15277,41 @@ st1_t4s_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,4,2) << ", [" << DisasmGSXR(rn) << "], #48";
 };
 
+st1_t4s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.MemWrite32( addr + U64((r*4+e)*4), cpu.GetVU32((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op st1_t4s_reg( 0b01001100100[11] : rm[5] : 0b011010[6] : rn[5] : rt[5] );
 st1_t4s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1747"};
 
 st1_t4s_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,4,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_t4s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.MemWrite32( addr + U64((r*4+e)*4), cpu.GetVU32((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_t1d_imm( 0b0000110010011111011011[22] : rn[5] : rt[5] );
@@ -11884,11 +15321,41 @@ st1_t1d_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,1,3) << ", [" << DisasmGSXR(rn) << "], #24";
 };
 
+st1_t1d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 1; ++e) {
+      cpu.MemWrite32( addr + U64((r*1+e)*8), cpu.GetVU64((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op st1_t1d_reg( 0b00001100100[11] : rm[5] : 0b011011[6] : rn[5] : rt[5] );
 st1_t1d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1689"};
 
 st1_t1d_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,1,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_t1d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 1; ++e) {
+      cpu.MemWrite32( addr + U64((r*1+e)*8), cpu.GetVU64((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_t2d_imm( 0b0100110010011111011011[22] : rn[5] : rt[5] );
@@ -11898,11 +15365,41 @@ st1_t2d_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,2,3) << ", [" << DisasmGSXR(rn) << "], #48";
 };
 
+st1_t2d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.MemWrite32( addr + U64((r*2+e)*8), cpu.GetVU64((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op st1_t2d_reg( 0b01001100100[11] : rm[5] : 0b011011[6] : rn[5] : rt[5] );
 st1_t2d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1702"};
 
 st1_t2d_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,3,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_t2d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 3; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.MemWrite32( addr + U64((r*2+e)*8), cpu.GetVU64((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_q8b_imm( 0b0000110010011111001000[22] : rn[5] : rt[5] );
@@ -11912,11 +15409,41 @@ st1_q8b_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,8,0) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
+st1_q8b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.MemWrite32( addr + U64((r*8+e)*1), cpu.GetVU8((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op st1_q8b_reg( 0b00001100100[11] : rm[5] : 0b001000[6] : rn[5] : rt[5] );
 st1_q8b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1758"};
 
 st1_q8b_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,8,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_q8b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.MemWrite32( addr + U64((r*8+e)*1), cpu.GetVU8((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_q16b_imm( 0b0100110010011111001000[22] : rn[5] : rt[5] );
@@ -11926,11 +15453,41 @@ st1_q16b_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,16,0) << ", [" << DisasmGSXR(rn) << "], #64";
 };
 
+st1_q16b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 16; ++e) {
+      cpu.MemWrite32( addr + U64((r*16+e)*1), cpu.GetVU8((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op st1_q16b_reg( 0b01001100100[11] : rm[5] : 0b001000[6] : rn[5] : rt[5] );
 st1_q16b_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1674"};
 
 st1_q16b_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,16,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_q16b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 16; ++e) {
+      cpu.MemWrite32( addr + U64((r*16+e)*1), cpu.GetVU8((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_q4h_imm( 0b0000110010011111001001[22] : rn[5] : rt[5] );
@@ -11940,11 +15497,41 @@ st1_q4h_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,4,1) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
+st1_q4h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.MemWrite32( addr + U64((r*4+e)*2), cpu.GetVU16((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op st1_q4h_reg( 0b00001100100[11] : rm[5] : 0b001001[6] : rn[5] : rt[5] );
 st1_q4h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1728"};
 
 st1_q4h_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,4,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_q4h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.MemWrite32( addr + U64((r*4+e)*2), cpu.GetVU16((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_q8h_imm( 0b0100110010011111001001[22] : rn[5] : rt[5] );
@@ -11954,11 +15541,41 @@ st1_q8h_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,8,1) << ", [" << DisasmGSXR(rn) << "], #64";
 };
 
+st1_q8h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.MemWrite32( addr + U64((r*8+e)*2), cpu.GetVU16((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op st1_q8h_reg( 0b01001100100[11] : rm[5] : 0b001001[6] : rn[5] : rt[5] );
 st1_q8h_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1773"};
 
 st1_q8h_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,8,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_q8h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 8; ++e) {
+      cpu.MemWrite32( addr + U64((r*8+e)*2), cpu.GetVU16((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_q2s_imm( 0b0000110010011111001010[22] : rn[5] : rt[5] );
@@ -11968,11 +15585,41 @@ st1_q2s_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,2,2) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
+st1_q2s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.MemWrite32( addr + U64((r*2+e)*4), cpu.GetVU32((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op st1_q2s_reg( 0b00001100100[11] : rm[5] : 0b001010[6] : rn[5] : rt[5] );
 st1_q2s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1713"};
 
 st1_q2s_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,2,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_q2s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.MemWrite32( addr + U64((r*2+e)*4), cpu.GetVU32((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_q4s_imm( 0b0100110010011111001010[22] : rn[5] : rt[5] );
@@ -11982,11 +15629,41 @@ st1_q4s_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,4,2) << ", [" << DisasmGSXR(rn) << "], #64";
 };
 
+st1_q4s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.MemWrite32( addr + U64((r*4+e)*4), cpu.GetVU32((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op st1_q4s_reg( 0b01001100100[11] : rm[5] : 0b001010[6] : rn[5] : rt[5] );
 st1_q4s_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1743"};
 
 st1_q4s_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,4,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_q4s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 4; ++e) {
+      cpu.MemWrite32( addr + U64((r*4+e)*4), cpu.GetVU32((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_q1d_imm( 0b0000110010011111001011[22] : rn[5] : rt[5] );
@@ -11996,11 +15673,41 @@ st1_q1d_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,1,3) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
+st1_q1d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 1; ++e) {
+      cpu.MemWrite32( addr + U64((r*1+e)*8), cpu.GetVU64((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(8) );
+};
+
 op st1_q1d_reg( 0b00001100100[11] : rm[5] : 0b001011[6] : rn[5] : rt[5] );
 st1_q1d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1687"};
 
 st1_q1d_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,1,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_q1d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,1); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 1; ++e) {
+      cpu.MemWrite32( addr + U64((r*1+e)*8), cpu.GetVU64((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_q2d_imm( 0b0100110010011111001011[22] : rn[5] : rt[5] );
@@ -12010,11 +15717,41 @@ st1_q2d_imm.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,2,3) << ", [" << DisasmGSXR(rn) << "], #64";
 };
 
+st1_q2d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.MemWrite32( addr + U64((r*2+e)*8), cpu.GetVU64((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
+};
+
 op st1_q2d_reg( 0b01001100100[11] : rm[5] : 0b001011[6] : rn[5] : rt[5] );
 st1_q2d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1698"};
 
 st1_q2d_reg.disasm = {
   sink << "st1\t" << DisasmBunch(rt,4,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st1_q2d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned r = 0; r < 4; ++r) {
+    for (unsigned e = 0; e < 2; ++e) {
+      cpu.MemWrite32( addr + U64((r*2+e)*8), cpu.GetVU64((rt+r)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st1_sbi( 0b0[1] : shl<3> index1[1] : 0b00110100000000000[17] : index0[3] : rn[5] : rt[5] );
@@ -12108,11 +15845,39 @@ st2_d8b.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,8,0) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st2_d8b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
+};
+
 op st2_d16b( 0b0100110000000000100000[22] : rn[5] : rt[5] );
 st2_d16b.var format : {char const*} = {"2676"};
 
 st2_d16b.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,16,0) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st2_d16b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
 };
 
 op st2_d4h( 0b0000110000000000100001[22] : rn[5] : rt[5] );
@@ -12122,11 +15887,39 @@ st2_d4h.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,4,1) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st2_d4h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
+};
+
 op st2_d8h( 0b0100110000000000100001[22] : rn[5] : rt[5] );
 st2_d8h.var format : {char const*} = {"2874"};
 
 st2_d8h.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,8,1) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st2_d8h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
 };
 
 op st2_d2s( 0b0000110000000000100010[22] : rn[5] : rt[5] );
@@ -12136,11 +15929,39 @@ st2_d2s.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,2,2) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st2_d2s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
+};
+
 op st2_d4s( 0b0100110000000000100010[22] : rn[5] : rt[5] );
 st2_d4s.var format : {char const*} = {"2814"};
 
 st2_d4s.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,4,2) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st2_d4s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
 };
 
 op st2_d2d( 0b0100110000000000100011[22] : rn[5] : rt[5] );
@@ -12150,11 +15971,40 @@ st2_d2d.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,2,3) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st2_d2d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*8), cpu.GetVU64((rt+s)%32, e) );
+    }
+  }
+};
+
 op st2_d8b_imm( 0b0000110010011111100000[22] : rn[5] : rt[5] );
 st2_d8b_imm.var format : {char const*} = {"2846"};
 
 st2_d8b_imm.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,8,0) << ", [" << DisasmGSXR(rn) << "], #16";
+};
+
+st2_d8b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
 };
 
 op st2_d8b_reg( 0b00001100100[11] : rm[5] : 0b100000[6] : rn[5] : rt[5] );
@@ -12164,11 +16014,41 @@ st2_d8b_reg.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,8,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+st2_d8b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op st2_d16b_imm( 0b0100110010011111100000[22] : rn[5] : rt[5] );
 st2_d16b_imm.var format : {char const*} = {"2678"};
 
 st2_d16b_imm.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,16,0) << ", [" << DisasmGSXR(rn) << "], #32";
+};
+
+st2_d16b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(32) );
 };
 
 op st2_d16b_reg( 0b01001100100[11] : rm[5] : 0b100000[6] : rn[5] : rt[5] );
@@ -12178,11 +16058,41 @@ st2_d16b_reg.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,16,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+st2_d16b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op st2_d4h_imm( 0b0000110010011111100001[22] : rn[5] : rt[5] );
 st2_d4h_imm.var format : {char const*} = {"2786"};
 
 st2_d4h_imm.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,4,1) << ", [" << DisasmGSXR(rn) << "], #16";
+};
+
+st2_d4h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
 };
 
 op st2_d4h_reg( 0b00001100100[11] : rm[5] : 0b100001[6] : rn[5] : rt[5] );
@@ -12192,11 +16102,41 @@ st2_d4h_reg.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,4,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+st2_d4h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op st2_d8h_imm( 0b0100110010011111100001[22] : rn[5] : rt[5] );
 st2_d8h_imm.var format : {char const*} = {"2876"};
 
 st2_d8h_imm.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,8,1) << ", [" << DisasmGSXR(rn) << "], #32";
+};
+
+st2_d8h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(32) );
 };
 
 op st2_d8h_reg( 0b01001100100[11] : rm[5] : 0b100001[6] : rn[5] : rt[5] );
@@ -12206,11 +16146,41 @@ st2_d8h_reg.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,8,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+st2_d8h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op st2_d2s_imm( 0b0000110010011111100010[22] : rn[5] : rt[5] );
 st2_d2s_imm.var format : {char const*} = {"2756"};
 
 st2_d2s_imm.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,2,2) << ", [" << DisasmGSXR(rn) << "], #16";
+};
+
+st2_d2s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(16) );
 };
 
 op st2_d2s_reg( 0b00001100100[11] : rm[5] : 0b100010[6] : rn[5] : rt[5] );
@@ -12220,11 +16190,41 @@ st2_d2s_reg.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,2,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+st2_d2s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op st2_d4s_imm( 0b0100110010011111100010[22] : rn[5] : rt[5] );
 st2_d4s_imm.var format : {char const*} = {"2816"};
 
 st2_d4s_imm.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,4,2) << ", [" << DisasmGSXR(rn) << "], #32";
+};
+
+st2_d4s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(32) );
 };
 
 op st2_d4s_reg( 0b01001100100[11] : rm[5] : 0b100010[6] : rn[5] : rt[5] );
@@ -12234,6 +16234,21 @@ st2_d4s_reg.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,4,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+st2_d4s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op st2_d2d_imm( 0b0100110010011111100011[22] : rn[5] : rt[5] );
 st2_d2d_imm.var format : {char const*} = {"2726"};
 
@@ -12241,11 +16256,41 @@ st2_d2d_imm.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,2,3) << ", [" << DisasmGSXR(rn) << "], #32";
 };
 
+st2_d2d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*8), cpu.GetVU64((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(32) );
+};
+
 op st2_d2d_reg( 0b01001100100[11] : rm[5] : 0b100011[6] : rn[5] : rt[5] );
 st2_d2d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1704"};
 
 st2_d2d_reg.disasm = {
   sink << "st2\t" << DisasmBunch(rt,2,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st2_d2d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 2; ++s) {
+      cpu.MemWrite32( addr + U64((e*2+s)*8), cpu.GetVU64((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st2_dbi( 0b0[1] : shl<3> index1[1] : 0b00110100100000000[17] : index0[3] : rn[5] : rt[5] );
@@ -12339,11 +16384,39 @@ st3_t8b.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,8,0) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st3_t8b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
+};
+
 op st3_t16b( 0b0100110000000000010000[22] : rn[5] : rt[5] );
 st3_t16b.var format : {char const*} = {"2666"};
 
 st3_t16b.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,16,0) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st3_t16b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
 };
 
 op st3_t4h( 0b0000110000000000010001[22] : rn[5] : rt[5] );
@@ -12353,11 +16426,39 @@ st3_t4h.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,4,1) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st3_t4h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
+};
+
 op st3_t8h( 0b0100110000000000010001[22] : rn[5] : rt[5] );
 st3_t8h.var format : {char const*} = {"2864"};
 
 st3_t8h.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,8,1) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st3_t8h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
 };
 
 op st3_t2s( 0b0000110000000000010010[22] : rn[5] : rt[5] );
@@ -12367,11 +16468,39 @@ st3_t2s.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,2,2) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st3_t2s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
+};
+
 op st3_t4s( 0b0100110000000000010010[22] : rn[5] : rt[5] );
 st3_t4s.var format : {char const*} = {"2804"};
 
 st3_t4s.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,4,2) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st3_t4s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
 };
 
 op st3_t2d( 0b0100110000000000010011[22] : rn[5] : rt[5] );
@@ -12381,11 +16510,40 @@ st3_t2d.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,2,3) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st3_t2d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*8), cpu.GetVU64((rt+s)%32, e) );
+    }
+  }
+};
+
 op st3_t8b_imm( 0b0000110010011111010000[22] : rn[5] : rt[5] );
 st3_t8b_imm.var format : {char const*} = {"2838"};
 
 st3_t8b_imm.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,8,0) << ", [" << DisasmGSXR(rn) << "], #24";
+};
+
+st3_t8b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(24) );
 };
 
 op st3_t8b_reg( 0b00001100100[11] : rm[5] : 0b010000[6] : rn[5] : rt[5] );
@@ -12395,11 +16553,41 @@ st3_t8b_reg.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,8,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+st3_t8b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op st3_t16b_imm( 0b0100110010011111010000[22] : rn[5] : rt[5] );
 st3_t16b_imm.var format : {char const*} = {"2670"};
 
 st3_t16b_imm.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,16,0) << ", [" << DisasmGSXR(rn) << "], #48";
+};
+
+st3_t16b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(48) );
 };
 
 op st3_t16b_reg( 0b01001100100[11] : rm[5] : 0b010000[6] : rn[5] : rt[5] );
@@ -12409,11 +16597,41 @@ st3_t16b_reg.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,16,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+st3_t16b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op st3_t4h_imm( 0b0000110010011111010001[22] : rn[5] : rt[5] );
 st3_t4h_imm.var format : {char const*} = {"2778"};
 
 st3_t4h_imm.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,4,1) << ", [" << DisasmGSXR(rn) << "], #24";
+};
+
+st3_t4h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(24) );
 };
 
 op st3_t4h_reg( 0b00001100100[11] : rm[5] : 0b010001[6] : rn[5] : rt[5] );
@@ -12423,11 +16641,41 @@ st3_t4h_reg.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,4,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+st3_t4h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op st3_t8h_imm( 0b0100110010011111010001[22] : rn[5] : rt[5] );
 st3_t8h_imm.var format : {char const*} = {"2868"};
 
 st3_t8h_imm.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,8,1) << ", [" << DisasmGSXR(rn) << "], #48";
+};
+
+st3_t8h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(48) );
 };
 
 op st3_t8h_reg( 0b01001100100[11] : rm[5] : 0b010001[6] : rn[5] : rt[5] );
@@ -12437,11 +16685,41 @@ st3_t8h_reg.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,8,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+st3_t8h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op st3_t2s_imm( 0b0000110010011111010010[22] : rn[5] : rt[5] );
 st3_t2s_imm.var format : {char const*} = {"2748"};
 
 st3_t2s_imm.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,2,2) << ", [" << DisasmGSXR(rn) << "], #24";
+};
+
+st3_t2s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(24) );
 };
 
 op st3_t2s_reg( 0b00001100100[11] : rm[5] : 0b010010[6] : rn[5] : rt[5] );
@@ -12451,11 +16729,41 @@ st3_t2s_reg.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,2,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+st3_t2s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op st3_t4s_imm( 0b0100110010011111010010[22] : rn[5] : rt[5] );
 st3_t4s_imm.var format : {char const*} = {"2808"};
 
 st3_t4s_imm.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,4,2) << ", [" << DisasmGSXR(rn) << "], #48";
+};
+
+st3_t4s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(48) );
 };
 
 op st3_t4s_reg( 0b01001100100[11] : rm[5] : 0b010010[6] : rn[5] : rt[5] );
@@ -12465,6 +16773,21 @@ st3_t4s_reg.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,4,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+st3_t4s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op st3_t2d_imm( 0b0100110010011111010011[22] : rn[5] : rt[5] );
 st3_t2d_imm.var format : {char const*} = {"2718"};
 
@@ -12472,11 +16795,41 @@ st3_t2d_imm.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,2,3) << ", [" << DisasmGSXR(rn) << "], #48";
 };
 
+st3_t2d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*8), cpu.GetVU64((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(48) );
+};
+
 op st3_t2d_reg( 0b01001100100[11] : rm[5] : 0b010011[6] : rn[5] : rt[5] );
 st3_t2d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1700"};
 
 st3_t2d_reg.disasm = {
   sink << "st3\t" << DisasmBunch(rt,3,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st3_t2d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 3; ++s) {
+      cpu.MemWrite32( addr + U64((e*3+s)*8), cpu.GetVU64((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st3_tbi( 0b0[1] : shl<3> index1[1] : 0b00110100000000001[17] : index0[3] : rn[5] : rt[5] );
@@ -12570,11 +16923,39 @@ st4_q8b.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,8,0) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st4_q8b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
+};
+
 op st4_q16b( 0b0100110000000000000000[22] : rn[5] : rt[5] );
 st4_q16b.var format : {char const*} = {"2660"};
 
 st4_q16b.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,16,0) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st4_q16b.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
 };
 
 op st4_q4h( 0b0000110000000000000001[22] : rn[5] : rt[5] );
@@ -12584,11 +16965,39 @@ st4_q4h.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,4,1) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st4_q4h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
+};
+
 op st4_q8h( 0b0100110000000000000001[22] : rn[5] : rt[5] );
 st4_q8h.var format : {char const*} = {"2858"};
 
 st4_q8h.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,8,1) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st4_q8h.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
 };
 
 op st4_q2s( 0b0000110000000000000010[22] : rn[5] : rt[5] );
@@ -12598,11 +17007,39 @@ st4_q2s.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,2,2) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st4_q2s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
+};
+
 op st4_q4s( 0b0100110000000000000010[22] : rn[5] : rt[5] );
 st4_q4s.var format : {char const*} = {"2798"};
 
 st4_q4s.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,4,2) << ", [" << DisasmGSXR(rn) << "]";
+};
+
+st4_q4s.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
 };
 
 op st4_q2d( 0b0100110000000000000011[22] : rn[5] : rt[5] );
@@ -12612,11 +17049,40 @@ st4_q2d.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,2,3) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+st4_q2d.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*8), cpu.GetVU64((rt+s)%32, e) );
+    }
+  }
+};
+
 op st4_q8b_imm( 0b0000110010011111000000[22] : rn[5] : rt[5] );
 st4_q8b_imm.var format : {char const*} = {"2830"};
 
 st4_q8b_imm.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,8,0) << ", [" << DisasmGSXR(rn) << "], #32";
+};
+
+st4_q8b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(32) );
 };
 
 op st4_q8b_reg( 0b00001100100[11] : rm[5] : 0b000000[6] : rn[5] : rt[5] );
@@ -12626,11 +17092,41 @@ st4_q8b_reg.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,8,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+st4_q8b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op st4_q16b_imm( 0b0100110010011111000000[22] : rn[5] : rt[5] );
 st4_q16b_imm.var format : {char const*} = {"2662"};
 
 st4_q16b_imm.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,16,0) << ", [" << DisasmGSXR(rn) << "], #64";
+};
+
+st4_q16b_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(64) );
 };
 
 op st4_q16b_reg( 0b01001100100[11] : rm[5] : 0b000000[6] : rn[5] : rt[5] );
@@ -12640,11 +17136,41 @@ st4_q16b_reg.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,16,0) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+st4_q16b_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+
+  for (unsigned e = 0; e < 16; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*1), cpu.GetVU8((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op st4_q4h_imm( 0b0000110010011111000001[22] : rn[5] : rt[5] );
 st4_q4h_imm.var format : {char const*} = {"2770"};
 
 st4_q4h_imm.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,4,1) << ", [" << DisasmGSXR(rn) << "], #32";
+};
+
+st4_q4h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(32) );
 };
 
 op st4_q4h_reg( 0b00001100100[11] : rm[5] : 0b000001[6] : rn[5] : rt[5] );
@@ -12654,11 +17180,41 @@ st4_q4h_reg.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,4,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+st4_q4h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op st4_q8h_imm( 0b0100110010011111000001[22] : rn[5] : rt[5] );
 st4_q8h_imm.var format : {char const*} = {"2860"};
 
 st4_q8h_imm.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,8,1) << ", [" << DisasmGSXR(rn) << "], #64";
+};
+
+st4_q8h_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(64) );
 };
 
 op st4_q8h_reg( 0b01001100100[11] : rm[5] : 0b000001[6] : rn[5] : rt[5] );
@@ -12668,11 +17224,41 @@ st4_q8h_reg.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,8,1) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+st4_q8h_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
+
+  for (unsigned e = 0; e < 8; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*2), cpu.GetVU16((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op st4_q2s_imm( 0b0000110010011111000010[22] : rn[5] : rt[5] );
 st4_q2s_imm.var format : {char const*} = {"2740"};
 
 st4_q2s_imm.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,2,2) << ", [" << DisasmGSXR(rn) << "], #32";
+};
+
+st4_q2s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(32) );
 };
 
 op st4_q2s_reg( 0b00001100100[11] : rm[5] : 0b000010[6] : rn[5] : rt[5] );
@@ -12682,11 +17268,41 @@ st4_q2s_reg.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,2,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+st4_q2s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op st4_q4s_imm( 0b0100110010011111000010[22] : rn[5] : rt[5] );
 st4_q4s_imm.var format : {char const*} = {"2800"};
 
 st4_q4s_imm.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,4,2) << ", [" << DisasmGSXR(rn) << "], #64";
+};
+
+st4_q4s_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(64) );
 };
 
 op st4_q4s_reg( 0b01001100100[11] : rm[5] : 0b000010[6] : rn[5] : rt[5] );
@@ -12696,6 +17312,21 @@ st4_q4s_reg.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,4,2) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
 };
 
+st4_q4s_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
+
+  for (unsigned e = 0; e < 4; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*4), cpu.GetVU32((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
+};
+
 op st4_q2d_imm( 0b0100110010011111000011[22] : rn[5] : rt[5] );
 st4_q2d_imm.var format : {char const*} = {"2710"};
 
@@ -12703,11 +17334,41 @@ st4_q2d_imm.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,2,3) << ", [" << DisasmGSXR(rn) << "], #64";
 };
 
+st4_q2d_imm.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*8), cpu.GetVU64((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + U64(64) );
+};
+
 op st4_q2d_reg( 0b01001100100[11] : rm[5] : 0b000011[6] : rn[5] : rt[5] );
 st4_q2d_reg.var reject : {Reject} = {rm == 31}, format : {char const*} = {"1696"};
 
 st4_q2d_reg.disasm = {
   sink << "st4\t" << DisasmBunch(rt,4,2,3) << ", [" << DisasmGSXR(rn) << "], " << DisasmGZXR(rm);
+};
+
+st4_q2d_reg.execute = {
+  typedef typename ARCH::U64 U64;
+
+  U64 addr( cpu.GetGSR(rn) );
+
+  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
+
+  for (unsigned e = 0; e < 2; ++e) {
+    for (unsigned s = 0; s < 4; ++s) {
+      cpu.MemWrite32( addr + U64((e*4+s)*8), cpu.GetVU64((rt+s)%32, e) );
+    }
+  }
+  cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
 op st4_qbi( 0b0[1] : shl<3> index1[1] : 0b00110100100000001[17] : index0[3] : rn[5] : rt[5] );

@@ -266,6 +266,11 @@ struct CPU
   void SetVU32( unsigned reg, U32 value ) { VectorZeroedStorage<U32>(reg)[0] = value; }
   void SetVU64( unsigned reg, U64 value ) { VectorZeroedStorage<U64>(reg)[0] = value; }
   
+  void UseVU8 ( unsigned reg, unsigned count ) { VectorStorage<U8> (reg); }
+  void UseVU16( unsigned reg, unsigned count ) { VectorStorage<U16>(reg); }
+  void UseVU32( unsigned reg, unsigned count ) { VectorStorage<U32>(reg); }
+  void UseVU64( unsigned reg, unsigned count ) { VectorStorage<U64>(reg); }
+
   //=====================================================================
   //=              Special/System Registers access methods              =
   //=====================================================================
