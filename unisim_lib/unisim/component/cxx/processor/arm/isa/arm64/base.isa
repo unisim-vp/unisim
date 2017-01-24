@@ -6876,11 +6876,27 @@ sttrh_wbo.disasm = {
   sink << "sttrh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
 
+/*******************************************************************
+ * STUR
+ *
+ * Store register (unscaled offset)
+ */
+
 op stur_wbo( 0b10111000000[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
 stur_wbo.var format : {char const*} = {"base,296"};
 
 stur_wbo.disasm = {
   sink << "str\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
+};
+
+stur_wbo.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U32 data( cpu.GetGZR(rt) );
+  cpu.MemWrite32(addr, data);
 };
 
 op stur_xbo( 0b11111000000[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
@@ -6890,6 +6906,25 @@ stur_xbo.disasm = {
   sink << "str\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
 
+stur_xbo.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U64 data( cpu.GetGZR(rt) );
+  cpu.MemWrite64(addr, data);
+};
+
+/*
+ * end of STUR
+ *******************************************************************/
+
+/*******************************************************************
+ * STURB
+ *
+ * Store register byte (unscaled offset)
+ */
+
 op sturb_wbo( 0b00111000000[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
 sturb_wbo.var format : {char const*} = {"base,307"};
 
@@ -6897,12 +6932,46 @@ sturb_wbo.disasm = {
   sink << "strb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
 
+sturb_wbo.execute = {
+  typedef typename ARCH::U8 U8;
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U8 data( cpu.GetGZR(rt) );
+  cpu.MemWrite8(addr, data);
+};
+
+/*
+ * end of STURB
+ *******************************************************************/
+
+/*******************************************************************
+ * STURH
+ *
+ * Store register halfword (unscaled offset)
+ */
+
 op sturh_wbo( 0b01111000000[11] : sext imm[9] : 0b00[2] : rn[5] : rt[5] );
 sturh_wbo.var format : {char const*} = {"base,310"};
 
 sturh_wbo.disasm = {
   sink << "strh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
+
+sturh_wbo.execute = {
+  typedef typename ARCH::U16 U16;
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
+  U16 data( cpu.GetGZR(rt) );
+  cpu.MemWrite16(addr, data);
+};
+
+/*
+ * end of STURB
+ *******************************************************************/
 
 op stxp_w( 0b10001000001[11] : rs[5] : 0b0[1] : rt2[5] : rn[5] : rt[5] );
 stxp_w.var format : {char const*} = {"base,169"};

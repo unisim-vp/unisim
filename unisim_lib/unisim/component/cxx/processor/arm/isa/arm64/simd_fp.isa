@@ -17848,6 +17848,16 @@ str_quo.disasm = {
   sink << "str\t" << DisasmQ(rt) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
 
+str_quo.execute = {
+  /* XXX: handling of quad vector */
+  typedef typename ARCH::U64 U64;
+  
+  U64 addr( cpu.GetGSR(rn) + U64(imm) );
+  U64 data0( cpu.GetVU64(rt,0) ), data1( cpu.GetVU64(rt,1) );
+  cpu.MemWrite64(addr + U64(0), data0);
+  cpu.MemWrite64(addr + U64(8), data1);
+};
+
 /*
  * end of STR (immediate, SIMD&FP)
  *******************************************************************/
