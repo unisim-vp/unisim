@@ -212,11 +212,15 @@ addhn_v8bv8hv8h.disasm = {
  * Add pair of elements (scalar)
  */
 
-op addp_dv2d( 0b0101111011110001101110[22] : rn[5] : rd[5] );
-addp_dv2d.var format : {char const*} = {"2222"};
+op addp_d( 0b0101111011110001101110[22] : rn[5] : rd[5] );
+addp_d.var format : {char const*} = {"2222"};
 
-addp_dv2d.disasm = {
+addp_d.disasm = {
   sink << "addp\t" << DisasmD(rd) << ", " << DisasmTV(rn,2,3);
+};
+
+addp_d.execute = {
+  cpu.SetVU64(rd,cpu.GetVU64(rn,0) + cpu.GetVU64(rn,1));
 };
 
 /*
@@ -229,53 +233,130 @@ addp_dv2d.disasm = {
  * Add pairwise (vector)
  */
 
-op addp_v8bv8bv8b( 0b00001110001[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
-addp_v8bv8bv8b.var format : {char const*} = {"1298"};
+op addp_v8b( 0b00001110001[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
+addp_v8b.var format : {char const*} = {"1298"};
 
-addp_v8bv8bv8b.disasm = {
+addp_v8b.disasm = {
   sink << "addp\t" << DisasmTV(rd,8,0) << ", " << DisasmTV(rn,8,0) << ", " << DisasmTV(rm,8,0);
 };
 
-op addp_v16bv16bv16b( 0b01001110001[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
-addp_v16bv16bv16b.var format : {char const*} = {"824"};
+addp_v8b.execute = {
+  typename ARCH::U8 res[8];
+  for (unsigned e=0; e < 4; e += 1) {
+    res[e+0] = cpu.GetVU8(rn,2*e) + cpu.GetVU8(rn,2*e+1);
+    res[e+4] = cpu.GetVU8(rm,2*e) + cpu.GetVU8(rm,2*e+1);
+  }
+  for (unsigned e=0; e < 8; e += 1)
+    cpu.SetVU8(rd,e,res[e]);
+  cpu.ClearHighV(rd,8);
+};
 
-addp_v16bv16bv16b.disasm = {
+op addp_v16b( 0b01001110001[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
+addp_v16b.var format : {char const*} = {"824"};
+
+addp_v16b.disasm = {
   sink << "addp\t" << DisasmTV(rd,16,0) << ", " << DisasmTV(rn,16,0) << ", " << DisasmTV(rm,16,0);
 };
 
-op addp_v4hv4hv4h( 0b00001110011[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
-addp_v4hv4hv4h.var format : {char const*} = {"1096"};
+addp_v16b.execute = {
+  typename ARCH::U8 res[16];
+  for (unsigned e=0; e < 8; e += 1) {
+    res[e+0] = cpu.GetVU8(rn,2*e) + cpu.GetVU8(rn,2*e+1);
+    res[e+8] = cpu.GetVU8(rm,2*e) + cpu.GetVU8(rm,2*e+1);
+  }
+  for (unsigned e=0; e < 16; e += 1)
+    cpu.SetVU8(rd,e,res[e]);
+  cpu.ClearHighV(rd,16);
+};
 
-addp_v4hv4hv4h.disasm = {
+op addp_v4h( 0b00001110011[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
+addp_v4h.var format : {char const*} = {"1096"};
+
+addp_v4h.disasm = {
   sink << "addp\t" << DisasmTV(rd,4,1) << ", " << DisasmTV(rn,4,1) << ", " << DisasmTV(rm,4,1);
 };
 
-op addp_v8hv8hv8h( 0b01001110011[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
-addp_v8hv8hv8h.var format : {char const*} = {"1409"};
+addp_v4h.execute = {
+  typename ARCH::U16 res[4];
+  for (unsigned e=0; e < 2; e += 1) {
+    res[e+0] = cpu.GetVU16(rn,2*e) + cpu.GetVU16(rn,2*e+1);
+    res[e+2] = cpu.GetVU16(rm,2*e) + cpu.GetVU16(rm,2*e+1);
+  }
+  for (unsigned e=0; e < 4; e += 1)
+    cpu.SetVU16(rd,e,res[e]);
+  cpu.ClearHighV(rd,8);
+};
 
-addp_v8hv8hv8h.disasm = {
+op addp_v8h( 0b01001110011[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
+addp_v8h.var format : {char const*} = {"1409"};
+
+addp_v8h.disasm = {
   sink << "addp\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,8,1) << ", " << DisasmTV(rm,8,1);
 };
 
-op addp_v2sv2sv2s( 0b00001110101[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
-addp_v2sv2sv2s.var format : {char const*} = {"1022"};
+addp_v8h.execute = {
+  typename ARCH::U16 res[8];
+  for (unsigned e=0; e < 4; e += 1) {
+    res[e+0] = cpu.GetVU16(rn,2*e) + cpu.GetVU16(rn,2*e+1);
+    res[e+4] = cpu.GetVU16(rm,2*e) + cpu.GetVU16(rm,2*e+1);
+  }
+  for (unsigned e=0; e < 8; e += 1)
+    cpu.SetVU16(rd,e,res[e]);
+  cpu.ClearHighV(rd,16);
+};
 
-addp_v2sv2sv2s.disasm = {
+op addp_v2s( 0b00001110101[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
+addp_v2s.var format : {char const*} = {"1022"};
+
+addp_v2s.disasm = {
   sink << "addp\t" << DisasmTV(rd,2,2) << ", " << DisasmTV(rn,2,2) << ", " << DisasmTV(rm,2,2);
 };
 
-op addp_v4sv4sv4s( 0b01001110101[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
-addp_v4sv4sv4s.var format : {char const*} = {"1201"};
+addp_v2s.execute = {
+  typename ARCH::U32 res[2];
+  for (unsigned e=0; e < 1; e += 1) {
+    res[e+0] = cpu.GetVU32(rn,2*e) + cpu.GetVU32(rn,2*e+1);
+    res[e+1] = cpu.GetVU32(rm,2*e) + cpu.GetVU32(rm,2*e+1);
+  }
+  for (unsigned e=0; e < 2; e += 1)
+    cpu.SetVU32(rd,e,res[e]);
+  cpu.ClearHighV(rd,8);
+};
 
-addp_v4sv4sv4s.disasm = {
+op addp_v4s( 0b01001110101[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
+addp_v4s.var format : {char const*} = {"1201"};
+
+addp_v4s.disasm = {
   sink << "addp\t" << DisasmTV(rd,4,2) << ", " << DisasmTV(rn,4,2) << ", " << DisasmTV(rm,4,2);
 };
 
-op addp_v2dv2dv2d( 0b01001110111[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
-addp_v2dv2dv2d.var format : {char const*} = {"895"};
+addp_v4s.execute = {
+  typename ARCH::U32 res[4];
+  for (unsigned e=0; e < 2; e += 1) {
+    res[e+0] = cpu.GetVU32(rn,2*e) + cpu.GetVU32(rn,2*e+1);
+    res[e+2] = cpu.GetVU32(rm,2*e) + cpu.GetVU32(rm,2*e+1);
+  }
+  for (unsigned e=0; e < 4; e += 1)
+    cpu.SetVU32(rd,e,res[e]);
+  cpu.ClearHighV(rd,16);
+};
 
-addp_v2dv2dv2d.disasm = {
+op addp_v2d( 0b01001110111[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
+addp_v2d.var format : {char const*} = {"895"};
+
+addp_v2d.disasm = {
   sink << "addp\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,2,3);
+};
+
+addp_v2d.execute = {
+  typename ARCH::U64 res[2];
+  for (unsigned e=0; e < 1; e += 1) {
+    res[e+0] = cpu.GetVU64(rn,2*e) + cpu.GetVU64(rn,2*e+1);
+    res[e+1] = cpu.GetVU64(rm,2*e) + cpu.GetVU64(rm,2*e+1);
+  }
+  for (unsigned e=0; e < 2; e += 1)
+    cpu.SetVU64(rd,e,res[e]);
+  cpu.ClearHighV(rd,16);
 };
 
 /*
