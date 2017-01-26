@@ -325,12 +325,11 @@ aesmc_v16b16b.disasm = {
   sink << "aesmc\t" << DisasmTV(rd,16,0) << ", " << DisasmTV(rn,16,0);
 };
 
-op and_v16bv16bv16b( 0b01001110001[11] : rm[5] : 0b000111[6] : rn[5] : rd[5] );
-and_v16bv16bv16b.var format : {char const*} = {"825"};
-
-and_v16bv16bv16b.disasm = {
-  sink << "and\t" << DisasmTV(rd,16,0) << ", " << DisasmTV(rn,16,0) << ", " << DisasmTV(rm,16,0);
-};
+/*******************************************************************
+ * AND (vector)
+ *
+ * Bitwise AND (vector)
+ */
 
 op and_v8bv8bv8b( 0b00001110001[11] : rm[5] : 0b000111[6] : rn[5] : rd[5] );
 and_v8bv8bv8b.var format : {char const*} = {"1299"};
@@ -339,11 +338,47 @@ and_v8bv8bv8b.disasm = {
   sink << "and\t" << DisasmTV(rd,8,0) << ", " << DisasmTV(rn,8,0) << ", " << DisasmTV(rm,8,0);
 };
 
-op bic_v16bv16bv16b( 0b01001110011[11] : rm[5] : 0b000111[6] : rn[5] : rd[5] );
-bic_v16bv16bv16b.var format : {char const*} = {"826"};
+and_v8bv8bv8b.execute = {
+  for (unsigned idx = 0; idx < 8; ++idx)
+    cpu.SetVU8(rd,idx,cpu.GetVU8(rn,idx) & cpu.GetVU8(rm,idx));
+  cpu.ClearHighV(rd,8);
+};
 
-bic_v16bv16bv16b.disasm = {
-  sink << "bic\t" << DisasmTV(rd,16,0) << ", " << DisasmTV(rn,16,0) << ", " << DisasmTV(rm,16,0);
+op and_v16bv16bv16b( 0b01001110001[11] : rm[5] : 0b000111[6] : rn[5] : rd[5] );
+and_v16bv16bv16b.var format : {char const*} = {"825"};
+
+and_v16bv16bv16b.disasm = {
+  sink << "and\t" << DisasmTV(rd,16,0) << ", " << DisasmTV(rn,16,0) << ", " << DisasmTV(rm,16,0);
+};
+
+and_v16bv16bv16b.execute = {
+  for (unsigned idx = 0; idx < 16; ++idx)
+    cpu.SetVU8(rd,idx,cpu.GetVU8(rn,idx) & cpu.GetVU8(rm,idx));
+  cpu.ClearHighV(rd,16);
+};
+
+/*
+ * end of AND (vector)
+ *******************************************************************/
+
+/*******************************************************************
+ * BIC (vector, immediate)
+ *
+ * Bitwise bit clear (vector, immediate)
+ */
+
+op bic_v4hi( 0b0010111100000[13] : shl<5> imm1[3] : 0b10[2] : shl<3> sh[1] : 0b101[3] : imm0[5] : rd[5] );
+bic_v4hi.var imm : {uint16_t} = {uint16_t(imm1|imm0) << sh}, format : {char const*} = {"1885"};
+
+bic_v4hi.disasm = {
+  sink << "bic\t" << DisasmTV(rd,4,1) << ", " << DisasmI(imm,16);
+};
+
+op bic_v8hi( 0b0110111100000[13] : shl<5> imm1[3] : 0b10[2] : shl<3> sh[1] : 0b101[3] : imm0[5] : rd[5] );
+bic_v8hi.var imm : {uint16_t} = {uint16_t(imm1|imm0) << sh}, format : {char const*} = {"1889"};
+
+bic_v8hi.disasm = {
+  sink << "bic\t" << DisasmTV(rd,8,1) << ", " << DisasmI(imm,16);
 };
 
 op bic_v2si( 0b0010111100000[13] : shl<5> imm1[3] : 0b0[1] : shl<3> sh[2] : 0b101[3] : imm0[5] : rd[5] );
@@ -353,19 +388,22 @@ bic_v2si.disasm = {
   sink << "bic\t" << DisasmTV(rd,2,2) << ", " << DisasmI(imm,16);
 };
 
-op bic_v4hi( 0b0010111100000[13] : shl<5> imm1[3] : 0b10[2] : shl<3> sh[1] : 0b101[3] : imm0[5] : rd[5] );
-bic_v4hi.var imm : {uint16_t} = {uint16_t(imm1|imm0) << sh}, format : {char const*} = {"1885"};
-
-bic_v4hi.disasm = {
-  sink << "bic\t" << DisasmTV(rd,4,1) << ", " << DisasmI(imm,16);
-};
-
 op bic_v4si( 0b0110111100000[13] : shl<5> imm1[3] : 0b0[1] : shl<3> sh[2] : 0b101[3] : imm0[5] : rd[5] );
 bic_v4si.var imm : {uint32_t} = {uint32_t(imm1|imm0) << sh}, format : {char const*} = {"1790"};
 
 bic_v4si.disasm = {
   sink << "bic\t" << DisasmTV(rd,4,2) << ", " << DisasmI(imm,16);
 };
+
+/*
+ * end of BIC (vector, immediate)
+ *******************************************************************/
+
+/*******************************************************************
+ * BIC (vector, register)
+ *
+ * Bitwise bit clear (vector, register)
+ */
 
 op bic_v8bv8bv8b( 0b00001110011[11] : rm[5] : 0b000111[6] : rn[5] : rd[5] );
 bic_v8bv8bv8b.var format : {char const*} = {"1300"};
@@ -374,12 +412,28 @@ bic_v8bv8bv8b.disasm = {
   sink << "bic\t" << DisasmTV(rd,8,0) << ", " << DisasmTV(rn,8,0) << ", " << DisasmTV(rm,8,0);
 };
 
-op bic_v8hi( 0b0110111100000[13] : shl<5> imm1[3] : 0b10[2] : shl<3> sh[1] : 0b101[3] : imm0[5] : rd[5] );
-bic_v8hi.var imm : {uint16_t} = {uint16_t(imm1|imm0) << sh}, format : {char const*} = {"1889"};
-
-bic_v8hi.disasm = {
-  sink << "bic\t" << DisasmTV(rd,8,1) << ", " << DisasmI(imm,16);
+bic_v8bv8bv8b.execute = {
+  for (unsigned idx = 0; idx < 8; ++idx)
+    cpu.SetVU8(rd,idx,cpu.GetVU8(rn,idx) & ~cpu.GetVU8(rm,idx));
+  cpu.ClearHighV(rd,8);
 };
+
+op bic_v16bv16bv16b( 0b01001110011[11] : rm[5] : 0b000111[6] : rn[5] : rd[5] );
+bic_v16bv16bv16b.var format : {char const*} = {"826"};
+
+bic_v16bv16bv16b.disasm = {
+  sink << "bic\t" << DisasmTV(rd,16,0) << ", " << DisasmTV(rn,16,0) << ", " << DisasmTV(rm,16,0);
+};
+
+bic_v16bv16bv16b.execute = {
+  for (unsigned idx = 0; idx < 16; ++idx)
+    cpu.SetVU8(rd,idx,cpu.GetVU8(rn,idx) & ~cpu.GetVU8(rm,idx));
+  cpu.ClearHighV(rd,16);
+};
+
+/*
+ * end of BIC (vector, register)
+ *******************************************************************/
 
 op bif_v16bv16bv16b( 0b01101110111[11] : rm[5] : 0b000111[6] : rn[5] : rd[5] );
 bif_v16bv16bv16b.var format : {char const*} = {"827"};
