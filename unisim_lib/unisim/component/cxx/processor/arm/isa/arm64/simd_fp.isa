@@ -510,7 +510,8 @@ clz_v8hv8h.disasm = {
 /*******************************************************************
  * CMEQ (register)
  *
- * Compare bitwise equal (vector), setting destination vector element to all ones if the condition holds, else zero
+ * Compare bitwise equal (vector), setting destination vector element
+ * to all ones if the condition holds, else zero
  */
 
 op cmeq_d_reg( 0b01111110111[11] : rm[5] : 0b100011[6] : rn[5] : rd[5] );
@@ -664,7 +665,8 @@ cmeq_v2d_reg.execute = {
 /*******************************************************************
  * CMEQ (zero)
  *
- * Compare bitwise equal to zero (vector), setting destination vector element to all ones if the condition holds, else zero
+ * Compare bitwise equal to zero (vector), setting destination vector
+ * element to all ones if the condition holds, else zero
  */
 
 op cmeq_d_zero( 0b0101111011100000100110[22] : rn[5] : rd[5] );
@@ -1125,6 +1127,13 @@ cmge_v2d_zero.execute = {
  * end of CMGE (zero)
  *******************************************************************/
 
+/*******************************************************************
+ * CMGT (register)
+ *
+ * Compare signed greater than (vector), setting destination vector
+ * element to all ones if the condition holds, else zero
+ */
+
 op cmgt_d_reg( 0b01011110111[11] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
 cmgt_d_reg.var format : {char const*} = {"710"};
 
@@ -1139,6 +1148,24 @@ cmgt_d_reg.execute = {
     S64 op1( cpu.GetVS64(rn,e) ), op2( 0 ), res;
     res =  S64(not (op1 > op2)) - S64(1);
     cpu.SetVS64(rd,e,res);
+  }
+  cpu.ClearHighV(rd,8);
+};
+
+op cmgt_v8b_reg( 0b00001110001[11] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
+cmgt_v8b_reg.var format : {char const*} = {"1306"};
+
+cmgt_v8b_reg.disasm = {
+  sink << "cmgt\t" << DisasmTV(rd,8,0) << ", " << DisasmTV(rn,8,0) << ", " << DisasmTV(rm,8,0);
+};
+
+cmgt_v8b_reg.execute = {
+  typedef typename ARCH::S8 S8;
+
+  for (unsigned e=0; e < 8; e += 1) {
+    S8 op1( cpu.GetVS8(rn,e) ), op2( 0 ), res;
+    res =  S8(not (op1 > op2)) - S8(1);
+    cpu.SetVS8(rd,e,res);
   }
   cpu.ClearHighV(rd,8);
 };
@@ -1161,38 +1188,38 @@ cmgt_v16b_reg.execute = {
   cpu.ClearHighV(rd,16);
 };
 
-op cmgt_d_zero( 0b0101111011100000100010[22] : rn[5] : rd[5] );
-cmgt_d_zero.var format : {char const*} = {"2212"};
+op cmgt_v4h_reg( 0b00001110011[11] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
+cmgt_v4h_reg.var format : {char const*} = {"1099"};
 
-cmgt_d_zero.disasm = {
-  sink << "cmgt\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", #0";
+cmgt_v4h_reg.disasm = {
+  sink << "cmgt\t" << DisasmTV(rd,4,1) << ", " << DisasmTV(rn,4,1) << ", " << DisasmTV(rm,4,1);
 };
 
-cmgt_d_zero.execute = {
-  typedef typename ARCH::S64 S64;
+cmgt_v4h_reg.execute = {
+  typedef typename ARCH::S16 S16;
 
-  for (unsigned e=0; e < 1; e += 1) {
-    S64 op1( cpu.GetVS64(rn,e) ), op2( 0 ), res;
-    res =  S64(not (op1 > op2)) - S64(1);
-    cpu.SetVS64(rd,e,res);
+  for (unsigned e=0; e < 4; e += 1) {
+    S16 op1( cpu.GetVS16(rn,e) ), op2( 0 ), res;
+    res =  S16(not (op1 > op2)) - S16(1);
+    cpu.SetVS16(rd,e,res);
   }
   cpu.ClearHighV(rd,8);
 };
 
-op cmgt_v16b_zero( 0b0100111000100000100010[22] : rn[5] : rd[5] );
-cmgt_v16b_zero.var format : {char const*} = {"2345"};
+op cmgt_v8h_reg( 0b01001110011[11] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
+cmgt_v8h_reg.var format : {char const*} = {"1412"};
 
-cmgt_v16b_zero.disasm = {
-  sink << "cmgt\t" << DisasmTV(rd,16,0) << ", " << DisasmTV(rn,16,0) << ", #0";
+cmgt_v8h_reg.disasm = {
+  sink << "cmgt\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,8,1) << ", " << DisasmTV(rm,8,1);
 };
 
-cmgt_v16b_zero.execute = {
-  typedef typename ARCH::S8 S8;
+cmgt_v8h_reg.execute = {
+  typedef typename ARCH::S16 S16;
 
-  for (unsigned e=0; e < 16; e += 1) {
-    S8 op1( cpu.GetVS8(rn,e) ), op2( 0 ), res;
-    res =  S8(not (op1 > op2)) - S8(1);
-    cpu.SetVS8(rd,e,res);
+  for (unsigned e=0; e < 8; e += 1) {
+    S16 op1( cpu.GetVS16(rn,e) ), op2( 0 ), res;
+    res =  S16(not (op1 > op2)) - S16(1);
+    cpu.SetVS16(rd,e,res);
   }
   cpu.ClearHighV(rd,16);
 };
@@ -1215,6 +1242,24 @@ cmgt_v2s_reg.execute = {
   cpu.ClearHighV(rd,8);
 };
 
+op cmgt_v4s_reg( 0b01001110101[11] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
+cmgt_v4s_reg.var format : {char const*} = {"1204"};
+
+cmgt_v4s_reg.disasm = {
+  sink << "cmgt\t" << DisasmTV(rd,4,2) << ", " << DisasmTV(rn,4,2) << ", " << DisasmTV(rm,4,2);
+};
+
+cmgt_v4s_reg.execute = {
+  typedef typename ARCH::S32 S32;
+
+  for (unsigned e=0; e < 4; e += 1) {
+    S32 op1( cpu.GetVS32(rn,e) ), op2( 0 ), res;
+    res =  S32(not (op1 > op2)) - S32(1);
+    cpu.SetVS32(rd,e,res);
+  }
+  cpu.ClearHighV(rd,16);
+};
+
 op cmgt_v2d_reg( 0b01001110111[11] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
 cmgt_v2d_reg.var format : {char const*} = {"898"};
 
@@ -1231,6 +1276,89 @@ cmgt_v2d_reg.execute = {
     cpu.SetVS64(rd,e,res);
   }
   cpu.ClearHighV(rd,16);
+};
+
+/*
+ * end of CMGT (register)
+ *******************************************************************/
+
+/*******************************************************************
+ * CMGT (zero)
+ *
+ * Compare signed greater than zero (vector), setting destination
+ * vector element to all ones if the condition holds, else zero
+ */
+
+op cmgt_d_zero( 0b0101111011100000100010[22] : rn[5] : rd[5] );
+cmgt_d_zero.var format : {char const*} = {"2212"};
+
+cmgt_d_zero.disasm = {
+  sink << "cmgt\t" << DisasmD(rd) << ", " << DisasmD(rn) << ", #0";
+};
+
+cmgt_d_zero.execute = {
+  typedef typename ARCH::S64 S64;
+
+  for (unsigned e=0; e < 1; e += 1) {
+    S64 op1( cpu.GetVS64(rn,e) ), op2( 0 ), res;
+    res =  S64(not (op1 > op2)) - S64(1);
+    cpu.SetVS64(rd,e,res);
+  }
+  cpu.ClearHighV(rd,8);
+};
+
+op cmgt_v8b_zero( 0b0000111000100000100010[22] : rn[5] : rd[5] );
+cmgt_v8b_zero.var format : {char const*} = {"2560"};
+
+cmgt_v8b_zero.disasm = {
+  sink << "cmgt\t" << DisasmTV(rd,8,0) << ", " << DisasmTV(rn,8,0) << ", #0";
+};
+
+cmgt_v8b_zero.execute = {
+  typedef typename ARCH::S8 S8;
+
+  for (unsigned e=0; e < 8; e += 1) {
+    S8 op1( cpu.GetVS8(rn,e) ), op2( 0 ), res;
+    res =  S8(not (op1 > op2)) - S8(1);
+    cpu.SetVS8(rd,e,res);
+  }
+  cpu.ClearHighV(rd,8);
+};
+
+op cmgt_v16b_zero( 0b0100111000100000100010[22] : rn[5] : rd[5] );
+cmgt_v16b_zero.var format : {char const*} = {"2345"};
+
+cmgt_v16b_zero.disasm = {
+  sink << "cmgt\t" << DisasmTV(rd,16,0) << ", " << DisasmTV(rn,16,0) << ", #0";
+};
+
+cmgt_v16b_zero.execute = {
+  typedef typename ARCH::S8 S8;
+
+  for (unsigned e=0; e < 16; e += 1) {
+    S8 op1( cpu.GetVS8(rn,e) ), op2( 0 ), res;
+    res =  S8(not (op1 > op2)) - S8(1);
+    cpu.SetVS8(rd,e,res);
+  }
+  cpu.ClearHighV(rd,16);
+};
+
+op cmgt_v4h_zero( 0b0000111001100000100010[22] : rn[5] : rd[5] );
+cmgt_v4h_zero.var format : {char const*} = {"2471"};
+
+cmgt_v4h_zero.disasm = {
+  sink << "cmgt\t" << DisasmTV(rd,4,1) << ", " << DisasmTV(rn,4,1) << ", #0";
+};
+
+cmgt_v4h_zero.execute = {
+  typedef typename ARCH::S16 S16;
+
+  for (unsigned e=0; e < 4; e += 1) {
+    S16 op1( cpu.GetVS16(rn,e) ), op2( 0 ), res;
+    res =  S16(not (op1 > op2)) - S16(1);
+    cpu.SetVS16(rd,e,res);
+  }
+  cpu.ClearHighV(rd,8);
 };
 
 op cmgt_v8h_zero( 0b0100111001100000100010[22] : rn[5] : rd[5] );
@@ -1265,78 +1393,6 @@ cmgt_v2s_zero.execute = {
     S32 op1( cpu.GetVS32(rn,e) ), op2( 0 ), res;
     res =  S32(not (op1 > op2)) - S32(1);
     cpu.SetVS32(rd,e,res);
-  }
-  cpu.ClearHighV(rd,8);
-};
-
-op cmgt_v4h_reg( 0b00001110011[11] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
-cmgt_v4h_reg.var format : {char const*} = {"1099"};
-
-cmgt_v4h_reg.disasm = {
-  sink << "cmgt\t" << DisasmTV(rd,4,1) << ", " << DisasmTV(rn,4,1) << ", " << DisasmTV(rm,4,1);
-};
-
-cmgt_v4h_reg.execute = {
-  typedef typename ARCH::S16 S16;
-
-  for (unsigned e=0; e < 4; e += 1) {
-    S16 op1( cpu.GetVS16(rn,e) ), op2( 0 ), res;
-    res =  S16(not (op1 > op2)) - S16(1);
-    cpu.SetVS16(rd,e,res);
-  }
-  cpu.ClearHighV(rd,8);
-};
-
-op cmgt_v4h_zero( 0b0000111001100000100010[22] : rn[5] : rd[5] );
-cmgt_v4h_zero.var format : {char const*} = {"2471"};
-
-cmgt_v4h_zero.disasm = {
-  sink << "cmgt\t" << DisasmTV(rd,4,1) << ", " << DisasmTV(rn,4,1) << ", #0";
-};
-
-cmgt_v4h_zero.execute = {
-  typedef typename ARCH::S16 S16;
-
-  for (unsigned e=0; e < 4; e += 1) {
-    S16 op1( cpu.GetVS16(rn,e) ), op2( 0 ), res;
-    res =  S16(not (op1 > op2)) - S16(1);
-    cpu.SetVS16(rd,e,res);
-  }
-  cpu.ClearHighV(rd,8);
-};
-
-op cmgt_v4s_reg( 0b01001110101[11] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
-cmgt_v4s_reg.var format : {char const*} = {"1204"};
-
-cmgt_v4s_reg.disasm = {
-  sink << "cmgt\t" << DisasmTV(rd,4,2) << ", " << DisasmTV(rn,4,2) << ", " << DisasmTV(rm,4,2);
-};
-
-cmgt_v4s_reg.execute = {
-  typedef typename ARCH::S32 S32;
-
-  for (unsigned e=0; e < 4; e += 1) {
-    S32 op1( cpu.GetVS32(rn,e) ), op2( 0 ), res;
-    res =  S32(not (op1 > op2)) - S32(1);
-    cpu.SetVS32(rd,e,res);
-  }
-  cpu.ClearHighV(rd,16);
-};
-
-op cmgt_v8b_zero( 0b0000111000100000100010[22] : rn[5] : rd[5] );
-cmgt_v8b_zero.var format : {char const*} = {"2560"};
-
-cmgt_v8b_zero.disasm = {
-  sink << "cmgt\t" << DisasmTV(rd,8,0) << ", " << DisasmTV(rn,8,0) << ", #0";
-};
-
-cmgt_v8b_zero.execute = {
-  typedef typename ARCH::S8 S8;
-
-  for (unsigned e=0; e < 8; e += 1) {
-    S8 op1( cpu.GetVS8(rn,e) ), op2( 0 ), res;
-    res =  S8(not (op1 > op2)) - S8(1);
-    cpu.SetVS8(rd,e,res);
   }
   cpu.ClearHighV(rd,8);
 };
@@ -1377,41 +1433,16 @@ cmgt_v2d_zero.execute = {
   cpu.ClearHighV(rd,16);
 };
 
-op cmgt_v8b_reg( 0b00001110001[11] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
-cmgt_v8b_reg.var format : {char const*} = {"1306"};
+/*
+ * end of CMGT (zero)
+ *******************************************************************/
 
-cmgt_v8b_reg.disasm = {
-  sink << "cmgt\t" << DisasmTV(rd,8,0) << ", " << DisasmTV(rn,8,0) << ", " << DisasmTV(rm,8,0);
-};
-
-cmgt_v8b_reg.execute = {
-  typedef typename ARCH::S8 S8;
-
-  for (unsigned e=0; e < 8; e += 1) {
-    S8 op1( cpu.GetVS8(rn,e) ), op2( 0 ), res;
-    res =  S8(not (op1 > op2)) - S8(1);
-    cpu.SetVS8(rd,e,res);
-  }
-  cpu.ClearHighV(rd,8);
-};
-
-op cmgt_v8h_reg( 0b01001110011[11] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
-cmgt_v8h_reg.var format : {char const*} = {"1412"};
-
-cmgt_v8h_reg.disasm = {
-  sink << "cmgt\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,8,1) << ", " << DisasmTV(rm,8,1);
-};
-
-cmgt_v8h_reg.execute = {
-  typedef typename ARCH::S16 S16;
-
-  for (unsigned e=0; e < 8; e += 1) {
-    S16 op1( cpu.GetVS16(rn,e) ), op2( 0 ), res;
-    res =  S16(not (op1 > op2)) - S16(1);
-    cpu.SetVS16(rd,e,res);
-  }
-  cpu.ClearHighV(rd,16);
-};
+/*******************************************************************
+ * CMHI (register)
+ *
+ * Compare unsigned higher (vector), setting destination vector
+ * element to all ones if the condition holds, else zero
+ */
 
 op cmhi_d_reg( 0b01111110111[11] : rm[5] : 0b001101[6] : rn[5] : rd[5] );
 cmhi_d_reg.var format : {char const*} = {"711"};
@@ -1557,6 +1588,17 @@ cmhi_v2d_reg.execute = {
   cpu.ClearHighV(rd,16);
 };
 
+/*
+ * end of CMHI (register)
+ *******************************************************************/
+
+/*******************************************************************
+ * CMHS (register)
+ *
+ * Compare unsigned higher or same (vector), setting destination
+ * vector element to all ones if the condition holds, else zero
+ */
+
 op cmhs_d_reg( 0b01111110111[11] : rm[5] : 0b001111[6] : rn[5] : rd[5] );
 cmhs_d_reg.var format : {char const*} = {"712"};
 
@@ -1700,6 +1742,18 @@ cmhs_v2d_reg.execute = {
   }
   cpu.ClearHighV(rd,16);
 };
+
+/*
+ * end of CMHS (register)
+ *******************************************************************/
+
+/*******************************************************************
+ * CMLE (zero)
+ *
+ * Compare signed less than or equal to zero (vector), setting
+ * destination vector element to all ones if the condition holds, else
+ * zero
+ */
 
 op cmle_d_zero( 0b0111111011100000100110[22] : rn[5] : rd[5] );
 cmle_d_zero.var format : {char const*} = {"2213"};
@@ -1845,6 +1899,17 @@ cmle_v2d_zero.execute = {
   cpu.ClearHighV(rd,16);
 };
 
+/*
+ * end of CMLE (zero)
+ *******************************************************************/
+
+/*******************************************************************
+ * CMLT (zero)
+ *
+ * Compare signed less than zero (vector), setting destination vector
+ * element to all ones if the condition holds, else zero
+ */
+
 op cmlt_d_zero( 0b0101111011100000101010[22] : rn[5] : rd[5] );
 cmlt_d_zero.var format : {char const*} = {"2214"};
 
@@ -1988,6 +2053,10 @@ cmlt_v2d_zero.execute = {
   }
   cpu.ClearHighV(rd,16);
 };
+
+/*
+ * end of CMLT (zero)
+ *******************************************************************/
 
 op cmtst_ddd( 0b01011110111[11] : rm[5] : 0b100011[6] : rn[5] : rd[5] );
 cmtst_ddd.var format : {char const*} = {"713"};
@@ -10987,7 +11056,6 @@ orr_v8hi.var imm : {uint16_t} = {uint16_t(imm1|imm0) << sh}, format : {char cons
 orr_v8hi.disasm = {
   sink << "orr\t" << DisasmTV(rd,8,1) << ", " << DisasmI(imm,16);
 };
-
 
 /*******************************************************************
  * ORR (vector, register)
