@@ -66,10 +66,9 @@ add_v8b.disasm = {
 };
 
 add_v8b.execute = {
-  cpu.UseVU8(rd,8);
-  
   for (unsigned idx = 0; idx < 8; ++idx)
     cpu.SetVU8(rd,idx,cpu.GetVU8(rn,idx) + cpu.GetVU8(rm,idx));
+  cpu.ClearHighV(rd,8);
 };
 
 op add_v16b( 0b01001110001[11] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
@@ -82,6 +81,7 @@ add_v16b.disasm = {
 add_v16b.execute = {
   for (unsigned idx = 0; idx < 16; ++idx)
     cpu.SetVU8(rd,idx,cpu.GetVU8(rn,idx) + cpu.GetVU8(rm,idx));
+  cpu.ClearHighV(rd,16);
 };
 
 op add_v4h( 0b00001110011[11] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
@@ -92,10 +92,9 @@ add_v4h.disasm = {
 };
 
 add_v4h.execute = {
-  cpu.UseVU16(rd,4);
-  
   for (unsigned idx = 0; idx < 4; ++idx)
     cpu.SetVU16(rd,idx,cpu.GetVU16(rn,idx) + cpu.GetVU16(rm,idx));
+  cpu.ClearHighV(rd,8);
 };
 
 op add_v8h( 0b01001110011[11] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
@@ -108,6 +107,7 @@ add_v8h.disasm = {
 add_v8h.execute = {
   for (unsigned idx = 0; idx < 8; ++idx)
     cpu.SetVU16(rd,idx,cpu.GetVU16(rn,idx) + cpu.GetVU16(rm,idx));
+  cpu.ClearHighV(rd,16);
 };
 
 op add_v2s( 0b00001110101[11] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
@@ -118,10 +118,9 @@ add_v2s.disasm = {
 };
 
 add_v2s.execute = {
-  cpu.UseVU32(rd,2);
-  
   for (unsigned idx = 0; idx < 2; ++idx)
     cpu.SetVU32(rd,idx,cpu.GetVU32(rn,idx) + cpu.GetVU32(rm,idx));
+  cpu.ClearHighV(rd,8);
 };
 
 op add_v4s( 0b01001110101[11] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
@@ -134,6 +133,7 @@ add_v4s.disasm = {
 add_v4s.execute = {
   for (unsigned idx = 0; idx < 2; ++idx)
     cpu.SetVU32(rd,idx,cpu.GetVU32(rn,idx) + cpu.GetVU32(rm,idx));
+  cpu.ClearHighV(rd,16);
 };
 
 op add_ddd( 0b01011110111[11] : rm[5] : 0b100001[6] : rn[5] : rd[5] );
@@ -157,6 +157,7 @@ add_v2d.disasm = {
 add_v2d.execute = {
   for (unsigned idx = 0; idx < 2; ++idx)
     cpu.SetVU64(rd,idx,cpu.GetVU64(rn,idx) + cpu.GetVU64(rm,idx));
+  cpu.ClearHighV(rd,16);
 };
 
 /*
@@ -508,6 +509,7 @@ clz_v8hv8h.disasm = {
 
 /*******************************************************************
  * CMEQ (register)
+ *
  * Compare bitwise equal (vector), setting destination vector element to all ones if the condition holds, else zero
  */
 
@@ -1228,13 +1230,10 @@ dup_v8b.disasm = {
 };
 
 dup_v8b.execute = {
-  typedef typename ARCH::U8 U8;
-  
-  cpu.UseVU8(rd,8);
-  
-  U8 element( cpu.GetGZR(rn) );
+  typename ARCH::U8 element( cpu.GetGZR(rn) );
   for (unsigned idx = 0; idx < 8; ++idx)
     cpu.SetVU8(rd,idx,element);
+  cpu.ClearHighV(rd,8);
 };
 
 op dup_v16b( 0b01001110000[11] : ?[4] : 0b1000011[7] : rn[5] : rd[5] );
@@ -1245,10 +1244,10 @@ dup_v16b.disasm = {
 };
 
 dup_v16b.execute = {
-  typedef typename ARCH::U8 U8;
-  U8 element( cpu.GetGZR(rn) );
+  typename ARCH::U8 element( cpu.GetGZR(rn) );
   for (unsigned idx = 0; idx < 16; ++idx)
     cpu.SetVU8(rd,idx,element);
+  cpu.ClearHighV(rd,16);
 };
 
 op dup_v4h( 0b00001110000[11] : ?[3] : 0b10000011[8] : rn[5] : rd[5] );
@@ -1259,13 +1258,10 @@ dup_v4h.disasm = {
 };
 
 dup_v4h.execute = {
-  typedef typename ARCH::U16 U16;
-  
-  cpu.UseVU16(rd,4);
-  
-  U16 element( cpu.GetGZR(rn) );
+  typename ARCH::U16 element( cpu.GetGZR(rn) );
   for (unsigned idx = 0; idx < 4; ++idx)
     cpu.SetVU16(rd,idx,element);
+  cpu.ClearHighV(rd,8);
 };
 
 op dup_v8h( 0b01001110000[11] : ?[3] : 0b10000011[8] : rn[5] : rd[5] );
@@ -1276,10 +1272,10 @@ dup_v8h.disasm = {
 };
 
 dup_v8h.execute = {
-  typedef typename ARCH::U16 U16;
-  U16 element( cpu.GetGZR(rn) );
+  typename ARCH::U16 element( cpu.GetGZR(rn) );
   for (unsigned idx = 0; idx < 8; ++idx)
     cpu.SetVU16(rd,idx,element);
+  cpu.ClearHighV(rd,16);
 };
 
 op dup_v2s( 0b00001110000[11] : ?[2] : 0b100000011[9] : rn[5] : rd[5] );
@@ -1290,13 +1286,10 @@ dup_v2s.disasm = {
 };
 
 dup_v2s.execute = {
-  typedef typename ARCH::U32 U32;
-  
-  cpu.UseVU32(rd,2);
-  
-  U32 element( cpu.GetGZR(rn) );
+  typename ARCH::U32 element( cpu.GetGZR(rn) );
   for (unsigned idx = 0; idx < 2; ++idx)
     cpu.SetVU32(rd,idx,element);
+  cpu.ClearHighV(rd,8);
 };
 
 op dup_v4s( 0b01001110000[11] : ?[2] : 0b100000011[9] : rn[5] : rd[5] );
@@ -1307,10 +1300,10 @@ dup_v4s.disasm = {
 };
 
 dup_v4s.execute = {
-  typedef typename ARCH::U32 U32;
-  U32 element( cpu.GetGZR(rn) );
+  typename ARCH::U32 element( cpu.GetGZR(rn) );
   for (unsigned idx = 0; idx < 4; ++idx)
     cpu.SetVU32(rd,idx,element);
+  cpu.ClearHighV(rd,16);
 };
 
 op dup_v2d( 0b01001110000[11] : ?[1] : 0b1000000011[10] : rn[5] : rd[5] );
@@ -1321,10 +1314,10 @@ dup_v2d.disasm = {
 };
 
 dup_v2d.execute = {
-  typedef typename ARCH::U64 U64;
-  U64 element( cpu.GetGZR(rn) );
+  typename ARCH::U64 element( cpu.GetGZR(rn) );
   for (unsigned idx = 0; idx < 2; ++idx)
     cpu.SetVU64(rd,idx,element);
+  cpu.ClearHighV(rd,16);
 };
 
 /*
@@ -4174,13 +4167,12 @@ ld1_s8b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*1+s)*1) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 };
 
 op ld1_s16b( 0b0100110001000000011100[22] : rn[5] : rt[5] );
@@ -4195,13 +4187,12 @@ ld1_s16b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,16); }
-
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*1+s)*1) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 };
 
 op ld1_s4h( 0b0000110001000000011101[22] : rn[5] : rt[5] );
@@ -4216,13 +4207,12 @@ ld1_s4h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*1+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 };
 
 op ld1_s8h( 0b0100110001000000011101[22] : rn[5] : rt[5] );
@@ -4237,13 +4227,12 @@ ld1_s8h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*1+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 };
 
 op ld1_s2s( 0b0000110001000000011110[22] : rn[5] : rt[5] );
@@ -4258,13 +4247,12 @@ ld1_s2s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*1+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 };
 
 op ld1_s4s( 0b0100110001000000011110[22] : rn[5] : rt[5] );
@@ -4279,13 +4267,12 @@ ld1_s4s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*1+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 };
 
 op ld1_s1d( 0b0000110001000000011111[22] : rn[5] : rt[5] );
@@ -4300,13 +4287,12 @@ ld1_s1d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned e = 0; e < 1; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*1+s)*8) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 };
 
 op ld1_s2d( 0b0100110001000000011111[22] : rn[5] : rt[5] );
@@ -4321,13 +4307,12 @@ ld1_s2d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*1+s)*8) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 };
 
 op ld1_d8b( 0b0000110001000000101000[22] : rn[5] : rt[5] );
@@ -4342,13 +4327,12 @@ ld1_d8b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*8+e)*1) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 };
 
 op ld1_d16b( 0b0100110001000000101000[22] : rn[5] : rt[5] );
@@ -4363,13 +4347,12 @@ ld1_d16b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 16; ++e) {
       cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*16+e)*1) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 };
 
 op ld1_d4h( 0b0000110001000000101001[22] : rn[5] : rt[5] );
@@ -4384,13 +4367,12 @@ ld1_d4h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*4+e)*2) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 };
 
 op ld1_d8h( 0b0100110001000000101001[22] : rn[5] : rt[5] );
@@ -4405,13 +4387,12 @@ ld1_d8h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*8+e)*2) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 };
 
 op ld1_d2s( 0b0000110001000000101010[22] : rn[5] : rt[5] );
@@ -4426,13 +4407,12 @@ ld1_d2s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*2+e)*4) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 };
 
 op ld1_d4s( 0b0100110001000000101010[22] : rn[5] : rt[5] );
@@ -4447,13 +4427,12 @@ ld1_d4s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*4+e)*4) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 };
 
 op ld1_d1d( 0b0000110001000000101011[22] : rn[5] : rt[5] );
@@ -4468,13 +4447,12 @@ ld1_d1d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 1; ++e) {
       cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*1+e)*8) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 };
 
 op ld1_d2d( 0b0100110001000000101011[22] : rn[5] : rt[5] );
@@ -4489,13 +4467,12 @@ ld1_d2d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*2+e)*8) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 };
 
 op ld1_t8b( 0b0000110001000000011000[22] : rn[5] : rt[5] );
@@ -4510,13 +4487,12 @@ ld1_t8b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*8+e)*1) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 };
 
 op ld1_t16b( 0b0100110001000000011000[22] : rn[5] : rt[5] );
@@ -4531,13 +4507,12 @@ ld1_t16b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 16; ++e) {
       cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*16+e)*1) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 };
 
 op ld1_t4h( 0b0000110001000000011001[22] : rn[5] : rt[5] );
@@ -4552,13 +4527,12 @@ ld1_t4h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*4+e)*2) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 };
 
 op ld1_t8h( 0b0100110001000000011001[22] : rn[5] : rt[5] );
@@ -4573,13 +4547,12 @@ ld1_t8h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*8+e)*2) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 };
 
 op ld1_t2s( 0b0000110001000000011010[22] : rn[5] : rt[5] );
@@ -4594,13 +4567,12 @@ ld1_t2s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*2+e)*4) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 };
 
 op ld1_t4s( 0b0100110001000000011010[22] : rn[5] : rt[5] );
@@ -4615,13 +4587,12 @@ ld1_t4s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*4+e)*4) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 };
 
 op ld1_t1d( 0b0000110001000000011011[22] : rn[5] : rt[5] );
@@ -4636,13 +4607,12 @@ ld1_t1d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 1; ++e) {
       cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*1+e)*8) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 };
 
 op ld1_t2d( 0b0100110001000000011011[22] : rn[5] : rt[5] );
@@ -4657,13 +4627,12 @@ ld1_t2d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*2+e)*8) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 };
 
 op ld1_q8b( 0b0000110001000000001000[22] : rn[5] : rt[5] );
@@ -4678,13 +4647,12 @@ ld1_q8b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*8+e)*1) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 };
 
 op ld1_q16b( 0b0100110001000000001000[22] : rn[5] : rt[5] );
@@ -4699,13 +4667,12 @@ ld1_q16b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 16; ++e) {
       cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*16+e)*1) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 };
 
 op ld1_q4h( 0b0000110001000000001001[22] : rn[5] : rt[5] );
@@ -4720,13 +4687,12 @@ ld1_q4h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*4+e)*2) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 };
 
 op ld1_q8h( 0b0100110001000000001001[22] : rn[5] : rt[5] );
@@ -4741,13 +4707,12 @@ ld1_q8h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*8+e)*2) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 };
 
 op ld1_q2s( 0b0000110001000000001010[22] : rn[5] : rt[5] );
@@ -4762,13 +4727,12 @@ ld1_q2s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*2+e)*4) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 };
 
 op ld1_q4s( 0b0100110001000000001010[22] : rn[5] : rt[5] );
@@ -4783,13 +4747,12 @@ ld1_q4s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*4+e)*4) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 };
 
 op ld1_q1d( 0b0000110001000000001011[22] : rn[5] : rt[5] );
@@ -4804,13 +4767,12 @@ ld1_q1d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 1; ++e) {
       cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*1+e)*8) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 };
 
 op ld1_q2d( 0b0100110001000000001011[22] : rn[5] : rt[5] );
@@ -4825,13 +4787,12 @@ ld1_q2d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*2+e)*8) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 };
 
 op ld1_s8b_imm( 0b0000110011011111011100[22] : rn[5] : rt[5] );
@@ -4846,13 +4807,13 @@ ld1_s8b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*1+s)*1) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+  
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -4868,13 +4829,13 @@ ld1_s8b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*1+s)*1) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -4890,13 +4851,13 @@ ld1_s16b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,16); }
-
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*1+s)*1) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -4912,13 +4873,13 @@ ld1_s16b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,16); }
-
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU8((rt+s)%32, e, cpu.MemRead8( addr + U64((e*1+s)*1) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -4934,13 +4895,13 @@ ld1_s4h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*1+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -4956,13 +4917,13 @@ ld1_s4h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*1+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -4978,13 +4939,13 @@ ld1_s8h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*1+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -5000,13 +4961,13 @@ ld1_s8h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*1+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5022,13 +4983,13 @@ ld1_s2s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*1+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -5044,13 +5005,13 @@ ld1_s2s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*1+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5066,13 +5027,13 @@ ld1_s4s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*1+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -5088,13 +5049,13 @@ ld1_s4s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*1+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5110,13 +5071,13 @@ ld1_s1d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned e = 0; e < 1; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*1+s)*8) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -5132,13 +5093,13 @@ ld1_s1d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned e = 0; e < 1; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*1+s)*8) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5154,13 +5115,13 @@ ld1_s2d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*1+s)*8) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -5176,13 +5137,13 @@ ld1_s2d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*1+s)*8) ));
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5198,13 +5159,13 @@ ld1_d8b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*8+e)*1) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -5220,13 +5181,13 @@ ld1_d8b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*8+e)*1) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5242,13 +5203,13 @@ ld1_d16b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 16; ++e) {
       cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*16+e)*1) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -5264,13 +5225,13 @@ ld1_d16b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 16; ++e) {
       cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*16+e)*1) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5286,13 +5247,13 @@ ld1_d4h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*4+e)*2) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -5308,13 +5269,13 @@ ld1_d4h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*4+e)*2) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5330,13 +5291,13 @@ ld1_d8h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*8+e)*2) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -5352,13 +5313,13 @@ ld1_d8h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*8+e)*2) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5374,13 +5335,13 @@ ld1_d2s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*2+e)*4) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -5396,13 +5357,13 @@ ld1_d2s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*2+e)*4) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5418,13 +5379,13 @@ ld1_d4s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*4+e)*4) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -5440,13 +5401,13 @@ ld1_d4s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*4+e)*4) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5462,13 +5423,13 @@ ld1_d1d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 1; ++e) {
       cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*1+e)*8) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -5484,13 +5445,13 @@ ld1_d1d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 1; ++e) {
       cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*1+e)*8) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5506,13 +5467,13 @@ ld1_d2d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*2+e)*8) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -5528,13 +5489,13 @@ ld1_d2d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*2+e)*8) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5550,13 +5511,13 @@ ld1_t8b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*8+e)*1) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -5572,13 +5533,13 @@ ld1_t8b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*8+e)*1) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5594,13 +5555,13 @@ ld1_t16b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 16; ++e) {
       cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*16+e)*1) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -5616,13 +5577,13 @@ ld1_t16b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 16; ++e) {
       cpu.SetVU8((rt+r)%32, e, cpu.MemRead8( addr + U64((r*16+e)*1) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5638,13 +5599,13 @@ ld1_t4h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*4+e)*2) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -5660,13 +5621,13 @@ ld1_t4h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*4+e)*2) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5682,13 +5643,13 @@ ld1_t8h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*8+e)*2) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -5704,13 +5665,13 @@ ld1_t8h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*8+e)*2) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5726,13 +5687,13 @@ ld1_t2s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*2+e)*4) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -5748,13 +5709,13 @@ ld1_t2s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*2+e)*4) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5770,13 +5731,13 @@ ld1_t4s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*4+e)*4) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -5792,13 +5753,13 @@ ld1_t4s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*4+e)*4) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5814,13 +5775,13 @@ ld1_t1d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 1; ++e) {
       cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*1+e)*8) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -5836,13 +5797,13 @@ ld1_t1d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 1; ++e) {
       cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*1+e)*8) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5858,13 +5819,13 @@ ld1_t2d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*2+e)*8) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -5880,13 +5841,13 @@ ld1_t2d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*2+e)*8) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -5902,7 +5863,7 @@ ld1_q8b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
@@ -5924,7 +5885,7 @@ ld1_q8b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
@@ -5946,7 +5907,7 @@ ld1_q16b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 16; ++e) {
@@ -5968,7 +5929,7 @@ ld1_q16b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 16; ++e) {
@@ -5990,13 +5951,13 @@ ld1_q4h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*4+e)*2) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -6012,13 +5973,13 @@ ld1_q4h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*4+e)*2) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -6034,13 +5995,13 @@ ld1_q8h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*8+e)*2) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -6056,13 +6017,13 @@ ld1_q8h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.SetVU16((rt+r)%32, e, cpu.MemRead16( addr + U64((r*8+e)*2) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -6078,13 +6039,13 @@ ld1_q2s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*2+e)*4) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -6100,13 +6061,13 @@ ld1_q2s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*2+e)*4) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -6122,13 +6083,13 @@ ld1_q4s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*4+e)*4) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -6144,13 +6105,13 @@ ld1_q4s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.SetVU32((rt+r)%32, e, cpu.MemRead32( addr + U64((r*4+e)*4) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -6166,13 +6127,13 @@ ld1_q1d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 1; ++e) {
       cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*1+e)*8) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -6188,13 +6149,13 @@ ld1_q1d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 1; ++e) {
       cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*1+e)*8) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -6210,13 +6171,13 @@ ld1_q2d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*2+e)*8) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -6232,13 +6193,13 @@ ld1_q2d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.SetVU64((rt+r)%32, e, cpu.MemRead64( addr + U64((r*2+e)*8) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -6536,7 +6497,7 @@ ld2_d8b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
@@ -6557,7 +6518,7 @@ ld2_d16b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
@@ -6578,13 +6539,13 @@ ld2_d4h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*2+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op ld2_d8h( 0b0100110001000000100001[22] : rn[5] : rt[5] );
@@ -6599,13 +6560,13 @@ ld2_d8h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*2+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op ld2_d2s( 0b0000110001000000100010[22] : rn[5] : rt[5] );
@@ -6620,13 +6581,13 @@ ld2_d2s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*2+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op ld2_d4s( 0b0100110001000000100010[22] : rn[5] : rt[5] );
@@ -6641,13 +6602,13 @@ ld2_d4s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*2+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op ld2_d2d( 0b0100110001000000100011[22] : rn[5] : rt[5] );
@@ -6662,13 +6623,13 @@ ld2_d2d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*2+s)*8) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op ld2_d8b_imm( 0b0000110011011111100000[22] : rn[5] : rt[5] );
@@ -6683,7 +6644,7 @@ ld2_d8b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
@@ -6705,7 +6666,7 @@ ld2_d8b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
@@ -6727,7 +6688,7 @@ ld2_d16b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
@@ -6749,7 +6710,7 @@ ld2_d16b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
@@ -6771,13 +6732,13 @@ ld2_d4h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*2+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -6793,13 +6754,13 @@ ld2_d4h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*2+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -6815,13 +6776,13 @@ ld2_d8h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*2+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(32) );
 };
 
@@ -6837,13 +6798,13 @@ ld2_d8h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*2+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -6859,13 +6820,13 @@ ld2_d2s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*2+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -6881,13 +6842,13 @@ ld2_d2s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*2+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -6903,13 +6864,13 @@ ld2_d4s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*2+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(32) );
 };
 
@@ -6925,13 +6886,13 @@ ld2_d4s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*2+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -6947,13 +6908,13 @@ ld2_d2d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*2+s)*8) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(32) );
 };
 
@@ -6969,13 +6930,13 @@ ld2_d2d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*2+s)*8) ));
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -7274,7 +7235,7 @@ ld3_t8b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
@@ -7295,7 +7256,7 @@ ld3_t16b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
@@ -7316,13 +7277,13 @@ ld3_t4h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*3+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op ld3_t8h( 0b0100110001000000010001[22] : rn[5] : rt[5] );
@@ -7337,13 +7298,13 @@ ld3_t8h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*3+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op ld3_t2s( 0b0000110001000000010010[22] : rn[5] : rt[5] );
@@ -7358,13 +7319,13 @@ ld3_t2s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*3+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op ld3_t4s( 0b0100110001000000010010[22] : rn[5] : rt[5] );
@@ -7379,13 +7340,13 @@ ld3_t4s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*3+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op ld3_t2d( 0b0100110001000000010011[22] : rn[5] : rt[5] );
@@ -7400,13 +7361,13 @@ ld3_t2d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*3+s)*8) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op ld3_t8b_imm( 0b0000110011011111010000[22] : rn[5] : rt[5] );
@@ -7421,7 +7382,7 @@ ld3_t8b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
@@ -7443,7 +7404,7 @@ ld3_t8b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
@@ -7465,7 +7426,7 @@ ld3_t16b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
@@ -7487,7 +7448,7 @@ ld3_t16b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
@@ -7509,13 +7470,13 @@ ld3_t4h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*3+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(24) );
 };
 
@@ -7531,13 +7492,13 @@ ld3_t4h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*3+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -7553,13 +7514,13 @@ ld3_t8h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*3+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(48) );
 };
 
@@ -7575,13 +7536,13 @@ ld3_t8h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*3+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -7597,13 +7558,13 @@ ld3_t2s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*3+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(24) );
 };
 
@@ -7619,13 +7580,13 @@ ld3_t2s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*3+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -7641,13 +7602,13 @@ ld3_t4s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*3+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(48) );
 };
 
@@ -7663,13 +7624,13 @@ ld3_t4s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*3+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -7685,13 +7646,13 @@ ld3_t2d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*3+s)*8) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(48) );
 };
 
@@ -7707,13 +7668,13 @@ ld3_t2d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*3+s)*8) ));
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -8011,7 +7972,7 @@ ld4_q8b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
@@ -8032,7 +7993,7 @@ ld4_q16b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
@@ -8053,13 +8014,13 @@ ld4_q4h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*4+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op ld4_q8h( 0b0100110001000000000001[22] : rn[5] : rt[5] );
@@ -8074,13 +8035,13 @@ ld4_q8h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*4+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op ld4_q2s( 0b0000110001000000000010[22] : rn[5] : rt[5] );
@@ -8095,13 +8056,13 @@ ld4_q2s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*4+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op ld4_q4s( 0b0100110001000000000010[22] : rn[5] : rt[5] );
@@ -8116,13 +8077,13 @@ ld4_q4s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*4+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op ld4_q2d( 0b0100110001000000000011[22] : rn[5] : rt[5] );
@@ -8137,13 +8098,13 @@ ld4_q2d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*4+s)*8) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op ld4_q8b_imm( 0b0000110011011111000000[22] : rn[5] : rt[5] );
@@ -8158,7 +8119,7 @@ ld4_q8b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
@@ -8180,7 +8141,7 @@ ld4_q8b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
@@ -8202,7 +8163,7 @@ ld4_q16b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
@@ -8224,7 +8185,7 @@ ld4_q16b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
@@ -8246,13 +8207,13 @@ ld4_q4h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*4+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(32) );
 };
 
@@ -8268,13 +8229,13 @@ ld4_q4h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*4+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -8290,13 +8251,13 @@ ld4_q8h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*4+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(64) );
 };
 
@@ -8312,13 +8273,13 @@ ld4_q8h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.SetVU16((rt+s)%32, e, cpu.MemRead16( addr + U64((e*4+s)*2) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -8334,13 +8295,13 @@ ld4_q2s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*4+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(32) );
 };
 
@@ -8356,13 +8317,13 @@ ld4_q2s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*4+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -8378,13 +8339,13 @@ ld4_q4s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*4+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(64) );
 };
 
@@ -8400,13 +8361,13 @@ ld4_q4s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.SetVU32((rt+s)%32, e, cpu.MemRead32( addr + U64((e*4+s)*4) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -8422,13 +8383,13 @@ ld4_q2d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*4+s)*8) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(64) );
 };
 
@@ -8444,13 +8405,13 @@ ld4_q2d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.SetVU64((rt+s)%32, e, cpu.MemRead64( addr + U64((e*4+s)*8) ));
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -13705,7 +13666,7 @@ st1_s8b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
@@ -13726,7 +13687,7 @@ st1_s16b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
@@ -13747,13 +13708,13 @@ st1_s4h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.MemWrite32( addr + U64((e*1+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op st1_s8h( 0b0100110000000000011101[22] : rn[5] : rt[5] );
@@ -13768,13 +13729,13 @@ st1_s8h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.MemWrite32( addr + U64((e*1+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st1_s2s( 0b0000110000000000011110[22] : rn[5] : rt[5] );
@@ -13789,13 +13750,13 @@ st1_s2s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.MemWrite32( addr + U64((e*1+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op st1_s4s( 0b0100110000000000011110[22] : rn[5] : rt[5] );
@@ -13810,13 +13771,13 @@ st1_s4s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.MemWrite32( addr + U64((e*1+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st1_s1d( 0b0000110000000000011111[22] : rn[5] : rt[5] );
@@ -13831,13 +13792,13 @@ st1_s1d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned e = 0; e < 1; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.MemWrite32( addr + U64((e*1+s)*8), cpu.GetVU64((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op st1_s2d( 0b0100110000000000011111[22] : rn[5] : rt[5] );
@@ -13852,13 +13813,13 @@ st1_s2d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.MemWrite32( addr + U64((e*1+s)*8), cpu.GetVU64((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st1_d8b( 0b0000110000000000101000[22] : rn[5] : rt[5] );
@@ -13873,7 +13834,7 @@ st1_d8b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
@@ -13894,7 +13855,7 @@ st1_d16b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 16; ++e) {
@@ -13915,13 +13876,13 @@ st1_d4h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.MemWrite32( addr + U64((r*4+e)*2), cpu.GetVU16((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op st1_d8h( 0b0100110000000000101001[22] : rn[5] : rt[5] );
@@ -13936,13 +13897,13 @@ st1_d8h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.MemWrite32( addr + U64((r*8+e)*2), cpu.GetVU16((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st1_d2s( 0b0000110000000000101010[22] : rn[5] : rt[5] );
@@ -13957,13 +13918,13 @@ st1_d2s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.MemWrite32( addr + U64((r*2+e)*4), cpu.GetVU32((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op st1_d4s( 0b0100110000000000101010[22] : rn[5] : rt[5] );
@@ -13978,13 +13939,13 @@ st1_d4s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.MemWrite32( addr + U64((r*4+e)*4), cpu.GetVU32((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st1_d1d( 0b0000110000000000101011[22] : rn[5] : rt[5] );
@@ -13999,13 +13960,13 @@ st1_d1d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 1; ++e) {
       cpu.MemWrite32( addr + U64((r*1+e)*8), cpu.GetVU64((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op st1_d2d( 0b0100110000000000101011[22] : rn[5] : rt[5] );
@@ -14020,13 +13981,13 @@ st1_d2d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.MemWrite32( addr + U64((r*2+e)*8), cpu.GetVU64((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st1_t8b( 0b0000110000000000011000[22] : rn[5] : rt[5] );
@@ -14041,7 +14002,7 @@ st1_t8b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
@@ -14062,7 +14023,7 @@ st1_t16b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 16; ++e) {
@@ -14083,13 +14044,13 @@ st1_t4h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.MemWrite32( addr + U64((r*4+e)*2), cpu.GetVU16((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op st1_t8h( 0b0100110000000000011001[22] : rn[5] : rt[5] );
@@ -14104,13 +14065,13 @@ st1_t8h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.MemWrite32( addr + U64((r*8+e)*2), cpu.GetVU16((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st1_t2s( 0b0000110000000000011010[22] : rn[5] : rt[5] );
@@ -14125,13 +14086,13 @@ st1_t2s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.MemWrite32( addr + U64((r*2+e)*4), cpu.GetVU32((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op st1_t4s( 0b0100110000000000011010[22] : rn[5] : rt[5] );
@@ -14146,13 +14107,13 @@ st1_t4s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.MemWrite32( addr + U64((r*4+e)*4), cpu.GetVU32((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st1_t1d( 0b0000110000000000011011[22] : rn[5] : rt[5] );
@@ -14167,13 +14128,13 @@ st1_t1d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 1; ++e) {
       cpu.MemWrite32( addr + U64((r*1+e)*8), cpu.GetVU64((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op st1_t2d( 0b0100110000000000011011[22] : rn[5] : rt[5] );
@@ -14188,13 +14149,13 @@ st1_t2d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.MemWrite32( addr + U64((r*2+e)*8), cpu.GetVU64((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st1_q8b( 0b0000110000000000001000[22] : rn[5] : rt[5] );
@@ -14209,7 +14170,7 @@ st1_q8b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
@@ -14230,7 +14191,7 @@ st1_q16b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 16; ++e) {
@@ -14251,13 +14212,13 @@ st1_q4h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.MemWrite32( addr + U64((r*4+e)*2), cpu.GetVU16((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op st1_q8h( 0b0100110000000000001001[22] : rn[5] : rt[5] );
@@ -14272,13 +14233,13 @@ st1_q8h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.MemWrite32( addr + U64((r*8+e)*2), cpu.GetVU16((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st1_q2s( 0b0000110000000000001010[22] : rn[5] : rt[5] );
@@ -14293,13 +14254,13 @@ st1_q2s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.MemWrite32( addr + U64((r*2+e)*4), cpu.GetVU32((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op st1_q4s( 0b0100110000000000001010[22] : rn[5] : rt[5] );
@@ -14314,13 +14275,13 @@ st1_q4s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.MemWrite32( addr + U64((r*4+e)*4), cpu.GetVU32((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st1_q1d( 0b0000110000000000001011[22] : rn[5] : rt[5] );
@@ -14335,13 +14296,13 @@ st1_q1d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 1; ++e) {
       cpu.MemWrite32( addr + U64((r*1+e)*8), cpu.GetVU64((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op st1_q2d( 0b0100110000000000001011[22] : rn[5] : rt[5] );
@@ -14356,13 +14317,13 @@ st1_q2d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.MemWrite32( addr + U64((r*2+e)*8), cpu.GetVU64((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st1_s8b_imm( 0b0000110010011111011100[22] : rn[5] : rt[5] );
@@ -14377,7 +14338,7 @@ st1_s8b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
@@ -14399,7 +14360,7 @@ st1_s8b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
@@ -14421,7 +14382,7 @@ st1_s16b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
@@ -14443,7 +14404,7 @@ st1_s16b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
@@ -14465,13 +14426,13 @@ st1_s4h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.MemWrite32( addr + U64((e*1+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -14487,13 +14448,13 @@ st1_s4h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.MemWrite32( addr + U64((e*1+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -14509,13 +14470,13 @@ st1_s8h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.MemWrite32( addr + U64((e*1+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -14531,13 +14492,13 @@ st1_s8h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.MemWrite32( addr + U64((e*1+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -14553,13 +14514,13 @@ st1_s2s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.MemWrite32( addr + U64((e*1+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -14575,13 +14536,13 @@ st1_s2s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.MemWrite32( addr + U64((e*1+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -14597,13 +14558,13 @@ st1_s4s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.MemWrite32( addr + U64((e*1+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -14619,13 +14580,13 @@ st1_s4s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.MemWrite32( addr + U64((e*1+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -14641,13 +14602,13 @@ st1_s1d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned e = 0; e < 1; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.MemWrite32( addr + U64((e*1+s)*8), cpu.GetVU64((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -14663,13 +14624,13 @@ st1_s1d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned e = 0; e < 1; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.MemWrite32( addr + U64((e*1+s)*8), cpu.GetVU64((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -14685,13 +14646,13 @@ st1_s2d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.MemWrite32( addr + U64((e*1+s)*8), cpu.GetVU64((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -14707,13 +14668,13 @@ st1_s2d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 1; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 1; ++s) {
       cpu.MemWrite32( addr + U64((e*1+s)*8), cpu.GetVU64((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 1; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -14729,7 +14690,7 @@ st1_d8b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
@@ -14751,7 +14712,7 @@ st1_d8b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
@@ -14773,7 +14734,7 @@ st1_d16b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 16; ++e) {
@@ -14795,7 +14756,7 @@ st1_d16b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 16; ++e) {
@@ -14817,13 +14778,13 @@ st1_d4h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.MemWrite32( addr + U64((r*4+e)*2), cpu.GetVU16((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -14839,13 +14800,13 @@ st1_d4h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.MemWrite32( addr + U64((r*4+e)*2), cpu.GetVU16((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -14861,13 +14822,13 @@ st1_d8h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.MemWrite32( addr + U64((r*8+e)*2), cpu.GetVU16((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -14883,13 +14844,13 @@ st1_d8h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.MemWrite32( addr + U64((r*8+e)*2), cpu.GetVU16((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -14905,13 +14866,13 @@ st1_d2s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.MemWrite32( addr + U64((r*2+e)*4), cpu.GetVU32((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -14927,13 +14888,13 @@ st1_d2s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.MemWrite32( addr + U64((r*2+e)*4), cpu.GetVU32((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -14949,13 +14910,13 @@ st1_d4s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.MemWrite32( addr + U64((r*4+e)*4), cpu.GetVU32((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -14971,13 +14932,13 @@ st1_d4s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.MemWrite32( addr + U64((r*4+e)*4), cpu.GetVU32((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -14993,13 +14954,13 @@ st1_d1d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 1; ++e) {
       cpu.MemWrite32( addr + U64((r*1+e)*8), cpu.GetVU64((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -15015,13 +14976,13 @@ st1_d1d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 1; ++e) {
       cpu.MemWrite32( addr + U64((r*1+e)*8), cpu.GetVU64((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -15037,13 +14998,13 @@ st1_d2d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.MemWrite32( addr + U64((r*2+e)*8), cpu.GetVU64((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -15059,13 +15020,13 @@ st1_d2d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 2; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.MemWrite32( addr + U64((r*2+e)*8), cpu.GetVU64((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -15081,7 +15042,7 @@ st1_t8b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
@@ -15103,7 +15064,7 @@ st1_t8b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
@@ -15125,7 +15086,7 @@ st1_t16b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 16; ++e) {
@@ -15147,7 +15108,7 @@ st1_t16b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 16; ++e) {
@@ -15169,13 +15130,13 @@ st1_t4h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.MemWrite32( addr + U64((r*4+e)*2), cpu.GetVU16((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -15191,13 +15152,13 @@ st1_t4h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.MemWrite32( addr + U64((r*4+e)*2), cpu.GetVU16((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -15213,13 +15174,13 @@ st1_t8h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.MemWrite32( addr + U64((r*8+e)*2), cpu.GetVU16((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -15235,13 +15196,13 @@ st1_t8h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.MemWrite32( addr + U64((r*8+e)*2), cpu.GetVU16((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -15257,13 +15218,13 @@ st1_t2s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.MemWrite32( addr + U64((r*2+e)*4), cpu.GetVU32((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -15279,13 +15240,13 @@ st1_t2s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.MemWrite32( addr + U64((r*2+e)*4), cpu.GetVU32((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -15301,13 +15262,13 @@ st1_t4s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.MemWrite32( addr + U64((r*4+e)*4), cpu.GetVU32((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -15323,13 +15284,13 @@ st1_t4s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.MemWrite32( addr + U64((r*4+e)*4), cpu.GetVU32((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -15345,13 +15306,13 @@ st1_t1d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 1; ++e) {
       cpu.MemWrite32( addr + U64((r*1+e)*8), cpu.GetVU64((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -15367,13 +15328,13 @@ st1_t1d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 1; ++e) {
       cpu.MemWrite32( addr + U64((r*1+e)*8), cpu.GetVU64((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -15389,13 +15350,13 @@ st1_t2d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.MemWrite32( addr + U64((r*2+e)*8), cpu.GetVU64((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -15411,13 +15372,13 @@ st1_t2d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 3; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.MemWrite32( addr + U64((r*2+e)*8), cpu.GetVU64((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -15433,7 +15394,7 @@ st1_q8b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
@@ -15455,7 +15416,7 @@ st1_q8b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
@@ -15477,7 +15438,7 @@ st1_q16b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 16; ++e) {
@@ -15499,7 +15460,7 @@ st1_q16b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 16; ++e) {
@@ -15521,13 +15482,13 @@ st1_q4h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.MemWrite32( addr + U64((r*4+e)*2), cpu.GetVU16((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -15543,13 +15504,13 @@ st1_q4h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.MemWrite32( addr + U64((r*4+e)*2), cpu.GetVU16((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -15565,13 +15526,13 @@ st1_q8h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.MemWrite32( addr + U64((r*8+e)*2), cpu.GetVU16((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -15587,13 +15548,13 @@ st1_q8h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 8; ++e) {
       cpu.MemWrite32( addr + U64((r*8+e)*2), cpu.GetVU16((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -15609,13 +15570,13 @@ st1_q2s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.MemWrite32( addr + U64((r*2+e)*4), cpu.GetVU32((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -15631,13 +15592,13 @@ st1_q2s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.MemWrite32( addr + U64((r*2+e)*4), cpu.GetVU32((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -15653,13 +15614,13 @@ st1_q4s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.MemWrite32( addr + U64((r*4+e)*4), cpu.GetVU32((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -15675,13 +15636,13 @@ st1_q4s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 4; ++e) {
       cpu.MemWrite32( addr + U64((r*4+e)*4), cpu.GetVU32((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -15697,13 +15658,13 @@ st1_q1d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 1; ++e) {
       cpu.MemWrite32( addr + U64((r*1+e)*8), cpu.GetVU64((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(8) );
 };
 
@@ -15719,13 +15680,13 @@ st1_q1d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,1); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 1; ++e) {
       cpu.MemWrite32( addr + U64((r*1+e)*8), cpu.GetVU64((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -15741,13 +15702,13 @@ st1_q2d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.MemWrite32( addr + U64((r*2+e)*8), cpu.GetVU64((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -15763,13 +15724,13 @@ st1_q2d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned r = 0; r < 4; ++r) {
     for (unsigned e = 0; e < 2; ++e) {
       cpu.MemWrite32( addr + U64((r*2+e)*8), cpu.GetVU64((rt+r)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -15869,7 +15830,7 @@ st2_d8b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
@@ -15890,7 +15851,7 @@ st2_d16b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
@@ -15911,13 +15872,13 @@ st2_d4h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.MemWrite32( addr + U64((e*2+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op st2_d8h( 0b0100110000000000100001[22] : rn[5] : rt[5] );
@@ -15932,13 +15893,13 @@ st2_d8h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.MemWrite32( addr + U64((e*2+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st2_d2s( 0b0000110000000000100010[22] : rn[5] : rt[5] );
@@ -15953,13 +15914,13 @@ st2_d2s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.MemWrite32( addr + U64((e*2+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op st2_d4s( 0b0100110000000000100010[22] : rn[5] : rt[5] );
@@ -15974,13 +15935,13 @@ st2_d4s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.MemWrite32( addr + U64((e*2+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st2_d2d( 0b0100110000000000100011[22] : rn[5] : rt[5] );
@@ -15995,13 +15956,13 @@ st2_d2d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.MemWrite32( addr + U64((e*2+s)*8), cpu.GetVU64((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st2_d8b_imm( 0b0000110010011111100000[22] : rn[5] : rt[5] );
@@ -16016,7 +15977,7 @@ st2_d8b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
@@ -16038,7 +15999,7 @@ st2_d8b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
@@ -16060,7 +16021,7 @@ st2_d16b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
@@ -16082,7 +16043,7 @@ st2_d16b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
@@ -16104,13 +16065,13 @@ st2_d4h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.MemWrite32( addr + U64((e*2+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -16126,13 +16087,13 @@ st2_d4h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.MemWrite32( addr + U64((e*2+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -16148,13 +16109,13 @@ st2_d8h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.MemWrite32( addr + U64((e*2+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(32) );
 };
 
@@ -16170,13 +16131,13 @@ st2_d8h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.MemWrite32( addr + U64((e*2+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -16192,13 +16153,13 @@ st2_d2s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.MemWrite32( addr + U64((e*2+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(16) );
 };
 
@@ -16214,13 +16175,13 @@ st2_d2s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.MemWrite32( addr + U64((e*2+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -16236,13 +16197,13 @@ st2_d4s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.MemWrite32( addr + U64((e*2+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(32) );
 };
 
@@ -16258,13 +16219,13 @@ st2_d4s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.MemWrite32( addr + U64((e*2+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -16280,13 +16241,13 @@ st2_d2d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.MemWrite32( addr + U64((e*2+s)*8), cpu.GetVU64((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(32) );
 };
 
@@ -16302,13 +16263,13 @@ st2_d2d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 2; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 2; ++s) {
       cpu.MemWrite32( addr + U64((e*2+s)*8), cpu.GetVU64((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 2; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -16408,7 +16369,7 @@ st3_t8b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
@@ -16429,7 +16390,7 @@ st3_t16b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
@@ -16450,13 +16411,13 @@ st3_t4h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.MemWrite32( addr + U64((e*3+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op st3_t8h( 0b0100110000000000010001[22] : rn[5] : rt[5] );
@@ -16471,13 +16432,13 @@ st3_t8h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.MemWrite32( addr + U64((e*3+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st3_t2s( 0b0000110000000000010010[22] : rn[5] : rt[5] );
@@ -16492,13 +16453,13 @@ st3_t2s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.MemWrite32( addr + U64((e*3+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op st3_t4s( 0b0100110000000000010010[22] : rn[5] : rt[5] );
@@ -16513,13 +16474,13 @@ st3_t4s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.MemWrite32( addr + U64((e*3+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st3_t2d( 0b0100110000000000010011[22] : rn[5] : rt[5] );
@@ -16534,13 +16495,13 @@ st3_t2d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.MemWrite32( addr + U64((e*3+s)*8), cpu.GetVU64((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st3_t8b_imm( 0b0000110010011111010000[22] : rn[5] : rt[5] );
@@ -16555,7 +16516,7 @@ st3_t8b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
@@ -16577,7 +16538,7 @@ st3_t8b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
@@ -16599,7 +16560,7 @@ st3_t16b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
@@ -16621,7 +16582,7 @@ st3_t16b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
@@ -16643,13 +16604,13 @@ st3_t4h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.MemWrite32( addr + U64((e*3+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(24) );
 };
 
@@ -16665,13 +16626,13 @@ st3_t4h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.MemWrite32( addr + U64((e*3+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -16687,13 +16648,13 @@ st3_t8h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.MemWrite32( addr + U64((e*3+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(48) );
 };
 
@@ -16709,13 +16670,13 @@ st3_t8h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.MemWrite32( addr + U64((e*3+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -16731,13 +16692,13 @@ st3_t2s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.MemWrite32( addr + U64((e*3+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(24) );
 };
 
@@ -16753,13 +16714,13 @@ st3_t2s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.MemWrite32( addr + U64((e*3+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -16775,13 +16736,13 @@ st3_t4s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.MemWrite32( addr + U64((e*3+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(48) );
 };
 
@@ -16797,13 +16758,13 @@ st3_t4s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.MemWrite32( addr + U64((e*3+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -16819,13 +16780,13 @@ st3_t2d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.MemWrite32( addr + U64((e*3+s)*8), cpu.GetVU64((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(48) );
 };
 
@@ -16841,13 +16802,13 @@ st3_t2d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 3; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 3; ++s) {
       cpu.MemWrite32( addr + U64((e*3+s)*8), cpu.GetVU64((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 3; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -16947,7 +16908,7 @@ st4_q8b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
@@ -16968,7 +16929,7 @@ st4_q16b.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
@@ -16989,13 +16950,13 @@ st4_q4h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.MemWrite32( addr + U64((e*4+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op st4_q8h( 0b0100110000000000000001[22] : rn[5] : rt[5] );
@@ -17010,13 +16971,13 @@ st4_q8h.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.MemWrite32( addr + U64((e*4+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st4_q2s( 0b0000110000000000000010[22] : rn[5] : rt[5] );
@@ -17031,13 +16992,13 @@ st4_q2s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.MemWrite32( addr + U64((e*4+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
 };
 
 op st4_q4s( 0b0100110000000000000010[22] : rn[5] : rt[5] );
@@ -17052,13 +17013,13 @@ st4_q4s.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.MemWrite32( addr + U64((e*4+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st4_q2d( 0b0100110000000000000011[22] : rn[5] : rt[5] );
@@ -17073,13 +17034,13 @@ st4_q2d.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.MemWrite32( addr + U64((e*4+s)*8), cpu.GetVU64((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
 };
 
 op st4_q8b_imm( 0b0000110010011111000000[22] : rn[5] : rt[5] );
@@ -17094,7 +17055,7 @@ st4_q8b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
@@ -17116,7 +17077,7 @@ st4_q8b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,8); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
 
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
@@ -17138,7 +17099,7 @@ st4_q16b_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
@@ -17160,7 +17121,7 @@ st4_q16b_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU8((rt+r)%32,16); }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
 
   for (unsigned e = 0; e < 16; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
@@ -17182,13 +17143,13 @@ st4_q4h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.MemWrite32( addr + U64((e*4+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(32) );
 };
 
@@ -17204,13 +17165,13 @@ st4_q4h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.MemWrite32( addr + U64((e*4+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -17226,13 +17187,13 @@ st4_q8h_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.MemWrite32( addr + U64((e*4+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(64) );
 };
 
@@ -17248,13 +17209,13 @@ st4_q8h_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU16((rt+r)%32,8); }
-
   for (unsigned e = 0; e < 8; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.MemWrite32( addr + U64((e*4+s)*2), cpu.GetVU16((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -17270,13 +17231,13 @@ st4_q2s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.MemWrite32( addr + U64((e*4+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + U64(32) );
 };
 
@@ -17292,13 +17253,13 @@ st4_q2s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.MemWrite32( addr + U64((e*4+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,8); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -17314,13 +17275,13 @@ st4_q4s_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.MemWrite32( addr + U64((e*4+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(64) );
 };
 
@@ -17336,13 +17297,13 @@ st4_q4s_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU32((rt+r)%32,4); }
-
   for (unsigned e = 0; e < 4; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.MemWrite32( addr + U64((e*4+s)*4), cpu.GetVU32((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
@@ -17358,13 +17319,13 @@ st4_q2d_imm.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.MemWrite32( addr + U64((e*4+s)*8), cpu.GetVU64((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + U64(64) );
 };
 
@@ -17380,13 +17341,13 @@ st4_q2d_reg.execute = {
 
   U64 addr( cpu.GetGSR(rn) );
 
-  for (unsigned r = 0; r < 4; ++r) { cpu.UseVU64((rt+r)%32,2); }
-
   for (unsigned e = 0; e < 2; ++e) {
     for (unsigned s = 0; s < 4; ++s) {
       cpu.MemWrite32( addr + U64((e*4+s)*8), cpu.GetVU64((rt+s)%32, e) );
     }
   }
+  for (unsigned r = 0; r < 4; ++r) { cpu.ClearHighV((rt+r)%32,16); }
+
   cpu.SetGSR(rn, addr + cpu.GetGZR(rm) );
 };
 
