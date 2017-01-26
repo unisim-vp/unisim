@@ -206,11 +206,34 @@ addhn_v8bv8hv8h.disasm = {
   sink << "addhn\t" << DisasmTV(rd,8,0) << ", " << DisasmTV(rn,8,1) << ", " << DisasmTV(rm,8,1);
 };
 
+/*******************************************************************
+ * ADDP (scalar)
+ *
+ * Add pair of elements (scalar)
+ */
+
 op addp_dv2d( 0b0101111011110001101110[22] : rn[5] : rd[5] );
 addp_dv2d.var format : {char const*} = {"2222"};
 
 addp_dv2d.disasm = {
   sink << "addp\t" << DisasmD(rd) << ", " << DisasmTV(rn,2,3);
+};
+
+/*
+ * end of ADDP (scalar)
+ *******************************************************************/
+
+/*******************************************************************
+ * ADDP (vector)
+ *
+ * Add pairwise (vector)
+ */
+
+op addp_v8bv8bv8b( 0b00001110001[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
+addp_v8bv8bv8b.var format : {char const*} = {"1298"};
+
+addp_v8bv8bv8b.disasm = {
+  sink << "addp\t" << DisasmTV(rd,8,0) << ", " << DisasmTV(rn,8,0) << ", " << DisasmTV(rm,8,0);
 };
 
 op addp_v16bv16bv16b( 0b01001110001[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
@@ -220,11 +243,18 @@ addp_v16bv16bv16b.disasm = {
   sink << "addp\t" << DisasmTV(rd,16,0) << ", " << DisasmTV(rn,16,0) << ", " << DisasmTV(rm,16,0);
 };
 
-op addp_v2dv2dv2d( 0b01001110111[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
-addp_v2dv2dv2d.var format : {char const*} = {"895"};
+op addp_v4hv4hv4h( 0b00001110011[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
+addp_v4hv4hv4h.var format : {char const*} = {"1096"};
 
-addp_v2dv2dv2d.disasm = {
-  sink << "addp\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,2,3);
+addp_v4hv4hv4h.disasm = {
+  sink << "addp\t" << DisasmTV(rd,4,1) << ", " << DisasmTV(rn,4,1) << ", " << DisasmTV(rm,4,1);
+};
+
+op addp_v8hv8hv8h( 0b01001110011[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
+addp_v8hv8hv8h.var format : {char const*} = {"1409"};
+
+addp_v8hv8hv8h.disasm = {
+  sink << "addp\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,8,1) << ", " << DisasmTV(rm,8,1);
 };
 
 op addp_v2sv2sv2s( 0b00001110101[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
@@ -234,13 +264,6 @@ addp_v2sv2sv2s.disasm = {
   sink << "addp\t" << DisasmTV(rd,2,2) << ", " << DisasmTV(rn,2,2) << ", " << DisasmTV(rm,2,2);
 };
 
-op addp_v4hv4hv4h( 0b00001110011[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
-addp_v4hv4hv4h.var format : {char const*} = {"1096"};
-
-addp_v4hv4hv4h.disasm = {
-  sink << "addp\t" << DisasmTV(rd,4,1) << ", " << DisasmTV(rn,4,1) << ", " << DisasmTV(rm,4,1);
-};
-
 op addp_v4sv4sv4s( 0b01001110101[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
 addp_v4sv4sv4s.var format : {char const*} = {"1201"};
 
@@ -248,19 +271,16 @@ addp_v4sv4sv4s.disasm = {
   sink << "addp\t" << DisasmTV(rd,4,2) << ", " << DisasmTV(rn,4,2) << ", " << DisasmTV(rm,4,2);
 };
 
-op addp_v8bv8bv8b( 0b00001110001[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
-addp_v8bv8bv8b.var format : {char const*} = {"1298"};
+op addp_v2dv2dv2d( 0b01001110111[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
+addp_v2dv2dv2d.var format : {char const*} = {"895"};
 
-addp_v8bv8bv8b.disasm = {
-  sink << "addp\t" << DisasmTV(rd,8,0) << ", " << DisasmTV(rn,8,0) << ", " << DisasmTV(rm,8,0);
+addp_v2dv2dv2d.disasm = {
+  sink << "addp\t" << DisasmTV(rd,2,3) << ", " << DisasmTV(rn,2,3) << ", " << DisasmTV(rm,2,3);
 };
 
-op addp_v8hv8hv8h( 0b01001110011[11] : rm[5] : 0b101111[6] : rn[5] : rd[5] );
-addp_v8hv8hv8h.var format : {char const*} = {"1409"};
-
-addp_v8hv8hv8h.disasm = {
-  sink << "addp\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,8,1) << ", " << DisasmTV(rm,8,1);
-};
+/*
+ * end of ADDP (vector)
+ *******************************************************************/
 
 op addv_bv16b( 0b0100111000110001101110[22] : rn[5] : rd[5] );
 addv_bv16b.var format : {char const*} = {"2168"};
