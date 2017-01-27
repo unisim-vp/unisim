@@ -77,7 +77,7 @@ namespace vmsav8 {
     {
       T tmp = 0;
       for (unsigned idx = sizeof (T); idx-- > 0;)
-        { tmp <<= 8; tmp |= uint32_t( src[idx] ); }
+        { tmp <<= 8; tmp |= unsigned( src[idx] ); }
       dst = tmp;
     }
   };
@@ -232,7 +232,7 @@ struct CPU
    * @param id the register index
    * @param val the value to set
    */
-  void SetGSR(uint32_t id, uint32_t val)
+  void SetGSR(unsigned id, uint64_t val)
   {
     gpr[id] = val;
   }
@@ -242,7 +242,7 @@ struct CPU
    * @param id the register index
    * @param val the value to set
    */
-  void SetGZR(uint32_t id, uint32_t val)
+  void SetGZR(unsigned id, uint64_t val)
   {
     if (id != 31) gpr[id] = val;
   }
@@ -286,7 +286,10 @@ struct CPU
 
   /** Set the value of PSTATE.<N,Z,C,V>
    *
-   *  @param nzcv the value to be assignd to PSTATE.<N,Z,C,V>
+   *  @param n the value to be assignd to PSTATE.<N>
+   *  @param z the value to be assignd to PSTATE.<Z>
+   *  @param c the value to be assignd to PSTATE.<C>
+   *  @param v the value to be assignd to PSTATE.<V>
    */
   void SetNZCV( uint32_t n, uint32_t z, uint32_t c, uint32_t v )
   {
