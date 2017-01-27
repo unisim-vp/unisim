@@ -5708,12 +5708,57 @@ prfum.disasm = {
   sink << "prfum\t" << DisasmI(rt,16) << ", [" << DisasmGSXR(rn) << "," << DisasmI(imm) << "]";
 };
 
+/*******************************************************************
+ * RBIT
+ *
+ * Reverse bit order
+ */
+
 op rbit_w( 0b0101101011000000000000[22] : rn[5] : rd[5] );
 rbit_w.var format : {char const*} = {"base,2617"};
 
 rbit_w.disasm = {
   sink << "rbit\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn);
 };
+
+rbit_w.execute = {
+  typedef typename ARCH::U32 U32;
+  
+  U32 res( cpu.GetGZR( rn ) );
+  U32 const masks[] = {0x55555555, 0x33333333, 0x0f0f0f0f, 0x00ff00ff, 0x0000ffff};
+  
+  for (unsigned i = 0; i < 5; ++i) {
+    unsigned shift = (1<<i);
+    res = ((res >> shift) & masks[i]) | ((res & masks[i]) << shift);
+  }
+    
+  cpu.SetGZR( rd, res );
+};
+
+op rbit_x( 0b1101101011000000000000[22] : rn[5] : rd[5] );
+rbit_x.var format : {char const*} = {"base,2617"};
+
+rbit_x.disasm = {
+  sink << "rbit\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn);
+};
+
+rbit_x.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 res( cpu.GetGZR( rn ) );
+  U64 const masks[] = {0x5555555555555555ull, 0x3333333333333333ull, 0x0f0f0f0f0f0f0f0full, 0x00ff00ff00ff00ffull, 0x0000ffff0000ffffull, 0x00000000ffffffffull};
+  
+  for (unsigned i = 0; i < 5; ++i) {
+    unsigned shift = (1<<i);
+    res = ((res >> shift) & masks[i]) | ((res & masks[i]) << shift);
+  }
+    
+  cpu.SetGZR( rd, res );
+};
+
+/*
+ * end of RBIT
+ *******************************************************************/
 
 /*******************************************************************
  * RET

@@ -10833,25 +10833,11 @@ mov_vbii.disasm = {
   sink << "mov\t" << DisasmTV(rd,0,0) << DisasmSubscript(index1) << ", " << DisasmTV(rn,0,0) << DisasmSubscript(index2);
 };
 
-op mov_vbw( 0b01001110000[11] : index[4] : 0b1000111[7] : rn[5] : rd[5] );
-mov_vbw.var format : {char const*} = {"1824"};
-
-mov_vbw.disasm = {
-  sink << "mov\t" << DisasmTV(rd,0,0) << DisasmSubscript(index) << ", " << DisasmGZWR(rn);
-};
-
 op mov_vdii( 0b01101110000[11] : index1[1] : 0b10000[5] : index2[1] : ?[3] : 0b1[1] : rn[5] : rd[5] );
 mov_vdii.var format : {char const*} = {"1785"};
 
 mov_vdii.disasm = {
   sink << "mov\t" << DisasmTV(rd,0,3) << DisasmSubscript(index1) << ", " << DisasmTV(rn,0,3) << DisasmSubscript(index2);
-};
-
-op mov_vdx( 0b01001110000[11] : index[1] : 0b1000000111[10] : rn[5] : rd[5] );
-mov_vdx.var format : {char const*} = {"2039"};
-
-mov_vdx.disasm = {
-  sink << "mov\t" << DisasmTV(rd,0,3) << DisasmSubscript(index) << ", " << DisasmGZXR(rn);
 };
 
 op mov_vhii( 0b01101110000[11] : index1[3] : 0b100[3] : index2[3] : ?[1] : 0b1[1] : rn[5] : rd[5] );
@@ -10861,13 +10847,6 @@ mov_vhii.disasm = {
   sink << "mov\t" << DisasmTV(rd,0,1) << DisasmSubscript(index1) << ", " << DisasmTV(rn,0,1) << DisasmSubscript(index2);
 };
 
-op mov_vhw( 0b01001110000[11] : index[3] : 0b10000111[8] : rn[5] : rd[5] );
-mov_vhw.var format : {char const*} = {"1928"};
-
-mov_vhw.disasm = {
-  sink << "mov\t" << DisasmTV(rd,0,1) << DisasmSubscript(index) << ", " << DisasmGZWR(rn);
-};
-
 op mov_vsii( 0b01101110000[11] : index1[2] : 0b1000[4] : index2[2] : ?[2] : 0b1[1] : rn[5] : rd[5] );
 mov_vsii.var format : {char const*} = {"686"};
 
@@ -10875,26 +10854,59 @@ mov_vsii.disasm = {
   sink << "mov\t" << DisasmTV(rd,0,2) << DisasmSubscript(index1) << ", " << DisasmTV(rn,0,2) << DisasmSubscript(index2);
 };
 
-op mov_vsw( 0b01001110000[11] : index[2] : 0b100000111[9] : rn[5] : rd[5] );
-mov_vsw.var format : {char const*} = {"2017"};
+/*******************************************************************
+ * INS (general)
+ *
+ * Insert vector element from general-purpose register
+ */
 
-mov_vsw.disasm = {
-  sink << "mov\t" << DisasmTV(rd,0,2) << DisasmSubscript(index) << ", " << DisasmGZWR(rn);
+op ins_vbw( 0b01001110000[11] : index[4] : 0b1000111[7] : rn[5] : rd[5] );
+ins_vbw.var format : {char const*} = {"1824"};
+
+ins_vbw.disasm = {
+  sink << "ins\t" << DisasmTV(rd,0,0) << DisasmSubscript(index) << ", " << DisasmGZWR(rn);
 };
 
-op mov_wvs( 0b00001110000[11] : index[2] : 0b100001111[9] : rn[5] : rd[5] );
-mov_wvs.var format : {char const*} = {"2018"};
-
-mov_wvs.disasm = {
-  sink << "mov\t" << DisasmGZWR(rd) << ", " << DisasmTV(rn,0,2) << DisasmSubscript(index);
+ins_vbw.execute = {
+  cpu.SetVU8(rd,index,typename ARCH::U8(cpu.GetGZR(rn)));
 };
 
-op mov_xvd( 0b01001110000[11] : index[1] : 0b1000001111[10] : rn[5] : rd[5] );
-mov_xvd.var format : {char const*} = {"2040"};
+op ins_vhw( 0b01001110000[11] : index[3] : 0b10000111[8] : rn[5] : rd[5] );
+ins_vhw.var format : {char const*} = {"1928"};
 
-mov_xvd.disasm = {
-  sink << "mov\t" << DisasmGZXR(rd) << ", " << DisasmTV(rn,0,3) << DisasmSubscript(index);
+ins_vhw.disasm = {
+  sink << "ins\t" << DisasmTV(rd,0,1) << DisasmSubscript(index) << ", " << DisasmGZWR(rn);
 };
+
+ins_vhw.execute = {
+  cpu.SetVU16(rd,index,typename ARCH::U16(cpu.GetGZR(rn)));
+};
+
+op ins_vsw( 0b01001110000[11] : index[2] : 0b100000111[9] : rn[5] : rd[5] );
+ins_vsw.var format : {char const*} = {"2017"};
+
+ins_vsw.disasm = {
+  sink << "ins\t" << DisasmTV(rd,0,2) << DisasmSubscript(index) << ", " << DisasmGZWR(rn);
+};
+
+ins_vsw.execute = {
+  cpu.SetVU32(rd,index,typename ARCH::U32(cpu.GetGZR(rn)));
+};
+
+op ins_vdx( 0b01001110000[11] : index[1] : 0b1000000111[10] : rn[5] : rd[5] );
+ins_vdx.var format : {char const*} = {"2039"};
+
+ins_vdx.disasm = {
+  sink << "ins\t" << DisasmTV(rd,0,3) << DisasmSubscript(index) << ", " << DisasmGZXR(rn);
+};
+
+ins_vdx.execute = {
+  cpu.SetVU64(rd,index,cpu.GetGZR(rn));
+};
+
+/*
+ * end of INS (general)
+ *******************************************************************/
 
 op movi_di( 0b0010111100000[13] : a[1] : b[1] : c[1] : 0b111001[6] : d[1] : e[1] : f[1] : g[1] : h[1] : rd[5] );
 movi_di.var imm : {uint64_t} = {((uint64_t(a)<<56)|(uint64_t(b)<<48)|(uint64_t(c)<<40)|(uint64_t(d)<<32)|(uint64_t(e)<<24)|(uint64_t(f)<<16)|(uint64_t(g)<<8)|(uint64_t(h)<<0))*0xff}, format : {char const*} = {"1941"};
@@ -12744,11 +12756,24 @@ smlsl_v8hv8bv8b.disasm = {
   sink << "smlsl\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,8,0) << ", " << DisasmTV(rm,8,0);
 };
 
+/*******************************************************************
+ * SMOV
+ *
+ * Signed move vector element to general-purpose register
+ */
+
 op smov_wvb( 0b00001110000[11] : index[4] : 0b1001011[7] : rn[5] : rd[5] );
 smov_wvb.var format : {char const*} = {"1825"};
 
 smov_wvb.disasm = {
   sink << "smov\t" << DisasmGZWR(rd) << ", " << DisasmTV(rn,0,0) << DisasmSubscript(index);
+};
+
+smov_wvb.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
+  cpu.SetGZR(rd, U32(S32(cpu.GetVS8(rn,index))));
 };
 
 op smov_wvh( 0b00001110000[11] : index[3] : 0b10001011[8] : rn[5] : rd[5] );
@@ -12758,11 +12783,25 @@ smov_wvh.disasm = {
   sink << "smov\t" << DisasmGZWR(rd) << ", " << DisasmTV(rn,0,1) << DisasmSubscript(index);
 };
 
+smov_wvh.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
+  cpu.SetGZR(rd, U32(S32(cpu.GetVS16(rn,index))));
+};
+
 op smov_xvb( 0b01001110000[11] : index[4] : 0b1001011[7] : rn[5] : rd[5] );
 smov_xvb.var format : {char const*} = {"1827"};
 
 smov_xvb.disasm = {
   sink << "smov\t" << DisasmGZXR(rd) << ", " << DisasmTV(rn,0,0) << DisasmSubscript(index);
+};
+
+smov_xvb.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  cpu.SetGZR(rd, U64(S64(cpu.GetVS8(rn,index))));
 };
 
 op smov_xvh( 0b01001110000[11] : index[3] : 0b10001011[8] : rn[5] : rd[5] );
@@ -12772,12 +12811,30 @@ smov_xvh.disasm = {
   sink << "smov\t" << DisasmGZXR(rd) << ", " << DisasmTV(rn,0,1) << DisasmSubscript(index);
 };
 
+smov_xvh.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  cpu.SetGZR(rd, U64(S64(cpu.GetVS16(rn,index))));
+};
+
 op smov_xvs( 0b01001110000[11] : index[2] : 0b100001011[9] : rn[5] : rd[5] );
 smov_xvs.var format : {char const*} = {"2019"};
 
 smov_xvs.disasm = {
   sink << "smov\t" << DisasmGZXR(rd) << ", " << DisasmTV(rn,0,2) << DisasmSubscript(index);
 };
+
+smov_xvs.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  
+  cpu.SetGZR(rd, U64(S64(cpu.GetVS32(rn,index))));
+};
+
+/*
+ * end of SMOV
+ *******************************************************************/
 
 op smull2_v2dv4sv4s( 0b01001110101[11] : rm[5] : 0b110000[6] : rn[5] : rd[5] );
 smull2_v2dv4sv4s.var format : {char const*} = {"979"};
@@ -20744,11 +20801,21 @@ umlsl_v8hv8bv8b.disasm = {
   sink << "umlsl\t" << DisasmTV(rd,8,1) << ", " << DisasmTV(rn,8,0) << ", " << DisasmTV(rm,8,0);
 };
 
+/*******************************************************************
+ * UMOV
+ *
+ * Unsigned move vector element to general-purpose register
+ */
+
 op umov_wvb( 0b00001110000[11] : index[4] : 0b1001111[7] : rn[5] : rd[5] );
 umov_wvb.var format : {char const*} = {"1826"};
 
 umov_wvb.disasm = {
   sink << "umov\t" << DisasmGZWR(rd) << ", " << DisasmTV(rn,0,0) << DisasmSubscript(index);
+};
+
+umov_wvb.execute = {
+  cpu.SetGZR(rd, typename ARCH::U32( cpu.GetVU8(rn,index) ) );
 };
 
 op umov_wvh( 0b00001110000[11] : index[3] : 0b10001111[8] : rn[5] : rd[5] );
@@ -20757,6 +20824,36 @@ umov_wvh.var format : {char const*} = {"1930"};
 umov_wvh.disasm = {
   sink << "umov\t" << DisasmGZWR(rd) << ", " << DisasmTV(rn,0,1) << DisasmSubscript(index);
 };
+
+umov_wvh.execute = {
+  cpu.SetGZR(rd, typename ARCH::U32( cpu.GetVU16(rn,index) ) );
+};
+
+op umov_wvs( 0b00001110000[11] : index[2] : 0b100001111[9] : rn[5] : rd[5] );
+umov_wvs.var format : {char const*} = {"2018"};
+
+umov_wvs.disasm = {
+  sink << "mov\t" << DisasmGZWR(rd) << ", " << DisasmTV(rn,0,2) << DisasmSubscript(index);
+};
+
+umov_wvs.execute = {
+  cpu.SetGZR(rd, typename ARCH::U32( cpu.GetVU32(rn,index) ) );
+};
+
+op umov_xvd( 0b01001110000[11] : index[1] : 0b1000001111[10] : rn[5] : rd[5] );
+umov_xvd.var format : {char const*} = {"2040"};
+
+umov_xvd.disasm = {
+  sink << "mov\t" << DisasmGZXR(rd) << ", " << DisasmTV(rn,0,3) << DisasmSubscript(index);
+};
+
+umov_xvd.execute = {
+  cpu.SetGZR(rd, cpu.GetVU64(rn,index) );
+};
+
+/*
+ * end of UMOV
+ *******************************************************************/
 
 op umull2_v2dv4sv4s( 0b01101110101[11] : rm[5] : 0b110000[6] : rn[5] : rd[5] );
 umull2_v2dv4sv4s.var format : {char const*} = {"989"};
