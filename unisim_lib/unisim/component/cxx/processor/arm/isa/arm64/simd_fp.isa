@@ -9860,7 +9860,7 @@ ldp_spo.execute = {
   U64 addr( cpu.GetGSR(rn) );
   U32 data0( cpu.MemRead32( addr + U64(0) ) ),
       data1( cpu.MemRead32( addr + U64(4) ) );
-  cpu.SetVU32( rt, data0);
+  cpu.SetVU32(rt,  data0);
   cpu.SetVU32(rt2, data1);
   cpu.SetGSR(rn, addr + U64(S64(imm)) );
 };
@@ -9879,7 +9879,7 @@ ldp_dpo.execute = {
   U64 addr( cpu.GetGSR(rn) );
   U64 data0( cpu.MemRead64( addr + U64(0) ) ),
       data1( cpu.MemRead64( addr + U64(8) ) );
-  cpu.SetVU64( rt, data0);
+  cpu.SetVU64(rt,  data0);
   cpu.SetVU64(rt2, data1);
   cpu.SetGSR(rn, addr + U64(S64(imm)) );
 };
@@ -9906,7 +9906,7 @@ ldp_sop.execute = {
   U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
   U32 data0( cpu.MemRead32( addr + U64(0) ) ),
       data1( cpu.MemRead32( addr + U64(4) ) );
-  cpu.SetVU32( rt, data0);
+  cpu.SetVU32(rt,  data0);
   cpu.SetVU32(rt2, data1);
   cpu.SetGSR(rn, addr);
 };
@@ -9925,7 +9925,7 @@ ldp_dop.execute = {
   U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
   U64 data0( cpu.MemRead64( addr + U64(0) ) ),
       data1( cpu.MemRead64( addr + U64(8) ) );
-  cpu.SetVU64( rt, data0);
+  cpu.SetVU64(rt,  data0);
   cpu.SetVU64(rt2, data1);
   cpu.SetGSR(rn, addr);
 };
@@ -9952,7 +9952,7 @@ ldp_so.execute = {
   U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
   U32 data0( cpu.MemRead32( addr + U64(0) ) ),
       data1( cpu.MemRead32( addr + U64(4) ) );
-  cpu.SetVU32( rt, data0);
+  cpu.SetVU32(rt,  data0);
   cpu.SetVU32(rt2, data1);
 };
 
@@ -9970,7 +9970,7 @@ ldp_do.execute = {
   U64 addr( cpu.GetGSR(rn) + U64(S64(imm)) );
   U64 data0( cpu.MemRead64( addr + U64(0) ) ),
       data1( cpu.MemRead64( addr + U64(8) ) );
-  cpu.SetVU64( rt, data0);
+  cpu.SetVU64(rt,  data0);
   cpu.SetVU64(rt2, data1);
 };
 

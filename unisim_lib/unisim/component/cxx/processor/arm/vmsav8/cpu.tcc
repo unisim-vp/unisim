@@ -118,7 +118,9 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 {
   {
     unisim::service::interfaces::Register* dbg_reg = 0;
-    unisim::kernel::service::Register<uint64_t>* var_reg = 0;
+    unisim::kernel::service::VariableBase* var_reg = 0;
+    //unisim::kernel::service::Register<uint64_t>* var_reg = 0;
+    
     // initialize the registers debugging interface for the 32 general purpose registers
     for (unsigned idx = 0; idx < 32; idx++)
       {
@@ -149,8 +151,13 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
     };
 
     dbg_reg = new ProgramCounterRegister( *this );
-    registers_registry["pc"] = registers_registry["r15"] = dbg_reg;
-    var_reg = new unisim::kernel::service::Register<uint64_t>( "pc", this, this->next_insn_addr, "Logical Register #15: pc, r15" );
+    registers_registry["pc"] = dbg_reg;
+    var_reg = new unisim::kernel::service::Register<uint64_t>( "pc", this, this->next_insn_addr, "Program Counter (Current Instruction Address)" );
+    variable_register_pool.insert( var_reg );
+    
+    dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "nzcv", &this->nzcv );
+    registers_registry["nzcv"] = dbg_reg;
+    var_reg = new unisim::kernel::service::Register<uint32_t>( "nzcv", this, this->nzcv, "PSTATE.{N,Z,C,V}" );
     variable_register_pool.insert( var_reg );
   }  
 }
@@ -627,6 +634,7 @@ CPU<CONFIG>::CallSupervisor( uint16_t imm )
     // we are executing on linux emulation mode, use linux_os_import
     try {
       linux_os_import->ExecuteSystemCall(imm);
+      instruction_counter_trap_reporting_import->ReportTrap(*this, "CallSupervisor");
     }
     catch (Exception const& e)
       {

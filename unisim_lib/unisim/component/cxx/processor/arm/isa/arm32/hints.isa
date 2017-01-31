@@ -146,7 +146,8 @@ dmb.disasm = {
   buffer << "dmb\t" << DisasmBarrierOption( opt );
 };
 
-dmb.execute = {};
+dmb.execute = {
+};
 
 /* DSB instruction */
 
@@ -157,7 +158,8 @@ dsb.disasm = {
   buffer << "dsb\t" << DisasmBarrierOption( opt );
 };
 
-dsb.execute = {};
+dsb.execute = {
+};
 
 /* ISB instruction */
 
@@ -168,5 +170,6 @@ isb.disasm = {
   buffer << "isb\t" << DisasmBarrierOption( opt );
 };
 
-isb.execute = {};
+isb.execute = {
+};
 
