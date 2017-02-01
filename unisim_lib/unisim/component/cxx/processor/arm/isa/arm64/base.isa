@@ -1,8 +1,55 @@
+/*
+ *  Copyright (c) 2007-2017,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ */
+
+/*******************************************************************
+ * ADC
+ *
+ * Add with carry: Rd = Rn + Rm + C
+ */
+
 op adc_www( 0b00011010000[11] : rm[5] : 0b000000[6] : rn[5] : rd[5] );
 adc_www.var format : {char const*} = {"base,1458"};
 
 adc_www.disasm = {
   sink << "adc\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
+};
+
+adc_www.execute = {
+  typedef typename ARCH::U32 U32;
+  
+  U32 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + op2 + U32(cpu.GetCarry());
+  cpu.SetGSR(rd, res);
 };
 
 op adc_xxx( 0b10011010000[11] : rm[5] : 0b000000[6] : rn[5] : rd[5] );
@@ -12,11 +59,43 @@ adc_xxx.disasm = {
   sink << "adc\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm);
 };
 
+adc_xxx.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + op2 + U64(cpu.GetCarry());
+  cpu.SetGSR(rd, res);
+};
+
+/*
+ * end of ADC
+ *******************************************************************/
+
+/*******************************************************************
+ * ADCS
+ * 
+ * Add with carry, setting the condition flags: Rd = Rn + Rm + C
+ */
+
 op adcs_www( 0b00111010000[11] : rm[5] : 0b000000[6] : rn[5] : rd[5] );
 adcs_www.var format : {char const*} = {"base,1459"};
 
 adcs_www.disasm = {
   sink << "adcs\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
+};
+
+adcs_www.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::BOOL BOOL;
+  
+  BOOL carry( cpu.GetCarry() );
+  
+  U32 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + op2 + U32(carry);
+  cpu.SetGZR(rd, res);
+  if (cpu.Cond(carry))
+    cpu.SetNZCV( S32(res) < S32(0), res == U32(0), op1 >= ~op2, (S32(res) < S32(0)) xor (S32(op1) < S32(~op2)) );
+  else
+    cpu.SetNZCV( S32(res) < S32(0), res == U32(0), op1 > ~op2, (S32(res) < S32(0)) xor (S32(op1) <= S32(~op2)) );
 };
 
 op adcs_xxx( 0b10111010000[11] : rm[5] : 0b000000[6] : rn[5] : rd[5] );
@@ -25,6 +104,25 @@ adcs_xxx.var format : {char const*} = {"base,1613"};
 adcs_xxx.disasm = {
   sink << "adcs\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm);
 };
+
+adcs_xxx.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::BOOL BOOL;
+  
+  BOOL carry( cpu.GetCarry() );
+  
+  U64 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + op2 + U64(carry);
+  cpu.SetGZR(rd, res);
+  if (cpu.Cond(carry))
+    cpu.SetNZCV( S64(res) < S64(0), res == U64(0), op1 >= ~op2, (S64(res) < S64(0)) xor (S64(op1) < S64(~op2)) );
+  else
+    cpu.SetNZCV( S64(res) < S64(0), res == U64(0), op1 > ~op2, (S64(res) < S64(0)) xor (S64(op1) <= S64(~op2)) );
+};
+
+/*
+ * end of ADCS
+ *******************************************************************/
 
 /*******************************************************************
  * ADD (extended register)
@@ -1380,90 +1478,6 @@ asr_xxx.execute = {
  * end of ASR (register)
  *******************************************************************/
 
-op at_s12e0r( 0b110101010000110001111000110[27] : rt[5] );
-at_s12e0r.var format : {char const*} = {"base,2910"};
-
-at_s12e0r.disasm = {
-  sink << "at\ts12e0r, " << DisasmGZXR(rt);
-};
-
-op at_s12e0w( 0b110101010000110001111000111[27] : rt[5] );
-at_s12e0w.var format : {char const*} = {"base,2911"};
-
-at_s12e0w.disasm = {
-  sink << "at\ts12e0w, " << DisasmGZXR(rt);
-};
-
-op at_s12e1r( 0b110101010000110001111000100[27] : rt[5] );
-at_s12e1r.var format : {char const*} = {"base,2912"};
-
-at_s12e1r.disasm = {
-  sink << "at\ts12e1r, " << DisasmGZXR(rt);
-};
-
-op at_s12e1w( 0b110101010000110001111000101[27] : rt[5] );
-at_s12e1w.var format : {char const*} = {"base,2913"};
-
-at_s12e1w.disasm = {
-  sink << "at\ts12e1w, " << DisasmGZXR(rt);
-};
-
-op at_s1e0r( 0b110101010000100001111000010[27] : rt[5] );
-at_s1e0r.var format : {char const*} = {"base,2914"};
-
-at_s1e0r.disasm = {
-  sink << "at\ts1e0r, " << DisasmGZXR(rt);
-};
-
-op at_s1e0w( 0b110101010000100001111000011[27] : rt[5] );
-at_s1e0w.var format : {char const*} = {"base,2915"};
-
-at_s1e0w.disasm = {
-  sink << "at\ts1e0w, " << DisasmGZXR(rt);
-};
-
-op at_s1e1r( 0b110101010000100001111000000[27] : rt[5] );
-at_s1e1r.var format : {char const*} = {"base,2916"};
-
-at_s1e1r.disasm = {
-  sink << "at\ts1e1r, " << DisasmGZXR(rt);
-};
-
-op at_s1e1w( 0b110101010000100001111000001[27] : rt[5] );
-at_s1e1w.var format : {char const*} = {"base,2917"};
-
-at_s1e1w.disasm = {
-  sink << "at\ts1e1w, " << DisasmGZXR(rt);
-};
-
-op at_s1e2r( 0b110101010000110001111000000[27] : rt[5] );
-at_s1e2r.var format : {char const*} = {"base,2918"};
-
-at_s1e2r.disasm = {
-  sink << "at\ts1e2r, " << DisasmGZXR(rt);
-};
-
-op at_s1e2w( 0b110101010000110001111000001[27] : rt[5] );
-at_s1e2w.var format : {char const*} = {"base,2919"};
-
-at_s1e2w.disasm = {
-  sink << "at\ts1e2w, " << DisasmGZXR(rt);
-};
-
-op at_s1e3r( 0b110101010000111001111000000[27] : rt[5] );
-at_s1e3r.var format : {char const*} = {"base,2920"};
-
-at_s1e3r.disasm = {
-  sink << "at\ts1e3r, " << DisasmGZXR(rt);
-};
-
-op at_s1e3w( 0b110101010000111001111000001[27] : rt[5] );
-at_s1e3w.var format : {char const*} = {"base,2921"};
-
-at_s1e3w.disasm = {
-  sink << "at\ts1e3w, " << DisasmGZXR(rt);
-};
-
 /*******************************************************************
  * B
  *
@@ -2222,6 +2236,12 @@ ccmp_x.execute = {
  * end of CCMN (register)
  *******************************************************************/
 
+/*******************************************************************
+ * CLREX
+ *
+ * Clear exclusive monitor
+ */
+
 op clrex( 0b11010101000000110011[20] : imm[4] : 0b01011111[8] );
 clrex.var format : {char const*} = {"base,2942"};
 
@@ -2229,11 +2249,40 @@ clrex.disasm = {
   sink << "clrex\t" << DisasmI(imm,16);
 };
 
+clrex.execute = {
+  cpu.ClearExclusiveLocal();
+};
+
+/*
+ * end of CLREX
+ *******************************************************************/
+
+/*******************************************************************
+ * CLS
+ *
+ * Count leading sign bits: Rd = CLS(Rn)
+ */
+
 op cls_w( 0b0101101011000000000101[22] : rn[5] : rd[5] );
 cls_w.var format : {char const*} = {"base,2615"};
 
 cls_w.disasm = {
   sink << "cls\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn);
+};
+
+cls_w.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
+  U32 val( cpu.GetGZR(rn) );
+  val = val ^ U32(S32(val) >> 1);
+  
+  if (cpu.Cond( val == U32(0) ))
+    val = U32(31);
+  else
+    val = U32(30) - BitScanReverse( val );
+  
+  cpu.SetGZR(rd, val);
 };
 
 op cls_x( 0b1101101011000000000101[22] : rn[5] : rd[5] );
@@ -2243,6 +2292,24 @@ cls_x.disasm = {
   sink << "cls\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn);
 };
 
+cls_x.execute = {
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::U64 U64;
+  
+  U64 val( cpu.GetGZR(rn) );
+  val = val ^ U64(S64(val) >> 1);
+  
+  if (cpu.Cond( val == U64(0) ))
+    val = U64(63);
+  else
+    val = U64(62) - BitScanReverse( val );
+  
+  cpu.SetGZR(rd, val);
+};
+
+/*
+ * end of CLS
+ *******************************************************************/
 
 /*******************************************************************
  * CLZ
@@ -2509,54 +2576,11 @@ csneg_x.execute = {
  * end of CSNEG
  *******************************************************************/
 
-op dc_cisw( 0b110101010000100001111110010[27] : rt[5] );
-dc_cisw.var format : {char const*} = {"base,2897"};
-
-dc_cisw.disasm = {
-  sink << "dc\tcisw, " << DisasmGZXR(rt);
-};
-
-op dc_civac( 0b110101010000101101111110001[27] : rt[5] );
-dc_civac.var format : {char const*} = {"base,2898"};
-
-dc_civac.disasm = {
-  sink << "dc\tcivac, " << DisasmGZXR(rt);
-};
-
-op dc_csw( 0b110101010000100001111010010[27] : rt[5] );
-dc_csw.var format : {char const*} = {"base,2899"};
-
-dc_csw.disasm = {
-  sink << "dc\tcsw, " << DisasmGZXR(rt);
-};
-
-op dc_cvac( 0b110101010000101101111010001[27] : rt[5] );
-dc_cvac.var format : {char const*} = {"base,2900"};
-
-dc_cvac.disasm = {
-  sink << "dc\tcvac, " << DisasmGZXR(rt);
-};
-
-op dc_cvau( 0b110101010000101101111011001[27] : rt[5] );
-dc_cvau.var format : {char const*} = {"base,2901"};
-
-dc_cvau.disasm = {
-  sink << "dc\tcvau, " << DisasmGZXR(rt);
-};
-
-op dc_isw( 0b110101010000100001110110010[27] : rt[5] );
-dc_isw.var format : {char const*} = {"base,2908"};
-
-dc_isw.disasm = {
-  sink << "dc\tisw, " << DisasmGZXR(rt);
-};
-
-op dc_ivac( 0b110101010000100001110110001[27] : rt[5] );
-dc_ivac.var format : {char const*} = {"base,2909"};
-
-dc_ivac.disasm = {
-  sink << "dc\tivac, " << DisasmGZXR(rt);
-};
+/*******************************************************************
+ * DCPS1
+ *
+ * Debug switch to exception level 1
+ */
 
 op dcps1( 0b11010100101[11] : imm[16] : 0b00001[5] );
 dcps1.var format : {char const*} = {"base,578"};
@@ -2565,6 +2589,16 @@ dcps1.disasm = {
   sink << "dcps1\t" << DisasmI(imm,16);
 };
 
+/*
+ * end of DCPS1
+ *******************************************************************/
+
+/*******************************************************************
+ * DCPS2
+ *
+ * Debug switch to exception level 2
+ */
+
 op dcps2( 0b11010100101[11] : imm[16] : 0b00010[5] );
 dcps2.var format : {char const*} = {"base,579"};
 
@@ -2572,12 +2606,32 @@ dcps2.disasm = {
   sink << "dcps2\t" << DisasmI(imm,16);
 };
 
+/*
+ * end of DCPS2
+ *******************************************************************/
+
+/*******************************************************************
+ * DCPS3
+ *
+ * Debug switch to exception level 
+ */
+
 op dcps3( 0b11010100101[11] : imm[16] : 0b00011[5] );
 dcps3.var format : {char const*} = {"base,580"};
 
 dcps3.disasm = {
   sink << "dcps3\t" << DisasmI(imm,16);
 };
+
+/*
+ * end of DCPS3
+ *******************************************************************/
+
+/*******************************************************************
+ * DMB
+ *
+ * Data memory barrier
+ */
 
 op dmb( 0b11010101000000110011[20] : imm[4] : 0b10111111[8] );
 dmb.var format : {char const*} = {"base,2943"};
@@ -2589,6 +2643,16 @@ dmb.disasm = {
 dmb.execute = {
 };
 
+/*
+ * end of DMB
+ *******************************************************************/
+
+/*******************************************************************
+ * DRPS
+ *
+ * Debug restore processor state
+ */
+
 op drps( 0b11010110101111110000001111100000[32] );
 drps.var format : {char const*} = {"base,2946"};
 
@@ -2596,12 +2660,26 @@ drps.disasm = {
   sink << "drps";
 };
 
+/*
+ * end of DRPS
+ *******************************************************************/
+
+/*******************************************************************
+ * DSB
+ *
+ * Data synchronization barrier
+ */
+
 op dsb( 0b11010101000000110011[20] : imm[4] : 0b10011111[8] );
 dsb.var format : {char const*} = {"base,2944"};
 
 dsb.disasm = {
   sink << "dsb\t" << DisasmBarrierOption(imm);
 };
+
+/*
+ * end of DSB
+ *******************************************************************/
 
 /*******************************************************************
  * EON (shifted register)
@@ -2889,12 +2967,28 @@ eor_xror.execute = {
  * end of EOR (shifted register)
  *******************************************************************/
 
+/*******************************************************************
+ * ERET
+ *
+ * Exception return using current ELR and SPSR
+ */
+
 op eret( 0b11010110100111110000001111100000[32] );
 eret.var format : {char const*} = {"base,2947"};
 
 eret.disasm = {
   sink << "eret";
 };
+
+/*
+ * end of ERET
+ *******************************************************************/
+
+/*******************************************************************
+ * EXTR
+ *
+ * Extract register from pair of registers
+ */
 
 op extr_w( 0b00010011100[11] : rm[5] : 0b0[1] : imms[5] : rn[5] : rd[5] );
 extr_w.var format : {char const*} = {"base,165"};
@@ -2904,6 +2998,13 @@ extr_w.disasm = {
     sink << "ror\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmI(imms);
   else
     sink << "extr\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm) << ", " << DisasmI(imms);
+};
+
+extr_w.execute = {
+  typedef typename ARCH::U32 U32;
+  
+  U32 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res( ((op1 << 1) << (imms ^ 31)) | (op2 >> imms) );
+  cpu.SetGZR(rd, res);
 };
 
 op extr_x( 0b10010011110[11] : rm[5] : imms[6] : rn[5] : rd[5] );
@@ -2916,12 +3017,39 @@ extr_x.disasm = {
     sink << "extr\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm) << ", " << DisasmI(imms);
 };
 
+extr_x.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 op1( cpu.GetGZR(rn) ), op2( cpu.GetGZR(rm) ), res( ((op1 << 1) << (imms ^ 63)) | (op2 >> imms) );
+  cpu.SetGZR(rd, res);
+};
+
+/*
+ * end of EXTR
+ *******************************************************************/
+
+/*******************************************************************
+ * HINT
+ *
+ * Hint instruction
+ */
+
 op hint( 0b11010101000000110010[20] : imm[7] : 0b11111[5] );
 hint.var format : {char const*} = {"base,2885"};
 
 hint.disasm = {
   sink << "hint\t" << DisasmI(imm,16);;
 };
+
+/*
+ * end of HINT
+ *******************************************************************/
+
+/*******************************************************************
+ * HLT
+ *
+ * Halting debug-mode breakpoint
+ */
 
 op hlt( 0b11010100010[11] : imm[16] : 0b00000[5] );
 hlt.var format : {char const*} = {"base,574"};
@@ -2930,6 +3058,16 @@ hlt.disasm = {
   sink << "hlt\t" << DisasmI(imm,16);
 };
 
+/*
+ * end of HLT
+ *******************************************************************/
+
+/*******************************************************************
+ * HVC
+ *
+ * Generate exception targeting exception level 2
+ */
+
 op hvc( 0b11010100000[11] : imm[16] : 0b00010[5] );
 hvc.var format : {char const*} = {"base,575"};
 
@@ -2937,26 +3075,15 @@ hvc.disasm = {
   sink << "hvc\t" << DisasmI(imm,16);
 };
 
-op ic_iallu( 0b110101010000100001110101000[27] : ?[5] );
-ic_iallu.var format : {char const*} = {"base,2902"};
+/*
+ * end of HVC
+ *******************************************************************/
 
-ic_iallu.disasm = {
-  sink << "ic\tiallu";
-};
-
-op ic_ialluis( 0b110101010000100001110001000[27] : ?[5] );
-ic_ialluis.var format : {char const*} = {"base,2903"};
-
-ic_ialluis.disasm = {
-  sink << "ic\tialluis";
-};
-
-op ic_ivau( 0b11010101000010110111010100111111[32] );
-ic_ivau.var format : {char const*} = {"base,2954"};
-
-ic_ivau.disasm = {
-  sink << "ic\tivau";
-};
+/*******************************************************************
+ * ISB
+ *
+ * Instruction synchronization barrier
+ */
 
 op isb( 0b11010101000000110011[20] : imm[4] : 0b11011111[8] );
 isb.var format : {char const*} = {"base,2945"};
@@ -2964,6 +3091,16 @@ isb.var format : {char const*} = {"base,2945"};
 isb.disasm = {
   sink << "isb\t" << DisasmI(imm,16);
 };
+
+/*
+ * end of ISB
+ *******************************************************************/
+
+/*******************************************************************
+ * LDAR
+ *
+ * Load-acquire register
+ */
 
 op ldar_w( 0b1000100011011111111111[22] : rn[5] : rt[5] );
 ldar_w.var format : {char const*} = {"base,2622"};
@@ -2979,6 +3116,16 @@ ldar_x.disasm = {
   sink << "ldar\t" << DisasmGZXR(rt) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+/*
+ * end of LDAR
+ *******************************************************************/
+
+/*******************************************************************
+ * LDARB
+ *
+ * Load-acquire register byte
+ */
+
 op ldarb_w( 0b0000100011011111111111[22] : rn[5] : rt[5] );
 ldarb_w.var format : {char const*} = {"base,2623"};
 
@@ -2986,12 +3133,32 @@ ldarb_w.disasm = {
   sink << "ldarb\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
 };
 
+/*
+ * end of LDARB
+ *******************************************************************/
+
+/*******************************************************************
+ * LDARH
+ *
+ * Load-acquire register halfword
+ */
+
 op ldarh_w( 0b0100100011011111111111[22] : rn[5] : rt[5] );
 ldarh_w.var format : {char const*} = {"base,2624"};
 
 ldarh_w.disasm = {
   sink << "ldarh\t" << DisasmGZWR(rt) << ", [" << DisasmGSXR(rn) << "]";
 };
+
+/*
+ * end of LDARH
+ *******************************************************************/
+
+/*******************************************************************
+ * LDAXP
+ *
+ * Load-acquire exclusive pair of registers
+ */
 
 op ldaxp_w( 0b10001000011[11] : rs[5] : 0b1[1] : rt2[5] : rn[5] : rt[5] );
 ldaxp_w.var format : {char const*} = {"base,220"};
@@ -3006,6 +3173,10 @@ ldaxp_x.var format : {char const*} = {"base,243"};
 ldaxp_x.disasm = {
   sink << "ldaxp\t" << DisasmGZXR(rt) << ", " << DisasmGZXR(rt2) << ", [" << DisasmGSXR(rn) << "]";
 };
+
+/*
+ * end of LDAXP
+ *******************************************************************/
 
 /*******************************************************************
  * LDAXR
@@ -4908,6 +5079,12 @@ ldursw_xbo.execute = {
  * end of LDURSW
  *******************************************************************/
 
+/*******************************************************************
+ * LDAXP
+ *
+ * Load-acquire exclusive pair of registers
+ */
+
 op ldxp_w( 0b10001000011[11] : rs[5] : 0b0[1] : rt2[5] : rn[5] : rt[5] );
 ldxp_w.var format : {char const*} = {"base,221"};
 
@@ -4921,6 +5098,10 @@ ldxp_x.var format : {char const*} = {"base,244"};
 ldxp_x.disasm = {
   sink << "ldxp\t" << DisasmGZXR(rt) << ", " << DisasmGZXR(rt2) << ", [" << DisasmGSXR(rn) << "]";
 };
+
+/*
+ * end of LDAXP
+ *******************************************************************/
 
 /*******************************************************************
  * LDXR
@@ -5214,7 +5395,7 @@ mrs_reg.var format : {char const*} = {"base,249"};
 mrs_reg.disasm = {
   char const* sys_reg_name = cpu.NameSystemRegister(2+o0, op1, crn, crm, op2);
   if (sys_reg_name)
-    sink << "mrs\t" << DisasmGZXR(rt) << ", " << sys_reg_name << " ; " << cpu.DescribeSystemRegister(2+o0, op1, crn, crm, op2);
+    sink << "mrs\t" << DisasmGZXR(rt) << ", " << sys_reg_name << "\t; " << cpu.DescribeSystemRegister(2+o0, op1, crn, crm, op2);
   else {
     uint32_t sys_reg_idx = 0;
     sys_reg_idx = (sys_reg_idx << 1) | o0;
@@ -5265,7 +5446,7 @@ msr_reg.var format : {char const*} = {"base,248"};
 msr_reg.disasm = {
   char const* sys_reg_name = cpu.NameSystemRegister( 2+o0, op1, crn, crm, op2 );
   if (sys_reg_name)
-    sink << "msr\t" << sys_reg_name << ", " << DisasmGZXR(rt) << " ; " << cpu.DescribeSystemRegister(2+o0, op1, crn, crm, op2);
+    sink << "msr\t" << sys_reg_name << ", " << DisasmGZXR(rt) << "\t; " << cpu.DescribeSystemRegister(2+o0, op1, crn, crm, op2);
   else {
     uint32_t sys_reg_idx = 0;
     sys_reg_idx = (sys_reg_idx << 1) | o0;
@@ -5331,12 +5512,22 @@ msub_x.execute = {
  * end of MSUB
  *******************************************************************/
 
+/*******************************************************************
+ * NOP
+ *
+ * No operation
+ */
+
 op nop( 0b11010101000000110010000000011111[32] );
 nop.var format : {char const*} = {"base,2948"};
 
 nop.disasm = {
   sink << "nop";
 };
+
+/*
+ * end of NOP
+ *******************************************************************/
 
 /*******************************************************************
  * ORN (shifted register)
@@ -5844,6 +6035,12 @@ rev_x.execute = {
  * end of REV
  *******************************************************************/
 
+/*******************************************************************
+ * REV16
+ *
+ * Reverse bytes in 16-bit halfwords
+ */
+
 op rev16_w( 0b0101101011000000000001[22] : rn[5] : rd[5] );
 rev16_w.var format : {char const*} = {"base,2619"};
 
@@ -5858,12 +6055,26 @@ rev16_x.disasm = {
   sink << "rev16\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn);
 };
 
+/*
+ * end of REV16
+ *******************************************************************/
+
+/*******************************************************************
+ * REV32
+ *
+ * Reverse bytes in 32-bit words
+ */
+
 op rev32_x( 0b1101101011000000000010[22] : rn[5] : rd[5] );
 rev32_x.var format : {char const*} = {"base,2652"};
 
 rev32_x.disasm = {
   sink << "rev32\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn);
 };
+
+/*
+ * end of REV32
+ *******************************************************************/
 
 /*******************************************************************
  * ROR (register)
@@ -8096,6 +8307,12 @@ svc.execute = {
  * end of SVC
  *******************************************************************/
 
+/*******************************************************************
+ * SYS
+ *
+ * System instruction
+ */
+
 op sys( 0b1101010100001[13] : op1[3] : crn[4] : crm[4] : op2[3] : rt[5] );
 sys.var format : {char const*} = {"base,352"};
 
@@ -8103,12 +8320,26 @@ sys.disasm = {
   sink << "sys\t" << DisasmI(op1) << ", " << DisasmC(crn) << ", " << DisasmC(crm) << ", " << DisasmI(op2) << ", " << DisasmGZXR(rt);
 };
 
+/*
+ * end of SYS
+ *******************************************************************/
+
+/*******************************************************************
+ * SYSL
+ *
+ * System instruction with result
+ */
+
 op sysl( 0b1101010100101[13] : op1[3] : crn[4] : crm[4] : op2[3] : rt[5] );
 sysl.var format : {char const*} = {"base,353"};
 
 sysl.disasm = {
   sink << "sysl\t" << DisasmGZXR(rt) << ", " << DisasmI(op1) << ", " << DisasmC(crn) << ", " << DisasmC(crm) << ", " << DisasmI(op2);
 };
+
+/*
+ * end of SYSL
+ *******************************************************************/
 
 /*******************************************************************
  * TB[N]Z
@@ -8141,230 +8372,6 @@ tb.execute = {
 /*
  * end of SUBS (shifted register)
  *******************************************************************/
-
-op tlbi_alle1( 0b110101010000110010000111100[27] : ?[5] );
-tlbi_alle1.var format : {char const*} = {"base,2889"};
-
-tlbi_alle1.disasm = {
-  sink << "tlbi\talle1";
-};
-
-op tlbi_alle1is( 0b110101010000110010000011100[27] : ?[5] );
-tlbi_alle1is.var format : {char const*} = {"base,2890"};
-
-tlbi_alle1is.disasm = {
-  sink << "tlbi\talle1is";
-};
-
-op tlbi_alle2( 0b110101010000110010000111000[27] : ?[5] );
-tlbi_alle2.var format : {char const*} = {"base,2891"};
-
-tlbi_alle2.disasm = {
-  sink << "tlbi\talle2";
-};
-
-op tlbi_alle2is( 0b110101010000110010000011000[27] : ?[5] );
-tlbi_alle2is.var format : {char const*} = {"base,2892"};
-
-tlbi_alle2is.disasm = {
-  sink << "tlbi\talle2is";
-};
-
-op tlbi_alle3( 0b110101010000111010000111000[27] : ?[5] );
-tlbi_alle3.var format : {char const*} = {"base,2893"};
-
-tlbi_alle3.disasm = {
-  sink << "tlbi\talle3";
-};
-
-op tlbi_alle3is( 0b110101010000111010000011000[27] : ?[5] );
-tlbi_alle3is.var format : {char const*} = {"base,2894"};
-
-tlbi_alle3is.disasm = {
-  sink << "tlbi\talle3is";
-};
-
-op tlbi_aside1( 0b110101010000100010000111010[27] : rt[5] );
-tlbi_aside1.var format : {char const*} = {"base,2895"};
-
-tlbi_aside1.disasm = {
-  sink << "tlbi\taside1, " << DisasmGZXR(rt);
-};
-
-op tlbi_aside1is( 0b110101010000100010000011010[27] : rt[5] );
-tlbi_aside1is.var format : {char const*} = {"base,2896"};
-
-tlbi_aside1is.disasm = {
-  sink << "tlbi\taside1is, " << DisasmGZXR(rt);
-};
-
-op tlbi_ipas2e1( 0b110101010000110010000100001[27] : rt[5] );
-tlbi_ipas2e1.var format : {char const*} = {"base,2904"};
-
-tlbi_ipas2e1.disasm = {
-  sink << "tlbi\tipas2e1, " << DisasmGZXR(rt);
-};
-
-op tlbi_ipas2e1is( 0b110101010000110010000000001[27] : rt[5] );
-tlbi_ipas2e1is.var format : {char const*} = {"base,2905"};
-
-tlbi_ipas2e1is.disasm = {
-  sink << "tlbi\tipas2e1is, " << DisasmGZXR(rt);
-};
-
-op tlbi_ipas2le1( 0b110101010000110010000100101[27] : rt[5] );
-tlbi_ipas2le1.var format : {char const*} = {"base,2906"};
-
-tlbi_ipas2le1.disasm = {
-  sink << "tlbi\tipas2le1, " << DisasmGZXR(rt);
-};
-
-op tlbi_ipas2le1is( 0b110101010000110010000000101[27] : rt[5] );
-tlbi_ipas2le1is.var format : {char const*} = {"base,2907"};
-
-tlbi_ipas2le1is.disasm = {
-  sink << "tlbi\tipas2le1is, " << DisasmGZXR(rt);
-};
-
-op tlbi_vaae1( 0b110101010000100010000111011[27] : rt[5] );
-tlbi_vaae1.var format : {char const*} = {"base,2922"};
-
-tlbi_vaae1.disasm = {
-  sink << "tlbi\tvaae1, " << DisasmGZXR(rt);
-};
-
-op tlbi_vaae1is( 0b110101010000100010000011011[27] : rt[5] );
-tlbi_vaae1is.var format : {char const*} = {"base,2923"};
-
-tlbi_vaae1is.disasm = {
-  sink << "tlbi\tvaae1is, " << DisasmGZXR(rt);
-};
-
-op tlbi_vaale1( 0b110101010000100010000111111[27] : rt[5] );
-tlbi_vaale1.var format : {char const*} = {"base,2924"};
-
-tlbi_vaale1.disasm = {
-  sink << "tlbi\tvaale1, " << DisasmGZXR(rt);
-};
-
-op tlbi_vaale1is( 0b110101010000100010000011111[27] : rt[5] );
-tlbi_vaale1is.var format : {char const*} = {"base,2925"};
-
-tlbi_vaale1is.disasm = {
-  sink << "tlbi\tvaale1is, " << DisasmGZXR(rt);
-};
-
-op tlbi_vae1( 0b110101010000100010000111001[27] : rt[5] );
-tlbi_vae1.var format : {char const*} = {"base,2926"};
-
-tlbi_vae1.disasm = {
-  sink << "tlbi\tvae1, " << DisasmGZXR(rt);
-};
-
-op tlbi_vae1is( 0b110101010000100010000011001[27] : rt[5] );
-tlbi_vae1is.var format : {char const*} = {"base,2927"};
-
-tlbi_vae1is.disasm = {
-  sink << "tlbi\tvae1is, " << DisasmGZXR(rt);
-};
-
-op tlbi_vae2( 0b110101010000110010000111001[27] : rt[5] );
-tlbi_vae2.var format : {char const*} = {"base,2928"};
-
-tlbi_vae2.disasm = {
-  sink << "tlbi\tvae2, " << DisasmGZXR(rt);
-};
-
-op tlbi_vae2is( 0b110101010000110010000011001[27] : rt[5] );
-tlbi_vae2is.var format : {char const*} = {"base,2929"};
-
-tlbi_vae2is.disasm = {
-  sink << "tlbi\tvae2is, " << DisasmGZXR(rt);
-};
-
-op tlbi_vae3( 0b110101010000111010000111001[27] : rt[5] );
-tlbi_vae3.var format : {char const*} = {"base,2930"};
-
-tlbi_vae3.disasm = {
-  sink << "tlbi\tvae3, " << DisasmGZXR(rt);
-};
-
-op tlbi_vae3is( 0b110101010000111010000011001[27] : rt[5] );
-tlbi_vae3is.var format : {char const*} = {"base,2931"};
-
-tlbi_vae3is.disasm = {
-  sink << "tlbi\tvae3is, " << DisasmGZXR(rt);
-};
-
-op tlbi_vale1( 0b110101010000100010000111101[27] : rt[5] );
-tlbi_vale1.var format : {char const*} = {"base,2932"};
-
-tlbi_vale1.disasm = {
-  sink << "tlbi\tvale1, " << DisasmGZXR(rt);
-};
-
-op tlbi_vale1is( 0b110101010000100010000011101[27] : rt[5] );
-tlbi_vale1is.var format : {char const*} = {"base,2933"};
-
-tlbi_vale1is.disasm = {
-  sink << "tlbi\tvale1is, " << DisasmGZXR(rt);
-};
-
-op tlbi_vale2( 0b110101010000110010000111101[27] : rt[5] );
-tlbi_vale2.var format : {char const*} = {"base,2934"};
-
-tlbi_vale2.disasm = {
-  sink << "tlbi\tvale2, " << DisasmGZXR(rt);
-};
-
-op tlbi_vale2is( 0b110101010000110010000011101[27] : rt[5] );
-tlbi_vale2is.var format : {char const*} = {"base,2935"};
-
-tlbi_vale2is.disasm = {
-  sink << "tlbi\tvale2is, " << DisasmGZXR(rt);
-};
-
-op tlbi_vale3( 0b110101010000111010000111101[27] : rt[5] );
-tlbi_vale3.var format : {char const*} = {"base,2936"};
-
-tlbi_vale3.disasm = {
-  sink << "tlbi\tvale3, " << DisasmGZXR(rt);
-};
-
-op tlbi_vale3is( 0b110101010000111010000011101[27] : rt[5] );
-tlbi_vale3is.var format : {char const*} = {"base,2937"};
-
-tlbi_vale3is.disasm = {
-  sink << "tlbi\tvale3is, " << DisasmGZXR(rt);
-};
-
-op tlbi_vmalle1( 0b110101010000100010000111000[27] : ?[5] );
-tlbi_vmalle1.var format : {char const*} = {"base,2938"};
-
-tlbi_vmalle1.disasm = {
-  sink << "tlbi\tvmalle1";
-};
-
-op tlbi_vmalle1is( 0b110101010000100010000011000[27] : ?[5] );
-tlbi_vmalle1is.var format : {char const*} = {"base,2939"};
-
-tlbi_vmalle1is.disasm = {
-  sink << "tlbi\tvmalle1is";
-};
-
-op tlbi_vmalls12e1( 0b110101010000110010000111110[27] : ?[5] );
-tlbi_vmalls12e1.var format : {char const*} = {"base,2940"};
-
-tlbi_vmalls12e1.disasm = {
-  sink << "tlbi\tvmalls12e1";
-};
-
-op tlbi_vmalls12e1is( 0b110101010000110010000011110[27] : ?[5] );
-tlbi_vmalls12e1is.var format : {char const*} = {"base,2941"};
-
-tlbi_vmalls12e1is.disasm = {
-  sink << "tlbi\tvmalls12e1is";
-};
 
 /*******************************************************************
  * UBFM

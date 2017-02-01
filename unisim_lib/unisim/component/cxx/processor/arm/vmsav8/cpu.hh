@@ -297,6 +297,7 @@ struct CPU
   }
   
   uint8_t GetNZCV() const { return nzcv; }
+  uint32_t GetCarry() const { return (nzcv >> 1) & 1; }
   
   /** Get the current Program Counter */
   uint64_t GetPC() { return current_insn_addr; }
