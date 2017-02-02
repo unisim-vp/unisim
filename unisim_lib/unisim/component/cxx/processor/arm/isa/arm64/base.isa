@@ -89,9 +89,9 @@ adcs_www.execute = {
   typedef typename ARCH::BOOL BOOL;
   
   BOOL carry( cpu.GetCarry() );
-  
   U32 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + op2 + U32(carry);
   cpu.SetGZR(rd, res);
+  
   if (cpu.Cond(carry))
     cpu.SetNZCV( S32(res) < S32(0), res == U32(0), op1 >= ~op2, (S32(res) < S32(0)) xor (S32(op1) < S32(~op2)) );
   else
@@ -111,9 +111,9 @@ adcs_xxx.execute = {
   typedef typename ARCH::BOOL BOOL;
   
   BOOL carry( cpu.GetCarry() );
-  
   U64 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + op2 + U64(carry);
   cpu.SetGZR(rd, res);
+  
   if (cpu.Cond(carry))
     cpu.SetNZCV( S64(res) < S64(0), res == U64(0), op1 >= ~op2, (S64(res) < S64(0)) xor (S64(op1) < S64(~op2)) );
   else
@@ -6114,6 +6114,12 @@ ror_xxx.execute = {
  * end of ROR (register)
  *******************************************************************/
 
+/*******************************************************************
+ * SBC
+ *
+ * Subtract with carry: Rd = Rn - Rm - 1 + C
+ */
+
 op sbc_www( 0b01011010000[11] : rm[5] : 0b000000[6] : rn[5] : rd[5] );
 sbc_www.var format : {char const*} = {"base,1472"};
 
@@ -6122,6 +6128,13 @@ sbc_www.disasm = {
     sink << "ngc\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rm);
   else
     sink << "sbc\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
+};
+
+sbc_www.execute = {
+  typedef typename ARCH::U32 U32;
+  
+  U32 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U32(not cpu.GetCarry());
+  cpu.SetGSR(rd, res);
 };
 
 op sbc_xxx( 0b11011010000[11] : rm[5] : 0b000000[6] : rn[5] : rd[5] );
@@ -6134,6 +6147,23 @@ sbc_xxx.disasm = {
     sink << "sbc\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm);
 };
 
+sbc_xxx.execute = {
+  typedef typename ARCH::U64 U64;
+  
+  U64 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U64(not cpu.GetCarry());
+  cpu.SetGSR(rd, res);
+};
+
+/*
+ * end of SBC
+ *******************************************************************/
+
+/*******************************************************************
+ * SBCS
+ *
+ * Subtract with carry, setting the condition flags: Rd = Rn - Rm - 1 + C
+ */
+
 op sbcs_www( 0b01111010000[11] : rm[5] : 0b000000[6] : rn[5] : rd[5] );
 sbcs_www.var format : {char const*} = {"base,1473"};
 
@@ -6142,6 +6172,21 @@ sbcs_www.disasm = {
     sink << "ngcs\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rm);
   else
     sink << "sbcs\t" << DisasmGZWR(rd) << ", " << DisasmGZWR(rn) << ", " << DisasmGZWR(rm);
+};
+
+sbcs_www.execute = {
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::BOOL BOOL;
+  
+  BOOL carry( cpu.GetCarry() );
+  U32 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U32(not carry);
+  cpu.SetGSR(rd, res);
+  
+  if (cpu.Cond(carry))
+    cpu.SetNZCV( S32(res) < S32(0), op1 == op2, op1 >= op2, (S32(res) < S32(0)) xor (S32(op1) < S32(op2)) );
+  else
+    cpu.SetNZCV( S32(res) < S32(0), op1 == op2, op1 > op2, (S32(res) < S32(0)) xor (S32(op1) <= S32(op2)) );
 };
 
 op sbcs_xxx( 0b11111010000[11] : rm[5] : 0b000000[6] : rn[5] : rd[5] );
@@ -6153,6 +6198,25 @@ sbcs_xxx.disasm = {
   else
     sink << "sbcs\t" << DisasmGZXR(rd) << ", " << DisasmGZXR(rn) << ", " << DisasmGZXR(rm);
 };
+
+sbcs_xxx.execute = {
+  typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
+  typedef typename ARCH::BOOL BOOL;
+  
+  BOOL carry( cpu.GetCarry() );
+  U64 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U64(not carry);
+  cpu.SetGSR(rd, res);
+  
+  if (cpu.Cond(carry))
+    cpu.SetNZCV( S64(res) < S64(0), op1 == op2, op1 >= op2, (S64(res) < S64(0)) xor (S64(op1) < S64(op2)) );
+  else
+    cpu.SetNZCV( S64(res) < S64(0), op1 == op2, op1 > op2, (S64(res) < S64(0)) xor (S64(op1) <= S64(op2)) );
+};
+
+/*
+ * end of SBCS
+ *******************************************************************/
 
 /*******************************************************************
  * SBFM
