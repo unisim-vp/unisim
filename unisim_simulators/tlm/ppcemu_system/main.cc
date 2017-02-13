@@ -755,7 +755,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	const char *filename = "vmlinux";
 	const char *kernel_params = "/dev/ram0 rw";
 	const char *device_tree_filename = "device_tree_pmac_g4.xml";
-	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
+	const char *gdb_server_arch_filename = "gdb_powerpc_32.xml";
 	const char *dwarf_register_number_mapping_filename = "powerpc_eabi_gcc_dwarf_register_number_mapping.xml";
 	const char *ramdisk_filename = "initrd.img";
 	const char *bmp_out_filename = "";

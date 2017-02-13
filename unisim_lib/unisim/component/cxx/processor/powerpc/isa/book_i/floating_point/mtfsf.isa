@@ -1,0 +1,89 @@
+/*
+ *  Copyright (c) 2007,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ */
+ 
+impl {
+#include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
+}
+
+op mtfsf(63[6]:?[1]:fm[8]:?[1]:fb[5]:711[10]:rc[1])
+mtfsf.execute = {
+	if(!CONFIG::HAS_FPU)
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		return false;
+	}
+	// Check if FPU is enabled
+	uint32_t msr = cpu->GetMSR();
+	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	{
+		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		return false;
+	}
+
+	uint32_t _m, fpscr, _fm, _rb,_c;
+	int _i;
+	_rb = cpu->GetFPR(fb).queryValue();
+	fpscr = cpu->GetFPSCR();
+	_fm = fm;
+
+	if(_fm & 0x80)
+	{
+		_m = 0x60000000;
+	}
+	else
+	{
+		_m=0x0;
+	}
+	_c=0x1;
+	for(_i=0;_i< 8;_i++)
+	{
+		if(_c & _fm)
+		{
+			_m= _m | (0xf<<(_i*4));
+		}
+		_c=_c<<1;
+	}
+	fpscr = _rb & _m;
+	cpu->SetFPSCR(fpscr);
+	// Copy FX, FEX, VX, OX to CR1
+	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
+	
+	return true;
+}
+mtfsf.disasm = {
+	os << "mtfsf" << (rc ? "." : "") << " " << (unsigned int) fm << ", f" << (unsigned int) fb;
+}
+
+specialize mtfsf(rc=0)
+specialize mtfsf(rc=1)

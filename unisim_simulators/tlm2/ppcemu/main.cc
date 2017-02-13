@@ -46,7 +46,7 @@
 #include <unisim/service/profiling/addr_profiler/profiler.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
-#include <unisim/service/os/linux_os/linux.hh>
+#include <unisim/service/os/linux_os/powerpc_linux32.hh>
 #include <unisim/service/power/cache_power_estimator.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
@@ -253,7 +253,7 @@ Simulator::Simulator(int argc, char **argv)
 	//===                         Service instantiations                    ===
 	//=========================================================================
 	//  - Linux loader and Linux ABI translator
-	linux_os = new Linux<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE>("linux-os");
+	linux_os = new unisim::service::os::linux_os::PowerPCLinux32<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE>("linux-os");
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
