@@ -479,9 +479,10 @@ namespace armsec
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); addr->Traverse( visitor ); }
       virtual int GenCode( Label& label, std::ostream& sink ) const
       {
-        int bitsize = 8*size;
-        sink << "Load" << (aligned ? "A" : "") << bitsize << "( " << addr.InsCode(label) << " )";
-        return bitsize;
+        /* TODO: dont assume little endianness */
+        /* TODO: exploit alignment info */
+        sink << "@[" << addr.InsCode(label) << ",<-," << size << "]";
+        return 8*size;
       }
       intptr_t cmp( ExprNode const& brhs ) const
       {
@@ -504,6 +505,8 @@ namespace armsec
       
       virtual int GenCode( Label& label, std::ostream& sink ) const
       {
+        /* TODO: dont assume little endianness */
+        /* TODO: exploit alignment info */
         sink << "@[" << addr.InsCode(label) << ",<-," << size << "] := " << value.InsCode(label);
         return 0;
       }
