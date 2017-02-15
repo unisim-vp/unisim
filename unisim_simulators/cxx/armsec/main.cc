@@ -769,7 +769,7 @@ namespace armsec
       {
         std::ostringstream code;
         Label insn( tail );
-        code << "if ((bsr_in<32> >>u bsr_out<32>){0,0}) goto " << exit.id << " else goto " << loop.id;
+        code << "if ((bsr_in<32> rshiftu bsr_out<32>){0,0}) goto " << exit.id << " else goto " << loop.id;
         insn = code.str();
       }
       label = exit;
