@@ -68,7 +68,7 @@ namespace armsec
       case BinaryOp::Asr:     sink << " rshifts "; break;
       case BinaryOp::Lsr:     sink << " rshiftu "; break;
       case BinaryOp::Ror:     sink << " rrotate "; break;
-      case BinaryOp::Mul:     sink << " multu "; break;
+      case BinaryOp::Mul:     sink << " * "; break;
         // case BinaryOp::Mod: break;
         // case BinaryOp::Div: break;
       }
