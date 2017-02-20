@@ -214,7 +214,7 @@ namespace linux_os {
           // else if(hwcap_token.compare("idiva") == 0)      { aarch64_hwcap |= AARCH64_HWCAP_AARCH64_IDIVA; }
           // else if(hwcap_token.compare("idivt") == 0)      { aarch64_hwcap |= AARCH64_HWCAP_AARCH64_IDIVT; }
           // else
-            { lin.Logger() << DebugWarning << "unknown hardware capability \"" << hwcap_token << "\"" << EndDebugWarning; }
+            { lin.DebugWarningStream() << "unknown hardware capability \"" << hwcap_token << "\"" << std::endl; }
         }
       hwcap = aarch64_hwcap;
       return true;
@@ -272,7 +272,7 @@ namespace linux_os {
       unisim::util::debug::blob::Section<address_type> const * sp_section =
         lin.GetBlob()->FindSection(".unisim.linux_os.stack.stack_pointer");
       if (sp_section == NULL) {
-        lin.Logger() << DebugError << "Could not find the stack pointer section." << EndDebugError;
+        lin.DebugErrorStream() << "Could not find the stack pointer section." << std::endl;
         return false;
       }
       if (not SetRegister(lin, "sp", sp_section->GetAddr()))
@@ -316,7 +316,7 @@ namespace linux_os {
       try { return GetSystemCallParam( lin, id ); }
       
       catch (...) {
-        lin.Logger() << DebugError << "No syscall argument #" << id << " in " << this->name << " linux" << EndDebugError;
+        lin.DebugErrorStream() << "No syscall argument #" << id << " in " << this->name << " linux" << std::endl;
       }
       
       return 0;
@@ -919,7 +919,7 @@ namespace linux_os {
       //           }
                   
       //         if(unlikely(lin.GetVerbose()))
-      //           lin.Logger() << DebugInfo << "times(buf=0x" << std::hex << buf_addr << std::dec << ")" << EndDebugInfo;
+      //           lin.DebugInfoStream() << "times(buf=0x" << std::hex << buf_addr << std::dec << ")" << std::endl;
 	
       //         SetAARCH64SystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
       //       }
@@ -967,10 +967,10 @@ namespace linux_os {
 
       //         if(unlikely(lin.GetVerbose()))
       //           {
-      //             lin.Logger() << DebugInfo
+      //             lin.DebugInfoStream()
       //                          << "gettimeofday(tv = 0x" << std::hex << tv_addr << std::dec
       //                          << ", tz = 0x" << std::hex << tz_addr << std::dec << ")"
-      //                          << EndDebugInfo;
+      //                          << std::endl;
       //           }
 	
       //         SetAARCH64SystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
@@ -1053,9 +1053,9 @@ namespace linux_os {
                       
       //             if(unlikely(lin.GetVerbose()))
       //               {
-      //                 lin.Logger() << DebugInfo
+      //                 lin.DebugInfoStream()
       //                              << "pathname = \"" << pathname << "\", buf_address = 0x" << std::hex << buf_address << std::dec
-      //                              << EndDebugInfo;
+      //                              << std::endl;
       //               }
       //           }
       //         else

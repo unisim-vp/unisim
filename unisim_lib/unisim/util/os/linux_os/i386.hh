@@ -182,7 +182,7 @@ namespace linux_os {
         lin.GetBlob()->FindSection(".unisim.linux_os.stack.stack_pointer");
       if (esp_section == NULL)
         {
-          lin.Logger() << DebugError << "Could not find the stack pointer section." << EndDebugError;
+          lin.DebugErrorStream() << "Could not find the stack pointer section." << std::endl;
           return false;
         }
       if (not SetRegister(lin, kI386_esp, esp_section->GetAddr()))
@@ -195,7 +195,7 @@ namespace linux_os {
         lin.GetBlob()->FindSection(".unisim.linux_os.etls.middle_pointer");
       if (not etls_section)
         {
-          lin.Logger() << DebugError << "Could not find the early TLS section." << EndDebugError;
+          lin.DebugErrorStream() << "Could not find the early TLS section." << std::endl;
           return false;
         }
       SetRegister(lin, "@gdt[3].base", etls_section->GetAddr() ); // for early TLS kludge
@@ -344,7 +344,7 @@ namespace linux_os {
       try { return GetSystemCallParam( lin, id ); }
       
       catch (int x) {
-        lin.Logger() << DebugError << "No syscall argument #" << id << " in " << this->name << " linux" << EndDebugError;
+        lin.DebugErrorStream() << "No syscall argument #" << id << " in " << this->name << " linux" << std::endl;
       }
       
       return 0;
@@ -774,9 +774,9 @@ namespace linux_os {
 	
               if(unlikely(lin.GetVerbose()))
                 {
-                  lin.Logger() << DebugInfo
-                               << "fd = " << target_fd << ", buf_address = 0x" << std::hex << buf_address << std::dec
-                               << EndDebugInfo;
+                  lin.DebugInfoStream()
+                    << "fd = " << target_fd << ", buf_address = 0x" << std::hex << buf_address << std::dec
+                    << std::endl;
                 }
 	
               SetI386SystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
