@@ -45,16 +45,11 @@ namespace util {
 namespace debug {
 namespace elf_symtab {
 
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugInfo;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::EndDebugError;
-
 template <class MEMORY_ADDR, class Elf_Sym>
-ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::ELF_SymtabHandler(unisim::kernel::logger::Logger& _logger, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob)
-	: logger(_logger)
+ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::ELF_SymtabHandler(std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob)
+	: debug_info_stream(_debug_info_stream)
+	, debug_warning_stream(_debug_warning_stream)
+	, debug_error_stream(_debug_error_stream)
 	, blob(_blob)
 	, symbol_table(0)
 {
@@ -89,7 +84,7 @@ void ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::Parse()
 			
 			if(!string_table_section || (string_table_section->GetType() != unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_STRTAB))
 			{
-				logger << DebugWarning << "Found a symbol table section but no string table section. Cannot build symbol table." << EndDebugWarning;
+				debug_warning_stream << "Found a symbol table section but no string table section. Cannot build symbol table." << std::endl;
 				break;
 			}
 			const char *string_table = (const char *) string_table_section->GetData();

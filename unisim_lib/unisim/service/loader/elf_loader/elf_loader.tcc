@@ -173,7 +173,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		elf_loader = 0;
 	}
 
-	elf_loader = new unisim::util::loader::elf_loader::ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>(logger, registers_import, memory_import);
+	elf_loader = new unisim::util::loader::elf_loader::ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream(), registers_import, memory_import);
 
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, Object::GetSimulator()->SearchSharedDataFile(filename.c_str()).c_str());
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_FORCE_BASE_ADDR, force_base_addr);

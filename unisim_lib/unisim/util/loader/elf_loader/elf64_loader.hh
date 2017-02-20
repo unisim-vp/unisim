@@ -48,12 +48,12 @@ template <class MEMORY_ADDR = uint64_t>
 class Elf64Loader : public ElfLoaderImpl<MEMORY_ADDR, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>
 {
 public:
-	Elf64Loader(unisim::kernel::logger::Logger& logger, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = 0);
+	Elf64Loader(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = 0);
 };
 
 template <class MEMORY_ADDR>
-Elf64Loader<MEMORY_ADDR>::Elf64Loader(unisim::kernel::logger::Logger& _logger, unisim::service::interfaces::Registers *_regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *_mem_if, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob)
-	: ElfLoaderImpl<MEMORY_ADDR, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>(_logger, _regs_if, _mem_if, _blob)
+Elf64Loader<MEMORY_ADDR>::Elf64Loader(std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, unisim::service::interfaces::Registers *_regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *_mem_if, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob)
+	: ElfLoaderImpl<MEMORY_ADDR, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>(_debug_info_stream, _debug_warning_stream, _debug_error_stream, _regs_if, _mem_if, _blob)
 {
 }
 

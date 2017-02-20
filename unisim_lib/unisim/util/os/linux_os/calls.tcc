@@ -503,8 +503,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::ReadMem( Linux& lin, ADDRESS_
     {
       if (unlikely(lin.verbose_))
         {
-          lin.logger_
-            << DebugInfo
+          lin.debug_info_stream
             << "OS read memory:" << std::endl
             << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
             << "\tsize = " << size << std::endl
@@ -512,21 +511,20 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::ReadMem( Linux& lin, ADDRESS_
                                
           for (unsigned int i = 0; i < size; i++)
             {
-              lin.logger_ << " " << (unsigned int)buffer[i];
+              lin.debug_info_stream << " " << (unsigned int)buffer[i];
             }
                        
-          lin.logger_ << std::dec << EndDebugInfo;
+          lin.debug_info_stream << std::dec << std::endl;
         }
       return true;
     }
   else
     {
-      lin.logger_
-        << DebugWarning
+      lin.debug_warning_stream
         << "failed OS read memory:" << std::endl
         << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
         << "\tsize = " << size
-        << EndDebugWarning;
+        << std::endl;
       return false;
     }
 }
@@ -538,18 +536,18 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::WriteMem( Linux& lin, ADDRESS
        
   if (unlikely(lin.verbose_))
     {
-      lin.logger_ << DebugInfo
-                  << "OS write memory:" << std::endl
-                  << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
-                  << "\tsize = " << size << std::endl
-                  << "\tdata =0x" << std::hex;
+      lin.debug_info_stream
+        << "OS write memory:" << std::endl
+        << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
+        << "\tsize = " << size << std::endl
+        << "\tdata =0x" << std::hex;
                        
       for (unsigned int i = 0; i < size; i++)
         {
-          lin.logger_ << " " << (unsigned int)buffer[i];
+          lin.debug_info_stream << " " << (unsigned int)buffer[i];
         }
                
-      lin.logger_ << std::dec << EndDebugInfo;
+      lin.debug_info_stream << std::dec << std::endl;
     }
   return lin.mem_inject_if_->InjectWriteMemory(addr, buffer, size);
 }
@@ -562,7 +560,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::ReadMemString(Linux& lin, ADD
   for (ADDRESS_TYPE tail = addr; ; len += 1, tail += 1)
     {
       if (len >= 0x100000) {
-        lin.Logger() << DebugError << "Huge string: bailing out" << EndDebugError;
+        lin.debug_error_stream << "Huge string: bailing out" << std::endl;
         return false;
       }
       uint8_t buffer;
@@ -601,7 +599,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       {
         int status = SysCall::GetParam(lin, 0);
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
         throw LSCExit( status );
       }
     } sc;
@@ -635,13 +633,13 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
 
         if (not buf)
           {
-            lin.logger_ << DebugWarning << "Out of memory" << EndDebugWarning;
+            lin.debug_warning_stream << "Out of memory" << std::endl;
             lin.SetSystemCallStatus(-LINUX_ENOMEM,true);
             return;
           }
         
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
         
         ssize_t ret = read(host_fd, buf, count);
         
@@ -687,7 +685,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
 
         if (not buf)
           {
-            lin.logger_ << DebugWarning << "Out of memory" << EndDebugWarning;
+            lin.debug_warning_stream << "Out of memory" << std::endl;
             lin.SetSystemCallStatus(-LINUX_ENOMEM,true);
             return;
           }
@@ -696,12 +694,12 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
                 
         if (unlikely(lin.verbose_))
           {
-            lin.logger_ << DebugInfo << this->TraceCall(lin) << std::endl << "*buffer =";
+            lin.debug_info_stream << this->TraceCall(lin) << std::endl << "*buffer =";
             for (size_t i = 0; i < count; i++)
               {
-                lin.logger_ << " 0x" << std::hex << (unsigned int)((uint8_t *)buf)[i] << std::dec;
+                lin.debug_info_stream << " 0x" << std::hex << (unsigned int)((uint8_t *)buf)[i] << std::dec;
               }
-            lin.logger_ << EndDebugInfo;
+            lin.debug_info_stream << std::endl;
           }
                 
         ssize_t ret = write(host_fd, buf, count);
@@ -740,7 +738,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         std::string pathname;
         if (not SysCall::ReadMemString(lin, addr, pathname))
           {
-            lin.logger_ << DebugWarning << "Out of memory" << EndDebugWarning;
+            lin.debug_warning_stream << "Out of memory" << std::endl;
             lin.SetSystemCallStatus(-LINUX_ENOMEM, true);
             return;
           }
@@ -749,7 +747,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
             SubPathOf(pathname, "/sys") or SubPathOf(pathname, "/var"))
           {
             // deny access to /dev, /proc, /sys, /var
-            lin.logger_ << DebugWarning << "No guest access to host " << pathname << EndDebugWarning;
+            lin.debug_warning_stream << "No guest access to host " << pathname << std::endl;
             lin.SetSystemCallStatus(-LINUX_EACCES,true);
             return;
           }
@@ -787,8 +785,8 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
     
         if(unlikely(lin.verbose_))
           {
-            lin.logger_ << DebugInfo << this->TraceCall(lin) << std::endl
-                        << "*pathname=\"" << pathname << "\"" << EndDebugInfo;
+            lin.debug_info_stream << this->TraceCall(lin) << std::endl
+                        << "*pathname=\"" << pathname << "\"" << std::endl;
           }
 
         lin.SetSystemCallStatus(target_fd, false);
@@ -817,7 +815,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
           }
         
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
         
         if (unsigned(host_fd) < 3)
           {
@@ -859,7 +857,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
 
         Args sc(lin);
         int32_t host_fd = SysCall::Target2HostFileDescriptor(lin, sc.fd);
@@ -890,7 +888,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
 
         pid_t ret = (pid_t) getpid();
         
@@ -910,7 +908,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         // equal to the process ID (PID, as returned by getpid)
         
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
         
         pid_t ret = getpid();
         
@@ -927,7 +925,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
         
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
         unsigned ret = 0;
@@ -960,7 +958,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         std::string pathname;
         if (not SysCall::ReadMemString(lin, addr, pathname))
           {
-            lin.logger_ << DebugWarning << "Out of memory" << EndDebugWarning;
+            lin.debug_warning_stream << "Out of memory" << std::endl;
             lin.SetSystemCallStatus(-LINUX_ENOMEM, true);
             return;
           }
@@ -969,14 +967,14 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
             SubPathOf(pathname, "/sys") or SubPathOf(pathname, "/var"))
           {
             // deny access to /dev, /proc, /sys, /var
-            lin.logger_ << DebugWarning << "No guest access to host " << pathname << EndDebugWarning;
+            lin.debug_warning_stream << "No guest access to host " << pathname << std::endl;
             lin.SetSystemCallStatus(-LINUX_EACCES,true);
             return;
           }
 
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << std::endl
-                      << "pathname=\"" << pathname << "\"" << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl
+                      << "pathname=\"" << pathname << "\"" << std::endl;
             
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
         int win_mode = 0;
@@ -1015,7 +1013,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
           }
 
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
   
         lin.SetSystemCallStatus(lin.brk_point_, false);
       }
@@ -1035,7 +1033,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         gid_t ret = getgid();
 #endif
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << " => " << ret << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << " => " << ret << std::endl;
         
         lin.SetSystemCallStatus(ret, false);
       }
@@ -1055,7 +1053,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         uid_t ret = geteuid();
 #endif
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << " => " << ret << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << " => " << ret << std::endl;
         
         lin.SetSystemCallStatus(ret, false);
       }
@@ -1075,7 +1073,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         gid_t ret = getegid();
 #endif
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << " => " << ret << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << " => " << ret << std::endl;
         
         lin.SetSystemCallStatus(ret, false);
       }
@@ -1148,7 +1146,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         SysCall::WriteMem(lin, result_addr, (uint8_t *) &lseek_result64, sizeof(lseek_result64));
         
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
   
         lin.SetSystemCallStatus(ret, false);
       }
@@ -1177,7 +1175,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         
     
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
         
         for (int step = count; (--step) >= 0; iovecaddr += 2*parameter_size)
           {
@@ -1281,7 +1279,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         uid_t ret = getuid();
 #endif
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << " => " << ret << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << " => " << ret << std::endl;
         
         lin.SetSystemCallStatus(ret, false);
       }
@@ -1301,7 +1299,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         gid_t ret = getgid();
 #endif
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << " => " << ret << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << " => " << ret << std::endl;
         
         lin.SetSystemCallStatus(ret, false);
       }
@@ -1321,7 +1319,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         uid_t ret = geteuid();
 #endif
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << " => " << ret << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << " => " << ret << std::endl;
         
         lin.SetSystemCallStatus(ret, false);
       }
@@ -1341,7 +1339,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         gid_t ret = getegid();
 #endif
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << " => " << ret << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << " => " << ret << std::endl;
         
         lin.SetSystemCallStatus(ret, false);
       }
@@ -1373,7 +1371,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       {
         int status = SysCall::GetParam(lin, 0);
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
         throw LSCExit( status );
       }
     } sc;
@@ -1400,7 +1398,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         int host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
   
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
         
         if (host_fd == -1)
           {
@@ -1463,7 +1461,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         int host_oldfd =       SysCall::Target2HostFileDescriptor(lin, target_oldfd);
   
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
         
         if (host_oldfd == -1)
           {
@@ -1485,7 +1483,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         lin.MapTargetToHostFileDescriptor(target_newfd, host_newfd);
         
         if (unlikely(lin.verbose_))
-          lin.logger_ << GetName() << " => newfd=" << target_newfd << EndDebugInfo;
+          lin.debug_info_stream << GetName() << " => newfd=" << target_newfd << std::endl;
   
         lin.SetSystemCallStatus(target_newfd, false);
       }
@@ -1587,7 +1585,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
         
         address_type pathnameaddr = SysCall::GetParam(lin, 0);
         
@@ -1599,7 +1597,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
           }
         
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << GetName() << ".pathname=\"" << pathname << "\"" << EndDebugInfo;
+          lin.debug_info_stream << GetName() << ".pathname=\"" << pathname << "\"" << std::endl;
         
         int ret = unlink(pathname.c_str());
         
@@ -1626,7 +1624,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
         
         Args sc(lin);
         
@@ -1640,7 +1638,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         int ret = rename(oldpath.c_str(), newpath.c_str());
         
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << GetName() << "(oldpath=\"" << oldpath << "\", newpath=\"" << newpath << "\") => " << ret << EndDebugInfo;
+          lin.debug_info_stream << GetName() << "(oldpath=\"" << oldpath << "\", newpath=\"" << newpath << "\") => " << ret << std::endl;
         
         lin.SetSystemCallStatus(ret, false);
       }
@@ -1726,7 +1724,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
         lin.SetSystemCallStatus(0, false);
       }
     } sc;
@@ -1743,7 +1741,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
         
         lin.SetSystemCallStatus(0, false);
       }
@@ -1763,7 +1761,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
         
         lin.SetSystemCallStatus(0, false);
       }
@@ -1783,7 +1781,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
         
         Args sc(lin);
         int32_t host_fd = SysCall::Target2HostFileDescriptor(lin, sc.fd);
@@ -1819,7 +1817,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
 
         mode_t mask = SysCall::GetParam(lin, 0);
         

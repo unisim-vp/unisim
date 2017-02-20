@@ -42,18 +42,11 @@ namespace unisim {
 namespace util {
 namespace lexer {
 
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::EndDebugInfo;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugError;
-
 template <class TOKEN>
-Lexer<TOKEN>::Lexer(std::istream *_stream, unisim::kernel::logger::Logger& _logger, bool _debug)
+Lexer<TOKEN>::Lexer(std::istream *_stream, std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, bool _debug)
 	: line()
 	, text()
-	, token_dictionnary(_logger, _debug)
+	, token_dictionnary(_debug_info_stream, _debug_warning_stream, _debug_error_stream, _debug)
 	, token_map()
 	, enable_ident_token(false)
 	, ident_token_id(0)
@@ -67,7 +60,9 @@ Lexer<TOKEN>::Lexer(std::istream *_stream, unisim::kernel::logger::Logger& _logg
 	, enable_eating_eol(false)
 	, stream(_stream)
 	, loc()
-	, logger(_logger)
+	, debug_info_stream(_debug_info_stream)
+	, debug_warning_stream(_debug_warning_stream)
+	, debug_error_stream(_debug_error_stream)
 	, debug(_debug)
 	, finished_scanning_line(false)
 	, lexer_error(false)
@@ -215,7 +210,7 @@ TOKEN *Lexer<TOKEN>::Next()
 					}
 					if(debug)
 					{
-						logger << DebugInfo << state << ":get '" << c << "'" << EndDebugInfo;
+						debug_info_stream << state << ":get '" << c << "'" << std::endl;
 					}
 
 					if((enable_eating_space && (c == ' ')) ||
@@ -224,7 +219,7 @@ TOKEN *Lexer<TOKEN>::Next()
 						loc.IncColNo();
 						if(debug)
 						{
-							logger << DebugInfo << state << ":eat" << EndDebugInfo;
+							debug_info_stream << state << ":eat" << std::endl;
 						}
 						break;
 					}
@@ -236,7 +231,7 @@ TOKEN *Lexer<TOKEN>::Next()
 						finished_scanning_line = false;
 						if(debug)
 						{
-							logger << DebugInfo << state << ":eat" << EndDebugInfo;
+							debug_info_stream << state << ":eat" << std::endl;
 						}
 						break;
 					}
@@ -275,7 +270,7 @@ TOKEN *Lexer<TOKEN>::Next()
 
 					if(debug)
 					{
-						logger << DebugInfo << state << ":putback '" << c << "'" << EndDebugInfo;
+						debug_info_stream << state << ":putback '" << c << "'" << std::endl;
 					}
 					stream->putback(c);
 				}
@@ -291,7 +286,7 @@ TOKEN *Lexer<TOKEN>::Next()
 				text += c;
 				if(debug)
 				{
-					logger << DebugInfo << state << ":get '" << c << "'" << EndDebugInfo;
+					debug_info_stream << state << ":get '" << c << "'" << std::endl;
 				}
 				
 				if(c == '\"')
@@ -308,7 +303,7 @@ TOKEN *Lexer<TOKEN>::Next()
 				{
 					if(stream->good())
 					{
-						logger << DebugInfo << state << ":get '" << c << "'" << EndDebugInfo;
+						debug_info_stream << state << ":get '" << c << "'" << std::endl;
 					}
 
 				}
@@ -331,7 +326,7 @@ TOKEN *Lexer<TOKEN>::Next()
 					
 					if(debug)
 					{
-						if(stream->good()) logger << DebugInfo << state << ":get '" << c << "'" << EndDebugInfo;
+						if(stream->good()) debug_info_stream << state << ":get '" << c << "'" << std::endl;
 					}
 
 					if(stream->eof())
@@ -342,7 +337,7 @@ TOKEN *Lexer<TOKEN>::Next()
 					{
 						if(debug)
 						{
-							logger << DebugInfo << state << ":putback '" << c << "'" << EndDebugInfo;
+							debug_info_stream << state << ":putback '" << c << "'" << std::endl;
 						}
 
 						stream->putback(c);
@@ -364,7 +359,7 @@ TOKEN *Lexer<TOKEN>::Next()
 				{
 					if(debug)
 					{
-						logger << DebugInfo << state << ":get '" << c << "'" << EndDebugInfo;
+						debug_info_stream << state << ":get '" << c << "'" << std::endl;
 					}
 					
 					line += c;
@@ -374,7 +369,7 @@ TOKEN *Lexer<TOKEN>::Next()
 				{
 					if(debug)
 					{
-						if(stream->good()) logger << DebugInfo << state << ":get '" << c << "'" << EndDebugInfo;
+						if(stream->good()) debug_info_stream << state << ":get '" << c << "'" << std::endl;
 					}
 					
 					if(stream->eof())
@@ -385,7 +380,7 @@ TOKEN *Lexer<TOKEN>::Next()
 					{
 						if(debug)
 						{
-							logger << DebugInfo << state << ":putback '" << c << "'" << EndDebugInfo;
+							debug_info_stream << state << ":putback '" << c << "'" << std::endl;
 						}
 						
 						stream->putback(c);
@@ -456,14 +451,13 @@ const char *Lexer<TOKEN>::GetTokenText(unsigned int token_id) const
 template <class TOKEN>
 void Lexer<TOKEN>::PrintFriendlyLocation(const Location& _loc) const
 {
-	logger << DebugInfo << line << EndDebugInfo;
-	logger << DebugInfo;
+	debug_info_stream << line << std::endl;
 	unsigned int colno = _loc.GetColNo();
 	while(--colno)
 	{
-		logger << " ";
+		debug_info_stream << " ";
 	}
-	logger << "^" << EndDebugInfo;
+	debug_info_stream << "^" << std::endl;
 }
 
 template <class TOKEN>
@@ -472,7 +466,7 @@ void Lexer<TOKEN>::ErrorUnknownToken(char c)
 	FinishScanningLine();
 	lexer_error = true;
 	PrintFriendlyLocation(loc);
-	logger << DebugError << loc << ", unknown token '" << c << "'" << EndDebugError; 
+	debug_error_stream << loc << ", unknown token '" << c << "'" << std::endl; 
 }
 
 template <class TOKEN>
@@ -481,7 +475,7 @@ void Lexer<TOKEN>::ErrorExpectedToken(const char *_text)
 	FinishScanningLine();
 	lexer_error = true;
 	PrintFriendlyLocation(loc);
-	logger << DebugError << loc << ", expected token '" << _text << "'" << EndDebugError; 
+	debug_error_stream << loc << ", expected token '" << _text << "'" << std::endl; 
 }
 
 template <class TOKEN>
@@ -489,7 +483,7 @@ void Lexer<TOKEN>::ErrorIO()
 {
 	lexer_error = true;
 	PrintFriendlyLocation(loc);
-	logger << DebugError << loc << ", I/O error" << EndDebugError; 
+	debug_error_stream << loc << ", I/O error" << std::endl; 
 }
 
 

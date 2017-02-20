@@ -252,7 +252,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
     return false;
   }
 
-  linuxlib_ = new LinuxImpl(logger_, registers_import_, memory_import_, memory_injection_import_);
+  linuxlib_ = new LinuxImpl(logger_.DebugInfoStream(), logger_.DebugWarningStream(), logger_.DebugErrorStream(), registers_import_, memory_import_, memory_injection_import_);
   
   // set up the different linuxlib parameters
   linuxlib_->SetVerbose(verbose_);

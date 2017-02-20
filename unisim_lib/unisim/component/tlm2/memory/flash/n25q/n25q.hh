@@ -120,7 +120,7 @@ private:
 		BitField<StatusRegister, ACC_RW, ACC_RO, 0>    Write_in_progress;                     // volatile
 
 		StatusRegister(N25Q<CONFIG> *_n25q, const std::string& name, const std::string& long_name)
-			: BaseType(_n25q, name, long_name, 0xfc)
+			: BaseType(std::string(_n25q->GetName()) + name, long_name, 0xfc)
 			, Status_register_write_enable_disable(this, "Status_register_write_enable_disable", 0x1)
 			, Top_bottom(this, "Top_bottom", 0x1)
 			, Block_protect_2_0(this, "Block_protect_2_0", 0x7)
@@ -201,7 +201,7 @@ private:
 		BitField<NonVolatileConfigurationRegister, ACC_RW, ACC_RW,  2>     Dual_IO_protocol;
 		
 		NonVolatileConfigurationRegister(N25Q<CONFIG> *_n25q, const std::string& name, const std::string& long_name)
-			: BaseType(_n25q, name, long_name, 0xffff)
+			: BaseType(std::string(_n25q->GetName()) + name, long_name, 0xffff)
 			, Number_of_dummy_clock_cycles(this, "Number_of_dummy_clock_cycles", 0xf)
 			, XIP_mode_at_power_on_reset(this, "XIP_mode_at_power_on_reset", 0x7)
 			, Output_driver_strength(this, "Output_driver_strength", 0x7)
@@ -224,7 +224,7 @@ private:
 		BitField<VolatileConfigurationRegister, ACC_RW, ACC_RW, 1, 0> Wrap;
 		
 		VolatileConfigurationRegister(N25Q<CONFIG> *_n25q, const std::string& name, const std::string& long_name)
-			: BaseType(_n25q, name, long_name, 0x0)
+			: BaseType(std::string(_n25q->GetName()) + name, long_name, 0x0)
 			, Number_of_dummy_clock_cycles(this, "Number_of_dummy_clock_cycles", 0xf)
 			, XIP(this, "XIP", 0x1)
 			, Wrap(this, "Wrap", 0x3)
@@ -248,7 +248,7 @@ private:
 		BitField<EnhancedVolatileConfigurationRegister, ACC_RW, ACC_RW, 2, 0> Output_driver_strength;
 		
 		EnhancedVolatileConfigurationRegister(N25Q<CONFIG> *_n25q, const std::string& name, const std::string& long_name)
-			: BaseType(_n25q, name, long_name, 0x0)
+			: BaseType(std::string(_n25q->GetName()) + name, long_name, 0x0)
 			, Quad_IO_protocol(this, "Quad_IO_protocol", 0x1)
 			, Dual_IO_protocol(this, "Dual_IO_protocol", 0x1)
 			, Reset_hold(this, "Reset_hold", 0x1)
@@ -274,7 +274,7 @@ private:
 		BitField<FlagStatusRegister, ACC_RW, ACC_RW, 1> Protection;
 		
 		FlagStatusRegister(N25Q<CONFIG> *_n25q, const std::string& name, const std::string& long_name)
-			: BaseType(_n25q, name, long_name, 0xff)
+			: BaseType(std::string(_n25q->GetName()) + name, long_name, 0xff)
 			, Program_or_erase_controller(this, "Program_or_erase_controller", 0x1)
 			, Erase_suspend(this, "Erase_suspend", 0x1)
 			, Erase(this, "Erase", 0x1)
@@ -331,7 +331,7 @@ private:
 		BitField<InternalConfigurationRegister, ACC_RW, ACC_NONE,  1, 0>  Wrap;
 		
 		InternalConfigurationRegister(N25Q<CONFIG> *_n25q, const std::string& name, const std::string& long_name)
-			: BaseType(_n25q, name, long_name, 0xffff)
+			: BaseType(std::string(_n25q->GetName()) + name, long_name, 0xffff)
 			, Number_of_dummy_clock_cycles(this, "Number_of_dummy_clock_cycles", 0xf)
 			, Output_driver_strength(this, "Output_driver_strength", 0x7)
 			, VPP_accelerator(this, "VPP_accelerator", 0x1)
@@ -354,7 +354,7 @@ private:
 		BitField<LockRegister, ACC_RW, ACC_RW, 0> Sector_write_lock;
 		
 		LockRegister(N25Q<CONFIG> *_n25q, const std::string& name, const std::string& long_name)
-			: BaseType(_n25q, name, long_name, 0x0)
+			: BaseType(std::string(_n25q->GetName()) + name, long_name, 0x0)
 			, Sector_lock_down(this, "Sector_lock_down", 0x0)
 			, Sector_write_lock(this, "Sector_write_lock", 0x0)
 		{

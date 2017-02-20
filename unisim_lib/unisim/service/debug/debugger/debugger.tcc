@@ -1060,7 +1060,7 @@ bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
 		|| ((magic[0] == 0x00) && (magic[1] == 0x9d)))
 		{
 			// TI COFF file detected
-			unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = new unisim::util::loader::coff_loader::CoffLoader<ADDRESS>(logger);
+			unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = new unisim::util::loader::coff_loader::CoffLoader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream());
 			
 			coff_loader->SetOption(unisim::util::loader::coff_loader::OPT_FILENAME, filename);
 			coff_loader->SetOption(unisim::util::loader::coff_loader::OPT_VERBOSE, verbose);
@@ -1086,7 +1086,7 @@ bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
 			{
 				case 1:
 					{
-						unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger, registers_import, memory_import);
+						unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream(), registers_import, memory_import);
 						
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
@@ -1107,7 +1107,7 @@ bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
 					break;
 				case 2:
 					{
-						unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger, registers_import, memory_import);
+						unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream(), registers_import, memory_import);
 						
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
@@ -1144,7 +1144,7 @@ bool Debugger<ADDRESS>::SetupDebugInfo(const unisim::util::debug::blob::Blob<ADD
 			break;
 		case unisim::util::debug::blob::FFMT_ELF32:
 			{
-				unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger, registers_import, memory_import, blob);
+				unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream(), registers_import, memory_import, blob);
 				
 				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
 				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
@@ -1158,7 +1158,7 @@ bool Debugger<ADDRESS>::SetupDebugInfo(const unisim::util::debug::blob::Blob<ADD
 			break;
 		case unisim::util::debug::blob::FFMT_ELF64:
 			{
-				unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger, registers_import, memory_import, blob);
+				unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream(), registers_import, memory_import, blob);
 				
 				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
 				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
@@ -1172,7 +1172,7 @@ bool Debugger<ADDRESS>::SetupDebugInfo(const unisim::util::debug::blob::Blob<ADD
 			break;
 		case unisim::util::debug::blob::FFMT_COFF:
 			{
-				unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = new unisim::util::loader::coff_loader::CoffLoader<ADDRESS>(logger, blob);
+				unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = new unisim::util::loader::coff_loader::CoffLoader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream(), blob);
 				
 				coff_loader->ParseSymbols();
 				coff_loaders.push_back(coff_loader);

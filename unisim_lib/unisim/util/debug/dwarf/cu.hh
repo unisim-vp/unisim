@@ -41,7 +41,6 @@
 #include <unisim/util/debug/stmt.hh>
 
 #include <unisim/util/debug/dwarf/expr_vm.hh>
-#include <unisim/kernel/logger/logger.hh>
 
 #include <list>
 #include <set>
@@ -99,7 +98,9 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *FindSubProgram(const char *name) const;
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
-	unisim::kernel::logger::Logger& logger;
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
 	bool debug;
 	DWARF_Format dw_fmt;
 	DWARF_Version dw_ver;

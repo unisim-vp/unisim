@@ -57,13 +57,6 @@ namespace util {
 namespace os {
 namespace linux_os {
 
-  using unisim::kernel::logger::DebugInfo;
-  using unisim::kernel::logger::DebugWarning;
-  using unisim::kernel::logger::DebugError;
-  using unisim::kernel::logger::EndDebugInfo;
-  using unisim::kernel::logger::EndDebugWarning;
-  using unisim::kernel::logger::EndDebugError;
-
   // Register names
   static char const* const kI386_eax = "%eax";
   static char const* const kI386_ecx = "%ecx";

@@ -39,7 +39,6 @@
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/kernel/logger/logger.hh>
 #include <set>
 
 namespace unisim {
@@ -175,7 +174,9 @@ private:
 	MEMORY_ADDR pc;
 	bool has_pc;
 	bool debug;
-	unisim::kernel::logger::Logger& logger;
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
 
 	bool Run(const DWARF_Expression<MEMORY_ADDR> *dw_expr, std::ostream *os, MEMORY_ADDR *result_addr, DWARF_Location<MEMORY_ADDR> *dw_location);
 

@@ -51,12 +51,13 @@ namespace loader {
 namespace coff_loader {
 
 using std::stringstream;
-using namespace unisim::kernel::logger;
 using unisim::kernel::service::Object;
 
 template <class MEMORY_ADDR>
-CoffLoader<MEMORY_ADDR>::CoffLoader(unisim::kernel::logger::Logger& _logger, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob)
-	: logger(_logger)
+CoffLoader<MEMORY_ADDR>::CoffLoader(std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob)
+	: debug_info_stream(_debug_info_stream)
+	, debug_warning_stream(_debug_warning_stream)
+	, debug_error_stream(_debug_error_stream)
 	, filename()
 	, entry_point(0)
 	, top_addr(0)
@@ -195,18 +196,18 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 
 	if(filename.empty())
 	{
-		logger << DebugError << "Don't know which executable file to load." << EndDebugError;
+		debug_error_stream << "Don't know which executable file to load." << std::endl;
 		return false;
 	}
 	
 	std::ifstream is(filename.c_str(), std::ifstream::in | std::ifstream::binary);
 	if(is.fail())
 	{
-		logger << DebugError << "Can't open executable \"" << filename << "\"" << EndDebugError;
+		debug_error_stream << "Can't open executable \"" << filename << "\"" << std::endl;
 		return false;
 	}
 	
-	logger << DebugInfo << "Opening \"" << filename << "\"" << EndDebugInfo;
+	debug_info_stream << "Opening \"" << filename << "\"" << std::endl;
 
 	if(is.seekg(0, std::ios::beg).fail())
 	{
@@ -218,7 +219,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 
 	if(is.read((char *) &magic, sizeof(magic)).fail())
 	{
-		logger << DebugError << "Could not read file header or \"" << filename << "\" is not a COFF file." << EndDebugError;
+		debug_error_stream << "Could not read file header or \"" << filename << "\" is not a COFF file." << std::endl;
 		return false;
 	}
 
@@ -228,11 +229,11 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 
 	if(!file_handler)
 	{
-		logger << DebugError << "Can't handle format of \"" << filename << "\"." << EndDebugError;
-		logger << DebugInfo << "Supported formats are:" << std::endl;
+		debug_error_stream << "Can't handle format of \"" << filename << "\"." << std::endl;
+		debug_info_stream << "Supported formats are:" << std::endl;
 		std::stringstream sstr;
 		file_handler_registry.DumpFileHandlers(sstr);
-		logger << sstr.str() << EndDebugInfo;
+		debug_info_stream << sstr.str() << std::endl;
 		return false;
 	}
 
@@ -240,7 +241,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 
 	if(!file)
 	{
-		logger << DebugError<< file_handler->What() << " can't handle format of \"" << filename << "\"" << EndDebugError;
+		debug_error_stream<< file_handler->What() << " can't handle format of \"" << filename << "\"" << std::endl;
 		return false;
 	}
 
@@ -253,7 +254,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 	//*(uint16_t *) hdr = magic;
 	if(is.read(hdr + sizeof(magic), file_hdr_size - sizeof(magic)).fail())
 	{
-		logger << DebugError << "Could not read file header or \"" << filename << "\" is not a COFF file." << EndDebugError;
+		debug_error_stream << "Could not read file header or \"" << filename << "\" is not a COFF file." << std::endl;
 		delete file;
 		file = 0;
 		return false;
@@ -261,7 +262,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 
 	if(!file->ParseFileHeader(hdr))
 	{
-		logger << DebugError << "File header is not supported or \"" << filename << "\" is not a COFF file." << EndDebugError;
+		debug_error_stream << "File header is not supported or \"" << filename << "\" is not a COFF file." << std::endl;
 		delete file;
 		file = 0;
 		return false;
@@ -274,21 +275,21 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 	{
 		std::stringstream sstr;
 		file->DumpFileHeader(sstr);
-		logger << DebugInfo << sstr.str() << EndDebugInfo;
+		debug_info_stream << sstr.str() << std::endl;
 	}
 
-	logger << DebugInfo << "File \"" << filename << "\" has " << (file->GetFileEndian() == E_LITTLE_ENDIAN ? "little" : "big") << "-endian headers" << EndDebugInfo;
-	logger << DebugInfo << "File \"" << filename << "\" is for " << file->GetArchitectureName() << EndDebugInfo;
+	debug_info_stream << "File \"" << filename << "\" has " << (file->GetFileEndian() == E_LITTLE_ENDIAN ? "little" : "big") << "-endian headers" << std::endl;
+	debug_info_stream << "File \"" << filename << "\" is for " << file->GetArchitectureName() << std::endl;
 
 	if(!file->IsExecutable())
 	{
-		logger << DebugError << "File \"" << filename << "\" is not an executable COFF file." << EndDebugError;
+		debug_error_stream << "File \"" << filename << "\" is not an executable COFF file." << std::endl;
 		delete file;
 		file = 0;
 		return false;
 	}
 
-	logger << DebugInfo << "File \"" << filename << "\" is executable" << EndDebugInfo;
+	debug_info_stream << "File \"" << filename << "\" is executable" << std::endl;
 
 	unsigned int aout_hdr_size = file->GetAoutHeaderSize();
 
@@ -298,7 +299,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 
 		if(is.read(aout_hdr, aout_hdr_size).fail())
 		{
-			logger << DebugError << "Could not read optional header." << EndDebugInfo;
+			debug_error_stream << "Could not read optional header." << std::endl;
 			delete file;
 			file = 0;
 			return false;
@@ -306,7 +307,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 
 		if(!file->ParseAoutHeader(aout_hdr))
 		{
-			logger << DebugError << "optional header is invalid or unsupported." << EndDebugError;
+			debug_error_stream << "optional header is invalid or unsupported." << std::endl;
 			delete file;
 			file = 0;
 			return false;
@@ -314,19 +315,19 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 
 		entry_point = file->GetEntryPoint();
 
-		logger << DebugInfo << "Program entry point at 0x" << std::hex << entry_point << std::dec << EndDebugInfo;
+		debug_info_stream << "Program entry point at 0x" << std::hex << entry_point << std::dec << std::endl;
 
 		if(dump_headers)
 		{
 			std::stringstream sstr;
 			file->DumpAoutHeader(sstr);
-			logger << DebugInfo << sstr.str() << EndDebugInfo;
+			debug_info_stream << sstr.str() << std::endl;
 		}
 	}
 	else
 	{
-		logger << DebugWarning << "File \"" << filename << "\" has no optional header." << EndDebugWarning;
-		logger << DebugWarning << "Program entry point is unknown" << EndDebugWarning;
+		debug_warning_stream << "File \"" << filename << "\" has no optional header." << std::endl;
+		debug_warning_stream << "Program entry point is unknown" << std::endl;
 	}
 
 	unsigned int num_sections = file->GetNumSections();
@@ -340,7 +341,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 
 		if(is.read(shdr, shdr_size).fail())
 		{
-			logger << DebugError << "Can't read section headers" << EndDebugError;
+			debug_error_stream << "Can't read section headers" << std::endl;
 			delete file;
 			file = 0;
 			return false;
@@ -348,7 +349,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 		
 		if(!file->ParseSectionHeader(section_num, shdr))
 		{
-			logger << DebugError << "Section header #" << section_num << " is invalid or unsupported" << EndDebugError;
+			debug_error_stream << "Section header #" << section_num << " is invalid or unsupported" << std::endl;
 			delete file;
 			file = 0;
 			return false;
@@ -374,7 +375,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 		{
 			std::stringstream sstr;
 			section->DumpHeader(sstr);
-			logger << DebugInfo << sstr.str() << EndDebugInfo;
+			debug_info_stream << sstr.str() << std::endl;
 		}
 
 		typename Section<MEMORY_ADDR>::Type section_type = section->GetType();
@@ -392,12 +393,12 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 				case Section<MEMORY_ADDR>::ST_LOADABLE_RAWDATA:
 				case Section<MEMORY_ADDR>::ST_SPECIFIC_CONTENT:
 				{
-					logger << DebugInfo << "Loading section " << section_name << " (" << (section_size * memory_atom_size) << " bytes)" << EndDebugInfo;
+					debug_info_stream << "Loading section " << section_name << " (" << (section_size * memory_atom_size) << " bytes)" << std::endl;
 					section_content = calloc(section_size, memory_atom_size);
 
 					if(!section_content || is.seekg(section_content_file_ptr, std::ios::beg).fail() || is.read((char *) section_content, section_size * memory_atom_size).fail())
 					{
-						logger << DebugError << "Can't load section " << section_name << EndDebugError;
+						debug_error_stream << "Can't load section " << section_name << std::endl;
 						if(section_content)
 						{
 							free(section_content);
@@ -416,7 +417,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 		if(section_type == Section<MEMORY_ADDR>::ST_STACK)
 		{
 			blob->SetStackBase((MEMORY_ADDR) section_addr * memory_atom_size);
-			logger << DebugInfo << "Stack base at 0x" << std::hex << section_addr << std::dec << EndDebugInfo;
+			debug_info_stream << "Stack base at 0x" << std::hex << section_addr << std::dec << std::endl;
 		}
 
 		typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Type blob_section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_UNKNOWN;
@@ -482,7 +483,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 			
 			if(!section->LoadSpecificContent(blob_segment, section_content, section_size))
 			{
-				logger << DebugError << "Can't load specific content of section " << section_name << EndDebugError;
+				debug_error_stream << "Can't load specific content of section " << section_name << std::endl;
 				success = false;
 			}
 			
@@ -494,7 +495,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 	unsigned long num_symbols = file->GetNumSymbols();
 	if(symtab_file_ptr && num_symbols)
 	{
-		logger << DebugInfo << "Loading symbol table" << EndDebugInfo;
+		debug_info_stream << "Loading symbol table" << std::endl;
 
 		unsigned long symtab_size = num_symbols * sizeof(syment);
 
@@ -502,18 +503,18 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 
 		if(!symtab_content || is.seekg(symtab_file_ptr, std::ios::beg).fail() || is.read((char *) symtab_content, symtab_size).fail())
 		{
-			logger << DebugError << "Can't load symbol table" << EndDebugError;
+			debug_error_stream << "Can't load symbol table" << std::endl;
 			success = false;
 			if(symtab_content) free(symtab_content);
 		}
 		else
 		{
-			logger << DebugInfo << "Loading string table" << EndDebugInfo;
+			debug_info_stream << "Loading string table" << std::endl;
 			uint32_t string_table_size;
 
 			if(is.read((char *) &string_table_size, sizeof(string_table_size)).fail())
 			{
-				logger << DebugError << "Can't load string table" << EndDebugError;
+				debug_error_stream << "Can't load string table" << std::endl;
 				success = false;
 			}
 			else
@@ -523,7 +524,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 
 				if(!string_table || is.read((char *) string_table + 4, string_table_size - 4).fail())
 				{
-					logger << DebugError << "Can't load string table" << EndDebugError;
+					debug_error_stream << "Can't load string table" << std::endl;
 					success = false;
 					if(string_table) free(string_table);
 				}
@@ -592,13 +593,13 @@ void CoffLoader<MEMORY_ADDR>::ParseSymbols()
 		delete symtab_handler;
 	}
 
-	symtab_handler = new unisim::util::debug::coff_symtab::Coff_SymtabHandler<MEMORY_ADDR>(logger, const_blob);
+	symtab_handler = new unisim::util::debug::coff_symtab::Coff_SymtabHandler<MEMORY_ADDR>(debug_info_stream, debug_warning_stream, debug_error_stream, const_blob);
 	
 	if(symtab_handler)
 	{
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << "Building symbol table" << EndDebugInfo;
+			debug_info_stream << "Building symbol table" << std::endl;
 		}
 		symtab_handler->Parse();
 	}

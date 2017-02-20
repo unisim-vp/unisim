@@ -42,13 +42,6 @@ namespace util {
 namespace debug {
 namespace dwarf {
 
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::EndDebugInfo;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugError;
-
 template <class MEMORY_ADDR>
 DWARF_DataObjectInfo<MEMORY_ADDR>::DWARF_DataObjectInfo()
 	: dw_data_object_loc(0)
@@ -99,7 +92,9 @@ DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR>
 	, mem_if(dw_handler->GetMemoryInterface())
 	, bv(arch_endianness)
 	, debug(_debug)
-	, logger(dw_handler->GetLogger())
+	, debug_info_stream(dw_handler->GetDebugInfoStream())
+	, debug_warning_stream(dw_handler->GetDebugWarningStream())
+	, debug_error_stream(dw_handler->GetDebugErrorStream())
 {
 }
 
@@ -120,7 +115,9 @@ DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR>
 	, mem_if(dw_handler->GetMemoryInterface())
 	, bv(arch_endianness)
 	, debug(_debug)
-	, logger(dw_handler->GetLogger())
+	, debug_info_stream(dw_handler->GetDebugInfoStream())
+	, debug_warning_stream(dw_handler->GetDebugWarningStream())
+	, debug_error_stream(dw_handler->GetDebugErrorStream())
 {
 	UpdateCache(dw_data_object_loc, dw_data_object_type);
 }
@@ -272,13 +269,13 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 	{
 		const std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges = dw_data_object_loc->GetRanges();
 		
-		logger << DebugInfo << "PC ranges for which data object location is valid are ";
+		debug_info_stream << "PC ranges for which data object location is valid are ";
 		typename std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >::const_iterator it;
 		for(it = ranges.begin(); it != ranges.end(); it++)
 		{
-			logger << "[0x" << std::hex << it->first << std::dec << "-0x" << std::hex << it->second << std::dec << "[ ";
+			debug_info_stream << "[0x" << std::hex << it->first << std::dec << "-0x" << std::hex << it->second << std::dec << "[ ";
 		}
-		logger << EndDebugInfo;
+		debug_info_stream << std::endl;
 	}
 	
 	bv.Clear();
@@ -294,7 +291,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 				MEMORY_ADDR dw_byte_size = dw_data_object_byte_size;
 				if(debug)
 				{
-					logger << DebugInfo << "DW_LOC_SIMPLE_MEMORY: addr=0x" << std::hex << dw_addr << std::dec << ", bit_offset=" << dw_data_object_bit_offset << ", bit_size=" << dw_data_object_bit_size << ", byte_size=" << dw_data_object_byte_size << EndDebugInfo;
+					debug_info_stream << "DW_LOC_SIMPLE_MEMORY: addr=0x" << std::hex << dw_addr << std::dec << ", bit_offset=" << dw_data_object_bit_offset << ", bit_size=" << dw_data_object_bit_size << ", byte_size=" << dw_data_object_byte_size << std::endl;
 				}
 				uint8_t buffer[dw_byte_size];
 				memset(buffer, 0, dw_byte_size);
@@ -303,7 +300,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 					MEMORY_ADDR addr = dw_addr + (dw_data_object_bit_offset / 8);
 					if(!mem_if->ReadMemory(addr, buffer, dw_byte_size))
 					{
-						logger << DebugError << "Can't read memory at 0x" << std::hex << addr << std::dec << " (" << dw_byte_size << " bytes)" << EndDebugError;
+						debug_error_stream << "Can't read memory at 0x" << std::hex << addr << std::dec << " (" << dw_byte_size << " bytes)" << std::endl;
 						return false;
 					}
 					
@@ -326,7 +323,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 				const unisim::service::interfaces::Register *arch_reg = dw_reg_num_mapping->GetArchReg(dw_reg_num);
 				if(debug)
 				{
-					logger << DebugInfo << "DW_LOC_SIMPLE_REGISTER: dw_reg_num=" << dw_reg_num << EndDebugInfo;
+					debug_info_stream << "DW_LOC_SIMPLE_REGISTER: dw_reg_num=" << dw_reg_num << std::endl;
 				}
 				if(!arch_reg) return false;
 				
@@ -387,7 +384,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 								unsigned int dw_bit_size = dw_reg_loc_piece->GetBitSize();
 								if(debug)
 								{
-									logger << DebugInfo << "DW_LOC_PIECE_REGISTER: dw_reg_num=" << dw_reg_num << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << EndDebugInfo;
+									debug_info_stream << "DW_LOC_PIECE_REGISTER: dw_reg_num=" << dw_reg_num << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
 								}
 								
 								const unisim::service::interfaces::Register *arch_reg = dw_reg_num_mapping->GetArchReg(dw_reg_num);
@@ -439,7 +436,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 								unsigned int dw_bit_size = dw_mem_loc_piece->GetBitSize();
 								if(debug)
 								{
-									logger << DebugInfo << "DW_LOC_PIECE_MEMORY: dw_addr=0x" << std::hex << dw_addr << std::dec << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << EndDebugInfo;
+									debug_info_stream << "DW_LOC_PIECE_MEMORY: dw_addr=0x" << std::hex << dw_addr << std::dec << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
 								}
 								
 								MEMORY_ADDR dw_byte_size = dw_bit_size ? (dw_bit_size + dw_bit_offset + 7) / 8 : arch_address_size;
@@ -509,7 +506,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 				MEMORY_ADDR dw_byte_size = dw_data_object_byte_size;
 				if(debug)
 				{
-					logger << DebugInfo << "DW_LOC_SIMPLE_MEMORY: addr=0x" << std::hex << dw_addr << std::dec << ", bit_offset=" << dw_data_object_bit_offset << ", bit_size=" << dw_data_object_bit_size << ", byte_size=" << dw_data_object_byte_size << EndDebugInfo;
+					debug_info_stream << "DW_LOC_SIMPLE_MEMORY: addr=0x" << std::hex << dw_addr << std::dec << ", bit_offset=" << dw_data_object_bit_offset << ", bit_size=" << dw_data_object_bit_size << ", byte_size=" << dw_data_object_byte_size << std::endl;
 				}
 				uint8_t buffer[dw_byte_size];
 				memset(buffer, 0, dw_byte_size);
@@ -536,7 +533,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 				unisim::service::interfaces::Register *arch_reg = dw_reg_num_mapping->GetArchReg(dw_reg_num);
 				if(debug)
 				{
-					logger << DebugInfo << "DW_LOC_SIMPLE_REGISTER: dw_reg_num=" << dw_reg_num << EndDebugInfo;
+					debug_info_stream << "DW_LOC_SIMPLE_REGISTER: dw_reg_num=" << dw_reg_num << std::endl;
 				}
 				if(!arch_reg) return false;
 				
@@ -604,7 +601,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 								unsigned int dw_bit_size = dw_reg_loc_piece->GetBitSize();
 								if(debug)
 								{
-									logger << DebugInfo << "DW_LOC_PIECE_REGISTER: dw_reg_num=" << dw_reg_num << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << EndDebugInfo;
+									debug_info_stream << "DW_LOC_PIECE_REGISTER: dw_reg_num=" << dw_reg_num << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
 								}
 								
 								unisim::service::interfaces::Register *arch_reg = dw_reg_num_mapping->GetArchReg(dw_reg_num);
@@ -676,7 +673,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 								unsigned int dw_bit_size = dw_mem_loc_piece->GetBitSize();
 								if(debug)
 								{
-									logger << DebugInfo << "DW_LOC_PIECE_MEMORY: dw_addr=0x" << std::hex << dw_addr << std::dec << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << EndDebugInfo;
+									debug_info_stream << "DW_LOC_PIECE_MEMORY: dw_addr=0x" << std::hex << dw_addr << std::dec << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
 								}
 								
 								MEMORY_ADDR dw_byte_size = dw_bit_size ? (dw_bit_size + dw_bit_offset + 7) / 8 : arch_address_size;

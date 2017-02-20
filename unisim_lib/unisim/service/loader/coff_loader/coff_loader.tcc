@@ -97,7 +97,7 @@ bool CoffLoader<MEMORY_ADDR>::BeginSetup()
 		coff_loader = 0;
 	}
 
-	coff_loader = new unisim::util::loader::coff_loader::CoffLoader<MEMORY_ADDR>(logger);
+	coff_loader = new unisim::util::loader::coff_loader::CoffLoader<MEMORY_ADDR>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream());
 
 	coff_loader->SetOption(unisim::util::loader::coff_loader::OPT_FILENAME, Object::GetSimulator()->SearchSharedDataFile(filename.c_str()).c_str());
 	coff_loader->SetOption(unisim::util::loader::coff_loader::OPT_DUMP_HEADERS, dump_headers);

@@ -36,7 +36,6 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_REGISTER_NUMBER_MAPPING_HH__
 
 #include <unisim/util/debug/dwarf/fwd.hh>
-#include <unisim/kernel/logger/logger.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/util/xml/xml.hh>
 #include <iosfwd>
@@ -52,7 +51,7 @@ std::ostream& operator << (std::ostream& os, const DWARF_RegisterNumberMapping& 
 class DWARF_RegisterNumberMapping
 {
 public:
-	DWARF_RegisterNumberMapping(unisim::kernel::logger::Logger& logger, unisim::service::interfaces::Registers *regs_if);
+	DWARF_RegisterNumberMapping(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, unisim::service::interfaces::Registers *regs_if);
 	~DWARF_RegisterNumberMapping();
 	
 	bool Load(const char *filename, const char *architecture);
@@ -63,7 +62,9 @@ public:
 	unsigned int GetSPRegNum() const;
 	friend std::ostream& operator << (std::ostream& os, const DWARF_RegisterNumberMapping& dw_reg_num_mapping);
 private:
-	unisim::kernel::logger::Logger& logger;
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
 	unisim::service::interfaces::Registers *regs_if;
 	std::map<unsigned int, unisim::service::interfaces::Register *> reg_num_mapping;
 	unsigned int sp_reg_num;

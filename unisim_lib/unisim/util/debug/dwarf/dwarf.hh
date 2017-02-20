@@ -45,7 +45,6 @@
 #include <unisim/util/debug/data_object.hh>
 #include <unisim/util/debug/subprogram.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/kernel/logger/logger.hh>
 
 #include <unisim/util/debug/dwarf/fmt.hh>
 #include <unisim/util/debug/dwarf/version.hh>
@@ -85,14 +84,12 @@ namespace debug {
 namespace dwarf {
 
 using unisim::util::endian::endian_type;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::EndDebugWarning;
 
 template <class MEMORY_ADDR>
 class DWARF_Handler
 {
 public:
-	DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob, unisim::kernel::logger::Logger& logger, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
+	DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob, std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
 	~DWARF_Handler();
 
 	void SetOption(Option opt, const char *s);
@@ -168,7 +165,9 @@ public:
 	DWARF_RegisterNumberMapping *GetRegisterNumberMapping() const;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *GetMemoryInterface() const;
 
-	unisim::kernel::logger::Logger& GetLogger() const;
+	std::ostream& GetDebugInfoStream() const;
+	std::ostream& GetDebugWarningStream() const;
+	std::ostream& GetDebugErrorStream() const;
 private:
 	endian_type file_endianness;
 	endian_type arch_endianness;
@@ -204,7 +203,9 @@ private:
 	std::vector<DWARF_Pubs<MEMORY_ADDR> *> dw_pubtypes;                        // from section .debug_pubtypes
 	std::map<uint64_t, DWARF_LocListEntry<MEMORY_ADDR> * > dw_loc_list;        // location lists in section .debug_loc indexed by .debug_loc section offset
 
-	unisim::kernel::logger::Logger& logger;
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
 	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
 	std::string reg_num_mapping_filename;
 	bool verbose;

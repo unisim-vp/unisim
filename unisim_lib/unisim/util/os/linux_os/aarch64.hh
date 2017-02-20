@@ -60,13 +60,6 @@ namespace util {
 namespace os {
 namespace linux_os {
 
-  using unisim::kernel::logger::DebugInfo;
-  using unisim::kernel::logger::DebugWarning;
-  using unisim::kernel::logger::DebugError;
-  using unisim::kernel::logger::EndDebugInfo;
-  using unisim::kernel::logger::EndDebugWarning;
-  using unisim::kernel::logger::EndDebugError;
-
   // Register names
   static char const* const kAARCH64_x0  = "x0"; /* syscall arg#1 */
   static char const* const kAARCH64_x1  = "x1"; /* syscall arg#2, argc */

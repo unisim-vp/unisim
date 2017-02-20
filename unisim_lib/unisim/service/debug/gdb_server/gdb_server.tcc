@@ -218,7 +218,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 
 	gdb_arch_reg_num = 0;
 	
-	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser(logger);
+	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream());
 	unisim::util::xml::Node *root_node = parser->Parse(Object::GetSimulator()->SearchSharedDataFile(architecture_description_filename.c_str()));
 
 	delete parser;

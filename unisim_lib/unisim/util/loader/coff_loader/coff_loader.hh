@@ -41,7 +41,6 @@
 #include <unisim/service/interfaces/blob.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/kernel/logger/logger.hh>
 
 #include <iosfwd>
 #include <inttypes.h>
@@ -190,7 +189,7 @@ template <class MEMORY_ADDR>
 class CoffLoader
 {
 public:
-	CoffLoader(unisim::kernel::logger::Logger& logger, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = 0);
+	CoffLoader(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = 0);
 	virtual ~CoffLoader();
 
 	void SetOption(Option opt, MEMORY_ADDR addr);
@@ -320,8 +319,10 @@ private:
 		} x;
 	} file_auxent;
 
-	// Logger
-	unisim::kernel::logger::Logger& logger;
+	// Logging
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
 	
 	// Run-time parameters
 	std::string filename;

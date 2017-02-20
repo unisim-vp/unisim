@@ -35,7 +35,6 @@
 #ifndef __UNISIM_UTIL_LOADER_ELF_LOADER_ELF_LOADER_HH__
 #define __UNISIM_UTIL_LOADER_ELF_LOADER_ELF_LOADER_HH__
 
-#include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/loader/elf_loader/elf32.h>
 #include <unisim/util/loader/elf_loader/elf64.h>
 #include <unisim/util/debug/dwarf/dwarf.hh>
@@ -74,13 +73,13 @@ typedef enum
 	OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME,
 	OPT_DEBUG_DWARF
 } Option;
-	
+
 template <class MEMORY_ADDR, unsigned int ElfClass, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 class ElfLoaderImpl
 {
 public:
 	
-	ElfLoaderImpl(unisim::kernel::logger::Logger& _logger, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = 0);
+	ElfLoaderImpl(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = 0);
 	virtual ~ElfLoaderImpl();
 	
 	bool Load();
@@ -117,7 +116,9 @@ public:
 	
 	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
 private:
-	unisim::kernel::logger::Logger& logger;
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
 	std::string filename;
 	MEMORY_ADDR base_addr;
 	bool force_base_addr;

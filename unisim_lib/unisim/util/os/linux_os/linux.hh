@@ -37,7 +37,6 @@
 
 #include <unisim/util/debug/blob/blob.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/kernel/logger/logger.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
@@ -155,7 +154,7 @@ namespace linux_os {
       Linux& lin;
     };
 
-    Linux(unisim::kernel::logger::Logger& logger, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if, unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if);
+    Linux(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if, unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if);
     ~Linux();
 
     void  SetVerbose(bool verbose);
@@ -257,8 +256,10 @@ namespace linux_os {
     //          if the system has not been successfully loaded.
     unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const GetBlob() const { return blob_; }
 	
-    // Gets the supplied logger
-    unisim::kernel::logger::Logger& Logger() { return logger_; }
+    // Gets the supplied logging streams
+    std::ostream& DebugInfoStream() { return debug_info_stream; }
+    std::ostream& DebugWarningStream() { return debug_warning_stream; }
+    std::ostream& DebugErrorStream() { return debug_error_stream; }
 
     // Gets the entry_point_ of the loaded program
     ADDRESS_TYPE GetEntryPoint() const { return entry_point_; }
@@ -329,8 +330,10 @@ namespace linux_os {
     // DWARF dump parameters
     std::string dwarf_to_html_output_directory_;
     std::string dwarf_to_xml_output_filename_;
-    // logger stream
-    unisim::kernel::logger::Logger& logger_;
+    // logger streams
+    std::ostream& debug_info_stream;
+    std::ostream& debug_warning_stream;
+    std::ostream& debug_error_stream;
 
     // program termination and return status
     bool terminated_;
