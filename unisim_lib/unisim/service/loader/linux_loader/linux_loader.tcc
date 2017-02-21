@@ -55,63 +55,62 @@ using namespace std;
 using namespace unisim::kernel::logger;
 
 template<class T>
-LinuxLoader<T>::LinuxLoader(const char *name, Object *parent) :
-Object(name, parent),
-Client<Loader>(name, parent),
-Client<Blob<T> >(name, parent),
-Client<Memory<T> >(name, parent),
-Service<Loader>(name, parent),
-Service<Blob<T> >(name, parent),
-unisim::kernel::service::VariableBaseListener(),
-loader_import("loader_import", this),
-blob_import("blob_import", this),
-memory_import("memory_import", this),
-loader_export("loader_export", this),
-blob_export("blob_export", this),
-endianness(E_LITTLE_ENDIAN),
-stack_base(0x4000000UL),
-stack_size(0x800000UL),
-max_environ(0),
-memory_page_size(4096),
-argc(0),
-argv(),
-apply_host_environ(true),
-envc(0),
-envp(),
-target_envp(),
-blob(0),
-stack_blob(0),
-verbose(false),
-endianness_string("little-endian"),
-param_endian("endianness", this, endianness_string,
-		"The endianness of the binary loaded. Available values are:"
-		" little-endian and big-endian."),
-param_stack_base("stack-base", this, stack_base,
-		"The stack base address used for the load and execution of the "
-		"linux application"),
-param_stack_size("stack-size", this, stack_size,
-		"The stack size used for the load and execution of the linux "
-		"application. The top of the stack will be stack-base + stack-size."),
-param_max_environ("max-environ", this, max_environ,
-		"The maximum size of the program environment during its execution."),
-param_argc("argc", this, argc,
-		"Number of commands in the program execution line (usually at least one"
+LinuxLoader<T>::LinuxLoader(const char *name, Object *parent)
+  : Object(name, parent)
+  , Client<Loader>(name, parent)
+  , Client<Blob<T> >(name, parent)
+  , Client<Memory<T> >(name, parent)
+  , Service<Loader>(name, parent)
+  , Service<Blob<T> >(name, parent)
+  , loader_import("loader_import", this)
+  , blob_import("blob_import", this)
+  , memory_import("memory_import", this)
+  , loader_export("loader_export", this)
+  , blob_export("blob_export", this)
+  , endianness(E_LITTLE_ENDIAN)
+  , stack_base(0x4000000UL)
+  , stack_size(0x800000UL)
+  , max_environ(0)
+  , memory_page_size(4096)
+  , argc(0)
+  , argv()
+  , apply_host_environ(true)
+  , envc(0)
+  , envp()
+  , target_envp()
+  , blob(0)
+  , stack_blob(0)
+  , verbose(false)
+  , endianness_string("little-endian")
+  , param_endian("endianness", this, endianness_string
+  , 		"The endianness of the binary loaded. Available values are:"
+		" little-endian and big-endian.")
+  , param_stack_base("stack-base", this, stack_base
+  , 		"The stack base address used for the load and execution of the "
+		"linux application")
+  , param_stack_size("stack-size", this, stack_size
+  , 		"The stack size used for the load and execution of the linux "
+		"application. The top of the stack will be stack-base + stack-size.")
+  , param_max_environ("max-environ", this, max_environ
+  , 		"The maximum size of the program environment during its execution.")
+  , param_argc("argc", this, argc
+  , 		"Number of commands in the program execution line (usually at least one"
 		" which is the name of the program executed). The different tokens"
 		" can be set up with the parameters argv[<n>] where <n> can go up to"
-		" argc - 1."),
-param_argv(),
-param_apply_host_environ("apply-host-environ", this, apply_host_environ,
-		"Wether to apply the host environment on the target simulator or use"
-		" the provided envc and envp."),
-param_envc("envc", this, envc,
-		"Number of environment variables defined for the program execution."
+		" argc - 1.")
+  , param_argv()
+  , param_apply_host_environ("apply-host-environ", this, apply_host_environ
+  , 		"Wether to apply the host environment on the target simulator or use"
+		" the provided envc and envp.")
+  , param_envc("envc", this, envc
+  , 		"Number of environment variables defined for the program execution."
 		" The different variables can be set up with the parameters envp[<n>]"
-		" where <n> can go up to envc - 1."),
-param_envp(),
-param_memory_page_size("memory-page-size", this, memory_page_size,
-		"The memory page size to use."),
-param_verbose("verbose", this, verbose, "Display verbose information"),
-logger(*this)
+		" where <n> can go up to envc - 1.")
+  , param_envp()
+  , param_memory_page_size("memory-page-size", this, memory_page_size
+  , 		"The memory page size to use.")
+  , param_verbose("verbose", this, verbose, "Display verbose information")
+  , logger(*this)
 {
 	param_max_environ.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_argc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -129,9 +128,8 @@ logger(*this)
 						*(argv[i]), argv_desc.str().c_str()));
 		}
 	}
-	param_argc.AddListener(this);
-	param_argc.NotifyListeners();
-
+	SetupArgsAndEnvs();
+	
 	param_envc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	if ( envc )
 	{
@@ -147,8 +145,7 @@ logger(*this)
 						*(envp[i]), envp_desc.str().c_str()));
 		}
 	}
-	param_envc.AddListener(this);
-	param_envc.NotifyListeners();
+	SetupArgsAndEnvs();
 
 	loader_export.SetupDependsOn(memory_import);
 	loader_export.SetupDependsOn(loader_import);
@@ -274,7 +271,7 @@ LinuxLoader<T>::SetupLoad()
 template <class T>
 void
 LinuxLoader<T> ::
-DumpSegment(unisim::util::debug::blob::Segment<T> const &s, int indent)
+DumpSegment(unisim::util::blob::Segment<T> const &s, int indent)
 {
 	std::string s_indent_pre(indent + 1, '*');
 	std::stringstream ss_indent;
@@ -285,10 +282,10 @@ DumpSegment(unisim::util::debug::blob::Segment<T> const &s, int indent)
 	logger << "Type: ";
 	switch ( s.GetType() )
 	{
-		case unisim::util::debug::blob::Segment<T>::TY_LOADABLE:
+		case unisim::util::blob::Segment<T>::TY_LOADABLE:
 			logger << "Loadable ";
 			break;
-		case unisim::util::debug::blob::Segment<T>::TY_UNKNOWN:
+		case unisim::util::blob::Segment<T>::TY_UNKNOWN:
 		default:
 			logger << "Unknown  ";
 			break;
@@ -296,28 +293,28 @@ DumpSegment(unisim::util::debug::blob::Segment<T> const &s, int indent)
 	logger << " Attribute: ";
 	switch ( s.GetAttr() )
 	{
-		case unisim::util::debug::blob::Segment<T>::SA_NULL:
+		case unisim::util::blob::Segment<T>::SA_NULL:
 			logger << "NULL ";
 			break;
-		case unisim::util::debug::blob::Segment<T>::SA_R:
+		case unisim::util::blob::Segment<T>::SA_R:
 			logger << "R    ";
 			break;
-		case unisim::util::debug::blob::Segment<T>::SA_W:
+		case unisim::util::blob::Segment<T>::SA_W:
 			logger << "W    ";
 			break;
-		case unisim::util::debug::blob::Segment<T>::SA_X:
+		case unisim::util::blob::Segment<T>::SA_X:
 			logger << "X    ";
 			break;
-		case unisim::util::debug::blob::Segment<T>::SA_RW:
+		case unisim::util::blob::Segment<T>::SA_RW:
 			logger << "RW   ";
 			break;
-		case unisim::util::debug::blob::Segment<T>::SA_RX:
+		case unisim::util::blob::Segment<T>::SA_RX:
 			logger << "RX   ";
 			break;
-		case unisim::util::debug::blob::Segment<T>::SA_WX:
+		case unisim::util::blob::Segment<T>::SA_WX:
 			logger << "WX   ";
 			break;
-		case unisim::util::debug::blob::Segment<T>::SA_RWX:
+		case unisim::util::blob::Segment<T>::SA_RWX:
 			logger << "RWX  ";
 			break;
 		default:
@@ -333,7 +330,7 @@ DumpSegment(unisim::util::debug::blob::Segment<T> const &s, int indent)
 template <class T>
 void
 LinuxLoader<T> ::
-DumpSection(unisim::util::debug::blob::Section<T> const &s, int indent)
+DumpSection(unisim::util::blob::Section<T> const &s, int indent)
 {
 	std::string s_indent_pre(indent + 1, '-');
 	std::stringstream ss_indent;
@@ -345,50 +342,50 @@ DumpSection(unisim::util::debug::blob::Section<T> const &s, int indent)
 	logger << s_indent << "  Type: ";
 	switch ( s.GetType() )
 	{
-		case unisim::util::debug::blob::Section<T>::TY_UNKNOWN:
+		case unisim::util::blob::Section<T>::TY_UNKNOWN:
 			logger << "Unknown ";
 			break;
-		case unisim::util::debug::blob::Section<T>::TY_NULL:
+		case unisim::util::blob::Section<T>::TY_NULL:
 			logger << "Null    ";
 			break;
-		case unisim::util::debug::blob::Section<T>::TY_PROGBITS:
+		case unisim::util::blob::Section<T>::TY_PROGBITS:
 			logger << "Progbits";
 			break;
-		case unisim::util::debug::blob::Section<T>::TY_NOBITS:
+		case unisim::util::blob::Section<T>::TY_NOBITS:
 			logger << "Nobits  ";
 			break;
-		case unisim::util::debug::blob::Section<T>::TY_STAB:
+		case unisim::util::blob::Section<T>::TY_STAB:
 			logger << "Stab    ";
 			break;
-		case unisim::util::debug::blob::Section<T>::TY_STRTAB:
+		case unisim::util::blob::Section<T>::TY_STRTAB:
 			logger << "Strtab  ";
 			break;
 	}
 	logger << "  Attribute: ";
 	switch ( s.GetAttr() )
 	{
-		case unisim::util::debug::blob::Section<T>::SA_NULL:
+		case unisim::util::blob::Section<T>::SA_NULL:
 			logger << "(None)";
 			break;
-		case unisim::util::debug::blob::Section<T>::SA_A:
+		case unisim::util::blob::Section<T>::SA_A:
 			logger << "A     ";
 			break;
-		case unisim::util::debug::blob::Section<T>::SA_W:
+		case unisim::util::blob::Section<T>::SA_W:
 			logger << "W     ";
 			break;
-		case unisim::util::debug::blob::Section<T>::SA_AW:
+		case unisim::util::blob::Section<T>::SA_AW:
 			logger << "AW    ";
 			break;
-		case unisim::util::debug::blob::Section<T>::SA_X:
+		case unisim::util::blob::Section<T>::SA_X:
 			logger << "X     ";
 			break;
-		case unisim::util::debug::blob::Section<T>::SA_AX:
+		case unisim::util::blob::Section<T>::SA_AX:
 			logger << "AX    ";
 			break;
-		case unisim::util::debug::blob::Section<T>::SA_WX:
+		case unisim::util::blob::Section<T>::SA_WX:
 			logger << "WX    ";
 			break;
-		case unisim::util::debug::blob::Section<T>::SA_AWX:
+		case unisim::util::blob::Section<T>::SA_AWX:
 			logger << "AWX   ";
 			break;
 	}
@@ -405,14 +402,14 @@ DumpSection(unisim::util::debug::blob::Section<T> const &s, int indent)
 template <class T>
 void
 LinuxLoader<T> ::
-DumpBlob(unisim::util::debug::blob::Blob<T> const &b, int indent)
+DumpBlob(unisim::util::blob::Blob<T> const &b, int indent)
 {
 	std::string s_indent_pre(indent + 1, '+');
 	std::stringstream ss_indent;
 	ss_indent << s_indent_pre << " ";
 	std::string s_indent(ss_indent.str().c_str());
 
-	typename unisim::util::debug::blob::Blob<T>::Capability cap =
+	typename unisim::util::blob::Blob<T>::Capability cap =
 		b.GetCapability();
 	const char *filename = b.GetFilename();
 	T entry = b.GetEntryPoint();
@@ -427,28 +424,28 @@ DumpBlob(unisim::util::debug::blob::Blob<T> const &b, int indent)
 	logger << s_indent << "Capabilities: ";
 	std::stringstream ss_cap;
 	bool first = true;
-	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_FILENAME ) { first = false; ss_cap << "Filename";}
-	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_ENTRY_POINT ) 
+	if ( cap & unisim::util::blob::Blob<T>::CAP_FILENAME ) { first = false; ss_cap << "Filename";}
+	if ( cap & unisim::util::blob::Blob<T>::CAP_ENTRY_POINT ) 
 	{
 		if ( !first ) ss_cap << "|";
 		first = false; ss_cap << "EntryPoint";
 	}
-	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_ARCHITECTURE )
+	if ( cap & unisim::util::blob::Blob<T>::CAP_ARCHITECTURE )
 	{
 		if ( !first ) ss_cap << "|";
 		first = false; ss_cap << "Architecture";
 	}
-	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_STACK_BASE )
+	if ( cap & unisim::util::blob::Blob<T>::CAP_STACK_BASE )
 	{
 		if ( !first ) ss_cap << "|";
 		first = false; ss_cap << "StackBase";
 	}
-	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_ENDIAN )
+	if ( cap & unisim::util::blob::Blob<T>::CAP_ENDIAN )
 	{
 		if ( !first ) ss_cap << "|";
 		first = false; ss_cap << "Endian";
 	}
-	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_ADDRESS_SIZE )
+	if ( cap & unisim::util::blob::Blob<T>::CAP_ADDRESS_SIZE )
 	{
 		if ( !first ) ss_cap << "|";
 		first = false; ss_cap << "AddressSize";
@@ -457,40 +454,40 @@ DumpBlob(unisim::util::debug::blob::Blob<T> const &b, int indent)
 		ss_cap << "(Default)";
 	logger << ss_cap.str() << std::endl;
 	
-	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_FILENAME )
+	if ( cap & unisim::util::blob::Blob<T>::CAP_FILENAME )
 		logger << s_indent << "Filename: "
 			<< b.GetFilename() << std::endl;
-	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_ENTRY_POINT ) 
+	if ( cap & unisim::util::blob::Blob<T>::CAP_ENTRY_POINT ) 
 		logger << s_indent << "Entry point: 0x"
 			<< std::hex << b.GetEntryPoint() << std::dec << std::endl;
-	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_ARCHITECTURE )
+	if ( cap & unisim::util::blob::Blob<T>::CAP_ARCHITECTURE )
 		logger << s_indent << "Architecture: "
 			<< b.GetArchitecture() << std::endl;
-	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_STACK_BASE )
+	if ( cap & unisim::util::blob::Blob<T>::CAP_STACK_BASE )
 		logger << s_indent << "Stack base: "
 			<< b.GetStackBase() << std::endl;
-	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_ENDIAN )
+	if ( cap & unisim::util::blob::Blob<T>::CAP_ENDIAN )
 		logger << s_indent << "Endian: "
 			<< (b.GetEndian() == unisim::util::endian::E_LITTLE_ENDIAN ?
 					"Little endian" : "Big endian") << std::endl;
 
-	const std::vector<const unisim::util::debug::blob::Segment<T> *> &segments =
+	const std::vector<const unisim::util::blob::Segment<T> *> &segments =
 		b.GetSegments();
-	for ( typename std::vector<const unisim::util::debug::blob::Segment<T> *>::const_iterator it = segments.begin();
+	for ( typename std::vector<const unisim::util::blob::Segment<T> *>::const_iterator it = segments.begin();
 			it != segments.end();
 			++it )
 		DumpSegment(*(*it), indent);
 
-	const std::vector<const unisim::util::debug::blob::Section<T> *> &sections =
+	const std::vector<const unisim::util::blob::Section<T> *> &sections =
 		b.GetSections();
-	for ( typename std::vector<const unisim::util::debug::blob::Section<T> *>::const_iterator it = sections.begin();
+	for ( typename std::vector<const unisim::util::blob::Section<T> *>::const_iterator it = sections.begin();
 			it != sections.end();
 			it++ )
 		DumpSection(*(*it), indent);
 
-	const std::vector<const unisim::util::debug::blob::Blob<T> *> &blobs =
+	const std::vector<const unisim::util::blob::Blob<T> *> &blobs =
 		b.GetBlobs();
-	for ( typename std::vector<const unisim::util::debug::blob::Blob<T> *>::const_iterator it = blobs.begin();
+	for ( typename std::vector<const unisim::util::blob::Blob<T> *>::const_iterator it = blobs.begin();
 			it != blobs.end();
 			it++ )
 		DumpBlob(*(*it), indent + 1);
@@ -506,7 +503,7 @@ LinuxLoader<T>::SetupBlob()
 {
 	if(blob) return true;
 	if(!loader_import) return false;
-	const unisim::util::debug::blob::Blob<T> *loader_blob = blob_import->GetBlob();
+	const unisim::util::blob::Blob<T> *loader_blob = blob_import->GetBlob();
 	if(!loader_blob) return false;
 
 	DumpBlob(*loader_blob, 0);
@@ -521,15 +518,15 @@ LinuxLoader<T>::SetupBlob()
 	T elf_brk = 0;
 	T num_segments = 0;
 
-	const std::vector<const unisim::util::debug::blob::Segment<T> *> &segments =
+	const std::vector<const unisim::util::blob::Segment<T> *> &segments =
 		loader_blob->GetSegments();
 	num_segments = segments.size();
-	for ( typename std::vector<const unisim::util::debug::blob::Segment<T> *>::const_iterator it = segments.begin();
+	for ( typename std::vector<const unisim::util::blob::Segment<T> *>::const_iterator it = segments.begin();
 			it != segments.end();
 			it++ )
 	{
-		typename unisim::util::debug::blob::Segment<T>::Type type = (*it)->GetType();
-		if ( type != unisim::util::debug::blob::Segment<T>::TY_LOADABLE )
+		typename unisim::util::blob::Segment<T>::Type type = (*it)->GetType();
+		if ( type != unisim::util::blob::Segment<T>::TY_LOADABLE )
 			continue;
 
 		T segment_addr = (*it)->GetAddr();
@@ -549,7 +546,7 @@ LinuxLoader<T>::SetupBlob()
 		if ( start_data < segment_addr )
 			start_data = segment_addr;
 
-		if ( (*it)->GetAttr() & unisim::util::debug::blob::Segment<T>::SA_X )
+		if ( (*it)->GetAttr() & unisim::util::blob::Segment<T>::SA_X )
 		{
 			if ( end_code < segment_end_addr )
 				end_code = segment_end_addr;
@@ -747,16 +744,16 @@ LinuxLoader<T>::SetupBlob()
 		memcpy(addr, &value, sizeof(argc));
 	}
 	
-	stack_blob = new unisim::util::debug::blob::Blob<T>();
+	stack_blob = new unisim::util::blob::Blob<T>();
 	stack_blob->Catch();
 	
 	stack_blob->SetEndian(endianness);
 	
 	stack_blob->SetStackBase(stack_base + sp);
 
-	unisim::util::debug::blob::Segment<T> *stack_segment = new unisim::util::debug::blob::Segment<T>(
-			unisim::util::debug::blob::Segment<T>::TY_LOADABLE,
-			unisim::util::debug::blob::Segment<T>::SA_RW,
+	unisim::util::blob::Segment<T> *stack_segment = new unisim::util::blob::Segment<T>(
+			unisim::util::blob::Segment<T>::TY_LOADABLE,
+			unisim::util::blob::Segment<T>::SA_RW,
 			0,
 			stack_base,
 			stack_size,
@@ -764,7 +761,7 @@ LinuxLoader<T>::SetupBlob()
 	
 	stack_blob->AddSegment(stack_segment);
 	
-	blob = new unisim::util::debug::blob::Blob<T>();
+	blob = new unisim::util::blob::Blob<T>();
 	blob->Catch();
 	blob->AddBlob(loader_blob);
 	blob->AddBlob(stack_blob);
@@ -805,10 +802,10 @@ LoadStack()
 {
 	if(!memory_import) return false;
 	if(!stack_blob) return false;
-	const std::vector<const unisim::util::debug::blob::Segment<T> *> &segments =
+	const std::vector<const unisim::util::blob::Segment<T> *> &segments =
 		stack_blob->GetSegments();
 
-	for ( typename std::vector<const unisim::util::debug::blob::Segment<T> *>::const_iterator it = segments.begin();
+	for ( typename std::vector<const unisim::util::blob::Segment<T> *>::const_iterator it = segments.begin();
 			it != segments.end();
 			it++ )
 	{
@@ -833,7 +830,7 @@ LoadStack()
 }
 
 template<class T>
-const typename unisim::util::debug::blob::Blob<T> *
+const typename unisim::util::blob::Blob<T> *
 LinuxLoader<T>::
 GetBlob()
 {
@@ -855,8 +852,7 @@ Log(T addr, const uint8_t *value, uint32_t size)
 
 template<class T>
 void
-LinuxLoader<T>::
-VariableBaseNotify(const unisim::kernel::service::VariableBase *var)
+LinuxLoader<T>::SetupArgsAndEnvs()
 {
 	if ( argc != argv.size() )
 	{

@@ -37,7 +37,6 @@
 
 #include <unisim/util/debug/dwarf/fwd.hh>
 #include <unisim/util/debug/stmt.hh>
-#include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/debug/data_object.hh>
 #include <unisim/util/debug/subprogram.hh>
 #include <list>
@@ -690,6 +689,7 @@ public:
 	void BuildStatementMatrix(std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix);
 	bool HasOverlap(MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByAddrRange(unsigned int dw_tag, MEMORY_ADDR addr, MEMORY_ADDR length) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindDIEByName(unsigned int dw_tag, const char *name, bool external) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindParentDIE(unsigned int dw_tag) const;
 	
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObject(const char *name) const;
@@ -729,6 +729,7 @@ public:
 	bool GetArrayElementEncoding(uint8_t& encoding) const;
 	unsigned int GetSubRangeCount() const;
 	const DWARF_DIE<MEMORY_ADDR> *GetAbstractOrigin() const;
+	const DWARF_DIE<MEMORY_ADDR> *GetSpecification() const;
 	
 	const unisim::util::debug::Type *BuildType(bool following_pointer = false, unsigned int array_dim = 0) const;
 	const unisim::util::debug::Type *BuildTypeOf() const;
@@ -756,7 +757,9 @@ private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
 	DWARF_DIE<MEMORY_ADDR> *dw_parent_die;
-	unisim::kernel::logger::Logger& logger;
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
 	bool debug;
 	uint64_t offset;
 	unsigned int id;

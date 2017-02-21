@@ -52,18 +52,18 @@ namespace os {
 namespace linux_os {
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-class Linux :
-    public unisim::kernel::service::Service<
-      unisim::service::interfaces::LinuxOS>,
-    public unisim::kernel::service::Service<
-      unisim::service::interfaces::Blob<ADDRESS_TYPE> >,
-	public unisim::kernel::service::Client<
-      unisim::service::interfaces::Memory<ADDRESS_TYPE> >,
-    public unisim::kernel::service::Client<
-      unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> >,
-    public unisim::kernel::service::Client<
-      unisim::service::interfaces::Registers> {
+class Linux
+  : public unisim::kernel::service::Service< unisim::service::interfaces::LinuxOS >
+  , public unisim::kernel::service::Service< unisim::service::interfaces::Blob<ADDRESS_TYPE> >
+  , public unisim::kernel::service::Client<  unisim::service::interfaces::Memory<ADDRESS_TYPE> >
+  , public unisim::kernel::service::Client<  unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> >
+  , public unisim::kernel::service::Client<  unisim::service::interfaces::Registers>
+{
  public:
+  
+  typedef unisim::util::os::linux_os::Linux<ADDRESS_TYPE, PARAMETER_TYPE> LinuxImpl;
+  typedef typename LinuxImpl::TargetSystem TargetSystem;
+  
   /* Exported services */
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::LinuxOS>
       linux_os_export_;
@@ -93,10 +93,11 @@ class Linux :
   virtual void ExecuteSystemCall(int id);
   //virtual bool Load();
 
-  virtual const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *GetBlob() const;
-
+  virtual const unisim::util::blob::Blob<ADDRESS_TYPE> *GetBlob() const;
   
- private:
+  virtual void SetupTargetSystem() = 0;
+  
+protected:
   /* the logger and its verbose option */
   unisim::kernel::logger::Logger logger_;
   bool verbose_;
@@ -121,10 +122,8 @@ class Linux :
   unisim::kernel::service::Parameter<std::string> param_stderr_pipe_filename;
   
   /* the linux library */
-  unisim::util::os::linux_os::Linux<ADDRESS_TYPE, PARAMETER_TYPE> *linuxlib_;
+  LinuxImpl* linuxlib_;
 
-  std::string system_;
-  unisim::kernel::service::Parameter<std::string> param_system_;
   unisim::util::endian::endian_type endianness_;
   unisim::kernel::service::Parameter<unisim::util::endian::endian_type> param_endianness_;
   ADDRESS_TYPE memory_page_size_;

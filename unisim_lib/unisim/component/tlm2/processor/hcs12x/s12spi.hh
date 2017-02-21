@@ -58,6 +58,7 @@
 #include <tlm_utils/tlm_quantumkeeper.h>
 #include <tlm_utils/peq_with_get.h>
 #include "tlm_utils/simple_target_socket.h"
+#include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/multi_passthrough_initiator_socket.h"
 
 #include <unisim/kernel/service/service.hh>
@@ -70,7 +71,7 @@
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
 
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 #include "unisim/util/debug/simple_register.hh"
 #include "unisim/util/endian/endian.hh"
 
@@ -106,7 +107,7 @@ using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::TrapReporting;
 
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::Host2BigEndian;
@@ -154,6 +155,8 @@ public:
 	static const uint8_t RESERVED2	= 0x06; // 1 bytes
 	static const uint8_t RESERVED3	= 0x07; // 1 bytes
 
+	static const unsigned int MEMORY_MAP_SIZE = 8;
+
 	enum STATUS {IDLE, ACTIVE};
 
 	ServiceImport<TrapReporting > trap_reporting_import;
@@ -167,6 +170,9 @@ public:
 
 	tlm_utils::simple_target_socket<S12SPI> slave_socket;
 	tlm_utils::simple_target_socket<S12SPI> bus_clock_socket;
+
+	tlm_utils::simple_initiator_socket<S12SPI> tx_socket;
+	tlm_utils::simple_target_socket<S12SPI> rx_socket;
 
 	S12SPI(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12SPI();
@@ -186,6 +192,8 @@ public:
     virtual void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
 
     void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
+
+	virtual void rx_b_transport(tlm::tlm_generic_payload&, sc_core::sc_time& t);
 
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
@@ -218,6 +226,10 @@ public:
 	 */
     virtual Register *GetRegister(const char *name);
 
+    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner ) {
+    	// TODO:
+    }
+
 	//=====================================================================
 	//=             registers setters and getters                         =
 	//=====================================================================
@@ -235,6 +247,8 @@ private:
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
 
 	XINT_Payload *xint_payload;
+
+	PayloadFabric<tlm::tlm_generic_payload> spi_payload_fabric;
 
 	double	bus_cycle_time_int;
 	Parameter<double>	param_bus_cycle_time_int;
@@ -254,6 +268,11 @@ private:
 
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
+
+	bool	tx_debug_enabled;
+	Parameter<bool>	param_tx_debug_enabled;
+	bool	rx_debug_enabled;
+	Parameter<bool>	param_rx_debug_enabled;
 
 	// Registers map
 	map<string, Register *> registers_registry;
@@ -285,9 +304,11 @@ private:
 	uint8_t spicr2_register;	// 1 byte
 	uint8_t spibr_register; // 1 byte
 	uint8_t spisr_register; // 1 byte
+
 	uint8_t spidr_register; // 1 bytes
 
 	uint8_t /*spidr_tx_buffer,*/ spidr_rx_buffer;;
+	sc_event rx_buffer_event;
 
 	inline void ComputeBaudRate();
 
@@ -344,6 +365,8 @@ private:
 	}
 
 	inline bool isLSBFirst() { return ((spicr1_register & 0x01) != 0); }
+
+
 	inline bool isOutputBufferEnabled() { return ((spicr2_register & 0x08) != 0); }
 	inline bool isClkStopInWait() { return ((spicr2_register & 0x02) != 0); }
 
@@ -433,6 +456,7 @@ private:
 		}
 	}
 
+	inline void setSSLow(bool val) {  ss = val; }
 	inline bool isSSLow() { return (!ss); }
 
 	inline void startTransmission() {
@@ -460,7 +484,7 @@ private:
 	std::queue<uint8_t> telnet_tx_fifo;
 	sc_event telnet_rx_event, telnet_tx_event;
 
-	inline void add(std::queue<uint8_t> &buffer_queue, uint8_t data, sc_event &event) {
+	inline void add(std::queue<uint8_t> &buffer_queue, const uint8_t& data, sc_event &event) {
 	    buffer_queue.push(data);
 	    event.notify();
 	}
@@ -487,7 +511,7 @@ private:
 	    return (buffer_queue.size());
 	}
 
-	inline void TelnetSendString(const char *msg) {
+	inline void TelnetSendString(const unsigned char *msg) {
 
 		while (*msg != 0)
 			add(telnet_tx_fifo, *msg++, telnet_tx_event) ;

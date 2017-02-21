@@ -43,7 +43,7 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <string>
 #include <vector>
-#include <unisim/util/debug/netstub.hh>
+#include <unisim/util/netstub/netstub.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
@@ -81,7 +81,7 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ParameterArray;
-using unisim::util::debug::NetStub;
+using unisim::util::netstub::NetStub;
 using unisim::service::interfaces::Synchronizable;
 using unisim::service::interfaces::Registers;
 
@@ -141,7 +141,8 @@ public:
 	virtual bool WriteMemory(ADDRESS physical_addr, const void *buffer, uint32_t size);
 	virtual bool ReadMemory(ADDRESS physical_addr, void *buffer, uint32_t size);
 	virtual void ReportMemoryAccess(typename unisim::util::debug::MemoryAccessType mat, typename unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
-	virtual void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr);
+	virtual void ReportCommitInstruction(ADDRESS addr);
+	virtual void ReportFetchInstruction(ADDRESS next_addr);
 	virtual void Trap();
 private:
 	BreakpointRegistry<ADDRESS> breakpoint_registry;

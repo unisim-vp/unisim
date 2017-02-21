@@ -134,8 +134,8 @@ public:
 
 	void Reset();
 
-	virtual void busWrite(MMC_DATA *buffer);
-	void busRead(MMC_DATA *buffer);
+	inline void busWrite(MMC_DATA *buffer);
+	inline void busRead(MMC_DATA *buffer);
 
 	//================================================================
     //=                    tlm2 Interface                            =

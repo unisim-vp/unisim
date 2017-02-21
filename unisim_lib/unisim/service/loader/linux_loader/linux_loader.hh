@@ -67,13 +67,12 @@ using unisim::kernel::service::ParameterArray;
 using unisim::kernel::logger::Logger;
 
 template<class T>
-class LinuxLoader :
-public Client<Loader>,
-public Client<Blob<T> >,
-public Client<Memory<T> >,
-public Service<Loader>,
-public Service<Blob<T> >,
-public unisim::kernel::service::VariableBaseListener
+class LinuxLoader
+  : public Client<Loader>
+  , public Client<Blob<T> >
+  , public Client<Memory<T> >
+  , public Service<Loader>
+  , public Service<Blob<T> >
 {
 public:
 	/* Import of the different services */
@@ -96,7 +95,7 @@ public:
 
 	/* Service interface methods */
 	virtual bool Load();
-	virtual const unisim::util::debug::blob::Blob<T> *GetBlob();
+	virtual const unisim::util::blob::Blob<T> *GetBlob();
 
 protected:
 	endian_type endianness;
@@ -110,8 +109,8 @@ protected:
 	unsigned int envc;
 	std::vector<std::string *> envp;
 	std::vector<std::string *> target_envp;
-	unisim::util::debug::blob::Blob<T> *blob;
-	unisim::util::debug::blob::Blob<T> *stack_blob;
+	unisim::util::blob::Blob<T> *blob;
+	unisim::util::blob::Blob<T> *stack_blob;
 	
 	//T stack_address;
 	//T arg_address;
@@ -122,9 +121,9 @@ private:
 	bool LoadStack();
 	bool SetupLoad();
 	bool SetupBlob();
-	void DumpBlob(unisim::util::debug::blob::Blob<T> const &, int);
-	void DumpSection(unisim::util::debug::blob::Section<T> const &, int);
-	void DumpSegment(unisim::util::debug::blob::Segment<T> const &, int);
+	void DumpBlob(unisim::util::blob::Blob<T> const &, int);
+	void DumpSection(unisim::util::blob::Section<T> const &, int);
+	void DumpSegment(unisim::util::blob::Segment<T> const &, int);
 	
 	static const int arch_size = sizeof(uint32_t); // this works for 32 bits which is the case of arm and powerpc
 
@@ -133,19 +132,31 @@ private:
 	Parameter<T> param_stack_base;
 	Parameter<T> param_stack_size;
 	Parameter<T> param_max_environ;
-	Parameter<unsigned int> param_argc;
+	struct ArgsAndEnvsParam : public Parameter<unsigned int>
+	{
+		ArgsAndEnvsParam(char const* name, LinuxLoader* _linux_loader, unsigned int& var, const char *description)
+		  : Parameter<unsigned int>(name, _linux_loader, var, description), linux_loader(*_linux_loader)
+		{}
+		void Set( unsigned int const& value ) {
+			Parameter<unsigned int>::Set( value );
+			linux_loader.SetupArgsAndEnvs();
+		}
+		LinuxLoader& linux_loader;
+	};
+	
+	ArgsAndEnvsParam param_argc;
 	std::vector<Parameter<string> *> param_argv;
 	Parameter<bool> param_apply_host_environ;
-	Parameter<unsigned int> param_envc;
+	ArgsAndEnvsParam param_envc;
 	std::vector<Parameter<string> *> param_envp;
-    Parameter<T> param_memory_page_size;
+	Parameter<T> param_memory_page_size;
 
 	Parameter<bool> param_verbose;
 	Logger logger;
 
 	void Log(T addr, const uint8_t *value, uint32_t size);
 
-	virtual void VariableBaseNotify(const unisim::kernel::service::VariableBase *var);
+	void SetupArgsAndEnvs();
 
 	// auxiliary table symbols
 	static const T AT_NULL = 0;

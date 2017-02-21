@@ -65,10 +65,12 @@ using unisim::component::cxx::processor::hcs12x::XB::XbModes;
  
 }
 
-action {void} execute({CPU *} {cpu}) {
+action {uint8_t} execute({CPU *} {cpu}) {
 	std::cerr << "Unknown instruction" << std::endl;
 
 	cpu->Stop(-1);
+	
+	return getCycles();
 }
 
 action {string} disasm({ostream&} {sink}) {
@@ -86,7 +88,7 @@ action {void} post_execute({ostream&} {sink}) {
 //	sink << "asm(\"NOP\");\n";
 }
 
-action {uint8_t} getCycles () {
+action {inline uint8_t} getCycles () {
 /*
  * if (indexed_addressing) then 
  *   return XbModes::GetIDXCycles(xb->getXbMode(), <idx_cyles>, <idx1_cyles>, <idx2_cyles>, <idxd_ind_cyles>, <idx2_ind_cyles>);

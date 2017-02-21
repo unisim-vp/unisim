@@ -39,7 +39,7 @@
 typedef SimConfigFPUWoCacheDebug SIM_CONFIG;
 typedef Simulator<SIM_CONFIG> SIMULATOR;
 
-int main(int argc, char *argv[])
+int sc_main(int argc, char *argv[])
 {
 #if defined(WIN32) || defined(WIN64)
 	// Loads the winsock2 dll

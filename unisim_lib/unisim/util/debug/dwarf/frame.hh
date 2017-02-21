@@ -36,7 +36,6 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_FRAME_HH__
 
 #include <unisim/util/debug/dwarf/fwd.hh>
-#include <unisim/kernel/logger/logger.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/util/endian/endian.hh>
@@ -48,7 +47,21 @@ namespace debug {
 namespace dwarf {
 
 template <class MEMORY_ADDR>
-std::ostream& operator << (std::ostream& os, const DWARF_Frame<MEMORY_ADDR>& dw_reg_set);
+std::ostream& operator << (std::ostream& os, const DWARF_RegSet<MEMORY_ADDR>& dw_reg_set);
+
+template <class MEMORY_ADDR>
+class DWARF_RegSet
+{
+public:
+	DWARF_RegSet();
+	void UndefRegister(unsigned int reg_num);
+	bool ReadRegister(unsigned int reg_num, MEMORY_ADDR& reg_value) const;
+	void WriteRegister(unsigned int reg_num, MEMORY_ADDR value);
+private:
+	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_RegSet<MEMORY_ADDR>& dw_reg_set);
+	
+	std::map<unsigned int, MEMORY_ADDR> reg_set;
+};
 
 template <class MEMORY_ADDR>
 class DWARF_Frame
@@ -62,13 +75,13 @@ public:
 	bool ComputeCFA(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, const DWARF_Frame<MEMORY_ADDR> *next_frame);
 	bool Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, const DWARF_Frame<MEMORY_ADDR> *next_frame, unsigned int dw_ret_addr_reg_num);
 	MEMORY_ADDR ReadCFA() const;
-	void UndefRegister(unsigned int reg_num);
+// 	void UndefRegister(unsigned int reg_num);
 	bool ReadRegister(unsigned int reg_num, MEMORY_ADDR& reg_value) const;
-	void WriteRegister(unsigned int reg_num, const MEMORY_ADDR value);
+// 	void WriteRegister(unsigned int reg_num, const MEMORY_ADDR value);
 	bool ReadAddrFromMemory(MEMORY_ADDR addr, MEMORY_ADDR& read_addr, unsigned int read_size) const;
 	bool GetPC(MEMORY_ADDR& pc_value) const;
-	
-	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_Frame<MEMORY_ADDR>& dw_reg_set);
+	const DWARF_RegSet<MEMORY_ADDR>& GetRegSet() const;
+
 private:
 	const DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	unsigned int sp_reg_num;
@@ -82,8 +95,8 @@ private:
 	MEMORY_ADDR pc;
 	MEMORY_ADDR cfa;
 	std::set<unsigned int> reg_num_set;
-	std::map<unsigned int, MEMORY_ADDR> reg_set;
-	
+	//std::map<unsigned int, MEMORY_ADDR> reg_set;
+	DWARF_RegSet<MEMORY_ADDR> dw_reg_set;
 };
 
 } // end of namespace dwarf

@@ -48,13 +48,11 @@
 #include "unisim/service/interfaces/registers.hh"
 // #include "unisim/service/os/linux_os/linux_os_exception.hh"
 #include "unisim/util/endian/endian.hh"
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 #include "unisim/util/likely/likely.hh"
 
 #include "unisim/service/os/linux_os/linux.hh"
 #include "unisim/util/os/linux_os/linux.hh"
-#include "unisim/util/os/linux_os/arm.hh"
-#include "unisim/util/os/linux_os/ppc.hh"
 
 #define LOCATION 	" - location = " << __FUNCTION__ << ":unisim/service/os/linux_os/linux_os.tcc:" << __LINE__
 
@@ -75,112 +73,110 @@ using unisim::kernel::logger::EndDebug;
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::
 Linux(const char *name, unisim::kernel::service::Object *parent)
-    : unisim::kernel::service::Object(name, parent)
-    , unisim::kernel::service::Service<unisim::service::interfaces::LinuxOS>(
-        name, parent)
-    , unisim::kernel::service::Service<unisim::service::interfaces::Blob<ADDRESS_TYPE> >(
-        name, parent)
-    , unisim::kernel::service::Client<
-      unisim::service::interfaces::Memory<ADDRESS_TYPE> >(name, parent)
-    , unisim::kernel::service::Client<
-      unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> >(name, parent)
-    , unisim::kernel::service::Client<unisim::service::interfaces::Registers>(
-        name, parent)
-    , linux_os_export_("linux-os-export", this)
-    , blob_export_("blob-export", this)
-    , memory_import_("memory-import", this)
-    , memory_injection_import_("memory-injection-import", this)
-    , registers_import_("registers-import", this)
-    , logger_(*this)
-    , verbose_(false)
-    , param_verbose_("verbose", this, verbose_)
-    , parse_dwarf_(false)
-	, debug_dwarf_(false)
-    , dwarf_to_html_output_directory_()
-    , dwarf_to_xml_output_filename_()
-    , param_parse_dwarf_("parse-dwarf", this, parse_dwarf_)
-	, param_debug_dwarf_("debug-dwarf", this, debug_dwarf_)
-    , param_dwarf_to_html_output_directory_("dwarf-to-html-output-directory", this, dwarf_to_html_output_directory_)
-    , param_dwarf_to_xml_output_filename_("dwarf-to-xml-output-filename", this, dwarf_to_xml_output_filename_)
-    , stdin_pipe_filename()
-    , stdout_pipe_filename()
-    , stderr_pipe_filename()
-    , param_stdin_pipe_filename("stdin-pipe-filename", this, stdin_pipe_filename, "stdin pipe filename")
-    , param_stdout_pipe_filename("stdout-pipe-filename", this, stdout_pipe_filename, "stdout pipe filename")
-    , param_stderr_pipe_filename("stderr-pipe-filename", this, stderr_pipe_filename, "stderr pipe filename")
-    , linuxlib_(0)
-    , system_("")
-    , param_system_("system", this, system_, "Emulated system architecture "
-                   "available values are \"arm\", \"arm-eabi\" and \"powerpc\"")
-    , endianness_(unisim::util::endian::E_LITTLE_ENDIAN)
-    , param_endianness_("endianness", this, endianness_,
-                   "The endianness of the binary loaded. Available values are:"
-                   " little-endian and big-endian.")
-    , memory_page_size_(4096)
-    , param_memory_page_size_("memory-page-size", this, memory_page_size_)
-    , stack_base_(0x4000000UL)
-    , param_stack_base_("stack-base", this, stack_base_,
-                        "The stack base address used for the load and execution"
-                        " of the linux application")
-    , binary_()
-    , param_binary_("binary", this, binary_,
-                    "The binary to execute on the target simulator. Usually it"
-                    " is the same value than the argv[1] parameter.")
-    , argc_(0)
-    , param_argc_("argc", this, argc_,
-                  "Number of commands in the program execution line (usually at"
-                  " least one which is the name of the program executed). The"
-                  " different tokens can be set up with the parameters"
-                  " argv[<n>] where <n> can go up to argc - 1.")
-    , argv_()
-    , param_argv_()
-    , apply_host_environment_(false)
-    , param_apply_host_environment_("apply-host-environment", this,
-                                    apply_host_environment_,
-                                    "Wether to apply the host environment on"
-                                    " the target simulator or use the provided"
-                                    " envc and envp.")
-    , envc_(0)
-    , param_envc_("envc", this, envc_,
-                  "Number of environment variables defined for the program"
-                  " execution. The different variables can be set up with the"
-                  " parameters envp[<n>] where <n> can go up to envc - 1.")
-    , envp_()
-    , param_envp_()
-    , utsname_sysname_("Linux")
-    , param_utsname_sysname_("utsname-sysname", this, utsname_sysname_,
-                            "The value that the uname system call should"
-                            " return. As this service is providing linux"
-                            " emulation supoort its value should be 'Linux', so"
-                            " you should not modify it.")
-    , utsname_nodename_("localhost")
-    , param_utsname_nodename_("utsname-nodename", this, utsname_nodename_,
-                             "The network node hostname that the uname system"
-                             " call should return. Default value is localhost,"
-                             " but you could write whatever name you want.")
-    , utsname_release_("2.6.27.35")
-    , param_utsname_release_("utsname-release", this, utsname_release_,
-                            "The kernel realese information that the uname"
-                            " system call should return. This should usually"
-                            " match the linux-kernel parameter.")
-    , utsname_version_("#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010")
-    , param_utsname_version_("utsname-version", this, utsname_version_,
-                            "The kernel version information that the uname"
-                            " system call should return.")
-    , utsname_machine_("armv5")
-    , param_utsname_machine_("utsname-machine", this, utsname_machine_,
-                            "The machine information that the uname system"
-                            " call should  return. This should be one of the"
-                            " supported architectures (the  system parameter,"
-                            " that is, arm or powerpc) or a specific model "
-                            " derived from it (i.e., arm926ejs).")
-    , utsname_domainname_("localhost")
-    , param_utsname_domainname_("utsname-domainname", this, utsname_domainname_,
-                               "The domain name information that the uname"
-                               " system call should return.")
-    , hwcap_("")
-    , param_hwcap_("hwcap", this, hwcap_,
-                   "CPU Hardware capabilities to enable (e.g. \"swp thumb fastmult vfp\".") {
+  : unisim::kernel::service::Object(name, parent)
+  , unisim::kernel::service::Service<unisim::service::interfaces::LinuxOS>(
+                                                                           name, parent)
+  , unisim::kernel::service::Service<unisim::service::interfaces::Blob<ADDRESS_TYPE> >(
+                                                                                       name, parent)
+  , unisim::kernel::service::Client<
+  unisim::service::interfaces::Memory<ADDRESS_TYPE> >(name, parent)
+  , unisim::kernel::service::Client<
+  unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> >(name, parent)
+  , unisim::kernel::service::Client<unisim::service::interfaces::Registers>(
+                                                                            name, parent)
+  , linux_os_export_("linux-os-export", this)
+  , blob_export_("blob-export", this)
+  , memory_import_("memory-import", this)
+  , memory_injection_import_("memory-injection-import", this)
+  , registers_import_("registers-import", this)
+  , logger_(*this)
+  , verbose_(false)
+  , param_verbose_("verbose", this, verbose_)
+  , parse_dwarf_(false)
+  , debug_dwarf_(false)
+  , dwarf_to_html_output_directory_()
+  , dwarf_to_xml_output_filename_()
+  , param_parse_dwarf_("parse-dwarf", this, parse_dwarf_)
+  , param_debug_dwarf_("debug-dwarf", this, debug_dwarf_)
+  , param_dwarf_to_html_output_directory_("dwarf-to-html-output-directory", this, dwarf_to_html_output_directory_)
+  , param_dwarf_to_xml_output_filename_("dwarf-to-xml-output-filename", this, dwarf_to_xml_output_filename_)
+  , stdin_pipe_filename()
+  , stdout_pipe_filename()
+  , stderr_pipe_filename()
+  , param_stdin_pipe_filename("stdin-pipe-filename", this, stdin_pipe_filename, "stdin pipe filename")
+  , param_stdout_pipe_filename("stdout-pipe-filename", this, stdout_pipe_filename, "stdout pipe filename")
+  , param_stderr_pipe_filename("stderr-pipe-filename", this, stderr_pipe_filename, "stderr pipe filename")
+  , linuxlib_(0)
+  , endianness_(unisim::util::endian::E_LITTLE_ENDIAN)
+  , param_endianness_("endianness", this, endianness_,
+                      "The endianness of the binary loaded. Available values are:"
+                      " little-endian and big-endian.")
+  , memory_page_size_(4096)
+  , param_memory_page_size_("memory-page-size", this, memory_page_size_)
+  , stack_base_(0x4000000UL)
+  , param_stack_base_("stack-base", this, stack_base_,
+                      "The stack base address used for the load and execution"
+                      " of the linux application")
+  , binary_()
+  , param_binary_("binary", this, binary_,
+                  "The binary to execute on the target simulator. Usually it"
+                  " is the same value than the argv[1] parameter.")
+  , argc_(0)
+  , param_argc_("argc", this, argc_,
+                "Number of commands in the program execution line (usually at"
+                " least one which is the name of the program executed). The"
+                " different tokens can be set up with the parameters"
+                " argv[<n>] where <n> can go up to argc - 1.")
+  , argv_()
+  , param_argv_()
+  , apply_host_environment_(false)
+  , param_apply_host_environment_("apply-host-environment", this,
+                                  apply_host_environment_,
+                                  "Wether to apply the host environment on"
+                                  " the target simulator or use the provided"
+                                  " envc and envp.")
+  , envc_(0)
+  , param_envc_("envc", this, envc_,
+                "Number of environment variables defined for the program"
+                " execution. The different variables can be set up with the"
+                " parameters envp[<n>] where <n> can go up to envc - 1.")
+  , envp_()
+  , param_envp_()
+  , utsname_sysname_("Linux")
+  , param_utsname_sysname_("utsname-sysname", this, utsname_sysname_,
+                           "The value that the uname system call should"
+                           " return. As this service is providing linux"
+                           " emulation supoort its value should be 'Linux', so"
+                           " you should not modify it.")
+  , utsname_nodename_("localhost")
+  , param_utsname_nodename_("utsname-nodename", this, utsname_nodename_,
+                            "The network node hostname that the uname system"
+                            " call should return. Default value is localhost,"
+                            " but you could write whatever name you want.")
+  , utsname_release_("2.6.27.35")
+  , param_utsname_release_("utsname-release", this, utsname_release_,
+                           "The kernel realese information that the uname"
+                           " system call should return. This should usually"
+                           " match the linux-kernel parameter.")
+  , utsname_version_("#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010")
+  , param_utsname_version_("utsname-version", this, utsname_version_,
+                           "The kernel version information that the uname"
+                           " system call should return.")
+  , utsname_machine_("armv5")
+  , param_utsname_machine_("utsname-machine", this, utsname_machine_,
+                           "The machine information that the uname system"
+                           " call should  return. This should be one of the"
+                           " supported architectures (the  system parameter,"
+                           " that is, arm or powerpc) or a specific model "
+                           " derived from it (i.e., arm926ejs).")
+  , utsname_domainname_("localhost")
+  , param_utsname_domainname_("utsname-domainname", this, utsname_domainname_,
+                              "The domain name information that the uname"
+                              " system call should return.")
+  , hwcap_("")
+  , param_hwcap_("hwcap", this, hwcap_,
+                 "CPU Hardware capabilities to enable (e.g. \"swp thumb fastmult vfp\".")
+{
   param_argc_.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
   
   linux_os_export_.SetupDependsOn(memory_import_);
@@ -189,12 +185,9 @@ Linux(const char *name, unisim::kernel::service::Object *parent)
 
 /** Destructor. */
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux() {
-  if(linuxlib_)
-  {
-    delete linuxlib_;
-    linuxlib_ = 0;
-  }
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux()
+{
+  delete linuxlib_;
 
   typename std::vector<std::string *>::iterator argv_it;
   for(argv_it = argv_.begin(); argv_it != argv_.end(); argv_it++) {
@@ -216,12 +209,14 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux() {
 
 /** Method to execute when the Linux is disconnected from its client. */
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::OnDisconnect() {
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::OnDisconnect()
+{
   // NOTHING ?
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup()
+{
   for (unsigned int i = 0; i < ((argc_ == 0)?1:argc_); i++) {
     std::stringstream argv_name, argv_desc, argv_val;
     argv_name << "argv[" << i << "]";
@@ -257,20 +252,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
     return false;
   }
 
-  // check that the given system is supported
-  // NOTE: This should not be done because the linux library is already doing it
-  if ((system_.compare("arm") != 0) &&
-      (system_.compare("arm-eabi") != 0) &&
-      (system_.compare("ppc") != 0)) {
-    logger_ << DebugError
-        << "Unsupported system (" << system_ << "), this service only supports"
-        << " arm and ppc systems" << std::endl
-        << LOCATION
-        << EndDebugError;
-    return false;
-  }
-
-  linuxlib_ = new unisim::util::os::linux_os::Linux<ADDRESS_TYPE, PARAMETER_TYPE>(logger_, registers_import_, memory_import_, memory_injection_import_);
+  linuxlib_ = new LinuxImpl(logger_.DebugInfoStream(), logger_.DebugWarningStream(), logger_.DebugErrorStream(), registers_import_, memory_import_, memory_injection_import_);
   
   // set up the different linuxlib parameters
   linuxlib_->SetVerbose(verbose_);
@@ -327,17 +309,30 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
     }
   }
 
-  // set the system type of the target simulator (should be the same than the
-  // binary)
-  {
-    bool success = linuxlib_->SetSystemType(system_.c_str());
-    if (!success) {
-      logger_ << DebugError
-          << "System type not supported (\"" << system_ << "\")."
-          << EndDebugError;
-      return false;
-    }
-  }
+  // setup target specific implementation
+  
+  this->SetupTargetSystem();
+  
+  // {
+  //   if      ((system_.compare("arm") == 0) or (system_.compare("arm-eabi") == 0))
+  //     {
+  //       target_system_ = new unisim::util::os::linux_os::ARMTS<linux_type>( system_, *linuxlib_ );
+  //     }
+  //   else if (system_.compare("ppc") == 0)
+  //     {
+  //       target_system_ = new unisim::util::os::linux_os::PPCTS<linux_type>( *linuxlib_ );
+  //     }
+  //   else if (system_.compare("i386") == 0)
+  //     {
+  //       target_system_ = new unisim::util::os::linux_os::I386TS<linux_type>( *linuxlib_ );
+  //     }
+  //   else {
+  //     logger_ << DebugError
+  //             << "System type not supported (\"" << system_ << "\")."
+  //             << EndDebugError;
+  //     return false;
+  //   }
+  // }
 
   // set the endianness of the target simulator
   linuxlib_->SetEndianness(endianness_);
@@ -406,7 +401,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id) {
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetBlob() const {
+const unisim::util::blob::Blob<ADDRESS_TYPE> *Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetBlob() const {
   return linuxlib_->GetBlob();
 }
 

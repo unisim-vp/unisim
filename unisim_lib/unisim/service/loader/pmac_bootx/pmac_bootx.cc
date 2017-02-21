@@ -34,7 +34,7 @@
  
 #include <unisim/service/loader/pmac_bootx/pmac_bootx.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/util/debug/register.hh>
+#include <unisim/service/interfaces/register.hh>
 #include <stdio.h>
 #include <stdlib.h>
 #include <fstream>
@@ -47,7 +47,7 @@ namespace pmac_bootx {
 using namespace std;
 using namespace unisim::util::endian;
 using unisim::service::interfaces::Registers;
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
 using unisim::kernel::logger::DebugError;
@@ -816,12 +816,12 @@ bool BootInfos::Load(uint32_t boot_infos_addr, const string& device_tree_filenam
 	boot_infos->frameBufferSize = 0;
 	boot_infos->totalParamsSize = Host2BigEndian(size);
 	
-	blob = new unisim::util::debug::blob::Blob<uint32_t>();
+	blob = new unisim::util::blob::Blob<uint32_t>();
 	blob->Catch();
 	
-	unisim::util::debug::blob::Section<uint32_t> *section = new unisim::util::debug::blob::Section<uint32_t>(
-		unisim::util::debug::blob::Section<uint32_t>::TY_UNKNOWN,
-		unisim::util::debug::blob::Section<uint32_t>::SA_A,
+	unisim::util::blob::Section<uint32_t> *section = new unisim::util::blob::Section<uint32_t>(
+		unisim::util::blob::Section<uint32_t>::TY_UNKNOWN,
+		unisim::util::blob::Section<uint32_t>::SA_A,
 		"boot_infos",
 		0,
 		0,
@@ -836,7 +836,7 @@ bool BootInfos::Load(uint32_t boot_infos_addr, const string& device_tree_filenam
 	return true;
 }
 
-const unisim::util::debug::blob::Blob<uint32_t> *BootInfos::GetBlob() const
+const unisim::util::blob::Blob<uint32_t> *BootInfos::GetBlob() const
 {
 	return blob;
 }
@@ -902,7 +902,7 @@ bool PMACBootX::SetupBlob()
 		return false;
 	}
 	
-	const unisim::util::debug::blob::Blob<uint32_t> *kernel_blob = blob_import->GetBlob();
+	const unisim::util::blob::Blob<uint32_t> *kernel_blob = blob_import->GetBlob();
 	
 	if(!kernel_blob)
 	{
@@ -927,7 +927,7 @@ bool PMACBootX::SetupBlob()
 		logger << DebugInfo << "Using ramdisk from image \"" << ramdisk_filename << "\"" << EndDebugInfo;
 	}
 	
-	const unisim::util::debug::blob::Blob<uint32_t> *boot_infos_blob = 0;
+	const unisim::util::blob::Blob<uint32_t> *boot_infos_blob = 0;
 
 	if(!boot_infos.Load(boot_infos_addr, GetSimulator()->SearchSharedDataFile(device_tree_filename.c_str()).c_str(), kernel_parms, GetSimulator()->SearchSharedDataFile(ramdisk_filename.c_str()).c_str(), screen_width, screen_height) || !(boot_infos_blob = boot_infos.GetBlob()))
 	{
@@ -935,7 +935,7 @@ bool PMACBootX::SetupBlob()
 		return false;
 	}
 
-	blob = new unisim::util::debug::blob::Blob<uint32_t>();
+	blob = new unisim::util::blob::Blob<uint32_t>();
 	blob->Catch();
 	
 	blob->SetArchitecture("powerpc");
@@ -991,7 +991,7 @@ bool PMACBootX::LoadBootInfosAndRegisters()
 {
 	if(!blob) return false;
 	
-	const unisim::util::debug::blob::Section<uint32_t> *boot_infos_section = blob->FindSection("boot_infos");
+	const unisim::util::blob::Section<uint32_t> *boot_infos_section = blob->FindSection("boot_infos");
 	if(!boot_infos_section)
 	{
 		logger << DebugError << "No boot_infos section found" << EndDebugError;
@@ -1018,7 +1018,7 @@ bool PMACBootX::LoadBootInfosAndRegisters()
 		}
 	}
 
-	unisim::util::debug::Register *cia = registers_import->GetRegister("cia");
+	unisim::service::interfaces::Register *cia = registers_import->GetRegister("cia");
 	if(!cia)
 	{
 		logger << DebugError << "Register \"cia\" does not exist" << EndDebugError;
@@ -1026,7 +1026,7 @@ bool PMACBootX::LoadBootInfosAndRegisters()
 	}
 	cia->SetValue(&entry_point);
 	
-	unisim::util::debug::Register *r1 = registers_import->GetRegister("r1");
+	unisim::service::interfaces::Register *r1 = registers_import->GetRegister("r1");
 	if(!r1)
 	{
 		logger << DebugError << "Register \"r1\" does not exist" << EndDebugError;
@@ -1034,7 +1034,7 @@ bool PMACBootX::LoadBootInfosAndRegisters()
 	}
 	r1->SetValue(&r1_value);
 	
-	unisim::util::debug::Register *r3 = registers_import->GetRegister("r3");
+	unisim::service::interfaces::Register *r3 = registers_import->GetRegister("r3");
 	if(!r3)
 	{
 		logger << DebugError << "Register \"r3\" does not exist" << EndDebugError;
@@ -1042,7 +1042,7 @@ bool PMACBootX::LoadBootInfosAndRegisters()
 	}
 	r3->SetValue(&r3_value);
 	
-	unisim::util::debug::Register *r4 = registers_import->GetRegister("r4");
+	unisim::service::interfaces::Register *r4 = registers_import->GetRegister("r4");
 	if(!r4)
 	{
 		logger << DebugError << "Register \"r4\" does not exist" << EndDebugError;
@@ -1050,7 +1050,7 @@ bool PMACBootX::LoadBootInfosAndRegisters()
 	}
 	r4->SetValue(&r4_value);
 	
-	unisim::util::debug::Register *r5 = registers_import->GetRegister("r5");
+	unisim::service::interfaces::Register *r5 = registers_import->GetRegister("r5");
 	if(!r5)
 	{
 		logger << DebugError << "Register \"r5\" does not exist" << EndDebugError;
@@ -1067,7 +1067,7 @@ bool PMACBootX::Load()
 	return loader_import->Load() && LoadBootInfosAndRegisters();
 }
 
-const unisim::util::debug::blob::Blob<uint32_t> *PMACBootX::GetBlob() const
+const unisim::util::blob::Blob<uint32_t> *PMACBootX::GetBlob() const
 {
 	return blob;
 }

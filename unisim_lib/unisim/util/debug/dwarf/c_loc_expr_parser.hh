@@ -36,7 +36,6 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_C_LOC_EXPR_PARSER_HH__
 
 #include <unisim/util/parser/parser.hh>
-#include <unisim/kernel/logger/logger.hh>
 #include <deque>
 
 namespace unisim {
@@ -134,7 +133,7 @@ typedef enum
 class CLocExprParser : public unisim::util::parser::Parser<CLocType>, public unisim::util::parser::Visitor<CLocType>
 {
 public:
-	CLocExprParser(std::istream *stream, unisim::kernel::logger::Logger& logger, bool debug = false);
+	CLocExprParser(std::istream *stream, std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, bool debug = false);
 	virtual ~CLocExprParser();
 
 	bool Parse(CLocOperationStream& c_loc_operation_stream);
@@ -153,7 +152,9 @@ private:
 		TOK_ARROW,
 	};
 	
-	unisim::kernel::logger::Logger& logger;
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
 	CLocOperationStream *c_loc_operation_stream;
 };
 

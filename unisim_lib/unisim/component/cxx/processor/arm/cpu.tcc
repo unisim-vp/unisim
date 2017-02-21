@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -30,35 +30,22 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  *  SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
+ 
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_TCC__
 
-#include <sstream>
-#include <iostream>
-#include <stdlib.h>
-#include "unisim/component/cxx/processor/arm/cpu.hh"
-#include "unisim/component/cxx/processor/arm/masks.hh"
-#include "unisim/component/cxx/processor/arm/config.hh"
-#include "unisim/component/cxx/processor/arm/isa_arm32.tcc"
-#include "unisim/component/cxx/processor/arm/isa_thumb.tcc"
-#include "unisim/component/cxx/processor/arm/instruction.tcc"
-#include "unisim/component/cxx/processor/arm/exception.tcc"
-#include "unisim/util/debug/simple_register.hh"
-#ifndef __STDC_CONSTANT_MACROS
-#define __STDC_CONSTANT_MACROS
-#endif // __STDC_CONSTANT_MACROS
-#include <stdint.h>
-
-#if (defined(__GNUC__) && (__GNUC__ >= 3))
-#define INLINE __attribute__((always_inline))
-#else
-#define INLINE
-#endif
-
-// #define ARM_OPTIMIZATION
+#include <unisim/component/cxx/processor/arm/cpu.hh>
+#include <unisim/component/cxx/processor/arm/disasm.hh>
+#include <unisim/component/cxx/processor/arm/exception.hh>
+#include <unisim/component/cxx/processor/arm/models.hh>
+#include <unisim/component/cxx/processor/arm/cp15.hh>
+#include <unisim/util/likely/likely.hh>
+#include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/endian/endian.hh>
+#include <unisim/util/debug/simple_register.hh>
 
 namespace unisim {
 namespace component {
@@ -66,4155 +53,999 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-using unisim::util::endian::E_BIG_ENDIAN;
-using unisim::util::endian::E_LITTLE_ENDIAN;
-using unisim::util::endian::BigEndian2Host;
-using unisim::util::endian::Host2BigEndian;
-using unisim::util::endian::Target2Host;
-using unisim::util::endian::Host2Target;
-using unisim::util::arithmetic::RotateRight;
-using std::cout;
-using std::cerr;
-using std::endl;
-using std::hex;
-using std::dec;
-using std::ostringstream;
-using unisim::util::debug::SimpleRegister;
-using unisim::util::debug::Symbol;
-using namespace unisim::kernel::logger;
-
-// Constructor
-template<class CONFIG>
-CPU<CONFIG> ::
-CPU(const char *name,
-	CacheInterface<typename CONFIG::address_t> *_memory_interface,
-	Object *parent)
-	: Object(name, parent)
-	// , Client<Loader<typename CONFIG::address_t> >(name, parent)
-	, Client<LinuxOS>(name, parent)
-	, Service<MemoryInjection<uint64_t> >(name, parent)
-	, Client<DebugControl<uint64_t> >(name, parent)
-	, Client<MemoryAccessReporting<uint64_t> >(name, parent)
-	, Client<TrapReporting>(name, parent)
-	, Service<MemoryAccessReportingControl>(name, parent)
-	, Service<Disassembly<uint64_t> >(name, parent)
-	, Service<Registers>(name, parent)
-	, Service<Memory<uint64_t> >(name, parent)
-	, Client<CachePowerEstimator>(name,  parent)
-	, Client<PowerMode>(name,  parent)
-	, disasm_export("disasm-export", this)
-	, registers_export("registers-export", this)
-	, memory_injection_export("memory-injection-export", this)
-	, memory_export("memory-export", this)
-	, memory_access_reporting_control_export(
-			"memory-access-reporting-control-export",
-			this)
-	, debug_control_import("debug-control-import", this)
-	, memory_access_reporting_import("memory-access-reporting-import", this)
-	, symbol_table_lookup_import("symbol-table-lookup-import", this)
-	, linux_os_import("linux-os-import", this)
-	, exception_trap_reporting_import("exception-trap-reporting-import", this)
-	, instruction_counter_trap_reporting_import(
-			"instruction-counter-trap-reporting-import", this)
-	, il1_power_estimator_import("il1-power-estimator-import",  this)
-	, dl1_power_estimator_import("dl1-power-estimator-import",  this)
-	, il1_power_mode_import("il1-power-mode-import",  this)
-	, dl1_power_mode_import("dl1-power-mode-import",  this)
-	, logger(*this)
-	, insn_cache_line_address(0)
-	, memory_interface(_memory_interface)
-	, running(true)
-	, cache_l1(0)
-	, cache_il1(0)
-	, cache_l2(0)
-	, requires_memory_access_reporting(true)
-	, requires_finished_instruction_reporting(true)
-	, fetchQueue()
-	, decodeQueue()
-	, executeQueue()
-	, lsQueue()
-	, firstLS(0)
-	, freeLSQueue()
-	, instruction_counter(0)
-	, default_endianness(E_BIG_ENDIAN)
-	, default_endianness_string("big-endian")
-	, arm966es_initram(false)
-	, arm966es_vinithi(false)
-	, cpu_cycle_time(0)
-	, voltage(0)
-	, cpu_cycle(0)
-	, bus_cycle(0)
-	, verbose_all(false)
-	, verbose_setup(false)
-	, verbose_step(false)
-	, verbose_exception(false)
-	, verbose_dump_regs_start(false)
-	, verbose_dump_regs_end(false)
-	, verbose_memory(false)
-	, trap_on_exception(false)
-	, trap_on_instruction_counter(0)
-	, param_default_endianness("default-endianness", this,
-			default_endianness_string,
-			"The processor default/boot endianness. Available values are: little-endian and big-endian.")
-	, param_arm966es_initram("arm966es-initram", this, arm966es_initram)
-	, param_arm966es_vinithi("arm966es-vinithi", this, arm966es_vinithi)
-	, param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time,
-			"CPU cycle time in ps")
-	, param_voltage("voltage",  this,  voltage, "CPU voltage in mV")
-	, param_verbose_all("verbose-all", this, verbose_all,
-			"Activate all the verbose option")
-	, param_verbose_setup("verbose-setup", this, verbose_setup,
-			"Display setup information")
-	, param_verbose_step("verbose-step", this, verbose_step,
-			"Display instruction step information")
-	, param_verbose_exception("verbose-exception", this, verbose_exception)
-	, param_verbose_dump_regs_start("verbose-dump-regs-start", this,
-			verbose_dump_regs_start)
-	, param_verbose_dump_regs_end("verbose-dump-regs-end", this,
-			verbose_dump_regs_end)
-	, param_verbose_memory("verbose-memory", this, verbose_memory,
-			"Dump detailed memory operations")
-	, param_trap_on_exception("trap-on-exception", this, trap_on_exception,
-			"Produce a trap when an exception occurs")
-	, param_trap_on_instruction_counter("trap-on-instruction-counter", this,
-			trap_on_instruction_counter,
-			"Produce a trap when the instruction counter is reached")
-	, stat_instruction_counter("instruction-counter", this, instruction_counter,
-			"Number of instructions executed")
-	, reg_sp("SP", this, gpr[13],
-			"The stack pointer (SP) register (alias of GPR[13])")
-	, reg_lr("LR", this, gpr[14],
-			"The link register (LR) (alias of GPR[14]")
-	, reg_pc("PC", this, gpr[15],
-			"The program counter (PC) register (alias of GPR[15]")
-	, reg_cpsr("CPSR", this, cpsr,
-			"The CPSR register")
-	/* initialization of ARM926EJS variables START */
-	, arm926ejs_icache()
-	, arm926ejs_dcache()
-	, arm926ejs_itcm()
-	, arm926ejs_dtcm()
-	, arm926ejs_wb()
-	, arm926ejs_wbb()
-	, arm926ejs_icache_size(0x01000) // 4KB
-	, arm926ejs_dcache_size(0x01000) // 4KB
-	, arm926ejs_enable_write_buffer(true)
-	, arm926ejs_enable_writeback_buffer(true)
-	/* initialization of ARM926EJS variables   END */
-{
-
-	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-
-	/* create ARM926EJS parameters if the CONFIG::MODEL is ARM926EJS */
-	if (CONFIG::MODEL == ARM926EJS)
-	{
-		param_arm926ejs_icache_size = new
-			unisim::kernel::service::Parameter<uint32_t>("icache-size",
-					this,
-					arm926ejs_icache_size,
-					"Instruction cache size in KB (available sizes are 4KB, 8KB, 16KB,"
-					" 32KB, 64KB, and 128KB). It can be desactivated setting it to 0.");
-		param_arm926ejs_dcache_size = new
-			unisim::kernel::service::Parameter<uint32_t>("dcache-size",
-					this,
-					arm926ejs_dcache_size,
-					"Data cache size in KB (available sizes are 4KB, 8KB, 16KB, 32KB,"
-					" 64KB, and 128KB). It can be desactivated setting it to 0.");
-		param_arm926ejs_enable_wb = new
-			unisim::kernel::service::Parameter<bool>("enable-wb",
-					this,
-					arm926ejs_enable_write_buffer,
-					"Activate the processor write buffer (only considered in user mode)");
-		param_arm926ejs_enable_wbb = new
-			unisim::kernel::service::Parameter<bool>("enable-wbb",
-					this,
-					arm926ejs_enable_writeback_buffer,
-					"Activate the processor write-back buffer (only considered in user"
-					" mode)");
-	}
-
-	/* Reset all the registers */
-	InitGPR();
-
-	// set CPSR to system mode
-	cpsr = 0;
-	for(unsigned int i = 0; i < num_phys_spsrs; i++) {
-		spsr[i] = 0;
-	}
-	for(unsigned int i = 0; i < 8; i++) {
-		fake_fpr[i] = 0;
-	}
-	fake_fps = 0;
-	SetCPSR_Mode(SYSTEM_MODE);
-	// set initial pc
-	/* Depending on the configuration being used set the initial pc */
-	if(CONFIG::MODEL == ARM966E_S) {
-		if(arm966es_vinithi)
-			SetGPR(PC_reg, (address_t)0xffff0000);
-		else
-			SetGPR(PC_reg, (address_t)0x00000000);
-		/* disable normal and fast interruptions */
-		SetCPSR_F();
-		SetCPSR_I();
-	}
-
-	if(CONFIG::MODEL == ARM7TDMI) {
-		SetGPR(PC_reg, (address_t)0x0);
-		/* disable normal and fast interruptions */
-		SetCPSR_F();
-		SetCPSR_I();
-	}
-
-	// initialize the variables to compute the final address on memory
-	//   accesses
-	if(GetEndianness() == E_BIG_ENDIAN) {
-		munged_address_mask8 = (typename CONFIG::address_t)0x03;;
-		munged_address_mask16 = (typename CONFIG::address_t)0x02;
-	} else {
-		munged_address_mask8 = 0;
-		munged_address_mask16 = 0;
-	}
-
-	/* initialize the check condition table */
-	InitializeCheckConditionTable();
-
-	CreateTCMSystem();
-
-	CreateCpSystem();
-
-	CreateMemorySystem();
-	
-	for (unsigned int i = 0; i < num_phys_gprs; i++)
-	{
-		stringstream ss;
-		stringstream ss_desc;
-		ss << "GPR_PHYS[" << i << "]";
-		ss_desc << "Physical register " << i;
-		reg_phys_gpr[i] = new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), this, phys_gpr[i], ss_desc.str().c_str());
-	}
-	for (unsigned int i = 0; i < num_log_gprs; i++)
-	{
-		stringstream ss;
-		stringstream ss_desc;
-		ss << "GPR[" << i << "]";
-		ss_desc << "Logical register " << i;
-		reg_gpr[i] = new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), this, gpr[i], ss_desc.str().c_str());
-	}
-	for (unsigned int i = 0; i < num_phys_spsrs; i++)
-	{
-		stringstream ss;
-		stringstream ss_desc;
-		ss << "SPSR[" << i << "]";
-		ss_desc << "SPSR[" << i << "] register";
-		reg_spsr[i] = new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), this, spsr[i], ss_desc.str().c_str());
-	}
-}
-
-// Destructor
-template<class CONFIG>
-CPU<CONFIG> ::
-~CPU() {
-	for (unsigned int i = 0; i < num_phys_gprs; i++)
-		if (reg_phys_gpr[i]) delete reg_phys_gpr[i];
-	for (unsigned int i = 0; i < num_log_gprs; i++)
-		if (reg_gpr[i]) delete reg_gpr[i];
-	for (unsigned int i = 0; i < num_phys_spsrs; i++)
-		if (reg_spsr[i]) delete reg_spsr[i];
-}
-
-//=====================================================================
-//=                  Client/Service setup methods               START =
-//=====================================================================
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-Setup() {
-	/* check verbose settings */
-	if (verbose_all) {
-		verbose_setup = true;
-		verbose_step = true;
-		verbose_dump_regs_start = true;
-		verbose_dump_regs_end = true;
-		verbose_memory = true;
-	}
-	if ( verbose_setup )
-	{
-		logger << DebugInfo;
-		logger << " - verbose-all = " << verbose_all << endl;
-		logger << " - verbose-setup = " << verbose_setup << endl;
-		logger << " - verbose-step = " << verbose_step << endl;
-		logger << " - verbose-dump-regs-start = " << verbose_dump_regs_start
-				<< endl;
-		logger << " - verbose-dump-regs-end = " << verbose_dump_regs_end
-				<< endl;
-		logger << " - verbose-memory = " << verbose_memory;
-		logger << EndDebugInfo;
-	}
-
-	/* fix the endianness depending on the endianness parameter */
-	if ( (default_endianness_string.compare("little-endian") != 0) &&
-			(default_endianness_string.compare("big-endian") != 0) )
-	{
-		logger << DebugError
-				<< "Error while setting the default endianness."
-				<< " '" << default_endianness_string << "' is not a correct"
-				<< " value."
-				<< " Available values are: little-endian and big-endian."
-				<< EndDebugError;
-		return false;
-	}
-	else
-	{
-		if ( default_endianness_string.compare("little-endian") == 0 )
-			default_endianness = E_LITTLE_ENDIAN;
-		else
-			default_endianness = E_BIG_ENDIAN;
-	}
-	/* check if the emulator is running in user or system mode and perform
-	 *   the corresponding initialization
-	 * if linux_os_import is connected then we are running in user mode,
-	 *   otherwise we are running in system mode
-	 */
-	if (linux_os_import) {
-		/* we are running in user mode:
-		 * - set CPSR to user mode
-		 * - initialize the cache system
-		 * - the initial pc will be set by linux
-		 */
-		// set CPSR to user mode
-		SetCPSR_Mode(USER_MODE);
-		if (VerboseSetup()) {
-			logger << DebugInfo << "Running \"" << GetName() << "\" in user mode"
-			<< EndDebugInfo;
-		}
-		// TO REMOVE (START)
-		// // initialize the cache system
-		// if(cache_l1 != 0) cache_l1->Enable();
-		// if(cache_il1 != 0) cache_il1->Enable();
-		// if(cache_l2 != 0) cache_l2->Enable();
-		// TO REMOVE (END)
-
-		/* models not specified will use no caches at all */
-		if ( CONFIG::MODEL == ARM926EJS )
-		{
-			unsigned int min_cycle_time = 0;
-			if ( arm926ejs_icache_size != 0 )
-			{
-				if ( !arm926ejs_icache.SetSize(arm926ejs_icache_size) )
-				{
-					logger << DebugError
-						<< "Invalid instruction cache size ("
-						<< (unsigned int)arm926ejs_icache_size
-						<< ")"
-						<< EndDebug;
-					return false;
-				}
-				if ( il1_power_mode_import )
-				{
-					unsigned int il1_min_cycle_time =
-							il1_power_mode_import->GetMinCycleTime();
-					if ( il1_min_cycle_time > 0 &&
-							il1_min_cycle_time > min_cycle_time )
-						min_cycle_time = il1_min_cycle_time;
-					unsigned int il1_default_voltage =
-							il1_power_mode_import->GetDefaultVoltage();
-					if ( voltage <= 0 )
-						voltage = il1_default_voltage;
-				}
-			}
-			if ( arm926ejs_dcache_size != 0 )
-			{
-				if ( !arm926ejs_dcache.SetSize(arm926ejs_dcache_size) )
-				{
-					logger << DebugError
-						<< "Invalid data cache size ("
-						<< (unsigned int)arm926ejs_dcache_size
-						<< ")"
-						<< EndDebug;
-					return false;
-				}
-				if ( dl1_power_mode_import )
-				{
-					unsigned int dl1_min_cycle_time =
-							dl1_power_mode_import->GetMinCycleTime();
-					if ( dl1_min_cycle_time > 0 &&
-							dl1_min_cycle_time > min_cycle_time )
-						min_cycle_time = dl1_min_cycle_time;
-					unsigned int dl1_default_voltage =
-							dl1_power_mode_import->GetDefaultVoltage();
-					if ( voltage <= 0 )
-						voltage = dl1_default_voltage;
-				}
-			}
-
-			if ( min_cycle_time > 0 )
-			{
-				if ( cpu_cycle_time > 0 )
-				{
-					if ( cpu_cycle_time < min_cycle_time )
-					{
-						if ( unlikely(verbose_setup) )
-						{
-							logger << DebugWarning;
-							logger << "A cycle time of " << cpu_cycle_time
-									<< " ps is too low for the simulated"
-									<< " hardware !" << endl;
-							logger << "cpu cycle time should be >= "
-									<< min_cycle_time << " ps." << endl;
-							logger << EndDebugWarning;
-						}
-					}
-				}
-				else
-				{
-					cpu_cycle_time = min_cycle_time;
-				}
-			}
-			else
-			{
-				if ( cpu_cycle_time <= 0 )
-				{
-					// we can't provide a valid cpu cycle time configuration
-					//   automatically
-					logger << DebugError
-							<< "cpu-cycle-time should be bigger than 0"
-							<< EndDebugError;
-					return false;
-				}
-			}
-		}
-
-		// initialize the variables to compute the final address on memory
-		//   accesses
-		munged_address_mask8 = 0;
-		munged_address_mask16 = 0;
-
-		if (verbose_setup)
-		{
-			logger << DebugInfo;
-			logger << "Setup information:" << endl;
-			logger << " - debug_control service ";
-			if (debug_control_import)
-				logger << "CONNECTED";
-			else
-				logger << "DISCONNECTED";
-			logger << endl;
-			logger << " - cpu cycle time = " << cpu_cycle_time << " ps"
-					<< endl;
-			if ( arm926ejs_icache_size != 0 )
-			{
-				logger << " - instruction cache size = "
-						<< arm926ejs_icache_size << " bytes" << endl;
-				logger << " - instruction cache power mode service ";
-				if ( il1_power_mode_import )
-					logger << "CONNECTED";
-				else
-					logger << "DISCONNECTED";
-			}
-			logger << endl;
-			if ( arm926ejs_dcache_size != 0 )
-			{
-				logger << " - data cache size = "
-						<< arm926ejs_dcache_size << " bytes" << endl;
-				logger << " - data cache power mode service ";
-				if ( dl1_power_mode_import )
-					logger << "CONNECTED";
-				else
-					logger << "DISCONNECTED";
-			}
-			logger << endl;
-			if ( (arm926ejs_icache_size != 0) ||
-					(arm926ejs_dcache_size != 0) )
-			{
-				if ( il1_power_mode_import || dl1_power_mode_import )
-					logger << " - voltage = " << voltage << "mV" << endl;
-			}
-			logger << EndDebugInfo;
-		}
-
-	} else {
-		/* we are running in system mode */
-		/* check that the processor model is supported */
-		if(CONFIG::MODEL != ARM966E_S &&
-		   CONFIG::MODEL != ARM7TDMI &&
-		   CONFIG::MODEL != ARM926EJS) {
-			logger << DebugError
-			<< "Running \"" << GetName() << "\" in system mode. "
-			<< "Only arm926ej_s, arm966e_s, arm7tdmi can run under this mode."
-			<< EndDebug;
-			return false;
-		}
-		// set CPSR to system mode
-		SetCPSR_Mode(SYSTEM_MODE);
-		// set initial pc
-		/* Depending on the configuration being used set the initial pc */
-		if (CONFIG::MODEL == ARM966E_S)
-		{
-			if (arm966es_vinithi)
-				SetGPR(PC_reg, (address_t)0xffff0000);
-			else
-				SetGPR(PC_reg, (address_t)0x00000000);
-			/* disable normal and fast interruptions */
-			SetCPSR_F();
-			SetCPSR_I();
-		}
-		if (CONFIG::MODEL == ARM7TDMI)
-		{
-			SetGPR(PC_reg, (address_t)0x0);
-			/* disable normal and fast interruptions */
-			SetCPSR_F();
-			SetCPSR_I();
-		}
-		if (CONFIG::MODEL == ARM926EJS)
-		{
-			SetGPR(PC_reg, (address_t)0x0);
-			/* disable normal and fast interruptions */
-			SetCPSR_F();
-			SetCPSR_I();
-
-			// Set the cache sizes
-			if (arm926ejs_icache_size)
-			{
-				if (!arm926ejs_icache.SetSize(arm926ejs_icache_size))
-				{
-					logger << DebugError
-						<< "Invalid instruction cache size (" << arm926ejs_icache_size
-						<< ")"
-						<< EndDebug;
-					return false;
-				}
-			}
-			else
-			{
-				logger << DebugError
-					<< "Invalid instruction cache size (" << arm926ejs_icache_size
-					<< ")"
-					<< EndDebug;
-				return false;
-			}
-
-			if (arm926ejs_dcache_size)
-			{
-				if (!arm926ejs_dcache.SetSize(arm926ejs_dcache_size))
-				{
-					logger << DebugError
-						<< "Invalid data cache size (" << arm926ejs_dcache_size
-						<< ")"
-						<< EndDebug;
-					return false;
-				}
-			}
-			else
-			{
-				logger << DebugError
-					<< "Invalid data cache size (" << arm926ejs_dcache_size
-					<< ")"
-					<< EndDebug;
-				return false;
-			}
-		}
-
-		// initialize the variables to compute the final address on memory
-		//   accesses
-		if(GetEndianness() == E_BIG_ENDIAN) {
-			munged_address_mask8 = (typename CONFIG::address_t)0x03;;
-			munged_address_mask16 = (typename CONFIG::address_t)0x02;
-		} else {
-			munged_address_mask8 = 0;
-			munged_address_mask16 = 0;
-		}
-	}
-	
-	/* setting debugging registers */
-	if (verbose_setup)
-		logger << DebugInfo
-		<< "Initializing debugging registers"
-		<< EndDebug;
-	
-	for(int i = 0; i < 16; i++) {
-		stringstream str;
-		str << "r" << i;
-		registers_registry[str.str().c_str()] =
-		new SimpleRegister<reg_t>(str.str().c_str(), &gpr[i]);
-	}
-	registers_registry["sp"] = new SimpleRegister<reg_t>("sp", &gpr[13]);
-	registers_registry["lr"] = new SimpleRegister<reg_t>("lr", &gpr[14]);
-	registers_registry["pc"] = new SimpleRegister<reg_t>("pc", &gpr[15]);
-	registers_registry["cpsr"] = new SimpleRegister<reg_t>("cpsr", &cpsr);
-	
-	if(!memory_access_reporting_import) {
-		requires_memory_access_reporting = false;
-		requires_finished_instruction_reporting = false;
-	}
-	
-	return true;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-OnDisconnect() {
-}
-
-//=====================================================================
-//=                  Client/Service setup methods               END   =
-//=====================================================================
-
-//=====================================================================
-//=             memory injection interface methods              START =
-//=====================================================================
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-InjectReadMemory(uint64_t addr, void *buffer, uint32_t size)
-{
-	uint32_t index = 0;
-	uint32_t base_addr = (uint32_t)addr;
-	uint32_t ef_addr;
-	if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import)
-	{
-		if ( arm926ejs_dcache.GetSize() )
-		{
-			// access memory while using the linux_os_import
-			//   tcm is ignored
-			while (size != 0)
-			{
-				// need to access the data cache before accessing the main memory
-				ef_addr = base_addr + index;
-
-				uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
-				uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
-				uint32_t cache_way;
-				bool cache_hit = false;
-				if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
-				{
-					if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
-					{
-						// the cache access is a hit, data can be simply read from the cache
-						uint32_t cache_index = arm926ejs_dcache.GetIndex(ef_addr);
-						uint32_t read_data_size =
-							arm926ejs_dcache.GetDataCopy(cache_set, cache_way, cache_index, size, &(((uint8_t *)buffer)[index]));
-						index += read_data_size;
-						size -= read_data_size;
-						cache_hit = true;
-					}
-				}
-				if ( !cache_hit )
-				{
-					memory_interface->PrRead(ef_addr,
-											 &(((uint8_t *)buffer)[index]),
-											 1);
-					index++;
-					size--;
-				}
-			}
-		}
-		else
-		{
-			// no data cache on this system, just send request to the memory
-			//   subsystem
-			while ( size != 0 )
-			{
-				ef_addr = base_addr + index;
-				memory_interface->PrRead(ef_addr,
-						&(((uint8_t *)buffer)[index]),
-						1);
-				index++;
-				size--;
-			}
-		}
-		return true;
-	}
-	if ( (CONFIG::MODEL == ARM926EJS) && !linux_os_import)
-	{
-		// access memory while simulating full system
-		// TODO
-		return false;
-	}
-	return false;
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-InjectWriteMemory(uint64_t addr,
-				  const void *buffer,
-				  uint32_t size) {
-	uint32_t index = 0;
-	uint32_t base_addr = (uint32_t)addr;
-	uint32_t ef_addr;
-	if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import)
-	{
-		if ( arm926ejs_dcache.GetSize() )
-		{
-			// access memory while using the linux_os_import
-			//   tcm is ignored
-			while ( size != 0 )
-			{
-				// need to access the data cache before accessing the main memory
-				ef_addr = base_addr + index;
-
-				uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
-				uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
-				uint32_t cache_way;
-				bool cache_hit = false;
-				if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
-				{
-					if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
-					{
-						// the cache access is a hit, data can be simply read from the cache
-						uint32_t cache_index = arm926ejs_dcache.GetIndex(ef_addr);
-						uint32_t write_data_size =
-							arm926ejs_dcache.SetData(cache_set, cache_way, cache_index, size, &(((uint8_t *)buffer)[index]));
-						arm926ejs_dcache.SetDirty(cache_set, cache_way, 1);
-						index += write_data_size;
-						size -= write_data_size;
-						cache_hit = true;
-					}
-				}
-				if ( !cache_hit )
-				{
-					memory_interface->PrWrite(ef_addr,
-							&(((uint8_t *)buffer)[index]),
-							1);
-					index++;
-					size--;
-				}
-			}
-		}
-		else
-		{
-			// there is no data cache in this system just send the request to
-			//   the memory subsystem
-			while ( size != 0 )
-			{
-				ef_addr = base_addr + index;
-				memory_interface->PrWrite(ef_addr,
-						&(((uint8_t *)buffer)[index]),
-						1);
-				index++;
-				size--;
-			}
-		}
-		return true;
-	}
-	if ( (CONFIG::MODEL == ARM926EJS) && !linux_os_import)
-	{
-		// access memory while simulating full system
-		// TODO
-		return false;
-	}
-	return false;
-}
-
-//=====================================================================
-//=             memory injection interface methods              END   =
-//=====================================================================
-
-//=====================================================================
-//=         memory access reporting control interface methods   START =
-//=====================================================================
-
-template<class CONFIG>
-void
-CPU<CONFIG>::
-RequiresMemoryAccessReporting(bool report) {
-	requires_memory_access_reporting = report;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG>::
-RequiresFinishedInstructionReporting(bool report) {
-	requires_finished_instruction_reporting = report;
-}
-
-//=====================================================================
-//=         memory access reporting control interface methods   END   =
-//=====================================================================
-
-//=====================================================================
-//=         non intrusive memory methods                        START =
-//=====================================================================
-
-// Non intrusive memory read
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-ReadMemory(uint64_t addr, void *buffer, uint32_t size)
-{
-	bool status = true;
-	uint32_t index = 0;
-	uint32_t base_addr = (uint32_t)addr;
-	uint32_t ef_addr;
-
-	if (CONFIG::MODEL == ARM926EJS && linux_os_import)
-	{
-		if ( arm926ejs_dcache.GetSize() )
-		{
-			// non intrusive access with linux support
-			//   tcm is ignored
-			while (size != 0 && status)
-			{
-				// need to access the data cache before accessing the main
-				//   memory
-				ef_addr = base_addr + index;
-
-				uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
-				uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
-				uint32_t cache_way;
-				bool cache_hit = false;
-				if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
-				{
-					if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
-					{
-						// the cache access is a hit, data can be simply read
-						//   from the cache
-						uint32_t cache_index =
-								arm926ejs_dcache.GetIndex(ef_addr);
-						uint32_t data_read_size =
-								arm926ejs_dcache.GetDataCopy(cache_set,
-										cache_way, cache_index, size,
-										&(((uint8_t *)buffer)[index]));
-						index += data_read_size;
-						size -= data_read_size;
-						cache_hit = true;
-					}
-				}
-				if ( !cache_hit )
-				{
-					status = status &&
-						ExternalReadMemory(ef_addr,
-										   &(((uint8_t *)buffer)[index]),
-										   1);
-					index++;
-					size--;
-				}
-			}
-		}
-		else
-		{
-			// there is no data cache in this system just perform the request
-			//   to the memory subsystem
-			while ( size != 0 && status )
-			{
-				ef_addr = base_addr + index;
-				status = status &&
-						ExternalReadMemory(ef_addr,
-								&(((uint8_t *)buffer)[index]),
-								1);
-				index++;
-				size--;
-			}
-		}
-		return status;
-	}
-	
-	if (CONFIG::MODEL == ARM926EJS && !linux_os_import)
-	{
-		// non intrusive access running on full-system mode
-		// TODO
-		return false;
-	}
-	
-	return false;
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-WriteMemory(uint64_t addr,
-			const void *buffer, uint32_t size)
-{
-	bool status = true;
-	uint32_t index = 0;
-	uint32_t base_addr = (uint32_t)addr;
-	uint32_t ef_addr;
-
-	if (CONFIG::MODEL == ARM926EJS && linux_os_import)
-	{
-		if ( arm926ejs_dcache.GetSize() )
-		{
-			// non intrusive access with linux support
-			//   tcm is ignored
-			while (size != 0 && status)
-			{
-				// need to access the data cache before accessing the main memory
-				ef_addr = base_addr + index;
-
-				uint32_t cache_tag = arm926ejs_dcache.GetTag(ef_addr);
-				uint32_t cache_set = arm926ejs_dcache.GetSet(ef_addr);
-				uint32_t cache_way;
-				bool cache_hit = false;
-				if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
-				{
-					if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
-					{
-						// the cache access is a hit, data can be simply written to the cache
-						uint32_t cache_index = arm926ejs_dcache.GetIndex(ef_addr);
-						uint32_t data_read_size =
-							arm926ejs_dcache.SetData(cache_set, cache_way, cache_index, size, &(((uint8_t *)buffer)[index]));
-						arm926ejs_dcache.SetDirty(cache_set, cache_way, 1);
-						index += data_read_size;
-						size -= data_read_size;
-						cache_hit = true;
-					}
-				}
-				if ( !cache_hit )
-				{
-					status = status &&
-						ExternalWriteMemory(ef_addr,
-											&(((uint8_t *)buffer)[index]),
-											1);
-					index++;
-					size--;
-				}
-			}
-		}
-		else
-		{
-			// there is no data cache in this system, just write the data to
-			//   the memory subsystem
-			while ( size != 0 && status )
-			{
-				ef_addr = base_addr + index;
-				status = status &&
-						ExternalWriteMemory(ef_addr,
-								&(((uint8_t *)buffer)[index]),
-								1);
-				index++;
-				size--;
-			}
-		}
-		return status;
-	}
-
-	if (CONFIG::MODEL == ARM926EJS && !linux_os_import)
-	{
-		// non intrusive access running on full-system mode
-		// TODO
-		return false;
-	}
-	
-	return false;
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-CoprocessorReadMemory(uint64_t addr,
-					  void *buffer, uint32_t size)
-{
-	return ExternalReadMemory(addr, buffer, size);
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-CoprocessorWriteMemory(uint64_t addr,
-					   const void *buffer, uint32_t size)
-{
-	return ExternalWriteMemory(addr, buffer, size);
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-ExternalReadMemory(uint64_t addr,
-				   void *buffer, uint32_t size)
-{
-	// this method should be implemented by the super class, that should
-	//   provide access to the external memory
-	return false;
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-ExternalWriteMemory(uint64_t addr,
-					const void *buffer, uint32_t size)
-{
-	// this method should be implemented by the super class, that shoul
-	//   provide access to the external memory
-	return false;
-}
-
-//=====================================================================
-//=             memory interface methods                        END   =
-//=====================================================================
-
-//=====================================================================
-//=             Registers interface methods                    START  =
-//=====================================================================
-
-template<class CONFIG>
-Register *
-CPU<CONFIG> ::
-GetRegister(const char *name) {
-	if(registers_registry.find(string(name)) != registers_registry.end())
-		return registers_registry[string(name)];
-	else
-		return NULL;
-}
-
-//=====================================================================
-//=             CPURegistersInterface interface methods         END  ==
-//=====================================================================
-
-//=====================================================================
-//=                   Disassembly methods                      START  =
-//=====================================================================
-
-template<class CONFIG>
-string
-CPU<CONFIG> ::
-Disasm(uint64_t addr, uint64_t &next_addr) {
-	typename isa::arm32::Operation<CONFIG> *op = NULL;
-	typename isa::thumb::Operation<CONFIG> *top = NULL;
-	insn_t insn;
-	thumb_insn_t tinsn;
-	
-	stringstream buffer;
-	if(GetCPSR_T()) {
-		if(!ReadMemory(addr, &tinsn, 2)) {
-			buffer << "Could not read from memory";
-			return buffer.str();
-		}
-		if (GetEndianness() == E_BIG_ENDIAN)
-			tinsn = BigEndian2Host(tinsn);
-		else
-			tinsn = LittleEndian2Host(tinsn);
-		top = thumb_decoder.Decode(addr, tinsn);
-		top->disasm(*this, buffer);
-	} else {
-		if(!ReadMemory(addr, &insn, 4)) {
-			buffer << "Could not read from memory";
-			return buffer.str();
-		}
-		if (GetEndianness() == E_BIG_ENDIAN)
-			insn = BigEndian2Host(insn);
-		else
-			insn = LittleEndian2Host(insn);
-		op = arm32_decoder.Decode(addr, insn);
-		op->disasm(*this, buffer);
-	}
-	return buffer.str();
-}
-
-//=====================================================================
-//=                   DebugDisasmInterface methods              END   =
-//=====================================================================
-
-//=====================================================================
-//=                   Debugging methods                        START  =
-//=====================================================================
-
-template<class CONFIG>
-string
-CPU<CONFIG> ::
-GetObjectFriendlyName(uint64_t addr)
-{
-	stringstream sstr;
-	
-	const Symbol<uint64_t> *symbol =
-			symbol_table_lookup_import->FindSymbolByAddr(addr,
-					Symbol<uint64_t>::SYM_OBJECT);
-	if(symbol)
-		sstr << symbol->GetFriendlyName(addr);
-	else
-		sstr << "0x" << std::hex << addr << std::dec;
-	
-	return sstr.str();
-}
-
-template<class CONFIG>
-string
-CPU<CONFIG> ::
-GetFunctionFriendlyName(uint64_t addr)
-{
-	stringstream sstr;
-
-	const Symbol<uint64_t> *symbol =
-			symbol_table_lookup_import->FindSymbolByAddr(addr,
-					Symbol<uint64_t>::SYM_FUNC);
-	if ( symbol )
-		sstr << symbol->GetFriendlyName(addr);
-	else
-		sstr << "0x" << std::hex << addr << std::dec;
-	
-	return sstr.str();
-}
-
-//=====================================================================
-//=                   Debugging methods                         END   =
-//=====================================================================
-
-//=====================================================================
-//=                    execution handling methods              START  =
-//=====================================================================
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-Stop(int ret) {
-	exit(ret);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-OnBusCycle() {
-	
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-Run() {
-	
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-Sync() {
-	
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-CoprocessorStop(unsigned int cp_id, int ret) {
-	Stop(ret);
-}
-
-template<class CONFIG>
-endian_type
-CPU<CONFIG> ::
-CoprocessorGetEndianness() {
-	return GetEndianness();
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-CoprocessorGetVinithi() {
-	return arm966es_vinithi;
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-CoprocessorGetInitram() {
-	return arm966es_initram;
-}
-
-//=====================================================================
-//=                    execution handling methods               END   =
-//=====================================================================
-
-/**************************************************************/
-/* Registers access methods    START                          */
-/**************************************************************/
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-InitGPR() {
-	for(unsigned int i = 0; i < num_log_gprs; i++)
-		gpr[i] = 0;
-	
-	for(unsigned int i = 0; i < num_phys_gprs; i++)
-		phys_gpr[i] = 0;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetGPRMapping(uint32_t src_mode, uint32_t tar_mode) {
-	//   /* gpr organization per running mode:
-	//    * - user:           0-14 (R0-R14),                  15 (PC)
-	//    * - system:         0-14 (R0-R14),                  15 (PC)
-	//    * - supervisor:     0-12 (R0-R12), 16-17 (R13-R14), 15 (PC)
-	//    * - abort:          0-12 (R0-R12), 18-19 (R13-R14), 15 (PC)
-	//    * - undefined:      0-12 (R0-R12), 20-21 (R13-R14), 15 (PC)
-	//    * - interrupt:      0-12 (R0-R12), 22-23 (R13-R14), 15 (PC)
-	//    * - fast interrupt: 0-7 (R0-R7),   24-30 (R8-R14),  15 (PC)
-	//    */
-
-	/* Backup current running mode */
-	switch(src_mode) {
-		case USER_MODE:
-		case SYSTEM_MODE:
-			for(unsigned int i = 0; i < 16; i++) {
-				phys_gpr[i] = gpr[i];
-			}
-			break;
-		case SUPERVISOR_MODE:
-			for(unsigned int i = 0; i < 13; i++) {
-				phys_gpr[i] = gpr[i];
-			}
-			phys_gpr[16] = gpr[13];
-			phys_gpr[17] = gpr[14];
-			phys_gpr[15] = gpr[15];
-			break;
-		case ABORT_MODE:
-			for(unsigned int i = 0; i < 13; i++) {
-				phys_gpr[i] = gpr[i];
-			}
-			phys_gpr[18] = gpr[13];
-			phys_gpr[19] = gpr[14];
-			phys_gpr[15] = gpr[15];
-			break;
-		case UNDEFINED_MODE:
-			for(unsigned int i = 0; i < 13; i++) {
-				phys_gpr[i] = gpr[i];
-			}
-			phys_gpr[20] = gpr[13];
-			phys_gpr[21] = gpr[14];
-			phys_gpr[15] = gpr[15];
-			break;
-		case IRQ_MODE:
-			for(unsigned int i = 0; i < 13; i++) {
-				phys_gpr[i] = gpr[i];
-			}
-			phys_gpr[22] = gpr[13];
-			phys_gpr[23] = gpr[14];
-			phys_gpr[15] = gpr[15];
-			break;
-		case FIQ_MODE:
-			for(unsigned int i = 0; i < 8; i++) {
-				phys_gpr[i] = gpr[i];
-			}
-			for(unsigned int i = 0; i < 7; i++) {
-				phys_gpr[24 + i] = gpr[8 + i];
-			}
-			phys_gpr[15] = gpr[15];
-			break;
-		default:
-			const char *c_tar_mode = "unknown";
-			switch(tar_mode)
-			{
-			case USER_MODE:
-				c_tar_mode = "USER_MODE";
-				break;
-			case SYSTEM_MODE:
-				c_tar_mode = "SYSTEM_MODE";
-				break;
-			case SUPERVISOR_MODE:
-				c_tar_mode = "SUPERVISOR_MODE";
-				break;
-			case ABORT_MODE:
-				c_tar_mode = "ABORT_MODE";
-				break;
-			case UNDEFINED_MODE:
-				c_tar_mode = "UNDEFINED_MODE";
-				break;
-			case IRQ_MODE:
-				c_tar_mode = "IRQ_MODE";
-				break;
-			case FIQ_MODE:
-				c_tar_mode = "FIQ_MODE";
-				break;
-			}
-			logger << DebugError << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
-				<< " unknown running mode (0x" << hex << src_mode << dec << "), target mode = " << c_tar_mode
-				<< EndDebug;
-			Stop(-1);
-			break;
-	}
-
-	/* Update registers to the target mode */
-	switch(tar_mode) {
-		case USER_MODE:
-		case SYSTEM_MODE:
-			for(unsigned int i = 0; i < 16; i++) {
-				gpr[i] = phys_gpr[i];
-			}
-			break;
-		case SUPERVISOR_MODE:
-			for(unsigned int i = 0; i < 13; i++) {
-				gpr[i] = phys_gpr[i];
-			}
-			gpr[13] = phys_gpr[16];
-			gpr[14] = phys_gpr[17];
-			gpr[15] = phys_gpr[15];
-			break;
-		case ABORT_MODE:
-			for(unsigned int i = 0; i < 13; i++) {
-				gpr[i] = phys_gpr[i];
-			}
-			gpr[13] = phys_gpr[18];
-			gpr[14] = phys_gpr[19];
-			gpr[15] = phys_gpr[15];
-			break;
-		case UNDEFINED_MODE:
-			for(unsigned int i = 0; i < 13; i++) {
-				gpr[i] = phys_gpr[i];
-			}
-			gpr[13] = phys_gpr[20];
-			gpr[14] = phys_gpr[21];
-			gpr[15] = phys_gpr[15];
-			break;
-		case IRQ_MODE:
-			for(unsigned int i = 0; i < 13; i++) {
-				gpr[i] = phys_gpr[i];
-			}
-			gpr[13] = phys_gpr[22];
-			gpr[14] = phys_gpr[23];
-			gpr[15] = phys_gpr[15];
-			break;
-		case FIQ_MODE:
-			for(unsigned int i = 0; i < 8; i++) {
-				gpr[i] = phys_gpr[i];
-			}
-			for(unsigned int i = 0; i < 7; i++) {
-				gpr[8 + i] = phys_gpr[24 + i];
-			}
-			gpr[15] = phys_gpr[15];
-			break;
-		default:
-			const char *c_src_mode = "unknown";
-			switch(src_mode)
-		{
-			case USER_MODE:
-				c_src_mode = "USER_MODE";
-				break;
-			case SYSTEM_MODE:
-				c_src_mode = "SYSTEM_MODE";
-				break;
-			case SUPERVISOR_MODE:
-				c_src_mode = "SUPERVISOR_MODE";
-				break;
-			case ABORT_MODE:
-				c_src_mode = "ABORT_MODE";
-				break;
-			case UNDEFINED_MODE:
-				c_src_mode = "UNDEFINED_MODE";
-				break;
-			case IRQ_MODE:
-				c_src_mode = "IRQ_MODE";
-				break;
-			case FIQ_MODE:
-				c_src_mode = "FIQ_MODE";
-				break;
-		}
-			logger << DebugError << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
-			<< " unknown target mode (0x" << hex << tar_mode << dec << "), source mode = " << c_src_mode
-			<< EndDebug;
-			Stop(-1);
-			break;
-	}
-}
-
-template<class CONFIG>
-typename CONFIG::reg_t
-CPU<CONFIG> ::
-GetGPR_usr(uint32_t id) const {
-	return gpr[id];
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetGPR_usr(uint32_t id, typename CONFIG::reg_t val) {
-	gpr[id] = val;
-}
-
-template<class CONFIG>
-const string
-CPU<CONFIG> ::
-DumpRegs() const {
-	ostringstream str;
-
-	for(unsigned int i = 0; i < 16; i++) {
-		str << "r" << i << " = 0x" << hex << GetGPR(i) << dec << ", ";
-	}
-	
-	//  for(unsigned int i = 0; i < 4; i++) {
-	//    str << "r" << (i * 4) << " = 0x" << hex << GetGPR(i * 4) << dec;
-	//    for(unsigned int j = 1; j < 4; j++) {
-	//      str << "\t r" << ((i * 4) + j) << " = 0x" << hex << GetGPR((i * 4) + j) << dec;
-	//    }
-	//    str << endl;
-	//  }
-	
-	str << "cpsr = (" << hex << GetCPSR() << dec << ") ";
-	typename CONFIG::reg_t mask;
-	for(mask = 0x80000000; mask != 0; mask = mask >> 1) {
-		if((mask & GetCPSR()) != 0) str << "1";
-		else str << "0";
-	}
-	//  str << endl;
-	
-	return str.str();
-}
-
-/* GPR access functions */
-template<class CONFIG>
-typename CONFIG::reg_t
-CPU<CONFIG> ::
-GetGPR(uint32_t id) const {
-	return gpr[id];
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetGPR(uint32_t id, typename CONFIG::reg_t val) {
-	gpr[id] = val;
-}
-
-/* CPSR access functions */
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetCPSR(uint32_t val) {
-	cpsr = val;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetCPSR_NZCV(bool n,
-			 bool z,
-			 bool c,
-			 bool v) {
-	if(n) cpsr = cpsr | CPSR_N_MASK;
-	else cpsr = cpsr & ~(CPSR_N_MASK);
-	if(z) cpsr = cpsr | CPSR_Z_MASK;
-	else cpsr = cpsr & ~(CPSR_Z_MASK);
-	if(c) cpsr = cpsr | CPSR_C_MASK;
-	else cpsr = cpsr & ~(CPSR_C_MASK);
-	if(v) cpsr = cpsr | CPSR_V_MASK;
-	else cpsr = cpsr & ~(CPSR_V_MASK);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetCPSR_N(const bool val) {
-	if(val) cpsr = cpsr | CPSR_N_MASK;
-	else cpsr = cpsr & ~(CPSR_N_MASK);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-UnsetCPSR_N() {
-	cpsr = cpsr & ~(CPSR_N_MASK);
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-GetCPSR_N() {
-	return (cpsr & CPSR_N_MASK) == CPSR_N_MASK;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetCPSR_Z(const bool val) {
-	if(val) cpsr = cpsr | CPSR_Z_MASK;
-	else cpsr = cpsr & ~(CPSR_Z_MASK);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-UnsetCPSR_Z() {
-	cpsr = cpsr & ~(CPSR_Z_MASK);
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-GetCPSR_Z() {
-	return (cpsr & CPSR_Z_MASK) == CPSR_Z_MASK;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetCPSR_C(const bool val) {
-	if(val) cpsr = cpsr | CPSR_C_MASK;
-	else cpsr = cpsr & ~(CPSR_C_MASK);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-UnsetCPSR_C() {
-	cpsr = cpsr & ~(CPSR_C_MASK);
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-GetCPSR_C() {
-	return (cpsr & CPSR_C_MASK) == CPSR_C_MASK;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetCPSR_V(const bool val) {
-	if(val) cpsr = cpsr | CPSR_V_MASK;
-	else cpsr = cpsr & ~(CPSR_V_MASK);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-UnsetCPSR_V() {
-	cpsr = cpsr & ~(CPSR_V_MASK);
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-GetCPSR_V() {
-	return (cpsr & CPSR_V_MASK) == CPSR_V_MASK;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetCPSR_Q(const bool val) {
-	if(val) cpsr = cpsr | CPSR_Q_MASK;
-	else cpsr = cpsr & ~(CPSR_Q_MASK);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-UnsetCPSR_Q() {
-	cpsr = cpsr & ~(CPSR_Q_MASK);
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-GetCPSR_Q() {
-	return (cpsr & CPSR_Q_MASK) == CPSR_Q_MASK;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetCPSR_I(const bool val) {
-	if(val) cpsr = cpsr | CPSR_I_MASK;
-	else cpsr = cpsr & ~(CPSR_I_MASK);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-UnsetCPSR_I() {
-	cpsr = cpsr & ~(CPSR_I_MASK);
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-GetCPSR_I() {
-	return (cpsr & CPSR_I_MASK) == CPSR_I_MASK;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetCPSR_F(const bool val) {
-	if(val) cpsr = cpsr | CPSR_F_MASK;
-	else cpsr = cpsr & ~(CPSR_F_MASK);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-UnsetCPSR_F() {
-	cpsr = cpsr & ~(CPSR_F_MASK);
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-GetCPSR_F() {
-	return (cpsr & CPSR_F_MASK) == CPSR_F_MASK;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetCPSR_T(const bool val) {
-	if(val) cpsr = cpsr | CPSR_T_MASK;
-	else cpsr = cpsr & ~(CPSR_T_MASK);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-UnsetCPSR_T() {
-	cpsr = cpsr & ~(CPSR_T_MASK);
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-GetCPSR_T() {
-	return (cpsr & CPSR_T_MASK) == CPSR_T_MASK;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetCPSR_Mode(uint32_t mode) {
-	cpsr = cpsr & ~(CPSR_RUNNING_MODE_MASK);
-	cpsr = cpsr | mode;
-}
-
-template<class CONFIG>
-uint32_t
-CPU<CONFIG> ::
-GetCPSR_Mode() {
-	uint32_t mode = cpsr & CPSR_RUNNING_MODE_MASK;
-	return mode;
-}
-
-template<class CONFIG>
-uint32_t
-CPU<CONFIG> ::
-GetCPSR() const {
-	return cpsr;
-}
-
-/* SPSR access functions */
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetSPSR(uint32_t val) {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	spsr[rm] = val;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetSPSR_NZCV(bool n,
-			 bool z,
-			 bool c,
-			 bool v) {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	if(n) spsr[rm] = spsr[rm] | SPSR_N_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_N_MASK);
-	if(z) spsr[rm] = spsr[rm] | SPSR_Z_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_Z_MASK);
-	if(c) spsr[rm] = spsr[rm] | SPSR_C_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_C_MASK);
-	if(v) spsr[rm] = spsr[rm] | SPSR_V_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_V_MASK);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetSPSR_N(const bool val) {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	if(val) spsr[rm] = spsr[rm] | SPSR_N_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_N_MASK);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-UnsetSPSR_N() {
-	unsigned int rm;
-
-	rm = GetSPSRIndex();
-	
-	spsr[rm] = spsr[rm] & ~(SPSR_N_MASK);
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-GetSPSR_N() {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	return (spsr[rm] & SPSR_N_MASK) == SPSR_N_MASK;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetSPSR_Z(const bool val) {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	if(val) spsr[rm] = spsr[rm] | SPSR_Z_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_Z_MASK);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-UnsetSPSR_Z() {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	spsr[rm] = spsr[rm] & ~(SPSR_Z_MASK);
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-GetSPSR_Z() {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	return (spsr[rm] & SPSR_Z_MASK) == SPSR_Z_MASK;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetSPSR_C(const bool val) {
-	unsigned int rm;
-
-	rm = GetSPSRIndex();
-	
-	if(val) spsr[rm] = spsr[rm] | SPSR_C_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_C_MASK);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-UnsetSPSR_C() {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	spsr[rm] = spsr[rm] & ~(SPSR_C_MASK);
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-GetSPSR_C() {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	return (spsr[rm] & SPSR_C_MASK) == SPSR_C_MASK;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetSPSR_V(const bool val) {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	if(val) spsr[rm] = spsr[rm] | SPSR_V_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_V_MASK);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-UnsetSPSR_V() {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	spsr[rm] = spsr[rm] & ~(SPSR_V_MASK);
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-GetSPSR_V() {
-	unsigned int rm;
-
-	rm = GetSPSRIndex();
-	
-	return (spsr[rm] & SPSR_V_MASK) == SPSR_V_MASK;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetSPSR_Q(const bool val) {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	if(val) spsr[rm] = spsr[rm] | SPSR_Q_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_Q_MASK);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-UnsetSPSR_Q() {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	spsr[rm] = spsr[rm] & ~(SPSR_Q_MASK);
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-GetSPSR_Q() {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	return (spsr[rm] & SPSR_Q_MASK) == SPSR_Q_MASK;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetSPSR_I(const bool val) {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	if(val) spsr[rm] = spsr[rm] | SPSR_I_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_I_MASK);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-UnsetSPSR_I() {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	spsr[rm] = spsr[rm] & ~(SPSR_I_MASK);
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-GetSPSR_I() {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	return (spsr[rm] & SPSR_I_MASK) == SPSR_I_MASK;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetSPSR_F(const bool val) {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	if(val) spsr[rm] = spsr[rm] | SPSR_F_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_F_MASK);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-UnsetSPSR_F() {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-
-	spsr[rm] = spsr[rm] & ~(SPSR_F_MASK);
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-GetSPSR_F() {
-	unsigned int rm;
-
-	rm = GetSPSRIndex();
-	
-	return (spsr[rm] & SPSR_F_MASK) == SPSR_F_MASK;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetSPSR_T(const bool val) {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	if(val) spsr[rm] = spsr[rm] | SPSR_T_MASK;
-	else spsr[rm] = spsr[rm] & ~(SPSR_T_MASK);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-UnsetSPSR_T() {
-	unsigned int rm;
-
-	rm = GetSPSRIndex();
-
-	spsr[rm] = spsr[rm] & ~(SPSR_T_MASK);
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-GetSPSR_T() {
-	unsigned int rm;
-
-	rm = GetSPSRIndex();
-
-	return (spsr[rm] & SPSR_T_MASK) == SPSR_T_MASK;
-}
-
-template<class CONFIG>
-uint32_t
-CPU<CONFIG> ::
-GetSPSR_Mode() {
-	unsigned int rm;
-
-	rm = GetSPSRIndex();
-
-	return spsr[rm] & (SPSR_RUNNING_MODE_MASK);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-SetSPSR_Mode(uint32_t mode) {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	spsr[rm] = spsr[rm] & ~(SPSR_RUNNING_MODE_MASK);
-	spsr[rm] = spsr[rm] | mode;
-}
-
-template<class CONFIG>
-uint32_t
-CPU<CONFIG> ::
-GetSPSR() {
-	unsigned int rm;
-	
-	rm = GetSPSRIndex();
-	
-	return spsr[rm];
-}
-
-/* gets spsr index from current running mode */
-template<class CONFIG>
-uint32_t
-CPU<CONFIG> ::
-GetSPSRIndex() {
-	uint32_t rm;
-
-	switch(cpsr & CPSR_RUNNING_MODE_MASK) {
-		case USER_MODE:
-			logger << DebugError
-			<< "Trying to modify SPSR under USER_MODE" << endl
-			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
-			<< EndDebugError;
-			Stop(-1);
-			break;
-		case SYSTEM_MODE:
-			logger << DebugError
-			<< "Trying to modify SPSR under SYSTEM_MODE" << endl
-			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
-			<< EndDebugError;
-			Stop(-1);
-			break;
-		case SUPERVISOR_MODE:
-			rm = 0;
-			break;
-		case ABORT_MODE:
-			rm = 1;
-			break;
-		case UNDEFINED_MODE:
-			rm = 2;
-			break;
-		case IRQ_MODE:
-			rm = 3;
-			break;
-		case FIQ_MODE:
-			rm = 4;
-			break;
-		default:
-			logger << DebugError
-			<< "unkonwn running mode." << endl
-			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
-			<< EndDebugError;
-			Stop(-1);
-			break;
-	}
-	
-	return rm;
-}
-
-/* other CPSR/SPSR methods */
-template<class CONFIG>
-void CPU<CONFIG> ::
-MoveSPSRtoCPSR() {
-	/* SPSR needs to be moved to CPSR
-	 * This means that we need to change the register mapping if the running mode has changed
-	 */
-	uint32_t src_mode = GetCPSR_Mode();
-	uint32_t dst_mode = GetSPSR_Mode();
-	uint32_t cur_spsr = GetSPSR();
-	SetCPSR(cur_spsr);
-	if(src_mode != dst_mode)
-		SetGPRMapping(src_mode, dst_mode);
-}
-
-/* Instruction condition checking method */
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-CheckCondition(uint32_t cond) { // check condition type
-	//	return CheckCondition(cond, GetCPSR());
-	return (cond == 0xe) || ((check_condition_table[cond] >> (cpsr >> 28)) & 1);
-}
-
-/* Condition codes update method */
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-UpdateConditionCodes() {
-	cout << "TODO: "
-	<< __FUNCTION__ << ":"
-	<< __FILE__ << ":"
-	<< __LINE__ << endl;
-}
-
-/* Result condition methods */
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-CarryFrom(const typename CONFIG::reg_t res, const typename CONFIG::reg_t s1, const typename CONFIG::reg_t s2,
-		  const typename CONFIG::reg_t carry_in) {
-	if((res < s1) || (res < s2)) return true;
-	return false;
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-BorrowFrom(const typename CONFIG::reg_t res, const typename CONFIG::reg_t s1, const typename CONFIG::reg_t s2,
-		   const typename CONFIG::reg_t carry_in) {
-	if(s1 > s2)
-		return false;
-	else {
-		if(s1 == s2)
-			if(carry_in) return true;
-			else return false;
-			else return true;
-	}
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-AdditionOverflowFrom(const typename CONFIG::reg_t res, const typename CONFIG::reg_t s1, const typename CONFIG::reg_t s2,
-					 const typename CONFIG::reg_t carry_in) {
-	if(((((int32_t)s1 >= 0) &&
-		 ((int32_t)s2 >= 0)) ||
-		(((int32_t)s1 < 0) &&
-		 ((int32_t)s2 < 0))) &&
-	   (((((int32_t)res >= 0) &&
-		  ((int32_t)s1 < 0)) ||
-		 (((int32_t)res < 0) &&
-		  ((int32_t)s1 >= 0))))) return true;
-	return false;
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-SubtractionOverflowFrom(const typename CONFIG::reg_t res, const typename CONFIG::reg_t s1, const typename CONFIG::reg_t s2,
-						const typename CONFIG::reg_t carry_in) {
-	if((((((int32_t)s1) < 0) &&
-		 (((int32_t)s2) >= 0)) ||
-		((((int32_t)s1) >= 0) &&
-		 (((int32_t)s2) < 0))) &&
-	   ((((((int32_t)res) >= 0) &&
-		  (((int32_t)s1) < 0)) ||
-		 ((((int32_t)res) < 0) &&
-		  (((int32_t)s1) >= 0))))) return true;
-	return false;
-}
-
-/**************************************************************/
-/* Registers access methods    END                            */
-/**************************************************************/
-
-/**************************************************************/
-/* Memory access methods       START                          */
-/**************************************************************/
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-ReadInsn(address_t address, uint16_t &val)
-{
-	if ( CONFIG::MODEL == ARM926EJS && linux_os_import )
-	{
-		// we are running simulation the linux OS
-		//   tcm memories are ignored on this mode
-		// check the instruction cache
-		uint32_t cache_tag = arm926ejs_icache.GetTag(address);
-		uint32_t cache_set = arm926ejs_icache.GetSet(address);
-		uint32_t cache_way;
-		bool cache_hit = false;
-		if ( arm926ejs_icache.GetWay(cache_tag, cache_set, &cache_way) )
-		{
-			if ( arm926ejs_icache.GetValid(cache_set, cache_way) )
-			{
-				// the data is in the cache, just read it
-				uint32_t cache_index =
-					arm926ejs_icache.GetIndex(address);
-				uint32_t read_data_size =
-					arm926ejs_icache.GetDataCopy(cache_set, cache_way, cache_index, 2, (uint8_t *)&val);
-				cache_hit = true;
-				if ( unlikely(read_data_size != 2 ) )
-				{
-					logger << DebugWarning
-						<< "While reading instruction cache, only " << (unsigned int)read_data_size
-						<< " byte(s) could be read, instead of the 2 that were requested (base address = 0x"
-						<< (unsigned int)address << ")"
-						<< EndDebugWarning;
-				}
-			}
-		}
-		if ( unlikely(!cache_hit) )
-		{
-			memory_interface->PrRead(address, (uint8_t *)&val, 2);
-		}
-
-		if ( unlikely(il1_power_estimator_import != 0) )
-			il1_power_estimator_import->ReportReadAccess();
-
-		return;
-	}
-	if ( CONFIG::MODEL == ARM926EJS && !linux_os_import )
-	{
-		// TODO
-	}
-	memory_interface->PrRead(address, (uint8_t *)&val, 2);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-ReadInsn(address_t address, uint32_t &val)
-{
-	uint32_t size = 4;
-	uint8_t *data;
-
-	if ( unlikely(verbose_memory) )
-		logger << DebugInfo << "Reading instruction at 0x" << hex
-			<< address << dec << EndDebugInfo;
-
-	if ( CONFIG::MODEL == ARM926EJS && linux_os_import )
-	{
-		if ( arm926ejs_icache.GetSize() )
-		{
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo
-					<< "Fetching 0x" << hex << address << dec
-					<< EndDebugInfo;
-			// we are running simulation the linux OS
-			//   tcm memories are ignored on this mode
-			// check the instruction cache
-			uint32_t cache_tag = arm926ejs_icache.GetTag(address);
-			uint32_t cache_set = arm926ejs_icache.GetSet(address);
-			uint32_t cache_way;
-			bool cache_hit = false;
-			if ( arm926ejs_icache.GetWay(cache_tag, cache_set, &cache_way) )
-			{
-				if ( arm926ejs_icache.GetValid(cache_set, cache_way) )
-				{
-					// the access is a hit, nothing needs to be done
-					cache_hit = true;
-				}
-			}
-			if ( unlikely(!cache_hit) )
-			{
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "ICache miss" << EndDebugInfo;
-				// get a way to replace
-				cache_way = arm926ejs_icache.GetNewWay(cache_set);
-				// no need to check valiad and dirty bits
-				// the new data can be requested
-				uint8_t *cache_data = 0;
-				uint32_t cache_address =
-						arm926ejs_icache.GetBaseAddressFromAddress(address);
-				// when getting the data we get the pointer to the cache line
-				//   containing the data, so no need to write the cache
-				//   afterwards
-				uint32_t cache_line_size = arm926ejs_icache.GetData(cache_set,
-						cache_way, &cache_data);
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "Requesting data (0x"
-						<< hex << cache_address << dec << ", "
-						<< cache_line_size << ") ..."
-						<< EndDebugInfo;
-				memory_interface->PrRead(cache_address, cache_data,
-						cache_line_size);
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "... data received" << EndDebugInfo;
-				arm926ejs_icache.SetTag(cache_set, cache_way, cache_tag);
-				arm926ejs_icache.SetValid(cache_set, cache_way, 1);
-			}
-			else
-			{
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "ICache hit" << EndDebugInfo;
-			}
-
-			// at this point the data is in the cache, we can read it from the
-			//   cache
-			uint32_t cache_index = arm926ejs_icache.GetIndex(address);
-			(void)arm926ejs_icache.GetData(cache_set, cache_way, cache_index,
-					size, &data);
-			arm926ejs_icache.GetDataCopy(cache_set, cache_way, cache_index, size,
-					(uint8_t *)&val);
-
-			if ( unlikely(il1_power_estimator_import != 0) )
-				il1_power_estimator_import->ReportReadAccess();
-		}
-		else
-		{
-			// no instruction cache present, just request the insn to the
-			//   memory system
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo
-					<< "Requesting memory data read (no insn cache)..."
-					<< EndDebugInfo;
-			memory_interface->PrRead(address, (uint8_t *)&val, size);
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo
-					<< "... data received (0x"
-					<< hex << address << dec << ", " << size << ") = 0x"
-					<< hex << val << dec << EndDebugInfo;
-
-		}
-		return;
-	}
-	
-	if ( CONFIG::MODEL == ARM926EJS && !linux_os_import )
-	{
-		// TODO
-	}
-
-	memory_interface->PrRead(address, (uint8_t *)&val, 4);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-ReadPrefetch(address_t address)
-{
-	address = address & ~(0x3);
-	MemoryOp<CONFIG> *memop;
-	
-	if ( freeLSQueue.empty() )
-		memop = new MemoryOp<CONFIG>();
-	else
-	{
-		memop = freeLSQueue.front();
-		freeLSQueue.pop();
-	}
-	memop->SetPrefetch(address);
-	lsQueue.push(memop);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-Read32toPCUpdateT(address_t address)
-{
-	MemoryOp<CONFIG> *memop;
-	
-	if ( freeLSQueue.empty() )
-		memop = new MemoryOp<CONFIG>();
-	else
-	{
-		memop = freeLSQueue.front();
-		freeLSQueue.pop();
-	}
-	memop->SetReadToPCUpdateT(address);
-	lsQueue.push(memop);
-
-	if (requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ,
-															   MemoryAccessReporting<uint64_t>::MT_DATA,
-															   address & ~((address_t)0x3), 4);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-Read32toPC(address_t address)
-{
-	MemoryOp<CONFIG> *memop;
-	
-	if ( freeLSQueue.empty() )
-		memop = new MemoryOp<CONFIG>();
-	else
-	{
-		memop = freeLSQueue.front();
-		freeLSQueue.pop();
-	}
-	memop->SetReadToPC(address);
-	lsQueue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ,
-															   MemoryAccessReporting<uint64_t>::MT_DATA,
-															   address & ~((address_t)0x3), 4);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-Read32toGPR(address_t address, uint32_t reg)
-{
-	MemoryOp<CONFIG> *memop;
-	
-	if ( freeLSQueue.empty() )
-		memop = new MemoryOp<CONFIG>();
-	else
-	{
-		memop = freeLSQueue.front();
-		freeLSQueue.pop();
-	}
-	memop->SetRead(address, 4, reg, false, false);
-	lsQueue.push(memop);
-
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ,
-															   MemoryAccessReporting<uint64_t>::MT_DATA,
-															   address & ~((address_t)0x3), 4);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-Read32toGPRAligned(address_t address, uint32_t reg)
-{
-	MemoryOp<CONFIG> *memop;
-	
-	address = address & ~((address_t)0x3);
-
-	if ( freeLSQueue.empty() )
-		memop = new MemoryOp<CONFIG>();
-	else
-	{
-		memop = freeLSQueue.front();
-		freeLSQueue.pop();
-	}
-	memop->SetRead(address, 4, reg, true, false);
-	lsQueue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ,
-															   MemoryAccessReporting<uint64_t>::MT_DATA,
-															   address, 4);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-Read16toGPRAligned(address_t address, uint32_t reg)
-{
-	MemoryOp<CONFIG> *memop;
-	
-	address = address & ~((address_t)0x1);
-	
-	if ( freeLSQueue.empty() )
-		memop = new MemoryOp<CONFIG>();
-	else
-	{
-		memop = freeLSQueue.front();
-		freeLSQueue.pop();
-	}
-	memop->SetRead(address, 2, reg, true, false);
-	lsQueue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ,
-															   MemoryAccessReporting<uint64_t>::MT_DATA,
-															   address, 2);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-ReadS16toGPRAligned(address_t address, uint32_t reg)
-{
-	MemoryOp<CONFIG> *memop;
-	
-	address = address & ~((address_t)0x1);
-	if ( freeLSQueue.empty() )
-		memop = new MemoryOp<CONFIG>();
-	else
-	{
-		memop = freeLSQueue.front();
-		freeLSQueue.pop();
-	}
-	memop->SetRead(address, 2, reg, /* aligned */true, /* signed */true);
-	lsQueue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ,
-															   MemoryAccessReporting<uint64_t>::MT_DATA,
-															   address, 2);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-ReadS8toGPR(address_t address, uint32_t reg)
-{
-	MemoryOp<CONFIG> *memop;
-	
-	if ( freeLSQueue.empty() )
-		memop = new MemoryOp<CONFIG>();
-	else
-	{
-		memop = freeLSQueue.front();
-		freeLSQueue.pop();
-	}
-	memop->SetRead(address, 1, reg, /* aligned */true, /* signed */true);
-	lsQueue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ,
-															   MemoryAccessReporting<uint64_t>::MT_DATA,
-															   address, 1);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-Read8toGPR(address_t address, uint32_t reg)
-{
-	MemoryOp<CONFIG> *memop;
-	
-	if ( freeLSQueue.empty() )
-		memop = new MemoryOp<CONFIG>();
-	else
-	{
-		memop = freeLSQueue.front();
-		freeLSQueue.pop();
-	}
-	memop->SetRead(address, 1, reg, /* aligned */true, /* signed */false);
-	lsQueue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ,
-															   MemoryAccessReporting<uint64_t>::MT_DATA,
-															   address, 1);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-Write32(address_t address, uint32_t value)
-{
-	MemoryOp<CONFIG> *memop;
-	
-	address = address & ~((address_t)0x3);
-	if ( freeLSQueue.empty() )
-		memop = new MemoryOp<CONFIG>();
-	else
-	{
-		memop = freeLSQueue.front();
-		freeLSQueue.pop();
-	}
-	memop->SetWrite(address, 4, value);
-	lsQueue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_WRITE,
-															   MemoryAccessReporting<uint64_t>::MT_DATA,
-															   address, 4);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-Write16(address_t address, uint16_t value)
-{
-	address = address & ~((address_t)0x1);
-	MemoryOp<CONFIG> *memop;
-	
-	if ( freeLSQueue.empty() )
-		memop = new MemoryOp<CONFIG>();
-	else
-	{
-		memop = freeLSQueue.front();
-		freeLSQueue.pop();
-	}
-	memop->SetWrite(address, 2, value);
-	lsQueue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_WRITE,
-															   MemoryAccessReporting<uint64_t>::MT_DATA,
-															   address, 2);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-Write8(address_t address, uint8_t value)
-{
-	MemoryOp<CONFIG> *memop;
-	
-	if ( freeLSQueue.empty() )
-		memop = new MemoryOp<CONFIG>();
-	else
-	{
-		memop = freeLSQueue.front();
-		freeLSQueue.pop();
-	}
-	memop->SetWrite(address, 1, value);
-	lsQueue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_WRITE,
-															   MemoryAccessReporting<uint64_t>::MT_DATA,
-															   address, 1);
-}
-
-/**************************************************************/
-/* Memory access methods       END                            */
-/**************************************************************/
-
-/**************************************************************/
-/* Coprocessor methods          START                         */
-/**************************************************************/
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-CoprocessorLoad(uint32_t cp_num, address_t address) {
-	
-	logger << DebugError
-	<< "TODO" << endl
-	<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
-	<< EndDebugError;
-	
-	Stop(-1);
-	
-	return false;
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-CoprocessorLoad(uint32_t cp_num, address_t address, uint32_t option) {
-	
-	logger << DebugError
-	<< "TODO" << endl
-	<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
-	<< EndDebugError;
-	
-	Stop(-1);
-	
-	return false;
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-CoprocessorStore(uint32_t cp_num, address_t address) {
-
-	logger << DebugError
-	<< "TODO" << endl
-	<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
-	<< EndDebugError;
-
-	Stop(-1);
-
-	return false;
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-CoprocessorStore(uint32_t cp_num, address_t address, uint32_t option) {
-
-	logger << DebugError
-	<< "TODO" << endl
-	<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
-	<< EndDebugError;
-
-
-	Stop(-1);
-
-	return false;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-CoprocessorDataProcess(uint32_t cp_num, uint32_t op1, uint32_t op2,
-					   uint32_t crd, uint32_t crn, uint32_t crm) {
-	
-	logger << DebugError
-	<< "TODO" << endl
-	<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
-	<< EndDebugError;
-	
-	Stop(-1);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-MoveToCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2,
-				  uint32_t rd, uint32_t crn, uint32_t crm) {
-	if(cp[cp_num] == 0) {
-
-		logger << DebugError
-		<< "TODO" << endl
-		<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
-		<< EndDebugError;
-
-		Stop(-1);
-	}
-	cp[cp_num]->WriteRegister(op1, op2, crn, crm, GetGPR(rd));
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2,
-					uint32_t rd, uint32_t crn, uint32_t crm) {
-	if(cp[cp_num] == 0) {
-		logger << DebugError
-		<< "TODO" << endl
-		<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
-		<< EndDebugError;
-
-		Stop(-1);
-	}
-	cp[cp_num]->ReadRegister(op1, op2, crn, crm, gpr[rd]);
-}
-
-/**************************************************************/
-/* Coprocessor methods          END                           */
-/**************************************************************/
-
-/**************************************************************/
-/* Exception methods            START                         */
-/**************************************************************/
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-PerformResetException() {
-	// - get current mode
-	// - switch to reset mode
-	// - R14_svc undefined
-	// - SPSR_svc undefined
-	// - set ARM state
-	// - disable fast interrupts
-	// - disable normal interrupts
-	// - jump to interruption vector
-	uint32_t cur_mode = GetCPSR_Mode();
-	//	uint32_t cur_cpsr = GetCPSR();
-	SetCPSR_Mode(SUPERVISOR_MODE);
-	SetGPRMapping(cur_mode, SUPERVISOR_MODE);
-	SetGPR(14, 0);
-	SetSPSR(0);
-	UnsetCPSR_T();
-	SetCPSR_F();
-	SetCPSR_I();
-	SetGPR(PC_reg, GetResetExceptionAddr());
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-PerformUndefInsnException() {
-	// - get current mode
-	// - switch to supervisor mode
-	// - address of this insn + 4 ==> R14_svc (pc already set to the right value)
-	// - CPSR (before switching to supervisor mode) ==> SPSR_svc
-	// - set ARM state
-	// - disable normal interrupts
-	// - jump to interruption vector
-	uint32_t cur_mode = GetCPSR_Mode();
-	uint32_t cur_cpsr = GetCPSR();
-	SetCPSR_Mode(UNDEFINED_MODE);
-	SetGPRMapping(cur_mode, UNDEFINED_MODE);
-	SetGPR(14, GetGPR(PC_reg));
-	SetSPSR(cur_cpsr);
-	UnsetCPSR_T();
-	SetCPSR_I();
-	SetGPR(PC_reg, GetUndefInsnExceptionAddr());
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-PerformSWIException() {
-	// - get current mode
-	// - switch to supervisor mode
-	// - address of this swi + 4 ==> R14_svc (pc already set to the right value)
-	// - CPSR (before switching to supervisor mode) ==> SPSR_svc
-	// - set ARM state
-	// - disable normal interrupts
-	// - jump to interruption vector
-	uint32_t cur_mode = GetCPSR_Mode();
-	uint32_t cur_cpsr = GetCPSR();
-	SetCPSR_Mode(SUPERVISOR_MODE);
-	SetGPRMapping(cur_mode, SUPERVISOR_MODE);
-	SetGPR(14, GetGPR(PC_reg));
-	SetSPSR(cur_cpsr);
-	UnsetCPSR_T();
-	SetCPSR_I();
-	SetGPR(PC_reg, GetSWIExceptionAddr());
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-PerformPrefetchAbortException() {
-	// - get current mode
-	// - switch to abort mode
-	// - address of this swi + 4 ==> R14_svc (pc already set to the right value)
-	// - CPSR (before switching to supervisor mode) ==> SPSR_svc
-	// - set ARM state
-	// - disable normal interrupts
-	// - jump to interruption vector
-	uint32_t cur_mode = GetCPSR_Mode();
-	uint32_t cur_cpsr = GetCPSR();
-	SetCPSR_Mode(ABORT_MODE);
-	SetGPRMapping(cur_mode, ABORT_MODE);
-	SetGPR(14, GetGPR(PC_reg));
-	SetSPSR(cur_cpsr);
-	UnsetCPSR_T();
-	SetCPSR_I();
-	SetGPR(PC_reg, GetPrefetchAbortExceptionAddr());
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-PerformDataAbortException() {
-	// - get current mode
-	// - switch to abort mode
-	// - address of the instrucction that produced the data abort + 8 ==> R14_svc
-	// - CPSR (before switching to supervisor mode) ==> SPSR_svc
-	// - set ARM state
-	// - disable normal interrupts
-	// - jump to interruption vector
-	uint32_t cur_mode = GetCPSR_Mode();
-	uint32_t cur_cpsr = GetCPSR();
-	SetCPSR_Mode(SUPERVISOR_MODE);
-	SetGPRMapping(cur_mode, ABORT_MODE);
-	SetGPR(14, GetGPR(PC_reg) + 0x4);
-	SetSPSR(cur_cpsr);
-	UnsetCPSR_T();
-	SetCPSR_I();
-	SetGPR(PC_reg, GetDataAbortExceptionAddr());
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-PerformIRQException() {
-	// - get current mode
-	// - switch to abort mode
-	// - address of the next instruction to be executed + 4 ==> R14_svc
-	// - CPSR (before switching to supervisor mode) ==> SPSR_svc
-	// - set ARM state
-	// - disable normal interrupts
-	// - jump to interruption vector
-	uint32_t cur_mode = GetCPSR_Mode();
-	uint32_t cur_cpsr = GetCPSR();
-	SetCPSR_Mode(IRQ_MODE);
-	SetGPRMapping(cur_mode, IRQ_MODE);
-	SetGPR(14, GetGPR(PC_reg) + 0x4);
-	SetSPSR(cur_cpsr);
-	UnsetCPSR_T();
-	SetCPSR_I();
-	SetGPR(PC_reg, GetIRQExceptionAddr());
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-PerformFIQException() {
-	// - get current mode
-	// - switch to reset mode
-	// - address of this swi + 4 ==> R14_svc (pc already set to the right value)
-	// - CPSR (before switching to supervisor mode) ==> SPSR_svc
-	// - set ARM state
-	// - disable fast interrupts
-	// - disable normal interrupts
-	// - jump to interruption vector
-	uint32_t cur_mode = GetCPSR_Mode();
-	uint32_t cur_cpsr = GetCPSR();
-	SetCPSR_Mode(FIQ_MODE);
-	SetGPRMapping(cur_mode, FIQ_MODE);
-	SetGPR(14, GetGPR(PC_reg));
-	SetSPSR(cur_cpsr);
-	UnsetCPSR_T();
-	SetCPSR_F();
-	SetCPSR_I();
-	SetGPR(PC_reg, GetFIQExceptionAddr());
-}
-
-template<class CONFIG>
-typename CONFIG::address_t
-CPU<CONFIG> ::
-GetExceptionVectorAddr() {
-	// action depends on the cpu model
-	if(CONFIG::MODEL == ARM966E_S)
-		// the cp15 should be able to get us the right value
-		return cp15_966es->GetExceptionVectorAddr();
-	if(CONFIG::MODEL == ARM7TDMI)
-		return 0x0;
-	
-	logger << DebugError
-	<< "TODO: exception vector address reporting is not implemented "
-	<< "for this architecture" << endl
-	<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
-	<< EndDebugError;
-	
-	Stop(-1);
-	return 0;
-}
-
-template<class CONFIG>
-typename CONFIG::address_t
-CPU<CONFIG> ::
-GetResetExceptionAddr() {
-	// vector + 0
-	return GetExceptionVectorAddr() + (address_t)0x0;
-}
-
-template<class CONFIG>
-typename CONFIG::address_t
-CPU<CONFIG> ::
-GetUndefInsnExceptionAddr() {
-	// vector + 0x4
-	return GetExceptionVectorAddr() + (address_t)0x04;
-}
-
-template<class CONFIG>
-typename CONFIG::address_t
-CPU<CONFIG> ::
-GetSWIExceptionAddr() {
-	// vector + 0x8
-	return GetExceptionVectorAddr() + (address_t)0x08;
-}
-
-template<class CONFIG>
-typename CONFIG::address_t
-CPU<CONFIG> ::
-GetPrefetchAbortExceptionAddr() {
-	// vector + 0xc
-	return GetExceptionVectorAddr() + (address_t)0x0c;
-}
-
-template<class CONFIG>
-typename CONFIG::address_t
-CPU<CONFIG> ::
-GetDataAbortExceptionAddr() {
-	// vector + 0x10
-	return GetExceptionVectorAddr() + (address_t)0x010;
-}
-
-template<class CONFIG>
-typename CONFIG::address_t
-CPU<CONFIG> ::
-GetIRQExceptionAddr() {
-	// vector + 0x18
-	return GetExceptionVectorAddr() + (address_t)0x018;
-}
-
-template<class CONFIG>
-typename CONFIG::address_t
-CPU<CONFIG> ::
-GetFIQExceptionAddr() {
-	// vector + 0x1c
-	return GetExceptionVectorAddr() + (address_t)0x01c;
-}
-
-/**************************************************************/
-/* Exception methods            END                           */
-/**************************************************************/
-
-/**************************************************************/
-/* Condition table methods    START                           */
-/**************************************************************/
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-CheckCondition(unsigned int cond, unsigned int cpsr_val) {
-	switch(cond) {
-		case COND_EQ:
-			if((cpsr_val & CPSR_Z_MASK) == CPSR_Z_MASK)
-				return true;
-			break;
-		case COND_NE:
-			if((cpsr_val & CPSR_Z_MASK) == 0)
-				return true;
-			break;
-		case COND_CS_HS:
-			if((cpsr_val & CPSR_C_MASK) == CPSR_C_MASK)
-				return true;
-			break;
-		case COND_CC_LO:
-			if((cpsr_val & CPSR_C_MASK) == 0)
-				return true;
-			break;
-		case COND_MI:
-			if((cpsr_val & CPSR_N_MASK) == CPSR_N_MASK)
-				return true;
-			break;
-		case COND_PL:
-			if((cpsr_val & CPSR_N_MASK) == 0)
-				return true;
-			break;
-		case COND_VS:
-			if((cpsr_val & CPSR_V_MASK) == CPSR_V_MASK)
-				return true;
-			break;
-		case COND_VC:
-			if((cpsr_val & CPSR_V_MASK) == 0)
-				return true;
-			break;
-		case COND_HI:
-			if(((cpsr_val & CPSR_C_MASK) == CPSR_C_MASK) &&
-			   ((cpsr_val & CPSR_Z_MASK) == 0))
-				return true;
-			break;
-		case COND_LS:
-			if(((cpsr_val & CPSR_C_MASK) == 0) ||
-			   ((cpsr_val & CPSR_Z_MASK) == CPSR_Z_MASK))
-				return true;
-			break;
-		case COND_GE:
-			if((cpsr_val & (CPSR_N_MASK | CPSR_V_MASK)) == (CPSR_N_MASK | CPSR_V_MASK))
-				return true;
-			if((cpsr_val & (CPSR_N_MASK | CPSR_V_MASK)) == 0)
-				return true;
-			break;
-		case COND_LT:
-			if(((cpsr_val & CPSR_N_MASK) == CPSR_N_MASK) &&
-			   ((cpsr_val & CPSR_V_MASK) == 0))
-				return true;
-			if(((cpsr_val & CPSR_N_MASK) == 0) &&
-			   ((cpsr_val & CPSR_V_MASK) == CPSR_V_MASK))
-				return true;
-			break;
-		case COND_GT:
-			if((cpsr_val & CPSR_Z_MASK) == 0) {
-				if((cpsr_val & (CPSR_N_MASK | CPSR_V_MASK)) == (CPSR_N_MASK | CPSR_V_MASK))
-					return true;
-				if((cpsr_val & (CPSR_N_MASK | CPSR_V_MASK)) == 0)
-					return true;
-			}
-			break;
-		case COND_LE:
-			if((cpsr_val & CPSR_Z_MASK) == CPSR_Z_MASK)
-				return true;
-			if(((cpsr_val & CPSR_N_MASK) == CPSR_N_MASK) &&
-			   ((cpsr_val & CPSR_V_MASK) == 0))
-				return true;
-			if(((cpsr_val & CPSR_N_MASK) == 0) &&
-			   ((cpsr_val & CPSR_V_MASK) == CPSR_V_MASK))
-				return true;
-			break;
-		case COND_AL:
-			return true;
-			break;
-		default:
-			return false;
-			break;
-	}
-
-	return false;
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-InitializeCheckConditionTable() { // check condition type
-	for(unsigned int cond = 0; cond < 16; cond++) {
-		uint16_t entry = 0;
-		for(uint32_t cpsr_val = 0; cpsr_val < 16; cpsr_val++) {
-			uint16_t val = 0;
-			if(CheckCondition(cond, cpsr_val << 28))
-				val = 1;
-			else
-				val = 0;
-			val = val << cpsr_val;
-			entry += val;
-		}
-		check_condition_table[cond] = entry;
-	}
-}
-
-/**************************************************************/
-/* Condition table methods    START                           */
-/**************************************************************/
-
-/**************************************************************/
-/* Instructions size methods  START                           */
-/**************************************************************/
-
-/* Returns current instruction size
- * NOTE: for the moment thumb is not supported, so only an instruction
- *   size is supported (32bits).
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugError;
+
+/** ModeInfo: compile time generation for parameters of ARM modes with banked registers
+ *
+ * This meta class generates at compile-time parameters and structure
+ * of Banked Registers for ARM Modes.
  */
-template<class CONFIG>
-uint32_t
-CPU<CONFIG> ::
-InstructionByteSize() {
-	if(GetCPSR_T()) return 2; // we are running in thumb mode
-	return 4;
-}
 
-template<class CONFIG>
-uint32_t
-CPU<CONFIG> ::
-InstructionBitSize() {
-	if(GetCPSR_T()) return 16; // we are running in thumb mode
-	return 32;
-}
+template <uint32_t MAPPED>
+struct ModeInfo
+{
+  static uint32_t const next = MAPPED & (MAPPED-1);
+  static uint32_t const count = 1 + ModeInfo<next>::count;
+};
 
-/**************************************************************/
-/* Instructions size methods    END                           */
-/**************************************************************/
+template <> struct ModeInfo<0> { static uint32_t const count = 0; };
 
-/**************************************************************/
-/* Alignment checking methods  START                          */
-/**************************************************************/
+template <class CORE, uint32_t MAPPED>
+struct BankedMode : public CORE::Mode
+{
+  BankedMode( char const* _suffix )
+    : CORE::Mode( _suffix ), banked_regs(), spsr()
+  {
+  }
+  uint32_t banked_regs[ModeInfo<MAPPED>::count];
+  uint32_t spsr;
 
-/* Check that the address is aligned
+  virtual bool     HasBR( unsigned idx ) { return (MAPPED >> idx) & 1; }
+  virtual bool     HasSPSR() { return true; }
+  virtual void     SetSPSR(uint32_t value ) { spsr = value; };
+  virtual uint32_t GetSPSR() { return spsr; };
+  virtual void     Swap( CORE& cpu )
+  {
+    for (unsigned idx = 0, bidx = 0; idx < cpu.num_log_gprs; ++idx)
+      if ((MAPPED >> idx) & 1) {
+        uint32_t regval = cpu.GetGPR(idx);
+        cpu.SetGPR( idx, banked_regs[bidx] );
+        banked_regs[bidx] = regval;
+        bidx += 1;
+      }
+  }
+};
+
+/** Constructor.
+ * Initializes CPU
+ *
+ * @param name the name that will be used by the UNISIM service 
+ *   infrastructure and will identify this object
+ * @param parent the parent object of this object
  */
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-CheckAlignmentExcep(typename CONFIG::address_t addr) {
-	//	if(CONFIG::DEBUG_ENABLE && logger_import)
-	//		(*logger_import) << DebugError << LOCATION
-	//			<< "TODO"
-	//			<< endl << EndDebugError;
-}
-
-/**************************************************************/
-/* Alignment checking methods  END                            */
-/**************************************************************/
-
-/**************************************************************/
-/* CPUARMLinuxOSInterface methods                       START */
-/**************************************************************/
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
-PerformExit(int ret) {
-	running = false;
-	Stop(ret);
-}
-
-/**************************************************************/
-/* CPUARMLinuxOSInterface methods                         END */
-/**************************************************************/
-
-/* endianness methods */
-template<class CONFIG>
-endian_type
-CPU<CONFIG> ::
-GetEndianness() {
-	return default_endianness;
-	//	return CONFIG::ENDIANESS;
-}
-
-/**************************************************************/
-/* Coprocessors creation methods (private)              START */
-/**************************************************************/
-
-template<class CONFIG>
-inline INLINE
-void
-CPU<CONFIG> ::
-CreateCpSystem() {
-	for(unsigned int i = 0; i < 16; i++)
-		cp[i] = 0;
-	
-	if(CONFIG::MODEL == ARM966E_S) {
-		cp15_966es = new cp15_966es_t("cp15", 15, this, dtcm, itcm, memory_interface, this);
-		cp[15] = cp15_966es;
-	}
-}
-
-/**************************************************************/
-/* Coprocessors creation methods (private)              END   */
-/**************************************************************/
-
-/**************************************************************/
-/* TCM creation methods (private)                       START */
-/**************************************************************/
-
-template<class CONFIG>
-inline INLINE
-void
-CPU<CONFIG> ::
-CreateTCMSystem() {
-	dtcm = 0;
-	itcm = 0;
-	
-	if(CONFIG::HAS_DTCM) {
-
-		dtcm = new dtcm_t("dtcm", this);
-	}
-	
-	if(CONFIG::HAS_ITCM) {
-		itcm = new itcm_t("itcm", this);
-	}
-}
-
-/**************************************************************/
-/* TCM creation methods (private)                       END   */
-/**************************************************************/
-
-/**************************************************************/
-/* Memory system creation methods (private)             START */
-/**************************************************************/
-
-template<class CONFIG>
-inline INLINE
-void
-CPU<CONFIG> ::
-CreateMemorySystem() {
-#if 0
-	/* TODO: remake all the memory system for the different components without using the memory_interface */
-	if(CONFIG::HAS_CACHE_L2) {
-		cerr << "Configuring cache level 2" << endl;
-		cache_l2 = new Cache<typename CONFIG::cache_l2_t>("cache_l2", memory_interface, this);
-		// cache_l2->memory_import >> memory_import;
-		if(CONFIG::HAS_INSN_CACHE_L1) {
-			cerr << "Configuring instruction cache level 1" << endl;
-			cache_il1 = new Cache<typename CONFIG::insn_cache_l1_t>("cache_il1", cache_l2, this);
-			// cache_il1->memory_import >> cache_l2->memory_export;
-			if(CONFIG::HAS_DATA_CACHE_L1) {
-				cerr << "Configuring data cache level 1" << endl;
-				cache_l1 = new Cache<typename CONFIG::cache_l1_t>("cache_dl1", cache_l2, this);
-				//	cache_l1->memory_import >> cache_l2->memory_export;
-				//			memory_export >> cache_l1->memory_export;
-			} else {
-				cerr << "No data data cache level 1" << endl;
-				cache_l1 = cache_l2;
-				//	memory_export >> cache_l2->memory_export;
-			}
-		} else {
-			if(CONFIG::HAS_DATA_CACHE_L1) {
-				cerr << "Configuring unisified cache level 1" << endl;
-				cache_l1 = new Cache<typename CONFIG::cache_l1_t>("cache_l1", cache_l2, this);
-				//	cache_l1->memory_import >> cache_l2->memory_export;
-				//	memory_export >> cache_l1->memory_export;
-			}
-		}
-	} else {
-		if(CONFIG::HAS_INSN_CACHE_L1) {
-			cache_il1 = new Cache<typename CONFIG::insn_cache_l1_t>("cache_il1", memory_interface, this);
-			cerr << "Configuring instruction cache level 1" << endl;
-			if(CONFIG::HAS_DATA_CACHE_L1) {
-				cerr << "Configuring data cache level 1" << endl;
-				cache_l1 = new Cache<typename CONFIG::cache_l1_t>("cache_dl1", memory_interface, this);
-				// cache_l1->memory_import >> memory_import;
-				//	memory_export >> cache_l1->memory_export;
-			}
-		} else {
-			if(CONFIG::HAS_DATA_CACHE_L1) {
-				cerr << "Configuring unified cache level 1" << endl;
-				cache_l1 = new Cache<typename CONFIG::cache_l1_t>("cache_dl1", memory_interface, this);
-				// cache_l1->memory_import >> memory_import;
-				//	memory_export >> cache_l1->memory_export;
-			} else {
-				cerr << "No caches present in this system" << endl;
-				//			cache_l1 = memory_interface;
-				//			memory_export >> memory_import;
-			}
-		}
-	}
-#endif
-}
-
-/**************************************************************/
-/* Memory system creation methods (private)               END */
-/**************************************************************/
-
-/**************************************************************/
-/* Memory system methods (private)                      START */
-/**************************************************************/
-
-template<class CONFIG>
-inline INLINE
-void
-CPU<CONFIG> ::
-PerformLoadStoreAccesses()
+template <class CONFIG>
+CPU<CONFIG>::CPU(const char *name, Object *parent)
+  : unisim::kernel::service::Object(name, parent)
+  , Service<Registers>(name, parent)
+  , logger(*this)
+  , verbose(false)
+  , m_isit(false)
+  , SCTLR()
+  , CPACR()
+  , TPIDRURW()
+  , TPIDRURO()
+  , FPSCR( 0x03000000 )
+  , FPEXC( 0 )
+  , registers_export("registers-export", this)
 {
-	// while the lsQueue is not empty process entries
-	while(!lsQueue.empty()) {
-		MemoryOp<CONFIG> *memop = lsQueue.front();
-		lsQueue.pop();
-		switch(memop->GetType()) {
-			case MemoryOp<CONFIG>::PREFETCH:
-				PerformPrefetchAccess(memop);
-				break;
-			case MemoryOp<CONFIG>::WRITE:
-				PerformWriteAccess(memop);
-				break;
-			case MemoryOp<CONFIG>::READ:
-				PerformReadAccess(memop);
-				break;
-			case MemoryOp<CONFIG>::READ_TO_PC_UPDATE_T:
-				PerformReadToPCUpdateTAccess(memop);
-				break;
-			case MemoryOp<CONFIG>::READ_TO_PC:
-				PerformReadToPCAccess(memop);
-				break;
-		}
-		freeLSQueue.push(memop);
-	}
+  // Initialize general purpose registers
+  for (unsigned idx = 0; idx < num_log_gprs; idx++)
+    gpr[idx] = 0;
+  this->current_insn_addr = 0;
+  this->next_insn_addr = 0;
+  
+  /* ARM modes (Banked Registers)
+   * At any given running mode only 16 registers are accessible.
+   * The following list indicates the mapping per running modes.
+   * - user:           0-14 (R0-R14),                  15 (PC)
+   * - system:         0-14 (R0-R14),                  15 (PC)
+   * - supervisor:     0-12 (R0-R12), 16-17 (R13-R14), 15 (PC)
+   * - abort:          0-12 (R0-R12), 18-19 (R13-R14), 15 (PC)
+   * - undefined:      0-12 (R0-R12), 20-21 (R13-R14), 15 (PC)
+   * - interrupt:      0-12 (R0-R12), 22-23 (R13-R14), 15 (PC)
+   * - fast interrupt: 0-7 (R0-R7),   24-30 (R8-R14),  15 (PC)
+   */
+  // Initialize ARM Modes (TODO: modes should be conditionnaly selected based on CONFIG)
+  modes[0b10000] = new Mode( "usr" ); // User mode (No banked regs, using main regs)
+  modes[0b10001] = new BankedMode<CPU,0b0111111100000000>( "fiq" ); // FIQ mode
+  modes[0b10010] = new BankedMode<CPU,0b0110000000000000>( "irq" ); // IRQ mode
+  modes[0b10011] = new BankedMode<CPU,0b0110000000000000>( "svc" ); // Supervisor mode
+  modes[0b10110] = new BankedMode<CPU,0b0110000000000000>( "mon" ); // Monitor mode
+  modes[0b10111] = new BankedMode<CPU,0b0110000000000000>( "abt" ); // Abort mode
+  modes[0b11010] = new BankedMode<CPU,0b0110000000000000>( "hyp" ); // Hyp mode
+  modes[0b11011] = new BankedMode<CPU,0b0110000000000000>( "und" ); // Undefined mode
+  modes[0b11111] = new Mode( "sys" ); // System mode (No banked regs, using main regs)
+  
+  // Initialize NEON/VFP registers
+  for (unsigned idx = 0; idx < 32; ++idx)
+    SetVU64( idx, U64(0) );
+
+  /*************************************/
+  /* Registers Debug Accessors   START */
+  /*************************************/
+  
+  {
+    unisim::service::interfaces::Register* dbg_reg = 0;
+    unisim::kernel::service::Register<uint32_t>* var_reg = 0;
+  
+    /** Specific Banked Register Debugging Accessor */
+    struct BankedRegister : public unisim::service::interfaces::Register
+    {
+      BankedRegister(CPU& _cpu, std::string _name, uint8_t _mode, uint8_t _idx ) : cpu(_cpu), name(_name), mode(_mode), idx(_idx) {}
+      virtual const char *GetName() const { return name.c_str(); }
+      virtual void GetValue( void* buffer ) const { *((uint32_t*)buffer) = cpu.GetBankedRegister( mode, idx ); }
+      virtual void SetValue( void const* buffer ) { cpu.SetBankedRegister( mode, idx, *((uint32_t*)buffer ) ); }
+      virtual int  GetSize() const { return 4; }
+      CPU&        cpu;
+      std::string name;
+      uint8_t     mode, idx;
+    };
+  
+    // initialize the registers debugging interface for the first 15 registers
+    for (unsigned idx = 0; idx < 15; idx++) {
+      std::string name, pretty_name, description;
+      { std::stringstream ss; ss << "r" << idx; name = ss.str(); }
+      { std::stringstream ss; ss << DisasmRegister( idx ); pretty_name = ss.str(); }
+      { std::stringstream ss; ss << "Logical register #" << idx << ": " << pretty_name; description = ss.str(); }
+      dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( pretty_name, &gpr[idx] );
+      registers_registry[pretty_name] = dbg_reg;
+      if (name != pretty_name) {
+        registers_registry[name] = dbg_reg;
+        description =  description + ", " + name;
+      }
+      var_reg = new unisim::kernel::service::Register<uint32_t>( pretty_name.c_str(), this, gpr[idx], description.c_str() );
+      variable_register_pool.insert( var_reg );
+      bool is_banked = false;
+      for (typename ModeMap::const_iterator itr = modes.begin(), end = modes.end(); itr != end; ++itr) {
+        if (not itr->second->HasBR( idx )) continue;
+        is_banked = true;
+        std::string br_name = name + '_' + itr->second->suffix;
+        std::string br_pretty_name = pretty_name + '_' + itr->second->suffix;
+        dbg_reg = new BankedRegister( *this, br_pretty_name, itr->first, idx );
+        registers_registry[br_pretty_name] = dbg_reg;
+        if (br_name != br_pretty_name)
+          registers_registry[br_name] = dbg_reg;
+      }
+      if (is_banked) {
+        std::string br_name = name + "_usr";
+        std::string br_pretty_name = pretty_name + "_usr";
+        dbg_reg = new BankedRegister( *this, br_pretty_name, USER_MODE, idx );
+        registers_registry[br_pretty_name] = dbg_reg;
+        if (br_name != br_pretty_name)
+          registers_registry[br_name] = dbg_reg;
+      }
+    }
+  
+    /** Specific Program Counter Register Debugging Accessor */
+    struct ProgramCounterRegister : public unisim::service::interfaces::Register
+    {
+      ProgramCounterRegister( CPU& _cpu ) : cpu(_cpu) {}
+      virtual const char *GetName() const { return "pc"; }
+      virtual void GetValue( void* buffer ) const { *((uint32_t*)buffer) = cpu.next_insn_addr; }
+      virtual void SetValue( void const* buffer ) { uint32_t address = *((uint32_t*)buffer); cpu.BranchExchange( address ); }
+      virtual int  GetSize() const { return 4; }
+      virtual void Clear() { /* Clear is meaningless for PC */ }
+      CPU&        cpu;
+    };
+
+    dbg_reg = new ProgramCounterRegister( *this );
+    registers_registry["pc"] = registers_registry["r15"] = dbg_reg;
+    var_reg = new unisim::kernel::service::Register<uint32_t>( "pc", this, this->next_insn_addr, "Logical Register #15: pc, r15" );
+    variable_register_pool.insert( var_reg );
+    
+    // Handling the CPSR register
+    dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "cpsr", &cpsr.m_value );
+    registers_registry["cpsr"] = dbg_reg;
+    var_reg = new unisim::kernel::service::Register<uint32_t>( "cpsr", this, this->cpsr.m_value, "Current Program Status Register" );
+    variable_register_pool.insert( var_reg );
+    
+    /** SPSRs */
+    struct SavedProgramStatusRegisterWithMode : public unisim::service::interfaces::Register
+    {
+      SavedProgramStatusRegisterWithMode( CPU& _cpu, std::string _name, uint8_t _mode ) : cpu(_cpu), name(_name), mode(_mode) {}
+      virtual ~SavedProgramStatusRegisterWithMode() {}
+      virtual const char *GetName() const { return name.c_str(); }
+      virtual void GetValue( void* buffer ) const { *((uint32_t*)buffer) = cpu.GetMode(mode).GetSPSR(); }
+      virtual void SetValue( void const* buffer ) { cpu.GetMode(mode).SetSPSR( *((uint32_t*)buffer) ); }
+      virtual int  GetSize() const { return 4; }
+      CPU&        cpu;
+      std::string name;
+      uint8_t     mode;
+    };
+    
+    for (typename ModeMap::const_iterator itr = modes.begin(), end = modes.end(); itr != end; ++itr) {
+      if (not itr->second->HasSPSR()) continue;
+      
+      std::string name = std::string( "spsr_" ) + itr->second->suffix;
+      dbg_reg = new SavedProgramStatusRegisterWithMode( *this, name, itr->first );
+      registers_registry[name] = dbg_reg;
+    }
+    struct SavedProgramStatusRegister : public unisim::service::interfaces::Register
+    {
+      SavedProgramStatusRegister( CPU& _cpu ) : cpu(_cpu) {} CPU& cpu;
+      virtual ~SavedProgramStatusRegister() {}
+      virtual const char *GetName() const { return "spsr"; }
+      virtual void GetValue( void* buffer ) const
+      {
+        try { *((uint32_t*)buffer) = cpu.CurrentMode().GetSPSR(); }
+        catch (std::logic_error const&)
+          {
+            /* Do not produce an error because dwarf says this register always exists */
+            *((uint32_t*)buffer) = 0;
+            //cpu.logger << DebugError << "No SPSR in " << cpu.CurrentMode().suffix << " mode" << EndDebugError;
+          }
+      }
+      virtual void SetValue( void const* buffer )
+      {
+        try { cpu.CurrentMode().SetSPSR( *((uint32_t*)buffer) ); }
+        catch (std::logic_error const&)
+          { cpu.logger << DebugError << "No SPSR in " << cpu.CurrentMode().suffix << " mode" << EndDebugError; }
+      }
+      virtual int  GetSize() const { return 4; }
+    };
+    registers_registry["spsr"] = new SavedProgramStatusRegister( *this );
+    
+    /* SCTLR */
+    dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "sctlr", &SCTLR );
+    registers_registry["sctlr"] = dbg_reg;
+    /* CPACR */
+    dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "cpacr", &CPACR );
+    registers_registry["cpacr"] = dbg_reg;
+    
+    // Advanced SIMD and VFP register
+    struct VFPDouble : public unisim::service::interfaces::Register
+    {
+      VFPDouble( CPU& _cpu, std::string _name, unsigned _reg ) : cpu(_cpu), name(_name), reg(_reg) {}
+      
+      virtual ~VFPDouble() {}
+      virtual const char *GetName() const { return name.c_str(); };
+      virtual void GetValue( void* buffer ) const { *((uint64_t*)buffer) = cpu.GetVU64( reg ); }
+      virtual void SetValue( void const* buffer ) { cpu.SetVU64( reg, *((uint64_t*)buffer) ); }
+      virtual int  GetSize() const { return 8; }
+
+      CPU& cpu; std::string name; unsigned reg;
+    };
+    
+    for (unsigned idx = 0; idx < 32; ++idx)
+      {
+        std::stringstream regname; regname << 'd' << idx;
+        dbg_reg = new VFPDouble( *this, regname.str(), idx );
+        registers_registry[regname.str()] = dbg_reg;
+      }
+    
+    struct VFPSingle : public unisim::service::interfaces::Register
+    {
+      VFPSingle( CPU& _cpu, std::string _name, unsigned _reg ) : cpu(_cpu), name(_name), reg(_reg) {}
+
+      virtual ~VFPSingle() {}
+      virtual const char *GetName() const { return name.c_str(); };
+      virtual void GetValue( void* buffer ) const { *((uint32_t*)buffer) = cpu.GetVU32( reg ); }
+      virtual void SetValue( void const* buffer ) { cpu.SetVU32( reg, *((uint32_t*)buffer) ); }
+      virtual int  GetSize() const { return 8; }
+
+      CPU& cpu; std::string name; unsigned reg;
+    };
+
+    for (unsigned idx = 0; idx < 32; ++idx)
+      {
+        std::stringstream regname; regname << 's' << idx;
+        dbg_reg = new VFPSingle( *this, regname.str(), idx );
+        registers_registry[regname.str()] = dbg_reg;
+      }
+
+    
+    // Handling the FPSCR register
+    dbg_reg = new unisim::util::debug::SimpleRegister<uint32_t>( "fpscr", &this->FPSCR );
+    registers_registry["fpscr"] = dbg_reg;
+    var_reg = new unisim::kernel::service::Register<uint32_t>( "fpscr", this, this->FPSCR, "Current Program Status Register" );
+    variable_register_pool.insert( var_reg );
+  }
+    
+  this->CPU<CONFIG>::CP15ResetRegisters();
 }
 
-template<class CONFIG>
-inline INLINE
-void
-CPU<CONFIG> ::
-PerformPrefetchAccess(MemoryOp<CONFIG> *memop)
+/** Destructor.
+ *
+ * Takes care of releasing:
+ *  - Debug Registers
+ */
+template <class CONFIG>
+CPU<CONFIG>::~CPU()
 {
-	uint32_t addr = memop->GetAddress();
-
-	if ( CONFIG::MODEL == ARM926EJS && linux_os_import )
-	{
-		// running arm926ejs with linux simulation
-		//   tcm are ignored
-		uint32_t cache_tag = arm926ejs_dcache.GetTag(addr);
-		uint32_t cache_set = arm926ejs_dcache.GetSet(addr);
-		uint32_t cache_way;
-		bool cache_hit = false;
-		if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
-		{
-			if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
-			{
-				// the access is a hit, nothing needs to be done
-				cache_hit = true;
-			}
-		}
-		// if the access was a miss, data needs to be fetched from main
-		//   memory and placed into the cache
-		if ( !cache_hit )
-		{
-			// get a way to replace
-			cache_way = arm926ejs_dcache.GetNewWay(cache_set);
-			// get the valid and dirty bits from the way to replace
-			bool cache_valid = arm926ejs_dcache.GetValid(cache_set,
-					cache_way);
-			bool cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
-					cache_way);
-			if ( cache_valid & cache_dirty )
-			{
-				// the cache line to replace is valid and dirty so it needs
-				//   to be sent to the main memory
-				uint8_t *rep_cache_data = 0;
-				uint32_t rep_cache_address =
-						arm926ejs_dcache.GetBaseAddress(cache_set,
-								cache_way);
-				arm926ejs_dcache.GetData(cache_set, cache_way,
-						&rep_cache_data);
-				memory_interface->PrWrite(rep_cache_address, rep_cache_data,
-						arm926ejs_dcache.LINE_SIZE);
-			}
-			// the new data can be requested
-			uint8_t *cache_data = 0;
-			uint32_t cache_address =
-					arm926ejs_dcache.GetBaseAddressFromAddress(addr);
-			// when getting the data we get the pointer to the cache line
-			//   containing the data, so no need to write the cache
-			//   afterwards
-			uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
-					cache_way, &cache_data);
-			memory_interface->PrRead(cache_address, cache_data,
-					cache_line_size);
-			arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
-			arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
-			arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
-		}
-		if ( unlikely(dl1_power_estimator_import != 0) )
-			dl1_power_estimator_import->ReportReadAccess();
-	}
-	if ( CONFIG::MODEL == ARM926EJS && !linux_os_import )
-	{
-		// TODO
-	}
-
-	/* should we report a memory access for a prefetch???? */
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					addr, 4);
+  /* Debug registers may be referenced more than once (by different
+   * names).  Thus we must keep track of deleted registers in order
+   * not to delete them multiple times. */
+  { std::set<unisim::service::interfaces::Register*> deleted_regs;
+    for (typename RegistersRegistry::iterator itr = registers_registry.begin(),
+           end = registers_registry.end(); itr != end; ++itr)
+      {
+        if (deleted_regs.insert( itr->second ).second)
+          delete itr->second;
+      }
+  }
+  
+  for (typename VariableRegisterPool::iterator itr = variable_register_pool.begin(),
+         end = variable_register_pool.end(); itr != end; ++itr)
+    delete *itr;
+  for (typename ModeMap::iterator itr = modes.begin(), end = modes.end(); itr != end; ++itr)
+    delete itr->second;
 }
 
-template<class CONFIG>
-inline INLINE
-void
-CPU<CONFIG> ::
-PerformWriteAccess(MemoryOp<CONFIG> *memop)
+/** Get a register by its name.
+ * Gets a register interface to the register specified by name.
+ *
+ * @param name the name of the requested register
+ *
+ * @return a pointer to the RegisterInterface corresponding to name
+ */
+template <class CONFIG>
+unisim::service::interfaces::Register*
+CPU<CONFIG>::GetRegister(const char *name)
 {
-	uint32_t addr = memop->GetAddress();
-	uint32_t size = memop->GetSize();
-	uint32_t write_addr = addr;
-	uint8_t val8 = 0;
-	uint16_t val16 = 0;
-	uint32_t val32 = 0;
-	uint8_t *data;
-
-	if ( unlikely(verbose_memory) )
-		logger << DebugInfo << "Perform write (addr = 0x" << hex
-			<< addr << dec << ", size = " << size << ")" << EndDebugInfo;
-
-	// fix the write address depending on the request size and endianess
-	//   and prepare the data to write
-	switch(size)
-	{
-	case 1:
-		write_addr = write_addr ^ munged_address_mask8;
-		val8 = (uint8_t)memop->GetWriteValue();
-		data = &val8;
-		break;
-	case 2:
-		write_addr = write_addr ^ munged_address_mask16;
-		val16 = (uint16_t)memop->GetWriteValue();
-		val16 = Host2Target(GetEndianness(), val16);
-		data = (uint8_t *)&val16;
-		break;
-	case 4:
-		val32 = memop->GetWriteValue();
-		val32 = Host2Target(GetEndianness(), val32);
-		data = (uint8_t *)&val32;
-		break;
-	default: // should never happen
-		break;
-	}
-
-	if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import )
-	{
-		if ( arm926ejs_dcache.GetSize() )
-		{
-			// running arm926ejs with linux simulation
-			//   tcm are ignored
-			uint32_t cache_tag = arm926ejs_dcache.GetTag(write_addr);
-			uint32_t cache_set = arm926ejs_dcache.GetSet(write_addr);
-			uint32_t cache_way;
-			bool cache_hit = false;
-			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
-			{
-				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) != 0 )
-				{
-					// the access is a hit
-					cache_hit = true;
-				}
-			}
-			// if the access was a hit the data needs to be written into
-			//   the cache, if the access was a miss the data needs to be
-			//   written into memory, but the cache doesn't need to be updated
-			if ( cache_hit )
-			{
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "Cache hit, updating cache."
-						<< EndDebugInfo;
-				uint32_t cache_index = arm926ejs_dcache.GetIndex(write_addr);
-				arm926ejs_dcache.SetData(cache_set, cache_way, cache_index,
-						size, data);
-				arm926ejs_dcache.SetDirty(cache_set, cache_way, 1);
-			}
-			else
-			{
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "Cache miss" << EndDebugInfo;
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "Performing write-through ..."
-						<< EndDebugInfo;
-				memory_interface->PrWrite(write_addr, data, size);
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "... write-through finished."
-						<< EndDebugInfo;
-			}
-
-			if ( unlikely(dl1_power_estimator_import != 0) )
-				dl1_power_estimator_import->ReportWriteAccess();
-		}
-		else // there is no data cache
-		{
-			// there is no data cache, so just send the request to the
-			//   memory interface
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Performing a memory write (no data cache) ..."
-					<< EndDebugInfo;
-			memory_interface->PrWrite(write_addr, data, size);
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "... memory write finished."
-					<< EndDebugInfo;
-		}
-	}
-	if ( (CONFIG::MODEL == ARM926EJS) && !linux_os_import )
-	{
-		// TODO
-	}
-
-	/* report read memory access if necessary */
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_WRITE,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					addr, size);
+  RegistersRegistry::iterator itr = registers_registry.find( name );
+  if (itr != registers_registry.end())
+    return itr->second;
+  else
+    return 0;
 }
 
-template<class CONFIG>
-inline INLINE
-void
-CPU<CONFIG> ::
-PerformReadAccess(MemoryOp<CONFIG> *memop)
+/** Get current privilege level
+ *
+ * Returns the current privilege level according to the running mode.
+ */
+template <class CONFIG>
+unsigned
+CPU<CONFIG>::GetPL()
 {
-	uint32_t addr = memop->GetAddress();
-	uint32_t size = memop->GetSize();
-	uint32_t read_addr = addr & ~(uint32_t)(size - 1);
-	uint8_t data32[4];
-	uint8_t *data;
-
-	if ( unlikely(verbose_memory) )
-		logger << DebugInfo << "Perform read (addr = 0x" << hex
-			<< addr << dec << ", size = " << size << ")" << EndDebugInfo;
-
-	// fix the read address depending on the request size and endianess
-	switch(size)
-	{
-	case 1: read_addr = read_addr ^ munged_address_mask8; break;
-	case 2: read_addr = read_addr ^ munged_address_mask16; break;
-	case 4: // nothing to do
-	default: // nothing to do
-		break;
-	}
-
-	if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import )
-	{
-		if ( arm926ejs_dcache.GetSize() )
-		{
-			// running arm926ejs with linux simulation
-			//   tcm are ignored
-			uint32_t cache_tag = arm926ejs_dcache.GetTag(read_addr);
-			uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
-			uint32_t cache_way;
-			bool cache_hit = false;
-			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
-			{
-				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
-				{
-					// the access is a hit, nothing needs to be done
-					cache_hit = true;
-				}
-			}
-			// if the access was a miss, data needs to be fetched from main
-			//   memory and placed into the cache
-			if ( unlikely(!cache_hit) )
-			{
-				// get a way to replace
-				cache_way = arm926ejs_dcache.GetNewWay(cache_set);
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "Cache miss" << EndDebugInfo;
-				// get the valid and dirty bits from the way to replace
-				uint8_t cache_valid = arm926ejs_dcache.GetValid(cache_set,
-						cache_way);
-				uint8_t cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
-						cache_way);
-
-				if ( (cache_valid != 0) & (cache_dirty != 0) )
-				{
-					// the cache line to replace is valid and dirty so it needs
-					//   to be sent to the main memory
-					uint8_t *rep_cache_data = 0;
-					uint32_t rep_cache_address =
-							arm926ejs_dcache.GetBaseAddress(cache_set,
-									cache_way);
-					arm926ejs_dcache.GetData(cache_set, cache_way,
-							&rep_cache_data);
-					if ( unlikely(verbose_memory) )
-						logger << DebugInfo << "Performing writeback ..."
-							<< EndDebugInfo;
-					memory_interface->PrWrite(rep_cache_address, rep_cache_data,
-							arm926ejs_dcache.LINE_SIZE);
-					if ( unlikely(verbose_memory) )
-						logger << DebugInfo << "... writeback performed."
-							<< EndDebugInfo;
-				}
-				// the new data can be requested
-				uint8_t *cache_data = 0;
-				uint32_t cache_address =
-						arm926ejs_dcache.GetBaseAddressFromAddress(read_addr);
-				// when getting the data we get the pointer to the cache line
-				//   containing the data, so no need to write the cache
-				//   afterwards
-				uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
-						cache_way, &cache_data);
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "Requesting data ..."
-						<< EndDebugInfo;
-				memory_interface->PrRead(cache_address, cache_data,
-						cache_line_size);
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "... data received" << EndDebugInfo;
-				arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
-				arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
-				arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
-			}
-			else
-			{
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "Cache hit" << EndDebugInfo;
-			}
-
-			// at this point the data is in the cache, we can read it from the
-			//   cache
-			uint32_t cache_index = arm926ejs_dcache.GetIndex(read_addr);
-			(void)arm926ejs_dcache.GetData(cache_set, cache_way, cache_index,
-					size, &data);
-		}
-		else // there is no data cache
-		{
-			// just read the data from the memory system
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Requesting data (no data cache) ..."
-					<< EndDebugInfo;
-			memory_interface->PrRead(read_addr, data32, size);
-			data = data32;
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "... data received" << EndDebugInfo;
-		}
-
-		// fix the data depending on its size
-		uint32_t value;
-		if (size == 1)
-		{
-			uint8_t val8 = *data;
-			if (memop->IsSigned())
-				value = (int32_t)(int8_t)val8;
-			else
-				value = val8;
-		}
-		else if (size == 2)
-		{
-			uint16_t val16 =
-					Target2Host(GetEndianness(), *((uint16_t *)data));
-			if (memop->IsSigned())
-				value = (int32_t)(int16_t)val16;
-			else
-				value = val16;
-		}
-		else if (size == 4)
-		{
-			uint32_t val32;
-			uint32_t val32_l, val32_r;
-			uint32_t align;
-
-			val32 = Target2Host(GetEndianness(), *((uint32_t *)data));
-			// we need to check alignment
-			align = addr & 0x03;
-			if (align != 0)
-			{
-				val32_l = (val32 << (align*8)) &
-						((~((uint32_t)0)) << (align*8));
-				val32_r = (val32 >> ((4 - align) * 8)) &
-						((~((uint32_t)0)) >> ((4 - align) * 8));
-				val32 = val32_l + val32_r;
-			}
-			value = val32;
-		}
-
-		if ( unlikely(verbose_memory) )
-			logger << DebugInfo << "Setting r"
-				<< (unsigned int)memop->GetTargetReg()
-				<< " to 0x" << hex << value << dec
-				<< EndDebugInfo;
-		SetGPR(memop->GetTargetReg(), value);
-
-		if ( unlikely(dl1_power_estimator_import != 0) )
-			dl1_power_estimator_import->ReportReadAccess();
-	}
-	if ( CONFIG::MODEL == ARM926EJS && !linux_os_import )
-	{
-		// TODO
-	}
-
-	/* report read memory access if necessary */
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					addr, size);
+  /* NOTE: in non-secure mode (TrustZone), there are more privilege levels. */
+  switch (cpsr.Get(M))
+    {
+    case USER_MODE:
+      return 0;
+      break;
+    case FIQ_MODE:
+    case IRQ_MODE:
+    case SUPERVISOR_MODE:
+    case MONITOR_MODE:
+    case ABORT_MODE:
+    case HYPERVISOR_MODE:
+    case UNDEFINED_MODE:
+    case SYSTEM_MODE:
+      return 1;
+      break;
+    default:
+      throw std::logic_error("undefined mode");
+    }
+  return 0;
 }
-
-template<class CONFIG>
-inline INLINE
+  
+/** Assert privilege level
+ *
+ * Throws if the current privilege level according to the running mode
+ * is not sufficient.
+ */
+template <class CONFIG>
 void
-CPU<CONFIG> ::
-PerformReadToPCAccess(MemoryOp<CONFIG> *memop) {
-	uint32_t addr = memop->GetAddress();
-	const uint32_t size = 4;
-	uint32_t read_addr = addr & ~(uint32_t)0x03;
-	uint8_t data32[4];
-	uint8_t *data;
-
-	if ( unlikely(verbose_memory) )
-		logger << DebugInfo << "Perform read to PC (addr = 0x" << hex
-			<< addr << dec << ", size = " << size << ")" << EndDebugInfo;
-
-	if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import )
-	{
-		if ( arm926ejs_dcache.GetSize() )
-		{
-			// running arm926ejs with linux simulation
-			//   tcm are ignored
-			uint32_t cache_tag = arm926ejs_dcache.GetTag(read_addr);
-			uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
-			uint32_t cache_way;
-			bool cache_hit = false;
-
-			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
-			{
-				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
-				{
-					// the access is a hit, nothing needs to be done
-					cache_hit = true;
-				}
-			}
-			// if the access was a miss, data needs to be fetched from main
-			//   memory and placed into the cache
-			if ( !cache_hit )
-			{
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "Cache miss" << EndDebugInfo;
-				// get a way to replace
-				cache_way = arm926ejs_dcache.GetNewWay(cache_set);
-				// get the valid and dirty bits from the way to replace
-				uint8_t cache_valid = arm926ejs_dcache.GetValid(cache_set,
-						cache_way);
-				uint8_t cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
-						cache_way);
-
-				if ( (cache_valid != 0) && (cache_dirty != 0) )
-				{
-					// the cache line to replace is valid and dirty so it needs
-					//   to be sent to the main memory
-					uint8_t *rep_cache_data = 0;
-					uint32_t rep_cache_address =
-							arm926ejs_dcache.GetBaseAddress(cache_set,
-									cache_way);
-					arm926ejs_dcache.GetData(cache_set, cache_way,
-							&rep_cache_data);
-					if ( unlikely(verbose_memory) )
-						logger << DebugInfo << "Performing writeback ..."
-							<< EndDebugInfo;
-					memory_interface->PrWrite(rep_cache_address, rep_cache_data,
-							arm926ejs_dcache.LINE_SIZE);
-					if ( unlikely(verbose_memory) )
-						logger << DebugInfo << "... writeback performed."
-							<< EndDebugInfo;
-				}
-				// the new data can be requested
-				uint8_t *cache_data = 0;
-				uint32_t cache_address =
-						arm926ejs_dcache.GetBaseAddressFromAddress(read_addr);
-				// when getting the data we get the pointer to the cache line
-				//   containing the data, so no need to write the cache
-				//   afterwards
-				uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
-						cache_way, &cache_data);
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "Requesting data ..."
-						<< EndDebugInfo;
-				memory_interface->PrRead(cache_address, cache_data,
-						cache_line_size);
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "... data received" << EndDebugInfo;
-				arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
-				arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
-				arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
-			}
-			else
-			{
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "Cache hit" << EndDebugInfo;
-			}
-
-			// at this point the data is in the cache, we can read it from the
-			//   cache
-			uint32_t cache_index = arm926ejs_dcache.GetIndex(read_addr);
-			(void)arm926ejs_dcache.GetData(cache_set, cache_way, cache_index,
-					size, &data);
-		}
-		else
-		{
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Requesting data (no data cache) ..."
-					<< EndDebugInfo;
-			memory_interface->PrRead(read_addr, data32, size);
-			data = data32;
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "... data received" << EndDebugInfo;
-
-		}
-		// fix the data depending on its size
-		uint32_t value;
-		uint32_t val32;
-		uint32_t val32_l, val32_r;
-		uint32_t align;
-
-		val32 = Target2Host(GetEndianness(), *((uint32_t *)data));
-		// we need to check alignment
-		align = addr & 0x03;
-		if (align != 0)
-		{
-			val32_l = (val32 << (align*8)) &
-					((~((uint32_t)0)) << (align*8));
-			val32_r = (val32 >> ((4 - align) * 8)) &
-					((~((uint32_t)0)) >> ((4 - align) * 8));
-			val32 = val32_l + val32_r;
-		}
-		value = val32;
-
-		if ( unlikely(verbose_memory) )
-			logger << DebugInfo << "Setting r"
-				<< (unsigned int)PC_reg
-				<< " to 0x" << hex << value << dec
-				<< EndDebugInfo;
-		SetGPR(PC_reg, value & ~(uint32_t)0x01);
-
-		if ( unlikely(dl1_power_estimator_import != 0) )
-			dl1_power_estimator_import->ReportReadAccess();
-	}
-	if ( (CONFIG::MODEL == ARM926EJS) && !linux_os_import )
-	{
-		// TODO
-	}
-
-	/* report read memory access if necessary */
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					addr, size);
-}
-
-template<class CONFIG>
-inline INLINE
-void
-CPU<CONFIG> ::
-PerformReadToPCUpdateTAccess(MemoryOp<CONFIG> *memop) {
-	uint32_t addr = memop->GetAddress();
-	const uint32_t size = 4;
-	uint32_t read_addr = addr & ~(uint32_t)0x03;
-	uint8_t data32[4];
-	uint8_t *data;
-
-	if ( unlikely(verbose_memory) )
-		logger << DebugInfo << "Perform read to PC update T (addr = 0x"
-			<< hex << addr << dec << ", size = " << size << ")"
-			<< EndDebugInfo;
-
-	if ( (CONFIG::MODEL == ARM926EJS) && linux_os_import )
-	{
-		if ( arm926ejs_dcache.GetSize() )
-		{
-			// running arm926ejs with linux simulation
-			//   tcm are ignored
-			uint32_t cache_tag = arm926ejs_dcache.GetTag(read_addr);
-			uint32_t cache_set = arm926ejs_dcache.GetSet(read_addr);
-			uint32_t cache_way;
-			bool cache_hit = false;
-
-			if ( arm926ejs_dcache.GetWay(cache_tag, cache_set, &cache_way) )
-			{
-				if ( arm926ejs_dcache.GetValid(cache_set, cache_way) )
-				{
-					// the access is a hit, nothing needs to be done
-					cache_hit = true;
-				}
-			}
-			// if the access was a miss, data needs to be fetched from main
-			//   memory and placed into the cache
-			if ( !cache_hit )
-			{
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "Cache miss" << EndDebugInfo;
-				// get a way to replace
-				cache_way = arm926ejs_dcache.GetNewWay(cache_set);
-				// get the valid and dirty bits from the way to replace
-				bool cache_valid = arm926ejs_dcache.GetValid(cache_set,
-						cache_way);
-				bool cache_dirty = arm926ejs_dcache.GetDirty(cache_set,
-						cache_way);
-				if ( cache_valid & cache_dirty )
-				{
-					// the cache line to replace is valid and dirty so it needs
-					//   to be sent to the main memory
-					uint8_t *rep_cache_data = 0;
-					uint32_t rep_cache_address =
-							arm926ejs_dcache.GetBaseAddress(cache_set,
-									cache_way);
-					arm926ejs_dcache.GetData(cache_set, cache_way,
-							&rep_cache_data);
-					if ( unlikely(verbose_memory) )
-						logger << DebugInfo << "Performing writeback ..."
-							<< EndDebugInfo;
-					memory_interface->PrWrite(rep_cache_address, rep_cache_data,
-							arm926ejs_dcache.LINE_SIZE);
-					if ( unlikely(verbose_memory) )
-						logger << DebugInfo << "... writeback performed."
-							<< EndDebugInfo;
-				}
-				// the new data can be requested
-				uint8_t *cache_data = 0;
-				uint32_t cache_address =
-						arm926ejs_dcache.GetBaseAddressFromAddress(read_addr);
-				// when getting the data we get the pointer to the cache line
-				//   containing the data, so no need to write the cache
-				//   afterwards
-				uint32_t cache_line_size = arm926ejs_dcache.GetData(cache_set,
-						cache_way, &cache_data);
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "Requesting data ..."
-						<< EndDebugInfo;
-				memory_interface->PrRead(cache_address, cache_data,
-						cache_line_size);
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "... data received" << EndDebugInfo;
-				arm926ejs_dcache.SetTag(cache_set, cache_way, cache_tag);
-				arm926ejs_dcache.SetValid(cache_set, cache_way, 1);
-				arm926ejs_dcache.SetDirty(cache_set, cache_way, 0);
-			}
-			else
-			{
-				if ( unlikely(verbose_memory) )
-					logger << DebugInfo << "Cache hit" << EndDebugInfo;
-			}
-
-			// at this point the data is in the cache, we can read it from the
-			//   cache
-			uint32_t cache_index = arm926ejs_dcache.GetIndex(read_addr);
-			(void)arm926ejs_dcache.GetData(cache_set, cache_way, cache_index,
-					size, &data);
-		}
-		else // there is no data cache
-		{
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "Requesting data (no data cache) ..."
-					<< EndDebugInfo;
-			memory_interface->PrRead(read_addr, data32,	size);
-			data = data32;
-			if ( unlikely(verbose_memory) )
-				logger << DebugInfo << "... data received" << EndDebugInfo;
-		}
-
-		// fix the data depending on its size
-		uint32_t value;
-		uint32_t val32;
-		uint32_t val32_l, val32_r;
-		uint32_t align;
-
-		val32 = Target2Host(GetEndianness(), *((uint32_t *)data));
-		// we need to check alignment
-		align = addr & 0x03;
-		if (align != 0)
-		{
-			val32_l = (val32 << (align*8)) &
-					((~((uint32_t)0)) << (align*8));
-			val32_r = (val32 >> ((4 - align) * 8)) &
-					((~((uint32_t)0)) >> ((4 - align) * 8));
-			val32 = val32_l + val32_r;
-		}
-		value = val32;
-
-		if ( unlikely(verbose_memory) )
-			logger << DebugInfo << "Setting r"
-				<< (unsigned int)memop->GetTargetReg()
-				<< " to 0x" << hex << value << dec
-				<< ", and setting CPSR[T] to "
-				<< (unsigned int)(value & (uint32_t)0x01)
-				<< EndDebugInfo;
-		SetGPR(PC_reg, value & ~(uint32_t)0x01);
-		SetCPSR_T((value & (uint32_t)0x01) == 0x01);
-
-		if ( unlikely(dl1_power_estimator_import != 0) )
-			dl1_power_estimator_import->ReportReadAccess();
-	}
-	if ( (CONFIG::MODEL == ARM926EJS) && !linux_os_import )
-	{
-		// TODO
-	}
-
-	/* report read memory access if necessary */
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					addr, size);
-}
-
-/**************************************************************/
-/* Memory system methods (private)                        END */
-/**************************************************************/
-
-/**************************************************************/
-/* Unpredictable instruction behavior (private)         START */
-/**************************************************************/
-
-template<class CONFIG>
-inline INLINE
-void
-CPU<CONFIG> ::
-Unpredictable() {
-	logger << DebugError
-	<< "Trying to execute unpredictable behavior instruction"
-	<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
-	<< EndDebugError;
-}
-/**************************************************************/
-/* Unpredictable instruction behavior (private)           END */
-/**************************************************************/
-
-/**************************************************************/
-/* Verbose methods (protected)                          START */
-/**************************************************************/
-
-template<class CONFIG>
-inline INLINE
-bool
-CPU<CONFIG> ::
-VerboseSetup()
+CPU<CONFIG>::RequiresPL(unsigned rpl)
 {
-	
-	return CONFIG::DEBUG_ENABLE && verbose_setup;
-	
+  if (GetPL() < rpl)
+    UnpredictableInsnBehaviour();
 }
 
-template<class CONFIG>
-inline INLINE
-bool
-CPU<CONFIG> ::
-VerboseStep()
+/** Scan available registers for the Registers interface
+ * 
+ *  Allows clients of the Registers interface to scan available
+ * register by providing a suitable RegisterScanner interface.
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
 {
-	
-	return CONFIG::DEBUG_ENABLE && verbose_step;
-	
+  scanner.Append( this->GetRegister( "r0" ) );
+  scanner.Append( this->GetRegister( "r1" ) );
+  scanner.Append( this->GetRegister( "r2" ) );
+  scanner.Append( this->GetRegister( "r3" ) );
+  scanner.Append( this->GetRegister( "r4" ) );
+  scanner.Append( this->GetRegister( "r5" ) );
+  scanner.Append( this->GetRegister( "r6" ) );
+  scanner.Append( this->GetRegister( "r7" ) );
+  scanner.Append( this->GetRegister( "r8" ) );
+  scanner.Append( this->GetRegister( "r9" ) );
+  scanner.Append( this->GetRegister( "r10" ) );
+  scanner.Append( this->GetRegister( "r11" ) );
+  scanner.Append( this->GetRegister( "r12" ) );
+  scanner.Append( this->GetRegister( "sp" ) );
+  scanner.Append( this->GetRegister( "lr" ) );
+  scanner.Append( this->GetRegister( "pc" ) );
+  // TODO: should expose CPSR (and most probably the APSR view)
+  // scanner.Append( this->GetRegister( "cpsr" ) );
 }
 
-template<class CONFIG>
-inline INLINE
-bool
-CPU<CONFIG> ::
-VerboseException()
+
+/** Software Interrupt
+ *  This method is called by SWI instructions to handle software interrupts.
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::CallSupervisor( uint16_t imm )
 {
-	return verbose_exception;
+  throw SVCException();
 }
 
-template<class CONFIG>
-inline INLINE
-void
-CPU<CONFIG> ::
-VerboseDumpRegs() {
-
-	for(unsigned int i = 0; i < 4; i++) {
-		for(unsigned int j = 0; j < 4; j++)
-			logger
-			<< "\t- r" << ((i*4) + j) << " = 0x" << hex << GetGPR((i*4) + j) << dec;
-		logger << endl;
-	}
-	logger << "\t- cpsr = (" << hex << GetCPSR() << dec << ") ";
-	typename CONFIG::reg_t mask;
-	for(mask = 0x80000000; mask != 0; mask = mask >> 1) {
-		if((mask & GetCPSR()) != 0) logger << "1";
-		else logger << "0";
-	}
-	logger << endl;
-}
-
-template<class CONFIG>
-inline INLINE
-void
-CPU<CONFIG> ::
-VerboseDumpRegsStart() {
-	if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_start) {
-		logger << DebugInfo
-		<< "Register dump before starting instruction execution: " << endl;
-		VerboseDumpRegs();
-		logger << EndDebugInfo;
-	}
-}
-
-template<class CONFIG>
-inline INLINE
-void
-CPU<CONFIG> ::
-VerboseDumpRegsEnd() {
-	if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_end) {
-		logger << DebugInfo
-		<< "Register dump at the end of instruction execution: " << endl;
-		VerboseDumpRegs();
-		logger << EndDebugInfo;
-	}
-}
-
-template<class CONFIG>
-inline INLINE
-bool
-CPU<CONFIG>::
-TrapOnException()
+/** Process Asynchronous Exceptions
+ *
+ * Processes pending asynchronous exceptions and return processed
+ * exception (at most one). Note 1: this is designed to be called just
+ * before PC update; next_insn_addr should point at the next instruction to
+ * execute whereas current_insn_addr is ignored (but should point to a
+ * finished instruction, except PC update).
+ *
+ * @param exception the A|I|F exception vector (as in CPSR)
+ * @return the exception vector corresponding to the processed esception
+ */
+template <class CONFIG>
+uint32_t
+CPU<CONFIG>::HandleAsynchronousException( uint32_t exceptions )
 {
-	return trap_on_exception && exception_trap_reporting_import;
+  // Asynchronous exceptions
+  // - Asynchronous Abort
+  // - FIQ
+  // - IRQ
+  
+  // If we reached this point at least one exception is pending (but maybe masked).
+  exceptions &= ~(cpsr.Get(ALL32));
+  
+  if (A.Get( exceptions ))
+    {
+      logger << DebugError << "Exception not handled (Asynchronous Abort)" << EndDebugError;
+      
+      unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+      
+      return A.Mask( exceptions );
+    }
+  
+  if (I.Get( exceptions ) or F.Get( exceptions ))
+    {
+      // FIQs have higher priority
+      bool isIRQ = not F.Get( exceptions );
+      if (this->verbose)
+        logger << DebugInfo << "Received " << (isIRQ ? "IRQ" : "FIQ") << " interrupt, handling it." << EndDebugInfo;
+      
+      TakePhysicalFIQorIRQException( isIRQ );
+      
+      return isIRQ ? I.Mask( exceptions ) : F.Mask( exceptions );
+    }
+  
+  return 0;
 }
 
-/**************************************************************/
-/* Verbose methods (protected)                            END */
-/**************************************************************/
+template <class CONFIG>
+uint32_t
+CPU<CONFIG>::ExcVectorBase()
+{
+  return sctlr::V.Get( SCTLR ) ? 0xffff0000 : 0x00000000;
+}
 
-/**************************************************************/
-/* Verbose methods (protected)                          START */
-/**************************************************************/
-
-template<class CONFIG>
+/** Take Reset Exception
+ */
+template <class CONFIG>
 void
-CPU<CONFIG> ::
-DumpInstructionProfile(ostream *output) {
-	(*output) << "Profile" << endl;
-	class item {
-		uint64_t opcode;
-		uint32_t profile;
-	};
-	
-	vector<uint64_t> opcode;
-	vector<uint32_t> counter;
-	for(map<uint64_t, uint32_t>::iterator it = profile.begin();
-		it != profile.end();
-		it++) {
-		bool done = false;
-		vector<uint64_t>::iterator oit = opcode.begin();
-		for(vector<uint32_t>::iterator cit = counter.begin();
-			!done && cit != counter.end();
-			cit++, oit++) {
-			if(it->second > *cit) {
-				counter.insert(cit, it->second);
-				opcode.insert(oit, it->first);
-				done = true;
-			}
-		}
-		if(!done) {
-			counter.push_back(it->second);
-			opcode.push_back(it->first);
-		}
-	}
-	
-	
-	uint32_t index = 0;
-	vector<uint32_t>::iterator cit = counter.begin();
-	for(vector<uint64_t>::iterator oit = opcode.begin();
-		oit != opcode.end();
-		oit++, cit++) {
-		typename isa::arm32::Operation<CONFIG> *op = NULL;
-		typename isa::thumb::Operation<CONFIG> *top = NULL;
-		uint32_t opcode = (uint32_t)(*oit & (uint64_t)0x0ffffffffULL);
-		bool thumb = *oit != opcode;
-		stringstream s;
-		if(thumb) {
-			top = thumb_decoder.Decode(0, opcode);
-			top->disasm(*this, s);
-		} else {
-			op = arm32_decoder.Decode(0, opcode);
-			op->disasm(*this, s);
-		}
-
-
-		(*output) << "0x" << hex << (*oit) << dec << "\t " << (*cit) << "\t " << s.str() << endl;
-		index++;
-	}
+CPU<CONFIG>::TakeReset()
+{
+  //   Enter Supervisor mode and (if relevant) Secure state, and reset
+  // CP15.  This affects the Banked versions and values of various
+  // registers accessed later in the code.  Also reset other system
+  // components.
+  
+  cpsr.Set( M, SUPERVISOR_MODE );
+  //if HaveSecurityExt() then SCR.NS = '0';
+  
+  //this->CP14ResetRegisters();
+  this->CP15ResetRegisters();
+  
+  //if HaveAdvSIMDorVFP() then FPEXC.EN = '0'; SUBARCHITECTURE_DEFINED further resetting;
+  //if HaveThumbEE() then TEECR.XED = '0';
+  //if HaveJazelle() then JMCR.JE = '0'; SUBARCHITECTURE_DEFINED further resetting;
+  // Further CPSR changes: all interrupts disabled, IT state reset, instruction set
+  // and endianness according to the SCTLR values produced by the above call to
+  // ResetControlRegisters().
+  cpsr.Set( I, 1 );
+  cpsr.Set( F, 1 );
+  cpsr.Set( A, 1 );
+  cpsr.ITSetState( 0b0000, 0b0000 ); // IT state reset
+  cpsr.Set( J, 0 );
+  cpsr.Set( T, sctlr::TE.Get( SCTLR ) );
+  cpsr.Set( E, sctlr::EE.Get( SCTLR ) );
+  // All registers, bits and fields not reset by the above pseudocode or by the
+  // BranchTo() call below are UNKNOWN bitstrings after reset. In particular, the
+  // return information registers R14_svc and SPSR_svc have UNKNOWN values, so that
+  // it is impossible to return from a reset in an architecturally defined way.
+  // Branch to Reset vector.
+  Branch(ExcVectorBase() + 0);
 }
 
-/**************************************************************/
-/* Verbose methods (protected)                            END */
-/**************************************************************/
+/** Take Undefined Exception
+ *  Implements how the processor takes the undefined exception
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::TakeUndefInstrException()
+{
+  //   Determine return information.  SPSR is to be the current CPSR,
+  // and LR is to be the current instruction address +4 for ARM or +2
+  // for THUMB.
 
+  uint32_t new_lr_value = GetCIA() + (cpsr.Get( T ) ? 2 : 4);
+  uint32_t new_spsr_value = cpsr.Get( ALL32 );
+  uint32_t vect_offset = 0x4;
+
+  // Check whether to take exception to Hyp mode
+  // if in Hyp mode then stay in Hyp mode
+  // take_to_hyp = HaveVirtExt() && HaveSecurityExt() && SCR.NS == '1' && CPSR.M == '11010';
+  // if HCR.TGE is set, take to Hyp mode through Hyp Trap vector
+  // route_to_hyp = (HaveVirtExt() && HaveSecurityExt() && !IsSecure() && HCR.TGE == '1'
+  //                && CPSR.M == '10000'); // User mode
+  // if HCR.TGE == '1' and in a Non-secure PL1 mode, the effect is UNPREDICTABLE
+  // return_offset = if CPSR.T == '1' then 2 else 4;
+  // preferred_exceptn_return = new_lr_value - return_offset;
+  // if take_to_hyp then
+  //     Note that whatever called TakeUndefInstrException() will have set the HSR
+  //     EnterHypMode(new_spsr_value, preferred_exceptn_return, vect_offset);
+  // elsif route_to_hyp then
+  //     Note that whatever called TakeUndefInstrException() will have set the HSR
+  //     EnterHypMode(new_spsr_value, preferred_exceptn_return, 20);
+  // else
+
+  // Enter Undefined ('11011') mode, and ensure Secure state if initially in Monitor
+  // ('10110') mode. This affects the Banked versions of various registers accessed later
+  // in the code.
+
+  // if CPSR.M == '10110' then SCR.NS = '0';
+  CurrentMode().Swap( *this ); // OUT
+  cpsr.Set( M, UNDEFINED_MODE ); // CPSR.M = '11011';
+  Mode& newmode = CurrentMode();
+  newmode.Swap( *this ); // IN
+  
+  // Write return information to registers, and make further CPSR changes: IRQs disabled,
+  // IT state reset, instruction set and endianness set to SCTLR-configured values.
+  newmode.SetSPSR( new_spsr_value );
+  SetGPR( 14, new_lr_value );
+  cpsr.Set( I, 1 );
+  cpsr.ITSetState( 0b0000, 0b0000 );
+  cpsr.Set( J, 0 );
+  cpsr.Set( T, sctlr::TE.Get( SCTLR ) ); // TE=0: ARM, TE=1: Thumb
+  cpsr.Set( E, sctlr::EE.Get( SCTLR ) ); // EE=0: little-endian, EE=1: big-endian
+  // Branch to Undefined Instruction vector.
+  Branch(ExcVectorBase() + vect_offset);
+}
+
+/** Take Data Abort Exception
+ *
+ * Implements how the processor takes the data abort exception
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::TakeDataOrPrefetchAbortException( bool isdata )
+{
+  //   Determine return information.  SPSR is to be the current CPSR,
+  // and LR is to be the current instruction address +8 for data abort
+  // or +4 for prefetch abort.  Thus exception should preferably
+  // return to LR-8 for data aborts or LR-4 for prefetch abort.
+
+  uint32_t preferred_exceptn_return = GetCIA();
+  uint32_t new_lr_value = preferred_exceptn_return + (isdata ? 8 : 4);
+  uint32_t new_spsr_value = cpsr.bits();
+  uint32_t vect_offset = isdata ? 16 : 12;
+  
+  // preferred_exceptn_return = new_lr_value - 8;
+  // // Determine whether this is an external abort to be routed to Monitor mode.
+  // route_to_monitor = HaveSecurityExt() && SCR.EA == '1' && IsExternalAbort();
+  // // Check whether to take exception to Hyp mode
+  // // if in Hyp mode then stay in Hyp mode
+  // take_to_hyp = HaveVirtExt() && HaveSecurityExt() && SCR.NS == '1' && CPSR.M == '11010';
+  // // otherwise, check whether to take to Hyp mode through Hyp Trap vector
+  // route_to_hyp = (HaveVirtExt() && HaveSecurityExt() && !IsSecure() &&
+  //                 (SecondStageAbort() ||
+  //                  (CPSR.M != HYPERVISOR_MODE && DebugException() && HDCR.TDE == '1') ||
+  //                  (CPSR.M != HYPERVISOR_MODE && (IsExternalAbort() && IsAsyncAbort() && HCR.AMO == '1')) ||
+  //                  (CPSR.M == USER_MODE && HCR.TGE == '1' && ((IsExternalAbort() && !IsAsyncAbort()) || IsAlignmentFault()))
+  //                 )
+  //                );
+  // // if HCR.TGE == '1' and in a Non-secure PL1 mode, the effect is UNPREDICTABLE
+  // if (route_to_monitor) {
+  //   // Ensure Secure state if initially in Monitor mode. This affects the Banked
+  //   // versions of various registers accessed later in the code
+  //   if (CPSR.M == '10110') SCR.NS = '0';
+  //   EnterMonitorMode(new_spsr_value, new_lr_value, vect_offset);
+  // } else if (take_to_hyp) {
+  //   EnterHypMode(new_spsr_value, preferred_exceptn_return, vect_offset);
+  // } else if (route_to_hyp) {
+  //   EnterHypMode(new_spsr_value, preferred_exceptn_return, 20);
+  //   else
+      
+  // Handle in Abort mode. Ensure Secure state if initially in Monitor mode. This
+  // affects the Banked versions of various registers accessed later in the code
+  // if HaveSecurityExt() && CPSR.M == '10110' then SCR.NS = '0';
+  
+  CurrentMode().Swap( *this ); // OUT
+  cpsr.Set( M, ABORT_MODE ); // CPSR.M = '10111';
+  Mode& newmode = CurrentMode();
+  newmode.Swap( *this ); // IN
+  
+  // Abort mode
+  // Write return information to registers, and make further CPSR changes:
+  // IRQs disabled, other interrupts disabled if appropriate,
+  // IT state reset, instruction set and endianness set to SCTLR-configured values.
+  
+  newmode.SetSPSR( new_spsr_value );
+  SetGPR( 14, new_lr_value );
+
+  cpsr.Set( I, 1 );
+  // if !HaveSecurityExt() || HaveVirtExt() || SCR.NS == '0' || SCR.AW == '1' then
+  //    CPSR.A = '1';
+  cpsr.ITSetState( 0b0000, 0b0000 );
+  cpsr.Set( J, 0 );
+  cpsr.Set( T, sctlr::TE.Get( SCTLR ) ); // TE=0: ARM, TE=1: Thumb
+  cpsr.Set( E, sctlr::EE.Get( SCTLR ) ); // EE=0: little-endian, EE=1: big-endian
+  // Branch to Abort vector.
+  Branch(ExcVectorBase() + vect_offset);
+}
+
+/** Take Reset Exception
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::TakeSVCException()
+{
+  //   Determine return information.  SPSR is to be the current CPSR,
+  // after changing the IT[] bits to give them the correct values for
+  // the following instruction, and LR is to be the next instruction
+  // address.  Thus exception should preferably return to LR.
+  
+  ITAdvance(); //< Finalize SVC instruction
+  
+  uint32_t new_lr_value = GetNIA();
+  uint32_t new_spsr_value = cpsr.Get( ALL32 );
+  uint32_t vect_offset = 0x8;
+  
+  // Check whether to take exception to Hyp mode
+  // if in Hyp mode then stay in Hyp mode
+  // take_to_hyp = (HaveVirtExt() && HaveSecurityExt() && SCR.NS == '1' && CPSR.M == '11010');
+  // if HCR.TGE is set to 1, take to Hyp mode through Hyp Trap vector
+  // route_to_hyp = (HaveVirtExt() && HaveSecurityExt() && !IsSecure() && HCR.TGE == '1'
+  //                && CPSR.M == '10000'); // User mode
+  // if HCR.TGE == '1' and in a Non-secure PL1 mode, the effect is UNPREDICTABLE
+  // preferred_exceptn_return = new_lr_value;
+  // if take_to_hyp then
+  //     EnterHypMode(new_spsr_value, preferred_exceptn_return, vect_offset);
+  // elsif route_to_hyp then
+  //     EnterHypMode(new_spsr_value, preferred_exceptn_return, 20);
+  // else
+  
+  // Enter Supervisor ('10011') mode, and ensure Secure state if initially in Monitor
+  // ('10110') mode. This affects the Banked versions of various registers accessed later
+  // in the code.
+  
+  // if CPSR.M == '10110' then SCR.NS = '0';
+  CurrentMode().Swap( *this ); // OUT
+  cpsr.Set( M, SUPERVISOR_MODE ); // CPSR.M = '10011';
+  Mode& newmode = CurrentMode();
+  newmode.Swap( *this ); // IN
+  
+  // Write return information to registers, and make further CPSR changes: IRQs disabled,
+  // IT state reset, instruction set and endianness set to SCTLR-configured values.
+  newmode.SetSPSR( new_spsr_value );
+  SetGPR( 14, new_lr_value );
+  cpsr.Set( I, 1 );
+  cpsr.ITSetState( 0b0000, 0b0000 );
+  cpsr.Set( J, 0 );
+  cpsr.Set( T, sctlr::TE.Get( SCTLR ) ); // TE=0: ARM, TE=1: Thumb
+  cpsr.Set( E, sctlr::EE.Get( SCTLR ) ); // EE=0: little-endian, EE=1: big-endian
+  // Branch to SVC vector.
+  Branch(ExcVectorBase() + vect_offset);
+}
+
+/** Take Physical FIQ or IRQ Exception
+ *
+ * @param isIRQ   whether the Exception is an IRQ (true) or an FIQ (false)
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::TakePhysicalFIQorIRQException( bool isIRQ )
+{
+  //   Determine return information.  SPSR is to be the current CPSR,
+  // and LR is to be the aborted instruction address + 4.  Thus
+  // exception should preferably return to LR-4.
+  
+  uint32_t new_lr_value = GetNIA() + 4;
+  uint32_t new_spsr_value = cpsr.Get( ALL32 );
+      
+  // TODO: [IRQ|FIQ]s may be routed to monitor (if
+  // HaveSecurityExt() and SCR.[IRQ|FIQ]) or to Hypervisor (if
+  // (HaveVirtExt() && HaveSecurityExt() && SCR.[IRQ|FIQ] == '0'
+  // && HCR.[IMO|FMO] == '1' && !IsSecure()) || CPSR.M ==
+  // '11010');
+      
+  // Handle in [IRQ|FIQ] mode. TODO: Ensure Secure state if
+  // initially in Monitor mode. This affects the Banked versions
+  // of various registers accessed later in the code.
+  CurrentMode().Swap( *this ); // OUT
+  cpsr.Set( M, isIRQ ? IRQ_MODE : FIQ_MODE );
+  Mode& newmode = CurrentMode();
+  newmode.Swap( *this ); // IN
+  // Write return information to registers, and make further CPSR
+  // changes: IRQs disabled, other interrupts disabled if
+  // appropriate, IT state reset, instruction set and endianness
+  // set to SCTLR-configured values.
+  newmode.SetSPSR( new_spsr_value );
+  SetGPR( 14, new_lr_value );
+  // IRQs disabled
+  cpsr.Set( I, 1 );
+  // When taking FIQ, FIQs masked (if !HaveSecurityExt() || HaveVirtExt() || SCR.NS == '0' || SCR.FW == '1')
+  if (not isIRQ)
+    cpsr.Set( F, 1 );
+  // Async Abort disabled (if !HaveSecurityExt() || HaveVirtExt() || SCR.NS == '0' || SCR.AW == '1')
+  cpsr.Set( A, 1 );
+  cpsr.ITSetState( 0b0000, 0b0000 ); // IT state reset
+  cpsr.Set( J, 0 );
+  cpsr.Set( T, sctlr::TE.Get( SCTLR ) );
+  cpsr.Set( E, sctlr::EE.Get( SCTLR ) );
+  // Branch to correct [IRQ|FIQ] vector
+  if (sctlr::VE.Get( SCTLR ))
+    BranchToFIQorIRQvector( isIRQ );              //< Virtual method, Implementation defined
+  else
+    CPU<CONFIG>::BranchToFIQorIRQvector( isIRQ ); //< Static method, default behavior
+}
+
+/** Branch to Physical FIQ or IRQ vector
+ * This method provides default behavior when branching to physical FIQ or IRQ vector
+ * @param isIRQ   whether the Exception is an IRQ (true) or an FIQ (false)
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::BranchToFIQorIRQvector( bool isIRQ )
+{
+  uint32_t vect_offset = isIRQ ? 0x18 : 0x1c;
+  Branch(ExcVectorBase() + vect_offset);
+}
+
+/** Read the value of a CP15 coprocessor register
+ *
+ * @param crn     the "crn" field of the instruction code
+ * @param opcode1 the "opcode1" field of the instruction code 
+ * @param crm     the "crm" field of the instruction code
+ * @param opcode2 the "opcode2" field of the instruction code
+ * @return        the read value
+ */
+template <class CONFIG>
+uint32_t
+CPU<CONFIG>::CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
+{
+  CP15Reg& reg = CP15GetRegister( crn, opcode1, crm, opcode2 );
+  RequiresPL(reg.RequiredPL());
+  return reg.Read( *this );
+}
+
+/** Write a value in a CP15 coprocessor register
+ * 
+ * @param crn     the "crn" field of the instruction code
+ * @param opcode1 the "opcode1" field of the instruction code
+ * @param crm     the "crm" field of the instruction code
+ * @param opcode2 the "opcode2" field of the instruction code
+ * @param val     value to be written to the register
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, uint32_t value )
+{
+  CP15Reg& reg = CP15GetRegister( crn, opcode1, crm, opcode2 ); 
+  RequiresPL(reg.RequiredPL());
+  reg.Write( *this, value );
+}
+
+/** Describe the nature of a CP15 coprocessor register
+ * 
+ * @param crn     the "crn" field of the instruction code
+ * @param opcode1 the "opcode1" field of the instruction code
+ * @param crm     the "crm" field of the instruction code
+ * @param opcode2 the "opcode2" field of the instruction code
+ * @return        a C string describing the CP15 register
+ */
+template <class CONFIG>
+char const*
+CPU<CONFIG>::CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
+{
+  return CP15GetRegister( crn, opcode1, crm, opcode2 ).Describe();
+}
+
+/** Get the Internal representation of the CP15 Register
+ * 
+ * @param crn     the "crn" field of the instruction code
+ * @param opcode1 the "opcode1" field of the instruction code
+ * @param crm     the "crm" field of the instruction code
+ * @param opcode2 the "opcode2" field of the instruction code
+ * @return        an internal CP15Reg
+ */
+template <class CONFIG>
+typename CPU<CONFIG>::CP15Reg&
+CPU<CONFIG>::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
+{
+
+  switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
+    {
+      /****************************
+       * Identification registers *
+       ****************************/
+    case CP15ENCODE( 0, 0, 1, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "ID_PFR0, Processor Feature Register 0"; }
+          uint32_t Read( CPU& cpu ) {
+            /*        ARM              Thumb2         Jazelle         ThumbEE   */
+            return (0b0001 << 0) | (0b0011 << 4) | (0b0000 << 8) | (0b0000 << 12);
+          }
+        } x;
+        return x;
+      } break;
+      
+      /****************************
+       * System control registers *
+       ****************************/
+    case CP15ENCODE( 1, 0, 0, 0 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "SCTLR, System Control Register"; }
+          /* TODO: handle SBO(DGP=0x00050078U) and SBZ(DGP=0xfffa0c00U)... */
+          uint32_t Read( CPU& cpu ) { return cpu.SCTLR; }
+          void Write( CPU& cpu, uint32_t value ) {
+            uint32_t old_ctlr = cpu.SCTLR;
+            cpu.SCTLR = value;
+            uint32_t diff = old_ctlr ^ value;
+            if (cpu.verbose) {
+              if      (sctlr::C.Get( diff ))
+                cpu.logger << DebugInfo << "DCache " << (sctlr::C.Get( value ) ? "enabled" : "disabled") << EndDebugInfo;
+              if (sctlr::M.Get( diff )) {
+                cpu.logger << DebugInfo << "MMU " << (sctlr::M.Get( value ) ? "enabled" : "disabled") << EndDebugInfo;
+              }
+            }
+          }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 1, 0, 0, 2 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "CPACR, Coprocessor Access Control Register"; }
+          uint32_t Read( CPU& cpu ) { return cpu.CPACR; }
+          void Write( CPU& cpu, uint32_t value ) {
+            // bit 29 is Reserved, UNK/SBZP
+            // cp0-cp9 and cp12-cp13 are not implemented
+            value &= ~0x2f0fffffU;
+            uint32_t neon = ((value >> 20)) & 0b1111;
+            if ((neon != 0b0000) and (neon != 0b0101) and (neon != 0b1111))
+              cpu.UnpredictableInsnBehaviour();
+            cpu.CPACR = value;
+          }
+        } x;
+        return x;
+      } break;
+      
+      /***********************************/
+      /* Context and thread ID registers */
+      /***********************************/
+      
+    case CP15ENCODE( 13, 0, 0, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "CONTEXTIDR, Context ID Register"; }
+          uint32_t Read( CPU& cpu ) { return cpu.CONTEXTIDR; }
+          void Write( CPU& cpu, uint32_t value ) { cpu.CONTEXTIDR = value; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 13, 0, 0, 2 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TPIDRURW, User Read/Write Thread ID Register"; }
+          unsigned RequiredPL() { return 0; /* Doesn't requires priviledges */ }
+          uint32_t Read( CPU& cpu ) { return cpu.TPIDRURW; }
+          void Write( CPU& cpu, uint32_t value ) { cpu.TPIDRURW = value; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 13, 0, 0, 3 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TPIDRURO, User Read-Only Thread ID Register"; }
+          unsigned RequiredPL() { return 0; /* Reading doesn't requires priviledges */ }
+          uint32_t Read( CPU& cpu ) { return cpu.TPIDRURO; }
+          void Write( CPU& cpu, uint32_t val ) { cpu.RequiresPL(1); cpu.TPIDRURO = val; }
+        } x;
+        return x;
+      } break;
+      
+    case CP15ENCODE( 13, 0, 0, 4 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "TPIDRPRW, PL1 only Thread ID Register"; }
+          uint32_t Read( CPU& cpu ) { return cpu.TPIDRPRW; }
+          void Write( CPU& cpu, uint32_t val ) { cpu.TPIDRPRW = val; }
+        } x;
+        return x;
+      } break;
+      
+    }
+
+  logger << DebugError << "Unknown CP15 register"
+         << ": CRn=" << unsigned(crn)
+         << ", opc1=" << unsigned(opcode1)
+         << ", CRm=" << unsigned(crm)
+         << ", opc2=" << unsigned(opcode2)
+         << ", pc=" << std::hex << current_insn_addr << std::dec
+         << EndDebugError;
+  
+  static struct CP15Error : public CP15Reg {
+    char const* Describe() { return "Unknown CP15 register"; }
+  } err;
+  return err;
+}
+
+/** Resets the internal values of corresponding CP15 Registers
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::CP15ResetRegisters()
+{
+  // Base default values for SCTLR (may be overwritten by memory architectures)
+  SCTLR = 0x00c50058; // SBO mask
+  sctlr::TE.Set(      SCTLR, 0 ); // Thumb Exception enable
+  sctlr::NMFI.Set(    SCTLR, 0 ); // Non-maskable FIQ (NMFI) support
+  sctlr::EE.Set(      SCTLR, 0 ); // Exception Endianness.
+  sctlr::VE.Set(      SCTLR, 0 ); // Interrupt Vectors Enable
+  sctlr::U.Set(       SCTLR, 1 ); // Alignment Model (0 before ARMv6, 0 or 1 in ARMv6, 1 in armv7)
+  sctlr::FI.Set(      SCTLR, 0 ); // Fast interrupts configuration enable
+  sctlr::RR.Set(      SCTLR, 0 ); // Round Robin select
+  sctlr::V.Set(       SCTLR, 0 ); // Vectors bit
+  sctlr::I.Set(       SCTLR, 0 ); // Instruction cache enable
+  sctlr::Z.Set(       SCTLR, 0 ); // Branch prediction enable.
+  sctlr::SW.Set(      SCTLR, 0 ); // SWP and SWPB enable. This bit enables the use of SWP and SWPB instructions.
+  sctlr::B.Set(       SCTLR, 0 ); // Endianness model (up to ARMv6)
+  sctlr::CP15BEN.Set( SCTLR, 1 ); // CP15 barrier enable.
+  sctlr::C.Set(       SCTLR, 0 ); // Cache enable. This is a global enable bit for data and unified caches.
+  sctlr::A.Set(       SCTLR, 0 ); // Alignment check enable
+  sctlr::M.Set(       SCTLR, 0 ); // MMU enable.
+  
+  CPACR = 0x0;
+}
+    
+/** Unpredictable Instruction Behaviour.
+ * This method is just called when an unpredictable behaviour is detected to
+ *   notifiy the processor.
+ */
+template <class CONFIG>
+void 
+CPU<CONFIG>::UnpredictableInsnBehaviour()
+{
+  logger << DebugWarning
+         << "Trying to execute unpredictable behavior instruction."
+         << " PC: " << std::hex << current_insn_addr << std::dec
+         << ", CPSR: " << std::hex << cpsr.bits() << std::dec
+         << " (" << cpsr << ")"
+         << EndDebugWarning;
+  this->Stop( -1 );
+}
+
+
+    
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-#undef LOCATION
-
-#undef INLINE
-
-#include "unisim/component/cxx/processor/arm/cpu.step_instruction.tcc"
-// #include "unisim/component/cxx/processor/arm/cpu.step_cycle.tcc"
-// #include "unisim/component/cxx/processor/arm/cpu.soclib_step_cycle.tcc"
-
 #endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_TCC__
-

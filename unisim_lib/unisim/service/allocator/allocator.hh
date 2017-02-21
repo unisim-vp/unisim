@@ -37,6 +37,7 @@
 
 #include "unisim/service/interfaces/allocator.hh"
 #include "unisim/kernel/service/service.hh"
+#include <inttypes.h>
 
 namespace unisim {
 namespace service {

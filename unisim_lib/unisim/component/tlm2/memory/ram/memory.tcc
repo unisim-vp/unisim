@@ -67,10 +67,12 @@ Memory(const sc_module_name& name, Object *parent)
 	, cycle_time()
 	, read_latency(cycle_time)
 	, write_latency(SC_ZERO_TIME)
+	, read_only(false)
 	, param_cycle_time("cycle-time", this, cycle_time, "memory cycle time")
 	, param_read_latency("read-latency", this, read_latency, "memory read latency")
 	, param_write_latency("write-latency", this, write_latency, "memory write latency")
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
+	, param_read_only("read-only", this, read_only, "enable/disable read-only protection")
 	, stat_read_counter("read-counter", this, read_counter, "read access counter (not accurate when using SystemC TLM 2.0 DMI)")
 	, stat_write_counter("write-counter", this, write_counter, "write access counter (not accurate when using SystemC TLM 2.0 DMI)")
 	, burst_latency_lut()
@@ -296,13 +298,25 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb
 					<< " of " << data_length << " bytes in length" << std::endl
 					<< EndDebugInfo;
 			}
-			if(byte_enable_length ||(streaming_width && (streaming_width != data_length)))
-				status = inherited::WriteMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
+			
+			if(read_only)
+			{
+				status = true;
+				logger << DebugWarning << LOCATION
+					<< ":" << (sc_time_stamp() + t).to_string()
+					<< ": Attempt to write into a read-only memory"
+					<< EndDebugWarning;
+			}
 			else
-				status = inherited::WriteMemory(addr, data_ptr, data_length);
-
-			if (status) {
-				write_counter++;
+			{
+				if(byte_enable_length ||(streaming_width && (streaming_width != data_length)))
+					status = inherited::WriteMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
+				else
+					status = inherited::WriteMemory(addr, data_ptr, data_length);
+				
+				if (status) {
+					write_counter++;
+				}
 			}
 
 			UpdateTime(data_length, write_latency, t);
@@ -391,13 +405,25 @@ b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 					<< " of " << data_length << " bytes in length" << std::endl
 					<< EndDebugInfo;
 			}
-			if(byte_enable_length ||(streaming_width && (streaming_width != data_length)) )
-				status = inherited::WriteMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
+
+			if(read_only)
+			{
+				status = true;
+				logger << DebugWarning << LOCATION
+					<< ":" << (sc_time_stamp() + t).to_string()
+					<< ": Attempt to write into a read-only memory"
+					<< EndDebugWarning;
+			}
 			else
-				status = inherited::WriteMemory(addr, data_ptr, data_length);
-			
-			if (status) {
-				write_counter++;
+			{
+				if(byte_enable_length ||(streaming_width && (streaming_width != data_length)) )
+					status = inherited::WriteMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
+				else
+					status = inherited::WriteMemory(addr, data_ptr, data_length);
+	
+				if (status) {
+					write_counter++;
+				}
 			}
 
 			UpdateTime(data_length, write_latency, t);

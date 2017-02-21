@@ -35,415 +35,367 @@
 #ifndef __UNISIM_UTIL_OS_LINUX_LINUX_HH__
 #define __UNISIM_UTIL_OS_LINUX_LINUX_HH__
 
+#include <unisim/util/blob/blob.hh>
+#include <unisim/util/endian/endian.hh>
+#include <unisim/service/interfaces/memory.hh>
+#include <unisim/service/interfaces/registers.hh>
+#include <unisim/service/interfaces/memory_injection.hh>
+#include <sstream>
 #include <map>
 #include <string>
 #include <vector>
 // #include <iostream>
-#include <sstream>
 
-#include "unisim/util/endian/endian.hh"
-#include "unisim/kernel/logger/logger.hh"
-#include "unisim/service/interfaces/memory.hh"
-#include "unisim/service/interfaces/registers.hh"
-#include "unisim/service/interfaces/memory_injection.hh"
-#include "unisim/util/debug/blob/blob.hh"
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
+#include <windows.h>
+#endif
 
 namespace unisim {
 namespace util {
 namespace os {
 namespace linux_os {
 
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-class Linux
-{
-public:
-	Linux(unisim::kernel::logger::Logger& logger, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if, unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if);
-	~Linux();
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
+  // see http://mathieuturcotte.ca/textes/windows-gettimeofday
+  struct timezone {
+    int tz_minuteswest;     /* minutes west of Greenwich */
+    int tz_dsttime;         /* type of DST correction */
+  };
+  inline int gettimeofday(struct timeval* p, struct timezone* tz) {
+    ULARGE_INTEGER ul; // As specified on MSDN.
+    FILETIME ft;
 
-	void  SetVerbose(bool verbose);
+    // Returns a 64-bit value representing the number of
+    // 100-nanosecond intervals since January 1, 1601 (UTC).
+    GetSystemTimeAsFileTime(&ft);
 
-	void  SetParseDWARF(bool parse_dwarf);
+    // Fill ULARGE_INTEGER low and high parts.
+    ul.LowPart = ft.dwLowDateTime;
+    ul.HighPart = ft.dwHighDateTime;
+    // Convert to microseconds.
+    ul.QuadPart /= 10ULL;
+    // Remove Windows to UNIX Epoch delta.
+    ul.QuadPart -= 11644473600000000ULL;
+    // Modulo to retrieve the microseconds.
+    p->tv_usec = (long) (ul.QuadPart % 1000000LL);
+    // Divide to retrieve the seconds.
+    p->tv_sec = (long) (ul.QuadPart / 1000000LL);
 
-	void  SetDebugDWARF(bool debug_dwarf);
+    tz->tz_minuteswest = 0;
+    tz->tz_dsttime = 0;
 
-	void SetDWARFToHTMLOutputDirectory(const char *dwarf_to_html_output_directory);
+    return 0;
+  }
+#endif
 
-	void SetDWARFToXMLOutputFilename(const char *dwarf_to_xml_output_filename);
+  template <typename T> struct AsSigned {};
+  template <> struct AsSigned<uint32_t> { typedef int32_t type; };
+  template <> struct AsSigned<uint64_t> { typedef int64_t type; };
 
-	bool SetCommandLine(std::vector<std::string> const &cmd);
-
-	std::vector<std::string> GetCommandLine();
-
-	bool SetEnvironment(std::vector<std::string> const &env);
-
-	std::vector<std::string> GetEnvironment();
-
-	void SetApplyHostEnvironment(bool use_host_environment);
-
-	bool GetApplyHostEnvironment();
-
-	bool AddLoadFile(char const * const file);
-
-	bool SetSystemType(char const * const system_type);
-
-	// Sets the endianness of the system.
-	// Note that if the loaded files endianness is different from the set
-	// endianness the Load() method will fail.
-	void SetEndianness(unisim::util::endian::endian_type endianness);
-
-	// Sets the stack base address that will be used for the application stack.
-	// Combined with SetStackSize the memory addresses from stack base to
-	// (stack base + stack size) will be reserved for the stack.
-	void SetStackBase(ADDRESS_TYPE stack_base);
-
-	// Sets the memory page size in bytes that will be used by the linux os
-	// emulator
-	void SetMemoryPageSize(ADDRESS_TYPE memory_page_size);
-
-	// Sets the values that will be used by the uname system call.
-	void SetUname(char const * const utsname_sysname,
-	              char const * const utsname_nodename,
-	              char const * const utsname_release,
-	              char const * const utsname_version,
-	              char const * const utsname_machine,
-	              char const * const utsname_domainname);
+  template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+  struct Linux
+  {
+    typedef ADDRESS_TYPE address_type;
+    typedef PARAMETER_TYPE parameter_type;
+    typedef typename AsSigned<PARAMETER_TYPE>::type sparameter_type;
+    typedef Linux<ADDRESS_TYPE, PARAMETER_TYPE> this_type;
 	
-	// HWCap
-	void SetHWCap(const char *hwcap);
-
-	// Set stdin/stdout/stderr pipe filenames
-	void SetStdinPipeFilename(const char *filename);
-	void SetStdoutPipeFilename(const char *filename);
-	void SetStderrPipeFilename(const char *filename);
-
-	// TODO: Remove
-	// // Sets the registers to be used
-	// void SetRegisters(std::vector<unisim::util::debug::Register *> &registers);
-	// END TODO
-
-	// Loads all the defined files using the user settings.
-	// Basic usage:
-	//   linux_os = new Linux<X,Y>(false);
-	//   // set options (for simplicity we assume successful calls)
-	//   linux_os->SetSystemType("arm-eabi");
-	//   linux_os->AddLoadFile("my_fabulous_elf_file");
-	//   ...
-	//   // actually load the system
-	//   if (linux_os->Load()) //success
-	//     ...;
-	//   else // failure
-	//     ...;
-	// Once Load() has been called and successfully returned, the user can get
-	// information from the loaded system with the GetBlob or request setup of the
-	// target emulator with SetupTarget.
-	// Returns: true on success, false otherwise.
-	bool Load();
-	// Checks if the system was already successfully loaded or not.
-	// Returns: true if the system has already successfully been loaded, false
-	//          if the system has not been loaded or if the Load() method
-	//          failed.
-	bool IsLoad();
-
-	// Sets up the target system using the currently loaded configuration (blob)
-	// using the register and memory interface.
-	// Returns: true on success, false otherwise.
-	bool SetupTarget();
-	bool SetupARMTarget();
-	bool SetupPPCTarget();
-
-	// Gets the memory footprint of the application as a blob.
-	// Returns: a blob describing the memory footprint of the application. NULL
-	//          if the system has not been successfully loaded.
-	unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const GetBlob() const;
-
-	// Executes the given system call id depending on the architecture the linux
-	// emulation is working on.
-	void ExecuteSystemCall(int id, bool& terminated, int& return_status);
-
-private:
-	bool is_load_; // true if a program has been successfully loaded, false
-	               // otherwise
-
-	// basic system information
-	std::string system_type_;
-	static const int kNumSupportedSystemTypes;
-	static const std::vector<std::string> supported_system_types_; // [kNumSupportedSystemTypes];
-	unisim::util::endian::endian_type endianness_;
-
-	// files to load
-	std::map<std::string,
-	         unisim::util::debug::blob::Blob<ADDRESS_TYPE> const *> load_files_;
-
-	// program addresses (computed from the given files)
-	ADDRESS_TYPE entry_point_;
-	bool load_addr_set_;
-	ADDRESS_TYPE load_addr_;
-	ADDRESS_TYPE start_code_;
-	ADDRESS_TYPE end_code_;
-	ADDRESS_TYPE start_data_;
-	ADDRESS_TYPE end_data_;
-	ADDRESS_TYPE elf_stack_;
-	ADDRESS_TYPE elf_brk_;
-	int num_segments_;
-	ADDRESS_TYPE stack_base_;
-	uint64_t memory_page_size_;
-	ADDRESS_TYPE mmap_base_;
-	ADDRESS_TYPE mmap_brk_point_;
-	ADDRESS_TYPE brk_point_;
-
-
-	// argc, argv and envp variables
-	unsigned int argc_;
-	std::vector<std::string> argv_;
-	unsigned int envc_;
-	std::vector<std::string> envp_;
-	bool apply_host_environnement_;
-	std::vector<std::string> target_envp_;
-
-	// utsname values
-	std::string utsname_sysname_;
-	std::string utsname_nodename_;
-	std::string utsname_release_;
-	std::string utsname_version_;
-	std::string utsname_machine_;
-	std::string utsname_domainname_;
-
-	// HWCAP
-	std::string hwcap_;
-
-	// the structure to keep all the loaded information
-	unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob_;
-
-	// interfaces to the CPU registers and memory
-	unisim::service::interfaces::Registers *regs_if_;
-	unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if_;
-	unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if_;
-
-	// syscall type shortener
-	typedef Linux<ADDRESS_TYPE,PARAMETER_TYPE> thistype;
-	typedef void (thistype::*syscall_t)();
-
-	// system calls indexes
-	std::map<std::string, syscall_t> syscall_name_map_;
-	std::map<int, std::string> syscall_name_assoc_map_;
-	std::map<int, syscall_t> syscall_impl_assoc_map_;
+    struct SysCall
+    {
+      virtual ~SysCall() {}
+      virtual void Execute( Linux& lin, int syscall_id ) const;
+      virtual void Describe( Linux& lin, std::ostream& sink ) const = 0;
+      virtual char const* GetName() const = 0;
+      virtual void Release() {}
+      std::string TraceCall( Linux& lin ) const;
+    protected:
+      // SysCall Friend accessing methods
+      static bool ReadMem(Linux& lin, ADDRESS_TYPE addr, uint8_t * const buffer, uint32_t size);
+      static bool WriteMem(Linux& lin, ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size);
+      static bool ReadMemString(Linux& lin, ADDRESS_TYPE addr, std::string& str);
+      static int HostToLinuxErrno(int host_errno); //< Errno conversion
+      static int Target2HostFileDescriptor( Linux& lin, int32_t fd );
+      static PARAMETER_TYPE GetParam(Linux& lin, int id); // <getting system call status
+    };
 	
-	// errno conversion
-	std::map<int, int32_t> host2linux_errno;
-
-	// current syscall information
-	int current_syscall_id_;
-	std::string current_syscall_name_;
-
-	// activate the verbose
-	bool verbose_;
-	// activate DWARF parsing
-	bool parse_dwarf_;
-	// activate debugging DWARF
-	bool debug_dwarf_;
-	// DWARF dump parameters
-	std::string dwarf_to_html_output_directory_;
-	std::string dwarf_to_xml_output_filename_;
-	// logger stream
-	unisim::kernel::logger::Logger& logger_;
-
-	// program termination and return status
-	bool terminated_;
-	int return_status_;
+    struct LSCExit { LSCExit( int _status ) : status( _status ) {} int status; };
 	
-	// stdin/stdout/stderr pipes
-	std::string stdin_pipe_filename;
-	std::string stdout_pipe_filename;
-	std::string stderr_pipe_filename;
-	int stdin_pipe_fd;
-	int stdout_pipe_fd;
-	int stderr_pipe_fd;
-
-	// target to host file descriptors
-	std::map<int32_t, int> target_to_host_fildes;
-	std::queue<int32_t> target_fildes_free_list;
-
-	// Maps the registers depending on the system
-	// Returns true on success
-	bool MapRegisters();
-	unisim::util::debug::Register *GetRegisterFromId(uint32_t id);
-	bool GetRegister(uint32_t id, PARAMETER_TYPE * const value);
-	bool SetRegister(uint32_t id, PARAMETER_TYPE value);
-
-	// Load the files set by the user into the given blob. Returns true on sucess,
-	// false otherwise.
-	bool LoadFiles(unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob);
-
-	// Gets the main executable blob, that is the blob that represents the
-	// executable file, not the maybe used dynamic libraries
-	unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const
-		GetMainBlob() const;
-
-	// From the given blob computes the initial addresses and values that will be
-	// used to initialize internal structures and the target processor
-	bool ComputeStructuralAddresses(
-		unisim::util::debug::blob::Blob<ADDRESS_TYPE> const &blob);
-
-	// Merge the contents of the given file blob into the input/output blob
-	bool FillBlobWithFileBlob(
-		unisim::util::debug::blob::Blob<ADDRESS_TYPE> const &file_blob,
-		unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob);
-
-	// Create the stack memory image and insert it into the given blob
-	bool CreateStack(unisim::util::debug::blob::Blob<ADDRESS_TYPE> * blob, uint64_t& stack_size) const;
-
-	// Set the aux table contents that will be added to the stack
-	void SetAuxTable(uint8_t * stack_data, ADDRESS_TYPE & sp) const;
-
-	// Set the contents of an aux table entry
-	ADDRESS_TYPE SetAuxTableEntry(uint8_t * stack_data, ADDRESS_TYPE sp,
-								ADDRESS_TYPE entry, ADDRESS_TYPE value) const;
-
-	// Fills the given blob with system dependent information
-	bool SetSystemBlob(unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const;
-
-	// Fills the given blob with ARM dependent information
-	bool SetArmBlob(unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const;
-
-	// Fills the given blob with PPC dependent information
-	bool SetPPCBlob(unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const;
-
-	// Set the ARM syscall mappings
-	bool SetupLinuxOSARM();
-
-	// Set the PowerPC syscall mappings
-	bool SetupLinuxOSPPC();
-
-	// Associate the syscall identifier to its name
-	void SetSyscallId(const char *syscall_name, int syscall_id);
-
-	// Set the system calls mapping between names and their implementation
-	void SetSyscallNameMap();
+    struct UTSName
+    {
+      std::string sysname;
+      std::string nodename;
+      std::string release;
+      std::string version;
+      std::string machine;
+      std::string domainname;
+    };
 	
-	// Determine if a syscall is available
-	bool HasSyscall(const char *syscall_name);
-	bool HasSyscall(int syscall_id);
-	syscall_t GetSyscallImpl(const char *syscall_name);
-	syscall_t GetSyscallImpl(int syscall_id);
-	const char *GetSyscallName(int syscall_id);
+    // Target System Specific interface
+    struct TargetSystem
+    {
+      TargetSystem( std::string _name, Linux& _lin ) : name( _name ), lin( _lin ) {}
+      virtual ~TargetSystem() {}
+      virtual bool SetupTarget() const = 0;
+      virtual bool GetAT_HWCAP( ADDRESS_TYPE& hwcap ) const = 0;
+      virtual bool SetSystemBlob( unisim::util::blob::Blob<ADDRESS_TYPE>* blob ) const = 0;
+      virtual SysCall* GetSystemCall(int& id) const = 0;
+      virtual PARAMETER_TYPE GetSystemCallParam(int id) const = 0;
+      virtual void SetSystemCallStatus(int64_t ret, bool error) const = 0;
+    protected:
+      // TargetSystem Friend accessing methods
+      unisim::service::interfaces::Registers& RegsIF() const { return *lin.regs_if_; }
+      unisim::service::interfaces::Memory<ADDRESS_TYPE>& MemIF() const { return *lin.mem_if_; }
+      std::string GetHWCAP() const { return lin.hwcap_; }
+      SysCall* GetSysCall( std::string name ) const { return lin.GetSysCall( name ); }
+      static bool GetRegister( Linux& lin, char const* regname, PARAMETER_TYPE * const value );
+      static bool SetRegister( Linux& lin, char const* regname, PARAMETER_TYPE value );
+      static bool ClearRegister( Linux& lin, char const* regname );
+      std::string name;
+      Linux& lin;
+    };
 
-	// Extract the system call number from the given identifier depending on the
-	// architecture being emulated
-	int GetSyscallNumber(int id);
-	int ARMGetSyscallNumber(int id);
-	int ARMEABIGetSyscallNumber(int id);
-	int PPCGetSyscallNumber(int id);
+    Linux(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if, unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if);
+    ~Linux();
 
-	// helper methods to read/write from/into the system memory for performing
-	// system calls or loading the initial memory image
-	bool ReadMem(ADDRESS_TYPE addr, uint8_t * const buffer, uint32_t size);
-	bool WriteMem(ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size);
+    void  SetVerbose(bool verbose);
+    bool  GetVerbose() const { return verbose_; };
 
-	// Errno conversion
-	int32_t Host2LinuxErrno(int host_errno) const;
+    void  SetParseDWARF(bool parse_dwarf);
+
+    void  SetDebugDWARF(bool debug_dwarf);
+
+    void SetDWARFToHTMLOutputDirectory(const char *dwarf_to_html_output_directory);
+
+    void SetDWARFToXMLOutputFilename(const char *dwarf_to_xml_output_filename);
+
+    bool SetCommandLine(std::vector<std::string> const &cmd);
+
+    std::vector<std::string> GetCommandLine();
+
+    bool SetEnvironment(std::vector<std::string> const &env);
+
+    std::vector<std::string> GetEnvironment();
+
+    void SetApplyHostEnvironment(bool use_host_environment);
+
+    bool GetApplyHostEnvironment();
+
+    bool AddLoadFile(char const * const file);
+
+    // Sets and gets the target specific system interface
+    void SetTargetSystem(TargetSystem* _target_system) { target_system = _target_system; }
+    TargetSystem* GetTargetSystem() { return target_system; }
 	
-	// File descriptors mapping
-	int Target2HostFileDescriptor(int32_t fd);
-	int32_t AllocateFileDescriptor();
-	void FreeFileDescriptor(int32_t fd);
-	void MapTargetToHostFileDescriptor(int32_t target_fd, int host_fd);
-	void UnmapTargetToHostFileDescriptor(int32_t target_fd);
+    // Sets and gets the endianness of the system.
+    // Note that if the loaded files endianness is different from the set
+    // endianness the Load() method will fail.
+    void SetEndianness(unisim::util::endian::endian_type endianness) { endianness_ = endianness; }
+    unisim::util::endian::endian_type GetEndianness() const { return endianness_; }
 	
-	// The list of linux system calls
-	void LSC_unknown();
-	void LSC_unimplemented();
-	void LSC_exit();
-	void LSC_read();
-	void LSC_write();
-	void LSC_open();
-	void LSC_close();
-	void LSC_lseek();
-	void LSC_getpid();
-	void LSC_gettid();
-	void LSC_getuid();
-	void LSC_access();
-	void LSC_times();
-	void LSC_brk();
-	void LSC_getgid();
-	void LSC_geteuid();
-	void LSC_getegid();
-	void LSC_munmap();
-	void LSC_stat();
-	void LSC_fstat();
-	void LSC_uname();
-	void LSC__llseek();
-	void LSC_writev();
-	void LSC_mmap();
-	void LSC_mmap2();
-	void LSC_stat64();
-	void LSC_fstat64();
-	void LSC_getuid32();
-	void LSC_getgid32();
-	void LSC_geteuid32();
-	void LSC_getegid32();
-	void LSC_flistxattr();
-	void LSC_exit_group();
-	void LSC_fcntl();
-	void LSC_fcntl64();
-	void LSC_dup();
-	void LSC_ioctl();
-	void LSC_ugetrlimit();
-	void LSC_getrlimit();
-	void LSC_setrlimit();
-	void LSC_rt_sigaction();
-	void LSC_getrusage();
-	void LSC_unlink();
-	void LSC_rename();
-	void LSC_time();
-	void LSC_socketcall();
-	void LSC_rt_sigprocmask();
-	void LSC_kill();
-	void LSC_tkill();
-	void LSC_tgkill();
-	void LSC_ftruncate();
-	void LSC_umask();
-	void LSC_gettimeofday();
-	void LSC_statfs();
-	void LSC_arm_breakpoint();
-	void LSC_arm_cacheflush();
-	void LSC_arm_usr26();
-	void LSC_arm_usr32();
-	void LSC_arm_set_tls();
+    // Sets the stack base address that will be used for the application stack.
+    // Combined with SetStackSize the memory addresses from stack base to
+    // (stack base + stack size) will be reserved for the stack.
+    void SetStackBase(ADDRESS_TYPE stack_base);
+	
+    // Sets the memory page size in bytes that will be used by the linux os
+    // emulator
+    void SetMemoryPageSize(ADDRESS_TYPE memory_page_size);
 
-	// system call 'stat' helper methods
-	int Stat(int fd, struct powerpc_stat *target_stat);
-	int Fstat64(int fd, struct powerpc_stat64 *target_stat);
-	int Stat64(const char *pathname, struct powerpc_stat64 *target_stat);
-	int Fstat64(int fd, struct arm_stat64 *target_stat);
-	int Stat64(const char *pathname, struct arm_stat64 *target_stat);
-	// system call 'times' helper methods
-	int Times(struct powerpc_tms *target_tms);
-	int Times(struct arm_tms *target_tms);
-	// system call 'gettimeofday' helper methods
-	int GetTimeOfDay(struct powerpc_timeval *target_timeval, struct powerpc_timezone *target_timezone);
-	int GetTimeOfDay(struct arm_timeval *target_timeval, struct arm_timezone *target_timezone);
-	// handling the mmap base address
-	ADDRESS_TYPE GetMmapBase() const;
-	void SetMmapBase(ADDRESS_TYPE base);
-	// handling the mmapbrkpoint address
-	ADDRESS_TYPE GetMmapBrkPoint() const;
-	void SetMmapBrkPoint(ADDRESS_TYPE brk_point);
-	// handling the brkpoint address
-	ADDRESS_TYPE GetBrkPoint() const;
-	void SetBrkPoint(ADDRESS_TYPE brk_point);
-	// reading system calls parameters
-	PARAMETER_TYPE GetSystemCallParam(int id);
-	PARAMETER_TYPE ARMGetSystemCallParam(int id);
-	PARAMETER_TYPE ARMEABIGetSystemCallParam(int id);
-	PARAMETER_TYPE PPCGetSystemCallParam(int id);
-	// writing system call status
-	void SetSystemCallStatus(int ret, bool error);
-	void ARMSetSystemCallStatus(int ret, bool error);
-	void ARMEABISetSystemCallStatus(int ret, bool error);
-	void PPCSetSystemCallStatus(int ret, bool error);
-	// compute the length of a buffer string
-	int StringLength(ADDRESS_TYPE addr);
-};
+    // Sets the values that will be used by the uname system call.
+    void SetUname(char const * const utsname_sysname,
+                  char const * const utsname_nodename,
+                  char const * const utsname_release,
+                  char const * const utsname_version,
+                  char const * const utsname_machine,
+                  char const * const utsname_domainname);
+	
+    // HWCap
+    void SetHWCap(const char *hwcap);
+
+    // Set stdin/stdout/stderr pipe filenames
+    void SetStdinPipeFilename(const char *filename);
+    void SetStdoutPipeFilename(const char *filename);
+    void SetStderrPipeFilename(const char *filename);
+
+    // TODO: Remove
+    // // Sets the registers to be used
+    // void SetRegisters(std::vector<unisim::service::interfaces::Register *> &registers);
+    // END TODO
+
+    // Loads all the defined files using the user settings.
+    // Basic usage:
+    //   linux_os = new Linux<X,Y>(false);
+    //   arm_target = new ARMTS<Linux<X,Y> >("arm-eabi", linux_os);
+    //   // set options (for simplicity we assume successful calls)
+    //   linux_os->SetTargetSystem(arm_target);
+    //   linux_os->AddLoadFile("my_fabulous_elf_file");
+    //   ...
+    //   // actually load the system
+    //   if (linux_os->Load()) //success
+    //     ...;
+    //   else // failure
+    //     ...;
+    // Once Load() has been called and successfully returned, the user can get
+    // information from the loaded system with the GetBlob or request setup of the
+    // target emulator with SetupTarget.
+    // Returns: true on success, false otherwise.
+    bool Load();
+    // Checks if the system was already successfully loaded or not.
+    // Returns: true if the system has already successfully been loaded, false
+    //          if the system has not been loaded or if the Load() method
+    //          failed.
+    bool IsLoad();
+
+    // Sets up the target system using the currently loaded configuration (blob)
+    // using the register and memory interface.
+    // Returns: true on success, false otherwise.
+    bool SetupTarget();
+
+    // Gets the memory footprint of the application as a blob.
+    // Returns: a blob describing the memory footprint of the application. NULL
+    //          if the system has not been successfully loaded.
+    unisim::util::blob::Blob<ADDRESS_TYPE> const * const GetBlob() const { return blob_; }
+	
+    // Gets the supplied logging streams
+    std::ostream& DebugInfoStream() { return debug_info_stream; }
+    std::ostream& DebugWarningStream() { return debug_warning_stream; }
+    std::ostream& DebugErrorStream() { return debug_error_stream; }
+
+    // Gets the entry_point_ of the loaded program
+    ADDRESS_TYPE GetEntryPoint() const { return entry_point_; }
+
+    // Executes the given system call id depending on the architecture the linux
+    // emulation is working on.
+    void ExecuteSystemCall(int id, bool& terminated, int& return_status);
+    void SetSystemCallStatus(int64_t ret, bool error); // <writing system call status
+	
+    void LogSystemCall(int id);
+
+    UTSName const& GetUTSName() const { return utsname; }
+	
+  private:
+    bool is_load_; // true if a program has been successfully loaded, false
+    // otherwise
+	
+    TargetSystem* target_system;
+	
+    unisim::util::endian::endian_type endianness_;
+
+    // files to load
+    std::map<std::string, unisim::util::blob::Blob<ADDRESS_TYPE> const *> load_files_;
+
+    // program addresses (computed from the given files)
+    ADDRESS_TYPE entry_point_;
+    bool load_addr_set_;
+    ADDRESS_TYPE load_addr_;
+    ADDRESS_TYPE start_code_;
+    ADDRESS_TYPE end_code_;
+    ADDRESS_TYPE start_data_;
+    ADDRESS_TYPE end_data_;
+    ADDRESS_TYPE elf_stack_;
+    ADDRESS_TYPE elf_brk_;
+    int num_segments_;
+    ADDRESS_TYPE stack_base_;
+    uint64_t memory_page_size_;
+    ADDRESS_TYPE brk_point_;
+
+
+    // argc, argv and envp variables
+    unsigned int argc_;
+    std::vector<std::string> argv_;
+    unsigned int envc_;
+    std::vector<std::string> envp_;
+    bool apply_host_environnement_;
+    std::vector<std::string> target_envp_;
+
+    // utsname values
+    UTSName utsname;
+    // HWCAP
+    std::string hwcap_;
+
+    // the structure to keep all the loaded information
+    unisim::util::blob::Blob<ADDRESS_TYPE> *blob_;
+
+    // interfaces to the CPU registers and memory
+    unisim::service::interfaces::Registers *regs_if_;
+    unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if_;
+    unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if_;
+
+    // activate the verbose
+    bool verbose_;
+    // activate DWARF parsing
+    bool parse_dwarf_;
+    // activate debugging DWARF
+    bool debug_dwarf_;
+    // DWARF dump parameters
+    std::string dwarf_to_html_output_directory_;
+    std::string dwarf_to_xml_output_filename_;
+    // logger streams
+    std::ostream& debug_info_stream;
+    std::ostream& debug_warning_stream;
+    std::ostream& debug_error_stream;
+
+    // program termination and return status
+    bool terminated_;
+    int return_status_;
+	
+    // stdin/stdout/stderr pipes
+    std::string stdin_pipe_filename;
+    std::string stdout_pipe_filename;
+    std::string stderr_pipe_filename;
+    int stdin_pipe_fd;
+    int stdout_pipe_fd;
+    int stderr_pipe_fd;
+
+    // target to host file descriptors
+    std::map<int32_t, int> target_to_host_fildes;
+    std::queue<int32_t> target_fildes_free_list;
+
+    // Maps the registers depending on the system
+    // Returns true on success
+    unisim::service::interfaces::Register* GetDebugRegister( char const* regname );
+    // bool GetRegister( char const* regname, PARAMETER_TYPE * const value );
+    // bool SetRegister( char const* regname, PARAMETER_TYPE value );
+	
+    // Load the files set by the user into the given blob. Returns true on sucess,
+    // false otherwise.
+    bool LoadFiles(unisim::util::blob::Blob<ADDRESS_TYPE> *blob);
+
+    // Gets the main executable blob, that is the blob that represents the
+    // executable file, not the maybe used dynamic libraries
+    unisim::util::blob::Blob<ADDRESS_TYPE> const * const GetMainBlob() const;
+
+    // From the given blob computes the initial addresses and values that will be
+    // used to initialize internal structures and the target processor
+    bool ComputeStructuralAddresses(
+                                    unisim::util::blob::Blob<ADDRESS_TYPE> const &blob);
+
+    // Merge the contents of the given file blob into the input/output blob
+    bool FillBlobWithFileBlob(
+                              unisim::util::blob::Blob<ADDRESS_TYPE> const &file_blob,
+                              unisim::util::blob::Blob<ADDRESS_TYPE> *blob);
+
+    // Create the stack memory image and insert it into the given blob
+    bool CreateStack(unisim::util::blob::Blob<ADDRESS_TYPE> * blob, uint64_t& stack_size) const;
+
+    // Set the aux table contents that will be added to the stack
+    void SetAuxTable(uint8_t * stack_data, ADDRESS_TYPE & sp) const;
+
+    // Set the contents of an aux table entry
+    ADDRESS_TYPE SetAuxTableEntry(uint8_t * stack_data, ADDRESS_TYPE sp,
+                                  ADDRESS_TYPE entry, ADDRESS_TYPE value) const;
+	
+    // File descriptors mapping
+    int32_t AllocateFileDescriptor();
+    void FreeFileDescriptor(int32_t fd);
+    void MapTargetToHostFileDescriptor(int32_t target_fd, int host_fd);
+    void UnmapTargetToHostFileDescriptor(int32_t target_fd);
+	
+    // The generic linux system call factories
+    SysCall* GetSysCall( std::string _name );
+	
+    // handling the brkpoint address (heap end)
+  };
 
 } // end of linux namespace
 } // end of os namespace

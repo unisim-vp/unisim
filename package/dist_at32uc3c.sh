@@ -136,16 +136,16 @@ unisim/util/debug/dwarf/ml.cc \
 unisim/util/debug/dwarf/register_number_mapping.cc \
 unisim/util/debug/dwarf/data_object.cc \
 unisim/util/debug/dwarf/c_loc_expr_parser.cc \
-unisim/util/debug/blob/blob32.cc \
-unisim/util/debug/blob/blob64.cc \
-unisim/util/debug/blob/section32.cc \
-unisim/util/debug/blob/section64.cc \
-unisim/util/debug/blob/segment32.cc \
-unisim/util/debug/blob/segment64.cc \
+unisim/util/blob/blob32.cc \
+unisim/util/blob/blob64.cc \
+unisim/util/blob/section32.cc \
+unisim/util/blob/section64.cc \
+unisim/util/blob/segment32.cc \
+unisim/util/blob/segment64.cc \
 unisim/util/debug/elf_symtab/elf_symtab32.cc \
 unisim/util/debug/elf_symtab/elf_symtab64.cc \
 unisim/util/debug/coff_symtab/coff_symtab32.cc \
-unisim/util/endian/endian.cc \
+unisim/kernel/service/endian.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/util/loader/coff_loader/coff_loader32.cc \
@@ -260,9 +260,9 @@ unisim/util/debug/dwarf/frame.hh \
 unisim/util/debug/dwarf/util.hh \
 unisim/util/debug/dwarf/data_object.hh \
 unisim/util/debug/dwarf/c_loc_expr_parser.hh \
-unisim/util/debug/blob/blob.hh \
-unisim/util/debug/blob/section.hh \
-unisim/util/debug/blob/segment.hh \
+unisim/util/blob/blob.hh \
+unisim/util/blob/section.hh \
+unisim/util/blob/segment.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/endian/endian.hh \
@@ -361,9 +361,9 @@ unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
 unisim/util/debug/dwarf/frame.tcc \
 unisim/util/debug/dwarf/data_object.tcc \
-unisim/util/debug/blob/blob.tcc \
-unisim/util/debug/blob/section.tcc \
-unisim/util/debug/blob/segment.tcc \
+unisim/util/blob/blob.tcc \
+unisim/util/blob/section.tcc \
+unisim/util/blob/segment.tcc \
 unisim/util/debug/elf_symtab/elf_symtab.tcc \
 unisim/util/debug/coff_symtab/coff_symtab.tcc \
 unisim/util/loader/elf_loader/elf_loader.tcc \
@@ -413,7 +413,6 @@ m4/bsd_sockets.m4 \
 m4/curses.m4 \
 m4/libedit.m4 \
 m4/systemc.m4 \
-m4/tlm20.m4 \
 m4/with_boost.m4 \
 m4/check_lib.m4 \
 m4/get_exec_path.m4 \
@@ -642,8 +641,8 @@ Requirements:
   - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
   - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
   - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
-  - Core SystemC Language >= 2.1 (http://www.systemc.org)
-  - TLM Transaction Level Modeling Library, Release >= 2.0 (http://www.systemc.org)
+  - Core SystemC Language >= 2.3.0 (http://www.systemc.org)
+
 
 Building instructions:
   $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-tlm20=<path-to-TLM-library-install-dir>
@@ -950,7 +949,6 @@ if [ "${has_to_build_at32uc3c_configure}" = "yes" ]; then
 	echo "UNISIM_WITH_BOOST(main)" >> "${AT32UC3C_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${AT32UC3C_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${AT32UC3C_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TLM20" >> "${AT32UC3C_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${AT32UC3C_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${AT32UC3C_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-at32uc3c-${AT32UC3C_VERSION}\"], [path of shared data relative to bin directory])" >> "${AT32UC3C_CONFIGURE_AC}"

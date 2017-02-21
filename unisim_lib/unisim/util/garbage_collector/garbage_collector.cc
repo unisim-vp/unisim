@@ -33,7 +33,9 @@
  */
  
 #include "unisim/util/garbage_collector/garbage_collector.hh"
+#if DEBUG_GC >= 2
 #include <unisim/kernel/debug/debug.hh>
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <iostream>

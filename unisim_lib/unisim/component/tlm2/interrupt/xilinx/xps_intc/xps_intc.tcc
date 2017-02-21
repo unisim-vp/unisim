@@ -120,13 +120,18 @@ XPS_IntC<CONFIG>::~XPS_IntC()
 template <class CONFIG>
 void XPS_IntC<CONFIG>::AlignToClock(sc_time& t)
 {
-	sc_dt::uint64 time_tu = t.value();
-	sc_dt::uint64 cycle_time_tu = cycle_time.value();
-	sc_dt::uint64 modulo = time_tu % cycle_time_tu;
-	if(!modulo) return; // already aligned
-
-	time_tu += cycle_time_tu - modulo;
-	t = sc_time(time_tu, false);
+// 	sc_dt::uint64 time_tu = t.value();
+// 	sc_dt::uint64 cycle_time_tu = cycle_time.value();
+// 	sc_dt::uint64 modulo = time_tu % cycle_time_tu;
+// 	if(!modulo) return; // already aligned
+// 
+// 	time_tu += cycle_time_tu - modulo;
+// 	t = sc_time(time_tu, false);
+	
+	sc_time modulo(t);
+	modulo %= cycle_time;
+	if(modulo == SC_ZERO_TIME) return; // already aligned
+	t += cycle_time - modulo;
 }
 
 template <class CONFIG>

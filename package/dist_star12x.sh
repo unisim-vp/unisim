@@ -113,12 +113,12 @@ unisim/kernel/logger/logger_server.cc \
 unisim/kernel/debug/debug.cc \
 unisim/util/xml/xml.cc \
 unisim/util/debug/dwarf/register_number_mapping.c \
-unisim/util/debug/blob/blob32.cc \
-unisim/util/debug/blob/blob64.cc \
-unisim/util/debug/blob/section32.cc \
-unisim/util/debug/blob/section64.cc \
-unisim/util/debug/blob/segment32.cc \
-unisim/util/debug/blob/segment64.cc \
+unisim/util/blob/blob32.cc \
+unisim/util/blob/blob64.cc \
+unisim/util/blob/section32.cc \
+unisim/util/blob/section64.cc \
+unisim/util/blob/segment32.cc \
+unisim/util/blob/segment64.cc \
 unisim/util/debug/elf_symtab/elf_symtab32.cc \
 unisim/util/debug/elf_symtab/elf_symtab64.cc \
 unisim/util/debug/coff_symtab/coff_symtab32.cc \
@@ -148,7 +148,7 @@ unisim/util/debug/dwarf/encoding.cc \
 unisim/util/debug/dwarf/filename.cc \
 unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
-unisim/util/endian/endian.cc \
+unisim/kernel/service/endian.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/inline_debugger/inline_debugger_64.cc \
@@ -255,9 +255,9 @@ unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/debug/dwarf/frame.hh \
 unisim/util/debug/dwarf/register_number_mapping.hh \
 unisim/util/debug/event.hh \
-unisim/util/debug/blob/blob.hh \
-unisim/util/debug/blob/section.hh \
-unisim/util/debug/blob/segment.hh \
+unisim/util/blob/blob.hh \
+unisim/util/blob/section.hh \
+unisim/util/blob/segment.hh \
 unisim/util/loader/elf_loader/elf_loader.hh \
 unisim/util/loader/elf_loader/elf32.h \
 unisim/util/loader/elf_loader/elf64.h \
@@ -358,14 +358,13 @@ unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/debugger/debugger.tcc \
 unisim/util/debug/dwarf/frame.tcc \
-unisim/util/debug/blob/section.tcc \
-unisim/util/debug/blob/blob.tcc \
-unisim/util/debug/blob/segment.tcc \
+unisim/util/blob/section.tcc \
+unisim/util/blob/blob.tcc \
+unisim/util/blob/segment.tcc \
 unisim/util/debug/elf_symtab/elf_symtab.tcc \
 unisim/util/loader/elf_loader/elf_loader.tcc \
 unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/debug/coff_symtab/coff_symtab.tcc \
-unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/loader/coff_loader/ti/ti.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
@@ -389,7 +388,6 @@ m4/bsd_sockets.m4 \
 m4/curses.m4 \
 m4/libedit.m4 \
 m4/systemc.m4 \
-m4/tlm20.m4 \
 m4/with_boost.m4 \
 m4/check_lib.m4 \
 m4/rtbcob.m4 \
@@ -758,7 +756,6 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${STAR12X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TLM20" >> "${STAR12X_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-star12x-${STAR12X_VERSION}\"], [path of shared data relative to bin directory])" >> "${STAR12X_CONFIGURE_AC}"

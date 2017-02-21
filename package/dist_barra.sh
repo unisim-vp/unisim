@@ -97,7 +97,7 @@ unisim/util/debug/breakpoint_registry_32.cc \
 unisim/util/debug/breakpoint_registry_64.cc \
 unisim/util/debug/profile_32.cc \
 unisim/util/debug/profile_64.cc \
-unisim/util/endian/endian.cc \
+unisim/kernel/service/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/component/cxx/scheduler/cuda_scheduler/cuda_scheduler.cc \
 unisim/component/cxx/processor/tesla/cpu.cc \

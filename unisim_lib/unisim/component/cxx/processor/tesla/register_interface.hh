@@ -46,7 +46,7 @@ namespace tesla {
 
 
 template <class CONFIG>
-struct VectorRegisterInterface : unisim::util::debug::Register
+struct VectorRegisterInterface : unisim::service::interfaces::Register
 {
 private:
 	std::string name;
@@ -63,7 +63,7 @@ public:
 };
 
 template <class CONFIG>
-struct ScalarRegisterInterface : unisim::util::debug::Register
+struct ScalarRegisterInterface : unisim::service::interfaces::Register
 {
 private:
 	std::string name;

@@ -56,7 +56,7 @@ namespace s19_loader {
 
 typedef uint32_t s19_address_t;
 
-using namespace std;
+// using namespace std;
 using unisim::service::interfaces::Memory;
 using namespace unisim::util::endian;
 using unisim::kernel::service::Service;
@@ -112,10 +112,10 @@ public:
 	virtual ~S19_Loader();
 
 private:
-	string				filename;
+	std::string				filename;
 	uint32_t	entry_point;
 
-	Parameter<string>	param_filename;
+	Parameter<std::string>	param_filename;
 
 	bool				isFirstDataRec;
 

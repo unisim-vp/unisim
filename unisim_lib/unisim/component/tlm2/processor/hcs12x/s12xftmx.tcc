@@ -34,6 +34,7 @@ S12XFTMX(const sc_module_name& name, Object *parent) :
 	, unisim::component::tlm2::memory::ram::Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>(name, parent)
 	, unisim::kernel::service::Service<Registers>(name, parent)
 
+	, unisim::kernel::service::Service<unisim::service::interfaces::Memory<ADDRESS> >(name, parent)
 	, registers_export("registers_export", this)
 
 	, bus_clock_socket("Bus-Clock")
@@ -177,7 +178,7 @@ S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 ~S12XFTMX() {
 
 	// Release registers_registry
-	map<string, unisim::util::debug::Register *>::iterator reg_iter;
+	map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
 
 	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
 	{
@@ -1675,9 +1676,9 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::setFLASHClock(
 //=====================================================================
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ReadMemory(service_address_t addr, void *buffer, uint32_t size)
+bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ReadMemory(ADDRESS addr, void *buffer, uint32_t size)
 {
-	if ((addr >= baseAddress) && (addr <= (baseAddress+REGISTERS_BANK_SIZE))) {
+	if ((addr >= baseAddress) && (addr < (baseAddress+REGISTERS_BANK_SIZE))) {
 		service_address_t offset = addr-baseAddress;
 		switch (offset) {
 			case FCLKDIV: {
@@ -1763,10 +1764,10 @@ bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ReadMemory(ser
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
+bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(ADDRESS addr, const void *buffer, uint32_t size)
 {
 
-	if ((addr >= baseAddress) && (addr <= (baseAddress+REGISTERS_BANK_SIZE))) {
+	if ((addr >= baseAddress) && (addr < (baseAddress+REGISTERS_BANK_SIZE))) {
 
 		if (size == 0) {
 			return (true);
@@ -2156,7 +2157,7 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::read_write( tl
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	if ((address >= baseAddress) && (address <= (baseAddress + REGISTERS_BANK_SIZE))) {
+	if ((address >= baseAddress) && (address < (baseAddress + REGISTERS_BANK_SIZE))) {
 
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);

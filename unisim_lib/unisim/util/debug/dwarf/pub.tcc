@@ -125,7 +125,7 @@ void DWARF_Pub<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigne
 	dw_die = dw_handler->FindDIE(cu_debug_info_offset + debug_info_offset);
 	if(!dw_die)
 	{
-		dw_handler->GetLogger() << DebugWarning << "While resolving [pub entry -> DIE] reference, can't find DIE (Debugging Information Entry) in .debug_info at offset " << (cu_debug_info_offset + debug_info_offset) << EndDebugWarning;
+		dw_handler->GetDebugWarningStream() << "While resolving [pub entry -> DIE] reference, can't find DIE (Debugging Information Entry) in .debug_info at offset " << (cu_debug_info_offset + debug_info_offset) << std::endl;
 	}
 }
 
@@ -380,7 +380,7 @@ void DWARF_Pubs<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsign
 	dw_cu = dw_handler->FindCompilationUnit(debug_info_offset);
 	if(!dw_cu)
 	{
-		dw_handler->GetLogger() << DebugWarning << "While resolving [pubs -> CU] reference, can't find CU (Compilation Unit) in .debug_info at offset " << debug_info_offset << EndDebugWarning;
+		dw_handler->GetDebugWarningStream() << "While resolving [pubs -> CU] reference, can't find CU (Compilation Unit) in .debug_info at offset " << debug_info_offset << std::endl;
 	}
 	
 	unsigned int i;

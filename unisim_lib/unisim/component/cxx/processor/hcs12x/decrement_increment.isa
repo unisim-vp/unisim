@@ -57,6 +57,8 @@ dec_ext.execute = {
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // DEC IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
@@ -99,6 +101,8 @@ dec_idx.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // DECA  or DECB
@@ -143,7 +147,8 @@ dec_ab.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
-	
+
+	return getCycles();
 }
 
 // DECW  EXT
@@ -173,6 +178,8 @@ decw_ext.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // DECW  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
@@ -216,6 +223,8 @@ decw_idx.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // DECX or DECY
@@ -260,7 +269,8 @@ dec_xy.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
-	
+
+	return getCycles();
 }
 
 // DES
@@ -277,6 +287,8 @@ des.disasm = {
 
 des.execute = {
 	cpu->setRegSP(cpu->getRegSP() - 1);
+
+	return getCycles();
 }
 
 // DEX
@@ -296,6 +308,8 @@ dex.execute = {
 	val--;
 	cpu->setRegX(val);
 	if (val == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();  
+
+	return getCycles();
 }
 
 // DEY
@@ -315,6 +329,8 @@ dey.execute = {
 	val--;
 	cpu->setRegY(val);
 	if (val == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();  
+
+	return getCycles();
 }
 
 /* ********* Increment Instructions ****** */
@@ -345,6 +361,8 @@ inc_ext.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // INC IDX or IDX or IDX2 or [D,IDX] or [IDX2]
@@ -387,6 +405,8 @@ inc_idx.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // INCA  or INCB
@@ -430,7 +450,8 @@ inc_ab.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
-	
+
+	return getCycles();
 }
 
 // INCW EXT
@@ -460,6 +481,8 @@ incw_ext.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // INCW  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
@@ -503,6 +526,8 @@ incw_idx.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	return getCycles();
 }
 
 // INX or INCY
@@ -547,7 +572,8 @@ inc_xy.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
-	
+
+	return getCycles();
 }
 
 // INS
@@ -564,6 +590,8 @@ ins.disasm = {
 
 ins.execute = {
 	cpu->setRegSP(cpu->getRegSP() + 1);
+
+	return getCycles();
 }
 
 // INX
@@ -583,6 +611,8 @@ inx.execute = {
 	val++;
 	cpu->setRegX(val);
 	if (val == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();  
+
+	return getCycles();
 }
 
 // INY
@@ -602,5 +632,7 @@ iny.execute = {
 	val++;
 	cpu->setRegY(val);
 	if (val == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();  
+
+	return getCycles();
 }
 

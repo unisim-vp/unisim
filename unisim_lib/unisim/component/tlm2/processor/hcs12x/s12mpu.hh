@@ -69,7 +69,7 @@
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
 
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 #include "unisim/util/debug/simple_register.hh"
 #include "unisim/util/endian/endian.hh"
 
@@ -105,7 +105,7 @@ using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::TrapReporting;
 
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::Host2BigEndian;
@@ -155,6 +155,8 @@ public:
 
 	static const uint8_t MPU_DESC_BANKS_OFFSET = 0x0C;	// This offset is used to instruments all descriptors
 	static const uint8_t MPU_DESC_WINDOW_SIZE = 6;
+
+	static const unsigned int MEMORY_MAP_SIZE = 12;
 
 	ServiceImport<TrapReporting > trap_reporting_import;
 
@@ -211,6 +213,10 @@ public:
 	 */
     virtual Register *GetRegister(const char *name);
 
+    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+    {
+    	// TODO
+    }
 	//=====================================================================
 	//=             registers setters and getters                         =
 	//=====================================================================

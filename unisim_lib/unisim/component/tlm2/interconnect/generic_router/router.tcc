@@ -39,6 +39,7 @@
 #include "unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc"
 #include <cmath>
 #include <sstream>
+#include <iostream>
 
 #define LOCATION 	" - location = " << __FUNCTION__ << ":unisim_lib/unisim/component/tlm2/interconnect/generic_router/router.tcc:" << __LINE__
 #define TIME(X) 	" - time = " << sc_time_stamp() + (X)
@@ -127,6 +128,9 @@ namespace tlm2 {
 namespace interconnect {
 namespace generic_router {
 
+using std::dec;
+using std::hex;
+using std::endl;
 using namespace unisim::kernel::logger;
 
 template <class CONFIG> const unsigned int unisim::component::tlm2::interconnect::generic_router::Router<CONFIG>::INPUT_SOCKETS;
@@ -932,8 +936,8 @@ T_get_direct_mem_ptr_cb(int id, transaction_type &trans, tlm::tlm_dmi &dmi) {
 		TRANS(logger, trans);
 		logger << EndDebug;
 		dmi.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
-		dmi.set_start_address(0);
-		dmi.set_end_address((sc_dt::uint64) -1);
+		dmi.set_start_address(trans.get_address());
+		dmi.set_end_address(trans.get_address() + trans.get_data_length() - 1);
 		return false;
 	}
 	/* perform the address translation */
@@ -969,26 +973,36 @@ T_get_direct_mem_ptr_cb(int id, transaction_type &trans, tlm::tlm_dmi &dmi) {
 	// restrict address range of DMI
 	sc_dt::uint64 start_range = mapping[mapping_id].range_start;
 	sc_dt::uint64 end_range = mapping[mapping_id].range_end;
-	
-	if(dmi_start_address < start_range)
+
+	if(dmi_end_address >= dmi_start_address) // prevent us from crazy targets behavior
 	{
-		// cut lower region
-		dmi.set_dmi_ptr(dmi.get_dmi_ptr() + (start_range - dmi_start_address));
+		if(dmi_start_address < start_range)
+		{
+			// cut lower region
+			dmi.set_dmi_ptr(dmi.get_dmi_ptr() + (start_range - dmi_start_address));
+			dmi.set_start_address(start_range);
+		}
+		else
+		{
+			dmi.set_start_address(dmi_start_address);
+		}
+			
+		if(dmi_end_address > end_range)
+		{
+			// cut upper region
+			dmi.set_end_address(end_range);
+		}
+		else
+		{
+			dmi.set_end_address(dmi_end_address);
+		}
+	}
+	else
+	{
+		// deny all crazy target address space
 		dmi.set_start_address(start_range);
-	}
-	else
-	{
-		dmi.set_start_address(dmi_start_address);
-	}
-		
-	if(dmi_end_address > end_range)
-	{
-		// cut upper region
 		dmi.set_end_address(end_range);
-	}
-	else
-	{
-		dmi.set_end_address(dmi_end_address);
+		dmi_status = false;
 	}
 
 	// add router latency per byte

@@ -57,14 +57,12 @@ class ManagedPayload
 {
 public:
 	ManagedPayload() :
-		extensions(tlm::max_num_extensions()),
 		memory_manager(0),
 		ref_count(0)
 	{
 	}
 	
 	explicit ManagedPayload(tlm::tlm_mm_interface *mm) :
-		extensions(tlm::max_num_extensions()),
 		memory_manager(mm),
 		ref_count(0)
 	{
@@ -100,181 +98,31 @@ public:
 	
 	void reset()
 	{
-		extensions.free_entire_cache();
 	};
-
-	void deep_copy_from(const ManagedPayload & other)
-	{
-		for(unsigned int i=0; i<other.extensions.size(); i++)
-		{
-			if(other.extensions[i])
-			{
-				if(!extensions[i])
-				{
-					tlm::tlm_extension_base *ext = other.extensions[i]->clone();
-					if(ext)
-					{
-						if(has_mm())
-						{
-							set_auto_extension(i, ext);
-						}
-						else
-						{
-							set_extension(i, ext);
-						}
-					}
-				}
-				else
-				{
-					extensions[i]->copy_from(*other.extensions[i]);
-				}
-			}
-		}
-	}
 	
-	void update_extensions_from(const ManagedPayload & other)
+	virtual ~ManagedPayload()
 	{
-		for(unsigned int i=0; i<other.extensions.size(); i++)
-		{
-			if(other.extensions[i])
-			{
-				if(extensions[i])
-				{
-					extensions[i]->copy_from(*other.extensions[i]);
-				}
-			}
-		}
 	}
 	
 	void free_all_extensions()
 	{
-		extensions.free_entire_cache();
-		for(unsigned int i=0; i<extensions.size(); i++)
-		{
-			if(extensions[i])
-			{
-				extensions[i]->free();
-				extensions[i] = 0;
-			}
-		}
 	}
-	
-	
-	virtual ~ManagedPayload()
-	{
-		for(unsigned int i=0; i<extensions.size(); i++)
-			if(extensions[i]) extensions[i]->free();
-	}
-	
-	template <typename T> T* set_extension(T* ext)
-	{
-		return static_cast<T*>(set_extension(T::ID, ext));
-	}
-	
-	tlm::tlm_extension_base* set_extension(unsigned int index, tlm::tlm_extension_base* ext)
-	{
-		tlm::tlm_extension_base* tmp = extensions[index];
-		extensions[index] = ext;
-		return tmp;
-	}
-	
-	template <typename T> T* set_auto_extension(T* ext)
-	{
-		return static_cast<T*>(set_auto_extension(T::ID, ext));
-	}
-	
-	tlm::tlm_extension_base* set_auto_extension(unsigned int index, tlm::tlm_extension_base* ext)
-	{
-		tlm::tlm_extension_base* tmp = extensions[index];
-		extensions[index] = ext;
-		if (!tmp) extensions.insert_in_cache(&extensions[index]);
-		assert(memory_manager != 0);
-		return tmp;
-	}
-	
-	template <typename T> void get_extension(T*& ext) const
-	{
-		ext = get_extension<T>();
-	}
-	
-	template <typename T> T* get_extension() const
-	{
-		return static_cast<T*>(get_extension(T::ID));
-	}
-	
-	tlm::tlm_extension_base* get_extension(unsigned int index) const
-	{
-		return extensions[index];
-	}
-	
-	template <typename T> void clear_extension(const T* ext)
-	{
-		clear_extension<T>();
-	}
-	
-	template <typename T> void clear_extension()
-	{
-		clear_extension(T::ID);
-	}
-	
-	template <typename T> void release_extension(T* ext)
-	{
-		release_extension<T>();
-	}
-	
-	template <typename T> void release_extension()
-	{
-		release_extension(T::ID);
-	}
-
-    void resize_extensions()
-    {
-        extensions.expand(tlm::max_num_extensions());
-    }
 
 protected:
 
-	ManagedPayload(const ManagedPayload& x) :
-		extensions(tlm::max_num_extensions())
-		, memory_manager(0)
+	ManagedPayload(const ManagedPayload& x)
+		: memory_manager(0)
 		, ref_count(0)
 
 	{
-		for(unsigned int i=0; i<extensions.size(); i++)
-		{
-			extensions[i] = x.get_extension(i);
-		}
 	}
 	
 	ManagedPayload& operator= (const ManagedPayload& x)
 	{
-		for(unsigned int i=0; i<extensions.size(); i++)
-		{
-			extensions[i] = x.get_extension(i);
-		}
 		return (*this);
 	}
 
 private:
-	void clear_extension(unsigned int index)
-	{
-		extensions[index] = static_cast<tlm::tlm_extension_base*>(0);
-	}
-	
-	void release_extension(unsigned int index)
-	{
-		if (memory_manager)
-		{
-			extensions.insert_in_cache(&extensions[index]);
-		}
-		else
-		{
-			extensions[index]->free();
-			extensions[index] = static_cast<tlm::tlm_extension_base*>(0);
-		}
-	}
-	
-	tlm::tlm_array<tlm::tlm_extension_base*> extensions;
 	tlm::tlm_mm_interface* memory_manager;
 	unsigned int ref_count;
 };
@@ -289,12 +137,19 @@ public:
 
 	~PayloadFabric()
 	{
-		while(!free_list.empty())
+		typename std::vector<PAYLOAD *>::iterator it;
+		
+		for(it = payloads.begin(); it != payloads.end(); it++)
 		{
-			PAYLOAD *payload = free_list.top();
-			free_list.pop();
+			PAYLOAD *payload = *it;
 			delete payload;
 		}
+// 		while(!free_list.empty())
+// 		{
+// 			PAYLOAD *payload = free_list.top();
+// 			free_list.pop();
+// 			delete payload;
+// 		}
 	}
 
 	PAYLOAD *allocate()
@@ -313,6 +168,7 @@ public:
 		payload = new PAYLOAD();
 		payload->set_mm(this);
 		payload->acquire();
+		payloads.push_back(payload);
 		return payload;
 	}
 
@@ -324,6 +180,7 @@ public:
 	}
 private:
 	std::stack<PAYLOAD *, std::vector<PAYLOAD *> > free_list;
+	std::vector<PAYLOAD *> payloads;
 };
 
 template <class T>
@@ -467,7 +324,9 @@ public:
 	Schedule()
 		: schedule()
 		, free_list()
-		, kernel_event()
+		, kernel_event("schedule_kernel_event")
+		, paused(false)
+		, pause_time_stamp(sc_core::SC_ZERO_TIME)
 	{
 	}
 	
@@ -495,8 +354,31 @@ public:
 		schedule.insert(std::pair<typename EVENT::Key, EVENT *>(event->GetKey(), event));
 		sc_time t(time_stamp);
 		t -= sc_time_stamp();
-//		std::cerr << "notify(" << t << ") from" << std::endl << unisim::kernel::debug::BackTrace() << std::endl;
 		kernel_event.notify(t);
+	}
+	
+	void Cancel(EVENT *event)
+	{
+		typename std::multimap<typename EVENT::Key, EVENT *>::iterator it = schedule.find(event->GetKey());
+		
+		if(it != schedule.end())
+		{
+			schedule.erase(it);
+			
+			if(schedule.empty())
+			{
+				kernel_event.cancel();
+			}
+			else
+			{
+				it = schedule.begin();
+				const sc_time& time_stamp = sc_time_stamp();
+				const sc_time& event_time_stamp = (*it).first.GetTimeStamp();
+				sc_time t(event_time_stamp);
+				t -= time_stamp;
+				kernel_event.notify(t);
+			}
+		}
 	}
 	
 	bool Empty() const
@@ -559,12 +441,63 @@ public:
 		}
 		schedule.clear();
 		kernel_event.cancel();
+		paused = false;
 	}
 
+	void Pause()
+	{
+		if(schedule.empty()) return;
+		
+		kernel_event.cancel();
+		
+		pause_time_stamp = sc_core::sc_time_stamp();
+		paused = true;
+	}
+	
+	void Unpause()
+	{
+		if(!paused) return;
+		
+		if(schedule.empty()) return;
+
+		sc_core::sc_time unpause_time_stamp = sc_core::sc_time_stamp();
+		
+		sc_core::sc_time time_shift(unpause_time_stamp);
+		time_shift -= pause_time_stamp;
+		
+		typename std::multimap<typename EVENT::Key, EVENT *>::iterator it = schedule.begin();
+		
+		do
+		{
+			EVENT *event = (*it).second;
+			
+			sc_core::sc_time shifted_time_stamp(event->GetTimeStamp());
+			shifted_time_stamp += time_shift;
+			event->SetTimeStamp(shifted_time_stamp);
+			schedule.insert(std::pair<typename EVENT::Key, EVENT *>(event->GetKey(), event));
+			
+			typename std::multimap<typename EVENT::Key, EVENT *>::iterator erase_it = it++;
+			schedule.erase(erase_it);
+		}
+		while(it != schedule.end());
+
+		it = schedule.begin();
+		
+		const sc_time& event_time_stamp = (*it).first.GetTimeStamp();
+		
+		sc_time t(event_time_stamp);
+		t -= unpause_time_stamp;
+		
+		kernel_event.notify(t);
+		
+		paused = false;
+	}
 private:
 	std::multimap<typename EVENT::Key, EVENT *> schedule;
 	std::stack<EVENT *, std::vector<EVENT *> > free_list;
 	sc_event kernel_event;
+	bool paused;
+	sc_time pause_time_stamp;
 };
 
 template <unsigned int BUSWIDTH = 32, class TYPES = tlm::tlm_base_protocol_types>
@@ -996,6 +929,7 @@ inline DMIRegion::DMIRegion(DMIGrant _dmi_grant, tlm::tlm_dmi *_dmi_data)
 	, dmi_data(_dmi_data)
 	, read_lat_lut(dmi_data->get_read_latency())
 	, write_lat_lut(dmi_data->get_write_latency())
+	, next(NULL)
 {
 }
 
@@ -1101,15 +1035,29 @@ inline DMIRegion *DMIRegionCache::Lookup(sc_dt::uint64 addr, sc_dt::uint64 size)
 
 inline void DMIRegionCache::Insert(DMIGrant dmi_grant, tlm::tlm_dmi *dmi_data)
 {
-	DMIRegion *dmi_region = new DMIRegion(dmi_grant, dmi_data);
-	dmi_region->next = mru_dmi_region;
-	mru_dmi_region = dmi_region;
+	if(dmi_data->get_end_address() >= dmi_data->get_start_address()) // prevent us from crazy targets behavior
+	{
+		DMIRegion *dmi_region = new DMIRegion(dmi_grant, dmi_data);
+		dmi_region->next = mru_dmi_region;
+		mru_dmi_region = dmi_region;
+	}
+	else
+	{
+		delete dmi_data;
+	}
 }
 
 inline void DMIRegionCache::Insert(DMIRegion *dmi_region)
 {
-	dmi_region->next = mru_dmi_region;
-	mru_dmi_region = dmi_region;
+	if(dmi_region->GetDMI()->get_end_address() >= dmi_region->GetDMI()->get_start_address()) // prevent us from crazy targets behavior
+	{
+		dmi_region->next = mru_dmi_region;
+		mru_dmi_region = dmi_region;
+	}
+	else
+	{
+		delete dmi_region;
+	}
 }
 
 inline void DMIRegionCache::Remove(DMIRegion *dmi_region)

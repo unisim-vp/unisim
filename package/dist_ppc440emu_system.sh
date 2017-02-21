@@ -126,9 +126,9 @@ unisim/util/debug/dwarf/encoding.cc \
 unisim/util/debug/dwarf/filename.cc \
 unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
-unisim/util/debug/blob/blob32.cc \
-unisim/util/debug/blob/section32.cc \
-unisim/util/endian/endian.cc \
+unisim/util/blob/blob32.cc \
+unisim/util/blob/section32.cc \
+unisim/kernel/service/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/random/random.cc \
@@ -255,8 +255,8 @@ unisim/util/debug/dwarf/loc.hh \
 unisim/util/debug/dwarf/ml.hh \
 unisim/util/debug/dwarf/range.hh \
 unisim/util/debug/dwarf/stmt_vm.hh \
-unisim/util/debug/blob/blob.hh \
-unisim/util/debug/blob/section.hh \
+unisim/util/blob/blob.hh \
+unisim/util/blob/section.hh \
 unisim/util/endian/endian.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/hash_table/hash_table.hh \
@@ -363,8 +363,8 @@ unisim/util/debug/dwarf/fde.tcc \
 unisim/util/debug/dwarf/macinfo.tcc \
 unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
-unisim/util/debug/blob/blob.tcc \
-unisim/util/debug/blob/section.tcc \
+unisim/util/blob/blob.tcc \
+unisim/util/blob/section.tcc \
 unisim/util/queue/queue.tcc \
 unisim/util/simfloat/floating.tcc \
 unisim/util/simfloat/integer.tcc \
@@ -418,7 +418,6 @@ m4/bsd_sockets.m4 \
 m4/curses.m4 \
 m4/libedit.m4 \
 m4/systemc.m4 \
-m4/tlm20.m4 \
 m4/with_boost.m4 \
 m4/cacti.m4 \
 m4/check_lib.m4 \
@@ -621,7 +620,7 @@ echo "  - boost (http://www.boost.org) development package (libboost-devel for R
 echo "  - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
 echo "  - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
 echo "  - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
-echo "  - Core SystemC Language >= 2.1 (http://www.systemc.org)" >> "${DEST_DIR}/INSTALL"
+echo "  - Core SystemC Language >= 2.3.0 (http://www.systemc.org)" >> "${DEST_DIR}/INSTALL"
 echo "" >> "${DEST_DIR}/INSTALL"
 echo "Building instructions:" >> "${DEST_DIR}/INSTALL"
 echo "  $ ./configure --with-systemc=<path-to-systemc-install-dir>" >> "${DEST_DIR}/INSTALL"
@@ -785,7 +784,6 @@ if [ "${has_to_build_ppc440emu_system_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_LIBXML2" >> "${PPC440EMU_SYSTEM_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_CXXABI" >> "${PPC440EMU_SYSTEM_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${PPC440EMU_SYSTEM_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TLM20" >> "${PPC440EMU_SYSTEM_CONFIGURE_AC}"
 	echo "UNISIM_WITH_BOOST" >> "${PPC440EMU_SYSTEM_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_BOOST_GRAPH" >> "${PPC440EMU_SYSTEM_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_CACTI" >> "${PPC440EMU_SYSTEM_CONFIGURE_AC}"

@@ -41,7 +41,6 @@
 #include <unisim/service/interfaces/blob.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/kernel/logger/logger.hh>
 
 #include <iosfwd>
 #include <inttypes.h>
@@ -59,7 +58,7 @@ namespace util {
 namespace loader {
 namespace coff_loader {
 
-using namespace std;
+// using namespace std;
 using unisim::service::interfaces::Memory;
 using namespace unisim::util::endian;
 using unisim::util::debug::Symbol;
@@ -129,8 +128,8 @@ public:
 	virtual MEMORY_ADDR GetTextSize() const = 0;
 	virtual MEMORY_ADDR GetDataSize() const = 0;
 	virtual MEMORY_ADDR GetBssSize() const = 0;
-	virtual void DumpFileHeader(ostream& os) const = 0;
-	virtual void DumpAoutHeader(ostream& os) const = 0;
+	virtual void DumpFileHeader(std::ostream& os) const = 0;
+	virtual void DumpAoutHeader(std::ostream& os) const = 0;
 
 	virtual const SectionTable<MEMORY_ADDR> *GetSectionTable() const = 0;
 private:
@@ -147,7 +146,7 @@ public:
 	virtual MEMORY_ADDR GetPhysicalAddress() const = 0;
 	virtual MEMORY_ADDR GetSize() const = 0;
 	virtual long GetContentFilePtr() const = 0;
-	virtual void DumpHeader(ostream& os) const = 0;
+	virtual void DumpHeader(std::ostream& os) const = 0;
 	virtual Type GetType() const = 0;
 	virtual bool LoadSpecificContent(unisim::service::interfaces::Memory<MEMORY_ADDR> *output, const void *content, uint32_t size) const = 0;
 };
@@ -173,7 +172,7 @@ public:
 	virtual ~FileHandlerRegistry();
 	void Register(FileHandler<MEMORY_ADDR> *file_handler);
 	FileHandler<MEMORY_ADDR> *operator [] (uint16_t magic);
-	void DumpFileHandlers(ostream& os);
+	void DumpFileHandlers(std::ostream& os);
 	void Reset();
 private:
 	std::map<uint16_t, FileHandler<MEMORY_ADDR> *> file_handlers;
@@ -190,7 +189,7 @@ template <class MEMORY_ADDR>
 class CoffLoader
 {
 public:
-	CoffLoader(unisim::kernel::logger::Logger& logger, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = 0);
+	CoffLoader(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, const unisim::util::blob::Blob<MEMORY_ADDR> *blob = 0);
 	virtual ~CoffLoader();
 
 	void SetOption(Option opt, MEMORY_ADDR addr);
@@ -203,7 +202,7 @@ public:
 
 	bool Load();
 	void ParseSymbols();
-	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
+	const unisim::util::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
 	void GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
@@ -320,11 +319,13 @@ private:
 		} x;
 	} file_auxent;
 
-	// Logger
-	unisim::kernel::logger::Logger& logger;
+	// Logging
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
 	
 	// Run-time parameters
-	string filename;
+	std::string filename;
 	MEMORY_ADDR entry_point;
 	MEMORY_ADDR top_addr;
 	MEMORY_ADDR stack_base;
@@ -336,8 +337,8 @@ private:
 	FileHandlerRegistry<MEMORY_ADDR> file_handler_registry;
 
 	// Blob
-	unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
-	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *const_blob;
+	unisim::util::blob::Blob<MEMORY_ADDR> *blob;
+	const unisim::util::blob::Blob<MEMORY_ADDR> *const_blob;
 
 	// Memory atom size of file being loaded
 	unsigned int memory_atom_size;

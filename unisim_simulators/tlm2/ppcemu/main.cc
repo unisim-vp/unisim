@@ -46,7 +46,7 @@
 #include <unisim/service/profiling/addr_profiler/profiler.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
-#include <unisim/service/os/linux_os/linux.hh>
+#include <unisim/service/os/linux_os/powerpc_linux32.hh>
 #include <unisim/service/power/cache_power_estimator.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
@@ -253,7 +253,7 @@ Simulator::Simulator(int argc, char **argv)
 	//===                         Service instantiations                    ===
 	//=========================================================================
 	//  - Linux loader and Linux ABI translator
-	linux_os = new Linux<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE>("linux-os");
+	linux_os = new unisim::service::os::linux_os::PowerPCLinux32<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE>("linux-os");
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
@@ -336,6 +336,7 @@ Simulator::Simulator(int argc, char **argv)
 		inline_debugger->backtrace_import >> debugger->backtrace_export;
 		inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
 		inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
+		inline_debugger->subprogram_lookup_import >> debugger->subprogram_lookup_export;
 		inline_debugger->profiling_import >> profiler->profiling_export;
 	}
 	else if(enable_gdb_server)
@@ -412,7 +413,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("schematic", "ppcemu/fig_schematic.pdf");
 
 	int gdb_server_tcp_port = 0;
-	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
+	const char *gdb_server_arch_filename = "gdb_powerpc_32.xml";
 	const char *dwarf_register_number_mapping_filename = "powerpc_eabi_gcc_dwarf_register_number_mapping.xml";
 	uint64_t maxinst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
 	double cpu_frequency = 300.0; // in Mhz

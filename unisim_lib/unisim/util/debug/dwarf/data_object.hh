@@ -35,7 +35,6 @@
 #ifndef __UNISIM_UTIL_DEBUG_DWARF_DATA_OBJECT_HH__
 #define __UNISIM_UTIL_DEBUG_DWARF_DATA_OBJECT_HH__
 
-#include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/debug/dwarf/fwd.hh>
 #include <unisim/util/debug/dwarf/expr_vm.hh>
 #include <unisim/util/endian/endian.hh>
@@ -127,7 +126,9 @@ private:
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
 	DWARF_BitVector bv;
 	bool debug;
-	unisim::kernel::logger::Logger& logger;
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
 	
 	void UpdateCache(const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, const unisim::util::debug::Type *dw_data_object_type);
 	void InvalidateCache();

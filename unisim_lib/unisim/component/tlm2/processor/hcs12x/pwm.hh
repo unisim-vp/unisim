@@ -54,7 +54,7 @@
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
 
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
@@ -87,7 +87,7 @@ using unisim::kernel::service::SignalArray;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
@@ -145,7 +145,7 @@ public:
 
 	void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
-    void refresh_channel(uint8_t channel_number);
+//    void refresh_channel(uint8_t channel_number);
 
     void	start();
     void	pwm7in_ChangeStatus(bool pwm7in_status);
@@ -198,6 +198,11 @@ public:
 	 */
     virtual Register *GetRegister(const char *name);
 
+    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+    {
+    	// TODO
+    }
+
 	//=====================================================================
 	//=             registers setters and getters                         =
 	//=====================================================================
@@ -216,6 +221,9 @@ protected:
 
 		if (value != output[channel_index]) {
 			channel_output_reg[channel_index] = value;
+
+			refreshOutput(output);
+
 		}
 
 	};
@@ -236,6 +244,8 @@ private:
 	double	bus_cycle_time_int;
 	Parameter<double>	param_bus_cycle_time_int;
 	sc_time		bus_cycle_time;
+
+	sc_event pwm_bw_event;
 
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;

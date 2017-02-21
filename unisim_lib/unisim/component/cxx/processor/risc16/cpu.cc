@@ -88,7 +88,7 @@ CPU::~CPU()
 		delete extended_registers_registry[i];
 	}
 	
-	std::map<std::string, unisim::util::debug::Register *>::iterator reg_iter;
+	std::map<std::string, unisim::service::interfaces::Register *>::iterator reg_iter;
 
 	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
 	{
@@ -236,9 +236,9 @@ string CPU::Disasm(uint64_t addr, uint64_t &next_addr)
 	return strm.str();
 }
 
-unisim::util::debug::Register *CPU::GetRegister(const char *name)
+unisim::service::interfaces::Register *CPU::GetRegister(const char *name)
 {
-	map<string, unisim::util::debug::Register *>::iterator reg_iter = registers_registry.find(name);
+	map<string, unisim::service::interfaces::Register *>::iterator reg_iter = registers_registry.find(name);
 	if(reg_iter != registers_registry.end())
 	{
 		return (*reg_iter).second;
@@ -246,6 +246,19 @@ unisim::util::debug::Register *CPU::GetRegister(const char *name)
 
 	return 0;
 }
+
+/** Scan available registers for the Registers interface
+ * 
+ *  Allows clients of the Registers interface to scan available
+ * register by providing a suitable RegisterScanner interface.
+ */
+void
+CPU::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+{
+  // TODO:
+}
+
+
 
 } // end of namespace risc16
 } // end of namespace processor

@@ -95,6 +95,8 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 		output[i] = false;
 	}
 
+	channel_output_reg.SetMutable(true);
+
 	// Reserved Register for factory testing
 	pwmtst_register = pwmprsc_register = pwmscnta_register = pwmscntb_register = 0;
 
@@ -104,7 +106,7 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	bus_clock_socket.register_b_transport(this, &PWM::updateBusClock);
 
 	xint_payload = xint_payload_fabric.allocate();
-	pwm_payload = payload_fabric.allocate();
+//	pwm_payload = payload_fabric.allocate();
 
 	Reset();
 
@@ -114,7 +116,7 @@ template <uint8_t PWM_SIZE>
 PWM<PWM_SIZE>::~PWM() {
 
 	// Release registers_registry
-	map<string, unisim::util::debug::Register *>::iterator reg_iter;
+	map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
 
 	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
 	{
@@ -131,7 +133,7 @@ PWM<PWM_SIZE>::~PWM() {
 	}
 
 	xint_payload->release();
-	pwm_payload->release();
+//	pwm_payload->release();
 
 }
 
@@ -273,7 +275,8 @@ tlm_sync_enum PWM<PWM_SIZE>::nb_transport_bw(PWM_Payload<PWM_SIZE>& pwm_payload,
 			Object::Stop(-1);
 			break;
 		case BEGIN_RESP:
-			pwm_payload.release();
+			//pwm_payload.release();
+			pwm_bw_event.notify();
 			return (TLM_COMPLETED);
 		case END_RESP:
 			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_RESP" << endl;
@@ -288,7 +291,7 @@ tlm_sync_enum PWM<PWM_SIZE>::nb_transport_bw(PWM_Payload<PWM_SIZE>& pwm_payload,
 	return (TLM_ACCEPTED);
 }
 
-
+/*
 template <uint8_t PWM_SIZE>
 void PWM<PWM_SIZE>::refresh_channel(uint8_t channel_number) {
 
@@ -301,33 +304,35 @@ void PWM<PWM_SIZE>::refresh_channel(uint8_t channel_number) {
 	refreshOutput(pwmChannelOutput);
 
 }
-
+*/
 
 template <uint8_t PWM_SIZE>
 void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
 {
 	tlm_phase phase = BEGIN_REQ;
 
-	pwm_payload->acquire();
+	PWM_Payload<PWM_SIZE>* pwm_payload = payload_fabric.allocate();
 
 	for (int i=0; i<PWM_SIZE; i++) {
 		pwm_payload->pwmChannel[i] = pwmValue[i];
 	}
 
-	quantumkeeper.inc(bus_cycle_time); // TODO: has to take in account the DTY and PERIOD and not the bus_cycle_time
-	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+//	quantumkeeper.inc(bus_cycle_time); // TODO: has to take in account the DTY and PERIOD and not the bus_cycle_time
+//	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 
-	sc_time local_time = quantumkeeper.get_local_time();
+//	sc_time local_time = quantumkeeper.get_local_time();
+	sc_time local_time = SC_ZERO_TIME;
 
 	if (debug_enabled) {
 		cout << sc_object::name() << ":: send " << *pwm_payload << " - " << sc_time_stamp() << endl;
 	}
 
-
 	tlm_sync_enum ret = master_sock->nb_transport_fw(*pwm_payload, phase, local_time);
 
 	pwm_payload->release();
 	
+	wait(pwm_bw_event);
+
 	switch(ret)
 	{
 		case TLM_ACCEPTED:
@@ -346,6 +351,9 @@ void PWM<PWM_SIZE>::refreshOutput(bool pwmValue[PWM_SIZE])
 			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 			break;
 	}
+
+	quantumkeeper.inc(bus_cycle_time); // TODO: has to take in account the DTY and PERIOD and not the bus_cycle_time
+	if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 
 }
 
@@ -1004,7 +1012,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 				setOutput(false);
 		}
 
-		pwmParent->refresh_channel(channel_index);
+//		pwmParent->refresh_channel(channel_index);
 
 		wait(wakeup_event);
 		return;
@@ -1016,7 +1024,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 
 		setOutput(true);
 
-		pwmParent->refresh_channel(channel_index);
+//		pwmParent->refresh_channel(channel_index);
 
 		wait(wakeup_event);
 		return;
@@ -1027,7 +1035,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 
 		setOutput(false);
 
-		pwmParent->refresh_channel(channel_index);
+//		pwmParent->refresh_channel(channel_index);
 
 		wait(wakeup_event);
 		return;
@@ -1046,7 +1054,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 
 	setOutput(!getOutput());
 
-	pwmParent->refresh_channel(channel_index);
+//	pwmParent->refresh_channel(channel_index);
 
 	if (*((T *) pwmcnt_register_ptr) == dty) // The counter can be reset by software during wait
 	{
@@ -1066,7 +1074,7 @@ template <class T> void PWM<PWM_SIZE>::Channel_t::checkChangeStateAndWait(const 
 
 			setOutput(!getOutput());
 
-			pwmParent->refresh_channel(channel_index);
+//			pwmParent->refresh_channel(channel_index);
 
 			if (isCenterAligned) {
 

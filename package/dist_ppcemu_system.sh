@@ -121,7 +121,7 @@ unisim/util/debug/watchpoint_registry_32.cc \
 unisim/util/debug/watchpoint_registry_64.cc \
 unisim/util/debug/breakpoint_registry_32.cc \
 unisim/util/debug/breakpoint_registry_64.cc \
-unisim/util/debug/data_object.cc \
+unisim/util/debug/type.cc \
 unisim/util/debug/stmt_32.cc \
 unisim/util/debug/stmt_64.cc \
 unisim/util/debug/dwarf/abbrev.cc \
@@ -136,16 +136,16 @@ unisim/util/debug/dwarf/ml.cc \
 unisim/util/debug/dwarf/register_number_mapping.cc \
 unisim/util/debug/dwarf/data_object.cc \
 unisim/util/debug/dwarf/c_loc_expr_parser.cc \
-unisim/util/debug/blob/blob32.cc \
-unisim/util/debug/blob/blob64.cc \
-unisim/util/debug/blob/section32.cc \
-unisim/util/debug/blob/section64.cc \
-unisim/util/debug/blob/segment32.cc \
-unisim/util/debug/blob/segment64.cc \
+unisim/util/blob/blob32.cc \
+unisim/util/blob/blob64.cc \
+unisim/util/blob/section32.cc \
+unisim/util/blob/section64.cc \
+unisim/util/blob/segment32.cc \
+unisim/util/blob/segment64.cc \
 unisim/util/debug/elf_symtab/elf_symtab32.cc \
 unisim/util/debug/elf_symtab/elf_symtab64.cc \
 unisim/util/debug/coff_symtab/coff_symtab32.cc \
-unisim/util/endian/endian.cc \
+unisim/kernel/service/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
@@ -277,6 +277,9 @@ unisim/util/debug/watchpoint.hh \
 unisim/util/debug/breakpoint_registry.hh \
 unisim/util/debug/symbol_table.hh \
 unisim/util/debug/data_object.hh \
+unisim/util/debug/type.hh \
+unisim/util/debug/data_object_initializer.hh \
+unisim/util/debug/subprogram.hh \
 unisim/util/debug/dwarf/abbrev.hh \
 unisim/util/debug/dwarf/attr.hh \
 unisim/util/debug/dwarf/call_frame_vm.hh \
@@ -309,10 +312,11 @@ unisim/util/debug/dwarf/register_number_mapping.hh \
 unisim/util/debug/dwarf/frame.hh \
 unisim/util/debug/dwarf/util.hh \
 unisim/util/debug/dwarf/data_object.hh \
+unisim/util/debug/dwarf/subprogram.hh \
 unisim/util/debug/dwarf/c_loc_expr_parser.hh \
-unisim/util/debug/blob/blob.hh \
-unisim/util/debug/blob/section.hh \
-unisim/util/debug/blob/segment.hh \
+unisim/util/blob/blob.hh \
+unisim/util/blob/section.hh \
+unisim/util/blob/segment.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/endian/endian.hh \
@@ -361,6 +365,7 @@ unisim/service/interfaces/video.hh \
 unisim/service/interfaces/keyboard.hh \
 unisim/service/interfaces/mouse.hh \
 unisim/service/interfaces/data_object_lookup.hh \
+unisim/service/interfaces/subprogram_lookup.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
@@ -445,7 +450,7 @@ unisim/util/debug/watchpoint_registry.tcc \
 unisim/util/debug/symbol_table.tcc \
 unisim/util/debug/symbol.tcc \
 unisim/util/debug/stmt.tcc \
-unisim/util/debug/data_object.tcc \
+unisim/util/debug/data_object_initializer.tcc \
 unisim/util/debug/dwarf/addr_range.tcc \
 unisim/util/debug/dwarf/call_frame_prog.tcc \
 unisim/util/debug/dwarf/cie.tcc \
@@ -464,9 +469,10 @@ unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
 unisim/util/debug/dwarf/frame.tcc \
 unisim/util/debug/dwarf/data_object.tcc \
-unisim/util/debug/blob/blob.tcc \
-unisim/util/debug/blob/section.tcc \
-unisim/util/debug/blob/segment.tcc \
+unisim/util/debug/dwarf/subprogram.tcc \
+unisim/util/blob/blob.tcc \
+unisim/util/blob/section.tcc \
+unisim/util/blob/segment.tcc \
 unisim/util/debug/elf_symtab/elf_symtab.tcc \
 unisim/util/debug/coff_symtab/coff_symtab.tcc \
 unisim/util/queue/queue.tcc \
@@ -757,7 +763,7 @@ Requirements:
   - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
   - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
   - libSDL (http://www.libsdl.org) development package (libsdl-devel for Redhat/Mandriva, libSDL-1.2-dev for Debian/Ubuntu)
-  - Core SystemC Language >= 2.1 (http://www.systemc.org)
+  - Core SystemC Language >= 2.3.0 (http://www.systemc.org)
 
 Building instructions:
   $ ./configure --with-systemc=<path-to-systemc-install-dir>

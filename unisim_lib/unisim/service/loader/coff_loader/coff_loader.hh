@@ -47,7 +47,7 @@ namespace service {
 namespace loader {
 namespace coff_loader {
 
-using namespace std;
+// using namespace std;
 using unisim::service::interfaces::Memory;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
@@ -82,7 +82,7 @@ public:
 	virtual bool EndSetup();
 
 	virtual bool Load();
-	virtual const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
+	virtual const unisim::util::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
 	virtual void GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
@@ -95,12 +95,12 @@ private:
 	unisim::util::loader::coff_loader::CoffLoader<MEMORY_ADDR> *coff_loader;
 	
 	// Run-time parameters
-	string filename;
+	std::string filename;
 	bool dump_headers;
 	bool verbose;
 
 	// Run-time parameters (accessors)
-	Parameter<string> param_filename;
+	Parameter<std::string> param_filename;
 	Parameter<bool> param_dump_headers;
 	Parameter<bool> param_verbose;
 

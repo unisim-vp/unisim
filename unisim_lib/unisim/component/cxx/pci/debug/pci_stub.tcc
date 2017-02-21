@@ -74,7 +74,7 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	registers_import("registers-import", this),
 	breakpoint_registry(),
 	watchpoint_registry(),
-	logger(*this),
+	logger(static_cast<Object&>(*this)),
 	verbose(false),
 
 	// PCI configuration registers initialization
@@ -558,7 +558,7 @@ bool PCIStub<ADDRESS>::ServeWrite(ADDRESS addr, const void *buffer, uint32_t siz
 template <class ADDRESS>
 bool PCIStub<ADDRESS>::ServeReadRegister(const char *name, uint32_t& value)
 {
-	unisim::util::debug::Register *reg = registers_import->GetRegister(name);
+	unisim::service::interfaces::Register *reg = registers_import->GetRegister(name);
 	if(!reg) return false;
 	if(reg->GetSize() != sizeof(value)) return false;
 	reg->GetValue(&value);
@@ -568,7 +568,7 @@ bool PCIStub<ADDRESS>::ServeReadRegister(const char *name, uint32_t& value)
 template <class ADDRESS>
 bool PCIStub<ADDRESS>::ServeWriteRegister(const char *name, uint32_t value)
 {
-	unisim::util::debug::Register *reg = registers_import->GetRegister(name);
+	unisim::service::interfaces::Register *reg = registers_import->GetRegister(name);
 	if(!reg) return false;
 	if(reg->GetSize() != sizeof(value)) return false;
 	reg->SetValue(&value);
@@ -607,7 +607,12 @@ void PCIStub<ADDRESS>::ReportMemoryAccess(typename unisim::util::debug::MemoryAc
 }
 
 template <class ADDRESS>
-void PCIStub<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
+void PCIStub<ADDRESS>::ReportCommitInstruction(ADDRESS addr)
+{
+}
+
+template <class ADDRESS>
+void PCIStub<ADDRESS>::ReportFetchInstruction(ADDRESS next_addr)
 {
 	if(!breakpoint_registry.HasBreakpoints()) return;
 	if(breakpoint_registry.HasBreakpoint(next_addr))

@@ -46,6 +46,7 @@
 
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger_server.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -55,11 +56,11 @@
 #include <unistd.h>
 //#include <limits.h>
 //#include <limits>
-#if defined(__APPLE_CC__) || defined (linux) 
+#if defined(__APPLE_CC__) || defined(linux) || defined(__linux) || defined(__linux__)
 #include <dlfcn.h>
 #endif
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <windows.h>
 #endif
 
@@ -76,7 +77,7 @@
 #include "unisim/kernel/debug/debug.hh"
 #include "unisim/util/likely/likely.hh"
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <fcntl.h>
 //Note: this is to force opening console and files in binary mode on Windows as on UNIX
 int _CRT_fmode = _O_BINARY;
@@ -120,7 +121,6 @@ using std::hex;
 using std::dec;
 using std::cerr;
 using std::endl;
-using std::stringstream;
 using std::ofstream;
 using namespace boost;
 
@@ -257,14 +257,14 @@ bool ResolvePath(const std::string& prefix_dir,
 //	char resolved_dir_buf[PATH_MAX + 1];
 	char resolved_dir_buf[FILENAME_MAX + 1];
 
-#if defined(linux) || defined(__APPLE_CC__)
+#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__APPLE_CC__)
 	if ( realpath(unresolved_dir.c_str(), 
 				resolved_dir_buf) )
 	{
 		out_dir = resolved_dir_buf;
 		return true;
 	}
-#elif defined(WIN32)
+#elif defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	DWORD length = GetFullPathName(unresolved_dir.c_str(), 
 			PATH_MAX + 1, 
 			resolved_dir_buf, 
@@ -297,7 +297,7 @@ VariableBase(const char *_name, Object *_owner, Type _type, const char *_descrip
 	, is_visible(true)
 	, is_serializable(true)
 	, is_modified(false)
-	, listener_list()
+	, listener_set()
 {
 	if(_owner)
 	{
@@ -320,7 +320,7 @@ VariableBase(const char *_name, VariableBase *_container, Type _type, const char
 	, is_visible(true)
 	, is_serializable(true)
 	, is_modified(false)
-	, listener_list()
+	, listener_set()
 {
 	Simulator::simulator->Register(this);
 }
@@ -337,7 +337,7 @@ VariableBase()
 	, is_visible(false)
 	, is_serializable(false)
 	, is_modified(false)
-	, listener_list()
+	, listener_set()
 {
 }
 
@@ -491,29 +491,30 @@ void VariableBase::SetModified(bool _is_modified)
 	is_modified = _is_modified;
 }
 
-void VariableBase::AddListener(VariableBaseListener *listener)
+void
+VariableBase::AddListener( VariableBaseListener* listener )
 {
-	listener_list.push_back(listener);
-	listener_list.unique(); // remove doubles
+  listener_set.insert( listener );
 }
 
-void VariableBase::RemoveListener(VariableBaseListener *listener)
+void
+VariableBase::RemoveListener( VariableBaseListener* listener )
 {
-	listener_list.remove(listener);
+  listener_set.erase( listener );
 }
 
-void VariableBase::NotifyListeners()
+void
+VariableBase::NotifyListeners()
 {
-	list<VariableBaseListener *>::iterator iter;
-
-	for ( iter = listener_list.begin();	iter != listener_list.end(); iter++) {
-		(*iter)->VariableBaseNotify(this);
-	}
-
+  typedef std::set<VariableBaseListener*>::iterator listener_iterator;
+  for (listener_iterator itr = listener_set.begin(), end = listener_set.end(); itr != end; ++itr)
+    {
+      (*itr)->VariableBaseNotify( this );
+    }
 }
 
 VariableBase::operator bool () const { return false; }
-VariableBase::operator char () const { return (long long) *this; }
+VariableBase::operator signed char () const { return (long long) *this; }
 VariableBase::operator short () const { return (long long) *this; }
 VariableBase::operator int () const { return (long long) *this; }
 VariableBase::operator long () const { return (long long) *this; }
@@ -537,7 +538,7 @@ VariableBase& VariableBase::operator = (unsigned char value) { *this = (unsigned
 VariableBase& VariableBase::operator = (unsigned short value) { *this = (unsigned long long) value; return *this; }
 VariableBase& VariableBase::operator = (unsigned int value) { *this = (unsigned long long) value; return *this; }
 VariableBase& VariableBase::operator = (unsigned long value) { *this = (unsigned long long) value; return *this; }
-VariableBase& VariableBase::operator = (unsigned long long value) { return *this; }
+VariableBase& VariableBase::operator = (unsigned long long value) { NotifyListeners(); return *this; }
 VariableBase& VariableBase::operator = (float value) { *this = (double) value; return *this; }
 VariableBase& VariableBase::operator = (double value) { NotifyListeners(); return *this; }
 VariableBase& VariableBase::operator = (const char *value) { NotifyListeners(); return *this; }
@@ -630,6 +631,7 @@ void VariableBase::GenerateLatexDocumentation(std::ostream& os) const
 	os << "\\hline" << std::endl;
 }
 
+
 //=============================================================================
 //=                            Variable<TYPE>                                =
 //=============================================================================
@@ -644,71 +646,31 @@ Variable<TYPE>::Variable(const char *_name, Object *_owner, TYPE& _storage, Type
 template <class TYPE>
 unsigned int Variable<TYPE>::GetBitSize() const { return sizeof(TYPE) * 8; }
 
-template <class TYPE> Variable<TYPE>::operator bool () const {
-//	return (*storage) ? true : false;
-
-	TYPE tmp;
-	bool result = ReadBack(tmp);
-
-	return (result? (tmp? true : false) : ((*storage) ? true : false));
+template <class TYPE> Variable<TYPE>::operator bool () const
+{
+	return bool( Get() );
 }
 
-template <class TYPE> Variable<TYPE>::operator long long () const {
-//	return (long long) *storage;
-
-	TYPE tmp;
-	bool result = ReadBack(tmp);
-
-	return (result? (long long) tmp : (long long) *storage);
-
+template <class TYPE> Variable<TYPE>::operator long long () const
+{
+	return (long long)( Get() );
 }
 
-template <class TYPE> Variable<TYPE>::operator unsigned long long () const {
-//	return (unsigned long long) *storage;
-
-	TYPE tmp;
-	bool result = ReadBack(tmp);
-
-	return (result? (unsigned long long) tmp : (unsigned long long) *storage);
+template <class TYPE> Variable<TYPE>::operator unsigned long long () const
+{
+	return (unsigned long long)( Get() );
 }
 
-template <class TYPE> Variable<TYPE>::operator double () const {
-//	return (double) *storage;
-
-	TYPE tmp;
-	bool result = ReadBack(tmp);
-
-	return (result? (double) tmp : (double) *storage);
-
+template <class TYPE> Variable<TYPE>::operator double () const
+{
+	return double( Get() );
 }
 
 template <class TYPE> Variable<TYPE>::operator string () const
 {
-//	stringstream sstr;
-//	switch(GetFormat())
-//	{
-//		case FMT_DEFAULT:
-//		case FMT_HEX:
-//			sstr << "0x" << hex;
-//			sstr.fill('0');
-//			sstr.width(2 * sizeof(TYPE));
-//			sstr << (unsigned long long) *storage;
-//			break;
-//		case FMT_DEC:
-//			sstr << dec;
-//			if(std::numeric_limits<TYPE>::is_signed)
-//				sstr << (long long) *storage;
-//			else
-//				sstr << (unsigned long long) *storage;
-//			break;
-//	}
-//	return sstr.str();
+	TYPE value = Get();
 
-
-	TYPE tmp;
-	bool result = ReadBack(tmp);
-
-	stringstream sstr;
+	std::stringstream sstr;
 	switch(GetFormat())
 	{
 		case FMT_DEFAULT:
@@ -716,68 +678,86 @@ template <class TYPE> Variable<TYPE>::operator string () const
 			sstr << "0x" << hex;
 			sstr.fill('0');
 			sstr.width(2 * sizeof(TYPE));
-			sstr << (result? (unsigned long long) tmp : (unsigned long long) *storage);
+			sstr << (unsigned long long)( value );
 			break;
 		case FMT_DEC:
 			sstr << dec;
 			if(std::numeric_limits<TYPE>::is_signed)
-				sstr << (result? (long long) tmp: (long long) *storage);
+				sstr << (long long)( value );
 			else
-				sstr << (result? (unsigned long long) tmp : (unsigned long long) *storage);
+				sstr << (unsigned long long)( value );
 			break;
 	}
 	return sstr.str();
-
 }
 
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (bool value)
 {
-	if ( IsMutable() ) {
-		TYPE tmp = value ? 1 : 0;
-		SetModified(*storage != tmp);
-		if (!WriteBack(tmp)) {
-			*storage = tmp;
-		}
-
+	if (IsMutable()) {
+		Set( value );
 	}
-	NotifyListeners();
 	return *this;
 }
 
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (long long value)
 {
-	if ( IsMutable() ) {
-		SetModified(*storage != (TYPE) value);
-		if (!WriteBack(value)) {
-			*storage = value;
-		}
+	if (IsMutable()) {
+		Set( value );
 	}
-	NotifyListeners();
 	return *this;
 }
 
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (unsigned long long value)
 {
-	if ( IsMutable() ) {
-		SetModified(*storage != (TYPE) value);
-		if (!WriteBack(value)) {
-			*storage = value;
-		}
+	if (IsMutable()) {
+		Set( value );
 	}
-	NotifyListeners();
 	return *this;
 }
 
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (double value)
 {
-	if ( IsMutable() ) {
-		SetModified(*storage != (TYPE) value);
-		if (!WriteBack((TYPE) value)) {
-			*storage = (TYPE) value;
-		}
+	if (IsMutable()) {
+		Set( value );
 	}
-	NotifyListeners();
 	return *this;
+}
+
+//=============================================================================
+//=                           FormulaOperator                                 =
+//=============================================================================
+
+FormulaOperator::FormulaOperator(const char *name)
+{
+	if((strcmp(name, "+") == 0) || (strcmp(name, "add") == 0) || (strcmp(name, "ADD") == 0)) op = OP_ADD;
+	else if((strcmp(name, "-") == 0) || (strcmp(name, "sub") == 0) || (strcmp(name, "SUB") == 0)) op = OP_SUB;
+	else if((strcmp(name, "*") == 0) || (strcmp(name, "mul") == 0) || (strcmp(name, "MUL") == 0)) op = OP_MUL;
+	else if((strcmp(name, "/") == 0) || (strcmp(name, "div") == 0) || (strcmp(name, "DIV") == 0)) op = OP_DIV;
+	else if((strcmp(name, "<") == 0) || (strcmp(name, "lt") == 0) || (strcmp(name, "LT") == 0)) op = OP_LT;
+	else if((strcmp(name, "<=") == 0) || (strcmp(name, "=<") == 0) || (strcmp(name, "lte") == 0) || (strcmp(name, "LTE") == 0)) op = OP_LTE;
+	else if((strcmp(name, ">") == 0) || (strcmp(name, "gt") == 0) || (strcmp(name, "GT") == 0)) op = OP_GT;
+	else if((strcmp(name, ">=") == 0) || (strcmp(name, "=>") == 0) || (strcmp(name, "gte") == 0)) op = OP_GTE;
+	else if((strcmp(name, "==") == 0) || (strcmp(name, "=") == 0) || (strcmp(name, "eq") == 0) || (strcmp(name, "EQ") == 0)) op = OP_EQ;
+	else if((strcmp(name, "?") == 0) || (strcmp(name, "sel") == 0) || (strcmp(name, "SEL") == 0)) op = OP_SEL;
+	else if((strcmp(name, "neg") == 0) || (strcmp(name, "NEG") == 0)) op = OP_NEG;
+	else if((strcmp(name, "abs") == 0) || (strcmp(name, "ABS") == 0)) op = OP_ABS;
+	else if((strcmp(name, "min") == 0) || (strcmp(name, "MIN") == 0)) op = OP_MIN;
+	else if((strcmp(name, "max") == 0) || (strcmp(name, "MAX") == 0)) op = OP_MAX;
+	else if((strcmp(name, "&") == 0) || (strcmp(name, "and") == 0) || (strcmp(name, "AND") == 0)) op = OP_AND;
+	else if((strcmp(name, "|") == 0) || (strcmp(name, "or") == 0) || (strcmp(name, "OR") == 0)) op = OP_OR;
+	else if((strcmp(name, "!=") == 0) || (strcmp(name, "<>") == 0) || (strcmp(name, "ne") == 0) || (strcmp(name, "NE") == 0)) op = OP_NEQ;
+	else if((strcmp(name, "!") == 0) || (strcmp(name, "~") == 0) || (strcmp(name, "not") == 0) || (strcmp(name, "NOT") == 0)) op = OP_NOT;
+	else op = OP_UNKNOWN;
+}
+
+FormulaOperator::FormulaOperator(Operator _op)
+	: op(_op)
+{
+}
+
+FormulaOperator::operator FormulaOperator::Operator() const
+{
+	return op;
 }
 
 //=============================================================================
@@ -785,9 +765,9 @@ template <class TYPE> VariableBase& Variable<TYPE>::operator = (double value)
 //=============================================================================
 
 template <class TYPE>
-Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, VariableBase *child1, VariableBase *child2, VariableBase *child3, const char *_description)
+Formula<TYPE>::Formula(const char *_name, Object *_owner, FormulaOperator _formula_op, VariableBase *child1, VariableBase *child2, VariableBase *child3, const char *_description)
 	: VariableBase(_name, _owner, VAR_FORMULA, _description)
-	, op(_op)
+	, op(_formula_op)
 {
 	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	childs[0] = child1;
@@ -800,9 +780,9 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, Variable
 }
 
 template <class TYPE>
-Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, VariableBase *child1, VariableBase *child2, const char *_description)
+Formula<TYPE>::Formula(const char *_name, Object *_owner, FormulaOperator _formula_op, VariableBase *child1, VariableBase *child2, const char *_description)
 	: VariableBase(_name, _owner, VAR_FORMULA, _description)
-	, op(_op)
+	, op(_formula_op)
 {
 	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	childs[0] = child1;
@@ -815,9 +795,9 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, Variable
 }
 
 template <class TYPE>
-Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, VariableBase *child, const char *_description)
+Formula<TYPE>::Formula(const char *_name, Object *_owner, FormulaOperator _formula_op, VariableBase *child, const char *_description)
 	: VariableBase(_name, _owner, VAR_FORMULA, _description)
-	, op(_op)
+	, op(_formula_op)
 {
 	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	childs[0] = child;
@@ -834,26 +814,28 @@ bool Formula<TYPE>::IsValid() const
 {
 	switch(op)
 	{
-		case OP_NEG:
-		case OP_ABS:
-		case OP_NOT:
+		case FormulaOperator::OP_UNKNOWN:
+			return false;
+		case FormulaOperator::OP_NEG:
+		case FormulaOperator::OP_ABS:
+		case FormulaOperator::OP_NOT:
 			return childs[0] != 0;
-		case OP_ADD:
-		case OP_SUB:
-		case OP_MUL:
-		case OP_DIV:
-		case OP_LT:
-		case OP_LTE:
-		case OP_GT:
-		case OP_GTE:
-		case OP_EQ:
-		case OP_MIN:
-		case OP_MAX:
-		case OP_AND:
-		case OP_OR:
-		case OP_NEQ:
+		case FormulaOperator::OP_ADD:
+		case FormulaOperator::OP_SUB:
+		case FormulaOperator::OP_MUL:
+		case FormulaOperator::OP_DIV:
+		case FormulaOperator::OP_LT:
+		case FormulaOperator::OP_LTE:
+		case FormulaOperator::OP_GT:
+		case FormulaOperator::OP_GTE:
+		case FormulaOperator::OP_EQ:
+		case FormulaOperator::OP_MIN:
+		case FormulaOperator::OP_MAX:
+		case FormulaOperator::OP_AND:
+		case FormulaOperator::OP_OR:
+		case FormulaOperator::OP_NEQ:
 			return (childs[0] != 0) && (childs[1] != 0);
-		case OP_SEL:
+		case FormulaOperator::OP_SEL:
 			return (childs[0] != 0) && (childs[1] != 0) && (childs[2] != 0);
 	}
 	return false;
@@ -865,7 +847,7 @@ template <class TYPE> Formula<TYPE>::operator unsigned long long () const { retu
 template <class TYPE> Formula<TYPE>::operator double () const { return (double) Compute(); }
 template <class TYPE> Formula<TYPE>::operator string () const
 {
-	stringstream sstr;
+	std::stringstream sstr;
 	switch(GetFormat())
 	{
 		case FMT_DEFAULT:
@@ -891,24 +873,25 @@ TYPE Formula<TYPE>::Compute() const
 {
 	switch(op)
 	{
-		case OP_ADD: return (TYPE)(childs[0] ? *childs[0] : TYPE()) + (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_SUB: return (TYPE)(childs[0] ? *childs[0] : TYPE()) - (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_MUL: return (TYPE)(childs[0] ? *childs[0] : TYPE()) * (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_DIV: return (TYPE)(childs[0] ? *childs[0] : TYPE()) / (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_LT: return (TYPE)(childs[0] ? *childs[0] : TYPE()) < (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_LTE: return (TYPE)(childs[0] ? *childs[0] : TYPE()) <= (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_GT: return (TYPE)(childs[0] ? *childs[0] : TYPE()) > (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_GTE: return (TYPE)(childs[0] ? *childs[0] : TYPE()) >= (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_EQ: return (TYPE)(childs[0] ? *childs[0] : TYPE()) == (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_SEL: return (TYPE)(childs[0] ? *childs[0] : TYPE()) ? (TYPE)(childs[1] ? *childs[1] : TYPE()) : (TYPE)(childs[2] ? *childs[2] : TYPE());
-		case OP_NEG: return -(TYPE)(childs[0] ? *childs[0] : TYPE());
-		case OP_ABS: return (TYPE)(childs[0] ? *childs[0] : TYPE()) >= 0 ? (TYPE)(childs[0] ? *childs[0] : TYPE()) : -(TYPE)(childs[0] ? *childs[0] : TYPE());
-		case OP_MIN: return (TYPE)(childs[0] ? *childs[0] : TYPE()) < (TYPE)(childs[1] ? *childs[1] : TYPE()) ? (TYPE)(childs[0] ? *childs[0] : TYPE()) : (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_MAX: return (TYPE)(childs[0] ? *childs[0] : TYPE()) > (TYPE)(childs[1] ? *childs[1] : TYPE()) ? (TYPE)(childs[0] ? *childs[0] : TYPE()) : (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_AND: return (TYPE)(childs[0] ? *childs[0] : TYPE()) && (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_OR: return (TYPE)(childs[0] ? *childs[0] : TYPE()) || (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_NEQ: return (TYPE)(childs[0] ? *childs[0] : TYPE()) != (TYPE)(childs[1] ? *childs[1] : TYPE());
-		case OP_NOT: return !(TYPE)(childs[0] ? *childs[0] : TYPE());
+		case FormulaOperator::OP_UNKNOWN: return TYPE();
+		case FormulaOperator::OP_ADD: return (TYPE)(childs[0] ? *childs[0] : TYPE()) + (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_SUB: return (TYPE)(childs[0] ? *childs[0] : TYPE()) - (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_MUL: return (TYPE)(childs[0] ? *childs[0] : TYPE()) * (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_DIV: return (TYPE)(childs[0] ? *childs[0] : TYPE()) / (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_LT: return (TYPE)(childs[0] ? *childs[0] : TYPE()) < (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_LTE: return (TYPE)(childs[0] ? *childs[0] : TYPE()) <= (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_GT: return (TYPE)(childs[0] ? *childs[0] : TYPE()) > (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_GTE: return (TYPE)(childs[0] ? *childs[0] : TYPE()) >= (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_EQ: return (TYPE)(childs[0] ? *childs[0] : TYPE()) == (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_SEL: return (TYPE)(childs[0] ? *childs[0] : TYPE()) ? (TYPE)(childs[1] ? *childs[1] : TYPE()) : (TYPE)(childs[2] ? *childs[2] : TYPE());
+		case FormulaOperator::OP_NEG: return -(TYPE)(childs[0] ? *childs[0] : TYPE());
+		case FormulaOperator::OP_ABS: return (TYPE)(childs[0] ? *childs[0] : TYPE()) >= 0 ? (TYPE)(childs[0] ? *childs[0] : TYPE()) : -(TYPE)(childs[0] ? *childs[0] : TYPE());
+		case FormulaOperator::OP_MIN: return (TYPE)(childs[0] ? *childs[0] : TYPE()) < (TYPE)(childs[1] ? *childs[1] : TYPE()) ? (TYPE)(childs[0] ? *childs[0] : TYPE()) : (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_MAX: return (TYPE)(childs[0] ? *childs[0] : TYPE()) > (TYPE)(childs[1] ? *childs[1] : TYPE()) ? (TYPE)(childs[0] ? *childs[0] : TYPE()) : (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_AND: return (TYPE)(childs[0] ? *childs[0] : TYPE()) && (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_OR: return (TYPE)(childs[0] ? *childs[0] : TYPE()) || (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_NEQ: return (TYPE)(childs[0] ? *childs[0] : TYPE()) != (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case FormulaOperator::OP_NOT: return !(TYPE)(childs[0] ? *childs[0] : TYPE());
 	}
 	return 0;
 }
@@ -919,14 +902,17 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 	std::stringstream sstr;
 	switch(op)
 	{
-		case Formula<TYPE>::OP_NEG:
+		case FormulaOperator::OP_UNKNOWN:
+			sstr << "unknown";
+			break;
+		case FormulaOperator::OP_NEG:
 			sstr << "-";
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_ABS:
+		case FormulaOperator::OP_ABS:
 			sstr << "ABS(";
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
@@ -934,14 +920,14 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 				sstr << TYPE();
 			sstr << ")";
 			break;
-		case Formula<TYPE>::OP_NOT:
+		case FormulaOperator::OP_NOT:
 			sstr << "!";
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_ADD:
+		case FormulaOperator::OP_ADD:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -952,7 +938,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_SUB:
+		case FormulaOperator::OP_SUB:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -963,7 +949,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_MUL:
+		case FormulaOperator::OP_MUL:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -974,7 +960,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_DIV:
+		case FormulaOperator::OP_DIV:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -985,7 +971,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_LT:
+		case FormulaOperator::OP_LT:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -996,7 +982,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_LTE:
+		case FormulaOperator::OP_LTE:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -1007,7 +993,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_GT:
+		case FormulaOperator::OP_GT:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -1018,7 +1004,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_GTE:
+		case FormulaOperator::OP_GTE:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -1029,7 +1015,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_EQ:
+		case FormulaOperator::OP_EQ:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -1040,7 +1026,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_MIN:
+		case FormulaOperator::OP_MIN:
 			sstr << "MIN(";
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
@@ -1053,7 +1039,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 				sstr << TYPE();
 			sstr << ")";
 			break;
-		case Formula<TYPE>::OP_MAX:
+		case FormulaOperator::OP_MAX:
 			sstr << "MAX(";
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
@@ -1066,7 +1052,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 				sstr << TYPE();
 			sstr << ")";
 			break;
-		case Formula<TYPE>::OP_AND:
+		case FormulaOperator::OP_AND:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -1077,7 +1063,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_OR:
+		case FormulaOperator::OP_OR:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -1088,7 +1074,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_NEQ:
+		case FormulaOperator::OP_NEQ:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -1099,7 +1085,7 @@ std::string Formula<TYPE>::GetSymbolicValue() const
 			else
 				sstr << TYPE();
 			break;
-		case Formula<TYPE>::OP_SEL:
+		case FormulaOperator::OP_SEL:
 			if(childs[0])
 				sstr << childs[0]->GetSymbolicValue();
 			else
@@ -1165,16 +1151,16 @@ const char *Variable<bool>::GetDataTypeName() const
 }
 
 template <>
-Variable<char>::Variable(const char *_name, Object *_owner, char& _storage, Type type, const char *_description) :
+Variable<signed char>::Variable(const char *_name, Object *_owner, signed char& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
 	Simulator::simulator->Initialize(this);
 }
 
 template <>
-const char *Variable<char>::GetDataTypeName() const
+const char *Variable<signed char>::GetDataTypeName() const
 {
-	return GetSignedDataTypeName<char>(); //"char";
+	return GetSignedDataTypeName<signed char>(); //"char";
 }
 
 template <>
@@ -1311,22 +1297,14 @@ const char *Variable<double>::GetDataTypeName() const
 template <>
 Variable<double>::operator string () const
 {
-//	stringstream sstr;
-//	sstr << *storage;
-//	return sstr.str();
-
-	double tmp;
-	bool result = ReadBack(tmp);
-
-	stringstream sstr;
-	sstr << (result? tmp : *storage);
+	std::stringstream sstr;
+	sstr << Get();
 	return sstr.str();
-
 }
 
 template <> 
-Variable<float>::Variable(const char *_name, Object *_owner, float& _storage, Type type, const char *_description) :
-	VariableBase(_name, _owner, type, _description), storage(&_storage)
+Variable<float>::Variable(const char *_name, Object *_owner, float& _storage, Type type, const char *_description)
+  : VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
 	Simulator::simulator->Initialize(this);
 }
@@ -1340,23 +1318,14 @@ const char *Variable<float>::GetDataTypeName() const
 template <>
 Variable<float>::operator string () const
 {
-//	stringstream sstr;
-//	sstr << *storage;
-//	return sstr.str();
-
-
-	float tmp;
-	bool result = ReadBack(tmp);
-
-	stringstream sstr;
-	sstr << (result? tmp : *storage);
+	std::stringstream sstr;
+	sstr << Get();
 	return sstr.str();
-
 }
 
 template <> 
-Variable<string>::Variable(const char *_name, Object *_owner, string& _storage, Type type, const char *_description) :
-	VariableBase(_name, _owner, type, _description), storage(&_storage)
+Variable<string>::Variable(const char *_name, Object *_owner, string& _storage, Type type, const char *_description)
+  : VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
 	Simulator::simulator->Initialize(this);
 }
@@ -1369,272 +1338,184 @@ const char *Variable<string>::GetDataTypeName() const
 
 template <> Variable<bool>::operator string () const
 {
-//	stringstream sstr;
-//	switch(GetFormat())
-//	{
-//		case FMT_DEFAULT:
-//			sstr << (*storage ? "true" : "false");
-//			break;
-//		case FMT_HEX:
-//			sstr << (*storage ? "0x1" : "0x0");
-//			break;
-//		case FMT_DEC:
-//			sstr << (*storage ? "1" : "0");
-//			break;
-//	}
-//	return sstr.str();
-
-
-	bool tmp;
-	bool result = ReadBack(tmp);
-
-	stringstream sstr;
+	bool value = Get();
+	std::stringstream sstr;
 	switch(GetFormat())
 	{
 		case FMT_DEFAULT:
-			sstr << (result? (tmp?  "true" : "false") : (*storage ? "true" : "false"));
+			sstr << (value ? "true" : "false");
 			break;
 		case FMT_HEX:
-			sstr << (result? (tmp?  "0x1" : "0x0") : (*storage ? "0x1" : "0x0"));
+			sstr << (value ? "0x1" : "0x0");
 			break;
 		case FMT_DEC:
-			sstr << (result? (tmp?  "1" : "0") : (*storage ? "1" : "0"));
+			sstr << (value ? "1" : "0");
 			break;
 	}
 	return sstr.str();
+}
 
+namespace
+{
+  long long ParseSigned( char const* value )
+  {
+    return (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+  }
+  unsigned long long ParseUnsigned( char const* value )
+  {
+    return (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+  }
+  double ParseDouble( char const* value )
+  {
+    return (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
+  }
+  
 }
 
 template <> VariableBase& Variable<bool>::operator = (const char *value)
 {
-	if ( IsMutable() ) {
-		bool tmp = (strcmp(value, "true") == 0) || (strcmp(value, "0x1") == 0) || (strcmp(value, "1") == 0);
-		SetModified(*storage != tmp);
-		if (!WriteBack(tmp)) {
-			*storage = tmp;
-		}
+	if (IsMutable()) {
+		Set( ParseSigned( value ) );
 	}
-	NotifyListeners();
 	return *this;
 }
-template <> VariableBase& Variable<char>::operator = (const char *value)
+template <> VariableBase& Variable<signed char>::operator = (const char *value)
 {
-	if ( IsMutable() ) {
-		char tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
-		SetModified(*storage != tmp);
-		if (!WriteBack(tmp)) {
-			*storage = tmp;
-		}
+	if (IsMutable()) {
+		Set( ParseSigned( value ) );
 	}
-	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<short>::operator = (const char *value)
 {
-	if ( IsMutable() ) {
-		short tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
-		SetModified(*storage != tmp);
-		if (!WriteBack(tmp)) {
-			*storage = tmp;
-		}
+	if (IsMutable()) {
+		Set( ParseSigned( value ) );
 	}
-	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<int>::operator = (const char *value)
 {
-	if ( IsMutable() ) {
-		int tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
-		SetModified(*storage != tmp);
-		if (!WriteBack(tmp)) {
-			*storage = tmp;
-		}
+	if (IsMutable()) {
+		Set( ParseSigned( value ) );
 	}
-	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<long>::operator = (const char *value)
 {
-	if ( IsMutable() ) {
-		long tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
-		SetModified(*storage != tmp);
-		if (!WriteBack(tmp)) {
-			*storage = tmp;
-		}
+	if (IsMutable()) {
+		Set( ParseSigned( value ) );
 	}
-	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<long long>::operator = (const char *value)
 {
-	if ( IsMutable() ) {
-		long long tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
-		SetModified(*storage != tmp);
-		if (!WriteBack(tmp)) {
-			*storage = tmp;
-		}
+	if (IsMutable()) {
+		Set( ParseSigned( value ) );
 	}
-	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned char>::operator = (const char *value)
 {
-	if ( IsMutable() ) {
-		unsigned char tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
-		SetModified(*storage != tmp);
-		if (!WriteBack(tmp)) {
-			*storage = tmp;
-		}
+	if (IsMutable()) {
+		Set( ParseUnsigned( value ) );
 	}
-	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned short>::operator = (const char *value)
 {
-	if ( IsMutable() ) {
-		unsigned short tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
-		SetModified(*storage != tmp);
-		if (!WriteBack(tmp)) {
-			*storage = tmp;
-		}
+	if (IsMutable()) {
+		Set( ParseUnsigned( value ) );
 	}
-	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned int>::operator = (const char *value)
 {
-	if ( IsMutable() ) {
-		unsigned int tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
-		SetModified(*storage != tmp);
-		if (!WriteBack(tmp)) {
-			*storage = tmp;
-		}
+	if (IsMutable()) {
+		Set( ParseUnsigned( value ) );
 	}
-	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned long>::operator = (const char *value)
 {
-	if ( IsMutable() ) {
-		unsigned long tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
-		SetModified(*storage != tmp);
-		if (!WriteBack(tmp)) {
-			*storage = tmp;
-		}
+	if (IsMutable()) {
+		Set( ParseUnsigned( value ) );
 	}
-	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned long long>::operator = (const char *value)
 {
-	if ( IsMutable() ) {
-		unsigned long long tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
-		SetModified(*storage != tmp);
-		if (!WriteBack(tmp)) {
-			*storage = tmp;
-		}
+	if (IsMutable()) {
+		Set( ParseUnsigned( value ) );
 	}
-	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<float>::operator = (const char *value)
 {
-	if ( IsMutable() ) {
-		float tmp = (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
-		SetModified(*storage != tmp);
-		if (!WriteBack(tmp)) {
-			*storage = tmp;
-		}
+	if (IsMutable()) {
+		Set( ParseDouble( value ) );
 	}
-	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<double>::operator = (const char *value)
 {
-	if ( IsMutable() ) {
-		double tmp = (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
-		SetModified(*storage != tmp);
-		if (!WriteBack(tmp)) {
-			*storage = tmp;
-		}
+	if (IsMutable()) {
+		Set( ParseDouble( value ) );
 	}
-	NotifyListeners();
 	return *this;
 }
 
-template <> Variable<string>::operator bool () const { return *storage == string("true"); }
-template <> Variable<string>::operator long long () const { return strtoll(storage->c_str(), 0, 0); }
-template <> Variable<string>::operator unsigned long long () const { return strtoull(storage->c_str(), 0, 0); }
-template <> Variable<string>::operator double () const { return strtod(storage->c_str(), 0); }
+template <> Variable<string>::operator bool () const { return ParseSigned(storage->c_str()); }
+template <> Variable<string>::operator long long () const { return ParseSigned(storage->c_str()); }
+template <> Variable<string>::operator unsigned long long () const { return ParseSigned(storage->c_str()); }
+template <> Variable<string>::operator double () const { return ParseDouble(storage->c_str()); }
 template <> Variable<string>::operator string () const { return *storage; }
 
 template <> VariableBase& Variable<string>::operator = (bool value)
 {
-	if ( IsMutable() ) {
-		string tmp = value ? "true" : "false";
-		SetModified(*storage != tmp);
-		if (!WriteBack(tmp)) {
-			*storage = tmp;
-		}
+	if (IsMutable()) {
+		Set( value ? "true" : "false" );
 	}
-	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<string>::operator = (long long value)
 {
 	if(IsMutable())
 	{
-		stringstream sstr;
-		sstr << "0x" << hex << value;
+		std::stringstream sstr;
+		sstr << "0x" << std::hex << value;
 		string tmp = sstr.str();
-		SetModified(*storage != tmp);
-		if (!WriteBack(tmp)) {
-			*storage = tmp;
-		}
+		Set( tmp );
 	}
-	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<string>::operator = (unsigned long long value)
 {
-	if ( IsMutable() )
+	if (IsMutable())
 	{
-		stringstream sstr;
+		std::stringstream sstr;
 		sstr << "0x" << hex << value;
 		string tmp = sstr.str();
-		SetModified(*storage != tmp);
-		if (!WriteBack(tmp)) {
-			*storage = tmp;
-		}
+		Set( tmp );
 	}
-	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<string>::operator = (double value)
 {
-	if ( IsMutable() )
+	if (IsMutable())
 	{
-		stringstream sstr;
+		std::stringstream sstr;
 		sstr << value;
 		string tmp = sstr.str();
-		SetModified(*storage != tmp);
-		if (!WriteBack(tmp)) {
-			*storage = tmp;
-		}
+		Set( tmp );
 	}
-	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<string>::operator = (const char *value)
 {
-	if ( IsMutable() )
+	if (IsMutable())
 	{
-		if(storage->compare(value) != 0) SetModified(true);
-		if (!WriteBack(std::string(value))) {
-			*storage = value;
-		}
+		Set( value );
 	}
-	NotifyListeners();
 	return *this;
 }
 
@@ -1645,7 +1526,7 @@ template <> VariableBase& Variable<string>::operator = (const char *value)
 template <>
 Formula<double>::operator string () const
 {
-	stringstream sstr;
+	std::stringstream sstr;
 	sstr << Compute();
 	return sstr.str();
 }
@@ -1657,9 +1538,9 @@ const char *Formula<bool>::GetDataTypeName() const
 }
 
 template <>
-const char *Formula<char>::GetDataTypeName() const
+const char *Formula<signed char>::GetDataTypeName() const
 {
-	return GetSignedDataTypeName<char>();
+	return GetSignedDataTypeName<signed char>();
 }
 
 template <>
@@ -1733,7 +1614,7 @@ const char *Formula<double>::GetDataTypeName() const
 //=============================================================================
 
 template class Variable<bool>;
-template class Variable<char>;
+template class Variable<signed char>;
 template class Variable<short>;
 template class Variable<int>;
 template class Variable<long>;
@@ -1748,7 +1629,7 @@ template class Variable<double>;
 template class Variable<string>;
 
 template class VariableArray<bool>;
-template class VariableArray<char>;
+template class VariableArray<signed char>;
 template class VariableArray<short>;
 template class VariableArray<int>;
 template class VariableArray<long>;
@@ -1763,7 +1644,7 @@ template class VariableArray<double>;
 template class VariableArray<string>;
 
 template class Formula<bool>;
-template class Formula<char>;
+template class Formula<signed char>;
 template class Formula<short>;
 template class Formula<int>;
 template class Formula<long>;
@@ -2015,14 +1896,6 @@ void Object::SetDescription(const char *_description)
 }
 
 //=============================================================================
-//=                              ServiceInterface                             =
-//=============================================================================
-
-ServiceInterface::~ServiceInterface()
-{
-}
-
-//=============================================================================
 //=                           ServiceImportBase                               =
 //=============================================================================
 
@@ -2174,6 +2047,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, apis()
 	, cmd_args(0)
 	, param_cmd_args(0)
+	, logger(0)
 {
 	bool has_share_data_dir_hint = false;
 	string shared_data_dir_hint;
@@ -2247,7 +2121,12 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					bool match = false;
 					for(cmd_opt_iter = command_line_options.begin(); !match && cmd_opt_iter != command_line_options.end(); cmd_opt_iter++)
 					{
-						if(*cmd_opt_iter == *arg)
+						if(strcmp(*arg, "--") == 0)
+						{
+							arg++;
+							arg_num++;
+						}
+						else if(*cmd_opt_iter == *arg)
 						{
 							// match
 							match=true;
@@ -2353,22 +2232,22 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	{
 		if(GetBinPath(argv[0], bin_dir, program_binary))
 		{
-			// std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
-			// std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
+// 			 std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
+// 			 std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
 
 			if ( GetSharePath(bin_dir, shared_data_dir) )
 			{
-				// std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
+// 				std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
 			}
 			else
 			{
-				// std::cerr << "Could not resolve share data dir path" << std::endl;
+// 				std::cerr << "Could not resolve share data dir path" << std::endl;
 				warn_get_share_path = true;
 			}
 		}
 		else
 		{
-			// std::cerr << "Could not resolve bin and share data dir paths" << std::endl;
+// 			std::cerr << "Could not resolve bin and share data dir paths" << std::endl;
 			warn_get_bin_path = true;
 			warn_get_share_path = true;
 		}
@@ -2377,13 +2256,13 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	{
 		if ( !ResolvePath(shared_data_dir_hint, string(), shared_data_dir) )
 		{
-			// std::cerr << "Could not resolve share data dir path" << std::endl;
+// 			std::cerr << "Could not resolve share data dir path" << std::endl;
 			warn_get_share_path = true;
 		}
 		else
 		{
-			// std::cerr << "Resolved data dir path: " << shared_data_dir
-			// 	<< std::endl;
+// 			std::cerr << "Resolved data dir path: " << shared_data_dir
+// 			 	<< std::endl;
 		}
 	}
 
@@ -2400,7 +2279,12 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					bool match = false;
 					for(cmd_opt_iter = command_line_options.begin(); !match && cmd_opt_iter != command_line_options.end(); cmd_opt_iter++)
 					{
-						if(*cmd_opt_iter == *arg)
+						if(strcmp(*arg, "--") == 0)
+						{
+							arg++;
+							arg_num++;
+						}
+						else if(*cmd_opt_iter == *arg)
 						{
 							// match
 							match=true;
@@ -2488,7 +2372,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					}
 					if(*p == '=')
 					{
-						char *variable_value = ++p;
+						const char *variable_value = ++p;
 						
 						SetVariable(variable_name.c_str(), variable_value);
 					}
@@ -2561,7 +2445,27 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	param_cmd_args->SetSerializable(false);
 	
 	// Setup logger
-	unisim::kernel::logger::LoggerServer::GetInstanceWithoutCountingReference()->Setup();
+        logger = new unisim::kernel::logger::Logger( "kernel_logger" );
+        unisim::kernel::logger::LoggerServer& logserv = *(logger->GetServerInstance());
+	param_logger_std_err = new Parameter<bool>( "kernel_logger.std_err", 0, logserv.opt_std_err_,
+                                                    "Show logger output through the standard error output" );
+	param_logger_std_out = new Parameter<bool>( "kernel_logger.std_out", 0, logserv.opt_std_out_,
+                                                    "Show logger output through the standard output" );
+	param_logger_std_err_color = new Parameter<bool>( "kernel_logger.std_err_color", 0, logserv.opt_std_err_color_,
+                                                          "Colorize logger output through the standard error output _(only works if std_err is active)" );
+	param_logger_std_out_color = new Parameter<bool>( "kernel_logger.std_out_color", 0, logserv.opt_std_out_color_,
+                                                          "Colorize logger output through the standard output _(only works if std_out is active)" );
+	param_logger_file = new Parameter<bool>( "kernel_logger.file", 0, logserv.opt_file_,
+                                                 "Keep logger output in a file" );
+	param_logger_filename = new Parameter<std::string>( "kernel_logger.filename", 0, logserv.opt_filename_,
+                                                            "Filename to keep logger output _(the option file must be activated)" );
+	param_logger_xml_file = new Parameter<bool>( "kernel_logger.xml_file", 0, logserv.opt_xml_file_,
+                                                     "Keep logger output in a file xml formatted" );
+	param_logger_xml_filename = new Parameter<std::string>( "kernel_logger.xml_filename", 0, logserv.opt_xml_filename_,
+                                                                "Filename to keep logger xml output _(the option xml_file must be activated)" );
+	param_logger_xml_file_gzipped = new Parameter<bool>( "kernel_logger.xml_file_gzipped", 0, logserv.opt_xml_file_gzipped_,
+                                                             "Compress the xml output (a .gz extension is automatically appended to the xml_filename option)" );
+        logserv.Setup();
 }
 
 Simulator::~Simulator()
@@ -2626,6 +2530,17 @@ Simulator::~Simulator()
 	{
 		delete[] cmd_args;
 	}
+
+        delete logger;
+	delete param_logger_std_err;
+	delete param_logger_std_out;
+	delete param_logger_std_err_color;
+	delete param_logger_std_out_color;
+	delete param_logger_file;
+	delete param_logger_filename;
+	delete param_logger_xml_file;
+	delete param_logger_xml_filename;
+	delete param_logger_xml_file_gzipped;
 }
 
 void Simulator::Version(ostream& os) const
@@ -3359,7 +3274,7 @@ void Simulator::GetRootObjects(list<Object *>& lst) const
 	}
 }
 
-#if defined(__APPLE_CC__) || defined(linux)
+#if defined(__APPLE_CC__) || defined(linux) || defined(__linux) || defined(__linux__)
 void FindMyself()
 {
 	// stupid method to find the path to the executable/library using the dladdr
@@ -3369,7 +3284,7 @@ void FindMyself()
 
 bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable_path) const
 {
-#if defined(linux) || defined(__APPLE_CC__)
+#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__APPLE_CC__)
 	Dl_info info;
 	if ( dladdr((void *)unisim::kernel::service::FindMyself, &info) != 0 )
 	{
@@ -3382,7 +3297,7 @@ bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable
 			return true;
 		}
 	}
-#elif defined(WIN32)
+#elif defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	char bin_path_buf[PATH_MAX + 1];
 	DWORD bin_path_length;
 	bin_path_length = GetModuleFileName(NULL, bin_path_buf, sizeof(bin_path_buf));
@@ -3446,7 +3361,7 @@ bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::str
 	const char *start = executable_path.c_str();
 	const char *end = start + executable_path.length() - 1;
 	while(end != (start - 1) && 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	      (*end != '\\') &&
 #endif
 	      (*end != '/'))
@@ -3496,7 +3411,7 @@ string Simulator::SearchSharedDataFile(const char *filename) const
 		std::cerr << "...not found" << std::endl;
 #endif
 
-		stringstream sstr;
+		std::stringstream sstr;
 		sstr << shared_data_dir << "/" << filename;
 		s = sstr.str();
 #ifdef DEBUG_SEARCH_SHARED_DATA_FILE
@@ -3524,7 +3439,7 @@ T Simulator::GetVariable(const char *variable_name, const T *t) const
 }
 
 template bool Simulator::GetVariable(const char *, const bool *) const;
-template char Simulator::GetVariable(const char *, const char *) const;
+template signed char Simulator::GetVariable(const char *, const signed char *) const;
 template short Simulator::GetVariable(const char *, const short *) const;
 template int Simulator::GetVariable(const char *, const int *) const;
 template long Simulator::GetVariable(const char *, const long *) const;
@@ -3603,26 +3518,26 @@ void Simulator::SetVariable(const char *variable_name, unsigned long variable_va
 
 void Simulator::SetVariable(const char *variable_name, unsigned long long variable_value)
 {
-	stringstream sstr;
+	std::stringstream sstr;
 	sstr << variable_value;
 	SetVariable(variable_name, sstr.str().c_str());
 }
 
 void Simulator::SetVariable(const char *variable_name, long long variable_value)
 {
-	stringstream sstr;
+	std::stringstream sstr;
 	sstr << variable_value;
 	SetVariable(variable_name, sstr.str().c_str());
 }
 
 void Simulator::SetVariable(const char *variable_name, float variable_value)
 {
-	SetVariable(variable_name, (double) variable_value);
+	SetVariable(variable_name, double(variable_value));
 }
 
 void Simulator::SetVariable(const char *variable_name, double variable_value)
 {
-	stringstream sstr;
+	std::stringstream sstr;
 	sstr << variable_value;
 	SetVariable(variable_name, sstr.str().c_str());
 }

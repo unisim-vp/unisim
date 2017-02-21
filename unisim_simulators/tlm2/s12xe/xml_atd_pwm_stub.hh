@@ -48,7 +48,7 @@ public:
 	typedef ATD_PWM_STUB inherited;
 
 	XML_ATD_PWM_STUB(const sc_module_name& name, Object *parent = 0);
-	virtual ~XML_ATD_PWM_STUB();
+	~XML_ATD_PWM_STUB();
 
 	void processATD0();
 	void processATD1();
@@ -60,15 +60,23 @@ public:
 		double time;
 	};
 
-	template <int SIZE> int LoadXmlData(const char *filename, std::vector<data_t<SIZE> > &vect);
+	template <int SIZE> int RandomizeData(std::vector<data_t<SIZE>* > &vect);
+	template <int SIZE> int LoadXmlData(const char *filename, std::vector<data_t<SIZE>* > &vect);
 	template <int SIZE> void parseRow (xmlDocPtr doc, xmlNodePtr cur, data_t<SIZE> &data);
 
 	virtual bool BeginSetup();
 
+	virtual void Inject_ATD0(double anValue[ATD0_SIZE]);
+	virtual void Inject_ATD1(double anValue[ATD1_SIZE]);
+	virtual void Get_PWM(bool (*pwmValue)[PWM_SIZE]);
+
 private:
 
-	std::vector<data_t<ATD0_SIZE> > atd0_vect;
-	std::vector<data_t<ATD1_SIZE> > atd1_vect;
+	std::vector<data_t<ATD0_SIZE>* > atd0_vect;
+	std::vector<data_t<ATD1_SIZE>* > atd1_vect;
+	bool pwmValue[PWM_SIZE];
+
+//	sc_time injection_delay;
 
 	string atd0_anx_stimulus_file;
 	Parameter<string>	param_atd0_anx_stimulus_file;
@@ -88,6 +96,20 @@ private:
 	uint8_t atd1_anx_wrap_around_channel;
 	Parameter<uint8_t> param_atd1_anx_wrap_around_channel;
 
+	bool	cosim_enabled;
+	Parameter<bool>		param_cosim_enabled;
+
+	bool	atd0_xml_enabled;
+	Parameter<bool>		param_atd0_xml_enabled;
+
+	bool	atd1_xml_enabled;
+	Parameter<bool>		param_atd1_xml_enabled;
+
+	bool	atd0_rand_enabled;
+	Parameter<bool>		param_atd0_rand_enabled;
+
+	bool	atd1_rand_enabled;
+	Parameter<bool>		param_atd1_rand_enabled;
 
 };
 

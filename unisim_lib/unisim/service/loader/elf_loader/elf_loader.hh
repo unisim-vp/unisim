@@ -57,7 +57,7 @@ namespace service {
 namespace loader {
 namespace elf_loader {
 
-using namespace std;
+// using namespace std;
 using unisim::service::interfaces::Memory;
 using namespace unisim::util::endian;
 using unisim::util::debug::Statement;
@@ -108,7 +108,7 @@ public:
 	virtual bool Load();
 	
 	// unisim::service::interfaces::Blob
-	virtual const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
+	virtual const unisim::util::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
 	// unisim::service::interfaces::SymbolTableLookup
 	virtual void GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
@@ -129,31 +129,31 @@ public:
 	virtual bool GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
 private:
 	unisim::util::loader::elf_loader::ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym> *elf_loader;
-	string filename;
+	std::string filename;
 	MEMORY_ADDR base_addr;
 	bool force_base_addr;
 	bool force_use_virtual_address;
 	bool initialize_extra_segment_bytes;
 	bool dump_headers;
-	string dwarf_to_html_output_directory;
-	string dwarf_to_xml_output_filename;
-	string dwarf_register_number_mapping_filename;
+	std::string dwarf_to_html_output_directory;
+	std::string dwarf_to_xml_output_filename;
+	std::string dwarf_register_number_mapping_filename;
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
 	endian_type endianness;
 	bool parse_dwarf;
 	bool debug_dwarf;
 	
-	Parameter<string> param_filename;
+	Parameter<std::string> param_filename;
 	Parameter<MEMORY_ADDR> param_base_addr;
 	Parameter<bool> param_force_base_addr;
 	Parameter<bool> param_force_use_virtual_address;
 	Parameter<bool> param_initialize_extra_segment_bytes;
 	Parameter<bool> param_dump_headers;
 	Parameter<bool> param_verbose;
-	Parameter<string> param_dwarf_to_html_output_directory;
-	Parameter<string> param_dwarf_to_xml_output_filename;
-	Parameter<string> param_dwarf_register_number_mapping_filename;
+	Parameter<std::string> param_dwarf_to_html_output_directory;
+	Parameter<std::string> param_dwarf_to_xml_output_filename;
+	Parameter<std::string> param_dwarf_register_number_mapping_filename;
 	Parameter<bool> param_parse_dwarf;
 	Parameter<bool> param_debug_dwarf;
 };

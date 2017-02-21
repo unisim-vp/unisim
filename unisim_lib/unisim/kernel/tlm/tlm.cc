@@ -64,65 +64,65 @@ unsigned int Variable<sc_time>::GetBitSize() const
 template <> 
 Variable<sc_time>::operator bool () const
 { 
-	return *storage != SC_ZERO_TIME; 
+	return Get() != SC_ZERO_TIME; 
 }
 
 template <> 
 Variable<sc_time>::operator long long () const
 {
-	return (long long) storage->to_seconds();
+	return (long long) Get().to_seconds();
 }
 
 template <> 
 Variable<sc_time>::operator unsigned long long () const
 {
-	return (unsigned long long) storage->to_seconds();
+	return (unsigned long long) Get().to_seconds();
 }
 
 template <> 
 Variable<sc_time>::operator double () const
 {
-	return storage->to_seconds();
+	return Get().to_seconds();
 }
 
 template <> 
 Variable<sc_time>::operator string () const
 {
-	return storage->to_string();
+	return Get().to_string();
 }
 
 template <> 
 VariableBase& Variable<sc_time>::operator = (bool value)
 { 
-	if(IsMutable()) *storage = sc_time(value ? 1.0 : 0.0, SC_SEC);
+	if (IsMutable()) Set( sc_time(value ? 1.0 : 0.0, SC_SEC) );
 	return *this;
 }
 
 template <> 
 VariableBase& Variable<sc_time>::operator = (long long value)
 {
-	if(IsMutable()) *storage = sc_time((double) value, SC_SEC);
+	if (IsMutable()) Set( sc_time((double) value, SC_SEC) );
 	return *this;
 }
 
 template <> 
 VariableBase& Variable<sc_time>::operator = (unsigned long long value)
 {
-	if(IsMutable()) *storage = sc_time((double) value, SC_SEC);
+	if (IsMutable()) Set( sc_time((double) value, SC_SEC) );
 	return *this;
 }
 
 template <> 
 VariableBase& Variable<sc_time>::operator = (double value)
 {
-	if(IsMutable()) *storage = sc_time(value, SC_SEC);
+	if (IsMutable()) Set( sc_time(value, SC_SEC) );
 	return *this;
 }
 
 template <> 
 VariableBase& Variable<sc_time>::operator = (const char *value)
 {
-	if(IsMutable())
+	if (IsMutable())
 	{
 		double v = 0.0;
 		sc_time_unit unit = SC_SEC;
@@ -144,9 +144,9 @@ VariableBase& Variable<sc_time>::operator = (const char *value)
 			if(strncmp(end, "s", 1) == 0) unit = SC_SEC;
 		}
 		
-		*storage = sc_time(v, unit);
+		Set( sc_time(v, unit) );
 	}
-	return *this; 
+	return *this;
 }
 
 template class Variable<sc_time>;

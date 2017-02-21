@@ -34,6 +34,7 @@
 
 #include <unisim/component/cxx/processor/hcs12x/hcs12x.hh>
 #include <unisim/component/cxx/processor/hcs12x/cpu.hh>
+#include <unisim/util/inlining/inlining.hh>
 
 namespace unisim {
 namespace component {
@@ -41,26 +42,21 @@ namespace cxx {
 namespace processor {
 namespace hcs12x {
 
-#if (defined(__GNUC__) && (__GNUC__ >= 3))
-#define INLINE __attribute__((always_inline))
-#else
-#define INLINE
-#endif
-
 using std::cout;
 
 using unisim::util::debug::SimpleRegister;
 using unisim::util::debug::Symbol;
 
-template void EBLB::setter<uint8_t>(uint8_t rr, uint8_t val);
-template void EBLB::setter<uint16_t>(uint8_t rr, uint16_t val);
-template uint8_t EBLB::getter<uint8_t>(uint8_t rr);
-template uint16_t EBLB::getter<uint16_t>(uint8_t rr);
-template void EBLB::exchange<uint8_t>(uint8_t rrSrc, uint8_t rrDst);
-template void EBLB::exchange<uint16_t>(uint8_t rrSrc, uint8_t rrDst);
+template void EBLB::setter<uint8_t>(unsigned int rr, uint8_t val);
+template void EBLB::setter<uint16_t>(unsigned int rr, uint16_t val);
+template uint8_t EBLB::getter<uint8_t>(unsigned int rr);
+template uint16_t EBLB::getter<uint16_t>(unsigned int rr);
+template void EBLB::exchange<uint8_t>(unsigned int rrSrc, unsigned int rrDst);
+template void EBLB::exchange<uint16_t>(unsigned int rrSrc, unsigned int rrDst);
 
 CPU::CPU(const char *name, Object *parent):
 	Object(name, parent),
+	Client<Loader>(name,  parent),
 	unisim::kernel::service::Client<DebugControl<physical_address_t> >(name, parent),
 	unisim::kernel::service::Client<MemoryAccessReporting<physical_address_t> >(name, parent),
 	unisim::kernel::service::Service<MemoryAccessReportingControl>(name, parent),
@@ -73,6 +69,8 @@ CPU::CPU(const char *name, Object *parent):
 	queueCurrentAddress(0xFFFE),
 	queueFirst(-1),
 	queueNElement(0),
+
+	loader_import("loader-import",  this),
 	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
 	memory_export("memory_export", this),
@@ -97,11 +95,15 @@ CPU::CPU(const char *name, Object *parent):
 	param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end),
 	verbose_exception(false),
 	param_verbose_exception("verbose-exception", this, verbose_exception),
-	trace_enable(false),
-	param_trace_enable("trace-enabled", this, trace_enable),
+
+	enable_trace(false),
+	param_enable_trace("enable-trace", this, enable_trace),
+
+	enable_file_trace(false),
+	param_enable_file_trace("enable-file-trace", this, enable_file_trace),
+
 	periodic_trap(-1),
 	param_periodic_trap("periodic-trap", this, periodic_trap),
-
 
 	requires_memory_access_reporting(false),
 	param_requires_memory_access_reporting("requires-memory-access-reporting", this, requires_memory_access_reporting),
@@ -120,6 +122,7 @@ CPU::CPU(const char *name, Object *parent):
 	syscall_interrupt(false),
 	spurious_interrupt(false),
 	state(CPU::RUNNING),
+	lastPC(0),
 	instruction_counter(0),
 	cycles_counter(0),
 	data_load_counter(0),
@@ -199,11 +202,11 @@ CPU::CPU(const char *name, Object *parent):
 	extended_registers_registry.push_back(ccr_var);
 	ccr_var->setCallBack(this, CCR, &CallBackObject::write, NULL);
 
-	unisim::util::debug::Register *ccrl = ccr->GetLowRegister();
+	unisim::service::interfaces::Register *ccrl = ccr->GetLowRegister();
 	registers_registry[ccrl->GetName()] = ccrl;
 	extended_registers_registry.push_back(new TimeBaseRegisterView(ccrl->GetName(), this, ccrReg, TimeBaseRegisterView::TB_LOW, "CCR LOW"));
 
-	unisim::util::debug::Register *ccrh = ccr->GetHighRegister();
+	unisim::service::interfaces::Register *ccrh = ccr->GetHighRegister();
 	registers_registry[ccrh->GetName()] = ccrh;
 	extended_registers_registry.push_back(new TimeBaseRegisterView(ccrh->GetName(), this, ccrReg, TimeBaseRegisterView::TB_HIGH, "CCR HIGH"));
 
@@ -216,7 +219,7 @@ CPU::~CPU()
 	//if (ccr) { delete ccr; ccr = NULL;}
 
 	// Release registers_registry
-	map<string, unisim::util::debug::Register *>::iterator reg_iter;
+	map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
 
 	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
 	{
@@ -231,6 +234,8 @@ CPU::~CPU()
 	}
 
 	if (logger) { delete logger; logger = NULL;}
+
+	if (trace.is_open()) { trace.close(); }
 }
 
 void CPU::setEntryPoint(address_t cpu_address)
@@ -310,13 +315,13 @@ void CPU::Sync()
 }
 
 
-uint8_t CPU::step()
+unsigned int CPU::step()
 {
 
 	uint8_t 	buffer[MAX_INS_SIZE];
 
 	Operation 	*op;
-	uint8_t	opCycles = 0;
+	unsigned int	opCycles = 0;
 
 	try
 	{
@@ -363,6 +368,11 @@ uint8_t CPU::step()
 					Stop(0);
 				}
 				if(dbg_cmd == DebugControl<physical_address_t>::DBG_RESET) {
+					if(loader_import)
+					{
+						loader_import->Load();
+					}
+
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_RESET command (PC = 0x"
@@ -435,27 +445,30 @@ uint8_t CPU::step()
 
 			setRegPC(getRegPC() + (insn_length/8));
 
-			if (trace_enable) {
+			if (enable_trace) {
 				stringstream disasm_str;
 				stringstream ctstr;
 
-				op->disasm(disasm_str);
-
 				ctstr << op->GetEncoding();
 
-				*logger << DebugInfo << "Cycles = " << cycles_counter
-					<< " : Time = " << (Object::GetSimulator()->GetSimTime())
+				disasm_str << "Cycles = " << std::dec << cycles_counter
+					<< " : Time = " << std::dec << (Object::GetSimulator()->GetSimTime())
 					<< " : PC = 0x" << std::hex << lastPC << std::dec << " : "
-					<< getFunctionFriendlyName(lastPC) << " : "
-					<< disasm_str.str()
-					<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) "
-					<< EndDebugInfo	<< std::endl;
+					<< getFunctionFriendlyName(lastPC) << " : ";
 
+				op->disasm(disasm_str);
+
+				disasm_str	<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) "
+					<< std::endl;
+
+				if (enable_file_trace) {
+					trace << disasm_str.str();
+				} else {
+					std::cout << disasm_str.str();
+				}
 			}
 
-			op->execute(this);
-
-			opCycles = op->getCycles();
+			opCycles = op->execute(this);
 
 			cycles_counter += opCycles;
 
@@ -478,12 +491,24 @@ uint8_t CPU::step()
 		}
 
 	}
-	catch (AsynchronousException& exc) { handleException(exc); }
-	catch (NonMaskableAccessErrorInterrupt& exc) { handleException(exc); }
-	catch (NonMaskableSWIInterrupt& exc) { handleException(exc); }
-	catch (TrapException& exc) { handleException(exc); }
-	catch (SysCallInterrupt& exc) { handleException(exc); }
-	catch (SpuriousInterrupt& exc) { handleException(exc); }
+	catch (AsynchronousException& exc) {
+		handleException(exc);
+	}
+	catch (NonMaskableAccessErrorInterrupt& exc) {
+		handleException(exc);
+	}
+	catch (NonMaskableSWIInterrupt& exc) {
+		handleException(exc);
+	}
+	catch (TrapException& exc) {
+		handleException(exc);
+	}
+	catch (SysCallInterrupt& exc) {
+		handleException(exc);
+	}
+	catch (SpuriousInterrupt& exc) {
+		handleException(exc);
+	}
 	catch(Exception& e)
 	{
 		if(debug_enabled && verbose_step)
@@ -507,7 +532,7 @@ uint8_t CPU::step()
 //=              HCS12X (CPU12X) Queue Handling                       =
 //=====================================================================
 
-uint8_t* CPU::queueFetch(address_t addr, uint8_t* ins, uint8_t nByte)
+uint8_t* CPU::queueFetch(address_t addr, uint8_t* ins, unsigned int nByte)
 {
 
 	if (nByte > QUEUE_SIZE) return (NULL);
@@ -525,7 +550,7 @@ uint8_t* CPU::queueFetch(address_t addr, uint8_t* ins, uint8_t nByte)
 		queueNElement = QUEUE_SIZE;
 	}
 
-	for (uint8_t i=0; i < nByte; i++)
+	for (unsigned int i=0; i < nByte; i++)
 	{
 		ins[i] = queueBuffer[(queueFirst + i) % QUEUE_SIZE];
 	}
@@ -533,7 +558,7 @@ uint8_t* CPU::queueFetch(address_t addr, uint8_t* ins, uint8_t nByte)
 	return (ins);
 }
 
-void CPU::queueFill(address_t addr, int position, uint8_t nByte)
+void CPU::queueFill(address_t addr, int position, unsigned int nByte)
 {
 	uint8_t buff[QUEUE_SIZE];
 
@@ -547,7 +572,7 @@ void CPU::queueFill(address_t addr, int position, uint8_t nByte)
 
 	busRead(&mmc_data);
 
-	for (uint8_t i=0; i<nByte; i++)
+	for (unsigned int i=0; i<nByte; i++)
 	{
 		queueBuffer[position] = buff[i];
 		position = (position + 1) % QUEUE_SIZE;
@@ -555,7 +580,7 @@ void CPU::queueFill(address_t addr, int position, uint8_t nByte)
 
 }
 
-void CPU::queueFlush(uint8_t nByte)
+void CPU::queueFlush(unsigned int nByte)
 {
 	queueFirst = (queueFirst + nByte) % QUEUE_SIZE;
 	queueNElement = queueNElement - nByte;
@@ -925,7 +950,7 @@ inline void CPU::reqAccessErrorInterrupt()
 // ======================================================
 
 template <class T>
-void EBLB::setter(uint8_t rr, T val) // setter function
+void EBLB::setter(unsigned int rr, T val) // setter function
 	/* Legal "rr" value for setter and getter functions
 	 * 0x00:A; 0x01:B;
 	 * 0x20:CCR; 0x21:CCRlow; 0x22:CCRhigh; 0x23:CCRWord
@@ -978,7 +1003,7 @@ void EBLB::setter(uint8_t rr, T val) // setter function
 }
 
 template <class T>
-T EBLB::getter(uint8_t rr) // getter function
+T EBLB::getter(unsigned int rr) // getter function
 	/* Legal "rr" value for setter and getter functions
 	 * 0x00:A; 0x01:B;
 	 * 0x20:CCR; 0x21:CCRlow; 0x22:CCRhigh; 0x23:CCRWord
@@ -1032,7 +1057,7 @@ T EBLB::getter(uint8_t rr) // getter function
 }
 
 template <class T>
-void EBLB::exchange(uint8_t rrSrc, uint8_t rrDst) {
+void EBLB::exchange(unsigned int rrSrc, unsigned int rrDst) {
 	T tmp = getter<T>(rrSrc);
 	setter<T>(rrSrc, getter<T>(rrDst));
 	setter<T>(rrDst, tmp);
@@ -1080,6 +1105,10 @@ bool CPU::BeginSetup() {
 			<< "Initializing debugging registers"
 			<< std::endl << EndDebugInfo;
 
+	if (enable_file_trace) {
+		trace.open("cpu_trace.txt");
+	}
+
 	return (true);
 }
 
@@ -1119,17 +1148,17 @@ void CPU::RequiresFinishedInstructionReporting(bool report)
 /* Verbose methods (protected)                          START */
 /**************************************************************/
 
-inline INLINE
+inline ALWAYS_INLINE
 bool CPU::VerboseSetup() {
 	return (debug_enabled && verbose_setup);
 }
 
-inline INLINE
+inline ALWAYS_INLINE
 bool CPU::VerboseStep() {
 	return (debug_enabled && verbose_step);
 }
 
-inline INLINE
+inline ALWAYS_INLINE
 void CPU::VerboseDumpRegs() {
 
 	*logger << "\t- A" << " = 0x" << std::hex << getRegA() << std::dec;
@@ -1145,7 +1174,7 @@ void CPU::VerboseDumpRegs() {
 
 }
 
-inline INLINE
+inline ALWAYS_INLINE
 void CPU::VerboseDumpRegsStart() {
 	if(debug_enabled && verbose_dump_regs_start) {
 		*logger << DebugInfo
@@ -1155,7 +1184,7 @@ void CPU::VerboseDumpRegsStart() {
 	}
 }
 
-inline INLINE
+inline ALWAYS_INLINE
 void CPU::VerboseDumpRegsEnd() {
 	if(debug_enabled && verbose_dump_regs_end) {
 		*logger << DebugInfo

@@ -406,7 +406,7 @@ void DWARF_Reference<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 	dw_die = dw_handler->FindDIE(debug_info_offset);
 	if(!dw_die)
 	{
-		dw_handler->GetLogger() << DebugWarning << "While resolving [reference attribute value -> DIE] reference, can't find DIE (Debug Information Entry) at offset " << debug_info_offset << EndDebugWarning;
+		dw_handler->GetDebugWarningStream() << "While resolving [reference attribute value -> DIE] reference, can't find DIE (Debug Information Entry) at offset " << debug_info_offset << std::endl;
 	}
 }
 
@@ -449,7 +449,7 @@ void DWARF_LinePtr<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 	dw_stmt_prog = dw_handler->FindStatementProgram(debug_line_offset);
 	if(!dw_stmt_prog)
 	{
-		dw_handler->GetLogger() << DebugWarning << "While resolving [line pointer attribute value -> statement program] reference, can't find .debug_line statement program at offset " << debug_line_offset << EndDebugWarning;
+		dw_handler->GetDebugWarningStream() << "While resolving [line pointer attribute value -> statement program] reference, can't find .debug_line statement program at offset " << debug_line_offset << std::endl;
 	}
 }
 
@@ -493,7 +493,7 @@ void DWARF_LocListPtr<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 	dw_loc_list_entry = dw_handler->FindLocListEntry(dw_cu, debug_loc_offset);
 	if(!dw_loc_list_entry)
 	{
-		dw_handler->GetLogger() << DebugWarning << "While resolving [location pointer attribute value -> location list entry] reference, can't find location list entry in .debug_loc at offset " << debug_loc_offset << EndDebugWarning;
+		dw_handler->GetDebugWarningStream() << "While resolving [location pointer attribute value -> location list entry] reference, can't find location list entry in .debug_loc at offset " << debug_loc_offset << std::endl;
 	}
 }
 
@@ -536,7 +536,7 @@ void DWARF_MacPtr<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 	dw_macinfo_list_entry = dw_handler->FindMacInfoListEntry(debug_macinfo_offset);
 	if(!dw_macinfo_list_entry)
 	{
-		dw_handler->GetLogger() << DebugWarning << "While resolving [macro pointer attribute value -> mac info list entry] reference, can't find mac info list entry in .debug_macinfo at offset " << debug_macinfo_offset << EndDebugWarning;
+		dw_handler->GetDebugWarningStream() << "While resolving [macro pointer attribute value -> mac info list entry] reference, can't find mac info list entry in .debug_macinfo at offset " << debug_macinfo_offset << std::endl;
 	}
 }
 
@@ -580,7 +580,7 @@ void DWARF_RangeListPtr<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler
 	dw_range_list_entry = dw_handler->FindRangeListEntry(dw_cu, debug_ranges_offset);
 	if(!dw_range_list_entry)
 	{
-		dw_handler->GetLogger() << DebugWarning << "While resolving [range list pointer attribute value -> range list entry] reference, can't find range list entry in .debug_ranges at offset " << debug_ranges_offset << EndDebugWarning;
+		dw_handler->GetDebugWarningStream() << "While resolving [range list pointer attribute value -> range list entry] reference, can't find range list entry in .debug_ranges at offset " << debug_ranges_offset << std::endl;
 	}
 }
 

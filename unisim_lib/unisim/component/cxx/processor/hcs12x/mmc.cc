@@ -104,7 +104,7 @@ MMC::MMC(const char *name, S12MPU_IF *_mpu, Object *parent):
 MMC::~MMC() {
 
 	// Release registers_registry
-	std::map<string, unisim::util::debug::Register *>::iterator reg_iter;
+	std::map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
 
 	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
 	{
@@ -318,7 +318,7 @@ bool MMC::ReadMemory(physical_address_t paged_addr, void *buffer, uint32_t size)
 	addr = getCPU12XPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
 
 	if (addr <= REG_HIGH_OFFSET) {
-		for (uint8_t i=0; i<MMC_MEMMAP_SIZE; i++) {
+		for (unsigned int i=0; i<MMC_MEMMAP_SIZE; i++) {
 			if (MMC_REGS_ADDRESSES[i] == addr) {
 				return (read(addr, buffer, 1));
 			}

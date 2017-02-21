@@ -42,13 +42,10 @@ namespace util {
 namespace debug {
 namespace dwarf {
 
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugError;
-
-DWARF_RegisterNumberMapping::DWARF_RegisterNumberMapping(unisim::kernel::logger::Logger& _logger, unisim::service::interfaces::Registers *_regs_if)
-	: logger(_logger)
+DWARF_RegisterNumberMapping::DWARF_RegisterNumberMapping(std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, unisim::service::interfaces::Registers *_regs_if)
+	: debug_info_stream(_debug_info_stream)
+	, debug_warning_stream(_debug_warning_stream)
+	, debug_error_stream(_debug_error_stream)
 	, regs_if(_regs_if)
 	, sp_reg_num(0)
 {
@@ -60,7 +57,7 @@ DWARF_RegisterNumberMapping::~DWARF_RegisterNumberMapping()
 
 bool DWARF_RegisterNumberMapping::Load(const char *filename, const char *architecture)
 {
-	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser(logger);
+	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser(debug_info_stream, debug_warning_stream, debug_error_stream);
 	unisim::util::xml::Node *root_node = parser->Parse(filename);
 
 	delete parser;
@@ -69,7 +66,7 @@ bool DWARF_RegisterNumberMapping::Load(const char *filename, const char *archite
 		
 	if(root_node->Name() != std::string("dw_reg_num_mapping"))
 	{
-		logger << DebugError << root_node->Filename() << ":" << root_node->LineNo() << ":root node is not named 'dw_reg_num_mapping'" << EndDebugError;
+		debug_error_stream << root_node->Filename() << ":" << root_node->LineNo() << ":root node is not named 'dw_reg_num_mapping'" << std::endl;
 		delete root_node;
 		return false;
 	}
@@ -99,7 +96,7 @@ bool DWARF_RegisterNumberMapping::Load(const char *filename, const char *archite
 		}
 	}
 	
-	logger << DebugError << root_node->Filename() << ": no matching architecture tag for Architecture \"" << architecture << "\"" << EndDebugError;
+	debug_error_stream << root_node->Filename() << ": no matching architecture tag for Architecture \"" << architecture << "\"" << std::endl;
 
 	delete root_node;
 	return false;
@@ -137,7 +134,7 @@ bool DWARF_RegisterNumberMapping::Load(unisim::util::xml::Node *root_node)
 			
 			if(has_dw_reg_num && has_arch_reg_name)
 			{
-				unisim::util::debug::Register *arch_reg = regs_if->GetRegister(arch_reg_name.c_str());
+				unisim::service::interfaces::Register *arch_reg = regs_if->GetRegister(arch_reg_name.c_str());
 				
 				if(arch_reg)
 				{
@@ -145,12 +142,12 @@ bool DWARF_RegisterNumberMapping::Load(unisim::util::xml::Node *root_node)
 				}
 				else
 				{
-					logger << DebugWarning << "CPU does not support register " << arch_reg_name << EndDebugWarning;
+					debug_warning_stream << "CPU does not support register " << arch_reg_name << std::endl;
 				}
 			}
 			else
 			{
-				logger << DebugWarning << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":node '" << (*xml_node)->Name().c_str() << "' has no 'dw_reg_num' or 'arch_reg' property" << EndDebugWarning;
+				debug_warning_stream << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":node '" << (*xml_node)->Name().c_str() << "' has no 'dw_reg_num' or 'arch_reg' property" << std::endl;
 				return false;
 			}
 		}
@@ -175,7 +172,7 @@ bool DWARF_RegisterNumberMapping::Load(unisim::util::xml::Node *root_node)
 			}
 			else
 			{
-				logger << DebugWarning << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":node '" << (*xml_node)->Name().c_str() << "' has no 'dw_reg_num' property" << EndDebugWarning;
+				debug_warning_stream << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":node '" << (*xml_node)->Name().c_str() << "' has no 'dw_reg_num' property" << std::endl;
 				return false;
 			}
 		}
@@ -185,21 +182,21 @@ bool DWARF_RegisterNumberMapping::Load(unisim::util::xml::Node *root_node)
 	return true;
 }
 
-void DWARF_RegisterNumberMapping::Map(unsigned int dw_reg_num, unisim::util::debug::Register *arch_reg)
+void DWARF_RegisterNumberMapping::Map(unsigned int dw_reg_num, unisim::service::interfaces::Register *arch_reg)
 {
 	reg_num_mapping[dw_reg_num] = arch_reg;
 }
 
-const unisim::util::debug::Register *DWARF_RegisterNumberMapping::GetArchReg(unsigned int dw_reg_num) const
+const unisim::service::interfaces::Register *DWARF_RegisterNumberMapping::GetArchReg(unsigned int dw_reg_num) const
 {
-	std::map<unsigned int, unisim::util::debug::Register *>::const_iterator iter = reg_num_mapping.find(dw_reg_num);
+	std::map<unsigned int, unisim::service::interfaces::Register *>::const_iterator iter = reg_num_mapping.find(dw_reg_num);
 	
 	return (iter != reg_num_mapping.end()) ? (*iter).second : 0;
 }
 
-unisim::util::debug::Register *DWARF_RegisterNumberMapping::GetArchReg(unsigned int dw_reg_num)
+unisim::service::interfaces::Register *DWARF_RegisterNumberMapping::GetArchReg(unsigned int dw_reg_num)
 {
-	std::map<unsigned int, unisim::util::debug::Register *>::const_iterator iter = reg_num_mapping.find(dw_reg_num);
+	std::map<unsigned int, unisim::service::interfaces::Register *>::const_iterator iter = reg_num_mapping.find(dw_reg_num);
 	
 	return (iter != reg_num_mapping.end()) ? (*iter).second : 0;
 }
@@ -208,7 +205,7 @@ void DWARF_RegisterNumberMapping::EnumRegisterNumbers(std::set<unsigned int>& re
 {
 	reg_num_set.clear();
 
-	std::map<unsigned int, unisim::util::debug::Register *>::const_iterator iter;
+	std::map<unsigned int, unisim::service::interfaces::Register *>::const_iterator iter;
 	
 	for(iter = reg_num_mapping.begin(); iter != reg_num_mapping.end(); iter++)
 	{
@@ -224,12 +221,12 @@ unsigned int DWARF_RegisterNumberMapping::GetSPRegNum() const
 
 std::ostream& operator << (std::ostream& os, const DWARF_RegisterNumberMapping& dw_reg_num_mapping)
 {
-	std::map<unsigned int, unisim::util::debug::Register *>::const_iterator iter;
+	std::map<unsigned int, unisim::service::interfaces::Register *>::const_iterator iter;
 	
 	for(iter = dw_reg_num_mapping.reg_num_mapping.begin(); iter != dw_reg_num_mapping.reg_num_mapping.end(); iter++)
 	{
 		unsigned int dw_reg_num = (*iter).first;
-		unisim::util::debug::Register *arch_reg = (*iter).second;
+		unisim::service::interfaces::Register *arch_reg = (*iter).second;
 		os << "r" << dw_reg_num << "->" << arch_reg->GetName() << std::endl;
 	}
 	return os;

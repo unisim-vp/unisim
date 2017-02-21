@@ -137,10 +137,10 @@ public:
 	void Stop(int ret);
 	void Sync();
 
-	address_t getIntVector(uint8_t& priority);
+	address_t getIntVector(unsigned int& priority);
 	void handleAsynchronousInterrupt();
 
-	void assertInterrupt(uint8_t offset, bool isXGATE_flag);
+	void assertInterrupt(unsigned int offset, bool isXGATE_flag);
 
 	void enbale_xgate();
 	void disable_xgate();

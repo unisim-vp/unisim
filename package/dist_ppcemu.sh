@@ -136,16 +136,16 @@ unisim/util/debug/dwarf/ml.cc \
 unisim/util/debug/dwarf/register_number_mapping.cc \
 unisim/util/debug/dwarf/data_object.cc \
 unisim/util/debug/dwarf/c_loc_expr_parser.cc \
-unisim/util/debug/blob/blob32.cc \
-unisim/util/debug/blob/blob64.cc \
-unisim/util/debug/blob/section32.cc \
-unisim/util/debug/blob/section64.cc \
-unisim/util/debug/blob/segment32.cc \
-unisim/util/debug/blob/segment64.cc \
+unisim/util/blob/blob32.cc \
+unisim/util/blob/blob64.cc \
+unisim/util/blob/section32.cc \
+unisim/util/blob/section64.cc \
+unisim/util/blob/segment32.cc \
+unisim/util/blob/segment64.cc \
 unisim/util/debug/elf_symtab/elf_symtab32.cc \
 unisim/util/debug/elf_symtab/elf_symtab64.cc \
 unisim/util/debug/coff_symtab/coff_symtab32.cc \
-unisim/util/endian/endian.cc \
+unisim/kernel/service/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/random/random.cc \
@@ -169,7 +169,7 @@ unisim/service/power/cache_dynamic_power.cc \
 unisim/service/power/cache_leakage_power.cc \
 unisim/service/power/cache_power_estimator.cc \
 unisim/service/power/cache_profile.cc \
-unisim/service/os/linux_os/linux.cc \
+unisim/service/os/linux_os/powerpc_linux32.cc \
 unisim/service/loader/elf_loader/elf32_loader.cc \
 unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/component/cxx/processor/powerpc/config.cc \
@@ -225,7 +225,6 @@ unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/breakpoint.hh \
 unisim/util/debug/event.hh \
 unisim/util/debug/profile.hh \
-unisim/util/debug/register.hh \
 unisim/util/debug/symbol.hh \
 unisim/util/debug/stmt.hh \
 unisim/util/debug/simple_register.hh \
@@ -270,9 +269,9 @@ unisim/util/debug/dwarf/util.hh \
 unisim/util/debug/dwarf/data_object.hh \
 unisim/util/debug/dwarf/subprogram.hh \
 unisim/util/debug/dwarf/c_loc_expr_parser.hh \
-unisim/util/debug/blob/blob.hh \
-unisim/util/debug/blob/section.hh \
-unisim/util/debug/blob/segment.hh \
+unisim/util/blob/blob.hh \
+unisim/util/blob/section.hh \
+unisim/util/blob/segment.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/endian/endian.hh \
@@ -295,7 +294,6 @@ unisim/util/loader/elf_loader/elf32_loader.hh \
 unisim/util/loader/elf_loader/elf64_loader.hh \
 unisim/util/loader/coff_loader/coff_loader.hh \
 unisim/util/loader/coff_loader/ti/ti.hh \
-unisim/util/os/linux_os/arm.hh \
 unisim/util/os/linux_os/aux_table.hh \
 unisim/util/os/linux_os/environment.hh \
 unisim/util/os/linux_os/files_flags.hh \
@@ -328,6 +326,7 @@ unisim/service/interfaces/blob.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/interfaces/subprogram_lookup.hh \
+unisim/service/interfaces/register.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
@@ -343,6 +342,7 @@ unisim/service/power/cache_dynamic_energy.hh \
 unisim/service/power/cache_dynamic_power.hh \
 unisim/service/power/cache_leakage_power.hh \
 unisim/service/os/linux_os/linux.hh \
+unisim/service/os/linux_os/powerpc_linux32.hh \
 unisim/component/cxx/memory/ram/memory.hh \
 unisim/component/cxx/processor/powerpc/floating.hh \
 unisim/component/cxx/processor/powerpc/config.hh \
@@ -381,9 +381,9 @@ unisim/util/debug/dwarf/stmt_vm.tcc \
 unisim/util/debug/dwarf/frame.tcc \
 unisim/util/debug/dwarf/data_object.tcc \
 unisim/util/debug/dwarf/subprogram.tcc \
-unisim/util/debug/blob/blob.tcc \
-unisim/util/debug/blob/section.tcc \
-unisim/util/debug/blob/segment.tcc \
+unisim/util/blob/blob.tcc \
+unisim/util/blob/section.tcc \
+unisim/util/blob/segment.tcc \
 unisim/util/debug/elf_symtab/elf_symtab.tcc \
 unisim/util/debug/coff_symtab/coff_symtab.tcc \
 unisim/util/queue/queue.tcc \
@@ -406,6 +406,7 @@ unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/elf_loader/elf32_loader.tcc \
 unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/service/os/linux_os/linux.tcc \
+unisim/service/os/linux_os/powerpc_linux32.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_cache.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debugging.tcc \
@@ -431,7 +432,6 @@ m4/bsd_sockets.m4 \
 m4/curses.m4 \
 m4/libedit.m4 \
 m4/systemc.m4 \
-m4/tlm20.m4 \
 m4/with_boost.m4 \
 m4/cacti.m4 \
 m4/check_lib.m4 \
@@ -440,7 +440,7 @@ m4/real_path.m4 \
 m4/pthread.m4"
 
 UNISIM_LIB_PPCEMU_DATA_FILES="\
-unisim/service/debug/gdb_server/gdb_powerpc.xml \
+unisim/service/debug/gdb_server/gdb_powerpc_32.xml \
 unisim/util/debug/dwarf/powerpc_eabi_dwarf_register_number_mapping.xml \
 unisim/util/debug/dwarf/powerpc_eabi_gcc_dwarf_register_number_mapping.xml"
 
@@ -649,8 +649,8 @@ Requirements:
   - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
   - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
   - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
-  - Core SystemC Language >= 2.1 (http://www.systemc.org)
-  - TLM Transaction Level Modeling Library, Release >= 2.0 (http://www.systemc.org)
+  - Core SystemC Language >= 2.3.0 (http://www.systemc.org)
+
 
 Building instructions:
   $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-tlm20=<path-to-TLM-library-install-dir>
@@ -955,7 +955,6 @@ if [ "${has_to_build_ppcemu_configure}" = "yes" ]; then
 	echo "UNISIM_WITH_BOOST(main)" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${PPCEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TLM20" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-ppcemu-${PPCEMU_VERSION}\"], [path of shared data relative to bin directory])" >> "${PPCEMU_CONFIGURE_AC}"

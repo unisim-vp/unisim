@@ -56,7 +56,8 @@ public:
 			unisim::kernel::service::ServiceImport<unisim::service::interfaces::Time> *_time_import);
 	~CacheLeakagePower();
 
-	double GetLeakagePower();
+	double GetLeakagePower() const;
+	bool operator != ( CacheLeakagePower const& clp ) const { return GetLeakagePower() != clp.GetLeakagePower(); }
 
 private:
 	const double *time_stamp;

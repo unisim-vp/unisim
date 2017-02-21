@@ -33,9 +33,9 @@
  * 		Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
+#include <unisim/service/tee/memory_access_reporting/tee.hh>
+#include <unisim/service/tee/memory_access_reporting/tee.tcc>
 #include <inttypes.h>
-#include "unisim/service/tee/memory_access_reporting/tee.hh"
-#include "unisim/service/tee/memory_access_reporting/tee.tcc"
 
 namespace unisim {
 namespace service {
