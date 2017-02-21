@@ -274,7 +274,6 @@ UNISIM_LIB_VIRTEX5FXT_ISA_FILES="\
 unisim/component/cxx/processor/powerpc/ppc440/isa/ppc440.isa \
 unisim/component/cxx/processor/powerpc/ppc440/isa/esr.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/add.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addc.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/adde.isa \
@@ -325,6 +324,7 @@ unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/slw.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/sraw.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/srawi.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/srw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fadd.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fadds.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fdiv.isa \
@@ -440,6 +440,7 @@ unisim/component/cxx/processor/powerpc/isa/book_ii/dcbt.isa \
 unisim/component/cxx/processor/powerpc/isa/book_ii/dcbtst.isa \
 unisim/component/cxx/processor/powerpc/isa/book_ii/dcbz.isa \
 unisim/component/cxx/processor/powerpc/isa/book_ii/icbi.isa \
+unisim/component/cxx/processor/powerpc/isa/book_ii/icbt.isa \
 unisim/component/cxx/processor/powerpc/isa/book_iii_e/tlbsync.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/syscall/sc.isa \
 unisim/component/cxx/processor/powerpc/isa/book_iii_e/rfi.isa \
@@ -481,7 +482,6 @@ unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/nmaclhw.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/legacy_int_mac/nmaclhws.isa \
 unisim/component/cxx/processor/powerpc/isa/book_e/dccci.isa \
 unisim/component/cxx/processor/powerpc/isa/book_e/dcread.isa \
-unisim/component/cxx/processor/powerpc/isa/book_e/icbt.isa \
 unisim/component/cxx/processor/powerpc/isa/book_e/iccci.isa \
 unisim/component/cxx/processor/powerpc/isa/book_e/icread.isa \
 unisim/component/cxx/processor/powerpc/isa/book_ii/mbar.isa \
