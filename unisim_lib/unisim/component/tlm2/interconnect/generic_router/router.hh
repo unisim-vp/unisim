@@ -181,7 +181,7 @@ public:
 	 */
 	virtual bool BeginSetup();
 
-private:
+protected:
 	typedef typename TYPES::tlm_payload_type transaction_type;
 	typedef typename TYPES::tlm_phase_type   phase_type;
 	typedef tlm::tlm_sync_enum               sync_enum_type;

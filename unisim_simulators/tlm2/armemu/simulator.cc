@@ -38,14 +38,18 @@ bool debug_enabled;
 
 using namespace std;
 
+bool Simulator::enable_monitor = false;
+
 Simulator::Simulator(int argc, char **argv)
   : unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
   , cpu(0)
   , memory(0)
   , time(0)
   , host_time(0)
-  , linux_os(0)
+  , linux_os()
   , tee_memory_access_reporting(0)
+  , nirq_signal("nIRQm")
+  , nfiq_signal("nFIQm")
   , simulation_spent_time(0.0)
   , gdb_server(0)
   , inline_debugger(0)
@@ -55,23 +59,18 @@ Simulator::Simulator(int argc, char **argv)
   , param_enable_gdb_server(0)
   , enable_inline_debugger(false)
   , param_enable_inline_debugger(0)
-  , il1_power_estimator(0)
-  , dl1_power_estimator(0)
-  , enable_power_estimation(false)
-  , param_enable_power_estimation("enable-power-estimation", 0,
-                                  enable_power_estimation,
-                                  "Activate caches power estimation.")
-  , formula_caches_total_dynamic_energy(0)
-  , formula_caches_total_dynamic_power(0)
-  , formula_caches_total_leakage_power(0)
-  , formula_caches_total_power(0)
   , exit_status(0)
 {
+  if(enable_monitor)
+  {
+    enable_inline_debugger = false;
+    enable_gdb_server = false;
+  }
   cpu = new CPU("cpu");
   memory = new MEMORY("memory");
   time = new unisim::service::time::sc_time::ScTime("time");
   host_time = new unisim::service::time::host_time::HostTime("host-time");
-  linux_os = new LINUX_OS("linux-os");
+  linux_os = new ArmLinux32("linux-os");
 
   param_enable_gdb_server = new unisim::kernel::service::Parameter<bool>(
       "enable-gdb-server", 0,
@@ -85,64 +84,38 @@ Simulator::Simulator(int argc, char **argv)
       "Enable inline debugger.");
   if ( enable_inline_debugger )
     inline_debugger = new INLINE_DEBUGGER("inline-debugger");
-  if ( enable_power_estimation )
-  {
-    il1_power_estimator = new POWER_ESTIMATOR("il1-power-estimator");
-    dl1_power_estimator = new POWER_ESTIMATOR("dl1-power-estimator");
-    formula_caches_total_dynamic_energy =
-        new unisim::kernel::service::Formula<double> (
-            "caches-total-dynamic-energy", 0,
-            unisim::kernel::service::Formula<double>::OP_ADD,
-            &(*dl1_power_estimator)["dynamic-energy"],
-            &(*il1_power_estimator)["dynamic-energy"],
-            0,
-            "caches total dynamic energy (in J)");
-    formula_caches_total_dynamic_power =
-        new unisim::kernel::service::Formula<double> (
-            "caches-total-dynamic-power", 0,
-            unisim::kernel::service::Formula<double>::OP_ADD,
-            &(*dl1_power_estimator)["dynamic-power"],
-            &(*il1_power_estimator)["dynamic-power"],
-            0,
-            "caches total dynamic power (in J)");
-    formula_caches_total_leakage_power =
-        new unisim::kernel::service::Formula<double> (
-            "caches-total-leakage-power", 0,
-            unisim::kernel::service::Formula<double>::OP_ADD,
-            &(*dl1_power_estimator)["leakage-power"],
-            &(*il1_power_estimator)["leakage-power"],
-            0,
-            "caches total leakage power (in J)");
-    formula_caches_total_power =
-        new unisim::kernel::service::Formula<double> (
-            "caches-total-power", 0,
-            unisim::kernel::service::Formula<double>::OP_ADD,
-            formula_caches_total_dynamic_power,
-            formula_caches_total_leakage_power,
-            0,
-            "caches total (dynamic+leakage) power (in J)");
-  }
-
-	//  - debugger
-	debugger = new DEBUGGER("debugger");
-	//  - profiler
-	profiler = enable_inline_debugger ? new PROFILER("profiler") : 0;
-	//  - Tee Memory Access Reporting
-	tee_memory_access_reporting = 
-		(enable_gdb_server || enable_inline_debugger) ?
-			new TEE_MEMORY_ACCESS_REPORTING("tee-memory-access-reporting") :
-			0;
   
+  //  - debugger
+  debugger = new DEBUGGER("debugger");
+  //  - monitor
+  monitor = enable_monitor ? new MONITOR("monitor") : 0;
+  //  - profiler
+  profiler = enable_inline_debugger ? new PROFILER("profiler") : 0;
+  //  - Tee Memory Access Reporting
+  tee_memory_access_reporting = 
+    (enable_gdb_server || enable_inline_debugger) ?
+    new TEE_MEMORY_ACCESS_REPORTING("tee-memory-access-reporting") :
+    0;
+  
+  
+  nfiq_signal = true; 
+  nirq_signal = true; 
+  nrst_signal = true;
   
   // In Linux mode, the system is not entirely simulated.
   // This mode allows to run Linux applications without simulating all the peripherals.
 
   cpu->master_socket(memory->slave_sock);
+  cpu->nIRQm( nirq_signal );
+  cpu->nFIQm( nfiq_signal );
+  cpu->nRESETm( nrst_signal );
+
 
   // Connect debugger to CPU
   cpu->debug_control_import >> debugger->debug_control_export;
   cpu->instruction_counter_trap_reporting_import >> debugger->trap_reporting_export;
   cpu->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
+  cpu->memory_import >> memory->memory_export;
   debugger->disasm_import >> cpu->disasm_export;
   debugger->memory_import >> cpu->memory_export;
   debugger->registers_import >> cpu->registers_export;
@@ -179,6 +152,7 @@ Simulator::Simulator(int argc, char **argv)
     inline_debugger->backtrace_import >> debugger->backtrace_export;
     inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
 	inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
+	inline_debugger->subprogram_lookup_import >> debugger->subprogram_lookup_export;
     inline_debugger->profiling_import >> profiler->profiling_export;
   }
   else if(enable_gdb_server)
@@ -191,23 +165,36 @@ Simulator::Simulator(int argc, char **argv)
     gdb_server->memory_import >> debugger->memory_export;
     gdb_server->registers_import >> debugger->registers_export;
   }
+  else if(enable_monitor)
+  {
+    debugger->debug_event_listener_import >> monitor->debug_event_listener_export;
+    monitor->debug_event_trigger_import >> debugger->debug_event_trigger_export;
+    monitor->memory_import >> debugger->memory_export;
+    monitor->registers_import >> debugger->registers_export;
+    monitor->stmt_lookup_import >> debugger->stmt_lookup_export;
+    monitor->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
+    monitor->backtrace_import >> debugger->backtrace_export;
+    monitor->debug_info_loading_import >> debugger->debug_info_loading_export;
+	monitor->data_object_lookup_import >> debugger->data_object_lookup_export;
+	monitor->subprogram_lookup_import >> debugger->subprogram_lookup_export;
+  }
 
   // Connect everything
   cpu->linux_os_import >> linux_os->linux_os_export_;
   linux_os->memory_import_ >> cpu->memory_export;
   linux_os->memory_injection_import_ >> cpu->memory_injection_export;
   linux_os->registers_import_ >> cpu->registers_export;
-  // connecting power estimator
-  if ( enable_power_estimation )
-  {
-    cpu->icache.power_estimator_import >> il1_power_estimator->power_estimator_export;
-    cpu->icache.power_mode_import >> il1_power_estimator->power_mode_export;
-    cpu->dcache.power_estimator_import >> dl1_power_estimator->power_estimator_export;
-    cpu->dcache.power_mode_import >> dl1_power_estimator->power_mode_export;
+  // // connecting power estimator
+  // if ( enable_power_estimation )
+  // {
+  //   cpu->icache.power_estimator_import >> il1_power_estimator->power_estimator_export;
+  //   cpu->icache.power_mode_import >> il1_power_estimator->power_mode_export;
+  //   cpu->dcache.power_estimator_import >> dl1_power_estimator->power_estimator_export;
+  //   cpu->dcache.power_mode_import >> dl1_power_estimator->power_mode_export;
 
-    il1_power_estimator->time_import >> time->time_export;
-    dl1_power_estimator->time_import >> time->time_export;
-  }
+  //   il1_power_estimator->time_import >> time->time_export;
+  //   dl1_power_estimator->time_import >> time->time_export;
+  // }
 }
 
 Simulator::~Simulator()
@@ -224,8 +211,7 @@ Simulator::~Simulator()
   if ( debugger ) delete debugger;
   if ( profiler ) delete profiler;
   if ( tee_memory_access_reporting ) delete tee_memory_access_reporting;
-  if ( il1_power_estimator ) delete il1_power_estimator;
-  if ( dl1_power_estimator ) delete dl1_power_estimator;
+  if ( monitor ) delete monitor;
 }
 
 int
@@ -370,7 +356,7 @@ SimulationFinished() const
 
 unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 {
-	if(enable_inline_debugger)
+	if(enable_inline_debugger || enable_monitor)
 	{
 		SetVariable("debugger.parse-dwarf", true);
 	}
@@ -423,11 +409,12 @@ void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, 
 	sc_stop();
 	if(!asynchronous)
 	{
-		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		sc_process_handle h = sc_get_current_process_handle();
+		switch(h.proc_kind())
 		{
 			case SC_THREAD_PROC_: 
 			case SC_CTHREAD_PROC_:
-				wait();
+				sc_core::wait();
 				break;
 			default:
 				break;
@@ -473,13 +460,12 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   sim->SetVariable("linux-os.utsname-nodename","localhost");
   sim->SetVariable("linux-os.utsname-release", "2.6.27.35");
   sim->SetVariable("linux-os.utsname-version", "#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010");
-  sim->SetVariable("linux-os.utsname-machine", "armv5");
+  sim->SetVariable("linux-os.utsname-machine", "armv7");
   sim->SetVariable("linux-os.utsname-domainname","localhost");
   sim->SetVariable("linux-os.apply-host-environment", false);
   sim->SetVariable("linux-os.hwcap", "swp half fastmult");
 
-  sim->SetVariable("gdb-server.architecture-description-filename",
-                   "gdb_armv5l.xml");
+  sim->SetVariable("gdb-server.architecture-description-filename", "gdb_arm_with_neon.xml");
   sim->SetVariable("debugger.parse-dwarf", false);
   sim->SetVariable("debugger.dwarf-register-number-mapping-filename", "arm_eabi_dwarf_register_number_mapping.xml");
 
@@ -551,3 +537,9 @@ void Simulator::SigIntHandler(int signum)
 	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
 }
 #endif
+
+void Simulator::EnableMonitor(int (*_monitor_callback)(void))
+{
+	enable_monitor = true;
+	unisim::service::debug::monitor::MonitorBase::SetCallback(_monitor_callback);
+}

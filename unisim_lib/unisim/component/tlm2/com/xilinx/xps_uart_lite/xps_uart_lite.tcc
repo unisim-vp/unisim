@@ -497,13 +497,18 @@ void XPS_UARTLite<CONFIG>::GenerateOutput()
 template <class CONFIG>
 void XPS_UARTLite<CONFIG>::AlignToClock(sc_time& t)
 {
-	sc_dt::uint64 time_tu = t.value();
-	sc_dt::uint64 cycle_time_tu = cycle_time.value();
-	sc_dt::uint64 modulo = time_tu % cycle_time_tu;
-	if(!modulo) return; // already aligned
+// 	sc_dt::uint64 time_tu = t.value();
+// 	sc_dt::uint64 cycle_time_tu = cycle_time.value();
+// 	sc_dt::uint64 modulo = time_tu % cycle_time_tu;
+// 	if(!modulo) return; // already aligned
+// 
+// 	time_tu += cycle_time_tu - modulo;
+// 	t = sc_time(time_tu, false);
 
-	time_tu += cycle_time_tu - modulo;
-	t = sc_time(time_tu, false);
+	sc_time modulo(t);
+	modulo %= cycle_time;
+	if(modulo == SC_ZERO_TIME) return; // already aligned
+	t += cycle_time - modulo;
 }
 
 } // end of namespace xps_uart_lite

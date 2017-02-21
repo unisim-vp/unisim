@@ -34,6 +34,7 @@
 
 #include <unisim/component/cxx/processor/hcs12x/s12xgate.hh>
 #include <unisim/component/cxx/processor/hcs12x/xgate.hh>
+#include <unisim/util/inlining/inlining.hh>
 
 namespace unisim {
 namespace component {
@@ -41,12 +42,6 @@ namespace cxx {
 namespace processor {
 namespace s12xgate {
 
-
-#if (defined(__GNUC__) && (__GNUC__ >= 3))
-#define INLINE __attribute__((always_inline))
-#else
-#define INLINE
-#endif
 
 using unisim::util::debug::SimpleRegister;
 
@@ -95,8 +90,11 @@ XGATE::XGATE(const char *name, Object *parent):
 	, requires_finished_instruction_reporting(true)
 	, param_requires_finished_instruction_reporting("requires-finished-instruction-reporting", this, requires_finished_instruction_reporting)
 
-	, trace_enable(false)
-	, param_trace_enable("trace-enabled", this, trace_enable)
+	, enable_trace(false)
+	, param_enable_trace("enable-trace", this, enable_trace)
+
+	, enable_file_trace(false)
+	, param_enable_file_trace("enable-file-trace", this, enable_file_trace)
 
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled, "")
@@ -155,7 +153,7 @@ XGATE::XGATE(const char *name, Object *parent):
 	stat_load_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	stat_store_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
-	for (uint8_t i=0; i<XGATE_SIZE; i++) {
+	for (unsigned int i=0; i<XGATE_SIZE; i++) {
 		param_software_channel_id.SetFormat(unisim::kernel::service::VariableBase::FMT_HEX);
 		param_software_channel_id.SetMutable(true);
 	}
@@ -175,12 +173,13 @@ XGATE::XGATE(const char *name, Object *parent):
 	xgif_register[6] = 0x0000;
 	xgif_register[7] = 0x0000;
 
+	lastPC = 0;
 }
 
 XGATE::~XGATE()
 {
 	// Release registers_registry
-	map<string, unisim::util::debug::Register *>::iterator reg_iter;
+	map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
 
 	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
 	{
@@ -196,6 +195,7 @@ XGATE::~XGATE()
 
 	if (logger) { delete logger; logger = NULL;}
 
+	if (trace.is_open()) { trace.close(); }
 
 }
 
@@ -203,17 +203,17 @@ XGATE::~XGATE()
 /* Verbose methods (protected)                          START */
 /**************************************************************/
 
-inline INLINE
+inline ALWAYS_INLINE
 bool XGATE::VerboseSetup() {
 	return (debug_enabled && verbose_setup);
 }
 
-inline INLINE
+inline ALWAYS_INLINE
 bool XGATE::VerboseStep() {
 	return (debug_enabled && verbose_step);
 }
 
-inline INLINE
+inline ALWAYS_INLINE
 void XGATE::VerboseDumpRegs() {
 
 	*logger << "\t- XGMCTL" << " = 0x" << std::hex << xgmctl_register << std::dec; //2-bytes
@@ -244,7 +244,7 @@ void XGATE::VerboseDumpRegs() {
 
 }
 
-inline INLINE
+inline ALWAYS_INLINE
 void XGATE::VerboseDumpRegsStart() {
 	if(debug_enabled && verbose_dump_regs_start) {
 		*logger << DebugInfo
@@ -254,7 +254,7 @@ void XGATE::VerboseDumpRegsStart() {
 	}
 }
 
-inline INLINE
+inline ALWAYS_INLINE
 void XGATE::VerboseDumpRegsEnd() {
 	if(debug_enabled && verbose_dump_regs_end) {
 		*logger << DebugInfo
@@ -476,6 +476,10 @@ bool XGATE::BeginSetup() {
 	extended_registers_registry.push_back(xgr7_var);
 	xgr7_var->setCallBack(this, XGR7, &CallBackObject::write, &CallBackObject::read);
 
+	if (enable_file_trace) {
+		trace.open("xgate_trace.txt");
+	}
+
 	Reset();
 
 	return (true);
@@ -538,13 +542,13 @@ void XGATE::Sync()
 
 Decoder decoder;
 
-uint8_t XGATE::step()
+unsigned int XGATE::step()
 {
 
 	uint8_t 	buffer[MAX_INS_SIZE];
 
 	Operation 	*op;
-	uint8_t	opCycles = 0;
+	unsigned int	opCycles = 0;
 
 	try
 	{
@@ -663,38 +667,30 @@ uint8_t XGATE::step()
 
 		setXGPC(getXGPC() + (insn_length/8));
 
-		if (trace_enable) {
+		if (enable_trace) {
 			stringstream disasm_str;
 			stringstream ctstr;
 
-			op->disasm(disasm_str);
-
 			ctstr << op->GetEncoding();
 
-			*logger << DebugInfo << "Cycles = " << cycles_counter
-				<< " : Time = " << (Object::GetSimulator()->GetSimTime())
+			disasm_str << "Cycles = " << std::dec << cycles_counter
+				<< " : Time = " << std::dec << (Object::GetSimulator()->GetSimTime())
 				<< " : PC = 0x" << std::hex << lastPC << std::dec << " : "
-				<< getFunctionFriendlyName(lastPC) << " : "
-				<< disasm_str.str()
-				<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) "
-				<< EndDebugInfo	<< std::endl;
+				<< getFunctionFriendlyName(lastPC) << " : ";
+
+			op->disasm(disasm_str);
+
+			disasm_str	<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) "
+				<< std::endl;
+
+			if (enable_file_trace) {
+				trace << disasm_str.str();
+			} else {
+				std::cout << disasm_str.str();
+			}
 		}
 
 		op->execute(this);
-
-		if (trace_enable && debug_enabled) {
-			std::cout << "CCR" << " = " << std::hex << currentRegisterBank->getCCR()->toString() << std::dec; // 1-bytes
-			std::cout << "\t- XGR0" << " = 0x" << std::hex << currentRegisterBank->getXGRx(0) << std::dec; // 2-bytes
-			std::cout << "\t- XGR1" << " = 0x" << std::hex << currentRegisterBank->getXGRx(1) << std::dec; // 2-bytes
-			std::cout << "\t- XGR2" << " = 0x" << std::hex << currentRegisterBank->getXGRx(2) << std::dec; // 2-bytes
-			std::cout << "\t- XGR3" << " = 0x" << std::hex << currentRegisterBank->getXGRx(3) << std::dec; // 2-bytes
-			std::cout << "\t- XGR4" << " = 0x" << std::hex << currentRegisterBank->getXGRx(4) << std::dec; // 2-bytes
-			std::cout << "\t- XGR5" << " = 0x" << std::hex << currentRegisterBank->getXGRx(5) << std::dec; // 2-bytes
-			std::cout << "\t- XGR6" << " = 0x" << std::hex << currentRegisterBank->getXGRx(6) << std::dec; // 2-bytes
-			std::cout << "\t- XGR7" << " = 0x" << std::hex << currentRegisterBank->getXGRx(7) << std::dec; // 2-bytes
-			std::cout << std::endl;
-
-		}
 
 		opCycles = op->getCycles();
 
@@ -729,7 +725,7 @@ uint8_t XGATE::step()
 
 }
 
-void XGATE::fetchInstruction(address_t addr, uint8_t* ins, uint8_t nByte)
+void XGATE::fetchInstruction(address_t addr, uint8_t* ins, unsigned int nByte)
 {
 
 	MMC_DATA mmc_data;
@@ -771,7 +767,7 @@ void XGATE::riseErrorCondition() {
 	state = STOP;
 }
 
-bool XGATE::lockSemaphore(TOWNER::OWNER owner, uint8_t index) {
+bool XGATE::lockSemaphore(TOWNER::OWNER owner, unsigned int index) {
 	if (semphore[index].lock(owner)) {
 		if (owner == TOWNER::CPU12X) {
 			xgsem_register = xgsem_register | (1 << index);
@@ -785,7 +781,7 @@ bool XGATE::lockSemaphore(TOWNER::OWNER owner, uint8_t index) {
 	return (false);
 }
 
-bool XGATE::unlockSemaphore(TOWNER::OWNER owner, uint8_t index) {
+bool XGATE::unlockSemaphore(TOWNER::OWNER owner, unsigned int index) {
 	if (semphore[index].unlock(owner)) {
 		xgsem_register = xgsem_register & ~(1 << index);
 		return (true);
@@ -811,7 +807,7 @@ void XGATE::RequiresFinishedInstructionReporting(bool report)
 
 bool XGATE::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr < (baseAddress+64))) {
+	if ((addr >= baseAddress) && (addr < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		if (size == 0) {
 			return (true);
@@ -978,7 +974,7 @@ bool XGATE::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
 bool XGATE::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr < (baseAddress+64))) {
+	if ((addr >= baseAddress) && (addr < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		if (size == 0) {
 			return (true);
@@ -1202,7 +1198,7 @@ bool XGATE::read(unsigned int offset, const void *buffer, unsigned int data_leng
 
 		default: {
 			if ((offset >= XGIF_7F_70) && (offset <= (XGIF_0F_00 + 1))) {
-				uint8_t index = (offset - XGIF_7F_70)/2;
+				unsigned int index = (offset - XGIF_7F_70)/2;
 				if (index < 2) {
 					*((uint16_t *) buffer) = Host2BigEndian(xgif_register[index] & 0x01FF);
 				}
@@ -1231,7 +1227,7 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 			// control bits can only be set or cleared if a "1" is written to its mask bit in the same register access.
 			uint16_t mask = val >> 8;
 
-			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
+			for (unsigned int i=0,j=1; i<8; i++,j=j*2) {
 				if ((mask & j) != 0) {
 					if ((val & j) != 0) {
 						xgmctl_register = xgmctl_register | j;
@@ -1305,7 +1301,7 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 			uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 			uint16_t mask = val >> 8;
 
-			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
+			for (unsigned int i=0,j=1; i<8; i++,j=j*2) {
 				if ((mask & j) != 0) {
 					if ((val & j) != 0) {
 						xgswt_register = xgswt_register | j;
@@ -1327,7 +1323,7 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 			uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 			uint16_t mask = val >> 8;
 
-			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
+			for (unsigned int i=0,j=1; i<8; i++,j=j*2) {
 				if ((mask & j) != 0) {
 					if ((val & j) != 0) {
 						lockSemaphore(TOWNER::CPU12X, i);

@@ -59,7 +59,7 @@
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
 
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
@@ -102,7 +102,7 @@ using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using unisim::component::cxx::processor::hcs12x::address_t;
@@ -139,6 +139,8 @@ public:
 						PBFLG, PA3H, PA2H, PA1H, PA0H, MCCNT_HIGH, MCCNT_LOW,
 						TC0H_HIGH, TC0H_LOW, TC1H_HIGH, TC1H_LOW,
 						TC2H_HIGH, TC2H_LOW, TC3H_HIGH, TC3H_LOW};
+
+	static const unsigned int MEMORY_MAP_SIZE = 64;
 
 	//=========================================================
 	//=                MODULE INTERFACE                       =
@@ -184,7 +186,7 @@ public:
 	inline void enterFreezeMode();
 	inline void exitFreezeMode();
 
-	void assertInterrupt(uint8_t interrupt_offset);
+	void assertInterrupt(unsigned int interrupt_offset);
 	void updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 	inline void latchToHoldingRegisters();
@@ -228,6 +230,11 @@ public:
 	 * @return A pointer to the RegisterInterface corresponding to name.
 	 */
     virtual Register *GetRegister(const char *name);
+
+    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+    {
+    	// TODO
+    }
 
 	//=====================================================================
 	//=             registers setters and getters                         =
@@ -372,23 +379,23 @@ private:
 	// Enhanced Capture Timer Channel 6 : IVBR + 0xE2
 	// Enhanced Capture Timer Channel 7 : IVBR + 0xE0
 
-	uint8_t offset_channel0_interrupt;
-	Parameter<uint8_t> param_offset_channel0_interrupt;
+	unsigned int offset_channel0_interrupt;
+	Parameter<unsigned int> param_offset_channel0_interrupt;
 
-	uint8_t offset_timer_overflow_interrupt;
-	Parameter<uint8_t> param_offset_timer_overflow_interrupt;
+	unsigned int offset_timer_overflow_interrupt;
+	Parameter<unsigned int> param_offset_timer_overflow_interrupt;
 
-	uint8_t pulse_accumulatorA_overflow_interrupt;
-	Parameter<uint8_t> param_pulse_accumulatorA_overflow_interrupt;
+	unsigned int pulse_accumulatorA_overflow_interrupt;
+	Parameter<unsigned int> param_pulse_accumulatorA_overflow_interrupt;
 
-	uint8_t pulse_accumulatorB_overflow_interrupt;
-	Parameter<uint8_t> param_pulse_accumulatorB_overflow_interrupt;
+	unsigned int pulse_accumulatorB_overflow_interrupt;
+	Parameter<unsigned int> param_pulse_accumulatorB_overflow_interrupt;
 
-	uint8_t pulse_accumulatorA_input_edge_interrupt;
-	Parameter<uint8_t> param_pulse_accumulatorA_input_edge_interrupt;
+	unsigned int pulse_accumulatorA_input_edge_interrupt;
+	Parameter<unsigned int> param_pulse_accumulatorA_input_edge_interrupt;
 
-	uint8_t modulus_counter_interrupt;
-	Parameter<uint8_t> param_modulus_counter_interrupt;
+	unsigned int modulus_counter_interrupt;
+	Parameter<unsigned int> param_modulus_counter_interrupt;
 
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;

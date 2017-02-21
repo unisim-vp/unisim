@@ -528,7 +528,7 @@ TBuiltDouble<TypeTraits>::setFloat(const FloatConversion& fcValue, StatusAndCont
                };
             };
          };
-         for (register int uIndex = (fcValue.querySizeExponent()-1)/(8*sizeof(unsigned int)); 
+         for (register int uIndex = (bitSizeMantissa()-1)/(8*sizeof(unsigned int)); 
                uIndex >= 0; --uIndex)
             biMantissa[uIndex] = fcmMantissa[uIndex];
          biMantissa.normalize();
@@ -553,7 +553,7 @@ TBuiltDouble<TypeTraits>::setFloat(const FloatConversion& fcValue, StatusAndCont
             }
             else
                scfFlags.setUnderflow();
-            for (register int uIndex = (fcValue.querySizeExponent()-1)/(8*sizeof(unsigned int)); 
+            for (register int uIndex = (bitSizeMantissa()-1)/(8*sizeof(unsigned int)); 
                   uIndex >= 0; --uIndex)
                biMantissa[uIndex] = fcmMantissa[uIndex];
             biMantissa.normalize();

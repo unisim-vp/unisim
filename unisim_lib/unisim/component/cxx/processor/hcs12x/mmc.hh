@@ -46,7 +46,7 @@
 #include "unisim/service/interfaces/registers.hh"
 
 #include "unisim/util/debug/simple_register.hh"
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 #include "unisim/util/singleton/singleton.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
@@ -73,7 +73,7 @@ using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 
 using unisim::util::debug::SimpleRegister;
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 using unisim::util::Singleton;
 
 using unisim::component::cxx::processor::hcs12x::S12MPU_IF;
@@ -96,10 +96,10 @@ public:
 	//=   MEMORY MAP (Logical Memories Offsets) and RESET VALUES OF MMC REGISTERS  =
 	//==============================================================================
 
-	static const uint8_t DIRECT_ADDRESS_SIZE	= 8;	// Number of bits used by the CPU to address DIRECT (max=8)
-	static const uint8_t RAM_ADDRESS_SIZE		= 12;	// Number of bits used by the CPU to address RAM (max=16)
-	static const uint8_t EEPROM_ADDRESS_SIZE	= 10;	// Number of bits used by the CPU to address EEPROM (max=16)
-	static const uint8_t FLASH_ADDRESS_SIZE		= 14;	// Number of bits used by the CPU to address FLASH (max=16)
+	static const unsigned int DIRECT_ADDRESS_SIZE	= 8;	// Number of bits used by the CPU to address DIRECT (max=8)
+	static const unsigned int RAM_ADDRESS_SIZE		= 12;	// Number of bits used by the CPU to address RAM (max=16)
+	static const unsigned int EEPROM_ADDRESS_SIZE	= 10;	// Number of bits used by the CPU to address EEPROM (max=16)
+	static const unsigned int FLASH_ADDRESS_SIZE		= 14;	// Number of bits used by the CPU to address FLASH (max=16)
 
 	static const uint16_t DIRECT_PAGE_SIZE	= 0x100;
 	static const uint16_t RAM_PAGE_SIZE		= 0x1000;
@@ -168,7 +168,7 @@ public:
 
 	enum {MMCCTL0,	MODE, GPAGE, DIRECT, MMCCTL1, RPAGE, EPAGE, PPAGE, RAMWPC, RAMXGU, RAMSHL, RAMSHU};
 
-	static const uint8_t MMC_MEMMAP_SIZE = 12;
+	static const unsigned int MMC_MEMMAP_SIZE = 12;
 	static address_t MMC_REGS_ADDRESSES[MMC_MEMMAP_SIZE];
 
 
@@ -268,6 +268,11 @@ public:
 	 */
     virtual Register *GetRegister(const char *name);
 
+
+    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+    {
+    	// TODO
+    }
 
 	//=====================================================================
 	//=             Internal Registers Access methods                     =

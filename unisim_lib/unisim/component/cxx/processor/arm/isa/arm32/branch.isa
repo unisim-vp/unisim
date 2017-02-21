@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
 /**********************************************
@@ -49,9 +49,10 @@ b.disasm = {
 };
 
 b.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
   
-  cpu.Branch( cpu.GetGPR(cpu.PC_reg) + imm );
+  typedef typename ARCH::U32 U32;
+  cpu.Branch( cpu.GetGPR( 15 ) + U32(imm) );
 };
 
 /*
@@ -69,10 +70,11 @@ bl.disasm = {
 };
 
 bl.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
   
-  cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() );
-  cpu.Branch( cpu.GetGPR(cpu.PC_reg) + imm );
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR( cpu.LR_reg, cpu.GetNIA() );
+  cpu.Branch( cpu.GetGPR( 15 ) + U32(imm) );
 };
 
 /*
@@ -83,7 +85,7 @@ bl.execute = {
  * bx (Branch and Exchange) instruction
  */
 
-{ ARCH::insns4T }: \
+{ ARCH::Config::insns4T }: \
 op bx( cond[4]: 0b00010010[8]: 0b1111[4]: 0b1111[4]: 0b1111[4]: 0b0001[4]: rm[4] );
 
 bx.disasm = {
@@ -91,7 +93,7 @@ bx.disasm = {
 };
 
 bx.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
   
   cpu.BranchExchange( cpu.GetGPR(rm) );
 };
@@ -108,7 +110,7 @@ bx.execute = {
  * specified by a register as though it were a BX instruction.
  */
 
-{ ARCH::insns5J }:                                      \
+{ ARCH::Config::insns5J }:                                      \
 op bxj( cond[4]: 0b00010010[8]: 0b1111[4]: 0b1111[4]: 0b1111[4]: 0b0010[4]: rm[4] );
 
 bxj.disasm = {
@@ -126,7 +128,7 @@ bxj.disasm = {
  * changes instruction set from Thumb to ARM.
  */
 
-{ ARCH::insns5T }: \
+{ ARCH::Config::insns5T }: \
 op blx_pcrel( 0b1111101[7]: shl<1> im0[1]: shl<2> sext<32> im1[24] );
 blx_pcrel.var imm : {uint32_t} = {im1|im0};
 
@@ -135,11 +137,12 @@ blx_pcrel.disasm = {
 };
 
 blx_pcrel.execute = {
-  cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() );
-  cpu.BranchExchange( (cpu.GetGPR(cpu.PC_reg) + imm) | 1 );
+  typedef typename ARCH::U32 U32;
+  cpu.SetGPR( cpu.LR_reg, cpu.GetNIA() );
+  cpu.BranchExchange( (cpu.GetGPR( 15 ) + U32(imm)) | U32(1) );
 };
 
-{ ARCH::insns5T }: \
+{ ARCH::Config::insns5T }: \
 op blx_reg( cond[4]: 0b00010010[8]: 0b1111[4]: 0b1111[4]: 0b1111[4]: 0b0011[4]: rm[4] );
 
 blx_reg.disasm = {
@@ -147,10 +150,11 @@ blx_reg.disasm = {
 };
 
 blx_reg.execute = {
-  if (not CheckCondition(cpu, cond)) return;
+  if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
   
-  uint32_t rm_value = cpu.GetGPR(rm);
-  cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() );
+  typedef typename ARCH::U32 U32;
+  U32 rm_value = cpu.GetGPR(rm);
+  cpu.SetGPR( cpu.LR_reg, cpu.GetNIA() );
   cpu.BranchExchange( rm_value );
 };
 

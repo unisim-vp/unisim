@@ -199,7 +199,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 		return false;
 	}
 	
-	ifstream is(filename.c_str(), ifstream::in | ifstream::binary);
+	std::ifstream is(filename.c_str(), std::ifstream::in | std::ifstream::binary);
 	if(is.fail())
 	{
 		logger << DebugError << "Can't open executable \"" << filename << "\"" << EndDebugError;
@@ -208,7 +208,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 	
 	logger << DebugInfo << "Opening \"" << filename << "\"" << EndDebugInfo;
 
-	if(is.seekg(0, ios::beg).fail())
+	if(is.seekg(0, std::ios::beg).fail())
 	{
 		return false;
 	}
@@ -229,8 +229,8 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 	if(!file_handler)
 	{
 		logger << DebugError << "Can't handle format of \"" << filename << "\"." << EndDebugError;
-		logger << DebugInfo << "Supported formats are:" << endl;
-		stringstream sstr;
+		logger << DebugInfo << "Supported formats are:" << std::endl;
+		std::stringstream sstr;
 		file_handler_registry.DumpFileHandlers(sstr);
 		logger << sstr.str() << EndDebugInfo;
 		return false;
@@ -272,7 +272,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 
 	if(dump_headers)
 	{
-		stringstream sstr;
+		std::stringstream sstr;
 		file->DumpFileHeader(sstr);
 		logger << DebugInfo << sstr.str() << EndDebugInfo;
 	}
@@ -314,11 +314,11 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 
 		entry_point = file->GetEntryPoint();
 
-		logger << DebugInfo << "Program entry point at 0x" << hex << entry_point << dec << EndDebugInfo;
+		logger << DebugInfo << "Program entry point at 0x" << std::hex << entry_point << std::dec << EndDebugInfo;
 
 		if(dump_headers)
 		{
-			stringstream sstr;
+			std::stringstream sstr;
 			file->DumpAoutHeader(sstr);
 			logger << DebugInfo << sstr.str() << EndDebugInfo;
 		}
@@ -372,7 +372,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 
 		if(dump_headers)
 		{
-			stringstream sstr;
+			std::stringstream sstr;
 			section->DumpHeader(sstr);
 			logger << DebugInfo << sstr.str() << EndDebugInfo;
 		}
@@ -395,7 +395,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 					logger << DebugInfo << "Loading section " << section_name << " (" << (section_size * memory_atom_size) << " bytes)" << EndDebugInfo;
 					section_content = calloc(section_size, memory_atom_size);
 
-					if(!section_content || is.seekg(section_content_file_ptr, ios::beg).fail() || is.read((char *) section_content, section_size * memory_atom_size).fail())
+					if(!section_content || is.seekg(section_content_file_ptr, std::ios::beg).fail() || is.read((char *) section_content, section_size * memory_atom_size).fail())
 					{
 						logger << DebugError << "Can't load section " << section_name << EndDebugError;
 						if(section_content)
@@ -416,7 +416,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 		if(section_type == Section<MEMORY_ADDR>::ST_STACK)
 		{
 			blob->SetStackBase((MEMORY_ADDR) section_addr * memory_atom_size);
-			logger << DebugInfo << "Stack base at 0x" << hex << section_addr << dec << EndDebugInfo;
+			logger << DebugInfo << "Stack base at 0x" << std::hex << section_addr << std::dec << EndDebugInfo;
 		}
 
 		typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Type blob_section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_UNKNOWN;
@@ -500,7 +500,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 
 		void *symtab_content = calloc(symtab_size, 1);
 
-		if(!symtab_content || is.seekg(symtab_file_ptr, ios::beg).fail() || is.read((char *) symtab_content, symtab_size).fail())
+		if(!symtab_content || is.seekg(symtab_file_ptr, std::ios::beg).fail() || is.read((char *) symtab_content, symtab_size).fail())
 		{
 			logger << DebugError << "Can't load symbol table" << EndDebugError;
 			success = false;
@@ -713,7 +713,7 @@ FileHandler<MEMORY_ADDR> *FileHandlerRegistry<MEMORY_ADDR>::operator [] (uint16_
 }
 
 template <class MEMORY_ADDR>
-void FileHandlerRegistry<MEMORY_ADDR>::DumpFileHandlers(ostream& os)
+void FileHandlerRegistry<MEMORY_ADDR>::DumpFileHandlers(std::ostream& os)
 {
 	typename std::map<uint16_t, FileHandler<MEMORY_ADDR> *>::iterator it;
 
@@ -721,7 +721,7 @@ void FileHandlerRegistry<MEMORY_ADDR>::DumpFileHandlers(ostream& os)
 	{
 		FileHandler<MEMORY_ADDR> *file_handler = it->second;
 		if(file_handler != 0)
-			os << " - " << file_handler->What() << endl;
+			os << " - " << file_handler->What() << std::endl;
 	}
 }
 

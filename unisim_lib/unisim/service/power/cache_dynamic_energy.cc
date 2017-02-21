@@ -54,7 +54,7 @@ CacheDynamicEnergy ::
 
 double
 CacheDynamicEnergy ::
-GetDynamicEnergy()
+GetDynamicEnergy() const
 {
 	map<CacheProfileKey, CacheProfile *>::const_iterator prof_iter;
 	double dyn_energy = 0.0;

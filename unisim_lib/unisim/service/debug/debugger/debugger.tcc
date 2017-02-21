@@ -202,15 +202,15 @@ typename unisim::service::interfaces::DebugControl<ADDRESS>::DebugCommand Debugg
 }
 
 template <class ADDRESS>
-bool Debugger<ADDRESS>::Listen(const typename unisim::util::debug::Event<ADDRESS>& event)
+bool Debugger<ADDRESS>::Listen(const typename unisim::util::debug::Event<ADDRESS> *event)
 {
-	switch(event.GetType())
+	switch(event->GetType())
 	{
 		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
 			{
-				const typename unisim::util::debug::Breakpoint<ADDRESS> *brkp = (const typename unisim::util::debug::Breakpoint<ADDRESS> *) &event;
+				const typename unisim::util::debug::Breakpoint<ADDRESS> *brkp = (const typename unisim::util::debug::Breakpoint<ADDRESS> *) event;
 				
-				if(!breakpoint_registry.SetBreakpoint(*brkp)) return false;
+				if(!breakpoint_registry.SetBreakpoint(brkp)) return false;
 				
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
@@ -219,9 +219,9 @@ bool Debugger<ADDRESS>::Listen(const typename unisim::util::debug::Event<ADDRESS
 			break;
 		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT:
 			{
-				const typename unisim::util::debug::Watchpoint<ADDRESS> *wp = (const typename unisim::util::debug::Watchpoint<ADDRESS> *) &event;
+				const typename unisim::util::debug::Watchpoint<ADDRESS> *wp = (const typename unisim::util::debug::Watchpoint<ADDRESS> *) event;
 				
-				if(!watchpoint_registry.SetWatchpoint(*wp)) return false;
+				if(!watchpoint_registry.SetWatchpoint(wp)) return false;
 				
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -236,15 +236,15 @@ bool Debugger<ADDRESS>::Listen(const typename unisim::util::debug::Event<ADDRESS
 }
 
 template <class ADDRESS>
-bool Debugger<ADDRESS>::Unlisten(const typename unisim::util::debug::Event<ADDRESS>& event)
+bool Debugger<ADDRESS>::Unlisten(const typename unisim::util::debug::Event<ADDRESS> *event)
 {
-	switch(event.GetType())
+	switch(event->GetType())
 	{
 		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
 			{
-				const typename unisim::util::debug::Breakpoint<ADDRESS> *brkp = (const typename unisim::util::debug::Breakpoint<ADDRESS> *) &event;
+				const typename unisim::util::debug::Breakpoint<ADDRESS> *brkp = (const typename unisim::util::debug::Breakpoint<ADDRESS> *) event;
 				
-				if(!breakpoint_registry.RemoveBreakpoint(*brkp)) return false;
+				if(!breakpoint_registry.RemoveBreakpoint(brkp)) return false;
 				
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
@@ -253,9 +253,9 @@ bool Debugger<ADDRESS>::Unlisten(const typename unisim::util::debug::Event<ADDRE
 			break;
 		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT:
 			{
-				const typename unisim::util::debug::Watchpoint<ADDRESS> *wp = (const typename unisim::util::debug::Watchpoint<ADDRESS> *) &event;
+				const typename unisim::util::debug::Watchpoint<ADDRESS> *wp = (const typename unisim::util::debug::Watchpoint<ADDRESS> *) event;
 				
-				if(!watchpoint_registry.RemoveWatchpoint(*wp)) return false;
+				if(!watchpoint_registry.RemoveWatchpoint(wp)) return false;
 				
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -275,41 +275,41 @@ void Debugger<ADDRESS>::EnumerateListenedEvents(std::list<const unisim::util::de
 	lst.clear();
 	if((ev_type == unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN) || (ev_type == unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT))
 	{
-		const std::list<unisim::util::debug::Breakpoint<ADDRESS> >& breakpoints = breakpoint_registry.GetBreakpoints();
-		typename std::list<unisim::util::debug::Breakpoint<ADDRESS> >::const_iterator brkp_it;
+		const std::list<const unisim::util::debug::Breakpoint<ADDRESS> *>& breakpoints = breakpoint_registry.GetBreakpoints();
+		typename std::list<const unisim::util::debug::Breakpoint<ADDRESS> *>::const_iterator brkp_it;
 		for(brkp_it = breakpoints.begin(); brkp_it != breakpoints.end(); brkp_it++)
 		{
-			lst.push_back(&(*brkp_it));
+			lst.push_back(*brkp_it);
 		}
 	}
 	if((ev_type == unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN) || (ev_type == unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT))
 	{
-		const std::list<unisim::util::debug::Watchpoint<ADDRESS> >& watchpoints = watchpoint_registry.GetWatchpoints();
-		typename std::list<unisim::util::debug::Watchpoint<ADDRESS> >::const_iterator wt_it;
+		const std::list<const unisim::util::debug::Watchpoint<ADDRESS> *>& watchpoints = watchpoint_registry.GetWatchpoints();
+		typename std::list<const unisim::util::debug::Watchpoint<ADDRESS> *>::const_iterator wt_it;
 		for(wt_it = watchpoints.begin(); wt_it != watchpoints.end(); wt_it++)
 		{
-			lst.push_back(&(*wt_it));
+			lst.push_back(*wt_it);
 		}
 	}
 }
 
 template <class ADDRESS>
-bool Debugger<ADDRESS>::IsEventListened(const unisim::util::debug::Event<ADDRESS>& event) const
+bool Debugger<ADDRESS>::IsEventListened(const unisim::util::debug::Event<ADDRESS> *event) const
 {
-	switch(event.GetType())
+	switch(event->GetType())
 	{
 		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
 			{
-				const typename unisim::util::debug::Breakpoint<ADDRESS> *brkp = (const typename unisim::util::debug::Breakpoint<ADDRESS> *) &event;
+				const typename unisim::util::debug::Breakpoint<ADDRESS> *brkp = (const typename unisim::util::debug::Breakpoint<ADDRESS> *) event;
 				
-				return breakpoint_registry.HasBreakpoint(*brkp);
+				return breakpoint_registry.HasBreakpoint(brkp);
 			}
 			break;
 		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT:
 			{
-				const typename unisim::util::debug::Watchpoint<ADDRESS> *wp = (const typename unisim::util::debug::Watchpoint<ADDRESS> *) &event;
+				const typename unisim::util::debug::Watchpoint<ADDRESS> *wp = (const typename unisim::util::debug::Watchpoint<ADDRESS> *) event;
 				
-				return watchpoint_registry.HasWatchpoint(*wp);
+				return watchpoint_registry.HasWatchpoint(wp);
 			}
 			break;
 		case unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN:
@@ -343,9 +343,17 @@ bool Debugger<ADDRESS>::WriteMemory(ADDRESS addr, const void *buffer, uint32_t s
 }
 
 template <class ADDRESS>
-unisim::util::debug::Register *Debugger<ADDRESS>::GetRegister(const char *name)
+unisim::service::interfaces::Register *Debugger<ADDRESS>::GetRegister(const char *name)
 {
 	return registers_import ? registers_import->GetRegister(name) : 0;
+}
+
+template <class ADDRESS>
+void Debugger<ADDRESS>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+	if (not registers_import)
+		return;
+	registers_import->ScanRegisters( scanner );
 }
 
 template <class ADDRESS>
@@ -357,12 +365,17 @@ void Debugger<ADDRESS>::ReportMemoryAccess(unisim::util::debug::MemoryAccessType
 		
 		if(!watchpoint) throw std::runtime_error("Internal error");
 		
-		if(debug_event_listener_import) debug_event_listener_import->OnDebugEvent(*watchpoint);
+		if(debug_event_listener_import) debug_event_listener_import->OnDebugEvent(watchpoint);
 	}
 }
 
 template <class ADDRESS>
-void Debugger<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
+void Debugger<ADDRESS>::ReportCommitInstruction(ADDRESS addr)
+{
+}
+
+template <class ADDRESS>
+void Debugger<ADDRESS>::ReportFetchInstruction(ADDRESS next_addr)
 {
 	if(breakpoint_registry.HasBreakpoint(next_addr))
 	{
@@ -370,7 +383,7 @@ void Debugger<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_add
 		
 		if(!breakpoint) throw std::runtime_error("Internal error");
 		
-		if(debug_event_listener_import) debug_event_listener_import->OnDebugEvent(*breakpoint);
+		if(debug_event_listener_import) debug_event_listener_import->OnDebugEvent(breakpoint);
 	}
 }
 

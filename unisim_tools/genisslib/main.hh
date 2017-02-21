@@ -38,11 +38,8 @@ struct Opts {
   char const*      depfilename;
   unsigned int     minwordsize;
   bool             sourcelines;
+  bool             privatemembers;
   bool             specialization;
-
-  static Opts&     shared();
-  
-  static Opts*     s_shared;
 };
 
 #endif // __MAIN_HH__

@@ -199,7 +199,7 @@ public:
 	friend ostream& operator << <CONFIG> (ostream& os, const MMUAccess<CONFIG>& mmu_access);
 };
 
-class TimeBaseRegisterInterface : public unisim::util::debug::Register
+class TimeBaseRegisterInterface : public unisim::service::interfaces::Register
 {
 public:
 	typedef enum
@@ -927,7 +927,8 @@ public:
 	//=                        Debugging stuffs                           =
 	//=====================================================================
 
-	virtual unisim::util::debug::Register *GetRegister(const char *name);
+	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 	virtual string Disasm(typename CONFIG::address_t addr, typename CONFIG::address_t& next_addr);
 	virtual const char *GetArchitectureName() const;
 	string GetObjectFriendlyName(typename CONFIG::address_t addr);
@@ -1136,7 +1137,7 @@ private:
 	uint64_t num_floating_point_unavailable_interrupts;
 	uint64_t num_auxiliary_processor_unavailable_interrupts;
 
-	map<string, unisim::util::debug::Register *> registers_registry;       //!< Every CPU register interfaces
+	map<string, unisim::service::interfaces::Register *> registers_registry;       //!< Every CPU register interfaces
 	std::vector<unisim::kernel::service::VariableBase *> registers_registry2;       //!< Every CPU register
 	uint64_t instruction_counter;                              //!< Number of executed instructions
 	bool fp32_estimate_inv_warning;

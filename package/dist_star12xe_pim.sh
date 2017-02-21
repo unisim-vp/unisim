@@ -30,7 +30,6 @@ else
 	exit -1
 fi
 
-
 DEST_DIR=$1
 UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
 UNISIM_LIB_DIR=${MY_DIR}/../unisim_lib
@@ -138,7 +137,7 @@ unisim/util/debug/breakpoint_registry_32.cc \
 unisim/util/debug/breakpoint_registry_64.cc \
 unisim/util/debug/stmt_32.cc \
 unisim/util/debug/stmt_64.cc \
-unisim/util/debug/data_object.cc \
+unisim/util/debug/type.cc \
 unisim/util/debug/dwarf/abbrev.cc \
 unisim/util/debug/dwarf/attr.cc \
 unisim/util/debug/dwarf/class.cc \
@@ -167,6 +166,7 @@ unisim/util/loader/coff_loader/coff_loader32.cc \
 unisim/util/loader/coff_loader/coff_loader64.cc \
 unisim/util/endian/endian.cc \
 unisim/util/lexer/lexer.cc \
+unisim/util/ieee754/ieee754.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
@@ -177,16 +177,27 @@ unisim/service/debug/debugger/debugger32.cc \
 unisim/service/debug/debugger/debugger64.cc \
 unisim/service/loader/elf_loader/elf32_loader.cc \
 unisim/service/loader/elf_loader/elf64_loader.cc \
+unisim/service/loader/raw_loader/raw_loader32.cc \
 unisim/service/loader/s19_loader/s19_loader.cc \
+unisim/service/loader/coff_loader/coff_loader32.cc \
+unisim/service/loader/multiformat_loader/multiformat_loader.cc \
+unisim/service/loader/multiformat_loader/multiformat_loader32.cc \
 unisim/service/profiling/addr_profiler/profiler32.cc \
 unisim/service/profiling/addr_profiler/profiler64.cc \
 unisim/service/telnet/telnet.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
-unisim/service/tee/registers/registers_tee.cc \
-unisim/service/tee/memory_import_export/memory_import_export_tee.cc \
+unisim/service/translator/memory_address/memory/translator.cc \
+unisim/service/tee/loader/tee.cc \
+unisim/service/tee/symbol_table_lookup/tee_32.cc \
+unisim/service/tee/blob/tee_32.cc \
+unisim/service/tee/stmt_lookup/tee_32.cc \
+unisim/service/tee/backtrace/tee_32.cc \
 unisim/service/tee/memory_access_reporting/tee_64.cc \
 unisim/service/tee/memory_access_reporting/tee_32.cc \
+unisim/service/tee/memory_import_export/memory_import_export_tee.cc \
+unisim/service/tee/registers/registers_tee.cc \
+unisim/service/tee/debug_event/debug_event_tee.cc \
 unisim/component/cxx/processor/hcs12x/xgate.cc \
 unisim/component/cxx/processor/hcs12x/ccr.cc \
 unisim/component/cxx/processor/hcs12x/cpu.cc \
@@ -206,7 +217,14 @@ unisim/component/tlm2/processor/hcs12x/s12xgate.cc \
 unisim/component/tlm2/processor/hcs12x/s12pit24b.cc \
 unisim/component/tlm2/processor/hcs12x/s12sci.cc \
 unisim/component/tlm2/processor/hcs12x/s12mpu.cc \
-unisim/component/tlm2/processor/hcs12x/s12spi.cc \
+unisim/component/tlm2/processor/hcs12x/s12spi_v5.cc \
+unisim/component/tlm2/processor/hcs12x/s12mscan.cc \
+unisim/component/tlm2/processor/hcs12x/s12xepim_v1.cc \
+unisim/component/tlm2/processor/hcs12x/s12xdbg_v3.cc \
+unisim/component/tlm2/processor/hcs12x/s12iic_v3.cc \
+unisim/component/tlm2/processor/hcs12x/s12vregl3v3_v1.cc \
+unisim/component/tlm2/processor/hcs12x/s12tim16b8c_v2.cc \
+unisim/component/tlm2/processor/hcs12x/reserved.cc \
 unisim/component/tlm2/interconnect/generic_router/router.cc \
 unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
@@ -221,7 +239,12 @@ unisim/service/pim/network/GenericThread.cpp \
 unisim/service/pim/network/SocketClientThread.cpp \
 unisim/service/pim/network/SocketServerThread.cpp \
 unisim/service/pim/network/SocketThread.cpp \
-unisim/service/pim/gdbthread.cc"
+unisim/service/pim/gdbthread.cc \
+unisim/service/monitor/monitor_server.cc \
+unisim/service/monitor/monitor.cc \
+unisim/service/monitor/default_monitor.cc \
+unisim/service/monitor/artimon_monitor.cc \
+"
 
 
 UNISIM_LIB_STAR12X_ISA_FILES="\
@@ -256,9 +279,13 @@ unisim/kernel/logger/logger_server.hh \
 unisim/kernel/debug/debug.hh \
 unisim/kernel/tlm2/tlm.hh \
 unisim/util/arithmetic/arithmetic.hh \
+unisim/util/converter/convert.hh \
 unisim/util/debug/breakpoint.hh \
+unisim/util/debug/data_object.hh \
+unisim/util/debug/type.hh \
+unisim/util/debug/data_object_initializer.hh \
 unisim/util/debug/profile.hh \
-unisim/util/debug/register.hh \
+unisim/service/interfaces/register.hh \
 unisim/util/debug/symbol.hh \
 unisim/util/debug/simple_register.hh \
 unisim/util/debug/watchpoint_registry.hh \
@@ -267,8 +294,10 @@ unisim/util/debug/breakpoint_registry.hh \
 unisim/util/debug/symbol_table.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/debug/stmt.hh \
+unisim/util/debug/subprogram.hh \
 unisim/util/debug/coff_symtab/coff_symtab.hh \
-unisim/util/debug/data_object.hh \
+unisim/util/debug/event.hh \
+unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/dwarf/abbrev.hh \
 unisim/util/debug/dwarf/attr.hh \
 unisim/util/debug/dwarf/call_frame_vm.hh \
@@ -299,16 +328,16 @@ unisim/util/debug/dwarf/util.hh \
 unisim/util/debug/dwarf/version.hh \
 unisim/util/debug/dwarf/option.hh \
 unisim/util/debug/dwarf/cfa.hh \
-unisim/util/debug/event.hh \
-unisim/util/endian/endian.hh \
 unisim/util/debug/dwarf/data_object.hh \
 unisim/util/debug/dwarf/c_loc_expr_parser.hh \
+unisim/util/debug/dwarf/subprogram.hh \
 unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
 unisim/util/debug/blob/segment.hh \
-unisim/util/debug/memory_access_type.hh \
+unisim/util/endian/endian.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/hash_table/hash_table.hh \
+unisim/util/inlining/inlining.hh \
 unisim/util/likely/likely.hh \
 unisim/util/dictionary/dictionary.hh \
 unisim/util/lexer/lexer.hh \
@@ -323,6 +352,13 @@ unisim/util/loader/coff_loader/coff_loader.hh \
 unisim/util/loader/coff_loader/ti/ti.hh \
 unisim/util/singleton/singleton.hh \
 unisim/util/xml/xml.hh \
+unisim/util/simfloat/floating.hh \
+unisim/util/simfloat/integer.hh \
+unisim/util/simfloat/host_floating.hh \
+unisim/util/ieee754/ieee754.hh \
+unisim/service/debug/gdb_server/gdb_server.hh \
+unisim/service/debug/inline_debugger/inline_debugger.hh \
+unisim/service/debug/debugger/debugger.hh \
 unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/char_io.hh \
@@ -338,22 +374,44 @@ unisim/service/interfaces/stmt_lookup.hh \
 unisim/service/interfaces/time.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/registers.hh \
+unisim/service/interfaces/subprogram_lookup.hh \
 unisim/service/interfaces/trap_reporting.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
 unisim/service/interfaces/profiling.hh \
+unisim/service/interfaces/monitor_if.hh \
 unisim/service/loader/elf_loader/elf_loader.hh \
 unisim/service/loader/elf_loader/elf32_loader.hh \
 unisim/service/loader/elf_loader/elf64_loader.hh \
+unisim/service/loader/raw_loader/raw_loader.hh \
+unisim/service/loader/s19_loader/s19_loader.hh \
+unisim/service/loader/coff_loader/coff_loader.hh \
+unisim/service/loader/multiformat_loader/multiformat_loader.hh \
+unisim/service/monitor/monitor_server.hh \
+unisim/service/monitor/monitor.hh \
+unisim/service/monitor/default_monitor.hh \
+unisim/service/monitor/artimon_monitor.hh \
+unisim/service/pim/gdbthread.hh \
+unisim/service/pim/pim.hh \
+unisim/service/pim/pim_server.hh \
+unisim/service/pim/pim_thread.hh \
+unisim/service/pim/network/BlockingQueue.hpp \
+unisim/service/pim/network/BlockingCircularQueue.hpp \
+unisim/service/pim/network/GenericThread.hpp \
+unisim/service/pim/network/SocketClientThread.hpp \
+unisim/service/pim/network/SocketServerThread.hpp \
+unisim/service/pim/network/SocketThread.hpp \
+unisim/service/profiling/addr_profiler/profiler.hh \
+unisim/service/translator/memory_address/memory/translator.hh \
+unisim/service/tee/loader/tee.hh \
+unisim/service/tee/symbol_table_lookup/tee.hh \
+unisim/service/tee/blob/tee.hh \
+unisim/service/tee/stmt_lookup/tee.hh \
 unisim/service/tee/backtrace/tee.hh \
+unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/tee/registers/registers_tee.hh \
 unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
-unisim/service/tee/memory_access_reporting/tee.hh \
-unisim/service/debug/gdb_server/gdb_server.hh \
-unisim/service/debug/inline_debugger/inline_debugger.hh \
-unisim/service/debug/debugger/debugger.hh \
-unisim/service/profiling/addr_profiler/profiler.hh \
-unisim/service/loader/s19_loader/s19_loader.hh \
+unisim/service/tee/debug_event/debug_event_tee.hh \
 unisim/service/telnet/telnet.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
@@ -366,6 +424,7 @@ unisim/component/cxx/processor/hcs12x/types.hh \
 unisim/component/cxx/processor/hcs12x/concatenated_register.hh \
 unisim/component/cxx/processor/hcs12x/config.hh \
 unisim/component/cxx/processor/hcs12x/xgate.hh \
+unisim/component/cxx/processor/hcs12x/s12mpu_if.hh \
 unisim/component/tlm2/processor/hcs12x/s12xgate.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
 unisim/component/tlm2/interconnect/generic_router/config.hh \
@@ -383,20 +442,17 @@ unisim/component/tlm2/processor/hcs12x/s12xeetx.hh \
 unisim/component/tlm2/processor/hcs12x/s12xftmx.hh \
 unisim/component/tlm2/processor/hcs12x/s12pit24b.hh \
 unisim/component/tlm2/processor/hcs12x/s12sci.hh \
-unisim/component/cxx/processor/hcs12x/s12mpu_if.hh \
 unisim/component/tlm2/processor/hcs12x/s12mpu.hh \
-unisim/component/tlm2/processor/hcs12x/s12spi.hh \
-unisim/service/pim/pim.hh \
-unisim/service/pim/pim_server.hh \
-unisim/service/pim/pim_thread.hh \
-unisim/util/converter/convert.hh \
-unisim/service/pim/network/BlockingQueue.hpp \
-unisim/service/pim/network/BlockingCircularQueue.hpp \
-unisim/service/pim/network/GenericThread.hpp \
-unisim/service/pim/network/SocketClientThread.hpp \
-unisim/service/pim/network/SocketServerThread.hpp \
-unisim/service/pim/network/SocketThread.hpp \
-unisim/service/pim/gdbthread.hh"
+unisim/component/tlm2/processor/hcs12x/s12spi_v5.hh \
+unisim/component/tlm2/processor/hcs12x/s12xepim_v1.hh \
+unisim/component/tlm2/processor/hcs12x/s12xdbg_v3.hh \
+unisim/component/tlm2/processor/hcs12x/s12iic_v3.hh \
+unisim/component/tlm2/processor/hcs12x/s12vregl3v3_v1.hh \
+unisim/component/tlm2/processor/hcs12x/s12tim16b8c_v2.hh \
+unisim/component/tlm2/processor/hcs12x/reserved.hh \
+unisim/component/tlm2/processor/hcs12x/s12mscan.hh \
+unisim/component/tlm2/processor/hcs12x/can_struct.h \
+"
 
 
 UNISIM_LIB_STAR12X_TEMPLATE_FILES="\
@@ -406,7 +462,7 @@ unisim/util/debug/watchpoint_registry.tcc \
 unisim/util/debug/symbol_table.tcc \
 unisim/util/debug/symbol.tcc \
 unisim/util/debug/stmt.tcc \
-unisim/util/debug/data_object.tcc \
+unisim/util/debug/data_object_initializer.tcc \
 unisim/util/debug/dwarf/addr_range.tcc \
 unisim/util/debug/dwarf/call_frame_prog.tcc \
 unisim/util/debug/dwarf/cie.tcc \
@@ -425,27 +481,40 @@ unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
 unisim/util/debug/dwarf/frame.tcc \
 unisim/util/debug/dwarf/data_object.tcc \
-unisim/util/dictionary/dictionary.tcc \
-unisim/util/lexer/lexer.tcc \
-unisim/util/parser/parser.tcc \
+unisim/util/debug/dwarf/subprogram.tcc \
 unisim/util/debug/blob/section.tcc \
 unisim/util/debug/blob/blob.tcc \
 unisim/util/debug/blob/segment.tcc \
 unisim/util/debug/elf_symtab/elf_symtab.tcc \
 unisim/util/loader/elf_loader/elf_loader.tcc \
-unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/debug/coff_symtab/coff_symtab.tcc \
 unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/loader/coff_loader/ti/ti.tcc \
+unisim/util/dictionary/dictionary.tcc \
+unisim/util/lexer/lexer.tcc \
+unisim/util/parser/parser.tcc \
+unisim/util/simfloat/floating.tcc \
+unisim/util/simfloat/integer.tcc \
+unisim/util/simfloat/host_floating.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/debugger/debugger.tcc \
 unisim/service/profiling/addr_profiler/profiler.tcc \
+unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/elf_loader/elf32_loader.tcc \
 unisim/service/loader/elf_loader/elf64_loader.tcc \
-unisim/service/loader/elf_loader/elf_loader.tcc \
+unisim/service/loader/raw_loader/raw_loader.tcc \
 unisim/service/loader/s19_loader/s19_loader.tcc \
+unisim/service/loader/coff_loader/coff_loader.tcc \
+unisim/service/loader/multiformat_loader/multiformat_loader.tcc \
+unisim/service/translator/memory_address/memory/translator.tcc \
+unisim/service/tee/loader/tee.tcc \
+unisim/service/tee/symbol_table_lookup/tee.tcc \
+unisim/service/tee/blob/tee.tcc \
+unisim/service/tee/stmt_lookup/tee.tcc \
+unisim/service/tee/backtrace/tee.tcc \
 unisim/service/tee/memory_access_reporting/tee.tcc \
+unisim/service/tee/debug_event/debug_event_tee.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
@@ -455,7 +524,12 @@ unisim/component/tlm2/processor/hcs12x/atd10b.tcc \
 unisim/component/tlm2/processor/hcs12x/s12xeetx.tcc \
 unisim/component/tlm2/processor/hcs12x/s12xftmx.tcc \
 unisim/component/tlm2/processor/hcs12x/s12pit24b.tcc \
-unisim/service/pim/pim_server.tcc "
+unisim/service/pim/pim_server.tcc \
+unisim/service/monitor/monitor_server.tcc \
+unisim/service/monitor/monitor.tcc \
+unisim/service/monitor/default_monitor.tcc \
+unisim/service/monitor/artimon_monitor.tcc \
+"
 
 UNISIM_LIB_STAR12X_M4_FILES="\
 m4/cxxabi.m4 \
@@ -468,13 +542,15 @@ m4/bsd_sockets.m4 \
 m4/curses.m4 \
 m4/libedit.m4 \
 m4/systemc.m4 \
-m4/tlm20.m4 \
 m4/with_boost.m4 \
 m4/check_lib.m4 \
 m4/rtbcob.m4 \
 m4/get_exec_path.m4 \
 m4/real_path.m4 \
-m4/pthread.m4"
+m4/lua.m4 \
+m4/pthread.m4 \
+m4/artimon.m4 \
+"
 
 UNISIM_LIB_STAR12X_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_hcs12x.xml \
@@ -509,17 +585,27 @@ vector \
 "
 
 UNISIM_SIMULATORS_STAR12X_SOURCE_FILES="\
-main_pim.cc \
 simulator.cc \
 atd_pwm_stub.cc \
 xml_atd_pwm_stub.cc \
 rtb_unisim.cc \
+can_stub.cc \
+tle8264_2e.cc \
+tle72xxSL.cc \
+simulator_if.cc \
 "
 UNISIM_SIMULATORS_STAR12X_HEADER_FILES="\
 simulator.hh \
 atd_pwm_stub.hh \
 xml_atd_pwm_stub.hh \
 rtb_unisim.hh \
+can_stub.hh \
+tle72xxSL.hh \
+simulator_if.h \
+"
+
+UNISIM_SIMULATORS_STAR12X_MAIN_SOURCE_FILES="\
+main_pim.cc \
 "
 
 UNISIM_SIMULATORS_STAR12X_TEMPLATE_FILES=
@@ -585,7 +671,7 @@ for file in ${UNISIM_LIB_STAR12X_FILES}; do
 	fi
 done
 
-UNISIM_SIMULATORS_STAR12X_FILES="${UNISIM_SIMULATORS_STAR12X_SOURCE_FILES} ${UNISIM_SIMULATORS_STAR12X_HEADER_FILES} ${UNISIM_SIMULATORS_STAR12X_TEMPLATE_FILES} ${UNISIM_SIMULATORS_STAR12X_DATA_FILES} ${UNISIM_SIMULATORS_STAR12X_CONFIG_FILES}"
+UNISIM_SIMULATORS_STAR12X_FILES="${UNISIM_SIMULATORS_STAR12X_MAIN_SOURCE_FILES} ${UNISIM_SIMULATORS_STAR12X_SOURCE_FILES} ${UNISIM_SIMULATORS_STAR12X_HEADER_FILES} ${UNISIM_SIMULATORS_STAR12X_TEMPLATE_FILES} ${UNISIM_SIMULATORS_STAR12X_DATA_FILES} ${UNISIM_SIMULATORS_STAR12X_CONFIG_FILES}"
 
 for file in ${UNISIM_SIMULATORS_STAR12X_FILES}; do
 	mkdir -p "${DEST_DIR}/star12x/`dirname ${file}`"
@@ -707,7 +793,7 @@ fi
 
 if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "Generating configure.ac"
-	echo "AC_INIT([UNISIM star12x Standalone simulator], [${STAR12X_VERSION}], [Reda Nouacer <reda.nouacer@cea.fr>], [unisim-star12x])" > "${DEST_DIR}/configure.ac"
+	echo "AC_INIT([UNISIM star12x Standalone simulator], [${STAR12X_VERSION}], [reda.nouacer@cea.fr], [unisim-star12x])" > "${DEST_DIR}/configure.ac"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${CONFIGURE_AC}"
@@ -778,7 +864,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES} parser.h" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_LFLAGS = -l" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
+	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_PROGRAMS = genisslib" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\\\"${GENISSLIB_VERSION}\\\"" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -824,22 +910,33 @@ fi
 
 if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	echo "Generating star12x configure.ac"
-	echo "AC_INIT([UNISIM star12x C++ simulator], [${STAR12X_VERSION}], [Reda Nouacer <reda.nouacer@cea.fr>], [star12x_cxx])" > "${STAR12X_CONFIGURE_AC}"
+	echo "AC_INIT([UNISIM star12x C++ simulator], [${STAR12X_VERSION}], [reda.nouacer@cea.fr], [star12x_cxx])" > "${STAR12X_CONFIGURE_AC}"
 	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_CONFIG_HEADERS([config.h])" >> "${STAR12X_CONFIGURE_AC}"
+	echo "" >> "${STAR12X_CONFIGURE_AC}"
+	echo "AC_CANONICAL_SYSTEM" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_CANONICAL_BUILD" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_CANONICAL_TARGET" >> "${STAR12X_CONFIGURE_AC}"
+	echo "" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${STAR12X_CONFIGURE_AC}"
+	echo "" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_PATH_PROGS(SH, sh)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_PROG_CXX" >> "${STAR12X_CONFIGURE_AC}"
-	echo "AC_PROG_RANLIB" >> "${STAR12X_CONFIGURE_AC}"
+#	echo "AC_PROG_RANLIB" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_PROG_INSTALL" >> "${STAR12X_CONFIGURE_AC}"
+	echo "" >> "${STAR12X_CONFIGURE_AC}"
+	echo "LT_INIT([win32-dll], [dlopen])" >> "${STAR12X_CONFIGURE_AC}"
+	echo "" >> "${STAR12X_CONFIGURE_AC}"
+	echo "AC_SUBST(LIBTOOL_DEPS)" >> "${STAR12X_CONFIGURE_AC}"
+	echo "AC_LTDL_DLLIB" >> "${STAR12X_CONFIGURE_AC}"
+	echo "" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_PROG_LN_S" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_LANG([C++])" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AM_PROG_CC_C_O" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_CHECK_HEADERS([${STAR12X_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${STAR12X_CONFIGURE_AC}"
+	echo "" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_CURSES(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_LIBEDIT(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_BSD_SOCKETS(main)" >> "${STAR12X_CONFIGURE_AC}"
@@ -847,11 +944,15 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_LIBXML2(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_CXXABI(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_PTHREAD(main)" >> "${STAR12X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_LUA(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_RTBCOB(main)" >> "${STAR12X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_ARTIMON(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${STAR12X_CONFIGURE_AC}"
+	echo "UNISIM_WITH_BOOST(main)" >> "${STAR12X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${STAR12X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TLM20" >> "${STAR12X_CONFIGURE_AC}"
+	echo "" >> "${STAR12X_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-star12x-${STAR12X_VERSION}\"], [path of shared data relative to bin directory])" >> "${STAR12X_CONFIGURE_AC}"
@@ -860,19 +961,47 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 
 	AM_STAR12X_VERSION=`printf ${STAR12X_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating star12x Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${STAR12X_MAKEFILE_AM}"
-	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${STAR12X_MAKEFILE_AM}"
-	echo "noinst_LIBRARIES = libstar12x-${STAR12X_VERSION}.a" >> "${STAR12X_MAKEFILE_AM}"
-	echo "nodist_libstar12x_${AM_STAR12X_VERSION}_a_SOURCES = unisim/component/cxx/processor/hcs12x/xb.cc unisim/component/cxx/processor/hcs12x/hcs12x.cc unisim/component/cxx/processor/hcs12x/s12xgate.cc" >> "${STAR12X_MAKEFILE_AM}"
-	echo "libstar12x_${AM_STAR12X_VERSION}_a_SOURCES = ${UNISIM_LIB_STAR12X_SOURCE_FILES}" >> "${STAR12X_MAKEFILE_AM}" # unisim/component/cxx/processor/hcs12x/xb.cc unisim/component/cxx/processor/hcs12x/hcs12x.cc" >> "${STAR12X_MAKEFILE_AM}"
+#	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${STAR12X_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${STAR12X_MAKEFILE_AM}"
+	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${STAR12X_MAKEFILE_AM}"
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
+	echo "LIBTOOL_DEPS = @LIBTOOL_DEPS@" >> "${STAR12X_MAKEFILE_AM}"
+	echo "libtool: \$(LIBTOOL_DEPS)" >> "${STAR12X_MAKEFILE_AM}"
+	echo -e "\t\$(SHELL) ./config.status libtool" >> "${STAR12X_MAKEFILE_AM}"
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
+# -------------------------
 	echo "bin_PROGRAMS = unisim-star12x-${STAR12X_VERSION}" >> "${STAR12X_MAKEFILE_AM}"
-	echo "unisim_star12x_${AM_STAR12X_VERSION}_SOURCES = ${UNISIM_SIMULATORS_STAR12X_SOURCE_FILES}" >> "${STAR12X_MAKEFILE_AM}"
-	echo "unisim_star12x_${AM_STAR12X_VERSION}_LDADD = libstar12x-${STAR12X_VERSION}.a" >> "${STAR12X_MAKEFILE_AM}"
+	echo "unisim_star12x_${AM_STAR12X_VERSION}_SOURCES = ${UNISIM_SIMULATORS_STAR12X_MAIN_SOURCE_FILES}" >> "${STAR12X_MAKEFILE_AM}"
+	echo "unisim_star12x_${AM_STAR12X_VERSION}_LDADD = libunisim-star12x-${STAR12X_VERSION}.la libunisim-star12x-simulator-${STAR12X_VERSION}.la" >> "${STAR12X_MAKEFILE_AM}"
+	echo "unisim_star12x_${AM_STAR12X_VERSION}_LDFLAGS = -static" >> "${STAR12X_MAKEFILE_AM}"
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
+# -------------------------
+	echo "lib_LTLIBRARIES = libunisim-star12x-simulator-${STAR12X_VERSION}.la" >> "${STAR12X_MAKEFILE_AM}"
+	echo "libunisim_star12x_simulator_${AM_STAR12X_VERSION}_la_CXXFLAGS =" >> "${STAR12X_MAKEFILE_AM}"
+	echo "libunisim_star12x_simulator_${AM_STAR12X_VERSION}_la_LDFLAGS = -no-undefined" >> "${STAR12X_MAKEFILE_AM}"
+	echo "libunisim_star12x_simulator_${AM_STAR12X_VERSION}_la_SOURCES = ${UNISIM_SIMULATORS_STAR12X_SOURCE_FILES}" >> "${STAR12X_MAKEFILE_AM}"
+	echo "libunisim_star12x_simulator_${AM_STAR12X_VERSION}_la_LIBADD = libunisim-star12x-${STAR12X_VERSION}.la" >> "${STAR12X_MAKEFILE_AM}"
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
+# -------------------------
+	echo "noinst_LTLIBRARIES = libunisim-star12x-${STAR12X_VERSION}.la" >> "${STAR12X_MAKEFILE_AM}"
+	echo "libunisim_star12x_${AM_STAR12X_VERSION}_la_CXXFLAGS =" >> "${STAR12X_MAKEFILE_AM}"
+	echo "libunisim_star12x_${AM_STAR12X_VERSION}_la_LDFLAGS = -no-undefined" >> "${STAR12X_MAKEFILE_AM}"
+	echo "nodist_libunisim_star12x_${AM_STAR12X_VERSION}_la_SOURCES = unisim/component/cxx/processor/hcs12x/xb.cc unisim/component/cxx/processor/hcs12x/hcs12x.cc unisim/component/cxx/processor/hcs12x/s12xgate.cc" >> "${STAR12X_MAKEFILE_AM}"
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
+# -------------------------
+	echo "libunisim_star12x_${AM_STAR12X_VERSION}_la_SOURCES = ${UNISIM_LIB_STAR12X_SOURCE_FILES}" >> "${STAR12X_MAKEFILE_AM}" #" unisim/component/cxx/processor/hcs12x/xb.cc unisim/component/cxx/processor/hcs12x/hcs12x.cc" >> "${STAR12X_MAKEFILE_AM}"
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
+# -------------------------
 	echo "noinst_HEADERS = ${UNISIM_TOOLS_STAR12X_HEADER_FILES} ${UNISIM_LIB_STAR12X_HEADER_FILES} ${UNISIM_LIB_STAR12X_TEMPLATE_FILES} ${UNISIM_SIMULATORS_STAR12X_HEADER_FILES} ${UNISIM_SIMULATORS_STAR12X_TEMPLATE_FILES}" >> "${STAR12X_MAKEFILE_AM}"
-	echo "EXTRA_DIST = ${UNISIM_LIB_STAR12X_M4_FILES}" >> "${STAR12X_MAKEFILE_AM}"
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
+	echo "includedir = \$(prefix)/include" >> "${STAR12X_MAKEFILE_AM}"
+	echo "include_HEADERS = simulator_if.h" >> "${STAR12X_MAKEFILE_AM}"
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
 	echo "sharedir = \$(prefix)/share/unisim-star12x-${STAR12X_VERSION}" >> "${STAR12X_MAKEFILE_AM}"
 	echo "dist_share_DATA = ${UNISIM_LIB_STAR12X_DATA_FILES} ${UNISIM_SIMULATORS_STAR12X_DATA_FILES} ${UNISIM_SIMULATORS_STAR12X_CONFIG_FILES}" >> "${STAR12X_MAKEFILE_AM}"
-
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
+	echo "EXTRA_DIST = ${UNISIM_LIB_STAR12X_M4_FILES}" >> "${STAR12X_MAKEFILE_AM}"
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
 	echo "BUILT_SOURCES=\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/s12xgate.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/s12xgate.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa" >> "${STAR12X_MAKEFILE_AM}"
 	echo "CLEANFILES=\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/s12xgate.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/s12xgate.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa" >> "${STAR12X_MAKEFILE_AM}"
 	echo "\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.cc: \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.hh" >> "${STAR12X_MAKEFILE_AM}"
@@ -888,7 +1017,8 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	echo "\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/s12xgate.hh: \${UNISIM_LIB_S12XGATE_ISA_FILES}" >> "${STAR12X_MAKEFILE_AM}"
 	printf "\t" >> "${STAR12X_MAKEFILE_AM}"
 	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/hcs12x; \$(GENISSLIB_PATH) -o s12xgate -w 32 -I . s12xgate.isa" >> "${STAR12X_MAKEFILE_AM}"
-
+	echo "" >> "${STAR12X_MAKEFILE_AM}"
+	echo "## The following script lines are only needed for debugging purpose" >> "${STAR12X_MAKEFILE_AM}"
 	echo "all-local: all-local-bin all-local-share" >> "${STAR12X_MAKEFILE_AM}"
 	echo "clean-local: clean-local-bin clean-local-share" >> "${STAR12X_MAKEFILE_AM}"
 	echo "all-local-bin: \$(bin_PROGRAMS)" >> "${STAR12X_MAKEFILE_AM}"
@@ -915,7 +1045,7 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	printf "\tfi\n" >> "${STAR12X_MAKEFILE_AM}"
 
 	echo "Building star12x configure"
-	${SHELL} -c "cd ${DEST_DIR}/star12x && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
+	${SHELL} -c "cd ${DEST_DIR}/star12x && aclocal -I m4 && libtoolize --force && autoconf --force && autoheader && automake -ac"
 fi
 
 echo "Distribution is up-to-date"

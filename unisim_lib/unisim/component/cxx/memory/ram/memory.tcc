@@ -76,7 +76,9 @@ template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
 Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, Object *parent)
 	: Object(name, parent, "this module implements a memory")
 	, Service<unisim::service::interfaces::Memory<PHYSICAL_ADDR> >(name, parent)
+
 	, memory_export("memory-export", this)
+
 	, org(0)
 	, bytesize(0)
 	, lo_addr(0)
@@ -87,10 +89,12 @@ Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, Object *parent)
 	, param_bytesize("bytesize", this, bytesize, "memory size in bytes")
 	, stat_memory_usage("memory-usage", this, memory_usage, (std::string("target memory usage in bytes (page granularity of ") + u32toa(PAGE_SIZE) + " bytes)").c_str())
 	, initial_byte_value(0x00)
-	, param_initial_byte_value("initial-byte-value", this, initial_byte_value)
+	, param_initial_byte_value("initial-byte-value", this, initial_byte_value, "initial value for all bytes of memory")
 
 {
 	stat_memory_usage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_memory_usage.SetVisible(false);
+
 	param_bytesize.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_initial_byte_value.SetFormat(unisim::kernel::service::VariableBase::FMT_HEX);
 }
@@ -215,7 +219,13 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 		copy_size = max_copy_size;
 		else
 		copy_size = size - copied;
-	
+
+//		if (HwFault_import) {
+//			HwFault_import->inject_fault("mchaa je ne sais pas !!!", 10);
+//
+//	//		HwFault_import->inject_fault("jsdhsqjd",  &page->storage[(addr + copied) & (PAGE_SIZE - 1)], copy_size);
+//		}
+
 		memcpy(&((uint8_t *)buffer)[copied], 
 		       &page->storage[(addr + copied) & (PAGE_SIZE - 1)],
 		       copy_size);
@@ -379,7 +389,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 			{
 				uint8_t *src = &page->storage[page_offset];
 				uint8_t *dst = &((uint8_t *)buffer)[copied];
-
+				uint32_t copy_left = copy_size;
 				do
 				{
 					uint8_t mask = byte_enable[byte_enable_offset];
@@ -387,7 +397,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 					*dst = ((*dst) & ~mask) | ((*src) & mask);
 					// cycle through the byte enable buffer
 					if(++byte_enable_offset >= byte_enable_length) byte_enable_offset = 0;
-				} while(++src, ++dst, --copy_size);
+				} while (++src, ++dst, --copy_left);
 			}
 			else
 			{

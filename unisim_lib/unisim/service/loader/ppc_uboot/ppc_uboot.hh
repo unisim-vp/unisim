@@ -101,12 +101,12 @@ private:
 	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *device_tree_blob;
 	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *initrd_blob;
 	unisim::util::debug::blob::Blob<MEMORY_ADDR> *kernel_cmd_line_blob;
-	unisim::util::debug::Register *ppc_cia;
-	unisim::util::debug::Register *ppc_r3;
-	unisim::util::debug::Register *ppc_r4;
-	unisim::util::debug::Register *ppc_r5;
-	unisim::util::debug::Register *ppc_r6;
-	unisim::util::debug::Register *ppc_r7;
+	unisim::service::interfaces::Register *ppc_cia;
+	unisim::service::interfaces::Register *ppc_r3;
+	unisim::service::interfaces::Register *ppc_r4;
+	unisim::service::interfaces::Register *ppc_r5;
+	unisim::service::interfaces::Register *ppc_r6;
+	unisim::service::interfaces::Register *ppc_r7;
 	std::string kernel_cmd_line;
 	MEMORY_ADDR kernel_cmd_line_addr;
 	bool verbose;

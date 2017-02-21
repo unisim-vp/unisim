@@ -121,6 +121,13 @@ private:
 
 	void PushKeyAction(const unisim::service::interfaces::Keyboard::KeyAction& key_action);
 
+	// Setup SDL
+	bool SetupSDL();
+	
+	bool alive;
+	unsigned int typematic_delay_us;
+	unsigned int typematic_interval_us;
+	
 #if defined(HAVE_SDL)
 	enum
 	{
@@ -142,13 +149,10 @@ private:
 	bool full_screen;
 	SDLKey host_key;
 	bool mode_set;
-	bool alive;
 	SDL_cond *video_subsystem_initialized_cond;
 	SDL_mutex *video_subsystem_initialized_mutex;
 	bool refresh;
 	bool force_refresh;
-	unsigned int typematic_delay_us;
-	unsigned int typematic_interval_us;
 	VideoMode<ADDRESS> video_mode;
 	unsigned int bmp_out_file_number;
 	string learn_keymap_filename;
@@ -166,9 +170,6 @@ private:
 	bool work_around_sdl_mouse_motion_coordinates_bug;
 	Parameter<bool> param_work_around_sdl_mouse_motion_coordinates_bug;
 
-	// Setup SDL
-	bool SetupSDL();
-	
 	// Keyboard learning is executed in main thread
 	void LearnKeyboard();
 

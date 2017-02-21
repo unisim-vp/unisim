@@ -127,7 +127,9 @@ private:
 	typedef enum
 	{
 		TOK_COMMA,
+#if 0
 		TOK_COLON,
+#endif
 		TOK_EQUAL,
 		TOK_STRING,
 		TOK_EOF
@@ -207,14 +209,16 @@ template <class MEMORY_ADDR>
 class Mapping
 {
 public:
-	Mapping(unsigned int _memory_num, const AddressRange<MEMORY_ADDR>& _addr_range)
+	Mapping(unsigned int _memory_num, const AddressRange<MEMORY_ADDR>& _addr_range, MEMORY_ADDR _translation)
 		: memory_num(_memory_num)
 		, addr_range(_addr_range)
+		, translation(_translation)
 	{
 	}
 	
 	unsigned int memory_num;
 	AddressRange<MEMORY_ADDR> addr_range;
+	MEMORY_ADDR translation;
 };
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
@@ -249,6 +253,7 @@ private:
 		TOK_COMMA,
 		TOK_COLON,
 		TOK_MINUS,
+		TOK_PLUS,
 		TOK_EQUAL,
 		TOK_EOF
 	} Token;
@@ -257,7 +262,8 @@ private:
 	{
 		OPT_UNKNOWN,
 		OPT_MEMORY,
-		OPT_RANGE
+		OPT_RANGE,
+		OPT_TRANSLATION
 	} MappingStatementOptionType;
 	
 	class MappingStatementOption
@@ -267,9 +273,11 @@ private:
 		unsigned int pos;
 		std::string value;
 		AddressRange<MEMORY_ADDR> range;
+		MEMORY_ADDR translation;
 		
 		MappingStatementOption(MappingStatementOptionType _type, unsigned int _pos, const std::string& _value);
 		MappingStatementOption(MappingStatementOptionType _type, unsigned int _pos, const AddressRange<MEMORY_ADDR>& _range);
+		MappingStatementOption(MappingStatementOptionType _type, unsigned int _pos, MEMORY_ADDR _translation);
 	};
 
 	class MappingStatement
@@ -296,6 +304,7 @@ private:
 	std::string GetTokenName(Token tok, const std::string& tok_value);
 	MappingStatementOptionType GetOptionType(const std::string& opt_name);
 	bool ParseAddressRange(const std::string& s, unsigned int& pos, AddressRange<MEMORY_ADDR>& addr_range);
+	bool ParseAddressTranslationOffset(const std::string& s, unsigned int& pos, MEMORY_ADDR& translation);
 	MappingStatementOption *ParseMappingStatementOption(const std::string& s, unsigned int& pos, unsigned int opt_idx);
 	MappingStatement *ParseMappingStatement(const std::string& s, unsigned int& pos);
 	int FindMemory(const char *name);

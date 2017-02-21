@@ -62,7 +62,7 @@ int CCR_t::GetSize() const
 	return (2);
 }
 
-unisim::util::debug::Register *CCR_t::GetLowRegister()
+unisim::service::interfaces::Register *CCR_t::GetLowRegister()
 {
 	return (new unisim::util::debug::SimpleRegister<uint8_t>("CCRL",
 #if BYTE_ORDER == BIG_ENDIAN
@@ -73,7 +73,7 @@ unisim::util::debug::Register *CCR_t::GetLowRegister()
         ));
 }
 
-unisim::util::debug::Register *CCR_t::GetHighRegister()
+unisim::service::interfaces::Register *CCR_t::GetHighRegister()
 {
 	return (new unisim::util::debug::SimpleRegister<uint8_t>("CCRH",
 #if BYTE_ORDER == BIG_ENDIAN

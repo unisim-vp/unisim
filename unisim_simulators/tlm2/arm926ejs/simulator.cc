@@ -33,6 +33,7 @@
  */
 
 #include "simulator.hh"
+#include <stdexcept>
 bool debug_enabled;
 
 void SigIntHandler(int signum) {
@@ -60,11 +61,13 @@ Simulator(int argc, char **argv)
 	, nor_flash_1(0)
 	, time(0)
 	, host_time(0)
-	, elf32_loader(0)
-	, raw_kernel_loader(0)
-	, raw_fs_loader(0)
+	, loader(0)
 	, trap_handler(0)
 	, simulation_spent_time(0.0)
+#if defined(SIM_GDB_SERVER_SUPPORT) || defined(SIM_INLINE_DEBUGGER_SUPPORT) || defined(SIM_SIM_DEBUGGER_SUPPORT)
+	, debugger(0)
+	, enable_debugger(false)
+#endif
 #ifdef SIM_GDB_SERVER_SUPPORT
 	, gdb_server(0)
 	, enable_gdb_server(false)
@@ -117,15 +120,14 @@ Simulator(int argc, char **argv)
 	nor_flash_1 = new FLASH("nor-flash-1");
 	time = new unisim::service::time::sc_time::ScTime("time");
 	host_time = new unisim::service::time::host_time::HostTime("host-time");
-	elf32_loader = new ELF32_LOADER("elf-loader");
-	raw_kernel_loader = new RAW_LOADER("raw-kernel-loader");
-	raw_fs_loader = new RAW_LOADER("raw-fs-loader");
+	loader = new LOADER("loader");
 	trap_handler = new TRAP_HANDLER("trap-handler");
 #ifdef SIM_GDB_SERVER_SUPPORT
 	param_enable_gdb_server = new unisim::kernel::service::Parameter<bool>(
 			"enable-gdb-server", 0,
 			enable_gdb_server,
 			"Enable GDB server.");
+	enable_debugger = enable_debugger || enable_gdb_server;
 	if ( enable_gdb_server )
 		gdb_server = new GDB_SERVER("gdb-server");
 #endif // SIM_GDB_SERVER_SUPPORT
@@ -134,6 +136,7 @@ Simulator(int argc, char **argv)
 			"enable-inline-debugger", 0,
 			enable_inline_debugger,
 			"Enable inline debugger.");
+	enable_debugger = enable_debugger || enable_inline_debugger;
 	if ( enable_inline_debugger )
 		inline_debugger = new INLINE_DEBUGGER("inline-debugger");
 #endif
@@ -142,8 +145,17 @@ Simulator(int argc, char **argv)
 			"enable-sim-debugger", 0,
 			enable_sim_debugger,
 			"Enable sim debugger.");
+	enable_debugger = enable_debugger || enable_sim_debugger;
 	if ( enable_sim_debugger )
 		sim_debugger = new SIM_DEBUGGER("sim-debugger");
+#endif
+#if defined(SIM_GDB_SERVER_SUPPORT) || defined(SIM_INLINE_DEBUGGER_SUPPORT) || defined(SIM_SIM_DEBUGGER_SUPPORT)
+	if( enable_debugger )
+	{
+		debugger = new DEBUGGER("debugger");
+		profiler = new PROFILER("profiler");
+		tee_memory_access_reporting = new TEE_MEMORY_ACCESS_REPORTING("tee-memory-access-reporting");
+	}
 #endif
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 	if ( enable_power_estimation )
@@ -259,9 +271,7 @@ Simulator(int argc, char **argv)
 	cpu->nfiq(devchip->nvicfiq_signal);
 
 	// Connect everything
-	elf32_loader->memory_import >> memory->memory_export;
-	raw_kernel_loader->memory_import >> memory->memory_export;
-	raw_fs_loader->memory_import >> memory->memory_export;
+	*loader->memory_import[0] >> memory->memory_export;
 #ifndef SIM_INLINE_DEBUGGER_SUPPORT
 	cpu->instruction_counter_trap_reporting_import >> 
 		*trap_handler->trap_reporting_export[0];
@@ -293,9 +303,12 @@ Simulator(int argc, char **argv)
 	}
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 
-	cpu->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
+	cpu->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 	// bridge->memory_import >> memory->memory_export;
 
+#if defined(SIM_GDB_SERVER_SUPPORT) || defined(SIM_INLINE_DEBUGGER_SUPPORT) || defined(SIM_SIM_DEBUGGER_SUPPORT)
+	EnableDebugger();
+#endif
 #ifdef SIM_GDB_SERVER_SUPPORT
 	EnableGdbServer();
 #endif // SIM_GDB_SERVER_SUPPORT
@@ -316,10 +329,13 @@ Simulator::~Simulator()
 	if ( nor_flash_1 ) delete nor_flash_1;
 	if ( time ) delete time;
 	if ( host_time ) delete host_time;
-	if ( elf32_loader ) delete elf32_loader;
-	if ( raw_kernel_loader ) delete raw_kernel_loader;
-	if ( raw_fs_loader ) delete raw_fs_loader;
+	if ( loader) delete loader;
 	if ( trap_handler ) delete trap_handler;
+#if defined(SIM_GDB_SERVER_SUPPORT) || defined(SIM_INLINE_DEBUGGER_SUPPORT) || defined(SIM_SIM_DEBUGGER_SUPPORT)
+	if ( debugger ) delete debugger;
+	if( profiler ) delete profiler;
+	if( tee_memory_access_reporting ) delete tee_memory_access_reporting;
+#endif
 #ifdef SIM_GDB_SERVER_SUPPORT
 	if ( param_enable_gdb_server ) delete param_enable_gdb_server;
 	if ( gdb_server ) delete gdb_server;
@@ -369,17 +385,17 @@ Simulator ::
 Run()
 {
 	/* TODO: remove this code and add it to a loader (raw loader???) */
-	static uint32_t bootloader[] = {
-		0xe3a00000,
-		0xe3a01083,
-		0xe3811c01,
-		0xe59f2000,
-		0xe59ff000,
-		0x00000100,
-		0x00010000
-	};
-
-	memory->WriteMemory(0, bootloader, sizeof(bootloader));
+// 	static uint32_t bootloader[] = {
+// 		0xe3a00000,
+// 		0xe3a01083,
+// 		0xe3811c01,
+// 		0xe59f2000,
+// 		0xe59ff000,
+// 		0x00000100,
+// 		0x00010000
+// 	};
+// 
+// 	memory->WriteMemory(0, bootloader, sizeof(bootloader));
 	/* END TODO */
 
 	if ( unlikely(SimulationFinished()) ) return 0;
@@ -510,7 +526,7 @@ SimulationFinished() const
 
 void
 Simulator ::
-Stop(unisim::kernel::service::Object *object, int exit_status)
+Stop(unisim::kernel::service::Object *object, int exit_status, bool asynchronous)
 {
 	if ( object )
 		std::cerr
@@ -525,7 +541,18 @@ Stop(unisim::kernel::service::Object *object, int exit_status)
 			<< " - exit status = " << exit_status
 			<< std::endl;
 	sc_stop();
-	wait();
+	if(!asynchronous)
+	{
+		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		{
+			case SC_THREAD_PROC_: 
+			case SC_CTHREAD_PROC_:
+				wait();
+				break;
+			default:
+				break;
+		}
+	}
 }
 
 void
@@ -557,18 +584,17 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("nor-flash-2.cycle-time",   "31250 ps");
 	sim->SetVariable("nor-flash-1.bytesize",     0xffffffffUL); 
 	sim->SetVariable("nor-flash-1.cycle-time",   "31250 ps");
-	sim->SetVariable("elf-loader.filename",      "test/install/u-boot");
-	sim->SetVariable("elf-loader.force-base-addr",
-												 true);
-	sim->SetVariable("elf-loader.base-addr",     0x10000);
-	sim->SetVariable("elf-loader.force-use-virtual-address",
-												 true);
-	sim->SetVariable("raw-kernel-loader.filename",      
-												 "test/install/uImage");
-	sim->SetVariable("raw-kernel-loader.base-addr",
-												 0x110000);
-	sim->SetVariable("raw-fs-loader.filename",   "test/install/rootfs.cpio.gz.uimg");
-	sim->SetVariable("raw-fs-loader.base-addr",  0x1110000);
+
+	sim->SetVariable("loader.filename" ,         "boot-loader.bin,test/install/u-boot,test/install/uImage,test/install/rootfs.cpio.gz.uimg");
+	sim->SetVariable("loader.memory-mapper.mapping",
+	                                             "memory=memory:0x0-0xffffffff");
+	sim->SetVariable("loader.file0.base-addr",    0x0);
+	sim->SetVariable("loader.file1.force-base-addr", true);
+	sim->SetVariable("loader.file1.base-addr",    0x10000);
+	sim->SetVariable("loader.file1.force-use-virtual-address",
+	                                              true);
+	sim->SetVariable("loader.file2.base-addr",    0x110000);
+	sim->SetVariable("loader.file3.base-addr",    0x1110000);
 
 	sim->SetVariable("trap-handler.num-traps", 3);
 	sim->SetVariable("trap-handler.trap-reporting-export-name[0]",
@@ -583,12 +609,11 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("pxp.uart2.enable-logger", true);
 
 #ifdef SIM_GDB_SERVER_SUPPORT
-	sim->SetVariable("gdb-server.architecture-description-filename",
-			"gdb_server/gdb_armv5l.xml");
+	sim->SetVariable("gdb-server.architecture-description-filename", "gdb_server/gdb_arm_with_fpa.xml");
 #endif // SIM_GDB_SERVER_SUPPORT
 
 #ifdef SIM_INLINE_DEBUGGER_SUPPORT
-	sim->SetVariable("inline-debugger.num-loaders", 1);
+	//sim->SetVariable("inline-debugger.num-loaders", 1);
 	sim->SetVariable("inline-debugger.search-path", "");
 #endif // SIM_INLINE_DEBUGGER_SUPPORT
 
@@ -697,6 +722,36 @@ VariableBaseNotify(const unisim::kernel::service::VariableBase *var)
 
 #endif // SIM_LIBRARY
 
+#if defined(SIM_GDB_SERVER_SUPPORT) || defined(SIM_INLINE_DEBUGGER_SUPPORT) || defined(SIM_SIM_DEBUGGER_SUPPORT)
+void
+Simulator::
+EnableDebugger()
+{
+	if(enable_debugger)
+	{
+		// Connect debugger to CPU
+		cpu->debug_control_import >> debugger->debug_control_export;
+		cpu->instruction_counter_trap_reporting_import >> debugger->trap_reporting_export;
+		cpu->exception_trap_reporting_import >> debugger->trap_reporting_export;
+		debugger->disasm_import >> cpu->disasm_export;
+		debugger->memory_import >> cpu->memory_export;
+		debugger->registers_import >> cpu->registers_export;
+// 		debugger->loader_import >> elf32_loader->loader_export;
+// 		debugger->blob_import >> elf32_loader->blob_export;
+		debugger->loader_import >> loader->loader_export;
+		debugger->blob_import >> loader->blob_export;
+
+		// Connect tee-memory-access-reporting to CPU, debugger and profiler
+		cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
+		*tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
+		*tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
+		profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
+		debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
+		tee_memory_access_reporting->out_control >> cpu->memory_access_reporting_control_export;
+	}
+}
+#endif
+
 #ifdef SIM_GDB_SERVER_SUPPORT
 void
 Simulator::
@@ -704,13 +759,17 @@ EnableGdbServer()
 {
 	if(enable_gdb_server)
 	{
-		// Connect gdb-server to CPU
-		cpu->debug_control_import >> gdb_server->debug_control_export;
-		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
-		gdb_server->memory_import >> cpu->memory_export;
-		gdb_server->registers_import >> cpu->registers_export;
-		gdb_server->memory_access_reporting_control_import >>
-			cpu->memory_access_reporting_control_export;
+		cpu->memory_access_reporting_import >> debugger->memory_access_reporting_export;
+		debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
+		
+		// Connect gdb-server to debugger
+		debugger->debug_control_import >> gdb_server->debug_control_export;
+		debugger->debug_event_listener_import >> gdb_server->debug_event_listener_export;
+		debugger->trap_reporting_import >> gdb_server->trap_reporting_export;
+		gdb_server->debug_event_trigger_import >> debugger->debug_event_trigger_export;
+		gdb_server->memory_import >> debugger->memory_export;
+		gdb_server->registers_import >> debugger->registers_export;
+
 	}
 }
 #endif // SIM_GDB_SERVER_SUPPORT
@@ -723,23 +782,21 @@ EnableInlineDebugger()
 	if ( enable_inline_debugger )
 	{
 		// connect the inline debugger to other components
-		cpu->debug_control_import >> inline_debugger->debug_control_export;
-		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
-		cpu->instruction_counter_trap_reporting_import >> inline_debugger->trap_reporting_export;
-		cpu->exception_trap_reporting_import >> inline_debugger->trap_reporting_export;
-		inline_debugger->disasm_import >> cpu->disasm_export;
-		inline_debugger->memory_import >> cpu->memory_export;
-		inline_debugger->registers_import >> cpu->registers_export;
-		inline_debugger->memory_access_reporting_control_import >>
-			cpu->memory_access_reporting_control_export;
-		//*inline_debugger->loader_import[0] >>
-		//	linux_os->loader_export;
-		*inline_debugger->loader_import[0] >>
-			elf32_loader->loader_export;
-		*inline_debugger->symbol_table_lookup_import[0] >>
-			elf32_loader->symbol_table_lookup_export;
-		*inline_debugger->stmt_lookup_import[0] >>
-			elf32_loader->stmt_lookup_export;
+		debugger->debug_event_listener_import >> inline_debugger->debug_event_listener_export;
+		debugger->trap_reporting_import >> inline_debugger->trap_reporting_export;
+		debugger->debug_control_import >> inline_debugger->debug_control_export;
+		inline_debugger->debug_event_trigger_import >> debugger->debug_event_trigger_export;
+		inline_debugger->disasm_import >> debugger->disasm_export;
+		inline_debugger->memory_import >> debugger->memory_export;
+		inline_debugger->registers_import >> debugger->registers_export;
+		inline_debugger->stmt_lookup_import >> debugger->stmt_lookup_export;
+		inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
+		inline_debugger->backtrace_import >> debugger->backtrace_export;
+		inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
+		inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
+		inline_debugger->subprogram_lookup_import >> debugger->subprogram_lookup_export;
+		inline_debugger->profiling_import >> profiler->profiling_export;
+
 	}
 }
 #endif // SIM_INLINE_DEBUGGER_SUPPORT

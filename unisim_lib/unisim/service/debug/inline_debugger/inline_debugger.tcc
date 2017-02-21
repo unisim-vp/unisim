@@ -60,7 +60,7 @@
 #include <fstream>
 #include <iostream>
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <windows.h>
 #include <io.h>     // for function access()
 #else
@@ -117,6 +117,9 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, subprogram_lookup_import("subprogram-lookup-import", this)
 	, logger(*this)
 	, memory_atom_size(1)
+	, search_path()
+	, init_macro()
+	, output()
 	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
 	, param_search_path("search-path", this, search_path, "Search path for source (separated by ';')")
 	, param_init_macro("init-macro", this, init_macro, "path to initial macro to run when debugger starts")
@@ -199,19 +202,19 @@ void InlineDebugger<ADDRESS>::OnDisconnect()
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event)
+void InlineDebugger<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
 {
-	switch(event.GetType())
+	switch(event->GetType())
 	{
 		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
 			{
-				const unisim::util::debug::Breakpoint<ADDRESS> *breakpoint = (const unisim::util::debug::Breakpoint<ADDRESS> *) &event;
+				const unisim::util::debug::Breakpoint<ADDRESS> *breakpoint = (const unisim::util::debug::Breakpoint<ADDRESS> *) event;
 				(*std_output_stream) << "-> Reached " << (*breakpoint) << std::endl;
 			}
 			break;
 		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT:
 			{
-				const unisim::util::debug::Watchpoint<ADDRESS> *watchpoint = (const unisim::util::debug::Watchpoint<ADDRESS> *) &event;
+				const unisim::util::debug::Watchpoint<ADDRESS> *watchpoint = (const unisim::util::debug::Watchpoint<ADDRESS> *) event;
 				(*std_output_stream) << "-> Reached " << (*watchpoint) << std::endl;
 			}
 			break;
@@ -304,12 +307,15 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 		}
 	}
 
-	int nparms = 0;
-
 	PrintTrackedDataObjects(cia);
 	
 	Disasm(cia, 1, next_addr);
 
+	if ((running_mode == INLINE_DEBUGGER_MODE_TRAVERSE) && IsVisited(cia))
+	{
+		return DebugControl<ADDRESS>::DBG_STEP;
+	}
+	
 	while(1)
 	{
 		trap = false;
@@ -329,7 +335,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 		
 		parm.clear();
 		Tokenize(line, parm);
-		nparms = parm.size();
+		int nparms = parm.size();
 	
 		recognized = false;
 
@@ -340,7 +346,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				break;
 			case 1:
 				{
-					unisim::util::debug::Register *reg = registers_import->GetRegister(parm[0].c_str());
+					unisim::service::interfaces::Register *reg = registers_import->GetRegister(parm[0].c_str());
 
 					if(reg)
 					{
@@ -381,6 +387,13 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				if(IsStepInstructionCommand(parm[0].c_str()))
 				{
 					running_mode = INLINE_DEBUGGER_MODE_STEP_INSTRUCTION;
+					if(interactive) last_line = line;
+					return DebugControl<ADDRESS>::DBG_STEP;
+				}
+
+				if(IsTraverseCommand(parm[0].c_str()))
+				{
+					running_mode = INLINE_DEBUGGER_MODE_TRAVERSE;
 					if(interactive) last_line = line;
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
@@ -1034,6 +1047,9 @@ void InlineDebugger<ADDRESS>::Help()
 	(*std_output_stream) << "<s | step>" << endl;
 	(*std_output_stream) << "    continue executing instructions until control reaches a different source line" << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<traverse>" << endl;
+	(*std_output_stream) << "    step continuously until control reaches an unvisited instruction" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
 	(*std_output_stream) << "<ni | nexti>" << endl;
 	(*std_output_stream) << "    continue to execute instructions until the processor reaches" << endl;
 	(*std_output_stream) << "    next contiguous instruction, a breakpoint or a watchpoint" << endl;
@@ -1137,6 +1153,18 @@ void InlineDebugger<ADDRESS>::Help()
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
 	(*std_output_stream) << "<setobject | setobj | sob> <data object name>" << endl;
 	(*std_output_stream) << "    set data object value in a programmer friendly manner" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<trackobject | trackobj | tob> <data object name>" << endl;
+	(*std_output_stream) << "    track data object and repeatedly print the data object value at each stepping" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<untrackobject | untrackobj | utob> <data object name>" << endl;
+	(*std_output_stream) << "    untrack data object" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<whatis> <data object name>" << endl;
+	(*std_output_stream) << "    print data object type" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<info> <subprogram name>" << endl;
+	(*std_output_stream) << "    print information about a subprogram" << endl;
 	(*std_output_stream) << "========================= BREAKPOINTS/WATCHPOINTS ==============================" << endl;
 	(*std_output_stream) << "<b | break> [<symbol | *address | filename:lineno>]" << endl;
 	(*std_output_stream) << "    set a breakpoint at 'symbol', 'address', or 'filename:lineno'. If 'symbol', 'address'," << endl;
@@ -1239,61 +1267,101 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count, ADDRESS &next_addr
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::HasBreakpoint(ADDRESS addr)
 {
-	return debug_event_trigger_import ? debug_event_trigger_import->IsEventListened(unisim::util::debug::Breakpoint<ADDRESS>(addr)) : false;
+	if(debug_event_trigger_import)
+	{
+		unisim::util::debug::Breakpoint<ADDRESS> brkp = unisim::util::debug::Breakpoint<ADDRESS>(addr);
+		return debug_event_trigger_import->IsEventListened(&brkp);
+	}
+	return false;
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetBreakpoint(ADDRESS addr)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Listen(unisim::util::debug::Breakpoint<ADDRESS>(addr)))
+	if(debug_event_trigger_import)
 	{
-		(*std_output_stream) << "Can't set breakpoint at 0x" << hex << addr << dec << endl;
+		unisim::util::debug::Breakpoint<ADDRESS> *brkp = new unisim::util::debug::Breakpoint<ADDRESS>(addr);
+		if(debug_event_trigger_import->Listen(brkp))
+		{
+			return;
+		}
+		delete brkp;
 	}
+	(*std_output_stream) << "Can't set breakpoint at 0x" << hex << addr << dec << endl;
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetReadWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
+	if(debug_event_trigger_import)
 	{
-		(*std_output_stream) << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
+		unisim::util::debug::Watchpoint<ADDRESS> *wp = new unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
+		
+		if(debug_event_trigger_import->Listen(wp))
+		{
+			return;
+		}
+		delete wp;
 	}
+	(*std_output_stream) << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetWriteWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
+	if(debug_event_trigger_import)
 	{
-		(*std_output_stream) << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
+		unisim::util::debug::Watchpoint<ADDRESS> *wp = new unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
+		
+		if(debug_event_trigger_import->Listen(wp))
+		{
+			return;
+		}
+		delete wp;
 	}
+	(*std_output_stream) << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DeleteBreakpoint(ADDRESS addr)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Unlisten(unisim::util::debug::Breakpoint<ADDRESS>(addr)))
+	if(debug_event_trigger_import)
 	{
-		(*std_output_stream) << "Can't remove breakpoint at 0x" << hex << addr << dec << endl;
+		unisim::util::debug::Breakpoint<ADDRESS> brkp = unisim::util::debug::Breakpoint<ADDRESS>(addr);
+		if(debug_event_trigger_import->Unlisten(&brkp))
+		{
+			return;
+		}
 	}
+	(*std_output_stream) << "Can't remove breakpoint at 0x" << hex << addr << dec << endl;
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DeleteReadWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
+	if(debug_event_trigger_import)
 	{
-		(*std_output_stream) << "Can't remove read watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
+		unisim::util::debug::Watchpoint<ADDRESS> wp = unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
+		if(debug_event_trigger_import->Unlisten(&wp))
+		{
+			return;
+		}
 	}
+	(*std_output_stream) << "Can't remove read watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DeleteWriteWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
+	if(debug_event_trigger_import)
 	{
-		(*std_output_stream) << "Can't remove write watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
+		unisim::util::debug::Watchpoint<ADDRESS> wp = unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
+		if(debug_event_trigger_import->Unlisten(&wp))
+		{
+			return;
+		}
 	}
+	(*std_output_stream) << "Can't remove write watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
 }
 
 template <class ADDRESS>
@@ -3230,7 +3298,7 @@ bool InlineDebugger<ADDRESS>::IsBlankLine(const std::string& line) const
 	unsigned int i;
 	for(i = 0; i < n; i++)
 	{
-		if(line[i] != ' ') return false;
+		if ((line[i] != ' ') && (line[i] != '\t') && (line[i] != '\n') && (line[i] != '\r')) return false;
 	}
 	return true;
 }
@@ -3246,6 +3314,12 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::IsStepInstructionCommand(const char *cmd) const
 {
 	return strcmp(cmd, "si") == 0 || strcmp(cmd, "stepi") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsTraverseCommand(const char *cmd) const
+{
+  return strcmp(cmd, "traverse") == 0;
 }
 
 template <class ADDRESS>
@@ -3493,6 +3567,39 @@ bool InlineDebugger<ADDRESS>::IsInfoSubProgramCommand(const char *cmd) const
 {
 	return strcmp(cmd, "info") == 0;
 }
+
+template <class ADDRESS>
+InlineDebugger<ADDRESS>::VisitedInstructionPage::VisitedInstructionPage()
+{
+	std::fill_n(flags,WORD_COUNT,0);
+}
+
+template <class ADDRESS>
+bool
+InlineDebugger<ADDRESS>::VisitedInstructionPage::Get(ADDRESS cia)
+{
+	uint32_t mask = uint32_t(1) << (cia % BITS_PER_WORD);
+	unsigned idx = (cia / BITS_PER_WORD) % WORD_COUNT;
+	bool visited( flags[idx] & mask );
+	flags[idx] |= mask;
+	return visited;
+}
+
+template <class ADDRESS>
+ADDRESS
+InlineDebugger<ADDRESS>::VisitedInstructionPage::MaskLowerBits(ADDRESS cia)
+{
+  return cia & -(ADDRESS(1) << OFFSET_BITS);
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsVisited(ADDRESS cia)
+{
+	ADDRESS hi_address = VisitedInstructionPage::MaskLowerBits(cia);
+	VisitedInstructionPage& vip = visited_instructions[hi_address];
+	return vip.Get(cia);
+}
+
 
 } // end of namespace inline_debugger
 } // end of namespace debug

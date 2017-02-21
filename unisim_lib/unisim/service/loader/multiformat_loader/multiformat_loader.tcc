@@ -134,7 +134,7 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 	, elf64_loaders()
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, param_verbose_parser("verbose-parser", this, verbose_parser, "Enable/Disable verbosity of parser")
-	, param_filename("filename", this, filename, "List of files to load. Syntax: [[filename=]<filename1>[:[format=]<format1>]][,[filename=]<filename2>[:[format=]<format2>]]... (e.g. boot.bin:raw,app.elf)")
+	, param_filename("filename", this, filename, "List of files to load. Syntax: [[filename=]<filename1>[=[format=]<format1>]][,[filename=]<filename2>[=[format=]<format2>]]... (e.g. boot.bin=raw,app.elf)")
 {
 	positional_option_types.push_back(OPT_FILENAME);
 	positional_option_types.push_back(OPT_FORMAT);
@@ -457,9 +457,9 @@ typename MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatement *MultiForma
 			return ld_stmt;
 		}
 		
-		if(tok != TOK_COLON)
+		if(tok != TOK_EQUAL)
 		{
-			logger << DebugWarning << "In Parameter " << param_filename.GetName() << ", unexpected " << GetTokenName(tok, tok_value) << " at character #" << (pos + 1) << " (expecting a ':')" << EndDebugWarning;
+			logger << DebugWarning << "In Parameter " << param_filename.GetName() << ", unexpected " << GetTokenName(tok, tok_value) << " at character #" << (pos + 1) << " (expecting a '=')" << EndDebugWarning;
 			PrettyPrintSyntaxErrorLocation(filename.c_str(), pos);
 			delete ld_stmt;
 			return 0;
@@ -588,24 +588,14 @@ unsigned int MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::
 		}
 		return n;
 	}
-	
-	if(c == ':')
-	{
-		tok_value = c;
-		tok = TOK_COLON;
-		if(IsVerboseParser())
-		{
-			logger << DebugInfo << "At character #" << (pos + 1) << ", got " << GetTokenName(tok, tok_value) << " (" << n << " characters length )" << EndDebugInfo;
-		}
-		return n;
-	}
-	
+
 	do
 	{
 		tok_value += c;
 		if((pos + n) >= s.length()) break;
 		c = s[pos + n];
-		if((c == '=') || (c == ',') || (c == ':')) break;
+		if((c == '=') || (c == ',')
+		) break;
 		n++;
 	}
 	while(1);
@@ -627,9 +617,6 @@ std::string MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::GetTokenName(Token tok
 	{
 		case TOK_COMMA:
 			sstr << "token ','";
-			break;
-		case TOK_COLON:
-			sstr << "token ':'";
 			break;
 		case TOK_EQUAL:
 			sstr << "token '='";
@@ -830,6 +817,7 @@ MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption::MappingStatemen
 	, pos(_pos)
 	, value(_value)
 	, range()
+	, translation()
 {
 }
 
@@ -839,6 +827,17 @@ MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption::MappingStatemen
 	, pos(_pos)
 	, value()
 	, range(_range)
+	, translation()
+{
+}
+
+template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
+MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption::MappingStatementOption(MappingStatementOptionType _type, unsigned int _pos, MEMORY_ADDR _translation)
+	: type(_type)
+	, pos(_pos)
+	, value()
+	, range()
+	, translation(_translation)
 {
 }
 
@@ -899,10 +898,11 @@ MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MemoryMapper(const char *name, Object *
 	, mapping_table()
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, param_verbose_parser("verbose-parser", this, verbose_parser, "Enable/Disable verbosity of parser")
-	, param_mapping("mapping", this, mapping, "Memory mapping. Syntax: [[(memory=]<memory1>[:[range=]<low1-high1>]][,[(memory=]<memory2>[:[range=]<low2-high2>]]... (e.g. ram:0x0-0x00ffff,rom:0xff0000-0xffffff)")
+	, param_mapping("mapping", this, mapping, "Memory mapping. Syntax: [memory=]<memory1>[:[range=]<low1-high1>][:[translation=]+<translation1>][,... (e.g. ram:0x0-0x00ffff,rom:0xff0000-0xffffff:+0xff0000)")
 {
 	positional_option_types.push_back(OPT_MEMORY);
 	positional_option_types.push_back(OPT_RANGE);
+	positional_option_types.push_back(OPT_TRANSLATION);
 
 	unsigned int i;
 	
@@ -995,6 +995,7 @@ bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::BeginSetup()
 		{
 			int memory_num = -1;
 			const AddressRange<MEMORY_ADDR> *addr_range = 0;
+			const MEMORY_ADDR *translation = 0;
 			
 			const MappingStatement *mapping_stmt = mapping_stmts[i];
 			const std::vector<MappingStatementOption *>& mapping_stmt_opts = mapping_stmt->opts;
@@ -1036,6 +1037,17 @@ bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::BeginSetup()
 							PrettyPrintSyntaxErrorLocation(mapping.c_str(), mapping_stmt_opt->pos);
 						}
 						break;
+					case OPT_TRANSLATION:
+						if(!translation)
+						{
+							translation = &mapping_stmt_opt->translation;
+						}
+						else
+						{
+							logger << DebugWarning << "In Parameter " << param_mapping.GetName() << ", unexpected " << mapping_stmt_opt->value << " address translation offset at character #" << (mapping_stmt_opt->pos + 1) << " because an address range was already specified" << EndDebugWarning;
+							PrettyPrintSyntaxErrorLocation(mapping.c_str(), mapping_stmt_opt->pos);
+						}
+						break;
 					default:
 						logger << DebugError << "Internal error" << EndDebugError;
 						Object::Stop(-1);
@@ -1045,7 +1057,7 @@ bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::BeginSetup()
 			
 			if((memory_num >= 0) && addr_range)
 			{
-				mapping_table.push_back(new Mapping<MEMORY_ADDR>(memory_num, *addr_range));
+				mapping_table.push_back(new Mapping<MEMORY_ADDR>(memory_num, *addr_range, translation ? *translation : 0));
 			}
 			else
 			{
@@ -1159,6 +1171,17 @@ unsigned int MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::strin
 	{
 		tok_value = c;
 		tok = TOK_MINUS;
+		if(IsVerboseParser())
+		{
+			logger << DebugInfo << "At character #" << (pos + 1) << ", got " << GetTokenName(tok, tok_value) << " (" << n << " characters length )" << EndDebugInfo;
+		}
+		return n;
+	}
+
+	if(c == '+')
+	{
+		tok_value = c;
+		tok = TOK_PLUS;
 		if(IsVerboseParser())
 		{
 			logger << DebugInfo << "At character #" << (pos + 1) << ", got " << GetTokenName(tok, tok_value) << " (" << n << " characters length )" << EndDebugInfo;
@@ -1283,6 +1306,9 @@ std::string MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::GetTokenName(Token tok, con
 		case TOK_MINUS:
 			sstr << "token '-'";
 			break;
+		case TOK_PLUS:
+			sstr << "token '+'";
+			break;
 		case TOK_EOF:
 			sstr << "end";
 			break;
@@ -1336,6 +1362,43 @@ bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::ParseAddressRange(const std::strin
 	
 	addr_range.low = low;
 	addr_range.high = high;
+	
+	return true;
+}
+
+template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
+bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::ParseAddressTranslationOffset(const std::string& s, unsigned int& pos, MEMORY_ADDR& translation)
+{
+	Token tok;
+	std::string tok_value;
+	MEMORY_ADDR tok_addr_value;
+	MEMORY_ADDR dummy;
+	unsigned int n;
+
+	n = ReadToken(s, pos, tok, tok_value, dummy);
+	
+	if(tok != TOK_PLUS)
+	{
+		logger << DebugWarning << "In Parameter " << param_mapping.GetName() << ", unexpected " << GetTokenName(tok, tok_value) << " at character #" << (pos + 1) << " (expecting a '+')" << EndDebugWarning;
+		PrettyPrintSyntaxErrorLocation(mapping.c_str(), pos);
+		return false;
+	}
+	
+	pos += n;
+	
+	n = ReadToken(s, pos, tok, tok_value, tok_addr_value);
+	
+	if(tok != TOK_ADDRESS)
+	{
+		logger << DebugWarning << "In Parameter " << param_mapping.GetName() << ", unexpected " << GetTokenName(tok, tok_value) << " at character #" << (pos + 1) << " (expecting an address translation offset)" << EndDebugWarning;
+		PrettyPrintSyntaxErrorLocation(mapping.c_str(), pos);
+		return false;
+	}
+	
+	pos += n;
+	
+	translation = tok_addr_value;
+	
 	return true;
 }
 
@@ -1363,30 +1426,6 @@ typename MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption *Memory
 					if(opt_idx < positional_option_types.size())
 					{
 						opt_type = positional_option_types[opt_idx];
-						
-						switch(opt_type)
-						{
-							case OPT_MEMORY:
-								mapping_stmt_opt = new MappingStatementOption(OPT_MEMORY, pos, tok_value);
-								pos += n;
-								break;
-							case OPT_RANGE:
-								{
-									AddressRange<MEMORY_ADDR> addr_range;
-									if(!ParseAddressRange(s, pos, addr_range))
-									{
-										logger << DebugWarning << "In Parameter " << param_mapping.GetName() << ", expecting an address range at character #" << (pos + 1) << EndDebugWarning;
-										PrettyPrintSyntaxErrorLocation(mapping.c_str(), pos);
-										return 0;
-									}
-									// Note: no need to increment pos because ParseAddressRange already did it
-									mapping_stmt_opt = new MappingStatementOption(OPT_RANGE, pos, addr_range);
-								}
-								break;
-							default:
-								logger << DebugError << "Internal error" << EndDebugError;
-								Object::Stop(-1);
-						}
 					}
 					else
 					{
@@ -1394,15 +1433,56 @@ typename MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption *Memory
 						PrettyPrintSyntaxErrorLocation(mapping.c_str(), pos);
 						return 0;
 					}
+					
+					state = 1;
 				}
 				else
 				{
 					pos += n;
+					state = 2;
 				}
-				state = 1;
 				break;
 				
 			case 1:
+				switch(opt_type)
+				{
+					case OPT_MEMORY:
+						mapping_stmt_opt = new MappingStatementOption(OPT_MEMORY, pos, tok_value);
+						pos += n;
+						break;
+					case OPT_RANGE:
+						{
+							AddressRange<MEMORY_ADDR> addr_range;
+							if(!ParseAddressRange(s, pos, addr_range))
+							{
+								logger << DebugWarning << "In Parameter " << param_mapping.GetName() << ", expecting an address range at character #" << (pos + 1) << EndDebugWarning;
+								PrettyPrintSyntaxErrorLocation(mapping.c_str(), pos);
+								return 0;
+							}
+							// Note: no need to increment pos because ParseAddressRange already did it
+							mapping_stmt_opt = new MappingStatementOption(OPT_RANGE, pos, addr_range);
+						}
+						break;
+					case OPT_TRANSLATION:
+						{
+							MEMORY_ADDR translation;
+							if(!ParseAddressTranslationOffset(s, pos, translation))
+							{
+								logger << DebugWarning << "In Parameter " << param_mapping.GetName() << ", expecting an address translation offset at character #" << (pos + 1) << EndDebugWarning;
+								PrettyPrintSyntaxErrorLocation(mapping.c_str(), pos);
+								return 0;
+							}
+							// Note: no need to increment pos because ParseAddressTranslationOffset already did it
+							mapping_stmt_opt = new MappingStatementOption(OPT_TRANSLATION, pos, translation);
+						}
+						break;
+					default:
+						logger << DebugError << "Internal error" << EndDebugError;
+						Object::Stop(-1);
+				}
+				break;
+				
+			case 2:
 				if(tok != TOK_EQUAL)
 				{
 					logger << DebugWarning << "In Parameter " << param_mapping.GetName() << ", unexpected " << GetTokenName(tok, tok_value) << " at character #" << (pos + 1) << " (expecting an '=')" << EndDebugWarning;
@@ -1410,19 +1490,7 @@ typename MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption *Memory
 					return 0;
 				}
 				pos += n;
-				state = 2;
-				break;
-			case 2:
-				if(tok != TOK_STRING)
-				{
-					logger << DebugWarning << "In Parameter " << param_mapping.GetName() << ", unexpected " << GetTokenName(tok, tok_value) << " at character #" << (pos + 1) << " (expecting a string)" << EndDebugWarning;
-					PrettyPrintSyntaxErrorLocation(mapping.c_str(), pos);
-					return 0;
-				}
-				
-				mapping_stmt_opt = new MappingStatementOption(opt_type, pos, tok_value);
-				pos += n;
-				state = 0;
+				state = 1;
 				break;
 		}
 	}
@@ -1480,6 +1548,7 @@ typename MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOptionType Mem
 {
 	if(opt_name.compare("memory") == 0) return OPT_MEMORY;
 	if(opt_name.compare("range") == 0) return OPT_RANGE;
+	if(opt_name.compare("translation") == 0) return OPT_TRANSLATION;
 	return OPT_UNKNOWN;
 }
 
@@ -1535,7 +1604,7 @@ bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::ReadMemory(MEMORY_ADDR addr, void 
 				if((low >= mapping->addr_range.low) && (low <= mapping->addr_range.high))
 				{
 					uint32_t sz = (high > mapping->addr_range.high) ? mapping->addr_range.high - low + 1 : high - low + 1;
-					if(!(*memory_import[mapping->memory_num])->ReadMemory(low, (uint8_t *) buffer + (low - addr), sz)) return false;
+					if(!(*memory_import[mapping->memory_num])->ReadMemory((low - mapping->addr_range.low) + mapping->translation, (uint8_t *) buffer + (low - addr), sz)) return false;
 					MEMORY_ADDR next_addr = low + sz;
 					if(next_addr < low) return true; // return if end of address space has been reached
 					low = next_addr;
@@ -1566,7 +1635,6 @@ bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::WriteMemory(MEMORY_ADDR addr, cons
 	
 	if(low > high) // out of address space ?
 	{
-		std::cerr << "size=" << size << std::endl;
 		logger << DebugWarning << "Access out of address space (@0x" << std::hex << low << std::dec << "-0x" << std::hex << high << std::dec << ")" << EndDebugWarning;
 		high = std::numeric_limits<MEMORY_ADDR>::max();
 	}
@@ -1584,7 +1652,7 @@ bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::WriteMemory(MEMORY_ADDR addr, cons
 				if((low >= mapping->addr_range.low) && (low <= mapping->addr_range.high))
 				{
 					uint32_t sz = (high > mapping->addr_range.high) ? mapping->addr_range.high - low + 1 : high - low + 1;
-					if(!(*memory_import[mapping->memory_num])->WriteMemory(low, (const uint8_t *) buffer + (low - addr), sz)) return false;
+					if(!(*memory_import[mapping->memory_num])->WriteMemory((low - mapping->addr_range.low) + mapping->translation, (const uint8_t *) buffer + (low - addr), sz)) return false;
 					MEMORY_ADDR next_addr = low + sz;
 					if(next_addr < low) return true; // return if end of address space has been reached
 					low = next_addr;

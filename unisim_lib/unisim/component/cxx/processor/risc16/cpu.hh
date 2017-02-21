@@ -161,7 +161,8 @@ public:
 	//=                   Register interface methods                      =
 	//=====================================================================
 	
-	virtual unisim::util::debug::Register *GetRegister(const char *name);
+	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
+	virtual void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner );
 
 	/** registers */
 	uint16_t cia;
@@ -178,7 +179,7 @@ private:
 	// the kernel logger
 	unisim::kernel::logger::Logger logger;
 
-	std::map<std::string, unisim::util::debug::Register *> registers_registry;
+	std::map<std::string, unisim::service::interfaces::Register *> registers_registry;
 	std::vector<unisim::kernel::service::VariableBase *> extended_registers_registry;
 };
 

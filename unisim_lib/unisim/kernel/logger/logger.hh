@@ -35,19 +35,11 @@
 #ifndef __UNISIM_KERNEL_LOGGER_HH__
 #define __UNISIM_KERNEL_LOGGER_HH__
 
+
+#include <string>
 #include <ios>
 #include <ostream>
 #include <sstream>
-
-namespace unisim { 
-namespace kernel {
-namespace service {
-
-class Object;
-
-}
-}
-}
 
 namespace unisim {
 namespace kernel {
@@ -55,11 +47,32 @@ namespace logger {
 
 class LoggerServer;
 
-class Logger {
-public:
-	Logger(const unisim::kernel::service::Object &obj);
+struct Logger
+{
+	Logger( std::string _name )
+	  : name( _name )
+	  , buffer_()
+	  , mode_( NO_MODE )
+	  , server_()
+	{ GetServerInstance(); }
+	
+	Logger( char const* _name )
+	  : name( _name )
+	  , buffer_()
+	  , mode_( NO_MODE )
+	  , server_()
+	{ GetServerInstance(); }
+	
+	template <typename OBJ>
+	Logger( OBJ const& obj )
+	  : name( obj.GetName() )
+	  , buffer_()
+	  , mode_( NO_MODE )
+	  , server_()
+	{ GetServerInstance(); }
+	
 	~Logger();
-
+	
 	friend Logger& operator << (Logger& logger, std::ios_base& (*f)(std::ios_base &));
 	friend Logger& operator << (Logger& logger, std::ostream& (*f)(std::ostream &));
 	friend Logger& operator << (Logger& logger, Logger& (*f)(Logger &));
@@ -69,24 +82,24 @@ public:
 		return *this;
 	}
 
-  // Returns the raw STL output stream that is used to print out the log.
-  // Use this method with caution. Before handling the stream one of the open
-  // debug tags should have been used, and after the close of the debug tags the
-  // stream should not be used any longer.
-  // Example of usage:
-  //   logger << DebugInfo; // start debug info message
-  //   {
-  //     std::ostream& log_stream = logger.GetStream(); // get the raw output
-  //                                                    // stream
-  //     // send whatever you want to the output stream
-  //     log_stream << "Hello world";
-  //     // ...
-  //   } // we ensure that the log_stream liveness is in between DebugInfo and
-  //     // EndDebugInfo tags, so it is not used outside that scope
-  //   logger << EndDebugInfo;
-  //
-  // More tricky usages are possible, but not recommended.
-  std::ostream& GetStream();
+	// Returns the raw STL output stream that is used to print out the log.
+	// Use this method with caution. Before handling the stream one of the open
+	// debug tags should have been used, and after the close of the debug tags the
+	// stream should not be used any longer.
+	// Example of usage:
+	//   logger << DebugInfo; // start debug info message
+	//   {
+	//     std::ostream& log_stream = logger.GetStream(); // get the raw output
+	//                                                    // stream
+	//     // send whatever you want to the output stream
+	//     log_stream << "Hello world";
+	//     // ...
+	//   } // we ensure that the log_stream liveness is in between DebugInfo and
+	//     // EndDebugInfo tags, so it is not used outside that scope
+	//   logger << EndDebugInfo;
+	//
+	// More tricky usages are possible, but not recommended.
+	std::ostream& GetStream() { return buffer_; }
 
 	void DebugInfo();
 	void EndDebugInfo();
@@ -96,17 +109,17 @@ public:
 	void EndDebugError();
 	void EndDebug();
 
+	unisim::kernel::logger::LoggerServer* GetServerInstance();
+	static unisim::kernel::logger::LoggerServer* StaticServerInstance();
 private:
-	std::stringstream buffer_;
-	const unisim::kernel::service::Object &obj_;
-	enum mode_t {NO_MODE,
-		INFO_MODE,
-		WARNING_MODE,
-		ERROR_MODE};
-	mode_t mode_;
 	void PrintMode();
+	
+	std::string name;
+	std::stringstream buffer_;
+	enum mode_t { NO_MODE = 0, INFO_MODE, WARNING_MODE, ERROR_MODE };
+	mode_t mode_;
 
-  unisim::kernel::logger::LoggerServer *server_;
+	unisim::kernel::logger::LoggerServer *server_;
 };
 
 Logger& DebugInfo(Logger&);

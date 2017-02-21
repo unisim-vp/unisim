@@ -219,7 +219,6 @@ unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/breakpoint.hh \
 unisim/util/debug/event.hh \
 unisim/util/debug/profile.hh \
-unisim/util/debug/register.hh \
 unisim/util/debug/symbol.hh \
 unisim/util/debug/stmt.hh \
 unisim/util/debug/simple_register.hh \
@@ -299,6 +298,7 @@ unisim/service/interfaces/stmt_lookup.hh \
 unisim/service/interfaces/time.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/profiling.hh \
+unisim/service/interfaces/register.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/synchronizable.hh \
 unisim/service/interfaces/trap_reporting.hh \
@@ -648,8 +648,8 @@ Requirements:
   - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
   - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
   - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
-  - Core SystemC Language >= 2.1 (http://www.systemc.org)
-  - TLM Transaction Level Modeling Library, Release >= 2.0 (http://www.systemc.org)
+  - Core SystemC Language >= 2.3.0 (http://www.systemc.org)
+
 
 Building instructions:
   $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-tlm20=<path-to-TLM-library-install-dir>
@@ -953,10 +953,10 @@ if [ "${has_to_build_avr32emu_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_CXXABI(main)" >> "${AVR32EMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${AVR32EMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${AVR32EMU_CONFIGURE_AC}"
-	echo "UNISIM_WITH_BOOST(main)" >> "${AVR32EMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${AVR32EMU_CONFIGURE_AC}"
+	echo "AX_BOOST_BASE([1.53.0], AC_MSG_NOTICE([boost >= 1.53.0 found.]), AC_MSG_ERROR([boost >= 1.53.0 not found.]))" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "CPPFLAGS=\"\${BOOST_CPPFLAGS} \${CPPFLAGS}\"" >> "${AVR32EMU_CONFIGURE_AC}"
+	echo "LDFLAGS=\"\${BOOST_LDFLAGS} \${LDFLAGS}\"" >> "${AVR32EMU_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${AVR32EMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TLM20" >> "${AVR32EMU_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${AVR32EMU_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${AVR32EMU_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-avr32emu-${AVR32EMU_VERSION}\"], [path of shared data relative to bin directory])" >> "${AVR32EMU_CONFIGURE_AC}"

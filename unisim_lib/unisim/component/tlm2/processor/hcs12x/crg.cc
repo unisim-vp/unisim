@@ -100,6 +100,8 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
 
+	, rti_fdr(1)
+
 	, synr_register(0x09)
 	, refdv_register(0x00)
 	, ctflg_register(0x00)
@@ -149,7 +151,7 @@ CRG::~CRG() {
 	bus_clk_trans->release();
 
 	// Release registers_registry
-	map<string, unisim::util::debug::Register *>::iterator reg_iter;
+	map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
 
 	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
 	{
@@ -175,7 +177,7 @@ void CRG::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	if ((address >= baseAddress) && (address < (baseAddress + 12))) {
+	if ((address >= baseAddress) && (address < (baseAddress + MEMORY_MAP_SIZE))) {
 
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);
@@ -688,7 +690,7 @@ void CRG::runRTI() {
 	}
 }
 
-void CRG::assertInterrupt(uint8_t interrupt_offset) {
+void CRG::assertInterrupt(unsigned int interrupt_offset) {
 
 	if ((interrupt_offset == interrupt_offset_pll_lock) && ((crgint_register & 0x10) == 0)) return;
 	if ((interrupt_offset == interrupt_offset_self_clock_mode) && ((crgint_register & 0x02) == 0)) return;
@@ -814,7 +816,7 @@ void CRG::updateBusClock() {
 
 	sc_time delay = SC_ZERO_TIME;
 
-	for (uint8_t i = 0; i < bus_clock_socket.size(); i++) {
+	for (unsigned int i = 0; i < bus_clock_socket.size(); i++) {
 		bus_clk_trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 
 		bus_clock_socket[i]->b_transport( *bus_clk_trans, delay);
@@ -1017,7 +1019,7 @@ void CRG::Reset() {
 
 bool CRG::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr <= (baseAddress+ARMCOP))) {
+	if ((addr >= baseAddress) && (addr <= (baseAddress + (unsigned int) ARMCOP))) {
 
 		physical_address_t offset = addr-baseAddress;
 
@@ -1063,7 +1065,7 @@ bool CRG::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
 bool CRG::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr <= (baseAddress+ARMCOP))) {
+	if ((addr >= baseAddress) && (addr <= (baseAddress + (unsigned int) ARMCOP))) {
 
 		if (size == 0) {
 			return (true);

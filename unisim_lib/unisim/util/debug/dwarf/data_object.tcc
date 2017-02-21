@@ -323,7 +323,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 				uint64_t dw_data_object_bit_size = dw_data_object_loc->GetBitSize();
 
 				unsigned int dw_reg_num = dw_data_object_loc->GetRegisterNumber();
-				const unisim::util::debug::Register *arch_reg = dw_reg_num_mapping->GetArchReg(dw_reg_num);
+				const unisim::service::interfaces::Register *arch_reg = dw_reg_num_mapping->GetArchReg(dw_reg_num);
 				if(debug)
 				{
 					logger << DebugInfo << "DW_LOC_SIMPLE_REGISTER: dw_reg_num=" << dw_reg_num << EndDebugInfo;
@@ -390,7 +390,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 									logger << DebugInfo << "DW_LOC_PIECE_REGISTER: dw_reg_num=" << dw_reg_num << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << EndDebugInfo;
 								}
 								
-								const unisim::util::debug::Register *arch_reg = dw_reg_num_mapping->GetArchReg(dw_reg_num);
+								const unisim::service::interfaces::Register *arch_reg = dw_reg_num_mapping->GetArchReg(dw_reg_num);
 								if(!arch_reg) return false;
 								
 								unsigned int reg_size = arch_reg->GetSize(); // FIXME: Get true bit size
@@ -533,7 +533,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 				uint64_t dw_data_object_bit_size = dw_data_object_loc->GetBitSize();
 
 				unsigned int dw_reg_num = dw_data_object_loc->GetRegisterNumber();
-				unisim::util::debug::Register *arch_reg = dw_reg_num_mapping->GetArchReg(dw_reg_num);
+				unisim::service::interfaces::Register *arch_reg = dw_reg_num_mapping->GetArchReg(dw_reg_num);
 				if(debug)
 				{
 					logger << DebugInfo << "DW_LOC_SIMPLE_REGISTER: dw_reg_num=" << dw_reg_num << EndDebugInfo;
@@ -607,7 +607,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 									logger << DebugInfo << "DW_LOC_PIECE_REGISTER: dw_reg_num=" << dw_reg_num << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << EndDebugInfo;
 								}
 								
-								unisim::util::debug::Register *arch_reg = dw_reg_num_mapping->GetArchReg(dw_reg_num);
+								unisim::service::interfaces::Register *arch_reg = dw_reg_num_mapping->GetArchReg(dw_reg_num);
 								if(!arch_reg) return false;
 								
 								unsigned int reg_size = arch_reg->GetSize(); // FIXME: Get true bit size

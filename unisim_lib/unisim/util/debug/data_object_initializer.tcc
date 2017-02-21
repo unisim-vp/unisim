@@ -81,7 +81,7 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 							{
 								if((data_object_value >= 32) && (data_object_value < 128))
 								{
-									(*os) << "'" << (char) data_object_value << "'";
+									(*os) << "'" << (char) data_object_value << "' /* 0x" << std::hex << data_object_value << std::dec << " */";
 								}
 								else
 								{

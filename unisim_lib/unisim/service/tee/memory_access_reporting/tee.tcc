@@ -107,13 +107,24 @@ void Tee<ADDRESS, MAX_IMPORTS>::ReportMemoryAccess(typename MemoryAccessReportin
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-void Tee<ADDRESS, MAX_IMPORTS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
+void Tee<ADDRESS, MAX_IMPORTS>::ReportCommitInstruction(ADDRESS addr)
 {
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
 	{
 		if(out[i])
-			if(*out[i]) (*out[i])->ReportFinishedInstruction(addr, next_addr);
+			if(*out[i]) (*out[i])->ReportCommitInstruction(addr);
+	}
+}
+
+template <class ADDRESS, unsigned int MAX_IMPORTS>
+void Tee<ADDRESS, MAX_IMPORTS>::ReportFetchInstruction(ADDRESS next_addr)
+{
+	unsigned int i;
+	for(i = 0; i < MAX_IMPORTS; i++)
+	{
+		if(out[i])
+			if(*out[i]) (*out[i])->ReportFetchInstruction(next_addr);
 	}
 }
 

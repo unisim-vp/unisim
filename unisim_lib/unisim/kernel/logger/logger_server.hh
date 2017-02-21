@@ -37,9 +37,7 @@
 
 #include <string>
 #include <fstream>
-#include <vector>
-
-#include "unisim/kernel/service/service.hh"
+#include <set>
 
 // Forward declaration to hide libxml2 data types
 typedef struct _xmlTextWriter xmlTextWriter;
@@ -49,47 +47,39 @@ namespace unisim {
 namespace kernel {
 namespace logger {
 
-class LoggerServer {
-public:
+struct Logger;
+
+struct LoggerServer
+{
 	/** Constructor */
 	LoggerServer();
 	/** Destructor */
-	virtual ~LoggerServer();
+	~LoggerServer();
 
-	/** Object Setup method
-	 * Implementation of the Setup method required by Object. Returns true if the initialization
-	 *   of the logger could be successfully done based on the parameters options, or false
-	 *   otherwise.
+	/** Setup the logger server according to options value
+	 * 
+	 * Returns true if the initialization of the logger could be
+	 * successfully done based on the parameters options, or false
+	 * otherwise.
 	 *
 	 * @return true if initialization succedded, false otherwise
 	 */
-	virtual bool Setup();
+	bool Setup();
 
-	/** Object OnDisconnect method
-	 * Implementation of the OnDisconnect method required by Object.
+	/** Register a client logger.
+	 * 
+	 * This method should be called by the different loggers when
+	 * being constructed.
 	 */
-	virtual void OnDisconnect();
+	void AddClient( Logger const* client );
 
-	/** Get a handle the unique logger server of the system
-	 * This method should be called by the different loggers to get a handle to
-	 *   the unique logger server that centralizes all the log requests.
-	 *
-	 * @return a pointer to the unique logger server of the system
+	/** Unregister a client logger and close server if needed
+	 *  
+	 *  This method should be called by the different client
+	 *  loggers when being destroyed.
 	 */
-	static LoggerServer *GetInstanceWithoutCountingReference();
-	static LoggerServer *GetInstance(const unisim::kernel::service::Object &obj);
+	void RemoveClient( Logger const* client );
 
-	/** Free the handle to the unique logger server of the system
-	 * This method should be called by the different loggers when being destroyed.
-	 */
-	static void RemoveInstance(const unisim::kernel::service::Object &obj);
-
-	/** Obtain the unique logger server object name
-	 *
-	 * @return the unique logger server object name
-	 */
-	static const char *GetObjectName();
-	
 	/** Message debug info log command
 	 * Loggers should call this method (using the handle obtained with GetInstance)
 	 *   to log a debug info message.
@@ -97,7 +87,7 @@ public:
 	 * @param obj the unisim::kernel::service::Object that is sending the debug info message
 	 * @param buffer the debug info message
 	 */
-	void DebugInfo(const unisim::kernel::service::Object &obj, const char *buffer);
+	void DebugInfo( std::string name, const char *buffer );
 	/** Message debug warning log command
 	 * Loggers should call this method (using the handle obtained with GetInstance)
 	 *   to log a debug warning message.
@@ -105,7 +95,7 @@ public:
 	 * @param obj the unisim::kernel::service::Object that is sending the debug warning message
 	 * @param buffer the debug warning message
 	 */
-	void DebugWarning(const unisim::kernel::service::Object &obj, const char *buffer);
+	void DebugWarning( std::string name, const char *buffer );
 	/** Message debug error log command
 	 * Loggers should call this method (using the handle obtained with GetInstance)
 	 *   to log a debug error message.
@@ -113,28 +103,11 @@ public:
 	 * @param obj the unisim::kernel::service::Object that is sending the debug error message
 	 * @param buffer the debug error message
 	 */
-	void DebugError(const unisim::kernel::service::Object &obj, const char *buffer);
+	void DebugError( std::string name, const char *buffer );
 
 private:
-	/** Pointer to the unique logger server of the system
-	 * This is the pointer that is returned when the GetInstance method is called. It must be
-	 *   set up at the GetInstance method if it hasn't been set up (that is, the first time
-	 *   it is called).
-	 */
-	static LoggerServer *singleton_;
-
-	/** Number of references to singleton
-	 * This is a counter to the number of times the singleton is being used.
-	 */
-	static unsigned long long int singleton_refs_;
-
-	/** Pointer to the objects that demanded an instance of the logger
-	 */
-	static std::vector<const unisim::kernel::service::Object *> *obj_refs_;
-
-	/** The unique logger server name
-	 */
-	static const char *name_;
+	/** Pointer set to the client loggers */
+	std::set<Logger const*> clients;
 
 	/** XML file handler
 	 * The type of this file handler is provided by libxml2.
@@ -148,7 +121,13 @@ private:
 	 * @param obj    the object source of the message
 	 * @param buffer the message buffer
 	 */
-	void XmlDebug(const char *type, const unisim::kernel::service::Object &obj, const char *buffer);
+	void XmlDebug( const char *type, std::string name, const char *buffer );
+
+	/** Server internal closing method
+         * 
+	 * Invoked when no client are connected anymore
+	 */
+	void Close();
 
 	/** Text file handler
 	 */
@@ -157,25 +136,16 @@ private:
 	/***************************************************************************
 	 * Parameters                                                        START *
 	 ***************************************************************************/
-
+public:
 	bool opt_std_err_;
-	unisim::kernel::service::Parameter<bool> param_std_err_;
 	bool opt_std_out_;
-	unisim::kernel::service::Parameter<bool> param_std_out_;
 	bool opt_std_err_color_;
-	unisim::kernel::service::Parameter<bool> param_std_err_color_;
 	bool opt_std_out_color_;
-	unisim::kernel::service::Parameter<bool> param_std_out_color_;
 	bool opt_file_;
-	unisim::kernel::service::Parameter<bool> param_file_;
 	std::string opt_filename_;
-	unisim::kernel::service::Parameter<std::string> param_filename_;
 	bool opt_xml_file_;
-	unisim::kernel::service::Parameter<bool> param_xml_file_;
 	std::string opt_xml_filename_;
-	unisim::kernel::service::Parameter<std::string> param_xml_filename_;
 	bool opt_xml_file_gzipped_;
-	unisim::kernel::service::Parameter<bool> param_xml_file_gzipped_;
 
 	/***************************************************************************
 	 * Parameters                                                          END *

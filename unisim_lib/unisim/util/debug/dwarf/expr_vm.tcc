@@ -2104,7 +2104,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::ReadRegister(unsigned int dw_reg_num, MEMO
 {
 	if(dw_frame) return dw_frame->ReadRegister(dw_reg_num, reg_value);
 	
-	const unisim::util::debug::Register *arch_reg = reg_num_mapping->GetArchReg(dw_reg_num);
+	const unisim::service::interfaces::Register *arch_reg = reg_num_mapping->GetArchReg(dw_reg_num);
 	
 	if(arch_reg)
 	{

@@ -103,7 +103,7 @@ using unisim::kernel::logger::EndDebugError;
 using namespace std;
 
 template <class CONFIG>
-class PCRegisterInterface : public unisim::util::debug::Register
+class PCRegisterInterface : public unisim::service::interfaces::Register
 {
 public:
 	PCRegisterInterface(const char *name, typename CONFIG::address_t *r15_value, typename CONFIG::address_t *npc_value);
@@ -396,7 +396,8 @@ public:
 	//=                        Debugging stuffs                           =
 	//=====================================================================
 
-	virtual unisim::util::debug::Register *GetRegister(const char *name);
+	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
+	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 	virtual string Disasm(typename CONFIG::address_t addr, typename CONFIG::address_t& next_addr);
 	string GetObjectFriendlyName(typename CONFIG::address_t addr);
 	string GetFunctionFriendlyName(typename CONFIG::address_t addr);
@@ -533,7 +534,7 @@ private:
 	std::string halt_on;
 	uint64_t max_inst;                                         //!< maximum number of instructions to execute
 
-	map<string, unisim::util::debug::Register *> registers_registry;       //!< Every CPU register interfaces
+	map<string, unisim::service::interfaces::Register *> registers_registry;       //!< Every CPU register interfaces
 	uint64_t instruction_counter;                              //!< Number of executed instructions
 
 	inline uint64_t GetInstructionCounter() const ALWAYS_INLINE { return instruction_counter; }

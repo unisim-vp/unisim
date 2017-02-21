@@ -41,6 +41,7 @@
 
 #include <inttypes.h>
 #include <unisim/util/inlining/inlining.hh>
+#include <limits>
 
 namespace unisim {
 namespace util {
@@ -58,6 +59,10 @@ inline void SignedSub8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, u
 inline void SignedSub16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in) ALWAYS_INLINE;
 inline void SignedSub32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in) ALWAYS_INLINE;
 
+inline void UnsignedSub8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t carry_in) ALWAYS_INLINE;
+inline void UnsignedSub16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t carry_in) ALWAYS_INLINE;
+inline void UnsignedSub32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t carry_in) ALWAYS_INLINE;
+
 inline void SignedSatAdd8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) ALWAYS_INLINE;
 inline void SignedSatAdd16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) ALWAYS_INLINE;
 inline void SignedSatAdd32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) ALWAYS_INLINE;
@@ -71,8 +76,16 @@ inline void UnsignedSatAdd32(uint32_t& result, uint8_t& borrow_out, uint8_t& ove
 inline void SignedSatSub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) ALWAYS_INLINE;
 inline void SignedSatSub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) ALWAYS_INLINE;
 inline void SignedSatSub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) ALWAYS_INLINE;
+inline void SignedSatSub8(uint8_t& result, uint8_t& does_sat, uint8_t x, uint8_t y) ALWAYS_INLINE;
+inline void SignedSatSub16(uint16_t& result, uint8_t& does_sat, uint16_t x, uint16_t y) ALWAYS_INLINE;
 inline void SignedSatSub32(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) ALWAYS_INLINE;
-inline void SignedSatSub16(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) ALWAYS_INLINE;
+
+inline void UnsignedSatSub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) ALWAYS_INLINE;
+inline void UnsignedSatSub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) ALWAYS_INLINE;
+inline void UnsignedSatSub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) ALWAYS_INLINE;
+inline void UnsignedSatSub8(uint8_t& result, uint8_t& overflow, uint8_t x, uint8_t y) ALWAYS_INLINE; 
+inline void UnsignedSatSub16(uint16_t& result, uint8_t& overflow, uint16_t x, uint16_t y) ALWAYS_INLINE;
+inline void UnsignedSatSub32(uint32_t& result, uint8_t& overflow, uint32_t x, uint32_t y) ALWAYS_INLINE;
 
 inline uint32_t ReverseCarryPropagationAdd(uint32_t x, uint32_t y) ALWAYS_INLINE;
 
@@ -114,6 +127,18 @@ inline bool BitScanForward(unsigned int& n, uint64_t v) ALWAYS_INLINE;
 
 inline bool BitScanReverse(unsigned int& n, uint32_t v) ALWAYS_INLINE;
 inline bool BitScanReverse(unsigned int& n, uint64_t v) ALWAYS_INLINE;
+
+inline int BitScanForward(unsigned char n) ALWAYS_INLINE;
+inline int BitScanForward(unsigned short n) ALWAYS_INLINE;
+inline int BitScanForward(unsigned n) ALWAYS_INLINE;
+inline int BitScanForward(unsigned long n) ALWAYS_INLINE;
+inline int BitScanForward(unsigned long long n) ALWAYS_INLINE;
+
+inline int BitScanReverse(unsigned char n) ALWAYS_INLINE;
+inline int BitScanReverse(unsigned short n) ALWAYS_INLINE;
+inline int BitScanReverse(unsigned n) ALWAYS_INLINE;
+inline int BitScanReverse(unsigned long n) ALWAYS_INLINE;
+inline int BitScanReverse(unsigned long long n) ALWAYS_INLINE;
 
 inline unsigned int CountLeadingZeros(uint32_t v) ALWAYS_INLINE;
 inline unsigned int CountLeadingZeros(uint64_t v) ALWAYS_INLINE;
@@ -473,6 +498,113 @@ inline void SignedSub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow
 #endif
 }
 
+// 8-bit unsigned substraction with carrying
+// inputs:
+//   - x        : 8-bit left operand of substraction
+//   - y        : 8-bit right operand of substraction
+//   - carry_in : input carry (0 or 1) for chaining full substractor
+// outputs:
+//   - result   : 8-bit result of substraction x - y
+//   - carry_out: output carry (0 or 1) of full substractor
+//   - overflow : overflow flag (0 or 1)
+inline void UnsignedSub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in) {
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
+	if(borrow_in)
+	{
+		__asm__ ("stc\nsbbb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQ" (result), "=qQm" (borrow_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "q" (y) : "cc");	
+	}
+	else
+	{
+		__asm__ ("subb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQ" (result), "=qQm" (borrow_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "q" (y) : "cc");
+	}
+	overflow = borrow_out;
+#else
+	uint8_t res = x - y - borrow_in;
+	uint8_t x7 = (x >> 7) & 1;
+	uint8_t y7 = (y >> 7) & 1;
+	uint8_t res7 = (res >> 7) & 1;
+	uint8_t b6 = res7 ^ x7 ^ y7;
+	uint8_t b7 = ((~x7 & y7) | (b6 & (~x7 | y7))) & 1;
+	overflow = borrow_out = b17;
+	result = res;
+	sign = (int8_t) res < 0;
+#endif
+}
+
+// 16-bit unsigned substraction with carrying
+// inputs:
+//   - x        : 16-bit left operand of substraction
+//   - y        : 16-bit right operand of substraction
+//   - carry_in : input carry (0 or 1) for chaining full substractor
+// outputs:
+//   - result   : 16-bit result of substraction x - y
+//   - carry_out: output carry (0 or 1) of full substractor
+//   - overflow : overflow flag (0 or 1)
+inline void UnsignedSub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in) {
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
+	if(borrow_in)
+	{
+		__asm__ ("stc\nsbbw %5, %0\nsetc %1\nseto %2\nsets %3" : "=r" (result), "=qQm" (borrow_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "rm" (y) : "cc");	
+	}
+	else
+	{
+		__asm__ ("subw %5, %0\nsetc %1\nseto %2\nsets %3" : "=r" (result), "=qQm" (borrow_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "rm" (y) : "cc");
+	}
+	overflow = borrow_out;
+#else
+	uint16_t res = x - y - borrow_in;
+	uint16_t x15 = (x >> 15) & 1;
+	uint8_t y15 = (y >> 15) & 1;
+	uint8_t res15 = (res >> 15) & 1;
+	uint8_t b14 = res15 ^ x15 ^ y15;
+	uint8_t b15 = ((~x15 & y15) | (b14 & (~x15 | y15))) & 1;
+	overflow = borrow_out = b15;
+	result = res;
+	sign = (int16_t) res < 0;
+#endif
+}
+
+// 32-bit unsigned substraction with carrying
+// inputs:
+//   - x        : 32-bit left operand of substraction
+//   - y        : 32-bit right operand of substraction
+//   - carry_in : input carry (0 or 1) for chaining full substractor
+// outputs:
+//   - result   : 32-bit result of substraction x - y
+//   - carry_out: output carry (0 or 1) of full substractor
+//   - overflow : overflow flag (0 or 1)
+//
+// The 31th 1-bit full substractor equations are:
+//    (1) result(31) = x(31) ^ y(31) ^ borrow(30)
+//    (2) borrow(31) = ~x(31).y(31) + borrow(30).(~x(31) + y(31))
+//    (3) overflow = borrow(31) ^ borrow(30)
+//    result is easily computed from x - y - borrow_in
+//    from (1) we obtain: borrow(30) = result(31) ^ x(31) ^ y(31)
+//    borrow_out is computed from equation (2), overflow from equation (3)
+inline void UnsignedSub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in) {
+#if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
+	if(borrow_in)
+	{
+		__asm__ ("stc\nsbbl %5, %0\nsetc %1\nseto %2\nsets %3" : "=r" (result), "=qQ" (borrow_out), "=qQ" (overflow), "=qQ" (sign) : "0" (x), "rm" (y) : "cc");	
+	}
+	else
+	{
+		__asm__ ("subl %5, %0\nsetc %1\nseto %2\nsets %3" : "=r" (result), "=qQ" (borrow_out), "=qQ" (overflow), "=qQ" (sign) : "0" (x), "rm" (y) : "cc");
+	}
+	overflow = borrow_out;
+#else
+	uint32_t res = x - y - borrow_in;
+	uint32_t x31 = (x >> 31) & 1;
+	uint32_t y31 = (y >> 31) & 1;
+	uint32_t res31 = (res >> 31) & 1;
+	uint32_t b30 = res31 ^ x31 ^ y31;
+	uint32_t b31 = ((~x31 & y31) | (b30 & (~x31 | y31))) & 1;
+	overflow = borrow_out = b31;
+	result = res;
+	sign = (int32_t) res < 0;
+#endif
+}
+
 //=============================================================================
 //=                    Full Adders with signed saturation                     =
 //=============================================================================
@@ -712,6 +844,109 @@ inline void SignedSatSub32(uint32_t& result, uint8_t& overflow, uint32_t x, uint
 	uint8_t borrow_out;
 	uint8_t sign;
 	SignedSatSub32(result, borrow_out, overflow, sign, x, y, 0);
+}
+
+//=============================================================================
+//=                Full Substractors with unsigned saturation                 =
+//=============================================================================
+
+// 8-bit unsigned substraction with saturation and carrying
+// inputs:
+//   - x        : 8-bit left operand of substraction
+//   - y        : 8-bit right operand of substraction
+//   - borrow_in : input borrow (0 or 1) for chaining full substractors
+// outputs:
+//   - result   : 8-bit result of addition x - y with saturation
+//   - borrow_out: output borrow (0 or 1) of full substractor
+//   - overflow : overflow flag (0 or 1)
+inline void UnsignedSatSub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint8_t x, uint8_t y, uint8_t borrow_in)
+{
+	UnsignedSub8(result, borrow_out, overflow, sign, x, y, borrow_in);
+	if(overflow)
+	{
+		result = 0;
+		sign = 0;
+	}
+}
+
+// 16-bit unsigned substraction with saturation and carrying
+// inputs:
+//   - x        : 16-bit left operand of substraction
+//   - y        : 16-bit right operand of substraction
+//   - borrow_in : input borrow (0 or 1) for chaining full substractors
+// outputs:
+//   - result   : 16-bit result of addition x - y with saturation
+//   - borrow_out: output borrow (0 or 1) of full substractor
+//   - overflow : overflow flag (0 or 1)
+inline void UnsignedSatSub16(uint16_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint16_t x, uint16_t y, uint8_t borrow_in)
+{
+	UnsignedSub16(result, borrow_out, overflow, sign, x, y, borrow_in);
+	if(overflow)
+	{
+		result = 0;
+		sign = 0;
+	}
+}
+
+// 32-bit unsigned substraction with saturation and carrying
+// inputs:
+//   - x        : 32-bit left operand of substraction
+//   - y        : 32-bit right operand of substraction
+//   - borrow_in : input borrow (0 or 1) for chaining full substractors
+// outputs:
+//   - result   : 32-bit result of addition x - y with saturation
+//   - borrow_out: output borrow (0 or 1) of full substractor
+//   - overflow : overflow flag (0 or 1)
+inline void UnsignedSatSub32(uint32_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_t& sign, uint32_t x, uint32_t y, uint8_t borrow_in)
+{
+	UnsignedSub32(result, borrow_out, overflow, sign, x, y, borrow_in);
+	if(overflow)
+	{
+		result = 0;
+		sign = 0;
+	}
+}
+
+// 8-bit unsigned substraction with saturation
+// inputs:
+//   - x        : 8-bit left operand of substraction
+//   - y        : 8-bit right operand of substraction
+// outputs:
+//   - result   : 8-bit result of addition x - y with saturation
+//   - overflow : overflow flag (0 or 1)
+inline void UnsignedSatSub8(uint8_t& result, uint8_t& overflow, uint8_t x, uint8_t y) 
+{
+	uint8_t borrow_out;
+	uint8_t sign;
+	UnsignedSatSub8(result, borrow_out, overflow, sign, x, y, 0);
+}
+
+// 16-bit unsigned substraction with saturation
+// inputs:
+//   - x        : 16-bit left operand of substraction
+//   - y        : 16-bit right operand of substraction
+// outputs:
+//   - result   : 16-bit result of addition x - y with saturation
+//   - overflow : overflow flag (0 or 1)
+inline void UnsignedSatSub16(uint16_t& result, uint8_t& overflow, uint16_t x, uint16_t y) 
+{
+	uint8_t borrow_out;
+	uint8_t sign;
+	UnsignedSatSub16(result, borrow_out, overflow, sign, x, y, 0);
+}
+
+// 32-bit unsigned substraction with saturation and carrying
+// inputs:
+//   - x        : 32-bit left operand of substraction
+//   - y        : 32-bit right operand of substraction
+// outputs:
+//   - result   : 32-bit result of addition x - y with saturation
+//   - overflow : overflow flag (0 or 1)
+inline void UnsignedSatSub32(uint32_t& result, uint8_t& overflow, uint32_t x, uint32_t y) 
+{
+	uint8_t borrow_out;
+	uint8_t sign;
+	UnsignedSatSub32(result, borrow_out, overflow, sign, x, y, 0);
 }
 
 //=============================================================================
@@ -1190,6 +1425,63 @@ inline bool BitScanReverse(unsigned int& n, uint64_t v)
 	}
 	return false;
 }
+
+#ifdef __GNUC__
+
+inline int BitScanForward(unsigned char n) { return __builtin_ctz(n); }
+inline int BitScanForward(unsigned short n) { return __builtin_ctz(n); }
+inline int BitScanForward(unsigned n) { return __builtin_ctz(n); }
+inline int BitScanForward(unsigned long n) { return __builtin_ctzl(n); }
+inline int BitScanForward(unsigned long long n) { return __builtin_ctzll(n); }
+
+inline int BitScanReverse(unsigned char n) { return std::numeric_limits<unsigned>::digits - 1 - __builtin_clz(n); }
+inline int BitScanReverse(unsigned short n) { return std::numeric_limits<unsigned>::digits - 1 - __builtin_clz(n); }
+inline int BitScanReverse(unsigned n) { return std::numeric_limits<unsigned>::digits - 1 - __builtin_clz(n); }
+inline int BitScanReverse(unsigned long n) { return std::numeric_limits<unsigned long>::digits - 1 - __builtin_clzl(n); }
+inline int BitScanReverse(unsigned long long n) { return std::numeric_limits<unsigned long long>::digits - 1 - __builtin_clzll(n); }
+
+#else
+
+template <typename INT>
+int
+BitScanForward_C(INT value)
+{
+  if (value)
+    for (int bit = 0; ; ++bit, value >>= 1)
+      if (value & 1)
+        return bit;
+  
+  return -1;
+}
+
+template <typename INT>
+int
+BitScanReverse_C(INT value)
+{
+  int bsr = -1;
+  
+  for (int bit = 0; value; ++bit, value >>= 1)
+    if (value & 1)
+      bsr = bit;
+  
+  return bsr;
+}
+
+inline int BitScanForward(unsigned char n) { return BitScanForward_C(n); }
+inline int BitScanForward(unsigned short n) { return BitScanForward_C(n); }
+inline int BitScanForward(unsigned n) { return BitScanForward_C(n); }
+inline int BitScanForward(unsigned long n) { return BitScanForward_C(n); }
+inline int BitScanForward(unsigned long long n) { return BitScanForward_C(n); }
+
+inline int BitScanReverse(unsigned char n) { return BitScanReverse_C(n); }
+inline int BitScanReverse(unsigned short n) { return BitScanReverse_C(n); }
+inline int BitScanReverse(unsigned n) { return BitScanReverse_C(n); }
+inline int BitScanReverse(unsigned long n) { return BitScanReverse_C(n); }
+inline int BitScanReverse(unsigned long long n) { return BitScanReverse_C(n); }
+
+#endif
+
+
 
 inline unsigned int CountLeadingZeros(uint32_t v)
 {

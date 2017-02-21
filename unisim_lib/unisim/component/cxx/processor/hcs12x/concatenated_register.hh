@@ -36,7 +36,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_CONCATENATED_REGISTER_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_CONCATENATED_REGISTER_HH__
 
-#include <unisim/util/debug/register.hh>
+#include <unisim/service/interfaces/register.hh>
 #include <string>
 #include <sstream>
 #include <stdexcept>
@@ -50,7 +50,7 @@ namespace processor {
 namespace hcs12x {
 
 using std::string;
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 
 using unisim::kernel::service::TCallBack;
 using unisim::kernel::service::CallBackObject;
@@ -144,24 +144,16 @@ public:
 	}
 
 protected:
-	bool WriteBack(REGISTER_TYPE storage) {
-
-		CallBackObject *cb = m_callback.get();
-		if (cb != NULL) {
-			return (((TCallBack<REGISTER_TYPE>&) *m_callback).Write(storage));
-		}
-
-		return (false);
+	bool WriteBack(REGISTER_TYPE storage)
+	{
+		bool status = m_callback.get() and m_callback->Write(storage);
+		if (status) this->NotifyListeners(); 
+		return status;
 	}
 
-	bool ReadBack(REGISTER_TYPE& storage) const {
-
-		CallBackObject *cb = m_callback.get();
-		if (cb != NULL) {
-			return (((TCallBack<REGISTER_TYPE>&) *m_callback).Read(storage));
-		}
-
-		return (false);
+	bool ReadBack(REGISTER_TYPE& storage) const
+	{
+		return m_callback.get() and m_callback->Read(storage);
 	}
 
 	const CallBackObject& callback() const { return (*m_callback); }
@@ -172,7 +164,7 @@ private:
 	SUB_REGISTER_TYPE* regHigh;
 	SUB_REGISTER_TYPE* regLow;
 
-	std::auto_ptr<CallBackObject> m_callback;
+	std::auto_ptr<TCallBack<REGISTER_TYPE> > m_callback;
 };
 
 

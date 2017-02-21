@@ -31,6 +31,7 @@
 #include <unisim/service/loader/elf_loader/elf_loader.hh>
 #include <unisim/service/loader/elf_loader/elf_loader.tcc>
 #include <unisim/service/loader/s19_loader/s19_loader.hh>
+#include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 
 #include <unisim/service/tee/memory_access_reporting/tee.hh>
 
@@ -55,9 +56,16 @@
 #include <unisim/component/tlm2/processor/hcs12x/ect.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12pit24b.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12sci.hh>
-#include <unisim/component/tlm2/processor/hcs12x/s12spi.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12spi_v5.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12mpu.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12xftmx.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12mscan.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12xepim_v1.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12xdbg_v3.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12iic_v3.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12vregl3v3_v1.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12tim16b8c_v2.hh>
+#include <unisim/component/tlm2/processor/hcs12x/reserved.hh>
 
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 
@@ -66,9 +74,15 @@
 #include <unisim/service/pim/pim.hh>
 #include <unisim/service/pim/pim_server.hh>
 
+#include <unisim/service/monitor/monitor.hh>
+#include <unisim/service/tee/debug_event/debug_event_tee.hh>
+
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 
 #include <xml_atd_pwm_stub.hh>
+#include <can_stub.hh>
+#include <tle8264_2e.hh>
+#include <tle72xxSL.hh>
 
 #ifdef HAVE_RTBCOB
 #include "rtb_unisim.hh"
@@ -97,6 +111,13 @@ using unisim::component::tlm2::processor::hcs12x::S12PIT24B;
 using unisim::component::tlm2::processor::hcs12x::S12SCI;
 using unisim::component::tlm2::processor::hcs12x::S12SPI;
 using unisim::component::tlm2::processor::hcs12x::S12MPU;
+using unisim::component::tlm2::processor::hcs12x::S12MSCAN;
+using unisim::component::tlm2::processor::hcs12x::S12XEPIM;
+using unisim::component::tlm2::processor::hcs12x::S12XDBG;
+using unisim::component::tlm2::processor::hcs12x::S12IIC;
+using unisim::component::tlm2::processor::hcs12x::S12VREGL3V3;
+using unisim::component::tlm2::processor::hcs12x::S12TIM16B8C;
+using unisim::component::tlm2::processor::hcs12x::RESERVED;
 
 using unisim::service::debug::debugger::Debugger;
 using unisim::service::debug::gdb_server::GDBServer;
@@ -104,8 +125,14 @@ using unisim::service::debug::inline_debugger::InlineDebugger;
 
 using unisim::service::interfaces::Loader;
 using unisim::service::loader::s19_loader::S19_Loader;
+using unisim::service::loader::multiformat_loader::MultiFormatLoader;
+
 using unisim::service::pim::PIM;
 using unisim::service::pim::PIMServer;
+
+using unisim::service::tee::debug_event::DebugEventTee;
+
+using unisim::service::monitor::Monitor;
 
 using unisim::service::profiling::addr_profiler::Profiler;
 
@@ -115,17 +142,14 @@ using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
 using unisim::kernel::service::VariableBase;
 
-using unisim::kernel::service::CallBackObject;
-
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::garbage_collector::GarbageCollector;
 
 using unisim::service::telnet::Telnet;
 
-class Simulator :
-	public unisim::kernel::service::Simulator
-	, public CallBackObject
 
+class Simulator
+  : public unisim::kernel::service::Simulator
 {
 private:
 	//=========================================================================
@@ -136,12 +160,14 @@ private:
 	typedef uint64_t MEMORY_ADDRESS_TYPE;
 	typedef unisim::component::cxx::processor::hcs12x::service_address_t SERVICE_ADDRESS_TYPE;
 
-public:
+		public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	virtual void Stop(Object *object, int _exit_status, bool asynchronous);
+	virtual Simulator::SetupStatus Setup();
 
 	void Run();
+	bool RunSample(double inVal);
 
 	virtual double GetSimTime()	{ if (sim_time) { return (sim_time->GetTime()); } else { return (0); }	}
 	virtual double GetHostTime()	{ if (host_time) { return (host_time->GetTime()); } else { return (0); }	}
@@ -155,8 +181,87 @@ public:
 		if (pim) { delete pim; pim = NULL; }
 	};
 
-	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length);
-	virtual bool write(unsigned int offset, const void *buffer, unsigned int data_length);
+	/*
+	 * To control the progress of the simulation:
+	 * - sc_pending_activity_at_current_time()
+	 * - sc_get_curr_simcontext()->next_time()
+	 */
+
+	double Inject_ATD0(double anValue[8]) {
+
+#ifdef HAVE_RTBCOB
+		rtbStub->output_ATD0(anValue);
+#else
+		xml_atd_pwm_stub->Inject_ATD0(anValue);
+#endif
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+	};
+
+	double Inject_ATD1(double anValue[16]) {
+
+#ifdef HAVE_RTBCOB
+		rtbStub->output_ATD1(anValue);
+#else
+		xml_atd_pwm_stub->Inject_ATD1(anValue);
+#endif
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+	};
+
+	double Get_PWM(bool (*pwmValue)[8]) {
+
+#ifdef HAVE_RTBCOB
+		rtbStub->input(&pwmValue);
+#else
+		xml_atd_pwm_stub->Get_PWM(pwmValue);
+#endif
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+	};
+
+	double Inject_CAN(CAN_DATATYPE msg)
+	{
+		can_stub->Inject_CAN(msg);
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+	}
+
+	double Get_CAN(CAN_DATATYPE *msg)
+	{
+
+		can_stub->Get_CAN(msg);
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+	}
+
+	double Inject_CANArray(CAN_DATATYPE_ARRAY msg)
+	{
+		can_stub->Inject_CANArray(msg);
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+	}
+
+    double getCANArray(CAN_DATATYPE_ARRAY *msg)
+    {
+    	can_stub->getCANArray(msg);
+
+		sc_time t;
+		sc_get_curr_simcontext()->next_time(t);
+		return (t.to_seconds());
+    }
 
 private:
 
@@ -164,10 +269,7 @@ private:
 	//===                     Aliases for components classes                ===
 	//=========================================================================
 
-//	typedef unisim::component::tlm2::memory::ram::Memory<> RAM;
 	typedef unisim::component::tlm2::memory::ram::Memory<32, physical_address_t, 8, 1024*1024, false>  RAM;
-//	typedef unisim::component::tlm2::memory::ram::Memory<> FLASH;
-//	typedef unisim::component::tlm2::memory::ram::Memory<32, physical_address_t, 8, 1024*1024, false>  FLASH;
 	typedef unisim::component::tlm2::processor::hcs12x::S12XFTMX<32, physical_address_t, 8, 1024*1024, false>  FTM;
 
 	typedef unisim::component::tlm2::processor::hcs12x::HCS12X CPU;
@@ -176,18 +278,22 @@ private:
 	typedef unisim::component::tlm2::processor::hcs12x::S12MPU MPU;
 	typedef unisim::component::tlm2::processor::hcs12x::S12XMMC MMC;
 
+	typedef unisim::component::tlm2::processor::hcs12x::S12MSCAN MSCAN;
+
 	typedef unisim::component::tlm2::processor::hcs12x::PWM<8> PWM;
 	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<16> ATD1;
-	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<8> ATD0;
+	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<16> ATD0;
 	typedef unisim::component::tlm2::processor::hcs12x::S12PIT24B<8> PIT;
 
-// ******* REGARDE Interface ElfLoader pour le typedef ci-dessous
+	// ******* REGARDE Interface ElfLoader pour le typedef ci-dessous
 	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<CPU_ADDRESS_TYPE, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
 
-	typedef unisim::service::tee::registers::RegistersTee<32> RegistersTee;
-	typedef unisim::service::tee::memory_import_export::MemoryImportExportTee<physical_address_t, 32> MemoryImportExportTee;
+	typedef unisim::service::tee::registers::RegistersTee<48> RegistersTee;
+	typedef unisim::service::tee::memory_import_export::MemoryImportExportTee<physical_address_t, 48> MemoryImportExportTee;
 	typedef unisim::service::tee::memory_access_reporting::Tee<CPU_ADDRESS_TYPE> MemoryAccessReportingTee;
 
+	typedef unisim::service::tee::debug_event::DebugEventTee<CPU_ADDRESS_TYPE> EVENT_TEE;
+	typedef unisim::service::monitor::Monitor<CPU_ADDRESS_TYPE> MONITOR;
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
@@ -209,9 +315,21 @@ private:
 
 	PIT *pit;
 
-	S12SCI *sci0, *sci1, *sci2, *sci3, *sci4, *sci5;
+	S12SCI *sci0, *sci1, *sci2, *sci3, *sci4, *sci5, *sci6, *sci7;
 
 	S12SPI *spi0, *spi1, *spi2;
+
+	MSCAN *can0, *can1, *can2, *can3, *can4;
+
+	S12XEPIM *pim;
+	S12XDBG *dbg;
+	S12IIC *iic0, *iic1;
+
+	S12VREGL3V3 *vreg;
+
+	S12TIM16B8C *tim;
+
+	RESERVED* reserved;
 
 	//  - Memories
 	RAM *global_ram;
@@ -233,12 +351,25 @@ private:
 	XML_ATD_PWM_STUB *xml_atd_pwm_stub;
 #endif
 
+	CAN_STUB *can_stub;
+	TLE8264_2E *tranceiver0, *tranceiver1,*tranceiver2,*tranceiver3,*tranceiver4;
+
+	TLE72XXSL *spi1_stub, *spi2_stub;
+
 	//=========================================================================
 	//===                         Service instantiations                    ===
 	//=========================================================================
 
-	S19_Loader<CPU_ADDRESS_TYPE> *loaderS19;
-	Elf32Loader *loaderELF;
+//	S19_Loader<CPU_ADDRESS_TYPE> *loaderS19;
+//	Elf32Loader *loaderELF;
+
+	EVENT_TEE *evTee;
+
+	// Monitoring tool: ARTiMon or EACSEL
+	MONITOR *monitor;
+
+	//  - Multiformat loader
+	MultiFormatLoader<CPU_ADDRESS_TYPE> *loader;
 
 	//  - profiler
 	Profiler<CPU_ADDRESS_TYPE> *profiler;
@@ -264,13 +395,19 @@ private:
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
 
+
+//	string filename;
+//	string symbol_filename;
+
 	bool enable_pim_server;
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
-	string filename;
+	bool enable_monitor;
+
 	Parameter<bool> param_enable_pim_server;
 	Parameter<bool> param_enable_gdb_server;
 	Parameter<bool> param_enable_inline_debugger;
+	Parameter<bool> param_enable_monitor;
 
 	bool sci_enable_telnet;
 	Parameter<bool>  param_sci_enable_telnet;
@@ -283,7 +420,7 @@ private:
 	Parameter<string> *param_pc_reg_name;
 
 	int exit_status;
-	bool isS19;
+//	bool isS19;
 
 	bool dump_parameters;
 	bool dump_formulas;
@@ -292,13 +429,30 @@ private:
 	Parameter<bool> param_dump_formulas;
 	Parameter<bool> param_dump_statistics;
 
-	enum ReadBackOffsets {DATA_LOAD_RATIO, DATA_STORE_RATIO};
-
 	double null_stat_var;
-	Statistic<double> stat_data_load_ratio;
-	Statistic<double> stat_data_store_ratio;
+	struct LoadRatioStatistic : public unisim::kernel::service::Variable<double>
+	{
+		LoadRatioStatistic(Simulator& _sim);
+		void Get(double& value);
+		Simulator& sim;
+	} stat_data_load_ratio;
+
+	struct StoreRatioStatistic : public unisim::kernel::service::Variable<double>
+	{
+		StoreRatioStatistic(Simulator& _sim);
+		void Get(double& value);
+		Simulator& sim;
+	} stat_data_store_ratio;
 
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+
+	void (*prev_sig_int_handler)(int);
+	double spent_time;
+	bool isStop;
+
+	physical_address_t entry_point;
+	Parameter<physical_address_t> param_entry_point;
+
 };
 
 #endif /* SIMULATOR_HH_ */

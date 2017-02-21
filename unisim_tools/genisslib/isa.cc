@@ -35,8 +35,6 @@
 #include <riscgenerator.hh>
 #include <ciscgenerator.hh>
 
-using namespace std;
-
 /** Constructor of Isa instance 
  */
 Isa::Isa()
@@ -55,21 +53,21 @@ Isa::~Isa() {}
     @param operation_symbol a symbol object representing the operation
     @return the matching operation object, null if no operation object matches
 */
-Operation_t*
-Isa::operation( ConstStr_t _symbol )
+Operation*
+Isa::operation( ConstStr _symbol )
 {
-  for( Vect_t<Operation_t>::iterator op = m_operations.begin(); op < m_operations.end(); ++ op )
-    if( (*op)->m_symbol == _symbol ) return *op;
+  for (Vector<Operation>::iterator op = m_operations.begin(); op < m_operations.end(); ++ op)
+    if ((**op).symbol == _symbol) return *op;
   
   return 0;
 }
 
 static void
-oplist_insert_unique( Vect_t<Operation_t>& _oplist, Operation_t* _op )
+oplist_insert_unique( Vector<Operation>& _oplist, Operation* _op )
 {
   // Check for duplicates
-  for (Vect_t<Operation_t>::const_iterator node = _oplist.begin(); node < _oplist.end(); ++ node)
-    { if ((**node).m_symbol == _op->m_symbol) return; }
+  for (Vector<Operation>::const_iterator node = _oplist.begin(); node < _oplist.end(); ++ node)
+    { if ((**node).symbol == _op->symbol) return; }
   _oplist.append( _op );
 }
 
@@ -80,21 +78,21 @@ oplist_insert_unique( Vect_t<Operation_t>& _oplist, Operation_t* _op )
     @param _opvec an operation vector that will receive the corresponding operations
 */
 bool
-Isa::operations( ConstStr_t _symbol, Vect_t<Operation_t>& _oplist )
+Isa::operations( ConstStr _symbol, Vector<Operation>& _oplist )
 {
   /* Symbol points to either an operation or a group.
    */
-  if (Operation_t* operation = this->operation( _symbol ))
+  if (Operation* operation = this->operation( _symbol ))
     {
       /* Symbol points to an operation */
       oplist_insert_unique( _oplist, operation );
       return true;
     }
   
-  if (Group_t* group = Scanner::isa().group( _symbol ))
+  if (Group* group = Scanner::isa().group( _symbol ))
     {
       /* Symbol points to a group */
-      for( Vect_t<Operation_t>::iterator gop = group->m_operations.begin(); gop < group->m_operations.end(); ++ gop )
+      for (Vector<Operation>::iterator gop = group->operations.begin(); gop < group->operations.end(); ++ gop)
         oplist_insert_unique( _oplist, *gop );
       return true;
     }
@@ -103,28 +101,40 @@ Isa::operations( ConstStr_t _symbol, Vect_t<Operation_t>& _oplist )
 }
 
 
-/** Remove an operation object from the global operation object list (operation_list)
+/** Remove an operation object from the global operation object list (m_operations)
     @param operation the operation object to remove
 */
 void
-Isa::remove( Operation_t* _op )
+Isa::remove( Operation* _op )
 {
-  for( Vect_t<Operation_t>::iterator iter = m_operations.begin(); iter < m_operations.end(); ++ iter ) {
-    if( *iter != _op ) continue;
+  for (Vector<Operation>::iterator iter = m_operations.begin(); iter < m_operations.end(); ++ iter) {
+    if (*iter != _op) continue;
     m_operations.erase( iter );
     return;
   }
+}
+
+/** Add an operation object to the global operation object list
+    (m_operations) and to active group accumulators (m_group_accs)
+    @param operation the operation object to add
+*/
+void
+Isa::add( Operation* _op )
+{
+  m_operations.append( _op );
+  for (GroupAccumulators::iterator itr = m_group_accs.begin(), end = m_group_accs.end(); itr != end; ++itr)
+    oplist_insert_unique( itr->second->operations, _op );
 }
 
 /** Search the global group lists for the given symbol
     @param _symbol the group symbol looked for
     @return the found group
 */
-Group_t*
-Isa::group( ConstStr_t _symbol )
+Group*
+Isa::group( ConstStr _symbol )
 {
-  for( Vect_t<Group_t>::iterator group = m_groups.begin(); group < m_groups.end(); ++ group )
-    if( (*group)->m_symbol == _symbol ) return *group;
+  for (Vector<Group>::iterator group = m_groups.begin(); group < m_groups.end(); ++ group)
+    if ((*group)->symbol == _symbol) return *group;
   
   return 0;
 }
@@ -133,10 +143,10 @@ Isa::group( ConstStr_t _symbol )
     @param action_proto_symbol a symbol object representing the action prototype
     @return the matching action prototype object, null if no action prototype object matches
 */
-ActionProto_t const*
-Isa::actionproto( ConstStr_t _symbol ) const
+ActionProto const*
+Isa::actionproto( ConstStr _symbol ) const
 {
-  for( Vect_t<ActionProto_t>::const_iterator proto = m_actionprotos.begin(); proto < m_actionprotos.end(); ++ proto )
+  for (Vector<ActionProto>::const_iterator proto = m_actionprotos.begin(); proto < m_actionprotos.end(); ++ proto)
     if( (*proto)->m_symbol == _symbol ) return *proto;
 
   return 0;
@@ -146,10 +156,10 @@ Isa::actionproto( ConstStr_t _symbol ) const
     @param actionproto the action prototype object to remove
 */
 void
-Isa::remove( ActionProto_t const* _ap )
+Isa::remove( ActionProto const* _ap )
 {
-  for( Vect_t<ActionProto_t>::iterator iter = m_actionprotos.begin(); iter < m_actionprotos.end(); ++ iter ) {
-    if( *iter != _ap ) continue;
+  for (Vector<ActionProto>::iterator iter = m_actionprotos.begin(); iter < m_actionprotos.end(); ++ iter) {
+    if (*iter != _ap) continue;
     m_actionprotos.erase( iter );
     return;
   }
@@ -160,13 +170,13 @@ Isa::remove( ActionProto_t const* _ap )
     @param _sink a stream
 */
 void
-Isa::expand( ostream& _sink ) const
+Isa::expand( std::ostream& _sink ) const
 {
   // dumping namespace
   if( not m_namespace.empty() ) {
     _sink << "namespace ";
     char const* sep = "";
-    for( std::vector<ConstStr_t>::const_iterator piece = m_namespace.begin(); piece < m_namespace.end(); sep = "::", ++ piece )
+    for (std::vector<ConstStr>::const_iterator piece = m_namespace.begin(); piece < m_namespace.end(); sep = "::", ++ piece)
       _sink << sep << (*piece);
     _sink << '\n';
   }
@@ -175,7 +185,7 @@ Isa::expand( ostream& _sink ) const
   if( not m_tparams.empty() ) {
     _sink << "template <";
     char const* sep = "";
-    for( Vect_t<CodePair_t>::const_iterator iter = m_tparams.begin(); iter < m_tparams.end(); sep = ", ", ++ iter )
+    for (Vector<CodePair>::const_iterator iter = m_tparams.begin(); iter < m_tparams.end(); sep = ", ", ++ iter)
       _sink << sep << *(*iter);
     _sink << ">\n";
   }
@@ -185,85 +195,87 @@ Isa::expand( ostream& _sink ) const
   _sink << "set endianness " << (m_little_endian ? "little" : "big") << "\n";
   _sink << "set addressclass {" << m_addrtype << "}\n";
   
-  for( Vect_t<SourceCode_t>::const_iterator srccode = m_decl_srccodes.begin(); srccode < m_decl_srccodes.end(); ++ srccode )
+  for (Vector<SourceCode>::const_iterator srccode = m_decl_srccodes.begin(); srccode < m_decl_srccodes.end(); ++ srccode)
     _sink << "decl " << *(*srccode) << "\n\n";
-  for( Vect_t<SourceCode_t>::const_iterator srccode = m_impl_srccodes.begin(); srccode < m_impl_srccodes.end(); ++ srccode )
+  for (Vector<SourceCode>::const_iterator srccode = m_impl_srccodes.begin(); srccode < m_impl_srccodes.end(); ++ srccode)
     _sink << "impl " << *(*srccode) << "\n\n";
   _sink << '\n';
 
   if( not m_vars.empty() ) {
     _sink << "var ";
     char const* sep = "";
-    for( Vect_t<Variable_t>::const_iterator var = m_vars.begin(); var < m_vars.end(); sep = ", ", ++ var )
+    for (Vector<Variable>::const_iterator var = m_vars.begin(); var < m_vars.end(); sep = ", ", ++ var)
       _sink << sep << *(*var);
     _sink << '\n';
   }
   _sink << '\n';
   
-  for( Vect_t<ActionProto_t>::const_iterator ap = m_actionprotos.begin(); ap < m_actionprotos.end(); ++ap )
+  for (Vector<ActionProto>::const_iterator ap = m_actionprotos.begin(); ap < m_actionprotos.end(); ++ap)
     _sink << *(*ap) << '\n';
   
   _sink << '\n';
   
-  for( Vect_t<Operation_t>::const_iterator op = m_operations.begin(); op < m_operations.end(); ++ op )
+  for (Vector<Operation>::const_iterator op = m_operations.begin(); op < m_operations.end(); ++ op)
     _sink << *(*op) << '\n';
 }
 
-auto_ptr<Generator>
-Isa::generator() const
+Generator*
+Isa::generator( Isa& _source, Opts const& _options ) const
 {
-  switch( m_decoder ) {
-  case RiscDecoder: return auto_ptr<Generator>( new RiscGenerator() );
-  case CiscDecoder: return auto_ptr<Generator>( new CiscGenerator() );
-    // case VliwDecoder: return new VliwGenerator( this ); break;
-  default: break;
-  }
+  switch (m_decoder)
+    {
+    case RiscDecoder: return new RiscGenerator( _source, _options );
+    case CiscDecoder: return new CiscGenerator( _source, _options );
+      // case VliwDecoder: return new VliwGenerator( this ); break;
+    default: break;
+    }
+  
   assert( false );
-  return auto_ptr<Generator>( 0 );
+  
+  return 0;
 }
 
 bool
 Isa::sanity_checks() const
 {
-  if( not m_addrtype ) {
-    // FIXME: Downgraded warning to error (default pointer size for
-    // target architecture is nonsense)
-    cerr << "error: no architecture address type found." << endl;
-    return false;
-  }
+  if (not m_addrtype.str())
+    {
+      std::cerr << "error: no architecture address type found." << std::endl;
+      return false;
+    }
   
   // Checking operations
-  for( Vect_t<Operation_t>::const_iterator op = m_operations.begin(); op < m_operations.end(); ++ op ) {
+  for (Vector<Operation>::const_iterator op = m_operations.begin(); op < m_operations.end(); ++ op) {
     // Looking for bitfield conflicts
-    for( Vect_t<BitField_t>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
-      ConstStr_t bf_symbol = (**bf).symbol();
-      if( not bf_symbol ) continue;
-      for( Vect_t<BitField_t>::const_iterator pbf = (**op).m_bitfields.begin(); pbf < bf; ++ pbf ) {
-        ConstStr_t pbf_symbol = (**pbf).symbol();
-        if( pbf_symbol != bf_symbol ) continue;
-        (**op).m_fileloc.err( "error: duplicated bit field `%s' in operation `%s'", bf_symbol.str(), (**op).m_symbol.str() );
+    for (Vector<BitField>::const_iterator bf = (**op).bitfields.begin(); bf < (**op).bitfields.end(); ++ bf) {
+      ConstStr bf_symbol = (**bf).getsymbol();
+      if (not bf_symbol.str()) continue;
+      for (Vector<BitField>::const_iterator pbf = (**op).bitfields.begin(); pbf < bf; ++ pbf) {
+        ConstStr pbf_symbol = (**pbf).getsymbol();
+        if (pbf_symbol != bf_symbol) continue;
+        (**op).fileloc.err( "error: duplicated bit field `%s' in operation `%s'", bf_symbol.str(), (**op).symbol.str() );
         return false;
       }
     }
     // Looking for variable conflicts
-    if( not (**op).m_variables.empty() ) {
-      for( Vect_t<Variable_t>::const_iterator checked = (**op).m_variables.begin(); checked < (**op).m_variables.end(); ++ checked ) {
-        Vect_t<Variable_t>::const_iterator found;
-        for( found = m_vars.begin(); found < m_vars.end(); ++ found )
-          if( (**found).m_symbol == (**checked).m_symbol ) break;
+    if( not (**op).variables.empty() ) {
+      for (Vector<Variable>::const_iterator checked = (**op).variables.begin(); checked < (**op).variables.end(); ++ checked) {
+        Vector<Variable>::const_iterator found;
+        for (found = m_vars.begin(); found < m_vars.end(); ++ found)
+          if ((**found).symbol == (**checked).symbol) break;
         
         if( (found < m_vars.end()) ) {
-          (**checked).m_ctype->m_fileloc.err( "error: in operation `%s', variable `%s' is already defined as global",
-                                              (**op).m_symbol.str(), (**checked).m_symbol.str() );
-          (**found).m_ctype->m_fileloc.err( "variable `%s' previously defined here", (**found).m_symbol.str() );
+          (**checked).ctype->fileloc.err( "error: in operation `%s', variable `%s' is already defined as global",
+                                              (**op).symbol.str(), (**checked).symbol.str() );
+          (**found).ctype->fileloc.err( "variable `%s' previously defined here", (**found).symbol.str() );
           return false;
         }
         
-        for( found = (**op).m_variables.begin(); found < checked; ++ found )
-          if( (**found).m_symbol == (**checked).m_symbol ) break;
+        for (found = (**op).variables.begin(); found < checked; ++ found)
+          if( (**found).symbol == (**checked).symbol ) break;
 
-        if( found < checked ) {
-          (**checked).m_ctype->m_fileloc.err( "error: in operation `%s', variable `%s' is defined several times", (**op).m_symbol.str(), (**checked).m_symbol.str() );
+        if (found < checked) {
+          (**checked).ctype->fileloc.err( "error: in operation `%s', variable `%s' is defined several times", (**op).symbol.str(), (**checked).symbol.str() );
           return false;
         }
       }
@@ -272,26 +284,18 @@ Isa::sanity_checks() const
   return true;
 }
 
-// SubDecoder_t const*
-// Isa::subdecoder( ConstStr_t _symbol ) const {
-//   for( Vect_t<SubDecoder_t>::const_iterator sd = m_subdecoders.begin(); sd < m_subdecoders.end(); ++ sd )
-//     if( (**sd).m_symbol == _symbol ) return *sd;
-//   return 0;
-// }
-
-
 /** Output a rule file (<filename>) suitable for make describing the dependencies of the main source file.
     @param _sink a stream
 */
 void
-Isa::deps( ostream& _sink, char const* _prefix ) const
+Isa::deps( std::ostream& _sink, char const* _prefix ) const
 {
   if( m_tparams.empty() ) {
     _sink << _prefix << ".cc " << _prefix << ".hh:";
   } else {
     _sink << _prefix << ".tcc " << _prefix << ".hh:";
   }
-  for( std::vector<ConstStr_t>::const_iterator inc = m_includes.begin(); inc < m_includes.end(); ++ inc )
+  for (std::vector<ConstStr>::const_iterator inc = m_includes.begin(); inc < m_includes.end(); ++ inc)
     _sink << " \\\n " << *inc;
   _sink << "\n\n";
 }
@@ -299,29 +303,29 @@ Isa::deps( ostream& _sink, char const* _prefix ) const
 void
 Isa::specialize()
 {
-  for( Vect_t<Specialization_t>::iterator spec = m_specializations.begin(); spec < m_specializations.end(); ++ spec ) {
+  for (Vector<Specialization>::iterator spec = m_specializations.begin(); spec < m_specializations.end(); ++ spec) {
     m_operations.push_back( (**spec).newop() );
   }
 }
 
 void
-Isa::setparam( ConstStr_t key, ConstStr_t value )
+Isa::setparam( ConstStr key, ConstStr value )
 {
-  static ConstStr_t   codetype( "codetype",        Scanner::symbols );
-  static ConstStr_t     scalar( "scalar",          Scanner::symbols );
-  static ConstStr_t     buffer( "buffer",          Scanner::symbols );
-  static ConstStr_t subdecoder( "subdecoder_p",    Scanner::symbols );
-  static ConstStr_t withsource( "withsource_p",    Scanner::symbols );
-  static ConstStr_t withencode( "withencode_p",    Scanner::symbols );
-  static ConstStr_t     istrue( "true",            Scanner::symbols );
-  static ConstStr_t    isfalse( "false",           Scanner::symbols );
-  static ConstStr_t endianness( "endianness",      Scanner::symbols );
-  static ConstStr_t      isbig( "big",             Scanner::symbols );
-  static ConstStr_t   islittle( "little",          Scanner::symbols );
-  static ConstStr_t     forder( "fields_order",    Scanner::symbols );
-  static ConstStr_t     worder( "words_order",     Scanner::symbols );
-  static ConstStr_t     isdesc( "descending",      Scanner::symbols );
-  static ConstStr_t      isasc( "ascending",       Scanner::symbols );
+  static ConstStr   codetype( "codetype",        Scanner::symbols );
+  static ConstStr     scalar( "scalar",          Scanner::symbols );
+  static ConstStr     buffer( "buffer",          Scanner::symbols );
+  static ConstStr subdecoder( "subdecoder_p",    Scanner::symbols );
+  static ConstStr withsource( "withsource_p",    Scanner::symbols );
+  static ConstStr withencode( "withencode_p",    Scanner::symbols );
+  static ConstStr     istrue( "true",            Scanner::symbols );
+  static ConstStr    isfalse( "false",           Scanner::symbols );
+  static ConstStr endianness( "endianness",      Scanner::symbols );
+  static ConstStr      isbig( "big",             Scanner::symbols );
+  static ConstStr   islittle( "little",          Scanner::symbols );
+  static ConstStr     forder( "fields_order",    Scanner::symbols );
+  static ConstStr     worder( "words_order",     Scanner::symbols );
+  static ConstStr     isdesc( "descending",      Scanner::symbols );
+  static ConstStr      isasc( "ascending",       Scanner::symbols );
   
   if      (key == codetype) {
     if      (value == scalar) m_decoder = RiscDecoder;
@@ -368,16 +372,16 @@ Isa::setparam( ConstStr_t key, ConstStr_t value )
 }
 
 void
-Isa::setparam( ConstStr_t key, SourceCode_t* value )
+Isa::setparam( ConstStr key, SourceCode* value )
 {
-  static ConstStr_t  addressclass( "addressclass",  Scanner::symbols );
-  static ConstStr_t codetypeclass( "codetypeclass", Scanner::symbols );
+  static ConstStr  addressclass( "addressclass",  Scanner::symbols );
+  static ConstStr codetypeclass( "codetypeclass", Scanner::symbols );
   
   if        (key == addressclass) {
-    m_addrtype = value->m_content;
+    m_addrtype = value->content;
     delete value;
   } else if (key == codetypeclass) {
-    //m_codetype = value->m_content;
+    //m_codetype = value->content;
     delete value;
   }
   
@@ -385,9 +389,9 @@ Isa::setparam( ConstStr_t key, SourceCode_t* value )
 }
 
 void
-Isa::setparam( ConstStr_t key, unsigned int value )
+Isa::setparam( ConstStr key, unsigned int value )
 {
-  static ConstStr_t  minwordsize( "minwordsize", Scanner::symbols );
+  static ConstStr  minwordsize( "minwordsize", Scanner::symbols );
   
   if        (key == minwordsize) {
     m_minwordsize = value;
@@ -396,20 +400,63 @@ Isa::setparam( ConstStr_t key, unsigned int value )
   else throw UnknownIdent( key );
 }
 
-SDClass_t const*
-Isa::sdclass( std::vector<ConstStr_t>& _namespace ) const
+SDClass const*
+Isa::sdclass( std::vector<ConstStr>& _namespace ) const
 {
-  for( Vect_t<SDClass_t>::const_iterator sdc = m_sdclasses.begin(); sdc != m_sdclasses.end(); ++ sdc ) {
+  for (Vector<SDClass>::const_iterator sdc = m_sdclasses.begin(); sdc != m_sdclasses.end(); ++ sdc) {
     if( (**sdc).m_namespace == _namespace ) return *sdc;
   }
   return 0;
 }
 
-SDInstance_t const*
-Isa::sdinstance( ConstStr_t _symbol ) const
+SDInstance const*
+Isa::sdinstance( ConstStr _symbol ) const
 {
-  for( Vect_t<SDInstance_t>::const_iterator sdi = m_sdinstances.begin(); sdi != m_sdinstances.end(); ++ sdi ) {
+  for (Vector<SDInstance>::const_iterator sdi = m_sdinstances.begin(); sdi != m_sdinstances.end(); ++ sdi) {
     if( (**sdi).m_symbol == _symbol ) return *sdi;
   }
   return 0;
+}
+
+void
+Isa::group_command( ConstStr group_symbol, ConstStr _command, FileLoc const& fl )
+{
+  static ConstStr  group_begin( "begin",  Scanner::symbols );
+  static ConstStr  group_end  ( "end",    Scanner::symbols );
+  
+  if (_command == group_begin)
+    {
+      m_group_accs[group_symbol] = new Group( group_symbol, fl );
+    }
+  else if (_command == group_end)
+    {
+      GroupAccumulators::iterator ga = m_group_accs.find( group_symbol );
+      
+      {
+        /* group accumulator should exist */
+        if (ga == m_group_accs.end()) {
+          fl.err( "error: no corresponding `group %s %s' to `group %s %s' directive.",
+                  group_symbol.str(), group_begin.str(), group_symbol.str(), group_end.str() );
+          throw ParseError();
+        }
+      
+        /* Operations and groups name should not conflict */
+        Operation* prev_op = Scanner::isa().operation( group_symbol );
+        if (prev_op) {
+          fl.err( "error: group name conflicts with operation `%s'", group_symbol.str() );
+          prev_op->fileloc.err( "operation `%s' previously defined here", group_symbol.str() );
+          throw ParseError();
+        }
+
+        Group* prev_grp = Scanner::isa().group( group_symbol );
+        if (prev_grp) {
+          fl.err( "conflicting group `%s' redefined", group_symbol.str() );
+          prev_grp->fileloc.err( "group `%s' previously defined here", group_symbol.str() );
+          throw ParseError();
+        }
+      }
+      
+      m_groups.push_back( ga->second );
+      m_group_accs.erase( ga );
+    }
 }

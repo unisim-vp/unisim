@@ -137,7 +137,7 @@ private:
 		 * Such modules are PIM, MMC and can be accounted for others
 		 * This index also cover the case of EEPROM emulation by the flash
 		 */
-		uint16_t			module_index;
+		unsigned int		module_index;
 		physical_address_t	start_address;
 		physical_address_t	end_address;
 	};

@@ -85,7 +85,7 @@ using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::SymbolTableLookup;
 
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 // see http://mathieuturcotte.ca/textes/windows-gettimeofday
 struct timezone {
   int tz_minuteswest;     /* minutes west of Greenwich */
@@ -347,7 +347,7 @@ bool AVR32_T2H_Syscalls<MEMORY_ADDR>::EndSetup()
 	if(!stdin_pipe_filename.empty())
 	{
 		int stdin_pipe_flags = O_RDONLY;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		int stdin_pipe_flags |= O_BINARY;
 #endif
 		stdin_pipe_fd = open(stdin_pipe_filename.c_str(), stdin_pipe_flags);
@@ -363,7 +363,7 @@ bool AVR32_T2H_Syscalls<MEMORY_ADDR>::EndSetup()
 	{
 		int stdout_pipe_flags = O_WRONLY | O_CREAT | O_TRUNC;
 		mode_t stdout_pipe_mode = S_IRUSR | S_IWUSR;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		stdout_pipe_flags |= O_BINARY;
 #else
 		stdout_pipe_mode |= S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
@@ -380,7 +380,7 @@ bool AVR32_T2H_Syscalls<MEMORY_ADDR>::EndSetup()
 	{
 		int stderr_pipe_flags = O_WRONLY | O_CREAT | O_TRUNC;
 		mode_t stderr_pipe_mode = S_IRUSR | S_IWUSR;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		stderr_pipe_flags |= O_BINARY;
 #else
 		stderr_pipe_mode |= S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
@@ -667,13 +667,13 @@ int AVR32_T2H_Syscalls<MEMORY_ADDR>::Fstat(int fd, struct avr32_stat *target_sta
 	target_stat->st_gid = Host2BigEndian((uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2BigEndian((int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2BigEndian((int64_t) host_stat.st_size);
-#if defined(WIN64) // Windows x64
+#if defined(WIN64) || defined(_WIN64) // Windows x64
 	target_stat->st_blksize = Host2BigEndian((int32_t) 512);
 	target_stat->st_blocks = Host2BigEndian((int64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim = Host2BigEndian((int64_t) host_stat.st_atim);
 	target_stat->st_mtim = Host2BigEndian((int64_t) host_stat.st_mtim);
 	target_stat->st_ctim = Host2BigEndian((int64_t) host_stat.st_ctim);
-#elif defined(linux) // Linux x64
+#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux x64
 	target_stat->st_blksize = Host2BigEndian((int64_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2BigEndian((int64_t) host_stat.st_blocks);
 	target_stat->st_atim = Host2BigEndian((int64_t) host_stat.st_atim.tv_sec);
@@ -697,13 +697,13 @@ int AVR32_T2H_Syscalls<MEMORY_ADDR>::Fstat(int fd, struct avr32_stat *target_sta
 	target_stat->st_gid = Host2BigEndian((uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2BigEndian((int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2BigEndian((int64_t) host_stat.st_size);
-#if defined(WIN32) // Windows 32
+#if defined(WIN32) || defined(_WIN32) // Windows 32
 	target_stat->st_blksize = Host2BigEndian((int32_t) 512);
 	target_stat->st_blocks = Host2BigEndian((int64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim = Host2BigEndian((int32_t) host_stat.st_atime);
 	target_stat->st_mtim = Host2BigEndian((int32_t) host_stat.st_mtime);
 	target_stat->st_ctim = Host2BigEndian((int32_t) host_stat.st_ctime);
-#elif defined(linux) // Linux 32
+#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux 32
 	target_stat->st_blksize = Host2BigEndian((int32_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2BigEndian((int64_t) host_stat.st_blocks);
 	target_stat->st_atim = Host2BigEndian((int32_t) host_stat.st_atim.tv_sec);
@@ -739,13 +739,13 @@ int AVR32_T2H_Syscalls<MEMORY_ADDR>::Stat(const char *path, struct avr32_stat *t
 	target_stat->st_gid = Host2BigEndian((uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2BigEndian((int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2BigEndian((int64_t) host_stat.st_size);
-#if defined(WIN64) // Windows x64
+#if defined(WIN64) || defined(_WIN64) // Windows x64
 	target_stat->st_blksize = Host2BigEndian((int32_t) 512);
 	target_stat->st_blocks = Host2BigEndian((int64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim = Host2BigEndian((int64_t) host_stat.st_atim);
 	target_stat->st_mtim = Host2BigEndian((int64_t) host_stat.st_mtim);
 	target_stat->st_ctim = Host2BigEndian((int64_t) host_stat.st_ctim);
-#elif defined(linux) // Linux x64
+#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux x64
 	target_stat->st_blksize = Host2BigEndian((int64_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2BigEndian((int64_t) host_stat.st_blocks);
 	target_stat->st_atim = Host2BigEndian((int64_t) host_stat.st_atim.tv_sec);
@@ -769,13 +769,13 @@ int AVR32_T2H_Syscalls<MEMORY_ADDR>::Stat(const char *path, struct avr32_stat *t
 	target_stat->st_gid = Host2BigEndian((uint32_t) host_stat.st_gid);
 	target_stat->st_rdev = Host2BigEndian((int64_t) host_stat.st_rdev);
 	target_stat->st_size = Host2BigEndian((int64_t) host_stat.st_size);
-#if defined(WIN32) // Windows 32
+#if defined(WIN32) || defined(_WIN32) // Windows 32
 	target_stat->st_blksize = Host2BigEndian((int32_t) 512);
 	target_stat->st_blocks = Host2BigEndian((int64_t)((host_stat.st_size + 511) / 512));
 	target_stat->st_atim = Host2BigEndian((int32_t) host_stat.st_atime);
 	target_stat->st_mtim = Host2BigEndian((int32_t) host_stat.st_mtime);
 	target_stat->st_ctim = Host2BigEndian((int32_t) host_stat.st_ctime);
-#elif defined(linux) // Linux 32
+#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux 32
 	target_stat->st_blksize = Host2BigEndian((int32_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2BigEndian((int64_t) host_stat.st_blocks);
 	target_stat->st_atim = Host2BigEndian((int32_t) host_stat.st_atim.tv_sec);
@@ -911,7 +911,7 @@ unisim::service::interfaces::AVR32_T2H_Syscalls::Status AVR32_T2H_Syscalls<MEMOR
 		if(flags & T2H_O_EXCL) host_flags |= O_EXCL;
 		if(flags & T2H_O_TRUNC) host_flags |= O_TRUNC;
 		if(flags & T2H_O_APPEND) host_flags |= O_APPEND;
-#if defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		host_flags |= O_BINARY; // target opens file as binary files
 		host_mode = mode & S_IRWXU; // Windows doesn't have bits for group and others
 #else

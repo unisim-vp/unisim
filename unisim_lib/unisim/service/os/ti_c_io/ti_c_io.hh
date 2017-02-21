@@ -165,8 +165,8 @@ private:
 	bool enable;
 	Parameter<bool> param_enable; 
 
-	unisim::util::debug::Register *reg_pc;
-	unisim::util::debug::Register *reg_sp;
+	unisim::service::interfaces::Register *reg_pc;
+	unisim::service::interfaces::Register *reg_sp;
 
 	bool warning_as_error;
 	string pc_register_name;

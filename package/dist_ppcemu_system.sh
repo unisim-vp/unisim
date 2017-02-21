@@ -228,29 +228,226 @@ unisim/component/tlm/memory/ram/memory_32.cc \
 unisim/component/tlm/memory/ram/memory_32_debug.cc \
 unisim/component/tlm/memory/flash/am29/am29lv800b.cc"
 
+# UNISIM_LIB_PPCEMU_SYSTEM_ISA_FILES="\
+# unisim/component/cxx/processor/powerpc/isa/altivec.isa \
+# unisim/component/cxx/processor/powerpc/isa/condition.isa \
+# unisim/component/cxx/processor/powerpc/isa/integer.isa \
+# unisim/component/cxx/processor/powerpc/isa/misc.isa \
+# unisim/component/cxx/processor/powerpc/isa/ppc.isa \
+# unisim/component/cxx/processor/powerpc/isa/branch.isa \
+# unisim/component/cxx/processor/powerpc/isa/floating.isa \
+# unisim/component/cxx/processor/powerpc/isa/optional_floating.isa \
+# unisim/component/cxx/processor/powerpc/isa/int_load_store.isa \
+# unisim/component/cxx/processor/powerpc/isa/byte_reverse_load_store.isa \
+# unisim/component/cxx/processor/powerpc/isa/string_load_store.isa \
+# unisim/component/cxx/processor/powerpc/isa/multiple_load_store.isa \
+# unisim/component/cxx/processor/powerpc/isa/fp_load_store.isa \
+# unisim/component/cxx/processor/powerpc/isa/external_control.isa \
+# unisim/component/cxx/processor/powerpc/isa/synchronization.isa \
+# unisim/component/cxx/processor/powerpc/isa/cache_management.isa \
+# unisim/component/cxx/processor/powerpc/isa/tlb_management.isa \
+# unisim/component/cxx/processor/powerpc/isa/specialization.isa \
+# unisim/component/cxx/processor/powerpc/mpc7447a/isa/mpc7447a.isa \
+# unisim/component/cxx/processor/powerpc/mpc7447a/isa/synchronization.isa \
+# unisim/component/cxx/processor/powerpc/mpc7447a/isa/tlb_management.isa \
+# unisim/component/cxx/processor/powerpc/mpc7447a/isa/misc.isa \
+# "
+
 UNISIM_LIB_PPCEMU_SYSTEM_ISA_FILES="\
+unisim/component/cxx/processor/powerpc/isa/book_i/integer.hh \
+unisim/component/cxx/processor/powerpc/isa/book_i/floating.hh \
 unisim/component/cxx/processor/powerpc/isa/altivec.isa \
-unisim/component/cxx/processor/powerpc/isa/condition.isa \
-unisim/component/cxx/processor/powerpc/isa/integer.isa \
-unisim/component/cxx/processor/powerpc/isa/misc.isa \
-unisim/component/cxx/processor/powerpc/isa/ppc.isa \
-unisim/component/cxx/processor/powerpc/isa/branch.isa \
-unisim/component/cxx/processor/powerpc/isa/floating.isa \
-unisim/component/cxx/processor/powerpc/isa/optional_floating.isa \
-unisim/component/cxx/processor/powerpc/isa/int_load_store.isa \
-unisim/component/cxx/processor/powerpc/isa/byte_reverse_load_store.isa \
-unisim/component/cxx/processor/powerpc/isa/string_load_store.isa \
-unisim/component/cxx/processor/powerpc/isa/multiple_load_store.isa \
-unisim/component/cxx/processor/powerpc/isa/fp_load_store.isa \
-unisim/component/cxx/processor/powerpc/isa/external_control.isa \
-unisim/component/cxx/processor/powerpc/isa/synchronization.isa \
-unisim/component/cxx/processor/powerpc/isa/cache_management.isa \
-unisim/component/cxx/processor/powerpc/isa/tlb_management.isa \
-unisim/component/cxx/processor/powerpc/isa/specialization.isa \
 unisim/component/cxx/processor/powerpc/mpc7447a/isa/mpc7447a.isa \
-unisim/component/cxx/processor/powerpc/mpc7447a/isa/synchronization.isa \
-unisim/component/cxx/processor/powerpc/mpc7447a/isa/tlb_management.isa \
-unisim/component/cxx/processor/powerpc/mpc7447a/isa/misc.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/add.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/addc.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/adde.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/addi.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/addic.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/addic_.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/addis.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/addme.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/addze.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/divw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/divwu.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/mulhw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/mulhwu.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/mulli.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/mullw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/neg.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/subf.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/subfc.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/subfe.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/subfic.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/subfme.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/subfze.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/cmp.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/cmpi.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/cmpl.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/cmpli.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/and.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/andc.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/andi_.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/andis_.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/cntlzw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/eqv.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/extsb.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/extsh.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/nand.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/nor.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/or.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/orc.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/ori.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/oris.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/xor.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/xori.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/xoris.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/rlwimi.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/rlwinm.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/rlwnm.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/slw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/sraw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/srawi.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/srw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fadd.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fadds.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fdiv.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fdivs.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fmul.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fmuls.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fsub.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fsubs.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fmadd.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fmadds.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fmsub.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fmsubs.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fnmadd.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fnmadds.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fnmsub.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fnmsubs.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fcmpo.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fcmpu.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fctiw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fctiwz.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/frsp.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fabs.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fmr.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fnabs.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fneg.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/mcrfs.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/mffs.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/mtfsb0.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/mtfsb1.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/mtfsf.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/mtfsfi.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fres.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/frsqrte.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fsel.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fsqrt.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fsqrts.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/b.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/bc.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/bcctr.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/bclr.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/crand.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/crandc.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/creqv.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/crnand.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/crnor.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/cror.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/crorc.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/crxor.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/mcrf.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lbz.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lbzu.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lbzux.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lbzx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lha.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lhau.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lhaux.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lhax.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lhz.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lhzu.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lhzux.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lhzx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lwz.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lwzu.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lwzux.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lwzx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stb.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stbu.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stbux.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stbx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/sth.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/sthu.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/sthux.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/sthx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stwu.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stwux.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stwx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lhbrx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lwbrx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/sthbrx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stwbrx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lswi.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lswx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stswi.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stswx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lmw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stmw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lfd.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lfdu.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lfdux.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lfdx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lfs.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lfsu.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lfsux.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/lfsx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stfd.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stfdu.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stfdux.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stfdx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stfiwx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stfs.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stfsu.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stfsux.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/stfsx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_ii/eciwx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_ii/ecowx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_ii/isync.isa \
+unisim/component/cxx/processor/powerpc/isa/book_ii/lwarx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_ii/stwcx_.isa \
+unisim/component/cxx/processor/powerpc/isa/book_ii/dcba.isa \
+unisim/component/cxx/processor/powerpc/isa/book_ii/dcbf.isa \
+unisim/component/cxx/processor/powerpc/isa/book_iii_e/dcbi.isa \
+unisim/component/cxx/processor/powerpc/isa/book_ii/dcbst.isa \
+unisim/component/cxx/processor/powerpc/isa/book_ii/dcbt.isa \
+unisim/component/cxx/processor/powerpc/isa/book_ii/dcbtst.isa \
+unisim/component/cxx/processor/powerpc/isa/book_ii/dcbz.isa \
+unisim/component/cxx/processor/powerpc/isa/book_ii/icbi.isa \
+unisim/component/cxx/processor/powerpc/isa/book_iii_e/tlbsync.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/sc.isa \
+unisim/component/cxx/processor/powerpc/isa/book_iii_e/rfi.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/tw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/twi.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/mcrxr.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/mfcr.isa \
+unisim/component/cxx/processor/powerpc/isa/book_iii_e/mfmsr.isa \
+unisim/component/cxx/processor/powerpc/isa/book_iii_e/mfspr.isa \
+unisim/component/cxx/processor/powerpc/isa/book_iii_e/mtspr.isa \
+unisim/component/cxx/processor/powerpc/isa/book_ii/mftb.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/mtcrf.isa \
+unisim/component/cxx/processor/powerpc/isa/book_ii/mtmsr.isa \
+unisim/component/cxx/processor/powerpc/isa/book_ii/eieio.isa \
+unisim/component/cxx/processor/powerpc/isa/book_ii/sync.isa \
+unisim/component/cxx/processor/powerpc/isa/pem32/tlbia.isa \
+unisim/component/cxx/processor/powerpc/isa/pem32/tlbie.isa \
+unisim/component/cxx/processor/powerpc/isa/pem32/tlbld.isa \
+unisim/component/cxx/processor/powerpc/isa/pem32/tlbli.isa \
+unisim/component/cxx/processor/powerpc/isa/book_iii_s/mfsr.isa \
+unisim/component/cxx/processor/powerpc/isa/book_iii_s/mfsrin.isa \
+unisim/component/cxx/processor/powerpc/isa/book_iii_s/mtsr.isa \
+unisim/component/cxx/processor/powerpc/isa/book_iii_s/mtsrin.isa \
 "
 
 UNISIM_LIB_PPCEMU_SYSTEM_HEADER_FILES="${UNISIM_LIB_PPCEMU_SYSTEM_ISA_FILES} \
@@ -268,7 +465,6 @@ unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/breakpoint.hh \
 unisim/util/debug/event.hh \
 unisim/util/debug/profile.hh \
-unisim/util/debug/register.hh \
 unisim/util/debug/symbol.hh \
 unisim/util/debug/stmt.hh \
 unisim/util/debug/simple_register.hh \
@@ -352,6 +548,7 @@ unisim/service/interfaces/stmt_lookup.hh \
 unisim/service/interfaces/time.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/profiling.hh \
+unisim/service/interfaces/register.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/linux_os.hh \
 unisim/service/interfaces/os.hh \
@@ -549,7 +746,7 @@ m4/real_path.m4 \
 m4/pthread.m4"
 
 UNISIM_LIB_PPCEMU_SYSTEM_DATA_FILES="\
-unisim/service/debug/gdb_server/gdb_powerpc.xml \
+unisim/service/debug/gdb_server/gdb_powerpc_32.xml \
 unisim/util/debug/dwarf/powerpc_eabi_dwarf_register_number_mapping.xml \
 unisim/util/debug/dwarf/powerpc_eabi_gcc_dwarf_register_number_mapping.xml \
 unisim/service/loader/pmac_bootx/device_tree_pmac_g4.xml \
@@ -763,7 +960,7 @@ Requirements:
   - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
   - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
   - libSDL (http://www.libsdl.org) development package (libsdl-devel for Redhat/Mandriva, libSDL-1.2-dev for Debian/Ubuntu)
-  - Core SystemC Language >= 2.1 (http://www.systemc.org)
+  - Core SystemC Language >= 2.3.0 (http://www.systemc.org)
 
 Building instructions:
   $ ./configure --with-systemc=<path-to-systemc-install-dir>

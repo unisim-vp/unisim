@@ -77,7 +77,8 @@ public:
 	virtual bool EndSetup();
 	
 	virtual void ReportMemoryAccess(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
-	virtual void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr);
+	virtual void ReportCommitInstruction(ADDRESS addr);
+	virtual void ReportFetchInstruction(ADDRESS next_addr);
 
 	virtual void SetProfileOption(typename unisim::service::interfaces::Profiling<ADDRESS>::ProfileType prof_type, typename unisim::service::interfaces::Profiling<ADDRESS>::Option opt, bool flag);
 	virtual void SetProfileOption(typename unisim::service::interfaces::Profiling<ADDRESS>::ProfileType prof_type, typename unisim::service::interfaces::Profiling<ADDRESS>::Option opt, ADDRESS addr);

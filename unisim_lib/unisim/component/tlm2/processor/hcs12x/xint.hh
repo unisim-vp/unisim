@@ -58,7 +58,7 @@
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
 
-#include "unisim/util/debug/register.hh"
+#include "unisim/service/interfaces/register.hh"
 
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
 
@@ -90,7 +90,7 @@ using unisim::kernel::service::ServiceExportBase;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 
-using unisim::util::debug::Register;
+using unisim::service::interfaces::Register;
 
 using unisim::component::tlm2::processor::hcs12x::XINT_REQ_ProtocolTypes;
 using unisim::component::tlm2::processor::hcs12x::XINT_Payload;
@@ -135,6 +135,7 @@ public:
 	static const uint8_t	INT_SYSCALL_OFFSET				= 0x12;
 	static const uint8_t	INT_SPURIOUS_OFFSET				= 0x10;
 
+	static const unsigned int MEMORY_MAP_SIZE = 16;
 
 	/*
 	 * 0xFFFE				: pin reset, power-on reset, low-voltage reset, illegal address reset
@@ -210,6 +211,11 @@ public:
 	 */
     virtual Register *GetRegister(const char *name);
 
+    void ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
+    {
+    	// TODO
+    }
+
 	//==============================================================
 	//=              XINT Registers Access Routines                =
 	//==============================================================
@@ -247,7 +253,7 @@ private:
 		bool getState() { return (state); }
 		void setPayload(XINT_Payload* _payload) { payload = _payload; }
 		XINT_Payload getPayload() { return (*payload); }
-		void releasePayload() { if (payload) {payload->release(); payload = NULL; } }
+		void releasePayload() { if (payload) {payload->reset(); payload->release(); payload = NULL; } }
 
 	private:
 		bool state;

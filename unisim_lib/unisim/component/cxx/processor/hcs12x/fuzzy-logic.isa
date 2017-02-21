@@ -110,6 +110,7 @@ by one.
 // (X) + 0x0004 ⇒ X
 	cpu->setRegX(xVal + 4);
 
+	return getCycles();
 }
 
 // REV: (8bits) MIN-MAX rule evaluation
@@ -186,6 +187,8 @@ rev.execute = {
 	 cpu->setRegX(xVal);
 	 cpu->setRegY(yVal);
 	 if (ccrV) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+
+	return getCycles();
 }
 
 // REVW: (16bits) MIN-MAX rule evaluation
@@ -271,6 +274,7 @@ revw.execute = {
 	 cpu->setRegY(yVal);
 	 if (ccrV) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 
+	return getCycles();
 }
 
 // WAV: Weighted Average Calculation
@@ -373,6 +377,8 @@ wav.execute = {
 	 cpu->setRegX(cpu->getRegTMP(0));
 	 	 
 	 cpu->ccr->setZ();
+
+	return getCycles();
 }
 
 // WAVR pseudo instruction: Resume execution of interrupted WAV instruction
@@ -407,6 +413,8 @@ wavr.execute = {
 	} else {
 		cpu->ccr->clrZ();
 	}
+
+	return getCycles();
 }
 
 /* ********  TABLE INTERPOLATION Instructions ********* */
@@ -450,6 +458,8 @@ tbl.execute = {
 	if ((msBits & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN();}
 	if (msBits == 0x00) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ();}	
 	if (lowBits > 0x7F) { cpu->ccr->setC(); } else { cpu->ccr->clrC();}	
+
+	return getCycles();
 }
 
 
@@ -488,6 +498,8 @@ with the radix point between bits 7 and 8.
 	if ((msBits & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN();}
 	if (result == 0x0000) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ();}	
 	if (lowBits > 0x7F) { cpu->ccr->setC(); } else { cpu->ccr->clrC();}	
+
+	return getCycles();
 }
 
 

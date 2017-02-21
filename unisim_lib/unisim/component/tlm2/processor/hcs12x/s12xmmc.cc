@@ -73,7 +73,7 @@ S12XMMC::~S12XMMC() {
 
 	mmc_trans->release();
 
-	for (uint16_t i=0; i <memoryMap.size(); i++) {
+	for (unsigned int i=0; i <memoryMap.size(); i++) {
 		if (memoryMap[i]) { delete memoryMap[i]; memoryMap[i] = NULL; }
 	}
 
@@ -84,7 +84,7 @@ bool S12XMMC::accessBus(physical_address_t addr, MMC_DATA *buffer, tlm::tlm_comm
 
 	bool find = false;
 
-	for (uint16_t i=0; i <memoryMap.size(); i++) {
+	for (unsigned int i=0; i <memoryMap.size(); i++) {
 		if ((addr >= memoryMap[i]->start_address) && (addr <= memoryMap[i]->end_address)) {
 			find = true;
 
@@ -137,11 +137,11 @@ void S12XMMC::xgate_access(MMC::ACCESS accessType, MMC_DATA *buffer) {
 
 	bool find = false;
 	if (inherited::version.compare("V3") == 0) {
-		for (int i=0; (i<inherited::MMC_MEMMAP_SIZE) && !find; i++) {
+		for (unsigned int i=0; (i<inherited::MMC_MEMMAP_SIZE) && !find; i++) {
 			find = (inherited::MMC_REGS_ADDRESSES[i] == logicalAddress);
 		}
 	} else if (inherited::version.compare("V4") == 0) {
-		for (int i=0; (i<=inherited::PPAGE) && !find; i++) {
+		for (unsigned int i=0; (i<=inherited::PPAGE) && !find; i++) {
 			find = (inherited::MMC_REGS_ADDRESSES[i] == logicalAddress);
 		}
 	}

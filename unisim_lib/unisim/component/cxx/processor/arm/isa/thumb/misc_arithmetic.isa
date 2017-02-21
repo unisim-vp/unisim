@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2013,
+ *  Copyright (c) 2007-2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
 /*******************************************************************
@@ -38,7 +38,7 @@
  * SXTB extracts an 8-bit value from a register, sign-extends it to 32 bits, and writes the result to the destination register. You can specify a rotation by 0, 8, 16, or 24 bits before extracting the 8-bit value.
  */
 
-{ ARCH::insns6 }:                               \
+{ ARCH::Config::insns6 }:                               \
 op sxtb( 0b1011001001[10]: rm[3]: rd[3] );
 
 sxtb.disasm = {
@@ -46,9 +46,12 @@ sxtb.disasm = {
 }
 
 sxtb.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.SetGPR( rd, (int32_t)((int8_t)cpu.GetGPR_npc( rm )) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S8  S8;
+  cpu.SetGPR( rd, U32( S32( S8( cpu.GetGPR( rm ) ) ) ) );
 };
 
 /*
@@ -61,7 +64,7 @@ sxtb.execute = {
  * SXTH extracts a 16-bit value from a register, sign-extends it to 32 bits, and writes the result to the destination register. You can specify a rotation by 0, 8, 16, or 24 bits before extracting the 16-bit value.
  */
 
-{ ARCH::insns6 }:                               \
+{ ARCH::Config::insns6 }:                               \
 op sxth( 0b1011001000[10]: rm[3]: rd[3] );
 
 sxth.disasm = {
@@ -69,9 +72,12 @@ sxth.disasm = {
 };
 
 sxth.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.SetGPR( rd, (int32_t)((int16_t)cpu.GetGPR_npc( rm )) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  typedef typename ARCH::S16 S16;
+  cpu.SetGPR( rd, U32( S32( S16( cpu.GetGPR( rm ) ) ) ) );
 };
 
 /*
@@ -84,7 +90,7 @@ sxth.execute = {
  * UXTB extracts an 8-bit value from a register, zero-extends it to 32 bits, and writes the result to the destination register. You can specify a rotation by 0, 8, 16, or 24 bits before extracting the 8-bit value.
  */
 
-{ ARCH::insns6 }:                               \
+{ ARCH::Config::insns6 }:                               \
 op uxtb( 0b1011001011[10]: rm[3]: rd[3] );
 
 uxtb.disasm = {
@@ -92,9 +98,11 @@ uxtb.disasm = {
 };
 
 uxtb.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.SetGPR( rd, (uint32_t)((uint8_t)cpu.GetGPR_npc( rm )) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U8  U8;
+  cpu.SetGPR( rd, U32( U8( cpu.GetGPR( rm ) ) ) );
 };
 
 /*
@@ -107,7 +115,7 @@ uxtb.execute = {
  * UXTH extracts a 16-bit value from a register, zero-extends it to 32 bits, and writes the result to the destination register. You can specify a rotation by 0, 8, 16, or 24 bits before extracting the 16-bit value.
  */
 
-{ ARCH::insns6 }:                               \
+{ ARCH::Config::insns6 }:                               \
 op uxth( 0b1011001010[10]: rm[3]: rd[3] );
 
 uxth.disasm = {
@@ -115,9 +123,11 @@ uxth.disasm = {
 };
 
 uxth.execute = {
-  if (not CheckCondition(cpu, cpu.itcond())) return;
+  if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.SetGPR( rd, (uint32_t)((uint16_t)cpu.GetGPR_npc( rm )) );
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U16 U16;
+  cpu.SetGPR( rd, U32( U16( cpu.GetGPR( rm ) ) ) );
 };
 
 /*

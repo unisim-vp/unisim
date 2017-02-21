@@ -97,7 +97,7 @@ public:
 	/** BeginSetup
 	 * Initializes the service interface. */
 	virtual bool BeginSetup();
-	
+
 	/**
 	 * TLM2 Slave methods
 	 */
@@ -129,6 +129,8 @@ private:
 	/** Latencies */
 	sc_time read_latency;
 	sc_time write_latency;
+	/** read-only flag */
+	bool read_only;
 	/** The parameter to set frequency */
 	Parameter<sc_time> param_cycle_time;
 	/** The parameters to set the latencies */
@@ -136,6 +138,8 @@ private:
 	Parameter<sc_time> param_write_latency;
 	/** The parameter to set the verbosity */
 	Parameter<bool> param_verbose;
+	/** The parameter to set read-only */
+	Parameter<bool> param_read_only;
 
 	Statistic<uint64_t> stat_read_counter;
 	Statistic<uint64_t> stat_write_counter;

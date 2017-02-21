@@ -228,7 +228,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	//  - Multiformat loader
 	loader = enable_linux_os ? 0 : new MultiFormatLoader<CPU_ADDRESS_TYPE>("loader");
 	//  - Linux loader and Linux ABI translator
-	linux_os = enable_linux_os ? new Linux<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE>("linux-os") : 0;
+	linux_os = enable_linux_os ? new unisim::service::os::linux_os::PowerPCLinux32<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE>("linux-os") : 0;
 	//  - debugger
 	debugger = (enable_linux_os || enable_inline_debugger || enable_gdb_server) ? new Debugger<CPU_ADDRESS_TYPE>("debugger") : 0;
 	//  - GDB server
@@ -648,7 +648,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	simulator->SetVariable("schematic", "virtex5fxt/fig_schematic.pdf");
 
 	int gdb_server_tcp_port = 0;
-	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
+	const char *gdb_server_arch_filename = "gdb_powerpc_32.xml";
 	const char *dwarf_register_number_mapping_filename = "powerpc_eabi_gcc_dwarf_register_number_mapping.xml";
 	uint64_t maxinst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
 	double cpu_frequency = 400.0; // in Mhz
@@ -750,9 +750,9 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 
 	// - Loader memory router
 	std::stringstream sstr_loader_mapping;
-	sstr_loader_mapping << "ram-effective-to-physical-address-translator:0x" << std::hex << CONFIG::RAM_BASE_ADDR << std::dec << "-0x" << std::hex << (CONFIG::RAM_BASE_ADDR + CONFIG::RAM_BYTE_SIZE - 1) << std::dec;
-	sstr_loader_mapping << ",bram-effective-to-physical-address-translator:0x" << std::hex << CONFIG::BRAM_BASE_ADDR << std::dec << "-0x" << std::hex << (CONFIG::BRAM_BASE_ADDR + CONFIG::BRAM_BYTE_SIZE - 1) << std::dec;
-	sstr_loader_mapping << ",flash-effective-to-physical-address-translator:0x" << std::hex << CONFIG::FLASH_BASE_ADDR << std::dec << "-0x" << std::hex << (CONFIG::FLASH_BASE_ADDR + CONFIG::FLASH_BYTE_SIZE - 1) << std::dec;
+	sstr_loader_mapping << "ram-effective-to-physical-address-translator:0x" << std::hex << CONFIG::RAM_BASE_ADDR << std::dec << "-0x" << std::hex << (CONFIG::RAM_BASE_ADDR + CONFIG::RAM_BYTE_SIZE - 1) << std::dec << ":+0x" << std::hex << CONFIG::RAM_BASE_ADDR << std::dec;
+	sstr_loader_mapping << ",bram-effective-to-physical-address-translator:0x" << std::hex << CONFIG::BRAM_BASE_ADDR << std::dec << "-0x" << std::hex << (CONFIG::BRAM_BASE_ADDR + CONFIG::BRAM_BYTE_SIZE - 1) << std::dec << ":+0x" << std::hex << CONFIG::BRAM_BASE_ADDR << std::dec;
+	sstr_loader_mapping << ",flash-effective-to-physical-address-translator:0x" << std::hex << CONFIG::FLASH_BASE_ADDR << std::dec << "-0x" << std::hex << (CONFIG::FLASH_BASE_ADDR + CONFIG::FLASH_BYTE_SIZE - 1) << std::dec << ":+0x" << std::hex << CONFIG::FLASH_BASE_ADDR << std::dec;
 	simulator->SetVariable("loader.memory-mapper.mapping", sstr_loader_mapping.str().c_str()); // 256 MB RAM / 256 KB BRAM / 32 MB Flash memory
 
 	//  - RAM
@@ -1036,11 +1036,13 @@ void Simulator<CONFIG>::Stop(Object *object, int _exit_status, bool asynchronous
 	sc_stop();
 	if(!asynchronous)
 	{
-		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		sc_process_handle h = sc_get_current_process_handle();
+		switch(h.proc_kind())
+// 		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
 		{
 			case SC_THREAD_PROC_: 
 			case SC_CTHREAD_PROC_:
-				wait();
+				sc_core::wait();
 				break;
 			default:
 				break;

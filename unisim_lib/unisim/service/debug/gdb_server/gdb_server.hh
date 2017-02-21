@@ -36,11 +36,13 @@
 #define __UNISIM_SERVICE_DEBUG_GDB_SERVER_GDB_SERVER_HH__
 
 #include <unisim/util/endian/endian.hh>
+#include <unisim/util/xml/xml.hh>
 #include <unisim/service/interfaces/debug_event.hh>
 #include <unisim/service/interfaces/debug_control.hh>
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/registers.hh>
+#include <unisim/service/interfaces/register.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 
@@ -50,7 +52,6 @@
 #include <unisim/util/debug/event.hh>
 #include <unisim/util/debug/breakpoint.hh>
 #include <unisim/util/debug/watchpoint.hh>
-#include <unisim/util/debug/register.hh>
 
 #include <string>
 #include <vector>
@@ -117,8 +118,8 @@ class GDBRegister
 {
 public:
 	GDBRegister();
-	GDBRegister(const string& reg_name, int reg_bitsize, GDBEndian endian, unsigned int reg_num);
-	GDBRegister(unisim::util::debug::Register *reg, GDBEndian endian, unsigned int reg_num);
+	GDBRegister(const string& reg_name, int reg_bitsize, GDBEndian endian, unsigned int reg_num, const std::string& type, const std::string& group);
+	GDBRegister(unisim::service::interfaces::Register *reg, const string& reg_name, GDBEndian endian, unsigned int reg_num, const std::string& type, const std::string& group);
 	inline const char *GetName() const { return name.c_str(); }
 	inline int GetBitSize() const { return bitsize; }
 	bool SetValue(const string& hex);
@@ -126,16 +127,33 @@ public:
 	bool GetValue(string& hex) const;
 	bool GetValue(void *buffer) const;
 	inline int GetHexLength() const { return bitsize / 4; }
-	inline unisim::util::debug::Register *GetRegisterInterface() { return reg; }
-	inline void SetRegisterInterface(unisim::util::debug::Register *reg) { this->reg = reg; }
+	inline unisim::service::interfaces::Register *GetRegisterInterface() { return reg; }
+	inline void SetRegisterInterface(unisim::service::interfaces::Register *reg) { this->reg = reg; }
 	inline GDBEndian GetEndian() const { return endian; }
 	unsigned int GetRegNum() const { return reg_num; }
+	bool IsEmpty() const { return (bitsize == 0) and (not reg); }
+	std::ostream& ToXML(std::ostream& os, unsigned int reg_num) const;
 private:
 	string name;
 	int bitsize;
-	unisim::util::debug::Register *reg;
+	unisim::service::interfaces::Register *reg;
 	GDBEndian endian;
 	unsigned int reg_num;
+	std::string type;
+	std::string group;
+};
+
+class GDBFeature
+{
+public:
+	GDBFeature(const std::string& feature_name, unsigned int id);
+	void AddRegister(const GDBRegister *gdb_register);
+	unsigned int GetId() const;
+	std::ostream& ToXML(std::ostream& os, std::string req_filename = std::string()) const;
+private:
+	std::string name;
+	unsigned int id;
+	std::vector<const GDBRegister *> gdb_registers;
 };
 
 template <class ADDRESS>
@@ -163,7 +181,7 @@ public:
 	GDBServer(const char *name, Object *parent = 0);
 	virtual ~GDBServer();
 
-	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event);
+	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event);
 	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
 	virtual void ReportTrap();
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj);
@@ -176,6 +194,12 @@ public:
 
 private:
 	static const unsigned int MAX_BUFFER_SIZE = 256;
+	bool VisitArchitecture(unisim::util::xml::Node *xml_node);
+	bool VisitBreakPointKind(unisim::util::xml::Node *xml_node);
+	bool VisitFeature(unisim::util::xml::Node *xml_node);
+	bool VisitRegister(unisim::util::xml::Node *xml_node, GDBFeature *gdb_feature);
+	bool VisitProgramCounter(unisim::util::xml::Node *xml_node);
+	
 	bool ParseHex(const string& s, size_t& pos, ADDRESS& value);
 	bool GetChar(char& c, bool blocking);
 	bool PutChar(char c);
@@ -187,27 +211,44 @@ private:
 	bool WriteRegisters(const string& hex);
 	bool ReadRegister(unsigned int regnum);
 	bool WriteRegister(unsigned int regnum, const string& hex);
-	bool ReadMemory(ADDRESS addr, uint32_t size);
-	bool WriteMemory(ADDRESS addr, const string& hex, uint32_t size);
+	bool ReadMemoryHex(ADDRESS addr, uint32_t size);
+	bool WriteMemoryHex(ADDRESS addr, const string& hex, uint32_t size);
+	bool ReadMemoryBin(ADDRESS addr, uint32_t size);
+	bool WriteMemoryBin(ADDRESS addr, const string& bin, uint32_t size);
 	bool ReportProgramExit();
 	bool ReportSignal(unsigned int signum);
 	bool ReportTracePointTrap();
-	bool SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size);
-	bool RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size);
+	bool SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t kind);
+	bool RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t kind);
 
 	void HandleQRcmd(string command);
+	void HandleQSupported(std::string features);
+	void SetGDBClientFeature(std::string gdb_client_feature);
+	void HandleQC();
+	void HandleQAttached(std::string command);
+	void HandleQTStatus();
+	void HandleQStartNoAckMode();
+	void HandleQXferFeaturesRead(std::string command);
+	void HandleQfThreadInfo();
+	void HandleQsThreadInfo();
 
 	void Disasm(ADDRESS addr, unsigned int size);
 	
 	void Kill();
+	
+	std::string EscapeString(const std::string& s) const;
 
 	unisim::kernel::logger::Logger logger;
 
 	int tcp_port;
 	string architecture_description_filename;
+	GDBEndian endian;
+	unsigned int gdb_arch_reg_num;
+	std::string program_counter_name;
 
 	int sock;
-	vector<GDBRegister> gdb_registers;
+	vector<GDBFeature *> gdb_features;
+	vector<GDBRegister *> gdb_registers;
 	GDBRegister *gdb_pc;
 	bool killed;
 	bool trap;
@@ -216,6 +257,19 @@ private:
 	bool extended_mode;
 	int32_t counter;
 	int32_t period;
+	bool gdb_client_feature_multiprocess;
+	bool gdb_client_feature_xmlregisters;
+	bool gdb_client_feature_qrelocinsn;
+	bool gdb_client_feature_swbreak;
+	bool gdb_client_feature_hwbreak;
+	bool gdb_client_feature_fork_events;
+	bool gdb_client_feature_vfork_events;
+	bool gdb_client_feature_exec_events;
+	bool gdb_client_feature_vcont;
+	unsigned int current_thread_id;
+	bool no_ack_mode;
+	std::map<uint32_t, uint32_t> arch_specific_breakpoint_kinds;
+	
 
 	ADDRESS disasm_addr;
 

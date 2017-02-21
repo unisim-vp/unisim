@@ -206,19 +206,19 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, stat_timer_cycle("timer-cycle",  this,  timer_cycle, "number of simulated timer cycles")
 	, stat_num_il1_accesses("num-il1-accesses", this, num_il1_accesses, "number of accesses to L1 instruction cache")
 	, stat_num_il1_misses("num-il1-misses", this, num_il1_misses, "number of misses to L1 instruction cache")
-	, formula_il1_miss_rate("il1-miss-rate", this, Formula<double>::OP_DIV, &stat_num_il1_misses, &stat_num_il1_accesses, "L1 instruction cache miss rate")
+	, formula_il1_miss_rate("il1-miss-rate", this, "/", &stat_num_il1_misses, &stat_num_il1_accesses, "L1 instruction cache miss rate")
 	, stat_num_dl1_accesses("num-dl1-accesses", this, num_dl1_accesses, "number of accesses to L1 data cache")
 	, stat_num_dl1_misses("num-dl1-misses", this, num_dl1_misses, "number of misses to L1 data cache")
-	, formula_dl1_miss_rate("dl1-miss-rate", this, Formula<double>::OP_DIV, &stat_num_dl1_misses, &stat_num_dl1_accesses, "L1 data cache miss rate")
+	, formula_dl1_miss_rate("dl1-miss-rate", this, "/", &stat_num_dl1_misses, &stat_num_dl1_accesses, "L1 data cache miss rate")
 	, stat_num_itlb_accesses("num-itlb-accesses", this, num_itlb_accesses, "number of accesses to shadow instruction translation look-aside buffer")
 	, stat_num_itlb_misses("num-itlb-misses", this, num_itlb_misses, "number of misses to shadow instruction translation look-aside buffer")
-	, formula_itlb_miss_rate("itlb-miss-rate", this, Formula<double>::OP_DIV, &stat_num_itlb_misses, &stat_num_itlb_accesses, "shadow instruction translation look-aside buffer miss rate")
+	, formula_itlb_miss_rate("itlb-miss-rate", this, "/", &stat_num_itlb_misses, &stat_num_itlb_accesses, "shadow instruction translation look-aside buffer miss rate")
 	, stat_num_dtlb_accesses("num-dtlb-accesses", this, num_dtlb_accesses, "number of accesses to shadow data translation look-aside buffer")
 	, stat_num_dtlb_misses("num-dtlb-misses", this, num_dtlb_misses, "number of misses to shadow data translation look-aside buffer")
-	, formula_dtlb_miss_rate("dtlb-miss-rate", this, Formula<double>::OP_DIV, &stat_num_dtlb_misses, &stat_num_dtlb_accesses, "shadow data translation look-aside buffer miss rate")
+	, formula_dtlb_miss_rate("dtlb-miss-rate", this, "/", &stat_num_dtlb_misses, &stat_num_dtlb_accesses, "shadow data translation look-aside buffer miss rate")
 	, stat_num_utlb_accesses("num-utlb-accesses", this, num_utlb_accesses, "number of accesses to unified data translation look-aside buffer")
 	, stat_num_utlb_misses("num-utlb-misses", this, num_utlb_misses, "number of misses to unified data translation look-aside buffer")
-	, formula_utlb_miss_rate("utlb-miss-rate", this, Formula<double>::OP_DIV, &stat_num_utlb_misses, &stat_num_utlb_accesses, "unified data translation look-aside buffer miss rate")
+	, formula_utlb_miss_rate("utlb-miss-rate", this, "/", &stat_num_utlb_misses, &stat_num_utlb_accesses, "unified data translation look-aside buffer miss rate")
 	, stat_num_interrupts("num-interrupts", this, num_interrupts, "Number of interrupts")
 	, stat_num_decrementer_interrupts("num-decrementer-interrupts", this, num_decrementer_interrupts, "Number decrementer interrupts")
 	, stat_num_fixed_interval_timer_interrupts("num-fixed-interval-timer-interrupts", this, num_fixed_interval_timer_interrupts, "Number of fixed interval timer interrupts")
@@ -246,6 +246,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 
 	registers_registry["cia"] = new unisim::util::debug::SimpleRegister<uint32_t>("cia", &cia);
 	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("cia", this, cia, "Current Instruction Address"));
+	registers_registry["pc"] = new unisim::util::debug::SimpleRegister<uint32_t>("pc", &cia);
+	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("pc", this, cia, "Program Counter"));
 
 	registers_registry["cr"] = new unisim::util::debug::SimpleRegister<uint32_t>("cr", &cr);
 	registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>("cr", this, cr, "Condition Register"));
@@ -499,7 +501,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 template <class CONFIG>
 CPU<CONFIG>::~CPU()
 {
-	map<string, unisim::util::debug::Register *>::iterator reg_iter;
+	map<string, unisim::service::interfaces::Register *>::iterator reg_iter;
 
 	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
 	{
@@ -2208,15 +2210,54 @@ string CPU<CONFIG>::GetFunctionFriendlyName(typename CONFIG::address_t addr)
 }
 
 template <class CONFIG>
-unisim::util::debug::Register *CPU<CONFIG>::GetRegister(const char *name)
+unisim::service::interfaces::Register *CPU<CONFIG>::GetRegister(const char *name)
 {
-	map<string, unisim::util::debug::Register *>::iterator reg_iter = registers_registry.find(name);
+	map<string, unisim::service::interfaces::Register *>::iterator reg_iter = registers_registry.find(name);
 	if(reg_iter != registers_registry.end())
 	{
 		return (*reg_iter).second;
 	}
 
 	return 0;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
+{
+  scanner.Append(this->GetRegister("r0"));
+  scanner.Append(this->GetRegister("r1"));
+  scanner.Append(this->GetRegister("r2"));
+  scanner.Append(this->GetRegister("r3"));
+  scanner.Append(this->GetRegister("r4"));
+  scanner.Append(this->GetRegister("r5"));
+  scanner.Append(this->GetRegister("r6"));
+  scanner.Append(this->GetRegister("r7"));
+  scanner.Append(this->GetRegister("r8"));
+  scanner.Append(this->GetRegister("r9"));
+  scanner.Append(this->GetRegister("r10"));
+  scanner.Append(this->GetRegister("r11"));
+  scanner.Append(this->GetRegister("r12"));
+  scanner.Append(this->GetRegister("r13"));
+  scanner.Append(this->GetRegister("r14"));
+  scanner.Append(this->GetRegister("r15"));
+  scanner.Append(this->GetRegister("r16"));
+  scanner.Append(this->GetRegister("r17"));
+  scanner.Append(this->GetRegister("r18"));
+  scanner.Append(this->GetRegister("r19"));
+  scanner.Append(this->GetRegister("r20"));
+  scanner.Append(this->GetRegister("r21"));
+  scanner.Append(this->GetRegister("r22"));
+  scanner.Append(this->GetRegister("r23"));
+  scanner.Append(this->GetRegister("r24"));
+  scanner.Append(this->GetRegister("r25"));
+  scanner.Append(this->GetRegister("r26"));
+  scanner.Append(this->GetRegister("r27"));
+  scanner.Append(this->GetRegister("r28"));
+  scanner.Append(this->GetRegister("r29"));
+  scanner.Append(this->GetRegister("r30"));
+  scanner.Append(this->GetRegister("r31"));
+  scanner.Append(this->GetRegister("cr"));
+  scanner.Append(this->GetRegister("cia"));
 }
 
 template <class CONFIG>
