@@ -58,6 +58,24 @@ enum Access
 	ACC_RW   = ACC_RO | ACC_WO
 };
 
+enum Control
+{
+	CTRL_DEFAULT = 0,
+	CTRL_MASK_HW_R = 1,
+	CTRL_MASK_HW_W = 2,
+	CTRL_MASK_HW_RW = CTRL_MASK_HW_R | CTRL_MASK_HW_W,
+	CTRL_MASK_SW_R = 4,
+	CTRL_MASK_SW_W = 8,
+	CTRL_MASK_SW_RW = CTRL_MASK_SW_R | CTRL_MASK_SW_W,
+	CTRL_MASK_HW_SW_RW = CTRL_MASK_HW_RW | CTRL_MASK_SW_RW,
+	CTRL_CHECK_HW_W = 16 | CTRL_MASK_HW_W,
+	CTRL_CHECK_SW_R = 32 | CTRL_MASK_SW_R,
+	CTRL_CHECK_SW_W = 64 | CTRL_MASK_SW_W,
+	CTRL_CHECK_HW_SW_W = CTRL_CHECK_HW_W | CTRL_CHECK_SW_W,
+	CTRL_CHECK_SW_RW = CTRL_CHECK_SW_R | CTRL_CHECK_SW_W,
+	CTRL_CHECK_HW_W_SW_RW = CTRL_CHECK_HW_W | CTRL_CHECK_SW_RW
+};
+
 template <int BYTE_SIZE> struct TypeFor {};
 template <> struct TypeFor<1> { typedef uint8_t TYPE; };
 template <> struct TypeFor<2> { typedef uint16_t TYPE; };
@@ -95,6 +113,7 @@ public:
 	virtual void DebugWrite(unsigned char *data_ptr) = 0;
 	virtual void DebugRead(unsigned char *data_ptr) = 0;
 
+	unisim::service::interfaces::Register *CreateRegisterInterface() const;
 private:
 	std::string name;
 	std::string friendly_name;
@@ -127,13 +146,29 @@ const std::string& RegisterBase::GetDescription() const
 	return description;
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
+unisim::service::interfaces::Register *RegisterBase::CreateRegisterInterface() const
+{
+	struct RegisterInterface : public unisim::service::interfaces::Register
+	{
+		RegisterInterface(RegisterBase *_reg) : reg(_reg) {}
+		virtual const char *GetName() const { return reg->GetName().c_str(); }
+		virtual void GetValue(void *buffer) const { reg->DebugRead((unsigned char *) buffer); }
+		virtual void SetValue(const void *buffer) { reg->DebugWrite((unsigned char *) buffer); }
+		virtual int GetSize() const { return (reg->GetBitSize() + 7) / 8; }
+		
+		RegisterBase *reg;
+	};
+	
+	return new RegisterInterface(this);
+}
+
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
 class Register;
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-std::ostream& operator << (std::ostream& os, const Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>& reg);
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+std::ostream& operator << (std::ostream& os, const Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>& reg);
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL = CTRL_CHECK_HW_W_SW_RW>
 class Register : public RegisterBase
 {
 public:
@@ -157,7 +192,7 @@ public:
 	void SetResetValue(STORAGE_TYPE value, STORAGE_TYPE mask);
 	void Reset();
 	operator const STORAGE_TYPE() const;
-	Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>& operator = (const STORAGE_TYPE& value);
+	Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>& operator = (const STORAGE_TYPE& value);
 	virtual bool CheckWrite(const STORAGE_TYPE& value, const STORAGE_TYPE& byte_enable);
 	virtual bool CheckRead(STORAGE_TYPE& value, const STORAGE_TYPE& byte_enable);
 	virtual bool Write(const STORAGE_TYPE& value, const STORAGE_TYPE& byte_enable = STORAGE_TYPE(-1));
@@ -169,7 +204,7 @@ public:
 	virtual void DebugWrite(unsigned char *data_ptr);
 	virtual void DebugRead(unsigned char *data_ptr);
 	
-	friend std::ostream& operator << <B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>(std::ostream& os, const Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>& reg);
+	friend std::ostream& operator << <B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>(std::ostream& os, const Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>& reg);
 private:
 	Storage<B_SIZE> storage;
 	Storage<B_SIZE> reset_storage;
@@ -179,8 +214,8 @@ private:
 	Storage<B_SIZE> sw_read_mask_storage;
 };
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-std::ostream& operator << (std::ostream& os, const Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>& reg)
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+std::ostream& operator << (std::ostream& os, const Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>& reg)
 {
 	return os << (uint64_t) reg.storage.value;
 }
@@ -221,99 +256,109 @@ Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::Register(const std::string& nam
 {
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::~Register()
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::~Register()
 {
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-unsigned int Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::GetBitSize() const
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+unsigned int Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::GetBitSize() const
 {
 	return B_SIZE;
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-void Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::SetHW_WriteMask(STORAGE_TYPE mask)
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+void Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::SetHW_WriteMask(STORAGE_TYPE mask)
 {
 	hw_write_mask_storage.value |= mask;
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-void Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::SetHW_ReadMask(STORAGE_TYPE mask)
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+void Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::SetHW_ReadMask(STORAGE_TYPE mask)
 {
 	hw_read_mask_storage.value |= mask;
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-void Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::SetSW_WriteMask(STORAGE_TYPE mask)
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+void Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::SetSW_WriteMask(STORAGE_TYPE mask)
 {
 	sw_write_mask_storage.value |= mask;
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-void Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::SetSW_ReadMask(STORAGE_TYPE mask)
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+void Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::SetSW_ReadMask(STORAGE_TYPE mask)
 {
 	sw_read_mask_storage.value |= mask;
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-typename Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::STORAGE_TYPE Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::GetHW_WriteMask() const
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+typename Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::STORAGE_TYPE Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::GetHW_WriteMask() const
 {
 	return hw_write_mask_storage.value;
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-typename Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::STORAGE_TYPE Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::GetHW_ReadMask() const
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+typename Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::STORAGE_TYPE Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::GetHW_ReadMask() const
 {
 	return hw_read_mask_storage.value;
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-typename Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::STORAGE_TYPE Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::GetSW_WriteMask() const
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+typename Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::STORAGE_TYPE Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::GetSW_WriteMask() const
 {
 	return sw_write_mask_storage.value;
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-typename Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::STORAGE_TYPE Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::GetSW_ReadMask() const
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+typename Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::STORAGE_TYPE Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::GetSW_ReadMask() const
 {
 	return sw_read_mask_storage.value;
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-void Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::SetResetValue(STORAGE_TYPE value, STORAGE_TYPE mask)
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+void Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::SetResetValue(STORAGE_TYPE value, STORAGE_TYPE mask)
 {
 	reset_storage.value = ((reset_storage.value & ~mask) | (value & mask)) & reset_storage.MASK;
 	Reset();
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-void Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::Reset()
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+void Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::Reset()
 {
 	storage.value = reset_storage.value;
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::operator const STORAGE_TYPE() const
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::operator const STORAGE_TYPE() const
 {
-	return ((reset_storage.value & ~hw_read_mask_storage.value) | (storage.value & hw_read_mask_storage.value)) & storage.MASK;
+	return (CTRL & CTRL_MASK_HW_R) ? (((reset_storage.value & ~hw_read_mask_storage.value) | (storage.value & hw_read_mask_storage.value)) & storage.MASK) : storage.value;
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>& Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::operator = (const STORAGE_TYPE& value)
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>& Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::operator = (const STORAGE_TYPE& value)
 {
-	if(((reset_storage.value & hw_write_mask_storage.value) | (value & ~hw_write_mask_storage.value & storage.MASK)) != reset_storage.value)
+	if(CTRL & CTRL_MASK_HW_W)
 	{
-		// Attempt to modify reserved or read-only bits
-		std::cerr << "Hardware attempt to modify reserved bits in Register \"" << GetName() << "\"" << std::endl;
-	}
+		if(CTRL & CTRL_CHECK_HW_W)
+		{
+			if(((reset_storage.value & hw_write_mask_storage.value) | (value & ~hw_write_mask_storage.value & storage.MASK)) != reset_storage.value)
+			{
+				// Attempt to modify reserved or read-only bits
+				std::cerr << "Hardware attempt to modify reserved bits in Register \"" << GetName() << "\"" << std::endl;
+			}
+		}
 
-	storage.value = ((storage.value & ~hw_write_mask_storage.value) | (value & hw_write_mask_storage.value)) & storage.MASK;
+		storage.value = ((storage.value & ~hw_write_mask_storage.value) | (value & hw_write_mask_storage.value)) & storage.MASK;
+	}
+	else
+	{
+		storage.value = value;
+	}
 	return *this;
 }
-// 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-bool Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::CheckWrite(const STORAGE_TYPE& value, const STORAGE_TYPE& byte_enable)
+
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+bool Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::CheckWrite(const STORAGE_TYPE& value, const STORAGE_TYPE& byte_enable)
 {
 	if(SW_ACCESS & ACC_WO)
 	{
@@ -332,8 +377,8 @@ bool Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::CheckWrite(const STORAGE_T
 	return false;
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-bool Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::CheckRead(STORAGE_TYPE& value, const STORAGE_TYPE& byte_enable)
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+bool Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::CheckRead(STORAGE_TYPE& value, const STORAGE_TYPE& byte_enable)
 {
 	if(SW_ACCESS & ACC_RO)
 	{
@@ -345,72 +390,86 @@ bool Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::CheckRead(STORAGE_TYPE& va
 	return false;
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-bool Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::Write(const STORAGE_TYPE& value, const STORAGE_TYPE& byte_enable)
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+bool Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::Write(const STORAGE_TYPE& value, const STORAGE_TYPE& byte_enable)
 {
-//	std::cerr << "!!!!!!!!!!!!!!!!!!!!" << GetName() << ".Write(value=0x" << std::hex << (unsigned long long) value << std::dec << ", byte_enable=0x" << std::hex << (unsigned long long) byte_enable << std::dec << ")" << std::endl;
-	if(CheckWrite(value, byte_enable))
+	if(CTRL & CTRL_MASK_SW_W)
 	{
-		STORAGE_TYPE old_value = this->operator const STORAGE_TYPE();
-		STORAGE_TYPE write_mask = byte_enable & sw_write_mask_storage.value;
-		STORAGE_TYPE new_value = (old_value & ~write_mask) | (value & write_mask);
-		this->operator = (new_value);
-		return true;
+		if(!(CTRL & CTRL_CHECK_SW_W) || CheckWrite(value, byte_enable))
+		{
+			STORAGE_TYPE old_value = this->operator const STORAGE_TYPE();
+			STORAGE_TYPE write_mask = byte_enable & sw_write_mask_storage.value;
+			STORAGE_TYPE new_value = (old_value & ~write_mask) | (value & write_mask);
+			this->operator = (new_value);
+			return true;
+		}
+	
+		return false;
 	}
 	
-	return false;
+	STORAGE_TYPE old_value = this->operator const STORAGE_TYPE();
+	STORAGE_TYPE new_value = (old_value & ~byte_enable) | (value & byte_enable);
+	this->operator = (new_value);
+	return true;
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-bool Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::Read(STORAGE_TYPE& value, const STORAGE_TYPE& byte_enable)
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+bool Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::Read(STORAGE_TYPE& value, const STORAGE_TYPE& byte_enable)
 {
-	if(CheckRead(value, byte_enable))
+	if(CTRL & CTRL_MASK_SW_R)
 	{
-		STORAGE_TYPE reg_value = this->operator const STORAGE_TYPE();
-		value = (value & ~byte_enable) | (reg_value & sw_read_mask_storage.value & byte_enable);
-		return true;
+		if(!(CTRL & CHECK_SW_R) || CheckRead(value, byte_enable))
+		{
+			STORAGE_TYPE reg_value = this->operator const STORAGE_TYPE();
+			value = (value & ~byte_enable) | (reg_value & sw_read_mask_storage.value & byte_enable);
+			return true;
+		}
+	
+		return false;
 	}
 	
-	return false;
+	STORAGE_TYPE reg_value = this->operator const STORAGE_TYPE();
+	value = (value & ~byte_enable) | (reg_value & byte_enable);
+	return true;
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-void Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::DebugWrite(const STORAGE_TYPE& value)
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+void Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::DebugWrite(const STORAGE_TYPE& value)
 {
 	this->operator = (value);
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-void Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::DebugRead(STORAGE_TYPE& value)
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+void Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::DebugRead(STORAGE_TYPE& value)
 {
 	value = this->operator const STORAGE_TYPE();
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-bool Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::Write(unsigned char *data_ptr, unsigned char *byte_enable_ptr)
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+bool Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::Write(unsigned char *data_ptr, unsigned char *byte_enable_ptr)
 {
 	STORAGE_TYPE *data_to_write = (STORAGE_TYPE *) data_ptr;
 	STORAGE_TYPE *byte_enable = (STORAGE_TYPE *) byte_enable_ptr;
 	return Write(*data_to_write, *byte_enable);
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-bool Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::Read(unsigned char *data_ptr, unsigned char *byte_enable_ptr)
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+bool Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::Read(unsigned char *data_ptr, unsigned char *byte_enable_ptr)
 {
 	STORAGE_TYPE *read_data = (STORAGE_TYPE *) data_ptr;
 	STORAGE_TYPE *byte_enable = (STORAGE_TYPE *) byte_enable_ptr;
 	return Read(*read_data, *byte_enable);
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-void Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::DebugWrite(unsigned char *data_ptr)
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+void Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::DebugWrite(unsigned char *data_ptr)
 {
 	STORAGE_TYPE *data_to_write = (STORAGE_TYPE *) data_ptr;
 	DebugWrite(*data_to_write);
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-void Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::DebugRead(unsigned char *data_ptr)
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+void Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::DebugRead(unsigned char *data_ptr)
 {
 	STORAGE_TYPE *read_data = (STORAGE_TYPE *) data_ptr;
 	DebugRead(*read_data);

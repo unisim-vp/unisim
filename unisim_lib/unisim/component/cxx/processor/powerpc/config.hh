@@ -264,6 +264,8 @@ public:
 		// IBM models
 		PPC405,
 		PPC440,
+		// Freescale models
+		E200Z,
 		NUM_MODELS
 	} Model;
 	
