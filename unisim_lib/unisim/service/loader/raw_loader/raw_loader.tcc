@@ -209,15 +209,15 @@ SetupBlob()
 			return false;
 		}
 		
-		blob = new unisim::util::debug::blob::Blob<MEMORY_ADDR>();
+		blob = new unisim::util::blob::Blob<MEMORY_ADDR>();
 		blob->Catch();
 		
 		blob->SetFilename(location.c_str());
 
-		unisim::util::debug::blob::Section<MEMORY_ADDR> *section = 
-			new unisim::util::debug::blob::Section<MEMORY_ADDR>(
-					unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_UNKNOWN,
-					unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_A,
+		unisim::util::blob::Section<MEMORY_ADDR> *section = 
+			new unisim::util::blob::Section<MEMORY_ADDR>(
+					unisim::util::blob::Section<MEMORY_ADDR>::TY_UNKNOWN,
+					unisim::util::blob::Section<MEMORY_ADDR>::SA_A,
 					"",
 					0,
 					0,
@@ -263,13 +263,13 @@ Load()
 
 	if(memory_import)
 	{
-		const typename std::vector<const unisim::util::debug::blob::Section<MEMORY_ADDR> *>& sections = blob->GetSections();
-		typename std::vector<const unisim::util::debug::blob::Section<MEMORY_ADDR> *>::const_iterator section_iter;
+		const typename std::vector<const unisim::util::blob::Section<MEMORY_ADDR> *>& sections = blob->GetSections();
+		typename std::vector<const unisim::util::blob::Section<MEMORY_ADDR> *>::const_iterator section_iter;
 		for(section_iter = sections.begin(); section_iter != sections.end(); section_iter++)
 		{
-			const unisim::util::debug::blob::Section<MEMORY_ADDR> *section = *section_iter;
+			const unisim::util::blob::Section<MEMORY_ADDR> *section = *section_iter;
 			
-			if(section->GetAttr() & unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_A)
+			if(section->GetAttr() & unisim::util::blob::Section<MEMORY_ADDR>::SA_A)
 			{
 				if(unlikely(verbose))
 				{
@@ -288,7 +288,7 @@ Load()
 		if ( verbose )
 		{
 			logger << DebugInfo
-				<< "Not loading \"" << ((blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME) ? blob->GetFilename() : "")
+				<< "Not loading \"" << ((blob->GetCapability() & unisim::util::blob::CAP_FILENAME) ? blob->GetFilename() : "")
 				<< "\" because the memory is not connected to"
 				<< " the loader."
 				<< EndDebugInfo;
@@ -298,7 +298,7 @@ Load()
 }
 
 template <class MEMORY_ADDR>
-const typename unisim::util::debug::blob::Blob<MEMORY_ADDR> *
+const typename unisim::util::blob::Blob<MEMORY_ADDR> *
 RawLoader<MEMORY_ADDR> ::
 GetBlob()
 const

@@ -178,7 +178,7 @@ namespace linux_os {
       if (not SetRegister(lin, kI386_eip, lin.GetEntryPoint()))
         return false;
       // Set ESP to the base of the created stack
-      unisim::util::debug::blob::Section<address_type> const * esp_section =
+      unisim::util::blob::Section<address_type> const * esp_section =
         lin.GetBlob()->FindSection(".unisim.linux_os.stack.stack_pointer");
       if (esp_section == NULL)
         {
@@ -191,7 +191,7 @@ namespace linux_os {
       // Pseudo GDT initialization  (flat memory + early TLS)
       SetRegister(lin, "@gdt[1].base", 0 ); // For code segment
       SetRegister(lin, "@gdt[2].base", 0 ); // For data segments
-      unisim::util::debug::blob::Section<address_type> const* etls_section =
+      unisim::util::blob::Section<address_type> const* etls_section =
         lin.GetBlob()->FindSection(".unisim.linux_os.etls.middle_pointer");
       if (not etls_section)
         {
@@ -829,10 +829,10 @@ namespace linux_os {
       return 0;
     }
     
-    bool SetSystemBlob( unisim::util::debug::blob::Blob<address_type>* blob ) const
+    bool SetSystemBlob( unisim::util::blob::Blob<address_type>* blob ) const
     {
-      typedef unisim::util::debug::blob::Section<address_type> Section;
-      typedef unisim::util::debug::blob::Segment<address_type> Segment;
+      typedef unisim::util::blob::Section<address_type> Section;
+      typedef unisim::util::blob::Segment<address_type> Segment;
           
       // The following code is clearly a hack since linux doesn't
       // allocate any TLS. Allocating the TLS is the libc's

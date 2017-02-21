@@ -203,7 +203,7 @@ bool TI_C_IO<MEMORY_ADDR>::LoadMemoryAndRegisters()
 			return !warning_as_error;
 		}
 		
-		const typename unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = blob_import->GetBlob();
+		const typename unisim::util::blob::Blob<MEMORY_ADDR> *blob = blob_import->GetBlob();
 		if(!blob)
 		{
 			logger << DebugWarning << "Can't get program informations" << EndDebugWarning;

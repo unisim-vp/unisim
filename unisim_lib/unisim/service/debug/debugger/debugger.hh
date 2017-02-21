@@ -222,10 +222,10 @@ private:
 	std::vector<bool> enable_elf64_loaders;
 	std::vector<bool> enable_coff_loaders;
 	
-	void SetupELFSymtab(const typename unisim::util::debug::blob::Blob<ADDRESS> *blob);
-	void SetupDWARF(const typename unisim::util::debug::blob::Blob<ADDRESS> *blob);
+	void SetupELFSymtab(const typename unisim::util::blob::Blob<ADDRESS> *blob);
+	void SetupDWARF(const typename unisim::util::blob::Blob<ADDRESS> *blob);
 	
-	bool SetupDebugInfo(const unisim::util::debug::blob::Blob<ADDRESS> *blob);
+	bool SetupDebugInfo(const unisim::util::blob::Blob<ADDRESS> *blob);
 	bool SetupDebugInfo();
 };
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,16 +32,16 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <unisim/util/debug/netstub.hh>
-#include <unisim/util/debug/netstub.tcc>
+#include <unisim/util/blob/blob.hh>
+#include <unisim/util/blob/blob.tcc>
+#include <inttypes.h>
 
 namespace unisim {
 namespace util {
-namespace debug {
+namespace blob {
 
-template class NetStub<uint32_t>;
-template class NetStub<uint64_t>;
+template class Blob<uint64_t>;
 
-} // end of namespace debug
+} // end of namespace blob
 } // end of namespace util
 } // end of namespace unisim

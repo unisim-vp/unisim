@@ -38,7 +38,7 @@
 #include <unisim/util/loader/elf_loader/elf32.h>
 #include <unisim/util/loader/elf_loader/elf64.h>
 #include <unisim/util/debug/dwarf/dwarf.hh>
-#include <unisim/util/debug/blob/blob.hh>
+#include <unisim/util/blob/blob.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/elf_symtab/elf_symtab.hh>
 #include <unisim/service/interfaces/registers.hh>
@@ -57,7 +57,7 @@ using namespace unisim::util::endian;
 using unisim::util::debug::Statement;
 using unisim::util::debug::Symbol;
 using unisim::util::debug::elf_symtab::ELF_SymtabHandler;
-using unisim::util::debug::blob::Blob;
+using unisim::util::blob::Blob;
 
 typedef enum
 {
@@ -79,7 +79,7 @@ class ElfLoaderImpl
 {
 public:
 	
-	ElfLoaderImpl(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = 0);
+	ElfLoaderImpl(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if, const unisim::util::blob::Blob<MEMORY_ADDR> *blob = 0);
 	virtual ~ElfLoaderImpl();
 	
 	bool Load();
@@ -93,7 +93,7 @@ public:
 	void GetOption(Option opt, std::string& s) const;
 	void GetOption(Option opt, bool& flag) const;
 	
-	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
+	const unisim::util::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
 	void GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
@@ -124,8 +124,8 @@ private:
 	bool force_base_addr;
 	bool force_use_virtual_address;
 	bool dump_headers;
-	unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
-	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *const_blob;
+	unisim::util::blob::Blob<MEMORY_ADDR> *blob;
+	const unisim::util::blob::Blob<MEMORY_ADDR> *const_blob;
 	ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym> *symtab_handler;
 	unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	unisim::service::interfaces::Registers *regs_if;

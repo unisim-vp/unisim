@@ -54,7 +54,7 @@ using std::stringstream;
 using unisim::kernel::service::Object;
 
 template <class MEMORY_ADDR>
-CoffLoader<MEMORY_ADDR>::CoffLoader(std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob)
+CoffLoader<MEMORY_ADDR>::CoffLoader(std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, const unisim::util::blob::Blob<MEMORY_ADDR> *_blob)
 	: debug_info_stream(_debug_info_stream)
 	, debug_warning_stream(_debug_warning_stream)
 	, debug_error_stream(_debug_error_stream)
@@ -356,14 +356,14 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 		}
 	}
 
-	blob = new unisim::util::debug::blob::Blob<MEMORY_ADDR>();
+	blob = new unisim::util::blob::Blob<MEMORY_ADDR>();
 	blob->Catch();
 	
 	blob->SetEntryPoint(entry_point * memory_atom_size);
 	blob->SetArchitecture(file->GetArchitectureName());
 	blob->SetFileEndian(file_endianness);
 	blob->SetMemoryAtomSize(memory_atom_size);
-	blob->SetFileFormat(unisim::util::debug::blob::FFMT_COFF);
+	blob->SetFileFormat(unisim::util::blob::FFMT_COFF);
 		
 	const SectionTable<MEMORY_ADDR> *section_table = file->GetSectionTable();
 
@@ -420,20 +420,20 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 			debug_info_stream << "Stack base at 0x" << std::hex << section_addr << std::dec << std::endl;
 		}
 
-		typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Type blob_section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_UNKNOWN;
+		typename unisim::util::blob::Section<MEMORY_ADDR>::Type blob_section_type = unisim::util::blob::Section<MEMORY_ADDR>::TY_UNKNOWN;
 		switch(section_type)
 		{
 			case Section<MEMORY_ADDR>::ST_LOADABLE_RAWDATA:
 			case Section<MEMORY_ADDR>::ST_SPECIFIC_CONTENT:
-				blob_section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_PROGBITS;
+				blob_section_type = unisim::util::blob::Section<MEMORY_ADDR>::TY_PROGBITS;
 				break;
 			default:
 				break;
 		}
 			
-		typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Attribute blob_section_attr = unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_AWX; // FIXME
+		typename unisim::util::blob::Section<MEMORY_ADDR>::Attribute blob_section_attr = unisim::util::blob::Section<MEMORY_ADDR>::SA_AWX; // FIXME
 
-		typename unisim::util::debug::blob::Section<MEMORY_ADDR> *blob_section = new unisim::util::debug::blob::Section<MEMORY_ADDR>(
+		typename unisim::util::blob::Section<MEMORY_ADDR> *blob_section = new unisim::util::blob::Section<MEMORY_ADDR>(
 			blob_section_type,
 			blob_section_attr,
 			section_name,
@@ -451,11 +451,11 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 			void *segment_content = calloc(section_size, memory_atom_size);
 			memcpy(segment_content, section_content, section_size * memory_atom_size);
 			
-			typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Type blob_segment_type = unisim::util::debug::blob::Segment<MEMORY_ADDR>::TY_LOADABLE;
+			typename unisim::util::blob::Segment<MEMORY_ADDR>::Type blob_segment_type = unisim::util::blob::Segment<MEMORY_ADDR>::TY_LOADABLE;
 				
-			typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Attribute blob_segment_attr = unisim::util::debug::blob::Segment<MEMORY_ADDR>::SA_RWX; // FIXME
+			typename unisim::util::blob::Segment<MEMORY_ADDR>::Attribute blob_segment_attr = unisim::util::blob::Segment<MEMORY_ADDR>::SA_RWX; // FIXME
 
-			typename unisim::util::debug::blob::Segment<MEMORY_ADDR> *blob_segment = new unisim::util::debug::blob::Segment<MEMORY_ADDR>(
+			typename unisim::util::blob::Segment<MEMORY_ADDR> *blob_segment = new unisim::util::blob::Segment<MEMORY_ADDR>(
 				blob_segment_type,
 				blob_segment_attr,
 				0,
@@ -471,11 +471,11 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 		{
 			// Note: ST_SPECIFIC_CONTENT desserve more attention because it is not raw data
 			// For that specific content, a fake memory (implemented by class Segment) is used to catch memory write access of loader, and build one loadable segment
-			typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Type blob_segment_type = unisim::util::debug::blob::Segment<MEMORY_ADDR>::TY_LOADABLE;
+			typename unisim::util::blob::Segment<MEMORY_ADDR>::Type blob_segment_type = unisim::util::blob::Segment<MEMORY_ADDR>::TY_LOADABLE;
 				
-			typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Attribute blob_segment_attr = unisim::util::debug::blob::Segment<MEMORY_ADDR>::SA_RWX; // FIXME
+			typename unisim::util::blob::Segment<MEMORY_ADDR>::Attribute blob_segment_attr = unisim::util::blob::Segment<MEMORY_ADDR>::SA_RWX; // FIXME
 
-			typename unisim::util::debug::blob::Segment<MEMORY_ADDR> *blob_segment = new unisim::util::debug::blob::Segment<MEMORY_ADDR>(
+			typename unisim::util::blob::Segment<MEMORY_ADDR> *blob_segment = new unisim::util::blob::Segment<MEMORY_ADDR>(
 				blob_segment_type,
 				blob_segment_attr,
 				0
@@ -531,9 +531,9 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 				else
 				{
 					blob->AddSection(
-						new unisim::util::debug::blob::Section<MEMORY_ADDR>(
-							unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_STRTAB,
-							unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_NULL,
+						new unisim::util::blob::Section<MEMORY_ADDR>(
+							unisim::util::blob::Section<MEMORY_ADDR>::TY_STRTAB,
+							unisim::util::blob::Section<MEMORY_ADDR>::SA_NULL,
 							".strtab",
 							0,
 							0,
@@ -543,9 +543,9 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 						)
 					);
 					blob->AddSection(
-						new unisim::util::debug::blob::Section<MEMORY_ADDR>(
-							unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_COFF_SYMTAB,
-							unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_NULL,
+						new unisim::util::blob::Section<MEMORY_ADDR>(
+							unisim::util::blob::Section<MEMORY_ADDR>::TY_COFF_SYMTAB,
+							unisim::util::blob::Section<MEMORY_ADDR>::SA_NULL,
 							".symtab",
 							0,
 							blob->GetSections().size() - 1, // link to previously added string table
@@ -580,7 +580,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 }
 
 template <class MEMORY_ADDR>
-const unisim::util::debug::blob::Blob<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::GetBlob() const
+const unisim::util::blob::Blob<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::GetBlob() const
 {
 	return blob ? blob : const_blob;
 }

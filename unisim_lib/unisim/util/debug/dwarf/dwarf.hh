@@ -40,7 +40,7 @@
 #include <vector>
 #include <iosfwd>
 #include <unisim/util/debug/dwarf/fwd.hh>
-#include <unisim/util/debug/blob/blob.hh>
+#include <unisim/util/blob/blob.hh>
 #include <unisim/util/debug/stmt.hh>
 #include <unisim/util/debug/data_object.hh>
 #include <unisim/util/debug/subprogram.hh>
@@ -89,7 +89,7 @@ template <class MEMORY_ADDR>
 class DWARF_Handler
 {
 public:
-	DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob, std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
+	DWARF_Handler(const unisim::util::blob::Blob<MEMORY_ADDR> *blob, std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
 	~DWARF_Handler();
 
 	void SetOption(Option opt, const char *s);
@@ -176,18 +176,18 @@ private:
 	bool inclusive_fde_addr_range;
 	
 	// Raw data
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_line_section;     // .debug_line section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_info_section;     // .debug_info section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_abbrev_section;   // .debug_abbrev section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_aranges_section;  // .debug_aranges section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_pubnames_section; // .debug_pubnames section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_pubtypes_section; // .debug_pubtypes section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_macinfo_section;  // .debug_macinfo section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_frame_section;    // .debug_frame section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *eh_frame_section;       // .eh_frame section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_str_section;      // .debug_str section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_loc_section;      // .debug_loc section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_ranges_section;   // .debug_ranges section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_line_section;     // .debug_line section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_info_section;     // .debug_info section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_abbrev_section;   // .debug_abbrev section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_aranges_section;  // .debug_aranges section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_pubnames_section; // .debug_pubnames section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_pubtypes_section; // .debug_pubtypes section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_macinfo_section;  // .debug_macinfo section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_frame_section;    // .debug_frame section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *eh_frame_section;       // .eh_frame section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_str_section;      // .debug_str section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_loc_section;      // .debug_loc section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_ranges_section;   // .debug_ranges section (raw data)
 	
 	std::map<uint64_t, DWARF_StatementProgram<MEMORY_ADDR> *> dw_stmt_progs;   // statement programs from section .debug_line indexed by .debug_line section offset
 	std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> stmt_matrix;               // Result of running dw_stmt_progs on dw_stmt_vms
@@ -206,7 +206,7 @@ private:
 	std::ostream& debug_info_stream;
 	std::ostream& debug_warning_stream;
 	std::ostream& debug_error_stream;
-	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
+	const unisim::util::blob::Blob<MEMORY_ADDR> *blob;
 	std::string reg_num_mapping_filename;
 	bool verbose;
 	bool debug;

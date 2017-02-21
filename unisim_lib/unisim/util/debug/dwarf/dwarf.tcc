@@ -60,7 +60,7 @@ namespace debug {
 namespace dwarf {
 
 template <class MEMORY_ADDR>
-DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob, std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, unisim::service::interfaces::Registers *_regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *_mem_if)
+DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::blob::Blob<MEMORY_ADDR> *_blob, std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, unisim::service::interfaces::Registers *_regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *_mem_if)
 	: file_endianness(_blob->GetEndian())
 	, arch_endianness(_blob->GetEndian())
 	, file_address_size(0)
@@ -91,10 +91,10 @@ DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::debug::blob::Blob<
 {
 	switch(_blob->GetFileFormat())
 	{
-		case unisim::util::debug::blob::FFMT_ELF32:
+		case unisim::util::blob::FFMT_ELF32:
 			file_address_size = 4;
 			break;
-		case unisim::util::debug::blob::FFMT_ELF64:
+		case unisim::util::blob::FFMT_ELF64:
 			file_address_size = 4;
 			break;
 		default:
@@ -345,7 +345,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 			int64_t sz;
 			if((sz = dw_abbrev->Load((const uint8_t *) debug_abbrev_section->GetData() + debug_abbrev_offset, debug_abbrev_section->GetSize() - debug_abbrev_offset, debug_abbrev_offset)) < 0)
 			{
-				if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+				if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 				{
 					debug_warning_stream << "In File \"" << GetFilename() << "\", ";
 				}
@@ -373,7 +373,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	{
 		if(debug)
 		{
-			if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+			if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 			{
 				debug_info_stream << "In File \"" << GetFilename() << "\", ";
 			}
@@ -394,7 +394,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 			int64_t sz;
 			if((sz = dw_cu->Load((const uint8_t *) debug_info_section->GetData() + debug_info_offset, debug_info_section->GetSize() - debug_info_offset, debug_info_offset)) < 0)
 			{
-				if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+				if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 				{
 					debug_warning_stream << "In File \"" << GetFilename() << "\", ";
 				}
@@ -415,7 +415,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	{
 		if(debug)
 		{
-			if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+			if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 			{
 				debug_info_stream << "In File \"" << GetFilename() << "\", ";
 			}
@@ -444,7 +444,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 				{
 					delete dw_cie;
 					
-					if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+					if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 					{
 						debug_warning_stream << "In File \"" << GetFilename() << "\", ";
 					}
@@ -469,7 +469,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	{
 		if(debug)
 		{
-			if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+			if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 			{
 				debug_info_stream << "In File \"" << GetFilename() << "\", ";
 			}
@@ -498,7 +498,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 				{
 					delete dw_cie;
 					
-					if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+					if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 					{
 						debug_warning_stream << "In File \"" << GetFilename() << "\", ";
 					}
@@ -543,7 +543,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 			int64_t sz;
 			if((sz = dw_address_ranges->Load((const uint8_t *) debug_aranges_section->GetData() + debug_aranges_offset, debug_aranges_section->GetSize() - debug_aranges_offset)) < 0)
 			{
-				if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+				if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 				{
 					debug_warning_stream << "In File \"" << GetFilename() << "\", ";
 				}
@@ -564,7 +564,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	{
 		if(debug)
 		{
-			if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+			if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 			{
 				debug_info_stream << "In File \"" << GetFilename() << "\", ";
 			}
@@ -585,7 +585,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 			int64_t sz;
 			if((sz = dw_public_names->Load((const uint8_t *) debug_pubnames_section->GetData() + debug_pubnames_offset, debug_pubnames_section->GetSize() - debug_pubnames_offset)) < 0)
 			{
-				if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+				if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 				{
 					debug_warning_stream << "In File \"" << GetFilename() << "\", ";
 				}
@@ -606,7 +606,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	{
 		if(debug)
 		{
-			if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+			if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 			{
 				debug_info_stream << "In File \"" << GetFilename() << "\", ";
 			}
@@ -627,7 +627,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 			int64_t sz;
 			if((sz = dw_public_types->Load((const uint8_t *) debug_pubtypes_section->GetData() + debug_pubtypes_offset, debug_pubtypes_section->GetSize() - debug_pubtypes_offset)) < 0)
 			{
-				if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+				if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 				{
 					debug_warning_stream << "In File \"" << GetFilename() << "\", ";
 				}
@@ -648,7 +648,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	{
 		if(debug)
 		{
-			if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+			if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 			{
 				debug_info_stream << "In File \"" << GetFilename() << "\", ";
 			}
@@ -660,7 +660,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	{
 		if(debug)
 		{
-			if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+			if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 			{
 				debug_info_stream << "In File \"" << GetFilename() << "\", ";
 			}

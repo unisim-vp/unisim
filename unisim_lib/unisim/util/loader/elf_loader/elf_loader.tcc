@@ -47,7 +47,7 @@ namespace loader {
 namespace elf_loader {
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, unisim::service::interfaces::Registers *_regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *_mem_if, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob)
+ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, unisim::service::interfaces::Registers *_regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *_mem_if, const unisim::util::blob::Blob<MEMORY_ADDR> *_blob)
 	: debug_info_stream(_debug_info_stream)
 	, debug_warning_stream(_debug_warning_stream)
 	, debug_error_stream(_debug_error_stream)
@@ -375,7 +375,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		debug_info_stream << "Program entry point at 0x" << std::hex << entry_point << std::dec << std::endl;
 	}
 
-	blob = new typename unisim::util::debug::blob::Blob<MEMORY_ADDR>();
+	blob = new typename unisim::util::blob::Blob<MEMORY_ADDR>();
 	blob->Catch();
 	
 	blob->SetEntryPoint(entry_point);
@@ -384,9 +384,9 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	blob->SetEndian(endianness);
 	blob->SetAddressSize(GetAddressSize(hdr));
 	if(Elf_Class == ELFCLASS32)
-		blob->SetFileFormat(unisim::util::debug::blob::FFMT_ELF32);
+		blob->SetFileFormat(unisim::util::blob::FFMT_ELF32);
 	else if(Elf_Class == ELFCLASS64)
-		blob->SetFileFormat(unisim::util::debug::blob::FFMT_ELF64);
+		blob->SetFileFormat(unisim::util::blob::FFMT_ELF64);
 	blob->SetELF_PHOFF(hdr->e_phoff);
 	blob->SetELF_PHENT(sizeof(Elf_Phdr));
         blob->SetELF_PHNUM(hdr->e_phnum);
@@ -408,11 +408,11 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			
 			const char *sh_name = GetSectionName(shdr, sh_string_table);
 			
-			typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Type section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_UNKNOWN;
+			typename unisim::util::blob::Section<MEMORY_ADDR>::Type section_type = unisim::util::blob::Section<MEMORY_ADDR>::TY_UNKNOWN;
 			switch(sh_type)
 			{
 				case SHT_NULL:
-					section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_NULL;
+					section_type = unisim::util::blob::Section<MEMORY_ADDR>::TY_NULL;
 					sh_size = 0;
 					sh_addr = 0;
 					sh_flags = 0;
@@ -420,23 +420,23 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 					sh_link = 0;
 					break;
 				case SHT_PROGBITS:
-					section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_PROGBITS;
+					section_type = unisim::util::blob::Section<MEMORY_ADDR>::TY_PROGBITS;
 					break;
 				case SHT_SYMTAB:
-					section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_ELF_SYMTAB;
+					section_type = unisim::util::blob::Section<MEMORY_ADDR>::TY_ELF_SYMTAB;
 					break;
 				case SHT_STRTAB:
-					section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_STRTAB;
+					section_type = unisim::util::blob::Section<MEMORY_ADDR>::TY_STRTAB;
 					break;
 				case SHT_NOBITS:
-					section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_NOBITS;
+					section_type = unisim::util::blob::Section<MEMORY_ADDR>::TY_NOBITS;
 					break;
 			}
 			
-			typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Attribute section_attr = unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_NULL;
-			if(sh_flags & SHF_WRITE) section_attr = (typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Attribute)(section_attr | unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_W);
-			if(sh_flags & SHF_ALLOC) section_attr = (typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Attribute)(section_attr | unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_A);
-			if(sh_flags & SHF_EXECINSTR) section_attr = (typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Attribute)(section_attr | unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_X);
+			typename unisim::util::blob::Section<MEMORY_ADDR>::Attribute section_attr = unisim::util::blob::Section<MEMORY_ADDR>::SA_NULL;
+			if(sh_flags & SHF_WRITE) section_attr = (typename unisim::util::blob::Section<MEMORY_ADDR>::Attribute)(section_attr | unisim::util::blob::Section<MEMORY_ADDR>::SA_W);
+			if(sh_flags & SHF_ALLOC) section_attr = (typename unisim::util::blob::Section<MEMORY_ADDR>::Attribute)(section_attr | unisim::util::blob::Section<MEMORY_ADDR>::SA_A);
+			if(sh_flags & SHF_EXECINSTR) section_attr = (typename unisim::util::blob::Section<MEMORY_ADDR>::Attribute)(section_attr | unisim::util::blob::Section<MEMORY_ADDR>::SA_X);
 			
 			if((sh_type != SHT_NULL) && verbose)
 			{
@@ -457,7 +457,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 				}
 			}
 			
-			unisim::util::debug::blob::Section<MEMORY_ADDR> *section = new unisim::util::debug::blob::Section<MEMORY_ADDR>(
+			unisim::util::blob::Section<MEMORY_ADDR> *section = new unisim::util::blob::Section<MEMORY_ADDR>(
 				section_type,
 				section_attr,
 				sh_name,
@@ -484,23 +484,23 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			MEMORY_ADDR segment_alignment = GetSegmentAlignment(phdr);
 			
 		
-			typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Type segment_type = unisim::util::debug::blob::Segment<MEMORY_ADDR>::TY_UNKNOWN;
+			typename unisim::util::blob::Segment<MEMORY_ADDR>::Type segment_type = unisim::util::blob::Segment<MEMORY_ADDR>::TY_UNKNOWN;
 			
 			switch(ph_type)
 			{
 				case PT_LOAD:
-					segment_type = unisim::util::debug::blob::Segment<MEMORY_ADDR>::TY_LOADABLE;
+					segment_type = unisim::util::blob::Segment<MEMORY_ADDR>::TY_LOADABLE;
 					break;
 				default:
-					segment_type = unisim::util::debug::blob::Segment<MEMORY_ADDR>::TY_UNKNOWN;
+					segment_type = unisim::util::blob::Segment<MEMORY_ADDR>::TY_UNKNOWN;
 					break;
 			}
 			
 			
-			typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Attribute segment_attr = unisim::util::debug::blob::Segment<MEMORY_ADDR>::SA_NULL;
-			if(ph_flags & PF_W) segment_attr = (typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Attribute)(segment_attr | unisim::util::debug::blob::Segment<MEMORY_ADDR>::SA_W);
-			if(ph_flags & PF_R) segment_attr = (typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Attribute)(segment_attr | unisim::util::debug::blob::Segment<MEMORY_ADDR>::SA_R);
-			if(ph_flags & PF_X) segment_attr = (typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Attribute)(segment_attr | unisim::util::debug::blob::Segment<MEMORY_ADDR>::SA_X);
+			typename unisim::util::blob::Segment<MEMORY_ADDR>::Attribute segment_attr = unisim::util::blob::Segment<MEMORY_ADDR>::SA_NULL;
+			if(ph_flags & PF_W) segment_attr = (typename unisim::util::blob::Segment<MEMORY_ADDR>::Attribute)(segment_attr | unisim::util::blob::Segment<MEMORY_ADDR>::SA_W);
+			if(ph_flags & PF_R) segment_attr = (typename unisim::util::blob::Segment<MEMORY_ADDR>::Attribute)(segment_attr | unisim::util::blob::Segment<MEMORY_ADDR>::SA_R);
+			if(ph_flags & PF_X) segment_attr = (typename unisim::util::blob::Segment<MEMORY_ADDR>::Attribute)(segment_attr | unisim::util::blob::Segment<MEMORY_ADDR>::SA_X);
 			
 			if(unlikely(verbose))
 			{
@@ -515,7 +515,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 				success = false;
 			}
 
-			unisim::util::debug::blob::Segment<MEMORY_ADDR> *segment = new unisim::util::debug::blob::Segment<MEMORY_ADDR>(
+			unisim::util::blob::Segment<MEMORY_ADDR> *segment = new unisim::util::blob::Segment<MEMORY_ADDR>(
 				segment_type,
 				segment_attr,
 				segment_alignment,
@@ -608,7 +608,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const typename unisim::util::debug::blob::Blob<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetBlob() const
+const typename unisim::util::blob::Blob<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetBlob() const
 {
 	return blob ? blob : const_blob;
 }

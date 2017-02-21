@@ -401,7 +401,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id) {
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetBlob() const {
+const unisim::util::blob::Blob<ADDRESS_TYPE> *Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetBlob() const {
   return linuxlib_->GetBlob();
 }
 

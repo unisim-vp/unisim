@@ -142,14 +142,14 @@ public:
 	uint32_t UnRelocate(void *p);
 
 	bool Load(uint32_t boot_infos_addr, const string& device_tree_filename, const string& kernel_parms, const string& ramdisk_filename, unsigned int screen_width, unsigned int screen_height);
-	const unisim::util::debug::blob::Blob<uint32_t> *GetBlob() const;
+	const unisim::util::blob::Blob<uint32_t> *GetBlob() const;
 private:
 	unisim::kernel::logger::Logger& logger;
 	bool verbose;
 	uint32_t size;
 	uint32_t max_size;
 	uint8_t *image;
-	unisim::util::debug::blob::Blob<uint32_t> *blob;
+	unisim::util::blob::Blob<uint32_t> *blob;
 
 	/* On kernel entry:
 	*
@@ -275,7 +275,7 @@ public:
 	virtual bool BeginSetup();
 	virtual bool Setup(ServiceExportBase *srv_export);
 	virtual bool EndSetup();
-	virtual const unisim::util::debug::blob::Blob<uint32_t> *GetBlob() const;
+	virtual const unisim::util::blob::Blob<uint32_t> *GetBlob() const;
 	virtual bool Load();
 
 private:
@@ -286,7 +286,7 @@ private:
 	unsigned int screen_width;
 	unsigned int screen_height;
 	bool verbose;
-	unisim::util::debug::blob::Blob<uint32_t> *blob;
+	unisim::util::blob::Blob<uint32_t> *blob;
 	
 	Parameter<string> param_device_tree_filename;
 	Parameter<string> param_kernel_parms;

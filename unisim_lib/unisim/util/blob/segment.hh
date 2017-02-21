@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,54 +32,53 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_BLOB_SECTION_HH__
-#define __UNISIM_UTIL_DEBUG_BLOB_SECTION_HH__
+#ifndef __UNISIM_UTIL_BLOB_SEGMENT_HH__
+#define __UNISIM_UTIL_BLOB_SEGMENT_HH__
 
+#include <unisim/service/interfaces/memory.hh>
 #include <string>
 
 namespace unisim {
 namespace util {
-namespace debug {
 namespace blob {
 
 template <class MEMORY_ADDR>
-class Section
+class Segment : public unisim::service::interfaces::Memory<MEMORY_ADDR>
 {
 public:
 	typedef enum
 	{
-		TY_UNKNOWN,  // unknown section type
-		TY_NULL,
-		TY_PROGBITS, // there's data in data
-		TY_NOBITS,   // all zero's
-		TY_ELF_SYMTAB,   // ELF symtab symbol table (should have a link to a string table)
-		TY_COFF_SYMTAB,  // COFF symbol table (should have a link to a string table)
-		TY_STRTAB    // string table
+		TY_UNKNOWN,
+		TY_LOADABLE
 	} Type;
 	
 	typedef enum
 	{
 		SA_NULL = 0,
-		SA_A = 1, // Alloc
+		SA_R = 1, // Read
 		SA_W = 2, // Write
-		SA_AW = 3,
+		SA_RW = 3,
 		SA_X = 4, // Execute
-		SA_AX = 5,
+		SA_RX = 5,
 		SA_WX = 6,
-		SA_AWX = 7
+		SA_RWX = 7
 	} Attribute;
 
-	Section(Type type, Attribute attr, const char *name, unsigned int alignment, unsigned int link, MEMORY_ADDR addr, MEMORY_ADDR size, void *data);
-	Section(const Section<MEMORY_ADDR>& section);
-	virtual ~Section();
+	Segment(Type _type, Attribute _attr, unsigned int _alignment);
+	Segment(Type type, Attribute attr, unsigned int alignment, MEMORY_ADDR addr, MEMORY_ADDR size, MEMORY_ADDR data_size, void *data);
+	Segment(const Segment<MEMORY_ADDR>& segment);
+	virtual ~Segment();
 	
+	virtual void Reset();
+	virtual bool ReadMemory(MEMORY_ADDR addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(MEMORY_ADDR addr, const void *buffer, uint32_t size);
+
 	Type GetType() const;
 	Attribute GetAttr() const;
-	const char *GetName() const;
 	unsigned int GetAlignment() const;
 	MEMORY_ADDR GetAddr() const;
 	MEMORY_ADDR GetSize() const;
-	unsigned int GetLink() const;
+	MEMORY_ADDR GetDataSize() const;
 	const void *GetData() const;
 	void GetAddrRange(MEMORY_ADDR& min_addr, MEMORY_ADDR& max_addr) const;
 	bool HasOverlap(MEMORY_ADDR min_addr, MEMORY_ADDR max_addr) const;
@@ -87,19 +86,17 @@ public:
 	void Catch() const;
 	void Release() const;
 private:
-	Type type;               // section type
-	Attribute attr;          // section attribute
-	std::string name;        // section name (empty=unavailable)
+	Type type;               // segment type
+	Attribute attr;          // segment attribute
 	unsigned int alignment;  // alignment (0=unavailable)
-	unsigned int link;       // link to another section
 	MEMORY_ADDR addr;        // location in memory
 	MEMORY_ADDR size;        // size in bytes of data
+	MEMORY_ADDR data_size;   // true size in bytes of data
 	void *data;
 	unsigned int *refcount;
 };
 
 } // end of namespace blob
-} // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
 

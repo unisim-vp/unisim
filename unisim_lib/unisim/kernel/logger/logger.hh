@@ -63,6 +63,7 @@ protected:
 	virtual std::streamsize xsputn(const char* s, std::streamsize n);
 	
 private:
+	void Append(char c);
 	void Flush();
 	
 	Logger& owner;

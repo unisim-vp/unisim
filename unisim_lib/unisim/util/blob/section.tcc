@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2011,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,41 +32,25 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_BLOB_SEGMENT_TCC__
-#define __UNISIM_UTIL_DEBUG_BLOB_SEGMENT_TCC__
+#ifndef __UNISIM_UTIL_BLOB_SECTION_TCC__
+#define __UNISIM_UTIL_BLOB_SECTION_TCC__
 
 #include <stdlib.h>
 #include <string.h>
-#include <inttypes.h>
 
 namespace unisim {
 namespace util {
-namespace debug {
 namespace blob {
 
 template <class MEMORY_ADDR>
-Segment<MEMORY_ADDR>::Segment(Type _type, Attribute _attr, unsigned int _alignment)
+Section<MEMORY_ADDR>::Section(Type _type, Attribute _attr, const char *_name, unsigned int _alignment, unsigned int _link, MEMORY_ADDR _addr, MEMORY_ADDR _size, void *_data)
 	: type(_type)
 	, attr(_attr)
+	, name(_name)
 	, alignment(_alignment)
-	, addr(0)
-	, size(0)
-	, data_size(0)
-	, data(0)
-	, refcount(0)
-{
-	refcount = new unsigned int();
-	*refcount = 0;
-}
-	
-template <class MEMORY_ADDR>
-Segment<MEMORY_ADDR>::Segment(Type _type, Attribute _attr, unsigned int _alignment, MEMORY_ADDR _addr, MEMORY_ADDR _size, MEMORY_ADDR _data_size, void *_data)
-	: type(_type)
-	, attr(_attr)
-	, alignment(_alignment)
+	, link(_link)
 	, addr(_addr)
 	, size(_size)
-	, data_size(_data_size)
 	, data(_data)
 	, refcount(0)
 {
@@ -75,28 +59,29 @@ Segment<MEMORY_ADDR>::Segment(Type _type, Attribute _attr, unsigned int _alignme
 }
 
 template <class MEMORY_ADDR>
-Segment<MEMORY_ADDR>::Segment(const Segment<MEMORY_ADDR>& segment)
-	: type(segment.type)
-	, attr(segment.attr)
-	, alignment(segment.alignment)
-	, addr(segment.addr)
-	, size(segment.size)
-	, data_size(segment.data_size)
+Section<MEMORY_ADDR>::Section(const Section<MEMORY_ADDR>& section)
+	: type(section.type)
+	, attr(section.attr)
+	, name(section.name)
+	, alignment(section.alignment)
+	, link(section.link)
+	, addr(section.addr)
+	, size(section.size)
 	, data(0)
 	, refcount(0)
 {
 	refcount = new unsigned int();
 	*refcount = 0;
 
-	if(segment.data)
+	if(section.data)
 	{
 		data = malloc(size);
-		memcpy(data, segment.data, size);
+		memcpy(data, section.data, size);
 	}
 }
 
 template <class MEMORY_ADDR>
-Segment<MEMORY_ADDR>::~Segment()
+Section<MEMORY_ADDR>::~Section()
 {
 	if(data)
 	{
@@ -106,120 +91,77 @@ Segment<MEMORY_ADDR>::~Segment()
 }
 
 template <class MEMORY_ADDR>
-void Segment<MEMORY_ADDR>::Reset()
-{
-}
-
-template <class MEMORY_ADDR>
-bool Segment<MEMORY_ADDR>::ReadMemory(MEMORY_ADDR _addr, void *_buffer, uint32_t _size)
-{
-	if(data)
-	{
-		MEMORY_ADDR begin_addr = (_addr < addr) ? addr : _addr;
-		MEMORY_ADDR end_addr = ((_addr + _size) > (addr + size)) ? (addr + size) : (_addr + _size);
-		
-		memcpy((uint8_t *) _buffer + (begin_addr - _addr), (uint8_t *) data + (begin_addr - addr), end_addr - begin_addr);
-	}
-	return true;
-}
-
-template <class MEMORY_ADDR>
-bool Segment<MEMORY_ADDR>::WriteMemory(MEMORY_ADDR _addr, const void *_buffer, uint32_t _size)
-{
-	if(data)
-	{
-		MEMORY_ADDR lo_addr = (_addr < addr) ? _addr : addr;
-		MEMORY_ADDR hi_addr = ((_addr + _size) > (addr + data_size)) ? (_addr + _size) : (addr + data_size);
-		
-		if((addr != lo_addr) || ((addr + data_size) != hi_addr))
-		{
-			void *new_data = calloc(hi_addr - lo_addr, 1);
-			memcpy((uint8_t *) new_data + (addr - lo_addr), (uint8_t *) data, data_size);
-			free(data);
-			data = new_data;
-			addr = lo_addr;
-			data_size = hi_addr - lo_addr;
-			if(data_size > size) size = data_size;
-		}
-	}
-	else
-	{
-		data = calloc(_size, 1);
-		addr = _addr;
-		data_size = _size;
-		if(data_size > size) size = data_size;
-	}
-	
-	memcpy((uint8_t *) data + (_addr - addr), _buffer, _size);
-	return true;
-}
-
-template <class MEMORY_ADDR>
-typename Segment<MEMORY_ADDR>::Type Segment<MEMORY_ADDR>::GetType() const
+typename Section<MEMORY_ADDR>::Type Section<MEMORY_ADDR>::GetType() const
 {
 	return type;
 }
 
 template <class MEMORY_ADDR>
-typename Segment<MEMORY_ADDR>::Attribute Segment<MEMORY_ADDR>::GetAttr() const
+typename Section<MEMORY_ADDR>::Attribute Section<MEMORY_ADDR>::GetAttr() const
 {
 	return attr;
 }
 
 template <class MEMORY_ADDR>
-unsigned int Segment<MEMORY_ADDR>::GetAlignment() const
+const char *Section<MEMORY_ADDR>::GetName() const
+{
+	return name.c_str();
+}
+
+template <class MEMORY_ADDR>
+unsigned int Section<MEMORY_ADDR>::GetAlignment() const
 {
 	return alignment;
 }
 
 template <class MEMORY_ADDR>
-MEMORY_ADDR Segment<MEMORY_ADDR>::GetAddr() const
+MEMORY_ADDR Section<MEMORY_ADDR>::GetAddr() const
 {
 	return addr;
 }
 
 template <class MEMORY_ADDR>
-MEMORY_ADDR Segment<MEMORY_ADDR>::GetSize() const
+MEMORY_ADDR Section<MEMORY_ADDR>::GetSize() const
 {
 	return size;
 }
 
 template <class MEMORY_ADDR>
-MEMORY_ADDR Segment<MEMORY_ADDR>::GetDataSize() const
+unsigned int Section<MEMORY_ADDR>::GetLink() const
 {
-	return data_size;
+	return link;
 }
 
 template <class MEMORY_ADDR>
-const void *Segment<MEMORY_ADDR>::GetData() const
+const void *Section<MEMORY_ADDR>::GetData() const
 {
 	return data;
 }
 
 template <class MEMORY_ADDR>
-void Segment<MEMORY_ADDR>::GetAddrRange(MEMORY_ADDR& min_addr, MEMORY_ADDR& max_addr) const
+void Section<MEMORY_ADDR>::GetAddrRange(MEMORY_ADDR& min_addr, MEMORY_ADDR& max_addr) const
 {
 	min_addr = addr;
 	max_addr = addr + size - 1;
 }
 
 template <class MEMORY_ADDR>
-bool Segment<MEMORY_ADDR>::HasOverlap(MEMORY_ADDR _min_addr, MEMORY_ADDR _max_addr) const
+bool Section<MEMORY_ADDR>::HasOverlap(MEMORY_ADDR _min_addr, MEMORY_ADDR _max_addr) const
 {
 	MEMORY_ADDR min_addr = addr;
 	MEMORY_ADDR max_addr = addr + size - 1;
-	
+
 	return ((max_addr < _max_addr) ? max_addr : _max_addr) >= ((min_addr < _min_addr) ? _min_addr : min_addr);
 }
 
 template <class MEMORY_ADDR>
-void Segment<MEMORY_ADDR>::Catch() const
+void Section<MEMORY_ADDR>::Catch() const
 {
 	(*refcount)++;
 }
 
 template <class MEMORY_ADDR>
-void Segment<MEMORY_ADDR>::Release() const
+void Section<MEMORY_ADDR>::Release() const
 {
 	if(--(*refcount) == 0)
 	{
@@ -228,7 +170,6 @@ void Segment<MEMORY_ADDR>::Release() const
 }
 
 } // end of namespace blob
-} // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
 

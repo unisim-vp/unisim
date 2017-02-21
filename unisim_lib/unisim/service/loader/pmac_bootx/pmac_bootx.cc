@@ -816,12 +816,12 @@ bool BootInfos::Load(uint32_t boot_infos_addr, const string& device_tree_filenam
 	boot_infos->frameBufferSize = 0;
 	boot_infos->totalParamsSize = Host2BigEndian(size);
 	
-	blob = new unisim::util::debug::blob::Blob<uint32_t>();
+	blob = new unisim::util::blob::Blob<uint32_t>();
 	blob->Catch();
 	
-	unisim::util::debug::blob::Section<uint32_t> *section = new unisim::util::debug::blob::Section<uint32_t>(
-		unisim::util::debug::blob::Section<uint32_t>::TY_UNKNOWN,
-		unisim::util::debug::blob::Section<uint32_t>::SA_A,
+	unisim::util::blob::Section<uint32_t> *section = new unisim::util::blob::Section<uint32_t>(
+		unisim::util::blob::Section<uint32_t>::TY_UNKNOWN,
+		unisim::util::blob::Section<uint32_t>::SA_A,
 		"boot_infos",
 		0,
 		0,
@@ -836,7 +836,7 @@ bool BootInfos::Load(uint32_t boot_infos_addr, const string& device_tree_filenam
 	return true;
 }
 
-const unisim::util::debug::blob::Blob<uint32_t> *BootInfos::GetBlob() const
+const unisim::util::blob::Blob<uint32_t> *BootInfos::GetBlob() const
 {
 	return blob;
 }
@@ -902,7 +902,7 @@ bool PMACBootX::SetupBlob()
 		return false;
 	}
 	
-	const unisim::util::debug::blob::Blob<uint32_t> *kernel_blob = blob_import->GetBlob();
+	const unisim::util::blob::Blob<uint32_t> *kernel_blob = blob_import->GetBlob();
 	
 	if(!kernel_blob)
 	{
@@ -927,7 +927,7 @@ bool PMACBootX::SetupBlob()
 		logger << DebugInfo << "Using ramdisk from image \"" << ramdisk_filename << "\"" << EndDebugInfo;
 	}
 	
-	const unisim::util::debug::blob::Blob<uint32_t> *boot_infos_blob = 0;
+	const unisim::util::blob::Blob<uint32_t> *boot_infos_blob = 0;
 
 	if(!boot_infos.Load(boot_infos_addr, GetSimulator()->SearchSharedDataFile(device_tree_filename.c_str()).c_str(), kernel_parms, GetSimulator()->SearchSharedDataFile(ramdisk_filename.c_str()).c_str(), screen_width, screen_height) || !(boot_infos_blob = boot_infos.GetBlob()))
 	{
@@ -935,7 +935,7 @@ bool PMACBootX::SetupBlob()
 		return false;
 	}
 
-	blob = new unisim::util::debug::blob::Blob<uint32_t>();
+	blob = new unisim::util::blob::Blob<uint32_t>();
 	blob->Catch();
 	
 	blob->SetArchitecture("powerpc");
@@ -991,7 +991,7 @@ bool PMACBootX::LoadBootInfosAndRegisters()
 {
 	if(!blob) return false;
 	
-	const unisim::util::debug::blob::Section<uint32_t> *boot_infos_section = blob->FindSection("boot_infos");
+	const unisim::util::blob::Section<uint32_t> *boot_infos_section = blob->FindSection("boot_infos");
 	if(!boot_infos_section)
 	{
 		logger << DebugError << "No boot_infos section found" << EndDebugError;
@@ -1067,7 +1067,7 @@ bool PMACBootX::Load()
 	return loader_import->Load() && LoadBootInfosAndRegisters();
 }
 
-const unisim::util::debug::blob::Blob<uint32_t> *PMACBootX::GetBlob() const
+const unisim::util::blob::Blob<uint32_t> *PMACBootX::GetBlob() const
 {
 	return blob;
 }
