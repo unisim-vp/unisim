@@ -182,7 +182,7 @@ namespace linux_os {
       if (not SetRegister(lin, kPPC_cia, lin.GetEntryPoint()))
         return false;
       // Set SP to the base of the created stack
-      unisim::util::debug::blob::Section<address_type> const * sp_section =
+      unisim::util::blob::Section<address_type> const * sp_section =
         lin.GetBlob()->FindSection(".unisim.linux_os.stack.stack_pointer");
       if (sp_section == NULL)
         {
@@ -1225,7 +1225,7 @@ namespace linux_os {
       return 0;
     }
     
-    bool SetSystemBlob( unisim::util::debug::blob::Blob<address_type>* blob ) const { return true; }
+    bool SetSystemBlob( unisim::util::blob::Blob<address_type>* blob ) const { return true; }
   };
 
 } // end of namespace linux_os

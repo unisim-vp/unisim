@@ -35,7 +35,7 @@
 #ifndef __UNISIM_UTIL_DEBUG_ELF_SYMTAB_ELF_SYMTAB_HH__
 #define __UNISIM_UTIL_DEBUG_ELF_SYMTAB_ELF_SYMTAB_HH__
 
-#include <unisim/util/debug/blob/blob.hh>
+#include <unisim/util/blob/blob.hh>
 #include <unisim/util/debug/symbol.hh>
 #include <unisim/util/debug/symbol_table.hh>
 #include <iostream>
@@ -50,7 +50,7 @@ template <class MEMORY_ADDR, class Elf_Sym>
 class ELF_SymtabHandler
 {
 public:
-	ELF_SymtabHandler(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob);
+	ELF_SymtabHandler(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, const unisim::util::blob::Blob<MEMORY_ADDR> *blob);
 	~ELF_SymtabHandler();
 
 	void Parse();
@@ -65,7 +65,7 @@ private:
 	std::ostream& debug_info_stream;
 	std::ostream& debug_warning_stream;
 	std::ostream& debug_error_stream;
-	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
+	const unisim::util::blob::Blob<MEMORY_ADDR> *blob;
 	unisim::util::debug::SymbolTable<MEMORY_ADDR> *symbol_table;
 };
 

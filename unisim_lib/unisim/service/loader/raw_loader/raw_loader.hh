@@ -42,7 +42,7 @@
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/loader.hh"
 #include "unisim/service/interfaces/blob.hh"
-#include "unisim/util/debug/blob/blob.hh"
+#include "unisim/util/blob/blob.hh"
 
 namespace unisim {
 namespace service {
@@ -74,13 +74,13 @@ public:
 	virtual bool EndSetup();
 	
 	virtual bool Load();
-	virtual const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
+	virtual const unisim::util::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
 private:
 	bool SetupBlob();
 	bool SetupLoad();
 
-	unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
+	unisim::util::blob::Blob<MEMORY_ADDR> *blob;
 	std::string filename;
 	MEMORY_ADDR base_addr;
 	MEMORY_ADDR size;

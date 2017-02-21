@@ -32,18 +32,16 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <unisim/util/debug/blob/blob.hh>
-#include <unisim/util/debug/blob/blob.tcc>
+#include <unisim/util/blob/segment.hh>
+#include <unisim/util/blob/segment.tcc>
 #include <inttypes.h>
 
 namespace unisim {
 namespace util {
-namespace debug {
 namespace blob {
 
-template class Blob<uint64_t>;
+template class Segment<uint64_t>;
 
 } // end of namespace blob
-} // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim

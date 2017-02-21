@@ -247,7 +247,7 @@ namespace linux_os {
       if (not SetRegister(lin, kARM_pc, lin.GetEntryPoint()))
         return false;
       // Set SP to the base of the created stack
-      unisim::util::debug::blob::Section<address_type> const * sp_section =
+      unisim::util::blob::Section<address_type> const * sp_section =
         lin.GetBlob()->FindSection(".unisim.linux_os.stack.stack_pointer");
       if (sp_section == NULL) {
         lin.DebugErrorStream() << "Could not find the stack pointer section." << std::endl;
@@ -1279,10 +1279,10 @@ namespace linux_os {
       return 0;
     }
     
-    bool SetSystemBlob( unisim::util::debug::blob::Blob<address_type>* blob ) const
+    bool SetSystemBlob( unisim::util::blob::Blob<address_type>* blob ) const
     {
-      typedef unisim::util::debug::blob::Section<address_type> Section;
-      typedef unisim::util::debug::blob::Segment<address_type> Segment;
+      typedef unisim::util::blob::Section<address_type> Section;
+      typedef unisim::util::blob::Segment<address_type> Segment;
       std::string mach = lin.GetUTSName().machine;
       if ((mach.compare("armv5") == 0) or (mach.compare("armv6") == 0) or (mach.compare("armv7") == 0))
         {

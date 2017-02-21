@@ -60,7 +60,7 @@ template <class MEMORY_ADDR>
 class Coff_SymtabHandler
 {
 public:
-	Coff_SymtabHandler(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob);
+	Coff_SymtabHandler(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, const unisim::util::blob::Blob<MEMORY_ADDR> *blob);
 	~Coff_SymtabHandler();
 
 	void Parse();
@@ -204,7 +204,7 @@ private:
 	std::ostream& debug_info_stream;
 	std::ostream& debug_warning_stream;
 	std::ostream& debug_error_stream;
-	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
+	const unisim::util::blob::Blob<MEMORY_ADDR> *blob;
 	unisim::util::debug::SymbolTable<MEMORY_ADDR> *symbol_table;
 
 	const char *GetStorageClassName(uint8_t sclass) const;

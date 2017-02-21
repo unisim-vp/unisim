@@ -43,7 +43,7 @@ namespace debug {
 namespace coff_symtab {
 
 template <class MEMORY_ADDR>
-Coff_SymtabHandler<MEMORY_ADDR>::Coff_SymtabHandler(std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob)
+Coff_SymtabHandler<MEMORY_ADDR>::Coff_SymtabHandler(std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, const unisim::util::blob::Blob<MEMORY_ADDR> *_blob)
 	: debug_info_stream(_debug_info_stream)
 	, debug_warning_stream(_debug_warning_stream)
 	, debug_error_stream(_debug_error_stream)
@@ -101,11 +101,11 @@ void Coff_SymtabHandler<MEMORY_ADDR>::Parse()
 	
 	unisim::util::endian::endian_type file_endianness = blob->GetFileEndian();
 	
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *symtab_section = blob->FindSection(unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_COFF_SYMTAB);
+	const unisim::util::blob::Section<MEMORY_ADDR> *symtab_section = blob->FindSection(unisim::util::blob::Section<MEMORY_ADDR>::TY_COFF_SYMTAB);
 	
 	if(!symtab_section) return;
 	
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *strtab_section = blob->FindSection(unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_STRTAB);
+	const unisim::util::blob::Section<MEMORY_ADDR> *strtab_section = blob->FindSection(unisim::util::blob::Section<MEMORY_ADDR>::TY_STRTAB);
 	
 	if(!strtab_section) return;
 	

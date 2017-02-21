@@ -74,8 +74,7 @@ LoggerStreamBuffer::~LoggerStreamBuffer()
 
 std::streambuf::int_type LoggerStreamBuffer::overflow(int_type c)
 {
-	buffer.append(1, c);
-	if(c == '\n') Flush();
+	Append(c);
 	
 	return c;
 }
@@ -84,25 +83,35 @@ std::streamsize LoggerStreamBuffer::xsputn(const char* s, std::streamsize n)
 {
 	if(n)
 	{
+		int count = n;
+		
 		do
 		{
 			char c = *s;
-			buffer.append(1, c);
-			if(c == '\n') Flush();
+			Append(c);
 		}
-		while(++s, --n);
+		while(++s, --count);
 	}
 	
 	return n;
 }
 
+void LoggerStreamBuffer::Append(char c)
+{
+	if(c == '\n')
+	{
+		Flush();
+	}
+	else
+	{
+		buffer.append(1, c);
+	}
+}
+
 void LoggerStreamBuffer::Flush()
 {
-	if(!buffer.empty())
-	{
-		(owner.GetServerInstance()->*logger_server_output_method_ptr)(owner.GetName(), buffer.c_str());
-		buffer.clear();
-	}
+	(owner.GetServerInstance()->*logger_server_output_method_ptr)(owner.GetName(), buffer.c_str());
+	buffer.clear();
 }
 
 LoggerStream::LoggerStream(Logger& owner, LoggerServerOutputMethodPtr logger_server_output_method_ptr)

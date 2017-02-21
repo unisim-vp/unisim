@@ -46,7 +46,7 @@ namespace debug {
 namespace elf_symtab {
 
 template <class MEMORY_ADDR, class Elf_Sym>
-ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::ELF_SymtabHandler(std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob)
+ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::ELF_SymtabHandler(std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream, const unisim::util::blob::Blob<MEMORY_ADDR> *_blob)
 	: debug_info_stream(_debug_info_stream)
 	, debug_warning_stream(_debug_warning_stream)
 	, debug_error_stream(_debug_error_stream)
@@ -72,17 +72,17 @@ void ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::Parse()
 	
 	symbol_table = new SymbolTable<MEMORY_ADDR>();
 	
-	const typename std::vector<const unisim::util::debug::blob::Section<MEMORY_ADDR> *>& sections = blob->GetSections();
-	typename std::vector<const unisim::util::debug::blob::Section<MEMORY_ADDR> *>::const_iterator section_iter;
+	const typename std::vector<const unisim::util::blob::Section<MEMORY_ADDR> *>& sections = blob->GetSections();
+	typename std::vector<const unisim::util::blob::Section<MEMORY_ADDR> *>::const_iterator section_iter;
 	for(section_iter = sections.begin(); section_iter != sections.end(); section_iter++)
 	{
-		const unisim::util::debug::blob::Section<MEMORY_ADDR> *section = *section_iter;
+		const unisim::util::blob::Section<MEMORY_ADDR> *section = *section_iter;
 		
-		if(section->GetType() == unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_ELF_SYMTAB)
+		if(section->GetType() == unisim::util::blob::Section<MEMORY_ADDR>::TY_ELF_SYMTAB)
 		{
-			const typename unisim::util::debug::blob::Section<MEMORY_ADDR> *string_table_section = blob->GetSection(section->GetLink());
+			const typename unisim::util::blob::Section<MEMORY_ADDR> *string_table_section = blob->GetSection(section->GetLink());
 			
-			if(!string_table_section || (string_table_section->GetType() != unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_STRTAB))
+			if(!string_table_section || (string_table_section->GetType() != unisim::util::blob::Section<MEMORY_ADDR>::TY_STRTAB))
 			{
 				debug_warning_stream << "Found a symbol table section but no string table section. Cannot build symbol table." << std::endl;
 				break;

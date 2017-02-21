@@ -134,17 +134,17 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 {
 	if(!memory_import) return false;
 
-	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = elf_loader->GetBlob();
+	const unisim::util::blob::Blob<MEMORY_ADDR> *blob = elf_loader->GetBlob();
 	if(!blob) return false;
 	
 	bool success = true;
-	const typename std::vector<const unisim::util::debug::blob::Segment<MEMORY_ADDR> *>& segments = blob->GetSegments();
-	typename std::vector<const unisim::util::debug::blob::Segment<MEMORY_ADDR> *>::const_iterator segment_iter;
+	const typename std::vector<const unisim::util::blob::Segment<MEMORY_ADDR> *>& segments = blob->GetSegments();
+	typename std::vector<const unisim::util::blob::Segment<MEMORY_ADDR> *>::const_iterator segment_iter;
 	for(segment_iter = segments.begin(); segment_iter != segments.end(); segment_iter++)
 	{
-		const unisim::util::debug::blob::Segment<MEMORY_ADDR> *segment = *segment_iter;
+		const unisim::util::blob::Segment<MEMORY_ADDR> *segment = *segment_iter;
 		
-		if(segment->GetType() == unisim::util::debug::blob::Segment<MEMORY_ADDR>::TY_LOADABLE)
+		if(segment->GetType() == unisim::util::blob::Segment<MEMORY_ADDR>::TY_LOADABLE)
 		{
 			MEMORY_ADDR write_size = initialize_extra_segment_bytes ? segment->GetSize() : segment->GetDataSize();
 			if (write_size) {
@@ -214,7 +214,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const typename unisim::util::debug::blob::Blob<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetBlob() const
+const typename unisim::util::blob::Blob<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetBlob() const
 {
 	return elf_loader ? elf_loader->GetBlob() : 0;
 }

@@ -39,7 +39,7 @@
 #include <unisim/util/os/linux_os/aux_table.hh>
 #include <unisim/util/os/linux_os/errno.hh>
 #include <unisim/util/likely/likely.hh>
-#include <unisim/util/debug/blob/blob.hh>
+#include <unisim/util/blob/blob.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/loader/elf_loader/elf32_loader.hh>
 #include <unisim/util/loader/elf_loader/elf64_loader.hh>
@@ -132,10 +132,10 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(std::ostream& _debug_info_stream,
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux()
 {
-	typename std::map<std::string, unisim::util::debug::blob::Blob<ADDRESS_TYPE> const *>::const_iterator it;
+	typename std::map<std::string, unisim::util::blob::Blob<ADDRESS_TYPE> const *>::const_iterator it;
 	for(it = load_files_.begin(); it != load_files_.end(); it++)
 	{
-		const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob = (*it).second;
+		const unisim::util::blob::Blob<ADDRESS_TYPE> *blob = (*it).second;
 		blob->Release();
 	}
 	
@@ -253,7 +253,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(char const * const filenam
     return false;
   }
 
-  unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const blob = loader.GetBlob();
+  unisim::util::blob::Blob<ADDRESS_TYPE> const * const blob = loader.GetBlob();
   
   if (blob == NULL) {
     debug_error_stream << "Could not create blob from" << " requested file (" << filename << ")." << std::endl;
@@ -401,8 +401,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load()
 
 	// create the root blob that will be used to store the image that will be
 	// loaded
-	unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob =
-	new unisim::util::debug::blob::Blob<ADDRESS_TYPE>();
+	unisim::util::blob::Blob<ADDRESS_TYPE>* blob =
+	new unisim::util::blob::Blob<ADDRESS_TYPE>();
 	blob->Catch();
 	
 	// load and add files to the blob
@@ -550,7 +550,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupTarget()
       return false;
     }
   
-  typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
+  typedef unisim::util::blob::Segment<ADDRESS_TYPE> Segment;
   typedef std::vector<const Segment*> SegmentVector;
   typedef typename SegmentVector::const_iterator SegmentVectorIterator;
   
@@ -672,44 +672,44 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id, bool& termin
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LoadFiles( unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob )
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LoadFiles( unisim::util::blob::Blob<ADDRESS_TYPE> *blob )
 {
   // Get the main executable blob
   // NOTE: current implementation of the linux os library only supports one
   // blob, the main executable blob
-  unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const main_blob =
+  unisim::util::blob::Blob<ADDRESS_TYPE> const * const main_blob =
       GetMainBlob();
 
   if (main_blob == NULL) return false;
 
-  if (main_blob->GetCapability() & unisim::util::debug::blob::CAP_FILE_FORMAT) {
+  if (main_blob->GetCapability() & unisim::util::blob::CAP_FILE_FORMAT) {
     blob->SetFileFormat(main_blob->GetFileFormat());
   }
-  if(main_blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME) {
+  if(main_blob->GetCapability() & unisim::util::blob::CAP_FILENAME) {
     blob->SetFilename(main_blob->GetFilename());
   }
-  if(main_blob->GetCapability() & unisim::util::debug::blob::CAP_ENTRY_POINT) {
+  if(main_blob->GetCapability() & unisim::util::blob::CAP_ENTRY_POINT) {
     blob->SetEntryPoint(main_blob->GetEntryPoint());
   }
-  if(main_blob->GetCapability() & unisim::util::debug::blob::CAP_ARCHITECTURE) {
+  if(main_blob->GetCapability() & unisim::util::blob::CAP_ARCHITECTURE) {
     blob->SetArchitecture(main_blob->GetArchitecture());
   }
-  if(main_blob->GetCapability() & unisim::util::debug::blob::CAP_STACK_BASE) {
+  if(main_blob->GetCapability() & unisim::util::blob::CAP_STACK_BASE) {
     blob->SetStackBase(main_blob->GetStackBase());
   }
-  if(main_blob->GetCapability() & unisim::util::debug::blob::CAP_ENDIAN) {
+  if(main_blob->GetCapability() & unisim::util::blob::CAP_ENDIAN) {
     blob->SetEndian(main_blob->GetEndian());
   }
-  if(main_blob->GetCapability() & unisim::util::debug::blob::CAP_FILE_ENDIAN) {
+  if(main_blob->GetCapability() & unisim::util::blob::CAP_FILE_ENDIAN) {
     blob->SetFileEndian(main_blob->GetFileEndian());
   }
-  if(main_blob->GetCapability() & unisim::util::debug::blob::CAP_ADDRESS_SIZE) {
+  if(main_blob->GetCapability() & unisim::util::blob::CAP_ADDRESS_SIZE) {
     blob->SetAddressSize(main_blob->GetAddressSize());
   }
-  if(main_blob->GetCapability() & unisim::util::debug::blob::CAP_ELF_PHOFF) {
+  if(main_blob->GetCapability() & unisim::util::blob::CAP_ELF_PHOFF) {
     blob->SetELF_PHOFF(main_blob->GetELF_PHOFF());
   }
-  if(main_blob->GetCapability() & unisim::util::debug::blob::CAP_ELF_PHENT) {
+  if(main_blob->GetCapability() & unisim::util::blob::CAP_ELF_PHENT) {
     blob->SetELF_PHENT(main_blob->GetELF_PHENT());
   }
 
@@ -724,11 +724,11 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LoadFiles( unisim::util::debug::blob::
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const Linux<ADDRESS_TYPE,
+unisim::util::blob::Blob<ADDRESS_TYPE> const * const Linux<ADDRESS_TYPE,
     PARAMETER_TYPE>:: GetMainBlob() const {
   /* NOTE only one file is supported, so we just get the first one if any */
   typename std::map<std::string,
-      unisim::util::debug::blob::Blob<ADDRESS_TYPE> const *>::const_iterator
+      unisim::util::blob::Blob<ADDRESS_TYPE> const *>::const_iterator
       it = load_files_.begin();
   if (it == load_files_.end()) return NULL;
   else return it->second;
@@ -736,9 +736,9 @@ unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const Linux<ADDRESS_TYPE,
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ComputeStructuralAddresses(
-    unisim::util::debug::blob::Blob<ADDRESS_TYPE> const &blob) {
+    unisim::util::blob::Blob<ADDRESS_TYPE> const &blob) {
   int loaded_segments = 0;
-  typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
+  typedef unisim::util::blob::Segment<ADDRESS_TYPE> Segment;
   typedef std::vector<const Segment *> SegmentVector;
   typedef typename SegmentVector::const_iterator SegmentVectorIterator;
   const SegmentVector &segments = blob.GetSegments();
@@ -755,10 +755,10 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ComputeStructuralAddresses(
   num_segments_ = 0;
 
   for (SegmentVectorIterator it = segments.begin(); it != segments.end(); it++) {
-    typename unisim::util::debug::blob::Segment<ADDRESS_TYPE>::Type type =
+    typename unisim::util::blob::Segment<ADDRESS_TYPE>::Type type =
         (*it)->GetType();
     // ignore the segment if it is not a loadable
-    if (type != unisim::util::debug::blob::Segment<ADDRESS_TYPE>::TY_LOADABLE)
+    if (type != unisim::util::blob::Segment<ADDRESS_TYPE>::TY_LOADABLE)
       continue;
 
     loaded_segments++;
@@ -793,12 +793,12 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ComputeStructuralAddresses(
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FillBlobWithFileBlob(
-    unisim::util::debug::blob::Blob<ADDRESS_TYPE> const &file_blob,
-    unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) {
-  typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
+    unisim::util::blob::Blob<ADDRESS_TYPE> const &file_blob,
+    unisim::util::blob::Blob<ADDRESS_TYPE> *blob) {
+  typedef unisim::util::blob::Segment<ADDRESS_TYPE> Segment;
   typedef std::vector<const Segment*> SegmentVector;
   typedef typename SegmentVector::const_iterator SegmentVectorIterator;
-  typedef unisim::util::debug::blob::Section<ADDRESS_TYPE> Section;
+  typedef unisim::util::blob::Section<ADDRESS_TYPE> Section;
   typedef std::vector<const Section*> SectionVector;
   typedef typename SectionVector::const_iterator SectionVectorIterator;
   const SegmentVector &file_segments = file_blob.GetSegments();
@@ -807,10 +807,10 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FillBlobWithFileBlob(
   // copy only segments that have data to be loaded
   for (SegmentVectorIterator it = file_segments.begin();
        it != file_segments.end(); it++) {
-    typename unisim::util::debug::blob::Segment<ADDRESS_TYPE>::Type type =
+    typename unisim::util::blob::Segment<ADDRESS_TYPE>::Type type =
         (*it)->GetType();
     // ignore the segment if it is not a loadable
-    if (type != unisim::util::debug::blob::Segment<ADDRESS_TYPE>::TY_LOADABLE)
+    if (type != unisim::util::blob::Segment<ADDRESS_TYPE>::TY_LOADABLE)
       continue;
 
     blob->AddSegment((*it));
@@ -825,13 +825,13 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FillBlobWithFileBlob(
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob, uint64_t& stack_size) const
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(unisim::util::blob::Blob<ADDRESS_TYPE>* blob, uint64_t& stack_size) const
 {
   typedef std::vector<ADDRESS_TYPE> AddressVector;
   typedef typename AddressVector::iterator AddressVectorIterator;
   typedef typename AddressVector::reverse_iterator AddressVectorReverseIterator;
-  typedef unisim::util::debug::blob::Section<ADDRESS_TYPE> Section;
-  typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
+  typedef unisim::util::blob::Section<ADDRESS_TYPE> Section;
+  typedef unisim::util::blob::Segment<ADDRESS_TYPE> Segment;
 
   // make sure a blob is being handled
   if (blob == NULL) {
@@ -1043,7 +1043,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
 
   ADDRESS_TYPE aux_table_symbol;
   ADDRESS_TYPE aux_table_value;
-  unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const main_blob =
+  unisim::util::blob::Blob<ADDRESS_TYPE> const * const main_blob =
       GetMainBlob();
 
   aux_table_symbol = AT_NULL;

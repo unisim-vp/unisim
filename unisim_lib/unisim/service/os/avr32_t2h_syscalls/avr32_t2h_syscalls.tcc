@@ -340,7 +340,7 @@ bool AVR32_T2H_Syscalls<MEMORY_ADDR>::EndSetup()
 	}
 	
 	
-	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = blob_import->GetBlob();
+	const unisim::util::blob::Blob<MEMORY_ADDR> *blob = blob_import->GetBlob();
 	MEMORY_ADDR entry_point = blob->GetEntryPoint();
 	reg_pc->SetValue(&entry_point);
 

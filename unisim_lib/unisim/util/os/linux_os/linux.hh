@@ -35,7 +35,7 @@
 #ifndef __UNISIM_UTIL_OS_LINUX_LINUX_HH__
 #define __UNISIM_UTIL_OS_LINUX_LINUX_HH__
 
-#include <unisim/util/debug/blob/blob.hh>
+#include <unisim/util/blob/blob.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/registers.hh>
@@ -137,7 +137,7 @@ namespace linux_os {
       virtual ~TargetSystem() {}
       virtual bool SetupTarget() const = 0;
       virtual bool GetAT_HWCAP( ADDRESS_TYPE& hwcap ) const = 0;
-      virtual bool SetSystemBlob( unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob ) const = 0;
+      virtual bool SetSystemBlob( unisim::util::blob::Blob<ADDRESS_TYPE>* blob ) const = 0;
       virtual SysCall* GetSystemCall(int& id) const = 0;
       virtual PARAMETER_TYPE GetSystemCallParam(int id) const = 0;
       virtual void SetSystemCallStatus(int64_t ret, bool error) const = 0;
@@ -254,7 +254,7 @@ namespace linux_os {
     // Gets the memory footprint of the application as a blob.
     // Returns: a blob describing the memory footprint of the application. NULL
     //          if the system has not been successfully loaded.
-    unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const GetBlob() const { return blob_; }
+    unisim::util::blob::Blob<ADDRESS_TYPE> const * const GetBlob() const { return blob_; }
 	
     // Gets the supplied logging streams
     std::ostream& DebugInfoStream() { return debug_info_stream; }
@@ -282,7 +282,7 @@ namespace linux_os {
     unisim::util::endian::endian_type endianness_;
 
     // files to load
-    std::map<std::string, unisim::util::debug::blob::Blob<ADDRESS_TYPE> const *> load_files_;
+    std::map<std::string, unisim::util::blob::Blob<ADDRESS_TYPE> const *> load_files_;
 
     // program addresses (computed from the given files)
     ADDRESS_TYPE entry_point_;
@@ -314,7 +314,7 @@ namespace linux_os {
     std::string hwcap_;
 
     // the structure to keep all the loaded information
-    unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob_;
+    unisim::util::blob::Blob<ADDRESS_TYPE> *blob_;
 
     // interfaces to the CPU registers and memory
     unisim::service::interfaces::Registers *regs_if_;
@@ -359,24 +359,24 @@ namespace linux_os {
 	
     // Load the files set by the user into the given blob. Returns true on sucess,
     // false otherwise.
-    bool LoadFiles(unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob);
+    bool LoadFiles(unisim::util::blob::Blob<ADDRESS_TYPE> *blob);
 
     // Gets the main executable blob, that is the blob that represents the
     // executable file, not the maybe used dynamic libraries
-    unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const GetMainBlob() const;
+    unisim::util::blob::Blob<ADDRESS_TYPE> const * const GetMainBlob() const;
 
     // From the given blob computes the initial addresses and values that will be
     // used to initialize internal structures and the target processor
     bool ComputeStructuralAddresses(
-                                    unisim::util::debug::blob::Blob<ADDRESS_TYPE> const &blob);
+                                    unisim::util::blob::Blob<ADDRESS_TYPE> const &blob);
 
     // Merge the contents of the given file blob into the input/output blob
     bool FillBlobWithFileBlob(
-                              unisim::util::debug::blob::Blob<ADDRESS_TYPE> const &file_blob,
-                              unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob);
+                              unisim::util::blob::Blob<ADDRESS_TYPE> const &file_blob,
+                              unisim::util::blob::Blob<ADDRESS_TYPE> *blob);
 
     // Create the stack memory image and insert it into the given blob
-    bool CreateStack(unisim::util::debug::blob::Blob<ADDRESS_TYPE> * blob, uint64_t& stack_size) const;
+    bool CreateStack(unisim::util::blob::Blob<ADDRESS_TYPE> * blob, uint64_t& stack_size) const;
 
     // Set the aux table contents that will be added to the stack
     void SetAuxTable(uint8_t * stack_data, ADDRESS_TYPE & sp) const;
