@@ -33,8 +33,8 @@
  *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_NETSTUB_TCC__
-#define __UNISIM_UTIL_DEBUG_NETSTUB_TCC__
+#ifndef __UNISIM_UTIL_NETSTUB_NETSTUB_TCC__
+#define __UNISIM_UTIL_NETSTUB_NETSTUB_TCC__
 
 #include <iostream>
 #include <sstream>
@@ -63,7 +63,7 @@
 
 namespace unisim {
 namespace util {
-namespace debug {
+namespace netstub {
 
 using namespace std;
 	
@@ -3361,7 +3361,7 @@ bool NetStub<ADDRESS>::ServeRemoveWriteWatchpoint(ADDRESS addr, uint32_t size, S
 	return false;
 }
 
-} // end of namespace debug
+} // end of namespace netstub
 } // end of namespace util
 } // end of namespace unisim
 
