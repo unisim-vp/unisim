@@ -69,13 +69,13 @@ public:
 	virtual bool BeginSetup();
 	virtual bool Setup(ServiceExportBase *srv_export);
 	
-	const unisim::util::debug::blob::Blob<ADDRESS> *GetBlob() const;
+	const unisim::util::blob::Blob<ADDRESS> *GetBlob() const;
 protected:
 	unisim::kernel::logger::Logger logger;
 private:
 	bool SetupBlob();
 	
-	unisim::util::debug::blob::Blob<ADDRESS> *blob;
+	unisim::util::blob::Blob<ADDRESS> *blob;
 };
 
 } // end of namespace blob

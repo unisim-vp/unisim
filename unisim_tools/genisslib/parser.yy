@@ -759,10 +759,10 @@ user_specialization: TOK_IDENT '.' TOK_SPECIALIZE '(' operation_list ')'
   Scanner::isa().m_user_orderings.push_back( Isa::Ordering() );
   Isa::Ordering& order = Scanner::isa().m_user_orderings.back();
   order.fileloc = Scanner::fileloc;
-  order.symbols.reserve( oplist->size() + 1 );
-  order.symbols.push_back( ConstStr( $1, Scanner::symbols ) );
+  order.top_op = ConstStr( $1, Scanner::symbols );
+  order.under_ops.reserve( oplist->size() );
   for (StringVector::const_iterator itr = oplist->begin(), end = oplist->end(); itr != end; ++itr)
-    { order.symbols.push_back( ConstStr( *itr, Scanner::symbols ) ); }
+    { order.under_ops.push_back( ConstStr( *itr, Scanner::symbols ) ); }
   delete oplist;
 }
 ;

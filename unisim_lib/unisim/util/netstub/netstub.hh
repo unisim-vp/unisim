@@ -33,8 +33,8 @@
  *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_NETSTUB_HH__
-#define __UNISIM_UTIL_DEBUG_NETSTUB_HH__
+#ifndef __UNISIM_UTIL_NETSTUB_NETSTUB_HH__
+#define __UNISIM_UTIL_NETSTUB_NETSTUB_HH__
 
 #include <inttypes.h>
 #include <string>
@@ -42,7 +42,7 @@
 
 namespace unisim {
 namespace util {
-namespace debug {
+namespace netstub {
 
 using std::string;
 using std::list;
@@ -284,7 +284,7 @@ protected:
 	virtual bool ServeRemoveWriteWatchpoint(ADDRESS addr, uint32_t size, SPACE space);
 };
 
-} // end of namespace debug
+} // end of namespace netstub
 } // end of namespace util
 } // end of namespace unisim
 

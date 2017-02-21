@@ -32,11 +32,11 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_BLOB_BLOB_HH__
-#define __UNISIM_UTIL_DEBUG_BLOB_BLOB_HH__
+#ifndef __UNISIM_UTIL_BLOB_BLOB_HH__
+#define __UNISIM_UTIL_BLOB_BLOB_HH__
 
-#include <unisim/util/debug/blob/section.hh>
-#include <unisim/util/debug/blob/segment.hh>
+#include <unisim/util/blob/section.hh>
+#include <unisim/util/blob/segment.hh>
 #include <unisim/util/endian/endian.hh>
 #include <string>
 #include <vector>
@@ -44,7 +44,6 @@
 
 namespace unisim {
 namespace util {
-namespace debug {
 namespace blob {
 
 using unisim::util::endian::endian_type;
@@ -151,7 +150,6 @@ private:
 
 
 } // end of namespace blob
-} // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
 

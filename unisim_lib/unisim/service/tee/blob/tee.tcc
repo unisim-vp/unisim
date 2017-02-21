@@ -112,7 +112,7 @@ bool Tee<ADDRESS, MAX_IMPORTS>::SetupBlob()
 {
 	if(blob) return true;
 
-	blob = new unisim::util::debug::blob::Blob<ADDRESS>();
+	blob = new unisim::util::blob::Blob<ADDRESS>();
 	blob->Catch();
 	
 	unsigned int i;
@@ -122,7 +122,7 @@ bool Tee<ADDRESS, MAX_IMPORTS>::SetupBlob()
 		{
 			if(*blob_import[i])
 			{
-				const unisim::util::debug::blob::Blob<ADDRESS> *lower_blob = (*blob_import[i])->GetBlob();
+				const unisim::util::blob::Blob<ADDRESS> *lower_blob = (*blob_import[i])->GetBlob();
 				if(lower_blob)
 				{
 					blob->AddBlob(lower_blob);
@@ -135,7 +135,7 @@ bool Tee<ADDRESS, MAX_IMPORTS>::SetupBlob()
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-const unisim::util::debug::blob::Blob<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::GetBlob() const
+const unisim::util::blob::Blob<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::GetBlob() const
 {
 	return blob;
 }

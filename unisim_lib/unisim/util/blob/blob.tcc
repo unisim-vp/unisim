@@ -32,14 +32,13 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_BLOB_BLOB_TCC__
-#define __UNISIM_UTIL_DEBUG_BLOB_BLOB_TCC__
+#ifndef __UNISIM_UTIL_BLOB_BLOB_TCC__
+#define __UNISIM_UTIL_BLOB_BLOB_TCC__
 
 #include <iostream>
 
 namespace unisim {
 namespace util {
-namespace debug {
 namespace blob {
 
 using unisim::util::endian::E_BIG_ENDIAN;
@@ -576,7 +575,6 @@ void Blob<MEMORY_ADDR>::Release() const
 }
 
 } // end of namespace blob
-} // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
 

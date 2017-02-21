@@ -34,7 +34,7 @@
 
 #include <iostream>
 #include <systemc.h>
-#include "simulator.hh"
+#include <simulator.hh>
 
 int sc_main(int argc, char *argv[])
 {
@@ -42,7 +42,7 @@ int sc_main(int argc, char *argv[])
 
   Simulator simulator( argc, argv );
 
-  switch ( simulator->Setup() )
+  switch (simulator.Setup())
     {
     case unisim::kernel::service::Simulator::ST_ERROR:
       std::cerr << "ERROR: Can't start simulation because of previous erros" << std::endl;
@@ -58,7 +58,7 @@ int sc_main(int argc, char *argv[])
            << "the simulation." << std::endl;
     case unisim::kernel::service::Simulator::ST_OK_TO_START:
       std::cerr << "Starting simulation." << std::endl;
-      ret = simulator->Run();
+      ret = simulator.Run();
       break;
     }
 

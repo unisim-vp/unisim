@@ -27,19 +27,19 @@ struct Vector : std::vector<Ptr<TP> >
 {
   Vector() {}
   Vector( TP* _item ) : std::vector<Ptr<TP> >( 1,_item ) {}
-  Vector( Vector<TP>& _src ) {
+  Vector( Vector<TP> const& _src ) {
     if (not &_src) return;
     *this = _src;
   }
-  Vector( uintptr_t _size ) : std::vector<Ptr<TP> >( _size, 0 ) {}
+  Vector( uintptr_t _size ) : std::vector<Ptr<TP> >( _size, (TP*)(0) ) {}
   
-  Vector<TP>& operator=( Vector<TP>& _src )
+  Vector<TP>& operator=( Vector<TP> const& _src )
   {
     if (not &_src) return *this;
     this->std::vector<Ptr<TP> >::operator=( _src );
     return *this;
   }
-  Vector<TP>& append( Vector<TP>& _src )
+  Vector<TP>& append( Vector<TP> const& _src )
   {
     if (not &_src) return *this;
     this->reserve( this->size() + _src.size() );

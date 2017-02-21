@@ -27,8 +27,8 @@
 /** A C/C++ comment object */
 struct Comment : virtual ReferenceCounter
 {
-  ConstStr              m_content;
-  FileLoc               m_fileloc;
+  ConstStr              content;
+  FileLoc               fileloc;
   
   Comment( ConstStr _content, FileLoc const& _fileloc );
   Comment( Comment const& _comment );

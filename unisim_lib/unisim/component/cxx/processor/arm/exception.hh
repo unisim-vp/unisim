@@ -35,7 +35,6 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXCEPTION_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXCEPTION_HH__
 
-#include <unisim/component/cxx/processor/arm/register_field.hh>
 #include <inttypes.h>
 
 namespace unisim {

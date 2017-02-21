@@ -60,13 +60,6 @@ namespace util {
 namespace os {
 namespace linux_os {
 
-  using unisim::kernel::logger::DebugInfo;
-  using unisim::kernel::logger::DebugWarning;
-  using unisim::kernel::logger::DebugError;
-  using unisim::kernel::logger::EndDebugInfo;
-  using unisim::kernel::logger::EndDebugWarning;
-  using unisim::kernel::logger::EndDebugError;
-
   // Register names
   static char const* const kARM_r0  = "r0"; /* syscall arg#1 */
   static char const* const kARM_r1  = "r1"; /* syscall arg#2, argc */
@@ -197,7 +190,7 @@ namespace linux_os {
           else if(hwcap_token.compare("vfpv4") == 0)      { arm_hwcap |= ARM_HWCAP_ARM_VFPv4; }
           else if(hwcap_token.compare("idiva") == 0)      { arm_hwcap |= ARM_HWCAP_ARM_IDIVA; }
           else if(hwcap_token.compare("idivt") == 0)      { arm_hwcap |= ARM_HWCAP_ARM_IDIVT; }
-          else { lin.Logger() << DebugWarning << "unknown hardware capability \"" << hwcap_token << "\"" << EndDebugWarning; }
+          else { lin.DebugWarningStream() << "unknown hardware capability \"" << hwcap_token << "\"" << std::endl; }
         }
       hwcap = arm_hwcap;
       return true;
@@ -254,10 +247,10 @@ namespace linux_os {
       if (not SetRegister(lin, kARM_pc, lin.GetEntryPoint()))
         return false;
       // Set SP to the base of the created stack
-      unisim::util::debug::blob::Section<address_type> const * sp_section =
+      unisim::util::blob::Section<address_type> const * sp_section =
         lin.GetBlob()->FindSection(".unisim.linux_os.stack.stack_pointer");
       if (sp_section == NULL) {
-        lin.Logger() << DebugError << "Could not find the stack pointer section." << EndDebugError;
+        lin.DebugErrorStream() << "Could not find the stack pointer section." << std::endl;
         return false;
       }
       if (not SetRegister(lin, kARM_sp, sp_section->GetAddr()))
@@ -277,7 +270,7 @@ namespace linux_os {
     
     static void SetARMSystemCallStatus(LINUX& _lin, int ret, bool error) { SetRegister(_lin, kARM_r0, (parameter_type) ret); }
     
-    void SetSystemCallStatus(int ret, bool error) const { SetARMSystemCallStatus( lin, ret, error ); }
+    void SetSystemCallStatus(int64_t ret, bool error) const { SetARMSystemCallStatus( lin, ret, error ); }
     
     static parameter_type GetSystemCallParam( LINUX& _lin, int id )
     {
@@ -302,7 +295,7 @@ namespace linux_os {
       try { return GetSystemCallParam( lin, id ); }
       
       catch (int x) {
-        lin.Logger() << DebugError << "No syscall argument #" << id << " in " << this->name << " linux" << EndDebugError;
+        lin.DebugErrorStream() << "No syscall argument #" << id << " in " << this->name << " linux" << std::endl;
       }
       
       return 0;
@@ -990,7 +983,7 @@ namespace linux_os {
                 }
                   
               if(unlikely(lin.GetVerbose()))
-                lin.Logger() << DebugInfo << "times(buf=0x" << std::hex << buf_addr << std::dec << ")" << EndDebugInfo;
+                lin.DebugInfoStream() << "times(buf=0x" << std::hex << buf_addr << std::dec << ")" << std::endl;
 	
               SetARMSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
             }
@@ -1038,10 +1031,10 @@ namespace linux_os {
 
               if(unlikely(lin.GetVerbose()))
                 {
-                  lin.Logger() << DebugInfo
-                               << "gettimeofday(tv = 0x" << std::hex << tv_addr << std::dec
-                               << ", tz = 0x" << std::hex << tz_addr << std::dec << ")"
-                               << EndDebugInfo;
+                  lin.DebugInfoStream()
+                    << "gettimeofday(tv = 0x" << std::hex << tv_addr << std::dec
+                    << ", tz = 0x" << std::hex << tz_addr << std::dec << ")"
+                    << std::endl;
                 }
 	
               SetARMSystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
@@ -1086,10 +1079,10 @@ namespace linux_os {
 
               if(unlikely(lin.GetVerbose()))
                 {
-                  lin.Logger() << DebugInfo
-                               << "fstat(fd=" << target_fd
-                               << ", buf_addr=0x" << std::hex << buf_address << std::dec
-                               << ")" << EndDebugInfo;
+                  lin.DebugInfoStream()
+                    << "fstat(fd=" << target_fd
+                    << ", buf_addr=0x" << std::hex << buf_address << std::dec
+                    << ")" << std::endl;
                 }
 	
               SetARMSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
@@ -1158,9 +1151,9 @@ namespace linux_os {
                       
                   if(unlikely(lin.GetVerbose()))
                     {
-                      lin.Logger() << DebugInfo
-                                   << "pathname = \"" << pathname << "\", buf_address = 0x" << std::hex << buf_address << std::dec
-                                   << EndDebugInfo;
+                      lin.DebugInfoStream()
+                        << "pathname = \"" << pathname << "\", buf_address = 0x" << std::hex << buf_address << std::dec
+                        << std::endl;
                     }
                 }
               else
@@ -1214,9 +1207,9 @@ namespace linux_os {
 	
               if(unlikely(lin.GetVerbose()))
                 {
-                  lin.Logger() << DebugInfo
-                               << "fd = " << target_fd << ", buf_address = 0x" << std::hex << buf_address << std::dec
-                               << EndDebugInfo;
+                  lin.DebugInfoStream()
+                    << "fd = " << target_fd << ", buf_address = 0x" << std::hex << buf_address << std::dec
+                    << std::endl;
                 }
 	
               SetARMSystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
@@ -1286,10 +1279,10 @@ namespace linux_os {
       return 0;
     }
     
-    bool SetSystemBlob( unisim::util::debug::blob::Blob<address_type>* blob ) const
+    bool SetSystemBlob( unisim::util::blob::Blob<address_type>* blob ) const
     {
-      typedef unisim::util::debug::blob::Section<address_type> Section;
-      typedef unisim::util::debug::blob::Segment<address_type> Segment;
+      typedef unisim::util::blob::Section<address_type> Section;
+      typedef unisim::util::blob::Segment<address_type> Segment;
       std::string mach = lin.GetUTSName().machine;
       if ((mach.compare("armv5") == 0) or (mach.compare("armv6") == 0) or (mach.compare("armv7") == 0))
         {

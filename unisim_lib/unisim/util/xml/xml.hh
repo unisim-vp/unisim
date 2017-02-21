@@ -35,7 +35,6 @@
 #ifndef __UNISIM_UTIL_XML_HH__
 #define __UNISIM_UTIL_XML_HH__
 
-#include <unisim/kernel/logger/logger.hh>
 #include <list>
 #include <string>
 #include <iosfwd>
@@ -122,7 +121,7 @@ private:
 class Parser
 {
 public:
-	Parser(unisim::kernel::logger::Logger& logger);
+	Parser(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream);
 	virtual ~Parser();
 	Node *Parse(const string& filename);
 private:
@@ -133,7 +132,9 @@ private:
 	Node *ParseNode(istream& is);
 	bool ParseComment(istream& is);
 
-	unisim::kernel::logger::Logger& logger;
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
 	Node *root_node;
 	int current_lineno;
 	string current_filename;

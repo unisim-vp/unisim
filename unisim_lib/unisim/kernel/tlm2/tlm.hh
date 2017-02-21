@@ -137,12 +137,19 @@ public:
 
 	~PayloadFabric()
 	{
-		while(!free_list.empty())
+		typename std::vector<PAYLOAD *>::iterator it;
+		
+		for(it = payloads.begin(); it != payloads.end(); it++)
 		{
-			PAYLOAD *payload = free_list.top();
-			free_list.pop();
+			PAYLOAD *payload = *it;
 			delete payload;
 		}
+// 		while(!free_list.empty())
+// 		{
+// 			PAYLOAD *payload = free_list.top();
+// 			free_list.pop();
+// 			delete payload;
+// 		}
 	}
 
 	PAYLOAD *allocate()
@@ -161,6 +168,7 @@ public:
 		payload = new PAYLOAD();
 		payload->set_mm(this);
 		payload->acquire();
+		payloads.push_back(payload);
 		return payload;
 	}
 
@@ -172,6 +180,7 @@ public:
 	}
 private:
 	std::stack<PAYLOAD *, std::vector<PAYLOAD *> > free_list;
+	std::vector<PAYLOAD *> payloads;
 };
 
 template <class T>
@@ -346,6 +355,30 @@ public:
 		sc_time t(time_stamp);
 		t -= sc_time_stamp();
 		kernel_event.notify(t);
+	}
+	
+	void Cancel(EVENT *event)
+	{
+		typename std::multimap<typename EVENT::Key, EVENT *>::iterator it = schedule.find(event->GetKey());
+		
+		if(it != schedule.end())
+		{
+			schedule.erase(it);
+			
+			if(schedule.empty())
+			{
+				kernel_event.cancel();
+			}
+			else
+			{
+				it = schedule.begin();
+				const sc_time& time_stamp = sc_time_stamp();
+				const sc_time& event_time_stamp = (*it).first.GetTimeStamp();
+				sc_time t(event_time_stamp);
+				t -= time_stamp;
+				kernel_event.notify(t);
+			}
+		}
 	}
 	
 	bool Empty() const

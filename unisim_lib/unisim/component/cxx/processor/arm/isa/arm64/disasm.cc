@@ -32,33 +32,45 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-/**************************************************************/
-/* Disassembling methods                                      */
-/**************************************************************/
-
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_DISASM_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_DISASM_HH__
-
 #include <inttypes.h>
-#include <iosfwd>
+#include <iostream>
+#include <sstream>
+
+#include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
+#include <unisim/component/cxx/processor/arm/isa/arm64/decode.hh>
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
+namespace isa {
+namespace arm64 {
 
-  struct DisasmObject
+  std::ostream&
+  operator << ( std::ostream& sink, DisasmObject const& dobj )
   {
-    virtual void operator() ( std::ostream& sink ) const = 0;
-    virtual ~DisasmObject() {};
-  };
-  std::ostream& operator << ( std::ostream& sink, DisasmObject const& dobj );
-  
+    dobj( sink );
+    return sink;
+  }
+
+  void
+  DisasmCond::operator () ( std::ostream& sink ) const
+  {
+    char const* condnames[] = {"eq", "ne", "cs", "cc", "mi", "pl", "vs", "vc", "hi", "ls", "ge", "lt", "gt", "le", "al", "nv"};
+    sink << condnames[rid];
+  }
+
+  void
+  DisasmF::operator () ( std::ostream& sink ) const
+  {
+    sink << "#" << float( imm );
+  }
+
+} // end of namespace arm64
+} // end of namespace isa
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
-
-#endif /* __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_VMSAV8_DISASM_HH__ */

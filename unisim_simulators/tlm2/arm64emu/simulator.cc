@@ -31,12 +31,14 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include "simulator.hh"
+#include <simulator.hh>
+#include <unisim/component/tlm2/memory/ram/memory.tcc>
+template class unisim::component::tlm2::memory::ram::Memory<64, uint64_t, 8, 1024 * 1024, true>;
+
+#include <string>
 #include <stdexcept>
 
 bool debug_enabled;
-
-bool Simulator::enable_monitor = false;
 
 Simulator::Simulator(int argc, char **argv)
   : unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
@@ -46,8 +48,6 @@ Simulator::Simulator(int argc, char **argv)
   , host_time(0)
   , linux_os(0)
   , tee_memory_access_reporting(0)
-  , nirq_signal("nIRQm")
-  , nfiq_signal("nFIQm")
   , simulation_spent_time(0.0)
   , gdb_server(0)
   , inline_debugger(0)
@@ -59,34 +59,27 @@ Simulator::Simulator(int argc, char **argv)
   , param_enable_inline_debugger(0)
   , exit_status(0)
 {
-  if(enable_monitor)
-  {
-    enable_inline_debugger = false;
-    enable_gdb_server = false;
-  }
   cpu = new CPU("cpu");
   memory = new MEMORY("memory");
   time = new unisim::service::time::sc_time::ScTime("time");
   host_time = new unisim::service::time::host_time::HostTime("host-time");
-  linux_os = new LINUX_OS("linux-os");
+  linux_os = new unisim::service::os::linux_os::ArmLinux64("linux-os");
 
   param_enable_gdb_server = new unisim::kernel::service::Parameter<bool>(
-      "enable-gdb-server", 0,
-      enable_gdb_server,
-      "Enable GDB server.");
+                                                                         "enable-gdb-server", 0,
+                                                                         enable_gdb_server,
+                                                                         "Enable GDB server.");
   if ( enable_gdb_server )
     gdb_server = new GDB_SERVER("gdb-server");
   param_enable_inline_debugger = new unisim::kernel::service::Parameter<bool>(
-      "enable-inline-debugger", 0,
-      enable_inline_debugger,
-      "Enable inline debugger.");
+                                                                              "enable-inline-debugger", 0,
+                                                                              enable_inline_debugger,
+                                                                              "Enable inline debugger.");
   if ( enable_inline_debugger )
     inline_debugger = new INLINE_DEBUGGER("inline-debugger");
   
   //  - debugger
   debugger = new DEBUGGER("debugger");
-  //  - monitor
-  monitor = enable_monitor ? new MONITOR("monitor") : 0;
   //  - profiler
   profiler = enable_inline_debugger ? new PROFILER("profiler") : 0;
   //  - Tee Memory Access Reporting
@@ -96,18 +89,10 @@ Simulator::Simulator(int argc, char **argv)
     0;
   
   
-  nfiq_signal = true; 
-  nirq_signal = true; 
-  nrst_signal = true;
-  
   // In Linux mode, the system is not entirely simulated.
   // This mode allows to run Linux applications without simulating all the peripherals.
 
   cpu->master_socket(memory->slave_sock);
-  cpu->nIRQm( nirq_signal );
-  cpu->nFIQm( nfiq_signal );
-  cpu->nRESETm( nrst_signal );
-
 
   // Connect debugger to CPU
   cpu->debug_control_import >> debugger->debug_control_export;
@@ -120,63 +105,49 @@ Simulator::Simulator(int argc, char **argv)
   debugger->blob_import >> linux_os->blob_export_;
 
   if(enable_inline_debugger)
-  {
-    // Connect tee-memory-access-reporting to CPU, debugger and profiler
-    cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
-    *tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
-    *tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
-    profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
-    debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
-    tee_memory_access_reporting->out_control >> cpu->memory_access_reporting_control_export;
-  }
+    {
+      // Connect tee-memory-access-reporting to CPU, debugger and profiler
+      cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
+      *tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
+      *tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
+      profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
+      debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
+      tee_memory_access_reporting->out_control >> cpu->memory_access_reporting_control_export;
+    }
   else
-  {
-    cpu->memory_access_reporting_import >> debugger->memory_access_reporting_export;
-    debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
-  }
+    {
+      cpu->memory_access_reporting_import >> debugger->memory_access_reporting_export;
+      debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
+    }
 
   if(enable_inline_debugger)
-  {
-    // Connect inline-debugger to debugger
-    debugger->debug_event_listener_import >> inline_debugger->debug_event_listener_export;
-    debugger->trap_reporting_import >> inline_debugger->trap_reporting_export;
-    debugger->debug_control_import >> inline_debugger->debug_control_export;
-    inline_debugger->debug_event_trigger_import >> debugger->debug_event_trigger_export;
-    inline_debugger->disasm_import >> debugger->disasm_export;
-    inline_debugger->memory_import >> debugger->memory_export;
-    inline_debugger->registers_import >> debugger->registers_export;
-    inline_debugger->stmt_lookup_import >> debugger->stmt_lookup_export;
-    inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
-    inline_debugger->backtrace_import >> debugger->backtrace_export;
-    inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
-	inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
-	inline_debugger->subprogram_lookup_import >> debugger->subprogram_lookup_export;
-    inline_debugger->profiling_import >> profiler->profiling_export;
-  }
+    {
+      // Connect inline-debugger to debugger
+      debugger->debug_event_listener_import >> inline_debugger->debug_event_listener_export;
+      debugger->trap_reporting_import >> inline_debugger->trap_reporting_export;
+      debugger->debug_control_import >> inline_debugger->debug_control_export;
+      inline_debugger->debug_event_trigger_import >> debugger->debug_event_trigger_export;
+      inline_debugger->disasm_import >> debugger->disasm_export;
+      inline_debugger->memory_import >> debugger->memory_export;
+      inline_debugger->registers_import >> debugger->registers_export;
+      inline_debugger->stmt_lookup_import >> debugger->stmt_lookup_export;
+      inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
+      inline_debugger->backtrace_import >> debugger->backtrace_export;
+      inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
+      inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
+      inline_debugger->subprogram_lookup_import >> debugger->subprogram_lookup_export;
+      inline_debugger->profiling_import >> profiler->profiling_export;
+    }
   else if(enable_gdb_server)
-  {
-    // Connect gdb-server to debugger
-    debugger->debug_control_import >> gdb_server->debug_control_export;
-    debugger->debug_event_listener_import >> gdb_server->debug_event_listener_export;
-    debugger->trap_reporting_import >> gdb_server->trap_reporting_export;
-    gdb_server->debug_event_trigger_import >> debugger->debug_event_trigger_export;
-    gdb_server->memory_import >> debugger->memory_export;
-    gdb_server->registers_import >> debugger->registers_export;
-  }
-  else if(enable_monitor)
-  {
-    debugger->debug_event_listener_import >> monitor->debug_event_listener_export;
-    monitor->debug_event_trigger_import >> debugger->debug_event_trigger_export;
-    monitor->memory_import >> debugger->memory_export;
-    monitor->registers_import >> debugger->registers_export;
-    monitor->stmt_lookup_import >> debugger->stmt_lookup_export;
-    monitor->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
-    monitor->backtrace_import >> debugger->backtrace_export;
-    monitor->debug_info_loading_import >> debugger->debug_info_loading_export;
-	monitor->data_object_lookup_import >> debugger->data_object_lookup_export;
-	monitor->subprogram_lookup_import >> debugger->subprogram_lookup_export;
-  }
-
+    {
+      // Connect gdb-server to debugger
+      debugger->debug_control_import >> gdb_server->debug_control_export;
+      debugger->debug_event_listener_import >> gdb_server->debug_event_listener_export;
+      debugger->trap_reporting_import >> gdb_server->trap_reporting_export;
+      gdb_server->debug_event_trigger_import >> debugger->debug_event_trigger_export;
+      gdb_server->memory_import >> debugger->memory_export;
+      gdb_server->registers_import >> debugger->registers_export;
+    }
   // Connect everything
   cpu->linux_os_import >> linux_os->linux_os_export_;
   linux_os->memory_import_ >> cpu->memory_export;
@@ -213,120 +184,118 @@ Simulator::~Simulator()
 }
 
 int
-Simulator ::
-Run()
+Simulator::Run()
 {
   if ( unlikely(SimulationFinished()) ) return 0;
 
-  double time_start = host_time->GetTime();
+  //  double time_start = host_time->GetTime();
 
 #ifndef WIN32
   void (*prev_sig_int_handler)(int) = 0;
 #endif
   
   if ( ! inline_debugger )
-  {
+    {
 #ifdef WIN32
-    SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
+      SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
 #else
-    prev_sig_int_handler = signal(SIGINT, &Simulator::SigIntHandler);
+      prev_sig_int_handler = signal(SIGINT, &Simulator::SigIntHandler);
 #endif
-  }
+    }
 
   sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
   
   try
-  {
-    sc_start();
-  }
+    {
+      sc_start();
+    }
   catch(std::runtime_error& e)
-  {
-    std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
-    std::cerr << e.what() << std::endl;
-  }
+    {
+      std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
+      std::cerr << e.what() << std::endl;
+    }
 
   if ( !inline_debugger )
-  {
+    {
 #ifdef WIN32
-    SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, FALSE);
+      SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, FALSE);
 #else
-    signal(SIGINT, prev_sig_int_handler);
+      signal(SIGINT, prev_sig_int_handler);
 #endif
-  }
+    }
 
   std::cerr << "Simulation finished" << std::endl;
 
-  double time_stop = host_time->GetTime();
-  double spent_time = time_stop - time_start;
-  simulation_spent_time += spent_time;
+  // double time_stop = host_time->GetTime();
+  // double spent_time = time_stop - time_start;
+  // simulation_spent_time += spent_time;
 
-  std::cerr << "Simulation run-time parameters:" << std::endl;
-  DumpParameters(std::cerr);
-  std::cerr << std::endl;
-  std::cerr << "Simulation formulas:" << std::endl;
-  DumpFormulas(std::cerr);
-  std::cerr << std::endl;
-  std::cerr << "Simulation statistics:" << std::endl;
-  DumpStatistics(std::cerr);
-  std::cerr << std::endl;
+  // std::cerr << "Simulation run-time parameters:" << std::endl;
+  // DumpParameters(std::cerr);
+  // std::cerr << std::endl;
+  // std::cerr << "Simulation formulas:" << std::endl;
+  // DumpFormulas(std::cerr);
+  // std::cerr << std::endl;
+  // std::cerr << "Simulation statistics:" << std::endl;
+  // DumpStatistics(std::cerr);
+  // std::cerr << std::endl;
 
-  std::cerr << "simulation time: " << simulation_spent_time << " seconds" << std::endl;
-  std::cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << std::endl;
-  std::cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << std::endl;
-  std::cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
+  // std::cerr << "simulation time: " << simulation_spent_time << " seconds" << std::endl;
+  // std::cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << std::endl;
+  // std::cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << std::endl;
+  // std::cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
 
   return exit_status;
 }
 
 int
-Simulator ::
-Run(double time, sc_time_unit unit)
+Simulator::Run(double time, sc_time_unit unit)
 {
   if ( unlikely(SimulationFinished()) ) return 0;
 
-  double time_start = host_time->GetTime();
+  // double time_start = host_time->GetTime();
 
 #ifndef WIN32
   void (*prev_sig_int_handler)(int) = 0;
 #endif
 
   if ( ! inline_debugger )
-  {
+    {
 #ifdef WIN32
-    SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
+      SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
 #else
-    prev_sig_int_handler = signal(SIGINT, &Simulator::SigIntHandler);
+      prev_sig_int_handler = signal(SIGINT, &Simulator::SigIntHandler);
 #endif
-  }
+    }
 
   sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
 
   try
-  {
-    sc_start(time, unit);
-  }
+    {
+      sc_start(time, unit);
+    }
   catch(std::runtime_error& e)
-  {
-    std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
-    std::cerr << e.what() << std::endl;
-  }
+    {
+      std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
+      std::cerr << e.what() << std::endl;
+    }
 
   if ( !inline_debugger )
-  {
+    {
 #ifdef WIN32
-    SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, FALSE);
+      SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, FALSE);
 #else
-    signal(SIGINT, prev_sig_int_handler);
+      signal(SIGINT, prev_sig_int_handler);
 #endif
-  }
+    }
 
-  double time_stop = host_time->GetTime();
-  double spent_time = time_stop - time_start;
-  simulation_spent_time += spent_time;
+  // double time_stop = host_time->GetTime();
+  // double spent_time = time_stop - time_start;
+  // simulation_spent_time += spent_time;
 
-  std::cerr << "Simulation statistics:" << std::endl;
-  DumpStatistics(std::cerr);
-  std::cerr << std::endl;
+  // std::cerr << "Simulation statistics:" << std::endl;
+  // DumpStatistics(std::cerr);
+  // std::cerr << std::endl;
 
   return exit_status;
 }
@@ -354,70 +323,70 @@ SimulationFinished() const
 
 unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 {
-	if(enable_inline_debugger || enable_monitor)
-	{
-		SetVariable("debugger.parse-dwarf", true);
-	}
+  if (enable_inline_debugger)
+    {
+      SetVariable("debugger.parse-dwarf", true);
+    }
 	
-	// Build the Linux OS arguments from the command line arguments
+  // Build the Linux OS arguments from the command line arguments
 	
-	unisim::kernel::service::VariableBase *cmd_args = FindVariable("cmd-args");
-	unsigned int cmd_args_length = cmd_args->GetLength();
-	if(cmd_args_length > 0)
-	{
-		SetVariable("linux-os.binary", ((string)(*cmd_args)[0]).c_str());
-		SetVariable("linux-os.argc", cmd_args_length);
+  unisim::kernel::service::VariableBase *cmd_args = FindVariable("cmd-args");
+  unsigned int cmd_args_length = cmd_args->GetLength();
+  if (cmd_args_length > 0)
+    {
+      SetVariable("linux-os.binary", ((std::string)(*cmd_args)[0]).c_str());
+      SetVariable("linux-os.argc", cmd_args_length);
 		
-		unsigned int i;
-		for(i = 0; i < cmd_args_length; i++)
-		{
-			std::stringstream sstr;
-			sstr << "linux-os.argv[" << i << "]";
-			SetVariable(sstr.str().c_str(), ((string)(*cmd_args)[i]).c_str());
-		}
-	}
+      unsigned int i;
+      for(i = 0; i < cmd_args_length; i++)
+        {
+          std::stringstream sstr;
+          sstr << "linux-os.argv[" << i << "]";
+          SetVariable(sstr.str().c_str(), ((std::string)(*cmd_args)[i]).c_str());
+        }
+    }
 
-	unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
+  unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
 	
-	// inline-debugger and gdb-server are exclusive
-	if(enable_inline_debugger && enable_gdb_server)
-	{
-		std::cerr << "ERROR! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " shall not be used together. Use " << param_enable_inline_debugger->GetName() << " and " << param_enable_gdb_server->GetName() << " to enable only one of the two" << std::endl;
-		if(setup_status != unisim::kernel::service::Simulator::ST_OK_DONT_START)
-		{
-			setup_status = unisim::kernel::service::Simulator::ST_ERROR;
-		}
-	}
+  // inline-debugger and gdb-server are exclusive
+  if(enable_inline_debugger && enable_gdb_server)
+    {
+      std::cerr << "ERROR! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " shall not be used together. Use " << param_enable_inline_debugger->GetName() << " and " << param_enable_gdb_server->GetName() << " to enable only one of the two" << std::endl;
+      if(setup_status != unisim::kernel::service::Simulator::ST_OK_DONT_START)
+        {
+          setup_status = unisim::kernel::service::Simulator::ST_ERROR;
+        }
+    }
 	
-	return setup_status;
+  return setup_status;
 }
 
 void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, bool asynchronous)
 {
-	exit_status = _exit_status;
-	if(object)
-	{
-		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
-	}
+  exit_status = _exit_status;
+  if(object)
+    {
+      std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
+    }
 #ifdef DEBUG_ARMEMU
-	std::cerr << "Call stack:" << std::endl;
-	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+  std::cerr << "Call stack:" << std::endl;
+  std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
 #endif
-	std::cerr << "Program exited with status " << exit_status << std::endl;
-	sc_stop();
-	if(!asynchronous)
-	{
-		sc_process_handle h = sc_get_current_process_handle();
-		switch(h.proc_kind())
-		{
-			case SC_THREAD_PROC_: 
-			case SC_CTHREAD_PROC_:
-				sc_core::wait();
-				break;
-			default:
-				break;
-		}
-	}
+  std::cerr << "Program exited with status " << exit_status << std::endl;
+  sc_stop();
+  if(!asynchronous)
+    {
+      sc_process_handle h = sc_get_current_process_handle();
+      switch(h.proc_kind())
+        {
+        case SC_THREAD_PROC_: 
+        case SC_CTHREAD_PROC_:
+          sc_core::wait();
+          break;
+        default:
+          break;
+        }
+    }
 }
 
 void
@@ -456,7 +425,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   sim->SetVariable("linux-os.envc",            0);
   sim->SetVariable("linux-os.utsname-sysname", "Linux");
   sim->SetVariable("linux-os.utsname-nodename","localhost");
-  sim->SetVariable("linux-os.utsname-release", "2.6.27.35");
+  sim->SetVariable("linux-os.utsname-release", "3.14.43-unisim");
   sim->SetVariable("linux-os.utsname-version", "#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010");
   sim->SetVariable("linux-os.utsname-machine", "armv7");
   sim->SetVariable("linux-os.utsname-domainname","localhost");
@@ -465,7 +434,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 
   sim->SetVariable("gdb-server.architecture-description-filename", "gdb_arm_with_neon.xml");
   sim->SetVariable("debugger.parse-dwarf", false);
-  sim->SetVariable("debugger.dwarf-register-number-mapping-filename", "arm_eabi_dwarf_register_number_mapping.xml");
+  sim->SetVariable("debugger.dwarf-register-number-mapping-filename", "aarch64_eabi_dwarf_register_number_mapping.xml");
 
   sim->SetVariable("inline-debugger.num-loaders", 1);
   sim->SetVariable("inline-debugger.search-path", "");
@@ -501,43 +470,38 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 #ifdef WIN32
 BOOL WINAPI Simulator::ConsoleCtrlHandler(DWORD dwCtrlType)
 {
-	bool stop = false;
-	switch(dwCtrlType)
-	{
-		case CTRL_C_EVENT:
-			std::cerr << "Interrupted by Ctrl-C" << std::endl;
-			stop = true;
-			break;
-		case CTRL_BREAK_EVENT:
-			std::cerr << "Interrupted by Ctrl-Break" << std::endl;
-			stop = true;
-			break;
-		case CTRL_CLOSE_EVENT:
-			std::cerr << "Interrupted by a console close" << std::endl;
-			stop = true;
-			break;
-		case CTRL_LOGOFF_EVENT:
-			std::cerr << "Interrupted because of logoff" << std::endl;
-			stop = true;
-			break;
-		case CTRL_SHUTDOWN_EVENT:
-			std::cerr << "Interrupted because of shutdown" << std::endl;
-			stop = true;
-			break;
-	}
-	if(stop) sc_stop();
-	return stop ? TRUE : FALSE;
+  bool stop = false;
+  switch(dwCtrlType)
+    {
+    case CTRL_C_EVENT:
+      std::cerr << "Interrupted by Ctrl-C" << std::endl;
+      stop = true;
+      break;
+    case CTRL_BREAK_EVENT:
+      std::cerr << "Interrupted by Ctrl-Break" << std::endl;
+      stop = true;
+      break;
+    case CTRL_CLOSE_EVENT:
+      std::cerr << "Interrupted by a console close" << std::endl;
+      stop = true;
+      break;
+    case CTRL_LOGOFF_EVENT:
+      std::cerr << "Interrupted because of logoff" << std::endl;
+      stop = true;
+      break;
+    case CTRL_SHUTDOWN_EVENT:
+      std::cerr << "Interrupted because of shutdown" << std::endl;
+      stop = true;
+      break;
+    }
+  if(stop) sc_stop();
+  return stop ? TRUE : FALSE;
 }
 #else
 void Simulator::SigIntHandler(int signum)
 {
-	std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
-	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
+  std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
+  unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
 }
 #endif
 
-void Simulator::EnableMonitor(int (*_monitor_callback)(void))
-{
-	enable_monitor = true;
-	unisim::service::debug::monitor::MonitorBase::SetCallback(_monitor_callback);
-}

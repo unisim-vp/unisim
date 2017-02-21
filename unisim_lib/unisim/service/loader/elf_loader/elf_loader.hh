@@ -108,7 +108,7 @@ public:
 	virtual bool Load();
 	
 	// unisim::service::interfaces::Blob
-	virtual const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
+	virtual const unisim::util::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
 	// unisim::service::interfaces::SymbolTableLookup
 	virtual void GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;

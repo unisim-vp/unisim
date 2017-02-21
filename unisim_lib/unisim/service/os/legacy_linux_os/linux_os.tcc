@@ -398,10 +398,10 @@ DumpBlob()
 	logger << DebugWarning
 		<< "Dumping blobs:" << std::endl;
 	DumpBlob(blob, 0);
-//	const std::vector<const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *> &blobs =
+//	const std::vector<const unisim::util::blob::Blob<ADDRESS_TYPE> *> &blobs =
 //		blob->GetBlobs();
 //	typename std::vector<
-//		const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *
+//		const unisim::util::blob::Blob<ADDRESS_TYPE> *
 //		>::const_iterator b;
 //	b = blobs.begin();
 //	for ( b = blobs.begin();
@@ -413,10 +413,10 @@ DumpBlob()
 //		logger << std::endl
 //			<< " + 0x" << std::hex << start << " - "
 //			<< "0x" << end << std::dec;
-//		const std::vector<const unisim::util::debug::blob::Section<ADDRESS_TYPE> *> &secs =
+//		const std::vector<const unisim::util::blob::Section<ADDRESS_TYPE> *> &secs =
 //			(*iter)->GetSections();
 //		typename std::vector<
-//			const unisim::util::debug::blob::Section<ADDRESS_TYPE> *
+//			const unisim::util::blob::Section<ADDRESS_TYPE> *
 //			>::const_iterator sec;
 //		for ( sec = secs.begin();
 //				sec != secs.end();
@@ -435,13 +435,13 @@ DumpBlob()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-DumpBlob(const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *b, int level)
+DumpBlob(const unisim::util::blob::Blob<ADDRESS_TYPE> *b, int level)
 {
 	ADDRESS_TYPE start_addr, end_addr;
 	b->GetAddrRange(start_addr, end_addr);
-	const std::vector<const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *> &blobs =
+	const std::vector<const unisim::util::blob::Blob<ADDRESS_TYPE> *> &blobs =
 		b->GetBlobs();
-	const std::vector<const unisim::util::debug::blob::Section<ADDRESS_TYPE> *> &secs =
+	const std::vector<const unisim::util::blob::Section<ADDRESS_TYPE> *> &secs =
 		b->GetSections();
 	logger << std::endl
 		<< "(" << level << ") 0x"
@@ -449,7 +449,7 @@ DumpBlob(const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *b, int level)
 		<< " - 0x" << end_addr << std::dec
 		<< " Cap = " << b->GetCapability();
 	typename std::vector<
-		const unisim::util::debug::blob::Section<ADDRESS_TYPE> *
+		const unisim::util::blob::Section<ADDRESS_TYPE> *
 		>::const_iterator sec;
 	for ( sec = secs.begin();
 			sec != secs.end();
@@ -462,7 +462,7 @@ DumpBlob(const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *b, int level)
 			<< "   Size = " << (*sec)->GetSize();
 	}
 	typename std::vector<
-		const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *
+		const unisim::util::blob::Blob<ADDRESS_TYPE> *
 		>::const_iterator bl;
 	for ( bl = blobs.begin();
 			bl != blobs.end();
@@ -483,7 +483,7 @@ SetupBlob()
 			<< EndDebugError;
 		return false;
 	}
-	const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *loader_blob = 
+	const unisim::util::blob::Blob<ADDRESS_TYPE> *loader_blob = 
 		blob_import->GetBlob();
 	if ( !loader_blob )
 	{
@@ -493,7 +493,7 @@ SetupBlob()
 		return false;
 	}
 
-	blob = new typename unisim::util::debug::blob::Blob<ADDRESS_TYPE>();
+	blob = new typename unisim::util::blob::Blob<ADDRESS_TYPE>();
 	blob->Catch();
 	blob->AddBlob(loader_blob);
 
@@ -560,10 +560,10 @@ SetupBlobARM()
 				blob_tls_buf[i] = Host2LittleEndian(tls_buf[i]);
 		}
 
-		unisim::util::debug::blob::Section<ADDRESS_TYPE> *tls_if_section = 
-			new unisim::util::debug::blob::Section<ADDRESS_TYPE>(
-					unisim::util::debug::blob::Section<ADDRESS_TYPE>::TY_UNKNOWN,
-					unisim::util::debug::blob::Section<ADDRESS_TYPE>::SA_A,
+		unisim::util::blob::Section<ADDRESS_TYPE> *tls_if_section = 
+			new unisim::util::blob::Section<ADDRESS_TYPE>(
+					unisim::util::blob::Section<ADDRESS_TYPE>::TY_UNKNOWN,
+					unisim::util::blob::Section<ADDRESS_TYPE>::SA_A,
 					"tls_if",
 					4,
 					0,
@@ -617,10 +617,10 @@ SetupBlobARM()
 				blob_cmpxchg_buf[i] = Host2LittleEndian(cmpxchg_buf[i]);
 		}
 
-		typename unisim::util::debug::blob::Section<ADDRESS_TYPE> *cmpxchg_if_section = 
-			new unisim::util::debug::blob::Section<ADDRESS_TYPE>(
-					unisim::util::debug::blob::Section<ADDRESS_TYPE>::TY_UNKNOWN,
-					unisim::util::debug::blob::Section<ADDRESS_TYPE>::SA_A,
+		typename unisim::util::blob::Section<ADDRESS_TYPE> *cmpxchg_if_section = 
+			new unisim::util::blob::Section<ADDRESS_TYPE>(
+					unisim::util::blob::Section<ADDRESS_TYPE>::TY_UNKNOWN,
+					unisim::util::blob::Section<ADDRESS_TYPE>::SA_A,
 					"cmpxchg_if",
 					4,
 					0,
@@ -633,8 +633,8 @@ SetupBlobARM()
 			logger << DebugInfo
 					<< "cmpxchg handler configured." << EndDebugInfo;
 		}
-		typename unisim::util::debug::blob::Blob<ADDRESS_TYPE> *arm_blob = 
-			new typename unisim::util::debug::blob::Blob<ADDRESS_TYPE>();
+		typename unisim::util::blob::Blob<ADDRESS_TYPE> *arm_blob = 
+			new typename unisim::util::blob::Blob<ADDRESS_TYPE>();
 		arm_blob->SetArchitecture("arm");
 		arm_blob->SetEndian(endianess);
 		arm_blob->AddSection(tls_if_section);
@@ -966,7 +966,7 @@ LoadARM()
 	}
 
 	bool status = true;
-	const typename unisim::util::debug::blob::Section<ADDRESS_TYPE> 
+	const typename unisim::util::blob::Section<ADDRESS_TYPE> 
 		*tls_if_section = blob->FindSection("tls_if");
 	if ( tls_if_section )
 	{
@@ -988,7 +988,7 @@ LoadARM()
 			status = false;
 		}
 	}
-	const typename unisim::util::debug::blob::Section<ADDRESS_TYPE> 
+	const typename unisim::util::blob::Section<ADDRESS_TYPE> 
 		*cmpxchg_if_section = blob->FindSection("cmpxchg_if");
 	if ( cmpxchg_if_section )
 	{
@@ -1085,7 +1085,7 @@ Load()
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-const typename unisim::util::debug::blob::Blob<ADDRESS_TYPE> *
+const typename unisim::util::blob::Blob<ADDRESS_TYPE> *
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 GetBlob()
 {

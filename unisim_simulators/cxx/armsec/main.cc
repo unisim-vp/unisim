@@ -479,9 +479,10 @@ namespace armsec
       virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); addr->Traverse( visitor ); }
       virtual int GenCode( Label& label, std::ostream& sink ) const
       {
-        int bitsize = 8*size;
-        sink << "Load" << (aligned ? "A" : "") << bitsize << "( " << addr.InsCode(label) << " )";
-        return bitsize;
+        /* TODO: dont assume little endianness */
+        /* TODO: exploit alignment info */
+        sink << "@[" << addr.InsCode(label) << ",<-," << size << "]";
+        return 8*size;
       }
       intptr_t cmp( ExprNode const& brhs ) const
       {
@@ -504,6 +505,8 @@ namespace armsec
       
       virtual int GenCode( Label& label, std::ostream& sink ) const
       {
+        /* TODO: dont assume little endianness */
+        /* TODO: exploit alignment info */
         sink << "@[" << addr.InsCode(label) << ",<-," << size << "] := " << value.InsCode(label);
         return 0;
       }
@@ -766,7 +769,7 @@ namespace armsec
       {
         std::ostringstream code;
         Label insn( tail );
-        code << "if ((bsr_in<32> >>u bsr_out<32>){0,0}) goto " << exit.id << " else goto " << loop.id;
+        code << "if ((bsr_in<32> rshiftu bsr_out<32>){0,0}) goto " << exit.id << " else goto " << loop.id;
         insn = code.str();
       }
       label = exit;
@@ -911,7 +914,7 @@ namespace armsec
       }
     
     std::ostringstream buffer;
-    buffer << "goto (" << nia.InsCode(current) << ")";
+    buffer << "goto (" << nia.InsCode(current) << (nia.MakeConst() ? ",0" : "") << ")";
     current = buffer.str();
   }
 }
@@ -962,14 +965,14 @@ struct Decoder
     
     std::shared_ptr<armsec::PathNode> path ( new armsec::PathNode );
 
-    std::cout << "(address," << armsec::DumpConstant( addr ) << ")\n";
-    std::cout << "(opcode," << armsec::DumpConstant( op->GetEncoding() ) << ")\n";
+    std::cout << "(address . " << armsec::DumpConstant( addr ) << ")\n";
+    std::cout << "(opcode . " << armsec::DumpConstant( op->GetEncoding() ) << ")\n";
     // std::cout << "(int_name,\"" << op->GetName() << "\")\n";
     
     armsec::State reference( path );
     reference.SetInsnProps( insn_addr, isa.is_thumb, op->GetLength() );
     
-    std::cout << "(mnemonic,\"";
+    std::cout << "(mnemonic . \"";
     op->disasm( reference, std::cout );
     std::cout << "\")\n";
     

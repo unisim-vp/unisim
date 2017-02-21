@@ -65,7 +65,7 @@ using unisim::util::endian::Host2Target;
 using unisim::util::endian::Target2Host;
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-int32_t Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::HostToLinuxErrno(int host_errno)
+int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::HostToLinuxErrno(int host_errno)
 {
   switch (host_errno)
     {
@@ -489,15 +489,6 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::Target2HostFileDescriptor(Linu
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::SetStatus(Linux& lin, int ret, bool error)
-{
-  if (unlikely(lin.verbose_))
-    lin.logger_ << DebugInfo << (error ? "err" : "ret") << " = 0x" << std::hex << ret << std::dec << EndDebugInfo;
-  
-  lin.target_system->SetSystemCallStatus(ret, error);
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 PARAMETER_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::GetParam(Linux& lin, int id)
 {
   return lin.target_system->GetSystemCallParam(id);
@@ -512,8 +503,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::ReadMem( Linux& lin, ADDRESS_
     {
       if (unlikely(lin.verbose_))
         {
-          lin.logger_
-            << DebugInfo
+          lin.debug_info_stream
             << "OS read memory:" << std::endl
             << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
             << "\tsize = " << size << std::endl
@@ -521,21 +511,20 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::ReadMem( Linux& lin, ADDRESS_
                                
           for (unsigned int i = 0; i < size; i++)
             {
-              lin.logger_ << " " << (unsigned int)buffer[i];
+              lin.debug_info_stream << " " << (unsigned int)buffer[i];
             }
                        
-          lin.logger_ << std::dec << EndDebugInfo;
+          lin.debug_info_stream << std::dec << std::endl;
         }
       return true;
     }
   else
     {
-      lin.logger_
-        << DebugWarning
+      lin.debug_warning_stream
         << "failed OS read memory:" << std::endl
         << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
         << "\tsize = " << size
-        << EndDebugWarning;
+        << std::endl;
       return false;
     }
 }
@@ -547,18 +536,18 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::WriteMem( Linux& lin, ADDRESS
        
   if (unlikely(lin.verbose_))
     {
-      lin.logger_ << DebugInfo
-                  << "OS write memory:" << std::endl
-                  << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
-                  << "\tsize = " << size << std::endl
-                  << "\tdata =0x" << std::hex;
+      lin.debug_info_stream
+        << "OS write memory:" << std::endl
+        << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
+        << "\tsize = " << size << std::endl
+        << "\tdata =0x" << std::hex;
                        
       for (unsigned int i = 0; i < size; i++)
         {
-          lin.logger_ << " " << (unsigned int)buffer[i];
+          lin.debug_info_stream << " " << (unsigned int)buffer[i];
         }
                
-      lin.logger_ << std::dec << EndDebugInfo;
+      lin.debug_info_stream << std::dec << std::endl;
     }
   return lin.mem_inject_if_->InjectWriteMemory(addr, buffer, size);
 }
@@ -571,7 +560,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::ReadMemString(Linux& lin, ADD
   for (ADDRESS_TYPE tail = addr; ; len += 1, tail += 1)
     {
       if (len >= 0x100000) {
-        lin.Logger() << DebugError << "Huge string: bailing out" << EndDebugError;
+        lin.debug_error_stream << "Huge string: bailing out" << std::endl;
         return false;
       }
       uint8_t buffer;
@@ -610,7 +599,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       {
         int status = SysCall::GetParam(lin, 0);
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
         throw LSCExit( status );
       }
     } sc;
@@ -622,54 +611,48 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "read"; }
       void Describe( Linux& lin, std::ostream& sink ) const {
         sink << "(int fd=" << std::dec << int(SysCall::GetParam(lin, 0))
-             << ", void *buf=0x" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
+             << ", void* buf=0x" << std::hex << (SysCall::GetParam(lin, 1))
              << ", size_t count=" << std::dec << int(SysCall::GetParam(lin, 2))
              << ")" << std::dec;
       }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        int32_t target_fd;
-        int host_fd;
-        size_t count;
-        ADDRESS_TYPE buf_addr;
-        void *buf;
-        ssize_t ret;
-        int32_t target_errno = 0;
+        int32_t target_fd = SysCall::GetParam(lin, 0);
+        ADDRESS_TYPE buf_addr = (ADDRESS_TYPE) SysCall::GetParam(lin, 1);
+        size_t count = (size_t) SysCall::GetParam(lin, 2);
 
-        target_fd = SysCall::GetParam(lin, 0);
-        buf_addr = (ADDRESS_TYPE) SysCall::GetParam(lin, 1);
-        count = (size_t) SysCall::GetParam(lin, 2);
-
-        host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
+        int host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
   
-        if(host_fd == -1)
+        if (host_fd == -1)
           {
-            target_errno = LINUX_EBADF;
-            ret = -1;
+            lin.SetSystemCallStatus(-LINUX_EBADF,true);
+            return;
           }
-        else
+        
+        void* buf = malloc(count);
+
+        if (not buf)
           {
-            buf = malloc(count);
-
-            if(buf)
-              {
-                ret = read(host_fd, buf, count);
-                if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
-                if(ret > 0) SysCall::WriteMem(lin, buf_addr, (uint8_t *)buf, ret);
-                free(buf);
-              }
-            else
-              {
-                ret = (ssize_t) -1;
-                target_errno = LINUX_ENOMEM;
-                lin.logger_ << DebugWarning << "Out of memory" << EndDebugWarning;
-              }
+            lin.debug_warning_stream << "Out of memory" << std::endl;
+            lin.SetSystemCallStatus(-LINUX_ENOMEM,true);
+            return;
           }
+        
+        if (unlikely(lin.verbose_))
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
+        
+        ssize_t ret = read(host_fd, buf, count);
+        
+        if (ret == -1) {
+          lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno), true);
+          return;
+        }
+        if (ret > 0)
+          SysCall::WriteMem(lin, buf_addr, (uint8_t *)buf, ret);
+        
+        free(buf);
 
-        if(unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
-
-        SysCall::SetStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
+        lin.SetSystemCallStatus(ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -680,60 +663,54 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "write"; }
       void Describe( Linux& lin, std::ostream& sink ) const {
         sink << "(int fd=" << std::dec << int(SysCall::GetParam(lin, 0))
-             << ", const void *buf=" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
+             << ", const void *buf=" << std::hex << (SysCall::GetParam(lin, 1))
              << ", size_t count=" << std::dec << unsigned(SysCall::GetParam(lin, 2))
              << ")";
       }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        int32_t target_fd;
-        int host_fd;
-        size_t count;
-        void *buf;
-        ADDRESS_TYPE buf_addr;
-        ssize_t ret;
-        int32_t target_errno = 0;
-
-        target_fd = SysCall::GetParam(lin, 0);
-        buf_addr = SysCall::GetParam(lin, 1);
-        count = (size_t)SysCall::GetParam(lin, 2);
+        int target_fd = SysCall::GetParam(lin, 0);
+        ADDRESS_TYPE buf_addr = SysCall::GetParam(lin, 1);
+        PARAMETER_TYPE count = SysCall::GetParam(lin, 2);
+        
+        int host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
   
-        host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
-  
-        if(host_fd == -1)
+        if (host_fd == -1)
           {
-            target_errno = LINUX_EBADF;
-            ret = -1;
-          }
-        else
-          {
-            buf = malloc(count);
-
-            if(buf)
-              {
-                SysCall::ReadMem(lin, buf_addr, (uint8_t *)buf, count);
-                ret = write(host_fd, buf, count);
-                if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
-                if(unlikely(lin.verbose_))
-                  {
-                    lin.logger_ << DebugInfo << this->TraceCall(lin) << std::endl << "*buffer =";
-                    for (size_t i = 0; i < count; i++)
-                      {
-                        lin.logger_ << " 0x" << std::hex << (unsigned int)((uint8_t *)buf)[i] << std::dec;
-                      }
-                    lin.logger_ << EndDebugInfo;
-                  }
-                free(buf);
-              }
-            else
-              {
-                ret = (ssize_t) -1;
-                target_errno = LINUX_ENOMEM;
-                lin.logger_ << DebugWarning << "Out of memory" << EndDebugWarning;
-              }
+            lin.SetSystemCallStatus(-LINUX_EBADF,true);
+            return;
           }
 
-        SysCall::SetStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
+        void* buf = malloc(count);
+
+        if (not buf)
+          {
+            lin.debug_warning_stream << "Out of memory" << std::endl;
+            lin.SetSystemCallStatus(-LINUX_ENOMEM,true);
+            return;
+          }
+            
+        SysCall::ReadMem(lin, buf_addr, (uint8_t *)buf, count);
+                
+        if (unlikely(lin.verbose_))
+          {
+            lin.debug_info_stream << this->TraceCall(lin) << std::endl << "*buffer =";
+            for (size_t i = 0; i < count; i++)
+              {
+                lin.debug_info_stream << " 0x" << std::hex << (unsigned int)((uint8_t *)buf)[i] << std::dec;
+              }
+            lin.debug_info_stream << std::endl;
+          }
+                
+        ssize_t ret = write(host_fd, buf, count);
+                
+        if (ret == -1) {
+          lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno),true);
+        }
+            
+        free(buf);
+        
+        lin.SetSystemCallStatus(ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -754,72 +731,65 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        int64_t ret;
-        int32_t target_errno = 0;
-        int32_t target_fd = -1;
-
-        ADDRESS_TYPE addr = SysCall::GetParam(lin, 0);
+        address_type addr = SysCall::GetParam(lin, 0);
+        int flags = SysCall::GetParam(lin, 1);
+        mode_t mode = SysCall::GetParam(lin, 2);
+        
         std::string pathname;
-        if (SysCall::ReadMemString(lin, addr, pathname))
+        if (not SysCall::ReadMemString(lin, addr, pathname))
           {
-            int flags = SysCall::GetParam(lin, 1);
-            mode_t mode = SysCall::GetParam(lin, 2);
-            if (SubPathOf(pathname, "/dev") or SubPathOf(pathname, "/proc") or
-                SubPathOf(pathname, "/sys") or SubPathOf(pathname, "/var"))
-              {
-                // deny access to /dev, /proc, /sys, /var
-                ret = -1;
-                target_errno = LINUX_EACCES;
-              }
-            else
-              {
+            lin.debug_warning_stream << "Out of memory" << std::endl;
+            lin.SetSystemCallStatus(-LINUX_ENOMEM, true);
+            return;
+          }
+        
+        if (SubPathOf(pathname, "/dev") or SubPathOf(pathname, "/proc") or
+            SubPathOf(pathname, "/sys") or SubPathOf(pathname, "/var"))
+          {
+            // deny access to /dev, /proc, /sys, /var
+            lin.debug_warning_stream << "No guest access to host " << pathname << std::endl;
+            lin.SetSystemCallStatus(-LINUX_EACCES,true);
+            return;
+          }
+        
 #if defined(linux) || defined(__linux) || defined(__linux__)
-                ret = open(pathname.c_str(), flags, mode);
+        int ret = open(pathname.c_str(), flags, mode);
 #else
-                int host_flags = 0;
-                int host_mode = 0;
-                // non-Linux open flags encoding may differ from a true Linux host
-                if((flags & LINUX_O_ACCMODE) == LINUX_O_RDONLY) host_flags = (host_flags & ~O_ACCMODE) | O_RDONLY;
-                if((flags & LINUX_O_ACCMODE) == LINUX_O_WRONLY) host_flags = (host_flags & ~O_ACCMODE) | O_WRONLY;
-                if((flags & LINUX_O_ACCMODE) == LINUX_O_RDWR) host_flags = (host_flags & ~O_ACCMODE) | O_RDWR;
-                if(flags & LINUX_O_CREAT) host_flags |= O_CREAT;
-                if(flags & LINUX_O_EXCL) host_flags |= O_EXCL;
-                if(flags & LINUX_O_TRUNC) host_flags |= O_TRUNC;
-                if(flags & LINUX_O_APPEND) host_flags |= O_APPEND;
+        int host_flags = 0;
+        int host_mode = 0;
+        // non-Linux open flags encoding may differ from a true Linux host
+        if((flags & LINUX_O_ACCMODE) == LINUX_O_RDONLY) host_flags = (host_flags & ~O_ACCMODE) | O_RDONLY;
+        if((flags & LINUX_O_ACCMODE) == LINUX_O_WRONLY) host_flags = (host_flags & ~O_ACCMODE) | O_WRONLY;
+        if((flags & LINUX_O_ACCMODE) == LINUX_O_RDWR) host_flags = (host_flags & ~O_ACCMODE) | O_RDWR;
+        if(flags & LINUX_O_CREAT) host_flags |= O_CREAT;
+        if(flags & LINUX_O_EXCL) host_flags |= O_EXCL;
+        if(flags & LINUX_O_TRUNC) host_flags |= O_TRUNC;
+        if(flags & LINUX_O_APPEND) host_flags |= O_APPEND;
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
-                host_flags |= O_BINARY; // Linux opens file as binary files
-                host_mode = mode & S_IRWXU; // Windows doesn't have bits for group and others
+        host_flags |= O_BINARY; // Linux opens file as binary files
+        host_mode = mode & S_IRWXU; // Windows doesn't have bits for group and others
 #else
-                host_mode = mode; // other UNIX systems should have the same bit encoding for protection
+        host_mode = mode; // other UNIX systems should have the same bit encoding for protection
 #endif
-                ret = open(pathname.c_str(), host_flags, host_mode);
+        ret = open(pathname.c_str(), host_flags, host_mode);
 #endif
-                if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
-              }
+        if(ret == -1) {
+          lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno),true);
+          return;
+        }
     
-            if(ret != -1)
-              {
-                int host_fd = ret;
-                target_fd = lin.AllocateFileDescriptor();
-                // keep relation between the target file descriptor and the host file descriptor
-                lin.MapTargetToHostFileDescriptor(target_fd, host_fd);
-              }
+        int host_fd = ret;
+        int target_fd = lin.AllocateFileDescriptor();
+        // keep relation between the target file descriptor and the host file descriptor
+        lin.MapTargetToHostFileDescriptor(target_fd, host_fd);
     
-            if(unlikely(lin.verbose_))
-              {
-                lin.logger_ << DebugInfo << this->TraceCall(lin) << std::endl
-                            << "*pathname=\"" << pathname << "\"" << EndDebugInfo;
-              }
-
-          }
-        else
+        if(unlikely(lin.verbose_))
           {
-            ret = -1;
-            target_errno = LINUX_ENOMEM;
-            lin.logger_ << DebugWarning << "Out of memory" << EndDebugWarning;
+            lin.debug_info_stream << this->TraceCall(lin) << std::endl
+                        << "*pathname=\"" << pathname << "\"" << std::endl;
           }
-  
-        SysCall::SetStatus(lin, (ret == -1) ? -target_errno : target_fd, (ret == -1));
+
+        lin.SetSystemCallStatus(target_fd, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -834,47 +804,39 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        int host_fd;
-        int32_t target_fd;
-        int ret;
-        int32_t target_errno = 0;
-
-        target_fd = SysCall::GetParam(lin, 0);
+        int target_fd = SysCall::GetParam(lin, 0);
   
-        host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
+        int host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
   
-        if(host_fd == -1)
+        if (host_fd == -1)
           {
-            target_errno = LINUX_EBADF;
-            ret = -1;
+            lin.SetSystemCallStatus(-LINUX_EBADF,true);
+            return;
           }
-        else
-          {
-            switch(host_fd)
-              {
-              case 0:
-              case 1:
-              case 2:
-                lin.UnmapTargetToHostFileDescriptor(target_fd);
-                lin.FreeFileDescriptor(target_fd);
-                ret = 0;
-                break;
-              default:
-                ret = close(host_fd);
-                if(ret == 0)
-                  {
-                    lin.UnmapTargetToHostFileDescriptor(target_fd);
-                    lin.FreeFileDescriptor(target_fd);
-                  }
-              }
-    
-            if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
-          }
-
-        if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
         
-        SysCall::SetStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
+        if (unlikely(lin.verbose_))
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
+        
+        if (unsigned(host_fd) < 3)
+          {
+            lin.UnmapTargetToHostFileDescriptor(target_fd);
+            lin.FreeFileDescriptor(target_fd);
+            lin.SetSystemCallStatus(0, false);
+            return;
+          }
+        
+        int ret = close(host_fd);
+        
+        if (ret == -1)
+          {
+            lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno),true);
+            return;
+          }
+        
+        lin.UnmapTargetToHostFileDescriptor(target_fd);
+        lin.FreeFileDescriptor(target_fd);
+        
+        lin.SetSystemCallStatus(ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -883,37 +845,37 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "lseek"; }
-      void Describe( Linux& lin, std::ostream& sink ) const {
-        sink << "(int fd=" << std::dec << int(SysCall::GetParam(lin, 0))
-             << ", off_t offset=" << std::dec << int(SysCall::GetParam(lin, 1))
-             << ", int whence=" << std::dec << int(SysCall::GetParam(lin, 2))
-             << ")";
+      struct Args {
+        Args(Linux& lin) : fd(SysCall::GetParam(lin, 0)), offset(SysCall::GetParam(lin, 1)), whence(SysCall::GetParam(lin, 2)) {};
+        unsigned fd; sparameter_type offset; unsigned whence;
+      };
+      void Describe( Linux& lin, std::ostream& sink ) const
+      {
+        Args sc(lin);
+        sink << "(unsigned fd=" << std::dec << sc.fd << ", off_t offset=" << std::dec << sc.offset << ", unsigned whence=" << std::dec << sc.whence << ")";
       }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        int32_t target_fd = SysCall::GetParam(lin, 0);
-        off_t offset = SysCall::GetParam(lin, 1);;
-        int whence = SysCall::GetParam(lin, 2);;
-
-        int host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
-        off_t ret;
-        int32_t target_errno = 0;
-        
-        if(host_fd == -1)
-          {
-            target_errno = LINUX_EBADF;
-            ret = -1;
-          }
-        else
-          {
-            ret = lseek(host_fd, offset, whence);
-            if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
-          }
-  
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
 
-        SysCall::SetStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
+        Args sc(lin);
+        int32_t host_fd = SysCall::Target2HostFileDescriptor(lin, sc.fd);
+        
+        if (host_fd == -1)
+          {
+            lin.SetSystemCallStatus(-LINUX_EBADF,false);
+            return;
+          }
+        
+        off_t ret = lseek(host_fd, sc.offset, sc.whence);
+        
+        if (ret == -1) {
+          lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno),true);
+          return;
+        }
+  
+        lin.SetSystemCallStatus(ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -925,12 +887,12 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Describe( Linux& lin, std::ostream& sink ) const { sink << "()"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        pid_t ret;
+        if (unlikely(lin.verbose_))
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
 
-        ret = (pid_t) getpid();
-        if(unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << "getpid()" << EndDebugInfo;
-        SysCall::SetStatus(lin, ret, false);
+        pid_t ret = (pid_t) getpid();
+        
+        lin.SetSystemCallStatus(ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -944,12 +906,13 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       {
         // Note: in a single threaded environment, the thread ID is
         // equal to the process ID (PID, as returned by getpid)
-        pid_t ret = (pid_t) getpid();
         
-        if(unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << "gettid()" << EndDebugInfo;
+        if (unlikely(lin.verbose_))
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
         
-        SysCall::SetStatus(lin, ret, false);
+        pid_t ret = getpid();
+        
+        lin.SetSystemCallStatus(ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -961,14 +924,16 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Describe( Linux& lin, std::ostream& sink ) const { sink << "()"; }
       void Execute( Linux& lin, int syscall_id ) const
       {
+        if (unlikely(lin.verbose_))
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
+        
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
-        uint32_t ret = 0;
+        unsigned ret = 0;
 #else
         uid_t ret = getuid();
 #endif
-        if(unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << "getuid()" << EndDebugInfo;
-        SysCall::SetStatus(lin, ret, false);
+        
+        lin.SetSystemCallStatus(ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -987,45 +952,44 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        int ret;
-        int32_t target_errno = 0;
-
         ADDRESS_TYPE addr = SysCall::GetParam(lin, 0);
+        mode_t mode = SysCall::GetParam(lin, 1);
+        
         std::string pathname;
-        if (SysCall::ReadMemString(lin, addr, pathname))
+        if (not SysCall::ReadMemString(lin, addr, pathname))
           {
-            mode_t mode = SysCall::GetParam(lin, 1);
-            if (SubPathOf(pathname, "/dev") or SubPathOf(pathname, "/proc") or
-                SubPathOf(pathname, "/sys") or SubPathOf(pathname, "/var"))
-              {
-                // deny access to /dev, /proc, /sys, /var
-                ret = -1;
-                target_errno = LINUX_EACCES;
-              }
-            else
-              {
+            lin.debug_warning_stream << "Out of memory" << std::endl;
+            lin.SetSystemCallStatus(-LINUX_ENOMEM, true);
+            return;
+          }
+        
+        if (SubPathOf(pathname, "/dev") or SubPathOf(pathname, "/proc") or
+            SubPathOf(pathname, "/sys") or SubPathOf(pathname, "/var"))
+          {
+            // deny access to /dev, /proc, /sys, /var
+            lin.debug_warning_stream << "No guest access to host " << pathname << std::endl;
+            lin.SetSystemCallStatus(-LINUX_EACCES,true);
+            return;
+          }
+
+        if (unlikely(lin.verbose_))
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl
+                      << "pathname=\"" << pathname << "\"" << std::endl;
+            
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
-                int win_mode = 0;
-                win_mode = mode & S_IRWXU; // Windows doesn't have bits for group and others
-                ret = access(pathname.c_str(), win_mode);
+        int win_mode = 0;
+        win_mode = mode & S_IRWXU; // Windows doesn't have bits for group and others
+        int ret = access(pathname.c_str(), win_mode);
 #else
-                ret = access(pathname.c_str(), mode);
+        int ret = access(pathname.c_str(), mode);
 #endif
-                if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
-              }
-            if(unlikely(lin.verbose_))
-              {
-                lin.logger_ << DebugInfo << this->TraceCall(lin) << std::endl
-                            << "pathname=\"" << pathname << "\"" << EndDebugInfo;
-              }
-          }
-        else
+        if (ret == -1)
           {
-            ret = -1;
-            target_errno = LINUX_ENOMEM;
-            lin.logger_ << DebugWarning << "Out of memory" << EndDebugWarning;
+            lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno),true);
+            return;
           }
-        SysCall::SetStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
+        
+        lin.SetSystemCallStatus(ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1041,19 +1005,17 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        ADDRESS_TYPE new_brk_point;
+        ADDRESS_TYPE new_brk_point = SysCall::GetParam(lin, 0);
 
-        new_brk_point = SysCall::GetParam(lin, 0);
-
-        if(new_brk_point > lin.brk_point_)
+        if (new_brk_point > lin.brk_point_)
           {
             lin.brk_point_ = new_brk_point;
           }
 
-        if(unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+        if (unlikely(lin.verbose_))
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
   
-        SysCall::SetStatus(lin, lin.brk_point_, false);
+        lin.SetSystemCallStatus(lin.brk_point_, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1066,14 +1028,14 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
-        uint32_t ret = 0;
+        unsigned ret = 0;
 #else
         gid_t ret = getgid();
 #endif
-        if(unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+        if (unlikely(lin.verbose_))
+          lin.debug_info_stream << this->TraceCall(lin) << " => " << ret << std::endl;
         
-        SysCall::SetStatus(lin, ret, false);
+        lin.SetSystemCallStatus(ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1086,14 +1048,14 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
-        uint32_t ret = 0;
+        unsigned ret = 0;
 #else
         uid_t ret = geteuid();
 #endif
-        if(unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
-  
-        SysCall::SetStatus(lin, ret, false);
+        if (unlikely(lin.verbose_))
+          lin.debug_info_stream << this->TraceCall(lin) << " => " << ret << std::endl;
+        
+        lin.SetSystemCallStatus(ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1106,14 +1068,14 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
-        uint32_t ret = 0;
+        unsigned ret = 0;
 #else
         gid_t ret = getegid();
 #endif
-        if(unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
-  
-        SysCall::SetStatus(lin, ret, false);
+        if (unlikely(lin.verbose_))
+          lin.debug_info_stream << this->TraceCall(lin) << " => " << ret << std::endl;
+        
+        lin.SetSystemCallStatus(ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1123,7 +1085,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
     static struct : public SysCall {
       char const* GetName() const { return "munmap"; }
       void Describe( Linux& lin, std::ostream& sink ) const {
-        sink << "(void *addr=" << std::hex << uint32_t(SysCall::GetParam(lin, 0))
+        sink << "(void *addr=" << std::hex << (SysCall::GetParam(lin, 0))
              << ", size_t length=" << std::dec << int(SysCall::GetParam(lin, 1))
              << ")";
       }
@@ -1135,8 +1097,8 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
     static struct : public SysCall {
       char const* GetName() const { return "stat"; }
       void Describe( Linux& lin, std::ostream& sink ) const {
-        sink << "(const char *pathname=" << std::hex << uint32_t(SysCall::GetParam(lin, 0))
-             << ", struct stat *buf=" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
+        sink << "(const char *pathname=" << std::hex << (SysCall::GetParam(lin, 0))
+             << ", struct stat *buf=" << std::hex << (SysCall::GetParam(lin, 1))
              << ")";
       }
     } sc;
@@ -1148,9 +1110,9 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "_llseek"; }
       void Describe( Linux& lin, std::ostream& sink ) const {
         sink << "(unsigned int fd=" << std::dec << int(SysCall::GetParam(lin, 0))
-             << ", unsigned long offset_high=" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
-             << ", unsigned long offset_low=" << std::hex << uint32_t(SysCall::GetParam(lin, 2))
-             << ", loff_t *result=" << std::hex << uint32_t(SysCall::GetParam(lin, 3))
+             << ", unsigned long offset_high=" << std::hex << (SysCall::GetParam(lin, 1))
+             << ", unsigned long offset_low=" << std::hex << (SysCall::GetParam(lin, 2))
+             << ", loff_t *result=" << std::hex << (SysCall::GetParam(lin, 3))
              << ", unsigned int whence=" << std::dec << int(SysCall::GetParam(lin, 4))
              << ")";
       }
@@ -1159,40 +1121,34 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
         int32_t target_fd = SysCall::GetParam(lin, 0);
         uint32_t offset_high = SysCall::GetParam(lin, 1);
         uint32_t offset_low = SysCall::GetParam(lin, 2);
-        off64_t offset = ((uint64_t) offset_high << 32) | (uint64_t) offset_low;
+        off64_t offset = (int64_t(offset_high) << 32) | offset_low;
         PARAMETER_TYPE result_addr = SysCall::GetParam(lin, 3);
         int whence = SysCall::GetParam(lin, 4);
         
-        uint64_t lseek_result64;
-        off64_t lseek_ret;
-        int32_t target_errno = 0;
 
         int host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
 
-        if(host_fd == -1)
+        if (host_fd == -1)
           {
-            target_errno = LINUX_EBADF;
-            lseek_ret = -1;
+            lin.SetSystemCallStatus(-LINUX_EBADF,true);
+            return;
           }
-        else
-          {
-            lseek_ret = lseek64(host_fd, offset, whence);
+        
+        off64_t ret = lseek64(host_fd, offset, whence);
       
-            if(lseek_ret == -1)
-              {
-                target_errno = SysCall::HostToLinuxErrno(errno);
-              }
-            else
-              {
-                lseek_result64 = unisim::util::endian::Host2Target(lin.endianness_, (uint64_t) lseek_ret);
-                SysCall::WriteMem(lin, result_addr, (uint8_t *) &lseek_result64, sizeof(lseek_result64));
-              }
+        if (ret == -1)
+          {
+            lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno), true);
+            return;
           }
-
+        
+        uint64_t lseek_result64 = unisim::util::endian::Host2Target(lin.endianness_, (uint64_t) ret);
+        SysCall::WriteMem(lin, result_addr, (uint8_t *) &lseek_result64, sizeof(lseek_result64));
+        
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
   
-        SysCall::SetStatus(lin, (PARAMETER_TYPE) (lseek_ret == -1) ? -target_errno : lseek_ret, (lseek_ret == -1));
+        lin.SetSystemCallStatus(ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1201,41 +1157,49 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "writev"; }
-      void Describe( Linux& lin, std::ostream& sink ) const {
+      void Describe( Linux& lin, std::ostream& sink ) const
+      {
         sink << "(int fd=" << std::dec << int(SysCall::GetParam(lin, 0))
-             << ", const struct iovec *iov=" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
+             << ", const struct iovec *iov=" << std::hex << (SysCall::GetParam(lin, 1))
              << ", int iovcnt=" << std::dec << int(SysCall::GetParam(lin, 2))
              << ")";
       }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        int32_t target_fd = SysCall::GetParam(lin, 0);
-        uint32_t iovecaddr = SysCall::GetParam(lin, 1);
-        int32_t count = SysCall::GetParam(lin, 2);
-        int32_t sum = 0;
+        // unsigned long fd, const struct iovec __user *vec, unsigned long vlen
+        parameter_type target_fd = SysCall::GetParam(lin, 0);
+        parameter_type iovecaddr = SysCall::GetParam(lin, 1);
+        parameter_type count = SysCall::GetParam(lin, 2);
+        unsigned const parameter_size = sizeof (parameter_type);
+        int64_t sum = 0;
+        
     
-        for (int step = count; (--step) >= 0; iovecaddr += 8) {
-          uint32_t iov_base, iov_len;
-          SysCall::ReadMem( lin, iovecaddr + 0, (uint8_t*)&iov_base, 4 );
-          SysCall::ReadMem( lin, iovecaddr + 4, (uint8_t*)&iov_len, 4 );
-          iov_base = unisim::util::endian::Target2Host( lin.endianness_, iov_base );
-          iov_len  = unisim::util::endian::Target2Host( lin.endianness_, iov_len );
-          assert( iov_len < 0x100000 );
-          uint8_t buffer[iov_len];
-          SysCall::ReadMem( lin, iov_base, &buffer[0], iov_len );
-          int ret = ::write( target_fd, &buffer[0], iov_len );
-          if (ret < 0) {
-            int32_t target_errno = SysCall::HostToLinuxErrno( errno );
-            SysCall::SetStatus(lin,  -target_errno, true );
-            return;
-          }
-          sum += ret;
-        }
-        
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
         
-        SysCall::SetStatus(lin,  sum, false );
+        for (int step = count; (--step) >= 0; iovecaddr += 2*parameter_size)
+          {
+            parameter_type iov_base, iov_len;
+            SysCall::ReadMem( lin, iovecaddr + 0*parameter_size, (uint8_t*)&iov_base, parameter_size );
+            SysCall::ReadMem( lin, iovecaddr + 1*parameter_size, (uint8_t*)&iov_len, parameter_size );
+            iov_base = unisim::util::endian::Target2Host( lin.endianness_, iov_base );
+            iov_len  = unisim::util::endian::Target2Host( lin.endianness_, iov_len );
+            assert( iov_len < 0x100000 );
+            uint8_t buffer[iov_len];
+            SysCall::ReadMem( lin, iov_base, &buffer[0], iov_len );
+          
+            int ret = ::write( target_fd, &buffer[0], iov_len );
+          
+            if (ret < 0)
+              {
+                lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno( errno ), true );
+                return;
+              }
+          
+            sum += ret;
+          }
+        
+        lin.SetSystemCallStatus(sum, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1246,12 +1210,12 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "mmap"; }
       void Describe( Linux& lin, std::ostream& sink ) const
       {
-        sink << "(void *addr=" << std::hex << uint32_t(SysCall::GetParam(lin, 0))
+        sink << "(void *addr=" << std::hex << (SysCall::GetParam(lin, 0))
              << ", size_t length=" << std::dec << int(SysCall::GetParam(lin, 1))
-             << ", int prot=" << std::hex << uint32_t(SysCall::GetParam(lin, 2))
-             << ", int flags=" << std::hex << uint32_t(SysCall::GetParam(lin, 3))
+             << ", int prot=" << std::hex << (SysCall::GetParam(lin, 2))
+             << ", int flags=" << std::hex << (SysCall::GetParam(lin, 3))
              << ", int fd=" << std::dec << int(SysCall::GetParam(lin, 4))
-             << ", off_t offset=" << std::hex << uint32_t(SysCall::GetParam(lin, 5))
+             << ", off_t offset=" << std::hex << (SysCall::GetParam(lin, 5))
              << ")";
       }
     } sc;
@@ -1278,9 +1242,9 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
     static struct : public SysCall {
       char const* GetName() const { return "mprotect"; }
       void Describe( Linux& lin, std::ostream& sink ) const {
-        sink << "(void *addr=0x" << std::hex << uint32_t(SysCall::GetParam(lin, 0))
-             << ", size_t len=0x" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
-             << ", int prot=0x" << std::hex << uint32_t(SysCall::GetParam(lin, 2))
+        sink << "(void *addr=0x" << std::hex << (SysCall::GetParam(lin, 0))
+             << ", size_t len=0x" << std::hex << (SysCall::GetParam(lin, 1))
+             << ", int prot=0x" << std::hex << (SysCall::GetParam(lin, 2))
              << ")" << std::dec;
       }
     } sc;
@@ -1291,12 +1255,12 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
     static struct : public SysCall {
       char const* GetName() const { return "mmap2"; }
       void Describe( Linux& lin, std::ostream& sink ) const {
-        sink << "(void *addr=0x" << std::hex << uint32_t(SysCall::GetParam(lin, 0))
-             << ", size_t length=0x" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
-             << ", int prot=0x" << std::hex << uint32_t(SysCall::GetParam(lin, 2))
-             << ", int flags=0x" << std::hex << uint32_t(SysCall::GetParam(lin, 3))
+        sink << "(void *addr=0x" << std::hex << (SysCall::GetParam(lin, 0))
+             << ", size_t length=0x" << std::hex << (SysCall::GetParam(lin, 1))
+             << ", int prot=0x" << std::hex << (SysCall::GetParam(lin, 2))
+             << ", int flags=0x" << std::hex << (SysCall::GetParam(lin, 3))
              << ", int fd=" << std::dec << int(SysCall::GetParam(lin, 4))
-             << ", off_t pgoffset=0x" << std::hex << uint32_t(SysCall::GetParam(lin, 5))
+             << ", off_t pgoffset=0x" << std::hex << (SysCall::GetParam(lin, 5))
              << ")" << std::dec;
       }
     } sc;
@@ -1310,13 +1274,14 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
-        uint32_t ret = 0;
+        unsigned ret = 0;
 #else
         uid_t ret = getuid();
 #endif
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
-        SysCall::SetStatus(lin, (PARAMETER_TYPE) ret, false);
+          lin.debug_info_stream << this->TraceCall(lin) << " => " << ret << std::endl;
+        
+        lin.SetSystemCallStatus(ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1329,13 +1294,14 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
-        uint32_t ret = 0;
+        unsigned ret = 0;
 #else
         gid_t ret = getgid();
 #endif
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
-        SysCall::SetStatus(lin, (PARAMETER_TYPE) ret, false);
+          lin.debug_info_stream << this->TraceCall(lin) << " => " << ret << std::endl;
+        
+        lin.SetSystemCallStatus(ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1348,13 +1314,14 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
-        uint32_t ret = 0;
+        unsigned ret = 0;
 #else
         uid_t ret = geteuid();
 #endif
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
-        SysCall::SetStatus(lin, (PARAMETER_TYPE) ret, false);
+          lin.debug_info_stream << this->TraceCall(lin) << " => " << ret << std::endl;
+        
+        lin.SetSystemCallStatus(ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1367,13 +1334,14 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
-        uint32_t ret = 0;
+        unsigned ret = 0;
 #else
         gid_t ret = getegid();
 #endif
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
-        SysCall::SetStatus(lin, (PARAMETER_TYPE) ret, false);
+          lin.debug_info_stream << this->TraceCall(lin) << " => " << ret << std::endl;
+        
+        lin.SetSystemCallStatus(ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1384,7 +1352,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "flistxattr"; }
       void Describe( Linux& lin, std::ostream& sink ) const {
         sink << "(int fd=" << std::dec << int(SysCall::GetParam(lin, 0))
-             << ", char *list=" << std::hex << uint32_t(SysCall::GetParam(lin, 1)) 
+             << ", char *list=" << std::hex << (SysCall::GetParam(lin, 1)) 
              << ", size_t size=" << std::dec << int(SysCall::GetParam(lin, 2))
              << ")";
       }
@@ -1403,7 +1371,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       {
         int status = SysCall::GetParam(lin, 0);
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
         throw LSCExit( status );
       }
     } sc;
@@ -1411,149 +1379,113 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   }
 
   {
-    static struct : public SysCall {
-      char const* GetName() const { return "fcntl"; }
+    struct FCntlSysCall : public SysCall
+    {
       void Describe( Linux& lin, std::ostream& sink ) const
       {
-        sink << "(int fd=" << std::dec << int(SysCall::GetParam(lin, 0))
-             << ", int cmd=" << std::dec << int(SysCall::GetParam(lin, 1))
-             << ", ...)"; }
-      void Execute( Linux& lin, int syscall_id ) const
-      {
-        int32_t target_fd = SysCall::GetParam(lin, 0);
-        int32_t cmd = SysCall::GetParam(lin, 1);
-        int32_t arg = (size_t)SysCall::GetParam(lin, 2);
-
-        int host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
-        int64_t ret;
-        int32_t target_errno = 0;
-        
-        if(host_fd == -1)
-          {
-            target_errno = LINUX_EBADF;
-            ret = -1;
-          }
-        else
-          {
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
-            ret = -1;
-            SysCall::SetStatus(lin, (PARAMETER_TYPE) -LINUX_ENOSYS, true);
-#else
-            ret = fcntl(host_fd, cmd, arg);
-            if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
-#endif
-          }
-  
-        if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
-        
-        SysCall::SetStatus(lin, (PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
-      }
-    } sc;
-    if (_name.compare( sc.GetName() ) == 0) return &sc;
-  }
-
-  {
-    static struct : public SysCall {
-      char const* GetName() const { return "fcntl64"; }
-      void Describe( Linux& lin, std::ostream& sink ) const
-      {
-        sink << "(int fd=" << std::dec << int(SysCall::GetParam(lin, 0))
-             << ", int cmd=" << std::dec << int(SysCall::GetParam(lin, 1))
+        sink << "(int fd=" << std::dec << unsigned(SysCall::GetParam(lin, 0))
+             << ", unsigned cmd=" << std::dec << unsigned(SysCall::GetParam(lin, 1))
+             << ", unsigned long arg=" << std::dec << SysCall::GetParam(lin, 2)
              << ")";
       }
       void Execute( Linux& lin, int syscall_id ) const
       {
+        // long sys_fcntl64(unsigned int fd, unsigned int cmd, unsigned long arg);
         int32_t target_fd = SysCall::GetParam(lin, 0);
         int32_t cmd = SysCall::GetParam(lin, 1);
+        parameter_type arg = SysCall::GetParam(lin, 2);
         
         int host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
-        int32_t ret, target_errno = 0;
-  
-        if(host_fd == -1)
-          {
-            target_errno = LINUX_EBADF;
-            ret = -1;
-          }
-        else
-          {
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
-            ret = -1;
-            target_errno = LINUX_ENOSYS;
-#else
-            switch(cmd)
-              {
-              case F_DUPFD:
-                //    case F_DUPFD_CLOEXEC:
-              case F_GETFD:
-              case F_SETFD:
-              case F_GETFL:
-              case F_SETFL:
-                ret = fcntl(host_fd, cmd);
-                if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
-                break;
-              case F_GETLK:
-              case F_SETLK:
-              case F_SETLKW:
-              default:
-                ret = -1;
-                target_errno = LINUX_EINVAL;
-                break;
-              }
-    
-#endif
-          }
   
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
         
-        SysCall::SetStatus(lin, (PARAMETER_TYPE)((ret == -1) ? -target_errno : ret), true);
+        if (host_fd == -1)
+          {
+            lin.SetSystemCallStatus(-LINUX_EBADF, true);
+            return;
+          }
+        
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
+        lin.SetSystemCall(-LINUX_ENOSYS, true);
+        return;
+#else
+        switch(cmd)
+          {
+            // Safe fcntl commands
+          case F_DUPFD:
+            //    case F_DUPFD_CLOEXEC:
+          case F_GETFD:
+          case F_SETFD:
+          case F_GETFL:
+          case F_SETFL: {
+            int64_t ret = fcntl(host_fd, cmd, arg);
+        
+            if (ret == -1)
+              lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno), true);
+            else
+              lin.SetSystemCallStatus(ret, true);
+            return;
+          
+          } break;
+            
+          case F_GETLK:
+          case F_SETLK:
+          case F_SETLKW:
+          default:
+            break;
+            return;
+          }
+#endif
+        lin.SetSystemCallStatus(-LINUX_EINVAL, true);
       }
-    } sc;
+    };
+  
+    static struct : public FCntlSysCall { char const* GetName() const { return "fcntl"; } } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
+    static struct : public FCntlSysCall { char const* GetName() const { return "fcntl64"; } } sc64;
+    if (_name.compare( sc.GetName() ) == 0) return &sc64;
   }
-
+  
   {
     static struct : public SysCall {
       char const* GetName() const { return "dup"; }
       void Describe( Linux& lin, std::ostream& sink ) const
       {
-        sink << "(int oldfd=" << std::dec << int(SysCall::GetParam(lin, 0)) << ")";
+        sink << "(unsigned oldfd=" << std::dec << unsigned(SysCall::GetParam(lin, 0)) << ")";
       }
       void Execute( Linux& lin, int syscall_id ) const
       {
+        // long sys_dup(unsigned int fildes);
         int32_t target_oldfd = SysCall::GetParam(lin, 0);
-        int host_oldfd = SysCall::Target2HostFileDescriptor(lin, target_oldfd);
-        int32_t target_newfd = -1, ret, target_errno = 0;
+        int host_oldfd =       SysCall::Target2HostFileDescriptor(lin, target_oldfd);
   
+        if (unlikely(lin.verbose_))
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
+        
         if (host_oldfd == -1)
           {
-            target_errno = LINUX_EBADF;
-            ret = -1;
+            lin.SetSystemCallStatus(-LINUX_EBADF, true);
+            return;
           }
-        else
+        
+        int64_t ret = dup(host_oldfd);
+        
+        if (ret == -1)
           {
-            ret = dup(host_oldfd);
-            if(ret == -1)
-              {
-                target_errno = SysCall::HostToLinuxErrno(errno);
-              }
-            else
-              {
-                int host_newfd = ret;
-                target_newfd = lin.AllocateFileDescriptor();
-                // keep relation between the target file descriptor and the host file descriptor
-                lin.MapTargetToHostFileDescriptor(target_newfd, host_newfd);
-              }
+            lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno), true);
+            return;
           }
+        
+        int host_newfd = ret;
+        int32_t target_newfd = lin.AllocateFileDescriptor();
+        // keep relation between the target file descriptor and the host file descriptor
+        lin.MapTargetToHostFileDescriptor(target_newfd, host_newfd);
+        
+        if (unlikely(lin.verbose_))
+          lin.debug_info_stream << GetName() << " => newfd=" << target_newfd << std::endl;
   
-        if(unlikely(lin.verbose_))
-          {
-            lin.logger_ << DebugInfo << this->TraceCall(lin) << std::endl
-                        << " -> newfd=" << ((PARAMETER_TYPE)target_newfd) << EndDebugInfo;
-          }
-  
-        SysCall::SetStatus(lin, (PARAMETER_TYPE) (ret == -1) ? -target_errno : target_newfd, (ret == -1));
+        lin.SetSystemCallStatus(target_newfd, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1577,7 +1509,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "chdir"; }
       void Describe( Linux& lin, std::ostream& sink ) const
       {
-        sink << "(const char *path=" << std::hex << uint32_t(SysCall::GetParam(lin, 0)) << ")";
+        sink << "(const char *path=" << std::hex << (SysCall::GetParam(lin, 0)) << ")";
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1588,15 +1520,8 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "ugetrlimit"; }
       void Describe( Linux& lin, std::ostream& sink ) const
       {
-        sink << "(int resource=" << std::dec << int(SysCall::GetParam(lin, 0))
-             << ", struct rlimit *rlim=" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
-             << ")";
-      }
-      void Execute( Linux& lin, int syscall_id ) const
-      {
-        if(unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
-        SysCall::SetStatus(lin, (PARAMETER_TYPE)(-EINVAL),true);
+        sink << "(unsigned resource=" << std::dec << unsigned(SysCall::GetParam(lin, 0))
+             << ", struct rlimit *rlim=" << std::hex << SysCall::GetParam(lin, 1) << ")";
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1607,9 +1532,8 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "getrlimit"; }
       void Describe( Linux& lin, std::ostream& sink ) const
       {
-        sink << "(int resource=" << std::dec << int(SysCall::GetParam(lin, 0))
-             << ", struct rlimit *rlim=" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
-             << ")";
+        sink << "(unsigned resource=" << std::dec << unsigned(SysCall::GetParam(lin, 0))
+             << ", struct rlimit *rlim=" << std::hex << SysCall::GetParam(lin, 1) << ")";
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1619,11 +1543,9 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
     static struct : public SysCall {
       char const* GetName() const { return "setrlimit"; }
       void Describe( Linux& lin, std::ostream& sink ) const {
-        sink << "(int resource=" << std::dec << int(SysCall::GetParam(lin, 0))
-             << ", const struct rlimit *rlim=" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
-             << ")";
+        sink << "(unsigned resource=" << std::dec << unsigned(SysCall::GetParam(lin, 0))
+             << ", const struct rlimit *rlim=" << std::hex << SysCall::GetParam(lin, 1) << ")";
       }
-      /* WAS EINVAL */
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
   }
@@ -1634,11 +1556,9 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Describe( Linux& lin, std::ostream& sink ) const
       {
         sink << "(int signum=" << std::dec << int(SysCall::GetParam(lin, 0))
-             << ", const struct sigaction *act=" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
-             << ", struct sigaction *oldact=" << std::hex << uint32_t(SysCall::GetParam(lin, 2))
-             << ")";
+             << ", const struct sigaction *act=" << std::hex << (SysCall::GetParam(lin, 1))
+             << ", struct sigaction *oldact=" << std::hex << (SysCall::GetParam(lin, 2)) << ")";
       }
-      /* WAS EINVAL */
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
   }
@@ -1649,10 +1569,8 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Describe( Linux& lin, std::ostream& sink ) const
       {
         sink << "(int who=" << std::dec << int(SysCall::GetParam(lin, 0))
-             << ", struct rusage *usage=" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
-             << ")";
+             << ", struct rusage *usage=" << std::hex << (SysCall::GetParam(lin, 1)) << ")";
       }
-      /* WAS EINVAL */
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
   }
@@ -1662,33 +1580,33 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "unlink"; }
       void Describe( Linux& lin, std::ostream& sink ) const
       {
-        sink << "(const char *pathname=" << std::hex << uint32_t(SysCall::GetParam(lin, 0)) << ")";
+        sink << "(const char *pathname=" << std::hex << (SysCall::GetParam(lin, 0)) << ")";
       }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        int ret;
-        int32_t target_errno = 0;
-
-        ADDRESS_TYPE pathnameaddr = SysCall::GetParam(lin, 0);
+        if (unlikely(lin.verbose_))
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
+        
+        address_type pathnameaddr = SysCall::GetParam(lin, 0);
+        
         std::string pathname;
-        if (SysCall::ReadMemString(lin, pathnameaddr, pathname))
+        if (not SysCall::ReadMemString(lin, pathnameaddr, pathname))
           {
-            ret = unlink(pathname.c_str());
-            if (ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
-    
-            if(unlikely(lin.verbose_))
-              {
-                lin.logger_ << DebugInfo << this->TraceCall(lin) << std::endl
-                            << "pathname=\"" << pathname << "\"" << EndDebugInfo;
-              }
-          }
-        else
-          {
-            ret = -1;
-            target_errno = LINUX_ENOMEM;
+            lin.SetSystemCallStatus(-LINUX_ENOMEM, true);
+            return;
           }
         
-        SysCall::SetStatus(lin, (PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
+        if (unlikely(lin.verbose_))
+          lin.debug_info_stream << GetName() << ".pathname=\"" << pathname << "\"" << std::endl;
+        
+        int ret = unlink(pathname.c_str());
+        
+        if (ret == -1) {
+          lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno), true);
+          return;
+        }
+        
+        lin.SetSystemCallStatus(ret, true);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1697,37 +1615,32 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "rename"; }
+      struct Args { Args(Linux& lin) : oldpath(SysCall::GetParam(lin, 0)), newpath(SysCall::GetParam(lin, 1)) {}; address_type oldpath, newpath; };
       void Describe( Linux& lin, std::ostream& sink ) const
       {
-        sink << "(const char *oldpath=" << std::hex << uint32_t(SysCall::GetParam(lin, 0))
-             << ", const char *newpath=" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
-             << ")";
+        Args sc(lin);
+        sink << "(const char *oldpath=" << std::hex << sc.oldpath << ", const char *newpath=" << std::hex << sc.newpath << ")";
       }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        int ret;
-        int32_t target_errno = 0;
-
-        ADDRESS_TYPE oldpathaddr = SysCall::GetParam(lin, 0);
-        ADDRESS_TYPE newpathaddr = SysCall::GetParam(lin, 1);
+        if (unlikely(lin.verbose_))
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
+        
+        Args sc(lin);
+        
         std::string oldpath, newpath;
-        if (SysCall::ReadMemString(lin, oldpathaddr, oldpath) and SysCall::ReadMemString(lin, newpathaddr, newpath))
+        if (not SysCall::ReadMemString(lin, sc.oldpath, oldpath) or not SysCall::ReadMemString(lin, sc.newpath, newpath))
           {
-            ret = rename(oldpath.c_str(), newpath.c_str());
-      
-            if (unlikely(lin.verbose_))
-              {
-                lin.logger_ << DebugInfo << this->TraceCall(lin) << std::endl
-                            << "oldpath=\"" << oldpath << "\", newpath=\"" << newpath << "\"" << EndDebugInfo;
-              }
+            lin.SetSystemCallStatus(-LINUX_ENOMEM, true);
+            return;
           }
-        else
-          {
-            ret = -1;
-            target_errno = LINUX_ENOMEM;
-          }
-  
-        SysCall::SetStatus(lin, (PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
+        
+        int ret = rename(oldpath.c_str(), newpath.c_str());
+        
+        if (unlikely(lin.verbose_))
+          lin.debug_info_stream << GetName() << "(oldpath=\"" << oldpath << "\", newpath=\"" << newpath << "\") => " << ret << std::endl;
+        
+        lin.SetSystemCallStatus(ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1738,7 +1651,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "time"; }
       void Describe( Linux& lin, std::ostream& sink ) const
       {
-        sink << "(time_t *t=" << std::hex << uint32_t(SysCall::GetParam(lin, 0)) << ")";
+        sink << "(time_t *t=" << std::hex << (SysCall::GetParam(lin, 0)) << ")";
       }
       /* WAS EINVAL */
     } sc;
@@ -1751,7 +1664,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Describe( Linux& lin, std::ostream& sink ) const
       {
         sink << "(int call=" << std::dec << int(SysCall::GetParam(lin, 0))
-             << ", unsigned long *args=" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
+             << ", unsigned long *args=" << std::hex << (SysCall::GetParam(lin, 1))
              << ")";
       }
       /* WAS EINVAL */
@@ -1779,7 +1692,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Describe( Linux& lin, std::ostream& sink ) const
       {
         sink << "(int sockfd=" << std::dec << int(SysCall::GetParam(lin, 0))
-             << ", const struct sockaddr *addr=" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
+             << ", const struct sockaddr *addr=" << std::hex << (SysCall::GetParam(lin, 1))
              << ", socklen_t addrlen=" << std::dec << int(SysCall::GetParam(lin, 2))
              << ")";
       }
@@ -1793,11 +1706,10 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Describe( Linux& lin, std::ostream& sink ) const
       {
         sink << "(int how=" << std::dec << int(SysCall::GetParam(lin, 0))
-             << ", const sigset_t *set=" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
-             << ", sigset_t *oldset=" << std::hex << uint32_t(SysCall::GetParam(lin, 2))
+             << ", const sigset_t *set=" << std::hex << (SysCall::GetParam(lin, 1))
+             << ", sigset_t *oldset=" << std::hex << (SysCall::GetParam(lin, 2))
              << ")";
       }
-      /* WAS EINVAL */
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
   }
@@ -1807,15 +1719,13 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "kill"; }
       void Describe( Linux& lin, std::ostream& sink ) const
       {
-        sink << "(pid_t pid=" << std::dec << int(SysCall::GetParam(lin, 0))
-             << ", int sig=" << std::dec << int(SysCall::GetParam(lin, 1))
-             << ")";
+        sink << "(int pid=" << std::dec << int(SysCall::GetParam(lin, 0)) << ", int sig=" << std::dec << int(SysCall::GetParam(lin, 1)) << ")";
       }
       void Execute( Linux& lin, int syscall_id ) const
       {
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
-        SysCall::SetStatus(lin, (PARAMETER_TYPE) 0, false);
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
+        lin.SetSystemCallStatus(0, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1826,15 +1736,14 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "tkill"; }
       void Describe( Linux& lin, std::ostream& sink ) const
       {
-        sink << "(int tid=" << std::dec << int(SysCall::GetParam(lin, 0))
-             << ", int sig=" << std::dec << int(SysCall::GetParam(lin, 1))
-             << ")";
+        sink << "(int tid=" << std::dec << int(SysCall::GetParam(lin, 0)) << ", int sig=" << std::dec << int(SysCall::GetParam(lin, 1)) << ")";
       }
       void Execute( Linux& lin, int syscall_id ) const
       {
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
-        SysCall::SetStatus(lin, (PARAMETER_TYPE) 0, false);
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
+        
+        lin.SetSystemCallStatus(0, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1847,13 +1756,14 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       {
         sink << "(int tgid=" << std::dec << int(SysCall::GetParam(lin, 0))
              << ", int tid=" << std::dec << int(SysCall::GetParam(lin, 1))
-             << ", int sig=" << std::dec << int(SysCall::GetParam(lin, 2))
-             << ")"; }
+             << ", int sig=" << std::dec << int(SysCall::GetParam(lin, 2)) << ")";
+      }
       void Execute( Linux& lin, int syscall_id ) const
       {
         if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
-        SysCall::SetStatus(lin, (PARAMETER_TYPE) 0, false);
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
+        
+        lin.SetSystemCallStatus(0, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1862,33 +1772,36 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   {
     static struct : public SysCall {
       char const* GetName() const { return "ftruncate"; }
-      void Describe( Linux& lin, std::ostream& sink ) const {
-        sink << "(int fd=" << std::dec << int(SysCall::GetParam(lin, 0))
-             << ", off_t length=" << std::dec << int(SysCall::GetParam(lin, 1))
-             << ")";
+      struct Args { Args(Linux& lin) : fd(SysCall::GetParam(lin, 0)), length(SysCall::GetParam(lin, 1)) {}; unsigned fd; parameter_type length; };
+      void Describe( Linux& lin, std::ostream& sink ) const
+      {
+        Args sc(lin);
+        sink << "(unsigned fd=" << std::dec << sc.fd << ", unsigned long length=" << std::dec << sc.length << ")";
       }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        int32_t target_fd = SysCall::GetParam(lin, 0);
-        int32_t length = SysCall::GetParam(lin, 1);
-  
-        int32_t host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd), ret, target_errno = 0;
+        if (unlikely(lin.verbose_))
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
+        
+        Args sc(lin);
+        int32_t host_fd = SysCall::Target2HostFileDescriptor(lin, sc.fd);
   
         if (host_fd == -1)
           {
-            target_errno = LINUX_EBADF;
-            ret = -1;
+            lin.SetSystemCallStatus(-LINUX_EBADF, true);
+            return;
           }
-        else
+        
+        // TODO: check that the guest-long length fits ftruncate's parameter
+        int ret = ftruncate(host_fd, sc.length);
+        
+        if (ret == -1)
           {
-            ret = ftruncate(host_fd, length);
-            if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
+            lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno), true);
+            return;
           }
   
-        if (unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
-        
-        SysCall::SetStatus(lin, (PARAMETER_TYPE) (ret == -1) ? -target_errno : ret, (ret == -1));
+        lin.SetSystemCallStatus(ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1903,13 +1816,14 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        mode_t mask = SysCall::GetParam(lin, 0);
-        int32_t ret = umask(mask);
-        
-        if(unlikely(lin.verbose_))
-          lin.logger_ << DebugInfo << this->TraceCall(lin) << EndDebugInfo;
+        if (unlikely(lin.verbose_))
+          lin.debug_info_stream << this->TraceCall(lin) << std::endl;
 
-        SysCall::SetStatus(lin, ret, false);
+        mode_t mask = SysCall::GetParam(lin, 0);
+        
+        int ret = umask(mask);
+        
+        lin.SetSystemCallStatus(ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -1920,11 +1834,10 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "statfs"; }
       void Describe( Linux& lin, std::ostream& sink ) const
       {
-        sink << "(const char *path=" << std::hex << uint32_t(SysCall::GetParam(lin, 0))
-             << ", struct statfs *buf=" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
+        sink << "(const char *path=" << std::hex << (SysCall::GetParam(lin, 0))
+             << ", struct statfs *buf=" << std::hex << (SysCall::GetParam(lin, 1))
              << ")";
       }
-      /* Was EINVAL */
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
   }
@@ -1942,9 +1855,9 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       char const* GetName() const { return "execve"; }
       void Describe( Linux& lin, std::ostream& sink ) const
       {
-        sink << "(const char *filename=" << std::hex << uint32_t(SysCall::GetParam(lin, 0))
-             << ", char *const argv[]=" << std::hex << uint32_t(SysCall::GetParam(lin, 1))
-             << ", char *const envp[]=" << std::hex << uint32_t(SysCall::GetParam(lin, 2))
+        sink << "(const char *filename=" << std::hex << (SysCall::GetParam(lin, 0))
+             << ", char *const argv[]=" << std::hex << (SysCall::GetParam(lin, 1))
+             << ", char *const envp[]=" << std::hex << (SysCall::GetParam(lin, 2))
              << ")";
       }
     } sc;

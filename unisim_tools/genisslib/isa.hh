@@ -57,7 +57,12 @@ struct Isa
   typedef std::map<ConstStr,Group*> GroupAccumulators;
   GroupAccumulators             m_group_accs;      /**< Active group accumulators */
   
-  struct Ordering { FileLoc fileloc; std::vector<ConstStr> symbols; };
+  struct Ordering
+  {
+    FileLoc fileloc;
+    ConstStr top_op;
+    std::vector<ConstStr> under_ops;
+  };
   typedef std::vector<Ordering> Orderings;
   Orderings                     m_user_orderings;
 

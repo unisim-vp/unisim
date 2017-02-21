@@ -42,23 +42,23 @@
 #include <getopt.h>
 #include <stdlib.h>
 
-#include "unisim/kernel/service/service.hh"
-#include "unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh"
-#include "unisim/component/tlm2/memory/ram/memory.hh"
-#include "unisim/util/likely/likely.hh"
-#include "unisim/service/time/sc_time/time.hh"
-#include "unisim/service/time/host_time/time.hh"
-#include "unisim/service/os/linux_os/linux.hh"
-#include "unisim/service/trap_handler/trap_handler.hh"
+#include <unisim/kernel/service/service.hh>
+#include <unisim/component/tlm2/processor/arm/cortex_a53/cpu.hh>
+#include <unisim/component/tlm2/memory/ram/memory.hh>
+#include <unisim/util/likely/likely.hh>
+#include <unisim/service/time/sc_time/time.hh>
+#include <unisim/service/time/host_time/time.hh>
+#include <unisim/service/os/linux_os/arm_linux64.hh>
+#include <unisim/service/trap_handler/trap_handler.hh>
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
-#include "unisim/service/debug/gdb_server/gdb_server.hh"
-#include "unisim/service/debug/inline_debugger/inline_debugger.hh"
-#include "unisim/service/debug/debugger/debugger.hh"
-#include "unisim/service/debug/monitor/monitor.hh"
-#include "unisim/service/profiling/addr_profiler/profiler.hh"
-#include "unisim/service/tee/memory_access_reporting/tee.hh"
+#include <unisim/service/debug/gdb_server/gdb_server.hh>
+#include <unisim/service/debug/inline_debugger/inline_debugger.hh>
+#include <unisim/service/debug/debugger/debugger.hh>
+#include <unisim/service/debug/monitor/monitor.hh>
+#include <unisim/service/profiling/addr_profiler/profiler.hh>
+#include <unisim/service/tee/memory_access_reporting/tee.hh>
 
 #ifdef WIN32
 
@@ -87,28 +87,23 @@ struct Simulator
  protected:
  private:
   static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
-  typedef unisim::component::tlm2::processor::arm::cortex_a9::CPU CPU;
-  typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> MEMORY;
-  typedef unisim::service::os::linux_os::Linux<uint32_t, uint32_t> LINUX_OS;
+  typedef unisim::component::tlm2::processor::arm::cortex_a53::CPU CPU;
+  typedef unisim::component::tlm2::memory::ram::Memory<64, uint64_t, 8, 1024 * 1024, true> MEMORY;
 
-  typedef unisim::service::debug::gdb_server::GDBServer<uint32_t> GDB_SERVER;
-  typedef unisim::service::debug::inline_debugger::InlineDebugger<uint32_t> INLINE_DEBUGGER;
-  typedef unisim::service::debug::debugger::Debugger<uint32_t> DEBUGGER;
-  typedef unisim::service::debug::monitor::Monitor<uint32_t> MONITOR;
-  typedef unisim::service::profiling::addr_profiler::Profiler<uint32_t> PROFILER;
-  typedef unisim::service::tee::memory_access_reporting::Tee<uint32_t> TEE_MEMORY_ACCESS_REPORTING;
+  typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDB_SERVER;
+  typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> INLINE_DEBUGGER;
+  typedef unisim::service::debug::debugger::Debugger<uint64_t> DEBUGGER;
+  typedef unisim::service::debug::monitor::Monitor<uint64_t> MONITOR;
+  typedef unisim::service::profiling::addr_profiler::Profiler<uint64_t> PROFILER;
+  typedef unisim::service::tee::memory_access_reporting::Tee<uint64_t> TEE_MEMORY_ACCESS_REPORTING;
 
-  CPU *cpu;
-  MEMORY *memory;
-  unisim::service::time::sc_time::ScTime *time;
-  unisim::service::time::host_time::HostTime *host_time;
-  LINUX_OS *linux_os;
-  TEE_MEMORY_ACCESS_REPORTING *tee_memory_access_reporting;
+  CPU*                                                       cpu;
+  MEMORY*                                                    memory;
+  unisim::service::time::sc_time::ScTime*                    time;
+  unisim::service::time::host_time::HostTime*                host_time;
+  unisim::service::os::linux_os::Linux<uint64_t, uint64_t>*  linux_os;
+  TEE_MEMORY_ACCESS_REPORTING*                               tee_memory_access_reporting;
 
-  sc_signal<bool>              nirq_signal;
-  sc_signal<bool>              nfiq_signal;
-  sc_signal<bool>              nrst_signal;
-  
   double simulation_spent_time;
 
   GDB_SERVER *gdb_server;

@@ -93,7 +93,7 @@ class Linux
   virtual void ExecuteSystemCall(int id);
   //virtual bool Load();
 
-  virtual const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *GetBlob() const;
+  virtual const unisim::util::blob::Blob<ADDRESS_TYPE> *GetBlob() const;
   
   virtual void SetupTargetSystem() = 0;
   

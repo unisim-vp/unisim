@@ -95,7 +95,7 @@ public:
 
 	/* Service interface methods */
 	virtual bool Load();
-	virtual const unisim::util::debug::blob::Blob<T> *GetBlob();
+	virtual const unisim::util::blob::Blob<T> *GetBlob();
 
 protected:
 	endian_type endianness;
@@ -109,8 +109,8 @@ protected:
 	unsigned int envc;
 	std::vector<std::string *> envp;
 	std::vector<std::string *> target_envp;
-	unisim::util::debug::blob::Blob<T> *blob;
-	unisim::util::debug::blob::Blob<T> *stack_blob;
+	unisim::util::blob::Blob<T> *blob;
+	unisim::util::blob::Blob<T> *stack_blob;
 	
 	//T stack_address;
 	//T arg_address;
@@ -121,9 +121,9 @@ private:
 	bool LoadStack();
 	bool SetupLoad();
 	bool SetupBlob();
-	void DumpBlob(unisim::util::debug::blob::Blob<T> const &, int);
-	void DumpSection(unisim::util::debug::blob::Section<T> const &, int);
-	void DumpSegment(unisim::util::debug::blob::Segment<T> const &, int);
+	void DumpBlob(unisim::util::blob::Blob<T> const &, int);
+	void DumpSection(unisim::util::blob::Section<T> const &, int);
+	void DumpSegment(unisim::util::blob::Segment<T> const &, int);
 	
 	static const int arch_size = sizeof(uint32_t); // this works for 32 bits which is the case of arm and powerpc
 

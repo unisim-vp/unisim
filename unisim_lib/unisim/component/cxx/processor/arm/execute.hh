@@ -74,8 +74,8 @@ namespace arm {
     util::truth_table::InBit<uint16_t,1> const C;
     util::truth_table::InBit<uint16_t,0> const V;
     
+    typedef typename coreT::U8  U8;
     typedef typename coreT::U16 U16;
-    typedef typename coreT::U32 U32;
 
     static U16 const condition_truth_tables[] = {
       U16((                  Z).tt), // eq; equal
@@ -96,7 +96,7 @@ namespace arm {
       U16(                  0x0000),    // <und>; never (illegal)
     };
     if (cond >= 15) throw std::logic_error("invalid condition code");
-    U32 nzcv = core.CPSR().Get( NZCV );
+    U8 nzcv( core.GetNZCV() );
     return ((condition_truth_tables[cond] >> nzcv) & U16(1)) != U16(0);
   }
   

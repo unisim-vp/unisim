@@ -35,11 +35,10 @@
 #ifndef __UNISIM_UTIL_LOADER_ELF_LOADER_ELF_LOADER_HH__
 #define __UNISIM_UTIL_LOADER_ELF_LOADER_ELF_LOADER_HH__
 
-#include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/loader/elf_loader/elf32.h>
 #include <unisim/util/loader/elf_loader/elf64.h>
 #include <unisim/util/debug/dwarf/dwarf.hh>
-#include <unisim/util/debug/blob/blob.hh>
+#include <unisim/util/blob/blob.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/elf_symtab/elf_symtab.hh>
 #include <unisim/service/interfaces/registers.hh>
@@ -58,7 +57,7 @@ using namespace unisim::util::endian;
 using unisim::util::debug::Statement;
 using unisim::util::debug::Symbol;
 using unisim::util::debug::elf_symtab::ELF_SymtabHandler;
-using unisim::util::debug::blob::Blob;
+using unisim::util::blob::Blob;
 
 typedef enum
 {
@@ -74,13 +73,13 @@ typedef enum
 	OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME,
 	OPT_DEBUG_DWARF
 } Option;
-	
+
 template <class MEMORY_ADDR, unsigned int ElfClass, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 class ElfLoaderImpl
 {
 public:
 	
-	ElfLoaderImpl(unisim::kernel::logger::Logger& _logger, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = 0);
+	ElfLoaderImpl(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if, const unisim::util::blob::Blob<MEMORY_ADDR> *blob = 0);
 	virtual ~ElfLoaderImpl();
 	
 	bool Load();
@@ -94,7 +93,7 @@ public:
 	void GetOption(Option opt, std::string& s) const;
 	void GetOption(Option opt, bool& flag) const;
 	
-	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
+	const unisim::util::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
 	void GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
@@ -117,14 +116,16 @@ public:
 	
 	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
 private:
-	unisim::kernel::logger::Logger& logger;
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
 	std::string filename;
 	MEMORY_ADDR base_addr;
 	bool force_base_addr;
 	bool force_use_virtual_address;
 	bool dump_headers;
-	unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
-	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *const_blob;
+	unisim::util::blob::Blob<MEMORY_ADDR> *blob;
+	const unisim::util::blob::Blob<MEMORY_ADDR> *const_blob;
 	ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym> *symtab_handler;
 	unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	unisim::service::interfaces::Registers *regs_if;
@@ -173,6 +174,9 @@ private:
 	const char *GetArchitecture(const Elf_Ehdr *hdr) const;
 	uint8_t GetAddressSize(const Elf_Ehdr *hdr) const;
 };
+
+// base template traits for standard ElfLoaderImpl declination
+template <class ADDRESS_TYPE, class PARAMETER_TYPE> struct StdElf {};
 
 } // end of namespace elf_loader
 } // end of namespace loader

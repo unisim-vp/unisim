@@ -30,8 +30,7 @@
     @param filename a filename object where the action was found
     @param lineno a line number where the action was found
 */
-Action::Action( ActionProto const* _actionproto, SourceCode* _source_code,
-                    Vector<Comment>& _comments, FileLoc const& _fileloc )
+Action::Action( ActionProto const* _actionproto, SourceCode* _source_code, Vector<Comment> const& _comments, FileLoc const& _fileloc )
   : m_operation( 0 ), m_actionproto( _actionproto ), m_source_code( _source_code ),
     m_comments( _comments ), m_fileloc( _fileloc )
 {}
