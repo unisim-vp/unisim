@@ -1,0 +1,99 @@
+/*
+ *  Copyright (c) 2007,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ */
+ 
+op mtspr(31[6]:rs[5]:spr[10]:467[10]:?[1])
+mtspr.execute = {
+	uint32_t n = ((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
+	uint32_t result = cpu->GetGPR(rs);
+	switch(n)
+	{
+		case 0x001:
+			cpu->SetXER(result);
+			break;
+		case 0x008:
+			cpu->SetLR(result);
+			break;
+		case 0x009:
+			cpu->SetCTR(result);
+			break;
+		default:
+			return cpu->SetSPR(n, result);
+	}
+	
+	return true;
+}
+mtspr.disasm = {
+	uint32_t n = ((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
+	switch(n)
+	{
+		case 1: os << "mtxer r" << (unsigned int) rs; return;
+		case 8: os << "mtlr r" << (unsigned int) rs; return;
+		case 9: os << "mtctr r" << (unsigned int) rs; return;
+		case 22: os << "mtdec r" << (unsigned int) rs; return;
+		case 528: os << "mtibatu 0, r" << (unsigned int) rs; return;
+		case 529: os << "mtibatl 0, r" << (unsigned int) rs; return;
+		case 530: os << "mtibatu 1, r" << (unsigned int) rs; return;
+		case 531: os << "mtibatl 1, r" << (unsigned int) rs; return;
+		case 532: os << "mtibatu 2, r" << (unsigned int) rs; return;
+		case 533: os << "mtibatl 2, r" << (unsigned int) rs; return;
+		case 534: os << "mtibatu 3, r" << (unsigned int) rs; return;
+		case 535: os << "mtibatl 3, r" << (unsigned int) rs; return;
+		case 536: os << "mtdbatu 0, r" << (unsigned int) rs; return;
+		case 537: os << "mtdbatl 0, r" << (unsigned int) rs; return;
+		case 538: os << "mtdbatu 1, r" << (unsigned int) rs; return;
+		case 539: os << "mtdbatl 1, r" << (unsigned int) rs; return;
+		case 540: os << "mtdbatu 2, r" << (unsigned int) rs; return;
+		case 541: os << "mtdbatl 2, r" << (unsigned int) rs; return;
+		case 542: os << "mtdbatu 3, r" << (unsigned int) rs; return;
+		case 543: os << "mtdbatl 3, r" << (unsigned int) rs; return;
+		case 560: os << "mtibatu 4, r" << (unsigned int) rs; return;
+		case 561: os << "mtibatl 4, r" << (unsigned int) rs; return;
+		case 562: os << "mtibatu 5, r" << (unsigned int) rs; return;
+		case 563: os << "mtibatl 5, r" << (unsigned int) rs; return;
+		case 564: os << "mtibatu 6, r" << (unsigned int) rs; return;
+		case 565: os << "mtibatl 6, r" << (unsigned int) rs; return;
+		case 566: os << "mtibatu 7, r" << (unsigned int) rs; return;
+		case 567: os << "mtibatl 7, r" << (unsigned int) rs; return;
+		case 568: os << "mtdbatu 4, r" << (unsigned int) rs; return;
+		case 569: os << "mtdbatl 4, r" << (unsigned int) rs; return;
+		case 570: os << "mtdbatu 5, r" << (unsigned int) rs; return;
+		case 571: os << "mtdbatl 5, r" << (unsigned int) rs; return;
+		case 572: os << "mtdbatu 6, r" << (unsigned int) rs; return;
+		case 573: os << "mtdbatl 6, r" << (unsigned int) rs; return;
+		case 574: os << "mtdbatu 7, r" << (unsigned int) rs; return;
+		case 575: os << "mtdbatl 7, r" << (unsigned int) rs; return;
+	}
+
+	os << "mtspr " << n << ", r" << (unsigned int) rs;
+}

@@ -831,6 +831,7 @@ InputInstrumentBase *Instrumenter::FindInputInstrument(const std::string& name)
 Simulator::Simulator(sc_core::sc_module_name const& name, int argc, char **argv, void (*LoadBuiltInConfig)(unisim::kernel::service::Simulator *simulator))
 	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
 	, unisim::kernel::service::Object(name)
+	, logger(*this)
 	, instrumenter(0)
 {
 	instrumenter = new Instrumenter("instrumenter");

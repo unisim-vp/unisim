@@ -1,0 +1,1060 @@
+/*
+ *  Copyright (c) 2016,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ */
+
+/***************************************/
+/*** Convenience disassembly methods ***/
+/***************************************/
+
+impl {
+#include <iostream>
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace powerpc {
+  
+  struct DASMPrint
+  {
+    virtual void Print( std::ostream& sink ) const = 0;
+    friend std::ostream& operator << (std::ostream& sink, DASMPrint const& dap)
+    {
+      dap.Print(sink);
+      return sink;
+    }
+  };
+  
+  struct GPRPrint : public DASMPrint
+  {
+    GPRPrint(unsigned _reg) : reg(_reg) {} unsigned reg;
+    void Print( std::ostream& sink ) const { sink << "r" << std::dec << reg; }
+  };
+  
+  struct HexPrint : public DASMPrint
+  {
+    HexPrint(uint32_t _num) : num(_num) {} unsigned num;
+    void Print( std::ostream& sink ) const { sink << "0x" << std::hex << num; }
+  };
+  
+  struct CRPrint : public DASMPrint
+  {
+    CRPrint(unsigned _reg) : reg(_reg) {} unsigned reg;
+    void Print( std::ostream& sink ) const { sink << "cr" << std::dec << reg; }
+  };
+  
+  struct CondPrint : public DASMPrint
+  {
+    CondPrint(unsigned _crb, bool _expect = true) : crb(_crb), expect(_expect) {} unsigned crb; bool expect;
+    void Print( std::ostream& sink ) const
+    {
+      char const* condnames[] = {"ge","le","ne","ns","lt","gt","eq","so"};
+      char const* condname = condnames[(crb&3)|(expect?4:0)];
+      if (crb >= 4)
+        sink << "4*" << CRPrint(crb>>2) << '+';
+      sink << condname;
+    }
+  };
+  
+  struct EAPrint : public DASMPrint
+  {
+    EAPrint(int32_t _idx, unsigned _reg) : idx(_idx), reg(_reg) {} int32_t idx; unsigned reg;
+    void Print( std::ostream& sink ) const
+    {
+      sink << std::dec << idx << '(';
+      if (reg)
+        sink << GPRPrint(reg);
+      else
+        sink << '0';
+      sink << ')';
+    }
+  };
+  
+  template <typename T>
+  int32_t scaled_immediate( T s11 )
+  {
+    int scale = (s11 >> 5) & 24;
+    int32_t msk = (s11 << 21) >> 31;
+    return (((s11 ^ msk) & 255) << scale) ^ msk;
+  }
+  
+} /* end of namespace powerpc */
+} /* end of namespace processor */
+} /* end of namespace cxx */
+} /* end of namespace component */
+} /* end of namespace unisim */
+
+}
+
+/*************************************/
+/*** Branch Operation Instructions ***/
+/*************************************/
+
+/**  Branch Instructions **/
+
+/* Branch [and Link] */
+op e_b(30[6]:0[1]:shl<1> sext <32> bd[24]:lk[1]);
+
+e_b.disasm = {
+	os << "e_b" << (lk?"l ":" ") << HexPrint(GetAddr()+bd);
+}
+
+/* Branch [and Link] Short Form */
+op se_b(58[6]:0[1]:lk[1]:shl<1> sext <32> bd[8]);
+
+se_b.disasm = {
+	os << "se_b" << (lk?"l ":" ") << HexPrint(GetAddr()+bd);
+}
+
+/* Branch Conditional [and Link] */
+op e_bc(30[6]:8[4]:0[1]:bo[1]:crn[2]:bi[2]:shl<1> sext <32> bd[15]:lk[1]);
+
+e_bc.disasm = {
+	os << "e_b" << CondPrint(bi,bo) << (lk?"l ":" ");
+	if (crn)
+		os << CRPrint(crn) << ',';
+	os << HexPrint(GetAddr()+bd);
+}
+
+/* Branch Decrement Conditional [and Link] */
+op e_bd(30[6]:8[4]:1[1]:bo[1]:?[4]:shl<1> sext <32> bd[15]:lk[1]);
+
+e_bd.disasm = {
+  os << "e_bd" << (bo?"z":"nz") << (lk?"l ":" ") << HexPrint(GetAddr()+bd);
+}
+
+/* Branch Conditional Short Form */
+op se_bc(28[5]:bo[1]:bi[2]:shl<1> sext bd[8]);
+
+se_bc.disasm = {
+	os << "se_b" << CondPrint(bi,bo) << ' ' << HexPrint(GetAddr()+bd);
+}
+
+/* Branch to Count Register [and Link] */
+op se_bctr(3[15]:lk[1]);
+
+se_bctr.disasm = {
+	os << "se_bctr" << (lk?"l":"");
+}
+
+/* Branch to Link Register [and Link] */
+op se_blr(2[15]:lk[1]);
+
+se_blr.disasm = {
+	os << "se_blr" << (lk?"l":"");
+}
+
+/**  System Linkage Instructions **/
+
+/* System Call */
+op se_sc(2[16]);
+
+se_sc.disasm = {
+	os << "se_sc";
+}
+
+/* Illegal */
+op se_illegal(0[16]);
+
+se_illegal.disasm = {
+	os << "se_illegal";
+}
+
+/* Return From Machine Check Interrupt */
+op se_rfmci(11[16]);
+
+se_rfmci.disasm = {
+	os << "se_rfmci";
+}
+
+/* Return From Critical Interrupt */
+op se_rfci(9[16]);
+
+se_rfci.disasm = {
+	os << "se_rfci";
+}
+
+/* Return From Interrupt */
+op se_rfi(8[16]);
+
+se_rfi.disasm = {
+	os << "se_rfi";
+}
+
+/* Return From Debug Interrupt */
+op se_rfdi(10[16]);
+
+se_rfdi.disasm = {
+	os << "se_rfdi";
+}
+
+/* Return From Guest Interrupt */
+op se_rfgi(12[16]);
+
+se_rfgi.disasm = {
+	os << "se_rfgi";
+}
+
+/** Condition Register Instructions **/
+
+/* Condition Register AND */
+op e_crand(31[6]:bt[5]:ba[5]:bb[5]:257[10]:0[1]);
+
+e_crand.disasm = {
+	os << "e_crand " << CondPrint(bt) << ',' << CondPrint(ba) << ',' << CondPrint(bb);
+}
+
+/* Condition Register AND with Complement */
+op e_crandc(31[6]:bt[5]:ba[5]:bb[5]:129[10]:0[1]);
+
+e_crandc.disasm = {
+	os << "e_crandc " << CondPrint(bt) << ',' << CondPrint(ba) << ',' << CondPrint(bb);
+}
+
+/* Condition Register Equivalent */
+op e_creqv(31[6]:bt[5]:ba[5]:bb[5]:289[10]:0[1]);
+
+e_creqv.disasm = {
+	if ((bt==ba) and (ba==bb))
+		os << "e_crset " << CondPrint(bt);
+	else
+		os << "e_creqv " << CondPrint(bt) << ',' << CondPrint(ba) << ',' << CondPrint(bb);
+}
+
+/* Condition Register NAND */
+op e_crnand(31[6]:bt[5]:ba[5]:bb[5]:225[10]:0[1]);
+
+e_crnand.disasm = {
+	os << "e_crnand " << CondPrint(bt) << ',' << CondPrint(ba) << ',' << CondPrint(bb);
+}
+
+/* Condition Register NOR */
+op e_crnor(31[6]:bt[5]:ba[5]:bb[5]:33[10]:0[1]);
+
+e_crnor.disasm = {
+	if (ba==bb)
+		os << "e_crnot " << CondPrint(bt) << ',' << CondPrint(ba);
+	else
+		os << "e_crnor " << CondPrint(bt) << ',' << CondPrint(ba) << ',' << CondPrint(bb);
+}
+
+/* Condition Register OR */
+op e_cror(31[6]:bt[5]:ba[5]:bb[5]:449[10]:0[1]);
+
+e_cror.disasm = {
+	if (ba==bb)
+		os << "e_crmove " << CondPrint(bt) << ',' << CondPrint(ba);
+	else
+		os << "e_cror " << CondPrint(bt) << ',' << CondPrint(ba) << ',' << CondPrint(bb);
+}
+
+/* Condition Register OR with Complement */
+op e_crorc(31[6]:bt[5]:ba[5]:bb[5]:417[10]:0[1]);
+
+e_crorc.disasm = {
+	os << "e_crorc " << CondPrint(bt) << ',' << CondPrint(ba) << ',' << CondPrint(bb);
+}
+
+/* Condition Register XOR */
+op e_crxor(31[6]:bt[5]:ba[5]:bb[5]:193[10]:0[1]);
+
+e_crxor.disasm = {
+	if ((bt==ba) and (ba==bb))
+		os << "e_crclr " << CondPrint(bt);
+	else
+		os << "e_crxor " << CondPrint(bt) << ',' << CondPrint(ba) << ',' << CondPrint(bb);
+}
+
+/* Move CR Field */
+op e_mcrf(31[6]:bf[3]:?[2]:bfa[3]:?[7]:16[10]:0[1]);
+
+e_mcrf.disasm = {
+	if (bfa!=0)
+		os << "e_mcrf " << CRPrint(bf) << ',' << CRPrint(bfa);
+	else
+		os << "e_mcrf " << CRPrint(bf);
+}
+
+/********************************/
+/*** Fixed-Point Instructions ***/
+/********************************/
+
+/** Fixed-Point Load Instructions **/
+
+/* Load Byte and Zero */
+op e_lbz(12[6]:rt[5]:ra[5]:sext d[16]);
+
+e_lbz.disasm = {
+	os << "e_lbz " << GPRPrint(rt) << ',' << EAPrint(d,ra);
+}
+
+/* Load Byte and Zero Short Form */
+op se_lbz(8[4]:sd[4]:sext srz[4]:sext srx[4]);
+se_lbz.var rx : {uint8_t} = {srx & 31}, rz : {uint8_t} = {srz & 31};
+
+se_lbz.disasm = {
+	os << "se_lbz " << GPRPrint(rz) << ',' << unsigned(sd) << "(" << GPRPrint(rx) << ")";
+}
+
+/* Load Byte and Zero with Update */
+op e_lbzu(6[6]:rt[5]:ra[5]:0[8]:sext d[8]);
+
+e_lbzu.disasm = {
+	os << "e_lbzu " << GPRPrint(rt) << ',' << EAPrint(d,ra);
+}
+
+/* Load Halfword Algebraic */
+op e_lha(14[6]:rt[5]:ra[5]:sext d[16]);
+
+e_lha.disasm = {
+	os << "e_lha " << GPRPrint(rt) << ',' << EAPrint(d,ra);
+}
+
+/* Load Halfword and Zero */
+op e_lhz(22[6]:rt[5]:ra[5]:sext d[16]);
+
+e_lhz.disasm = {
+	os << "e_lhz " << GPRPrint(rt) << ',' << EAPrint(d,ra);
+}
+
+/* Load Halfword and Zero Short Form */
+op se_lhz(10[4]:shl<1> sd[4]:sext srz[4]:sext srx[4]);
+se_lhz.var rx : {uint8_t} = {srx & 31}, rz : {uint8_t} = {srz & 31};
+
+se_lhz.disasm = {
+	os << "se_lhz " << GPRPrint(rz) << ',' << unsigned(sd) << "(" << GPRPrint(rx) << ")";
+}
+
+/* Load Halfword Algebraic with Update */
+op e_lhau(6[6]:rt[5]:ra[5]:3[8]:sext d[8]);
+
+e_lhau.disasm = {
+	os << "e_lhau " << GPRPrint(rt) << ',' << EAPrint(d,ra);
+}
+
+/* Load Halfword and Zero with Update */
+op e_lhzu(6[6]:rt[5]:ra[5]:1[8]:sext d[8]);
+
+e_lhzu.disasm = {
+	os << "e_lhzu " << GPRPrint(rt) << ',' << EAPrint(d,ra);
+}
+
+/* Load Word and Zero */
+op e_lwz(20[6]:rt[5]:ra[5]:sext d[16]);
+
+e_lwz.disasm = {
+	os << "e_lwz " << GPRPrint(rt) << ',' << EAPrint(d,ra);
+}
+
+/* Load Word and Zero Short Form */
+op se_lwz(12[4]:shl<2> sd[4]:sext srz[4]:sext srx[4]);
+se_lwz.var rx : {uint8_t} = {srx & 31}, rz : {uint8_t} = {srz & 31};
+
+se_lwz.disasm = {
+	os << "se_lwz " << GPRPrint(rz) << ',' << unsigned(sd) << "(" << GPRPrint(rx) << ")";
+}
+
+/* Load Word and Zero with Update */
+op e_lwzu(6[6]:rt[5]:ra[5]:2[8]:sext d[8]);
+
+e_lwzu.disasm = {
+	os << "e_lwzu " << GPRPrint(rt) << ',' << EAPrint(d,ra);
+}
+
+/** Fixed-Point Store Instructions **/
+
+/* Store Byte */
+op e_stb(13[6]:rs[5]:ra[5]:sext d[16]);
+
+e_stb.disasm = {
+	os << "e_stb " << GPRPrint(rs) << ',' << EAPrint(d,ra);
+}
+
+/* Store Byte Short */
+op se_stb(9[4]:sd[4]:sext srz[4]:sext srx[4]);
+se_stb.var rx : {uint8_t} = {srx & 31}, rz : {uint8_t} = {srz & 31};
+
+se_stb.disasm = {
+	os << "se_stb " << GPRPrint(rz) << ',' << unsigned(sd) << "(" << GPRPrint(rx) << ")";
+}
+
+/* Store Byte with Update */
+op e_stbu(6[6]:rs[5]:ra[5]:4[8]:sext d[8]);
+
+e_stbu.disasm = {
+	os << "e_stbu " << GPRPrint(rs) << ',' << EAPrint(d,ra);
+}
+
+/* Store Halfword */
+op e_sth(23[6]:rs[5]:ra[5]:sext d[16]);
+
+e_sth.disasm = {
+	os << "e_sth " << GPRPrint(rs) << ',' << EAPrint(d,ra);
+}
+
+/* Store Halfword Short Form */
+op se_sth(11[4]:shl<1> sd[4]:sext srz[4]:sext srx[4]);
+se_sth.var rx : {uint8_t} = {srx & 31}, rz : {uint8_t} = {srz & 31};
+
+se_sth.disasm = {
+	os << "se_sth " << GPRPrint(rz) << ',' << unsigned(sd) << "(" << GPRPrint(rx) << ")";
+}
+
+/* Store Halfword with Update */
+op e_sthu(6[6]:rs[5]:ra[5]:5[8]:sext d[8]);
+
+e_sthu.disasm = {
+	os << "e_sthu " << GPRPrint(rs) << ',' << EAPrint(d,ra);
+}
+
+/* Store Word */
+op e_stw(21[6]:rs[5]:ra[5]:sext d[16]);
+
+e_stw.disasm = {
+	os << "e_stw " << GPRPrint(rs) << ',' << EAPrint(d,ra);
+}
+
+/* Store Word Short Form */
+op se_stw(13[4]:shl<2> sd[4]:sext srz[4]:sext srx[4]);
+se_stw.var rx : {uint8_t} = {srx & 31}, rz : {uint8_t} = {srz & 31};
+
+se_stw.disasm = {
+	os << "se_stw " << GPRPrint(rz) << ',' << unsigned(sd) << "(" << GPRPrint(rx) << ")";
+}
+
+/* Store Word with Update */
+op e_stwu(6[6]:rs[5]:ra[5]:6[8]:sext d[8]);
+
+e_stwu.disasm = {
+	os << "e_stwu " << GPRPrint(rs) << ',' << EAPrint(d,ra);
+}
+
+/** Fixed-Point Load and Store Multiple Instructions **/
+
+/* Load Multiple Word */
+op e_lmw(6[6]:rt[5]:ra[5]:8[8]:sext d[8]);
+
+e_lmw.disasm = {
+	os << "e_lmw " << GPRPrint(rt) << ',' << EAPrint(d,ra);
+}
+
+/* Store Multiple Word */
+op e_stmw(6[6]:rs[5]:ra[5]:9[8]:sext d[8]);
+
+e_stmw.disasm = {
+	os << "e_stmw " << GPRPrint(rs) << ',' << EAPrint(d,ra);
+}
+
+/** Fixed-Point Arithmetic Instructions **/
+
+/* Add Short Form */
+op se_add(1[6]:0[2]:sext sry[4]:sext srx[4]);
+se_add.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {sry & 31};
+
+se_add.disasm = {
+	os << "se_add " << GPRPrint(rx) << ',' << GPRPrint(ry);
+}
+
+/* Add Immediate */
+op e_add16i(7[6]:rt[5]:ra[5]:sext si[16]);
+
+e_add16i.disasm = {
+  os << "e_add16i " << GPRPrint(rt) << ',' << GPRPrint(ra) << ',' << si;
+}
+
+/* Add (2 operand) Immediate and Record */
+op e_add2i_(28[6]:shl<11> sext <32> si_a[5]:ra[5]:17[5]:si_b[11]);
+
+e_add2i_.disasm = {
+	os << "e_add2i. " << GPRPrint(ra) << ',' << int(si_a|si_b);
+}
+
+/* Add (2 operand) Immediate Shifted */
+op e_add2is(28[6]:shl<11> sext <32> si_a[5]:ra[5]:18[5]:si_b[11]);
+
+e_add2is.disasm = {
+	os << "e_add2is " << GPRPrint(ra) << ',' << int(si_a|si_b);
+}
+
+/* Add Scaled Immediate */
+op e_addi(6[6]:rt[5]:ra[5]:8[4]:rc[1]:s11[11]);
+e_addi.var sci8 : {int32_t} = {scaled_immediate(s11)};
+
+e_addi.disasm = {
+	os << "e_addi" << (rc?". ":" ") << GPRPrint(rt) << ',' << GPRPrint(ra) << ',' << sci8;
+}
+
+/* Add Immediate Short Form */
+op se_addi(8[6]:0[1]:oim5[5]:sext srx[4]);
+se_addi.var rx : {uint8_t} = {srx & 31};
+
+se_addi.disasm = {
+	os << "se_addi " << GPRPrint(rx) << ',' << unsigned(oim5+1);
+}
+
+/* Add Scaled Immediate Carrying */
+op e_addic(6[6]:rt[5]:ra[5]:9[4]:rc[1]:s11[11]);
+e_addic.var sci8 : {int32_t} = {scaled_immediate(s11)};
+
+e_addic.disasm = {
+	os << "e_addic" << (rc?". ":" ") << GPRPrint(rt) << ',' << GPRPrint(ra) << ',' << sci8;
+}
+
+/* Subtract */
+op se_sub(1[6]:2[2]:sext sry[4]:sext srx[4]);
+se_sub.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {sry & 31};
+
+se_sub.disasm = {
+	os << "se_sub " << GPRPrint(rx) << ',' << GPRPrint(ry);
+}
+
+/* Subtract From Short Form */
+op se_subf(1[6]:3[2]:sext sry[4]:sext srx[4]);
+se_subf.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {sry & 31};
+
+se_subf.disasm = {
+	os << "se_subf " << GPRPrint(rx) << ',' << GPRPrint(ry);
+}
+
+/* Subtract From Scaled Immediate Carrying */
+op e_subfic(6[6]:rt[5]:ra[5]:11[4]:rc[1]:s11[11]);
+e_subfic.var sci8 : {int32_t} = {scaled_immediate(s11)};
+
+e_subfic.disasm = {
+	os << "e_subfic" << (rc?". ":" ") << GPRPrint(rt) << ',' << GPRPrint(ra) << ',' << sci8;
+}
+
+/* Subtract Immediate */
+op se_subi(9[6]:rc[1]:oim5[5]:sext srx[4]);
+se_subi.var rx : {uint8_t} = {srx & 31};
+
+se_subi.disasm = {
+	os << "se_subi" << (rc?". ":" ") << GPRPrint(rx) << ',' << unsigned(oim5+1);
+}
+
+/* Multiply Low Scaled Immediate */
+op e_mulli(6[6]:rt[5]:ra[5]:20[5]:s11[11]);
+e_mulli.var sci8 : {int32_t} = {scaled_immediate(s11)};
+
+e_mulli.disasm = {
+	os << "e_mulli " << GPRPrint(rt) << ',' << GPRPrint(ra) << ',' << sci8;
+}
+
+/* Multiply (2 operand) Low Immediate */
+op e_mull2i(28[6]:shl<11> sext <32> si_a[5]:ra[5]:20[5]:si_b[11]);
+
+e_mull2i.disasm = {
+	os << "e_mull2i " << GPRPrint(ra) << ',' << int(si_a|si_b);
+}
+
+/* Multiply Low Word Short Form */
+op se_mullw(1[6]:1[2]:sext sry[4]:sext srx[4]);
+se_mullw.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {sry & 31};
+
+se_mullw.disasm = {
+	os << "se_mullw " << GPRPrint(rx) << ',' << GPRPrint(ry);
+}
+
+/* Negate Short Form */
+op se_neg(0[6]:3[6]:sext srx[4]);
+se_neg.var rx : {uint8_t} = {srx & 31};
+
+se_neg.disasm = {
+	os << "se_neg " << GPRPrint(rx);
+}
+
+/**  Fixed-Point Compare and Bit Test Instructions **/
+
+/* Bit Test Immediate */
+op se_btsti(25[6]:1[1]:ui5[5]:sext srx[4]);
+se_btsti.var rx : {uint8_t} = {srx & 31};
+
+se_btsti.disasm = {
+	os << "se_btsti " << GPRPrint(rx) << ',' << unsigned(ui5);
+}
+
+/* Compare Immediate Word */
+op e_cmp16i(28[6]:shl<11> sext <32> si_a[5]:ra[5]:19[5]:si_b[11]);
+
+e_cmp16i.disasm = {
+	os << "e_cmp16i " << GPRPrint(ra) << ',' << int(si_a|si_b);
+}
+
+/* Compare Scaled Immediate Word */
+op e_cmpi(6[6]:0[3]:bf[2]:ra[5]:21[5]:s11[11]);
+e_cmpi.var sci8 : {int32_t} = {scaled_immediate(s11)};
+
+e_cmpi.disasm = {
+	os << "e_cmpi " << CRPrint(bf) << ',' << GPRPrint(ra) << ',' << sci8;
+}
+
+/* Compare Word */
+op se_cmp(3[6]:0[2]:sext sry[4]:sext srx[4]);
+se_cmp.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {sry & 31};
+
+se_cmp.disasm = {
+	os << "se_cmp " << GPRPrint(rx) << ',' << GPRPrint(ry);
+}
+
+/* Compare Immediate Word Short Form */
+op se_cmpi(10[6]:1[1]:ui5[5]:sext srx[4]);
+se_cmpi.var rx : {uint8_t} = {srx & 31};
+
+se_cmpi.disasm = {
+	os << "se_cmpi " << GPRPrint(rx) << ',' << unsigned(ui5);
+}
+
+/* Compare Logical Immediate Word */
+op e_cmpl16i(28[6]:shl<11> ui_a[5]:ra[5]:21[5]:ui_b[11]);
+
+e_cmpl16i.disasm = {
+	os << "e_cmpl16i " << GPRPrint(ra) << ',' << int(ui_a|ui_b);
+}
+
+/* Compare Logical Scaled Immediate Word */
+op e_cmpli(6[6]:1[3]:bf[2]:ra[5]:21[5]:s11[11]);
+e_cmpli.var sci8 : {int32_t} = {scaled_immediate(s11)};
+
+e_cmpli.disasm = {
+	os << "e_cmpli " << CRPrint(bf) << ',' << GPRPrint(ra) << ',' << sci8;
+}
+
+/* Compare Logical Word */
+op se_cmpl(3[6]:1[2]:sext sry[4]:sext srx[4]);
+se_cmpl.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {sry & 31};
+
+se_cmpl.disasm = {
+	os << "se_cmpl " << GPRPrint(rx) << ',' << GPRPrint(ry);
+}
+
+/* Compare Logical Immediate Word */
+op se_cmpli(8[6]:1[1]:oim5[5]:sext srx[4]);
+se_cmpli.var rx : {uint8_t} = {srx & 31};
+
+se_cmpli.disasm = {
+	os << "se_cmpli " << GPRPrint(rx) << ',' << unsigned(oim5+1);
+}
+
+/* Compare Halfword */
+op e_cmph(31[6]:bf[3]:0[2]:ra[5]:rb[5]:14[10]:0[1]);
+
+e_cmph.disasm = {
+	os << "e_cmph " << CRPrint(bf) << ',' << GPRPrint(ra) << ',' << GPRPrint(rb);
+}
+
+/* Compare Halfword Short Form */
+op se_cmph(3[6]:2[2]:sext sry[4]:sext srx[4]);
+se_cmph.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {sry & 31};
+
+se_cmph.disasm = {
+	os << "se_cmph " << GPRPrint(rx) << ',' << GPRPrint(ry);
+}
+
+/* Compare Halfword Immediate */
+op e_cmph16i(28[6]:shl<11> sext <32> si_a[5]:ra[5]:22[5]:si_b[11]);
+
+e_cmph16i.disasm = {
+	os << "e_cmph16i " << GPRPrint(ra) << ',' << int(si_a|si_b);
+}
+
+/* Compare Halfword Logical */
+op e_cmphl(31[6]:bf[3]:0[2]:ra[5]:rb[5]:46[10]:0[1]);
+
+e_cmphl.disasm = {
+	os << "e_cmphl " << CRPrint(bf) << ',' << GPRPrint(ra) << ',' << GPRPrint(rb);
+}
+
+/* Compare Halfword Logical Short Form */
+op se_cmphl(3[6]:3[2]:sext sry[4]:sext srx[4]);
+se_cmphl.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {sry & 31};
+
+se_cmphl.disasm = {
+	os << "se_cmphl " << GPRPrint(rx) << ',' << GPRPrint(ry);
+}
+
+/* Compare Halfword Logical Immediate */
+op e_cmphl16i(28[6]:shl<11> ui_a[5]:ra[5]:23[5]:ui_b[11]);
+
+e_cmphl16i.disasm = {
+	os << "e_cmphl16i " << GPRPrint(ra) << ',' << int(ui_a|ui_b);
+}
+
+/** Fixed-Point Logical, Bit, and Move Instructions **/
+
+/* AND (two operand) Immediate */
+op e_and2i_(28[6]:rt[5]:shl<11> ui_a[5]:25[5]:ui_b[11]);
+
+e_and2i_.disasm = {
+	os << "e_and2i. " << GPRPrint(rt) << ',' << int(ui_a|ui_b);
+}
+
+/* AND (2 operand) Immediate Shifted */
+op e_and2is(28[6]:rt[5]:shl<11> ui_a[5]:29[5]:ui_b[11]);
+
+e_and2is.disasm = {
+	os << "e_and2is. " << GPRPrint(rt) << ',' << int(ui_a|ui_b);
+}
+
+/* AND Scaled Immediate */
+op e_andi(6[6]:rs[5]:ra[5]:12[4]:rc[1]:s11[11]);
+e_andi.var sci8 : {int32_t} = {scaled_immediate(s11)};
+
+e_andi.disasm = {
+	os << "e_andi" << (rc?". ":" ") << GPRPrint(ra) << ',' << GPRPrint(rs) << ',' << sci8;
+}
+
+/* AND Immediate Short Form */
+op se_andi(11[6]:1[1]:ui5[5]:sext srx[4]);
+se_andi.var rx : {uint8_t} = {srx & 31};
+
+se_andi.disasm = {
+	os << "se_andi " << GPRPrint(rx) << ',' << unsigned(ui5);
+}
+
+/* OR (two operand) Immediate */
+op e_or2i(28[6]:rt[5]:shl<11> ui_a[5]:24[5]:ui_b[11]);
+
+e_or2i.disasm = {
+	os << "e_or2i " << GPRPrint(rt) << ',' << int(ui_a|ui_b);
+}
+
+/* OR (2 operand) Immediate Shifted */
+op e_or2is(28[6]:rt[5]:shl<11> ui_a[5]:26[5]:ui_b[11]);
+
+e_or2is.disasm = {
+	os << "e_or2is " << GPRPrint(rt) << ',' << int(ui_a|ui_b);
+}
+
+/* OR Scaled Immediate */
+op e_ori(6[6]:rs[5]:ra[5]:13[4]:rc[1]:s11[11]);
+e_ori.var sci8 : {int32_t} = {scaled_immediate(s11)};
+
+e_ori.disasm = {
+	if ((rc == 0) and (ra == 0) and (rs == 0) and (s11 == 0))
+		os << "e_nop";
+	else
+		os << "e_ori" << (rc?". ":" ") << GPRPrint(ra) << ',' << GPRPrint(rs) << ',' << sci8;
+}
+
+/* XOR Scaled Immediate */
+op e_xori(6[6]:rs[5]:ra[5]:14[4]:rc[1]:s11[11]);
+e_xori.var sci8 : {int32_t} = {scaled_immediate(s11)};
+
+e_xori.disasm = {
+	os << "e_xori" << (rc?". ":" ") << GPRPrint(ra) << ',' << GPRPrint(rs) << ',' << sci8;
+}
+
+/* AND Short Form */
+op se_and(17[6]:1[1]:rc[1]:sext sry[4]:sext srx[4]);
+se_and.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {sry & 31};
+
+se_and.disasm = {
+	os << "se_and" << (rc?". ":" ") << GPRPrint(rx) << ',' << GPRPrint(ry);
+}
+
+/* AND with Complement Short Form */
+op se_andc(17[6]:1[2]:sext sry[4]:sext srx[4]);
+se_andc.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {sry & 31};
+
+se_andc.disasm = {
+	os << "se_andc " << GPRPrint(rx) << ',' << GPRPrint(ry);
+}
+
+/* OR Short Form */
+op se_or(17[6]:0[2]:sext sry[4]:sext srx[4]);
+se_or.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {sry & 31};
+
+se_or.disasm = {
+	if ((rx == 0) and (ry == 0))
+		os << "se_nop";
+	else
+		os << "se_or " << GPRPrint(rx) << ',' << GPRPrint(ry);
+}
+
+/* NOT Short Form */
+op se_not(0[6]:2[6]:sext srx[4]);
+se_not.var rx : {uint8_t} = {srx & 31};
+
+se_not.disasm = {
+	os << "se_not " << GPRPrint(rx);
+}
+
+/* Bit Clear Immediate */
+op se_bclri(24[6]:0[1]:ui5[5]:sext srx[4]);
+se_bclri.var rx : {uint8_t} = {srx & 31};
+
+se_bclri.disasm = {
+	os << "se_bclri " << GPRPrint(rx) << ',' << unsigned(ui5);
+}
+
+/* Bit Generate Immediate */
+op se_bgeni(24[6]:1[1]:ui5[5]:sext srx[4]);
+se_bgeni.var rx : {uint8_t} = {srx & 31};
+
+se_bgeni.disasm = {
+	os << "se_bgeni " << GPRPrint(rx) << ',' << unsigned(ui5);
+}
+
+/* Bit Mask Generate Immediate */
+op se_bmaski(11[6]:0[1]:ui5[5]:sext srx[4]);
+se_bmaski.var rx : {uint8_t} = {srx & 31};
+
+se_bmaski.disasm = {
+	os << "se_bmaski " << GPRPrint(rx) << ',' << unsigned(ui5);
+}
+
+/* Bit Set Immediate */
+op se_bseti(25[6]:0[1]:ui5[5]:sext srx[4]);
+se_bseti.var rx : {uint8_t} = {srx & 31};
+
+se_bseti.disasm = {
+	os << "se_bseti " << GPRPrint(rx) << ',' << unsigned(ui5);
+}
+
+/* Extend Sign Byte Short Form */
+op se_extsb(0[6]:13[6]:sext srx[4]);
+se_extsb.var rx : {uint8_t} = {srx & 31};
+
+se_extsb.disasm = {
+	os << "se_extsb " << GPRPrint(rx);
+}
+
+/* Extend Sign Halfword Short Form */
+op se_extsh(0[6]:15[6]:sext srx[4]);
+se_extsh.var rx : {uint8_t} = {srx & 31};
+
+se_extsh.disasm = {
+	os << "se_extsh " << GPRPrint(rx);
+}
+
+/* Extend Zero Byte */
+op se_extzb(0[6]:12[6]:sext srx[4]);
+se_extzb.var rx : {uint8_t} = {srx & 31};
+
+se_extzb.disasm = {
+	os << "se_extzb " << GPRPrint(rx);
+}
+
+/* Extend Zero Halfword */
+op se_extzh(0[6]:14[6]:sext srx[4]);
+se_extzh.var rx : {uint8_t} = {srx & 31};
+
+se_extzh.disasm = {
+	os << "se_extzh " << GPRPrint(rx);
+}
+
+/* Load Immediate */
+op e_li(28[6]:rt[5]:shl<11> li20_b[5]:0[1]:shl<16> sext li20_c[4]:li20_a[11]);
+
+e_li.disasm = {
+	os << "e_li " << GPRPrint(rt) << ',' << int(li20_a|li20_b|li20_c);
+}
+
+/* Load Immediate Short Form */
+op se_li(9[5]:ui[7]:sext srx[4]);
+se_li.var rx : {uint8_t} = {srx & 31};
+
+se_li.disasm = {
+	os << "se_li " << GPRPrint(rx) << ',' << unsigned(ui);
+}
+
+/* Load Immediate Shifted */
+op e_lis(28[6]:rt[5]:shl<11> ui_a[5]:28[5]:ui_b[11]);
+
+e_lis.disasm = {
+	os << "e_lis " << GPRPrint(rt) << ',' << int(ui_a|ui_b);
+}
+
+/* Move from Alternate Register */
+op se_mfar(0[6]:3[2]:ary[4]:sext srx[4]);
+se_mfar.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {ary + 8};
+
+se_mfar.disasm = {
+	os << "se_mfar " << GPRPrint(rx) << ',' << GPRPrint(ry);
+}
+
+/* Move Register */
+op se_mr(0[6]:1[2]:sext sry[4]:sext srx[4]);
+se_mr.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {sry & 31};
+
+se_mr.disasm = {
+	os << "se_mr " << GPRPrint(rx) << ',' << GPRPrint(ry);
+}
+
+/* Move To Alternate Register */
+op se_mtar(0[6]:2[2]:sext sry[4]:arx[4]);
+se_mtar.var rx : {uint8_t} = {arx + 8}, ry : {uint8_t} = {sry & 31};
+
+se_mtar.disasm = {
+	os << "se_mtar " << GPRPrint(rx) << ',' << GPRPrint(ry);
+}
+
+/** Fixed-Point Rotate and Shift Instructions **/
+
+/* Rotate Left Word */
+op e_rlw(31[6]:rs[5]:ra[5]:rb[5]:280[10]:rc[1]);
+
+e_rlw.disasm = {
+	os << "e_rlw" << (rc?". ":" ") << GPRPrint(ra) << ',' << GPRPrint(rs) << ',' << GPRPrint(rb);
+}
+
+/* Rotate Left Word Immediate */
+op e_rlwi(31[6]:rs[5]:ra[5]:sh[5]:312[10]:rc[1]);
+
+e_rlwi.disasm = {
+	os << "e_rlwi" << (rc?". ":" ") << GPRPrint(ra) << ',' << GPRPrint(rs) << ',' << int(sh);
+}
+
+/* Rotate Left Word Immediate then Mask Insert */
+op e_rlwimi(29[6]:rs[5]:ra[5]:sh[5]:mb[5]:me[5]:0[1]);
+
+e_rlwimi.disasm = {
+	os << "e_rlwimi " << GPRPrint(ra) << ',' << GPRPrint(rs) << ',' << int(sh) << ',' << int(mb) << ',' << int(me);
+}
+
+/* Rotate Left Word Immediate then AND with Mask */
+op e_rlwinm(29[6]:rs[5]:ra[5]:sh[5]:mb[5]:me[5]:1[1]);
+
+e_rlwinm.disasm = {
+	os << "e_rlwinm " << GPRPrint(ra) << ',' << GPRPrint(rs) << ',' << int(sh) << ',' << int(mb) << ',' << int(me);
+}
+
+/* Shift Left Word Immediate */
+op e_slwi(31[6]:rs[5]:ra[5]:sh[5]:56[10]:rc[1]);
+
+e_slwi.disasm = {
+	os << "e_slwi" << (rc?". ":" ") << GPRPrint(ra) << ',' << GPRPrint(rs) << ',' << int(sh);
+}
+
+/* Shift Left Word Immediate Short Form */
+op se_slwi(27[6]:0[1]:ui5[5]:sext srx[4]);
+se_slwi.var rx : {uint8_t} = {srx & 31};
+
+se_slwi.disasm = {
+	os << "se_slwi " << GPRPrint(rx) << ',' << unsigned(ui5);
+}
+
+/* Shift Left Word */
+op se_slw(16[6]:2[2]:sext sry[4]:sext srx[4]);
+se_slw.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {sry & 31};
+
+se_slw.disasm = {
+	os << "se_slw " << GPRPrint(rx) << ',' << GPRPrint(ry);
+}
+
+/* Shift Right Algebraic Word Immediate */
+op se_srawi(26[6]:1[1]:ui5[5]:sext srx[4]);
+se_srawi.var rx : {uint8_t} = {srx & 31};
+
+se_srawi.disasm = {
+	os << "se_srawi " << GPRPrint(rx) << ',' << unsigned(ui5);
+}
+
+/* Shift Right Algebraic Word */
+op se_sraw(16[6]:1[2]:sext sry[4]:sext srx[4]);
+se_sraw.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {sry & 31};
+
+se_sraw.disasm = {
+	os << "se_sraw " << GPRPrint(rx) << ',' << GPRPrint(ry);
+}
+
+/* Shift Right Word Immediate */
+op e_srwi(31[6]:rs[5]:ra[5]:sh[5]:568[10]:rc[1]);
+
+e_srwi.disasm = {
+	os << "e_srwi" << (rc?". ":" ") << GPRPrint(ra) << ',' << GPRPrint(rs) << ',' << int(sh);
+}
+
+/* Shift Right Word Immediate Short Form */
+op se_srwi(26[6]:0[1]:ui5[5]:sext srx[4]);
+se_srwi.var rx : {uint8_t} = {srx & 31};
+
+se_srwi.disasm = {
+	os << "se_srwi " << GPRPrint(rx) << ',' << unsigned(ui5);
+}
+
+/* Shift Right Word */
+op se_srw(16[6]:0[2]:sext sry[4]:sext srx[4]);
+se_srw.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {sry & 31};
+
+se_srw.disasm = {
+	os << "se_srw " << GPRPrint(rx) << ',' << GPRPrint(ry);
+}
+
+/** Move To/From System Register Instructions **/
+
+/* Move From Count Register */
+op se_mfctr(0[6]:10[6]:sext srx[4]);
+se_mfctr.var rx : {uint8_t} = {srx & 31};
+
+se_mfctr.disasm = {
+	os << "se_mfctr " << GPRPrint(rx);
+}
+
+/* Move From Link Register */
+op se_mflr(0[6]:8[6]:sext srx[4]);
+se_mflr.var rx : {uint8_t} = {srx & 31};
+
+se_mflr.disasm = {
+	os << "se_mflr " << GPRPrint(rx);
+}
+
+/* Move To Count Register */
+op se_mtctr(0[6]:11[6]:sext srx[4]);
+se_mtctr.var rx : {uint8_t} = {srx & 31};
+
+se_mtctr.disasm = {
+	os << "se_mtctr " << GPRPrint(rx);
+}
+
+/* Move To Link Register */
+op se_mtlr(0[6]:9[6]:sext srx[4]);
+se_mtlr.var rx : {uint8_t} = {srx & 31};
+
+se_mtlr.disasm = {
+	os << "se_mtlr " << GPRPrint(rx);
+}
+
+/*************************************/
+/***  Storage Control Instructions ***/
+/*************************************/
+
+/** Storage Synchronization Instructions **/
+
+/* Instruction Synchronize */
+op se_isync(1[16]);
+
+se_isync.disasm = {
+	os << "se_isync";
+}
+
