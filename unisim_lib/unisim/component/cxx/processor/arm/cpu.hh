@@ -247,6 +247,8 @@ struct CPU
    */
   PSR&  CPSR() { return cpsr; };
   
+  uint32_t GetNZCV() const { return cpsr.Get( NZCV ); }
+  
   /** Get the endian configuration of the processor.
    *
    * @return the endian being used
@@ -471,7 +473,7 @@ public:
   void        SetVSR(  unsigned idx, F32 const& val ) { erb.ef32.SetReg( erb, idx, val ); }
   F64 const&  GetVDR(  unsigned idx )                 { return erb.ef64.GetReg( erb, idx ); }
   void        SetVDR(  unsigned idx, F64 const& val ) { erb.ef64.SetReg( erb, idx, val ); }
-
+  
   /*************************************/
   /* Debug Registers             START */
   /*************************************/

@@ -126,7 +126,7 @@ public:
     /* Service interface methods */
     virtual void ExecuteSystemCall(int id);
 	virtual bool Load();
-	virtual const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *GetBlob();
+	virtual const unisim::util::blob::Blob<ADDRESS_TYPE> *GetBlob();
 
 private:
 	bool LoadARM();
@@ -148,7 +148,7 @@ private:
 	 * otherwise they are unused
 	 */
 	void DumpBlob();
-	void DumpBlob(const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *b, int level);
+	void DumpBlob(const unisim::util::blob::Blob<ADDRESS_TYPE> *b, int level);
 	
 	bool ReadMem(ADDRESS_TYPE, void *buffer, uint32_t size);
 	bool WriteMem(ADDRESS_TYPE, const void *buffer, uint32_t size);
@@ -185,7 +185,7 @@ private:
     typedef LinuxOS<ADDRESS_TYPE,PARAMETER_TYPE> thistype;
     typedef void (thistype::*syscall_t)();
 
-	unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob;
+	unisim::util::blob::Blob<ADDRESS_TYPE> *blob;
 
 	map<string, syscall_t> syscall_name_map;
     map<int, string> syscall_name_assoc_map;

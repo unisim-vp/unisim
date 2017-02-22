@@ -36,7 +36,6 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_FRAME_HH__
 
 #include <unisim/util/debug/dwarf/fwd.hh>
-#include <unisim/kernel/logger/logger.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/util/endian/endian.hh>

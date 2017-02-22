@@ -16,7 +16,6 @@
  ***************************************************************************/
 
 #include <comment.hh>
-#include <scanner.hh>
 
 /** Constructor
     @param _content the C String containing the C comment
@@ -24,11 +23,11 @@
     @param _lineno the line number where the C/C++ comment was found
 */
 Comment::Comment( ConstStr _content, FileLoc const& _fileloc )
-  : m_content( _content ), m_fileloc( _fileloc )
+  : content( _content ), fileloc( _fileloc )
 {}
 
 Comment::Comment( Comment const& _comment )
-  : m_content( _comment.m_content ), m_fileloc( _comment.m_fileloc )
+  : content( _comment.content ), fileloc( _comment.fileloc )
 {}
 
 

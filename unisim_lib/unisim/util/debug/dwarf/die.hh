@@ -37,7 +37,6 @@
 
 #include <unisim/util/debug/dwarf/fwd.hh>
 #include <unisim/util/debug/stmt.hh>
-#include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/debug/data_object.hh>
 #include <unisim/util/debug/subprogram.hh>
 #include <list>
@@ -758,7 +757,9 @@ private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
 	DWARF_DIE<MEMORY_ADDR> *dw_parent_die;
-	unisim::kernel::logger::Logger& logger;
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
 	bool debug;
 	uint64_t offset;
 	unsigned int id;

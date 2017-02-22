@@ -45,6 +45,8 @@ namespace linux_os {
 
 struct ArmLinux64 : public Linux<uint64_t, uint64_t>
 {
+  typedef Linux<uint64_t, uint64_t> PLinux;
+
   ArmLinux64( const char* name, unisim::kernel::service::Object* parent = 0 );
   ~ArmLinux64();
   

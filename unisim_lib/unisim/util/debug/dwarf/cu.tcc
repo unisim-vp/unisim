@@ -44,17 +44,12 @@ namespace util {
 namespace debug {
 namespace dwarf {
 
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::EndDebugError;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::EndDebugInfo;
-
 template <class MEMORY_ADDR>
 DWARF_CompilationUnit<MEMORY_ADDR>::DWARF_CompilationUnit(DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 	: dw_handler(_dw_handler)
-	, logger(_dw_handler->GetLogger())
+	, debug_info_stream(_dw_handler->GetDebugInfoStream())
+	, debug_warning_stream(_dw_handler->GetDebugWarningStream())
+	, debug_error_stream(_dw_handler->GetDebugErrorStream())
 	, debug(false)
 	, dw_fmt(FMT_DWARF_UNKNOWN)
 	, dw_ver(DW_VER_UNKNOWN)
@@ -342,7 +337,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindDIEByAddrR
 		const DWARF_DIE<MEMORY_ADDR> *dw_found_die = dw_die->FindDIEByAddrRange(dw_tag, addr, length);
 		if(debug && dw_found_die)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", found DIE #" << dw_found_die->GetId() << " for address range 0x" << std::hex << addr << "-0x" << (addr + length) << std::dec << EndDebugInfo;
+			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", found DIE #" << dw_found_die->GetId() << " for address range 0x" << std::hex << addr << "-0x" << (addr + length) << std::dec << std::endl;
 		}
 		return dw_found_die;
 	}
@@ -369,7 +364,7 @@ bool DWARF_CompilationUnit<MEMORY_ADDR>::GetFrameBase(MEMORY_ADDR pc, MEMORY_ADD
 	{
 		if(debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
+			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching PC=0x" << std::hex << pc << std::dec << std::endl;
 		}
 		return 0;
 	}
@@ -384,7 +379,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindDataObject
 	{
 		if(debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
+			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching PC=0x" << std::hex << pc << std::dec << std::endl;
 		}
 		return 0;
 	}
@@ -402,7 +397,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindDataObject
 		
 		if(dw_die_code_portion_parent && debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", parent of DIE #" << dw_die_code_portion->GetId() << " is DIE #" << dw_die_code_portion_parent->GetId() << EndDebugInfo;
+			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", parent of DIE #" << dw_die_code_portion->GetId() << " is DIE #" << dw_die_code_portion_parent->GetId() << std::endl;
 		}
 		
 		dw_die_code_portion = dw_die_code_portion_parent;
@@ -411,7 +406,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindDataObject
 	
 	if(debug)
 	{
-		logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching data object name \"" << name << "\" and PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
+		debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching data object name \"" << name << "\" and PC=0x" << std::hex << pc << std::dec << std::endl;
 	}
 	return 0;
 }
@@ -424,7 +419,7 @@ void DWARF_CompilationUnit<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::
 	{
 		if(debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
+			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching PC=0x" << std::hex << pc << std::dec << std::endl;
 		}
 		return;
 	}
@@ -437,7 +432,7 @@ void DWARF_CompilationUnit<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::
 		
 		if(dw_die_code_portion_parent && debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", parent of DIE #" << dw_die_code_portion->GetId() << " is DIE #" << dw_die_code_portion_parent->GetId() << EndDebugInfo;
+			debug_info_stream << "In File \"" << dw_handler->GetFilename() << "\", parent of DIE #" << dw_die_code_portion->GetId() << " is DIE #" << dw_die_code_portion_parent->GetId() << std::endl;
 		}
 		
 		if(local_only && (dw_die_code_portion->GetTag() == DW_TAG_subprogram)) break;

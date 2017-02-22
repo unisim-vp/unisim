@@ -294,17 +294,17 @@ Generator::toposort()
   // Adding explicit edges (user specified)
   for (Isa::Orderings::iterator itr = source.m_user_orderings.begin(), end = source.m_user_orderings.end(); itr != end; ++itr) {
     // Unrolling specialization relations
-    std::vector<ConstStr>::const_iterator symitr = itr->symbols.begin(), symend = itr->symbols.end();
     typedef Vector<Operation> OpV;
-    OpV aboves;
-    if (not source.operations( *symitr, aboves ))
+    OpV ops_above;
+    if (not source.operations( itr->top_op, ops_above ))
       {
-        itr->fileloc.loc( std::cerr ) << "error: no such operation or group `" << symitr->str() << "'" << std::endl;
+        itr->fileloc.loc( std::cerr ) << "error: no such operation or group `" << itr->top_op.str() << "'" << std::endl;
         throw GenerationError;
       }
-    OpV belows;
-    while ((++symitr) != symend) {
-      if (not source.operations( *symitr, belows ))
+    OpV ops_below;
+    for (std::vector<ConstStr>::const_iterator symitr = itr->under_ops.begin(), symend = itr->under_ops.end(); symitr != symend; ++symitr)
+      {
+      if (not source.operations( *symitr, ops_below ))
         {
           itr->fileloc.loc( std::cerr ) << "error: no such operation or group `" << symitr->str() << "'" << std::endl;
           throw GenerationError;
@@ -312,9 +312,9 @@ Generator::toposort()
     }
     
     // Check each user specialization and insert when valid
-    for (OpV::iterator aoitr = aboves.begin(), aoend = aboves.end(); aoitr != aoend; ++aoitr) {
+    for (OpV::iterator aoitr = ops_above.begin(), aoend = ops_above.end(); aoitr != aoend; ++aoitr) {
       OpCode& opcode1( opcode( *aoitr ) );
-      for (OpV::iterator boitr = belows.begin(), boend = belows.end(); boitr != boend; ++boitr) {
+      for (OpV::iterator boitr = ops_below.begin(), boend = ops_below.end(); boitr != boend; ++boitr) {
         OpCode& opcode2( opcode( *boitr ) );
         switch (opcode1.locate( opcode2 )) {
         default: break;
@@ -840,7 +840,7 @@ Generator::isa_operations_decl( Product& _product ) const
       
       if( not actionproto->m_comments.empty() ) {
         for( Vector<Comment>::const_iterator comm = actionproto->m_comments.begin(); comm < actionproto->m_comments.end(); ++ comm )
-          _product.code( " %s\n", (**comm).m_content.str() );
+          _product.code( " %s\n", (**comm).content.str() );
       }
       
       if (source.m_withsource) {
@@ -968,7 +968,7 @@ Generator::isa_operations_methods( Product& _product ) const {
   for( Vector<Operation>::const_iterator op = source.m_operations.begin(); op < source.m_operations.end(); ++ op ) {
     if( not (**op).comments.empty() ) {
       for( Vector<Comment>::const_iterator comm = (**op).comments.begin(); comm < (**op).comments.end(); ++ comm )
-        _product.code( "%s\n", (**comm).m_content.str() );
+        _product.code( "%s\n", (**comm).content.str() );
     }
     
     if (source.m_withsource) {
@@ -995,7 +995,7 @@ Generator::isa_operations_methods( Product& _product ) const {
 
       if( not (**action).m_comments.empty() ) {
         for( Vector<Comment>::const_iterator comm = (**action).m_comments.begin(); comm < (**action).m_comments.end(); ++ comm )
-          _product.code( "%s\n", (**comm).m_content.str() );
+          _product.code( "%s\n", (**comm).content.str() );
       }
 
       if (source.m_withsource) {

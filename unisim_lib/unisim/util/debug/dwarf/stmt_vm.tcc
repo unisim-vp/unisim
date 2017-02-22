@@ -43,17 +43,12 @@ namespace util {
 namespace debug {
 namespace dwarf {
 
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugInfo;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::EndDebugError;
-
 template <class MEMORY_ADDR>
 DWARF_StatementVM<MEMORY_ADDR>::DWARF_StatementVM(const DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 	: dw_handler(_dw_handler)
-	, logger(_dw_handler->GetLogger())
+	, debug_info_stream(_dw_handler->GetDebugInfoStream())
+	, debug_warning_stream(_dw_handler->GetDebugWarningStream())
+	, debug_error_stream(_dw_handler->GetDebugErrorStream())
 	, debug(false)
 	, address(0)
 	, op_index(0)
@@ -110,7 +105,7 @@ void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_
 				{
 					if(debug)
 					{
-						logger << DebugWarning << "Directory index is out of range in line number program" << EndDebugInfo;
+						debug_warning_stream << "Directory index is out of range in line number program" << std::endl;
 					}
 					
 					return;
@@ -183,7 +178,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 							{
 								if(debug)
 								{
-									logger << DebugError << "LEB128 argument #" << i << " of standard Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << " is bad or missing in line number program" << std::endl;
+									debug_error_stream << "LEB128 argument #" << i << " of standard Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << " is bad or missing in line number program" << std::endl;
 								}
 								return false;
 							}
@@ -197,7 +192,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 						{
 							if(debug)
 							{
-								logger << DebugError << "uhalf argument #" << i << " of standard Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << " is bad or missing in line number program" << std::endl;
+								debug_error_stream << "uhalf argument #" << i << " of standard Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << " is bad or missing in line number program" << std::endl;
 							}
 							return false;
 						}
@@ -346,7 +341,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 				{
 					if(debug)
 					{
-						logger << DebugError << "Length (encoded as a LEB128) of an instruction (with an extended opcode) is bad or missing in line number program" << EndDebugError;
+						debug_error_stream << "Length (encoded as a LEB128) of an instruction (with an extended opcode) is bad or missing in line number program" << std::endl;
 					}
 					return false;
 				}
@@ -406,7 +401,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 								default:
 									if(debug)
 									{
-										logger << DebugError << "DW_LNE_set_address: unsupported address size" << EndDebugError;
+										debug_error_stream << "DW_LNE_set_address: unsupported address size" << std::endl;
 									}
 									return false;
 							}
@@ -424,7 +419,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 							{
 								if(debug)
 								{
-									logger << DebugError << "DW_LNE_define_file: bad DWARF filename entry" << EndDebugError;
+									debug_error_stream << "DW_LNE_define_file: bad DWARF filename entry" << std::endl;
 								}
 								return false;
 							}
@@ -441,7 +436,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 							{
 								if(debug)
 								{
-									logger << DebugError << "DW_LNE_set_discriminator: discriminator is bad or missing in line number program" << EndDebugError;
+									debug_error_stream << "DW_LNE_set_discriminator: discriminator is bad or missing in line number program" << std::endl;
 								}
 								return false;
 							}
@@ -452,7 +447,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 					default:
 						if(debug)
 						{
-							logger << DebugError << "unknown extended Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << EndDebugError;
+							debug_error_stream << "unknown extended Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << std::endl;
 						}
 						return false;
 				}

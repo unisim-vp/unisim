@@ -45,13 +45,6 @@ namespace memory {
 namespace flash {
 namespace n25q {
 
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::EndDebugInfo;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugError;
-
 template <typename CONFIG>
 N25Q<CONFIG>::N25Q(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent)
@@ -68,7 +61,8 @@ N25Q<CONFIG>::N25Q(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, param_output_filename("output-filename", this, output_filename, "output filename")
 	, schedule()
 	, suspend_stack()
-	, write_operation_in_progress_event(0)
+	, program_or_erase_operation_in_progress_event(0)
+	, suspend_in_progress_event(0)
 	, erase_resume_time_stamp(sc_core::SC_ZERO_TIME)
 	, program_resume_time_stamp(sc_core::SC_ZERO_TIME)
 	, subsector_erase_resume_time_stamp(sc_core::SC_ZERO_TIME)
@@ -481,15 +475,8 @@ void N25Q<CONFIG>::Zero(uint8_t *dst, unsigned int dst_bit_length, unsigned int 
 	
 	if(dst_bit_length)
 	{
-		unsigned int l = dst_bit_length / 8;
-		memset(dst, 0, l); // zero first bytes
-		if(verbose && debug)
-		{
-			logger << DebugInfo << "D0-D" << ((8 * l) - 1) << " <- X" << EndDebugInfo;
-		}
-		
 		unsigned int i;
-		for(i = 8 * l; i < dst_bit_length; i++)
+		for(i = 0; i < dst_bit_length; i++)
 		{
 			unsigned int dbio = dst_bit_offset + i;
 			unsigned int dbyo = dbio / 8;
@@ -702,6 +689,61 @@ bool N25Q<CONFIG>::IsEraseSuspendedFor(uint32_t addr)
 				return (erase_addr / CONFIG::SECTOR_SIZE) == (addr / CONFIG::SECTOR_SIZE);
 			case N25Q_BULK_ERASE_COMMAND:
 				return (addr < CONFIG::SIZE);
+			default:
+				break;
+		}
+	}
+	
+	return false;
+}
+
+template <typename CONFIG>
+bool N25Q<CONFIG>::IsEraseSuspended()
+{
+	typename std::vector<Event *>::size_type n = suspend_stack.size();
+	typename std::vector<Event *>::size_type i;
+
+	for(i = 0; i < n; i++)
+	{
+		Event *suspended_event = suspend_stack[i];
+		
+		n25q_command_type n25q_cmd = suspended_event->GetCommand();
+		
+		switch(n25q_cmd)
+		{
+			case N25Q_SUBSECTOR_ERASE_COMMAND:
+			case N25Q_SECTOR_ERASE_COMMAND:
+			case N25Q_BULK_ERASE_COMMAND:
+				return true;
+			default:
+				break;
+		}
+	}
+	
+	return false;
+}
+
+template <typename CONFIG>
+bool N25Q<CONFIG>::IsSubSectorEraseOrProgramSuspended()
+{
+	typename std::vector<Event *>::size_type n = suspend_stack.size();
+	typename std::vector<Event *>::size_type i;
+
+	for(i = 0; i < n; i++)
+	{
+		Event *suspended_event = suspend_stack[i];
+		
+		n25q_command_type n25q_cmd = suspended_event->GetCommand();
+		
+		switch(n25q_cmd)
+		{
+			case N25Q_PAGE_PROGRAM_COMMAND:
+			case N25Q_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+			case N25Q_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+			case N25Q_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+			case N25Q_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+			case N25Q_SUBSECTOR_ERASE_COMMAND:
+				return true;
 			default:
 				break;
 		}
@@ -986,7 +1028,7 @@ typename N25Q<CONFIG>::Event *N25Q<CONFIG>::Decode(payload_type& payload, bool b
 			unsigned char *data_ptr_clone = new unsigned char[payload.get_data_length()];
 			payload_clone->set_data_ptr(data_ptr_clone);
 			payload_clone->copy_from(payload);
-			event->SetPayload(payload_clone, true);
+			event->SetPayload(payload_clone, true, true);
 		}
 	}
 	event->SetCommand(n25q_cmd);
@@ -1052,7 +1094,7 @@ unsigned int N25Q<CONFIG>::DummyCycles(n25q_command_type n25q_cmd)
 }
 
 template <typename CONFIG>
-typename N25Q<CONFIG>::Event *N25Q<CONFIG>::PostEndOfWriteOperation(Event *event)
+typename N25Q<CONFIG>::Event *N25Q<CONFIG>::PostEndOfWriteOperation(Event *event, const sc_core::sc_time& operation_duration)
 {
 	payload_type *payload = event->GetPayload();
 	n25q_command_type n25q_cmd = event->GetCommand();
@@ -1063,11 +1105,14 @@ typename N25Q<CONFIG>::Event *N25Q<CONFIG>::PostEndOfWriteOperation(Event *event
 	
 	Event *end_of_operation_event = schedule.AllocEvent();
 	
-	sc_core::sc_time operation_duration = ComputeWriteOperationTime(event);
-	
 	sc_core::sc_time end_of_operation_time_stamp(sc_core::sc_time_stamp());
 	end_of_operation_time_stamp += operation_duration;
 
+	if(verbose)
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": " << event->GetCommand() << " will finish at " << end_of_operation_time_stamp << EndDebugInfo;
+	}
+	
 	end_of_operation_event->SetTimeStamp(end_of_operation_time_stamp);
 	if(payload->has_mm())
 	{
@@ -1080,7 +1125,7 @@ typename N25Q<CONFIG>::Event *N25Q<CONFIG>::PostEndOfWriteOperation(Event *event
 		unsigned char *data_ptr_clone = new unsigned char[payload->get_data_length()];
 		payload_clone->set_data_ptr(data_ptr_clone);
 		payload_clone->copy_from(*payload);
-		end_of_operation_event->SetPayload(payload_clone, true);
+		end_of_operation_event->SetPayload(payload_clone, true, true);
 	}
 	end_of_operation_event->SetCommand(n25q_cmd);
 	end_of_operation_event->SetAddress(n25q_addr);
@@ -1089,6 +1134,7 @@ typename N25Q<CONFIG>::Event *N25Q<CONFIG>::PostEndOfWriteOperation(Event *event
 	end_of_operation_event->SetReadDataBitOffset(read_data_bit_offset);
 	end_of_operation_event->SetStage(END_OF_OPERATION);
 	end_of_operation_event->SetPostTime(sc_core::sc_time_stamp());
+	end_of_operation_event->SetDuration(operation_duration);
 	
 	schedule.Notify(end_of_operation_event);
 	
@@ -1101,13 +1147,22 @@ void N25Q<CONFIG>::ReadID(Event *event)
 	payload_type *payload = event->GetPayload();
 	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
 	unsigned int rx_data_bit_length = payload->get_rx_data_bit_length();
-	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
 	unsigned char *rx_data_ptr = payload->get_rx_data_ptr();
-	unsigned int rx_width = payload->get_rx_width();
-	n25q_signal_type rx_signals = n25q_output_signal(rx_width);
-	n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
+	
+	if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
+	{
+		unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
+		unsigned int rx_width = payload->get_rx_width();
+		n25q_signal_type rx_signals = n25q_output_signal(rx_width);
+		n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
 
-	Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, CONFIG::ID, 8 * CONFIG::ID_SIZE, read_data_bit_offset, data_signals);
+		Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, CONFIG::ID, 8 * CONFIG::ID_SIZE, read_data_bit_offset, data_signals);
+	}
+	else
+	{
+		Zero(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset);
+		logger << DebugWarning << "Attempt to read ID while in program or erase state" << EndDebugWarning;
+	}
 }
 
 template <typename CONFIG>
@@ -1116,190 +1171,238 @@ void N25Q<CONFIG>::MultipleIOReadID(Event *event)
 	payload_type *payload = event->GetPayload();
 	unsigned int rx_data_bit_length = payload->get_rx_data_bit_length();
 	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
-	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
 	unsigned char *rx_data_ptr = payload->get_rx_data_ptr();
-	unsigned int rx_width = payload->get_rx_width();
-	n25q_signal_type rx_signals = n25q_output_signal(rx_width);
-	n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
+	
+	if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
+	{
+		unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
+		unsigned int rx_width = payload->get_rx_width();
+		n25q_signal_type rx_signals = n25q_output_signal(rx_width);
+		n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
 
-	Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, CONFIG::ID, 3 * 8, read_data_bit_offset, data_signals); // Note: Multiple I/O READ ID command can only read first 3 bytes of ID
+		Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, CONFIG::ID, 3 * 8, read_data_bit_offset, data_signals); // Note: Multiple I/O READ ID command can only read first 3 bytes of ID
+	}
+	else
+	{
+		Zero(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset);
+		logger << DebugWarning << "Attempt to read ID while in program or erase state" << EndDebugWarning;
+	}
 }
 
 template <typename CONFIG>
 void N25Q<CONFIG>::ReadSFDP(Event *event)
 {
 	payload_type *payload = event->GetPayload();
-	uint32_t addr = event->GetAddress();
 	unsigned int rx_data_bit_length = payload->get_rx_data_bit_length();
 	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
-	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
 	unsigned char *rx_data_ptr = payload->get_rx_data_ptr();
-	unsigned int rx_data_length = payload->get_rx_data_length();
-	unsigned int rx_width = payload->get_rx_width();
-	n25q_signal_type rx_signals = n25q_output_signal(rx_width);
-	n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
-
-	uint8_t tmp[rx_data_length];
 	
-	unsigned int offset;
-	unsigned int boundary = 2048; // When the 2048-byte boundary is reached,
-	                              // the data output wraps to address 0 of the serial
-	                              // Flash discovery parameter table.
-	
-	if(addr >= boundary) addr = 0;
-	
-	unsigned int moved = 0;
-	
-	for(offset = 0; offset < rx_data_length; offset += moved)
+	if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
 	{
-		uint32_t data_to_copy = rx_data_length - offset;
-		uint32_t data_to_zero = 0;
-		if(data_to_copy > (CONFIG::SFDP_SIZE - addr))
-		{
-			data_to_zero = rx_data_length - data_to_copy;
-			if(data_to_zero > (boundary - CONFIG::SFDP_SIZE)) data_to_zero = boundary - CONFIG::SFDP_SIZE;
-			data_to_copy = CONFIG::SFDP_SIZE - addr;
-		}
-		
-		memcpy(tmp + offset, CONFIG::SFDP + addr, data_to_copy);
-		if(data_to_zero)
-		{
-			memset(tmp + offset + data_to_copy, 0, data_to_zero);
-		}
-		
-		moved = data_to_copy + data_to_zero;
-	}
+		uint32_t addr = event->GetAddress();
+		unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
+		unsigned int rx_data_length = payload->get_rx_data_length();
+		unsigned int rx_width = payload->get_rx_width();
+		n25q_signal_type rx_signals = n25q_output_signal(rx_width);
+		n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
 
-	Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, rx_data_bit_length, read_data_bit_offset, data_signals);
+		uint8_t tmp[rx_data_length];
+		
+		unsigned int offset;
+		unsigned int boundary = 2048; // When the 2048-byte boundary is reached,
+									// the data output wraps to address 0 of the serial
+									// Flash discovery parameter table.
+		
+		if(addr >= boundary) addr = 0;
+		
+		unsigned int moved = 0;
+		
+		for(offset = 0; offset < rx_data_length; offset += moved)
+		{
+			uint32_t data_to_copy = rx_data_length - offset;
+			uint32_t data_to_zero = 0;
+			if(data_to_copy > (CONFIG::SFDP_SIZE - addr))
+			{
+				data_to_zero = rx_data_length - data_to_copy;
+				if(data_to_zero > (boundary - CONFIG::SFDP_SIZE)) data_to_zero = boundary - CONFIG::SFDP_SIZE;
+				data_to_copy = CONFIG::SFDP_SIZE - addr;
+			}
+			
+			memcpy(tmp + offset, CONFIG::SFDP + addr, data_to_copy);
+			if(data_to_zero)
+			{
+				memset(tmp + offset + data_to_copy, 0, data_to_zero);
+			}
+			
+			moved = data_to_copy + data_to_zero;
+		}
+
+		Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, rx_data_bit_length, read_data_bit_offset, data_signals);
+	}
+	else
+	{
+		Zero(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset);
+		logger << DebugWarning << "Attempt to read serial flash discovery parameters while in program or erase state" << EndDebugWarning;
+	}
 }
 
 template <typename CONFIG>
 void N25Q<CONFIG>::Read(Event *event)
 {
 	payload_type *payload = event->GetPayload();
-	uint32_t addr = event->GetAddress();
 	unsigned int rx_data_bit_length = payload->get_rx_data_bit_length();
 	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
-	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
 	unsigned char *rx_data_ptr = payload->get_rx_data_ptr();
-	unsigned int rx_width = payload->get_rx_width();
-	n25q_signal_type rx_signals = n25q_output_signal(rx_width);
-	n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
-	unsigned int data_width = n25q_signal_width(data_signals);
-	unsigned int data_cycles = (rx_data_bit_length - rx_data_bit_offset) / rx_width;
-
-	unsigned int read_bit_length = data_cycles * data_width;
-	unsigned int read_length = (read_bit_length + 7) / 8;
 	
-	uint8_t tmp[read_length];
-	
-	unsigned int offset = 0;
-	uint32_t wrap = GetWrap();
-	
-	unsigned int copied = 0;
-	
-	for(offset = 0; offset < read_length; offset += copied)
+	if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
 	{
-		uint32_t wrapped_addr_offset = addr & (wrap - 1);
-		uint32_t size_to_copy = wrap - wrapped_addr_offset;
-		if(size_to_copy > (read_length - offset)) size_to_copy = read_length - offset;
-		if(size_to_copy > (CONFIG::SIZE - addr)) size_to_copy = CONFIG::SIZE - addr;
+		uint32_t addr = event->GetAddress();
+		unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
+		unsigned int rx_width = payload->get_rx_width();
+		n25q_signal_type rx_signals = n25q_output_signal(rx_width);
+		n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
+		unsigned int data_width = n25q_signal_width(data_signals);
+		unsigned int data_cycles = (rx_data_bit_length - rx_data_bit_offset) / rx_width;
+
+		unsigned int read_bit_length = data_cycles * data_width;
+		unsigned int read_length = (read_bit_length + 7) / 8;
 		
-		if(verbose)
-		{
-			logger << DebugInfo << "Reading " << (8 * size_to_copy) << " bits at bit offset 0x" << std::hex << (8 * addr) << std::dec << EndDebugInfo;
-		}
-		// During a PROGRAM SUSPEND operation, a READ operation is possible in any page except the one in a suspended state.
-		// Reading from a page that is in a suspended state will output indeterminate data.
-		// During an ERASE SUSPEND operation, a PROGRAM or READ operation is possible in any sector except the one in a suspended state.
-		// Reading from a sector that is in a suspended state will output indeterminate data.
-		if(IsProgramOrEraseSuspendedFor(addr))
-		{
-			logger << DebugWarning << "Attempt to read data at 0x" << addr << " from a page/sector that is in suspend state" << EndDebugWarning;
-		}
-		memcpy(tmp + offset, storage + addr, size_to_copy);
+		uint8_t tmp[read_length];
 		
-		copied = size_to_copy;
+		unsigned int offset = 0;
+		uint32_t wrap = GetWrap();
 		
-		if(wrapped_addr_offset)
+		unsigned int copied = 0;
+		
+		for(offset = 0; offset < read_length; offset += copied)
 		{
-			addr += copied;
+			uint32_t wrapped_addr_offset = addr & (wrap - 1);
+			uint32_t size_to_copy = wrap - wrapped_addr_offset;
+			if(size_to_copy > (read_length - offset)) size_to_copy = read_length - offset;
+			if(size_to_copy > (CONFIG::SIZE - addr)) size_to_copy = CONFIG::SIZE - addr;
+			
+			if(verbose)
+			{
+				logger << DebugInfo << "Reading " << (8 * size_to_copy) << " bits at bit offset 0x" << std::hex << (8 * addr) << std::dec << EndDebugInfo;
+			}
+			// During a PROGRAM SUSPEND operation, a READ operation is possible in any page except the one in a suspended state.
+			// Reading from a page that is in a suspended state will output indeterminate data.
+			// During an ERASE SUSPEND operation, a PROGRAM or READ operation is possible in any sector except the one in a suspended state.
+			// Reading from a sector that is in a suspended state will output indeterminate data.
+			if(IsProgramOrEraseSuspendedFor(addr))
+			{
+				logger << DebugWarning << "Attempt to read data at 0x" << addr << " from a page/sector that is in suspend state" << EndDebugWarning;
+			}
+			memcpy(tmp + offset, storage + addr, size_to_copy);
+			
+			copied = size_to_copy;
+			
+			if(wrapped_addr_offset)
+			{
+				addr += copied;
+			}
 		}
+		
+		Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, read_bit_length, read_data_bit_offset, data_signals);
 	}
-	
-	Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, read_bit_length, read_data_bit_offset, data_signals);
+	else
+	{
+		Zero(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset);
+		logger << DebugWarning << "Attempt to read while in program or erase state" << EndDebugWarning;
+	}
 }
 
 template <typename CONFIG>
 void N25Q<CONFIG>::FastRead(Event *event)
 {
-	payload_type *payload = event->GetPayload();
-	n25q_command_type n25q_cmd = event->GetCommand();
-	unsigned int tx_data_bit_length = payload->get_tx_data_bit_length();
-	unsigned char *tx_data_ptr = payload->get_tx_data_ptr();
-	unsigned int tx_data_bit_offset = event->GetTxDataBitOffset();
-	
-	unsigned int tx_width = payload->get_tx_width();
-	n25q_signal_type tx_signals = n25q_input_signal(tx_width);
-
-	if((tx_data_bit_offset + (1 * tx_width)) > tx_data_bit_length)
-	{
-		std::stringstream sstr_cmd;
-		sstr_cmd << event->GetCommand();
-		logger << DebugWarning << "Not enough dummy bits for XIP confirmation bit of " << sstr_cmd.str() << EndDebugWarning;
-		return;
-	}
-	
 	uint8_t xip_confirmation_bit = 0;
-	Xfer(&xip_confirmation_bit, 1, 0, DQ0, tx_data_ptr, tx_data_bit_length, tx_data_bit_offset, tx_signals);
-
-	if(verbose)
+	
+	if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
 	{
-		logger << DebugInfo << "XIP confirmation bit is " << (unsigned int)((xip_confirmation_bit >> 7) & 1) << EndDebugInfo;
-	}
+		payload_type *payload = event->GetPayload();
+		n25q_command_type n25q_cmd = event->GetCommand();
+		unsigned int tx_data_bit_length = payload->get_tx_data_bit_length();
+		unsigned char *tx_data_ptr = payload->get_tx_data_ptr();
+		unsigned int tx_data_bit_offset = event->GetTxDataBitOffset();
+		
+		unsigned int tx_width = payload->get_tx_width();
+		n25q_signal_type tx_signals = n25q_input_signal(tx_width);
 
-	unsigned int dummy_cycles = DummyCycles(n25q_cmd);
-	
-	tx_data_bit_offset += dummy_cycles * tx_width;
-	
-	event->SetTxDataBitOffset(tx_data_bit_offset);
+		if((tx_data_bit_offset + (1 * tx_width)) > tx_data_bit_length)
+		{
+			std::stringstream sstr_cmd;
+			sstr_cmd << event->GetCommand();
+			logger << DebugWarning << "Not enough dummy bits for XIP confirmation bit of " << sstr_cmd.str() << EndDebugWarning;
+			return;
+		}
+		
+		Xfer(&xip_confirmation_bit, 1, 0, DQ0, tx_data_ptr, tx_data_bit_length, tx_data_bit_offset, tx_signals);
+
+		if(verbose)
+		{
+			logger << DebugInfo << "XIP confirmation bit is " << (unsigned int)((xip_confirmation_bit >> 7) & 1) << EndDebugInfo;
+		}
+
+		unsigned int dummy_cycles = DummyCycles(n25q_cmd);
+		
+		tx_data_bit_offset += dummy_cycles * tx_width;
+		
+		event->SetTxDataBitOffset(tx_data_bit_offset);
+	}
 	
 	Read(event);
 	
-	switch(n25q_mode)
+	if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
 	{
-		case N25Q_STD_MODE:
-			// Standard mode
-			if(((CONFIG::XIP_F == CONFIG::BASIC_XIP) || !VCR.XIP) && !xip_confirmation_bit) // XIP=0 and Xb=0
-			{
-				n25q_mode = N25Q_XIP_MODE;
-				n25q_xip_cmd = event->GetCommand();
-			}
-			break;
-		case N25Q_XIP_MODE:
-			// XIP mode
-			if(xip_confirmation_bit) // XIP confirmation bit=1
-			{
-				// XIP is terminated by driving the XIP confirmation bit to 1.
-				n25q_mode = N25Q_STD_MODE;
-				
-				// The device automatically resets volatile configuration register bit 3 to 1.
-				VCR.XIP = 1;
-			}
-			break;
+		switch(n25q_mode)
+		{
+			case N25Q_STD_MODE:
+				// Standard mode
+				if(((CONFIG::XIP_F == CONFIG::BASIC_XIP) || !VCR.XIP) && !xip_confirmation_bit) // XIP=0 and Xb=0
+				{
+					n25q_mode = N25Q_XIP_MODE;
+					n25q_xip_cmd = event->GetCommand();
+				}
+				break;
+			case N25Q_XIP_MODE:
+				// XIP mode
+				if(xip_confirmation_bit) // XIP confirmation bit=1
+				{
+					// XIP is terminated by driving the XIP confirmation bit to 1.
+					n25q_mode = N25Q_STD_MODE;
+					
+					// The device automatically resets volatile configuration register bit 3 to 1.
+					VCR.XIP = 1;
+				}
+				break;
+		}
 	}
 }
 
 template <typename CONFIG>
 void N25Q<CONFIG>::WriteEnable()
 {
-	SR.Write_enable_latch = 1;
+	if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
+	{
+		SR.Write_enable_latch = 1;
+	}
+	else
+	{
+		logger << DebugWarning << "Attempt to run " << N25Q_WRITE_ENABLE_COMMAND << " while in program or erase state" << EndDebugWarning;
+	}
 }
 
 template <typename CONFIG>
 void N25Q<CONFIG>::WriteDisable()
 {
-	SR.Write_enable_latch = 0;
+	if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
+	{
+		SR.Write_enable_latch = 0;
+	}
+	else
+	{
+		logger << DebugWarning << "Attempt to run " << N25Q_WRITE_DISABLE_COMMAND << " while in program or erase state" << EndDebugWarning;
+	}
 }
 
 template <typename CONFIG>
@@ -1351,24 +1454,33 @@ void N25Q<CONFIG>::ReadNonVolatileConfigurationRegister(Event *event)
 	payload_type *payload = event->GetPayload();
 	unsigned int rx_data_bit_length = payload->get_rx_data_bit_length();
 	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
-	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
 	unsigned char *rx_data_ptr = payload->get_rx_data_ptr();
-	unsigned int rx_data_length = payload->get_rx_data_length();
-	unsigned int rx_width = payload->get_rx_width();
-	n25q_signal_type rx_signals = n25q_output_signal(rx_width);
-	n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
 
-	uint8_t tmp[rx_data_length];
-	
-	uint16_t nvcr_value_value = FSR;
-	unsigned int i;
-	// continuously sends NVCR value (MSB followed by LSB)
-	for(i = 0; i < rx_data_length; i++)
+	if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
 	{
-		tmp[i] = (i & 1) ? nvcr_value_value : (nvcr_value_value >> 8);
+		unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
+		unsigned int rx_data_length = payload->get_rx_data_length();
+		unsigned int rx_width = payload->get_rx_width();
+		n25q_signal_type rx_signals = n25q_output_signal(rx_width);
+		n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
+
+		uint8_t tmp[rx_data_length];
+		
+		uint16_t nvcr_value_value = FSR;
+		unsigned int i;
+		// continuously sends NVCR value (MSB followed by LSB)
+		for(i = 0; i < rx_data_length; i++)
+		{
+			tmp[i] = (i & 1) ? nvcr_value_value : (nvcr_value_value >> 8);
+		}
+		
+		Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, rx_data_bit_length, read_data_bit_offset, data_signals);
 	}
-	
-	Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, rx_data_bit_length, read_data_bit_offset, data_signals);
+	else
+	{
+		Zero(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset);
+		logger << DebugWarning << "Attempt to read Nonvolatile configuration register while in program or erase state" << EndDebugWarning;
+	}
 }
 
 template <typename CONFIG>
@@ -1377,19 +1489,28 @@ void N25Q<CONFIG>::ReadVolatileConfigurationRegister(Event *event)
 	payload_type *payload = event->GetPayload();
 	unsigned int rx_data_bit_length = payload->get_rx_data_bit_length();
 	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
-	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
 	unsigned char *rx_data_ptr = payload->get_rx_data_ptr();
-	unsigned int rx_data_length = payload->get_rx_data_length();
-	unsigned int rx_width = payload->get_rx_width();
-	n25q_signal_type rx_signals = n25q_output_signal(rx_width);
-	n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
+	
+	if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
+	{
+		unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
+		unsigned int rx_data_length = payload->get_rx_data_length();
+		unsigned int rx_width = payload->get_rx_width();
+		n25q_signal_type rx_signals = n25q_output_signal(rx_width);
+		n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
 
-	uint8_t tmp[rx_data_length];
-	
-	uint8_t vcr_value = VCR;
-	memset(tmp, vcr_value, rx_data_length);
-	
-	Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, rx_data_bit_length, read_data_bit_offset, data_signals);
+		uint8_t tmp[rx_data_length];
+		
+		uint8_t vcr_value = VCR;
+		memset(tmp, vcr_value, rx_data_length);
+		
+		Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, rx_data_bit_length, read_data_bit_offset, data_signals);
+	}
+	else
+	{
+		Zero(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset);
+		logger << DebugWarning << "Attempt to read volatile configuration register while in program or erase state" << EndDebugWarning;
+	}
 }
 
 template <typename CONFIG>
@@ -1398,83 +1519,109 @@ void N25Q<CONFIG>::ReadEnhancedVolatileConfigurationRegister(Event *event)
 	payload_type *payload = event->GetPayload();
 	unsigned int rx_data_bit_length = payload->get_rx_data_bit_length();
 	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
-	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
 	unsigned char *rx_data_ptr = payload->get_rx_data_ptr();
-	unsigned int rx_data_length = payload->get_rx_data_length();
-	unsigned int rx_width = payload->get_rx_width();
-	n25q_signal_type rx_signals = n25q_output_signal(rx_width);
-	n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
+	
+	if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
+	{
+		unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
+		unsigned int rx_data_length = payload->get_rx_data_length();
+		unsigned int rx_width = payload->get_rx_width();
+		n25q_signal_type rx_signals = n25q_output_signal(rx_width);
+		n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
 
-	uint8_t tmp[rx_data_length];
-	
-	uint8_t vecr_value = VECR;
-	memset(tmp, vecr_value, rx_data_length);
-	
-	Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, rx_data_bit_length, read_data_bit_offset, data_signals);
+		uint8_t tmp[rx_data_length];
+		
+		uint8_t vecr_value = VECR;
+		memset(tmp, vecr_value, rx_data_length);
+		
+		Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, rx_data_bit_length, read_data_bit_offset, data_signals);
+	}
+	else
+	{
+		Zero(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset);
+		logger << DebugWarning << "Attempt to read Enhanced volatile configuration register while in program or erase state" << EndDebugWarning;
+	}
 }
 
 template <typename CONFIG>
 void N25Q<CONFIG>::ReadLockRegister(Event *event)
 {
 	payload_type *payload = event->GetPayload();
-	uint32_t addr = event->GetAddress();
 	unsigned int rx_data_bit_length = payload->get_rx_data_bit_length();
 	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
-	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
 	unsigned char *rx_data_ptr = payload->get_rx_data_ptr();
-	unsigned int rx_data_length = payload->get_rx_data_length();
-	unsigned int rx_width = payload->get_rx_width();
-	n25q_signal_type rx_signals = n25q_output_signal(rx_width);
-	n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
-
-	uint8_t tmp[rx_data_length];
 	
-	uint8_t lr_value = (addr < CONFIG::SIZE) ? (const uint8_t) *LR[addr / CONFIG::SECTOR_SIZE] : 0;
-	unsigned int i;
-	for(i = 0; i < rx_data_length; i++)
+	if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
 	{
-		tmp[i] = lr_value;
-	}
-	
-	Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, rx_data_bit_length, read_data_bit_offset, data_signals);
+		uint32_t addr = event->GetAddress();
+		unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
+		unsigned int rx_data_length = payload->get_rx_data_length();
+		unsigned int rx_width = payload->get_rx_width();
+		n25q_signal_type rx_signals = n25q_output_signal(rx_width);
+		n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
 
+		uint8_t tmp[rx_data_length];
+		
+		uint8_t lr_value = (addr < CONFIG::SIZE) ? (const uint8_t) *LR[addr / CONFIG::SECTOR_SIZE] : 0;
+		unsigned int i;
+		for(i = 0; i < rx_data_length; i++)
+		{
+			tmp[i] = lr_value;
+		}
+		
+		Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, rx_data_bit_length, read_data_bit_offset, data_signals);
+	}
+	else
+	{
+		Zero(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset);
+		logger << DebugWarning << "Attempt to read lock register while in program or erase state" << EndDebugWarning;
+	}
 }
 
 template <typename CONFIG>
 void N25Q<CONFIG>::ReadOTPArray(Event *event)
 {
 	payload_type *payload = event->GetPayload();
-	uint32_t addr = event->GetAddress();
 	unsigned int rx_data_bit_length = payload->get_rx_data_bit_length();
 	unsigned int rx_data_bit_offset = event->GetRxDataBitOffset();
-	unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
 	unsigned char *rx_data_ptr = payload->get_rx_data_ptr();
-	unsigned int rx_data_length = payload->get_rx_data_length();
-	unsigned int rx_width = payload->get_rx_width();
-	n25q_signal_type rx_signals = n25q_output_signal(rx_width);
-	n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
-
-	uint8_t tmp[rx_data_length];
-
-	if(addr < CONFIG::OTP_ARRAY_SIZE)
+	
+	if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
 	{
-		unsigned int data_to_copy = rx_data_length;
-		if(data_to_copy > (CONFIG::OTP_ARRAY_SIZE - addr)) data_to_copy = CONFIG::OTP_ARRAY_SIZE - addr;
-		
-		memcpy(tmp, OTP + addr, data_to_copy);
-		
-		if(rx_data_length > data_to_copy)
+		uint32_t addr = event->GetAddress();
+		unsigned int read_data_bit_offset = event->GetReadDataBitOffset();
+		unsigned int rx_data_length = payload->get_rx_data_length();
+		unsigned int rx_width = payload->get_rx_width();
+		n25q_signal_type rx_signals = n25q_output_signal(rx_width);
+		n25q_signal_type data_signals = n25q_data_signal(event->GetCommand(), GetProtocol(), n25q_mode);
+
+		uint8_t tmp[rx_data_length];
+
+		if(addr < CONFIG::OTP_ARRAY_SIZE)
 		{
-			unsigned int dup_length = rx_data_length - data_to_copy;
-			memset(tmp + data_to_copy, OTP[CONFIG::OTP_ARRAY_SIZE - 1], dup_length);
+			unsigned int data_to_copy = rx_data_length;
+			if(data_to_copy > (CONFIG::OTP_ARRAY_SIZE - addr)) data_to_copy = CONFIG::OTP_ARRAY_SIZE - addr;
+			
+			memcpy(tmp, OTP + addr, data_to_copy);
+			
+			if(rx_data_length > data_to_copy)
+			{
+				unsigned int dup_length = rx_data_length - data_to_copy;
+				memset(tmp + data_to_copy, OTP[CONFIG::OTP_ARRAY_SIZE - 1], dup_length);
+			}
 		}
+		else
+		{
+			memset(tmp, 0, rx_data_length);
+		}
+		
+		Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, rx_data_bit_length, read_data_bit_offset, data_signals);
 	}
 	else
 	{
-		memset(tmp, 0, rx_data_length);
+		Zero(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset);
+		logger << DebugWarning << "Attempt to read OTP array while in program or erase state" << EndDebugWarning;
 	}
-	
-	Xfer(rx_data_ptr, rx_data_bit_length - rx_data_bit_offset, rx_data_bit_offset, rx_signals, tmp, rx_data_bit_length, read_data_bit_offset, data_signals);
 }
 
 template <typename CONFIG>
@@ -1485,18 +1632,39 @@ void N25Q<CONFIG>::WriteNonVolatileConfigurationRegister(Event *event)
 	switch(event->GetStage())
 	{
 		case START_OF_OPERATION:
-			if(SR.Write_enable_latch)
+			if(SR.Write_enable_latch) // write enable ?
 			{
-				if(FSR.Program_or_erase_controller) // ready
+				if(!SR.Write_in_progress) // ready ?
 				{
-					PostEndOfWriteOperation(event);
-					// When the operation is in progress, the write in progress bit is set to 1.
-					SR.Write_in_progress = 1;
-					FSR.Program_or_erase_controller = 0; // busy
+					if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
+					{
+						if(!IsEraseSuspended()) // Erase suspend state ?
+						{
+							if(!IsSubSectorEraseOrProgramSuspended()) // Subsector Erase or Suspend Program Suspend State ?
+							{
+								PostEndOfWriteOperation(event, ComputeWriteOperationTime(event));;
+								// When the operation is in progress, the write in progress bit is set to 1.
+								SR.Write_in_progress = 1;
+								FSR.Program_or_erase_controller = 0; // busy
+							}
+							else
+							{
+								logger << DebugWarning << "Attempt to write Nonvolatile configuration register while in Subsector Erase Suspend or Program Suspend State" << EndDebugWarning;
+							}
+						}
+						else
+						{
+							logger << DebugWarning << "Attempt to write Nonvolatile configuration register while in Erase Suspend State" << EndDebugWarning;
+						}
+					}
+					else
+					{
+						logger << DebugWarning << "Attempt to write non volatile configuration register while program or erase controller is busy (PROGRAM, ERASE, WRITE STATUS REGISTER, or WRITE NON VOLATILE CONFIGURATION command cycle is in progress)" << EndDebugWarning;
+					}
 				}
 				else
 				{
-					logger << DebugWarning << "Attempt to write non volatile configuration register while program or erase controller is busy (PROGRAM, ERASE, WRITE STATUS REGISTER, or WRITE NON VOLATILE CONFIGURATION command cycle is in progress)" << EndDebugWarning;
+					logger << DebugWarning << "Attempt to write Nonvolatile configuration register while a write is in progress (WRITE STATUS REGISTER, WRITE NONVOLATILE CONFIGURATION REGISTER, PROGRAM, ERASE command cycle is in progress)" << EndDebugWarning;
 				}
 				// The write enable latch bit is cleared to 0, whether the operation is successful or not.
 				SR.Write_enable_latch = 0;
@@ -1554,10 +1722,17 @@ void N25Q<CONFIG>::WriteVolatileConfigurationRegister(Event *event)
 	switch(event->GetStage())
 	{
 		case START_OF_OPERATION:
-			if(SR.Write_enable_latch)
+			if(SR.Write_enable_latch) // write enable ?
 			{
-				PostEndOfWriteOperation(event);
-				// Note: it is not specified whether SR.Write_enable_latch is cleared
+				if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
+				{
+					PostEndOfWriteOperation(event, ComputeWriteOperationTime(event));;
+					// Note: it is not specified whether SR.Write_enable_latch is cleared
+				}
+				else
+				{
+					logger << DebugWarning << "Attempt to run " << N25Q_WRITE_VOLATILE_CONFIGURATION_REGISTER_COMMAND << " while in program or erase state" << EndDebugWarning;
+				}
 			}
 			else
 			{
@@ -1607,10 +1782,17 @@ void N25Q<CONFIG>::WriteEnhancedVolatileConfigurationRegister(Event *event)
 	switch(event->GetStage())
 	{
 		case START_OF_OPERATION:
-			if(SR.Write_enable_latch)
+			if(SR.Write_enable_latch) // write enable ?
 			{
-				PostEndOfWriteOperation(event);
-				// Note: it is not specified whether SR.Write_enable_latch is cleared
+				if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
+				{
+					PostEndOfWriteOperation(event, ComputeWriteOperationTime(event));;
+					// Note: it is not specified whether SR.Write_enable_latch is cleared
+				}
+				else
+				{
+					logger << DebugWarning << "Attempt to run " << N25Q_WRITE_ENHANCED_VOLATILE_CONFIGURATION_REGISTER_COMMAND << " while in program or erase state" << EndDebugWarning;
+				}
 			}
 			else
 			{
@@ -1664,18 +1846,41 @@ void N25Q<CONFIG>::WriteStatusRegister(Event *event)
 	switch(event->GetStage())
 	{
 		case START_OF_OPERATION:
-			if(SR.Write_enable_latch)
+			if(SR.Write_enable_latch) // write enable ?
 			{
-				if(FSR.Program_or_erase_controller) // ready
+				if(!SR.Write_in_progress) // ready ?
 				{
-					PostEndOfWriteOperation(event);
-					// When the operation is in progress, the write in progress bit is set to 1.
-					SR.Write_in_progress = 1;
-					FSR.Program_or_erase_controller = 0; // busy
+					if(!IsEraseSuspended()) // Erase suspend state ?
+					{
+						if(!IsSubSectorEraseOrProgramSuspended()) // Subsector Erase or Suspend Program Suspend State ?
+						{
+							if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
+							{
+								PostEndOfWriteOperation(event, ComputeWriteOperationTime(event));;
+								// When the operation is in progress, the write in progress bit is set to 1.
+								SR.Write_in_progress = 1;
+								FSR.Program_or_erase_controller = 0; // busy
+							}
+							else
+							{
+								logger << DebugWarning << "Attempt to write status register while program or erase controller is busy (PROGRAM, ERASE, WRITE STATUS REGISTER, or WRITE NON VOLATILE CONFIGURATION command cycle is in progress)" << EndDebugWarning;
+								// The write enable latch bit is cleared to 0, whether the operation is successful or not.
+								SR.Write_enable_latch = 0;
+							}
+						}
+						else
+						{
+							logger << DebugWarning << "Attempt to write status register while in Subsector Erase Suspend or Program Suspend State" << EndDebugWarning;
+						}
+					}
+					else
+					{
+						logger << DebugWarning << "Attempt to write status register while in Erase Suspend State" << EndDebugWarning;
+					}
 				}
 				else
 				{
-					logger << DebugWarning << "Attempt to write status register while program or erase controller is busy (PROGRAM, ERASE, WRITE STATUS REGISTER, or WRITE NON VOLATILE CONFIGURATION command cycle is in progress)" << EndDebugWarning;
+					logger << DebugWarning << "Attempt to write status register while a write is in progress (WRITE STATUS REGISTER, WRITE NONVOLATILE CONFIGURATION REGISTER, PROGRAM, ERASE command cycle is in progress)" << EndDebugWarning;
 					// The write enable latch bit is cleared to 0, whether the operation is successful or not.
 					SR.Write_enable_latch = 0;
 				}
@@ -1691,6 +1896,8 @@ void N25Q<CONFIG>::WriteStatusRegister(Event *event)
 			{
 				// When the operation completes, the write in progress bit is cleared to 0, whether the operation is successful or not.
 				SR.Write_in_progress = 0;
+				// The write enable latch bit is cleared to 0, whether the operation is successful or not.
+				SR.Write_enable_latch = 0;
 				
 				unsigned char *tx_data_ptr = payload->get_tx_data_ptr();
 				unsigned int tx_data_bit_length = payload->get_tx_data_bit_length();
@@ -1719,8 +1926,6 @@ void N25Q<CONFIG>::WriteStatusRegister(Event *event)
 				}
 				
 				FSR.Program_or_erase_controller = 1; // ready
-				// The write enable latch bit is cleared to 0, whether the operation is successful or not.
-				SR.Write_enable_latch = 0;
 			}
 			break;
 	}
@@ -1747,32 +1952,39 @@ void N25Q<CONFIG>::WriteLockRegister(Event *event)
 
 				LockRegister *lr = LR[addr / CONFIG::SECTOR_SIZE];
 
-				if(SR.Write_enable_latch)
+				if(SR.Write_enable_latch) // write enable ?
 				{
-					if(!lr->Sector_lock_down)
+					if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
 					{
-						// Because lock register bits are volatile, change to the bits is immediate.
-						if((tx_data_bit_offset + (data_cycles * tx_width)) > tx_data_bit_length)
+						if(!lr->Sector_lock_down)
 						{
-							logger << DebugWarning << "not enough data bits for " << N25Q_WRITE_LOCK_REGISTER_COMMAND << EndDebugWarning;
-						}
-						else if((tx_data_bit_offset + (data_cycles * tx_width)) < tx_data_bit_length)
-						{
-							logger << DebugWarning << "too many data bits for " << N25Q_WRITE_LOCK_REGISTER_COMMAND << EndDebugWarning;
+							// Because lock register bits are volatile, change to the bits is immediate.
+							if((tx_data_bit_offset + (data_cycles * tx_width)) > tx_data_bit_length)
+							{
+								logger << DebugWarning << "not enough data bits for " << N25Q_WRITE_LOCK_REGISTER_COMMAND << EndDebugWarning;
+							}
+							else if((tx_data_bit_offset + (data_cycles * tx_width)) < tx_data_bit_length)
+							{
+								logger << DebugWarning << "too many data bits for " << N25Q_WRITE_LOCK_REGISTER_COMMAND << EndDebugWarning;
+							}
+							else
+							{
+								uint8_t data_byte;
+								Xfer(&data_byte, 8, 0, data_signals, tx_data_ptr, tx_data_bit_length, tx_data_bit_offset, tx_signals);
+								uint8_t new_lr_value = data_byte;
+								lr->Write(new_lr_value);
+							}
+							
+							PostEndOfWriteOperation(event, ComputeWriteOperationTime(event));;
 						}
 						else
 						{
-							uint8_t data_byte;
-							Xfer(&data_byte, 8, 0, data_signals, tx_data_ptr, tx_data_bit_length, tx_data_bit_offset, tx_signals);
-							uint8_t new_lr_value = data_byte;
-							lr->Write(new_lr_value);
+							logger << DebugWarning << "Attempt to write " << lr->GetFriendlyName() << " while " << lr->Sector_lock_down.GetName() << " = '1'" << EndDebugWarning;
 						}
-						
-						PostEndOfWriteOperation(event);
 					}
 					else
 					{
-						logger << DebugWarning << "Attempt to write " << lr->GetFriendlyName() << " while " << lr->Sector_lock_down.GetName() << " = '1'" << EndDebugWarning;
+						logger << DebugWarning << "Attempt to run " << N25Q_WRITE_LOCK_REGISTER_COMMAND << " while in program or erase state" << EndDebugWarning;
 					}
 				}
 				else
@@ -1792,9 +2004,16 @@ void N25Q<CONFIG>::WriteLockRegister(Event *event)
 template <typename CONFIG>
 void N25Q<CONFIG>::ClearFlagStatusRegister()
 {
-	FSR.Erase = 0;
-	FSR.Program = 0;
-	FSR.Protection = 0;
+	if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
+	{
+		FSR.Erase = 0;
+		FSR.Program = 0;
+		FSR.Protection = 0;
+	}
+	else
+	{
+		logger << DebugWarning << "Attempt to run " << N25Q_CLEAR_FLAG_STATUS_REGISTER_COMMAND << " while in program or erase state" << EndDebugWarning;
+	}
 }
 
 template <typename CONFIG>
@@ -1806,21 +2025,41 @@ void N25Q<CONFIG>::ProgramOTPArray(Event *event)
 	{
 		case START_OF_OPERATION:
 			{
-				if(SR.Write_enable_latch)
+				if(SR.Write_enable_latch) // write enable ?
 				{
-					if(OTP[CONFIG::OTP_ARRAY_SIZE] & 1)
+					if(!SR.Write_in_progress) // ready (not in Program or Erase State) ?
 					{
-						// unlocked
-						PostEndOfWriteOperation(event);
-						
-						// When the operation is in progress, the write in progress bit is set to 1.
-						SR.Write_in_progress = 1;
-						FSR.Program_or_erase_controller = 0; // busy
+						if(!IsEraseSuspended()) // Erase suspend state ?
+						{
+							if(!IsSubSectorEraseOrProgramSuspended()) // Subsector Erase or Suspend Program Suspend State ?
+							{
+								if(OTP[CONFIG::OTP_ARRAY_SIZE] & 1)
+								{
+									// unlocked
+									PostEndOfWriteOperation(event, ComputeWriteOperationTime(event));;
+									
+									// When the operation is in progress, the write in progress bit is set to 1.
+									SR.Write_in_progress = 1;
+								}
+								else
+								{
+									// permanently locked
+									logger << DebugWarning << "Attempt to program permanently locked OTP Array" << EndDebugWarning;
+								}
+							}
+							else
+							{
+								logger << DebugWarning << "Attempt to program OTP array while in Subsector Erase Suspend or Program Suspend State" << EndDebugWarning;
+							}
+						}
+						else
+						{
+							logger << DebugWarning << "Attempt to program OTP array while in Erase Suspend State" << EndDebugWarning;
+						}
 					}
 					else
 					{
-						// permanently locked
-						logger << DebugWarning << "Attempt to program permanently locked OTP Array" << EndDebugWarning;
+						logger << DebugWarning << "Attempt to program OTP array while a write is in progress (WRITE STATUS REGISTER, WRITE NONVOLATILE CONFIGURATION REGISTER, PROGRAM, ERASE command cycle is in progress)" << EndDebugWarning;
 					}
 					// The write enable latch bit is cleared to 0, whether the operation is successful or not.
 					SR.Write_enable_latch = 0;
@@ -1863,7 +2102,6 @@ void N25Q<CONFIG>::ProgramOTPArray(Event *event)
 				
 				// When the operation completes, the write in progress bit is cleared to 0.
 				SR.Write_in_progress = 0;
-				FSR.Program_or_erase_controller = 1; // ready
 			}
 			break;
 	}
@@ -1879,44 +2117,58 @@ void N25Q<CONFIG>::Program(Event *event)
 	{
 		case START_OF_OPERATION:
 			{
-				if(SR.Write_enable_latch)
+				if(SR.Write_enable_latch) // write enable ?
 				{
-					if(FSR.Program_or_erase_controller) // ready
+					if(!SR.Write_in_progress) // ready
 					{
-						if(!IsEraseSuspendedFor(addr))
+						if(FSR.Program_or_erase_controller) // ready
 						{
-							if(!IsSectorProtected(addr))
+							if(!IsSubSectorEraseOrProgramSuspended())
 							{
-								Event *end_of_operation_event = PostEndOfWriteOperation(event);
-								write_operation_in_progress_event = end_of_operation_event;
-								
-								// When the operation is in progress, the write in progress bit is set to 1.
-								SR.Write_in_progress = 1;
-								FSR.Program_or_erase_controller = 0; // busy
+								if(!IsEraseSuspendedFor(addr))
+								{
+									if(!IsSectorProtected(addr))
+									{
+										Event *end_of_operation_event = PostEndOfWriteOperation(event, ComputeWriteOperationTime(event));;
+										program_or_erase_operation_in_progress_event = end_of_operation_event;
+										
+										// When the operation is in progress, the write in progress bit is set to 1.
+										SR.Write_in_progress = 1;
+										FSR.Program_or_erase_controller = 0; // busy
+									}
+									else
+									{
+										// When a command is applied to a protected sector,
+										// the command is not executed, the write enable latch bit remains
+										// set to 1, and flag status register bits 1 and 4 are set.
+										FSR.Protection = 1; // protection error
+										FSR.Program = 1; // protection error
+										logger << DebugWarning << "Attempt to program a page within a protected sector" << EndDebugWarning;
+									}
+								}
+								else
+								{
+									logger << DebugWarning << "Attempt to program a sector at 0x" << addr << " that is in ERASE SUSPEND state" << EndDebugWarning;
+									
+									// The device ignores a PROGRAM command to a sector that is in an ERASE SUSPEND state;
+									// it also sets the flag status register bit 4 to 1: program failure/protection error,
+									// and leaves the write enable latch bit unchanged.
+									FSR.Program = 1; // program failure
+								}
 							}
 							else
 							{
-								// When a command is applied to a protected sector,
-								// the command is not executed, the write enable latch bit remains
-								// set to 1, and flag status register bits 1 and 4 are set.
-								FSR.Protection = 1; // protection error
-								FSR.Program = 1; // protection error
-								logger << DebugWarning << "Attempt to program a page within a protected sector" << EndDebugWarning;
+								logger << DebugWarning << "Attempt to program a page while in Subsector Erase Suspend or Program Suspend State" << EndDebugWarning;
 							}
 						}
 						else
 						{
-							logger << DebugWarning << "Attempt to program a sector at 0x" << addr << " that is in ERASE SUSPEND state" << EndDebugWarning;
-							
-							// The device ignores a PROGRAM command to a sector that is in an ERASE SUSPEND state;
-							// it also sets the flag status register bit 4 to 1: program failure/protection error,
-							// and leaves the write enable latch bit unchanged.
-							FSR.Program = 1; // program failure
+							logger << DebugWarning << "Attempt to program a page while program or erase controller is busy (PROGRAM, ERASE, WRITE STATUS REGISTER, or WRITE NON VOLATILE CONFIGURATION command cycle is in progress)" << EndDebugWarning;
 						}
 					}
 					else
 					{
-						logger << DebugWarning << "Attempt to program a page while program or erase controller is busy (PROGRAM, ERASE, WRITE STATUS REGISTER, or WRITE NON VOLATILE CONFIGURATION command cycle is in progress)" << EndDebugWarning;
+						logger << DebugWarning << "Attempt to program while a write is in progress (WRITE STATUS REGISTER, WRITE NONVOLATILE CONFIGURATION REGISTER, PROGRAM, ERASE command cycle is in progress)" << EndDebugWarning;
 					}
 					
 					// The write enable latch bit is cleared to 0, whether the operation is successful or not.
@@ -1997,35 +2249,51 @@ void N25Q<CONFIG>::SubSectorErase(Event *event)
 	{
 		case START_OF_OPERATION:
 			{
-				if(SR.Write_enable_latch)
+				if(SR.Write_enable_latch) // Write enable ?
 				{
-					if(FSR.Program_or_erase_controller) // ready
+					if(!SR.Write_in_progress) // ready ?
 					{
-						if(IsProgramSuspendedFor(addr))
+						if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
 						{
-							logger << DebugWarning << "Attempt to erase a subsector at 0x" << addr << " that is in PROGRAM SUSPEND state" << EndDebugWarning;
-						}
-						
-						if(!IsSectorProtected(addr))
-						{
-							Event *end_of_operation_event = PostEndOfWriteOperation(event);
-							write_operation_in_progress_event = end_of_operation_event;
-							// When the operation is in progress, the write in progress bit is set to 1. 
-							SR.Write_in_progress = 1;
-							FSR.Program_or_erase_controller = 0; // busy
+							if(!IsEraseSuspended()) // Erase suspend state ?
+							{
+								if(!IsSubSectorEraseOrProgramSuspended()) // Subsector Erase or Suspend Program Suspend State ?
+								{
+									if(!IsSectorProtected(addr)) // Sector is protected ?
+									{
+										Event *end_of_operation_event = PostEndOfWriteOperation(event, ComputeWriteOperationTime(event));;
+										program_or_erase_operation_in_progress_event = end_of_operation_event;
+										// When the operation is in progress, the write in progress bit is set to 1. 
+										SR.Write_in_progress = 1;
+										FSR.Program_or_erase_controller = 0; // busy
+									}
+									else
+									{
+										// When a command is applied to a protected subsector, the command is not executed.
+										// Instead, the write enable latch bit remains set to 1, and flag status register bits 1 and 5 are set.
+										FSR.Protection = 1; // protection error
+										FSR.Erase = 1; // protection error
+										logger << DebugWarning << "Attempt to erase a subsector within a protected sector" << EndDebugWarning;
+									}
+								}
+								else
+								{
+									logger << DebugWarning << "Attempt to erase a subsector at 0x" << addr << " while in Subsector Erase Suspend or Program Suspend State" << EndDebugWarning;
+								}
+							}
+							else
+							{
+								logger << DebugWarning << "Attempt to erase a subsector at 0x" << addr << " while in Erase Suspend State" << EndDebugWarning;
+							}
 						}
 						else
 						{
-							// When a command is applied to a protected subsector, the command is not executed.
-							// Instead, the write enable latch bit remains set to 1, and flag status register bits 1 and 5 are set.
-							FSR.Protection = 1; // protection error
-							FSR.Erase = 1; // protection error
-							logger << DebugWarning << "Attempt to erase a subsector within a protected sector" << EndDebugWarning;
+							logger << DebugWarning << "Attempt to erase a subsector while program or erase controller is busy (PROGRAM, ERASE, WRITE STATUS REGISTER, or WRITE NON VOLATILE CONFIGURATION command cycle is in progress)" << EndDebugWarning;
 						}
 					}
 					else
 					{
-						logger << DebugWarning << "Attempt to erase a subsector while program or erase controller is busy (PROGRAM, ERASE, WRITE STATUS REGISTER, or WRITE NON VOLATILE CONFIGURATION command cycle is in progress)" << EndDebugWarning;
+						logger << DebugWarning << "Attempt to erase subsector while a write is in progress (WRITE STATUS REGISTER, WRITE NONVOLATILE CONFIGURATION REGISTER, PROGRAM, ERASE command cycle is in progress)" << EndDebugWarning;
 					}
 					
 					// The write enable latch bit is cleared to 0, whether the operation is successful or not.
@@ -2044,6 +2312,8 @@ void N25Q<CONFIG>::SubSectorErase(Event *event)
 			{
 				sc_dt::uint64 sector_base_addr = addr & ~(CONFIG::SUBSECTOR_SIZE - 1);
 				EraseStorage(sector_base_addr, CONFIG::SUBSECTOR_SIZE);
+				// When the operation completes, the write in progress bit is cleared to 0.
+				SR.Write_in_progress = 0;
 				FSR.Program_or_erase_controller = 1; // ready
 			}
 			break;
@@ -2059,35 +2329,51 @@ void N25Q<CONFIG>::SectorErase(Event *event)
 	{
 		case START_OF_OPERATION:
 			{
-				if(SR.Write_enable_latch)
+				if(SR.Write_enable_latch) // Write enable ?
 				{
-					if(FSR.Program_or_erase_controller) // ready
+					if(!SR.Write_in_progress) // ready ?
 					{
-						if(IsProgramSuspendedFor(addr))
+						if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
 						{
-							logger << DebugWarning << "Attempt to erase a sector at 0x" << addr << " that is in PROGRAM SUSPEND state" << EndDebugWarning;
-						}
-						
-						if(!IsSectorProtected(addr))
-						{
-							Event *end_of_operation_event = PostEndOfWriteOperation(event);
-							write_operation_in_progress_event = end_of_operation_event;
-							// When the operation is in progress, the write in progress bit is set to 1. 
-							SR.Write_in_progress = 1;
-							FSR.Program_or_erase_controller = 0; // busy
+							if(!IsEraseSuspended()) // Erase suspend state ?
+							{
+								if(!IsSubSectorEraseOrProgramSuspended()) // Subsector Erase or Suspend Program Suspend State ?
+								{
+									if(!IsSectorProtected(addr)) // Sector is protected ?
+									{
+										Event *end_of_operation_event = PostEndOfWriteOperation(event, ComputeWriteOperationTime(event));;
+										program_or_erase_operation_in_progress_event = end_of_operation_event;
+										// When the operation is in progress, the write in progress bit is set to 1. 
+										SR.Write_in_progress = 1;
+										FSR.Program_or_erase_controller = 0; // busy
+									}
+									else
+									{
+										// When a command is applied to a protected subsector, the command is not executed.
+										// Instead, the write enable latch bit remains set to 1, and flag status register bits 1 and 5 are set.
+										FSR.Protection = 1; // protection error
+										FSR.Erase = 1; // protection error
+										logger << DebugWarning << "Attempt to erase a protected sector" << EndDebugWarning;
+									}
+								}
+								else
+								{
+									logger << DebugWarning << "Attempt to erase a sector at 0x" << addr << " while in Subsector Erase Suspend or Program Suspend State" << EndDebugWarning;
+								}
+							}
+							else
+							{
+								logger << DebugWarning << "Attempt to erase a sector at 0x" << addr << " while in Erase Suspend State" << EndDebugWarning;
+							}
 						}
 						else
 						{
-							// When a command is applied to a protected subsector, the command is not executed.
-							// Instead, the write enable latch bit remains set to 1, and flag status register bits 1 and 5 are set.
-							FSR.Protection = 1; // protection error
-							FSR.Erase = 1; // protection error
-							logger << DebugWarning << "Attempt to erase a protected sector" << EndDebugWarning;
+							logger << DebugWarning << "Attempt to erase a sector while program or erase controller is busy (PROGRAM, ERASE, WRITE STATUS REGISTER, or WRITE NON VOLATILE CONFIGURATION command cycle is in progress)" << EndDebugWarning;
 						}
 					}
 					else
 					{
-						logger << DebugWarning << "Attempt to erase a sector while program or erase controller is busy (PROGRAM, ERASE, WRITE STATUS REGISTER, or WRITE NON VOLATILE CONFIGURATION command cycle is in progress)" << EndDebugWarning;
+						logger << DebugWarning << "Attempt to erase sector while a write is in progress (WRITE STATUS REGISTER, WRITE NONVOLATILE CONFIGURATION REGISTER, PROGRAM, ERASE command cycle is in progress)" << EndDebugWarning;
 					}
 					
 					// The write enable latch bit is cleared to 0, whether the operation is successful or not.
@@ -2106,6 +2392,8 @@ void N25Q<CONFIG>::SectorErase(Event *event)
 			{
 				sc_dt::uint64 sector_base_addr = addr & ~(CONFIG::SECTOR_SIZE - 1);
 				EraseStorage(sector_base_addr, CONFIG::SECTOR_SIZE);
+				// When the operation completes, the write in progress bit is cleared to 0.
+				SR.Write_in_progress = 0;
 				FSR.Program_or_erase_controller = 1; // ready
 			}
 			break;
@@ -2119,35 +2407,51 @@ void N25Q<CONFIG>::BulkErase(Event *event)
 	{
 		case START_OF_OPERATION:
 			{
-				if(SR.Write_enable_latch)
+				if(SR.Write_enable_latch) // write enable ?
 				{
-					if(FSR.Program_or_erase_controller) // ready
+					if(!SR.Write_in_progress) // ready ?
 					{
-						if(IsProgramSuspended())
+						if(FSR.Program_or_erase_controller) // ready (not in Program or Erase State) ?
 						{
-							logger << DebugWarning << "Attempt to bulk erase while a page is in PROGRAM SUSPEND state" << EndDebugWarning;
-						}
-
-						if(!IsDeviceProtected())
-						{
-							Event *end_of_operation_event = PostEndOfWriteOperation(event);
-							write_operation_in_progress_event = end_of_operation_event;
-							// When the operation is in progress, the write in progress bit is set to 1. 
-							SR.Write_in_progress = 1;
-							FSR.Program_or_erase_controller = 0; // busy
+							if(!IsEraseSuspended()) // Erase suspend state ?
+							{
+								if(!IsSubSectorEraseOrProgramSuspended()) // Subsector Erase or Suspend Program Suspend State ?
+								{
+									if(!IsDeviceProtected()) // Is Device protected (even partially) ?
+									{
+										Event *end_of_operation_event = PostEndOfWriteOperation(event, ComputeWriteOperationTime(event));;
+										program_or_erase_operation_in_progress_event = end_of_operation_event;
+										// When the operation is in progress, the write in progress bit is set to 1. 
+										SR.Write_in_progress = 1;
+										FSR.Program_or_erase_controller = 0; // busy
+									}
+									else
+									{
+										// When a command is applied to a protected subsector, the command is not executed.
+										// Instead, the write enable latch bit remains set to 1, and flag status register bits 1 and 5 are set.
+										FSR.Protection = 1; // protection error
+										FSR.Erase = 1; // protection error
+										logger << DebugWarning << "Attempt to erase a protected sector during a bulk erase" << EndDebugWarning;
+									}
+								}
+								else
+								{
+									logger << DebugWarning << "Attempt to bulk erase while in Subsector Erase Suspend or Program Suspend State" << EndDebugWarning;
+								}
+							}
+							else
+							{
+								logger << DebugWarning << "Attempt to bulk erase while in Erase Suspend State" << EndDebugWarning;
+							}
 						}
 						else
 						{
-							// When a command is applied to a protected subsector, the command is not executed.
-							// Instead, the write enable latch bit remains set to 1, and flag status register bits 1 and 5 are set.
-							FSR.Protection = 1; // protection error
-							FSR.Erase = 1; // protection error
-							logger << DebugWarning << "Attempt to erase a protected sector during a bulk erase" << EndDebugWarning;
+							logger << DebugWarning << "Attempt to bulk erase while program or erase controller is busy (PROGRAM, ERASE, WRITE STATUS REGISTER, or WRITE NON VOLATILE CONFIGURATION command cycle is in progress)" << EndDebugWarning;
 						}
 					}
 					else
 					{
-						logger << DebugWarning << "Attempt to erase a sector while program or erase controller is busy (PROGRAM, ERASE, WRITE STATUS REGISTER, or WRITE NON VOLATILE CONFIGURATION command cycle is in progress)" << EndDebugWarning;
+						logger << DebugWarning << "Attempt to bulk erase while a write is in progress (WRITE STATUS REGISTER, WRITE NONVOLATILE CONFIGURATION REGISTER, PROGRAM, ERASE command cycle is in progress)" << EndDebugWarning;
 					}
 					
 					// The write enable latch bit is cleared to 0, whether the operation is successful or not.
@@ -2165,6 +2469,8 @@ void N25Q<CONFIG>::BulkErase(Event *event)
 		case END_OF_OPERATION:
 			{
 				EraseStorage(0, CONFIG::SIZE);
+				// When the operation completes, the write in progress bit is cleared to 0.
+				SR.Write_in_progress = 0;
 				FSR.Program_or_erase_controller = 1; // ready
 			}
 			break;
@@ -2174,134 +2480,196 @@ void N25Q<CONFIG>::BulkErase(Event *event)
 template <typename CONFIG>
 void N25Q<CONFIG>::ProgramEraseSuspend(Event *suspend_event)
 {
-	if(suspend_stack.size() > CONFIG::MAX_PROGRAM_SUSPEND_OPERATION_NESTING_LEVEL)
+	switch(suspend_event->GetStage())
 	{
-		switch(CONFIG::MAX_PROGRAM_SUSPEND_OPERATION_NESTING_LEVEL)
-		{
-			case 0:
-				logger << DebugWarning << "It is not possible to nest PROGRAM/ERASE SUSPEND operation inside a PROGRAM/ERASE SUSPEND" << EndDebugWarning;
-				break;
-			case 1:
-				logger << DebugWarning << "It is possible to nest PROGRAM/ERASE SUSPEND operation inside a PROGRAM/ERASE SUSPEND operation just once" << EndDebugWarning;
-				break;
-			default:
-				logger << DebugWarning << "It is possible to nest PROGRAM/ERASE SUSPEND operation inside a PROGRAM/ERASE SUSPEND operation just " << CONFIG::MAX_PROGRAM_SUSPEND_OPERATION_NESTING_LEVEL << " times" << EndDebugWarning;
-				break;
-		}
-		return;
-	}
-	
-	n25q_command_type n25q_cmd = write_operation_in_progress_event->GetCommand();
-	
-	switch(n25q_cmd)
-	{
-		case N25Q_PAGE_PROGRAM_COMMAND:
-		case N25Q_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-		case N25Q_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-		case N25Q_QUAD_INPUT_FAST_PROGRAM_COMMAND:
-		case N25Q_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
-			// program operation
+		case START_OF_OPERATION:
 			{
-				sc_core::sc_time time_since_last_program_resume(suspend_event->GetTimeStamp());
-				time_since_last_program_resume -= program_resume_time_stamp;
-				
-				if(time_since_last_program_resume < program_resume_to_suspend)
+				if(!FSR.Program_or_erase_controller) // Program or Erase State ?
 				{
-					logger << DebugWarning << "Program resume to program suspend timing constraint is not met" << EndDebugWarning;
-				}
-			}
-			break;
-		
-		case N25Q_SECTOR_ERASE_COMMAND:
-		case N25Q_BULK_ERASE_COMMAND:
-			// sector or bulk erase operation
-			{
-				sc_core::sc_time time_since_last_erase_resume(suspend_event->GetTimeStamp());
-				time_since_last_erase_resume -= erase_resume_time_stamp;
-				
-				if(time_since_last_erase_resume < erase_resume_to_suspend)
-				{
-					logger << DebugWarning << "Erase resume to erase suspend timing constraint is not met" << EndDebugWarning;
-				}
-			}
-			break;
-		case N25Q_SUBSECTOR_ERASE_COMMAND:
-			// subsector erase operation
-			{
-				sc_core::sc_time time_since_last_subsector_erase_resume(suspend_event->GetTimeStamp());
-				time_since_last_subsector_erase_resume -= subsector_erase_resume_time_stamp;
-				
-				if(time_since_last_subsector_erase_resume < subsector_erase_resume_to_suspend)
-				{
-					logger << DebugWarning << "Subsector erase resume to erase suspend timing constraint is not met" << EndDebugWarning;
-				}
-			}
-			break;
-			
-		default:
-			// not a program/erase operation
-			logger << DebugWarning << n25q_cmd << " can't be suspended" << EndDebugError;
-			return;
-	}
-	
-	write_operation_in_progress_event->UpdateElapsedTime(suspend_event->GetTimeStamp());
-	
-	// compute whether it worths to suspend operation (i.e. suspend latency > time to finish operation)
-	bool do_suspend = true;
-	
-	const sc_core::sc_time& write_operation_duration = write_operation_in_progress_event->GetDuration();
-	const sc_core::sc_time& write_operation_elapsed_time = write_operation_in_progress_event->GetElapsedTime();
-	sc_core::sc_time time_to_end_of_write_operation(write_operation_duration);
-	time_to_end_of_write_operation -= write_operation_elapsed_time;
+					if(!program_or_erase_operation_in_progress_event)
+					{
+						logger << DebugError << "Internal Error! Program or Erase operation in progress is not being tracked" << EndDebugError;
+					}
+					
+					if(suspend_in_progress_event)
+					{
+						logger << DebugWarning << "There's already a pending " << suspend_event->GetCommand() << EndDebugWarning;
+						return;
+					}
+					
+					if(suspend_stack.size() > CONFIG::MAX_PROGRAM_SUSPEND_OPERATION_NESTING_LEVEL)
+					{
+						switch(CONFIG::MAX_PROGRAM_SUSPEND_OPERATION_NESTING_LEVEL)
+						{
+							case 0:
+								logger << DebugWarning << "It is not possible to nest PROGRAM/ERASE SUSPEND operation inside a PROGRAM/ERASE SUSPEND" << EndDebugWarning;
+								break;
+							case 1:
+								logger << DebugWarning << "It is possible to nest PROGRAM/ERASE SUSPEND operation inside a PROGRAM/ERASE SUSPEND operation just once" << EndDebugWarning;
+								break;
+							default:
+								logger << DebugWarning << "It is possible to nest PROGRAM/ERASE SUSPEND operation inside a PROGRAM/ERASE SUSPEND operation just " << CONFIG::MAX_PROGRAM_SUSPEND_OPERATION_NESTING_LEVEL << " times" << EndDebugWarning;
+								break;
+						}
+						return;
+					}
+					
+					n25q_command_type n25q_cmd = program_or_erase_operation_in_progress_event->GetCommand();
+					
+					switch(n25q_cmd)
+					{
+						case N25Q_PAGE_PROGRAM_COMMAND:
+						case N25Q_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+						case N25Q_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+						case N25Q_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+						case N25Q_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+							// program operation
+							{
+								sc_core::sc_time time_since_last_program_resume(suspend_event->GetTimeStamp());
+								time_since_last_program_resume -= program_resume_time_stamp;
+								
+								if(time_since_last_program_resume < program_resume_to_suspend)
+								{
+									logger << DebugWarning << "Program resume to program suspend timing constraint is not met" << EndDebugWarning;
+								}
+							}
+							break;
+						
+						case N25Q_SECTOR_ERASE_COMMAND:
+						case N25Q_BULK_ERASE_COMMAND:
+							// sector or bulk erase operation
+							{
+								sc_core::sc_time time_since_last_erase_resume(suspend_event->GetTimeStamp());
+								time_since_last_erase_resume -= erase_resume_time_stamp;
+								
+								if(time_since_last_erase_resume < erase_resume_to_suspend)
+								{
+									logger << DebugWarning << "Erase resume to erase suspend timing constraint is not met" << EndDebugWarning;
+								}
+							}
+							break;
+						case N25Q_SUBSECTOR_ERASE_COMMAND:
+							// subsector erase operation
+							{
+								sc_core::sc_time time_since_last_subsector_erase_resume(suspend_event->GetTimeStamp());
+								time_since_last_subsector_erase_resume -= subsector_erase_resume_time_stamp;
+								
+								if(time_since_last_subsector_erase_resume < subsector_erase_resume_to_suspend)
+								{
+									logger << DebugWarning << "Subsector erase resume to erase suspend timing constraint is not met" << EndDebugWarning;
+								}
+							}
+							break;
+							
+						default:
+							// not a program/erase operation
+							logger << DebugWarning << n25q_cmd << " can't be suspended" << EndDebugWarning;
+							return;
+					}
+					
+					program_or_erase_operation_in_progress_event->UpdateElapsedTime(suspend_event->GetTimeStamp());
+					
+					// compute whether it worths to suspend operation (i.e. suspend latency > time to finish operation)
+					bool do_suspend = true;
+					
+					const sc_core::sc_time& write_operation_duration = program_or_erase_operation_in_progress_event->GetDuration();
+					const sc_core::sc_time& write_operation_elapsed_time = program_or_erase_operation_in_progress_event->GetElapsedTime();
+					sc_core::sc_time time_to_end_of_write_operation(write_operation_duration);
+					time_to_end_of_write_operation -= write_operation_elapsed_time;
 
-	switch(n25q_cmd)
-	{
-		case N25Q_PAGE_PROGRAM_COMMAND:
-		case N25Q_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-		case N25Q_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-		case N25Q_QUAD_INPUT_FAST_PROGRAM_COMMAND:
-		case N25Q_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
-			if(suspend_latency_program <= time_to_end_of_write_operation)
-			{
-				do_suspend = false;
+					switch(n25q_cmd)
+					{
+						case N25Q_PAGE_PROGRAM_COMMAND:
+						case N25Q_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+						case N25Q_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+						case N25Q_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+						case N25Q_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+							if(suspend_latency_program > time_to_end_of_write_operation)
+							{
+								do_suspend = false;
+								if(verbose)
+								{
+									logger << DebugInfo << sc_core::sc_time_stamp() << ": Suspend of " << n25q_cmd << " cancelled because suspend latency (" << suspend_latency_program << ") is greater than time to finish " << n25q_cmd << " (" << time_to_end_of_write_operation << ")" << EndDebugInfo;
+								}
+							}
+							break;
+						case N25Q_SUBSECTOR_ERASE_COMMAND:
+						case N25Q_SECTOR_ERASE_COMMAND:
+						case N25Q_BULK_ERASE_COMMAND:
+							if(suspend_latency_erase > time_to_end_of_write_operation)
+							{
+								do_suspend = false;
+								if(verbose)
+								{
+									logger << DebugInfo << sc_core::sc_time_stamp() << ": Suspend of " << n25q_cmd << " cancelled because suspend latency (" << suspend_latency_erase << ") is greater than time to finish " << n25q_cmd << " (" << time_to_end_of_write_operation << ")" << EndDebugInfo;
+								}
+							}
+							break;
+						default:
+							logger << DebugError << "Internal error! " << n25q_cmd << " can't be suspended" << EndDebugError;
+							unisim::kernel::service::Object::Stop(-1);
+							return;
+					}
+					
+					if(do_suspend)
+					{
+						if(verbose)
+						{
+							logger << DebugInfo << sc_core::sc_time_stamp() << ": Suspending " << n25q_cmd << EndDebugInfo;
+						}
+						
+						program_or_erase_operation_in_progress_event->Suspend();
+						schedule.Cancel(program_or_erase_operation_in_progress_event);
+						suspend_stack.push_back(program_or_erase_operation_in_progress_event);
+						program_or_erase_operation_in_progress_event = 0;
+						switch(n25q_cmd)
+						{
+							case N25Q_PAGE_PROGRAM_COMMAND:
+							case N25Q_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+							case N25Q_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
+							case N25Q_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+							case N25Q_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
+								{
+									// If a SUSPEND command is issued during a PROGRAM operation, then the flag status
+									// register bit 2 is set to 1.
+									FSR.Program_suspend = 1; // In effect
+									Event *end_of_operation_event = PostEndOfWriteOperation(suspend_event, suspend_latency_program);
+									suspend_in_progress_event = end_of_operation_event;
+								}
+								break;
+							case N25Q_SUBSECTOR_ERASE_COMMAND:
+							case N25Q_SECTOR_ERASE_COMMAND:
+							case N25Q_BULK_ERASE_COMMAND:
+								{
+									// If a SUSPEND command is issued during an ERASE operation, then the flag status
+									// register bit 6 is set to 1.
+									FSR.Erase_suspend = 1; // In effect
+									Event *end_of_operation_event = PostEndOfWriteOperation(suspend_event, suspend_latency_erase);
+									suspend_in_progress_event = end_of_operation_event;
+								}
+								break;
+							default:
+								logger << DebugError << "Internal error! " << n25q_cmd << " can't be suspended" << EndDebugError;
+								unisim::kernel::service::Object::Stop(-1);
+								return;
+						}
+						
+						SR.Write_in_progress = 0; // ready
+					}
+				}
+				else
+				{
+					logger << DebugWarning << "Attempt to PROGRAM SUSPEND or ERASE SUSPEND while not in Program or Erase State" << EndDebugWarning;
+				}
 			}
 			break;
-		case N25Q_SUBSECTOR_ERASE_COMMAND:
-		case N25Q_SECTOR_ERASE_COMMAND:
-		case N25Q_BULK_ERASE_COMMAND:
-			if(suspend_latency_erase <= time_to_end_of_write_operation)
-			{
-				do_suspend = false;
-			}
+
+		case END_OF_OPERATION:
+			// After erase/program latency time, the flag status register bit 7 is
+			// also set to 1, showing the device to be in a suspended state, waiting for any operation
+			FSR.Program_or_erase_controller = 1; // ready
+			suspend_in_progress_event = 0;
 			break;
-		default:
-			do_suspend = false;
-			break;
-	}
-	
-	if(do_suspend)
-	{
-		write_operation_in_progress_event->Suspend();
-		suspend_stack.push_back(write_operation_in_progress_event);
-		write_operation_in_progress_event = 0;
-		switch(n25q_cmd)
-		{
-			case N25Q_PAGE_PROGRAM_COMMAND:
-			case N25Q_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-			case N25Q_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
-			case N25Q_QUAD_INPUT_FAST_PROGRAM_COMMAND:
-			case N25Q_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
-				FSR.Program_suspend = 1; // In effect
-				break;
-			case N25Q_SUBSECTOR_ERASE_COMMAND:
-			case N25Q_SECTOR_ERASE_COMMAND:
-			case N25Q_BULK_ERASE_COMMAND:
-				FSR.Erase_suspend = 1; // In effect
-				break;
-			default:
-				break;
-		}
-		FSR.Program_or_erase_controller = 1; // ready
 	}
 }
 
@@ -2310,12 +2678,26 @@ void N25Q<CONFIG>::ProgramEraseResume(Event *resume_event)
 {
 	if(suspend_stack.size())
 	{
+		if(suspend_in_progress_event)
+		{
+			if(verbose)
+			{
+				logger << DebugInfo << resume_event->GetTimeStamp() << ": cancelling " << suspend_in_progress_event->GetCommand() << EndDebugInfo;
+			}
+			schedule.Cancel(suspend_in_progress_event);
+		}
+		
 		Event *suspended_operation_event = suspend_stack.back();
 		suspend_stack.pop_back();
 	
 		if(suspended_operation_event)
 		{
 			n25q_command_type n25q_cmd = suspended_operation_event->GetCommand();
+			
+			if(verbose)
+			{
+				logger << DebugInfo << sc_core::sc_time_stamp() << ": Resuming " << n25q_cmd << EndDebugInfo;
+			}
 			
 			switch(n25q_cmd)
 			{
@@ -2349,6 +2731,11 @@ void N25Q<CONFIG>::ProgramEraseResume(Event *resume_event)
 			
 			sc_core::sc_time end_of_operation_time_stamp(resume_event->GetTimeStamp());
 			end_of_operation_time_stamp += time_to_end_of_operation;
+			if(verbose)
+			{
+				logger << DebugInfo << sc_core::sc_time_stamp() << ": " << suspended_operation_event->GetCommand() << " will finish at " << end_of_operation_time_stamp << EndDebugInfo;
+			}
+			suspended_operation_event->SetTimeStamp(end_of_operation_time_stamp);
 			
 			schedule.Notify(suspended_operation_event);
 			
@@ -2359,20 +2746,28 @@ void N25Q<CONFIG>::ProgramEraseResume(Event *resume_event)
 				case N25Q_EXTENDED_DUAL_INPUT_FAST_PROGRAM_COMMAND:
 				case N25Q_QUAD_INPUT_FAST_PROGRAM_COMMAND:
 				case N25Q_EXTENDED_QUAD_INPUT_FAST_PROGRAM_COMMAND:
-					write_operation_in_progress_event = suspended_operation_event;
+					program_or_erase_operation_in_progress_event = suspended_operation_event;
 					FSR.Program_suspend = 0; // Not in effect
 					break;
 				
 				case N25Q_SECTOR_ERASE_COMMAND:
 				case N25Q_BULK_ERASE_COMMAND:
 				case N25Q_SUBSECTOR_ERASE_COMMAND:
-					write_operation_in_progress_event = suspended_operation_event;
+					program_or_erase_operation_in_progress_event = suspended_operation_event;
 					FSR.Erase_suspend = 0; // Not in effect
 				default:
 					break;
 			}
 			
-			FSR.Program_or_erase_controller = 1; // busy
+			SR.Write_in_progress = 1; // busy
+			FSR.Program_or_erase_controller = 0; // busy
+		}
+	}
+	else
+	{
+		if(verbose)
+		{
+			logger << DebugInfo << sc_core::sc_time_stamp() << ": There's no pending program/erase to resume" << EndDebugInfo;
 		}
 	}
 }

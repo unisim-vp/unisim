@@ -34,11 +34,10 @@
 
 #include <iostream>
 #include <systemc.h>
-#include "simulator.hh"
+#include <simulator.hh>
 
-using namespace std;
-
-int sc_main(int argc, char *argv[]) {
+int sc_main(int argc, char *argv[])
+{
 	int ret = 0;
 
 	Simulator *simulator = new Simulator(argc, argv);

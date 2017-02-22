@@ -97,7 +97,7 @@ bool CoffLoader<MEMORY_ADDR>::BeginSetup()
 		coff_loader = 0;
 	}
 
-	coff_loader = new unisim::util::loader::coff_loader::CoffLoader<MEMORY_ADDR>(logger);
+	coff_loader = new unisim::util::loader::coff_loader::CoffLoader<MEMORY_ADDR>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream());
 
 	coff_loader->SetOption(unisim::util::loader::coff_loader::OPT_FILENAME, Object::GetSimulator()->SearchSharedDataFile(filename.c_str()).c_str());
 	coff_loader->SetOption(unisim::util::loader::coff_loader::OPT_DUMP_HEADERS, dump_headers);
@@ -131,17 +131,17 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 {
 	if(!memory_import) return false;
 
-	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = coff_loader->GetBlob();
+	const unisim::util::blob::Blob<MEMORY_ADDR> *blob = coff_loader->GetBlob();
 	if(!blob) return false;
 	
 	bool success = true;
-	const typename std::vector<const unisim::util::debug::blob::Segment<MEMORY_ADDR> *>& segments = blob->GetSegments();
-	typename std::vector<const unisim::util::debug::blob::Segment<MEMORY_ADDR> *>::const_iterator segment_iter;
+	const typename std::vector<const unisim::util::blob::Segment<MEMORY_ADDR> *>& segments = blob->GetSegments();
+	typename std::vector<const unisim::util::blob::Segment<MEMORY_ADDR> *>::const_iterator segment_iter;
 	for(segment_iter = segments.begin(); segment_iter != segments.end(); segment_iter++)
 	{
-		const unisim::util::debug::blob::Segment<MEMORY_ADDR> *segment = *segment_iter;
+		const unisim::util::blob::Segment<MEMORY_ADDR> *segment = *segment_iter;
 		
-		if(segment->GetType() == unisim::util::debug::blob::Segment<MEMORY_ADDR>::TY_LOADABLE)
+		if(segment->GetType() == unisim::util::blob::Segment<MEMORY_ADDR>::TY_LOADABLE)
 		{
 			MEMORY_ADDR write_size = segment->GetSize();
 			if(write_size)
@@ -163,7 +163,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 }
 
 template <class MEMORY_ADDR>
-const unisim::util::debug::blob::Blob<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::GetBlob() const
+const unisim::util::blob::Blob<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::GetBlob() const
 {
 	return coff_loader ? coff_loader->GetBlob() : 0;
 }

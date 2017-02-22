@@ -434,10 +434,10 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
   if (trans.get_command() == tlm::TLM_IGNORE_COMMAND) 
   {
     PCPU::logger << DebugWarning << "Received nb_transport_bw on master socket" 
-      << ", with an ignore, which the cpu doesn't know how to handle" 
-      << std::endl
-      << TIME(time) << std::endl
-      << PHASE(phase) << std::endl;
+                 << ", with an ignore, which the cpu doesn't know how to handle" 
+                 << std::endl << TIME(time)
+                 << std::endl << PHASE(phase)
+                 << std::endl;
     TRANS(PCPU::logger, trans);
     PCPU::logger << EndDebug;
     return ret;
@@ -451,10 +451,11 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
        * generates cpu requests), neither END_RESP (as it is the cpu which
        * ends responses) */
       PCPU::logger << DebugError << "Received nb_transport_bw on master_socket" 
-        << ", with unexpected phase" << std::endl
-        << LOCATION << std::endl
-        << TIME(time) << std::endl
-        << PHASE(phase) << std::endl;
+                   << ", with unexpected phase"
+                   << std::endl << LOCATION
+                   << std::endl << TIME(time)
+                   << std::endl << PHASE(phase)
+                   << std::endl;
       TRANS(PCPU::logger, trans);
       PCPU::logger << EndDebug;
       Stop(-1);

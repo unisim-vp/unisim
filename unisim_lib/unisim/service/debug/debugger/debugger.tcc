@@ -423,8 +423,8 @@ bool Debugger<ADDRESS>::EnableBinary(const char *filename, bool enable)
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
 		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-		const unisim::util::debug::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
+		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 		{
 			if(strcmp(blob->GetFilename(), filename) == 0)
 			{
@@ -438,8 +438,8 @@ bool Debugger<ADDRESS>::EnableBinary(const char *filename, bool enable)
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
 		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-		const unisim::util::debug::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
+		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 		{
 			if(strcmp(blob->GetFilename(), filename) == 0)
 			{
@@ -453,8 +453,8 @@ bool Debugger<ADDRESS>::EnableBinary(const char *filename, bool enable)
 	for(i = 0; i < num_coff_loaders; i++)
 	{
 		typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
-		const unisim::util::debug::blob::Blob<ADDRESS> *blob = coff_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		const unisim::util::blob::Blob<ADDRESS> *blob = coff_loader->GetBlob();
+		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 		{
 			if(strcmp(blob->GetFilename(), filename) == 0)
 			{
@@ -476,8 +476,8 @@ void Debugger<ADDRESS>::EnumerateBinaries(std::list<std::string>& lst) const
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
 		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-		const unisim::util::debug::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
+		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 		{
 			lst.push_back(std::string(blob->GetFilename()));
 		}
@@ -487,8 +487,8 @@ void Debugger<ADDRESS>::EnumerateBinaries(std::list<std::string>& lst) const
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
 		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-		const unisim::util::debug::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
+		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 		{
 			lst.push_back(std::string(blob->GetFilename()));
 		}
@@ -498,8 +498,8 @@ void Debugger<ADDRESS>::EnumerateBinaries(std::list<std::string>& lst) const
 	for(i = 0; i < num_coff_loaders; i++)
 	{
 		typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
-		const unisim::util::debug::blob::Blob<ADDRESS> *blob = coff_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		const unisim::util::blob::Blob<ADDRESS> *blob = coff_loader->GetBlob();
+		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 		{
 			lst.push_back(std::string(blob->GetFilename()));
 		}
@@ -515,8 +515,8 @@ bool Debugger<ADDRESS>::IsBinaryEnabled(const char *filename) const
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
 		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-		const unisim::util::debug::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
+		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 		{
 			if(strcmp(blob->GetFilename(), filename) == 0)
 			{
@@ -529,8 +529,8 @@ bool Debugger<ADDRESS>::IsBinaryEnabled(const char *filename) const
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
 		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-		const unisim::util::debug::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		const unisim::util::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
+		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 		{
 			if(strcmp(blob->GetFilename(), filename) == 0)
 			{
@@ -543,8 +543,8 @@ bool Debugger<ADDRESS>::IsBinaryEnabled(const char *filename) const
 	for(i = 0; i < num_coff_loaders; i++)
 	{
 		typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
-		const unisim::util::debug::blob::Blob<ADDRESS> *blob = coff_loader->GetBlob();
-		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		const unisim::util::blob::Blob<ADDRESS> *blob = coff_loader->GetBlob();
+		if(blob->GetCapability() & unisim::util::blob::CAP_FILENAME)
 		{
 			if(strcmp(blob->GetFilename(), filename) == 0)
 			{
@@ -1060,7 +1060,7 @@ bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
 		|| ((magic[0] == 0x00) && (magic[1] == 0x9d)))
 		{
 			// TI COFF file detected
-			unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = new unisim::util::loader::coff_loader::CoffLoader<ADDRESS>(logger);
+			unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = new unisim::util::loader::coff_loader::CoffLoader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream());
 			
 			coff_loader->SetOption(unisim::util::loader::coff_loader::OPT_FILENAME, filename);
 			coff_loader->SetOption(unisim::util::loader::coff_loader::OPT_VERBOSE, verbose);
@@ -1086,7 +1086,7 @@ bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
 			{
 				case 1:
 					{
-						unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger, registers_import, memory_import);
+						unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream(), registers_import, memory_import);
 						
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
@@ -1107,7 +1107,7 @@ bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
 					break;
 				case 2:
 					{
-						unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger, registers_import, memory_import);
+						unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream(), registers_import, memory_import);
 						
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
@@ -1134,17 +1134,17 @@ bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
 }
 
 template <class ADDRESS>
-bool Debugger<ADDRESS>::SetupDebugInfo(const unisim::util::debug::blob::Blob<ADDRESS> *blob)
+bool Debugger<ADDRESS>::SetupDebugInfo(const unisim::util::blob::Blob<ADDRESS> *blob)
 {
-	typename unisim::util::debug::blob::FileFormat ffmt = blob->GetFileFormat();
+	typename unisim::util::blob::FileFormat ffmt = blob->GetFileFormat();
 	
 	switch(ffmt)
 	{
-		case unisim::util::debug::blob::FFMT_UNKNOWN:
+		case unisim::util::blob::FFMT_UNKNOWN:
 			break;
-		case unisim::util::debug::blob::FFMT_ELF32:
+		case unisim::util::blob::FFMT_ELF32:
 			{
-				unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger, registers_import, memory_import, blob);
+				unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream(), registers_import, memory_import, blob);
 				
 				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
 				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
@@ -1156,9 +1156,9 @@ bool Debugger<ADDRESS>::SetupDebugInfo(const unisim::util::debug::blob::Blob<ADD
 				enable_elf32_loaders.push_back(true);
 			}
 			break;
-		case unisim::util::debug::blob::FFMT_ELF64:
+		case unisim::util::blob::FFMT_ELF64:
 			{
-				unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger, registers_import, memory_import, blob);
+				unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream(), registers_import, memory_import, blob);
 				
 				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
 				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
@@ -1170,9 +1170,9 @@ bool Debugger<ADDRESS>::SetupDebugInfo(const unisim::util::debug::blob::Blob<ADD
 				enable_elf64_loaders.push_back(true);
 			}
 			break;
-		case unisim::util::debug::blob::FFMT_COFF:
+		case unisim::util::blob::FFMT_COFF:
 			{
-				unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = new unisim::util::loader::coff_loader::CoffLoader<ADDRESS>(logger, blob);
+				unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = new unisim::util::loader::coff_loader::CoffLoader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream(), blob);
 				
 				coff_loader->ParseSymbols();
 				coff_loaders.push_back(coff_loader);
@@ -1181,12 +1181,12 @@ bool Debugger<ADDRESS>::SetupDebugInfo(const unisim::util::debug::blob::Blob<ADD
 			break;
 	}
 	
-	const typename std::vector<const unisim::util::debug::blob::Blob<ADDRESS> *>& sibling_blobs = blob->GetBlobs();
+	const typename std::vector<const unisim::util::blob::Blob<ADDRESS> *>& sibling_blobs = blob->GetBlobs();
 	
-	typename std::vector<const unisim::util::debug::blob::Blob<ADDRESS> *>::const_iterator it;
+	typename std::vector<const unisim::util::blob::Blob<ADDRESS> *>::const_iterator it;
 	for(it = sibling_blobs.begin(); it != sibling_blobs.end(); it++)
 	{
-		const unisim::util::debug::blob::Blob<ADDRESS> *sibling_blob = *it;
+		const unisim::util::blob::Blob<ADDRESS> *sibling_blob = *it;
 		SetupDebugInfo(sibling_blob);
 	}
 	return true;
@@ -1197,7 +1197,7 @@ bool Debugger<ADDRESS>::SetupDebugInfo()
 {
 	if(setup_debug_info_done) return true;
 	if(!blob_import) return false;
-	const unisim::util::debug::blob::Blob<ADDRESS> *blob = blob_import->GetBlob();
+	const unisim::util::blob::Blob<ADDRESS> *blob = blob_import->GetBlob();
 	if(!blob) return true; // no blob
 	bool status = SetupDebugInfo(blob);
 	if(status) setup_debug_info_done = true;

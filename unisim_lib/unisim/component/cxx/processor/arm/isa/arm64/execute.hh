@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,21 +29,42 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <unisim/util/debug/blob/segment.hh>
-#include <unisim/util/debug/blob/segment.tcc>
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ISA_ARM64_EXECUTE_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ISA_ARM64_EXECUTE_HH__
+
 #include <inttypes.h>
 
 namespace unisim {
-namespace util {
-namespace debug {
-namespace blob {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace arm {
+namespace isa {
+namespace arm64 {
 
-template class Segment<uint64_t>;
+template <class ARCH>
+typename ARCH::U64
+UnsignedMultiplyHigh64( ARCH&, typename ARCH::U64 opl, typename ARCH::U64 opr )
+{
+  typedef typename ARCH::U32 U32;
+  typedef typename ARCH::U64 U64;
+  
+  U64 lhi = opl >> 32, llo = U32(opl), rhi = opr >> 32, rlo = U32(opr);
+  U64 hihi( lhi*rhi ), hilo( lhi*rlo), lohi( llo*rhi ), lolo( llo*rlo );
+  return (((lolo >> 32) + U64(U32(hilo)) + U64(U32(lohi))) >> 32) + (hilo >> 32) + (lohi >> 32) + hihi;
+}
 
-} // end of namespace blob
-} // end of namespace debug
-} // end of namespace util
+
+} // end of namespace arm64
+} // end of namespace isa
+} // end of namespace arm
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
 } // end of namespace unisim
+
+#endif /* __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ISA_ARM64_EXECUTE_HH__ */
+

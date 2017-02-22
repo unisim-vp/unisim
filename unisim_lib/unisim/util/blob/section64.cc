@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2011,
+ *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,75 +32,16 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_BLOB_SEGMENT_HH__
-#define __UNISIM_UTIL_DEBUG_BLOB_SEGMENT_HH__
-
-#include <unisim/service/interfaces/memory.hh>
-#include <string>
+#include <unisim/util/blob/section.hh>
+#include <unisim/util/blob/section.tcc>
+#include <inttypes.h>
 
 namespace unisim {
 namespace util {
-namespace debug {
 namespace blob {
 
-template <class MEMORY_ADDR>
-class Segment : public unisim::service::interfaces::Memory<MEMORY_ADDR>
-{
-public:
-	typedef enum
-	{
-		TY_UNKNOWN,
-		TY_LOADABLE
-	} Type;
-	
-	typedef enum
-	{
-		SA_NULL = 0,
-		SA_R = 1, // Read
-		SA_W = 2, // Write
-		SA_RW = 3,
-		SA_X = 4, // Execute
-		SA_RX = 5,
-		SA_WX = 6,
-		SA_RWX = 7
-	} Attribute;
-
-	Segment(Type _type, Attribute _attr, unsigned int _alignment);
-	Segment(Type type, Attribute attr, unsigned int alignment, MEMORY_ADDR addr, MEMORY_ADDR size, MEMORY_ADDR data_size, void *data);
-	Segment(const Segment<MEMORY_ADDR>& segment);
-	virtual ~Segment();
-	
-	virtual void Reset();
-	virtual bool ReadMemory(MEMORY_ADDR addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(MEMORY_ADDR addr, const void *buffer, uint32_t size);
-
-	Type GetType() const;
-	Attribute GetAttr() const;
-	unsigned int GetAlignment() const;
-	MEMORY_ADDR GetAddr() const;
-	MEMORY_ADDR GetSize() const;
-	MEMORY_ADDR GetDataSize() const;
-	const void *GetData() const;
-	void GetAddrRange(MEMORY_ADDR& min_addr, MEMORY_ADDR& max_addr) const;
-	bool HasOverlap(MEMORY_ADDR min_addr, MEMORY_ADDR max_addr) const;
-	
-	void Catch() const;
-	void Release() const;
-private:
-	Type type;               // segment type
-	Attribute attr;          // segment attribute
-	unsigned int alignment;  // alignment (0=unavailable)
-	MEMORY_ADDR addr;        // location in memory
-	MEMORY_ADDR size;        // size in bytes of data
-	MEMORY_ADDR data_size;   // true size in bytes of data
-	void *data;
-	unsigned int *refcount;
-};
+template class Section<uint64_t>;
 
 } // end of namespace blob
-} // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
-
-#endif
-

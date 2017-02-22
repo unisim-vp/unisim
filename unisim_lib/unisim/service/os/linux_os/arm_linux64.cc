@@ -32,7 +32,7 @@
  */
 
 #include <unisim/service/os/linux_os/arm_linux64.hh>
-#include <unisim/util/os/linux_os/arm64.hh>
+#include <unisim/util/os/linux_os/aarch64.hh>
 #include <inttypes.h>
 
 #include <unisim/service/os/linux_os/linux.tcc>
@@ -49,14 +49,14 @@ ArmLinux64::ArmLinux64( const char* name, unisim::kernel::service::Object* paren
 }
 
 void
-ArmLinux32::SetupTargetSystem()
+ArmLinux64::SetupTargetSystem()
 {
-  linuxlib_->SetTargetSystem( new unisim::util::os::linux_os::ARM64TS<Linux<uint32_t, uint32_t>::LinuxImpl>( *linuxlib_ ) );
+  linuxlib_->SetTargetSystem( new unisim::util::os::linux_os::AARCH64TS<PLinux::LinuxImpl>( *linuxlib_ ) );
 }
 
 ArmLinux64::~ArmLinux64()
 {
-  delete linuxlib_->GetTargetSystem();
+  if (linuxlib_) delete linuxlib_->GetTargetSystem();
 }
 
 } // end of linux_os namespace

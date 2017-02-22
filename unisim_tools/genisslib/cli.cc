@@ -35,9 +35,11 @@ struct Pattern {
 
   bool        next() {
     char const* end = m_end;
-    while( *end != '\0' and *end != ',' ) ++end;
-    if (m_end == end) return false;
-    m_begin = m_end; m_end = end; return true;
+    while (*end == ',') ++end;
+    char const* begin = end;
+    while ((*end != '\0') and (*end != ',')) ++end;
+    if (end == begin) return false;
+    m_begin = begin; m_end = end; return true;
   }
 
   uintptr_t   length() const { return m_end - m_begin; }

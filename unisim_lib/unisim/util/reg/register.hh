@@ -35,8 +35,8 @@
 #ifndef __UNISIM_UTIL_REG_REGISTER_HH__
 #define __UNISIM_UTIL_REG_REGISTER_HH__
 
-#include <unisim/kernel/service/service.hh>
 #include <unisim/util/endian/endian.hh>
+#include <unisim/service/interfaces/register.hh>
 #include <string>
 #include <vector>
 #include <map>
@@ -102,7 +102,7 @@ struct Storage
 class RegisterBase
 {
 public:
-	inline RegisterBase(unisim::kernel::service::Object *owner, const std::string& name, const std::string& friendly_name = std::string());
+	inline RegisterBase(const std::string& name, const std::string& friendly_name = std::string());
 	
 	inline void SetDescription(const std::string& description);
 	inline const std::string& GetName() const;
@@ -114,17 +114,15 @@ public:
 	virtual void DebugWrite(unsigned char *data_ptr) = 0;
 	virtual void DebugRead(unsigned char *data_ptr) = 0;
 
-	unisim::service::interfaces::Register *CreateRegisterInterface() const;
+	inline unisim::service::interfaces::Register *CreateRegisterInterface();
 private:
-	unisim::kernel::service::Object *owner;
 	std::string name;
 	std::string friendly_name;
 	std::string description;
 };
 
-RegisterBase::RegisterBase(unisim::kernel::service::Object *_owner, const std::string& _name, const std::string& _friendly_name)
-	: owner(_owner)
-	, name(std::string(_owner->GetName()) + '.' + _name)
+RegisterBase::RegisterBase(const std::string& _name, const std::string& _friendly_name)
+	: name(_name)
 	, friendly_name(_friendly_name.empty() ? _name : _friendly_name)
 {
 }
@@ -149,7 +147,7 @@ const std::string& RegisterBase::GetDescription() const
 	return description;
 }
 
-unisim::service::interfaces::Register *RegisterBase::CreateRegisterInterface() const
+unisim::service::interfaces::Register *RegisterBase::CreateRegisterInterface()
 {
 	struct RegisterInterface : public unisim::service::interfaces::Register
 	{
@@ -178,9 +176,9 @@ public:
 	typedef typename Storage<B_SIZE>::TYPE STORAGE_TYPE;
 	static const int BIT_SIZE = B_SIZE;
 	static const endian_type BIT_ORDERING = B_ORDER;
-	Register(unisim::kernel::service::Object *owner, const std::string& name, const std::string& friendly_name = std::string());
-	Register(unisim::kernel::service::Object *owner, const std::string& name, const STORAGE_TYPE& reset_value);
-	Register(unisim::kernel::service::Object *owner, const std::string& name, const std::string& friendly_name, const STORAGE_TYPE& reset_value);
+	Register(const std::string& name, const std::string& friendly_name = std::string());
+	Register(const std::string& name, const STORAGE_TYPE& reset_value);
+	Register(const std::string& name, const std::string& friendly_name, const STORAGE_TYPE& reset_value);
 	virtual ~Register();
 	
 	virtual unsigned int GetBitSize() const;
@@ -224,8 +222,8 @@ std::ostream& operator << (std::ostream& os, const Register<B_SIZE, HW_ACCESS, S
 }
 
 template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
-Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::Register(unisim::kernel::service::Object *owner, const std::string& name, const std::string& friendly_name)
-	: RegisterBase(owner, name, friendly_name)
+Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::Register(const std::string& name, const std::string& friendly_name)
+	: RegisterBase(name, friendly_name)
 	, storage()
 	, reset_storage()
 	, hw_write_mask_storage(0)
@@ -236,8 +234,8 @@ Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::Register(unisim::kernel::
 }
 
 template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
-Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::Register(unisim::kernel::service::Object *owner, const std::string& name, const std::string& friendly_name, const STORAGE_TYPE& reset_value)
-	: RegisterBase(owner, name, friendly_name)
+Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::Register(const std::string& name, const std::string& friendly_name, const STORAGE_TYPE& reset_value)
+	: RegisterBase(name, friendly_name)
 	, storage(reset_value)
 	, reset_storage(reset_value)
 	, hw_write_mask_storage(0)
@@ -248,8 +246,8 @@ Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::Register(unisim::kernel::
 }
 
 template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
-Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::Register(unisim::kernel::service::Object *owner, const std::string& name, const STORAGE_TYPE& reset_value)
-	: RegisterBase(owner, name)
+Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::Register(const std::string& name, const STORAGE_TYPE& reset_value)
+	: RegisterBase(name)
 	, storage(reset_value)
 	, reset_storage(reset_value)
 	, hw_write_mask_storage(0)
@@ -370,7 +368,7 @@ bool Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::CheckWrite(const STO
 		if((value & byte_enable & ~sw_write_mask_storage.value) != (old_value & byte_enable & ~sw_write_mask_storage.value)) // is write would modify read-only bits ?
 		{
 			// yes: attempt to modify reserved bits
-			std::cerr << "Software attempt to modify read-only bits in Register \"" << GetName() << "\"" << std::endl;
+			std::cerr << "Software attempt to modify read-only bits in Register \"" << GetName() << "\" (from value 0x" << std::hex << (unsigned long long) old_value << " to value 0x" << (unsigned long long) value << std::dec << ")" << std::endl;
 		}
 		
 		return true;
@@ -421,7 +419,7 @@ bool Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::Read(STORAGE_TYPE& v
 {
 	if(CTRL & CTRL_MASK_SW_R)
 	{
-		if(!(CTRL & CHECK_SW_R) || CheckRead(value, byte_enable))
+		if(!(CTRL & CTRL_CHECK_SW_R) || CheckRead(value, byte_enable))
 		{
 			STORAGE_TYPE reg_value = this->operator const STORAGE_TYPE();
 			value = (value & ~byte_enable) | (reg_value & sw_read_mask_storage.value & byte_enable);

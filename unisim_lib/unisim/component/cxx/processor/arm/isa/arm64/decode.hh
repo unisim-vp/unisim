@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015-2016,
+ *  Copyright (c) 2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,29 +32,75 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <inttypes.h>
-#include <iostream>
-#include <sstream>
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ISA_ARM64_DECODE_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ISA_ARM64_DECODE_HH__
 
-#include "unisim/component/cxx/processor/arm/disasm.hh"
-#include "unisim/component/cxx/processor/arm/psr.hh"
+#include <inttypes.h>
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
+namespace isa {
+namespace arm64 {
 
-  std::ostream&
-  operator << ( std::ostream& sink, DisasmObject const& dobj )
+struct Reject { void operator = ( bool condition ) const { if (condition) throw *this; } };
+
+struct FPImm
+{
+  FPImm() : smallfp(0) {}
+  FPImm( uint8_t _smallfp ) : smallfp(_smallfp) {} uint8_t smallfp;
+
+  template <typename T>
+  T toFP() const
   {
-    dobj( sink );
-    return sink;
+    float sign = (smallfp & 0x80) ? -1 : 1;
+
+    float fixed = float( (0b10000 | (smallfp & 0b1111)) << (((smallfp >> 4) & 0b111) ^ 0b100) );
+    return sign * (fixed / 128);
   }
+  operator float () const { return this->toFP<float>(); }
+};
+
+struct DecodeBitMasks
+{
+  uint64_t wmask, tmask;
+  DecodeBitMasks( unsigned n, unsigned imms, unsigned immr)
+    : wmask(0), tmask(0)
+  {
+    unsigned len = (n << 6) | (imms ^ 0b111111);
+    if (not len) throw Reject();
+    len = (31 - __builtin_clz( len ));
+    if (len < 1) throw Reject();
+    unsigned esize = (1<<len), levels = esize-1;
+    if ((imms & levels) == levels) throw Reject();
+    unsigned S = imms & levels, R = immr & levels, D = (S-R) & levels;
+
+    uint64_t welem = ((2ull<<S)-1ull);
+    uint64_t telem = ((2ull<<D)-1ull);
+    // ROR(welem,R)
+    if (R)
+      welem = ((welem >> R) | (welem << (esize-R))) & ((2ull<<levels)-1ull);
+    // Replicate
+    for (unsigned size = esize; size < 64; size *= 2)
+      {
+        welem = (welem << size) | welem;
+        telem = (telem << size) | telem;
+      }
+    wmask = welem;
+    tmask = telem;
+  }
+};
 
 
+} // end of namespace arm64
+} // end of namespace isa
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
+
+#endif /* __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ISA_ARM64_DECODE_HH__ */
+
