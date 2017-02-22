@@ -36,6 +36,7 @@
 #define __UNISIM_KERNEL_TLM2_SIMULATOR_HH__
 
 #include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/logger/logger.hh>
 #include <systemc>
 #include <stdexcept>
 #include <string>
@@ -267,7 +268,8 @@ public:
 	void TraceSignalPattern(const std::string& signal_name_pattern);
 	void Bind(const std::string& port_name, const std::string& signal_name);
 	void BindArray(const std::string& port_array_name, const std::string& signal_array_name, unsigned int begin_idx, unsigned int end_idx);
-
+protected:
+	unisim::kernel::logger::Logger logger;
 private:
 	Instrumenter *instrumenter;
 };

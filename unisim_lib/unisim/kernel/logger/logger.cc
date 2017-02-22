@@ -69,7 +69,10 @@ LoggerStreamBuffer::LoggerStreamBuffer(Logger& _owner, LoggerServerOutputMethodP
 
 LoggerStreamBuffer::~LoggerStreamBuffer()
 {
-	Flush();
+	if(!buffer.empty())
+	{
+		Flush();
+	}
 }
 
 std::streambuf::int_type LoggerStreamBuffer::overflow(int_type c)

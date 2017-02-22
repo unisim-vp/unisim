@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_REG_REGISTER_HH__
 
 #include <unisim/util/endian/endian.hh>
+#include <unisim/service/interfaces/register.hh>
 #include <string>
 #include <vector>
 #include <map>
@@ -113,7 +114,7 @@ public:
 	virtual void DebugWrite(unsigned char *data_ptr) = 0;
 	virtual void DebugRead(unsigned char *data_ptr) = 0;
 
-	unisim::service::interfaces::Register *CreateRegisterInterface() const;
+	inline unisim::service::interfaces::Register *CreateRegisterInterface();
 private:
 	std::string name;
 	std::string friendly_name;
@@ -146,7 +147,7 @@ const std::string& RegisterBase::GetDescription() const
 	return description;
 }
 
-unisim::service::interfaces::Register *RegisterBase::CreateRegisterInterface() const
+unisim::service::interfaces::Register *RegisterBase::CreateRegisterInterface()
 {
 	struct RegisterInterface : public unisim::service::interfaces::Register
 	{
@@ -220,8 +221,8 @@ std::ostream& operator << (std::ostream& os, const Register<B_SIZE, HW_ACCESS, S
 	return os << (uint64_t) reg.storage.value;
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::Register(const std::string& name, const std::string& friendly_name)
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::Register(const std::string& name, const std::string& friendly_name)
 	: RegisterBase(name, friendly_name)
 	, storage()
 	, reset_storage()
@@ -232,8 +233,8 @@ Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::Register(const std::string& nam
 {
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::Register(const std::string& name, const std::string& friendly_name, const STORAGE_TYPE& reset_value)
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::Register(const std::string& name, const std::string& friendly_name, const STORAGE_TYPE& reset_value)
 	: RegisterBase(name, friendly_name)
 	, storage(reset_value)
 	, reset_storage(reset_value)
@@ -244,8 +245,8 @@ Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::Register(const std::string& nam
 {
 }
 
-template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER>
-Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER>::Register(const std::string& name, const STORAGE_TYPE& reset_value)
+template <int B_SIZE, Access HW_ACCESS, Access SW_ACCESS, endian_type B_ORDER, Control CTRL>
+Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::Register(const std::string& name, const STORAGE_TYPE& reset_value)
 	: RegisterBase(name)
 	, storage(reset_value)
 	, reset_storage(reset_value)
@@ -418,7 +419,7 @@ bool Register<B_SIZE, HW_ACCESS, SW_ACCESS, B_ORDER, CTRL>::Read(STORAGE_TYPE& v
 {
 	if(CTRL & CTRL_MASK_SW_R)
 	{
-		if(!(CTRL & CHECK_SW_R) || CheckRead(value, byte_enable))
+		if(!(CTRL & CTRL_CHECK_SW_R) || CheckRead(value, byte_enable))
 		{
 			STORAGE_TYPE reg_value = this->operator const STORAGE_TYPE();
 			value = (value & ~byte_enable) | (reg_value & sw_read_mask_storage.value & byte_enable);
