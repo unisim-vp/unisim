@@ -110,6 +110,7 @@ unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/kernel/api/api.cc \
 unisim/kernel/service/service.cc \
+unisim/kernel/service/endian.cc \
 unisim/kernel/service/xml_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/api/debug/debug_api.cc \
@@ -171,7 +172,6 @@ unisim/util/os/linux_os/linux.cc \
 unisim/util/lexer/lexer.cc \
 unisim/util/ieee754/ieee754.cc \
 unisim/util/xml/xml.cc \
-unisim/kernel/service/endian.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/random/random.cc \
 unisim/util/queue/queue.cc \
