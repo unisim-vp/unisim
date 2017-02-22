@@ -110,7 +110,7 @@ unisim/kernel/service/xml_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
-unisim/kernel/debug/debug.cc \
+unisim/util/backtrace/backtrace.cc \
 unisim/kernel/api/api.cc \
 unisim/util/xml/xml.cc \
 unisim/util/debug/symbol_32.cc \
@@ -217,7 +217,7 @@ unisim/kernel/service/xml_helper.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/tlm2/tlm.hh \
-unisim/kernel/debug/debug.hh \
+unisim/util/backtrace/backtrace.hh \
 unisim/kernel/api/api.hh \
 unisim/util/likely/likely.hh \
 unisim/util/xml/xml.hh \

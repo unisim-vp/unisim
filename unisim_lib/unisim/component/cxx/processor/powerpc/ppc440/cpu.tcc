@@ -40,7 +40,7 @@
 #include <unisim/component/cxx/cache/cache.tcc>
 #include <unisim/component/cxx/tlb/tlb.tcc>
 #include <unisim/util/queue/queue.tcc>
-#include <unisim/kernel/debug/debug.hh>
+#include <unisim/util/backtrace/backtrace.hh>
 
 #include <sstream>
 #include <stdexcept>

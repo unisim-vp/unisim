@@ -74,7 +74,7 @@
 #include <boost/graph/graphviz.hpp>
 
 #include "unisim/kernel/service/xml_helper.hh"
-#include "unisim/kernel/debug/debug.hh"
+#include "unisim/util/backtrace/backtrace.hh"
 #include "unisim/util/likely/likely.hh"
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
@@ -87,28 +87,28 @@ int _CRT_fmode = _O_BINARY;
 void *operator new(std::size_t size)
 {
 	std::cerr << "malloc(" << size << ")" << std::endl;
-	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 	return malloc(size);
 }
 
 void *operator new[](std::size_t size)
 {
 	std::cerr << "malloc(" << size << ")" << std::endl;
-	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 	return malloc(size);
 }
 
 void operator delete(void *storage, std::size_t size)
 {
 	std::cerr << "free(" << size << ")" << std::endl;
-	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 	free(storage);
 }
 
 void operator delete[](void *storage, std::size_t size)
 {
 	std::cerr << "free(" << size << ")" << std::endl;
-	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 	free(storage);
 }
 #endif

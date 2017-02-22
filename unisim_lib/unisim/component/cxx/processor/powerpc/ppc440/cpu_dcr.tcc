@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_PPC440_CPU_DCR_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_PPC440_CPU_DCR_TCC__
 
-#include <unisim/kernel/debug/debug.hh>
+#include <unisim/util/backtrace/backtrace.hh>
 
 #ifdef powerpc
 #undef powerpc

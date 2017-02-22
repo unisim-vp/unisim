@@ -65,7 +65,7 @@
 #include <map>
 #include <iosfwd>
 
-#include <unisim/kernel/debug/debug.hh>
+#include <unisim/util/backtrace/backtrace.hh>
 
 #ifdef powerpc
 #undef powerpc
@@ -543,7 +543,7 @@ public:
 			{
 				// Only PLB transfers should induce such misprediction
 				std::cerr << "WARNING! " << delta << " > " << old_dec << " (" << (int64_t) (delta - old_dec) << ") at 0x" << std::hex << GetCIA() << std::dec << std::endl;
-				std::cerr << unisim::kernel::debug::BackTrace(4) << std::endl;
+				std::cerr << unisim::util::backtrace::BackTrace(4) << std::endl;
 				if(trap_reporting_import) trap_reporting_import->ReportTrap();
 			}
 #endif

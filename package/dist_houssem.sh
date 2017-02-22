@@ -124,7 +124,7 @@ unisim/kernel/service/xml_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
-unisim/kernel/debug/debug.cc \
+unisim/util/backtrace/backtrace.cc \
 unisim/util/xml/xml.cc \
 unisim/util/debug/profile_32.cc \
 unisim/util/debug/profile_64.cc \
@@ -217,7 +217,7 @@ unisim/kernel/service/service.hh \
 unisim/kernel/service/xml_helper.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
-unisim/kernel/debug/debug.hh \
+unisim/util/backtrace/backtrace.hh \
 unisim/kernel/tlm2/tlm.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/debug/breakpoint.hh \

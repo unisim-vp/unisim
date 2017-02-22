@@ -60,7 +60,7 @@
 #include <map>
 #include <iosfwd>
 
-#include <unisim/kernel/debug/debug.hh>
+#include <unisim/util/backtrace/backtrace.hh>
 
 namespace unisim {
 namespace component {

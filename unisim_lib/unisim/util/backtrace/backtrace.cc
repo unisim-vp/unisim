@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <unisim/kernel/debug/debug.hh>
+#include <unisim/util/backtrace/backtrace.hh>
 #include <stdlib.h>
 #include <iostream>
 
@@ -46,8 +46,8 @@
 #endif
 
 namespace unisim {
-namespace kernel {
-namespace debug {
+namespace util {
+namespace backtrace {
 
 BackTrace::BackTrace(unsigned int max_depth) :
 	stack_depth(0),
@@ -55,7 +55,7 @@ BackTrace::BackTrace(unsigned int max_depth) :
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && defined(HAVE_CXXABI)
 	stack_addrs = (void **) malloc((max_depth + 1) * sizeof(void *));
-	stack_depth = backtrace(stack_addrs, max_depth + 1);
+	stack_depth = ::backtrace(stack_addrs, max_depth + 1);
 	stack_addrs = (void **) realloc(stack_addrs, stack_depth * sizeof(void *));
 #endif
 }
@@ -193,6 +193,6 @@ std::ostream& operator << (std::ostream& os, const BackTrace& backtrace)
 	return os;
 }
 
-} // end of debug namespace
-} // end of kernel namespace
+} // end of backtrace namespace
+} // end of util namespace
 } // end of unisim namespace

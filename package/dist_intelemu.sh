@@ -65,7 +65,7 @@ unisim/component/cxx/processor/intel/math.cc \
 
 UNISIM_LIB_INTELEMU_HEADER_FILES="\
 unisim/kernel/api/api.hh \
-unisim/kernel/debug/debug.hh \
+unisim/util/backtrace/backtrace.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/service/service.hh \

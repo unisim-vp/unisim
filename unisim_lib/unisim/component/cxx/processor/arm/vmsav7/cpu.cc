@@ -35,7 +35,7 @@
 #include <unisim/component/cxx/processor/arm/vmsav7/cpu.hh>
 #include <unisim/component/cxx/processor/arm/vmsav7/cp15.hh>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
-#include <unisim/kernel/debug/debug.hh>
+#include <unisim/util/backtrace/backtrace.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/truth_table/truth_table.hh>

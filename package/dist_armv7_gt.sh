@@ -105,7 +105,7 @@ unistd.h \
 vector"
 
 UNISIM_LIB_ARMV7_GT_SOURCE_FILES="\
-unisim/kernel/debug/debug.cc \
+unisim/util/backtrace/backtrace.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/kernel/api/api.cc \
@@ -265,7 +265,7 @@ unisim/component/cxx/processor/arm/isa/arm32/arm32.isa"
 UNISIM_LIB_ARMV7_GT_ISA_FILES="${UNISIM_LIB_ARMV7_GT_ISA_THUMB_FILES} ${UNISIM_LIB_ARMV7_GT_ISA_ARM32_FILES}"
 
 UNISIM_LIB_ARMV7_GT_HEADER_FILES="${UNISIM_LIB_ARMV7_GT_ISA_FILES} \
-unisim/kernel/debug/debug.hh \
+unisim/util/backtrace/backtrace.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/api/api.hh \

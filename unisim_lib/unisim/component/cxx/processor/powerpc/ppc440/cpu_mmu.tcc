@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_PPC440_CPU_MMU_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_PPC440_CPU_MMU_TCC__
 
-#include <unisim/kernel/debug/debug.hh>
+#include <unisim/util/backtrace/backtrace.hh>
 
 #ifdef powerpc
 #undef powerpc
@@ -54,7 +54,7 @@ void CPU<CONFIG>::InvalidateITLB()
 	if(unlikely(IsVerboseITLB()))
 	{
 		logger << DebugInfo << "Invalidating ITLB" << EndDebugInfo;
-		logger << DebugInfo << unisim::kernel::debug::BackTrace() << EndDebugInfo;
+		logger << DebugInfo << unisim::util::backtrace::BackTrace() << EndDebugInfo;
 	}
 	
 	uint32_t way;

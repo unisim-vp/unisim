@@ -34,7 +34,7 @@
  
 #include "unisim/util/garbage_collector/garbage_collector.hh"
 #if DEBUG_GC >= 2
-#include <unisim/kernel/debug/debug.hh>
+#include <unisim/util/backtrace/backtrace.hh>
 #endif
 #include <stdlib.h>
 #include <string.h>
@@ -139,7 +139,7 @@ void *GarbageCollector::Allocate(unsigned int size)
 		if(num_allocs >= ABNORMAL_ALLOC_THRESHOLD)
 		{
 			std::cerr << "Alloc(" << block << ") of size " << block->size << ":" << std::endl;
-			std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+			std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 		}
 #endif
  		return block + 1;
@@ -158,7 +158,7 @@ void *GarbageCollector::Allocate(unsigned int size)
 		if(num_allocs >= ABNORMAL_ALLOC_THRESHOLD)
 		{
 			std::cerr << "Reuse(" << block << ") of size " << block->size << ":" << std::endl;
-			std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+			std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 		}
 #endif
  		return block + 1;
@@ -179,7 +179,7 @@ void *GarbageCollector::Allocate(unsigned int size)
 	if(num_allocs >= ABNORMAL_ALLOC_THRESHOLD)
 	{
 		std::cerr << "Alloc(" << block << ") of size " << block->size << ":" << std::endl;
-		std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+		std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 	}
 #endif
 	
@@ -196,7 +196,7 @@ bool GarbageCollector::Collect(void *p)
 	if(num_allocs >= ABNORMAL_ALLOC_THRESHOLD)
 	{
 		std::cerr << "Collect(" << block << ") of size " << block->size << ":" << std::endl;
-		std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+		std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 	}
 #endif
 	if(block->magic != MAGIC)
@@ -217,7 +217,7 @@ bool GarbageCollector::Collect(void *p)
 		if(num_allocs >= ABNORMAL_ALLOC_THRESHOLD)
 		{
 			std::cerr << "free(" << block << ") of size " << block->size << ":" << std::endl;
-			std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+			std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 		}
 #endif
 		free(block);
@@ -241,7 +241,7 @@ void GarbageCollector::Catch(void *p)
 	if(num_allocs >= ABNORMAL_ALLOC_THRESHOLD)
 	{
 		std::cerr << "Catch(" << block << ") of size " << block->size << ":" << std::endl;
-		std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+		std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 	}
 #endif
 	if(block->magic != MAGIC)

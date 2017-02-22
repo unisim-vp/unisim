@@ -32,14 +32,14 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_KERNEL_DEBUG_DEBUG_HH__
-#define __UNISIM_KERNEL_DEBUG_DEBUG_HH__
+#ifndef __UNISIM_UTIL_BACKTRACE_BACKTRACE_HH__
+#define __UNISIM_UTIL_BACKTRACE_BACKTRACE_HH__
 
 #include <iosfwd>
 
 namespace unisim {
-namespace kernel {
-namespace debug {
+namespace util {
+namespace backtrace {
 
 class BackTrace;
 
@@ -57,8 +57,8 @@ private:
 	void **stack_addrs;
 };
 
-} // end of debug namespace
-} // end of kernel namespace
+} // end of backtrace namespace
+} // end of util namespace
 } // end of unisim namespace
 
 #endif // __UNISIM_KERNEL_DEBUG_DEBUG_HH__
