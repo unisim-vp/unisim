@@ -966,7 +966,15 @@ struct Decoder
     std::shared_ptr<armsec::PathNode> path ( new armsec::PathNode );
 
     std::cout << "(address . " << armsec::DumpConstant( addr ) << ")\n";
-    std::cout << "(opcode . " << armsec::DumpConstant( op->GetEncoding() ) << ")\n";
+    
+    std::cout << "(opcode . ";
+    switch (op->GetLength())
+      {
+      case 16: std::cout << armsec::DumpConstant( uint16_t(op->GetEncoding()) ); break;
+      case 32: std::cout << armsec::DumpConstant( uint32_t(op->GetEncoding()) ); break;
+      }
+    std::cout << ")\n";
+    
     // std::cout << "(int_name,\"" << op->GetName() << "\")\n";
     
     armsec::State reference( path );
