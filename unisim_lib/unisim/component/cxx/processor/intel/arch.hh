@@ -39,8 +39,6 @@
 #include <unisim/component/cxx/processor/intel/segments.hh>
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/vectorbank.hh>
-#include <unisim/service/interfaces/linux_os.hh>
-#include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
 #include <unisim/service/interfaces/registers.hh>
@@ -116,15 +114,13 @@ namespace intel {
 
     Operation<Arch>*            fetch();
     
-    virtual unisim::service::interfaces::LinuxOS* GetLinuxOS() { return 0; };
+    virtual void ExecuteSystemCall( unsigned id ) = 0;
     
     void                        interrupt( uint8_t _exc )
     {
       switch (_exc) {
       case 0x80: {
-        unisim::service::interfaces::LinuxOS* linux_os = GetLinuxOS();
-        if (not linux_os) throw 0;
-        linux_os->ExecuteSystemCall( int( m_regs[0] ) );
+        this->ExecuteSystemCall( m_regs[0] );
       } break;
       default:
         std::cerr << "Unhandled interruption (0x" << std::hex << uint32_t( _exc ) << ").\n";
@@ -137,8 +133,9 @@ namespace intel {
     uint32_t                    m_EIP;
     
   public:
+    enum ipproc_t { ipjmp = 0, ipcall, ipret };
     u32_t                       geteip() { return m_EIP; }
-    void                        seteip( u32_t _eip ) { m_EIP = _eip; }
+    void                        seteip( u32_t _eip, ipproc_t ipproc = ipjmp ) { m_EIP = _eip; }
     void                        addeip( u32_t offset ) { m_EIP += offset; }
 
     // INTEGER STATE
@@ -230,7 +227,7 @@ namespace intel {
       uint32_t ti = (_value >> 2) & 0x0001; // global or local
       uint32_t pl = (_value >> 0) & 0x0003; // requested privilege level
       
-      if (not GetLinuxOS()) throw 0;
+      //if (not GetLinuxOS()) throw 0;
       if ((idx >= 6) or (id == 0) or (id >= 4) or (ti != 0) or (pl != 3)) throw 0;
       
       m_srs[idx].update( id, ti, pl, m_gdt_bases[id] );
