@@ -160,7 +160,7 @@ namespace_list:
 }
   | namespace_list TOK_QUAD_DOT TOK_IDENT
 {
-  $$ = $1->append( $3 );
+  $$ = &($1->append( $3 ));
 }
 ;
 
@@ -432,7 +432,7 @@ bitfield_list : bitfield
 }
   | bitfield_list ':' bitfield
 {
-  $$ = $1->append( $3 );
+  $$ = &($1->append( $3 ));
 }
 ;
 
@@ -558,7 +558,7 @@ var_list: var
 }
   | var_list ',' var
 {
-  $$ = $1->append( $3 );
+  $$ = &($1->append( $3 ));
 }
 ;
 
@@ -680,7 +680,7 @@ param_list:
 }
   | param_list ',' param
 {
-  $$ = $1->append( $3 );
+  $$ = &($1->append( $3 ));
 }
 ;
 
@@ -774,7 +774,7 @@ constraint_list:
 }
   | constraint_list ',' constraint
 {
-  $$ = $1->append( $3 );
+  $$ = &($1->append( $3 ));
 }
 ;
 
@@ -846,7 +846,7 @@ operation_list:
 }
   | operation_list ',' TOK_IDENT
 {
-  $$ = $1->append( $3 );
+  $$ = &($1->append( $3 ));
 }
 ;
 

@@ -47,7 +47,7 @@ namespace unisim {
 namespace kernel {
 namespace logger {
 
-class LoggerServer;
+struct LoggerServer;
 class Logger;
 
 typedef void (LoggerServer::*LoggerServerOutputMethodPtr)(std::string, const char *);
