@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_REG_REGISTER_HH__
-#define __UNISIM_UTIL_REG_REGISTER_HH__
+#ifndef __UNISIM_UTIL_REG_DEV_REGISTER_HH__
+#define __UNISIM_UTIL_REG_DEV_REGISTER_HH__
 
 #include <unisim/util/endian/endian.hh>
 #include <unisim/service/interfaces/register.hh>
@@ -948,4 +948,4 @@ AddressableRegister<ADDRESS> *RegisterAddressMap<ADDRESS>::FindRegister(ADDRESS 
 } // end of namespace util
 } // end of namespace unisim
 
-#endif // __UNISIM_UTIL_REG_REGISTER_HH__
+#endif // __UNISIM_UTIL_REG_DEV_REGISTER_HH__

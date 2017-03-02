@@ -39,7 +39,7 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/kernel/tlm2/tlm_spi.hh>
-#include <unisim/util/reg/register.hh>
+#include <unisim/util/reg/dev_register.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/component/tlm2/memory/flash/n25q/n25q_defs.hh>
 #include <fstream>
