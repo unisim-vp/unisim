@@ -16,12 +16,13 @@
  ***************************************************************************/
 
 #include <referencecounting.hh>
-#include <iostream>
+#include <stdexcept>
 
 void
-ReferenceCounter::const_check() const {
-  if (not this or m_count > 1) {
+ReferenceCounter::const_check() const
+{
+  if (m_count > 1) {
     asm volatile( "shared_object_modification:" );
-    std::cerr << "Modifying a shared object...\n";
+    throw std::logic_error("Modifying a shared object...");
   }
 }

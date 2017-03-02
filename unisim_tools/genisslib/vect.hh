@@ -25,64 +25,93 @@
 template <class TP>
 struct Vector : std::vector<Ptr<TP> >
 {
-  Vector() {}
-  Vector( TP* _item ) : std::vector<Ptr<TP> >( 1,_item ) {}
-  Vector( Vector<TP> const& _src ) {
-    if (not &_src) return;
-    *this = _src;
-  }
-  Vector( uintptr_t _size ) : std::vector<Ptr<TP> >( _size, (TP*)(0) ) {}
+  typedef std::vector<Ptr<TP> > inherited;
+  typedef typename inherited::iterator iterator;
+  typedef typename inherited::const_iterator const_iterator;
+  
+  Vector()
+  {}
+  
+  Vector( TP* _item )
+    : inherited( 1,_item )
+  {}
+  
+  Vector( Vector<TP> const& _src )
+    : inherited( _src )
+  {}
+  
+  Vector( uintptr_t _size )
+    : inherited( _size, (TP*)(0) )
+  {}
   
   Vector<TP>& operator=( Vector<TP> const& _src )
   {
-    if (not &_src) return *this;
-    this->std::vector<Ptr<TP> >::operator=( _src );
+    inherited::operator=( _src );
     return *this;
   }
+  
   Vector<TP>& append( Vector<TP> const& _src )
   {
-    if (not &_src) return *this;
-    this->reserve( this->size() + _src.size() );
-    typedef typename std::vector<Ptr<TP> >::const_iterator const_iterator;
-    for (const_iterator iter = _src.begin(); iter != _src.end(); ++ iter)
-      this->push_back( *iter );
+    inherited::reserve( this->size() + _src.size() );
+    for (const_iterator itr = _src.begin(), stp = _src.end(); itr != stp; ++itr)
+      { this->push_back( *itr ); }
     return *this;
   }
-  Vector<TP>* append( TP* _item ) { this->push_back( _item ); return this; }
+  
+  Vector<TP>& append( TP* _item )
+  {
+    this->push_back( _item );
+    return *this;
+  }
 };
 
 struct StringVector : std::vector<char const*>
 {
-  StringVector() {}
-  StringVector( char const* _item ) : std::vector<char const*>( 1,_item ) {}
+  typedef std::vector<char const*> inherited;
+  typedef typename inherited::iterator iterator;
+  typedef typename inherited::const_iterator const_iterator;
+  
+  StringVector()
+  {}
+  
+  StringVector( char const* _item )
+    : inherited( 1,_item )
+  {}
+  
   StringVector( StringVector& _src )
-  {
-    if (not &_src) return;
-    *this = _src;
-  }
-  StringVector( uintptr_t _size ) : std::vector<char const*>( _size, 0 ) {}
+    : inherited( _src )
+  {}
+  
+  StringVector( uintptr_t _size )
+    : inherited( _size, 0 )
+  {}
   
   StringVector& operator=( StringVector& _src )
   {
-    if (not &_src) return *this;
-    this->std::vector<char const*>::operator=( _src );
+    inherited::operator=( _src );
     return *this;
   }
+  
   StringVector& append( StringVector& _src )
   {
-    if (not &_src) return *this;
-    this->reserve( this->size() + _src.size() );
-    typedef typename std::vector<char const*>::const_iterator const_iterator;
-    for (const_iterator iter = _src.begin(); iter != _src.end(); ++ iter) push_back( *iter );
+    inherited::reserve( size() + _src.size() );
+    for (const_iterator iter = _src.begin(); iter != _src.end(); ++ iter)
+      { push_back( *iter ); }
     return *this;
   }
-  StringVector* append( char const* _item ) { this->push_back( _item ); return this; }
-
+  
+  StringVector& append( char const* _item )
+  {
+    this->push_back( _item );
+    return *this;
+  }
 };
 
 struct UIntVector : std::vector<unsigned int>
 {
-  UIntVector( unsigned int value ) : std::vector<unsigned int>( 1, value ) {}
+  UIntVector( unsigned int value )
+    : std::vector<unsigned int>( 1, value )
+  {}
 };
 
 #endif // __VECT_HH__

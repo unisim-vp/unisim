@@ -553,12 +553,20 @@ class Register : public Variable<TYPE>
 {
 public:
 	Register(const char *name, Object *owner, TYPE& storage, const char *description = NULL)
-	  : Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description) {}
+	  : Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description)
+	  , m_callback( 0 )
+	{}
+	
+	~Register()
+	{
+	  delete m_callback;
+	}
 	
 	typedef TCallBack<TYPE> TCB;
 	void setCallBack(CallBackObject *owner, unsigned int offset, typename TCB::cbwrite _write, typename TCB::cbread _read)
 	{
-		m_callback.reset(new TCB(owner, offset, _write, _read));
+		if (m_callback) delete m_callback;
+		m_callback = new TCB(owner, offset, _write, _read);
 	}
 
 	virtual void Set( TYPE const& value ) { if (not WriteBack(value)) Variable<TYPE>::Set( value ); }
@@ -575,18 +583,18 @@ public:
 protected:
 	bool WriteBack(TYPE const& storage)
 	{
-		bool status = m_callback.get() and m_callback->Write(storage);
+		bool status = (m_callback and m_callback->Write(storage));
 		if (status) this->NotifyListeners();
 		return status;
 	}
 
 	bool ReadBack(TYPE& storage) const
 	{
-		return (m_callback.get() and m_callback->Read(storage));
+		return (m_callback and m_callback->Read(storage));
 	}
 
 private:
-	std::auto_ptr<TCB> m_callback;
+	TCB* m_callback;
 };
 
 template <class TYPE>

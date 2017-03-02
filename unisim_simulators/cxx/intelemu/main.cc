@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009,
+ *  Copyright (c) 2009-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -34,83 +34,9 @@
 
 #include <unisim/component/cxx/processor/intel/arch.hh>
 #include <unisim/component/cxx/processor/intel/isa/intel.hh>
-#include <unisim/service/interfaces/memory_injection.hh>
-#include <unisim/service/interfaces/memory.hh>
-#include <unisim/service/interfaces/registers.hh>
-#include <unisim/util/os/linux_os/linux.hh>
-#include <unisim/util/os/linux_os/i386.hh>
 #include <unisim/util/debug/simple_register.hh>
-#include <unisim/kernel/logger/logger_server.hh>
-#include <unisim/kernel/logger/logger.hh>
+#include <linuxsystem.hh>
 #include <iostream>
-
-struct LinuxOS
-  : public unisim::service::interfaces::LinuxOS
-{
-  unisim::kernel::logger::Logger logger;
-  unisim::util::os::linux_os::Linux<uint32_t, uint32_t> linux_impl;
-  
-  bool exited;
-  int app_ret_status;
-  LinuxOS( unisim::service::interfaces::Registers *regs_if,
-           unisim::service::interfaces::Memory<uint32_t> *mem_if,
-           unisim::service::interfaces::MemoryInjection<uint32_t> *mem_inject_if
-           )
-    : unisim::service::interfaces::LinuxOS()
-    , logger( "linux32" )
-    , linux_impl( logger, regs_if, mem_if, mem_inject_if )
-    , exited( false )
-    , app_ret_status( -1 )
-  {}
-  
-  void Setup( std::vector<std::string> const& simargs, std::vector<std::string> const& envs )
-  {
-    // Set up the different linuxlib parameters
-    linux_impl.SetVerbose(false);
-  
-    if (not linux_impl.SetCommandLine(simargs))
-      throw 0;
-    
-    // Set the linuxlib option to set the target environment with the
-    // host environment
-    linux_impl.SetApplyHostEnvironment(false);
-    linux_impl.SetEnvironment(envs);
-    
-    // Set the binary that will be simulated in the target simulator
-    if (not linux_impl.AddLoadFile( simargs[0].c_str() ))
-      throw 0;
-  
-    // Set the system type of the target simulator (should be the same than the
-    // binary)
-    auto i386_target = new unisim::util::os::linux_os::I386TS<unisim::util::os::linux_os::Linux<uint32_t,uint32_t> >( linux_impl );
-    linux_impl.SetTargetSystem(i386_target);
-    
-    linux_impl.SetEndianness( unisim::util::endian::E_LITTLE_ENDIAN );
-    linux_impl.SetStackBase( 0x40000000UL );
-    linux_impl.SetMemoryPageSize( 0x1000UL );
-    linux_impl.SetUname("Linux" /* sysname */,
-                     "localhost" /* nodename */,
-                     "3.14.43-unisim" /* release */,
-                     "#1 SMP Fri Mar 12 05:23:09 UTC 2010" /* version */,
-                     "i386" /* machine */,
-                     "localhost" /* domainname */);
-    // linux_impl.SetStdinPipeFilename(stdin_pipe_filename.c_str());
-    // linux_impl.SetStdoutPipeFilename(stdout_pipe_filename.c_str());
-    // linux_impl.SetStderrPipeFilename(stderr_pipe_filename.c_str());
-
-    // now it is time to try to run the initialization of the linuxlib
-    if (not linux_impl.Load())
-      throw 0;
-  
-    if (!linux_impl.SetupTarget())
-      throw 0;
-  
-  }
-  void ExecuteSystemCall( int id )
-  {
-    linux_impl.ExecuteSystemCall( id, exited, app_ret_status );
-  }
-};
 
 struct Arch
   : public unisim::component::cxx::processor::intel::Arch
@@ -186,7 +112,7 @@ struct Arch
   }
   
   void SetLinuxOS( unisim::service::interfaces::LinuxOS* _linux_os ) { linux_os = _linux_os; }
-  unisim::service::interfaces::LinuxOS* GetLinuxOS() { return linux_os; }
+  // unisim::service::interfaces::LinuxOS* GetLinuxOS() { return linux_os; }
   
   unisim::service::interfaces::LinuxOS* linux_os;
   std::map<std::string,unisim::service::interfaces::Register*> regmap;
@@ -235,6 +161,14 @@ struct Arch
   // unisim::service::interfaces::MemoryInjection<ADDRESS>
   bool InjectReadMemory(uint32_t addr, void *buffer, uint32_t size) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
   bool InjectWriteMemory(uint32_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
+  // Implementation of ExecuteSystemCall
+  
+  virtual void ExecuteSystemCall( unsigned id )
+  {
+    if (not linux_os)
+      { throw std::logic_error( "No linux OS emulation connected" ); }
+    linux_os->ExecuteSystemCall( id );
+  }
   
 };
 
@@ -242,24 +176,6 @@ struct Arch
 int
 main( int argc, char *argv[] )
 {
-#ifdef WIN32
-  struct { // Loads/Unloads the winsock2 dll
-    WSADATA wsaData;
-    WSAEnv()
-    {
-      WORD wVersionRequested = MAKEWORD( 2, 2 );
-      if(WSAStartup(wVersionRequested, &wsaData) == 0)
-        return;
-      std::cerr << "WSAStartup failed" << std::endl;
-      throw 0;
-    }
-    ~WSAEnv() { WSACleanup(); }
-  } wsa_env;
-#endif
-
-  // Simulator simulator( argc, argv );
-  unisim::kernel::logger::Logger::StaticServerInstance()->opt_std_err_color_ = true;
-
   uintptr_t simargs_idx = 1;
   std::vector<std::string> simargs(&argv[simargs_idx], &argv[argc]);
   
@@ -280,27 +196,10 @@ main( int argc, char *argv[] )
   envs.push_back( "LANG=C" );
   
   Arch cpu;
-  LinuxOS linux32( &cpu, &cpu, &cpu );
+  LinuxOS linux32( std::cerr, &cpu, &cpu, &cpu );
   cpu.SetLinuxOS( &linux32 );
   
   linux32.Setup( simargs, envs );
-  
-  // switch (simulator.Setup())
-  //   {
-  //   case unisim::kernel::service::Simulator::ST_ERROR:
-  //     std::cerr << "ERROR: Can't start simulation because of previous errors" << std::endl;
-  //     return 1;
-      
-  //   case unisim::kernel::service::Simulator::ST_OK_DONT_START:
-  //     std::cerr << "Successfully configured the simulator." << std::endl;
-  //     return 0;
-      
-  //   case unisim::kernel::service::Simulator::ST_WARNING:
-  //     std::cerr << "WARNING: problems detected during setup, trying anyway." << std::endl;
-  //   case unisim::kernel::service::Simulator::ST_OK_TO_START:
-  //     std::cerr << "Starting simulation." << std::endl;
-  //     break;
-  //   }
   
   cpu.m_disasm = false;
   

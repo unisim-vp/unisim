@@ -55,7 +55,6 @@ unisim/util/debug/symbol_32.cc \
 unisim/util/debug/type.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/os/linux_os/environment.cc \
-unisim/util/os/linux_os/linux.cc \
 unisim/util/lexer/lexer.cc \
 unisim/util/xml/xml.cc \
 unisim/component/cxx/processor/intel/disasm.cc \
@@ -179,7 +178,6 @@ unisim/component/cxx/processor/intel/arch.hh \
 unisim/component/cxx/processor/intel/segments.hh \
 unisim/component/cxx/processor/intel/vectorbank.hh \
 unisim/component/cxx/processor/intel/math.hh \
-unisim/component/cxx/processor/intel/fwd.hh \
 unisim/component/cxx/processor/intel/isa/string.hh \
 unisim/component/cxx/processor/intel/isa/special.hh \
 unisim/component/cxx/processor/intel/isa/integer.hh \
@@ -256,9 +254,12 @@ string \
 
 UNISIM_SIMULATORS_INTELEMU_SOURCE_FILES="\
 main.cc \
+linuxsystem.cc \
 "
 
-UNISIM_SIMULATORS_INTELEMU_HEADER_FILES=""
+UNISIM_SIMULATORS_INTELEMU_HEADER_FILES="\
+linuxsystem.hh \
+"
 
 UNISIM_SIMULATORS_INTELEMU_EXTRA_FILES="\
 config.h.in \

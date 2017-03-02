@@ -137,7 +137,7 @@ ldrb_1.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
-  cpu.SetGPR_mem( rt, cpu.MemRead8( cpu.GetGPR(rn) + U32(imm) ) );
+  cpu.SetGPR_mem( rt, U32( cpu.MemRead8( cpu.GetGPR(rn) + U32(imm) ) ) );
 };
 
 /*
@@ -157,7 +157,7 @@ ldrb_2.disasm = {
 ldrb_2.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemRead8( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
+  cpu.SetGPR_mem( rt, typename ARCH::U32( cpu.MemRead8( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) ) );
 };
 
 /*
@@ -179,7 +179,7 @@ ldrh_1.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
-  cpu.SetGPR_mem( rt, cpu.MemURead16( cpu.GetGPR(rn) + U32(imm) ) );
+  cpu.SetGPR_mem( rt, U32( cpu.MemURead16( cpu.GetGPR(rn) + U32(imm) ) ) );
 };
 
 /*
@@ -199,7 +199,7 @@ ldrh_2.disasm = {
 ldrh_2.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.SetGPR_mem( rt, cpu.MemURead16( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) );
+  cpu.SetGPR_mem( rt, typename ARCH::U32( cpu.MemURead16( cpu.GetGPR(rn) + cpu.GetGPR(rm) ) ) );
 };
 
 /*

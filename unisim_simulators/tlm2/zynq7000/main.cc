@@ -39,7 +39,7 @@
 using namespace std;
 
 int
-main(int argc, char *argv[])
+sc_main(int argc, char *argv[])
 {
 #ifdef WIN32
   struct { // Loads/Unloads the winsock2 dll                                                                                                                  

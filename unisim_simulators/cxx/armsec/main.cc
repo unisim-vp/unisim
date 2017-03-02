@@ -530,10 +530,10 @@ namespace armsec
     std::set<Expr> stores;
     
     U32  MemURead32( U32 const& addr ) { return U32( Expr( new Load( 4, false, addr.expr ) ) ); }
-    U32  MemURead16( U32 const& addr ) { return U32( Expr( new Load( 2, false, addr.expr ) ) ); }
+    U16  MemURead16( U32 const& addr ) { return U16( Expr( new Load( 2, false, addr.expr ) ) ); }
     U32  MemRead32( U32 const& addr ) { return U32( Expr( new Load( 4, true, addr.expr ) ) ); }
-    U32  MemRead16( U32 const& addr ) { return U32( Expr( new Load( 2, true, addr.expr ) ) ); }
-    U32  MemRead8( U32 const& addr ) { return U32( Expr( new Load( 1, false, addr.expr ) ) ); }
+    U16  MemRead16( U32 const& addr ) { return U16( Expr( new Load( 2, true, addr.expr ) ) ); }
+    U8   MemRead8( U32 const& addr ) { return U8( Expr( new Load( 1, false, addr.expr ) ) ); }
     
     void MemUWrite32( U32 const& addr, U32 const& value ) { stores.insert( new Store( 4, false, addr.expr, value.expr ) ); }
     void MemUWrite16( U32 const& addr, U16 const& value ) { stores.insert( new Store( 2, false, addr.expr, value.expr ) ); }
@@ -966,7 +966,15 @@ struct Decoder
     std::shared_ptr<armsec::PathNode> path ( new armsec::PathNode );
 
     std::cout << "(address . " << armsec::DumpConstant( addr ) << ")\n";
-    std::cout << "(opcode . " << armsec::DumpConstant( op->GetEncoding() ) << ")\n";
+    
+    std::cout << "(opcode . ";
+    switch (op->GetLength())
+      {
+      case 16: std::cout << armsec::DumpConstant( uint16_t(op->GetEncoding()) ); break;
+      case 32: std::cout << armsec::DumpConstant( uint32_t(op->GetEncoding()) ); break;
+      }
+    std::cout << ")\n";
+    
     // std::cout << "(int_name,\"" << op->GetName() << "\")\n";
     
     armsec::State reference( path );

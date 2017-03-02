@@ -51,16 +51,16 @@ public:
   ~Ptr() { if( not m_object or release() > 0 ) return; delete m_object; }
     
   operator Object_t const* () const { if (not m_object) return 0; return m_object; }
-  operator Object_t* () {
-    if (not m_object) return 0;
-    // m_object->ReferenceCounter::const_check();
+  operator Object_t* ()
+  {
+    // if (m_object) m_object->ReferenceCounter::const_check();
     return m_object;
   }
     
   Object_t const*       operator->() const { if (not m_object) return 0; return m_object; }
-  Object_t*             operator->() {
-    if (not m_object) return 0;
-    // m_object->ReferenceCounter::const_check();
+  Object_t*             operator->()
+  {
+    // if (m_object) m_object->ReferenceCounter::const_check();
     return m_object;
   }
 };
