@@ -444,8 +444,8 @@ public:
   
   U32 FPSCR, FPEXC;
 
-  U32 RoundTowardsZeroFPSCR() const { return RMode.Insert( FPSCR, U32(RoundTowardsZero) ); }
-  U32 RoundToNearestFPSCR() const { return RMode.Insert( FPSCR, U32(RoundToNearest) ); }
+  U32 RoundTowardsZeroFPSCR() const { U32 fpscr = FPSCR; RMode.Set( fpscr, U32(RoundTowardsZero) ); return fpscr; }
+  U32 RoundToNearestFPSCR() const   { U32 fpscr = FPSCR; RMode.Set( fpscr, U32(RoundToNearest) ); return fpscr; }
   U32 StandardValuedFPSCR() const   { return AHP.Mask( FPSCR ) | 0x03000000; }
   
   struct ExtRegBank

@@ -41,6 +41,14 @@ CiscGenerator::CiscGenerator( Isa& _source, Opts const& _options )
   : Generator( _source, _options ), m_code_capacity( 0 )
 {};
 
+CiscGenerator::~CiscGenerator()
+{
+  for (OpCodeMap::iterator current = m_opcodes.begin(), stop = m_opcodes.end(); current != stop; ++current)
+    {
+      delete current->second;
+    }
+}
+
 /** Base constructor, sets the size of the OpCode and allocates mask and bits buffers
 */
 CiscOpCode::CiscOpCode( ConstStr _symbol, unsigned int _prefixsize, unsigned int _fullsize, bool _vlen )

@@ -52,7 +52,7 @@ struct RiscGenerator : public Generator
   ConstStr                      m_insn_cpostfix;
   
   RiscGenerator( Isa& _source, Opts const& _options );
-  ~RiscGenerator() {};
+  ~RiscGenerator();
   
   RiscOpCode const&             riscopcode( Operation const* _op ) const { return dynamic_cast<RiscOpCode const&>( opcode( _op ) ); }
   RiscOpCode&                   riscopcode( Operation const* _op ) { return dynamic_cast<RiscOpCode&>( opcode( _op ) ); };
