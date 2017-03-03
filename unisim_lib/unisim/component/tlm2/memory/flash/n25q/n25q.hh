@@ -39,7 +39,7 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/kernel/tlm2/tlm_spi.hh>
-#include <unisim/util/reg/register.hh>
+#include <unisim/util/reg/dev/register.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/component/tlm2/memory/flash/n25q/n25q_defs.hh>
 #include <fstream>
@@ -51,14 +51,14 @@ namespace memory {
 namespace flash {
 namespace n25q {
 
-using unisim::util::reg::Register;
-using unisim::util::reg::BitField;
+using unisim::util::reg::dev::Register;
+using unisim::util::reg::dev::BitField;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::E_LITTLE_ENDIAN;
-using unisim::util::reg::ACC_NONE;
-using unisim::util::reg::ACC_RO;
-using unisim::util::reg::ACC_WO;
-using unisim::util::reg::ACC_RW;
+using unisim::util::reg::dev::ACC_NONE;
+using unisim::util::reg::dev::ACC_RO;
+using unisim::util::reg::dev::ACC_WO;
+using unisim::util::reg::dev::ACC_RW;
 
 using unisim::kernel::tlm2::TLM_SPI_HALF_DUPLEX;
 using unisim::kernel::tlm2::TLM_SPI_OK;

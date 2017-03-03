@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_REG_REGISTER_HH__
-#define __UNISIM_UTIL_REG_REGISTER_HH__
+#ifndef __UNISIM_UTIL_REG_DEV_REGISTER_HH__
+#define __UNISIM_UTIL_REG_DEV_REGISTER_HH__
 
 #include <unisim/util/endian/endian.hh>
 #include <unisim/service/interfaces/register.hh>
@@ -46,6 +46,7 @@
 namespace unisim {
 namespace util {
 namespace reg {
+namespace dev {
 
 using unisim::util::endian::endian_type;
 using unisim::util::endian::E_BIG_ENDIAN;
@@ -944,8 +945,9 @@ AddressableRegister<ADDRESS> *RegisterAddressMap<ADDRESS>::FindRegister(ADDRESS 
 	return it != reg_addr_map.end() ? (*it).second : 0;
 }
 
+} // end of namespace dev
 } // end of namespace reg
 } // end of namespace util
 } // end of namespace unisim
 
-#endif // __UNISIM_UTIL_REG_REGISTER_HH__
+#endif // __UNISIM_UTIL_REG_DEV_REGISTER_HH__
