@@ -52,8 +52,8 @@
  * MR::TYPE mr_val = mr.Get<MR::ALL>();
  */
 
-#ifndef __UNISIM_UTIL_REG_CPU_REGISTER_HH__
-#define __UNISIM_UTIL_REG_CPU_REGISTER_HH__
+#ifndef __UNISIM_UTIL_REG_CORE_REGISTER_HH__
+#define __UNISIM_UTIL_REG_CORE_REGISTER_HH__
 
 #include <iostream>
 #include <inttypes.h>
@@ -61,6 +61,7 @@
 namespace unisim {
 namespace util {
 namespace reg {
+namespace core {
 
 template <int BYTE_SIZE> struct TypeForByteSize {};
 template <> struct TypeForByteSize<1> { typedef uint8_t TYPE; };
@@ -328,8 +329,9 @@ template <typename T> void BitFieldSet<  BF0,  BF1,  BF2,  BF3,  BF4,  BF5,  BF6
 	storage = (storage & ~GetMask<T>()) | (bitfiedset_value & GetMask<T>());
 }
 
+} // end of namespace core
 } // end of namespace reg
 } // end of namespace util
 } // end of namespace unisim
 
-#endif // __UNISIM_UTIL_REG_CPU_REGISTER_HH__
+#endif // __UNISIM_UTIL_REG_CORE_REGISTER_HH__

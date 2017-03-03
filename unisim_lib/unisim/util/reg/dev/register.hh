@@ -46,6 +46,7 @@
 namespace unisim {
 namespace util {
 namespace reg {
+namespace dev {
 
 using unisim::util::endian::endian_type;
 using unisim::util::endian::E_BIG_ENDIAN;
@@ -944,6 +945,7 @@ AddressableRegister<ADDRESS> *RegisterAddressMap<ADDRESS>::FindRegister(ADDRESS 
 	return it != reg_addr_map.end() ? (*it).second : 0;
 }
 
+} // end of namespace dev
 } // end of namespace reg
 } // end of namespace util
 } // end of namespace unisim
