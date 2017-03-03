@@ -39,7 +39,6 @@ impl {
 /* Vector dot product of halfwords [exchanged], add, {signed integer,
    unsigned integer, signed by unsigned integer} and accumulate
    [negative] with saturate (zvdotph[x][{a,s}]{s,u,su}i[{aa,an}][s]):
-/*
  * - zvdotphaui
  * - zvdotphauis
  * - zvdotphauiaa
@@ -96,7 +95,7 @@ impl {
  * - zvdotphssuians
  */
 op zvdotphi(4[6]:rd[5]:ra[5]:rb[5]:0b1101[4]:substract[1]:exchange[1]:ty[2]:acc[2]:s[1])
-/* substract in {0="a",1="s"}, exchange in {0="",1="x"}, acc in {00="",01="aa",10="an"}, ty in {00="ui",01="si",10="sui"}, s in {0="",1="s"}
+/* substract in {0="a",1="s"}, exchange in {0="",1="x"}, acc in {00="",01="aa",10="an"}, ty in {00="ui",01="si",10="sui"}, s in {0="",1="s"} */
 /* substract=1 exchange=1 is illegal */
 zvdotphi.var ill : { bool } = {
 	   (substract && exchange) // substract=1 & exchange=1 is illegal
