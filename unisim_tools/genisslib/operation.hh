@@ -30,7 +30,7 @@
 struct Operation : virtual ReferenceCounter
 {
   Operation( ConstStr _symbol,
-             Vector<BitField>& _bitfields, Vector<Comment>& _comments,
+             Vector<BitField> const& _bitfields, Vector<Comment> const& _comments,
              SourceCode* _op_condition, FileLoc const& _fileloc );
   ~Operation();
   

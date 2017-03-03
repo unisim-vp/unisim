@@ -96,7 +96,7 @@ Specialization::newop()
 
   //  Actions, comments, variables, conditions, and fileloc are
   //  duplicated.
-  Operation* res = new Operation( symbol, *static_cast<Vector<BitField>*>( 0 ), m_operation->comments,
+  Operation* res = new Operation( symbol, Vector<BitField>(), m_operation->comments,
                                       m_operation->condition, m_operation->fileloc );
   
   res->variables = m_operation->variables;
