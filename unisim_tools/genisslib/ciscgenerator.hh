@@ -51,7 +51,7 @@ struct CiscGenerator : public Generator
   unsigned int                  m_code_capacity;
   
   CiscGenerator( Isa& _source, Opts const& _options );
-  ~CiscGenerator() {};
+  ~CiscGenerator();
   
   CiscOpCode const&           ciscopcode( Operation const* _op ) const { return dynamic_cast<CiscOpCode const&>( opcode( _op ) ); }
   CiscOpCode&                 ciscopcode( Operation const* _op ) { return dynamic_cast<CiscOpCode&>( opcode( _op ) ); };

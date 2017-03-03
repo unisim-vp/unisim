@@ -81,6 +81,14 @@ RiscGenerator::RiscGenerator( Isa& _source, Opts const& _options )
   : Generator( _source, _options ), m_insn_ctypesize( 0 )
 {};
 
+RiscGenerator::~RiscGenerator()
+{
+  for (OpCodeMap::iterator current = m_opcodes.begin(), stop = m_opcodes.end(); current != stop; ++current)
+    {
+      delete current->second;
+    }
+}
+
 /** Process the isa structure and computes RISC specific data 
 */
 void
