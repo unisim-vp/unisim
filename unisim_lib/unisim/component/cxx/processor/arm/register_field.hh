@@ -77,21 +77,21 @@ namespace arm {
       T const mask = getmask<T>();
       reg = (reg & ~mask) | ((value << int(pos)) & mask);
     }
-    template <typename T>
-    T Insert( T const& reg, T const& value ) const
-    {
-      T const mask = getmask<T>();
-      return (reg & ~mask) | ((value << int(pos)) & mask);
-    }
+    // template <typename T>
+    // T Insert( T const& reg, T const& value ) const
+    // {
+    //   T const mask = getmask<T>();
+    //   return (reg & ~mask) | ((value << int(pos)) & mask);
+    // }
     template <typename T> void Set( T& reg, bool ones ) const { this->Set( reg, ones ? ~T( 0 ) : T( 0 )); }
-    template <typename T>
-    T Swap( T& reg, T const& value ) const
-    {
-      T const mask = getmask<T>();
-      T res = (reg & mask) >> int(pos);
-      reg = (reg & ~mask) | ((value << int(pos)) & mask);
-      return res;
-    }
+    // template <typename T>
+    // T Swap( T& reg, T const& value ) const
+    // {
+    //   T const mask = getmask<T>();
+    //   T res = (reg & mask) >> int(pos);
+    //   reg = (reg & ~mask) | ((value << int(pos)) & mask);
+    //   return res;
+    // }
   };
   
   /* Common bitfields */
