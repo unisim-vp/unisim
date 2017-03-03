@@ -381,10 +381,6 @@ bitfield_list_decl: '(' bitfield_list ')'
 {
   $$ = $2;
 }
-  |
-{
-  $$ = 0;
-}
 ;
 
 op_condition: TOK_SOURCE_CODE ':'
@@ -672,7 +668,7 @@ param: TOK_SOURCE_CODE TOK_SOURCE_CODE
 
 param_list:
 {
-  $$ = 0;
+  $$ = new Vector<CodePair>();
 }
   | param
 {
