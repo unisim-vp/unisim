@@ -40,7 +40,7 @@ op zldw(0b000100[6]:shl<1> rd[4]:0b0[1]:ra[5]:uimm[5]:0b0110[4]:u[1]:0b000011[6]
 zldw.var displacement : { uint32_t } = { uimm * 8 }
 zldw.var ill : { bool } = {
 	   (!ra && u)  // ra=0 & u=1 is illegal
-	|| (!uimm & u) // uimm=0 & u=1 is illegal
+	|| (!uimm && u) // uimm=0 & u=1 is illegal
 }
 zldw.execute = {
 	if(unlikely(ill))
