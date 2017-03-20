@@ -433,14 +433,20 @@ namespace armsec
     
     U32 FPSCR, FPEXC;
     
+    //U32 StandardValuedFPSCR() const   { return AHP.Mask( FPSCR ) | 0x03000000; }
+    
     U32 RoundTowardsZeroFPSCR() const
     {
-      return unisim::component::cxx::processor::arm::RMode.Insert( FPSCR, U32(unisim::component::cxx::processor::arm::RoundTowardsZero) );
+      U32 fpscr = FPSCR;
+      unisim::component::cxx::processor::arm::RMode.Set( fpscr, U32(unisim::component::cxx::processor::arm::RoundTowardsZero) );
+      return fpscr;
     }
     
     U32 RoundToNearestFPSCR() const
     {
-      return unisim::component::cxx::processor::arm::RMode.Insert( FPSCR, U32(unisim::component::cxx::processor::arm::RoundToNearest) );
+      U32 fpscr = FPSCR;
+      unisim::component::cxx::processor::arm::RMode.Set( fpscr, U32(unisim::component::cxx::processor::arm::RoundToNearest) );
+      return fpscr;
     }
     
     void not_implemented() { throw std::logic_error( "not implemented" ); }
@@ -972,8 +978,10 @@ struct Decoder
       {
       case 16: std::cout << armsec::DumpConstant( uint16_t(op->GetEncoding()) ); break;
       case 32: std::cout << armsec::DumpConstant( uint32_t(op->GetEncoding()) ); break;
+      default: throw std::logic_error("bad instruction length"); break;
       }
     std::cout << ")\n";
+    std::cout << "(size . " << (op->GetLength() / 8) << ")\n";
     
     // std::cout << "(int_name,\"" << op->GetName() << "\")\n";
     
