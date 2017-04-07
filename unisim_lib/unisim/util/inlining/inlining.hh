@@ -39,9 +39,14 @@
 #undef ALWAYS_INLINE
 #endif
 
+#if defined(NEVER_INLINE)
+#undef NEVER_INLINE
+#endif
+
 #if defined(__GNUC__)
 #if (__GNUC__ > 4) || ((__GNUC__ >= 4) && ((__GNUC_MINOR__ > 1) || ((__GNUC_MINOR__ >= 1) && (__GNUC_PATCHLEVEL__ >= 3))))     // GNU C version >= 4.1.3
 #define ALWAYS_INLINE __attribute__((always_inline))
+#define NEVER_INLINE __attribute__ ((noinline))
 #else
 #define ALWAYS_INLINE
 #endif
@@ -50,6 +55,7 @@
 
 #if __has_attribute(always_inline)
 #define ALWAYS_INLINE __attribute__((always_inline))
+#define NEVER_INLINE __attribute__ ((noinline))
 #else
 #define ALWAYS_INLINE
 #endif
