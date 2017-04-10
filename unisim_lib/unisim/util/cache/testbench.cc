@@ -104,58 +104,31 @@ struct MyMemorySubSystem : MemorySubSystem<MSS_TYPES, MyMemorySubSystem<MSS_TYPE
 	typedef CacheHierarchy<MSS_TYPES, L1I, L2U> INSTRUCTION_CACHE_HIERARCHY;
 	
 	MyMemorySubSystem();
-	
-	template <typename CACHE, bool dummy = true>
-	struct INTERFACE
-	{
-		static CACHE *GetCache(MyMemorySubSystem<MSS_TYPES>* mss) { return 0; }
-		static bool IsCacheVerbose(const MyMemorySubSystem<MSS_TYPES>* mss) { return false; }
-		static bool IsCacheEnabled(MyMemorySubSystem<MSS_TYPES>* mss) { return true; }
-		static void ChooseLineToEvict(MyMemorySubSystem<MSS_TYPES>* mss, CacheAccess<MSS_TYPES, CACHE>& access) { access.way = 0; }
-		static void UpdateReplacementPolicyOnAccess(MyMemorySubSystem<MSS_TYPES>* mss, CacheAccess<MSS_TYPES, CACHE>& access) {}
-		static void UpdateReplacementPolicyOnFill(MyMemorySubSystem<MSS_TYPES>* mss, CacheAccess<MSS_TYPES, CACHE>& access) {}
-	};
-	
-	template <bool dummy>
-	struct INTERFACE<L1I, dummy>
-	{
-		static L1I *GetCache(MyMemorySubSystem<MSS_TYPES>* mss) { return &mss->l1i; }
-		static bool IsCacheVerbose(const MyMemorySubSystem<MSS_TYPES>* mss) { return true; }
-		static bool IsCacheEnabled(MyMemorySubSystem<MSS_TYPES>* mss) { return true; }
-		static void ChooseLineToEvict(MyMemorySubSystem<MSS_TYPES>* mss, CacheAccess<MSS_TYPES, L1I>& access) { access.way = access.set->template Status<typename L1I::SET_STATUS>().lru.Select(); }
-		static void UpdateReplacementPolicyOnAccess(MyMemorySubSystem<MSS_TYPES>* mss, CacheAccess<MSS_TYPES, L1I>& access) { access.set->template Status<typename L1I::SET_STATUS>().lru.UpdateOnAccess(access.way); }
-		static void UpdateReplacementPolicyOnFill(MyMemorySubSystem<MSS_TYPES>* mss, CacheAccess<MSS_TYPES, L1I>& access) {}
-	};
 
-	template <bool dummy>
-	struct INTERFACE<L1D, dummy>
-	{
-		static L1D *GetCache(MyMemorySubSystem<MSS_TYPES>* mss) { return &mss->l1d; }
-		static bool IsCacheVerbose(const MyMemorySubSystem<MSS_TYPES>* mss) { return true; }
-		static bool IsCacheEnabled(MyMemorySubSystem<MSS_TYPES>* mss) { return true; }
-		static void ChooseLineToEvict(MyMemorySubSystem<MSS_TYPES>* mss, CacheAccess<MSS_TYPES, L1D>& access) { access.way = access.set->template Status<typename L1D::SET_STATUS>().lru.Select(); }
-		static void UpdateReplacementPolicyOnAccess(MyMemorySubSystem<MSS_TYPES>* mss, CacheAccess<MSS_TYPES, L1D>& access) { access.set->template Status<typename L1D::SET_STATUS>().lru.UpdateOnAccess(access.way); }
-		static void UpdateReplacementPolicyOnFill(MyMemorySubSystem<MSS_TYPES>* mss, CacheAccess<MSS_TYPES, L1D>& access) {}
-	};
-
-	template <bool dummy>
-	struct INTERFACE<L2U, dummy>
-	{
-		static L2U *GetCache(MyMemorySubSystem<MSS_TYPES>* mss) { return &mss->l2u; }
-		static bool IsCacheVerbose(const MyMemorySubSystem<MSS_TYPES>* mss) { return true; }
-		static bool IsCacheEnabled(MyMemorySubSystem<MSS_TYPES>* mss) { return true; }
-		static void ChooseLineToEvict(MyMemorySubSystem<MSS_TYPES>* mss, CacheAccess<MSS_TYPES, L2U>& access) { access.way = access.set->template Status<typename L2U::SET_STATUS>().lru.Select(); }
-		static void UpdateReplacementPolicyOnAccess(MyMemorySubSystem<MSS_TYPES>* mss, CacheAccess<MSS_TYPES, L2U>& access) { access.set->template Status<typename L2U::SET_STATUS>().lru.UpdateOnAccess(access.way); }
-		static void UpdateReplacementPolicyOnFill(MyMemorySubSystem<MSS_TYPES>* mss, CacheAccess<MSS_TYPES, L2U>& access) {}
-	};
+	L1I *GetCache(const L1I *);
+	L1D *GetCache(const L1D *);
+	L2U *GetCache(const L2U *);
 	
-	template <typename CACHE> CACHE *GetCache() { return INTERFACE<CACHE>::GetCache(this); }
-	template <typename CACHE> bool IsCacheVerbose() const { return INTERFACE<CACHE>::IsCacheVerbose(this); }
-	template <typename CACHE> bool IsCacheEnabled() { return INTERFACE<CACHE>::IsCacheEnabled(this); }
-	template <typename CACHE> void ChooseLineToEvict(CacheAccess<MSS_TYPES, CACHE>& access) { return INTERFACE<CACHE>::ChooseLineToEvict(this, access); }
-	template <typename CACHE> void UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, CACHE>& access) { return INTERFACE<CACHE>::UpdateReplacementPolicyOnAccess(this, access); }
-	template <typename CACHE> void UpdateReplacementPolicyOnFill(CacheAccess<MSS_TYPES, CACHE>& access) { return INTERFACE<CACHE>::UpdateReplacementPolicyOnFill(this, access); }
-
+	bool IsCacheVerbose(const L1I *) const { return true; }
+	bool IsCacheVerbose(const L1D *) const { return true; }
+	bool IsCacheVerbose(const L2U *) const { return true; }
+	
+	bool IsCacheEnabled(const L1I *) { return true; }
+	bool IsCacheEnabled(const L1D *) { return true; }
+	bool IsCacheEnabled(const L2U *) { return true; }
+	
+	void ChooseLineToEvict(CacheAccess<MSS_TYPES, L1I>& access);
+	void ChooseLineToEvict(CacheAccess<MSS_TYPES, L1D>& access);
+	void ChooseLineToEvict(CacheAccess<MSS_TYPES, L2U>& access);
+	
+	void UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, L1I>& access);
+	void UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, L1D>& access);
+	void UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, L2U>& access);
+	
+	void UpdateReplacementPolicyOnFill(CacheAccess<MSS_TYPES, L1I>& access) {}
+	void UpdateReplacementPolicyOnFill(CacheAccess<MSS_TYPES, L1D>& access) {}
+	void UpdateReplacementPolicyOnFill(CacheAccess<MSS_TYPES, L2U>& access) {}
+	
 	inline bool IsVerboseDataLoad() const ALWAYS_INLINE { return true; }
 	inline bool IsVerboseDataStore() const ALWAYS_INLINE { return true; }
 	inline bool IsVerboseInstructionFetch() const ALWAYS_INLINE { return true; }
@@ -176,70 +149,59 @@ struct MyMemorySubSystem : MemorySubSystem<MSS_TYPES, MyMemorySubSystem<MSS_TYPE
 	std::map<typename MSS_TYPES::ADDRESS, uint8_t> memory;
 };
 
-#if 0
 template <typename MSS_TYPES>
-template <bool dummy>
-int *MyMemorySubSystem<MSS_TYPES>::INTERFACE<int, dummy>::GetCache(MyMemorySubSystem<MSS_TYPES> *mss)
+typename MyMemorySubSystem<MSS_TYPES>::L1I *MyMemorySubSystem<MSS_TYPES>::GetCache(const L1I *)
 {
 	return &l1i;
 }
 
 template <typename MSS_TYPES>
-template <bool dummy>
-typename MyMemorySubSystem<MSS_TYPES>::L1D *MyMemorySubSystem<MSS_TYPES>::INTERFACE<dummy>::GetCache<MyMemorySubSystem<MSS_TYPES>::L1D>()
+typename MyMemorySubSystem<MSS_TYPES>::L1D *MyMemorySubSystem<MSS_TYPES>::GetCache(const L1D *)
 {
 	return &l1d;
 }
 
 template <typename MSS_TYPES>
-template <bool dummy>
-typename MyMemorySubSystem<MSS_TYPES>::L2U *MyMemorySubSystem<MSS_TYPES>::INTERFACE<dummy>::GetCache<MyMemorySubSystem<MSS_TYPES>::L2U>()
+typename MyMemorySubSystem<MSS_TYPES>::L2U *MyMemorySubSystem<MSS_TYPES>::GetCache(const L2U *)
 {
 	return &l2u;
 }
 
 template <typename MSS_TYPES>
-template <bool dummy>
-void MyMemorySubSystem<MSS_TYPES>::INTERFACE<MyMemorySubSystem<MSS_TYPES>::L1I, dummy>::ChooseLineToEvict(CacheAccess<MSS_TYPES, MyMemorySubSystem<MSS_TYPES>::L1I>& access)
+void MyMemorySubSystem<MSS_TYPES>::ChooseLineToEvict(CacheAccess<MSS_TYPES, L1I>& access)
 {
-	access.way = access.set->Status<L1I::SET_STATUS>().lru.Select();
+	access.way = access.set->template Status<typename L1I::SET_STATUS>().lru.Select();
 }
 
 template <typename MSS_TYPES>
-template <bool dummy>
-void MyMemorySubSystem<MSS_TYPES>::INTERFACE<dummy>::ChooseLineToEvict(CacheAccess<MSS_TYPES, MyMemorySubSystem<MSS_TYPES>::L1D>& access)
+void MyMemorySubSystem<MSS_TYPES>::ChooseLineToEvict(CacheAccess<MSS_TYPES, L1D>& access)
 {
-	access.way = access.set->Status<L1D::SET_STATUS>().lru.Select();
+	access.way = access.set->template Status<typename L1D::SET_STATUS>().lru.Select();
 }
 
 template <typename MSS_TYPES>
-template <bool dummy>
-void MyMemorySubSystem<MSS_TYPES>::INTERFACE<dummy>::ChooseLineToEvict(CacheAccess<MSS_TYPES, MyMemorySubSystem<MSS_TYPES>::L2U>& access)
+void MyMemorySubSystem<MSS_TYPES>::ChooseLineToEvict(CacheAccess<MSS_TYPES, L2U>& access)
 {
-	access.way = access.set->Status<L2U::SET_STATUS>().lru.Select();
+	access.way = access.set->template Status<typename L2U::SET_STATUS>().lru.Select();
 }
 
 template <typename MSS_TYPES>
-template <bool dummy>
-void MyMemorySubSystem<MSS_TYPES>::INTERFACE<dummy>::UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, MyMemorySubSystem<MSS_TYPES>::L1I>& access)
+void MyMemorySubSystem<MSS_TYPES>::UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, L1I>& access)
 {
-	access.set->Status<L1I::SET_STATUS>().lru.UpdateOnAccess(access.way);
+	access.set->template Status<typename L1I::SET_STATUS>().lru.UpdateOnAccess(access.way);
 }
 
 template <typename MSS_TYPES>
-template <bool dummy>
-void MyMemorySubSystem<MSS_TYPES>::INTERFACE<dummy>::UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, MyMemorySubSystem<MSS_TYPES>::L1D>& access)
+void MyMemorySubSystem<MSS_TYPES>::UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, L1D>& access)
 {
-	access.set->Status<L1D::SET_STATUS>().lru.UpdateOnAccess(access.way);
+	access.set->template Status<typename L1D::SET_STATUS>().lru.UpdateOnAccess(access.way);
 }
 
 template <typename MSS_TYPES>
-template <bool dummy>
-void MyMemorySubSystem<MSS_TYPES>::INTERFACE<dummy>::UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, MyMemorySubSystem<MSS_TYPES>::L2U>& access)
+void MyMemorySubSystem<MSS_TYPES>::UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, L2U>& access)
 {
-	access.set->Status<L2U::SET_STATUS>().lru.UpdateOnAccess(access.way);
+	access.set->template Status<typename L2U::SET_STATUS>().lru.UpdateOnAccess(access.way);
 }
-#endif
 
 
 template <typename MSS_TYPES>

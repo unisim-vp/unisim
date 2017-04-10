@@ -515,13 +515,13 @@ struct LRU_ReplacementPolicy
 	inline unsigned int Select() const
 	{
 		unsigned int way = (lru_bits >> L) & M;
-		std::cerr << "S: way=" << way << std::endl;
+		//std::cerr << "S: way=" << way << std::endl;
 		return way;
 	}
 
 	inline void UpdateOnAccess(unsigned int way)
 	{
-		std::cerr << "A(" << way << "): lru_bits = 0x" << std::hex << (unsigned long long) lru_bits << std::dec << std::endl;
+		//std::cerr << "A(" << way << "): lru_bits = 0x" << std::hex << (unsigned long long) lru_bits << std::dec << std::endl;
 		if((lru_bits & M) == way) return;
 		
 		unsigned int i;
@@ -533,7 +533,7 @@ struct LRU_ReplacementPolicy
 			if((_lru_bits & M) == way)
 			{
 				lru_bits = ((((_lru_bits >> S) << (i * S)) | (lru_bits & ((LRU_BITS_TYPE(1) << (i * S)) - 1))) << S) | way; 
-				std::cerr << "A(" << way << ") -> 0x" << std::hex << (unsigned long long) lru_bits << std::dec << std::endl;
+				//std::cerr << "A(" << way << ") -> 0x" << std::hex << (unsigned long long) lru_bits << std::dec << std::endl;
 				return;
 			}
 		}
@@ -618,7 +618,7 @@ template <typename TYPES, typename MSS>
 struct MemorySubSystem
 {
 	/* Constructor */
-	MemorySubSystem(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream);
+	MemorySubSystem();
 	
 	/* Data Load */
 	bool DataLoad(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
@@ -631,11 +631,22 @@ struct MemorySubSystem
 	
 protected:
 	///////////////// To be overriden by derived class ////////////////////////
-	
-	template <typename CACHE> inline CACHE *GetCache() ALWAYS_INLINE;
 
-	template <typename CACHE> inline bool IsCacheVerbose() const ALWAYS_INLINE;
+#if 0	
+	inline CACHE *GetCache(MSS *mss, const CACHE *null) ALWAYS_INLINE;
+	inline bool IsCacheVerbose(MSS *mss, const CACHE *null) ALWAYS_INLINE;
+	inline bool IsCacheEnabled(MSS *mss, const CACHE *null) ALWAYS_INLINE;
+	inline void ChooseLineToEvict(MSS *mss, CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
+	inline void UpdateReplacementPolicyOnAccess(MSS *mss, CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
+	inline void UpdateReplacementPolicyOnFill(MSS *mss, CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
+#endif
 	
+	inline std::ostream& GetDebugInfoStream() ALWAYS_INLINE;
+	
+	inline std::ostream& GetDebugWarningStream() ALWAYS_INLINE;
+
+	inline std::ostream& GetDebugErrorStream() ALWAYS_INLINE;
+
 	inline bool IsVerboseDataLoad() const ALWAYS_INLINE;
 	
 	inline bool IsVerboseDataStore() const ALWAYS_INLINE;
@@ -652,14 +663,6 @@ protected:
 	
 	inline bool IsDataWriteAccessWriteThrough(typename TYPES::STORAGE_ATTR storage_attr) const ALWAYS_INLINE;
 
-	template <typename CACHE> inline bool IsCacheEnabled() ALWAYS_INLINE;
-	
-	template <typename CACHE> inline void ChooseLineToEvict(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
-	
-	template <typename CACHE> inline void UpdateReplacementPolicyOnAccess(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
-
-	template <typename CACHE> inline void UpdateReplacementPolicyOnFill(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
-	
 	bool DataBusRead(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr, bool rwitm);
 
 	bool DataBusWrite(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
@@ -760,15 +763,40 @@ protected:
 	template <typename CACHE_HIERARCHY, typename CACHE, typename UNTIL, bool INVALIDATE>
 	inline bool GlobalWriteBackLineByAddress(typename TYPES::ADDRESS addr);
 private:
-	std::ostream& debug_info_stream;
-	std::ostream& debug_warning_stream;
-	std::ostream& debug_error_stream;
-	
+
 	//////////////////// trampoline to overridable methods /////////////////////
 	
+	template <typename CACHE, bool dummy = true>
+	struct __MSS_CACHE_INTERFACE__
+	{
+		static inline CACHE *GetCache(MSS *mss, const CACHE *null)  ALWAYS_INLINE { return mss->GetCache(null); }
+		static inline bool IsCacheVerbose(MSS *mss, const CACHE *null) ALWAYS_INLINE { return mss->IsCacheVerbose(null); }
+		static inline bool IsCacheEnabled(MSS *mss, const CACHE *null) ALWAYS_INLINE { return mss->IsCacheEnabled(null); }
+		static inline void ChooseLineToEvict(MSS *mss, CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE { mss->ChooseLineToEvict(access); }
+		static inline void UpdateReplacementPolicyOnAccess(MSS *mss, CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE { mss->UpdateReplacementPolicyOnAccess(access); }
+		static inline void UpdateReplacementPolicyOnFill(MSS *mss, CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE { mss->UpdateReplacementPolicyOnFill(access); }
+	};
+	
+	template <bool dummy>
+	struct __MSS_CACHE_INTERFACE__<NullCache<TYPES>, dummy>
+	{
+		static inline NullCache<TYPES> *GetCache(MSS *mss, const NullCache<TYPES> *null) ALWAYS_INLINE { return 0; }
+		static inline bool IsCacheVerbose(MSS *mss, const NullCache<TYPES> *null) ALWAYS_INLINE { return false; }
+		static inline bool IsCacheEnabled(MSS *mss, const NullCache<TYPES> *null) ALWAYS_INLINE { return false; }
+		static inline void ChooseLineToEvict(MSS *mss, CacheAccess<TYPES, NullCache<TYPES> >& access) ALWAYS_INLINE {}
+		static inline void UpdateReplacementPolicyOnAccess(MSS *mss, CacheAccess<TYPES, NullCache<TYPES> >& access) ALWAYS_INLINE {}
+		static inline void UpdateReplacementPolicyOnFill(MSS *mss, CacheAccess<TYPES, NullCache<TYPES> >& access) ALWAYS_INLINE {}
+	};
+
 	template <typename CACHE> inline CACHE *__MSS_GetCache__() ALWAYS_INLINE;
 	
-	template <typename CACHE> inline bool __MSS_IsCacheVerbose__() const ALWAYS_INLINE;
+	inline std::ostream& __MSS_GetDebugInfoStream__() ALWAYS_INLINE;
+	
+	inline std::ostream& __MSS_GetDebugWarningStream__() ALWAYS_INLINE;
+
+	inline std::ostream& __MSS_GetDebugErrorStream__() ALWAYS_INLINE;
+
+	template <typename CACHE> inline bool __MSS_IsCacheVerbose__() ALWAYS_INLINE;
 	
 	inline bool __MSS_IsStorageCacheable__(typename TYPES::STORAGE_ATTR storage_attr) const ALWAYS_INLINE;
 	
@@ -801,8 +829,6 @@ private:
 	inline bool __MSS_InstructionBusRead__(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr) ALWAYS_INLINE;
 	
 	///////////////////////////////////////////////////////////////////////////
-	
-	template <typename CACHE> void ThrowBadCacheInstance() NEVER_INLINE;
 	
 	void Trace(const char *type, typename TYPES::ADDRESS addr, const void *buffer, unsigned int size);
 };
@@ -1453,10 +1479,7 @@ inline unsigned int Cache<TYPES, CACHE>::NumSectors()
 ////////////////////////////// MemorySubSystem<> ////////////////////////////////
 
 template <typename TYPES, typename MSS>
-MemorySubSystem<TYPES, MSS>::MemorySubSystem(std::ostream& _debug_info_stream, std::ostream& _debug_warning_stream, std::ostream& _debug_error_stream)
-	: debug_info_stream(_debug_info_stream)
-	, debug_warning_stream(_debug_warning_stream)
-	, debug_error_stream(_debug_error_stream)
+MemorySubSystem<TYPES, MSS>::MemorySubSystem()
 {
 }
 
@@ -1534,14 +1557,14 @@ inline bool MemorySubSystem<TYPES, MSS>::Load(typename TYPES::ADDRESS addr, void
 		cache->Lookup(access);
 		if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 		{
-			debug_info_stream << CACHE::__MSS_GetName__() << ": Lookup at @0x"
-							<< std::hex << access.addr << std::dec << " : "
-							<< "line_base_addr=0x" << std::hex << access.line_base_addr << std::dec << ","
-							<< "index=0x" << std::hex << access.index << std::dec << ","
-							<< "sector=0x" << std::hex << access.sector << std::dec << ","
-							<< "offset=0x" << std::hex << access.offset << std::dec << ","
-							<< "size_to_block_boundary=0x" << std::hex << access.size_to_block_boundary << std::dec
-							<< std::endl;
+			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Lookup at @0x"
+			                             << std::hex << access.addr << std::dec << " : "
+			                             << "line_base_addr=0x" << std::hex << access.line_base_addr << std::dec << ","
+			                             << "index=0x" << std::hex << access.index << std::dec << ","
+			                             << "sector=0x" << std::hex << access.sector << std::dec << ","
+			                             << "offset=0x" << std::hex << access.offset << std::dec << ","
+			                             << "size_to_block_boundary=0x" << std::hex << access.size_to_block_boundary << std::dec
+			                             << std::endl;
 		}
 
 		if(unlikely(!access.line))
@@ -1549,13 +1572,13 @@ inline bool MemorySubSystem<TYPES, MSS>::Load(typename TYPES::ADDRESS addr, void
 			// Line miss
 			if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 			{
-				debug_info_stream << CACHE::__MSS_GetName__() << ": Line miss at @0x" << std::hex << access.addr << std::dec << std::endl;
+				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Line miss at @0x" << std::hex << access.addr << std::dec << std::endl;
 			}
 
 			__MSS_ChooseLineToEvict__(access);
 			if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 			{
-				debug_info_stream << CACHE::__MSS_GetName__() << ": Line miss: choosen way=" << access.way << std::endl;
+				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Line miss: choosen way=" << access.way << std::endl;
 			}
 			
 			bool status = EvictLine<CACHE_HIERARCHY, CACHE>(access); 
@@ -1565,7 +1588,7 @@ inline bool MemorySubSystem<TYPES, MSS>::Load(typename TYPES::ADDRESS addr, void
 		{
 			if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 			{
-				debug_info_stream << CACHE::__MSS_GetName__() << ": Line hit: index=" << access.index << ", way=" << access.line->GetWay() << std::endl;
+				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Line hit: index=" << access.index << ", way=" << access.line->GetWay() << std::endl;
 			}
 		}
 
@@ -1574,19 +1597,20 @@ inline bool MemorySubSystem<TYPES, MSS>::Load(typename TYPES::ADDRESS addr, void
 			// Block miss
 			if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 			{
-				debug_info_stream << CACHE::__MSS_GetName__() << ": Block miss at @0x" << std::hex << access.addr << std::dec << std::endl;
+				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Block miss at @0x" << std::hex << access.addr << std::dec << std::endl;
 			}
 			
 			typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 			
 			bool status = FillBlock<CACHE_HIERARCHY, CACHE, NLC>(access);
 			if(unlikely(!status)) return false;
+			__MSS_UpdateReplacementPolicyOnFill__(access);
 		}
 		else
 		{
 			if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 			{
-				debug_info_stream << CACHE::__MSS_GetName__() << ": Block hit at @0x" << std::hex << access.addr << std::dec << std::endl;
+				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Block hit at @0x" << std::hex << access.addr << std::dec << std::endl;
 			}
 		}
 
@@ -1633,14 +1657,14 @@ inline bool MemorySubSystem<TYPES, MSS>::Store(typename TYPES::ADDRESS addr, con
 		cache->Lookup(access);
 		if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 		{
-			debug_info_stream << CACHE::__MSS_GetName__() << ": Lookup at @0x"
-							<< std::hex << access.addr << std::dec << " : "
-							<< "line_base_addr=0x" << std::hex << access.line_base_addr << std::dec << ","
-							<< "index=0x" << std::hex << access.index << std::dec << ","
-							<< "sector=0x" << std::hex << access.sector << std::dec << ","
-							<< "offset=0x" << std::hex << access.offset << std::dec << ","
-							<< "size_to_block_boundary=0x" << std::hex << access.size_to_block_boundary << std::dec
-							<< std::endl;
+			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Lookup at @0x"
+			                             << std::hex << access.addr << std::dec << " : "
+			                             << "line_base_addr=0x" << std::hex << access.line_base_addr << std::dec << ","
+			                             << "index=0x" << std::hex << access.index << std::dec << ","
+			                             << "sector=0x" << std::hex << access.sector << std::dec << ","
+			                             << "offset=0x" << std::hex << access.offset << std::dec << ","
+			                             << "size_to_block_boundary=0x" << std::hex << access.size_to_block_boundary << std::dec
+			                             << std::endl;
 		}
 		
 		if(unlikely(!access.line))
@@ -1648,7 +1672,7 @@ inline bool MemorySubSystem<TYPES, MSS>::Store(typename TYPES::ADDRESS addr, con
 			// Line miss
 			if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 			{
-				debug_info_stream << CACHE::__MSS_GetName__() << ": Line miss at @0x" << std::hex << access.addr << std::dec << std::endl;
+				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Line miss at @0x" << std::hex << access.addr << std::dec << std::endl;
 			}
 
 			if(CACHE::IsWriteAllocate())
@@ -1657,7 +1681,7 @@ inline bool MemorySubSystem<TYPES, MSS>::Store(typename TYPES::ADDRESS addr, con
 				__MSS_ChooseLineToEvict__(access);
 				if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 				{
-					debug_info_stream << CACHE::__MSS_GetName__() << ": Line miss: choosen way=" << access.way << std::endl;
+					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Line miss: choosen way=" << access.way << std::endl;
 				}
 
 				bool status = EvictLine<CACHE_HIERARCHY, CACHE>(access);
@@ -1668,7 +1692,7 @@ inline bool MemorySubSystem<TYPES, MSS>::Store(typename TYPES::ADDRESS addr, con
 		{
 			if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 			{
-				debug_info_stream << CACHE::__MSS_GetName__() << ": Line hit: index=" << access.index << ", way=" << access.line->GetWay() << std::endl;
+				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Line hit: index=" << access.index << ", way=" << access.line->GetWay() << std::endl;
 			}
 		}
 		
@@ -1677,7 +1701,7 @@ inline bool MemorySubSystem<TYPES, MSS>::Store(typename TYPES::ADDRESS addr, con
 			// Block miss
 			if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 			{
-				debug_info_stream << CACHE::__MSS_GetName__() << ": Block miss at @0x" << std::hex << access.addr << std::dec << std::endl;
+				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Block miss at @0x" << std::hex << access.addr << std::dec << std::endl;
 			}
 			
 			if(CACHE::IsWriteAllocate())
@@ -1687,13 +1711,14 @@ inline bool MemorySubSystem<TYPES, MSS>::Store(typename TYPES::ADDRESS addr, con
 				
 				bool status = FillBlock<CACHE_HIERARCHY, CACHE, NLC>(access);
 				if(unlikely(!status)) return false;
+				__MSS_UpdateReplacementPolicyOnFill__(access);
 			}
 		}
 		else
 		{
 			if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 			{
-				debug_info_stream << CACHE::__MSS_GetName__() << " Block hit at @0x" << std::hex << access.addr << std::dec << std::endl;
+				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << " Block hit at @0x" << std::hex << access.addr << std::dec << std::endl;
 			}
 		}
 
@@ -1736,7 +1761,7 @@ inline bool MemorySubSystem<TYPES, MSS>::FillBlock(CacheAccess<TYPES, TO>& to_ac
 		// (1) Block Fill from Memory
 		if(unlikely(__MSS_IsCacheVerbose__<TO>()))
 		{
-			debug_info_stream << TO::__MSS_GetName__() << ": Filling block from memory at @0x" << std::hex << to_access.block_base_addr << std::dec << std::endl;
+			__MSS_GetDebugInfoStream__() << TO::__MSS_GetName__() << ": Filling block from memory at @0x" << std::hex << to_access.block_base_addr << std::dec << std::endl;
 		}
 		
 		if(TO::IsDataCache())
@@ -1759,7 +1784,9 @@ inline bool MemorySubSystem<TYPES, MSS>::FillBlock(CacheAccess<TYPES, TO>& to_ac
 		// (2) fill block from next level cache
 		typedef typename CACHE_HIERARCHY::template NextLevel<FROM>::CACHE NLC;
 		
-		return FillBlock<CACHE_HIERARCHY, TO, NLC>(to_access);
+		bool status = FillBlock<CACHE_HIERARCHY, TO, NLC>(to_access);
+		if(unlikely(!status)) return false;
+		__MSS_UpdateReplacementPolicyOnFill__(to_access);
 	}
 	else
 	{
@@ -1771,7 +1798,7 @@ inline bool MemorySubSystem<TYPES, MSS>::FillBlock(CacheAccess<TYPES, TO>& to_ac
 
 		if(unlikely(__MSS_IsCacheVerbose__<TO>()))
 		{
-			debug_info_stream << TO::__MSS_GetName__() << ": Filling block from " << FROM::__MSS_GetName__() << " at @0x" << std::hex << to_access.block_base_addr << std::dec << std::endl;
+			__MSS_GetDebugInfoStream__() << TO::__MSS_GetName__() << ": Filling block from " << FROM::__MSS_GetName__() << " at @0x" << std::hex << to_access.block_base_addr << std::dec << std::endl;
 		}
 		
 		CacheAccess<TYPES, FROM> from_access;
@@ -1784,14 +1811,14 @@ inline bool MemorySubSystem<TYPES, MSS>::FillBlock(CacheAccess<TYPES, TO>& to_ac
 		from->Lookup(from_access);
 		if(unlikely(__MSS_IsCacheVerbose__<FROM>()))
 		{
-			debug_info_stream << FROM::__MSS_GetName__() << ": Lookup at @0x"
-							<< std::hex << from_access.addr << std::dec << " : "
-							<< "line_base_addr=0x" << std::hex << from_access.line_base_addr << std::dec << ","
-							<< "index=0x" << std::hex << from_access.index << std::dec << ","
-							<< "sector=0x" << std::hex << from_access.sector << std::dec << ","
-							<< "offset=0x" << std::hex << from_access.offset << std::dec << ","
-							<< "size_to_block_boundary=0x" << std::hex << from_access.size_to_block_boundary << std::dec
-							<< std::endl;
+			__MSS_GetDebugInfoStream__() << FROM::__MSS_GetName__() << ": Lookup at @0x"
+			                             << std::hex << from_access.addr << std::dec << " : "
+			                             << "line_base_addr=0x" << std::hex << from_access.line_base_addr << std::dec << ","
+			                             << "index=0x" << std::hex << from_access.index << std::dec << ","
+			                             << "sector=0x" << std::hex << from_access.sector << std::dec << ","
+			                             << "offset=0x" << std::hex << from_access.offset << std::dec << ","
+			                             << "size_to_block_boundary=0x" << std::hex << from_access.size_to_block_boundary << std::dec
+			                             << std::endl;
 		}
 
 		if(unlikely(!from_access.line))
@@ -1799,13 +1826,13 @@ inline bool MemorySubSystem<TYPES, MSS>::FillBlock(CacheAccess<TYPES, TO>& to_ac
 			// Line miss
 			if(unlikely(__MSS_IsCacheVerbose__<FROM>()))
 			{
-				debug_info_stream << FROM::__MSS_GetName__() << ": Line miss at @0x" << std::hex << from_access.addr << std::dec << std::endl;
+				__MSS_GetDebugInfoStream__() << FROM::__MSS_GetName__() << ": Line miss at @0x" << std::hex << from_access.addr << std::dec << std::endl;
 			}
 			
 			__MSS_ChooseLineToEvict__(from_access);
 			if(unlikely(__MSS_IsCacheVerbose__<FROM>()))
 			{
-				debug_info_stream << FROM::__MSS_GetName__() << ": Line miss: choosen way=" << from_access.way << std::endl;
+				__MSS_GetDebugInfoStream__() << FROM::__MSS_GetName__() << ": Line miss: choosen way=" << from_access.way << std::endl;
 			}
 			
 			bool status = EvictLine<CACHE_HIERARCHY, FROM>(from_access);
@@ -1815,7 +1842,7 @@ inline bool MemorySubSystem<TYPES, MSS>::FillBlock(CacheAccess<TYPES, TO>& to_ac
 		{
 			if(unlikely(__MSS_IsCacheVerbose__<FROM>()))
 			{
-				debug_info_stream << FROM::__MSS_GetName__() << ": Line hit: index=" << from_access.index << ", way=" << from_access.line->GetWay() << std::endl;
+				__MSS_GetDebugInfoStream__() << FROM::__MSS_GetName__() << ": Line hit: index=" << from_access.index << ", way=" << from_access.line->GetWay() << std::endl;
 			}
 		}
 
@@ -1825,20 +1852,21 @@ inline bool MemorySubSystem<TYPES, MSS>::FillBlock(CacheAccess<TYPES, TO>& to_ac
 			// Block miss
 			if(unlikely(__MSS_IsCacheVerbose__<FROM>()))
 			{
-				debug_info_stream << FROM::__MSS_GetName__() << ": Block miss at @0x" << std::hex << from_access.addr << std::dec << std::endl;
+				__MSS_GetDebugInfoStream__() << FROM::__MSS_GetName__() << ": Block miss at @0x" << std::hex << from_access.addr << std::dec << std::endl;
 			}
 			
 			typedef typename CACHE_HIERARCHY::template NextLevel<FROM>::CACHE NLC;
 			
 			bool status = FillBlock<CACHE_HIERARCHY, FROM, NLC>(from_access);
 			if(unlikely(!status)) return false;
+			__MSS_UpdateReplacementPolicyOnFill__(from_access);
 		}
 		else
 		{
 			// (3.1) fill block from cache
 			if(unlikely(__MSS_IsCacheVerbose__<FROM>()))
 			{
-				debug_info_stream << FROM::__MSS_GetName__() << " Block hit at @0x" << std::hex << from_access.addr << std::dec << std::endl;
+				__MSS_GetDebugInfoStream__() << FROM::__MSS_GetName__() << " Block hit at @0x" << std::hex << from_access.addr << std::dec << std::endl;
 			}
 		}
 
@@ -1849,7 +1877,6 @@ inline bool MemorySubSystem<TYPES, MSS>::FillBlock(CacheAccess<TYPES, TO>& to_ac
 	to_access.line->SetValid();
 	to_access.line->SetBaseAddr(to_access.line_base_addr);
 	to_access.block->SetValid();
-	__MSS_UpdateReplacementPolicyOnFill__(to_access);
 	
 	return true;
 }
@@ -1869,7 +1896,7 @@ bool MemorySubSystem<TYPES, MSS>::WriteBackDirtyBlock(CacheAccess<TYPES, FROM>& 
 		// (1) Write back block to memory
 		if(unlikely(__MSS_IsCacheVerbose__<FROM>()))
 		{
-			debug_info_stream << FROM::__MSS_GetName__() << ": Writing back dirty block to memory 0x" << std::hex << from_dirty_block_to_write_back.GetBaseAddr() << std::dec << std::endl;
+			__MSS_GetDebugInfoStream__() << FROM::__MSS_GetName__() << ": Writing back dirty block to memory 0x" << std::hex << from_dirty_block_to_write_back.GetBaseAddr() << std::dec << std::endl;
 		}
 		if(unlikely(!__MSS_DataBusWrite__(from_dirty_block_to_write_back.GetBaseAddr(), &from_dirty_block_to_write_back[0], FROM::BLOCK_SIZE, typename TYPES::STORAGE_ATTR())))
 		{
@@ -1898,14 +1925,14 @@ bool MemorySubSystem<TYPES, MSS>::WriteBackDirtyBlock(CacheAccess<TYPES, FROM>& 
 		to->Lookup(to_access);
 		if(unlikely(__MSS_IsCacheVerbose__<TO>()))
 		{
-			debug_info_stream << TO::__MSS_GetName__() << ": Lookup at @0x"
-							<< std::hex << to_access.addr << std::dec << " : "
-							<< "line_base_addr=0x" << std::hex << to_access.line_base_addr << std::dec << ","
-							<< "index=0x" << std::hex << to_access.index << std::dec << ","
-							<< "sector=0x" << std::hex << to_access.sector << std::dec << ","
-							<< "offset=0x" << std::hex << to_access.offset << std::dec << ","
-							<< "size_to_block_boundary=0x" << std::hex << to_access.size_to_block_boundary << std::dec
-							<< std::endl;
+			__MSS_GetDebugInfoStream__() << TO::__MSS_GetName__() << ": Lookup at @0x"
+			                             << std::hex << to_access.addr << std::dec << " : "
+			                             << "line_base_addr=0x" << std::hex << to_access.line_base_addr << std::dec << ","
+			                             << "index=0x" << std::hex << to_access.index << std::dec << ","
+			                             << "sector=0x" << std::hex << to_access.sector << std::dec << ","
+			                             << "offset=0x" << std::hex << to_access.offset << std::dec << ","
+			                             << "size_to_block_boundary=0x" << std::hex << to_access.size_to_block_boundary << std::dec
+			                             << std::endl;
 		}
 
 		if(to_access.block)
@@ -1914,7 +1941,7 @@ bool MemorySubSystem<TYPES, MSS>::WriteBackDirtyBlock(CacheAccess<TYPES, FROM>& 
 			// block hit
 			if(unlikely(__MSS_IsCacheVerbose__<FROM>()))
 			{
-				debug_info_stream << FROM::__MSS_GetName__() << ": Writing back dirty block to " << TO::__MSS_GetName__() << " at @0x" << std::hex << from_dirty_block_to_write_back.GetBaseAddr() << std::dec << std::endl;
+				__MSS_GetDebugInfoStream__() << FROM::__MSS_GetName__() << ": Writing back dirty block to " << TO::__MSS_GetName__() << " at @0x" << std::hex << from_dirty_block_to_write_back.GetBaseAddr() << std::dec << std::endl;
 			}
 			memcpy(&(*to_access.block)[to_access.offset], &from_dirty_block_to_write_back[0], FROM::BLOCK_SIZE); // <-- write back
 			to_access.block->SetDirty();
@@ -1933,7 +1960,7 @@ bool MemorySubSystem<TYPES, MSS>::WriteBackDirtyBlock(CacheAccess<TYPES, FROM>& 
 	{
 		if(unlikely(__MSS_IsCacheVerbose__<FROM>()))
 		{
-			debug_info_stream << FROM::__MSS_GetName__() << ": Invalidating block at 0x" << std::hex << from_dirty_block_to_write_back.GetBaseAddr() << std::dec << std::endl;
+			__MSS_GetDebugInfoStream__() << FROM::__MSS_GetName__() << ": Invalidating block at 0x" << std::hex << from_dirty_block_to_write_back.GetBaseAddr() << std::dec << std::endl;
 		}
 		from_dirty_block_to_write_back.Invalidate();
 	}
@@ -1949,7 +1976,7 @@ bool MemorySubSystem<TYPES, MSS>::WriteBackLine(CacheAccess<TYPES, CACHE>& acces
 	{
 		if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 		{
-			debug_info_stream << CACHE::__MSS_GetName__() << ": Writing back Line at @0x" << std::hex << access.line_to_write_back_evict->GetBaseAddr() << std::dec << std::endl;
+			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Writing back Line at @0x" << std::hex << access.line_to_write_back_evict->GetBaseAddr() << std::dec << std::endl;
 		}
 		if(CACHE::IsWriteBackCache())
 		{
@@ -1974,7 +2001,7 @@ bool MemorySubSystem<TYPES, MSS>::WriteBackLine(CacheAccess<TYPES, CACHE>& acces
 		{
 			if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 			{
-				debug_info_stream << CACHE::__MSS_GetName__() << ": Invalidating Line at @0x" << std::hex << access.line_to_write_back_evict->GetBaseAddr() << std::dec << std::endl;
+				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Invalidating Line at @0x" << std::hex << access.line_to_write_back_evict->GetBaseAddr() << std::dec << std::endl;
 			}
 			access.line_to_write_back_evict->Invalidate();
 		}
@@ -1983,7 +2010,7 @@ bool MemorySubSystem<TYPES, MSS>::WriteBackLine(CacheAccess<TYPES, CACHE>& acces
 	{
 		if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 		{
-			debug_info_stream << CACHE::__MSS_GetName__() << ": Nothing to write back because Line is invalid" << std::endl;
+			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Nothing to write back because Line is invalid" << std::endl;
 		}
 	}
 	
@@ -2002,7 +2029,7 @@ bool MemorySubSystem<TYPES, MSS>::EvictLine(CacheAccess<TYPES, CACHE>& access)
 	{
 		if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 		{
-			debug_info_stream << CACHE::__MSS_GetName__() << ": Invalidating Line at @0x" << std::hex << access.line_to_write_back_evict->GetBaseAddr() << std::dec << std::endl;
+			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Invalidating Line at @0x" << std::hex << access.line_to_write_back_evict->GetBaseAddr() << std::dec << std::endl;
 		}
 		access.line_to_write_back_evict->Invalidate();
 	}
@@ -2014,17 +2041,21 @@ bool MemorySubSystem<TYPES, MSS>::EvictLine(CacheAccess<TYPES, CACHE>& access)
 }
 
 template <typename TYPES, typename MSS>
-template <typename CACHE>
-inline CACHE *MemorySubSystem<TYPES, MSS>::GetCache()
+inline std::ostream& MemorySubSystem<TYPES, MSS>::GetDebugInfoStream()
 {
-	return 0;
+	return std::cout;
 }
 
 template <typename TYPES, typename MSS>
-template <typename CACHE>
-inline bool MemorySubSystem<TYPES, MSS>::IsCacheVerbose() const
+inline std::ostream& MemorySubSystem<TYPES, MSS>::GetDebugWarningStream()
 {
-	return false;
+	return std::cerr;
+}
+
+template <typename TYPES, typename MSS>
+inline std::ostream& MemorySubSystem<TYPES, MSS>::GetDebugErrorStream()
+{
+	return std::cerr;
 }
 
 template <typename TYPES, typename MSS>
@@ -2076,32 +2107,6 @@ inline bool MemorySubSystem<TYPES, MSS>::IsDataWriteAccessWriteThrough(typename 
 }
 
 template <typename TYPES, typename MSS>
-template <typename CACHE>
-inline bool MemorySubSystem<TYPES, MSS>::IsCacheEnabled()
-{
-	return false;
-}
-
-template <typename TYPES, typename MSS>
-template <typename CACHE>
-inline void MemorySubSystem<TYPES, MSS>::ChooseLineToEvict(CacheAccess<TYPES, CACHE>& access)
-{
-	access.way = 0;
-}
-
-template <typename TYPES, typename MSS>
-template <typename CACHE>
-inline void MemorySubSystem<TYPES, MSS>::UpdateReplacementPolicyOnAccess(CacheAccess<TYPES, CACHE>& access)
-{
-}
-
-template <typename TYPES, typename MSS>
-template <typename CACHE>
-inline void MemorySubSystem<TYPES, MSS>::UpdateReplacementPolicyOnFill(CacheAccess<TYPES, CACHE>& access)
-{
-}
-
-template <typename TYPES, typename MSS>
 bool MemorySubSystem<TYPES, MSS>::DataBusRead(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr, bool rwitm)
 {
 	return false;
@@ -2120,46 +2125,79 @@ bool MemorySubSystem<TYPES, MSS>::InstructionBusRead(typename TYPES::ADDRESS add
 }
 
 template <typename TYPES, typename MSS>
-template <typename CACHE> void MemorySubSystem<TYPES, MSS>::ThrowBadCacheInstance()
-{
-	const char *cache_typename = CACHE::GetName();
-	std::string msg("Internal Error! ");
-	msg += cache_typename;
-	msg += " *GetCache<";
-	msg += cache_typename;
-	msg += ">() shall be overriden by MemorySubSystem derived class and shall return a valid pointer to the instance of ";
-	msg += cache_typename;
-	throw std::runtime_error(msg);
-}
-
-template <typename TYPES, typename MSS>
 void MemorySubSystem<TYPES, MSS>::Trace(const char *type, typename TYPES::ADDRESS addr, const void *buffer, unsigned int size)
 {
 	unsigned int i;
-	debug_info_stream << "Memory Sub-System: " << type << " [";
+	__MSS_GetDebugInfoStream__() << "Memory Sub-System: " << type << " [";
 	for(i = 0; i < size; i++)
 	{
 		uint8_t value = ((uint8_t *) buffer)[i];
 		uint8_t l = value & 15;
 		uint8_t h = value >> 4;
-		debug_info_stream << (i ? " ": "") << "0x" << (char)((h < 10) ? '0' + h : 'a' + h - 10) << (char)((l < 10) ? '0' + l : 'a' + l - 10);
+		__MSS_GetDebugInfoStream__() << (i ? " ": "") << "0x" << (char)((h < 10) ? '0' + h : 'a' + h - 10) << (char)((l < 10) ? '0' + l : 'a' + l - 10);
 	}
-	debug_info_stream << "] (" << size << " bytes) at @0x" << std::hex << addr << std::dec << std::endl;
+	__MSS_GetDebugInfoStream__() << "] (" << size << " bytes) at @0x" << std::hex << addr << std::dec << std::endl;
 }
 
 template <typename TYPES, typename MSS>
 template <typename CACHE> inline CACHE *MemorySubSystem<TYPES, MSS>::__MSS_GetCache__()
 {
-	CACHE *cache = static_cast<MSS *>(this)->template GetCache<CACHE>();
-	if(unlikely(!cache)) ThrowBadCacheInstance<CACHE>();
+	CACHE *cache = __MSS_CACHE_INTERFACE__<CACHE>::GetCache(static_cast<MSS *>(this), (const CACHE *) 0);
 	return cache;
 }
 
 template <typename TYPES, typename MSS>
 template <typename CACHE>
-inline bool MemorySubSystem<TYPES, MSS>::__MSS_IsCacheVerbose__() const
+inline bool MemorySubSystem<TYPES, MSS>::__MSS_IsCacheVerbose__()
 {
-	return static_cast<const MSS *>(this)->template IsCacheVerbose<CACHE>();
+	return __MSS_CACHE_INTERFACE__<CACHE>::IsCacheVerbose(static_cast<MSS *>(this), (const CACHE *) 0);
+}
+
+template <typename TYPES, typename MSS>
+template <typename CACHE>
+inline bool MemorySubSystem<TYPES, MSS>::__MSS_IsCacheEnabled__()
+{
+	return __MSS_CACHE_INTERFACE__<CACHE>::IsCacheEnabled(static_cast<MSS *>(this), (const CACHE *) 0);
+}
+
+template <typename TYPES, typename MSS>
+template <typename CACHE>
+inline void MemorySubSystem<TYPES, MSS>::__MSS_ChooseLineToEvict__(CacheAccess<TYPES, CACHE>& access)
+{
+	__MSS_CACHE_INTERFACE__<CACHE>::ChooseLineToEvict(static_cast<MSS *>(this), access);
+	access.line_to_write_back_evict = &(*access.set)[access.way];
+}
+
+template <typename TYPES, typename MSS>
+template <typename CACHE>
+inline void MemorySubSystem<TYPES, MSS>::__MSS_UpdateReplacementPolicyOnAccess__(CacheAccess<TYPES, CACHE>& access)
+{
+	__MSS_CACHE_INTERFACE__<CACHE>::UpdateReplacementPolicyOnAccess(static_cast<MSS *>(this), access);
+}
+
+template <typename TYPES, typename MSS>
+template <typename CACHE>
+inline void MemorySubSystem<TYPES, MSS>::__MSS_UpdateReplacementPolicyOnFill__(CacheAccess<TYPES, CACHE>& access)
+{
+	__MSS_CACHE_INTERFACE__<CACHE>::UpdateReplacementPolicyOnFill(static_cast<MSS *>(this), access);
+}
+
+template <typename TYPES, typename MSS>
+inline std::ostream& MemorySubSystem<TYPES, MSS>::__MSS_GetDebugInfoStream__()
+{
+	return static_cast<MSS *>(this)->template GetDebugInfoStream();
+}
+
+template <typename TYPES, typename MSS>
+inline std::ostream& MemorySubSystem<TYPES, MSS>::__MSS_GetDebugWarningStream__()
+{
+	return static_cast<MSS *>(this)->template GetDebugWarningStream();
+}
+
+template <typename TYPES, typename MSS>
+inline std::ostream& MemorySubSystem<TYPES, MSS>::__MSS_GetDebugErrorStream__()
+{
+	return static_cast<MSS *>(this)->template GetDebugErrorStream();
 }
 
 template <typename TYPES, typename MSS>
@@ -2172,35 +2210,6 @@ template <typename TYPES, typename MSS>
 inline bool MemorySubSystem<TYPES, MSS>::__MSS_IsDataWriteAccessWriteThrough__(typename TYPES::STORAGE_ATTR storage_attr) const
 {
 	return static_cast<const MSS *>(this)->IsDataWriteAccessWriteThrough(storage_attr);
-}
-
-template <typename TYPES, typename MSS>
-template <typename CACHE>
-inline bool MemorySubSystem<TYPES, MSS>::__MSS_IsCacheEnabled__()
-{
-	return static_cast<MSS *>(this)->template IsCacheEnabled<CACHE>();
-}
-
-template <typename TYPES, typename MSS>
-template <typename CACHE>
-inline void MemorySubSystem<TYPES, MSS>::__MSS_ChooseLineToEvict__(CacheAccess<TYPES, CACHE>& access)
-{
-	static_cast<MSS *>(this)->template ChooseLineToEvict<CACHE>(access);
-	access.line_to_write_back_evict = &(*access.set)[access.way];
-}
-
-template <typename TYPES, typename MSS>
-template <typename CACHE>
-inline void MemorySubSystem<TYPES, MSS>::__MSS_UpdateReplacementPolicyOnAccess__(CacheAccess<TYPES, CACHE>& access)
-{
-	static_cast<MSS *>(this)->template UpdateReplacementPolicyOnAccess<CACHE>(access);
-}
-
-template <typename TYPES, typename MSS>
-template <typename CACHE>
-inline void MemorySubSystem<TYPES, MSS>::__MSS_UpdateReplacementPolicyOnFill__(CacheAccess<TYPES, CACHE>& access)
-{
-	static_cast<MSS *>(this)->template UpdateReplacementPolicyOnFill<CACHE>(access);
 }
 
 template <typename TYPES, typename MSS>
@@ -2344,14 +2353,14 @@ inline void MemorySubSystem<TYPES, MSS>::Lookup(CacheAccess<TYPES, CACHE>& acces
 	
 	if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 	{
-		debug_info_stream << CACHE::__MSS_GetName__() << ": Lookup at @0x"
-						<< std::hex << access.addr << std::dec << " : "
-						<< "line_base_addr=0x" << std::hex << access.line_base_addr << std::dec << ","
-						<< "index=0x" << std::hex << access.index << std::dec << ","
-						<< "sector=0x" << std::hex << access.sector << std::dec << ","
-						<< "offset=0x" << std::hex << access.offset << std::dec << ","
-						<< "size_to_block_boundary=0x" << std::hex << access.size_to_block_boundary << std::dec
-						<< std::endl;
+		__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Lookup at @0x"
+		                             << std::hex << access.addr << std::dec << " : "
+		                             << "line_base_addr=0x" << std::hex << access.line_base_addr << std::dec << ","
+		                             << "index=0x" << std::hex << access.index << std::dec << ","
+		                             << "sector=0x" << std::hex << access.sector << std::dec << ","
+		                             << "offset=0x" << std::hex << access.offset << std::dec << ","
+		                             << "size_to_block_boundary=0x" << std::hex << access.size_to_block_boundary << std::dec
+		                             << std::endl;
 	}
 }
 
@@ -2373,7 +2382,7 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateBlockByAddress(typename TYPES
 	{
 		if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 		{
-			debug_info_stream << CACHE::__MSS_GetName__() << ": Invalidating Block at @0x" << std::hex << block->GetBaseAddr() << std::dec << std::endl;
+			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Invalidating Block at @0x" << std::hex << block->GetBaseAddr() << std::dec << std::endl;
 		}
 		block->Invalidate();
 	}
@@ -2398,7 +2407,7 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateLineByAddress(typename TYPES:
 	{
 		if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 		{
-			debug_info_stream << CACHE::__MSS_GetName__() << ": Invalidating Line at @0x" << std::hex << line->GetBaseAddr() << std::dec << std::endl;
+			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Invalidating Line at @0x" << std::hex << line->GetBaseAddr() << std::dec << std::endl;
 		}
 		line->Invalidate();
 	}
@@ -2412,17 +2421,17 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateBlockBySetWayAndSector(unsign
 
 	if(index >= CACHE::NumSets())
 	{
-		debug_warning_stream << CACHE::__MSS_GetName__() << ": Attempt to invalidate a block in a set with an invalid index 0x" << std::hex << index << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to invalidate a block in a set with an invalid index 0x" << std::hex << index << std::dec << std::endl;
 	}
 
 	if(way >= CACHE::NumWays())
 	{
-		debug_warning_stream << CACHE::__MSS_GetName__() << ": Attempt to invalidate a block in a line with an invalid way 0x" << std::hex << way << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to invalidate a block in a line with an invalid way 0x" << std::hex << way << std::dec << std::endl;
 	}
 	
 	if(sector >= CACHE::NumSectors())
 	{
-		debug_warning_stream << CACHE::__MSS_GetName__() << ": Attempt to invalidate a block with an invalid sector 0x" << std::hex << sector << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to invalidate a block with an invalid sector 0x" << std::hex << sector << std::dec << std::endl;
 	}
 
 	CACHE *cache = __MSS_GetCache__<CACHE>();
@@ -2435,7 +2444,7 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateBlockBySetWayAndSector(unsign
 		
 	if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 	{
-		debug_info_stream << CACHE::__MSS_GetName__() << ": Invalidating Block in set #0x" << std::hex << set.GetIndex() << ", way #0x" << line.GetWay() << ", sector #0x" << block.GetSector() << std::dec << std::endl;
+		__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Invalidating Block in set #0x" << std::hex << set.GetIndex() << ", way #0x" << line.GetWay() << ", sector #0x" << block.GetSector() << std::dec << std::endl;
 	}
 		
 	block.Invalidate();
@@ -2449,12 +2458,12 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateLineBySetAndWay(unsigned int 
 
 	if(index >= CACHE::NumSets())
 	{
-		debug_warning_stream << CACHE::__MSS_GetName__() << ": Attempt to invalidate a line in a set with an invalid index 0x" << std::hex << index << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to invalidate a line in a set with an invalid index 0x" << std::hex << index << std::dec << std::endl;
 	}
 
 	if(way >= CACHE::NumWays())
 	{
-		debug_warning_stream << CACHE::__MSS_GetName__() << ": Attempt to invalidate a line with an invalid way 0x" << std::hex << way << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to invalidate a line with an invalid way 0x" << std::hex << way << std::dec << std::endl;
 	}
 	
 	CACHE *cache = __MSS_GetCache__<CACHE>();
@@ -2465,7 +2474,7 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateLineBySetAndWay(unsigned int 
 	
 	if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 	{
-		debug_info_stream << CACHE::__MSS_GetName__() << ": Invalidating Line in set #0x" << std::hex << set.GetIndex() << ", way #0x" << line.GetWay() << std::dec << std::endl;
+		__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Invalidating Line in set #0x" << std::hex << set.GetIndex() << ", way #0x" << line.GetWay() << std::dec << std::endl;
 	}
 	
 	line.Invalidate();
@@ -2479,7 +2488,7 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateSet(unsigned int index)
 
 	if(index >= CACHE::NumSets())
 	{
-		debug_warning_stream << CACHE::__MSS_GetName__() << ": Attempt to invalidate a set with an invalid index 0x" << std::hex << index << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to invalidate a set with an invalid index 0x" << std::hex << index << std::dec << std::endl;
 	}
 
 	CACHE *cache = __MSS_GetCache__<CACHE>();
@@ -2488,7 +2497,7 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateSet(unsigned int index)
 
 	if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 	{
-		debug_info_stream << CACHE::__MSS_GetName__() << ": Invalidating Set #0x" << std::hex << set.GetIndex() << std::dec << std::endl;
+		__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Invalidating Set #0x" << std::hex << set.GetIndex() << std::dec << std::endl;
 	}
 	
 	set.Invalidate();
@@ -2504,7 +2513,7 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateAll()
 	
 	if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 	{
-		debug_info_stream << CACHE::__MSS_GetName__() << ": Invalidating all" << std::endl;
+		__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Invalidating all" << std::endl;
 	}
 
 	cache->Invalidate();
@@ -2550,17 +2559,17 @@ inline bool MemorySubSystem<TYPES, MSS>::WriteBackBlockBySetWayAndSector(unsigne
 	
 	if(index >= CACHE::NumSets())
 	{
-		debug_warning_stream << CACHE::__MSS_GetName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a block in a set with an invalid index 0x" << std::hex << index << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a block in a set with an invalid index 0x" << std::hex << index << std::dec << std::endl;
 	}
 
 	if(way >= CACHE::NumWays())
 	{
-		debug_warning_stream << CACHE::__MSS_GetName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a block in a line with an invalid way 0x" << std::hex << way << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a block in a line with an invalid way 0x" << std::hex << way << std::dec << std::endl;
 	}
 	
 	if(sector >= CACHE::NumSectors())
 	{
-		debug_warning_stream << CACHE::__MSS_GetName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a block with an invalid sector 0x" << std::hex << sector << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a block with an invalid sector 0x" << std::hex << sector << std::dec << std::endl;
 	}
 
 	CacheSet<TYPES, CACHE>& set = (*cache)[index];
@@ -2591,12 +2600,12 @@ inline bool MemorySubSystem<TYPES, MSS>::WriteBackLineBySetAndWay(unsigned int i
 	
 	if(index >= CACHE::NumSets())
 	{
-		debug_warning_stream << CACHE::__MSS_GetName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a line in a set with an invalid index 0x" << std::hex << index << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a line in a set with an invalid index 0x" << std::hex << index << std::dec << std::endl;
 	}
 
 	if(way >= CACHE::NumWays())
 	{
-		debug_warning_stream << CACHE::__MSS_GetName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a line with an invalid way 0x" << std::hex << way << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a line with an invalid way 0x" << std::hex << way << std::dec << std::endl;
 	}
 
 	CacheSet<TYPES, CACHE>& set = (*cache)[index];
@@ -2655,7 +2664,7 @@ inline bool MemorySubSystem<TYPES, MSS>::GlobalWriteBackBlockByAddress(typename 
 			{
 				if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 				{
-					debug_info_stream << CACHE::__MSS_GetName__() << ": Invalidating Block at @0x" << std::hex << block.GetBaseAddr() << std::dec << std::endl;
+					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Invalidating Block at @0x" << std::hex << block.GetBaseAddr() << std::dec << std::endl;
 				}
 				block.Invalidate();
 			}
@@ -2705,7 +2714,7 @@ inline bool MemorySubSystem<TYPES, MSS>::GlobalWriteBackLineByAddress(typename T
 			{
 				if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 				{
-					debug_info_stream << CACHE::__MSS_GetName__() << ": Invalidating Line at @0x" << std::hex << line->GetBaseAddr() << std::dec << std::endl;
+					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Invalidating Line at @0x" << std::hex << line->GetBaseAddr() << std::dec << std::endl;
 				}
 				line->Invalidate();
 			}
