@@ -272,11 +272,17 @@ void LongPrettyPrinter::PrintDescription(std::ostream& os, const std::string& s)
 	os << s;
 }
 
-/////////////////////////////////// Field /////////////////////////////////////
-
 /////////////////////////////// NullField //////////////////////////////////
 
 void NullField::SetName(const std::string& name)
+{
+}
+
+void NullField::SetDisplayName(const std::string& disp_name)
+{
+}
+
+void NullField::SetDescription(const std::string& desc)
 {
 }
 
@@ -285,12 +291,6 @@ const std::string& NullField::GetName()
 	static std::string null_string;
 	return null_string;
 }
-
-//////////////////////////////// FieldSet //////////////////////////////////
-
-
-/////////////////////////////////// Register //////////////////////////////////
-
 
 } // end of namespace core
 } // end of namespace reg

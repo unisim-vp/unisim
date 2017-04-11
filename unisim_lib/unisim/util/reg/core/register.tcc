@@ -45,9 +45,10 @@ namespace core {
 ///////////////////////////////// DEFINITIONS /////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-/////////////////////////////////// Access ////////////////////////////////////
+////////////////////////////// TypeForBitSize<> ///////////////////////////////
 
-//////////////////////////////// WarningStatus ////////////////////////////////
+template <unsigned int SIZE> const unsigned int TypeForBitSize<SIZE>::BYTE_SIZE;
+template <unsigned int SIZE> const typename TypeForBitSize<SIZE>::TYPE TypeForBitSize<SIZE>::MASK;
 
 ///////////////////////////// PropertyRegistry ////////////////////////////////
 
@@ -143,9 +144,9 @@ inline void Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::SetName(const std::str
 }
 
 template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
-inline void Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::SetDisplayName(const std::string& desc)
+inline void Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::SetDisplayName(const std::string& disp_name)
 {
-	PropertyRegistry::SetStringProperty(GetDisplayNameKey(), desc);
+	PropertyRegistry::SetStringProperty(GetDisplayNameKey(), disp_name);
 }
 
 template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
@@ -271,17 +272,17 @@ inline const std::string& Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::GetNameK
 }
 
 template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
-inline const std::string& Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::GetDescriptionKey()
+inline const std::string& Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::GetDisplayNameKey()
 {
-	static std::string unique_key = PropertyRegistry::GenUniqueTypeName<FIELD>(std::string("Field_description"));
+	static std::string unique_key = PropertyRegistry::GenUniqueTypeName<FIELD>(std::string("Field_display_name"));
 	if(!unique_key.empty()) return unique_key;
 	return unique_key;
 }
 
 template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
-inline const std::string& Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::GetDisplayNameKey()
+inline const std::string& Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::GetDescriptionKey()
 {
-	static std::string unique_key = PropertyRegistry::GenUniqueTypeName<FIELD>(std::string("Field_display_name"));
+	static std::string unique_key = PropertyRegistry::GenUniqueTypeName<FIELD>(std::string("Field_description"));
 	if(!unique_key.empty()) return unique_key;
 	return unique_key;
 }
@@ -341,13 +342,13 @@ template < typename  BF0, typename  BF1, typename  BF2, typename  BF3
          , typename BF56, typename BF57, typename BF58, typename BF59
          , typename BF60, typename BF61, typename BF62, typename BF63>
 template <typename T> inline T FieldSet<  BF0,  BF1,  BF2,  BF3,  BF4,  BF5,  BF6,  BF7
-                                          ,  BF8,  BF9, BF10, BF11, BF12, BF13, BF14, BF15
-                                          , BF16, BF17, BF18, BF19, BF20, BF21, BF22, BF23
-                                          , BF24, BF25, BF26, BF27, BF28, BF29, BF30, BF31
-                                          , BF32, BF33, BF34, BF35, BF36, BF37, BF38, BF39
-                                          , BF40, BF41, BF42, BF43, BF44, BF45, BF46, BF47
-                                          , BF48, BF49, BF50, BF51, BF52, BF53, BF54, BF55
-                                          , BF56, BF57, BF58, BF59, BF60, BF61, BF62, BF63>::GetMask()
+                                       ,  BF8,  BF9, BF10, BF11, BF12, BF13, BF14, BF15
+                                       , BF16, BF17, BF18, BF19, BF20, BF21, BF22, BF23
+                                       , BF24, BF25, BF26, BF27, BF28, BF29, BF30, BF31
+                                       , BF32, BF33, BF34, BF35, BF36, BF37, BF38, BF39
+                                       , BF40, BF41, BF42, BF43, BF44, BF45, BF46, BF47
+                                       , BF48, BF49, BF50, BF51, BF52, BF53, BF54, BF55
+                                       , BF56, BF57, BF58, BF59, BF60, BF61, BF62, BF63>::GetMask()
 {
 	return  BF0::template GetMask<T>() |  BF1::template GetMask<T>() |  BF2::template GetMask<T>() |  BF3::template GetMask<T>() |  BF4::template GetMask<T>() |  BF5::template GetMask<T>() |  BF6::template GetMask<T>() |  BF7::template GetMask<T>()
 	     |  BF8::template GetMask<T>() |  BF9::template GetMask<T>() | BF10::template GetMask<T>() | BF11::template GetMask<T>() | BF12::template GetMask<T>() | BF13::template GetMask<T>() | BF14::template GetMask<T>() | BF15::template GetMask<T>()
@@ -376,13 +377,13 @@ template < typename  BF0, typename  BF1, typename  BF2, typename  BF3
          , typename BF56, typename BF57, typename BF58, typename BF59
          , typename BF60, typename BF61, typename BF62, typename BF63>
 template <typename T> inline T FieldSet<  BF0,  BF1,  BF2,  BF3,  BF4,  BF5,  BF6,  BF7
-                                          ,  BF8,  BF9, BF10, BF11, BF12, BF13, BF14, BF15
-                                          , BF16, BF17, BF18, BF19, BF20, BF21, BF22, BF23
-                                          , BF24, BF25, BF26, BF27, BF28, BF29, BF30, BF31
-                                          , BF32, BF33, BF34, BF35, BF36, BF37, BF38, BF39
-                                          , BF40, BF41, BF42, BF43, BF44, BF45, BF46, BF47
-                                          , BF48, BF49, BF50, BF51, BF52, BF53, BF54, BF55
-                                          , BF56, BF57, BF58, BF59, BF60, BF61, BF62, BF63>::GetAssignMask()
+                                       ,  BF8,  BF9, BF10, BF11, BF12, BF13, BF14, BF15
+                                       , BF16, BF17, BF18, BF19, BF20, BF21, BF22, BF23
+                                       , BF24, BF25, BF26, BF27, BF28, BF29, BF30, BF31
+                                       , BF32, BF33, BF34, BF35, BF36, BF37, BF38, BF39
+                                       , BF40, BF41, BF42, BF43, BF44, BF45, BF46, BF47
+                                       , BF48, BF49, BF50, BF51, BF52, BF53, BF54, BF55
+                                       , BF56, BF57, BF58, BF59, BF60, BF61, BF62, BF63>::GetAssignMask()
 {
 	return  BF0::template GetAssignMask<T>() |  BF1::template GetAssignMask<T>() |  BF2::template GetAssignMask<T>() |  BF3::template GetAssignMask<T>() |  BF4::template GetAssignMask<T>() |  BF5::template GetAssignMask<T>() |  BF6::template GetAssignMask<T>() |  BF7::template GetAssignMask<T>()
 	     |  BF8::template GetAssignMask<T>() |  BF9::template GetAssignMask<T>() | BF10::template GetAssignMask<T>() | BF11::template GetAssignMask<T>() | BF12::template GetAssignMask<T>() | BF13::template GetAssignMask<T>() | BF14::template GetAssignMask<T>() | BF15::template GetAssignMask<T>()
@@ -411,13 +412,13 @@ template < typename  BF0, typename  BF1, typename  BF2, typename  BF3
          , typename BF56, typename BF57, typename BF58, typename BF59
          , typename BF60, typename BF61, typename BF62, typename BF63>
 template <typename T> inline T FieldSet<  BF0,  BF1,  BF2,  BF3,  BF4,  BF5,  BF6,  BF7
-                                          ,  BF8,  BF9, BF10, BF11, BF12, BF13, BF14, BF15
-                                          , BF16, BF17, BF18, BF19, BF20, BF21, BF22, BF23
-                                          , BF24, BF25, BF26, BF27, BF28, BF29, BF30, BF31
-                                          , BF32, BF33, BF34, BF35, BF36, BF37, BF38, BF39
-                                          , BF40, BF41, BF42, BF43, BF44, BF45, BF46, BF47
-                                          , BF48, BF49, BF50, BF51, BF52, BF53, BF54, BF55
-                                          , BF56, BF57, BF58, BF59, BF60, BF61, BF62, BF63>::GetWriteMask()
+                                       ,  BF8,  BF9, BF10, BF11, BF12, BF13, BF14, BF15
+                                       , BF16, BF17, BF18, BF19, BF20, BF21, BF22, BF23
+                                       , BF24, BF25, BF26, BF27, BF28, BF29, BF30, BF31
+                                       , BF32, BF33, BF34, BF35, BF36, BF37, BF38, BF39
+                                       , BF40, BF41, BF42, BF43, BF44, BF45, BF46, BF47
+                                       , BF48, BF49, BF50, BF51, BF52, BF53, BF54, BF55
+                                       , BF56, BF57, BF58, BF59, BF60, BF61, BF62, BF63>::GetWriteMask()
 {
 	return  BF0::template GetWriteMask<T>() |  BF1::template GetWriteMask<T>() |  BF2::template GetWriteMask<T>() |  BF3::template GetWriteMask<T>() |  BF4::template GetWriteMask<T>() |  BF5::template GetWriteMask<T>() |  BF6::template GetWriteMask<T>() |  BF7::template GetWriteMask<T>()
 	     |  BF8::template GetWriteMask<T>() |  BF9::template GetWriteMask<T>() | BF10::template GetWriteMask<T>() | BF11::template GetWriteMask<T>() | BF12::template GetWriteMask<T>() | BF13::template GetWriteMask<T>() | BF14::template GetWriteMask<T>() | BF15::template GetWriteMask<T>()
@@ -446,13 +447,13 @@ template < typename  BF0, typename  BF1, typename  BF2, typename  BF3
          , typename BF56, typename BF57, typename BF58, typename BF59
          , typename BF60, typename BF61, typename BF62, typename BF63>
 template <typename T> inline T FieldSet<  BF0,  BF1,  BF2,  BF3,  BF4,  BF5,  BF6,  BF7
-                                          ,  BF8,  BF9, BF10, BF11, BF12, BF13, BF14, BF15
-                                          , BF16, BF17, BF18, BF19, BF20, BF21, BF22, BF23
-                                          , BF24, BF25, BF26, BF27, BF28, BF29, BF30, BF31
-                                          , BF32, BF33, BF34, BF35, BF36, BF37, BF38, BF39
-                                          , BF40, BF41, BF42, BF43, BF44, BF45, BF46, BF47
-                                          , BF48, BF49, BF50, BF51, BF52, BF53, BF54, BF55
-                                          , BF56, BF57, BF58, BF59, BF60, BF61, BF62, BF63>::GetReadMask()
+                                       ,  BF8,  BF9, BF10, BF11, BF12, BF13, BF14, BF15
+                                       , BF16, BF17, BF18, BF19, BF20, BF21, BF22, BF23
+                                       , BF24, BF25, BF26, BF27, BF28, BF29, BF30, BF31
+                                       , BF32, BF33, BF34, BF35, BF36, BF37, BF38, BF39
+                                       , BF40, BF41, BF42, BF43, BF44, BF45, BF46, BF47
+                                       , BF48, BF49, BF50, BF51, BF52, BF53, BF54, BF55
+                                       , BF56, BF57, BF58, BF59, BF60, BF61, BF62, BF63>::GetReadMask()
 {
 	return  BF0::template GetReadMask<T>() |  BF1::template GetReadMask<T>() |  BF2::template GetReadMask<T>() |  BF3::template GetReadMask<T>() |  BF4::template GetReadMask<T>() |  BF5::template GetReadMask<T>() |  BF6::template GetReadMask<T>() |  BF7::template GetReadMask<T>()
 	     |  BF8::template GetReadMask<T>() |  BF9::template GetReadMask<T>() | BF10::template GetReadMask<T>() | BF11::template GetReadMask<T>() | BF12::template GetReadMask<T>() | BF13::template GetReadMask<T>() | BF14::template GetReadMask<T>() | BF15::template GetReadMask<T>()
@@ -481,13 +482,13 @@ template < typename  BF0, typename  BF1, typename  BF2, typename  BF3
          , typename BF56, typename BF57, typename BF58, typename BF59
          , typename BF60, typename BF61, typename BF62, typename BF63>
 template <typename T> inline T FieldSet<  BF0,  BF1,  BF2,  BF3,  BF4,  BF5,  BF6,  BF7
-                                          ,  BF8,  BF9, BF10, BF11, BF12, BF13, BF14, BF15
-                                          , BF16, BF17, BF18, BF19, BF20, BF21, BF22, BF23
-                                          , BF24, BF25, BF26, BF27, BF28, BF29, BF30, BF31
-                                          , BF32, BF33, BF34, BF35, BF36, BF37, BF38, BF39
-                                          , BF40, BF41, BF42, BF43, BF44, BF45, BF46, BF47
-                                          , BF48, BF49, BF50, BF51, BF52, BF53, BF54, BF55
-                                          , BF56, BF57, BF58, BF59, BF60, BF61, BF62, BF63>::Get(const T& storage)
+                                       ,  BF8,  BF9, BF10, BF11, BF12, BF13, BF14, BF15
+                                       , BF16, BF17, BF18, BF19, BF20, BF21, BF22, BF23
+                                       , BF24, BF25, BF26, BF27, BF28, BF29, BF30, BF31
+                                       , BF32, BF33, BF34, BF35, BF36, BF37, BF38, BF39
+                                       , BF40, BF41, BF42, BF43, BF44, BF45, BF46, BF47
+                                       , BF48, BF49, BF50, BF51, BF52, BF53, BF54, BF55
+                                       , BF56, BF57, BF58, BF59, BF60, BF61, BF62, BF63>::Get(const T& storage)
 {
 	return storage & GetMask<T>();
 }
@@ -509,13 +510,13 @@ template < typename  BF0, typename  BF1, typename  BF2, typename  BF3
          , typename BF56, typename BF57, typename BF58, typename BF59
          , typename BF60, typename BF61, typename BF62, typename BF63>
 template <typename T> inline void FieldSet<  BF0,  BF1,  BF2,  BF3,  BF4,  BF5,  BF6,  BF7
-                                             ,  BF8,  BF9, BF10, BF11, BF12, BF13, BF14, BF15
-                                             , BF16, BF17, BF18, BF19, BF20, BF21, BF22, BF23
-                                             , BF24, BF25, BF26, BF27, BF28, BF29, BF30, BF31
-                                             , BF32, BF33, BF34, BF35, BF36, BF37, BF38, BF39
-                                             , BF40, BF41, BF42, BF43, BF44, BF45, BF46, BF47
-                                             , BF48, BF49, BF50, BF51, BF52, BF53, BF54, BF55
-                                             , BF56, BF57, BF58, BF59, BF60, BF61, BF62, BF63>::Set(T& storage, const T& fieldset_value)
+                                          ,  BF8,  BF9, BF10, BF11, BF12, BF13, BF14, BF15
+                                          , BF16, BF17, BF18, BF19, BF20, BF21, BF22, BF23
+                                          , BF24, BF25, BF26, BF27, BF28, BF29, BF30, BF31
+                                          , BF32, BF33, BF34, BF35, BF36, BF37, BF38, BF39
+                                          , BF40, BF41, BF42, BF43, BF44, BF45, BF46, BF47
+                                          , BF48, BF49, BF50, BF51, BF52, BF53, BF54, BF55
+                                          , BF56, BF57, BF58, BF59, BF60, BF61, BF62, BF63>::Set(T& storage, const T& fieldset_value)
 {
 	storage = (storage & ~GetMask<T>()) | (fieldset_value & GetMask<T>());
 }
@@ -536,121 +537,14 @@ template < typename  BF0, typename  BF1, typename  BF2, typename  BF3
          , typename BF52, typename BF53, typename BF54, typename BF55
          , typename BF56, typename BF57, typename BF58, typename BF59
          , typename BF60, typename BF61, typename BF62, typename BF63>
-inline void FieldSet<  BF0,  BF1,  BF2,  BF3,  BF4,  BF5,  BF6,  BF7
-                       ,  BF8,  BF9, BF10, BF11, BF12, BF13, BF14, BF15
-                       , BF16, BF17, BF18, BF19, BF20, BF21, BF22, BF23
-                       , BF24, BF25, BF26, BF27, BF28, BF29, BF30, BF31
-                       , BF32, BF33, BF34, BF35, BF36, BF37, BF38, BF39
-                       , BF40, BF41, BF42, BF43, BF44, BF45, BF46, BF47
-                       , BF48, BF49, BF50, BF51, BF52, BF53, BF54, BF55
-                       , BF56, BF57, BF58, BF59, BF60, BF61, BF62, BF63>::SetName(
-	  const std::string&  name0, const std::string&  name1, const std::string&  name2, const std::string&  name3
-	, const std::string&  name4, const std::string&  name5, const std::string&  name6, const std::string&  name7
-	, const std::string&  name8, const std::string&  name9, const std::string& name10, const std::string& name11
-	, const std::string& name12, const std::string& name13, const std::string& name14, const std::string& name15
-	, const std::string& name16, const std::string& name17, const std::string& name18, const std::string& name19
-	, const std::string& name20, const std::string& name21, const std::string& name22, const std::string& name23
-	, const std::string& name24, const std::string& name25, const std::string& name26, const std::string& name27
-	, const std::string& name28, const std::string& name29, const std::string& name30, const std::string& name31
-	, const std::string& name32, const std::string& name33, const std::string& name34, const std::string& name35
-	, const std::string& name36, const std::string& name37, const std::string& name38, const std::string& name39
-	, const std::string& name40, const std::string& name41, const std::string& name42, const std::string& name43
-	, const std::string& name44, const std::string& name45, const std::string& name46, const std::string& name47
-	, const std::string& name48, const std::string& name49, const std::string& name50, const std::string& name51
-	, const std::string& name52, const std::string& name53, const std::string& name54, const std::string& name55
-	, const std::string& name56, const std::string& name57, const std::string& name58, const std::string& name59
-	, const std::string& name60, const std::string& name61, const std::string& name62, const std::string& name63)
-{
-	BF0::SetName(name0);
-	if(typeid(BF1) == typeid(NullField)) return; BF1::SetName(name1);
-	if(typeid(BF2) == typeid(NullField)) return; BF2::SetName(name2);
-	if(typeid(BF3) == typeid(NullField)) return; BF3::SetName(name3);
-	if(typeid(BF4) == typeid(NullField)) return; BF4::SetName(name4);
-	if(typeid(BF5) == typeid(NullField)) return; BF5::SetName(name5);
-	if(typeid(BF6) == typeid(NullField)) return; BF6::SetName(name6);
-	if(typeid(BF7) == typeid(NullField)) return; BF7::SetName(name7);
-	if(typeid(BF8) == typeid(NullField)) return; BF8::SetName(name8);
-	if(typeid(BF9) == typeid(NullField)) return; BF9::SetName(name9);
-	if(typeid(BF10) == typeid(NullField)) return; BF10::SetName(name10);
-	if(typeid(BF11) == typeid(NullField)) return; BF11::SetName(name11);
-	if(typeid(BF12) == typeid(NullField)) return; BF12::SetName(name12);
-	if(typeid(BF13) == typeid(NullField)) return; BF13::SetName(name13);
-	if(typeid(BF14) == typeid(NullField)) return; BF14::SetName(name14);
-	if(typeid(BF15) == typeid(NullField)) return; BF15::SetName(name15);
-	if(typeid(BF16) == typeid(NullField)) return; BF16::SetName(name16);
-	if(typeid(BF17) == typeid(NullField)) return; BF17::SetName(name17);
-	if(typeid(BF18) == typeid(NullField)) return; BF18::SetName(name18);
-	if(typeid(BF19) == typeid(NullField)) return; BF19::SetName(name19);
-	if(typeid(BF20) == typeid(NullField)) return; BF20::SetName(name20);
-	if(typeid(BF21) == typeid(NullField)) return; BF21::SetName(name21);
-	if(typeid(BF22) == typeid(NullField)) return; BF22::SetName(name22);
-	if(typeid(BF23) == typeid(NullField)) return; BF23::SetName(name23);
-	if(typeid(BF24) == typeid(NullField)) return; BF24::SetName(name24);
-	if(typeid(BF25) == typeid(NullField)) return; BF25::SetName(name25);
-	if(typeid(BF26) == typeid(NullField)) return; BF26::SetName(name26);
-	if(typeid(BF27) == typeid(NullField)) return; BF27::SetName(name27);
-	if(typeid(BF28) == typeid(NullField)) return; BF28::SetName(name28);
-	if(typeid(BF29) == typeid(NullField)) return; BF29::SetName(name29);
-	if(typeid(BF30) == typeid(NullField)) return; BF30::SetName(name30);
-	if(typeid(BF31) == typeid(NullField)) return; BF31::SetName(name31);
-	if(typeid(BF32) == typeid(NullField)) return; BF32::SetName(name32);
-	if(typeid(BF33) == typeid(NullField)) return; BF33::SetName(name33);
-	if(typeid(BF34) == typeid(NullField)) return; BF34::SetName(name34);
-	if(typeid(BF35) == typeid(NullField)) return; BF35::SetName(name35);
-	if(typeid(BF36) == typeid(NullField)) return; BF36::SetName(name36);
-	if(typeid(BF37) == typeid(NullField)) return; BF37::SetName(name37);
-	if(typeid(BF38) == typeid(NullField)) return; BF38::SetName(name38);
-	if(typeid(BF39) == typeid(NullField)) return; BF39::SetName(name39);
-	if(typeid(BF40) == typeid(NullField)) return; BF40::SetName(name40);
-	if(typeid(BF41) == typeid(NullField)) return; BF41::SetName(name41);
-	if(typeid(BF42) == typeid(NullField)) return; BF42::SetName(name42);
-	if(typeid(BF43) == typeid(NullField)) return; BF43::SetName(name43);
-	if(typeid(BF44) == typeid(NullField)) return; BF44::SetName(name44);
-	if(typeid(BF45) == typeid(NullField)) return; BF45::SetName(name45);
-	if(typeid(BF46) == typeid(NullField)) return; BF46::SetName(name46);
-	if(typeid(BF47) == typeid(NullField)) return; BF47::SetName(name47);
-	if(typeid(BF48) == typeid(NullField)) return; BF48::SetName(name48);
-	if(typeid(BF49) == typeid(NullField)) return; BF49::SetName(name49);
-	if(typeid(BF50) == typeid(NullField)) return; BF50::SetName(name50);
-	if(typeid(BF51) == typeid(NullField)) return; BF51::SetName(name51);
-	if(typeid(BF52) == typeid(NullField)) return; BF52::SetName(name52);
-	if(typeid(BF53) == typeid(NullField)) return; BF53::SetName(name53);
-	if(typeid(BF54) == typeid(NullField)) return; BF54::SetName(name54);
-	if(typeid(BF55) == typeid(NullField)) return; BF55::SetName(name55);
-	if(typeid(BF56) == typeid(NullField)) return; BF56::SetName(name56);
-	if(typeid(BF57) == typeid(NullField)) return; BF57::SetName(name57);
-	if(typeid(BF58) == typeid(NullField)) return; BF58::SetName(name58);
-	if(typeid(BF59) == typeid(NullField)) return; BF59::SetName(name59);
-	if(typeid(BF60) == typeid(NullField)) return; BF60::SetName(name60);
-	if(typeid(BF61) == typeid(NullField)) return; BF61::SetName(name61);
-	if(typeid(BF62) == typeid(NullField)) return; BF62::SetName(name62);
-	if(typeid(BF63) == typeid(NullField)) return; BF63::SetName(name63);
-}
-
-template < typename  BF0, typename  BF1, typename  BF2, typename  BF3 
-         , typename  BF4, typename  BF5, typename  BF6, typename  BF7 
-         , typename  BF8, typename  BF9, typename BF10, typename BF11
-         , typename BF12, typename BF13, typename BF14, typename BF15
-         , typename BF16, typename BF17, typename BF18, typename BF19
-         , typename BF20, typename BF21, typename BF22, typename BF23
-         , typename BF24, typename BF25, typename BF26, typename BF27
-         , typename BF28, typename BF29, typename BF30, typename BF31
-         , typename BF32, typename BF33, typename BF34, typename BF35
-         , typename BF36, typename BF37, typename BF38, typename BF39
-         , typename BF40, typename BF41, typename BF42, typename BF43
-         , typename BF44, typename BF45, typename BF46, typename BF47
-         , typename BF48, typename BF49, typename BF50, typename BF51
-         , typename BF52, typename BF53, typename BF54, typename BF55
-         , typename BF56, typename BF57, typename BF58, typename BF59
-         , typename BF60, typename BF61, typename BF62, typename BF63>
 inline const std::string& FieldSet<  BF0,  BF1,  BF2,  BF3,  BF4,  BF5,  BF6,  BF7
-                                     ,  BF8,  BF9, BF10, BF11, BF12, BF13, BF14, BF15
-                                     , BF16, BF17, BF18, BF19, BF20, BF21, BF22, BF23
-                                     , BF24, BF25, BF26, BF27, BF28, BF29, BF30, BF31
-                                     , BF32, BF33, BF34, BF35, BF36, BF37, BF38, BF39
-                                     , BF40, BF41, BF42, BF43, BF44, BF45, BF46, BF47
-                                     , BF48, BF49, BF50, BF51, BF52, BF53, BF54, BF55
-                                     , BF56, BF57, BF58, BF59, BF60, BF61, BF62, BF63>::GetName()
+                                  ,  BF8,  BF9, BF10, BF11, BF12, BF13, BF14, BF15
+                                  , BF16, BF17, BF18, BF19, BF20, BF21, BF22, BF23
+                                  , BF24, BF25, BF26, BF27, BF28, BF29, BF30, BF31
+                                  , BF32, BF33, BF34, BF35, BF36, BF37, BF38, BF39
+                                  , BF40, BF41, BF42, BF43, BF44, BF45, BF46, BF47
+                                  , BF48, BF49, BF50, BF51, BF52, BF53, BF54, BF55
+                                  , BF56, BF57, BF58, BF59, BF60, BF61, BF62, BF63>::GetName()
 {
 	static std::string name;
 	if(!name.empty()) return name;
@@ -906,7 +800,7 @@ inline void FieldSet<  BF0,  BF1,  BF2,  BF3,  BF4,  BF5,  BF6,  BF7
 	if(typeid(BF63) == typeid(NullField)) return; os << std::endl; BF63::LongPrettyPrint(os, storage);
 }
 
-/////////////////////////////////// Register //////////////////////////////////
+////////////////////////////////// Register<> /////////////////////////////////
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 const typename Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::TYPE Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::TYPE_MASK;
@@ -939,6 +833,18 @@ template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGIST
 inline typename Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::TYPE Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetReadMask() const
 {
 	return (_ACCESS & SW_R) ? (REGISTER::ALL::template GetReadMask<TYPE>() & TYPE_MASK) : 0;
+}
+
+template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
+inline typename Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::TYPE Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Get(unsigned int bit_offset) const
+{
+	return ((value & TYPE_MASK) >> bit_offset) & 1;
+}
+
+template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
+inline void Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Set(unsigned int bit_offset, TYPE bit_value)
+{
+	value = (value | (TYPE(1) << bit_offset)) & GetMask();
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
@@ -982,6 +888,12 @@ template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGIST
 inline Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::operator TYPE () const
 {
 	return value & TYPE_MASK;
+}
+
+template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
+inline typename Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::TYPE Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::operator [] (unsigned int bit_offset) const
+{
+	return Get(bit_offset);
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
@@ -1052,6 +964,38 @@ void Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::DebugRead(TYPE& _value, 
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
+WarningStatus Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Write(unsigned char *data_ptr, unsigned char *bit_enable_ptr)
+{
+	TYPE *data_to_write = (TYPE *) data_ptr;
+	const TYPE bit_enable = (bit_enable_ptr) ? *(TYPE *) bit_enable_ptr : ~TYPE(0);
+	return Write(*data_to_write, bit_enable);
+}
+
+template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
+WarningStatus Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Read(unsigned char *data_ptr, unsigned char *bit_enable_ptr)
+{
+	TYPE *read_data = (TYPE *) data_ptr;
+	const TYPE bit_enable = (bit_enable_ptr) ? *(TYPE *) bit_enable_ptr : ~TYPE(0);
+	return Read(*read_data, bit_enable);
+}
+
+template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
+void Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::DebugWrite(unsigned char *data_ptr, unsigned char *bit_enable_ptr)
+{
+	TYPE *data_to_write = (TYPE *) data_ptr;
+	const TYPE bit_enable = (bit_enable_ptr) ? *(TYPE *) bit_enable_ptr : ~TYPE(0);
+	DebugWrite(*data_to_write, bit_enable);
+}
+
+template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
+void Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::DebugRead(unsigned char *data_ptr, unsigned char *bit_enable_ptr)
+{
+	TYPE *read_data = (TYPE *) data_ptr;
+	const TYPE bit_enable = (bit_enable_ptr) ? *(TYPE *) bit_enable_ptr : ~TYPE(0);
+	DebugRead(*read_data, bit_enable);
+}
+
+template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 std::ostream& operator << (std::ostream& os, const Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>& reg)
 {
 	return os << (reg.value & Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::TYPE_MASK);
@@ -1091,9 +1035,9 @@ void Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::SetName(const std::strin
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
-void Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::SetDisplayName(const std::string& desc)
+void Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::SetDisplayName(const std::string& disp_name)
 {
-	PropertyRegistry::SetStringProperty(GetDisplayNameKey(), desc);
+	PropertyRegistry::SetStringProperty(GetDisplayNameKey(), disp_name);
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
@@ -1169,6 +1113,25 @@ const std::string& Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetDescrip
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
+unisim::service::interfaces::Register *Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::CreateRegisterInterface()
+{
+	typedef Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE> RegType;
+	
+	struct RegisterInterface : public unisim::service::interfaces::Register
+	{
+		RegisterInterface(RegType *_reg) : reg(_reg) {}
+		virtual const char *GetName() const { return reg->GetName().c_str(); }
+		virtual void GetValue(void *buffer) const { reg->DebugRead((unsigned char *) buffer); }
+		virtual void SetValue(const void *buffer) { reg->DebugWrite((unsigned char *) buffer); }
+		virtual int GetSize() const { return (reg->GetSize() + 7) / 8; }
+		
+		RegType *reg;
+	};
+	
+	return new RegisterInterface(this);
+}
+
+template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 inline const std::string& Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetNameKey() const
 {
 	static std::string unique_key = PropertyRegistry::GenUniqueInstanceName(this, "Register_name");
@@ -1188,6 +1151,104 @@ template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGIST
 inline const std::string& Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetDescriptionKey() const
 {
 	static std::string unique_key = PropertyRegistry::GenUniqueInstanceName(this, "Register_description");
+	if(!unique_key.empty()) return unique_key;
+	return unique_key;
+}
+
+/////////////////////////////// RegisterFile<> ////////////////////////////////
+
+template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE>
+RegisterFile<REGISTER, _DIM, REGISTER_FILE_BASE>::RegisterFile()
+	: regs()
+{
+}
+
+template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE>
+RegisterFile<REGISTER, _DIM, REGISTER_FILE_BASE>::RegisterFile(typename REGISTER::TYPE value)
+	: regs()
+{
+	unsigned int index;
+	
+	for(index = 0; index < _DIM; index++)
+	{
+		regs[index].Initialize(value);
+	}
+}
+
+template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE>
+inline REGISTER& RegisterFile<REGISTER, _DIM, REGISTER_FILE_BASE>::operator [] (int index)
+{
+	return regs[index];
+}
+
+template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE>
+inline const REGISTER& RegisterFile<REGISTER, _DIM, REGISTER_FILE_BASE>::operator [] (int index) const
+{
+	return regs[index];
+}
+
+template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE>
+inline unsigned int RegisterFile<REGISTER, _DIM, REGISTER_FILE_BASE>::GetDim() const
+{
+	return _DIM;
+}
+
+template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE>
+void RegisterFile<REGISTER, _DIM, REGISTER_FILE_BASE>::SetName(const std::string& name)
+{
+	PropertyRegistry::SetStringProperty(GetNameKey(), name);
+}
+
+template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE>
+void RegisterFile<REGISTER, _DIM, REGISTER_FILE_BASE>::SetDisplayName(const std::string& disp_name)
+{
+	PropertyRegistry::SetStringProperty(GetDisplayNameKey(), disp_name);
+}
+
+template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE>
+void RegisterFile<REGISTER, _DIM, REGISTER_FILE_BASE>::SetDescription(const std::string& desc)
+{
+	PropertyRegistry::SetStringProperty(GetDescriptionKey(), desc);
+}
+
+template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE>
+const std::string& RegisterFile<REGISTER, _DIM, REGISTER_FILE_BASE>::GetName() const
+{
+	return PropertyRegistry::GetStringProperty(GetNameKey());
+}
+
+template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE>
+const std::string& RegisterFile<REGISTER, _DIM, REGISTER_FILE_BASE>::GetDisplayName() const
+{
+	return PropertyRegistry::GetStringProperty(GetDisplayNameKey());
+}
+
+template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE>
+const std::string& RegisterFile<REGISTER, _DIM, REGISTER_FILE_BASE>::GetDescription() const
+{
+	return PropertyRegistry::GetStringProperty(GetDescriptionKey());
+}
+
+template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE>
+inline const std::string& RegisterFile<REGISTER, _DIM, REGISTER_FILE_BASE>::GetNameKey() const
+{
+	static std::string unique_key = PropertyRegistry::GenUniqueInstanceName(this, "RegisterFile_name");
+	if(!unique_key.empty()) return unique_key;
+	return unique_key;
+}
+
+template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE>
+inline const std::string& RegisterFile<REGISTER, _DIM, REGISTER_FILE_BASE>::GetDisplayNameKey() const
+{
+	static std::string unique_key = PropertyRegistry::GenUniqueInstanceName(this, "RegisterFile_display_name");
+	if(!unique_key.empty()) return unique_key;
+	return unique_key;
+}
+
+template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE>
+inline const std::string& RegisterFile<REGISTER, _DIM, REGISTER_FILE_BASE>::GetDescriptionKey() const
+{
+	static std::string unique_key = PropertyRegistry::GenUniqueInstanceName(this, "RegisterFile_description");
 	if(!unique_key.empty()) return unique_key;
 	return unique_key;
 }
@@ -1215,33 +1276,25 @@ unsigned int AddressableRegister<REGISTER, _SIZE, _ACCESS>::__ARB_GetSize__() co
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS>
 WarningStatus AddressableRegister<REGISTER, _SIZE, _ACCESS>::__ARB_Write__(unsigned char *data_ptr, unsigned char *bit_enable_ptr)
 {
-	typename Super::TYPE *data_to_write = (typename Super::TYPE *) data_ptr;
-	const typename Super::TYPE bit_enable = (bit_enable_ptr) ? *(typename Super::TYPE *) bit_enable_ptr : ~typename Super::TYPE(0);
-	return Super::Write(*data_to_write, bit_enable);
+	return Super::Write(data_ptr, bit_enable_ptr);
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS>
 WarningStatus AddressableRegister<REGISTER, _SIZE, _ACCESS>::__ARB_Read__(unsigned char *data_ptr, unsigned char *bit_enable_ptr)
 {
-	typename Super::TYPE *read_data = (typename Super::TYPE *) data_ptr;
-	const typename Super::TYPE bit_enable = (bit_enable_ptr) ? *(typename Super::TYPE *) bit_enable_ptr : ~typename Super::TYPE(0);
-	return Super::Read(*read_data, bit_enable);
+	return Super::Read(data_ptr, bit_enable_ptr);
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS>
 void AddressableRegister<REGISTER, _SIZE, _ACCESS>::__ARB_DebugWrite__(unsigned char *data_ptr, unsigned char *bit_enable_ptr)
 {
-	typename Super::TYPE *data_to_write = (typename Super::TYPE *) data_ptr;
-	const typename Super::TYPE bit_enable = (bit_enable_ptr) ? *(typename Super::TYPE *) bit_enable_ptr : ~typename Super::TYPE(0);
-	Super::DebugWrite(*data_to_write, bit_enable);
+	Super::DebugWrite(data_ptr, bit_enable_ptr);
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS>
 void AddressableRegister<REGISTER, _SIZE, _ACCESS>::__ARB_DebugRead__(unsigned char *data_ptr, unsigned char *bit_enable_ptr)
 {
-	typename Super::TYPE *read_data = (typename Super::TYPE *) data_ptr;
-	const typename Super::TYPE bit_enable = (bit_enable_ptr) ? *(typename Super::TYPE *) bit_enable_ptr : ~typename Super::TYPE(0);
-	Super::DebugRead(*read_data, bit_enable);
+	Super::DebugRead(data_ptr, bit_enable_ptr);
 }
 
 ///////////////////////////// AddressableRegisterHandle<> ///////////////////////////

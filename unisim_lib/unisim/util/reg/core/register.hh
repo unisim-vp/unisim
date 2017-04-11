@@ -98,6 +98,7 @@
 #define __UNISIM_UTIL_REG_CORE_REGISTER_HH__
 
 #include <unisim/util/inlining/inlining.hh>
+#include <unisim/service/interfaces/register.hh>
 #include <iostream>
 #include <map>
 #include <vector>
@@ -282,6 +283,8 @@ struct NullField
 	template <typename T> static inline T GetWriteMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetReadMask() ALWAYS_INLINE;
 	static void SetName(const std::string& name);
+	static void SetDisplayName(const std::string& disp_name);
+	static void SetDescription(const std::string& desc);
 	static const std::string& GetName();
 	template <typename T> static void ShortPrettyPrint(std::ostream& os, const T& storage);
 	template <typename T> static void LongPrettyPrint(std::ostream& os, const T& storage);
@@ -313,23 +316,6 @@ struct FieldSet
 	template <typename T> static inline T GetReadMask() ALWAYS_INLINE;
 	template <typename T> static inline T Get(const T& storage) ALWAYS_INLINE;
 	template <typename T> static inline void Set(T& storage, const T& bitfied_value) ALWAYS_INLINE;
-	static inline void SetName( const std::string&  name0                , const std::string&  name1 = std::string(), const std::string&  name2 = std::string(), const std::string&  name3 = std::string()
-	                          , const std::string&  name4 = std::string(), const std::string&  name5 = std::string(), const std::string&  name6 = std::string(), const std::string&  name7 = std::string()
-	                          , const std::string&  name8 = std::string(), const std::string&  name9 = std::string(), const std::string& name10 = std::string(), const std::string& name11 = std::string()
-	                          , const std::string& name12 = std::string(), const std::string& name13 = std::string(), const std::string& name14 = std::string(), const std::string& name15 = std::string()
-	                          , const std::string& name16 = std::string(), const std::string& name17 = std::string(), const std::string& name18 = std::string(), const std::string& name19 = std::string()
-	                          , const std::string& name20 = std::string(), const std::string& name21 = std::string(), const std::string& name22 = std::string(), const std::string& name23 = std::string()
-	                          , const std::string& name24 = std::string(), const std::string& name25 = std::string(), const std::string& name26 = std::string(), const std::string& name27 = std::string()
-	                          , const std::string& name28 = std::string(), const std::string& name29 = std::string(), const std::string& name30 = std::string(), const std::string& name31 = std::string()
-	                          , const std::string& name32 = std::string(), const std::string& name33 = std::string(), const std::string& name34 = std::string(), const std::string& name35 = std::string()
-	                          , const std::string& name36 = std::string(), const std::string& name37 = std::string(), const std::string& name38 = std::string(), const std::string& name39 = std::string()
-	                          , const std::string& name40 = std::string(), const std::string& name41 = std::string(), const std::string& name42 = std::string(), const std::string& name43 = std::string()
-	                          , const std::string& name44 = std::string(), const std::string& name45 = std::string(), const std::string& name46 = std::string(), const std::string& name47 = std::string()
-	                          , const std::string& name48 = std::string(), const std::string& name49 = std::string(), const std::string& name50 = std::string(), const std::string& name51 = std::string()
-	                          , const std::string& name52 = std::string(), const std::string& name53 = std::string(), const std::string& name54 = std::string(), const std::string& name55 = std::string()
-	                          , const std::string& name56 = std::string(), const std::string& name57 = std::string(), const std::string& name58 = std::string(), const std::string& name59 = std::string()
-	                          , const std::string& name60 = std::string(), const std::string& name61 = std::string(), const std::string& name62 = std::string(), const std::string& name63 = std::string());
-
 	static inline const std::string& GetName();
 	template <typename T> static inline void ShortPrettyPrint(std::ostream& os, const T& storage);
 	template <typename T> static inline void LongPrettyPrint(std::ostream& os, const T& storage);
@@ -356,9 +342,6 @@ template <unsigned int SIZE> struct TypeForBitSize
 	static const TYPE MASK = (SIZE == (8 * BYTE_SIZE)) ? (~TYPE(0)) : ((TYPE(1) << SIZE) - 1);
 };
 
-template <unsigned int SIZE> const unsigned int TypeForBitSize<SIZE>::BYTE_SIZE;
-template <unsigned int SIZE> const typename TypeForBitSize<SIZE>::TYPE TypeForBitSize<SIZE>::MASK;
-
 ////////////////////////////// NullRegisterBase ///////////////////////////////
 
 struct NullRegisterBase {};
@@ -377,6 +360,8 @@ public:
 	static const unsigned int SIZE = _SIZE;
 	static const Access ACCESS = _ACCESS;
 	
+	inline TYPE Get(unsigned int bit_offset) const ALWAYS_INLINE;
+	inline void Set(unsigned int bit_offset, TYPE bit_value) ALWAYS_INLINE;
 	template <typename FIELD> inline TYPE Get() const ALWAYS_INLINE;
 	template <typename FIELD> inline void Set(TYPE field_value) ALWAYS_INLINE;
 	
@@ -390,17 +375,22 @@ public:
 	void Initialize(TYPE value);
 	inline Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>& operator = (const TYPE& value) ALWAYS_INLINE;
 	inline operator TYPE () const ALWAYS_INLINE;
+	inline TYPE operator [] (unsigned int bit_offset) const ALWAYS_INLINE;
 	WarningStatus Write(const TYPE& value, const TYPE& bit_enable = (~TYPE(0) & TYPE_MASK));
 	WarningStatus Read(TYPE& value, const TYPE& bit_enable = (~TYPE(0) & TYPE_MASK));
 	void DebugWrite(const TYPE& value, const TYPE& bit_enable = (~TYPE(0) & TYPE_MASK));
 	void DebugRead(TYPE& value, const TYPE& bit_enable = (~TYPE(0) & TYPE_MASK));
+	WarningStatus Write(unsigned char *data_ptr, unsigned char *bit_enable_ptr = 0);
+	WarningStatus Read(unsigned char *data_ptr, unsigned char *bit_enable_ptr = 0);
+	void DebugWrite(unsigned char *data_ptr, unsigned char *bit_enable_ptr = 0);
+	void DebugRead(unsigned char *data_ptr, unsigned char *bit_enable_ptr = 0);
 	void ShortPrettyPrint(std::ostream& os) const;
 	void LongPrettyPrint(std::ostream& os) const;
 	
 	friend std::ostream& operator << <REGISTER, _SIZE>(std::ostream& os, const Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>& reg);
 	
 	void SetName(const std::string& name);
-	void SetDisplayName(const std::string& desc);
+	void SetDisplayName(const std::string& disp_name);
 	void SetDescription(const std::string& desc);
 	unsigned int GetSize() const;
 	Access GetAccess() const;
@@ -414,8 +404,41 @@ public:
 	const std::string& GetDisplayName() const;
 	const std::string& GetDescription() const;
 	
+	unisim::service::interfaces::Register *CreateRegisterInterface();
 private:
 	TYPE value;
+	const std::string& GetNameKey() const;
+	const std::string& GetDisplayNameKey() const;
+	const std::string& GetDescriptionKey() const;
+};
+
+/////////////////////////// NullRegisterFileBase //////////////////////////////
+
+struct NullRegisterFileBase {};
+
+/////////////////////////////// RegisterFile<> ////////////////////////////////
+
+template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE = NullRegisterFileBase>
+class RegisterFile
+{
+public:
+	RegisterFile();
+	RegisterFile(typename REGISTER::TYPE value);
+	inline REGISTER& operator [] (int index) ALWAYS_INLINE;
+	inline const REGISTER& operator [] (int index) const ALWAYS_INLINE;
+	
+	inline unsigned int GetDim() const ALWAYS_INLINE;
+	
+	void SetName(const std::string& name);
+	void SetDisplayName(const std::string& disp_name);
+	void SetDescription(const std::string& desc);
+	
+	const std::string& GetName() const;
+	const std::string& GetDisplayName() const;
+	const std::string& GetDescription() const;
+private:
+	REGISTER regs[_DIM];
+	
 	const std::string& GetNameKey() const;
 	const std::string& GetDisplayNameKey() const;
 	const std::string& GetDescriptionKey() const;
@@ -504,7 +527,6 @@ private:
 
 	void Optimize() const;
 };
-
 
 } // end of namespace core
 } // end of namespace reg
