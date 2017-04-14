@@ -143,9 +143,20 @@ namespace armsec
         }
     }
   
-    typedef std::vector<armsec::Expr> ExprStack;
+    struct Context
+    {
+      Context() : upper(0) {}
+      Context( Context* _up ) : upper(_up) {}
+      
+      void add_pending( armsec::Expr e ) { pendings.push_back(e); }
+      bool has_pending() const { return pendings.size() > 0; }
+      
+      typedef std::vector<armsec::Expr> Pendings;
+      Pendings pendings;
+      Context* upper;
+    };
 
-    void GenCode( Label const&, Label const&, ExprStack& ) const;
+    void GenCode( Label const&, Label const&, Context* ) const;
     
     Expr cond;
     std::set<Expr> sinks;
@@ -727,7 +738,7 @@ namespace armsec
   {
     BOOL neg = S32(res) < S32(0);
     state.cpsr.n = neg.expr;
-    state.cpsr.z = ( lhs == rhs ).expr;
+    state.cpsr.z = ( res == U32(0) ).expr;
     state.cpsr.c = ( lhs > rhs ).expr;
     state.cpsr.v = ( neg xor (S32(lhs) < S32(rhs)) ).expr;
   }
@@ -796,14 +807,9 @@ namespace armsec
   }
   
   void
-  PathNode::GenCode( Label const& start, Label const& after, ExprStack& pending ) const
+  PathNode::GenCode( Label const& start, Label const& after, Context* _up ) const
   {
-    struct F
-    {
-      F( ExprStack& _p ) : p(_p), s(p.size()) {}
-      ~F() { p.resize(s); }
-      ExprStack& p; uintptr_t s;
-    } frame( pending );
+    Context ctx( _up );
     
     armsec::Expr nia;
     
@@ -846,7 +852,7 @@ namespace armsec
           if (rid == armsec::State::RegID::nia)
             nia = dynamic_cast<armsec::State::RegWrite&>( *wb.node ).value;
           else
-            pending.push_back( wb );
+            ctx.add_pending( wb );
         }
       else
         {
@@ -871,37 +877,34 @@ namespace armsec
         Label ifinsn( current );
     
         current = after;
-        if (nia.good() or (after.valid() and (pending.size() > frame.s)))
+        if (nia.good() or (after.valid() and (ctx.has_pending())))
           current.next();
     
         if (not false_nxt) {
           Label ifthen(current);
           buffer << " goto " << ifthen.next() << " else goto " << current.id;
           ifinsn = buffer.str();
-          true_nxt->GenCode( ifthen, current, pending );
+          true_nxt->GenCode( ifthen, current, &ctx );
         } else if (not true_nxt) {
           Label ifelse(current);
           buffer << " goto " << current.id << " else goto " << ifelse.next();
           ifinsn = buffer.str();
-          false_nxt->GenCode( ifelse, current, pending );
+          false_nxt->GenCode( ifelse, current, &ctx );
         } else {
           Label ifthen(current), ifelse(current);
           buffer << " goto " << ifthen.next() << " else goto " << ifelse.next();
           ifinsn = buffer.str();
-          true_nxt->GenCode( ifthen, current, pending );
-          false_nxt->GenCode( ifelse, current, pending );
+          true_nxt->GenCode( ifthen, current, &ctx );
+          false_nxt->GenCode( ifelse, current, &ctx );
         }
       }
     
-    uintptr_t idx = pending.size();
-    
-    while (idx > frame.s)
+    for (Context::Pendings::iterator itr = ctx.pendings.begin(), end = ctx.pendings.end(); itr != end; ++itr)
       {
-        idx -= 1;
         std::ostringstream buffer;
-        pending[idx]->GenCode(current, buffer);
+        (*itr)->GenCode(current, buffer);
         Label insn( current );
-        int next = ((idx > frame.s) or nia.good()) ? current.next() : after.id;
+        int next = (((itr+1) != end) or nia.good()) ? current.next() : after.id;
         buffer << "; goto " << next;
         insn = buffer.str();
       }
@@ -909,14 +912,16 @@ namespace armsec
     if (not nia.good())
       return;
     
-    while (idx > 0)
+    for (Context* uc = ctx.upper; uc; uc = uc->upper)
       {
-        idx -= 1;
-        std::ostringstream buffer;
-        pending[idx]->GenCode(current, buffer);
-        Label insn( current );
-        buffer << "; goto " << current.next();
-        insn = buffer.str();
+        for (Context::Pendings::iterator itr = uc->pendings.begin(), end = uc->pendings.end(); itr != end; ++itr)
+          { 
+            std::ostringstream buffer;
+            (*itr)->GenCode(current, buffer);
+            Label insn( current );
+            buffer << "; goto " << current.next();
+            insn = buffer.str();
+          }
       }
     
     std::ostringstream buffer;
@@ -959,19 +964,33 @@ struct Decoder
   void
   do_isa( ISA& isa, uint32_t addr, uint32_t code )
   {
-#if __cplusplus >= 201103L
-    std::unique_ptr
-#else
-    std::auto_ptr
-#endif
-      <typename ISA::Operation> op(isa.NCDecode( addr, ISA::mkcode( code ) ) );
+    std::cout << "(address . " << armsec::DumpConstant( addr ) << ")\n";
+    
+    struct Op
+    {
+      typedef typename ISA::Operation type;
+      ~Op() { delete op; }
+      Op() : op(0) {}
+      void operator = ( type* o ) { op = o; }
+      type* operator -> () { return op; }
+      type* op;
+    } op;
+    
+    try
+      {
+        op = isa.NCDecode( addr, ISA::mkcode( code ) );
+      }
+    catch (unisim::component::cxx::processor::arm::Reject const&)
+      {
+        std::cout << "(opcode . " << armsec::DumpConstant( code ) << ")\n"
+                  << "(illegal)\n";
+        return;
+      }
     
     // armsec::Expr insn_addr( new InstructionAddress() ); //<if instruction address shall a remain variable
     armsec::Expr insn_addr( armsec::make_const( addr ) ); //<if instruction address shall be known
     
     std::shared_ptr<armsec::PathNode> path ( new armsec::PathNode );
-
-    std::cout << "(address . " << armsec::DumpConstant( addr ) << ")\n";
     
     std::cout << "(opcode . ";
     switch (op->GetLength())
@@ -989,23 +1008,39 @@ struct Decoder
     reference.SetInsnProps( insn_addr, isa.is_thumb, op->GetLength() );
     
     std::cout << "(mnemonic . \"";
-    op->disasm( reference, std::cout );
-    std::cout << "\")\n";
+    try
+      {
+        op->disasm( reference, std::cout );
+      }
+    catch (...)
+      {
+        std::cout << "(bad)";
+      }
     
-    for (bool end = false; not end;) {
-      armsec::State state( path );
-      state.SetInsnProps( insn_addr, isa.is_thumb, op->GetLength() );
-      op->execute( state );
-      end = state.close( reference );
-    }
+    std::cout << "\")\n";
+    try
+      {
+        for (bool end = false; not end;)
+          {
+            armsec::State state( path );
+            state.SetInsnProps( insn_addr, isa.is_thumb, op->GetLength() );
+            op->execute( state );
+            end = state.close( reference );
+          }
+      }
+    catch (...)
+      {
+        std::cout << "(unimplemented)\n";
+        return;
+      }
+    
     path->factorize();
     path->remove_dead_paths();
-    
-    std::vector<armsec::Expr> init;
+
     armsec::Label::Program program;
     armsec::Label beglabel(program), endlabel(program);
     beglabel.next();
-    path->GenCode( beglabel, endlabel, init );
+    path->GenCode( beglabel, endlabel, 0 );
     
     for (uintptr_t idx = 0; idx < program.size(); idx += 1)
       std::cout << '(' << armsec::DumpConstant( addr ) << ',' << idx << ") " << program[idx] << std::endl;
