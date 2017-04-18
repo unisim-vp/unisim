@@ -39,6 +39,8 @@ namespace armsec
     int id;
   };
   
+  struct Expr;
+  
   struct ExprNode
   {
     virtual ~ExprNode() {}
@@ -51,9 +53,9 @@ namespace armsec
     struct Visitor
     {
       virtual ~Visitor() {}
-      virtual void Process( ExprNode const* ) = 0;
+      virtual void Process( Expr& ) = 0;
     };
-    virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); }
+    virtual void Traverse( Visitor& visitor ) = 0;
     virtual intptr_t cmp( ExprNode const& ) const = 0;
     virtual ExprNode* GetConstNode() = 0;
     
@@ -282,6 +284,8 @@ namespace armsec
       return (value < rhs.value) ? -1 : (value > rhs.value) ? +1 : 0;
     }
     
+    virtual void Traverse( Visitor& visitor ) {}
+    
     static VALUE_TYPE
     GetValue( ConstNodeBase const& cnb )
     { return dynamic_cast<ConstNode<VALUE_TYPE> const&>( cnb ).value; }
@@ -371,6 +375,8 @@ namespace armsec
     ~Expr() { if (node) node->Release(); }
     ExprNode const* operator->() const { return node; }
     ExprNode* operator->() { return node; }
+    ExprNode const& operator* () const { return *node; }
+    ExprNode& operator* () { return *node; }
     intptr_t cmp( Expr const& rhs ) const
     {
       /* First compare actual types */
@@ -397,16 +403,21 @@ namespace armsec
     
     struct Code
     {
-      Code( Expr const& _expr, Label& _label ) : expr(_expr), label(_label) {}
+      Code( Expr const& _expr, Label& _label ) : expr(_expr), label(_label), size(0) {}
+      Code( Expr const& _expr, Label& _label, int* _size ) : expr(_expr), label(_label), size(_size) {}
+      
       friend std::ostream& operator << ( std::ostream& sink, Code const& code )
       {
-        code.expr->GenCode( code.label, sink );
+        int size = code.expr->GenCode( code.label, sink );
+        if (code.size) *code.size = size;
         return sink;
       }
       Expr const& expr;
       Label& label;
+      int* size;
     };
-    Code InsCode(Label& label) const { return Code(*this,label); }
+    Code GetCode(Label& label) const { return Code(*this,label); }
+    Code GetCode(Label& label, int& size) const { return Code(*this,label,&size); }
   };
   
   template <typename VALUE_TYPE>
@@ -427,17 +438,16 @@ namespace armsec
           int extend = dst_bit_size - src_bit_size;
           if      (extend > 0)
             {
-              sink << (std::numeric_limits<SRC_VALUE_TYPE>::is_signed ? "exts " : "extu ");
-              src->GenCode( label, sink );
-              sink << ' ' << dst_bit_size;
+              sink << (std::numeric_limits<SRC_VALUE_TYPE>::is_signed ? "exts " : "extu ")
+                   << src.GetCode( label ) << ' ' << dst_bit_size;
             }
           else
             {
               typedef CastNode<SRC_VALUE_TYPE,DST_VALUE_TYPE> ReverseCast;
               if (ReverseCast* inv = dynamic_cast<ReverseCast*>( src.node )) {
-                inv->src->GenCode( label, sink );
+                sink << inv->src.GetCode( label );
               } else {
-                src->GenCode( label, sink );
+                sink << src.GetCode( label );
                 if  (extend < 0)
                   sink << " {0," << (dst_bit_size-1) << "}";
               }
@@ -446,9 +456,7 @@ namespace armsec
       else
         {
           TypeInfo<DST_VALUE_TYPE>::name( sink );
-          sink << "( ";
-          src->GenCode( label, sink );
-          sink << " )";
+          sink << "( " << src.GetCode( label ) << " )";
         }
       
       return dst_bit_size;
@@ -460,8 +468,7 @@ namespace armsec
       return src.cmp( rhs.src );
     }
     
-    void Traverse( Visitor& visitor ) const
-    { visitor.Process( this ); src->Traverse( visitor ); }
+    virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
     
     virtual ExprNode* GetConstNode()
     {
@@ -487,9 +494,11 @@ namespace armsec
   struct UONode : public ExprNode
   {
     UONode( UnaryOp _unop, Expr const& _src )
-      : unop(_unop), src( _src ) {}
-    virtual void Traverse( Visitor& visitor ) const
-    { visitor.Process( this ); src->Traverse( visitor ); }
+      : unop(_unop), src( _src )
+    {}
+    
+    virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
+    
     virtual int GenCode( Label& label, std::ostream& sink ) const;
     intptr_t cmp( ExprNode const& brhs ) const
     {
@@ -510,9 +519,11 @@ namespace armsec
   struct BONode : public ExprNode
   {
     BONode( BinaryOp _binop, Expr const& _left, Expr const& _right )
-      : binop(_binop), left( _left ), right( _right ) {}
-    virtual void Traverse( Visitor& visitor ) const
-    { visitor.Process( this ); left->Traverse( visitor ); right->Traverse( visitor ); }
+      : binop(_binop), left( _left ), right( _right )
+    {}
+    
+    virtual void Traverse( Visitor& visitor ) { visitor.Process( left ); visitor.Process( right ); }
+    
     virtual int GenCode( Label& label, std::ostream& sink ) const;
 
     intptr_t cmp( ExprNode const& brhs ) const
@@ -630,7 +641,7 @@ namespace armsec
     struct DefaultNaNNode : public ExprNode
     {
       DefaultNaNNode( int _fsz ) : fsz( _fsz ) {} int fsz;
-      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); }
+      virtual void Traverse( Visitor& visitor ) {}
       virtual int GenCode( Label& label, std::ostream& sink ) const
       { sink << "F" << fsz << "DefaultNaN()"; return fsz; }
       intptr_t cmp( ExprNode const& brhs ) const
@@ -672,9 +683,9 @@ namespace armsec
     struct IsNaNNode : public ExprNode
     {
       IsNaNNode( Expr const& _src, bool _signaling ) : src(_src), signaling(_signaling) {} Expr src; bool signaling;
-      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
+      virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
       virtual int GenCode( Label& label, std::ostream& sink ) const
-      { sink << "Is" << (signaling?'S':'Q') << "NaN( " << src.InsCode(label) << " )"; return 1; }
+      { sink << "Is" << (signaling?'S':'Q') << "NaN( " << src.GetCode(label) << " )"; return 1; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         IsNaNNode const& rhs = dynamic_cast<IsNaNNode const&>( brhs );
@@ -725,14 +736,18 @@ namespace armsec
     struct MulAddNode : public ExprNode
     {
       MulAddNode( Expr const& _acc, Expr const& _left, Expr const& _right )
-        : acc( _acc ), left( _left ), right( _right ) {}
+        : acc( _acc ), left( _left ), right( _right )
+      {}
+      
       Expr acc, left, right;
-      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); acc->Traverse( visitor ); left->Traverse( visitor ); right->Traverse( visitor ); }
+      
+      virtual void Traverse( Visitor& visitor ) { visitor.Process( acc ); visitor.Process( left ); visitor.Process( right ); }
+      
       virtual int GenCode( Label& label, std::ostream& sink ) const
       {
         sink << "FMulAdd( ";
-        int retsize = acc->GenCode(label,sink);
-        sink << ", " << left.InsCode(label) << ", " << right.InsCode(label) << " )";
+        int retsize = 0;
+        sink << acc.GetCode( label, retsize ) << ", " << left.GetCode(label) << ", " << right.GetCode(label) << " )";
         return retsize;
       }
       
@@ -755,14 +770,17 @@ namespace armsec
     struct IsInvalidMulAddNode : public ExprNode
     {
       IsInvalidMulAddNode( Expr const& _acc, Expr const& _left, Expr const& _right )
-        : acc( _acc ), left( _left ), right( _right ) {}
+        : acc( _acc ), left( _left ), right( _right )
+      {}
       Expr acc, left, right;
-      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); acc->Traverse( visitor ); left->Traverse( visitor ); right->Traverse( visitor ); }
+      
+      virtual void Traverse( Visitor& visitor ) { visitor.Process( acc ); visitor.Process( left ); visitor.Process( right ); }
+      
       virtual int GenCode( Label& label, std::ostream& sink ) const
       {
-        sink << "FIsInvalidMulAdd( " << acc.InsCode(label)
-             << ", " << left.InsCode(label)
-             << ", " << right.InsCode(label) << " )";
+        sink << "FIsInvalidMulAdd( " << acc.GetCode(label)
+             << ", " << left.GetCode(label)
+             << ", " << right.GetCode(label) << " )";
         return 1;
       }
       intptr_t cmp( ExprNode const& brhs ) const
@@ -796,10 +814,12 @@ namespace armsec
       FtoFNode( Expr const& _src, int _ssz, int _dsz )
         : src( _src ), ssz( _ssz ), dsz( _dsz )
       {} Expr src; int ssz; int dsz;
-      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
+      
+      virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
+      
       virtual int GenCode( Label& label, std::ostream& sink ) const
       {
-        sink << "F" << ssz << "2F" << dsz << "( " << src.InsCode(label) << " )";
+        sink << "F" << ssz << "2F" << dsz << "( " << src.GetCode(label) << " )";
         return dsz;
       }
       intptr_t cmp( ExprNode const& brhs ) const
@@ -823,10 +843,12 @@ namespace armsec
       FtoINode( Expr const& _src, int _fsz, int _isz, int _fb )
         : src( _src ), fsz( _fsz ), isz( _isz ), fb( _fb )
       {} Expr src; int fsz; int isz; int fb; 
-      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
+      
+      virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
+      
       virtual int GenCode( Label& label, std::ostream& sink ) const
       {
-        sink << "F" << fsz << "2I" << isz << "( " << src.InsCode(label) << ", " << fb << " )";
+        sink << "F" << fsz << "2I" << isz << "( " << src.GetCode(label) << ", " << fb << " )";
         return isz;
       }
       intptr_t cmp( ExprNode const& brhs ) const
@@ -851,9 +873,11 @@ namespace armsec
       ItoFNode( Expr const& _src, int _isz, int _fsz, int _fb )
         : src( _src ), isz( _isz ), fsz( _fsz ), fb( _fb )
       {} Expr src; int isz; int fsz; int fb;
-      virtual void Traverse( Visitor& visitor ) const { visitor.Process( this ); src->Traverse( visitor ); }
+      
+      virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
+      
       virtual int GenCode( Label& label, std::ostream& sink ) const
-      { sink << "I" << isz << "2F" << fsz << "( " << src.InsCode(label) << ", " << fb << " )"; return fsz; }
+      { sink << "I" << isz << "2F" << fsz << "( " << src.GetCode(label) << ", " << fb << " )"; return fsz; }
       
       intptr_t cmp( ExprNode const& brhs ) const
       {

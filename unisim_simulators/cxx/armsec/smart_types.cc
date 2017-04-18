@@ -34,8 +34,8 @@ namespace armsec
   int
   BONode::GenCode( Label& label, std::ostream& sink ) const
   {
-    sink << '(';
-    int retsz = left->GenCode(label,sink);
+    int retsz;
+    sink << '(' << left.GetCode(label,retsz);
     
     switch (binop.code)
       {
@@ -73,7 +73,7 @@ namespace armsec
         // case BinaryOp::Div: break;
       }
     
-    sink << right.InsCode(label) << ')';
+    sink << right.GetCode(label) << ')';
     return retsz;
   }
   
@@ -93,8 +93,8 @@ namespace armsec
         // case UnaryOp::BSF:   break;
       }
     
-    int retsz = src->GenCode(label,sink);
-    sink << ')';
+    int retsz = 0;
+    sink << src.GetCode(label,retsz) << ')';
     return retsz;
   }
 
