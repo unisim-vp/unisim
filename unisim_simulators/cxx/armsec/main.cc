@@ -1088,7 +1088,7 @@ struct Decoder
     
     // std::cout << "(int_name,\"" << trans.insn->GetName() << "\")\n";
     
-    std::cout << "(mnemonic . "; trans.disasm( std::cout ); std::cout << ")\n";
+    std::cout << "(mnemonic . \""; trans.disasm( std::cout ); std::cout << "\")\n";
     
     armsec::Label::Program program;
     if (trans.Generate( program ))
