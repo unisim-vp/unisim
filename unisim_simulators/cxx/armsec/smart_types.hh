@@ -252,7 +252,7 @@ namespace armsec
     
     friend std::ostream& operator << ( std::ostream& sink, DbaConstantDumper<T> const& cst )
     {
-      sink << "0x" << std::hex << std::setw(2*sizeof(T)) << std::setfill('0') << cst.value << std::dec;
+      sink << "0x" << std::hex << std::setw(2*sizeof(T)) << std::setfill('0') << uint64_t(cst.value) << std::dec;
       return sink;
     }
   };

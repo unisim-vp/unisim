@@ -617,7 +617,7 @@ namespace armsec
     
     U32         CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { not_implemented(); return U32(); }
     void        CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, U32 const& value ) { not_implemented(); }
-    char const* CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { not_implemented(); return ""; }
+    char const* CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { return "some CP15 register"; }
     
     bool
     close( State const& ref )
@@ -1106,24 +1106,37 @@ struct Decoder
   void  translate_thumb( uint32_t addr, uint32_t code ) { translate_isa( thumbisa, addr, code ); }
 };
 
-uint32_t getu32( char const* arg )
+uint32_t getu32( uint32_t& res, char const* arg )
 {
   char *end;
-  uint32_t res = strtoul( arg, &end, 0 );
+  uint32_t tmp = strtoul( arg, &end, 0 );
   if ((*arg == '\0') or (*end != '\0'))
-    throw std::runtime_error( "Invalid argument." );
-  return res;
+    return false;
+  res = tmp;
+  return true;
+}
+
+char const* usage()
+{
+  return "usage: <prog> [arm|thumb] <addr> <code>\n";
 }
 
 int
 main( int argc, char** argv )
 {
-  if (argc != 4) {
-    std::cerr << "usage: <prog> [arm|thumb] <addr> <code>\n";
-    return 1;
-  }
+  if (argc != 4)
+    {
+      std::cerr << "Wrong number of CLI arguments.\n" << usage();
+      return 1;
+    }
   
-  uint32_t addr = getu32(argv[2]), code = getu32(argv[3]);
+  uint32_t addr, code;
+  
+  if (not getu32(addr, argv[2]) or not getu32(code, argv[3]))
+    {
+      std::cerr << "<addr> and <code> whould be 32bits numeric values.\n" << usage();
+      return 1;
+    }
   
   Decoder decoder;
   std::string iset(argv[1]);
