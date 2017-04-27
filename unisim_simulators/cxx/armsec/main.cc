@@ -24,7 +24,206 @@ namespace armsec
   typedef SmartValue<int16_t>  S16;
   typedef SmartValue<int32_t>  S32;
   typedef SmartValue<int64_t>  S64;
+
+
+  struct dbx
+  {
+    dbx( unsigned _bits, uint64_t _value ) : value(_value), bits(_bits) {} uint64_t value; unsigned bits;
+    friend std::ostream& operator << ( std::ostream& sink, dbx const& _ )
+    {
+      sink << "0x" << std::hex << std::setw(_.bits/4) << std::setfill('0') << _.value << std::dec;
+      return sink;
+    }
+  };
   
+  struct ASExprNode : public ExprNode
+  {
+    virtual int GenCode( Label& label, std::ostream& sink ) const = 0;
+    
+    static
+    int
+    GenerateCode( Expr const& expr, Label& label, std::ostream& sink )
+    {
+      /*** Pre expression process ***/
+      
+      /*** Sub expression process ***/
+      if (ASExprNode const* node = dynamic_cast<ASExprNode const*>( expr.node ))
+        {
+          return node->GenCode( label, sink );
+        }
+      else if (ConstNodeBase const* node = dynamic_cast<ConstNodeBase const*>( expr.node ))
+        {
+          switch (node->GetType())
+            {
+            case ConstNodeBase::BOOL: sink << node->GetS32() << "<1>";  return 1;
+            case ConstNodeBase::U8:  case ConstNodeBase::S8:  sink << dbx(8, node->GetU8());  return 8;
+            case ConstNodeBase::U16: case ConstNodeBase::S16: sink << dbx(16,node->GetU16()); return 16;
+            case ConstNodeBase::U32: case ConstNodeBase::S32: sink << dbx(32,node->GetU32()); return 32;
+            case ConstNodeBase::U64: case ConstNodeBase::S64: sink << dbx(64,node->GetU64()); return 64;
+            default: break;
+            }
+          throw std::logic_error("can't encode type");
+          
+        }
+      
+      throw std::logic_error("No GenCode method");
+      return 0;
+    }
+  };
+
+  struct GetCode
+  {
+    GetCode(Expr const& _expr, Label& _label) : expr(_expr), label(_label) {} Expr const& expr; Label& label;
+    friend std::ostream& operator << ( std::ostream& sink, GetCode const& gc )
+    {
+      ASExprNode::GenerateCode( gc.expr, gc.label, sink );
+      return sink;
+    }
+  };
+
+  // virtual int ConstNode<VALUE_TYPE>::GenCode( Label& label, std::ostream& sink ) const
+  // { sink << DumpConstant( value ); return TypeInfo<VALUE_TYPE>::bitsize(); }
+
+  
+  // int
+  // BONode::GenCode( Label& label, std::ostream& sink ) const
+  // {
+  //   int retsz;
+  //   sink << '(' << left.GetCode(label,retsz);
+    
+  //   switch (binop.code)
+  //     {
+  //     default:                sink << " [" << binop.c_str() << "] "; break;
+        
+  //     case BinaryOp::Add:     sink << " + "; break;
+        
+  //     case BinaryOp::Sub:     sink << " - "; break;
+        
+  //     case BinaryOp::Xor:     sink << " xor "; break;
+  //     case BinaryOp::Or:      sink << " or "; break;
+  //     case BinaryOp::And:     sink << " and "; break;
+        
+  //     case BinaryOp::Teq:     sink << " = "; break;
+  //     case BinaryOp::Tne:     sink << " <> "; break;
+        
+  //     case BinaryOp::Tle:     sink << " <=s "; break;
+  //     case BinaryOp::Tleu:    sink << " <=u "; break;
+        
+  //     case BinaryOp::Tge:     sink << " >=s "; break;
+  //     case BinaryOp::Tgeu:    sink << " >=u "; break;
+        
+  //     case BinaryOp::Tlt:     sink << " <s "; break;
+  //     case BinaryOp::Tltu:    sink << " <u "; break;
+        
+  //     case BinaryOp::Tgt:     sink << " >s "; break;
+  //     case BinaryOp::Tgtu:    sink << " >u "; break;
+      
+  //     case BinaryOp::Lsl:     sink << " lshift "; break;
+  //     case BinaryOp::Asr:     sink << " rshifts "; break;
+  //     case BinaryOp::Lsr:     sink << " rshiftu "; break;
+  //     case BinaryOp::Ror:     sink << " rrotate "; break;
+  //     case BinaryOp::Mul:     sink << " * "; break;
+  //       // case BinaryOp::Mod: break;
+  //       // case BinaryOp::Div: break;
+  //     }
+    
+  //   sink << right.GetCode(label) << ')';
+  //   return retsz;
+  // }
+  
+  // int
+  // UONode::GenCode( Label& label, std::ostream& sink ) const
+  // {
+  //   sink << '(';
+  //   switch (unop.code)
+  //     {
+  //     default:              sink << "[" << unop.c_str() << "] "; break;
+        
+  //     case UnaryOp::Not:    sink << "not "; break;
+  //     case UnaryOp::Neg:    sink << "- "; break;
+        
+  //       // case UnaryOp::BSwp:  break;
+  //       // case UnaryOp::BSR:   break;
+  //       // case UnaryOp::BSF:   break;
+  //     }
+    
+  //   int retsz = 0;
+  //   sink << src.GetCode(label,retsz) << ')';
+  //   return retsz;
+  // }
+  
+  
+  
+  // virtual int CastNode::GenCode( Label& label, std::ostream& sink ) const
+  // {
+  //   int dst_bit_size = TypeInfo<DST_VALUE_TYPE>::bitsize(), src_bit_size = TypeInfo<SRC_VALUE_TYPE>::bitsize();
+      
+  //   if (std::numeric_limits<DST_VALUE_TYPE>::is_integer and std::numeric_limits<SRC_VALUE_TYPE>::is_integer)
+  //     {
+  //       int extend = dst_bit_size - src_bit_size;
+  //       if      (extend > 0)
+  //         {
+  //           sink << (std::numeric_limits<SRC_VALUE_TYPE>::is_signed ? "exts " : "extu ")
+  //                << GetCode(src, label ) << ' ' << dst_bit_size;
+  //         }
+  //       else
+  //         {
+  //           typedef CastNode<SRC_VALUE_TYPE,DST_VALUE_TYPE> ReverseCast;
+  //           if (ReverseCast* inv = dynamic_cast<ReverseCast*>( src.node )) {
+  //             sink << inv->GetCode(src, label );
+  //           } else {
+  //             sink << GetCode(src, label );
+  //             if  (extend < 0)
+  //               sink << " {0," << (dst_bit_size-1) << "}";
+  //           }
+  //         }
+  //     }
+  //   else
+  //     {
+  //       TypeInfo<DST_VALUE_TYPE>::name( sink );
+  //       sink << "( " << GetCode(src, label ) << " )";
+  //     }
+      
+  //   return dst_bit_size;
+  // }
+
+  // virtual int DefaultNaNNode::GenCode( Label& label, std::ostream& sink ) const
+  //     { sink << "F" << fsz << "DefaultNaN()"; return fsz; }
+  
+  // virtual int FtoINode::GenCode( Label& label, std::ostream& sink ) const
+  //     {
+  //       sink << "F" << fsz << "2I" << isz << "( " << GetCode(src,label) << ", " << fb << " )";
+  //       return isz;
+  //     }
+  
+  // virtual int ItoFNode::GenCode( Label& label, std::ostream& sink ) const
+  //     { sink << "I" << isz << "2F" << fsz << "( " << GetCode(src,label) << ", " << fb << " )"; return fsz; }
+      
+  // virtual int FtoFNode::GenCode( Label& label, std::ostream& sink ) const
+  //     {
+  //       sink << "F" << ssz << "2F" << dsz << "( " << GetCode(src,label) << " )";
+  //       return dsz;
+  //     }
+  
+  // virtual int IsInvalidMulAddNode::GenCode( Label& label, std::ostream& sink ) const
+  //     {
+  //       sink << "FIsInvalidMulAdd( " << GetCode(acc,label)
+  //            << ", " << GetCode(left,label)
+  //            << ", " << GetCode(right,label) << " )";
+  //       return 1;
+  //     }
+
+  // virtual int MulAddNode::GenCode( Label& label, std::ostream& sink ) const
+  //     {
+  //       sink << "FMulAdd( ";
+  //       int retsize = 0;
+  //       sink << GetCode(acc, label, retsize ) << ", " << GetCode(left,label) << ", " << GetCode(right,label) << " )";
+  //       return retsize;
+  //     }
+      
+  // virtual int IsNaNNode::GenCode( Label& label, std::ostream& sink ) const
+  //     { sink << "Is" << (signaling?'S':'Q') << "NaN( " << GetCode(src,label) << " )"; return 1; }
+
   struct Label;
   
   struct PathNode
@@ -293,7 +492,7 @@ namespace armsec
       Code code;
     };
     
-    struct RegRead : public ExprNode
+    struct RegRead : public ASExprNode
     {
       RegRead( RegID _id, unsigned _bitsize ) : id(_id), bitsize(_bitsize) {}
       RegRead( char const* name, unsigned _bitsize ) : id( name ), bitsize(_bitsize) {}
@@ -309,12 +508,15 @@ namespace armsec
       unsigned bitsize;
     };
     
-    struct RegWrite : public ExprNode
+    struct RegWrite : public ASExprNode
     {
       RegWrite( RegID _id, Expr const& _value, unsigned _bitsize ) : id(_id), value(_value), bitsize(_bitsize) {}
       RegWrite( char const* name, Expr const& _value, unsigned _bitsize ) : id(name), value(_value), bitsize(_bitsize) {}
       virtual int GenCode( Label& label, std::ostream& sink ) const
-      { sink << id.c_str() << "<" << std::dec << bitsize << "> := " << value.GetCode(label); return 0; }
+      {
+        sink << id.c_str() << "<" << std::dec << bitsize << "> := " << GetCode(value,label);
+        return 0;
+      }
       
       virtual intptr_t cmp( ExprNode const& brhs ) const
       {
@@ -486,7 +688,7 @@ namespace armsec
     
     void SetGPRMapping( uint32_t src_mode, uint32_t tar_mode ) { /* system related */ not_implemented(); }
     
-    struct Load : public ExprNode
+    struct Load : public ASExprNode
     {
       Load( unsigned _size, bool _aligned, Expr const& _addr )
         : addr(_addr), size( _size ), aligned(_aligned)
@@ -498,7 +700,7 @@ namespace armsec
       {
         /* TODO: dont assume little endianness */
         /* TODO: exploit alignment info */
-        sink << "@[" << addr.GetCode(label) << ",<-," << size << "]";
+        sink << "@[" << GetCode(addr,label) << ",<-," << size << "]";
         return 8*size;
       }
       intptr_t cmp( ExprNode const& brhs ) const
@@ -514,7 +716,7 @@ namespace armsec
       bool aligned;
     };
     
-    struct Store : public ExprNode
+    struct Store : public ASExprNode
     {
       Store( unsigned _size, bool _aligned, Expr const& _addr, Expr const& _value )
         : value(_value), addr(_addr), size(_size), aligned(_aligned)
@@ -524,7 +726,7 @@ namespace armsec
       {
         /* TODO: dont assume little endianness */
         /* TODO: exploit alignment info */
-        sink << "@[" << addr.GetCode(label) << ",<-," << size << "] := " << value.GetCode(label);
+        sink << "@[" << GetCode(addr,label) << ",<-," << size << "] := " << GetCode(value, label);
         return 0;
       }
       
@@ -648,7 +850,7 @@ namespace armsec
     }
   };
 
-  // struct ConditionTest : public ExprNode
+  // struct ConditionTest : public ASExprNode
   // {
   //   ConditionTest( unsigned _cond ) : cond( _cond ) {} unsigned cond;
   //   virtual void Repr( std::ostream& sink ) const
@@ -712,7 +914,7 @@ namespace armsec
   //   Code code;
   // };
   
-  // struct GenFlags : public ExprNode
+  // struct GenFlags : public ASExprNode
   // {
   //   GenFlags( GenFlagsID _id, Expr const& _ipsr, Expr const& _lhs, Expr const& _rhs )
   //     : id(_id), ipsr(_ipsr), lhs(_lhs), rhs(_rhs) {}
@@ -751,7 +953,7 @@ namespace armsec
     UpdateStatusSub( state, res, lhs, -rhs );
   }
   
-  struct BSR : public ExprNode
+  struct BSR : public ASExprNode
   {
     BSR( Expr const& _src ) : src(_src) {}
     
@@ -760,7 +962,7 @@ namespace armsec
       Label tail(label);
       {
         std::ostringstream buffer;
-        buffer << "bsr_in<32> := " << src.GetCode(tail);
+        buffer << "bsr_in<32> := " << GetCode(src,tail);
         Label insn( tail );
         buffer << "; goto " << tail.next();
         insn = buffer.str();
@@ -858,7 +1060,7 @@ namespace armsec
             }
           
             else {
-              struct TmpVar : public armsec::ExprNode
+              struct TmpVar : public armsec::ASExprNode
               {
                 TmpVar( armsec::State::RegID rid, unsigned rsz )
                   : dsz(rsz)
@@ -872,7 +1074,7 @@ namespace armsec
               }* tmp = new TmpVar( rid, rsz );
             
               std::ostringstream buffer;
-              buffer << tmp->ref << " := " << rw->value.GetCode( current );
+              buffer << tmp->ref << " := " << GetCode(rw->value, current);
               Label insn( current );
               buffer << "; goto " << current.next();
               insn = buffer.str();
@@ -889,8 +1091,7 @@ namespace armsec
         else
           {
             std::ostringstream buffer;
-            int retsize = 0;
-            buffer << itr->GetCode( current, retsize );
+            int retsize = ASExprNode::GenerateCode( *itr, current, buffer );
             if (retsize) throw 0;
             Label insn( current );
             buffer << "; goto " << current.next();
@@ -906,7 +1107,7 @@ namespace armsec
     else
       {
         std::ostringstream buffer;
-        buffer << "if " << cond.GetCode(current) << " ";
+        buffer << "if " << GetCode(cond,current) << " ";
         Label ifinsn( current );
     
         current = after;
@@ -935,7 +1136,7 @@ namespace armsec
     for (Context::Pendings::iterator itr = ctx.pendings.begin(), end = ctx.pendings.end(); itr != end; ++itr)
       {
         std::ostringstream buffer;
-        buffer << itr->GetCode(current);
+        buffer << GetCode(*itr,current);
         Label insn( current );
         int next = (((itr+1) != end) or nia.good()) ? current.next() : after.id;
         buffer << "; goto " << next;
@@ -950,7 +1151,7 @@ namespace armsec
         for (Context::Pendings::iterator itr = uc->pendings.begin(), end = uc->pendings.end(); itr != end; ++itr)
           { 
             std::ostringstream buffer;
-            buffer << itr->GetCode(current);
+            buffer << GetCode(*itr,current);
             Label insn( current );
             buffer << "; goto " << current.next();
             insn = buffer.str();
@@ -958,7 +1159,7 @@ namespace armsec
       }
     
     std::ostringstream buffer;
-    buffer << "goto (" << nia.GetCode(current) << (nia.MakeConst() ? ",0" : "") << ")";
+    buffer << "goto (" << GetCode(nia,current) << (nia.MakeConst() ? ",0" : "") << ")";
     current = buffer.str();
   }
 }
@@ -985,7 +1186,7 @@ struct Decoder
   ARMISA armisa;
   THUMBISA thumbisa;
 
-  struct InstructionAddress : public armsec::ExprNode
+  struct InstructionAddress : public armsec::ASExprNode
   {
     InstructionAddress() {}
     virtual void Repr( std::ostream& sink ) const { sink << "insn_addr"; }
@@ -997,7 +1198,7 @@ struct Decoder
   void
   translate_isa( ISA& isa, uint32_t addr, uint32_t code )
   {
-    std::cout << "(address . " << armsec::DumpConstant( addr ) << ")\n";
+    std::cout << "(address . " << armsec::dbx( 32, addr ) << ")\n";
     
     struct Translation
     {
@@ -1071,20 +1272,14 @@ struct Decoder
       State     reference;
     } trans( addr );
     
-    switch (trans.decode( isa, code ))
+    unsigned bitlen = trans.decode( isa, code );
+    if (bitlen != 16 and bitlen != 32)
       {
-      case 16:
-        std::cout << "(opcode . " << armsec::DumpConstant( uint16_t(trans.insn->GetEncoding()) ) << ")\n(size . 2)\n";
-        break;
-        
-      case 32:
-        std::cout << "(opcode . " << armsec::DumpConstant( uint32_t(trans.insn->GetEncoding()) ) << ")\n(size . 4)\n";
-        break;
-        
-      default:
-        std::cout << armsec::DumpConstant( code ) << ")\n(illegal)\n";
+        std::cout << "(opcode . " << armsec::dbx( 32, code ) << ")\n(illegal)\n";
         return;
       }
+    
+    std::cout << "(opcode . " << armsec::dbx( bitlen, trans.insn->GetEncoding() ) << ")\n(size . " << (bitlen/8) << ")\n";
     
     // std::cout << "(int_name,\"" << trans.insn->GetName() << "\")\n";
     
@@ -1094,7 +1289,7 @@ struct Decoder
     if (trans.Generate( program ))
       {
         for (uintptr_t idx = 0; idx < program.size(); idx += 1)
-          std::cout << '(' << armsec::DumpConstant( addr ) << ',' << idx << ") " << program[idx] << std::endl;
+          std::cout << '(' << armsec::dbx( 32, addr ) << ',' << idx << ") " << program[idx] << std::endl;
       }
     else
       {

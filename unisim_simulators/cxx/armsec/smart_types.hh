@@ -58,8 +58,6 @@ namespace armsec
     virtual void Traverse( Visitor& visitor ) = 0;
     virtual intptr_t cmp( ExprNode const& ) const = 0;
     virtual ExprNode* GetConstNode() = 0;
-    
-    virtual int GenCode( Label& label, std::ostream& sink ) const = 0;
   };
   
   template <typename EnumCODE>
@@ -191,6 +189,8 @@ namespace armsec
     virtual int16_t GetS16() const = 0;
     virtual int32_t GetS32() const = 0;
     virtual int64_t GetS64() const = 0;
+    enum type_t { BOOL, U8, U16, U32, U64, S8, S16, S32, S64, F32, F64 };
+    virtual type_t GetType() const = 0;
     static std::ostream& warn();
   };
   
@@ -235,48 +235,47 @@ namespace armsec
     static void name( std::ostream& sink )
     { sink << (std::numeric_limits<VALUE_TYPE>::is_signed ? 'S' : 'U') << (8*sizeof(VALUE_TYPE)); };
     static unsigned bitsize() { return 8*sizeof(VALUE_TYPE); }
+    static ConstNodeBase::type_t GetType()
+    {
+      if (std::numeric_limits<VALUE_TYPE>::is_integer)
+        {
+          bool is_signed = std::numeric_limits<VALUE_TYPE>::is_signed;
+          //int bits = std::numeric_limits<VALUE_TYPE>::digits + (is_signed ? 1 : 0);
+          int bits = 8*sizeof(VALUE_TYPE);
+          switch (bits) {
+          case 8:  return is_signed ? ConstNodeBase::S8 :  ConstNodeBase::U8;
+          case 16: return is_signed ? ConstNodeBase::S16 : ConstNodeBase::U16;
+          case 32: return is_signed ? ConstNodeBase::S32 : ConstNodeBase::U32;
+          case 64: return is_signed ? ConstNodeBase::S64 : ConstNodeBase::U64;
+          }
+        }
+      throw std::logic_error("not an integer type");
+    }
   };
   
   template <> struct TypeInfo<bool>
-  { static void name( std::ostream& sink ) { sink << "BOOL"; } static unsigned bitsize() { return 1; } };
+  {
+    static void name( std::ostream& sink ) { sink << "BOOL"; }
+    static unsigned bitsize() { return 1; }
+    static ConstNodeBase::type_t GetType() { return ConstNodeBase::BOOL; }
+  };
   template <> struct TypeInfo<float>
-  { static void name( std::ostream& sink ) { sink << "F32"; } static unsigned bitsize() { return 32; } };
+  {
+    static void name( std::ostream& sink ) { sink << "F32"; }
+    static unsigned bitsize() { return 32; }
+    static ConstNodeBase::type_t GetType() { return ConstNodeBase::F32; }
+  };
   template <> struct TypeInfo<double>
-  { static void name( std::ostream& sink ) { sink << "F64"; } static unsigned bitsize() { return 64; } };
-  
-  template <typename T>
-  struct DbaConstantDumper
   {
-    DbaConstantDumper( T v ) : value(v) {}
-    T value;
-    
-    friend std::ostream& operator << ( std::ostream& sink, DbaConstantDumper<T> const& cst )
-    {
-      sink << "0x" << std::hex << std::setw(2*sizeof(T)) << std::setfill('0') << uint64_t(cst.value) << std::dec;
-      return sink;
-    }
+    static void name( std::ostream& sink ) { sink << "F64"; }
+    static unsigned bitsize() { return 64; }
+    static ConstNodeBase::type_t GetType() { return ConstNodeBase::F64; }
   };
-  
-  template <>
-  struct DbaConstantDumper<bool>
-  {
-    DbaConstantDumper<bool>( bool v ) : value(v) {}
-    bool value;
-    friend std::ostream& operator << ( std::ostream& sink, DbaConstantDumper<bool> const& cst )
-    {
-      sink << std::dec << int(cst.value) << "<1>";
-      return sink;
-    }
-  };
-  
-  template <typename T>  DbaConstantDumper<T> DumpConstant( T v ) { return DbaConstantDumper<T>( v ); }
   
   template <typename VALUE_TYPE>
   struct ConstNode : public ConstNodeBase
   {
     ConstNode( VALUE_TYPE _value ) : value( _value ) {} VALUE_TYPE value;
-    virtual int GenCode( Label& label, std::ostream& sink ) const
-    { sink << DumpConstant( value ); return TypeInfo<VALUE_TYPE>::bitsize(); }
     
     intptr_t cmp( ExprNode const& brhs ) const
     {
@@ -358,6 +357,7 @@ namespace armsec
     int16_t GetS16() const { return value; }
     int32_t GetS32() const { return value; }
     int64_t GetS64() const { return value; }
+    type_t GetType() const { return TypeInfo<VALUE_TYPE>::GetType(); }
   };
   
   struct Expr
@@ -400,24 +400,6 @@ namespace armsec
       return false;
     }
     bool good() const { return node; }
-    
-    struct Code
-    {
-      Code( Expr const& _expr, Label& _label ) : expr(_expr), label(_label), size(0) {}
-      Code( Expr const& _expr, Label& _label, int* _size ) : expr(_expr), label(_label), size(_size) {}
-      
-      friend std::ostream& operator << ( std::ostream& sink, Code const& code )
-      {
-        int size = code.expr->GenCode( code.label, sink );
-        if (code.size) *code.size = size;
-        return sink;
-      }
-      Expr const& expr;
-      Label& label;
-      int* size;
-    };
-    Code GetCode(Label& label) const { return Code(*this,label); }
-    Code GetCode(Label& label, int& size) const { return Code(*this,label,&size); }
   };
   
   template <typename VALUE_TYPE>
@@ -429,38 +411,6 @@ namespace armsec
     CastNode( Expr const& _src )
       : src(_src)
     {}
-    virtual int GenCode( Label& label, std::ostream& sink ) const
-    {
-      int dst_bit_size = TypeInfo<DST_VALUE_TYPE>::bitsize(), src_bit_size = TypeInfo<SRC_VALUE_TYPE>::bitsize();
-      
-      if (std::numeric_limits<DST_VALUE_TYPE>::is_integer and std::numeric_limits<SRC_VALUE_TYPE>::is_integer)
-        {
-          int extend = dst_bit_size - src_bit_size;
-          if      (extend > 0)
-            {
-              sink << (std::numeric_limits<SRC_VALUE_TYPE>::is_signed ? "exts " : "extu ")
-                   << src.GetCode( label ) << ' ' << dst_bit_size;
-            }
-          else
-            {
-              typedef CastNode<SRC_VALUE_TYPE,DST_VALUE_TYPE> ReverseCast;
-              if (ReverseCast* inv = dynamic_cast<ReverseCast*>( src.node )) {
-                sink << inv->src.GetCode( label );
-              } else {
-                sink << src.GetCode( label );
-                if  (extend < 0)
-                  sink << " {0," << (dst_bit_size-1) << "}";
-              }
-            }
-        }
-      else
-        {
-          TypeInfo<DST_VALUE_TYPE>::name( sink );
-          sink << "( " << src.GetCode( label ) << " )";
-        }
-      
-      return dst_bit_size;
-    }
     
     intptr_t cmp( ExprNode const& brhs ) const
     {
@@ -499,7 +449,6 @@ namespace armsec
     
     virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
     
-    virtual int GenCode( Label& label, std::ostream& sink ) const;
     intptr_t cmp( ExprNode const& brhs ) const
     {
       UONode const& rhs = dynamic_cast<UONode const&>( brhs );
@@ -524,8 +473,6 @@ namespace armsec
     
     virtual void Traverse( Visitor& visitor ) { visitor.Process( left ); visitor.Process( right ); }
     
-    virtual int GenCode( Label& label, std::ostream& sink ) const;
-
     intptr_t cmp( ExprNode const& brhs ) const
     {
       BONode const& rhs = dynamic_cast<BONode const&>( brhs );
@@ -642,8 +589,6 @@ namespace armsec
     {
       DefaultNaNNode( int _fsz ) : fsz( _fsz ) {} int fsz;
       virtual void Traverse( Visitor& visitor ) {}
-      virtual int GenCode( Label& label, std::ostream& sink ) const
-      { sink << "F" << fsz << "DefaultNaN()"; return fsz; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         DefaultNaNNode const& rhs = dynamic_cast<DefaultNaNNode const&>( brhs );
@@ -684,8 +629,6 @@ namespace armsec
     {
       IsNaNNode( Expr const& _src, bool _signaling ) : src(_src), signaling(_signaling) {} Expr src; bool signaling;
       virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
-      virtual int GenCode( Label& label, std::ostream& sink ) const
-      { sink << "Is" << (signaling?'S':'Q') << "NaN( " << src.GetCode(label) << " )"; return 1; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         IsNaNNode const& rhs = dynamic_cast<IsNaNNode const&>( brhs );
@@ -743,14 +686,6 @@ namespace armsec
       
       virtual void Traverse( Visitor& visitor ) { visitor.Process( acc ); visitor.Process( left ); visitor.Process( right ); }
       
-      virtual int GenCode( Label& label, std::ostream& sink ) const
-      {
-        sink << "FMulAdd( ";
-        int retsize = 0;
-        sink << acc.GetCode( label, retsize ) << ", " << left.GetCode(label) << ", " << right.GetCode(label) << " )";
-        return retsize;
-      }
-      
       intptr_t cmp( ExprNode const& brhs ) const
       {
         MulAddNode const& rhs = dynamic_cast<MulAddNode const&>( brhs );
@@ -776,13 +711,6 @@ namespace armsec
       
       virtual void Traverse( Visitor& visitor ) { visitor.Process( acc ); visitor.Process( left ); visitor.Process( right ); }
       
-      virtual int GenCode( Label& label, std::ostream& sink ) const
-      {
-        sink << "FIsInvalidMulAdd( " << acc.GetCode(label)
-             << ", " << left.GetCode(label)
-             << ", " << right.GetCode(label) << " )";
-        return 1;
-      }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         IsInvalidMulAddNode const& rhs = dynamic_cast<IsInvalidMulAddNode const&>( brhs );
@@ -817,11 +745,6 @@ namespace armsec
       
       virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
       
-      virtual int GenCode( Label& label, std::ostream& sink ) const
-      {
-        sink << "F" << ssz << "2F" << dsz << "( " << src.GetCode(label) << " )";
-        return dsz;
-      }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         FtoFNode const& rhs = dynamic_cast<FtoFNode const&>( brhs );
@@ -846,11 +769,6 @@ namespace armsec
       
       virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
       
-      virtual int GenCode( Label& label, std::ostream& sink ) const
-      {
-        sink << "F" << fsz << "2I" << isz << "( " << src.GetCode(label) << ", " << fb << " )";
-        return isz;
-      }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         FtoINode const& rhs = dynamic_cast<FtoINode const&>( brhs );
@@ -875,9 +793,6 @@ namespace armsec
       {} Expr src; int isz; int fsz; int fb;
       
       virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
-      
-      virtual int GenCode( Label& label, std::ostream& sink ) const
-      { sink << "I" << isz << "2F" << fsz << "( " << src.GetCode(label) << ", " << fb << " )"; return fsz; }
       
       intptr_t cmp( ExprNode const& brhs ) const
       {
