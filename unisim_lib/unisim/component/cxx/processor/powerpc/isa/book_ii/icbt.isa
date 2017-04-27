@@ -36,7 +36,7 @@ op legacy_icbt(31[6]:?[5]:ra[5]:rb[5]:262[10]:?[1]) /* icbt on earlier PowerPC 4
 op new_icbt(31[6]:?[5]:ra[5]:rb[5]:22[10]:?[1]) /* icbt on PPC4XX */
 group icbt(legacy_icbt, new_icbt)
 icbt.execute = {
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
 	return cpu->Icbt(ea);
 }

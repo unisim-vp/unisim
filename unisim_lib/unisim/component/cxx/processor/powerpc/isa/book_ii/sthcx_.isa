@@ -34,16 +34,16 @@
  
 op sthcx_(31[6]:rs[5]:ra[5]:rb[5]:726[10]:1[1])
 sthcx_.execute = {
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
 	return cpu->Stbcx(rs, ea);
 }
 
 sthcx_.disasm = {
 	os << "sthcx. r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
+	if(cpu && (cpu->GetCIA() == this->GetAddr()))
 	{
-		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+		ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
 	}
 }

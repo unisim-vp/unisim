@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 impl {
@@ -39,6 +40,34 @@ impl {
 /* Shift Right Algebraic Word Immediate */
 op se_srawi(26[6]:1[1]:ui5[5]:sext srx[4]);
 se_srawi.var rx : {uint8_t} = {srx & 31};
+
+se_srawi.execute = {
+	// Read the input operands
+	int32_t s = cpu->GetGPR(rx);
+	XER& xer = cpu->GetXER();
+	
+	// Compute the result
+	int32_t result;
+
+	if(ui5 == 0)
+	{
+		result = s;
+		// Generate XER[CA]: XER[CA]=0
+		xer.Set<XER::CA>(0);
+	}
+	else
+	{
+		unsigned int sh = ui5;
+		result = s >> sh;
+		// Generate XER[CA]
+		xer.Set<XER::CA>((s < 0) && ((s << (32 - sh)) != 0));
+	}
+	
+	// Write back the result
+	cpu->SetGPR(rx, result);
+	
+	return true;
+}
 
 se_srawi.disasm = {
 	os << "se_srawi " << GPRPrint(rx) << ',' << unsigned(ui5);

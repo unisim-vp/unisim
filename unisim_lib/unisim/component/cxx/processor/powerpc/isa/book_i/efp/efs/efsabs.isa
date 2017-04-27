@@ -34,13 +34,7 @@
 
 op efsabs(4[6]:rd[5]:ra[5]:?[5]:708[11])
 efsabs.execute = {
-	if(!CONFIG::HAS_FPU)
-	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
-		return false;
-	}
-	
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 efsabs.disasm = {

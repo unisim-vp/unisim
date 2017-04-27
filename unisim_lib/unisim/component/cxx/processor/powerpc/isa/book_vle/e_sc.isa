@@ -40,9 +40,10 @@
 
 op e_sc(31[6]:?[10]:ELEV[5]:36[10]:?[1])
 e_sc.execute = {
-	cpu->SetException(CONFIG::EXC_SYSTEM_CALL);
-	return false;
+	cpu->ThrowException<CPU::SystemCallInterrupt::SystemCall>().SetELEV(ELEV);
+	return true;
 }
 e_sc.disasm = {
 	os << "e_sc";
+	if(ELEV!=0) os << " " << int(ELEV);
 }

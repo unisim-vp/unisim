@@ -41,7 +41,7 @@ cmpi.execute = {
 	// Raise an illegal instruction exception if l=1
 	if(unlikely(l))
 	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
 		return false;
 	}
 	

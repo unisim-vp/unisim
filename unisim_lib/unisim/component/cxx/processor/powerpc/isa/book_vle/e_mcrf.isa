@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 impl {
@@ -37,11 +38,24 @@ impl {
 }
 
 /* Move CR Field */
-op e_mcrf(31[6]:bf[3]:?[2]:bfa[3]:?[7]:16[10]:0[1]);
+op e_mcrf(31[6]:crd[3]:?[2]:crs[3]:?[7]:16[10]:0[1]);
+
+e_mcrf.execute = {
+	CR& cr = cpu->GetCR();
+	uint32_t c = cr;
+
+	unsigned int crbd = 4 * crd;
+	unsigned int crbs = 4 * crs;
+	uint32_t s = (c << crbs) >> crbd;
+	uint32_t m = 0xf0000000UL >> crbd;
+	
+	cr = (c & ~m) | (s & m);
+	return true;
+}
 
 e_mcrf.disasm = {
-	if (bfa!=0)
-		os << "e_mcrf " << CRPrint(bf) << ',' << CRPrint(bfa);
+	if (crs!=0)
+		os << "e_mcrf " << CRPrint(crd) << ',' << CRPrint(crs);
 	else
-		os << "e_mcrf " << CRPrint(bf);
+		os << "e_mcrf " << CRPrint(crd);
 }

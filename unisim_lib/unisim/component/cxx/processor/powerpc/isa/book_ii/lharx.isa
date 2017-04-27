@@ -34,15 +34,15 @@
  
 op lharx(31[6]:rd[5]:ra[5]:rb[5]:116[10]:eh[1])
 lharx.execute = {
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
 	return cpu->Lharx(rd, ea);
 }
 lharx.disasm = {
 	os << "lharx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb << ", " << (unsigned int) eh;
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
+	if(cpu && (cpu->GetCIA() == this->GetAddr()))
 	{
-		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+		ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
 	}
 }

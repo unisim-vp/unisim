@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -38,6 +38,11 @@ impl {
 
 /* Debug Notify Halt */
 op se_dnh(0b0000000000001111[16]);
+
+se_dnh.execute = {
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
+	return false;
+}
 
 se_dnh.disasm = {
 	os << "se_dnh";

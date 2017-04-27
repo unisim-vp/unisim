@@ -35,7 +35,7 @@
 /* Subtract from halfword odd signed to word (zsubfhosw) */
 op zsubfhosw(0b000100[6]:rd[5]:ra[5]:rb[5]:0b01000100111[11])
 zsubfhosw.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zsubfhosw.disasm = {

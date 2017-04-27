@@ -36,10 +36,10 @@ op lmw(46[6]:rd[5]:ra[5]:sext<32>d[16])
 lmw.execute = {
 	if(unlikely(ra >= rd))
 	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
 		return false;
 	}
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + d : d);
 
 	unsigned int r;
 	for(r = rd; r < 32; r++)
@@ -52,9 +52,9 @@ lmw.execute = {
 }
 lmw.disasm = {
 	os << "lmw r" << (unsigned int) rd << ", " << d << "(r" << (unsigned int) ra << ")";
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
+	if(cpu && (cpu->GetCIA() == this->GetAddr()))
 	{
-		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
+		ADDRESS ea = (ra ? cpu->GetGPR(ra) + d : d);
 		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
 	}
 }

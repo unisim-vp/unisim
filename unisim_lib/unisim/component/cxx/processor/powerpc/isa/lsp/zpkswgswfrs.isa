@@ -35,7 +35,7 @@
 /* Pack signed word guarded to signed word fractional round and saturate (zpkswgswfrs) */
 op zpkswgswfrs(0b000100[6]:rd[5]:ra[5]:rb[5]:0b01000111001[11])
 zpkswgswfrs.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zpkswgswfrs.disasm = {

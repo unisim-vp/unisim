@@ -98,18 +98,18 @@ op zvdotphi(4[6]:rd[5]:ra[5]:rb[5]:0b1101[4]:substract[1]:exchange[1]:ty[2]:acc[
 /* substract in {0="a",1="s"}, exchange in {0="",1="x"}, acc in {00="",01="aa",10="an"}, ty in {00="ui",01="si",10="sui"}, s in {0="",1="s"} */
 /* substract=1 exchange=1 is illegal */
 zvdotphi.var ill : { bool } = {
-	   (substract && exchange) // substract=1 & exchange=1 is illegal
+	   ((substract != 0) && (exchange != 0)) // substract=1 & exchange=1 is illegal
 	|| (ty == 3)               // ty=0b11 is illegal
 	|| (acc == 3)              // acc=0b11 is illegal
 }
 zvdotphi.execute = {
 	if(unlikely(ill))
 	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
 		return false;
 	}
 
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zvdotphi.disasm = {

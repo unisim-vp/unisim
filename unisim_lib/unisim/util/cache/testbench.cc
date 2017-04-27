@@ -141,6 +141,10 @@ struct MyMemorySubSystem : MemorySubSystem<MSS_TYPES, MyMemorySubSystem<MSS_TYPE
 	bool DataBusRead(typename MSS_TYPES::ADDRESS addr, void *buffer, unsigned int size, typename MSS_TYPES::STORAGE_ATTR storage_attr, bool rwitm);
 	bool DataBusWrite(typename MSS_TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename MSS_TYPES::STORAGE_ATTR storage_attr);
 	bool InstructionBusRead(typename MSS_TYPES::ADDRESS addr, void *buffer, unsigned int size, typename MSS_TYPES::STORAGE_ATTR storage_attr);
+
+	bool DebugDataBusRead(typename MSS_TYPES::ADDRESS addr, void *buffer, unsigned int size, typename MSS_TYPES::STORAGE_ATTR storage_attr);
+	bool DebugDataBusWrite(typename MSS_TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename MSS_TYPES::STORAGE_ATTR storage_attr);
+	bool DebugInstructionBusRead(typename MSS_TYPES::ADDRESS addr, void *buffer, unsigned int size, typename MSS_TYPES::STORAGE_ATTR storage_attr);
 	
 	void InvalidateLineByAddress(typename MSS_TYPES::ADDRESS addr);
 	void CleanBySetAndWay(unsigned int index, unsigned int way);
@@ -220,7 +224,7 @@ bool MyMemorySubSystem<MSS_TYPES>::DataBusRead(typename MSS_TYPES::ADDRESS addr,
 	unsigned int i;
 	for(i = 0; i < size; i++)
 	{
-		((uint8_t *) buffer)[i] = memory[i];
+		((uint8_t *) buffer)[i] = memory[addr + i];
 	}
 	return true;
 }
@@ -231,7 +235,7 @@ bool MyMemorySubSystem<MSS_TYPES>::DataBusWrite(typename MSS_TYPES::ADDRESS addr
 	unsigned int i;
 	for(i = 0; i < size; i++)
 	{
-		memory[i] = ((uint8_t *) buffer)[i];
+		memory[addr + i] = ((uint8_t *) buffer)[i];
 	}
 	return true;
 }
@@ -242,7 +246,40 @@ bool MyMemorySubSystem<MSS_TYPES>::InstructionBusRead(typename MSS_TYPES::ADDRES
 	unsigned int i;
 	for(i = 0; i < size; i++)
 	{
-		((uint8_t *) buffer)[i] = memory[i];
+		((uint8_t *) buffer)[i] = memory[addr + i];
+	}
+	return true;
+}
+
+template <typename MSS_TYPES>
+bool MyMemorySubSystem<MSS_TYPES>::DebugDataBusRead(typename MSS_TYPES::ADDRESS addr, void *buffer, unsigned int size, typename MSS_TYPES::STORAGE_ATTR storage_attr)
+{
+	unsigned int i;
+	for(i = 0; i < size; i++)
+	{
+		((uint8_t *) buffer)[i] = memory[addr + i];
+	}
+	return true;
+}
+
+template <typename MSS_TYPES>
+bool MyMemorySubSystem<MSS_TYPES>::DebugDataBusWrite(typename MSS_TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename MSS_TYPES::STORAGE_ATTR storage_attr)
+{
+	unsigned int i;
+	for(i = 0; i < size; i++)
+	{
+		memory[addr + i] = ((uint8_t *) buffer)[i];
+	}
+	return true;
+}
+
+template <typename MSS_TYPES>
+bool MyMemorySubSystem<MSS_TYPES>::DebugInstructionBusRead(typename MSS_TYPES::ADDRESS addr, void *buffer, unsigned int size, typename MSS_TYPES::STORAGE_ATTR storage_attr)
+{
+	unsigned int i;
+	for(i = 0; i < size; i++)
+	{
+		((uint8_t *) buffer)[i] = memory[addr + i];
 	}
 	return true;
 }
@@ -269,15 +306,36 @@ void MyMemorySubSystem<MSS_TYPES>::CleanByAddress(typename MSS_TYPES::ADDRESS ad
 
 int main()
 {
+	uint8_t dbg_init_buf[64] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
+	                           , 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
+	                           , 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f
+	                           , 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f };
 	uint8_t buf[4] = { 0xab, 0xcd, 0xef, 0x10 };
 	
 	sandbox::MyMemorySubSystem<sandbox::MEMORY_SUB_SYSTEM_TYPES> mss;
+	
+	mss.DebugDataStore(0x1200, dbg_init_buf, 64, 0);
 	
 	mss.DataStore(0x1234, buf, 4, 0);
 	mss.DataLoad(0x1234, buf, 4, 0);
 	mss.DataLoad(0x1260, buf, 4, 0);
 	mss.DataLoad(0x1280, buf, 4, 0);
 	mss.DataLoad(0x12a0, buf, 4, 0);
+	
+	uint8_t dbg_buf[64];
+	
+	bool dbg_data_load_status = mss.DebugDataLoad(0x1200, dbg_buf, 64, 0);
+	
+	unsigned int i;
+	std::cout << "dbg_buf (" << dbg_data_load_status << ") = ";
+	for(i = 0; i < 64; i++)
+	{
+		uint8_t value = dbg_buf[i];
+		uint8_t l = value & 15;
+		uint8_t h = value >> 4;
+		std::cout << (i ? " ": "") << "0x" << (char)((h < 10) ? '0' + h : 'a' + h - 10) << (char)((l < 10) ? '0' + l : 'a' + l - 10);
+	}
+	std::cout << std::endl;
 	//mss.DataLoad(0x1234, buf, 4, 0);
 	//mss.InstructionFetch(0x1234, buf, 4, 0);
 	//mss.CleanBySetAndWay(0x12, 0x0);

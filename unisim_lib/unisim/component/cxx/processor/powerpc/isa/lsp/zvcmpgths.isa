@@ -35,7 +35,7 @@
 /* Vector compare greater than halfword signed (zvcmpgths) */
 op zvcmpgths(0b000100[6]:crd[3]:0b01[2]:ra[5]:rb[5]:0b01000110000[11])
 zvcmpgths.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zvcmpgths.disasm = {

@@ -34,26 +34,36 @@
  
 op mcrxr(31[6]:crfD[3]:?[12]:512[10]:?[1])
 mcrxr.execute = {
-	// Read XER
-	uint32_t xer = cpu->GetXER();
+	XER& xer = cpu->GetXER();
 	
-	// Read CR
-	uint32_t cr = cpu->GetCR();
+	CR& cr = cpu->GetCR();
 	
 	// Generate CR[crfD]: CR[crfD]=XER[0-3]
-	cr = (cr & ~(CONFIG::CR0_MASK >> (4 * crfD))) | ((xer & 0xf0000000UL) >> (4 * crfD));
-	
+	switch(crfD)
+	{
+		case 0: cr.Set<CR::CR0::ALL>(xer.Get<XER::_0_3>()); break;
+		case 1: cr.Set<CR::CR1::ALL>(xer.Get<XER::_0_3>()); break;
+		case 2: cr.Set<CR::CR2::ALL>(xer.Get<XER::_0_3>()); break;
+		case 3: cr.Set<CR::CR3::ALL>(xer.Get<XER::_0_3>()); break;
+		case 4: cr.Set<CR::CR4::ALL>(xer.Get<XER::_0_3>()); break;
+		case 5: cr.Set<CR::CR5::ALL>(xer.Get<XER::_0_3>()); break;
+		case 6: cr.Set<CR::CR6::ALL>(xer.Get<XER::_0_3>()); break;
+		case 7: cr.Set<CR::CR7::ALL>(xer.Get<XER::_0_3>()); break;
+	}
 	// Reset XER[0-3]
-	xer = xer & 0x0fffffffUL;
-
-	// Update CR
-	cpu->SetCR(cr);
-	
-	// Update XER
-	cpu->SetXER(xer);
+	xer.Set<XER::_0_3>(0);
 	
 	return true;
 }
 mcrxr.disasm = {
 	os << "mcrxr cr" << (unsigned int) crfD;
 }
+
+specialize mcrxr(crfD=0)
+specialize mcrxr(crfD=1)
+specialize mcrxr(crfD=2)
+specialize mcrxr(crfD=3)
+specialize mcrxr(crfD=4)
+specialize mcrxr(crfD=5)
+specialize mcrxr(crfD=6)
+specialize mcrxr(crfD=7)

@@ -34,13 +34,7 @@
 
 op efststeq(4[6]:bf[3]:?[2]:ra[5]:rb[5]:734[11])
 efststeq.execute = {
-	if(!CONFIG::HAS_FPU)
-	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
-		return false;
-	}
-	
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 efststeq.disasm = {

@@ -35,7 +35,7 @@
 /* Vector unpack halfwords as signed integers (zvunpkhsi) */
 op zvunpkhsi(0b000100[6]:shl<1> rd[4]:0b0[1]:ra[5]:0b00011[5]:0b10001111000[11]) /* rd odd is illegal */
 zvunpkhsi.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zvunpkhsi.disasm = {

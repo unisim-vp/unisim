@@ -260,6 +260,8 @@ public:
 	template <typename T> sc_core::sc_signal<T>& CreateSignal(const T& init_value);
 	template <typename T> sc_core::sc_signal<T>& CreateSignal(const std::string& signal_name, const T& init_value);
 	template <typename T> void CreateSignalArray(const std::string& signal_array_name, unsigned int signal_array_dim, const T& init_value);
+	template <typename T> sc_core::sc_signal<T>& GetSignal(const std::string& signal_name);
+	template <typename T> sc_core::sc_signal<T>& GetSignal(const std::string& signal_array_name, unsigned int idx);
 	
 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void RegisterSignal(sc_core::sc_signal<T, WRITER_POLICY> *signal);
 	template <typename T> void RegisterPort(sc_core::sc_port_b<sc_core::sc_signal_in_if<T> >& in_port);
@@ -287,6 +289,16 @@ template <typename T> sc_core::sc_signal<T>& Simulator::CreateSignal(const std::
 template <typename T> void Simulator::CreateSignalArray(const std::string& signal_array_name, unsigned int signal_array_dim, const T& init_value)
 {
 	instrumenter->CreateSignalArray(signal_array_name, signal_array_dim, init_value);
+}
+
+template <typename T> sc_core::sc_signal<T>& Simulator::GetSignal(const std::string& signal_name)
+{
+	return instrumenter->GetSignal<T>(signal_name);
+}
+
+template <typename T> sc_core::sc_signal<T>& Simulator::GetSignal(const std::string& signal_array_name, unsigned int idx)
+{
+	return instrumenter->GetSignal<T>(signal_array_name, idx);
 }
 
 template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void Simulator::RegisterSignal(sc_core::sc_signal<T, WRITER_POLICY> *signal)

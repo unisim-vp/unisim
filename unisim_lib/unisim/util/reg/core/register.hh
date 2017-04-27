@@ -407,9 +407,9 @@ public:
 	unisim::service::interfaces::Register *CreateRegisterInterface();
 private:
 	TYPE value;
-	const std::string& GetNameKey() const;
-	const std::string& GetDisplayNameKey() const;
-	const std::string& GetDescriptionKey() const;
+	const std::string GetNameKey() const;
+	const std::string GetDisplayNameKey() const;
+	const std::string GetDescriptionKey() const;
 };
 
 /////////////////////////// NullRegisterFileBase //////////////////////////////

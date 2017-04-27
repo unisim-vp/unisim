@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 impl {
@@ -37,8 +38,25 @@ impl {
 }
 
 /* Compare Halfword Logical Immediate */
-op e_cmphl16i(28[6]:shl<11> ui_a[5]:ra[5]:23[5]:ui_b[11]);
+op e_cmphl16i(28[6]:shl<11> ui_h[5]:ra[5]:23[5]:ui_l[11]);
+e_cmphl16i.var ui : { int16_t } = { ui_h | ui_l }
+
+e_cmphl16i.execute = {
+	// Read the input unsigned halfword operands
+	uint16_t a = cpu->GetGPR(ra);
+	uint16_t b = ui;
+
+	// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(a<b) CR0[GT]=(a>b) CR0[EQ]=(a==b)
+	XER& xer = cpu->GetXER();
+	CR& cr = cpu->GetCR();
+	cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
+	cr.Set<CR::CR0::LT>(a < b);
+	cr.Set<CR::CR0::GT>(a > b);
+	cr.Set<CR::CR0::EQ>(a == b);
+
+	return true;
+}
 
 e_cmphl16i.disasm = {
-	os << "e_cmphl16i " << GPRPrint(ra) << ',' << int(ui_a|ui_b);
+	os << "e_cmphl16i " << GPRPrint(ra) << ',' << int16_t(ui);
 }

@@ -35,7 +35,7 @@
 /* Add word signed and saturate (zaddwss) */
 op zaddwss(0b000100[6]:rd[5]:ra[5]:rb[5]:0b01000010010[11])
 zaddwss.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zaddwss.disasm = {

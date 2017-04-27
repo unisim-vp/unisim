@@ -34,7 +34,7 @@
 
 op lswi(31[6]:rd[5]:ra[5]:nb[5]:597[10]:?[1])
 lswi.execute = {
-	typename CONFIG::address_t ea = ra ? cpu->GetGPR(ra) : 0;
+	ADDRESS ea = ra ? cpu->GetGPR(ra) : 0;
 
 	uint8_t n = nb ? nb : 32;
 	unsigned int r = rd;
@@ -52,9 +52,9 @@ lswi.execute = {
 }
 lswi.disasm = {
 	os << "lswi r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << (unsigned int) nb;
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
+	if(cpu && (cpu->GetCIA() == this->GetAddr()))
 	{
-		typename CONFIG::address_t ea = ra ? cpu->GetGPR(ra) : 0;
+		ADDRESS ea = ra ? cpu->GetGPR(ra) : 0;
 		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
 	}
 }

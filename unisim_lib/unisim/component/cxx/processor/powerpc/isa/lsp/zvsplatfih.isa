@@ -35,7 +35,7 @@
 /* Vector splat fractional immediate halfword (zvsplatfih) */
 op zvsplatfih(0b000100[6]:rd[5]:shl<11> sext<16> simm[5]:0b00001[5]:0b01000111111[11])
 zvsplatfih.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zvsplatfih.disasm = {

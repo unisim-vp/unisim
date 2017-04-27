@@ -1103,7 +1103,9 @@ const std::string& Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetName() 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 const std::string& Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetDisplayName() const
 {
-	return PropertyRegistry::GetStringProperty(GetDisplayNameKey());
+	const std::string& display_name = PropertyRegistry::GetStringProperty(GetDisplayNameKey());
+	if(!display_name.empty()) return display_name;
+	return GetName();
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
@@ -1132,27 +1134,21 @@ unisim::service::interfaces::Register *Register<REGISTER, _SIZE, _ACCESS, REGIST
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
-inline const std::string& Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetNameKey() const
+inline const std::string Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetNameKey() const
 {
-	static std::string unique_key = PropertyRegistry::GenUniqueInstanceName(this, "Register_name");
-	if(!unique_key.empty()) return unique_key;
-	return unique_key;
+	return PropertyRegistry::GenUniqueInstanceName(this, "Register_name");
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
-inline const std::string& Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetDisplayNameKey() const
+inline const std::string Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetDisplayNameKey() const
 {
-	static std::string unique_key = PropertyRegistry::GenUniqueInstanceName(this, "Register_display_name");
-	if(!unique_key.empty()) return unique_key;
-	return unique_key;
+	return PropertyRegistry::GenUniqueInstanceName(this, "Register_display_name");
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
-inline const std::string& Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetDescriptionKey() const
+inline const std::string Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetDescriptionKey() const
 {
-	static std::string unique_key = PropertyRegistry::GenUniqueInstanceName(this, "Register_description");
-	if(!unique_key.empty()) return unique_key;
-	return unique_key;
+	return PropertyRegistry::GenUniqueInstanceName(this, "Register_description");
 }
 
 /////////////////////////////// RegisterFile<> ////////////////////////////////

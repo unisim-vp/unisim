@@ -34,13 +34,7 @@
 
 op efscfui(4[6]:rd[5]:?[5]:rb[5]:720[11])
 efscfui.execute = {
-	if(!CONFIG::HAS_FPU)
-	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
-		return false;
-	}
-	
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 efscfui.disasm = {

@@ -35,7 +35,7 @@
 /* Vector compare less than halfword unsigned (zvcmplthu) */
 op zvcmplthu(0b000100[6]:crd[3]:0b00[2]:ra[5]:rb[5]:0b01000110001[11])
 zvcmplthu.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zvcmplthu.disasm = {

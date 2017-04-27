@@ -35,7 +35,7 @@
 /* Vector saturate signed halfwords to unsigned halfword range (zvsatshuh) */
 op zvsatshuh(0b000100[6]:rd[5]:ra[5]:0b11100[5]:0b01000111111[11])
 zvsatshuh.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zvsatshuh.disasm = {

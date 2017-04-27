@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 impl {
@@ -38,6 +39,13 @@ impl {
 
 /* Store Word */
 op e_stw(21[6]:rs[5]:ra[5]:sext d[16]);
+
+e_stw.execute = {
+	// compute the effective address
+	ADDRESS ea = ra ? (cpu->GetGPR(ra) + d) : d;
+	// do the memory access
+	return cpu->Int32Store(rs, ea);
+}
 
 e_stw.disasm = {
 	os << "e_stw " << GPRPrint(rs) << ',' << EAPrint(d,ra);

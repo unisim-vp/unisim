@@ -50,7 +50,7 @@ impl {
  */ 
 op zvmhuugwsmf(4[6]:rd[5]:ra[5]:rb[5]:0b1001[4]:0b1010[4]:acc[2]:r[1]) /* acc in {00="",01="aa",10="an",11="anp"}, r in {0="",1="r"} */
 zvmhuugwsmf.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zvmhuugwsmf.disasm = {

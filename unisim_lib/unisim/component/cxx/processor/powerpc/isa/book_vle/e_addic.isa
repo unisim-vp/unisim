@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 impl {
@@ -37,9 +38,9 @@ impl {
 }
 
 /* Add Scaled Immediate Carrying */
-op e_addic(6[6]:rt[5]:ra[5]:9[4]:rc[1]:s11[11]);
+op e_addic(6[6]:rd[5]:ra[5]:9[4]:rc[1]:s11[11]);
 e_addic.var sci8 : {int32_t} = {scaled_immediate(s11)};
 
 e_addic.disasm = {
-	os << "e_addic" << (rc?". ":" ") << GPRPrint(rt) << ',' << GPRPrint(ra) << ',' << sci8;
+	os << "e_addic" << (rc?". ":" ") << GPRPrint(rd) << ',' << GPRPrint(ra) << ',' << sci8;
 }

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 impl {
@@ -38,6 +39,14 @@ impl {
 
 /* Branch to Count Register [and Link] */
 op se_bctr(3[15]:lk[1]);
+
+se_bctr.execute = {
+	ADDRESS target_addr = cpu->GetCTR() & 0xfffffffeUL;
+	cpu->Branch(target_addr);
+	if(lk) cpu->SetLR(cpu->GetCIA() + 2);
+	
+	return true;
+}
 
 se_bctr.disasm = {
 	os << "se_bctr" << (lk?"l":"");

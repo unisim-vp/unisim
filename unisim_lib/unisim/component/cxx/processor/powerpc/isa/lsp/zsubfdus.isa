@@ -35,7 +35,7 @@
 /* Subtract from doubleword unsigned saturate (zsubfdus) */
 op zsubfdus(0b000100[6]:shl<1> rd[4]:0b0[1]:ra[5]:rb[5]:0b10001110011[11]) /* rd odd is illegal */
 zsubfdus.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zsubfdus.disasm = {

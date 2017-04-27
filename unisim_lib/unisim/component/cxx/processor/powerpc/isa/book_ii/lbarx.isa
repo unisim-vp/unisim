@@ -34,15 +34,15 @@
  
 op lbarx(31[6]:rd[5]:ra[5]:rb[5]:52[10]:eh[1])
 lbarx.execute = {
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
 	return cpu->Lbarx(rd, ea);
 }
 lbarx.disasm = {
 	os << "lbarx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb << ", " << (unsigned int) eh;
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
+	if(cpu && (cpu->GetCIA() == this->GetAddr()))
 	{
-		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+		ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
 	}
 }

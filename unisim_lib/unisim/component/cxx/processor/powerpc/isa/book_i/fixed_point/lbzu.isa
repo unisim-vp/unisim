@@ -36,11 +36,11 @@ op lbzu(35[6]:rd[5]:ra[5]:sext<32>d[16])
 lbzu.execute = {
 	if(unlikely(ra == 0 || ra == rd))
 	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
 		return false;
 	}
 	// compute the effective address
-	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
+	ADDRESS ea = (cpu->GetGPR(ra) + d);
 	// do the memory access
 	if(unlikely(!cpu->Int8Load(rd, ea))) return false;
 	// update the address register
@@ -50,9 +50,9 @@ lbzu.execute = {
 }
 lbzu.disasm = {
 	os << "lbzu r" << (unsigned int) rd << ", " << d << "(r" << (unsigned int) ra << ")";
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
+	if(cpu && (cpu->GetCIA() == this->GetAddr()))
 	{
-		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
+		ADDRESS ea = (cpu->GetGPR(ra) + d);
 		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
 	}
 }

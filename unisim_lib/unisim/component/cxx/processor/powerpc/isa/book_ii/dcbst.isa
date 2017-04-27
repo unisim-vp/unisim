@@ -34,7 +34,7 @@
 
 op dcbst(31[6]:?[5]:ra[5]:rb[5]:54[10]:?[1])
 dcbst.execute = {
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
 	return cpu->Dcbst(ea);
 }

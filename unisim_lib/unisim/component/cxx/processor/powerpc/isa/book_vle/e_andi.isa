@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 impl {
@@ -38,7 +39,31 @@ impl {
 
 /* AND Scaled Immediate */
 op e_andi(6[6]:rs[5]:ra[5]:12[4]:rc[1]:s11[11]);
-e_andi.var sci8 : {int32_t} = {scaled_immediate(s11)};
+e_andi.var sci8 : {uint32_t} = {scaled_immediate(s11)};
+
+e_andi.execute = {
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	
+	// Compute the result
+	uint32_t result = s & sci8;
+	
+	if(rc)
+	{
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		XER& xer = cpu->GetXER();
+		CR& cr = cpu->GetCR();
+		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
+		cr.Set<CR::CR0::LT>((int32_t) result < 0);
+		cr.Set<CR::CR0::GT>((int32_t) result > 0);
+		cr.Set<CR::CR0::EQ>((int32_t) result == 0);
+	}
+
+	// Write back the result
+	cpu->SetGPR(ra, result);
+	
+	return true;
+}
 
 e_andi.disasm = {
 	os << "e_andi" << (rc?". ":" ") << GPRPrint(ra) << ',' << GPRPrint(rs) << ',' << sci8;

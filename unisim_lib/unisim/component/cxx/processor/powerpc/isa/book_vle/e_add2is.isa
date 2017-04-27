@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 impl {
@@ -37,8 +38,22 @@ impl {
 }
 
 /* Add (2 operand) Immediate Shifted */
-op e_add2is(28[6]:shl<11> sext <32> si_a[5]:ra[5]:18[5]:si_b[11]);
+op e_add2is(28[6]:shl<11> sext <32> si_h[5]:ra[5]:18[5]:si_l[11]);
+e_add2is.var si : { int32_t } = { (si_h | si_l) << 16 }
+
+e_add2is.execute = {
+	// Read the input operands
+	int32_t a = cpu->GetGPR(ra);
+	
+	// Compute the result
+	int32_t result = a + si;
+	
+	// Write back the result
+	cpu->SetGPR(ra, result);
+	
+	return true;
+}
 
 e_add2is.disasm = {
-	os << "e_add2is " << GPRPrint(ra) << ',' << int(si_a|si_b);
+	os << "e_add2is " << GPRPrint(ra) << ',' << int(si_h|si_l);
 }

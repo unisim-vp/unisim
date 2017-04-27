@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 impl {
@@ -37,18 +38,70 @@ impl {
 }
 
 /* Branch (Decrement) Conditional [and Link] */
-op e_bc(30[6]:8[4]:bo[2]:crn[2]:bi[2]:shl<1> sext <32> bd[15]:lk[1]);
+op e_bc(30[6]:8[4]:bo[2]:bi[4]:shl<1> sext <32> bd[15]:lk[1]);
+
+e_bc.execute = {
+	bool ctr_ok;
+	bool cond_ok;
+	bool ok;
+	
+	if(bo & 1)
+	{
+		/* Decrement CTR */
+		cpu->SetCTR(cpu->GetCTR() - 1);
+		/* Test whether to branch if CTR is zero or not */
+		if(bo & 2)
+		{
+			ctr_ok = cpu->GetCTR() == 0;
+		}
+		else
+		{
+			ctr_ok = cpu->GetCTR() != 0;
+		}
+		
+		cond_ok = true;
+	}
+	else
+	{
+		/* Conditional branch */
+		if(bo & 2)
+		{
+			/* Branch if condition is true */
+			cond_ok = ((cpu->GetCR() << bi) & 0x80000000UL) != 0;
+		}
+		else
+		{
+			/* Branch if condition is false */
+			cond_ok = ((cpu->GetCR() << bi) & 0x80000000UL) == 0;
+		}
+		
+		ctr_ok = true;
+	}
+	
+	ok = ctr_ok && cond_ok; 
+
+	if(ok)
+	{
+		ADDRESS target_addr = cpu->GetCIA() + bd;
+		cpu->Branch(target_addr);
+	}
+	
+	if(lk) cpu->SetLR(cpu->GetCIA() + 4);
+	
+	return true;
+}
 
 e_bc.disasm = {
 	if(bo & 2)
 	{
-		os << "e_bd" << ((bo & 1)?"z":"nz") << (lk?"l ":" ") << HexPrint(Operation<CONFIG>::GetAddr()+bd);
+		os << "e_bd" << ((bo & 1)?"z":"nz") << (lk?"l ":" ") << HexPrint(this->GetAddr()+bd);
 	}
 	else
 	{
-		os << "e_b" << CondPrint(bi,bo & 1) << (lk?"l ":" ");
+		os << "e_b" << CondPrint(bi & 3,bo & 1) << (lk?"l ":" ");
+		unsigned int crn = bi >> 2;
 		if (crn)
 			os << CRPrint(crn) << ',';
-		os << HexPrint(Operation<CONFIG>::GetAddr()+bd);
+		os << HexPrint(this->GetAddr()+bd);
 	}
 }
