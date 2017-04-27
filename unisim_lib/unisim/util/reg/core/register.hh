@@ -198,16 +198,25 @@ template <typename ADDRESS> class RegisterAddressMap;
 class PropertyRegistry
 {
 public:
-	static void SetStringProperty(const std::string& unique_id, const std::string& value);
-	static void SetUnsignedIntProperty(const std::string& unique_id, uint64_t value);
-	static const std::string& GetStringProperty(const std::string& unique_id);
-	static uint64_t GetUnsignedIntegerProperty(const std::string& unique_id);
-	static std::string GenUniqueInstanceName(const void *instance_ptr, const std::string& name);
-	template <typename T> static std::string GenUniqueTypeName(const std::string& name);
+	enum ElementType
+	{
+		EL_REGISTER = 0,
+		EL_FIELD    = 1
+	};
+	
+	enum StringPropertyType
+	{
+		STR_PROP_NAME      = 0,
+		STR_PROP_DISP_NAME = 1,
+		STR_PROP_DESC      = 2
+	};
+
+	static void SetStringProperty(ElementType el_type, StringPropertyType prop_type, intptr_t key, const std::string& value);
+	static const std::string& GetStringProperty(ElementType el_type, StringPropertyType prop_type, intptr_t key);
 	
 private:
-	static std::map<std::string, std::string> string_prop_registry;
-	static std::map<std::string, uint64_t> uint_prop_registry;
+	static std::map<intptr_t, std::string> string_prop_registry[2][3];
+	
 };
 
 ///////////////////////////// LongPrettyPrinter ///////////////////////////////
@@ -233,7 +242,12 @@ public:
 	static void PrintDescription(std::ostream& os, const std::string& s);
 };
 
+//////////////////////////////// FieldID ///////////////////////////////////
+
+unsigned int FieldID();
+
 ////////////////////////////////// Field<> ////////////////////////////////////
+
 
 template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH = 1, Access _ACCESS = SW_RW>
 class Field
@@ -243,6 +257,8 @@ public:
 	static const unsigned int BITWIDTH = _BITWIDTH;
 	static const Access ACCESS = _ACCESS;
 	static const unsigned int BITWIDTH_MINUS_1 = _BITWIDTH - 1;
+	
+	static const unsigned int ID;
 
 	template <typename T> static inline T GetMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetAssignMask() ALWAYS_INLINE;

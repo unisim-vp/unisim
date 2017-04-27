@@ -116,41 +116,28 @@ std::ostream& operator << (std::ostream& os, const WarningStatus& ws)
 
 ///////////////////////////// PropertyRegistry ////////////////////////////////
 
-std::map<std::string, std::string> PropertyRegistry::string_prop_registry;
-std::map<std::string, uint64_t> PropertyRegistry::uint_prop_registry;
+std::map<intptr_t, std::string> PropertyRegistry::string_prop_registry[2][3];
 
-void PropertyRegistry::SetStringProperty(const std::string& unique_id, const std::string& string_value)
+void PropertyRegistry::SetStringProperty(ElementType el_type, StringPropertyType str_prop_type, intptr_t key, const std::string& value)
 {
-	if(!string_value.empty())
+	if(!value.empty())
 	{
-		std::map<std::string, std::string>::const_iterator iter = string_prop_registry.find(unique_id);
+		std::map<intptr_t, std::string>::const_iterator iter = string_prop_registry[el_type][str_prop_type].find(key);
 		
-		if(iter != string_prop_registry.end())
+		if(iter != string_prop_registry[el_type][str_prop_type].end())
 		{
 			return; // already exists
 		}
 
-		string_prop_registry[unique_id] = string_value;
+		string_prop_registry[el_type][str_prop_type][key] = value;
 	}
 }
 
-void PropertyRegistry::SetUnsignedIntProperty(const std::string& unique_id, uint64_t uint_value)
+const std::string& PropertyRegistry::GetStringProperty(ElementType el_type, StringPropertyType str_prop_type, intptr_t key)
 {
-	std::map<std::string, uint64_t>::const_iterator iter = uint_prop_registry.find(unique_id);
+	std::map<intptr_t, std::string>::const_iterator iter = string_prop_registry[el_type][str_prop_type].find(key);
 	
-	if(iter != uint_prop_registry.end())
-	{
-		return; // already exists
-	}
-
-	uint_prop_registry[unique_id] = uint_value;
-}
-
-const std::string& PropertyRegistry::GetStringProperty(const std::string& unique_id)
-{
-	std::map<std::string, std::string>::const_iterator iter = string_prop_registry.find(unique_id);
-	
-	if(iter != string_prop_registry.end())
+	if(iter != string_prop_registry[el_type][str_prop_type].end())
 	{
 		return (*iter).second;
 	}
@@ -158,25 +145,6 @@ const std::string& PropertyRegistry::GetStringProperty(const std::string& unique
 	static std::string null_string;
 	
 	return null_string;
-}
-
-uint64_t PropertyRegistry::GetUnsignedIntegerProperty(const std::string& unique_id)
-{
-	std::map<std::string, uint64_t>::const_iterator iter = uint_prop_registry.find(unique_id);
-	
-	if(iter != uint_prop_registry.end())
-	{
-		return (*iter).second;
-	}
-	
-	return 0;
-}
-
-std::string PropertyRegistry::GenUniqueInstanceName(const void *instance_ptr, const std::string& name)
-{
-	std::stringstream sstr;
-	sstr << name << '_' << instance_ptr;
-	return sstr.str();
 }
 
 ///////////////////////////// LongPrettyPrinter ///////////////////////////////
@@ -209,12 +177,12 @@ void LongPrettyPrinter::Print(std::ostream& os, const std::string& s, unsigned i
 
 void LongPrettyPrinter::PrintHeader(std::ostream& os)
 {
-	Print(os, "kind", KIND_PRINT_WIDTH);
-	Print(os, "range", RANGE_PRINT_WIDTH);
-	Print(os, "name", NAME_PRINT_WIDTH);
-	Print(os, "value", VALUE_PRINT_WIDTH);
-	Print(os, "access", ACCESS_PRINT_WIDTH);
-	os << "description" << std::endl;
+	Print(os, "--KIND--", KIND_PRINT_WIDTH);
+	Print(os, "-RANGE--", RANGE_PRINT_WIDTH);
+	Print(os, "------NAME------", NAME_PRINT_WIDTH);
+	Print(os, "---------VALUE---------", VALUE_PRINT_WIDTH);
+	Print(os, "-------------------ACCESS---------------------", ACCESS_PRINT_WIDTH);
+	os << "--------------------DESCRIPTION-------------------" << std::endl;
 }
 
 void LongPrettyPrinter::PrintKind(std::ostream& os, const std::string& kind)
@@ -270,6 +238,14 @@ void LongPrettyPrinter::PrintAccess(std::ostream& os, const Access& access)
 void LongPrettyPrinter::PrintDescription(std::ostream& os, const std::string& s)
 {
 	os << s;
+}
+
+//////////////////////////////// FieldID ///////////////////////////////////
+
+unsigned int FieldID()
+{
+	static unsigned int field_id = 0;
+	return field_id++;
 }
 
 /////////////////////////////// NullField //////////////////////////////////

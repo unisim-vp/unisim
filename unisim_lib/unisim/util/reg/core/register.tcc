@@ -50,17 +50,6 @@ namespace core {
 template <unsigned int SIZE> const unsigned int TypeForBitSize<SIZE>::BYTE_SIZE;
 template <unsigned int SIZE> const typename TypeForBitSize<SIZE>::TYPE TypeForBitSize<SIZE>::MASK;
 
-///////////////////////////// PropertyRegistry ////////////////////////////////
-
-template <typename T> std::string PropertyRegistry::GenUniqueTypeName(const std::string& name)
-{
-	std::string unique_name(name);
-	unique_name += '_';
-	unique_name += typeid(T).name();
-	
-	return unique_name;
-}
-
 ///////////////////////////// LongPrettyPrinter ///////////////////////////////
 
 template <typename T>
@@ -92,6 +81,9 @@ const Access Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::ACCESS;
 
 template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
 const unsigned int Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::BITWIDTH_MINUS_1;
+
+template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
+const unsigned int Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::ID = FieldID();
 
 template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
 template <typename T> inline T Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::GetMask()
@@ -140,19 +132,19 @@ inline void Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::Set(T& storage, const 
 template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
 inline void Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::SetName(const std::string& name)
 {
-	PropertyRegistry::SetStringProperty(GetNameKey(), name);
+	PropertyRegistry::SetStringProperty(PropertyRegistry::EL_FIELD, PropertyRegistry::STR_PROP_NAME, ID, name);
 }
 
 template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
 inline void Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::SetDisplayName(const std::string& disp_name)
 {
-	PropertyRegistry::SetStringProperty(GetDisplayNameKey(), disp_name);
+	PropertyRegistry::SetStringProperty(PropertyRegistry::EL_FIELD, PropertyRegistry::STR_PROP_DISP_NAME, ID, disp_name);
 }
 
 template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
 inline void Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::SetDescription(const std::string& desc)
 {
-	PropertyRegistry::SetStringProperty(GetDescriptionKey(), desc);
+	PropertyRegistry::SetStringProperty(PropertyRegistry::EL_FIELD, PropertyRegistry::STR_PROP_DESC, ID, desc);
 }
 
 template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
@@ -212,13 +204,13 @@ inline bool Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::IsWriteOnlyAndOnce()
 template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
 inline const std::string& Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::GetName()
 {
-	return PropertyRegistry::GetStringProperty(GetNameKey());
+	return PropertyRegistry::GetStringProperty(PropertyRegistry::EL_FIELD, PropertyRegistry::STR_PROP_NAME, ID);
 }
 
 template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
 inline const std::string& Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::GetDisplayName()
 {
-	const std::string& display_name = PropertyRegistry::GetStringProperty(GetDisplayNameKey());
+	const std::string& display_name = PropertyRegistry::GetStringProperty(PropertyRegistry::EL_FIELD, PropertyRegistry::STR_PROP_DISP_NAME, ID);
 	if(!display_name.empty()) return display_name;
 	return GetName();
 }
@@ -226,7 +218,7 @@ inline const std::string& Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::GetDispl
 template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
 inline const std::string& Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::GetDescription()
 {
-	return PropertyRegistry::GetStringProperty(GetDescriptionKey());
+	return PropertyRegistry::GetStringProperty(PropertyRegistry::EL_FIELD, PropertyRegistry::STR_PROP_DESC, ID);
 }
 
 template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
@@ -261,30 +253,6 @@ inline void Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::LongPrettyPrint(std::o
 	LongPrettyPrinter::PrintValue(os, Get<T>(storage));
 	LongPrettyPrinter::PrintAccess(os, _ACCESS);
 	LongPrettyPrinter::PrintDescription(os, GetDescription());
-}
-
-template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
-inline const std::string& Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::GetNameKey()
-{
-	static std::string unique_key = PropertyRegistry::GenUniqueTypeName<FIELD>(std::string("Field_name"));
-	if(!unique_key.empty()) return unique_key;
-	return unique_key;
-}
-
-template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
-inline const std::string& Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::GetDisplayNameKey()
-{
-	static std::string unique_key = PropertyRegistry::GenUniqueTypeName<FIELD>(std::string("Field_display_name"));
-	if(!unique_key.empty()) return unique_key;
-	return unique_key;
-}
-
-template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
-inline const std::string& Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::GetDescriptionKey()
-{
-	static std::string unique_key = PropertyRegistry::GenUniqueTypeName<FIELD>(std::string("Field_description"));
-	if(!unique_key.empty()) return unique_key;
-	return unique_key;
 }
 
 /////////////////////////////// NullField //////////////////////////////////
@@ -1031,19 +999,19 @@ void Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::LongPrettyPrint(std::ost
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 void Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::SetName(const std::string& name)
 {
-	PropertyRegistry::SetStringProperty(GetNameKey(), name);
+	PropertyRegistry::SetStringProperty(PropertyRegistry::EL_REGISTER, PropertyRegistry::STR_PROP_NAME, (intptr_t) this, name);
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 void Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::SetDisplayName(const std::string& disp_name)
 {
-	PropertyRegistry::SetStringProperty(GetDisplayNameKey(), disp_name);
+	PropertyRegistry::SetStringProperty(PropertyRegistry::EL_REGISTER, PropertyRegistry::STR_PROP_DISP_NAME, (intptr_t) this, disp_name);
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 void Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::SetDescription(const std::string& desc)
 {
-	PropertyRegistry::SetStringProperty(GetDescriptionKey(), desc);
+	PropertyRegistry::SetStringProperty(PropertyRegistry::EL_REGISTER, PropertyRegistry::STR_PROP_DESC, (intptr_t) this, desc);
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
@@ -1097,13 +1065,13 @@ bool Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::IsWriteOnlyAndOnce() con
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 const std::string& Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetName() const
 {
-	return PropertyRegistry::GetStringProperty(GetNameKey());
+	return PropertyRegistry::GetStringProperty(PropertyRegistry::EL_REGISTER, PropertyRegistry::STR_PROP_NAME, (intptr_t) this);
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 const std::string& Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetDisplayName() const
 {
-	const std::string& display_name = PropertyRegistry::GetStringProperty(GetDisplayNameKey());
+	const std::string& display_name = PropertyRegistry::GetStringProperty(PropertyRegistry::EL_REGISTER, PropertyRegistry::STR_PROP_DISP_NAME, (intptr_t) this);
 	if(!display_name.empty()) return display_name;
 	return GetName();
 }
@@ -1111,7 +1079,7 @@ const std::string& Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetDisplay
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 const std::string& Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetDescription() const
 {
-	return PropertyRegistry::GetStringProperty(GetDescriptionKey());
+	return PropertyRegistry::GetStringProperty(PropertyRegistry::EL_REGISTER, PropertyRegistry::STR_PROP_DESC, (intptr_t) this);
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
@@ -1131,24 +1099,6 @@ unisim::service::interfaces::Register *Register<REGISTER, _SIZE, _ACCESS, REGIST
 	};
 	
 	return new RegisterInterface(this);
-}
-
-template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
-inline const std::string Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetNameKey() const
-{
-	return PropertyRegistry::GenUniqueInstanceName(this, "Register_name");
-}
-
-template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
-inline const std::string Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetDisplayNameKey() const
-{
-	return PropertyRegistry::GenUniqueInstanceName(this, "Register_display_name");
-}
-
-template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
-inline const std::string Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetDescriptionKey() const
-{
-	return PropertyRegistry::GenUniqueInstanceName(this, "Register_description");
 }
 
 /////////////////////////////// RegisterFile<> ////////////////////////////////
@@ -1223,30 +1173,6 @@ template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE>
 const std::string& RegisterFile<REGISTER, _DIM, REGISTER_FILE_BASE>::GetDescription() const
 {
 	return PropertyRegistry::GetStringProperty(GetDescriptionKey());
-}
-
-template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE>
-inline const std::string& RegisterFile<REGISTER, _DIM, REGISTER_FILE_BASE>::GetNameKey() const
-{
-	static std::string unique_key = PropertyRegistry::GenUniqueInstanceName(this, "RegisterFile_name");
-	if(!unique_key.empty()) return unique_key;
-	return unique_key;
-}
-
-template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE>
-inline const std::string& RegisterFile<REGISTER, _DIM, REGISTER_FILE_BASE>::GetDisplayNameKey() const
-{
-	static std::string unique_key = PropertyRegistry::GenUniqueInstanceName(this, "RegisterFile_display_name");
-	if(!unique_key.empty()) return unique_key;
-	return unique_key;
-}
-
-template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE>
-inline const std::string& RegisterFile<REGISTER, _DIM, REGISTER_FILE_BASE>::GetDescriptionKey() const
-{
-	static std::string unique_key = PropertyRegistry::GenUniqueInstanceName(this, "RegisterFile_description");
-	if(!unique_key.empty()) return unique_key;
-	return unique_key;
 }
 
 /////////////////////////// AddressableRegister<> /////////////////////////////
