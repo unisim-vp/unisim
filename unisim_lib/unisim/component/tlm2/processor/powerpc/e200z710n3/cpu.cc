@@ -310,6 +310,7 @@ void CPU::P_RESET_B_Process()
 	if(p_reset_b.posedge())
 	{
 		ThrowException<SystemResetInterrupt::Reset>();
+		hid0.Set<HID0::NHR>(0);
 		external_event.notify(sc_core::SC_ZERO_TIME);
 		start_event.notify();
 		SetResetAddress(sc_dt::sc_uint<30>(p_rstbase).to_uint64() << 2);

@@ -82,9 +82,6 @@ public:
 	
 	virtual void InterruptAcknowledge() {}
 
-// 	void SetDataMemoryBaseAddress(ADDRESS _dmem_base_addr) { dmem_base_addr = _dmem_base_addr; }
-// 	void SetInstructionMemoryBaseAddress(ADDRESS _imem_base_addr) { imem_base_addr = _imem_base_addr; }
-	
 	////////////////////////// Machine State Register /////////////////////////
 	
 	struct MSR : SuperCPU::MSR
@@ -103,6 +100,23 @@ public:
 	};
 	
 	////////////////////////// Special Purpose Registers //////////////////////
+	
+	// Hardware Implementation Dependent Register 0
+	struct HID0 : SuperCPU::HID0
+	{
+		typedef SuperCPU::HID0 Super;
+		
+		HID0(CPU *_cpu) : Super(_cpu) {}
+		HID0(CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		void Effect()
+		{
+			cpu->UpdateExceptionEnable();
+		}
+		
+		HID0& operator = (const uint32_t& value) { this->Super::operator = (value); Effect(); return *this; }
+		virtual bool MoveTo(uint32_t value) { if(!this->Super::MoveTo(value)) return false; Effect(); return true; }
+	};
 	
 	// L1 Cache Control and Status Register 0
 	struct L1CSR0 : SuperCPU::L1CSR0
@@ -169,7 +183,7 @@ public:
 		
 		virtual void Reset()
 		{
-			Set<CARCH>(0);   // The caches support partitioning of way availability for I/O accesses
+			Set<CARCH>(0);   // The cache architecture is Harvard
 			Set<CWPA>(1);    // Cache Way Partionning Available
 			Set<DCFAHA>(0);  // The data cache does not support Flush All in Hardware
 			Set<DCFISWA>(1); // The data cache supports invalidation by Set and Way via L1FINV0
@@ -177,8 +191,8 @@ public:
 			Set<DCREPL>(3);  // The data cache implements a FIFO replacement policy
 			Set<DCLA>(0);    // The data cache does not implement the line locking APU
 			Set<DCECA>(1);   // The data cache implements error checking
-			Set<DCNWAY>(1);  // The data cache is 2-way set-associative
-			Set<DCSIZE>(4);  // The size of the data cache is 4 KB
+			Set<DCNWAY>(L1D::ASSOCIATIVITY - 1);  // The data cache is 2-way set-associative
+			Set<DCSIZE>(L1D::SIZE / 1024);        // The size of the data cache is 4 KB
 		}
 	};
 	
@@ -197,8 +211,8 @@ public:
 			Set<ICREPL>(3);   // The instruction cache implements a FIFO replacement policy
 			Set<ICLA>(0);     // The instruction cache does not implement the line locking APU
 			Set<ICECA>(1);    // The instruction cache implements error checking
-			Set<ICNWAY>(1);   // The instruction cache is 2-way set-associative
-			Set<ICSIZE>(2);   // The size of the instruction cache is 16 KB
+			Set<ICNWAY>(L1I::ASSOCIATIVITY - 1);   // The instruction cache is 2-way set-associative
+			Set<ICSIZE>(L1I::SIZE / 1024);         // The size of the instruction cache is 16 KB
 		}
 	};
 	
@@ -272,7 +286,7 @@ public:
 		
 		virtual void Reset()
 		{
-			Set<DMEM_BASE_ADDR>(DMEM_BASE_ADDR::Get<ADDRESS>(cpu->cur_dmem_base_addr));
+			Set<DMEM_BASE_ADDR>(DMEM_BASE_ADDR::Get(cpu->cur_dmem_base_addr));
 			Set<DECUA>(1);
 			Set<DECA>(1);
 			Set<DMSIZE>(cpu->dmem_size / 4096);
@@ -334,7 +348,7 @@ public:
 		
 		virtual void Reset()
 		{
-			Set<IMEM_BASE_ADDR>(IMEM_BASE_ADDR::Get<ADDRESS>(cpu->cur_imem_base_addr));
+			Set<IMEM_BASE_ADDR>(IMEM_BASE_ADDR::Get(cpu->cur_imem_base_addr));
 			Set<IECUA>(1);
 			Set<IECA>(1);
 			Set<IMSIZE>(cpu->imem_size / 4096);
@@ -384,28 +398,29 @@ public:
 	//////////////////////////////// Interrupts ///////////////////////////////
 	
 	// Priorities:
-	//  0   SystemResetInterrupt                 Reset                             
-	//  1   MachineCheckInterrupt                NMI                               
-	//  2   MachineCheckInterrupt                ErrorReport                       
-	//  3   MachineCheckInterrupt                AsynchronousMachineCheck          
-	//  4   ExternalInputInterrupt               ExternalInput                     
-	//  5   CriticalInputInterrupt               CriticalInput                     
-	//  6   DebugInterrupt                       AsynchronousDebugEvent            
-	//  7   PerformanceMonitorInterrupt          PerformanceCounterOverflow        
-	//  8   PerformanceMonitorInterrupt          DebugEvent                        
-	//  9   InstructionStorageInterrupt          AccessControl                     
-	// 10   ProgramInterrupt                     IllegalInstruction                
-	// 11   ProgramInterrupt                     PrivilegeViolation                
-	// 12   ProgramInterrupt                     Trap                              
-	// 13   ProgramInterrupt                     UnimplementedInstruction          
-	// 14   SystemCallInterrupt                  SystemCall                        
-	// 15   DataStorageInterrupt                 AccessControl                     
-	// 16   AlignmentInterrupt                   UnalignedLoadStoreMultiple        
-	// 17   AlignmentInterrupt                   UnalignedLoadLinkStoreConditional 
-	// 18   AlignmentInterrupt                   WriteThroughDCBZ                  
-	// 19   EmbeddedFloatingPointDataInterrupt   EmbeddedFloatingPointData         
-	// 20   EmbeddedFloatingPointRoundInterrupt  EmbeddedFloatingPointRound        
-	// 21   DebugInterrupt                       SynchronousDebugEvent             
+	//  0   SystemResetInterrupt                 Reset
+	//  1   MachineCheckInterrupt                NMI
+	//  2   MachineCheckInterrupt                ErrorReport
+	//  3   MachineCheckInterrupt                MCP
+	//  4   MachineCheckInterrupt                AsynchronousMachineCheck
+	//  5   ExternalInputInterrupt               ExternalInput
+	//  6   CriticalInputInterrupt               CriticalInput
+	//  7   DebugInterrupt                       AsynchronousDebugEvent
+	//  8   PerformanceMonitorInterrupt          PerformanceCounterOverflow
+	//  9   PerformanceMonitorInterrupt          DebugEvent
+	// 10   InstructionStorageInterrupt          AccessControl
+	// 11   ProgramInterrupt                     IllegalInstruction
+	// 12   ProgramInterrupt                     PrivilegeViolation
+	// 13   ProgramInterrupt                     Trap
+	// 14   ProgramInterrupt                     UnimplementedInstruction
+	// 15   SystemCallInterrupt                  SystemCall
+	// 16   DataStorageInterrupt                 AccessControl
+	// 17   AlignmentInterrupt                   UnalignedLoadStoreMultiple
+	// 18   AlignmentInterrupt                   UnalignedLoadLinkStoreConditional
+	// 19   AlignmentInterrupt                   WriteThroughDCBZ
+	// 20   EmbeddedFloatingPointDataInterrupt   EmbeddedFloatingPointData
+	// 21   EmbeddedFloatingPointRoundInterrupt  EmbeddedFloatingPointRound
+	// 22   DebugInterrupt                       SynchronousDebugEvent
 	
 	struct SystemResetInterrupt : Interrupt<SystemResetInterrupt, 0x00 /* p_rstbase[0:29] */>
 	{
@@ -433,7 +448,7 @@ public:
 
 	struct CriticalInputInterrupt : Interrupt<CriticalInputInterrupt, 0x00>
 	{
-		struct CriticalInput                        : Exception<CriticalInputInterrupt,5> { static const char *GetName() { return "Critical Input Interrupt/Critical Input Exception"; } };             //  p_critint_b is asserted and MSR[CE] = 1
+		struct CriticalInput                        : Exception<CriticalInputInterrupt,6> { static const char *GetName() { return "Critical Input Interrupt/Critical Input Exception"; } };             //  p_critint_b is asserted and MSR[CE] = 1
 		
 		typedef ExceptionSet<CriticalInput> ALL;
 		
@@ -483,7 +498,8 @@ public:
 
 		struct NMI                                  : Exception<MachineCheckInterrupt,1> { static const char *GetName() { return "Machine Check Interrupt/NMI Exception"; } };               // Non-Maskable Interrupt: p_nmi_b transitions from negated to asserted.
 		struct ErrorReport                          : Exception<MachineCheckInterrupt,2> { static const char *GetName() { return "Machine Check Interrupt/Error Report Exception"; } };      // Non-Maskable Interrupt: Error report
-		struct AsynchronousMachineCheck             : Exception<MachineCheckInterrupt,3> { static const char *GetName() { return "Machine Check Interrupt/Asynchronous Machine Check Exception"; } };   // Maskable with MSR[ME]
+		struct MCP                                  : Exception<MachineCheckInterrupt,3> { static const char *GetName() { return "Machine Check Interrupt/MCP"; } };                         // Maskable with MSR[ME] and HID0[EMCP]: p_mcp_b transition from negated to asserted
+		struct AsynchronousMachineCheck             : Exception<MachineCheckInterrupt,4> { static const char *GetName() { return "Machine Check Interrupt/Asynchronous Machine Check Exception"; } };   // Maskable with MSR[ME]
 		
 		typedef ExceptionSet<NMI, ErrorReport, AsynchronousMachineCheck> ALL;
 		
@@ -511,7 +527,7 @@ public:
 	
 	struct DataStorageInterrupt : InterruptWithAddress<DataStorageInterrupt, 0x20>
 	{
-		struct AccessControl                        : Exception<DataStorageInterrupt,15> { static const char *GetName() { return "Data Storage Interrupt/Access Control Exception"; } };               // Access control
+		struct AccessControl                        : Exception<DataStorageInterrupt,16> { static const char *GetName() { return "Data Storage Interrupt/Access Control Exception"; } };               // Access control
 		
 		typedef ExceptionSet<AccessControl> ALL;
 		
@@ -531,7 +547,7 @@ public:
 
 	struct InstructionStorageInterrupt : Interrupt<InstructionStorageInterrupt, 0x30>
 	{
-		struct AccessControl                        : Exception<InstructionStorageInterrupt,9> { static const char *GetName() { return "Instruction Storage Interrupt/Access Control Exception"; } };        // Access control
+		struct AccessControl                        : Exception<InstructionStorageInterrupt,10> { static const char *GetName() { return "Instruction Storage Interrupt/Access Control Exception"; } };        // Access control
 		
 		typedef ExceptionSet<AccessControl> ALL;
 		
@@ -552,7 +568,7 @@ public:
 
 	struct ExternalInputInterrupt : Interrupt<ExternalInputInterrupt, 0x40>
 	{
-		struct ExternalInput                        : Exception<ExternalInputInterrupt,4> { static const char *GetName() { return "External Input Interrupt/External Input Exception"; } };             // Interrupt Controller interrupt and MSR[EE] = 1
+		struct ExternalInput                        : Exception<ExternalInputInterrupt,5> { static const char *GetName() { return "External Input Interrupt/External Input Exception"; } };             // Interrupt Controller interrupt and MSR[EE] = 1
 		
 		typedef ExceptionSet<ExternalInput> ALL;
 		
@@ -572,9 +588,9 @@ public:
 
 	struct AlignmentInterrupt : InterruptWithAddress<AlignmentInterrupt, 0x50>
 	{
-		struct UnalignedLoadStoreMultiple           : Exception<AlignmentInterrupt,16> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load/Store Multiple Exception"; } };                 // lmw, stmw not word aligned
-		struct UnalignedLoadLinkStoreConditional    : Exception<AlignmentInterrupt,17> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load Link/Store Conditional Exception"; } };                 // lwarx or stwcx. not word aligned, lharx or sthcx. not halfword aligned
-		struct WriteThroughDCBZ                     : Exception<AlignmentInterrupt,18> { static const char *GetName() { return "Alignment Interrupt/Write Through DCBZ Exception"; } };                 // dcbz
+		struct UnalignedLoadStoreMultiple           : Exception<AlignmentInterrupt,17> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load/Store Multiple Exception"; } };                 // lmw, stmw not word aligned
+		struct UnalignedLoadLinkStoreConditional    : Exception<AlignmentInterrupt,18> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load Link/Store Conditional Exception"; } };                 // lwarx or stwcx. not word aligned, lharx or sthcx. not halfword aligned
+		struct WriteThroughDCBZ                     : Exception<AlignmentInterrupt,19> { static const char *GetName() { return "Alignment Interrupt/Write Through DCBZ Exception"; } };                 // dcbz
 		
 		typedef ExceptionSet<UnalignedLoadStoreMultiple, UnalignedLoadLinkStoreConditional, WriteThroughDCBZ> ALL;
 		
@@ -594,10 +610,10 @@ public:
 	
 	struct ProgramInterrupt : Interrupt<ProgramInterrupt, 0x60>
 	{
-		struct IllegalInstruction                   : Exception<ProgramInterrupt,10>  { static const char *GetName() { return "Program Interrupt/Illegal Instruction Exception"; } };                   // illegal instruction
-		struct PrivilegeViolation                   : Exception<ProgramInterrupt,11>  { static const char *GetName() { return "Program Interrupt/Privilege Violation Exception"; } };                   // privilege violation
-		struct Trap                                 : Exception<ProgramInterrupt,12> { static const char *GetName() { return "Program Interrupt/Trap Exception"; } };                   // trap instruction
-		struct UnimplementedInstruction             : Exception<ProgramInterrupt,13> { static const char *GetName() { return "Program Interrupt/Unimplemented Instruction Exception"; } };                   // unimplemented instruction
+		struct IllegalInstruction                   : Exception<ProgramInterrupt,11>  { static const char *GetName() { return "Program Interrupt/Illegal Instruction Exception"; } };                   // illegal instruction
+		struct PrivilegeViolation                   : Exception<ProgramInterrupt,12>  { static const char *GetName() { return "Program Interrupt/Privilege Violation Exception"; } };                   // privilege violation
+		struct Trap                                 : Exception<ProgramInterrupt,13> { static const char *GetName() { return "Program Interrupt/Trap Exception"; } };                   // trap instruction
+		struct UnimplementedInstruction             : Exception<ProgramInterrupt,14> { static const char *GetName() { return "Program Interrupt/Unimplemented Instruction Exception"; } };                   // unimplemented instruction
 		
 		typedef ExceptionSet<IllegalInstruction, PrivilegeViolation, Trap> ALL;
 		
@@ -617,8 +633,8 @@ public:
 
 	struct PerformanceMonitorInterrupt : Interrupt<PerformanceMonitorInterrupt, 0x70>
 	{
-		struct PerformanceCounterOverflow           : Exception<PerformanceMonitorInterrupt,7> { static const char *GetName() { return "Performance Monitor Interrupt/Performance Counter Overflow Exception"; } };        // PMC register overflow
-		struct DebugEvent                           : Exception<PerformanceMonitorInterrupt,8> { static const char *GetName() { return "Performance Monitor Interrupt/Debug Event Exception"; } };        // Event w/PMGC0[UDI]=0
+		struct PerformanceCounterOverflow           : Exception<PerformanceMonitorInterrupt,8> { static const char *GetName() { return "Performance Monitor Interrupt/Performance Counter Overflow Exception"; } };        // PMC register overflow
+		struct DebugEvent                           : Exception<PerformanceMonitorInterrupt,9> { static const char *GetName() { return "Performance Monitor Interrupt/Debug Event Exception"; } };        // Event w/PMGC0[UDI]=0
 		
 		typedef ExceptionSet<PerformanceCounterOverflow, DebugEvent> ALL;
 		
@@ -637,7 +653,7 @@ public:
 	
 	struct SystemCallInterrupt : Interrupt<SystemCallInterrupt, 0x80>
 	{
-		struct SystemCall                           : Exception<SystemCallInterrupt,14> { static const char *GetName() { return "System Call Interrupt/System Call Exception"; } };                // Execution of the System Call (se_sc) instruction
+		struct SystemCall                           : Exception<SystemCallInterrupt,15> { static const char *GetName() { return "System Call Interrupt/System Call Exception"; } };                // Execution of the System Call (se_sc) instruction
 		
 		typedef ExceptionSet<SystemCall> ALL;
 		
@@ -696,8 +712,8 @@ public:
 			DBG_IMPRECISE_DEBUG_EVENT                = 0x02000000  // Sync
 		};
 		
-		struct AsynchronousDebugEvent                   : Exception<DebugInterrupt,6> { static const char *GetName() { return "Debug Interrupt/Asynchronous Debug Event Exception"; } };
-		struct SynchronousDebugEvent                    : Exception<DebugInterrupt,21> { static const char *GetName() { return "Debug Interrupt/Synchronous Debug Event Exception"; } };
+		struct AsynchronousDebugEvent                   : Exception<DebugInterrupt,7> { static const char *GetName() { return "Debug Interrupt/Asynchronous Debug Event Exception"; } };
+		struct SynchronousDebugEvent                    : Exception<DebugInterrupt,22> { static const char *GetName() { return "Debug Interrupt/Synchronous Debug Event Exception"; } };
 		
 		typedef ExceptionSet< AsynchronousDebugEvent, SynchronousDebugEvent > ALL;
 		
@@ -724,7 +740,7 @@ public:
 
 	struct EmbeddedFloatingPointDataInterrupt : Interrupt<EmbeddedFloatingPointDataInterrupt, 0xa0>
 	{
-		struct EmbeddedFloatingPointData            : Exception<EmbeddedFloatingPointDataInterrupt,19> { static const char *GetName() { return "Embedded Floating-Point Data Interrupt/Embedded Floating-Point Data Exception"; } }; // Embedded Floating-point Data Exception
+		struct EmbeddedFloatingPointData            : Exception<EmbeddedFloatingPointDataInterrupt,20> { static const char *GetName() { return "Embedded Floating-Point Data Interrupt/Embedded Floating-Point Data Exception"; } }; // Embedded Floating-point Data Exception
 		
 		typedef ExceptionSet<EmbeddedFloatingPointData> ALL;
 		
@@ -744,7 +760,7 @@ public:
 	
 	struct EmbeddedFloatingPointRoundInterrupt : Interrupt<EmbeddedFloatingPointRoundInterrupt, 0xb0>
 	{
-		struct EmbeddedFloatingPointRound           : Exception<EmbeddedFloatingPointRoundInterrupt,20> { static const char *GetName() { return "Embedded Floating-Point Round Interrupt/Embedded Floating-Point Round Exception"; } };// Embedded Floating-point Round Exception
+		struct EmbeddedFloatingPointRound           : Exception<EmbeddedFloatingPointRoundInterrupt,21> { static const char *GetName() { return "Embedded Floating-Point Round Interrupt/Embedded Floating-Point Round Exception"; } };// Embedded Floating-point Round Exception
 		
 		typedef ExceptionSet<EmbeddedFloatingPointRound> ALL;
 		
@@ -954,7 +970,7 @@ public:
 	bool DebugDataStore(ADDRESS addr, const void *buffer, unsigned int size);
 	bool DebugInstructionFetch(ADDRESS addr, void *buffer, unsigned int size);
 	
-private:
+protected:
 	////////////////////////// Run-time parameters ////////////////////////////
 	
 	ADDRESS imem_base_addr;
@@ -992,9 +1008,6 @@ private:
 	
 	bool verbose_instruction_bus_read;
 	unisim::kernel::service::Parameter<bool> param_verbose_instruction_bus_read;
-	
-//	ADDRESS dmem_base_addr;
-//	unisim::kernel::service::Parameter<ADDRESS> param_dmem_base_addr;
 	
 	///////////////////////////// Interrupts //////////////////////////////////
 	

@@ -692,9 +692,22 @@ void CPU::UpdateExceptionEnable()
 	}
 	
 	if(msr.Get<MSR::ME>())
+	{
 		EnableInterrupt<MachineCheckInterrupt::AsynchronousMachineCheck>();
+	}
 	else
+	{
 		DisableInterrupt<MachineCheckInterrupt::AsynchronousMachineCheck>();
+	}
+
+	if(msr.Get<MSR::ME>() && hid0.Get<HID0::EMCP>())
+	{
+		EnableInterrupt<MachineCheckInterrupt::MCP>();
+	}
+	else
+	{
+		DisableInterrupt<MachineCheckInterrupt::MCP>();
+	}
 	
 	if(msr.Get<MSR::DE>())
 		EnableInterrupt<DebugInterrupt>();
