@@ -46,7 +46,7 @@ tw.execute = {
 	if((uint32_t) a > (uint32_t) b && (to & 1)) trap = 1;
 	if(unlikely(trap))
 	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_TRAP);
+		cpu->ThrowException<CPU::ProgramInterrupt::Trap>();
 		return false;
 	}
 	return true;

@@ -34,7 +34,7 @@
 
 op dcbf(31[6]:?[5]:ra[5]:rb[5]:86[10]:?[1])
 dcbf.execute = {
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
 	return cpu->Dcbf(ea);
 }

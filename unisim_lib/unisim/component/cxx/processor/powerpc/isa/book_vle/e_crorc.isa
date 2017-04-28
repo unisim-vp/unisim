@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 impl {
@@ -37,8 +38,20 @@ impl {
 }
 
 /* Condition Register OR with Complement */
-op e_crorc(31[6]:bt[5]:ba[5]:bb[5]:417[10]:0[1]);
+op e_crorc(31[6]:crbd[5]:crba[5]:crbb[5]:417[10]:0[1]);
+
+e_crorc.execute = {
+	uint32_t a, b, c, d, m;
+	CR& cr = cpu->GetCR();
+	c = cr;
+	a = c << crba;
+	b = c << crbb;
+	d = (a | ~b) >> crbd;
+	m = 0x80000000UL >> crbd;
+	cr = (c & m) | d;
+	return true;
+}
 
 e_crorc.disasm = {
-	os << "e_crorc " << CondPrint(bt) << ',' << CondPrint(ba) << ',' << CondPrint(bb);
+	os << "e_crorc " << CondPrint(crbd) << ',' << CondPrint(crba) << ',' << CondPrint(crbb);
 }

@@ -35,15 +35,15 @@
 op lha(42[6]:rd[5]:ra[5]:sext<32>d[16])
 lha.execute = {
 	// compute the effective address
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + d : d);
 	// do the memory access
 	return cpu->SInt16Load(rd, ea); // 16-bit load/no byte reverse/sign extend
 }
 lha.disasm = {
 	os << "lha r" << (unsigned int) rd << ", " << d << "(r" << (unsigned int) ra << ")";
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
+	if(cpu && (cpu->GetCIA() == this->GetAddr()))
 	{
-		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
+		ADDRESS ea = (ra ? cpu->GetGPR(ra) + d : d);
 		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
 	}
 }

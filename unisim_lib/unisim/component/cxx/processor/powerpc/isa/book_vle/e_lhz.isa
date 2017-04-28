@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 impl {
@@ -37,8 +38,15 @@ impl {
 }
 
 /* Load Halfword and Zero */
-op e_lhz(22[6]:rt[5]:ra[5]:sext d[16]);
+op e_lhz(22[6]:rd[5]:ra[5]:sext<32> d[16]);
+
+e_lhz.execute = {
+	// compute the effective address
+	ADDRESS ea = ra ? (cpu->GetGPR(ra) + d) : d;
+	// do the memory access
+	return cpu->Int16Load(rd, ea); // 16-bit load/no byte reverse/no sign extend
+}
 
 e_lhz.disasm = {
-	os << "e_lhz " << GPRPrint(rt) << ',' << EAPrint(d,ra);
+	os << "e_lhz " << GPRPrint(rd) << ',' << EAPrint(d,ra);
 }

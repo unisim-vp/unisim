@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 impl {
@@ -37,8 +38,21 @@ impl {
 }
 
 /* Add Immediate */
-op e_add16i(7[6]:rt[5]:ra[5]:sext si[16]);
+op e_add16i(7[6]:rd[5]:ra[5]:sext<32> si[16]);
+
+e_add16i.execute = {
+	// Read the input operands
+	int32_t a = cpu->GetGPR(ra);
+
+	// Compute the result
+	int32_t result = a + si;
+
+	// Write back the result
+	cpu->SetGPR(rd, result);
+	
+	return true;
+}
 
 e_add16i.disasm = {
-  os << "e_add16i " << GPRPrint(rt) << ',' << GPRPrint(ra) << ',' << si;
+  os << "e_add16i " << GPRPrint(rd) << ',' << GPRPrint(ra) << ',' << si;
 }

@@ -39,6 +39,7 @@
 /*** Convenience disassembly methods ***/
 /***************************************/
 
+#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 #include <iostream>
 
 namespace unisim {
@@ -46,69 +47,68 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace powerpc {
-  
-  struct DASMPrint
-  {
-    virtual void Print( std::ostream& sink ) const = 0;
-    friend std::ostream& operator << (std::ostream& sink, DASMPrint const& dap)
-    {
-      dap.Print(sink);
-      return sink;
-    }
-  };
-  
-  struct GPRPrint : public DASMPrint
-  {
-    GPRPrint(unsigned _reg) : reg(_reg) {} unsigned reg;
-    void Print( std::ostream& sink ) const { sink << "r" << std::dec << reg; }
-  };
-  
-  struct HexPrint : public DASMPrint
-  {
-    HexPrint(uint32_t _num) : num(_num) {} unsigned num;
-    void Print( std::ostream& sink ) const { sink << "0x" << std::hex << num; }
-  };
-  
-  struct CRPrint : public DASMPrint
-  {
-    CRPrint(unsigned _reg) : reg(_reg) {} unsigned reg;
-    void Print( std::ostream& sink ) const { sink << "cr" << std::dec << reg; }
-  };
-  
-  struct CondPrint : public DASMPrint
-  {
-    CondPrint(unsigned _crb, bool _expect = true) : crb(_crb), expect(_expect) {} unsigned crb; bool expect;
-    void Print( std::ostream& sink ) const
-    {
-      char const* condnames[] = {"ge","le","ne","ns","lt","gt","eq","so"};
-      char const* condname = condnames[(crb&3)|(expect?4:0)];
-      if (crb >= 4)
-        sink << "4*" << CRPrint(crb>>2) << '+';
-      sink << condname;
-    }
-  };
-  
-  struct EAPrint : public DASMPrint
-  {
-    EAPrint(int32_t _idx, unsigned _reg) : idx(_idx), reg(_reg) {} int32_t idx; unsigned reg;
-    void Print( std::ostream& sink ) const
-    {
-      sink << std::dec << idx << '(';
-      if (reg)
-        sink << GPRPrint(reg);
-      else
-        sink << '0';
-      sink << ')';
-    }
-  };
-  
-  template <typename T>
-  int32_t scaled_immediate( T s11 )
-  {
-    int scale = (s11 >> 5) & 24;
-    int32_t msk = (s11 << 21) >> 31;
-    return (((s11 ^ msk) & 255) << scale) ^ msk;
-  }
+
+struct DASMPrint
+{
+	virtual void Print( std::ostream& sink ) const = 0;
+	friend std::ostream& operator << (std::ostream& sink, DASMPrint const& dap)
+	{
+		dap.Print(sink);
+		return sink;
+	}
+};
+
+struct GPRPrint : public DASMPrint
+{
+	GPRPrint(unsigned _reg) : reg(_reg) {} unsigned reg;
+	void Print( std::ostream& sink ) const { sink << "r" << std::dec << reg; }
+};
+
+struct HexPrint : public DASMPrint
+{
+	HexPrint(uint32_t _num) : num(_num) {} unsigned num;
+	void Print( std::ostream& sink ) const { sink << "0x" << std::hex << num; }
+};
+
+struct CRPrint : public DASMPrint
+{
+	CRPrint(unsigned _reg) : reg(_reg) {} unsigned reg;
+	void Print( std::ostream& sink ) const { sink << "cr" << std::dec << reg; }
+};
+
+struct CondPrint : public DASMPrint
+{
+	CondPrint(unsigned _crb, bool _expect = true) : crb(_crb), expect(_expect) {} unsigned crb; bool expect;
+	void Print( std::ostream& sink ) const
+	{
+		char const* condnames[] = {"ge","le","ne","ns","lt","gt","eq","so"};
+		char const* condname = condnames[(crb&3)|(expect?4:0)];
+		if (crb >= 4)
+		sink << "4*" << CRPrint(crb>>2) << '+';
+		sink << condname;
+	}
+};
+
+struct EAPrint : public DASMPrint
+{
+	EAPrint(int32_t _idx, unsigned _reg) : idx(_idx), reg(_reg) {} int32_t idx; unsigned reg;
+	void Print( std::ostream& sink ) const
+	{
+		sink << std::dec << idx << '(';
+		if (reg)
+		sink << GPRPrint(reg);
+		else
+		sink << '0';
+		sink << ')';
+	}
+};
+
+inline uint32_t scaled_immediate( uint32_t s11 )
+{
+	int scale = (s11 >> 5) & 24;
+	uint32_t msk = (int32_t) (s11 << 21) >> 31;
+	return (((s11 ^ msk) & 255) << scale) ^ msk;
+}
   
 } /* end of namespace powerpc */
 } /* end of namespace processor */

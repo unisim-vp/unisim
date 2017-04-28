@@ -35,7 +35,7 @@
 /* Vector compare equal halfword (zvcmpeqh) */
 op zvcmpeqh(0b000100[6]:crd[3]:0b00[2]:ra[5]:rb[5]:0b01000110010[11])
 zvcmpeqh.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zvcmpeqh.disasm = {

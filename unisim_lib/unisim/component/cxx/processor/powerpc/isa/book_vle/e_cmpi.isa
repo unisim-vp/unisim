@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 impl {
@@ -37,9 +38,54 @@ impl {
 }
 
 /* Compare Scaled Immediate Word */
-op e_cmpi(6[6]:0[3]:bf[2]:ra[5]:21[5]:s11[11]);
+op e_cmpi(6[6]:0[3]:crd[2]:ra[5]:21[5]:s11[11]);
 e_cmpi.var sci8 : {int32_t} = {scaled_immediate(s11)};
 
-e_cmpi.disasm = {
-	os << "e_cmpi " << CRPrint(bf) << ',' << GPRPrint(ra) << ',' << sci8;
+e_cmpi.execute = {
+	// Read signed input operands
+	int32_t a = cpu->GetGPR(ra);
+	int32_t b = sci8;
+	
+	CR& cr = cpu->GetCR();
+	XER& xer = cpu->GetXER();
+	
+	// Generate CR[crd] bit field
+	switch(crd)
+	{
+		case 0:
+			cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
+			cr.Set<CR::CR0::LT>(a < b);
+			cr.Set<CR::CR0::GT>(a > b);
+			cr.Set<CR::CR0::EQ>(a == b);
+			break;
+		case 1:
+			cr.Set<CR::CR1::SO>(xer.Get<XER::SO>());
+			cr.Set<CR::CR1::LT>(a < b);
+			cr.Set<CR::CR1::GT>(a > b);
+			cr.Set<CR::CR1::EQ>(a == b);
+			break;
+		case 2:
+			cr.Set<CR::CR2::SO>(xer.Get<XER::SO>());
+			cr.Set<CR::CR2::LT>(a < b);
+			cr.Set<CR::CR2::GT>(a > b);
+			cr.Set<CR::CR2::EQ>(a == b);
+			break;
+		case 3:
+			cr.Set<CR::CR3::SO>(xer.Get<XER::SO>());
+			cr.Set<CR::CR3::LT>(a < b);
+			cr.Set<CR::CR3::GT>(a > b);
+			cr.Set<CR::CR3::EQ>(a == b);
+			break;
+	}
+	
+	return true;
 }
+
+e_cmpi.disasm = {
+	os << "e_cmpi " << CRPrint(crd) << ',' << GPRPrint(ra) << ',' << sci8;
+}
+
+specialize e_cmpi(crd=0)
+specialize e_cmpi(crd=1)
+specialize e_cmpi(crd=2)
+specialize e_cmpi(crd=3)

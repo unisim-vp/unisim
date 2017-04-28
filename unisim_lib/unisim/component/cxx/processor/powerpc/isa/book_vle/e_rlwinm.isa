@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 impl {
@@ -38,6 +39,21 @@ impl {
 
 /* Rotate Left Word Immediate then AND with Mask */
 op e_rlwinm(29[6]:rs[5]:ra[5]:sh[5]:mb[5]:me[5]:1[1]);
+
+e_rlwinm.execute = {
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	
+	// Compute the result
+	uint32_t r = RotateLeft(s, sh);
+	uint32_t m = Mask(mb, me);
+	uint32_t result = r & m;
+	
+	// Write back the result
+	cpu->SetGPR(ra, result);
+	
+	return true;
+}
 
 e_rlwinm.disasm = {
 	os << "e_rlwinm " << GPRPrint(ra) << ',' << GPRPrint(rs) << ',' << int(sh) << ',' << int(mb) << ',' << int(me);

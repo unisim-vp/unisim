@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 impl {
@@ -37,8 +38,24 @@ impl {
 }
 
 /* Load Halfword Algebraic with Update */
-op e_lhau(6[6]:rt[5]:ra[5]:3[8]:sext d[8]);
+op e_lhau(6[6]:rd[5]:ra[5]:3[8]:sext<32> d[8]);
+
+e_lhau.execute = {
+	if(unlikely((ra == 0) || (ra == rd)))
+	{
+		cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
+		return false;
+	}
+	// compute the effective address
+	ADDRESS ea = cpu->GetGPR(ra) + d;
+	// do the memory access
+	if(unlikely(!cpu->SInt16Load(rd, ea))) return false; // 16-bit load/no byte reverse/sign extend
+	// update the address register
+	cpu->SetGPR(ra, ea);
+	
+	return true;
+}
 
 e_lhau.disasm = {
-	os << "e_lhau " << GPRPrint(rt) << ',' << EAPrint(d,ra);
+	os << "e_lhau " << GPRPrint(rd) << ',' << EAPrint(d,ra);
 }

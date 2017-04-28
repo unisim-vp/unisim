@@ -39,8 +39,11 @@ mtspr.execute = {
 	switch(n)
 	{
 		case 0x001:
-			cpu->SetXER(result);
+		{
+			XER& xer = cpu->GetXER();
+			xer = result;
 			break;
+		}
 		case 0x008:
 			cpu->SetLR(result);
 			break;
@@ -48,7 +51,7 @@ mtspr.execute = {
 			cpu->SetCTR(result);
 			break;
 		default:
-			return cpu->SetSPR(n, result);
+			return cpu->MoveToSPR(n, result);
 	}
 	
 	return true;
@@ -60,39 +63,6 @@ mtspr.disasm = {
 		case 1: os << "mtxer r" << (unsigned int) rs; return;
 		case 8: os << "mtlr r" << (unsigned int) rs; return;
 		case 9: os << "mtctr r" << (unsigned int) rs; return;
-		case 22: os << "mtdec r" << (unsigned int) rs; return;
-		case 528: os << "mtibatu 0, r" << (unsigned int) rs; return;
-		case 529: os << "mtibatl 0, r" << (unsigned int) rs; return;
-		case 530: os << "mtibatu 1, r" << (unsigned int) rs; return;
-		case 531: os << "mtibatl 1, r" << (unsigned int) rs; return;
-		case 532: os << "mtibatu 2, r" << (unsigned int) rs; return;
-		case 533: os << "mtibatl 2, r" << (unsigned int) rs; return;
-		case 534: os << "mtibatu 3, r" << (unsigned int) rs; return;
-		case 535: os << "mtibatl 3, r" << (unsigned int) rs; return;
-		case 536: os << "mtdbatu 0, r" << (unsigned int) rs; return;
-		case 537: os << "mtdbatl 0, r" << (unsigned int) rs; return;
-		case 538: os << "mtdbatu 1, r" << (unsigned int) rs; return;
-		case 539: os << "mtdbatl 1, r" << (unsigned int) rs; return;
-		case 540: os << "mtdbatu 2, r" << (unsigned int) rs; return;
-		case 541: os << "mtdbatl 2, r" << (unsigned int) rs; return;
-		case 542: os << "mtdbatu 3, r" << (unsigned int) rs; return;
-		case 543: os << "mtdbatl 3, r" << (unsigned int) rs; return;
-		case 560: os << "mtibatu 4, r" << (unsigned int) rs; return;
-		case 561: os << "mtibatl 4, r" << (unsigned int) rs; return;
-		case 562: os << "mtibatu 5, r" << (unsigned int) rs; return;
-		case 563: os << "mtibatl 5, r" << (unsigned int) rs; return;
-		case 564: os << "mtibatu 6, r" << (unsigned int) rs; return;
-		case 565: os << "mtibatl 6, r" << (unsigned int) rs; return;
-		case 566: os << "mtibatu 7, r" << (unsigned int) rs; return;
-		case 567: os << "mtibatl 7, r" << (unsigned int) rs; return;
-		case 568: os << "mtdbatu 4, r" << (unsigned int) rs; return;
-		case 569: os << "mtdbatl 4, r" << (unsigned int) rs; return;
-		case 570: os << "mtdbatu 5, r" << (unsigned int) rs; return;
-		case 571: os << "mtdbatl 5, r" << (unsigned int) rs; return;
-		case 572: os << "mtdbatu 6, r" << (unsigned int) rs; return;
-		case 573: os << "mtdbatl 6, r" << (unsigned int) rs; return;
-		case 574: os << "mtdbatu 7, r" << (unsigned int) rs; return;
-		case 575: os << "mtdbatl 7, r" << (unsigned int) rs; return;
 	}
 
 	os << "mtspr " << n << ", r" << (unsigned int) rs;

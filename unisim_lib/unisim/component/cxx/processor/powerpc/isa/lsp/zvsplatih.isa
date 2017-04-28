@@ -35,7 +35,7 @@
 /* Vector splat immediate halfword (zvsplatih) */
 op zvsplatih(0b000100[6]:rd[5]:sext<16> simm[5]:0b00000[5]:0b01000111111[11])
 zvsplatih.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zvsplatih.disasm = {

@@ -34,7 +34,7 @@
 
 op dcbi(31[6]:?[5]:ra[5]:rb[5]:470[10]:?[1])
 dcbi.execute = {
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 	return cpu->Dcbi(ea);
 }
 dcbi.disasm = {

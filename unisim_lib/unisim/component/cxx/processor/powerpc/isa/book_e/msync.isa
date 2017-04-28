@@ -33,7 +33,7 @@
  */
  
 op msync(31[6]:?[15]:598[10]:?[1])
-msync.execute = { cpu->Synchronize(); return true;  }
+msync.execute = { return cpu->Msync(); }
 msync.disasm = {
 	os << "msync";
 }

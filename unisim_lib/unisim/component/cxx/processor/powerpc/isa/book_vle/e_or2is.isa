@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 impl {
@@ -37,8 +38,22 @@ impl {
 }
 
 /* OR (2 operand) Immediate Shifted */
-op e_or2is(28[6]:rt[5]:shl<11> ui_a[5]:26[5]:ui_b[11]);
+op e_or2is(28[6]:rd[5]:shl<11> ui_h[5]:26[5]:ui_l[11]);
+e_or2is.var ui : { uint32_t } = { (ui_h | ui_l) << 16 }
+
+e_or2is.execute = {
+	// Read the input operands
+	uint32_t d = cpu->GetGPR(rd);
+	
+	// Compute the result
+	uint32_t result = d | ui;
+	
+	// Write back the result
+	cpu->SetGPR(rd, result);
+	
+	return true;
+}
 
 e_or2is.disasm = {
-	os << "e_or2is " << GPRPrint(rt) << ',' << int(ui_a|ui_b);
+	os << "e_or2is " << GPRPrint(rd) << ',' << int16_t(ui_h|ui_l);
 }

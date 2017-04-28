@@ -35,7 +35,7 @@
 /* Vector add / subtract from word signed and saturate (zvaddsubfwss) */
 op zvaddsubfwss(0b000100[6]:shl<1> rd[4]:0b0[1]:ra[5]:rb[5]:0b10001101100[11]) /* rd odd is illegal */
 zvaddsubfwss.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zvaddsubfwss.disasm = {

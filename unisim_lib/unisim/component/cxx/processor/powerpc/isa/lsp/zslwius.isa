@@ -35,7 +35,7 @@
 /* Shift left word immediate unsigned and saturate (zslwius) */
 op zslwius(0b000100[6]:rd[5]:ra[5]:uimm[5]:0b01001111110[11])
 zslwius.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zslwius.disasm = {

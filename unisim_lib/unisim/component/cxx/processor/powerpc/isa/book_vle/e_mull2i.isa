@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 impl {
@@ -37,8 +38,23 @@ impl {
 }
 
 /* Multiply (2 operand) Low Immediate */
-op e_mull2i(28[6]:shl<11> sext <32> si_a[5]:ra[5]:20[5]:si_b[11]);
+op e_mull2i(28[6]:shl<11> sext <32> si_h[5]:ra[5]:20[5]:si_l[11]);
+e_mull2i.var si : { uint32_t } = { si_h | si_l }
+
+e_mull2i.execute = {
+	// Read the input operands
+	int32_t a = cpu->GetGPR(ra);
+	
+	// Compute the result
+	int64_t result64 = (int64_t) a * (int64_t) si;
+	int32_t result = (int32_t) result64;
+	
+	// Write back the result
+	cpu->SetGPR(ra, result);
+	
+	return true;
+}
 
 e_mull2i.disasm = {
-	os << "e_mull2i " << GPRPrint(ra) << ',' << int(si_a|si_b);
+	os << "e_mull2i " << GPRPrint(ra) << ',' << int(si_h|si_l);
 }

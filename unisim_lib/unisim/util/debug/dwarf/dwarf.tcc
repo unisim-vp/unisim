@@ -332,7 +332,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	unsigned int i;
 	unsigned int j;
 	
-	if(debug_abbrev_section)
+	if(debug_abbrev_section && debug_abbrev_section->GetSize())
 	{
 		if(verbose)
 		{
@@ -381,7 +381,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 		}
 	}
 
-	if(debug_info_section)
+	if(debug_info_section && debug_info_section->GetSize())
 	{
 		if(verbose)
 		{
@@ -423,7 +423,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 		}
 	}
 
-	if(debug_frame_section)
+	if(debug_frame_section && debug_frame_section->GetSize())
 	{
 		if(verbose)
 		{
@@ -477,7 +477,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 		}
 	}
 
-	if(eh_frame_section)
+	if(eh_frame_section && eh_frame_section->GetSize())
 	{
 		if(verbose)
 		{
@@ -530,7 +530,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 		while(eh_frame_offset < eh_frame_section->GetSize());
 	}
 
-	if(debug_aranges_section)
+	if(debug_aranges_section && debug_aranges_section->GetSize())
 	{
 		if(verbose)
 		{
@@ -572,7 +572,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 		}
 	}
 
-	if(debug_pubnames_section)
+	if(debug_pubnames_section && debug_pubnames_section->GetSize())
 	{
 		if(verbose)
 		{
@@ -614,7 +614,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 		}
 	}
 
-	if(debug_pubtypes_section)
+	if(debug_pubtypes_section && debug_pubtypes_section->GetSize())
 	{
 		if(verbose)
 		{

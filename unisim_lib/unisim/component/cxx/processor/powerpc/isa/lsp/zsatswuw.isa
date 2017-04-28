@@ -35,7 +35,7 @@
 /* Saturate signed word to unsigned word range (zsatswuw) */
 op zsatswuw(0b000100[6]:rd[5]:ra[5]:0b11000[5]:0b01000111111[11])
 zsatswuw.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zsatswuw.disasm = {

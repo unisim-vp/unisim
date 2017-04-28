@@ -34,13 +34,7 @@
 
 op efsmin(0b000100[6]:rd[5]:ra[5]:rb[5]:0b01010110001[11])
 efsmin.execute = {
-	if(!CONFIG::HAS_FPU)
-	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
-		return false;
-	}
-	
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 efsmin.disasm = {

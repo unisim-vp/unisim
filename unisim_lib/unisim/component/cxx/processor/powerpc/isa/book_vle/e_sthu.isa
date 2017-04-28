@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 impl {
@@ -38,6 +39,22 @@ impl {
 
 /* Store Halfword with Update */
 op e_sthu(6[6]:rs[5]:ra[5]:5[8]:sext d[8]);
+
+e_sthu.execute = {
+	if(unlikely(ra == 0))
+	{
+		cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
+		return false;
+	}
+	// compute the effective address
+	ADDRESS ea = cpu->GetGPR(ra) + d;
+	// do the memory access
+	if(unlikely(!cpu->Int16Store(rs, ea))) return false;
+	// update the address register
+	cpu->SetGPR(ra, ea);
+	
+	return true;
+}
 
 e_sthu.disasm = {
 	os << "e_sthu " << GPRPrint(rs) << ',' << EAPrint(d,ra);

@@ -48,7 +48,7 @@ mfspr.execute = {
 			result = cpu->GetCTR();
 			break;
 		default:
-			if(unlikely(!cpu->GetSPR(n, result))) return false;
+			if(unlikely(!cpu->MoveFromSPR(n, result))) return false;
 			break;
 	}
 	
@@ -63,39 +63,6 @@ mfspr.disasm = {
 		case 1: os << "mfxer r" << (unsigned int) rd; return;
 		case 8: os << "mflr r" << (unsigned int) rd; return;
 		case 9: os << "mfctr r" << (unsigned int) rd; return;
-		case 22: os << "mfdec r" << (unsigned int) rd; return;
-		case 528: os << "mfibatu r" << (unsigned int) rd << ", 0"; return;
-		case 529: os << "mfibatl r" << (unsigned int) rd << ", 0"; return;
-		case 530: os << "mfibatu r" << (unsigned int) rd << ", 1"; return;
-		case 531: os << "mfibatl r" << (unsigned int) rd << ", 1"; return;
-		case 532: os << "mfibatu r" << (unsigned int) rd << ", 2"; return;
-		case 533: os << "mfibatl r" << (unsigned int) rd << ", 2"; return;
-		case 534: os << "mfibatu r" << (unsigned int) rd << ", 3"; return;
-		case 535: os << "mfibatl r" << (unsigned int) rd << ", 3"; return;
-		case 536: os << "mfdbatu r" << (unsigned int) rd << ", 0"; return;
-		case 537: os << "mfdbatl r" << (unsigned int) rd << ", 0"; return;
-		case 538: os << "mfdbatu r" << (unsigned int) rd << ", 1"; return;
-		case 539: os << "mfdbatl r" << (unsigned int) rd << ", 1"; return;
-		case 540: os << "mfdbatu r" << (unsigned int) rd << ", 2"; return;
-		case 541: os << "mfdbatl r" << (unsigned int) rd << ", 2"; return;
-		case 542: os << "mfdbatu r" << (unsigned int) rd << ", 3"; return;
-		case 543: os << "mfdbatl r" << (unsigned int) rd << ", 3"; return;
-		case 560: os << "mfibatu r" << (unsigned int) rd << ", 4"; return;
-		case 561: os << "mfibatl r" << (unsigned int) rd << ", 4"; return;
-		case 562: os << "mfibatu r" << (unsigned int) rd << ", 5"; return;
-		case 563: os << "mfibatl r" << (unsigned int) rd << ", 5"; return;
-		case 564: os << "mfibatu r" << (unsigned int) rd << ", 6"; return;
-		case 565: os << "mfibatl r" << (unsigned int) rd << ", 6"; return;
-		case 566: os << "mfibatu r" << (unsigned int) rd << ", 7"; return;
-		case 567: os << "mfibatl r" << (unsigned int) rd << ", 7"; return;
-		case 568: os << "mfdbatu r" << (unsigned int) rd << ", 4"; return;
-		case 569: os << "mfdbatl r" << (unsigned int) rd << ", 4"; return;
-		case 570: os << "mfdbatu r" << (unsigned int) rd << ", 5"; return;
-		case 571: os << "mfdbatl r" << (unsigned int) rd << ", 5"; return;
-		case 572: os << "mfdbatu r" << (unsigned int) rd << ", 6"; return;
-		case 573: os << "mfdbatl r" << (unsigned int) rd << ", 6"; return;
-		case 574: os << "mfdbatu r" << (unsigned int) rd << ", 7"; return;
-		case 575: os << "mfdbatl r" << (unsigned int) rd << ", 7"; return;
 	}
 
 	os << "mfspr r" << (unsigned int) rd << ", " << n;

@@ -41,25 +41,80 @@ cmpl.execute = {
 	// Raise an illegal instruction exception if l=1
 	if(unlikely(l))
 	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
 		return false;
 	}
 	
 	// Read the input operands
 	uint32_t a = cpu->GetGPR(ra);
 	uint32_t b = cpu->GetGPR(rb) ;
-	uint32_t cr = cpu->GetCR();
-	uint32_t xer = cpu->GetXER();
+	CR& cr = cpu->GetCR();
+	XER& xer = cpu->GetXER();
 	
 	// Generate CR[crfD] bit field
-	uint32_t c = ((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) | ((a < b) ? CONFIG::CR0_LT_MASK : (a > b) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK);
-	cr = (cr & ~(CONFIG::CR0_MASK >> (4 * crfD))) | (c >> (4 * crfD));
-	
-	// Update CR
-	cpu->SetCR(cr);
+	switch(crfD)
+	{
+		case 0:
+			cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
+			cr.Set<CR::CR0::LT>(a < b);
+			cr.Set<CR::CR0::GT>(a > b);
+			cr.Set<CR::CR0::EQ>(a == b);
+			break;
+		case 1:
+			cr.Set<CR::CR1::SO>(xer.Get<XER::SO>());
+			cr.Set<CR::CR1::LT>(a < b);
+			cr.Set<CR::CR1::GT>(a > b);
+			cr.Set<CR::CR1::EQ>(a == b);
+			break;
+		case 2:
+			cr.Set<CR::CR2::SO>(xer.Get<XER::SO>());
+			cr.Set<CR::CR2::LT>(a < b);
+			cr.Set<CR::CR2::GT>(a > b);
+			cr.Set<CR::CR2::EQ>(a == b);
+			break;
+		case 3:
+			cr.Set<CR::CR3::SO>(xer.Get<XER::SO>());
+			cr.Set<CR::CR3::LT>(a < b);
+			cr.Set<CR::CR3::GT>(a > b);
+			cr.Set<CR::CR3::EQ>(a == b);
+			break;
+		case 4:
+			cr.Set<CR::CR4::SO>(xer.Get<XER::SO>());
+			cr.Set<CR::CR4::LT>(a < b);
+			cr.Set<CR::CR4::GT>(a > b);
+			cr.Set<CR::CR4::EQ>(a == b);
+			break;
+		case 5:
+			cr.Set<CR::CR5::SO>(xer.Get<XER::SO>());
+			cr.Set<CR::CR5::LT>(a < b);
+			cr.Set<CR::CR5::GT>(a > b);
+			cr.Set<CR::CR5::EQ>(a == b);
+			break;
+		case 6:
+			cr.Set<CR::CR6::SO>(xer.Get<XER::SO>());
+			cr.Set<CR::CR6::LT>(a < b);
+			cr.Set<CR::CR6::GT>(a > b);
+			cr.Set<CR::CR6::EQ>(a == b);
+			break;
+		case 7:
+			cr.Set<CR::CR7::SO>(xer.Get<XER::SO>());
+			cr.Set<CR::CR7::LT>(a < b);
+			cr.Set<CR::CR7::GT>(a > b);
+			cr.Set<CR::CR7::EQ>(a == b);
+			break;
+	}
 	
 	return true;
 }
 cmpl.disasm = {
 	os << "cmpl cr" << (unsigned int) crfD << ", " << (unsigned int) l << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 }
+
+specialize cmpl(crfD=0)
+specialize cmpl(crfD=1)
+specialize cmpl(crfD=2)
+specialize cmpl(crfD=3)
+specialize cmpl(crfD=4)
+specialize cmpl(crfD=5)
+specialize cmpl(crfD=6)
+specialize cmpl(crfD=7)

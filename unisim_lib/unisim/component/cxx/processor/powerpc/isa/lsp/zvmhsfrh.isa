@@ -39,7 +39,7 @@ impl {
 /* Vector multiply halfword signed, fractional and round, to halfword (zvmhsfrh) */
 op zvmhsfrh(4[6]:rd[5]:ra[5]:rb[5]:0b1100[4]:0b11[2]:0b11[2]:0b00[2]:0b1[1])
 zvmhsfrh.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zvmhsfrh.disasm = {

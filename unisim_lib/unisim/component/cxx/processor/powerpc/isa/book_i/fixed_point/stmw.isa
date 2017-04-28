@@ -34,7 +34,7 @@
 
 op stmw(47[6]:rs[5]:ra[5]:sext<32>d[16])
 stmw.execute = {
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + d : d);
 
 	unsigned int r;
 
@@ -48,9 +48,9 @@ stmw.execute = {
 }
 stmw.disasm = {
 	os << "stmw r" << (unsigned int) rs << ", " << d << "(r" << (unsigned int) ra << ")";
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
+	if(cpu && (cpu->GetCIA() == this->GetAddr()))
 	{
-		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
+		ADDRESS ea = (ra ? cpu->GetGPR(ra) + d : d);
 		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
 	}
 }

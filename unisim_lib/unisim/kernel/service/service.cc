@@ -2069,6 +2069,9 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	
 	simulator = this;
 	void_variable = new VariableBase("void", (Object *) 0, VariableBase::VAR_VOID, "unknown variable");
+	void_variable->SetMutable(false);
+	void_variable->SetVisible(false);
+	void_variable->SetSerializable(false);
 
 	var_authors = new Parameter<string>("authors", 0, authors, "Authors");
 	var_authors->SetMutable(false);

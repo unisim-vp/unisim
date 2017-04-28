@@ -35,7 +35,7 @@
 /* Vector rotate left halfword immediate (zvrlhi) */
 op zvrlhi(0b000100[6]:rd[5]:ra[5]:0b0[1]:uimm[4]:0b01001110111[11]) /* uimm > 15 is illegal */
 zvrlhi.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zvrlhi.disasm = {

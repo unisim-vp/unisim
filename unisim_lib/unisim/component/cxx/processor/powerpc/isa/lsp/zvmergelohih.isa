@@ -35,7 +35,7 @@
 /* Vector merge high/low halfwords (zvmergehiloh) */
 op zvmergelohih(0b000100[6]:rd[5]:ra[5]:rb[5]:0b01000101111[11])
 zvmergelohih.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zvmergelohih.disasm = {

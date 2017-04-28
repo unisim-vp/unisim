@@ -35,7 +35,7 @@
 /* Shift left word signed and saturate (zslwss) */
 op zslwss(0b000100[6]:rd[5]:ra[5]:rb[5]:0b01001111101[11])
 zslwss.execute = {
-	cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
 zslwss.disasm = {
