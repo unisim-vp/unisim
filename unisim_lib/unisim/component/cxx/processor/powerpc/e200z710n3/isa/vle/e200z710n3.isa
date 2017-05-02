@@ -39,6 +39,7 @@ decl {
 #include <iosfwd>
 #include <unisim/util/likely/likely.hh>
 #include <unisim/component/cxx/processor/powerpc/e200z710n3/types.hh>
+
 }
 
 impl {
@@ -55,6 +56,12 @@ action {bool} execute({CPU *} {cpu}) {
 
 action {void} disasm({CPU *} {cpu}, {std::ostream&} {os}) {
 	os << "???";
+}
+
+action {void} update_esr_st({CPU *} {cpu}) {
+}
+
+action {void} update_esr_spv({CPU *} {cpu}) {
 }
 
 /* Book I: Power ISA User Instruction Set Architecture */
@@ -539,3 +546,23 @@ include "unisim/component/cxx/processor/powerpc/isa/lsp/zxtrw.isa"
 include "unisim/component/cxx/processor/powerpc/isa/mpu/mpure.isa"
 include "unisim/component/cxx/processor/powerpc/isa/mpu/mpusync.isa"
 include "unisim/component/cxx/processor/powerpc/isa/mpu/mpuwe.isa"
+
+group esr_st(stbux, stbx, sthbrx, sthux, sthx, stwbrx, stwux, stwx, stbcx_, \
+             sthcx_, stwcx_, e_stb, e_stbu, e_sth, e_sthu, e_stmw, e_stw, \
+             e_stwu, se_stb, se_sth, se_stw)
+
+esr_st.update_esr_st = {
+	CPU::ESR& esr = cpu->GetESR();
+	esr.Set<CPU::ESR::ST>(1);
+}
+
+group esr_spv(efsabs,efsadd, efscfh, efscfsf, efscfsi, efscfuf, efscfui, \
+             efscmpeq, efscmpgt, efscmplt, efscth, efsctsf, efsctsi, \
+             efsctsiz, efsctuf, efsctui, efsctuiz, efsdiv, efsmadd, \
+             efsmsub, efsmax, efsmin, efsmul, efsnabs, efsneg, efsnmadd, \
+             efsnmsub, efssqrt, efssub, efststeq, efststgt, efststlt)
+
+esr_spv.update_esr_spv = {
+	CPU::ESR& esr = cpu->GetESR();
+	esr.Set<CPU::ESR::SPV>(1);
+}

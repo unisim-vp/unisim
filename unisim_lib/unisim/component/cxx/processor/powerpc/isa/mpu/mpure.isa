@@ -33,6 +33,11 @@
  */
 
 op mpure(31[6]:1[1]:?[14]:0b1110110010[10]:?[1])
+
+mpure.execute = {
+	return cpu->Mpure();
+}
+
 mpure.disasm = {
 	os << "mpure";
 }

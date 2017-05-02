@@ -51,6 +51,12 @@ CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
 	, memory_import("memory-import", this)
 	, disasm_export("disasm-export", this)
 	, memory_export("memory-export", this)
+	, processor_version(0x0)
+	, param_processor_version("processor-version", this, processor_version, "Processor Version")
+	, system_version(0x0)
+	, param_system_version("system-version", this, system_version, "System Version")
+	, system_information(0x0)
+	, param_system_information("system-information", this, system_information, "System Information")
 	, imem_base_addr(0x0)
 	, param_imem_base_addr("imem-base-addr", this, imem_base_addr, "IMEM (Local Instruction Memory) base address at reset")
 	, imem_size(0)
@@ -81,6 +87,7 @@ CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
 	, instruction_buffer()
 	, vle_decoder()
 	, operation(0)
+	, mpu(this, 0x2)
 	, l1i()
 	, l1d()
 	, imem(0)
@@ -102,6 +109,7 @@ CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
 	, sprg2(this)
 	, sprg3(this)
 	, pir(this)
+	, pvr(this)
 	, dbsr(this)
 	, dbcr0(this)
 	, dbcr1(this)
@@ -114,6 +122,7 @@ CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
 	, dac2(this)
 	, dvc1(this)
 	, dvc2(this)
+	, tir(this)
 	, spefscr(this)
 	, l1cfg0(this)
 	, l1cfg1(this)
@@ -141,22 +150,17 @@ CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
 	, dvc1u(this)
 	, dvc2u(this)
 	, dbcr6(this)
-	, mas0(this)
-	, mas1(this)
-	, mas2(this)
-	, mas3(this)
 	, edbrac0(this)
-	, mpu0cfg(this)
 	, dmemcfg0(this)
 	, imemcfg0(this)
 	, l1finv1(this)
 	, devent(this)
+	, sir(this)
 	, hid0(this)
 	, hid1(this)
 	, l1csr0(this)
 	, l1csr1(this)
 	, bucsr(this)
-	, mpu0csr0(this)
 	, l1finv0(this)
 	, svr(this)
 	, dmemctl0(this)
@@ -193,6 +197,9 @@ CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
 	, upmlcb3(this, &pmlcb3)
 	, tmcfg0(this)
 {
+	param_processor_version.SetMutable(false);
+	param_system_version.SetMutable(false);
+	param_system_information.SetMutable(false);
 	param_imem_base_addr.SetMutable(false);
 	param_imem_size.SetMutable(false);
 	param_imem_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -210,6 +217,10 @@ CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
 	
 	cur_imem_base_addr = imem_base_addr;
 	cur_dmem_base_addr = dmem_base_addr;
+	
+	pvr.Initialize(processor_version);
+	svr.Initialize(system_version);
+	sir.Initialize(system_information);
 }
 
 CPU::~CPU()
@@ -281,6 +292,7 @@ bool CPU::EndSetup()
 	
 	//MoveToSPR(1010, 0x1 | 0x2 | 0x80000);
 	//MoveToSPR(1011, 0x1 | 0x2);
+	
 	return true;
 }
 
@@ -290,6 +302,7 @@ void CPU::Reset()
 	msr.Initialize(0x0);
 	cur_imem_base_addr = imem_base_addr;
 	cur_dmem_base_addr = dmem_base_addr;
+	MoveToSPR(1014, 1);
 }
 
 void CPU::ProcessInterrupt(SystemResetInterrupt *system_reset_interrupt)
@@ -372,9 +385,11 @@ void CPU::ProcessInterrupt(DataStorageInterrupt *data_storage_interrupt)
 	srr0 = cia;
 	srr1 = msr;
 	
-	//esr.Set<ESR::ST>(operation->IsStore());
-	//esr.Set<ESR::SPV)(operation->IsSignalProcessing());
-	//esr.Set<ESR::VLEMI>(operation->IsVLEModeInstruction());
+	// ESR: [ST], [SPV], VLEMI. All other bits cleared
+	esr = 0;
+	operation->update_esr_st(this);
+	operation->update_esr_spv(this);
+	esr.Set<ESR::VLEMI>(1);
 	
 	assert(data_storage_interrupt->HasAddress());
 	dear = data_storage_interrupt->GetAddress();
@@ -397,8 +412,9 @@ void CPU::ProcessInterrupt(InstructionStorageInterrupt *instruction_storage_inte
 	srr0 = cia;
 	srr1 = msr;
 	
+	// ESR: VLEMI. All other bits cleared
 	esr = 0;
-	//esr.Set<ESR::VLEMI>(operation->IsVLEModeInstruction());
+	esr.Set<ESR::VLEMI>(1);
 	
 	msr.Set<InstructionStorageInterrupt::MSR_CLEARED_FIELDS>(0);
 
@@ -416,9 +432,10 @@ void CPU::ProcessInterrupt(AlignmentInterrupt *alignment_interrupt)
 	srr0 = cia;
 	srr1 = msr;
 	
+	// ESR: [ST], VLEMI. All other bits cleared
 	esr = 0;
-	//esr.Set<ESR::ST>(operation->IsStore());
-	//esr.Set<ESR::VLEMI>(operation->IsVLEModeInstruction());
+	operation->update_esr_st(this);
+	esr.Set<ESR::VLEMI>(1);
 	
 	assert(alignment_interrupt->HasAddress());
 	dear = alignment_interrupt->GetAddress();
@@ -441,8 +458,9 @@ void CPU::ProcessInterrupt(ProgramInterrupt *program_interrupt)
 	srr0 = cia;
 	srr1 = msr;
 	
+	// ESR: VLEMI. All other bits cleared
 	esr = 0;
-	//esr.Set<ESR::VLEMI>(operation->IsVLEModeInstruction());
+	esr.Set<ESR::VLEMI>(1);
 	if(RecognizedException<ProgramInterrupt::IllegalInstruction>() || RecognizedException<ProgramInterrupt::UnimplementedInstruction>())
 	{
 		esr.Set<ESR::PIL>(1);
@@ -472,9 +490,10 @@ void CPU::ProcessInterrupt(EmbeddedFloatingPointDataInterrupt *embedded_floating
 	srr0 = cia;
 	srr1 = msr;
 	
+	// ESR: SPV, VLEMI. All other bits cleared
 	esr = 0;
-	//esr.Set<ESR::VLEMI>(operation->IsVLEModeInstruction());
-	//esr.Set<ESR::SPV>(1);   // Signal Processing
+	esr.Set<ESR::SPV>(1);
+	esr.Set<ESR::VLEMI>(1);
 	
 	msr.Set<EmbeddedFloatingPointDataInterrupt::MSR_CLEARED_FIELDS>(0);
 	
@@ -492,9 +511,10 @@ void CPU::ProcessInterrupt(EmbeddedFloatingPointRoundInterrupt *embedded_floatin
 	srr0 = cia;
 	srr1 = msr;
 	
+	// ESR: SPV, VLEMI. All other bits cleared
 	esr = 0;
-	//esr.Set<ESR::VLEMI>(operation->IsVLEModeInstruction());
-	//esr.Set<ESR::SPV>(1);   // Signal Processing
+	esr.Set<ESR::SPV>(1);
+	esr.Set<ESR::VLEMI>(1);
 	
 	msr.Set<EmbeddedFloatingPointDataInterrupt::MSR_CLEARED_FIELDS>(0);
 	
@@ -512,8 +532,9 @@ void CPU::ProcessInterrupt(SystemCallInterrupt *system_call_interrupt)
 	srr0 = nia;
 	srr1 = msr;
 	
+	// ESR: VLEMI. All other bits cleared
 	esr = 0;
-	//esr.Set<ESR::VLEMI>(operation->IsVLEModeInstruction());
+	esr.Set<ESR::VLEMI>(1);
 	
 	msr.Set<SystemCallInterrupt::MSR_CLEARED_FIELDS>(0);
 	
@@ -676,9 +697,13 @@ void CPU::ProcessInterrupt(DebugInterrupt *debug_interrupt)
 void CPU::UpdateExceptionEnable()
 {
 	if(msr.Get<MSR::CE>())
+	{
 		EnableInterrupt<CriticalInputInterrupt>();
+	}
 	else
+	{
 		DisableInterrupt<CriticalInputInterrupt>();
+	}
 	
 	if(msr.Get<MSR::EE>())
 	{
@@ -699,20 +724,15 @@ void CPU::UpdateExceptionEnable()
 	{
 		DisableInterrupt<MachineCheckInterrupt::AsynchronousMachineCheck>();
 	}
-
-	if(msr.Get<MSR::ME>() && hid0.Get<HID0::EMCP>())
-	{
-		EnableInterrupt<MachineCheckInterrupt::MCP>();
-	}
-	else
-	{
-		DisableInterrupt<MachineCheckInterrupt::MCP>();
-	}
 	
 	if(msr.Get<MSR::DE>())
+	{
 		EnableInterrupt<DebugInterrupt>();
+	}
 	else
+	{
 		DisableInterrupt<DebugInterrupt>();
+	}
 }
 
 bool CPU::DataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm)
@@ -807,7 +827,15 @@ bool CPU::AHBDebugDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, 
 
 bool CPU::DataLoad(ADDRESS addr, void *buffer, unsigned int size)
 {
-	// TODO: check MPU access rights
+	MPU_ENTRY *mpu_entry = mpu.CheckPermissions(addr, /* exec */ false, /* write */ false);
+
+	if(!mpu_entry)
+	{
+		ThrowException<DataStorageInterrupt::AccessControl>();
+		return false;
+	}
+	
+	STORAGE_ATTR storage_attr = STORAGE_ATTR((MAS0::I::Get(mpu_entry->mas0) ? SA_I : 0) | (MAS0::G::Get(mpu_entry->mas0) ? SA_G : 0));
 	
 	ADDRESS cur_dmem_high_addr = cur_dmem_base_addr + dmem_size; 
 
@@ -819,7 +847,7 @@ bool CPU::DataLoad(ADDRESS addr, void *buffer, unsigned int size)
 	else
 	{
 		// Data Cache
-		if(unlikely(!this->SuperMSS::DataLoad(addr, buffer, size, 0))) return false;
+		if(unlikely(!this->SuperMSS::DataLoad(addr, buffer, size, storage_attr))) return false;
 	}
 	
 	return true;
@@ -827,8 +855,16 @@ bool CPU::DataLoad(ADDRESS addr, void *buffer, unsigned int size)
 
 bool CPU::DataStore(ADDRESS addr, void *buffer, unsigned int size)
 {
-	// TODO: check MPU access rights
+	MPU_ENTRY *mpu_entry = mpu.CheckPermissions(addr, /* exec */ false, /* write */ true);
+
+	if(!mpu_entry)
+	{
+		ThrowException<DataStorageInterrupt::AccessControl>();
+		return false;
+	}
 	
+	STORAGE_ATTR storage_attr = STORAGE_ATTR((MAS0::I::Get(mpu_entry->mas0) ? SA_I : 0) | (MAS0::G::Get(mpu_entry->mas0) ? SA_G : 0));
+
 	ADDRESS cur_dmem_high_addr = cur_dmem_base_addr + dmem_size; 
 
 	if((addr >= cur_dmem_base_addr) && (addr < cur_dmem_high_addr))
@@ -839,7 +875,7 @@ bool CPU::DataStore(ADDRESS addr, void *buffer, unsigned int size)
 	else
 	{
 		// Data Cache
-		if(unlikely(!this->SuperMSS::DataStore(addr, buffer, size, 0))) return false;
+		if(unlikely(!this->SuperMSS::DataStore(addr, buffer, size, storage_attr))) return false;
 	}
 	
 	return false;
@@ -925,9 +961,13 @@ bool CPU::DebugDataLoad(ADDRESS addr, void *buffer, unsigned int size)
 			else
 			{
 				// Data Cache
+				MPU_ENTRY *mpu_entry = mpu.CheckPermissions(addr, /* exec */ false, /* write */ false);
+				
+				STORAGE_ATTR storage_attr = mpu_entry ? STORAGE_ATTR((MAS0::I::Get(mpu_entry->mas0) ? SA_I : 0) | (MAS0::G::Get(mpu_entry->mas0) ? SA_G : 0)) : SA_DEFAULT;
+					
 				sz = L1D::BLOCK_SIZE - (addr % L1D::BLOCK_SIZE);
 				if(sz > size) sz = size;
-				if(!this->SuperMSS::DebugDataLoad(addr, buffer, sz, 0))
+				if(!this->SuperMSS::DebugDataLoad(addr, buffer, sz, storage_attr))
 				{
 					status = false;
 					memset(buffer, 0, sz);
@@ -974,9 +1014,13 @@ bool CPU::DebugDataStore(ADDRESS addr, const void *buffer, unsigned int size)
 			else
 			{
 				// Data Cache
+				MPU_ENTRY *mpu_entry = mpu.CheckPermissions(addr, /* exec */ false, /* write */ true);
+				
+				STORAGE_ATTR storage_attr = mpu_entry ? STORAGE_ATTR((MAS0::I::Get(mpu_entry->mas0) ? SA_I : 0) | (MAS0::G::Get(mpu_entry->mas0) ? SA_G : 0)) : SA_DEFAULT;
+
 				sz = L1D::BLOCK_SIZE - (addr % L1D::BLOCK_SIZE);
 				if(sz > size) sz = size;
-				if(!this->SuperMSS::DebugDataStore(addr, buffer, sz, 0))
+				if(!this->SuperMSS::DebugDataStore(addr, buffer, sz, storage_attr))
 				{
 					status = false;
 				}
@@ -1022,9 +1066,13 @@ bool CPU::DebugInstructionFetch(ADDRESS addr, void *buffer, unsigned int size)
 			else
 			{
 				// Instruction Cache
+				MPU_ENTRY *mpu_entry = mpu.CheckPermissions(addr, /* exec */ true, /* write */ false);
+				
+				STORAGE_ATTR storage_attr = mpu_entry ? STORAGE_ATTR((MAS0::I::Get(mpu_entry->mas0) ? SA_I : 0) | (MAS0::G::Get(mpu_entry->mas0) ? SA_G : 0)) : SA_DEFAULT;
+
 				sz = L1D::BLOCK_SIZE - (addr % L1D::BLOCK_SIZE);
 				if(sz > size) sz = size;
-				if(!this->SuperMSS::DebugInstructionFetch(addr, buffer, sz, 0))
+				if(!this->SuperMSS::DebugInstructionFetch(addr, buffer, sz, storage_attr))
 				{
 					status = false;
 					memset(buffer, 0, sz);
@@ -1246,6 +1294,23 @@ bool CPU::Isync()
 	return true;
 }
 
+bool CPU::Mpure()
+{
+	mpu.ReadEntry();
+	return true;
+}
+
+bool CPU::Mpuwe()
+{
+	mpu.WriteEntry();
+	return true;
+}
+
+bool CPU::Mpusync()
+{
+	return true;
+}
+
 bool CPU::Rfi()
 {
 	if(msr.Get<MSR::PR>())
@@ -1332,7 +1397,15 @@ bool CPU::Rfmci()
 
 bool CPU::InstructionFetch(ADDRESS addr, void *buffer, unsigned int size)
 {
-	// TODO: Check MPU access rights
+	MPU_ENTRY *mpu_entry = mpu.CheckPermissions(addr, /* exec */ true, /* write */ false);
+
+	if(!mpu_entry)
+	{
+		ThrowException<InstructionStorageInterrupt::AccessControl>();
+		return false;
+	}
+
+	STORAGE_ATTR storage_attr = STORAGE_ATTR((MAS0::I::Get(mpu_entry->mas0) ? SA_I : 0) | (MAS0::G::Get(mpu_entry->mas0) ? SA_G : 0));
 	
 	ADDRESS cur_imem_high_addr = cur_imem_base_addr + imem_size; 
 
@@ -1344,7 +1417,7 @@ bool CPU::InstructionFetch(ADDRESS addr, void *buffer, unsigned int size)
 	else
 	{
 		// Instruction Cache
-		if(unlikely(!this->SuperMSS::InstructionFetch(addr, buffer, size, 0))) return false;
+		if(unlikely(!this->SuperMSS::InstructionFetch(addr, buffer, size, storage_attr))) return false;
 	}
 	
 	return true;
@@ -1376,7 +1449,7 @@ bool CPU::InstructionFetch(ADDRESS addr, unisim::component::cxx::processor::powe
 	{
 		base_addr += L1I::BLOCK_SIZE;
 
-		if(!this->SuperMSS::InstructionFetch(base_addr, instruction_buffer, L1I::BLOCK_SIZE, 0)) return false;
+		if(!InstructionFetch(base_addr, instruction_buffer, L1I::BLOCK_SIZE)) return false;
 
 		instruction_buffer_base_addr = base_addr;
 		instruction_buffer_index = -1;

@@ -50,6 +50,332 @@ namespace processor {
 namespace powerpc {
 namespace e200z710n3 {
 
+struct MPU_ENTRY
+{
+	uint32_t mas0;
+	uint32_t mas1;
+	uint32_t mas2;
+	uint32_t mas3;
+};
+
+template <typename CONFIG>
+struct MPU
+{
+	typedef typename CONFIG::CPU CPU;
+	typedef typename CPU::MAS0 MAS0;
+	typedef typename CPU::MAS1 MAS1;
+	typedef typename CPU::MAS2 MAS2;
+	typedef typename CPU::MAS3 MAS3;
+	typedef typename CPU::MPU0CSR0 MPU0CSR0;
+	typedef typename CPU::PID0 PID0;
+	typedef typename CPU::MSR MSR;
+	static const unsigned int NUM_INST_MPU_ENTRIES = CONFIG::NUM_INST_MPU_ENTRIES;
+	static const unsigned int NUM_DATA_MPU_ENTRIES = CONFIG::NUM_DATA_MPU_ENTRIES;
+	static const unsigned int NUM_SHARED_MPU_ENTRIES = CONFIG::NUM_SHARED_MPU_ENTRIES;
+	
+	MPU(CPU *cpu, unsigned int sel);
+	void WriteEntry();
+	void ReadEntry();
+	MPU_ENTRY *CheckPermissions(ADDRESS addr, bool exec, bool write);
+protected:
+	struct MMUCFG : CPU::MMUCFG
+	{
+		typedef typename CPU::MMUCFG Super;
+		
+		MMUCFG(CPU *_cpu) : Super(_cpu) {}
+		MMUCFG(CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		virtual void Reset()
+		{
+			this->template Set<typename CPU::MMUCFG::RASIZE>(32);
+			this->template Set<typename CPU::MMUCFG::PIDSIZE>(PID0::Process_ID::GetBitWidth() - 1);
+			this->template Set<typename CPU::MMUCFG::NMPUS>(1);
+			this->template Set<typename CPU::MMUCFG::NTLBS>(0);
+			this->template Set<typename CPU::MMUCFG::MAVN>(3);
+		}
+	};
+	
+	struct MPU0CFG : CPU::MPU0CFG
+	{
+		typedef typename CPU::MPU0CFG Super;
+		
+		MPU0CFG(CPU *_cpu) : Super(_cpu) {}
+		MPU0CFG(CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		virtual void Reset()
+		{
+			this->template Set<typename CPU::MPU0CFG::FASSOC>(1);
+			this->template Set<typename CPU::MPU0CFG::MINSIZE>(0);   // Smallest region size is 1 byte; Note: Due to the use of access address matching, the effective smallest region size is 8 bytes
+			this->template Set<typename CPU::MPU0CFG::MAXSIZE>(0xb); // Largest region size is 4 GB
+			this->template Set<typename CPU::MPU0CFG::IPROT>(1);
+			this->template Set<typename CPU::MPU0CFG::UAMSKA>(1);
+			this->template Set<typename CPU::MPU0CFG::SHENTRY>(0x2);
+			this->template Set<typename CPU::MPU0CFG::DENTRY>(0x4);
+			this->template Set<typename CPU::MPU0CFG::IENTRY>(0x2);
+		}
+	};
+	
+private:
+	bool Match(MPU_ENTRY *mpu_entry, ADDRESS addr, bool exec, bool write);
+	
+	CPU *cpu;
+	unsigned int sel;
+	MAS0 mas0;
+	MAS1 mas1;
+	MAS2 mas2;
+	MAS3 mas3;
+	MPU0CFG mpu0cfg;
+	MPU0CSR0 mpu0csr0;
+	MMUCFG mmucfg;
+	MPU_ENTRY *mru_inst_mpu_entry;
+	MPU_ENTRY *mru_data_mpu_entry;
+	MPU_ENTRY *mru_shd_mpu_entry;
+	MPU_ENTRY hole_mpu_entry;
+	
+	MPU_ENTRY inst_mpu_entries[NUM_INST_MPU_ENTRIES];
+	MPU_ENTRY data_mpu_entries[NUM_DATA_MPU_ENTRIES];
+	MPU_ENTRY shd_mpu_entries[NUM_SHARED_MPU_ENTRIES];
+};
+
+template <typename CONFIG>
+MPU<CONFIG>::MPU(CPU *_cpu, unsigned int _sel)
+	: cpu(_cpu)
+	, sel(_sel)
+	, mas0(_cpu)
+	, mas1(_cpu)
+	, mas2(_cpu)
+	, mas3(_cpu)
+	, mpu0cfg(_cpu)
+	, mpu0csr0(_cpu)
+	, mmucfg(_cpu)
+	, mru_inst_mpu_entry(0)
+	, mru_data_mpu_entry(0)
+	, mru_shd_mpu_entry(0)
+	, hole_mpu_entry()
+{
+	unsigned int esel;
+	
+	for(esel = 0; esel < NUM_INST_MPU_ENTRIES; esel++)
+	{
+		MPU_ENTRY *mpu_entry = &inst_mpu_entries[esel];
+		mpu_entry->mas0 = 0;
+		mpu_entry->mas1 = 0;
+		mpu_entry->mas2 = 0;
+		mpu_entry->mas3 = 0;
+		MAS0::SEL::Set(mpu_entry->mas0, sel);
+	}
+	
+	for(esel = 0; esel < NUM_DATA_MPU_ENTRIES; esel++)
+	{
+		MPU_ENTRY *mpu_entry = &data_mpu_entries[esel];
+		mpu_entry->mas0 = 0;
+		mpu_entry->mas1 = 0;
+		mpu_entry->mas2 = 0;
+		mpu_entry->mas3 = 0;
+		MAS0::SEL::Set(mpu_entry->mas0, sel);
+	}
+	
+	for(esel = 0; esel < NUM_SHARED_MPU_ENTRIES; esel++)
+	{
+		MPU_ENTRY *mpu_entry = &shd_mpu_entries[esel];
+		mpu_entry->mas0 = 0;
+		mpu_entry->mas1 = 0;
+		mpu_entry->mas2 = 0;
+		mpu_entry->mas3 = 0;
+		MAS0::SEL::Set(mpu_entry->mas0, sel);
+	}
+
+	mru_inst_mpu_entry = &inst_mpu_entries[0];
+	mru_data_mpu_entry = &data_mpu_entries[0];
+	mru_shd_mpu_entry = &shd_mpu_entries[0];
+	
+	MAS0::I::Set(hole_mpu_entry.mas0, 0U); // *NOT* cache inhibited
+	MAS0::G::Set(hole_mpu_entry.mas0, 0U); // *NOT* guarded
+}
+
+template <typename CONFIG>
+void MPU<CONFIG>::WriteEntry()
+{
+	unsigned int sel = mas0.template Get<typename MAS0::SEL>();
+	
+	if(sel == mas0.template Get<typename MAS0::SEL>())
+	{
+		unsigned int esel = mas0.template Get<typename MAS0::ESEL>();
+		unsigned int inst = mas0.template Get<typename MAS0::INST>();
+		unsigned int shd = mas0.template Get<typename MAS0::SHD>();
+		
+		MPU_ENTRY *mpu_entry = 0;
+		
+		if(shd)
+		{
+			// shared entry
+			mpu_entry = (esel < NUM_SHARED_MPU_ENTRIES) ? &shd_mpu_entries[esel] : 0;
+		}
+		else if(inst)
+		{
+			// pure instruction entry
+			mpu_entry = (esel < NUM_INST_MPU_ENTRIES) ? &inst_mpu_entries[esel] : 0;
+		}
+		else
+		{
+			// pure data entry
+			mpu_entry = (esel < NUM_DATA_MPU_ENTRIES) ? &data_mpu_entries[esel] : 0;
+		}
+		
+		if(mpu_entry)
+		{
+			mpu_entry->mas0 = mas0;
+			mpu_entry->mas1 = mas1;
+			mpu_entry->mas2 = mas2;
+			mpu_entry->mas3 = mas3;
+		}
+	}
+}
+
+template <typename CONFIG>
+void MPU<CONFIG>::ReadEntry()
+{
+	MPU_ENTRY *mpu_entry = 0;
+	
+	if(sel == mas0.template Get<typename MAS0::SEL>())
+	{
+		unsigned int esel = mas0.template Get<typename MAS0::ESEL>();
+		unsigned int inst = mas0.template Get<typename MAS0::INST>();
+		unsigned int shd = mas0.template Get<typename MAS0::SHD>();
+		
+		if(shd)
+		{
+			// shared entry
+			mpu_entry = (esel < NUM_SHARED_MPU_ENTRIES) ? &shd_mpu_entries[esel] : 0;
+		}
+		else if(inst)
+		{
+			// pure instruction entry
+			mpu_entry = (esel < NUM_INST_MPU_ENTRIES) ? &inst_mpu_entries[esel] : 0;
+		}
+		else
+		{
+			// pure data entry
+			mpu_entry = (esel < NUM_DATA_MPU_ENTRIES) ? &data_mpu_entries[esel] : 0;
+		}
+	}
+	
+	mas0 = mpu_entry ? mpu_entry->mas0 : 0;
+	mas1 = mpu_entry ? mpu_entry->mas1 : 0;
+	mas2 = mpu_entry ? mpu_entry->mas2 : 0;
+	mas3 = mpu_entry ? mpu_entry->mas3 : 0;
+}
+
+template <typename CONFIG>
+bool MPU<CONFIG>::Match(MPU_ENTRY *mpu_entry, ADDRESS addr, bool exec, bool write)
+{
+	MSR& msr = cpu->msr;
+	PID0& pid0 = cpu->pid0;
+	unsigned int pid = pid0.template Get<typename PID0::Process_ID>();
+
+	if(MAS0::VALID::Get(mpu_entry->mas0))
+	{
+		// valid MPU entry
+		unsigned int pr = msr.template Get<typename MSR::PR>();
+		
+		if(( exec && ((pr && (mpu0csr0.template Get<typename MPU0CSR0::BYPUX>()            || MAS0::UX_UR::Get(mpu_entry->mas0))) || (!pr && (mpu0csr0.template Get<typename MPU0CSR0::BYPSX>()    || MAS0::SX_SR::Get(mpu_entry->mas0))))) ||
+		   (!exec && ((pr && ((write && (mpu0csr0.template Get<typename MPU0CSR0::BYPUW>() || MAS0::UW::Get(mpu_entry->mas0)))    || (!write && (mpu0csr0.template Get<typename MPU0CSR0::BYPUR>() || MAS0::UX_UR::Get(mpu_entry->mas0))))) ||
+		             (!pr && ((write && (mpu0csr0.template Get<typename MPU0CSR0::BYPSW>() || MAS0::SW::Get(mpu_entry->mas0)))    || (!write && (mpu0csr0.template Get<typename MPU0CSR0::BYPSR>() || MAS0::SX_SR::Get(mpu_entry->mas0))))))))
+		{
+			// Access right match
+			unsigned int tid = MAS1::TID::Get(mpu_entry->mas1);
+			unsigned int tidmsk = MAS1::TIDMSK::Get(mpu_entry->mas1);
+			
+			if(!tid || (((tid ^ pid) & ~tidmsk) == 0))
+			{
+				// TID match
+				
+				// Note: Due to the use of access address matching, the effective smallest region size is 8 bytes
+				struct B29_31 : Field<void, 29, 31> {};
+				
+				ADDRESS upper_bound = MAS2::UPPER_BOUND::Get(mpu_entry->mas2);
+				ADDRESS lower_bound = MAS3::LOWER_BOUND::Get(mpu_entry->mas3);
+				
+				ADDRESS addr_mask = ~((int32_t) 0x80000000 >> MAS0::UAMSK::Get(mpu_entry->mas0));
+				B29_31::Set(addr_mask, 0U);
+				
+				ADDRESS masked_addr = addr & addr_mask;
+				ADDRESS masked_upper_bound = upper_bound & addr_mask;
+				ADDRESS masked_lower_bound = lower_bound & addr_mask;
+				
+				if((masked_addr >= masked_lower_bound) && (masked_addr <= masked_upper_bound))
+				{
+					// Address match
+					return true;
+				}
+			}
+		}
+	}
+	
+	return false;
+}
+
+template <typename CONFIG>
+MPU_ENTRY *MPU<CONFIG>::CheckPermissions(ADDRESS addr, bool exec, bool write)
+{
+	if(mpu0csr0.template Get<typename MPU0CSR0::MPUEN>())
+	{
+		unsigned int esel;
+
+		if(exec)
+		{
+			// instruction
+			if(Match(mru_inst_mpu_entry, addr, exec, write)) return mru_inst_mpu_entry;
+			
+			for(esel = 0; esel < NUM_INST_MPU_ENTRIES; esel++)
+			{
+				MPU_ENTRY *mpu_entry = &inst_mpu_entries[esel];
+				
+				if(Match(mpu_entry, addr, exec, write))
+				{
+					mru_inst_mpu_entry = mpu_entry;
+					return mpu_entry;
+				}
+			}
+		}
+		else
+		{
+			// data
+			if(Match(mru_data_mpu_entry, addr, exec, write)) return mru_data_mpu_entry;
+			
+			for(esel = 0; esel < NUM_DATA_MPU_ENTRIES; esel++)
+			{
+				MPU_ENTRY *mpu_entry = &data_mpu_entries[esel];
+				
+				if(Match(mpu_entry, addr, exec, write))
+				{
+					mru_data_mpu_entry = mpu_entry;
+					return mpu_entry;
+				}
+			}
+		}
+		
+		// shared
+		if(Match(mru_shd_mpu_entry, addr, exec, write)) return mru_shd_mpu_entry;
+
+		for(esel = 0; esel < NUM_SHARED_MPU_ENTRIES; esel++)
+		{
+			MPU_ENTRY *mpu_entry = &shd_mpu_entries[esel];
+			
+			if(Match(mpu_entry, addr, exec, write))
+			{
+				mru_shd_mpu_entry = mpu_entry;
+				return mpu_entry;
+			}
+		}
+	}
+	else
+	{
+		return &hole_mpu_entry;
+	}
+
+	return 0;
+}
 
 class CPU
 	: public unisim::component::cxx::processor::powerpc::CPU<CONFIG>
@@ -59,6 +385,7 @@ class CPU
 	, public unisim::kernel::service::Service<unisim::service::interfaces::Memory<ADDRESS> >
 {
 public:
+	typedef CPU ThisCPU;
 	typedef unisim::component::cxx::processor::powerpc::CPU<CONFIG> SuperCPU;
 	typedef unisim::util::cache::MemorySubSystem<MSS_TYPES, CPU> SuperMSS;
 	
@@ -401,26 +728,25 @@ public:
 	//  0   SystemResetInterrupt                 Reset
 	//  1   MachineCheckInterrupt                NMI
 	//  2   MachineCheckInterrupt                ErrorReport
-	//  3   MachineCheckInterrupt                MCP
-	//  4   MachineCheckInterrupt                AsynchronousMachineCheck
-	//  5   ExternalInputInterrupt               ExternalInput
-	//  6   CriticalInputInterrupt               CriticalInput
-	//  7   DebugInterrupt                       AsynchronousDebugEvent
-	//  8   PerformanceMonitorInterrupt          PerformanceCounterOverflow
-	//  9   PerformanceMonitorInterrupt          DebugEvent
-	// 10   InstructionStorageInterrupt          AccessControl
-	// 11   ProgramInterrupt                     IllegalInstruction
-	// 12   ProgramInterrupt                     PrivilegeViolation
-	// 13   ProgramInterrupt                     Trap
-	// 14   ProgramInterrupt                     UnimplementedInstruction
-	// 15   SystemCallInterrupt                  SystemCall
-	// 16   DataStorageInterrupt                 AccessControl
-	// 17   AlignmentInterrupt                   UnalignedLoadStoreMultiple
-	// 18   AlignmentInterrupt                   UnalignedLoadLinkStoreConditional
-	// 19   AlignmentInterrupt                   WriteThroughDCBZ
-	// 20   EmbeddedFloatingPointDataInterrupt   EmbeddedFloatingPointData
-	// 21   EmbeddedFloatingPointRoundInterrupt  EmbeddedFloatingPointRound
-	// 22   DebugInterrupt                       SynchronousDebugEvent
+	//  3   MachineCheckInterrupt                AsynchronousMachineCheck
+	//  4   ExternalInputInterrupt               ExternalInput
+	//  5   CriticalInputInterrupt               CriticalInput
+	//  6   DebugInterrupt                       AsynchronousDebugEvent
+	//  7   PerformanceMonitorInterrupt          PerformanceCounterOverflow
+	//  8   PerformanceMonitorInterrupt          DebugEvent
+	//  9   InstructionStorageInterrupt          AccessControl
+	// 10   ProgramInterrupt                     IllegalInstruction
+	// 11   ProgramInterrupt                     PrivilegeViolation
+	// 12   ProgramInterrupt                     Trap
+	// 13   ProgramInterrupt                     UnimplementedInstruction
+	// 14   SystemCallInterrupt                  SystemCall
+	// 15   DataStorageInterrupt                 AccessControl
+	// 16   AlignmentInterrupt                   UnalignedLoadStoreMultiple
+	// 17   AlignmentInterrupt                   UnalignedLoadLinkStoreConditional
+	// 18   AlignmentInterrupt                   WriteThroughDCBZ
+	// 19   EmbeddedFloatingPointDataInterrupt   EmbeddedFloatingPointData
+	// 20   EmbeddedFloatingPointRoundInterrupt  EmbeddedFloatingPointRound
+	// 21   DebugInterrupt                       SynchronousDebugEvent
 	
 	struct SystemResetInterrupt : Interrupt<SystemResetInterrupt, 0x00 /* p_rstbase[0:29] */>
 	{
@@ -448,7 +774,7 @@ public:
 
 	struct CriticalInputInterrupt : Interrupt<CriticalInputInterrupt, 0x00>
 	{
-		struct CriticalInput                        : Exception<CriticalInputInterrupt,6> { static const char *GetName() { return "Critical Input Interrupt/Critical Input Exception"; } };             //  p_critint_b is asserted and MSR[CE] = 1
+		struct CriticalInput                        : Exception<CriticalInputInterrupt,5> { static const char *GetName() { return "Critical Input Interrupt/Critical Input Exception"; } };             //  p_critint_b is asserted and MSR[CE] = 1
 		
 		typedef ExceptionSet<CriticalInput> ALL;
 		
@@ -498,8 +824,7 @@ public:
 
 		struct NMI                                  : Exception<MachineCheckInterrupt,1> { static const char *GetName() { return "Machine Check Interrupt/NMI Exception"; } };               // Non-Maskable Interrupt: p_nmi_b transitions from negated to asserted.
 		struct ErrorReport                          : Exception<MachineCheckInterrupt,2> { static const char *GetName() { return "Machine Check Interrupt/Error Report Exception"; } };      // Non-Maskable Interrupt: Error report
-		struct MCP                                  : Exception<MachineCheckInterrupt,3> { static const char *GetName() { return "Machine Check Interrupt/MCP"; } };                         // Maskable with MSR[ME] and HID0[EMCP]: p_mcp_b transition from negated to asserted
-		struct AsynchronousMachineCheck             : Exception<MachineCheckInterrupt,4> { static const char *GetName() { return "Machine Check Interrupt/Asynchronous Machine Check Exception"; } };   // Maskable with MSR[ME]
+		struct AsynchronousMachineCheck             : Exception<MachineCheckInterrupt,3> { static const char *GetName() { return "Machine Check Interrupt/Asynchronous Machine Check Exception"; } };   // Maskable with MSR[ME]
 		
 		typedef ExceptionSet<NMI, ErrorReport, AsynchronousMachineCheck> ALL;
 		
@@ -527,7 +852,7 @@ public:
 	
 	struct DataStorageInterrupt : InterruptWithAddress<DataStorageInterrupt, 0x20>
 	{
-		struct AccessControl                        : Exception<DataStorageInterrupt,16> { static const char *GetName() { return "Data Storage Interrupt/Access Control Exception"; } };               // Access control
+		struct AccessControl                        : Exception<DataStorageInterrupt,15> { static const char *GetName() { return "Data Storage Interrupt/Access Control Exception"; } };               // Access control
 		
 		typedef ExceptionSet<AccessControl> ALL;
 		
@@ -547,7 +872,7 @@ public:
 
 	struct InstructionStorageInterrupt : Interrupt<InstructionStorageInterrupt, 0x30>
 	{
-		struct AccessControl                        : Exception<InstructionStorageInterrupt,10> { static const char *GetName() { return "Instruction Storage Interrupt/Access Control Exception"; } };        // Access control
+		struct AccessControl                        : Exception<InstructionStorageInterrupt,9> { static const char *GetName() { return "Instruction Storage Interrupt/Access Control Exception"; } };        // Access control
 		
 		typedef ExceptionSet<AccessControl> ALL;
 		
@@ -568,7 +893,7 @@ public:
 
 	struct ExternalInputInterrupt : Interrupt<ExternalInputInterrupt, 0x40>
 	{
-		struct ExternalInput                        : Exception<ExternalInputInterrupt,5> { static const char *GetName() { return "External Input Interrupt/External Input Exception"; } };             // Interrupt Controller interrupt and MSR[EE] = 1
+		struct ExternalInput                        : Exception<ExternalInputInterrupt,4> { static const char *GetName() { return "External Input Interrupt/External Input Exception"; } };             // Interrupt Controller interrupt and MSR[EE] = 1
 		
 		typedef ExceptionSet<ExternalInput> ALL;
 		
@@ -588,9 +913,9 @@ public:
 
 	struct AlignmentInterrupt : InterruptWithAddress<AlignmentInterrupt, 0x50>
 	{
-		struct UnalignedLoadStoreMultiple           : Exception<AlignmentInterrupt,17> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load/Store Multiple Exception"; } };                 // lmw, stmw not word aligned
-		struct UnalignedLoadLinkStoreConditional    : Exception<AlignmentInterrupt,18> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load Link/Store Conditional Exception"; } };                 // lwarx or stwcx. not word aligned, lharx or sthcx. not halfword aligned
-		struct WriteThroughDCBZ                     : Exception<AlignmentInterrupt,19> { static const char *GetName() { return "Alignment Interrupt/Write Through DCBZ Exception"; } };                 // dcbz
+		struct UnalignedLoadStoreMultiple           : Exception<AlignmentInterrupt,16> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load/Store Multiple Exception"; } };                 // lmw, stmw not word aligned
+		struct UnalignedLoadLinkStoreConditional    : Exception<AlignmentInterrupt,17> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load Link/Store Conditional Exception"; } };                 // lwarx or stwcx. not word aligned, lharx or sthcx. not halfword aligned
+		struct WriteThroughDCBZ                     : Exception<AlignmentInterrupt,18> { static const char *GetName() { return "Alignment Interrupt/Write Through DCBZ Exception"; } };                 // dcbz
 		
 		typedef ExceptionSet<UnalignedLoadStoreMultiple, UnalignedLoadLinkStoreConditional, WriteThroughDCBZ> ALL;
 		
@@ -610,10 +935,10 @@ public:
 	
 	struct ProgramInterrupt : Interrupt<ProgramInterrupt, 0x60>
 	{
-		struct IllegalInstruction                   : Exception<ProgramInterrupt,11>  { static const char *GetName() { return "Program Interrupt/Illegal Instruction Exception"; } };                   // illegal instruction
-		struct PrivilegeViolation                   : Exception<ProgramInterrupt,12>  { static const char *GetName() { return "Program Interrupt/Privilege Violation Exception"; } };                   // privilege violation
-		struct Trap                                 : Exception<ProgramInterrupt,13> { static const char *GetName() { return "Program Interrupt/Trap Exception"; } };                   // trap instruction
-		struct UnimplementedInstruction             : Exception<ProgramInterrupt,14> { static const char *GetName() { return "Program Interrupt/Unimplemented Instruction Exception"; } };                   // unimplemented instruction
+		struct IllegalInstruction                   : Exception<ProgramInterrupt,10>  { static const char *GetName() { return "Program Interrupt/Illegal Instruction Exception"; } };                   // illegal instruction
+		struct PrivilegeViolation                   : Exception<ProgramInterrupt,11>  { static const char *GetName() { return "Program Interrupt/Privilege Violation Exception"; } };                   // privilege violation
+		struct Trap                                 : Exception<ProgramInterrupt,12> { static const char *GetName() { return "Program Interrupt/Trap Exception"; } };                   // trap instruction
+		struct UnimplementedInstruction             : Exception<ProgramInterrupt,13> { static const char *GetName() { return "Program Interrupt/Unimplemented Instruction Exception"; } };                   // unimplemented instruction
 		
 		typedef ExceptionSet<IllegalInstruction, PrivilegeViolation, Trap> ALL;
 		
@@ -633,8 +958,8 @@ public:
 
 	struct PerformanceMonitorInterrupt : Interrupt<PerformanceMonitorInterrupt, 0x70>
 	{
-		struct PerformanceCounterOverflow           : Exception<PerformanceMonitorInterrupt,8> { static const char *GetName() { return "Performance Monitor Interrupt/Performance Counter Overflow Exception"; } };        // PMC register overflow
-		struct DebugEvent                           : Exception<PerformanceMonitorInterrupt,9> { static const char *GetName() { return "Performance Monitor Interrupt/Debug Event Exception"; } };        // Event w/PMGC0[UDI]=0
+		struct PerformanceCounterOverflow           : Exception<PerformanceMonitorInterrupt,7> { static const char *GetName() { return "Performance Monitor Interrupt/Performance Counter Overflow Exception"; } };        // PMC register overflow
+		struct DebugEvent                           : Exception<PerformanceMonitorInterrupt,8> { static const char *GetName() { return "Performance Monitor Interrupt/Debug Event Exception"; } };        // Event w/PMGC0[UDI]=0
 		
 		typedef ExceptionSet<PerformanceCounterOverflow, DebugEvent> ALL;
 		
@@ -653,7 +978,7 @@ public:
 	
 	struct SystemCallInterrupt : Interrupt<SystemCallInterrupt, 0x80>
 	{
-		struct SystemCall                           : Exception<SystemCallInterrupt,15> { static const char *GetName() { return "System Call Interrupt/System Call Exception"; } };                // Execution of the System Call (se_sc) instruction
+		struct SystemCall                           : Exception<SystemCallInterrupt,14> { static const char *GetName() { return "System Call Interrupt/System Call Exception"; } };                // Execution of the System Call (se_sc) instruction
 		
 		typedef ExceptionSet<SystemCall> ALL;
 		
@@ -712,8 +1037,8 @@ public:
 			DBG_IMPRECISE_DEBUG_EVENT                = 0x02000000  // Sync
 		};
 		
-		struct AsynchronousDebugEvent                   : Exception<DebugInterrupt,7> { static const char *GetName() { return "Debug Interrupt/Asynchronous Debug Event Exception"; } };
-		struct SynchronousDebugEvent                    : Exception<DebugInterrupt,22> { static const char *GetName() { return "Debug Interrupt/Synchronous Debug Event Exception"; } };
+		struct AsynchronousDebugEvent                   : Exception<DebugInterrupt,6> { static const char *GetName() { return "Debug Interrupt/Asynchronous Debug Event Exception"; } };
+		struct SynchronousDebugEvent                    : Exception<DebugInterrupt,21> { static const char *GetName() { return "Debug Interrupt/Synchronous Debug Event Exception"; } };
 		
 		typedef ExceptionSet< AsynchronousDebugEvent, SynchronousDebugEvent > ALL;
 		
@@ -740,7 +1065,7 @@ public:
 
 	struct EmbeddedFloatingPointDataInterrupt : Interrupt<EmbeddedFloatingPointDataInterrupt, 0xa0>
 	{
-		struct EmbeddedFloatingPointData            : Exception<EmbeddedFloatingPointDataInterrupt,20> { static const char *GetName() { return "Embedded Floating-Point Data Interrupt/Embedded Floating-Point Data Exception"; } }; // Embedded Floating-point Data Exception
+		struct EmbeddedFloatingPointData            : Exception<EmbeddedFloatingPointDataInterrupt,19> { static const char *GetName() { return "Embedded Floating-Point Data Interrupt/Embedded Floating-Point Data Exception"; } }; // Embedded Floating-point Data Exception
 		
 		typedef ExceptionSet<EmbeddedFloatingPointData> ALL;
 		
@@ -760,7 +1085,7 @@ public:
 	
 	struct EmbeddedFloatingPointRoundInterrupt : Interrupt<EmbeddedFloatingPointRoundInterrupt, 0xb0>
 	{
-		struct EmbeddedFloatingPointRound           : Exception<EmbeddedFloatingPointRoundInterrupt,21> { static const char *GetName() { return "Embedded Floating-Point Round Interrupt/Embedded Floating-Point Round Exception"; } };// Embedded Floating-point Round Exception
+		struct EmbeddedFloatingPointRound           : Exception<EmbeddedFloatingPointRoundInterrupt,20> { static const char *GetName() { return "Embedded Floating-Point Round Interrupt/Embedded Floating-Point Round Exception"; } };// Embedded Floating-point Round Exception
 		
 		typedef ExceptionSet<EmbeddedFloatingPointRound> ALL;
 		
@@ -796,6 +1121,18 @@ public:
 	
 	void SetAutoVector(bool value) { if(verbose_interrupt) logger << DebugInfo << (value ? "Enabling" : "Disabling") << " auto vector" << EndDebugInfo; enable_auto_vectored_interrupts = value; }
 	void SetVectorOffset(ADDRESS value) { vector_offset = value & 0xfffffffcUL; }
+	
+	///////////////////////// Memory Protection Unit //////////////////////////
+
+	struct MPU_CONFIG
+	{
+		typedef ThisCPU CPU;
+		static const unsigned int NUM_INST_MPU_ENTRIES = 6;
+		static const unsigned int NUM_DATA_MPU_ENTRIES = 12;
+		static const unsigned int NUM_SHARED_MPU_ENTRIES = 6;
+	};
+	
+	friend class MPU<MPU_CONFIG>;
 	
 	//////////////////////////// Memory SubSystem /////////////////////////////
 	
@@ -904,8 +1241,8 @@ public:
 	inline bool IsVerboseDataBusRead() const ALWAYS_INLINE { return verbose_data_bus_read; }
 	inline bool IsVerboseDataBusWrite() const ALWAYS_INLINE { return verbose_data_bus_write; }
 	inline bool IsVerboseInstructionBusRead() const ALWAYS_INLINE { return verbose_instruction_bus_read; }
-	bool IsStorageCacheable(STORAGE_ATTR storage_attr) const { return true; }
-	bool IsDataWriteAccessWriteThrough(STORAGE_ATTR storage_attr) const { return false; }
+	bool IsStorageCacheable(STORAGE_ATTR storage_attr) const { return !(storage_attr & SA_I); }
+	bool IsDataWriteAccessWriteThrough(STORAGE_ATTR storage_attr) const { return true; }
 
 	bool DataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm);
 	bool DataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
@@ -936,6 +1273,7 @@ public:
 	void ClearInstructionCacheLockoutBySetAndWay(unsigned int index, unsigned int way);
 public:
 	MSR& GetMSR() { return msr; }
+	ESR& GetESR() { return esr; }
 
 	bool Dcba(ADDRESS addr);
 	bool Dcbi(ADDRESS addr);
@@ -960,6 +1298,9 @@ public:
 	bool Rfci();
 	bool Rfdi();
 	bool Rfmci();
+	bool Mpure();
+	bool Mpuwe();
+	bool Mpusync();
 
 	bool InstructionFetch(ADDRESS addr, void *buffer, unsigned int size);
 	void FlushInstructionBuffer();
@@ -973,6 +1314,15 @@ public:
 protected:
 	////////////////////////// Run-time parameters ////////////////////////////
 	
+	uint32_t processor_version;
+	unisim::kernel::service::Parameter<uint32_t> param_processor_version;
+	
+	uint32_t system_version;
+	unisim::kernel::service::Parameter<uint32_t> param_system_version;
+
+	uint32_t system_information;
+	unisim::kernel::service::Parameter<uint32_t> param_system_information;
+
 	ADDRESS imem_base_addr;
 	unisim::kernel::service::Parameter<ADDRESS> param_imem_base_addr;
 
@@ -1024,6 +1374,10 @@ protected:
 	unisim::component::cxx::processor::powerpc::e200z710n3::isa::vle::Decoder vle_decoder;
 	unisim::component::cxx::processor::powerpc::e200z710n3::isa::vle::Operation *operation;
 	
+	///////////////////////// Memory Protection Unit //////////////////////////
+
+	MPU<MPU_CONFIG> mpu;
+
 	/////////////////////////// Memory sub-system /////////////////////////////
 	
 	L1I l1i;
@@ -1035,6 +1389,8 @@ protected:
 	ADDRESS cur_imem_base_addr;
 	ADDRESS cur_dmem_base_addr;
 
+	///////////////////////// Memory Protection Unit //////////////////////////
+	
 	/////////////////////////// Machine State Register ////////////////////////
 	
 	MSR msr;
@@ -1055,6 +1411,7 @@ protected:
 	SPRG2 sprg2;
 	SPRG3 sprg3;
 	PIR pir;
+	PVR pvr;
 	DBSR dbsr;
 	DBCR0 dbcr0;
 	DBCR1 dbcr1;
@@ -1067,6 +1424,7 @@ protected:
 	DAC2 dac2;
 	DVC1 dvc1;
 	DVC2 dvc2;
+	TIR tir;
 	SPEFSCR spefscr;
 	L1CFG0 l1cfg0;
 	L1CFG1 l1cfg1;
@@ -1094,22 +1452,17 @@ protected:
 	DVC1U dvc1u;
 	DVC2U dvc2u;
 	DBCR6 dbcr6;
-	MAS0 mas0;
-	MAS1 mas1;
-	MAS2 mas2;
-	MAS3 mas3;
 	EDBRAC0 edbrac0;
-	MPU0CFG mpu0cfg;
 	DMEMCFG0 dmemcfg0;
 	IMEMCFG0 imemcfg0;
 	L1FINV1 l1finv1;
 	DEVENT devent;
+	SIR sir;
 	HID0 hid0;
 	HID1 hid1;
 	L1CSR0 l1csr0;
 	L1CSR1 l1csr1;
 	BUCSR bucsr;
-	MPU0CSR0 mpu0csr0;
 	L1FINV0 l1finv0;
 	SVR svr;
 	

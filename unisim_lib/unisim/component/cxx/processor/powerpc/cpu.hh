@@ -1513,6 +1513,7 @@ protected:
 		}
 	};
 
+public:
 	// Exception Syndrome Register
 	struct ESR : PrivilegedSPR<ESR, 62>
 	{
@@ -1560,6 +1561,7 @@ protected:
 			VLEMI::SetName("vlemi"); VLEMI::SetDescription("VLE Mode Instruction");
 		}
 	};
+protected:
 	
 	// Interrupt Vector Prefix Register
 	struct IVPR : PrivilegedSPR<IVPR, 63>
@@ -2133,6 +2135,20 @@ protected:
 		virtual void Reset() { /* unaffected */ }
 	private:
 		void Init() { this->SetName("dvc2"); this->SetDescription("Data Value Compare 2"); }
+	};
+	
+	// Thread ID
+	struct TIR : ReadOnlyPrivilegedSPR<TIR, 446>
+	{
+		typedef ReadOnlyPrivilegedSPR<TIR, 446> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+
+		TIR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
+		TIR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init() { this->SetName("tir"); this->SetDescription("Thread ID"); }
 	};
 
 	// Signal Processing Extension/Embedded Floating-point Status and Control Register
@@ -3350,6 +3366,20 @@ protected:
 	private:
 		void Init() { this->SetName("devent"); this->SetDescription("Debug Event Register"); }
 	};
+	
+	// System Information
+	struct SIR : ReadOnlyPrivilegedSPR<SIR, 992>
+	{
+		typedef ReadOnlyPrivilegedSPR<SIR, 992> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		SIR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
+		SIR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init() { this->SetName("sir"); this->SetDescription("System Information"); }
+	};
 
 	// Hardware Implementation Dependent Register 0
 	struct HID0 : PrivilegedSPR<HID0, 1008>
@@ -3453,7 +3483,7 @@ protected:
 		};
 		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
 		{
-			typedef FieldSet<WID, WDD, DCWA, DCECE, DCEI, DCLOC, DCEA, DCLOINV, DCABT, DCINV, DCE> ALL;
+			typedef FieldSet<WID> ALL;
 		};
 
 		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;

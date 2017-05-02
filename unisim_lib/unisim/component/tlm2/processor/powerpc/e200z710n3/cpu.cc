@@ -328,9 +328,9 @@ void CPU::P_NMI_B_Process()
 
 void CPU::P_MCP_B_Process()
 {
-	if(p_mcp_b.negedge())
+	if(p_mcp_b.negedge() && hid0.Get<HID0::EMCP>())
 	{
-		ThrowException<MachineCheckInterrupt::MCP>();
+		ThrowException<MachineCheckInterrupt::AsynchronousMachineCheck>().SetEvent(MachineCheckInterrupt::MCE_MCP);
 		external_event.notify(sc_core::SC_ZERO_TIME);
 	}
 }

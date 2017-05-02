@@ -240,7 +240,9 @@ void CPU<CONFIG>::Reset()
 template <class CONFIG>
 void CPU<CONFIG>::RegisterSLR(unsigned int n, SLRBase *slr_p)
 {
-	slr[slr_p->GetSpace()][n] = slr_p;
+	SLR_Space_Type slr_space = slr_p->GetSpace();
+	assert(slr[slr_space][n] == 0);
+	slr[slr_space][n] = slr_p;
 }
 
 template <class CONFIG>

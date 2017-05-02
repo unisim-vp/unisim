@@ -48,9 +48,16 @@ class CPU;
 
 typedef uint32_t ADDRESS;
 typedef uint32_t PHYSICAL_ADDRESS;
-typedef unsigned int STORAGE_ATTR;
 const unsigned int FSB_WIDTH = 8;
 const bool DEBUG_ENABLE = false;
+
+enum STORAGE_ATTR
+{
+	SA_DEFAULT = 0,           // not cache inhibited and not guarded
+	SA_I       = 1,           // cache inhibited
+	SA_G       = 2,           // guarded
+	SA_IG      = SA_I | SA_G, // cache inhibited and guarded
+};
 
 struct CONFIG
 {

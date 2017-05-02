@@ -266,7 +266,7 @@ public:
 	template <typename T> static inline T GetReadMask() ALWAYS_INLINE;
 	template <typename T> static inline T Mask(const T& storage) ALWAYS_INLINE;
 	template <typename T> static inline T Get(const T& storage) ALWAYS_INLINE;
-	template <typename T> static void inline Set(T& storage, const T& field_value) ALWAYS_INLINE;
+	template <typename T> static void inline Set(T& storage, T field_value) ALWAYS_INLINE;
 	static inline void SetName(const std::string& name);
 	static inline void SetDisplayName(const std::string& disp_name);
 	static inline void SetDescription(const std::string& desc);
@@ -331,7 +331,7 @@ struct FieldSet
 	template <typename T> static inline T GetWriteMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetReadMask() ALWAYS_INLINE;
 	template <typename T> static inline T Get(const T& storage) ALWAYS_INLINE;
-	template <typename T> static inline void Set(T& storage, const T& bitfied_value) ALWAYS_INLINE;
+	template <typename T> static inline void Set(T& storage, T bitfied_value) ALWAYS_INLINE;
 	static inline const std::string& GetName();
 	template <typename T> static inline void ShortPrettyPrint(std::ostream& os, const T& storage);
 	template <typename T> static inline void LongPrettyPrint(std::ostream& os, const T& storage);

@@ -124,7 +124,7 @@ inline T Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::Get(const T& storage)
 
 template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
 template <typename T>
-inline void Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::Set(T& storage, const T& bitfied_value)
+inline void Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::Set(T& storage, T bitfied_value)
 {
 	storage = (storage & ~GetAssignMask<T>()) | ((bitfied_value << _BITOFFSET) & GetAssignMask<T>());
 }
@@ -484,7 +484,7 @@ template <typename T> inline void FieldSet<  BF0,  BF1,  BF2,  BF3,  BF4,  BF5, 
                                           , BF32, BF33, BF34, BF35, BF36, BF37, BF38, BF39
                                           , BF40, BF41, BF42, BF43, BF44, BF45, BF46, BF47
                                           , BF48, BF49, BF50, BF51, BF52, BF53, BF54, BF55
-                                          , BF56, BF57, BF58, BF59, BF60, BF61, BF62, BF63>::Set(T& storage, const T& fieldset_value)
+                                          , BF56, BF57, BF58, BF59, BF60, BF61, BF62, BF63>::Set(T& storage, T fieldset_value)
 {
 	storage = (storage & ~GetMask<T>()) | (fieldset_value & GetMask<T>());
 }
