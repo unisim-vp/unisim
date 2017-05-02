@@ -2,7 +2,7 @@
 #include <unisim/util/endian/endian.hh>
 #include <iostream>
 
-namespace armsec
+namespace unisim
 {
   std::ostream& ConstNodeBase::warn() { return std::cerr; }
   

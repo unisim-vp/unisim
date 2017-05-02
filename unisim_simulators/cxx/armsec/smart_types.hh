@@ -1,19 +1,14 @@
 #ifndef SMART_TYPES_HH
 #define SMART_TYPES_HH
 
-#include <limits>       // std::numeric_limits
+#include <limits>
 #include <ostream>
-#include <iomanip>
 #include <stdexcept>
-#include <string>
-#include <vector>
 #include <cstring>
 #include <typeinfo>
 #include <inttypes.h>
 
-// #include <cmath>
-
-namespace armsec
+namespace unisim
 {
   template <typename Bool> struct AssertBool {};
   template <>              struct AssertBool<bool> { static void check() {} };
@@ -24,20 +19,6 @@ namespace armsec
   template <class T, class U>  struct CmpTypes { static bool const same = false; };
 
   template <class T>  struct CmpTypes<T,T> { static bool const same = true; };
-  
-  struct Label
-  {
-    typedef std::vector<std::string> Program;
-    
-    Label( Program& _program ) : program(&_program), id(-1) {}
-    
-    int next() { id = program->size(); program->push_back(""); return id; }
-    bool valid() const { return id >= 0; }
-    void operator = (std::string const& src) { program->at(id) = src; }
-    
-    Program* program;
-    int id;
-  };
   
   struct Expr;
   
@@ -56,6 +37,7 @@ namespace armsec
       virtual void Process( Expr& ) = 0;
     };
     virtual void Traverse( Visitor& visitor ) = 0;
+    virtual void Repr( std::ostream& sink ) const = 0;
     virtual intptr_t cmp( ExprNode const& ) const = 0;
     virtual ExprNode* GetConstNode() = 0;
   };
@@ -174,6 +156,79 @@ namespace armsec
     Code code;
   };
   
+  struct ScalarType
+  {
+    enum id_t { BOOL, U8, U16, U32, U64, S8, S16, S32, S64, F32, F64 };
+    ScalarType( id_t id )
+      : name(0), bitsize(0), is_signed(false), is_integer(false)
+    {
+      switch (id)
+        {
+        case BOOL: bitsize = 1;  is_integer = true;  is_signed = false; name = "BOOL"; break;
+        case U8:   bitsize = 8;  is_integer = true;  is_signed = false; name = "U8";  break;
+        case S8:   bitsize = 8;  is_integer = true;  is_signed = true;  name = "S8";  break;
+        case U16:  bitsize = 16; is_integer = true;  is_signed = false; name = "U16"; break;
+        case S16:  bitsize = 16; is_integer = true;  is_signed = true;  name = "S16"; break;
+        case U32:  bitsize = 32; is_integer = true;  is_signed = false; name = "U32"; break;
+        case S32:  bitsize = 32; is_integer = true;  is_signed = true;  name = "S32"; break;
+        case U64:  bitsize = 64; is_integer = true;  is_signed = false; name = "U64"; break;
+        case S64:  bitsize = 64; is_integer = true;  is_signed = true;  name = "S64"; break;
+        case F32:  bitsize = 32; is_integer = false; is_signed = true;  name = "F32"; break;
+        case F64:  bitsize = 64; is_integer = false; is_signed = true;  name = "F64"; break;
+        }
+    }
+    char const* name;
+    unsigned bitsize;
+    bool is_signed, is_integer;
+  };
+  
+  template <typename VALUE_TYPE>
+  struct TypeInfo
+  {
+    static void Repr( std::ostream& sink, VALUE_TYPE v )
+    {
+      sink << (std::numeric_limits<VALUE_TYPE>::is_signed ? 'S' : 'U')
+           << (8*sizeof(VALUE_TYPE)) << "( 0x"
+           << std::hex << uint64_t(v) << " )"<< std::dec;
+    };
+    static unsigned bitsize() { return 8*sizeof(VALUE_TYPE); }
+    static ScalarType::id_t GetType()
+    {
+      if (std::numeric_limits<VALUE_TYPE>::is_integer)
+        {
+          bool is_signed = std::numeric_limits<VALUE_TYPE>::is_signed;
+          //int bits = std::numeric_limits<VALUE_TYPE>::digits + (is_signed ? 1 : 0);
+          int bits = 8*sizeof(VALUE_TYPE);
+          switch (bits) {
+          case 8:  return is_signed ? ScalarType::S8 :  ScalarType::U8;
+          case 16: return is_signed ? ScalarType::S16 : ScalarType::U16;
+          case 32: return is_signed ? ScalarType::S32 : ScalarType::U32;
+          case 64: return is_signed ? ScalarType::S64 : ScalarType::U64;
+          }
+        }
+      throw std::logic_error("not an integer type");
+    }
+  };
+  
+  template <> struct TypeInfo<bool>
+  {
+    static void Repr( std::ostream& sink, bool v ) { sink << "BOOL( " << int(v) << " )"; }
+    static unsigned bitsize() { return 1; }
+    static ScalarType::id_t GetType() { return ScalarType::BOOL; }
+  };
+  template <> struct TypeInfo<float>
+  {
+    static void Repr( std::ostream& sink, float v ) { sink << "F32( " << v << " )"; }
+    static unsigned bitsize() { return 32; }
+    static ScalarType::id_t GetType() { return ScalarType::F32; }
+  };
+  template <> struct TypeInfo<double>
+  {
+    static void Repr( std::ostream& sink, double v ) { sink << "F64( " << v << " )"; }
+    static unsigned bitsize() { return 64; }
+    static ScalarType::id_t GetType() { return ScalarType::F64; }
+  };
+  
   struct ConstNodeBase : public ExprNode
   {
     ExprNode* GetConstNode() { return this; };
@@ -189,8 +244,7 @@ namespace armsec
     virtual int16_t GetS16() const = 0;
     virtual int32_t GetS32() const = 0;
     virtual int64_t GetS64() const = 0;
-    enum type_t { BOOL, U8, U16, U32, U64, S8, S16, S32, S64, F32, F64 };
-    virtual type_t GetType() const = 0;
+    virtual ScalarType::id_t GetType() const = 0;
     static std::ostream& warn();
   };
   
@@ -230,49 +284,6 @@ namespace armsec
   uint16_t BSwp( uint16_t v );
   
   template <typename VALUE_TYPE>
-  struct TypeInfo
-  {
-    static void name( std::ostream& sink )
-    { sink << (std::numeric_limits<VALUE_TYPE>::is_signed ? 'S' : 'U') << (8*sizeof(VALUE_TYPE)); };
-    static unsigned bitsize() { return 8*sizeof(VALUE_TYPE); }
-    static ConstNodeBase::type_t GetType()
-    {
-      if (std::numeric_limits<VALUE_TYPE>::is_integer)
-        {
-          bool is_signed = std::numeric_limits<VALUE_TYPE>::is_signed;
-          //int bits = std::numeric_limits<VALUE_TYPE>::digits + (is_signed ? 1 : 0);
-          int bits = 8*sizeof(VALUE_TYPE);
-          switch (bits) {
-          case 8:  return is_signed ? ConstNodeBase::S8 :  ConstNodeBase::U8;
-          case 16: return is_signed ? ConstNodeBase::S16 : ConstNodeBase::U16;
-          case 32: return is_signed ? ConstNodeBase::S32 : ConstNodeBase::U32;
-          case 64: return is_signed ? ConstNodeBase::S64 : ConstNodeBase::U64;
-          }
-        }
-      throw std::logic_error("not an integer type");
-    }
-  };
-  
-  template <> struct TypeInfo<bool>
-  {
-    static void name( std::ostream& sink ) { sink << "BOOL"; }
-    static unsigned bitsize() { return 1; }
-    static ConstNodeBase::type_t GetType() { return ConstNodeBase::BOOL; }
-  };
-  template <> struct TypeInfo<float>
-  {
-    static void name( std::ostream& sink ) { sink << "F32"; }
-    static unsigned bitsize() { return 32; }
-    static ConstNodeBase::type_t GetType() { return ConstNodeBase::F32; }
-  };
-  template <> struct TypeInfo<double>
-  {
-    static void name( std::ostream& sink ) { sink << "F64"; }
-    static unsigned bitsize() { return 64; }
-    static ConstNodeBase::type_t GetType() { return ConstNodeBase::F64; }
-  };
-  
-  template <typename VALUE_TYPE>
   struct ConstNode : public ConstNodeBase
   {
     ConstNode( VALUE_TYPE _value ) : value( _value ) {} VALUE_TYPE value;
@@ -281,6 +292,11 @@ namespace armsec
     {
       ConstNode<VALUE_TYPE> const& rhs = dynamic_cast<ConstNode<VALUE_TYPE> const&>( brhs );
       return (value < rhs.value) ? -1 : (value > rhs.value) ? +1 : 0;
+    }
+    
+    virtual void Repr( std::ostream& sink ) const
+    {
+      TypeInfo<VALUE_TYPE>::Repr( sink, value );
     }
     
     virtual void Traverse( Visitor& visitor ) {}
@@ -321,7 +337,7 @@ namespace armsec
         case BinaryOp::NA:   throw std::logic_error("???");
         }
       
-      warn() << "Unhandled binary operation: " << op.c_str() << std::endl;
+      warn() << "Unhandled binary operation: " << op.c_str() << "\n";
       return 0;
     }
     ConstNodeBase*
@@ -344,7 +360,7 @@ namespace armsec
           
         }
       
-      warn() << "Unhandled unary operation: " << op.c_str() << std::endl;
+      warn() << "Unhandled unary operation: " << op.c_str() << "\n";
       return 0;
     }
     float GetFloat() const { return value; }
@@ -357,7 +373,7 @@ namespace armsec
     int16_t GetS16() const { return value; }
     int32_t GetS32() const { return value; }
     int64_t GetS64() const { return value; }
-    type_t GetType() const { return TypeInfo<VALUE_TYPE>::GetType(); }
+    ScalarType::id_t GetType() const { return TypeInfo<VALUE_TYPE>::GetType(); }
   };
   
   struct Expr
@@ -405,12 +421,21 @@ namespace armsec
   template <typename VALUE_TYPE>
   Expr make_const( VALUE_TYPE value ) { return Expr( new ConstNode<VALUE_TYPE>( value ) ); }
   
-  template <typename DST_VALUE_TYPE, typename SRC_VALUE_TYPE>
-  struct CastNode : public ExprNode
+  struct CastNodeBase : public ExprNode
   {
-    CastNode( Expr const& _src )
-      : src(_src)
-    {}
+    CastNodeBase( Expr const& _src ) : src(_src) {}
+    virtual ScalarType::id_t GetSrcType() const = 0;
+    virtual ScalarType::id_t GetDstType() const = 0;
+    Expr src;
+  };
+  
+  template <typename DST_VALUE_TYPE, typename SRC_VALUE_TYPE>
+  struct CastNode : public CastNodeBase
+  {
+    CastNode( Expr const& _src ) : CastNodeBase( _src ) {}
+    
+    virtual ScalarType::id_t GetSrcType() const { return TypeInfo<SRC_VALUE_TYPE>::GetType(); }
+    virtual ScalarType::id_t GetDstType() const { return TypeInfo<DST_VALUE_TYPE>::GetType(); }
     
     intptr_t cmp( ExprNode const& brhs ) const
     {
@@ -419,6 +444,7 @@ namespace armsec
     }
     
     virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
+    virtual void Repr( std::ostream& sink ) const { sink << ScalarType( TypeInfo<SRC_VALUE_TYPE>::GetType() ).name; sink << "( "; src->Repr(sink); sink << " )"; }
     
     virtual ExprNode* GetConstNode()
     {
@@ -438,7 +464,6 @@ namespace armsec
       }
       return 0;
     }
-    Expr src;
   };
   
   struct UONode : public ExprNode
@@ -448,6 +473,7 @@ namespace armsec
     {}
     
     virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
+    virtual void Repr( std::ostream& sink ) const { sink << unop.c_str() << "( "; src->Repr( sink ); sink << " )"; }
     
     intptr_t cmp( ExprNode const& brhs ) const
     {
@@ -472,6 +498,7 @@ namespace armsec
     {}
     
     virtual void Traverse( Visitor& visitor ) { visitor.Process( left ); visitor.Process( right ); }
+    virtual void Repr( std::ostream& sink ) const { sink << binop.c_str() << "( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
     
     intptr_t cmp( ExprNode const& brhs ) const
     {
@@ -495,8 +522,9 @@ namespace armsec
   struct SmartValue
   {
     typedef VALUE_TYPE value_type;
+    typedef SmartValue<value_type> this_type;
     
-    Expr                  expr;
+    Expr expr;
     
     SmartValue() : expr( make_const( value_type() ) ) {}
     
@@ -521,49 +549,49 @@ namespace armsec
 
     static bool const is_signed = std::numeric_limits<value_type>::is_signed;
     
-    SmartValue<value_type>& operator = ( SmartValue<value_type> const& other ) { expr = other.expr; return *this; }
+    this_type& operator = ( this_type const& other ) { expr = other.expr; return *this; }
     
     template <typename SHIFT_TYPE>
-    SmartValue<value_type> operator << ( SHIFT_TYPE shift ) const { return SmartValue<value_type>( Expr( new BONode( "Lsl", expr, make_const( shift ) ) ) ); }
+    this_type operator << ( SHIFT_TYPE shift ) const { return this_type( Expr( new BONode( "Lsl", expr, make_const( shift ) ) ) ); }
     template <typename SHIFT_TYPE>
-    SmartValue<value_type> operator >> ( SHIFT_TYPE shift ) const { return SmartValue<value_type>( Expr( new BONode(is_signed?"Asr":"Lsr",expr,make_const(shift)) ) ); }
+    this_type operator >> ( SHIFT_TYPE shift ) const { return this_type( Expr( new BONode(is_signed?"Asr":"Lsr",expr,make_const(shift)) ) ); }
     template <typename SHIFT_TYPE>
-    SmartValue<value_type>& operator <<= ( SHIFT_TYPE shift ) { expr = new BONode( "Lsl", expr, make_const( shift ) ); return *this; }
+    this_type& operator <<= ( SHIFT_TYPE shift ) { expr = new BONode( "Lsl", expr, make_const( shift ) ); return *this; }
     template <typename SHIFT_TYPE>
-    SmartValue<value_type>& operator >>= ( SHIFT_TYPE shift ) { expr = new BONode(is_signed?"Asr":"Lsr",expr,make_const(shift)); return *this; }
+    this_type& operator >>= ( SHIFT_TYPE shift ) { expr = new BONode(is_signed?"Asr":"Lsr",expr,make_const(shift)); return *this; }
     
     template <typename SHIFT_TYPE>
-    SmartValue<value_type> operator << ( SmartValue<SHIFT_TYPE> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "Lsl", expr, other.expr ) ) ); }
+    this_type operator << ( SmartValue<SHIFT_TYPE> const& other ) const { return this_type( Expr( new BONode( "Lsl", expr, other.expr ) ) ); }
     template <typename SHIFT_TYPE>
-    SmartValue<value_type> operator >> ( SmartValue<SHIFT_TYPE> const& other ) const { return SmartValue<value_type>( Expr( new BONode(is_signed?"Asr":"Lsr",expr,other.expr) ) ); }
+    this_type operator >> ( SmartValue<SHIFT_TYPE> const& other ) const { return this_type( Expr( new BONode(is_signed?"Asr":"Lsr",expr,other.expr) ) ); }
     
-    SmartValue<value_type> operator - () const { return SmartValue<value_type>( Expr( new UONode( "Neg", expr ) ) ); }
-    SmartValue<value_type> operator ~ () const { return SmartValue<value_type>( Expr( new UONode( "Not", expr ) ) ); }
+    this_type operator - () const { return this_type( Expr( new UONode( "Neg", expr ) ) ); }
+    this_type operator ~ () const { return this_type( Expr( new UONode( "Not", expr ) ) ); }
     
-    SmartValue<value_type>& operator += ( SmartValue<value_type> const& other ) { expr = new BONode( "Add", expr, other.expr ); return *this; }
-    SmartValue<value_type>& operator -= ( SmartValue<value_type> const& other ) { expr = new BONode( "Sub", expr, other.expr ); return *this; }
-    SmartValue<value_type>& operator *= ( SmartValue<value_type> const& other ) { expr = new BONode( "Mul", expr, other.expr ); return *this; }
-    SmartValue<value_type>& operator /= ( SmartValue<value_type> const& other ) { expr = new BONode( "Div", expr, other.expr ); return *this; }
-    SmartValue<value_type>& operator %= ( SmartValue<value_type> const& other ) { expr = new BONode( "Mod", expr, other.expr ); return *this; }
-    SmartValue<value_type>& operator ^= ( SmartValue<value_type> const& other ) { expr = new BONode( "Xor", expr, other.expr ); return *this; }
-    SmartValue<value_type>& operator &= ( SmartValue<value_type> const& other ) { expr = new BONode( "And", expr, other.expr ); return *this; }
-    SmartValue<value_type>& operator |= ( SmartValue<value_type> const& other ) { expr = new  BONode( "Or", expr, other.expr ); return *this; }
+    this_type& operator += ( this_type const& other ) { expr = new BONode( "Add", expr, other.expr ); return *this; }
+    this_type& operator -= ( this_type const& other ) { expr = new BONode( "Sub", expr, other.expr ); return *this; }
+    this_type& operator *= ( this_type const& other ) { expr = new BONode( "Mul", expr, other.expr ); return *this; }
+    this_type& operator /= ( this_type const& other ) { expr = new BONode( "Div", expr, other.expr ); return *this; }
+    this_type& operator %= ( this_type const& other ) { expr = new BONode( "Mod", expr, other.expr ); return *this; }
+    this_type& operator ^= ( this_type const& other ) { expr = new BONode( "Xor", expr, other.expr ); return *this; }
+    this_type& operator &= ( this_type const& other ) { expr = new BONode( "And", expr, other.expr ); return *this; }
+    this_type& operator |= ( this_type const& other ) { expr = new  BONode( "Or", expr, other.expr ); return *this; }
     
-    SmartValue<value_type> operator + ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "Add", expr, other.expr ) ) ); }
-    SmartValue<value_type> operator - ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "Sub", expr, other.expr ) ) ); }
-    SmartValue<value_type> operator * ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "Mul", expr, other.expr ) ) ); }
-    SmartValue<value_type> operator / ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "Div", expr, other.expr ) ) ); }
-    SmartValue<value_type> operator % ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "Mod", expr, other.expr ) ) ); }
-    SmartValue<value_type> operator ^ ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "Xor", expr, other.expr ) ) ); }
-    SmartValue<value_type> operator & ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( Expr( new BONode( "And", expr, other.expr ) ) ); }
-    SmartValue<value_type> operator | ( SmartValue<value_type> const& other ) const { return SmartValue<value_type>( Expr( new  BONode( "Or", expr, other.expr ) ) ); }
+    this_type operator + ( this_type const& other ) const { return this_type( Expr( new BONode( "Add", expr, other.expr ) ) ); }
+    this_type operator - ( this_type const& other ) const { return this_type( Expr( new BONode( "Sub", expr, other.expr ) ) ); }
+    this_type operator * ( this_type const& other ) const { return this_type( Expr( new BONode( "Mul", expr, other.expr ) ) ); }
+    this_type operator / ( this_type const& other ) const { return this_type( Expr( new BONode( "Div", expr, other.expr ) ) ); }
+    this_type operator % ( this_type const& other ) const { return this_type( Expr( new BONode( "Mod", expr, other.expr ) ) ); }
+    this_type operator ^ ( this_type const& other ) const { return this_type( Expr( new BONode( "Xor", expr, other.expr ) ) ); }
+    this_type operator & ( this_type const& other ) const { return this_type( Expr( new BONode( "And", expr, other.expr ) ) ); }
+    this_type operator | ( this_type const& other ) const { return this_type( Expr( new  BONode( "Or", expr, other.expr ) ) ); }
     
-    SmartValue<bool> operator == ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( Expr( new BONode( "Teq", expr, other.expr ) ) ); }
-    SmartValue<bool> operator != ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( Expr( new BONode( "Tne", expr, other.expr ) ) ); }
-    SmartValue<bool> operator <= ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( Expr( new BONode( is_signed ? "Tle" : "Tleu", expr, other.expr ) ) ); }
-    SmartValue<bool> operator >= ( SmartValue<value_type> const& other ) const { return SmartValue<bool>( Expr( new BONode( is_signed ? "Tge" : "Tgeu", expr, other.expr ) ) ); }
-    SmartValue<bool> operator < ( SmartValue<value_type> const& other ) const  { return SmartValue<bool>( Expr( new BONode( is_signed ? "Tlt" : "Tltu", expr, other.expr ) ) ); }
-    SmartValue<bool> operator > ( SmartValue<value_type> const& other ) const  { return SmartValue<bool>( Expr( new BONode( is_signed ? "Tgt" : "Tgtu", expr, other.expr ) ) ); }
+    SmartValue<bool> operator == ( this_type const& other ) const { return SmartValue<bool>( Expr( new BONode( "Teq", expr, other.expr ) ) ); }
+    SmartValue<bool> operator != ( this_type const& other ) const { return SmartValue<bool>( Expr( new BONode( "Tne", expr, other.expr ) ) ); }
+    SmartValue<bool> operator <= ( this_type const& other ) const { return SmartValue<bool>( Expr( new BONode( is_signed ? "Tle" : "Tleu", expr, other.expr ) ) ); }
+    SmartValue<bool> operator >= ( this_type const& other ) const { return SmartValue<bool>( Expr( new BONode( is_signed ? "Tge" : "Tgeu", expr, other.expr ) ) ); }
+    SmartValue<bool> operator < ( this_type const& other ) const  { return SmartValue<bool>( Expr( new BONode( is_signed ? "Tlt" : "Tltu", expr, other.expr ) ) ); }
+    SmartValue<bool> operator > ( this_type const& other ) const  { return SmartValue<bool>( Expr( new BONode( is_signed ? "Tgt" : "Tgtu", expr, other.expr ) ) ); }
     
     SmartValue<bool> operator ! () const
     { AssertBool<value_type>::check(); return SmartValue<bool>( Expr( new UONode( "Not", expr ) ) ); }
@@ -589,6 +617,7 @@ namespace armsec
     {
       DefaultNaNNode( int _fsz ) : fsz( _fsz ) {} int fsz;
       virtual void Traverse( Visitor& visitor ) {}
+      virtual void Repr( std::ostream& sink ) const { sink << "DefaultNaN()"; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         DefaultNaNNode const& rhs = dynamic_cast<DefaultNaNNode const&>( brhs );
@@ -629,6 +658,7 @@ namespace armsec
     {
       IsNaNNode( Expr const& _src, bool _signaling ) : src(_src), signaling(_signaling) {} Expr src; bool signaling;
       virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "IsNaN("; src->Repr(sink); sink << ")"; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         IsNaNNode const& rhs = dynamic_cast<IsNaNNode const&>( brhs );
@@ -685,6 +715,17 @@ namespace armsec
       Expr acc, left, right;
       
       virtual void Traverse( Visitor& visitor ) { visitor.Process( acc ); visitor.Process( left ); visitor.Process( right ); }
+      virtual void Repr( std::ostream& sink ) const
+      {
+        sink << "IsInvalidMulAdd( ";
+        acc->Repr(sink);
+        sink << ", ";
+        left->Repr(sink);
+        sink << ", ";
+        right->Repr(sink);
+        sink << " )";
+      }
+      
       
       intptr_t cmp( ExprNode const& brhs ) const
       {
@@ -710,6 +751,16 @@ namespace armsec
       Expr acc, left, right;
       
       virtual void Traverse( Visitor& visitor ) { visitor.Process( acc ); visitor.Process( left ); visitor.Process( right ); }
+      virtual void Repr( std::ostream& sink ) const
+      {
+        sink << "IsInvalidMulAdd( ";
+        acc->Repr(sink);
+        sink << ", ";
+        left->Repr(sink);
+        sink << ", ";
+        right->Repr(sink);
+        sink << " )";
+      }
       
       intptr_t cmp( ExprNode const& brhs ) const
       {
@@ -744,6 +795,7 @@ namespace armsec
       {} Expr src; int ssz; int dsz;
       
       virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "FtoF( "; src->Repr(sink); sink << " )"; }
       
       intptr_t cmp( ExprNode const& brhs ) const
       {
@@ -768,6 +820,7 @@ namespace armsec
       {} Expr src; int fsz; int isz; int fb; 
       
       virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "FtoI( "; src->Repr(sink); sink << " )"; }
       
       intptr_t cmp( ExprNode const& brhs ) const
       {
@@ -793,6 +846,7 @@ namespace armsec
       {} Expr src; int isz; int fsz; int fb;
       
       virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
+      virtual void Repr( std::ostream& sink ) const { sink << "ItoF( "; src->Repr(sink); sink << " )"; }
       
       intptr_t cmp( ExprNode const& brhs ) const
       {
