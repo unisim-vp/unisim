@@ -106,6 +106,7 @@ vector"
 
 UNISIM_LIB_ARMSEC_SOURCE_FILES="\
 unisim/component/cxx/processor/arm/disasm.cc \
+unisim/util/symbolic/symbolic.cc \
 "
 
 UNISIM_LIB_ARMSEC_ISA_THUMB_FILES="\
@@ -159,6 +160,7 @@ unisim/util/truth_table/truth_table.hh \
 unisim/util/endian/endian.hh \
 unisim/util/inlining/inlining.hh \
 unisim/util/arithmetic/arithmetic.hh \
+unisim/util/symbolic/symbolic.hh \
 unisim/component/cxx/processor/arm/disasm.hh \
 unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \
@@ -226,10 +228,8 @@ UNISIM_SIMULATOR_ARMSEC_ISA_FILES="${UNISIM_SIMULATOR_ARMSEC_ISA_THUMB_FILES} ${
 
 UNISIM_SIMULATOR_ARMSEC_SOURCE_FILES="\
 main.cc \
-smart_types.cc \
 "
 UNISIM_SIMULATOR_ARMSEC_HEADER_FILES="${UNISIM_SIMULATOR_ARMSEC_ISA_FILES} \
-smart_types.hh \
 "
 
 UNISIM_SIMULATOR_ARMSEC_EXTRA_FILES="\

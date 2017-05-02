@@ -1,8 +1,8 @@
 #include <unisim/component/cxx/processor/arm/disasm.hh>
 #include <unisim/component/cxx/processor/arm/psr.hh>
+#include <unisim/util/symbolic/symbolic.hh>
 #include <top_arm32.tcc>
 #include <top_thumb.tcc>
-#include <smart_types.hh>
 
 #include <iostream>
 #include <string>
@@ -15,17 +15,17 @@
 
 namespace armsec
 {
-  typedef unisim::SmartValue<double>   F64;
-  typedef unisim::SmartValue<float>    F32;
-  typedef unisim::SmartValue<bool>     BOOL;
-  typedef unisim::SmartValue<uint8_t>  U8;
-  typedef unisim::SmartValue<uint16_t> U16;
-  typedef unisim::SmartValue<uint32_t> U32;
-  typedef unisim::SmartValue<uint64_t> U64;
-  typedef unisim::SmartValue<int8_t>   S8;
-  typedef unisim::SmartValue<int16_t>  S16;
-  typedef unisim::SmartValue<int32_t>  S32;
-  typedef unisim::SmartValue<int64_t>  S64;
+  typedef unisim::util::symbolic::SmartValue<double>   F64;
+  typedef unisim::util::symbolic::SmartValue<float>    F32;
+  typedef unisim::util::symbolic::SmartValue<bool>     BOOL;
+  typedef unisim::util::symbolic::SmartValue<uint8_t>  U8;
+  typedef unisim::util::symbolic::SmartValue<uint16_t> U16;
+  typedef unisim::util::symbolic::SmartValue<uint32_t> U32;
+  typedef unisim::util::symbolic::SmartValue<uint64_t> U64;
+  typedef unisim::util::symbolic::SmartValue<int8_t>   S8;
+  typedef unisim::util::symbolic::SmartValue<int16_t>  S16;
+  typedef unisim::util::symbolic::SmartValue<int32_t>  S32;
+  typedef unisim::util::symbolic::SmartValue<int64_t>  S64;
 
   struct dbx
   {
@@ -51,15 +51,16 @@ namespace armsec
     int id;
   };
   
-  struct ASExprNode : public unisim::ExprNode
+  struct ASExprNode : public unisim::util::symbolic::ExprNode
   {
+    typedef unisim::util::symbolic::Expr Expr;
     virtual int GenCode( Label& label, std::ostream& sink ) const = 0;
-    static  int GenerateCode( unisim::Expr const& expr, Label& label, std::ostream& sink );
+    static  int GenerateCode( Expr const& expr, Label& label, std::ostream& sink );
   };
 
   struct GetCode
   {
-    GetCode(unisim::Expr const& _expr, Label& _label) : expr(_expr), label(_label) {} unisim::Expr const& expr; Label& label;
+    GetCode(ASExprNode::Expr const& _expr, Label& _label) : expr(_expr), label(_label) {} ASExprNode::Expr const& expr; Label& label;
     friend std::ostream& operator << ( std::ostream& sink, GetCode const& gc )
     {
       ASExprNode::GenerateCode( gc.expr, gc.label, sink );
@@ -68,18 +69,25 @@ namespace armsec
   };
     
   int
-  ASExprNode::GenerateCode( unisim::Expr const& expr, Label& label, std::ostream& sink )
+  ASExprNode::GenerateCode( ASExprNode::Expr const& expr, Label& label, std::ostream& sink )
   {
+    typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
+    typedef unisim::util::symbolic::ScalarType ScalarType;
+    typedef unisim::util::symbolic::CastNodeBase CastNodeBase;
+    typedef unisim::util::symbolic::BinaryOp BinaryOp;
+    typedef unisim::util::symbolic::UnaryOp UnaryOp;
+    typedef unisim::util::symbolic::BONode BONode;
+    typedef unisim::util::symbolic::UONode UONode;
+    
     /*** Pre expression process ***/
-      
+    
     /*** Sub expression process ***/
     if (ASExprNode const* node = dynamic_cast<ASExprNode const*>( expr.node ))
       {
         return node->GenCode( label, sink );
       }
-    else if (unisim::ConstNodeBase const* node = dynamic_cast<unisim::ConstNodeBase const*>( expr.node ))
+    else if (ConstNodeBase const* node = dynamic_cast<ConstNodeBase const*>( expr.node ))
       {
-        typedef unisim::ScalarType ScalarType;
         switch (node->GetType())
           {
           case ScalarType::BOOL: sink << node->GetS32() << "<1>";  return 1;
@@ -91,11 +99,10 @@ namespace armsec
           }
         throw std::logic_error("can't encode type");
       }
-    else if (unisim::BONode const* node = dynamic_cast<unisim::BONode const*>( expr.node ))
+    else if (BONode const* node = dynamic_cast<BONode const*>( expr.node ))
       {
         int retsz = GenerateCode( node->left, label, sink << '(' );
           
-        typedef unisim::BinaryOp BinaryOp;
         switch (node->binop.code)
           {
           default:                sink << " [" << node->binop.c_str() << "] "; break;
@@ -134,11 +141,10 @@ namespace armsec
         sink << GetCode( node->right, label ) << ')';
         return retsz;
       }
-    else if (unisim::UONode const* node = dynamic_cast<unisim::UONode const*>( expr.node ))
+    else if (UONode const* node = dynamic_cast<UONode const*>( expr.node ))
       {
         sink << '(';
           
-        typedef unisim::UnaryOp UnaryOp;
         switch (node->unop.code)
           {
           default:              sink << "[" << node->unop.c_str() << "] "; break;
@@ -155,9 +161,9 @@ namespace armsec
         sink << ')';
         return retsz;
       }
-    else if (unisim::CastNodeBase const* node = dynamic_cast<unisim::CastNodeBase const*>( expr.node ))
+    else if (CastNodeBase const* node = dynamic_cast<CastNodeBase const*>( expr.node ))
       {
-        unisim::ScalarType src( node->GetSrcType() ), dst( node->GetDstType() );
+        ScalarType src( node->GetSrcType() ), dst( node->GetDstType() );
           
         if (dst.is_integer and src.is_integer)
           {
@@ -168,7 +174,7 @@ namespace armsec
               }
             else
               {
-                unisim::CastNodeBase const* src_node = dynamic_cast<unisim::CastNodeBase const*>( node->src.node );
+                CastNodeBase const* src_node = dynamic_cast<CastNodeBase const*>( node->src.node );
                 if (src_node and (src_node->GetSrcType() == node->GetDstType())) {
                   sink << GetCode(src_node->src, label);
                 } else {
@@ -231,11 +237,14 @@ namespace armsec
   
   struct PathNode
   {
+    typedef unisim::util::symbolic::Expr Expr;
+    typedef unisim::util::symbolic::ExprNode ExprNode;
+    
     PathNode( PathNode* _previous=0 )
       : cond(), sinks(), previous(_previous), true_nxt(), false_nxt(), complete(false)
     {}
     
-    PathNode* proceed( unisim::Expr const& _cond, bool& result )
+    PathNode* proceed( Expr const& _cond, bool& result )
     {
       if (not cond.good())
         {
@@ -309,17 +318,17 @@ namespace armsec
       false_nxt->factorize();
       true_nxt->factorize();
       
-      std::vector<unisim::Expr> isect;
+      std::vector<Expr> isect;
       {
         isect.resize( std::max( false_nxt->sinks.size(), true_nxt->sinks.size() ) );
-        std::vector<unisim::Expr>::iterator end =
+        std::vector<Expr>::iterator end =
           std::set_intersection( false_nxt->sinks.begin(), false_nxt->sinks.end(),
                                  true_nxt->sinks.begin(), true_nxt->sinks.end(),
                                  isect.begin() );
         isect.resize( end - isect.begin() );
       }
       
-      for (std::vector<unisim::Expr>::const_iterator itr = isect.begin(), end = isect.end(); itr != end; ++itr) {
+      for (std::vector<Expr>::const_iterator itr = isect.begin(), end = isect.end(); itr != end; ++itr) {
         sinks.insert( *itr );
         false_nxt->sinks.erase( *itr );
         true_nxt->sinks.erase( *itr );
@@ -327,8 +336,9 @@ namespace armsec
       
       // If condition begins with a logical not, remove the not and
       //   swap if then else branches
-      if (unisim::UONode* uon = dynamic_cast<unisim::UONode*>( cond.node ))
-        if (uon->unop.cmp( unisim::UnaryOp("Not") ) == 0) {
+      typedef unisim::util::symbolic::UONode UONode;
+      if (UONode* uon = dynamic_cast<UONode*>( cond.node ))
+        if (uon->unop.cmp( unisim::util::symbolic::UnaryOp("Not") ) == 0) {
           cond = uon->src;
           std::swap( false_nxt, true_nxt );
         }
@@ -339,22 +349,22 @@ namespace armsec
       Context() : upper(0) {}
       Context( Context* _up ) : upper(_up) {}
       
-      void add_pending( unisim::Expr e ) { pendings.push_back(e); }
+      void add_pending( Expr e ) { pendings.push_back(e); }
       bool has_pending() const { return pendings.size() > 0; }
       
-      void add_var( unisim::Expr e, unisim::Expr n ) { vars[e] = n; }
+      void add_var( Expr e, Expr n ) { vars[e] = n; }
       
       Context* upper;
-      typedef std::vector<unisim::Expr> Pendings;
+      typedef std::vector<Expr> Pendings;
       Pendings pendings;
-      typedef std::map<unisim::Expr,unisim::Expr> Vars;
+      typedef std::map<Expr,Expr> Vars;
       Vars vars;
     };
 
     void GenCode( Label const&, Label const&, Context* ) const;
     
-    unisim::Expr cond;
-    std::set<unisim::Expr> sinks;
+    Expr cond;
+    std::set<Expr> sinks;
     PathNode* previous;
     PathNode* true_nxt;
     PathNode* false_nxt;
@@ -375,15 +385,16 @@ namespace armsec
     typedef armsec::S32  S32;
     typedef armsec::S64  S64;
     
-    typedef unisim::FP   FP;
+    typedef unisim::util::symbolic::FP   FP;
+    typedef unisim::util::symbolic::Expr Expr;
     
     template <typename T>
-    bool Cond( unisim::SmartValue<T> cond )
+    bool Cond( unisim::util::symbolic::SmartValue<T> cond )
     {
       if (not cond.expr.node)
         throw std::logic_error( "Not a cond" );
       
-      typedef unisim::ConstNodeBase ConstNodeBase;
+      typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
       if (ConstNodeBase* cnode = dynamic_cast<ConstNodeBase*>( cond.expr->GetConstNode() ))
         return cnode->GetU8();
       
@@ -485,9 +496,9 @@ namespace armsec
       }
     
       RegID( Code _code ) : code(_code) {}
-      RegID( char const* _code ) : code(NA) { unisim::cstr2enum( *this, _code ); }
+      RegID( char const* _code ) : code(NA) { unisim::util::symbolic::cstr2enum( *this, _code ); }
       
-      char const* c_str() const { return unisim::enum2cstr( *this, "NA" ); }
+      char const* c_str() const { return unisim::util::symbolic::enum2cstr( *this, "NA" ); }
       RegID operator + ( int offset ) const { return RegID( Code(int(code) + offset) ); }
       int operator - ( RegID rid ) const { return int(code) - int(rid.code); }
       bool operator == ( RegID rid ) const { return code == rid.code; }
@@ -514,8 +525,8 @@ namespace armsec
     
     struct RegWrite : public ASExprNode
     {
-      RegWrite( RegID _id, unisim::Expr const& _value, unsigned _bitsize ) : id(_id), value(_value), bitsize(_bitsize) {}
-      RegWrite( char const* name, unisim::Expr const& _value, unsigned _bitsize ) : id(name), value(_value), bitsize(_bitsize) {}
+      RegWrite( RegID _id, Expr const& _value, unsigned _bitsize ) : id(_id), value(_value), bitsize(_bitsize) {}
+      RegWrite( char const* name, Expr const& _value, unsigned _bitsize ) : id(name), value(_value), bitsize(_bitsize) {}
       virtual int GenCode( Label& label, std::ostream& sink ) const
       {
         sink << id.c_str() << "<" << std::dec << bitsize << "> := " << GetCode(value,label);
@@ -535,27 +546,27 @@ namespace armsec
       virtual ExprNode* GetConstNode() { return 0; };
       
       RegID id;
-      unisim::Expr value;
+      Expr value;
       unsigned bitsize;
     };
     
     State( PathNode* _path )
       : path( _path )
       , next_insn_addr()
-      , cpsr( unisim::Expr( new RegRead("n",1) ),
-              unisim::Expr( new RegRead("z",1) ),
-              unisim::Expr( new RegRead("c",1) ),
-              unisim::Expr( new RegRead("v",1) ),
-              unisim::Expr( new RegRead("cpsr",32) ) )
-      , spsr( unisim::Expr( new RegRead("spsr",32) ) )
-      , FPSCR( unisim::Expr( new RegRead("fpscr",32) ) )
-      , FPEXC( unisim::Expr( new RegRead("fpexc",32) ) )
+      , cpsr( Expr( new RegRead("n",1) ),
+              Expr( new RegRead("z",1) ),
+              Expr( new RegRead("c",1) ),
+              Expr( new RegRead("v",1) ),
+              Expr( new RegRead("cpsr",32) ) )
+      , spsr( Expr( new RegRead("spsr",32) ) )
+      , FPSCR( Expr( new RegRead("fpscr",32) ) )
+      , FPEXC( Expr( new RegRead("fpexc",32) ) )
     {
       for (unsigned reg = 0; reg < 15; ++reg)
-        reg_values[reg] = U32( unisim::Expr( new RegRead( RegID("r0") + reg, 32 ) ) );
+        reg_values[reg] = U32( Expr( new RegRead( RegID("r0") + reg, 32 ) ) );
     }
     
-    void SetInsnProps( unisim::Expr const& _expr, bool is_thumb, unsigned insn_length )
+    void SetInsnProps( Expr const& _expr, bool is_thumb, unsigned insn_length )
     {
       if ((insn_length != 32) and ((insn_length != 16) or not is_thumb))
         throw std::logic_error( "Bad instruction length" );
@@ -572,10 +583,10 @@ namespace armsec
     //struct psr_type : public FieldRegisterU32
     struct psr_type
     {
-      psr_type( unisim::Expr const& _n, unisim::Expr const& _z, unisim::Expr const& _c, unisim::Expr const& _v, unisim::Expr const& _bg )
+      psr_type( Expr const& _n, Expr const& _z, Expr const& _c, Expr const& _v, Expr const& _bg )
         : n(_n), z(_z), c(_c), v(_v), bg(_bg)
       {}
-      unisim::Expr n, z, c, v;
+      Expr n, z, c, v;
       U32 bg;
       
       typedef unisim::component::cxx::processor::arm::RegisterField<31,1> NRF; /* Negative Integer Condition Flag */
@@ -595,7 +606,7 @@ namespace armsec
       template <typename RF>
       U32 Set( RF const& _, U32 const& value )
       {
-        unisim::StaticAssert<(RF::pos > 31) or ((RF::pos + RF::size) <= 28)>::check();
+        unisim::util::symbolic::StaticAssert<(RF::pos > 31) or ((RF::pos + RF::size) <= 28)>::check();
         
         return _.Get( bg );
       }
@@ -629,7 +640,7 @@ namespace armsec
       template <typename RF>
       U32 Get( RF const& _ )
       {
-        unisim::StaticAssert<(RF::pos > 31) or ((RF::pos + RF::size) <= 28)>::check();
+        unisim::util::symbolic::StaticAssert<(RF::pos > 31) or ((RF::pos + RF::size) <= 28)>::check();
         
         return _.Get( bg );
       }
@@ -699,7 +710,7 @@ namespace armsec
     
     struct Load : public ASExprNode
     {
-      Load( unsigned _size, bool _aligned, unisim::Expr const& _addr )
+      Load( unsigned _size, bool _aligned, Expr const& _addr )
         : addr(_addr), size( _size ), aligned(_aligned)
       {}
       
@@ -712,22 +723,22 @@ namespace armsec
         sink << "@[" << GetCode(addr,label) << ",<-," << size << "]";
         return 8*size;
       }
-      intptr_t cmp( unisim::ExprNode const& brhs ) const
+      intptr_t cmp( ExprNode const& brhs ) const
       {
         Load const& rhs = dynamic_cast<Load const&>( brhs );
         if (intptr_t delta = addr.cmp( rhs.addr )) return delta;
         if (intptr_t delta = int(size - rhs.size)) return delta;
         return (int(aligned) - int(rhs.aligned));
       }
-      unisim::ExprNode* GetConstNode() { return 0; };
-      unisim::Expr addr;
+      ExprNode* GetConstNode() { return 0; };
+      Expr addr;
       unsigned size;
       bool aligned;
     };
     
     struct Store : public ASExprNode
     {
-      Store( unsigned _size, bool _aligned, unisim::Expr const& _addr, unisim::Expr const& _value )
+      Store( unsigned _size, bool _aligned, Expr const& _addr, Expr const& _value )
         : value(_value), addr(_addr), size(_size), aligned(_aligned)
       {}
       
@@ -742,7 +753,7 @@ namespace armsec
       virtual void Traverse( Visitor& visitor ) { visitor.Process( addr ); visitor.Process( value ); }
       virtual void Repr( std::ostream& sink ) const { sink << "["; addr->Repr( sink ); sink << "," << size << "," << (aligned?'a':'u') << "] := "; value->Repr(sink); }
       
-      intptr_t cmp( unisim::ExprNode const& brhs ) const
+      intptr_t cmp( ExprNode const& brhs ) const
       {
         Store const& rhs = dynamic_cast<Store const&>( brhs );
         if (intptr_t delta = value.cmp( rhs.value )) return delta;
@@ -751,20 +762,20 @@ namespace armsec
         return (int(aligned) - int(rhs.aligned));
       }
       
-      unisim::ExprNode* GetConstNode() { return 0; };
+      ExprNode* GetConstNode() { return 0; };
       
-      unisim::Expr value, addr;
+      Expr value, addr;
       unsigned size;
       bool aligned;
     };
     
-    std::set<unisim::Expr> stores;
+    std::set<Expr> stores;
     
-    U32  MemURead32( U32 const& addr ) { return U32( unisim::Expr( new Load( 4, false, addr.expr ) ) ); }
-    U16  MemURead16( U32 const& addr ) { return U16( unisim::Expr( new Load( 2, false, addr.expr ) ) ); }
-    U32  MemRead32( U32 const& addr ) { return U32( unisim::Expr( new Load( 4, true, addr.expr ) ) ); }
-    U16  MemRead16( U32 const& addr ) { return U16( unisim::Expr( new Load( 2, true, addr.expr ) ) ); }
-    U8   MemRead8( U32 const& addr ) { return U8( unisim::Expr( new Load( 1, false, addr.expr ) ) ); }
+    U32  MemURead32( U32 const& addr ) { return U32( Expr( new Load( 4, false, addr.expr ) ) ); }
+    U16  MemURead16( U32 const& addr ) { return U16( Expr( new Load( 2, false, addr.expr ) ) ); }
+    U32  MemRead32( U32 const& addr ) { return U32( Expr( new Load( 4, true, addr.expr ) ) ); }
+    U16  MemRead16( U32 const& addr ) { return U16( Expr( new Load( 2, true, addr.expr ) ) ); }
+    U8   MemRead8( U32 const& addr ) { return U8( Expr( new Load( 1, false, addr.expr ) ) ); }
     
     void MemUWrite32( U32 const& addr, U32 const& value ) { stores.insert( new Store( 4, false, addr.expr, value.expr ) ); }
     void MemUWrite16( U32 const& addr, U16 const& value ) { stores.insert( new Store( 2, false, addr.expr, value.expr ) ); }
@@ -835,26 +846,26 @@ namespace armsec
     close( State const& ref )
     {
       bool complete = path->close();
-      path->sinks.insert( unisim::Expr( new RegWrite( "pc", next_insn_addr.expr, 32 ) ) );
+      path->sinks.insert( Expr( new RegWrite( "pc", next_insn_addr.expr, 32 ) ) );
       if (cpsr.n != ref.cpsr.n)
-        path->sinks.insert( unisim::Expr( new RegWrite( "n", cpsr.n, 1 ) ) );
+        path->sinks.insert( Expr( new RegWrite( "n", cpsr.n, 1 ) ) );
       if (cpsr.z != ref.cpsr.z)
-        path->sinks.insert( unisim::Expr( new RegWrite( "z", cpsr.z, 1 ) ) );
+        path->sinks.insert( Expr( new RegWrite( "z", cpsr.z, 1 ) ) );
       if (cpsr.c != ref.cpsr.c)
-        path->sinks.insert( unisim::Expr( new RegWrite( "c", cpsr.c, 1 ) ) );
+        path->sinks.insert( Expr( new RegWrite( "c", cpsr.c, 1 ) ) );
       if (cpsr.v != ref.cpsr.v)
-        path->sinks.insert( unisim::Expr( new RegWrite( "v", cpsr.v, 1 ) ) );
+        path->sinks.insert( Expr( new RegWrite( "v", cpsr.v, 1 ) ) );
       if (cpsr.bg.expr != ref.cpsr.bg.expr)
-        path->sinks.insert( unisim::Expr( new RegWrite( "cpsr", cpsr.bg.expr, 32 ) ) );
+        path->sinks.insert( Expr( new RegWrite( "cpsr", cpsr.bg.expr, 32 ) ) );
       if (spsr.expr != ref.spsr.expr)
-        path->sinks.insert( unisim::Expr( new RegWrite( "spsr", spsr.expr, 32 ) ) );
+        path->sinks.insert( Expr( new RegWrite( "spsr", spsr.expr, 32 ) ) );
       if (FPSCR.expr != ref.FPSCR.expr)
-        path->sinks.insert( unisim::Expr( new RegWrite( "fpscr", FPSCR.expr, 32 ) ) );
+        path->sinks.insert( Expr( new RegWrite( "fpscr", FPSCR.expr, 32 ) ) );
       for (unsigned reg = 0; reg < 15; ++reg) {
         if (reg_values[reg].expr != ref.reg_values[reg].expr)
-          path->sinks.insert( unisim::Expr( new RegWrite( RegID("r0") + reg, reg_values[reg].expr, 32 ) ) );
+          path->sinks.insert( Expr( new RegWrite( RegID("r0") + reg, reg_values[reg].expr, 32 ) ) );
       }
-      for (std::set<unisim::Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
+      for (std::set<Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
         path->sinks.insert( *itr );
       return complete;
     }
@@ -868,11 +879,11 @@ namespace armsec
       
   //     sink << "CTST_" << unisim::component::cxx::processor::arm::DisasmCondition(cond) << "(flags)";
   //   }
-  //   virtual intptr_t cmp( unisim::ExprNode const& brhs ) const {
+  //   virtual intptr_t cmp( ExprNode const& brhs ) const {
   //     ConditionTest const& rhs = dynamic_cast<ConditionTest const&>( brhs );
   //     return int(cond) - int(rhs.cond);
   //   }
-  //   virtual unisim::ExprNode* GetConstNode() { return 0; };
+  //   virtual ExprNode* GetConstNode() { return 0; };
   // };
 
   BOOL
@@ -895,12 +906,12 @@ namespace armsec
     case 11: return           (N xor V); // lt; signed less than
     case 12: return not(Z or (N xor V)); // gt; signed greater than
     case 13: return    (Z or (N xor V)); // le; signed less than or equal
-    case 14: return unisim::make_const( true ); // al; always
+    case 14: return unisim::util::symbolic::make_const( true ); // al; always
     default: break;                     // nv; never (illegal)     
     }
     
     throw std::logic_error( "undefined condition" );
-    return unisim::make_const( false );    
+    return unisim::util::symbolic::make_const( false );    
   }
   
   // struct GenFlagsID
@@ -926,14 +937,14 @@ namespace armsec
   
   // struct GenFlags : public ASExprNode
   // {
-  //   GenFlags( GenFlagsID _id, unisim::Expr const& _ipsr, unisim::Expr const& _lhs, unisim::Expr const& _rhs )
+  //   GenFlags( GenFlagsID _id, Expr const& _ipsr, Expr const& _lhs, Expr const& _rhs )
   //     : id(_id), ipsr(_ipsr), lhs(_lhs), rhs(_rhs) {}
     
   //   virtual void Repr( std::ostream& sink ) const
   //   {
   //     sink << "GenFlags(" << id.c_str() << ", " << ipsr << ", " << lhs << ", " << rhs << ")";
   //   }
-  //   virtual intptr_t cmp( unisim::ExprNode const& bright ) const
+  //   virtual intptr_t cmp( ExprNode const& bright ) const
   //   {
   //     GenFlags const& right = dynamic_cast<GenFlags const&>( bright );
   //     if (int delta = id - right.id) return delta;
@@ -941,9 +952,9 @@ namespace armsec
   //     if (intptr_t delta = lhs.cmp(right.lhs)) return delta;
   //     return rhs.cmp(right.rhs);
   //   }
-  //   virtual unisim::ExprNode* GetConstNode() { return 0; };
+  //   virtual ExprNode* GetConstNode() { return 0; };
   //   GenFlagsID id;
-  //   unisim::Expr ipsr, lhs, rhs;
+  //   Expr ipsr, lhs, rhs;
   // };
 
   
@@ -965,7 +976,7 @@ namespace armsec
   
   struct BSR : public ASExprNode
   {
-    BSR( unisim::Expr const& _src ) : src(_src) {}
+    BSR( Expr const& _src ) : src(_src) {}
     
     virtual int GenCode( Label& label, std::ostream& sink ) const
     {
@@ -1010,15 +1021,15 @@ namespace armsec
       return 32;
     }
     
-    virtual intptr_t cmp( unisim::ExprNode const& rhs ) const { return src.cmp( dynamic_cast<BSR const&>( rhs ).src ); }
+    virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& rhs ) const { return src.cmp( dynamic_cast<BSR const&>( rhs ).src ); }
     
-    virtual unisim::ExprNode* GetConstNode() { return 0; }
+    virtual unisim::util::symbolic::ExprNode* GetConstNode() { return 0; }
     
     virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
     
     virtual void Repr( std::ostream& sink ) const { sink << "BSR( "; src->Repr(sink); sink << " )"; }
     
-    unisim::Expr src;
+    Expr src;
   };
   
   U32 BitScanReverse( U32 const& value )
@@ -1031,16 +1042,16 @@ namespace armsec
   {
     Context ctx( _up );
     
-    unisim::Expr nia;
+    Expr nia;
     
     Label current( start );
     
-    for (std::set<unisim::Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
+    for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
       {
         
-        struct CSE : public unisim::ExprNode::Visitor
+        struct CSE : public ExprNode::Visitor
         {
-          virtual void Process( unisim::Expr& expr )
+          virtual void Process( Expr& expr )
           {
             for (Context* c = &ctx; c; c = c->upper)
               {
@@ -1063,7 +1074,7 @@ namespace armsec
         
         if (armsec::State::RegWrite* rw = dynamic_cast<armsec::State::RegWrite*>( itr->node ))
           {
-            unisim::Expr wb;
+            Expr wb;
             armsec::State::RegID rid = rw->id;
             unsigned             rsz = rw->bitsize;
           
@@ -1078,8 +1089,8 @@ namespace armsec
                   : dsz(rsz)
                 { std::ostringstream buffer; buffer << "nxt_" << rid.c_str() << "<" << rsz << ">"; ref = buffer.str(); }
                 virtual int GenCode( Label& label, std::ostream& sink ) const { sink << ref; return dsz; }
-                virtual intptr_t cmp( unisim::ExprNode const& rhs ) const { return ref.compare( dynamic_cast<TmpVar const&>( rhs ).ref ); }
-                virtual unisim::ExprNode* GetConstNode() { return 0; };
+                virtual intptr_t cmp( ExprNode const& rhs ) const { return ref.compare( dynamic_cast<TmpVar const&>( rhs ).ref ); }
+                virtual ExprNode* GetConstNode() { return 0; };
                 virtual void Traverse( Visitor& visitor ) {}
                 virtual void Repr( std::ostream& sink ) const { sink << ref; }
                 std::string ref;
@@ -1177,10 +1188,7 @@ namespace armsec
   }
 }
 
-namespace unisim
-{
-  using armsec::BitScanReverse;
-}
+namespace unisim { namespace util { namespace symbolic { using armsec::BitScanReverse; } } }
 
 struct ARMISA : public unisim::component::cxx::processor::arm::isa::arm32::Decoder<armsec::State>
 {
@@ -1208,8 +1216,8 @@ struct Decoder
   {
     InstructionAddress() {}
     virtual void Repr( std::ostream& sink ) const { sink << "insn_addr"; }
-    virtual intptr_t cmp( unisim::ExprNode const& brhs ) const { dynamic_cast<InstructionAddress const&>( brhs ); return 0; }
-    virtual unisim::ExprNode* GetConstNode() { return 0; };
+    virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { dynamic_cast<InstructionAddress const&>( brhs ); return 0; }
+    virtual unisim::util::symbolic::ExprNode* GetConstNode() { return 0; };
   };
   
   template <class ISA>
@@ -1222,7 +1230,7 @@ struct Decoder
     {
       typedef typename ISA::Operation Insn;
       typedef typename armsec::PathNode Code;
-      typedef typename unisim::Expr Expr;
+      typedef typename unisim::util::symbolic::Expr Expr;
       typedef typename armsec::State State;
       
       ~Translation() { delete insn; delete code; }
@@ -1254,8 +1262,8 @@ struct Decoder
       bool
       Generate( armsec::Label::Program& program )
       {
-        // unisim::Expr insn_addr( new InstructionAddress ); //< symbolic instruction address
-        unisim::Expr insn_addr( unisim::make_const( addr ) ); //< concrete instruction address
+        // Expr insn_addr( new InstructionAddress ); //< symbolic instruction address
+        Expr insn_addr( unisim::util::symbolic::make_const( addr ) ); //< concrete instruction address
         
         reference.SetInsnProps( insn_addr, ISA::is_thumb, insn->GetLength() );
         
