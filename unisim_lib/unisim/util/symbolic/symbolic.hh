@@ -315,9 +315,12 @@ namespace symbolic {
   double BinarySHR( double, uint8_t );
   float BinarySHR( float, uint8_t );
   template <typename VALUE_TYPE>
-  VALUE_TYPE BSwp( VALUE_TYPE v ) { throw std::logic_error( "No ByteSwap for this type" ); }
-  uint32_t BSwp( uint32_t v );
-  uint16_t BSwp( uint16_t v );
+  VALUE_TYPE EvalByteSwap( VALUE_TYPE v ) { throw std::logic_error( "No ByteSwap for this type" ); }
+  uint32_t EvalByteSwap( uint32_t v );
+  uint16_t EvalByteSwap( uint16_t v );
+  template <typename VALUE_TYPE>
+  VALUE_TYPE EvalBitScanReverse( VALUE_TYPE v ) { throw std::logic_error( "No BitScanReverse for this type" ); }
+  uint32_t EvalBitScanReverse( uint32_t v );
   
   template <typename VALUE_TYPE>
   struct ConstNode : public ConstNodeBase
@@ -381,10 +384,10 @@ namespace symbolic {
     {
       switch (op.code)
         {
-        case UnaryOp::BSwp:  return new ConstNode<VALUE_TYPE>( BSwp( value ) );
+        case UnaryOp::BSwp:  return new ConstNode<VALUE_TYPE>( EvalByteSwap( value ) );
         case UnaryOp::Not:   return new ConstNode<VALUE_TYPE>( BinaryNot( value ) );
         case UnaryOp::Neg:   return new ConstNode<VALUE_TYPE>( - value );
-        case UnaryOp::BSR:   break;
+        case UnaryOp::BSR:   return new ConstNode<VALUE_TYPE>( EvalBitScanReverse( value ) ); break;
         case UnaryOp::BSF:   break;
         case UnaryOp::FSQB:  break;
         case UnaryOp::FFZ:   break;
@@ -646,6 +649,9 @@ namespace symbolic {
   UTP RotateRight( UTP const& value, unsigned shift ) { return UTP( new BONode( "Ror", value.expr, make_const( shift ) ) ); }
   template <typename UTP>
   UTP RotateRight( UTP const& value, UTP const& shift ) { return UTP( new BONode( "Ror", value.expr, shift.expr ) ); }
+  
+  template <typename UTP>
+  UTP BitScanReverse( UTP const& value ) { return UTP( new UONode( "BSR", value.expr ) ); }
   
   struct FP
   {

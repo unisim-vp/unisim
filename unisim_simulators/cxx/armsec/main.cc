@@ -143,20 +143,63 @@ namespace armsec
       }
     else if (UONode const* node = dynamic_cast<UONode const*>( expr.node ))
       {
-        sink << '(';
-          
+        char const* operation = 0;
+        
         switch (node->unop.code)
           {
-          default:              sink << "[" << node->unop.c_str() << "] "; break;
+          default:              operation = node->unop.c_str(); break;
         
-          case UnaryOp::Not:    sink << "not "; break;
-          case UnaryOp::Neg:    sink << "- "; break;
+          case UnaryOp::Not:    operation = "not "; break;
+          case UnaryOp::Neg:    operation = "- "; break;
         
             // case UnaryOp::BSwp:  break;
-            // case UnaryOp::BSR:   break;
             // case UnaryOp::BSF:   break;
+            
+          case UnaryOp::BSR:
+            {
+              Label tail(label);
+              {
+                std::ostringstream buffer;
+                buffer << "bsr_in<32> := " << GetCode(node->src,tail);
+                Label insn( tail );
+                buffer << "; goto " << tail.next();
+                insn = buffer.str();
+              }
+              {
+                std::ostringstream code;
+                Label insn( tail );
+                code << "bsr_out<32> := 32<32> ; goto " << tail.next();
+                insn = code.str();
+              }
+              Label exit(tail);
+              exit.next();
+              {
+                std::ostringstream code;
+                Label insn( tail );
+                code << "if (bsr_in<32> = 0<32>) goto " << exit.id << " else goto " << tail.next();
+                insn = code.str();
+              }
+              Label loop(tail);
+              {
+                std::ostringstream code;
+                code << "bsr_out<32> := bsr_out<32> - 1<32> ; goto " << tail.next();
+                loop = code.str();
+              }
+              {
+                std::ostringstream code;
+                Label insn( tail );
+                code << "if ((bsr_in<32> rshiftu bsr_out<32>){0,0}) goto " << exit.id << " else goto " << loop.id;
+                insn = code.str();
+              }
+              label = exit;
+      
+              sink << "bsr_out<32>";
+      
+              return 32;
+            }
           }
     
+        sink << '(' << operation << ' ';
         int retsz = GenerateCode( node->src, label, sink );
         sink << ')';
         return retsz;
@@ -974,69 +1017,6 @@ namespace armsec
     UpdateStatusSub( state, res, lhs, -rhs );
   }
   
-  struct BSR : public ASExprNode
-  {
-    BSR( Expr const& _src ) : src(_src) {}
-    
-    virtual int GenCode( Label& label, std::ostream& sink ) const
-    {
-      Label tail(label);
-      {
-        std::ostringstream buffer;
-        buffer << "bsr_in<32> := " << GetCode(src,tail);
-        Label insn( tail );
-        buffer << "; goto " << tail.next();
-        insn = buffer.str();
-      }
-      {
-        std::ostringstream code;
-        Label insn( tail );
-        code << "bsr_out<32> := 32<32> ; goto " << tail.next();
-        insn = code.str();
-      }
-      Label exit(tail);
-      exit.next();
-      {
-        std::ostringstream code;
-        Label insn( tail );
-        code << "if (bsr_in<32> = 0<32>) goto " << exit.id << " else goto " << tail.next();
-        insn = code.str();
-      }
-      Label loop(tail);
-      {
-        std::ostringstream code;
-        code << "bsr_out<32> := bsr_out<32> - 1<32> ; goto " << tail.next();
-        loop = code.str();
-      }
-      {
-        std::ostringstream code;
-        Label insn( tail );
-        code << "if ((bsr_in<32> rshiftu bsr_out<32>){0,0}) goto " << exit.id << " else goto " << loop.id;
-        insn = code.str();
-      }
-      label = exit;
-      
-      sink << "bsr_out<32>";
-      
-      return 32;
-    }
-    
-    virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& rhs ) const { return src.cmp( dynamic_cast<BSR const&>( rhs ).src ); }
-    
-    virtual unisim::util::symbolic::ExprNode* GetConstNode() { return 0; }
-    
-    virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
-    
-    virtual void Repr( std::ostream& sink ) const { sink << "BSR( "; src->Repr(sink); sink << " )"; }
-    
-    Expr src;
-  };
-  
-  U32 BitScanReverse( U32 const& value )
-  {
-    return U32( new BSR( value.expr ) );
-  }
-  
   void
   PathNode::GenCode( Label const& start, Label const& after, Context* _up ) const
   {
@@ -1187,8 +1167,6 @@ namespace armsec
     current = buffer.str();
   }
 }
-
-namespace unisim { namespace util { namespace symbolic { using armsec::BitScanReverse; } } }
 
 struct ARMISA : public unisim::component::cxx::processor::arm::isa::arm32::Decoder<armsec::State>
 {
