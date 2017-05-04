@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015,
+ *  Copyright (c) 2015-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -51,8 +51,8 @@ using namespace unisim::component::cxx::processor::arm;
 
 struct Sink
 {
-  Sink()
-    : protos( "benchmark/testprotos.inc" ), info( "benchmark/testinfo.inc" ), srcs( "benchmark/testsrcs.s" ), opidx( 0 )
+  Sink( std::string const& gendir )
+    : protos( gendir + ".protos.inc" ), info( gendir + ".info.inc" ), srcs( gendir + ".srcs.s" ), opidx( 0 )
   {
     protos << "/* -*- mode: c++ -*- */\n\nextern \"C\"\n{\n";
     info   << "/* -*- mode: c++ -*- */\n\nTestInfo optests[] =\n{\n";
@@ -81,7 +81,7 @@ struct TestConfig
   bool bigendian;
   uint8_t offset;
   
-  TestConfig( ut::Interface const& _iif, std::string _ident, std::string _disasm )
+  TestConfig( ut::Interface const& _iif, std::string const& _ident, std::string const& _disasm )
     : iif( _iif ), ident( _ident ), disasm( _disasm ), bigendian( false ), offset( 0 )
   {}
   
@@ -89,22 +89,28 @@ struct TestConfig
   {
     if (iif.usemem()) {
       std::ostringstream sink;
-      auto const& p = iif.GetPrologue();
-      DisasmRegister br( p.base );
-      uint32_t aoffset = uint32_t(offset);
-      sink << "\tldr\t" << br << ", =0x" << std::hex << (p.offset + (p.sign ? -aoffset : aoffset)) << std::dec << "\n";
-      if (p.sign)
-        sink << "\tsub\t" << br << ", " << br << ", r4\n";
-      else
-        sink << "\tadd\t" << br << ", " << br << ", r4\n";
-      for (auto reg : p.regs) {
-        sink << "\tldr\t" << DisasmRegister( reg.first ) << ", =0x" << std::hex << reg.second << std::dec << "\n";
+      try {
+        auto const& p = iif.GetPrologue();
+        DisasmRegister br( p.base );
+        uint32_t aoffset = uint32_t(offset);
+        sink << "\tldr\t" << br << ", =0x" << std::hex << (p.offset + (p.sign ? -aoffset : aoffset)) << std::dec << "\n";
+        if (p.sign)
+          sink << "\tsub\t" << br << ", " << br << ", r4\n";
+        else
+          sink << "\tadd\t" << br << ", " << br << ", r4\n";
+        for (auto reg : p.regs) {
+          sink << "\tldr\t" << DisasmRegister( reg.first ) << ", =0x" << std::hex << reg.second << std::dec << "\n";
+        }
+        if (bigendian) sink << "\tsetend\tbe\n";
+      } catch (ut::Interface::Prologue::Error const& x) {
+        std::cerr << "In: " << disasm << ".\n";
+        throw x;
       }
-      if (bigendian) sink << "\tsetend\tbe\n";
       return sink.str();
     }
     return "";
   }
+  
   std::string epilogue() const
   {
     if (iif.usemem()) {
@@ -119,6 +125,7 @@ struct TestConfig
     }
     return "";
   }
+  
   std::string finally() const { return iif.usemem() ? "\t.ltorg\n" : ""; }
   TestConfig& altmem( bool be, unsigned _offset )
   {
@@ -178,7 +185,7 @@ struct ARM32 : isa::arm32::Decoder<ut::Arch>
   }
 };
 
-struct THUMB2 : isa::thumb2::Decoder<ut::Arch>
+struct THUMB : isa::thumb2::Decoder<ut::Arch>
 {
   typedef isa::thumb2::DecodeTableEntry<ut::Arch> DecodeTableEntry;
   typedef isa::thumb2::CodeType CodeType;
@@ -191,7 +198,7 @@ struct THUMB2 : isa::thumb2::Decoder<ut::Arch>
   static char const* Name() { return "Thumb2"; }
   
   void
-  write_test( Sink& sink, std::string midfix, TestConfig const& cfg, unsigned cond, bool wide, std::string hexcode )
+  write_test( Sink& sink, std::string const& midfix, TestConfig const& cfg, unsigned cond, bool wide, std::string const& hexcode )
   {
     char const* condname = (cond < 15) ? &"eq\0ne\0cs\0cc\0mi\0pl\0vs\0vc\0hi\0ls\0ge\0lt\0gt\0le\0al"[cond*3] : 0;
     uintptr_t opidx = sink.next_index();
@@ -335,17 +342,10 @@ struct Checker
       }
   }
   
-  std::string getreposname() const
-  {
-    std::string filename( ISA::Name() );
-    filename += ".tests";
-    return filename;
-  }
-  
   void
-  write_repos()
+  write_repos( std::string const& reposname )
   {
-    std::ofstream sink( getreposname() );
+    std::ofstream sink( reposname );
     
     typedef typename TestClasses::value_type TCItem;
     typedef typename CodeClass::value_type CCItem;
@@ -376,15 +376,15 @@ struct Checker
     std::string name;
     unsigned    line;
     
-    FileLoc( std::string _name ) : name( _name ) {}
+    FileLoc( std::string const& _name ) : name( _name ) {}
     void newline() { line += 1; }
     std::ostream& dump( std::ostream& sink ) const { sink << name << ':' << line << ": "; return sink; }
   };
   
   void
-  read_repos()
+  read_repos( std::string const& reposname )
   {
-    FileLoc fl( getreposname() );
+    FileLoc fl( reposname );
     std::ifstream source( fl.name );
     
     while (source)
@@ -462,30 +462,57 @@ struct Checker
   }
 };
 
-int
-main()
+template <typename T>
+void Update( std::string const& reposname )
 {
-  uintptr_t const ttl = 100000;
+  uintptr_t ttl = 10000;
+  if (char const* ttl_cfg = getenv("TTL_CFG")) { ttl = strtoull(ttl_cfg,0,0); }
   
-  Sink sink;
+  std::string suffix(".tests");
   
-  {
-    Checker<ARM32> checker;
-    checker.read_repos();
-    checker.discover( ttl );
-    checker.write_repos();
-    checker.write_tests( sink );
-  }
+  if ((suffix.size() >= reposname.size()) or not std::equal(suffix.rbegin(), suffix.rend(), reposname.rbegin()))
+    {
+      std::cerr << "Bad test repository name (should ends with " << suffix << ").\n";
+      throw 0;
+    }
   
-  std::cout << "==============\n";
+  std::string basename( reposname.substr( 0, reposname.size() - suffix.size() ) );
   
-  {
-    Checker<THUMB2> checker;
-    checker.read_repos();
-    checker.discover( ttl );
-    checker.write_repos();
-    checker.write_tests( sink );
-  }
+  Sink sink( basename );
+      
+  Checker<T> checker;
+  checker.read_repos( reposname );
+  checker.discover( ttl );
+  checker.write_repos( reposname );
+  checker.write_tests( sink );
+}
+
+int
+main( int argc, char** argv )
+{
+  try
+    {
+      if (argc != 3) {
+        std::cerr << "Wrong number of argument.\n";
+        throw 0;
+      }
+      
+      if      (strcmp("arm32",argv[1]) == 0)
+        {
+          Update<ARM32>( argv[2] );
+        }
+      else if (strcmp("thumb",argv[1]) == 0)
+        {
+          Update<THUMB>( argv[2] );
+        }
+      else
+        throw 0;
+    }
+  catch (...)
+    {
+      std::cerr << argv[0] << " [arm32|thumb] <path_to_test_file>\n";
+      return 1;
+    }
   
   return 0;
 }

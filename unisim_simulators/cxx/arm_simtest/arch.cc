@@ -221,26 +221,31 @@ namespace ut
               {
               case unisim::util::symbolic::BinaryOp::Add:
                 try {
-                  rule.offset -= GetValue( n->left.node );
-                  Process( n->right.node );
+                  GetRule trial(*this);
+                  trial.rule.offset -= GetValue( n->left.node );
+                  trial.Process( n->right.node );
+                  rule = trial.rule;
                 } catch (Prologue::Error const&) {
                   rule.offset -= GetValue( n->right.node );
                   Process( n->left.node );
                 }
-                break;
+                return;
                 
               case unisim::util::symbolic::BinaryOp::Sub:
                 try {
-                  rule.rsub( GetValue( n->left.node ) );
-                  Process( n->right.node );
+                  GetRule trial(*this);
+                  trial.rule.rsub( GetValue( n->left.node ) );
+                  trial.Process( n->right.node );
+                  rule = trial.rule;
                 } catch (Prologue::Error const&) {
                   rule.offset += GetValue( n->right.node );
                   Process( n->left.node );
                 }
+                return;
+                
+              default:
                 break;
               }
-
-            return;
           }
         
         throw Prologue::Error();
@@ -256,20 +261,40 @@ namespace ut
         
         if (auto n = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const*>(node))
           return n->value;
-        
+        if (auto n = dynamic_cast<unisim::util::symbolic::ConstNode<int32_t> const*>(node))
+          return n->value;
+        if (auto n = dynamic_cast<unisim::util::symbolic::CastNode<int32_t,uint32_t> const*>(node))
+          return GetValue( n->src.node );
+        if (auto n = dynamic_cast<unisim::util::symbolic::CastNode<uint32_t,int32_t> const*>(node))
+          return GetValue( n->src.node );
+
         if (auto n = dynamic_cast<unisim::util::symbolic::BONode const*>(node))
           {
             uint32_t lval = GetValue( n->left.node );
             uint32_t rval = GetValue( n->right.node );
+            using unisim::util::symbolic::BinaryOp;
             switch (n->binop.code)
               {
-              case unisim::util::symbolic::BinaryOp::Add: return lval + rval;
-              case unisim::util::symbolic::BinaryOp::Sub: return lval - rval;
-              case unisim::util::symbolic::BinaryOp::Lsl: return lval << rval;
-              case unisim::util::symbolic::BinaryOp::Lsr: return lval >> rval;
-              case unisim::util::symbolic::BinaryOp::Or:  return lval | rval;
-              case unisim::util::symbolic::BinaryOp::And: return lval & rval;
-              case unisim::util::symbolic::BinaryOp::Asr: return int32_t(lval) >> rval;
+              case BinaryOp::Add: return lval + rval;
+              case BinaryOp::Sub: return lval - rval;
+              case BinaryOp::Lsl: return lval << rval;
+              case BinaryOp::Lsr: return lval >> rval;
+              case BinaryOp::Or:  return lval | rval;
+              case BinaryOp::And: return lval & rval;
+              case BinaryOp::Asr: return int32_t(lval) >> rval;
+              default: break;
+              }
+          }
+        
+        if (auto n = dynamic_cast<unisim::util::symbolic::UONode const*>(node))
+          {
+            uint32_t val = GetValue( n->src.node );
+            using unisim::util::symbolic::UnaryOp;
+            switch (n->unop.code)
+              {
+              case UnaryOp::Neg: return -val;
+              case UnaryOp::Not: return ~val;
+              default: break;
               }
           }
         

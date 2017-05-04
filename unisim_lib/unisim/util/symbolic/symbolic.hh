@@ -35,6 +35,7 @@
 #ifndef __UNISIM_UTIL_SYMBOLIC_SYMBOLIC_HH__
 #define __UNISIM_UTIL_SYMBOLIC_SYMBOLIC_HH__
 
+#include <unisim/util/arithmetic/arithmetic.hh>
 #include <ostream>
 #include <stdexcept>
 #include <limits>
@@ -285,42 +286,44 @@ namespace symbolic {
   };
   
   template <typename VALUE_TYPE>
-  VALUE_TYPE BinaryXor( VALUE_TYPE l, VALUE_TYPE r ) { return l ^ r; }
-  double BinaryXor( double l, double r );
-  float BinaryXor( float l, float r );
+  VALUE_TYPE EvalXor( VALUE_TYPE l, VALUE_TYPE r ) { return l ^ r; }
+  double     EvalXor( double l, double r );
+  float      EvalXor( float l, float r );
   template <typename VALUE_TYPE>
-  VALUE_TYPE BinaryAnd( VALUE_TYPE l, VALUE_TYPE r ) { return l & r; }
-  double BinaryAnd( double l, double r );
-  float BinaryAnd( float l, float r );
+  VALUE_TYPE EvalAnd( VALUE_TYPE l, VALUE_TYPE r ) { return l & r; }
+  double     EvalAnd( double l, double r );
+  float      EvalAnd( float l, float r );
   template <typename VALUE_TYPE>
-  VALUE_TYPE BinaryOr( VALUE_TYPE l, VALUE_TYPE r ) { return l | r; }
-  double BinaryOr( double l, double r );
-  float BinaryOr( float l, float r );
+  VALUE_TYPE EvalOr( VALUE_TYPE l, VALUE_TYPE r ) { return l | r; }
+  double     EvalOr( double l, double r );
+  float      EvalOr( float l, float r );
   template <typename VALUE_TYPE>
-  VALUE_TYPE BinaryNot( VALUE_TYPE val ) { return ~val; }
-  bool BinaryNot( bool val );
-  double BinaryNot( double val );
-  float BinaryNot( float val );
+  VALUE_TYPE EvalNot( VALUE_TYPE val ) { return ~val; }
+  double     EvalNot( double val );
+  float      EvalNot( float val );
 
   // template <typename VALUE_TYPE>
-  // VALUE_TYPE BinaryROR( VALUE_TYPE l, uint8_t shift ) { return rotate_right( l, shift ); }
-  // double BinaryROR( double, uint8_t );
-  // float BinaryROR( float, uint8_t );
+  // VALUE_TYPE EvalROR( VALUE_TYPE l, uint8_t shift ) { return rotate_right( l, shift ); }
+  // double     EvalROR( double, uint8_t );
+  // float      EvalROR( float, uint8_t );
   template <typename VALUE_TYPE>
-  VALUE_TYPE BinarySHL( VALUE_TYPE l, uint8_t shift ) { return l << shift; }
-  double BinarySHL( double, uint8_t );
-  float BinarySHL( float, uint8_t );
+  VALUE_TYPE EvalSHL( VALUE_TYPE l, uint8_t shift ) { return l << shift; }
+  double     EvalSHL( double, uint8_t );
+  float      EvalSHL( float, uint8_t );
   template <typename VALUE_TYPE>
-  VALUE_TYPE BinarySHR( VALUE_TYPE l, uint8_t shift ) { return l >> shift; }
-  double BinarySHR( double, uint8_t );
-  float BinarySHR( float, uint8_t );
+  VALUE_TYPE EvalSHR( VALUE_TYPE l, uint8_t shift ) { return l >> shift; }
+  double     EvalSHR( double, uint8_t );
+  float      EvalSHR( float, uint8_t );
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalByteSwap( VALUE_TYPE v ) { throw std::logic_error( "No ByteSwap for this type" ); }
-  uint32_t EvalByteSwap( uint32_t v );
-  uint16_t EvalByteSwap( uint16_t v );
+  uint32_t   EvalByteSwap( uint32_t v );
+  uint16_t   EvalByteSwap( uint16_t v );
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalBitScanReverse( VALUE_TYPE v ) { throw std::logic_error( "No BitScanReverse for this type" ); }
-  uint32_t EvalBitScanReverse( uint32_t v );
+  uint32_t   EvalBitScanReverse( uint32_t v );
+  template <typename VALUE_TYPE>
+  VALUE_TYPE EvalBitScanForward( VALUE_TYPE v ) { throw std::logic_error( "No BitScanForward for this type" ); }
+  uint32_t   EvalBitScanForward( uint32_t v );
   
   template <typename VALUE_TYPE>
   struct ConstNode : public ConstNodeBase
@@ -349,12 +352,12 @@ namespace symbolic {
     {
       switch (op.code)
         {
-        case BinaryOp::Xor:  return new ConstNode<VALUE_TYPE>( BinaryXor( value, GetValue( cnb ) ) );
-        case BinaryOp::And:  return new ConstNode<VALUE_TYPE>( BinaryAnd( value, GetValue( cnb ) ) );
-        case BinaryOp::Or:   return new ConstNode<VALUE_TYPE>( BinaryOr( value, GetValue( cnb ) ) );
-        case BinaryOp::Lsl:  return new ConstNode<VALUE_TYPE>( BinarySHL( value, cnb.GetU8() ) );
+        case BinaryOp::Xor:  return new ConstNode<VALUE_TYPE>( EvalXor( value, GetValue( cnb ) ) );
+        case BinaryOp::And:  return new ConstNode<VALUE_TYPE>( EvalAnd( value, GetValue( cnb ) ) );
+        case BinaryOp::Or:   return new ConstNode<VALUE_TYPE>( EvalOr( value, GetValue( cnb ) ) );
+        case BinaryOp::Lsl:  return new ConstNode<VALUE_TYPE>( EvalSHL( value, cnb.GetU8() ) );
         case BinaryOp::Lsr:
-        case BinaryOp::Asr:  return new ConstNode<VALUE_TYPE>( BinarySHR( value, cnb.GetU8() ) );
+        case BinaryOp::Asr:  return new ConstNode<VALUE_TYPE>( EvalSHR( value, cnb.GetU8() ) );
         case BinaryOp::Add:  return new ConstNode<VALUE_TYPE>( value + GetValue( cnb ) );
         case BinaryOp::Sub:  return new ConstNode<VALUE_TYPE>( value - GetValue( cnb ) );
         case BinaryOp::Mul:  return new ConstNode<VALUE_TYPE>( value * GetValue( cnb ) );
@@ -385,10 +388,10 @@ namespace symbolic {
       switch (op.code)
         {
         case UnaryOp::BSwp:  return new ConstNode<VALUE_TYPE>( EvalByteSwap( value ) );
-        case UnaryOp::Not:   return new ConstNode<VALUE_TYPE>( BinaryNot( value ) );
+        case UnaryOp::Not:   return new ConstNode<VALUE_TYPE>( EvalNot( value ) );
         case UnaryOp::Neg:   return new ConstNode<VALUE_TYPE>( - value );
-        case UnaryOp::BSR:   return new ConstNode<VALUE_TYPE>( EvalBitScanReverse( value ) ); break;
-        case UnaryOp::BSF:   break;
+        case UnaryOp::BSR:   return new ConstNode<VALUE_TYPE>( EvalBitScanReverse( value ) );
+        case UnaryOp::BSF:   return new ConstNode<VALUE_TYPE>( EvalBitScanForward( value ) );
         case UnaryOp::FSQB:  break;
         case UnaryOp::FFZ:   break;
         case UnaryOp::FNeg:  break;
@@ -455,6 +458,7 @@ namespace symbolic {
       return false;
     }
     bool good() const { return node; }
+    friend std::ostream& operator << (std::ostream&, Expr const&);
   };
   
   template <typename VALUE_TYPE>
@@ -483,7 +487,7 @@ namespace symbolic {
     }
     
     virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
-    virtual void Repr( std::ostream& sink ) const { sink << ScalarType( TypeInfo<SRC_VALUE_TYPE>::GetType() ).name; sink << "( "; src->Repr(sink); sink << " )"; }
+    virtual void Repr( std::ostream& sink ) const { sink << ScalarType( TypeInfo<DST_VALUE_TYPE>::GetType() ).name; sink << "( "; src->Repr(sink); sink << " )"; }
     
     virtual ExprNode* GetConstNode()
     {
@@ -652,6 +656,15 @@ namespace symbolic {
   
   template <typename UTP>
   UTP BitScanReverse( UTP const& value ) { return UTP( new UONode( "BSR", value.expr ) ); }
+  
+  template <typename UTP>
+  UTP BitScanForward( UTP const& value ) { return UTP( new UONode( "BSF", value.expr ) ); }
+  
+  template <typename T>
+  SmartValue<T> power( SmartValue<T> const& left, SmartValue<T> const& right ) { return SmartValue<T>( new BONode( "Pow", left.expr, right.expr ) ); }
+  
+  template <typename T>
+  SmartValue<T> fmodulo( SmartValue<T> const& left, SmartValue<T> const& right ) { return SmartValue<T>( new BONode( "FMod", left.expr, right.expr ) ); }
   
   struct FP
   {

@@ -41,32 +41,43 @@ namespace unisim {
 namespace util {
 namespace symbolic {
 
+  std::ostream&
+  operator << (std::ostream& sink, Expr const& expr )
+  {
+    if (expr.good())
+      expr->Repr( sink );
+    else
+      sink << "*null*";
+    
+    return sink;
+  }
   std::ostream& ConstNodeBase::warn() { return std::cerr; }
   
-  double BinaryXor( double l, double r ) { throw std::logic_error( "No ^ for double." ); }
-  float BinaryXor( float l, float r ) { throw std::logic_error( "No ^ for float." ); }
+  double   EvalXor( double l, double r ) { throw std::logic_error( "No ^ for double." ); }
+  float    EvalXor( float l, float r ) { throw std::logic_error( "No ^ for float." ); }
   
-  double BinaryAnd( double l, double r ) { throw std::logic_error( "No & for double." ); }
-  float BinaryAnd( float l, float r ) { throw std::logic_error( "No & for float." ); }
+  double   EvalAnd( double l, double r ) { throw std::logic_error( "No & for double." ); }
+  float    EvalAnd( float l, float r ) { throw std::logic_error( "No & for float." ); }
   
-  double BinaryOr( double l, double r ) { throw std::logic_error( "No | for double." ); }
-  float BinaryOr( float l, float r ) { throw std::logic_error( "No | for float." ); }
+  double   EvalOr( double l, double r ) { throw std::logic_error( "No | for double." ); }
+  float    EvalOr( float l, float r ) { throw std::logic_error( "No | for float." ); }
   
-  bool BinaryNot( bool val ) { return not val; }
-  double BinaryNot( double val ) { throw std::logic_error( "No ~ for double." ); }
-  float BinaryNot( float val ) { throw std::logic_error( "No ~ for float." ); }
+  double   EvalNot( double val ) { throw std::logic_error( "No ~ for double." ); }
+  float    EvalNot( float val ) { throw std::logic_error( "No ~ for float." ); }
   
-  double BinarySHL( double, uint8_t ) { throw std::logic_error( "No << for double." ); }
-  float BinarySHL( float, uint8_t ) { throw std::logic_error( "No << for float." ); }
+  double   EvalSHL( double, uint8_t ) { throw std::logic_error( "No << for double." ); }
+  float    EvalSHL( float, uint8_t ) { throw std::logic_error( "No << for float." ); }
   
-  double BinarySHR( double, uint8_t ) { throw std::logic_error( "No >> for double." ); }
-  float BinarySHR( float, uint8_t ) { throw std::logic_error( "No >> for float." ); }
+  double   EvalSHR( double, uint8_t ) { throw std::logic_error( "No >> for double." ); }
+  float    EvalSHR( float, uint8_t ) { throw std::logic_error( "No >> for float." ); }
   
   uint32_t EvalByteSwap( uint32_t v ) { return unisim::util::endian::ByteSwap( v ); }
   uint16_t EvalByteSwap( uint16_t v ) { return unisim::util::endian::ByteSwap( v ); }
   
   uint32_t EvalBitScanReverse( uint32_t v ) { return unisim::util::arithmetic::BitScanReverse( v ); }
 
+  uint32_t EvalBitScanForward( uint32_t v ) { return unisim::util::arithmetic::BitScanForward( v ); }
+  
 } /* end of namespace symbolic */
 } /* end of namespace util */
 } /* end of namespace unisim */
