@@ -4084,7 +4084,7 @@ protected:
 			name_sstr << "pmc" << PMC_NUM;
 			
 			std::stringstream desc_sstr;
-			name_sstr << "Performance Monitor Counter register" << PMC_NUM;
+			desc_sstr << "Performance Monitor Counter register" << PMC_NUM;
 			
 			               this->SetName(name_sstr.str());                         this->SetDescription(desc_sstr.str());
 			OV           ::SetName("ov");            OV           ::SetDescription("Overflow");

@@ -304,6 +304,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.CPU2.processor-version", 0x815f8000);
 	simulator->SetVariable("HARDWARE.CPU2.system-version", 0x0);
 	simulator->SetVariable("HARDWARE.CPU2.system-information", 0x2);
+	simulator->SetVariable("HARDWARE.CPU2.cpuid", 0x2);
 
 	// CPU0
 	simulator->SetVariable("HARDWARE.CPU0.cpu-cycle-time", sc_time(cpu0_cycle_time, SC_PS).to_string().c_str());
@@ -322,6 +323,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.CPU0.processor-version", 0x81b00000);
 	simulator->SetVariable("HARDWARE.CPU0.system-version", 0x0);
 	simulator->SetVariable("HARDWARE.CPU0.system-information", 0x0);
+	simulator->SetVariable("HARDWARE.CPU0.cpuid", 0x0);
 	
 	// CPU1
 	simulator->SetVariable("HARDWARE.CPU1.cpu-cycle-time", sc_time(cpu1_cycle_time, SC_PS).to_string().c_str());
@@ -340,6 +342,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.CPU1.processor-version", 0x81b00000);
 	simulator->SetVariable("HARDWARE.CPU1.system-version", 0x0);
 	simulator->SetVariable("HARDWARE.CPU1.system-information", 0x1);
+	simulator->SetVariable("HARDWARE.CPU1.cpuid", 0x1);
 
 	//  - Interconnect
 	simulator->SetVariable("HARDWARE.INTERCONNECT.cycle_time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());

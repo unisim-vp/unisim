@@ -477,6 +477,13 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 				
+				if (IsRegistersCommand(parm[0].c_str()))
+				{
+					recognized = true;
+					DumpRegisters();
+					break;
+				}
+
 				if (IsRegisterCommand(parm[0].c_str()))
 				{
 					recognized = true;
@@ -1067,6 +1074,9 @@ void InlineDebugger<ADDRESS>::Help()
 	(*std_output_stream) << "<d | dump> [<symbol | *address>]" << endl;
 	(*std_output_stream) << "    dump memory starting from 'symbol', 'address', or after the previous dump" << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<regs | registers>" << endl;
+	(*std_output_stream) << "    dump registers" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
 	(*std_output_stream) << "<bt | backtrace>" << endl;
 	(*std_output_stream) << "    display backtrace" << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
@@ -1518,6 +1528,37 @@ void InlineDebugger<ADDRESS>::DumpMemory(ADDRESS addr)
 		(*std_output_stream) << endl;
 	}
 	(*std_output_stream).width(width);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpRegisters()
+{
+	struct Printer : unisim::service::interfaces::RegisterScanner
+	{
+		InlineDebugger<ADDRESS> *inline_debugger;
+		
+		virtual void Append( unisim::service::interfaces::Register* reg)
+		{
+			unsigned int size = reg->GetSize();
+			uint8_t value[size];
+			reg->GetValue(&value);
+			int i;
+			(*inline_debugger->std_output_stream) << reg->GetName() << " = 0x" << std::hex;
+#if BYTE_ORDER == BIG_ENDIAN
+			for(i = 0; i < (int) size; i++)
+#else
+			for(i = size - 1; i >= 0; i--)
+#endif
+			{
+				(*inline_debugger->std_output_stream) << (value[i] >> 4);
+				(*inline_debugger->std_output_stream) << (value[i] & 15);
+			}
+			(*inline_debugger->std_output_stream) << std::dec << endl;
+		}
+	} printer;
+	
+	printer.inline_debugger = this;
+	registers_import->ScanRegisters(printer);
 }
 
 template <class ADDRESS>
@@ -3374,6 +3415,12 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::IsDumpCommand(const char *cmd) const
 {
 	return strcmp(cmd, "d") == 0 || strcmp(cmd, "dump") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsRegistersCommand(const char *cmd) const
+{
+	return strcmp(cmd, "regs") == 0 || strcmp(cmd, "registers") == 0;
 }
 
 template <class ADDRESS>
