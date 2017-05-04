@@ -161,6 +161,7 @@ CPU<CONFIG>::CPU(const char *name, unisim::kernel::service::Object *parent)
 	, external_dcr(this)
 	, slr()
 	, reset_addr(0x0)
+	, param_reset_addr("reset-addr", this, reset_addr, "reset address")
 	, cia(0)
 	, nia(0)
 	, gpr()
@@ -209,6 +210,43 @@ bool CPU<CONFIG>::BeginSetup()
 			if(slr_p)
 			{
 				slr_p->AddRegisterInterface();
+			}
+		}
+	}
+	
+	return true;
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::EndSetup()
+{
+	if(!halt_on.empty())
+	{
+		const unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *halt_on_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByName(halt_on.c_str(), unisim::util::debug::Symbol<typename CONFIG::ADDRESS>::SYM_FUNC) : 0;
+		
+		if(halt_on_symbol)
+		{
+			halt_on_addr = halt_on_symbol->GetAddress();
+			if(verbose_setup)
+			{
+				logger << DebugInfo << "Simulation will halt at '" << halt_on_symbol->GetName() << "' (0x" << std::hex << halt_on_addr << std::dec << ")" << EndDebugInfo;
+			}
+		}
+		else
+		{
+			std::stringstream sstr(halt_on);
+			sstr >> std::hex;
+			if(sstr >> halt_on_addr)
+			{
+				if(verbose_setup)
+				{
+					logger << DebugInfo <<  "Simulation will halt at 0x" << std::hex << halt_on_addr << std::dec << EndDebugInfo;
+				}
+			}
+			else
+			{
+				logger << DebugWarning << "Invalid address (" << halt_on << ") in Parameter " << param_halt_on.GetName() << EndDebugWarning;
+				halt_on_addr = (typename CONFIG::ADDRESS) -1;
 			}
 		}
 	}

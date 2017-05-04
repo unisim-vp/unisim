@@ -141,7 +141,6 @@ enum WarningStatus
 	WS_WROR      = 2,                 // writing read-only register
 	WS_WROB      = 4,                 // writing read-only bits
 	WS_RWOR      = 8,                 // reading write-only register
-	WS_RWOB      = 16,                // reading write-only bits
 	WS_WOORV_WROR = WS_WOORV | WS_WROR, // writing out-of-range value and writing read-only register
 	WS_WOORV_WROB = WS_WOORV | WS_WROB, // writing out-of-range value and writing read-only bits
 };

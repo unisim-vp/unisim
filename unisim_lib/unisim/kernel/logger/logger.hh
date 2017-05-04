@@ -48,7 +48,7 @@ namespace kernel {
 namespace logger {
 
 struct LoggerServer;
-class Logger;
+struct Logger;
 
 typedef void (LoggerServer::*LoggerServerOutputMethodPtr)(std::string, const char *);
 
@@ -81,9 +81,8 @@ private:
 	LoggerStreamBuffer logger_stream_buffer;
 };
 
-class Logger
+struct Logger
 {
-public:
 	Logger(const std::string& name);
 	Logger(const char *name);
 	Logger(const unisim::kernel::service::Object& object);

@@ -79,6 +79,15 @@ struct MSS_TYPES
 	typedef CONFIG::STORAGE_ATTR STORAGE_ATTR;
 };
 
+struct MPU_CONFIG
+{
+	typedef unisim::component::cxx::processor::powerpc::e200z710n3::CPU CPU;
+	typedef unisim::component::cxx::processor::powerpc::e200z710n3::ADDRESS ADDRESS;
+	static const unsigned int NUM_INST_MPU_ENTRIES = 6;
+	static const unsigned int NUM_DATA_MPU_ENTRIES = 12;
+	static const unsigned int NUM_SHARED_MPU_ENTRIES = 6;
+};
+
 } // end of namespace e200z710n3
 } // end of namespace powerpc
 } // end of namespace processor

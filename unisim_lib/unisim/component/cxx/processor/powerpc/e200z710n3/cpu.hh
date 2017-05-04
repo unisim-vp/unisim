@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_E200Z710N3_CPU_HH__
 
 #include <unisim/component/cxx/processor/powerpc/cpu.tcc>
+#include <unisim/component/cxx/processor/powerpc/e200z710n3/mpu.hh>
 #include <unisim/component/cxx/processor/powerpc/e200z710n3/types.hh>
 #include <unisim/component/cxx/processor/powerpc/e200z710n3/isa/vle.hh>
 #include <unisim/util/cache/cache.hh>
@@ -50,333 +51,6 @@ namespace processor {
 namespace powerpc {
 namespace e200z710n3 {
 
-struct MPU_ENTRY
-{
-	uint32_t mas0;
-	uint32_t mas1;
-	uint32_t mas2;
-	uint32_t mas3;
-};
-
-template <typename CONFIG>
-struct MPU
-{
-	typedef typename CONFIG::CPU CPU;
-	typedef typename CPU::MAS0 MAS0;
-	typedef typename CPU::MAS1 MAS1;
-	typedef typename CPU::MAS2 MAS2;
-	typedef typename CPU::MAS3 MAS3;
-	typedef typename CPU::MPU0CSR0 MPU0CSR0;
-	typedef typename CPU::PID0 PID0;
-	typedef typename CPU::MSR MSR;
-	static const unsigned int NUM_INST_MPU_ENTRIES = CONFIG::NUM_INST_MPU_ENTRIES;
-	static const unsigned int NUM_DATA_MPU_ENTRIES = CONFIG::NUM_DATA_MPU_ENTRIES;
-	static const unsigned int NUM_SHARED_MPU_ENTRIES = CONFIG::NUM_SHARED_MPU_ENTRIES;
-	
-	MPU(CPU *cpu, unsigned int sel);
-	void WriteEntry();
-	void ReadEntry();
-	MPU_ENTRY *CheckPermissions(ADDRESS addr, bool exec, bool write);
-protected:
-	struct MMUCFG : CPU::MMUCFG
-	{
-		typedef typename CPU::MMUCFG Super;
-		
-		MMUCFG(CPU *_cpu) : Super(_cpu) {}
-		MMUCFG(CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
-		
-		virtual void Reset()
-		{
-			this->template Set<typename CPU::MMUCFG::RASIZE>(32);
-			this->template Set<typename CPU::MMUCFG::PIDSIZE>(PID0::Process_ID::GetBitWidth() - 1);
-			this->template Set<typename CPU::MMUCFG::NMPUS>(1);
-			this->template Set<typename CPU::MMUCFG::NTLBS>(0);
-			this->template Set<typename CPU::MMUCFG::MAVN>(3);
-		}
-	};
-	
-	struct MPU0CFG : CPU::MPU0CFG
-	{
-		typedef typename CPU::MPU0CFG Super;
-		
-		MPU0CFG(CPU *_cpu) : Super(_cpu) {}
-		MPU0CFG(CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
-		
-		virtual void Reset()
-		{
-			this->template Set<typename CPU::MPU0CFG::FASSOC>(1);
-			this->template Set<typename CPU::MPU0CFG::MINSIZE>(0);   // Smallest region size is 1 byte; Note: Due to the use of access address matching, the effective smallest region size is 8 bytes
-			this->template Set<typename CPU::MPU0CFG::MAXSIZE>(0xb); // Largest region size is 4 GB
-			this->template Set<typename CPU::MPU0CFG::IPROT>(1);
-			this->template Set<typename CPU::MPU0CFG::UAMSKA>(1);
-			this->template Set<typename CPU::MPU0CFG::SHENTRY>(0x2);
-			this->template Set<typename CPU::MPU0CFG::DENTRY>(0x4);
-			this->template Set<typename CPU::MPU0CFG::IENTRY>(0x2);
-		}
-	};
-	
-private:
-	bool Match(MPU_ENTRY *mpu_entry, ADDRESS addr, bool exec, bool write);
-	
-	CPU *cpu;
-	unsigned int sel;
-	MAS0 mas0;
-	MAS1 mas1;
-	MAS2 mas2;
-	MAS3 mas3;
-	MPU0CFG mpu0cfg;
-	MPU0CSR0 mpu0csr0;
-	MMUCFG mmucfg;
-	MPU_ENTRY *mru_inst_mpu_entry;
-	MPU_ENTRY *mru_data_mpu_entry;
-	MPU_ENTRY *mru_shd_mpu_entry;
-	MPU_ENTRY hole_mpu_entry;
-	
-	MPU_ENTRY inst_mpu_entries[NUM_INST_MPU_ENTRIES];
-	MPU_ENTRY data_mpu_entries[NUM_DATA_MPU_ENTRIES];
-	MPU_ENTRY shd_mpu_entries[NUM_SHARED_MPU_ENTRIES];
-};
-
-template <typename CONFIG>
-MPU<CONFIG>::MPU(CPU *_cpu, unsigned int _sel)
-	: cpu(_cpu)
-	, sel(_sel)
-	, mas0(_cpu)
-	, mas1(_cpu)
-	, mas2(_cpu)
-	, mas3(_cpu)
-	, mpu0cfg(_cpu)
-	, mpu0csr0(_cpu)
-	, mmucfg(_cpu)
-	, mru_inst_mpu_entry(0)
-	, mru_data_mpu_entry(0)
-	, mru_shd_mpu_entry(0)
-	, hole_mpu_entry()
-{
-	unsigned int esel;
-	
-	for(esel = 0; esel < NUM_INST_MPU_ENTRIES; esel++)
-	{
-		MPU_ENTRY *mpu_entry = &inst_mpu_entries[esel];
-		mpu_entry->mas0 = 0;
-		mpu_entry->mas1 = 0;
-		mpu_entry->mas2 = 0;
-		mpu_entry->mas3 = 0;
-		MAS0::SEL::Set(mpu_entry->mas0, sel);
-	}
-	
-	for(esel = 0; esel < NUM_DATA_MPU_ENTRIES; esel++)
-	{
-		MPU_ENTRY *mpu_entry = &data_mpu_entries[esel];
-		mpu_entry->mas0 = 0;
-		mpu_entry->mas1 = 0;
-		mpu_entry->mas2 = 0;
-		mpu_entry->mas3 = 0;
-		MAS0::SEL::Set(mpu_entry->mas0, sel);
-	}
-	
-	for(esel = 0; esel < NUM_SHARED_MPU_ENTRIES; esel++)
-	{
-		MPU_ENTRY *mpu_entry = &shd_mpu_entries[esel];
-		mpu_entry->mas0 = 0;
-		mpu_entry->mas1 = 0;
-		mpu_entry->mas2 = 0;
-		mpu_entry->mas3 = 0;
-		MAS0::SEL::Set(mpu_entry->mas0, sel);
-	}
-
-	mru_inst_mpu_entry = &inst_mpu_entries[0];
-	mru_data_mpu_entry = &data_mpu_entries[0];
-	mru_shd_mpu_entry = &shd_mpu_entries[0];
-	
-	MAS0::I::Set(hole_mpu_entry.mas0, 0U); // *NOT* cache inhibited
-	MAS0::G::Set(hole_mpu_entry.mas0, 0U); // *NOT* guarded
-}
-
-template <typename CONFIG>
-void MPU<CONFIG>::WriteEntry()
-{
-	unsigned int sel = mas0.template Get<typename MAS0::SEL>();
-	
-	if(sel == mas0.template Get<typename MAS0::SEL>())
-	{
-		unsigned int esel = mas0.template Get<typename MAS0::ESEL>();
-		unsigned int inst = mas0.template Get<typename MAS0::INST>();
-		unsigned int shd = mas0.template Get<typename MAS0::SHD>();
-		
-		MPU_ENTRY *mpu_entry = 0;
-		
-		if(shd)
-		{
-			// shared entry
-			mpu_entry = (esel < NUM_SHARED_MPU_ENTRIES) ? &shd_mpu_entries[esel] : 0;
-		}
-		else if(inst)
-		{
-			// pure instruction entry
-			mpu_entry = (esel < NUM_INST_MPU_ENTRIES) ? &inst_mpu_entries[esel] : 0;
-		}
-		else
-		{
-			// pure data entry
-			mpu_entry = (esel < NUM_DATA_MPU_ENTRIES) ? &data_mpu_entries[esel] : 0;
-		}
-		
-		if(mpu_entry)
-		{
-			mpu_entry->mas0 = mas0;
-			mpu_entry->mas1 = mas1;
-			mpu_entry->mas2 = mas2;
-			mpu_entry->mas3 = mas3;
-		}
-	}
-}
-
-template <typename CONFIG>
-void MPU<CONFIG>::ReadEntry()
-{
-	MPU_ENTRY *mpu_entry = 0;
-	
-	if(sel == mas0.template Get<typename MAS0::SEL>())
-	{
-		unsigned int esel = mas0.template Get<typename MAS0::ESEL>();
-		unsigned int inst = mas0.template Get<typename MAS0::INST>();
-		unsigned int shd = mas0.template Get<typename MAS0::SHD>();
-		
-		if(shd)
-		{
-			// shared entry
-			mpu_entry = (esel < NUM_SHARED_MPU_ENTRIES) ? &shd_mpu_entries[esel] : 0;
-		}
-		else if(inst)
-		{
-			// pure instruction entry
-			mpu_entry = (esel < NUM_INST_MPU_ENTRIES) ? &inst_mpu_entries[esel] : 0;
-		}
-		else
-		{
-			// pure data entry
-			mpu_entry = (esel < NUM_DATA_MPU_ENTRIES) ? &data_mpu_entries[esel] : 0;
-		}
-	}
-	
-	mas0 = mpu_entry ? mpu_entry->mas0 : 0;
-	mas1 = mpu_entry ? mpu_entry->mas1 : 0;
-	mas2 = mpu_entry ? mpu_entry->mas2 : 0;
-	mas3 = mpu_entry ? mpu_entry->mas3 : 0;
-}
-
-template <typename CONFIG>
-bool MPU<CONFIG>::Match(MPU_ENTRY *mpu_entry, ADDRESS addr, bool exec, bool write)
-{
-	MSR& msr = cpu->msr;
-	PID0& pid0 = cpu->pid0;
-	unsigned int pid = pid0.template Get<typename PID0::Process_ID>();
-
-	if(MAS0::VALID::Get(mpu_entry->mas0))
-	{
-		// valid MPU entry
-		unsigned int pr = msr.template Get<typename MSR::PR>();
-		
-		if(( exec && ((pr && (mpu0csr0.template Get<typename MPU0CSR0::BYPUX>()            || MAS0::UX_UR::Get(mpu_entry->mas0))) || (!pr && (mpu0csr0.template Get<typename MPU0CSR0::BYPSX>()    || MAS0::SX_SR::Get(mpu_entry->mas0))))) ||
-		   (!exec && ((pr && ((write && (mpu0csr0.template Get<typename MPU0CSR0::BYPUW>() || MAS0::UW::Get(mpu_entry->mas0)))    || (!write && (mpu0csr0.template Get<typename MPU0CSR0::BYPUR>() || MAS0::UX_UR::Get(mpu_entry->mas0))))) ||
-		             (!pr && ((write && (mpu0csr0.template Get<typename MPU0CSR0::BYPSW>() || MAS0::SW::Get(mpu_entry->mas0)))    || (!write && (mpu0csr0.template Get<typename MPU0CSR0::BYPSR>() || MAS0::SX_SR::Get(mpu_entry->mas0))))))))
-		{
-			// Access right match
-			unsigned int tid = MAS1::TID::Get(mpu_entry->mas1);
-			unsigned int tidmsk = MAS1::TIDMSK::Get(mpu_entry->mas1);
-			
-			if(!tid || (((tid ^ pid) & ~tidmsk) == 0))
-			{
-				// TID match
-				
-				// Note: Due to the use of access address matching, the effective smallest region size is 8 bytes
-				struct B29_31 : Field<void, 29, 31> {};
-				
-				ADDRESS upper_bound = MAS2::UPPER_BOUND::Get(mpu_entry->mas2);
-				ADDRESS lower_bound = MAS3::LOWER_BOUND::Get(mpu_entry->mas3);
-				
-				ADDRESS addr_mask = ~((int32_t) 0x80000000 >> MAS0::UAMSK::Get(mpu_entry->mas0));
-				B29_31::Set(addr_mask, 0U);
-				
-				ADDRESS masked_addr = addr & addr_mask;
-				ADDRESS masked_upper_bound = upper_bound & addr_mask;
-				ADDRESS masked_lower_bound = lower_bound & addr_mask;
-				
-				if((masked_addr >= masked_lower_bound) && (masked_addr <= masked_upper_bound))
-				{
-					// Address match
-					return true;
-				}
-			}
-		}
-	}
-	
-	return false;
-}
-
-template <typename CONFIG>
-MPU_ENTRY *MPU<CONFIG>::CheckPermissions(ADDRESS addr, bool exec, bool write)
-{
-	if(mpu0csr0.template Get<typename MPU0CSR0::MPUEN>())
-	{
-		unsigned int esel;
-
-		if(exec)
-		{
-			// instruction
-			if(Match(mru_inst_mpu_entry, addr, exec, write)) return mru_inst_mpu_entry;
-			
-			for(esel = 0; esel < NUM_INST_MPU_ENTRIES; esel++)
-			{
-				MPU_ENTRY *mpu_entry = &inst_mpu_entries[esel];
-				
-				if(Match(mpu_entry, addr, exec, write))
-				{
-					mru_inst_mpu_entry = mpu_entry;
-					return mpu_entry;
-				}
-			}
-		}
-		else
-		{
-			// data
-			if(Match(mru_data_mpu_entry, addr, exec, write)) return mru_data_mpu_entry;
-			
-			for(esel = 0; esel < NUM_DATA_MPU_ENTRIES; esel++)
-			{
-				MPU_ENTRY *mpu_entry = &data_mpu_entries[esel];
-				
-				if(Match(mpu_entry, addr, exec, write))
-				{
-					mru_data_mpu_entry = mpu_entry;
-					return mpu_entry;
-				}
-			}
-		}
-		
-		// shared
-		if(Match(mru_shd_mpu_entry, addr, exec, write)) return mru_shd_mpu_entry;
-
-		for(esel = 0; esel < NUM_SHARED_MPU_ENTRIES; esel++)
-		{
-			MPU_ENTRY *mpu_entry = &shd_mpu_entries[esel];
-			
-			if(Match(mpu_entry, addr, exec, write))
-			{
-				mru_shd_mpu_entry = mpu_entry;
-				return mpu_entry;
-			}
-		}
-	}
-	else
-	{
-		return &hole_mpu_entry;
-	}
-
-	return 0;
-}
-
 class CPU
 	: public unisim::component::cxx::processor::powerpc::CPU<CONFIG>
 	, public unisim::util::cache::MemorySubSystem<MSS_TYPES, CPU >
@@ -389,26 +63,42 @@ public:
 	typedef unisim::component::cxx::processor::powerpc::CPU<CONFIG> SuperCPU;
 	typedef unisim::util::cache::MemorySubSystem<MSS_TYPES, CPU> SuperMSS;
 	
-	// imports
+	/////////////////////////// service imports ///////////////////////////////
+	
 	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<PHYSICAL_ADDRESS> > memory_import;
 
-	// exports
+	/////////////////////////// service exports ///////////////////////////////
+
 	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<ADDRESS> > disasm_export;
 	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<ADDRESS> > memory_export;
 
+	////////////////////////////// constructor ////////////////////////////////
+	
 	CPU(const char *name, unisim::kernel::service::Object *parent = 0);
+
+	/////////////////////////////// destructor ////////////////////////////////
+
 	virtual ~CPU();
 	
+	////////////////////////////// setup hooks ////////////////////////////////
+
 	virtual bool EndSetup();
+
+	//////////  unisim::service::interfaces::Disassembly<> ////////////////////
+	
+	virtual std::string Disasm(ADDRESS addr, ADDRESS& next_addr);
+	
+	/////////////// unisim::service::interfaces::Memory<> /////////////////////
 	
 	virtual void Reset();
-
-	virtual std::string Disasm(ADDRESS addr, ADDRESS& next_addr);
 	virtual bool ReadMemory(ADDRESS addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(ADDRESS addr, const void *buffer, uint32_t size);
 	
+	///////////////// Interface with SystemC TLM-2.0 wrapper module ///////////
+	
 	virtual void InterruptAcknowledge() {}
-
+	virtual void Idle() {}
+	
 	////////////////////////// Machine State Register /////////////////////////
 	
 	struct MSR : SuperCPU::MSR
@@ -425,9 +115,56 @@ public:
 			return *this;
 		}
 	};
+
+	///////////// Interface with .isa behavioral description files ////////////
+	
+	MSR& GetMSR() { return msr; }
+	ESR& GetESR() { return esr; }
+
+	bool Dcba(ADDRESS addr);
+	bool Dcbi(ADDRESS addr);
+	bool Dcbf(ADDRESS addr);
+	bool Dcbst(ADDRESS addr);
+	bool Dcbt(ADDRESS addr);
+	bool Dcbtst(ADDRESS addr);
+	bool Dcbz(ADDRESS addr);
+	bool Icbi(ADDRESS addr);
+	bool Icbt(ADDRESS addr);
+	bool Lbarx(unsigned int rd, ADDRESS addr);
+	bool Lharx(unsigned int rd, ADDRESS addr);
+	bool Lwarx(unsigned int rd, ADDRESS addr);
+	bool Mbar(ADDRESS addr);
+	bool Stbcx(unsigned int rs, ADDRESS addr);
+	bool Sthcx(unsigned int rs, ADDRESS addr);
+	bool Stwcx(unsigned int rs, ADDRESS addr);
+	bool Wait();
+	bool Msync();
+	bool Isync();
+	bool Rfi();
+	bool Rfci();
+	bool Rfdi();
+	bool Rfmci();
+	bool Mpure();
+	bool Mpuwe();
+	bool Mpusync();
 	
 	////////////////////////// Special Purpose Registers //////////////////////
 	
+	// Processor ID Register
+	struct PIR : SuperCPU::PIR
+	{
+		typedef SuperCPU::PIR Super;
+		
+		PIR(CPU *_cpu) : Super(_cpu) {}
+		PIR(CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		virtual void Reset()
+		{
+			Set<ID_0_23>(0);
+			Set<ID_24_31>(cpu->cpuid);
+		}
+	};
+
 	// Hardware Implementation Dependent Register 0
 	struct HID0 : SuperCPU::HID0
 	{
@@ -464,7 +201,7 @@ public:
 				cpu->GetDebugInfoStream() << "Replacement of Data Cache Way #0 is " << ((Get<L1CSR0::WDD>() & 1) ? "disabled" : "enabled") << std::endl;
 				cpu->GetDebugInfoStream() << "Replacement of Data Cache Way #1 is " << ((Get<L1CSR0::WDD>() & 2) ? "disabled" : "enabled") << std::endl;
 			}
-			if(Get<L1CSR0::DCE>() && Get<L1CSR0::DCINV>())
+			if(Get<L1CSR0::DCINV>())
 			{
 				cpu->InvalidateDataCache();
 				Set<L1CSR0::DCINV>(0);
@@ -489,7 +226,7 @@ public:
 			{
 				cpu->GetDebugInfoStream() << "Instruction Cache is " << (Get<L1CSR1::ICE>() ? "enabled" : "disabled") << std::endl;
 			}
-			if(Get<L1CSR1::ICE>() && Get<L1CSR1::ICINV>())
+			if(Get<L1CSR1::ICINV>())
 			{
 				cpu->InvalidateInstructionCache();
 				Set<L1CSR1::ICINV>(0);
@@ -639,6 +376,7 @@ public:
 			{
 				cpu->cur_dmem_base_addr = cpu->dmem_base_addr;
 			}
+			cpu->cur_dmem_high_addr = cpu->cur_dmem_base_addr + cpu->dmem_size;
 			
 			cpu->dmemcfg0.Reset(); // regenerate DMEMCFG0 read-only register
 		}
@@ -658,7 +396,7 @@ public:
 			Set<DCPECE        >(1);
 			Set<DSECE         >(1);
 			
-			cpu->dmemcfg0.Reset(); // regenerate DMEMCFG0 read-only register
+			Effect();
 		}
 		
 		DMEMCTL0& operator = (const uint32_t& value) { this->Super::operator = (value); Effect(); return *this; }
@@ -701,6 +439,7 @@ public:
 			{
 				cpu->cur_imem_base_addr = cpu->imem_base_addr;
 			}
+			cpu->cur_imem_high_addr = cpu->cur_imem_base_addr + cpu->imem_size;
 			
 			cpu->imemcfg0.Reset(); // regenerate IMEMCFG0 read-only register
 		}
@@ -715,7 +454,7 @@ public:
 			Set<ICPECE        >(1);
 			Set<ISECE         >(1);
 			
-			cpu->imemcfg0.Reset(); // regenerate IMEMCFG0 read-only register
+			Effect();
 		}
 		
 		IMEMCTL0& operator = (const uint32_t& value) { this->Super::operator = (value); Effect(); return *this; }
@@ -1122,18 +861,6 @@ public:
 	void SetAutoVector(bool value) { if(verbose_interrupt) logger << DebugInfo << (value ? "Enabling" : "Disabling") << " auto vector" << EndDebugInfo; enable_auto_vectored_interrupts = value; }
 	void SetVectorOffset(ADDRESS value) { vector_offset = value & 0xfffffffcUL; }
 	
-	///////////////////////// Memory Protection Unit //////////////////////////
-
-	struct MPU_CONFIG
-	{
-		typedef ThisCPU CPU;
-		static const unsigned int NUM_INST_MPU_ENTRIES = 6;
-		static const unsigned int NUM_DATA_MPU_ENTRIES = 12;
-		static const unsigned int NUM_SHARED_MPU_ENTRIES = 6;
-	};
-	
-	friend class MPU<MPU_CONFIG>;
-	
 	//////////////////////////// Memory SubSystem /////////////////////////////
 	
 	// Level 1 Instruction Cache
@@ -1265,6 +992,11 @@ public:
 	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataLoad(T& value, ADDRESS ea);
 	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataStore(T value, ADDRESS ea);
 	
+	unsigned int ExternalLoad(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size);
+	unsigned int ExternalStore(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size);
+	unsigned char *GetDirectMemPtr(PHYSICAL_ADDRESS addr, PHYSICAL_ADDRESS& start_addr, PHYSICAL_ADDRESS& end_addr);
+	virtual void InvalidateDirectMemPtr(PHYSICAL_ADDRESS start_addr, PHYSICAL_ADDRESS end_addr) {}
+
 	void InvalidateDataCache();
 	void InvalidateDataCacheBySetAndWay(unsigned int index, unsigned int way);
 	void ClearDataCacheLockoutBySetAndWay(unsigned int index, unsigned int way);
@@ -1272,35 +1004,6 @@ public:
 	void InvalidateInstructionCacheBySetAndWay(unsigned int index, unsigned int way);
 	void ClearInstructionCacheLockoutBySetAndWay(unsigned int index, unsigned int way);
 public:
-	MSR& GetMSR() { return msr; }
-	ESR& GetESR() { return esr; }
-
-	bool Dcba(ADDRESS addr);
-	bool Dcbi(ADDRESS addr);
-	bool Dcbf(ADDRESS addr);
-	bool Dcbst(ADDRESS addr);
-	bool Dcbt(ADDRESS addr);
-	bool Dcbtst(ADDRESS addr);
-	bool Dcbz(ADDRESS addr);
-	bool Icbi(ADDRESS addr);
-	bool Icbt(ADDRESS addr);
-	bool Lbarx(unsigned int rd, ADDRESS addr);
-	bool Lharx(unsigned int rd, ADDRESS addr);
-	bool Lwarx(unsigned int rd, ADDRESS addr);
-	bool Mbar(ADDRESS addr);
-	bool Stbcx(unsigned int rs, ADDRESS addr);
-	bool Sthcx(unsigned int rs, ADDRESS addr);
-	bool Stwcx(unsigned int rs, ADDRESS addr);
-	bool Wait();
-	bool Msync();
-	bool Isync();
-	bool Rfi();
-	bool Rfci();
-	bool Rfdi();
-	bool Rfmci();
-	bool Mpure();
-	bool Mpuwe();
-	bool Mpusync();
 
 	bool InstructionFetch(ADDRESS addr, void *buffer, unsigned int size);
 	void FlushInstructionBuffer();
@@ -1314,6 +1017,9 @@ public:
 protected:
 	////////////////////////// Run-time parameters ////////////////////////////
 	
+	uint8_t cpuid;
+	unisim::kernel::service::Parameter<uint8_t> param_cpuid;
+
 	uint32_t processor_version;
 	unisim::kernel::service::Parameter<uint32_t> param_processor_version;
 	
@@ -1328,7 +1034,7 @@ protected:
 
 	ADDRESS imem_size;
 	unisim::kernel::service::Parameter<ADDRESS> param_imem_size;
-	
+
 	ADDRESS dmem_base_addr;
 	unisim::kernel::service::Parameter<ADDRESS> param_dmem_base_addr;
 
@@ -1369,28 +1075,30 @@ protected:
 	ADDRESS instruction_buffer_base_addr;
 	uint16_t instruction_buffer[L1I::BLOCK_SIZE / 2];
 	
-	////////////////////////// Instruction decoder ////////////////////////////
+	/////////////////////// VLE Instruction decoder ///////////////////////////
 	
 	unisim::component::cxx::processor::powerpc::e200z710n3::isa::vle::Decoder vle_decoder;
 	unisim::component::cxx::processor::powerpc::e200z710n3::isa::vle::Operation *operation;
 	
 	///////////////////////// Memory Protection Unit //////////////////////////
 
+	friend struct MPU<MPU_CONFIG>;
+	
 	MPU<MPU_CONFIG> mpu;
 
 	/////////////////////////// Memory sub-system /////////////////////////////
 	
-	L1I l1i;
-	L1D l1d;
+	L1I l1i;                     // L1 instruction cache
+	L1D l1d;                     // L1 data cache
 	
-	uint8_t *imem;
-	uint8_t *dmem;
+	uint8_t *imem;               // I-MEM
+	uint8_t *dmem;               // D-MEM
 	
 	ADDRESS cur_imem_base_addr;
 	ADDRESS cur_dmem_base_addr;
+	ADDRESS cur_imem_high_addr;
+	ADDRESS cur_dmem_high_addr;
 
-	///////////////////////// Memory Protection Unit //////////////////////////
-	
 	/////////////////////////// Machine State Register ////////////////////////
 	
 	MSR msr;

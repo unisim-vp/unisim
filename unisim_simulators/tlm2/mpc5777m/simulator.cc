@@ -37,7 +37,7 @@
 
 Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	: unisim::kernel::tlm2::Simulator(name, argc, argv, LoadBuiltInConfig)
-	, cpu(0)
+	, cpu2(0)
 	, ram(0)
 	, interconnect(0)
 	, loader(0)
@@ -58,7 +58,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//===                     Component instantiations                      ===
 	//=========================================================================
 	//  - PowerPC processor
-	cpu = new CPU("CPU", this);
+	cpu2 = new CPU2("CPU2", this);
 
 	//  - RAM
 	ram = new RAM("RAM", this);
@@ -89,17 +89,17 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//=========================================================================
 	//===                          Port registration                        ===
 	//=========================================================================
-	RegisterPort(cpu->m_por);
-	RegisterPort(cpu->p_reset_b);
-	RegisterPort(cpu->p_nmi_b);
-	RegisterPort(cpu->p_mcp_b);
-	RegisterPort(cpu->p_rstbase);
-	RegisterPort(cpu->p_cpuid);
-	RegisterPort(cpu->p_extint_b);
-	RegisterPort(cpu->p_crint_b);
-	RegisterPort(cpu->p_avec_b);
-	RegisterPort(cpu->p_voffset);
-	RegisterPort(cpu->p_iack);
+	RegisterPort(cpu2->m_por);
+	RegisterPort(cpu2->p_reset_b);
+	RegisterPort(cpu2->p_nmi_b);
+	RegisterPort(cpu2->p_mcp_b);
+	RegisterPort(cpu2->p_rstbase);
+	RegisterPort(cpu2->p_cpuid);
+	RegisterPort(cpu2->p_extint_b);
+	RegisterPort(cpu2->p_crint_b);
+	RegisterPort(cpu2->p_avec_b);
+	RegisterPort(cpu2->p_voffset);
+	RegisterPort(cpu2->p_iack);
 
 	//=========================================================================
 	//===                           Signal creation                         ===
@@ -121,55 +121,57 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//===                        Components connection                      ===
 	//=========================================================================
 
-	cpu->ahb_if(*interconnect->targ_socket[0]); // CPU>AHB_IF <-> Memory Router
-	(*interconnect->init_socket[0])(ram->slave_sock); // Memory Router <-> RAM
+	cpu2->i_ahb_if(*interconnect->targ_socket[0]); // CPU2>I_AHB_IF <-> Crossbar
+	cpu2->d_ahb_if(*interconnect->targ_socket[1]); // CPU2>D_AHB_IF <-> Crossbar
+	(*interconnect->init_socket[0])(ram->slave_sock); // Crossbar <-> RAM
+	(*interconnect->init_socket[1])(cpu2->s_ahb_if);  // Crossbar <-> S_AHB_IF<CPU2
 
-	Bind("HARDWARE.CPU.m_por"           , "HARDWARE.m_por");
-	Bind("HARDWARE.CPU.p_reset_b"       , "HARDWARE.p_reset_b");
-	Bind("HARDWARE.CPU.p_nmi_b"         , "HARDWARE.p_nmi_b");
-	Bind("HARDWARE.CPU.p_mcp_b"         , "HARDWARE.p_mcp_b");
-	Bind("HARDWARE.CPU.p_rstbase"       , "HARDWARE.p_rstbase");
-	Bind("HARDWARE.CPU.p_cpuid"         , "HARDWARE.p_cpuid");
-	Bind("HARDWARE.CPU.p_extint_b"      , "HARDWARE.p_extint_b");
-	Bind("HARDWARE.CPU.p_crint_b"       , "HARDWARE.p_crint_b");
-	Bind("HARDWARE.CPU.p_avec_b"        , "HARDWARE.p_avec_b");
-	Bind("HARDWARE.CPU.p_voffset"       , "HARDWARE.p_voffset");
-	Bind("HARDWARE.CPU.p_iack"          , "HARDWARE.p_iack");
+	Bind("HARDWARE.CPU2.m_por"           , "HARDWARE.m_por");
+	Bind("HARDWARE.CPU2.p_reset_b"       , "HARDWARE.p_reset_b");
+	Bind("HARDWARE.CPU2.p_nmi_b"         , "HARDWARE.p_nmi_b");
+	Bind("HARDWARE.CPU2.p_mcp_b"         , "HARDWARE.p_mcp_b");
+	Bind("HARDWARE.CPU2.p_rstbase"       , "HARDWARE.p_rstbase");
+	Bind("HARDWARE.CPU2.p_cpuid"         , "HARDWARE.p_cpuid");
+	Bind("HARDWARE.CPU2.p_extint_b"      , "HARDWARE.p_extint_b");
+	Bind("HARDWARE.CPU2.p_crint_b"       , "HARDWARE.p_crint_b");
+	Bind("HARDWARE.CPU2.p_avec_b"        , "HARDWARE.p_avec_b");
+	Bind("HARDWARE.CPU2.p_voffset"       , "HARDWARE.p_voffset");
+	Bind("HARDWARE.CPU2.p_iack"          , "HARDWARE.p_iack");
 	
 	//=========================================================================
 	//===                        Clients/Services connection                ===
 	//=========================================================================
 
-	cpu->memory_import >> interconnect->memory_export;
+	cpu2->memory_import >> interconnect->memory_export;
 
 	(*interconnect->memory_import[0]) >> ram->memory_export;
-//	cpu->loader_import >> loader->loader_export;
+//	cpu2->loader_import >> loader2->loader_export;
 		
 	if(enable_inline_debugger || enable_gdb_server)
 	{
 		if(enable_inline_debugger)
 		{
 			// Connect tee-memory-access-reporting to CPU, debugger and profiler
-			cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
+			cpu2->memory_access_reporting_import >> tee_memory_access_reporting->in;
 			*tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
 			*tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
 			profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
 			debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
-			tee_memory_access_reporting->out_control >> cpu->memory_access_reporting_control_export;
+			tee_memory_access_reporting->out_control >> cpu2->memory_access_reporting_control_export;
 		}
 		else
 		{
 			// Connect CPU to debugger
-			cpu->memory_access_reporting_import >> debugger->memory_access_reporting_export;
-			debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
+			cpu2->memory_access_reporting_import >> debugger->memory_access_reporting_export;
+			debugger->memory_access_reporting_control_import >> cpu2->memory_access_reporting_control_export;
 		}
 
 		// Connect debugger to CPU
-		cpu->debug_control_import >> debugger->debug_control_export;
-		cpu->trap_reporting_import >> debugger->trap_reporting_export;
-		debugger->disasm_import >> cpu->disasm_export;
-		debugger->memory_import >> cpu->memory_export;
-		debugger->registers_import >> cpu->registers_export;
+		cpu2->debug_control_import >> debugger->debug_control_export;
+		cpu2->trap_reporting_import >> debugger->trap_reporting_export;
+		debugger->disasm_import >> cpu2->disasm_export;
+		debugger->memory_import >> cpu2->memory_export;
+		debugger->registers_import >> cpu2->registers_export;
 		debugger->loader_import >> loader->loader_export;
 		debugger->blob_import >> loader->blob_export;
 	}
@@ -204,8 +206,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	}
 
 	(*loader->memory_import[0]) >> ram->memory_export;
-	loader->registers_import >> cpu->registers_export;
-	cpu->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
+	loader->registers_import >> cpu2->registers_export;
+	cpu2->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 	
 	SC_HAS_PROCESS(Simulator);
 	
@@ -220,7 +222,7 @@ Simulator::~Simulator()
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
 	if(profiler) delete profiler;
-	if(cpu) delete cpu;
+	if(cpu2) delete cpu2;
 	if(sim_time) delete sim_time;
 	if(host_time) delete host_time;
 	if(loader) delete loader;
@@ -229,8 +231,8 @@ Simulator::~Simulator()
 
 void Simulator::ResetProcess()
 {
-	sc_core::sc_signal<sc_dt::sc_uint<30> >& p_rstbase = GetSignal<sc_dt::sc_uint<30> >("HARDWARE.p_rstbase");
-	p_rstbase = sc_dt::sc_uint<30>(/*0x404100*/ /*0x13a0000*/ 0x1500000 >> 2);
+// 	sc_core::sc_signal<sc_dt::sc_uint<30> >& p_rstbase = GetSignal<sc_dt::sc_uint<30> >("HARDWARE.p_rstbase");
+// 	p_rstbase = sc_dt::sc_uint<30>(0x404100 /*0x13a0000*/ /*0x1500000*/ >> 2);
 	sc_core::sc_signal<bool>& p_reset_b = GetSignal<bool>("HARDWARE.p_reset_b");
 	p_reset_b = false;
 	wait(sc_core::sc_time(10.0, sc_core::SC_NS));
@@ -257,53 +259,99 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("license", "BSD (see file COPYING)");
 	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>");
 	simulator->SetVariable("version", VERSION);
-	simulator->SetVariable("description", "UNISIM MPC5777M, full system e200z-based simulator");
+	simulator->SetVariable("description", "UNISIM MPC5777M, MPC5777M SoC simulator");
 	simulator->SetVariable("schematic", "mpc5777m/fig_schematic.pdf");
 
 	int gdb_server_tcp_port = 0;
 	const char *gdb_server_arch_filename = "gdb_powerpc_vle.xml";
 	const char *dwarf_register_number_mapping_filename = "powerpc_eabi_gcc_dwarf_register_number_mapping.xml";
 	uint64_t maxinst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
-	double cpu_frequency = 200.0; // in Mhz
-	double cpu_clock_multiplier = 2.0;
-	double ext_timer_clock_divisor = 2.0;
-	double cpu_ipc = 2.0; // in instructions per cycle
-	double cpu_cycle_time = (double)(1.0e6 / cpu_frequency); // in picoseconds
-	double fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
-	double ext_timer_cycle_time = ext_timer_clock_divisor * cpu_cycle_time;
+	double cpu2_frequency = 200.0; // in Mhz
+	double cpu2_clock_multiplier = 2.0;
+	double cpu2_ipc = 2.0; // in instructions per cycle
+	double cpu0_frequency = 300.0; // in Mhz
+	double cpu0_clock_multiplier = 1.5;
+	double cpu0_ipc = 1.0; // in instructions per cycle
+	double cpu1_frequency = 300.0; // in Mhz
+	double cpu1_clock_multiplier = 1.5;
+	double cpu1_ipc = 1.0; // in instructions per cycle
+	double cpu2_cycle_time = (double)(1.0e6 / cpu2_frequency); // in picoseconds
+	double cpu0_cycle_time = (double)(1.0e6 / cpu0_frequency); // in picoseconds
+	double cpu1_cycle_time = (double)(1.0e6 / cpu1_frequency); // in picoseconds
+	double fsb_cycle_time = cpu2_clock_multiplier * cpu2_cycle_time;
 	double mem_cycle_time = fsb_cycle_time;
 
 	//=========================================================================
 	//===                     Component run-time configuration              ===
 	//=========================================================================
 
-	//  - PowerPC processor
-	// if the following line ("cpu-cycle-time") is commented, the cpu will use the power estimators to find min cpu cycle time
-	simulator->SetVariable("HARDWARE.CPU.cpu-cycle-time", sc_time(cpu_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("HARDWARE.CPU.bus-cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("HARDWARE.CPU.ext-timer-cycle-time", sc_time(ext_timer_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("HARDWARE.CPU.voltage", 1.0 * 1e3); // mV
-	simulator->SetVariable("HARDWARE.CPU.max-inst", maxinst);
-	simulator->SetVariable("HARDWARE.CPU.nice-time", "200 ns"); // 200 ns (currently geared to the minimum interval between capture trigger samples)
-	simulator->SetVariable("HARDWARE.CPU.ipc", cpu_ipc);
-	simulator->SetVariable("HARDWARE.CPU.enable-dmi", true); // Allow CPU to use of SystemC TLM 2.0 DMI
+	//  - e200 PowerPC cores
 
-	simulator->SetVariable("HARDWARE.CPU.dmem-base-addr", 0x52800000);
-	simulator->SetVariable("HARDWARE.CPU.dmem-size", 64 * 1024);
+	// CPU2
+	simulator->SetVariable("HARDWARE.CPU2.cpu-cycle-time", sc_time(cpu2_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("HARDWARE.CPU2.bus-cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("HARDWARE.CPU2.max-inst", maxinst);
+	simulator->SetVariable("HARDWARE.CPU2.nice-time", "200 ns"); // 200 ns (currently geared to the minimum interval between capture trigger samples)
+	simulator->SetVariable("HARDWARE.CPU2.ipc", cpu2_ipc);
+	simulator->SetVariable("HARDWARE.CPU2.enable-dmi", true); // Allow CPU to use of SystemC TLM 2.0 DMI
 
-	simulator->SetVariable("HARDWARE.CPU.imem-base-addr", 0x52000000);
-	simulator->SetVariable("HARDWARE.CPU.imem-size", 16 * 1024);
+	simulator->SetVariable("HARDWARE.CPU2.dmem-base-addr", 0x52800000);
+	simulator->SetVariable("HARDWARE.CPU2.dmem-size", 64 * 1024);
+
+	simulator->SetVariable("HARDWARE.CPU2.imem-base-addr", 0x52000000);
+	simulator->SetVariable("HARDWARE.CPU2.imem-size", 16 * 1024);
 	
+	simulator->SetVariable("HARDWARE.CPU2.processor-version", 0x815f8000);
+	simulator->SetVariable("HARDWARE.CPU2.system-version", 0x0);
+	simulator->SetVariable("HARDWARE.CPU2.system-information", 0x2);
+
+	// CPU0
+	simulator->SetVariable("HARDWARE.CPU0.cpu-cycle-time", sc_time(cpu0_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("HARDWARE.CPU0.bus-cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("HARDWARE.CPU0.max-inst", maxinst);
+	simulator->SetVariable("HARDWARE.CPU0.nice-time", "200 ns"); // 200 ns (currently geared to the minimum interval between capture trigger samples)
+	simulator->SetVariable("HARDWARE.CPU0.ipc", cpu0_ipc);
+	simulator->SetVariable("HARDWARE.CPU0.enable-dmi", true); // Allow CPU to use of SystemC TLM 2.0 DMI
+
+	simulator->SetVariable("HARDWARE.CPU0.dmem-base-addr", 0x50800000);
+	simulator->SetVariable("HARDWARE.CPU0.dmem-size", 64 * 1024);
+
+	simulator->SetVariable("HARDWARE.CPU0.imem-base-addr", 0x50000000);
+	simulator->SetVariable("HARDWARE.CPU0.imem-size", 16 * 1024);
+	
+	simulator->SetVariable("HARDWARE.CPU0.processor-version", 0x81b00000);
+	simulator->SetVariable("HARDWARE.CPU0.system-version", 0x0);
+	simulator->SetVariable("HARDWARE.CPU0.system-information", 0x0);
+	
+	// CPU1
+	simulator->SetVariable("HARDWARE.CPU1.cpu-cycle-time", sc_time(cpu1_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("HARDWARE.CPU1.bus-cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("HARDWARE.CPU1.max-inst", maxinst);
+	simulator->SetVariable("HARDWARE.CPU1.nice-time", "200 ns"); // 200 ns (currently geared to the minimum interval between capture trigger samples)
+	simulator->SetVariable("HARDWARE.CPU1.ipc", cpu1_ipc);
+	simulator->SetVariable("HARDWARE.CPU1.enable-dmi", true); // Allow CPU to use of SystemC TLM 2.0 DMI
+
+	simulator->SetVariable("HARDWARE.CPU1.dmem-base-addr", 0x51800000);
+	simulator->SetVariable("HARDWARE.CPU1.dmem-size", 64 * 1024);
+
+	simulator->SetVariable("HARDWARE.CPU1.imem-base-addr", 0x51000000);
+	simulator->SetVariable("HARDWARE.CPU1.imem-size", 16 * 1024);
+	
+	simulator->SetVariable("HARDWARE.CPU1.processor-version", 0x81b00000);
+	simulator->SetVariable("HARDWARE.CPU1.system-version", 0x0);
+	simulator->SetVariable("HARDWARE.CPU1.system-information", 0x1);
+
 	//  - Interconnect
 	simulator->SetVariable("HARDWARE.INTERCONNECT.cycle_time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
 
 	//  - Memory router
 	simulator->SetVariable("HARDWARE.INTERCONNECT.cycle_time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_0", "range_start=\"0x0\" range_end=\"0xffffffff\" output_port=\"0\" translation=\"0x0\""); // RAM
+	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_0", "range_start=\"0x52000000\" range_end=\"0x5fffffff\" output_port=\"1\" translation=\"0x0\""); // CPU2 Local Memory
+	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_1", "range_start=\"0x0\" range_end=\"0xfffffffe\" output_port=\"0\" translation=\"0x0\""); // RAM
 
 	// - Loader memory router
 	std::stringstream sstr_loader_mapping;
-	sstr_loader_mapping << "HARDWARE.RAM:0x0-0x0fffffff:+0x0" << std::dec;
+	sstr_loader_mapping << "HARDWARE.RAM:0x0-0xffffffff:+0x0" << std::dec;
 	simulator->SetVariable("loader.memory-mapper.mapping", sstr_loader_mapping.str().c_str());
 
 	//  - RAM
@@ -311,7 +359,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.RAM.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("HARDWARE.RAM.write-latency", SC_ZERO_TIME.to_string().c_str());
 	simulator->SetVariable("HARDWARE.RAM.org", 0x0);
-	simulator->SetVariable("HARDWARE.RAM.bytesize", 256 * 1024 * 1024);
+	simulator->SetVariable("HARDWARE.RAM.bytesize", 4096ULL * 1024 * 1024);
 	
 	//=========================================================================
 	//===                      Service run-time configuration               ===
@@ -383,8 +431,8 @@ void Simulator::Run()
 
 	cerr << "simulation time: " << spent_time << " seconds" << endl;
 	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-	cerr << "target speed: " << ((double) (*cpu)["instruction-counter"] / ((double) (*cpu)["run-time"] - (double) (*cpu)["idle-time"]) / 1000000.0) << " MIPS" << endl;
-	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
+	cerr << "target speed: " << ((double) (*cpu2)["instruction-counter"] / ((double) (*cpu2)["run-time"] - (double) (*cpu2)["idle-time"]) / 1000000.0) << " MIPS" << endl;
+	cerr << "host simulation speed: " << ((double) (*cpu2)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
 	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
 }
 

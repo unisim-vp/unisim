@@ -807,6 +807,7 @@ unisim/component/cxx/memory/ram/memory.hh \
 unisim/component/cxx/processor/powerpc/cpu.hh \
 unisim/component/cxx/processor/powerpc/e200z710n3/cpu.hh \
 unisim/component/cxx/processor/powerpc/e200z710n3/types.hh \
+unisim/component/cxx/processor/powerpc/e200z710n3/mpu.hh \
 unisim/component/tlm2/processor/powerpc/e200z710n3/cpu.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
 unisim/component/tlm2/interconnect/generic_router/router.hh \

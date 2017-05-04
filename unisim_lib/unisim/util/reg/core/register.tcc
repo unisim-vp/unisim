@@ -906,11 +906,6 @@ WarningStatus Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Read(TYPE& _val
 		// reading write-only register
 		ws = WarningStatus(ws | WS_RWOR);
 	}
-	else if(read_mask != bit_enable)
-	{
-		// reading write-only bits
-		ws = WarningStatus(ws | WS_RWOB);
-	}
 	
 	_value = (_value & ~read_mask) | (value & read_mask);
 	

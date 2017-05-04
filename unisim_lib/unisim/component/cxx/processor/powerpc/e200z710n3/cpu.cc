@@ -51,6 +51,8 @@ CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
 	, memory_import("memory-import", this)
 	, disasm_export("disasm-export", this)
 	, memory_export("memory-export", this)
+	, cpuid(0x0)
+	, param_cpuid("cpuid", this, cpuid, "CPU ID at reset")
 	, processor_version(0x0)
 	, param_processor_version("processor-version", this, processor_version, "Processor Version")
 	, system_version(0x0)
@@ -83,7 +85,7 @@ CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
 	, param_verbose_instruction_bus_read("verbose-instruction-bus-read", this, verbose_instruction_bus_read, "enable/disable verbosity of instruction bus read")
 	, enable_auto_vectored_interrupts(false)
 	, vector_offset(0x0)
-	, instruction_buffer_base_addr(ADDRESS(-1))
+	, instruction_buffer_base_addr(~ADDRESS(0))
 	, instruction_buffer()
 	, vle_decoder()
 	, operation(0)
@@ -92,8 +94,10 @@ CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
 	, l1d()
 	, imem(0)
 	, dmem(0)
-	, cur_imem_base_addr(imem_base_addr)
-	, cur_dmem_base_addr(dmem_base_addr)
+	, cur_imem_base_addr(0)
+	, cur_dmem_base_addr(0)
+	, cur_imem_high_addr(0)
+	, cur_dmem_high_addr(0)
 	, msr(this)
 	, srr0(this)
 	, srr1(this)
@@ -215,22 +219,10 @@ CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
 	dmem = new uint8_t[dmem_size];
 	memset(dmem, 0, dmem_size);
 	
-	cur_imem_base_addr = imem_base_addr;
-	cur_dmem_base_addr = dmem_base_addr;
-	
 	pvr.Initialize(processor_version);
 	svr.Initialize(system_version);
 	sir.Initialize(system_information);
-}
-
-CPU::~CPU()
-{
-	delete[] imem;
-	delete[] dmem;
-}
-
-bool CPU::EndSetup()
-{
+	
 	InstallInterrupt<SystemResetInterrupt>();
 	InstallInterrupt<MachineCheckInterrupt>();
 	InstallInterrupt<DataStorageInterrupt>();
@@ -254,44 +246,17 @@ bool CPU::EndSetup()
 	EnableInterrupt<EmbeddedFloatingPointDataInterrupt>();
 	EnableInterrupt<EmbeddedFloatingPointRoundInterrupt>();
 	EnableInterrupt<SystemCallInterrupt>();
+}
 
-	if(!halt_on.empty())
-	{
-		const unisim::util::debug::Symbol<ADDRESS> *halt_on_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByName(halt_on.c_str(), unisim::util::debug::Symbol<ADDRESS>::SYM_FUNC) : 0;
-		
-		if(halt_on_symbol)
-		{
-			halt_on_addr = halt_on_symbol->GetAddress();
-			if(verbose_setup)
-			{
-				logger << DebugInfo << "Simulation will halt at '" << halt_on_symbol->GetName() << "' (0x" << std::hex << halt_on_addr << std::dec << ")" << EndDebugInfo;
-			}
-		}
-		else
-		{
-			std::stringstream sstr(halt_on);
-			sstr >> std::hex;
-			if(sstr >> halt_on_addr)
-			{
-				if(verbose_setup)
-				{
-					logger << DebugInfo <<  "Simulation will halt at 0x" << std::hex << halt_on_addr << std::dec << EndDebugInfo;
-				}
-			}
-			else
-			{
-				logger << DebugWarning << "Invalid address (" << halt_on << ") in Parameter " << param_halt_on.GetName() << EndDebugWarning;
-				halt_on_addr = (ADDRESS) -1;
-			}
-		}
-	}
-	
-	//Reset(); // TO BE REMOVED
-	//cia = 0x13a0000;
-	//esr.MoveTo(0xffffffffUL);
-	
-	//MoveToSPR(1010, 0x1 | 0x2 | 0x80000);
-	//MoveToSPR(1011, 0x1 | 0x2);
+CPU::~CPU()
+{
+	delete[] imem;
+	delete[] dmem;
+}
+
+bool CPU::EndSetup()
+{
+	if(!SuperCPU::EndSetup()) return false;
 	
 	return true;
 }
@@ -300,9 +265,6 @@ void CPU::Reset()
 {
 	SuperCPU::Reset();
 	msr.Initialize(0x0);
-	cur_imem_base_addr = imem_base_addr;
-	cur_dmem_base_addr = dmem_base_addr;
-	MoveToSPR(1014, 1);
 }
 
 void CPU::ProcessInterrupt(SystemResetInterrupt *system_reset_interrupt)
@@ -827,18 +789,14 @@ bool CPU::AHBDebugDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, 
 
 bool CPU::DataLoad(ADDRESS addr, void *buffer, unsigned int size)
 {
-	MPU_ENTRY *mpu_entry = mpu.CheckPermissions(addr, /* exec */ false, /* write */ false);
+	MPU_ENTRY *mpu_entry = mpu.CheckPermissions</* exec */ false, /* write */ false>(addr);
 
 	if(!mpu_entry)
 	{
-		ThrowException<DataStorageInterrupt::AccessControl>();
+		ThrowException<DataStorageInterrupt::AccessControl>().SetAddress(addr);
 		return false;
 	}
 	
-	STORAGE_ATTR storage_attr = STORAGE_ATTR((MAS0::I::Get(mpu_entry->mas0) ? SA_I : 0) | (MAS0::G::Get(mpu_entry->mas0) ? SA_G : 0));
-	
-	ADDRESS cur_dmem_high_addr = cur_dmem_base_addr + dmem_size; 
-
 	if((addr >= cur_dmem_base_addr) && (addr < cur_dmem_high_addr))
 	{
 		// DMEM
@@ -846,7 +804,8 @@ bool CPU::DataLoad(ADDRESS addr, void *buffer, unsigned int size)
 	}
 	else
 	{
-		// Data Cache
+		// External
+		STORAGE_ATTR storage_attr = STORAGE_ATTR((MAS0::I::Get(mpu_entry->mas0) ? SA_I : 0) | (MAS0::G::Get(mpu_entry->mas0) ? SA_G : 0));
 		if(unlikely(!this->SuperMSS::DataLoad(addr, buffer, size, storage_attr))) return false;
 	}
 	
@@ -855,18 +814,14 @@ bool CPU::DataLoad(ADDRESS addr, void *buffer, unsigned int size)
 
 bool CPU::DataStore(ADDRESS addr, void *buffer, unsigned int size)
 {
-	MPU_ENTRY *mpu_entry = mpu.CheckPermissions(addr, /* exec */ false, /* write */ true);
+	MPU_ENTRY *mpu_entry = mpu.CheckPermissions</* exec */ false, /* write */ true>(addr);
 
 	if(!mpu_entry)
 	{
-		ThrowException<DataStorageInterrupt::AccessControl>();
+		ThrowException<DataStorageInterrupt::AccessControl>().SetAddress(addr);
 		return false;
 	}
 	
-	STORAGE_ATTR storage_attr = STORAGE_ATTR((MAS0::I::Get(mpu_entry->mas0) ? SA_I : 0) | (MAS0::G::Get(mpu_entry->mas0) ? SA_G : 0));
-
-	ADDRESS cur_dmem_high_addr = cur_dmem_base_addr + dmem_size; 
-
 	if((addr >= cur_dmem_base_addr) && (addr < cur_dmem_high_addr))
 	{
 		// DMEM
@@ -874,11 +829,111 @@ bool CPU::DataStore(ADDRESS addr, void *buffer, unsigned int size)
 	}
 	else
 	{
-		// Data Cache
+		// External
+		STORAGE_ATTR storage_attr = STORAGE_ATTR((MAS0::I::Get(mpu_entry->mas0) ? SA_I : 0) | (MAS0::G::Get(mpu_entry->mas0) ? SA_G : 0));
 		if(unlikely(!this->SuperMSS::DataStore(addr, buffer, size, storage_attr))) return false;
 	}
 	
-	return false;
+	return true;
+}
+
+unsigned int CPU::ExternalLoad(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size)
+{
+	unsigned int read_bytes = 0;
+	
+	if(size)
+	{
+		do
+		{
+			unsigned int sz = 0;
+			
+			if((addr >= cur_imem_base_addr) && (addr < cur_imem_high_addr))
+			{
+				// IMEM
+				sz = cur_imem_high_addr - addr;
+				if(sz > size) sz = size;
+				memcpy(buffer, &imem[addr - cur_imem_base_addr], sz);
+			}
+			else if((addr >= cur_dmem_base_addr) && (addr < cur_dmem_high_addr))
+			{
+				// DMEM
+				sz = cur_dmem_high_addr - addr;
+				if(sz > size) sz = size;
+				memcpy(buffer, &dmem[addr - cur_dmem_base_addr], sz);
+			}
+			else
+			{
+				return read_bytes;
+			}
+			
+			buffer = (uint8_t *) buffer + sz;
+			addr += sz;
+			size -= sz;
+			read_bytes += sz;
+		}
+		while(size);
+	}
+	
+	return read_bytes;
+}
+
+unsigned int CPU::ExternalStore(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size)
+{
+	unsigned int written_bytes = 0;
+	
+	if(size)
+	{
+		do
+		{
+			unsigned int sz = 0;
+			
+			if((addr >= cur_imem_base_addr) && (addr < cur_imem_high_addr))
+			{
+				// IMEM
+				sz = cur_imem_high_addr - addr;
+				if(sz > size) sz = size;
+				memcpy(&imem[addr - cur_imem_base_addr], buffer, sz);
+			}
+			else if((addr >= cur_dmem_base_addr) && (addr < cur_dmem_high_addr))
+			{
+				// DMEM
+				sz = cur_dmem_high_addr - addr;
+				if(sz > size) sz = size;
+				memcpy(&dmem[addr - cur_dmem_base_addr], buffer, sz);
+			}
+			else
+			{
+				return written_bytes;
+			}
+			
+			buffer = (uint8_t *) buffer + sz;
+			addr += sz;
+			size -= sz;
+			written_bytes += sz;
+		}
+		while(size);
+	}
+	
+	return written_bytes;
+}
+
+unsigned char *CPU::GetDirectMemPtr(PHYSICAL_ADDRESS addr, PHYSICAL_ADDRESS& start_addr, PHYSICAL_ADDRESS& end_addr)
+{
+	if((addr >= cur_imem_base_addr) && (addr < cur_imem_high_addr))
+	{
+		// IMEM
+		start_addr = cur_imem_base_addr;
+		end_addr = cur_imem_high_addr;
+		return imem;
+	}
+	else if((addr >= cur_dmem_base_addr) && (addr < cur_dmem_high_addr))
+	{
+		// DMEM
+		start_addr = cur_dmem_base_addr;
+		end_addr = cur_dmem_high_addr;
+		return dmem;
+	}
+	return 0;
 }
 
 std::string CPU::Disasm(ADDRESS addr, ADDRESS& next_addr)
@@ -904,6 +959,16 @@ std::string CPU::Disasm(ADDRESS addr, ADDRESS& next_addr)
 	sstr.fill('0');
 	switch(operation->GetLength())
 	{
+		case 0:
+		{
+			sstr.width(8); 
+			sstr << insn << std::dec << " ";
+			operation->disasm(this, sstr);
+
+			next_addr = addr + 4;
+			break;
+		}
+			
 		case 16:
 		{
 			sstr.width(4); 
@@ -925,7 +990,7 @@ std::string CPU::Disasm(ADDRESS addr, ADDRESS& next_addr)
 		}
 		
 		default:
-			throw std::runtime_error("Internal Error !");
+			throw std::runtime_error("Internal Error! Bad operation length from VLE decoder");
 	}
 	
 	return sstr.str();
@@ -937,21 +1002,11 @@ bool CPU::DebugDataLoad(ADDRESS addr, void *buffer, unsigned int size)
 	
 	if(size)
 	{
-		ADDRESS cur_imem_high_addr = cur_imem_base_addr + imem_size;
-		ADDRESS cur_dmem_high_addr = cur_dmem_base_addr + dmem_size;
-
 		do
 		{
 			unsigned int sz = 0;
 			
-			if((addr >= cur_imem_base_addr) && (addr < cur_imem_high_addr))
-			{
-				// IMEM
-				sz = cur_imem_high_addr - addr;
-				if(sz > size) sz = size;
-				memcpy(buffer, &imem[addr - cur_imem_base_addr], sz);
-			}
-			else if((addr >= cur_dmem_base_addr) && (addr < cur_dmem_high_addr))
+			if((addr >= cur_dmem_base_addr) && (addr < cur_dmem_high_addr))
 			{
 				// DMEM
 				sz = cur_dmem_high_addr - addr;
@@ -960,8 +1015,8 @@ bool CPU::DebugDataLoad(ADDRESS addr, void *buffer, unsigned int size)
 			}
 			else
 			{
-				// Data Cache
-				MPU_ENTRY *mpu_entry = mpu.CheckPermissions(addr, /* exec */ false, /* write */ false);
+				// External
+				MPU_ENTRY *mpu_entry = mpu.CheckPermissions</* exec */ false, /* write */ false>(addr);
 				
 				STORAGE_ATTR storage_attr = mpu_entry ? STORAGE_ATTR((MAS0::I::Get(mpu_entry->mas0) ? SA_I : 0) | (MAS0::G::Get(mpu_entry->mas0) ? SA_G : 0)) : SA_DEFAULT;
 					
@@ -990,21 +1045,11 @@ bool CPU::DebugDataStore(ADDRESS addr, const void *buffer, unsigned int size)
 
 	if(size)
 	{
-		ADDRESS cur_imem_high_addr = cur_imem_base_addr + imem_size;
-		ADDRESS cur_dmem_high_addr = cur_dmem_base_addr + dmem_size;
-
 		do
 		{
 			unsigned int sz = 0;
 			
-			if((addr >= cur_imem_base_addr) && (addr < cur_imem_high_addr))
-			{
-				// IMEM
-				sz = cur_imem_high_addr - addr;
-				if(sz > size) sz = size;
-				memcpy(&imem[addr - cur_imem_base_addr], buffer, sz);
-			}
-			else if((addr >= cur_dmem_base_addr) && (addr < cur_dmem_high_addr))
+			if((addr >= cur_dmem_base_addr) && (addr < cur_dmem_high_addr))
 			{
 				// DMEM
 				sz = cur_dmem_high_addr - addr;
@@ -1013,8 +1058,8 @@ bool CPU::DebugDataStore(ADDRESS addr, const void *buffer, unsigned int size)
 			}
 			else
 			{
-				// Data Cache
-				MPU_ENTRY *mpu_entry = mpu.CheckPermissions(addr, /* exec */ false, /* write */ true);
+				// External
+				MPU_ENTRY *mpu_entry = mpu.CheckPermissions</* exec */ false, /* write */ true>(addr);
 				
 				STORAGE_ATTR storage_attr = mpu_entry ? STORAGE_ATTR((MAS0::I::Get(mpu_entry->mas0) ? SA_I : 0) | (MAS0::G::Get(mpu_entry->mas0) ? SA_G : 0)) : SA_DEFAULT;
 
@@ -1042,9 +1087,6 @@ bool CPU::DebugInstructionFetch(ADDRESS addr, void *buffer, unsigned int size)
 
 	if(size)
 	{
-		ADDRESS cur_imem_high_addr = cur_imem_base_addr + imem_size;
-		ADDRESS cur_dmem_high_addr = cur_dmem_base_addr + dmem_size;
-
 		do
 		{
 			unsigned int sz = 0;
@@ -1056,17 +1098,10 @@ bool CPU::DebugInstructionFetch(ADDRESS addr, void *buffer, unsigned int size)
 				if(sz > size) sz = size;
 				memcpy(buffer, &imem[addr - cur_imem_base_addr], sz);
 			}
-			else if((addr >= cur_dmem_base_addr) && (addr < cur_dmem_high_addr))
-			{
-				// DMEM
-				sz = cur_dmem_high_addr - addr;
-				if(sz > size) sz = size;
-				memcpy(buffer, &dmem[addr - cur_dmem_base_addr], sz);
-			}
 			else
 			{
-				// Instruction Cache
-				MPU_ENTRY *mpu_entry = mpu.CheckPermissions(addr, /* exec */ true, /* write */ false);
+				// External
+				MPU_ENTRY *mpu_entry = mpu.CheckPermissions</* exec */ true, /* write */ false>(addr);
 				
 				STORAGE_ATTR storage_attr = mpu_entry ? STORAGE_ATTR((MAS0::I::Get(mpu_entry->mas0) ? SA_I : 0) | (MAS0::G::Get(mpu_entry->mas0) ? SA_G : 0)) : SA_DEFAULT;
 
@@ -1178,34 +1213,63 @@ bool CPU::Dcbi(ADDRESS addr)
 		return false;
 	}
 	
-	// TODO: check access right
+	if(!IsCacheEnabled(&l1d)) return true; // dcbi is treated as a no-op in supervisor mode if the data cache is disabled
+	
+	MPU_ENTRY *mpu_entry = mpu.CheckPermissions</* exec */ false, /* write */ true>(addr); // dcbi is treated as a store for the purpose of access protection
+	
+	if(!mpu_entry)
+	{
+		ThrowException<DataStorageInterrupt::AccessControl>().SetAddress(addr);
+		return false;
+	}
+	
 	InvalidateLineByAddress<L1D>(addr);
 	return true;
 }
 
 bool CPU::Dcbf(ADDRESS addr)
 {
-	// TODO: check access right
+	if(!IsCacheEnabled(&l1d)) return true; // dcbf is treated as a no-op if the data cache is disabled
+	
+	MPU_ENTRY *mpu_entry = mpu.CheckPermissions</* exec */ false, /* write */ false>(addr); // dcbf is treated as a load for the purpose of access protection
+	
+	if(!mpu_entry)
+	{
+		ThrowException<DataStorageInterrupt::AccessControl>().SetAddress(addr);
+		return false;
+	}
+	
 	return GlobalWriteBackLineByAddress<DATA_CACHE_HIERARCHY, L1D, L1D, /* invalidate */ true>(addr);
 }
 
 bool CPU::Dcbst(ADDRESS addr)
 {
-	// TODO: check access right
-	return GlobalWriteBackLineByAddress<DATA_CACHE_HIERARCHY, L1D, L1D, /* invalidate */ true>(addr);
+	if(!IsCacheEnabled(&l1d)) return true; // dcbst is treated as a no-op if the data cache is disabled
+	
+	MPU_ENTRY *mpu_entry = mpu.CheckPermissions</* exec */ false, /* write */ false>(addr); // dcbst is treated as a load for the purpose of access protection
+	
+	if(!mpu_entry)
+	{
+		ThrowException<DataStorageInterrupt::AccessControl>().SetAddress(addr);
+		return false;
+	}
+
+	return GlobalWriteBackLineByAddress<DATA_CACHE_HIERARCHY, L1D, L1D, /* invalidate */ false>(addr); // line is not invalidated
 }
 
 bool CPU::Dcbt(ADDRESS addr)
 {
-	// TODO: check MPU access right
-	// No-op: no architecturally visible
+	if(hid0.Get<HID0::NOPTI>()) return true; // icbt is treated as a no-op if HID0[NOPTI]=1
+	
+	// TODO: data cache software prefetching
 	return true;
 }
 
 bool CPU::Dcbtst(ADDRESS addr)
 {
-	// TODO: check MPU access right
-	// No-op: no architecturally visible
+	if(hid0.Get<HID0::NOPTI>()) return true; // icbt is treated as a no-op if HID0[NOPTI]=1
+
+	// TODO: data cache software prefetching
 	return true;
 }
 
@@ -1224,34 +1288,50 @@ bool CPU::Icbi(ADDRESS addr)
 		return false;
 	}
 	
-	// TODO: check MPU access right
+	MPU_ENTRY *mpu_entry = mpu.CheckPermissions</* exec */ false, /* write */ false>(addr); // icbi is treated as a load for the purpose of access protection
+	
+	if(!mpu_entry)
+	{
+		ThrowException<DataStorageInterrupt::AccessControl>().SetAddress(addr);
+		return false;
+	}
+
 	InvalidateLineByAddress<L1I>(addr);
 	return true;
 }
 
 bool CPU::Icbt(ADDRESS addr)
 {
-	// TODO: check MPU access right
-	// No-op: no architecturally visible
+	if(hid0.Get<HID0::NOPTI>()) return true; // icbt is treated as a no-op if HID0[NOPTI]=1
+	
+	MPU_ENTRY *mpu_entry = mpu.CheckPermissions</* exec */ false, /* write */ false>(addr); // icbt is treated as a load for the purpose of access protection
+	
+	if(!mpu_entry)
+	{
+		ThrowException<DataStorageInterrupt::AccessControl>().SetAddress(addr);
+		return false;
+	}
+
+	// TODO: instruction cache software prefetching
 	return true;
 }
 
 bool CPU::Lbarx(unsigned int rd, ADDRESS addr)
 {
-	ThrowException<ProgramInterrupt::UnimplementedInstruction>();
-	return false;
+	// TODO: reservation logic
+	return Int8Load(rd, addr);
 }
 
 bool CPU::Lharx(unsigned int rd, ADDRESS addr)
 {
-	ThrowException<ProgramInterrupt::UnimplementedInstruction>();
-	return false;
+	// TODO: reservation logic
+	return Int16Load(rd, addr);
 }
 
 bool CPU::Lwarx(unsigned int rd, ADDRESS addr)
 {
-	ThrowException<ProgramInterrupt::UnimplementedInstruction>();
-	return false;
+	// TODO: reservation logic
+	return Int16Load(rd, addr);
 }
 
 bool CPU::Mbar(ADDRESS addr)
@@ -1262,26 +1342,50 @@ bool CPU::Mbar(ADDRESS addr)
 
 bool CPU::Stbcx(unsigned int rs, ADDRESS addr)
 {
-	ThrowException<ProgramInterrupt::UnimplementedInstruction>();
-	return false;
+	// TODO: reservation logic
+	// Note: Address match with prior lbarx, lharx, or lwarx not required for store to be performed
+	if(!Int8Store(rs, addr)) return false;
+	// Clear CR0[LT][GT], setCR0[EQ] and copy XER[SO] to CR0[SO]
+	cr.Set<CR::CR0::LT>(0);
+	cr.Set<CR::CR0::GT>(0);
+	cr.Set<CR::CR0::EQ>(1);
+	cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
+	
+	return true;
 }
 
 bool CPU::Sthcx(unsigned int rs, ADDRESS addr)
 {
-	ThrowException<ProgramInterrupt::UnimplementedInstruction>();
-	return false;
+	// TODO: reservation logic
+	// Note: Address match with prior lbarx, lharx, or lwarx not required for store to be performed
+	if(!Int16Store(rs, addr)) return false;
+	// Clear CR0[LT][GT], setCR0[EQ] and copy XER[SO] to CR0[SO]
+	cr.Set<CR::CR0::LT>(0);
+	cr.Set<CR::CR0::GT>(0);
+	cr.Set<CR::CR0::EQ>(1);
+	cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
+	
+	return true;
 }
 
 bool CPU::Stwcx(unsigned int rs, ADDRESS addr)
 {
-	ThrowException<ProgramInterrupt::UnimplementedInstruction>();
-	return false;
+	// TODO: reservation logic
+	// Note: Address match with prior lbarx, lharx, or lwarx not required for store to be performed
+	if(!Int32Store(rs, addr)) return false;
+	// Clear CR0[LT][GT], setCR0[EQ] and copy XER[SO] to CR0[SO]
+	cr.Set<CR::CR0::LT>(0);
+	cr.Set<CR::CR0::GT>(0);
+	cr.Set<CR::CR0::EQ>(1);
+	cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
+	
+	return true;
 }
 
 bool CPU::Wait()
 {
-	ThrowException<ProgramInterrupt::UnimplementedInstruction>();
-	return false;
+	Idle();
+	return true;
 }
 
 bool CPU::Msync()
@@ -1308,6 +1412,7 @@ bool CPU::Mpuwe()
 
 bool CPU::Mpusync()
 {
+	// mpusync is treated as no-op in this architecture
 	return true;
 }
 
@@ -1319,7 +1424,9 @@ bool CPU::Rfi()
 		return false;
 	}
 	
-	Branch(srr0 & 0xfffffffe);
+	struct B0_30 : Field<void, 0, 30> {};
+
+	Branch(srr0 & B0_30::GetMask<ADDRESS>());
 	msr = srr1;
 	
 	if(unlikely(verbose_interrupt))
@@ -1340,7 +1447,9 @@ bool CPU::Rfci()
 		return false;
 	}
 	
-	Branch(csrr0 & 0xfffffffe);
+	struct B0_30 : Field<void, 0, 30> {};
+
+	Branch(csrr0 & B0_30::GetMask<ADDRESS>());
 	msr = csrr1;
 	
 	if(unlikely(verbose_interrupt))
@@ -1361,7 +1470,9 @@ bool CPU::Rfdi()
 		return false;
 	}
 	
-	Branch(dsrr0 & 0xfffffffe);
+	struct B0_30 : Field<void, 0, 30> {};
+
+	Branch(dsrr0 & B0_30::GetMask<ADDRESS>());
 	msr = dsrr1;
 	
 	if(unlikely(verbose_interrupt))
@@ -1382,7 +1493,9 @@ bool CPU::Rfmci()
 		return false;
 	}
 	
-	Branch(mcsrr0 & 0xfffffffe);
+	struct B0_30 : Field<void, 0, 30> {};
+	
+	Branch(mcsrr0 & B0_30::GetMask<ADDRESS>());
 	msr = mcsrr1;
 	
 	if(unlikely(verbose_interrupt))
@@ -1397,7 +1510,7 @@ bool CPU::Rfmci()
 
 bool CPU::InstructionFetch(ADDRESS addr, void *buffer, unsigned int size)
 {
-	MPU_ENTRY *mpu_entry = mpu.CheckPermissions(addr, /* exec */ true, /* write */ false);
+	MPU_ENTRY *mpu_entry = mpu.CheckPermissions</* exec */ true, /* write */ false>(addr);
 
 	if(!mpu_entry)
 	{
@@ -1407,8 +1520,6 @@ bool CPU::InstructionFetch(ADDRESS addr, void *buffer, unsigned int size)
 
 	STORAGE_ATTR storage_attr = STORAGE_ATTR((MAS0::I::Get(mpu_entry->mas0) ? SA_I : 0) | (MAS0::G::Get(mpu_entry->mas0) ? SA_G : 0));
 	
-	ADDRESS cur_imem_high_addr = cur_imem_base_addr + imem_size; 
-
 	if((addr >= cur_imem_base_addr) && (addr < cur_imem_high_addr))
 	{
 		// IMEM
@@ -1416,7 +1527,7 @@ bool CPU::InstructionFetch(ADDRESS addr, void *buffer, unsigned int size)
 	}
 	else
 	{
-		// Instruction Cache
+		// External
 		if(unlikely(!this->SuperMSS::InstructionFetch(addr, buffer, size, storage_attr))) return false;
 	}
 	
@@ -1425,7 +1536,7 @@ bool CPU::InstructionFetch(ADDRESS addr, void *buffer, unsigned int size)
 
 void CPU::FlushInstructionBuffer()
 {
-	instruction_buffer_base_addr = ADDRESS(-1);
+	instruction_buffer_base_addr = ~ADDRESS(0);
 }
 
 bool CPU::InstructionFetch(ADDRESS addr, unisim::component::cxx::processor::powerpc::e200z710n3::isa::vle::CodeType& insn)
@@ -1530,9 +1641,6 @@ void CPU::StepOneInstruction()
 			logger << DebugInfo << "Aborted instruction #" << instruction_counter << ":0x" << std::hex << addr << std::dec << ":" << sstr.str() << EndDebugInfo;
 		}
 	}
-	
-	//DL1SanityCheck();
-	//IL1SanityCheck();
 }
 
 } // end of namespace e200z710n3
