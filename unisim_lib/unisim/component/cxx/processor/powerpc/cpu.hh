@@ -374,43 +374,61 @@ class CPU
 public:
 	typedef CPU<CONFIG> ThisCPU;
 	
-	// imports
+	/////////////////////////// service imports ///////////////////////////////
+
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::SymbolTableLookup<typename CONFIG::ADDRESS> > symbol_table_lookup_import;
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::DebugControl<typename CONFIG::ADDRESS> > debug_control_import;
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::MemoryAccessReporting<typename CONFIG::ADDRESS> > memory_access_reporting_import;
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::TrapReporting> trap_reporting_import;
 	
-	// exports
+	/////////////////////////// service exports ///////////////////////////////
+
 	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
 	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::Registers> registers_export;
 	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::Synchronizable> synchronizable_export;
 
+	////////////////////////////// constructor ////////////////////////////////
+
 	CPU(const char *name, unisim::kernel::service::Object *parent = 0);
+
+	/////////////////////////////// destructor ////////////////////////////////
+
 	virtual ~CPU();
 	
+	////////////////////////////// setup hooks ////////////////////////////////
+
 	virtual bool BeginSetup();
 	virtual bool EndSetup();
 	
+	//////////////////////////////// Reset ////////////////////////////////////
+
 	void Reset();
+	
+	//////////////////////////// Logger streams ///////////////////////////////
 	
 	std::ostream& GetDebugInfoStream() { return logger.DebugInfoStream(); }
 	std::ostream& GetDebugWarningStream() { return logger.DebugWarningStream(); }
 	std::ostream& GetDebugErrorStream() { return logger.DebugErrorStream(); }
 	
+	//////////////// unisim::service::interface::Registers ////////////////////
+	
 	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
 	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 
-	virtual void DCRRead(unsigned int dcrn, uint32_t& value) { value = 0; }
-	virtual void DCRWrite(unsigned int dcrn, uint32_t value) {}
+	//////////////// unisim::service::interface::DebugControl /////////////////
 	
-	virtual void Synchronize();
 	virtual void RequiresMemoryAccessReporting(bool report);
 	virtual void RequiresFinishedInstructionReporting(bool report);
-
-	std::string GetObjectFriendlyName(typename CONFIG::ADDRESS addr);
-
-	inline void SetResetAddress(typename CONFIG::ADDRESS _reset_addr) { reset_addr = _reset_addr; }
 	
+	/////////////// unisim::service::interface::Synchronizable ////////////////
+	
+	virtual void Synchronize();
+
+	///////////// External Device Control Register access methods /////////////
+		
+	virtual void DCRRead(unsigned int dcrn, uint32_t& value) { value = 0; }
+	virtual void DCRWrite(unsigned int dcrn, uint32_t value) {}
+
 	///////////// Interface with .isa behavioral description files ////////////
 	
 	// see also ThrowException<> for interrupt
@@ -455,16 +473,9 @@ public:
 	bool Int32StoreByteReverse(unsigned int rs, typename CONFIG::ADDRESS ea);
 	bool IntStoreMSBFirst(unsigned int rs, typename CONFIG::ADDRESS ea, unsigned int size);
 	
-	///////////////////////////////////////////////////////////////////////////
-protected:
-	unisim::kernel::logger::Logger logger;
-    /** indicates if the memory accesses require to be reported */
-    bool requires_memory_access_reporting;
-    /** indicates if the finished instructions require to be reported */
-    bool requires_finished_instruction_reporting;
-	inline void MonitorLoad(typename CONFIG::ADDRESS ea, unsigned int size);
-	inline void MonitorStore(typename CONFIG::ADDRESS ea, unsigned int size);
+	std::string GetObjectFriendlyName(typename CONFIG::ADDRESS addr);
 	
+	///////////////////////////////////////////////////////////////////////////
 protected:
 	
 	///////////////////////////////// InterruptBase ///////////////////////////////////
@@ -4345,7 +4356,18 @@ protected:
 		
 	};
 	
-protected:
+	///////////////////////////// Logger //////////////////////////////////////
+	
+	unisim::kernel::logger::Logger logger;
+	
+	/////////// unisim::service::interfaces::MemoryAccessReporting<> //////////
+	
+    bool requires_memory_access_reporting;        // indicates if the memory accesses require to be reported
+    bool requires_finished_instruction_reporting; // indicates if the finished instructions require to be reported
+	
+	inline void MonitorLoad(typename CONFIG::ADDRESS ea, unsigned int size);
+	inline void MonitorStore(typename CONFIG::ADDRESS ea, unsigned int size);
+	
 	////////////////////////// Run-time parameters ////////////////////////////
 
 	uint64_t instruction_counter;
