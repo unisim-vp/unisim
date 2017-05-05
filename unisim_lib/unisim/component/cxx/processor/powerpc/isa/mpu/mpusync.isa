@@ -33,6 +33,11 @@
  */
 
 op mpusync(31[6]:1[1]:?[14]:0b1000110110[10]:?[1])
+
+mpusync.execute = {
+	return cpu->Mpusync();
+}
+
 mpusync.disasm = {
 	os << "mpusync";
 }

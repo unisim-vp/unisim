@@ -374,67 +374,64 @@ class CPU
 public:
 	typedef CPU<CONFIG> ThisCPU;
 	
-	// imports
+	/////////////////////////// service imports ///////////////////////////////
+
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::SymbolTableLookup<typename CONFIG::ADDRESS> > symbol_table_lookup_import;
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::DebugControl<typename CONFIG::ADDRESS> > debug_control_import;
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::MemoryAccessReporting<typename CONFIG::ADDRESS> > memory_access_reporting_import;
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::TrapReporting> trap_reporting_import;
 	
-	// exports
+	/////////////////////////// service exports ///////////////////////////////
+
 	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
 	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::Registers> registers_export;
 	unisim::kernel::service::ServiceExport<typename unisim::service::interfaces::Synchronizable> synchronizable_export;
 
+	////////////////////////////// constructor ////////////////////////////////
+
 	CPU(const char *name, unisim::kernel::service::Object *parent = 0);
+
+	/////////////////////////////// destructor ////////////////////////////////
+
 	virtual ~CPU();
 	
+	////////////////////////////// setup hooks ////////////////////////////////
+
 	virtual bool BeginSetup();
+	virtual bool EndSetup();
 	
+	//////////////////////////////// Reset ////////////////////////////////////
+
 	void Reset();
+	
+	//////////////////////////// Logger streams ///////////////////////////////
 	
 	std::ostream& GetDebugInfoStream() { return logger.DebugInfoStream(); }
 	std::ostream& GetDebugWarningStream() { return logger.DebugWarningStream(); }
 	std::ostream& GetDebugErrorStream() { return logger.DebugErrorStream(); }
 	
+	//////////////// unisim::service::interface::Registers ////////////////////
+	
 	virtual unisim::service::interfaces::Register *GetRegister(const char *name);
 	virtual void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner);
 
-	virtual void DCRRead(unsigned int dcrn, uint32_t& value) { value = 0; }
-	virtual void DCRWrite(unsigned int dcrn, uint32_t value) {}
+	//////////////// unisim::service::interface::DebugControl /////////////////
 	
-	virtual void Synchronize();
 	virtual void RequiresMemoryAccessReporting(bool report);
 	virtual void RequiresFinishedInstructionReporting(bool report);
+	
+	/////////////// unisim::service::interface::Synchronizable ////////////////
+	
+	virtual void Synchronize();
 
-	std::string GetObjectFriendlyName(typename CONFIG::ADDRESS addr);
+	///////////// External Device Control Register access methods /////////////
+		
+	virtual void DCRRead(unsigned int dcrn, uint32_t& value) { value = 0; }
+	virtual void DCRWrite(unsigned int dcrn, uint32_t value) {}
+
+	///////////// Interface with .isa behavioral description files ////////////
 	
-	//////////////////////// User's land memory access ////////////////////////
-	
-	bool Int8Load(unsigned int rd, typename CONFIG::ADDRESS ea);
-	bool Int16Load(unsigned int rd, typename CONFIG::ADDRESS ea);
-	bool SInt16Load(unsigned int rd, typename CONFIG::ADDRESS ea);
-	bool Int32Load(unsigned int rd, typename CONFIG::ADDRESS ea);
-	bool Int16LoadByteReverse(unsigned int rd, typename CONFIG::ADDRESS ea);
-	bool Int32LoadByteReverse(unsigned int rd, typename CONFIG::ADDRESS ea);
-	bool IntLoadMSBFirst(unsigned int rd, typename CONFIG::ADDRESS ea, unsigned int size);
-	bool Int8Store(unsigned int rs, typename CONFIG::ADDRESS ea);
-	bool Int16Store(unsigned int rs, typename CONFIG::ADDRESS ea);
-	bool Int32Store(unsigned int rs, typename CONFIG::ADDRESS ea);
-	bool Int16StoreByteReverse(unsigned int rs, typename CONFIG::ADDRESS ea);
-	bool Int32StoreByteReverse(unsigned int rs, typename CONFIG::ADDRESS ea);
-	bool IntStoreMSBFirst(unsigned int rs, typename CONFIG::ADDRESS ea, unsigned int size);
-protected:
-	// load/store
-	unisim::kernel::logger::Logger logger;
-    /** indicates if the memory accesses require to be reported */
-    bool requires_memory_access_reporting;
-    /** indicates if the finished instructions require to be reported */
-    bool requires_finished_instruction_reporting;
-	inline void MonitorLoad(typename CONFIG::ADDRESS ea, unsigned int size);
-	inline void MonitorStore(typename CONFIG::ADDRESS ea, unsigned int size);
-	
-public:
-	/////////////////////// User's land register access ///////////////////////
+	// see also ThrowException<> for interrupt
 	
 	inline uint32_t GetGPR(unsigned int n) const ALWAYS_INLINE { return gpr[n].template Get<typename GPR::ALL>(); }
 	inline void SetGPR(unsigned int n, uint32_t value) ALWAYS_INLINE { gpr[n].template Set<typename GPR::ALL>(value); }
@@ -451,10 +448,6 @@ public:
 	inline void SetNIA(typename CONFIG::ADDRESS value) ALWAYS_INLINE { nia = value; }
 	inline void Branch(typename CONFIG::ADDRESS value) ALWAYS_INLINE { nia = value; }
 
-	inline void SetResetAddress(typename CONFIG::ADDRESS _reset_addr) { reset_addr = _reset_addr; }
-
-	////////////// User's land system level registers access //////////////////
-
 	bool MoveFromSPR(unsigned int n, uint32_t& value);
 	bool MoveToSPR(unsigned int n, uint32_t value);
 	bool MoveFromTBR(unsigned int n, uint32_t& value);
@@ -465,7 +458,24 @@ public:
 	bool MoveToPMR(unsigned int n, uint32_t value);
 	bool MoveFromTMR(unsigned int n, uint32_t& value);
 	bool MoveToTMR(unsigned int n, uint32_t value);
+
+	bool Int8Load(unsigned int rd, typename CONFIG::ADDRESS ea);
+	bool Int16Load(unsigned int rd, typename CONFIG::ADDRESS ea);
+	bool SInt16Load(unsigned int rd, typename CONFIG::ADDRESS ea);
+	bool Int32Load(unsigned int rd, typename CONFIG::ADDRESS ea);
+	bool Int16LoadByteReverse(unsigned int rd, typename CONFIG::ADDRESS ea);
+	bool Int32LoadByteReverse(unsigned int rd, typename CONFIG::ADDRESS ea);
+	bool IntLoadMSBFirst(unsigned int rd, typename CONFIG::ADDRESS ea, unsigned int size);
+	bool Int8Store(unsigned int rs, typename CONFIG::ADDRESS ea);
+	bool Int16Store(unsigned int rs, typename CONFIG::ADDRESS ea);
+	bool Int32Store(unsigned int rs, typename CONFIG::ADDRESS ea);
+	bool Int16StoreByteReverse(unsigned int rs, typename CONFIG::ADDRESS ea);
+	bool Int32StoreByteReverse(unsigned int rs, typename CONFIG::ADDRESS ea);
+	bool IntStoreMSBFirst(unsigned int rs, typename CONFIG::ADDRESS ea, unsigned int size);
 	
+	std::string GetObjectFriendlyName(typename CONFIG::ADDRESS addr);
+	
+	///////////////////////////////////////////////////////////////////////////
 protected:
 	
 	///////////////////////////////// InterruptBase ///////////////////////////////////
@@ -760,9 +770,9 @@ protected:
 		virtual bool CheckMoveToLegality()
 		{
 			// Illegal Instruction
-			if(cpu->ThisCPU::verbose_move_to_slr)
+			if(cpu->verbose_move_to_slr)
 			{
-				cpu->ThisCPU::GetDebugWarningStream() << "Move to invalid system level register is an illegal operation" << std::endl;
+				cpu->GetDebugWarningStream() << "Move to invalid system level register is an illegal operation" << std::endl;
 			}
 			cpu->template ThrowException<typename CONFIG::STATE::ProgramInterrupt::IllegalInstruction>();
 			return false;
@@ -771,9 +781,9 @@ protected:
 		virtual bool CheckMoveFromLegality()
 		{
 			// Illegal Instruction
-			if(cpu->ThisCPU::verbose_move_from_slr)
+			if(cpu->verbose_move_from_slr)
 			{
-				cpu->ThisCPU::GetDebugWarningStream() << "Move from invalid system level register is an illegal operation" << std::endl;
+				cpu->GetDebugWarningStream() << "Move from invalid system level register is an illegal operation" << std::endl;
 			}
 			cpu->template ThrowException<typename CONFIG::STATE::ProgramInterrupt::IllegalInstruction>();
 			return false;
@@ -790,7 +800,7 @@ protected:
 		ExternalDCR(ThisCPU *_cpu) : cpu(_cpu), n(0) {}
 		
 		void Attach(unsigned int _n) { n = _n; }
-		virtual bool IsValid() { return true; }
+		virtual bool IsValid() const { return true; }
 		virtual bool CheckMoveFromLegality() { return true; }
 		virtual bool CheckMoveToLegality() { return true; }
 		virtual bool MoveTo(uint32_t value) { cpu->DCRWrite(n, value); return true; }
@@ -820,9 +830,9 @@ protected:
 			if(cpu->GetMSR().template Get<typename CONFIG::STATE::MSR::PR>() && (SLR_PRIVILEGE == SLR_PRIVILEGED))
 			{
 				// Privilege Violation
-				if(cpu->ThisCPU::verbose_move_to_slr)
+				if(cpu->verbose_move_to_slr)
 				{
-					cpu->ThisCPU::GetDebugWarningStream() << "Move to " << this->GetName() << " is a privileged operation" << std::endl;
+					cpu->GetDebugWarningStream() << "Move to " << this->GetName() << " is a privileged operation" << std::endl;
 				}
 				cpu->template ThrowException<typename CONFIG::STATE::ProgramInterrupt::PrivilegeViolation>();
 				return false;
@@ -831,9 +841,9 @@ protected:
 			if(SLR_ACCESS == SLR_RO)
 			{
 				// Illegal Instruction
-				if(cpu->ThisCPU::verbose_move_to_slr)
+				if(cpu->verbose_move_to_slr)
 				{
-					cpu->ThisCPU::GetDebugWarningStream() << "Move to " << this->GetName() << " is an illegal operation" << std::endl;
+					cpu->GetDebugWarningStream() << "Move to " << this->GetName() << " is an illegal operation" << std::endl;
 				}
 				cpu->template ThrowException<typename CONFIG::STATE::ProgramInterrupt::IllegalInstruction>();
 				return false;
@@ -847,9 +857,9 @@ protected:
 			if(cpu->GetMSR().template Get<typename CONFIG::STATE::MSR::PR>() && (SLR_PRIVILEGE == SLR_PRIVILEGED))
 			{
 				// Privilege Violation
-				if(cpu->ThisCPU::verbose_move_from_slr)
+				if(cpu->verbose_move_from_slr)
 				{
-					cpu->ThisCPU::GetDebugWarningStream() << "Move from " << this->GetName() << " is a privileged operation" << std::endl;
+					cpu->GetDebugWarningStream() << "Move from " << this->GetName() << " is a privileged operation" << std::endl;
 				}
 				cpu->template ThrowException<typename CONFIG::STATE::ProgramInterrupt::PrivilegeViolation>();
 				return false;
@@ -858,9 +868,9 @@ protected:
 			if(SLR_ACCESS == SLR_WO)
 			{
 				// Illegal Instruction
-				if(cpu->ThisCPU::verbose_move_from_slr)
+				if(cpu->verbose_move_from_slr)
 				{
-					cpu->ThisCPU::GetDebugWarningStream() << "Move from " << this->GetName() << " is an illegal operation" << std::endl;
+					cpu->GetDebugWarningStream() << "Move from " << this->GetName() << " is an illegal operation" << std::endl;
 				}
 				cpu->template ThrowException<typename CONFIG::STATE::ProgramInterrupt::IllegalInstruction>();
 				return false;
@@ -874,13 +884,13 @@ protected:
 			unisim::util::reg::core::WarningStatus ws = this->Write(value);
 			if(ws)
 			{
-				cpu->ThisCPU::GetDebugWarningStream() << "While moving 0x" << std::hex << value << std::dec << " to " << this->GetName() << ", " << ws << "; See below " << this->GetName() << " content after move operation: " << std::endl;
-				this->LongPrettyPrint(cpu->ThisCPU::GetDebugWarningStream());
-				cpu->ThisCPU::GetDebugWarningStream() << std::endl;
+				cpu->GetDebugWarningStream() << "While moving 0x" << std::hex << value << std::dec << " to " << this->GetName() << ", " << ws << "; See below " << this->GetName() << " content after move operation: " << std::endl;
+				this->LongPrettyPrint(cpu->GetDebugWarningStream());
+				cpu->GetDebugWarningStream() << std::endl;
 			}
-			else if(cpu->ThisCPU::verbose_move_to_slr)
+			else if(cpu->verbose_move_to_slr)
 			{
-				cpu->ThisCPU::GetDebugWarningStream() << "Moving 0x" << std::hex << value << std::dec << " to " << this->GetName() << std::endl;
+				cpu->GetDebugWarningStream() << "Moving 0x" << std::hex << value << std::dec << " to " << this->GetName() << std::endl;
 			}
 
 			
@@ -889,17 +899,18 @@ protected:
 		
 		virtual bool MoveFrom(uint32_t& value)
 		{
+			value = 0;
 			unisim::util::reg::core::WarningStatus ws = this->Read(value);
 			if(ws)
 			{
-				cpu->ThisCPU::GetDebugWarningStream() << ws << std::endl;
-				cpu->ThisCPU::GetDebugWarningStream() << "While moving 0x" << std::hex << value << std::dec << " from " << this->GetName() << ", " << ws << "; See below " << this->GetName() << " content after move operation: " << std::endl;
-				this->LongPrettyPrint(cpu->ThisCPU::GetDebugWarningStream());
-				cpu->ThisCPU::GetDebugWarningStream() << std::endl;
+				cpu->GetDebugWarningStream() << ws << std::endl;
+				cpu->GetDebugWarningStream() << "While moving 0x" << std::hex << value << std::dec << " from " << this->GetName() << ", " << ws << "; See below " << this->GetName() << " content after move operation: " << std::endl;
+				this->LongPrettyPrint(cpu->GetDebugWarningStream());
+				cpu->GetDebugWarningStream() << std::endl;
 			}
-			else if(cpu->ThisCPU::verbose_move_to_slr)
+			else if(cpu->verbose_move_to_slr)
 			{
-				cpu->ThisCPU::GetDebugWarningStream() << "Moving 0x" << std::hex << value << std::dec << " from " << this->GetName() << std::endl;
+				cpu->GetDebugWarningStream() << "Moving 0x" << std::hex << value << std::dec << " from " << this->GetName() << std::endl;
 			}
 			
 			return true;
@@ -1513,6 +1524,7 @@ protected:
 		}
 	};
 
+public:
 	// Exception Syndrome Register
 	struct ESR : PrivilegedSPR<ESR, 62>
 	{
@@ -1560,6 +1572,7 @@ protected:
 			VLEMI::SetName("vlemi"); VLEMI::SetDescription("VLE Mode Instruction");
 		}
 	};
+protected:
 	
 	// Interrupt Vector Prefix Register
 	struct IVPR : PrivilegedSPR<IVPR, 63>
@@ -1798,7 +1811,7 @@ protected:
 		DBSR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
-		virtual bool MoveTo(unisim::component::cxx::processor::powerpc::CPU<CONFIG> *cpu, uint32_t value) { this->template Set<ALL>(this->template Get<ALL>() & ~value); return true; } // W1C
+		virtual bool MoveTo(uint32_t value) { this->template Set<ALL>(this->template Get<ALL>() & ~value); return true; } // W1C
 	private:
 		void Init()
 		{
@@ -2133,6 +2146,20 @@ protected:
 		virtual void Reset() { /* unaffected */ }
 	private:
 		void Init() { this->SetName("dvc2"); this->SetDescription("Data Value Compare 2"); }
+	};
+	
+	// Thread ID
+	struct TIR : ReadOnlyPrivilegedSPR<TIR, 446>
+	{
+		typedef ReadOnlyPrivilegedSPR<TIR, 446> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+
+		TIR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
+		TIR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init() { this->SetName("tir"); this->SetDescription("Thread ID"); }
 	};
 
 	// Signal Processing Extension/Embedded Floating-point Status and Control Register
@@ -2686,7 +2713,7 @@ protected:
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
 		
-		virtual bool MoveTo(unisim::component::cxx::processor::powerpc::CPU<CONFIG> *cpu, uint32_t value) { this->template Set<ALL>(this->template Get<ALL>() & ~value); return true; } // W1C
+		virtual bool MoveTo(uint32_t value) { this->template Set<ALL>(this->template Get<ALL>() & ~value); return true; } // W1C
 	
 	private:
 		void Init()
@@ -3047,6 +3074,11 @@ protected:
 		MAS0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		MAS0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
+		
+		virtual void Reset()
+		{
+			this->template Set<RO>(0);
+		}
 	private:
 		void Init()
 		{
@@ -3350,6 +3382,20 @@ protected:
 	private:
 		void Init() { this->SetName("devent"); this->SetDescription("Debug Event Register"); }
 	};
+	
+	// System Information
+	struct SIR : ReadOnlyPrivilegedSPR<SIR, 992>
+	{
+		typedef ReadOnlyPrivilegedSPR<SIR, 992> Super;
+		
+		struct ALL : Field<ALL, 0, 31> {};
+		
+		SIR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
+		SIR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		using Super::operator =;
+	private:
+		void Init() { this->SetName("sir"); this->SetDescription("System Information"); }
+	};
 
 	// Hardware Implementation Dependent Register 0
 	struct HID0 : PrivilegedSPR<HID0, 1008>
@@ -3453,7 +3499,7 @@ protected:
 		};
 		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
 		{
-			typedef FieldSet<WID, WDD, DCWA, DCECE, DCEI, DCLOC, DCEA, DCLOINV, DCABT, DCINV, DCE> ALL;
+			typedef FieldSet<WID> ALL;
 		};
 
 		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
@@ -4038,7 +4084,7 @@ protected:
 			name_sstr << "pmc" << PMC_NUM;
 			
 			std::stringstream desc_sstr;
-			name_sstr << "Performance Monitor Counter register" << PMC_NUM;
+			desc_sstr << "Performance Monitor Counter register" << PMC_NUM;
 			
 			               this->SetName(name_sstr.str());                         this->SetDescription(desc_sstr.str());
 			OV           ::SetName("ov");            OV           ::SetDescription("Overflow");
@@ -4310,7 +4356,18 @@ protected:
 		
 	};
 	
-protected:
+	///////////////////////////// Logger //////////////////////////////////////
+	
+	unisim::kernel::logger::Logger logger;
+	
+	/////////// unisim::service::interfaces::MemoryAccessReporting<> //////////
+	
+    bool requires_memory_access_reporting;        // indicates if the memory accesses require to be reported
+    bool requires_finished_instruction_reporting; // indicates if the finished instructions require to be reported
+	
+	inline void MonitorLoad(typename CONFIG::ADDRESS ea, unsigned int size);
+	inline void MonitorStore(typename CONFIG::ADDRESS ea, unsigned int size);
+	
 	////////////////////////// Run-time parameters ////////////////////////////
 
 	uint64_t instruction_counter;
@@ -4365,6 +4422,7 @@ protected:
 	//////////////////////////// Reset Address ////////////////////////////////
 	
 	typename CONFIG::ADDRESS reset_addr;
+	unisim::kernel::service::Parameter<typename CONFIG::ADDRESS> param_reset_addr;
 	
 	/////////////////////////// Program Counter ///////////////////////////////
 	

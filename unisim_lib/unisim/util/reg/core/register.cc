@@ -103,12 +103,6 @@ std::ostream& operator << (std::ostream& os, const WarningStatus& ws)
 			os << (warn ? "and" : "") << "reading write-only register";
 			warn = true;
 		}
-
-		if(ws & WS_RWOB)
-		{
-			os << (warn ? "and" : "") << "reading write-only bits";
-			warn = true;
-		}
 	}
 	
 	return os;

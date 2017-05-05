@@ -66,13 +66,17 @@ class CPU
 	: public sc_module
 	, public unisim::component::cxx::processor::powerpc::e200z710n3::CPU
 	, public tlm::tlm_bw_transport_if<>
+	, public tlm::tlm_fw_transport_if<>
 {
 public:
 	
 	typedef unisim::component::cxx::processor::powerpc::e200z710n3::CPU Super;
-	typedef tlm::tlm_initiator_socket<unisim::component::cxx::processor::powerpc::e200z710n3::CONFIG::FSB_WIDTH * 8> ahb_if_type;
+	typedef tlm::tlm_initiator_socket<unisim::component::cxx::processor::powerpc::e200z710n3::CONFIG::FSB_WIDTH * 8> ahb_master_if_type;
+	typedef tlm::tlm_target_socket<unisim::component::cxx::processor::powerpc::e200z710n3::CONFIG::FSB_WIDTH * 8> ahb_slave_if_type;
 
-	ahb_if_type ahb_if; // master interface
+	ahb_master_if_type i_ahb_if; // instruction master AHB interface
+	ahb_master_if_type d_ahb_if; // data master AHB interface
+	ahb_slave_if_type s_ahb_if;  // slave AHB interface
 	sc_core::sc_in<bool>                m_por;            // power-on reset
 	sc_core::sc_in<bool>                p_reset_b;        // reset
 	sc_core::sc_in<bool>                p_nmi_b;          // NMI
@@ -90,13 +94,20 @@ public:
 	
 	virtual bool EndSetup();
 
-	// Back path
+	// Backward path
 	virtual tlm::tlm_sync_enum nb_transport_bw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+	
+	// Forward path
+	virtual void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
+	virtual bool get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data);
+	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& payload);
+	virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	
 	virtual void Synchronize();
 	virtual void Idle();
 	virtual void InterruptAcknowledge();
+	virtual void InvalidateDirectMemPtr(PHYSICAL_ADDRESS start_addr, PHYSICAL_ADDRESS end_addr);
 	
 	void P_RESET_B_Process();
 	void P_NMI_B_Process();
@@ -147,7 +158,8 @@ private:
 	Formula<double> formula_idle_rate;
 	Formula<double> formula_load_rate;
 	
-	unisim::kernel::tlm2::DMIRegionCache dmi_region_cache;
+	unisim::kernel::tlm2::DMIRegionCache i_dmi_region_cache;
+	unisim::kernel::tlm2::DMIRegionCache d_dmi_region_cache;
 
 	inline void AlignToBusClock() ALWAYS_INLINE;
 	void AlignToBusClock(sc_time& t);

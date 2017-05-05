@@ -123,9 +123,9 @@ private:
 	{
 	public:
 		typedef FSB_ADDRESS_TYPE ADDRESS;
-		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 1;
-		static const unsigned int MAX_NUM_MAPPINGS = 1;
+		static const unsigned int INPUT_SOCKETS = 2;
+		static const unsigned int OUTPUT_SOCKETS = 2;
+		static const unsigned int MAX_NUM_MAPPINGS = 2;
 		static const unsigned int BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;
 	};
@@ -135,14 +135,14 @@ private:
 	//=========================================================================
 
 	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> RAM;
-	typedef unisim::component::tlm2::processor::powerpc::e200z710n3::CPU CPU;
+	typedef unisim::component::tlm2::processor::powerpc::e200z710n3::CPU CPU2;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<INTERCONNECT_CONFIG> INTERCONNECT;
 
 	//=========================================================================
 	//===                           Components                              ===
 	//=========================================================================
 	//  - PowerPC processor
-	CPU *cpu;
+	CPU2 *cpu2;
 	//  - RAM
 	RAM *ram;
 	//  - Interconnect

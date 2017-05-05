@@ -33,6 +33,11 @@
  */
 
 op mpuwe(31[6]:1[1]:?[14]:0b1111010010[10]:?[1])
+
+mpuwe.execute = {
+	return cpu->Mpuwe();
+}
+
 mpuwe.disasm = {
 	os << "mpuwe";
 }

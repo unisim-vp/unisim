@@ -59,7 +59,9 @@ CPU::CPU(const sc_module_name& name, Object *parent)
 	: Object(name, parent, "this module implements a E200Z710N3 CPU core")
 	, sc_module(name)
 	, unisim::component::cxx::processor::powerpc::e200z710n3::CPU(name, parent)
-	, ahb_if("ahb_if")
+	, i_ahb_if("i_ahb_if")
+	, d_ahb_if("d_ahb_if")
+	, s_ahb_if("s_ahb_if")
 	, m_por("m_por")
 	, p_reset_b("p_reset_b")
 	, p_nmi_b("p_nmi_b")
@@ -98,9 +100,12 @@ CPU::CPU(const sc_module_name& name, Object *parent)
 	, stat_idle_time("idle-time", this, idle_time, "idle time")
 	, formula_idle_rate("idle-rate", this, "/", &stat_idle_time, &stat_run_time, "idle rate")
 	, formula_load_rate("load-rate", this, "-", &stat_one, &formula_idle_rate, "load rate")
-	, dmi_region_cache()
+	, i_dmi_region_cache()
+	, d_dmi_region_cache()
 {
-	ahb_if(*this);
+	i_ahb_if(*this);
+	d_ahb_if(*this);
+	s_ahb_if(*this);
 	
 	stat_one.SetMutable(false);
 	stat_one.SetSerializable(false);
@@ -154,11 +159,158 @@ tlm::tlm_sync_enum CPU::nb_transport_bw(tlm::tlm_generic_payload& trans, tlm::tl
 
 void CPU::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
-	dmi_region_cache.Invalidate(start_range, end_range);
+	i_dmi_region_cache.Invalidate(start_range, end_range);
+	d_dmi_region_cache.Invalidate(start_range, end_range);
 	if(DEBUG_ENABLE && debug_dmi)
 	{
 		Super::logger << DebugInfo << "AHB: invalidate granted access for 0x" << std::hex << start_range << "-0x" << end_range << std::dec << EndDebugInfo;
 	}
+}
+
+void CPU::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
+{
+	tlm::tlm_command cmd = payload.get_command();
+	
+	if(cmd != tlm::TLM_IGNORE_COMMAND)
+	{
+		unsigned int streaming_width = payload.get_streaming_width();
+		unsigned int data_length = payload.get_data_length();
+		unsigned char *data_ptr = payload.get_data_ptr();
+		unsigned char *byte_enable_ptr = payload.get_byte_enable_ptr();
+		sc_dt::uint64 start_addr = payload.get_address();
+		//sc_dt::uint64 end_addr = start_addr + ((streaming_width > data_length) ? data_length : streaming_width) - 1;
+		
+		if(!data_ptr)
+		{
+			this->logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
+			unisim::kernel::service::Object::Stop(-1);
+			return;
+		}
+		else if(!data_length)
+		{
+			this->logger << DebugError << "data length range for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
+			unisim::kernel::service::Object::Stop(-1);
+			return;
+		}
+		else if(byte_enable_ptr)
+		{
+			// byte enable is unsupported
+			this->logger << DebugWarning << "byte enable for TLM-2.0 GP READ/WRITE command is unsupported" << EndDebugWarning;
+			payload.set_response_status(tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE);
+		}
+		else if(streaming_width < data_length)
+		{
+			// streaming is unsupported
+			this->logger << DebugWarning << "streaming for TLM-2.0 GP READ/WRITE command is unsupported" << EndDebugWarning;
+			payload.set_response_status(tlm::TLM_BURST_ERROR_RESPONSE);
+		}
+		else
+		{
+			switch(cmd)
+			{
+				case tlm::TLM_READ_COMMAND:
+				{
+					unsigned int read_bytes = ExternalLoad(start_addr, data_ptr, data_length);
+					if(read_bytes != data_length)
+					{
+						payload.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
+					}
+					break;
+				}
+				case tlm::TLM_WRITE_COMMAND:
+				{
+					unsigned int written_bytes = ExternalStore(start_addr, data_ptr, data_length);
+					if(written_bytes != data_length)
+					{
+						payload.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
+					}
+					break;
+				}
+				case tlm::TLM_IGNORE_COMMAND:
+					break;
+			}
+		}
+		
+		t += bus_cycle_time;
+	}
+	
+	payload.set_dmi_allowed(true);
+}
+
+bool CPU::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
+{
+	PHYSICAL_ADDRESS addr = payload.get_address();
+	PHYSICAL_ADDRESS dmi_start_addr = addr;
+	PHYSICAL_ADDRESS dmi_end_addr = addr;
+
+	unsigned char *dmi_ptr = GetDirectMemPtr(addr, dmi_start_addr, dmi_end_addr);
+
+	dmi_data.set_start_address(dmi_start_addr);
+	dmi_data.set_end_address(dmi_end_addr);
+	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+
+	if(dmi_ptr)
+	{
+		//std::cerr << sc_module::name() << ": grant 0x" << std::hex << dmi_start_addr << "-0x" << dmi_end_addr << std::dec << std::endl;
+		dmi_data.set_dmi_ptr(dmi_ptr);
+		dmi_data.set_read_latency(bus_cycle_time);
+		dmi_data.set_write_latency(bus_cycle_time);
+		return true;
+	}
+
+	return false;
+}
+
+unsigned int CPU::transport_dbg(tlm::tlm_generic_payload& payload)
+{
+	unsigned int xfered = 0;
+	tlm::tlm_command cmd = payload.get_command();
+	
+	//unsigned int streaming_width = payload.get_streaming_width();
+	unsigned int data_length = payload.get_data_length();
+	unsigned char *data_ptr = payload.get_data_ptr();
+	//unsigned char *byte_enable_ptr = payload.get_byte_enable_ptr();
+	sc_dt::uint64 start_addr = payload.get_address();
+	//sc_dt::uint64 end_addr = start_addr + ((streaming_width > data_length) ? data_length : streaming_width) - 1;
+		
+	if(!data_ptr)
+	{
+		this->logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
+		unisim::kernel::service::Object::Stop(-1);
+		return 0;
+	}
+	else if(!data_length)
+	{
+		this->logger << DebugError << "data length range for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
+		unisim::kernel::service::Object::Stop(-1);
+		return 0;
+	}
+	else
+	{
+		switch(cmd)
+		{
+			case tlm::TLM_READ_COMMAND:
+			{
+				xfered = ExternalLoad(start_addr, data_ptr, data_length);
+				break;
+			}
+			case tlm::TLM_WRITE_COMMAND:
+			{
+				xfered = ExternalStore(start_addr, data_ptr, data_length);
+				break;
+			}
+			case tlm::TLM_IGNORE_COMMAND:
+				break;
+		}
+	}
+	
+	return xfered;
+}
+
+tlm::tlm_sync_enum CPU::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
+{
+	b_transport(payload, t);
+	return tlm::TLM_COMPLETED;
 }
 
 void CPU::Synchronize()
@@ -223,6 +375,11 @@ void CPU::InterruptAcknowledge()
 	int_ack_event.notify(sc_core::SC_ZERO_TIME);
 }
 
+void CPU::InvalidateDirectMemPtr(PHYSICAL_ADDRESS start_addr, PHYSICAL_ADDRESS end_addr)
+{
+	s_ahb_if->invalidate_direct_mem_ptr(start_addr, end_addr);
+}
+
 bool CPU::AHBDebugInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr)
 {
 	if(sc_core::sc_get_status() < sc_core::SC_END_OF_ELABORATION)
@@ -241,7 +398,7 @@ bool CPU::AHBDebugInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_
 	payload->set_streaming_width(size);
 	payload->set_data_ptr((unsigned char *) buffer);
 	
-	unsigned int read_size = ahb_if->transport_dbg(*payload);
+	unsigned int read_size = i_ahb_if->transport_dbg(*payload);
 
 	return (payload->is_response_ok() && (read_size == size));
 }
@@ -264,7 +421,7 @@ bool CPU::AHBDebugDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_
 	payload->set_streaming_width(size);
 	payload->set_data_ptr((unsigned char *) buffer);
 	
-	unsigned int read_size = ahb_if->transport_dbg(*payload);
+	unsigned int read_size = d_ahb_if->transport_dbg(*payload);
 
 	return (payload->is_response_ok() && (read_size == size));
 }
@@ -287,7 +444,7 @@ bool CPU::AHBDebugDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, 
 	payload->set_streaming_width(size);
 	payload->set_data_ptr((unsigned char *) buffer);
 	
-	unsigned int write_size = ahb_if->transport_dbg(*payload);
+	unsigned int write_size = d_ahb_if->transport_dbg(*payload);
 
 	return (payload->is_response_ok() && (write_size == size));
 }
@@ -313,7 +470,7 @@ void CPU::P_RESET_B_Process()
 		hid0.Set<HID0::NHR>(0);
 		external_event.notify(sc_core::SC_ZERO_TIME);
 		start_event.notify();
-		SetResetAddress(sc_dt::sc_uint<30>(p_rstbase).to_uint64() << 2);
+		//SetResetAddress(sc_dt::sc_uint<30>(p_rstbase).to_uint64() << 2);
 	}
 }
 
@@ -328,9 +485,9 @@ void CPU::P_NMI_B_Process()
 
 void CPU::P_MCP_B_Process()
 {
-	if(p_mcp_b.negedge())
+	if(p_mcp_b.negedge() && hid0.Get<HID0::EMCP>())
 	{
-		ThrowException<MachineCheckInterrupt::MCP>();
+		ThrowException<MachineCheckInterrupt::AsynchronousMachineCheck>().SetEvent(MachineCheckInterrupt::MCE_MCP);
 		external_event.notify(sc_core::SC_ZERO_TIME);
 	}
 }
@@ -395,7 +552,7 @@ bool CPU::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t siz
 	
 	if(likely(enable_dmi))
 	{
-		dmi_region = dmi_region_cache.Lookup(physical_addr, size);
+		dmi_region = i_dmi_region_cache.Lookup(physical_addr, size);
 		
 		if(likely(dmi_region != 0))
 		{
@@ -438,7 +595,7 @@ bool CPU::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t siz
 	payload->set_data_length(size);
 	payload->set_data_ptr((unsigned char *) buffer);
 	
-	ahb_if->b_transport(*payload, cpu_time);
+	i_ahb_if->b_transport(*payload, cpu_time);
 	
 	run_time = sc_time_stamp();
 	run_time += cpu_time;
@@ -452,9 +609,9 @@ bool CPU::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t siz
 			if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: target allows DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			
 			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
-			unisim::kernel::tlm2::DMIGrant dmi_grant = ahb_if->get_direct_mem_ptr(*payload, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
+			unisim::kernel::tlm2::DMIGrant dmi_grant = i_ahb_if->get_direct_mem_ptr(*payload, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
 			
-			dmi_region_cache.Insert(dmi_grant, dmi_data);
+			i_dmi_region_cache.Insert(dmi_grant, dmi_data);
 		}
 		else
 		{
@@ -475,7 +632,7 @@ bool CPU::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t siz
 	
 	if(likely(enable_dmi))
 	{
-		dmi_region = dmi_region_cache.Lookup(physical_addr, size);
+		dmi_region = d_dmi_region_cache.Lookup(physical_addr, size);
 		
 		if(likely(dmi_region != 0))
 		{
@@ -518,7 +675,7 @@ bool CPU::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t siz
 	payload->set_data_length(size);
 	payload->set_data_ptr((unsigned char *) buffer);
 	
-	ahb_if->b_transport(*payload, cpu_time);
+	d_ahb_if->b_transport(*payload, cpu_time);
 	
 	run_time = sc_time_stamp();
 	run_time += cpu_time;
@@ -532,9 +689,9 @@ bool CPU::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t siz
 			if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: target allows DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 
 			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
-			unisim::kernel::tlm2::DMIGrant dmi_grant = ahb_if->get_direct_mem_ptr(*payload, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
+			unisim::kernel::tlm2::DMIGrant dmi_grant = d_ahb_if->get_direct_mem_ptr(*payload, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
 			
-			dmi_region_cache.Insert(dmi_grant, dmi_data);
+			d_dmi_region_cache.Insert(dmi_grant, dmi_data);
 		}
 		else
 		{
@@ -555,7 +712,7 @@ bool CPU::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint3
 
 	if(likely(enable_dmi))
 	{
-		dmi_region = dmi_region_cache.Lookup(physical_addr, size);
+		dmi_region = d_dmi_region_cache.Lookup(physical_addr, size);
 		
 		if(likely(dmi_region != 0))
 		{
@@ -598,7 +755,7 @@ bool CPU::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint3
 	payload->set_data_length(size);
 	payload->set_data_ptr((unsigned char *) buffer);
 	
-	ahb_if->b_transport(*payload, cpu_time);
+	d_ahb_if->b_transport(*payload, cpu_time);
 	
 	run_time = sc_time_stamp();
 	run_time += cpu_time;
@@ -611,9 +768,9 @@ bool CPU::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint3
 		{
 			if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: target allows DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
-			unisim::kernel::tlm2::DMIGrant dmi_grant = ahb_if->get_direct_mem_ptr(*payload, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
+			unisim::kernel::tlm2::DMIGrant dmi_grant = d_ahb_if->get_direct_mem_ptr(*payload, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
 			
-			dmi_region_cache.Insert(dmi_grant, dmi_data);
+			d_dmi_region_cache.Insert(dmi_grant, dmi_data);
 		}
 		else
 		{

@@ -258,6 +258,7 @@ private:
 	bool IsDeleteCommand(const char *cmd) const;
 	bool IsDeleteWatchCommand(const char *cmd) const;
 	bool IsDumpCommand(const char *cmd) const;
+	bool IsRegistersCommand(const char *cmd) const;
 	bool IsEditCommand(const char *cmd) const;
 	bool IsHelpCommand(const char *cmd) const;
 	bool IsResetCommand(const char *cmd) const;
@@ -300,6 +301,7 @@ private:
 	void DumpBreakpoints();
 	void DumpWatchpoints();
 	void DumpMemory(ADDRESS addr);
+	void DumpRegisters();
 	bool EditBuffer(ADDRESS addr, std::vector<uint8_t>& buffer);
 	bool EditMemory(ADDRESS addr);
 	void DumpSymbols(const typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& symbols, const char *name = 0);

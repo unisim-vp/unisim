@@ -134,6 +134,7 @@ template <typename TYPES, typename CACHE> struct CacheLine;
 template <typename TYPES, typename CACHE> struct CacheSet;
 template <typename TYPES, typename CACHE> struct Cache;
 template <typename TYPES> struct NullCache;
+template <typename TYPES> struct NullCache1;
 template <typename TYPES> struct NullCache2;
 template <typename TYPES> struct NullCache3;
 template <typename TYPES> struct NullCache4;
@@ -350,6 +351,21 @@ struct NullCache : Cache<TYPES, NullCache<TYPES> >
 	static const char *GetName() { return "NullCache"; }
 };
 
+////////////////////////////// NullCache1<> ///////////////////////////////////
+
+template <typename TYPES>
+struct NullCache1 : Cache<TYPES, NullCache1<TYPES> >
+{
+	static const CacheWritingPolicy WRITING_POLICY = CACHE_WRITE_THROUGH_AND_NO_WRITE_ALLOCATE_POLICY;
+	static const CacheType TYPE = NULL_CACHE;
+	static const unsigned int ASSOCIATIVITY = 1;
+	static const unsigned int BLOCKS_PER_LINE = 1;
+	static const unsigned int BLOCK_SIZE = 1;
+	static const unsigned int SIZE = 1;
+	
+	static const char *GetName() { return "NullCache1"; }
+};
+
 ////////////////////////////// NullCache2<> ///////////////////////////////////
 
 template <typename TYPES>
@@ -397,7 +413,7 @@ struct NullCache4 : Cache<TYPES, NullCache4<TYPES> >
 
 ////////////////////////////// CacheHierarchy<> /////////////////////////////////
 
-template <typename TYPES, typename _L1CACHE, typename _L2CACHE = NullCache2<TYPES>, typename _L3CACHE = NullCache3<TYPES>, typename _L4CACHE = NullCache4<TYPES> >
+template <typename TYPES, typename _L1CACHE = NullCache1<TYPES>, typename _L2CACHE = NullCache2<TYPES>, typename _L3CACHE = NullCache3<TYPES>, typename _L4CACHE = NullCache4<TYPES> >
 struct CacheHierarchy
 {
 	typedef _L1CACHE L1CACHE;
@@ -859,6 +875,18 @@ private:
 		static inline bool ChooseLineToEvict(MSS *mss, CacheAccess<TYPES, NullCache<TYPES> >& access) ALWAYS_INLINE { return false; }
 		static inline void UpdateReplacementPolicyOnAccess(MSS *mss, CacheAccess<TYPES, NullCache<TYPES> >& access) ALWAYS_INLINE {}
 		static inline void UpdateReplacementPolicyOnFill(MSS *mss, CacheAccess<TYPES, NullCache<TYPES> >& access) ALWAYS_INLINE {}
+	};
+
+	template <bool dummy>
+	struct __MSS_CACHE_INTERFACE__<NullCache1<TYPES>, dummy>
+	{
+		static inline NullCache1<TYPES> *GetCache(MSS *mss, const NullCache1<TYPES> *null) ALWAYS_INLINE { return 0; }
+		static inline bool IsCacheVerbose(MSS *mss, const NullCache1<TYPES> *null) ALWAYS_INLINE { return false; }
+		static inline bool IsCacheEnabled(MSS *mss, const NullCache1<TYPES> *null) ALWAYS_INLINE { return false; }
+		static inline bool IsCacheWriteAllocate(MSS *mss, const NullCache1<TYPES> *null) ALWAYS_INLINE { return false; }
+		static inline bool ChooseLineToEvict(MSS *mss, CacheAccess<TYPES, NullCache1<TYPES> >& access) ALWAYS_INLINE { return false; }
+		static inline void UpdateReplacementPolicyOnAccess(MSS *mss, CacheAccess<TYPES, NullCache1<TYPES> >& access) ALWAYS_INLINE {}
+		static inline void UpdateReplacementPolicyOnFill(MSS *mss, CacheAccess<TYPES, NullCache1<TYPES> >& access) ALWAYS_INLINE {}
 	};
 
 	template <bool dummy>

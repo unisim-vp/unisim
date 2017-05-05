@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_E200Z710N3_CPU_HH__
 
 #include <unisim/component/cxx/processor/powerpc/cpu.tcc>
+#include <unisim/component/cxx/processor/powerpc/e200z710n3/mpu.hh>
 #include <unisim/component/cxx/processor/powerpc/e200z710n3/types.hh>
 #include <unisim/component/cxx/processor/powerpc/e200z710n3/isa/vle.hh>
 #include <unisim/util/cache/cache.hh>
@@ -50,7 +51,6 @@ namespace processor {
 namespace powerpc {
 namespace e200z710n3 {
 
-
 class CPU
 	: public unisim::component::cxx::processor::powerpc::CPU<CONFIG>
 	, public unisim::util::cache::MemorySubSystem<MSS_TYPES, CPU >
@@ -59,29 +59,46 @@ class CPU
 	, public unisim::kernel::service::Service<unisim::service::interfaces::Memory<ADDRESS> >
 {
 public:
+	typedef CPU ThisCPU;
 	typedef unisim::component::cxx::processor::powerpc::CPU<CONFIG> SuperCPU;
 	typedef unisim::util::cache::MemorySubSystem<MSS_TYPES, CPU> SuperMSS;
 	
-	// imports
+	/////////////////////////// service imports ///////////////////////////////
+	
 	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<PHYSICAL_ADDRESS> > memory_import;
 
-	// exports
+	/////////////////////////// service exports ///////////////////////////////
+
 	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Disassembly<ADDRESS> > disasm_export;
 	unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<ADDRESS> > memory_export;
 
+	////////////////////////////// constructor ////////////////////////////////
+	
 	CPU(const char *name, unisim::kernel::service::Object *parent = 0);
+
+	/////////////////////////////// destructor ////////////////////////////////
+
 	virtual ~CPU();
 	
+	////////////////////////////// setup hooks ////////////////////////////////
+
 	virtual bool EndSetup();
+
+	//////////  unisim::service::interfaces::Disassembly<> ////////////////////
+	
+	virtual std::string Disasm(ADDRESS addr, ADDRESS& next_addr);
+	
+	/////////////// unisim::service::interfaces::Memory<> /////////////////////
 	
 	virtual void Reset();
-
-	virtual std::string Disasm(ADDRESS addr, ADDRESS& next_addr);
 	virtual bool ReadMemory(ADDRESS addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(ADDRESS addr, const void *buffer, uint32_t size);
 	
+	///////////////// Interface with SystemC TLM-2.0 wrapper module ///////////
+	
 	virtual void InterruptAcknowledge() {}
-
+	virtual void Idle() {}
+	
 	////////////////////////// Machine State Register /////////////////////////
 	
 	struct MSR : SuperCPU::MSR
@@ -98,9 +115,56 @@ public:
 			return *this;
 		}
 	};
+
+	///////////// Interface with .isa behavioral description files ////////////
+	
+	MSR& GetMSR() { return msr; }
+	ESR& GetESR() { return esr; }
+
+	bool Dcba(ADDRESS addr);
+	bool Dcbi(ADDRESS addr);
+	bool Dcbf(ADDRESS addr);
+	bool Dcbst(ADDRESS addr);
+	bool Dcbt(ADDRESS addr);
+	bool Dcbtst(ADDRESS addr);
+	bool Dcbz(ADDRESS addr);
+	bool Icbi(ADDRESS addr);
+	bool Icbt(ADDRESS addr);
+	bool Lbarx(unsigned int rd, ADDRESS addr);
+	bool Lharx(unsigned int rd, ADDRESS addr);
+	bool Lwarx(unsigned int rd, ADDRESS addr);
+	bool Mbar(ADDRESS addr);
+	bool Stbcx(unsigned int rs, ADDRESS addr);
+	bool Sthcx(unsigned int rs, ADDRESS addr);
+	bool Stwcx(unsigned int rs, ADDRESS addr);
+	bool Wait();
+	bool Msync();
+	bool Isync();
+	bool Rfi();
+	bool Rfci();
+	bool Rfdi();
+	bool Rfmci();
+	bool Mpure();
+	bool Mpuwe();
+	bool Mpusync();
 	
 	////////////////////////// Special Purpose Registers //////////////////////
 	
+	// Processor ID Register
+	struct PIR : SuperCPU::PIR
+	{
+		typedef SuperCPU::PIR Super;
+		
+		PIR(CPU *_cpu) : Super(_cpu) {}
+		PIR(CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		virtual void Reset()
+		{
+			Set<ID_0_23>(0);
+			Set<ID_24_31>(cpu->cpuid);
+		}
+	};
+
 	// Hardware Implementation Dependent Register 0
 	struct HID0 : SuperCPU::HID0
 	{
@@ -137,7 +201,7 @@ public:
 				cpu->GetDebugInfoStream() << "Replacement of Data Cache Way #0 is " << ((Get<L1CSR0::WDD>() & 1) ? "disabled" : "enabled") << std::endl;
 				cpu->GetDebugInfoStream() << "Replacement of Data Cache Way #1 is " << ((Get<L1CSR0::WDD>() & 2) ? "disabled" : "enabled") << std::endl;
 			}
-			if(Get<L1CSR0::DCE>() && Get<L1CSR0::DCINV>())
+			if(Get<L1CSR0::DCINV>())
 			{
 				cpu->InvalidateDataCache();
 				Set<L1CSR0::DCINV>(0);
@@ -162,7 +226,7 @@ public:
 			{
 				cpu->GetDebugInfoStream() << "Instruction Cache is " << (Get<L1CSR1::ICE>() ? "enabled" : "disabled") << std::endl;
 			}
-			if(Get<L1CSR1::ICE>() && Get<L1CSR1::ICINV>())
+			if(Get<L1CSR1::ICINV>())
 			{
 				cpu->InvalidateInstructionCache();
 				Set<L1CSR1::ICINV>(0);
@@ -312,6 +376,7 @@ public:
 			{
 				cpu->cur_dmem_base_addr = cpu->dmem_base_addr;
 			}
+			cpu->cur_dmem_high_addr = cpu->cur_dmem_base_addr + cpu->dmem_size;
 			
 			cpu->dmemcfg0.Reset(); // regenerate DMEMCFG0 read-only register
 		}
@@ -331,7 +396,7 @@ public:
 			Set<DCPECE        >(1);
 			Set<DSECE         >(1);
 			
-			cpu->dmemcfg0.Reset(); // regenerate DMEMCFG0 read-only register
+			Effect();
 		}
 		
 		DMEMCTL0& operator = (const uint32_t& value) { this->Super::operator = (value); Effect(); return *this; }
@@ -374,6 +439,7 @@ public:
 			{
 				cpu->cur_imem_base_addr = cpu->imem_base_addr;
 			}
+			cpu->cur_imem_high_addr = cpu->cur_imem_base_addr + cpu->imem_size;
 			
 			cpu->imemcfg0.Reset(); // regenerate IMEMCFG0 read-only register
 		}
@@ -388,7 +454,7 @@ public:
 			Set<ICPECE        >(1);
 			Set<ISECE         >(1);
 			
-			cpu->imemcfg0.Reset(); // regenerate IMEMCFG0 read-only register
+			Effect();
 		}
 		
 		IMEMCTL0& operator = (const uint32_t& value) { this->Super::operator = (value); Effect(); return *this; }
@@ -401,26 +467,25 @@ public:
 	//  0   SystemResetInterrupt                 Reset
 	//  1   MachineCheckInterrupt                NMI
 	//  2   MachineCheckInterrupt                ErrorReport
-	//  3   MachineCheckInterrupt                MCP
-	//  4   MachineCheckInterrupt                AsynchronousMachineCheck
-	//  5   ExternalInputInterrupt               ExternalInput
-	//  6   CriticalInputInterrupt               CriticalInput
-	//  7   DebugInterrupt                       AsynchronousDebugEvent
-	//  8   PerformanceMonitorInterrupt          PerformanceCounterOverflow
-	//  9   PerformanceMonitorInterrupt          DebugEvent
-	// 10   InstructionStorageInterrupt          AccessControl
-	// 11   ProgramInterrupt                     IllegalInstruction
-	// 12   ProgramInterrupt                     PrivilegeViolation
-	// 13   ProgramInterrupt                     Trap
-	// 14   ProgramInterrupt                     UnimplementedInstruction
-	// 15   SystemCallInterrupt                  SystemCall
-	// 16   DataStorageInterrupt                 AccessControl
-	// 17   AlignmentInterrupt                   UnalignedLoadStoreMultiple
-	// 18   AlignmentInterrupt                   UnalignedLoadLinkStoreConditional
-	// 19   AlignmentInterrupt                   WriteThroughDCBZ
-	// 20   EmbeddedFloatingPointDataInterrupt   EmbeddedFloatingPointData
-	// 21   EmbeddedFloatingPointRoundInterrupt  EmbeddedFloatingPointRound
-	// 22   DebugInterrupt                       SynchronousDebugEvent
+	//  3   MachineCheckInterrupt                AsynchronousMachineCheck
+	//  4   ExternalInputInterrupt               ExternalInput
+	//  5   CriticalInputInterrupt               CriticalInput
+	//  6   DebugInterrupt                       AsynchronousDebugEvent
+	//  7   PerformanceMonitorInterrupt          PerformanceCounterOverflow
+	//  8   PerformanceMonitorInterrupt          DebugEvent
+	//  9   InstructionStorageInterrupt          AccessControl
+	// 10   ProgramInterrupt                     IllegalInstruction
+	// 11   ProgramInterrupt                     PrivilegeViolation
+	// 12   ProgramInterrupt                     Trap
+	// 13   ProgramInterrupt                     UnimplementedInstruction
+	// 14   SystemCallInterrupt                  SystemCall
+	// 15   DataStorageInterrupt                 AccessControl
+	// 16   AlignmentInterrupt                   UnalignedLoadStoreMultiple
+	// 17   AlignmentInterrupt                   UnalignedLoadLinkStoreConditional
+	// 18   AlignmentInterrupt                   WriteThroughDCBZ
+	// 19   EmbeddedFloatingPointDataInterrupt   EmbeddedFloatingPointData
+	// 20   EmbeddedFloatingPointRoundInterrupt  EmbeddedFloatingPointRound
+	// 21   DebugInterrupt                       SynchronousDebugEvent
 	
 	struct SystemResetInterrupt : Interrupt<SystemResetInterrupt, 0x00 /* p_rstbase[0:29] */>
 	{
@@ -448,7 +513,7 @@ public:
 
 	struct CriticalInputInterrupt : Interrupt<CriticalInputInterrupt, 0x00>
 	{
-		struct CriticalInput                        : Exception<CriticalInputInterrupt,6> { static const char *GetName() { return "Critical Input Interrupt/Critical Input Exception"; } };             //  p_critint_b is asserted and MSR[CE] = 1
+		struct CriticalInput                        : Exception<CriticalInputInterrupt,5> { static const char *GetName() { return "Critical Input Interrupt/Critical Input Exception"; } };             //  p_critint_b is asserted and MSR[CE] = 1
 		
 		typedef ExceptionSet<CriticalInput> ALL;
 		
@@ -498,8 +563,7 @@ public:
 
 		struct NMI                                  : Exception<MachineCheckInterrupt,1> { static const char *GetName() { return "Machine Check Interrupt/NMI Exception"; } };               // Non-Maskable Interrupt: p_nmi_b transitions from negated to asserted.
 		struct ErrorReport                          : Exception<MachineCheckInterrupt,2> { static const char *GetName() { return "Machine Check Interrupt/Error Report Exception"; } };      // Non-Maskable Interrupt: Error report
-		struct MCP                                  : Exception<MachineCheckInterrupt,3> { static const char *GetName() { return "Machine Check Interrupt/MCP"; } };                         // Maskable with MSR[ME] and HID0[EMCP]: p_mcp_b transition from negated to asserted
-		struct AsynchronousMachineCheck             : Exception<MachineCheckInterrupt,4> { static const char *GetName() { return "Machine Check Interrupt/Asynchronous Machine Check Exception"; } };   // Maskable with MSR[ME]
+		struct AsynchronousMachineCheck             : Exception<MachineCheckInterrupt,3> { static const char *GetName() { return "Machine Check Interrupt/Asynchronous Machine Check Exception"; } };   // Maskable with MSR[ME]
 		
 		typedef ExceptionSet<NMI, ErrorReport, AsynchronousMachineCheck> ALL;
 		
@@ -527,7 +591,7 @@ public:
 	
 	struct DataStorageInterrupt : InterruptWithAddress<DataStorageInterrupt, 0x20>
 	{
-		struct AccessControl                        : Exception<DataStorageInterrupt,16> { static const char *GetName() { return "Data Storage Interrupt/Access Control Exception"; } };               // Access control
+		struct AccessControl                        : Exception<DataStorageInterrupt,15> { static const char *GetName() { return "Data Storage Interrupt/Access Control Exception"; } };               // Access control
 		
 		typedef ExceptionSet<AccessControl> ALL;
 		
@@ -547,7 +611,7 @@ public:
 
 	struct InstructionStorageInterrupt : Interrupt<InstructionStorageInterrupt, 0x30>
 	{
-		struct AccessControl                        : Exception<InstructionStorageInterrupt,10> { static const char *GetName() { return "Instruction Storage Interrupt/Access Control Exception"; } };        // Access control
+		struct AccessControl                        : Exception<InstructionStorageInterrupt,9> { static const char *GetName() { return "Instruction Storage Interrupt/Access Control Exception"; } };        // Access control
 		
 		typedef ExceptionSet<AccessControl> ALL;
 		
@@ -568,7 +632,7 @@ public:
 
 	struct ExternalInputInterrupt : Interrupt<ExternalInputInterrupt, 0x40>
 	{
-		struct ExternalInput                        : Exception<ExternalInputInterrupt,5> { static const char *GetName() { return "External Input Interrupt/External Input Exception"; } };             // Interrupt Controller interrupt and MSR[EE] = 1
+		struct ExternalInput                        : Exception<ExternalInputInterrupt,4> { static const char *GetName() { return "External Input Interrupt/External Input Exception"; } };             // Interrupt Controller interrupt and MSR[EE] = 1
 		
 		typedef ExceptionSet<ExternalInput> ALL;
 		
@@ -588,9 +652,9 @@ public:
 
 	struct AlignmentInterrupt : InterruptWithAddress<AlignmentInterrupt, 0x50>
 	{
-		struct UnalignedLoadStoreMultiple           : Exception<AlignmentInterrupt,17> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load/Store Multiple Exception"; } };                 // lmw, stmw not word aligned
-		struct UnalignedLoadLinkStoreConditional    : Exception<AlignmentInterrupt,18> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load Link/Store Conditional Exception"; } };                 // lwarx or stwcx. not word aligned, lharx or sthcx. not halfword aligned
-		struct WriteThroughDCBZ                     : Exception<AlignmentInterrupt,19> { static const char *GetName() { return "Alignment Interrupt/Write Through DCBZ Exception"; } };                 // dcbz
+		struct UnalignedLoadStoreMultiple           : Exception<AlignmentInterrupt,16> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load/Store Multiple Exception"; } };                 // lmw, stmw not word aligned
+		struct UnalignedLoadLinkStoreConditional    : Exception<AlignmentInterrupt,17> { static const char *GetName() { return "Alignment Interrupt/Unaligned Load Link/Store Conditional Exception"; } };                 // lwarx or stwcx. not word aligned, lharx or sthcx. not halfword aligned
+		struct WriteThroughDCBZ                     : Exception<AlignmentInterrupt,18> { static const char *GetName() { return "Alignment Interrupt/Write Through DCBZ Exception"; } };                 // dcbz
 		
 		typedef ExceptionSet<UnalignedLoadStoreMultiple, UnalignedLoadLinkStoreConditional, WriteThroughDCBZ> ALL;
 		
@@ -610,10 +674,10 @@ public:
 	
 	struct ProgramInterrupt : Interrupt<ProgramInterrupt, 0x60>
 	{
-		struct IllegalInstruction                   : Exception<ProgramInterrupt,11>  { static const char *GetName() { return "Program Interrupt/Illegal Instruction Exception"; } };                   // illegal instruction
-		struct PrivilegeViolation                   : Exception<ProgramInterrupt,12>  { static const char *GetName() { return "Program Interrupt/Privilege Violation Exception"; } };                   // privilege violation
-		struct Trap                                 : Exception<ProgramInterrupt,13> { static const char *GetName() { return "Program Interrupt/Trap Exception"; } };                   // trap instruction
-		struct UnimplementedInstruction             : Exception<ProgramInterrupt,14> { static const char *GetName() { return "Program Interrupt/Unimplemented Instruction Exception"; } };                   // unimplemented instruction
+		struct IllegalInstruction                   : Exception<ProgramInterrupt,10>  { static const char *GetName() { return "Program Interrupt/Illegal Instruction Exception"; } };                   // illegal instruction
+		struct PrivilegeViolation                   : Exception<ProgramInterrupt,11>  { static const char *GetName() { return "Program Interrupt/Privilege Violation Exception"; } };                   // privilege violation
+		struct Trap                                 : Exception<ProgramInterrupt,12> { static const char *GetName() { return "Program Interrupt/Trap Exception"; } };                   // trap instruction
+		struct UnimplementedInstruction             : Exception<ProgramInterrupt,13> { static const char *GetName() { return "Program Interrupt/Unimplemented Instruction Exception"; } };                   // unimplemented instruction
 		
 		typedef ExceptionSet<IllegalInstruction, PrivilegeViolation, Trap> ALL;
 		
@@ -633,8 +697,8 @@ public:
 
 	struct PerformanceMonitorInterrupt : Interrupt<PerformanceMonitorInterrupt, 0x70>
 	{
-		struct PerformanceCounterOverflow           : Exception<PerformanceMonitorInterrupt,8> { static const char *GetName() { return "Performance Monitor Interrupt/Performance Counter Overflow Exception"; } };        // PMC register overflow
-		struct DebugEvent                           : Exception<PerformanceMonitorInterrupt,9> { static const char *GetName() { return "Performance Monitor Interrupt/Debug Event Exception"; } };        // Event w/PMGC0[UDI]=0
+		struct PerformanceCounterOverflow           : Exception<PerformanceMonitorInterrupt,7> { static const char *GetName() { return "Performance Monitor Interrupt/Performance Counter Overflow Exception"; } };        // PMC register overflow
+		struct DebugEvent                           : Exception<PerformanceMonitorInterrupt,8> { static const char *GetName() { return "Performance Monitor Interrupt/Debug Event Exception"; } };        // Event w/PMGC0[UDI]=0
 		
 		typedef ExceptionSet<PerformanceCounterOverflow, DebugEvent> ALL;
 		
@@ -653,7 +717,7 @@ public:
 	
 	struct SystemCallInterrupt : Interrupt<SystemCallInterrupt, 0x80>
 	{
-		struct SystemCall                           : Exception<SystemCallInterrupt,15> { static const char *GetName() { return "System Call Interrupt/System Call Exception"; } };                // Execution of the System Call (se_sc) instruction
+		struct SystemCall                           : Exception<SystemCallInterrupt,14> { static const char *GetName() { return "System Call Interrupt/System Call Exception"; } };                // Execution of the System Call (se_sc) instruction
 		
 		typedef ExceptionSet<SystemCall> ALL;
 		
@@ -712,8 +776,8 @@ public:
 			DBG_IMPRECISE_DEBUG_EVENT                = 0x02000000  // Sync
 		};
 		
-		struct AsynchronousDebugEvent                   : Exception<DebugInterrupt,7> { static const char *GetName() { return "Debug Interrupt/Asynchronous Debug Event Exception"; } };
-		struct SynchronousDebugEvent                    : Exception<DebugInterrupt,22> { static const char *GetName() { return "Debug Interrupt/Synchronous Debug Event Exception"; } };
+		struct AsynchronousDebugEvent                   : Exception<DebugInterrupt,6> { static const char *GetName() { return "Debug Interrupt/Asynchronous Debug Event Exception"; } };
+		struct SynchronousDebugEvent                    : Exception<DebugInterrupt,21> { static const char *GetName() { return "Debug Interrupt/Synchronous Debug Event Exception"; } };
 		
 		typedef ExceptionSet< AsynchronousDebugEvent, SynchronousDebugEvent > ALL;
 		
@@ -740,7 +804,7 @@ public:
 
 	struct EmbeddedFloatingPointDataInterrupt : Interrupt<EmbeddedFloatingPointDataInterrupt, 0xa0>
 	{
-		struct EmbeddedFloatingPointData            : Exception<EmbeddedFloatingPointDataInterrupt,20> { static const char *GetName() { return "Embedded Floating-Point Data Interrupt/Embedded Floating-Point Data Exception"; } }; // Embedded Floating-point Data Exception
+		struct EmbeddedFloatingPointData            : Exception<EmbeddedFloatingPointDataInterrupt,19> { static const char *GetName() { return "Embedded Floating-Point Data Interrupt/Embedded Floating-Point Data Exception"; } }; // Embedded Floating-point Data Exception
 		
 		typedef ExceptionSet<EmbeddedFloatingPointData> ALL;
 		
@@ -760,7 +824,7 @@ public:
 	
 	struct EmbeddedFloatingPointRoundInterrupt : Interrupt<EmbeddedFloatingPointRoundInterrupt, 0xb0>
 	{
-		struct EmbeddedFloatingPointRound           : Exception<EmbeddedFloatingPointRoundInterrupt,21> { static const char *GetName() { return "Embedded Floating-Point Round Interrupt/Embedded Floating-Point Round Exception"; } };// Embedded Floating-point Round Exception
+		struct EmbeddedFloatingPointRound           : Exception<EmbeddedFloatingPointRoundInterrupt,20> { static const char *GetName() { return "Embedded Floating-Point Round Interrupt/Embedded Floating-Point Round Exception"; } };// Embedded Floating-point Round Exception
 		
 		typedef ExceptionSet<EmbeddedFloatingPointRound> ALL;
 		
@@ -904,8 +968,8 @@ public:
 	inline bool IsVerboseDataBusRead() const ALWAYS_INLINE { return verbose_data_bus_read; }
 	inline bool IsVerboseDataBusWrite() const ALWAYS_INLINE { return verbose_data_bus_write; }
 	inline bool IsVerboseInstructionBusRead() const ALWAYS_INLINE { return verbose_instruction_bus_read; }
-	bool IsStorageCacheable(STORAGE_ATTR storage_attr) const { return true; }
-	bool IsDataWriteAccessWriteThrough(STORAGE_ATTR storage_attr) const { return false; }
+	bool IsStorageCacheable(STORAGE_ATTR storage_attr) const { return !(storage_attr & SA_I); }
+	bool IsDataWriteAccessWriteThrough(STORAGE_ATTR storage_attr) const { return true; }
 
 	bool DataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm);
 	bool DataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
@@ -928,6 +992,11 @@ public:
 	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataLoad(T& value, ADDRESS ea);
 	template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN> bool DataStore(T value, ADDRESS ea);
 	
+	unsigned int ExternalLoad(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size);
+	unsigned int ExternalStore(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size);
+	unsigned char *GetDirectMemPtr(PHYSICAL_ADDRESS addr, PHYSICAL_ADDRESS& start_addr, PHYSICAL_ADDRESS& end_addr);
+	virtual void InvalidateDirectMemPtr(PHYSICAL_ADDRESS start_addr, PHYSICAL_ADDRESS end_addr) {}
+
 	void InvalidateDataCache();
 	void InvalidateDataCacheBySetAndWay(unsigned int index, unsigned int way);
 	void ClearDataCacheLockoutBySetAndWay(unsigned int index, unsigned int way);
@@ -935,31 +1004,6 @@ public:
 	void InvalidateInstructionCacheBySetAndWay(unsigned int index, unsigned int way);
 	void ClearInstructionCacheLockoutBySetAndWay(unsigned int index, unsigned int way);
 public:
-	MSR& GetMSR() { return msr; }
-
-	bool Dcba(ADDRESS addr);
-	bool Dcbi(ADDRESS addr);
-	bool Dcbf(ADDRESS addr);
-	bool Dcbst(ADDRESS addr);
-	bool Dcbt(ADDRESS addr);
-	bool Dcbtst(ADDRESS addr);
-	bool Dcbz(ADDRESS addr);
-	bool Icbi(ADDRESS addr);
-	bool Icbt(ADDRESS addr);
-	bool Lbarx(unsigned int rd, ADDRESS addr);
-	bool Lharx(unsigned int rd, ADDRESS addr);
-	bool Lwarx(unsigned int rd, ADDRESS addr);
-	bool Mbar(ADDRESS addr);
-	bool Stbcx(unsigned int rs, ADDRESS addr);
-	bool Sthcx(unsigned int rs, ADDRESS addr);
-	bool Stwcx(unsigned int rs, ADDRESS addr);
-	bool Wait();
-	bool Msync();
-	bool Isync();
-	bool Rfi();
-	bool Rfci();
-	bool Rfdi();
-	bool Rfmci();
 
 	bool InstructionFetch(ADDRESS addr, void *buffer, unsigned int size);
 	void FlushInstructionBuffer();
@@ -973,12 +1017,24 @@ public:
 protected:
 	////////////////////////// Run-time parameters ////////////////////////////
 	
+	uint8_t cpuid;
+	unisim::kernel::service::Parameter<uint8_t> param_cpuid;
+
+	uint32_t processor_version;
+	unisim::kernel::service::Parameter<uint32_t> param_processor_version;
+	
+	uint32_t system_version;
+	unisim::kernel::service::Parameter<uint32_t> param_system_version;
+
+	uint32_t system_information;
+	unisim::kernel::service::Parameter<uint32_t> param_system_information;
+
 	ADDRESS imem_base_addr;
 	unisim::kernel::service::Parameter<ADDRESS> param_imem_base_addr;
 
 	ADDRESS imem_size;
 	unisim::kernel::service::Parameter<ADDRESS> param_imem_size;
-	
+
 	ADDRESS dmem_base_addr;
 	unisim::kernel::service::Parameter<ADDRESS> param_dmem_base_addr;
 
@@ -1019,21 +1075,29 @@ protected:
 	ADDRESS instruction_buffer_base_addr;
 	uint16_t instruction_buffer[L1I::BLOCK_SIZE / 2];
 	
-	////////////////////////// Instruction decoder ////////////////////////////
+	/////////////////////// VLE Instruction decoder ///////////////////////////
 	
 	unisim::component::cxx::processor::powerpc::e200z710n3::isa::vle::Decoder vle_decoder;
 	unisim::component::cxx::processor::powerpc::e200z710n3::isa::vle::Operation *operation;
 	
+	///////////////////////// Memory Protection Unit //////////////////////////
+
+	friend struct MPU<MPU_CONFIG>;
+	
+	MPU<MPU_CONFIG> mpu;
+
 	/////////////////////////// Memory sub-system /////////////////////////////
 	
-	L1I l1i;
-	L1D l1d;
+	L1I l1i;                     // L1 instruction cache
+	L1D l1d;                     // L1 data cache
 	
-	uint8_t *imem;
-	uint8_t *dmem;
+	uint8_t *imem;               // I-MEM
+	uint8_t *dmem;               // D-MEM
 	
 	ADDRESS cur_imem_base_addr;
 	ADDRESS cur_dmem_base_addr;
+	ADDRESS cur_imem_high_addr;
+	ADDRESS cur_dmem_high_addr;
 
 	/////////////////////////// Machine State Register ////////////////////////
 	
@@ -1055,6 +1119,7 @@ protected:
 	SPRG2 sprg2;
 	SPRG3 sprg3;
 	PIR pir;
+	PVR pvr;
 	DBSR dbsr;
 	DBCR0 dbcr0;
 	DBCR1 dbcr1;
@@ -1067,6 +1132,7 @@ protected:
 	DAC2 dac2;
 	DVC1 dvc1;
 	DVC2 dvc2;
+	TIR tir;
 	SPEFSCR spefscr;
 	L1CFG0 l1cfg0;
 	L1CFG1 l1cfg1;
@@ -1094,22 +1160,17 @@ protected:
 	DVC1U dvc1u;
 	DVC2U dvc2u;
 	DBCR6 dbcr6;
-	MAS0 mas0;
-	MAS1 mas1;
-	MAS2 mas2;
-	MAS3 mas3;
 	EDBRAC0 edbrac0;
-	MPU0CFG mpu0cfg;
 	DMEMCFG0 dmemcfg0;
 	IMEMCFG0 imemcfg0;
 	L1FINV1 l1finv1;
 	DEVENT devent;
+	SIR sir;
 	HID0 hid0;
 	HID1 hid1;
 	L1CSR0 l1csr0;
 	L1CSR1 l1csr1;
 	BUCSR bucsr;
-	MPU0CSR0 mpu0csr0;
 	L1FINV0 l1finv0;
 	SVR svr;
 	

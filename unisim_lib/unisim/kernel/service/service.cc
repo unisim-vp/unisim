@@ -2448,27 +2448,27 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	param_cmd_args->SetSerializable(false);
 	
 	// Setup logger
-        logger = new unisim::kernel::logger::Logger( "kernel_logger" );
-        unisim::kernel::logger::LoggerServer& logserv = *(logger->GetServerInstance());
+	logger = new unisim::kernel::logger::Logger( "kernel_logger" );
+	unisim::kernel::logger::LoggerServer& logserv = *(logger->GetServerInstance());
 	param_logger_std_err = new Parameter<bool>( "kernel_logger.std_err", 0, logserv.opt_std_err_,
-                                                    "Show logger output through the standard error output" );
+	                                            "Show logger output through the standard error output" );
 	param_logger_std_out = new Parameter<bool>( "kernel_logger.std_out", 0, logserv.opt_std_out_,
-                                                    "Show logger output through the standard output" );
+	                                            "Show logger output through the standard output" );
 	param_logger_std_err_color = new Parameter<bool>( "kernel_logger.std_err_color", 0, logserv.opt_std_err_color_,
-                                                          "Colorize logger output through the standard error output _(only works if std_err is active)" );
+	                                                  "Colorize logger output through the standard error output (only works if std_err is active)" );
 	param_logger_std_out_color = new Parameter<bool>( "kernel_logger.std_out_color", 0, logserv.opt_std_out_color_,
-                                                          "Colorize logger output through the standard output _(only works if std_out is active)" );
+	                                                  "Colorize logger output through the standard output (only works if std_out is active)" );
 	param_logger_file = new Parameter<bool>( "kernel_logger.file", 0, logserv.opt_file_,
-                                                 "Keep logger output in a file" );
+	                                         "Keep logger output in a file" );
 	param_logger_filename = new Parameter<std::string>( "kernel_logger.filename", 0, logserv.opt_filename_,
-                                                            "Filename to keep logger output _(the option file must be activated)" );
+	                                                    "Filename to keep logger output (the option file must be activated)" );
 	param_logger_xml_file = new Parameter<bool>( "kernel_logger.xml_file", 0, logserv.opt_xml_file_,
-                                                     "Keep logger output in a file xml formatted" );
+	                                             "Keep logger output in a file xml formatted" );
 	param_logger_xml_filename = new Parameter<std::string>( "kernel_logger.xml_filename", 0, logserv.opt_xml_filename_,
-                                                                "Filename to keep logger xml output _(the option xml_file must be activated)" );
+	                                                        "Filename to keep logger xml output (the option xml_file must be activated)" );
 	param_logger_xml_file_gzipped = new Parameter<bool>( "kernel_logger.xml_file_gzipped", 0, logserv.opt_xml_file_gzipped_,
-                                                             "Compress the xml output (a .gz extension is automatically appended to the xml_filename option)" );
-        logserv.Setup();
+	                                                     "Compress the xml output (a .gz extension is automatically appended to the xml_filename option)" );
+	logserv.Setup();
 }
 
 Simulator::~Simulator()
