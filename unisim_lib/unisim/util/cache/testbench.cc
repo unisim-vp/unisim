@@ -37,7 +37,7 @@ struct MyMemorySubSystem : MemorySubSystem<MSS_TYPES, MyMemorySubSystem<MSS_TYPE
 {
 	typedef MemorySubSystem<MSS_TYPES, MyMemorySubSystem> Super;
 	
-	struct L1I : Cache<MSS_TYPES, L1I>
+	struct L1I_CONFIG
 	{
 		static const uint32_t SIZE                     = 32768;
 		static const CacheWritingPolicy WRITING_POLICY = CACHE_WRITE_BACK_AND_WRITE_ALLOCATE_POLICY;
@@ -55,8 +55,10 @@ struct MyMemorySubSystem : MemorySubSystem<MSS_TYPES, MyMemorySubSystem<MSS_TYPE
 		
 		struct BLOCK_STATUS : CacheBlockStatus {};
 	};
+	
+	struct L1I : Cache<MSS_TYPES, L1I_CONFIG, L1I> {};
 
-	struct L1D : Cache<MSS_TYPES, L1D>
+	struct L1D_CONFIG
 	{
 		static const uint32_t SIZE                     = 32768;
 		static const CacheWritingPolicy WRITING_POLICY = CACHE_WRITE_BACK_AND_WRITE_ALLOCATE_POLICY;
@@ -75,10 +77,10 @@ struct MyMemorySubSystem : MemorySubSystem<MSS_TYPES, MyMemorySubSystem<MSS_TYPE
 		struct BLOCK_STATUS : CacheBlockStatus {};
 	};
 	
-	struct L2U : Cache<MSS_TYPES, L2U>
+	struct L1D : Cache<MSS_TYPES, L1D_CONFIG, L1D> {};
+	
+	struct L2U_CONFIG
 	{
-		typedef Cache<MSS_TYPES, L2U> Super;
-		
 		static const uint32_t SIZE                     = 131072;
 		static const CacheWritingPolicy WRITING_POLICY = CACHE_WRITE_BACK_AND_WRITE_ALLOCATE_POLICY;
 		static const CacheType TYPE                    = UNIFIED_CACHE;
@@ -95,6 +97,8 @@ struct MyMemorySubSystem : MemorySubSystem<MSS_TYPES, MyMemorySubSystem<MSS_TYPE
 		
 		struct BLOCK_STATUS : CacheBlockStatus {};
 	};
+	
+	struct L2U : Cache<MSS_TYPES, L2U_CONFIG, L2U> {};
 
 	L1I l1i;
 	L1D l1d;
@@ -117,9 +121,13 @@ struct MyMemorySubSystem : MemorySubSystem<MSS_TYPES, MyMemorySubSystem<MSS_TYPE
 	bool IsCacheEnabled(const L1D *) { return true; }
 	bool IsCacheEnabled(const L2U *) { return true; }
 	
-	void ChooseLineToEvict(CacheAccess<MSS_TYPES, L1I>& access);
-	void ChooseLineToEvict(CacheAccess<MSS_TYPES, L1D>& access);
-	void ChooseLineToEvict(CacheAccess<MSS_TYPES, L2U>& access);
+	bool IsCacheWriteAllocate(const L1I *) { return false; }
+	bool IsCacheWriteAllocate(const L1D *) { return false; }
+	bool IsCacheWriteAllocate(const L2U *) { return false; }
+
+	bool ChooseLineToEvict(CacheAccess<MSS_TYPES, L1I>& access);
+	bool ChooseLineToEvict(CacheAccess<MSS_TYPES, L1D>& access);
+	bool ChooseLineToEvict(CacheAccess<MSS_TYPES, L2U>& access);
 	
 	void UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, L1I>& access);
 	void UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, L1D>& access);
@@ -172,39 +180,42 @@ typename MyMemorySubSystem<MSS_TYPES>::L2U *MyMemorySubSystem<MSS_TYPES>::GetCac
 }
 
 template <typename MSS_TYPES>
-void MyMemorySubSystem<MSS_TYPES>::ChooseLineToEvict(CacheAccess<MSS_TYPES, L1I>& access)
+bool MyMemorySubSystem<MSS_TYPES>::ChooseLineToEvict(CacheAccess<MSS_TYPES, L1I>& access)
 {
-	access.way = access.set->template Status<typename L1I::SET_STATUS>().lru.Select();
+	access.way = access.set->Status().lru.Select();
+	return true;
 }
 
 template <typename MSS_TYPES>
-void MyMemorySubSystem<MSS_TYPES>::ChooseLineToEvict(CacheAccess<MSS_TYPES, L1D>& access)
+bool MyMemorySubSystem<MSS_TYPES>::ChooseLineToEvict(CacheAccess<MSS_TYPES, L1D>& access)
 {
-	access.way = access.set->template Status<typename L1D::SET_STATUS>().lru.Select();
+	access.way = access.set->Status().lru.Select();
+	return true;
 }
 
 template <typename MSS_TYPES>
-void MyMemorySubSystem<MSS_TYPES>::ChooseLineToEvict(CacheAccess<MSS_TYPES, L2U>& access)
+bool MyMemorySubSystem<MSS_TYPES>::ChooseLineToEvict(CacheAccess<MSS_TYPES, L2U>& access)
 {
-	access.way = access.set->template Status<typename L2U::SET_STATUS>().lru.Select();
+	access.way = access.set->Status().lru.Select();
+	return true;
 }
 
 template <typename MSS_TYPES>
 void MyMemorySubSystem<MSS_TYPES>::UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, L1I>& access)
 {
-	access.set->template Status<typename L1I::SET_STATUS>().lru.UpdateOnAccess(access.way);
+	access.set->Status().lru.UpdateOnAccess(access.way);
 }
 
 template <typename MSS_TYPES>
 void MyMemorySubSystem<MSS_TYPES>::UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, L1D>& access)
 {
-	access.set->template Status<typename L1D::SET_STATUS>().lru.UpdateOnAccess(access.way);
+	access.set->Status().lru.UpdateOnAccess(access.way);
 }
 
 template <typename MSS_TYPES>
 void MyMemorySubSystem<MSS_TYPES>::UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, L2U>& access)
 {
-	access.set->template Status<typename L2U::SET_STATUS>().lru.UpdateOnAccess(access.way);
+	access.set->Status().lru.UpdateOnAccess(access.way);
 }
 
 

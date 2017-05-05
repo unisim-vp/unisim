@@ -295,8 +295,6 @@ bool CPU::EndSetup()
 {
 	if(!SuperCPU::EndSetup()) return false;
 	
-	l1csr0 = 1;
-	
 	return true;
 }
 
@@ -1206,9 +1204,9 @@ void CPU::ClearDataCacheLockoutBySetAndWay(unsigned int index, unsigned int way)
 	}
 
 	assert(way < L1D::ASSOCIATIVITY);
-	unisim::util::cache::CacheSet<MSS_TYPES, L1D>& set = l1d[index];
+	unisim::util::cache::CacheSet<MSS_TYPES, L1D::CACHE_CONFIG>& set = l1d[index];
 	
-	unsigned int& lockout = set.Status<L1D::SET_STATUS>().lockout;
+	unsigned int& lockout = set.Status().lockout;
 	lockout = lockout & ~((1 << (L1I::ASSOCIATIVITY - 1)) >> way);
 }
 
@@ -1238,9 +1236,9 @@ void CPU::ClearInstructionCacheLockoutBySetAndWay(unsigned int index, unsigned i
 	}
 	
 	assert(way < L1I::ASSOCIATIVITY);
-	unisim::util::cache::CacheSet<MSS_TYPES, L1I>& set = l1i[index];
+	unisim::util::cache::CacheSet<MSS_TYPES, L1I::CACHE_CONFIG>& set = l1i[index];
 	
-	unsigned int& lockout = set.Status<L1I::SET_STATUS>().lockout;
+	unsigned int& lockout = set.Status().lockout;
 	lockout = lockout & ~((1 << (L1I::ASSOCIATIVITY - 1)) >> way);
 }
 

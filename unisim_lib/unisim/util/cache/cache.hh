@@ -129,10 +129,10 @@ template <typename TYPES, typename CACHE> struct CacheAccess;
 struct CacheBlockStatus;
 struct CacheLineStatus;
 struct CacheSetStatus;
-template <typename TYPES, typename CACHE> struct CacheBlock;
-template <typename TYPES, typename CACHE> struct CacheLine;
-template <typename TYPES, typename CACHE> struct CacheSet;
-template <typename TYPES, typename CACHE> struct Cache;
+template <typename TYPES, typename CONFIG> struct CacheBlock;
+template <typename TYPES, typename CONFIG> struct CacheLine;
+template <typename TYPES, typename CONFIG> struct CacheSet;
+template <typename TYPES, typename CONFIG, typename CACHE> struct Cache;
 template <typename TYPES> struct NullCache;
 template <typename TYPES> struct NullCache1;
 template <typename TYPES> struct NullCache2;
@@ -151,18 +151,18 @@ struct CacheAccess
 	typename TYPES::STORAGE_ATTR storage_attr; // storage attribute
 	bool rwitm;                                // read with intent to modify
 	
-	////////////////////////////////////////////////////////////// input ////////////////// output //////////
-	typename TYPES::ADDRESS line_base_addr;            //            X              Lookup
-	typename TYPES::ADDRESS block_base_addr;           //            X              Lookup
-	unsigned int index;                                //            X              Lookup/ChooseLineToEvict
-	unsigned int way;                                  //            X              Lookup
-	unsigned int sector;                               //            X              Lookup
-	unsigned int offset;                               //            X              Lookup
-	unsigned int size_to_block_boundary;               //            X              Lookup
-	CacheSet<TYPES, CACHE> *set;                       //            X              Lookup
-	CacheLine<TYPES, CACHE> *line;                     //            X              Lookup
-	CacheLine<TYPES, CACHE> *line_to_write_back_evict; // WriteBackLine/EvictLine     X
-	CacheBlock<TYPES, CACHE> *block;                   //       FillBlock           Lookup
+	////////////////////////////////////////////////////////////////////////////////////// input ////////////////// output //////////
+	typename TYPES::ADDRESS line_base_addr;                                    //            X              Lookup
+	typename TYPES::ADDRESS block_base_addr;                                   //            X              Lookup
+	unsigned int index;                                                        //            X              Lookup/ChooseLineToEvict
+	unsigned int way;                                                          //            X              Lookup
+	unsigned int sector;                                                       //            X              Lookup
+	unsigned int offset;                                                       //            X              Lookup
+	unsigned int size_to_block_boundary;                                       //            X              Lookup
+	CacheSet<TYPES, typename CACHE::CACHE_CONFIG> *set;                        //            X              Lookup
+	CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *line;                      //            X              Lookup
+	CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *line_to_write_back_evict;  // WriteBackLine/EvictLine     X
+	CacheBlock<TYPES, typename CACHE::CACHE_CONFIG> *block;                    //       FillBlock           Lookup
 };
 
 /////////////////////////// CacheBlockStatus<> //////////////////////////////////
@@ -196,7 +196,7 @@ struct CacheSetStatus
 
 /////////////////////////////// CacheBlock<> //////////////////////////////////
 
-template <typename TYPES, typename CACHE>
+template <typename TYPES, typename CONFIG>
 struct CacheBlock
 {
 public:
@@ -214,23 +214,23 @@ public:
 	inline void SetValid() ALWAYS_INLINE;
 	inline void SetDirty() ALWAYS_INLINE;
 	inline void Invalidate() ALWAYS_INLINE;
-	template <typename BLOCK_STATUS> BLOCK_STATUS& Status();
+	inline typename CONFIG::BLOCK_STATUS& Status() ALWAYS_INLINE;
 
 	void SetSector(unsigned int sector);
 	inline unsigned int GetSector() const;
 protected:
-	friend struct CacheLine<TYPES, CACHE>;
+	friend struct CacheLine<TYPES, CONFIG>;
 	inline void SetBaseAddr(typename TYPES::ADDRESS base_addr);
 private:
 	typename TYPES::ADDRESS base_addr;
-	CacheBlockStatus *status;
+	typename CONFIG::BLOCK_STATUS status;
 	unsigned int sector;
-	uint8_t *storage;
+	uint8_t storage[CONFIG::BLOCK_SIZE];
 };
 
 /////////////////////////////// CacheLine<> ///////////////////////////////////
 
-template <typename TYPES, typename CACHE>
+template <typename TYPES, typename CONFIG>
 struct CacheLine
 {
 public:
@@ -241,29 +241,29 @@ public:
 	inline void SetBaseAddr(typename TYPES::ADDRESS addr) ALWAYS_INLINE;
 	inline typename TYPES::ADDRESS GetBaseAddr() const ALWAYS_INLINE;
 	static inline void DecodeAddress(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
-	inline CacheBlock<TYPES, CACHE>& operator [] (unsigned int sector) ALWAYS_INLINE;
+	inline CacheBlock<TYPES, CONFIG>& operator [] (unsigned int sector) ALWAYS_INLINE;
 
 	inline unsigned int GetWay() const ALWAYS_INLINE;
 	inline bool IsValid() const ALWAYS_INLINE;
 	inline void SetValid() ALWAYS_INLINE;
 	inline void Invalidate() ALWAYS_INLINE;
-	template <typename LINE_STATUS> LINE_STATUS& Status();
+	inline typename CONFIG::LINE_STATUS& Status() ALWAYS_INLINE;
 protected:
 private:
-	friend struct CacheSet<TYPES, CACHE>;
+	friend struct CacheSet<TYPES, CONFIG>;
 	
 	bool valid;
-	CacheLine<TYPES, CACHE> *next;
-	CacheLine<TYPES, CACHE> *prev;
+	CacheLine<TYPES, CONFIG> *next;
+	CacheLine<TYPES, CONFIG> *prev;
 	typename TYPES::ADDRESS base_addr;
 	unsigned int way;
-	CacheLineStatus *status;
-	CacheBlock<TYPES, CACHE> *blocks;
+	typename CONFIG::LINE_STATUS status;
+	CacheBlock<TYPES, CONFIG> blocks[CONFIG::BLOCKS_PER_LINE];
 };
 
 //////////////////////////////// CacheSet<> ///////////////////////////////////
 
-template <typename TYPES, typename CACHE>
+template <typename TYPES, typename CONFIG>
 struct CacheSet
 {
 public:
@@ -271,7 +271,7 @@ public:
 	~CacheSet();
 
 	static inline void DecodeAddress(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
-	inline CacheLine<TYPES, CACHE>& operator [] (unsigned int way) ALWAYS_INLINE;
+	inline CacheLine<TYPES, CONFIG>& operator [] (unsigned int way) ALWAYS_INLINE;
 
 	inline void InvalidateLineByWay(unsigned int way) ALWAYS_INLINE;
 	inline void Invalidate() ALWAYS_INLINE;
@@ -279,35 +279,47 @@ public:
 	void SetIndex(unsigned int index);
 	inline unsigned int GetIndex() const ALWAYS_INLINE;
 	
-	template <typename SET_STATUS> SET_STATUS& Status();
+	inline typename CONFIG::SET_STATUS& Status() ALWAYS_INLINE;
 	
-	inline CacheLine<TYPES, CACHE> *AssociativeSearch(typename TYPES::ADDRESS line_base_addr) ALWAYS_INLINE;
+	inline CacheLine<TYPES, CONFIG> *AssociativeSearch(typename TYPES::ADDRESS line_base_addr) ALWAYS_INLINE;
 
 protected:
 private:
-	CacheSetStatus *status;
-	CacheLine<TYPES, CACHE> *mrs_line;
-	CacheLine<TYPES, CACHE> *lrs_line;
-	CacheLine<TYPES, CACHE> *lines;
+	typename CONFIG::SET_STATUS status;
+	CacheLine<TYPES, CONFIG> *mrs_line;
+	CacheLine<TYPES, CONFIG> *lrs_line;
+	CacheLine<TYPES, CONFIG> lines[CONFIG::ASSOCIATIVITY];
 	unsigned int index;
 };
 /////////////////////////////////// Cache<> ///////////////////////////////////
 
-template <typename TYPES, typename CACHE>
+template <typename TYPES, typename CONFIG, typename CACHE>
 struct Cache
 {
+	typedef CONFIG CACHE_CONFIG;
+	
+	static const CacheWritingPolicy WRITING_POLICY = CONFIG::WRITING_POLICY;
+	static const CacheType TYPE = CONFIG::TYPE;
+	static const unsigned int ASSOCIATIVITY = CONFIG::ASSOCIATIVITY;
+	static const unsigned int BLOCKS_PER_LINE = CONFIG::BLOCKS_PER_LINE;
+	static const unsigned int BLOCK_SIZE = CONFIG::BLOCK_SIZE;
+	static const unsigned int SIZE = CONFIG::SIZE;
+	typedef typename CONFIG::SET_STATUS SET_STATUS;
+	typedef typename CONFIG::LINE_STATUS LINE_STATUS;
+	typedef typename CONFIG::BLOCK_STATUS BLOCK_STATUS;
+	
 	Cache();
 	~Cache();
 
 	static inline void DecodeAddress(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& index, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
-	inline CacheSet<TYPES, CACHE>& operator [] (unsigned int index) ALWAYS_INLINE;
+	inline CacheSet<TYPES, CONFIG>& operator [] (unsigned int index) ALWAYS_INLINE;
 
 	inline void InvalidateSet(unsigned int index) ALWAYS_INLINE;
 	inline void InvalidateLineBySetAndWay(unsigned int index, unsigned int way) ALWAYS_INLINE;
 	inline void Invalidate() ALWAYS_INLINE;
-	inline CacheSet<TYPES, CACHE> *LookupSet(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
-	inline CacheLine<TYPES, CACHE> *LookupLine(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
-	inline CacheBlock<TYPES, CACHE> *LookupBlock(typename TYPES::ADDRESS addr, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
+	inline CacheSet<TYPES, CONFIG> *LookupSet(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
+	inline CacheLine<TYPES, CONFIG> *LookupLine(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
+	inline CacheBlock<TYPES, CONFIG> *LookupBlock(typename TYPES::ADDRESS addr, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
 	inline void Lookup(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
 	
 	static inline bool IsNullCache() ALWAYS_INLINE;
@@ -329,17 +341,16 @@ protected:
 private:
 	unsigned int num_accesses;
 	unsigned int num_misses;
-	CacheSet<TYPES, CACHE> *sets;
+	CacheSet<TYPES, CONFIG> sets[CONFIG::SIZE / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY];
 
 	template <typename, typename MSS> friend struct MemorySubSystem;
 	static inline const char *__MSS_GetName__() ALWAYS_INLINE;
 	static std::string GenName();
 };
 
-////////////////////////////// NullCache<> ///////////////////////////////////
+//////////////////////////// NullCacheConfig //////////////////////////////////
 
-template <typename TYPES>
-struct NullCache : Cache<TYPES, NullCache<TYPES> >
+struct NullCacheConfig
 {
 	static const CacheWritingPolicy WRITING_POLICY = CACHE_WRITE_THROUGH_AND_NO_WRITE_ALLOCATE_POLICY;
 	static const CacheType TYPE = NULL_CACHE;
@@ -348,68 +359,34 @@ struct NullCache : Cache<TYPES, NullCache<TYPES> >
 	static const unsigned int BLOCK_SIZE = 1;
 	static const unsigned int SIZE = 1;
 	
-	static const char *GetName() { return "NullCache"; }
+	struct SET_STATUS : CacheSetStatus {};
+	struct LINE_STATUS : CacheLineStatus {};
+	struct BLOCK_STATUS : CacheBlockStatus {};
 };
+
+////////////////////////////// NullCache<> ///////////////////////////////////
+
+template <typename TYPES> struct NullCache : Cache<TYPES, NullCacheConfig, NullCache<TYPES> > {};
 
 ////////////////////////////// NullCache1<> ///////////////////////////////////
 
 template <typename TYPES>
-struct NullCache1 : Cache<TYPES, NullCache1<TYPES> >
-{
-	static const CacheWritingPolicy WRITING_POLICY = CACHE_WRITE_THROUGH_AND_NO_WRITE_ALLOCATE_POLICY;
-	static const CacheType TYPE = NULL_CACHE;
-	static const unsigned int ASSOCIATIVITY = 1;
-	static const unsigned int BLOCKS_PER_LINE = 1;
-	static const unsigned int BLOCK_SIZE = 1;
-	static const unsigned int SIZE = 1;
-	
-	static const char *GetName() { return "NullCache1"; }
-};
+struct NullCache1 : Cache<TYPES, NullCacheConfig, NullCache1<TYPES> > {};
 
 ////////////////////////////// NullCache2<> ///////////////////////////////////
 
 template <typename TYPES>
-struct NullCache2 : Cache<TYPES, NullCache2<TYPES> >
-{
-	static const CacheWritingPolicy WRITING_POLICY = CACHE_WRITE_THROUGH_AND_NO_WRITE_ALLOCATE_POLICY;
-	static const CacheType TYPE = NULL_CACHE;
-	static const unsigned int ASSOCIATIVITY = 1;
-	static const unsigned int BLOCKS_PER_LINE = 1;
-	static const unsigned int BLOCK_SIZE = 1;
-	static const unsigned int SIZE = 1;
-	
-	static const char *GetName() { return "NullCache2"; }
-};
+struct NullCache2 : Cache<TYPES, NullCacheConfig, NullCache2<TYPES> > {};
 
 ////////////////////////////// NullCache3<> ///////////////////////////////////
 
 template <typename TYPES>
-struct NullCache3 : Cache<TYPES, NullCache3<TYPES> >
-{
-	static const CacheWritingPolicy WRITING_POLICY = CACHE_WRITE_THROUGH_AND_NO_WRITE_ALLOCATE_POLICY;
-	static const CacheType TYPE = NULL_CACHE;
-	static const unsigned int ASSOCIATIVITY = 1;
-	static const unsigned int BLOCKS_PER_LINE = 1;
-	static const unsigned int BLOCK_SIZE = 1;
-	static const unsigned int SIZE = 1;
-	
-	static const char *GetName() { return "NullCache3"; }
-};
+struct NullCache3 : Cache<TYPES, NullCacheConfig, NullCache3<TYPES> > {};
 
 ////////////////////////////// NullCache4<> ///////////////////////////////////
 
 template <typename TYPES>
-struct NullCache4 : Cache<TYPES, NullCache4<TYPES> >
-{
-	static const CacheWritingPolicy WRITING_POLICY = CACHE_WRITE_THROUGH_AND_NO_WRITE_ALLOCATE_POLICY;
-	static const CacheType TYPE = NULL_CACHE;
-	static const unsigned int ASSOCIATIVITY = 1;
-	static const unsigned int BLOCKS_PER_LINE = 1;
-	static const unsigned int BLOCK_SIZE = 1;
-	static const unsigned int SIZE = 1;
-	
-	static const char *GetName() { return "NullCache4"; }
-};
+struct NullCache4 : Cache<TYPES, NullCacheConfig, NullCache4<TYPES> > {};
 
 ////////////////////////////// CacheHierarchy<> /////////////////////////////////
 
@@ -709,6 +686,7 @@ protected:
 	inline CACHE *GetCache(const CACHE *null) ALWAYS_INLINE;
 	inline bool IsCacheVerbose(const CACHE *null) ALWAYS_INLINE;
 	inline bool IsCacheEnabled(const CACHE *null) ALWAYS_INLINE;
+	inline bool IsCacheWriteAllocate(const CACHE *null) ALWAYS_INLINE;
 	inline bool ChooseLineToEvict(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
 	inline void UpdateReplacementPolicyOnAccess(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
 	inline void UpdateReplacementPolicyOnFill(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
@@ -788,15 +766,15 @@ protected:
 
 	/* Lookup set by address */
 	template <typename CACHE>
-	inline CacheSet<TYPES, CACHE> *LookupSet(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
+	inline CacheSet<TYPES, typename CACHE::CACHE_CONFIG> *LookupSet(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
 	
 	/* Lookup line by address */
 	template <typename CACHE>
-	inline CacheLine<TYPES, CACHE> *LookupLine(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
+	inline CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *LookupLine(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
 	
 	/* Lookup block by address */
 	template <typename CACHE>
-	inline CacheBlock<TYPES, CACHE> *LookupBlock(typename TYPES::ADDRESS addr, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
+	inline CacheBlock<TYPES, typename CACHE::CACHE_CONFIG> *LookupBlock(typename TYPES::ADDRESS addr, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
 	
 	/* Lookup by address */
 	template <typename CACHE>
@@ -1014,305 +992,286 @@ inline std::ostream& operator << (std::ostream& os, const CacheWritingPolicy& cw
 
 /////////////////////////////// CacheBlock<> //////////////////////////////////
 
-template <typename TYPES, typename CACHE>
-CacheBlock<TYPES, CACHE>::CacheBlock()
+template <typename TYPES, typename CONFIG>
+CacheBlock<TYPES, CONFIG>::CacheBlock()
 	: base_addr(0)
-	, status(0)
+	, status()
 	, sector(0)
-	, storage(0)
+	, storage()
 {
-	status = new typename CACHE::BLOCK_STATUS();
-	storage = new uint8_t[CACHE::BLOCK_SIZE];
-	memset(storage, 0, CACHE::BLOCK_SIZE);
+	memset(storage, 0, CONFIG::BLOCK_SIZE);
 }
 
-template <typename TYPES, typename CACHE>
-CacheBlock<TYPES, CACHE>::~CacheBlock()
+template <typename TYPES, typename CONFIG>
+CacheBlock<TYPES, CONFIG>::~CacheBlock()
 {
-	delete status;
-	delete[] storage;
 }
 
-template <typename TYPES, typename CACHE>
-inline uint8_t& CacheBlock<TYPES, CACHE>::operator [] (unsigned int offset)
+template <typename TYPES, typename CONFIG>
+inline uint8_t& CacheBlock<TYPES, CONFIG>::operator [] (unsigned int offset)
 {
 	return storage[offset];
 }
 
-template <typename TYPES, typename CACHE>
-inline void CacheBlock<TYPES, CACHE>::SetBaseAddr(typename TYPES::ADDRESS addr)
+template <typename TYPES, typename CONFIG>
+inline void CacheBlock<TYPES, CONFIG>::SetBaseAddr(typename TYPES::ADDRESS addr)
 {
 	base_addr = addr;
 }
 
-template <typename TYPES, typename CACHE>
-inline typename TYPES::ADDRESS CacheBlock<TYPES, CACHE>::GetBaseAddr() const
+template <typename TYPES, typename CONFIG>
+inline typename TYPES::ADDRESS CacheBlock<TYPES, CONFIG>::GetBaseAddr() const
 {
 	return base_addr;
 }
 
-template <typename TYPES, typename CACHE>
-inline void CacheBlock<TYPES, CACHE>::Zero()
+template <typename TYPES, typename CONFIG>
+inline void CacheBlock<TYPES, CONFIG>::Zero()
 {
-	memset(storage, 0, CACHE::BLOCK_SIZE);
+	memset(storage, 0, CONFIG::BLOCK_SIZE);
 }
 
-template <typename TYPES, typename CACHE>
-inline void CacheBlock<TYPES, CACHE>::Write(const void *buffer, unsigned int offset, unsigned int size)
+template <typename TYPES, typename CONFIG>
+inline void CacheBlock<TYPES, CONFIG>::Write(const void *buffer, unsigned int offset, unsigned int size)
 {
-	assert(CACHE::BLOCK_SIZE >= (offset + size));
+	assert(CONFIG::BLOCK_SIZE >= (offset + size));
 	memcpy(storage + offset, buffer, size);
 }
 
-template <typename TYPES, typename CACHE>
-inline void CacheBlock<TYPES, CACHE>::Read(void *buffer, unsigned int offset, unsigned int size)
+template <typename TYPES, typename CONFIG>
+inline void CacheBlock<TYPES, CONFIG>::Read(void *buffer, unsigned int offset, unsigned int size)
 {
-	assert(CACHE::BLOCK_SIZE >= (offset + size));
+	assert(CONFIG::BLOCK_SIZE >= (offset + size));
 	memcpy(buffer, storage + offset, size);
 }
 
-template <typename TYPES, typename CACHE>
-inline bool CacheBlock<TYPES, CACHE>::IsValid() const
+template <typename TYPES, typename CONFIG>
+inline bool CacheBlock<TYPES, CONFIG>::IsValid() const
 {
-	return status->IsValid();
+	return status.IsValid();
 }
 
-template <typename TYPES, typename CACHE>
-inline bool CacheBlock<TYPES, CACHE>::IsDirty() const
+template <typename TYPES, typename CONFIG>
+inline bool CacheBlock<TYPES, CONFIG>::IsDirty() const
 {
-	return status->IsDirty();
+	return status.IsDirty();
 }
 
-template <typename TYPES, typename CACHE>
-inline void CacheBlock<TYPES, CACHE>::SetValid()
+template <typename TYPES, typename CONFIG>
+inline void CacheBlock<TYPES, CONFIG>::SetValid()
 {
-	status->SetValid();
+	status.SetValid();
 }
 
-template <typename TYPES, typename CACHE>
-inline void CacheBlock<TYPES, CACHE>::SetDirty()
+template <typename TYPES, typename CONFIG>
+inline void CacheBlock<TYPES, CONFIG>::SetDirty()
 {
-	status->SetDirty();
+	status.SetDirty();
 }
 
-template <typename TYPES, typename CACHE>
-inline void CacheBlock<TYPES, CACHE>::Invalidate()
+template <typename TYPES, typename CONFIG>
+inline void CacheBlock<TYPES, CONFIG>::Invalidate()
 {
-	status->Invalidate();
+	status.Invalidate();
 }
 
-template <typename TYPES, typename CACHE>
-template <typename BLOCK_STATUS>
-inline BLOCK_STATUS& CacheBlock<TYPES, CACHE>::Status()
+template <typename TYPES, typename CONFIG>
+inline typename CONFIG::BLOCK_STATUS& CacheBlock<TYPES, CONFIG>::Status()
 {
-	return *static_cast<BLOCK_STATUS *>(status);
+	return status;
 }
 
-template <typename TYPES, typename CACHE>
-void CacheBlock<TYPES, CACHE>::SetSector(unsigned int _sector)
+template <typename TYPES, typename CONFIG>
+void CacheBlock<TYPES, CONFIG>::SetSector(unsigned int _sector)
 {
 	sector = _sector;
 }
 
-template <typename TYPES, typename CACHE>
-inline unsigned int CacheBlock<TYPES, CACHE>::GetSector() const
+template <typename TYPES, typename CONFIG>
+inline unsigned int CacheBlock<TYPES, CONFIG>::GetSector() const
 {
 	return sector;
 }
 
 /////////////////////////////// CacheLine<> ///////////////////////////////////
 
-template <typename TYPES, typename CACHE>
-CacheLine<TYPES, CACHE>::CacheLine()
+template <typename TYPES, typename CONFIG>
+CacheLine<TYPES, CONFIG>::CacheLine()
 	: valid(false)
 	, next(0)
 	, prev(0)
 	, base_addr(0)
 	, way(0)
-	, status(0)
-	, blocks(0)
+	, status()
+	, blocks()
 {
-	status = new typename CACHE::LINE_STATUS();
-	
-	blocks = new CacheBlock<TYPES, CACHE>[CACHE::BLOCKS_PER_LINE]();
-	
 	unsigned int sector;
-	for(sector = 0; sector < CACHE::BLOCKS_PER_LINE; sector++)
+	for(sector = 0; sector < CONFIG::BLOCKS_PER_LINE; sector++)
 	{
 		blocks[sector].SetSector(sector);
 	}
 }
 
-template <typename TYPES, typename CACHE>
-CacheLine<TYPES, CACHE>::~CacheLine()
+template <typename TYPES, typename CONFIG>
+CacheLine<TYPES, CONFIG>::~CacheLine()
 {
-	delete status;
-	delete[] blocks;
 }
 
-template <typename TYPES, typename CACHE>
-inline typename TYPES::ADDRESS CacheLine<TYPES, CACHE>::GetBaseAddr() const
+template <typename TYPES, typename CONFIG>
+inline typename TYPES::ADDRESS CacheLine<TYPES, CONFIG>::GetBaseAddr() const
 {
 	return base_addr;
 }
 
-template <typename TYPES, typename CACHE>
-inline void CacheLine<TYPES, CACHE>::SetWay(unsigned int _way)
+template <typename TYPES, typename CONFIG>
+inline void CacheLine<TYPES, CONFIG>::SetWay(unsigned int _way)
 {
 	way = _way;
 }
 
-template <typename TYPES, typename CACHE>
-inline void CacheLine<TYPES, CACHE>::SetBaseAddr(typename TYPES::ADDRESS base_addr)
+template <typename TYPES, typename CONFIG>
+inline void CacheLine<TYPES, CONFIG>::SetBaseAddr(typename TYPES::ADDRESS base_addr)
 {
 	this->base_addr = base_addr;
 	unsigned int sector;
-	for(sector = 0; sector < CACHE::BLOCKS_PER_LINE; sector++)
+	for(sector = 0; sector < CONFIG::BLOCKS_PER_LINE; sector++)
 	{
-		blocks[sector].SetBaseAddr(base_addr + (sector * CACHE::BLOCK_SIZE));
+		blocks[sector].SetBaseAddr(base_addr + (sector * CONFIG::BLOCK_SIZE));
 	}
 }
 
-template <typename TYPES, typename CACHE>
-inline CacheBlock<TYPES, CACHE>& CacheLine<TYPES, CACHE>::operator [] (unsigned int sector)
+template <typename TYPES, typename CONFIG>
+inline CacheBlock<TYPES, CONFIG>& CacheLine<TYPES, CONFIG>::operator [] (unsigned int sector)
 {
-	return blocks[sector % CACHE::BLOCKS_PER_LINE];
+	return blocks[sector % CONFIG::BLOCKS_PER_LINE];
 }
 
-template <typename TYPES, typename CACHE>
-inline unsigned int CacheLine<TYPES, CACHE>::GetWay() const
+template <typename TYPES, typename CONFIG>
+inline unsigned int CacheLine<TYPES, CONFIG>::GetWay() const
 {
 	return way;
 }
 
-template <typename TYPES, typename CACHE>
-inline bool CacheLine<TYPES, CACHE>::IsValid() const
+template <typename TYPES, typename CONFIG>
+inline bool CacheLine<TYPES, CONFIG>::IsValid() const
 {
 	return valid;
 }
 
-template <typename TYPES, typename CACHE>
-inline void CacheLine<TYPES, CACHE>::SetValid()
+template <typename TYPES, typename CONFIG>
+inline void CacheLine<TYPES, CONFIG>::SetValid()
 {
 	valid = true;
 }
 
-template <typename TYPES, typename CACHE>
-inline void CacheLine<TYPES, CACHE>::Invalidate()
+template <typename TYPES, typename CONFIG>
+inline void CacheLine<TYPES, CONFIG>::Invalidate()
 {
 	unsigned int sector;
 
-	for(sector = 0; sector < CACHE::BLOCKS_PER_LINE; sector++)
+	for(sector = 0; sector < CONFIG::BLOCKS_PER_LINE; sector++)
 	{
-		CacheBlock<TYPES, CACHE>& block = blocks[sector];
+		CacheBlock<TYPES, CONFIG>& block = blocks[sector];
 
 		block.Invalidate();
 	}
 	
 	valid = false;
 	base_addr = 0;
-	status->Invalidate();
+	status.Invalidate();
 }
 
-template <typename TYPES, typename CACHE>
-template <typename LINE_STATUS>
-inline LINE_STATUS& CacheLine<TYPES, CACHE>::Status()
+template <typename TYPES, typename CONFIG>
+inline typename CONFIG::LINE_STATUS& CacheLine<TYPES, CONFIG>::Status()
 {
-	return *static_cast<LINE_STATUS *>(status);
+	return status;
 }
 
 //////////////////////////////// CacheSet<> ///////////////////////////////////
 
-template <typename TYPES, typename CACHE>
-CacheSet<TYPES, CACHE>::CacheSet()
-	: status(0)
+template <typename TYPES, typename CONFIG>
+CacheSet<TYPES, CONFIG>::CacheSet()
+	: status()
 	, mrs_line(0)
 	, lrs_line(0)
-	, lines(0)
+	, lines()
 	, index(0)
 {
-	status = new typename CACHE::SET_STATUS();
-	
-	lines = new CacheLine<TYPES, CACHE>[CACHE::ASSOCIATIVITY]();
-	
 	unsigned int way;
 	
-	for(way = 0; way < CACHE::ASSOCIATIVITY; way++)
+	for(way = 0; way < CONFIG::ASSOCIATIVITY; way++)
 	{
-		CacheLine<TYPES, CACHE>& line = lines[way];
+		CacheLine<TYPES, CONFIG>& line = lines[way];
 		line.SetWay(way);
 		
 		line.prev = (way > 0) ? &lines[way - 1] : 0;
-		line.next = (way < (CACHE::ASSOCIATIVITY - 1)) ? &lines[way + 1] : 0;
+		line.next = (way < (CONFIG::ASSOCIATIVITY - 1)) ? &lines[way + 1] : 0;
 	}
 	
 	mrs_line = &lines[0];
-	lrs_line = &lines[CACHE::ASSOCIATIVITY - 1];
+	lrs_line = &lines[CONFIG::ASSOCIATIVITY - 1];
 }
 
-template <typename TYPES, typename CACHE>
-CacheSet<TYPES, CACHE>::~CacheSet()
+template <typename TYPES, typename CONFIG>
+CacheSet<TYPES, CONFIG>::~CacheSet()
 {
-	delete status;
-	delete[] lines;
 }
 
-template <typename TYPES, typename CACHE>
-inline CacheLine<TYPES, CACHE>& CacheSet<TYPES, CACHE>::operator [] (unsigned int way)
+template <typename TYPES, typename CONFIG>
+inline CacheLine<TYPES, CONFIG>& CacheSet<TYPES, CONFIG>::operator [] (unsigned int way)
 {
-	return lines[way % CACHE::ASSOCIATIVITY];
+	return lines[way % CONFIG::ASSOCIATIVITY];
 }
 
-template <typename TYPES, typename CACHE>
-inline void CacheSet<TYPES, CACHE>::InvalidateLineByWay(unsigned int way)
+template <typename TYPES, typename CONFIG>
+inline void CacheSet<TYPES, CONFIG>::InvalidateLineByWay(unsigned int way)
 {
-	CacheLine<TYPES, CACHE>& line = lines[way % CACHE::ASSOCIATIVITY];
+	CacheLine<TYPES, CONFIG>& line = lines[way % CONFIG::ASSOCIATIVITY];
 	line.Invalidate();
 }
 
-template <typename TYPES, typename CACHE>
-inline void CacheSet<TYPES, CACHE>::Invalidate()
+template <typename TYPES, typename CONFIG>
+inline void CacheSet<TYPES, CONFIG>::Invalidate()
 {
 	unsigned int way;
 
-	for(way = 0; way < CACHE::ASSOCIATIVITY; way++)
+	for(way = 0; way < CONFIG::ASSOCIATIVITY; way++)
 	{
-		CacheLine<TYPES, CACHE>& line = lines[way];
+		CacheLine<TYPES, CONFIG>& line = lines[way];
 		
 		line.Invalidate();
 
 		line.prev = (way > 0) ? &lines[way - 1] : 0;
-		line.next = (way < (CACHE::ASSOCIATIVITY - 1)) ? &lines[way + 1] : 0;
+		line.next = (way < (CONFIG::ASSOCIATIVITY - 1)) ? &lines[way + 1] : 0;
 	}
 	mrs_line = &lines[0];
-	lrs_line = &lines[CACHE::ASSOCIATIVITY - 1];
+	lrs_line = &lines[CONFIG::ASSOCIATIVITY - 1];
 	
-	status->Invalidate();
+	status.Invalidate();
 }
 
-template <typename TYPES, typename CACHE>
-inline void CacheSet<TYPES, CACHE>::SetIndex(unsigned int _index)
+template <typename TYPES, typename CONFIG>
+inline void CacheSet<TYPES, CONFIG>::SetIndex(unsigned int _index)
 {
 	index = _index;
 }
 
-template <typename TYPES, typename CACHE>
-inline unsigned int CacheSet<TYPES, CACHE>::GetIndex() const
+template <typename TYPES, typename CONFIG>
+inline unsigned int CacheSet<TYPES, CONFIG>::GetIndex() const
 {
 	return index;
 }
 
-template <typename TYPES, typename CACHE>
-template <typename SET_STATUS>
-inline SET_STATUS& CacheSet<TYPES, CACHE>::Status()
+template <typename TYPES, typename CONFIG>
+inline typename CONFIG::SET_STATUS& CacheSet<TYPES, CONFIG>::Status()
 {
-	return *static_cast<SET_STATUS *>(status);
+	return status;
 }
 
-template <typename TYPES, typename CACHE>
-inline CacheLine<TYPES, CACHE> *CacheSet<TYPES, CACHE>::AssociativeSearch(typename TYPES::ADDRESS line_base_addr)
+template <typename TYPES, typename CONFIG>
+inline CacheLine<TYPES, CONFIG> *CacheSet<TYPES, CONFIG>::AssociativeSearch(typename TYPES::ADDRESS line_base_addr)
 {
-	CacheLine<TYPES, CACHE> *line;
+	CacheLine<TYPES, CONFIG> *line;
 	
 	// Associative search from most recently searched to least recently searched
 	for(line = mrs_line; line != 0; line = line->next)
@@ -1348,106 +1307,103 @@ inline CacheLine<TYPES, CACHE> *CacheSet<TYPES, CACHE>::AssociativeSearch(typena
 
 ////////////////////////////////// Cache<> ////////////////////////////////////
 
-template <typename TYPES, typename CACHE>
-Cache<TYPES, CACHE>::Cache()
+template <typename TYPES, typename CONFIG, typename CACHE>
+Cache<TYPES, CONFIG, CACHE>::Cache()
 	: num_accesses(0)
 	, num_misses(0)
-	, sets(0)
+	, sets()
 {
-	sets = new CacheSet<TYPES, CACHE>[CACHE::SIZE / CACHE::BLOCK_SIZE / CACHE::BLOCKS_PER_LINE / CACHE::ASSOCIATIVITY]();
-	
 	unsigned int index;
-	for(index = 0; index < (CACHE::SIZE / CACHE::BLOCK_SIZE / CACHE::BLOCKS_PER_LINE / CACHE::ASSOCIATIVITY); index++)
+	for(index = 0; index < (CONFIG::SIZE / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY); index++)
 	{
 		sets[index].SetIndex(index);
 	}
 }
 
-template <typename TYPES, typename CACHE>
-Cache<TYPES, CACHE>::~Cache()
+template <typename TYPES, typename CONFIG, typename CACHE>
+Cache<TYPES, CONFIG, CACHE>::~Cache()
 {
-	delete[] sets;
 }
 
-template <typename TYPES, typename CACHE>
-inline void Cache<TYPES, CACHE>::DecodeAddress(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& index, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline void Cache<TYPES, CONFIG, CACHE>::DecodeAddress(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& index, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
 {
-	offset = addr % CACHE::BLOCK_SIZE;
-	block_base_addr = addr & ~(CACHE::BLOCK_SIZE - 1);
-	size_to_block_boundary = CACHE::BLOCK_SIZE - offset;
-	line_base_addr = addr & ~((CACHE::BLOCK_SIZE * CACHE::BLOCKS_PER_LINE) - 1);
-	sector = (addr / CACHE::BLOCK_SIZE) % CACHE::BLOCKS_PER_LINE;
-	index = (addr % CACHE::SIZE) / CACHE::BLOCK_SIZE / CACHE::BLOCKS_PER_LINE / CACHE::ASSOCIATIVITY;
+	offset = addr % CONFIG::BLOCK_SIZE;
+	block_base_addr = addr & ~(CONFIG::BLOCK_SIZE - 1);
+	size_to_block_boundary = CONFIG::BLOCK_SIZE - offset;
+	line_base_addr = addr & ~((CONFIG::BLOCK_SIZE * CONFIG::BLOCKS_PER_LINE) - 1);
+	sector = (addr / CONFIG::BLOCK_SIZE) % CONFIG::BLOCKS_PER_LINE;
+	index = (addr % CONFIG::SIZE) / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY;
 }
 
-template <typename TYPES, typename CACHE>
-inline CacheSet<TYPES, CACHE>& Cache<TYPES, CACHE>::operator [] (unsigned int index)
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline CacheSet<TYPES, CONFIG>& Cache<TYPES, CONFIG, CACHE>::operator [] (unsigned int index)
 {
-	return sets[index % (CACHE::SIZE / CACHE::BLOCK_SIZE / CACHE::BLOCKS_PER_LINE / CACHE::ASSOCIATIVITY)];
+	return sets[index % (CONFIG::SIZE / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY)];
 }
 
-template <typename TYPES, typename CACHE>
-inline void Cache<TYPES, CACHE>::InvalidateSet(unsigned int index)
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline void Cache<TYPES, CONFIG, CACHE>::InvalidateSet(unsigned int index)
 {
-	CacheSet<TYPES, CACHE>& set = sets[index];
+	CacheSet<TYPES, CONFIG>& set = sets[index];
 
 	set.Invalidate();
 }
 
-template <typename TYPES, typename CACHE>
-inline void Cache<TYPES, CACHE>::InvalidateLineBySetAndWay(unsigned int index, unsigned int way)
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline void Cache<TYPES, CONFIG, CACHE>::InvalidateLineBySetAndWay(unsigned int index, unsigned int way)
 {
-	CacheSet<TYPES, CACHE>& set = sets[index % (CACHE::SIZE / CACHE::BLOCK_SIZE / CACHE::BLOCKS_PER_LINE / CACHE::ASSOCIATIVITY)];
+	CacheSet<TYPES, CONFIG>& set = sets[index % (CONFIG::SIZE / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY)];
 	
 	set.InvalidateLineByWay(way);
 }
 
-template <typename TYPES, typename CACHE>
-inline void Cache<TYPES, CACHE>::Invalidate()
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline void Cache<TYPES, CONFIG, CACHE>::Invalidate()
 {
 	unsigned int index;
 	
-	for(index = 0; index < (CACHE::SIZE / CACHE::BLOCK_SIZE / CACHE::BLOCKS_PER_LINE / CACHE::ASSOCIATIVITY); index++)
+	for(index = 0; index < (CONFIG::SIZE / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY); index++)
 	{
-		CacheSet<TYPES, CACHE>& set = sets[index];
+		CacheSet<TYPES, CONFIG>& set = sets[index];
 		set.Invalidate();
 	}
 }
 
-template <typename TYPES, typename CACHE>
-inline CacheSet<TYPES, CACHE> *Cache<TYPES, CACHE>::LookupSet(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline CacheSet<TYPES, CONFIG> *Cache<TYPES, CONFIG, CACHE>::LookupSet(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
 {
 	unsigned int index;
 	
 	// Decode the address
 	DecodeAddress(addr, line_base_addr, block_base_addr, index, sector, offset, size_to_block_boundary);
 	
-	CacheSet<TYPES, CACHE> *set = &sets[index];
+	CacheSet<TYPES, CONFIG> *set = &sets[index];
 	
 	return set;
 }
 
-template <typename TYPES, typename CACHE>
-inline CacheLine<TYPES, CACHE> *Cache<TYPES, CACHE>::LookupLine(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline CacheLine<TYPES, CONFIG> *Cache<TYPES, CONFIG, CACHE>::LookupLine(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
 {
 	typename TYPES::ADDRESS line_base_addr;
 	
-	CacheSet<TYPES, CACHE> *set = LookupSet(addr, line_base_addr, block_base_addr, sector, offset, size_to_block_boundary);
-	CacheLine<TYPES, CACHE> *line = set->AssociativeSearch(line_base_addr);
+	CacheSet<TYPES, CONFIG> *set = LookupSet(addr, line_base_addr, block_base_addr, sector, offset, size_to_block_boundary);
+	CacheLine<TYPES, CONFIG> *line = set->AssociativeSearch(line_base_addr);
 	
 	return line;
 }
 
-template <typename TYPES, typename CACHE>
-inline CacheBlock<TYPES, CACHE> *Cache<TYPES, CACHE>::LookupBlock(typename TYPES::ADDRESS addr, unsigned int& offset, unsigned int& size_to_block_boundary)
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline CacheBlock<TYPES, CONFIG> *Cache<TYPES, CONFIG, CACHE>::LookupBlock(typename TYPES::ADDRESS addr, unsigned int& offset, unsigned int& size_to_block_boundary)
 {
 	typename TYPES::ADDRESS block_base_addr;
 	unsigned int sector;
-	CacheLine<TYPES, CACHE> *line = LookupLine(addr, block_base_addr, sector, offset, size_to_block_boundary);
+	CacheLine<TYPES, CONFIG> *line = LookupLine(addr, block_base_addr, sector, offset, size_to_block_boundary);
 	
 	if(line)
 	{
-		CacheBlock<TYPES, CACHE> *block = &line->blocks[sector];
+		CacheBlock<TYPES, CONFIG> *block = &line->blocks[sector];
 		
 		return block->IsValid() ? block : 0;
 	}
@@ -1455,8 +1411,8 @@ inline CacheBlock<TYPES, CACHE> *Cache<TYPES, CACHE>::LookupBlock(typename TYPES
 	return 0;
 }
 
-template <typename TYPES, typename CACHE>
-inline void Cache<TYPES, CACHE>::Lookup(CacheAccess<TYPES, CACHE>& access)
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline void Cache<TYPES, CONFIG, CACHE>::Lookup(CacheAccess<TYPES, CACHE>& access)
 {
 	typename TYPES::ADDRESS addr = access.addr;
 	typename TYPES::ADDRESS line_base_addr;
@@ -1465,9 +1421,9 @@ inline void Cache<TYPES, CACHE>::Lookup(CacheAccess<TYPES, CACHE>& access)
 	unsigned int sector;
 	unsigned int offset;
 	unsigned int size_to_block_boundary;
-	CacheSet<TYPES, CACHE> *set;
-	CacheLine<TYPES, CACHE> *line;
-	CacheBlock<TYPES, CACHE> *block;
+	CacheSet<TYPES, CONFIG> *set;
+	CacheLine<TYPES, CONFIG> *line;
+	CacheBlock<TYPES, CONFIG> *block;
 	
 	num_accesses++;
 	// Decode the address
@@ -1500,8 +1456,8 @@ inline void Cache<TYPES, CACHE>::Lookup(CacheAccess<TYPES, CACHE>& access)
 	num_misses++;
 }
 
-template <typename TYPES, typename CACHE>
-std::string Cache<TYPES, CACHE>::GenName()
+template <typename TYPES, typename CONFIG, typename CACHE>
+std::string Cache<TYPES, CONFIG, CACHE>::GenName()
 {
 	std::string generated_cache_typename;
 #if defined(__GNUC__) && (__GNUC__ >= 3) && defined(HAVE_CXXABI)
@@ -1531,96 +1487,96 @@ std::string Cache<TYPES, CACHE>::GenName()
 	return generated_cache_typename;
 }
 
-template <typename TYPES, typename CACHE>
-const char *Cache<TYPES, CACHE>::GetName()
+template <typename TYPES, typename CONFIG, typename CACHE>
+const char *Cache<TYPES, CONFIG, CACHE>::GetName()
 {
 	static std::string cache_typename = GenName();
 	
 	return cache_typename.c_str();
 }
 
-template <typename TYPES, typename CACHE>
-inline const char *Cache<TYPES, CACHE>::__MSS_GetName__()
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline const char *Cache<TYPES, CONFIG, CACHE>::__MSS_GetName__()
 {
 	return CACHE::GetName();
 }
 
-template <typename TYPES, typename CACHE>
-inline bool Cache<TYPES, CACHE>::IsNullCache()
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline bool Cache<TYPES, CONFIG, CACHE>::IsNullCache()
 {
-	return CACHE::TYPE == NULL_CACHE;
+	return CONFIG::TYPE == NULL_CACHE;
 }
 
-template <typename TYPES, typename CACHE>
-inline bool Cache<TYPES, CACHE>::IsDataCacheOnly()
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline bool Cache<TYPES, CONFIG, CACHE>::IsDataCacheOnly()
 {
-	return CACHE::TYPE == DATA_CACHE;
+	return CONFIG::TYPE == DATA_CACHE;
 }
 
-template <typename TYPES, typename CACHE>
-inline bool Cache<TYPES, CACHE>::IsDataCache()
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline bool Cache<TYPES, CONFIG, CACHE>::IsDataCache()
 {
-	return CACHE::TYPE & DATA_CACHE;
+	return CONFIG::TYPE & DATA_CACHE;
 }
 
-template <typename TYPES, typename CACHE>
-inline bool Cache<TYPES, CACHE>::IsInstructionCacheOnly()
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline bool Cache<TYPES, CONFIG, CACHE>::IsInstructionCacheOnly()
 {
-	return CACHE::TYPE == INSTRUCTION_CACHE;
+	return CONFIG::TYPE == INSTRUCTION_CACHE;
 }
 
-template <typename TYPES, typename CACHE>
-inline bool Cache<TYPES, CACHE>::IsInstructionCache()
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline bool Cache<TYPES, CONFIG, CACHE>::IsInstructionCache()
 {
-	return CACHE::TYPE & INSTRUCTION_CACHE;
+	return CONFIG::TYPE & INSTRUCTION_CACHE;
 }
 
-template <typename TYPES, typename CACHE>
-inline bool Cache<TYPES, CACHE>::IsUnifiedCache()
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline bool Cache<TYPES, CONFIG, CACHE>::IsUnifiedCache()
 {
-	return CACHE::TYPE == UNIFIED_CACHE;
+	return CONFIG::TYPE == UNIFIED_CACHE;
 }
 
-template <typename TYPES, typename CACHE>
-inline bool Cache<TYPES, CACHE>::IsWriteBackCache()
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline bool Cache<TYPES, CONFIG, CACHE>::IsWriteBackCache()
 {
-	return CACHE::WRITING_POLICY & CACHE_WRITE_BACK;
+	return CONFIG::WRITING_POLICY & CACHE_WRITE_BACK;
 }
 
-template <typename TYPES, typename CACHE>
-inline bool Cache<TYPES, CACHE>::IsWriteThroughCache()
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline bool Cache<TYPES, CONFIG, CACHE>::IsWriteThroughCache()
 {
-	return !(CACHE::WRITING_POLICY & CACHE_WRITE_BACK);
+	return !(CONFIG::WRITING_POLICY & CACHE_WRITE_BACK);
 }
 
-template <typename TYPES, typename CACHE>
-inline bool Cache<TYPES, CACHE>::IsWriteAllocate()
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline bool Cache<TYPES, CONFIG, CACHE>::IsWriteAllocate()
 {
-	return CACHE::WRITING_POLICY & CACHE_WRITE_ALLOCATE;
+	return CONFIG::WRITING_POLICY & CACHE_WRITE_ALLOCATE;
 }
 
-template <typename TYPES, typename CACHE>
-inline bool Cache<TYPES, CACHE>::IsNotWriteAllocate()
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline bool Cache<TYPES, CONFIG, CACHE>::IsNotWriteAllocate()
 {
-	return !(CACHE::WRITING_POLICY & CACHE_WRITE_ALLOCATE);
+	return !(CONFIG::WRITING_POLICY & CACHE_WRITE_ALLOCATE);
 }
 
-template <typename TYPES, typename CACHE>
-inline unsigned int Cache<TYPES, CACHE>::NumSets()
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline unsigned int Cache<TYPES, CONFIG, CACHE>::NumSets()
 {
-	return CACHE::SIZE / CACHE::BLOCK_SIZE / CACHE::BLOCKS_PER_LINE / CACHE::ASSOCIATIVITY;
+	return CONFIG::SIZE / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY;
 }
 
-template <typename TYPES, typename CACHE>
-inline unsigned int Cache<TYPES, CACHE>::NumWays()
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline unsigned int Cache<TYPES, CONFIG, CACHE>::NumWays()
 {
-	return CACHE::ASSOCIATIVITY;
+	return CONFIG::ASSOCIATIVITY;
 }
 
-template <typename TYPES, typename CACHE>
-inline unsigned int Cache<TYPES, CACHE>::NumSectors()
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline unsigned int Cache<TYPES, CONFIG, CACHE>::NumSectors()
 {
-	return CACHE::BLOCKS_PER_LINE;
+	return CONFIG::BLOCKS_PER_LINE;
 }
 
 ////////////////////////////// MemorySubSystem<> ////////////////////////////////
@@ -1874,7 +1830,7 @@ inline bool MemorySubSystem<TYPES, MSS>::StoreInCacheHierarchy(typename TYPES::A
 	//     - (1) Store to memory because access is not cacheable or access is to latest level (memory)
 	//     - (2) If cache is disabled, try with next level cache in the hierarchy
 	//     - (3) If cache is enable, store in this cache
-	if(unlikely((CACHE::TYPE == NULL_CACHE) || !__MSS_IsStorageCacheable__(storage_attr)))
+	if(unlikely(CACHE::IsNullCache() || !__MSS_IsStorageCacheable__(storage_attr)))
 	{
 		// (1) Store to memory
 		if(unlikely(!__MSS_DataBusWrite__(addr, buffer, size, storage_attr)))
@@ -2249,7 +2205,7 @@ template <typename TYPES, typename MSS>
 template <typename CACHE_HIERARCHY, typename FROM, typename TO, bool INVALIDATE>
 bool MemorySubSystem<TYPES, MSS>::WriteBackDirtyBlock(CacheAccess<TYPES, FROM>& from_access, unsigned int from_sector)
 {
-	CacheBlock<TYPES, FROM>& from_dirty_block_to_write_back = (*from_access.line_to_write_back_evict)[from_sector];
+	CacheBlock<TYPES, typename FROM::CACHE_CONFIG>& from_dirty_block_to_write_back = (*from_access.line_to_write_back_evict)[from_sector];
 	
 	// 3 cases:
 	//   - (1) write back to memory
@@ -2350,7 +2306,7 @@ bool MemorySubSystem<TYPES, MSS>::WriteBackLine(CacheAccess<TYPES, CACHE>& acces
 		
 			for(sector = 0; sector < CACHE::BLOCKS_PER_LINE; sector++)
 			{
-				CacheBlock<TYPES, CACHE>& block_to_evict = (*access.line_to_write_back_evict)[sector];
+				CacheBlock<TYPES, typename CACHE::CACHE_CONFIG>& block_to_evict = (*access.line_to_write_back_evict)[sector];
 		
 				if(block_to_evict.IsValid() && block_to_evict.IsDirty())
 				{
@@ -2708,7 +2664,7 @@ inline void MemorySubSystem<TYPES, MSS>::DecodeAddress(typename TYPES::ADDRESS a
 
 template <typename TYPES, typename MSS>
 template <typename CACHE>
-inline CacheSet<TYPES, CACHE> *MemorySubSystem<TYPES, MSS>::LookupSet(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
+inline CacheSet<TYPES, typename CACHE::CACHE_CONFIG> *MemorySubSystem<TYPES, MSS>::LookupSet(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
 {
 	if(CACHE::IsNullCache()) return 0;
 
@@ -2719,7 +2675,7 @@ inline CacheSet<TYPES, CACHE> *MemorySubSystem<TYPES, MSS>::LookupSet(typename T
 
 template <typename TYPES, typename MSS>
 template <typename CACHE>
-inline CacheLine<TYPES, CACHE> *MemorySubSystem<TYPES, MSS>::LookupLine(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
+inline CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *MemorySubSystem<TYPES, MSS>::LookupLine(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
 {
 	if(CACHE::IsNullCache()) return 0;
 
@@ -2730,7 +2686,7 @@ inline CacheLine<TYPES, CACHE> *MemorySubSystem<TYPES, MSS>::LookupLine(typename
 
 template <typename TYPES, typename MSS>
 template <typename CACHE>
-inline CacheBlock<TYPES, CACHE> *MemorySubSystem<TYPES, MSS>::LookupBlock(typename TYPES::ADDRESS addr, unsigned int& offset, unsigned int& size_to_block_boundary)
+inline CacheBlock<TYPES, typename CACHE::CACHE_CONFIG> *MemorySubSystem<TYPES, MSS>::LookupBlock(typename TYPES::ADDRESS addr, unsigned int& offset, unsigned int& size_to_block_boundary)
 {
 	if(CACHE::IsNullCache()) return 0;
 
@@ -2788,7 +2744,7 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateBlockByAddress(typename TYPES
 	unsigned int offset;
 	unsigned int size_to_block_boundary;
 	
-	CacheBlock<TYPES, CACHE> *block = cache->LookupBlock(addr, offset, size_to_block_boundary);
+	CacheBlock<TYPES, typename CACHE::CACHE_CONFIG> *block = cache->LookupBlock(addr, offset, size_to_block_boundary);
 	
 	if(block)
 	{
@@ -2813,7 +2769,7 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateLineByAddress(typename TYPES:
 	unsigned int offset;
 	unsigned int size_to_block_boundary;
 	
-	CacheLine<TYPES, CACHE> *line = cache->LookupLine(addr, block_base_addr, sector, offset, size_to_block_boundary);
+	CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *line = cache->LookupLine(addr, block_base_addr, sector, offset, size_to_block_boundary);
 	
 	if(line)
 	{
@@ -2848,11 +2804,11 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateBlockBySetWayAndSector(unsign
 
 	CACHE *cache = __MSS_GetCache__<CACHE>();
 	
-	CacheSet<TYPES, CACHE>& set = (*cache)[index];
+	CacheSet<TYPES, typename CACHE::CACHE_CONFIG>& set = (*cache)[index];
 	
-	CacheLine<TYPES, CACHE>& line = set[way];
+	CacheLine<TYPES, typename CACHE::CACHE_CONFIG>& line = set[way];
 	
-	CacheBlock<TYPES, CACHE>& block = line[sector];
+	CacheBlock<TYPES, typename CACHE::CACHE_CONFIG>& block = line[sector];
 		
 	if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 	{
@@ -2880,9 +2836,9 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateLineBySetAndWay(unsigned int 
 	
 	CACHE *cache = __MSS_GetCache__<CACHE>();
 	
-	CacheSet<TYPES, CACHE>& set = (*cache)[index];
+	CacheSet<TYPES, typename CACHE::CACHE_CONFIG>& set = (*cache)[index];
 	
-	CacheLine<TYPES, CACHE>& line = set[way];
+	CacheLine<TYPES, typename CACHE::CACHE_CONFIG>& line = set[way];
 	
 	if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 	{
@@ -2905,7 +2861,7 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateSet(unsigned int index)
 
 	CACHE *cache = __MSS_GetCache__<CACHE>();
 	
-	CacheSet<TYPES, CACHE>& set = (*cache)[index];
+	CacheSet<TYPES, typename CACHE::CACHE_CONFIG>& set = (*cache)[index];
 
 	if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
 	{
@@ -2984,13 +2940,13 @@ inline bool MemorySubSystem<TYPES, MSS>::WriteBackBlockBySetWayAndSector(unsigne
 		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a block with an invalid sector 0x" << std::hex << sector << std::dec << std::endl;
 	}
 
-	CacheSet<TYPES, CACHE>& set = (*cache)[index];
+	CacheSet<TYPES, typename CACHE::CACHE_CONFIG>& set = (*cache)[index];
 	
-	CacheLine<TYPES, CACHE>& line = set[way];
+	CacheLine<TYPES, typename CACHE::CACHE_CONFIG>& line = set[way];
 
 	if(line.IsValid())
 	{
-		CacheBlock<TYPES, CACHE>& block = line[sector];
+		CacheBlock<TYPES, typename CACHE::CACHE_CONFIG>& block = line[sector];
 		
 		if(block.IsValid() && block.IsDirty())
 		{
@@ -3020,9 +2976,9 @@ inline bool MemorySubSystem<TYPES, MSS>::WriteBackLineBySetAndWay(unsigned int i
 		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a line with an invalid way 0x" << std::hex << way << std::dec << std::endl;
 	}
 
-	CacheSet<TYPES, CACHE>& set = (*cache)[index];
+	CacheSet<TYPES, typename CACHE::CACHE_CONFIG>& set = (*cache)[index];
 	
-	CacheLine<TYPES, CACHE>& line = set[way];
+	CacheLine<TYPES, typename CACHE::CACHE_CONFIG>& line = set[way];
 
 	if(line.IsValid())
 	{
@@ -3052,11 +3008,11 @@ inline bool MemorySubSystem<TYPES, MSS>::GlobalWriteBackBlockByAddress(typename 
 		unsigned int offset;
 		unsigned int size_to_block_boundary;
 		
-		CacheLine<TYPES, CACHE> *line = cache->LookupLine(addr, block_base_addr, sector, offset, size_to_block_boundary);
+		CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *line = cache->LookupLine(addr, block_base_addr, sector, offset, size_to_block_boundary);
 		
 		if(line)
 		{
-			CacheBlock<TYPES, CACHE>& block = (*line)[sector];
+			CacheBlock<TYPES, typename CACHE::CACHE_CONFIG>& block = (*line)[sector];
 			
 			if(likely(__MSS_IsCacheEnabled__<CACHE>()))
 			{
@@ -3110,7 +3066,7 @@ inline bool MemorySubSystem<TYPES, MSS>::GlobalWriteBackLineByAddress(typename T
 		unsigned int offset;
 		unsigned int size_to_block_boundary;
 		
-		CacheLine<TYPES, CACHE> *line = cache->LookupLine(addr, block_base_addr, sector, offset, size_to_block_boundary);
+		CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *line = cache->LookupLine(addr, block_base_addr, sector, offset, size_to_block_boundary);
 		
 		if(line)
 		{

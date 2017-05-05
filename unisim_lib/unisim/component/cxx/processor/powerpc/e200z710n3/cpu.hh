@@ -915,7 +915,7 @@ public:
 	//////////////////////////// Memory SubSystem /////////////////////////////
 	
 	// Level 1 Instruction Cache
-	struct L1I : unisim::util::cache::Cache<MSS_TYPES, L1I>
+	struct L1I_CONFIG
 	{
 		static const uint32_t SIZE                                          = 16384;
 		static const unisim::util::cache::CacheWritingPolicy WRITING_POLICY = unisim::util::cache::CACHE_WRITE_THROUGH_AND_NO_WRITE_ALLOCATE_POLICY;
@@ -936,9 +936,11 @@ public:
 		
 		struct BLOCK_STATUS : unisim::util::cache::CacheBlockStatus {};
 	};
+	
+	struct L1I : unisim::util::cache::Cache<MSS_TYPES, L1I_CONFIG, L1I> {};
 
 	// Level 1 Data Cache
-	struct L1D : unisim::util::cache::Cache<MSS_TYPES, L1D>
+	struct L1D_CONFIG
 	{
 		static const uint32_t SIZE                                          = 4096;
 		static const unisim::util::cache::CacheWritingPolicy WRITING_POLICY = unisim::util::cache::CACHE_WRITE_THROUGH_AND_NO_WRITE_ALLOCATE_POLICY;
@@ -959,6 +961,8 @@ public:
 		
 		struct BLOCK_STATUS : unisim::util::cache::CacheBlockStatus {};
 	};
+	
+	struct L1D : unisim::util::cache::Cache<MSS_TYPES, L1D_CONFIG, L1D> {};
 
 	IF_COND_TRAIT(_) { typedef unisim::util::cache::CacheHierarchy<MSS_TYPES, L1D> DATA_CACHE_HIERARCHY; };
 	ELSE_COND_TRAIT(_) { typedef unisim::util::cache::CacheHierarchy<MSS_TYPES> DATA_CACHE_HIERARCHY; };
@@ -978,10 +982,10 @@ public:
 	{
 		if(l1csr0.Get<L1CSR0::WID>() == ((1 << L1I::ASSOCIATIVITY) - 1)) return false; // all instruction cache ways are locked
 		
-		unsigned int& lockout = access.set->Status<L1D::SET_STATUS>().lockout;
+		unsigned int& lockout = access.set->Status().lockout;
 		if(lockout == ((1 << L1I::ASSOCIATIVITY) - 1)) return false; // all data cache ways are locked-out
 		
-		unsigned int& victim_way = access.set->Status<L1I::SET_STATUS>().victim_way;
+		unsigned int& victim_way = access.set->Status().victim_way;
 		while((l1csr0.Get<L1CSR0::WID>() & ((1 << (L1I::ASSOCIATIVITY - 1)) >> victim_way)) || (lockout & ((1 << (L1I::ASSOCIATIVITY - 1)) >> victim_way))) victim_way++;
 		access.way = victim_way;
 		return true;
@@ -989,7 +993,7 @@ public:
 	inline void UpdateReplacementPolicyOnAccess(unisim::util::cache::CacheAccess<MSS_TYPES, L1I>& access) ALWAYS_INLINE {}
 	inline void UpdateReplacementPolicyOnFill(unisim::util::cache::CacheAccess<MSS_TYPES, L1I>& access) ALWAYS_INLINE
 	{
-		access.set->Status<L1I::SET_STATUS>().victim_way++;
+		access.set->Status().victim_way++;
 	}
 
 	inline L1D *GetCache(const L1D *) ALWAYS_INLINE { return HAS_DATA_CACHE ? &l1d : 0; }
@@ -1002,10 +1006,10 @@ public:
 		
 		if(l1csr0.Get<L1CSR0::WDD>() == ((1 << L1D::ASSOCIATIVITY) - 1)) return false; // all data cache ways are locked
 
-		unsigned int& lockout = access.set->Status<L1D::SET_STATUS>().lockout;
+		unsigned int& lockout = access.set->Status().lockout;
 		if(lockout == ((1 << L1D::ASSOCIATIVITY) - 1)) return false; // all data cache ways are locked-out
 		
-		unsigned int& victim_way = access.set->Status<L1D::SET_STATUS>().victim_way;
+		unsigned int& victim_way = access.set->Status().victim_way;
 		while((l1csr0.Get<L1CSR0::WDD>() & ((1 << (L1D::ASSOCIATIVITY - 1)) >> victim_way)) || (lockout & ((1 << (L1D::ASSOCIATIVITY - 1)) >> victim_way))) victim_way++;
 		
 		access.way = victim_way;
@@ -1017,7 +1021,7 @@ public:
 	{
 		if(HAS_DATA_CACHE)
 		{
-			access.set->Status<L1D::SET_STATUS>().victim_way++;
+			access.set->Status().victim_way++;
 		}
 	}
 	
