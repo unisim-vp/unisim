@@ -295,6 +295,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.CPU2.ipc", cpu2_ipc);
 	simulator->SetVariable("HARDWARE.CPU2.enable-dmi", true); // Allow CPU to use of SystemC TLM 2.0 DMI
 
+	simulator->SetVariable("HARDWARE.CPU2.local-memory-base-addr", 0x52000000);
+	simulator->SetVariable("HARDWARE.CPU2.local-memory-size", 8 * 1024 * 1024);
+
 	simulator->SetVariable("HARDWARE.CPU2.dmem-base-addr", 0x52800000);
 	simulator->SetVariable("HARDWARE.CPU2.dmem-size", 64 * 1024);
 
@@ -314,6 +317,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.CPU0.ipc", cpu0_ipc);
 	simulator->SetVariable("HARDWARE.CPU0.enable-dmi", true); // Allow CPU to use of SystemC TLM 2.0 DMI
 
+	simulator->SetVariable("HARDWARE.CPU0.local-memory-base-addr", 0x50000000);
+	simulator->SetVariable("HARDWARE.CPU0.local-memory-size", 8 * 1024 * 1024);
+
 	simulator->SetVariable("HARDWARE.CPU0.dmem-base-addr", 0x50800000);
 	simulator->SetVariable("HARDWARE.CPU0.dmem-size", 64 * 1024);
 
@@ -332,6 +338,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.CPU1.nice-time", "200 ns"); // 200 ns (currently geared to the minimum interval between capture trigger samples)
 	simulator->SetVariable("HARDWARE.CPU1.ipc", cpu1_ipc);
 	simulator->SetVariable("HARDWARE.CPU1.enable-dmi", true); // Allow CPU to use of SystemC TLM 2.0 DMI
+
+	simulator->SetVariable("HARDWARE.CPU1.local-memory-base-addr", 0x51000000);
+	simulator->SetVariable("HARDWARE.CPU1.local-memory-size", 8 * 1024 * 1024);
 
 	simulator->SetVariable("HARDWARE.CPU1.dmem-base-addr", 0x51800000);
 	simulator->SetVariable("HARDWARE.CPU1.dmem-size", 64 * 1024);

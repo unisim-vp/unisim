@@ -50,6 +50,7 @@ typedef uint32_t ADDRESS;
 typedef uint32_t PHYSICAL_ADDRESS;
 const unsigned int FSB_WIDTH = 8;
 const bool DEBUG_ENABLE = false;
+const bool HAS_DATA_CACHE = true;
 
 enum STORAGE_ATTR
 {

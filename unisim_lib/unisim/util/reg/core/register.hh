@@ -375,8 +375,10 @@ public:
 	static const unsigned int SIZE = _SIZE;
 	static const Access ACCESS = _ACCESS;
 	
+	inline bool HasBit(unsigned int bit_offset) const ALWAYS_INLINE;
 	inline TYPE Get(unsigned int bit_offset) const ALWAYS_INLINE;
 	inline void Set(unsigned int bit_offset, TYPE bit_value) ALWAYS_INLINE;
+	template <typename FIELD> inline bool HasField() const ALWAYS_INLINE;
 	template <typename FIELD> inline TYPE Get() const ALWAYS_INLINE;
 	template <typename FIELD> inline void Set(TYPE field_value) ALWAYS_INLINE;
 	

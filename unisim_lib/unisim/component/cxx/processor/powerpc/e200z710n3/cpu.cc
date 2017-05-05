@@ -59,30 +59,34 @@ CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
 	, param_system_version("system-version", this, system_version, "System Version")
 	, system_information(0x0)
 	, param_system_information("system-information", this, system_information, "System Information")
+	, local_memory_base_addr(0)
+	, param_local_memory_base_addr(0)
+	, local_memory_size(0)
+	, param_local_memory_size(0)
 	, imem_base_addr(0x0)
-	, param_imem_base_addr("imem-base-addr", this, imem_base_addr, "IMEM (Local Instruction Memory) base address at reset")
+	, param_imem_base_addr(0)
 	, imem_size(0)
-	, param_imem_size("imem-size", this, imem_size, "size in bytes of IMEM (Local Instruction Memory)")
+	, param_imem_size(0)
 	, dmem_base_addr(0x0)
-	, param_dmem_base_addr("dmem-base-addr", this, dmem_base_addr, "DMEM (Local Data Memory) base address at reset")
+	, param_dmem_base_addr(0)
 	, dmem_size(0)
-	, param_dmem_size("dmem-size", this, dmem_size, "size in bytes of DMEM (Local Data Memory)")
+	, param_dmem_size(0)
 	, verbose_instruction_cache(false)
-	, param_verbose_instruction_cache("verbose-instruction-cache", this, verbose_instruction_cache, "enable/disable verbosity of instruction cache")
+	, param_verbose_instruction_cache(0)
 	, verbose_data_cache(false)
-	, param_verbose_data_cache("verbose-data-cache", this, verbose_data_cache, "enable/disable verbosity of data cache")
+	, param_verbose_data_cache(0)
 	, verbose_data_load(false)
-	, param_verbose_data_load("verbose-data-load", this, verbose_data_load, "enable/disable verbosity of data load")
+	, param_verbose_data_load(0)
 	, verbose_data_store(false)
-	, param_verbose_data_store("verbose-data-store", this, verbose_data_store, "enable/disable verbosity of data store")
+	, param_verbose_data_store(0)
 	, verbose_instruction_fetch(false)
-	, param_verbose_instruction_fetch("verbose-instruction-fetch", this, verbose_instruction_fetch, "enable/disable verbosity of instruction fetch")
+	, param_verbose_instruction_fetch(0)
 	, verbose_data_bus_read(false)
-	, param_verbose_data_bus_read("verbose-data-bus-read", this, verbose_data_bus_read, "enable/disable verbosity of data bus read")
+	, param_verbose_data_bus_read(0)
 	, verbose_data_bus_write(false)
-	, param_verbose_data_bus_write("verbose-data-bus-write", this, verbose_data_bus_write, "enable/disable verbosity of data bus write")
+	, param_verbose_data_bus_write(0)
 	, verbose_instruction_bus_read(false)
-	, param_verbose_instruction_bus_read("verbose-instruction-bus-read", this, verbose_instruction_bus_read, "enable/disable verbosity of instruction bus read")
+	, param_verbose_instruction_bus_read(0)
 	, enable_auto_vectored_interrupts(false)
 	, vector_offset(0x0)
 	, instruction_buffer_base_addr(~ADDRESS(0))
@@ -201,18 +205,33 @@ CPU::CPU(const char *name, unisim::kernel::service::Object *parent)
 	, upmlcb3(this, &pmlcb3)
 	, tmcfg0(this)
 {
+	param_local_memory_base_addr = new unisim::kernel::service::Parameter<ADDRESS>("local-memory-base-addr", this, local_memory_base_addr, "local memory base address");
+	param_local_memory_size = new unisim::kernel::service::Parameter<ADDRESS>("local-memory-size", this, local_memory_size, "local memory size");
+	param_imem_base_addr = new unisim::kernel::service::Parameter<ADDRESS>("imem-base-addr", this, imem_base_addr, "IMEM (Local Instruction Memory) base address at reset");
+	param_imem_size = new unisim::kernel::service::Parameter<ADDRESS>("imem-size", this, imem_size, "size in bytes of IMEM (Local Instruction Memory)");
+	param_dmem_base_addr = new unisim::kernel::service::Parameter<ADDRESS>("dmem-base-addr", this, dmem_base_addr, "DMEM (Local Data Memory) base address at reset");
+	param_dmem_size = new unisim::kernel::service::Parameter<ADDRESS>("dmem-size", this, dmem_size, "size in bytes of DMEM (Local Data Memory)");
+	param_verbose_instruction_cache = new unisim::kernel::service::Parameter<bool>("verbose-instruction-cache", this, verbose_instruction_cache, "enable/disable verbosity of instruction cache");
+	if(HAS_DATA_CACHE)
+	{
+		param_verbose_data_cache = new unisim::kernel::service::Parameter<bool>("verbose-data-cache", this, verbose_data_cache, "enable/disable verbosity of data cache");
+	}
+	param_verbose_data_load = new unisim::kernel::service::Parameter<bool>("verbose-data-load", this, verbose_data_load, "enable/disable verbosity of data load");
+	param_verbose_data_store = new unisim::kernel::service::Parameter<bool>("verbose-data-store", this, verbose_data_store, "enable/disable verbosity of data store");
+	param_verbose_instruction_fetch = new unisim::kernel::service::Parameter<bool>("verbose-instruction-fetch", this, verbose_instruction_fetch, "enable/disable verbosity of instruction fetch");
+	param_verbose_data_bus_read = new unisim::kernel::service::Parameter<bool>("verbose-data-bus-read", this, verbose_data_bus_read, "enable/disable verbosity of data bus read");
+	param_verbose_data_bus_write = new unisim::kernel::service::Parameter<bool>("verbose-data-bus-write", this, verbose_data_bus_write, "enable/disable verbosity of data bus write");
+	param_verbose_instruction_bus_read = new unisim::kernel::service::Parameter<bool>("verbose-instruction-bus-read", this, verbose_instruction_bus_read, "enable/disable verbosity of instruction bus read");
+
 	param_processor_version.SetMutable(false);
 	param_system_version.SetMutable(false);
 	param_system_information.SetMutable(false);
-	param_imem_base_addr.SetMutable(false);
-	param_imem_size.SetMutable(false);
-	param_imem_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_dmem_base_addr.SetMutable(false);
-	param_dmem_size.SetMutable(false);
-	param_dmem_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_imem_base_addr->SetMutable(false);
+	param_imem_size->SetMutable(false);
+	param_imem_size->SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_dmem_base_addr->SetMutable(false);
+	param_dmem_size->SetMutable(false);
+	param_dmem_size->SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
 	imem = new uint8_t[imem_size];
 	memset(imem, 0, imem_size);
@@ -252,11 +271,31 @@ CPU::~CPU()
 {
 	delete[] imem;
 	delete[] dmem;
+	
+	delete param_local_memory_base_addr;
+	delete param_local_memory_size;
+	delete param_imem_base_addr;
+	delete param_imem_size;
+	delete param_dmem_base_addr;
+	delete param_dmem_size;
+	delete param_verbose_instruction_cache;
+	if(HAS_DATA_CACHE)
+	{
+		delete param_verbose_data_cache;
+	}
+	delete param_verbose_data_load;
+	delete param_verbose_data_store;
+	delete param_verbose_instruction_fetch;
+	delete param_verbose_data_bus_read;
+	delete param_verbose_data_bus_write;
+	delete param_verbose_instruction_bus_read;
 }
 
 bool CPU::EndSetup()
 {
 	if(!SuperCPU::EndSetup()) return false;
+	
+	l1csr0 = 1;
 	
 	return true;
 }
@@ -1020,7 +1059,7 @@ bool CPU::DebugDataLoad(ADDRESS addr, void *buffer, unsigned int size)
 				
 				STORAGE_ATTR storage_attr = mpu_entry ? STORAGE_ATTR((MAS0::I::Get(mpu_entry->mas0) ? SA_I : 0) | (MAS0::G::Get(mpu_entry->mas0) ? SA_G : 0)) : SA_DEFAULT;
 					
-				sz = L1D::BLOCK_SIZE - (addr % L1D::BLOCK_SIZE);
+				sz = HAS_DATA_CACHE ? (L1D::BLOCK_SIZE - (addr % L1D::BLOCK_SIZE)) : size;
 				if(sz > size) sz = size;
 				if(!this->SuperMSS::DebugDataLoad(addr, buffer, sz, storage_attr))
 				{
@@ -1063,7 +1102,7 @@ bool CPU::DebugDataStore(ADDRESS addr, const void *buffer, unsigned int size)
 				
 				STORAGE_ATTR storage_attr = mpu_entry ? STORAGE_ATTR((MAS0::I::Get(mpu_entry->mas0) ? SA_I : 0) | (MAS0::G::Get(mpu_entry->mas0) ? SA_G : 0)) : SA_DEFAULT;
 
-				sz = L1D::BLOCK_SIZE - (addr % L1D::BLOCK_SIZE);
+				sz = HAS_DATA_CACHE ? (L1D::BLOCK_SIZE - (addr % L1D::BLOCK_SIZE)) : size;
 				if(sz > size) sz = size;
 				if(!this->SuperMSS::DebugDataStore(addr, buffer, sz, storage_attr))
 				{
@@ -1105,7 +1144,7 @@ bool CPU::DebugInstructionFetch(ADDRESS addr, void *buffer, unsigned int size)
 				
 				STORAGE_ATTR storage_attr = mpu_entry ? STORAGE_ATTR((MAS0::I::Get(mpu_entry->mas0) ? SA_I : 0) | (MAS0::G::Get(mpu_entry->mas0) ? SA_G : 0)) : SA_DEFAULT;
 
-				sz = L1D::BLOCK_SIZE - (addr % L1D::BLOCK_SIZE);
+				sz = HAS_DATA_CACHE ? (L1D::BLOCK_SIZE - (addr % L1D::BLOCK_SIZE)) : size;
 				if(sz > size) sz = size;
 				if(!this->SuperMSS::DebugInstructionFetch(addr, buffer, sz, storage_attr))
 				{
@@ -1137,6 +1176,8 @@ bool CPU::WriteMemory(ADDRESS addr, const void *buffer, uint32_t size)
 
 void CPU::InvalidateDataCache()
 {
+	if(!HAS_DATA_CACHE) return;
+
 	if(verbose_data_cache)
 	{
 		logger << DebugInfo << "Invalidating Data Cache" << EndDebugInfo;
@@ -1146,6 +1187,8 @@ void CPU::InvalidateDataCache()
 
 void CPU::InvalidateDataCacheBySetAndWay(unsigned int index, unsigned int way)
 {
+	if(!HAS_DATA_CACHE) return;
+
 	if(verbose_data_cache)
 	{
 		logger << DebugInfo << "Invalidating Data Cache by Set #" << index << " and Way #" << way << EndDebugInfo;
@@ -1155,6 +1198,8 @@ void CPU::InvalidateDataCacheBySetAndWay(unsigned int index, unsigned int way)
 
 void CPU::ClearDataCacheLockoutBySetAndWay(unsigned int index, unsigned int way)
 {
+	if(!HAS_DATA_CACHE) return;
+	
 	if(verbose_data_cache)
 	{
 		logger << DebugInfo << "Clearing Data Cache Lockout by Set #" << index << " and Way #" << way << EndDebugInfo;

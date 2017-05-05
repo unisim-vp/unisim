@@ -192,19 +192,22 @@ public:
 		
 		void Effect()
 		{
-			if(cpu->verbose_data_cache)
+			if(HAS_DATA_CACHE)
 			{
-				cpu->GetDebugInfoStream() << "Data Cache is " << (Get<L1CSR0::DCE>() ? "enabled" : "disabled") << std::endl;
-				cpu->GetDebugInfoStream() << "Data Cache Write Allocation Policy is " << (Get<L1CSR0::DCWA>() ? "enabled" : "disabled") << std::endl;
-				cpu->GetDebugInfoStream() << "Replacement of Instruction Cache Way #0 is " << ((Get<L1CSR0::WID>() & 1) ? "disabled" : "enabled") << std::endl;
-				cpu->GetDebugInfoStream() << "Replacement of Instruction Cache Way #1 is " << ((Get<L1CSR0::WID>() & 2) ? "disabled" : "enabled") << std::endl;
-				cpu->GetDebugInfoStream() << "Replacement of Data Cache Way #0 is " << ((Get<L1CSR0::WDD>() & 1) ? "disabled" : "enabled") << std::endl;
-				cpu->GetDebugInfoStream() << "Replacement of Data Cache Way #1 is " << ((Get<L1CSR0::WDD>() & 2) ? "disabled" : "enabled") << std::endl;
-			}
-			if(Get<L1CSR0::DCINV>())
-			{
-				cpu->InvalidateDataCache();
-				Set<L1CSR0::DCINV>(0);
+				if(cpu->verbose_data_cache)
+				{
+					cpu->GetDebugInfoStream() << "Data Cache is " << (Get<L1CSR0::DCE>() ? "enabled" : "disabled") << std::endl;
+					cpu->GetDebugInfoStream() << "Data Cache Write Allocation Policy is " << (Get<L1CSR0::DCWA>() ? "enabled" : "disabled") << std::endl;
+					cpu->GetDebugInfoStream() << "Replacement of Instruction Cache Way #0 is " << ((Get<L1CSR0::WID>() & 1) ? "disabled" : "enabled") << std::endl;
+					cpu->GetDebugInfoStream() << "Replacement of Instruction Cache Way #1 is " << ((Get<L1CSR0::WID>() & 2) ? "disabled" : "enabled") << std::endl;
+					cpu->GetDebugInfoStream() << "Replacement of Data Cache Way #0 is " << ((Get<L1CSR0::WDD>() & 1) ? "disabled" : "enabled") << std::endl;
+					cpu->GetDebugInfoStream() << "Replacement of Data Cache Way #1 is " << ((Get<L1CSR0::WDD>() & 2) ? "disabled" : "enabled") << std::endl;
+				}
+				if(Get<L1CSR0::DCINV>())
+				{
+					cpu->InvalidateDataCache();
+					Set<L1CSR0::DCINV>(0);
+				}
 			}
 		}
 		
@@ -247,16 +250,32 @@ public:
 		
 		virtual void Reset()
 		{
-			Set<CARCH>(0);   // The cache architecture is Harvard
-			Set<CWPA>(1);    // Cache Way Partionning Available
-			Set<DCFAHA>(0);  // The data cache does not support Flush All in Hardware
-			Set<DCFISWA>(1); // The data cache supports invalidation by Set and Way via L1FINV0
-			Set<DCBSIZE>(0); // The data cache implements a block size of 32 bytes
-			Set<DCREPL>(3);  // The data cache implements a FIFO replacement policy
-			Set<DCLA>(0);    // The data cache does not implement the line locking APU
-			Set<DCECA>(1);   // The data cache implements error checking
-			Set<DCNWAY>(L1D::ASSOCIATIVITY - 1);  // The data cache is 2-way set-associative
-			Set<DCSIZE>(L1D::SIZE / 1024);        // The size of the data cache is 4 KB
+			if(HAS_DATA_CACHE)
+			{
+				Set<CARCH>(CARCH_HARVARD);
+				Set<CWPA>(1);
+				Set<DCFAHA>(0);
+				Set<DCFISWA>(1);
+				Set<DCBSIZE>(CEIL_LOG2<L1D::BLOCK_SIZE>::VALUE - 5);
+				Set<DCREPL>(CREPL_FIFO);
+				Set<DCLA>(0);
+				Set<DCECA>(1);
+				Set<DCNWAY>(L1D::ASSOCIATIVITY - 1);
+				Set<DCSIZE>(L1D::SIZE / 1024);
+			}
+			else
+			{
+				Set<CARCH>(CARCH_INSTRUCTION_ONLY);
+				Set<CWPA>(0);
+				Set<DCFAHA>(0);
+				Set<DCFISWA>(0);
+				Set<DCBSIZE>(0);
+				Set<DCREPL>(0);
+				Set<DCLA>(0);
+				Set<DCECA>(0);
+				Set<DCNWAY>(0);
+				Set<DCSIZE>(0);
+			}
 		}
 	};
 	
@@ -271,8 +290,8 @@ public:
 		virtual void Reset()
 		{
 			Set<ICFISWA>(1);  // The instruction cache supports invalidation by Set and Way via L1FINV1
-			Set<ICBSIZE>(0);  // The instruction cache implements a block size of 32 bytes
-			Set<ICREPL>(3);   // The instruction cache implements a FIFO replacement policy
+			Set<ICBSIZE>(CEIL_LOG2<L1I::BLOCK_SIZE>::VALUE - 5);  // The instruction cache implements a block size of 32 bytes
+			Set<ICREPL>(CREPL_FIFO);   // The instruction cache implements a FIFO replacement policy
 			Set<ICLA>(0);     // The instruction cache does not implement the line locking APU
 			Set<ICECA>(1);    // The instruction cache implements error checking
 			Set<ICNWAY>(L1I::ASSOCIATIVITY - 1);   // The instruction cache is 2-way set-associative
@@ -288,6 +307,38 @@ public:
 		L1FINV0(CPU *_cpu) : Super(_cpu) {}
 		L1FINV0(CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
+		virtual bool CheckMoveToLegality()
+		{
+			if(HAS_DATA_CACHE)
+			{
+				return Super::CheckMoveToLegality();
+			}
+			
+			// Illegal Instruction
+			if(cpu->verbose_move_to_slr)
+			{
+				cpu->GetDebugWarningStream() << "Move to " << this->GetName() << " is an illegal operation (no data cache present)" << std::endl;
+			}
+			cpu->ThrowException<CONFIG::STATE::ProgramInterrupt::IllegalInstruction>();
+			return false;
+		}
+		
+		virtual bool CheckMoveFromLegality()
+		{
+			if(HAS_DATA_CACHE)
+			{
+				return Super::CheckMoveFromLegality();
+			}
+			
+			// Illegal Instruction
+			if(cpu->verbose_move_to_slr)
+			{
+				cpu->GetDebugWarningStream() << "Move to " << this->GetName() << " is an illegal operation (no data cache present)" << std::endl;
+			}
+			cpu->ThrowException<CONFIG::STATE::ProgramInterrupt::IllegalInstruction>();
+			return false;
+		}
+
 		void Effect()
 		{
 			switch(Get<CCMD>())
@@ -306,7 +357,7 @@ public:
 			}
 		}
 		
-		L1FINV0& operator = (const uint32_t& value) { this->Super::operator = (value); Effect(); return *this; }
+		L1FINV0& operator = (const uint32_t& value) { if(HAS_DATA_CACHE) { this->Super::operator = (value); Effect(); } return *this; }
 		virtual bool MoveTo(uint32_t value) { if(!this->Super::MoveTo(value)) return false; Effect(); return true; }
 	};
 	
@@ -908,8 +959,11 @@ public:
 		
 		struct BLOCK_STATUS : unisim::util::cache::CacheBlockStatus {};
 	};
+
+	IF_COND_TRAIT(_) { typedef unisim::util::cache::CacheHierarchy<MSS_TYPES, L1D> DATA_CACHE_HIERARCHY; };
+	ELSE_COND_TRAIT(_) { typedef unisim::util::cache::CacheHierarchy<MSS_TYPES> DATA_CACHE_HIERARCHY; };
+	typedef COND_TRAIT(HAS_DATA_CACHE, _)::DATA_CACHE_HIERARCHY DATA_CACHE_HIERARCHY;
 	
-	typedef unisim::util::cache::CacheHierarchy<MSS_TYPES, L1D> DATA_CACHE_HIERARCHY;
 	typedef unisim::util::cache::CacheHierarchy<MSS_TYPES, L1I> INSTRUCTION_CACHE_HIERARCHY;
 	
 	inline std::ostream& GetDebugInfoStream() ALWAYS_INLINE { return this->SuperCPU::GetDebugInfoStream(); }
@@ -938,12 +992,14 @@ public:
 		access.set->Status<L1I::SET_STATUS>().victim_way++;
 	}
 
-	inline L1D *GetCache(const L1D *) ALWAYS_INLINE { return &l1d; }
-	inline bool IsCacheVerbose(const L1D *) ALWAYS_INLINE { return verbose_data_cache; }
-	inline bool IsCacheEnabled(const L1D *) ALWAYS_INLINE { return l1csr0.Get<L1CSR0::DCE>(); }
-	inline bool IsCacheWriteAllocate(const L1D *) ALWAYS_INLINE { return l1csr0.Get<L1CSR0::DCWA>(); }
+	inline L1D *GetCache(const L1D *) ALWAYS_INLINE { return HAS_DATA_CACHE ? &l1d : 0; }
+	inline bool IsCacheVerbose(const L1D *) ALWAYS_INLINE { return HAS_DATA_CACHE ? verbose_data_cache : false; }
+	inline bool IsCacheEnabled(const L1D *) ALWAYS_INLINE { return HAS_DATA_CACHE ? l1csr0.Get<L1CSR0::DCE>() : false; }
+	inline bool IsCacheWriteAllocate(const L1D *) ALWAYS_INLINE { return HAS_DATA_CACHE ? l1csr0.Get<L1CSR0::DCWA>() : false; }
 	inline bool ChooseLineToEvict(unisim::util::cache::CacheAccess<MSS_TYPES, L1D>& access) ALWAYS_INLINE
 	{
+		if(!HAS_DATA_CACHE) return false;
+		
 		if(l1csr0.Get<L1CSR0::WDD>() == ((1 << L1D::ASSOCIATIVITY) - 1)) return false; // all data cache ways are locked
 
 		unsigned int& lockout = access.set->Status<L1D::SET_STATUS>().lockout;
@@ -959,7 +1015,10 @@ public:
 	inline void UpdateReplacementPolicyOnAccess(unisim::util::cache::CacheAccess<MSS_TYPES, L1D>& access) ALWAYS_INLINE {}
 	inline void UpdateReplacementPolicyOnFill(unisim::util::cache::CacheAccess<MSS_TYPES, L1D>& access) ALWAYS_INLINE
 	{
-		access.set->Status<L1D::SET_STATUS>().victim_way++;
+		if(HAS_DATA_CACHE)
+		{
+			access.set->Status<L1D::SET_STATUS>().victim_way++;
+		}
 	}
 	
 	inline bool IsVerboseDataLoad() const ALWAYS_INLINE { return verbose_data_load; }
@@ -968,8 +1027,8 @@ public:
 	inline bool IsVerboseDataBusRead() const ALWAYS_INLINE { return verbose_data_bus_read; }
 	inline bool IsVerboseDataBusWrite() const ALWAYS_INLINE { return verbose_data_bus_write; }
 	inline bool IsVerboseInstructionBusRead() const ALWAYS_INLINE { return verbose_instruction_bus_read; }
-	bool IsStorageCacheable(STORAGE_ATTR storage_attr) const { return !(storage_attr & SA_I); }
-	bool IsDataWriteAccessWriteThrough(STORAGE_ATTR storage_attr) const { return true; }
+	bool IsStorageCacheable(STORAGE_ATTR storage_attr) const { return HAS_DATA_CACHE ? !(storage_attr & SA_I) : false; }
+	bool IsDataWriteAccessWriteThrough(STORAGE_ATTR storage_attr) const { return HAS_DATA_CACHE ? true : false; }
 
 	bool DataBusRead(PHYSICAL_ADDRESS addr, void *buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm);
 	bool DataBusWrite(PHYSICAL_ADDRESS addr, const void *buffer, unsigned int size, STORAGE_ATTR storage_attr);
@@ -1029,41 +1088,47 @@ protected:
 	uint32_t system_information;
 	unisim::kernel::service::Parameter<uint32_t> param_system_information;
 
+	ADDRESS local_memory_base_addr;
+	unisim::kernel::service::Parameter<ADDRESS> *param_local_memory_base_addr;
+
+	ADDRESS local_memory_size;
+	unisim::kernel::service::Parameter<ADDRESS> *param_local_memory_size;
+
 	ADDRESS imem_base_addr;
-	unisim::kernel::service::Parameter<ADDRESS> param_imem_base_addr;
+	unisim::kernel::service::Parameter<ADDRESS> *param_imem_base_addr;
 
 	ADDRESS imem_size;
-	unisim::kernel::service::Parameter<ADDRESS> param_imem_size;
+	unisim::kernel::service::Parameter<ADDRESS> *param_imem_size;
 
 	ADDRESS dmem_base_addr;
-	unisim::kernel::service::Parameter<ADDRESS> param_dmem_base_addr;
+	unisim::kernel::service::Parameter<ADDRESS> *param_dmem_base_addr;
 
 	ADDRESS dmem_size;
-	unisim::kernel::service::Parameter<ADDRESS> param_dmem_size;
+	unisim::kernel::service::Parameter<ADDRESS> *param_dmem_size;
 
 	bool verbose_instruction_cache;
-	unisim::kernel::service::Parameter<bool> param_verbose_instruction_cache;
+	unisim::kernel::service::Parameter<bool> *param_verbose_instruction_cache;
 	
 	bool verbose_data_cache;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_cache;
+	unisim::kernel::service::Parameter<bool> *param_verbose_data_cache;
 	
 	bool verbose_data_load;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_load;
+	unisim::kernel::service::Parameter<bool> *param_verbose_data_load;
 	
 	bool verbose_data_store;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_store;
+	unisim::kernel::service::Parameter<bool> *param_verbose_data_store;
 	
 	bool verbose_instruction_fetch;
-	unisim::kernel::service::Parameter<bool> param_verbose_instruction_fetch;
+	unisim::kernel::service::Parameter<bool> *param_verbose_instruction_fetch;
 	
 	bool verbose_data_bus_read;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_bus_read;
+	unisim::kernel::service::Parameter<bool> *param_verbose_data_bus_read;
 	
 	bool verbose_data_bus_write;
-	unisim::kernel::service::Parameter<bool> param_verbose_data_bus_write;
+	unisim::kernel::service::Parameter<bool> *param_verbose_data_bus_write;
 	
 	bool verbose_instruction_bus_read;
-	unisim::kernel::service::Parameter<bool> param_verbose_instruction_bus_read;
+	unisim::kernel::service::Parameter<bool> *param_verbose_instruction_bus_read;
 	
 	///////////////////////////// Interrupts //////////////////////////////////
 	
@@ -1241,9 +1306,9 @@ inline bool CPU::DataLoad(T& value, typename CONFIG::ADDRESS ea)
 	}
 
 #if BYTE_ORDER == LITTLE_ENDIAN
-	if((REVERSE && !FORCE_BIG_ENDIAN) || (!REVERSE && FORCE_BIG_ENDIAN))
+	if(!REVERSE || FORCE_BIG_ENDIAN)
 #else
-	if((!REVERSE && !FORCE_BIG_ENDIAN) || (REVERSE && FORCE_BIG_ENDIAN))
+	if(REVERSE && !FORCE_BIG_ENDIAN)
 #endif
 	{
 		unisim::util::endian::BSwap(value);
@@ -1256,9 +1321,9 @@ template <typename T, bool REVERSE, bool FORCE_BIG_ENDIAN>
 inline bool CPU::DataStore(T value, typename CONFIG::ADDRESS ea)
 {
 #if BYTE_ORDER == LITTLE_ENDIAN
-	if((REVERSE && !FORCE_BIG_ENDIAN) || (!REVERSE && FORCE_BIG_ENDIAN))
+	if(!REVERSE || FORCE_BIG_ENDIAN)
 #else
-	if((!REVERSE && !FORCE_BIG_ENDIAN) || (REVERSE && FORCE_BIG_ENDIAN))
+	if(REVERSE && !FORCE_BIG_ENDIAN)
 #endif
 	{
 		unisim::util::endian::BSwap(value);

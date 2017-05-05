@@ -64,6 +64,14 @@
 #undef powerpc
 #endif
 
+#define IF_COND_TRAIT(CLASS_NAME) template <bool, bool __IF_COND_TRAIT_DUMMY__ = true> struct CLASS_NAME {}; template <bool __IF_COND_TRAIT_DUMMY__> struct CLASS_NAME<true, __IF_COND_TRAIT_DUMMY__>
+#define ELSE_COND_TRAIT(CLASS_NAME) template <bool __IF_COND_TRAIT_DUMMY__> struct CLASS_NAME<false, __IF_COND_TRAIT_DUMMY__>
+#define COND_TRAIT(COND, CLASS_NAME) CLASS_NAME<COND>
+	
+#define SWITCH_ENUM_TRAIT(ENUM_TYPE, CLASS_NAME) template <ENUM_TYPE, bool __SWITCH_TRAIT_DUMMY__ = true> struct CLASS_NAME {}
+#define CASE_ENUM_TRAIT(ENUM_VALUE, CLASS_NAME) template <bool __SWITCH_TRAIT_DUMMY__> struct CLASS_NAME<ENUM_VALUE, __SWITCH_TRAIT_DUMMY__>
+#define ENUM_TRAIT(ENUM_VALUE, CLASS_NAME) CLASS_NAME<ENUM_VALUE>
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -111,8 +119,61 @@ enum Model
 	E200Z710N3
 };
 
+inline std::ostream& operator << (std::ostream& os, const Model& model)
+{
+	switch(model)
+	{
+		case MPC601:      os << "MPC601"; break;
+		case MPC603E:     os << "MPC603E"; break;
+		case MPC604E:     os << "MPC604E"; break;
+		case MPC740:      os << "MPC740"; break;
+		case MPC745:      os << "MPC745"; break;
+		case MPC750:      os << "MPC750"; break;
+		case MPC755:      os << "MPC755"; break;
+		case MPC7400:     os << "MPC7400"; break;
+		case MPC7410:     os << "MPC7410"; break;
+		case MPC7441:     os << "MPC7441"; break;
+		case MPC7445:     os << "MPC7445"; break;
+		case MPC7447:     os << "MPC7447"; break;
+		case MPC7447A:    os << "MPC7447A"; break;
+		case MPC7448:     os << "MPC7448"; break;
+		case MPC7450:     os << "MPC7450"; break;
+		case MPC7451:     os << "MPC7451"; break;
+		case MPC7455:     os << "MPC7455"; break;
+		case MPC7457:     os << "MPC7457"; break;
+		case PPC405:      os << "PPC405"; break;
+		case PPC440:      os << "PPC440"; break;
+		case E200Z425BN3: os << "e200z425Bn3"; break;
+		case E200Z710N3:  os << "e200z710n3"; break;
+		default:          os << "unknown"; break;
+	}
+	return os;
+}
+
 using unisim::util::reg::core::FieldSet;
 using unisim::util::reg::core::RegisterFile;
+
+////////////////////////////////// LOG2 ///////////////////////////////////////
+
+template <unsigned int N>
+struct LOG2
+{
+    static const unsigned int VALUE = LOG2<N / 2>::VALUE + 1;
+};
+
+template <>
+struct LOG2<1>
+{
+    static const unsigned int VALUE = 0;
+};
+
+ /////////////////////////////// CEIL_LOG2 ////////////////////////////////////
+
+template <unsigned int N>
+struct CEIL_LOG2
+{
+    static const unsigned int VALUE = (N > (1 << LOG2<N>::VALUE)) ? LOG2<N>::VALUE + 1 : LOG2<N>::VALUE;
+};
 
 //////////////////////////////////// Field<> //////////////////////////////////
 
@@ -120,8 +181,6 @@ template <typename FIELD, int OFFSET1, int OFFSET2 = -1>
 struct Field : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1>
 {
 	typedef unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1> Super;
-	
-	//static inline void SetName(const std::string& name) { Super::SetName(name); }
 };
 
 //////////////////////////////// Register /////////////////////////////////
@@ -1367,18 +1426,10 @@ public:
 		struct PMM : Field<PMM,29> {}; // PMM Performance monitor mark bit
 		struct RI  : Field<RI ,30> {}; // Recoverable Interrupt
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<SPV, WE, CE, EE, PR, FP, ME, FE0, DE, FE1, IS, DS, PMM, RI> ALL;
-		};
-
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<CE, EE, PR, ME, DE, PMM, RI> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<SPV, WE, CE, EE, PR, FP, ME, FE0, DE, FE1, IS, DS, PMM, RI> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<CE, EE, PR, ME, DE, PMM, RI> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		MSR(typename CONFIG::STATE *_cpu) : Super(), cpu(_cpu) { Init(); }
 		MSR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_value), cpu(_cpu) { Init(); }
@@ -1451,18 +1502,10 @@ protected:
 		
 		struct Process_ID : Field<Process_ID, 24, 31> {}; // Process ID
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<Process_ID> ALL;
-		};
-
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<Process_ID> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<Process_ID> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<Process_ID> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		PID0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		PID0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -1539,20 +1582,11 @@ public:
 		struct SPV   : Field<SPV  ,24> {}; // EFPU APU Operation
 		struct VLEMI : Field<VLEMI,26> {}; // VLE Mode Instruction
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<PIL, PPR, PTR, FP, ST, BO, SPV, VLEMI> ALL;
-		};
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<PIL, PPR, PTR, FP, ST, BO, SPV, VLEMI> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<PIL, PPR, PTR, FP, ST, BO, SPV, VLEMI> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<PIL, PPR, PTR, FP, ST, BO, SPV, VLEMI> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
-
-		
 		ESR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		ESR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
@@ -1581,18 +1615,10 @@ protected:
 		
 		struct Vector_Base : Field<Vector_Base, 0, 23> {}; // Vector Base
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<Vector_Base> ALL;
-		};
-
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<Vector_Base> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<Vector_Base> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<Vector_Base> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		IVPR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		IVPR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -1695,18 +1721,10 @@ protected:
 		struct ID_0_23  : Field<ID_0_23 , 0, 23>  {}; // bits 0:23
 		struct ID_24_31 : Field<ID_24_31, 24, 31> {}; // bits 24:31
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<ID_0_23, ID_24_31> ALL;
-		};
-
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<ID_0_23, ID_24_31> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<ID_0_23, ID_24_31> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<ID_0_23, ID_24_31> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		PIR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		PIR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -1732,18 +1750,10 @@ protected:
 		struct Major_Rev : Field<Major_Rev, 24, 27> {};
 		struct MBG_ID    : Field<MBG_ID   , 28, 31> {};
 
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<MANID, Type, Version, MBG_Use, Minor_Rev, MBG_ID> ALL;
-		};
-
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<MANID, Type, Version, MBG_Use, Minor_Rev, MBG_ID> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<MANID, Type, Version, MBG_Use, Minor_Rev, MBG_ID> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<MANID, Type, Version, MBG_Use, Minor_Rev, MBG_ID> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		PVR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		PVR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -1792,20 +1802,12 @@ protected:
 		struct DNI      : Field<DNI     , 27>     {}; // Debug Notify Interrupt (se_dni)
 		struct DAC_OFST : Field<DAC_OFST, 28, 30> {}; // Data Address Compare Offset
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet< IDE, UDE, MRR, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4_8, DAC1R, DAC1W
-			                , DAC2R, DAC2W, RET, DEVT1, DEVT2, PMI, MPU, CIRPT, CRET, DNI, DAC_OFST> ALL;
-		};
-
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet< IDE, UDE, MRR, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4_8, DAC1R, DAC1W
-			                , DAC2R, DAC2W, RET, DEVT1, DEVT2, PMI, MPU, CIRPT, CRET, DNI, DAC_OFST> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet< IDE, UDE, MRR, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4_8, DAC1R, DAC1W
+		                                                  , DAC2R, DAC2W, RET, DEVT1, DEVT2, PMI, MPU, CIRPT, CRET, DNI, DAC_OFST> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet< IDE, UDE, MRR, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4_8, DAC1R, DAC1W
+		                                                  , DAC2R, DAC2W, RET, DEVT1, DEVT2, PMI, MPU, CIRPT, CRET, DNI, DAC_OFST> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		DBSR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		DBSR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -1874,18 +1876,12 @@ protected:
 		struct CRET  : Field<CRET , 26>     {}; // Critical Return Debug Event Enable
 		struct FT    : Field<FT   , 31>     {}; // Freeze Timers on Debug Event
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<EDM, IDM, RST, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4, DAC1, DAC2, RET, IAC5, IAC6, IAC7, IAC8, DEVT1, DEVT2, DCNT1, DCNT2, CIRPT, CRET, FT> ALL;
-		};
-
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<EDM, IDM, RST, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4, DAC1, DAC2, RET, IAC5, IAC6, IAC7, IAC8, DEVT1, DEVT2, DCNT1, DCNT2, CIRPT, CRET, FT> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet< EDM, IDM, RST, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4, DAC1, DAC2
+		                                                  , RET, IAC5, IAC6, IAC7, IAC8, DEVT1, DEVT2, DCNT1, DCNT2, CIRPT, CRET, FT> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet< EDM, IDM, RST, ICMP, BRT, IRPT, TRAP, IAC1, IAC2, IAC3, IAC4, DAC1, DAC2, RET
+		                                                  , IAC5, IAC6, IAC7, IAC8, DEVT1, DEVT2, DCNT1, DCNT2, CIRPT, CRET, FT> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		DBCR0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		DBCR0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -1938,18 +1934,10 @@ protected:
 		struct IAC4ER : Field<IAC4ER, 22, 23> {}; // Instruction Address Compare 4 Effective/Real Mode
 		struct IAC34M : Field<IAC34M, 24, 25> {}; // Instruction Address Compare 3/4 Mode
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<IAC1US, IAC1ER, IAC2US, IAC2ER, IAC12M, IAC3US, IAC3ER, IAC4US, IAC4ER, IAC34M> ALL;
-		};
-
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<IAC1US, IAC1ER, IAC2US, IAC2ER, IAC12M, IAC3US, IAC3ER, IAC4US, IAC4ER, IAC34M> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<IAC1US, IAC1ER, IAC2US, IAC2ER, IAC12M, IAC3US, IAC3ER, IAC4US, IAC4ER, IAC34M> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<IAC1US, IAC1ER, IAC2US, IAC2ER, IAC12M, IAC3US, IAC3ER, IAC4US, IAC4ER, IAC34M> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		DBCR1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		DBCR1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -1988,18 +1976,10 @@ protected:
 		struct DVC1BE  : Field<DVC1BE , 16, 23> {}; // Data Value Compare 1 Byte Enables
 		struct DVC2BE  : Field<DVC2BE , 24, 31> {}; // Data Value Compare 2 Byte Enables
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<DAC1US, DAC1ER, DAC2US, DAC2ER, DAC12M, DAC1LNK, DAC2LNK, DVC1M, DVC2M, DVC1BE, DVC2BE> ALL;
-		};
-
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<DAC1US, DAC1ER, DAC2US, DAC2ER, DAC12M, DAC1LNK, DAC2LNK, DVC1M, DVC2M, DVC1BE, DVC2BE> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<DAC1US, DAC1ER, DAC2US, DAC2ER, DAC12M, DAC1LNK, DAC2LNK, DVC1M, DVC2M, DVC1BE, DVC2BE> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<DAC1US, DAC1ER, DAC2US, DAC2ER, DAC12M, DAC1LNK, DAC2LNK, DVC1M, DVC2M, DVC1BE, DVC2BE> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		DBCR2(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		DBCR2(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -2186,18 +2166,10 @@ protected:
 		struct FOVFE : Field<FOVFE, 29> {}; // Embedded Floating-point Overflow Exception Enable
 		struct FRMC  : Field<FRMC , 30> {}; // Embedded Floating-point Rounding Mode Control
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<FINXS, FINVS, FDBZS, FUNFS, FOVFS, MODE, FG, FX, FINV, FDBZ, FUNF, FOVF, FINXE, FINVE, FDBZE, FUNFE, FOVFE, FRMC> ALL;
-		};
-
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<FINXS, FINVS, FDBZS, FUNFS, FOVFS, MODE, FG, FX, FINV, FDBZ, FUNF, FOVF, FINXE, FINVE, FDBZE, FUNFE, FOVFE, FRMC> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<FINXS, FINVS, FDBZS, FUNFS, FOVFS, MODE, FG, FX, FINV, FDBZ, FUNF, FOVF, FINXE, FINVE, FDBZE, FUNFE, FOVFE, FRMC> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<FINXS, FINVS, FDBZS, FUNFS, FOVFS, MODE, FG, FX, FINV, FDBZ, FUNF, FOVF, FINXE, FINVE, FDBZE, FUNFE, FOVFE, FRMC> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		SPEFSCR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		SPEFSCR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -2229,34 +2201,41 @@ protected:
 		}
 	};
 	
+	enum
+	{
+		CARCH_HARVARD          = 0,
+		CARCH_UNIFIED          = 1,
+		CARCH_INSTRUCTION_ONLY = 2
+	};
+	
+	enum
+	{
+		CREPL_LRU                = 0,
+		CREPL_PLRU               = 1,
+		CREPL_PSEUDO_ROUND_ROBIN = 2,
+		CREPL_FIFO               = 3
+	};
+	
 	// L1 Cache Configuration Register 0
 	struct L1CFG0 : NonPrivilegedSPR<L1CFG0, 515>
 	{
 		typedef NonPrivilegedSPR<L1CFG0, 515> Super;
-		
-		struct CARCH   : Field<CARCH  , 0, 1>   {}; // Cache Architecture
+	
+		struct CARCH   : Field<CARCH  , 0, 1>   {}; // Cache Architecture: 00=Harvard, 01=Unified, 10=Instruction only (L1CFG1 contains configuration information), 11=Reserved
 		struct CWPA    : Field<CWPA   , 2>      {}; // Cache Way Partitioning Available
 		struct DCFAHA  : Field<DCFAHA , 3>      {}; // Data Cache Flush All by Hardware Available
 		struct DCFISWA : Field<DCFISWA, 4>      {}; // Data Cache Flush/Invalidate by Set and Way Available
-		struct DCBSIZE : Field<DCBSIZE, 7, 8>   {}; // Data Cache Block Size
-		struct DCREPL  : Field<DCREPL , 9, 10>  {}; // Data Cache Replacement Policy
+		struct DCBSIZE : Field<DCBSIZE, 7, 8>   {}; // Data Cache Block Size: 00=32 bytes, 01=64 bytes, 10=128 bytes, 11=Reserved
+		struct DCREPL  : Field<DCREPL , 9, 10>  {}; // Data Cache Replacement Policy: 00=True LRU, 01=Pseudo LRU, 10=Pseudo round robin, 11=FIFO
 		struct DCLA    : Field<DCLA   , 11>     {}; // Data Cache Lockup APU Available
 		struct DCECA   : Field<DCECA  , 12>     {}; // Data Cache Error Checking Available
-		struct DCNWAY  : Field<DCNWAY , 13, 20> {}; // Data Cache Number of Ways
-		struct DCSIZE  : Field<DCSIZE , 21, 31> {}; // Data Cache Size
+		struct DCNWAY  : Field<DCNWAY , 13, 20> {}; // Data Cache Number of Ways (minus 1)
+		struct DCSIZE  : Field<DCSIZE , 21, 31> {}; // Data Cache Size (in KB)
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<CARCH, CWPA, DCFAHA, DCFISWA, DCBSIZE, DCREPL, DCLA, DCECA, DCNWAY, DCSIZE> ALL;
-		};
-
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<CARCH, CWPA, DCFAHA, DCFISWA, DCBSIZE, DCREPL, DCLA, DCECA, DCNWAY, DCSIZE> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<CARCH, CWPA, DCFAHA, DCFISWA, DCBSIZE, DCREPL, DCLA, DCECA, DCNWAY, DCSIZE> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<CARCH, CWPA, DCFAHA, DCFISWA, DCBSIZE, DCREPL, DCLA, DCECA, DCNWAY, DCSIZE> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		L1CFG0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		L1CFG0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -2288,20 +2267,13 @@ protected:
 		struct ICREPL  : Field<ICREPL , 9, 10>  {}; // Instruction Cache Replacement Policy
 		struct ICLA    : Field<ICLA   , 11>     {}; // Instruction Cache Locking APU Available
 		struct ICECA   : Field<ICECA  , 12>     {}; // Instruction Cache Error Checking Available
-		struct ICNWAY  : Field<ICNWAY , 13, 20> {}; // Instruction Cache Number of Ways
-		struct ICSIZE  : Field<ICSIZE , 21, 31> {}; // Instruction Cache Size
+		struct ICNWAY  : Field<ICNWAY , 13, 20> {}; // Instruction Cache Number of Ways (minus 1)
+		struct ICSIZE  : Field<ICSIZE , 21, 31> {}; // Instruction Cache Size (in KB)
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<ICFISWA, ICBSIZE, ICREPL, ICLA, ICECA, ICNWAY, ICSIZE> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<ICFISWA, ICBSIZE, ICREPL, ICLA, ICECA, ICNWAY, ICSIZE> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<ICFISWA, ICBSIZE, ICREPL, ICLA, ICECA, ICNWAY, ICSIZE> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<ICFISWA, ICBSIZE, ICREPL, ICLA, ICECA, ICNWAY, ICSIZE> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		L1CFG1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		L1CFG1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -2374,27 +2346,20 @@ protected:
 		struct CNT2T1  : Field<CNT2T1 , 30> {}; // Debug Counter 2 Trigger Counter 1 Enable
 		struct _CONFIG : Field<_CONFIG , 31> {}; // Debug Counter Configuration
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<DEVT1C1, DEVT2C1, ICMPC1, IAC1C1, IAC2C1, IAC3C1,
-			                 IAC4C1, DAC1RC1, DAC1WC1, DAC2RC1, DAC2WC1, IRPTC1,
-			                 RETC1, DEVT1C2, DEVT2C2, ICMPC2, IAC1C2, IAC2C2,
-			                 IAC3C2, IAC4C2, DAC1RC2, DAC1WC2, DAC2RC2, DAC2WC2,
-			                 DEVT1T1, DEVT2T1, IAC1T1, IAC3T1, DAC1RT1, DAC1WT1,
-			                 CNT2T1, _CONFIG> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<DEVT1C1, DEVT2C1, ICMPC1, IAC1C1, IAC2C1, IAC3C1,
-			                 IAC4C1, DAC1RC1, DAC1WC1, DAC2RC1, DAC2WC1, IRPTC1,
-			                 RETC1, DEVT1C2, DEVT2C2, ICMPC2, IAC1C2, IAC2C2,
-			                 IAC3C2, IAC4C2, DAC1RC2, DAC1WC2, DAC2RC2, DAC2WC2,
-			                 DEVT1T1, DEVT2T1, IAC1T1, IAC3T1, DAC1RT1, DAC1WT1,
-			                 CNT2T1, _CONFIG> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet< DEVT1C1, DEVT2C1, ICMPC1, IAC1C1, IAC2C1, IAC3C1
+		                                                  , IAC4C1, DAC1RC1, DAC1WC1, DAC2RC1, DAC2WC1, IRPTC1
+		                                                  , RETC1, DEVT1C2, DEVT2C2, ICMPC2, IAC1C2, IAC2C2
+		                                                  , IAC3C2, IAC4C2, DAC1RC2, DAC1WC2, DAC2RC2, DAC2WC2
+		                                                  , DEVT1T1, DEVT2T1, IAC1T1, IAC3T1, DAC1RT1, DAC1WT1
+		                                                  , CNT2T1, _CONFIG > ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet< DEVT1C1, DEVT2C1, ICMPC1, IAC1C1, IAC2C1, IAC3C1
+		                                                  , IAC4C1, DAC1RC1, DAC1WC1, DAC2RC1, DAC2WC1, IRPTC1
+		                                                  , RETC1, DEVT1C2, DEVT2C2, ICMPC2, IAC1C2, IAC2C2
+		                                                  , IAC3C2, IAC4C2, DAC1RC2, DAC1WC2, DAC2RC2, DAC2WC2
+		                                                  , DEVT1T1, DEVT2T1, IAC1T1, IAC3T1, DAC1RT1, DAC1WT1
+		                                                  , CNT2T1, _CONFIG > ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		DBCR3(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		DBCR3(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -2446,17 +2411,10 @@ protected:
 		struct CNT1 : Field<CNT1, 0, 15>  {};
 		struct CNT2 : Field<CNT2, 16, 31> {};
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<CNT1, CNT2> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<CNT1, CNT2> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<CNT1, CNT2> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<CNT1, CNT2> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		DBCNT(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		DBCNT(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -2483,18 +2441,11 @@ protected:
 		struct DAC1CFG : Field<DAC1CFG, 20, 23> {}; // Data Address Compare 1 Configuration 
 		struct DAC2CFG : Field<DAC2CFG, 28, 31> {}; // Data Address Compare 2 Configuration 
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<DVC1C, DVC2C, DAC1XMH, DAC2XMH, DAC1XM, DAC2XM, DAC1CFG, DAC2CFG> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<DVC1C, DVC2C, DAC1XMH, DAC2XMH, DAC1XM, DAC2XM, DAC1CFG, DAC2CFG> ALL;
-		};
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<DVC1C, DVC2C, DAC1XMH, DAC2XMH, DAC1XM, DAC2XM, DAC1CFG, DAC2CFG> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<DVC1C, DVC2C, DAC1XMH, DAC2XMH, DAC1XM, DAC2XM, DAC1CFG, DAC2CFG> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
-		
 		DBCR4(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		DBCR4(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
@@ -2529,17 +2480,10 @@ protected:
 		struct IAC8ER : Field<IAC8US, 22, 23> {}; // Instruction Address Compare 8 Effective/Real Mode
 		struct IAC78M : Field<IAC78M, 24, 25> {}; // Instruction Address Compare 7/8 Mode
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<IAC5US, IAC5ER, IAC6US, IAC6ER, IAC56M, IAC7US, IAC7ER, IAC7ER, IAC8US, IAC78M> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<IAC5US, IAC5ER, IAC6US, IAC6ER, IAC56M, IAC7US, IAC7ER, IAC7ER, IAC8US, IAC78M> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<IAC5US, IAC5ER, IAC6US, IAC6ER, IAC56M, IAC7US, IAC7ER, IAC7ER, IAC8US, IAC78M> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<IAC5US, IAC5ER, IAC6US, IAC6ER, IAC56M, IAC7US, IAC7ER, IAC7ER, IAC8US, IAC78M> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		DBCR5(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		DBCR5(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -2687,25 +2631,18 @@ protected:
 		struct BUS_WRERR   : Field<BUS_WRERR  , 29> {}; // Write bus error on store to bus or DMEM/imprecise write error
 		struct BUS_WRDSI   : Field<BUS_WRDSI  , 30> {}; // Write bus error on buffered store to bus with DSI signaled. Set concurrently with BUS_WRERR for this case
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<MCP, IC_DPERR, DC_DPERR, EXCP_ERR, IC_TPERR,
-			                 DC_TPERR, IC_LKERR, DC_LKERR, NMI, MAV, MEA,
-			                 U, IF, LD, ST, G, STACK_ERR, IMEM_PERR,
-			                 DMEM_RDPERR, DMEM_WRPERR, BUS_IRERR, BUS_DRERR,
-			                 BUS_WRERR, BUS_WRDSI> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<MCP, IC_DPERR, DC_DPERR, EXCP_ERR, IC_TPERR,
-			                 DC_TPERR, IC_LKERR, DC_LKERR, NMI, MAV, MEA,
-			                 U, IF, LD, ST, G, STACK_ERR, IMEM_PERR,
-			                 DMEM_RDPERR, DMEM_WRPERR, BUS_IRERR, BUS_DRERR,
-			                 BUS_WRERR, BUS_WRDSI> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet< MCP, IC_DPERR, DC_DPERR, EXCP_ERR, IC_TPERR
+		                                                  , DC_TPERR, IC_LKERR, DC_LKERR, NMI, MAV, MEA
+		                                                  , U, IF, LD, ST, G, STACK_ERR, IMEM_PERR
+		                                                  , DMEM_RDPERR, DMEM_WRPERR, BUS_IRERR, BUS_DRERR
+		                                                  , BUS_WRERR, BUS_WRDSI > ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet< MCP, IC_DPERR, DC_DPERR, EXCP_ERR, IC_TPERR
+		                                                  , DC_TPERR, IC_LKERR, DC_LKERR, NMI, MAV, MEA
+		                                                  , U, IF, LD, ST, G, STACK_ERR, IMEM_PERR
+		                                                  , DMEM_RDPERR, DMEM_WRPERR, BUS_IRERR, BUS_DRERR
+		                                                  , BUS_WRERR, BUS_WRDSI > ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		MCSR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		MCSR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -2848,17 +2785,10 @@ protected:
 		struct DAC3CFG : Field<DAC3CFG, 24, 27> {}; // Data Address Compare 3 Configuration
 		struct DAC4CFG : Field<DAC4CFG, 28, 31> {}; // Data Address Compare 4 Configuration
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<DAC3XMH, DAC4XMH, DAC3XM, DAC4XM, DAC3CFG, DAC4CFG> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<DAC3XMH, DAC4XMH, DAC3XM, DAC4XM, DAC3CFG, DAC4CFG> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<DAC3XMH, DAC4XMH, DAC3XM, DAC4XM, DAC3CFG, DAC4CFG> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<DAC3XMH, DAC4XMH, DAC3XM, DAC4XM, DAC3CFG, DAC4CFG> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		DBCR7(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		DBCR7(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -2889,17 +2819,10 @@ protected:
 		struct DAC3LNK : Field<DAC3LNK, 10>   {}; // Data Address Compare 3 Linked
 		struct DAC4LNK : Field<DAC4LNK, 11>   {}; // Data Address Compare 4 Linked
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<DAC3US, DAC3ER, DAC4US, DAC4ER, DAC34M, DAC3LNK, DAC4LNK> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<DAC3US, DAC3ER, DAC4US, DAC4ER, DAC34M, DAC3LNK, DAC4LNK> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<DAC3US, DAC3ER, DAC4US, DAC4ER, DAC34M, DAC3LNK, DAC4LNK> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<DAC3US, DAC3ER, DAC4US, DAC4ER, DAC34M, DAC3LNK, DAC4LNK> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		DBCR8(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		DBCR8(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -2976,17 +2899,10 @@ protected:
 		struct IAC7XM : Field<IAC7XM, 24, 27> {}; // Instruction Address Compare 7 Extended Mask Control
 		struct IAC8XM : Field<IAC8XM, 28, 31> {}; // Instruction Address Compare 8 Extended Mask Control
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<IAC1XM, IAC2XM, IAC3XM, IAC4XM, IAC5XM, IAC6XM, IAC7XM, IAC8XM> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<IAC1XM, IAC2XM, IAC3XM, IAC4XM, IAC5XM, IAC6XM, IAC7XM, IAC8XM> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<IAC1XM, IAC2XM, IAC3XM, IAC4XM, IAC5XM, IAC6XM, IAC7XM, IAC8XM> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<IAC1XM, IAC2XM, IAC3XM, IAC4XM, IAC5XM, IAC6XM, IAC7XM, IAC8XM> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		DBCR6(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		DBCR6(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3013,17 +2929,10 @@ protected:
 		
 		struct STGC : Field<STGC, 2, 3> {}; // Store Gather Control
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<STGC> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<STGC> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<STGC> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<STGC> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		L1CSR2(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		L1CSR2(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3059,17 +2968,10 @@ protected:
 		struct I     : Field<I    , 28>     {}; // Cache Inhibited
 		struct G     : Field<G    , 30>     {}; // Guarded
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<VALID, IPROT, SEL, RO, DEBUG, INST, SHD, ESEL, UAMSK, UW, SW, UX_UR, SX_SR, IOVR, GOVR, I, G> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<VALID, IPROT, SEL, RO, DEBUG, INST, SHD, ESEL, UAMSK, UW, SW, UX_UR, SX_SR, IOVR, GOVR, I, G> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<VALID, IPROT, SEL, RO, DEBUG, INST, SHD, ESEL, UAMSK, UW, SW, UX_UR, SX_SR, IOVR, GOVR, I, G> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<VALID, IPROT, SEL, RO, DEBUG, INST, SHD, ESEL, UAMSK, UW, SW, UX_UR, SX_SR, IOVR, GOVR, I, G> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		MAS0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		MAS0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3111,17 +3013,10 @@ protected:
 		struct TID    : Field<TID   , 8, 15>  {}; // Region ID bits
 		struct TIDMSK : Field<TIDMSK, 24, 31> {}; // Region ID mask
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<TID, TIDMSK> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<TID, TIDMSK> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<TID, TIDMSK> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<TID, TIDMSK> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		MAS1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		MAS1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3144,17 +3039,10 @@ protected:
 		
 		struct UPPER_BOUND : Field<UPPER_BOUND, 0, 31> {}; // Upper bound of address range covered by entry
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<UPPER_BOUND> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<UPPER_BOUND> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<UPPER_BOUND> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<UPPER_BOUND> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		MAS2(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		MAS2(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3174,19 +3062,12 @@ protected:
 	{
 		typedef PrivilegedSPR<MAS3, 627> Super;
 		
-		struct LOWER_BOUND : Field<LOWER_BOUND, 0, 31> {};
+		struct LOWER_BOUND : Field<LOWER_BOUND, 0, 31> {}; // Lower bound of address range covered by entry
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<LOWER_BOUND> ALL; // Lower bound of address range covered by entry
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<LOWER_BOUND> ALL; // Lower bound of address range covered by entry
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<LOWER_BOUND> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<LOWER_BOUND> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		MAS3(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		MAS3(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3271,17 +3152,10 @@ protected:
 		struct DECA           : Field<DECA          , 22>     {}; // DMEM Error Correction Available
 		struct DMSIZE         : Field<DMSIZE        , 24, 29> {}; // DMEM Size
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<DMEM_BASE_ADDR, DECUA, DECA, DMSIZE> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<DMEM_BASE_ADDR, DECUA, DECA, DMSIZE> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<DMEM_BASE_ADDR, DECUA, DECA, DMSIZE> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<DMEM_BASE_ADDR, DECUA, DECA, DMSIZE> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		DMEMCFG0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		DMEMCFG0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3307,17 +3181,10 @@ protected:
 		struct IECA           : Field<IECA          , 22>     {}; // IMEM Error Correction Available
 		struct IMSIZE         : Field<IMSIZE        , 24, 29> {}; // IMEM Size
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<IMEM_BASE_ADDR, IECUA, IECA, IMSIZE> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<IMEM_BASE_ADDR, IECUA, IECA, IMSIZE> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<IMEM_BASE_ADDR, IECUA, IECA, IMSIZE> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<IMEM_BASE_ADDR, IECUA, IECA, IMSIZE> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		IMEMCFG0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		IMEMCFG0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3342,17 +3209,10 @@ protected:
 		struct CSET : Field<CSET, 21, 26> {}; // Cache Set
 		struct CCMD : Field<CCMD, 29, 31> {}; // Cache Command
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<CWAY, CSET, CCMD> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<CWAY, CSET, CCMD> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<CWAY, CSET, CCMD> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<CWAY, CSET, CCMD> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 
 		L1FINV1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		L1FINV1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3411,17 +3271,10 @@ protected:
 		struct MCCLRDE : Field<MCCLRDE, 22> {}; // Machine Check Interrupt Clears MSR[DE]
 		struct NOPTI   : Field<NOPTI  , 31> {}; // No-op Touch Instructions
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<EMCP, ICR, NHR, DCLREE, DCLRCE, CICLRDE, MCCLRDE, NOPTI> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<EMCP, ICR, NHR, DCLREE, DCLRCE, CICLRDE, MCCLRDE, NOPTI> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<EMCP, ICR, NHR, DCLREE, DCLRCE, CICLRDE, MCCLRDE, NOPTI> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<EMCP, ICR, NHR, DCLREE, DCLRCE, CICLRDE, MCCLRDE, NOPTI> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		HID0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		HID0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3450,17 +3303,10 @@ protected:
 		struct HP_NMI : Field<HP_NMI, 23> {}; // High priority elevation for NMI and critical interrupts
 		struct ATS    : Field<ATS   , 24> {}; // Atomic status
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<HP_NOR, HP_NMI, ATS> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<HP_NOR, HP_NMI, ATS> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<HP_NOR, HP_NMI, ATS> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<HP_NOR, HP_NMI, ATS> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		HID1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		HID1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3492,17 +3338,10 @@ protected:
 		struct DCINV   : Field<DCINV  , 30>     {}; // Data Cache Invalidate
 		struct DCE     : Field<DCE    , 31>     {}; // Data Cache Enable
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<WID, WDD, DCWA, DCECE, DCEI, DCLOC, DCEA, DCLOINV, DCABT, DCINV, DCE> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<WID> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<WID, WDD, DCWA, DCECE, DCEI, DCLOC, DCEA, DCLOINV, DCABT, DCINV, DCE> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<WID> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		L1CSR0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		L1CSR0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3541,17 +3380,10 @@ protected:
 		struct ICINV   : Field<ICINV  , 30>     {}; // Instruction Cache Invalidate
 		struct ICE     : Field<ICE    , 31>     {}; // Instruction Cache Enable
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<ICECE, ICEI, ICLOC, ICEA, ICLOINV, ICABT, ICINV, ICE> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<ICECE, ICEI, ICLOC, ICEA, ICLOINV, ICABT, ICINV, ICE> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<ICECE, ICEI, ICLOC, ICEA, ICLOINV, ICABT, ICINV, ICE> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<ICECE, ICEI, ICLOC, ICEA, ICLOINV, ICABT, ICINV, ICE> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		L1CSR1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		L1CSR1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3583,17 +3415,10 @@ protected:
 		struct BPRED  : Field<BPRED , 29, 30> {}; // Branch Prediction Control (Static)
 		struct BPEN   : Field<BPEN  , 31>     {}; // Branch target buffer prediction enable
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<BBFI, BALLOC, BPRED, BPEN> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<BBFI, BALLOC, BPRED, BPEN> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<BBFI, BALLOC, BPRED, BPEN> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<BBFI, BALLOC, BPRED, BPEN> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		BUCSR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		BUCSR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3629,17 +3454,10 @@ protected:
 		struct MPUFI  : Field<MPUFI , 30> {}; // MPU flash invalidate
 		struct MPUEN  : Field<MPUEN , 31> {}; // MPU Enable
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<BYPSR, BYPSW, BYPSX, BYPUR, BYPUW, BYPUX, DRDEND, DWDEN, IDEN, TIDCTL, MPUFI, MPUEN> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<BYPSR, BYPSW, BYPSX, BYPUR, BYPUW, BYPUX, DRDEND, DWDEN, IDEN, TIDCTL, MPUFI, MPUEN> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<BYPSR, BYPSW, BYPSX, BYPUR, BYPUW, BYPUX, DRDEND, DWDEN, IDEN, TIDCTL, MPUFI, MPUEN> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<BYPSR, BYPSW, BYPSX, BYPUR, BYPUW, BYPUX, DRDEND, DWDEN, IDEN, TIDCTL, MPUFI, MPUEN> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		MPU0CSR0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		MPU0CSR0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3676,17 +3494,10 @@ protected:
 		struct NTLBS   : Field<NTLBS  , 28, 29> {}; // Number of TLBs
 		struct MAVN    : Field<MAVN   , 30, 31> {}; // MMU Architecture Version Number
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<RASIZE, PIDSIZE, NMPUS, NTLBS, MAVN> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<RASIZE, PIDSIZE, NMPUS, NTLBS, MAVN> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<RASIZE, PIDSIZE, NMPUS, NTLBS, MAVN> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<RASIZE, PIDSIZE, NMPUS, NTLBS, MAVN> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		MMUCFG(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		MMUCFG(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3712,17 +3523,10 @@ protected:
 		struct CSET : Field<CSET, 21, 26> {}; // Cache Set
 		struct CCMD : Field<CCMD, 29, 31> {}; // Cache Command
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<CWAY, CSET, CCMD> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<CWAY, CSET, CCMD> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<CWAY, CSET, CCMD> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<CWAY, CSET, CCMD> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		L1FINV0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		L1FINV0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3746,17 +3550,10 @@ protected:
 		
 		struct System_Version : Field<System_Version, 0, 31> {};
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<System_Version> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<System_Version> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<System_Version> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<System_Version> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		SVR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		SVR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3790,17 +3587,10 @@ protected:
 		struct DCPECE         : Field<DCPECE        , 30>     {}; // DMEM CPU Port ECC Enabled (CPU Port)
 		struct DSECE          : Field<DSECE         , 31>     {}; // DMEM Slave port Error Checking Enable (Slave port)
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<DMEM_BASE_ADDR, DBYPCB, DBYPAT, DBYPDEC, DECUE, DBAPD, DPEIE, DICWE, DSWCE, DDAUEC, DCPECE, DSECE> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<DMEM_BASE_ADDR, DBYPCB, DBYPAT, DBYPDEC, DECUE, DBAPD, DPEIE, DICWE, DSWCE, DDAUEC, DCPECE, DSECE> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<DMEM_BASE_ADDR, DBYPCB, DBYPAT, DBYPDEC, DECUE, DBAPD, DPEIE, DICWE, DSWCE, DDAUEC, DCPECE, DSECE> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<DMEM_BASE_ADDR, DBYPCB, DBYPAT, DBYPDEC, DECUE, DBAPD, DPEIE, DICWE, DSWCE, DDAUEC, DCPECE, DSECE> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		DMEMCTL0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		DMEMCTL0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3846,17 +3636,10 @@ protected:
 		struct DURAC1 : Field<DURAC1, 28, 29> {}; // DMEM User Read Access Control for Quadrant 1
 		struct DURAC0 : Field<DURAC0, 30, 31> {}; // DMEM User Read Access Control for Quadrant 0
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<DSWAC3, DSWAC2, DSWAC1, DSWAC0, DSRAC3, DSRAC2, DSRAC1, DSRAC0, DUWAC3, DUWAC2, DUWAC1, DUWAC0, DURAC3, DURAC2, DURAC1, DURAC0> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<DSWAC3, DSWAC2, DSWAC1, DSWAC0, DSRAC3, DSRAC2, DSRAC1, DSRAC0, DUWAC3, DUWAC2, DUWAC1, DUWAC0, DURAC3, DURAC2, DURAC1, DURAC0> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<DSWAC3, DSWAC2, DSWAC1, DSWAC0, DSRAC3, DSRAC2, DSRAC1, DSRAC0, DUWAC3, DUWAC2, DUWAC1, DUWAC0, DURAC3, DURAC2, DURAC1, DURAC0> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<DSWAC3, DSWAC2, DSWAC1, DSWAC0, DSRAC3, DSRAC2, DSRAC1, DSRAC0, DUWAC3, DUWAC2, DUWAC1, DUWAC0, DURAC3, DURAC2, DURAC1, DURAC0> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		DMEMCTL1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		DMEMCTL1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3900,17 +3683,10 @@ protected:
 		struct ICPECE         : Field<ICPECE        , 30>     {}; // IMEM CPU Port ECC Enable (CPU Port)
 		struct ISECE          : Field<ISECE         , 31>     {}; // IMEM Slave port Error Checking Enable (Slave port)
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<IMEM_BASE_ADDR, IECUE, IBAPD, ISWCE, IDAUEC, ICPECE, ISECE> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<IMEM_BASE_ADDR, IECUE, IBAPD, ISWCE, IDAUEC, ICPECE, ISECE> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<IMEM_BASE_ADDR, IECUE, IBAPD, ISWCE, IDAUEC, ICPECE, ISECE> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<IMEM_BASE_ADDR, IECUE, IBAPD, ISWCE, IDAUEC, ICPECE, ISECE> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		IMEMCTL0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		IMEMCTL0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3943,17 +3719,10 @@ protected:
 		struct IUXAC1 : Field<IUXAC1, 28, 29> {}; // IMEM User Instruction Fetch Access Control for Quadrant 1
 		struct IUXAC0 : Field<IUXAC0, 30, 31> {}; // IMEM User Instruction Fetch Access Control for Quadrant 0
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<ISXAC3, ISXAC2, ISXAC1, ISXAC0, IUXAC3, IUXAC2, IUXAC1, IUXAC0> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<ISXAC3, ISXAC2, ISXAC1, ISXAC0, IUXAC3, IUXAC2, IUXAC1, IUXAC0> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<ISXAC3, ISXAC2, ISXAC1, ISXAC0, IUXAC3, IUXAC2, IUXAC1, IUXAC0> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<ISXAC3, ISXAC2, ISXAC1, ISXAC0, IUXAC3, IUXAC2, IUXAC1, IUXAC0> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		IMEMCTL1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		IMEMCTL1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -3986,17 +3755,10 @@ protected:
 		struct DDAC   : Field<DDAC  , 30> {}; // Data Disable Address Checking
 		struct DECCEN : Field<DECCEN, 31> {}; // Data ECC Enable Field
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<IDAC, IECCEN, DDAC, DECCEN> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<IDAC, IECCEN, DDAC, DECCEN> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<IDAC, IECCEN, DDAC, DECCEN> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<IDAC, IECCEN, DDAC, DECCEN> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		E2ECTL0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		E2ECTL0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -4022,17 +3784,10 @@ protected:
 		struct INVC            : Field<INVC           , 18, 19> {}; // Invert Control
 		struct WCHKBIT_CHKINVT : Field<WCHKBIT_CHKINVT, 24, 31> {}; // Write Checkbits / Checkbit Invert Mask
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<RCHKBIT, WRC, INVC, WCHKBIT_CHKINVT> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<RCHKBIT, WRC, INVC, WCHKBIT_CHKINVT> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<RCHKBIT, WRC, INVC, WCHKBIT_CHKINVT> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<RCHKBIT, WRC, INVC, WCHKBIT_CHKINVT> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		E2EECSR0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		E2EECSR0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -4062,17 +3817,10 @@ protected:
 		struct OV            : Field<OV           , 0> {};      // Overflow
 		struct Counter_Value : Field<Counter_Value, 1, 31> {};  // Indicates the number of occurrences of the specified event
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<OV, Counter_Value> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<OV, Counter_Value> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<OV, Counter_Value> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<OV, Counter_Value> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		PMC(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		PMC(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -4108,17 +3856,10 @@ protected:
 		struct TBSEL : Field<TBSEL, 19> {}; // Time Base Selector
 		struct TBEE  : Field<TBEE , 23> {}; // Time base transition Event Enable
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<FAC, PMIE, FCECE, TBSEL, TBEE> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<FAC, PMIE, FCECE, TBSEL, TBEE> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<FAC, PMIE, FCECE, TBSEL, TBEE> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<FAC, PMIE, FCECE, TBSEL, TBEE> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		PMGC0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		PMGC0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -4150,17 +3891,10 @@ protected:
 		struct EVENT : Field<EVENT, 8,15>  {}; // Event selector
 		struct PMP   : Field<PMP  , 17,19> {}; // Performance Monitor Watchpoint Periodicity Select
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<FC, FCS, FCU, FCM1, FCM0, CE, EVENT, PMP> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<FC, FCS, FCU, FCM1, FCM0, CE, EVENT, PMP> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<FC, FCS, FCU, FCM1, FCM0, CE, EVENT, PMP> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<FC, FCS, FCU, FCM1, FCM0, CE, EVENT, PMP> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		PMLCa(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		PMLCa(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -4206,17 +3940,10 @@ protected:
 		struct THRESHMUL  : Field<THRESHMUL , 21,23> {}; // Threshold multiple
 		struct THRESHOLD  : Field<THRESHOLD , 26,31> {}; // Threshold
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<TRIGONCTL, TRIGOFFCTL, TRIGONSEL, TRIGOFFSEL, TRIGGERED, THRESHMUL, THRESHOLD> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<TRIGONCTL, TRIGOFFCTL, TRIGONSEL, TRIGOFFSEL, TRIGGERED, THRESHMUL, THRESHOLD> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<TRIGONCTL, TRIGOFFCTL, TRIGONSEL, TRIGOFFSEL, TRIGGERED, THRESHMUL, THRESHOLD> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<TRIGONCTL, TRIGOFFCTL, TRIGONSEL, TRIGOFFSEL, TRIGGERED, THRESHMUL, THRESHOLD> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		PMLCb(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		PMLCb(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
@@ -4308,17 +4035,10 @@ protected:
 		struct NATHRD   : Field<NATHRD  , 18,23> {}; // Number of active threads implemented
 		struct NTHRD    : Field<NTHRD   , 26,31> {}; // Number of threads implemented
 		
-		template <Model _MODEL, bool dummy = true> struct IMPLEMENTATION {};
-		template <bool dummy> struct IMPLEMENTATION<E200Z710N3, dummy>
-		{
-			typedef FieldSet<NPRIBITS, NATHRD, NTHRD> ALL;
-		};
-		template <bool dummy> struct IMPLEMENTATION<E200Z425BN3, dummy>
-		{
-			typedef FieldSet<NPRIBITS, NATHRD, NTHRD> ALL;
-		};
-
-		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
+		SWITCH_ENUM_TRAIT(Model, _);
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<NPRIBITS, NATHRD, NTHRD> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<NPRIBITS, NATHRD, NTHRD> ALL; };
+		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		TMCFG0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
 		TMCFG0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }

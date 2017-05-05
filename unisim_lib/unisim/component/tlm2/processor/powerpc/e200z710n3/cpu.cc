@@ -210,19 +210,27 @@ void CPU::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 			{
 				case tlm::TLM_READ_COMMAND:
 				{
-					unsigned int read_bytes = ExternalLoad(start_addr, data_ptr, data_length);
+					unsigned int read_bytes = ExternalLoad(start_addr + local_memory_base_addr, data_ptr, data_length);
 					if(read_bytes != data_length)
 					{
 						payload.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
+					}
+					else
+					{
+						payload.set_response_status(tlm::TLM_OK_RESPONSE);
 					}
 					break;
 				}
 				case tlm::TLM_WRITE_COMMAND:
 				{
-					unsigned int written_bytes = ExternalStore(start_addr, data_ptr, data_length);
+					unsigned int written_bytes = ExternalStore(start_addr + local_memory_base_addr, data_ptr, data_length);
 					if(written_bytes != data_length)
 					{
 						payload.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
+					}
+					else
+					{
+						payload.set_response_status(tlm::TLM_OK_RESPONSE);
 					}
 					break;
 				}
@@ -291,12 +299,12 @@ unsigned int CPU::transport_dbg(tlm::tlm_generic_payload& payload)
 		{
 			case tlm::TLM_READ_COMMAND:
 			{
-				xfered = ExternalLoad(start_addr, data_ptr, data_length);
+				xfered = ExternalLoad(start_addr + local_memory_base_addr, data_ptr, data_length);
 				break;
 			}
 			case tlm::TLM_WRITE_COMMAND:
 			{
-				xfered = ExternalStore(start_addr, data_ptr, data_length);
+				xfered = ExternalStore(start_addr + local_memory_base_addr, data_ptr, data_length);
 				break;
 			}
 			case tlm::TLM_IGNORE_COMMAND:
@@ -592,6 +600,7 @@ bool CPU::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t siz
 	
 	payload->set_address(physical_addr);
 	payload->set_command(tlm::TLM_READ_COMMAND);
+	payload->set_streaming_width(size);
 	payload->set_data_length(size);
 	payload->set_data_ptr((unsigned char *) buffer);
 	
@@ -672,6 +681,7 @@ bool CPU::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t siz
 	
 	payload->set_address(physical_addr);
 	payload->set_command(tlm::TLM_READ_COMMAND);
+	payload->set_streaming_width(size);
 	payload->set_data_length(size);
 	payload->set_data_ptr((unsigned char *) buffer);
 	
@@ -752,6 +762,7 @@ bool CPU::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint3
 	
 	payload->set_address(physical_addr);
 	payload->set_command(tlm::TLM_WRITE_COMMAND);
+	payload->set_streaming_width(size);
 	payload->set_data_length(size);
 	payload->set_data_ptr((unsigned char *) buffer);
 	

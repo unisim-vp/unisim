@@ -170,6 +170,10 @@ CPU<CONFIG>::CPU(const char *name, unisim::kernel::service::Object *parent)
 	, ctr()
 	, cr()
 {
+	param_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+
 	unsigned int i;
 	
 	for(i = 0; i < 32; i++)
