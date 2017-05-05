@@ -52,26 +52,17 @@ using namespace unisim::component::cxx::processor::arm;
 struct Sink
 {
   Sink( std::string const& gendir )
-    : protos( gendir + ".protos.inc" ), info( gendir + ".info.inc" ), srcs( gendir + ".srcs.s" ), opidx( 0 )
+    : macros( gendir + ".inc" ), sources( gendir + ".s" )
   {
-    protos << "/* -*- mode: c++ -*- */\n\nextern \"C\"\n{\n";
-    info   << "/* -*- mode: c++ -*- */\n\nTestInfo optests[] =\n{\n";
-    srcs   << "\t.syntax\tunified\n\n";
+    sources   << "\t.syntax\tunified\n\n";
   }
   
-  ~Sink()
-  {
-    info << "};\n\n";
-    protos << "}\n\n";
-  }
+  ~Sink() {}
   
-  std::ofstream protos;
-  std::ofstream info;
-  std::ofstream srcs;
-  uintptr_t     opidx;
+  std::ofstream macros;
+  std::ofstream sources;
   
-  uintptr_t next_index() { return opidx++; }
-  std::string test_prefix() const { std::ostringstream oss; oss << "Tst" << (opidx-1); return oss.str(); }
+  char const* test_prefix() const { return "iut_"; }
 };
 
 struct TestConfig
@@ -157,24 +148,21 @@ struct ARM32 : isa::arm32::Decoder<ut::Arch>
   {
     std::string hexcode;
     { std::ostringstream oss; oss << std::hex << code; hexcode = oss.str(); }
-    uintptr_t opidx = sink.next_index();
     std::string opfunc_name = sink.test_prefix() + cfg.ident + '_' + hexcode;
     
-    sink.protos << "  extern void " << opfunc_name << "();\t/* " << std::dec << opidx << " */\n";
+    sink.macros << "ENTRY(" << opfunc_name << ",0x" << hexcode << ")\n";
     
-    sink.info << "  { &" << opfunc_name << ", 0x" << hexcode << " },\t/* " << std::dec << opidx << " */\n";
-    
-    sink.srcs << "\t.text\n\t.align\t2\n\t.global\t" << opfunc_name
-              << "\n\t.type\t" << opfunc_name
-              << ", %function\n" << opfunc_name
-              << ":\t/* " << std::dec << opidx << " */\n"
-              << cfg.prologue()
-              << "\t.long\t0x" << hexcode << '\t' << "/* " << cfg.disasm << " */\n"
-              << cfg.epilogue()
-              << "\tbx\tlr\n"
-              << cfg.finally()
-              << "\t.size\t" << opfunc_name
-              << ", .-" << opfunc_name << "\n\n";
+    sink.sources << "\t.text\n\t.align\t2\n\t.global\t" << opfunc_name
+                 << "\n\t.type\t" << opfunc_name
+                 << ", %function\n" << opfunc_name
+                 << ":\n"
+                 << cfg.prologue()
+                 << "\t.long\t0x" << hexcode << '\t' << "/* " << cfg.disasm << " */\n"
+                 << cfg.epilogue()
+                 << "\tbx\tlr\n"
+                 << cfg.finally()
+                 << "\t.size\t" << opfunc_name
+                 << ", .-" << opfunc_name << "\n\n";
   }
   void
   write_tests( Sink& sink, TestConfig const& cfg, CodeType code )
@@ -201,27 +189,24 @@ struct THUMB : isa::thumb2::Decoder<ut::Arch>
   write_test( Sink& sink, std::string const& midfix, TestConfig const& cfg, unsigned cond, bool wide, std::string const& hexcode )
   {
     char const* condname = (cond < 15) ? &"eq\0ne\0cs\0cc\0mi\0pl\0vs\0vc\0hi\0ls\0ge\0lt\0gt\0le\0al"[cond*3] : 0;
-    uintptr_t opidx = sink.next_index();
     
     std::string opfunc_name( sink.test_prefix() + midfix );
     if (condname) opfunc_name = opfunc_name + '_' + condname;
     
-    sink.protos << "  extern void " << opfunc_name << "();\t/* " << std::dec << opidx << " */\n";
+    sink.macros << "ENTRY(" << opfunc_name << ",0x" << hexcode << ")\n";
     
-    sink.info << "  { &" << opfunc_name << ", 0x" << hexcode << " },\t/* " << std::dec << opidx << " */\n";
-    
-    sink.srcs << "\t.text\n\t.align\t2\n\t.global\t" << opfunc_name
-              << "\n\t.type\t" << opfunc_name
-              << ", %function\n\t.thumb\n\t.thumb_func\n" << opfunc_name
-              << ":\t/* " << std::dec << opidx << " */\n"
-              << cfg.prologue();
-    if (condname) sink.srcs << "\t.short\t0x" << std::hex << (0b1011111100001000 | (cond << 4)) << std::dec  << "/* it " << condname << " */\n";
-    sink.srcs << "\t." << (wide ? "long" : "short") << "\t0x" << hexcode << '\t' << "/* " << cfg.disasm << " */\n"
-              << cfg.epilogue()
-              << "\tbx\tlr\n"
-              << cfg.finally()
-              << "\t.size\t" << opfunc_name
-              << ", .-" << opfunc_name << "\n\n";
+    sink.sources << "\t.text\n\t.align\t2\n\t.global\t" << opfunc_name
+                 << "\n\t.type\t" << opfunc_name
+                 << ", %function\n\t.thumb\n\t.thumb_func\n" << opfunc_name
+                 << ":\n"
+                 << cfg.prologue();
+    if (condname) sink.sources << "\t.short\t0x" << std::hex << (0b1011111100001000 | (cond << 4)) << std::dec  << "/* it " << condname << " */\n";
+    sink.sources << "\t." << (wide ? "long" : "short") << "\t0x" << hexcode << '\t' << "/* " << cfg.disasm << " */\n"
+                 << cfg.epilogue()
+                 << "\tbx\tlr\n"
+                 << cfg.finally()
+                 << "\t.size\t" << opfunc_name
+                 << ", .-" << opfunc_name << "\n\n";
   }
   
   void

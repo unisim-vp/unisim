@@ -89,12 +89,13 @@ namespace ut
           {
             auto sreg = dynamic_cast<SourceReg const*>( expr.node );
             if (sreg and sreg->reg == reg) count += 1;
+            expr->Traverse(*this);
           }
         };
         {
           // No PC relative loads for now
           RegRefs pcrefs(15);
-          expr->Traverse( pcrefs );
+          pcrefs.Process( expr );
           if (pcrefs.count) { throw Untestable("PC relative address."); }
         }
         struct
@@ -127,7 +128,7 @@ namespace ut
         for (auto x : bregs.candidates) {
           if (x.second != 1) continue;
           RegRefs chk( x.first );
-          expr->Traverse( chk );
+          chk.Process( expr );
           if (chk.count != 1) continue;
           reg_idx = x.first;
         }
