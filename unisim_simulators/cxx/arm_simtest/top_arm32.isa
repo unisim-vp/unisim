@@ -39,13 +39,14 @@
 **********************************************/
 
 namespace unisim::component::cxx::processor::arm::isa::arm32
-set endianness big
+
 set addressclass {uint32_t}
 template <{typename} {ARCH}>
+set codetype scalar;
 
 decl {
 #include <iosfwd>
-#include <stdint.h>
+#include <inttypes.h>
 } // end of decl
 
 impl {
@@ -56,7 +57,6 @@ impl {
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <testutils.hh>
 #include <iostream>
-#include <iomanip>
 } // end of impl
 
 action {void} execute({ARCH &} {cpu}) {
