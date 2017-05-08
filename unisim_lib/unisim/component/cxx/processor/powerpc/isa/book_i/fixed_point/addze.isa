@@ -38,15 +38,15 @@ impl {
 
 op addze(31[6]:rd[5]:ra[5]:?[5]:oe[1]:202[9]:rc[1])
 addze.execute = {
-	uint8_t carry; // carry out
-	uint8_t overflow; // overflow
-	uint8_t sign; // sign
-	uint32_t result;
+	CPU::U8 carry; // carry out
+	CPU::U8 overflow; // overflow
+	CPU::U8 sign; // sign
+	CPU::U32 result;
 	
 	// Read the input operands
-	uint32_t a = cpu->GetGPR(ra);
+	CPU::U32 a = cpu->GetGPR(ra);
 	XER& xer = cpu->GetXER();
-	uint8_t carry_in = xer.Get<XER::CA>();
+	CPU::U8 carry_in = xer.Get<XER::CA>();
 	
 	// Compute the result
 	SignedAdd32(result, carry, overflow, sign, a, carry_in, 0);
@@ -61,7 +61,7 @@ addze.execute = {
 	{
 		// Generate XER[OV] and XER[SO]
 		xer.Set<XER::OV>(overflow);
-		if(overflow) xer.Set<XER::SO>(1);
+		xer.Set<XER::SO>(xer.Get<XER::SO>() | overflow);
 	}
 	
 	if(unlikely(rc))
@@ -69,9 +69,9 @@ addze.execute = {
 		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>((int32_t) result < 0);
-		cr.Set<CR::CR0::GT>((int32_t) result > 0);
-		cr.Set<CR::CR0::EQ>((int32_t) result == 0);
+		cr.Set<CR::CR0::LT>(CPU::S32(result) < CPU::S32(0));
+		cr.Set<CR::CR0::GT>(CPU::S32(result) > CPU::S32(0));
+		cr.Set<CR::CR0::EQ>(result == CPU::U32(0));
 	}
 	
 	return true;

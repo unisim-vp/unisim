@@ -43,7 +43,7 @@ wrtee.execute = {
 	}
 	
 	// Read the input operand
-	uint32_t s = cpu->GetGPR(rs);
+	CPU::U32 s = cpu->GetGPR(rs);
 	
 	msr.Set<CPU::MSR::EE>((s & 0x8000) != 0);
 	

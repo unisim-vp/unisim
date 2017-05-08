@@ -39,12 +39,12 @@ impl {
 op srw(31[6]:rs[5]:ra[5]:rb[5]:536[10]:rc[1])
 srw.execute = {
 	// Read the input operands
-	uint32_t s = cpu->GetGPR(rs);
-	uint32_t b = cpu->GetGPR(rb);
+	CPU::U32 s = cpu->GetGPR(rs);
+	CPU::U32 b = cpu->GetGPR(rb);
 	
 	// Compute the result
 	unsigned int sh = b & 0x3f;
-	uint32_t result = (sh & 0x20) ? 0 : s >> (sh & 0x1f);
+	CPU::U32 result = (sh & 0x20) ? 0 : s >> (sh & 0x1f);
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);
@@ -54,9 +54,9 @@ srw.execute = {
 		XER& xer = cpu->GetXER();
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>((int32_t) result < 0);
-		cr.Set<CR::CR0::GT>((int32_t) result > 0);
-		cr.Set<CR::CR0::EQ>((int32_t) result == 0);
+		cr.Set<CR::CR0::LT>(CPU::S32(result) < CPU::S32(0));
+		cr.Set<CR::CR0::GT>(CPU::S32(result) > CPU::S32(0));
+		cr.Set<CR::CR0::EQ>(result == CPU::U32(0));
 	}
 	
 	return true;

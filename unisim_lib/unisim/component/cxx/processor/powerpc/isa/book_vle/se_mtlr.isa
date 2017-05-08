@@ -42,7 +42,7 @@ op se_mtlr(0[6]:9[6]:sext srx[4]);
 se_mtlr.var rx : {uint8_t} = {srx & 31};
 
 se_mtlr.execute = {
-	uint32_t result = cpu->GetGPR(rx);
+	CPU::U32 result = cpu->GetGPR(rx);
 	cpu->SetLR(result);
 	return true;
 }

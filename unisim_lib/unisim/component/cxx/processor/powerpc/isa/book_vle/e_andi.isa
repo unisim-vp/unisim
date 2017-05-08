@@ -43,10 +43,10 @@ e_andi.var sci8 : {uint32_t} = {scaled_immediate(s11)};
 
 e_andi.execute = {
 	// Read the input operands
-	uint32_t s = cpu->GetGPR(rs);
+	CPU::U32 s = cpu->GetGPR(rs);
 	
 	// Compute the result
-	uint32_t result = s & sci8;
+	CPU::U32 result = s & sci8;
 	
 	if(rc)
 	{
@@ -54,9 +54,9 @@ e_andi.execute = {
 		XER& xer = cpu->GetXER();
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>((int32_t) result < 0);
-		cr.Set<CR::CR0::GT>((int32_t) result > 0);
-		cr.Set<CR::CR0::EQ>((int32_t) result == 0);
+		cr.Set<CR::CR0::LT>(CPU::S32(result) < CPU::S32(0));
+		cr.Set<CR::CR0::GT>(CPU::S32(result) > CPU::S32(0));
+		cr.Set<CR::CR0::EQ>(result == CPU::U32(0));
 	}
 
 	// Write back the result

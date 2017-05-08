@@ -39,8 +39,8 @@ impl {
 op divw(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:491[9]:rc[1])
 divw.execute = {
 	// Read the input operands
-	uint32_t a = cpu->GetGPR(ra);
-	uint32_t b = cpu->GetGPR(rb);
+	CPU::U32 a = cpu->GetGPR(ra);
+	CPU::U32 b = cpu->GetGPR(rb);
 	
 	if(unlikely((a == 0x80000000UL && b == 0xffffffffUL) || b == 0))
 	{
@@ -94,9 +94,9 @@ divw.execute = {
 				// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 				CR& cr = cpu->GetCR();
 				cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-				cr.Set<CR::CR0::LT>((int32_t) result < 0);
-				cr.Set<CR::CR0::GT>((int32_t) result > 0);
-				cr.Set<CR::CR0::EQ>((int32_t) result == 0);
+				cr.Set<CR::CR0::LT>(CPU::S32(result) < CPU::S32(0));
+				cr.Set<CR::CR0::GT>(CPU::S32(result) > CPU::S32(0));
+				cr.Set<CR::CR0::EQ>(result == CPU::U32(0));
 			}
 		}
 	}

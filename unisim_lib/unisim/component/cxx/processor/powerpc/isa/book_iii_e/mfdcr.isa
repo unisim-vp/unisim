@@ -36,7 +36,7 @@ op mfdcr(31[6]:rd[5]:dcrf[10]:323[10]:?[1])
 
 mfdcr.execute = {
 	unsigned int dcrn = ((dcrf & 0x1f) << 5) | ((dcrf >> 5) & 0x1f);
-	uint32_t result;
+	CPU::U32 result;
 	
 	if(unlikely(!cpu->MoveFromDCR(dcrn, result))) return false;
 	
@@ -46,6 +46,6 @@ mfdcr.execute = {
 }
 
 mfdcr.disasm = {
-	uint32_t dcrn = ((dcrf & 0x1f) << 5) | ((dcrf >> 5) & 0x1f);
+	CPU::U32 dcrn = ((dcrf & 0x1f) << 5) | ((dcrf >> 5) & 0x1f);
 	os << "mfdcr r" << (unsigned int) rd << ", " << dcrn;
 }

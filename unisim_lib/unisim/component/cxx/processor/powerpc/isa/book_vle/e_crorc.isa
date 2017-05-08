@@ -41,7 +41,7 @@ impl {
 op e_crorc(31[6]:crbd[5]:crba[5]:crbb[5]:417[10]:0[1]);
 
 e_crorc.execute = {
-	uint32_t a, b, c, d, m;
+	CPU::U32 a, b, c, d, m;
 	CR& cr = cpu->GetCR();
 	c = cr;
 	a = c << crba;

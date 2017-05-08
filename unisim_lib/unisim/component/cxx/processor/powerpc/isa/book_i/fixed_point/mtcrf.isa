@@ -35,12 +35,12 @@
 op mtcrf(31[6]:rs[5]:?[1]:crm[8]:?[1]:144[10]:?[1])
 mtcrf.execute = {
 	// Read the input operands
-	uint32_t s = cpu->GetGPR(rs);
+	CPU::U32 s = cpu->GetGPR(rs);
 	CR& cr = cpu->GetCR();
 	
 	// Generate a bit mask of bits to move from source GPR to CR
-	uint32_t m = 128;
-	uint32_t mask = 0;
+	CPU::U32 m =128;
+	CPU::U32 mask = 0;
 	unsigned int i = 8; // Hope compiler will unroll the loop !
 	do
 	{
