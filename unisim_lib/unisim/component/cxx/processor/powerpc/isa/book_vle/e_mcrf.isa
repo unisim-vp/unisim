@@ -46,8 +46,8 @@ e_mcrf.execute = {
 
 	unsigned int crbd = 4 * crd;
 	unsigned int crbs = 4 * crs;
-	CPU::U32 s =(c << crbs) >> crbd;
-	CPU::U32 m =0xf0000000UL >> crbd;
+	CPU::U32 s = (c << crbs) >> crbd;
+	CPU::U32 m = CPU::U32(0xf0000000UL >> crbd);
 	
 	cr = (c & ~m) | (s & m);
 	return true;

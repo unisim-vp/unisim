@@ -46,7 +46,7 @@ e_andi.execute = {
 	CPU::U32 s = cpu->GetGPR(rs);
 	
 	// Compute the result
-	CPU::U32 result = s & sci8;
+	CPU::U32 result = s & CPU::U32(CPU::S32(sci8));
 	
 	if(rc)
 	{

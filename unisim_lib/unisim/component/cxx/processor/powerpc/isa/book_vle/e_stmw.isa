@@ -41,9 +41,9 @@ impl {
 op e_stmw(6[6]:rs[5]:ra[5]:9[8]:sext d[8]);
 
 e_stmw.execute = {
-	ADDRESS ea = ra ? (cpu->GetGPR(ra) + d) : d;
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) : CPU::U32(0)) + CPU::U32(d);
 
-	if(unlikely((ea & 3) != 0))
+	if(unlikely(cpu->Cond((ea & CPU::U32(3)) != CPU::U32(0))))
 	{
 		cpu->ThrowException<CPU::AlignmentInterrupt::UnalignedLoadStoreMultiple>();
 		return false;
@@ -54,7 +54,7 @@ e_stmw.execute = {
 	for(r = rs; r < 32; r++)
 	{
 		if(unlikely(!cpu->Int32Store(r, ea))) return false;
-		ea = ea + 4;
+		ea = ea + CPU::U32(4);
 	}
 	
 	return true;

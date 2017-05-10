@@ -53,6 +53,14 @@ namespace ut
   typedef SmartValue<int32_t>  S32;
   typedef SmartValue<int64_t>  S64;
 
+  typedef SmartValue<uint32_t> ADDRESS;
+  
+  template <unsigned BITS> struct TypeFor {};
+  template <> struct TypeFor<8> { typedef U8 U; typedef S8 S; };
+  template <> struct TypeFor<16> { typedef U16 U; typedef S16 S; };
+  template <> struct TypeFor<32> { typedef U32 U; typedef S32 S; };
+  template <> struct TypeFor<64> { typedef U64 U; typedef S64 S; };
+  
   struct UniqueVId {
     UniqueVId() : index(0) {} unsigned index;
     unsigned next() { return index++; }
@@ -148,25 +156,68 @@ namespace ut
     struct OV {};
     struct SO {};
     struct CA {};
+    struct _0_3 {};
     template <typename PART,typename T> void Set( SmartValue<T> const& value ) {}
-    template <typename PART> U8 Get() { return U8(0); }
+    template <typename PART> void Set( unsigned ) {}
+    template <typename PART> U32 Get() { return U32(0); }
+    operator U32 () const { return U32(0); }
+    XER& operator= (U32 const& v) { return *this; }
+    XER& GetXER() { return *this; }
   };
 
   struct CR
   {
-    struct CR0
-    {
-      struct OV {};
-      struct SO {};
-      struct LT {};
-      struct GT {};
-      struct EQ {};
-    };
+    struct CR0 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
+    struct CR1 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
+    struct CR2 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
+    struct CR3 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
+    struct CR4 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
+    struct CR5 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
+    struct CR6 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
+    struct CR7 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
     template <typename PART,typename T> void Set( SmartValue<T> const& value ) {}
-    template <typename PART> U8 Get() { return U8(0); }
+    template <typename PART> void Set( unsigned ) {}
+    template <typename PART> U32 Get() { return U32(0); }
+    operator U32 () const { return U32(0); }
+    CR& operator= (U32 const& v) { return *this; }
+    CR& GetCR() { return *this; }
+  };
+  
+  struct LR
+  {
+    template <typename PART,typename T> void Set( SmartValue<T> const& value ) {}
+    template <typename PART> void Set( unsigned ) {}
+    template <typename PART> U32 Get() { return U32(0); }
+    operator U32 () const { return U32(0); }
+    LR& operator= (U32 const& v) { return *this; }
+    LR& GetLR() { return *this; }
+    void SetLR(U32 const& v) {}
+  };
+  
+  struct CTR
+  {
+    template <typename PART,typename T> void Set( SmartValue<T> const& value ) {}
+    template <typename PART> void Set( unsigned ) {}
+    template <typename PART> U32 Get() { return U32(0); }
+    operator U32 () const { return U32(0); }
+    CTR& operator= (U32 const& v) { return *this; }
+    CTR& GetCTR() { return *this; }
+    void SetCTR(U32 const& v) {}
+  };
+  
+  struct MSR
+  {
+    struct PR {};
+    struct EE {};
+    template <typename PART,typename T> void Set( SmartValue<T> const& value ) {}
+    template <typename PART> void Set( unsigned ) {}
+    template <typename PART> U32 Get() { return U32(0); }
+    operator U32 () const { return U32(0); }
+    MSR& operator= (U32 const& v) { return *this; }
+    MSR& GetMSR() { return *this; }
   };
 
-  struct CPU : public XER, public CR
+  struct CPU : public XER, public CR, public MSR, public LR, public CTR
   {
     typedef ut::BOOL BOOL;
     typedef ut::U8   U8;
@@ -178,23 +229,89 @@ namespace ut
     typedef ut::S16  S32;
     typedef ut::S16  S64;
     
+    typedef unisim::util::symbolic::Expr Expr;
+    typedef unisim::util::symbolic::ExprNode ExprNode;
+    
+    typedef MSR MSR;
+    
+    struct Interrupt { void SetELEV(unsigned x); };
+    
+    struct SystemCallInterrupt
+    {
+      struct SystemCall {};
+    };
+    
+    struct AlignmentInterrupt
+    {
+      struct UnalignedLoadStoreMultiple {};
+    };
+    
     struct ProgramInterrupt
     {
       struct UnimplementedInstruction {};
       struct IllegalInstruction {};
+      struct Trap {};
+      struct PrivilegeViolation {};
     };
     
-    XER& GetXER() { return *this; }
-    CR& GetCR() { return *this; }
+    template <class T> Interrupt ThrowException() { reject(); return Interrupt(); }
     
-    template <class T> void ThrowException() { reject(); }
+    template <typename T> bool Cond( SmartValue<T> const& c ) { return false; }
 
     Interface interface;
     UniqueVId gpr_uvi;
     U32   reg_values[32];
+    U32   cia;
     
+    U32 GetCIA() { return cia; };
+    bool EqualCIA(uint32_t pc) { return false; };
     U32 GetGPR(unsigned n) { return reg_values[n]; };
     void SetGPR(unsigned n, U32 value) { reg_values[n] = value; }
+    void SetGPR(unsigned n, S32 value) { reg_values[n] = U32(value); }
+    
+    static void LoadRepr( std::ostream& sink, Expr const& _addr, unsigned bits );
+    
+    template <unsigned BITS>
+    struct Load : public ExprNode
+    {
+      Load( Expr const& _addr ) : addr(_addr) {}
+      virtual void Repr( std::ostream& sink ) const { LoadRepr( sink, addr, BITS ); }
+      virtual void Traverse( ExprNode::Visitor& visitor ) { visitor.Process(addr); }
+      virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const
+      {
+        return addr.cmp( dynamic_cast<Load<BITS> const&>( brhs ).addr );
+      }
+      virtual unisim::util::symbolic::ExprNode* GetConstNode() { return 0; }
+      Expr addr;
+    };
+    
+    template <unsigned BITS> Expr MemRead( U32 const& _addr )
+    {
+      interface.load_addrs.push_back( _addr.expr );
+      return new Load<BITS>( _addr.expr );
+    }
+    template <unsigned BITS> void MemWrite( U32 const& _addr, typename TypeFor<BITS>::U const& _val )
+    {
+      interface.store_addrs.push_back( _addr.expr );
+    }
+    
+    bool Int8Load(unsigned n, U32 const& address) { SetGPR(n, CPU::U32(CPU::U8(MemRead<8>(address)))); return true; }
+    bool Int16Load(unsigned n, U32 const& address) { SetGPR(n, CPU::U32(CPU::U16(MemRead<16>(address)))); return true; }
+    bool Int32Load(unsigned n, U32 const& address) { SetGPR(n, CPU::U32(MemRead<32>(address))); return true; }
+    
+    bool SInt8Load(unsigned n, U32 const& address) { SetGPR(n, CPU::S32(CPU::S8(MemRead<8>(address)))); return true; }
+    bool SInt16Load(unsigned n, U32 const& address) { SetGPR(n, CPU::S32(CPU::S16(MemRead<16>(address)))); return true; }
+
+    bool Int16LoadByteReverse(unsigned n, U32 const& address) { SetGPR(n, ByteSwap(CPU::U32(CPU::U16(MemRead<16>(address))))); return true; }
+    bool Int32LoadByteReverse(unsigned n, U32 const& address) { SetGPR(n, ByteSwap(CPU::U32(MemRead<32>(address)))); return true; }
+    
+    bool Int8Store(unsigned n, U32 const& address ) { MemWrite<8>( address, U8(GetGPR(n)) ); return true; }
+    bool Int16Store(unsigned n, U32 const& address ) { MemWrite<16>( address, U16(GetGPR(n)) ); return true; }
+    bool Int32Store(unsigned n, U32 const& address ) { MemWrite<32>( address, U32(GetGPR(n)) ); return true; }
+
+    bool Int16StoreByteReverse(unsigned n, U32 const& address ) { MemWrite<16>( address, ByteSwap(U16(GetGPR(n))) ); return true; }
+    bool Int32StoreByteReverse(unsigned n, U32 const& address ) { MemWrite<32>( address, ByteSwap(U32(GetGPR(n))) ); return true; }
+
     
     void gpr_append( unsigned idx, bool w ) { interface.irappend( idx, w, gpr_uvi ); }
 
@@ -202,10 +319,62 @@ namespace ut
     
     void donttest_system();
     void donttest_branch();
+    
+    char const* GetObjectFriendlyName(U32) { return "???"; }
+    
+    bool Branch(U32 const& addr) { donttest_branch(); return false; }
+    
+    bool Rfmci() { donttest_system(); return false; }
+    bool Rfci() { donttest_system(); return false; }
+    bool Rfdi() { donttest_system(); return false; }
+    bool Rfi() { donttest_system(); return false; }
 
+    bool Dcba(U32 const& addr) { donttest_system(); return false; }
+    bool Dcbf(U32 const& addr) { donttest_system(); return false; }
+    bool Dcbst(U32 const& addr) { donttest_system(); return false; }
+    bool Dcbz(U32 const& addr) { donttest_system(); return false; }
+    bool Dcbi(U32 const& addr) { donttest_system(); return false; }
+    bool Icbi(U32 const& addr) { donttest_system(); return false; }
+    bool Icbt(U32 const& addr) { donttest_system(); return false; }
+    
+    bool Msync() { donttest_system(); return false; }
+    bool Isync() { donttest_system(); return false; }
+    bool Mpure() { donttest_system(); return false; }
+    bool Mpuwe() { donttest_system(); return false; }
+    bool Mpusync() { donttest_system(); return false; }
+    
+    bool Lbarx(unsigned n, U32 const& addr) { donttest_system(); return false; }
+    bool Lharx(unsigned n, U32 const& addr) { donttest_system(); return false; }
+    bool Lwarx(unsigned n, U32 const& addr) { donttest_system(); return false; }
+    bool Stbcx(unsigned n, U32 const& addr) { donttest_system(); return false; }
+    bool Sthcx(unsigned n, U32 const& addr) { donttest_system(); return false; }
+    bool Stwcx(unsigned n, U32 const& addr) { donttest_system(); return false; }
+    bool MoveFromDCR(unsigned dcrn, U32& result) { donttest_system(); return false; }
+    bool MoveFromSPR(unsigned dcrn, U32& result) { donttest_system(); return false; }
+    bool MoveToSPR(unsigned dcrn, U32 const& result) { donttest_system(); return false; }
   };
   
-  U32 SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, U8 carry_in);
+  extern void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, U8 carry_in);
+  extern inline void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, int carry_in) { return SignedAdd32(result, carry_out, overflow, sign, x, y, U8(carry_in)); }
+
+  struct MaskNode : public unisim::util::symbolic::ExprNode
+  {
+    typedef unisim::util::symbolic::Expr Expr;
+    
+    MaskNode( Expr const& _mb, Expr const& _me ) : mb(_mb), me(_me) {}
+    virtual void Repr( std::ostream& sink ) const;
+    virtual void Traverse( ExprNode::Visitor& visitor ) { visitor.Process(mb); visitor.Process(me); }
+    virtual intptr_t cmp( ExprNode const& brhs ) const
+    {
+      MaskNode const& rhs = dynamic_cast<MaskNode const&>( brhs );
+      if (intptr_t delta = mb.cmp( rhs.mb )) return delta;
+      return me.cmp( rhs.me );
+    }
+    virtual ExprNode* GetConstNode() { return 0; }
+    Expr mb, me;
+  };
+    
+  extern U32 Mask(U32 mb, U32 me);
 }
 
 #endif // ARCH_HH

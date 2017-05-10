@@ -43,8 +43,8 @@ e_cmphl16i.var ui : { int16_t } = { ui_h | ui_l }
 
 e_cmphl16i.execute = {
 	// Read the input unsigned halfword operands
-	uint16_t a = cpu->GetGPR(ra);
-	uint16_t b = ui;
+	CPU::U16 a = CPU::U16( cpu->GetGPR(ra) );
+        CPU::U16 b = CPU::U16( ui );
 
 	// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(a<b) CR0[GT]=(a>b) CR0[EQ]=(a==b)
 	XER& xer = cpu->GetXER();

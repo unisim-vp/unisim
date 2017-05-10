@@ -44,7 +44,7 @@ e_cmpli.var sci8 : {uint32_t} = {scaled_immediate(s11)};
 e_cmpli.execute = {
 	// Read the input unsigned operands
 	CPU::U32 a = cpu->GetGPR(ra);
-	CPU::U32 b =sci8;
+	CPU::U32 b = CPU::U32( sci8 );
 	
 	CR& cr = cpu->GetCR();
 	XER& xer = cpu->GetXER();

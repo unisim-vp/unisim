@@ -46,7 +46,7 @@ se_bclri.execute = {
 	CPU::U32 x = cpu->GetGPR(rx);
 	
 	// Compute the result
-	CPU::U32 m =~(0x80000000UL >> ui5);
+	CPU::U32 m =CPU::U32(~(0x80000000UL >> ui5));
 	CPU::U32 result = x & m;
 	
 	// Write back the result

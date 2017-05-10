@@ -40,7 +40,7 @@ lwarx.execute = {
 }
 lwarx.disasm = {
 	os << "lwarx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-	if(cpu && (cpu->GetCIA() == this->GetAddr()))
+	if(cpu && (cpu->EqualCIA(this->GetAddr())))
 	{
 		ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";

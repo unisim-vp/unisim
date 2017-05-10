@@ -36,11 +36,11 @@ op isel(31[6]:rd[5]:ra[5]:rb[5]:crb[5]:15[5]:?[1])
 
 isel.execute = {
 	CPU::U32 cr = cpu->GetCR();
-	CPU::U32 a = cpu->GetGPR(ra);
+	CPU::U32 a = ra ? cpu->GetGPR(ra) : CPU::U32(0);
 	CPU::U32 b = cpu->GetGPR(rb);
 	
 	CPU::U32 result;
-	result = (cr & (1UL << (31 - crb))) ? (ra ? a : 0) : b;
+	result = cpu->Cond(cr & (CPU::U32(1) << (31 - crb))) ? a : b;
 	
 	cpu->SetGPR(rd, result);
 	

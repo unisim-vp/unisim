@@ -64,7 +64,7 @@ add.execute = {
 			// Generate XER[OV] and XER[SO]
 			XER& xer = cpu->GetXER();
 			xer.Set<XER::OV>(ov);
-			xer.Set<XER::SO>(xer.Get<XER::SO>() | ov);
+			xer.Set<XER::SO>(xer.Get<XER::SO>() | CPU::U32(ov));
 		}
 		if(rc)
 		{

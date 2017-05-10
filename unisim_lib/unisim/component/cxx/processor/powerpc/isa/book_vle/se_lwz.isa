@@ -43,7 +43,7 @@ se_lwz.var rx : {uint8_t} = {srx & 31}, rz : {uint8_t} = {srz & 31};
 
 se_lwz.execute = {
 	// compute the effective address
-	ADDRESS ea = cpu->GetGPR(rx) + sd;
+	ADDRESS ea = cpu->GetGPR(rx) + CPU::U32(CPU::S32(sd));
 	// do the memory access
 	return cpu->Int32Load(rz, ea); // 32-bit load/no byte reverse/no sign extend
 }

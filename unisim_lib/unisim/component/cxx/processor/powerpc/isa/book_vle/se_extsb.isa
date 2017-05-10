@@ -43,10 +43,10 @@ se_extsb.var rx : {uint8_t} = {srx & 31};
 
 se_extsb.execute = {
 	// Read the input operands
-	CPU::U32 s = cpu->GetGPR(rx);
+	CPU::S8 s = CPU::S8(cpu->GetGPR(rx));
 	
 	// Compute the result
-	CPU::U32 result = (uint32_t)(int32_t)(int8_t)(uint8_t) s;
+	CPU::S32 result = CPU::S32(s);
 	
 	// Write back the result
 	cpu->SetGPR(rx, result);

@@ -36,7 +36,7 @@ op wrteei(31[6]:?[10]:e[1]:0[4]:163[10]:?[1])
 
 wrteei.execute = {
 	CPU::MSR& msr = cpu->GetMSR();
-	if(unlikely(msr.Get<CPU::MSR::PR>()))
+	if(unlikely(cpu->Cond(msr.Get<CPU::MSR::PR>())))
 	{
 		cpu->ThrowException<CPU::ProgramInterrupt::PrivilegeViolation>();
 		return false;

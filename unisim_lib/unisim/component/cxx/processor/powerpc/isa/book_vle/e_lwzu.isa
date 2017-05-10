@@ -47,7 +47,7 @@ e_lwzu.execute = {
 		return false;
 	}
 	// compute the effective address
-	ADDRESS ea = cpu->GetGPR(ra) + d;
+	ADDRESS ea = cpu->GetGPR(ra) + CPU::U32(d);
 	// do the memory access
 	if(unlikely(!cpu->Int32Load(rd, ea))) return false; // 32-bit load/no byte reverse/no sign extend
 	// update the address register

@@ -47,7 +47,7 @@ e_rlwimi.execute = {
 	
 	// Compute the result
   	CPU::U32 r =RotateLeft(s, sh);
-	CPU::U32 m =Mask(mb, me);
+        CPU::U32 m = CPU::U32(Mask(mb, me));
 	CPU::U32 result = (r & m) | (a & ~m);
 	
 	// Write back the result

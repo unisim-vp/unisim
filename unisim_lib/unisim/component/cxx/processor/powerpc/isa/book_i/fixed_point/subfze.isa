@@ -46,10 +46,10 @@ subfze.execute = {
 	// Read the input operands
 	CPU::U32 a = cpu->GetGPR(ra);
 	XER& xer = cpu->GetXER();
-	CPU::U8 carry_in = xer.Get<XER::CA>();
+	CPU::U32 carry_in = CPU::U32(xer.Get<XER::CA>());
 	
 	// Compute the result
-	SignedAdd32(result, carry, overflow, sign, ~a, carry_in, 0);
+	SignedAdd32(result, carry, overflow, sign, ~a, carry_in, CPU::U8(0));
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -61,7 +61,7 @@ subfze.execute = {
 	{
 		// Generate XER[OV] and XER[SO]
 		xer.Set<XER::OV>(overflow);
-		xer.Set<XER::SO>(xer.Get<XER::SO>() | overflow);
+		xer.Set<XER::SO>(xer.Get<XER::SO>() | CPU::U32(overflow));
 	}
 	
 	if(unlikely(rc))

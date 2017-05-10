@@ -42,8 +42,8 @@ op e_cmphl(31[6]:crd[3]:0[2]:ra[5]:rb[5]:46[10]:0[1]);
 
 e_cmphl.execute = {
 	// Read the input unsigned halfword operands
-	uint16_t a = cpu->GetGPR(ra);
-	uint16_t b = cpu->GetGPR(rb);
+	CPU::U16 a = CPU::U16( cpu->GetGPR(ra) );
+	CPU::U16 b = CPU::U16( cpu->GetGPR(rb) );
 
 	CR& cr = cpu->GetCR();
 	XER& xer = cpu->GetXER();

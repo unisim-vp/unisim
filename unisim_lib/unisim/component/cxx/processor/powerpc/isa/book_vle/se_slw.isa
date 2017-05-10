@@ -47,8 +47,8 @@ se_slw.execute = {
 	CPU::U32 y = cpu->GetGPR(ry);
 	
 	// Compute the result
-	CPU::U32 result = (y & 0x20) ? 0 : (x << (y & 0x1f));
-
+	CPU::U32 result = cpu->Cond(y >= CPU::U32(0x20)) ? CPU::U32(0) : (x << y);
+	
 	// Write back the result
 	cpu->SetGPR(rx, result);
 	

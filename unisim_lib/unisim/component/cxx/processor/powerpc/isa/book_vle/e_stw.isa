@@ -42,7 +42,7 @@ op e_stw(21[6]:rs[5]:ra[5]:sext d[16]);
 
 e_stw.execute = {
 	// compute the effective address
-	ADDRESS ea = ra ? (cpu->GetGPR(ra) + d) : d;
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) : CPU::U32(0)) + CPU::U32(d);
 	// do the memory access
 	return cpu->Int32Store(rs, ea);
 }

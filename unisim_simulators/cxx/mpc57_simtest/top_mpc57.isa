@@ -52,16 +52,90 @@ impl {
 #include <arch.hh>
 #include <testutils.hh>
 #include <iostream>
+#include <unisim/component/cxx/processor/powerpc/isa/lsp/lsp.hh>
 
-using ut::CPU;
-using ut::SignedAdd32;
-using ut::XER;
-using ut::CR;
+namespace mpc57
+{
+  using ut::CPU;
+  using ut::SignedAdd32;
+  using ut::XER;
+  using ut::CR;
+  using ut::ADDRESS;
 
-inline char const* LSP_HS_EVEN_ODD( unsigned n ) { return "<?>"; }
-inline char const* LSP_TY( unsigned n ) { return "<?>"; }
-inline char const* LSP_ACC( unsigned n ) { return "<?>"; }
+  inline char const* LSP_HS_EVEN_ODD( unsigned n ) { return "<?>"; }
+  inline char const* LSP_TY( unsigned n ) { return "<?>"; }
+  inline char const* LSP_ACC( unsigned n ) { return "<?>"; }
 
+  struct DASMPrint
+  {
+    virtual void Print( std::ostream& sink ) const = 0;
+    friend std::ostream& operator << (std::ostream& sink, DASMPrint const& dap)
+    {
+      dap.Print(sink);
+      return sink;
+    }
+  };
+  
+  struct GPRPrint : public DASMPrint
+  {
+    GPRPrint(unsigned _reg) : reg(_reg) {} unsigned reg;
+    void Print( std::ostream& sink ) const { sink << "r" << std::dec << reg; }
+  };
+  
+  struct HexPrint : public DASMPrint
+  {
+    HexPrint(uint32_t _num) : num(_num) {} unsigned num;
+    void Print( std::ostream& sink ) const { sink << "0x" << std::hex << num; }
+  };
+  
+  struct CRPrint : public DASMPrint
+  {
+    CRPrint(unsigned _reg) : reg(_reg) {} unsigned reg;
+    void Print( std::ostream& sink ) const { sink << "cr" << std::dec << reg; }
+  };
+  
+  struct CondPrint : public DASMPrint
+  {
+    CondPrint(unsigned _crb, bool _expect = true) : crb(_crb), expect(_expect) {} unsigned crb; bool expect;
+    void Print( std::ostream& sink ) const
+    {
+      char const* condnames[] = {"ge","le","ne","ns","lt","gt","eq","so"};
+      char const* condname = condnames[(crb&3)|(expect?4:0)];
+      if (crb >= 4)
+        sink << "4*" << CRPrint(crb>>2) << '+';
+      sink << condname;
+    }
+  };
+  
+  struct EAPrint : public DASMPrint
+  {
+    EAPrint(int32_t _idx, unsigned _reg) : idx(_idx), reg(_reg) {} int32_t idx; unsigned reg;
+    void Print( std::ostream& sink ) const
+    {
+      sink << std::dec << idx << '(';
+      if (reg)
+        sink << GPRPrint(reg);
+      else
+        sink << '0';
+      sink << ')';
+    }
+  };
+  
+  template <typename T>
+  int32_t scaled_immediate( T s11 )
+  {
+    int scale = (s11 >> 5) & 24;
+    int32_t msk = (s11 << 21) >> 31;
+    return (((s11 ^ msk) & 255) << scale) ^ msk;
+  }
+
+  inline uint32_t Mask(uint32_t mb, uint32_t me)
+  {
+    return (mb > me) ? ~(((uint32_t) -1 >> mb) ^ ((me >= 31) ? 0 : (uint32_t) -1 >> (me + 1))) : (((uint32_t)-1 >> mb) ^ ((me >= 31) ? 0 : (uint32_t) -1 >> (me + 1)));
+  }
+  
+  using unisim::component::cxx::processor::powerpc::LSP_HS_UPPER_LOWER_EXCHANGED;
+}
 }
 
 action {bool} execute({CPU *} {cpu}) {

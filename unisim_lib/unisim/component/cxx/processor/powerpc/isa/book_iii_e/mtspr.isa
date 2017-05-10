@@ -34,7 +34,7 @@
  
 op mtspr(31[6]:rs[5]:spr[10]:467[10]:?[1])
 mtspr.execute = {
-	CPU::U32 n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
+	unsigned n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
 	CPU::U32 result = cpu->GetGPR(rs);
 	switch(n)
 	{
@@ -57,7 +57,7 @@ mtspr.execute = {
 	return true;
 }
 mtspr.disasm = {
-	CPU::U32 n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
+	unsigned n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
 	switch(n)
 	{
 		case 1: os << "mtxer r" << (unsigned int) rs; return;

@@ -43,13 +43,13 @@ e_subfic.var sci8 : {int32_t} = {scaled_immediate(s11)};
 
 e_subfic.execute = {
 	CPU::U8 carry; // carry out
-	CPU::U8 overflow = 0; // overflow
+	CPU::U8 overflow = CPU::U8(0); // overflow
 	CPU::U8 sign; // sign
 	CPU::U32 result;
 
 	// Read the input operands
-	int32_t a = cpu->GetGPR(ra);
-	int32_t b = sci8;
+	CPU::U32 a = cpu->GetGPR(ra);
+        CPU::U32 b = CPU::U32(sci8);
 	XER& xer = cpu->GetXER();
 	
 	// Compute the result
@@ -69,7 +69,7 @@ e_subfic.execute = {
 	cpu->SetGPR(rd, result);
 	
 	// Generate XER[CA]
-	xer.Set<XER::CA>(carry || (a == 0));
+	xer.Set<XER::CA>(CPU::BOOL(carry) or (a == CPU::U32(0)));
 	
 	return true;
 }

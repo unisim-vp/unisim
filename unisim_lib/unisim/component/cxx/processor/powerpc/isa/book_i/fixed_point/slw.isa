@@ -43,7 +43,7 @@ slw.execute = {
 	CPU::U32 b = cpu->GetGPR(rb);
 	
 	// Compute the result
-	CPU::U32 result = (b & 0x20) ? 0 : s << (b & 0x1f);
+	CPU::U32 result = cpu->Cond(b >= CPU::U32(0x20)) ? CPU::U32(0) : s << b;
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);

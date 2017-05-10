@@ -39,16 +39,16 @@ mtcrf.execute = {
 	CR& cr = cpu->GetCR();
 	
 	// Generate a bit mask of bits to move from source GPR to CR
-	CPU::U32 m =128;
-	CPU::U32 mask = 0;
-	unsigned int i = 8; // Hope compiler will unroll the loop !
-	do
-	{
-		mask = (crm & m) ? (mask << 4) | 0xf : mask << 4;
-	} while(m >>= 1, --i);
+        CPU::U32 mask;
+        {
+		uint32_t m = 0;
+	        for (int idx = 8; --idx >= 0;)
+			m = (m << 4) | (((crm >> idx) & 1) * 0xf);
+		mask = CPU::U32(m);
+	}
 	
 	// Apply the bit mask
-	cr = (cr & ~mask) | (s & mask);
+	cr = (CPU::U32(cr) & ~mask) | (s & mask);
 	
 	return true;
 }

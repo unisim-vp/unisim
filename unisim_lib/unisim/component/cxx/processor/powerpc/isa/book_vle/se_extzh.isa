@@ -46,7 +46,7 @@ se_extzh.execute = {
 	CPU::U32 s = cpu->GetGPR(rx);
 	
 	// Compute the result
-	CPU::U32 result = (uint16_t) s;
+	CPU::U32 result = CPU::U32(CPU::U16(s));
 	
 	// Write back the result
 	cpu->SetGPR(rx, result);

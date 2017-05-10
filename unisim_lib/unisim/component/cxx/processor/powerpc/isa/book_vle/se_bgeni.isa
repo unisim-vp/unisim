@@ -42,7 +42,7 @@ op se_bgeni(24[6]:1[1]:ui5[5]:sext srx[4]);
 se_bgeni.var rx : {uint8_t} = {srx & 31};
 
 se_bgeni.execute = {
-	CPU::U32 result = 0x80000000UL >> ui5;
+	CPU::U32 result = CPU::U32(0x80000000UL >> ui5);
 	cpu->SetGPR(rx, result);
 	
 	return true;

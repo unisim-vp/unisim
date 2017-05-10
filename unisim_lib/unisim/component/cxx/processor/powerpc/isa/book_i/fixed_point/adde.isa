@@ -47,7 +47,7 @@ adde.execute = {
 	CPU::U32 a = cpu->GetGPR(ra);
 	CPU::U32 b = cpu->GetGPR(rb);
 	XER& xer = cpu->GetXER();
-	CPU::U32 carry_in = xer.Get<XER::CA>();
+	CPU::U8 carry_in = CPU::U8(xer.Get<XER::CA>());
 	
 	// Compute the result
 	SignedAdd32(result, carry, overflow, sign, a, b, carry_in);
@@ -62,7 +62,7 @@ adde.execute = {
 	{
 		// Generate XER[OV] and XER[SO]
 		xer.Set<XER::OV>(overflow);
-		xer.Set<XER::SO>(xer.Get<XER::SO>() | overflow);
+		xer.Set<XER::SO>(xer.Get<XER::SO>() | CPU::U32(overflow));
 	}
 	
 	if(unlikely(rc))

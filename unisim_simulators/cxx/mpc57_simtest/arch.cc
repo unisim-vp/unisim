@@ -41,7 +41,11 @@
 namespace ut
 {
   void SourceReg::Repr( std::ostream& sink ) const { sink << 'r' << unsigned( reg ); }
+  void MaskNode::Repr( std::ostream& sink ) const { sink << "Mask( " << mb << "," << me << " )"; }
+  void CPU::LoadRepr( std::ostream& sink, Expr const& _addr, unsigned bits ) { sink << "Load<"<<bits<<">( " << _addr << " )"; }
   
+  void CPU::Interrupt::SetELEV(unsigned x) {}
+
   void
   Interface::irappend( uint8_t index, bool w, UniqueVId& uvi )
   {
@@ -373,7 +377,7 @@ namespace ut
 
   void CPU::reject() { throw Reject(); }
 
-  U32 SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, U8 carry_in)
+  void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, U8 carry_in)
   {
     U32 res = x + y + U32(carry_in);
     U32 carry31 = ((x & y) | ((res ^ x ^ y) & (x | y)));
@@ -383,4 +387,6 @@ namespace ut
     overflow = U8(((carry31 ^ (res ^ x ^ y)) >> 31) & U32(1));
   }
   
+  inline U32 Mask(U32 mb, U32 me) { return U32(new MaskNode( mb.expr, me.expr )); }
+
 } // end of namespace ut

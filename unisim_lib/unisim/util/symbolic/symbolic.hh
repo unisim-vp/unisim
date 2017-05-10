@@ -117,7 +117,7 @@ namespace symbolic {
     enum Code {
       NA=0
       , Xor, And, Or
-      , Ror, Lsl, Asr, Lsr
+      , Ror, Rol, Lsl, Asr, Lsr
       , Add, Sub, Div, Mod, Mul
       , Teq, Tne, Tge, Tgt, Tle, Tlt, Tgeu, Tgtu, Tleu, Tltu
       , FCmp
@@ -135,6 +135,7 @@ namespace symbolic {
       if (e(  "Mod", Mod  )) return;
       if (e(  "Mul", Mul  )) return;
       if (e(  "Ror", Ror  )) return;
+      if (e(  "Rol", Rol  )) return;
       if (e(  "Lsl", Lsl  )) return;
       if (e(  "Asr", Asr  )) return;
       if (e(  "Lsr", Lsr  )) return;
@@ -374,6 +375,7 @@ namespace symbolic {
         case BinaryOp::Tgt:  return new ConstNode   <bool>   ( value >  GetValue( cnb ) );
           
         case BinaryOp::Ror:  break;
+        case BinaryOp::Rol:  break;
         case BinaryOp::Mod:  break;
         case BinaryOp::FCmp: break;
         case BinaryOp::NA:   throw std::logic_error("???");
@@ -653,6 +655,11 @@ namespace symbolic {
   UTP RotateRight( UTP const& value, unsigned shift ) { return UTP( new BONode( "Ror", value.expr, make_const( shift ) ) ); }
   template <typename UTP>
   UTP RotateRight( UTP const& value, UTP const& shift ) { return UTP( new BONode( "Ror", value.expr, shift.expr ) ); }
+  
+  template <typename UTP>
+  UTP RotateLeft( UTP const& value, unsigned shift ) { return UTP( new BONode( "Rol", value.expr, make_const( shift ) ) ); }
+  template <typename UTP>
+  UTP RotateLeft( UTP const& value, UTP const& shift ) { return UTP( new BONode( "Rol", value.expr, shift.expr ) ); }
   
   template <typename UTP>
   UTP BitScanReverse( UTP const& value ) { return UTP( new UONode( "BSR", value.expr ) ); }

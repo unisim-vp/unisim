@@ -39,39 +39,24 @@ impl {
 op sraw(31[6]:rs[5]:ra[5]:rb[5]:792[10]:rc[1])
 sraw.execute = {
 	// Read the input operands
-	CPU::U32 s = cpu->GetGPR(rs);
+	CPU::S32 s = CPU::S32(cpu->GetGPR(rs));
 	CPU::U32 b = cpu->GetGPR(rb);
 	XER& xer = cpu->GetXER();
 	
 	// Compute the result
-	int32_t result;
+        CPU::S32 result;
 
 #if 0	
-	CPU::U32 n =b & 0x3f;
+	CPU::U32 n =b & CPU::U32(0x3f);
 	CPU::U32 r =RotateLeft(s, 32 - n);
-	CPU::U32 m =Mask(n);
+
+	CPU::U32 m = cpu->Cond(n < CPU::U32(32)) ? (cpu->Cond(n != CPU::U32(0)) ? (CPU::U32(1) << (CPU::U32(32) - n)) - CPU::U32(1) : CPU::U32(0xffffffffUL)) : CPU::U32(0);
 	result = (r & m) | (((int32_t) s >> 31) & ~m);
 	xer.Set<XER::CA>(((int32_t) s < 0) && ((r & ~m) != 0)));
 #else
-	if(b & 0x20)
-	{
-		result = ((int32_t) s < 0) ? 0xffffffffUL : 0;
-		xer.Set<XER::CA>(((int32_t) s < 0) && ((s & 0x7fffffffUL) != 0));
-	}
-	else
-	{
-		CPU::U32 n =b & 0x1f;
-		if(n)
-		{
-			result = (int32_t) s >> n;
-			xer.Set<XER::CA>(((int32_t) s < 0) && ((s << (32 - n)) != 0));
-		}
-		else
-		{
-			result = s;
-			xer.Set<XER::CA>(0);
-		}
-	}
+	CPU::U32 sh = cpu->Cond(b < CPU::U32(0x1f)) ? b : CPU::U32(0x1f);
+	result = s >> sh;
+	xer.Set<XER::CA>((s < CPU::S32(0)) and ((s & ((CPU::S32(1) << sh) - CPU::S32(1))) != CPU::S32(0)));
 #endif
 	
 	// Write back the result
@@ -82,9 +67,9 @@ sraw.execute = {
 		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(CPU::S32(result) < CPU::S32(0));
-		cr.Set<CR::CR0::GT>(CPU::S32(result) > CPU::S32(0));
-		cr.Set<CR::CR0::EQ>(result == CPU::U32(0));
+		cr.Set<CR::CR0::LT>(result < CPU::S32(0));
+		cr.Set<CR::CR0::GT>(result > CPU::S32(0));
+		cr.Set<CR::CR0::EQ>(result == CPU::S32(0));
 	}
 	
 	return true;

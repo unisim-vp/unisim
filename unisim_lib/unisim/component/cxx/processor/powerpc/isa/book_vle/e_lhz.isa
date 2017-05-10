@@ -42,7 +42,7 @@ op e_lhz(22[6]:rd[5]:ra[5]:sext<32> d[16]);
 
 e_lhz.execute = {
 	// compute the effective address
-	ADDRESS ea = ra ? (cpu->GetGPR(ra) + d) : d;
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) : CPU::U32(0)) + CPU::U32(d);
 	// do the memory access
 	return cpu->Int16Load(rd, ea); // 16-bit load/no byte reverse/no sign extend
 }

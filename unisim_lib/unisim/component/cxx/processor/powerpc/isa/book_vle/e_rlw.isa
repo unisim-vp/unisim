@@ -44,7 +44,7 @@ e_rlw.execute = {
 	// Read the input operands
 	CPU::U32 s = cpu->GetGPR(rs);
 	CPU::U32 b = cpu->GetGPR(rb);
-	unsigned int n = b & 0x1f;
+        CPU::U32 n = b & CPU::U32(0x1f);
 	
 	// Compute the result
 	CPU::U32 result = RotateLeft(s, n);

@@ -34,7 +34,7 @@
  
 op mfspr(31[6]:rd[5]:spr[10]:339[10]:?[1])
 mfspr.execute = {
-	CPU::U32 n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
+	unsigned n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
 	CPU::U32 result;
 	switch(n)
 	{
@@ -57,7 +57,7 @@ mfspr.execute = {
 	return true;
 }
 mfspr.disasm = {
-	CPU::U32 n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
+	unsigned n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
 	switch(n)
 	{
 		case 1: os << "mfxer r" << (unsigned int) rd; return;

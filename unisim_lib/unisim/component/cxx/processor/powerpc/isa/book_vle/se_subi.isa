@@ -46,7 +46,7 @@ se_subi.execute = {
 	CPU::U32 x = cpu->GetGPR(rx);
 	
 	// Compute the result
-	CPU::U32 result = x - (oim5 + 1);
+	CPU::U32 result = x - CPU::U32(oim5 + 1);
 	
 	if(rc)
 	{

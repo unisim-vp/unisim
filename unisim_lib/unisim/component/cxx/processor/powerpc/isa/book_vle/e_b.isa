@@ -41,9 +41,9 @@ impl {
 op e_b(30[6]:0[1]:shl<1> sext <32> bd[24]:lk[1]);
 
 e_b.execute = {
-	ADDRESS target_addr = cpu->GetCIA() + bd;
+	ADDRESS target_addr = cpu->GetCIA() + CPU::U32(bd);
 	cpu->Branch(target_addr);
-	if(lk) cpu->SetLR(cpu->GetCIA() + 4);
+	if(lk) cpu->SetLR(cpu->GetCIA() + CPU::U32(4));
 	return true;
 }
 

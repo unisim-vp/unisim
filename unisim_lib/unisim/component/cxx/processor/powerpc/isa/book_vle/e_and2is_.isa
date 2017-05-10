@@ -46,7 +46,7 @@ e_and2is_.execute = {
 	CPU::U32 d = cpu->GetGPR(rd);
 	
 	// Compute the result
-	CPU::U32 result = d & ui;
+	CPU::U32 result = d & CPU::U32(ui);
 	
 	// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 	XER& xer = cpu->GetXER();

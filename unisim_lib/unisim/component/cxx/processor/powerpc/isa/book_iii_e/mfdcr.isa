@@ -46,6 +46,6 @@ mfdcr.execute = {
 }
 
 mfdcr.disasm = {
-	CPU::U32 dcrn = ((dcrf & 0x1f) << 5) | ((dcrf >> 5) & 0x1f);
+	uint32_t dcrn = ((dcrf & 0x1f) << 5) | ((dcrf >> 5) & 0x1f);
 	os << "mfdcr r" << (unsigned int) rd << ", " << dcrn;
 }

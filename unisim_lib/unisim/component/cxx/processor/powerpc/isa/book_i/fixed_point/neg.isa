@@ -41,10 +41,10 @@ neg.execute = {
 	// Read the input operands
 	CPU::U32 a = cpu->GetGPR(ra);
 	
-	if(a == 0x80000000UL)
+	if(cpu->Cond(a == CPU::U32(0x80000000UL)))
 	{
 		// Write back the result
-		cpu->SetGPR(rd, 0x80000000UL);
+		cpu->SetGPR(rd, a);
 		
 		if(unlikely(oe || rc))
 		{

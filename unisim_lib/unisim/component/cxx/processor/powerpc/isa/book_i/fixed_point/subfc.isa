@@ -60,7 +60,7 @@ subfc.execute = {
 	{
 		// Generate XER[OV] and XER[SO]
 		xer.Set<XER::OV>(overflow);
-		xer.Set<XER::SO>(xer.Get<XER::SO>() | overflow);
+		xer.Set<XER::SO>(xer.Get<XER::SO>() | CPU::U32(overflow));
 	}
 
 	if(unlikely(rc))

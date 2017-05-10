@@ -43,25 +43,13 @@ se_srawi.var rx : {uint8_t} = {srx & 31};
 
 se_srawi.execute = {
 	// Read the input operands
-	int32_t s = cpu->GetGPR(rx);
-	XER& xer = cpu->GetXER();
+	CPU::S32 s = CPU::S32( cpu->GetGPR(rx) );
 	
 	// Compute the result
-	int32_t result;
+        CPU::S32 result = s >> ui5;
 
-	if(ui5 == 0)
-	{
-		result = s;
-		// Generate XER[CA]: XER[CA]=0
-		xer.Set<XER::CA>(0);
-	}
-	else
-	{
-		unsigned int sh = ui5;
-		result = s >> sh;
-		// Generate XER[CA]
-		xer.Set<XER::CA>((s < 0) && ((s << (32 - sh)) != 0));
-	}
+	XER& xer = cpu->GetXER();
+	xer.Set<XER::CA>((s < CPU::S32(0)) and ((s & ((CPU::S32(1) << ui5) - CPU::S32(1))) != CPU::S32(0)));
 	
 	// Write back the result
 	cpu->SetGPR(rx, result);

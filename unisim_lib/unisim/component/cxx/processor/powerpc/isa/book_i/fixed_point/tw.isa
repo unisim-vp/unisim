@@ -34,16 +34,15 @@
  
 op tw(31[6]:to[5]:ra[5]:rb[5]:4[10]:?[1])
 tw.execute = {
-	int32_t a, b;
-	int trap;
-	a = cpu->GetGPR(ra);
-	b = cpu->GetGPR(rb);
-	trap = 0;
-	if(a < b && (to & 16)) trap = 1;
-	if(a > b && (to & 8)) trap = 1;
-	if(a == b && (to & 4)) trap = 1;
-	if((uint32_t) a < (uint32_t) b && (to & 2)) trap = 1;
-	if((uint32_t) a > (uint32_t) b && (to & 1)) trap = 1;
+	CPU::S32 a = CPU::S32(cpu->GetGPR(ra));
+	CPU::S32 b = CPU::S32(cpu->GetGPR(rb));
+	bool trap = false;
+	if((to & 16) and cpu->Cond((a < b))) trap = true;
+        if((to &  8) and cpu->Cond((a > b))) trap = true;
+        if((to &  4) and cpu->Cond((a == b))) trap = true;
+        if((to &  2) and cpu->Cond((CPU::S32(a) < CPU::S32(b)))) trap = true;
+        if((to &  1) and cpu->Cond((CPU::S32(a) > CPU::S32(b)))) trap = true;
+        
 	if(unlikely(trap))
 	{
 		cpu->ThrowException<CPU::ProgramInterrupt::Trap>();

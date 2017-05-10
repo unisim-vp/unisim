@@ -42,7 +42,7 @@ cntlzw.execute = {
 	CPU::U32 s = cpu->GetGPR(rs);
 	
 	// Compute the result
-	CPU::U32 result = CountLeadingZeros(s);
+	CPU::U32 result = (cpu->Cond(s == CPU::U32(0))) ? CPU::U32(31) - BitScanReverse(s) : CPU::U32(32);
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);

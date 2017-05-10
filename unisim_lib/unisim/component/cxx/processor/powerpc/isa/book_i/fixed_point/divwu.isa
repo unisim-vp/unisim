@@ -42,10 +42,10 @@ divwu.execute = {
 	CPU::U32 a = cpu->GetGPR(ra);
 	CPU::U32 b = cpu->GetGPR(rb);
 	
-	if(unlikely(b == 0))
+	if(unlikely(cpu->Cond(b == CPU::U32(0))))
 	{
 		// Write back the result (zero)
-		cpu->SetGPR(rd, 0);
+		cpu->SetGPR(rd, CPU::U32(0));
 		
 		if(unlikely(oe || rc))
 		{
