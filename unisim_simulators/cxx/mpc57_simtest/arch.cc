@@ -32,6 +32,7 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
+#include <top_mpc57.hh>
 #include <testutils.hh>
 #include <arch.hh>
 #include <sstream>
@@ -43,112 +44,92 @@ namespace ut
   void SourceReg::Repr( std::ostream& sink ) const { sink << 'r' << unsigned( reg ); }
   void MaskNode::Repr( std::ostream& sink ) const { sink << "Mask( " << mb << "," << me << " )"; }
   void CPU::LoadRepr( std::ostream& sink, Expr const& _addr, unsigned bits ) { sink << "Load<"<<bits<<">( " << _addr << " )"; }
-  
-  void CPU::Interrupt::SetELEV(unsigned x) {}
+  void BadSource::Repr( std::ostream& sink ) const { sink << "BadSource( \"" << msg << "\" )"; }
+  void MixNode::Repr( std::ostream& sink ) const { sink << "Mix( " << left << ", " << right << " )"; }
+  void XER::XERNode::Repr( std::ostream& sink ) const { sink << "XER"; }
+  void CR::CRNode::Repr( std::ostream& sink ) const { sink << "CR"; }
 
+  void CPU::Interrupt::SetELEV(unsigned x) {}
+  
   void
-  Interface::irappend( uint8_t index, bool w, UniqueVId& uvi )
+  Interface::irappend( uint8_t index, bool w )
   {
-    // We want register operands to be in {0-3,15} and register 15
-    // (PC) is only allowed as a source
-    if      (index == 15) {
-      if (w) throw Reject();
-    }
-    else if (index >= 4) {
-      throw Reject();
-    }
+    // We want register operands to be in {4-7}
+    if ((index < 4) or (index >= 8))
+      throw Untestable("Wild register access");
     
-    VirtualRegister& reg = irmap[index];
-    if (reg.bad) reg.allocate( uvi );
+    iruse.push_back( index );
+    auto itr = irmap.find(index);
+    if ((itr == irmap.end()) or (index < itr->first))
+      itr = irmap.emplace_hint( itr, std::piecewise_construct, std::forward_as_tuple( index ), std::forward_as_tuple( irmap.size() ) );
+    VirtualRegister& reg = itr->second;
     reg.source |= not w;
     reg.destination |= w;
-    iruse.push_back( index );
   }
   
-  void
-  Interface::finalize( uint8_t _length )
+  Interface::Interface( mpc57::Operation& op )
+    : xer(0), cr(0), base_register(-1), aligned(false), mem_writes(false), length(op.GetLength())
   {
-    length = _length;
+    for (PathNode path_root;;)
+      {
+        CPU cpu( *this, path_root );
+        
+        if (not op.execute( &cpu )) {
+          std::cerr << "error: " << op.GetName() << " returned false.\n";
+          throw 0;
+        }
+        
+        if (cpu.close())
+          break;
+      }
+    
     if (not usemem()) return; // done
     
-    if (store_addrs.size() > 4) {
-      // Incidentally, a stm can store r0, r1, r2, r3 and pc (this is
-      // legal from the interface point of view). Unfortunately there
-      // is only room for 4 values in the testbench.
-      throw Untestable("Too many stores");
+    struct BaseRegChecker : public ExprNode::Visitor
+    {
+      virtual void Process( Expr& expr )
+      {
+        if      (auto n = dynamic_cast<SourceReg const*>( expr.node ))
+          {
+            uint32_t reg  = (1u << n->reg);
+            invalid |= (invalid | visited | (valid_path ? 0 : -1)) & reg;
+            visited |= reg;
+            return;
+          }
+        
+        bool valid_node = false;
+        
+        if (auto n = dynamic_cast<unisim::util::symbolic::BONode*>(expr.node))
+          {
+            unisim::util::symbolic::BinaryOp const& bop = n->binop;
+            valid_node = ((bop.code == bop.Add) or (bop.code == bop.Sub));
+          }
+        
+        bool valid_prev = valid_path;
+        valid_path = valid_prev and valid_node;
+        
+        expr->Traverse( *this );
+        
+        valid_path = valid_prev;
+      }
+      uint32_t valid() { return visited & ~invalid; }
+      BaseRegChecker() : valid_path(true), invalid(0), visited(0) {}
+      bool valid_path;
+      uint32_t invalid, visited;
+    };
+    
+    // We want register operands to be in {4-7}
+    uint32_t valid_base_regs = 0xf0;
+    
+    for (Expr expr : mem_addrs) {
+      BaseRegChecker brc;
+      brc.Process(expr);
+      valid_base_regs &= brc.valid();
     }
     
-    struct FinErr {};
-    struct
-    {
-      std::set<unsigned> regs;
-      void Process( Expr& expr )
-      {
-        struct RegRefs: public ExprNode::Visitor
-        {
-          RegRefs( unsigned _reg ) : reg( _reg ), count(0) {} unsigned reg, count;
-          virtual void Process( Expr& expr )
-          {
-            auto sreg = dynamic_cast<SourceReg const*>( expr.node );
-            if (sreg and sreg->reg == reg) count += 1;
-            expr->Traverse(*this);
-          }
-        };
-        {
-          // No PC relative loads for now
-          RegRefs pcrefs(15);
-          pcrefs.Process( expr );
-          if (pcrefs.count) { throw Untestable("PC relative address."); }
-        }
-        struct
-        {
-          std::map<unsigned,unsigned> candidates;
-          void Process( Expr& expr )
-          {
-            if      (auto n = dynamic_cast<SourceReg const*>(expr.node))
-              { candidates[n->reg] += 1; }
-            else if (auto n = dynamic_cast<unisim::util::symbolic::BONode*>(expr.node))
-              {
-                switch (n->binop.code)
-                  {
-                  default:
-                    return;
-
-                  case unisim::util::symbolic::BinaryOp::Add:
-                  case unisim::util::symbolic::BinaryOp::Sub:
-                    Process( n->left );
-                    Process( n->right );
-                    break;
-                  }
-              }
-            else
-              return;
-          }
-        } bregs;
-        unsigned reg_idx = 16;
-        bregs.Process( expr );
-        for (auto x : bregs.candidates) {
-          if (x.second != 1) continue;
-          RegRefs chk( x.first );
-          chk.Process( expr );
-          if (chk.count != 1) continue;
-          reg_idx = x.first;
-        }
-        if (reg_idx >= 16)
-          throw Untestable( "No valid base register." );
-        regs.insert( reg_idx );
-      }
-    } base;
-    for (Expr& expr : store_addrs)
-      base.Process( expr );
-    for (Expr& expr : load_addrs)
-      base.Process( expr );
-    if (base.regs.size() != 1) {
-      std::stringstream err;
-      err << "Bad base register count: " << base.regs.size() << '.';
-      throw Untestable( err.str() );
-    }
-    base_register = *(base.regs.begin());
+    if (valid_base_regs == 0)
+      throw Untestable("no base address register");
+    base_register =__builtin_ctz(valid_base_regs);
   }
   
   Interface::Prologue
@@ -165,23 +146,10 @@ namespace ut
       }
     };
     
-    struct Variables
+    struct Rules
     {
-      typedef Prologue::Regs Regs;
-      Variables() : regs() {}
-      Regs regs; std::set<Rule> rules;
-      uint32_t operator[] ( unsigned idx )
-      {
-        Regs::iterator itr = regs.lower_bound( idx );
-	// idx is less or equal to itr->first.
-	if (itr == regs.end() or (idx < itr->first)) {
-          uint32_t value = rand();
-          itr = regs.insert( itr, Regs::value_type( idx, value ) );
-        }
-	return itr->second;
-      }
-      
       void add( Rule const& rule ) { rules.insert( rule ); }
+      
       Rule GetBaseRule()
       {
         if (not rules.begin()->sign) {
@@ -199,12 +167,29 @@ namespace ut
         }
         return *itr;
       }
+
+      std::set<Rule> rules;
+    };
+
+    struct Registers : Prologue::Regs
+    {
+      uint32_t eval(unsigned idx)
+      {
+        Prologue::Regs::iterator itr = lower_bound( idx );
+	// idx is less or equal to itr->first.
+	if (itr == end() or (idx < itr->first)) {
+          uint32_t value = rand();
+          itr = insert( itr, Prologue::Regs::value_type( idx, value ) );
+        }
+	return itr->second;
+      }
     };
     
     struct GetRule
     {
-      GetRule( Variables& _vars, unsigned _rbase ) : vars( _vars ), rbase( _rbase ), rule() {}
-      Variables& vars;
+      GetRule( Registers& _regs, Rules& _rules, unsigned _rbase ) : regs( _regs ), rules(_rules), rbase( _rbase ), rule() {}
+      Registers& regs;
+      Rules&     rules;
       unsigned   rbase;
       Rule       rule;
       
@@ -212,9 +197,9 @@ namespace ut
       {
         if (auto n = dynamic_cast<SourceReg const*>(node))
           {
-            // Unless reg is not rbase, we're done !
+            // Unless reg is not rbase, we're OK !
             if (n->reg != rbase) throw Prologue::Error();
-            vars.add( rule ); 
+            rules.add( rule ); 
             return;
           }
         
@@ -259,7 +244,7 @@ namespace ut
         if (auto n = dynamic_cast<SourceReg const*>(node))
           {
             if (n->reg == rbase) throw Prologue::Error();
-            return vars[n->reg];
+            return regs[n->reg];
           }
         
         if (auto n = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const*>(node))
@@ -325,13 +310,15 @@ namespace ut
         return 0;
       }
     };
-    Variables vars;
-    for (Expr const& expr : store_addrs)
-      GetRule( vars, base_register ).Process( expr.node );
-    for (Expr const& expr : load_addrs)
-      GetRule( vars, base_register ).Process( expr.node );
-    Rule rule = vars.GetBaseRule();
-    return Prologue( vars.regs, rule.offset, rule.sign, base_register );
+    
+    Registers regs;
+    Rules rules;
+    
+    for (Expr const& expr : mem_addrs)
+      GetRule( regs, rules, base_register ).Process( expr.node );
+    
+    Rule rule = rules.GetBaseRule();
+    return Prologue( regs, rule.offset, rule.sign, base_register );
   }
 
   namespace { template <typename T> int _Cmp( T a, T b ) { return (a < b) ? -1 : (a > b) ? +1 : 0; } }
@@ -347,15 +334,15 @@ namespace ut
       if (int _cmp = _Cmp( int( areg == 15 ), int( breg == 15 ) )) { return _cmp; }
       if (int _cmp = irmap.at(areg).cmp( b.irmap.at(breg) )) { return _cmp; }
     }
-    if (int _cmp = psr.cmp( b.psr )) return _cmp;
+    if (int _cmp = xer.cmp( b.xer )) return _cmp;
+    if (int _cmp = cr.cmp( b.cr )) return _cmp;
     
     return 0; // All equal
   }
 
   int
-  VirtualRegister::cmp( VirtualRegister const& b ) const
+  Interface::VirtualRegister::cmp( VirtualRegister const& b ) const
   {
-    if (bad or b.bad) throw 0;
     if (int _cmp = _Cmp( vindex, b.vindex )) return _cmp;
     if (int _cmp = _Cmp( source, b.source )) return _cmp;
     if (int _cmp = _Cmp( destination, b.destination )) return _cmp;
@@ -363,19 +350,11 @@ namespace ut
     return 0; // All equal
   }
   
-  void
-  CPU::donttest_branch()
-  {
-    throw ut::DontTest( "not under test (branch)" );
-  }
+  void  CPU::donttest_branch()  { throw ut::Untestable("branch"); }
 
-  void
-  CPU::donttest_system()
-  {
-    throw ut::DontTest( "not under test (system)" );
-  }
-
-  void CPU::reject() { throw Reject(); }
+  void  CPU::donttest_system()  { throw ut::Untestable("system"); }
+  
+  void  CPU::donttest_illegal() { throw ut::Untestable("illegal"); }
 
   void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, U8 carry_in)
   {
@@ -389,4 +368,47 @@ namespace ut
   
   inline U32 Mask(U32 mb, U32 me) { return U32(new MaskNode( mb.expr, me.expr )); }
 
+  PathNode::PathNode( PathNode* _previous )
+    : cond(), previous( _previous ), true_nxt(), false_nxt(), complete(false)
+  {}
+    
+  PathNode::~PathNode()
+  {
+    delete false_nxt;
+    delete true_nxt;
+  }
+    
+  bool
+  PathNode::proceed( Expr const& _cond )
+  {
+    if (not cond.node) {
+      cond = _cond;
+      false_nxt = new PathNode( this );
+      true_nxt = new PathNode( this );
+      return false;
+    }
+      
+    if (cond != _cond)
+      throw std::logic_error( "unexpected condition" );
+      
+    if (not false_nxt->complete)
+      return false;
+      
+    if (true_nxt->complete)
+      throw std::logic_error( "unexpected condition" );
+    
+    return true;
+  }
+    
+  bool
+  PathNode::close()
+  {
+    complete = true;
+    if (not previous)
+      return true;
+    if (previous->true_nxt == this)
+      return previous->close();
+    return false;
+  }
+    
 } // end of namespace ut

@@ -39,10 +39,6 @@
 
 namespace ut
 {
-  struct DontTest
-  {
-    DontTest( std::string _msg ) : msg( _msg ) {} std::string msg;
-  };
 }
 
 #endif // TESTUTILS_HH

@@ -46,9 +46,8 @@
 struct Sink
 {
   Sink( std::string const& gendir )
-    : macros( gendir + ".inc" ), sources( gendir + ".s" )
+    : macros( gendir + ".inc" ), sources( gendir + ".S" )
   {
-    sources   << "\t.syntax\tunified\n\n";
   }
   
   ~Sink() {}
@@ -63,11 +62,10 @@ struct TestConfig
 {
   ut::Interface const& iif;
   std::string ident, disasm;
-  bool bigendian;
   uint8_t offset;
   
   TestConfig( ut::Interface const& _iif, std::string const& _ident, std::string const& _disasm )
-    : iif( _iif ), ident( _ident ), disasm( _disasm ), bigendian( false ), offset( 0 )
+    : iif( _iif ), ident( _ident ), disasm( _disasm ), offset( 0 )
   {}
   
   std::string prologue() const
@@ -75,20 +73,26 @@ struct TestConfig
     if (iif.usemem()) {
       std::ostringstream sink;
       try {
-        // auto const& p = iif.GetPrologue();
-        // DisasmRegister br( p.base );
-        // uint32_t aoffset = uint32_t(offset);
-        // sink << "\tldr\t" << br << ", =0x" << std::hex << (p.offset + (p.sign ? -aoffset : aoffset)) << std::dec << "\n";
-        // if (p.sign)
-        //   sink << "\tsub\t" << br << ", " << br << ", r4\n";
-        // else
-        //   sink << "\tadd\t" << br << ", " << br << ", r4\n";
-        // for (auto reg : p.regs) {
-        //   sink << "\tldr\t" << DisasmRegister( reg.first ) << ", =0x" << std::hex << reg.second << std::dec << "\n";
-        // }
-        if (bigendian) sink << "\tsetend\tbe\n";
+        auto const& p = iif.GetPrologue();
+        mpc57::GPRPrint br( p.base );
+        int32_t voff = p.offset + uint32_t(offset)*(p.sign ? -1 : +1);
+        {
+          mpc57::HexPrint xoff( voff );
+          sink << "\te_lis\t" << br << ", " << xoff << "@h\n";
+          sink << "\te_or2i\t" << br << ", " << xoff << "@l\n";
+        }
+        if (p.sign)
+          sink << "\tsub\t" << br << ", " << br << ", r3\n";
+        else
+          sink << "\tadd\t" << br << ", " << br << ", r3\n";
+        for (auto reg : p.regs) {
+          mpc57::GPRPrint rname( reg.first );
+          mpc57::HexPrint rvalue( reg.second );
+          sink << "\te_lis\t" << rname << ", " << rvalue << "@h\n";
+          sink << "\te_or2i\t" << rname << ", " << rvalue << "@l\n";
+        }
       } catch (ut::Interface::Prologue::Error const& x) {
-        std::cerr << "In: " << disasm << ".\n";
+        std::cerr << "Prologue error in: " << disasm << ".\n";
         throw x;
       }
       return sink.str();
@@ -96,27 +100,11 @@ struct TestConfig
     return "";
   }
   
-  std::string epilogue() const
-  {
-    if (iif.usemem()) {
-      std::ostringstream sink;  
-      if (bigendian) sink << "\tsetend\tle\n";
-      if (iif.store_addrs.size()) {
-        sink << "\tldm\tr4, {r5, r6, r7, r8}\n";
-        sink << "\tadd\tr9, r4, #16\n";
-        sink << "\tstm\tr9, {r5, r6, r7, r8}\n";
-      }
-      return sink.str();
-    }
-    return "";
-  }
+  std::string epilogue() const { return ""; }
   
-  std::string finally() const { return iif.usemem() ? "\t.ltorg\n" : ""; }
-  TestConfig& altmem( bool be, unsigned _offset )
+  TestConfig& altmem( unsigned _offset )
   {
-    bigendian = be;
     offset = _offset;
-    if (be) ident += "_eb";
     switch (_offset) {
     case 1: ident += "_o1"; break;
     case 2: ident += "_o2"; break;
@@ -132,12 +120,8 @@ struct MPC57 : mpc57::Decoder
   typedef mpc57::CodeType         CodeType;
   typedef mpc57::Operation        Operation;
   
-  static CodeType mkcode( uint32_t code ) {
-    if ((code >> 28) == 15)
-      return CodeType( code );
-    return CodeType( (0x0fffffff & code) | 0xe0000000 );
-  }
-  static char const* Name() { return "Arm32"; }
+  static CodeType mkcode( uint32_t code ) { return CodeType( code ); }
+  static char const* Name() { return "VLE"; }
   void
   write_test( Sink& sink, TestConfig const& cfg, CodeType code )
   {
@@ -149,21 +133,18 @@ struct MPC57 : mpc57::Decoder
     
     sink.sources << "\t.text\n\t.align\t2\n\t.global\t" << opfunc_name
                  << "\n\t.type\t" << opfunc_name
-                 << ", %function\n" << opfunc_name
+                 << ", @function\n" << opfunc_name
                  << ":\n"
                  << cfg.prologue()
                  << "\t.long\t0x" << hexcode << '\t' << "/* " << cfg.disasm << " */\n"
                  << cfg.epilogue()
-                 << "\tbx\tlr\n"
-                 << cfg.finally()
+                 << "\tse_blr\n"
                  << "\t.size\t" << opfunc_name
                  << ", .-" << opfunc_name << "\n\n";
   }
   void
   write_tests( Sink& sink, TestConfig const& cfg, CodeType code )
   {
-    if ((code >> 28) == 14)
-      write_test( sink, cfg, ((code % 14) << 28) | (code & 0x0fffffff) );
     write_test( sink, cfg, code );
   }
 };
@@ -191,12 +172,13 @@ struct Checker
       {
         uint32_t mask = opc.opcode_mask, bits = opc.opcode & mask;
         auto testclass = testclasses.end();
+        std::map<std::string,uintptr_t> fails;
         
-        try {
-          for (uintptr_t trial = 0; trial < ttl; ++trial)
-            {
-              step += 1;
-              try {
+        for (uintptr_t trial = 0; trial < ttl; ++trial)
+          {
+            step += 1;
+            try
+              {
                 CodeType code = ISA::mkcode( (random.Generate() & ~mask) | bits );
                 
                 std::unique_ptr<Operation> codeop( opc.decode( code, 0 ) );
@@ -214,7 +196,10 @@ struct Checker
                 }
                 
                 if (codeop->donttest())
-                  throw ut::DontTest( "not under test (explicit donttest)." );
+                  {
+                    fails["not under test"] += 1;
+                    break;
+                  }
                 
                 {
                   std::unique_ptr<Operation> realop( isa.NCDecode( 0, code ) );
@@ -226,35 +211,39 @@ struct Checker
                   std::cerr << "Possible issue: too many tests for" << testclass->first << "...\n";
                   throw 0;
                 }
+                
                 // We need to perform an abstract execution of the
                 // instruction to 1/ further check testability and 2/
                 // compute operation interface.
-                ut::CPU cpu;
-                codeop->execute( &cpu );
-                try { cpu.interface.finalize( codeop->GetLength() ); }
-                catch (ut::Interface::Untestable const& ut) {
-                  //std::cerr << "Can't test (#" << step << ")" << this->disasm( code ) << ", " << ut.argument << std::endl;
-                  throw ut::Reject();
-                }
+                ut::Interface interface( *codeop );
+
                 // At this point, code corresponds to valid operation
                 // to be tested. Nevertheless, if the interface of
                 // this operation matches an existing test, we don't
                 // add the operation since the new test is unlikely to
                 // reveal new bugs.
-                if (testclass->second.find( cpu.interface ) != testclass->second.end()) continue;
-                testclass->second.insert( std::make_pair( cpu.interface, code ) );
+                if (testclass->second.find( interface ) != testclass->second.end()) continue;
+                testclass->second.insert( std::make_pair( interface, code ) );
                 trial = 0;
               }
-              catch (ut::Reject const& reject) { continue; }
-            }
-          if (testclass == testclasses.end())
-            std::cerr << "Tests[" << ISA::Name() << "::?]: max ttl reached (nothing found).\n";
-          else if (testclass->second.size() == 0)
-            std::cerr << "max ttl reached (nothing found).\n";
-          else
-            std::cerr << testclass->second.size() << " patterns found." << std::endl;
-        }
-        catch (ut::DontTest const& dt) { std::cerr << dt.msg << std::endl; }
+            catch (ut::Untestable const& denial)
+              {
+                fails[denial.reason] += 1;
+                if (denial.reason == "not implemented")
+                  break;
+              }
+          }
+        if (testclass == testclasses.end())
+          std::cerr << "Tests[" << ISA::Name() << "::?]: nothing found...\n";
+        else if (testclass->second.size() == 0)
+          {
+            std::cerr << "nothing found";
+            for (auto&& reason : fails)
+              std::cerr << " <" << reason.first << ">";
+            std::cerr << "\n";
+          }
+        else
+          std::cerr << testclass->second.size() << " patterns found." << std::endl;
       }
   }
   
@@ -282,8 +271,7 @@ struct Checker
   {
     std::unique_ptr<Operation> operation( isa.NCDecode( 0, code ) );
     std::ostringstream oss;
-    static ut::CPU for_disasm_purpose;
-    operation->disasm( &for_disasm_purpose, oss );
+    operation->disasm( 0, oss );
     return oss.str();
   }
   
@@ -294,7 +282,7 @@ struct Checker
     
     FileLoc( std::string const& _name ) : name( _name ) {}
     void newline() { line += 1; }
-    std::ostream& dump( std::ostream& sink ) const { sink << name << ':' << line << ": "; return sink; }
+    friend std::ostream& operator << (std::ostream& sink, FileLoc const& fl) { sink << fl.name << ':' << fl.line << ": "; return sink; }
   };
   
   void
@@ -315,38 +303,35 @@ struct Checker
         std::getline( source, extra, '\n' );
         // Decoding operation and checking that given operation name is coherent
         CodeType code = ISA::mkcode( rawcode );
-        try { 
-          std::unique_ptr<Operation> codeop( isa.NCDecode( 0, code ) );
-          if (name != codeop->GetName()) {
-            std::cerr << "Operation '" << std::hex << rawcode << std::dec << "' "
-                      << "is said to be: '" << name << "' "
-                      << "whereas it is: '" << codeop->GetName() << "'\n";
-            throw 0;
-          }
-          if (codeop->donttest()) {
-            extra += " ... explicit donttest";
-            throw ut::Reject();
-          }
-          
-          // Performing an abstract execution to check the validity of
-          // the opcode, and to compute the interface of the operation
-          ut::CPU cpu;
-          codeop->execute( &cpu );
-          try { cpu.interface.finalize( codeop->GetLength() ); }
-          catch (ut::Interface::Untestable const& ut) {
-            std::stringstream err;
-            err << " ... can't test " << this->disasm( code ) << ", " << ut.argument;
-            extra += err.str();
-            throw ut::Reject();
-          }
-          cpu.interface.length = codeop->GetLength();
-          
-          // Finally recording the operation test
-          testclasses[name].insert( std::make_pair( cpu.interface, code ) );
-        } 
-        catch (ut::Reject const& reject) {
-          fl.dump( std::cerr ) << "(" << extra << ") rejected.\n";
+        
+        std::unique_ptr<Operation> codeop( isa.NCDecode( 0, code ) );
+        if (name != codeop->GetName()) {
+          std::cerr << "Operation '" << std::hex << rawcode << std::dec << "' "
+                    << "is said to be: '" << name << "' "
+                    << "whereas it is: '" << codeop->GetName() << "'\n";
+          throw 0;
         }
+        
+        if (codeop->donttest())
+          {
+            std::cerr << fl << " explicit rejection ('donttest') for " << codeop->GetName() << "\n";
+            continue;
+          }
+          
+        // Performing an abstract execution to check the validity of
+        // the opcode, and to compute the interface of the operation
+        try
+          {
+            ut::Interface interface( *codeop );
+            // Finally recording the operation test
+            testclasses[name].insert( std::make_pair( interface, code ) );
+          }
+        catch (ut::Untestable const& denial)
+          {
+            std::cerr << fl << ": behavioral rejection for " << this->disasm( code ) << " <" << denial.reason << ">\n";
+            continue;
+          }
+        
       }
     
   }
@@ -367,8 +352,7 @@ struct Checker
             if (cfg.iif.usemem()) {
               unsigned offset_end = cfg.iif.aligned ? 1 : 4;
               for (unsigned offset = 0; offset < offset_end; ++offset) {
-                isa.write_tests( sink, TestConfig( cfg ).altmem( false, offset ), ccitem.second );
-                isa.write_tests( sink, TestConfig( cfg ).altmem( true, offset ), ccitem.second );
+                isa.write_tests( sink, TestConfig( cfg ).altmem( offset ), ccitem.second );
               }
             } else {
               isa.write_tests( sink, cfg, ccitem.second );
@@ -413,12 +397,7 @@ main( int argc, char** argv )
         throw 0;
       }
       
-      if      (strcmp("arm32",argv[1]) == 0)
-        {
-          Update<MPC57>( argv[2] );
-        }
-      else
-        throw 0;
+      Update<MPC57>( argv[1] );
     }
   catch (...)
     {

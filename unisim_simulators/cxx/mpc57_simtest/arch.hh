@@ -38,7 +38,12 @@
 #include <unisim/util/symbolic/symbolic.hh>
 #include <map>
 #include <vector>
-#include <list>
+#include <set>
+
+namespace mpc57
+{
+  struct Operation;
+}
 
 namespace ut
 {
@@ -61,26 +66,28 @@ namespace ut
   template <> struct TypeFor<32> { typedef U32 U; typedef S32 S; };
   template <> struct TypeFor<64> { typedef U64 U; typedef S64 S; };
   
-  struct UniqueVId {
-    UniqueVId() : index(0) {} unsigned index;
-    unsigned next() { return index++; }
-    void reset() { index = 0; }
+  struct Untestable
+  {
+    Untestable(std::string const& _reason) : reason(_reason) {}
+    std::string reason;
   };
   
-  struct VirtualRegister
+  struct PathNode
   {
-    VirtualRegister() : vindex(0), source(false), destination(false), bad(true) {}
-    VirtualRegister( unsigned _index ) : vindex(_index), source(false), destination(false), bad(false) {}
+    typedef unisim::util::symbolic::Expr Expr;
+
+    PathNode( PathNode* _previous=0 );
+    ~PathNode();
+
+    bool        proceed( Expr const& _cond );
+    bool        close();
+    PathNode*   next( bool predicate ) const { return predicate ? true_nxt : false_nxt; }
     
-    uint8_t vindex      : 5;
-    uint8_t source      : 1;
-    uint8_t destination : 1;
-    uint8_t bad         : 1;
-    
-    void allocate( UniqueVId& uvi ) { if (not bad) throw 0; vindex = uvi.next(); bad = false; }
-    void addaccess( bool w ) { source |= not w; destination |= w; }
-    
-    int  cmp( VirtualRegister const& ) const;
+    Expr cond;
+    PathNode* previous;
+    PathNode* true_nxt;
+    PathNode* false_nxt;
+    bool complete;
   };
   
   struct Interface
@@ -88,30 +95,39 @@ namespace ut
     typedef unisim::util::symbolic::Expr Expr;
     typedef unisim::util::symbolic::ExprNode ExprNode;
     
-    Interface()
-      : irmap(), iruse(), load_addrs(), store_addrs()
-      , psr(0), length(0), itsensitive(false), base_register(-1), aligned(true)
-    {}
+    Interface( mpc57::Operation& op );
     
+    struct VirtualRegister
+    {
+      VirtualRegister() : vindex(0), source(false), destination(false), bad(true) { throw 0; }
+      VirtualRegister( unsigned _index ) : vindex(_index), source(false), destination(false), bad(false) {}
+    
+      uint8_t vindex      : 5;
+      uint8_t source      : 1;
+      uint8_t destination : 1;
+      uint8_t bad         : 1;
+    
+      void addaccess( bool w ) { source |= not w; destination |= w; }
+    
+      int  cmp( VirtualRegister const& ) const;
+    };
+
     std::map<unsigned,VirtualRegister> irmap;
     std::vector<unsigned>              iruse;
-    std::list<Expr>                    load_addrs;
-    std::list<Expr>                    store_addrs;
-    VirtualRegister                    psr;
-    uint8_t                            length;
-    bool                               itsensitive;
+    VirtualRegister                    xer, cr;
+    std::set<Expr>                     mem_addrs;
     uint8_t                            base_register;
     bool                               aligned;
+    bool                               mem_writes;
+    uint8_t                            length;
+
     
-    void irappend( uint8_t _index, bool w, UniqueVId& uvi );
-    void readflags() { psr.addaccess( false ); }
-    void writeflags() { psr.addaccess( true ); }
+    void irappend( uint8_t _index, bool w );
     
     int  cmp( Interface const& ) const;
     bool operator < ( Interface const& b ) const { return cmp( b ) < 0; }
-    bool usemem() const { return store_addrs.size() or load_addrs.size(); }
+    bool usemem() const { return mem_addrs.size(); }
     
-    void finalize( uint8_t _length );
     
     struct Prologue
     {
@@ -127,17 +143,14 @@ namespace ut
     Prologue GetPrologue() const;
     
     void PCRelPrologue( Prologue const& pc ) const;
-    struct Untestable
-    {
-      std::string argument;
-      Untestable( std::string part ) : argument( part ) {}
-      Untestable( std::string part, Untestable const& ut ) : argument( part + ' ' + ut.argument ) {}
-    };
+    
+    void load( Expr const& addr ) { mem_addrs.insert( addr ); }
+    void store( Expr const& addr ) { mem_addrs.insert( addr ); mem_writes = true; }
   };
   
   struct SourceReg : public unisim::util::symbolic::ExprNode
   {
-    SourceReg( unsigned _reg ) : reg( _reg ) {} unsigned reg;
+    SourceReg( Interface const& _ifc, unsigned _reg ) : ifc(_ifc), reg( _reg ) {}
     virtual void Repr( std::ostream& sink ) const;
     virtual void Traverse( ExprNode::Visitor& visitor ) {}
     virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const
@@ -146,10 +159,44 @@ namespace ut
       return (reg < ref) ? -1 : (reg > ref) ? +1 : 0;
     }
     virtual unisim::util::symbolic::ExprNode* GetConstNode() { return 0; }
+    Interface const& ifc; unsigned reg;    
   };
   
-  struct Reject {};
   struct CPU;
+
+  struct BadSource : public unisim::util::symbolic::ExprNode
+  {
+    BadSource( char const* _msg ) : msg(_msg) {}
+    virtual void Repr( std::ostream& sink ) const;
+    virtual void Traverse( ExprNode::Visitor& visitor ) {}
+    virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const
+    {
+      char const* rmsg = dynamic_cast<BadSource const&>( brhs ).msg;
+      rmsg = rmsg ? rmsg : "";
+      char const* lmsg = msg ? msg : "";
+      return strcmp( lmsg, rmsg );
+    }
+    virtual unisim::util::symbolic::ExprNode* GetConstNode() { return 0; }
+    char const* msg;
+  };
+  
+  struct MixNode : public unisim::util::symbolic::ExprNode
+  {
+    typedef unisim::util::symbolic::Expr Expr;
+    typedef unisim::util::symbolic::ExprNode ExprNode;
+    
+    MixNode( Expr const& _left, Expr const& _right ) : left(_left), right(_right) {}
+    virtual void Repr( std::ostream& sink ) const;
+    virtual void Traverse( ExprNode::Visitor& visitor ) { visitor.Process(left); visitor.Process(right);  }
+    virtual intptr_t cmp( ExprNode const& brhs ) const
+    {
+      MixNode const& rhs = dynamic_cast<MixNode const&>( brhs );
+      if (intptr_t delta = left.cmp( rhs.left )) return delta;
+      return right.cmp( rhs.right );
+    }
+    virtual ExprNode* GetConstNode() { return 0; }
+    Expr left, right;
+  };
   
   struct XER
   {
@@ -157,12 +204,28 @@ namespace ut
     struct SO {};
     struct CA {};
     struct _0_3 {};
-    template <typename PART,typename T> void Set( SmartValue<T> const& value ) {}
-    template <typename PART> void Set( unsigned ) {}
-    template <typename PART> U32 Get() { return U32(0); }
-    operator U32 () const { return U32(0); }
-    XER& operator= (U32 const& v) { return *this; }
+    
+    typedef unisim::util::symbolic::Expr Expr;
+    typedef unisim::util::symbolic::ExprNode ExprNode;
+    
+    template <typename PART,typename T> void Set( SmartValue<T> const& value ) { XERAccess(true); xer_value = Expr( new MixNode( xer_value.expr, value.expr ) ); }
+    template <typename PART> void Set( uint32_t value ) { Set<PART,uint32_t>( unisim::util::symbolic::make_const(value) ); }
+    template <typename PART> U32 Get() { XERAccess(false); return xer_value; }
+    operator U32 () { XERAccess(false); return xer_value; }
+    XER& operator= ( U32 const& value ) { XERAccess(true); xer_value = value; return *this; }
     XER& GetXER() { return *this; }
+    
+    struct XERNode : public ExprNode
+    {
+      virtual void Repr( std::ostream& sink ) const;virtual void Traverse( ExprNode::Visitor& visitor ) {}
+      virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
+      virtual ExprNode* GetConstNode() { return 0; }
+    };
+    
+    XER() : xer_value( new XERNode ) {}
+    
+    U32 xer_value;
+    virtual void XERAccess( bool is_write ) = 0;
   };
 
   struct CR
@@ -175,46 +238,62 @@ namespace ut
     struct CR5 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
     struct CR6 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
     struct CR7 { struct OV {}; struct SO {}; struct LT {}; struct GT {}; struct EQ {}; struct ALL {}; };
-    template <typename PART,typename T> void Set( SmartValue<T> const& value ) {}
-    template <typename PART> void Set( unsigned ) {}
-    template <typename PART> U32 Get() { return U32(0); }
-    operator U32 () const { return U32(0); }
-    CR& operator= (U32 const& v) { return *this; }
+    
+    typedef unisim::util::symbolic::Expr Expr;
+    typedef unisim::util::symbolic::ExprNode ExprNode;
+    
+    template <typename PART,typename T> void Set( SmartValue<T> const& value ) { CRAccess(true); cr_value = Expr( new MixNode( cr_value.expr, value.expr ) ); }
+    template <typename PART> void Set( uint32_t value ) { Set<PART,uint32_t>( unisim::util::symbolic::make_const(value) ); }
+    template <typename PART> U32 Get() { CRAccess(false); return cr_value; }
+    operator U32 () { CRAccess(false); return cr_value; }
+    CR& operator= ( U32 const& value ) { CRAccess(true); cr_value = value; return *this; }
     CR& GetCR() { return *this; }
+    
+    struct CRNode : public ExprNode
+    {
+      virtual void Repr( std::ostream& sink ) const;virtual void Traverse( ExprNode::Visitor& visitor ) {}
+      virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
+      virtual ExprNode* GetConstNode() { return 0; }
+    };
+
+    CR() : cr_value( new CRNode ) {}
+
+    U32 cr_value;
+    virtual void CRAccess( bool is_write ) = 0;
   };
   
   struct LR
   {
-    template <typename PART,typename T> void Set( SmartValue<T> const& value ) {}
-    template <typename PART> void Set( unsigned ) {}
+    template <typename PART,typename T> void Set( SmartValue<T> const& value ) { throw Untestable("LR access");  }
+    template <typename PART> void Set( unsigned ) { throw Untestable("LR access");  }
     template <typename PART> U32 Get() { return U32(0); }
-    operator U32 () const { return U32(0); }
-    LR& operator= (U32 const& v) { return *this; }
+    operator U32 () { return U32(0); }
+    LR& operator= (U32 const& v) { throw Untestable("LR access"); return *this; }
     LR& GetLR() { return *this; }
-    void SetLR(U32 const& v) {}
+    void SetLR(U32 const& v) { throw Untestable("LR access"); }
   };
   
   struct CTR
   {
-    template <typename PART,typename T> void Set( SmartValue<T> const& value ) {}
-    template <typename PART> void Set( unsigned ) {}
+    template <typename PART,typename T> void Set( SmartValue<T> const& value ) { throw Untestable("CTR access"); }
+    template <typename PART> void Set( unsigned ) { throw Untestable("CTR access"); }
     template <typename PART> U32 Get() { return U32(0); }
-    operator U32 () const { return U32(0); }
-    CTR& operator= (U32 const& v) { return *this; }
+    operator U32 () { return U32(0); }
+    CTR& operator= (U32 const& v) { throw Untestable("CTR access"); return *this; }
     CTR& GetCTR() { return *this; }
-    void SetCTR(U32 const& v) {}
+    void SetCTR(U32 const& v) { throw Untestable("CTR access"); }
   };
   
   struct MSR
   {
     struct PR {};
     struct EE {};
-    template <typename PART,typename T> void Set( SmartValue<T> const& value ) {}
-    template <typename PART> void Set( unsigned ) {}
-    template <typename PART> U32 Get() { return U32(0); }
-    operator U32 () const { return U32(0); }
-    MSR& operator= (U32 const& v) { return *this; }
-    MSR& GetMSR() { return *this; }
+    template <typename PART,typename T> void Set( SmartValue<T> const& value ) { throw Untestable("MSR access"); }
+    template <typename PART> void Set( unsigned ) { throw Untestable("MSR access"); }
+    template <typename PART> U32 Get() { throw Untestable("MSR access"); return U32(0); }
+    operator U32 () { throw Untestable("MSR access"); return U32(0); }
+    MSR& operator= (U32 const& v) { throw Untestable("MSR access"); return *this; }
+    MSR& GetMSR() { throw Untestable("MSR access"); return *this; }
   };
 
   struct CPU : public XER, public CR, public MSR, public LR, public CTR
@@ -233,6 +312,16 @@ namespace ut
     typedef unisim::util::symbolic::ExprNode ExprNode;
     
     typedef MSR MSR;
+    
+    CPU( Interface& _interface, PathNode& root )
+      : interface(_interface), path(&root), cia( new CIA )
+    {     
+      for (unsigned reg = 0; reg < 32; ++reg)
+        reg_values[reg] = U32( new SourceReg( interface, reg ) );
+    }
+    
+    virtual void XERAccess( bool is_write ) { interface.xer.addaccess(is_write); }
+    virtual void CRAccess( bool is_write ) { interface.cr.addaccess(is_write); }
     
     struct Interrupt { void SetELEV(unsigned x); };
     
@@ -254,20 +343,43 @@ namespace ut
       struct PrivilegeViolation {};
     };
     
-    template <class T> Interrupt ThrowException() { reject(); return Interrupt(); }
+    template <class T> Interrupt ThrowException() { DispatchException( T() ); return Interrupt(); }
     
-    template <typename T> bool Cond( SmartValue<T> const& c ) { return false; }
+    template <class T> void DispatchException( T const& exc ) { donttest_system(); }
+    void DispatchException( ProgramInterrupt::UnimplementedInstruction const& exc ) { throw Untestable("not implemented"); }
+    void DispatchException( AlignmentInterrupt::UnalignedLoadStoreMultiple const& exc ) { interface.aligned = true; donttest_illegal(); }
+    
+    
+    template <typename T> bool Cond( SmartValue<T> const& cond )
+    {
+      bool predicate = path->proceed( cond.expr );
+      path = path->next( predicate );
+      return predicate;
+    }
+    
+    bool close() { return path->close(); }
 
-    Interface interface;
-    UniqueVId gpr_uvi;
-    U32   reg_values[32];
-    U32   cia;
+    Interface& interface;
+    PathNode*  path;
+    U32        reg_values[32];
+    U32        cia;
+    
+    
+    struct CIA : public ExprNode
+    {
+      CIA() {}
+      
+      virtual void Repr( std::ostream& sink ) const { sink << "CIA"; }
+      virtual void Traverse( ExprNode::Visitor& visitor ) {}
+      virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { return 0; }
+      virtual unisim::util::symbolic::ExprNode* GetConstNode() { return 0; }
+    };
     
     U32 GetCIA() { return cia; };
     bool EqualCIA(uint32_t pc) { return false; };
-    U32 GetGPR(unsigned n) { return reg_values[n]; };
-    void SetGPR(unsigned n, U32 value) { reg_values[n] = value; }
-    void SetGPR(unsigned n, S32 value) { reg_values[n] = U32(value); }
+    U32 GetGPR(unsigned n) { gpr_append(n,false); return reg_values[n]; };
+    void SetGPR(unsigned n, U32 value) { gpr_append(n,true); reg_values[n] = value; }
+    void SetGPR(unsigned n, S32 value) { gpr_append(n,true); reg_values[n] = U32(value); }
     
     static void LoadRepr( std::ostream& sink, Expr const& _addr, unsigned bits );
     
@@ -287,12 +399,12 @@ namespace ut
     
     template <unsigned BITS> Expr MemRead( U32 const& _addr )
     {
-      interface.load_addrs.push_back( _addr.expr );
+      interface.load( _addr.expr );
       return new Load<BITS>( _addr.expr );
     }
     template <unsigned BITS> void MemWrite( U32 const& _addr, typename TypeFor<BITS>::U const& _val )
     {
-      interface.store_addrs.push_back( _addr.expr );
+      interface.store( _addr.expr );
     }
     
     bool Int8Load(unsigned n, U32 const& address) { SetGPR(n, CPU::U32(CPU::U8(MemRead<8>(address)))); return true; }
@@ -312,13 +424,11 @@ namespace ut
     bool Int16StoreByteReverse(unsigned n, U32 const& address ) { MemWrite<16>( address, ByteSwap(U16(GetGPR(n))) ); return true; }
     bool Int32StoreByteReverse(unsigned n, U32 const& address ) { MemWrite<32>( address, ByteSwap(U32(GetGPR(n))) ); return true; }
 
-    
-    void gpr_append( unsigned idx, bool w ) { interface.irappend( idx, w, gpr_uvi ); }
+    void gpr_append( unsigned idx, bool w ) { interface.irappend( idx, w ); }
 
-    void reject();
-    
     void donttest_system();
     void donttest_branch();
+    void donttest_illegal();
     
     char const* GetObjectFriendlyName(U32) { return "???"; }
     
@@ -355,7 +465,8 @@ namespace ut
   };
   
   extern void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, U8 carry_in);
-  extern inline void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, int carry_in) { return SignedAdd32(result, carry_out, overflow, sign, x, y, U8(carry_in)); }
+  extern inline void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, int carry_in)
+  { return SignedAdd32(result, carry_out, overflow, sign, x, y, U8(carry_in)); }
 
   struct MaskNode : public unisim::util::symbolic::ExprNode
   {
@@ -373,8 +484,9 @@ namespace ut
     virtual ExprNode* GetConstNode() { return 0; }
     Expr mb, me;
   };
-    
+  
   extern U32 Mask(U32 mb, U32 me);
+  
 }
 
 #endif // ARCH_HH

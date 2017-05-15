@@ -42,8 +42,34 @@ decl {
 #include <inttypes.h>
 
 namespace ut { struct CPU; }
-namespace mpc57 { using ut::CPU; }
 
+namespace mpc57
+{
+  using ut::CPU;
+
+  struct DASMPrint
+  {
+    virtual void Print( std::ostream& sink ) const = 0;
+    friend std::ostream& operator << (std::ostream& sink, DASMPrint const& dap)
+    {
+      dap.Print(sink);
+      return sink;
+    }
+  };
+
+  struct GPRPrint : public DASMPrint
+  {
+    GPRPrint(unsigned _reg) : reg(_reg) {} unsigned reg;
+    void Print( std::ostream& sink ) const;
+  };
+  
+  struct HexPrint : public DASMPrint
+  {
+    HexPrint(uint32_t _num) : num(_num) {} unsigned num;
+    void Print( std::ostream& sink ) const;
+  };
+  
+}
 }
 
 impl {
@@ -66,27 +92,9 @@ namespace mpc57
   inline char const* LSP_TY( unsigned n ) { return "<?>"; }
   inline char const* LSP_ACC( unsigned n ) { return "<?>"; }
 
-  struct DASMPrint
-  {
-    virtual void Print( std::ostream& sink ) const = 0;
-    friend std::ostream& operator << (std::ostream& sink, DASMPrint const& dap)
-    {
-      dap.Print(sink);
-      return sink;
-    }
-  };
-  
-  struct GPRPrint : public DASMPrint
-  {
-    GPRPrint(unsigned _reg) : reg(_reg) {} unsigned reg;
-    void Print( std::ostream& sink ) const { sink << "r" << std::dec << reg; }
-  };
-  
-  struct HexPrint : public DASMPrint
-  {
-    HexPrint(uint32_t _num) : num(_num) {} unsigned num;
-    void Print( std::ostream& sink ) const { sink << "0x" << std::hex << num; }
-  };
+  void GPRPrint::Print( std::ostream& sink ) const { sink << "r" << std::dec << reg; }
+
+  void HexPrint::Print( std::ostream& sink ) const { sink << "0x" << std::hex << num << std::dec; }
   
   struct CRPrint : public DASMPrint
   {
@@ -139,7 +147,7 @@ namespace mpc57
 }
 
 action {bool} execute({CPU *} {cpu}) {
-  throw ut::DontTest( std::string( "warning, " ) + GetName() + " is not implemented." );
+  throw ut::Untestable("not implemented");
   return false;
 }
 
