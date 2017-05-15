@@ -274,6 +274,7 @@ namespace symbolic {
     virtual ConstNodeBase* uop( UnaryOp op ) const = 0;
     virtual float GetFloat() const = 0;
     virtual double GetDouble() const = 0;
+    virtual bool GetBoolean() const = 0;
     virtual uint8_t GetU8() const = 0;
     virtual uint16_t GetU16() const = 0;
     virtual uint32_t GetU32() const = 0;
@@ -300,13 +301,10 @@ namespace symbolic {
   float      EvalOr( float l, float r );
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalNot( VALUE_TYPE val ) { return ~val; }
+  inline bool EvalNot( bool val ) { return not val; }
   double     EvalNot( double val );
   float      EvalNot( float val );
 
-  // template <typename VALUE_TYPE>
-  // VALUE_TYPE EvalROR( VALUE_TYPE l, uint8_t shift ) { return rotate_right( l, shift ); }
-  // double     EvalROR( double, uint8_t );
-  // float      EvalROR( float, uint8_t );
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalSHL( VALUE_TYPE l, uint8_t shift ) { return l << shift; }
   double     EvalSHL( double, uint8_t );
@@ -325,6 +323,13 @@ namespace symbolic {
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalBitScanForward( VALUE_TYPE v ) { throw std::logic_error( "No BitScanForward for this type" ); }
   uint32_t   EvalBitScanForward( uint32_t v );
+  template <typename VALUE_TYPE>
+  VALUE_TYPE EvalRotateRight( VALUE_TYPE v, uint8_t shift ) { throw std::logic_error( "No RotateRight for this type" ); }
+  uint32_t   EvalRotateRight( uint32_t v, uint8_t shift );
+  template <typename VALUE_TYPE>
+  VALUE_TYPE EvalRotateLeft( VALUE_TYPE v, uint8_t shift ) { throw std::logic_error( "No RotateLeft for this type" ); }
+  uint32_t   EvalRotateLeft( uint32_t v, uint8_t shift );
+    
   
   template <typename VALUE_TYPE>
   struct ConstNode : public ConstNodeBase
@@ -374,8 +379,8 @@ namespace symbolic {
         case BinaryOp::Tgtu:
         case BinaryOp::Tgt:  return new ConstNode   <bool>   ( value >  GetValue( cnb ) );
           
-        case BinaryOp::Ror:  break;
-        case BinaryOp::Rol:  break;
+        case BinaryOp::Ror:  return new ConstNode<VALUE_TYPE>( EvalRotateRight( value, cnb.GetU8() ) );
+        case BinaryOp::Rol:  return new ConstNode<VALUE_TYPE>( EvalRotateLeft( value, cnb.GetU8() ) );
         case BinaryOp::Mod:  break;
         case BinaryOp::FCmp: break;
         case BinaryOp::NA:   throw std::logic_error("???");
@@ -409,6 +414,7 @@ namespace symbolic {
     }
     float GetFloat() const { return value; }
     double GetDouble() const { return value; }
+    bool GetBoolean() const { return value; }
     uint8_t GetU8() const { return value; }
     uint16_t GetU16() const { return value; }
     uint32_t GetU32() const { return value; }
@@ -451,6 +457,18 @@ namespace symbolic {
     bool operator == ( Expr const& rhs ) const { return cmp( rhs ) == 0; }
     bool operator  < ( Expr const& rhs ) const { return cmp( rhs )  < 0; }
     bool operator  > ( Expr const& rhs ) const { return cmp( rhs )  > 0; }
+    
+    ConstNodeBase* ConstSimplify()
+    {
+      if (ExprNode* cn = node->GetConstNode())
+        {
+          *this = Expr( cn );
+          return dynamic_cast<ConstNodeBase*>( cn );
+        }
+      
+      return 0;
+    }
+    
     bool MakeConst()
     {
       if (ExprNode* cn = node->GetConstNode()) {
@@ -462,7 +480,7 @@ namespace symbolic {
     bool good() const { return node; }
     friend std::ostream& operator << (std::ostream&, Expr const&);
   };
-  
+
   template <typename VALUE_TYPE>
   Expr make_const( VALUE_TYPE value ) { return Expr( new ConstNode<VALUE_TYPE>( value ) ); }
   
@@ -497,6 +515,7 @@ namespace symbolic {
         ConstNodeBase& const_src( dynamic_cast<ConstNodeBase&>( *src.node ) );
         if (CmpTypes<DST_VALUE_TYPE,   float>::same) return new ConstNode<   float>( const_src.GetFloat() );
         if (CmpTypes<DST_VALUE_TYPE,  double>::same) return new ConstNode<  double>( const_src.GetDouble() );
+	if (CmpTypes<DST_VALUE_TYPE,    bool>::same) return new ConstNode<    bool>( const_src.GetBoolean() );
         if (CmpTypes<DST_VALUE_TYPE, uint8_t>::same) return new ConstNode< uint8_t>( const_src.GetU8() );
         if (CmpTypes<DST_VALUE_TYPE,uint16_t>::same) return new ConstNode<uint16_t>( const_src.GetU16() );
         if (CmpTypes<DST_VALUE_TYPE,uint32_t>::same) return new ConstNode<uint32_t>( const_src.GetU32() );

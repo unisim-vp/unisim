@@ -437,9 +437,8 @@ namespace armsec
       if (not cond.expr.node)
         throw std::logic_error( "Not a cond" );
       
-      typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-      if (ConstNodeBase* cnode = dynamic_cast<ConstNodeBase*>( cond.expr->GetConstNode() ))
-        return cnode->GetU8();
+      if (unisim::util::symbolic::ConstNodeBase* cnode = cond.expr.ConstSimplify())
+        return cnode->GetBoolean();
       
       bool result;
       path = path->proceed( cond.expr, result );
