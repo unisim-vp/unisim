@@ -82,11 +82,7 @@ namespace armsec
     /*** Pre expression process ***/
     
     /*** Sub expression process ***/
-    if (ASExprNode const* node = dynamic_cast<ASExprNode const*>( expr.node ))
-      {
-        return node->GenCode( label, sink );
-      }
-    else if (ConstNodeBase const* node = dynamic_cast<ConstNodeBase const*>( expr.node ))
+    if (ConstNodeBase const* node = const_cast<Expr&>( expr )->GetConstNode())
       {
         switch (node->GetType())
           {
@@ -201,6 +197,37 @@ namespace armsec
       
                   return 32;
                 }
+              case Op::Cast:
+                {
+                  CastNodeBase const& cnb = dynamic_cast<CastNodeBase const&>( *expr.node );
+                  ScalarType src( cnb.GetSrcType() ), dst( cnb.GetDstType() );
+                  
+                  if (dst.is_integer and src.is_integer)
+                    {
+                      int extend = dst.bitsize - src.bitsize;
+                      if      (extend > 0)
+                        {
+                          sink << '(' << (src.is_signed ? "exts " : "extu ") << GetCode(cnb.src, label ) << ' ' << dst.bitsize << ')';
+                        }
+                      else if (extend < 0)
+                        {
+                          CastNodeBase const* src_node = dynamic_cast<CastNodeBase const*>( cnb.src.node );
+                          if (src_node and (src_node->GetSrcType() == cnb.GetDstType())) {
+                            sink << GetCode(src_node->src, label);
+                          } else {
+                            sink << "(" << GetCode(cnb.src, label) << " {0," << (dst.bitsize-1) << "})";
+                          }
+                        }
+                      else
+                        sink << GetCode(cnb.src, label);
+                    }
+                  else
+                    {
+                      sink << dst.name << "( " << GetCode(cnb.src, label ) << " )";
+                    }
+      
+                  return dst.bitsize;
+                }
               }
     
             sink << '(' << operation << ' ';
@@ -212,35 +239,9 @@ namespace armsec
             break;
           }
       }
-    else if (CastNodeBase const* node = dynamic_cast<CastNodeBase const*>( expr.node ))
+    else if (ASExprNode const* node = dynamic_cast<ASExprNode const*>( expr.node ))
       {
-        ScalarType src( node->GetSrcType() ), dst( node->GetDstType() );
-          
-        if (dst.is_integer and src.is_integer)
-          {
-            int extend = dst.bitsize - src.bitsize;
-            if      (extend > 0)
-              {
-                sink << (src.is_signed ? "exts " : "extu ") << GetCode(node->src, label ) << ' ' << dst.bitsize;
-              }
-            else
-              {
-                CastNodeBase const* src_node = dynamic_cast<CastNodeBase const*>( node->src.node );
-                if (src_node and (src_node->GetSrcType() == node->GetDstType())) {
-                  sink << GetCode(src_node->src, label);
-                } else {
-                  sink << GetCode(node->src, label);
-                  if  (extend < 0)
-                    sink << " {0," << (dst.bitsize-1) << "}";
-                }
-              }
-          }
-        else
-          {
-            sink << dst.name << "( " << GetCode(node->src, label ) << " )";
-          }
-      
-        return dst.bitsize;
+        return node->GenCode( label, sink );
       }
       
     throw std::logic_error("No GenCode method");
@@ -398,18 +399,57 @@ namespace armsec
     struct Context
     {
       Context() : upper(0) {}
-      Context( Context* _up ) : upper(_up) {}
+      Context( Context* _up ) : upper(_up) { if (_up) next_tmp = _up->next_tmp; }
       
       void add_pending( Expr e ) { pendings.push_back(e); }
       bool has_pending() const { return pendings.size() > 0; }
       
-      void add_var( Expr e, Expr n ) { vars[e] = n; }
+      struct TmpVar : public armsec::ASExprNode
+      {
+        TmpVar( std::string const& _ref, unsigned rsz )
+          : ref(_ref), dsz(rsz)
+        {}
+        virtual int GenCode( Label& label, std::ostream& sink ) const { sink << ref; return dsz; }
+        virtual intptr_t cmp( ExprNode const& rhs ) const { return ref.compare( dynamic_cast<TmpVar const&>( rhs ).ref ); }
+        virtual unsigned SubCount() const { return 0; }
+        virtual void Repr( std::ostream& sink ) const { sink << ref; }
+        std::string ref;
+        int dsz;
+      };
+      
+      Expr const&
+      record_cse( std::string const& name, unsigned size, Expr const& expr )
+      {
+        Expr& place = vars[expr];
+        if (place.good())
+          throw std::logic_error( "multiple temporary definitions" );
+        place = new TmpVar( name, size );
+        return place;
+      }
+      
+      Expr const&
+      make_nxt( char const* rname, unsigned rsz, Expr const& expr )
+      {
+        std::ostringstream buffer;
+        buffer << "nxt_" << rname << "<" << rsz << ">";
+        return record_cse( buffer.str(), rsz, expr );
+      }
+      
+      Expr const&
+      make_tmp( unsigned size, Expr const& expr )
+      {
+        std::ostringstream buffer;
+        unsigned id = next_tmp[size]++;
+        buffer << "tmp" << size << '_' << id << "<" << size << ">";
+        return record_cse( buffer.str(), size, expr );
+      }
       
       Context* upper;
       typedef std::vector<Expr> Pendings;
       Pendings pendings;
       typedef std::map<Expr,Expr> Vars;
       Vars vars;
+      std::map<unsigned,unsigned> next_tmp;
     };
 
     void GenCode( Label const&, Label const&, Context* ) const;
@@ -1030,9 +1070,57 @@ namespace armsec
     
     Label current( start );
     
+    {
+      /* find common sub expressions */
+      struct
+      {
+        void Recurse( Expr& expr )
+        {
+          for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
+            Process( expr->GetSub(idx) );
+        }
+      
+        void Process( Expr& expr )
+        {
+          if (not expr->SubCount())
+            return;
+          
+          if (occurences[expr]++)
+            return;
+          
+          Recurse( expr );
+        }
+      
+        std::map<Expr,unsigned> occurences;
+      } cse;
+    
+      for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
+        {
+          cse.Recurse( const_cast<Expr&>( *itr ) );
+        }
+    
+      for (std::map<Expr,unsigned>::iterator itr = cse.occurences.begin(), end = cse.occurences.end(); itr != end; ++itr)
+        {
+          if (itr->second < 2)
+            continue;
+          std::string tmp_src;
+          Expr        tmp_dst;
+          {
+            std::ostringstream buffer;
+            int retsize = ASExprNode::GenerateCode( itr->first, current, buffer );
+            tmp_src = buffer.str();
+            tmp_dst = ctx.make_tmp( retsize, itr->first );
+          }
+          std::ostringstream buffer;
+          buffer << GetCode(tmp_dst, current) << " := " << tmp_src;
+          Label insn( current );
+          buffer << "; goto " << current.next();
+          insn = buffer.str();
+        }
+    }
+    
     for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
       {
-        
         struct CSE
         {
           void Recurse( Expr& expr )
@@ -1059,7 +1147,7 @@ namespace armsec
           CSE( Context& _ctx ) : ctx(_ctx) {} Context& ctx;
         } cse( ctx );
         
-        cse.Recurse(const_cast<Expr&>(*itr));
+        cse.Recurse( const_cast<Expr&>( *itr ) );
         
         if (armsec::State::RegWrite* rw = dynamic_cast<armsec::State::RegWrite*>( itr->node ))
           {
@@ -1067,33 +1155,21 @@ namespace armsec
             armsec::State::RegID rid = rw->id;
             unsigned             rsz = rw->bitsize;
           
-            if (rw->value.ConstSimplify()) {
-              wb = *itr;
-            }
-          
-            else {
-              struct TmpVar : public armsec::ASExprNode
+            if (rw->value.ConstSimplify() or dynamic_cast<Context::TmpVar const*>( rw->value.node ))
               {
-                TmpVar( armsec::State::RegID rid, unsigned rsz )
-                  : dsz(rsz)
-                { std::ostringstream buffer; buffer << "nxt_" << rid.c_str() << "<" << rsz << ">"; ref = buffer.str(); }
-                virtual int GenCode( Label& label, std::ostream& sink ) const { sink << ref; return dsz; }
-                virtual intptr_t cmp( ExprNode const& rhs ) const { return ref.compare( dynamic_cast<TmpVar const&>( rhs ).ref ); }
-                virtual unsigned SubCount() const { return 0; }
-                virtual void Repr( std::ostream& sink ) const { sink << ref; }
-                std::string ref;
-                int dsz;
-              }* tmp = new TmpVar( rid, rsz );
+                wb = *itr;
+              }
+            else
+              {
+                Expr tmp = ctx.make_nxt( rid.c_str(), rsz, rw->value );
+                std::ostringstream buffer;
+                buffer << GetCode(tmp, current) << " := " << GetCode(rw->value, current);
+                Label insn( current );
+                buffer << "; goto " << current.next();
+                insn = buffer.str();
             
-              std::ostringstream buffer;
-              buffer << tmp->ref << " := " << GetCode(rw->value, current);
-              Label insn( current );
-              buffer << "; goto " << current.next();
-              insn = buffer.str();
-              ctx.add_var( rw->value, tmp );
-            
-              wb = new armsec::State::RegWrite( rid, tmp, rsz );
-            }
+                wb = new armsec::State::RegWrite( rid, tmp, rsz );
+              }
           
             if (rid.code == rid.nia)
               nia = dynamic_cast<armsec::State::RegWrite&>( *wb.node ).value;

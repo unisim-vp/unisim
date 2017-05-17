@@ -237,6 +237,7 @@ config.h.in \
 thumb2plan.sh \
 arm32plan.sh \
 damien_issues.sh \
+significant_tests.sh \
 "
 
 UNISIM_SIMULATOR_ARMSEC_TEMPLATE_FILES=
