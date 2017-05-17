@@ -71,13 +71,13 @@ namespace armsec
   int
   ASExprNode::GenerateCode( ASExprNode::Expr const& expr, Label& label, std::ostream& sink )
   {
-    typedef unisim::util::symbolic::ConstNodeBase ConstNodeBase;
-    typedef unisim::util::symbolic::ScalarType ScalarType;
-    typedef unisim::util::symbolic::CastNodeBase CastNodeBase;
-    typedef unisim::util::symbolic::BinaryOp BinaryOp;
-    typedef unisim::util::symbolic::UnaryOp UnaryOp;
-    typedef unisim::util::symbolic::BONode BONode;
-    typedef unisim::util::symbolic::UONode UONode;
+    using unisim::util::symbolic::ConstNodeBase;
+    using unisim::util::symbolic::ScalarType;
+    using unisim::util::symbolic::CastNodeBase;
+    using unisim::util::symbolic::Op;
+    using unisim::util::symbolic::OpNodeBase;
+    using unisim::util::symbolic::BONode;
+    using unisim::util::symbolic::UONode;
     
     /*** Pre expression process ***/
     
@@ -99,110 +99,118 @@ namespace armsec
           }
         throw std::logic_error("can't encode type");
       }
-    else if (BONode const* node = dynamic_cast<BONode const*>( expr.node ))
+    else if (OpNodeBase const* node = const_cast<Expr&>( expr )->AsOpNode())
       {
-        int retsz = GenerateCode( node->left, label, sink << '(' );
-          
-        switch (node->binop.code)
+        switch (node->SubCount())
           {
-          default:                sink << " [" << node->binop.c_str() << "] "; break;
+          case 2: {
+            int retsz = GenerateCode( const_cast<OpNodeBase*>( node )->GetSub(0), label, sink << '(' );
+        
+        
+            switch (node->op.code)
+              {
+              default:                sink << " [" << node->op.c_str() << "] "; break;
             
-          case BinaryOp::Add:     sink << " + "; break;
-          case BinaryOp::Sub:     sink << " - "; break;
+              case Op::Add:     sink << " + "; break;
+              case Op::Sub:     sink << " - "; break;
         
-          case BinaryOp::Xor:     sink << " xor "; break;
-          case BinaryOp::Or:      sink << " or "; break;
-          case BinaryOp::And:     sink << " and "; break;
+              case Op::Xor:     sink << " xor "; break;
+              case Op::Or:      sink << " or "; break;
+              case Op::And:     sink << " and "; break;
         
-          case BinaryOp::Teq:     sink << " = "; break;
-          case BinaryOp::Tne:     sink << " <> "; break;
+              case Op::Teq:     sink << " = "; break;
+              case Op::Tne:     sink << " <> "; break;
         
-          case BinaryOp::Tle:     sink << " <=s "; break;
-          case BinaryOp::Tleu:    sink << " <=u "; break;
+              case Op::Tle:     sink << " <=s "; break;
+              case Op::Tleu:    sink << " <=u "; break;
         
-          case BinaryOp::Tge:     sink << " >=s "; break;
-          case BinaryOp::Tgeu:    sink << " >=u "; break;
+              case Op::Tge:     sink << " >=s "; break;
+              case Op::Tgeu:    sink << " >=u "; break;
         
-          case BinaryOp::Tlt:     sink << " <s "; break;
-          case BinaryOp::Tltu:    sink << " <u "; break;
+              case Op::Tlt:     sink << " <s "; break;
+              case Op::Tltu:    sink << " <u "; break;
         
-          case BinaryOp::Tgt:     sink << " >s "; break;
-          case BinaryOp::Tgtu:    sink << " >u "; break;
+              case Op::Tgt:     sink << " >s "; break;
+              case Op::Tgtu:    sink << " >u "; break;
       
-          case BinaryOp::Lsl:     sink << " lshift "; break;
-          case BinaryOp::Asr:     sink << " rshifts "; break;
-          case BinaryOp::Lsr:     sink << " rshiftu "; break;
-          case BinaryOp::Ror:     sink << " rrotate "; break;
-          case BinaryOp::Mul:     sink << " * "; break;
-            // case BinaryOp::Mod: break;
-            // case BinaryOp::Div: break;
-          }
+              case Op::Lsl:     sink << " lshift "; break;
+              case Op::Asr:     sink << " rshifts "; break;
+              case Op::Lsr:     sink << " rshiftu "; break;
+              case Op::Ror:     sink << " rrotate "; break;
+              case Op::Mul:     sink << " * "; break;
+                // case Op::Mod: break;
+                // case Op::Div: break;
+              }
           
-        sink << GetCode( node->right, label ) << ')';
-        return retsz;
-      }
-    else if (UONode const* node = dynamic_cast<UONode const*>( expr.node ))
-      {
-        char const* operation = 0;
-        
-        switch (node->unop.code)
-          {
-          default:              operation = node->unop.c_str(); break;
-        
-          case UnaryOp::Not:    operation = "not "; break;
-          case UnaryOp::Neg:    operation = "- "; break;
-        
-            // case UnaryOp::BSwp:  break;
-            // case UnaryOp::BSF:   break;
-            
-          case UnaryOp::BSR:
-            {
-              Label tail(label);
-              {
-                std::ostringstream buffer;
-                buffer << "bsr_in<32> := " << GetCode(node->src,tail);
-                Label insn( tail );
-                buffer << "; goto " << tail.next();
-                insn = buffer.str();
-              }
-              {
-                std::ostringstream code;
-                Label insn( tail );
-                code << "bsr_out<32> := 32<32> ; goto " << tail.next();
-                insn = code.str();
-              }
-              Label exit(tail);
-              exit.next();
-              {
-                std::ostringstream code;
-                Label insn( tail );
-                code << "if (bsr_in<32> = 0<32>) goto " << exit.id << " else goto " << tail.next();
-                insn = code.str();
-              }
-              Label loop(tail);
-              {
-                std::ostringstream code;
-                code << "bsr_out<32> := bsr_out<32> - 1<32> ; goto " << tail.next();
-                loop = code.str();
-              }
-              {
-                std::ostringstream code;
-                Label insn( tail );
-                code << "if ((bsr_in<32> rshiftu bsr_out<32>){0,0}) goto " << exit.id << " else goto " << loop.id;
-                insn = code.str();
-              }
-              label = exit;
-      
-              sink << "bsr_out<32>";
-      
-              return 32;
-            }
+            sink << GetCode( const_cast<OpNodeBase*>(node)->GetSub(1), label ) << ')';
+            return retsz;
           }
+            
+          case 1: {
+            char const* operation = 0;
+        
+            switch (node->op.code)
+              {
+              default:              operation = node->op.c_str(); break;
+        
+              case Op::Not:    operation = "not "; break;
+              case Op::Neg:    operation = "- "; break;
+        
+                // case Op::BSwp:  break;
+                // case Op::BSF:   break;
+            
+              case Op::BSR:
+                {
+                  Label tail(label);
+                  {
+                    std::ostringstream buffer;
+                    buffer << "bsr_in<32> := " << GetCode(const_cast<OpNodeBase*>(node)->GetSub(0),tail);
+                    Label insn( tail );
+                    buffer << "; goto " << tail.next();
+                    insn = buffer.str();
+                  }
+                  {
+                    std::ostringstream code;
+                    Label insn( tail );
+                    code << "bsr_out<32> := 32<32> ; goto " << tail.next();
+                    insn = code.str();
+                  }
+                  Label exit(tail);
+                  exit.next();
+                  {
+                    std::ostringstream code;
+                    Label insn( tail );
+                    code << "if (bsr_in<32> = 0<32>) goto " << exit.id << " else goto " << tail.next();
+                    insn = code.str();
+                  }
+                  Label loop(tail);
+                  {
+                    std::ostringstream code;
+                    code << "bsr_out<32> := bsr_out<32> - 1<32> ; goto " << tail.next();
+                    loop = code.str();
+                  }
+                  {
+                    std::ostringstream code;
+                    Label insn( tail );
+                    code << "if ((bsr_in<32> rshiftu bsr_out<32>){0,0}) goto " << exit.id << " else goto " << loop.id;
+                    insn = code.str();
+                  }
+                  label = exit;
+      
+                  sink << "bsr_out<32>";
+      
+                  return 32;
+                }
+              }
     
-        sink << '(' << operation << ' ';
-        int retsz = GenerateCode( node->src, label, sink );
-        sink << ')';
-        return retsz;
+            sink << '(' << operation << ' ';
+            int retsz = GenerateCode( const_cast<OpNodeBase*>(node)->GetSub(0), label, sink );
+            sink << ')';
+            return retsz;
+          }
+          default:
+            break;
+          }
       }
     else if (CastNodeBase const* node = dynamic_cast<CastNodeBase const*>( expr.node ))
       {
@@ -381,8 +389,8 @@ namespace armsec
       //   swap if then else branches
       typedef unisim::util::symbolic::UONode UONode;
       if (UONode* uon = dynamic_cast<UONode*>( cond.node ))
-        if (uon->unop.cmp( unisim::util::symbolic::UnaryOp("Not") ) == 0) {
-          cond = uon->src;
+        if (uon->op.cmp( unisim::util::symbolic::Op("Not") ) == 0) {
+          cond = uon->GetSub(0);
           std::swap( false_nxt, true_nxt );
         }
     }
@@ -501,51 +509,55 @@ namespace armsec
     {
       enum Code
         {
-          NA = 0
-          , r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr, nia
-          , n, z, c, v// , q, ge0, ge1, ge2, ge3
-          , cpsr, spsr
-          , fpscr, fpexc
-        };
+          NA = 0,
+          r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr, nia,
+          n, z, c, v, // q, ge0, ge1, ge2, ge3,
+          cpsr, spsr,
+          fpscr, fpexc,
+          end
+        } code;
       
-      template <class E> static void
-      Enumeration( E& e )
+      char const* c_str() const
       {
-        if (e(     "r0", r0     )) return;
-        if (e(     "r1", r1     )) return;
-        if (e(     "r2", r2     )) return;
-        if (e(     "r3", r3     )) return;
-        if (e(     "r4", r4     )) return;
-        if (e(     "r5", r5     )) return;
-        if (e(     "r6", r6     )) return;
-        if (e(     "r7", r7     )) return;
-        if (e(     "r8", r8     )) return;
-        if (e(     "r9", r9     )) return;
-        if (e(     "sl", sl     )) return;
-        if (e(     "fp", fp     )) return;
-        if (e(     "ip", ip     )) return;
-        if (e(     "sp", sp     )) return;
-        if (e(     "lr", lr     )) return;
-        if (e(     "pc", nia    )) return;
-        if (e(      "n", n      )) return;
-        if (e(      "z", z      )) return;
-        if (e(      "c", c      )) return;
-        if (e(      "v", v      )) return;
-        if (e(   "cpsr", cpsr   )) return;
-        if (e(   "spsr", spsr   )) return;
-        if (e(  "fpscr", fpscr  )) return;
-        if (e(  "fpexc", fpexc  )) return;
+        switch (code)
+          {
+          case    r0: return "r0";
+          case    r1: return "r1";
+          case    r2: return "r2";
+          case    r3: return "r3";
+          case    r4: return "r4";
+          case    r5: return "r5";
+          case    r6: return "r6";
+          case    r7: return "r7";
+          case    r8: return "r8";
+          case    r9: return "r9";
+          case    sl: return "sl";
+          case    fp: return "fp";
+          case    ip: return "ip";
+          case    sp: return "sp";
+          case    lr: return "lr";
+          case    nia: return "pc";
+          case     n: return "n";
+          case     z: return "z";
+          case     c: return "c";
+          case     v: return "v";
+          case  cpsr: return "cpsr";
+          case  spsr: return "spsr";
+          case fpscr: return "fpscr";
+          case fpexc: return "fpexc";
+          case    NA: return "NA";
+          case   end: break;
+          }
+        return "INVALID";
       }
-    
+      
       RegID( Code _code ) : code(_code) {}
       RegID( char const* _code ) : code(NA) { unisim::util::symbolic::cstr2enum( *this, _code ); }
       
-      char const* c_str() const { return unisim::util::symbolic::enum2cstr( *this, "NA" ); }
       RegID operator + ( int offset ) const { return RegID( Code(int(code) + offset) ); }
-      int operator - ( RegID rid ) const { return int(code) - int(rid.code); }
-      bool operator == ( RegID rid ) const { return code == rid.code; }
-      
-      Code code;
+      //int operator - ( RegID rid ) const { return int(code) - int(rid.code); }
+      //bool operator == ( RegID rid ) const { return code == rid.code; }
+      intptr_t cmp( RegID rhs ) const { return intptr_t(code) - intptr_t(rhs.code); }
     };
     
     struct RegRead : public ASExprNode
@@ -553,14 +565,10 @@ namespace armsec
       RegRead( RegID _id, unsigned _bitsize ) : id(_id), bitsize(_bitsize) {}
       RegRead( char const* name, unsigned _bitsize ) : id( name ), bitsize(_bitsize) {}
       virtual int GenCode( Label& label, std::ostream& sink ) const { sink << id.c_str() << "<" << bitsize << ">"; return bitsize; }
-      virtual intptr_t cmp( ExprNode const& brhs ) const {
-        RegRead const& rhs = dynamic_cast<RegRead const&>( brhs );
-        return id - rhs.id;
-      }
-      virtual void Traverse( Visitor& visitor ) {}
-      virtual void Repr( std::ostream& sink ) const { sink << id.c_str(); }
-      virtual ExprNode* GetConstNode() { return 0; };
+      virtual intptr_t cmp( ExprNode const& brhs ) const { return id.cmp( dynamic_cast<RegRead const&>( brhs ).id ); }
       
+      virtual unsigned SubCount() const { return 0; }
+      virtual void Repr( std::ostream& sink ) const { sink << id.c_str(); }
       RegID id;
       unsigned bitsize;
     };
@@ -578,14 +586,13 @@ namespace armsec
       virtual intptr_t cmp( ExprNode const& brhs ) const
       {
         RegWrite const& rhs = dynamic_cast<RegWrite const&>( brhs );
-        if (intptr_t delta = id - rhs.id) return delta;
+        if (intptr_t delta = id.cmp( rhs.id )) return delta;
         return value.cmp( rhs.value );
       }
       
-      virtual void Traverse( Visitor& visitor ) { visitor.Process( value ); }
+      virtual unsigned SubCount() const { return 1; }
+      virtual Expr& GetSub(unsigned idx) { if (idx != 0) return ExprNode::GetSub(idx); return value; }
       virtual void Repr( std::ostream& sink ) const { sink << id.c_str() << " := "; value->Repr(sink); }
-      
-      virtual ExprNode* GetConstNode() { return 0; };
       
       RegID id;
       Expr value;
@@ -756,7 +763,8 @@ namespace armsec
         : addr(_addr), size( _size ), aligned(_aligned)
       {}
       
-      virtual void Traverse( Visitor& visitor ) { visitor.Process( addr ); }
+      virtual unsigned SubCount() const { return 1; }
+      virtual Expr& GetSub(unsigned idx) { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
       virtual void Repr( std::ostream& sink ) const { sink << "["; addr->Repr( sink ); sink << "," << size << "," << (aligned?'a':'u') << "]"; }
       virtual int GenCode( Label& label, std::ostream& sink ) const
       {
@@ -772,7 +780,7 @@ namespace armsec
         if (intptr_t delta = int(size - rhs.size)) return delta;
         return (int(aligned) - int(rhs.aligned));
       }
-      ExprNode* GetConstNode() { return 0; };
+      
       Expr addr;
       unsigned size;
       bool aligned;
@@ -792,7 +800,8 @@ namespace armsec
         return 0;
       }
       
-      virtual void Traverse( Visitor& visitor ) { visitor.Process( addr ); visitor.Process( value ); }
+      virtual unsigned SubCount() const { return 2; }
+      virtual Expr& GetSub(unsigned idx) { switch (idx) { case 0: return addr; case 1: return value; } return ExprNode::GetSub(idx); }
       virtual void Repr( std::ostream& sink ) const { sink << "["; addr->Repr( sink ); sink << "," << size << "," << (aligned?'a':'u') << "] := "; value->Repr(sink); }
       
       intptr_t cmp( ExprNode const& brhs ) const
@@ -803,8 +812,6 @@ namespace armsec
         if (intptr_t delta = int(size - rhs.size)) return delta;
         return (int(aligned) - int(rhs.aligned));
       }
-      
-      ExprNode* GetConstNode() { return 0; };
       
       Expr value, addr;
       unsigned size;
@@ -925,7 +932,6 @@ namespace armsec
   //     ConditionTest const& rhs = dynamic_cast<ConditionTest const&>( brhs );
   //     return int(cond) - int(rhs.cond);
   //   }
-  //   virtual ExprNode* GetConstNode() { return 0; };
   // };
 
   BOOL
@@ -963,8 +969,8 @@ namespace armsec
   //   template <class E> static void
   //   Enumeration( E& e )
   //   {
-  //     if (e( "Sub", Sub )) return;
-  //     if (e( "Add", Add )) return;
+  //     case  Sub: return "Sub";
+  //     case  Add: return "Add";
   //   }
     
   //   GenFlagsID( Code _code ) : code(_code) {}
@@ -994,7 +1000,6 @@ namespace armsec
   //     if (intptr_t delta = lhs.cmp(right.lhs)) return delta;
   //     return rhs.cmp(right.rhs);
   //   }
-  //   virtual ExprNode* GetConstNode() { return 0; };
   //   GenFlagsID id;
   //   Expr ipsr, lhs, rhs;
   // };
@@ -1028,9 +1033,14 @@ namespace armsec
     for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
       {
         
-        struct CSE : public ExprNode::Visitor
+        struct CSE
         {
-          virtual void Process( Expr& expr )
+          void Recurse( Expr& expr )
+          {
+            for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
+              Process( expr->GetSub(idx) );
+          }
+          void Process( Expr& expr )
           {
             for (Context* c = &ctx; c; c = c->upper)
               {
@@ -1043,13 +1053,13 @@ namespace armsec
                     return;
                   }
               }
-            expr->Traverse( *this );
+            Recurse(expr);
           }
           
           CSE( Context& _ctx ) : ctx(_ctx) {} Context& ctx;
         } cse( ctx );
         
-        itr->node->Traverse( cse );
+        cse.Recurse(const_cast<Expr&>(*itr));
         
         if (armsec::State::RegWrite* rw = dynamic_cast<armsec::State::RegWrite*>( itr->node ))
           {
@@ -1057,7 +1067,7 @@ namespace armsec
             armsec::State::RegID rid = rw->id;
             unsigned             rsz = rw->bitsize;
           
-            if (rw->value.MakeConst()) {
+            if (rw->value.ConstSimplify()) {
               wb = *itr;
             }
           
@@ -1069,8 +1079,7 @@ namespace armsec
                 { std::ostringstream buffer; buffer << "nxt_" << rid.c_str() << "<" << rsz << ">"; ref = buffer.str(); }
                 virtual int GenCode( Label& label, std::ostream& sink ) const { sink << ref; return dsz; }
                 virtual intptr_t cmp( ExprNode const& rhs ) const { return ref.compare( dynamic_cast<TmpVar const&>( rhs ).ref ); }
-                virtual ExprNode* GetConstNode() { return 0; };
-                virtual void Traverse( Visitor& visitor ) {}
+                virtual unsigned SubCount() const { return 0; }
                 virtual void Repr( std::ostream& sink ) const { sink << ref; }
                 std::string ref;
                 int dsz;
@@ -1086,7 +1095,7 @@ namespace armsec
               wb = new armsec::State::RegWrite( rid, tmp, rsz );
             }
           
-            if (rid == armsec::State::RegID::nia)
+            if (rid.code == rid.nia)
               nia = dynamic_cast<armsec::State::RegWrite&>( *wb.node ).value;
             else
               ctx.add_pending( wb );
@@ -1162,7 +1171,7 @@ namespace armsec
       }
     
     std::ostringstream buffer;
-    buffer << "goto (" << GetCode(nia,current) << (nia.MakeConst() ? ",0" : "") << ")";
+    buffer << "goto (" << GetCode(nia,current) << (nia.ConstSimplify() ? ",0" : "") << ")";
     current = buffer.str();
   }
 }
@@ -1194,7 +1203,6 @@ struct Decoder
     InstructionAddress() {}
     virtual void Repr( std::ostream& sink ) const { sink << "insn_addr"; }
     virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { dynamic_cast<InstructionAddress const&>( brhs ); return 0; }
-    virtual unisim::util::symbolic::ExprNode* GetConstNode() { return 0; };
   };
   
   template <class ISA>

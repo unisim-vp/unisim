@@ -57,6 +57,7 @@ impl {
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <testutils.hh>
 #include <iostream>
+#include <iomanip>
 } // end of impl
 
 action {void} execute({ARCH &} {cpu}) {

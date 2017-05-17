@@ -85,11 +85,11 @@ namespace ut
     
     if (not usemem()) return; // done
     
-    struct BaseRegChecker : public ExprNode::Visitor
+    struct BaseRegChecker
     {
       virtual void Process( Expr& expr )
       {
-        if      (auto n = dynamic_cast<SourceReg const*>( expr.node ))
+        if (auto n = dynamic_cast<SourceReg const*>( expr.node ))
           {
             uint32_t reg  = (1u << n->reg);
             invalid |= (invalid | visited | (valid_path ? 0 : -1)) & reg;
@@ -99,16 +99,17 @@ namespace ut
         
         bool valid_node = false;
         
-        if (auto n = dynamic_cast<unisim::util::symbolic::BONode*>(expr.node))
+        if (auto n = expr->AsOpNode())
           {
-            unisim::util::symbolic::BinaryOp const& bop = n->binop;
-            valid_node = ((bop.code == bop.Add) or (bop.code == bop.Sub));
+            auto op = n->op;
+            valid_node = ((op.code == op.Add) or (op.code == op.Sub));
           }
         
         bool valid_prev = valid_path;
         valid_path = valid_prev and valid_node;
         
-        expr->Traverse( *this );
+        for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
+          Process( expr->GetSub(idx) );
         
         valid_path = valid_prev;
       }
@@ -178,7 +179,7 @@ namespace ut
         Prologue::Regs::iterator itr = lower_bound( idx );
 	// idx is less or equal to itr->first.
 	if (itr == end() or (idx < itr->first)) {
-          uint32_t value = rand();
+          uint32_t value = unsigned( rand() ) % 128; /* ppc se_li's immediate is 7 bit unsigned */
           itr = insert( itr, Prologue::Regs::value_type( idx, value ) );
         }
 	return itr->second;
@@ -193,7 +194,7 @@ namespace ut
       unsigned   rbase;
       Rule       rule;
       
-      void Process( ExprNode const* node )
+      void Process( ExprNode* node )
       {
         if (auto n = dynamic_cast<SourceReg const*>(node))
           {
@@ -203,31 +204,31 @@ namespace ut
             return;
           }
         
-        if (auto n = dynamic_cast<unisim::util::symbolic::BONode const*>( node ))
+        if (auto n = node->AsOpNode())
           {
-            switch (n->binop.code)
+            switch (n->op.code)
               {
-              case unisim::util::symbolic::BinaryOp::Add:
+              case unisim::util::symbolic::Op::Add:
                 try {
                   GetRule trial(*this);
-                  trial.rule.offset -= GetValue( n->left.node );
-                  trial.Process( n->right.node );
+                  trial.rule.offset -= GetValue( n->GetSub(0).node );
+                  trial.Process( n->GetSub(1).node );
                   rule = trial.rule;
                 } catch (Prologue::Error const&) {
-                  rule.offset -= GetValue( n->right.node );
-                  Process( n->left.node );
+                  rule.offset -= GetValue( n->GetSub(1).node );
+                  Process( n->GetSub(0).node );
                 }
                 return;
                 
-              case unisim::util::symbolic::BinaryOp::Sub:
+              case unisim::util::symbolic::Op::Sub:
                 try {
                   GetRule trial(*this);
-                  trial.rule.rsub( GetValue( n->left.node ) );
-                  trial.Process( n->right.node );
+                  trial.rule.rsub( GetValue( n->GetSub(0).node ) );
+                  trial.Process( n->GetSub(1).node );
                   rule = trial.rule;
                 } catch (Prologue::Error const&) {
-                  rule.offset += GetValue( n->right.node );
-                  Process( n->left.node );
+                  rule.offset += GetValue( n->GetSub(1).node );
+                  Process( n->GetSub(0).node );
                 }
                 return;
                 
@@ -239,12 +240,12 @@ namespace ut
         throw Prologue::Error();
       }
       
-      uint32_t GetValue( ExprNode const* node )
+      uint32_t GetValue( ExprNode* node )
       {
         if (auto n = dynamic_cast<SourceReg const*>(node))
           {
             if (n->reg == rbase) throw Prologue::Error();
-            return regs[n->reg];
+            return regs.eval(n->reg);
           }
         
         if (auto n = dynamic_cast<unisim::util::symbolic::ConstNode<uint32_t> const*>(node))
@@ -256,32 +257,22 @@ namespace ut
         if (auto n = dynamic_cast<unisim::util::symbolic::CastNode<uint32_t,int32_t> const*>(node))
           return GetValue( n->src.node );
 
-        if (auto n = dynamic_cast<unisim::util::symbolic::BONode const*>(node))
+        if (auto n = node->AsOpNode())
           {
-            uint32_t lval = GetValue( n->left.node );
-            uint32_t rval = GetValue( n->right.node );
-            using unisim::util::symbolic::BinaryOp;
-            switch (n->binop.code)
+            uint32_t lval = GetValue( n->GetSub(0).node );
+            uint32_t rval = n->SubCount() > 1 ? GetValue( n->GetSub(1).node ) : 0;
+            using unisim::util::symbolic::Op;
+            switch (n->op.code)
               {
-              case BinaryOp::Add: return lval + rval;
-              case BinaryOp::Sub: return lval - rval;
-              case BinaryOp::Lsl: return lval << rval;
-              case BinaryOp::Lsr: return lval >> rval;
-              case BinaryOp::Or:  return lval | rval;
-              case BinaryOp::And: return lval & rval;
-              case BinaryOp::Asr: return int32_t(lval) >> rval;
-              default: break;
-              }
-          }
-        
-        if (auto n = dynamic_cast<unisim::util::symbolic::UONode const*>(node))
-          {
-            uint32_t val = GetValue( n->src.node );
-            using unisim::util::symbolic::UnaryOp;
-            switch (n->unop.code)
-              {
-              case UnaryOp::Neg: return -val;
-              case UnaryOp::Not: return ~val;
+              case Op::Add: return lval + rval;
+              case Op::Sub: return lval - rval;
+              case Op::Lsl: return lval << rval;
+              case Op::Lsr: return lval >> rval;
+              case Op::Or:  return lval | rval;
+              case Op::And: return lval & rval;
+              case Op::Asr: return int32_t(lval) >> rval;
+              case Op::Neg: return -lval;
+              case Op::Not: return ~lval;
               default: break;
               }
           }

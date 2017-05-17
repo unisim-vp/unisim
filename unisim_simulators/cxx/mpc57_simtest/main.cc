@@ -62,11 +62,12 @@ struct TestConfig
 {
   ut::Interface const& iif;
   std::string ident, disasm;
-  uint8_t offset;
   
   TestConfig( ut::Interface const& _iif, std::string const& _ident, std::string const& _disasm )
-    : iif( _iif ), ident( _ident ), disasm( _disasm ), offset( 0 )
+    : iif( _iif ), ident( _ident ), disasm( _disasm )
   {}
+  
+  bool wide() const { return iif.length == 32; }
   
   std::string prologue() const
   {
@@ -75,21 +76,33 @@ struct TestConfig
       try {
         auto const& p = iif.GetPrologue();
         mpc57::GPRPrint br( p.base );
-        int32_t voff = p.offset + uint32_t(offset)*(p.sign ? -1 : +1);
-        {
-          mpc57::HexPrint xoff( voff );
-          sink << "\te_lis\t" << br << ", " << xoff << "@h\n";
-          sink << "\te_or2i\t" << br << ", " << xoff << "@l\n";
-        }
-        if (p.sign)
-          sink << "\tsub\t" << br << ", " << br << ", r3\n";
+        if      ((p.offset & -128) == 0)
+          {
+            // a suitable 7 bit unsigned immediate (cost 2 bytes)
+            sink << "\tse_li\t" << br << ", " << p.offset << "\n";
+          }
+        else if (((p.offset + 0x80000) >> 20) == 0)
+          {
+            // a suitable 20 bit signed immediate (cost 4 bytes)
+            sink << "\te_li\t" << br << ", " << int32_t(p.offset) << "\n";
+          }
         else
-          sink << "\tadd\t" << br << ", " << br << ", r3\n";
+          {
+            // a full n raw 32 bit immediate (8 bytes)
+            mpc57::HexPrint xoff( p.offset );
+            sink << "\te_lis\t" << br << ", " << xoff << "@h\n";
+            sink << "\te_or2i\t" << br << ", " << xoff << "@l\n";
+          }
+        
+        mpc57::GPRPrint buffer( iif.aligned ? 3 : 0 );
+
+        sink << "\t" << (p.sign ? "sub" : "add") << "\t" << br << ", " << br << ", " << buffer << "\n";
+        
         for (auto reg : p.regs) {
           mpc57::GPRPrint rname( reg.first );
           mpc57::HexPrint rvalue( reg.second );
-          sink << "\te_lis\t" << rname << ", " << rvalue << "@h\n";
-          sink << "\te_or2i\t" << rname << ", " << rvalue << "@l\n";
+          if (reg.second & -128) { std::cerr << "IE immediate generation.\n"; throw 0; }
+          sink << "\tse_li\t" << rname << ", " << rvalue << "\n";
         }
       } catch (ut::Interface::Prologue::Error const& x) {
         std::cerr << "Prologue error in: " << disasm << ".\n";
@@ -101,17 +114,6 @@ struct TestConfig
   }
   
   std::string epilogue() const { return ""; }
-  
-  TestConfig& altmem( unsigned _offset )
-  {
-    offset = _offset;
-    switch (_offset) {
-    case 1: ident += "_o1"; break;
-    case 2: ident += "_o2"; break;
-    case 3: ident += "_o3"; break;
-    }
-    return *this;
-  }
 };
 
 struct MPC57 : mpc57::Decoder
@@ -136,16 +138,11 @@ struct MPC57 : mpc57::Decoder
                  << ", @function\n" << opfunc_name
                  << ":\n"
                  << cfg.prologue()
-                 << "\t.long\t0x" << hexcode << '\t' << "/* " << cfg.disasm << " */\n"
+                 << "\t." << (cfg.wide() ? "long" : "short") << "\t0x" << hexcode << '\t' << "/* " << cfg.disasm << " */\n"
                  << cfg.epilogue()
                  << "\tse_blr\n"
                  << "\t.size\t" << opfunc_name
                  << ", .-" << opfunc_name << "\n\n";
-  }
-  void
-  write_tests( Sink& sink, TestConfig const& cfg, CodeType code )
-  {
-    write_test( sink, cfg, code );
   }
 };
 
@@ -349,14 +346,7 @@ struct Checker
         for (CCItem const& ccitem : tcitem.second)
           {
             TestConfig cfg( ccitem.first, std::string( ISA::Name() ) + '_' + name, disasm( ccitem.second ) );
-            if (cfg.iif.usemem()) {
-              unsigned offset_end = cfg.iif.aligned ? 1 : 4;
-              for (unsigned offset = 0; offset < offset_end; ++offset) {
-                isa.write_tests( sink, TestConfig( cfg ).altmem( offset ), ccitem.second );
-              }
-            } else {
-              isa.write_tests( sink, cfg, ccitem.second );
-            }
+            isa.write_test( sink, cfg, ccitem.second );
           }
       }
   }
@@ -376,14 +366,12 @@ void Update( std::string const& reposname )
       throw 0;
     }
   
-  std::string basename( reposname.substr( 0, reposname.size() - suffix.size() ) );
-  
-  Sink sink( basename );
-      
   Checker<T> checker;
   checker.read_repos( reposname );
   checker.discover( ttl );
   checker.write_repos( reposname );
+  std::string basename( reposname.substr( 0, reposname.size() - suffix.size() ) );
+  Sink sink( basename );
   checker.write_tests( sink );
 }
 

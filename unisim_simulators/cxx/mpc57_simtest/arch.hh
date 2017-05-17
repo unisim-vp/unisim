@@ -150,16 +150,15 @@ namespace ut
   
   struct SourceReg : public unisim::util::symbolic::ExprNode
   {
-    SourceReg( Interface const& _ifc, unsigned _reg ) : ifc(_ifc), reg( _reg ) {}
+    SourceReg( unsigned _reg ) : reg( _reg ) {}
     virtual void Repr( std::ostream& sink ) const;
-    virtual void Traverse( ExprNode::Visitor& visitor ) {}
+    virtual unsigned SubCount() const { return 0; };
     virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const
     {
       unsigned ref = dynamic_cast<SourceReg const&>( brhs ).reg;
       return (reg < ref) ? -1 : (reg > ref) ? +1 : 0;
     }
-    virtual unisim::util::symbolic::ExprNode* GetConstNode() { return 0; }
-    Interface const& ifc; unsigned reg;    
+    unsigned reg;
   };
   
   struct CPU;
@@ -168,7 +167,6 @@ namespace ut
   {
     BadSource( char const* _msg ) : msg(_msg) {}
     virtual void Repr( std::ostream& sink ) const;
-    virtual void Traverse( ExprNode::Visitor& visitor ) {}
     virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const
     {
       char const* rmsg = dynamic_cast<BadSource const&>( brhs ).msg;
@@ -176,7 +174,6 @@ namespace ut
       char const* lmsg = msg ? msg : "";
       return strcmp( lmsg, rmsg );
     }
-    virtual unisim::util::symbolic::ExprNode* GetConstNode() { return 0; }
     char const* msg;
   };
   
@@ -187,14 +184,14 @@ namespace ut
     
     MixNode( Expr const& _left, Expr const& _right ) : left(_left), right(_right) {}
     virtual void Repr( std::ostream& sink ) const;
-    virtual void Traverse( ExprNode::Visitor& visitor ) { visitor.Process(left); visitor.Process(right);  }
+    virtual unsigned SubCount() const { return 2; };
+    virtual Expr& GetSub(unsigned idx) { switch (idx) { case 0: return left; case 1: return right; } return ExprNode::GetSub(idx); };
     virtual intptr_t cmp( ExprNode const& brhs ) const
     {
       MixNode const& rhs = dynamic_cast<MixNode const&>( brhs );
       if (intptr_t delta = left.cmp( rhs.left )) return delta;
       return right.cmp( rhs.right );
     }
-    virtual ExprNode* GetConstNode() { return 0; }
     Expr left, right;
   };
   
@@ -217,9 +214,9 @@ namespace ut
     
     struct XERNode : public ExprNode
     {
-      virtual void Repr( std::ostream& sink ) const;virtual void Traverse( ExprNode::Visitor& visitor ) {}
+      virtual void Repr( std::ostream& sink ) const;
+      virtual unsigned SubCount() const { return 0; };
       virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
-      virtual ExprNode* GetConstNode() { return 0; }
     };
     
     XER() : xer_value( new XERNode ) {}
@@ -251,9 +248,9 @@ namespace ut
     
     struct CRNode : public ExprNode
     {
-      virtual void Repr( std::ostream& sink ) const;virtual void Traverse( ExprNode::Visitor& visitor ) {}
+      virtual void Repr( std::ostream& sink ) const;
+      virtual unsigned SubCount() const { return 0; };
       virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
-      virtual ExprNode* GetConstNode() { return 0; }
     };
 
     CR() : cr_value( new CRNode ) {}
@@ -317,7 +314,7 @@ namespace ut
       : interface(_interface), path(&root), cia( new CIA )
     {     
       for (unsigned reg = 0; reg < 32; ++reg)
-        reg_values[reg] = U32( new SourceReg( interface, reg ) );
+        reg_values[reg] = U32( new SourceReg( reg ) );
     }
     
     virtual void XERAccess( bool is_write ) { interface.xer.addaccess(is_write); }
@@ -370,9 +367,8 @@ namespace ut
       CIA() {}
       
       virtual void Repr( std::ostream& sink ) const { sink << "CIA"; }
-      virtual void Traverse( ExprNode::Visitor& visitor ) {}
+      virtual unsigned SubCount() const { return 0; };
       virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { return 0; }
-      virtual unisim::util::symbolic::ExprNode* GetConstNode() { return 0; }
     };
     
     U32 GetCIA() { return cia; };
@@ -388,12 +384,10 @@ namespace ut
     {
       Load( Expr const& _addr ) : addr(_addr) {}
       virtual void Repr( std::ostream& sink ) const { LoadRepr( sink, addr, BITS ); }
-      virtual void Traverse( ExprNode::Visitor& visitor ) { visitor.Process(addr); }
+      virtual unsigned SubCount() const { return 2; };
+      virtual Expr& GetSub(unsigned idx) { switch (idx) { case 0: return addr; } return ExprNode::GetSub(idx); };
       virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const
-      {
-        return addr.cmp( dynamic_cast<Load<BITS> const&>( brhs ).addr );
-      }
-      virtual unisim::util::symbolic::ExprNode* GetConstNode() { return 0; }
+      { return addr.cmp( dynamic_cast<Load<BITS> const&>( brhs ).addr ); }
       Expr addr;
     };
     
@@ -474,14 +468,14 @@ namespace ut
     
     MaskNode( Expr const& _mb, Expr const& _me ) : mb(_mb), me(_me) {}
     virtual void Repr( std::ostream& sink ) const;
-    virtual void Traverse( ExprNode::Visitor& visitor ) { visitor.Process(mb); visitor.Process(me); }
+    virtual unsigned SubCount() const { return 2; };
+    virtual Expr& GetSub(unsigned idx) { switch (idx) { case 0: return mb; case 1: return me; } return ExprNode::GetSub(idx); };
     virtual intptr_t cmp( ExprNode const& brhs ) const
     {
       MaskNode const& rhs = dynamic_cast<MaskNode const&>( brhs );
       if (intptr_t delta = mb.cmp( rhs.mb )) return delta;
       return me.cmp( rhs.me );
     }
-    virtual ExprNode* GetConstNode() { return 0; }
     Expr mb, me;
   };
   

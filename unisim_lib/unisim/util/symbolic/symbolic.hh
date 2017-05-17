@@ -59,6 +59,9 @@ namespace symbolic {
   
   struct Expr;
   
+  struct ConstNodeBase;
+  struct OpNodeBase;
+  
   struct ExprNode
   {
     virtual ~ExprNode() {}
@@ -68,130 +71,91 @@ namespace symbolic {
     void Release() { if (--refs == 0) delete this; }
     /* Generic functions */
     struct Error {};
-    struct Visitor
-    {
-      virtual ~Visitor() {}
-      virtual void Process( Expr& ) = 0;
-    };
-    virtual void Traverse( Visitor& visitor ) = 0;
+    virtual unsigned SubCount() const = 0;
+    virtual Expr& GetSub(unsigned idx) { throw std::logic_error("out of bound sub expression"); }
     virtual void Repr( std::ostream& sink ) const = 0;
     virtual intptr_t cmp( ExprNode const& ) const = 0;
-    virtual ExprNode* GetConstNode() = 0;
+    virtual ConstNodeBase* GetConstNode() { return 0; };
+    virtual OpNodeBase* AsOpNode() { return 0; }
   };
   
-  template <typename EnumCODE>
-  struct CS2EN
-  {
-    CS2EN( EnumCODE& _dst, char const* _src ) : dst(_dst), src(_src) {}
-    EnumCODE& dst; char const* src;
-    bool operator() ( char const* strcode, EnumCODE numcode ) const
-    { if (strcmp( strcode, src ) != 0) return false; dst=numcode; return true; }
-  };
-
   template <class EnumCLASS>
   void cstr2enum( EnumCLASS& ecl, char const* src )
   {
-    CS2EN<typename EnumCLASS::Code> cs2en( ecl.code, src );
-    EnumCLASS::Enumeration( cs2en );
+    for (int idx = 1, end = EnumCLASS::end; idx != end; ++idx)
+      {
+        typedef typename EnumCLASS::Code Code;
+        Code code = Code(idx);
+        if (strcmp(EnumCLASS(code).c_str(), src) == 0)
+          { ecl.code = code; break; }
+      }
   }
 
-  template <class EnumCODE>
-  struct EN2CS
+  struct Op
   {
-    EN2CS( EnumCODE _src, char const* def ) : res(def), src(_src) {}
-    char const* res; EnumCODE src;
-    bool operator() ( char const* strcode, EnumCODE numcode )
-    { if (numcode != src) return false; res=strcode; return true; }
-  };
-
-  template <class EnumCLASS>
-  char const* enum2cstr( EnumCLASS const& ecl, char const* def )
-  {
-    EN2CS<typename EnumCLASS::Code> en2cs( ecl.code, def );
-    EnumCLASS::Enumeration( en2cs );
-    return en2cs.res;
-  }
-  
-  struct BinaryOp
-  {
-    enum Code {
-      NA=0
-      , Xor, And, Or
-      , Ror, Rol, Lsl, Asr, Lsr
-      , Add, Sub, Div, Mod, Mul
-      , Teq, Tne, Tge, Tgt, Tle, Tlt, Tgeu, Tgtu, Tleu, Tltu
-      , FCmp
-    };
+    enum Code
+      {
+        NA = 0,
+        Xor, And, Or,
+        Ror, Rol, Lsl, Asr, Lsr,
+        Add, Sub, Div, Mod, Mul,
+        Teq, Tne, Tge, Tgt, Tle, Tlt, Tgeu, Tgtu, Tleu, Tltu,
+        BSwp, BSR, BSF, Not, Neg,
+        FCmp,FSQB, FFZ, FNeg, FSqrt, FAbs, FDen,
+        Cast,
+        end
+      } code;
     
-    template <class E> static void
-    Enumeration( E& e )
+    
+    char const* c_str() const
     {
-      if (e(  "Xor", Xor  )) return;
-      if (e(  "And", And  )) return;
-      if (e(   "Or", Or   )) return;
-      if (e(  "Add", Add  )) return;
-      if (e(  "Sub", Sub  )) return;
-      if (e(  "Div", Div  )) return;
-      if (e(  "Mod", Mod  )) return;
-      if (e(  "Mul", Mul  )) return;
-      if (e(  "Ror", Ror  )) return;
-      if (e(  "Rol", Rol  )) return;
-      if (e(  "Lsl", Lsl  )) return;
-      if (e(  "Asr", Asr  )) return;
-      if (e(  "Lsr", Lsr  )) return;
-      if (e(  "Teq", Teq  )) return;
-      if (e(  "Tne", Tne  )) return;
-      if (e(  "Tge", Tge  )) return;
-      if (e(  "Tgt", Tgt  )) return;
-      if (e(  "Tle", Tle  )) return;
-      if (e(  "Tlt", Tlt  )) return;
-      if (e( "Tgeu", Tgeu )) return;
-      if (e( "Tgtu", Tgtu )) return;
-      if (e( "Tleu", Tleu )) return;
-      if (e( "Tltu", Tltu )) return;
-      if (e( "FCmp", FCmp )) return;
+      switch (code)
+        {
+        case   Xor: return "Xor";
+        case   And: return "And";
+        case    Or: return "Or";
+        case   Add: return "Add";
+        case   Sub: return "Sub";
+        case   Div: return "Div";
+        case   Mod: return "Mod";
+        case   Mul: return "Mul";
+        case   Ror: return "Ror";
+        case   Rol: return "Rol";
+        case   Lsl: return "Lsl";
+        case   Asr: return "Asr";
+        case   Lsr: return "Lsr";
+        case   Teq: return "Teq";
+        case   Tne: return "Tne";
+        case   Tge: return "Tge";
+        case   Tgt: return "Tgt";
+        case   Tle: return "Tle";
+        case   Tlt: return "Tlt";
+        case  Tgeu: return "Tgeu";
+        case  Tgtu: return "Tgtu";
+        case  Tleu: return "Tleu";
+        case  Tltu: return "Tltu";
+        case  FCmp: return "FCmp";
+        case  BSwp: return "BSwp";
+        case   BSR: return "BSR";
+        case   BSF: return "BSF";
+        case   Not: return "Not";
+        case   Neg: return "Neg";
+        case  FSQB: return "FSQB";
+        case   FFZ: return "FFZ";
+        case  FNeg: return "FNeg";
+        case FSqrt: return "FSqrt";
+        case  FAbs: return "FAbs";
+        case  FDen: return "FDen";
+        case    NA: return "NA";
+        case  Cast: return "Cast";
+        case   end: break;
+        }
+      return "INVALID";
     }
     
-    BinaryOp( Code _code ) : code(_code) {}
-    BinaryOp( char const* _code ) : code(NA) { cstr2enum( *this, _code ); }
-    char const* c_str() const { return enum2cstr( *this, "NA" ); }
-    
-    intptr_t cmp( BinaryOp rhs ) const { return intptr_t(code) - intptr_t(rhs.code); }
-    
-    Code code;
-  };
-  
-  struct UnaryOp
-  {
-    enum Code {
-      NA=0,
-      BSwp, BSR, BSF, Not, Neg,
-      FSQB, FFZ, FNeg, FSqrt, FAbs, FDen
-    };
-    
-    template <class E> static void
-    Enumeration( E& e )
-    {
-      if (e(  "BSwp", BSwp  )) return;
-      if (e(   "BSR", BSR   )) return;
-      if (e(   "BSF", BSF   )) return;
-      if (e(   "Not", Not   )) return;
-      if (e(   "Neg", Neg   )) return;
-      if (e(  "FSQB", FSQB  )) return;
-      if (e(   "FFZ", FFZ   )) return;
-      if (e(  "FNeg", FNeg  )) return;
-      if (e( "FSqrt", FSqrt )) return;
-      if (e(  "FAbs", FAbs  )) return;
-      if (e(  "FDen", FDen  )) return;
-    }
-    
-    UnaryOp( Code _code ) : code(_code) {}
-    UnaryOp( char const* _code ) : code(NA) { cstr2enum( *this, _code ); }
-    
-    char const* c_str() const { return enum2cstr( *this, "NA" ); }
-    intptr_t cmp( UnaryOp rhs ) const { return intptr_t(code) - intptr_t(rhs.code); }
-    
-    Code code;
+    Op( Code _code ) : code(_code) {}
+    Op( char const* _code ) : code(NA) { cstr2enum( *this, _code ); }
+    intptr_t cmp( Op rhs ) const { return intptr_t(code) - intptr_t(rhs.code); }
   };
   
   struct ScalarType
@@ -269,9 +233,9 @@ namespace symbolic {
   
   struct ConstNodeBase : public ExprNode
   {
-    ExprNode* GetConstNode() { return this; };
-    virtual ConstNodeBase* bop( BinaryOp op, ConstNodeBase& cnb ) const = 0;
-    virtual ConstNodeBase* uop( UnaryOp op ) const = 0;
+    virtual unsigned SubCount() const { return 0; };
+    ConstNodeBase* GetConstNode() { return this; };
+    virtual ConstNodeBase* apply( OpNodeBase& onb ) const = 0;
     virtual float GetFloat() const = 0;
     virtual double GetDouble() const = 0;
     virtual bool GetBoolean() const = 0;
@@ -329,7 +293,14 @@ namespace symbolic {
   template <typename VALUE_TYPE>
   VALUE_TYPE EvalRotateLeft( VALUE_TYPE v, uint8_t shift ) { throw std::logic_error( "No RotateLeft for this type" ); }
   uint32_t   EvalRotateLeft( uint32_t v, uint8_t shift );
+  
+  struct OpNodeBase : public ExprNode
+  {
+    OpNodeBase( Op _op ) : op(_op) {}
+    virtual OpNodeBase* AsOpNode() { return this; }
     
+    Op op;
+  };
   
   template <typename VALUE_TYPE>
   struct ConstNode : public ConstNodeBase
@@ -347,69 +318,56 @@ namespace symbolic {
       TypeInfo<VALUE_TYPE>::Repr( sink, value );
     }
     
-    virtual void Traverse( Visitor& visitor ) {}
-    
-    static VALUE_TYPE
-    GetValue( ConstNodeBase const& cnb )
-    { return dynamic_cast<ConstNode<VALUE_TYPE> const&>( cnb ).value; }
+    static VALUE_TYPE GetRHS( OpNodeBase& onb );
+    static uint8_t GetU8RHS( OpNodeBase& onb );
   
     ConstNodeBase*
-    bop( BinaryOp op, ConstNodeBase& cnb ) const
+    apply( OpNodeBase& onb ) const
     {
-      switch (op.code)
+      switch (onb.op.code)
         {
-        case BinaryOp::Xor:  return new ConstNode<VALUE_TYPE>( EvalXor( value, GetValue( cnb ) ) );
-        case BinaryOp::And:  return new ConstNode<VALUE_TYPE>( EvalAnd( value, GetValue( cnb ) ) );
-        case BinaryOp::Or:   return new ConstNode<VALUE_TYPE>( EvalOr( value, GetValue( cnb ) ) );
-        case BinaryOp::Lsl:  return new ConstNode<VALUE_TYPE>( EvalSHL( value, cnb.GetU8() ) );
-        case BinaryOp::Lsr:
-        case BinaryOp::Asr:  return new ConstNode<VALUE_TYPE>( EvalSHR( value, cnb.GetU8() ) );
-        case BinaryOp::Add:  return new ConstNode<VALUE_TYPE>( value + GetValue( cnb ) );
-        case BinaryOp::Sub:  return new ConstNode<VALUE_TYPE>( value - GetValue( cnb ) );
-        case BinaryOp::Mul:  return new ConstNode<VALUE_TYPE>( value * GetValue( cnb ) );
-        case BinaryOp::Div:  return new ConstNode<VALUE_TYPE>( value / GetValue( cnb ) );
-        case BinaryOp::Teq:  return new ConstNode   <bool>   ( value == GetValue( cnb ) );
-        case BinaryOp::Tne:  return new ConstNode   <bool>   ( value != GetValue( cnb ) );
-        case BinaryOp::Tleu:
-        case BinaryOp::Tle:  return new ConstNode   <bool>   ( value <= GetValue( cnb ) );
-        case BinaryOp::Tltu:
-        case BinaryOp::Tlt:  return new ConstNode   <bool>   ( value <  GetValue( cnb ) );
-        case BinaryOp::Tgeu:
-        case BinaryOp::Tge:  return new ConstNode   <bool>   ( value >= GetValue( cnb ) );
-        case BinaryOp::Tgtu:
-        case BinaryOp::Tgt:  return new ConstNode   <bool>   ( value >  GetValue( cnb ) );
+        case Op::BSwp:  return new ConstNode<VALUE_TYPE>( EvalByteSwap( value ) );
+        case Op::Not:   return new ConstNode<VALUE_TYPE>( EvalNot( value ) );
+        case Op::Neg:   return new ConstNode<VALUE_TYPE>( - value );
+        case Op::BSR:   return new ConstNode<VALUE_TYPE>( EvalBitScanReverse( value ) );
+        case Op::BSF:   return new ConstNode<VALUE_TYPE>( EvalBitScanForward( value ) );
+        case Op::FSQB:  break;
+        case Op::FFZ:   break;
+        case Op::FNeg:  break;
+        case Op::FSqrt: break;
+        case Op::FAbs:  break;
+        case Op::FDen:  break;
+        case Op::Xor:   return new ConstNode<VALUE_TYPE>( EvalXor( value, GetRHS( onb ) ) );
+        case Op::And:   return new ConstNode<VALUE_TYPE>( EvalAnd( value, GetRHS( onb ) ) );
+        case Op::Or:    return new ConstNode<VALUE_TYPE>( EvalOr( value, GetRHS( onb ) ) );
+        case Op::Lsl:   return new ConstNode<VALUE_TYPE>( EvalSHL( value, GetU8RHS( onb ) ) );
+        case Op::Lsr:   
+        case Op::Asr:   return new ConstNode<VALUE_TYPE>( EvalSHR( value, GetU8RHS( onb ) ) );
+        case Op::Add:   return new ConstNode<VALUE_TYPE>( value + GetRHS( onb ) );
+        case Op::Sub:   return new ConstNode<VALUE_TYPE>( value - GetRHS( onb ) );
+        case Op::Mul:   return new ConstNode<VALUE_TYPE>( value * GetRHS( onb ) );
+        case Op::Div:   return new ConstNode<VALUE_TYPE>( value / GetRHS( onb ) );
+        case Op::Teq:   return new ConstNode   <bool>   ( value == GetRHS( onb ) );
+        case Op::Tne:   return new ConstNode   <bool>   ( value != GetRHS( onb ) );
+        case Op::Tleu:  
+        case Op::Tle:   return new ConstNode   <bool>   ( value <= GetRHS( onb ) );
+        case Op::Tltu:  
+        case Op::Tlt:   return new ConstNode   <bool>   ( value <  GetRHS( onb ) );
+        case Op::Tgeu:  
+        case Op::Tge:   return new ConstNode   <bool>   ( value >= GetRHS( onb ) );
+        case Op::Tgtu:  
+        case Op::Tgt:   return new ConstNode   <bool>   ( value >  GetRHS( onb ) );
+        case Op::Ror:   return new ConstNode<VALUE_TYPE>( EvalRotateRight( value, GetU8RHS( onb ) ) );
+        case Op::Rol:   return new ConstNode<VALUE_TYPE>( EvalRotateLeft( value, GetU8RHS( onb ) ) );
+        case Op::Mod:   break;
+        case Op::FCmp:  break;
           
-        case BinaryOp::Ror:  return new ConstNode<VALUE_TYPE>( EvalRotateRight( value, cnb.GetU8() ) );
-        case BinaryOp::Rol:  return new ConstNode<VALUE_TYPE>( EvalRotateLeft( value, cnb.GetU8() ) );
-        case BinaryOp::Mod:  break;
-        case BinaryOp::FCmp: break;
-        case BinaryOp::NA:   throw std::logic_error("???");
+        case Op::NA:
+        case Op::Cast: /* Should have been handled elsewhere */
+        case Op::end:   throw std::logic_error("???");
         }
       
-      warn() << "Unhandled binary operation: " << op.c_str() << "\n";
-      return 0;
-    }
-    ConstNodeBase*
-    uop( UnaryOp op ) const
-    {
-      switch (op.code)
-        {
-        case UnaryOp::BSwp:  return new ConstNode<VALUE_TYPE>( EvalByteSwap( value ) );
-        case UnaryOp::Not:   return new ConstNode<VALUE_TYPE>( EvalNot( value ) );
-        case UnaryOp::Neg:   return new ConstNode<VALUE_TYPE>( - value );
-        case UnaryOp::BSR:   return new ConstNode<VALUE_TYPE>( EvalBitScanReverse( value ) );
-        case UnaryOp::BSF:   return new ConstNode<VALUE_TYPE>( EvalBitScanForward( value ) );
-        case UnaryOp::FSQB:  break;
-        case UnaryOp::FFZ:   break;
-        case UnaryOp::FNeg:  break;
-        case UnaryOp::FSqrt: break;
-        case UnaryOp::FAbs:  break;
-        case UnaryOp::FDen:  break;
-        case UnaryOp::NA:    throw std::logic_error("???");
-          
-        }
-      
-      warn() << "Unhandled unary operation: " << op.c_str() << "\n";
+      warn() << "Unhandled unary operation: " << onb.op.c_str() << "\n";
       return 0;
     }
     float GetFloat() const { return value; }
@@ -469,26 +427,74 @@ namespace symbolic {
       return 0;
     }
     
-    bool MakeConst()
-    {
-      if (ExprNode* cn = node->GetConstNode()) {
-        *this = Expr( cn );
-        return true;
-      }
-      return false;
-    }
     bool good() const { return node; }
     friend std::ostream& operator << (std::ostream&, Expr const&);
   };
+  
+  template <typename VALUE_TYPE>
+  VALUE_TYPE ConstNode<VALUE_TYPE>::GetRHS( OpNodeBase& onb ) { return dynamic_cast<ConstNode<VALUE_TYPE> const&>( *onb.GetSub(1).node ).value; }
+  template <typename VALUE_TYPE>
+  uint8_t ConstNode<VALUE_TYPE>::GetU8RHS( OpNodeBase& onb ) { return dynamic_cast<ConstNodeBase const&>( *onb.GetSub(1).node ).GetU8(); }
 
   template <typename VALUE_TYPE>
   Expr make_const( VALUE_TYPE value ) { return Expr( new ConstNode<VALUE_TYPE>( value ) ); }
   
-  struct CastNodeBase : public ExprNode
+  template <unsigned SUBCOUNT>
+  struct OpNode : public OpNodeBase
   {
-    CastNodeBase( Expr const& _src ) : src(_src) {}
+    typedef OpNode<SUBCOUNT> this_type;
+    
+    OpNode( Op _op ) : OpNodeBase(_op) {}
+
+    virtual ConstNodeBase* GetConstNode()
+    {
+      if (ConstNodeBase* base = subs[0].ConstSimplify())
+        {
+          for (unsigned idx = 1; idx < SUBCOUNT; ++idx)
+            if (not subs[idx].ConstSimplify())
+              return 0;
+          return base->apply( *this );
+        }
+      return 0;
+    }
+    virtual unsigned SubCount() const { return SUBCOUNT; };
+    virtual Expr& GetSub(unsigned idx)
+    {
+      if (idx >= SUBCOUNT)
+        return ExprNode::GetSub(idx);
+      return subs[idx];
+    };
+    virtual intptr_t cmp( ExprNode const& brhs ) const
+    {
+      this_type const& rhs = dynamic_cast<this_type const&>( brhs );
+      
+      if (intptr_t delta = op.cmp( rhs.op ))
+        return delta;
+      for (unsigned idx = 0; idx < SUBCOUNT; ++idx)
+        if (intptr_t delta = subs[idx].cmp( rhs.subs[idx] ))
+          return delta;
+      return 0;
+    }
+    
+    virtual void Repr( std::ostream& sink ) const
+    {
+      sink << op.c_str() << "( ";
+      char const* sep = "";
+      for (unsigned idx = 0; idx < SUBCOUNT; ++idx)
+        sink << sep << subs[idx];
+      sink << " )";
+    }
+    
+    Expr subs[SUBCOUNT];
+  };
+  
+  struct CastNodeBase : public OpNodeBase
+  {
+    CastNodeBase( Expr const& _src ) : OpNodeBase( Op::Cast ), src(_src) {}
     virtual ScalarType::id_t GetSrcType() const = 0;
     virtual ScalarType::id_t GetDstType() const = 0;
+    virtual unsigned SubCount() const { return 1; };
+    virtual Expr& GetSub(unsigned idx) { if (idx!= 0) return ExprNode::GetSub(idx); return src; }
     Expr src;
   };
   
@@ -506,80 +512,38 @@ namespace symbolic {
       return src.cmp( rhs.src );
     }
     
-    virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
     virtual void Repr( std::ostream& sink ) const { sink << ScalarType( TypeInfo<DST_VALUE_TYPE>::GetType() ).name; sink << "( "; src->Repr(sink); sink << " )"; }
     
-    virtual ExprNode* GetConstNode()
+    virtual ConstNodeBase* GetConstNode()
     {
-      if (src.MakeConst()) {
-        ConstNodeBase& const_src( dynamic_cast<ConstNodeBase&>( *src.node ) );
-        if (CmpTypes<DST_VALUE_TYPE,   float>::same) return new ConstNode<   float>( const_src.GetFloat() );
-        if (CmpTypes<DST_VALUE_TYPE,  double>::same) return new ConstNode<  double>( const_src.GetDouble() );
-	if (CmpTypes<DST_VALUE_TYPE,    bool>::same) return new ConstNode<    bool>( const_src.GetBoolean() );
-        if (CmpTypes<DST_VALUE_TYPE, uint8_t>::same) return new ConstNode< uint8_t>( const_src.GetU8() );
-        if (CmpTypes<DST_VALUE_TYPE,uint16_t>::same) return new ConstNode<uint16_t>( const_src.GetU16() );
-        if (CmpTypes<DST_VALUE_TYPE,uint32_t>::same) return new ConstNode<uint32_t>( const_src.GetU32() );
-        if (CmpTypes<DST_VALUE_TYPE,uint64_t>::same) return new ConstNode<uint64_t>( const_src.GetU64() );
-        if (CmpTypes<DST_VALUE_TYPE,  int8_t>::same) return new ConstNode<  int8_t>( const_src.GetS8() );
-        if (CmpTypes<DST_VALUE_TYPE, int16_t>::same) return new ConstNode< int16_t>( const_src.GetS16() );
-        if (CmpTypes<DST_VALUE_TYPE, int32_t>::same) return new ConstNode< int32_t>( const_src.GetS32() );
-        if (CmpTypes<DST_VALUE_TYPE, int64_t>::same) return new ConstNode< int64_t>( const_src.GetS64() );
-        throw std::logic_error("Unkown Type");
-      }
+      
+      if (ConstNodeBase* cnb = src->GetConstNode())
+        {
+          if (CmpTypes<DST_VALUE_TYPE,   float>::same) return new ConstNode<   float>( cnb->GetFloat() );
+          if (CmpTypes<DST_VALUE_TYPE,  double>::same) return new ConstNode<  double>( cnb->GetDouble() );
+          if (CmpTypes<DST_VALUE_TYPE,    bool>::same) return new ConstNode<    bool>( cnb->GetBoolean() );
+          if (CmpTypes<DST_VALUE_TYPE, uint8_t>::same) return new ConstNode< uint8_t>( cnb->GetU8() );
+          if (CmpTypes<DST_VALUE_TYPE,uint16_t>::same) return new ConstNode<uint16_t>( cnb->GetU16() );
+          if (CmpTypes<DST_VALUE_TYPE,uint32_t>::same) return new ConstNode<uint32_t>( cnb->GetU32() );
+          if (CmpTypes<DST_VALUE_TYPE,uint64_t>::same) return new ConstNode<uint64_t>( cnb->GetU64() );
+          if (CmpTypes<DST_VALUE_TYPE,  int8_t>::same) return new ConstNode<  int8_t>( cnb->GetS8() );
+          if (CmpTypes<DST_VALUE_TYPE, int16_t>::same) return new ConstNode< int16_t>( cnb->GetS16() );
+          if (CmpTypes<DST_VALUE_TYPE, int32_t>::same) return new ConstNode< int32_t>( cnb->GetS32() );
+          if (CmpTypes<DST_VALUE_TYPE, int64_t>::same) return new ConstNode< int64_t>( cnb->GetS64() );
+          throw std::logic_error("Unkown Type");
+        }
       return 0;
     }
   };
   
-  struct UONode : public ExprNode
+  struct UONode : public OpNode<1>
   {
-    UONode( UnaryOp _unop, Expr const& _src )
-      : unop(_unop), src( _src )
-    {}
-    
-    virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
-    virtual void Repr( std::ostream& sink ) const { sink << unop.c_str() << "( "; src->Repr( sink ); sink << " )"; }
-    
-    intptr_t cmp( ExprNode const& brhs ) const
-    {
-      UONode const& rhs = dynamic_cast<UONode const&>( brhs );
-      if (intptr_t delta = unop.cmp( rhs.unop )) return delta;
-      return src.cmp( rhs.src );
-    }
-    virtual ExprNode* GetConstNode()
-    {
-      if (src.MakeConst()) {
-        return dynamic_cast<ConstNodeBase&>( *src.node ).uop( unop );
-      }
-      return 0;
-    }
-    UnaryOp unop; Expr src;
+    UONode( Op _op, Expr const& _src ) : OpNode<1>( _op ) { subs[0] = _src; }
   };
   
-  struct BONode : public ExprNode
+  struct BONode : public OpNode<2>
   {
-    BONode( BinaryOp _binop, Expr const& _left, Expr const& _right )
-      : binop(_binop), left( _left ), right( _right )
-    {}
-    
-    virtual void Traverse( Visitor& visitor ) { visitor.Process( left ); visitor.Process( right ); }
-    virtual void Repr( std::ostream& sink ) const { sink << binop.c_str() << "( "; left->Repr( sink ); sink << ", "; right->Repr( sink ); sink << " )"; }
-    
-    intptr_t cmp( ExprNode const& brhs ) const
-    {
-      BONode const& rhs = dynamic_cast<BONode const&>( brhs );
-      if (intptr_t delta = binop.cmp( rhs.binop)) return delta;
-      if (intptr_t delta = left.cmp( rhs.left )) return delta;
-      return right.cmp( rhs.right );
-    }
-    virtual ExprNode* GetConstNode()
-    {
-      bool left_const = left.MakeConst();
-      bool right_const = right.MakeConst();
-      if (left_const and right_const)
-        return dynamic_cast<ConstNodeBase&>( *left.node ).bop( binop, dynamic_cast<ConstNodeBase&>( *right.node ) );
-      return 0;
-    }
-    BinaryOp binop; Expr left; Expr right;
+    BONode( Op _op, Expr const& _left, Expr const& _right ) : OpNode<2>(_op) { subs[0] = _left; subs[1] = _right; }
   };
   
   template <typename VALUE_TYPE>
@@ -595,7 +559,7 @@ namespace symbolic {
     SmartValue( Expr const& _expr )
       : expr( _expr )
     {
-      expr.MakeConst();
+      expr.ConstSimplify();
     }
     
     explicit SmartValue( value_type value ) : expr( make_const( value ) ) {}
@@ -607,7 +571,7 @@ namespace symbolic {
         expr = other.expr;
       } else {
         expr = new CastNode<VALUE_TYPE,SRC_VALUE_TYPE>( other.expr );
-        expr.MakeConst();
+        expr.ConstSimplify();
       }
     }
 
@@ -697,14 +661,13 @@ namespace symbolic {
     struct DefaultNaNNode : public ExprNode
     {
       DefaultNaNNode( int _fsz ) : fsz( _fsz ) {} int fsz;
-      virtual void Traverse( Visitor& visitor ) {}
       virtual void Repr( std::ostream& sink ) const { sink << "DefaultNaN()"; }
+      virtual unsigned SubCount() const { return 0; };
       intptr_t cmp( ExprNode const& brhs ) const
       {
         DefaultNaNNode const& rhs = dynamic_cast<DefaultNaNNode const&>( brhs );
         return fsz - rhs.fsz;
       }
-      ExprNode* GetConstNode() { return 0; };
     };
     
     static inline
@@ -738,7 +701,6 @@ namespace symbolic {
     struct IsNaNNode : public ExprNode
     {
       IsNaNNode( Expr const& _src, bool _signaling ) : src(_src), signaling(_signaling) {} Expr src; bool signaling;
-      virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
       virtual void Repr( std::ostream& sink ) const { sink << "IsNaN("; src->Repr(sink); sink << ")"; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
@@ -746,7 +708,8 @@ namespace symbolic {
         if (intptr_t delta = src.cmp( rhs.src )) return delta;
         return int(signaling) - int(rhs.signaling);
       }
-      ExprNode* GetConstNode() { return 0; };
+      virtual unsigned SubCount() const { return 1; };
+      virtual ExprNode* Sub(unsigned idx) { return src.node; };
     };
     
     template <typename FLOAT> static
@@ -795,10 +758,12 @@ namespace symbolic {
       
       Expr acc, left, right;
       
-      virtual void Traverse( Visitor& visitor ) { visitor.Process( acc ); visitor.Process( left ); visitor.Process( right ); }
+      virtual unsigned SubCount() const { return 3; };
+      virtual ExprNode* Sub(unsigned idx) { switch (idx) { case 0: return acc.node; case 1: return left.node; case 2: return right.node; } return 0; };
+      
       virtual void Repr( std::ostream& sink ) const
       {
-        sink << "IsInvalidMulAdd( ";
+        sink << "MulAdd( ";
         acc->Repr(sink);
         sink << ", ";
         left->Repr(sink);
@@ -815,7 +780,6 @@ namespace symbolic {
         if (intptr_t delta = right.cmp( rhs.right )) return delta;
         return acc.cmp( rhs.acc );
       }
-      ExprNode* GetConstNode() { return 0; };
     };
     
     template <typename FLOAT, class ARCH> static
@@ -831,7 +795,9 @@ namespace symbolic {
       {}
       Expr acc, left, right;
       
-      virtual void Traverse( Visitor& visitor ) { visitor.Process( acc ); visitor.Process( left ); visitor.Process( right ); }
+      virtual unsigned SubCount() const { return 3; };
+      virtual ExprNode* Sub(unsigned idx) { switch (idx) { case 0: return acc.node; case 1: return left.node; case 2: return right.node; } return 0; };
+      
       virtual void Repr( std::ostream& sink ) const
       {
         sink << "IsInvalidMulAdd( ";
@@ -850,7 +816,6 @@ namespace symbolic {
         if (intptr_t delta = right.cmp( rhs.right )) return delta;
         return acc.cmp( rhs.acc );
       }
-      ExprNode* GetConstNode() { return 0; };
     };
     
     template <typename SOFTDBL> static
@@ -875,9 +840,9 @@ namespace symbolic {
         : src( _src ), ssz( _ssz ), dsz( _dsz )
       {} Expr src; int ssz; int dsz;
       
-      virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
       virtual void Repr( std::ostream& sink ) const { sink << "FtoF( "; src->Repr(sink); sink << " )"; }
-      
+      virtual unsigned SubCount() const { return 1; }
+      virtual Expr& GetSub(unsigned idx) { if (idx != 0) return ExprNode::GetSub(idx); return src; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         FtoFNode const& rhs = dynamic_cast<FtoFNode const&>( brhs );
@@ -885,7 +850,6 @@ namespace symbolic {
         if (intptr_t delta = ssz - rhs.ssz) return delta;
         return dsz - rhs.dsz;
       }
-      ExprNode* GetConstNode() { return 0; };
     };
     
     template <typename ofpT, typename ifpT, class ARCH> static
@@ -900,9 +864,9 @@ namespace symbolic {
         : src( _src ), fsz( _fsz ), isz( _isz ), fb( _fb )
       {} Expr src; int fsz; int isz; int fb; 
       
-      virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
       virtual void Repr( std::ostream& sink ) const { sink << "FtoI( "; src->Repr(sink); sink << " )"; }
-      
+      virtual unsigned SubCount() const { return 1; }
+      virtual Expr& GetSub(unsigned idx) { if (idx != 0) return ExprNode::GetSub(idx); return src; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         FtoINode const& rhs = dynamic_cast<FtoINode const&>( brhs );
@@ -911,7 +875,6 @@ namespace symbolic {
         if (intptr_t delta = fsz - rhs.fsz) return delta;
         return fb - rhs.fb;
       }
-      ExprNode* GetConstNode() { return 0; };
     };
 
     template <typename intT, typename fpT, class ARCH> static
@@ -926,9 +889,9 @@ namespace symbolic {
         : src( _src ), isz( _isz ), fsz( _fsz ), fb( _fb )
       {} Expr src; int isz; int fsz; int fb;
       
-      virtual void Traverse( Visitor& visitor ) { visitor.Process( src ); }
       virtual void Repr( std::ostream& sink ) const { sink << "ItoF( "; src->Repr(sink); sink << " )"; }
-      
+      virtual unsigned SubCount() const { return 1; }
+      virtual Expr& GetSub(unsigned idx) { if (idx != 0) return ExprNode::GetSub(idx); return src; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         ItoFNode const& rhs = dynamic_cast<ItoFNode const&>( brhs );
@@ -937,7 +900,6 @@ namespace symbolic {
         if (intptr_t delta = fsz - rhs.fsz) return delta;
         return fb - rhs.fb;
       }
-      ExprNode* GetConstNode() { return 0; };
     };
     
     template <typename fpT, typename intT, class ARCH> static

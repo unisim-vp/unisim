@@ -173,13 +173,12 @@ namespace ut
   {
     SourceReg( unsigned _reg ) : reg( _reg ) {} unsigned reg;
     virtual void Repr( std::ostream& sink ) const;
-    virtual void Traverse( ExprNode::Visitor& visitor ) {}
+    virtual unsigned SubCount() const { return 0; }
     virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const
     {
       unsigned ref = dynamic_cast<SourceReg const&>( brhs ).reg;
       return (reg < ref) ? -1 : (reg > ref) ? +1 : 0;
     }
-    virtual unisim::util::symbolic::ExprNode* GetConstNode() { return 0; }
   };
   
   struct Arch
@@ -244,9 +243,8 @@ namespace ut
     struct NPC : public ExprNode
     {
       virtual void Repr( std::ostream& sink ) const { sink << "@NextInsn"; }
-      virtual void Traverse( ExprNode::Visitor& visitor ) {}
+      virtual unsigned SubCount() const { return 0; }
       virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { return 0; }
-      virtual unisim::util::symbolic::ExprNode* GetConstNode() { return 0; }
     };
     
     U32 GetNIA() { gpr_append( 15, false ); return U32( new NPC ); }
@@ -258,9 +256,8 @@ namespace ut
     {
       PSRFlags( uint32_t _mask ) : mask( _mask ) {} uint32_t mask;
       virtual void Repr( std::ostream& sink ) const { sink << "PSR_flags"; }
-      virtual void Traverse( ExprNode::Visitor& visitor ) {}
+      virtual unsigned SubCount() const { return 0; }
       virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { return 0; }
-      virtual unisim::util::symbolic::ExprNode* GetConstNode() { return 0; }
     };
     
     uint32_t   psr_value, psr_ok_mask;
@@ -304,9 +301,9 @@ namespace ut
     {
       Load( Expr const& _address ) : address( _address ) {} Expr address;
       virtual void Repr( std::ostream& sink ) const { sink << "Load( "; address->Repr( sink ); sink << " )"; }
-      virtual void Traverse( Visitor& visitor ) { visitor.Process( address ); }
+      virtual unsigned SubCount() const { return 1; }
+      virtual Expr& GetSub(unsigned idx) { if (idx!=0) return ExprNode::GetSub(0); return address; }
       virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { return address->cmp( *dynamic_cast<Load const&>( brhs ).address.node ); }
-      virtual unisim::util::symbolic::ExprNode* GetConstNode() { return 0; }
     };
     
     U32 MemRead( Expr const& addr, bool aligned=true )
