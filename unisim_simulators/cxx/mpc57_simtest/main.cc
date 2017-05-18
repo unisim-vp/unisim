@@ -123,6 +123,12 @@ struct MPC57 : mpc57::Decoder
   typedef mpc57::Operation        Operation;
   
   static CodeType mkcode( uint32_t code ) { return CodeType( code ); }
+  static CodeType cleancode( Operation const& op )
+  {
+    CodeType code = op.GetEncoding();
+    unsigned lsb = 32 - op.GetLength();
+    return (code >> lsb) << lsb;
+  }
   static char const* Name() { return "VLE"; }
   void
   write_test( Sink& sink, TestConfig const& cfg, CodeType code )
@@ -207,6 +213,7 @@ struct Checker
                   std::unique_ptr<Operation> realop( isa.NCDecode( 0, code ) );
                   if (strcmp( realop->GetName(), codeop->GetName() ) != 0)
                     continue; /* Not the op we were looking for. */
+                  code = ISA::cleancode( *codeop );
                 }
                 
                 if (testclass->second.size() >= 256) {
@@ -307,6 +314,8 @@ struct Checker
         CodeType code = ISA::mkcode( rawcode );
         
         std::unique_ptr<Operation> codeop( isa.NCDecode( 0, code ) );
+        code = ISA::cleancode( *codeop );
+        
         if (name != codeop->GetName()) {
           std::cerr << "Operation '" << std::hex << rawcode << std::dec << "' "
                     << "is said to be: '" << name << "' "
