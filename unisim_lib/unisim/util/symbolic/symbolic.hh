@@ -235,7 +235,7 @@ namespace symbolic {
   {
     virtual unsigned SubCount() const { return 0; };
     ConstNodeBase* GetConstNode() { return this; };
-    virtual ConstNodeBase* apply( OpNodeBase& onb ) const = 0;
+    virtual ConstNodeBase* apply( Op op, ConstNodeBase const** args ) const = 0;
     virtual float GetFloat() const = 0;
     virtual double GetDouble() const = 0;
     virtual bool GetBoolean() const = 0;
@@ -318,13 +318,12 @@ namespace symbolic {
       TypeInfo<VALUE_TYPE>::Repr( sink, value );
     }
     
-    static VALUE_TYPE GetRHS( OpNodeBase& onb );
-    static uint8_t GetU8RHS( OpNodeBase& onb );
+    static VALUE_TYPE GetValue( ConstNodeBase const* cnb );
   
     ConstNodeBase*
-    apply( OpNodeBase& onb ) const
+    apply( Op op, ConstNodeBase const** args ) const
     {
-      switch (onb.op.code)
+      switch (op.code)
         {
         case Op::BSwp:  return new ConstNode<VALUE_TYPE>( EvalByteSwap( value ) );
         case Op::Not:   return new ConstNode<VALUE_TYPE>( EvalNot( value ) );
@@ -337,28 +336,28 @@ namespace symbolic {
         case Op::FSqrt: break;
         case Op::FAbs:  break;
         case Op::FDen:  break;
-        case Op::Xor:   return new ConstNode<VALUE_TYPE>( EvalXor( value, GetRHS( onb ) ) );
-        case Op::And:   return new ConstNode<VALUE_TYPE>( EvalAnd( value, GetRHS( onb ) ) );
-        case Op::Or:    return new ConstNode<VALUE_TYPE>( EvalOr( value, GetRHS( onb ) ) );
-        case Op::Lsl:   return new ConstNode<VALUE_TYPE>( EvalSHL( value, GetU8RHS( onb ) ) );
+        case Op::Xor:   return new ConstNode<VALUE_TYPE>( EvalXor( value, GetValue( args[1] ) ) );
+        case Op::And:   return new ConstNode<VALUE_TYPE>( EvalAnd( value, GetValue( args[1] ) ) );
+        case Op::Or:    return new ConstNode<VALUE_TYPE>( EvalOr( value, GetValue( args[1] ) ) );
+        case Op::Lsl:   return new ConstNode<VALUE_TYPE>( EvalSHL( value, args[1]->GetU8() ) );
         case Op::Lsr:   
-        case Op::Asr:   return new ConstNode<VALUE_TYPE>( EvalSHR( value, GetU8RHS( onb ) ) );
-        case Op::Add:   return new ConstNode<VALUE_TYPE>( value + GetRHS( onb ) );
-        case Op::Sub:   return new ConstNode<VALUE_TYPE>( value - GetRHS( onb ) );
-        case Op::Mul:   return new ConstNode<VALUE_TYPE>( value * GetRHS( onb ) );
-        case Op::Div:   return new ConstNode<VALUE_TYPE>( value / GetRHS( onb ) );
-        case Op::Teq:   return new ConstNode   <bool>   ( value == GetRHS( onb ) );
-        case Op::Tne:   return new ConstNode   <bool>   ( value != GetRHS( onb ) );
+        case Op::Asr:   return new ConstNode<VALUE_TYPE>( EvalSHR( value, args[1]->GetU8() ) );
+        case Op::Add:   return new ConstNode<VALUE_TYPE>( value + GetValue( args[1] ) );
+        case Op::Sub:   return new ConstNode<VALUE_TYPE>( value - GetValue( args[1] ) );
+        case Op::Mul:   return new ConstNode<VALUE_TYPE>( value * GetValue( args[1] ) );
+        case Op::Div:   return new ConstNode<VALUE_TYPE>( value / GetValue( args[1] ) );
+        case Op::Teq:   return new ConstNode   <bool>   ( value == GetValue( args[1] ) );
+        case Op::Tne:   return new ConstNode   <bool>   ( value != GetValue( args[1] ) );
         case Op::Tleu:  
-        case Op::Tle:   return new ConstNode   <bool>   ( value <= GetRHS( onb ) );
+        case Op::Tle:   return new ConstNode   <bool>   ( value <= GetValue( args[1] ) );
         case Op::Tltu:  
-        case Op::Tlt:   return new ConstNode   <bool>   ( value <  GetRHS( onb ) );
+        case Op::Tlt:   return new ConstNode   <bool>   ( value <  GetValue( args[1] ) );
         case Op::Tgeu:  
-        case Op::Tge:   return new ConstNode   <bool>   ( value >= GetRHS( onb ) );
+        case Op::Tge:   return new ConstNode   <bool>   ( value >= GetValue( args[1] ) );
         case Op::Tgtu:  
-        case Op::Tgt:   return new ConstNode   <bool>   ( value >  GetRHS( onb ) );
-        case Op::Ror:   return new ConstNode<VALUE_TYPE>( EvalRotateRight( value, GetU8RHS( onb ) ) );
-        case Op::Rol:   return new ConstNode<VALUE_TYPE>( EvalRotateLeft( value, GetU8RHS( onb ) ) );
+        case Op::Tgt:   return new ConstNode   <bool>   ( value >  GetValue( args[1] ) );
+        case Op::Ror:   return new ConstNode<VALUE_TYPE>( EvalRotateRight( value, args[1]->GetU8() ) );
+        case Op::Rol:   return new ConstNode<VALUE_TYPE>( EvalRotateLeft( value, args[1]->GetU8() ) );
         case Op::Mod:   break;
         case Op::FCmp:  break;
           
@@ -367,7 +366,7 @@ namespace symbolic {
         case Op::end:   throw std::logic_error("???");
         }
       
-      warn() << "Unhandled unary operation: " << onb.op.c_str() << "\n";
+      warn() << "Unhandled unary operation: " << op.c_str() << "\n";
       return 0;
     }
     float GetFloat() const { return value; }
@@ -432,9 +431,7 @@ namespace symbolic {
   };
   
   template <typename VALUE_TYPE>
-  VALUE_TYPE ConstNode<VALUE_TYPE>::GetRHS( OpNodeBase& onb ) { return dynamic_cast<ConstNode<VALUE_TYPE> const&>( *onb.GetSub(1).node ).value; }
-  template <typename VALUE_TYPE>
-  uint8_t ConstNode<VALUE_TYPE>::GetU8RHS( OpNodeBase& onb ) { return dynamic_cast<ConstNodeBase const&>( *onb.GetSub(1).node ).GetU8(); }
+  VALUE_TYPE ConstNode<VALUE_TYPE>::GetValue( ConstNodeBase const* cnb ) { return dynamic_cast<ConstNode<VALUE_TYPE> const&>( *cnb ).value; }
 
   template <typename VALUE_TYPE>
   Expr make_const( VALUE_TYPE value ) { return Expr( new ConstNode<VALUE_TYPE>( value ) ); }
@@ -448,14 +445,15 @@ namespace symbolic {
 
     virtual ConstNodeBase* GetConstNode()
     {
-      if (ConstNodeBase* base = subs[0].ConstSimplify())
+      Expr args[SUBCOUNT];
+      ConstNodeBase const* cnbs[SUBCOUNT];
+      for (unsigned idx = 0; idx < SUBCOUNT; ++idx)
         {
-          for (unsigned idx = 1; idx < SUBCOUNT; ++idx)
-            if (not subs[idx].ConstSimplify())
-              return 0;
-          return base->apply( *this );
+          args[idx] = subs[idx];
+          if (not (cnbs[idx] = args[idx].ConstSimplify()))
+            return 0;
         }
-      return 0;
+      return cnbs[0]->apply( op, &cnbs[0] );
     }
     virtual unsigned SubCount() const { return SUBCOUNT; };
     virtual Expr& GetSub(unsigned idx)

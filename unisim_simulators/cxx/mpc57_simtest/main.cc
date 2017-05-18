@@ -128,7 +128,12 @@ struct MPC57 : mpc57::Decoder
   write_test( Sink& sink, TestConfig const& cfg, CodeType code )
   {
     std::string hexcode;
-    { std::ostringstream oss; oss << std::hex << code; hexcode = oss.str(); }
+    {
+      uint32_t codebits = code >> (cfg.wide() ? 0 : 16);
+      std::ostringstream oss;
+      oss << std::hex << codebits;
+      hexcode = oss.str();
+    }
     std::string opfunc_name = sink.test_prefix() + cfg.ident + '_' + hexcode;
     
     sink.macros << "ENTRY(" << opfunc_name << ",0x" << hexcode << ")\n";
