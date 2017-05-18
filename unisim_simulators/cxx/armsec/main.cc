@@ -100,7 +100,7 @@ namespace armsec
         switch (node->SubCount())
           {
           case 2: {
-            int retsz = GenerateCode( const_cast<OpNodeBase*>( node )->GetSub(0), label, sink << '(' );
+            int retsz = GenerateCode( node->GetSub(0), label, sink << '(' );
         
         
             switch (node->op.code)
@@ -138,7 +138,7 @@ namespace armsec
                 // case Op::Div: break;
               }
           
-            sink << GetCode( const_cast<OpNodeBase*>(node)->GetSub(1), label ) << ')';
+            sink << GetCode( node->GetSub(1), label ) << ')';
             return retsz;
           }
             
@@ -160,7 +160,7 @@ namespace armsec
                   Label tail(label);
                   {
                     std::ostringstream buffer;
-                    buffer << "bsr_in<32> := " << GetCode(const_cast<OpNodeBase*>(node)->GetSub(0),tail);
+                    buffer << "bsr_in<32> := " << GetCode(node->GetSub(0),tail);
                     Label insn( tail );
                     buffer << "; goto " << tail.next();
                     insn = buffer.str();
@@ -231,7 +231,7 @@ namespace armsec
               }
     
             sink << '(' << operation << ' ';
-            int retsz = GenerateCode( const_cast<OpNodeBase*>(node)->GetSub(0), label, sink );
+            int retsz = GenerateCode( node->GetSub(0), label, sink );
             sink << ')';
             return retsz;
           }
@@ -1097,7 +1097,7 @@ namespace armsec
     
       for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
         {
-          cse.Recurse( const_cast<Expr&>( *itr ) );
+          cse.Recurse( *itr );
         }
     
       for (std::map<Expr,unsigned>::iterator itr = cse.occurences.begin(), end = cse.occurences.end(); itr != end; ++itr)
@@ -1124,12 +1124,12 @@ namespace armsec
       {
         struct CSE
         {
-          void Recurse( Expr& expr )
+          void Recurse( Expr const& expr )
           {
             for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
-              Process( const_cast<Expr&>( expr->GetSub(idx) ) );
+              Process( expr->GetSub(idx) );
           }
-          void Process( Expr& expr )
+          void Process( Expr const& expr )
           {
             for (Context* c = &ctx; c; c = c->upper)
               {
@@ -1138,7 +1138,7 @@ namespace armsec
                   {
                     // Found a common sub-expression
                     //std::cerr << "Found a common sub-expression\n";
-                    expr = itr->second;
+                    const_cast<Expr&>( expr ) = itr->second;
                     return;
                   }
               }
@@ -1148,7 +1148,7 @@ namespace armsec
           CSE( Context& _ctx ) : ctx(_ctx) {} Context& ctx;
         } cse( ctx );
         
-        cse.Recurse( const_cast<Expr&>( *itr ) );
+        cse.Recurse( *itr );
         
         if (armsec::State::RegWrite const* rw = dynamic_cast<armsec::State::RegWrite const*>( itr->node ))
           {
