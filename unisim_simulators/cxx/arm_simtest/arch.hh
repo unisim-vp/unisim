@@ -302,7 +302,7 @@ namespace ut
       Load( Expr const& _address ) : address( _address ) {} Expr address;
       virtual void Repr( std::ostream& sink ) const { sink << "Load( "; address->Repr( sink ); sink << " )"; }
       virtual unsigned SubCount() const { return 1; }
-      virtual Expr& GetSub(unsigned idx) { if (idx!=0) return ExprNode::GetSub(0); return address; }
+      virtual Expr const& GetSub(unsigned idx) const { if (idx!=0) return ExprNode::GetSub(0); return address; }
       virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { return address->cmp( *dynamic_cast<Load const&>( brhs ).address.node ); }
     };
     

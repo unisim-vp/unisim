@@ -82,7 +82,7 @@ namespace armsec
     /*** Pre expression process ***/
     
     /*** Sub expression process ***/
-    if (ConstNodeBase const* node = const_cast<Expr&>( expr )->GetConstNode())
+    if (ConstNodeBase const* node = expr->GetConstNode())
       {
         switch (node->GetType())
           {
@@ -95,7 +95,7 @@ namespace armsec
           }
         throw std::logic_error("can't encode type");
       }
-    else if (OpNodeBase const* node = const_cast<Expr&>( expr )->AsOpNode())
+    else if (OpNodeBase const* node = expr->AsOpNode())
       {
         switch (node->SubCount())
           {
@@ -389,7 +389,7 @@ namespace armsec
       // If condition begins with a logical not, remove the not and
       //   swap if then else branches
       typedef unisim::util::symbolic::UONode UONode;
-      if (UONode* uon = dynamic_cast<UONode*>( cond.node ))
+      if (UONode const* uon = dynamic_cast<UONode const*>( cond.node ))
         if (uon->op.cmp( unisim::util::symbolic::Op("Not") ) == 0) {
           cond = uon->GetSub(0);
           std::swap( false_nxt, true_nxt );
@@ -485,11 +485,12 @@ namespace armsec
       if (not cond.expr.node)
         throw std::logic_error( "Not a cond" );
       
-      if (unisim::util::symbolic::ConstNodeBase* cnode = cond.expr.ConstSimplify())
+      Expr cexp( cond.expr );
+      if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
         return cnode->GetBoolean();
       
       bool result;
-      path = path->proceed( cond.expr, result );
+      path = path->proceed( cexp, result );
       return result;
     }
     
@@ -631,7 +632,7 @@ namespace armsec
       }
       
       virtual unsigned SubCount() const { return 1; }
-      virtual Expr& GetSub(unsigned idx) { if (idx != 0) return ExprNode::GetSub(idx); return value; }
+      virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
       virtual void Repr( std::ostream& sink ) const { sink << id.c_str() << " := "; value->Repr(sink); }
       
       RegID id;
@@ -804,7 +805,7 @@ namespace armsec
       {}
       
       virtual unsigned SubCount() const { return 1; }
-      virtual Expr& GetSub(unsigned idx) { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
+      virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
       virtual void Repr( std::ostream& sink ) const { sink << "["; addr->Repr( sink ); sink << "," << size << "," << (aligned?'a':'u') << "]"; }
       virtual int GenCode( Label& label, std::ostream& sink ) const
       {
@@ -841,7 +842,7 @@ namespace armsec
       }
       
       virtual unsigned SubCount() const { return 2; }
-      virtual Expr& GetSub(unsigned idx) { switch (idx) { case 0: return addr; case 1: return value; } return ExprNode::GetSub(idx); }
+      virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return addr; case 1: return value; } return ExprNode::GetSub(idx); }
       virtual void Repr( std::ostream& sink ) const { sink << "["; addr->Repr( sink ); sink << "," << size << "," << (aligned?'a':'u') << "] := "; value->Repr(sink); }
       
       intptr_t cmp( ExprNode const& brhs ) const
@@ -1074,13 +1075,13 @@ namespace armsec
       /* find common sub expressions */
       struct
       {
-        void Recurse( Expr& expr )
+        void Recurse( Expr const& expr )
         {
           for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
             Process( expr->GetSub(idx) );
         }
       
-        void Process( Expr& expr )
+        void Process( Expr const& expr )
         {
           if (not expr->SubCount())
             return;
@@ -1126,7 +1127,7 @@ namespace armsec
           void Recurse( Expr& expr )
           {
             for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
-              Process( expr->GetSub(idx) );
+              Process( const_cast<Expr&>( expr->GetSub(idx) ) );
           }
           void Process( Expr& expr )
           {
@@ -1149,15 +1150,16 @@ namespace armsec
         
         cse.Recurse( const_cast<Expr&>( *itr ) );
         
-        if (armsec::State::RegWrite* rw = dynamic_cast<armsec::State::RegWrite*>( itr->node ))
+        if (armsec::State::RegWrite const* rw = dynamic_cast<armsec::State::RegWrite const*>( itr->node ))
           {
             Expr wb;
             armsec::State::RegID rid = rw->id;
             unsigned             rsz = rw->bitsize;
+            armsec::State::RegWrite* nrw = new armsec::State::RegWrite( *rw );
           
-            if (rw->value.ConstSimplify() or dynamic_cast<Context::TmpVar const*>( rw->value.node ))
+            if (nrw->value.ConstSimplify() or dynamic_cast<Context::TmpVar const*>( rw->value.node ))
               {
-                wb = *itr;
+                wb = nrw;
               }
             else
               {
@@ -1167,12 +1169,14 @@ namespace armsec
                 Label insn( current );
                 buffer << "; goto " << current.next();
                 insn = buffer.str();
-            
-                wb = new armsec::State::RegWrite( rid, tmp, rsz );
+                
+                nrw->value = tmp;
+                
+                wb = nrw;
               }
           
             if (rid.code == rid.nia)
-              nia = dynamic_cast<armsec::State::RegWrite&>( *wb.node ).value;
+              nia = nrw->value;
             else
               ctx.add_pending( wb );
           }

@@ -85,7 +85,7 @@ namespace ut
         struct RegRefs
         {
           RegRefs( unsigned _reg ) : reg( _reg ), count(0) {} unsigned reg, count;
-          virtual void Process( Expr& expr )
+          virtual void Process( Expr const& expr )
           {
             auto sreg = dynamic_cast<SourceReg const*>( expr.node );
             if (sreg and sreg->reg == reg) count += 1;
@@ -103,7 +103,7 @@ namespace ut
         struct
         {
           std::map<unsigned,unsigned> candidates;
-          void Process( Expr& expr )
+          void Process( Expr const& expr )
           {
             if      (auto n = dynamic_cast<SourceReg const*>(expr.node))
               { candidates[n->reg] += 1; }
@@ -202,7 +202,7 @@ namespace ut
       unsigned   rbase;
       Rule       rule;
       
-      void Process( ExprNode* node )
+      void Process( ExprNode const* node )
       {
         if (auto n = dynamic_cast<SourceReg const*>(node))
           {
@@ -248,7 +248,7 @@ namespace ut
         throw Prologue::Error();
       }
       
-      uint32_t GetValue( ExprNode* node )
+      uint32_t GetValue( ExprNode const* node )
       {
         if (auto n = dynamic_cast<SourceReg const*>(node))
           {

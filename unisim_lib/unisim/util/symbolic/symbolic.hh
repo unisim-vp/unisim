@@ -66,17 +66,16 @@ namespace symbolic {
   {
     virtual ~ExprNode() {}
     ExprNode() : refs(0) {}
-    uintptr_t refs;
-    void Retain() { ++refs; }
-    void Release() { if (--refs == 0) delete this; }
+    mutable uintptr_t refs;
+    void Retain() const { ++refs; }
+    void Release() const { if (--refs == 0) delete this; }
     /* Generic functions */
-    struct Error {};
     virtual unsigned SubCount() const = 0;
-    virtual Expr& GetSub(unsigned idx) { throw std::logic_error("out of bound sub expression"); }
+    virtual Expr const& GetSub(unsigned idx) const { throw std::logic_error("out of bound sub expression"); }
     virtual void Repr( std::ostream& sink ) const = 0;
     virtual intptr_t cmp( ExprNode const& ) const = 0;
-    virtual ConstNodeBase* GetConstNode() { return 0; };
-    virtual OpNodeBase* AsOpNode() { return 0; }
+    virtual ConstNodeBase const* GetConstNode() const { return 0; };
+    virtual OpNodeBase const* AsOpNode() const { return 0; }
   };
   
   template <class EnumCLASS>
@@ -234,7 +233,7 @@ namespace symbolic {
   struct ConstNodeBase : public ExprNode
   {
     virtual unsigned SubCount() const { return 0; };
-    ConstNodeBase* GetConstNode() { return this; };
+    ConstNodeBase const* GetConstNode() const { return this; };
     virtual ConstNodeBase* apply( Op op, ConstNodeBase const** args ) const = 0;
     virtual float GetFloat() const = 0;
     virtual double GetDouble() const = 0;
@@ -297,7 +296,7 @@ namespace symbolic {
   struct OpNodeBase : public ExprNode
   {
     OpNodeBase( Op _op ) : op(_op) {}
-    virtual OpNodeBase* AsOpNode() { return this; }
+    virtual OpNodeBase const* AsOpNode() const { return this; }
     
     Op op;
   };
@@ -385,21 +384,24 @@ namespace symbolic {
   
   struct Expr
   {
-    Expr() : node() {} ExprNode* node;
+    Expr() : node() {} ExprNode const* node;
     Expr( Expr const& expr ) : node( expr.node ) { if (node) node->Retain(); }
-    Expr( ExprNode* const& _node ) : node( _node ) { if (node) node->Retain(); }
-    Expr&  operator = ( Expr const& expr )
-      { if (expr.node) expr.node->Retain();
-        ExprNode* old_node = node;
-        node = expr.node;
-        if (old_node) old_node->Release();
-        return *this;
-      }
+    Expr( ExprNode const* _node ) : node( _node ) { if (node) node->Retain(); }
     ~Expr() { if (node) node->Release(); }
+    
+    Expr&  operator = ( Expr const& expr )
+    {
+      if (expr.node) expr.node->Retain();
+      ExprNode const* old_node = node;
+      node = expr.node;
+      if (old_node) old_node->Release();
+      return *this;
+    }
+    
     ExprNode const* operator->() const { return node; }
-    ExprNode* operator->() { return node; }
+    ExprNode const* operator->() { return node; }
     ExprNode const& operator* () const { return *node; }
-    ExprNode& operator* () { return *node; }
+    
     intptr_t cmp( Expr const& rhs ) const
     {
       /* First compare actual types */
@@ -410,17 +412,18 @@ namespace symbolic {
       /* Same types, call derived comparator */
       return node->cmp( *rhs.node );
     }
+    
     bool operator != ( Expr const& rhs ) const { return cmp( rhs ) != 0; }
     bool operator == ( Expr const& rhs ) const { return cmp( rhs ) == 0; }
     bool operator  < ( Expr const& rhs ) const { return cmp( rhs )  < 0; }
     bool operator  > ( Expr const& rhs ) const { return cmp( rhs )  > 0; }
     
-    ConstNodeBase* ConstSimplify()
+    ConstNodeBase const* ConstSimplify()
     {
-      if (ExprNode* cn = node->GetConstNode())
+      if (ConstNodeBase const* cn = node->GetConstNode())
         {
           *this = Expr( cn );
-          return dynamic_cast<ConstNodeBase*>( cn );
+          return cn;
         }
       
       return 0;
@@ -443,7 +446,7 @@ namespace symbolic {
     
     OpNode( Op _op ) : OpNodeBase(_op) {}
 
-    virtual ConstNodeBase* GetConstNode()
+    virtual ConstNodeBase const* GetConstNode() const
     {
       Expr args[SUBCOUNT];
       ConstNodeBase const* cnbs[SUBCOUNT];
@@ -456,7 +459,7 @@ namespace symbolic {
       return cnbs[0]->apply( op, &cnbs[0] );
     }
     virtual unsigned SubCount() const { return SUBCOUNT; };
-    virtual Expr& GetSub(unsigned idx)
+    virtual Expr const& GetSub(unsigned idx) const
     {
       if (idx >= SUBCOUNT)
         return ExprNode::GetSub(idx);
@@ -492,7 +495,7 @@ namespace symbolic {
     virtual ScalarType::id_t GetSrcType() const = 0;
     virtual ScalarType::id_t GetDstType() const = 0;
     virtual unsigned SubCount() const { return 1; };
-    virtual Expr& GetSub(unsigned idx) { if (idx!= 0) return ExprNode::GetSub(idx); return src; }
+    virtual Expr const& GetSub(unsigned idx) const { if (idx!= 0) return ExprNode::GetSub(idx); return src; }
     Expr src;
   };
   
@@ -512,10 +515,10 @@ namespace symbolic {
     
     virtual void Repr( std::ostream& sink ) const { sink << ScalarType( TypeInfo<DST_VALUE_TYPE>::GetType() ).name; sink << "( "; src->Repr(sink); sink << " )"; }
     
-    virtual ConstNodeBase* GetConstNode()
+    virtual ConstNodeBase const* GetConstNode() const
     {
       
-      if (ConstNodeBase* cnb = src->GetConstNode())
+      if (ConstNodeBase const* cnb = src->GetConstNode())
         {
           if (CmpTypes<DST_VALUE_TYPE,   float>::same) return new ConstNode<   float>( cnb->GetFloat() );
           if (CmpTypes<DST_VALUE_TYPE,  double>::same) return new ConstNode<  double>( cnb->GetDouble() );
@@ -707,7 +710,7 @@ namespace symbolic {
         return int(signaling) - int(rhs.signaling);
       }
       virtual unsigned SubCount() const { return 1; };
-      virtual ExprNode* Sub(unsigned idx) { return src.node; };
+      virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return src; };
     };
     
     template <typename FLOAT> static
@@ -757,7 +760,7 @@ namespace symbolic {
       Expr acc, left, right;
       
       virtual unsigned SubCount() const { return 3; };
-      virtual ExprNode* Sub(unsigned idx) { switch (idx) { case 0: return acc.node; case 1: return left.node; case 2: return right.node; } return 0; };
+      virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return acc; case 1: return left; case 2: return right; } return ExprNode::GetSub(idx); };
       
       virtual void Repr( std::ostream& sink ) const
       {
@@ -794,7 +797,7 @@ namespace symbolic {
       Expr acc, left, right;
       
       virtual unsigned SubCount() const { return 3; };
-      virtual ExprNode* Sub(unsigned idx) { switch (idx) { case 0: return acc.node; case 1: return left.node; case 2: return right.node; } return 0; };
+      virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return acc; case 1: return left; case 2: return right; } return ExprNode::GetSub(idx); };
       
       virtual void Repr( std::ostream& sink ) const
       {
@@ -840,7 +843,7 @@ namespace symbolic {
       
       virtual void Repr( std::ostream& sink ) const { sink << "FtoF( "; src->Repr(sink); sink << " )"; }
       virtual unsigned SubCount() const { return 1; }
-      virtual Expr& GetSub(unsigned idx) { if (idx != 0) return ExprNode::GetSub(idx); return src; }
+      virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return src; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         FtoFNode const& rhs = dynamic_cast<FtoFNode const&>( brhs );
@@ -864,7 +867,7 @@ namespace symbolic {
       
       virtual void Repr( std::ostream& sink ) const { sink << "FtoI( "; src->Repr(sink); sink << " )"; }
       virtual unsigned SubCount() const { return 1; }
-      virtual Expr& GetSub(unsigned idx) { if (idx != 0) return ExprNode::GetSub(idx); return src; }
+      virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return src; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         FtoINode const& rhs = dynamic_cast<FtoINode const&>( brhs );
@@ -889,7 +892,7 @@ namespace symbolic {
       
       virtual void Repr( std::ostream& sink ) const { sink << "ItoF( "; src->Repr(sink); sink << " )"; }
       virtual unsigned SubCount() const { return 1; }
-      virtual Expr& GetSub(unsigned idx) { if (idx != 0) return ExprNode::GetSub(idx); return src; }
+      virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return src; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         ItoFNode const& rhs = dynamic_cast<ItoFNode const&>( brhs );

@@ -87,7 +87,7 @@ namespace ut
     
     struct BaseRegChecker
     {
-      virtual void Process( Expr& expr )
+      virtual void Process( Expr const& expr )
       {
         if (auto n = dynamic_cast<SourceReg const*>( expr.node ))
           {
@@ -194,7 +194,7 @@ namespace ut
       unsigned   rbase;
       Rule       rule;
       
-      void Process( ExprNode* node )
+      void Process( ExprNode const* node )
       {
         if (auto n = dynamic_cast<SourceReg const*>(node))
           {
@@ -240,7 +240,7 @@ namespace ut
         throw Prologue::Error();
       }
       
-      uint32_t GetValue( ExprNode* node )
+      uint32_t GetValue( ExprNode const* node )
       {
         if (auto n = dynamic_cast<SourceReg const*>(node))
           {

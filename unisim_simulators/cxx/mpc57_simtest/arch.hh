@@ -185,7 +185,7 @@ namespace ut
     MixNode( Expr const& _left, Expr const& _right ) : left(_left), right(_right) {}
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 2; };
-    virtual Expr& GetSub(unsigned idx) { switch (idx) { case 0: return left; case 1: return right; } return ExprNode::GetSub(idx); };
+    virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return left; case 1: return right; } return ExprNode::GetSub(idx); };
     virtual intptr_t cmp( ExprNode const& brhs ) const
     {
       MixNode const& rhs = dynamic_cast<MixNode const&>( brhs );
@@ -385,7 +385,7 @@ namespace ut
       Load( Expr const& _addr ) : addr(_addr) {}
       virtual void Repr( std::ostream& sink ) const { LoadRepr( sink, addr, BITS ); }
       virtual unsigned SubCount() const { return 2; };
-      virtual Expr& GetSub(unsigned idx) { switch (idx) { case 0: return addr; } return ExprNode::GetSub(idx); };
+      virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return addr; } return ExprNode::GetSub(idx); };
       virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const
       { return addr.cmp( dynamic_cast<Load<BITS> const&>( brhs ).addr ); }
       Expr addr;
@@ -469,7 +469,7 @@ namespace ut
     MaskNode( Expr const& _mb, Expr const& _me ) : mb(_mb), me(_me) {}
     virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 2; };
-    virtual Expr& GetSub(unsigned idx) { switch (idx) { case 0: return mb; case 1: return me; } return ExprNode::GetSub(idx); };
+    virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return mb; case 1: return me; } return ExprNode::GetSub(idx); };
     virtual intptr_t cmp( ExprNode const& brhs ) const
     {
       MaskNode const& rhs = dynamic_cast<MaskNode const&>( brhs );
