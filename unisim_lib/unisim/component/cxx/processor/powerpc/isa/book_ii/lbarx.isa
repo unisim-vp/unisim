@@ -40,9 +40,4 @@ lbarx.execute = {
 }
 lbarx.disasm = {
 	os << "lbarx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb << ", " << (unsigned int) eh;
-	if(cpu && (cpu->GetCIA() == this->GetAddr()))
-	{
-		ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
 }
