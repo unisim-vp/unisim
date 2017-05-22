@@ -38,6 +38,13 @@ impl {
 
 op cmp(31[6]:crfD[3]:?[1]:l[1]:ra[5]:rb[5]:0[10]:?[1])
 cmp.execute = {
+	// Raise an illegal instruction exception if l=1
+	if(unlikely(l))
+	{
+		cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
+		return false;
+	}
+	
 	// Read the input operands
 	int32_t a = cpu->GetGPR(ra);
 	int32_t b = cpu->GetGPR(rb) ;
