@@ -48,7 +48,7 @@ e_crxor.execute = {
 	b = c << crbb;
 	d = (a ^ b) >> crbd;
 	m = 0x80000000UL >> crbd;
-	cr = (c & m) | d;
+	cr = (c & ~m) | (d & m);
 	return true;
 }
 
