@@ -42,13 +42,13 @@ op e_rlwimi(29[6]:rs[5]:ra[5]:sh[5]:mb[5]:me[5]:0[1]);
 
 e_rlwimi.execute = {
 	// Read the input operands
-	CPU::U32 s = cpu->GetGPR(rs);
-	CPU::U32 a = cpu->GetGPR(ra);
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t a = cpu->GetGPR(ra);
 	
 	// Compute the result
-  	CPU::U32 r =RotateLeft(s, sh);
-        CPU::U32 m = CPU::U32(Mask(mb, me));
-	CPU::U32 result = (r & m) | (a & ~m);
+	uint32_t r =RotateLeft(s, sh);
+	uint32_t m = uint32_t(Mask(mb, me));
+	uint32_t result = (r & m) | (a & ~m);
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);

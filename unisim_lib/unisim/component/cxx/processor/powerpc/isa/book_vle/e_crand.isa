@@ -41,13 +41,13 @@ impl {
 op e_crand(31[6]:crbd[5]:crba[5]:crbb[5]:257[10]:0[1]);
 
 e_crand.execute = {
-	CPU::U32 a, b, c, d, m;
+	uint32_t a, b, c, d, m;
 	CR& cr = cpu->GetCR();
 	c = cr;
 	a = c << crba;
 	b = c << crbb;
 	d = (a & b) >> crbd;
-	m = CPU::U32(0x80000000UL >> crbd);
+	m = uint32_t(0x80000000UL >> crbd);
 	cr = (c & m) | d;
 	return true;
 }

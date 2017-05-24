@@ -41,20 +41,20 @@ impl {
 op se_bc(28[5]:bo[1]:bi[2]:shl<1> sext bd[8]);
 
 se_bc.execute = {
-	CPU::BOOL cond_ok;
+	bool cond_ok;
 	
 	if(bo)
 	{
 		/* Branch if condition is true */
-		cond_ok = ((CPU::U32(cpu->GetCR()) << bi) & CPU::U32(0x80000000UL)) != CPU::U32(0);
+		cond_ok = ((uint32_t(cpu->GetCR()) << bi) & uint32_t(0x80000000UL)) != uint32_t(0);
 	}
 	else
 	{
 		/* Branch if condition is false */
-		cond_ok = ((CPU::U32(cpu->GetCR()) << bi) & CPU::U32(0x80000000UL)) == CPU::U32(0);
+		cond_ok = ((uint32_t(cpu->GetCR()) << bi) & uint32_t(0x80000000UL)) == uint32_t(0);
 	}
 	
-	if(cpu->Cond(cond_ok))
+	if(cond_ok)
 	{
 		ADDRESS target_addr = cpu->GetCIA() + ADDRESS(bd);
 		cpu->Branch(target_addr);

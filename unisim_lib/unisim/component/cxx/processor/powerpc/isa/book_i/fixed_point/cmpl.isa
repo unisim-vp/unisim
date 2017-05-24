@@ -46,8 +46,8 @@ cmpl.execute = {
 	}
 	
 	// Read the input operands
-	CPU::U32 a = cpu->GetGPR(ra);
-	CPU::U32 b =cpu->GetGPR(rb) ;
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t b = cpu->GetGPR(rb) ;
 	CR& cr = cpu->GetCR();
 	XER& xer = cpu->GetXER();
 	

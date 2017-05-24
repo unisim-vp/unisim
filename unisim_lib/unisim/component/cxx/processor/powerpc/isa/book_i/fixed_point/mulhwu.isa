@@ -39,12 +39,12 @@ impl {
 op mulhwu(31[6]:rd[5]:ra[5]:rb[5]:?[1]:11[9]:rc[1])
 mulhwu.execute = {
 	// Read the input operands
-	CPU::U64 a = CPU::U64( cpu->GetGPR(ra) );
-	CPU::U64 b = CPU::U64( cpu->GetGPR(rb) );
+	uint64_t a = uint64_t( cpu->GetGPR(ra) );
+	uint64_t b = uint64_t( cpu->GetGPR(rb) );
 	
 	// Compute the result
-	CPU::U64 result64 = a * b;
-	CPU::U32 result = CPU::U32(result64 >> 32);
+	uint64_t result64 = a * b;
+	uint32_t result = uint32_t(result64 >> 32);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -55,9 +55,9 @@ mulhwu.execute = {
 		XER& xer = cpu->GetXER();
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(CPU::S32(result) < CPU::S32(0));
-		cr.Set<CR::CR0::GT>(CPU::S32(result) > CPU::S32(0));
-		cr.Set<CR::CR0::EQ>(result == CPU::U32(0));
+		cr.Set<CR::CR0::LT>(int32_t(result) < int32_t(0));
+		cr.Set<CR::CR0::GT>(int32_t(result) > int32_t(0));
+		cr.Set<CR::CR0::EQ>(result == uint32_t(0));
 	}
 	
 	return true;

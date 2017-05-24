@@ -36,16 +36,16 @@ op wrtee(31[6]:rs[5]:?[10]:131[10]:?[1])
 
 wrtee.execute = {
 	CPU::MSR& msr = cpu->GetMSR();
-	if(unlikely(cpu->Cond(msr.Get<CPU::MSR::PR>())))
+	if(unlikely(msr.Get<CPU::MSR::PR>()))
 	{
 		cpu->ThrowException<CPU::ProgramInterrupt::PrivilegeViolation>();
 		return false;
 	}
 	
 	// Read the input operand
-	CPU::U32 s = cpu->GetGPR(rs);
+	uint32_t s = cpu->GetGPR(rs);
 	
-	msr.Set<CPU::MSR::EE>((s & CPU::U32(0x8000)) != CPU::U32(0));
+	msr.Set<CPU::MSR::EE>((s & uint32_t(0x8000)) != uint32_t(0));
 	
 	return true;
 }

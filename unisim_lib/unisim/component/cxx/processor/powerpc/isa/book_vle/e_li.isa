@@ -42,7 +42,7 @@ op e_li(28[6]:rd[5]:shl<11> li20_b[5]:0[1]:shl<16> sext<32> li20_c[4]:li20_a[11]
 e_li.var li20 : { int32_t } = { li20_a | li20_b | li20_c }
 
 e_li.execute = {
-  cpu->SetGPR(rd, CPU::U32(li20));
+  cpu->SetGPR(rd, uint32_t(li20));
 	return true;
 }
 

@@ -39,12 +39,12 @@ impl {
 op mullw(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:235[9]:rc[1])
 mullw.execute = {
 	// Read the input operands
-	CPU::S64 a = CPU::S64( cpu->GetGPR(ra) );
-	CPU::S64 b = CPU::S64( cpu->GetGPR(rb) );
+	int64_t a = int64_t( cpu->GetGPR(ra) );
+	int64_t b = int64_t( cpu->GetGPR(rb) );
 	
 	// Compute the result
-	CPU::S64 result64 = a * b;
-	CPU::S32 result = CPU::S32( result64 );
+	int64_t result64 = a * b;
+	int32_t result = int32_t( result64 );
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -53,7 +53,7 @@ mullw.execute = {
 	{
 		XER& xer = cpu->GetXER();
 		
-		if(oe && cpu->Cond(CPU::U32(result64 >> 32) != CPU::U32(0)))
+		if(oe && (uint32_t(result64 >> 32) != uint32_t(0)))
 		{
 			// Generate XER[OV] and XER[SO]: XER[OV]=1 XER[SO]=1
 			xer.Set<XER::OV>(1);
@@ -65,9 +65,9 @@ mullw.execute = {
 			XER& xer = cpu->GetXER();
 			CR& cr = cpu->GetCR();
 			cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-			cr.Set<CR::CR0::LT>(result < CPU::S32(0));
-			cr.Set<CR::CR0::GT>(result > CPU::S32(0));
-			cr.Set<CR::CR0::EQ>(result == CPU::S32(0));
+			cr.Set<CR::CR0::LT>(result < int32_t(0));
+			cr.Set<CR::CR0::GT>(result > int32_t(0));
+			cr.Set<CR::CR0::EQ>(result == int32_t(0));
 		}
 	}
 	

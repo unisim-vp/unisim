@@ -43,11 +43,11 @@ se_bclri.var rx : {uint8_t} = {srx & 31};
 
 se_bclri.execute = {
 	// Read the input operands
-	CPU::U32 x = cpu->GetGPR(rx);
+	uint32_t x = cpu->GetGPR(rx);
 	
 	// Compute the result
-	CPU::U32 m =CPU::U32(~(0x80000000UL >> ui5));
-	CPU::U32 result = x & m;
+	uint32_t m =uint32_t(~(0x80000000UL >> ui5));
+	uint32_t result = x & m;
 	
 	// Write back the result
 	cpu->SetGPR(rx, result);

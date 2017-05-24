@@ -43,18 +43,18 @@ e_add2i_.var si : { int32_t } = { si_h | si_l }
 
 e_add2i_.execute = {
 	// Read the input operands
-	CPU::S32 a = CPU::S32( cpu->GetGPR(ra) );
+	int32_t a = int32_t( cpu->GetGPR(ra) );
 	
 	// Compute the result
-        CPU::S32 result = a + CPU::S32(si);
+	int32_t result = a + int32_t(si);
 	
 	// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 	XER& xer = cpu->GetXER();
 	CR& cr = cpu->GetCR();
 	cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-	cr.Set<CR::CR0::LT>(result < CPU::S32(0));
-	cr.Set<CR::CR0::GT>(result > CPU::S32(0));
-	cr.Set<CR::CR0::EQ>(result == CPU::S32(0));
+	cr.Set<CR::CR0::LT>(result < int32_t(0));
+	cr.Set<CR::CR0::GT>(result > int32_t(0));
+	cr.Set<CR::CR0::EQ>(result == int32_t(0));
 
 	// Write back the result
 	cpu->SetGPR(ra, result);

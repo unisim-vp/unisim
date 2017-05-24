@@ -43,11 +43,11 @@ se_srw.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {sry & 31};
 
 se_srw.execute = {
 	// Read the input operands
-	CPU::U32 s = cpu->GetGPR(rx);
-	CPU::U32 y = cpu->GetGPR(ry);
+	uint32_t s = cpu->GetGPR(rx);
+	uint32_t y = cpu->GetGPR(ry);
 	
 	// Compute the result
-	CPU::U32 result = cpu->Cond(y & CPU::U32(0x20)) ? CPU::U32(0) : (s >> (y & CPU::U32(0x1f)));
+	uint32_t result = y & uint32_t(0x20) ? uint32_t(0) : (s >> (y & uint32_t(0x1f)));
 	
 	// Write back the result
 	cpu->SetGPR(rx, result);

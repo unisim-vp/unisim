@@ -42,7 +42,7 @@ op se_mfar(0[6]:3[2]:ary[4]:sext srx[4]);
 se_mfar.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {ary + 8};
 
 se_mfar.execute = {
-	CPU::U32 result = cpu->GetGPR(ry);
+	uint32_t result = cpu->GetGPR(ry);
 	cpu->SetGPR(rx, result);
 	
 	return true;

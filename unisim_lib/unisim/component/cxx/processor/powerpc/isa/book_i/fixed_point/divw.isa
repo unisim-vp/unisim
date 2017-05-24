@@ -39,13 +39,13 @@ impl {
 op divw(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:491[9]:rc[1])
 divw.execute = {
 	// Read the input operands
-	CPU::U32 a = cpu->GetGPR(ra);
-	CPU::U32 b = cpu->GetGPR(rb);
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t b = cpu->GetGPR(rb);
 	
-	if(unlikely(cpu->Cond((a == CPU::U32(0x80000000) and b == CPU::U32(0xffffffff)) or b == CPU::U32(0))))
+	if(unlikely((a == uint32_t(0x80000000) and b == uint32_t(0xffffffff)) or b == uint32_t(0)))
 	{
 		// Write back the result (zero)
-		cpu->SetGPR(rd, CPU::U32(0));
+		cpu->SetGPR(rd, uint32_t(0));
 		
 		if(unlikely(oe || rc))
 		{
@@ -71,11 +71,11 @@ divw.execute = {
 	else
 	{
 		// Read the input operands
-		CPU::S32 a = CPU::S32( cpu->GetGPR(ra) );
-		CPU::S32 b = CPU::S32( cpu->GetGPR(rb) );
+		int32_t a = int32_t( cpu->GetGPR(ra) );
+		int32_t b = int32_t( cpu->GetGPR(rb) );
 		
 		// Compute the result
-                CPU::S32 result = a / b;
+		int32_t result = a / b;
 		
 		// Write back the result
 		cpu->SetGPR(rd, result);
@@ -94,9 +94,9 @@ divw.execute = {
 				// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 				CR& cr = cpu->GetCR();
 				cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-				cr.Set<CR::CR0::LT>(result < CPU::S32(0));
-				cr.Set<CR::CR0::GT>(result > CPU::S32(0));
-				cr.Set<CR::CR0::EQ>(result == CPU::S32(0));
+				cr.Set<CR::CR0::LT>(result < int32_t(0));
+				cr.Set<CR::CR0::GT>(result > int32_t(0));
+				cr.Set<CR::CR0::EQ>(result == int32_t(0));
 			}
 		}
 	}

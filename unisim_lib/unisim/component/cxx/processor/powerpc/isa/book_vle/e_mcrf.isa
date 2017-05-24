@@ -42,12 +42,12 @@ op e_mcrf(31[6]:crd[3]:?[2]:crs[3]:?[7]:16[10]:0[1]);
 
 e_mcrf.execute = {
 	CR& cr = cpu->GetCR();
-	CPU::U32 c =cr;
+	uint32_t c =cr;
 
 	unsigned int crbd = 4 * crd;
 	unsigned int crbs = 4 * crs;
-	CPU::U32 s = (c << crbs) >> crbd;
-	CPU::U32 m = CPU::U32(0xf0000000UL >> crbd);
+	uint32_t s = (c << crbs) >> crbd;
+	uint32_t m = uint32_t(0xf0000000UL >> crbd);
 	
 	cr = (c & ~m) | (s & m);
 	return true;

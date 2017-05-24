@@ -38,11 +38,11 @@ impl {
 
 op add(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:266[9]:rc[1])
 add.execute = {
-	CPU::U32 result;
+	uint32_t result;
 
 	// Read the input operands
-	CPU::U32 a = cpu->GetGPR(ra);
-	CPU::U32 b = cpu->GetGPR(rb);
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t b = cpu->GetGPR(rb);
 
 	if(likely(!oe && !rc))
 	{
@@ -50,21 +50,21 @@ add.execute = {
 	}
 	else
 	{
-		CPU::U8 ca; // carry out
-		CPU::U8 ov; // overflow
-		CPU::U8 sign; // sign
+		uint8_t ca; // carry out
+		uint8_t ov; // overflow
+		uint8_t sign; // sign
 
 		// Compute the result
-		SignedAdd32(result, ca, ov, sign, a, b, CPU::U8(0));
+		SignedAdd32(result, ca, ov, sign, a, b, uint8_t(0));
 		
 		// Read XER
-		//CPU::U32 xer = cpu->GetXER();
+		//uint32_t xer = cpu->GetXER();
 		if(oe)
 		{
 			// Generate XER[OV] and XER[SO]
 			XER& xer = cpu->GetXER();
 			xer.Set<XER::OV>(ov);
-			xer.Set<XER::SO>(xer.Get<XER::SO>() | CPU::U32(ov));
+			xer.Set<XER::SO>(xer.Get<XER::SO>() | uint32_t(ov));
 		}
 		if(rc)
 		{
@@ -72,9 +72,9 @@ add.execute = {
 			XER& xer = cpu->GetXER();
 			CR& cr = cpu->GetCR();
 			cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-			cr.Set<CR::CR0::LT>(CPU::S32(result) < CPU::S32(0));
-			cr.Set<CR::CR0::GT>(CPU::S32(result) > CPU::S32(0));
-			cr.Set<CR::CR0::EQ>((result == CPU::U32(0)));
+			cr.Set<CR::CR0::LT>(int32_t(result) < int32_t(0));
+			cr.Set<CR::CR0::GT>(int32_t(result) > int32_t(0));
+			cr.Set<CR::CR0::EQ>((result == uint32_t(0)));
 		}
 	}
 	

@@ -43,10 +43,10 @@ se_neg.var rx : {uint8_t} = {srx & 31};
 
 se_neg.execute = {
 	// Read the input operands
-	CPU::U32 a = cpu->GetGPR(rx);
+	uint32_t a = cpu->GetGPR(rx);
 	
 	// Compute the result
-	CPU::U32 result = -a; // 2's complement of a: (~a) + 1;
+	uint32_t result = -a; // 2's complement of a: (~a) + 1;
 		
 	// Write back the result
 	cpu->SetGPR(rx, result);

@@ -39,10 +39,10 @@ impl {
 op cntlzw(31[6]:rs[5]:ra[5]:?[5]:26[10]:rc[1])
 cntlzw.execute = {
 	// read the input operands
-	CPU::U32 s = cpu->GetGPR(rs);
+	uint32_t s = cpu->GetGPR(rs);
 	
 	// Compute the result
-	CPU::U32 result = (cpu->Cond(s == CPU::U32(0))) ? CPU::U32(31) - BitScanReverse(s) : CPU::U32(32);
+	uint32_t result = (s == uint32_t(0)) ? uint32_t(31) - BitScanReverse(s) : uint32_t(32);
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);
@@ -53,9 +53,9 @@ cntlzw.execute = {
 		XER& xer = cpu->GetXER();
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(CPU::S32(result) < CPU::S32(0));
-		cr.Set<CR::CR0::GT>(CPU::S32(result) > CPU::S32(0));
-		cr.Set<CR::CR0::EQ>(result == CPU::U32(0));
+		cr.Set<CR::CR0::LT>(int32_t(result) < int32_t(0));
+		cr.Set<CR::CR0::GT>(int32_t(result) > int32_t(0));
+		cr.Set<CR::CR0::EQ>(result == uint32_t(0));
 	}
 	
 	return true;

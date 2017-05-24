@@ -43,11 +43,11 @@ e_mull2i.var si : { uint32_t } = { si_h | si_l }
 
 e_mull2i.execute = {
 	// Read the input operands
-	CPU::U32 a = cpu->GetGPR(ra);
-	CPU::U32 b = CPU::U32(si);
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t b = uint32_t(si);
 	
 	// Compute the result
-        CPU::U32 result = a * b;
+	uint32_t result = a * b;
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);

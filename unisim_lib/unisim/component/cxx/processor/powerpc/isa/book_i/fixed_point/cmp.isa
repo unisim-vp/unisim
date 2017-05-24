@@ -46,8 +46,8 @@ cmp.execute = {
 	}
 	
 	// Read the input operands
-	CPU::S32 a = CPU::S32( cpu->GetGPR(ra) );
-	CPU::S32 b = CPU::S32( cpu->GetGPR(rb) );
+	int32_t a = int32_t( cpu->GetGPR(ra) );
+	int32_t b = int32_t( cpu->GetGPR(rb) );
 	CR& cr = cpu->GetCR();
 	XER& xer = cpu->GetXER();
 	

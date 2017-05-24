@@ -42,12 +42,12 @@ op e_rlwinm(29[6]:rs[5]:ra[5]:sh[5]:mb[5]:me[5]:1[1]);
 
 e_rlwinm.execute = {
 	// Read the input operands
-	CPU::U32 s = cpu->GetGPR(rs);
+	uint32_t s = cpu->GetGPR(rs);
 	
 	// Compute the result
-	CPU::U32 r =RotateLeft(s, sh);
-	CPU::U32 m =CPU::U32(Mask(mb, me));
-	CPU::U32 result = r & m;
+	uint32_t r =RotateLeft(s, sh);
+	uint32_t m =uint32_t(Mask(mb, me));
+	uint32_t result = r & m;
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);

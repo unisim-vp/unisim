@@ -43,10 +43,10 @@ se_not.var rx : {uint8_t} = {srx & 31};
 
 se_not.execute = {
 	// Read the input operands
-	CPU::U32 a = cpu->GetGPR(rx);
+	uint32_t a = cpu->GetGPR(rx);
 	
 	// Compute the result
-	CPU::U32 result = ~a; // 1's complement of a
+	uint32_t result = ~a; // 1's complement of a
 	
 	// Write back the result
 	cpu->SetGPR(rx, result);

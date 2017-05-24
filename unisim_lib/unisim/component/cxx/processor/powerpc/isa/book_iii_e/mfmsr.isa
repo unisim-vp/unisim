@@ -35,7 +35,7 @@
 op mfmsr(31[6]:rd[5]:?[10]:83[10]:?[1])
 mfmsr.execute = {
 	CPU::MSR& msr = cpu->GetMSR();
-	if(unlikely(cpu->Cond(msr.Get<CPU::MSR::PR>())))
+	if(unlikely(msr.Get<CPU::MSR::PR>()))
 	{
 		cpu->ThrowException<CPU::ProgramInterrupt::PrivilegeViolation>();
 		return false;

@@ -41,9 +41,4 @@ stbcx_.execute = {
 
 stbcx_.disasm = {
 	os << "stbcx. r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-	if(cpu && (cpu->EqualCIA(this->GetAddr())))
-	{
-		ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
 }

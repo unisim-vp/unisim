@@ -43,8 +43,8 @@ se_cmpli.var rx : {uint8_t} = {srx & 31};
 
 se_cmpli.execute = {
 	// Read the input unsigned operands
-	CPU::U32 a = cpu->GetGPR(rx);
-	CPU::U32 b = CPU::U32(oim5 + 1);
+	uint32_t a = cpu->GetGPR(rx);
+	uint32_t b = uint32_t(oim5 + 1);
 	
 	// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(a<b) CR0[GT]=(a>b) CR0[EQ]=(a==b)
 	XER& xer = cpu->GetXER();

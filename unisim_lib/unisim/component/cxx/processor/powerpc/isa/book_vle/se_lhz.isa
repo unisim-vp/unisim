@@ -43,7 +43,7 @@ se_lhz.var rx : {uint8_t} = {srx & 31}, rz : {uint8_t} = {srz & 31};
 
 se_lhz.execute = {
 	// compute the effective address
-	ADDRESS ea = cpu->GetGPR(rx) + CPU::U32(CPU::S32(sd));
+	ADDRESS ea = cpu->GetGPR(rx) + uint32_t(int32_t(sd));
 	// do the memory access
 	return cpu->Int16Load(rz, ea);
 }
