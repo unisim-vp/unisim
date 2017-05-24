@@ -39,7 +39,7 @@ impl {
 op extsh(31[6]:rs[5]:ra[5]:?[5]:922[10]:rc[1])
 extsh.execute = {
 	// Read the input operands
-	int8_t s = int8_t( cpu->GetGPR(rs));
+	int16_t s = int16_t(cpu->GetGPR(rs));
 	
 	// Compute the result
 	int32_t result = int32_t(s);

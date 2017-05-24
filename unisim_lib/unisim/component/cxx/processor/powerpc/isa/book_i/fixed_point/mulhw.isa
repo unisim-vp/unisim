@@ -39,8 +39,8 @@ impl {
 op mulhw(31[6]:rd[5]:ra[5]:rb[5]:?[1]:75[9]:rc[1])
 mulhw.execute = {
 	// Read the input operands
-	int64_t a = int64_t( cpu->GetGPR(ra) );
-	int64_t b = int64_t( cpu->GetGPR(rb) );
+	int64_t a = int64_t( int32_t(cpu->GetGPR(ra)) );
+	int64_t b = int64_t( int32_t(cpu->GetGPR(rb)) );
 	
 	// Compute the result
 	int64_t result64 = a*b;
