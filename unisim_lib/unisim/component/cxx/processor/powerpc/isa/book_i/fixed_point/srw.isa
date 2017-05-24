@@ -40,10 +40,10 @@ op srw(31[6]:rs[5]:ra[5]:rb[5]:536[10]:rc[1])
 srw.execute = {
 	// Read the input operands
 	uint32_t s = cpu->GetGPR(rs);
-	uint32_t b = cpu->GetGPR(rb);
+	uint32_t b = cpu->GetGPR(rb) & uint32_t(0x3f);
 	
 	// Compute the result
-	uint32_t result = (b >= uint32_t(0x20)) ? uint32_t(0) : s >> b;
+	uint32_t result = (b >= uint32_t(0x20)) ? uint32_t(0) : (s >> b);
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);

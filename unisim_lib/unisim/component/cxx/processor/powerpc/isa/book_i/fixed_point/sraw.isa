@@ -40,7 +40,7 @@ op sraw(31[6]:rs[5]:ra[5]:rb[5]:792[10]:rc[1])
 sraw.execute = {
 	// Read the input operands
 	int32_t s = int32_t(cpu->GetGPR(rs));
-	uint32_t b = cpu->GetGPR(rb);
+	uint32_t b = cpu->GetGPR(rb) & uint32_t(0x3f);
 	XER& xer = cpu->GetXER();
 	
 	// Compute the result
@@ -54,7 +54,7 @@ sraw.execute = {
 	result = (r & m) | (((int32_t) s >> 31) & ~m);
 	xer.Set<XER::CA>(((int32_t) s < 0) && ((r & ~m) != 0)));
 #else
-	uint32_t sh = b < uint32_t(0x1f) ? b : uint32_t(0x1f);
+	uint32_t sh = (b >= uint32_t(0x20)) ? uint32_t(0x1f) : b;
 	result = s >> sh;
 	xer.Set<XER::CA>((s < int32_t(0)) and ((s & ((int32_t(1) << sh) - int32_t(1))) != int32_t(0)));
 #endif
