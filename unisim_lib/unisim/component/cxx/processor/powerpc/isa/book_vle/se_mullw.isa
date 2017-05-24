@@ -47,8 +47,8 @@ se_mullw.execute = {
 	uint32_t b = cpu->GetGPR(ry);
 	
 	// Compute the result
-	int64_t result64 = (int64_t) a * (int64_t) b;
-	uint32_t result = (uint32_t) result64;
+	
+	uint32_t result = a * b;
 	
 	// Write back the result
 	cpu->SetGPR(rx, result);

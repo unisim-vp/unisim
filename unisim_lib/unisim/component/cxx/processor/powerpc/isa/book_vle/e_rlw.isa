@@ -44,7 +44,7 @@ e_rlw.execute = {
 	// Read the input operands
 	uint32_t s = cpu->GetGPR(rs);
 	uint32_t b = cpu->GetGPR(rb);
-	unsigned int n = b & 0x1f;
+	uint32_t n = b & uint32_t(0x1f);
 	
 	// Compute the result
 	uint32_t result = RotateLeft(s, n);
@@ -58,9 +58,9 @@ e_rlw.execute = {
 		XER& xer = cpu->GetXER();
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>((int32_t) result < 0);
-		cr.Set<CR::CR0::GT>((int32_t) result > 0);
-		cr.Set<CR::CR0::EQ>((int32_t) result == 0);
+		cr.Set<CR::CR0::LT>(int32_t(result) < int32_t(0));
+		cr.Set<CR::CR0::GT>(int32_t(result) > int32_t(0));
+		cr.Set<CR::CR0::EQ>(result == uint32_t(0));
 	}
 	
 	return true;

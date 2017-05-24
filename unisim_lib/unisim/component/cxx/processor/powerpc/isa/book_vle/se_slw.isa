@@ -47,8 +47,8 @@ se_slw.execute = {
 	uint32_t y = cpu->GetGPR(ry);
 	
 	// Compute the result
-	uint32_t result = (y & 0x20) ? 0 : (x << (y & 0x1f));
-
+	uint32_t result = y >= uint32_t(0x20) ? uint32_t(0) : (x << y);
+	
 	// Write back the result
 	cpu->SetGPR(rx, result);
 	

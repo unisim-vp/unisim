@@ -46,7 +46,7 @@ se_bclri.execute = {
 	uint32_t x = cpu->GetGPR(rx);
 	
 	// Compute the result
-	uint32_t m = ~(0x80000000UL >> ui5);
+	uint32_t m =uint32_t(~(0x80000000UL >> ui5));
 	uint32_t result = x & m;
 	
 	// Write back the result
