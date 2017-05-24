@@ -41,14 +41,14 @@ mcrxr.execute = {
 	// Generate CR[crfD]: CR[crfD]=XER[0-3]
 	switch(crfD)
 	{
-		case 0: cr.Set<CR::CR0::ALL>(xer.Get<XER::_0_3>()); break;
-		case 1: cr.Set<CR::CR1::ALL>(xer.Get<XER::_0_3>()); break;
-		case 2: cr.Set<CR::CR2::ALL>(xer.Get<XER::_0_3>()); break;
-		case 3: cr.Set<CR::CR3::ALL>(xer.Get<XER::_0_3>()); break;
-		case 4: cr.Set<CR::CR4::ALL>(xer.Get<XER::_0_3>()); break;
-		case 5: cr.Set<CR::CR5::ALL>(xer.Get<XER::_0_3>()); break;
-		case 6: cr.Set<CR::CR6::ALL>(xer.Get<XER::_0_3>()); break;
-		case 7: cr.Set<CR::CR7::ALL>(xer.Get<XER::_0_3>()); break;
+		case 0: cr.Set<CR::CR0>(xer.Get<XER::_0_3>()); break;
+		case 1: cr.Set<CR::CR1>(xer.Get<XER::_0_3>()); break;
+		case 2: cr.Set<CR::CR2>(xer.Get<XER::_0_3>()); break;
+		case 3: cr.Set<CR::CR3>(xer.Get<XER::_0_3>()); break;
+		case 4: cr.Set<CR::CR4>(xer.Get<XER::_0_3>()); break;
+		case 5: cr.Set<CR::CR5>(xer.Get<XER::_0_3>()); break;
+		case 6: cr.Set<CR::CR6>(xer.Get<XER::_0_3>()); break;
+		case 7: cr.Set<CR::CR7>(xer.Get<XER::_0_3>()); break;
 	}
 	// Reset XER[0-3]
 	xer.Set<XER::_0_3>(0);
