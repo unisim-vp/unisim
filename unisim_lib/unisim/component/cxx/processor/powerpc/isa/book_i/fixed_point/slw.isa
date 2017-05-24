@@ -43,7 +43,7 @@ slw.execute = {
 	uint32_t b = cpu->GetGPR(rb) & uint32_t(0x3f);
 	
 	// Compute the result
-	uint32_t result = (b >= uint32_t(0x20)) ? uint32_t(0) : (s << b));
+	uint32_t result = (b >= uint32_t(0x20)) ? uint32_t(0) : (s << b);
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);
