@@ -328,7 +328,7 @@ public:
 		struct SO : Field<SO,23> {};
 		typedef FieldSet<LT, GT, EQ, SO> ALL;
 	};
-	struct CR6 : Field<CR6,24,3>
+	struct CR6 : Field<CR6,24,27>
 	{
 		struct LT : Field<LT,24> {};
 		struct GT : Field<GT,25> {};
