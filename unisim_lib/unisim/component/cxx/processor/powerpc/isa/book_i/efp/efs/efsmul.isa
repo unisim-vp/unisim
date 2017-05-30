@@ -29,13 +29,75 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr), Franck Vedrine (franck.vedrine@cea.fr)
  */
 
 op efsmul(4[6]:rd[5]:ra[5]:rb[5]:712[11])
 efsmul.execute = {
-	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
-	return false;
+	// if(!CONFIG::HAS_FPU)
+	// {
+	//	 cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+	//	 // cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
+	//	 return false;
+	// }
+	// Check if FPU is enabled
+	uint32_t msr = cpu->GetMSR();
+	/* if(unlikely(!(msr & CONFIG::MSR_SPV_MASK)))
+	{
+		cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
+		// SPE/embedded floating-point unavailable exception (causes the SPE/embedded floating-point
+		//	 unavailable interrupt)—IVOR32 (SPR 528)
+		// cpu->ThrowException<CPU::ProgramInterrupt::UnavailableInterrupt>();
+		// see cpu.hh
+		// cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		return false;
+	} */
+
+	// Read the input operands
+	uint32_t spefscr = cpu->GetSPEFSCR();
+	// uint32_t old_spefscr = spefscr;
+	Flags flags;
+	flags.setRoundingMode((spefscr & CONFIG::SPEFSCR_FRMC_MASK) >> CONFIG::SPEFSCR_FRMC_OFFSET);
+	flags.setAvoidDenormalized();
+	flags.setAvoidAllInfty();
+
+	SoftFloat result(cpu->GetGPR(ra));
+	SoftFloat b(cpu->GetGPR(rd));
+	// Generate FINV
+	GenSPEFSCR_FINV<CONFIG>(spefscr, result, &b);
+	bool hasInvalidInput = HasSPEFSCR_InvalidInput(result) || HasSPEFSCR_InvalidInput(b);
+
+	// Compute the result
+	result.multAssign(b, flags);
+
+	if ((spefscr & CONFIG::SPEFSCR_FINVE_MASK) == 0) {
+		// default results are provided by the hardware when an infinity, denormalized, or NaN input is received
+	}
+
+	// Generate FINV, FOFV, FUNV, FINXS, FG, FX
+	GenSPEFSCR_FOVF<CONFIG>(spefscr, flags);
+	GenSPEFSCR_FUNF<CONFIG>(spefscr, flags);
+	GenSPEFSCR_FINXS<CONFIG>(spefscr, flags);
+	GenSPEFSCR_FG<CONFIG>(spefscr, flags, hasInvalidInput);
+	GenSPEFSCR_FX<CONFIG>(spefscr, flags, hasInvalidInput);
+
+	// Update FPSCR
+	cpu->SetSPEFSCR(spefscr);
+
+	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
+	if(unlikely(DoesSPEFSCR_TriggerException<CONFIG>(spefscr)))
+	{
+		// Raise a floating point exception
+		cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
+		return false;
+	}
+
+	// Write back the result
+	cpu->SetGPR(rd, result.queryValue());
+
+	// Copy flags to condition register?
+	
+	return true;
 }
 efsmul.disasm = {
 	os << "efsmul r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;

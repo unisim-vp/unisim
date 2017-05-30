@@ -85,6 +85,8 @@ class Access : public Integer::Details::Access {
       
      private:
       bool fAvoidInfty;
+      bool fAvoidAllInfty;
+      bool fAvoidDenormalized;
       bool fKeepNaNSign;
       bool fProduceDivNaNPositive;
       bool fRoundToEven;
@@ -110,7 +112,8 @@ class Access : public Integer::Details::Access {
 
      public:
       StatusAndControlFlags()
-         :  fAvoidInfty(false), fKeepNaNSign(false), fProduceDivNaNPositive(false),
+         :  fAvoidInfty(false), fAvoidAllInfty(false), fAvoidDenormalized(false),
+            fKeepNaNSign(false), fProduceDivNaNPositive(false),
             fRoundToEven(true), fPositiveZeroMAdd(false), fUpApproximateInfty(false),
             fUpApproximateInversionForNear(false), fChooseNaNAddBeforeMult(false),
             fConvertNaNNegative(false), fRefuseMinusZero(false), cContext(CMinDown),
@@ -119,7 +122,8 @@ class Access : public Integer::Details::Access {
             fSNaNOperand(false), qnrQNaNResult(QNNRUndefined), feExcept(FENoException),
             fDivisionByZero(false) {}
       StatusAndControlFlags(const StatusAndControlFlags& rpSource)
-         :  fAvoidInfty(rpSource.fAvoidInfty), fKeepNaNSign(rpSource.fKeepNaNSign), fProduceDivNaNPositive(rpSource.fProduceDivNaNPositive),
+         :  fAvoidInfty(rpSource.fAvoidInfty), fAvoidAllInfty(rpSource.fAvoidAllInfty), fAvoidDenormalized(rpSource.fAvoidDenormalized),
+            fKeepNaNSign(rpSource.fKeepNaNSign), fProduceDivNaNPositive(rpSource.fProduceDivNaNPositive),
             fRoundToEven(rpSource.fRoundToEven), fPositiveZeroMAdd(rpSource.fPositiveZeroMAdd),
             fUpApproximateInfty(rpSource.fUpApproximateInfty), fUpApproximateInversionForNear(rpSource.fUpApproximateInversionForNear),
             fChooseNaNAddBeforeMult(rpSource.fChooseNaNAddBeforeMult), fConvertNaNNegative(rpSource.fConvertNaNNegative),
@@ -148,6 +152,10 @@ class Access : public Integer::Details::Access {
       StatusAndControlFlags& setPositiveZeroMAdd() { fPositiveZeroMAdd = true; return *this; }
       StatusAndControlFlags& avoidInfty()      { fAvoidInfty = true; return *this; }
       StatusAndControlFlags& clearAvoidInfty() { fAvoidInfty = false; return *this; }
+      StatusAndControlFlags& avoidAllInfty()   { fAvoidAllInfty = true; return *this; }
+      StatusAndControlFlags& clearAvoidAllInfty() { fAvoidAllInfty = false; return *this; }
+      StatusAndControlFlags& avoidDenormalized() { fAvoidDenormalized = true; return *this; }
+      StatusAndControlFlags& clearAvoidDenormalized() { fAvoidDenormalized = false; return *this; }
       StatusAndControlFlags& setKeepNaNSign()  { fKeepNaNSign = true; return *this; }
       StatusAndControlFlags& setProduceDivNaNPositive() { fProduceDivNaNPositive = true; return *this; }
       StatusAndControlFlags& setUpApproximateInfty() { fUpApproximateInfty = true; return *this; }
@@ -166,10 +174,12 @@ class Access : public Integer::Details::Access {
       bool isRoundToEven() const { return fRoundToEven && isNearestRound(); }
       bool isPositiveZeroMAdd() { return fPositiveZeroMAdd; }
       bool isInftyAvoided() const { return fAvoidInfty; }
+      bool isAllInftyAvoided() const { return fAvoidAllInfty; }
       bool doesAvoidInfty(bool fNegative) const
          {  assert(fAvoidInfty);
-            return fNegative ? (rmRound >= RMHighest) : (rmRound & RMLowest);
+            return fAvoidAllInfty || (fNegative ? (rmRound >= RMHighest) : (rmRound & RMLowest));
          }
+      bool isDenormalizedAvoided() const { return fAvoidDenormalized; }
       bool keepNaNSign() const { return fKeepNaNSign; }
       bool produceDivNaNPositive() const { return fProduceDivNaNPositive; }
       bool upApproximateInfty() const { return fUpApproximateInfty; }
@@ -796,6 +806,8 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
       {  return (biExponent == TypeTraits::getInftyExponent(biExponent))
             && biMantissa.cbitArray(bitSizeMantissa()-1);
       }
+   bool hasInftyExponent() const
+      {  return biExponent == TypeTraits::getInftyExponent(biExponent); }
    bool isNormalized() const
       {  return (!biExponent.isZero()) && (biExponent != TypeTraits::getInftyExponent(biExponent)); }
    bool isDenormalized() const { return biExponent.isZero() && !biMantissa.isZero(); }

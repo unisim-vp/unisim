@@ -43,7 +43,97 @@ decl {
 }
 
 impl {
+
 #include <unisim/component/cxx/processor/powerpc/e200z710n3/cpu.hh>
+#include <unisim/component/cxx/processor/powerpc/floating.hh>
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace powerpc {
+
+template <class CONFIG, class FLOAT>
+inline void GenSPEFSCR_FINV(uint32_t& spefscr, const FLOAT& first,
+		const FLOAT* second = NULL, bool isDivideOperation=false, bool isIntegerConversion=false)
+{
+	spefscr &= ~CONFIG::SPEFSCR_FINV_MASK;
+	if (unlikely(first.hasInftyExponent()) || unlikely(first.isDenormalized()))
+		spefscr |= 1U << CONFIG::SPEFSCR_FINV;
+	else if (second && (unlikely(second->hasInftyExponent()) || unlikely(second->isDenormalized())))
+		spefscr |= 1U << CONFIG::SPEFSCR_FINV;
+	else if (isDivideOperation && unlikely(first.isZero()) && (second && unlikely(second->isZero())))
+		spefscr |= 1U << CONFIG::SPEFSCR_FINV;
+}
+
+template <class CONFIG>
+inline void GenSPEFSCR_FOVF(uint32_t& spefscr, const Flags& flags)
+{
+	spefscr &= ~CONFIG::SPEFSCR_FOVF_MASK;
+	if (flags.isOverflow())
+		spefscr |= 1U << CONFIG::SPEFSCR_FOVF;
+}
+
+template <class CONFIG>
+inline void GenSPEFSCR_FUNF(uint32_t& spefscr, const Flags& flags)
+{
+	spefscr &= ~CONFIG::SPEFSCR_FUNF_MASK;
+	if (flags.isUnderflow())
+		spefscr |= 1U << CONFIG::SPEFSCR_FUNF;
+}
+
+template <class CONFIG>
+inline void GenSPEFSCR_FINXS(uint32_t& spefscr, const Flags& flags)
+{ 	if (flags.isApproximate())
+		spefscr |= 1U << CONFIG::SPEFSCR_FINXS;
+	else if (((spefscr & CONFIG::SPEFSCR_FOVFE_MASK) == 0)
+			&& ((spefscr & CONFIG::SPEFSCR_FOVF_MASK) || (spefscr & CONFIG::SPEFSCR_FOVFH_MASK)))
+		spefscr |= 1U << CONFIG::SPEFSCR_FINXS;
+	else if (((spefscr & CONFIG::SPEFSCR_FUNFE_MASK) == 0)
+			&& ((spefscr & CONFIG::SPEFSCR_FUNF_MASK) || (spefscr & CONFIG::SPEFSCR_FUNFH_MASK)))
+		spefscr |= 1U << CONFIG::SPEFSCR_FINXS;
+}
+
+template <class FLOAT>
+inline bool HasSPEFSCR_InvalidInput(const FLOAT& input)
+{ 	return input.isDenormalized() || input.hasInftyExponent(); }
+
+template <class CONFIG>
+inline void GenSPEFSCR_FG(uint32_t& spefscr, const Flags& flags, bool hasInvalidInput=false)
+{ 	if (hasInvalidInput || flags.isOverflow() || flags.isUnderflow())
+		spefscr &= ~(1U << CONFIG::SPEFSCR_FG);
+}
+
+template <class CONFIG>
+inline void GenSPEFSCR_FX(uint32_t& spefscr, const Flags& flags, bool hasInvalidInput=false)
+{ 	if (flags.isApproximate())
+		spefscr |= 1U << CONFIG::SPEFSCR_FX;
+	if (hasInvalidInput || flags.isOverflow() || flags.isUnderflow())
+		spefscr &= ~(1U << CONFIG::SPEFSCR_FX);
+}
+
+template <class CONFIG>
+inline bool DoesSPEFSCR_TriggerException(const uint32_t& spefscr)
+{	// Check for floating point exception condition:
+	return ((spefscr & CONFIG::SPEFSCR_FINXS_MASK) && (spefscr & CONFIG::SPEFSCR_FINXE_MASK))
+        || ((spefscr & (CONFIG::SPEFSCR_FINV_MASK | CONFIG::SPEFSCR_FINVH_MASK))
+			&& (spefscr & CONFIG::SPEFSCR_FINVE_MASK))
+        || ((spefscr & (CONFIG::SPEFSCR_FDBZ_MASK | CONFIG::SPEFSCR_FDBZH_MASK))
+			&& (spefscr & CONFIG::SPEFSCR_FDBZE_MASK))
+        || ((spefscr & (CONFIG::SPEFSCR_FUNF_MASK | CONFIG::SPEFSCR_FUNFH_MASK))
+			&& (spefscr & CONFIG::SPEFSCR_FUNFE_MASK))
+        || ((spefscr & (CONFIG::SPEFSCR_FOVF_MASK | CONFIG::SPEFSCR_FOVFH_MASK))
+			&& (spefscr & CONFIG::SPEFSCR_FOVFE_MASK));
+}
+
+template <class CONFIG, class FLOAT>
+inline void GenSPEFSCR_FG(uint32_t& fscr, const FLOAT& result)
+{
+	fscr &= ~CONFIG::SPEFSCR_FG_MASK;
+}
+
+}}}}} // end of namespace unisim::component::cxx::processor::powerpc
+
 }
 
 set addressclass {uint32_t}

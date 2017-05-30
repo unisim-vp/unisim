@@ -120,6 +120,8 @@ public:
 	
 	MSR& GetMSR() { return msr; }
 	ESR& GetESR() { return esr; }
+	SPEFSCR& GetSPEFSCR() { return spefscr; }
+	void SetSPEFSCR(uint32_t& new_spefscr) { spefscr = new_spefscr; }
 
 	bool Dcba(ADDRESS addr);
 	bool Dcbi(ADDRESS addr);
