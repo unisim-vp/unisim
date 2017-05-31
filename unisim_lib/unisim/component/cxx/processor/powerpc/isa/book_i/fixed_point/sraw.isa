@@ -36,7 +36,8 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 }
 
-op sraw(31[6]:rs[5]:ra[5]:rb[5]:792[10]:rc[1])
+op sraw(31[6]:rs[5]:ra[5]:rb[5]:792[10]:rc[1]);
+
 sraw.execute = {
 	// Read the input operands
 	int32_t s = int32_t(cpu->GetGPR(rs));
@@ -44,20 +45,9 @@ sraw.execute = {
 	XER& xer = cpu->GetXER();
 	
 	// Compute the result
-	int32_t result;
-
-#if 0	
-	uint32_t n =b & uint32_t(0x3f);
-	uint32_t r =RotateLeft(s, 32 - n);
-
-	uint32_t m = n < uint32_t(32) ? (cpu->Cond(n != uint32_t(0)) ? (uint32_t(1) << (uint32_t(32) - n)) - uint32_t(1) : uint32_t(0xffffffffUL)) : uint32_t(0);
-	result = (r & m) | (((int32_t) s >> 31) & ~m);
-	xer.Set<XER::CA>(((int32_t) s < 0) && ((r & ~m) != 0)));
-#else
-	uint32_t sh = (b >= uint32_t(0x20)) ? uint32_t(0x1f) : b;
-	result = s >> sh;
+	uint32_t sh = (b > uint32_t(0x1f)) ? uint32_t(0x1f) : b;
+	int32_t result = s >> sh;
 	xer.Set<XER::CA>((s < int32_t(0)) and ((s & ((int32_t(1) << sh) - int32_t(1))) != int32_t(0)));
-#endif
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);

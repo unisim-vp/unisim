@@ -44,14 +44,12 @@ se_sraw.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {sry & 31};
 se_sraw.execute = {
 	// Read the input operands
 	int32_t x = int32_t(cpu->GetGPR(rx));
-	uint32_t y = cpu->GetGPR(ry);
+	uint32_t y = cpu->GetGPR(ry) & uint32_t(0x3f);
 	XER& xer = cpu->GetXER();
 	
 	// Compute the result
-	int32_t result;
-	
-	uint32_t sh = y < uint32_t(0x1f) ? y : uint32_t(0x1f);
-	result = x >> sh;
+	uint32_t sh = (y > uint32_t(0x1f)) ? uint32_t(0x1f) : y;
+	int32_t result = x >> sh;
 	xer.Set<XER::CA>((x < int32_t(0)) and ((x & ((int32_t(1) << sh) - int32_t(1))) != int32_t(0)));
 	
 	// Write back the result
