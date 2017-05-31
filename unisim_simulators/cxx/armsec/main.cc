@@ -45,7 +45,20 @@ namespace armsec
     
     int next() { id = program->size(); program->push_back(""); return id; }
     bool valid() const { return id >= 0; }
-    void operator = (std::string const& src) { program->at(id) = src; }
+    //void operator = (std::string const& src) { program->at(id) = src; }
+    void write(std::string const& src)
+    {
+      std::string& stmt = program->at(id);
+      stmt = src;
+      uintptr_t pos = stmt.find( "<next>" );
+      if (pos == std::string::npos)
+        return;
+      id = program->size();
+      program->push_back("");
+      std::ostringstream buf;
+      buf << id;
+      stmt.replace(pos, 6, buf.str());
+    }
     
     Program* program;
     int id;
@@ -157,41 +170,26 @@ namespace armsec
             
               case Op::BSR:
                 {
-                  Label tail(label);
+                  Label head(label);
+                  int exit = label.next(), loop;
                   {
                     std::ostringstream buffer;
-                    buffer << "bsr_in<32> := " << GetCode(node->GetSub(0),tail);
-                    Label insn( tail );
-                    buffer << "; goto " << tail.next();
-                    insn = buffer.str();
+                    buffer << "bsr_in<32> := " << GetCode(node->GetSub(0),head) << " ; goto <next>";
+                    head.write( buffer.str() );
+                    head.write( "bsr_out<32> := 32<32> ; goto <next>" );
                   }
                   {
-                    std::ostringstream code;
-                    Label insn( tail );
-                    code << "bsr_out<32> := 32<32> ; goto " << tail.next();
-                    insn = code.str();
-                  }
-                  Label exit(tail);
-                  exit.next();
-                  {
-                    std::ostringstream code;
-                    Label insn( tail );
-                    code << "if (bsr_in<32> = 0<32>) goto " << exit.id << " else goto " << tail.next();
-                    insn = code.str();
-                  }
-                  Label loop(tail);
-                  {
-                    std::ostringstream code;
-                    code << "bsr_out<32> := bsr_out<32> - 1<32> ; goto " << tail.next();
-                    loop = code.str();
+                    std::ostringstream buffer;
+                    buffer << "if (bsr_in<32> = 0<32>) goto " << exit << " else goto <next>";
+                    head.write( buffer.str() );
+                    loop = head.id;
+                    head.write( "bsr_out<32> := bsr_out<32> - 1<32> ; goto <next>" );
                   }
                   {
-                    std::ostringstream code;
-                    Label insn( tail );
-                    code << "if ((bsr_in<32> rshiftu bsr_out<32>){0,0}) goto " << exit.id << " else goto " << loop.id;
-                    insn = code.str();
+                    std::ostringstream buffer;
+                    buffer << "if ((bsr_in<32> rshiftu bsr_out<32>){0,0}) goto " << exit << " else goto " << loop;
+                    head.write( buffer.str() );
                   }
-                  label = exit;
       
                   sink << "bsr_out<32>";
       
@@ -1113,10 +1111,8 @@ namespace armsec
             tmp_dst = ctx.make_tmp( retsize, itr->first );
           }
           std::ostringstream buffer;
-          buffer << GetCode(tmp_dst, current) << " := " << tmp_src;
-          Label insn( current );
-          buffer << "; goto " << current.next();
-          insn = buffer.str();
+          buffer << GetCode(tmp_dst, current) << " := " << tmp_src << "; goto <next>";
+          current.write( buffer.str() );
         }
     }
     
@@ -1152,27 +1148,19 @@ namespace armsec
         
         if (armsec::State::RegWrite const* rw = dynamic_cast<armsec::State::RegWrite const*>( itr->node ))
           {
-            Expr wb;
             armsec::State::RegID rid = rw->id;
             unsigned             rsz = rw->bitsize;
             armsec::State::RegWrite* nrw = new armsec::State::RegWrite( *rw );
-          
-            if (nrw->value.ConstSimplify() or dynamic_cast<Context::TmpVar const*>( rw->value.node ))
-              {
-                wb = nrw;
-              }
-            else
+            Expr wb( nrw );
+            
+            if (not nrw->value.ConstSimplify() and not dynamic_cast<Context::TmpVar const*>( rw->value.node ))
               {
                 Expr tmp = ctx.make_nxt( rid.c_str(), rsz, rw->value );
                 std::ostringstream buffer;
-                buffer << GetCode(tmp, current) << " := " << GetCode(rw->value, current);
-                Label insn( current );
-                buffer << "; goto " << current.next();
-                insn = buffer.str();
+                buffer << GetCode(tmp, current) << " := " << GetCode(rw->value, current) << "; goto <next>";
+                current.write( buffer.str() );
                 
                 nrw->value = tmp;
-                
-                wb = nrw;
               }
           
             if (rid.code == rid.nia)
@@ -1183,11 +1171,11 @@ namespace armsec
         else
           {
             std::ostringstream buffer;
-            int retsize = ASExprNode::GenerateCode( *itr, current, buffer );
-            if (retsize) throw 0;
-            Label insn( current );
-            buffer << "; goto " << current.next();
-            insn = buffer.str();
+            if (ASExprNode::GenerateCode( *itr, current, buffer ))
+              throw 0;
+            
+            buffer << "; goto <next>";
+            current.write( buffer.str() );
           }
       }
     
@@ -1200,39 +1188,45 @@ namespace armsec
       {
         std::ostringstream buffer;
         buffer << "if " << GetCode(cond,current) << " ";
-        Label ifinsn( current );
-    
-        current = after;
+        
+        // Preparing room for if thel else code
+        Label ifinsn( current ), endif( after );
         if (nia.good() or (after.valid() and (ctx.has_pending())))
-          current.next();
-    
+          endif.next();
+        
         if (not false_nxt) {
-          Label ifthen(current);
-          buffer << " goto " << ifthen.next() << " else goto " << current.id;
-          ifinsn = buffer.str();
-          true_nxt->GenCode( ifthen, current, &ctx );
+          Label ifthen(ifinsn); ifthen.next();
+          buffer << " goto " << ifthen.id << " else goto " << endif.id;
+          ifinsn.write( buffer.str() );
+          true_nxt->GenCode( ifthen, endif, &ctx );
         } else if (not true_nxt) {
-          Label ifelse(current);
-          buffer << " goto " << current.id << " else goto " << ifelse.next();
-          ifinsn = buffer.str();
-          false_nxt->GenCode( ifelse, current, &ctx );
+          Label ifelse(ifinsn); ifelse.next();
+          buffer << " goto " << endif.id << " else goto " << ifelse.id;
+          ifinsn.write( buffer.str() );
+          false_nxt->GenCode( ifelse, endif, &ctx );
         } else {
-          Label ifthen(current), ifelse(current);
-          buffer << " goto " << ifthen.next() << " else goto " << ifelse.next();
-          ifinsn = buffer.str();
-          true_nxt->GenCode( ifthen, current, &ctx );
-          false_nxt->GenCode( ifelse, current, &ctx );
+          Label ifthen(ifinsn), ifelse(ifinsn); ifthen.next(); ifelse.next();
+          buffer << " goto " << ifthen.id << " else goto " << ifelse.id;
+          ifinsn.write( buffer.str() );
+          true_nxt->GenCode( ifthen, endif, &ctx );
+          false_nxt->GenCode( ifelse, endif, &ctx );
         }
+        
+        current = endif;
       }
     
     for (Context::Pendings::iterator itr = ctx.pendings.begin(), end = ctx.pendings.end(); itr != end; ++itr)
       {
         std::ostringstream buffer;
-        buffer << GetCode(*itr,current);
-        Label insn( current );
-        int next = (((itr+1) != end) or nia.good()) ? current.next() : after.id;
-        buffer << "; goto " << next;
-        insn = buffer.str();
+        if (ASExprNode::GenerateCode( *itr, current, buffer ))
+          throw 0;
+        
+        if (((itr+1) == end) and not nia.good())
+          buffer << " goto " << after.id;
+        else
+          buffer << " goto <next>";
+        
+        current.write( buffer.str() );
       }
     
     if (not nia.good())
@@ -1243,16 +1237,17 @@ namespace armsec
         for (Context::Pendings::iterator itr = uc->pendings.begin(), end = uc->pendings.end(); itr != end; ++itr)
           { 
             std::ostringstream buffer;
-            buffer << GetCode(*itr,current);
-            Label insn( current );
-            buffer << "; goto " << current.next();
-            insn = buffer.str();
+            if (ASExprNode::GenerateCode( *itr, current, buffer ))
+              throw 0;
+            
+            buffer << " goto <next>";
+            current.write( buffer.str() );
           }
       }
     
     std::ostringstream buffer;
     buffer << "goto (" << GetCode(nia,current) << (nia.ConstSimplify() ? ",0" : "") << ")";
-    current = buffer.str();
+    current.write( buffer.str() );
   }
 }
 
