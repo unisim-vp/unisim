@@ -39,25 +39,23 @@ namespace armsec
   
   struct Label
   {
-    struct Statement
+    struct Program
     {
-      Statement() : text(0) {}
-      ~Statement() { delete [] text; }
-      void write(std::string const& s)
+      std::vector<char const*> insns;
+      std::set<std::string> statements;
+      
+      uintptr_t size() const { return insns.size(); }
+      uintptr_t allocate() { uintptr_t nid = insns.size(); insns.push_back(0); return nid; }
+      void write(int id, std::string const& s)
       {
-        if (text) throw std::runtime_error("overwriting statement");
-        uintptr_t sz = s.size();
-        char* buf = new char[sz+1];
-        s.copy(buf,sz);
-        buf[sz] = '\0';
+        char const*& insn = insns.at(id);
+        if (insn) throw std::runtime_error("overwriting statement");
+        insn = statements.insert( s ).first->c_str();
       }
-      friend std::ostream& operator << (std::ostream& sink, Statement const& s) { sink << s.text; return sink; }
-      char const* text;
+      char const* operator [] ( uintptr_t idx ) const { return insns.at(idx); }
     };
     
-    typedef std::vector<Statement> Program;
     
-    Label() = delete;
     Label( Program& _program ) : program(_program), id(-1) {}
     
     Label& operator= (Label const& l)
@@ -67,7 +65,7 @@ namespace armsec
       return *this;
     }
     
-    int allocate() { id = program.size(); program.push_back(Statement()); return id; }
+    int allocate() { return (id = program.allocate()); }
     
     bool valid() const { return id >= 0; }
     
@@ -76,18 +74,17 @@ namespace armsec
       uintptr_t pos = src.find( "<next>" );
       if (pos == std::string::npos)
         {
-          program.at(id).write( src );
+          program.write( id, src );
           return id;
         }
       
       int insn = id;
-      id = program.size();
-      program.push_back(Statement());
+      id = program.allocate();
       
       std::string stmt(src);
       { std::ostringstream buf; buf << id; stmt.replace(pos, 6, buf.str()); }
       
-      program.at(insn).write( stmt );
+      program.write( insn, stmt );
       
       return insn;
     }

@@ -1,3 +1,4 @@
+set -ex
 ${ARMSEC} arm 0x4000 0x012fff1e; echo
 ${ARMSEC} arm 0x4000 0x01a02001; echo
 ${ARMSEC} arm 0x4000 0x01a0c003; echo
