@@ -52,7 +52,12 @@ namespace armsec
         if (insn) throw std::runtime_error("overwriting statement");
         insn = statements.insert( s ).first->c_str();
       }
-      char const* operator [] ( uintptr_t idx ) const { return insns.at(idx); }
+      char const* operator [] ( uintptr_t idx ) const
+      {
+        char const* res = insns.at(idx);
+        if (not res) throw std::runtime_error("empty instruction");
+        return res;
+      }
     };
     
     
@@ -69,7 +74,7 @@ namespace armsec
     
     bool valid() const { return id >= 0; }
     
-    int write( std::string const& src )
+    int write( std::string const& src, int next=-1 )
     {
       uintptr_t pos = src.find( "<next>" );
       if (pos == std::string::npos)
@@ -79,7 +84,7 @@ namespace armsec
         }
       
       int insn = id;
-      id = program.allocate();
+      id = (next == -1) ? program.allocate() : next;
       
       std::string stmt(src);
       { std::ostringstream buf; buf << id; stmt.replace(pos, 6, buf.str()); }
@@ -1098,7 +1103,33 @@ namespace armsec
     
     Expr nia;
     
-    Label current( start );
+    struct Head
+    {
+      Head( Label const& _start, int _after ) : cur(_start), after(_after) {}
+      ~Head()
+      {
+        if (not pending.size()) return;
+        cur.write( pending, after );
+        pending.clear();
+      }
+      
+      Label& current() { flush(); return cur; }
+      void write( std::string const& s )
+      {
+        flush();
+        if (s.size()==0) throw std::runtime_error("xxx");
+        pending = s;
+      }
+      void flush()
+      {
+        if (not pending.size()) return;
+        cur.write( pending );
+        pending.clear();
+      }
+      Label cur;
+      int after;
+      std::string pending;
+    } head( start, after.GetID() );
     
     {
       /* find common sub expressions */
@@ -1137,13 +1168,14 @@ namespace armsec
           Expr        tmp_dst;
           {
             std::ostringstream buffer;
-            int retsize = ASExprNode::GenerateCode( itr->first, current, buffer );
+            int retsize = ASExprNode::GenerateCode( itr->first, head.current(), buffer );
             tmp_src = buffer.str();
             tmp_dst = ctx.make_tmp( retsize, itr->first );
           }
           std::ostringstream buffer;
-          buffer << GetCode(tmp_dst, current) << " := " << tmp_src << "; goto <next>";
-          current.write( buffer.str() );
+          buffer << GetCode(tmp_dst, head.current()) << " := " << tmp_src << "; goto <next>";
+          
+          head.write( buffer.str() );
         }
     }
     
@@ -1188,8 +1220,8 @@ namespace armsec
               {
                 Expr tmp = ctx.make_nxt( rid.c_str(), rsz, rw->value );
                 std::ostringstream buffer;
-                buffer << GetCode(tmp, current) << " := " << GetCode(rw->value, current) << "; goto <next>";
-                current.write( buffer.str() );
+                buffer << GetCode(tmp, head.current()) << " := " << GetCode(rw->value, head.current()) << "; goto <next>";
+                head.write( buffer.str() );
                 
                 nrw->value = tmp;
               }
@@ -1202,11 +1234,11 @@ namespace armsec
         else
           {
             std::ostringstream buffer;
-            if (ASExprNode::GenerateCode( *itr, current, buffer ))
+            if (ASExprNode::GenerateCode( *itr, head.current(), buffer ))
               throw 0;
             
             buffer << "; goto <next>";
-            current.write( buffer.str() );
+            head.write( buffer.str() );
           }
       }
     
@@ -1218,10 +1250,11 @@ namespace armsec
     else
       {
         std::ostringstream buffer;
-        buffer << "if " << GetCode(cond,current) << " ";
+        Label ifinsn(head.current());
+        buffer << "if " << GetCode(cond,ifinsn) << " ";
         
-        // Preparing room for if thel else code
-        Label ifinsn( current ), endif( after );
+        // Preparing room for if then else code
+        Label endif( after );
         if (nia.good() or (after.valid() and (ctx.has_pending())))
           endif.allocate();
         
@@ -1243,25 +1276,23 @@ namespace armsec
           false_nxt->GenCode( ifelse, endif, &ctx );
         }
         
-        current = endif;
+        head.current() = endif;
       }
     
     for (Context::Pendings::iterator itr = ctx.pendings.begin(), end = ctx.pendings.end(); itr != end; ++itr)
       {
         std::ostringstream buffer;
-        if (ASExprNode::GenerateCode( *itr, current, buffer ))
+        if (ASExprNode::GenerateCode( *itr, head.current(), buffer ))
           throw 0;
         
-        if (((itr+1) == end) and not nia.good())
-          buffer << "; goto " << after.GetID();
-        else
-          buffer << "; goto <next>";
-        
-        current.write( buffer.str() );
+        buffer << "; goto <next>";
+        head.write( buffer.str() );
       }
     
     if (not nia.good())
       return;
+    
+    Label current( head.current() );
     
     for (Context* uc = ctx.upper; uc; uc = uc->upper)
       {
