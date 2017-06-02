@@ -39,28 +39,63 @@ namespace armsec
   
   struct Label
   {
-    typedef std::vector<std::string> Program;
-    
-    Label( Program& _program ) : program(&_program), id(-1) {}
-    
-    int next() { id = program->size(); program->push_back(""); return id; }
-    bool valid() const { return id >= 0; }
-    //void operator = (std::string const& src) { program->at(id) = src; }
-    void write(std::string const& src)
+    struct Statement
     {
-      std::string& stmt = program->at(id);
-      stmt = src;
-      uintptr_t pos = stmt.find( "<next>" );
-      if (pos == std::string::npos)
-        return;
-      id = program->size();
-      program->push_back("");
-      std::ostringstream buf;
-      buf << id;
-      stmt.replace(pos, 6, buf.str());
+      Statement() : text(0) {}
+      ~Statement() { delete [] text; }
+      void write(std::string const& s)
+      {
+        if (text) throw std::runtime_error("overwriting statement");
+        uintptr_t sz = s.size();
+        char* buf = new char[sz+1];
+        s.copy(buf,sz);
+        buf[sz] = '\0';
+      }
+      friend std::ostream& operator << (std::ostream& sink, Statement const& s) { sink << s.text; return sink; }
+      char const* text;
+    };
+    
+    typedef std::vector<Statement> Program;
+    
+    Label() = delete;
+    Label( Program& _program ) : program(_program), id(-1) {}
+    
+    Label& operator= (Label const& l)
+    {
+      if (&program != &l.program) throw std::runtime_error("label programs must aggree");
+      id = l.id;
+      return *this;
     }
     
-    Program* program;
+    int allocate() { id = program.size(); program.push_back(Statement()); return id; }
+    
+    bool valid() const { return id >= 0; }
+    
+    int write( std::string const& src )
+    {
+      uintptr_t pos = src.find( "<next>" );
+      if (pos == std::string::npos)
+        {
+          program.at(id).write( src );
+          return id;
+        }
+      
+      int insn = id;
+      id = program.size();
+      program.push_back(Statement());
+      
+      std::string stmt(src);
+      { std::ostringstream buf; buf << id; stmt.replace(pos, 6, buf.str()); }
+      
+      program.at(insn).write( stmt );
+      
+      return insn;
+    }
+    
+    int GetID() const { return id; }
+    
+  private:
+    Program& program;
     int id;
   };
   
@@ -171,7 +206,7 @@ namespace armsec
               case Op::BSR:
                 {
                   Label head(label);
-                  int exit = label.next(), loop;
+                  int exit = label.allocate(), loop;
                   {
                     std::ostringstream buffer;
                     buffer << "bsr_in<32> := " << GetCode(node->GetSub(0),head) << " ; goto <next>";
@@ -182,8 +217,7 @@ namespace armsec
                     std::ostringstream buffer;
                     buffer << "if (bsr_in<32> = 0<32>) goto " << exit << " else goto <next>";
                     head.write( buffer.str() );
-                    loop = head.id;
-                    head.write( "bsr_out<32> := bsr_out<32> - 1<32> ; goto <next>" );
+                    loop = head.write( "bsr_out<32> := bsr_out<32> - 1<32> ; goto <next>" );
                   }
                   {
                     std::ostringstream buffer;
@@ -1192,21 +1226,21 @@ namespace armsec
         // Preparing room for if thel else code
         Label ifinsn( current ), endif( after );
         if (nia.good() or (after.valid() and (ctx.has_pending())))
-          endif.next();
+          endif.allocate();
         
         if (not false_nxt) {
-          Label ifthen(ifinsn); ifthen.next();
-          buffer << " goto " << ifthen.id << " else goto " << endif.id;
+          Label ifthen(ifinsn);
+          buffer << " goto " << ifthen.allocate() << " else goto " << endif.GetID();
           ifinsn.write( buffer.str() );
           true_nxt->GenCode( ifthen, endif, &ctx );
         } else if (not true_nxt) {
-          Label ifelse(ifinsn); ifelse.next();
-          buffer << " goto " << endif.id << " else goto " << ifelse.id;
+          Label ifelse(ifinsn);
+          buffer << " goto " << endif.GetID() << " else goto " << ifelse.allocate();
           ifinsn.write( buffer.str() );
           false_nxt->GenCode( ifelse, endif, &ctx );
         } else {
-          Label ifthen(ifinsn), ifelse(ifinsn); ifthen.next(); ifelse.next();
-          buffer << " goto " << ifthen.id << " else goto " << ifelse.id;
+          Label ifthen(ifinsn), ifelse(ifinsn);
+          buffer << " goto " << ifthen.allocate() << " else goto " << ifelse.allocate();
           ifinsn.write( buffer.str() );
           true_nxt->GenCode( ifthen, endif, &ctx );
           false_nxt->GenCode( ifelse, endif, &ctx );
@@ -1222,9 +1256,9 @@ namespace armsec
           throw 0;
         
         if (((itr+1) == end) and not nia.good())
-          buffer << " goto " << after.id;
+          buffer << "; goto " << after.GetID();
         else
-          buffer << " goto <next>";
+          buffer << "; goto <next>";
         
         current.write( buffer.str() );
       }
@@ -1240,7 +1274,7 @@ namespace armsec
             if (ASExprNode::GenerateCode( *itr, current, buffer ))
               throw 0;
             
-            buffer << " goto <next>";
+            buffer << "; goto <next>";
             current.write( buffer.str() );
           }
       }
@@ -1346,7 +1380,7 @@ struct Decoder
         code->remove_dead_paths();
 
         armsec::Label beglabel(program), endlabel(program);
-        beglabel.next();
+        beglabel.allocate();
         code->GenCode( beglabel, endlabel, 0 );
         
         return true;
