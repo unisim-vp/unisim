@@ -5,6 +5,13 @@
 
 namespace sandbox {
 
+using unisim::util::cache::AccessController;
+using unisim::util::cache::AccessControl;
+using unisim::util::cache::LocalMemoryType;
+using unisim::util::cache::DATA_LOC_MEM;
+using unisim::util::cache::INSTRUCTION_LOC_MEM;
+using unisim::util::cache::LocalMemory;
+using unisim::util::cache::LocalMemorySet;
 using unisim::util::cache::CacheSetStatus;
 using unisim::util::cache::CacheLineStatus;
 using unisim::util::cache::CacheBlockStatus;
@@ -29,6 +36,7 @@ using unisim::util::cache::PseudoRandomReplacementPolicy;
 struct MEMORY_SUB_SYSTEM_TYPES
 {
 	typedef uint32_t ADDRESS;
+	typedef uint32_t PHYSICAL_ADDRESS;
 	typedef uint32_t STORAGE_ATTR;
 };
 
@@ -36,7 +44,46 @@ template <typename MSS_TYPES>
 struct MyMemorySubSystem : MemorySubSystem<MSS_TYPES, MyMemorySubSystem<MSS_TYPES> >
 {
 	typedef MemorySubSystem<MSS_TYPES, MyMemorySubSystem> Super;
+	typedef MyMemorySubSystem<MSS_TYPES> ThisMemorySubSystem;
 	
+	struct MPU : AccessController<MSS_TYPES, MPU>
+	{
+		template <bool DEBUG> bool ControlAccess(AccessControl<MSS_TYPES>& access_control)
+		{
+			access_control.size_to_protection_boundary = 0xffffffffUL;
+			access_control.phys_addr = access_control.addr;
+			access_control.storage_attr = 0;
+			return true;
+		}
+	};
+	
+	struct IMEM_CONFIG
+	{
+		static const LocalMemoryType TYPE = INSTRUCTION_LOC_MEM;
+		static const typename MSS_TYPES::ADDRESS BASE_ADDRESS = 0x52000000;
+		static const uint32_t SIZE = 16384;
+		
+	};
+	
+	struct IMEM : LocalMemory<MSS_TYPES, IMEM_CONFIG, IMEM>
+	{
+		bool IsVerbose() const ALWAYS_INLINE { return true; }
+		static const char *GetLocalMemoryName() { return "IMEM"; }
+	};
+
+	struct DMEM_CONFIG
+	{
+		static const LocalMemoryType TYPE = DATA_LOC_MEM;
+		static const typename MSS_TYPES::ADDRESS BASE_ADDRESS = 0x50000000;
+		static const uint32_t SIZE = 65536;
+	};
+	
+	struct DMEM : LocalMemory<MSS_TYPES, DMEM_CONFIG, DMEM>
+	{
+		bool IsVerbose() const ALWAYS_INLINE { return true; }
+		static const char *GetLocalMemoryName() { return "DMEM"; }
+	};
+
 	struct L1I_CONFIG
 	{
 		static const uint32_t SIZE                     = 32768;
@@ -56,7 +103,29 @@ struct MyMemorySubSystem : MemorySubSystem<MSS_TYPES, MyMemorySubSystem<MSS_TYPE
 		struct BLOCK_STATUS : CacheBlockStatus {};
 	};
 	
-	struct L1I : Cache<MSS_TYPES, L1I_CONFIG, L1I> {};
+	struct L1I : Cache<MSS_TYPES, L1I_CONFIG, L1I>
+	{
+		typedef Cache<MSS_TYPES, L1I_CONFIG, L1I> Super;
+		
+		L1I(ThisMemorySubSystem *_mss) : Super(), mss(_mss) {}
+		
+		static const char *GetCacheName() { return "L1I"; }
+		inline bool IsVerbose() const ALWAYS_INLINE { return true; }
+		inline bool IsEnabled() const ALWAYS_INLINE { return true; }
+		inline bool IsWriteAllocate() const  ALWAYS_INLINE { return false; }
+		inline bool ChooseLineToEvict(CacheAccess<MSS_TYPES, L1I>& access) ALWAYS_INLINE
+		{
+			access.way = access.set->Status().lru.Select();
+			return true;
+		}
+		inline void UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, L1I>& access) ALWAYS_INLINE
+		{
+			access.set->Status().lru.UpdateOnAccess(access.way);
+		}
+		
+	private:
+		ThisMemorySubSystem *mss;
+	};
 
 	struct L1D_CONFIG
 	{
@@ -77,7 +146,29 @@ struct MyMemorySubSystem : MemorySubSystem<MSS_TYPES, MyMemorySubSystem<MSS_TYPE
 		struct BLOCK_STATUS : CacheBlockStatus {};
 	};
 	
-	struct L1D : Cache<MSS_TYPES, L1D_CONFIG, L1D> {};
+	struct L1D : Cache<MSS_TYPES, L1D_CONFIG, L1D>
+	{
+		typedef Cache<MSS_TYPES, L1D_CONFIG, L1D> Super;
+		
+		L1D(ThisMemorySubSystem *_mss) : Super(), mss(_mss) {}
+		
+		static const char *GetCacheName() { return "L1D"; }
+		inline bool IsVerbose() const ALWAYS_INLINE { return true; }
+		inline bool IsEnabled() const ALWAYS_INLINE { return true; }
+		inline bool IsWriteAllocate() const  ALWAYS_INLINE { return false; }
+		inline bool ChooseLineToEvict(CacheAccess<MSS_TYPES, L1D>& access) ALWAYS_INLINE
+		{
+			access.way = access.set->Status().lru.Select();
+			return true;
+		}
+		inline void UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, L1D>& access) ALWAYS_INLINE
+		{
+			access.set->Status().lru.UpdateOnAccess(access.way);
+		}
+		
+	private:
+		ThisMemorySubSystem *mss;
+	};
 	
 	struct L2U_CONFIG
 	{
@@ -98,45 +189,52 @@ struct MyMemorySubSystem : MemorySubSystem<MSS_TYPES, MyMemorySubSystem<MSS_TYPE
 		struct BLOCK_STATUS : CacheBlockStatus {};
 	};
 	
-	struct L2U : Cache<MSS_TYPES, L2U_CONFIG, L2U> {};
-
+	struct L2U : Cache<MSS_TYPES, L2U_CONFIG, L2U>
+	{
+		typedef Cache<MSS_TYPES, L2U_CONFIG, L2U> Super;
+		
+		L2U(ThisMemorySubSystem *_mss) : Super(), mss(_mss) {}
+		
+		static const char *GetCacheName() { return "L2U"; }
+		inline bool IsVerbose() const ALWAYS_INLINE { return true; }
+		inline bool IsEnabled() const ALWAYS_INLINE { return true; }
+		inline bool IsWriteAllocate() const  ALWAYS_INLINE { return false; }
+		inline bool ChooseLineToEvict(CacheAccess<MSS_TYPES, L2U>& access) ALWAYS_INLINE
+		{
+			access.way = access.set->Status().lru.Select();
+			return true;
+		}
+		inline void UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, L2U>& access) ALWAYS_INLINE
+		{
+			access.set->Status().lru.UpdateOnAccess(access.way);
+		}
+		
+	private:
+		ThisMemorySubSystem *mss;
+	};
+	
+	MPU mpu;
+	IMEM imem;
+	DMEM dmem;
 	L1I l1i;
 	L1D l1d;
 	L2U l2u;
 	
+	typedef MPU ACCESS_CONTROLLER;
+	typedef LocalMemorySet<MSS_TYPES, DMEM> DATA_LOCAL_MEMORIES;
+	typedef LocalMemorySet<MSS_TYPES, IMEM> INSTRUCTION_LOCAL_MEMORIES;
 	typedef CacheHierarchy<MSS_TYPES, L1D, L2U> DATA_CACHE_HIERARCHY;
 	typedef CacheHierarchy<MSS_TYPES, L1I, L2U> INSTRUCTION_CACHE_HIERARCHY;
 	
 	MyMemorySubSystem();
 
-	L1I *GetCache(const L1I *);
-	L1D *GetCache(const L1D *);
-	L2U *GetCache(const L2U *);
-	
-	bool IsCacheVerbose(const L1I *) const { return true; }
-	bool IsCacheVerbose(const L1D *) const { return true; }
-	bool IsCacheVerbose(const L2U *) const { return true; }
-	
-	bool IsCacheEnabled(const L1I *) { return true; }
-	bool IsCacheEnabled(const L1D *) { return true; }
-	bool IsCacheEnabled(const L2U *) { return true; }
-	
-	bool IsCacheWriteAllocate(const L1I *) { return false; }
-	bool IsCacheWriteAllocate(const L1D *) { return false; }
-	bool IsCacheWriteAllocate(const L2U *) { return false; }
+	MPU *GetAccessController() ALWAYS_INLINE { return &mpu; }
+	IMEM *GetLocalMemory(const IMEM *) ALWAYS_INLINE { return &imem; }
+	DMEM *GetLocalMemory(const DMEM *) ALWAYS_INLINE { return &dmem; }
+	L1I *GetCache(const L1I *) ALWAYS_INLINE { return &l1i; }
+	L1D *GetCache(const L1D *) ALWAYS_INLINE { return &l1d; }
+	L2U *GetCache(const L2U *) ALWAYS_INLINE { return &l2u; }
 
-	bool ChooseLineToEvict(CacheAccess<MSS_TYPES, L1I>& access);
-	bool ChooseLineToEvict(CacheAccess<MSS_TYPES, L1D>& access);
-	bool ChooseLineToEvict(CacheAccess<MSS_TYPES, L2U>& access);
-	
-	void UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, L1I>& access);
-	void UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, L1D>& access);
-	void UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, L2U>& access);
-	
-	void UpdateReplacementPolicyOnFill(CacheAccess<MSS_TYPES, L1I>& access) {}
-	void UpdateReplacementPolicyOnFill(CacheAccess<MSS_TYPES, L1D>& access) {}
-	void UpdateReplacementPolicyOnFill(CacheAccess<MSS_TYPES, L2U>& access) {}
-	
 	inline bool IsVerboseDataLoad() const ALWAYS_INLINE { return true; }
 	inline bool IsVerboseDataStore() const ALWAYS_INLINE { return true; }
 	inline bool IsVerboseInstructionFetch() const ALWAYS_INLINE { return true; }
@@ -144,7 +242,7 @@ struct MyMemorySubSystem : MemorySubSystem<MSS_TYPES, MyMemorySubSystem<MSS_TYPE
 	inline bool IsVerboseDataBusWrite() const ALWAYS_INLINE { return true; }
 	inline bool IsVerboseInstructionBusRead() const ALWAYS_INLINE { return true; }
 	bool IsStorageCacheable(typename MSS_TYPES::STORAGE_ATTR storage_attr) const { return true; }
-	bool IsDataWriteAccessWriteThrough(typename MSS_TYPES::STORAGE_ATTR storage_attr) const { return false; }
+	bool IsDataStoreAccessWriteThrough(typename MSS_TYPES::STORAGE_ATTR storage_attr) const { return false; }
 	
 	bool DataBusRead(typename MSS_TYPES::ADDRESS addr, void *buffer, unsigned int size, typename MSS_TYPES::STORAGE_ATTR storage_attr, bool rwitm);
 	bool DataBusWrite(typename MSS_TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename MSS_TYPES::STORAGE_ATTR storage_attr);
@@ -162,69 +260,13 @@ struct MyMemorySubSystem : MemorySubSystem<MSS_TYPES, MyMemorySubSystem<MSS_TYPE
 };
 
 template <typename MSS_TYPES>
-typename MyMemorySubSystem<MSS_TYPES>::L1I *MyMemorySubSystem<MSS_TYPES>::GetCache(const L1I *)
-{
-	return &l1i;
-}
-
-template <typename MSS_TYPES>
-typename MyMemorySubSystem<MSS_TYPES>::L1D *MyMemorySubSystem<MSS_TYPES>::GetCache(const L1D *)
-{
-	return &l1d;
-}
-
-template <typename MSS_TYPES>
-typename MyMemorySubSystem<MSS_TYPES>::L2U *MyMemorySubSystem<MSS_TYPES>::GetCache(const L2U *)
-{
-	return &l2u;
-}
-
-template <typename MSS_TYPES>
-bool MyMemorySubSystem<MSS_TYPES>::ChooseLineToEvict(CacheAccess<MSS_TYPES, L1I>& access)
-{
-	access.way = access.set->Status().lru.Select();
-	return true;
-}
-
-template <typename MSS_TYPES>
-bool MyMemorySubSystem<MSS_TYPES>::ChooseLineToEvict(CacheAccess<MSS_TYPES, L1D>& access)
-{
-	access.way = access.set->Status().lru.Select();
-	return true;
-}
-
-template <typename MSS_TYPES>
-bool MyMemorySubSystem<MSS_TYPES>::ChooseLineToEvict(CacheAccess<MSS_TYPES, L2U>& access)
-{
-	access.way = access.set->Status().lru.Select();
-	return true;
-}
-
-template <typename MSS_TYPES>
-void MyMemorySubSystem<MSS_TYPES>::UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, L1I>& access)
-{
-	access.set->Status().lru.UpdateOnAccess(access.way);
-}
-
-template <typename MSS_TYPES>
-void MyMemorySubSystem<MSS_TYPES>::UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, L1D>& access)
-{
-	access.set->Status().lru.UpdateOnAccess(access.way);
-}
-
-template <typename MSS_TYPES>
-void MyMemorySubSystem<MSS_TYPES>::UpdateReplacementPolicyOnAccess(CacheAccess<MSS_TYPES, L2U>& access)
-{
-	access.set->Status().lru.UpdateOnAccess(access.way);
-}
-
-
-template <typename MSS_TYPES>
 MyMemorySubSystem<MSS_TYPES>::MyMemorySubSystem()
 	: Super()
-	, l1i()
-	, l1d()
-	, l2u()
+	, imem()
+	, dmem()
+	, l1i(this)
+	, l1d(this)
+	, l2u(this)
 {
 }
 
@@ -325,17 +367,18 @@ int main()
 	
 	sandbox::MyMemorySubSystem<sandbox::MEMORY_SUB_SYSTEM_TYPES> mss;
 	
-	mss.DebugDataStore(0x1200, dbg_init_buf, 64, 0);
+	mss.DataStore(0x50000000, dbg_init_buf, 64);
+	mss.DebugDataStore(0x1200, dbg_init_buf, 64);
 	
-	mss.DataStore(0x1234, buf, 4, 0);
-	mss.DataLoad(0x1234, buf, 4, 0);
-	mss.DataLoad(0x1260, buf, 4, 0);
-	mss.DataLoad(0x1280, buf, 4, 0);
-	mss.DataLoad(0x12a0, buf, 4, 0);
+	mss.DataStore(0x1234, buf, 4);
+	mss.DataLoad(0x1234, buf, 4);
+	mss.DataLoad(0x1260, buf, 4);
+	mss.DataLoad(0x1280, buf, 4);
+	mss.DataLoad(0x12a0, buf, 4);
 	
 	uint8_t dbg_buf[64];
 	
-	bool dbg_data_load_status = mss.DebugDataLoad(0x1200, dbg_buf, 64, 0);
+	bool dbg_data_load_status = mss.DebugDataLoad(0x1200, dbg_buf, 64);
 	
 	unsigned int i;
 	std::cout << "dbg_buf (" << dbg_data_load_status << ") = ";

@@ -298,11 +298,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.CPU2.local-memory-base-addr", 0x52000000);
 	simulator->SetVariable("HARDWARE.CPU2.local-memory-size", 8 * 1024 * 1024);
 
-	simulator->SetVariable("HARDWARE.CPU2.dmem-base-addr", 0x52800000);
-	simulator->SetVariable("HARDWARE.CPU2.dmem-size", 64 * 1024);
+	simulator->SetVariable("HARDWARE.CPU2.DMEM.base-addr", 0x52800000);
+	simulator->SetVariable("HARDWARE.CPU2.DMEM.size", 64 * 1024);
 
-	simulator->SetVariable("HARDWARE.CPU2.imem-base-addr", 0x52000000);
-	simulator->SetVariable("HARDWARE.CPU2.imem-size", 16 * 1024);
+	simulator->SetVariable("HARDWARE.CPU2.IMEM.base-addr", 0x52000000);
+	simulator->SetVariable("HARDWARE.CPU2.IMEM.size", 16 * 1024);
 	
 	simulator->SetVariable("HARDWARE.CPU2.processor-version", 0x815f8000);
 	simulator->SetVariable("HARDWARE.CPU2.system-version", 0x0);
@@ -320,11 +320,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.CPU0.local-memory-base-addr", 0x50000000);
 	simulator->SetVariable("HARDWARE.CPU0.local-memory-size", 8 * 1024 * 1024);
 
-	simulator->SetVariable("HARDWARE.CPU0.dmem-base-addr", 0x50800000);
-	simulator->SetVariable("HARDWARE.CPU0.dmem-size", 64 * 1024);
+	simulator->SetVariable("HARDWARE.CPU0.DMEM.base-addr", 0x50800000);
+	simulator->SetVariable("HARDWARE.CPU0.DMEM.size", 64 * 1024);
 
-	simulator->SetVariable("HARDWARE.CPU0.imem-base-addr", 0x50000000);
-	simulator->SetVariable("HARDWARE.CPU0.imem-size", 16 * 1024);
+	simulator->SetVariable("HARDWARE.CPU0.IMEM.base-addr", 0x50000000);
+	simulator->SetVariable("HARDWARE.CPU0.IMEM.size", 16 * 1024);
 	
 	simulator->SetVariable("HARDWARE.CPU0.processor-version", 0x81b00000);
 	simulator->SetVariable("HARDWARE.CPU0.system-version", 0x0);
@@ -342,11 +342,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.CPU1.local-memory-base-addr", 0x51000000);
 	simulator->SetVariable("HARDWARE.CPU1.local-memory-size", 8 * 1024 * 1024);
 
-	simulator->SetVariable("HARDWARE.CPU1.dmem-base-addr", 0x51800000);
-	simulator->SetVariable("HARDWARE.CPU1.dmem-size", 64 * 1024);
+	simulator->SetVariable("HARDWARE.CPU1.DMEM.base-addr", 0x51800000);
+	simulator->SetVariable("HARDWARE.CPU1.DMEM.size", 64 * 1024);
 
-	simulator->SetVariable("HARDWARE.CPU1.imem-base-addr", 0x51000000);
-	simulator->SetVariable("HARDWARE.CPU1.imem-size", 16 * 1024);
+	simulator->SetVariable("HARDWARE.CPU1.IMEM.base-addr", 0x51000000);
+	simulator->SetVariable("HARDWARE.CPU1.IMEM.size", 16 * 1024);
 	
 	simulator->SetVariable("HARDWARE.CPU1.processor-version", 0x81b00000);
 	simulator->SetVariable("HARDWARE.CPU1.system-version", 0x0);

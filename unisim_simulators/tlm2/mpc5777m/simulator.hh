@@ -40,7 +40,7 @@
 #endif
 
 // Class definition of components
-#include <unisim/component/tlm2/processor/powerpc/e200z710n3/cpu.hh>
+#include <unisim/component/tlm2/processor/powerpc/e200/mpc57xx/e200z425bn3/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/config.hh>
@@ -135,7 +135,7 @@ private:
 	//=========================================================================
 
 	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> RAM;
-	typedef unisim::component::tlm2::processor::powerpc::e200z710n3::CPU CPU2;
+	typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::e200z425bn3::CPU CPU2;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<INTERCONNECT_CONFIG> INTERCONNECT;
 
 	//=========================================================================
