@@ -43,7 +43,7 @@ op e_stmw(6[6]:rs[5]:ra[5]:9[8]:sext d[8]);
 e_stmw.execute = {
 	ADDRESS ea = (ra ? cpu->GetGPR(ra) : uint32_t(0)) + uint32_t(d);
 
-	if(unlikely((ea & uint32_t(3) != uint32_t(0))))
+	if(unlikely((ea & uint32_t(3)) != uint32_t(0)))
 	{
 		cpu->ThrowException<CPU::AlignmentInterrupt::UnalignedLoadStoreMultiple>();
 		return false;
