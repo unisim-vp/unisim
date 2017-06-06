@@ -1,0 +1,733 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<variables>
+	<object name="HARDWARE">
+		<object name="HARDWARE.CPU2">
+			<object name="HARDWARE.CPU2.L1I">
+				<variable name="verbose">
+					<type>parameter</type>
+					<data_type>boolean</data_type>
+					<value>false</value>
+					<description>enable/disable verbosity</description>
+					<enumeration>
+						<item>true</item>
+						<item>false</item>
+					</enumeration>
+				</variable>
+			</object>
+			<object name="HARDWARE.CPU2.IMEM">
+				<variable name="base-addr">
+					<type>parameter</type>
+					<data_type>unsigned 32-bit integer</data_type>
+					<value>0x52000000</value>
+					<description>base address at reset</description>
+				</variable>
+				<variable name="size">
+					<type>parameter</type>
+					<data_type>unsigned 32-bit integer</data_type>
+					<value>16384</value>
+					<description>size in bytes (at most 65536 bytes)</description>
+				</variable>
+				<variable name="verbose">
+					<type>parameter</type>
+					<data_type>boolean</data_type>
+					<value>false</value>
+					<description>enable/disable verbosity</description>
+					<enumeration>
+						<item>true</item>
+						<item>false</item>
+					</enumeration>
+				</variable>
+			</object>
+			<object name="HARDWARE.CPU2.DMEM">
+				<variable name="base-addr">
+					<type>parameter</type>
+					<data_type>unsigned 32-bit integer</data_type>
+					<value>0x52800000</value>
+					<description>base address at reset</description>
+				</variable>
+				<variable name="size">
+					<type>parameter</type>
+					<data_type>unsigned 32-bit integer</data_type>
+					<value>65536</value>
+					<description>size in bytes (at most 65536 bytes)</description>
+				</variable>
+				<variable name="verbose">
+					<type>parameter</type>
+					<data_type>boolean</data_type>
+					<value>false</value>
+					<description>enable/disable verbosity</description>
+					<enumeration>
+						<item>true</item>
+						<item>false</item>
+					</enumeration>
+				</variable>
+			</object>
+			<variable name="instruction-counter">
+				<type>parameter</type>
+				<data_type>unsigned 64-bit integer</data_type>
+				<value>0</value>
+				<description>number of simulated instructions</description>
+			</variable>
+			<variable name="trap-on-instruction-counter">
+				<type>parameter</type>
+				<data_type>unsigned 64-bit integer</data_type>
+				<value>18446744073709551615</value>
+				<description>number of simulated instruction before traping</description>
+			</variable>
+			<variable name="max-inst">
+				<type>parameter</type>
+				<data_type>unsigned 64-bit integer</data_type>
+				<value>18446744073709551615</value>
+				<description>maximum number of instructions to simulate</description>
+			</variable>
+			<variable name="halt-on">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Symbol or address where to stop simulation</description>
+			</variable>
+			<variable name="verbose-setup">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity while setup</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-exception">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of exception</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-move-to-slr">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of move to system level registers (SPRs, and so on)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-move-from-slr">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of move from system level registers (SPRs, and so on)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="reset-addr">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x40040000</value>
+				<description>reset address</description>
+			</variable>
+			<variable name="cpuid">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x02</value>
+				<description>CPU ID at reset</description>
+			</variable>
+			<variable name="processor-version">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x815f8000</value>
+				<description>Processor Version</description>
+			</variable>
+			<variable name="system-version">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>System Version</description>
+			</variable>
+			<variable name="system-information">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000002</value>
+				<description>System Information</description>
+			</variable>
+			<variable name="local-memory-base-addr">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x52000000</value>
+				<description>local memory base address</description>
+			</variable>
+			<variable name="local-memory-size">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00800000</value>
+				<description>local memory size</description>
+			</variable>
+			<variable name="verbose-data-load">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of data load</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-data-store">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of data store</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-instruction-fetch">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of instruction fetch</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-data-bus-read">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of data bus read</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-data-bus-write">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of data bus write</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-instruction-bus-read">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of instruction bus read</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="cpu-cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>5 ns</value>
+				<description>cpu cycle time</description>
+			</variable>
+			<variable name="bus-cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>bus cycle time</description>
+			</variable>
+			<variable name="nice-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>200 ns</value>
+				<description>maximum time between synchonizations</description>
+			</variable>
+			<variable name="ipc">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>2</value>
+				<description>maximum instructions per cycle, typically 1 or 2</description>
+			</variable>
+			<variable name="enable-host-idle">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable host idle periods when target is idle</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="debug-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable debugging of DMI (Direct Memory Access)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.RAM">
+			<variable name="org">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>memory origin/base address</description>
+			</variable>
+			<variable name="bytesize">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0</value>
+				<description>memory size in bytes</description>
+			</variable>
+			<variable name="initial-byte-value">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x00</value>
+				<description>initial value for all bytes of memory</description>
+			</variable>
+			<variable name="cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>memory cycle time</description>
+			</variable>
+			<variable name="read-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>memory read latency</description>
+			</variable>
+			<variable name="write-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>memory write latency</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="read-only">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable read-only protection</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.INTERCONNECT">
+			<variable name="cycle_time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>Time to process a request/response by the router</description>
+			</variable>
+			<variable name="port_buffer_size">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0</value>
+				<description>Defines the size of the buffer for incomming requests in each of the input ports (0 = infinite)</description>
+			</variable>
+			<variable name="mapping_0">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x52000000&quot; range_end=&quot;0x5fffffff&quot; output_port=&quot;1&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_1">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x0&quot; range_end=&quot;0xfffffffe&quot; output_port=&quot;0&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+		</object>
+	</object>
+	<object name="debugger">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="dwarf-to-html-output-directory">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>DWARF v2/v3 to HTML output directory</description>
+		</variable>
+		<variable name="dwarf-register-number-mapping-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>powerpc_eabi_gcc_dwarf_register_number_mapping.xml</value>
+			<description>DWARF register number mapping filename</description>
+		</variable>
+		<variable name="parse-dwarf">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable parsing of DWARF debugging informations</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="debug-dwarf">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable debugging of DWARF</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="gdb-server">
+		<variable name="memory-atom-size">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>1</value>
+			<description>size of the smallest addressable element in memory</description>
+		</variable>
+		<variable name="tcp-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>12345</value>
+			<description>TCP/IP port to listen waiting for a GDB client connection</description>
+		</variable>
+		<variable name="architecture-description-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>gdb_powerpc_vle.xml</value>
+			<description>filename of a XML description of the connected processor</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="instrumenter">
+		<variable name="enable-output-instrumentation">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable output instrumentation of signals</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="instrumentation-output-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Output filename for instrumented signals</description>
+		</variable>
+		<variable name="output-instrumentation">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Instrumented signals to output in the instrumentation output file</description>
+		</variable>
+		<variable name="output-instrumentation-start-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>0 s</value>
+			<description>Start time for output instrumentation of signals</description>
+		</variable>
+		<variable name="output-instrumentation-end-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>18446744073709551615 ps</value>
+			<description>End time for output instrumentation of signals</description>
+		</variable>
+		<variable name="output-csv-delimiter">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>,</value>
+			<description>CSV delimiter for instrumentation output file</description>
+		</variable>
+		<variable name="enable-input-instrumentation">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable input instrumentation of signals</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="instrumentation-input-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Input filename for instrumented signals</description>
+		</variable>
+		<variable name="input-instrumentation">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Instrumented signals (wildcard '*' is allowed in signal names) that take there input from the instrumentation input file</description>
+		</variable>
+		<variable name="input-instrumentation-start-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>0 s</value>
+			<description>Start time for input instrumentation of signals</description>
+		</variable>
+		<variable name="input-instrumentation-end-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>18446744073709551615 ps</value>
+			<description>End time for input instrumentation of signals</description>
+		</variable>
+		<variable name="input-csv-delimiter">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>,</value>
+			<description>CSV delimiter for instrumentation input file</description>
+		</variable>
+		<variable name="vcd-trace-file">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>VCD output filename for signals trace</description>
+		</variable>
+		<variable name="trace-signals">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Signals to trace (wildcard '*' is allowed in signal names)</description>
+		</variable>
+		<variable name="enable-trace-signals">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable signals trace</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="gtkwave-init-script">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>GTKWave initialization script that simulators must automatically generate at startup</description>
+		</variable>
+	</object>
+	<object name="loader">
+		<object name="loader.memory-mapper">
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-parser">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity of parser</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="mapping">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>HARDWARE.RAM:0x0-0xffffffff:+0x0</value>
+				<description>Memory mapping. Syntax: [memory=]&lt;memory1&gt;[:[range=]&lt;low1-high1&gt;][:[translation=]+&lt;translation1&gt;][,... (e.g. ram:0x0-0x00ffff,rom:0xff0000-0xffffff:+0xff0000)</description>
+			</variable>
+		</object>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose-parser">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity of parser</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>soft/boot.elf</value>
+			<description>List of files to load. Syntax: [[filename=]&lt;filename1&gt;[=[format=]&lt;format1&gt;]][,[filename=]&lt;filename2&gt;[=[format=]&lt;format2&gt;]]... (e.g. boot.bin=raw,app.elf)</description>
+		</variable>
+	</object>
+	<variable name="enable-gdb-server">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>true</value>
+		<description>Enable/Disable GDB server instantiation</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-inline-debugger">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable inline debugger instantiation</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-press-enter-at-exit">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>true</value>
+		<description>Enable/Disable pressing key enter at exit</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.file">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Keep logger output in a file</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.filename">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value>logger_output.txt</value>
+		<description>Filename to keep logger output (the option file must be activated)</description>
+	</variable>
+	<variable name="kernel_logger.std_err">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>true</value>
+		<description>Show logger output through the standard error output</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.std_err_color">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Colorize logger output through the standard error output (only works if std_err is active)</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.std_out">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Show logger output through the standard output</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.std_out_color">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Colorize logger output through the standard output (only works if std_out is active)</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.xml_file">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Keep logger output in a file xml formatted</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.xml_file_gzipped">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Compress the xml output (a .gz extension is automatically appended to the xml_filename option)</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.xml_filename">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value>logger_output.xml</value>
+		<description>Filename to keep logger xml output (the option xml_file must be activated)</description>
+	</variable>
+</variables>
