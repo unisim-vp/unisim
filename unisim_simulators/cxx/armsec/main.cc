@@ -39,25 +39,26 @@ namespace armsec
   
   struct Label
   {
-    struct Program
+    struct Program :  public std::map<int,std::string>
     {
-      std::vector<char const*> insns;
-      std::set<std::string> statements;
+      typedef std::map<int,std::string> MapType;
+      typedef MapType::iterator iterator;
+      typedef MapType::const_iterator const_iterator;
+
+
+      Program() : insn_count(0) {}
       
-      uintptr_t size() const { return insns.size(); }
-      uintptr_t allocate() { uintptr_t nid = insns.size(); insns.push_back(0); return nid; }
-      void write(int id, std::string const& s)
+      int next_insn() const { return insn_count; }
+      int allocate() { return insn_count++; }
+      iterator write(int idx, std::string const& s)
       {
-        char const*& insn = insns.at(id);
-        if (insn) throw std::runtime_error("overwriting statement");
-        insn = statements.insert( s ).first->c_str();
+        iterator itr = lower_bound(idx);
+        if (itr != end() and itr->first == idx)
+          throw std::runtime_error("overwriting statement");
+        return insert( itr, std::make_pair(idx,s) );
       }
-      char const* operator [] ( uintptr_t idx ) const
-      {
-        char const* res = insns.at(idx);
-        if (not res) throw std::runtime_error("empty instruction");
-        return res;
-      }
+    
+      int insn_count;
     };
     
     
@@ -74,24 +75,21 @@ namespace armsec
     
     bool valid() const { return id >= 0; }
     
-    int write( std::string const& src, int next=-1 )
+    static bool subst_next( std::string& s, int next )
     {
-      uintptr_t pos = src.find( "<next>" );
+      uintptr_t pos = s.find( "<next>" );
       if (pos == std::string::npos)
-        {
-          program.write( id, src );
-          return id;
-        }
-      
-      int insn = id;
-      id = (next == -1) ? program.allocate() : next;
-      
-      std::string stmt(src);
-      { std::ostringstream buf; buf << id; stmt.replace(pos, 6, buf.str()); }
-      
-      program.write( insn, stmt );
-      
-      return insn;
+        return false;
+      { std::ostringstream buf; buf << next; s.replace(pos, 6, buf.str()); }
+      return true;
+    }
+    
+    int write( std::string const& src )
+    {
+      Program::iterator insn = program.write( id, src );
+      if (subst_next(insn->second, program.next_insn()))
+        id = program.allocate();
+      return insn->first;
     }
     
     int GetID() const { return id; }
@@ -106,7 +104,7 @@ namespace armsec
     typedef unisim::util::symbolic::Expr Expr;
     virtual int GenCode( Label& label, std::ostream& sink ) const = 0;
     static  int GenerateCode( Expr const& expr, Label& label, std::ostream& sink );
-  };
+ };
 
   struct GetCode
   {
@@ -117,9 +115,9 @@ namespace armsec
       return sink;
     }
   };
-    
+  
   int
-  ASExprNode::GenerateCode( ASExprNode::Expr const& expr, Label& label, std::ostream& sink )
+  ASExprNode::GenerateCode(Expr const& expr, Label& label, std::ostream& sink)
   {
     using unisim::util::symbolic::ConstNodeBase;
     using unisim::util::symbolic::ScalarType;
@@ -208,7 +206,7 @@ namespace armsec
               case Op::BSR:
                 {
                   Label head(label);
-                  int exit = label.allocate(), loop;
+                  int exit = label.allocate(), loop; 
                   {
                     std::ostringstream buffer;
                     buffer << "bsr_in<32> := " << GetCode(node->GetSub(0),head) << " ; goto <next>";
@@ -611,7 +609,7 @@ namespace armsec
           case    ip: return "ip";
           case    sp: return "sp";
           case    lr: return "lr";
-          case    nia: return "pc";
+          case   nia: return "pc";
           case     n: return "n";
           case     z: return "z";
           case     c: return "c";
@@ -1109,7 +1107,8 @@ namespace armsec
       ~Head()
       {
         if (not pending.size()) return;
-        cur.write( pending, after );
+        Label::subst_next(pending, after);
+        cur.write( pending );
         pending.clear();
       }
       
@@ -1133,44 +1132,62 @@ namespace armsec
     
     {
       /* find common sub expressions */
-      struct
+      struct : public std::map<Expr,unsigned>
       {
-        void Recurse( Expr const& expr )
+        void Process( Expr const& expr )
         {
           for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
-            Process( expr->GetSub(idx) );
+            Recurse( expr->GetSub(idx) );
         }
       
-        void Process( Expr const& expr )
+        void Recurse( Expr const& expr )
         {
           if (not expr->SubCount())
             return;
           
-          if (occurences[expr]++)
+          if ((*this)[expr]++)
             return;
           
-          Recurse( expr );
+          Process( expr );
         }
+      } sestats;
       
-        std::map<Expr,unsigned> occurences;
-      } cse;
-    
       for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
         {
-          cse.Recurse( *itr );
+          sestats.Process( *itr );
         }
-    
-      for (std::map<Expr,unsigned>::iterator itr = cse.occurences.begin(), end = cse.occurences.end(); itr != end; ++itr)
+      
+      struct CSE : public std::multimap<unsigned,Expr>
+      {
+        void Process( Expr const& expr )
+        {
+          insert( std::make_pair( CountSubs( expr ), expr ) );
+        }
+        unsigned CountSubs( Expr const& expr )
+        {
+          unsigned sum = 1;
+          for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
+            sum += CountSubs( expr->GetSub(idx) );
+          return sum;
+        }
+      } cse;
+      
+      for (std::map<Expr,unsigned>::iterator itr = sestats.begin(), end = sestats.end(); itr != end; ++itr)
         {
           if (itr->second < 2)
             continue;
+          cse.Process(itr->first);
+        }
+      
+      for (std::multimap<unsigned,Expr>::const_iterator itr = cse.begin(), end = cse.end(); itr != end; ++itr)
+        {
           std::string tmp_src;
           Expr        tmp_dst;
           {
             std::ostringstream buffer;
-            int retsize = ASExprNode::GenerateCode( itr->first, head.current(), buffer );
+            int retsize = ASExprNode::GenerateCode( itr->second, head.current(), buffer );
             tmp_src = buffer.str();
-            tmp_dst = ctx.make_tmp( retsize, itr->first );
+            tmp_dst = ctx.make_tmp( retsize, itr->second );
           }
           std::ostringstream buffer;
           buffer << GetCode(tmp_dst, head.current()) << " := " << tmp_src << "; goto <next>";
@@ -1434,10 +1451,12 @@ struct Decoder
     std::cout << "(mnemonic . \""; trans.disasm( std::cout ); std::cout << "\")\n";
     
     armsec::Label::Program program;
+    
     if (trans.Generate( program ))
       {
-        for (uintptr_t idx = 0; idx < program.size(); idx += 1)
-          std::cout << '(' << armsec::dbx( 32, addr ) << ',' << idx << ") " << program[idx] << std::endl;
+        typedef armsec::Label::Program::const_iterator Iterator;
+        for (Iterator itr = program.begin(), end = program.end(); itr != end; ++itr)
+          std::cout << "(" << armsec::dbx( 32, addr ) << ',' << itr->first << ") " << itr->second << std::endl;
       }
     else
       {
