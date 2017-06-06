@@ -280,7 +280,7 @@ struct CR : Register<CR, 32>
 public:
 	typedef Register<CR, 32> Super;
 	
-	struct CR0
+	struct CR0 : Field<CR0,0,3>
 	{
 		struct LT : Field<LT,0> {};
 		struct GT : Field<GT,1> {};
@@ -288,7 +288,7 @@ public:
 		struct SO : Field<SO,3> {};
 		typedef FieldSet<LT, GT, EQ, SO> ALL;
 	};
-	struct CR1
+	struct CR1 : Field<CR1,4,7>
 	{
 		struct LT : Field<LT,4> {};
 		struct GT : Field<GT,5> {};
@@ -296,7 +296,7 @@ public:
 		struct SO : Field<SO,7> {};
 		typedef FieldSet<LT, GT, EQ, SO> ALL;
 	};
-	struct CR2
+	struct CR2 : Field<CR2,8,11>
 	{
 		struct LT : Field<LT,8> {};
 		struct GT : Field<GT,9> {};
@@ -304,7 +304,7 @@ public:
 		struct SO : Field<SO,11> {};
 		typedef FieldSet<LT, GT, EQ, SO> ALL;
 	};
-	struct CR3
+	struct CR3 : Field<CR3,12,15>
 	{
 		struct LT : Field<LT,12> {};
 		struct GT : Field<GT,13> {};
@@ -312,7 +312,7 @@ public:
 		struct SO : Field<SO,15> {};
 		typedef FieldSet<LT, GT, EQ, SO> ALL;
 	};
-	struct CR4
+	struct CR4 : Field<CR4,16,19>
 	{
 		struct LT : Field<LT,16> {};
 		struct GT : Field<GT,17> {};
@@ -320,7 +320,7 @@ public:
 		struct SO : Field<SO,19> {};
 		typedef FieldSet<LT, GT, EQ, SO> ALL;
 	};
-	struct CR5
+	struct CR5 : Field<CR5,20,23>
 	{
 		struct LT : Field<LT,20> {};
 		struct GT : Field<GT,21> {};
@@ -328,7 +328,7 @@ public:
 		struct SO : Field<SO,23> {};
 		typedef FieldSet<LT, GT, EQ, SO> ALL;
 	};
-	struct CR6
+	struct CR6 : Field<CR6,24,27>
 	{
 		struct LT : Field<LT,24> {};
 		struct GT : Field<GT,25> {};
@@ -336,7 +336,7 @@ public:
 		struct SO : Field<SO,27> {};
 		typedef FieldSet<LT, GT, EQ, SO> ALL;
 	};
-	struct CR7
+	struct CR7 : Field<CR7,28,31>
 	{
 		struct LT : Field<LT,28> {};
 		struct GT : Field<GT,29> {};

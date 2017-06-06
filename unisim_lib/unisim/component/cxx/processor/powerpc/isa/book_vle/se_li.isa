@@ -42,7 +42,7 @@ op se_li(9[5]:ui[7]:sext srx[4]);
 se_li.var rx : {uint8_t} = {srx & 31};
 
 se_li.execute = {
-	uint32_t result = ui;
+	uint32_t result = uint32_t(ui);
 	cpu->SetGPR(rx, result);
 	
 	return true;

@@ -47,6 +47,7 @@ using unisim::util::arithmetic::SignedAdd32;
 using unisim::util::arithmetic::UnsignedAdd32;
 using unisim::util::arithmetic::RotateLeft;
 using unisim::util::arithmetic::CountLeadingZeros;
+using unisim::util::arithmetic::BitScanReverse;
 using unisim::util::arithmetic::SignExtend;
 using unisim::util::arithmetic::SignedSatAdd32;
 using unisim::util::arithmetic::UnsignedSatAdd32;

@@ -36,69 +36,55 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 }
 
-op divwu(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:459[9]:rc[1])
+op divwu(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:459[9]:rc[1]);
+
 divwu.execute = {
 	// Read the input operands
-	uint32_t a = cpu->GetGPR(ra);
-	uint32_t b = cpu->GetGPR(rb);
+	uint32_t a = int32_t( cpu->GetGPR(ra) );
+	uint32_t b = int32_t( cpu->GetGPR(rb) );
+	XER& xer = cpu->GetXER();
+	uint32_t result;
 	
-	if(unlikely(b == 0))
+	if(unlikely(b == uint32_t(0)))
 	{
-		// Write back the result (zero)
-		cpu->SetGPR(rd, 0);
-		
-		if(unlikely(oe || rc))
-		{
-			XER& xer = cpu->GetXER();
+		// Compute the result (0)
+		result = uint32_t(-1);
 			
-			if(unlikely(oe))
-			{
-				// Generate XER[OV] and XER[SO]: XER[OV]=1 XER[SO]=1
-				xer.Set<XER::OV>(1);
-				xer.Set<XER::SO>(1);
-			}
-			if(unlikely(rc))
-			{
-				// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=0 CR0[GT]=0 CR0[EQ]=1
-				CR& cr = cpu->GetCR();
-				cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-				cr.Set<CR::CR0::LT>(0);
-				cr.Set<CR::CR0::GT>(0);
-				cr.Set<CR::CR0::EQ>(1);
-			}
+		if(unlikely(oe))
+		{
+			// Generate XER[OV] and XER[SO]: XER[OV]=1 XER[SO]=1
+			xer.Set<XER::OV>(1);
+			xer.Set<XER::SO>(1);
 		}
 	}
 	else
 	{
 		// Compute the result
-		uint32_t result = a / b ;
-		
-		// Write back the result
-		cpu->SetGPR(rd, result);
-		
-		if(unlikely(oe || rc))
-		{
-			XER& xer = cpu->GetXER();
+		result = a / b ;
 			
-			if(unlikely(oe))
-			{
-				// Generate XER[OV]: XER[OV]=0
-				xer.Set<XER::OV>(0);
-			}
-			if(unlikely(rc))
-			{
-				// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
-				CR& cr = cpu->GetCR();
-				cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-				cr.Set<CR::CR0::LT>((int32_t) result < 0);
-				cr.Set<CR::CR0::GT>((int32_t) result > 0);
-				cr.Set<CR::CR0::EQ>((int32_t) result == 0);
-			}
+		if(unlikely(oe))
+		{
+			// Generate XER[OV]: XER[OV]=0
+			xer.Set<XER::OV>(0);
 		}
+	}
+	
+	// Write back the result
+	cpu->SetGPR(rd, result);
+		
+	if(unlikely(rc))
+	{
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		CR& cr = cpu->GetCR();
+		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
+		cr.Set<CR::CR0::LT>(int32_t(result) < int32_t(0));
+		cr.Set<CR::CR0::GT>(int32_t(result) > int32_t(0));
+		cr.Set<CR::CR0::EQ>(result == uint32_t(0));
 	}
 	
 	return true;
 }
+
 divwu.disasm = {
 	os << "divwu" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 }

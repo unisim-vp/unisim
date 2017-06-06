@@ -47,8 +47,8 @@ e_crxor.execute = {
 	a = c << crba;
 	b = c << crbb;
 	d = (a ^ b) >> crbd;
-	m = 0x80000000UL >> crbd;
-	cr = (c & m) | d;
+	m = uint32_t(0x80000000UL >> crbd);
+	cr = (c & ~m) | (d & m);
 	return true;
 }
 

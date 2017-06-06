@@ -36,28 +36,30 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 }
 
-op mullw(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:235[9]:rc[1])
+op mullw(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:235[9]:rc[1]);
+
 mullw.execute = {
 	// Read the input operands
-	uint32_t a = cpu->GetGPR(ra);
-	uint32_t b = cpu->GetGPR(rb);
+	int64_t a = int64_t( int32_t( cpu->GetGPR(ra) ) );
+	int64_t b = int64_t( int32_t( cpu->GetGPR(rb) ) );
 	
 	// Compute the result
-	int64_t result64 = (int64_t) a * (int64_t) b;
-	uint32_t result = (uint32_t) result64;
+	int64_t result64 = a * b;
+	int32_t result = int32_t( result64 );
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
 	
-	if(unlikely(oe || rc))
+	if(unlikely(oe or rc))
 	{
 		XER& xer = cpu->GetXER();
 		
-		if(oe && (0xFFFFFFFF00000000ULL & result64) != 0)
+		if(oe)
 		{
-			// Generate XER[OV] and XER[SO]: XER[OV]=1 XER[SO]=1
-			xer.Set<XER::OV>(1);
-			xer.Set<XER::SO>(1);
+			uint32_t overflow = uint32_t(result64 != int64_t(result));
+			// Generate XER[OV] and XER[SO]: XER[OV]=overflow XER[SO]=1
+			xer.Set<XER::OV>(overflow);
+			xer.Set<XER::SO>(xer.Get<XER::SO>() | overflow);
 		}
 		if(unlikely(rc))
 		{
@@ -65,16 +67,17 @@ mullw.execute = {
 			XER& xer = cpu->GetXER();
 			CR& cr = cpu->GetCR();
 			cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-			cr.Set<CR::CR0::LT>((int32_t) result < 0);
-			cr.Set<CR::CR0::GT>((int32_t) result > 0);
-			cr.Set<CR::CR0::EQ>((int32_t) result == 0);
+			cr.Set<CR::CR0::LT>(result < int32_t(0));
+			cr.Set<CR::CR0::GT>(result > int32_t(0));
+			cr.Set<CR::CR0::EQ>(result == int32_t(0));
 		}
 	}
 	
 	return true;
 }
+
 mullw.disasm = {
-	os << "mullw r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "mullw" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 }
 
 specialize mullw(rc=0,oe=0)

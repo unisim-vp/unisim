@@ -47,9 +47,9 @@ e_lmw.execute = {
 		return false;
 	}
 	
-	ADDRESS ea = ra ? (cpu->GetGPR(ra) + d) : d;
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) : uint32_t(0)) + uint32_t(d);
 	
-	if(unlikely((ea & 3) != 0))
+	if(unlikely((ea & uint32_t(3)) != uint32_t(0)))
 	{
 		cpu->ThrowException<CPU::AlignmentInterrupt::UnalignedLoadStoreMultiple>();
 		return false;
@@ -59,7 +59,7 @@ e_lmw.execute = {
 	for(r = rd; r < 32; r++)
 	{
 		if(unlikely(!cpu->Int32Load(r, ea))) return false;
-		ea = ea + 4;
+		ea = ea + uint32_t(4);
 	}
 	
 	return true;

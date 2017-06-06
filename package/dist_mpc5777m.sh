@@ -204,8 +204,8 @@ unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/andc.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmp.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmpl.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cntlzw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divw.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divwu.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divw_sat.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divwu_sat.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/eqv.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/extsb.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/extsh.isa \

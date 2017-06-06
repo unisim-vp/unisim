@@ -46,15 +46,15 @@ e_and2i_.execute = {
 	uint32_t d = cpu->GetGPR(rd);
 	
 	// Compute the result
-	uint32_t result = d & ui;
+	uint32_t result = d & uint32_t(ui);
 	
 	// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 	XER& xer = cpu->GetXER();
 	CR& cr = cpu->GetCR();
 	cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-	cr.Set<CR::CR0::LT>((int32_t) result < 0);
-	cr.Set<CR::CR0::GT>((int32_t) result > 0);
-	cr.Set<CR::CR0::EQ>((int32_t) result == 0);
+	cr.Set<CR::CR0::LT>(int32_t(result) < int32_t(0));
+	cr.Set<CR::CR0::GT>(int32_t(result) > int32_t(0));
+	cr.Set<CR::CR0::EQ>(result == uint32_t(0));
 
 	// Write back the result
 	cpu->SetGPR(rd, result);

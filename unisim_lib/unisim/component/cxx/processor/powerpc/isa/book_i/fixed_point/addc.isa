@@ -49,7 +49,7 @@ addc.execute = {
 	XER& xer = cpu->GetXER();
 	
 	// Compute the result
-	SignedAdd32(result, carry, overflow, sign, a, b, 0);
+	SignedAdd32(result, carry, overflow, sign, a, b, uint8_t(0));
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -61,7 +61,7 @@ addc.execute = {
 	{
 		// Generate XER[OV] and XER[SO]
 		xer.Set<XER::OV>(overflow);
-		if(overflow) xer.Set<XER::SO>(1);
+		xer.Set<XER::SO>(xer.Get<XER::SO>() | uint32_t(overflow));
 	}
 
 	if(unlikely(rc))
@@ -69,9 +69,9 @@ addc.execute = {
 		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>((int32_t) result < 0);
-		cr.Set<CR::CR0::GT>((int32_t) result > 0);
-		cr.Set<CR::CR0::EQ>((int32_t) result == 0);
+		cr.Set<CR::CR0::LT>(int32_t(result) < int32_t(0));
+		cr.Set<CR::CR0::GT>(int32_t(result) > int32_t(0));
+		cr.Set<CR::CR0::EQ>(result == uint32_t(0));
 	}
 	
 	return true;

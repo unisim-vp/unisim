@@ -43,8 +43,8 @@ e_cmp16i.var si : { int32_t } = { si_h | si_l }
 
 e_cmp16i.execute = {
 	// Read the input operands
-	int32_t a = cpu->GetGPR(ra);
-	int32_t b = si;
+	int32_t a = int32_t( cpu->GetGPR(ra) );
+	int32_t b = int32_t( si );
 
 	// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(a<b) CR0[GT]=(a>b) CR0[EQ]=(a==b)
 	XER& xer = cpu->GetXER();

@@ -50,9 +50,4 @@ stbux.execute = {
 }
 stbux.disasm = {
 	os << "stbux r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-	if(cpu && (cpu->GetCIA() == this->GetAddr()))
-	{
-		ADDRESS ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
 }

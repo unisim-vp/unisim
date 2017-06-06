@@ -41,9 +41,4 @@ stwbrx.execute = {
 }
 stwbrx.disasm = {
 	os << "stwbrx r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-	if(cpu && (cpu->GetCIA() == this->GetAddr()))
-	{
-		ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
 }

@@ -46,7 +46,7 @@ e_or2is.execute = {
 	uint32_t d = cpu->GetGPR(rd);
 	
 	// Compute the result
-	uint32_t result = d | ui;
+	uint32_t result = d | uint32_t(ui);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);

@@ -42,7 +42,7 @@ op e_stb(13[6]:rs[5]:ra[5]:sext d[16]);
 
 e_stb.execute = {
 	// compute the effective address
-	ADDRESS ea = (ra ? cpu->GetGPR(ra) + d : d);
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) : uint32_t(0)) + uint32_t(d);
 	// do the memory access
 	return cpu->Int8Store(rs, ea);
 }

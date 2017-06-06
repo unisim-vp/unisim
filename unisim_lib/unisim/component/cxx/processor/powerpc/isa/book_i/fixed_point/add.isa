@@ -55,7 +55,7 @@ add.execute = {
 		uint8_t sign; // sign
 
 		// Compute the result
-		SignedAdd32(result, ca, ov, sign, a, b, 0);
+		SignedAdd32(result, ca, ov, sign, a, b, uint8_t(0));
 		
 		// Read XER
 		//uint32_t xer = cpu->GetXER();
@@ -64,7 +64,7 @@ add.execute = {
 			// Generate XER[OV] and XER[SO]
 			XER& xer = cpu->GetXER();
 			xer.Set<XER::OV>(ov);
-			if(ov) xer.Set<XER::SO>(1);
+			xer.Set<XER::SO>(xer.Get<XER::SO>() | uint32_t(ov));
 		}
 		if(rc)
 		{
@@ -72,9 +72,9 @@ add.execute = {
 			XER& xer = cpu->GetXER();
 			CR& cr = cpu->GetCR();
 			cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-			cr.Set<CR::CR0::LT>((int32_t) result < 0);
-			cr.Set<CR::CR0::GT>((int32_t) result > 0);
-			cr.Set<CR::CR0::EQ>((int32_t) result == 0);
+			cr.Set<CR::CR0::LT>(int32_t(result) < int32_t(0));
+			cr.Set<CR::CR0::GT>(int32_t(result) > int32_t(0));
+			cr.Set<CR::CR0::EQ>((result == uint32_t(0)));
 		}
 	}
 	

@@ -42,7 +42,7 @@ op se_bmaski(11[6]:0[1]:ui5[5]:sext srx[4]);
 se_bmaski.var rx : {uint8_t} = {srx & 31};
 
 se_bmaski.execute = {
-	uint32_t result = ~((0x80000000UL >> ui5) - 1);
+	uint32_t result = uint32_t( (ui5 ? uint32_t(1) << ui5 : uint32_t(0)) - 1 );
 	cpu->SetGPR(rx, result);
 	
 	return true;

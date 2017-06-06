@@ -46,7 +46,7 @@ se_extzb.execute = {
 	uint32_t s = cpu->GetGPR(rx);
 	
 	// Compute the result
-	uint32_t result = (uint8_t) s;
+	uint32_t result = uint32_t(uint8_t(s));
 	
 	// Write back the result
 	cpu->SetGPR(rx, result);

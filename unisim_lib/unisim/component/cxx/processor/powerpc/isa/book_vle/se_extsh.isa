@@ -43,10 +43,10 @@ se_extsh.var rx : {uint8_t} = {srx & 31};
 
 se_extsh.execute = {
 	// Read the input operands
-	uint32_t s = cpu->GetGPR(rx);
+	int16_t s = int16_t(cpu->GetGPR(rx));
 	
 	// Compute the result
-	uint32_t result = (uint32_t)(int32_t)(int16_t)(uint16_t) s;
+	int32_t result = int32_t( s );
 	
 	// Write back the result
 	cpu->SetGPR(rx, result);

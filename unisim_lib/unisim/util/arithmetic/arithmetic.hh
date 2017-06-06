@@ -525,7 +525,7 @@ inline void UnsignedSub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow
 	uint8_t res7 = (res >> 7) & 1;
 	uint8_t b6 = res7 ^ x7 ^ y7;
 	uint8_t b7 = ((~x7 & y7) | (b6 & (~x7 | y7))) & 1;
-	overflow = borrow_out = b17;
+	overflow = borrow_out = b7;
 	result = res;
 	sign = (int8_t) res < 0;
 #endif
