@@ -91,6 +91,27 @@ namespace cache {
 /////////////////////////////// DECLARATIONS //////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+//////////////////////////// MemoryAccessType /////////////////////////////////
+
+enum MemoryAccessType
+{
+	MAT_WRITE = 0,
+	MAT_READ  = 1,
+	MAT_EXEC  = 2
+};
+
+///////////////////////////// LocalMemoryType /////////////////////////////////
+
+enum LocalMemoryType
+{
+	NULL_LOC_MEM        = 0, // null local memory
+	DATA_LOC_MEM        = 1, // data local memory
+	INSTRUCTION_LOC_MEM = 2, // instruction local memory
+	UNIFIED_LOC_MEM     = 3, // unified local memory (both data and instruction)
+};
+
+inline std::ostream& operator << (std::ostream& os, const LocalMemoryType& lmt);
+
 ///////////////////////// CacheType /////////////////////////////
 
 enum CacheType
@@ -125,6 +146,15 @@ inline std::ostream& operator << (std::ostream& os, const CacheWritingPolicy& cw
 
 /////////////////////////// Forward declarations //////////////////////////////
 
+template <typename TYPES> struct AccessControl;
+template <typename TYPES, typename ACCESS_CONTROLLER> struct AccessController;
+template <typename TYPES> struct NullLocalMemory;
+template <typename TYPES> struct NullLocalMemory1;
+template <typename TYPES> struct NullLocalMemory2;
+template <typename TYPES> struct NullLocalMemory3;
+template <typename TYPES> struct NullLocalMemory4;
+template <typename TYPES, typename _LOC_MEM1, typename _LOC_MEM2, typename _LOC_MEM3, typename _LOC_MEM4> struct LocalMemorySet;
+template <typename TYPES, typename CONFIG, typename LOC_MEM> struct LocalMemory;
 template <typename TYPES, typename CACHE> struct CacheAccess;
 struct CacheBlockStatus;
 struct CacheLineStatus;
@@ -141,28 +171,182 @@ template <typename TYPES> struct NullCache4;
 template <typename TYPES, typename _L1CACHE, typename _L2CACHE, typename _L3CACHE, typename _L4CACHE> struct CacheHierarchy;
 template <typename TYPES, typename MSS> struct MemorySubSystem;
 
+////////////////////////////// AccessControl<> ////////////////////////////////
+
+template <typename TYPES>
+struct AccessControl
+{
+	/////////////////////////////////////////////////////////////// input /////////// output /////////
+	typename TYPES::ADDRESS addr;                            // ControlAccess            X
+	MemoryAccessType mem_access_type;                        // ControlAccess            X
+	typename TYPES::ADDRESS size_to_protection_boundary;     //       X            ControlAccess        // Note: zero means until the end of address space
+	typename TYPES::PHYSICAL_ADDRESS phys_addr;              //       X            ControlAccess
+	typename TYPES::STORAGE_ATTR storage_attr;               //       X            ControlAccess
+};
+
+///////////////////////////// AccessControler<> ///////////////////////////////
+
+template <typename TYPES, typename ACCESS_CONTROLLER>
+struct AccessController
+{
+	AccessController();
+	~AccessController();
+	
+	template <bool DEBUG> bool ControlAccess(AccessControl<TYPES>& access_control) ALWAYS_INLINE;
+private:
+	template <bool DEBUG> bool __MSS_ControlAccess__(AccessControl<TYPES>& access_control) ALWAYS_INLINE;
+};
+
+/////////////////////////// NullLocalMemoryConfig /////////////////////////////
+
+struct NullLocalMemoryConfig
+{
+	static const LocalMemoryType TYPE = NULL_LOC_MEM;
+	static const unsigned int BASE_ADDRESS = 0;
+	static const unsigned int SIZE = 1;
+};
+
+///////////////////////////// NullLocalMemory<> ////////////////////////////////
+
+template <typename TYPES>
+struct NullLocalMemory : LocalMemory<TYPES, NullLocalMemoryConfig, NullLocalMemory<TYPES> >
+{
+	static const char *GetLocalMemoryName() { return "NullLocalMemory"; }
+};
+
+//////////////////////////// NullLocalMemory1<> ////////////////////////////////
+
+template <typename TYPES>
+struct NullLocalMemory1 : LocalMemory<TYPES, NullLocalMemoryConfig, NullLocalMemory1<TYPES> >
+{
+	static const char *GetLocalMemoryName() { return "NullLocalMemory1"; }
+};
+
+//////////////////////////// NullLocalMemory2<> ////////////////////////////////
+
+template <typename TYPES>
+struct NullLocalMemory2 : LocalMemory<TYPES, NullLocalMemoryConfig, NullLocalMemory2<TYPES> >
+{
+	static const char *GetLocalMemoryName() { return "NullLocalMemory2"; }
+};
+
+//////////////////////////// NullLocalMemory3<> ////////////////////////////////
+
+template <typename TYPES>
+struct NullLocalMemory3 : LocalMemory<TYPES, NullLocalMemoryConfig, NullLocalMemory3<TYPES> >
+{
+	static const char *GetLocalMemoryName() { return "NullLocalMemory3"; }
+};
+
+//////////////////////////// NullLocalMemory4<> ////////////////////////////////
+
+template <typename TYPES>
+struct NullLocalMemory4 : LocalMemory<TYPES, NullLocalMemoryConfig, NullLocalMemory4<TYPES> >
+{
+	static const char *GetLocalMemoryName() { return "NullLocalMemory4"; }
+};
+
+///////////////////////////// LocalMemorySet<> ////////////////////////////////
+
+template <typename TYPES, typename _LOC_MEM1 = NullLocalMemory1<TYPES>, typename _LOC_MEM2 = NullLocalMemory2<TYPES>, typename _LOC_MEM3 = NullLocalMemory3<TYPES>, typename _LOC_MEM4 = NullLocalMemory4<TYPES> >
+struct LocalMemorySet
+{
+	typedef _LOC_MEM1 LOC_MEM1;
+	typedef _LOC_MEM2 LOC_MEM2;
+	typedef _LOC_MEM3 LOC_MEM3;
+	typedef _LOC_MEM4 LOC_MEM5;
+	
+	template <typename _LOC_MEM, bool dummy = true>
+	struct NextLocalMemory
+	{
+		typedef NullLocalMemory<TYPES> LOC_MEM;
+	};
+	
+	template <bool dummy>
+	struct NextLocalMemory<_LOC_MEM1, dummy>
+	{
+		typedef _LOC_MEM2 LOC_MEM;
+	};
+
+	template <bool dummy>
+	struct NextLocalMemory<_LOC_MEM2, dummy>
+	{
+		typedef _LOC_MEM3 LOC_MEM;
+	};
+
+	template <bool dummy>
+	struct NextLocalMemory<_LOC_MEM3, dummy>
+	{
+		typedef _LOC_MEM4 LOC_MEM;
+	};
+};
+
+////////////////////////////// LocalMemory<> //////////////////////////////////
+
+template <typename TYPES, typename CONFIG, typename LOC_MEM>
+struct LocalMemory
+{
+	typedef CONFIG LOC_MEM_CONFIG;
+	static const LocalMemoryType TYPE = CONFIG::TYPE;
+	static const typename TYPES::PHYSICAL_ADDRESS BASE_ADDRESS = CONFIG::BASE_ADDRESS;
+	static const unsigned int SIZE = CONFIG::SIZE;
+	
+	LocalMemory();
+	~LocalMemory();
+	
+	static inline bool IsNullLocalMemory() ALWAYS_INLINE;
+	static inline bool IsDataLocalMemoryOnly() ALWAYS_INLINE;
+	static inline bool IsDataLocalMemory() ALWAYS_INLINE;
+	static inline bool IsInstructionLocalMemoryOnly() ALWAYS_INLINE;
+	static inline bool IsInstructionLocalMemory() ALWAYS_INLINE;
+	static inline bool IsUnifiedLocalMemory() ALWAYS_INLINE;
+	
+	inline uint8_t& GetByteByOffset(unsigned int offset) ALWAYS_INLINE;
+	inline uint8_t& operator [] (unsigned int offset) ALWAYS_INLINE;
+	
+	///////////////// To be overriden by derived class ////////////////////////
+	
+	inline bool IsVerbose() const ALWAYS_INLINE;
+	inline typename TYPES::PHYSICAL_ADDRESS GetBaseAddress() const;
+	inline unsigned int GetSize() const;
+
+	///////////////////////////////////////////////////////////////////////////
+private:
+	uint8_t bytes[CONFIG::SIZE];
+
+	template <typename, typename MSS> friend struct MemorySubSystem;
+	
+	//////////////////// trampoline to overridable methods /////////////////////
+	
+	static inline const char *__MSS_GetLocalMemoryName__() ALWAYS_INLINE;
+	inline bool __MSS_IsVerbose__() const ALWAYS_INLINE;
+	inline typename TYPES::PHYSICAL_ADDRESS __MSS_GetBaseAddress__() const ALWAYS_INLINE;
+	inline unsigned int __MSS_GetSize__() const ALWAYS_INLINE;
+};
+
 /////////////////////////////// CacheAccess<> /////////////////////////////////
 
 template <typename TYPES, typename CACHE>
 struct CacheAccess
 {
 	///////////////////////////////// input ///////////////////////////////////
-	typename TYPES::ADDRESS addr;              // address
+	typename TYPES::PHYSICAL_ADDRESS phys_addr;              // phys_address
 	typename TYPES::STORAGE_ATTR storage_attr; // storage attribute
 	bool rwitm;                                // read with intent to modify
 	
-	////////////////////////////////////////////////////////////////////////////////////// input ////////////////// output //////////
-	typename TYPES::ADDRESS line_base_addr;                                    //            X              Lookup
-	typename TYPES::ADDRESS block_base_addr;                                   //            X              Lookup
-	unsigned int index;                                                        //            X              Lookup/ChooseLineToEvict
-	unsigned int way;                                                          //            X              Lookup
-	unsigned int sector;                                                       //            X              Lookup
-	unsigned int offset;                                                       //            X              Lookup
-	unsigned int size_to_block_boundary;                                       //            X              Lookup
-	CacheSet<TYPES, typename CACHE::CACHE_CONFIG> *set;                        //            X              Lookup
-	CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *line;                      //            X              Lookup
-	CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *line_to_write_back_evict;  // WriteBackLine/EvictLine     X
-	CacheBlock<TYPES, typename CACHE::CACHE_CONFIG> *block;                    //       FillBlock           Lookup
+	////////////////////////////////////////////////////////////////////////////////////// input ////////////////////// output //////////
+	typename TYPES::PHYSICAL_ADDRESS line_base_phys_addr;                      //            X                          Lookup
+	typename TYPES::PHYSICAL_ADDRESS block_base_phys_addr;                     //            X                          Lookup
+	unsigned int index;                                                        //            X                  Lookup/ChooseLineToEvict
+	unsigned int way;                                                          //            X                          Lookup
+	unsigned int sector;                                                       //            X                          Lookup
+	unsigned int offset;                                                       //            X                          Lookup
+	unsigned int size_to_block_boundary;                                       //            X                          Lookup
+	Cache<TYPES, typename CACHE::CACHE_CONFIG, CACHE> *cache;                  // WriteBackLine/EvictLine/FillBlock     Lookup 
+	CacheSet<TYPES, typename CACHE::CACHE_CONFIG> *set;                        //            X                          Lookup
+	CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *line;                      //            X                          Lookup
+	CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *line_to_write_back_evict;  // WriteBackLine/EvictLine                 X
+	CacheBlock<TYPES, typename CACHE::CACHE_CONFIG> *block;                    //       FillBlock                       Lookup
 };
 
 /////////////////////////// CacheBlockStatus<> //////////////////////////////////
@@ -203,8 +387,9 @@ public:
 	CacheBlock();
 	~CacheBlock();
 	inline uint8_t& operator [] (unsigned int offset) ALWAYS_INLINE;
-	static inline void DecodeAddress(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& base_addr, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
-	inline typename TYPES::ADDRESS GetBaseAddr() const ALWAYS_INLINE;
+	inline uint8_t& GetByteByOffset(unsigned int offset) ALWAYS_INLINE;
+	static inline void DecodeAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& base_phys_addr, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
+	inline typename TYPES::PHYSICAL_ADDRESS GetBaseAddress() const ALWAYS_INLINE;
 	inline void Zero() ALWAYS_INLINE;
 	inline void Write(const void *buffer, unsigned int offset, unsigned int size) ALWAYS_INLINE;
 	inline void Read(void *buffer, unsigned int offset, unsigned int size) ALWAYS_INLINE;
@@ -220,9 +405,9 @@ public:
 	inline unsigned int GetSector() const;
 protected:
 	friend struct CacheLine<TYPES, CONFIG>;
-	inline void SetBaseAddr(typename TYPES::ADDRESS base_addr);
+	inline void SetBaseAddress(typename TYPES::PHYSICAL_ADDRESS base_phys_addr);
 private:
-	typename TYPES::ADDRESS base_addr;
+	typename TYPES::PHYSICAL_ADDRESS base_phys_addr;
 	typename CONFIG::BLOCK_STATUS status;
 	unsigned int sector;
 	uint8_t storage[CONFIG::BLOCK_SIZE];
@@ -238,9 +423,10 @@ public:
 	~CacheLine();
 
 	inline void SetWay(unsigned int way) ALWAYS_INLINE;
-	inline void SetBaseAddr(typename TYPES::ADDRESS addr) ALWAYS_INLINE;
-	inline typename TYPES::ADDRESS GetBaseAddr() const ALWAYS_INLINE;
-	static inline void DecodeAddress(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
+	inline void SetBaseAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr) ALWAYS_INLINE;
+	inline typename TYPES::PHYSICAL_ADDRESS GetBaseAddress() const ALWAYS_INLINE;
+	static inline void DecodeAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& line_base_phys_addr, typename TYPES::PHYSICAL_ADDRESS& block_base_phys_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
+	inline CacheBlock<TYPES, CONFIG>& GetBlockBySector(unsigned int sector) ALWAYS_INLINE;
 	inline CacheBlock<TYPES, CONFIG>& operator [] (unsigned int sector) ALWAYS_INLINE;
 
 	inline unsigned int GetWay() const ALWAYS_INLINE;
@@ -255,7 +441,7 @@ private:
 	bool valid;
 	CacheLine<TYPES, CONFIG> *next;
 	CacheLine<TYPES, CONFIG> *prev;
-	typename TYPES::ADDRESS base_addr;
+	typename TYPES::PHYSICAL_ADDRESS base_phys_addr;
 	unsigned int way;
 	typename CONFIG::LINE_STATUS status;
 	CacheBlock<TYPES, CONFIG> blocks[CONFIG::BLOCKS_PER_LINE];
@@ -270,7 +456,8 @@ public:
 	CacheSet();
 	~CacheSet();
 
-	static inline void DecodeAddress(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
+	static inline void DecodeAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& line_base_phys_addr, typename TYPES::PHYSICAL_ADDRESS& block_base_phys_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
+	inline CacheLine<TYPES, CONFIG>& GetLineByWay(unsigned int way) ALWAYS_INLINE;
 	inline CacheLine<TYPES, CONFIG>& operator [] (unsigned int way) ALWAYS_INLINE;
 
 	inline void InvalidateLineByWay(unsigned int way) ALWAYS_INLINE;
@@ -281,7 +468,7 @@ public:
 	
 	inline typename CONFIG::SET_STATUS& Status() ALWAYS_INLINE;
 	
-	inline CacheLine<TYPES, CONFIG> *AssociativeSearch(typename TYPES::ADDRESS line_base_addr) ALWAYS_INLINE;
+	inline CacheLine<TYPES, CONFIG> *AssociativeSearch(typename TYPES::PHYSICAL_ADDRESS line_base_phys_addr) ALWAYS_INLINE;
 
 protected:
 private:
@@ -311,15 +498,16 @@ struct Cache
 	Cache();
 	~Cache();
 
-	static inline void DecodeAddress(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& index, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
+	static inline void DecodeAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& line_base_phys_addr, typename TYPES::PHYSICAL_ADDRESS& block_base_phys_addr, unsigned int& index, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
+	inline CacheSet<TYPES, CONFIG>& GetSetByIndex(unsigned int index) ALWAYS_INLINE;
 	inline CacheSet<TYPES, CONFIG>& operator [] (unsigned int index) ALWAYS_INLINE;
 
 	inline void InvalidateSet(unsigned int index) ALWAYS_INLINE;
 	inline void InvalidateLineBySetAndWay(unsigned int index, unsigned int way) ALWAYS_INLINE;
 	inline void Invalidate() ALWAYS_INLINE;
-	inline CacheSet<TYPES, CONFIG> *LookupSet(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
-	inline CacheLine<TYPES, CONFIG> *LookupLine(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
-	inline CacheBlock<TYPES, CONFIG> *LookupBlock(typename TYPES::ADDRESS addr, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
+	inline CacheSet<TYPES, CONFIG> *LookupSet(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& line_base_phys_addr, typename TYPES::PHYSICAL_ADDRESS& block_base_phys_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
+	inline CacheLine<TYPES, CONFIG> *LookupLine(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& block_base_phys_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
+	inline CacheBlock<TYPES, CONFIG> *LookupBlock(typename TYPES::PHYSICAL_ADDRESS phys_addr, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
 	inline void Lookup(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
 	
 	static inline bool IsNullCache() ALWAYS_INLINE;
@@ -328,24 +516,41 @@ struct Cache
 	static inline bool IsInstructionCacheOnly() ALWAYS_INLINE;
 	static inline bool IsInstructionCache() ALWAYS_INLINE;
 	static inline bool IsUnifiedCache() ALWAYS_INLINE;
-	static inline bool IsWriteBackCache() ALWAYS_INLINE;
-	static inline bool IsWriteThroughCache() ALWAYS_INLINE;
-	static inline bool IsWriteAllocate() ALWAYS_INLINE;
-	static inline bool IsNotWriteAllocate() ALWAYS_INLINE;
+	static inline bool IsStaticWriteBackCache() ALWAYS_INLINE;
+	static inline bool IsStaticWriteThroughCache() ALWAYS_INLINE;
+	static inline bool IsStaticWriteAllocate() ALWAYS_INLINE;
+	static inline bool IsStaticNotWriteAllocate() ALWAYS_INLINE;
 	
 	static inline unsigned int NumSets() ALWAYS_INLINE;
 	static inline unsigned int NumWays() ALWAYS_INLINE;
 	static inline unsigned int NumSectors() ALWAYS_INLINE;
-protected:
-	static const char *GetName();
+	
+	///////////////// To be overriden by derived class ////////////////////////
+
+	inline bool IsVerbose() const ALWAYS_INLINE;
+	inline bool IsEnabled() const ALWAYS_INLINE;
+	inline bool IsWriteAllocate() const ALWAYS_INLINE;
+	inline bool ChooseLineToEvict(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
+	inline void UpdateReplacementPolicyOnAccess(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
+	inline void UpdateReplacementPolicyOnFill(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
+
+	///////////////////////////////////////////////////////////////////////////
 private:
 	unsigned int num_accesses;
 	unsigned int num_misses;
 	CacheSet<TYPES, CONFIG> sets[CONFIG::SIZE / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY];
 
 	template <typename, typename MSS> friend struct MemorySubSystem;
-	static inline const char *__MSS_GetName__() ALWAYS_INLINE;
-	static std::string GenName();
+	
+	//////////////////// trampoline to overridable methods /////////////////////
+
+	static inline const char *__MSS_GetCacheName__() ALWAYS_INLINE;
+	inline bool __MSS_IsVerbose__() const ALWAYS_INLINE;
+	inline bool __MSS_IsEnabled__() const ALWAYS_INLINE;
+	inline bool __MSS_IsWriteAllocate__() const  ALWAYS_INLINE;
+	inline bool __MSS_ChooseLineToEvict__(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
+	inline void __MSS_UpdateReplacementPolicyOnAccess__(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
+	inline void __MSS_UpdateReplacementPolicyOnFill__(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
 };
 
 //////////////////////////// NullCacheConfig //////////////////////////////////
@@ -366,27 +571,42 @@ struct NullCacheConfig
 
 ////////////////////////////// NullCache<> ///////////////////////////////////
 
-template <typename TYPES> struct NullCache : Cache<TYPES, NullCacheConfig, NullCache<TYPES> > {};
+template <typename TYPES> struct NullCache : Cache<TYPES, NullCacheConfig, NullCache<TYPES> >
+{
+	static const char *GetCacheName() { return "NullCache"; }
+};
 
 ////////////////////////////// NullCache1<> ///////////////////////////////////
 
 template <typename TYPES>
-struct NullCache1 : Cache<TYPES, NullCacheConfig, NullCache1<TYPES> > {};
+struct NullCache1 : Cache<TYPES, NullCacheConfig, NullCache1<TYPES> >
+{
+	static const char *GetCacheName() { return "NullCache1"; }
+};
 
 ////////////////////////////// NullCache2<> ///////////////////////////////////
 
 template <typename TYPES>
-struct NullCache2 : Cache<TYPES, NullCacheConfig, NullCache2<TYPES> > {};
+struct NullCache2 : Cache<TYPES, NullCacheConfig, NullCache2<TYPES> >
+{
+	static const char *GetCacheName() { return "NullCache2"; }
+};
 
 ////////////////////////////// NullCache3<> ///////////////////////////////////
 
 template <typename TYPES>
-struct NullCache3 : Cache<TYPES, NullCacheConfig, NullCache3<TYPES> > {};
+struct NullCache3 : Cache<TYPES, NullCacheConfig, NullCache3<TYPES> >
+{
+	static const char *GetCacheName() { return "NullCache3"; }
+};
 
 ////////////////////////////// NullCache4<> ///////////////////////////////////
 
 template <typename TYPES>
-struct NullCache4 : Cache<TYPES, NullCacheConfig, NullCache4<TYPES> > {};
+struct NullCache4 : Cache<TYPES, NullCacheConfig, NullCache4<TYPES> >
+{
+	static const char *GetCacheName() { return "NullCache4"; }
+};
 
 ////////////////////////////// CacheHierarchy<> /////////////////////////////////
 
@@ -656,93 +876,177 @@ private:
 
 ////////////////////////////// MemorySubSystem<> ////////////////////////////////
 
+// TYPES:
+//   - ADDRESS         : C++ type for a logical/effective address
+//   - PHYSICAL_ADDRESS: C++ type for a physical address
+//   - STORAGE_ATTR    : C++ type for storage attribute
 template <typename TYPES, typename MSS>
 struct MemorySubSystem
 {
 	/* Constructor */
 	MemorySubSystem();
 	
+	/* Destructor */
+	virtual ~MemorySubSystem();
+	
+	//////////////////// From the inside of the processor  ////////////////////
+	
 	/* Data Load */
-	bool DataLoad(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
+	bool DataLoad(typename TYPES::ADDRESS addr, void *buffer, unsigned int size);
 	
 	/* Data Store */
-	bool DataStore(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
+	bool DataStore(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size);
 	
 	/* Instruction Fetch */
-	bool InstructionFetch(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
+	bool InstructionFetch(typename TYPES::ADDRESS addr, void *buffer, unsigned int size);
 	
 	/* Debug Data Load */
-	bool DebugDataLoad(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
+	bool DebugDataLoad(typename TYPES::ADDRESS addr, void *buffer, unsigned int size);
 
 	/* Debug Data Store */
-	bool DebugDataStore(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
+	bool DebugDataStore(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size);
 	
 	/* Debug Instruction Fetch */
-	bool DebugInstructionFetch(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
+	bool DebugInstructionFetch(typename TYPES::ADDRESS addr, void *buffer, unsigned int size);
+	
+	/////////////////// From the outside of the processor  ////////////////////
+	
+	/* Incoming Load */
+	unsigned int IncomingLoad(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size);
+	
+	/* Incoming Store */
+	unsigned int IncomingStore(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size);
+
+	/* Incoming Debug Load */
+	unsigned int DebugIncomingLoad(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size);
+	
+	/* Incoming Debug Store */
+	unsigned int DebugIncomingStore(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size);
+	
+	/**** DMI */
+	
+	uint8_t *GetDirectAccess(typename TYPES::PHYSICAL_ADDRESS addr, typename TYPES::PHYSICAL_ADDRESS& start_addr, typename TYPES::PHYSICAL_ADDRESS& end_addr);
+	
+private:
+	/* Default access controller (no address translation, no protection) */
+	struct __MSS_AccessController__ : AccessController<TYPES, __MSS_AccessController__> {};
+	
+	typedef __MSS_AccessController__ ACCESS_CONTROLLER;
+	
 protected:
 	///////////////// To be overriden by derived class ////////////////////////
 
-#if 0	
+	// mandatory
+#if 0
+	inline LOC_MEM *GetLocalMemory(const LOC_MEM *null) ALWAYS_INLINE;
 	inline CACHE *GetCache(const CACHE *null) ALWAYS_INLINE;
-	inline bool IsCacheVerbose(const CACHE *null) ALWAYS_INLINE;
-	inline bool IsCacheEnabled(const CACHE *null) ALWAYS_INLINE;
-	inline bool IsCacheWriteAllocate(const CACHE *null) ALWAYS_INLINE;
-	inline bool ChooseLineToEvict(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
-	inline void UpdateReplacementPolicyOnAccess(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
-	inline void UpdateReplacementPolicyOnFill(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
 #endif
 	
+	// optional
+	
+	/* Get a custom access controller */
+	inline ACCESS_CONTROLLER *GetAccessController() ALWAYS_INLINE;
+
+	/* Get debug info stream */
 	inline std::ostream& GetDebugInfoStream() ALWAYS_INLINE;
 	
+	/* Get debug warning stream */
 	inline std::ostream& GetDebugWarningStream() ALWAYS_INLINE;
 
+	/* Get debug error stream */
 	inline std::ostream& GetDebugErrorStream() ALWAYS_INLINE;
 
+	/* Enable/Disable verbosity of data loads */
 	inline bool IsVerboseDataLoad() const ALWAYS_INLINE;
 	
+	/* Enable/Disable verbosity of data store */
 	inline bool IsVerboseDataStore() const ALWAYS_INLINE;
 	
+	/* Enable/Disable verbosity of instruction fetch */
 	inline bool IsVerboseInstructionFetch() const ALWAYS_INLINE;
 	
+	/* Enable/Disable verbosity of data bus reads */
 	inline bool IsVerboseDataBusRead() const ALWAYS_INLINE;
 	
+	/* Enable/Disable verbosity of data bus writes */
 	inline bool IsVerboseDataBusWrite() const ALWAYS_INLINE;
 	
+	/* Enable/Disable verbosity of instruction bus reads */
 	inline bool IsVerboseInstructionBusRead() const ALWAYS_INLINE;
 
+	/* Test whether storage attribute allow store to be cacheable  */
 	inline bool IsStorageCacheable(typename TYPES::STORAGE_ATTR storage_attr) const ALWAYS_INLINE;
 	
-	inline bool IsDataWriteAccessWriteThrough(typename TYPES::STORAGE_ATTR storage_attr) const ALWAYS_INLINE;
+	/* Test whether storage attribute allow store are dynamically write-through (even with write back caches) */
+	inline bool IsDataStoreAccessWriteThrough(typename TYPES::STORAGE_ATTR storage_attr) const ALWAYS_INLINE;
 
-	bool DataBusRead(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr, bool rwitm);
+	/**** output interface */
+	/* Data Bus Read */
+	bool DataBusRead(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr, bool rwitm);
 
-	bool DataBusWrite(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
+	/* Data Bus Write */
+	bool DataBusWrite(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
 
-	bool InstructionBusRead(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
+	/* Instruction Bus Read */
+	bool InstructionBusRead(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
 	
-	bool DebugDataBusRead(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
+	/* Debug Data Bus Read */
+	bool DebugDataBusRead(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
 
-	bool DebugDataBusWrite(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
+	/* Debug Data Bus Write */
+	bool DebugDataBusWrite(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
 
-	bool DebugInstructionBusRead(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
+	/* Debug Instruction Bus Read */
+	bool DebugInstructionBusRead(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
 
 	////////////////////////////// Helper functions ///////////////////////////
 	
+	/* Load from memory sub-system (local memories then cache hierarchy) */
+	template <typename LOC_MEM_SET, typename CACHE_HIERARCHY, typename LOC_MEM, typename CACHE>
+	inline bool LoadFromMSS(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
+	
+	/* Store in memory sub-system (local memories then cache hierarchy) */
+	template <typename LOC_MEM_SET, typename CACHE_HIERARCHY, typename LOC_MEM, typename CACHE>
+	inline bool StoreInMSS(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
+
+	/* Debug Data Load from memory sub-system (local memories then cache hierarchy) with address translation through access controller */
+	template <typename LOC_MEM_SET, typename CACHE_HIERARCHY, typename LOC_MEM, typename CACHE>
+	inline bool DebugDataLoadFromMSS(typename TYPES::ADDRESS addr, void *buffer, unsigned int size);
+	
+	/* Debug Store in memory sub-system (local memories then cache hierarchy) with address translation through access controller */
+	template <typename LOC_MEM_SET, typename CACHE_HIERARCHY, typename LOC_MEM, typename CACHE>
+	inline bool DebugDataStoreInMSS(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size);
+
+	/* Debug Instruction Fetch from memory sub-system (local memories then cache hierarchy) with address translation through access controller */
+	template <typename LOC_MEM_SET, typename CACHE_HIERARCHY, typename LOC_MEM, typename CACHE>
+	inline bool DebugInstructionFetchFromMSS(typename TYPES::ADDRESS addr, void *buffer, unsigned int size);
+
+	/* Debug Load (Data Load or Instruction Fetch) from local memories (returns number of bytes transfered) */
+	template <typename LOC_MEM_SET, typename LOC_MEM>
+	inline unsigned int DebugLoadFromLocalMemory(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size);
+	
+	/* Debug Store (Data Store) in local memories (returns number of bytes transfered) */
+	template <typename LOC_MEM_SET, typename LOC_MEM>
+	inline unsigned int DebugStoreInLocalMemory(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size);
+
+	template <typename LOC_MEM_SET, typename LOC_MEM>
+	uint8_t *GetDirectAccessToLocalMemory(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& start_phys_addr, typename TYPES::PHYSICAL_ADDRESS& end_phys_addr);
+	
 	/* Load data/instruction from Cache CACHE */
 	template <typename CACHE_HIERARCHY, typename CACHE>
-	inline bool LoadFromCacheHierarchy(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
+	inline bool LoadFromCacheHierarchy(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
 
 	/* Store data into Cache CACHE. If cache or access is write-through then store also in next level caches, until memory */
 	template <typename CACHE_HIERARCHY, typename CACHE>
-	inline bool StoreInCacheHierarchy(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
+	inline bool StoreInCacheHierarchy(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
 	
 	/* Debug Load data/instruction from Cache CACHE or, if missing, in next levels */
 	template <typename CACHE_HIERARCHY, typename CACHE>
-	bool DebugLoadFromCacheHierarchy(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
+	bool DebugLoadFromCacheHierarchy(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
 
 	/* Debug Store data into Cache CACHE or, if missing, in next levels */
 	template <typename CACHE_HIERARCHY, typename CACHE>
-	bool DebugStoreInCacheHierarchy(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
+	bool DebugStoreInCacheHierarchy(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr);
 	
 	/* Fill block from Cache TO with content from Cache FROM. If Cache FROM is disabled, then try with next level caches, until memory */
 	template <typename CACHE_HIERARCHY, typename TO, typename FROM>
@@ -760,33 +1064,33 @@ protected:
 	template <typename CACHE_HIERARCHY, typename CACHE>
 	bool EvictLine(CacheAccess<TYPES, CACHE>& from_access);
 
-	/* Decode address */
+	/* Decode phys_address */
 	template <typename CACHE>
-	static inline void DecodeAddress(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& index, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
+	static inline void DecodeAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& line_base_phys_addr, typename TYPES::PHYSICAL_ADDRESS& block_base_phys_addr, unsigned int& index, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
 
-	/* Lookup set by address */
+	/* Lookup set by phys_address */
 	template <typename CACHE>
-	inline CacheSet<TYPES, typename CACHE::CACHE_CONFIG> *LookupSet(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
+	inline CacheSet<TYPES, typename CACHE::CACHE_CONFIG> *LookupSet(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& line_base_phys_addr, typename TYPES::PHYSICAL_ADDRESS& block_base_phys_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
 	
-	/* Lookup line by address */
+	/* Lookup line by phys_address */
 	template <typename CACHE>
-	inline CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *LookupLine(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
+	inline CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *LookupLine(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& block_base_phys_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
 	
-	/* Lookup block by address */
+	/* Lookup block by phys_address */
 	template <typename CACHE>
-	inline CacheBlock<TYPES, typename CACHE::CACHE_CONFIG> *LookupBlock(typename TYPES::ADDRESS addr, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
+	inline CacheBlock<TYPES, typename CACHE::CACHE_CONFIG> *LookupBlock(typename TYPES::PHYSICAL_ADDRESS phys_addr, unsigned int& offset, unsigned int& size_to_block_boundary) ALWAYS_INLINE;
 	
-	/* Lookup by address */
+	/* Lookup by phys_address */
 	template <typename CACHE>
 	inline void Lookup(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
 	
-	/* Invalidate block by address */
+	/* Invalidate block by phys_address */
 	template <typename CACHE>
-	inline void InvalidateBlockByAddress(typename TYPES::ADDRESS addr);
+	inline void InvalidateBlockByAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr);
 
-	/* Invalidate line by address */
+	/* Invalidate line by phys_address */
 	template <typename CACHE>
-	inline void InvalidateLineByAddress(typename TYPES::ADDRESS addr);
+	inline void InvalidateLineByAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr);
 	
 	/* Invalidate block by set, way, and sector */
 	template <typename CACHE>
@@ -804,13 +1108,13 @@ protected:
 	template <typename CACHE>
 	inline void InvalidateAll();
 	
-	/* Invalidate blocks by address in caches [CACHE..UNTIL] */
+	/* Invalidate blocks by phys_address in caches [CACHE..UNTIL] */
 	template <typename CACHE_HIERARCHY, typename CACHE, typename UNTIL>
-	inline void GlobalInvalidateBlockByAddress(typename TYPES::ADDRESS addr);
+	inline void GlobalInvalidateBlockByAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr);
 
-	/* Invalidate lines by address in cache [CACHE..UNTIL] */
+	/* Invalidate lines by phys_address in cache [CACHE..UNTIL] */
 	template <typename CACHE_HIERARCHY, typename CACHE, typename UNTIL>
-	inline void GlobalInvalidateLineByAddress(typename TYPES::ADDRESS addr);
+	inline void GlobalInvalidateLineByAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr);
 
 	/* Write back block by set, way and sector, and optionnally invalidate block */
 	template <typename CACHE_HIERARCHY, typename CACHE, bool INVALIDATE>
@@ -820,90 +1124,94 @@ protected:
 	template <typename CACHE_HIERARCHY, typename CACHE, bool INVALIDATE>
 	inline bool WriteBackLineBySetAndWay(unsigned int index, unsigned int way);
 
-	/* Write back blocks by address in caches [CACHE..UNTIL], and optionnaly invalidate blocks */
+	/* Write back blocks by phys_address in caches [CACHE..UNTIL], and optionnaly invalidate blocks */
 	template <typename CACHE_HIERARCHY, typename CACHE, typename UNTIL, bool INVALIDATE>
-	inline bool GlobalWriteBackBlockByAddress(typename TYPES::ADDRESS addr);
+	inline bool GlobalWriteBackBlockByAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr);
 
-	/* Write back lines by address in caches [CACHE..UNTIL], and optionnaly invalidate lines */
+	/* Write back lines by phys_address in caches [CACHE..UNTIL], and optionnaly invalidate lines */
 	template <typename CACHE_HIERARCHY, typename CACHE, typename UNTIL, bool INVALIDATE>
-	inline bool GlobalWriteBackLineByAddress(typename TYPES::ADDRESS addr);
+	inline bool GlobalWriteBackLineByAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr);
 private:
 
 	//////////////////// trampoline to overridable methods /////////////////////
 	
+	template <typename LOC_MEM, bool dummy = true>
+	struct __MSS_LOC_MEM_INTERFACE__
+	{
+		static inline LOC_MEM *GetLocalMemory(MSS *mss, const LOC_MEM *null) ALWAYS_INLINE { return mss->GetLocalMemory(null); }
+	};
+	
+	template <bool dummy>
+	struct __MSS_LOC_MEM_INTERFACE__<NullLocalMemory<TYPES>, dummy>
+	{
+		static inline NullLocalMemory<TYPES> *GetLocalMemory(MSS *mss, const NullLocalMemory<TYPES> *null) ALWAYS_INLINE { return 0; }
+	};
+
+	template <bool dummy>
+	struct __MSS_LOC_MEM_INTERFACE__<NullLocalMemory1<TYPES>, dummy>
+	{
+		static inline NullLocalMemory1<TYPES> *GetLocalMemory(MSS *mss, const NullLocalMemory1<TYPES> *null) ALWAYS_INLINE { return 0; }
+	};
+
+	template <bool dummy>
+	struct __MSS_LOC_MEM_INTERFACE__<NullLocalMemory2<TYPES>, dummy>
+	{
+		static inline NullLocalMemory2<TYPES> *GetLocalMemory(MSS *mss, const NullLocalMemory2<TYPES> *null) ALWAYS_INLINE { return 0; }
+	};
+
+	template <bool dummy>
+	struct __MSS_LOC_MEM_INTERFACE__<NullLocalMemory3<TYPES>, dummy>
+	{
+		static inline NullLocalMemory3<TYPES> *GetLocalMemory(MSS *mss, const NullLocalMemory3<TYPES> *null) ALWAYS_INLINE { return 0; }
+	};
+
+	template <bool dummy>
+	struct __MSS_LOC_MEM_INTERFACE__<NullLocalMemory4<TYPES>, dummy>
+	{
+		static inline NullLocalMemory4<TYPES> *GetLocalMemory(MSS *mss, const NullLocalMemory4<TYPES> *null) ALWAYS_INLINE { return 0; }
+	};
+
 	template <typename CACHE, bool dummy = true>
 	struct __MSS_CACHE_INTERFACE__
 	{
 		static inline CACHE *GetCache(MSS *mss, const CACHE *null)  ALWAYS_INLINE { return mss->GetCache(null); }
-		static inline bool IsCacheVerbose(MSS *mss, const CACHE *null) ALWAYS_INLINE { return mss->IsCacheVerbose(null); }
-		static inline bool IsCacheEnabled(MSS *mss, const CACHE *null) ALWAYS_INLINE { return mss->IsCacheEnabled(null); }
-		static inline bool IsCacheWriteAllocate(MSS *mss, const CACHE *null) ALWAYS_INLINE { return mss->IsCacheWriteAllocate(null); }
-		static inline bool ChooseLineToEvict(MSS *mss, CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE { return mss->ChooseLineToEvict(access); }
-		static inline void UpdateReplacementPolicyOnAccess(MSS *mss, CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE { mss->UpdateReplacementPolicyOnAccess(access); }
-		static inline void UpdateReplacementPolicyOnFill(MSS *mss, CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE { mss->UpdateReplacementPolicyOnFill(access); }
 	};
 	
 	template <bool dummy>
 	struct __MSS_CACHE_INTERFACE__<NullCache<TYPES>, dummy>
 	{
 		static inline NullCache<TYPES> *GetCache(MSS *mss, const NullCache<TYPES> *null) ALWAYS_INLINE { return 0; }
-		static inline bool IsCacheVerbose(MSS *mss, const NullCache<TYPES> *null) ALWAYS_INLINE { return false; }
-		static inline bool IsCacheEnabled(MSS *mss, const NullCache<TYPES> *null) ALWAYS_INLINE { return false; }
-		static inline bool IsCacheWriteAllocate(MSS *mss, const NullCache<TYPES> *null) ALWAYS_INLINE { return false; }
-		static inline bool ChooseLineToEvict(MSS *mss, CacheAccess<TYPES, NullCache<TYPES> >& access) ALWAYS_INLINE { return false; }
-		static inline void UpdateReplacementPolicyOnAccess(MSS *mss, CacheAccess<TYPES, NullCache<TYPES> >& access) ALWAYS_INLINE {}
-		static inline void UpdateReplacementPolicyOnFill(MSS *mss, CacheAccess<TYPES, NullCache<TYPES> >& access) ALWAYS_INLINE {}
 	};
 
 	template <bool dummy>
 	struct __MSS_CACHE_INTERFACE__<NullCache1<TYPES>, dummy>
 	{
 		static inline NullCache1<TYPES> *GetCache(MSS *mss, const NullCache1<TYPES> *null) ALWAYS_INLINE { return 0; }
-		static inline bool IsCacheVerbose(MSS *mss, const NullCache1<TYPES> *null) ALWAYS_INLINE { return false; }
-		static inline bool IsCacheEnabled(MSS *mss, const NullCache1<TYPES> *null) ALWAYS_INLINE { return false; }
-		static inline bool IsCacheWriteAllocate(MSS *mss, const NullCache1<TYPES> *null) ALWAYS_INLINE { return false; }
-		static inline bool ChooseLineToEvict(MSS *mss, CacheAccess<TYPES, NullCache1<TYPES> >& access) ALWAYS_INLINE { return false; }
-		static inline void UpdateReplacementPolicyOnAccess(MSS *mss, CacheAccess<TYPES, NullCache1<TYPES> >& access) ALWAYS_INLINE {}
-		static inline void UpdateReplacementPolicyOnFill(MSS *mss, CacheAccess<TYPES, NullCache1<TYPES> >& access) ALWAYS_INLINE {}
 	};
 
 	template <bool dummy>
 	struct __MSS_CACHE_INTERFACE__<NullCache2<TYPES>, dummy>
 	{
 		static inline NullCache2<TYPES> *GetCache(MSS *mss, const NullCache2<TYPES> *null) ALWAYS_INLINE { return 0; }
-		static inline bool IsCacheVerbose(MSS *mss, const NullCache2<TYPES> *null) ALWAYS_INLINE { return false; }
-		static inline bool IsCacheEnabled(MSS *mss, const NullCache2<TYPES> *null) ALWAYS_INLINE { return false; }
-		static inline bool IsCacheWriteAllocate(MSS *mss, const NullCache2<TYPES> *null) ALWAYS_INLINE { return false; }
-		static inline bool ChooseLineToEvict(MSS *mss, CacheAccess<TYPES, NullCache2<TYPES> >& access) ALWAYS_INLINE { return false; }
-		static inline void UpdateReplacementPolicyOnAccess(MSS *mss, CacheAccess<TYPES, NullCache2<TYPES> >& access) ALWAYS_INLINE {}
-		static inline void UpdateReplacementPolicyOnFill(MSS *mss, CacheAccess<TYPES, NullCache2<TYPES> >& access) ALWAYS_INLINE {}
 	};
 
 	template <bool dummy>
 	struct __MSS_CACHE_INTERFACE__<NullCache3<TYPES>, dummy>
 	{
 		static inline NullCache3<TYPES> *GetCache(MSS *mss, const NullCache3<TYPES> *null) ALWAYS_INLINE { return 0; }
-		static inline bool IsCacheVerbose(MSS *mss, const NullCache3<TYPES> *null) ALWAYS_INLINE { return false; }
-		static inline bool IsCacheEnabled(MSS *mss, const NullCache3<TYPES> *null) ALWAYS_INLINE { return false; }
-		static inline bool IsCacheWriteAllocate(MSS *mss, const NullCache3<TYPES> *null) ALWAYS_INLINE { return false; }
-		static inline bool ChooseLineToEvict(MSS *mss, CacheAccess<TYPES, NullCache3<TYPES> >& access) ALWAYS_INLINE { return false; }
-		static inline void UpdateReplacementPolicyOnAccess(MSS *mss, CacheAccess<TYPES, NullCache3<TYPES> >& access) ALWAYS_INLINE {}
-		static inline void UpdateReplacementPolicyOnFill(MSS *mss, CacheAccess<TYPES, NullCache3<TYPES> >& access) ALWAYS_INLINE {}
 	};
 
 	template <bool dummy>
 	struct __MSS_CACHE_INTERFACE__<NullCache4<TYPES>, dummy>
 	{
 		static inline NullCache4<TYPES> *GetCache(MSS *mss, const NullCache4<TYPES> *null) ALWAYS_INLINE { return 0; }
-		static inline bool IsCacheVerbose(MSS *mss, const NullCache4<TYPES> *null) ALWAYS_INLINE { return false; }
-		static inline bool IsCacheEnabled(MSS *mss, const NullCache4<TYPES> *null) ALWAYS_INLINE { return false; }
-		static inline bool IsCacheWriteAllocate(MSS *mss, const NullCache4<TYPES> *null) ALWAYS_INLINE { return false; }
-		static inline bool ChooseLineToEvict(MSS *mss, CacheAccess<TYPES, NullCache4<TYPES> >& access) ALWAYS_INLINE { return false; }
-		static inline void UpdateReplacementPolicyOnAccess(MSS *mss, CacheAccess<TYPES, NullCache4<TYPES> >& access) ALWAYS_INLINE {}
-		static inline void UpdateReplacementPolicyOnFill(MSS *mss, CacheAccess<TYPES, NullCache4<TYPES> >& access) ALWAYS_INLINE {}
 	};
+	
+	template <typename ACCESS_CONTROLLER> inline ACCESS_CONTROLLER *__MSS_GetAccessController__() ALWAYS_INLINE;
 
 	template <typename CACHE> inline CACHE *__MSS_GetCache__() ALWAYS_INLINE;
+	
+	template <typename LOC_MEM> inline LOC_MEM *__MSS_GetLocalMemory__() ALWAYS_INLINE;
 	
 	inline std::ostream& __MSS_GetDebugInfoStream__() ALWAYS_INLINE;
 	
@@ -911,21 +1219,9 @@ private:
 
 	inline std::ostream& __MSS_GetDebugErrorStream__() ALWAYS_INLINE;
 
-	template <typename CACHE> inline bool __MSS_IsCacheVerbose__() ALWAYS_INLINE;
-	
 	inline bool __MSS_IsStorageCacheable__(typename TYPES::STORAGE_ATTR storage_attr) const ALWAYS_INLINE;
 	
-	inline bool __MSS_IsDataWriteAccessWriteThrough__(typename TYPES::STORAGE_ATTR storage_attr) const ALWAYS_INLINE;
-
-	template <typename CACHE> inline bool __MSS_IsCacheEnabled__() ALWAYS_INLINE;
-
-	template <typename CACHE> inline bool __MSS_IsCacheWriteAllocate__() ALWAYS_INLINE;
-	
-	template <typename CACHE> inline bool __MSS_ChooseLineToEvict__(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
-	
-	template <typename CACHE> inline void __MSS_UpdateReplacementPolicyOnAccess__(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
-
-	template <typename CACHE> inline void __MSS_UpdateReplacementPolicyOnFill__(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
+	inline bool __MSS_IsDataStoreAccessWriteThrough__(typename TYPES::STORAGE_ATTR storage_attr) const ALWAYS_INLINE;
 
 	inline bool __MSS_IsVerboseDataLoad__() const ALWAYS_INLINE;
 
@@ -939,17 +1235,17 @@ private:
 
 	inline bool __MSS_IsVerboseInstructionBusRead__() const ALWAYS_INLINE;
 	
-	inline bool __MSS_DataBusRead__(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr, bool rwitm) ALWAYS_INLINE;
+	inline bool __MSS_DataBusRead__(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr, bool rwitm) ALWAYS_INLINE;
 
-	inline bool __MSS_DataBusWrite__(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr) ALWAYS_INLINE;
+	inline bool __MSS_DataBusWrite__(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr) ALWAYS_INLINE;
 	
-	inline bool __MSS_InstructionBusRead__(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr) ALWAYS_INLINE;
+	inline bool __MSS_InstructionBusRead__(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr) ALWAYS_INLINE;
 	
-	inline bool __MSS_DebugDataBusRead__(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr) ALWAYS_INLINE;
+	inline bool __MSS_DebugDataBusRead__(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr) ALWAYS_INLINE;
 
-	inline bool __MSS_DebugDataBusWrite__(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr) ALWAYS_INLINE;
+	inline bool __MSS_DebugDataBusWrite__(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr) ALWAYS_INLINE;
 	
-	inline bool __MSS_DebugInstructionBusRead__(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr) ALWAYS_INLINE;
+	inline bool __MSS_DebugInstructionBusRead__(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr) ALWAYS_INLINE;
 
 	///////////////////////////////////////////////////////////////////////////
 	
@@ -959,6 +1255,22 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////// DEFINITIONS /////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+
+////////////////////// LocalMemoryType //////////////////////////
+
+inline std::ostream& operator << (std::ostream& os, const LocalMemoryType& lmt)
+{
+	switch(lmt)
+	{
+		case NULL_LOC_MEM       : os << "null local memory"; break;
+		case DATA_LOC_MEM       : os << "data local memory"; break;
+		case INSTRUCTION_LOC_MEM: os << "instruction local memory"; break;
+		case UNIFIED_LOC_MEM    : os << "unified local memory"; break;
+		default: os << "?"; break;
+	};
+	
+	return os;
+}
 
 ///////////////////////// CacheType /////////////////////////////
 
@@ -990,11 +1302,146 @@ inline std::ostream& operator << (std::ostream& os, const CacheWritingPolicy& cw
 	return os;
 }
 
+//////////////////////////// AccessController<> ///////////////////////////////
+
+template <typename TYPES, typename ACCESS_CONTROLLER>
+AccessController<TYPES, ACCESS_CONTROLLER>::AccessController()
+{
+}
+
+template <typename TYPES, typename ACCESS_CONTROLLER>
+AccessController<TYPES, ACCESS_CONTROLLER>::~AccessController()
+{
+}
+
+template <typename TYPES, typename ACCESS_CONTROLLER>
+template <bool DEBUG>
+bool AccessController<TYPES, ACCESS_CONTROLLER>::ControlAccess(AccessControl<TYPES>& access_control)
+{
+	access_control.size_to_protection_boundary = access_control.addr ? (-access_control.addr) : 0; // zero means greatest possible region
+	access_control.phys_addr = access_control.addr;
+	access_control.storage_attr = typename TYPES::STORAGE_ATTR();
+	return true;
+}
+
+template <typename TYPES, typename ACCESS_CONTROLLER>
+template <bool DEBUG>
+bool AccessController<TYPES, ACCESS_CONTROLLER>::__MSS_ControlAccess__(AccessControl<TYPES>& access_control)
+{
+	return static_cast<ACCESS_CONTROLLER *>(this)->template ControlAccess<DEBUG>(access_control);
+}
+
+////////////////////////////// LocalMemory<> //////////////////////////////////
+
+template <typename TYPES, typename CONFIG, typename LOC_MEM>
+LocalMemory<TYPES, CONFIG, LOC_MEM>::LocalMemory()
+	: bytes()
+{
+	memset(bytes, 0, CONFIG::SIZE);
+}
+
+template <typename TYPES, typename CONFIG, typename LOC_MEM>
+LocalMemory<TYPES, CONFIG, LOC_MEM>::~LocalMemory()
+{
+}
+
+template <typename TYPES, typename CONFIG, typename LOC_MEM>
+inline uint8_t& LocalMemory<TYPES, CONFIG, LOC_MEM>::GetByteByOffset(unsigned int offset)
+{
+	assert(offset < __MSS_GetSize__());
+	return bytes[offset];
+}
+
+template <typename TYPES, typename CONFIG, typename LOC_MEM>
+inline uint8_t& LocalMemory<TYPES, CONFIG, LOC_MEM>::operator [] (unsigned int offset)
+{
+	return GetByteByOffset(offset);
+}
+
+template <typename TYPES, typename CONFIG, typename LOC_MEM>
+inline bool LocalMemory<TYPES, CONFIG, LOC_MEM>::IsNullLocalMemory()
+{
+	return CONFIG::TYPE == NULL_LOC_MEM;
+}
+
+template <typename TYPES, typename CONFIG, typename LOC_MEM>
+inline bool LocalMemory<TYPES, CONFIG, LOC_MEM>::IsDataLocalMemoryOnly()
+{
+	return CONFIG::TYPE == DATA_LOC_MEM;
+}
+
+template <typename TYPES, typename CONFIG, typename LOC_MEM>
+inline bool LocalMemory<TYPES, CONFIG, LOC_MEM>::IsDataLocalMemory()
+{
+	return CONFIG::TYPE & DATA_LOC_MEM;
+}
+
+template <typename TYPES, typename CONFIG, typename LOC_MEM>
+inline bool LocalMemory<TYPES, CONFIG, LOC_MEM>::IsInstructionLocalMemoryOnly()
+{
+	return CONFIG::TYPE == INSTRUCTION_LOC_MEM;
+}
+
+template <typename TYPES, typename CONFIG, typename LOC_MEM>
+inline bool LocalMemory<TYPES, CONFIG, LOC_MEM>::IsInstructionLocalMemory()
+{
+	return CONFIG::TYPE & INSTRUCTION_LOC_MEM;
+}
+
+template <typename TYPES, typename CONFIG, typename LOC_MEM>
+inline bool LocalMemory<TYPES, CONFIG, LOC_MEM>::IsUnifiedLocalMemory()
+{
+	return CONFIG::TYPE == UNIFIED_LOC_MEM;
+}
+
+template <typename TYPES, typename CONFIG, typename LOC_MEM>
+bool LocalMemory<TYPES, CONFIG, LOC_MEM>::IsVerbose() const
+{
+	return false;
+}
+
+template <typename TYPES, typename CONFIG, typename LOC_MEM>
+typename TYPES::PHYSICAL_ADDRESS LocalMemory<TYPES, CONFIG, LOC_MEM>::GetBaseAddress() const
+{
+	return CONFIG::BASE_ADDRESS;
+}
+
+template <typename TYPES, typename CONFIG, typename LOC_MEM>
+inline unsigned int LocalMemory<TYPES, CONFIG, LOC_MEM>::GetSize() const
+{
+	return CONFIG::SIZE;
+}
+
+template <typename TYPES, typename CONFIG, typename LOC_MEM>
+inline const char *LocalMemory<TYPES, CONFIG, LOC_MEM>::__MSS_GetLocalMemoryName__()
+{
+	return LOC_MEM::GetLocalMemoryName();
+}
+
+template <typename TYPES, typename CONFIG, typename LOC_MEM>
+inline bool LocalMemory<TYPES, CONFIG, LOC_MEM>::__MSS_IsVerbose__() const
+{
+	return static_cast<const LOC_MEM *>(this)->IsVerbose();
+}
+
+template <typename TYPES, typename CONFIG, typename LOC_MEM>
+inline typename TYPES::PHYSICAL_ADDRESS LocalMemory<TYPES, CONFIG, LOC_MEM>::__MSS_GetBaseAddress__() const
+{
+	return static_cast<const LOC_MEM *>(this)->GetBaseAddress();
+}
+
+template <typename TYPES, typename CONFIG, typename LOC_MEM>
+inline unsigned int LocalMemory<TYPES, CONFIG, LOC_MEM>::__MSS_GetSize__() const
+{
+	unsigned int size = static_cast<const LOC_MEM *>(this)->GetSize();
+	return (size < CONFIG::SIZE) ? size : CONFIG::SIZE;
+}
+
 /////////////////////////////// CacheBlock<> //////////////////////////////////
 
 template <typename TYPES, typename CONFIG>
 CacheBlock<TYPES, CONFIG>::CacheBlock()
-	: base_addr(0)
+	: base_phys_addr(0)
 	, status()
 	, sector(0)
 	, storage()
@@ -1008,21 +1455,28 @@ CacheBlock<TYPES, CONFIG>::~CacheBlock()
 }
 
 template <typename TYPES, typename CONFIG>
-inline uint8_t& CacheBlock<TYPES, CONFIG>::operator [] (unsigned int offset)
+inline uint8_t& CacheBlock<TYPES, CONFIG>::GetByteByOffset(unsigned int offset)
 {
+	assert(offset < CONFIG::BLOCK_SIZE);
 	return storage[offset];
 }
 
 template <typename TYPES, typename CONFIG>
-inline void CacheBlock<TYPES, CONFIG>::SetBaseAddr(typename TYPES::ADDRESS addr)
+inline uint8_t& CacheBlock<TYPES, CONFIG>::operator [] (unsigned int offset)
 {
-	base_addr = addr;
+	return GetByteByOffset(offset);
 }
 
 template <typename TYPES, typename CONFIG>
-inline typename TYPES::ADDRESS CacheBlock<TYPES, CONFIG>::GetBaseAddr() const
+inline void CacheBlock<TYPES, CONFIG>::SetBaseAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr)
 {
-	return base_addr;
+	base_phys_addr = phys_addr;
+}
+
+template <typename TYPES, typename CONFIG>
+inline typename TYPES::PHYSICAL_ADDRESS CacheBlock<TYPES, CONFIG>::GetBaseAddress() const
+{
+	return base_phys_addr;
 }
 
 template <typename TYPES, typename CONFIG>
@@ -1100,7 +1554,7 @@ CacheLine<TYPES, CONFIG>::CacheLine()
 	: valid(false)
 	, next(0)
 	, prev(0)
-	, base_addr(0)
+	, base_phys_addr(0)
 	, way(0)
 	, status()
 	, blocks()
@@ -1118,9 +1572,9 @@ CacheLine<TYPES, CONFIG>::~CacheLine()
 }
 
 template <typename TYPES, typename CONFIG>
-inline typename TYPES::ADDRESS CacheLine<TYPES, CONFIG>::GetBaseAddr() const
+inline typename TYPES::PHYSICAL_ADDRESS CacheLine<TYPES, CONFIG>::GetBaseAddress() const
 {
-	return base_addr;
+	return base_phys_addr;
 }
 
 template <typename TYPES, typename CONFIG>
@@ -1130,20 +1584,26 @@ inline void CacheLine<TYPES, CONFIG>::SetWay(unsigned int _way)
 }
 
 template <typename TYPES, typename CONFIG>
-inline void CacheLine<TYPES, CONFIG>::SetBaseAddr(typename TYPES::ADDRESS base_addr)
+inline void CacheLine<TYPES, CONFIG>::SetBaseAddress(typename TYPES::PHYSICAL_ADDRESS base_phys_addr)
 {
-	this->base_addr = base_addr;
+	this->base_phys_addr = base_phys_addr;
 	unsigned int sector;
 	for(sector = 0; sector < CONFIG::BLOCKS_PER_LINE; sector++)
 	{
-		blocks[sector].SetBaseAddr(base_addr + (sector * CONFIG::BLOCK_SIZE));
+		blocks[sector].SetBaseAddress(base_phys_addr + (sector * CONFIG::BLOCK_SIZE));
 	}
+}
+
+template <typename TYPES, typename CONFIG>
+inline CacheBlock<TYPES, CONFIG>& CacheLine<TYPES, CONFIG>::GetBlockBySector(unsigned int sector)
+{
+	return blocks[sector % CONFIG::BLOCKS_PER_LINE];
 }
 
 template <typename TYPES, typename CONFIG>
 inline CacheBlock<TYPES, CONFIG>& CacheLine<TYPES, CONFIG>::operator [] (unsigned int sector)
 {
-	return blocks[sector % CONFIG::BLOCKS_PER_LINE];
+	return GetBlockBySector(sector);
 }
 
 template <typename TYPES, typename CONFIG>
@@ -1177,7 +1637,7 @@ inline void CacheLine<TYPES, CONFIG>::Invalidate()
 	}
 	
 	valid = false;
-	base_addr = 0;
+	base_phys_addr = 0;
 	status.Invalidate();
 }
 
@@ -1218,9 +1678,15 @@ CacheSet<TYPES, CONFIG>::~CacheSet()
 }
 
 template <typename TYPES, typename CONFIG>
-inline CacheLine<TYPES, CONFIG>& CacheSet<TYPES, CONFIG>::operator [] (unsigned int way)
+inline CacheLine<TYPES, CONFIG>& CacheSet<TYPES, CONFIG>::GetLineByWay(unsigned int way)
 {
 	return lines[way % CONFIG::ASSOCIATIVITY];
+}
+
+template <typename TYPES, typename CONFIG>
+inline CacheLine<TYPES, CONFIG>& CacheSet<TYPES, CONFIG>::operator [] (unsigned int way)
+{
+	return GetLineByWay(way);
 }
 
 template <typename TYPES, typename CONFIG>
@@ -1269,14 +1735,14 @@ inline typename CONFIG::SET_STATUS& CacheSet<TYPES, CONFIG>::Status()
 }
 
 template <typename TYPES, typename CONFIG>
-inline CacheLine<TYPES, CONFIG> *CacheSet<TYPES, CONFIG>::AssociativeSearch(typename TYPES::ADDRESS line_base_addr)
+inline CacheLine<TYPES, CONFIG> *CacheSet<TYPES, CONFIG>::AssociativeSearch(typename TYPES::PHYSICAL_ADDRESS line_base_phys_addr)
 {
 	CacheLine<TYPES, CONFIG> *line;
 	
 	// Associative search from most recently searched to least recently searched
 	for(line = mrs_line; line != 0; line = line->next)
 	{
-		if(likely(line->IsValid() && (line->GetBaseAddr() == line_base_addr)))
+		if(likely(line->IsValid() && (line->GetBaseAddress() == line_base_phys_addr)))
 		{
 			// Hit
 			
@@ -1326,20 +1792,26 @@ Cache<TYPES, CONFIG, CACHE>::~Cache()
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
-inline void Cache<TYPES, CONFIG, CACHE>::DecodeAddress(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& index, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
+inline void Cache<TYPES, CONFIG, CACHE>::DecodeAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& line_base_phys_addr, typename TYPES::PHYSICAL_ADDRESS& block_base_phys_addr, unsigned int& index, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
 {
-	offset = addr % CONFIG::BLOCK_SIZE;
-	block_base_addr = addr & ~(CONFIG::BLOCK_SIZE - 1);
+	offset = phys_addr % CONFIG::BLOCK_SIZE;
+	block_base_phys_addr = phys_addr & ~(CONFIG::BLOCK_SIZE - 1);
 	size_to_block_boundary = CONFIG::BLOCK_SIZE - offset;
-	line_base_addr = addr & ~((CONFIG::BLOCK_SIZE * CONFIG::BLOCKS_PER_LINE) - 1);
-	sector = (addr / CONFIG::BLOCK_SIZE) % CONFIG::BLOCKS_PER_LINE;
-	index = (addr % CONFIG::SIZE) / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY;
+	line_base_phys_addr = phys_addr & ~((CONFIG::BLOCK_SIZE * CONFIG::BLOCKS_PER_LINE) - 1);
+	sector = (phys_addr / CONFIG::BLOCK_SIZE) % CONFIG::BLOCKS_PER_LINE;
+	index = (phys_addr % CONFIG::SIZE) / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY;
+}
+
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline CacheSet<TYPES, CONFIG>& Cache<TYPES, CONFIG, CACHE>::GetSetByIndex(unsigned int index)
+{
+	return sets[index % (CONFIG::SIZE / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY)];
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
 inline CacheSet<TYPES, CONFIG>& Cache<TYPES, CONFIG, CACHE>::operator [] (unsigned int index)
 {
-	return sets[index % (CONFIG::SIZE / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY)];
+	return GetSetByIndex(index);
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
@@ -1371,12 +1843,12 @@ inline void Cache<TYPES, CONFIG, CACHE>::Invalidate()
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
-inline CacheSet<TYPES, CONFIG> *Cache<TYPES, CONFIG, CACHE>::LookupSet(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
+inline CacheSet<TYPES, CONFIG> *Cache<TYPES, CONFIG, CACHE>::LookupSet(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& line_base_phys_addr, typename TYPES::PHYSICAL_ADDRESS& block_base_phys_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
 {
 	unsigned int index;
 	
-	// Decode the address
-	DecodeAddress(addr, line_base_addr, block_base_addr, index, sector, offset, size_to_block_boundary);
+	// Decode the phys_address
+	DecodeAddress(phys_addr, line_base_phys_addr, block_base_phys_addr, index, sector, offset, size_to_block_boundary);
 	
 	CacheSet<TYPES, CONFIG> *set = &sets[index];
 	
@@ -1384,22 +1856,22 @@ inline CacheSet<TYPES, CONFIG> *Cache<TYPES, CONFIG, CACHE>::LookupSet(typename 
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
-inline CacheLine<TYPES, CONFIG> *Cache<TYPES, CONFIG, CACHE>::LookupLine(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
+inline CacheLine<TYPES, CONFIG> *Cache<TYPES, CONFIG, CACHE>::LookupLine(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& block_base_phys_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
 {
-	typename TYPES::ADDRESS line_base_addr;
+	typename TYPES::PHYSICAL_ADDRESS line_base_phys_addr;
 	
-	CacheSet<TYPES, CONFIG> *set = LookupSet(addr, line_base_addr, block_base_addr, sector, offset, size_to_block_boundary);
-	CacheLine<TYPES, CONFIG> *line = set->AssociativeSearch(line_base_addr);
+	CacheSet<TYPES, CONFIG> *set = LookupSet(phys_addr, line_base_phys_addr, block_base_phys_addr, sector, offset, size_to_block_boundary);
+	CacheLine<TYPES, CONFIG> *line = set->AssociativeSearch(line_base_phys_addr);
 	
 	return line;
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
-inline CacheBlock<TYPES, CONFIG> *Cache<TYPES, CONFIG, CACHE>::LookupBlock(typename TYPES::ADDRESS addr, unsigned int& offset, unsigned int& size_to_block_boundary)
+inline CacheBlock<TYPES, CONFIG> *Cache<TYPES, CONFIG, CACHE>::LookupBlock(typename TYPES::PHYSICAL_ADDRESS phys_addr, unsigned int& offset, unsigned int& size_to_block_boundary)
 {
-	typename TYPES::ADDRESS block_base_addr;
+	typename TYPES::PHYSICAL_ADDRESS block_base_phys_addr;
 	unsigned int sector;
-	CacheLine<TYPES, CONFIG> *line = LookupLine(addr, block_base_addr, sector, offset, size_to_block_boundary);
+	CacheLine<TYPES, CONFIG> *line = LookupLine(phys_addr, block_base_phys_addr, sector, offset, size_to_block_boundary);
 	
 	if(line)
 	{
@@ -1414,9 +1886,9 @@ inline CacheBlock<TYPES, CONFIG> *Cache<TYPES, CONFIG, CACHE>::LookupBlock(typen
 template <typename TYPES, typename CONFIG, typename CACHE>
 inline void Cache<TYPES, CONFIG, CACHE>::Lookup(CacheAccess<TYPES, CACHE>& access)
 {
-	typename TYPES::ADDRESS addr = access.addr;
-	typename TYPES::ADDRESS line_base_addr;
-	typename TYPES::ADDRESS block_base_addr;
+	typename TYPES::PHYSICAL_ADDRESS phys_addr = access.phys_addr;
+	typename TYPES::PHYSICAL_ADDRESS line_base_phys_addr;
+	typename TYPES::PHYSICAL_ADDRESS block_base_phys_addr;
 	unsigned int index;
 	unsigned int sector;
 	unsigned int offset;
@@ -1426,17 +1898,18 @@ inline void Cache<TYPES, CONFIG, CACHE>::Lookup(CacheAccess<TYPES, CACHE>& acces
 	CacheBlock<TYPES, CONFIG> *block;
 	
 	num_accesses++;
-	// Decode the address
-	DecodeAddress(addr, line_base_addr, block_base_addr, index, sector, offset, size_to_block_boundary);
-	access.line_base_addr = line_base_addr;
-	access.block_base_addr = block_base_addr;
+	// Decode the phys_address
+	DecodeAddress(phys_addr, line_base_phys_addr, block_base_phys_addr, index, sector, offset, size_to_block_boundary);
+	access.line_base_phys_addr = line_base_phys_addr;
+	access.block_base_phys_addr = block_base_phys_addr;
 	access.index = index;
 	access.sector = sector;
 	access.offset = offset;
 	access.size_to_block_boundary = size_to_block_boundary;
 	access.set = set = &sets[index];
+	access.cache = this;
 
-	line = set->AssociativeSearch(line_base_addr);
+	line = set->AssociativeSearch(line_base_phys_addr);
 	
 	if(line)
 	{
@@ -1444,7 +1917,7 @@ inline void Cache<TYPES, CONFIG, CACHE>::Lookup(CacheAccess<TYPES, CACHE>& acces
 		access.line = line;
 		access.line_to_write_back_evict = 0;
 		access.way = line->GetWay();
-		block = &(*line)[sector];
+		block = &line->GetBlockBySector(sector);
 		access.block = block->IsValid() ? block : 0;
 
 		return;
@@ -1457,48 +1930,84 @@ inline void Cache<TYPES, CONFIG, CACHE>::Lookup(CacheAccess<TYPES, CACHE>& acces
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
-std::string Cache<TYPES, CONFIG, CACHE>::GenName()
+inline bool Cache<TYPES, CONFIG, CACHE>::IsVerbose() const
 {
-	std::string generated_cache_typename;
-#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(HAVE_CXXABI)
-	int status = -1;
-	char *demangled_cache_typename = abi::__cxa_demangle(typeid(CACHE).name(), NULL, NULL, &status);
-	if(status == 0)
-	{
-		std::string unstripped_demangled_cache_typename(demangled_cache_typename);
-		std::size_t pos = unstripped_demangled_cache_typename.find_last_of("::");
-		if(pos != std::string::npos)
-		{
-			generated_cache_typename = unstripped_demangled_cache_typename.substr(pos + 1);
-		}
-		else
-		{
-			generated_cache_typename = demangled_cache_typename;
-		}
-	}
-	else
-	{
-		generated_cache_typename = typeid(CACHE).name();
-	}
-	std::free(demangled_cache_typename);
-#else
-	generated_cache_typename = typeid(CACHE).name();
-#endif
-	return generated_cache_typename;
+	return false;
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
-const char *Cache<TYPES, CONFIG, CACHE>::GetName()
+inline bool Cache<TYPES, CONFIG, CACHE>::IsEnabled() const
 {
-	static std::string cache_typename = GenName();
-	
-	return cache_typename.c_str();
+	return false;
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
-inline const char *Cache<TYPES, CONFIG, CACHE>::__MSS_GetName__()
+inline bool Cache<TYPES, CONFIG, CACHE>::IsWriteAllocate() const
 {
-	return CACHE::GetName();
+	return false;
+}
+
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline bool Cache<TYPES, CONFIG, CACHE>::ChooseLineToEvict(CacheAccess<TYPES, CACHE>& access)
+{
+	return false;
+}
+
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline void Cache<TYPES, CONFIG, CACHE>::UpdateReplacementPolicyOnAccess(CacheAccess<TYPES, CACHE>& access)
+{
+}
+
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline void Cache<TYPES, CONFIG, CACHE>::UpdateReplacementPolicyOnFill(CacheAccess<TYPES, CACHE>& access)
+{
+}
+
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline const char *Cache<TYPES, CONFIG, CACHE>::__MSS_GetCacheName__()
+{
+	return CACHE::GetCacheName();
+}
+
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline bool Cache<TYPES, CONFIG, CACHE>::__MSS_IsVerbose__() const
+{
+	return static_cast<const CACHE *>(this)->IsVerbose();
+}
+
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline bool Cache<TYPES, CONFIG, CACHE>::__MSS_IsEnabled__() const
+{
+	return static_cast<const CACHE *>(this)->IsEnabled();
+}
+
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline bool Cache<TYPES, CONFIG, CACHE>::__MSS_IsWriteAllocate__() const
+{
+	return static_cast<const CACHE *>(this)->IsWriteAllocate();
+}
+
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline bool Cache<TYPES, CONFIG, CACHE>::__MSS_ChooseLineToEvict__(CacheAccess<TYPES, CACHE>& access)
+{
+	if(likely(static_cast<CACHE *>(this)->ChooseLineToEvict(access)))
+	{
+		access.line_to_write_back_evict = &access.set->GetLineByWay(access.way);
+		return true;
+	}
+	return false;
+}
+
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline void Cache<TYPES, CONFIG, CACHE>::__MSS_UpdateReplacementPolicyOnAccess__(CacheAccess<TYPES, CACHE>& access)
+{
+	static_cast<CACHE *>(this)->UpdateReplacementPolicyOnAccess(access);
+}
+
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline void Cache<TYPES, CONFIG, CACHE>::__MSS_UpdateReplacementPolicyOnFill__(CacheAccess<TYPES, CACHE>& access)
+{
+	static_cast<CACHE *>(this)->UpdateReplacementPolicyOnFill(access);
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
@@ -1538,25 +2047,25 @@ inline bool Cache<TYPES, CONFIG, CACHE>::IsUnifiedCache()
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
-inline bool Cache<TYPES, CONFIG, CACHE>::IsWriteBackCache()
+inline bool Cache<TYPES, CONFIG, CACHE>::IsStaticWriteBackCache()
 {
 	return CONFIG::WRITING_POLICY & CACHE_WRITE_BACK;
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
-inline bool Cache<TYPES, CONFIG, CACHE>::IsWriteThroughCache()
+inline bool Cache<TYPES, CONFIG, CACHE>::IsStaticWriteThroughCache()
 {
 	return !(CONFIG::WRITING_POLICY & CACHE_WRITE_BACK);
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
-inline bool Cache<TYPES, CONFIG, CACHE>::IsWriteAllocate()
+inline bool Cache<TYPES, CONFIG, CACHE>::IsStaticWriteAllocate()
 {
 	return CONFIG::WRITING_POLICY & CACHE_WRITE_ALLOCATE;
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
-inline bool Cache<TYPES, CONFIG, CACHE>::IsNotWriteAllocate()
+inline bool Cache<TYPES, CONFIG, CACHE>::IsStaticNotWriteAllocate()
 {
 	return !(CONFIG::WRITING_POLICY & CACHE_WRITE_ALLOCATE);
 }
@@ -1587,9 +2096,35 @@ MemorySubSystem<TYPES, MSS>::MemorySubSystem()
 }
 
 template <typename TYPES, typename MSS>
-bool MemorySubSystem<TYPES, MSS>::DataLoad(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+MemorySubSystem<TYPES, MSS>::~MemorySubSystem()
 {
-	if(!LoadFromCacheHierarchy<typename MSS::DATA_CACHE_HIERARCHY, typename MSS::DATA_CACHE_HIERARCHY::L1CACHE>(addr, buffer, size, storage_attr)) return false;
+}
+
+template <typename TYPES, typename MSS>
+bool MemorySubSystem<TYPES, MSS>::DataLoad(typename TYPES::ADDRESS addr, void *buffer, unsigned int size)
+{
+	typename TYPES::ADDRESS cur_addr = addr;
+	unsigned int rem_size = size;
+	
+	do
+	{
+		// Access control
+		AccessControl<TYPES> access_control;
+		access_control.addr = cur_addr;
+		access_control.mem_access_type = MAT_READ;
+		
+		typename MSS::ACCESS_CONTROLLER *access_controller = __MSS_GetAccessController__<typename MSS::ACCESS_CONTROLLER>();
+		
+		if(!access_controller->template ControlAccess</* debug */ false>(access_control)) return false;
+		
+		unsigned int cur_size = access_control.size_to_protection_boundary ? std::min(rem_size, access_control.size_to_protection_boundary) : rem_size;
+
+		if(!LoadFromMSS<typename MSS::DATA_LOCAL_MEMORIES, typename MSS::DATA_CACHE_HIERARCHY, typename MSS::DATA_LOCAL_MEMORIES::LOC_MEM1, typename MSS::DATA_CACHE_HIERARCHY::L1CACHE>(access_control.phys_addr, buffer, cur_size, access_control.storage_attr)) return false;
+	
+		cur_addr += cur_size;
+		rem_size -= cur_size;
+	}
+	while(unlikely(rem_size));
 	
 	if(unlikely(__MSS_IsVerboseDataLoad__())) Trace("Loading Data", addr, buffer, size);
 	
@@ -1597,45 +2132,302 @@ bool MemorySubSystem<TYPES, MSS>::DataLoad(typename TYPES::ADDRESS addr, void *b
 }
 
 template <typename TYPES, typename MSS>
-bool MemorySubSystem<TYPES, MSS>::DataStore(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+bool MemorySubSystem<TYPES, MSS>::DataStore(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size)
 {
 	if(unlikely(__MSS_IsVerboseDataStore__())) Trace("Storing Data", addr, buffer, size);
 
-	return StoreInCacheHierarchy<typename MSS::DATA_CACHE_HIERARCHY, typename MSS::DATA_CACHE_HIERARCHY::L1CACHE>(addr, buffer, size, storage_attr);
+	typename TYPES::ADDRESS cur_addr = addr;
+	unsigned int rem_size = size;
+	
+	do
+	{
+		// Access control
+		AccessControl<TYPES> access_control;
+		access_control.addr = cur_addr;
+		access_control.mem_access_type = MAT_WRITE;
+		
+		typename MSS::ACCESS_CONTROLLER *access_controller = __MSS_GetAccessController__<typename MSS::ACCESS_CONTROLLER>();
+		
+		if(!access_controller->template ControlAccess</* debug */ false>(access_control)) return false;
+
+		unsigned int cur_size = access_control.size_to_protection_boundary ? std::min(rem_size, access_control.size_to_protection_boundary) : rem_size;
+		
+		if(!StoreInMSS<typename MSS::DATA_LOCAL_MEMORIES, typename MSS::DATA_CACHE_HIERARCHY, typename MSS::DATA_LOCAL_MEMORIES::LOC_MEM1, typename MSS::DATA_CACHE_HIERARCHY::L1CACHE>(access_control.phys_addr, buffer, size, access_control.storage_attr)) return false;
+		
+		cur_addr += cur_size;
+		rem_size -= cur_size;
+	}
+	while(unlikely(rem_size));
+	
+	return true;
 }
 
 template <typename TYPES, typename MSS>
-bool MemorySubSystem<TYPES, MSS>::InstructionFetch(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+bool MemorySubSystem<TYPES, MSS>::InstructionFetch(typename TYPES::ADDRESS addr, void *buffer, unsigned int size)
 {
-	if(!LoadFromCacheHierarchy<typename MSS::INSTRUCTION_CACHE_HIERARCHY, typename MSS::INSTRUCTION_CACHE_HIERARCHY::L1CACHE>(addr, buffer, size, storage_attr)) return false;
+	typename TYPES::ADDRESS cur_addr = addr;
+	unsigned int rem_size = size;
 	
+	do
+	{
+		// Access control
+		AccessControl<TYPES> access_control;
+		access_control.addr = cur_addr;
+		access_control.mem_access_type = MAT_EXEC;
+		
+		typename MSS::ACCESS_CONTROLLER *access_controller = __MSS_GetAccessController__<typename MSS::ACCESS_CONTROLLER>();
+		
+		if(!access_controller->template ControlAccess</* debug */ false>(access_control)) return false;
+
+		unsigned int cur_size = access_control.size_to_protection_boundary ? std::min(rem_size, access_control.size_to_protection_boundary) : rem_size;
+		
+		if(!LoadFromMSS<typename MSS::INSTRUCTION_LOCAL_MEMORIES, typename MSS::INSTRUCTION_CACHE_HIERARCHY, typename MSS::INSTRUCTION_LOCAL_MEMORIES::LOC_MEM1, typename MSS::INSTRUCTION_CACHE_HIERARCHY::L1CACHE>(access_control.phys_addr, buffer, cur_size, access_control.storage_attr)) return false;
+		
+		cur_addr += cur_size;
+		rem_size -= cur_size;
+	}
+	while(unlikely(rem_size));
+		
 	if(unlikely(__MSS_IsVerboseInstructionFetch__())) Trace("Fetching Instruction", addr, buffer, size);
 	
 	return true;
 }
 
 template <typename TYPES, typename MSS>
-bool MemorySubSystem<TYPES, MSS>::DebugDataLoad(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+bool MemorySubSystem<TYPES, MSS>::DebugDataLoad(typename TYPES::ADDRESS addr, void *buffer, unsigned int size)
+{
+	return DebugDataLoadFromMSS<typename MSS::DATA_LOCAL_MEMORIES, typename MSS::DATA_CACHE_HIERARCHY, typename MSS::DATA_LOCAL_MEMORIES::LOC_MEM1, typename MSS::DATA_CACHE_HIERARCHY::L1CACHE>(addr, buffer, size);
+}
+
+template <typename TYPES, typename MSS>
+bool MemorySubSystem<TYPES, MSS>::DebugDataStore(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size)
+{
+	return DebugDataStoreInMSS<typename MSS::DATA_LOCAL_MEMORIES, typename MSS::DATA_CACHE_HIERARCHY, typename MSS::DATA_LOCAL_MEMORIES::LOC_MEM1, typename MSS::DATA_CACHE_HIERARCHY::L1CACHE>(addr, buffer, size);
+}
+
+template <typename TYPES, typename MSS>
+bool MemorySubSystem<TYPES, MSS>::DebugInstructionFetch(typename TYPES::ADDRESS addr, void *buffer, unsigned int size)
+{
+	return DebugInstructionFetchFromMSS<typename MSS::INSTRUCTION_LOCAL_MEMORIES, typename MSS::INSTRUCTION_CACHE_HIERARCHY, typename MSS::INSTRUCTION_LOCAL_MEMORIES::LOC_MEM1, typename MSS::INSTRUCTION_CACHE_HIERARCHY::L1CACHE>(addr, buffer, size);
+}
+
+template <typename TYPES, typename MSS>
+unsigned int MemorySubSystem<TYPES, MSS>::IncomingLoad(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size)
+{
+	unsigned int read_bytes = 0;
+	
+	if(size)
+	{
+		do
+		{
+			unsigned int sz = 0;
+			
+			sz = DebugLoadFromLocalMemory<typename MSS::INSTRUCTION_LOCAL_MEMORIES, typename MSS::INSTRUCTION_LOCAL_MEMORIES::LOC_MEM1>(phys_addr, buffer, size);
+			
+			if(!sz)
+			{
+				sz = DebugLoadFromLocalMemory<typename MSS::DATA_LOCAL_MEMORIES, typename MSS::DATA_LOCAL_MEMORIES::LOC_MEM1>(phys_addr, buffer, size);
+			
+				if(!sz)
+				{
+					return read_bytes;
+				}
+			}
+			
+			buffer = (uint8_t *) buffer + sz;
+			phys_addr += sz;
+			size -= sz;
+			read_bytes += sz;
+		}
+		while(size);
+	}
+	
+	return read_bytes;
+}
+
+template <typename TYPES, typename MSS>
+unsigned int MemorySubSystem<TYPES, MSS>::IncomingStore(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size)
+{
+	unsigned int written_bytes = 0;
+	
+	if(size)
+	{
+		do
+		{
+			unsigned int sz = 0;
+			
+			sz = DebugStoreInLocalMemory<typename MSS::INSTRUCTION_LOCAL_MEMORIES, typename MSS::INSTRUCTION_LOCAL_MEMORIES::LOC_MEM1>(phys_addr, buffer, size);
+			
+			if(!sz)
+			{
+				sz = DebugStoreInLocalMemory<typename MSS::DATA_LOCAL_MEMORIES, typename MSS::DATA_LOCAL_MEMORIES::LOC_MEM1>(phys_addr, buffer, size);
+				
+				if(!sz)
+				{
+					return written_bytes;
+				}
+			}
+			
+			buffer = (uint8_t *) buffer + sz;
+			phys_addr += sz;
+			size -= sz;
+			written_bytes += sz;
+		}
+		while(size);
+	}
+	
+	return written_bytes;
+}
+
+template <typename TYPES, typename MSS>
+unsigned int MemorySubSystem<TYPES, MSS>::DebugIncomingLoad(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size)
+{
+	return IncomingLoad(phys_addr, buffer, size);
+}
+
+template <typename TYPES, typename MSS>
+unsigned int MemorySubSystem<TYPES, MSS>::DebugIncomingStore(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size)
+{
+	return IncomingStore(phys_addr, buffer, size);
+}
+
+template <typename TYPES, typename MSS>
+uint8_t *MemorySubSystem<TYPES, MSS>::GetDirectAccess(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& start_phys_addr, typename TYPES::PHYSICAL_ADDRESS& end_phys_addr)
+{
+	uint8_t *p = GetDirectAccessToLocalMemory<typename MSS::INSTRUCTION_LOCAL_MEMORIES, typename MSS::INSTRUCTION_LOCAL_MEMORIES::LOC_MEM1>(phys_addr, start_phys_addr, end_phys_addr);
+	if(!p)
+	{
+		p = GetDirectAccessToLocalMemory<typename MSS::DATA_LOCAL_MEMORIES, typename MSS::DATA_LOCAL_MEMORIES::LOC_MEM1>(phys_addr, start_phys_addr, end_phys_addr);
+	}
+	return p;
+}
+
+template <typename TYPES, typename MSS>
+template <typename LOC_MEM_SET, typename CACHE_HIERARCHY, typename LOC_MEM, typename CACHE>
+inline bool MemorySubSystem<TYPES, MSS>::LoadFromMSS(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+{
+	// 3 cases:
+	//     - (1) Load from cache hierarchy because access does not target local memories
+	//     - (2) Load from that local memory because access target that local memory
+	//     - (3) Try to load from next local memory because access does not target that local memory
+	
+	if(unlikely(LOC_MEM::IsNullLocalMemory()))
+	{
+		// (1) Load from cache hierarchy
+		return LoadFromCacheHierarchy<CACHE_HIERARCHY, CACHE>(phys_addr, buffer, size, storage_attr);
+	}
+
+	LOC_MEM *loc_mem = __MSS_GetLocalMemory__<LOC_MEM>();
+	typename TYPES::PHYSICAL_ADDRESS loc_mem_base_phys_addr = loc_mem->__MSS_GetBaseAddress__();
+	
+	if(likely(phys_addr >= loc_mem_base_phys_addr))
+	{
+		typename TYPES::PHYSICAL_ADDRESS loc_mem_high_phys_addr = loc_mem_base_phys_addr + loc_mem->__MSS_GetSize__();
+	
+		if(likely(phys_addr < loc_mem_high_phys_addr))
+		{
+			// (2) Load from that local memory
+			if(unlikely(loc_mem->__MSS_IsVerbose__()))
+			{
+				__MSS_GetDebugInfoStream__() << LOC_MEM::__MSS_GetLocalMemoryName__() << ": load at @0x" << std::hex << phys_addr << std::dec << std::endl;
+			}
+			assert((phys_addr + size) <= loc_mem_high_phys_addr);
+			memcpy(buffer, &loc_mem->GetByteByOffset(phys_addr - loc_mem_base_phys_addr), size);
+			return true;
+		}
+	}
+
+	// (3) Try to load from next local memory
+	typedef typename LOC_MEM_SET::template NextLocalMemory<LOC_MEM>::LOC_MEM NLM;
+
+	return LoadFromMSS<LOC_MEM_SET, CACHE_HIERARCHY, NLM, CACHE>(phys_addr, buffer, size, storage_attr);
+}
+
+template <typename TYPES, typename MSS>
+template <typename LOC_MEM_SET, typename CACHE_HIERARCHY, typename LOC_MEM, typename CACHE>
+inline bool MemorySubSystem<TYPES, MSS>::StoreInMSS(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+{
+	// 3 cases:
+	//     - (1) Store in cache hierarchy because access does not target local memories
+	//     - (2) Store in that local memory because access target that local memory
+	//     - (3) Try to store in next local memory because access does not target that local memory
+	
+	if(unlikely(LOC_MEM::IsNullLocalMemory()))
+	{
+		// (1) Load from cache hierarchy
+		return StoreInCacheHierarchy<CACHE_HIERARCHY, CACHE>(phys_addr, buffer, size, storage_attr);
+	}
+
+	LOC_MEM *loc_mem = __MSS_GetLocalMemory__<LOC_MEM>();
+	typename TYPES::PHYSICAL_ADDRESS loc_mem_base_phys_addr = loc_mem->__MSS_GetBaseAddress__();
+	
+	if(likely(phys_addr >= loc_mem_base_phys_addr))
+	{
+		typename TYPES::PHYSICAL_ADDRESS loc_mem_high_phys_addr = loc_mem_base_phys_addr + loc_mem->__MSS_GetSize__();
+	
+		if(likely(phys_addr < loc_mem_high_phys_addr))
+		{
+			// (2) Store in that local memory
+			if(unlikely(loc_mem->__MSS_IsVerbose__()))
+			{
+				__MSS_GetDebugInfoStream__() << LOC_MEM::__MSS_GetLocalMemoryName__() << ": store at @0x" << std::hex << phys_addr << std::dec << std::endl;
+			}
+			assert((phys_addr + size) <= loc_mem_high_phys_addr);
+			memcpy(&loc_mem->GetByteByOffset(phys_addr - loc_mem_base_phys_addr), buffer, size);
+			return true;
+		}
+	}
+
+	// (3) Try to store in next local memory
+	typedef typename LOC_MEM_SET::template NextLocalMemory<LOC_MEM>::LOC_MEM NLM;
+
+	return StoreInMSS<LOC_MEM_SET, CACHE_HIERARCHY, NLM, CACHE>(phys_addr, buffer, size, storage_attr);
+}
+
+template <typename TYPES, typename MSS>
+template <typename LOC_MEM_SET, typename CACHE_HIERARCHY, typename LOC_MEM, typename CACHE>
+inline bool MemorySubSystem<TYPES, MSS>::DebugDataLoadFromMSS(typename TYPES::ADDRESS addr, void *buffer, unsigned int size)
 {
 	bool status = true;
 	
 	if(size)
 	{
-		unsigned int load_offset = 0;
-		
 		do
 		{
-			unsigned int size_to_block_boundary = MSS::DATA_CACHE_HIERARCHY::L1CACHE::BLOCK_SIZE - (addr % MSS::DATA_CACHE_HIERARCHY::L1CACHE::BLOCK_SIZE);
-			unsigned int load_size = (size_to_block_boundary > size) ? size : size_to_block_boundary;
+			unsigned int sz = 0;
 			
-			if(!DebugLoadFromCacheHierarchy<typename MSS::DATA_CACHE_HIERARCHY, typename MSS::DATA_CACHE_HIERARCHY::L1CACHE>(addr, (uint8_t *) buffer + load_offset, load_size, storage_attr))
+			// Access control
+			AccessControl<TYPES> access_control;
+			access_control.addr = addr;
+			access_control.mem_access_type = MAT_READ;
+			
+			typename MSS::ACCESS_CONTROLLER *access_controller = __MSS_GetAccessController__<typename MSS::ACCESS_CONTROLLER>();
+			
+			if(access_controller->template ControlAccess</* debug */ true>(access_control))
 			{
+				sz = access_control.size_to_protection_boundary ? std::min(size, access_control.size_to_protection_boundary) : size;
+				sz = DebugLoadFromLocalMemory<LOC_MEM_SET, LOC_MEM>(access_control.phys_addr, buffer, sz);
+			
+				if(!sz)
+				{
+					// External
+					sz = std::min(size, CACHE_HIERARCHY::L1CACHE::BLOCK_SIZE - (access_control.phys_addr % CACHE_HIERARCHY::L1CACHE::BLOCK_SIZE));
+					if(!DebugLoadFromCacheHierarchy<CACHE_HIERARCHY, CACHE>(access_control.phys_addr, buffer, sz, access_control.storage_attr))
+					{
+						status = false;
+						memset(buffer, 0, sz);
+					}
+				}
+			}
+			else
+			{
+				sz = 1;
 				status = false;
 			}
 			
-			size -= load_size;
-			addr += load_size;
-			load_offset += load_size;
+			buffer = (uint8_t *) buffer + sz;
+			addr += sz;
+			size -= sz;
 		}
 		while(size);
 	}
@@ -1644,27 +2436,48 @@ bool MemorySubSystem<TYPES, MSS>::DebugDataLoad(typename TYPES::ADDRESS addr, vo
 }
 
 template <typename TYPES, typename MSS>
-bool MemorySubSystem<TYPES, MSS>::DebugDataStore(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+template <typename LOC_MEM_SET, typename CACHE_HIERARCHY, typename LOC_MEM, typename CACHE>
+inline bool MemorySubSystem<TYPES, MSS>::DebugDataStoreInMSS(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size)
 {
 	bool status = true;
 	
 	if(size)
 	{
-		unsigned int store_offset = 0;
-		
 		do
 		{
-			unsigned int size_to_block_boundary = MSS::DATA_CACHE_HIERARCHY::L1CACHE::BLOCK_SIZE - (addr % MSS::DATA_CACHE_HIERARCHY::L1CACHE::BLOCK_SIZE);
-			unsigned int store_size = (size_to_block_boundary > size) ? size : size_to_block_boundary;
+			unsigned int sz = 0;
 			
-			if(unlikely((!DebugStoreInCacheHierarchy<typename MSS::DATA_CACHE_HIERARCHY, typename MSS::DATA_CACHE_HIERARCHY::L1CACHE>(addr, (uint8_t *) buffer + store_offset, store_size, storage_attr))))
+			// Access control
+			AccessControl<TYPES> access_control;
+			access_control.addr = addr;
+			access_control.mem_access_type = MAT_WRITE;
+			
+			typename MSS::ACCESS_CONTROLLER *access_controller = __MSS_GetAccessController__<typename MSS::ACCESS_CONTROLLER>();
+			
+			if(access_controller->template ControlAccess</* debug */ true>(access_control))
 			{
+				sz = access_control.size_to_protection_boundary ? std::min(size, access_control.size_to_protection_boundary) : size;
+				sz = DebugStoreInLocalMemory<LOC_MEM_SET, LOC_MEM>(access_control.phys_addr, buffer, sz);
+			
+				if(!sz)
+				{
+					// External
+					sz = std::min(size, CACHE_HIERARCHY::L1CACHE::BLOCK_SIZE - (access_control.phys_addr % CACHE_HIERARCHY::L1CACHE::BLOCK_SIZE));
+					if(!DebugStoreInCacheHierarchy<CACHE_HIERARCHY, CACHE>(access_control.phys_addr, buffer, sz, access_control.storage_attr))
+					{
+						status = false;
+					}
+				}
+			}
+			else
+			{
+				sz = 1;
 				status = false;
 			}
 			
-			size -= store_size;
-			addr += store_size;
-			store_offset += store_size;
+			buffer = (uint8_t *) buffer + sz;
+			addr += sz;
+			size -= sz;
 		}
 		while(size);
 	}
@@ -1673,37 +2486,186 @@ bool MemorySubSystem<TYPES, MSS>::DebugDataStore(typename TYPES::ADDRESS addr, c
 }
 
 template <typename TYPES, typename MSS>
-bool MemorySubSystem<TYPES, MSS>::DebugInstructionFetch(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+template <typename LOC_MEM_SET, typename CACHE_HIERARCHY, typename LOC_MEM, typename CACHE>
+inline bool MemorySubSystem<TYPES, MSS>::DebugInstructionFetchFromMSS(typename TYPES::ADDRESS addr, void *buffer, unsigned int size)
 {
 	bool status = true;
 	
 	if(size)
 	{
-		unsigned int fetch_offset = 0;
-		
 		do
 		{
-			unsigned int size_to_block_boundary = MSS::INSTRUCTION_CACHE_HIERARCHY::L1CACHE::BLOCK_SIZE - (addr % MSS::INSTRUCTION_CACHE_HIERARCHY::L1CACHE::BLOCK_SIZE);
-			unsigned int fetch_size = (size_to_block_boundary > size) ? size : size_to_block_boundary;
+			unsigned int sz = 0;
 			
-			if(unlikely((!DebugLoadFromCacheHierarchy<typename MSS::INSTRUCTION_CACHE_HIERARCHY, typename MSS::INSTRUCTION_CACHE_HIERARCHY::L1CACHE>(addr, (uint8_t *) buffer + fetch_offset, fetch_size, storage_attr))))
+			// Access control
+			AccessControl<TYPES> access_control;
+			access_control.addr = addr;
+			access_control.mem_access_type = MAT_EXEC;
+			
+			typename MSS::ACCESS_CONTROLLER *access_controller = __MSS_GetAccessController__<typename MSS::ACCESS_CONTROLLER>();
+			
+			if(access_controller->template ControlAccess</* debug */ true>(access_control))
 			{
+				sz = access_control.size_to_protection_boundary ? std::min(size, access_control.size_to_protection_boundary) : size;
+				sz = DebugLoadFromLocalMemory<LOC_MEM_SET, LOC_MEM>(access_control.phys_addr, buffer, sz);
+			
+				if(!sz)
+				{
+					// External
+					sz = std::min(size, CACHE_HIERARCHY::L1CACHE::BLOCK_SIZE - (access_control.phys_addr % CACHE_HIERARCHY::L1CACHE::BLOCK_SIZE));
+					if(!DebugLoadFromCacheHierarchy<CACHE_HIERARCHY, CACHE>(access_control.phys_addr, buffer, sz, access_control.storage_attr))
+					{
+						status = false;
+						memset(buffer, 0, sz);
+					}
+				}
+			}
+			else
+			{
+				sz = 1;
 				status = false;
 			}
 			
-			size -= fetch_size;
-			addr += fetch_size;
-			fetch_offset += fetch_size;
+			buffer = (uint8_t *) buffer + sz;
+			addr += sz;
+			size -= sz;
 		}
 		while(size);
 	}
 	
 	return status;
+}
+
+template <typename TYPES, typename MSS>
+template <typename LOC_MEM_SET, typename LOC_MEM>
+inline unsigned int MemorySubSystem<TYPES, MSS>::DebugLoadFromLocalMemory(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size)
+{
+	// 2 cases:
+	//     - (1) return 0 because access does not target local memories
+	//     - (2) Load from that local memory because access target that local memory
+	//     - (3) Try to load from next local memory because access does not target that local memory
+	
+	if(unlikely(LOC_MEM::IsNullLocalMemory()))
+	{
+		// (1) access does not target local memories
+		return 0;
+	}
+
+	LOC_MEM *loc_mem = __MSS_GetLocalMemory__<LOC_MEM>();
+	typename TYPES::PHYSICAL_ADDRESS loc_mem_base_phys_addr = loc_mem->__MSS_GetBaseAddress__();
+	
+	if(likely(phys_addr >= loc_mem_base_phys_addr))
+	{
+		typename TYPES::PHYSICAL_ADDRESS loc_mem_high_phys_addr = loc_mem_base_phys_addr + loc_mem->__MSS_GetSize__();
+	
+		if(likely(phys_addr < loc_mem_high_phys_addr))
+		{
+			// (2) Load from that local memory
+			if(unlikely(loc_mem->__MSS_IsVerbose__()))
+			{
+				__MSS_GetDebugInfoStream__() << LOC_MEM::__MSS_GetLocalMemoryName__() << ": debug load at @0x" << std::hex << phys_addr << std::dec << std::endl;
+			}
+			
+			unsigned int sz = std::min(loc_mem_high_phys_addr - phys_addr, size);
+			
+			memcpy(buffer, &loc_mem->GetByteByOffset(phys_addr - loc_mem_base_phys_addr), sz);
+			return sz;
+		}
+	}
+
+	// (3) Try to debug load from next local memory
+	typedef typename LOC_MEM_SET::template NextLocalMemory<LOC_MEM>::LOC_MEM NLM;
+
+	return DebugLoadFromLocalMemory<LOC_MEM_SET, NLM>(phys_addr, buffer, size);
+}
+
+template <typename TYPES, typename MSS>
+template <typename LOC_MEM_SET, typename LOC_MEM>
+inline unsigned int MemorySubSystem<TYPES, MSS>::DebugStoreInLocalMemory(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size)
+{
+	// 2 cases:
+	//     - (1) return 0 because access does not target local memories
+	//     - (2) debug store in that local memory because access target that local memory
+	//     - (3) Try to debug store in next local memory because access does not target that local memory
+	
+	if(unlikely(LOC_MEM::IsNullLocalMemory()))
+	{
+		// (1) access does not target local memories
+		return 0;
+	}
+
+	LOC_MEM *loc_mem = __MSS_GetLocalMemory__<LOC_MEM>();
+	typename TYPES::PHYSICAL_ADDRESS loc_mem_base_phys_addr = loc_mem->__MSS_GetBaseAddress__();
+	
+	if(likely(phys_addr >= loc_mem_base_phys_addr))
+	{
+		typename TYPES::PHYSICAL_ADDRESS loc_mem_high_phys_addr = loc_mem_base_phys_addr + loc_mem->__MSS_GetSize__();
+	
+		if(likely(phys_addr < loc_mem_high_phys_addr))
+		{
+			// (2) Load from that local memory
+			if(unlikely(loc_mem->__MSS_IsVerbose__()))
+			{
+				__MSS_GetDebugInfoStream__() << LOC_MEM::__MSS_GetLocalMemoryName__() << ": debug load at @0x" << std::hex << phys_addr << std::dec << std::endl;
+			}
+			
+			unsigned int sz = std::min(loc_mem_high_phys_addr - phys_addr, size);
+			
+			memcpy(&loc_mem->GetByteByOffset(phys_addr - loc_mem_base_phys_addr), buffer, sz);
+			return sz;
+		}
+	}
+
+	// (3) Try to debug load from next local memory
+	typedef typename LOC_MEM_SET::template NextLocalMemory<LOC_MEM>::LOC_MEM NLM;
+
+	return DebugStoreInLocalMemory<LOC_MEM_SET, NLM>(phys_addr, buffer, size);
+}
+
+template <typename TYPES, typename MSS>
+template <typename LOC_MEM_SET, typename LOC_MEM>
+uint8_t *MemorySubSystem<TYPES, MSS>::GetDirectAccessToLocalMemory(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& start_phys_addr, typename TYPES::PHYSICAL_ADDRESS& end_phys_addr)
+{
+	// 2 cases:
+	//     - (1) return 0 because access does not target local memories
+	//     - (2) return a valid pointer from that local memory because access target that local memory
+	//     - (3) Try to get a valid pointer from next local memory because access does not target that local memory
+	
+	if(unlikely(LOC_MEM::IsNullLocalMemory()))
+	{
+		// (1) access does not target local memories
+		return 0;
+	}
+
+	LOC_MEM *loc_mem = __MSS_GetLocalMemory__<LOC_MEM>();
+	typename TYPES::PHYSICAL_ADDRESS loc_mem_base_phys_addr = loc_mem->__MSS_GetBaseAddress__();
+	
+	if(likely(phys_addr >= loc_mem_base_phys_addr))
+	{
+		typename TYPES::PHYSICAL_ADDRESS loc_mem_high_phys_addr = loc_mem_base_phys_addr + loc_mem->__MSS_GetSize__();
+	
+		if(likely(phys_addr < loc_mem_high_phys_addr))
+		{
+			// (2) return a valid pointer from that local memory 
+			start_phys_addr = loc_mem_base_phys_addr;
+			end_phys_addr = loc_mem_high_phys_addr - 1;
+			if(unlikely(loc_mem->__MSS_IsVerbose__()))
+			{
+				__MSS_GetDebugInfoStream__() << LOC_MEM::__MSS_GetLocalMemoryName__() << ": direct memory access granted for @0x" << std::hex << start_phys_addr << "-0x" << end_phys_addr << std::dec << std::endl;
+			}
+			return &loc_mem->GetByteByOffset(0);
+		}
+	}
+
+	// (3) Try to debug load from next local memory
+	typedef typename LOC_MEM_SET::template NextLocalMemory<LOC_MEM>::LOC_MEM NLM;
+
+	return GetDirectAccessToLocalMemory<LOC_MEM_SET, NLM>(phys_addr, start_phys_addr, end_phys_addr);
 }
 
 template <typename TYPES, typename MSS>
 template <typename CACHE_HIERARCHY, typename CACHE>
-inline bool MemorySubSystem<TYPES, MSS>::LoadFromCacheHierarchy(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+inline bool MemorySubSystem<TYPES, MSS>::LoadFromCacheHierarchy(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
 {
 	// 3 cases:
 	//     - (1) Load from memory because access is not cacheable or access is to latest level (memory)
@@ -1714,42 +2676,38 @@ inline bool MemorySubSystem<TYPES, MSS>::LoadFromCacheHierarchy(typename TYPES::
 		// (1) Load from memory
 		if(typeid(CACHE_HIERARCHY) == typeid(typename MSS::DATA_CACHE_HIERARCHY))
 		{
-			if(unlikely(!__MSS_DataBusRead__(addr, buffer, size, storage_attr, false)))
-			{
-				return false;
-			}
+			return __MSS_DataBusRead__(phys_addr, buffer, size, storage_attr, false);
 		}
 		else
 		{
-			if(unlikely(!__MSS_InstructionBusRead__(addr, buffer, size, storage_attr)))
-			{
-				return false;
-			}
+			return __MSS_InstructionBusRead__(phys_addr, buffer, size, storage_attr);
 		}
 	}
-	else if(unlikely(!__MSS_IsCacheEnabled__<CACHE>()))
+	
+	CACHE *cache = __MSS_GetCache__<CACHE>();
+
+	if(unlikely(!cache->__MSS_IsEnabled__()))
 	{
 		// (2) Load from next level cache
 		typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 		
-		if(!LoadFromCacheHierarchy<CACHE_HIERARCHY, NLC>(addr, buffer, size, storage_attr)) return false;
+		if(!LoadFromCacheHierarchy<CACHE_HIERARCHY, NLC>(phys_addr, buffer, size, storage_attr)) return false;
 	}
 	else
 	{
 		// (3) Load from this cache
 		CacheAccess<TYPES, CACHE> access;
 
-		access.addr = addr;
+		access.phys_addr = phys_addr;
 		access.storage_attr = storage_attr;
 		access.rwitm = false;
 		
-		CACHE *cache = __MSS_GetCache__<CACHE>();
 		cache->Lookup(access);
-		if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+		if(unlikely(cache->__MSS_IsVerbose__()))
 		{
-			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Lookup at @0x"
-			                             << std::hex << access.addr << std::dec << " : "
-			                             << "line_base_addr=0x" << std::hex << access.line_base_addr << std::dec << ","
+			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Lookup at @0x"
+			                             << std::hex << access.phys_addr << std::dec << " : "
+			                             << "line_base_phys_addr=0x" << std::hex << access.line_base_phys_addr << std::dec << ","
 			                             << "index=0x" << std::hex << access.index << std::dec << ","
 			                             << "sector=0x" << std::hex << access.sector << std::dec << ","
 			                             << "offset=0x" << std::hex << access.offset << std::dec << ","
@@ -1760,16 +2718,16 @@ inline bool MemorySubSystem<TYPES, MSS>::LoadFromCacheHierarchy(typename TYPES::
 		if(unlikely(!access.line))
 		{
 			// Line miss
-			if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+			if(unlikely(cache->__MSS_IsVerbose__()))
 			{
-				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Line miss at @0x" << std::hex << access.addr << std::dec << std::endl;
+				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Line miss at @0x" << std::hex << access.phys_addr << std::dec << std::endl;
 			}
 
-			if(likely(__MSS_ChooseLineToEvict__(access)))
+			if(likely(cache->__MSS_ChooseLineToEvict__(access)))
 			{
-				if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+				if(unlikely(cache->__MSS_IsVerbose__()))
 				{
-					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Line miss: choosen way=" << access.way << std::endl;
+					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Line miss: choosen way=" << access.way << std::endl;
 				}
 				
 				if(unlikely((!EvictLine<CACHE_HIERARCHY, CACHE>(access)))) return false;
@@ -1777,9 +2735,9 @@ inline bool MemorySubSystem<TYPES, MSS>::LoadFromCacheHierarchy(typename TYPES::
 		}
 		else
 		{
-			if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+			if(unlikely(cache->__MSS_IsVerbose__()))
 			{
-				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Line hit: index=" << access.index << ", way=" << access.line->GetWay() << std::endl;
+				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Line hit: index=" << access.index << ", way=" << access.line->GetWay() << std::endl;
 			}
 		}
 
@@ -1788,34 +2746,34 @@ inline bool MemorySubSystem<TYPES, MSS>::LoadFromCacheHierarchy(typename TYPES::
 			if(unlikely(!access.block))
 			{
 				// Block miss
-				if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+				if(unlikely(cache->__MSS_IsVerbose__()))
 				{
-					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Block miss at @0x" << std::hex << access.addr << std::dec << std::endl;
+					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Block miss at @0x" << std::hex << access.phys_addr << std::dec << std::endl;
 				}
 				
 				typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 				
 				if(unlikely((!FillBlock<CACHE_HIERARCHY, CACHE, NLC>(access)))) return false;
-				__MSS_UpdateReplacementPolicyOnFill__(access);
+				cache->__MSS_UpdateReplacementPolicyOnFill__(access);
 			}
 			else
 			{
-				if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+				if(unlikely(cache->__MSS_IsVerbose__()))
 				{
-					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Block hit at @0x" << std::hex << access.addr << std::dec << std::endl;
+					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Block hit at @0x" << std::hex << access.phys_addr << std::dec << std::endl;
 				}
 			}
 
 			assert(size <= access.size_to_block_boundary);
-			memcpy(buffer, &(*access.block)[access.offset], size);
-			__MSS_UpdateReplacementPolicyOnAccess__(access);
+			memcpy(buffer, &access.block->GetByteByOffset(access.offset), size);
+			cache->__MSS_UpdateReplacementPolicyOnAccess__(access);
 		}
 		else
 		{
 			// Line miss and locked way: Load from next level cache
 			typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 			
-			if(!LoadFromCacheHierarchy<CACHE_HIERARCHY, NLC>(addr, buffer, size, storage_attr)) return false;
+			if(!LoadFromCacheHierarchy<CACHE_HIERARCHY, NLC>(phys_addr, buffer, size, storage_attr)) return false;
 		}
 	}
 	
@@ -1824,7 +2782,7 @@ inline bool MemorySubSystem<TYPES, MSS>::LoadFromCacheHierarchy(typename TYPES::
 
 template <typename TYPES, typename MSS>
 template <typename CACHE_HIERARCHY, typename CACHE>
-inline bool MemorySubSystem<TYPES, MSS>::StoreInCacheHierarchy(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+inline bool MemorySubSystem<TYPES, MSS>::StoreInCacheHierarchy(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
 {
 	// 3 cases:
 	//     - (1) Store to memory because access is not cacheable or access is to latest level (memory)
@@ -1833,34 +2791,33 @@ inline bool MemorySubSystem<TYPES, MSS>::StoreInCacheHierarchy(typename TYPES::A
 	if(unlikely(CACHE::IsNullCache() || !__MSS_IsStorageCacheable__(storage_attr)))
 	{
 		// (1) Store to memory
-		if(unlikely(!__MSS_DataBusWrite__(addr, buffer, size, storage_attr)))
-		{
-			return false;
-		}
+		return __MSS_DataBusWrite__(phys_addr, buffer, size, storage_attr);
 	}
-	else if(unlikely(!__MSS_IsCacheEnabled__<CACHE>()))
+	
+	CACHE *cache = __MSS_GetCache__<CACHE>();
+	
+	if(unlikely(!cache->__MSS_IsEnabled__()))
 	{
 		// (2) Store in next level cache
 		typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 		
-		if(!StoreInCacheHierarchy<CACHE_HIERARCHY, NLC>(addr, buffer, size, storage_attr)) return false;
+		if(!StoreInCacheHierarchy<CACHE_HIERARCHY, NLC>(phys_addr, buffer, size, storage_attr)) return false;
 	}
 	else
 	{
 		// (3) store in this cache
 		CacheAccess<TYPES, CACHE> access;
 
-		access.addr = addr;
+		access.phys_addr = phys_addr;
 		access.storage_attr = storage_attr;
 		access.rwitm = true;
 		
-		CACHE *cache = __MSS_GetCache__<CACHE>();
 		cache->Lookup(access);
-		if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+		if(unlikely(cache->__MSS_IsVerbose__()))
 		{
-			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Lookup at @0x"
-			                             << std::hex << access.addr << std::dec << " : "
-			                             << "line_base_addr=0x" << std::hex << access.line_base_addr << std::dec << ","
+			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Lookup at @0x"
+			                             << std::hex << access.phys_addr << std::dec << " : "
+			                             << "line_base_phys_addr=0x" << std::hex << access.line_base_phys_addr << std::dec << ","
 			                             << "index=0x" << std::hex << access.index << std::dec << ","
 			                             << "sector=0x" << std::hex << access.sector << std::dec << ","
 			                             << "offset=0x" << std::hex << access.offset << std::dec << ","
@@ -1871,19 +2828,19 @@ inline bool MemorySubSystem<TYPES, MSS>::StoreInCacheHierarchy(typename TYPES::A
 		if(unlikely(!access.line))
 		{
 			// Line miss
-			if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+			if(unlikely(cache->__MSS_IsVerbose__()))
 			{
-				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Line miss at @0x" << std::hex << access.addr << std::dec << std::endl;
+				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Line miss at @0x" << std::hex << access.phys_addr << std::dec << std::endl;
 			}
 
-			if(CACHE::IsWriteAllocate() || __MSS_IsCacheWriteAllocate__<CACHE>())
+			if(CACHE::IsStaticWriteAllocate() || cache->__MSS_IsWriteAllocate__())
 			{
 				// write-allocate: evict before fill
-				if(likely(__MSS_ChooseLineToEvict__(access)))
+				if(likely(cache->__MSS_ChooseLineToEvict__(access)))
 				{
-					if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+					if(unlikely(cache->__MSS_IsVerbose__()))
 					{
-						__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Line miss: choosen way=" << access.way << std::endl;
+						__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Line miss: choosen way=" << access.way << std::endl;
 					}
 
 					if(unlikely((!EvictLine<CACHE_HIERARCHY, CACHE>(access)))) return false;
@@ -1892,9 +2849,9 @@ inline bool MemorySubSystem<TYPES, MSS>::StoreInCacheHierarchy(typename TYPES::A
 		}
 		else
 		{
-			if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+			if(unlikely(cache->__MSS_IsVerbose__()))
 			{
-				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Line hit: index=" << access.index << ", way=" << access.line->GetWay() << std::endl;
+				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Line hit: index=" << access.index << ", way=" << access.line->GetWay() << std::endl;
 			}
 		}
 		
@@ -1903,46 +2860,46 @@ inline bool MemorySubSystem<TYPES, MSS>::StoreInCacheHierarchy(typename TYPES::A
 			if(unlikely(!access.block))
 			{
 				// Block miss
-				if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+				if(unlikely(cache->__MSS_IsVerbose__()))
 				{
-					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Block miss at @0x" << std::hex << access.addr << std::dec << std::endl;
+					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Block miss at @0x" << std::hex << access.phys_addr << std::dec << std::endl;
 				}
 				
-				if(CACHE::IsWriteAllocate() || __MSS_IsCacheWriteAllocate__<CACHE>())
+				if(CACHE::IsStaticWriteAllocate() || cache->__MSS_IsWriteAllocate__())
 				{
 					// write-allocate: fill if missing block
 					typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 					
 					if(unlikely((!FillBlock<CACHE_HIERARCHY, CACHE, NLC>(access)))) return false;
-					__MSS_UpdateReplacementPolicyOnFill__(access);
+					cache->__MSS_UpdateReplacementPolicyOnFill__(access);
 				}
 			}
 			else
 			{
-				if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+				if(unlikely(cache->__MSS_IsVerbose__()))
 				{
-					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << " Block hit at @0x" << std::hex << access.addr << std::dec << std::endl;
+					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << " Block hit at @0x" << std::hex << access.phys_addr << std::dec << std::endl;
 				}
 			}
 
-			if(CACHE::IsWriteAllocate() || __MSS_IsCacheWriteAllocate__<CACHE>() || access.block)
+			if(CACHE::IsStaticWriteAllocate() || cache->__MSS_IsWriteAllocate__() || access.block)
 			{
 				// write-allocate or cache hit
 				assert(size <= access.size_to_block_boundary);
-				memcpy(&(*access.block)[access.offset], buffer, size);
-				if(CACHE::IsWriteBackCache())
+				memcpy(&access.block->GetByteByOffset(access.offset), buffer, size);
+				if(CACHE::IsStaticWriteBackCache())
 				{
 					// write-back
 					access.block->SetDirty();
 				}
-				__MSS_UpdateReplacementPolicyOnAccess__(access);
+				cache->__MSS_UpdateReplacementPolicyOnAccess__(access);
 			}
 			
-			if(CACHE::IsWriteThroughCache() || __MSS_IsDataWriteAccessWriteThrough__(storage_attr))
+			if(CACHE::IsStaticWriteThroughCache() || __MSS_IsDataStoreAccessWriteThrough__(storage_attr))
 			{
 				typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 				
-				if(unlikely((!StoreInCacheHierarchy<CACHE_HIERARCHY, NLC>(addr, buffer, size, storage_attr)))) return false;
+				if(unlikely((!StoreInCacheHierarchy<CACHE_HIERARCHY, NLC>(phys_addr, buffer, size, storage_attr)))) return false;
 			}
 		}
 		else
@@ -1950,7 +2907,7 @@ inline bool MemorySubSystem<TYPES, MSS>::StoreInCacheHierarchy(typename TYPES::A
 			// Line miss and locked way: Store to next level cache
 			typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 			
-			if(!StoreInCacheHierarchy<CACHE_HIERARCHY, NLC>(addr, buffer, size, storage_attr)) return false;
+			if(!StoreInCacheHierarchy<CACHE_HIERARCHY, NLC>(phys_addr, buffer, size, storage_attr)) return false;
 		}
 	}
 
@@ -1959,7 +2916,7 @@ inline bool MemorySubSystem<TYPES, MSS>::StoreInCacheHierarchy(typename TYPES::A
 
 template <typename TYPES, typename MSS>
 template <typename CACHE_HIERARCHY, typename CACHE>
-bool MemorySubSystem<TYPES, MSS>::DebugLoadFromCacheHierarchy(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+bool MemorySubSystem<TYPES, MSS>::DebugLoadFromCacheHierarchy(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
 {
 	// 3 cases:
 	//     - (1) Debug Load from memory because access is not cacheable or access is to latest level (memory)
@@ -1970,28 +2927,30 @@ bool MemorySubSystem<TYPES, MSS>::DebugLoadFromCacheHierarchy(typename TYPES::AD
 		// (1) Load from memory
 		if(typeid(CACHE_HIERARCHY) == typeid(typename MSS::DATA_CACHE_HIERARCHY))
 		{
-			return __MSS_DebugDataBusRead__(addr, buffer, size, storage_attr);
+			return __MSS_DebugDataBusRead__(phys_addr, buffer, size, storage_attr);
 		}
 		else
 		{
-			return __MSS_DebugInstructionBusRead__(addr, buffer, size, storage_attr);
+			return __MSS_DebugInstructionBusRead__(phys_addr, buffer, size, storage_attr);
 		}
 	}
-	else if(unlikely(!__MSS_IsCacheEnabled__<CACHE>()))
+	
+	CACHE *cache = __MSS_GetCache__<CACHE>();
+	
+	if(unlikely(!cache->__MSS_IsEnabled__()))
 	{
 		// (2) Load from next level cache
 		typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 		
-		return DebugLoadFromCacheHierarchy<CACHE_HIERARCHY, NLC>(addr, buffer, size, storage_attr);
+		return DebugLoadFromCacheHierarchy<CACHE_HIERARCHY, NLC>(phys_addr, buffer, size, storage_attr);
 	}
 	else
 	{
 		// (3) Debug Load from this cache
 		CacheAccess<TYPES, CACHE> access;
 
-		access.addr = addr;
+		access.phys_addr = phys_addr;
 		
-		CACHE *cache = __MSS_GetCache__<CACHE>();
 		cache->Lookup(access);
 
 		if(unlikely(!access.block))
@@ -1999,11 +2958,11 @@ bool MemorySubSystem<TYPES, MSS>::DebugLoadFromCacheHierarchy(typename TYPES::AD
 			// miss: try debug loading from next level cache
 			typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 			
-			return DebugLoadFromCacheHierarchy<CACHE_HIERARCHY, NLC>(addr, buffer, size, storage_attr);
+			return DebugLoadFromCacheHierarchy<CACHE_HIERARCHY, NLC>(phys_addr, buffer, size, storage_attr);
 		}
 
 		assert(size <= access.size_to_block_boundary);
-		memcpy(buffer, &(*access.block)[access.offset], size);
+		memcpy(buffer, &access.block->GetByteByOffset(access.offset), size);
 	}
 	
 	return true;
@@ -2011,7 +2970,7 @@ bool MemorySubSystem<TYPES, MSS>::DebugLoadFromCacheHierarchy(typename TYPES::AD
 
 template <typename TYPES, typename MSS>
 template <typename CACHE_HIERARCHY, typename CACHE>
-bool MemorySubSystem<TYPES, MSS>::DebugStoreInCacheHierarchy(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+bool MemorySubSystem<TYPES, MSS>::DebugStoreInCacheHierarchy(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
 {
 	// 3 cases:
 	//     - (1) Debug Store to memory because access is not cacheable or access is to latest level (memory)
@@ -2020,23 +2979,25 @@ bool MemorySubSystem<TYPES, MSS>::DebugStoreInCacheHierarchy(typename TYPES::ADD
 	if(unlikely(CACHE::IsNullCache() || !__MSS_IsStorageCacheable__(storage_attr)))
 	{
 		// (1) debug store to memory
-		return __MSS_DebugDataBusWrite__(addr, buffer, size, storage_attr);
+		return __MSS_DebugDataBusWrite__(phys_addr, buffer, size, storage_attr);
 	}
-	else if(unlikely(!__MSS_IsCacheEnabled__<CACHE>()))
+	
+	CACHE *cache = __MSS_GetCache__<CACHE>();
+	
+	if(unlikely(!cache->__MSS_IsEnabled__()))
 	{
 		// (2) Store into next level cache
 		typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 		
-		return DebugStoreInCacheHierarchy<CACHE_HIERARCHY, NLC>(addr, buffer, size, storage_attr);
+		return DebugStoreInCacheHierarchy<CACHE_HIERARCHY, NLC>(phys_addr, buffer, size, storage_attr);
 	}
 	else
 	{
 		// (3) Debug Store into this cache
 		CacheAccess<TYPES, CACHE> access;
 
-		access.addr = addr;
+		access.phys_addr = phys_addr;
 		
-		CACHE *cache = __MSS_GetCache__<CACHE>();
 		cache->Lookup(access);
 
 		if(unlikely(!access.block))
@@ -2044,11 +3005,11 @@ bool MemorySubSystem<TYPES, MSS>::DebugStoreInCacheHierarchy(typename TYPES::ADD
 			// miss: try debug loading from next level cache
 			typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 			
-			return DebugStoreInCacheHierarchy<CACHE_HIERARCHY, NLC>(addr, buffer, size, storage_attr);
+			return DebugStoreInCacheHierarchy<CACHE_HIERARCHY, NLC>(phys_addr, buffer, size, storage_attr);
 		}
 
 		assert(size <= access.size_to_block_boundary);
-		memcpy(&(*access.block)[access.offset], buffer, size);
+		memcpy(&access.block->GetByteByOffset(access.offset), buffer, size);
 	}
 	
 	return true;
@@ -2063,139 +3024,143 @@ inline bool MemorySubSystem<TYPES, MSS>::FillBlock(CacheAccess<TYPES, TO>& to_ac
 	//     - (2) if cache is disabled, try to fill block from next level cache
 	//     - (3) if cache is enabled, fill block from cache
 	
-	to_access.block = &(*to_access.line)[to_access.sector];
+	to_access.block = &to_access.line->GetBlockBySector(to_access.sector);
 	
 	if(unlikely(FROM::IsNullCache()))
 	{
 		// (1) Block Fill from Memory
-		if(unlikely(__MSS_IsCacheVerbose__<TO>()))
+		if(unlikely(to_access.cache->__MSS_IsVerbose__()))
 		{
-			__MSS_GetDebugInfoStream__() << TO::__MSS_GetName__() << ": Filling block from memory at @0x" << std::hex << to_access.block_base_addr << std::dec << std::endl;
+			__MSS_GetDebugInfoStream__() << TO::__MSS_GetCacheName__() << ": Filling block from memory at @0x" << std::hex << to_access.block_base_phys_addr << std::dec << std::endl;
 		}
 		
 		if(TO::IsDataCache())
 		{
-			if(unlikely(!__MSS_DataBusRead__(to_access.block_base_addr, &(*to_access.block)[0], TO::BLOCK_SIZE, to_access.storage_attr, to_access.rwitm)))
+			if(unlikely(!__MSS_DataBusRead__(to_access.block_base_phys_addr, &to_access.block->GetByteByOffset(0), TO::BLOCK_SIZE, to_access.storage_attr, to_access.rwitm)))
 			{
 				return false;
 			}
 		}
 		else
 		{
-			if(unlikely(!__MSS_InstructionBusRead__(to_access.block_base_addr, &(*to_access.block)[0], TO::BLOCK_SIZE, to_access.storage_attr)))
+			if(unlikely(!__MSS_InstructionBusRead__(to_access.block_base_phys_addr, &to_access.block->GetByteByOffset(0), TO::BLOCK_SIZE, to_access.storage_attr)))
 			{
 				return false;
 			}
 		}
-	}
-	else if(unlikely(!__MSS_IsCacheEnabled__<FROM>()))
-	{
-		// (2) fill block from next level cache
-		typedef typename CACHE_HIERARCHY::template NextLevel<FROM>::CACHE NLC;
-		
-		if(unlikely((!FillBlock<CACHE_HIERARCHY, TO, NLC>(to_access)))) return false;
-		__MSS_UpdateReplacementPolicyOnFill__(to_access);
 	}
 	else
 	{
-		// (3) cache is enabled, try to fill block from cache
-		
-		// 2 sub-cases:
-		//   - (3.1) if block fill hits then fill block from cache
-		//   - (3.2) if block fill misses then try to fill block from next level cache
-
-		if(unlikely(__MSS_IsCacheVerbose__<TO>()))
-		{
-			__MSS_GetDebugInfoStream__() << TO::__MSS_GetName__() << ": Filling block from " << FROM::__MSS_GetName__() << " at @0x" << std::hex << to_access.block_base_addr << std::dec << std::endl;
-		}
-		
-		CacheAccess<TYPES, FROM> from_access;
-		
-		from_access.addr = to_access.block_base_addr;
-		from_access.storage_attr = to_access.storage_attr;
-		from_access.rwitm = to_access.rwitm;
-
 		FROM *from = __MSS_GetCache__<FROM>();
-		from->Lookup(from_access);
-		if(unlikely(__MSS_IsCacheVerbose__<FROM>()))
-		{
-			__MSS_GetDebugInfoStream__() << FROM::__MSS_GetName__() << ": Lookup at @0x"
-			                             << std::hex << from_access.addr << std::dec << " : "
-			                             << "line_base_addr=0x" << std::hex << from_access.line_base_addr << std::dec << ","
-			                             << "index=0x" << std::hex << from_access.index << std::dec << ","
-			                             << "sector=0x" << std::hex << from_access.sector << std::dec << ","
-			                             << "offset=0x" << std::hex << from_access.offset << std::dec << ","
-			                             << "size_to_block_boundary=0x" << std::hex << from_access.size_to_block_boundary << std::dec
-			                             << std::endl;
-		}
-
-		if(unlikely(!from_access.line))
-		{
-			// Line miss
-			if(unlikely(__MSS_IsCacheVerbose__<FROM>()))
-			{
-				__MSS_GetDebugInfoStream__() << FROM::__MSS_GetName__() << ": Line miss at @0x" << std::hex << from_access.addr << std::dec << std::endl;
-			}
 			
-			if(likely(__MSS_ChooseLineToEvict__(from_access)))
-			{
-				if(unlikely(__MSS_IsCacheVerbose__<FROM>()))
-				{
-					__MSS_GetDebugInfoStream__() << FROM::__MSS_GetName__() << ": Line miss: choosen way=" << from_access.way << std::endl;
-				}
-				
-				if(unlikely((!EvictLine<CACHE_HIERARCHY, FROM>(from_access)))) return false;
-			}
-		}
-		else
+		if(unlikely(!from->__MSS_IsEnabled__()))
 		{
-			if(unlikely(__MSS_IsCacheVerbose__<FROM>()))
-			{
-				__MSS_GetDebugInfoStream__() << FROM::__MSS_GetName__() << ": Line hit: index=" << from_access.index << ", way=" << from_access.line->GetWay() << std::endl;
-			}
-		}
-
-		if(likely(from_access.line))
-		{
-			if(unlikely(!from_access.block))
-			{
-				// (3.2) fill block from next level cache
-				// Block miss
-				if(unlikely(__MSS_IsCacheVerbose__<FROM>()))
-				{
-					__MSS_GetDebugInfoStream__() << FROM::__MSS_GetName__() << ": Block miss at @0x" << std::hex << from_access.addr << std::dec << std::endl;
-				}
-				
-				typedef typename CACHE_HIERARCHY::template NextLevel<FROM>::CACHE NLC;
-				
-				if(unlikely((!FillBlock<CACHE_HIERARCHY, FROM, NLC>(from_access)))) return false;
-				__MSS_UpdateReplacementPolicyOnFill__(from_access);
-			}
-			else
-			{
-				// (3.1) fill block from cache
-				if(unlikely(__MSS_IsCacheVerbose__<FROM>()))
-				{
-					__MSS_GetDebugInfoStream__() << FROM::__MSS_GetName__() << " Block hit at @0x" << std::hex << from_access.addr << std::dec << std::endl;
-				}
-			}
-
-			assert(TO::BLOCK_SIZE <= from_access.size_to_block_boundary);
-			memcpy(&(*to_access.block)[0], &(*from_access.block)[from_access.offset], TO::BLOCK_SIZE); // <-- block fill
-			__MSS_UpdateReplacementPolicyOnAccess__(from_access);
-		}
-		else
-		{
-			// Line miss and locked way: fill from next level cache
+			// (2) fill block from next level cache
 			typedef typename CACHE_HIERARCHY::template NextLevel<FROM>::CACHE NLC;
 			
 			if(unlikely((!FillBlock<CACHE_HIERARCHY, TO, NLC>(to_access)))) return false;
-			__MSS_UpdateReplacementPolicyOnFill__(to_access);
+			to_access.cache->__MSS_UpdateReplacementPolicyOnFill__(to_access);
+		}
+		else
+		{
+			// (3) cache is enabled, try to fill block from cache
+			
+			// 2 sub-cases:
+			//   - (3.1) if block fill hits then fill block from cache
+			//   - (3.2) if block fill misses then try to fill block from next level cache
+
+			if(unlikely(to_access.cache->__MSS_IsVerbose__()))
+			{
+				__MSS_GetDebugInfoStream__() << TO::__MSS_GetCacheName__() << ": Filling block from " << FROM::__MSS_GetCacheName__() << " at @0x" << std::hex << to_access.block_base_phys_addr << std::dec << std::endl;
+			}
+			
+			CacheAccess<TYPES, FROM> from_access;
+			
+			from_access.phys_addr = to_access.block_base_phys_addr;
+			from_access.storage_attr = to_access.storage_attr;
+			from_access.rwitm = to_access.rwitm;
+
+			from->Lookup(from_access);
+			if(unlikely(from->__MSS_IsVerbose__()))
+			{
+				__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << ": Lookup at @0x"
+											<< std::hex << from_access.phys_addr << std::dec << " : "
+											<< "line_base_phys_addr=0x" << std::hex << from_access.line_base_phys_addr << std::dec << ","
+											<< "index=0x" << std::hex << from_access.index << std::dec << ","
+											<< "sector=0x" << std::hex << from_access.sector << std::dec << ","
+											<< "offset=0x" << std::hex << from_access.offset << std::dec << ","
+											<< "size_to_block_boundary=0x" << std::hex << from_access.size_to_block_boundary << std::dec
+											<< std::endl;
+			}
+
+			if(unlikely(!from_access.line))
+			{
+				// Line miss
+				if(unlikely(from->__MSS_IsVerbose__()))
+				{
+					__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << ": Line miss at @0x" << std::hex << from_access.phys_addr << std::dec << std::endl;
+				}
+				
+				if(likely(from->__MSS_ChooseLineToEvict__(from_access)))
+				{
+					if(unlikely(from->__MSS_IsVerbose__()))
+					{
+						__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << ": Line miss: choosen way=" << from_access.way << std::endl;
+					}
+					
+					if(unlikely((!EvictLine<CACHE_HIERARCHY, FROM>(from_access)))) return false;
+				}
+			}
+			else
+			{
+				if(unlikely(from->__MSS_IsVerbose__()))
+				{
+					__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << ": Line hit: index=" << from_access.index << ", way=" << from_access.line->GetWay() << std::endl;
+				}
+			}
+
+			if(likely(from_access.line))
+			{
+				if(unlikely(!from_access.block))
+				{
+					// (3.2) fill block from next level cache
+					// Block miss
+					if(unlikely(from->__MSS_IsVerbose__()))
+					{
+						__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << ": Block miss at @0x" << std::hex << from_access.phys_addr << std::dec << std::endl;
+					}
+					
+					typedef typename CACHE_HIERARCHY::template NextLevel<FROM>::CACHE NLC;
+					
+					if(unlikely((!FillBlock<CACHE_HIERARCHY, FROM, NLC>(from_access)))) return false;
+					from->__MSS_UpdateReplacementPolicyOnFill__(from_access);
+				}
+				else
+				{
+					// (3.1) fill block from cache
+					if(unlikely(from->__MSS_IsVerbose__()))
+					{
+						__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << " Block hit at @0x" << std::hex << from_access.phys_addr << std::dec << std::endl;
+					}
+				}
+
+				assert(TO::BLOCK_SIZE <= from_access.size_to_block_boundary);
+				memcpy(&to_access.block->GetByteByOffset(0), &from_access.block->GetByteByOffset(from_access.offset), TO::BLOCK_SIZE); // <-- block fill
+				from->__MSS_UpdateReplacementPolicyOnAccess__(from_access);
+			}
+			else
+			{
+				// Line miss and locked way: fill from next level cache
+				typedef typename CACHE_HIERARCHY::template NextLevel<FROM>::CACHE NLC;
+				
+				if(unlikely((!FillBlock<CACHE_HIERARCHY, TO, NLC>(to_access)))) return false;
+				to_access.cache->__MSS_UpdateReplacementPolicyOnFill__(to_access);
+			}
 		}
 	}
 	
 	to_access.line->SetValid();
-	to_access.line->SetBaseAddr(to_access.line_base_addr);
+	to_access.line->SetBaseAddress(to_access.line_base_phys_addr);
 	to_access.block->SetValid();
 	
 	return true;
@@ -2205,7 +3170,7 @@ template <typename TYPES, typename MSS>
 template <typename CACHE_HIERARCHY, typename FROM, typename TO, bool INVALIDATE>
 bool MemorySubSystem<TYPES, MSS>::WriteBackDirtyBlock(CacheAccess<TYPES, FROM>& from_access, unsigned int from_sector)
 {
-	CacheBlock<TYPES, typename FROM::CACHE_CONFIG>& from_dirty_block_to_write_back = (*from_access.line_to_write_back_evict)[from_sector];
+	CacheBlock<TYPES, typename FROM::CACHE_CONFIG>& from_dirty_block_to_write_back = from_access.line_to_write_back_evict->GetBlockBySector(from_sector);
 	
 	// 3 cases:
 	//   - (1) write back to memory
@@ -2214,74 +3179,78 @@ bool MemorySubSystem<TYPES, MSS>::WriteBackDirtyBlock(CacheAccess<TYPES, FROM>& 
 	if(unlikely(TO::IsNullCache()))
 	{
 		// (1) Write back block to memory
-		if(unlikely(__MSS_IsCacheVerbose__<FROM>()))
+		if(unlikely(from_access.cache->__MSS_IsVerbose__()))
 		{
-			__MSS_GetDebugInfoStream__() << FROM::__MSS_GetName__() << ": Writing back dirty block to memory 0x" << std::hex << from_dirty_block_to_write_back.GetBaseAddr() << std::dec << std::endl;
+			__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << ": Writing back dirty block to memory 0x" << std::hex << from_dirty_block_to_write_back.GetBaseAddress() << std::dec << std::endl;
 		}
-		if(unlikely(!__MSS_DataBusWrite__(from_dirty_block_to_write_back.GetBaseAddr(), &from_dirty_block_to_write_back[0], FROM::BLOCK_SIZE, typename TYPES::STORAGE_ATTR())))
+		if(unlikely(!__MSS_DataBusWrite__(from_dirty_block_to_write_back.GetBaseAddress(), &from_dirty_block_to_write_back.GetByteByOffset(0), FROM::BLOCK_SIZE, typename TYPES::STORAGE_ATTR())))
 		{
 			return false;
 		}
 	}
-	else if(unlikely(!__MSS_IsCacheEnabled__<TO>()))
-	{
-		// (2) try to write back to next level cache
-		typedef typename CACHE_HIERARCHY::template NextLevel<FROM>::CACHE NLC;
-		
-		if(!WriteBackDirtyBlock<CACHE_HIERARCHY, FROM, NLC, INVALIDATE>(from_access, from_sector)) return false;
-	}
 	else
 	{
-		// (3) cache is enabled, try to write back to cache
-		
-		// 2 sub-cases:
-		//   - (3.1) if write back hits then write back to cache
-		//   - (3.2) if write back misses then try to write back in next level cache
-		CacheAccess<TYPES, TO> to_access;
-
-		to_access.addr = from_dirty_block_to_write_back.GetBaseAddr();
-		
 		TO *to = __MSS_GetCache__<TO>();
-		to->Lookup(to_access);
-		if(unlikely(__MSS_IsCacheVerbose__<TO>()))
+			
+		if(unlikely(!to->__MSS_IsEnabled__()))
 		{
-			__MSS_GetDebugInfoStream__() << TO::__MSS_GetName__() << ": Lookup at @0x"
-			                             << std::hex << to_access.addr << std::dec << " : "
-			                             << "line_base_addr=0x" << std::hex << to_access.line_base_addr << std::dec << ","
-			                             << "index=0x" << std::hex << to_access.index << std::dec << ","
-			                             << "sector=0x" << std::hex << to_access.sector << std::dec << ","
-			                             << "offset=0x" << std::hex << to_access.offset << std::dec << ","
-			                             << "size_to_block_boundary=0x" << std::hex << to_access.size_to_block_boundary << std::dec
-			                             << std::endl;
-		}
-
-		if(to_access.block)
-		{
-			// (3.1) write back to cache
-			// block hit
-			if(unlikely(__MSS_IsCacheVerbose__<FROM>()))
-			{
-				__MSS_GetDebugInfoStream__() << FROM::__MSS_GetName__() << ": Writing back dirty block to " << TO::__MSS_GetName__() << " at @0x" << std::hex << from_dirty_block_to_write_back.GetBaseAddr() << std::dec << std::endl;
-			}
-			assert(FROM::BLOCK_SIZE <= to_access.size_to_block_boundary);
-			memcpy(&(*to_access.block)[to_access.offset], &from_dirty_block_to_write_back[0], FROM::BLOCK_SIZE); // <-- write back
-			to_access.block->SetDirty();
-		}
-		else
-		{
-			// (3.2) try to write back in next level cache
+			// (2) try to write back to next level cache
 			typedef typename CACHE_HIERARCHY::template NextLevel<FROM>::CACHE NLC;
 			
 			if(!WriteBackDirtyBlock<CACHE_HIERARCHY, FROM, NLC, INVALIDATE>(from_access, from_sector)) return false;
+		}
+		else
+		{
+			// (3) cache is enabled, try to write back to cache
+			
+			// 2 sub-cases:
+			//   - (3.1) if write back hits then write back to cache
+			//   - (3.2) if write back misses then try to write back in next level cache
+			CacheAccess<TYPES, TO> to_access;
+
+			to_access.phys_addr = from_dirty_block_to_write_back.GetBaseAddress();
+			
+			to->Lookup(to_access);
+			if(unlikely(to->__MSS_IsVerbose__()))
+			{
+				__MSS_GetDebugInfoStream__() << TO::__MSS_GetCacheName__() << ": Lookup at @0x"
+											<< std::hex << to_access.phys_addr << std::dec << " : "
+											<< "line_base_phys_addr=0x" << std::hex << to_access.line_base_phys_addr << std::dec << ","
+											<< "index=0x" << std::hex << to_access.index << std::dec << ","
+											<< "sector=0x" << std::hex << to_access.sector << std::dec << ","
+											<< "offset=0x" << std::hex << to_access.offset << std::dec << ","
+											<< "size_to_block_boundary=0x" << std::hex << to_access.size_to_block_boundary << std::dec
+											<< std::endl;
+			}
+
+			if(to_access.block)
+			{
+				// (3.1) write back to cache
+				// block hit
+				if(unlikely(to->__MSS_IsVerbose__()))
+				{
+					__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << ": Writing back dirty block to " << TO::__MSS_GetCacheName__() << " at @0x" << std::hex << from_dirty_block_to_write_back.GetBaseAddress() << std::dec << std::endl;
+				}
+				assert(FROM::BLOCK_SIZE <= to_access.size_to_block_boundary);
+				memcpy(&to_access.block->GetByteByOffset(to_access.offset), &from_dirty_block_to_write_back.GetByteByOffset(0), FROM::BLOCK_SIZE); // <-- write back
+				to_access.block->SetDirty();
+			}
+			else
+			{
+				// (3.2) try to write back in next level cache
+				typedef typename CACHE_HIERARCHY::template NextLevel<FROM>::CACHE NLC;
+				
+				if(!WriteBackDirtyBlock<CACHE_HIERARCHY, FROM, NLC, INVALIDATE>(from_access, from_sector)) return false;
+			}
 		}
 	}
 	
 	// optionnally invalidate block
 	if(INVALIDATE)
 	{
-		if(unlikely(__MSS_IsCacheVerbose__<FROM>()))
+		if(unlikely(from_access.cache->__MSS_IsVerbose__()))
 		{
-			__MSS_GetDebugInfoStream__() << FROM::__MSS_GetName__() << ": Invalidating block at 0x" << std::hex << from_dirty_block_to_write_back.GetBaseAddr() << std::dec << std::endl;
+			__MSS_GetDebugInfoStream__() << FROM::__MSS_GetCacheName__() << ": Invalidating block at 0x" << std::hex << from_dirty_block_to_write_back.GetBaseAddress() << std::dec << std::endl;
 		}
 		from_dirty_block_to_write_back.Invalidate();
 	}
@@ -2295,18 +3264,18 @@ bool MemorySubSystem<TYPES, MSS>::WriteBackLine(CacheAccess<TYPES, CACHE>& acces
 {
 	if(access.line_to_write_back_evict->IsValid())
 	{
-		if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+		if(unlikely(access.cache->__MSS_IsVerbose__()))
 		{
-			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Writing back Line at @0x" << std::hex << access.line_to_write_back_evict->GetBaseAddr() << std::dec << std::endl;
+			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Writing back Line at @0x" << std::hex << access.line_to_write_back_evict->GetBaseAddress() << std::dec << std::endl;
 		}
-		if(CACHE::IsWriteBackCache())
+		if(CACHE::IsStaticWriteBackCache())
 		{
 			// write-back cache
 			unsigned int sector;
 		
 			for(sector = 0; sector < CACHE::BLOCKS_PER_LINE; sector++)
 			{
-				CacheBlock<TYPES, typename CACHE::CACHE_CONFIG>& block_to_evict = (*access.line_to_write_back_evict)[sector];
+				CacheBlock<TYPES, typename CACHE::CACHE_CONFIG>& block_to_evict = access.line_to_write_back_evict->GetBlockBySector(sector);
 		
 				if(block_to_evict.IsValid() && block_to_evict.IsDirty())
 				{
@@ -2320,18 +3289,18 @@ bool MemorySubSystem<TYPES, MSS>::WriteBackLine(CacheAccess<TYPES, CACHE>& acces
 		
 		if(INVALIDATE)
 		{
-			if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+			if(unlikely(access.cache->__MSS_IsVerbose__()))
 			{
-				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Invalidating Line at @0x" << std::hex << access.line_to_write_back_evict->GetBaseAddr() << std::dec << std::endl;
+				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Line at @0x" << std::hex << access.line_to_write_back_evict->GetBaseAddress() << std::dec << std::endl;
 			}
 			access.line_to_write_back_evict->Invalidate();
 		}
 	}
 	else
 	{
-		if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+		if(unlikely(access.cache->__MSS_IsVerbose__()))
 		{
-			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Nothing to write back because Line is invalid" << std::endl;
+			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Nothing to write back because Line is invalid" << std::endl;
 		}
 	}
 	
@@ -2342,15 +3311,15 @@ template <typename TYPES, typename MSS>
 template <typename CACHE_HIERARCHY, typename CACHE>
 bool MemorySubSystem<TYPES, MSS>::EvictLine(CacheAccess<TYPES, CACHE>& access)
 {
-	if(CACHE::IsDataCache() && CACHE::IsWriteBackCache())
+	if(CACHE::IsDataCache() && CACHE::IsStaticWriteBackCache())
 	{
 		WriteBackLine<CACHE_HIERARCHY, CACHE, /* invalidate */ true >(access);
 	}
 	else
 	{
-		if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+		if(unlikely(access.cache->__MSS_IsVerbose__()))
 		{
-			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Invalidating Line at @0x" << std::hex << access.line_to_write_back_evict->GetBaseAddr() << std::dec << std::endl;
+			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Line at @0x" << std::hex << access.line_to_write_back_evict->GetBaseAddress() << std::dec << std::endl;
 		}
 		access.line_to_write_back_evict->Invalidate();
 	}
@@ -2422,43 +3391,43 @@ inline bool MemorySubSystem<TYPES, MSS>::IsStorageCacheable(typename TYPES::STOR
 }
 
 template <typename TYPES, typename MSS>
-inline bool MemorySubSystem<TYPES, MSS>::IsDataWriteAccessWriteThrough(typename TYPES::STORAGE_ATTR storage_attr) const
+inline bool MemorySubSystem<TYPES, MSS>::IsDataStoreAccessWriteThrough(typename TYPES::STORAGE_ATTR storage_attr) const
 {
 	return false;
 }
 
 template <typename TYPES, typename MSS>
-bool MemorySubSystem<TYPES, MSS>::DataBusRead(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr, bool rwitm)
+bool MemorySubSystem<TYPES, MSS>::DataBusRead(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr, bool rwitm)
 {
 	return false;
 }
 
 template <typename TYPES, typename MSS>
-bool MemorySubSystem<TYPES, MSS>::DataBusWrite(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+bool MemorySubSystem<TYPES, MSS>::DataBusWrite(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
 {
 	return false;
 }
 
 template <typename TYPES, typename MSS>
-bool MemorySubSystem<TYPES, MSS>::InstructionBusRead(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+bool MemorySubSystem<TYPES, MSS>::InstructionBusRead(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
 {
 	return false;
 }
 
 template <typename TYPES, typename MSS>
-bool MemorySubSystem<TYPES, MSS>::DebugDataBusRead(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+bool MemorySubSystem<TYPES, MSS>::DebugDataBusRead(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
 {
 	return false;
 }
 
 template <typename TYPES, typename MSS>
-bool MemorySubSystem<TYPES, MSS>::DebugDataBusWrite(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+bool MemorySubSystem<TYPES, MSS>::DebugDataBusWrite(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
 {
 	return false;
 }
 
 template <typename TYPES, typename MSS>
-bool MemorySubSystem<TYPES, MSS>::DebugInstructionBusRead(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+bool MemorySubSystem<TYPES, MSS>::DebugInstructionBusRead(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
 {
 	return false;
 }
@@ -2479,6 +3448,19 @@ void MemorySubSystem<TYPES, MSS>::Trace(const char *type, typename TYPES::ADDRES
 }
 
 template <typename TYPES, typename MSS>
+inline typename MemorySubSystem<TYPES, MSS>::ACCESS_CONTROLLER *MemorySubSystem<TYPES, MSS>::GetAccessController()
+{
+	static __MSS_AccessController__ access_controller;
+	return &access_controller;
+}
+
+template <typename TYPES, typename MSS>
+template <typename ACCESS_CONTROLLER> inline ACCESS_CONTROLLER *MemorySubSystem<TYPES, MSS>::__MSS_GetAccessController__()
+{
+	return static_cast<MSS *>(this)->GetAccessController();
+}
+
+template <typename TYPES, typename MSS>
 template <typename CACHE> inline CACHE *MemorySubSystem<TYPES, MSS>::__MSS_GetCache__()
 {
 	CACHE *cache = __MSS_CACHE_INTERFACE__<CACHE>::GetCache(static_cast<MSS *>(this), (const CACHE *) 0);
@@ -2486,50 +3468,10 @@ template <typename CACHE> inline CACHE *MemorySubSystem<TYPES, MSS>::__MSS_GetCa
 }
 
 template <typename TYPES, typename MSS>
-template <typename CACHE>
-inline bool MemorySubSystem<TYPES, MSS>::__MSS_IsCacheVerbose__()
+template <typename LOC_MEM> inline LOC_MEM *MemorySubSystem<TYPES, MSS>::__MSS_GetLocalMemory__()
 {
-	return __MSS_CACHE_INTERFACE__<CACHE>::IsCacheVerbose(static_cast<MSS *>(this), (const CACHE *) 0);
-}
-
-template <typename TYPES, typename MSS>
-template <typename CACHE>
-inline bool MemorySubSystem<TYPES, MSS>::__MSS_IsCacheEnabled__()
-{
-	return __MSS_CACHE_INTERFACE__<CACHE>::IsCacheEnabled(static_cast<MSS *>(this), (const CACHE *) 0);
-}
-
-template <typename TYPES, typename MSS>
-template <typename CACHE>
-inline bool MemorySubSystem<TYPES, MSS>::__MSS_IsCacheWriteAllocate__()
-{
-	return __MSS_CACHE_INTERFACE__<CACHE>::IsCacheWriteAllocate(static_cast<MSS *>(this), (const CACHE *) 0);
-}
-
-template <typename TYPES, typename MSS>
-template <typename CACHE>
-inline bool MemorySubSystem<TYPES, MSS>::__MSS_ChooseLineToEvict__(CacheAccess<TYPES, CACHE>& access)
-{
-	if(likely(__MSS_CACHE_INTERFACE__<CACHE>::ChooseLineToEvict(static_cast<MSS *>(this), access)))
-	{
-		access.line_to_write_back_evict = &(*access.set)[access.way];
-		return true;
-	}
-	return false;
-}
-
-template <typename TYPES, typename MSS>
-template <typename CACHE>
-inline void MemorySubSystem<TYPES, MSS>::__MSS_UpdateReplacementPolicyOnAccess__(CacheAccess<TYPES, CACHE>& access)
-{
-	__MSS_CACHE_INTERFACE__<CACHE>::UpdateReplacementPolicyOnAccess(static_cast<MSS *>(this), access);
-}
-
-template <typename TYPES, typename MSS>
-template <typename CACHE>
-inline void MemorySubSystem<TYPES, MSS>::__MSS_UpdateReplacementPolicyOnFill__(CacheAccess<TYPES, CACHE>& access)
-{
-	__MSS_CACHE_INTERFACE__<CACHE>::UpdateReplacementPolicyOnFill(static_cast<MSS *>(this), access);
+	LOC_MEM *loc_mem = __MSS_LOC_MEM_INTERFACE__<LOC_MEM>::GetLocalMemory(static_cast<MSS *>(this), (const LOC_MEM *) 0);
+	return loc_mem;
 }
 
 template <typename TYPES, typename MSS>
@@ -2557,9 +3499,9 @@ inline bool MemorySubSystem<TYPES, MSS>::__MSS_IsStorageCacheable__(typename TYP
 }
 
 template <typename TYPES, typename MSS>
-inline bool MemorySubSystem<TYPES, MSS>::__MSS_IsDataWriteAccessWriteThrough__(typename TYPES::STORAGE_ATTR storage_attr) const
+inline bool MemorySubSystem<TYPES, MSS>::__MSS_IsDataStoreAccessWriteThrough__(typename TYPES::STORAGE_ATTR storage_attr) const
 {
-	return static_cast<const MSS *>(this)->IsDataWriteAccessWriteThrough(storage_attr);
+	return static_cast<const MSS *>(this)->IsDataStoreAccessWriteThrough(storage_attr);
 }
 
 template <typename TYPES, typename MSS>
@@ -2599,59 +3541,59 @@ inline bool MemorySubSystem<TYPES, MSS>::__MSS_IsVerboseInstructionBusRead__() c
 }
 
 template <typename TYPES, typename MSS>
-inline bool MemorySubSystem<TYPES, MSS>::__MSS_DataBusRead__(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr, bool rwitm)
+inline bool MemorySubSystem<TYPES, MSS>::__MSS_DataBusRead__(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr, bool rwitm)
 {
-	if(!static_cast<MSS *>(this)->DataBusRead(addr, buffer, size, storage_attr, rwitm)) return false;
+	if(!static_cast<MSS *>(this)->DataBusRead(phys_addr, buffer, size, storage_attr, rwitm)) return false;
 
-	if(unlikely(__MSS_IsVerboseDataBusRead__())) Trace("Reading from Bus Data", addr, buffer, size);
+	if(unlikely(__MSS_IsVerboseDataBusRead__())) Trace("Reading from Bus Data", phys_addr, buffer, size);
 
 	return true;
 }
 
 template <typename TYPES, typename MSS>
-inline bool MemorySubSystem<TYPES, MSS>::__MSS_DataBusWrite__(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+inline bool MemorySubSystem<TYPES, MSS>::__MSS_DataBusWrite__(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
 {
-	if(unlikely(__MSS_IsVerboseDataBusWrite__())) Trace("Writing to Bus Data", addr, buffer, size);
+	if(unlikely(__MSS_IsVerboseDataBusWrite__())) Trace("Writing to Bus Data", phys_addr, buffer, size);
 
-	return static_cast<MSS *>(this)->DataBusWrite(addr, buffer, size, storage_attr);
+	return static_cast<MSS *>(this)->DataBusWrite(phys_addr, buffer, size, storage_attr);
 }
 
 template <typename TYPES, typename MSS>
-inline bool MemorySubSystem<TYPES, MSS>::__MSS_InstructionBusRead__(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+inline bool MemorySubSystem<TYPES, MSS>::__MSS_InstructionBusRead__(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
 {
-	if(!static_cast<MSS *>(this)->InstructionBusRead(addr, buffer, size, storage_attr)) return false;
+	if(!static_cast<MSS *>(this)->InstructionBusRead(phys_addr, buffer, size, storage_attr)) return false;
 
-	if(unlikely(__MSS_IsVerboseInstructionBusRead__())) Trace("Reading from Bus Instruction", addr, buffer, size);
+	if(unlikely(__MSS_IsVerboseInstructionBusRead__())) Trace("Reading from Bus Instruction", phys_addr, buffer, size);
 	
 	return true;
 }
 
 template <typename TYPES, typename MSS>
-inline bool MemorySubSystem<TYPES, MSS>::__MSS_DebugDataBusRead__(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+inline bool MemorySubSystem<TYPES, MSS>::__MSS_DebugDataBusRead__(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
 {
-	return static_cast<MSS *>(this)->DebugDataBusRead(addr, buffer, size, storage_attr);
+	return static_cast<MSS *>(this)->DebugDataBusRead(phys_addr, buffer, size, storage_attr);
 }
 
 template <typename TYPES, typename MSS>
-inline bool MemorySubSystem<TYPES, MSS>::__MSS_DebugDataBusWrite__(typename TYPES::ADDRESS addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+inline bool MemorySubSystem<TYPES, MSS>::__MSS_DebugDataBusWrite__(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
 {
-	return static_cast<MSS *>(this)->DebugDataBusWrite(addr, buffer, size, storage_attr);
+	return static_cast<MSS *>(this)->DebugDataBusWrite(phys_addr, buffer, size, storage_attr);
 }
 
 template <typename TYPES, typename MSS>
-inline bool MemorySubSystem<TYPES, MSS>::__MSS_DebugInstructionBusRead__(typename TYPES::ADDRESS addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
+inline bool MemorySubSystem<TYPES, MSS>::__MSS_DebugInstructionBusRead__(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr)
 {
-	return static_cast<MSS *>(this)->DebugInstructionBusRead(addr, buffer, size, storage_attr);
+	return static_cast<MSS *>(this)->DebugInstructionBusRead(phys_addr, buffer, size, storage_attr);
 }
 
 template <typename TYPES, typename MSS>
 template <typename CACHE>
-inline void MemorySubSystem<TYPES, MSS>::DecodeAddress(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& index, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
+inline void MemorySubSystem<TYPES, MSS>::DecodeAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& line_base_phys_addr, typename TYPES::PHYSICAL_ADDRESS& block_base_phys_addr, unsigned int& index, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
 {
 	if(unlikely(CACHE::IsNullCache()))
 	{
-		line_base_addr = 0;
-		block_base_addr = 0;
+		line_base_phys_addr = 0;
+		block_base_phys_addr = 0;
 		index = 0;
 		sector = 0;
 		offset = 0;
@@ -2659,40 +3601,40 @@ inline void MemorySubSystem<TYPES, MSS>::DecodeAddress(typename TYPES::ADDRESS a
 		return;
 	}
 
-	CACHE::DecodeAddress(addr, line_base_addr, block_base_addr, index, sector, offset, size_to_block_boundary);
+	CACHE::DecodeAddress(phys_addr, line_base_phys_addr, block_base_phys_addr, index, sector, offset, size_to_block_boundary);
 }
 
 template <typename TYPES, typename MSS>
 template <typename CACHE>
-inline CacheSet<TYPES, typename CACHE::CACHE_CONFIG> *MemorySubSystem<TYPES, MSS>::LookupSet(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& line_base_addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
+inline CacheSet<TYPES, typename CACHE::CACHE_CONFIG> *MemorySubSystem<TYPES, MSS>::LookupSet(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& line_base_phys_addr, typename TYPES::PHYSICAL_ADDRESS& block_base_phys_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
 {
 	if(CACHE::IsNullCache()) return 0;
 
 	CACHE *cache = __MSS_GetCache__<CACHE>();
 	
-	return cache->LookupSet(addr, line_base_addr, block_base_addr, sector, offset, size_to_block_boundary);
+	return cache->LookupSet(phys_addr, line_base_phys_addr, block_base_phys_addr, sector, offset, size_to_block_boundary);
 }
 
 template <typename TYPES, typename MSS>
 template <typename CACHE>
-inline CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *MemorySubSystem<TYPES, MSS>::LookupLine(typename TYPES::ADDRESS addr, typename TYPES::ADDRESS& block_base_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
+inline CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *MemorySubSystem<TYPES, MSS>::LookupLine(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& block_base_phys_addr, unsigned int& sector, unsigned int& offset, unsigned int& size_to_block_boundary)
 {
 	if(CACHE::IsNullCache()) return 0;
 
 	CACHE *cache = __MSS_GetCache__<CACHE>();
 	
-	return cache->LookupLine(addr, block_base_addr, sector, offset, size_to_block_boundary);
+	return cache->LookupLine(phys_addr, block_base_phys_addr, sector, offset, size_to_block_boundary);
 }
 
 template <typename TYPES, typename MSS>
 template <typename CACHE>
-inline CacheBlock<TYPES, typename CACHE::CACHE_CONFIG> *MemorySubSystem<TYPES, MSS>::LookupBlock(typename TYPES::ADDRESS addr, unsigned int& offset, unsigned int& size_to_block_boundary)
+inline CacheBlock<TYPES, typename CACHE::CACHE_CONFIG> *MemorySubSystem<TYPES, MSS>::LookupBlock(typename TYPES::PHYSICAL_ADDRESS phys_addr, unsigned int& offset, unsigned int& size_to_block_boundary)
 {
 	if(CACHE::IsNullCache()) return 0;
 
 	CACHE *cache = __MSS_GetCache__<CACHE>();
 	
-	return cache->LookupBlock(addr, offset, size_to_block_boundary);
+	return cache->LookupBlock(phys_addr, offset, size_to_block_boundary);
 }
 
 template <typename TYPES, typename MSS>
@@ -2701,8 +3643,8 @@ inline void MemorySubSystem<TYPES, MSS>::Lookup(CacheAccess<TYPES, CACHE>& acces
 {
 	if(unlikely(CACHE::IsNullCache()))
 	{
-		access.line_base_addr = 0;
-		access.block_base_addr = 0;
+		access.line_base_phys_addr = 0;
+		access.block_base_phys_addr = 0;
 		access.index = 0;
 		access.way = 0;
 		access.sector = 0;
@@ -2719,11 +3661,11 @@ inline void MemorySubSystem<TYPES, MSS>::Lookup(CacheAccess<TYPES, CACHE>& acces
 	
 	cache->Lookup(access);
 	
-	if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+	if(unlikely(cache->__MSS_IsVerbose__()))
 	{
-		__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Lookup at @0x"
-		                             << std::hex << access.addr << std::dec << " : "
-		                             << "line_base_addr=0x" << std::hex << access.line_base_addr << std::dec << ","
+		__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Lookup at @0x"
+		                             << std::hex << access.phys_addr << std::dec << " : "
+		                             << "line_base_phys_addr=0x" << std::hex << access.line_base_phys_addr << std::dec << ","
 		                             << "index=0x" << std::hex << access.index << std::dec << ","
 		                             << "sector=0x" << std::hex << access.sector << std::dec << ","
 		                             << "offset=0x" << std::hex << access.offset << std::dec << ","
@@ -2734,23 +3676,23 @@ inline void MemorySubSystem<TYPES, MSS>::Lookup(CacheAccess<TYPES, CACHE>& acces
 
 template <typename TYPES, typename MSS>
 template <typename CACHE>
-inline void MemorySubSystem<TYPES, MSS>::InvalidateBlockByAddress(typename TYPES::ADDRESS addr)
+inline void MemorySubSystem<TYPES, MSS>::InvalidateBlockByAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr)
 {
 	if(CACHE::IsNullCache()) return;
 
 	CACHE *cache = __MSS_GetCache__<CACHE>();
 	
-	typename TYPES::ADDRESS block_base_addr;
+	typename TYPES::PHYSICAL_ADDRESS block_base_phys_addr;
 	unsigned int offset;
 	unsigned int size_to_block_boundary;
 	
-	CacheBlock<TYPES, typename CACHE::CACHE_CONFIG> *block = cache->LookupBlock(addr, offset, size_to_block_boundary);
+	CacheBlock<TYPES, typename CACHE::CACHE_CONFIG> *block = cache->LookupBlock(phys_addr, offset, size_to_block_boundary);
 	
 	if(block)
 	{
-		if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+		if(unlikely(cache->__MSS_IsVerbose__()))
 		{
-			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Invalidating Block at @0x" << std::hex << block->GetBaseAddr() << std::dec << std::endl;
+			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Block at @0x" << std::hex << block->GetBaseAddress() << std::dec << std::endl;
 		}
 		block->Invalidate();
 	}
@@ -2758,24 +3700,24 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateBlockByAddress(typename TYPES
 
 template <typename TYPES, typename MSS>
 template <typename CACHE>
-inline void MemorySubSystem<TYPES, MSS>::InvalidateLineByAddress(typename TYPES::ADDRESS addr)
+inline void MemorySubSystem<TYPES, MSS>::InvalidateLineByAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr)
 {
 	if(CACHE::IsNullCache()) return;
 
 	CACHE *cache = __MSS_GetCache__<CACHE>();
 	
-	typename TYPES::ADDRESS block_base_addr;
+	typename TYPES::PHYSICAL_ADDRESS block_base_phys_addr;
 	unsigned int sector;
 	unsigned int offset;
 	unsigned int size_to_block_boundary;
 	
-	CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *line = cache->LookupLine(addr, block_base_addr, sector, offset, size_to_block_boundary);
+	CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *line = cache->LookupLine(phys_addr, block_base_phys_addr, sector, offset, size_to_block_boundary);
 	
 	if(line)
 	{
-		if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+		if(unlikely(cache->__MSS_IsVerbose__()))
 		{
-			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Invalidating Line at @0x" << std::hex << line->GetBaseAddr() << std::dec << std::endl;
+			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Line at @0x" << std::hex << line->GetBaseAddress() << std::dec << std::endl;
 		}
 		line->Invalidate();
 	}
@@ -2789,30 +3731,30 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateBlockBySetWayAndSector(unsign
 
 	if(index >= CACHE::NumSets())
 	{
-		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to invalidate a block in a set with an invalid index 0x" << std::hex << index << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetCacheName__() << ": Attempt to invalidate a block in a set with an invalid index 0x" << std::hex << index << std::dec << std::endl;
 	}
 
 	if(way >= CACHE::NumWays())
 	{
-		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to invalidate a block in a line with an invalid way 0x" << std::hex << way << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetCacheName__() << ": Attempt to invalidate a block in a line with an invalid way 0x" << std::hex << way << std::dec << std::endl;
 	}
 	
 	if(sector >= CACHE::NumSectors())
 	{
-		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to invalidate a block with an invalid sector 0x" << std::hex << sector << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetCacheName__() << ": Attempt to invalidate a block with an invalid sector 0x" << std::hex << sector << std::dec << std::endl;
 	}
 
 	CACHE *cache = __MSS_GetCache__<CACHE>();
 	
-	CacheSet<TYPES, typename CACHE::CACHE_CONFIG>& set = (*cache)[index];
+	CacheSet<TYPES, typename CACHE::CACHE_CONFIG>& set = cache->GetSetByIndex(index);
 	
-	CacheLine<TYPES, typename CACHE::CACHE_CONFIG>& line = set[way];
+	CacheLine<TYPES, typename CACHE::CACHE_CONFIG>& line = set->GetLineByWay(way);
 	
-	CacheBlock<TYPES, typename CACHE::CACHE_CONFIG>& block = line[sector];
+	CacheBlock<TYPES, typename CACHE::CACHE_CONFIG>& block = line->GetBlockBySector(sector);
 		
-	if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+	if(unlikely(cache->__MSS_IsVerbose__()))
 	{
-		__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Invalidating Block in set #0x" << std::hex << set.GetIndex() << ", way #0x" << line.GetWay() << ", sector #0x" << block.GetSector() << std::dec << std::endl;
+		__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Block in set #0x" << std::hex << set.GetIndex() << ", way #0x" << line.GetWay() << ", sector #0x" << block.GetSector() << std::dec << std::endl;
 	}
 		
 	block.Invalidate();
@@ -2826,23 +3768,23 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateLineBySetAndWay(unsigned int 
 
 	if(index >= CACHE::NumSets())
 	{
-		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to invalidate a line in a set with an invalid index 0x" << std::hex << index << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetCacheName__() << ": Attempt to invalidate a line in a set with an invalid index 0x" << std::hex << index << std::dec << std::endl;
 	}
 
 	if(way >= CACHE::NumWays())
 	{
-		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to invalidate a line with an invalid way 0x" << std::hex << way << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetCacheName__() << ": Attempt to invalidate a line with an invalid way 0x" << std::hex << way << std::dec << std::endl;
 	}
 	
 	CACHE *cache = __MSS_GetCache__<CACHE>();
 	
-	CacheSet<TYPES, typename CACHE::CACHE_CONFIG>& set = (*cache)[index];
+	CacheSet<TYPES, typename CACHE::CACHE_CONFIG>& set = cache->GetSetByIndex(index);
 	
-	CacheLine<TYPES, typename CACHE::CACHE_CONFIG>& line = set[way];
+	CacheLine<TYPES, typename CACHE::CACHE_CONFIG>& line = set->GetLineByWay(way);
 	
-	if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+	if(unlikely(cache->__MSS_IsVerbose__()))
 	{
-		__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Invalidating Line in set #0x" << std::hex << set.GetIndex() << ", way #0x" << line.GetWay() << std::dec << std::endl;
+		__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Line in set #0x" << std::hex << set.GetIndex() << ", way #0x" << line.GetWay() << std::dec << std::endl;
 	}
 	
 	line.Invalidate();
@@ -2856,16 +3798,16 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateSet(unsigned int index)
 
 	if(index >= CACHE::NumSets())
 	{
-		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to invalidate a set with an invalid index 0x" << std::hex << index << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetCacheName__() << ": Attempt to invalidate a set with an invalid index 0x" << std::hex << index << std::dec << std::endl;
 	}
 
 	CACHE *cache = __MSS_GetCache__<CACHE>();
 	
-	CacheSet<TYPES, typename CACHE::CACHE_CONFIG>& set = (*cache)[index];
+	CacheSet<TYPES, typename CACHE::CACHE_CONFIG>& set = cache->GetSetByIndex(index);
 
-	if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+	if(unlikely(cache->__MSS_IsVerbose__()))
 	{
-		__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Invalidating Set #0x" << std::hex << set.GetIndex() << std::dec << std::endl;
+		__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Set #0x" << std::hex << set.GetIndex() << std::dec << std::endl;
 	}
 	
 	set.Invalidate();
@@ -2879,9 +3821,9 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateAll()
 
 	CACHE *cache = __MSS_GetCache__<CACHE>();
 	
-	if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+	if(unlikely(cache->__MSS_IsVerbose__()))
 	{
-		__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Invalidating all" << std::endl;
+		__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating all" << std::endl;
 	}
 
 	cache->Invalidate();
@@ -2889,33 +3831,33 @@ inline void MemorySubSystem<TYPES, MSS>::InvalidateAll()
 
 template <typename TYPES, typename MSS>
 template <typename CACHE_HIERARCHY, typename CACHE, typename UNTIL>
-inline void MemorySubSystem<TYPES, MSS>::GlobalInvalidateBlockByAddress(typename TYPES::ADDRESS addr)
+inline void MemorySubSystem<TYPES, MSS>::GlobalInvalidateBlockByAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr)
 {
 	if(CACHE::IsNullCache()) return;
 
-	InvalidateBlockByAddress<CACHE>(addr);
+	InvalidateBlockByAddress<CACHE>(phys_addr);
 
 	if(typeid(CACHE) != typeid(UNTIL))
 	{
 		typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 		
-		GlobalInvalidateBlockByAddress<CACHE_HIERARCHY, NLC, UNTIL>(addr);
+		GlobalInvalidateBlockByAddress<CACHE_HIERARCHY, NLC, UNTIL>(phys_addr);
 	}
 }
 
 template <typename TYPES, typename MSS>
 template <typename CACHE_HIERARCHY, typename CACHE, typename UNTIL>
-inline void MemorySubSystem<TYPES, MSS>::GlobalInvalidateLineByAddress(typename TYPES::ADDRESS addr)
+inline void MemorySubSystem<TYPES, MSS>::GlobalInvalidateLineByAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr)
 {
 	if(CACHE::IsNullCache()) return;
 
-	InvalidateLineByAddress<CACHE>(addr);
+	InvalidateLineByAddress<CACHE>(phys_addr);
 
 	if(typeid(CACHE) != typeid(UNTIL))
 	{
 		typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 		
-		GlobalInvalidateLineByAddress<CACHE_HIERARCHY, NLC, UNTIL>(addr);
+		GlobalInvalidateLineByAddress<CACHE_HIERARCHY, NLC, UNTIL>(phys_addr);
 	}
 }
 
@@ -2927,26 +3869,26 @@ inline bool MemorySubSystem<TYPES, MSS>::WriteBackBlockBySetWayAndSector(unsigne
 	
 	if(index >= CACHE::NumSets())
 	{
-		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a block in a set with an invalid index 0x" << std::hex << index << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetCacheName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a block in a set with an invalid index 0x" << std::hex << index << std::dec << std::endl;
 	}
 
 	if(way >= CACHE::NumWays())
 	{
-		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a block in a line with an invalid way 0x" << std::hex << way << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetCacheName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a block in a line with an invalid way 0x" << std::hex << way << std::dec << std::endl;
 	}
 	
 	if(sector >= CACHE::NumSectors())
 	{
-		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a block with an invalid sector 0x" << std::hex << sector << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetCacheName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a block with an invalid sector 0x" << std::hex << sector << std::dec << std::endl;
 	}
 
-	CacheSet<TYPES, typename CACHE::CACHE_CONFIG>& set = (*cache)[index];
+	CacheSet<TYPES, typename CACHE::CACHE_CONFIG>& set = cache->GetSetByIndex(index);
 	
-	CacheLine<TYPES, typename CACHE::CACHE_CONFIG>& line = set[way];
+	CacheLine<TYPES, typename CACHE::CACHE_CONFIG>& line = set->GetLineByWay(way);
 
 	if(line.IsValid())
 	{
-		CacheBlock<TYPES, typename CACHE::CACHE_CONFIG>& block = line[sector];
+		CacheBlock<TYPES, typename CACHE::CACHE_CONFIG>& block = line->GetBlockBySector(sector);
 		
 		if(block.IsValid() && block.IsDirty())
 		{
@@ -2968,17 +3910,17 @@ inline bool MemorySubSystem<TYPES, MSS>::WriteBackLineBySetAndWay(unsigned int i
 	
 	if(index >= CACHE::NumSets())
 	{
-		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a line in a set with an invalid index 0x" << std::hex << index << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetCacheName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a line in a set with an invalid index 0x" << std::hex << index << std::dec << std::endl;
 	}
 
 	if(way >= CACHE::NumWays())
 	{
-		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a line with an invalid way 0x" << std::hex << way << std::dec << std::endl;
+		__MSS_GetDebugWarningStream__() << CACHE::__MSS_GetCacheName__() << ": Attempt to write back" << (INVALIDATE ? " and invalidate" :"") << " a line with an invalid way 0x" << std::hex << way << std::dec << std::endl;
 	}
 
-	CacheSet<TYPES, typename CACHE::CACHE_CONFIG>& set = (*cache)[index];
+	CacheSet<TYPES, typename CACHE::CACHE_CONFIG>& set = cache->GetSetByIndex(index);
 	
-	CacheLine<TYPES, typename CACHE::CACHE_CONFIG>& line = set[way];
+	CacheLine<TYPES, typename CACHE::CACHE_CONFIG>& line = set->GetLineByWay(way);
 
 	if(line.IsValid())
 	{
@@ -2993,7 +3935,7 @@ inline bool MemorySubSystem<TYPES, MSS>::WriteBackLineBySetAndWay(unsigned int i
 
 template <typename TYPES, typename MSS>
 template <typename CACHE_HIERARCHY, typename CACHE, typename UNTIL, bool INVALIDATE>
-inline bool MemorySubSystem<TYPES, MSS>::GlobalWriteBackBlockByAddress(typename TYPES::ADDRESS addr)
+inline bool MemorySubSystem<TYPES, MSS>::GlobalWriteBackBlockByAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr)
 {
 	if(CACHE::IsNullCache())
 	{
@@ -3003,18 +3945,18 @@ inline bool MemorySubSystem<TYPES, MSS>::GlobalWriteBackBlockByAddress(typename 
 	{
 		CACHE *cache = __MSS_GetCache__<CACHE>();
 		
-		typename TYPES::ADDRESS block_base_addr;
+		typename TYPES::PHYSICAL_ADDRESS block_base_phys_addr;
 		unsigned int sector;
 		unsigned int offset;
 		unsigned int size_to_block_boundary;
 		
-		CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *line = cache->LookupLine(addr, block_base_addr, sector, offset, size_to_block_boundary);
+		CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *line = cache->LookupLine(phys_addr, block_base_phys_addr, sector, offset, size_to_block_boundary);
 		
 		if(line)
 		{
 			CacheBlock<TYPES, typename CACHE::CACHE_CONFIG>& block = (*line)[sector];
 			
-			if(likely(__MSS_IsCacheEnabled__<CACHE>()))
+			if(likely(cache->__MSS_IsEnabled__()))
 			{
 				CacheAccess<TYPES, CACHE> access;
 				
@@ -3030,9 +3972,9 @@ inline bool MemorySubSystem<TYPES, MSS>::GlobalWriteBackBlockByAddress(typename 
 			}
 			else if(INVALIDATE)
 			{
-				if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+				if(unlikely(cache->__MSS_IsVerbose__()))
 				{
-					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Invalidating Block at @0x" << std::hex << block.GetBaseAddr() << std::dec << std::endl;
+					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Block at @0x" << std::hex << block.GetBaseAddress() << std::dec << std::endl;
 				}
 				block.Invalidate();
 			}
@@ -3043,7 +3985,7 @@ inline bool MemorySubSystem<TYPES, MSS>::GlobalWriteBackBlockByAddress(typename 
 	{
 		typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 		
-		if(!GlobalWriteBackBlockByAddress<CACHE_HIERARCHY, NLC, UNTIL, INVALIDATE>(addr)) return false;
+		if(!GlobalWriteBackBlockByAddress<CACHE_HIERARCHY, NLC, UNTIL, INVALIDATE>(phys_addr)) return false;
 	}
 	
 	return true;
@@ -3051,7 +3993,7 @@ inline bool MemorySubSystem<TYPES, MSS>::GlobalWriteBackBlockByAddress(typename 
 
 template <typename TYPES, typename MSS>
 template <typename CACHE_HIERARCHY, typename CACHE, typename UNTIL, bool INVALIDATE>
-inline bool MemorySubSystem<TYPES, MSS>::GlobalWriteBackLineByAddress(typename TYPES::ADDRESS addr)
+inline bool MemorySubSystem<TYPES, MSS>::GlobalWriteBackLineByAddress(typename TYPES::PHYSICAL_ADDRESS phys_addr)
 {
 	if(CACHE::IsNullCache())
 	{
@@ -3061,16 +4003,16 @@ inline bool MemorySubSystem<TYPES, MSS>::GlobalWriteBackLineByAddress(typename T
 	{
 		CACHE *cache = __MSS_GetCache__<CACHE>();
 		
-		typename TYPES::ADDRESS block_base_addr;
+		typename TYPES::PHYSICAL_ADDRESS block_base_phys_addr;
 		unsigned int sector;
 		unsigned int offset;
 		unsigned int size_to_block_boundary;
 		
-		CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *line = cache->LookupLine(addr, block_base_addr, sector, offset, size_to_block_boundary);
+		CacheLine<TYPES, typename CACHE::CACHE_CONFIG> *line = cache->LookupLine(phys_addr, block_base_phys_addr, sector, offset, size_to_block_boundary);
 		
 		if(line)
 		{
-			if(likely(__MSS_IsCacheEnabled__<CACHE>()))
+			if(likely(cache->__MSS_IsEnabled__()))
 			{
 				CacheAccess<TYPES, CACHE> access;
 				
@@ -3080,9 +4022,9 @@ inline bool MemorySubSystem<TYPES, MSS>::GlobalWriteBackLineByAddress(typename T
 			}
 			else if(INVALIDATE)
 			{
-				if(unlikely(__MSS_IsCacheVerbose__<CACHE>()))
+				if(unlikely(cache->__MSS_IsVerbose__()))
 				{
-					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetName__() << ": Invalidating Line at @0x" << std::hex << line->GetBaseAddr() << std::dec << std::endl;
+					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Invalidating Line at @0x" << std::hex << line->GetBaseAddress() << std::dec << std::endl;
 				}
 				line->Invalidate();
 			}
@@ -3093,7 +4035,7 @@ inline bool MemorySubSystem<TYPES, MSS>::GlobalWriteBackLineByAddress(typename T
 	{
 		typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 		
-		if(!GlobalWriteBackLineByAddress<CACHE_HIERARCHY, NLC, UNTIL, INVALIDATE>(addr)) return false;
+		if(!GlobalWriteBackLineByAddress<CACHE_HIERARCHY, NLC, UNTIL, INVALIDATE>(phys_addr)) return false;
 	}
 	
 	return true;

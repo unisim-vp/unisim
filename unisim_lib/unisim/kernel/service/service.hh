@@ -150,8 +150,8 @@ public:
 	typedef enum { FMT_DEFAULT, FMT_HEX, FMT_DEC } Format;
 
 	VariableBase();
-	VariableBase(const char *name, Object *owner, Type type, const char *description);
-	VariableBase(const char *name, VariableBase *container, Type type, const char *description);
+	VariableBase(const char *name, Object *owner, Type type, const char *description = 0);
+	VariableBase(const char *name, VariableBase *container, Type type, const char *description = 0);
 	virtual ~VariableBase();
 
 	Object *GetOwner() const;
@@ -168,6 +168,7 @@ public:
 	void GetEnumeratedValues(vector<string> &values) const;
 	bool AddEnumeratedValue(const char *value);
 	bool RemoveEnumeratedValue(const char *value);
+	void SetDescription(const char *description);
 	void SetFormat(Format fmt);
 	bool IsVoid() const;
 

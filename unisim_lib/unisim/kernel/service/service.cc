@@ -441,6 +441,11 @@ bool VariableBase::RemoveEnumeratedValue(const char *value) {
 	return false;
 }
 
+void VariableBase::SetDescription(const char *_description)
+{
+	description = _description;
+}
+
 void VariableBase::SetFormat(Format _fmt)
 {
 	fmt = _fmt;

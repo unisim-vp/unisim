@@ -420,24 +420,24 @@ private:
 	std::vector<OBJECT *> objects;
 };
 
-template <class CONFIG>
+template <typename TYPES, typename CONFIG>
 class CPU
-	: public unisim::kernel::service::Client<typename unisim::service::interfaces::SymbolTableLookup<typename CONFIG::ADDRESS> >
-	, public unisim::kernel::service::Client<typename unisim::service::interfaces::DebugControl<typename CONFIG::ADDRESS> >
-	, public unisim::kernel::service::Client<typename unisim::service::interfaces::MemoryAccessReporting<typename CONFIG::ADDRESS> >
+	: public unisim::kernel::service::Client<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::ADDRESS> >
+	, public unisim::kernel::service::Client<typename unisim::service::interfaces::DebugControl<typename TYPES::ADDRESS> >
+	, public unisim::kernel::service::Client<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::ADDRESS> >
 	, public unisim::kernel::service::Client<typename unisim::service::interfaces::TrapReporting>
 	, public unisim::kernel::service::Service<typename unisim::service::interfaces::MemoryAccessReportingControl>
 	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Registers>
 	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Synchronizable>
 {
 public:
-	typedef CPU<CONFIG> ThisCPU;
+	typedef CPU<TYPES, CONFIG> ThisCPU;
 	
 	/////////////////////////// service imports ///////////////////////////////
 
-	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::SymbolTableLookup<typename CONFIG::ADDRESS> > symbol_table_lookup_import;
-	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::DebugControl<typename CONFIG::ADDRESS> > debug_control_import;
-	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::MemoryAccessReporting<typename CONFIG::ADDRESS> > memory_access_reporting_import;
+	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::ADDRESS> > symbol_table_lookup_import;
+	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::DebugControl<typename TYPES::ADDRESS> > debug_control_import;
+	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::ADDRESS> > memory_access_reporting_import;
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::TrapReporting> trap_reporting_import;
 	
 	/////////////////////////// service exports ///////////////////////////////
@@ -501,11 +501,11 @@ public:
 	inline XER& GetXER() ALWAYS_INLINE { return xer; }
 	inline CR& GetCR() ALWAYS_INLINE { return cr; }
 	
-	inline typename CONFIG::ADDRESS GetCIA() const ALWAYS_INLINE { return cia; }
+	inline typename TYPES::ADDRESS GetCIA() const ALWAYS_INLINE { return cia; }
 	inline void SetCIA(uint32_t value) ALWAYS_INLINE { cia = value; }
-	inline typename CONFIG::ADDRESS GetNIA() const ALWAYS_INLINE { return nia; }
-	inline void SetNIA(typename CONFIG::ADDRESS value) ALWAYS_INLINE { nia = value; }
-	inline void Branch(typename CONFIG::ADDRESS value) ALWAYS_INLINE { nia = value; }
+	inline typename TYPES::ADDRESS GetNIA() const ALWAYS_INLINE { return nia; }
+	inline void SetNIA(typename TYPES::ADDRESS value) ALWAYS_INLINE { nia = value; }
+	inline void Branch(typename TYPES::ADDRESS value) ALWAYS_INLINE { nia = value; }
 
 	bool MoveFromSPR(unsigned int n, uint32_t& value);
 	bool MoveToSPR(unsigned int n, uint32_t value);
@@ -518,21 +518,21 @@ public:
 	bool MoveFromTMR(unsigned int n, uint32_t& value);
 	bool MoveToTMR(unsigned int n, uint32_t value);
 
-	bool Int8Load(unsigned int rd, typename CONFIG::ADDRESS ea);
-	bool Int16Load(unsigned int rd, typename CONFIG::ADDRESS ea);
-	bool SInt16Load(unsigned int rd, typename CONFIG::ADDRESS ea);
-	bool Int32Load(unsigned int rd, typename CONFIG::ADDRESS ea);
-	bool Int16LoadByteReverse(unsigned int rd, typename CONFIG::ADDRESS ea);
-	bool Int32LoadByteReverse(unsigned int rd, typename CONFIG::ADDRESS ea);
-	bool IntLoadMSBFirst(unsigned int rd, typename CONFIG::ADDRESS ea, unsigned int size);
-	bool Int8Store(unsigned int rs, typename CONFIG::ADDRESS ea);
-	bool Int16Store(unsigned int rs, typename CONFIG::ADDRESS ea);
-	bool Int32Store(unsigned int rs, typename CONFIG::ADDRESS ea);
-	bool Int16StoreByteReverse(unsigned int rs, typename CONFIG::ADDRESS ea);
-	bool Int32StoreByteReverse(unsigned int rs, typename CONFIG::ADDRESS ea);
-	bool IntStoreMSBFirst(unsigned int rs, typename CONFIG::ADDRESS ea, unsigned int size);
+	bool Int8Load(unsigned int rd, typename TYPES::ADDRESS ea);
+	bool Int16Load(unsigned int rd, typename TYPES::ADDRESS ea);
+	bool SInt16Load(unsigned int rd, typename TYPES::ADDRESS ea);
+	bool Int32Load(unsigned int rd, typename TYPES::ADDRESS ea);
+	bool Int16LoadByteReverse(unsigned int rd, typename TYPES::ADDRESS ea);
+	bool Int32LoadByteReverse(unsigned int rd, typename TYPES::ADDRESS ea);
+	bool IntLoadMSBFirst(unsigned int rd, typename TYPES::ADDRESS ea, unsigned int size);
+	bool Int8Store(unsigned int rs, typename TYPES::ADDRESS ea);
+	bool Int16Store(unsigned int rs, typename TYPES::ADDRESS ea);
+	bool Int32Store(unsigned int rs, typename TYPES::ADDRESS ea);
+	bool Int16StoreByteReverse(unsigned int rs, typename TYPES::ADDRESS ea);
+	bool Int32StoreByteReverse(unsigned int rs, typename TYPES::ADDRESS ea);
+	bool IntStoreMSBFirst(unsigned int rs, typename TYPES::ADDRESS ea, unsigned int size);
 	
-	std::string GetObjectFriendlyName(typename CONFIG::ADDRESS addr);
+	std::string GetObjectFriendlyName(typename TYPES::ADDRESS addr);
 	
 	///////////////////////////////////////////////////////////////////////////
 protected:
@@ -543,7 +543,7 @@ protected:
 	{
 	public:
 		virtual ~InterruptBase() {}
-		virtual void ProcessInterrupt(typename CONFIG::STATE *cpu) = 0;
+		virtual void ProcessInterrupt(typename CONFIG::CPU *cpu) = 0;
 		virtual const char *GetInterruptName() const { return "Unknown Interrupt"; }
 		virtual unsigned int GetOffset() const { return 0; }
 	};
@@ -598,7 +598,7 @@ protected:
 			INTERRUPT::ALL::InstallInterrupt(exception_dispatcher, &interrupt);
 		}
 		
-		virtual void ProcessInterrupt(typename CONFIG::STATE *cpu) { cpu->ProcessInterrupt(static_cast<INTERRUPT *>(this)); }
+		virtual void ProcessInterrupt(typename CONFIG::CPU *cpu) { cpu->ProcessInterrupt(static_cast<INTERRUPT *>(this)); }
 
 		virtual unsigned int GetOffset() const { return _OFFSET; }
 		
@@ -610,14 +610,14 @@ protected:
 	template <typename INTERRUPT, unsigned int _OFFSET>
 	struct InterruptWithAddress : public Interrupt<INTERRUPT, _OFFSET>
 	{
-		void SetAddress(typename CONFIG::ADDRESS _addr) { addr = _addr; has_addr = true; }
+		void SetAddress(typename TYPES::ADDRESS _addr) { addr = _addr; has_addr = true; }
 		void ClearAddress() { has_addr = false; }
 		bool HasAddress() const { return has_addr; }
-		typename CONFIG::ADDRESS GetAddress() const { return addr; }
+		typename TYPES::ADDRESS GetAddress() const { return addr; }
 		
 	private:
 		bool has_addr;
-		typename CONFIG::ADDRESS addr;
+		typename TYPES::ADDRESS addr;
 	};
 	
 	
@@ -746,7 +746,7 @@ protected:
 	class ExceptionDispatcher : public ExceptionDispatcherBase
 	{
 	public:
-		ExceptionDispatcher(typename CONFIG::STATE *cpu);
+		ExceptionDispatcher(typename CONFIG::CPU *cpu);
 		~ExceptionDispatcher();
 		virtual void InstallInterrupt(unsigned int priority, InterruptBase *interrupt);
 		template <typename EXCEPTION> typename EXCEPTION::INTERRUPT& ThrowException();
@@ -758,7 +758,7 @@ protected:
 	private:
 		typedef typename TypeForBitSize<NUM_EXCEPTIONS>::TYPE TYPE;
 		
-		typename CONFIG::STATE *cpu;
+		typename CONFIG::CPU *cpu;
 		TYPE exc_flags;                            // Exception flags (bits are ordered according to exception priority): 1=thrown 0=not thrown
 		TYPE exc_mask;                             // Exception mask (bits are ordered according to exception priority): 1=enabled, 0=disabled
 		InterruptBase *interrupts[NUM_EXCEPTIONS]; // Installed interrupts by priority
@@ -833,7 +833,7 @@ protected:
 			{
 				cpu->GetDebugWarningStream() << "Move to invalid system level register is an illegal operation" << std::endl;
 			}
-			cpu->template ThrowException<typename CONFIG::STATE::ProgramInterrupt::IllegalInstruction>();
+			cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
 			return false;
 		}
 		
@@ -844,7 +844,7 @@ protected:
 			{
 				cpu->GetDebugWarningStream() << "Move from invalid system level register is an illegal operation" << std::endl;
 			}
-			cpu->template ThrowException<typename CONFIG::STATE::ProgramInterrupt::IllegalInstruction>();
+			cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
 			return false;
 		}
 	private:
@@ -875,8 +875,8 @@ protected:
 		static const SLR_Access_Type SLR_ACCESS = _SLR_ACCESS;
 		static const SLR_Privilege_Type SLR_PRIVILEGE = _SLR_PRIVILEGE;
 		
-		SLR(typename CONFIG::STATE *_cpu) : Super(), cpu(_cpu) { Init(); }
-		SLR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_value), cpu(_cpu) { Init(); }
+		SLR(typename CONFIG::CPU *_cpu) : Super(), cpu(_cpu) { Init(); }
+		SLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_value), cpu(_cpu) { Init(); }
 		virtual bool IsValid() const { return true; }
 		virtual unsigned int GetRegNum() const { return _SLR_NUM; }
 		virtual SLR_Space_Type GetSpace() const { return _SLR_SPACE; }
@@ -886,14 +886,14 @@ protected:
 
 		virtual bool CheckMoveToLegality()
 		{
-			if(cpu->GetMSR().template Get<typename CONFIG::STATE::MSR::PR>() && (SLR_PRIVILEGE == SLR_PRIVILEGED))
+			if(cpu->GetMSR().template Get<typename CONFIG::CPU::MSR::PR>() && (SLR_PRIVILEGE == SLR_PRIVILEGED))
 			{
 				// Privilege Violation
 				if(cpu->verbose_move_to_slr)
 				{
 					cpu->GetDebugWarningStream() << "Move to " << this->GetName() << " is a privileged operation" << std::endl;
 				}
-				cpu->template ThrowException<typename CONFIG::STATE::ProgramInterrupt::PrivilegeViolation>();
+				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::PrivilegeViolation>();
 				return false;
 			}
 
@@ -904,7 +904,7 @@ protected:
 				{
 					cpu->GetDebugWarningStream() << "Move to " << this->GetName() << " is an illegal operation" << std::endl;
 				}
-				cpu->template ThrowException<typename CONFIG::STATE::ProgramInterrupt::IllegalInstruction>();
+				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
 				return false;
 			}
 			
@@ -913,14 +913,14 @@ protected:
 		
 		virtual bool CheckMoveFromLegality()
 		{
-			if(cpu->GetMSR().template Get<typename CONFIG::STATE::MSR::PR>() && (SLR_PRIVILEGE == SLR_PRIVILEGED))
+			if(cpu->GetMSR().template Get<typename CONFIG::CPU::MSR::PR>() && (SLR_PRIVILEGE == SLR_PRIVILEGED))
 			{
 				// Privilege Violation
 				if(cpu->verbose_move_from_slr)
 				{
 					cpu->GetDebugWarningStream() << "Move from " << this->GetName() << " is a privileged operation" << std::endl;
 				}
-				cpu->template ThrowException<typename CONFIG::STATE::ProgramInterrupt::PrivilegeViolation>();
+				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::PrivilegeViolation>();
 				return false;
 			}
 			
@@ -931,7 +931,7 @@ protected:
 				{
 					cpu->GetDebugWarningStream() << "Move from " << this->GetName() << " is an illegal operation" << std::endl;
 				}
-				cpu->template ThrowException<typename CONFIG::STATE::ProgramInterrupt::IllegalInstruction>();
+				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
 				return false;
 			}
 
@@ -975,7 +975,7 @@ protected:
 			return true;
 		}
 
-		typename CONFIG::STATE *GetCPU() const { return cpu; }
+		typename CONFIG::CPU *GetCPU() const { return cpu; }
 		
 		virtual void AddRegisterInterface()
 		{
@@ -985,7 +985,7 @@ protected:
 		using Super::operator =;
 		
 	protected:
-		typename CONFIG::STATE *cpu;
+		typename CONFIG::CPU *cpu;
 	private:
 		
 		void Init()
@@ -999,8 +999,8 @@ protected:
 	{
 		typedef SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RW, SLR_PRIVILEGED> Super;
 		
-		PrivilegedSLR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		PrivilegedSLR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		PrivilegedSLR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		PrivilegedSLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1010,8 +1010,8 @@ protected:
 	{
 		typedef SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RO, SLR_PRIVILEGED> Super;
 
-		ReadOnlyPrivilegedSLR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		ReadOnlyPrivilegedSLR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		ReadOnlyPrivilegedSLR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		ReadOnlyPrivilegedSLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1021,8 +1021,8 @@ protected:
 	{
 		typedef SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RW, SLR_NON_PRIVILEGED> Super;
 
-		NonPrivilegedSLR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		NonPrivilegedSLR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		NonPrivilegedSLR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		NonPrivilegedSLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1032,8 +1032,8 @@ protected:
 	{
 		typedef SLR<SLR_REGISTER, _SLR_SPACE, _SLR_NUM, SLR_RO, SLR_NON_PRIVILEGED> Super;
 
-		ReadOnlyNonPrivilegedSLR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		ReadOnlyNonPrivilegedSLR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		ReadOnlyNonPrivilegedSLR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		ReadOnlyNonPrivilegedSLR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1041,7 +1041,7 @@ protected:
 	template <typename SLR_REGISTER, SLR_Space_Type _SLR_SPACE, unsigned int _USLR_NUM, SLR_Access_Type _USLR_ACCESS = SLR_RW>
 	struct USLR : SLRBase
 	{
-		USLR(typename CONFIG::STATE *_cpu, SLR_REGISTER *_slr) : cpu(_cpu), slr(_slr) {}
+		USLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : cpu(_cpu), slr(_slr) {}
 		virtual bool IsValid() const { return true; }
 		virtual unsigned int GetRegNum() const { return _USLR_NUM; }
 		virtual SLR_Space_Type GetSpace() const { return _SLR_SPACE; }
@@ -1053,7 +1053,7 @@ protected:
 			if(_USLR_ACCESS == SLR_RO)
 			{
 				// Illegal Instruction
-				cpu->template ThrowException<typename CONFIG::STATE::ProgramInterrupt::IllegalInstruction>();
+				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
 				return false;
 			}
 
@@ -1064,7 +1064,7 @@ protected:
 			if(_USLR_ACCESS == SLR_WO)
 			{
 				// Illegal Instruction
-				cpu->template ThrowException<typename CONFIG::STATE::ProgramInterrupt::IllegalInstruction>();
+				cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
 				return false;
 			}
 			
@@ -1073,7 +1073,7 @@ protected:
 		virtual bool MoveTo(uint32_t value) { return slr->MoveTo(value); }
 		virtual bool MoveFrom(uint32_t& value) { return slr->MoveFrom(value); }
 	private:
-		typename CONFIG::STATE *cpu;
+		typename CONFIG::CPU *cpu;
 		SLR_REGISTER *slr;
 	};
 
@@ -1082,7 +1082,7 @@ protected:
 	{
 		typedef USLR<SLR_REGISTER, _SLR_SPACE, _USLR_NUM, SLR_RO> Super;
 		
-		ReadOnlyUSLR(typename CONFIG::STATE *_cpu, SLR_REGISTER *_slr) : Super(_cpu, _slr) {}
+		ReadOnlyUSLR(typename CONFIG::CPU *_cpu, SLR_REGISTER *_slr) : Super(_cpu, _slr) {}
 	};
 
 	//////////////////// Special Purpose Register Modeling ////////////////////
@@ -1092,8 +1092,8 @@ protected:
 	{
 		typedef PrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM> Super;
 		
-		PrivilegedSPR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		PrivilegedSPR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		PrivilegedSPR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		PrivilegedSPR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1103,8 +1103,8 @@ protected:
 	{
 		typedef ReadOnlyPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM> Super;
 
-		ReadOnlyPrivilegedSPR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		ReadOnlyPrivilegedSPR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		ReadOnlyPrivilegedSPR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		ReadOnlyPrivilegedSPR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1114,8 +1114,8 @@ protected:
 	{
 		typedef NonPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM> Super;
 
-		NonPrivilegedSPR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		NonPrivilegedSPR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		NonPrivilegedSPR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		NonPrivilegedSPR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1125,8 +1125,8 @@ protected:
 	{
 		typedef ReadOnlyNonPrivilegedSLR<SPR_REGISTER, SLR_SPR_SPACE, _SPR_NUM> Super;
 
-		ReadOnlyNonPrivilegedSPR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		ReadOnlyNonPrivilegedSPR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		ReadOnlyNonPrivilegedSPR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		ReadOnlyNonPrivilegedSPR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1154,8 +1154,8 @@ protected:
 	{
 		typedef PrivilegedSLR<TBR_REGISTER, SLR_TBR_SPACE, _TBR_NUM> Super;
 		
-		PrivilegedTBR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		PrivilegedTBR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		PrivilegedTBR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		PrivilegedTBR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1165,8 +1165,8 @@ protected:
 	{
 		typedef ReadOnlyPrivilegedSLR<TBR_REGISTER, SLR_TBR_SPACE, _TBR_NUM> Super;
 
-		ReadOnlyPrivilegedTBR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		ReadOnlyPrivilegedTBR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		ReadOnlyPrivilegedTBR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		ReadOnlyPrivilegedTBR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1176,8 +1176,8 @@ protected:
 	{
 		typedef NonPrivilegedSLR<TBR_REGISTER, SLR_TBR_SPACE, _TBR_NUM> Super;
 
-		NonPrivilegedTBR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		NonPrivilegedTBR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		NonPrivilegedTBR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		NonPrivilegedTBR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1187,8 +1187,8 @@ protected:
 	{
 		typedef ReadOnlyNonPrivilegedSLR<TBR_REGISTER, SLR_TBR_SPACE, _TBR_NUM> Super;
 
-		ReadOnlyNonPrivilegedTBR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		ReadOnlyNonPrivilegedTBR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		ReadOnlyNonPrivilegedTBR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		ReadOnlyNonPrivilegedTBR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1216,8 +1216,8 @@ protected:
 	{
 		typedef PrivilegedSLR<DCR_REGISTER, SLR_DCR_SPACE, _DCR_NUM> Super;
 		
-		PrivilegedDCR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		PrivilegedDCR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		PrivilegedDCR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		PrivilegedDCR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1227,8 +1227,8 @@ protected:
 	{
 		typedef ReadOnlyPrivilegedSLR<DCR_REGISTER, SLR_DCR_SPACE, _DCR_NUM> Super;
 
-		ReadOnlyPrivilegedDCR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		ReadOnlyPrivilegedDCR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		ReadOnlyPrivilegedDCR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		ReadOnlyPrivilegedDCR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1238,8 +1238,8 @@ protected:
 	{
 		typedef NonPrivilegedSLR<DCR_REGISTER, SLR_DCR_SPACE, _DCR_NUM> Super;
 
-		NonPrivilegedDCR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		NonPrivilegedDCR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		NonPrivilegedDCR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		NonPrivilegedDCR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1249,8 +1249,8 @@ protected:
 	{
 		typedef ReadOnlyNonPrivilegedSLR<DCR_REGISTER, SLR_DCR_SPACE, _DCR_NUM> Super;
 
-		ReadOnlyNonPrivilegedDCR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		ReadOnlyNonPrivilegedDCR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		ReadOnlyNonPrivilegedDCR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		ReadOnlyNonPrivilegedDCR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1278,8 +1278,8 @@ protected:
 	{
 		typedef PrivilegedSLR<PMR_REGISTER, SLR_PMR_SPACE, _PMR_NUM> Super;
 		
-		PrivilegedPMR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		PrivilegedPMR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		PrivilegedPMR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		PrivilegedPMR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1289,8 +1289,8 @@ protected:
 	{
 		typedef ReadOnlyPrivilegedSLR<PMR_REGISTER, SLR_PMR_SPACE, _PMR_NUM> Super;
 
-		ReadOnlyPrivilegedPMR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		ReadOnlyPrivilegedPMR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		ReadOnlyPrivilegedPMR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		ReadOnlyPrivilegedPMR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1300,8 +1300,8 @@ protected:
 	{
 		typedef NonPrivilegedSLR<PMR_REGISTER, SLR_PMR_SPACE, _PMR_NUM> Super;
 
-		NonPrivilegedPMR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		NonPrivilegedPMR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		NonPrivilegedPMR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		NonPrivilegedPMR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1311,8 +1311,8 @@ protected:
 	{
 		typedef ReadOnlyNonPrivilegedSLR<PMR_REGISTER, SLR_PMR_SPACE, _PMR_NUM> Super;
 
-		ReadOnlyNonPrivilegedPMR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		ReadOnlyNonPrivilegedPMR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		ReadOnlyNonPrivilegedPMR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		ReadOnlyNonPrivilegedPMR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1322,7 +1322,7 @@ protected:
 	{
 		typedef USLR<PMR_REGISTER, SLR_PMR_SPACE, _UPMR_NUM> Super;
 		
-		UPMR(typename CONFIG::STATE *_cpu, PMR_REGISTER *_pmr) : Super(_cpu, _pmr) {}
+		UPMR(typename CONFIG::CPU *_cpu, PMR_REGISTER *_pmr) : Super(_cpu, _pmr) {}
 	};
 
 	template <typename PMR_REGISTER, unsigned int _UPMR_NUM>
@@ -1330,7 +1330,7 @@ protected:
 	{
 		typedef ReadOnlyUSLR<PMR_REGISTER, SLR_PMR_SPACE, _UPMR_NUM> Super;
 		
-		ReadOnlyUPMR(typename CONFIG::STATE *_cpu, PMR_REGISTER *_pmr) : Super(_cpu, _pmr) {}
+		ReadOnlyUPMR(typename CONFIG::CPU *_cpu, PMR_REGISTER *_pmr) : Super(_cpu, _pmr) {}
 	};
 
 	//////////////////// Thread Management Register Modeling //////////////////
@@ -1340,8 +1340,8 @@ protected:
 	{
 		typedef PrivilegedSLR<TMR_REGISTER, SLR_TMR_SPACE, _TMR_NUM> Super;
 		
-		PrivilegedTMR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		PrivilegedTMR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		PrivilegedTMR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		PrivilegedTMR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1351,8 +1351,8 @@ protected:
 	{
 		typedef ReadOnlyPrivilegedSLR<TMR_REGISTER, SLR_TMR_SPACE, _TMR_NUM> Super;
 
-		ReadOnlyPrivilegedTMR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		ReadOnlyPrivilegedTMR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		ReadOnlyPrivilegedTMR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		ReadOnlyPrivilegedTMR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1362,8 +1362,8 @@ protected:
 	{
 		typedef NonPrivilegedSLR<TMR_REGISTER, SLR_TMR_SPACE, _TMR_NUM> Super;
 
-		NonPrivilegedTMR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		NonPrivilegedTMR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		NonPrivilegedTMR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		NonPrivilegedTMR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1373,8 +1373,8 @@ protected:
 	{
 		typedef ReadOnlyNonPrivilegedSLR<TMR_REGISTER, SLR_TMR_SPACE, _TMR_NUM> Super;
 
-		ReadOnlyNonPrivilegedTMR(typename CONFIG::STATE *_cpu) : Super(_cpu) {}
-		ReadOnlyNonPrivilegedTMR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		ReadOnlyNonPrivilegedTMR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		ReadOnlyNonPrivilegedTMR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		using Super::operator =;
 	};
@@ -1384,7 +1384,7 @@ protected:
 	{
 		typedef USLR<TMR_REGISTER, SLR_TMR_SPACE, _UTMR_NUM> Super;
 		
-		UTMR(typename CONFIG::STATE *_cpu, TMR_REGISTER *_tmr) : Super(_cpu, _tmr) {}
+		UTMR(typename CONFIG::CPU *_cpu, TMR_REGISTER *_tmr) : Super(_cpu, _tmr) {}
 	};
 
 	template <typename TMR_REGISTER, unsigned int _UTMR_NUM>
@@ -1392,7 +1392,7 @@ protected:
 	{
 		typedef ReadOnlyUSLR<TMR_REGISTER, SLR_TMR_SPACE, _UTMR_NUM> Super;
 		
-		ReadOnlyUTMR(typename CONFIG::STATE *_cpu, TMR_REGISTER *_tmr) : Super(_cpu, _tmr) {}
+		ReadOnlyUTMR(typename CONFIG::CPU *_cpu, TMR_REGISTER *_tmr) : Super(_cpu, _tmr) {}
 	};
 
 	void RegisterSLR(unsigned int n, SLRBase *slr);
@@ -1431,11 +1431,11 @@ public:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<CE, EE, PR, ME, DE, PMM, RI> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		MSR(typename CONFIG::STATE *_cpu) : Super(), cpu(_cpu) { Init(); }
-		MSR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_value), cpu(_cpu) { Init(); }
+		MSR(typename CONFIG::CPU *_cpu) : Super(), cpu(_cpu) { Init(); }
+		MSR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_value), cpu(_cpu) { Init(); }
 		using Super::operator =;
 	protected:
-		typename CONFIG::STATE *cpu;
+		typename CONFIG::CPU *cpu;
 	private:
 		
 		void Init()
@@ -1469,8 +1469,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		SRR0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		SRR0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		SRR0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		SRR0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -1485,8 +1485,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		SRR1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		SRR1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		SRR1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		SRR1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -1507,8 +1507,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<Process_ID> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		PID0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		PID0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		PID0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		PID0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
@@ -1523,8 +1523,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		CSRR0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		CSRR0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		CSRR0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		CSRR0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -1539,8 +1539,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		CSRR1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		CSRR1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		CSRR1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		CSRR1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 
 		virtual void Reset() { /* unaffected */ }
@@ -1555,8 +1555,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		DEAR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DEAR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DEAR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DEAR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -1587,8 +1587,8 @@ public:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<PIL, PPR, PTR, FP, ST, BO, SPV, VLEMI> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 
-		ESR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		ESR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		ESR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		ESR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 
 		virtual void Reset() { this->Initialize(0x00000000); }
@@ -1620,8 +1620,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<Vector_Base> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		IVPR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		IVPR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		IVPR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		IVPR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -1640,8 +1640,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		USPRG0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		USPRG0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		USPRG0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		USPRG0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -1656,8 +1656,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		SPRG0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		SPRG0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		SPRG0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		SPRG0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -1672,8 +1672,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		SPRG1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		SPRG1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		SPRG1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		SPRG1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -1688,8 +1688,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		SPRG2(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		SPRG2(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		SPRG2(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		SPRG2(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -1704,8 +1704,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		SPRG3(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		SPRG3(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		SPRG3(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		SPRG3(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -1726,8 +1726,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<ID_0_23, ID_24_31> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		PIR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		PIR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		PIR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		PIR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -1755,8 +1755,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<MANID, Type, Version, MBG_Use, Minor_Rev, MBG_ID> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		PVR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		PVR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		PVR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		PVR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -1809,8 +1809,8 @@ protected:
 		                                                  , DAC2R, DAC2W, RET, DEVT1, DEVT2, PMI, MPU, CIRPT, CRET, DNI, DAC_OFST> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		DBSR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DBSR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DBSR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DBSR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual bool MoveTo(uint32_t value) { this->template Set<ALL>(this->template Get<ALL>() & ~value); return true; } // W1C
@@ -1883,8 +1883,8 @@ protected:
 		                                                  , IAC5, IAC6, IAC7, IAC8, DEVT1, DEVT2, DCNT1, DCNT2, CIRPT, CRET, FT> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		DBCR0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DBCR0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DBCR0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DBCR0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -1939,8 +1939,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<IAC1US, IAC1ER, IAC2US, IAC2ER, IAC12M, IAC3US, IAC3ER, IAC4US, IAC4ER, IAC34M> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		DBCR1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DBCR1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DBCR1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DBCR1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -1981,8 +1981,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<DAC1US, DAC1ER, DAC2US, DAC2ER, DAC12M, DAC1LNK, DAC2LNK, DVC1M, DVC2M, DVC1BE, DVC2BE> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		DBCR2(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DBCR2(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DBCR2(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DBCR2(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -2009,8 +2009,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		IAC1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		IAC1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		IAC1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		IAC1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
@@ -2025,8 +2025,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		IAC2(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		IAC2(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		IAC2(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		IAC2(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
@@ -2041,8 +2041,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		IAC3(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		IAC3(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		IAC3(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		IAC3(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
@@ -2057,8 +2057,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		IAC4(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		IAC4(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		IAC4(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		IAC4(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
@@ -2073,8 +2073,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		DAC1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DAC1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DAC1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DAC1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
@@ -2089,8 +2089,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		DAC2(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DAC2(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DAC2(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DAC2(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init() { this->SetName("dac2"); this->SetDescription("Data Address Compare 2"); }
@@ -2103,8 +2103,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		DVC1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DVC1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DVC1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DVC1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -2119,8 +2119,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		DVC2(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DVC2(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DVC2(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DVC2(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -2135,8 +2135,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 
-		TIR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		TIR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		TIR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		TIR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init() { this->SetName("tir"); this->SetDescription("Thread ID"); }
@@ -2171,8 +2171,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<FINXS, FINVS, FDBZS, FUNFS, FOVFS, MODE, FG, FX, FINV, FDBZ, FUNF, FOVF, FINXE, FINVE, FDBZE, FUNFE, FOVFE, FRMC> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		SPEFSCR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		SPEFSCR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		SPEFSCR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		SPEFSCR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
@@ -2237,8 +2237,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<CARCH, CWPA, DCFAHA, DCFISWA, DCBSIZE, DCREPL, DCLA, DCECA, DCNWAY, DCSIZE> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		L1CFG0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		L1CFG0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		L1CFG0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L1CFG0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -2275,8 +2275,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<ICFISWA, ICBSIZE, ICREPL, ICLA, ICECA, ICNWAY, ICSIZE> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		L1CFG1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		L1CFG1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		L1CFG1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L1CFG1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -2299,8 +2299,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		NPIDR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		NPIDR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		NPIDR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		NPIDR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
@@ -2361,8 +2361,8 @@ protected:
 		                                                  , CNT2T1, _CONFIG > ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		DBCR3(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DBCR3(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DBCR3(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DBCR3(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -2416,8 +2416,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<CNT1, CNT2> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		DBCNT(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DBCNT(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DBCNT(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DBCNT(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -2446,8 +2446,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<DVC1C, DVC2C, DAC1XMH, DAC2XMH, DAC1XM, DAC2XM, DAC1CFG, DAC2CFG> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 
-		DBCR4(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DBCR4(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DBCR4(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DBCR4(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -2485,8 +2485,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<IAC5US, IAC5ER, IAC6US, IAC6ER, IAC56M, IAC7US, IAC7ER, IAC7ER, IAC8US, IAC78M> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		DBCR5(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DBCR5(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DBCR5(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DBCR5(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -2512,8 +2512,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		IAC5(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		IAC5(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		IAC5(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		IAC5(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
@@ -2528,8 +2528,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		IAC6(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		IAC6(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		IAC6(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		IAC6(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
@@ -2544,8 +2544,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		IAC7(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		IAC7(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		IAC7(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		IAC7(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
@@ -2560,8 +2560,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		IAC8(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		IAC8(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		IAC8(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		IAC8(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
@@ -2576,8 +2576,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		MCSRR0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		MCSRR0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		MCSRR0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		MCSRR0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -2592,8 +2592,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		MCSRR1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		MCSRR1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		MCSRR1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		MCSRR1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -2644,8 +2644,8 @@ protected:
 		                                                  , BUS_WRERR, BUS_WRDSI > ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		MCSR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		MCSR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		MCSR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		MCSR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
@@ -2690,8 +2690,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		MCAR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		MCAR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		MCAR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		MCAR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -2706,8 +2706,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		DSRR0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DSRR0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DSRR0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DSRR0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -2722,8 +2722,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		DSRR1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DSRR1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DSRR1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DSRR1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -2738,8 +2738,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		DDAM(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DDAM(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DDAM(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DDAM(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init() { this->SetName("ddam"); this->SetDescription("Debug Data Acquisition Messaging Register"); }
@@ -2752,8 +2752,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 
-		DAC3(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DAC3(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DAC3(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DAC3(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init() { this->SetName("dac3"); this->SetDescription("Data Address Compare 3"); }
@@ -2766,8 +2766,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		DAC4(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DAC4(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DAC4(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DAC4(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init() { this->SetName("dac4"); this->SetDescription("Data Address Compare 4"); }
@@ -2790,8 +2790,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<DAC3XMH, DAC4XMH, DAC3XM, DAC4XM, DAC3CFG, DAC4CFG> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		DBCR7(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DBCR7(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DBCR7(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DBCR7(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -2824,8 +2824,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<DAC3US, DAC3ER, DAC4US, DAC4ER, DAC34M, DAC3LNK, DAC4LNK> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		DBCR8(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DBCR8(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DBCR8(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DBCR8(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -2848,8 +2848,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		DDEAR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DDEAR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DDEAR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DDEAR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -2864,8 +2864,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		DVC1U(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DVC1U(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DVC1U(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DVC1U(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init() { this->SetName("dvc1u"); this->SetDescription("Data Value Compare 1 Upper"); }
@@ -2878,8 +2878,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		DVC2U(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DVC2U(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DVC2U(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DVC2U(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init() { this->SetName("dvc2u"); this->SetDescription("Data Value Compare 2 Upper"); }
@@ -2904,8 +2904,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<IAC1XM, IAC2XM, IAC3XM, IAC4XM, IAC5XM, IAC6XM, IAC7XM, IAC8XM> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		DBCR6(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DBCR6(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DBCR6(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DBCR6(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -2934,8 +2934,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<STGC> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		L1CSR2(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		L1CSR2(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		L1CSR2(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L1CSR2(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -2973,8 +2973,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<VALID, IPROT, SEL, RO, DEBUG, INST, SHD, ESEL, UAMSK, UW, SW, UX_UR, SX_SR, IOVR, GOVR, I, G> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		MAS0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		MAS0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		MAS0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		MAS0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset()
@@ -3018,8 +3018,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<TID, TIDMSK> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		MAS1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		MAS1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		MAS1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		MAS1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -3044,8 +3044,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<UPPER_BOUND> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		MAS2(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		MAS2(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		MAS2(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		MAS2(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -3069,8 +3069,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<LOWER_BOUND> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		MAS3(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		MAS3(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		MAS3(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		MAS3(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { /* unaffected */ }
@@ -3091,8 +3091,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		EDBRAC0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		EDBRAC0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		EDBRAC0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		EDBRAC0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init() { this->SetName("edbrac0"); this->SetDescription("External Debug Resource Allocation Control Register 0"); }
@@ -3124,8 +3124,8 @@ protected:
 
 		typedef typename IMPLEMENTATION<CONFIG::MODEL>::ALL ALL;
 		
-		MPU0CFG(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		MPU0CFG(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		MPU0CFG(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		MPU0CFG(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -3157,8 +3157,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<DMEM_BASE_ADDR, DECUA, DECA, DMSIZE> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		DMEMCFG0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DMEMCFG0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DMEMCFG0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DMEMCFG0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -3186,8 +3186,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<IMEM_BASE_ADDR, IECUA, IECA, IMSIZE> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		IMEMCFG0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		IMEMCFG0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		IMEMCFG0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		IMEMCFG0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -3214,8 +3214,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<CWAY, CSET, CCMD> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 
-		L1FINV1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		L1FINV1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		L1FINV1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L1FINV1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
@@ -3236,8 +3236,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		DEVENT(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DEVENT(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DEVENT(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DEVENT(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init() { this->SetName("devent"); this->SetDescription("Debug Event Register"); }
@@ -3250,8 +3250,8 @@ protected:
 		
 		struct ALL : Field<ALL, 0, 31> {};
 		
-		SIR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		SIR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		SIR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		SIR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init() { this->SetName("sir"); this->SetDescription("System Information"); }
@@ -3276,8 +3276,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<EMCP, ICR, NHR, DCLREE, DCLRCE, CICLRDE, MCCLRDE, NOPTI> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		HID0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		HID0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		HID0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		HID0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -3308,8 +3308,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<HP_NOR, HP_NMI, ATS> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		HID1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		HID1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		HID1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		HID1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -3343,8 +3343,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<WID> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		L1CSR0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		L1CSR0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		L1CSR0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L1CSR0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
@@ -3385,8 +3385,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<ICECE, ICEI, ICLOC, ICEA, ICLOINV, ICABT, ICINV, ICE> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		L1CSR1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		L1CSR1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		L1CSR1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L1CSR1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
@@ -3420,8 +3420,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<BBFI, BALLOC, BPRED, BPEN> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		BUCSR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		BUCSR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		BUCSR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		BUCSR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
@@ -3459,8 +3459,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<BYPSR, BYPSW, BYPSX, BYPUR, BYPUW, BYPUX, DRDEND, DWDEN, IDEN, TIDCTL, MPUFI, MPUEN> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		MPU0CSR0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		MPU0CSR0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		MPU0CSR0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		MPU0CSR0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
@@ -3499,8 +3499,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<RASIZE, PIDSIZE, NMPUS, NTLBS, MAVN> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		MMUCFG(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		MMUCFG(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		MMUCFG(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		MMUCFG(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -3528,8 +3528,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<CWAY, CSET, CCMD> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		L1FINV0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		L1FINV0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		L1FINV0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		L1FINV0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
@@ -3555,8 +3555,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<System_Version> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		SVR(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		SVR(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		SVR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		SVR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -3592,8 +3592,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<DMEM_BASE_ADDR, DBYPCB, DBYPAT, DBYPDEC, DECUE, DBAPD, DPEIE, DICWE, DSWCE, DDAUEC, DCPECE, DSECE> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		DMEMCTL0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DMEMCTL0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DMEMCTL0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DMEMCTL0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -3641,8 +3641,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<DSWAC3, DSWAC2, DSWAC1, DSWAC0, DSRAC3, DSRAC2, DSRAC1, DSRAC0, DUWAC3, DUWAC2, DUWAC1, DUWAC0, DURAC3, DURAC2, DURAC1, DURAC0> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		DMEMCTL1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		DMEMCTL1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		DMEMCTL1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		DMEMCTL1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x0); }
@@ -3688,8 +3688,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<IMEM_BASE_ADDR, IECUE, IBAPD, ISWCE, IDAUEC, ICPECE, ISECE> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		IMEMCTL0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		IMEMCTL0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		IMEMCTL0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		IMEMCTL0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -3724,8 +3724,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<ISXAC3, ISXAC2, ISXAC1, ISXAC0, IUXAC3, IUXAC2, IUXAC1, IUXAC0> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		IMEMCTL1(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		IMEMCTL1(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		IMEMCTL1(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		IMEMCTL1(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 		
 		virtual void Reset() { this->Initialize(0x0); }
@@ -3760,8 +3760,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<IDAC, IECCEN, DDAC, DECCEN> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		E2ECTL0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		E2ECTL0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		E2ECTL0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		E2ECTL0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -3789,8 +3789,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<RCHKBIT, WRC, INVC, WCHKBIT_CHKINVT> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		E2EECSR0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		E2EECSR0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		E2EECSR0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		E2EECSR0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -3822,8 +3822,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<OV, Counter_Value> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		PMC(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		PMC(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		PMC(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		PMC(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -3861,8 +3861,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<FAC, PMIE, FCECE, TBSEL, TBEE> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		PMGC0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		PMGC0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		PMGC0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		PMGC0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -3896,8 +3896,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<FC, FCS, FCU, FCM1, FCM0, CE, EVENT, PMP> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		PMLCa(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		PMLCa(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		PMLCa(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		PMLCa(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -3945,8 +3945,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<TRIGONCTL, TRIGOFFCTL, TRIGONSEL, TRIGOFFSEL, TRIGGERED, THRESHMUL, THRESHOLD> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		PMLCb(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		PMLCb(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		PMLCb(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		PMLCb(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -3980,7 +3980,7 @@ protected:
 	{
 		typedef ReadOnlyUPMR<PMC<PMC_NUM>, 0 + PMC_NUM> Super;
 		
-		UPMC(typename CONFIG::STATE *_cpu, PMC<PMC_NUM> *pmc) : Super(_cpu, pmc) {}
+		UPMC(typename CONFIG::CPU *_cpu, PMC<PMC_NUM> *pmc) : Super(_cpu, pmc) {}
 	};
 	
 	typedef UPMC<0> UPMC0;
@@ -3993,7 +3993,7 @@ protected:
 	{
 		typedef ReadOnlyUPMR<PMGC0, 384> Super;
 		
-		UPMGC0(typename CONFIG::STATE *_cpu, PMGC0 *pmgc0) : Super(_cpu, pmgc0) {}
+		UPMGC0(typename CONFIG::CPU *_cpu, PMGC0 *pmgc0) : Super(_cpu, pmgc0) {}
 	};
 
 	//  User performance monitor local control A(0-3)
@@ -4002,7 +4002,7 @@ protected:
 	{
 		typedef ReadOnlyUPMR<PMLCa<PMLCA_NUM>, 128 + PMLCA_NUM> Super;
 		
-		UPMLCa(typename CONFIG::STATE *_cpu, PMLCa<PMLCA_NUM> *pmlca) : Super(_cpu, pmlca) {}
+		UPMLCa(typename CONFIG::CPU *_cpu, PMLCa<PMLCA_NUM> *pmlca) : Super(_cpu, pmlca) {}
 	};
 	
 	typedef UPMLCa<0> UPMLCa0;
@@ -4016,7 +4016,7 @@ protected:
 	{
 		typedef ReadOnlyUPMR<PMLCb<PMLCB_NUM>, 256 + PMLCB_NUM> Super;
 		
-		UPMLCb(typename CONFIG::STATE *_cpu, PMLCb<PMLCB_NUM> *pmlca) : Super(_cpu, pmlca) {}
+		UPMLCb(typename CONFIG::CPU *_cpu, PMLCb<PMLCB_NUM> *pmlca) : Super(_cpu, pmlca) {}
 	};
 	
 	typedef UPMLCb<0> UPMLCb0;
@@ -4040,8 +4040,8 @@ protected:
 		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<NPRIBITS, NATHRD, NTHRD> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
-		TMCFG0(typename CONFIG::STATE *_cpu) : Super(_cpu) { Init(); }
-		TMCFG0(typename CONFIG::STATE *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
+		TMCFG0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
+		TMCFG0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
 	private:
 		void Init()
@@ -4085,8 +4085,8 @@ protected:
     bool requires_memory_access_reporting;        // indicates if the memory accesses require to be reported
     bool requires_finished_instruction_reporting; // indicates if the finished instructions require to be reported
 	
-	inline void MonitorLoad(typename CONFIG::ADDRESS ea, unsigned int size);
-	inline void MonitorStore(typename CONFIG::ADDRESS ea, unsigned int size);
+	inline void MonitorLoad(typename TYPES::ADDRESS ea, unsigned int size);
+	inline void MonitorStore(typename TYPES::ADDRESS ea, unsigned int size);
 	
 	////////////////////////// Run-time parameters ////////////////////////////
 
@@ -4099,7 +4099,7 @@ protected:
 	uint64_t max_inst;
 	unisim::kernel::service::Parameter<uint64_t> param_max_inst;
 	
-	typename CONFIG::ADDRESS halt_on_addr;
+	typename TYPES::ADDRESS halt_on_addr;
 	std::string halt_on;
 	unisim::kernel::service::Parameter<std::string> param_halt_on;
 	
@@ -4141,13 +4141,13 @@ private:
 protected:
 	//////////////////////////// Reset Address ////////////////////////////////
 	
-	typename CONFIG::ADDRESS reset_addr;
-	unisim::kernel::service::Parameter<typename CONFIG::ADDRESS> param_reset_addr;
+	typename TYPES::ADDRESS reset_addr;
+	unisim::kernel::service::Parameter<typename TYPES::ADDRESS> param_reset_addr;
 	
 	/////////////////////////// Program Counter ///////////////////////////////
 	
-	typename CONFIG::ADDRESS cia;
-	typename CONFIG::ADDRESS nia;
+	typename TYPES::ADDRESS cia;
+	typename TYPES::ADDRESS nia;
 	
 	////////////////////// General Purpose Registers //////////////////////////
 	

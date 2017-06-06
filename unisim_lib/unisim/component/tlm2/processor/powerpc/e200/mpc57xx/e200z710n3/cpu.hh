@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,20 +31,40 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-op mtmsr(31[6]:rs[5]:?[10]:146[10]:?[1])
-mtmsr.execute = {
-	CPU::MSR& msr = cpu->GetMSR();
-	if(msr.Get<CPU::MSR::PR>())
-	{
-		cpu->ThrowException<CPU::ProgramInterrupt::PrivilegeViolation>();
-		return false;
-	}
 
-	msr = cpu->GetGPR(rs);
-	
-	return true;
-}
-mtmsr.disasm = {
-	os << "mtmsr r" << (unsigned int) rs;
-}
+#ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_POWERPC_E200_MPC57XX_E200Z710N3_CPU_HH__
+#define __UNISIM_COMPONENT_TLM2_PROCESSOR_POWERPC_E200_MPC57XX_E200Z710N3_CPU_HH__
+
+#include <unisim/component/tlm2/processor/powerpc/e200/mpc57xx/cpu.hh>
+#include <unisim/component/tlm2/processor/powerpc/e200/mpc57xx/cpu.tcc>
+#include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/cpu.tcc>
+#include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/cpu.hh>
+#include <systemc.h>
+#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/logger/logger.hh>
+#include <unisim/kernel/tlm2/tlm.hh>
+#include <inttypes.h>
+#include <stack>
+#include <vector>
+
+namespace unisim {
+namespace component {
+namespace tlm2 {
+namespace processor {
+namespace powerpc {
+namespace e200 {
+namespace mpc57xx {
+namespace e200z710n3 {
+
+typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::CPU<unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z710n3::TYPES, unisim::component::cxx::processor::powerpc::e200::mpc57xx::e200z710n3::CONFIG> CPU;
+
+} // end of namespace e200z710n3
+} // end of namespace mpc57xx
+} // end of namesapce e200
+} // end of namespace powerpc
+} // end of namespace processor
+} // end of namespace tlm2
+} // end of namespace component
+} // end of namespace unisim
+
+#endif

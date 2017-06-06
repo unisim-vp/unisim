@@ -771,7 +771,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
 #else
         host_mode = mode; // other UNIX systems should have the same bit encoding for protection
 #endif
-        ret = open(pathname.c_str(), host_flags, host_mode);
+        int ret = open(pathname.c_str(), host_flags, host_mode);
 #endif
         if(ret == -1) {
           lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno),true);
@@ -1407,7 +1407,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
           }
         
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
-        lin.SetSystemCall(-LINUX_ENOSYS, true);
+        lin.SetSystemCallStatus(-LINUX_ENOSYS, true);
         return;
 #else
         switch(cmd)
