@@ -52,9 +52,9 @@ adc.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
-  U32 op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), res = op1 + op2 + cpu.CPSR().Get( C );
+  U32 op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), carry = cpu.CPSR().Get( C ), res = op1 + op2 + carry;
   cpu.SetGPR( rdn, res );
-  if (not cpu.itblock()) UpdateStatusAdd( cpu, res, op1, op2 );
+  if (not cpu.itblock()) UpdateStatusAddWithCarry( cpu, res, op1, op2, carry );
 };
 
 /*
@@ -665,9 +665,9 @@ sbc.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
-  U32 op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), res = op1 - op2 - (cpu.CPSR().Get( C ) ^ U32(1));
+  U32 op1 = cpu.GetGPR( rdn ), op2 = cpu.GetGPR( rm ), borrow = cpu.CPSR().Get( C ) ^ U32(1), res = op1 - op2 - borrow;
   cpu.SetGPR( rdn, res );
-  if (not cpu.itblock()) UpdateStatusSub( cpu, res, op1, op2 );
+  if (not cpu.itblock()) UpdateStatusSubWithBorrow( cpu, res, op1, op2, borrow );
 };
 
 /*

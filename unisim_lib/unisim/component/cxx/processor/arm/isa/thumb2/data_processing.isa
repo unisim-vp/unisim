@@ -300,9 +300,10 @@ sbc_w.execute = {
   U32
     op1 = cpu.GetGPR( rn ), rmval = cpu.GetGPR( rm ),
     op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-    res = op1 - op2 - (cpu.CPSR().Get( C ) ^ U32(1));
+    borrow = cpu.CPSR().Get( C ) ^ U32(1),
+    res = op1 - op2 - borrow;
   cpu.SetGPR( rd, res );
-  if (s) UpdateStatusSub( cpu, res, op1, op2 );
+  if (s) UpdateStatusSubWithBorrow( cpu, res, op1, op2, borrow );
 };
 
 op sbc_wrri( 0b11110[5]: shl <11> imm2[1]: 0b01[2]: 0b011[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
@@ -315,9 +316,9 @@ sbc_wrri.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
-  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 - op2 - (cpu.CPSR().Get( C ) ^ U32(1));
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), borrow = cpu.CPSR().Get( C ) ^ U32(1), res = op1 - op2 - borrow;
   cpu.SetGPR( rd, res );
-  if (s) UpdateStatusSub( cpu, res, op1, op2 );
+  if (s) UpdateStatusSubWithBorrow( cpu, res, op1, op2, borrow );
 };
 
 /* RSB instructions */
@@ -336,8 +337,8 @@ rsb.execute = {
   
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
-           op1 = ComputeImmShift( cpu, rmval, shift, imm ), op2 = cpu.GetGPR( rn ),
-           res = op1 - op2;
+    op1 = ComputeImmShift( cpu, rmval, shift, imm ), op2 = cpu.GetGPR( rn ),
+    res = op1 - op2;
   cpu.SetGPR( rd, res );
   if (s) UpdateStatusSub( cpu, res, op1, op2 );
 };
@@ -452,10 +453,10 @@ adc_w.execute = {
   
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
-           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-           res = op1 + op2 + cpu.CPSR().Get( C );
+    op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ), carry = cpu.CPSR().Get( C ),
+    res = op1 + op2 + carry;
   cpu.SetGPR( rd, res );
-  if (s) UpdateStatusAdd( cpu, res, op1, op2 );
+  if (s) UpdateStatusAddWithCarry( cpu, res, op1, op2, carry );
 };
 
 op adc_wrri( 0b11110[5]: shl <11> imm2[1]: 0b01[2]: 0b010[3]: s[1]: rn[4]:> <: 0b0[1]: shl<8> imm1[3]: rd[4]: imm0[8] );
@@ -468,9 +469,9 @@ adc_wrri.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typedef typename ARCH::U32 U32;
-  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 + op2 + cpu.CPSR().Get( C );
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), carry = cpu.CPSR().Get( C ), res = op1 + op2 + carry;
   cpu.SetGPR( rd, res );
-  if (s) UpdateStatusAdd( cpu, res, op1, op2 );
+  if (s) UpdateStatusAddWithCarry( cpu, res, op1, op2, carry );
 };
 
 /* EOR instructions */

@@ -381,9 +381,9 @@ adc_32imm.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
   typedef typename ARCH::U32 U32;
-  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 + op2 + cpu.CPSR().Get( C );
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), carry = cpu.CPSR().Get( C ), res = op1 + op2 + carry;
   cpu.SetGPR( rd, res );
-  if (s) UpdateStatusAdd( cpu, res, op1, op2 );
+  if (s) UpdateStatusAddWithCarry( cpu, res, op1, op2, carry );
 };
 
 op adc_imm_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0101[4]: s[1]: rn[4]: rd[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
@@ -399,10 +399,10 @@ adc_imm_shift.execute = {
 
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
-           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-           res = op1 + op2 + cpu.CPSR().Get( C );
+    op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ), carry = cpu.CPSR().Get( C ),
+    res = op1 + op2 + carry;
   cpu.SetGPR( rd, res );
-  if (s) UpdateStatusAdd( cpu, res, op1, op2 );
+  if (s) UpdateStatusAddWithCarry( cpu, res, op1, op2, carry );
 };
 
 op adc_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0101[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
@@ -418,10 +418,10 @@ adc_reg_shift.execute = {
 
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
-           op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
-           res = op1 + op2 + cpu.CPSR().Get( C );
+    op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ), carry = cpu.CPSR().Get( C ),
+    res = op1 + op2 + carry;
   cpu.SetGPR( rd, res );
-  if (s) UpdateStatusAdd( cpu, res, op1, op2 );
+  if (s) UpdateStatusAddWithCarry( cpu, res, op1, op2 , carry );
 };
 
 /*
@@ -444,9 +444,9 @@ sbc_32imm.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
   typedef typename ARCH::U32 U32;
-  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 - op2 - (cpu.CPSR().Get( C ) ^ U32(1));
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), borrow = cpu.CPSR().Get( C ) ^ U32(1), res = op1 - op2 - borrow;
   cpu.SetGPR( rd, res );
-  if (s) UpdateStatusSub( cpu, res, op1, op2 );
+  if (s) UpdateStatusSubWithBorrow( cpu, res, op1, op2, borrow );
 };
 
 op sbc_imm_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0110[4]: s[1]: rn[4]: rd[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
@@ -462,10 +462,10 @@ sbc_imm_shift.execute = {
 
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
-           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-           res = op1 - op2 - (cpu.CPSR().Get( C ) ^ U32(1));
+    op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ), borrow = cpu.CPSR().Get( C ) ^ U32(1),
+    res = op1 - op2 - borrow;
   cpu.SetGPR( rd, res );
-  if (s) UpdateStatusSub( cpu, res, op1, op2 );
+  if (s) UpdateStatusSubWithBorrow( cpu, res, op1, op2, borrow );
 };
 
 op sbc_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0110[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
@@ -481,10 +481,10 @@ sbc_reg_shift.execute = {
 
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
-           op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
-           res = op1 - op2 - (cpu.CPSR().Get( C ) ^ U32(1));
+    op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ), borrow = cpu.CPSR().Get( C ) ^ U32(1),
+    res = op1 - op2 - borrow;
   cpu.SetGPR( rd, res );
-  if (s) UpdateStatusSub( cpu, res, op1, op2 );
+  if (s) UpdateStatusSubWithBorrow( cpu, res, op1, op2, borrow );
 };
 
 /*
@@ -507,9 +507,9 @@ rsc_32imm.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
   typedef typename ARCH::U32 U32;
-  U32 op1 = U32(imm), op2 = cpu.GetGPR( rn ), res = op1 - op2 - (cpu.CPSR().Get( C ) ^ U32(1));
+  U32 op1 = U32(imm), op2 = cpu.GetGPR( rn ), borrow = cpu.CPSR().Get( C ) ^ U32(1), res = op1 - op2 - borrow;
   cpu.SetGPR( rd, res );
-  if (s) UpdateStatusSub( cpu, res, op1, op2 );
+  if (s) UpdateStatusSubWithBorrow( cpu, res, op1, op2, borrow );
 };
 
 op rsc_imm_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0111[4]: s[1]: rn[4]: rd[4]: imm[5]: shift[2]: 0b0[1]: rm[4] );
@@ -524,10 +524,10 @@ rsc_imm_shift.execute = {
 
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
-           op1 = ComputeImmShift( cpu, rmval, shift, imm ), op2 = cpu.GetGPR( rn ),
-           res = op1 - op2 - (cpu.CPSR().Get( C ) ^ U32(1));
+    op1 = ComputeImmShift( cpu, rmval, shift, imm ), op2 = cpu.GetGPR( rn ), borrow = cpu.CPSR().Get( C ) ^ U32(1),
+    res = op1 - op2 - borrow;
   cpu.SetGPR( rd, res );
-  if (s) UpdateStatusSub( cpu, res, op1, op2 );
+  if (s) UpdateStatusSubWithBorrow( cpu, res, op1, op2, borrow );
 };
 
 op rsc_reg_shift( cond[4]: 0b00[2]: 0b0[1]: 0b0111[4]: s[1]: rn[4]: rd[4]: rs[4]: 0b0[1]: shift[2]: 0b1[1]: rm[4] );
@@ -543,10 +543,10 @@ rsc_reg_shift.execute = {
 
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
-           op1 = ComputeRegShift( cpu, rmval, shift, rsval ), op2 = cpu.GetGPR( rn ),
-           res = op1 - op2 - (cpu.CPSR().Get( C ) ^ U32(1));
+    op1 = ComputeRegShift( cpu, rmval, shift, rsval ), op2 = cpu.GetGPR( rn ), borrow = cpu.CPSR().Get( C ) ^ U32(1),
+    res = op1 - op2 - borrow;
   cpu.SetGPR( rd, res );
-  if (s) UpdateStatusSub( cpu, res, op1, op2 );
+  if (s) UpdateStatusSubWithBorrow( cpu, res, op1, op2, borrow );
 };
 
 /*

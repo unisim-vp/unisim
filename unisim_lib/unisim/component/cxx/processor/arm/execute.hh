@@ -216,7 +216,14 @@ namespace arm {
     core.CPSR().Set( C, ((lhs & rhs) | ((~res) & (lhs | rhs))) >> 31 );
     core.CPSR().Set( V, ((lhs & rhs & (~res)) | ((~lhs) & (~rhs) & res)) >> 31 );
   }
-
+  
+  template <typename coreT>
+  void
+  UpdateStatusAddWithCarry( coreT& core, typename coreT::U32 const& res, typename coreT::U32 const& lhs, typename coreT::U32 const& rhs, typename coreT::U32 const& carry )
+  {
+    UpdateStatusAdd( core, res, lhs, rhs );
+  }
+  
   /* In ARM isa, the substraction carry correspond to the complementary                                                                          
    * addition's carry.                                                                                                                           
    */
@@ -229,6 +236,13 @@ namespace arm {
     core.CPSR().Set( Z, U32(res == U32(0)) );
     core.CPSR().Set( C, ((lhs & (~rhs)) | ((~res) & (lhs | (~rhs)))) >> 31 );
     core.CPSR().Set( V, ((lhs & (~rhs) & (~res)) | ((~lhs) & rhs & res)) >> 31 );
+  }
+  
+  template <typename coreT>
+  void
+  UpdateStatusSubWithBorrow( coreT& core, typename coreT::U32 const& res, typename coreT::U32 const& lhs, typename coreT::U32 const& rhs, typename coreT::U32 const& borrow )
+  {
+    UpdateStatusSub( core, res, lhs, rhs );
   }
   
   template <unsigned SIZE> struct _SWP_MSB { static uint32_t const mask = (_SWP_MSB<SIZE*2>::mask >> SIZE) | _SWP_MSB<SIZE*2>::mask; };

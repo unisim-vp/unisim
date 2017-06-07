@@ -92,10 +92,11 @@ adcs_www.execute = {
   U32 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + op2 + U32(carry);
   cpu.SetGZR(rd, res);
   
+  BOOL n = S32(res) < S32(0), z = res == U32(0);
   if (cpu.Cond(carry))
-    cpu.SetNZCV( S32(res) < S32(0), res == U32(0), op1 >= ~op2, (S32(res) < S32(0)) xor (S32(op1) < S32(~op2)) );
+    cpu.SetNZCV( n, z, op1 >= ~op2, n xor (S32(op1) <  S32(~op2)) );
   else
-    cpu.SetNZCV( S32(res) < S32(0), res == U32(0), op1 > ~op2, (S32(res) < S32(0)) xor (S32(op1) <= S32(~op2)) );
+    cpu.SetNZCV( n, z, op1 >  ~op2, n xor (S32(op1) <= S32(~op2)) );
 };
 
 op adcs_xxx( 0b10111010000[11] : rm[5] : 0b000000[6] : rn[5] : rd[5] );
@@ -114,10 +115,11 @@ adcs_xxx.execute = {
   U64 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 + op2 + U64(carry);
   cpu.SetGZR(rd, res);
   
+  BOOL n = S64(res) < S64(0), z = res == U64(0);
   if (cpu.Cond(carry))
-    cpu.SetNZCV( S64(res) < S64(0), res == U64(0), op1 >= ~op2, (S64(res) < S64(0)) xor (S64(op1) < S64(~op2)) );
+    cpu.SetNZCV( n, z, op1 >= ~op2, n xor (S64(op1) <  S64(~op2)) );
   else
-    cpu.SetNZCV( S64(res) < S64(0), res == U64(0), op1 > ~op2, (S64(res) < S64(0)) xor (S64(op1) <= S64(~op2)) );
+    cpu.SetNZCV( n, z, op1 >  ~op2, n xor (S64(op1) <= S64(~op2)) );
 };
 
 /*
@@ -6302,14 +6304,15 @@ sbcs_www.execute = {
   typedef typename ARCH::S32 S32;
   typedef typename ARCH::BOOL BOOL;
   
-  BOOL carry( cpu.GetCarry() );
-  U32 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U32(not carry);
+  BOOL borrow( not cpu.GetCarry() );
+  U32 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U32(borrow);
   cpu.SetGSR(rd, res);
   
-  if (cpu.Cond(carry))
-    cpu.SetNZCV( S32(res) < S32(0), op1 == op2, op1 >= op2, (S32(res) < S32(0)) xor (S32(op1) < S32(op2)) );
+  BOOL n = S32(res) < S32(0), z = op1 == op2;
+  if (cpu.Cond(borrow))
+    cpu.SetNZCV( n, z, op1 >  op2, n xor (S32(op1) <= S32(op2)) );
   else
-    cpu.SetNZCV( S32(res) < S32(0), op1 == op2, op1 > op2, (S32(res) < S32(0)) xor (S32(op1) <= S32(op2)) );
+    cpu.SetNZCV( n, z, op1 >= op2, n xor (S32(op1) <  S32(op2)) );
 };
 
 op sbcs_xxx( 0b11111010000[11] : rm[5] : 0b000000[6] : rn[5] : rd[5] );
@@ -6327,14 +6330,15 @@ sbcs_xxx.execute = {
   typedef typename ARCH::S64 S64;
   typedef typename ARCH::BOOL BOOL;
   
-  BOOL carry( cpu.GetCarry() );
-  U64 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U64(not carry);
+  BOOL borrow( not cpu.GetCarry() );
+  U64 op1( cpu.GetGSR(rn) ), op2( cpu.GetGZR(rm) ), res = op1 - op2 - U64(borrow);
   cpu.SetGSR(rd, res);
   
-  if (cpu.Cond(carry))
-    cpu.SetNZCV( S64(res) < S64(0), op1 == op2, op1 >= op2, (S64(res) < S64(0)) xor (S64(op1) < S64(op2)) );
+  BOOL n = S64(res) < S64(0), z = op1 == op2;
+  if (cpu.Cond(borrow))
+    cpu.SetNZCV( n, z, op1 >  op2, n xor (S64(op1) <= S64(op2)) );
   else
-    cpu.SetNZCV( S64(res) < S64(0), op1 == op2, op1 > op2, (S64(res) < S64(0)) xor (S64(op1) <= S64(op2)) );
+    cpu.SetNZCV( n, z, op1 >= op2, n xor (S64(op1) <  S64(op2)) );
 };
 
 /*
