@@ -68,6 +68,7 @@ public:
 	typedef typename SuperCPU::MCSR MCSR;
 	typedef typename SuperCPU::ESR ESR;
 	typedef typename SuperCPU::DBSR DBSR;
+	typedef typename SuperCPU::SPEFSCR SPEFSCR;
 	
 	/////////////////////////// service imports ///////////////////////////////
 	
@@ -126,6 +127,7 @@ public:
 	
 	MSR& GetMSR() { return msr; }
 	typename SuperCPU::ESR& GetESR() { return esr; }
+   SPEFSCR& GetSPEFSCR() { return spefscr; }
 
 	bool Lbarx(unsigned int rd, ADDRESS addr);
 	bool Lharx(unsigned int rd, ADDRESS addr);

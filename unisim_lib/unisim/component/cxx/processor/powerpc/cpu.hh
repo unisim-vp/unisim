@@ -2147,6 +2147,10 @@ protected:
 	{
 		typedef NonPrivilegedSPR<SPEFSCR, 512> Super;
 		
+		struct FINVH : Field<FINVH, 4> {}; // Embedded Floating-point Invalid Operation / Input error
+		struct FDBZH : Field<FDBZH, 5> {}; // Embedded Floating-point Divide by Zero
+		struct FUNFH : Field<FUNFH, 6> {}; // Embedded Floating-point Underflow
+		struct FOVFH : Field<FOVFH, 7> {}; // Embedded Floating-point Overflow
 		struct FINXS : Field<FINXS, 10> {}; // Embedded Floating-point Inexact Sticky Flag
 		struct FINVS : Field<FINVS, 11> {}; // Enmedded Floating-point Invalid Operation Sticky Flag
 		struct FDBZS : Field<FDBZS, 12> {}; // Embedded Floating-point Divide by Zero Sticky Flag

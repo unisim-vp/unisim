@@ -62,7 +62,9 @@ class CPU; // forward declaration
 
 impl {
 #include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/cpu.hh>
+#include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/floating.hh>
 #include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/cpu.tcc>
+#include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/genfflags.hh>
 
 namespace unisim {
 namespace component {

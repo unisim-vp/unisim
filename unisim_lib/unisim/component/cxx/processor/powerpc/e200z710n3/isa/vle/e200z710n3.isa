@@ -45,7 +45,7 @@ decl {
 impl {
 
 #include <unisim/component/cxx/processor/powerpc/e200z710n3/cpu.hh>
-#include <unisim/component/cxx/processor/powerpc/floating.hh>
+#include <unisim/component/cxx/processor/powerpc/e200z710n3/floating.hh>
 
 namespace unisim {
 namespace component {
