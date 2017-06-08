@@ -421,7 +421,7 @@ adc_reg_shift.execute = {
     op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ), carry = cpu.CPSR().Get( C ),
     res = op1 + op2 + carry;
   cpu.SetGPR( rd, res );
-  if (s) UpdateStatusAddWithCarry( cpu, res, op1, op2 , carry );
+  if (s) UpdateStatusAddWithCarry( cpu, res, op1, op2, carry );
 };
 
 /*

@@ -1081,14 +1081,54 @@ namespace armsec
     BOOL neg = S32(res) < S32(0);
     state.cpsr.n = neg.expr;
     state.cpsr.z = ( res == U32(0) ).expr;
-    state.cpsr.c = ( lhs > rhs ).expr;
+    state.cpsr.c = ( lhs >= rhs ).expr;
     state.cpsr.v = ( neg xor (S32(lhs) < S32(rhs)) ).expr;
+  }
+  
+  void
+  UpdateStatusSubWithBorrow( State& state, U32 const& res, U32 const& lhs, U32 const& rhs, U32 const& borrow )
+  {
+    BOOL neg = S32(res) < S32(0);
+    state.cpsr.n = neg.expr;
+    state.cpsr.z = ( res == U32(0) ).expr;
+    if (state.Cond(borrow != U32(0)))
+      {
+        state.cpsr.c = ( lhs >  rhs ).expr;
+        state.cpsr.v = ( neg xor (S32(lhs) <= S32(rhs)) ).expr;
+      }
+    else
+      {
+        state.cpsr.c = ( lhs >= rhs ).expr;
+        state.cpsr.v = ( neg xor (S32(lhs) <  S32(rhs)) ).expr;
+      }
   }
   
   void
   UpdateStatusAdd( State& state, U32 const& res, U32 const& lhs, U32 const& rhs )
   {
-    UpdateStatusSub( state, res, lhs, -rhs );
+    BOOL neg = S32(res) < S32(0);
+    state.cpsr.n = neg.expr;
+    state.cpsr.z = ( res == U32(0) ).expr;
+    state.cpsr.c = ( lhs >  ~rhs ).expr;
+    state.cpsr.v = ( neg xor (S32(lhs) <= S32(~rhs)) ).expr;
+  }
+  
+  void
+  UpdateStatusAddWithCarry( State& state, U32 const& res, U32 const& lhs, U32 const& rhs, U32 const& carry )
+  {
+    BOOL neg = S32(res) < S32(0);
+    state.cpsr.n = neg.expr;
+    state.cpsr.z = ( res == U32(0) ).expr;
+    if (state.Cond(carry != U32(0)))
+      {
+        state.cpsr.c = ( lhs >= ~rhs ).expr;
+        state.cpsr.v = ( neg xor (S32(lhs) <  S32(~rhs)) ).expr;
+      }
+    else
+      {
+        state.cpsr.c = ( lhs >  ~rhs ).expr;
+        state.cpsr.v = ( neg xor (S32(lhs) <= S32(~rhs)) ).expr;
+      }
   }
   
   void
