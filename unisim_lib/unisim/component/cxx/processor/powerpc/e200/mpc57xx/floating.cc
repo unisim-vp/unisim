@@ -43,6 +43,7 @@
 
 template class unisim::util::simfloat::Numerics::Double::TBuiltDouble<unisim::component::cxx::processor::powerpc::e200::mpc57xx::BuiltFloatTraits>;
 template class unisim::util::simfloat::Numerics::Double::TBuiltDouble<unisim::component::cxx::processor::powerpc::e200::mpc57xx::BuiltDoubleTraits>;
+template class unisim::util::simfloat::Numerics::Double::TBuiltDouble<unisim::component::cxx::processor::powerpc::e200::mpc57xx::BuiltHalfFloatTraits>;
 
 namespace unisim {
 namespace component {

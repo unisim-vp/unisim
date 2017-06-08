@@ -43,7 +43,7 @@ efsmul.execute = {
 	flags.setRoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>());
 
 	SoftFloat result(cpu->GetGPR(ra));
-	SoftFloat b(cpu->GetGPR(rd));
+	SoftFloat b(cpu->GetGPR(rb));
 	// Generate FINV
 	GenSPEFSCR_FINV<CPU::SPEFSCR, CONFIG>(spefscr, result, &b);
 

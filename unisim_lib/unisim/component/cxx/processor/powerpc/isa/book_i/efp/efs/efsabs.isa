@@ -43,7 +43,7 @@ efsabs.execute = {
 	SoftFloat result(cpu->GetGPR(ra));
 
 	// Generate FINV
-	GenSPEFSCR_FINV<CPU::SPEFSCR, CONFIG>(spefscr, result);
+	GenSPEFSCR_FINV<CPU::SPEFSCR, CONFIG, SoftFloat>(spefscr, result);
 
 	// Compute the result
 	result.setNegative(false);

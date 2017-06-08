@@ -225,6 +225,119 @@ static const unsigned int RN_DOWN = 3;
          }
    };
 
+class IntConversion {
+  public:
+   typedef unisim::util::simfloat::Numerics::Integer::TBigCellInt<unisim::util::simfloat::Numerics::Integer::Details::TCellIntegerTraits<(64 + 1)/(8*sizeof(unsigned))> > BigInt;
+
+  private:
+   BigInt biResult;
+   int uSize;
+   bool fUnsigned;
+
+   void normalize()
+      {  if ((uSize % (8*sizeof(unsigned))) > 0)
+            biResult.array((uSize+1)/(8*sizeof(unsigned)))
+               &= ~(~0U << (uSize % (8*sizeof(unsigned))));
+      }
+
+  public:
+   IntConversion() : uSize(32), fUnsigned(true) {}
+   IntConversion(const IntConversion& source)
+      :  biResult(source.biResult), uSize(source.uSize), fUnsigned(source.fUnsigned) {}
+
+   IntConversion& setSigned() { fUnsigned = false; return *this; }
+   IntConversion& setUnsigned() { fUnsigned = true; return *this; }
+   void setSize(int bitSize) { assert(bitSize <= 64); uSize = bitSize; }
+   IntConversion& assignSigned(int64_t value)
+      {  assert(!fUnsigned); uSize = 64; memcpy(&biResult.array(0), &value, 8); return *this; }
+   IntConversion& assignUnsigned(uint64_t value)
+      {  assert(fUnsigned); uSize = 64; memcpy(&biResult.array(0), &value, 8); return *this; }
+   IntConversion& assignSigned(int32_t value)
+      {  assert(!fUnsigned); uSize = 32; memcpy(&biResult.array(0), &value, 4); return *this; }
+   IntConversion& assignUnsigned(uint32_t value)
+      {  assert(fUnsigned); uSize = 32; memcpy(&biResult.array(0), &value, 4); return *this; }
+   IntConversion& assignSigned(int16_t value)
+      {  assert(!fUnsigned); uSize = 32; memcpy(&biResult.array(0), &value, 4); return *this; }
+   IntConversion& assignUnsigned(uint16_t value)
+      {  assert(fUnsigned); uSize = 16; memcpy(&biResult.array(0), &value, 4); return *this; }
+   IntConversion& assign(unsigned int value)
+      {  assert(fUnsigned); biResult.clear(); biResult.array(0) = value; return *this; }
+
+   int querySize() const { return uSize; }
+   int queryMaxDigits() const { return fUnsigned ? uSize : (uSize-1); }
+   bool isUnsigned() const { return fUnsigned; }
+   bool isSigned() const   { return !fUnsigned; }
+
+   int64_t asInt64() const
+      {  int64_t result; memcpy(&result, &const_cast<BigInt&>(biResult).array(0), 8); return result; }
+   int64_t asUInt64() const
+      {  uint64_t result; memcpy(&result, &const_cast<BigInt&>(biResult).array(0), 8); return result; }
+   int32_t asInt32() const
+      {  int32_t result; memcpy(&result, &const_cast<BigInt&>(biResult).array(0), 4); return result; }
+   int32_t asUInt32() const
+      {  uint32_t result; memcpy(&result, &const_cast<BigInt&>(biResult).array(0), 4); return result; }
+   int16_t asInt16() const
+      {  int16_t result; memcpy(&result, &const_cast<BigInt&>(biResult).array(0), 2); return result; }
+   int16_t asUInt16() const
+      {  uint16_t result; memcpy(&result, &const_cast<BigInt&>(biResult).array(0), 2); return result; }
+
+   void opposite()
+      {  assert(!fUnsigned);
+         if (biResult.neg(uSize).inc().hasCarry())
+            normalize();
+      }
+   bool isPositive() const { return fUnsigned || !biResult.cbitArray(uSize-1); }
+   bool isNegative() const { return !fUnsigned && biResult.cbitArray(uSize-1); }
+   bool isDifferentZero() const { return !biResult.isZero(); }
+   int log_base_2() const { return biResult.log_base_2(); }
+   bool hasZero(int digits) const { return biResult.hasZero(digits); }
+   bool cbitArray(int localIndex) const { return biResult.cbitArray(localIndex); }
+   IntConversion& operator>>=(int shift)
+      {  assert(isPositive()); biResult >>= shift; return *this; }
+   IntConversion& operator<<=(int shift)
+      {  assert(isPositive()); biResult <<= shift; return *this; }
+   IntConversion& operator&=(const IntConversion& source)
+      {  assert(isPositive() && source.isPositive());
+         biResult &= source.biResult;
+         return *this;
+      }
+   IntConversion& neg() { biResult.neg(uSize); return *this; }
+   IntConversion& inc()
+      {  if (biResult.inc().hasCarry())
+            normalize();
+         return *this;
+      }
+
+   IntConversion& operator=(const IntConversion& source)
+      {  biResult = source.biResult;
+         fUnsigned = source.fUnsigned;
+         return *this;
+      }
+   typedef BigInt::BitArray BitArray;
+   BitArray bitArray(int index) { assert(isPositive()); return biResult.bitArray(index); }
+   void setBitArray(int index, bool fValue)
+      {  assert(isPositive()); biResult.setBitArray(index, fValue); }
+   void setTrueBitArray(int index)
+      {  assert(isPositive()); biResult.setTrueBitArray(index); }
+   void setFalseBitArray(int index)
+      {  assert(isPositive()); biResult.setFalseBitArray(index); }
+
+   void setMin()
+      {  biResult.clear();
+         if (!fUnsigned)
+            biResult.setTrueBitArray(uSize-1);
+      }
+   void setMax()
+      {  biResult.clear(); 
+         if (fUnsigned)
+            biResult.neg(uSize);
+         else
+            biResult.neg(uSize-1);
+      }
+   unsigned int& operator[](int index) { return biResult[index]; }
+   unsigned int operator[](int index) const { return biResult[index]; }
+};
+
 class BuiltDoubleTraits : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11> {
   public:
    typedef Flags StatusAndControlFlags;
@@ -232,6 +345,7 @@ class BuiltDoubleTraits : public unisim::util::simfloat::Numerics::Double::Built
      public:
       typedef Flags StatusAndControlFlags;
    };
+   typedef mpc57xx::IntConversion IntConversion;
 };
 
 class SoftHalfFloat;
@@ -243,6 +357,8 @@ class SoftDouble : public unisim::util::simfloat::Numerics::Double::TBuiltDouble
   public:
    SoftDouble() : inherited() {}
    SoftDouble(const SoftFloat& sfFloat, Flags& rpParams);
+   SoftDouble(const SoftDouble& source) : inherited(source) {}
+   SoftDouble(const IntConversion& intConversion, Flags& params) : inherited(intConversion, params) {}
    SoftDouble(const uint64_t& uDouble) { setChunk((void *) &uDouble, unisim::util::endian::IsHostLittleEndian()); }
    SoftDouble& operator=(const SoftDouble& sdSource)
       {  return (SoftDouble&) inherited::operator=(sdSource); }
@@ -261,6 +377,7 @@ class BuiltFloatTraits : public unisim::util::simfloat::Numerics::Double::BuiltD
      public:
       typedef Flags StatusAndControlFlags;
    };
+   typedef mpc57xx::IntConversion IntConversion;
 };
 
 class SoftFloat : public unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltFloatTraits> {
@@ -269,7 +386,10 @@ class SoftFloat : public unisim::util::simfloat::Numerics::Double::TBuiltDouble<
 
   public:
    SoftFloat() : inherited() {}
+   SoftFloat(const SoftHalfFloat& sdDouble, Flags& rpParams);
    SoftFloat(const SoftDouble& sdDouble, Flags& rpParams);
+   SoftFloat(const IntConversion& intConversion, Flags& params) : inherited(intConversion, params) {}
+   SoftFloat(const SoftFloat& source) : inherited(source) {}
    SoftFloat(const uint32_t& uFloat) { setChunk((void *) &uFloat, unisim::util::endian::IsHostLittleEndian()); }
 
    SoftFloat& operator=(const SoftFloat& sfSource)
@@ -277,8 +397,40 @@ class SoftFloat : public unisim::util::simfloat::Numerics::Double::TBuiltDouble<
    SoftFloat& assign(const SoftFloat& sfSource)
       {  return (SoftFloat&) inherited::operator=(sfSource); }
    SoftFloat& assign(const SoftDouble& sdDouble, Flags& rpParams);
+   SoftFloat& assign(const SoftHalfFloat& sdDouble, Flags& rpParams);
    uint32_t queryValue() const
       {  uint32_t uResult; fillChunk(&uResult, unisim::util::endian::IsHostLittleEndian()); return uResult; }
+};
+
+class BuiltHalfFloatTraits : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<10, 5> {
+  public:
+   typedef Flags StatusAndControlFlags;
+   class MultExtension : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<10, 5>::MultExtension {
+     public:
+      typedef Flags StatusAndControlFlags;
+   };
+   typedef mpc57xx::IntConversion IntConversion;
+};
+
+class SoftHalfFloat : public unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltHalfFloatTraits> {
+  private:
+   typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltHalfFloatTraits> inherited;
+
+  public:
+   SoftHalfFloat() : inherited() {}
+   SoftHalfFloat(const IntConversion& intConversion, Flags& params) : inherited(intConversion, params) {}
+   SoftHalfFloat(const SoftHalfFloat& source) : inherited(source) {}
+   SoftHalfFloat(const SoftFloat& sdDouble, Flags& rpParams);
+   SoftHalfFloat(const SoftDouble& sdDouble, Flags& rpParams);
+   SoftHalfFloat(const uint16_t& uHalfFloat) { setChunk((void *) &uHalfFloat, unisim::util::endian::IsHostLittleEndian()); }
+
+   SoftHalfFloat& operator=(const SoftHalfFloat& sfSource)
+      {  return (SoftHalfFloat&) inherited::operator=(sfSource); }
+   SoftHalfFloat& assign(const SoftHalfFloat& sfSource)
+      {  return (SoftHalfFloat&) inherited::operator=(sfSource); }
+   SoftHalfFloat& assign(const SoftFloat& sdDouble, Flags& rpParams);
+   uint16_t queryValue() const
+      {  uint16_t uResult; fillChunk(&uResult, unisim::util::endian::IsHostLittleEndian()); return uResult; }
 };
 
 inline SoftDouble&
@@ -307,8 +459,36 @@ SoftFloat::assign(const SoftDouble& sdDouble, Flags& rpParams) {
    return (SoftFloat&) inherited::operator=(inherited(fcConversion, rpParams));
 }
 
+inline SoftFloat&
+SoftFloat::assign(const SoftHalfFloat& sdDouble, Flags& rpParams) {
+   FloatConversion fcConversion;
+   fcConversion.setSizeMantissa(10).setSizeExponent(5);
+   fcConversion.setNegative(sdDouble.isNegative());
+   fcConversion.exponent()[0] = sdDouble.queryBasicExponent()[0];
+   fcConversion.mantissa()[0] = sdDouble.queryMantissa()[0];
+   return (SoftFloat&) inherited::operator=(inherited(fcConversion, rpParams));
+}
+
 inline
 SoftFloat::SoftFloat(const SoftDouble& sdDouble, Flags& rpParams)
+   { assign(sdDouble, rpParams); }
+
+inline
+SoftFloat::SoftFloat(const SoftHalfFloat& sdDouble, Flags& rpParams)
+   { assign(sdDouble, rpParams); }
+
+inline SoftHalfFloat&
+SoftHalfFloat::assign(const SoftFloat& sdDouble, Flags& rpParams) {
+   FloatConversion fcConversion;
+   fcConversion.setSizeMantissa(23).setSizeExponent(8);
+   fcConversion.setNegative(sdDouble.isNegative());
+   fcConversion.exponent()[0] = sdDouble.queryBasicExponent()[0];
+   fcConversion.mantissa()[0] = sdDouble.queryMantissa()[0];
+   return (SoftHalfFloat&) inherited::operator=(inherited(fcConversion, rpParams));
+}
+
+inline
+SoftHalfFloat::SoftHalfFloat(const SoftFloat& sdDouble, Flags& rpParams)
    { assign(sdDouble, rpParams); }
 
 class FloatingPointRegisterInterface : public unisim::service::interfaces::Register
