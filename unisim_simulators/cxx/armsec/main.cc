@@ -396,6 +396,8 @@ namespace armsec
         }
         if (not leaf)
           return false;
+        else
+          cond = Expr();
       }
       // This is a leaf; if no local sinks, signal dead path to parent
       return sinks.size() == 0;
@@ -581,7 +583,7 @@ namespace armsec
         {
           NA = 0,
           r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr, nia,
-          n, z, c, v, // q, ge0, ge1, ge2, ge3,
+          n, z, c, v, itstate, // q, ge0, ge1, ge2, ge3,
           cpsr, spsr,
           fpscr, fpexc,
           end
@@ -591,32 +593,33 @@ namespace armsec
       {
         switch (code)
           {
-          case    r0: return "r0";
-          case    r1: return "r1";
-          case    r2: return "r2";
-          case    r3: return "r3";
-          case    r4: return "r4";
-          case    r5: return "r5";
-          case    r6: return "r6";
-          case    r7: return "r7";
-          case    r8: return "r8";
-          case    r9: return "r9";
-          case    sl: return "sl";
-          case    fp: return "fp";
-          case    ip: return "ip";
-          case    sp: return "sp";
-          case    lr: return "lr";
-          case   nia: return "pc";
-          case     n: return "n";
-          case     z: return "z";
-          case     c: return "c";
-          case     v: return "v";
-          case  cpsr: return "cpsr";
-          case  spsr: return "spsr";
-          case fpscr: return "fpscr";
-          case fpexc: return "fpexc";
-          case    NA: return "NA";
-          case   end: break;
+          case      r0: return "r0";
+          case      r1: return "r1";
+          case      r2: return "r2";
+          case      r3: return "r3";
+          case      r4: return "r4";
+          case      r5: return "r5";
+          case      r6: return "r6";
+          case      r7: return "r7";
+          case      r8: return "r8";
+          case      r9: return "r9";
+          case      sl: return "sl";
+          case      fp: return "fp";
+          case      ip: return "ip";
+          case      sp: return "sp";
+          case      lr: return "lr";
+          case     nia: return "pc";
+          case       n: return "n";
+          case       z: return "z";
+          case       c: return "c";
+          case       v: return "v";
+          case itstate: return "itstate";
+          case    cpsr: return "cpsr";
+          case    spsr: return "spsr";
+          case   fpscr: return "fpscr";
+          case   fpexc: return "fpexc";
+          case      NA: return "NA";
+          case     end: break;
           }
         return "INVALID";
       }
@@ -676,6 +679,7 @@ namespace armsec
               Expr( new RegRead("z",1) ),
               Expr( new RegRead("c",1) ),
               Expr( new RegRead("v",1) ),
+              Expr( new RegRead("itstate",8) ),
               Expr( new RegRead("cpsr",32) ) )
       , spsr( Expr( new RegRead("spsr",32) ) )
       , FPSCR( Expr( new RegRead("fpscr",32) ) )
@@ -702,10 +706,11 @@ namespace armsec
     //struct psr_type : public FieldRegisterU32
     struct psr_type
     {
-      psr_type( Expr const& _n, Expr const& _z, Expr const& _c, Expr const& _v, Expr const& _bg )
-        : n(_n), z(_z), c(_c), v(_v), bg(_bg)
+      psr_type( Expr const& _n, Expr const& _z, Expr const& _c, Expr const& _v, Expr const& _itstate, Expr const& _bg )
+        : n(_n), z(_z), c(_c), v(_v), itstate(_itstate), bg(_bg)
       {}
       Expr n, z, c, v;
+      U8 itstate;
       U32 bg;
       
       typedef unisim::component::cxx::processor::arm::RegisterField<31,1> NRF; /* Negative Integer Condition Flag */
@@ -720,14 +725,19 @@ namespace armsec
       typedef unisim::component::cxx::processor::arm::RegisterField< 9,1> ERF; /* Endianness execution state */
       typedef unisim::component::cxx::processor::arm::RegisterField< 0,5> MRF; /* Mode field */
       
+      typedef unisim::component::cxx::processor::arm::RegisterField<10,6> ITHIRF;
+      typedef unisim::component::cxx::processor::arm::RegisterField<25,2> ITLORF;
+      
       typedef unisim::component::cxx::processor::arm::RegisterField< 0,32> ALL;
       
       template <typename RF>
-      U32 Set( RF const& _, U32 const& value )
+      void Set( RF const& _, U32 const& value )
       {
-        unisim::util::symbolic::StaticAssert<(RF::pos > 31) or ((RF::pos + RF::size) <= 28)>::check();
+        unisim::util::symbolic::StaticAssert<(RF::pos > 31) or ((RF::pos + RF::size) <= 28)>::check(); // NZCV
+        unisim::util::symbolic::StaticAssert<(RF::pos > 26) or ((RF::pos + RF::size) <= 25)>::check(); // ITLO
+        unisim::util::symbolic::StaticAssert<(RF::pos > 15) or ((RF::pos + RF::size) <= 10)>::check(); // ITHI
         
-        return _.Get( bg );
+        return _.Set( bg, value );
       }
       
       void Set( NRF const& _, BOOL const& value ) { n = value.expr; }
@@ -735,7 +745,7 @@ namespace armsec
       void Set( CRF const& _, BOOL const& value ) { c = value.expr; }
       void Set( VRF const& _, BOOL const& value ) { v = value.expr; }
 
-      void Set( QRF const& _, U32 const& value ) { _.Set( bg, value ); }
+      //void Set( QRF const& _, U32 const& value ) { unisim::util::symbolic::StaticAssert<false>::check();_.Set( bg, value ); }
       void Set( ERF const& _, U32 const& value ) { _.Set( bg, value ); }
       
       void Set( NZCVRF const& _, U32 const& value )
@@ -753,13 +763,25 @@ namespace armsec
         c = BOOL( CRF().Get( value ) ).expr;
         v = BOOL( VRF().Get( value ) ).expr;
         
+        itstate = U8((ITHIRF().Get( value ) << 2) | ITLORF().Get( value ));
+        
         unisim::component::cxx::processor::arm::RegisterField<0,28>().Set( bg, value );
       }
+      
+      void
+      SetITState( uint8_t init_val )
+      {
+        itstate = U8(init_val);
+      }
+      
+      BOOL InITBlock() const { return (itstate & U8(0b1111)) != U8(0); }
       
       template <typename RF>
       U32 Get( RF const& _ )
       {
-        unisim::util::symbolic::StaticAssert<(RF::pos > 31) or ((RF::pos + RF::size) <= 28)>::check();
+        unisim::util::symbolic::StaticAssert<(RF::pos > 31) or ((RF::pos + RF::size) <= 28)>::check(); // NZCV
+        unisim::util::symbolic::StaticAssert<(RF::pos > 26) or ((RF::pos + RF::size) <= 25)>::check(); // ITLO
+        unisim::util::symbolic::StaticAssert<(RF::pos > 15) or ((RF::pos + RF::size) <= 10)>::check(); // ITHI
         
         return _.Get( bg );
       }
@@ -926,10 +948,29 @@ namespace armsec
     void SetVSR( unsigned idx, F32 val ) {}
     F64  GetVDR( unsigned idx ) { return F64(); }
     void SetVDR( unsigned idx, F64 val ) {}
-  
-    uint32_t itcond() const { return this->COND_AL; }
-    bool itblock() { return false; }
-    void ITSetState( uint32_t cond, uint32_t mask ) { not_implemented(); }
+    
+    struct ITCond {};
+    
+    ITCond itcond() const { return ITCond(); }
+    bool itblock() { return Cond(cpsr.InITBlock()); }
+    bool is_it_assigned; /* determines wether current instruction is an IT one. */
+    void ITSetState( uint32_t cond, uint32_t mask )
+    {
+      cpsr.SetITState( (cond << 4) | mask );
+      is_it_assigned = true;
+    }
+    void
+    ITAdvance()
+    {
+      if (is_it_assigned)
+        is_it_assigned = false;
+      else if (itblock())
+        {
+          U8 itstate( cpsr.itstate );
+          itstate = (Cond(itstate & U8(7))) ? ((itstate & U8(-32)) | ((itstate << 1) & U8(31))) : U8(0);
+          cpsr.itstate = itstate;
+        }
+    }
 
     // /* masks for the different running modes */
     // static uint32_t const RUNNING_MODE_MASK = 0x1F;
@@ -974,6 +1015,8 @@ namespace armsec
         path->sinks.insert( Expr( new RegWrite( "c", cpsr.c, 1 ) ) );
       if (cpsr.v != ref.cpsr.v)
         path->sinks.insert( Expr( new RegWrite( "v", cpsr.v, 1 ) ) );
+      if (cpsr.itstate.expr != ref.cpsr.itstate.expr)
+        path->sinks.insert( Expr( new RegWrite( "itstate", cpsr.itstate.expr, 8 ) ) );
       if (cpsr.bg.expr != ref.cpsr.bg.expr)
         path->sinks.insert( Expr( new RegWrite( "cpsr", cpsr.bg.expr, 32 ) ) );
       if (spsr.expr != ref.spsr.expr)
@@ -1030,6 +1073,30 @@ namespace armsec
     
     throw std::logic_error( "undefined condition" );
     return unisim::util::symbolic::make_const( false );    
+  }
+
+  BOOL
+  CheckCondition( State& state, State::ITCond const& cond )
+  {
+    BOOL N = state.cpsr.n, Z = state.cpsr.z, C = state.cpsr.c, V = state.cpsr.v;
+    U8 cc = (state.cpsr.itstate >> 4);
+    return
+      ((state.cpsr.itstate & U8(0b1111)) == U8(0)) or // unconditional
+      ((cc == U8(0)) and (Z)) or // eq; equal
+      ((cc == U8(1)) and (not Z)) or // ne; not equal
+      ((cc == U8(2)) and (C)) or // cs/hs; unsigned higher or same
+      ((cc == U8(3)) and (not C)) or // cc/lo; unsigned lower
+      ((cc == U8(4)) and (N)) or // mi; negative
+      ((cc == U8(5)) and (not N)) or // pl; positive or zero
+      ((cc == U8(6)) and (V)) or // vs; overflow set
+      ((cc == U8(7)) and (not V)) or // vc; overflow clear
+      ((cc == U8(8)) and (not (not C or Z))) or // hi; unsigned higher
+      ((cc == U8(9)) and ((not C or Z))) or // ls; unsigned lower or same
+      ((cc == U8(10)) and (not (N xor V))) or // ge; signed greater than or equal
+      ((cc == U8(11)) and ((N xor V))) or // lt; signed less than
+      ((cc == U8(12)) and (not(Z or (N xor V)))) or // gt; signed greater than
+      ((cc == U8(13)) and ((Z or (N xor V)))) or // le; signed less than or equal
+      ((cc == U8(14)) and (unisim::util::symbolic::make_const( true )));
   }
   
   // struct GenFlagsID
@@ -1198,6 +1265,9 @@ namespace armsec
             rtmps[rw->value] = rw->id.c_str();
         }
       
+      // if (cond.good())
+      //   sestats.Process( cond );
+      
       struct CSE : public std::multimap<unsigned,Expr>
       {
         void Process( Expr const& expr )
@@ -1216,7 +1286,9 @@ namespace armsec
       for (std::map<Expr,unsigned>::iterator itr = sestats.begin(), end = sestats.end(); itr != end; ++itr)
         {
           if (itr->second < 2)
-            continue;
+            continue; // No reuse
+          if (ctx.vars.count(itr->first))
+            continue; // Already defined
           cse.Process(itr->first);
         }
       
@@ -1384,16 +1456,16 @@ struct Decoder
     struct Translation
     {
       typedef typename ISA::Operation Insn;
-      typedef typename armsec::PathNode Code;
+      typedef typename armsec::PathNode PathNode;
       typedef typename unisim::util::symbolic::Expr Expr;
       typedef typename armsec::State State;
       
-      ~Translation() { delete insn; delete code; }
+      ~Translation() { delete insn; delete coderoot; }
       Translation( uint32_t _addr )
         : insn(0)
-        , code(new armsec::PathNode)
+        , coderoot(new armsec::PathNode)
         , addr( _addr )
-        , reference( code )
+        , reference( coderoot )
       {}
       
       int
@@ -1426,9 +1498,10 @@ struct Decoder
           {
             for (bool end = false; not end;)
               {
-                State state( code );
+                State state( coderoot );
                 state.SetInsnProps( insn_addr, ISA::is_thumb, insn->GetLength() );
                 insn->execute( state );
+                state.ITAdvance();
                 end = state.close( reference );
               }
           }
@@ -1437,18 +1510,18 @@ struct Decoder
             return false;
           }
     
-        code->factorize();
-        code->remove_dead_paths();
+        coderoot->factorize();
+        coderoot->remove_dead_paths();
 
         armsec::Label beglabel(program), endlabel(program);
         beglabel.allocate();
-        code->GenCode( beglabel, endlabel, 0 );
+        coderoot->GenCode( beglabel, endlabel, 0 );
         
         return true;
       }
       
       Insn*     insn;
-      Code*     code;
+      PathNode* coderoot;
       uint32_t  addr;
       State     reference;
     } trans( addr );

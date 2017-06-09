@@ -602,7 +602,7 @@ CPU::ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
 
   unsigned read_size = master_socket->transport_dbg(*trans);
 
-  return (trans->is_response_ok() and read_size == size);
+  return read_size == size;
 }
 
 /**
@@ -634,7 +634,7 @@ CPU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
 
   unsigned write_size = master_socket->transport_dbg(*trans);
 
-  return (trans->is_response_ok() and (write_size == size));
+  return write_size == size;
 }
 
 /**
