@@ -53,6 +53,9 @@ namespace symbolic {
   }
   std::ostream& ConstNodeBase::warn() { return std::cerr; }
   
+  double   EvalMod( double l, double r ) { throw std::logic_error( "No ^ for double." ); }
+  float    EvalMod( float l, float r ) { throw std::logic_error( "No ^ for float." ); }
+  
   double   EvalXor( double l, double r ) { throw std::logic_error( "No ^ for double." ); }
   float    EvalXor( float l, float r ) { throw std::logic_error( "No ^ for float." ); }
   

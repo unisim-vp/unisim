@@ -251,6 +251,10 @@ namespace symbolic {
   };
   
   template <typename VALUE_TYPE>
+  VALUE_TYPE EvalMod( VALUE_TYPE l, VALUE_TYPE r ) { return l % r; }
+  double     EvalMod( double l, double r );
+  float      EvalMod( float l, float r );
+  template <typename VALUE_TYPE>
   VALUE_TYPE EvalXor( VALUE_TYPE l, VALUE_TYPE r ) { return l ^ r; }
   double     EvalXor( double l, double r );
   float      EvalXor( float l, float r );
@@ -345,6 +349,8 @@ namespace symbolic {
         case Op::Sub:   return new ConstNode<VALUE_TYPE>( value - GetValue( args[1] ) );
         case Op::Mul:   return new ConstNode<VALUE_TYPE>( value * GetValue( args[1] ) );
         case Op::Div:   return new ConstNode<VALUE_TYPE>( value / GetValue( args[1] ) );
+        case Op::Mod:   return new ConstNode<VALUE_TYPE>( EvalMod( value, GetValue( args[1] ) ) );
+          
         case Op::Teq:   return new ConstNode   <bool>   ( value == GetValue( args[1] ) );
         case Op::Tne:   return new ConstNode   <bool>   ( value != GetValue( args[1] ) );
         case Op::Tleu:  
@@ -357,7 +363,6 @@ namespace symbolic {
         case Op::Tgt:   return new ConstNode   <bool>   ( value >  GetValue( args[1] ) );
         case Op::Ror:   return new ConstNode<VALUE_TYPE>( EvalRotateRight( value, args[1]->GetU8() ) );
         case Op::Rol:   return new ConstNode<VALUE_TYPE>( EvalRotateLeft( value, args[1]->GetU8() ) );
-        case Op::Mod:   break;
         case Op::FCmp:  break;
           
         case Op::NA:
