@@ -34,8 +34,30 @@
 
 op efsneg(4[6]:rd[5]:ra[5]:?[5]:710[11])
 efsneg.execute = {
-	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
-	return false;
+	if (!HasGenSPEFSCR<CPU, CONFIG>(cpu))
+		return false;
+
+	// Read the input operands and update FPSCR
+	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
+
+	SoftFloat result(cpu->GetGPR(ra));
+
+	// Generate FINV
+	GenSPEFSCR_FINV<CPU::SPEFSCR, CONFIG, SoftFloat>(spefscr, result);
+
+	// Compute the result
+	result.setNegative(!result.isNegative());
+
+	if (!spefscr.Get<CPU::SPEFSCR::FINVE>() && spefscr.Get<CPU::SPEFSCR::FINV>())
+		GenSPEFSCR_DefaultResults(spefscr, result);
+	if(unlikely((DoesSPEFSCR_TriggerException<CPU::SPEFSCR, CONFIG>(spefscr)))) {
+		GenSPEFSCR_TriggerException<CPU, CONFIG>(cpu);
+		return false;
+	};
+
+	// Write back the result
+	cpu->SetGPR(rd, result.queryValue());
+	return true;
 }
 efsneg.disasm = {
 	os << "efsneg r" << (unsigned int) rd << ", r" << (unsigned int) ra;

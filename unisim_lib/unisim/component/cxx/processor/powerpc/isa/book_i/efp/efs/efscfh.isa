@@ -49,11 +49,9 @@ efscfh.execute = {
 	// Compute the result
 	SoftFloat result(b, flags);
 
-	if (!spefscr.Get<CPU::SPEFSCR::FINVE>() && spefscr.Get<CPU::SPEFSCR::FINV>()) {
-		spefscr.Set<CPU::SPEFSCR::FGH>(false);
-		spefscr.Set<CPU::SPEFSCR::FXH>(false);
-		spefscr.Set<CPU::SPEFSCR::FG>(false);
-		spefscr.Set<CPU::SPEFSCR::FX>(false);
+	if (!spefscr.Get<CPU::SPEFSCR::FINVE>() && spefscr.Get<CPU::SPEFSCR::FINV>())
+		GenSPEFSCR_DefaultResults(spefscr, result);
+	if(unlikely((DoesSPEFSCR_TriggerException<CPU::SPEFSCR, CONFIG>(spefscr)))) {
 		GenSPEFSCR_TriggerException<CPU, CONFIG>(cpu);
 		return false;
 	};

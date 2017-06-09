@@ -51,7 +51,7 @@ efsadd.execute = {
 	result.plusAssign(b, flags);
 
 	if (!spefscr.Get<CPU::SPEFSCR::FINVE>() && spefscr.Get<CPU::SPEFSCR::FINV>())
-		GenSPEFSCR_DefaultResults(result);
+		GenSPEFSCR_DefaultResults(spefscr, result);
 
 	// Generate FOFV, FUNF, FINXS, FG, FX
 	GenSPEFSCR_FOVF<CPU::SPEFSCR, CONFIG>(spefscr, flags);

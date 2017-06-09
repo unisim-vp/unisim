@@ -29,13 +29,39 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr), Franck Vedrine (franck.vedrine@cea.fr)
  */
 
 op efscfuf(4[6]:rd[5]:?[5]:rb[5]:722[11])
 efscfuf.execute = {
-	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
-	return false;
+	if (!HasGenSPEFSCR<CPU, CONFIG>(cpu))
+		return false;
+
+	// Read the input operands and update FPSCR
+	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
+	Flags flags;
+	flags.setRoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>());
+
+	SoftFloat::IntConversion conversion;
+	conversion.assignUnsigned((uint32_t) cpu->GetGPR(rb));
+	SoftFloat result(conversion, flags);
+	bool isZero = result.querySBasicExponent().sub(32).hasCarry() || result.queryBasicExponent().isZero();
+	if (isZero) {
+		if (!result.isZero()) { // should not occur
+			flags.setUnderflow();
+			result.clear();
+		};
+	};
+
+	// Generate FINXS, FG, FX
+	GenSPEFSCR_FINXS<CPU::SPEFSCR, CONFIG>(spefscr, flags);
+	GenSPEFSCR_FG<CPU::SPEFSCR, CONFIG>(spefscr, flags);
+	GenSPEFSCR_FX<CPU::SPEFSCR, CONFIG>(spefscr, flags);
+
+	// Write back the result
+	cpu->SetGPR(rd, result.queryValue());
+
+	return true;
 }
 efscfuf.disasm = {
 	os << "efscfuf r" << (unsigned int) rd << ", r" << (unsigned int) rb;

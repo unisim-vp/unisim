@@ -71,20 +71,27 @@ inline bool HasGenSPEFSCR(CPU* cpu)
 
 template <class SPEFSCR, class CONFIG, class FLOAT>
 inline void GenSPEFSCR_FINV(SPEFSCR& spefscr, const FLOAT& first,
-		const FLOAT* second = NULL, bool isDivideOperation=false, bool isIntegerConversion=false)
+		const FLOAT* second = NULL, const FLOAT* third = NULL, bool isDivideOperation=false,
+      bool isIntegerConversion=false)
 {
 	spefscr.template Set<typename SPEFSCR::FINV>(false);
 	if (unlikely(first.hasInftyExponent() || first.isDenormalized()))
 		spefscr.template Set<typename SPEFSCR::FINV>(true);
 	else if (unlikely(second && (second->hasInftyExponent() || second->isDenormalized())))
 		spefscr.template Set<typename SPEFSCR::FINV>(true);
+	else if (unlikely(third && (third->hasInftyExponent() || third->isDenormalized())))
+		spefscr.template Set<typename SPEFSCR::FINV>(true);
 	else if (unlikely(isDivideOperation && second && first.isZero() && second->isZero()))
 		spefscr.template Set<typename SPEFSCR::FINV>(true);
 }
 
-template <class FLOAT>
-inline void GenSPEFSCR_DefaultResults(FLOAT& result)
+template <class SPEFSCR, class FLOAT>
+inline void GenSPEFSCR_DefaultResults(SPEFSCR& spefscr, FLOAT& result)
 {
+	spefscr.template Set<typename SPEFSCR::FGH>(false);
+	spefscr.template Set<typename SPEFSCR::FXH>(false);
+	spefscr.template Set<typename SPEFSCR::FG>(false);
+	spefscr.template Set<typename SPEFSCR::FX>(false);
 	// default results are provided by the hardware when an infinity, denormalized, or NaN input is received
 }
 
@@ -115,6 +122,13 @@ inline void GenSPEFSCR_FINXS(SPEFSCR& spefscr, const Flags& flags)
 	else if (spefscr.template Get<typename SPEFSCR::FUNFE>()
 			&& (spefscr.template Get<typename SPEFSCR::FUNF>() || spefscr.template Get<typename SPEFSCR::FUNFH>()))
 		spefscr.template Set<typename SPEFSCR::FINXS>(true);
+}
+
+template <class SPEFSCR, class CONFIG>
+inline void GenSPEFSCR_FDBZ(SPEFSCR& spefscr, const Flags& flags)
+{
+	if (flags.isDivisionByZero())
+		spefscr.template Set<typename SPEFSCR::FDBZ>(true);
 }
 
 template <class SPEFSCR, class CONFIG>
