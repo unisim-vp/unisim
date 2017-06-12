@@ -513,12 +513,12 @@ namespace armsec
     typedef unisim::util::symbolic::Expr Expr;
     
     template <typename T>
-    bool Cond( unisim::util::symbolic::SmartValue<T> const& _cond )
+    bool Cond( unisim::util::symbolic::SmartValue<T> const& cond )
     {
-      if (not _cond.expr.node)
-        throw std::logic_error( "Not a cond" );
-      BOOL cond(_cond);
-      Expr cexp( cond.expr );
+      if (not cond.expr.good())
+        throw std::logic_error( "Not a valid condition" );
+      
+      Expr cexp( BOOL(cond).expr );
       if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
         return cnode->GetBoolean();
       
@@ -1503,7 +1503,8 @@ struct Decoder
                 State state( coderoot );
                 state.SetInsnProps( insn_addr, ISA::is_thumb, insn->GetLength() );
                 insn->execute( state );
-                state.ITAdvance();
+                if (ISA::is_thumb)
+                  state.ITAdvance();
                 end = state.close( reference );
               }
           }
