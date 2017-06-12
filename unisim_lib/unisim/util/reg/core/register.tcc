@@ -852,6 +852,11 @@ Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Register(TYPE _value)
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
+void Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::WithinRegisterFileCtor(unsigned int index)
+{
+}
+
+template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 void Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Initialize(TYPE _value)
 {
 	value = _value & TYPE_MASK;
@@ -1114,6 +1119,12 @@ template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE>
 RegisterFile<REGISTER, _DIM, REGISTER_FILE_BASE>::RegisterFile()
 	: regs()
 {
+	unsigned int index;
+	
+	for(index = 0; index < _DIM; index++)
+	{
+		regs[index].WithinRegisterFileCtor(index);
+	}
 }
 
 template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE>
@@ -1124,6 +1135,7 @@ RegisterFile<REGISTER, _DIM, REGISTER_FILE_BASE>::RegisterFile(typename REGISTER
 	
 	for(index = 0; index < _DIM; index++)
 	{
+		regs[index].WithinRegisterFileCtor(index);
 		regs[index].Initialize(value);
 	}
 }
@@ -1391,6 +1403,257 @@ AddressableRegisterHandle<ADDRESS> *RegisterAddressMap<ADDRESS>::FindAddressable
 
 	return it != reg_addr_map.end() ? (*it).second : 0;
 }
+
+template <typename ADDRESS>
+bool RegisterAddressMap<ADDRESS>::Write(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian)
+{
+	unsigned int byte_offset;
+	
+	unisim::util::endian::endian_type host_endian = unisim::util::endian::GetHostEndian();
+	
+	for(byte_offset = 0; byte_offset < data_length;)
+	{
+		ADDRESS byte_addr = addr + byte_offset;
+		
+		AddressableRegisterHandle<ADDRESS> *arh = FindAddressableRegister(byte_addr);
+		
+		if(!arh) return false;
+		
+		ADDRESS reg_addr = arh->GetAddress();
+		
+		unsigned int reg_size = arh->GetSize();
+		unsigned int reg_size_minus_1 = reg_size - 1;
+		unsigned char reg_value[reg_size];
+		unsigned char reg_be[reg_size];
+		
+		memset(reg_value, 0, sizeof(reg_value));
+		memset(reg_be, 0, sizeof(reg_be));
+		
+		unsigned int byte_pos = byte_addr - reg_addr;
+		
+		unsigned int sz = std::min(data_length - byte_offset, reg_size - byte_pos);
+		
+		do
+		{
+			uint8_t byte_value = data_ptr[byte_offset];
+			if(host_endian != target_endian)
+			{
+				reg_value[reg_size_minus_1 - byte_pos] = byte_value;
+				reg_be[reg_size_minus_1 - byte_pos] = 0xff;
+			}
+			else
+			{
+				reg_value[byte_pos] = byte_value;
+				reg_be[byte_pos] = 0xff;
+			}
+			
+			byte_offset++;
+			byte_pos++;
+		}
+		while(--sz);
+		
+		arh->Write(reg_value, reg_be);
+	}
+	
+	return true;
+}
+
+template <typename ADDRESS>
+bool RegisterAddressMap<ADDRESS>::Read(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian)
+{
+	unsigned int byte_offset;
+	
+	unisim::util::endian::endian_type host_endian = unisim::util::endian::GetHostEndian();
+	
+	for(byte_offset = 0; byte_offset < data_length;)
+	{
+		ADDRESS byte_addr = addr + byte_offset;
+		
+		AddressableRegisterHandle<ADDRESS> *arh = FindAddressableRegister(byte_addr);
+		
+		if(!arh) return false;
+		
+		ADDRESS reg_addr = arh->GetAddress();
+		
+		unsigned int reg_size = arh->GetSize();
+		unsigned int reg_size_minus_1 = reg_size - 1;
+		unsigned char reg_value[reg_size];
+		
+		arh->Read(reg_value);
+		
+		unsigned int byte_pos = byte_addr - reg_addr;
+		
+		unsigned int sz = std::min(data_length - byte_offset, reg_size - byte_pos);
+		
+		do
+		{
+			uint8_t byte_value = (host_endian != target_endian) ? reg_value[reg_size_minus_1 - byte_pos] : reg_value[byte_pos];
+			data_ptr[byte_offset] = byte_value;
+			
+			byte_offset++;
+			byte_pos++;
+		}
+		while(--sz);
+	}
+	
+	return true;
+}
+
+template <typename ADDRESS>
+unsigned int RegisterAddressMap<ADDRESS>::DebugWrite(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian)
+{
+	unsigned int byte_offset;
+	
+	unisim::util::endian::endian_type host_endian = unisim::util::endian::GetHostEndian();
+	
+	for(byte_offset = 0; byte_offset < data_length;)
+	{
+		ADDRESS byte_addr = addr + byte_offset;
+		
+		AddressableRegisterHandle<ADDRESS> *arh = FindAddressableRegister(byte_addr);
+		
+		if(!arh) return byte_offset;
+		
+		ADDRESS reg_addr = arh->GetAddress();
+		
+		unsigned int reg_size = arh->GetSize();
+		unsigned int reg_size_minus_1 = reg_size - 1;
+		unsigned char reg_value[reg_size];
+		unsigned char reg_be[reg_size];
+		
+		memset(reg_value, 0, sizeof(reg_value));
+		memset(reg_be, 0, sizeof(reg_be));
+		
+		unsigned int byte_pos = byte_addr - reg_addr;
+		
+		unsigned int sz = std::min(data_length - byte_offset, reg_size - byte_pos);
+		
+		do
+		{
+			uint8_t byte_value = data_ptr[byte_offset];
+			if(host_endian != target_endian)
+			{
+				reg_value[reg_size_minus_1 - byte_pos] = byte_value;
+				reg_be[reg_size_minus_1 - byte_pos] = 0xff;
+			}
+			else
+			{
+				reg_value[byte_pos] = byte_value;
+				reg_be[byte_pos] = 0xff;
+			}
+			
+			byte_offset++;
+			byte_pos++;
+		}
+		while(--sz);
+		
+		arh->DebugWrite(reg_value, reg_be);
+	}
+	
+	return true;
+}
+
+template <typename ADDRESS>
+unsigned int RegisterAddressMap<ADDRESS>::DebugRead(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian)
+{
+	unsigned int byte_offset;
+	
+	unisim::util::endian::endian_type host_endian = unisim::util::endian::GetHostEndian();
+	
+	for(byte_offset = 0; byte_offset < data_length;)
+	{
+		ADDRESS byte_addr = addr + byte_offset;
+		
+		AddressableRegisterHandle<ADDRESS> *arh = FindAddressableRegister(byte_addr);
+		
+		if(!arh) return byte_offset;
+		
+		ADDRESS reg_addr = arh->GetAddress();
+		
+		unsigned int reg_size = arh->GetSize();
+		unsigned int reg_size_minus_1 = reg_size - 1;
+		unsigned char reg_value[reg_size];
+		
+		arh->DebugRead(reg_value);
+		
+		unsigned int byte_pos = byte_addr - reg_addr;
+		
+		unsigned int sz = std::min(data_length - byte_offset, reg_size - byte_pos);
+		
+		do
+		{
+			uint8_t byte_value = (host_endian != target_endian) ? reg_value[reg_size_minus_1 - byte_pos] : reg_value[byte_pos];
+			data_ptr[byte_offset] = byte_value;
+			
+			byte_offset++;
+			byte_pos++;
+		}
+		while(--sz);
+	}
+	
+	return true;
+}
+
+#if 0
+template <typename ADDRESS>
+unsigned int RegisterAddressMap<ADDRESS>::DebugWrite(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian)
+{
+	unsigned int byte_offset;
+	
+	unisim::util::endian::endian_type host_endian = unisim::util::endian::GetHostEndian();
+	
+	for(byte_offset = 0; byte_offset < data_length; byte_offset++)
+	{
+		uint8_t byte_value = data_ptr[byte_offset]; 
+		ADDRESS byte_addr = addr + byte_offset;
+		
+		AddressableRegisterHandle<ADDRESS> *arh = FindAddressableRegister(byte_addr);
+		
+		if(!arh) return byte_offset;
+		
+		unsigned int reg_size = arh->GetSize();
+		unsigned char reg_value[reg_size];
+		arh->DebugRead(reg_value);
+		if(host_endian != target_endian)
+		{
+			reg_value[reg_size - 1 - (byte_addr - arh->GetAddress())] = byte_value;
+		}
+		else
+		{
+			reg_value[byte_addr - arh->GetAddress()] = byte_value;
+		}
+		
+		arh->DebugWrite(reg_value);
+	}
+	
+	return data_length;
+}
+
+template <typename ADDRESS>
+unsigned int RegisterAddressMap<ADDRESS>::DebugRead(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian)
+{
+	unsigned int byte_offset;
+	
+	unisim::util::endian::endian_type host_endian = unisim::util::endian::GetHostEndian();
+	
+	for(byte_offset = 0; byte_offset < data_length; byte_offset++)
+	{
+		ADDRESS byte_addr = addr + byte_offset;
+		
+		AddressableRegisterHandle<ADDRESS> *arh = FindAddressableRegister(byte_addr);
+		
+		if(!arh) return byte_offset;
+		
+		unsigned int reg_size = arh->GetSize();
+		unsigned char reg_value[reg_size];
+		arh->DebugRead(reg_value);
+		
+		data_ptr[byte_offset] = (host_endian != target_endian) ? reg_value[reg_size - 1 - (byte_addr - arh->GetAddress())] : reg_value[byte_addr - arh->GetAddress()];
+	}
+	
+	return data_length;
+}
+#endif
 
 } // end of namespace core
 } // end of namespace reg

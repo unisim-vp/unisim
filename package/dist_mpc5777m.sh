@@ -821,6 +821,7 @@ unisim/component/tlm2/memory/ram/memory.hh \
 unisim/component/tlm2/interconnect/generic_router/router.hh \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh \
 unisim/component/tlm2/interconnect/generic_router/config.hh \
+unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.hh \
 "
 
 UNISIM_LIB_MPC5777M_TEMPLATE_FILES="\
@@ -894,6 +895,7 @@ unisim/component/tlm2/processor/powerpc/e200/mpc57xx/cpu.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
+unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.tcc \
 "
 
 UNISIM_LIB_MPC5777M_M4_FILES="\
@@ -1130,7 +1132,7 @@ EOF
 cat << EOF > "${DEST_DIR}/README"
 This package contains:
   - UNISIM GenISSLib: an instruction set simulator generator
-  - UNISIM MPC5777M Simulator: a full system e200z-like simulator.
+  - UNISIM MPC5777M Simulator: a MPC5777M SoC simulator.
 See INSTALL for installation instructions.
 EOF
 

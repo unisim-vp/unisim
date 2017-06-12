@@ -126,6 +126,7 @@ public:
 	
 	MSR& GetMSR() { return msr; }
 	typename SuperCPU::ESR& GetESR() { return esr; }
+	typename SuperCPU::SPEFSCR& GetSPEFSCR() { return spefscr; }
 
 	bool Lbarx(unsigned int rd, ADDRESS addr);
 	bool Lharx(unsigned int rd, ADDRESS addr);
