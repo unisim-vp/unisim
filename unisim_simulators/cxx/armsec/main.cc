@@ -253,6 +253,8 @@ namespace armsec
                           CastNodeBase const* src_node = dynamic_cast<CastNodeBase const*>( cnb.src.node );
                           if (src_node and (src_node->GetSrcType() == cnb.GetDstType())) {
                             sink << GetCode(src_node->src, vars, label);
+                          } else  if (dst.bitsize == 1) {
+                            sink << "(" << GetCode(cnb.src, vars, label) << " <> " << dbx(src.bitsize,0) << ")";
                           } else {
                             sink << "(" << GetCode(cnb.src, vars, label) << " {0," << (dst.bitsize-1) << "})";
                           }
@@ -511,11 +513,11 @@ namespace armsec
     typedef unisim::util::symbolic::Expr Expr;
     
     template <typename T>
-    bool Cond( unisim::util::symbolic::SmartValue<T> cond )
+    bool Cond( unisim::util::symbolic::SmartValue<T> const& _cond )
     {
-      if (not cond.expr.node)
+      if (not _cond.expr.node)
         throw std::logic_error( "Not a cond" );
-      
+      BOOL cond(_cond);
       Expr cexp( cond.expr );
       if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
         return cnode->GetBoolean();
@@ -967,7 +969,7 @@ namespace armsec
       else if (itblock())
         {
           U8 itstate( cpsr.itstate );
-          itstate = (Cond(itstate & U8(7))) ? ((itstate & U8(-32)) | ((itstate << 1) & U8(31))) : U8(0);
+          itstate = (Cond((itstate & U8(7)) != U8(0))) ? ((itstate & U8(-32)) | ((itstate << 1) & U8(31))) : U8(0);
           cpsr.itstate = itstate;
         }
     }
