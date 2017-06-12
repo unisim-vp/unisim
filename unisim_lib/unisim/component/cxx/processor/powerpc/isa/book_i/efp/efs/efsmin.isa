@@ -29,13 +29,47 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr), Franck Vedrine (franck.vedrine@cea.fr)
  */
 
 op efsmin(0b000100[6]:rd[5]:ra[5]:rb[5]:0b01010110001[11])
 efsmin.execute = {
-	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
-	return false;
+	if (!cpu->CheckSPV())
+		return false;
+
+	// Read the input operands and update FPSCR
+	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
+	Flags flags;
+	flags.setRoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>());
+
+	SoftFloat a(cpu->GetGPR(ra));
+	SoftFloat b(cpu->GetGPR(rb));
+	// Generate FINV
+	GenSPEFSCR_FINV<CPU::SPEFSCR, CONFIG, SoftFloat>(spefscr, a, &b);
+
+	// Compute the result
+	SoftFloat result(a);
+	if (b < a)
+		result = b;
+	if (a.isNaN() && !b.isNaN())
+		result = b;
+
+	if (!spefscr.Get<CPU::SPEFSCR::FINVE>() && spefscr.Get<CPU::SPEFSCR::FINV>())
+		GenSPEFSCR_DefaultResults(spefscr, result);
+
+	// Generate FG, FX
+	GenSPEFSCR_FG<CPU::SPEFSCR, CONFIG>(spefscr, flags);
+	GenSPEFSCR_FX<CPU::SPEFSCR, CONFIG>(spefscr, flags);
+
+	if(unlikely((DoesSPEFSCR_TriggerException<CPU::SPEFSCR, CONFIG>(spefscr)))) {
+		GenSPEFSCR_TriggerException<CPU, CONFIG>(cpu);
+		return false;
+	};
+
+	// Write back the result
+	cpu->SetGPR(rd, result.queryValue());
+
+	return true;
 }
 efsmin.disasm = {
 	os << "efsmin r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;

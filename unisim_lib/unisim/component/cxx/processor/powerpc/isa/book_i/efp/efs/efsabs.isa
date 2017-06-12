@@ -29,14 +29,40 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr), Franck Vedrine (franck.vedrine@cea.fr)
  */
 
 op efsabs(4[6]:rd[5]:ra[5]:?[5]:708[11])
 efsabs.execute = {
-	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
-	return false;
+	if (!cpu->CheckSPV())
+		return false;
+
+	// Read the input operands and update FPSCR
+	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
+
+	SoftFloat result(cpu->GetGPR(ra));
+
+	// Generate FINV
+	GenSPEFSCR_FINV<CPU::SPEFSCR, CONFIG, SoftFloat>(spefscr, result);
+
+	// Compute the result
+	result.setNegative(false);
+
+	// It is implementation dependent if invalid values for rA (NaN, denorm, infinity) are detected and exceptions are taken.
+	if (!spefscr.Get<CPU::SPEFSCR::FINVE>() && spefscr.Get<CPU::SPEFSCR::FINV>())
+		GenSPEFSCR_DefaultResults(spefscr, result);
+
+	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
+	if(unlikely((DoesSPEFSCR_TriggerException<CPU::SPEFSCR, CONFIG>(spefscr)))) {
+		GenSPEFSCR_TriggerException<CPU, CONFIG>(cpu);
+		return false;
+	};
+
+	// Write back the result
+	cpu->SetGPR(rd, result.queryValue());
+	return true;
 }
 efsabs.disasm = {
 	os << "efsabs r" << (unsigned int) rd << ", r" << (unsigned int) ra;
 }
+

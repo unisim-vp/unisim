@@ -29,13 +29,58 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr), Franck Vedrine (franck.vedrine@cea.fr)
  */
 
 op efsctsi(4[6]:rd[5]:?[5]:rb[5]:725[11])
 efsctsi.execute = {
-	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
-	return false;
+	if (!cpu->CheckSPV())
+		return false;
+
+	// Read the input operands and update FPSCR
+	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
+	Flags flags;
+	flags.setRoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>());
+
+	SoftFloat b(cpu->GetGPR(rb));
+	// Generate FINV
+	GenSPEFSCR_FINV<CPU::SPEFSCR, CONFIG, SoftFloat>(spefscr, b);
+
+	// Compute the result
+	int32_t result;
+	if (unlikely(b.isNaN()))
+		result = 0;
+	else {
+		SoftFloat::IntConversion conversion;
+		conversion.setSigned().setSize(32);
+		b.retrieveInteger(conversion, flags);
+		//  if (unlikely(flags.isOverflow()))
+		//  	result = b.isPositive() ? 0x7fffffff : 0x80000000;
+		//  else
+		//  	result = conversion.asInt32();
+		result = conversion.asInt32();
+	};
+
+	if (!spefscr.Get<CPU::SPEFSCR::FINVE>() && spefscr.Get<CPU::SPEFSCR::FINV>())
+		GenSPEFSCR_DefaultResults(spefscr, result);
+
+	// Generate FOFV, FUNF, FINXS, FG, FX
+	GenSPEFSCR_FOVF<CPU::SPEFSCR, CONFIG>(spefscr, flags);
+	GenSPEFSCR_FUNF<CPU::SPEFSCR, CONFIG>(spefscr, flags);
+	GenSPEFSCR_FINXS<CPU::SPEFSCR, CONFIG>(spefscr, flags);
+	GenSPEFSCR_FG<CPU::SPEFSCR, CONFIG>(spefscr, flags);
+	GenSPEFSCR_FX<CPU::SPEFSCR, CONFIG>(spefscr, flags);
+
+	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
+	if(unlikely((DoesSPEFSCR_TriggerException<CPU::SPEFSCR, CONFIG>(spefscr)))) {
+		GenSPEFSCR_TriggerException<CPU, CONFIG>(cpu);
+		return false;
+	};
+
+	// Write back the result
+	cpu->SetGPR(rd, (uint32_t) result);
+
+	return true;
 }
 efsctsi.disasm = {
 	os << "efsctsi r" << (unsigned int) rd << ", r" << (unsigned int) rb;

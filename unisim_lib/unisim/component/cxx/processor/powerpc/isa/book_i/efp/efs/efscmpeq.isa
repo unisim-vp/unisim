@@ -29,13 +29,62 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr), Franck Vedrine (franck.vedrine@cea.fr)
  */
 
 op efscmpeq(4[6]:bf[3]:?[2]:ra[5]:rb[5]:718[11])
 efscmpeq.execute = {
-	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
-	return false;
+	if (!cpu->CheckSPV())
+		return false;
+
+	// Read the input operands and update FPSCR
+	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
+	SoftFloat a(cpu->GetGPR(ra));
+	SoftFloat b(cpu->GetGPR(rb));
+	// Generate FINV
+	GenSPEFSCR_FINV<CPU::SPEFSCR, CONFIG, SoftFloat>(spefscr, a, &b);
+
+	// Compute the result
+	bool result = a == b;
+
+	if (!spefscr.Get<CPU::SPEFSCR::FINVE>() && spefscr.Get<CPU::SPEFSCR::FINV>())
+		GenSPEFSCR_DefaultResults(spefscr, result);
+	if(unlikely((DoesSPEFSCR_TriggerException<CPU::SPEFSCR, CONFIG>(spefscr)))) {
+		GenSPEFSCR_TriggerException<CPU, CONFIG>(cpu);
+		return false;
+	};
+
+	// Write back the result in CR[bf] bit field
+	CR& cr = cpu->GetCR();
+	switch(bf)
+	{
+		case 0:
+			cr.Set<CR::CR0::EQ>(result);
+			break;
+		case 1:
+			cr.Set<CR::CR1::EQ>(result);
+			break;
+		case 2:
+			cr.Set<CR::CR2::EQ>(result);
+			break;
+		case 3:
+			cr.Set<CR::CR3::EQ>(result);
+			break;
+		case 4:
+			cr.Set<CR::CR4::EQ>(result);
+			break;
+		case 5:
+			cr.Set<CR::CR5::EQ>(result);
+			break;
+		case 6:
+			cr.Set<CR::CR6::EQ>(result);
+			break;
+		case 7:
+			cr.Set<CR::CR7::EQ>(result);
+			break;
+	}
+
+	return true;
 }
 efscmpeq.disasm = {
 	os << "efscmpeq " << (unsigned int) bf << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;

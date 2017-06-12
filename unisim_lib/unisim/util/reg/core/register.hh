@@ -98,6 +98,7 @@
 #define __UNISIM_UTIL_REG_CORE_REGISTER_HH__
 
 #include <unisim/util/inlining/inlining.hh>
+#include <unisim/util/endian/endian.hh>
 #include <unisim/service/interfaces/register.hh>
 #include <iostream>
 #include <map>
@@ -389,6 +390,7 @@ public:
 	
 	Register();
 	Register(TYPE value);
+	void WithinRegisterFileCtor(unsigned int index);
 	void Initialize(TYPE value);
 	inline Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>& operator = (const TYPE& value) ALWAYS_INLINE;
 	inline operator TYPE () const ALWAYS_INLINE;
@@ -509,8 +511,8 @@ public:
 	
 	ADDRESS GetAddress() const { return addr; }
 	unsigned int GetSize() const { return size; }
-	bool Write(unsigned char *data_ptr, unsigned char *bit_enable_ptr = 0) { return arb->__ARB_Write__(data_ptr, bit_enable_ptr); }
-	bool Read(unsigned char *data_ptr, unsigned char *bit_enable_ptr = 0)  { return arb->__ARB_Read__(data_ptr, bit_enable_ptr); }
+	WarningStatus Write(unsigned char *data_ptr, unsigned char *bit_enable_ptr = 0) { return arb->__ARB_Write__(data_ptr, bit_enable_ptr); }
+	WarningStatus Read(unsigned char *data_ptr, unsigned char *bit_enable_ptr = 0)  { return arb->__ARB_Read__(data_ptr, bit_enable_ptr); }
 	void DebugWrite(unsigned char *data_ptr, unsigned char *bit_enable_ptr = 0) { return arb->__ARB_DebugWrite__(data_ptr, bit_enable_ptr); }
 	void DebugRead(unsigned char *data_ptr, unsigned char *bit_enable_ptr = 0)  { return arb->__ARB_DebugRead__(data_ptr, bit_enable_ptr); }
 private:
@@ -535,6 +537,12 @@ public:
 	virtual ~RegisterAddressMap();
 	void MapRegister(ADDRESS addr, AddressableRegisterBase *r, unsigned int size = 0 /* in bytes (with padding) */);
 	AddressableRegisterHandle<ADDRESS> *FindAddressableRegister(ADDRESS addr) const;
+	
+	bool Write(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian);
+	bool Read(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian);
+	
+	unsigned int DebugWrite(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian);
+	unsigned int DebugRead(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian);
 private:
 	mutable bool optimized;
 	mutable bool optimizable;

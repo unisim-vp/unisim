@@ -44,6 +44,7 @@
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/config.hh>
+#include <unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.hh>
 
 // Class definition of kernel, services and interfaces
 #include <unisim/kernel/service/service.hh>
@@ -121,13 +122,18 @@ private:
 
 	struct INTERCONNECT_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
 	{
-	public:
 		typedef FSB_ADDRESS_TYPE ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 2;
-		static const unsigned int OUTPUT_SOCKETS = 2;
-		static const unsigned int MAX_NUM_MAPPINGS = 2;
+		static const unsigned int OUTPUT_SOCKETS = 3;
+		static const unsigned int MAX_NUM_MAPPINGS = 3;
 		static const unsigned int BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;
+	};
+	
+	struct INTC_CONFIG
+	{
+		static const unsigned int NUM_PROCESSORS = 1;
+		static const unsigned int NUM_HW_IRQS = 1;
 	};
 
 	//=========================================================================
@@ -137,6 +143,7 @@ private:
 	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> RAM;
 	typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::e200z425bn3::CPU CPU2;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<INTERCONNECT_CONFIG> INTERCONNECT;
+	typedef unisim::component::tlm2::interrupt::freescale::mpc57xx::intc::INTC<INTC_CONFIG> INTC;
 
 	//=========================================================================
 	//===                           Components                              ===
@@ -147,6 +154,8 @@ private:
 	RAM *ram;
 	//  - Interconnect
 	INTERCONNECT *interconnect;
+	//  - Interrupt Controller
+	INTC *intc;
 	
 	//=========================================================================
 	//===                            Services                               ===

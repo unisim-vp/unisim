@@ -29,13 +29,56 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr), Franck Vedrine (franck.vedrine@cea.fr)
  */
 
 op efststgt(4[6]:bf[3]:?[2]:ra[5]:rb[5]:732[11])
 efststgt.execute = {
-	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
-	return false;
+	if (!cpu->CheckSPV())
+		return false;
+
+	// Read the input operands and update FPSCR
+	SoftFloat a(cpu->GetGPR(ra));
+	SoftFloat b(cpu->GetGPR(rb));
+
+	// Compute the result
+	bool result;
+	if (unlikely(a.hasInftyExponent() || a.isDenormalized() || b.hasInftyExponent() || b.isDenormalized()))
+		result = ((int32_t) cpu->GetGPR(ra)) > ((int32_t) cpu->GetGPR(rb));
+	else
+		result = a > b;
+
+	// Write back the result in CR[bf] bit field
+	CR& cr = cpu->GetCR();
+	switch(bf)
+	{
+		case 0:
+			cr.Set<CR::CR0::GT>(result);
+			break;
+		case 1:
+			cr.Set<CR::CR1::GT>(result);
+			break;
+		case 2:
+			cr.Set<CR::CR2::GT>(result);
+			break;
+		case 3:
+			cr.Set<CR::CR3::GT>(result);
+			break;
+		case 4:
+			cr.Set<CR::CR4::GT>(result);
+			break;
+		case 5:
+			cr.Set<CR::CR5::GT>(result);
+			break;
+		case 6:
+			cr.Set<CR::CR6::GT>(result);
+			break;
+		case 7:
+			cr.Set<CR::CR7::GT>(result);
+			break;
+	}
+
+	return true;
 }
 efststgt.disasm = {
 	os << "efststgt " << (unsigned int) bf << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;

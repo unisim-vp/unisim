@@ -34,12 +34,14 @@
 
 #include <simulator.hh>
 #include "unisim/component/tlm2/interconnect/generic_router/router.tcc"
+#include <unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.tcc>
 
 Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	: unisim::kernel::tlm2::Simulator(name, argc, argv, LoadBuiltInConfig)
 	, cpu2(0)
 	, ram(0)
 	, interconnect(0)
+	, intc(0)
 	, loader(0)
 	, debugger(0)
 	, gdb_server(0)
@@ -65,6 +67,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	//  - Interconnect
 	interconnect = new INTERCONNECT("INTERCONNECT", this);
+	
+	//  - Interrupt Controller
+	intc = new INTC("INTC", this);
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -100,6 +105,19 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(cpu2->p_avec_b);
 	RegisterPort(cpu2->p_voffset);
 	RegisterPort(cpu2->p_iack);
+	
+	unsigned int hw_irq_num;
+	for(hw_irq_num = 0; hw_irq_num < INTC_CONFIG::NUM_HW_IRQS; hw_irq_num++)
+	{
+		RegisterPort(*intc->p_hw_irq[hw_irq_num]);
+	}
+	unsigned int prc_num;
+	for(prc_num = 0; prc_num < INTC_CONFIG::NUM_PROCESSORS; prc_num++)
+	{
+		RegisterPort(*intc->p_iack[prc_num]);
+		RegisterPort(*intc->p_avec_b[prc_num]);
+		RegisterPort(*intc->p_voffset[prc_num]);
+	}
 
 	//=========================================================================
 	//===                           Signal creation                         ===
@@ -113,9 +131,11 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateSignal("p_cpuid", sc_dt::sc_uint<8>(0));
 	CreateSignal("p_extint_b", true);
 	CreateSignal("p_crint_b", true);
-	CreateSignal("p_avec_b", true);
-	CreateSignal("p_voffset", sc_dt::sc_uint<14>(0));
-	CreateSignal("p_iack", false);
+	CreateSignalArray("p_avec_b", INTC_CONFIG::NUM_PROCESSORS, true);
+	CreateSignalArray("p_voffset", INTC_CONFIG::NUM_PROCESSORS, sc_dt::sc_uint<14>(0));
+	CreateSignalArray("p_iack", INTC_CONFIG::NUM_PROCESSORS, false);
+	
+	CreateSignal("fake_irq", false);
 	
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -125,6 +145,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	cpu2->d_ahb_if(*interconnect->targ_socket[1]); // CPU2>D_AHB_IF <-> Crossbar
 	(*interconnect->init_socket[0])(ram->slave_sock); // Crossbar <-> RAM
 	(*interconnect->init_socket[1])(cpu2->s_ahb_if);  // Crossbar <-> S_AHB_IF<CPU2
+	(*interconnect->init_socket[2])(*intc->ahb_if[0]);// Crossbar <-> AHB_IF_0<INTC
 
 	Bind("HARDWARE.CPU2.m_por"           , "HARDWARE.m_por");
 	Bind("HARDWARE.CPU2.p_reset_b"       , "HARDWARE.p_reset_b");
@@ -134,9 +155,14 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.CPU2.p_cpuid"         , "HARDWARE.p_cpuid");
 	Bind("HARDWARE.CPU2.p_extint_b"      , "HARDWARE.p_extint_b");
 	Bind("HARDWARE.CPU2.p_crint_b"       , "HARDWARE.p_crint_b");
-	Bind("HARDWARE.CPU2.p_avec_b"        , "HARDWARE.p_avec_b");
-	Bind("HARDWARE.CPU2.p_voffset"       , "HARDWARE.p_voffset");
-	Bind("HARDWARE.CPU2.p_iack"          , "HARDWARE.p_iack");
+	Bind("HARDWARE.CPU2.p_avec_b"        , "HARDWARE.p_avec_b_0");
+	Bind("HARDWARE.CPU2.p_voffset"       , "HARDWARE.p_voffset_0");
+	Bind("HARDWARE.CPU2.p_iack"          , "HARDWARE.p_iack_0");
+	
+	Bind("HARDWARE.INTC.p_hw_irq_0"      , "HARDWARE.fake_irq");
+	BindArray("HARDWARE.INTC.p_avec_b"   , "HARDWARE.p_avec_b"   , 0, INTC_CONFIG::NUM_PROCESSORS - 1);
+	BindArray("HARDWARE.INTC.p_voffset"  , "HARDWARE.p_voffset"  , 0, INTC_CONFIG::NUM_PROCESSORS - 1);
+	BindArray("HARDWARE.INTC.p_iack"     , "HARDWARE.p_iack"     , 0, INTC_CONFIG::NUM_PROCESSORS - 1);
 	
 	//=========================================================================
 	//===                        Clients/Services connection                ===
@@ -216,13 +242,14 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 
 Simulator::~Simulator()
 {
+	if(cpu2) delete cpu2;
 	if(ram) delete ram;
 	if(interconnect) delete interconnect;
+	if(intc) delete intc;
 	if(debugger) delete debugger;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
 	if(profiler) delete profiler;
-	if(cpu2) delete cpu2;
 	if(sim_time) delete sim_time;
 	if(host_time) delete host_time;
 	if(loader) delete loader;
@@ -238,17 +265,17 @@ void Simulator::ResetProcess()
 	wait(sc_core::sc_time(10.0, sc_core::SC_NS));
 	p_reset_b = true;
 	
-	wait(sc_core::sc_time(40.0, sc_core::SC_NS));
-	sc_core::sc_signal<sc_dt::sc_uint<14> >& p_voffset = GetSignal<sc_dt::sc_uint<14> >("HARDWARE.p_voffset");
-	p_voffset = sc_dt::sc_uint<14>(0x1234);
-
-	sc_core::sc_signal<bool>& p_avec_b = GetSignal<bool>("HARDWARE.p_avec_b");
-	p_avec_b = true;
-
-	sc_core::sc_signal<bool>& p_extint_b = GetSignal<bool>("HARDWARE.p_extint_b");
-	p_extint_b = false;
-	wait(sc_core::sc_time(10.0, sc_core::SC_NS));
-	p_extint_b = true;
+// 	wait(sc_core::sc_time(40.0, sc_core::SC_NS));
+// 	sc_core::sc_signal<sc_dt::sc_uint<14> >& p_voffset = GetSignal<sc_dt::sc_uint<14> >("HARDWARE.p_voffset");
+// 	p_voffset = sc_dt::sc_uint<14>(0x1234);
+// 
+// 	sc_core::sc_signal<bool>& p_avec_b = GetSignal<bool>("HARDWARE.p_avec_b");
+// 	p_avec_b = true;
+// 
+// 	sc_core::sc_signal<bool>& p_extint_b = GetSignal<bool>("HARDWARE.p_extint_b");
+// 	p_extint_b = false;
+// 	wait(sc_core::sc_time(10.0, sc_core::SC_NS));
+// 	p_extint_b = true;
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
@@ -359,7 +386,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//  - Memory router
 	simulator->SetVariable("HARDWARE.INTERCONNECT.cycle_time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_0", "range_start=\"0x52000000\" range_end=\"0x5fffffff\" output_port=\"1\" translation=\"0x0\""); // CPU2 Local Memory
-	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_1", "range_start=\"0x0\" range_end=\"0xfffffffe\" output_port=\"0\" translation=\"0x0\""); // RAM
+	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_1", "range_start=\"0xfc040000\" range_end=\"0xfc04ffff\" output_port=\"2\" translation=\"0x0\""); // INTC
+	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_2", "range_start=\"0x0\" range_end=\"0xfffffffe\" output_port=\"0\" translation=\"0x0\""); // RAM
 
 	// - Loader memory router
 	std::stringstream sstr_loader_mapping;

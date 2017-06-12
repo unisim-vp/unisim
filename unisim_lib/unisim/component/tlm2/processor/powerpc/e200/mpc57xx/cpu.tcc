@@ -449,7 +449,7 @@ bool CPU<TYPES, CONFIG>::AHBDebugDataRead(PHYSICAL_ADDRESS physical_addr, void *
 	
 	unsigned int read_size = d_ahb_if->transport_dbg(*payload);
 
-	return (payload->is_response_ok() && (read_size == size));
+	return read_size == size;
 }
 
 template <typename TYPES, typename CONFIG>
@@ -473,7 +473,7 @@ bool CPU<TYPES, CONFIG>::AHBDebugDataWrite(PHYSICAL_ADDRESS physical_addr, const
 	
 	unsigned int write_size = d_ahb_if->transport_dbg(*payload);
 
-	return (payload->is_response_ok() && (write_size == size));
+	return write_size == size;
 }
 
 template <typename TYPES, typename CONFIG>
