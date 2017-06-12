@@ -33,6 +33,8 @@
  */
 
 #include <unisim/component/cxx/processor/powerpc/e200z710n3/cpu.hh>
+#include <unisim/component/cxx/processor/powerpc/floating.hh>
+#include <unisim/util/simfloat/floating.tcc>
 
 namespace unisim {
 namespace component {
@@ -1692,3 +1694,8 @@ void CPU::StepOneInstruction()
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
+
+template class unisim::util::simfloat::Numerics::Double::TBuiltDouble<unisim::component::cxx::processor::powerpc::BuiltFloatTraits>;
+template class unisim::util::simfloat::Numerics::Double::TBuiltDouble<unisim::component::cxx::processor::powerpc::BuiltDoubleTraits>;
+
+

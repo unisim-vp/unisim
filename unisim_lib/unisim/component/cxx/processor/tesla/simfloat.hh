@@ -46,7 +46,7 @@ namespace tesla {
 
 class IntConversion {
   public:
-   typedef unisim::util::simfloat::Numerics::Integer::TBigCellInt<unisim::util::simfloat::Numerics::Integer::Details::TCellIntegerTraits<1> > BigInt;
+   typedef unisim::util::simfloat::Numerics::Integer::TBigCellInt<unisim::util::simfloat::Numerics::Integer::Details::TCellIntegerTraits<(64 + 1)/(8*sizeof(unsigned))> > BigInt;
 
   private:
    BigInt biResult;

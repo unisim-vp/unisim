@@ -56,6 +56,8 @@ namespace ieee754 {
       enum FlowException { FENoException, FEOverflow, FEUnderflow, FEEnd };
       
      private:
+      bool fAvoidAllInfty;
+      bool fAvoidDenormalized;
       bool fRoundToEven;
       bool fUpApproximateInfty;
       
@@ -72,12 +74,14 @@ namespace ieee754 {
 
      public:
       Flags()
-         :  fRoundToEven(true), fUpApproximateInfty(false), rmRound(RMNearest),
+         :  fAvoidAllInfty(false), fAvoidDenormalized(false), fRoundToEven(true),
+            fUpApproximateInfty(false), rmRound(RMNearest),
             fKeepSignalingConversion(true), aApproximation(AExact), rrReadResult(RRTotal),
             fEffectiveRoundToEven(false), fSNaNOperand(false), qnrQNaNResult(QNNRUndefined),
             feExcept(FENoException), fDivisionByZero(false) {}
       Flags(const Flags& rpSource)
-         :  fRoundToEven(rpSource.fRoundToEven), fUpApproximateInfty(rpSource.fUpApproximateInfty),
+         :  fAvoidAllInfty(rpSource.fAvoidAllInfty), fAvoidDenormalized(rpSource.fAvoidDenormalized),
+            fRoundToEven(rpSource.fRoundToEven), fUpApproximateInfty(rpSource.fUpApproximateInfty),
             rmRound(rpSource.rmRound), fKeepSignalingConversion(rpSource.fKeepSignalingConversion),
             aApproximation(rpSource.aApproximation), rrReadResult(rpSource.rrReadResult),
             fEffectiveRoundToEven(rpSource.fEffectiveRoundToEven), fSNaNOperand(rpSource.fSNaNOperand), qnrQNaNResult(rpSource.qnrQNaNResult),
@@ -96,7 +100,10 @@ namespace ieee754 {
       bool isRoundToEven() const { return fRoundToEven && isNearestRound(); }
       bool isPositiveZeroMAdd() { return true; }
       bool isInftyAvoided() const { return true; }
-      bool doesAvoidInfty(bool fNegative) const {  return fNegative ? (rmRound >= RMHighest) : (rmRound & RMLowest); }
+      bool isAllInftyAvoided() const { return fAvoidAllInfty; }
+      bool doesAvoidInfty(bool fNegative) const
+         {  return fAvoidAllInfty || (fNegative ? (rmRound >= RMHighest) : (rmRound & RMLowest)); }
+      bool isDenormalizedAvoided() const { return fAvoidDenormalized; }
       bool keepNaNSign() const { return true; }
       bool produceMultNaNPositive() const { return true; }
       bool produceDivNaNPositive() const { return true; }
@@ -108,6 +115,10 @@ namespace ieee754 {
       bool isConvertNaNNegative() const { return true; }
       bool acceptMinusZero() const { return true; }
 
+      void setAvoidAllInfty()   { fAvoidAllInfty = true; }
+      void clearAvoidAllInfty() { fAvoidAllInfty = false; }
+      void setAvoidDenormalized() { fAvoidDenormalized = true; }
+      void clearAvoidDenormalized() { fAvoidDenormalized = false; }
       void setRoundToEven() { fRoundToEven = true; }
       void clearRoundToEven() { fRoundToEven = false; }
       void setUpApproximateInfty() { fUpApproximateInfty = true; }

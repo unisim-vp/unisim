@@ -181,6 +181,7 @@ unisim/service/tee/backtrace/tee_32.cc \
 unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/service/telnet/telnet.cc \
 unisim/service/os/linux_os/powerpc_linux32.cc \
+unisim/component/cxx/processor/powerpc/e200/mpc57xx/floating.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/cpu.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/cpu.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
@@ -812,6 +813,8 @@ unisim/component/cxx/processor/powerpc/e200/mpc57xx/imem.hh \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/dmem.hh \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/l1i.hh \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/l1d.hh \
+unisim/component/cxx/processor/powerpc/e200/mpc57xx/floating.hh \
+unisim/component/cxx/processor/powerpc/e200/mpc57xx/genfflags.hh \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/cpu.hh \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/cpu.hh \
 unisim/component/tlm2/processor/powerpc/e200/mpc57xx/cpu.hh \
