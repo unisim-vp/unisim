@@ -34,7 +34,7 @@
 
 op efscfsi(4[6]:rd[5]:?[5]:rb[5]:721[11])
 efscfsi.execute = {
-	if (!HasGenSPEFSCR<CPU, CONFIG>(cpu))
+	if (!cpu->CheckSPV())
 		return false;
 
 	// Read the input operands and update FPSCR

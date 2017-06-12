@@ -144,6 +144,8 @@ public:
 	bool Rfdi();
 	bool Rfmci();
 	
+	bool CheckSPV() { return true; } // This architecture totally ignores SPV
+	
 	////////////////////////// Special Purpose Registers //////////////////////
 	
 	// Processor ID Register

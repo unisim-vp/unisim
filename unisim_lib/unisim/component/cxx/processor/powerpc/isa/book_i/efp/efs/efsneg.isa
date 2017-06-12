@@ -34,7 +34,7 @@
 
 op efsneg(4[6]:rd[5]:ra[5]:?[5]:710[11])
 efsneg.execute = {
-	if (!HasGenSPEFSCR<CPU, CONFIG>(cpu))
+	if (!cpu->CheckSPV())
 		return false;
 
 	// Read the input operands and update FPSCR

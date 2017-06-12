@@ -34,7 +34,7 @@
 
 op efsabs(4[6]:rd[5]:ra[5]:?[5]:708[11])
 efsabs.execute = {
-	if (!HasGenSPEFSCR<CPU, CONFIG>(cpu))
+	if (!cpu->CheckSPV())
 		return false;
 
 	// Read the input operands and update FPSCR

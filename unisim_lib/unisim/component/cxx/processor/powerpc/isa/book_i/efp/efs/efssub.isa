@@ -34,7 +34,7 @@
 
 op efssub(4[6]:rd[5]:ra[5]:rb[5]:705[11])
 efssub.execute = {
-	if (!HasGenSPEFSCR<CPU, CONFIG>(cpu))
+	if (!cpu->CheckSPV())
 		return false;
 
 	// Read the input operands and update FPSCR

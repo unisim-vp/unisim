@@ -34,7 +34,7 @@
 
 op efsmin(0b000100[6]:rd[5]:ra[5]:rb[5]:0b01010110001[11])
 efsmin.execute = {
-	if (!HasGenSPEFSCR<CPU, CONFIG>(cpu))
+	if (!cpu->CheckSPV())
 		return false;
 
 	// Read the input operands and update FPSCR

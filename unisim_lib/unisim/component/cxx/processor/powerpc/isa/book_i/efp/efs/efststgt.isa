@@ -34,7 +34,7 @@
 
 op efststgt(4[6]:bf[3]:?[2]:ra[5]:rb[5]:732[11])
 efststgt.execute = {
-	if (!HasGenSPEFSCR<CPU, CONFIG>(cpu))
+	if (!cpu->CheckSPV())
 		return false;
 
 	// Read the input operands and update FPSCR
