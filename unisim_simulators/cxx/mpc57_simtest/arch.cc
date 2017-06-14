@@ -48,6 +48,7 @@ namespace ut
   void MixNode::Repr( std::ostream& sink ) const { sink << "Mix( " << left << ", " << right << " )"; }
   void XER::XERNode::Repr( std::ostream& sink ) const { sink << "XER"; }
   void CR::CRNode::Repr( std::ostream& sink ) const { sink << "CR"; }
+  void SPEFSCR::SPEFSCRNode::Repr( std::ostream& sink ) const { sink << "SPEFSCR"; }
 
   void CPU::Interrupt::SetELEV(unsigned x) {}
   
@@ -68,20 +69,21 @@ namespace ut
   }
   
   Interface::Interface( mpc57::Operation& op )
-    : xer(0), cr(0), base_register(-1), aligned(false), mem_writes(false), length(op.GetLength())
+    : xer(0), cr(0), spefscr(0), base_register(-1), aligned(false), mem_writes(false), length(op.GetLength()), retfalse(false)
   {
+    bool has_valid_path = false;
     for (PathNode path_root;;)
       {
         CPU cpu( *this, path_root );
         
-        if (not op.execute( &cpu )) {
-          std::cerr << "error: " << op.GetName() << " returned false.\n";
-          throw 0;
-        }
+        has_valid_path |= op.execute( &cpu );
         
         if (cpu.close())
           break;
       }
+    
+    if (not has_valid_path)
+      throw ut::Untestable("illegal");
     
     if (not usemem()) return; // done
     
@@ -317,16 +319,17 @@ namespace ut
   int
   Interface::cmp( Interface const& b ) const
   {
-    if (int _cmp = _Cmp( iruse.size(), b.iruse.size() )) { return _cmp; }
-    if (int _cmp = _Cmp( irmap.size(), b.irmap.size() )) { return _cmp; }
+    if (int delta = _Cmp( iruse.size(), b.iruse.size() )) { return delta; }
+    if (int delta = _Cmp( irmap.size(), b.irmap.size() )) { return delta; }
     
     for (unsigned idx = 0; idx < iruse.size(); ++idx) {
       unsigned areg = iruse[idx], breg = b.iruse[idx];
-      if (int _cmp = _Cmp( int( areg == 15 ), int( breg == 15 ) )) { return _cmp; }
-      if (int _cmp = irmap.at(areg).cmp( b.irmap.at(breg) )) { return _cmp; }
+      if (int delta = _Cmp( int( areg == 15 ), int( breg == 15 ) )) { return delta; }
+      if (int delta = irmap.at(areg).cmp( b.irmap.at(breg) )) { return delta; }
     }
-    if (int _cmp = xer.cmp( b.xer )) return _cmp;
-    if (int _cmp = cr.cmp( b.cr )) return _cmp;
+    if (int delta = xer.cmp( b.xer )) return delta;
+    if (int delta = cr.cmp( b.cr )) return delta;
+    if (int delta = spefscr.cmp( b.spefscr )) return delta;
     
     return 0; // All equal
   }
@@ -334,9 +337,9 @@ namespace ut
   int
   Interface::VirtualRegister::cmp( VirtualRegister const& b ) const
   {
-    if (int _cmp = _Cmp( vindex, b.vindex )) return _cmp;
-    if (int _cmp = _Cmp( source, b.source )) return _cmp;
-    if (int _cmp = _Cmp( destination, b.destination )) return _cmp;
+    if (int delta = _Cmp( vindex, b.vindex )) return delta;
+    if (int delta = _Cmp( source, b.source )) return delta;
+    if (int delta = _Cmp( destination, b.destination )) return delta;
     
     return 0; // All equal
   }
@@ -345,8 +348,6 @@ namespace ut
 
   void  CPU::donttest_system()  { throw ut::Untestable("system"); }
   
-  void  CPU::donttest_illegal() { throw ut::Untestable("illegal"); }
-
   void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, U8 carry_in)
   {
     U32 res = x + y + U32(carry_in);

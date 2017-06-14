@@ -46,7 +46,7 @@ se_andi.execute = {
 	uint32_t x = cpu->GetGPR(rx);
 	
 	// Compute the result
-	uint32_t result = x & uint32_t(ui5);
+	uint32_t result = x & uint32_t( ui5);
 	
 	// Write back the result
 	cpu->SetGPR(rx, result);

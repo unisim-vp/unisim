@@ -54,7 +54,7 @@ using unisim::util::arithmetic::UnsignedSatAdd32;
 
 inline uint32_t Mask(uint32_t mb, uint32_t me)
 {
-	return (mb > me) ? ~(((uint32_t) -1 >> mb) ^ ((me >= 31) ? 0 : (uint32_t) -1 >> (me + 1))) : (((uint32_t)-1 >> mb) ^ ((me >= 31) ? 0 : (uint32_t) -1 >> (me + 1)));
+	return (mb > me) ? ~((uint32_t(-1) >> mb) ^ ((me >= 31) ? 0 : uint32_t(-1) >> (me + 1))) : ((uint32_t(-1) >> mb) ^ ((me >= 31) ? 0 : uint32_t(-1) >> (me + 1)));
 }
 
 inline uint32_t Mask(uint32_t n)

@@ -79,7 +79,7 @@ impl {
 op zvdotphg(4[6]:rd[5]:ra[5]:rb[5]:0b1010[4]:substract[1]:exchange[1]:ty[2]:acc[2]:0b1[1])
 /* substract in {0="a",1="s"}, exchange in {0="",1="x"}, acc in {00="",01="aa",10="an"}, ty in {00="ui",01="si",10="sui",11="smf"} */
 /* substract=1 exchange=1 is illegal */
-zvdotphg.var ill : { bool } = {
+zvdotphg.var ill : {bool} = {
 	   (acc == 3) // acc=0b11 is illegal
 	|| ((substract != 0) && (exchange != 0)) // substract=1 & exchange=1 is illegal
 }

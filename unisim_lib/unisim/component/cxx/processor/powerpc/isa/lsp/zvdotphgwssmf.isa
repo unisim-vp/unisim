@@ -43,7 +43,7 @@
  * - zvdotphgwssmfran
  */
 op zvdotphgwssmf(4[6]:rd[5]:ra[5]:rb[5]:0b1001[4]:0b1001[4]:acc[2]:r[1]) /* acc in {00="",01="aa",10="an"}, r in {0="",1="r"} */
-zvdotphgwssmf.var ill : { bool } = {
+zvdotphgwssmf.var ill : {bool} = {
 	(acc == 3)  // acc=0b11 is illegal
 }
 zvdotphgwssmf.execute = {

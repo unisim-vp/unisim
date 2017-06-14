@@ -41,13 +41,13 @@ impl {
 op e_lhau(6[6]:rd[5]:ra[5]:3[8]:sext<32> d[8]);
 
 e_lhau.execute = {
-	if(unlikely((ra == 0) || (ra == rd)))
+	if (unlikely((ra == 0) or (ra == rd)))
 	{
 		cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
 		return false;
 	}
 	// compute the effective address
-	ADDRESS ea = cpu->GetGPR(ra) + uint32_t(d);
+	ADDRESS ea = cpu->GetGPR(ra) + uint32_t( d);
 	// do the memory access
 	if(unlikely(!cpu->SInt16Load(rd, ea))) return false; // 16-bit load/no byte reverse/sign extend
 	// update the address register

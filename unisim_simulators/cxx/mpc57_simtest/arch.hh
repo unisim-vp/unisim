@@ -111,15 +111,16 @@ namespace ut
     
       int  cmp( VirtualRegister const& ) const;
     };
-
+    
     std::map<unsigned,VirtualRegister> irmap;
     std::vector<unsigned>              iruse;
-    VirtualRegister                    xer, cr;
+    VirtualRegister                    xer, cr, spefscr;
     std::set<Expr>                     mem_addrs;
     uint8_t                            base_register;
     bool                               aligned;
     bool                               mem_writes;
     uint8_t                            length;
+    bool                               retfalse;
 
     
     void irappend( uint8_t _index, bool w );
@@ -194,6 +195,21 @@ namespace ut
     }
     Expr left, right;
   };
+  
+  struct Unknown : public unisim::util::symbolic::ExprNode
+  {
+    typedef unisim::util::symbolic::Expr Expr;
+    typedef unisim::util::symbolic::ExprNode ExprNode;
+    
+    Unknown() {}
+    virtual void Repr( std::ostream& sink ) const { sink << "?"; }
+    virtual unsigned SubCount() const { return 0; };
+    virtual Expr const& GetSub(unsigned idx) const { return ExprNode::GetSub(idx); };
+    virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
+  };
+  
+  template <class T>
+  T make_unknown() { return T( Unknown::Expr( new Unknown() ) ); }
   
   struct XER
   {
@@ -293,7 +309,36 @@ namespace ut
     MSR& GetMSR() { throw Untestable("MSR access"); return *this; }
   };
 
-  struct CPU : public XER, public CR, public MSR, public LR, public CTR
+  struct SPEFSCR
+  {
+    struct FRMC {};
+    struct FINVE {};
+    struct FINV {};
+    
+    typedef unisim::util::symbolic::Expr Expr;
+    typedef unisim::util::symbolic::ExprNode ExprNode;
+    
+    template <typename PART,typename T> void Set( SmartValue<T> const& value ) { SPEFSCRAccess(true); spefscr_value = Expr( new MixNode( spefscr_value.expr, value.expr ) ); }
+    template <typename PART> void Set( uint32_t value ) { Set<PART,uint32_t>( unisim::util::symbolic::make_const(value) ); }
+    template <typename PART> U32 Get() { SPEFSCRAccess(false); return spefscr_value; }
+    operator U32 () { SPEFSCRAccess(false); return spefscr_value; }
+    SPEFSCR& operator= ( U32 const& value ) { SPEFSCRAccess(true); spefscr_value = value; return *this; }
+    SPEFSCR& GetSPEFSCR() { return *this; }
+    
+    struct SPEFSCRNode : public ExprNode
+    {
+      virtual void Repr( std::ostream& sink ) const;
+      virtual unsigned SubCount() const { return 0; };
+      virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
+    };
+    
+    SPEFSCR() : spefscr_value( new SPEFSCRNode ) {}
+    
+    U32 spefscr_value;
+    virtual void SPEFSCRAccess( bool is_write ) = 0;
+  };
+    
+  struct CPU : public XER, public CR, public MSR, public LR, public CTR, public SPEFSCR
   {
     typedef ut::BOOL BOOL;
     typedef ut::U8   U8;
@@ -302,13 +347,14 @@ namespace ut
     typedef ut::U64  U64;
     typedef ut::S8   S8;
     typedef ut::S16  S16;
-    typedef ut::S16  S32;
-    typedef ut::S16  S64;
+    typedef ut::S32  S32;
+    typedef ut::S64  S64;
     
     typedef unisim::util::symbolic::Expr Expr;
     typedef unisim::util::symbolic::ExprNode ExprNode;
     
     typedef MSR MSR;
+    typedef SPEFSCR SPEFSCR;
     
     CPU( Interface& _interface, PathNode& root )
       : interface(_interface), path(&root), cia( new CIA )
@@ -319,6 +365,7 @@ namespace ut
     
     virtual void XERAccess( bool is_write ) { interface.xer.addaccess(is_write); }
     virtual void CRAccess( bool is_write ) { interface.cr.addaccess(is_write); }
+    virtual void SPEFSCRAccess( bool is_write ) { interface.spefscr.addaccess(is_write); }
     
     struct Interrupt { void SetELEV(unsigned x); };
     
@@ -344,15 +391,24 @@ namespace ut
     
     template <class T> void DispatchException( T const& exc ) { donttest_system(); }
     void DispatchException( ProgramInterrupt::UnimplementedInstruction const& exc ) { throw Untestable("not implemented"); }
-    void DispatchException( AlignmentInterrupt::UnalignedLoadStoreMultiple const& exc ) { interface.aligned = true; donttest_illegal(); }
+    void DispatchException( AlignmentInterrupt::UnalignedLoadStoreMultiple const& exc ) { interface.aligned = true; }
     
     
     template <typename T> bool Cond( SmartValue<T> const& cond )
     {
-      bool predicate = path->proceed( cond.expr );
+      if (not cond.expr.good())
+        throw std::logic_error( "Not a valid condition" );
+
+      Expr cexp( BOOL(cond).expr );
+      if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
+        return cnode->GetBoolean();
+
+      bool predicate = path->proceed( cexp );
       path = path->next( predicate );
       return predicate;
     }
+    
+    bool Cond(bool c) { return c; }
     
     bool close() { return path->close(); }
 
@@ -456,7 +512,109 @@ namespace ut
     bool MoveFromDCR(unsigned dcrn, U32& result) { donttest_system(); return false; }
     bool MoveFromSPR(unsigned dcrn, U32& result) { donttest_system(); return false; }
     bool MoveToSPR(unsigned dcrn, U32 const& result) { donttest_system(); return false; }
+    
+    bool CheckSPV() { return true; }
+    
   };
+  
+  struct Flags
+  {
+    void setRoundingMode(U32 const&) {}
+    void setRoundingMode(unsigned) {}
+    void setUnderflow() {}
+    void setOverflow() {}
+    void setDownApproximate() {}
+    void setUpApproximate() {}
+    BOOL isUpApproximate() { return make_unknown<BOOL>(); }
+    BOOL isDownApproximate() { return make_unknown<BOOL>(); }
+  };
+  
+  struct BigInt
+  {
+    BigInt() {}
+    BigInt& sub(int) { return *this; }
+    BigInt& add(int) { return *this; }
+    BOOL hasCarry() { return make_unknown<BOOL>(); }
+    BOOL isZero() { return make_unknown<BOOL>(); }
+  };
+  
+  struct SoftHalfFloat;
+  
+  struct SoftFloat
+  {
+    struct IntConversion
+    {
+      void assignSigned( S32 const& ) {}
+      void assignUnsigned( U32 const& ) {}
+      IntConversion& setSigned() { return *this; }
+      IntConversion& setUnsigned() { return *this; }
+      IntConversion& setSize(int) { return *this; }
+      S32 asInt32() { return make_unknown<S32>(); }
+      U32 asUInt32() { return make_unknown<U32>(); }
+    };
+    
+    SoftFloat( IntConversion const&, Flags const& ) {}
+    SoftFloat( U32 const& ) {}
+    SoftFloat( SoftHalfFloat const&, Flags const& ) {}
+    
+    U32 queryValue() { return make_unknown<U32>(); }
+    BOOL isNaN() { return make_unknown<BOOL>(); }
+    BOOL operator == (SoftFloat const&) { return make_unknown<BOOL>(); }
+    BOOL operator < (SoftFloat const&) { return make_unknown<BOOL>(); }
+    BOOL operator > (SoftFloat const&) { return make_unknown<BOOL>(); }
+    void retrieveInteger(IntConversion const&, Flags const&) {}
+    BOOL isPositive() { return make_unknown<BOOL>(); }
+    BOOL isNegative() { return make_unknown<BOOL>(); }
+    void setNegative(bool=false) {}
+    void setNegative(BOOL) {}
+    void plusAssign(SoftFloat const&, Flags const& flags) {}
+    void divAssign(SoftFloat const&, Flags const& flags) {}
+    void multAssign(SoftFloat const&, Flags const& flags) {}
+    void minusAssign(SoftFloat const&, Flags const& flags) {}
+    void sqrtAssign() {}
+    void squareAssign(Flags const& flags) {}
+    void multAndAddAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
+    void multAndSubAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
+    void multNegativeAndAddAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
+    void multNegativeAndSubAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
+    
+    BigInt querySBasicExponent() { return BigInt(); }
+    BigInt queryBasicExponent() { return BigInt(); }
+    BOOL isZero() { return make_unknown<BOOL>(); }
+    void clear() {}
+    
+    BOOL hasInftyExponent() { return make_unknown<BOOL>(); }
+    BOOL isDenormalized() { return make_unknown<BOOL>(); }
+  };
+
+  struct SoftHalfFloat
+  {
+    SoftHalfFloat( U16 const& ) {}
+    SoftHalfFloat( SoftFloat const&, Flags const& ) {}
+    U32 queryValue() { return make_unknown<U32>(); }
+  };
+  
+  static const unsigned int RN_NEAREST = 0;
+  static const unsigned int RN_ZERO = 1;
+  static const unsigned int RN_UP = 2;
+  static const unsigned int RN_DOWN = 3;
+
+  inline void GenSPEFSCR_FOVF(SPEFSCR& spefscr, const Flags& flags) { spefscr = make_unknown<U32>(); }
+  inline void GenSPEFSCR_FUNF(SPEFSCR& spefscr, const Flags& flags) { spefscr = make_unknown<U32>(); }
+  inline void GenSPEFSCR_FINXS(SPEFSCR& spefscr, const Flags& flags) { spefscr = make_unknown<U32>(); }
+  inline void GenSPEFSCR_FDBZ(SPEFSCR& spefscr, const Flags& flags) { spefscr = make_unknown<U32>(); }
+  inline void GenSPEFSCR_FG(SPEFSCR& spefscr, const Flags& flags, bool x=false) { spefscr = make_unknown<U32>(); }
+  inline void GenSPEFSCR_FX(SPEFSCR& spefscr, const Flags& flags, bool x=false) { spefscr = make_unknown<U32>(); }
+  inline void GenSPEFSCR_FG(SPEFSCR& spefscr, const SoftFloat& result) { spefscr = make_unknown<U32>(); }
+  inline BOOL HasSPEFSCR_InvalidInput(const SoftFloat& input) { return make_unknown<BOOL>(); }
+  template <class RESULT>
+  inline void GenSPEFSCR_DefaultResults(SPEFSCR& spefscr, RESULT& result) { spefscr = make_unknown<U32>(); }
+  template <class FLOAT>
+  inline void GenSPEFSCR_FINV(SPEFSCR& spefscr, FLOAT& first, FLOAT* second = 0, FLOAT* third = 0, bool x=false, bool y=false) { spefscr = make_unknown<U32>(); }
+
+  inline BOOL DoesSPEFSCR_TriggerException(const SPEFSCR& spefscr) { return BOOL(false); }
+  
+  inline void GenSPEFSCR_TriggerException(CPU* cpu) { cpu->donttest_system(); }
   
   extern void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, U8 carry_in);
   extern inline void SignedAdd32(U32& result, U8& carry_out, U8& overflow, U8& sign, U32 x, U32 y, int carry_in)

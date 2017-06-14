@@ -169,8 +169,9 @@ struct Checker
   ISA isa;
   
   TestClasses testclasses;
+  std::ofstream logger;
   
-  Checker() : random( 1, 2, 3, 4 ) {}
+  Checker() : random( 1, 2, 3, 4 ), logger((std::string( ISA::Name() ) + ".log").c_str()) {}
   
   void discover( uintptr_t ttl )
   {
@@ -212,7 +213,10 @@ struct Checker
                 {
                   std::unique_ptr<Operation> realop( isa.NCDecode( 0, code ) );
                   if (strcmp( realop->GetName(), codeop->GetName() ) != 0)
-                    continue; /* Not the op we were looking for. */
+                    {
+                      fails["hidden"] += 1;
+                      continue; /* Not the op we were looking for. */
+                    }
                   code = ISA::cleancode( *codeop );
                 }
                 
@@ -246,10 +250,14 @@ struct Checker
           std::cerr << "Tests[" << ISA::Name() << "::?]: nothing found...\n";
         else if (testclass->second.size() == 0)
           {
-            std::cerr << "nothing found";
+            std::ostringstream msg;
+            
+            msg << "nothing found";
             for (auto&& reason : fails)
-              std::cerr << " <" << reason.first << ">";
-            std::cerr << "\n";
+              msg << " <" << reason.first << ">";
+            msg << "\n";
+            std::cerr << msg.str();
+            logger << testclass->first << " : " << msg.str();
           }
         else
           std::cerr << testclass->second.size() << " patterns found." << std::endl;

@@ -34,7 +34,7 @@
 
 op lbzux(31[6]:rd[5]:ra[5]:rb[5]:119[10]:?[1])
 lbzux.execute = {
-	if(unlikely(ra == 0 || ra == rd))
+	if (unlikely((ra == 0) or (ra == rd)))
 	{
 		cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
 		return false;

@@ -44,7 +44,7 @@ impl {
  * - zvmhuianh
 */
 op zvmhui(4[6]:rd[5]:ra[5]:rb[5]:0b1100[4]:0b11[2]:0b00[2]:acc[2]:0b0[1]) /* acc in {00="",01="aa",10="an"} */
-zvmhui.var ill : { bool } = {
+zvmhui.var ill : {bool} = {
 	(acc == 3) // acc=0b11 is illegal
 }
 zvmhui.execute = {

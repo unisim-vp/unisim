@@ -41,13 +41,13 @@ impl {
 op e_lbzu(6[6]:rd[5]:ra[5]:0[8]:sext<32> d[8]);
 
 e_lbzu.execute = {
-	if(unlikely((ra == 0) || (ra == rd)))
+	if (unlikely((ra == 0) or (ra == rd)))
 	{
 		cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
 		return false;
 	}
 	// compute the effective address
-	ADDRESS ea = cpu->GetGPR(ra) + uint32_t(d);
+	ADDRESS ea = cpu->GetGPR(ra) + uint32_t( d);
 	// do the memory access
 	if(unlikely(!cpu->Int8Load(rd, ea))) return false;
 	// update the address register

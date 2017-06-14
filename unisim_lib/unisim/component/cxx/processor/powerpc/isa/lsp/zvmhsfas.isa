@@ -54,7 +54,7 @@ impl {
  * - zvmhxlsfanps
 */
 op zvmhsfas(4[6]:rd[5]:ra[5]:rb[5]:0b1011[4]:hs[2]:0b11[2]:acc[2]:0b0[1]) /* hs in {00="ul",01="ll",10="uu",11="xl"}, acc in {01="aa",10="an",11="anp"} */
-zvmhsfas.var ill : { bool } = {
+zvmhsfas.var ill : {bool} = {
 	(acc == 0) // acc=0b00 is illegal
 }
 zvmhsfas.execute = {

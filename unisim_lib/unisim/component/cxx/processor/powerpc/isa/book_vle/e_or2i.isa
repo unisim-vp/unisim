@@ -39,14 +39,14 @@ impl {
 
 /* OR (two operand) Immediate */
 op e_or2i(28[6]:rd[5]:shl<11> ui_h[5]:24[5]:ui_l[11]);
-e_or2i.var ui : { uint16_t } = { ui_h | ui_l }
+e_or2i.var ui : {uint16_t} = { ui_h | ui_l }
 
 e_or2i.execute = {
 	// Read the input operands
 	uint32_t d = cpu->GetGPR(rd);
 	
 	// Compute the result
-	uint32_t result = d | uint32_t(ui);
+	uint32_t result = d | uint32_t( ui);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -55,5 +55,5 @@ e_or2i.execute = {
 }
 
 e_or2i.disasm = {
-	os << "e_or2i " << GPRPrint(rd) << ',' << int16_t(ui_h|ui_l);
+	os << "e_or2i " << GPRPrint(rd) << ',' << ui;
 }

@@ -46,7 +46,7 @@ namespace powerpc {
 namespace e200 {
 namespace mpc57xx {
 
-template <class CPU, class CONFIG>
+template <class CPU>
 inline bool HasGenSPEFSCR(CPU* cpu)
 {
 	// if(!CONFIG::HAS_FPU)
@@ -69,7 +69,7 @@ inline bool HasGenSPEFSCR(CPU* cpu)
 	return true;
 }
 
-template <class SPEFSCR, class CONFIG, class FLOAT>
+template <class SPEFSCR, class FLOAT>
 inline void GenSPEFSCR_FINV(SPEFSCR& spefscr, const FLOAT& first,
 		const FLOAT* second = NULL, const FLOAT* third = NULL, bool isDivideOperation=false,
       bool isIntegerConversion=false)
@@ -95,7 +95,7 @@ inline void GenSPEFSCR_DefaultResults(SPEFSCR& spefscr, FLOAT& result)
 	// default results are provided by the hardware when an infinity, denormalized, or NaN input is received
 }
 
-template <class SPEFSCR, class CONFIG>
+template <class SPEFSCR>
 inline void GenSPEFSCR_FOVF(SPEFSCR& spefscr, const Flags& flags)
 {
 	spefscr.template Set<typename SPEFSCR::FOVF>(false);
@@ -103,7 +103,7 @@ inline void GenSPEFSCR_FOVF(SPEFSCR& spefscr, const Flags& flags)
 		spefscr.template Set<typename SPEFSCR::FOVF>(true);
 }
 
-template <class SPEFSCR, class CONFIG>
+template <class SPEFSCR>
 inline void GenSPEFSCR_FUNF(SPEFSCR& spefscr, const Flags& flags)
 {
 	spefscr.template Set<typename SPEFSCR::FUNF>(false);
@@ -111,7 +111,7 @@ inline void GenSPEFSCR_FUNF(SPEFSCR& spefscr, const Flags& flags)
 		spefscr.template Set<typename SPEFSCR::FUNF>(true);
 }
 
-template <class SPEFSCR, class CONFIG>
+template <class SPEFSCR>
 inline void GenSPEFSCR_FINXS(SPEFSCR& spefscr, const Flags& flags)
 {
 	if (flags.isApproximate())
@@ -124,21 +124,21 @@ inline void GenSPEFSCR_FINXS(SPEFSCR& spefscr, const Flags& flags)
 		spefscr.template Set<typename SPEFSCR::FINXS>(true);
 }
 
-template <class SPEFSCR, class CONFIG>
+template <class SPEFSCR>
 inline void GenSPEFSCR_FDBZ(SPEFSCR& spefscr, const Flags& flags)
 {
 	if (flags.isDivisionByZero())
 		spefscr.template Set<typename SPEFSCR::FDBZ>(true);
 }
 
-template <class SPEFSCR, class CONFIG>
+template <class SPEFSCR>
 inline void GenSPEFSCR_FG(SPEFSCR& spefscr, const Flags& flags)
 {
 	if (spefscr.template Get<typename SPEFSCR::FINV>() || flags.isOverflow() || flags.isUnderflow())
 		spefscr.template Set<typename SPEFSCR::FG>(false);
 }
 
-template <class SPEFSCR, class CONFIG>
+template <class SPEFSCR>
 inline void GenSPEFSCR_FX(SPEFSCR& spefscr, const Flags& flags)
 {
 	if (flags.isApproximate())
@@ -147,7 +147,7 @@ inline void GenSPEFSCR_FX(SPEFSCR& spefscr, const Flags& flags)
 		spefscr.template Set<typename SPEFSCR::FX>(false);
 }
 
-template <class SPEFSCR, class CONFIG>
+template <class SPEFSCR>
 inline bool DoesSPEFSCR_TriggerException(const SPEFSCR& spefscr)
 {	// Check for floating point exception condition:
 	return (spefscr.template Get<typename SPEFSCR::FINXS>() && spefscr.template Get<typename SPEFSCR::FINXE>())
@@ -161,14 +161,14 @@ inline bool DoesSPEFSCR_TriggerException(const SPEFSCR& spefscr)
 				&& spefscr.template Get<typename SPEFSCR::FOVFE>());
 }
 
-template <class CPU, class CONFIG>
+template <class CPU>
 inline void GenSPEFSCR_TriggerException(CPU* cpu)
 {
 	// Raise a floating point exception
 	cpu->template ThrowException<typename CPU::ProgramInterrupt::UnimplementedInstruction>();
 }
 
-template <class SPEFSCR, class CONFIG, class FLOAT>
+template <class SPEFSCR, class FLOAT>
 inline void GenSPEFSCR_FG(SPEFSCR& spefscr, const FLOAT& result)
 {
 	spefscr.template Set<typename SPEFSCR::FG>(false);

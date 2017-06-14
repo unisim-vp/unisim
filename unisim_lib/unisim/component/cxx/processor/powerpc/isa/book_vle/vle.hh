@@ -106,7 +106,7 @@ struct EAPrint : public DASMPrint
 inline uint32_t scaled_immediate( uint32_t s11 )
 {
 	int scale = (s11 >> 5) & 24;
-	uint32_t msk = (int32_t) (s11 << 21) >> 31;
+	uint32_t msk = int32_t(s11 << 21) >> 31;
 	return (((s11 ^ msk) & 255) << scale) ^ msk;
 }
   

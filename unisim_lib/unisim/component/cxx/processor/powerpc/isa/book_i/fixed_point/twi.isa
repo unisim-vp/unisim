@@ -34,10 +34,9 @@
  
 op twi(03[6]:to[5]:ra[5]:sext<32> simm[16])
 twi.execute = {
-	int32_t a;
-	int trap;
-	a = (int32_t) cpu->GetGPR(ra);
-	trap = 0;
+	int32_t a( cpu->GetGPR(ra) );
+	int trap = 0;
+	
 	if(a < simm && (to & 16)) trap = 1;
 	if(a > simm && (to & 8)) trap = 1;
 	if(a == simm && (to & 4)) trap = 1;

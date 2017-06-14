@@ -45,24 +45,24 @@ efsmax.execute = {
 	SoftFloat a(cpu->GetGPR(ra));
 	SoftFloat b(cpu->GetGPR(rb));
 	// Generate FINV
-	GenSPEFSCR_FINV<CPU::SPEFSCR, CONFIG, SoftFloat>(spefscr, a, &b);
+	GenSPEFSCR_FINV(spefscr, a, &b);
 
 	// Compute the result
 	SoftFloat result(a);
 	if (b > a)
 		result = b;
-	if (a.isNaN() && !b.isNaN())
+	else if (unlikely(a.isNaN() and not b.isNaN()))
 		result = b;
 
-	if (!spefscr.Get<CPU::SPEFSCR::FINVE>() && spefscr.Get<CPU::SPEFSCR::FINV>())
+	if (unlikely((spefscr.Get<CPU::SPEFSCR::FINVE>() == uint32_t(0)) and (spefscr.Get<CPU::SPEFSCR::FINV>() != uint32_t(0))))
 		GenSPEFSCR_DefaultResults(spefscr, result);
 
 	// Generate FG, FX
-	GenSPEFSCR_FG<CPU::SPEFSCR, CONFIG>(spefscr, flags);
-	GenSPEFSCR_FX<CPU::SPEFSCR, CONFIG>(spefscr, flags);
+	GenSPEFSCR_FG(spefscr, flags);
+	GenSPEFSCR_FX(spefscr, flags);
 
-	if(unlikely((DoesSPEFSCR_TriggerException<CPU::SPEFSCR, CONFIG>(spefscr)))) {
-		GenSPEFSCR_TriggerException<CPU, CONFIG>(cpu);
+	if(unlikely((DoesSPEFSCR_TriggerException(spefscr)))) {
+		GenSPEFSCR_TriggerException(cpu);
 		return false;
 	};
 

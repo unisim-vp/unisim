@@ -49,7 +49,7 @@ impl {
  * - zmwgsuian
  */
 op zmwgi(4[6]:rd[5]:ra[5]:rb[5]:0b1010[4]:0b11[2]:ty[2]:acc[2]:0b0[1]) /* ty in {00="ui",01="si",10="sui"}, acc in {00="",01="aa",10="an"} */
-zmwgi.var ill : { bool } = {
+zmwgi.var ill : {bool} = {
 	   (ty == 3) // ty=0b11 is illegal
 	|| (acc == 3) // acc=0b11 is illegal
 }

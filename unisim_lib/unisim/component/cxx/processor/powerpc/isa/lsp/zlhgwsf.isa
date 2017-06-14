@@ -37,8 +37,8 @@
  * - zlhgwsfu
  */
 op zlhgwsf(0b000100[6]:rd[5]:ra[5]:uimm[5]:0b0110[4]:u[1]:0b011101[6])
-zlhgwsf.var displacement : { uint32_t } = { uimm * 2 }
-zlhgwsf.var ill : { bool } = {
+zlhgwsf.var displacement : {uint32_t} = { uimm * 2 }
+zlhgwsf.var ill : {bool} = {
 	   (!ra && u)  // ra=0 & u=1 is illegal
 	|| (!uimm && u) // uimm=0 & u=1 is illegal
 }

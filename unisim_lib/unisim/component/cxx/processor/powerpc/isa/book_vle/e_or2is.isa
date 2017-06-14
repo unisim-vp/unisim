@@ -39,14 +39,14 @@ impl {
 
 /* OR (2 operand) Immediate Shifted */
 op e_or2is(28[6]:rd[5]:shl<11> ui_h[5]:26[5]:ui_l[11]);
-e_or2is.var ui : { uint32_t } = { (ui_h | ui_l) << 16 }
+e_or2is.var ui : {uint16_t} = { ui_h | ui_l }
 
 e_or2is.execute = {
 	// Read the input operands
 	uint32_t d = cpu->GetGPR(rd);
 	
 	// Compute the result
-	uint32_t result = d | uint32_t(ui);
+	uint32_t result = d | uint32_t( ui << 16 );
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
@@ -55,5 +55,5 @@ e_or2is.execute = {
 }
 
 e_or2is.disasm = {
-	os << "e_or2is " << GPRPrint(rd) << ',' << int16_t(ui_h|ui_l);
+	os << "e_or2is " << GPRPrint(rd) << ',' << ui;
 }

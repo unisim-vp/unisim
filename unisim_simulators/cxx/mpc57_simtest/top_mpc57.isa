@@ -87,6 +87,24 @@ namespace mpc57
   using ut::XER;
   using ut::CR;
   using ut::ADDRESS;
+  using ut::Flags;
+  using ut::RN_NEAREST;
+  using ut::RN_ZERO;
+  using ut::RN_UP;
+  using ut::RN_DOWN;
+  using ut::SoftFloat;
+  using ut::SoftHalfFloat;
+
+
+  using ut::GenSPEFSCR_FINV;
+  using ut::GenSPEFSCR_FOVF;
+  using ut::GenSPEFSCR_FUNF;
+  using ut::GenSPEFSCR_FINXS;
+  using ut::HasSPEFSCR_InvalidInput;
+  using ut::GenSPEFSCR_FG;
+  using ut::GenSPEFSCR_FX;
+  using ut::DoesSPEFSCR_TriggerException;
+  using ut::GenSPEFSCR_FG;
 
   inline char const* LSP_HS_EVEN_ODD( unsigned n ) { return "<?>"; }
   inline char const* LSP_TY( unsigned n ) { return "<?>"; }
@@ -144,6 +162,29 @@ namespace mpc57
   
   using unisim::component::cxx::processor::powerpc::LSP_HS_UPPER_LOWER_EXCHANGED;
 }
+
+#if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
+#if defined(likely)
+#undef likely
+#endif
+
+#if defined(unlikely)
+#undef unlikely
+#endif
+
+#if defined(unlikely)
+#undef perhaps
+#endif
+
+#define likely(x)       __builtin_expect(cpu->Cond(x),1)
+#define perhaps(x)      (cpu->Cond(x))
+#define unlikely(x)     __builtin_expect(cpu->Cond(x),0)
+#else
+#define likely(x)       (cpu->Cond(x))
+#define perhaps(x)      (cpu->Cond(x))
+#define unlikely(x)     (cpu->Cond(x))
+#endif
+
 }
 
 action {bool} execute({CPU *} {cpu}) {

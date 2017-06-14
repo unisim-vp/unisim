@@ -77,7 +77,7 @@ impl {
  * - zmhogsmfan
  */
 op zmhg(4[6]:rd[5]:ra[5]:rb[5]:0b1010[4]:hs[2]:ty[2]:acc[2]:0b0[1]) /* hs in {00="e",01="eo",10="o"}, ty in {00="ui",01="si",10="sui",11="smf"}, acc in {00="",01="aa",10="an"}  */
-zmhg.var ill : { bool } = {
+zmhg.var ill : {bool} = {
 	   (acc == 3)  // acc=0b11 is illegal
 }
 zmhg.execute = {

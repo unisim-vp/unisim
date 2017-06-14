@@ -47,7 +47,7 @@ e_stbu.execute = {
 		return false;
 	}
 	// compute the effective address
-	ADDRESS ea = cpu->GetGPR(ra) + uint32_t(d);
+	ADDRESS ea = cpu->GetGPR(ra) + uint32_t( d);
 	// do the memory access
 	if(unlikely(!cpu->Int8Store(rs, ea))) return false;
 	// update the address register

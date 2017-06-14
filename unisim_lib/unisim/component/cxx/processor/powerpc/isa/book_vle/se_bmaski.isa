@@ -39,10 +39,10 @@ impl {
 
 /* Bit Mask Generate Immediate */
 op se_bmaski(11[6]:0[1]:ui5[5]:sext srx[4]);
-se_bmaski.var rx : {uint8_t} = {srx & 31};
+se_bmaski.var rx : {uint8_t} = {srx & 31}, bmaski : {uint32_t} = {(ui5 ? (1U << ui5) : 0U) - 1U};
 
 se_bmaski.execute = {
-	uint32_t result = uint32_t( (ui5 ? uint32_t(1) << ui5 : uint32_t(0)) - 1 );
+	uint32_t result = uint32_t(bmaski);
 	cpu->SetGPR(rx, result);
 	
 	return true;

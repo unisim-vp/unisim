@@ -37,8 +37,8 @@
  * - zlwwosdu
  */
 op zlwwosd(0b000100[6]:shl<1> rd[4]:0b0[1]:ra[5]:uimm[5]:0b0110[4]:u[1]:0b001011[6]) /* rd odd is illegal */
-zlwwosd.var displacement : { uint32_t } = { uimm * 4 }
-zlwwosd.var ill : { bool } = {
+zlwwosd.var displacement : {uint32_t} = { uimm * 4 }
+zlwwosd.var ill : {bool} = {
 	   (!ra && u)   // ra=0 & u=1 is illegal
 	|| (!uimm && u) // uimm=0 & u=1 is illegal
 }

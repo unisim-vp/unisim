@@ -47,7 +47,7 @@ impl {
  * - zmhogwsmfran
  */
 op zmhogwsmf(4[6]:rd[5]:ra[5]:rb[5]:0b1001[4]:0b10[2]:0b11[2]:acc[2]:r[1]) /* acc in {00="",01="aa",10="an"}, r in {0="",1="r"} */
-zmhogwsmf.var ill : { bool } = {
+zmhogwsmf.var ill : {bool} = {
 	(acc == 3) // acc=0b11 is illegal
 }
 zmhogwsmf.execute = {

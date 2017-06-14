@@ -37,8 +37,8 @@
  * - zstwhu
  */
 op zstwh(0b000100[6]:rs[5]:ra[5]:uimm[5]:0b0110[4]:u[1]:0b111101[6])
-zstwh.var displacement : { uint32_t } = { uimm * 4 }
-zstwh.var ill : { bool } = {
+zstwh.var displacement : {uint32_t} = { uimm * 4 }
+zstwh.var ill : {bool} = {
 	   (!ra && u)   // ra=0 & u=1 is illegal
 	|| (!uimm && u) // uimm=0 & u=1 is illegal
 }

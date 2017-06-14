@@ -44,12 +44,12 @@ efsctsiz.execute = {
 
 	SoftFloat b(cpu->GetGPR(rb));
 	// Generate FINV
-	GenSPEFSCR_FINV<CPU::SPEFSCR, CONFIG, SoftFloat>(spefscr, b);
+	GenSPEFSCR_FINV(spefscr, b);
 
 	// Compute the result
 	int32_t result;
 	if (unlikely(b.isNaN()))
-		result = 0;
+		result = int32_t(0);
 	else {
 		SoftFloat::IntConversion conversion;
 		conversion.setSigned().setSize(32);
@@ -61,24 +61,24 @@ efsctsiz.execute = {
 		result = conversion.asInt32();
 	};
 
-	if (!spefscr.Get<CPU::SPEFSCR::FINVE>() && spefscr.Get<CPU::SPEFSCR::FINV>())
+	if (unlikely((spefscr.Get<CPU::SPEFSCR::FINVE>() == uint32_t(0)) and (spefscr.Get<CPU::SPEFSCR::FINV>() != uint32_t(0))))
 		GenSPEFSCR_DefaultResults(spefscr, result);
 
 	// Generate FOFV, FUNF, FINXS, FG, FX
-	GenSPEFSCR_FOVF<CPU::SPEFSCR, CONFIG>(spefscr, flags);
-	GenSPEFSCR_FUNF<CPU::SPEFSCR, CONFIG>(spefscr, flags);
-	GenSPEFSCR_FINXS<CPU::SPEFSCR, CONFIG>(spefscr, flags);
-	GenSPEFSCR_FG<CPU::SPEFSCR, CONFIG>(spefscr, flags);
-	GenSPEFSCR_FX<CPU::SPEFSCR, CONFIG>(spefscr, flags);
+	GenSPEFSCR_FOVF(spefscr, flags);
+	GenSPEFSCR_FUNF(spefscr, flags);
+	GenSPEFSCR_FINXS(spefscr, flags);
+	GenSPEFSCR_FG(spefscr, flags);
+	GenSPEFSCR_FX(spefscr, flags);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely((DoesSPEFSCR_TriggerException<CPU::SPEFSCR, CONFIG>(spefscr)))) {
-		GenSPEFSCR_TriggerException<CPU, CONFIG>(cpu);
+	if(unlikely((DoesSPEFSCR_TriggerException(spefscr)))) {
+		GenSPEFSCR_TriggerException(cpu);
 		return false;
 	};
 
 	// Write back the result
-	cpu->SetGPR(rd, (uint32_t) result);
+	cpu->SetGPR(rd, result);
 
 	return true;
 	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();

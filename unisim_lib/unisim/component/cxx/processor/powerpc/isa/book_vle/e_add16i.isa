@@ -42,10 +42,10 @@ op e_add16i(7[6]:rd[5]:ra[5]:sext<32> si[16]);
 
 e_add16i.execute = {
 	// Read the input operands
-	int32_t a = int32_t( cpu->GetGPR(ra) );
+	int32_t a = int32_t(  cpu->GetGPR(ra) );
 
 	// Compute the result
-	int32_t result = a + int32_t(si);
+	int32_t result = a + int32_t( si);
 
 	// Write back the result
 	cpu->SetGPR(rd, result);

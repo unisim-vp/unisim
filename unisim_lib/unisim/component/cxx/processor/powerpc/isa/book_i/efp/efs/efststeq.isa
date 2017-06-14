@@ -38,13 +38,13 @@ efststeq.execute = {
 		return false;
 
 	// Read the input operands and update FPSCR
-	SoftFloat a(cpu->GetGPR(ra));
-	SoftFloat b(cpu->GetGPR(rb));
+	U32 ua( cpu->GetGPR(ra) ), ub( cpu->GetGPR(rb) );
+	SoftFloat a( ua ), b( ub );
 
 	// Compute the result
 	bool result;
-	if (unlikely(a.hasInftyExponent() || a.isDenormalized() || b.hasInftyExponent() || b.isDenormalized()))
-		result = ((int32_t) cpu->GetGPR(ra)) == ((int32_t) cpu->GetGPR(rb));
+	if (unlikely(a.hasInftyExponent() or a.isDenormalized() or b.hasInftyExponent() or b.isDenormalized()))
+		result = ua == ub;
 	else
 		result = a == b;
 

@@ -39,10 +39,10 @@ impl {
 
 /* Load Immediate Shifted */
 op e_lis(28[6]:rd[5]:shl<11> ui_h[5]:28[5]:ui_l[11]);
-e_lis.var ui : { uint32_t } = { (ui_h | ui_l) << 16 }
+e_lis.var ui : {uint32_t} = { (ui_h | ui_l) << 16 }
 
 e_lis.execute = {
-  cpu->SetGPR(rd, uint32_t(ui));
+  cpu->SetGPR(rd, uint32_t( ui));
 	return true;
 }
 

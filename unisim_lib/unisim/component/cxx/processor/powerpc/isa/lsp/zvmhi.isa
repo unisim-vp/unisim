@@ -90,7 +90,7 @@ impl {
  * - zvmhxlsuianp
  */
 op zvmhi(4[6]:rd[5]:ra[5]:rb[5]:0b1011[4]:hs[2]:ty[2]:acc[2]:0b0[1]) /* hs in {00="ul",01="ll",10="uu",11="xl"}, ty in {00="ui",01="si",10="sui"}, acc in {00="",01="aa",10="an",11="anp"} */
-zvmhi.var ill : { bool } = {
+zvmhi.var ill : {bool} = {
 	(ty == 3) // ty=0b11 is illegal
 }
 zvmhi.execute = {

@@ -37,7 +37,7 @@
  * - zlhhsplatmx
  */
 op zlhhsplatx(0b000100[6]:rd[5]:ra[5]:rb[5]:0b0110[4]:m[1]:0b011110[6])
-zlhhsplatx.var ill : { bool } = {
+zlhhsplatx.var ill : {bool} = {
 	   (!ra && m) // ra=0 & m=1 is illegal
 }
 zlhhsplatx.execute = {

@@ -37,8 +37,8 @@
  * - zlhheu
  */
 op zlhhe(0b000100[6]:rd[5]:ra[5]:uimm[5]:0b0110[4]:u[1]:0b110001[6])
-zlhhe.var displacement : { uint32_t } = { uimm * 2 }
-zlhhe.var ill : { bool } = {
+zlhhe.var displacement : {uint32_t} = { uimm * 2 }
+zlhhe.var ill : {bool} = {
 	   (!ra && u) // ra=0 & u=1 is illegal
 	|| (!uimm && u) // uimm=0 & u=1 is illegal
 }

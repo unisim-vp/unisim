@@ -16,14 +16,14 @@ os << "" << (u ? "u" : "") << " r" << (unsigned int) rd << ", " << displacement 
 
 os << "" << (u ? "u" : "") << " r" << (unsigned int) rs << ", " << displacement << "(r" << (unsigned int) ra << ")";
 
-var ill : { bool } = {
+var ill : {bool} = {
 	   (rd & 1)  // rd odd is illegal
 	|| (!ra && u) // ra=0 & u=1 is illegal
 	|| (!ra && m) // ra=0 & m=1 is illegal
 	|| (!uimm && u) // uimm=0 & u=1 is illegal
 }
 
-var unpred : { bool } = {
+var unpred : {bool} = {
 	   (hs == 3) // behavior when hs=11b is unspecified
 	|| ((acc == 0) || (acc == 3)) // behavior when acc=00b or acc=11b is unspecified
 	|| (acc) // behavior when acc is not 00b is unspecified

@@ -46,7 +46,7 @@ neg.execute = {
 		// Write back the result
 		cpu->SetGPR(rd, a);
 		
-		if(unlikely(oe || rc))
+		if(unlikely(oe or rc))
 		{
 			XER& xer = cpu->GetXER();
 			
@@ -75,7 +75,7 @@ neg.execute = {
 		// Write back the result
 		cpu->SetGPR(rd, result);
 
-		if(unlikely(oe || rc))
+		if(unlikely(oe or rc))
 		{
 			XER& xer = cpu->GetXER();
 			
@@ -89,9 +89,9 @@ neg.execute = {
 				// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 				CR& cr = cpu->GetCR();
 				cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-				cr.Set<CR::CR0::LT>(int32_t(result) < int32_t(0));
-				cr.Set<CR::CR0::GT>(int32_t(result) > int32_t(0));
-				cr.Set<CR::CR0::EQ>(result == uint32_t(0));
+				cr.Set<CR::CR0::LT>(int32_t( result) < int32_t( 0));
+				cr.Set<CR::CR0::GT>(int32_t( result) > int32_t( 0));
+				cr.Set<CR::CR0::EQ>(result == uint32_t( 0));
 			}
 		}
 	}

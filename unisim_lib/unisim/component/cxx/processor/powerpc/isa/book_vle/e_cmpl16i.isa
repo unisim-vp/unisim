@@ -39,12 +39,12 @@ impl {
 
 /* Compare Logical Immediate Word */
 op e_cmpl16i(28[6]:shl<11> ui_h[5]:ra[5]:21[5]:ui_l[11]);
-e_cmpl16i.var ui : { uint16_t } = { ui_h | ui_l }
+e_cmpl16i.var ui : {uint16_t} = { ui_h | ui_l }
 
 e_cmpl16i.execute = {
 	// Read input unsigned operands
 	uint32_t a = cpu->GetGPR(ra);
-	uint32_t b = uint32_t( ui );
+	uint32_t b = uint32_t(  ui );
 	
 	// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(a<b) CR0[GT]=(a>b) CR0[EQ]=(a==b)
 	XER& xer = cpu->GetXER();

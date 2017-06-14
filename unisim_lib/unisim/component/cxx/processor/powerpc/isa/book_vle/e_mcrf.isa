@@ -47,7 +47,7 @@ e_mcrf.execute = {
 	unsigned int crbd = 4 * crd;
 	unsigned int crbs = 4 * crs;
 	uint32_t s = (c << crbs) >> crbd;
-	uint32_t m = uint32_t(0xf0000000UL >> crbd);
+	uint32_t m = uint32_t( 0xf0000000UL >> crbd);
 	
 	cr = (c & ~m) | (s & m);
 	return true;

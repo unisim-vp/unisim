@@ -34,7 +34,7 @@
 
 /*  Subtract from doubleword (zsubfd) */
 op zsubfd(0b000100[6]:rd[5]:ra[5]:rb[5]:0b10001100011[11])
-zsubfd.var ill : { bool } = {
+zsubfd.var ill : {bool} = {
 	(rd & 1) // rd odd is illegal
 }
 zsubfd.execute = {

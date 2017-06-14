@@ -37,7 +37,7 @@
  * - zstdwmx
  */
 op zstdwx(0b000100[6]:shl<1> rs[4]:0b0[1]:ra[5]:rb[5]:0b0110[4]:m[1]:0b100010[6]) /* rs odd is illegal */
-zstdwx.var ill : { bool } = {
+zstdwx.var ill : {bool} = {
 	(!ra && m) // ra=0 & m=1 is illegal
 }
 zstdwx.execute = {

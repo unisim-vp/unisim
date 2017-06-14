@@ -37,7 +37,7 @@
  * - zlwwmx
  */
 op zlwwx(0b000100[6]:rd[5]:ra[5]:rb[5]:0b0110[4]:m[1]:0b011010[6])
-zlwwx.var ill : { bool } = {
+zlwwx.var ill : {bool} = {
 	   (!ra && m) // ra=0 & m=1 is illegal
 }
 zlwwx.execute = {

@@ -34,7 +34,7 @@
 
 /* Add doubleword (zaddd) */
 op zaddd(0b000100[6]:rd[5]:ra[5]:rb[5]:0b10001100010[11])
-zaddd.var ill : { bool } = {
+zaddd.var ill : {bool} = {
 	(rd & 1) // rd odd is illegal
 }
 zaddd.execute = {

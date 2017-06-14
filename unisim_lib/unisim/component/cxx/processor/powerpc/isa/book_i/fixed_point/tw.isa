@@ -34,14 +34,14 @@
  
 op tw(31[6]:to[5]:ra[5]:rb[5]:4[10]:?[1])
 tw.execute = {
-	int32_t a = int32_t(cpu->GetGPR(ra));
-	int32_t b = int32_t(cpu->GetGPR(rb));
+	int32_t a = int32_t( cpu->GetGPR(ra));
+	int32_t b = int32_t( cpu->GetGPR(rb));
 	bool trap = false;
 	if((to & 16) and (a < b)) trap = true;
 	if((to &  8) and (a > b)) trap = true;
 	if((to &  4) and (a == b)) trap = true;
-	if((to &  2) and (int32_t(a) < int32_t(b))) trap = true;
-	if((to &  1) and (int32_t(a) > int32_t(b))) trap = true;
+	if((to &  2) and (int32_t( a) < int32_t( b))) trap = true;
+	if((to &  1) and (int32_t( a) > int32_t( b))) trap = true;
 	
 	if(unlikely(trap))
 	{

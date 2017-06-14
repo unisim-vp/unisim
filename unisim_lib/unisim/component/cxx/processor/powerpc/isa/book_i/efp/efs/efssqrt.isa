@@ -44,11 +44,11 @@ efssqrt.execute = {
 
 	SoftFloat result(cpu->GetGPR(ra));
 	// Generate FINV
-	GenSPEFSCR_FINV<CPU::SPEFSCR, CONFIG, SoftFloat>(spefscr, result);
+	GenSPEFSCR_FINV(spefscr, result);
 
 	// Compute the result
 	if (unlikely(result.isNegative())) {
-		if (!result.isZero())
+		if (likely(not result.isZero()))
 			spefscr.Set<CPU::SPEFSCR::FINV>(true);
 		result.clear();
 		result.setNegative();
@@ -72,17 +72,17 @@ efssqrt.execute = {
 		};
 	};
 
-	if (spefscr.Get<CPU::SPEFSCR::FINV>() && !spefscr.Get<CPU::SPEFSCR::FINVE>())
+	if (unlikely((spefscr.Get<CPU::SPEFSCR::FINVE>() == uint32_t(0)) and (spefscr.Get<CPU::SPEFSCR::FINV>() != uint32_t(0))))
 		GenSPEFSCR_DefaultResults(spefscr, result);
 
 	// Generate FOFV, FUNF, FINXS, FG, FX
-	GenSPEFSCR_FINXS<CPU::SPEFSCR, CONFIG>(spefscr, flags);
-	GenSPEFSCR_FG<CPU::SPEFSCR, CONFIG>(spefscr, flags);
-	GenSPEFSCR_FX<CPU::SPEFSCR, CONFIG>(spefscr, flags);
+	GenSPEFSCR_FINXS(spefscr, flags);
+	GenSPEFSCR_FG(spefscr, flags);
+	GenSPEFSCR_FX(spefscr, flags);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely((DoesSPEFSCR_TriggerException<CPU::SPEFSCR, CONFIG>(spefscr)))) {
-		GenSPEFSCR_TriggerException<CPU, CONFIG>(cpu);
+	if(unlikely((DoesSPEFSCR_TriggerException(spefscr)))) {
+		GenSPEFSCR_TriggerException(cpu);
 		return false;
 	};
 

@@ -46,7 +46,7 @@ e_rlwinm.execute = {
 	
 	// Compute the result
 	uint32_t r =RotateLeft(s, sh);
-	uint32_t m =uint32_t(Mask(mb, me));
+	uint32_t m =uint32_t( Mask(mb, me));
 	uint32_t result = r & m;
 	
 	// Write back the result

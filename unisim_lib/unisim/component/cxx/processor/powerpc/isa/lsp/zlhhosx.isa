@@ -37,7 +37,7 @@
  * - zlhhosmx
  */
 op zlhhosx(0b000100[6]:rd[5]:ra[5]:rb[5]:0b0110[4]:m[1]:0b110010[6])
-zlhhosx.var ill : { bool } = {
+zlhhosx.var ill : {bool} = {
 	   (!ra && m) // ra=0 & m=1 is illegal
 }
 zlhhosx.execute = {

@@ -43,18 +43,18 @@ efsabs.execute = {
 	SoftFloat result(cpu->GetGPR(ra));
 
 	// Generate FINV
-	GenSPEFSCR_FINV<CPU::SPEFSCR, CONFIG, SoftFloat>(spefscr, result);
+	GenSPEFSCR_FINV(spefscr, result);
 
 	// Compute the result
 	result.setNegative(false);
 
 	// It is implementation dependent if invalid values for rA (NaN, denorm, infinity) are detected and exceptions are taken.
-	if (!spefscr.Get<CPU::SPEFSCR::FINVE>() && spefscr.Get<CPU::SPEFSCR::FINV>())
+	if ((spefscr.Get<CPU::SPEFSCR::FINVE>() == uint32_t(0)) and (spefscr.Get<CPU::SPEFSCR::FINV>() != uint32_t(0)))
 		GenSPEFSCR_DefaultResults(spefscr, result);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely((DoesSPEFSCR_TriggerException<CPU::SPEFSCR, CONFIG>(spefscr)))) {
-		GenSPEFSCR_TriggerException<CPU, CONFIG>(cpu);
+	if(unlikely((DoesSPEFSCR_TriggerException(spefscr)))) {
+		GenSPEFSCR_TriggerException(cpu);
 		return false;
 	};
 

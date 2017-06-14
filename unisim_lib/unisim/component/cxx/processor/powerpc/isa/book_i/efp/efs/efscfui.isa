@@ -43,13 +43,13 @@ efscfui.execute = {
 	flags.setRoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>());
 
 	SoftFloat::IntConversion conversion;
-	conversion.assignUnsigned((uint32_t) cpu->GetGPR(rb));
+	conversion.assignUnsigned( uint32_t(cpu->GetGPR(rb)) );
 	SoftFloat result(conversion, flags);
 
 	// Generate FINXS, FG, FX
-	GenSPEFSCR_FINXS<CPU::SPEFSCR, CONFIG>(spefscr, flags);
-	GenSPEFSCR_FG<CPU::SPEFSCR, CONFIG>(spefscr, flags);
-	GenSPEFSCR_FX<CPU::SPEFSCR, CONFIG>(spefscr, flags);
+	GenSPEFSCR_FINXS(spefscr, flags);
+	GenSPEFSCR_FG(spefscr, flags);
+	GenSPEFSCR_FX(spefscr, flags);
 
 	// Write back the result
 	cpu->SetGPR(rd, result.queryValue());

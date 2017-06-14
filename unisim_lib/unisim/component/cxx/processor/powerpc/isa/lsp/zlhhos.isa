@@ -37,8 +37,8 @@
  * - zlhhosu
  */
 op zlhhos(0b000100[6]:rd[5]:ra[5]:uimm[5]:0b0110[4]:u[1]:0b0110011[6])
-zlhhos.var displacement : { uint32_t } = { uimm * 2 }
-zlhhos.var ill : { bool } = {
+zlhhos.var displacement : {uint32_t} = { uimm * 2 }
+zlhhos.var ill : {bool} = {
 	   (!ra && u)   // ra=0 & u=1 is illegal
 	|| (!uimm && u) // uimm=0 & u=1 is illegal
 }

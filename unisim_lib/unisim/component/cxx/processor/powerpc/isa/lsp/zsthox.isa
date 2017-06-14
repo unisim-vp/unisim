@@ -37,7 +37,7 @@
  * - zsthomx
  */
 op zsthox(0b000100[6]:rs[5]:ra[5]:rb[5]:0b0110[4]:m[1]:0b111010[6])
-zsthox.var ill : { bool } = {
+zsthox.var ill : {bool} = {
 	(!ra && m) // ra=0 & m=1 is illegal
 }
 zsthox.execute = {

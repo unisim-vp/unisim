@@ -42,17 +42,17 @@ efscfh.execute = {
 	Flags flags;
 	flags.setRoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>());
 
-	SoftHalfFloat b((uint16_t) cpu->GetGPR(rb));
+	SoftHalfFloat b( uint16_t(cpu->GetGPR(rb)) );
 	// Generate FINV
-	GenSPEFSCR_FINV<CPU::SPEFSCR, CONFIG, SoftHalfFloat>(spefscr, b);
+	GenSPEFSCR_FINV(spefscr, b);
 
 	// Compute the result
 	SoftFloat result(b, flags);
 
-	if (!spefscr.Get<CPU::SPEFSCR::FINVE>() && spefscr.Get<CPU::SPEFSCR::FINV>())
+	if (unlikely((spefscr.Get<CPU::SPEFSCR::FINVE>() == uint32_t(0)) and (spefscr.Get<CPU::SPEFSCR::FINV>() != uint32_t(0))))
 		GenSPEFSCR_DefaultResults(spefscr, result);
-	if(unlikely((DoesSPEFSCR_TriggerException<CPU::SPEFSCR, CONFIG>(spefscr)))) {
-		GenSPEFSCR_TriggerException<CPU, CONFIG>(cpu);
+	if(unlikely((DoesSPEFSCR_TriggerException(spefscr)))) {
+		GenSPEFSCR_TriggerException(cpu);
 		return false;
 	};
 

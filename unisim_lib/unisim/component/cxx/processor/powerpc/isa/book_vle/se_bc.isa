@@ -46,12 +46,12 @@ se_bc.execute = {
 	if(bo)
 	{
 		/* Branch if condition is true */
-		cond_ok = ((uint32_t(cpu->GetCR()) << bi) & uint32_t(0x80000000UL)) != uint32_t(0);
+		cond_ok = ((uint32_t( cpu->GetCR()) << bi) & uint32_t(0x80000000UL)) != uint32_t(0);
 	}
 	else
 	{
 		/* Branch if condition is false */
-		cond_ok = ((uint32_t(cpu->GetCR()) << bi) & uint32_t(0x80000000UL)) == uint32_t(0);
+		cond_ok = ((uint32_t( cpu->GetCR()) << bi) & uint32_t(0x80000000UL)) == uint32_t(0);
 	}
 	
 	if(cond_ok)

@@ -42,8 +42,8 @@ op e_cmph(31[6]:crd[3]:0[2]:ra[5]:rb[5]:14[10]:0[1]);
 
 e_cmph.execute = {
 	// Read the input signed halfword operands
-	int16_t a = int16_t( cpu->GetGPR(ra) );
-	int16_t b = int16_t( cpu->GetGPR(rb) );
+	int16_t a = int16_t(  cpu->GetGPR(ra) );
+	int16_t b = int16_t(  cpu->GetGPR(rb) );
 
 	CR& cr = cpu->GetCR();
 	XER& xer = cpu->GetXER();

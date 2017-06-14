@@ -44,7 +44,7 @@ impl {
  * - zvmhuianhs
 */
 op zvmhuis(4[6]:rd[5]:ra[5]:rb[5]:0b1100[4]:0b11[2]:0b00[2]:acc[2]:0b1[1]) /* acc in {00="",01="aa",10="an"} */
-zvmhuis.var ill : { bool } = {
+zvmhuis.var ill : {bool} = {
 	(acc == 3) // acc=0b11 is illegal
 }
 zvmhuis.execute = {

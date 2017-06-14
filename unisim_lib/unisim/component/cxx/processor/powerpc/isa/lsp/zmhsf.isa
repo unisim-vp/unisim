@@ -43,7 +43,7 @@ impl {
  * - zmhosf
  */
 op zmhsf(4[6]:rd[5]:ra[5]:rb[5]:0b1100[4]:hs[2]:0b11[2]:0b00[2]:0b0[1]) /* hs in {00="e",01="eo",10="o"} */
-zmhsf.var ill : { bool } = {
+zmhsf.var ill : {bool} = {
 	(hs == 3) // hs=0b11 is illegal
 }
 zmhsf.execute = {
