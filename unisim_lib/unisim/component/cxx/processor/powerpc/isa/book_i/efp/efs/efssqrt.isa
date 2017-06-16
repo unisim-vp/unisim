@@ -41,6 +41,7 @@ efssqrt.execute = {
 	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
 	Flags flags;
 	flags.setRoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>());
+	// flags.setRoundingMode(RN_NEAREST);
 
 	SoftFloat result(cpu->GetGPR(ra));
 	// Generate FINV
@@ -59,7 +60,7 @@ efssqrt.execute = {
 		SoftFloat a(result);
 		result.sqrtAssign();
 		SoftFloat b(result);
-		b.squareAssign(flags);
+		b.squareAssign(squareFlags);
 		if (b < a)
 			flags.setDownApproximate();
 		else if (b > a)
@@ -77,8 +78,9 @@ efssqrt.execute = {
 
 	// Generate FOFV, FUNF, FINXS, FG, FX
 	GenSPEFSCR_FINXS<CPU::SPEFSCR, CONFIG>(spefscr, flags);
-	GenSPEFSCR_FG<CPU::SPEFSCR, CONFIG>(spefscr, flags);
-	GenSPEFSCR_FX<CPU::SPEFSCR, CONFIG>(spefscr, flags);
+	GenSPEFSCR_FG_FX<CPU::SPEFSCR, CONFIG>(spefscr, flags, result.isNegative());
+	if (spefscr.Get<CPU::SPEFSCR::FRMC>() != RN_NEAREST)
+	   GenSPEFSCR_ExactResult(result, flags, spefscr.Get<CPU::SPEFSCR::FRMC>());
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
 	if(unlikely((DoesSPEFSCR_TriggerException<CPU::SPEFSCR, CONFIG>(spefscr)))) {

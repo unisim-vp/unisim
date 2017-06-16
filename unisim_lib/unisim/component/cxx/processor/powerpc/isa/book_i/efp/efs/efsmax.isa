@@ -41,6 +41,7 @@ efsmax.execute = {
 	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
 	Flags flags;
 	flags.setRoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>());
+	// flags.setRoundingMode(RN_NEAREST);
 
 	SoftFloat a(cpu->GetGPR(ra));
 	SoftFloat b(cpu->GetGPR(rb));
@@ -58,8 +59,7 @@ efsmax.execute = {
 		GenSPEFSCR_DefaultResults(spefscr, result);
 
 	// Generate FG, FX
-	GenSPEFSCR_FG<CPU::SPEFSCR, CONFIG>(spefscr, flags);
-	GenSPEFSCR_FX<CPU::SPEFSCR, CONFIG>(spefscr, flags);
+	GenSPEFSCR_FG_FX<CPU::SPEFSCR, CONFIG>(spefscr, flags, result.isNegative());
 
 	if(unlikely((DoesSPEFSCR_TriggerException<CPU::SPEFSCR, CONFIG>(spefscr)))) {
 		GenSPEFSCR_TriggerException<CPU, CONFIG>(cpu);

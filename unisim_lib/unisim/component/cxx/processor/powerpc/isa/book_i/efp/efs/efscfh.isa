@@ -41,6 +41,7 @@ efscfh.execute = {
 	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
 	Flags flags;
 	flags.setRoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>());
+	// flags.setRoundingMode(RN_NEAREST);
 
 	SoftHalfFloat b((uint16_t) cpu->GetGPR(rb));
 	// Generate FINV
