@@ -68,39 +68,49 @@ std::ostream& operator << (std::ostream& os, const Access& access)
 	return os;
 };
 
-//////////////////////////////// WarningStatus ////////////////////////////////
+//////////////////////////////// ReadWriteStatus ////////////////////////////////
 
-std::ostream& operator << (std::ostream& os, const WarningStatus& ws)
+std::ostream& operator << (std::ostream& os, const ReadWriteStatus& rws)
 {
 	bool warn = false;
 	
-	if(ws == WS_OK)
+	if(rws == RWS_OK)
 	{
 		os << "OK";
 	}
+	else if(rws == RWS_UA)
+	{
+		os << "unmapped access";
+	}
 	else
 	{
-		if(ws & WS_WOORV)
+		if(rws & RWS_WOORV)
 		{
 			os << "writing out-of-range value";
 			warn = true;
-		}
+		}	
 
-		if(ws & WS_WROR)
+		if(rws & RWS_WROR)
 		{
 			os << (warn ? "and" : "") << "writing read-only register";
 			warn = true;
 		}
 
-		if(ws & WS_WROB)
+		if(rws & RWS_WROB)
 		{
 			os << (warn ? "and" : "") << "writing read-only bits";
 			warn = true;
 		}
 
-		if(ws & WS_RWOR)
+		if(rws & RWS_RWOR)
 		{
 			os << (warn ? "and" : "") << "reading write-only register";
+			warn = true;
+		}
+		
+		if(rws & RWS_ANA)
+		{
+			os << (warn ? "and" : "") << "access not allowed";
 			warn = true;
 		}
 	}
@@ -110,7 +120,7 @@ std::ostream& operator << (std::ostream& os, const WarningStatus& ws)
 
 ///////////////////////////// PropertyRegistry ////////////////////////////////
 
-std::map<intptr_t, std::string> PropertyRegistry::string_prop_registry[2][3];
+std::map<intptr_t, std::string> PropertyRegistry::string_prop_registry[3][3];
 
 void PropertyRegistry::SetStringProperty(ElementType el_type, StringPropertyType str_prop_type, intptr_t key, const std::string& value)
 {

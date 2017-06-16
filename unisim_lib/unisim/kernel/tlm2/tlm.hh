@@ -53,6 +53,20 @@ namespace unisim {
 namespace kernel {
 namespace tlm2 {
 
+inline const sc_core::sc_time& AlignToClock(sc_core::sc_time& time_stamp, sc_core::sc_time& clk_cycle_time)
+{
+	sc_core::sc_time skew(time_stamp);
+	skew %= clk_cycle_time;
+	
+	if(skew != sc_core::SC_ZERO_TIME)
+	{
+		time_stamp += clk_cycle_time;
+		time_stamp -= skew;
+	}
+	
+	return time_stamp;
+}
+
 class ManagedPayload
 {
 public:

@@ -50,7 +50,6 @@ ASSEMBLER_ARGS= \
 -I"$(S32DS)/e200_ewl2/EWL_C/include" \
 -I"$(S32DS)/e200_ewl2/EWL_C/include/pa" \
 -DMPC5777M \
--DDISABLE_SWT2 \
 -DI_CACHE \
 -mcpu=e200z4 \
 -specs=ewl_c9x.specs \
@@ -58,6 +57,9 @@ ASSEMBLER_ARGS= \
 -mvle \
 -mregnames \
 --sysroot="$(S32DS)/e200_ewl2"
+
+#-DDISABLE_SWT2 \
+
 
 .PHONY: all
 all: $(EXE)

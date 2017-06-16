@@ -646,6 +646,8 @@ bool CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 			if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: target allows DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			
 			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
+			payload->set_address(physical_addr);
+			payload->set_data_length(size);
 			unisim::kernel::tlm2::DMIGrant dmi_grant = i_ahb_if->get_direct_mem_ptr(*payload, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
 			
 			i_dmi_region_cache.Insert(dmi_grant, dmi_data);
@@ -728,6 +730,8 @@ bool CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 			if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: target allows DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 
 			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
+			payload->set_address(physical_addr);
+			payload->set_data_length(size);
 			unisim::kernel::tlm2::DMIGrant dmi_grant = d_ahb_if->get_direct_mem_ptr(*payload, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
 			
 			d_dmi_region_cache.Insert(dmi_grant, dmi_data);
@@ -809,6 +813,8 @@ bool CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void
 		{
 			if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: target allows DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
+			payload->set_address(physical_addr);
+			payload->set_data_length(size);
 			unisim::kernel::tlm2::DMIGrant dmi_grant = d_ahb_if->get_direct_mem_ptr(*payload, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
 			
 			d_dmi_region_cache.Insert(dmi_grant, dmi_data);

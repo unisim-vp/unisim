@@ -70,18 +70,18 @@
  * mr = 0x0;
  * 
  * // software write of register value
- * WarningStatus ws_write = mr.Write(0xffffffff);
- * if(ws_write)
+ * ReadWriteStatus rws_write = mr.Write(0xffffffff);
+ * if(rws_write)
  * {
- *     std::cerr << ws_write << std::endl;
+ *     std::cerr << rws_write << std::endl;
  * }
  * 
  * // software read of register value
  * uint32_t v;
- * WarningStatus ws_read = mr.Read(v);
- * if(ws_read)
+ * ReadWriteStatus rws_read = mr.Read(v);
+ * if(rws_read)
  * {
- *     std::cerr << ws_read << std::endl;
+ *     std::cerr << rws_read << std::endl;
  * }
  * 
  * // print register value
@@ -133,20 +133,32 @@ enum Access
 
 std::ostream& operator << (std::ostream& os, const Access& access);
 
-//////////////////////////////// WarningStatus ////////////////////////////////
+//////////////////////////////// ReadWriteStatus ////////////////////////////////
 
-enum WarningStatus
+enum ReadWriteStatus
 {
-	WS_OK        = 0,                 // OK
-	WS_WOORV     = 1,                 // writing out-of-range value
-	WS_WROR      = 2,                 // writing read-only register
-	WS_WROB      = 4,                 // writing read-only bits
-	WS_RWOR      = 8,                 // reading write-only register
-	WS_WOORV_WROR = WS_WOORV | WS_WROR, // writing out-of-range value and writing read-only register
-	WS_WOORV_WROB = WS_WOORV | WS_WROB, // writing out-of-range value and writing read-only bits
+	RWS_OK            = 0,                                   // OK
+	RWS_WOORV         = 1,                                   // writing out-of-range value
+	RWS_WROR          = 2,                                   // writing read-only register
+	RWS_WROB          = 4,                                   // writing read-only bits
+	RWS_RWOR          = 8,                                   // reading write-only register
+	RWS_WOORV_WROR    = RWS_WOORV | RWS_WROR,                // writing out-of-range value and writing read-only register
+	RWS_WOORV_WROB    = RWS_WOORV | RWS_WROB,                // writing out-of-range value and writing read-only bits
+	RWS_ANA            = 16,                                 // access not allowed
+	RWS_WOORV_NA      = RWS_WOORV | RWS_ANA,                 // writing out-of-range value and access not allowed
+	RWS_WROR_NA       = RWS_WROR | RWS_ANA,                  // writing read-only register and access not allowed
+	RWS_WROB_NA       = RWS_WROB | RWS_ANA,                  // writing read-only bits and access not allowed
+	RWS_RWOR_NA       = RWS_RWOR | RWS_ANA,                  // reading write-only register and access not allowed
+	RWS_WOORV_WROR_NA = RWS_WOORV | RWS_WROR | RWS_ANA,      // writing out-of-range value and writing read-only register and access not allowed
+	RWS_WOORV_WROB_NA = RWS_WOORV | RWS_WROB | RWS_ANA,      // writing out-of-range value and writing read-only bits and access not allowed
+	RWS_UA            = 32                                   // unmapped access
 };
 
-std::ostream& operator << (std::ostream& os, const WarningStatus& ws);
+std::ostream& operator << (std::ostream& os, const ReadWriteStatus& ws);
+
+inline bool IsReadWriteError(ReadWriteStatus rws) ALWAYS_INLINE;
+
+inline bool IsReadWriteError(ReadWriteStatus rws) { return (rws & (RWS_ANA | RWS_UA)) != 0; }
 
 ////////////////////////// Forward declarations ///////////////////////////////
 
@@ -175,7 +187,7 @@ template < typename  BF0, typename  BF1, typename  BF2, typename  BF3
          , typename BF56, typename BF57, typename BF58, typename BF59
          , typename BF60, typename BF61, typename BF62, typename BF63> struct FieldSet;
 
-template <typename ADDRESS> class RegisterAddressMap;
+template <typename ADDRESS, typename CUSTOM_RW_ARG> class RegisterAddressMap;
 
 template <unsigned int BYTE_SIZE> struct TypeForByteSize;
 
@@ -185,13 +197,17 @@ struct NullRegisterBase;
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE> class Register;
 
-class AddressableRegisterBase;
+template <typename CUSTOM_RW_ARG> class AddressableRegisterBase;
 
-template <typename REGISTER, unsigned int _SIZE, Access _ACCESS> class AddressableRegister;
+template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename CUSTOM_RW_ARG> class AddressableRegister;
 
-template <typename ADDRESS> class AddressableRegisterHandle;
+template <typename ADDRESS, typename CUSTOM_RW_ARG> class AddressableRegisterHandle;
 
-template <typename ADDRESS> class RegisterAddressMap;
+template <typename ADDRESS, typename CUSTOM_RW_ARG> class RegisterAddressMap;
+
+/////////////////////////////// NullCustomArg /////////////////////////////////
+
+struct NullCustomArg {};
 
 ///////////////////////////// PropertyRegistry ////////////////////////////////
 
@@ -200,8 +216,9 @@ class PropertyRegistry
 public:
 	enum ElementType
 	{
-		EL_REGISTER = 0,
-		EL_FIELD    = 1
+		EL_REGISTER      = 0,
+		EL_FIELD         = 1,
+		EL_REGISTER_FILE = 2
 	};
 	
 	enum StringPropertyType
@@ -215,7 +232,7 @@ public:
 	static const std::string& GetStringProperty(ElementType el_type, StringPropertyType prop_type, intptr_t key);
 	
 private:
-	static std::map<intptr_t, std::string> string_prop_registry[2][3];
+	static std::map<intptr_t, std::string> string_prop_registry[3][3];
 	
 };
 
@@ -390,19 +407,19 @@ public:
 	
 	Register();
 	Register(TYPE value);
-	void WithinRegisterFileCtor(unsigned int index);
+	void WithinRegisterFileCtor(unsigned int index, void *custom_ctor_arg);
 	void Initialize(TYPE value);
 	inline Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>& operator = (const TYPE& value) ALWAYS_INLINE;
 	inline operator TYPE () const ALWAYS_INLINE;
 	inline TYPE operator [] (unsigned int bit_offset) const ALWAYS_INLINE;
-	WarningStatus Write(const TYPE& value, const TYPE& bit_enable = (~TYPE(0) & TYPE_MASK));
-	WarningStatus Read(TYPE& value, const TYPE& bit_enable = (~TYPE(0) & TYPE_MASK));
+	ReadWriteStatus Write(const TYPE& value, const TYPE& bit_enable = (~TYPE(0) & TYPE_MASK));
+	ReadWriteStatus Read(TYPE& value, const TYPE& bit_enable = (~TYPE(0) & TYPE_MASK));
 	void DebugWrite(const TYPE& value, const TYPE& bit_enable = (~TYPE(0) & TYPE_MASK));
 	void DebugRead(TYPE& value, const TYPE& bit_enable = (~TYPE(0) & TYPE_MASK));
-	WarningStatus Write(unsigned char *data_ptr, unsigned char *bit_enable_ptr = 0);
-	WarningStatus Read(unsigned char *data_ptr, unsigned char *bit_enable_ptr = 0);
-	void DebugWrite(unsigned char *data_ptr, unsigned char *bit_enable_ptr = 0);
-	void DebugRead(unsigned char *data_ptr, unsigned char *bit_enable_ptr = 0);
+	ReadWriteStatus Write(const unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0);
+	ReadWriteStatus Read(unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0);
+	void DebugWrite(const unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0);
+	void DebugRead(unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0);
 	void ShortPrettyPrint(std::ostream& os) const;
 	void LongPrettyPrint(std::ostream& os) const;
 	
@@ -437,16 +454,17 @@ struct NullRegisterFileBase {};
 
 /////////////////////////////// RegisterFile<> ////////////////////////////////
 
-template <typename REGISTER, unsigned int _DIM, typename REGISTER_FILE_BASE = NullRegisterFileBase>
-class RegisterFile
+template <typename REGISTER, unsigned int _DIM, typename CUSTOM_CTOR_ARG = NullCustomArg, typename REGISTER_FILE_BASE = NullRegisterFileBase>
+class RegisterFile : public REGISTER_FILE_BASE
 {
 public:
-	RegisterFile();
-	RegisterFile(typename REGISTER::TYPE value);
+	RegisterFile(CUSTOM_CTOR_ARG *custom_ctor_arg = 0);
+	RegisterFile(typename REGISTER::TYPE value, CUSTOM_CTOR_ARG *custom_ctor_arg = 0);
 	inline REGISTER& operator [] (int index) ALWAYS_INLINE;
 	inline const REGISTER& operator [] (int index) const ALWAYS_INLINE;
 	
 	inline unsigned int GetDim() const ALWAYS_INLINE;
+	inline unsigned int GetSize() const ALWAYS_INLINE;
 	
 	void SetName(const std::string& name);
 	void SetDisplayName(const std::string& disp_name);
@@ -463,64 +481,110 @@ private:
 	const std::string& GetDescriptionKey() const;
 };
 
-////////////////////////// AddressableRegisterBase ////////////////////////////
+///////////////////////// AddressableRegisterBase<> ///////////////////////////
 
 // Note: this class is internal, it is not intended to be used directly by the user
 //       use AddressableRegister instead
+template <typename CUSTOM_RW_ARG>
 class AddressableRegisterBase
 {
 protected:
 	virtual unsigned int __ARB_GetSize__() const = 0;
-	virtual WarningStatus __ARB_Write__(unsigned char *data_ptr, unsigned char *bit_enable_ptr) = 0;
-	virtual WarningStatus __ARB_Read__(unsigned char *data_ptr, unsigned char *bit_enable_ptr) = 0;
-	virtual void __ARB_DebugWrite__(unsigned char *data_ptr, unsigned char *bit_enable_ptr) = 0;
-	virtual void __ARB_DebugRead__(unsigned char *data_ptr, unsigned char *bit_enable_ptr) = 0;
+	virtual const std::string& __ARB_GetName__() const = 0;
+	virtual ReadWriteStatus __ARB_Write__(const unsigned char *data_ptr, const unsigned char *bit_enable_ptr, CUSTOM_RW_ARG *custom_rw_arg) = 0;
+	virtual ReadWriteStatus __ARB_Read__(unsigned char *data_ptr, const unsigned char *bit_enable_ptr, CUSTOM_RW_ARG *custom_rw_arg) = 0;
+	virtual void __ARB_DebugWrite__(const unsigned char *data_ptr, const unsigned char *bit_enable_ptr, CUSTOM_RW_ARG *custom_rw_arg) = 0;
+	virtual void __ARB_DebugRead__(unsigned char *data_ptr, const unsigned char *bit_enable_ptr, CUSTOM_RW_ARG *custom_rw_arg) = 0;
+	virtual void ShortPrettyPrint(std::ostream& os) = 0;
+	virtual void LongPrettyPrint(std::ostream& os) = 0;
 	
-	template <typename ADDRESS> friend class AddressableRegisterHandle;
-	template <typename ADDRESS> friend class RegisterAddressMap;
+	template <typename ADDRESS, typename _CUSTOM_RW_ARG> friend class AddressableRegisterHandle;
+	template <typename ADDRESS, typename _CUSTOM_RW_ARG> friend class RegisterAddressMap;
+};
+
+/////////////////////// AddressableRegisterFileBase<> /////////////////////////
+// Note: this class is internal, it is not intended to be used directly by the user
+//       use AddressableRegisterFile instead
+template <typename CUSTOM_RW_ARG>
+class AddressableRegisterFileBase
+{
+protected:
+	virtual unsigned int __ARFB_GetDim__() const = 0;
+	virtual const std::string& __ARFB_GetName__() const = 0;
+	virtual AddressableRegisterBase<CUSTOM_RW_ARG> *__ARFB_GetRegister__(unsigned int index) = 0;
+	
+	template <typename ADDRESS, typename _CUSTOM_RW_ARG> friend class RegisterAddressMap;
 };
 
 /////////////////////////// AddressableRegister<> /////////////////////////////
 
-template <typename REGISTER, unsigned int _SIZE, Access _ACCESS = SW_RW>
-class AddressableRegister : public Register<REGISTER, _SIZE, _ACCESS, AddressableRegisterBase>
+template <typename REGISTER, unsigned int _SIZE, Access _ACCESS = SW_RW, typename CUSTOM_RW_ARG = NullCustomArg>
+class AddressableRegister : public Register<REGISTER, _SIZE, _ACCESS, AddressableRegisterBase<CUSTOM_RW_ARG> >
 {
 public:
-	typedef Register<REGISTER, _SIZE, _ACCESS, AddressableRegisterBase> Super;
+	typedef Register<REGISTER, _SIZE, _ACCESS, AddressableRegisterBase<CUSTOM_RW_ARG> > Super;
 	
 	AddressableRegister();
 	AddressableRegister(typename Super::TYPE value);
 
 	using Super::operator =;
-	
+
+protected:
+	virtual ReadWriteStatus Write(const typename Super::TYPE& value, const typename Super::TYPE& bit_enable, CUSTOM_RW_ARG *custom_rw_arg);
+	virtual ReadWriteStatus Read(typename Super::TYPE& value, const typename Super::TYPE& bit_enable, CUSTOM_RW_ARG *custom_rw_arg);
+	virtual ReadWriteStatus DebugWrite(const typename Super::TYPE& value, const typename Super::TYPE& bit_enable, CUSTOM_RW_ARG *custom_rw_arg);
+	virtual ReadWriteStatus DebugRead(typename Super::TYPE& value, const typename Super::TYPE& bit_enable, CUSTOM_RW_ARG *custom_rw_arg);
+	virtual void ShortPrettyPrint(std::ostream& os);
+	virtual void LongPrettyPrint(std::ostream& os);
 private:
 	virtual unsigned int __ARB_GetSize__() const;
-	virtual WarningStatus __ARB_Write__(unsigned char *data_ptr, unsigned char *bit_enable_ptr);
-	virtual WarningStatus __ARB_Read__(unsigned char *data_ptr, unsigned char *bit_enable_ptr);
-	virtual void __ARB_DebugWrite__(unsigned char *data_ptr, unsigned char *bit_enable_ptr);
-	virtual void __ARB_DebugRead__(unsigned char *data_ptr, unsigned char *bit_enable_ptr);
+	virtual const std::string& __ARB_GetName__() const;
+	virtual ReadWriteStatus __ARB_Write__(const unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0, CUSTOM_RW_ARG *custom_rw_arg = 0);
+	virtual ReadWriteStatus __ARB_Read__(unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0, CUSTOM_RW_ARG *custom_rw_arg = 0);
+	virtual void __ARB_DebugWrite__(const unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0, CUSTOM_RW_ARG *custom_rw_arg = 0);
+	virtual void __ARB_DebugRead__(unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0, CUSTOM_RW_ARG *custom_rw_arg = 0);
+};
+
+////////////////////////// AddressableRegisterFile<> //////////////////////////
+template <typename REGISTER, unsigned int _DIM, typename CUSTOM_CTOR_ARG = NullCustomArg, typename CUSTOM_RW_ARG = NullCustomArg>
+class AddressableRegisterFile : public RegisterFile<REGISTER, _DIM, CUSTOM_CTOR_ARG, AddressableRegisterFileBase<CUSTOM_RW_ARG> >
+{
+public:
+	typedef RegisterFile<REGISTER, _DIM, CUSTOM_CTOR_ARG, AddressableRegisterFileBase<CUSTOM_RW_ARG> > Super;
+	
+	AddressableRegisterFile(CUSTOM_CTOR_ARG *custom_ctor_arg = 0);
+	AddressableRegisterFile(typename REGISTER::TYPE value, CUSTOM_CTOR_ARG *custom_ctor_arg = 0);
+	
+	using Super::operator [];
+private:
+	virtual unsigned int __ARFB_GetDim__() const;
+	virtual const std::string& __ARFB_GetName__() const;
+	virtual AddressableRegisterBase<CUSTOM_RW_ARG> *__ARFB_GetRegister__(unsigned int index);
 };
 
 ////////////////////////// AddressableRegisterHandle<> ////////////////////////
 
-template <typename ADDRESS>
+template <typename ADDRESS, typename CUSTOM_RW_ARG = NullCustomArg>
 class AddressableRegisterHandle
 {
 public:
-	AddressableRegisterHandle(ADDRESS addr, unsigned int size, AddressableRegisterBase *arb);
+	AddressableRegisterHandle(ADDRESS addr, unsigned int size, AddressableRegisterBase<CUSTOM_RW_ARG> *arb);
 	
 	ADDRESS GetAddress() const { return addr; }
 	unsigned int GetSize() const { return size; }
-	WarningStatus Write(unsigned char *data_ptr, unsigned char *bit_enable_ptr = 0) { return arb->__ARB_Write__(data_ptr, bit_enable_ptr); }
-	WarningStatus Read(unsigned char *data_ptr, unsigned char *bit_enable_ptr = 0)  { return arb->__ARB_Read__(data_ptr, bit_enable_ptr); }
-	void DebugWrite(unsigned char *data_ptr, unsigned char *bit_enable_ptr = 0) { return arb->__ARB_DebugWrite__(data_ptr, bit_enable_ptr); }
-	void DebugRead(unsigned char *data_ptr, unsigned char *bit_enable_ptr = 0)  { return arb->__ARB_DebugRead__(data_ptr, bit_enable_ptr); }
+	const std::string& GetName() const { return arb->__ARB_GetName__(); }
+	ReadWriteStatus Write(const unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0, CUSTOM_RW_ARG *custom_rw_arg = 0) { return arb->__ARB_Write__(data_ptr, bit_enable_ptr, custom_rw_arg); }
+	ReadWriteStatus Read(unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0, CUSTOM_RW_ARG *custom_rw_arg = 0)  { return arb->__ARB_Read__(data_ptr, bit_enable_ptr, custom_rw_arg); }
+	void DebugWrite(const unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0, CUSTOM_RW_ARG *custom_rw_arg = 0) { return arb->__ARB_DebugWrite__(data_ptr, bit_enable_ptr, custom_rw_arg); }
+	void DebugRead(unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0, CUSTOM_RW_ARG *custom_rw_arg = 0)  { return arb->__ARB_DebugRead__(data_ptr, bit_enable_ptr, custom_rw_arg); }
+	void ShortPrettyPrint(std::ostream& os) const { arb->ShortPrettyPrint(os); }
+	void LongPrettyPrint(std::ostream& os) const { arb->LongPrettyPrint(os); }
 private:
-	friend class RegisterAddressMap<ADDRESS>;
+	friend class RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>;
 	
 	ADDRESS addr;
 	unsigned int size; // in bytes (with padding)
-	AddressableRegisterBase *arb;
+	AddressableRegisterBase<CUSTOM_RW_ARG> *arb;
 	unsigned int ref_count;
 	
 	void Acquire();
@@ -529,26 +593,29 @@ private:
 
 ///////////////////////////// RegisterAddressMap<> ////////////////////////////
 
-template <typename ADDRESS>
+template <typename ADDRESS, typename CUSTOM_RW_ARG = NullCustomArg>
 class RegisterAddressMap
 {
 public:
 	RegisterAddressMap();
+	RegisterAddressMap(std::ostream& warning_stream);
 	virtual ~RegisterAddressMap();
-	void MapRegister(ADDRESS addr, AddressableRegisterBase *r, unsigned int size = 0 /* in bytes (with padding) */);
-	AddressableRegisterHandle<ADDRESS> *FindAddressableRegister(ADDRESS addr) const;
+	void MapRegister(ADDRESS addr, AddressableRegisterBase<CUSTOM_RW_ARG> *reg, unsigned int reg_byte_size = 0 /* in bytes (with padding) */);
+	void MapRegisterFile(ADDRESS addr, AddressableRegisterFileBase<CUSTOM_RW_ARG> *regfile, unsigned int reg_byte_size = 0 /* in bytes (with padding) */);
+	AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *FindAddressableRegister(ADDRESS addr) const;
 	
-	bool Write(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian);
-	bool Read(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian);
+	ReadWriteStatus Write(ADDRESS addr, const unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian, CUSTOM_RW_ARG *custom_rw_arg = 0);
+	ReadWriteStatus Read(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian, CUSTOM_RW_ARG *custom_rw_arg = 0);
 	
-	unsigned int DebugWrite(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian);
-	unsigned int DebugRead(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian);
+	unsigned int DebugWrite(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian, CUSTOM_RW_ARG *custom_rw_arg = 0);
+	unsigned int DebugRead(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian, CUSTOM_RW_ARG *custom_rw_arg = 0);
 private:
 	mutable bool optimized;
 	mutable bool optimizable;
 	mutable std::pair<ADDRESS, ADDRESS> addr_range;
-	mutable std::vector<AddressableRegisterHandle<ADDRESS> *> opt_reg_addr_map;
-	std::map<ADDRESS, AddressableRegisterHandle<ADDRESS> *> reg_addr_map;
+	mutable std::vector<AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *> opt_reg_addr_map;
+	std::map<ADDRESS, AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *> reg_addr_map;
+	std::ostream *warning_stream;
 
 	void Optimize() const;
 };

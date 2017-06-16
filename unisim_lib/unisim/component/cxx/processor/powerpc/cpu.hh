@@ -940,10 +940,10 @@ protected:
 		
 		virtual bool MoveTo(uint32_t value)
 		{
-			unisim::util::reg::core::WarningStatus ws = this->Write(value);
-			if(ws)
+			unisim::util::reg::core::ReadWriteStatus rws = this->Write(value);
+			if(rws)
 			{
-				cpu->GetDebugWarningStream() << "While moving 0x" << std::hex << value << std::dec << " to " << this->GetName() << ", " << ws << "; See below " << this->GetName() << " content after move operation: " << std::endl;
+				cpu->GetDebugWarningStream() << "While moving 0x" << std::hex << value << std::dec << " to " << this->GetName() << ", " << rws << "; See below " << this->GetName() << " content after move operation: " << std::endl;
 				this->LongPrettyPrint(cpu->GetDebugWarningStream());
 				cpu->GetDebugWarningStream() << std::endl;
 			}
@@ -951,19 +951,18 @@ protected:
 			{
 				cpu->GetDebugWarningStream() << "Moving 0x" << std::hex << value << std::dec << " to " << this->GetName() << std::endl;
 			}
-
 			
-			return true;
+			return !unisim::util::reg::core::IsReadWriteError(rws);
 		}
 		
 		virtual bool MoveFrom(uint32_t& value)
 		{
 			value = 0;
-			unisim::util::reg::core::WarningStatus ws = this->Read(value);
-			if(ws)
+			unisim::util::reg::core::ReadWriteStatus rws = this->Read(value);
+			if(rws)
 			{
-				cpu->GetDebugWarningStream() << ws << std::endl;
-				cpu->GetDebugWarningStream() << "While moving 0x" << std::hex << value << std::dec << " from " << this->GetName() << ", " << ws << "; See below " << this->GetName() << " content after move operation: " << std::endl;
+				cpu->GetDebugWarningStream() << rws << std::endl;
+				cpu->GetDebugWarningStream() << "While moving 0x" << std::hex << value << std::dec << " from " << this->GetName() << ", " << rws << "; See below " << this->GetName() << " content after move operation: " << std::endl;
 				this->LongPrettyPrint(cpu->GetDebugWarningStream());
 				cpu->GetDebugWarningStream() << std::endl;
 			}
@@ -972,7 +971,7 @@ protected:
 				cpu->GetDebugWarningStream() << "Moving 0x" << std::hex << value << std::dec << " from " << this->GetName() << std::endl;
 			}
 			
-			return true;
+			return !unisim::util::reg::core::IsReadWriteError(rws);
 		}
 
 		typename CONFIG::CPU *GetCPU() const { return cpu; }
