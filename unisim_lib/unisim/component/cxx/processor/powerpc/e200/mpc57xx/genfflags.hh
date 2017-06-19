@@ -71,8 +71,7 @@ inline bool HasGenSPEFSCR(CPU* cpu)
 
 template <class SPEFSCR, class CONFIG, class FLOAT>
 inline void GenSPEFSCR_FINV(SPEFSCR& spefscr, const FLOAT& first,
-		const FLOAT* second = NULL, const FLOAT* third = NULL, bool isDivideOperation=false,
-      bool isIntegerConversion=false)
+		const FLOAT* second = NULL, const FLOAT* third = NULL, bool isDivideOperation=false)
 {
 	spefscr.template Set<typename SPEFSCR::FINV>(false);
 	if (unlikely(first.hasInftyExponent() || first.isDenormalized()))
@@ -132,10 +131,66 @@ inline void GenSPEFSCR_FDBZ(SPEFSCR& spefscr, const Flags& flags)
 }
 
 template <class SPEFSCR, class CONFIG>
-inline void GenSPEFSCR_FG(SPEFSCR& spefscr, const Flags& flags)
+inline void GenSPEFSCR_FG_FX(SPEFSCR& spefscr, const Flags& flags, bool isResultNegative)
 {
 	if (spefscr.template Get<typename SPEFSCR::FINV>() || flags.isOverflow() || flags.isUnderflow())
 		spefscr.template Set<typename SPEFSCR::FG>(false);
+	else {
+		if (likely(flags.isApproximate())) {
+			if (unlikely(flags.hasEffectiveRoundToEven())) {
+				spefscr.template Set<typename SPEFSCR::FG>(true);
+				spefscr.template Set<typename SPEFSCR::FX>(false);
+			}
+			else {
+				spefscr.template Set<typename SPEFSCR::FG>(!isResultNegative == flags.isUpApproximate());
+				spefscr.template Set<typename SPEFSCR::FX>(true);
+			};
+		};
+	};
+}
+
+template <class FLOAT>
+inline void GenSPEFSCR_ExactResult(FLOAT& result, const Flags& flags, unsigned int rounding_mode)
+{
+	if (rounding_mode == RN_ZERO) {
+		if (result.isPositive() ? flags.isUpApproximate() : flags.isDownApproximate()) {
+			if (result.isPositive())
+				result.setToPrevious();
+			else
+				result.setToNext();
+			if (unlikely(result.isDenormalized())) {
+				bool isNegative = result.isNegative();
+				result.clear();
+				result.setNegative(isNegative);
+			};
+		};
+	}
+	else if (rounding_mode == RN_UP) {
+		if (flags.isDownApproximate()) {
+			result.setToNext();
+			if (result.isDenormalized()) {
+				bool isNegative = result.isNegative();
+				result.clear();
+				result.setNegative(isNegative);
+				// first normalized ?
+			};
+			if (unlikely(result.hasInftyExponent()))
+				result.setToPrevious();
+		};
+	}
+	else if (rounding_mode == RN_DOWN) {
+		if (flags.isUpApproximate()) {
+			result.setToPrevious();
+			if (result.isDenormalized()) {
+				bool isNegative = result.isNegative();
+				result.clear();
+				result.setNegative(isNegative);
+				// first normalized ?
+			};
+			if (unlikely(result.hasInftyExponent()))
+				result.setToNext();
+		};
+	}
 }
 
 template <class SPEFSCR, class CONFIG>
