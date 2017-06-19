@@ -1220,25 +1220,49 @@ AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::AddressableRegiste
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename CUSTOM_RW_ARG>
-ReadWriteStatus AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::Write(const typename Super::TYPE& value, const typename Super::TYPE& bit_enable, CUSTOM_RW_ARG *custom_rw_arg)
+ReadWriteStatus AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::Write(const typename Super::TYPE& value, const typename Super::TYPE& bit_enable)
 {
 	return Super::Write(value, bit_enable);
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename CUSTOM_RW_ARG>
-ReadWriteStatus AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::Read(typename Super::TYPE& value, const typename Super::TYPE& bit_enable, CUSTOM_RW_ARG *custom_rw_arg)
+ReadWriteStatus AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::Read(typename Super::TYPE& value, const typename Super::TYPE& bit_enable)
 {
 	return Super::Read(value, bit_enable);
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename CUSTOM_RW_ARG>
-ReadWriteStatus AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::DebugWrite(const typename Super::TYPE& value, const typename Super::TYPE& bit_enable, CUSTOM_RW_ARG *custom_rw_arg)
+ReadWriteStatus AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::DebugWrite(const typename Super::TYPE& value, const typename Super::TYPE& bit_enable)
 {
 	return Super::Write(value, bit_enable);
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename CUSTOM_RW_ARG>
-ReadWriteStatus AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::DebugRead(typename Super::TYPE& value, const typename Super::TYPE& bit_enable, CUSTOM_RW_ARG *custom_rw_arg)
+ReadWriteStatus AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::DebugRead(typename Super::TYPE& value, const typename Super::TYPE& bit_enable)
+{
+	return Super::Read(value, bit_enable);
+}
+
+template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename CUSTOM_RW_ARG>
+ReadWriteStatus AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::Write(CUSTOM_RW_ARG& custom_rw_arg, const typename Super::TYPE& value, const typename Super::TYPE& bit_enable)
+{
+	return Super::Write(value, bit_enable);
+}
+
+template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename CUSTOM_RW_ARG>
+ReadWriteStatus AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::Read(CUSTOM_RW_ARG& custom_rw_arg, typename Super::TYPE& value, const typename Super::TYPE& bit_enable)
+{
+	return Super::Read(value, bit_enable);
+}
+
+template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename CUSTOM_RW_ARG>
+ReadWriteStatus AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::DebugWrite(CUSTOM_RW_ARG& custom_rw_arg, const typename Super::TYPE& value, const typename Super::TYPE& bit_enable)
+{
+	return Super::Write(value, bit_enable);
+}
+
+template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename CUSTOM_RW_ARG>
+ReadWriteStatus AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::DebugRead(CUSTOM_RW_ARG& custom_rw_arg, typename Super::TYPE& value, const typename Super::TYPE& bit_enable)
 {
 	return Super::Read(value, bit_enable);
 }
@@ -1268,39 +1292,49 @@ const std::string& AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>:
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename CUSTOM_RW_ARG>
-ReadWriteStatus AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::__ARB_Write__(const unsigned char *data_ptr, const unsigned char *bit_enable_ptr, CUSTOM_RW_ARG *custom_arg)
+ReadWriteStatus AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::__ARB_Write__(CUSTOM_RW_ARG *custom_rw_arg, const unsigned char *data_ptr, const unsigned char *bit_enable_ptr)
 {
-//	return Super::Write(data_ptr, bit_enable_ptr);
 	const typename Super::TYPE *data_to_write = (const typename Super::TYPE *) data_ptr;
 	const typename Super::TYPE bit_enable = (bit_enable_ptr) ? *(const typename Super::TYPE *) bit_enable_ptr : ~typename Super::TYPE(0);
-	return Write(*data_to_write, bit_enable, custom_arg);
+	return custom_rw_arg ? Write(*custom_rw_arg, *data_to_write, bit_enable) : Write(*data_to_write, bit_enable);
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename CUSTOM_RW_ARG>
-ReadWriteStatus AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::__ARB_Read__(unsigned char *data_ptr, const unsigned char *bit_enable_ptr, CUSTOM_RW_ARG *custom_arg)
+ReadWriteStatus AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::__ARB_Read__(CUSTOM_RW_ARG *custom_rw_arg, unsigned char *data_ptr, const unsigned char *bit_enable_ptr)
 {
-//	return Super::Read(data_ptr, bit_enable_ptr);
 	typename Super::TYPE *read_data = (typename Super::TYPE *) data_ptr;
 	const typename Super::TYPE bit_enable = (bit_enable_ptr) ? *(const typename Super::TYPE *) bit_enable_ptr : ~typename Super::TYPE(0);
-	return Read(*read_data, bit_enable, custom_arg);
+	return custom_rw_arg ? Read(*custom_rw_arg, *read_data, bit_enable) : Read(*read_data, bit_enable);
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename CUSTOM_RW_ARG>
-void AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::__ARB_DebugWrite__(const unsigned char *data_ptr, const unsigned char *bit_enable_ptr, CUSTOM_RW_ARG *custom_arg)
+void AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::__ARB_DebugWrite__(CUSTOM_RW_ARG *custom_rw_arg, const unsigned char *data_ptr, const unsigned char *bit_enable_ptr)
 {
-//	Super::DebugWrite(data_ptr, bit_enable_ptr);
 	const typename Super::TYPE *data_to_write = (const typename Super::TYPE *) data_ptr;
 	const typename Super::TYPE bit_enable = (bit_enable_ptr) ? *(const typename Super::TYPE *) bit_enable_ptr : ~typename Super::TYPE(0);
-	DebugWrite(*data_to_write, bit_enable, custom_arg);
+	if(custom_rw_arg)
+	{
+		DebugWrite(*custom_rw_arg, *data_to_write, bit_enable);
+	}
+	else
+	{
+		DebugWrite(*data_to_write, bit_enable);
+	}
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename CUSTOM_RW_ARG>
-void AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::__ARB_DebugRead__(unsigned char *data_ptr, const unsigned char *bit_enable_ptr, CUSTOM_RW_ARG *custom_arg)
+void AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::__ARB_DebugRead__(CUSTOM_RW_ARG *custom_rw_arg, unsigned char *data_ptr, const unsigned char *bit_enable_ptr)
 {
-//	Super::DebugRead(data_ptr, bit_enable_ptr);
 	typename Super::TYPE *read_data = (typename Super::TYPE *) data_ptr;
 	const typename Super::TYPE bit_enable = (bit_enable_ptr) ? *(const typename Super::TYPE *) bit_enable_ptr : ~typename Super::TYPE(0);
-	DebugRead(*read_data, bit_enable, custom_arg);
+	if(custom_rw_arg)
+	{
+		DebugRead(*custom_rw_arg, *read_data, bit_enable);
+	}
+	else
+	{
+		DebugRead(*read_data, bit_enable);
+	}
 }
 
 /////////////////////////// AddressableRegisterFile<> /////////////////////////
@@ -1371,17 +1405,7 @@ RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::RegisterAddressMap()
 	, opt_reg_addr_map()
 	, reg_addr_map()
 	, warning_stream(0)
-{
-}
-
-template <typename ADDRESS, typename CUSTOM_RW_ARG>
-RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::RegisterAddressMap(std::ostream& _warning_stream)
-	: optimized(true)
-	, optimizable(true)
-	, addr_range(ADDRESS(-1), ADDRESS(0))
-	, opt_reg_addr_map()
-	, reg_addr_map()
-	, warning_stream(&_warning_stream)
+	, data_endian(unisim::util::endian::GetHostEndian())
 {
 }
 
@@ -1399,6 +1423,18 @@ RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::~RegisterAddressMap()
 			arh->Release();
 		}
 	}
+}
+
+template <typename ADDRESS, typename CUSTOM_RW_ARG>
+void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::SetWarningStream(std::ostream& _warning_stream)
+{
+	warning_stream = &_warning_stream;
+}
+
+template <typename ADDRESS, typename CUSTOM_RW_ARG>
+void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::SetEndian(unisim::util::endian::endian_type _endian)
+{
+	data_endian = _endian;
 }
 
 template <typename ADDRESS, typename CUSTOM_RW_ARG>
@@ -1435,7 +1471,7 @@ void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::MapRegister(ADDRESS addr, Addre
 }
 
 template <typename ADDRESS, typename CUSTOM_RW_ARG>
-void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::MapRegisterFile(ADDRESS addr, AddressableRegisterFileBase<CUSTOM_RW_ARG> *arfb, unsigned int reg_byte_size)
+void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::MapRegisterFile(ADDRESS addr, AddressableRegisterFileBase<CUSTOM_RW_ARG> *arfb, unsigned int reg_byte_size, unsigned int stride)
 {
 	//std::cerr << "Mapping " << arfb->__ARFB_GetName__() << " to 0x" << std::hex << addr << std::dec << std::endl;
 	ADDRESS reg_addr;
@@ -1445,7 +1481,7 @@ void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::MapRegisterFile(ADDRESS addr, A
 		AddressableRegisterBase<CUSTOM_RW_ARG> *arb = arfb->__ARFB_GetRegister__(idx);
 		unsigned int _reg_byte_size = reg_byte_size ? reg_byte_size : (arb->__ARB_GetSize__() + 7) / 8;
 		MapRegister(reg_addr, arb, _reg_byte_size);
-		reg_addr += _reg_byte_size;
+		reg_addr += stride ? stride : _reg_byte_size;
 	}
 }
 
@@ -1532,7 +1568,55 @@ AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *RegisterAddressMap<ADDRESS, C
 }
 
 template <typename ADDRESS, typename CUSTOM_RW_ARG>
-ReadWriteStatus RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Write(ADDRESS addr, const unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian, CUSTOM_RW_ARG *custom_arg)
+ReadWriteStatus RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Write(ADDRESS addr, const unsigned char *data_ptr, unsigned int data_length)
+{
+	return Write((CUSTOM_RW_ARG *) 0, addr, data_ptr, data_length); 
+}
+
+template <typename ADDRESS, typename CUSTOM_RW_ARG>
+ReadWriteStatus RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Read(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length)
+{
+	return Read((CUSTOM_RW_ARG *) 0, addr, data_ptr, data_length); 
+}
+
+template <typename ADDRESS, typename CUSTOM_RW_ARG>
+unsigned int RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::DebugWrite(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length)
+{
+	return DebugWrite((CUSTOM_RW_ARG *) 0, addr, data_ptr, data_length); 
+}
+
+template <typename ADDRESS, typename CUSTOM_RW_ARG>
+unsigned int RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::DebugRead(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length)
+{
+	return DebugRead((CUSTOM_RW_ARG *) 0, addr, data_ptr, data_length); 
+}
+
+template <typename ADDRESS, typename CUSTOM_RW_ARG>
+ReadWriteStatus RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Write(CUSTOM_RW_ARG& custom_rw_arg, ADDRESS addr, const unsigned char *data_ptr, unsigned int data_length)
+{
+	return Write(&custom_rw_arg, addr, data_ptr, data_length); 
+}
+
+template <typename ADDRESS, typename CUSTOM_RW_ARG>
+ReadWriteStatus RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Read(CUSTOM_RW_ARG& custom_rw_arg, ADDRESS addr, unsigned char *data_ptr, unsigned int data_length)
+{
+	return Read(&custom_rw_arg, addr, data_ptr, data_length); 
+}
+
+template <typename ADDRESS, typename CUSTOM_RW_ARG>
+unsigned int RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::DebugWrite(CUSTOM_RW_ARG& custom_rw_arg, ADDRESS addr, unsigned char *data_ptr, unsigned int data_length)
+{
+	return DebugWrite(&custom_rw_arg, addr, data_ptr, data_length); 
+}
+
+template <typename ADDRESS, typename CUSTOM_RW_ARG>
+unsigned int RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::DebugRead(CUSTOM_RW_ARG& custom_rw_arg, ADDRESS addr, unsigned char *data_ptr, unsigned int data_length)
+{
+	return DebugRead(&custom_rw_arg, addr, data_ptr, data_length); 
+}
+
+template <typename ADDRESS, typename CUSTOM_RW_ARG>
+ReadWriteStatus RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Write(CUSTOM_RW_ARG *custom_rw_arg, ADDRESS addr, const unsigned char *data_ptr, unsigned int data_length)
 {
 	unsigned int byte_offset;
 	
@@ -1563,7 +1647,7 @@ ReadWriteStatus RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Write(ADDRESS addr, 
 		do
 		{
 			uint8_t byte_value = data_ptr[byte_offset];
-			if(host_endian != target_endian)
+			if(host_endian != data_endian)
 			{
 				reg_value[reg_size_minus_1 - byte_pos] = byte_value;
 				reg_be[reg_size_minus_1 - byte_pos] = 0xff;
@@ -1579,7 +1663,7 @@ ReadWriteStatus RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Write(ADDRESS addr, 
 		}
 		while(--sz);
 		
-		ReadWriteStatus rws = arh->Write(reg_value, reg_be, custom_arg);
+		ReadWriteStatus rws = arh->__ARH_Write__(custom_rw_arg, reg_value, reg_be);
 		
 		if(rws)
 		{
@@ -1598,7 +1682,7 @@ ReadWriteStatus RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Write(ADDRESS addr, 
 }
 
 template <typename ADDRESS, typename CUSTOM_RW_ARG>
-ReadWriteStatus RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Read(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian, CUSTOM_RW_ARG *custom_arg)
+ReadWriteStatus RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Read(CUSTOM_RW_ARG *custom_rw_arg, ADDRESS addr, unsigned char *data_ptr, unsigned int data_length)
 {
 	unsigned int byte_offset;
 	
@@ -1618,7 +1702,7 @@ ReadWriteStatus RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Read(ADDRESS addr, u
 		unsigned int reg_size_minus_1 = reg_size - 1;
 		unsigned char reg_value[reg_size];
 		
-		ReadWriteStatus rws = arh->Read(reg_value, /* bit enable */ 0, custom_arg);
+		ReadWriteStatus rws = arh->__ARH_Read__(custom_rw_arg, reg_value, /* bit enable */ 0);
 		
 		if(rws)
 		{
@@ -1638,7 +1722,7 @@ ReadWriteStatus RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Read(ADDRESS addr, u
 		
 		do
 		{
-			uint8_t byte_value = (host_endian != target_endian) ? reg_value[reg_size_minus_1 - byte_pos] : reg_value[byte_pos];
+			uint8_t byte_value = (host_endian != data_endian) ? reg_value[reg_size_minus_1 - byte_pos] : reg_value[byte_pos];
 			data_ptr[byte_offset] = byte_value;
 			
 			byte_offset++;
@@ -1651,7 +1735,7 @@ ReadWriteStatus RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Read(ADDRESS addr, u
 }
 
 template <typename ADDRESS, typename CUSTOM_RW_ARG>
-unsigned int RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::DebugWrite(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian, CUSTOM_RW_ARG *custom_arg)
+unsigned int RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::DebugWrite(CUSTOM_RW_ARG *custom_rw_arg, ADDRESS addr, unsigned char *data_ptr, unsigned int data_length)
 {
 	unsigned int byte_offset;
 	
@@ -1682,7 +1766,7 @@ unsigned int RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::DebugWrite(ADDRESS addr
 		do
 		{
 			uint8_t byte_value = data_ptr[byte_offset];
-			if(host_endian != target_endian)
+			if(host_endian != data_endian)
 			{
 				reg_value[reg_size_minus_1 - byte_pos] = byte_value;
 				reg_be[reg_size_minus_1 - byte_pos] = 0xff;
@@ -1698,14 +1782,14 @@ unsigned int RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::DebugWrite(ADDRESS addr
 		}
 		while(--sz);
 		
-		arh->DebugWrite(reg_value, reg_be, custom_arg);
+		arh->__ARH_DebugWrite__(custom_rw_arg, reg_value, reg_be);
 	}
 	
 	return true;
 }
 
 template <typename ADDRESS, typename CUSTOM_RW_ARG>
-unsigned int RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::DebugRead(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian, CUSTOM_RW_ARG *custom_arg)
+unsigned int RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::DebugRead(CUSTOM_RW_ARG *custom_rw_arg, ADDRESS addr, unsigned char *data_ptr, unsigned int data_length)
 {
 	unsigned int byte_offset;
 	
@@ -1725,7 +1809,7 @@ unsigned int RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::DebugRead(ADDRESS addr,
 		unsigned int reg_size_minus_1 = reg_size - 1;
 		unsigned char reg_value[reg_size];
 		
-		arh->DebugRead(reg_value, 0 /* bit_enable */, custom_arg);
+		arh->__ARH_DebugRead__(custom_rw_arg, reg_value, 0 /* bit_enable */);
 		
 		unsigned int byte_pos = byte_addr - reg_addr;
 		
@@ -1733,7 +1817,7 @@ unsigned int RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::DebugRead(ADDRESS addr,
 		
 		do
 		{
-			uint8_t byte_value = (host_endian != target_endian) ? reg_value[reg_size_minus_1 - byte_pos] : reg_value[byte_pos];
+			uint8_t byte_value = (host_endian != data_endian) ? reg_value[reg_size_minus_1 - byte_pos] : reg_value[byte_pos];
 			data_ptr[byte_offset] = byte_value;
 			
 			byte_offset++;

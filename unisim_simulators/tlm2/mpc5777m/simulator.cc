@@ -35,6 +35,7 @@
 #include <simulator.hh>
 #include "unisim/component/tlm2/interconnect/generic_router/router.tcc"
 #include <unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.tcc>
+#include <unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.tcc>
 
 Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	: unisim::kernel::tlm2::Simulator(name, argc, argv, LoadBuiltInConfig)
@@ -44,6 +45,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, flash(0)
 	, interconnect(0)
 	, intc(0)
+	, stm2(0)
 	, loader(0)
 	, debugger(0)
 	, gdb_server(0)
@@ -78,6 +80,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	//  - Interrupt Controller
 	intc = new INTC("INTC", this);
+	
+	//  - System Timer Module
+	stm2 = new STM("STM2", this);
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -127,6 +132,12 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		RegisterPort(*intc->p_avec_b[prc_num]);
 		RegisterPort(*intc->p_voffset[prc_num]);
 	}
+	
+	unsigned int channel_num;
+	for(channel_num = 0; channel_num < STM_CONFIG::NUM_CHANNELS; channel_num++)
+	{
+		RegisterPort(*stm2->p_irq[channel_num]);
+	}
 
 	//=========================================================================
 	//===                           Signal creation                         ===
@@ -140,12 +151,13 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateSignal("p_cpuid", sc_dt::sc_uint<8>(0));
 	CreateSignal("p_extint_b", true);
 	CreateSignal("p_crint_b", true);
-	CreateSignalArray("p_irq_b", INTC_CONFIG::NUM_PROCESSORS, false);
-	CreateSignalArray("p_avec_b", INTC_CONFIG::NUM_PROCESSORS, true);
-	CreateSignalArray("p_voffset", INTC_CONFIG::NUM_PROCESSORS, sc_dt::sc_uint<14>(0));
-	CreateSignalArray("p_iack", INTC_CONFIG::NUM_PROCESSORS, false);
+	CreateSignalArray(INTC_CONFIG::NUM_PROCESSORS, "p_irq_b", false);
+	CreateSignalArray(INTC_CONFIG::NUM_PROCESSORS, "p_avec_b", true);
+	CreateSignalArray(INTC_CONFIG::NUM_PROCESSORS, "p_voffset", sc_dt::sc_uint<INTC_CONFIG::VOFFSET_WIDTH>(0));
+	CreateSignalArray(INTC_CONFIG::NUM_PROCESSORS, "p_iack", false);
 	
-	CreateSignal("fake_irq", false);
+	CreateSignalArray(INTC_CONFIG::NUM_HW_IRQS, "fake_irq", false);
+	CreateSignalArray(STM_CONFIG::NUM_CHANNELS, "stm2_cir", false);
 	
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -158,6 +170,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*interconnect->init_socket[2])(flash->slave_sock);  // Crossbar <-> FLASH
 	(*interconnect->init_socket[3])(cpu2->s_ahb_if);  // Crossbar <-> S_AHB_IF<CPU2
 	(*interconnect->init_socket[4])(*intc->ahb_if[0]);// Crossbar <-> AHB_IF_0<INTC
+	(*interconnect->init_socket[5])(stm2->ahb_if);// Crossbar <-> AHB_IF<STM2
 
 	Bind("HARDWARE.CPU2.m_por"           , "HARDWARE.m_por");
 	Bind("HARDWARE.CPU2.p_reset_b"       , "HARDWARE.p_reset_b");
@@ -171,11 +184,14 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.CPU2.p_voffset"       , "HARDWARE.p_voffset_0");
 	Bind("HARDWARE.CPU2.p_iack"          , "HARDWARE.p_iack_0");
 	
-	Bind("HARDWARE.INTC.p_hw_irq_0"      , "HARDWARE.fake_irq");
-	BindArray("HARDWARE.INTC.p_irq_b"    , "HARDWARE.p_irq_b"    , 0, INTC_CONFIG::NUM_PROCESSORS - 1);
-	BindArray("HARDWARE.INTC.p_avec_b"   , "HARDWARE.p_avec_b"   , 0, INTC_CONFIG::NUM_PROCESSORS - 1);
-	BindArray("HARDWARE.INTC.p_voffset"  , "HARDWARE.p_voffset"  , 0, INTC_CONFIG::NUM_PROCESSORS - 1);
-	BindArray("HARDWARE.INTC.p_iack"     , "HARDWARE.p_iack"     , 0, INTC_CONFIG::NUM_PROCESSORS - 1);
+//	Bind("HARDWARE.INTC.p_hw_irq_0"      , "HARDWARE.fake_irq");
+	BindArray(INTC_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC.p_irq_b"  , "HARDWARE.p_irq_b"  );
+	BindArray(INTC_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC.p_avec_b" , "HARDWARE.p_avec_b" );
+	BindArray(INTC_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC.p_voffset", "HARDWARE.p_voffset");
+	BindArray(INTC_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC.p_iack"   , "HARDWARE.p_iack"   );
+	
+	BindArray(STM_CONFIG::NUM_CHANNELS, "HARDWARE.STM2.p_irq"   , "HARDWARE.stm2_cir");
+	BindArray(STM_CONFIG::NUM_CHANNELS, "HARDWARE.INTC.p_hw_irq", "HARDWARE.stm2_cir");
 	
 	//=========================================================================
 	//===                        Clients/Services connection                ===
@@ -267,6 +283,7 @@ Simulator::~Simulator()
 	if(flash) delete flash;
 	if(interconnect) delete interconnect;
 	if(intc) delete intc;
+	if(stm2) delete stm2;
 	if(debugger) delete debugger;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;

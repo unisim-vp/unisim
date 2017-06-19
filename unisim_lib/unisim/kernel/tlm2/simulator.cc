@@ -273,22 +273,34 @@ void Instrumenter::Bind(const std::string& port_name, const std::string& signal_
 	netlist[port_name] = signal_name;
 }
 
-void Instrumenter::BindArray(const std::string& port_array_name, const std::string& signal_array_name, unsigned int begin_idx, unsigned int end_idx)
+void Instrumenter::BindArray(unsigned int dim, const std::string& port_array_name, unsigned int port_array_begin_idx, unsigned int port_array_stride, const std::string& signal_array_name, unsigned int signal_array_begin_idx, unsigned int signal_array_stride)
 {
-	unsigned int array_index;
+	unsigned int idx;
 	
-	for(array_index = begin_idx; array_index <= end_idx; array_index++)
+	for(idx = 0; idx < dim; idx++)
 	{
+		unsigned int port_array_idx = port_array_begin_idx + (idx * port_array_stride);
+		unsigned int signal_array_idx = signal_array_begin_idx + (idx * signal_array_stride);
 		std::stringstream port_name_sstr;
-		port_name_sstr << port_array_name << "_" << array_index;
+		port_name_sstr << port_array_name << "_" << port_array_idx;
 		std::string port_name(port_name_sstr.str());
 
 		std::stringstream signal_name_sstr;
-		signal_name_sstr << signal_array_name << "_" << array_index;
+		signal_name_sstr << signal_array_name << "_" << signal_array_idx;
 		std::string signal_name(signal_name_sstr.str());
 		
 		Bind(port_name, signal_name);
 	}
+}
+
+void Instrumenter::BindArray(unsigned int dim, const std::string& port_array_name, unsigned int port_array_begin_idx, const std::string& signal_array_name, unsigned int signal_array_begin_idx)
+{
+	BindArray(dim, port_array_name, port_array_begin_idx, 1, signal_array_name, signal_array_begin_idx, 1);
+}
+
+void Instrumenter::BindArray(unsigned int dim, const std::string& port_array_name, const std::string& signal_array_name)
+{
+	BindArray(dim, port_array_name, 0, signal_array_name, 0);
 }
 
 bool Instrumenter::Match(const std::string& p, const std::string& s) const
@@ -375,22 +387,6 @@ void Instrumenter::StartBinding()
 		const std::string& port_name = (*netlist_it).first;
 		const std::string& signal_name = (*netlist_it).second;
 
-#if 0
-		bool status = TryBind<bool>(port_name, signal_name);
-		if(!status) status = TryBind<sc_dt::sc_uint<32> >(port_name, signal_name);
-		if(!status) status = TryBind<sc_dt::sc_uint<3> >(port_name, signal_name);
-		if(!status) status = TryBind<sc_dt::sc_uint<2> >(port_name, signal_name);
-		
-		if(status)
-		{
-			std::cout << "Connecting Port \"" << port_name << "\" to Signal \"" << signal_name << "\"" << std::endl;
-		}
-		else
-		{
-			std::cerr << "WARNING! Can't connect Port \"" << port_name << "\" to Signal \"" << signal_name << "\"" << std::endl;
-		}
-#endif
-		
 		std::map<std::string, TyperBase *>::iterator typer_it = typers.find(port_name);
 		
 		if(typer_it != typers.end())
@@ -767,17 +763,6 @@ void Instrumenter::InstrumentOutputSignal(const std::string& signal_name)
 		}
 	}
 	std::cerr << "WARNING! Can't instrument Signal \"" << signal_name << "\" for output" << std::endl;	
-	
-#if 0
-	bool status_bool = TryInstrumentOutputSignal<bool>(signal_name);
-	bool status_sc_uint_32 = TryInstrumentOutputSignal<sc_dt::sc_uint<32> >(signal_name);
-	bool status_sc_uint_3 = TryInstrumentOutputSignal<sc_dt::sc_uint<3> >(signal_name);
-	bool status_sc_uint_2 = TryInstrumentOutputSignal<sc_dt::sc_uint<2> >(signal_name);
-	if(!status_bool && !status_sc_uint_32 && !status_sc_uint_3 && !status_sc_uint_2)
-	{
-		std::cerr << "WARNING! Can't instrument Signal \"" << signal_name << "\" for output" << std::endl;
-	}
-#endif
 }
 
 bool Instrumenter::InstrumentInputSignal(const std::string& signal_name)
@@ -797,20 +782,6 @@ bool Instrumenter::InstrumentInputSignal(const std::string& signal_name)
 	}
 	std::cerr << "WARNING! Can't instrument Signal \"" << signal_name << "\" for input" << std::endl;	
 	return false;
-
-#if 0
-	bool status_bool = TryInstrumentInputSignal<bool>(signal_name);
-	bool status_sc_uint_32 = TryInstrumentInputSignal<sc_dt::sc_uint<32> >(signal_name);
-	bool status_sc_uint_3 = TryInstrumentInputSignal<sc_dt::sc_uint<3> >(signal_name);
-	bool status_sc_uint_2 = TryInstrumentInputSignal<sc_dt::sc_uint<2> >(signal_name);
-	if(!status_bool && !status_sc_uint_32 && !status_sc_uint_3 && !status_sc_uint_2)
-	{
-		std::cerr << "WARNING! Can't instrument Signal \"" << signal_name << "\" for input" << std::endl;
-		return false;
-	}
-
-	return true;
-#endif
 }
 
 InputInstrumentBase *Instrumenter::FindInputInstrument(const std::string& name)
@@ -857,9 +828,19 @@ void Simulator::Bind(const std::string& port_name, const std::string& signal_nam
 	instrumenter->Bind(port_name, signal_name);
 }
 
-void Simulator::BindArray(const std::string& port_array_name, const std::string& signal_array_name, unsigned int begin_idx, unsigned int end_idx)
+void Simulator::BindArray(unsigned int dim, const std::string& port_array_name, const std::string& signal_array_name)
 {
-	instrumenter->BindArray(port_array_name, signal_array_name, begin_idx, end_idx);
+	instrumenter->BindArray(dim, port_array_name, signal_array_name);
+}
+
+void Simulator::BindArray(unsigned int dim, const std::string& port_array_name, unsigned int port_array_begin_idx, const std::string& signal_array_name, unsigned int signal_array_begin_idx)
+{
+	instrumenter->BindArray(dim, port_array_name, port_array_begin_idx, signal_array_name, signal_array_begin_idx);
+}
+
+void Simulator::BindArray(unsigned int dim, const std::string& port_array_name, unsigned int port_array_begin_idx, unsigned int port_array_stride, const std::string& signal_array_name, unsigned int signal_array_begin_idx, unsigned int signal_array_stride)
+{
+	instrumenter->BindArray(dim, port_array_name, port_array_begin_idx, port_array_stride, signal_array_name, signal_array_begin_idx, signal_array_stride);
 }
 
 } // end of namespace tlm2

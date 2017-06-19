@@ -45,6 +45,7 @@
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/config.hh>
 #include <unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.hh>
+#include <unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.hh>
 
 // Class definition of kernel, services and interfaces
 #include <unisim/kernel/service/service.hh>
@@ -124,8 +125,8 @@ private:
 	{
 		typedef FSB_ADDRESS_TYPE ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 2;
-		static const unsigned int OUTPUT_SOCKETS = 5;
-		static const unsigned int MAX_NUM_MAPPINGS = 10;
+		static const unsigned int OUTPUT_SOCKETS = 6;
+		static const unsigned int MAX_NUM_MAPPINGS = 11;
 		static const unsigned int BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;
 	};
@@ -133,7 +134,15 @@ private:
 	struct INTC_CONFIG
 	{
 		static const unsigned int NUM_PROCESSORS = 1;
-		static const unsigned int NUM_HW_IRQS = 1;
+		static const unsigned int NUM_HW_IRQS = 4;
+		static const unsigned int BUSWIDTH = 64; // FIXME: INTC will be on PBRIDGE which is 32-bit width
+		static const unsigned int VOFFSET_WIDTH = 14;
+	};
+	
+	struct STM_CONFIG
+	{
+		static const unsigned int NUM_CHANNELS = 4;
+		static const unsigned int BUSWIDTH = 64; // FIXME: INTC will be on PBRIDGE which is 32-bit width
 	};
 
 	//=========================================================================
@@ -147,6 +156,7 @@ private:
 	typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::e200z425bn3::CPU CPU2;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<INTERCONNECT_CONFIG> INTERCONNECT;
 	typedef unisim::component::tlm2::interrupt::freescale::mpc57xx::intc::INTC<INTC_CONFIG> INTC;
+	typedef unisim::component::tlm2::timer::freescale::mpc57xx::stm::STM<STM_CONFIG> STM;
 
 	//=========================================================================
 	//===                           Components                              ===
@@ -163,6 +173,8 @@ private:
 	INTERCONNECT *interconnect;
 	//  - Interrupt Controller
 	INTC *intc;
+	//  - System Timer Mode
+	STM *stm2;
 	
 	//=========================================================================
 	//===                            Services                               ===

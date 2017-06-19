@@ -431,8 +431,6 @@ class CPU
 	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Synchronizable>
 {
 public:
-	typedef CPU<TYPES, CONFIG> ThisCPU;
-	
 	/////////////////////////// service imports ///////////////////////////////
 
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::ADDRESS> > symbol_table_lookup_import;
@@ -824,7 +822,7 @@ protected:
 	template <SLR_Space_Type _SLR_SPACE>
 	struct InvalidSLR : SLRBase
 	{
-		InvalidSLR(ThisCPU *_cpu) : cpu(_cpu) {}
+		InvalidSLR(typename CONFIG::CPU *_cpu) : cpu(_cpu) {}
 		
 		virtual bool CheckMoveToLegality()
 		{
@@ -848,15 +846,15 @@ protected:
 			return false;
 		}
 	private:
-		ThisCPU *cpu;
+		typename CONFIG::CPU *cpu;
 	};
 	
 	struct ExternalDCR : DCRBase
 	{
-		ThisCPU *cpu;
+		typename CONFIG::CPU *cpu;
 		unsigned int n;
 		
-		ExternalDCR(ThisCPU *_cpu) : cpu(_cpu), n(0) {}
+		ExternalDCR(typename CONFIG::CPU *_cpu) : cpu(_cpu), n(0) {}
 		
 		void Attach(unsigned int _n) { n = _n; }
 		virtual bool IsValid() const { return true; }

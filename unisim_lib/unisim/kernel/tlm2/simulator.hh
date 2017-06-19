@@ -152,7 +152,7 @@ public:
 	sc_core::sc_clock& CreateClock(const std::string& clock_name, const sc_core::sc_time& clock_period, double clock_duty_cycle, const sc_core::sc_time& clock_start_time, bool clock_posedge_first);
 	template <typename T> sc_core::sc_signal<T>& CreateSignal(const T& init_value);
 	template <typename T> sc_core::sc_signal<T>& CreateSignal(const std::string& signal_name, const T& init_value);
-	template <typename T> void CreateSignalArray(const std::string& signal_array_name, unsigned int signal_array_dim, const T& init_value);
+	template <typename T> void CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value);
 
 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void RegisterSignal(sc_core::sc_signal<T, WRITER_POLICY> *signal);
 	void RegisterPort(sc_core::sc_port_base& port);
@@ -161,7 +161,9 @@ public:
 
 	void TraceSignalPattern(const std::string& signal_name_pattern);
 	void Bind(const std::string& port_name, const std::string& signal_name);
-	void BindArray(const std::string& port_array_name, const std::string& signal_array_name, unsigned int begin_idx, unsigned int end_idx);
+	void BindArray(unsigned int dim, const std::string& port_array_name, const std::string& signal_array_name);
+	void BindArray(unsigned int dim, const std::string& port_array_name, unsigned int port_array_begin_idx, const std::string& signal_array_name, unsigned int signal_array_begin_idx);
+	void BindArray(unsigned int dim, const std::string& port_array_name, unsigned int port_array_begin_idx, unsigned int port_array_stride, const std::string& signal_array_name, unsigned int signal_array_begin_idx, unsigned int signal_array_stride);
 	
 	void StartBinding();
 	void StartInstrumentation();
@@ -259,7 +261,7 @@ public:
 	sc_core::sc_clock& CreateClock(const std::string& clock_name, const sc_core::sc_time& clock_period, double clock_duty_cycle, const sc_core::sc_time& clock_start_time, bool clock_posedge_first);
 	template <typename T> sc_core::sc_signal<T>& CreateSignal(const T& init_value);
 	template <typename T> sc_core::sc_signal<T>& CreateSignal(const std::string& signal_name, const T& init_value);
-	template <typename T> void CreateSignalArray(const std::string& signal_array_name, unsigned int signal_array_dim, const T& init_value);
+	template <typename T> void CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value);
 	template <typename T> sc_core::sc_signal<T>& GetSignal(const std::string& signal_name);
 	template <typename T> sc_core::sc_signal<T>& GetSignal(const std::string& signal_array_name, unsigned int idx);
 	
@@ -269,7 +271,9 @@ public:
 
 	void TraceSignalPattern(const std::string& signal_name_pattern);
 	void Bind(const std::string& port_name, const std::string& signal_name);
-	void BindArray(const std::string& port_array_name, const std::string& signal_array_name, unsigned int begin_idx, unsigned int end_idx);
+	void BindArray(unsigned int dim, const std::string& port_array_name, const std::string& signal_array_name);
+	void BindArray(unsigned int dim, const std::string& port_array_name, unsigned int port_array_begin_idx, const std::string& signal_array_name, unsigned int signal_array_begin_idx);
+	void BindArray(unsigned int dim, const std::string& port_array_name, unsigned int port_array_begin_idx, unsigned int port_array_stride, const std::string& signal_array_name, unsigned int signal_array_begin_idx, unsigned int signal_array_stride);
 protected:
 	unisim::kernel::logger::Logger logger;
 private:
@@ -286,9 +290,9 @@ template <typename T> sc_core::sc_signal<T>& Simulator::CreateSignal(const std::
 	return instrumenter->CreateSignal(signal_name, init_value);
 }
 
-template <typename T> void Simulator::CreateSignalArray(const std::string& signal_array_name, unsigned int signal_array_dim, const T& init_value)
+template <typename T> void Simulator::CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value)
 {
-	instrumenter->CreateSignalArray(signal_array_name, signal_array_dim, init_value);
+	instrumenter->CreateSignalArray(signal_array_dim, signal_array_name, init_value);
 }
 
 template <typename T> sc_core::sc_signal<T>& Simulator::GetSignal(const std::string& signal_name)
@@ -498,7 +502,7 @@ sc_core::sc_signal<T>& Instrumenter::CreateSignal(const std::string& signal_name
 }
 
 template <typename T>
-void Instrumenter::CreateSignalArray(const std::string& signal_array_name, unsigned int signal_array_dim, const T& init_value)
+void Instrumenter::CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value)
 {
 	unsigned int signal_array_index;
 	

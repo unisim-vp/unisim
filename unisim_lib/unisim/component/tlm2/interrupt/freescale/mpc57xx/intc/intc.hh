@@ -72,7 +72,6 @@ using unisim::util::reg::core::SW_RW;
 using unisim::util::reg::core::SW_W;
 using unisim::util::reg::core::RWS_OK;
 using unisim::util::reg::core::RWS_ANA;
-using unisim::util::reg::core::NullCustomArg;
 
 template <typename FIELD, int OFFSET1, int OFFSET2 = -1>
 struct Field8 : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (7 - OFFSET2) : (7 - OFFSET1)) : (7 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1>
@@ -97,6 +96,8 @@ struct CONFIG
 {
 	static const unsigned int NUM_PROCESSORS = 4;
 	static const unsigned int NUM_HW_IRQS = 992;
+	static const unsigned int BUSWIDTH = 32;
+	static const unsigned int VOFFSET_WIDTH = 14;
 };
 #endif
 
@@ -113,6 +114,8 @@ public:
 	static const unsigned int NUM_PRIORITY_LEVELS = 64;
 	static const unsigned int MAX_PRIORITY_LEVEL = NUM_PRIORITY_LEVELS - 1;
 	static const unsigned int NUM_IRQS_PER_PRIORITY_LEVEL = NUM_IRQS / NUM_PRIORITY_LEVELS;
+	static const unsigned int BUSWIDTH = CONFIG::BUSWIDTH;
+	static const unsigned int VOFFSET_WIDTH = CONFIG::VOFFSET_WIDTH;
 	static const bool threaded_model = false;
 	
 	enum IRQ_Type
@@ -121,14 +124,14 @@ public:
 		HW_IRQ = 1
 	};
 	
-	typedef tlm_utils::passthrough_target_socket_tagged<INTC, 64> ahb_slave_if_type;
+	typedef tlm_utils::passthrough_target_socket_tagged<INTC, BUSWIDTH> ahb_slave_if_type;
 
-	ahb_slave_if_type *ahb_if[NUM_PROCESSORS]; // AHB slave interface
+	ahb_slave_if_type *ahb_if[NUM_PROCESSORS]; // AHB slave interface   FIXME: final design will have only one common port with a master ID in a tlm gp extension
 	sc_core::sc_in<bool> *p_hw_irq[NUM_HW_IRQS];
 	sc_core::sc_in<bool> *p_iack[NUM_PROCESSORS];
 	sc_core::sc_out<bool> *p_irq_b[NUM_PROCESSORS];
 	sc_core::sc_out<bool> *p_avec_b[NUM_PROCESSORS];
-	sc_core::sc_out<sc_dt::sc_uint<14> > *p_voffset[NUM_PROCESSORS];
+	sc_core::sc_out<sc_dt::sc_uint<VOFFSET_WIDTH> > *p_voffset[NUM_PROCESSORS];
 	
 	INTC(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
 	virtual ~INTC();
@@ -298,16 +301,15 @@ private:
 			HVEN0::SetName("HVEN0"); HVEN0::SetDescription("Hardware vector enable for processor 0");
 		}
 		
-		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable, ProcessorNumber *p_prc_num)
+		virtual ReadWriteStatus Write(ProcessorNumber& writter_prc_num, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			unsigned int writter_prc_num = *p_prc_num;
 			if(!intc->CheckMasterProtection(writter_prc_num))
 			{
 				// CPU is not allowed to write INTC_BCR
 				return RWS_ANA;
 			}
 			
-			return Super::Write(value, bit_enable, p_prc_num);
+			return Super::Write(writter_prc_num, value, bit_enable);
 		}
 		
 		using Super::operator =;
@@ -337,16 +339,15 @@ private:
 			MPROT::SetName("MPROT"); MPROT::SetDescription("Master Protection");
 		}
 		
-		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable, ProcessorNumber *p_prc_num)
+		virtual ReadWriteStatus Write(ProcessorNumber& writter_prc_num, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			unsigned int writter_prc_num = *p_prc_num;
 			if(!intc->CheckMasterProtection(writter_prc_num))
 			{
 				// CPU is not allowed to write INTC_MPROT
 				return RWS_ANA;
 			}
 			
-			return Super::Write(value, bit_enable, p_prc_num);
+			return Super::Write(writter_prc_num, value, bit_enable);
 		}
 
 		using Super::operator =;
@@ -384,16 +385,15 @@ private:
 			PRI::SetDescription("Priority of the currently executing ISR");
 		}
 		
-		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable, ProcessorNumber *p_prc_num)
+		virtual ReadWriteStatus Write(ProcessorNumber& writter_prc_num, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			unsigned int writter_prc_num = *p_prc_num;
 			if(!intc->CheckMasterProtection(writter_prc_num))
 			{
 				// CPU is not allowed to write INTC_CPR
 				return RWS_ANA;
 			}
 			
-			return Super::Write(value, bit_enable, p_prc_num);
+			return Super::Write(writter_prc_num, value, bit_enable);
 		}
 
 		using Super::operator =;
@@ -433,10 +433,8 @@ private:
 			INTVEC::SetName("INTVEC"); INTVEC::SetDescription("Interrupt vector");
 		}
 
-		virtual ReadWriteStatus Read(uint32_t& value, const uint32_t& bit_enable, ProcessorNumber *p_prc_num)
+		virtual ReadWriteStatus Read(ProcessorNumber& reader_prc_num, uint32_t& value, const uint32_t& bit_enable)
 		{
-			unsigned int reader_prc_num = *p_prc_num;
-			
 			if(!intc->CheckMasterProtection(reader_prc_num))
 			{
 				// CPU is not allowed to read INTC_IACK
@@ -450,19 +448,18 @@ private:
 				intc->SetIRQOutput(prc_num, false);
 			}
 			
-			return Super::Read(value, bit_enable, p_prc_num);
+			return Super::Read(reader_prc_num, value, bit_enable);
 		}
 		
-		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable, ProcessorNumber *p_prc_num)
+		virtual ReadWriteStatus Write(ProcessorNumber& writter_prc_num, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			unsigned int writter_prc_num = *p_prc_num;
 			if(!intc->CheckMasterProtection(writter_prc_num))
 			{
 				// CPU is not allowed to write INTC_IACK
 				return RWS_ANA;
 			}
 			
-			return Super::Write(value, bit_enable, p_prc_num);
+			return Super::Write(writter_prc_num, value, bit_enable);
 		}
 
 		using Super::operator =;
@@ -501,9 +498,8 @@ private:
 			EOI::SetDescription("End of Interrupt");
 		}
 		
-		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable, ProcessorNumber *p_prc_num)
+		virtual ReadWriteStatus Write(ProcessorNumber& writter_prc_num, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			unsigned int writter_prc_num = *p_prc_num;
 			if(!intc->CheckMasterProtection(writter_prc_num))
 			{
 				// CPU is not allowed to write INTC_EOIR
@@ -586,10 +582,9 @@ private:
 			return *this;
 		}
 		
-		virtual ReadWriteStatus Write(const uint8_t& value, const uint8_t& bit_enable, ProcessorNumber *p_prc_num)
+		virtual ReadWriteStatus Write(ProcessorNumber& writter_prc_num, const uint8_t& value, const uint8_t& bit_enable)
 		{
 			unsigned int sw_irq_num = reg_num;
-			unsigned int writter_prc_num = *p_prc_num;
 			
 			if(INTC_SSCIR::CLR::Get(value) && !intc->CheckWriteProtection_SSCIR_CLR(writter_prc_num, sw_irq_num))
 			{
@@ -597,7 +592,7 @@ private:
 				return RWS_ANA;
 			}
 			
-			ReadWriteStatus rws = Super::Write(value, bit_enable, p_prc_num);
+			ReadWriteStatus rws = Super::Write(writter_prc_num, value, bit_enable);
 
 			Effect();
 			
@@ -665,9 +660,8 @@ private:
 			
 		}
 		
-		virtual ReadWriteStatus Write(const uint16_t& value, const uint16_t& bit_enable, ProcessorNumber *p_prc_num)
+		virtual ReadWriteStatus Write(ProcessorNumber& writter_prc_num, const uint16_t& value, const uint16_t& bit_enable)
 		{
-			unsigned int writter_prc_num = *p_prc_num;
 			if(!intc->CheckMasterProtection(writter_prc_num))
 			{
 				// CPU is not allowed to write INTC_PSR
@@ -679,7 +673,7 @@ private:
 			unsigned int hw_sw_irq_num = reg_num;
 			unsigned int irq_num = (IRQ_TYPE == HW_IRQ) ? intc->HW_IRQ2IRQ(hw_sw_irq_num) : intc->SW_IRQ2IRQ(hw_sw_irq_num);
 			
-			ReadWriteStatus rws = Super::Write(value, bit_enable, p_prc_num);
+			ReadWriteStatus rws = Super::Write(writter_prc_num, value, bit_enable);
 			
 			unsigned int new_priority = this->template Get<typename INTC_PSR::PRIN>();
 			unsigned int new_prc_seln = this->template Get<typename INTC_PSR::PRC_SELN>();

@@ -825,6 +825,7 @@ unisim/component/tlm2/interconnect/generic_router/router.hh \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh \
 unisim/component/tlm2/interconnect/generic_router/config.hh \
 unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.hh \
+unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.hh \
 "
 
 UNISIM_LIB_MPC5777M_TEMPLATE_FILES="\
@@ -899,6 +900,7 @@ unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.tcc \
+unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.tcc \
 "
 
 UNISIM_LIB_MPC5777M_M4_FILES="\

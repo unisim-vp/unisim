@@ -491,10 +491,10 @@ class AddressableRegisterBase
 protected:
 	virtual unsigned int __ARB_GetSize__() const = 0;
 	virtual const std::string& __ARB_GetName__() const = 0;
-	virtual ReadWriteStatus __ARB_Write__(const unsigned char *data_ptr, const unsigned char *bit_enable_ptr, CUSTOM_RW_ARG *custom_rw_arg) = 0;
-	virtual ReadWriteStatus __ARB_Read__(unsigned char *data_ptr, const unsigned char *bit_enable_ptr, CUSTOM_RW_ARG *custom_rw_arg) = 0;
-	virtual void __ARB_DebugWrite__(const unsigned char *data_ptr, const unsigned char *bit_enable_ptr, CUSTOM_RW_ARG *custom_rw_arg) = 0;
-	virtual void __ARB_DebugRead__(unsigned char *data_ptr, const unsigned char *bit_enable_ptr, CUSTOM_RW_ARG *custom_rw_arg) = 0;
+	virtual ReadWriteStatus __ARB_Write__(CUSTOM_RW_ARG *custom_rw_arg, const unsigned char *data_ptr, const unsigned char *bit_enable_ptr) = 0;
+	virtual ReadWriteStatus __ARB_Read__(CUSTOM_RW_ARG *custom_rw_arg, unsigned char *data_ptr, const unsigned char *bit_enable_ptr) = 0;
+	virtual void __ARB_DebugWrite__(CUSTOM_RW_ARG *custom_rw_arg, const unsigned char *data_ptr, const unsigned char *bit_enable_ptr) = 0;
+	virtual void __ARB_DebugRead__(CUSTOM_RW_ARG *custom_rw_arg, unsigned char *data_ptr, const unsigned char *bit_enable_ptr) = 0;
 	virtual void ShortPrettyPrint(std::ostream& os) = 0;
 	virtual void LongPrettyPrint(std::ostream& os) = 0;
 	
@@ -530,19 +530,23 @@ public:
 	using Super::operator =;
 
 protected:
-	virtual ReadWriteStatus Write(const typename Super::TYPE& value, const typename Super::TYPE& bit_enable, CUSTOM_RW_ARG *custom_rw_arg);
-	virtual ReadWriteStatus Read(typename Super::TYPE& value, const typename Super::TYPE& bit_enable, CUSTOM_RW_ARG *custom_rw_arg);
-	virtual ReadWriteStatus DebugWrite(const typename Super::TYPE& value, const typename Super::TYPE& bit_enable, CUSTOM_RW_ARG *custom_rw_arg);
-	virtual ReadWriteStatus DebugRead(typename Super::TYPE& value, const typename Super::TYPE& bit_enable, CUSTOM_RW_ARG *custom_rw_arg);
+	virtual ReadWriteStatus Write(const typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
+	virtual ReadWriteStatus Read(typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
+	virtual ReadWriteStatus DebugWrite(const typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
+	virtual ReadWriteStatus DebugRead(typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
+	virtual ReadWriteStatus Write(CUSTOM_RW_ARG& custom_rw_arg, const typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
+	virtual ReadWriteStatus Read(CUSTOM_RW_ARG& custom_rw_arg, typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
+	virtual ReadWriteStatus DebugWrite(CUSTOM_RW_ARG& custom_rw_arg, const typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
+	virtual ReadWriteStatus DebugRead(CUSTOM_RW_ARG& custom_rw_arg, typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
 	virtual void ShortPrettyPrint(std::ostream& os);
 	virtual void LongPrettyPrint(std::ostream& os);
 private:
 	virtual unsigned int __ARB_GetSize__() const;
 	virtual const std::string& __ARB_GetName__() const;
-	virtual ReadWriteStatus __ARB_Write__(const unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0, CUSTOM_RW_ARG *custom_rw_arg = 0);
-	virtual ReadWriteStatus __ARB_Read__(unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0, CUSTOM_RW_ARG *custom_rw_arg = 0);
-	virtual void __ARB_DebugWrite__(const unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0, CUSTOM_RW_ARG *custom_rw_arg = 0);
-	virtual void __ARB_DebugRead__(unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0, CUSTOM_RW_ARG *custom_rw_arg = 0);
+	virtual ReadWriteStatus __ARB_Write__(CUSTOM_RW_ARG *custom_rw_arg, const unsigned char *data_ptr, const unsigned char *bit_enable_ptr);
+	virtual ReadWriteStatus __ARB_Read__(CUSTOM_RW_ARG *custom_rw_arg, unsigned char *data_ptr, const unsigned char *bit_enable_ptr);
+	virtual void __ARB_DebugWrite__(CUSTOM_RW_ARG *custom_rw_arg, const unsigned char *data_ptr, const unsigned char *bit_enable_ptr);
+	virtual void __ARB_DebugRead__(CUSTOM_RW_ARG *custom_rw_arg, unsigned char *data_ptr, const unsigned char *bit_enable_ptr);
 };
 
 ////////////////////////// AddressableRegisterFile<> //////////////////////////
@@ -573,10 +577,14 @@ public:
 	ADDRESS GetAddress() const { return addr; }
 	unsigned int GetSize() const { return size; }
 	const std::string& GetName() const { return arb->__ARB_GetName__(); }
-	ReadWriteStatus Write(const unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0, CUSTOM_RW_ARG *custom_rw_arg = 0) { return arb->__ARB_Write__(data_ptr, bit_enable_ptr, custom_rw_arg); }
-	ReadWriteStatus Read(unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0, CUSTOM_RW_ARG *custom_rw_arg = 0)  { return arb->__ARB_Read__(data_ptr, bit_enable_ptr, custom_rw_arg); }
-	void DebugWrite(const unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0, CUSTOM_RW_ARG *custom_rw_arg = 0) { return arb->__ARB_DebugWrite__(data_ptr, bit_enable_ptr, custom_rw_arg); }
-	void DebugRead(unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0, CUSTOM_RW_ARG *custom_rw_arg = 0)  { return arb->__ARB_DebugRead__(data_ptr, bit_enable_ptr, custom_rw_arg); }
+	ReadWriteStatus Write(const unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0) { return arb->__ARB_Write__((CUSTOM_RW_ARG *) 0, data_ptr, bit_enable_ptr); }
+	ReadWriteStatus Read(unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0)  { return arb->__ARB_Read__((CUSTOM_RW_ARG *) 0, data_ptr, bit_enable_ptr); }
+	void DebugWrite(const unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0) { return arb->__ARB_DebugWrite__((CUSTOM_RW_ARG *) 0, data_ptr, bit_enable_ptr); }
+	void DebugRead(unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0)  { return arb->__ARB_DebugRead__((CUSTOM_RW_ARG *) 0, data_ptr, bit_enable_ptr); }
+	ReadWriteStatus Write(CUSTOM_RW_ARG& custom_rw_arg, const unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0) { return arb->__ARB_Write__(&custom_rw_arg, data_ptr, bit_enable_ptr); }
+	ReadWriteStatus Read(CUSTOM_RW_ARG& custom_rw_arg, unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0)  { return arb->__ARB_Read__(&custom_rw_arg, data_ptr, bit_enable_ptr); }
+	void DebugWrite(CUSTOM_RW_ARG& custom_rw_arg, const unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0) { return arb->__ARB_DebugWrite__(&custom_rw_arg, data_ptr, bit_enable_ptr); }
+	void DebugRead(CUSTOM_RW_ARG& custom_rw_arg, unsigned char *data_ptr, const unsigned char *bit_enable_ptr = 0)  { return arb->__ARB_DebugRead__(&custom_rw_arg, data_ptr, bit_enable_ptr); }
 	void ShortPrettyPrint(std::ostream& os) const { arb->ShortPrettyPrint(os); }
 	void LongPrettyPrint(std::ostream& os) const { arb->LongPrettyPrint(os); }
 private:
@@ -589,6 +597,11 @@ private:
 	
 	void Acquire();
 	void Release();
+
+	ReadWriteStatus __ARH_Write__(CUSTOM_RW_ARG *custom_rw_arg, const unsigned char *data_ptr, const unsigned char *bit_enable_ptr) { return arb->__ARB_Write__(custom_rw_arg, data_ptr, bit_enable_ptr); }
+	ReadWriteStatus __ARH_Read__(CUSTOM_RW_ARG *custom_rw_arg, unsigned char *data_ptr, const unsigned char *bit_enable_ptr)  { return arb->__ARB_Read__(custom_rw_arg, data_ptr, bit_enable_ptr); }
+	void __ARH_DebugWrite__(CUSTOM_RW_ARG *custom_rw_arg, const unsigned char *data_ptr, const unsigned char *bit_enable_ptr) { return arb->__ARB_DebugWrite__(custom_rw_arg, data_ptr, bit_enable_ptr); }
+	void __ARH_DebugRead__(CUSTOM_RW_ARG *custom_rw_arg, unsigned char *data_ptr, const unsigned char *bit_enable_ptr)  { return arb->__ARB_DebugRead__(custom_rw_arg, data_ptr, bit_enable_ptr); }
 };
 
 ///////////////////////////// RegisterAddressMap<> ////////////////////////////
@@ -598,17 +611,22 @@ class RegisterAddressMap
 {
 public:
 	RegisterAddressMap();
-	RegisterAddressMap(std::ostream& warning_stream);
 	virtual ~RegisterAddressMap();
+	void SetWarningStream(std::ostream& warning_stream);
+	void SetEndian(unisim::util::endian::endian_type endian);
 	void MapRegister(ADDRESS addr, AddressableRegisterBase<CUSTOM_RW_ARG> *reg, unsigned int reg_byte_size = 0 /* in bytes (with padding) */);
-	void MapRegisterFile(ADDRESS addr, AddressableRegisterFileBase<CUSTOM_RW_ARG> *regfile, unsigned int reg_byte_size = 0 /* in bytes (with padding) */);
+	void MapRegisterFile(ADDRESS addr, AddressableRegisterFileBase<CUSTOM_RW_ARG> *regfile, unsigned int reg_byte_size = 0 /* in bytes (with padding) */, unsigned int stride = 0 /* in bytes */);
 	AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *FindAddressableRegister(ADDRESS addr) const;
 	
-	ReadWriteStatus Write(ADDRESS addr, const unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian, CUSTOM_RW_ARG *custom_rw_arg = 0);
-	ReadWriteStatus Read(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian, CUSTOM_RW_ARG *custom_rw_arg = 0);
+	ReadWriteStatus Write(ADDRESS addr, const unsigned char *data_ptr, unsigned int data_length);
+	ReadWriteStatus Read(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length);
+	unsigned int DebugWrite(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length);
+	unsigned int DebugRead(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length);
 	
-	unsigned int DebugWrite(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian, CUSTOM_RW_ARG *custom_rw_arg = 0);
-	unsigned int DebugRead(ADDRESS addr, unsigned char *data_ptr, unsigned int data_length, unisim::util::endian::endian_type target_endian, CUSTOM_RW_ARG *custom_rw_arg = 0);
+	ReadWriteStatus Write(CUSTOM_RW_ARG& custom_rw_arg, ADDRESS addr, const unsigned char *data_ptr, unsigned int data_length);
+	ReadWriteStatus Read(CUSTOM_RW_ARG& custom_rw_arg, ADDRESS addr, unsigned char *data_ptr, unsigned int data_length);
+	unsigned int DebugWrite(CUSTOM_RW_ARG& custom_rw_arg, ADDRESS addr, unsigned char *data_ptr, unsigned int data_length);
+	unsigned int DebugRead(CUSTOM_RW_ARG& custom_rw_arg, ADDRESS addr, unsigned char *data_ptr, unsigned int data_length);
 private:
 	mutable bool optimized;
 	mutable bool optimizable;
@@ -616,8 +634,14 @@ private:
 	mutable std::vector<AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *> opt_reg_addr_map;
 	std::map<ADDRESS, AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *> reg_addr_map;
 	std::ostream *warning_stream;
+	unisim::util::endian::endian_type data_endian;
 
 	void Optimize() const;
+	
+	ReadWriteStatus Write(CUSTOM_RW_ARG *custom_rw_arg, ADDRESS addr, const unsigned char *data_ptr, unsigned int data_length);
+	ReadWriteStatus Read(CUSTOM_RW_ARG *custom_rw_arg, ADDRESS addr, unsigned char *data_ptr, unsigned int data_length);
+	unsigned int DebugWrite(CUSTOM_RW_ARG *custom_rw_arg, ADDRESS addr, unsigned char *data_ptr, unsigned int data_length);
+	unsigned int DebugRead(CUSTOM_RW_ARG *custom_rw_arg, ADDRESS addr, unsigned char *data_ptr, unsigned int data_length);
 };
 
 } // end of namespace core

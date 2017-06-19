@@ -68,7 +68,7 @@ INTC<CONFIG>::INTC(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, lifo()
 	, irqs()
 	, priority_tree()
-	, reg_addr_map(logger.DebugWarningStream())
+	, reg_addr_map()
 	, schedule()
 	, last_irq_b_time_stamp()
 	, irq_select_event()
@@ -139,7 +139,7 @@ INTC<CONFIG>::INTC(const sc_core::sc_module_name& name, unisim::kernel::service:
 	{
 		std::stringstream p_voffset_name_sstr;
 		p_voffset_name_sstr << "p_voffset_" << prc_num;
-		p_voffset[prc_num] = new sc_core::sc_out<sc_dt::sc_uint<14> >(p_voffset_name_sstr.str().c_str());
+		p_voffset[prc_num] = new sc_core::sc_out<sc_dt::sc_uint<VOFFSET_WIDTH> >(p_voffset_name_sstr.str().c_str());
 	}
 	
 	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
@@ -156,6 +156,8 @@ INTC<CONFIG>::INTC(const sc_core::sc_module_name& name, unisim::kernel::service:
 		gen_irq_b_event[prc_num] = new sc_core::sc_event(gen_irq_b_event_name_sstr.str().c_str());
 	}
 
+	reg_addr_map.SetWarningStream(logger.DebugWarningStream());
+	reg_addr_map.SetEndian(endian);
 	reg_addr_map.MapRegister(intc_bcr.ADDRESS_OFFSET, &intc_bcr);
 	reg_addr_map.MapRegister(intc_mprot.ADDRESS_OFFSET, &intc_mprot);
 	reg_addr_map.MapRegisterFile(INTC_CPR::ADDRESS_OFFSET, &intc_cpr);
@@ -351,14 +353,14 @@ unsigned int INTC<CONFIG>::transport_dbg(int _prc_num, tlm::tlm_generic_payload&
 		return 0;
 	}
 	
-	ProcessorNumber prc_num(_prc_num);
+	ProcessorNumber prc_num = _prc_num;
 	
 	switch(cmd)
 	{
 		case tlm::TLM_WRITE_COMMAND:
-			return reg_addr_map.DebugWrite(start_addr, data_ptr, data_length, endian, &prc_num);
+			return reg_addr_map.DebugWrite(prc_num, start_addr, data_ptr, data_length);
 		case tlm::TLM_READ_COMMAND:
-			return reg_addr_map.DebugRead(start_addr, data_ptr, data_length, endian, &prc_num);
+			return reg_addr_map.DebugRead(prc_num, start_addr, data_ptr, data_length);
 		default:
 			break;
 	}
@@ -441,16 +443,16 @@ void INTC<CONFIG>::ProcessEvent(Event *event)
 		}
 		else
 		{
-			ProcessorNumber prc_num(event->GetProcessorNumber());
+			ProcessorNumber prc_num = event->GetProcessorNumber();
 			ReadWriteStatus rws = RWS_OK;
 			
 			switch(cmd)
 			{
 				case tlm::TLM_WRITE_COMMAND:
-					rws = reg_addr_map.Write(start_addr, data_ptr, data_length, endian, &prc_num);
+					rws = reg_addr_map.Write(prc_num, start_addr, data_ptr, data_length);
 					break;
 				case tlm::TLM_READ_COMMAND:
-					rws = reg_addr_map.Read(start_addr, data_ptr, data_length, endian, &prc_num);
+					rws = reg_addr_map.Read(prc_num, start_addr, data_ptr, data_length);
 					break;
 				default:
 					break;
