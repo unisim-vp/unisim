@@ -51,12 +51,14 @@ INTC<CONFIG>::INTC(const sc_core::sc_module_name& name, unisim::kernel::service:
 	: unisim::kernel::service::Object(name, parent)
 	, sc_core::sc_module(name)
 	, ahb_if()
+	, p_clk("p_clk")
 	, p_hw_irq()
 	, p_iack()
 	, p_irq_b()
 	, p_avec_b()
 	, p_voffset()
 	, logger(*this)
+	, p_clk_prop_proxy(p_clk)
 	, intc_bcr(this)
 	, intc_mprot(this)
 	, intc_cpr(this)
@@ -80,7 +82,6 @@ INTC<CONFIG>::INTC(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 	, cycle_time(10.0, sc_core::SC_NS)
-	, param_cycle_time("cycle-time", this, cycle_time, "cycle time")
 {
 	SC_HAS_PROCESS(INTC);
 
@@ -271,6 +272,19 @@ INTC<CONFIG>::~INTC()
 	{
 		delete gen_irq_b_event[prc_num];
 	}
+}
+
+template <typename CONFIG>
+void INTC<CONFIG>::end_of_elaboration()
+{
+	cycle_time = p_clk_prop_proxy.GetClockPeriod();
+	
+	sc_core::sc_spawn_options clock_properties_changed_process_spawn_options;
+	
+	clock_properties_changed_process_spawn_options.spawn_method();
+	clock_properties_changed_process_spawn_options.set_sensitivity(&p_clk_prop_proxy.GetClockPropertiesChangedEvent());
+
+	sc_core::sc_spawn(sc_bind(&INTC<CONFIG>::ClockPropertiesChangedProcess, this), "ClockPropertiesChangedProcess", &clock_properties_changed_process_spawn_options);
 }
 
 template <typename CONFIG>
@@ -665,6 +679,12 @@ void INTC<CONFIG>::IRQ_B_Process(unsigned int prc_num)
 		// keep time stamp when IRQ was negated, because IRQ shall negate for at least one clock cycle
 		last_irq_b_time_stamp[prc_num] = sc_core::sc_time_stamp();
 	}
+}
+
+template <typename CONFIG>
+void INTC<CONFIG>::ClockPropertiesChangedProcess()
+{
+	cycle_time = p_clk_prop_proxy.GetClockPeriod();
 }
 
 template <typename CONFIG>

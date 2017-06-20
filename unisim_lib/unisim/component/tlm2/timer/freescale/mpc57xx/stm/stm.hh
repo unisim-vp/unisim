@@ -101,6 +101,7 @@ public:
 	typedef tlm::tlm_target_socket<BUSWIDTH> ahb_slave_if_type;
 
 	ahb_slave_if_type ahb_if; // AHB slave interface
+	sc_core::sc_in<bool> p_clk;
 	sc_core::sc_out<bool> *p_irq[NUM_CHANNELS];
 	
 	STM(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
@@ -112,6 +113,8 @@ public:
 	tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
 
 private:
+	virtual void end_of_elaboration();
+
 	unisim::kernel::logger::Logger logger;
 	
 	class Event
@@ -391,6 +394,8 @@ private:
 		unsigned int reg_num;
 	};
 	
+	unisim::kernel::tlm2::ClockPropertiesProxy p_clk_prop_proxy;
+
 	STM_CR stm_cr;
 	STM_CNT stm_cnt;
 	AddressableRegisterFile<STM_CCR, NUM_CHANNELS, STM<CONFIG> > stm_ccr;
@@ -406,11 +411,11 @@ private:
 	bool verbose;
 	unisim::kernel::service::Parameter<bool> param_verbose;
 	sc_core::sc_time cycle_time;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_cycle_time;
 	
 	void ProcessEvent(Event *event);
 	void ProcessEvents();
 	void Process();
+	void ClockPropertiesChangedProcess();
 };
 
 } // end of namespace stm

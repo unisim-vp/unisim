@@ -162,7 +162,7 @@ bool Instrumenter::EndSetup()
 	return true;
 }
 
-sc_core::sc_clock& Instrumenter::CreateClock(const std::string& clock_name, const sc_core::sc_time& clock_period, double clock_duty_cycle, const sc_core::sc_time& clock_start_time, bool clock_posedge_first)
+Clock& Instrumenter::CreateClock(const std::string& clock_name)
 {
 	std::map<std::string, sc_core::sc_interface *>::iterator signal_pool_it = signal_pool.find(clock_name);
 	if(signal_pool_it != signal_pool.end())
@@ -170,12 +170,12 @@ sc_core::sc_clock& Instrumenter::CreateClock(const std::string& clock_name, cons
 		throw std::runtime_error("Internal error! clock already exists");
 	}
 
-	sc_core::sc_clock *clock = new sc_core::sc_clock(clock_name.c_str(), clock_period, clock_duty_cycle, clock_start_time, clock_posedge_first);
-	std::cout << "Creating clock \"" << clock->name() << "\" with a period of " << clock_period << ", a duty cycle of " << clock_duty_cycle << ", starting with " << (clock_posedge_first ? "rising" : "falling") << " edge at " << clock_start_time << std::endl;
+	Clock *clock = new Clock(clock_name.c_str(), GetParent());
+	std::cout << "Creating clock \"" << clock->sc_core::sc_object::name() << "\" with a period of " << clock->GetClockPeriod() << ", a duty cycle of " << clock->GetClockDutyCycle() << ", starting with " << (clock->GetClockPosEdgeFirst() ? "rising" : "falling") << " edge at " << clock->GetClockStartTime() << std::endl;
 	
-	signal_pool[clock->name()] = clock;
+	signal_pool[clock->sc_core::sc_object::name()] = clock;
 	
-	typers[clock->name()] = new Typer<bool>(this);
+	typers[clock->sc_core::sc_object::name()] = new Typer<bool>(this);
 
 	return *clock;
 }
@@ -398,6 +398,10 @@ void Instrumenter::StartBinding()
 				std::cout << "Connecting Port \"" << port_name << "\" to Signal \"" << signal_name << "\"" << std::endl;
 				continue;
 			}
+		}
+		else
+		{
+			std::cout << "Port \"" << port_name << "\" does not exist" << std::endl;
 		}
 		
 		std::cerr << "WARNING! Can't connect Port \"" << port_name << "\" to Signal \"" << signal_name << "\"" << std::endl;
@@ -805,7 +809,7 @@ Simulator::Simulator(sc_core::sc_module_name const& name, int argc, char **argv,
 	, logger(*this)
 	, instrumenter(0)
 {
-	instrumenter = new Instrumenter("instrumenter");
+	instrumenter = new Instrumenter("instrumenter", this);
 }
 
 Simulator::~Simulator()
@@ -813,9 +817,9 @@ Simulator::~Simulator()
 	delete instrumenter;
 }
 
-sc_core::sc_clock& Simulator::CreateClock(const std::string& clock_name, const sc_core::sc_time& clock_period, double clock_duty_cycle, const sc_core::sc_time& clock_start_time, bool clock_posedge_first)
+Clock& Simulator::CreateClock(const std::string& clock_name)
 {
-	return instrumenter->CreateClock(clock_name, clock_period, clock_duty_cycle, clock_start_time, clock_posedge_first);
+	return instrumenter->CreateClock(clock_name);
 }
 
 void Simulator::TraceSignalPattern(const std::string& signal_name_pattern)

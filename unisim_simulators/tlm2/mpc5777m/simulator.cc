@@ -119,6 +119,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(cpu2->p_voffset);
 	RegisterPort(cpu2->p_iack);
 	
+	RegisterPort(intc->p_clk);
+	
 	unsigned int hw_irq_num;
 	for(hw_irq_num = 0; hw_irq_num < INTC_CONFIG::NUM_HW_IRQS; hw_irq_num++)
 	{
@@ -133,6 +135,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		RegisterPort(*intc->p_voffset[prc_num]);
 	}
 	
+	RegisterPort(stm2->p_clk);
 	unsigned int channel_num;
 	for(channel_num = 0; channel_num < STM_CONFIG::NUM_CHANNELS; channel_num++)
 	{
@@ -142,6 +145,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//=========================================================================
 	//===                           Signal creation                         ===
 	//=========================================================================
+	
+	CreateClock("clk");
 	
 	CreateSignal("m_por", false);
 	CreateSignal("p_reset_b", false);
@@ -184,12 +189,14 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.CPU2.p_voffset"       , "HARDWARE.p_voffset_0");
 	Bind("HARDWARE.CPU2.p_iack"          , "HARDWARE.p_iack_0");
 	
+	Bind("HARDWARE.INTC.p_clk"           , "HARDWARE.clk");
 //	Bind("HARDWARE.INTC.p_hw_irq_0"      , "HARDWARE.fake_irq");
 	BindArray(INTC_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC.p_irq_b"  , "HARDWARE.p_irq_b"  );
 	BindArray(INTC_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC.p_avec_b" , "HARDWARE.p_avec_b" );
 	BindArray(INTC_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC.p_voffset", "HARDWARE.p_voffset");
 	BindArray(INTC_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC.p_iack"   , "HARDWARE.p_iack"   );
 	
+	Bind("HARDWARE.STM2.p_clk"           , "HARDWARE.clk");
 	BindArray(STM_CONFIG::NUM_CHANNELS, "HARDWARE.STM2.p_irq"   , "HARDWARE.stm2_cir");
 	BindArray(STM_CONFIG::NUM_CHANNELS, "HARDWARE.INTC.p_hw_irq", "HARDWARE.stm2_cir");
 	
@@ -350,6 +357,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//===                     Component run-time configuration              ===
 	//=========================================================================
 
+	simulator->SetVariable("HARDWARE.clk.lazy-clock", "true");
+	
 	//  - e200 PowerPC cores
 
 	// CPU2

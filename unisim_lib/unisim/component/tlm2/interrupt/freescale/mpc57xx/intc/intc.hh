@@ -38,6 +38,7 @@
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
+#include <unisim/kernel/tlm2/clock.hh>
 #include <unisim/util/reg/core/register.hh>
 #include <tlm_utils/passthrough_target_socket.h>
 #include <stack>
@@ -127,6 +128,7 @@ public:
 	typedef tlm_utils::passthrough_target_socket_tagged<INTC, BUSWIDTH> ahb_slave_if_type;
 
 	ahb_slave_if_type *ahb_if[NUM_PROCESSORS]; // AHB slave interface   FIXME: final design will have only one common port with a master ID in a tlm gp extension
+	sc_core::sc_in<bool> p_clk;
 	sc_core::sc_in<bool> *p_hw_irq[NUM_HW_IRQS];
 	sc_core::sc_in<bool> *p_iack[NUM_PROCESSORS];
 	sc_core::sc_out<bool> *p_irq_b[NUM_PROCESSORS];
@@ -142,6 +144,8 @@ public:
 	tlm::tlm_sync_enum nb_transport_fw(int prc_num, tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
 
 private:
+	virtual void end_of_elaboration();
+	
 	unisim::kernel::logger::Logger logger;
 	
 	class Event
@@ -731,6 +735,8 @@ private:
 		unsigned int reg_num;
 	};
 	
+	unisim::kernel::tlm2::ClockPropertiesProxy p_clk_prop_proxy;
+	
 	INTC_BCR intc_bcr;
 	INTC_MPROT intc_mprot;
 	AddressableRegisterFile<INTC_CPR, NUM_PROCESSORS, INTC<CONFIG>, ProcessorNumber> intc_cpr;
@@ -783,7 +789,6 @@ private:
 	bool verbose;
 	unisim::kernel::service::Parameter<bool> param_verbose;
 	sc_core::sc_time cycle_time;
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_cycle_time;
 	
 	bool CheckMasterProtection(unsigned int prc_num) const;
 	bool CheckWriteProtection_SSCIR_CLR(unsigned int prc_num, unsigned int sw_irq_num) const;
@@ -801,6 +806,7 @@ private:
 	void IRQ_B_Process(unsigned int prc_num);
 	void IACK_Process(unsigned int prc_num);
 	void IRQ_Select_Process(unsigned int prc_num);
+	void ClockPropertiesChangedProcess();
 };
 
 } // end of namespace intc

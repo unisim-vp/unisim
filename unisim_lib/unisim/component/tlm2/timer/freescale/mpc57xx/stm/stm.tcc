@@ -51,7 +51,9 @@ STM<CONFIG>::STM(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	: unisim::kernel::service::Object(name, parent)
 	, sc_core::sc_module(name)
 	, ahb_if("ahb_if")
+	, p_clk("p_clk")
 	, p_irq()
+	, p_clk_prop_proxy(p_clk)
 	, logger(*this)
 	, stm_cr(this)
 	, stm_cnt(this)
@@ -65,7 +67,6 @@ STM<CONFIG>::STM(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 	, cycle_time(10.0, sc_core::SC_NS)
-	, param_cycle_time("cycle-time", this, cycle_time, "cycle time")
 {
 	ahb_if(*this); // bind interface
 	
@@ -107,6 +108,19 @@ STM<CONFIG>::~STM()
 	{
 		delete p_irq[channel_num];
 	}
+}
+
+template <typename CONFIG>
+void STM<CONFIG>::end_of_elaboration()
+{
+	cycle_time = p_clk_prop_proxy.GetClockPeriod();
+	
+	sc_core::sc_spawn_options clock_properties_changed_process_spawn_options;
+	
+	clock_properties_changed_process_spawn_options.spawn_method();
+	clock_properties_changed_process_spawn_options.set_sensitivity(&p_clk_prop_proxy.GetClockPropertiesChangedEvent());
+
+	sc_core::sc_spawn(sc_bind(&STM<CONFIG>::ClockPropertiesChangedProcess, this), "ClockPropertiesChangedProcess", &clock_properties_changed_process_spawn_options);
 }
 
 template <typename CONFIG>
@@ -336,6 +350,12 @@ void STM<CONFIG>::Process()
 		ProcessEvents();
 		next_trigger(schedule.GetKernelEvent());
 	}
+}
+
+template <typename CONFIG>
+void STM<CONFIG>::ClockPropertiesChangedProcess()
+{
+	cycle_time = p_clk_prop_proxy.GetClockPeriod();
 }
 
 } // end of namespace stm
