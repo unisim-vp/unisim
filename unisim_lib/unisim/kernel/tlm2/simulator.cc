@@ -171,7 +171,7 @@ Clock& Instrumenter::CreateClock(const std::string& clock_name)
 	}
 
 	Clock *clock = new Clock(clock_name.c_str(), GetParent());
-	std::cout << "Creating clock \"" << clock->sc_core::sc_object::name() << "\" with a period of " << clock->GetClockPeriod() << ", a duty cycle of " << clock->GetClockDutyCycle() << ", starting with " << (clock->GetClockPosEdgeFirst() ? "rising" : "falling") << " edge at " << clock->GetClockStartTime() << std::endl;
+	std::cout << "Creating " << (clock->IsClockLazy() ? "lazy (fast) " : "toggling (painfully slow) ") << "Clock \"" << clock->sc_core::sc_object::name() << "\" with a period of " << clock->GetClockPeriod() << ", a duty cycle of " << clock->GetClockDutyCycle() << ", starting with " << (clock->GetClockPosEdgeFirst() ? "rising" : "falling") << " edge at " << clock->GetClockStartTime() << std::endl;
 	
 	signal_pool[clock->sc_core::sc_object::name()] = clock;
 	

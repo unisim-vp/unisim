@@ -51,14 +51,14 @@ INTC<CONFIG>::INTC(const sc_core::sc_module_name& name, unisim::kernel::service:
 	: unisim::kernel::service::Object(name, parent)
 	, sc_core::sc_module(name)
 	, ahb_if()
-	, p_clk("p_clk")
+	, m_clk("m_clk")
 	, p_hw_irq()
 	, p_iack()
 	, p_irq_b()
 	, p_avec_b()
 	, p_voffset()
 	, logger(*this)
-	, p_clk_prop_proxy(p_clk)
+	, m_clk_prop_proxy(m_clk)
 	, intc_bcr(this)
 	, intc_mprot(this)
 	, intc_cpr(this)
@@ -277,12 +277,12 @@ INTC<CONFIG>::~INTC()
 template <typename CONFIG>
 void INTC<CONFIG>::end_of_elaboration()
 {
-	cycle_time = p_clk_prop_proxy.GetClockPeriod();
+	cycle_time = m_clk_prop_proxy.GetClockPeriod();
 	
 	sc_core::sc_spawn_options clock_properties_changed_process_spawn_options;
 	
 	clock_properties_changed_process_spawn_options.spawn_method();
-	clock_properties_changed_process_spawn_options.set_sensitivity(&p_clk_prop_proxy.GetClockPropertiesChangedEvent());
+	clock_properties_changed_process_spawn_options.set_sensitivity(&m_clk_prop_proxy.GetClockPropertiesChangedEvent());
 
 	sc_core::sc_spawn(sc_bind(&INTC<CONFIG>::ClockPropertiesChangedProcess, this), "ClockPropertiesChangedProcess", &clock_properties_changed_process_spawn_options);
 }
@@ -684,7 +684,7 @@ void INTC<CONFIG>::IRQ_B_Process(unsigned int prc_num)
 template <typename CONFIG>
 void INTC<CONFIG>::ClockPropertiesChangedProcess()
 {
-	cycle_time = p_clk_prop_proxy.GetClockPeriod();
+	cycle_time = m_clk_prop_proxy.GetClockPeriod();
 }
 
 template <typename CONFIG>

@@ -1,6 +1,116 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <variables>
 	<object name="HARDWARE">
+		<object name="HARDWARE.instrumenter">
+			<variable name="enable-output-instrumentation">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable output instrumentation of signals</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="instrumentation-output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Output filename for instrumented signals</description>
+			</variable>
+			<variable name="output-instrumentation">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Instrumented signals to output in the instrumentation output file</description>
+			</variable>
+			<variable name="output-instrumentation-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>Start time for output instrumentation of signals</description>
+			</variable>
+			<variable name="output-instrumentation-end-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>18446744073709551615 ps</value>
+				<description>End time for output instrumentation of signals</description>
+			</variable>
+			<variable name="output-csv-delimiter">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>,</value>
+				<description>CSV delimiter for instrumentation output file</description>
+			</variable>
+			<variable name="enable-input-instrumentation">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable input instrumentation of signals</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="instrumentation-input-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Input filename for instrumented signals</description>
+			</variable>
+			<variable name="input-instrumentation">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Instrumented signals (wildcard '*' is allowed in signal names) that take there input from the instrumentation input file</description>
+			</variable>
+			<variable name="input-instrumentation-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>Start time for input instrumentation of signals</description>
+			</variable>
+			<variable name="input-instrumentation-end-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>18446744073709551615 ps</value>
+				<description>End time for input instrumentation of signals</description>
+			</variable>
+			<variable name="input-csv-delimiter">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>,</value>
+				<description>CSV delimiter for instrumentation input file</description>
+			</variable>
+			<variable name="vcd-trace-file">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>VCD output filename for signals trace</description>
+			</variable>
+			<variable name="trace-signals">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Signals to trace (wildcard '*' is allowed in signal names)</description>
+			</variable>
+			<variable name="enable-trace-signals">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable signals trace</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="gtkwave-init-script">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>GTKWave initialization script that simulators must automatically generate at startup</description>
+			</variable>
+		</object>
 		<object name="HARDWARE.CPU2">
 			<object name="HARDWARE.CPU2.L1I">
 				<variable name="verbose">
@@ -238,17 +348,11 @@
 					<item>false</item>
 				</enumeration>
 			</variable>
-			<variable name="cpu-cycle-time">
+			<variable name="clock-multiplier">
 				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>5 ns</value>
-				<description>cpu cycle time</description>
-			</variable>
-			<variable name="bus-cycle-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>10 ns</value>
-				<description>bus cycle time</description>
+				<data_type>double precision floating-point</data_type>
+				<value>1</value>
+				<description>clock multiplier</description>
 			</variable>
 			<variable name="nice-time">
 				<type>parameter</type>
@@ -327,7 +431,7 @@
 			<variable name="write-latency">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
-				<value>0 s</value>
+				<value>10 ns</value>
 				<description>memory write latency</description>
 			</variable>
 			<variable name="verbose">
@@ -385,7 +489,7 @@
 			<variable name="write-latency">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
-				<value>0 s</value>
+				<value>10 ns</value>
 				<description>memory write latency</description>
 			</variable>
 			<variable name="verbose">
@@ -443,7 +547,7 @@
 			<variable name="write-latency">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
-				<value>0 s</value>
+				<value>10 ns</value>
 				<description>memory write latency</description>
 			</variable>
 			<variable name="verbose">
@@ -590,6 +694,12 @@
 				<value>range_start=&quot;0xfc040000&quot; range_end=&quot;0xfc04ffff&quot; output_port=&quot;4&quot; translation=&quot;0x0&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 			</variable>
+			<variable name="mapping_10">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc070000&quot; range_end=&quot;0xfc073fff&quot; output_port=&quot;5&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
 		</object>
 		<object name="HARDWARE.INTC">
 			<variable name="endian">
@@ -600,6 +710,78 @@
 				<enumeration>
 					<item>little-endian</item>
 					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.STM2">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.clk">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
 				</enumeration>
 			</variable>
 		</object>
@@ -658,7 +840,7 @@
 		<variable name="tcp-port">
 			<type>parameter</type>
 			<data_type>signed 32-bit integer</data_type>
-			<value>12345</value>
+			<value>0</value>
 			<description>TCP/IP port to listen waiting for a GDB client connection</description>
 		</variable>
 		<variable name="architecture-description-filename">
@@ -676,116 +858,6 @@
 				<item>true</item>
 				<item>false</item>
 			</enumeration>
-		</variable>
-	</object>
-	<object name="instrumenter">
-		<variable name="enable-output-instrumentation">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable output instrumentation of signals</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="instrumentation-output-filename">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>Output filename for instrumented signals</description>
-		</variable>
-		<variable name="output-instrumentation">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>Instrumented signals to output in the instrumentation output file</description>
-		</variable>
-		<variable name="output-instrumentation-start-time">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>0 s</value>
-			<description>Start time for output instrumentation of signals</description>
-		</variable>
-		<variable name="output-instrumentation-end-time">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>9223372036854775808 ps</value>
-			<description>End time for output instrumentation of signals</description>
-		</variable>
-		<variable name="output-csv-delimiter">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>,</value>
-			<description>CSV delimiter for instrumentation output file</description>
-		</variable>
-		<variable name="enable-input-instrumentation">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable input instrumentation of signals</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="instrumentation-input-filename">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>Input filename for instrumented signals</description>
-		</variable>
-		<variable name="input-instrumentation">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>Instrumented signals (wildcard '*' is allowed in signal names) that take there input from the instrumentation input file</description>
-		</variable>
-		<variable name="input-instrumentation-start-time">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>0 s</value>
-			<description>Start time for input instrumentation of signals</description>
-		</variable>
-		<variable name="input-instrumentation-end-time">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>9223372036854775808 ps</value>
-			<description>End time for input instrumentation of signals</description>
-		</variable>
-		<variable name="input-csv-delimiter">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>,</value>
-			<description>CSV delimiter for instrumentation input file</description>
-		</variable>
-		<variable name="vcd-trace-file">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>VCD output filename for signals trace</description>
-		</variable>
-		<variable name="trace-signals">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>Signals to trace (wildcard '*' is allowed in signal names)</description>
-		</variable>
-		<variable name="enable-trace-signals">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable signals trace</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="gtkwave-init-script">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>GTKWave initialization script that simulators must automatically generate at startup</description>
 		</variable>
 	</object>
 	<object name="loader">
@@ -821,102 +893,26 @@
 			<variable name="filename">
 				<type>parameter</type>
 				<data_type>string</data_type>
-				<value>soft/boot.elf</value>
-				<description>the ELF filename to load into memory</description>
+				<value>boot.elf</value>
+				<description>Location of the raw file to load.</description>
 			</variable>
 			<variable name="base-addr">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
 				<value>0x00000000</value>
-				<description>if force-base-addr is true force base address for a unique program segment, otherwise ignored</description>
+				<description>Target base address.</description>
 			</variable>
-			<variable name="force-base-addr">
+			<variable name="size">
 				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>if true force base address for a unique program segment</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="force-use-virtual-address">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>true</value>
-				<description>force use of virtual addresses instead of physical addresses (default false)</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="initialize-extra-segment-bytes">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>whether to initialize extra bytes in segments (p_filesz &lt; p_memsz) to zero (true for standard ELF files)</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="dump-headers">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>dump headers while loading ELF file</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>Number of bytes to copy. If 0 then all the file contents will be copied. If smaller than the file, the contents of the file will be cropped. If bigger than the file size, all the file will be copied.</description>
 			</variable>
 			<variable name="verbose">
 				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>enable/disable verbosity</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="dwarf-to-html-output-directory">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value></value>
-				<description>DWARF v2/v3 to HTML output directory</description>
-			</variable>
-			<variable name="dwarf-to-xml-output-filename">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value></value>
-				<description>DWARF v2/v3 to XML output filename</description>
-			</variable>
-			<variable name="dwarf-register-number-mapping-filename">
-				<type>parameter</type>
-				<data_type>string</data_type>
-				<value></value>
-				<description>DWARF register number mapping filename</description>
-			</variable>
-			<variable name="parse-dwarf">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable parsing of DWARF debugging informations</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="debug-dwarf">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>Enable/Disable debugging of DWARF</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>Set verbose mode (0 not active, otherwise active).</description>
 			</variable>
 		</object>
 		<variable name="verbose">
@@ -942,7 +938,7 @@
 		<variable name="filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value>soft/boot.elf</value>
+			<value>boot.elf</value>
 			<description>List of files to load. Syntax: [[filename=]&lt;filename1&gt;[=[format=]&lt;format1&gt;]][,[filename=]&lt;filename2&gt;[=[format=]&lt;format2&gt;]]... (e.g. boot.bin=raw,app.elf)</description>
 		</variable>
 	</object>

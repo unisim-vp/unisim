@@ -56,13 +56,15 @@ std::ostream& operator << (std::ostream& os, const Access& access)
 {
 	switch(access & SW_RW1)
 	{
-		case HW_RO: os << "hardware read-only/no software access"; break;
-		case HW_RW: os << "hardware read-write/no software access"; break;
-		case SW_R: os << "hardware read/software read access"; break;
-		case SW_W: os << "hardware write/software write access"; break;
-		case SW_RW: os << "hardware read-write/software read-write access"; break;
-		case SW_W1: os << "hardware write/software writeOnce access"; break;
-		case SW_RW1: os << "hardware read-write/software read-writeOnce access"; break;
+		case HW_RO  : os << "hardware read-only/no software access"; break;
+		case HW_RW  : os << "hardware read-write/no software access"; break;
+		case SW_R   : os << "hardware read/software read access"; break;
+		case SW_W   : os << "hardware write/software write access"; break;
+		case SW_RW  : os << "hardware read-write/software read-write access"; break;
+		case SW_W1  : os << "hardware write/software write once access"; break;
+		case SW_RW1 : os << "hardware read-write/software read-write once access"; break;
+		case SW_W1C : os << "hardware read-write/software write 1 clear access"; break;
+		case SW_RW1C: os << "hardware read-write/software read-write 1 clear access"; break;
 	}
 	
 	return os;

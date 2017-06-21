@@ -260,6 +260,11 @@ bool Clock::IsClockFrozen() const
 	return frozen_clock;
 }
 
+bool Clock::IsClockLazy() const
+{
+	return lazy_clock;
+}
+
 const sc_core::sc_event& Clock::GetClockPropertiesChangedEvent() const
 {
 	return clock_properties_changed_event;

@@ -128,7 +128,7 @@ public:
 	typedef tlm_utils::passthrough_target_socket_tagged<INTC, BUSWIDTH> ahb_slave_if_type;
 
 	ahb_slave_if_type *ahb_if[NUM_PROCESSORS]; // AHB slave interface   FIXME: final design will have only one common port with a master ID in a tlm gp extension
-	sc_core::sc_in<bool> p_clk;
+	sc_core::sc_in<bool> m_clk;
 	sc_core::sc_in<bool> *p_hw_irq[NUM_HW_IRQS];
 	sc_core::sc_in<bool> *p_iack[NUM_PROCESSORS];
 	sc_core::sc_out<bool> *p_irq_b[NUM_PROCESSORS];
@@ -735,7 +735,7 @@ private:
 		unsigned int reg_num;
 	};
 	
-	unisim::kernel::tlm2::ClockPropertiesProxy p_clk_prop_proxy;
+	unisim::kernel::tlm2::ClockPropertiesProxy m_clk_prop_proxy;
 	
 	INTC_BCR intc_bcr;
 	INTC_MPROT intc_mprot;

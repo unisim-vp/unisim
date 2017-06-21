@@ -64,6 +64,7 @@ CPU<TYPES, CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, i_ahb_if("i_ahb_if")
 	, d_ahb_if("d_ahb_if")
 	, s_ahb_if("s_ahb_if")
+	, m_clk("m_clk")
 	, m_por("m_por")
 	, p_reset_b("p_reset_b")
 	, p_nmi_b("p_nmi_b")
@@ -75,9 +76,11 @@ CPU<TYPES, CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, p_avec_b("p_avec_b")
 	, p_voffset("p_voffset")
 	, p_iack("p_iack")
+	, m_clk_prop_proxy(m_clk)
 	, payload_fabric()
-	, cpu_cycle_time()
-	, bus_cycle_time()
+	, time_per_instruction()
+	, clock_multiplier(1.0)
+	, bus_cycle_time(10.0, sc_core::SC_NS)
 	, cpu_time()
 	, nice_time()
 	, run_time()
@@ -90,8 +93,7 @@ CPU<TYPES, CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, one(1.0)
 	, enable_dmi(false)
 	, debug_dmi(false)
-	, param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time, "cpu cycle time")
-	, param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time, "bus cycle time")
+	, param_clock_multiplier("clock-multiplier", this, clock_multiplier, "clock multiplier")
 	, param_nice_time("nice-time", this, nice_time, "maximum time between synchonizations")
 	, param_ipc("ipc", this, ipc, "maximum instructions per cycle, typically 1 or 2")
 	, param_enable_host_idle("enable-host-idle", this, enable_host_idle, "Enable/Disable host idle periods when target is idle")
@@ -109,6 +111,11 @@ CPU<TYPES, CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	d_ahb_if(*this);
 	s_ahb_if(*this);
 	
+	param_clock_multiplier.SetMutable(false);
+	param_nice_time.SetMutable(false);
+	param_ipc.SetMutable(false);
+	param_enable_host_idle.SetMutable(false);
+	param_enable_dmi.SetMutable(false);
 	stat_one.SetMutable(false);
 	stat_one.SetSerializable(false);
 	stat_one.SetVisible(false);
@@ -142,6 +149,19 @@ CPU<TYPES, CONFIG>::CPU(const sc_module_name& name, Object *parent)
 template <typename TYPES, typename CONFIG>
 CPU<TYPES, CONFIG>::~CPU()
 {
+}
+
+template <typename TYPES, typename CONFIG>
+void CPU<TYPES, CONFIG>::end_of_elaboration()
+{
+	UpdateSpeed();
+	
+	sc_core::sc_spawn_options clock_properties_changed_process_spawn_options;
+	
+	clock_properties_changed_process_spawn_options.spawn_method();
+	clock_properties_changed_process_spawn_options.set_sensitivity(&m_clk_prop_proxy.GetClockPropertiesChangedEvent());
+
+	sc_core::sc_spawn(sc_bind(&CPU<TYPES, CONFIG>::ClockPropertiesChangedProcess, this), "ClockPropertiesChangedProcess", &clock_properties_changed_process_spawn_options);
 }
 
 template <typename TYPES, typename CONFIG>
@@ -559,10 +579,26 @@ void CPU<TYPES, CONFIG>::P_AVEC_B_Process()
 }
 
 template <typename TYPES, typename CONFIG>
+void CPU<TYPES, CONFIG>::UpdateSpeed()
+{
+	bus_cycle_time = m_clk_prop_proxy.GetClockPeriod();
+	sc_core::sc_time cpu_cycle_time = bus_cycle_time / clock_multiplier;
+	time_per_instruction = cpu_cycle_time / ipc;
+	std::cerr << "bus_cycle_time=" << bus_cycle_time << std::endl;
+	std::cerr << "clock_multiplier=" << clock_multiplier << std::endl;
+	std::cerr << "time_per_instruction=" << time_per_instruction << std::endl;
+}
+
+template <typename TYPES, typename CONFIG>
+void CPU<TYPES, CONFIG>::ClockPropertiesChangedProcess()
+{
+	UpdateSpeed();
+}
+
+template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::Run()
 {
 	wait(start_event);
-	sc_time time_per_instruction = cpu_cycle_time / ipc;
 	
 	while(1)
 	{

@@ -70,6 +70,7 @@ using unisim::util::reg::core::AddressableRegisterFile;
 using unisim::util::reg::core::ReadWriteStatus;
 using unisim::util::reg::core::SW_RW;
 using unisim::util::reg::core::SW_W;
+using unisim::util::reg::core::SW_RW1C;
 using unisim::util::reg::core::RWS_OK;
 using unisim::util::reg::core::RWS_ANA;
 
@@ -101,7 +102,8 @@ public:
 	typedef tlm::tlm_target_socket<BUSWIDTH> ahb_slave_if_type;
 
 	ahb_slave_if_type ahb_if; // AHB slave interface
-	sc_core::sc_in<bool> p_clk;
+	sc_core::sc_in<bool> m_clk;
+	sc_core::sc_in<bool> debug_mode;
 	sc_core::sc_out<bool> *p_irq[NUM_CHANNELS];
 	
 	STM(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
@@ -228,38 +230,73 @@ private:
 		bool release_payload;
 		sc_core::sc_event *completion_event;
 	};
+	
+	template <typename REGISTER>
+	struct STM_Register : AddressableRegister<REGISTER, 32, SW_RW, sc_core::sc_time>
+	{
+		typedef AddressableRegister<REGISTER, 32, SW_RW, sc_core::sc_time> Super;
+		
+		STM_Register(STM<CONFIG> *_stm) : Super(), stm(_stm) {}
+		STM_Register(STM<CONFIG> *_stm, uint32_t value) : Super(value), stm(_stm) {}
+
+		virtual ReadWriteStatus Read(sc_core::sc_time& time_stamp, uint32_t& value, const uint32_t& bit_enable)
+		{
+			stm->RunCounterToTime(time_stamp);
+			return this->Super::Read(time_stamp, value, bit_enable);
+		}
+		
+		virtual ReadWriteStatus Write(sc_core::sc_time& time_stamp, const uint32_t& value, const uint32_t& bit_enable)
+		{
+			stm->RunCounterToTime(time_stamp);
+			ReadWriteStatus rws = this->Super::Write(time_stamp, value, bit_enable);
+			stm->ScheduleCountersRun();
+			return rws;
+		}
+
+		using Super::operator =;
+		
+	protected:
+		STM<CONFIG> *stm;
+	};
 
 	// STM Control Register (STM_CR)
-	struct STM_CR : AddressableRegister<STM_CR, 32, SW_RW>
+	struct STM_CR : STM_Register<STM_CR>
 	{
-		typedef AddressableRegister<STM_CR, 32, SW_RW> Super;
+		typedef STM_Register<STM_CR> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x0;
 
 		struct CPS : Field<CPS, 16, 23> {}; // Counter Prescaler
 		struct FRZ : Field<FRZ, 30>     {}; // Freeze
+		struct TEN : Field<TEN, 31>     {}; // Timer counter enabled
 		
 		typedef FieldSet<CPS, FRZ> ALL;
 		
-		STM_CR(STM<CONFIG> *_stm) : Super(), stm(_stm) { Init(); }
-		STM_CR(STM<CONFIG> *_stm, uint32_t value) : Super(value), stm(_stm) { Init(); }
+		STM_CR(STM<CONFIG> *_stm) : Super(_stm) { Init(); }
+		STM_CR(STM<CONFIG> *_stm, uint32_t value) : Super(_stm, value) { Init(); }
 		
 		void Init()
 		{
 			this->SetName("STM_CR"); this->SetDescription("STM Control Register");
 			CPS::SetName("CPS"); CPS::SetDescription("Counter Prescaler");
 			FRZ::SetName("FRZ"); FRZ::SetDescription("Freeze");
+			TEN::SetName("TEN"); TEN::SetDescription("Timer counter enabled");
 		}
 		
+		virtual ReadWriteStatus Write(sc_core::sc_time& time_stamp, const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = this->Super::Write(time_stamp, value, bit_enable);
+			this->stm->RefreshFreeze(); // FRZ may have changed
+			return rws;
+		}
+
 		using Super::operator =;
-	private:
-		STM<CONFIG> *stm;
 	};
 
 	// STM Count Register (STM_CNT)
-	struct STM_CNT : AddressableRegister<STM_CNT, 32, SW_RW>
+	struct STM_CNT : STM_Register<STM_CNT>
 	{
-		typedef AddressableRegister<STM_CNT, 32, SW_RW> Super;
+		typedef STM_Register<STM_CNT> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x4;
 
@@ -267,24 +304,22 @@ private:
 		
 		typedef FieldSet<CNT> ALL;
 		
-		STM_CNT(STM<CONFIG> *_stm) : Super(), stm(_stm) { Init(); }
-		STM_CNT(STM<CONFIG> *_stm, uint32_t value) : Super(value), stm(_stm) { Init(); }
+		STM_CNT(STM<CONFIG> *_stm) : Super(_stm) { Init(); }
+		STM_CNT(STM<CONFIG> *_stm, uint32_t value) : Super(_stm, value) { Init(); }
 		
 		void Init()
 		{
 			this->SetName("STM_CNT"); this->SetDescription("STM Count Register");
 			CNT::SetName("CNT"); CNT::SetDescription("Timer count value used as the time base for all channels");
 		}
-		
+
 		using Super::operator =;
-	private:
-		STM<CONFIG> *stm;
 	};
 
 	// STM Channel Control Register (STM_CCRn)
-	struct STM_CCR : AddressableRegister<STM_CCR, 32, SW_RW>
+	struct STM_CCR : STM_Register<STM_CCR>
 	{
-		typedef AddressableRegister<STM_CCR, 32, SW_RW> Super;
+		typedef STM_Register<STM_CCR> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x10;
 
@@ -292,13 +327,13 @@ private:
 		
 		typedef FieldSet<CEN> ALL;
 		
-		STM_CCR() : Super(), stm(0), reg_num(0) {}
-		STM_CCR(STM<CONFIG> *_stm) : Super(), stm(_stm) {}
-		STM_CCR(STM<CONFIG> *_stm, uint32_t value) : Super(value), stm(_stm) {}
+		STM_CCR() : Super(0), reg_num(0) {}
+		STM_CCR(STM<CONFIG> *_stm) : Super(_stm) {}
+		STM_CCR(STM<CONFIG> *_stm, uint32_t value) : Super(_stm, value) {}
 		
 		void WithinRegisterFileCtor(unsigned int _reg_num, STM<CONFIG> *_stm)
 		{
-			stm = _stm;
+			this->stm = _stm;
 			reg_num = _reg_num;
 			
 			std::stringstream name_sstr;
@@ -311,31 +346,30 @@ private:
 			CEN::SetName("CEN");
 			CEN::SetDescription("Channel Enable");
 		}
-		
+
 		using Super::operator =;
 	private:
-		STM<CONFIG> *stm;
 		unsigned int reg_num;
 	};
 
 	// STM Channel Interrupt Register (STM_CIRn)
-	struct STM_CIR : AddressableRegister<STM_CIR, 32, SW_RW>
+	struct STM_CIR : STM_Register<STM_CIR>
 	{
-		typedef AddressableRegister<STM_CIR, 32, SW_RW> Super;
+		typedef STM_Register<STM_CIR> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x14;
 
-		struct CIF : Field<CIF, 31> {}; // Channel Enable
+		struct CIF : Field<CIF, 31, SW_RW1C> {}; // Channel Enable
 		
 		typedef FieldSet<CIF> ALL;
 		
-		STM_CIR() : Super(), stm(0), reg_num(0) {}
-		STM_CIR(STM<CONFIG> *_stm) : Super(), stm(_stm) {}
-		STM_CIR(STM<CONFIG> *_stm, uint32_t value) : Super(value), stm(_stm) {}
+		STM_CIR() : Super(0), reg_num(0) {}
+		STM_CIR(STM<CONFIG> *_stm) : Super(_stm) {}
+		STM_CIR(STM<CONFIG> *_stm, uint32_t value) : Super(_stm, value) {}
 		
 		void WithinRegisterFileCtor(unsigned int _reg_num, STM<CONFIG> *_stm)
 		{
-			stm = _stm;
+			this->stm = _stm;
 			reg_num = _reg_num;
 			
 			std::stringstream name_sstr;
@@ -347,18 +381,19 @@ private:
 			
 			CIF::SetName("CIF");
 			CIF::SetDescription("Channel Interrupt Flag");
+			
+			this->template Set<typename STM_CIR::CIF>(1);
 		}
-		
+
 		using Super::operator =;
 	private:
-		STM<CONFIG> *stm;
 		unsigned int reg_num;
 	};
 
 	// STM Channel Compare Register (STM_CMPn)
-	struct STM_CMP : AddressableRegister<STM_CMP, 32, SW_RW>
+	struct STM_CMP : STM_Register<STM_CMP>
 	{
-		typedef AddressableRegister<STM_CMP, 32, SW_RW> Super;
+		typedef STM_Register<STM_CMP> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x18;
 
@@ -366,13 +401,13 @@ private:
 		
 		typedef FieldSet<CMP> ALL;
 		
-		STM_CMP() : Super(), stm(0), reg_num(0) {}
-		STM_CMP(STM<CONFIG> *_stm) : Super(), stm(_stm) {}
-		STM_CMP(STM<CONFIG> *_stm, uint32_t value) : Super(value), stm(_stm) {}
+		STM_CMP() : Super(0), reg_num(0) {}
+		STM_CMP(STM<CONFIG> *_stm) : Super(_stm) {}
+		STM_CMP(STM<CONFIG> *_stm, uint32_t value) : Super(_stm, value) {}
 		
 		void WithinRegisterFileCtor(unsigned int _reg_num, STM<CONFIG> *_stm)
 		{
-			stm = _stm;
+			this->stm = _stm;
 			reg_num = _reg_num;
 			
 			std::stringstream name_sstr;
@@ -387,22 +422,22 @@ private:
 			cmp_description_sstr << "Compare value for channel #" << reg_num;
 			CMP::SetDescription(cmp_description_sstr.str());
 		}
-		
+
 		using Super::operator =;
 	private:
 		STM<CONFIG> *stm;
 		unsigned int reg_num;
 	};
 	
-	unisim::kernel::tlm2::ClockPropertiesProxy p_clk_prop_proxy;
+	unisim::kernel::tlm2::ClockPropertiesProxy m_clk_prop_proxy;
 
 	STM_CR stm_cr;
 	STM_CNT stm_cnt;
-	AddressableRegisterFile<STM_CCR, NUM_CHANNELS, STM<CONFIG> > stm_ccr;
-	AddressableRegisterFile<STM_CIR, NUM_CHANNELS, STM<CONFIG> > stm_cir;
-	AddressableRegisterFile<STM_CMP, NUM_CHANNELS, STM<CONFIG> > stm_cmp;
+	AddressableRegisterFile<STM_CCR, NUM_CHANNELS, STM<CONFIG>, sc_core::sc_time> stm_ccr;
+	AddressableRegisterFile<STM_CIR, NUM_CHANNELS, STM<CONFIG>, sc_core::sc_time> stm_cir;
+	AddressableRegisterFile<STM_CMP, NUM_CHANNELS, STM<CONFIG>, sc_core::sc_time> stm_cmp;
 	
-	RegisterAddressMap<sc_dt::uint64> reg_addr_map;
+	RegisterAddressMap<sc_dt::uint64, sc_core::sc_time> reg_addr_map;
 	
 	unisim::kernel::tlm2::Schedule<Event> schedule;
 	
@@ -410,12 +445,29 @@ private:
 	unisim::kernel::service::Parameter<unisim::util::endian::endian_type> param_endian;
 	bool verbose;
 	unisim::kernel::service::Parameter<bool> param_verbose;
-	sc_core::sc_time cycle_time;
+	
+	bool irq_level[NUM_CHANNELS];
+	sc_core::sc_event *gen_irq_event[NUM_CHANNELS];
+	sc_core::sc_time last_counters_run_time;
+	sc_core::sc_time prescaled_clock_period;
+	sc_core::sc_event counters_run_event;
+	bool freeze;
 	
 	void ProcessEvent(Event *event);
 	void ProcessEvents();
 	void Process();
-	void ClockPropertiesChangedProcess();
+	void UpdatePrescaledClockPeriod();
+	void P_IRQ_Process(unsigned int channel_num);
+	
+	void SetIRQLevel(unsigned int channel_num, bool level);
+	void TriggerInterrupt(unsigned int channel_num);
+	void AckInterrupt(unsigned int channel_num);
+	void IncrementCounter(sc_dt::uint64 delta);
+	sc_core::sc_time TimeToNextCountersRun();
+	void RunCounterToTime(const sc_core::sc_time& time_stamp);
+	void ScheduleCountersRun();
+	void RunCounterProcess();
+	void RefreshFreeze();
 };
 
 } // end of namespace stm

@@ -106,6 +106,12 @@ template <typename T> inline T Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::Get
 }
 
 template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
+template <typename T> inline T Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::GetWriteOneClearMask()
+{
+	return (_ACCESS & SW_W1C) ? GetMask<T>() : 0;
+}
+
+template <typename FIELD, unsigned int _BITOFFSET, unsigned int _BITWIDTH, Access _ACCESS>
 template <typename T> inline T Field<FIELD, _BITOFFSET, _BITWIDTH, _ACCESS>::GetReadMask()
 {
 	return (_ACCESS & SW_R) ? GetMask<T>() : 0;
@@ -278,6 +284,12 @@ inline T NullField::GetWriteMask()
 }
 
 template <typename T>
+inline T NullField::GetWriteOneClearMask()
+{
+	return 0;
+}
+
+template <typename T>
 inline T NullField::GetReadMask()
 {
 	return 0;
@@ -398,6 +410,41 @@ template <typename T> inline T FieldSet<  BF0,  BF1,  BF2,  BF3,  BF4,  BF5,  BF
 	     | BF40::template GetWriteMask<T>() | BF41::template GetWriteMask<T>() | BF42::template GetWriteMask<T>() | BF43::template GetWriteMask<T>() | BF44::template GetWriteMask<T>() | BF45::template GetWriteMask<T>() | BF46::template GetWriteMask<T>() | BF47::template GetWriteMask<T>()
 	     | BF48::template GetWriteMask<T>() | BF49::template GetWriteMask<T>() | BF50::template GetWriteMask<T>() | BF51::template GetWriteMask<T>() | BF52::template GetWriteMask<T>() | BF53::template GetWriteMask<T>() | BF54::template GetWriteMask<T>() | BF55::template GetWriteMask<T>()
 	     | BF56::template GetWriteMask<T>() | BF57::template GetWriteMask<T>() | BF58::template GetWriteMask<T>() | BF59::template GetWriteMask<T>() | BF60::template GetWriteMask<T>() | BF61::template GetWriteMask<T>() | BF62::template GetWriteMask<T>() | BF63::template GetWriteMask<T>();
+}
+
+template < typename  BF0, typename  BF1, typename  BF2, typename  BF3 
+         , typename  BF4, typename  BF5, typename  BF6, typename  BF7 
+         , typename  BF8, typename  BF9, typename BF10, typename BF11
+         , typename BF12, typename BF13, typename BF14, typename BF15
+         , typename BF16, typename BF17, typename BF18, typename BF19
+         , typename BF20, typename BF21, typename BF22, typename BF23
+         , typename BF24, typename BF25, typename BF26, typename BF27
+         , typename BF28, typename BF29, typename BF30, typename BF31
+         , typename BF32, typename BF33, typename BF34, typename BF35
+         , typename BF36, typename BF37, typename BF38, typename BF39
+         , typename BF40, typename BF41, typename BF42, typename BF43
+         , typename BF44, typename BF45, typename BF46, typename BF47
+         , typename BF48, typename BF49, typename BF50, typename BF51
+         , typename BF52, typename BF53, typename BF54, typename BF55
+         , typename BF56, typename BF57, typename BF58, typename BF59
+         , typename BF60, typename BF61, typename BF62, typename BF63>
+template <typename T> inline T FieldSet<  BF0,  BF1,  BF2,  BF3,  BF4,  BF5,  BF6,  BF7
+                                       ,  BF8,  BF9, BF10, BF11, BF12, BF13, BF14, BF15
+                                       , BF16, BF17, BF18, BF19, BF20, BF21, BF22, BF23
+                                       , BF24, BF25, BF26, BF27, BF28, BF29, BF30, BF31
+                                       , BF32, BF33, BF34, BF35, BF36, BF37, BF38, BF39
+                                       , BF40, BF41, BF42, BF43, BF44, BF45, BF46, BF47
+                                       , BF48, BF49, BF50, BF51, BF52, BF53, BF54, BF55
+                                       , BF56, BF57, BF58, BF59, BF60, BF61, BF62, BF63>::GetWriteOneClearMask()
+{
+	return  BF0::template GetWriteOneClearMask<T>() |  BF1::template GetWriteOneClearMask<T>() |  BF2::template GetWriteOneClearMask<T>() |  BF3::template GetWriteOneClearMask<T>() |  BF4::template GetWriteOneClearMask<T>() |  BF5::template GetWriteOneClearMask<T>() |  BF6::template GetWriteOneClearMask<T>() |  BF7::template GetWriteOneClearMask<T>()
+	     |  BF8::template GetWriteOneClearMask<T>() |  BF9::template GetWriteOneClearMask<T>() | BF10::template GetWriteOneClearMask<T>() | BF11::template GetWriteOneClearMask<T>() | BF12::template GetWriteOneClearMask<T>() | BF13::template GetWriteOneClearMask<T>() | BF14::template GetWriteOneClearMask<T>() | BF15::template GetWriteOneClearMask<T>()
+	     | BF16::template GetWriteOneClearMask<T>() | BF17::template GetWriteOneClearMask<T>() | BF18::template GetWriteOneClearMask<T>() | BF19::template GetWriteOneClearMask<T>() | BF20::template GetWriteOneClearMask<T>() | BF21::template GetWriteOneClearMask<T>() | BF22::template GetWriteOneClearMask<T>() | BF23::template GetWriteOneClearMask<T>()
+	     | BF24::template GetWriteOneClearMask<T>() | BF25::template GetWriteOneClearMask<T>() | BF26::template GetWriteOneClearMask<T>() | BF27::template GetWriteOneClearMask<T>() | BF28::template GetWriteOneClearMask<T>() | BF29::template GetWriteOneClearMask<T>() | BF30::template GetWriteOneClearMask<T>() | BF31::template GetWriteOneClearMask<T>()
+	     | BF32::template GetWriteOneClearMask<T>() | BF33::template GetWriteOneClearMask<T>() | BF34::template GetWriteOneClearMask<T>() | BF35::template GetWriteOneClearMask<T>() | BF36::template GetWriteOneClearMask<T>() | BF37::template GetWriteOneClearMask<T>() | BF38::template GetWriteOneClearMask<T>() | BF39::template GetWriteOneClearMask<T>()
+	     | BF40::template GetWriteOneClearMask<T>() | BF41::template GetWriteOneClearMask<T>() | BF42::template GetWriteOneClearMask<T>() | BF43::template GetWriteOneClearMask<T>() | BF44::template GetWriteOneClearMask<T>() | BF45::template GetWriteOneClearMask<T>() | BF46::template GetWriteOneClearMask<T>() | BF47::template GetWriteOneClearMask<T>()
+	     | BF48::template GetWriteOneClearMask<T>() | BF49::template GetWriteOneClearMask<T>() | BF50::template GetWriteOneClearMask<T>() | BF51::template GetWriteOneClearMask<T>() | BF52::template GetWriteOneClearMask<T>() | BF53::template GetWriteOneClearMask<T>() | BF54::template GetWriteOneClearMask<T>() | BF55::template GetWriteOneClearMask<T>()
+	     | BF56::template GetWriteOneClearMask<T>() | BF57::template GetWriteOneClearMask<T>() | BF58::template GetWriteOneClearMask<T>() | BF59::template GetWriteOneClearMask<T>() | BF60::template GetWriteOneClearMask<T>() | BF61::template GetWriteOneClearMask<T>() | BF62::template GetWriteOneClearMask<T>() | BF63::template GetWriteOneClearMask<T>();
 }
 
 template < typename  BF0, typename  BF1, typename  BF2, typename  BF3 
@@ -800,6 +847,12 @@ inline typename Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::TYPE Register
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
+inline typename Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::TYPE Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetWriteOneClearMask() const
+{
+	return (_ACCESS & SW_W1C) ? (REGISTER::ALL::template GetWriteOneClearMask<TYPE>() & TYPE_MASK): 0;
+}
+
+template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 inline typename Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::TYPE Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetReadMask() const
 {
 	return (_ACCESS & SW_R) ? (REGISTER::ALL::template GetReadMask<TYPE>() & TYPE_MASK) : 0;
@@ -889,6 +942,9 @@ ReadWriteStatus Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Write(const T
 	ReadWriteStatus rws(RWS_OK);
 	const TYPE write_mask = bit_enable & GetWriteMask();
 	const TYPE unwritable_mask = bit_enable & ~GetWriteMask();
+	const TYPE write_one_clear_mask = _value & bit_enable & GetWriteOneClearMask();
+	
+	value = value & ~write_one_clear_mask;
 	
 	TYPE old_value = value & TYPE_MASK;
 	
@@ -909,7 +965,7 @@ ReadWriteStatus Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Write(const T
 		rws = ReadWriteStatus(rws | RWS_WROB);
 	}
 	
-	value = (old_value & ~write_mask) | (_value & write_mask);
+	value = (old_value & ~write_mask) | (_value & write_mask & ~write_one_clear_mask);
 	
 	return rws;
 }
@@ -1441,7 +1497,7 @@ template <typename ADDRESS, typename CUSTOM_RW_ARG>
 void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::MapRegister(ADDRESS addr, AddressableRegisterBase<CUSTOM_RW_ARG> *arb, unsigned int reg_byte_size)
 {
 	unsigned int _reg_byte_size = reg_byte_size ? reg_byte_size : (arb->__ARB_GetSize__() + 7) / 8;
-	//std::cerr << "Mapping " << arb->__ARB_GetName__() << " to 0x" << std::hex << addr << std::dec << " (" << reg_byte_size << " bytes)" << std::endl;
+	std::cerr << "Mapping " << arb->__ARB_GetName__() << " to 0x" << std::hex << addr << std::dec << " (" << reg_byte_size << " bytes)" << std::endl;
 
 	unsigned int byte_idx;
 
@@ -1554,7 +1610,7 @@ AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *RegisterAddressMap<ADDRESS, C
 {
 	if(optimized)
 	{
-		return opt_reg_addr_map.size() ? opt_reg_addr_map[addr - addr_range.first] : 0;
+		return (opt_reg_addr_map.size() && ((addr >= addr_range.first) && (addr <= addr_range.second))) ? opt_reg_addr_map[addr - addr_range.first] : 0;
 	}
 	
 	if(optimizable)
@@ -1702,6 +1758,7 @@ ReadWriteStatus RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Read(CUSTOM_RW_ARG *
 		unsigned int reg_size_minus_1 = reg_size - 1;
 		unsigned char reg_value[reg_size];
 		
+		std::cerr << "Reading \"" << arh->GetName() << "\"" << std::endl;
 		ReadWriteStatus rws = arh->__ARH_Read__(custom_rw_arg, reg_value, /* bit enable */ 0);
 		
 		if(rws)

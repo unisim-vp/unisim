@@ -50,6 +50,7 @@ public:
 	virtual const sc_core::sc_time& GetClockStartTime() const = 0;
 	virtual bool GetClockPosEdgeFirst() const = 0;
 	virtual bool IsClockFrozen() const = 0;
+	virtual bool IsClockLazy() const = 0;
 	virtual const sc_core::sc_event& GetClockPropertiesChangedEvent() const = 0;
 };
 
@@ -81,6 +82,7 @@ public:
 	virtual const sc_core::sc_time& GetClockStartTime() const;
 	virtual bool GetClockPosEdgeFirst() const;
 	virtual bool IsClockFrozen() const;
+	virtual bool IsClockLazy() const;
 	virtual const sc_core::sc_event& GetClockPropertiesChangedEvent() const;
 protected:
 	virtual void before_end_of_elaboration();

@@ -127,8 +127,13 @@ enum Access
 	SW_R = 2 | HW_RW,             // hardware read-write/software read access
 	SW_W = 4 | HW_RW,             // hardware read-write/software write access
 	SW_RW = SW_R | SW_W,          // hardware read-write/software read-write access (default)
-	SW_W1 = 8 | SW_W,             // hardware write/software writeOnce access
-	SW_RW1 = SW_RW | SW_W1,       // hardware read-write/software read-writeOnce access
+	SW_W1 = 8 | SW_W,             // hardware write/software write once access
+	SW_RW1 = SW_RW | SW_W1,       // hardware read-write/software read-write once access
+	
+	SW_W1C = 16 | SW_W,           // hardware read-write/software write 1 clear access
+	SW_W11C = SW_W1C | SW_W1,     // hardware read-write/software write one and 1 clear access
+	SW_RW1C = SW_RW | SW_W1C,     // hardware read-write/software read-write 1 clear access
+	SW_RW11C = SW_RW1 | SW_W1C    // hardware read-write/software read-write one and 1 clear access
 };
 
 std::ostream& operator << (std::ostream& os, const Access& access);
@@ -280,6 +285,7 @@ public:
 	template <typename T> static inline T GetMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetAssignMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetWriteMask() ALWAYS_INLINE;
+	template <typename T> static inline T GetWriteOneClearMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetReadMask() ALWAYS_INLINE;
 	template <typename T> static inline T Mask(const T& storage) ALWAYS_INLINE;
 	template <typename T> static inline T Get(const T& storage) ALWAYS_INLINE;
@@ -314,6 +320,7 @@ struct NullField
 	template <typename T> static inline T GetMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetAssignMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetWriteMask() ALWAYS_INLINE;
+	template <typename T> static inline T GetWriteOneClearMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetReadMask() ALWAYS_INLINE;
 	static void SetName(const std::string& name);
 	static void SetDisplayName(const std::string& disp_name);
@@ -346,6 +353,7 @@ struct FieldSet
 	template <typename T> static inline T GetMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetAssignMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetWriteMask() ALWAYS_INLINE;
+	template <typename T> static inline T GetWriteOneClearMask() ALWAYS_INLINE;
 	template <typename T> static inline T GetReadMask() ALWAYS_INLINE;
 	template <typename T> static inline T Get(const T& storage) ALWAYS_INLINE;
 	template <typename T> static inline void Set(T& storage, T bitfied_value) ALWAYS_INLINE;
@@ -403,6 +411,7 @@ public:
 	inline TYPE GetMask() const ALWAYS_INLINE;
 	inline TYPE GetAssignMask() const ALWAYS_INLINE;
 	inline TYPE GetWriteMask() const ALWAYS_INLINE;
+	inline TYPE GetWriteOneClearMask() const ALWAYS_INLINE;
 	inline TYPE GetReadMask() const ALWAYS_INLINE;
 	
 	Register();
