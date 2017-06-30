@@ -155,11 +155,11 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	, param_verbose_move_from_slr("verbose-move-from-slr", this, verbose_move_from_slr, "enable/disable verbosity of move from system level registers (SPRs, and so on)")
 	, registers_registry()
 	, exception_dispatcher(static_cast<typename CONFIG::CPU *>(this))
-	, invalid_spr(this)
-	, invalid_tbr(this)
-	, invalid_pmr(this)
-	, invalid_tmr(this)
-	, external_dcr(this)
+	, invalid_spr(static_cast<typename CONFIG::CPU *>(this))
+	, invalid_tbr(static_cast<typename CONFIG::CPU *>(this))
+	, invalid_pmr(static_cast<typename CONFIG::CPU *>(this))
+	, invalid_tmr(static_cast<typename CONFIG::CPU *>(this))
+	, external_dcr(static_cast<typename CONFIG::CPU *>(this))
 	, slr()
 	, reset_addr(0x0)
 	, param_reset_addr("reset-addr", this, reset_addr, "reset address")
@@ -685,6 +685,18 @@ bool CPU<TYPES, CONFIG>::IntLoadMSBFirst(unsigned int rd, typename TYPES::ADDRES
 }
 
 template <typename TYPES, typename CONFIG>
+template <typename REGISTER>
+bool CPU<TYPES, CONFIG>::SpecialLoad(REGISTER& reg, typename TYPES::ADDRESS ea)
+{
+	uint32_t value;
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, false>(value, ea);
+	if(unlikely(!status)) return false;
+	reg = value;
+	MonitorLoad(ea, sizeof(value));
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int8Store(unsigned int rs, typename TYPES::ADDRESS ea)
 {
 	uint8_t value = gpr[rs];
@@ -781,6 +793,17 @@ bool CPU<TYPES, CONFIG>::IntStoreMSBFirst(unsigned int rs, typename TYPES::ADDRE
 	}
 
 	MonitorStore(ea, size);
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+template <typename REGISTER>
+bool CPU<TYPES, CONFIG>::SpecialStore(const REGISTER& reg, typename TYPES::ADDRESS ea)
+{
+	uint32_t value = reg;
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, false>(value, ea);
+	if(unlikely(!status)) return false;
+	MonitorStore(ea, sizeof(value));
 	return true;
 }
 

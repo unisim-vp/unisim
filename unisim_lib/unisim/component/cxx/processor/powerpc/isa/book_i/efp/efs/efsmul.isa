@@ -35,37 +35,35 @@
 op efsmul(4[6]:rd[5]:ra[5]:rb[5]:712[11]);
 
 efsmul.execute = {
-  if (!cpu->CheckSPV())
-    return false;
+	if (!cpu->CheckSPV())
+		return false;
 
-  // Read the input operands
-  SoftFloat result(cpu->GetGPR(ra)), b(cpu->GetGPR(rb));
+	// Read the input operands
+	SoftFloat result(cpu->GetGPR(ra)), b(cpu->GetGPR(rb));
 
-  // Check for Invalid Operation/Input errors
-  if (not cpu->EFPProcessInput().set(result).set(b).proceed())
-    return false;
-  
-  // Compute the result
-  CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-  Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
-  if (not result.isZero() and not b.isZero())
-    {
-      result.multAssign(b, flags);
-    }
-  else
-    {
-      bool neg = (result.isNegative() ^ b.isNegative());
-      result.clear();
-      result.setNegative( neg );
-    }
-  
-  // Handle EFP Specific Signaling/Rounding
-  bool status = cpu->EFPProcessOutput( result, flags );
+	// Check for Invalid Operation/Input errors
+	if (not cpu->EFPProcessInput().set(result).set(b).proceed())
+		return false;
 	
-  // Write back the result
-  cpu->SetGPR(rd, result.queryValue());
+	// Compute the result
+	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
+	Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
+	if (not result.isZero() and not b.isZero())
+	{
+		result.multAssign(b, flags);
+	}
+	else
+	{
+		result.setZero(result.isNegative() ^ b.isNegative());
+	}
+	
+	// Handle EFP Specific Signaling/Rounding
+	bool status = cpu->EFPProcessOutput( result, flags );
+	
+	// Write back the result
+	cpu->SetGPR(rd, result.queryValue());
 
-  return status;
+	return status;
 }
 
 efsmul.disasm = {

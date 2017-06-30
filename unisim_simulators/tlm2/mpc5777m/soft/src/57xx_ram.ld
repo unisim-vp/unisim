@@ -23,8 +23,8 @@ MEMORY
 {
     SRAM :	org = 0x40040000,   len = 128K
     
-    int_iram  : org = 0x52000000,   len = 16K
-    int_dram  : org = 0x52800000,   len = 64K   
+    local_imem  : org = 0x52000000,   len = 16K
+    local_dmem  : org = 0x52800000,   len = 64K   
 }
 
 SECTIONS
@@ -38,23 +38,82 @@ SECTIONS
     .core_exceptions_table   : ALIGN(4096)
     {
       __IVPR_VALUE = . ;
-      *(.core_exceptions_table)
+      KEEP(*(.core_exceptions_table))
     } > SRAM
 
     .intc_vector_table   : ALIGN(4096)
     {
-      *(.intc_vector_table)
+      KEEP(*(.intc_vector_table))
     } > SRAM
       
     .text : 
     {
       *(.text.startup)
-      *(.text)
-      *(.init)
+      *(.text)      
       *(.text.*)
+      KEEP (*(.init))
+      KEEP (*(.fini))            
       . = ALIGN(16);
     } > SRAM
-    
+      
+    .ctors :
+    {
+      __CTOR_LIST__ = .;
+      /* gcc uses crtbegin.o to find the start of
+         the constructors, so we make sure it is
+         first.  Because this is a wildcard, it
+         doesn't matter if the user does not
+         actually link against crtbegin.o; the
+         linker won't look for a file to match a
+         wildcard.  The wildcard also means that it
+         doesn't matter which directory crtbegin.o
+         is in.  */
+      KEEP (*crtbegin.o(.ctors))
+      KEEP (*crtbegin?.o(.ctors))
+      /* We don't want to include the .ctor section from
+         from the crtend.o file until after the sorted ctors.
+         The .ctor section from the crtend file contains the
+         end of ctors marker and it must be last */
+      KEEP (*(EXCLUDE_FILE(*crtend?.o *crtend.o) .ctors))
+      KEEP (*(SORT(.ctors.*)))
+      KEEP (*(.ctors))
+      __CTOR_END__ = .;
+    } > SRAM
+
+    .dtors :
+    {
+      __DTOR_LIST__ = .;
+      KEEP (*crtbegin.o(.dtors))
+      KEEP (*crtbegin?.o(.dtors))
+      KEEP (*(EXCLUDE_FILE(*crtend?.o *crtend.o) .dtors))
+      KEEP (*(SORT(.dtors.*)))
+      KEEP (*(.dtors))
+      __DTOR_END__ = .;
+    } > SRAM
+        
+    .preinit_array :
+    {
+      PROVIDE_HIDDEN (__preinit_array_start = .);
+      KEEP (*(.preinit_array*))
+      PROVIDE_HIDDEN (__preinit_array_end = .);
+    } > SRAM
+
+    .init_array :
+    {
+      PROVIDE_HIDDEN (__init_array_start = .);
+      KEEP (*(SORT(.init_array.*)))
+      KEEP (*(.init_array*))
+      PROVIDE_HIDDEN (__init_array_end = .);
+    } > SRAM
+
+    .fini_array :
+    {
+      PROVIDE_HIDDEN (__fini_array_start = .);
+      KEEP (*(SORT(.fini_array.*)))
+      KEEP (*(.fini_array*))
+      PROVIDE_HIDDEN (__fini_array_end = .);
+    } > SRAM
+        
     .rodata :
     {
       *(.rodata)
@@ -112,7 +171,7 @@ SECTIONS
       _stack_addr = . ;
       __SP_INIT = . ;
       . += 4;
-    } > SRAM
+    } > local_dmem
  
 /*-------- LABELS USED IN CODE -------------------------------*/
         

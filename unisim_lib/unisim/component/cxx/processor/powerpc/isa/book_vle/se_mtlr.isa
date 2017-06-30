@@ -43,7 +43,8 @@ se_mtlr.var rx : {uint8_t} = {srx & 31};
 
 se_mtlr.execute = {
 	uint32_t result = cpu->GetGPR(rx);
-	cpu->SetLR(result);
+	LR& lr = cpu->GetLR();
+	lr = result;
 	return true;
 }
 

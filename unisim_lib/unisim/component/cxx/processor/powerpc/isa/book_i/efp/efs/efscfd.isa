@@ -32,11 +32,13 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op efscfd(4[6]:rd[5]:?[5]:rb[5]:719[11])
+op efscfd(4[6]:rd[5]:?[5]:rb[5]:719[11]);
+
 efscfd.execute = {
 	cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 	return false;
 }
+
 efscfd.disasm = {
 	os << "efscfd r" << (unsigned int) rd << ", r" << (unsigned int) rb;
 }

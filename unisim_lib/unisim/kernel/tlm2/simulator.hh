@@ -37,6 +37,7 @@
 
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/logger/logger.hh>
+#include <unisim/kernel/tlm2/clock.hh>
 #include <systemc>
 #include <stdexcept>
 #include <string>
@@ -149,10 +150,10 @@ public:
 	virtual ~Instrumenter();
 	virtual bool EndSetup();
 	
-	sc_core::sc_clock& CreateClock(const std::string& clock_name, const sc_core::sc_time& clock_period, double clock_duty_cycle, const sc_core::sc_time& clock_start_time, bool clock_posedge_first);
+	Clock& CreateClock(const std::string& clock_name);
 	template <typename T> sc_core::sc_signal<T>& CreateSignal(const T& init_value);
 	template <typename T> sc_core::sc_signal<T>& CreateSignal(const std::string& signal_name, const T& init_value);
-	template <typename T> void CreateSignalArray(const std::string& signal_array_name, unsigned int signal_array_dim, const T& init_value);
+	template <typename T> void CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value);
 
 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void RegisterSignal(sc_core::sc_signal<T, WRITER_POLICY> *signal);
 	void RegisterPort(sc_core::sc_port_base& port);
@@ -161,7 +162,9 @@ public:
 
 	void TraceSignalPattern(const std::string& signal_name_pattern);
 	void Bind(const std::string& port_name, const std::string& signal_name);
-	void BindArray(const std::string& port_array_name, const std::string& signal_array_name, unsigned int begin_idx, unsigned int end_idx);
+	void BindArray(unsigned int dim, const std::string& port_array_name, const std::string& signal_array_name);
+	void BindArray(unsigned int dim, const std::string& port_array_name, unsigned int port_array_begin_idx, const std::string& signal_array_name, unsigned int signal_array_begin_idx);
+	void BindArray(unsigned int dim, const std::string& port_array_name, unsigned int port_array_begin_idx, unsigned int port_array_stride, const std::string& signal_array_name, unsigned int signal_array_begin_idx, unsigned int signal_array_stride);
 	
 	void StartBinding();
 	void StartInstrumentation();
@@ -256,10 +259,10 @@ public:
 	Simulator(sc_core::sc_module_name const& name, int argc, char **argv, void (*LoadBuiltInConfig)(unisim::kernel::service::Simulator *simulator) = 0);
 	virtual ~Simulator();
 	
-	sc_core::sc_clock& CreateClock(const std::string& clock_name, const sc_core::sc_time& clock_period, double clock_duty_cycle, const sc_core::sc_time& clock_start_time, bool clock_posedge_first);
+	Clock& CreateClock(const std::string& clock_name);
 	template <typename T> sc_core::sc_signal<T>& CreateSignal(const T& init_value);
 	template <typename T> sc_core::sc_signal<T>& CreateSignal(const std::string& signal_name, const T& init_value);
-	template <typename T> void CreateSignalArray(const std::string& signal_array_name, unsigned int signal_array_dim, const T& init_value);
+	template <typename T> void CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value);
 	template <typename T> sc_core::sc_signal<T>& GetSignal(const std::string& signal_name);
 	template <typename T> sc_core::sc_signal<T>& GetSignal(const std::string& signal_array_name, unsigned int idx);
 	
@@ -269,7 +272,9 @@ public:
 
 	void TraceSignalPattern(const std::string& signal_name_pattern);
 	void Bind(const std::string& port_name, const std::string& signal_name);
-	void BindArray(const std::string& port_array_name, const std::string& signal_array_name, unsigned int begin_idx, unsigned int end_idx);
+	void BindArray(unsigned int dim, const std::string& port_array_name, const std::string& signal_array_name);
+	void BindArray(unsigned int dim, const std::string& port_array_name, unsigned int port_array_begin_idx, const std::string& signal_array_name, unsigned int signal_array_begin_idx);
+	void BindArray(unsigned int dim, const std::string& port_array_name, unsigned int port_array_begin_idx, unsigned int port_array_stride, const std::string& signal_array_name, unsigned int signal_array_begin_idx, unsigned int signal_array_stride);
 protected:
 	unisim::kernel::logger::Logger logger;
 private:
@@ -286,9 +291,9 @@ template <typename T> sc_core::sc_signal<T>& Simulator::CreateSignal(const std::
 	return instrumenter->CreateSignal(signal_name, init_value);
 }
 
-template <typename T> void Simulator::CreateSignalArray(const std::string& signal_array_name, unsigned int signal_array_dim, const T& init_value)
+template <typename T> void Simulator::CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value)
 {
-	instrumenter->CreateSignalArray(signal_array_name, signal_array_dim, init_value);
+	instrumenter->CreateSignalArray(signal_array_dim, signal_array_name, init_value);
 }
 
 template <typename T> sc_core::sc_signal<T>& Simulator::GetSignal(const std::string& signal_name)
@@ -360,7 +365,7 @@ void InputInstrument<T>::Inject()
 {
 	if(value_changed)
 	{
-#if DEBUG_INSTRUMENTER
+#if DEBUG_INSTRUMENTER >= 2
 		std::cout << "InputInstrument<T>::Inject(): At " << sc_core::sc_time_stamp() << ", " << signal->name() << " <- '" << value << "'" << std::endl;
 #endif
 		signal->write(value);
@@ -443,7 +448,7 @@ template <typename T>
 sc_core::sc_signal<T>& Instrumenter::CreateSignal(const T& init_value)
 {
 	sc_core::sc_signal<T> *signal = new sc_core::sc_signal<T>();
-#ifdef DEBUG_INSTRUMENTER
+#if DEBUG_INSTRUMENTER >= 1
 	std::cout << "Creating Signal \"" << signal->name() << "\" <- '" << init_value << "'" << std::endl;
 #endif
 	signal_pool[signal->name()] = signal;
@@ -465,7 +470,7 @@ sc_core::sc_signal<T>& Instrumenter::CreateSignal(const std::string& signal_name
 	}
 	
 	sc_core::sc_signal<T> *signal = new sc_core::sc_signal<T>(signal_name.c_str());
-#ifdef DEBUG_INSTRUMENTER
+#if DEBUG_INSTRUMENTER >= 1
 	std::cout << "Creating Signal \"" << signal->name() << "\" <- '" << init_value << "'" << std::endl;
 #endif
 	signal_pool[signal->name()] = signal;
@@ -498,7 +503,7 @@ sc_core::sc_signal<T>& Instrumenter::CreateSignal(const std::string& signal_name
 }
 
 template <typename T>
-void Instrumenter::CreateSignalArray(const std::string& signal_array_name, unsigned int signal_array_dim, const T& init_value)
+void Instrumenter::CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value)
 {
 	unsigned int signal_array_index;
 	
@@ -633,7 +638,7 @@ bool Instrumenter::TryTraceSignal(const std::string& signal_name)
 			
 			if(signal)
 			{
-#ifdef DEBUG_INSTRUMENTER
+#if DEBUG_INSTRUMENTER >= 1
 				std::cout << "Tracing Signal \"" << signal->name() << "\"" << std::endl;
 #endif
 				sc_trace(trace_file, *signal, signal->name());
@@ -648,7 +653,7 @@ bool Instrumenter::TryTraceSignal(const std::string& signal_name)
 template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
 void Instrumenter::RegisterSignal(sc_core::sc_signal<T, WRITER_POLICY> *signal)
 {
-#ifdef DEBUG_INSTRUMENTER
+#if DEBUG_INSTRUMENTER >= 1
 	std::cout << "Registering Signal \"" << signal->name() << "\"" << std::endl;
 #endif
 	signal_pool[signal->name()] = signal;
@@ -683,10 +688,23 @@ bool Instrumenter::TryBind(const std::string& port_name, const std::string& sign
 		
 		in_port = dynamic_cast<sc_core::sc_port_b<sc_core::sc_signal_in_if<T> > *>(port_base);
 		
+#if DEBUG_INSTRUMENTER >= 2
+		std::cout << "TryBind(\"" << port_name << ",\"" << signal_name << "): in_port=" << in_port << std::endl;
+#endif
+
 		if(!in_port)
 		{
 			out_port = dynamic_cast<sc_core::sc_port_b<sc_core::sc_signal_inout_if<T> > *>(port_base);
+#if DEBUG_INSTRUMENTER >= 2
+			std::cerr << "TryBind(\"" << port_name << ",\"" << signal_name << "): out_port=" << out_port << std::endl;
+#endif
 		}
+	}
+	else
+	{
+#if DEBUG_INSTRUMENTER >= 1
+	std::cout << "WARNING! While binding, port \"" << port_name << "\" does not exist" << std::endl;
+#endif
 	}
 	
 	if(in_port || out_port)
@@ -701,15 +719,26 @@ bool Instrumenter::TryBind(const std::string& port_name, const std::string& sign
 			{
 				sc_core::sc_signal_in_if<T> *signal_in_if = dynamic_cast<sc_core::sc_signal_in_if<T> *>(signal_if);
 				
+#if DEBUG_INSTRUMENTER >= 2
+				std::cout << "TryBind(\"" << port_name << ",\"" << signal_name << "): signal_in_if=" << signal_in_if << std::endl;
+#endif
+				
 				if(signal_in_if)
 				{
 					(*in_port)(*signal_in_if);
+#if DEBUG_INSTRUMENTER >= 2
+					std::cout << "TryBind(\"" << port_name << ",\"" << signal_name << "): success (in port <- signal_in_if)" << std::endl;
+#endif
 					return true;
 				}
 			}
 			else if(out_port)
 			{
 				sc_core::sc_signal_inout_if<T> *signal_inout_if = dynamic_cast<sc_core::sc_signal_inout_if<T> *>(signal_if);
+
+#if DEBUG_INSTRUMENTER >= 2
+				std::cout << "TryBind(\"" << port_name << ",\"" << signal_name << "): signal_inout_if=" << signal_inout_if << std::endl;
+#endif
 
 				if(signal_inout_if)
 				{
@@ -723,16 +752,43 @@ bool Instrumenter::TryBind(const std::string& port_name, const std::string& sign
 							sc_core::sc_signal_inout_if<T> *original_signal_inout_if = dynamic_cast<sc_core::sc_signal_inout_if<T> *>(original_signal_if);
 							if(!original_signal_inout_if) throw std::runtime_error("Internal error! can't retrieve interface of original signal");
 							(*out_port)(*original_signal_inout_if);
+#if DEBUG_INSTRUMENTER >= 2
+							std::cout << "TryBind(\"" << port_name << ",\"" << signal_name << "): success (out_port -> original_signal_inout_if)" << std::endl;
+#endif
 							return true;
 						}
 						throw std::runtime_error("Internal error! can't find original signal");
 					}
 					(*out_port)(*signal_inout_if);
+#if DEBUG_INSTRUMENTER >= 2
+					std::cout << "TryBind(\"" << port_name << ",\"" << signal_name << "): success (output -> signal_inout_if)" << std::endl;
+#endif
 					return true;
+				}
+				else
+				{
+#if DEBUG_INSTRUMENTER >= 1
+					std::cout << "WARNING! While binding, signal \"" << signal_name << "\" either does not exist or data type is incompatible" << std::endl;
+#endif
 				}
 			}
 		}
+		else
+		{
+#if DEBUG_INSTRUMENTER >= 1
+			std::cout << "WARNING! While binding, signal \"" << signal_name << "\" either does not exist" << std::endl;
+#endif
+		}
 	}
+	else
+	{
+#if DEBUG_INSTRUMENTER >= 1
+	std::cout << "WARNING! While binding, port \"" << port_name << "\" either does not exist or data type is incompatible" << std::endl;
+#endif
+	}
+#if DEBUG_INSTRUMENTER >= 2
+	std::cout << "TryBind(\"" << port_name << ",\"" << signal_name << "): failed" << std::endl;
+#endif
 	return false;
 }
 
@@ -747,7 +803,7 @@ bool Instrumenter::TryInstrumentInputSignal(const std::string& signal_name)
 		sc_core::sc_signal<T> *injected_signal = TryGetSignal<T>((signal_name + "_injected").c_str());
 		if(!original_signal || !injected_signal) throw std::runtime_error("Internal error! can't get either original or injected signal");
 		
-#ifdef DEBUG_INSTRUMENTER
+#if DEBUG_INSTRUMENTER >= 1
 		std::cout << "Instrumenting Signal \"" << signal->name() << "\" for input" << std::endl;
 #endif
 		InputInstrument<T> *instrument = new InputInstrument<T>(signal_name, injected_signal);
@@ -776,7 +832,7 @@ bool Instrumenter::TryInstrumentOutputSignal(const std::string& signal_name)
 	{
 		
 		sc_core::sc_signal<T> *matched_signal = *sv_it;
-#ifdef DEBUG_INSTRUMENTER
+#if DEBUG_INSTRUMENTER >= 1
 		std::cout << "Instrumenting Signal \"" << matched_signal->name() << "\" for output" << std::endl;
 #endif
 		std::string matched_signal_name(matched_signal->name());
@@ -798,14 +854,14 @@ void Instrumenter::SignalTeeProcess(sc_core::sc_signal<T> *original_signal, sc_c
 	
 	if((time_stamp >= input_instrumentation_start_time) && (time_stamp <= input_instrumentation_end_time))
 	{
-#if DEBUG_INSTRUMENTER
+#if DEBUG_INSTRUMENTER >= 2
 		std::cout << time_stamp << ": Inject: " << signal->name() << " <- '" << (*injected_signal) << "'" << std::endl;
 #endif
 		value = *injected_signal;
 	}
 	else
 	{
-#if DEBUG_INSTRUMENTER
+#if DEBUG_INSTRUMENTER >= 2
 		std::cout << time_stamp << ": Passthrough: " << signal->name() << " <- '" << (*original_signal) << "'" << std::endl;
 #endif
 		value = *original_signal;

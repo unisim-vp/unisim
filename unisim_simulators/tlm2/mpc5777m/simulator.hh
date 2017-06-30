@@ -40,11 +40,13 @@
 #endif
 
 // Class definition of components
+#include <unisim/component/tlm2/processor/powerpc/e200/mpc57xx/e200z710n3/cpu.hh>
 #include <unisim/component/tlm2/processor/powerpc/e200/mpc57xx/e200z425bn3/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/config.hh>
 #include <unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.hh>
+#include <unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.hh>
 
 // Class definition of kernel, services and interfaces
 #include <unisim/kernel/service/service.hh>
@@ -91,7 +93,7 @@ using unisim::kernel::service::Variable;
 using unisim::kernel::service::VariableBase;
 using unisim::kernel::service::Object;
 
-static const bool DEBUG_ENABLE = false;
+static const bool DEBUG_ENABLE = true;
 
 //=========================================================================
 //===                        Top level class                            ===
@@ -124,38 +126,58 @@ private:
 	{
 		typedef FSB_ADDRESS_TYPE ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 2;
-		static const unsigned int OUTPUT_SOCKETS = 3;
-		static const unsigned int MAX_NUM_MAPPINGS = 3;
+		static const unsigned int OUTPUT_SOCKETS = 6;
+		static const unsigned int MAX_NUM_MAPPINGS = 11;
 		static const unsigned int BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;
 	};
 	
-	struct INTC_CONFIG
+	struct INTC_0_CONFIG
 	{
-		static const unsigned int NUM_PROCESSORS = 1;
-		static const unsigned int NUM_HW_IRQS = 1;
+		static const unsigned int NUM_PROCESSORS = 3;
+		static const unsigned int NUM_HW_IRQS = 965 - 32;
+		static const unsigned int BUSWIDTH = 64; // FIXME: INTC will be on PBRIDGE which is 32-bit width
+		static const unsigned int VOFFSET_WIDTH = 14;
+	};
+	
+	struct STM_2_CONFIG
+	{
+		static const unsigned int NUM_CHANNELS = 4;
+		static const unsigned int BUSWIDTH = 64; // FIXME: INTC will be on PBRIDGE which is 32-bit width
 	};
 
 	//=========================================================================
 	//===                     Aliases for components classes                ===
 	//=========================================================================
 
-	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> RAM;
-	typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::e200z425bn3::CPU CPU2;
+//	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> RAM;
+	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> STANDBY_RAM;
+	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> SYSTEM_RAM;
+	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> FLASH;
+	typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::e200z710n3::CPU Main_Core_0;
+	typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::e200z710n3::CPU Main_Core_1;
+	typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::e200z425bn3::CPU Peripheral_Core_2;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<INTERCONNECT_CONFIG> INTERCONNECT;
-	typedef unisim::component::tlm2::interrupt::freescale::mpc57xx::intc::INTC<INTC_CONFIG> INTC;
+	typedef unisim::component::tlm2::interrupt::freescale::mpc57xx::intc::INTC<INTC_0_CONFIG> INTC_0;
+	typedef unisim::component::tlm2::timer::freescale::mpc57xx::stm::STM<STM_2_CONFIG> STM_2;
 
 	//=========================================================================
 	//===                           Components                              ===
 	//=========================================================================
 	//  - PowerPC processor
-	CPU2 *cpu2;
-	//  - RAM
-	RAM *ram;
+	Peripheral_Core_2 *peripheral_core_2;
+	//  - Standby RAM
+	STANDBY_RAM *standby_ram;
+	//  - System RAM
+	SYSTEM_RAM *system_ram;
+	//  - FLASH
+	FLASH *flash;
 	//  - Interconnect
 	INTERCONNECT *interconnect;
 	//  - Interrupt Controller
-	INTC *intc;
+	INTC_0 *intc_0;
+	//  - System Timer Mode
+	STM_2 *stm_2;
 	
 	//=========================================================================
 	//===                            Services                               ===
@@ -191,6 +213,8 @@ private:
 #endif
 	
 	void ResetProcess();
+	
+	void InterruptSource(unsigned int irq_num, const std::string& source = std::string());
 };
 
 #endif // __MPC5777M_SIMULATOR_HH__

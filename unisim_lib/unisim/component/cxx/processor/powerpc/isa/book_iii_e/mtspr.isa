@@ -45,11 +45,17 @@ mtspr.execute = {
 			break;
 		}
 		case 0x008:
-			cpu->SetLR(result);
+		{
+			LR& lr = cpu->GetLR();
+			lr = result;
 			break;
+		}
 		case 0x009:
-			cpu->SetCTR(result);
+		{
+			CTR& ctr = cpu->GetCTR();
+			ctr = result;
 			break;
+		}
 		default:
 			return cpu->MoveToSPR(n, result);
 	}

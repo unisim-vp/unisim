@@ -431,8 +431,6 @@ class CPU
 	, public unisim::kernel::service::Service<typename unisim::service::interfaces::Synchronizable>
 {
 public:
-	typedef CPU<TYPES, CONFIG> ThisCPU;
-	
 	/////////////////////////// service imports ///////////////////////////////
 
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::ADDRESS> > symbol_table_lookup_import;
@@ -494,10 +492,13 @@ public:
 	
 	inline uint32_t GetGPR(unsigned int n) const ALWAYS_INLINE { return gpr[n].template Get<typename GPR::ALL>(); }
 	inline void SetGPR(unsigned int n, uint32_t value) ALWAYS_INLINE { gpr[n].template Set<typename GPR::ALL>(value); }
-	inline uint32_t GetLR() const ALWAYS_INLINE { return lr.template Get<typename LR::ALL>(); }
-	inline void SetLR(uint32_t value) ALWAYS_INLINE { lr.template Set<typename LR::ALL>(value); }
-	inline uint32_t GetCTR() const ALWAYS_INLINE { return ctr.template Get<typename CTR::ALL>(); }
-	inline void SetCTR(uint32_t value) ALWAYS_INLINE { ctr = value; }
+// 	inline uint32_t GetLR() const ALWAYS_INLINE { return lr.template Get<typename LR::ALL>(); }
+// 	inline void SetLR(uint32_t value) ALWAYS_INLINE { lr.template Set<typename LR::ALL>(value); }
+// 	inline uint32_t GetCTR() const ALWAYS_INLINE { return ctr.template Get<typename CTR::ALL>(); }
+// 	inline void SetCTR(uint32_t value) ALWAYS_INLINE { ctr = value; }
+
+	inline LR& GetLR() ALWAYS_INLINE { return lr; }
+	inline CTR& GetCTR() ALWAYS_INLINE { return ctr; }
 	inline XER& GetXER() ALWAYS_INLINE { return xer; }
 	inline CR& GetCR() ALWAYS_INLINE { return cr; }
 	
@@ -531,6 +532,8 @@ public:
 	bool Int16StoreByteReverse(unsigned int rs, typename TYPES::ADDRESS ea);
 	bool Int32StoreByteReverse(unsigned int rs, typename TYPES::ADDRESS ea);
 	bool IntStoreMSBFirst(unsigned int rs, typename TYPES::ADDRESS ea, unsigned int size);
+	template <typename REGISTER> bool SpecialLoad(REGISTER& reg, typename TYPES::ADDRESS ea);
+	template <typename REGISTER> bool SpecialStore(const REGISTER& reg, typename TYPES::ADDRESS ea);
 	
 	std::string GetObjectFriendlyName(typename TYPES::ADDRESS addr);
 	
@@ -824,7 +827,7 @@ protected:
 	template <SLR_Space_Type _SLR_SPACE>
 	struct InvalidSLR : SLRBase
 	{
-		InvalidSLR(ThisCPU *_cpu) : cpu(_cpu) {}
+		InvalidSLR(typename CONFIG::CPU *_cpu) : cpu(_cpu) {}
 		
 		virtual bool CheckMoveToLegality()
 		{
@@ -848,15 +851,15 @@ protected:
 			return false;
 		}
 	private:
-		ThisCPU *cpu;
+		typename CONFIG::CPU *cpu;
 	};
 	
 	struct ExternalDCR : DCRBase
 	{
-		ThisCPU *cpu;
+		typename CONFIG::CPU *cpu;
 		unsigned int n;
 		
-		ExternalDCR(ThisCPU *_cpu) : cpu(_cpu), n(0) {}
+		ExternalDCR(typename CONFIG::CPU *_cpu) : cpu(_cpu), n(0) {}
 		
 		void Attach(unsigned int _n) { n = _n; }
 		virtual bool IsValid() const { return true; }
@@ -872,6 +875,7 @@ protected:
 		typedef unisim::util::reg::core::Register<SLR_REGISTER, 32, unisim::util::reg::core::Access(_SLR_ACCESS), SLRBase> Super;
 		static const SLR_Space_Type SLR_SPACE = _SLR_SPACE;
 		static const unsigned int SLR_NUM = _SLR_NUM;
+		static const unsigned int REG_NUM = _SLR_NUM;
 		static const SLR_Access_Type SLR_ACCESS = _SLR_ACCESS;
 		static const SLR_Privilege_Type SLR_PRIVILEGE = _SLR_PRIVILEGE;
 		
@@ -940,10 +944,10 @@ protected:
 		
 		virtual bool MoveTo(uint32_t value)
 		{
-			unisim::util::reg::core::WarningStatus ws = this->Write(value);
-			if(ws)
+			unisim::util::reg::core::ReadWriteStatus rws = this->Write(value);
+			if(rws)
 			{
-				cpu->GetDebugWarningStream() << "While moving 0x" << std::hex << value << std::dec << " to " << this->GetName() << ", " << ws << "; See below " << this->GetName() << " content after move operation: " << std::endl;
+				cpu->GetDebugWarningStream() << "While moving 0x" << std::hex << value << std::dec << " to " << this->GetName() << ", " << rws << "; See below " << this->GetName() << " content after move operation: " << std::endl;
 				this->LongPrettyPrint(cpu->GetDebugWarningStream());
 				cpu->GetDebugWarningStream() << std::endl;
 			}
@@ -951,19 +955,18 @@ protected:
 			{
 				cpu->GetDebugWarningStream() << "Moving 0x" << std::hex << value << std::dec << " to " << this->GetName() << std::endl;
 			}
-
 			
-			return true;
+			return !unisim::util::reg::core::IsReadWriteError(rws);
 		}
 		
 		virtual bool MoveFrom(uint32_t& value)
 		{
 			value = 0;
-			unisim::util::reg::core::WarningStatus ws = this->Read(value);
-			if(ws)
+			unisim::util::reg::core::ReadWriteStatus rws = this->Read(value);
+			if(rws)
 			{
-				cpu->GetDebugWarningStream() << ws << std::endl;
-				cpu->GetDebugWarningStream() << "While moving 0x" << std::hex << value << std::dec << " from " << this->GetName() << ", " << ws << "; See below " << this->GetName() << " content after move operation: " << std::endl;
+				cpu->GetDebugWarningStream() << rws << std::endl;
+				cpu->GetDebugWarningStream() << "While moving 0x" << std::hex << value << std::dec << " from " << this->GetName() << ", " << rws << "; See below " << this->GetName() << " content after move operation: " << std::endl;
 				this->LongPrettyPrint(cpu->GetDebugWarningStream());
 				cpu->GetDebugWarningStream() << std::endl;
 			}
@@ -972,7 +975,7 @@ protected:
 				cpu->GetDebugWarningStream() << "Moving 0x" << std::hex << value << std::dec << " from " << this->GetName() << std::endl;
 			}
 			
-			return true;
+			return !unisim::util::reg::core::IsReadWriteError(rws);
 		}
 
 		typename CONFIG::CPU *GetCPU() const { return cpu; }
@@ -1459,7 +1462,7 @@ public:
 			cpu->AddRegisterInterface(this->CreateRegisterInterface());
 		}
 	};
-protected:
+
 	////////////////////////// Special Purpose Registers //////////////////////
 	
 	// Save/Restore Register 0
@@ -4150,6 +4153,7 @@ protected:
 		
 	};
 	
+protected:
 	///////////////////////////// Logger //////////////////////////////////////
 	
 	unisim::kernel::logger::Logger logger;

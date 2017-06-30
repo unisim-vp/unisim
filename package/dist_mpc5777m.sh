@@ -107,6 +107,7 @@ unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/tlm2/simulator.cc \
+unisim/kernel/tlm2/clock.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/util/backtrace/backtrace.cc \
@@ -302,6 +303,7 @@ unisim/component/cxx/processor/powerpc/isa/book_ii/stwcx_.isa \
 unisim/component/cxx/processor/powerpc/isa/book_ii/wait.isa \
 unisim/component/cxx/processor/powerpc/isa/book_iii_e/dcbi.isa \
 unisim/component/cxx/processor/powerpc/isa/book_iii_e/mfdcr.isa \
+unisim/component/cxx/processor/powerpc/isa/book_iii_e/mtdcr.isa \
 unisim/component/cxx/processor/powerpc/isa/book_iii_e/mfmsr.isa \
 unisim/component/cxx/processor/powerpc/isa/book_iii_e/mfspr.isa \
 unisim/component/cxx/processor/powerpc/isa/book_iii_e/mtspr.isa \
@@ -428,6 +430,18 @@ unisim/component/cxx/processor/powerpc/isa/book_vle/e_stw.isa \
 unisim/component/cxx/processor/powerpc/isa/book_vle/e_stwu.isa \
 unisim/component/cxx/processor/powerpc/isa/book_vle/e_subfic.isa \
 unisim/component/cxx/processor/powerpc/isa/book_vle/e_xori.isa \
+unisim/component/cxx/processor/powerpc/isa/book_vle/e_lmvgprw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_vle/e_stmvgprw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_vle/e_lmvsprw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_vle/e_stmvsprw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_vle/e_lmvsrrw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_vle/e_stmvsrrw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_vle/e_lmvcsrrw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_vle/e_stmvcsrrw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_vle/e_lmvdsrrw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_vle/e_stmvdsrrw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_vle/e_lmvmcsrrw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_vle/e_stmvmcsrrw.isa \
 unisim/component/cxx/processor/powerpc/isa/lsp/lsp.hh \
 unisim/component/cxx/processor/powerpc/isa/lsp/zabsw.isa \
 unisim/component/cxx/processor/powerpc/isa/lsp/zabsws.isa \
@@ -670,6 +684,7 @@ unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/tlm2/tlm.hh \
 unisim/kernel/tlm2/simulator.hh \
+unisim/kernel/tlm2/clock.hh \
 unisim/util/backtrace/backtrace.hh \
 unisim/kernel/api/api.hh \
 unisim/util/likely/likely.hh \
@@ -825,6 +840,7 @@ unisim/component/tlm2/interconnect/generic_router/router.hh \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh \
 unisim/component/tlm2/interconnect/generic_router/config.hh \
 unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.hh \
+unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.hh \
 "
 
 UNISIM_LIB_MPC5777M_TEMPLATE_FILES="\
@@ -899,6 +915,7 @@ unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.tcc \
+unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.tcc \
 "
 
 UNISIM_LIB_MPC5777M_M4_FILES="\
@@ -993,12 +1010,23 @@ AUTHORS \
 NEWS \
 ChangeLog \
 unisim.ico \
-soft/57xx_ram.ld \
-soft/boot.gdb \
-soft/main.c \
 soft/Makefile \
-soft/startup.S \
-soft/boot.elf \
+soft/include/typedefs.h \
+soft/include/MPC5777M.h \
+soft/include/derivative.h \
+soft/include/compiler_api.h \
+soft/include/intc.h \
+soft/include/stm.h \
+soft/src/57xx_ram.ld \
+soft/src/startup.S \
+soft/src/main_Z4_2.c \
+soft/src/vector.S \
+soft/src/57xx_flash.ld \
+soft/src/intc_sw_handlers.S \
+soft/src/flashrchw.c \
+soft/src/intc.c \
+soft/src/stm.c \
+soft/bin/boot.elf \
 sim_config.xml \
 gtkwave_init_script.tcl \
 .gtkwaverc \

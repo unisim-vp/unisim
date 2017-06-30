@@ -35,45 +35,43 @@
 op efsdiv(4[6]:rd[5]:ra[5]:rb[5]:713[11]);
 
 efsdiv.execute = {
-  if (!cpu->CheckSPV())
-    return false;
+	if (!cpu->CheckSPV())
+		return false;
 
-  // Read the input operands
-  SoftFloat result(cpu->GetGPR(ra)), b(cpu->GetGPR(rb));
+	// Read the input operands
+	SoftFloat result(cpu->GetGPR(ra)), b(cpu->GetGPR(rb));
 
-  // Check for Invalid Operation/Input errors
-  if (not cpu->EFPProcessInput().set(result).set(b).proceed())
-    return false;
-  CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-  if (unlikely(b.isZero() and (spefscr.Get<CPU::SPEFSCR::FINV>() == uint32_t(0))))
-    {
-      if (result.isZero()) spefscr.SetInvalid(true);
-      else                 spefscr.SetDivideByZero(true);
-    }
-        
-  // Compute the result
-  Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
-  if (likely(not b.hasInftyExponent()))
-    {
-      result.divAssign(b, flags);
-      if (unlikely(b.isZero()))
-        flags.clear();
-    }
-  else
-    {
-      bool neg = (result.isNegative() ^ b.isNegative());
-      result.clear();
-      result.setNegative( neg );
-    }
-  
-  
-  // Handle EFP Specific Signaling/Rounding
-  bool status = cpu->EFPProcessOutput( result, flags );
+	// Check for Invalid Operation/Input errors
+	if (not cpu->EFPProcessInput().set(result).set(b).proceed())
+		return false;
+	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
+	if (unlikely(b.isZero() and (spefscr.Get<CPU::SPEFSCR::FINV>() == uint32_t(0))))
+	{
+		if (result.isZero()) spefscr.SetInvalid(true);
+		else                 spefscr.SetDivideByZero(true);
+	}
+				
+	// Compute the result
+	Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
+	if (likely(not b.hasInftyExponent()))
+	{
+		result.divAssign(b, flags);
+		if (unlikely(b.isZero()))
+			flags.clear();
+	}
+	else
+	{
+		result.setZero(result.isNegative() ^ b.isNegative());
+	}
 	
-  // Write back the result
-  cpu->SetGPR(rd, result.queryValue());
+	
+	// Handle EFP Specific Signaling/Rounding
+	bool status = cpu->EFPProcessOutput( result, flags );
+	
+	// Write back the result
+	cpu->SetGPR(rd, result.queryValue());
 
-  return status;
+	return status;
 }
 
 efsdiv.disasm = {

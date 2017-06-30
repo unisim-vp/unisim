@@ -173,7 +173,7 @@ static const unsigned int RN_DOWN = 3;
 
       void setEffectiveRoundToEven() { fEffectiveRoundToEven = true; }
       void clearEffectiveRoundToEven() { fEffectiveRoundToEven = false; }
-      bool hasEffectiveRoundToEven() { return fEffectiveRoundToEven; }
+      bool hasEffectiveRoundToEven() const { return fEffectiveRoundToEven; }
 
       void setPartialRead() { rrReadResult = RRPartial; }
       void setTotalRead() { rrReadResult = RRTotal; }

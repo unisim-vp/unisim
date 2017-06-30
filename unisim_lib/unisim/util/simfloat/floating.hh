@@ -225,7 +225,7 @@ class Access : public Integer::Details::Access {
 
       void setEffectiveRoundToEven() { fEffectiveRoundToEven = true; }
       void clearEffectiveRoundToEven() { fEffectiveRoundToEven = false; }
-      bool hasEffectiveRoundToEven() { return fEffectiveRoundToEven; }
+      bool hasEffectiveRoundToEven() const { return fEffectiveRoundToEven; }
 
       void setPartialRead() { rrReadResult = RRPartial; }
       void setTotalRead() { rrReadResult = RRTotal; }

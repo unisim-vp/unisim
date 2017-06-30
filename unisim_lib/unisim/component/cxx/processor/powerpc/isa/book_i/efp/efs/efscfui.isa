@@ -39,7 +39,7 @@ efscfui.execute = {
 		return false;
 
 	// Read the input operands
-        uint32_t src( cpu->GetGPR(rb) );
+	uint32_t src( cpu->GetGPR(rb) );
 	
 	// Check for Invalid Operation/Input errors
 	if (not cpu->EFPProcessInput().proceed())

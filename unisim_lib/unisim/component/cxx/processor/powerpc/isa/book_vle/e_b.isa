@@ -43,7 +43,12 @@ op e_b(30[6]:0[1]:shl<1> sext <32> bd[24]:lk[1]);
 e_b.execute = {
 	ADDRESS target_addr = cpu->GetCIA() + uint32_t( bd);
 	cpu->Branch(target_addr);
-	if(lk) cpu->SetLR(cpu->GetCIA() + uint32_t( 4));
+	if(lk)
+	{
+		LR& lr = cpu->GetLR();
+		lr = cpu->GetCIA() + uint32_t(4);
+	}
+
 	return true;
 }
 

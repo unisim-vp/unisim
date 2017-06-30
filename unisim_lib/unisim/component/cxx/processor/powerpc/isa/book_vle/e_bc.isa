@@ -44,18 +44,19 @@ e_bc.execute = {
 	bool ctr_ok;
 	bool cond_ok;
 	
-	if(bo & 1)
+	if(bo & 2)
 	{
 		/* Decrement CTR */
-		cpu->SetCTR(uint32_t( cpu->GetCTR()) - uint32_t( 1));
+		CTR& ctr = cpu->GetCTR();
+		ctr = uint32_t(ctr) - uint32_t(1);
 		/* Test whether to branch if CTR is zero or not */
-		if(bo & 2)
+		if(bo & 1)
 		{
-			ctr_ok = uint32_t( cpu->GetCTR()) == uint32_t( 0);
+			ctr_ok = uint32_t(ctr) == uint32_t(0);
 		}
 		else
 		{
-			ctr_ok = uint32_t( cpu->GetCTR()) != uint32_t( 0);
+			ctr_ok = uint32_t(ctr) != uint32_t(0);
 		}
 		
 		cond_ok = bool(true);
@@ -63,15 +64,16 @@ e_bc.execute = {
 	else
 	{
 		/* Conditional branch */
-		if(bo & 2)
+		CR& cr = cpu->GetCR();
+		if(bo & 1)
 		{
 			/* Branch if condition is true */
-			cond_ok = ((uint32_t( cpu->GetCR()) << uint32_t( bi)) & uint32_t( 0x80000000UL)) != uint32_t( 0);
+			cond_ok = ((uint32_t(cr) << uint32_t(bi)) & uint32_t(0x80000000UL)) != uint32_t(0);
 		}
 		else
 		{
 			/* Branch if condition is false */
-			cond_ok = ((uint32_t( cpu->GetCR()) << uint32_t( bi)) & uint32_t( 0x80000000UL)) == uint32_t( 0);
+			cond_ok = ((uint32_t(cr) << uint32_t(bi)) & uint32_t(0x80000000UL)) == uint32_t(0);
 		}
 		
 		ctr_ok = bool(true);
@@ -83,7 +85,11 @@ e_bc.execute = {
 		cpu->Branch(target_addr);
 	}
 	
-	if(lk) cpu->SetLR(cpu->GetCIA() + uint32_t( 4));
+	if(lk)
+	{
+		LR& lr = cpu->GetLR();
+		lr = cpu->GetCIA() + uint32_t(4);
+	}
 	
 	return true;
 }

@@ -1,8 +1,118 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <variables>
 	<object name="HARDWARE">
-		<object name="HARDWARE.CPU2">
-			<object name="HARDWARE.CPU2.L1I">
+		<object name="HARDWARE.instrumenter">
+			<variable name="enable-output-instrumentation">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable output instrumentation of signals</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="instrumentation-output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Output filename for instrumented signals</description>
+			</variable>
+			<variable name="output-instrumentation">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Instrumented signals to output in the instrumentation output file</description>
+			</variable>
+			<variable name="output-instrumentation-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>Start time for output instrumentation of signals</description>
+			</variable>
+			<variable name="output-instrumentation-end-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>18446744073709551615 ps</value>
+				<description>End time for output instrumentation of signals</description>
+			</variable>
+			<variable name="output-csv-delimiter">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>,</value>
+				<description>CSV delimiter for instrumentation output file</description>
+			</variable>
+			<variable name="enable-input-instrumentation">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable input instrumentation of signals</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="instrumentation-input-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Input filename for instrumented signals</description>
+			</variable>
+			<variable name="input-instrumentation">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Instrumented signals (wildcard '*' is allowed in signal names) that take there input from the instrumentation input file</description>
+			</variable>
+			<variable name="input-instrumentation-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>Start time for input instrumentation of signals</description>
+			</variable>
+			<variable name="input-instrumentation-end-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>18446744073709551615 ps</value>
+				<description>End time for input instrumentation of signals</description>
+			</variable>
+			<variable name="input-csv-delimiter">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>,</value>
+				<description>CSV delimiter for instrumentation input file</description>
+			</variable>
+			<variable name="vcd-trace-file">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>VCD output filename for signals trace</description>
+			</variable>
+			<variable name="trace-signals">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Signals to trace (wildcard '*' is allowed in signal names)</description>
+			</variable>
+			<variable name="enable-trace-signals">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable signals trace</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="gtkwave-init-script">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>GTKWave initialization script that simulators must automatically generate at startup</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.Peripheral_Core_2">
+			<object name="HARDWARE.Peripheral_Core_2.L1I">
 				<variable name="verbose">
 					<type>parameter</type>
 					<data_type>boolean</data_type>
@@ -14,7 +124,7 @@
 					</enumeration>
 				</variable>
 			</object>
-			<object name="HARDWARE.CPU2.IMEM">
+			<object name="HARDWARE.Peripheral_Core_2.IMEM">
 				<variable name="base-addr">
 					<type>parameter</type>
 					<data_type>unsigned 32-bit integer</data_type>
@@ -38,7 +148,7 @@
 					</enumeration>
 				</variable>
 			</object>
-			<object name="HARDWARE.CPU2.DMEM">
+			<object name="HARDWARE.Peripheral_Core_2.DMEM">
 				<variable name="base-addr">
 					<type>parameter</type>
 					<data_type>unsigned 32-bit integer</data_type>
@@ -238,17 +348,11 @@
 					<item>false</item>
 				</enumeration>
 			</variable>
-			<variable name="cpu-cycle-time">
+			<variable name="clock-multiplier">
 				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>5 ns</value>
-				<description>cpu cycle time</description>
-			</variable>
-			<variable name="bus-cycle-time">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>10 ns</value>
-				<description>bus cycle time</description>
+				<data_type>double precision floating-point</data_type>
+				<value>1</value>
+				<description>clock multiplier</description>
 			</variable>
 			<variable name="nice-time">
 				<type>parameter</type>
@@ -293,7 +397,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.RAM">
+		<object name="HARDWARE.STANDBY-RAM">
 			<variable name="org">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
@@ -303,7 +407,7 @@
 			<variable name="bytesize">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
-				<value>0</value>
+				<value>65536</value>
 				<description>memory size in bytes</description>
 			</variable>
 			<variable name="initial-byte-value">
@@ -327,7 +431,7 @@
 			<variable name="write-latency">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
-				<value>0 s</value>
+				<value>10 ns</value>
 				<description>memory write latency</description>
 			</variable>
 			<variable name="verbose">
@@ -351,11 +455,127 @@
 				</enumeration>
 			</variable>
 		</object>
+		<object name="HARDWARE.SYSTEM-RAM">
+			<variable name="org">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>memory origin/base address</description>
+			</variable>
+			<variable name="bytesize">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>348160</value>
+				<description>memory size in bytes</description>
+			</variable>
+			<variable name="initial-byte-value">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x00</value>
+				<description>initial value for all bytes of memory</description>
+			</variable>
+			<variable name="cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>memory cycle time</description>
+			</variable>
+			<variable name="read-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>memory read latency</description>
+			</variable>
+			<variable name="write-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>memory write latency</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="read-only">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable read-only protection</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.FLASH">
+			<variable name="org">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>memory origin/base address</description>
+			</variable>
+			<variable name="bytesize">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>8388608</value>
+				<description>memory size in bytes</description>
+			</variable>
+			<variable name="initial-byte-value">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x00</value>
+				<description>initial value for all bytes of memory</description>
+			</variable>
+			<variable name="cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>memory cycle time</description>
+			</variable>
+			<variable name="read-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>memory read latency</description>
+			</variable>
+			<variable name="write-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>memory write latency</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="read-only">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>enable/disable read-only protection</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
 		<object name="HARDWARE.INTERCONNECT">
 			<variable name="cycle_time">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
-				<value>10 ns</value>
+				<value>5 ns</value>
 				<description>Time to process a request/response by the router</description>
 			</variable>
 			<variable name="port_buffer_size">
@@ -364,23 +584,325 @@
 				<value>0</value>
 				<description>Defines the size of the buffer for incomming requests in each of the input ports (0 = infinite)</description>
 			</variable>
+			<variable name="verbose_all">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Activate all the verbose options</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_setup">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display Object setup information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_tlm">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display TLM blocking/non-blocking transactions information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_tlm_debug">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display TLM debug transactions information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_memory_interface">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display memory interface operations information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
 			<variable name="mapping_0">
 				<type>parameter</type>
 				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
-				<value>range_start=&quot;0x52000000&quot; range_end=&quot;0x5fffffff&quot; output_port=&quot;1&quot; translation=&quot;0x0&quot;</value>
+				<value>range_start=&quot;0x40000000&quot; range_end=&quot;0x4000ffff&quot; output_port=&quot;0&quot; translation=&quot;0x0&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 			</variable>
 			<variable name="mapping_1">
 				<type>parameter</type>
 				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
-				<value>range_start=&quot;0xfc040000&quot; range_end=&quot;0xfc04ffff&quot; output_port=&quot;2&quot; translation=&quot;0x0&quot;</value>
+				<value>range_start=&quot;0x40010000&quot; range_end=&quot;0x401fffff&quot; output_port=&quot;1&quot; translation=&quot;0x0&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 			</variable>
 			<variable name="mapping_2">
 				<type>parameter</type>
 				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
-				<value>range_start=&quot;0x0&quot; range_end=&quot;0xfffffffe&quot; output_port=&quot;0&quot; translation=&quot;0x0&quot;</value>
+				<value>range_start=&quot;0x400000&quot; range_end=&quot;0x407fff&quot; output_port=&quot;2&quot; translation=&quot;0x0&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_3">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x60c000&quot; range_end=&quot;0x62ffff&quot; output_port=&quot;2&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_4">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x680000&quot; range_end=&quot;0x7fffff&quot; output_port=&quot;2&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_5">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x800000&quot; range_end=&quot;0x9fffff&quot; output_port=&quot;2&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_6">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xa00000&quot; range_end=&quot;0xffffff&quot; output_port=&quot;2&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_7">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x1000000&quot; range_end=&quot;0x1ffffff&quot; output_port=&quot;2&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_8">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x52000000&quot; range_end=&quot;0x5fffffff&quot; output_port=&quot;3&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_9">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc040000&quot; range_end=&quot;0xfc04ffff&quot; output_port=&quot;4&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_10">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc070000&quot; range_end=&quot;0xfc073fff&quot; output_port=&quot;5&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.INTC_0">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.STM_2">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.clk_200MHz">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>5 ns</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.clk_300MHz">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>3333 ps</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.clk_100MHz">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.clk_50MHz">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
 			</variable>
 		</object>
 	</object>
@@ -458,116 +980,6 @@
 			</enumeration>
 		</variable>
 	</object>
-	<object name="instrumenter">
-		<variable name="enable-output-instrumentation">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable output instrumentation of signals</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="instrumentation-output-filename">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>Output filename for instrumented signals</description>
-		</variable>
-		<variable name="output-instrumentation">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>Instrumented signals to output in the instrumentation output file</description>
-		</variable>
-		<variable name="output-instrumentation-start-time">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>0 s</value>
-			<description>Start time for output instrumentation of signals</description>
-		</variable>
-		<variable name="output-instrumentation-end-time">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>18446744073709551615 ps</value>
-			<description>End time for output instrumentation of signals</description>
-		</variable>
-		<variable name="output-csv-delimiter">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>,</value>
-			<description>CSV delimiter for instrumentation output file</description>
-		</variable>
-		<variable name="enable-input-instrumentation">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable input instrumentation of signals</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="instrumentation-input-filename">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>Input filename for instrumented signals</description>
-		</variable>
-		<variable name="input-instrumentation">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>Instrumented signals (wildcard '*' is allowed in signal names) that take there input from the instrumentation input file</description>
-		</variable>
-		<variable name="input-instrumentation-start-time">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>0 s</value>
-			<description>Start time for input instrumentation of signals</description>
-		</variable>
-		<variable name="input-instrumentation-end-time">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>18446744073709551615 ps</value>
-			<description>End time for input instrumentation of signals</description>
-		</variable>
-		<variable name="input-csv-delimiter">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>,</value>
-			<description>CSV delimiter for instrumentation input file</description>
-		</variable>
-		<variable name="vcd-trace-file">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>VCD output filename for signals trace</description>
-		</variable>
-		<variable name="trace-signals">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>Signals to trace (wildcard '*' is allowed in signal names)</description>
-		</variable>
-		<variable name="enable-trace-signals">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable signals trace</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="gtkwave-init-script">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>GTKWave initialization script that simulators must automatically generate at startup</description>
-		</variable>
-	</object>
 	<object name="loader">
 		<object name="loader.memory-mapper">
 			<variable name="verbose">
@@ -593,8 +1005,110 @@
 			<variable name="mapping">
 				<type>parameter</type>
 				<data_type>string</data_type>
-				<value>HARDWARE.RAM:0x0-0xffffffff:+0x0</value>
+				<value>HARDWARE.STANDBY-RAM:0x40000000-0x4000ffff:+0x0,HARDWARE.SYSTEM-RAM:0x40010000-0x401fffff:+0x0,HARDWARE.FLASH:0x00400000-0x00407fff:+0x0,HARDWARE.FLASH:0x0060c000-0x0062ffff:+0x0,HARDWARE.FLASH:0x00680000-0x007fffff:+0x0,HARDWARE.FLASH:0x00800000-0x009fffff:+0x0,HARDWARE.FLASH:0x01000000-0x01ffffff:+0x0,HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x0</value>
 				<description>Memory mapping. Syntax: [memory=]&lt;memory1&gt;[:[range=]&lt;low1-high1&gt;][:[translation=]+&lt;translation1&gt;][,... (e.g. ram:0x0-0x00ffff,rom:0xff0000-0xffffff:+0xff0000)</description>
+			</variable>
+		</object>
+		<object name="loader.file0">
+			<variable name="filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>soft/bin/boot.elf</value>
+				<description>the ELF filename to load into memory</description>
+			</variable>
+			<variable name="base-addr">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>if force-base-addr is true force base address for a unique program segment, otherwise ignored</description>
+			</variable>
+			<variable name="force-base-addr">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>if true force base address for a unique program segment</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="force-use-virtual-address">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>force use of virtual addresses instead of physical addresses (default false)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="initialize-extra-segment-bytes">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>whether to initialize extra bytes in segments (p_filesz &lt; p_memsz) to zero (true for standard ELF files)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="dump-headers">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>dump headers while loading ELF file</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="dwarf-to-html-output-directory">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF v2/v3 to HTML output directory</description>
+			</variable>
+			<variable name="dwarf-to-xml-output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF v2/v3 to XML output filename</description>
+			</variable>
+			<variable name="dwarf-register-number-mapping-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF register number mapping filename</description>
+			</variable>
+			<variable name="parse-dwarf">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable parsing of DWARF debugging informations</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="debug-dwarf">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable debugging of DWARF</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
 			</variable>
 		</object>
 		<variable name="verbose">
@@ -620,7 +1134,7 @@
 		<variable name="filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value>soft/boot.elf</value>
+			<value>soft/bin/boot.elf</value>
 			<description>List of files to load. Syntax: [[filename=]&lt;filename1&gt;[=[format=]&lt;format1&gt;]][,[filename=]&lt;filename2&gt;[=[format=]&lt;format2&gt;]]... (e.g. boot.bin=raw,app.elf)</description>
 		</variable>
 	</object>

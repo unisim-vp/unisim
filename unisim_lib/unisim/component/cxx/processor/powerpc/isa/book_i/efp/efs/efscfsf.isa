@@ -48,7 +48,6 @@ efscfsf.execute = {
 	// Compute the result
 	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
 	Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
-	
 	SoftFloat::IntConversion conversion;
 	conversion.setSigned().assignSigned( src );
 	SoftFloat result(conversion, flags);

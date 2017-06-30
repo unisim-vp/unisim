@@ -35,43 +35,43 @@
 op efsctuf(4[6]:rd[5]:?[5]:rb[5]:726[11]);
 
 efsctuf.execute = {
-  if (!cpu->CheckSPV())
-    return false;
+	if (!cpu->CheckSPV())
+		return false;
 
-  // Read the input operands
-  SoftFloat b(cpu->GetGPR(rb));
-        
-  // Check for Invalid Operation/Input errors
-  if (not cpu->EFPProcessInput().set(b).proceed())
-    return false; // Should not occur
+	// Read the input operands
+	SoftFloat b(cpu->GetGPR(rb));
+				
+	// Check for Invalid Operation/Input errors
+	if (not cpu->EFPProcessInput().set(b).proceed())
+		return false; // Should not occur
 	
-  // Compute the result
-  CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-  Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
-  uint32_t result;
-  if (unlikely(b.isNegative() or b.isZero() or b.isNaN()))
-    result = uint32_t(0);
-  else {
-    SoftFloat::IntConversion conversion;
-    conversion.setUnsigned().setSize(32);
-    b.retrieveInteger(conversion, flags, 32);
-    result = conversion.asUInt32();
-  }
+	// Compute the result
+	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
+	Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
+	uint32_t result;
+	if (unlikely(b.isNegative() or b.isZero() or b.isNaN()))
+		result = uint32_t(0);
+	else {
+		SoftFloat::IntConversion conversion;
+		conversion.setUnsigned().setSize(32);
+		b.retrieveInteger(conversion, flags, 32);
+		result = conversion.asUInt32();
+	}
 
-  // Update flags
-  if (flags.isOverflow())
-    {
-      // Overflow is invalid
-      if (not spefscr.SetInvalid( true ))
-        return false;
-      flags.clearFlowException();
-    }
-  cpu->EFPProcessOutput(b, flags);
-        
-  // Write back the result
-  cpu->SetGPR(rd, result);
+	// Update flags
+	if (flags.isOverflow())
+	{
+		// Overflow is invalid
+		if (not spefscr.SetInvalid( true ))
+			return false;
+		flags.clearFlowException();
+	}
+	cpu->EFPProcessOutput(b, flags);
+				
+	// Write back the result
+	cpu->SetGPR(rd, result);
 
-  return true;
+	return true;
 }
 
 efsctuf.disasm = {

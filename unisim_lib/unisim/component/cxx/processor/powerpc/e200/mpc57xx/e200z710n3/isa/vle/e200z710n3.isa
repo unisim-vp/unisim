@@ -220,6 +220,7 @@ include "unisim/component/cxx/processor/powerpc/isa/book_ii/wait.isa"
 /* Book III-E: Power ISA Operating Environment Architecture - Embedded Environment */
 include "unisim/component/cxx/processor/powerpc/isa/book_iii_e/dcbi.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_iii_e/mfdcr.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_iii_e/mtdcr.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_iii_e/mfmsr.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_iii_e/mfspr.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_iii_e/mtspr.isa"
@@ -352,6 +353,20 @@ include "unisim/component/cxx/processor/powerpc/isa/book_vle/e_stw.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_vle/e_stwu.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_vle/e_subfic.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_vle/e_xori.isa"
+
+/* New VLE instructions */
+include "unisim/component/cxx/processor/powerpc/isa/book_vle/e_lmvgprw.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_vle/e_stmvgprw.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_vle/e_lmvsprw.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_vle/e_stmvsprw.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_vle/e_lmvsrrw.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_vle/e_stmvsrrw.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_vle/e_lmvcsrrw.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_vle/e_stmvcsrrw.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_vle/e_lmvdsrrw.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_vle/e_stmvdsrrw.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_vle/e_lmvmcsrrw.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_vle/e_stmvmcsrrw.isa"
 
 /* Memory Protection Unit (MPU) */
 include "unisim/component/cxx/processor/powerpc/isa/mpu/mpure.isa"

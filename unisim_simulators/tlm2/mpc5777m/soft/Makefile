@@ -1,4 +1,4 @@
-S32DS         = /opt/Freescale/S32_Power_v1.1/S32DS
+S32DS         = /opt/NXP/S32DS_Power_v1.2/S32DS
 CROSS_COMPILE = powerpc-eabivle-
 CC            = $(CROSS_COMPILE)gcc
 RM            = rm -f
@@ -6,24 +6,24 @@ CP            = cp
 
 CFLAGS    = -I.
 OPTFLAGS ?= -O1
-CFLAGS    = -g3 $(OPTFLAGS) # -Wall
+CFLAGS    = -g3 $(OPTFLAGS) -fdebug-prefix-map=$(PWD)=../ # -Wall
 LDFLAGS   = -static
 
 LIBS      =
-SRCS      = main.c
-ASMS      = startup.S
+SRCS      = src/flashrchw.c src/main_Z4_2.c src/intc.c src/stm.c
+ASMS      = src/startup.S src/intc_sw_handlers.S src/vector.S
 
 COBJS     = $(patsubst %.c,%.o,$(SRCS))
 AOBJS     = $(patsubst %.S,%.o,$(ASMS))
 OBJS      = $(COBJS) $(AOBJS)
-DEPS      = $(patsubst %.o,%.d,$(COBJS))
+DEPS      = $(patsubst %.o,%.d,$(OBJS))
 
-EXE       = boot.elf
+EXE       = bin/boot.elf
 
 FPRODS    =
 
 LINKER_ARGS= \
--T 57xx_ram.ld \
+-T src/57xx_ram.ld \
 -Xlinker \
 --gc-sections \
 -mcpu=e200z4 \
@@ -32,8 +32,10 @@ LINKER_ARGS= \
 --sysroot="$(S32DS)/e200_ewl2"
 
 COMPILER_ARGS= \
+-Iinclude \
 -I"$(S32DS)/e200_ewl2/EWL_C/include" \
 -I"$(S32DS)/e200_ewl2/EWL_C/include/pa" \
+-DMPC5777M \
 -fmessage-length=0 \
 -fsigned-char \
 -ffunction-sections \
@@ -47,10 +49,11 @@ COMPILER_ARGS= \
 --sysroot="$(S32DS)/e200_ewl2"
 
 ASSEMBLER_ARGS= \
+-Iinclude \
 -I"$(S32DS)/e200_ewl2/EWL_C/include" \
 -I"$(S32DS)/e200_ewl2/EWL_C/include/pa" \
 -DMPC5777M \
--DDISABLE_SWT2 \
+-DHW_INIT \
 -DI_CACHE \
 -mcpu=e200z4 \
 -specs=ewl_c9x.specs \
@@ -58,6 +61,9 @@ ASSEMBLER_ARGS= \
 -mvle \
 -mregnames \
 --sysroot="$(S32DS)/e200_ewl2"
+
+#-DDISABLE_SWT2 \
+
 
 .PHONY: all
 all: $(EXE)
@@ -77,8 +83,9 @@ $(AOBJS): %.o: %.S
 
 .PHONY: clean
 clean:
-	$(RM) $(OBJS) 
+	$(RM) $(OBJS)
 	$(RM) $(FPRODS)
+	$(RM) $(DEPS)
 
 -include $(DEPS)
 

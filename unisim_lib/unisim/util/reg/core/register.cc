@@ -54,53 +54,68 @@ namespace core {
 
 std::ostream& operator << (std::ostream& os, const Access& access)
 {
-	switch(access & SW_RW1)
+	switch(access)
 	{
-		case HW_RO: os << "hardware read-only/no software access"; break;
-		case HW_RW: os << "hardware read-write/no software access"; break;
-		case SW_R: os << "hardware read/software read access"; break;
-		case SW_W: os << "hardware write/software write access"; break;
-		case SW_RW: os << "hardware read-write/software read-write access"; break;
-		case SW_W1: os << "hardware write/software writeOnce access"; break;
-		case SW_RW1: os << "hardware read-write/software read-writeOnce access"; break;
+		case HW_RO      : os << "hardware read-only/no software access"; break;
+		case HW_RW      : os << "hardware read-write/no software access"; break;
+		case SW_R       : os << "hardware read-write/software read access"; break;
+		case SW_W       : os << "hardware read-write/software write access"; break;
+		case SW_RW      : os << "hardware read-write/software read-write access"; break;
+		case SW_W1      : os << "hardware write/software write once access"; break;
+		case SW_R_W1    : os << "hardware read-write/software read-write once access"; break;
+		case SW_W1C     : os << "hardware read-write/software write 1 clear access"; break;
+		case SW_W1_W1C  : os << "hardware read-write/software write one and 1 clear access"; break;
+		case SW_R_W1C   : os << "hardware read-write/software read-write 1 clear access"; break;
+		case SW_R_W1_W1C: os << "hardware read-write/software read-write once and write 1 clear access"; break;
+		default: os << "?"; break;
 	}
 	
 	return os;
 };
 
-//////////////////////////////// WarningStatus ////////////////////////////////
+//////////////////////////////// ReadWriteStatus ////////////////////////////////
 
-std::ostream& operator << (std::ostream& os, const WarningStatus& ws)
+std::ostream& operator << (std::ostream& os, const ReadWriteStatus& rws)
 {
 	bool warn = false;
 	
-	if(ws == WS_OK)
+	if(rws == RWS_OK)
 	{
 		os << "OK";
 	}
+	else if(rws == RWS_UA)
+	{
+		os << "unmapped access";
+	}
 	else
 	{
-		if(ws & WS_WOORV)
+		if(rws & RWS_WOORV)
 		{
 			os << "writing out-of-range value";
 			warn = true;
-		}
+		}	
 
-		if(ws & WS_WROR)
+		if(rws & RWS_WROR)
 		{
 			os << (warn ? "and" : "") << "writing read-only register";
 			warn = true;
 		}
 
-		if(ws & WS_WROB)
+		if(rws & RWS_WROB)
 		{
 			os << (warn ? "and" : "") << "writing read-only bits";
 			warn = true;
 		}
 
-		if(ws & WS_RWOR)
+		if(rws & RWS_RWOR)
 		{
 			os << (warn ? "and" : "") << "reading write-only register";
+			warn = true;
+		}
+		
+		if(rws & RWS_ANA)
+		{
+			os << (warn ? "and" : "") << "access not allowed";
 			warn = true;
 		}
 	}
@@ -110,7 +125,7 @@ std::ostream& operator << (std::ostream& os, const WarningStatus& ws)
 
 ///////////////////////////// PropertyRegistry ////////////////////////////////
 
-std::map<intptr_t, std::string> PropertyRegistry::string_prop_registry[2][3];
+std::map<intptr_t, std::string> PropertyRegistry::string_prop_registry[3][3];
 
 void PropertyRegistry::SetStringProperty(ElementType el_type, StringPropertyType str_prop_type, intptr_t key, const std::string& value)
 {

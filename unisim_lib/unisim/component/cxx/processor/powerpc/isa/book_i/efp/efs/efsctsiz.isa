@@ -48,28 +48,24 @@ efsctsiz.execute = {
 	// Compute the result
 	Flags flags = Flags( Flags::RoundingMode(RN_ZERO) );
 	int32_t result;
-        if (unlikely(b.isNaN()))
+				if (unlikely(b.isNaN()))
 		result = int32_t(0);
 	else {
 		SoftFloat::IntConversion conversion;
 		conversion.setSigned().setSize(32);
 		b.retrieveInteger(conversion, flags);
-		//  if (unlikely(flags.isOverflow()))
-		//  	result = b.isPositive() ? 0x7fffffff : 0x80000000;
-		//  else
-		//  	result = conversion.asInt32();
 		result = conversion.asInt32();
 	};
 
 	// Update flags
-        if (flags.isOverflow())
-          {
-            // Overflow is invalid
-            CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-            if (not spefscr.SetInvalid( true ))
-              return false;
-            flags.clearFlowException();
-          }
+	if (flags.isOverflow())
+	{
+		// Overflow is invalid
+		CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
+		if (not spefscr.SetInvalid( true ))
+			return false;
+		flags.clearFlowException();
+	}
 	cpu->EFPProcessOutput(b, flags);
 
 	// Write back the result

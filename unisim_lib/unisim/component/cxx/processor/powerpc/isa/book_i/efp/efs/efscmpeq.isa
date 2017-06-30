@@ -58,38 +58,38 @@ efscmpeq.execute = {
 	CR& cr = cpu->GetCR();
 	switch(bf)
 	{
-		case 0:
-			cr.Set<CR::CR0>(0);
-			cr.Set<CR::CR0::GT>(result);
-			break;
-		case 1:
-			cr.Set<CR::CR1>(0);
-			cr.Set<CR::CR1::GT>(result);
-			break;
-		case 2:
-			cr.Set<CR::CR2>(0);
-			cr.Set<CR::CR2::GT>(result);
-			break;
-		case 3:
-			cr.Set<CR::CR3>(0);
-			cr.Set<CR::CR3::GT>(result);
-			break;
-		case 4:
-			cr.Set<CR::CR4>(0);
-			cr.Set<CR::CR4::GT>(result);
-			break;
-		case 5:
-			cr.Set<CR::CR5>(0);
-			cr.Set<CR::CR5::GT>(result);
-			break;
-		case 6:
-			cr.Set<CR::CR6>(0);
-			cr.Set<CR::CR6::GT>(result);
-			break;
-		case 7:
-			cr.Set<CR::CR7>(0);
-			cr.Set<CR::CR7::GT>(result);
-			break;
+	case 0:
+		cr.Set<CR::CR0>(0);
+		cr.Set<CR::CR0::GT>(result);
+		break;
+	case 1:
+		cr.Set<CR::CR1>(0);
+		cr.Set<CR::CR1::GT>(result);
+		break;
+	case 2:
+		cr.Set<CR::CR2>(0);
+		cr.Set<CR::CR2::GT>(result);
+		break;
+	case 3:
+		cr.Set<CR::CR3>(0);
+		cr.Set<CR::CR3::GT>(result);
+		break;
+	case 4:
+		cr.Set<CR::CR4>(0);
+		cr.Set<CR::CR4::GT>(result);
+		break;
+	case 5:
+		cr.Set<CR::CR5>(0);
+		cr.Set<CR::CR5::GT>(result);
+		break;
+	case 6:
+		cr.Set<CR::CR6>(0);
+		cr.Set<CR::CR6::GT>(result);
+		break;
+	case 7:
+		cr.Set<CR::CR7>(0);
+		cr.Set<CR::CR7::GT>(result);
+		break;
 	}
 
 	return true;

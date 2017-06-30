@@ -35,31 +35,31 @@
 op efsmax(0b000100[6]:rd[5]:ra[5]:rb[5]:0b01010110000[11]);
 
 efsmax.execute = {
-  if (!cpu->CheckSPV())
-    return false;
+	if (!cpu->CheckSPV())
+		return false;
 
-  // Read the input operands
-  SoftFloat a(cpu->GetGPR(ra)), b(cpu->GetGPR(rb));
+	// Read the input operands
+	SoftFloat a(cpu->GetGPR(ra)), b(cpu->GetGPR(rb));
 
-  // Check for Invalid Operation/Input errors
-  if (not cpu->EFPProcessInput().set(a).set(b).proceed())
-    return false;
+	// Check for Invalid Operation/Input errors
+	if (not cpu->EFPProcessInput().set(a).set(b).proceed())
+		return false;
 	
-  // Compute the result
-  if (unlikely(a.isZero() and b.isZero()))
-    a.setZero(a.isNegative() and b.isNegative());
-  else if     (b > a)
-    a = b;
-  else if (unlikely(a.isNaN() and not b.isNaN()))
-    a = b;
+	// Compute the result
+	if      (unlikely(a.isZero() and b.isZero()))
+		a.setZero(a.isNegative() and b.isNegative());
+	else if (b > a)
+		a = b;
+	else if (unlikely(a.isNaN() and not b.isNaN()))
+		a = b;
 
-  // Update the flags
-  cpu->EFPProcessOutput(a, Flags());
+	// Update the flags
+	cpu->EFPProcessOutput(a, Flags());
 
-  // Write back the result
-  cpu->SetGPR(rd, a.queryValue());
+	// Write back the result
+	cpu->SetGPR(rd, a.queryValue());
 
-  return true;
+	return true;
 }
 
 efsmax.disasm = {

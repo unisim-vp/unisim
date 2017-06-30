@@ -35,31 +35,31 @@
 op efsnmadd(0b000100[6]:rd[5]:ra[5]:rb[5]:0b01011001010[11]);
 
 efsnmadd.execute = {
-  if (!cpu->CheckSPV())
-    return false;
-  
-  // Read the input operands
-  SoftFloat d(cpu->GetGPR(rd)), result(cpu->GetGPR(ra)), b(cpu->GetGPR(rb));
-  
-  // Check for Invalid Operation/Input errors
-  if (not cpu->EFPProcessInput().set(result).set(b).set(d).proceed())
-    return false;
-  if      (result.isZero() and b.isNaN()) b.querySBasicExponent().clear();
-  else if (b.isZero() and result.isNaN()) result.querySBasicExponent().clear();
-  
-  // Compute the result
-  CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-  Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
-  result.multAndAddAssign(b, d, flags);
-  result.setNegative(not result.isNegative());
-  
-  // Handle EFP Specific Signaling/Rounding
-  bool status = cpu->EFPProcessOutput( result, flags );
-  
-  // Write back the result
-  cpu->SetGPR(rd, result.queryValue());
-  
-  return status;
+	if (!cpu->CheckSPV())
+		return false;
+	
+	// Read the input operands
+	SoftFloat d(cpu->GetGPR(rd)), result(cpu->GetGPR(ra)), b(cpu->GetGPR(rb));
+	
+	// Check for Invalid Operation/Input errors
+	if (not cpu->EFPProcessInput().set(result).set(b).set(d).proceed())
+		return false;
+	if      (result.isZero() and b.isNaN()) b.querySBasicExponent().clear();
+	else if (b.isZero() and result.isNaN()) result.querySBasicExponent().clear();
+	
+	// Compute the result
+	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
+	Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
+	result.multAndAddAssign(b, d, flags);
+	result.setNegative(not result.isNegative());
+	
+	// Handle EFP Specific Signaling/Rounding
+	bool status = cpu->EFPProcessOutput( result, flags );
+	
+	// Write back the result
+	cpu->SetGPR(rd, result.queryValue());
+	
+	return status;
 }
 
 efsnmadd.disasm = {

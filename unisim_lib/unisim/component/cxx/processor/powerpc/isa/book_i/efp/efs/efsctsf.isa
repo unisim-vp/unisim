@@ -35,43 +35,43 @@
 op efsctsf(4[6]:rd[5]:?[5]:rb[5]:727[11]);
 
 efsctsf.execute = {
-  if (!cpu->CheckSPV())
-    return false;
+	if (!cpu->CheckSPV())
+		return false;
 
-  // Read the input operands
-  SoftFloat b(cpu->GetGPR(rb));
+	// Read the input operands
+	SoftFloat b(cpu->GetGPR(rb));
 	
-  // Check for Invalid Operation/Input errors
-  if (not cpu->EFPProcessInput().set(b).proceed())
-    return false; // Should not occur
+	// Check for Invalid Operation/Input errors
+	if (not cpu->EFPProcessInput().set(b).proceed())
+		return false; // Should not occur
 	
-  // Compute the result
-  CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-  Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
-  int32_t result;
-  if (unlikely(b.isZero() or b.isNaN()))
-    result = int32_t(0);
-  else {
-    SoftFloat::IntConversion conversion;
-    conversion.setSigned().setSize(32);
-    b.retrieveInteger(conversion, flags, 31);
-    result = conversion.asInt32();
-  };
+	// Compute the result
+	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
+	Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
+	int32_t result;
+	if (unlikely(b.isZero() or b.isNaN()))
+		result = int32_t(0);
+	else {
+		SoftFloat::IntConversion conversion;
+		conversion.setSigned().setSize(32);
+		b.retrieveInteger(conversion, flags, 31);
+		result = conversion.asInt32();
+	};
 
-  // Update flags
-  if (flags.isOverflow())
-    {
-      // Overflow is invalid
-      if (not spefscr.SetInvalid( true ))
-        return false;
-      flags.clearFlowException();
-    }
-  cpu->EFPProcessOutput(b, flags);
-        
-  // Write back the result
-  cpu->SetGPR(rd, result);
+	// Update flags
+	if (flags.isOverflow())
+	{
+		// Overflow is invalid
+		if (not spefscr.SetInvalid( true ))
+			return false;
+		flags.clearFlowException();
+	}
+	cpu->EFPProcessOutput(b, flags);
+				
+	// Write back the result
+	cpu->SetGPR(rd, result);
 
-  return true;
+	return true;
 }
 
 efsctsf.disasm = {
