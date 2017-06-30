@@ -2190,14 +2190,14 @@ protected:
 		
 		bool SetInvalid( bool inv, bool invh=false )
 		{
-			Set<FINV>( inv );
-			Set<FINVH>( invh );
+			this->template Set<FINV>( inv );
+			this->template Set<FINVH>( invh );
 			if (inv or invh)
 			{
-				Set<FINVS>( true );
-				if (Get<FINVE>())
+				this->template Set<FINVS>( true );
+				if (this->template Get<FINVE>())
 				{
-					cpu->ThrowException<ProgramInterrupt::IllegalInstruction>();
+					this->cpu->ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
 					return false;
 				}
 			}
@@ -2206,14 +2206,14 @@ protected:
 		
 		bool SetDivideByZero( bool dbz, bool dbzh=false )
 		{
-			Set<FDBZ>( dbz );
-			Set<FDBZH>( dbzh );
+			this->template Set<FDBZ>( dbz );
+			this->template Set<FDBZH>( dbzh );
 			if (dbz or dbzh)
 			{
-				Set<FDBZS>( true );
-				if (Get<FDBZE>())
+				this->template Set<FDBZS>( true );
+				if (this->template Get<FDBZE>())
 				{
-					cpu->ThrowException<ProgramInterrupt::IllegalInstruction>();
+					this->cpu->ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
 					return false;
 				}
 			}
@@ -2222,14 +2222,14 @@ protected:
 
 		bool SetOverflow( bool ovf, bool ovfh=false )
 		{
-			Set<FOVF>( ovf );
-			Set<FOVFH>( ovfh );
+			this->template Set<FOVF>( ovf );
+			this->template Set<FOVFH>( ovfh );
 			if (ovf or ovfh)
 			{
-				Set<FOVFS>( true );
-				if (Get<FOVFE>())
+				this->template Set<FOVFS>( true );
+				if (this->template Get<FOVFE>())
 				{
-					cpu->ThrowException<ProgramInterrupt::IllegalInstruction>();
+					this->cpu->ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
 					return false;
 				}
 			}
@@ -2238,14 +2238,14 @@ protected:
 		
 		bool SetUnderflow( bool unf, bool unfh=false )
 		{
-			Set<FUNF>( unf );
-			Set<FUNFH>( unfh );
+			this->template Set<FUNF>( unf );
+			this->template Set<FUNFH>( unfh );
 			if (unf or unfh)
 			{
-				Set<FUNFS>( true );
-				if (Get<FUNFE>())
+				this->template Set<FUNFS>( true );
+				if (this->template Get<FUNFE>())
 				{
-					cpu->ThrowException<ProgramInterrupt::IllegalInstruction>();
+					this->cpu->ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
 					return false;
 				}
 			}

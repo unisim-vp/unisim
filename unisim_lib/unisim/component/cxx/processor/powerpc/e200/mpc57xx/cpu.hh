@@ -639,6 +639,88 @@ public:
 	bool InstructionFetch(ADDRESS addr, typename CONFIG::VLE_CODE_TYPE& insn);
 	void StepOneInstruction();
 	
+	struct __EFPProcessInput__
+	{
+		__EFPProcessInput__( CPU& _cpu ) : cpu(_cpu), finv(false) {};
+		template <class FLOAT>
+		__EFPProcessInput__& set( FLOAT& input ) { finv |= not check_input( input ) ; return *this; }
+		template <class FLOAT>
+		static bool check_input( FLOAT& input )
+		{
+			if (unlikely(input.isDenormalized()))
+			{
+				input.setZero(input.isNegative());
+				return false;
+			}
+			
+			if (unlikely(input.hasInftyExponent()))
+				return false;
+			
+			return true;
+		}
+		bool proceed()
+		{
+			cpu.spefscr.template Set<typename SPEFSCR::FINV>(finv);
+			if (finv)
+			{
+				cpu.spefscr.template Set<typename SPEFSCR::FINVS>(true);
+				if (cpu.spefscr.template Get<typename SPEFSCR::FINVE>())
+				{
+					cpu.template ThrowException<typename ProgramInterrupt::UnimplementedInstruction>();
+					return false;
+				}
+			}
+			return true;
+		}
+		
+		CPU& cpu;
+		bool finv;
+	};
+	
+	__EFPProcessInput__
+	EFPProcessInput()
+	{
+		spefscr.template Set<typename SPEFSCR::FG>(false);
+		spefscr.template Set<typename SPEFSCR::FX>(false);
+		spefscr.template Set<typename SPEFSCR::FGH>(false);
+		spefscr.template Set<typename SPEFSCR::FXH>(false);
+		spefscr.template Set<typename SPEFSCR::FDBZ>(false);
+		spefscr.template Set<typename SPEFSCR::FDBZH>(false);
+		spefscr.template SetDivideByZero( false );
+		return __EFPProcessInput__( *this );
+	}
+	
+	template <class FLOAT, class FLAGS>
+	bool
+	EFPProcessOutput( FLOAT& output, FLAGS const& flags )
+	{
+		if (output.hasInftyExponent())
+		{
+			bool neg = output.isNegative();
+			output.setInfty();
+			output.setToPrevious();
+			output.setNegative(neg);
+		}
+		bool inexact = flags.isApproximate() and not spefscr.template Get<typename CPU::SPEFSCR::FINV>();
+		if (not spefscr.template SetOverflow( inexact and flags.isOverflow() ))
+			return false;
+		if (not spefscr.template SetUnderflow( inexact and flags.isUnderflow() ))
+			return false;
+
+		if (inexact)
+		{
+			// Compute inexact flags (FG, FX)
+			spefscr.template Set<typename SPEFSCR::FINXS>(true);
+			if (spefscr.template Get<typename SPEFSCR::FINXE>())
+			{
+				this->template ThrowException<typename ProgramInterrupt::UnimplementedInstruction>();
+				return false;
+			}
+		}
+
+		return true;
+	}
+	
 protected:
 	////////////////////////// Run-time parameters ////////////////////////////
 	
