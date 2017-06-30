@@ -284,7 +284,7 @@ namespace simfloat {
         // We need to use Round Towards Zero (default would be round
         // to nearest) because we need to have exact values of
         // mantissa bits rather than good quality approximation
-        xflags.setRoundingMode( arm::RoundTowardsZero ); 
+        xflags.xflags.setZeroRound();
         next.divAssign( series_value, xflags );
         next.plusAssign( series_value, xflags );
         next.multAssign( half, xflags );
