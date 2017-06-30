@@ -685,6 +685,18 @@ bool CPU<TYPES, CONFIG>::IntLoadMSBFirst(unsigned int rd, typename TYPES::ADDRES
 }
 
 template <typename TYPES, typename CONFIG>
+template <typename REGISTER>
+bool CPU<TYPES, CONFIG>::SpecialLoad(REGISTER& reg, typename TYPES::ADDRESS ea)
+{
+	uint32_t value;
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, false>(value, ea);
+	if(unlikely(!status)) return false;
+	reg = value;
+	MonitorLoad(ea, sizeof(value));
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int8Store(unsigned int rs, typename TYPES::ADDRESS ea)
 {
 	uint8_t value = gpr[rs];
@@ -781,6 +793,17 @@ bool CPU<TYPES, CONFIG>::IntStoreMSBFirst(unsigned int rs, typename TYPES::ADDRE
 	}
 
 	MonitorStore(ea, size);
+	return true;
+}
+
+template <typename TYPES, typename CONFIG>
+template <typename REGISTER>
+bool CPU<TYPES, CONFIG>::SpecialStore(const REGISTER& reg, typename TYPES::ADDRESS ea)
+{
+	uint32_t value = reg;
+	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, false>(value, ea);
+	if(unlikely(!status)) return false;
+	MonitorStore(ea, sizeof(value));
 	return true;
 }
 

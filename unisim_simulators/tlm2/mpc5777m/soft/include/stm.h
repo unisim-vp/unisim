@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,45 +31,30 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-op mtspr(31[6]:rs[5]:spr[10]:467[10]:?[1])
-mtspr.execute = {
-	unsigned n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
-	uint32_t result = cpu->GetGPR(rs);
-	switch(n)
-	{
-		case 0x001:
-		{
-			XER& xer = cpu->GetXER();
-			xer = result;
-			break;
-		}
-		case 0x008:
-		{
-			LR& lr = cpu->GetLR();
-			lr = result;
-			break;
-		}
-		case 0x009:
-		{
-			CTR& ctr = cpu->GetCTR();
-			ctr = result;
-			break;
-		}
-		default:
-			return cpu->MoveToSPR(n, result);
-	}
-	
-	return true;
-}
-mtspr.disasm = {
-	unsigned n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
-	switch(n)
-	{
-		case 1: os << "mtxer r" << (unsigned int) rs; return;
-		case 8: os << "mtlr r" << (unsigned int) rs; return;
-		case 9: os << "mtctr r" << (unsigned int) rs; return;
-	}
 
-	os << "mtspr " << n << ", r" << (unsigned int) rs;
-}
+#ifndef __STM_H__
+#define __STM_H__
+
+#include "typedefs.h"
+
+typedef void (*stm_int_handler_t)(unsigned int, unsigned int);
+
+void stm_init(unsigned int stm_id);
+void stm_set_channel_irq_priority(unsigned int stm_id, unsigned int chan, unsigned int priority);
+void stm_select_channel_irq_for_processor(unsigned int stm_id, unsigned int chan, unsigned int prc_num);
+void stm_deselect_channel_irq_for_processor(unsigned int stm_id, unsigned int chan, unsigned int prc_num);
+void stm_set_counter_prescale(unsigned int stm_id, unsigned int prescale);
+unsigned int stm_get_counter_prescale(unsigned int stm_id);
+void stm_enable_counter(unsigned int stm_id);
+void stm_disable_counter(unsigned int stm_id);
+void stm_set_counter(unsigned int stm_id, uint32_t counter);
+uint32_t stm_get_counter(unsigned int stm_id);
+void stm_enable_channel(unsigned int stm_id, unsigned int chan);
+void stm_disable_channel(unsigned int stm_id, unsigned int chan);
+void stm_set_channel_compare(unsigned int stm_id, unsigned int chan, uint32_t cmp);
+uint32_t stm_get_channel_compare(unsigned int stm_id, unsigned int chan);
+void stm_clear_interrupt_flag(unsigned int stm_id, unsigned int chan);
+unsigned int stm_get_interrupt_flag(unsigned int stm_id, unsigned int chan);
+stm_int_handler_t stm_set_interrupt_handler(unsigned int stm_id, unsigned int chan, stm_int_handler_t stm_int_handler);
+
+#endif

@@ -43,7 +43,11 @@ op se_bctr(3[15]:lk[1]);
 se_bctr.execute = {
 	ADDRESS target_addr = uint32_t(cpu->GetCTR()) & uint32_t(0xfffffffeUL);
 	cpu->Branch(target_addr);
-	if(lk) cpu->SetLR(cpu->GetCIA() + uint32_t(2));
+	if(lk)
+	{
+		LR& lr = cpu->GetLR();
+		lr = cpu->GetCIA() + uint32_t(2);
+	}
 	
 	return true;
 }

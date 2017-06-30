@@ -122,6 +122,7 @@ class ClockPropertiesProxy
 public:
 	ClockPropertiesProxy(sc_core::sc_in<bool>& clk_port);
 	
+	bool IsClockCompatible() const;
 	const sc_core::sc_time& GetClockPeriod() const;
 	double GetClockDutyCycle() const;
 	const sc_core::sc_time& GetClockStartTime() const;
@@ -133,6 +134,7 @@ private:
 	mutable unisim::kernel::tlm2::ClockPropertiesInterface *clk_prop_if;
 	
 	void Initialize() const;
+	void CheckCompatibility() const;
 };
 
 } // end of namespace tlm2

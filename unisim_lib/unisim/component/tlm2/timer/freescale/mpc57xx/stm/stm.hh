@@ -68,16 +68,17 @@ using unisim::util::reg::core::RegisterAddressMap;
 using unisim::util::reg::core::FieldSet;
 using unisim::util::reg::core::AddressableRegisterFile;
 using unisim::util::reg::core::ReadWriteStatus;
+using unisim::util::reg::core::Access;
 using unisim::util::reg::core::SW_RW;
 using unisim::util::reg::core::SW_W;
-using unisim::util::reg::core::SW_RW1C;
+using unisim::util::reg::core::SW_R_W1C;
 using unisim::util::reg::core::RWS_OK;
 using unisim::util::reg::core::RWS_ANA;
 
-template <typename FIELD, int OFFSET1, int OFFSET2 = -1>
-struct Field : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1>
+template <typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
+struct Field : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, _ACCESS>
 {
-	typedef unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1> Super;
+	typedef unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, _ACCESS> Super;
 };
 
 #if 0
@@ -95,16 +96,19 @@ class STM
 	, public tlm::tlm_fw_transport_if<>
 {
 public:
-	static const unsigned int NUM_CHANNELS = CONFIG::NUM_CHANNELS;
-	static const unsigned int BUSWIDTH = CONFIG::BUSWIDTH;
-	static const bool threaded_model = false;
+	static const unsigned int TLM2_IP_VERSION_MAJOR = 1;
+	static const unsigned int TLM2_IP_VERSION_MINOR = 0;
+	static const unsigned int TLM2_IP_VERSION_PATCH = 0;
+	static const unsigned int NUM_CHANNELS          = CONFIG::NUM_CHANNELS;
+	static const unsigned int BUSWIDTH              = CONFIG::BUSWIDTH;
+	static const bool threaded_model                = false;
 	
 	typedef tlm::tlm_target_socket<BUSWIDTH> ahb_slave_if_type;
 
-	ahb_slave_if_type ahb_if; // AHB slave interface
-	sc_core::sc_in<bool> m_clk;
-	sc_core::sc_in<bool> debug_mode;
-	sc_core::sc_out<bool> *p_irq[NUM_CHANNELS];
+	ahb_slave_if_type      ahb_if;            // AHB slave interface
+	sc_core::sc_in<bool>   m_clk;             // Clock port
+	sc_core::sc_in<bool>   debug_mode;        // debug port
+	sc_core::sc_out<bool> *irq[NUM_CHANNELS]; // IRQ outputs
 	
 	STM(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
 	virtual ~STM();
@@ -225,12 +229,13 @@ private:
 		}
 		
 	private:
-		Key key;
-		tlm::tlm_generic_payload *payload;
-		bool release_payload;
-		sc_core::sc_event *completion_event;
+		Key key;                             // schedule key (i.e. time stamp)
+		tlm::tlm_generic_payload *payload;   // payload
+		bool release_payload;                // whether payload must be released using payload memory management
+		sc_core::sc_event *completion_event; // completion event (for blocking transport interface)
 	};
 	
+	// Common STM register representation
 	template <typename REGISTER>
 	struct STM_Register : AddressableRegister<REGISTER, 32, SW_RW, sc_core::sc_time>
 	{
@@ -239,17 +244,26 @@ private:
 		STM_Register(STM<CONFIG> *_stm) : Super(), stm(_stm) {}
 		STM_Register(STM<CONFIG> *_stm, uint32_t value) : Super(value), stm(_stm) {}
 
+		inline bool IsVerboseRead() const ALWAYS_INLINE { return stm->verbose; }
+		inline bool IsVerboseWrite() const ALWAYS_INLINE { return stm->verbose; }
+		inline std::ostream& GetInfoStream() ALWAYS_INLINE { return stm->logger.DebugInfoStream(); }
+
 		virtual ReadWriteStatus Read(sc_core::sc_time& time_stamp, uint32_t& value, const uint32_t& bit_enable)
 		{
+			// Run counter until read time so that registers reflect precise state of STM
 			stm->RunCounterToTime(time_stamp);
+			// Read register
 			return this->Super::Read(time_stamp, value, bit_enable);
 		}
 		
 		virtual ReadWriteStatus Write(sc_core::sc_time& time_stamp, const uint32_t& value, const uint32_t& bit_enable)
 		{
+			// Run counter until write time
 			stm->RunCounterToTime(time_stamp);
+			// Write register
 			ReadWriteStatus rws = this->Super::Write(time_stamp, value, bit_enable);
-			stm->ScheduleCountersRun();
+			// STM register changes affect IRQ output, so schedule a run of counter and compare that may trigger an IRQ output
+			stm->ScheduleCounterRun();
 			return rws;
 		}
 
@@ -270,7 +284,7 @@ private:
 		struct FRZ : Field<FRZ, 30>     {}; // Freeze
 		struct TEN : Field<TEN, 31>     {}; // Timer counter enabled
 		
-		typedef FieldSet<CPS, FRZ> ALL;
+		typedef FieldSet<CPS, FRZ, TEN> ALL;
 		
 		STM_CR(STM<CONFIG> *_stm) : Super(_stm) { Init(); }
 		STM_CR(STM<CONFIG> *_stm, uint32_t value) : Super(_stm, value) { Init(); }
@@ -285,8 +299,11 @@ private:
 		
 		virtual ReadWriteStatus Write(sc_core::sc_time& time_stamp, const uint32_t& value, const uint32_t& bit_enable)
 		{
+			// Write STM register
 			ReadWriteStatus rws = this->Super::Write(time_stamp, value, bit_enable);
-			this->stm->RefreshFreeze(); // FRZ may have changed
+			
+			// FRZ may have changed
+			this->stm->RefreshFreeze();
 			return rws;
 		}
 
@@ -359,7 +376,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x14;
 
-		struct CIF : Field<CIF, 31, SW_RW1C> {}; // Channel Enable
+		struct CIF : Field<CIF, 31, 31, SW_R_W1C> {}; // Channel Enable
 		
 		typedef FieldSet<CIF> ALL;
 		
@@ -381,8 +398,16 @@ private:
 			
 			CIF::SetName("CIF");
 			CIF::SetDescription("Channel Interrupt Flag");
+		}
+
+		virtual ReadWriteStatus Write(sc_core::sc_time& time_stamp, const uint32_t& value, const uint32_t& bit_enable)
+		{
+			// Write STM register
+			ReadWriteStatus rws = this->Super::Write(time_stamp, value, bit_enable); // this may clear CIF
 			
-			this->template Set<typename STM_CIR::CIF>(1);
+			unsigned int channel_num = reg_num;
+			this->stm->SetIRQLevel(channel_num, this->template Get<typename STM_CIR::CIF>());
+			return rws;
 		}
 
 		using Super::operator =;
@@ -425,47 +450,48 @@ private:
 
 		using Super::operator =;
 	private:
-		STM<CONFIG> *stm;
 		unsigned int reg_num;
 	};
 	
-	unisim::kernel::tlm2::ClockPropertiesProxy m_clk_prop_proxy;
+	unisim::kernel::tlm2::ClockPropertiesProxy m_clk_prop_proxy; // proxy to get clock properties from clock port
 
-	STM_CR stm_cr;
-	STM_CNT stm_cnt;
-	AddressableRegisterFile<STM_CCR, NUM_CHANNELS, STM<CONFIG>, sc_core::sc_time> stm_ccr;
-	AddressableRegisterFile<STM_CIR, NUM_CHANNELS, STM<CONFIG>, sc_core::sc_time> stm_cir;
-	AddressableRegisterFile<STM_CMP, NUM_CHANNELS, STM<CONFIG>, sc_core::sc_time> stm_cmp;
+	// STM Registers
+	STM_CR                                                                        stm_cr;  // STM_CR
+	STM_CNT                                                                       stm_cnt; // STM_CNT
+	AddressableRegisterFile<STM_CCR, NUM_CHANNELS, STM<CONFIG>, sc_core::sc_time> stm_ccr; // STM_CCRn
+	AddressableRegisterFile<STM_CIR, NUM_CHANNELS, STM<CONFIG>, sc_core::sc_time> stm_cir; // STM_CIRn
+	AddressableRegisterFile<STM_CMP, NUM_CHANNELS, STM<CONFIG>, sc_core::sc_time> stm_cmp; // STM_CMPn
 	
+	// STM registers address map
 	RegisterAddressMap<sc_dt::uint64, sc_core::sc_time> reg_addr_map;
 	
-	unisim::kernel::tlm2::Schedule<Event> schedule;
+	unisim::kernel::tlm2::Schedule<Event> schedule; // Payload (processor requests over AHB interface) schedule
 	
 	unisim::util::endian::endian_type endian;
 	unisim::kernel::service::Parameter<unisim::util::endian::endian_type> param_endian;
 	bool verbose;
 	unisim::kernel::service::Parameter<bool> param_verbose;
 	
-	bool irq_level[NUM_CHANNELS];
-	sc_core::sc_event *gen_irq_event[NUM_CHANNELS];
-	sc_core::sc_time last_counters_run_time;
-	sc_core::sc_time prescaled_clock_period;
-	sc_core::sc_event counters_run_event;
-	bool freeze;
+	bool irq_level[NUM_CHANNELS];                   // IRQ output level for each channel
+	sc_core::sc_event *gen_irq_event[NUM_CHANNELS]; // Event to trigger IRQ output (IRQ_Process)
+	sc_core::sc_time last_counter_run_time;         // Last time when counter ran
+	sc_core::sc_time prescaled_clock_period;        // Prescaled clock period
+	sc_core::sc_event counter_run_event;            // Event to trigger counter run (RunCounterProcess)
+	bool freeze;                                    // Latched value for internal "freeze"
 	
 	void ProcessEvent(Event *event);
 	void ProcessEvents();
 	void Process();
 	void UpdatePrescaledClockPeriod();
-	void P_IRQ_Process(unsigned int channel_num);
+	void IRQ_Process(unsigned int channel_num);
 	
 	void SetIRQLevel(unsigned int channel_num, bool level);
-	void TriggerInterrupt(unsigned int channel_num);
-	void AckInterrupt(unsigned int channel_num);
+	void CompareCounter();
 	void IncrementCounter(sc_dt::uint64 delta);
-	sc_core::sc_time TimeToNextCountersRun();
+	sc_dt::uint64 TicksToNextCounterRun();
+	sc_core::sc_time TimeToNextCounterRun();
 	void RunCounterToTime(const sc_core::sc_time& time_stamp);
-	void ScheduleCountersRun();
+	void ScheduleCounterRun();
 	void RunCounterProcess();
 	void RefreshFreeze();
 };

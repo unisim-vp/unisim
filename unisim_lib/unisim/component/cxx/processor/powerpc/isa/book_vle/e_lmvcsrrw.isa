@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2016-2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -30,46 +30,25 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
-op mtspr(31[6]:rs[5]:spr[10]:467[10]:?[1])
-mtspr.execute = {
-	unsigned n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
-	uint32_t result = cpu->GetGPR(rs);
-	switch(n)
-	{
-		case 0x001:
-		{
-			XER& xer = cpu->GetXER();
-			xer = result;
-			break;
-		}
-		case 0x008:
-		{
-			LR& lr = cpu->GetLR();
-			lr = result;
-			break;
-		}
-		case 0x009:
-		{
-			CTR& ctr = cpu->GetCTR();
-			ctr = result;
-			break;
-		}
-		default:
-			return cpu->MoveToSPR(n, result);
-	}
-	
-	return true;
-}
-mtspr.disasm = {
-	unsigned n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
-	switch(n)
-	{
-		case 1: os << "mtxer r" << (unsigned int) rs; return;
-		case 8: os << "mtlr r" << (unsigned int) rs; return;
-		case 9: os << "mtctr r" << (unsigned int) rs; return;
-	}
 
-	os << "mtspr " << n << ", r" << (unsigned int) rs;
+impl {
+#include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
+}
+
+/*  */
+op e_lmvcsrrw(0b000110[6]:0b00101[5]:ra[5]:0b00010000[8]:sext d8[8])
+
+e_lmvcsrrw.execute = {
+	// compute the effective address
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) : uint32_t(0)) + uint32_t(d8);
+	// do the memory accesses
+	if(!cpu->SpecialLoad(cpu->GetCSRR0(), ea)) return false;
+	ea = ea + 4;
+	return cpu->SpecialLoad(cpu->GetCSRR1(), ea);
+}
+
+e_lmvcsrrw.disasm = {
+	os << "e_lmvcsrrw " << EAPrint(d8,ra);
 }

@@ -280,8 +280,17 @@ ClockPropertiesProxy::ClockPropertiesProxy(sc_core::sc_in<bool>& clk_port_)
 void ClockPropertiesProxy::Initialize() const
 {
 	clk_prop_if = dynamic_cast<unisim::kernel::tlm2::ClockPropertiesInterface *>(clk_port[0]);
-	
-	if(!clk_prop_if)
+}
+
+bool ClockPropertiesProxy::IsClockCompatible() const
+{
+	if(!clk_prop_if) Initialize();
+	return clk_prop_if != 0;
+}
+
+void ClockPropertiesProxy::CheckCompatibility() const
+{
+	if(!IsClockCompatible())
 	{
 		throw std::runtime_error("ClockPropertiesProxy: clock port is not bound to a unisim::kernel::tlm2::Clock");
 	}
@@ -289,37 +298,37 @@ void ClockPropertiesProxy::Initialize() const
 
 const sc_core::sc_time& ClockPropertiesProxy::GetClockPeriod() const
 {
-	if(!clk_prop_if) Initialize();
+	CheckCompatibility();
 	return clk_prop_if->GetClockPeriod();
 }
 
 double ClockPropertiesProxy::GetClockDutyCycle() const
 {
-	if(!clk_prop_if) Initialize();
+	CheckCompatibility();
 	return clk_prop_if->GetClockDutyCycle();
 }
 
 const sc_core::sc_time& ClockPropertiesProxy::GetClockStartTime() const
 {
-	if(!clk_prop_if) Initialize();
+	CheckCompatibility();
 	return clk_prop_if->GetClockStartTime();
 }
 
 bool ClockPropertiesProxy::GetClockPosEdgeFirst() const
 {
-	if(!clk_prop_if) Initialize();
+	CheckCompatibility();
 	return clk_prop_if->GetClockPosEdgeFirst();
 }
 
 bool ClockPropertiesProxy::IsClockFrozen() const
 {
-	if(!clk_prop_if) Initialize();
+	CheckCompatibility();
 	return clk_prop_if->IsClockFrozen();
 }
 
 const sc_core::sc_event& ClockPropertiesProxy::GetClockPropertiesChangedEvent() const
 {
-	if(!clk_prop_if) Initialize();
+	CheckCompatibility();
 	return clk_prop_if->GetClockPropertiesChangedEvent();
 }
 

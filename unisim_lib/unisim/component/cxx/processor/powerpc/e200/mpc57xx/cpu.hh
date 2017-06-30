@@ -115,7 +115,19 @@ public:
 		MSR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
 		MSR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
-		MSR& operator = (const uint32_t& value)
+		inline void Set(unsigned int bit_offset, typename MSR::TYPE bit_value) ALWAYS_INLINE
+		{
+			Super::Set(bit_offset, bit_value);
+			this->cpu->UpdateExceptionEnable();
+		}
+		
+		template <typename FIELD> inline void Set(typename MSR::TYPE field_value)
+		{
+			Super::template Set<FIELD>(field_value);
+			this->cpu->UpdateExceptionEnable();
+		}
+
+		MSR& operator = (const typename MSR::TYPE& value)
 		{
 			this->Super::operator = (value);
 			this->cpu->UpdateExceptionEnable();
@@ -128,6 +140,14 @@ public:
 	MSR& GetMSR() { return msr; }
 	ESR& GetESR() { return esr; }
 	SPEFSCR& GetSPEFSCR() { return spefscr; }
+	typename SuperCPU::SRR0& GetSRR0() { return srr0; }
+	typename SuperCPU::SRR1& GetSRR1() { return srr1; }
+	typename SuperCPU::CSRR0& GetCSRR0() { return csrr0; }
+	typename SuperCPU::CSRR1& GetCSRR1() { return csrr1; }
+	typename SuperCPU::MCSRR0& GetMCSRR0() { return mcsrr0; }
+	typename SuperCPU::MCSRR1& GetMCSRR1() { return mcsrr1; }
+	typename SuperCPU::DSRR0& GetDSRR0() { return dsrr0; }
+	typename SuperCPU::DSRR1& GetDSRR1() { return dsrr1; }
 
 	bool Lbarx(unsigned int rd, ADDRESS addr);
 	bool Lharx(unsigned int rd, ADDRESS addr);
@@ -153,8 +173,8 @@ public:
 	{
 		typedef typename SuperCPU::PIR Super;
 		
-		PIR(CPU *_cpu) : Super(_cpu) {}
-		PIR(CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		PIR(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		PIR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		virtual void Reset()
 		{
@@ -168,8 +188,8 @@ public:
 	{
 		typedef typename SuperCPU::HID0 Super;
 		
-		HID0(CPU *_cpu) : Super(_cpu) {}
-		HID0(CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		HID0(typename CONFIG::CPU *_cpu) : Super(_cpu) {}
+		HID0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
 		
 		void Effect()
 		{
@@ -577,8 +597,8 @@ public:
 	
 	void UpdateExceptionEnable();
 	
-	void SetAutoVector(bool value) { if(this->verbose_interrupt) this->logger << DebugInfo << (value ? "Enabling" : "Disabling") << " auto vector" << EndDebugInfo; enable_auto_vectored_interrupts = value; }
-	void SetVectorOffset(ADDRESS value) { vector_offset = value & 0xfffffffcUL; }
+	void SetAutoVector(bool value);
+	void SetVectorOffset(ADDRESS value);
 	
 	inline std::ostream& GetDebugInfoStream() ALWAYS_INLINE { return this->SuperCPU::GetDebugInfoStream(); }
 	inline std::ostream& GetDebugWarningStream() ALWAYS_INLINE { return this->SuperCPU::GetDebugWarningStream(); }
@@ -692,7 +712,7 @@ protected:
 	typename SuperCPU::SPRG1 sprg1;
 	typename SuperCPU::SPRG2 sprg2;
 	typename SuperCPU::SPRG3 sprg3;
-	typename SuperCPU::PIR pir;
+	PIR pir;
 	typename SuperCPU::PVR pvr;
 	typename SuperCPU::DBSR dbsr;
 	typename SuperCPU::DBCR0 dbcr0;
@@ -735,7 +755,7 @@ protected:
 	typename SuperCPU::EDBRAC0 edbrac0;
 	typename SuperCPU::DEVENT devent;
 	typename SuperCPU::SIR sir;
-	typename SuperCPU::HID0 hid0;
+	HID0 hid0;
 	typename SuperCPU::HID1 hid1;
 	typename SuperCPU::BUCSR bucsr;
 	typename SuperCPU::SVR svr;

@@ -118,22 +118,32 @@ namespace core {
 /////////////////////////////// DECLARATIONS //////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+///////////////////////////////// AccessFlag //////////////////////////////////
+
+enum AccessFlags
+{
+	AF_HW_W   = 1,
+	AF_SW_R   = 2,
+	AF_SW_W   = 4,
+	AF_SW_W1  = 8,
+	AF_SW_W1C = 16
+};
+
 /////////////////////////////////// Access ////////////////////////////////////
 
 enum Access
 {
-	HW_RO = 0,                    // hardware read-only/no software access
-	HW_RW = 1,                    // hardware read-write/no software access
-	SW_R = 2 | HW_RW,             // hardware read-write/software read access
-	SW_W = 4 | HW_RW,             // hardware read-write/software write access
-	SW_RW = SW_R | SW_W,          // hardware read-write/software read-write access (default)
-	SW_W1 = 8 | SW_W,             // hardware write/software write once access
-	SW_RW1 = SW_RW | SW_W1,       // hardware read-write/software read-write once access
-	
-	SW_W1C = 16 | SW_W,           // hardware read-write/software write 1 clear access
-	SW_W11C = SW_W1C | SW_W1,     // hardware read-write/software write one and 1 clear access
-	SW_RW1C = SW_RW | SW_W1C,     // hardware read-write/software read-write 1 clear access
-	SW_RW11C = SW_RW1 | SW_W1C    // hardware read-write/software read-write one and 1 clear access
+	HW_RO = 0,                                                       // hardware read-only/no software access
+	HW_RW = AF_HW_W,                                                 // hardware read-write/no software access
+	SW_R = AF_SW_R | AF_HW_W,                                        // hardware read-write/software read access
+	SW_W = AF_SW_W | AF_HW_W,                                        // hardware read-write/software write access
+	SW_RW = AF_SW_R | AF_SW_W | AF_HW_W,                             // hardware read-write/software read-write access (default)
+	SW_W1 = AF_SW_W | AF_SW_W1 | AF_HW_W,                            // hardware write/software write once access
+	SW_R_W1 = AF_SW_R | AF_SW_W | AF_SW_W1 | AF_HW_W,                // hardware read-write/software read-write once access
+	SW_W1C = AF_SW_W | AF_SW_W1C | AF_HW_W,                          // hardware read-write/software write 1 clear access
+	SW_W1_W1C = AF_SW_W | AF_SW_W1 | AF_SW_W1C | AF_HW_W,            // hardware read-write/software write one and 1 clear access
+	SW_R_W1C = AF_SW_R | AF_SW_W | AF_SW_W1C | AF_HW_W,              // hardware read-write/software read-write 1 clear access
+	SW_R_W1_W1C = AF_SW_R | AF_SW_W | AF_SW_W1 | AF_SW_W1C | AF_HW_W // hardware read-write/software read-write once and write 1 clear access
 };
 
 std::ostream& operator << (std::ostream& os, const Access& access);
@@ -149,7 +159,7 @@ enum ReadWriteStatus
 	RWS_RWOR          = 8,                                   // reading write-only register
 	RWS_WOORV_WROR    = RWS_WOORV | RWS_WROR,                // writing out-of-range value and writing read-only register
 	RWS_WOORV_WROB    = RWS_WOORV | RWS_WROB,                // writing out-of-range value and writing read-only bits
-	RWS_ANA            = 16,                                 // access not allowed
+	RWS_ANA           = 16,                                  // access not allowed
 	RWS_WOORV_NA      = RWS_WOORV | RWS_ANA,                 // writing out-of-range value and access not allowed
 	RWS_WROR_NA       = RWS_WROR | RWS_ANA,                  // writing read-only register and access not allowed
 	RWS_WROB_NA       = RWS_WROB | RWS_ANA,                  // writing read-only bits and access not allowed
@@ -450,11 +460,19 @@ public:
 	const std::string& GetDescription() const;
 	
 	unisim::service::interfaces::Register *CreateRegisterInterface();
+	
+	inline bool IsVerboseRead() const ALWAYS_INLINE;
+	inline bool IsVerboseWrite() const ALWAYS_INLINE;
+	inline std::ostream& GetInfoStream() ALWAYS_INLINE;
 private:
 	TYPE value;
 	const std::string GetNameKey() const;
 	const std::string GetDisplayNameKey() const;
 	const std::string GetDescriptionKey() const;
+	
+	inline bool __IsVerboseRead__() const ALWAYS_INLINE;
+	inline bool __IsVerboseWrite__() const ALWAYS_INLINE;
+	inline std::ostream& __GetInfoStream__() ALWAYS_INLINE;
 };
 
 /////////////////////////// NullRegisterFileBase //////////////////////////////
@@ -541,12 +559,12 @@ public:
 protected:
 	virtual ReadWriteStatus Write(const typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
 	virtual ReadWriteStatus Read(typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
-	virtual ReadWriteStatus DebugWrite(const typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
-	virtual ReadWriteStatus DebugRead(typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
+	virtual void DebugWrite(const typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
+	virtual void DebugRead(typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
 	virtual ReadWriteStatus Write(CUSTOM_RW_ARG& custom_rw_arg, const typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
 	virtual ReadWriteStatus Read(CUSTOM_RW_ARG& custom_rw_arg, typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
-	virtual ReadWriteStatus DebugWrite(CUSTOM_RW_ARG& custom_rw_arg, const typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
-	virtual ReadWriteStatus DebugRead(CUSTOM_RW_ARG& custom_rw_arg, typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
+	virtual void DebugWrite(CUSTOM_RW_ARG& custom_rw_arg, const typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
+	virtual void DebugRead(CUSTOM_RW_ARG& custom_rw_arg, typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
 	virtual void ShortPrettyPrint(std::ostream& os);
 	virtual void LongPrettyPrint(std::ostream& os);
 private:

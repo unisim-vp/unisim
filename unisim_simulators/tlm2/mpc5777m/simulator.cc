@@ -39,13 +39,13 @@
 
 Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	: unisim::kernel::tlm2::Simulator(name, argc, argv, LoadBuiltInConfig)
-	, cpu2(0)
+	, peripheral_core_2(0)
 	, standby_ram(0)
 	, system_ram(0)
 	, flash(0)
 	, interconnect(0)
-	, intc(0)
-	, stm2(0)
+	, intc_0(0)
+	, stm_2(0)
 	, loader(0)
 	, debugger(0)
 	, gdb_server(0)
@@ -63,8 +63,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
-	//  - PowerPC processor
-	cpu2 = new CPU2("CPU2", this);
+	//  - PowerPC e200 processors
+	peripheral_core_2 = new Peripheral_Core_2("Peripheral_Core_2", this);
 
 	//  - Standby RAM
 	standby_ram = new STANDBY_RAM("STANDBY-RAM", this);
@@ -79,10 +79,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	interconnect = new INTERCONNECT("INTERCONNECT", this);
 	
 	//  - Interrupt Controller
-	intc = new INTC("INTC", this);
+	intc_0 = new INTC_0("INTC_0", this);
 	
 	//  - System Timer Module
-	stm2 = new STM("STM2", this);
+	stm_2 = new STM_2("STM_2", this);
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -107,48 +107,52 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//=========================================================================
 	//===                          Port registration                        ===
 	//=========================================================================
-	RegisterPort(cpu2->m_clk);
-	RegisterPort(cpu2->m_por);
-	RegisterPort(cpu2->p_reset_b);
-	RegisterPort(cpu2->p_nmi_b);
-	RegisterPort(cpu2->p_mcp_b);
-	RegisterPort(cpu2->p_rstbase);
-	RegisterPort(cpu2->p_cpuid);
-	RegisterPort(cpu2->p_extint_b);
-	RegisterPort(cpu2->p_crint_b);
-	RegisterPort(cpu2->p_avec_b);
-	RegisterPort(cpu2->p_voffset);
-	RegisterPort(cpu2->p_iack);
+	RegisterPort(peripheral_core_2->m_clk);
+	RegisterPort(peripheral_core_2->m_por);
+	RegisterPort(peripheral_core_2->p_reset_b);
+	RegisterPort(peripheral_core_2->p_nmi_b);
+	RegisterPort(peripheral_core_2->p_mcp_b);
+	RegisterPort(peripheral_core_2->p_rstbase);
+	RegisterPort(peripheral_core_2->p_cpuid);
+	RegisterPort(peripheral_core_2->p_extint_b);
+	RegisterPort(peripheral_core_2->p_crint_b);
+	RegisterPort(peripheral_core_2->p_avec_b);
+	RegisterPort(peripheral_core_2->p_voffset);
+	RegisterPort(peripheral_core_2->p_iack);
 	
-	RegisterPort(intc->m_clk);
+	RegisterPort(intc_0->m_clk);
+	RegisterPort(intc_0->reset_b);
 	
 	unsigned int hw_irq_num;
-	for(hw_irq_num = 0; hw_irq_num < INTC_CONFIG::NUM_HW_IRQS; hw_irq_num++)
+	for(hw_irq_num = 0; hw_irq_num < INTC_0_CONFIG::NUM_HW_IRQS; hw_irq_num++)
 	{
-		RegisterPort(*intc->p_hw_irq[hw_irq_num]);
+		RegisterPort(*intc_0->hw_irq[hw_irq_num]);
 	}
 	unsigned int prc_num;
-	for(prc_num = 0; prc_num < INTC_CONFIG::NUM_PROCESSORS; prc_num++)
+	for(prc_num = 0; prc_num < INTC_0_CONFIG::NUM_PROCESSORS; prc_num++)
 	{
-		RegisterPort(*intc->p_iack[prc_num]);
-		RegisterPort(*intc->p_irq_b[prc_num]);
-		RegisterPort(*intc->p_avec_b[prc_num]);
-		RegisterPort(*intc->p_voffset[prc_num]);
+		RegisterPort(*intc_0->p_iack[prc_num]);
+		RegisterPort(*intc_0->p_irq_b[prc_num]);
+		RegisterPort(*intc_0->p_avec_b[prc_num]);
+		RegisterPort(*intc_0->p_voffset[prc_num]);
 	}
 	
-	RegisterPort(stm2->m_clk);
-	RegisterPort(stm2->debug_mode);
+	RegisterPort(stm_2->m_clk);
+	RegisterPort(stm_2->debug_mode);
 	unsigned int channel_num;
-	for(channel_num = 0; channel_num < STM_CONFIG::NUM_CHANNELS; channel_num++)
+	for(channel_num = 0; channel_num < STM_2_CONFIG::NUM_CHANNELS; channel_num++)
 	{
-		RegisterPort(*stm2->p_irq[channel_num]);
+		RegisterPort(*stm_2->irq[channel_num]);
 	}
 
 	//=========================================================================
 	//===                           Signal creation                         ===
 	//=========================================================================
 	
-	CreateClock("clk");
+	CreateClock("clk_200MHz");
+	CreateClock("clk_300MHz");
+	CreateClock("clk_100MHz");
+	CreateClock("clk_50MHz");
 	
 	CreateSignal("m_por", false);
 	CreateSignal("debug_mode", false);
@@ -159,89 +163,1048 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateSignal("p_cpuid", sc_dt::sc_uint<8>(0));
 	CreateSignal("p_extint_b", true);
 	CreateSignal("p_crint_b", true);
-	CreateSignalArray(INTC_CONFIG::NUM_PROCESSORS, "p_irq_b", false);
-	CreateSignalArray(INTC_CONFIG::NUM_PROCESSORS, "p_avec_b", true);
-	CreateSignalArray(INTC_CONFIG::NUM_PROCESSORS, "p_voffset", sc_dt::sc_uint<INTC_CONFIG::VOFFSET_WIDTH>(0));
-	CreateSignalArray(INTC_CONFIG::NUM_PROCESSORS, "p_iack", false);
+	CreateSignalArray(INTC_0_CONFIG::NUM_PROCESSORS, "p_irq_b", false);
+	CreateSignalArray(INTC_0_CONFIG::NUM_PROCESSORS, "p_avec_b", true);
+	CreateSignalArray(INTC_0_CONFIG::NUM_PROCESSORS, "p_voffset", sc_dt::sc_uint<INTC_0_CONFIG::VOFFSET_WIDTH>(0));
+	CreateSignalArray(INTC_0_CONFIG::NUM_PROCESSORS, "p_iack", false);
 	
-	CreateSignalArray(INTC_CONFIG::NUM_HW_IRQS, "fake_irq", false);
-	CreateSignalArray(STM_CONFIG::NUM_CHANNELS, "stm2_cir", false);
+	CreateSignalArray(INTC_0::NUM_IRQS, "irq", false);
+	CreateSignalArray(STM_2_CONFIG::NUM_CHANNELS, "stm_2_cir", false);
 	
 	//=========================================================================
 	//===                        Components connection                      ===
 	//=========================================================================
 
-	cpu2->i_ahb_if(*interconnect->targ_socket[0]); // CPU2>I_AHB_IF <-> Crossbar
-	cpu2->d_ahb_if(*interconnect->targ_socket[1]); // CPU2>D_AHB_IF <-> Crossbar
+	peripheral_core_2->i_ahb_if(*interconnect->targ_socket[0]); // Peripheral_Core_2>I_AHB_IF <-> Crossbar
+	peripheral_core_2->d_ahb_if(*interconnect->targ_socket[1]); // Peripheral_Core_2>D_AHB_IF <-> Crossbar
 	(*interconnect->init_socket[0])(standby_ram->slave_sock); // Crossbar <-> Standby RAM
 	(*interconnect->init_socket[1])(system_ram->slave_sock);  // Crossbar <-> System RAM
 	(*interconnect->init_socket[2])(flash->slave_sock);  // Crossbar <-> FLASH
-	(*interconnect->init_socket[3])(cpu2->s_ahb_if);  // Crossbar <-> S_AHB_IF<CPU2
-	(*interconnect->init_socket[4])(*intc->ahb_if[0]);// Crossbar <-> AHB_IF_0<INTC
-	(*interconnect->init_socket[5])(stm2->ahb_if);// Crossbar <-> AHB_IF<STM2
+	(*interconnect->init_socket[3])(peripheral_core_2->s_ahb_if);  // Crossbar <-> S_AHB_IF<Peripheral_Core_2
+	(*interconnect->init_socket[4])(intc_0->peripheral_slave_if);// Crossbar <-> PERIPHERAL_SLAVE_IF<INTC_0
+	(*interconnect->init_socket[5])(stm_2->ahb_if);// Crossbar <-> AHB_IF<STM_2
 
-	Bind("HARDWARE.CPU2.m_clk"           , "HARDWARE.clk");
-	Bind("HARDWARE.CPU2.m_por"           , "HARDWARE.m_por");
-	Bind("HARDWARE.CPU2.p_reset_b"       , "HARDWARE.p_reset_b");
-	Bind("HARDWARE.CPU2.p_nmi_b"         , "HARDWARE.p_nmi_b");
-	Bind("HARDWARE.CPU2.p_mcp_b"         , "HARDWARE.p_mcp_b");
-	Bind("HARDWARE.CPU2.p_rstbase"       , "HARDWARE.p_rstbase");
-	Bind("HARDWARE.CPU2.p_cpuid"         , "HARDWARE.p_cpuid");
-	Bind("HARDWARE.CPU2.p_extint_b"      , "HARDWARE.p_irq_b_0");
-	Bind("HARDWARE.CPU2.p_crint_b"       , "HARDWARE.p_crint_b");
-	Bind("HARDWARE.CPU2.p_avec_b"        , "HARDWARE.p_avec_b_0");
-	Bind("HARDWARE.CPU2.p_voffset"       , "HARDWARE.p_voffset_0");
-	Bind("HARDWARE.CPU2.p_iack"          , "HARDWARE.p_iack_0");
+	Bind("HARDWARE.Peripheral_Core_2.m_clk"           , "HARDWARE.clk_200MHz");
+	Bind("HARDWARE.Peripheral_Core_2.m_por"           , "HARDWARE.m_por");
+	Bind("HARDWARE.Peripheral_Core_2.p_reset_b"       , "HARDWARE.p_reset_b");
+	Bind("HARDWARE.Peripheral_Core_2.p_nmi_b"         , "HARDWARE.p_nmi_b");
+	Bind("HARDWARE.Peripheral_Core_2.p_mcp_b"         , "HARDWARE.p_mcp_b");
+	Bind("HARDWARE.Peripheral_Core_2.p_rstbase"       , "HARDWARE.p_rstbase");
+	Bind("HARDWARE.Peripheral_Core_2.p_cpuid"         , "HARDWARE.p_cpuid");
+	Bind("HARDWARE.Peripheral_Core_2.p_extint_b"      , "HARDWARE.p_irq_b_2");
+	Bind("HARDWARE.Peripheral_Core_2.p_crint_b"       , "HARDWARE.p_crint_b");
+	Bind("HARDWARE.Peripheral_Core_2.p_avec_b"        , "HARDWARE.p_avec_b_2");
+	Bind("HARDWARE.Peripheral_Core_2.p_voffset"       , "HARDWARE.p_voffset_2");
+	Bind("HARDWARE.Peripheral_Core_2.p_iack"          , "HARDWARE.p_iack_2");
 	
-	Bind("HARDWARE.INTC.m_clk"           , "HARDWARE.clk");
-//	Bind("HARDWARE.INTC.p_hw_irq_0"      , "HARDWARE.fake_irq");
-	BindArray(INTC_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC.p_irq_b"  , "HARDWARE.p_irq_b"  );
-	BindArray(INTC_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC.p_avec_b" , "HARDWARE.p_avec_b" );
-	BindArray(INTC_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC.p_voffset", "HARDWARE.p_voffset");
-	BindArray(INTC_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC.p_iack"   , "HARDWARE.p_iack"   );
+	Bind("HARDWARE.INTC_0.m_clk"           , "HARDWARE.clk_50MHz");
+	Bind("HARDWARE.INTC_0.reset_b"         , "HARDWARE.p_reset_b");
+	BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_irq_b"  , "HARDWARE.p_irq_b"  );
+	BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_avec_b" , "HARDWARE.p_avec_b" );
+	BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_voffset", "HARDWARE.p_voffset");
+	BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_iack"   , "HARDWARE.p_iack"   );
 	
-	Bind("HARDWARE.STM2.m_clk"           , "HARDWARE.clk");
-	Bind("HARDWARE.STM2.debug_mode"      , "HARDWARE.debug_mode");
-	BindArray(STM_CONFIG::NUM_CHANNELS, "HARDWARE.STM2.p_irq"   , "HARDWARE.stm2_cir");
-	BindArray(STM_CONFIG::NUM_CHANNELS, "HARDWARE.INTC.p_hw_irq", "HARDWARE.stm2_cir");
+	Bind("HARDWARE.STM_2.m_clk"           , "HARDWARE.clk_50MHz");
+	Bind("HARDWARE.STM_2.debug_mode"      , "HARDWARE.debug_mode");
+	
+	// Interrupt sources
+	
+	// IRQ # ---- Source name ------------ Description ------------------------- Note --------------
+	//   0     INTC SSCIR0[CLR]     software settable flag 0            internally routed in INTC
+	//  ..           ..                       ..                                   ..
+	//  31    INTC SSCIR31[CLR]    software settable flag 31            internally routed in INTC
+	
+	//  32          TODO
+	//  ..          TODO
+	//  43          TODO
+	
+	InterruptSource(32);
+	InterruptSource(33);
+	InterruptSource(34);
+	InterruptSource(35);
+	InterruptSource(36);
+	InterruptSource(37);
+	InterruptSource(38);
+	InterruptSource(39);
+	InterruptSource(40);
+	InterruptSource(41);
+	InterruptSource(42);
+	InterruptSource(43);
+	
+	//  44      STM_2 CIR0[CIF]     platform period timer 2_0
+	//  45      STM_2 CIR1[CIF]     platform period timer 2_1
+	//  46      STM_2 CIR2[CIF]     platform period timer 2_2
+	//  47      STM_2 CIR3[CIF]     platform period timer 2_3
+	
+	InterruptSource(44, "HARDWARE.STM_2.irq_0");
+	InterruptSource(45, "HARDWARE.STM_2.irq_1");
+	InterruptSource(46, "HARDWARE.STM_2.irq_2");
+	InterruptSource(47, "HARDWARE.STM_2.irq_3");
+
+	// 48
+	// ..           TODO
+	// 964
+
+	InterruptSource(48);
+	InterruptSource(49);
+	InterruptSource(50);
+	InterruptSource(51);
+	InterruptSource(52);
+	InterruptSource(53);
+	InterruptSource(54);
+	InterruptSource(55);
+	InterruptSource(56);
+	InterruptSource(57);
+	InterruptSource(58);
+	InterruptSource(59);
+	InterruptSource(60);
+	InterruptSource(61);
+	InterruptSource(62);
+	InterruptSource(63);
+	InterruptSource(64);
+	InterruptSource(65);
+	InterruptSource(66);
+	InterruptSource(67);
+	InterruptSource(68);
+	InterruptSource(69);
+	InterruptSource(70);
+	InterruptSource(71);
+	InterruptSource(72);
+	InterruptSource(73);
+	InterruptSource(74);
+	InterruptSource(75);
+	InterruptSource(76);
+	InterruptSource(77);
+	InterruptSource(78);
+	InterruptSource(79);
+	InterruptSource(80);
+	InterruptSource(81);
+	InterruptSource(82);
+	InterruptSource(83);
+	InterruptSource(84);
+	InterruptSource(85);
+	InterruptSource(86);
+	InterruptSource(87);
+	InterruptSource(88);
+	InterruptSource(89);
+	InterruptSource(90);
+	InterruptSource(91);
+	InterruptSource(92);
+	InterruptSource(93);
+	InterruptSource(94);
+	InterruptSource(95);
+	InterruptSource(96);
+	InterruptSource(97);
+	InterruptSource(98);
+	InterruptSource(99);
+	InterruptSource(100);
+	InterruptSource(101);
+	InterruptSource(102);
+	InterruptSource(103);
+	InterruptSource(104);
+	InterruptSource(105);
+	InterruptSource(106);
+	InterruptSource(107);
+	InterruptSource(108);
+	InterruptSource(109);
+	InterruptSource(110);
+	InterruptSource(111);
+	InterruptSource(112);
+	InterruptSource(113);
+	InterruptSource(114);
+	InterruptSource(115);
+	InterruptSource(116);
+	InterruptSource(117);
+	InterruptSource(118);
+	InterruptSource(119);
+	InterruptSource(120);
+	InterruptSource(121);
+	InterruptSource(122);
+	InterruptSource(123);
+	InterruptSource(124);
+	InterruptSource(125);
+	InterruptSource(126);
+	InterruptSource(127);
+	InterruptSource(128);
+	InterruptSource(129);
+	InterruptSource(130);
+	InterruptSource(131);
+	InterruptSource(132);
+	InterruptSource(133);
+	InterruptSource(134);
+	InterruptSource(135);
+	InterruptSource(136);
+	InterruptSource(137);
+	InterruptSource(138);
+	InterruptSource(139);
+	InterruptSource(140);
+	InterruptSource(141);
+	InterruptSource(142);
+	InterruptSource(143);
+	InterruptSource(144);
+	InterruptSource(145);
+	InterruptSource(146);
+	InterruptSource(147);
+	InterruptSource(148);
+	InterruptSource(149);
+	InterruptSource(150);
+	InterruptSource(151);
+	InterruptSource(152);
+	InterruptSource(153);
+	InterruptSource(154);
+	InterruptSource(155);
+	InterruptSource(156);
+	InterruptSource(157);
+	InterruptSource(158);
+	InterruptSource(159);
+	InterruptSource(160);
+	InterruptSource(161);
+	InterruptSource(162);
+	InterruptSource(163);
+	InterruptSource(164);
+	InterruptSource(165);
+	InterruptSource(166);
+	InterruptSource(167);
+	InterruptSource(168);
+	InterruptSource(169);
+	InterruptSource(170);
+	InterruptSource(171);
+	InterruptSource(172);
+	InterruptSource(173);
+	InterruptSource(174);
+	InterruptSource(175);
+	InterruptSource(176);
+	InterruptSource(177);
+	InterruptSource(178);
+	InterruptSource(179);
+	InterruptSource(180);
+	InterruptSource(181);
+	InterruptSource(182);
+	InterruptSource(183);
+	InterruptSource(184);
+	InterruptSource(185);
+	InterruptSource(186);
+	InterruptSource(187);
+	InterruptSource(188);
+	InterruptSource(189);
+	InterruptSource(190);
+	InterruptSource(191);
+	InterruptSource(192);
+	InterruptSource(193);
+	InterruptSource(194);
+	InterruptSource(195);
+	InterruptSource(196);
+	InterruptSource(197);
+	InterruptSource(198);
+	InterruptSource(199);
+	InterruptSource(200);
+	InterruptSource(201);
+	InterruptSource(202);
+	InterruptSource(203);
+	InterruptSource(204);
+	InterruptSource(205);
+	InterruptSource(206);
+	InterruptSource(207);
+	InterruptSource(208);
+	InterruptSource(209);
+	InterruptSource(210);
+	InterruptSource(211);
+	InterruptSource(212);
+	InterruptSource(213);
+	InterruptSource(214);
+	InterruptSource(215);
+	InterruptSource(216);
+	InterruptSource(217);
+	InterruptSource(218);
+	InterruptSource(219);
+	InterruptSource(220);
+	InterruptSource(221);
+	InterruptSource(222);
+	InterruptSource(223);
+	InterruptSource(224);
+	InterruptSource(225);
+	InterruptSource(226);
+	InterruptSource(227);
+	InterruptSource(228);
+	InterruptSource(229);
+	InterruptSource(230);
+	InterruptSource(231);
+	InterruptSource(232);
+	InterruptSource(233);
+	InterruptSource(234);
+	InterruptSource(235);
+	InterruptSource(236);
+	InterruptSource(237);
+	InterruptSource(238);
+	InterruptSource(239);
+	InterruptSource(240);
+	InterruptSource(241);
+	InterruptSource(242);
+	InterruptSource(243);
+	InterruptSource(244);
+	InterruptSource(245);
+	InterruptSource(246);
+	InterruptSource(247);
+	InterruptSource(248);
+	InterruptSource(249);
+	InterruptSource(250);
+	InterruptSource(251);
+	InterruptSource(252);
+	InterruptSource(253);
+	InterruptSource(254);
+	InterruptSource(255);
+	InterruptSource(256);
+	InterruptSource(257);
+	InterruptSource(258);
+	InterruptSource(259);
+	InterruptSource(260);
+	InterruptSource(261);
+	InterruptSource(262);
+	InterruptSource(263);
+	InterruptSource(264);
+	InterruptSource(265);
+	InterruptSource(266);
+	InterruptSource(267);
+	InterruptSource(268);
+	InterruptSource(269);
+	InterruptSource(270);
+	InterruptSource(271);
+	InterruptSource(272);
+	InterruptSource(273);
+	InterruptSource(274);
+	InterruptSource(275);
+	InterruptSource(276);
+	InterruptSource(277);
+	InterruptSource(278);
+	InterruptSource(279);
+	InterruptSource(280);
+	InterruptSource(281);
+	InterruptSource(282);
+	InterruptSource(283);
+	InterruptSource(284);
+	InterruptSource(285);
+	InterruptSource(286);
+	InterruptSource(287);
+	InterruptSource(288);
+	InterruptSource(289);
+	InterruptSource(290);
+	InterruptSource(291);
+	InterruptSource(292);
+	InterruptSource(293);
+	InterruptSource(294);
+	InterruptSource(295);
+	InterruptSource(296);
+	InterruptSource(297);
+	InterruptSource(298);
+	InterruptSource(299);
+	InterruptSource(300);
+	InterruptSource(301);
+	InterruptSource(302);
+	InterruptSource(303);
+	InterruptSource(304);
+	InterruptSource(305);
+	InterruptSource(306);
+	InterruptSource(307);
+	InterruptSource(308);
+	InterruptSource(309);
+	InterruptSource(310);
+	InterruptSource(311);
+	InterruptSource(312);
+	InterruptSource(313);
+	InterruptSource(314);
+	InterruptSource(315);
+	InterruptSource(316);
+	InterruptSource(317);
+	InterruptSource(318);
+	InterruptSource(319);
+	InterruptSource(320);
+	InterruptSource(321);
+	InterruptSource(322);
+	InterruptSource(323);
+	InterruptSource(324);
+	InterruptSource(325);
+	InterruptSource(326);
+	InterruptSource(327);
+	InterruptSource(328);
+	InterruptSource(329);
+	InterruptSource(330);
+	InterruptSource(331);
+	InterruptSource(332);
+	InterruptSource(333);
+	InterruptSource(334);
+	InterruptSource(335);
+	InterruptSource(336);
+	InterruptSource(337);
+	InterruptSource(338);
+	InterruptSource(339);
+	InterruptSource(340);
+	InterruptSource(341);
+	InterruptSource(342);
+	InterruptSource(343);
+	InterruptSource(344);
+	InterruptSource(345);
+	InterruptSource(346);
+	InterruptSource(347);
+	InterruptSource(348);
+	InterruptSource(349);
+	InterruptSource(350);
+	InterruptSource(351);
+	InterruptSource(352);
+	InterruptSource(353);
+	InterruptSource(354);
+	InterruptSource(355);
+	InterruptSource(356);
+	InterruptSource(357);
+	InterruptSource(358);
+	InterruptSource(359);
+	InterruptSource(360);
+	InterruptSource(361);
+	InterruptSource(362);
+	InterruptSource(363);
+	InterruptSource(364);
+	InterruptSource(365);
+	InterruptSource(366);
+	InterruptSource(367);
+	InterruptSource(368);
+	InterruptSource(369);
+	InterruptSource(370);
+	InterruptSource(371);
+	InterruptSource(372);
+	InterruptSource(373);
+	InterruptSource(374);
+	InterruptSource(375);
+	InterruptSource(376);
+	InterruptSource(377);
+	InterruptSource(378);
+	InterruptSource(379);
+	InterruptSource(380);
+	InterruptSource(381);
+	InterruptSource(382);
+	InterruptSource(383);
+	InterruptSource(384);
+	InterruptSource(385);
+	InterruptSource(386);
+	InterruptSource(387);
+	InterruptSource(388);
+	InterruptSource(389);
+	InterruptSource(390);
+	InterruptSource(391);
+	InterruptSource(392);
+	InterruptSource(393);
+	InterruptSource(394);
+	InterruptSource(395);
+	InterruptSource(396);
+	InterruptSource(397);
+	InterruptSource(398);
+	InterruptSource(399);
+	InterruptSource(400);
+	InterruptSource(401);
+	InterruptSource(402);
+	InterruptSource(403);
+	InterruptSource(404);
+	InterruptSource(405);
+	InterruptSource(406);
+	InterruptSource(407);
+	InterruptSource(408);
+	InterruptSource(409);
+	InterruptSource(410);
+	InterruptSource(411);
+	InterruptSource(412);
+	InterruptSource(413);
+	InterruptSource(414);
+	InterruptSource(415);
+	InterruptSource(416);
+	InterruptSource(417);
+	InterruptSource(418);
+	InterruptSource(419);
+	InterruptSource(420);
+	InterruptSource(421);
+	InterruptSource(422);
+	InterruptSource(423);
+	InterruptSource(424);
+	InterruptSource(425);
+	InterruptSource(426);
+	InterruptSource(427);
+	InterruptSource(428);
+	InterruptSource(429);
+	InterruptSource(430);
+	InterruptSource(431);
+	InterruptSource(432);
+	InterruptSource(433);
+	InterruptSource(434);
+	InterruptSource(435);
+	InterruptSource(436);
+	InterruptSource(437);
+	InterruptSource(438);
+	InterruptSource(439);
+	InterruptSource(440);
+	InterruptSource(441);
+	InterruptSource(442);
+	InterruptSource(443);
+	InterruptSource(444);
+	InterruptSource(445);
+	InterruptSource(446);
+	InterruptSource(447);
+	InterruptSource(448);
+	InterruptSource(449);
+	InterruptSource(450);
+	InterruptSource(451);
+	InterruptSource(452);
+	InterruptSource(453);
+	InterruptSource(454);
+	InterruptSource(455);
+	InterruptSource(456);
+	InterruptSource(457);
+	InterruptSource(458);
+	InterruptSource(459);
+	InterruptSource(460);
+	InterruptSource(461);
+	InterruptSource(462);
+	InterruptSource(463);
+	InterruptSource(464);
+	InterruptSource(465);
+	InterruptSource(466);
+	InterruptSource(467);
+	InterruptSource(468);
+	InterruptSource(469);
+	InterruptSource(470);
+	InterruptSource(471);
+	InterruptSource(472);
+	InterruptSource(473);
+	InterruptSource(474);
+	InterruptSource(475);
+	InterruptSource(476);
+	InterruptSource(477);
+	InterruptSource(478);
+	InterruptSource(479);
+	InterruptSource(480);
+	InterruptSource(481);
+	InterruptSource(482);
+	InterruptSource(483);
+	InterruptSource(484);
+	InterruptSource(485);
+	InterruptSource(486);
+	InterruptSource(487);
+	InterruptSource(488);
+	InterruptSource(489);
+	InterruptSource(490);
+	InterruptSource(491);
+	InterruptSource(492);
+	InterruptSource(493);
+	InterruptSource(494);
+	InterruptSource(495);
+	InterruptSource(496);
+	InterruptSource(497);
+	InterruptSource(498);
+	InterruptSource(499);
+	InterruptSource(500);
+	InterruptSource(501);
+	InterruptSource(502);
+	InterruptSource(503);
+	InterruptSource(504);
+	InterruptSource(505);
+	InterruptSource(506);
+	InterruptSource(507);
+	InterruptSource(508);
+	InterruptSource(509);
+	InterruptSource(510);
+	InterruptSource(511);
+	InterruptSource(512);
+	InterruptSource(513);
+	InterruptSource(514);
+	InterruptSource(515);
+	InterruptSource(516);
+	InterruptSource(517);
+	InterruptSource(518);
+	InterruptSource(519);
+	InterruptSource(520);
+	InterruptSource(521);
+	InterruptSource(522);
+	InterruptSource(523);
+	InterruptSource(524);
+	InterruptSource(525);
+	InterruptSource(526);
+	InterruptSource(527);
+	InterruptSource(528);
+	InterruptSource(529);
+	InterruptSource(530);
+	InterruptSource(531);
+	InterruptSource(532);
+	InterruptSource(533);
+	InterruptSource(534);
+	InterruptSource(535);
+	InterruptSource(536);
+	InterruptSource(537);
+	InterruptSource(538);
+	InterruptSource(539);
+	InterruptSource(540);
+	InterruptSource(541);
+	InterruptSource(542);
+	InterruptSource(543);
+	InterruptSource(544);
+	InterruptSource(545);
+	InterruptSource(546);
+	InterruptSource(547);
+	InterruptSource(548);
+	InterruptSource(549);
+	InterruptSource(550);
+	InterruptSource(551);
+	InterruptSource(552);
+	InterruptSource(553);
+	InterruptSource(554);
+	InterruptSource(555);
+	InterruptSource(556);
+	InterruptSource(557);
+	InterruptSource(558);
+	InterruptSource(559);
+	InterruptSource(560);
+	InterruptSource(561);
+	InterruptSource(562);
+	InterruptSource(563);
+	InterruptSource(564);
+	InterruptSource(565);
+	InterruptSource(566);
+	InterruptSource(567);
+	InterruptSource(568);
+	InterruptSource(569);
+	InterruptSource(570);
+	InterruptSource(571);
+	InterruptSource(572);
+	InterruptSource(573);
+	InterruptSource(574);
+	InterruptSource(575);
+	InterruptSource(576);
+	InterruptSource(577);
+	InterruptSource(578);
+	InterruptSource(579);
+	InterruptSource(580);
+	InterruptSource(581);
+	InterruptSource(582);
+	InterruptSource(583);
+	InterruptSource(584);
+	InterruptSource(585);
+	InterruptSource(586);
+	InterruptSource(587);
+	InterruptSource(588);
+	InterruptSource(589);
+	InterruptSource(590);
+	InterruptSource(591);
+	InterruptSource(592);
+	InterruptSource(593);
+	InterruptSource(594);
+	InterruptSource(595);
+	InterruptSource(596);
+	InterruptSource(597);
+	InterruptSource(598);
+	InterruptSource(599);
+	InterruptSource(600);
+	InterruptSource(601);
+	InterruptSource(602);
+	InterruptSource(603);
+	InterruptSource(604);
+	InterruptSource(605);
+	InterruptSource(606);
+	InterruptSource(607);
+	InterruptSource(608);
+	InterruptSource(609);
+	InterruptSource(610);
+	InterruptSource(611);
+	InterruptSource(612);
+	InterruptSource(613);
+	InterruptSource(614);
+	InterruptSource(615);
+	InterruptSource(616);
+	InterruptSource(617);
+	InterruptSource(618);
+	InterruptSource(619);
+	InterruptSource(620);
+	InterruptSource(621);
+	InterruptSource(622);
+	InterruptSource(623);
+	InterruptSource(624);
+	InterruptSource(625);
+	InterruptSource(626);
+	InterruptSource(627);
+	InterruptSource(628);
+	InterruptSource(629);
+	InterruptSource(630);
+	InterruptSource(631);
+	InterruptSource(632);
+	InterruptSource(633);
+	InterruptSource(634);
+	InterruptSource(635);
+	InterruptSource(636);
+	InterruptSource(637);
+	InterruptSource(638);
+	InterruptSource(639);
+	InterruptSource(640);
+	InterruptSource(641);
+	InterruptSource(642);
+	InterruptSource(643);
+	InterruptSource(644);
+	InterruptSource(645);
+	InterruptSource(646);
+	InterruptSource(647);
+	InterruptSource(648);
+	InterruptSource(649);
+	InterruptSource(650);
+	InterruptSource(651);
+	InterruptSource(652);
+	InterruptSource(653);
+	InterruptSource(654);
+	InterruptSource(655);
+	InterruptSource(656);
+	InterruptSource(657);
+	InterruptSource(658);
+	InterruptSource(659);
+	InterruptSource(660);
+	InterruptSource(661);
+	InterruptSource(662);
+	InterruptSource(663);
+	InterruptSource(664);
+	InterruptSource(665);
+	InterruptSource(666);
+	InterruptSource(667);
+	InterruptSource(668);
+	InterruptSource(669);
+	InterruptSource(670);
+	InterruptSource(671);
+	InterruptSource(672);
+	InterruptSource(673);
+	InterruptSource(674);
+	InterruptSource(675);
+	InterruptSource(676);
+	InterruptSource(677);
+	InterruptSource(678);
+	InterruptSource(679);
+	InterruptSource(680);
+	InterruptSource(681);
+	InterruptSource(682);
+	InterruptSource(683);
+	InterruptSource(684);
+	InterruptSource(685);
+	InterruptSource(686);
+	InterruptSource(687);
+	InterruptSource(688);
+	InterruptSource(689);
+	InterruptSource(690);
+	InterruptSource(691);
+	InterruptSource(692);
+	InterruptSource(693);
+	InterruptSource(694);
+	InterruptSource(695);
+	InterruptSource(696);
+	InterruptSource(697);
+	InterruptSource(698);
+	InterruptSource(699);
+	InterruptSource(700);
+	InterruptSource(701);
+	InterruptSource(702);
+	InterruptSource(703);
+	InterruptSource(704);
+	InterruptSource(705);
+	InterruptSource(706);
+	InterruptSource(707);
+	InterruptSource(708);
+	InterruptSource(709);
+	InterruptSource(710);
+	InterruptSource(711);
+	InterruptSource(712);
+	InterruptSource(713);
+	InterruptSource(714);
+	InterruptSource(715);
+	InterruptSource(716);
+	InterruptSource(717);
+	InterruptSource(718);
+	InterruptSource(719);
+	InterruptSource(720);
+	InterruptSource(721);
+	InterruptSource(722);
+	InterruptSource(723);
+	InterruptSource(724);
+	InterruptSource(725);
+	InterruptSource(726);
+	InterruptSource(727);
+	InterruptSource(728);
+	InterruptSource(729);
+	InterruptSource(730);
+	InterruptSource(731);
+	InterruptSource(732);
+	InterruptSource(733);
+	InterruptSource(734);
+	InterruptSource(735);
+	InterruptSource(736);
+	InterruptSource(737);
+	InterruptSource(738);
+	InterruptSource(739);
+	InterruptSource(740);
+	InterruptSource(741);
+	InterruptSource(742);
+	InterruptSource(743);
+	InterruptSource(744);
+	InterruptSource(745);
+	InterruptSource(746);
+	InterruptSource(747);
+	InterruptSource(748);
+	InterruptSource(749);
+	InterruptSource(750);
+	InterruptSource(751);
+	InterruptSource(752);
+	InterruptSource(753);
+	InterruptSource(754);
+	InterruptSource(755);
+	InterruptSource(756);
+	InterruptSource(757);
+	InterruptSource(758);
+	InterruptSource(759);
+	InterruptSource(760);
+	InterruptSource(761);
+	InterruptSource(762);
+	InterruptSource(763);
+	InterruptSource(764);
+	InterruptSource(765);
+	InterruptSource(766);
+	InterruptSource(767);
+	InterruptSource(768);
+	InterruptSource(769);
+	InterruptSource(770);
+	InterruptSource(771);
+	InterruptSource(772);
+	InterruptSource(773);
+	InterruptSource(774);
+	InterruptSource(775);
+	InterruptSource(776);
+	InterruptSource(777);
+	InterruptSource(778);
+	InterruptSource(779);
+	InterruptSource(780);
+	InterruptSource(781);
+	InterruptSource(782);
+	InterruptSource(783);
+	InterruptSource(784);
+	InterruptSource(785);
+	InterruptSource(786);
+	InterruptSource(787);
+	InterruptSource(788);
+	InterruptSource(789);
+	InterruptSource(790);
+	InterruptSource(791);
+	InterruptSource(792);
+	InterruptSource(793);
+	InterruptSource(794);
+	InterruptSource(795);
+	InterruptSource(796);
+	InterruptSource(797);
+	InterruptSource(798);
+	InterruptSource(799);
+	InterruptSource(800);
+	InterruptSource(801);
+	InterruptSource(802);
+	InterruptSource(803);
+	InterruptSource(804);
+	InterruptSource(805);
+	InterruptSource(806);
+	InterruptSource(807);
+	InterruptSource(808);
+	InterruptSource(809);
+	InterruptSource(810);
+	InterruptSource(811);
+	InterruptSource(812);
+	InterruptSource(813);
+	InterruptSource(814);
+	InterruptSource(815);
+	InterruptSource(816);
+	InterruptSource(817);
+	InterruptSource(818);
+	InterruptSource(819);
+	InterruptSource(820);
+	InterruptSource(821);
+	InterruptSource(822);
+	InterruptSource(823);
+	InterruptSource(824);
+	InterruptSource(825);
+	InterruptSource(826);
+	InterruptSource(827);
+	InterruptSource(828);
+	InterruptSource(829);
+	InterruptSource(830);
+	InterruptSource(831);
+	InterruptSource(832);
+	InterruptSource(833);
+	InterruptSource(834);
+	InterruptSource(835);
+	InterruptSource(836);
+	InterruptSource(837);
+	InterruptSource(838);
+	InterruptSource(839);
+	InterruptSource(840);
+	InterruptSource(841);
+	InterruptSource(842);
+	InterruptSource(843);
+	InterruptSource(844);
+	InterruptSource(845);
+	InterruptSource(846);
+	InterruptSource(847);
+	InterruptSource(848);
+	InterruptSource(849);
+	InterruptSource(850);
+	InterruptSource(851);
+	InterruptSource(852);
+	InterruptSource(853);
+	InterruptSource(854);
+	InterruptSource(855);
+	InterruptSource(856);
+	InterruptSource(857);
+	InterruptSource(858);
+	InterruptSource(859);
+	InterruptSource(860);
+	InterruptSource(861);
+	InterruptSource(862);
+	InterruptSource(863);
+	InterruptSource(864);
+	InterruptSource(865);
+	InterruptSource(866);
+	InterruptSource(867);
+	InterruptSource(868);
+	InterruptSource(869);
+	InterruptSource(870);
+	InterruptSource(871);
+	InterruptSource(872);
+	InterruptSource(873);
+	InterruptSource(874);
+	InterruptSource(875);
+	InterruptSource(876);
+	InterruptSource(877);
+	InterruptSource(878);
+	InterruptSource(879);
+	InterruptSource(880);
+	InterruptSource(881);
+	InterruptSource(882);
+	InterruptSource(883);
+	InterruptSource(884);
+	InterruptSource(885);
+	InterruptSource(886);
+	InterruptSource(887);
+	InterruptSource(888);
+	InterruptSource(889);
+	InterruptSource(890);
+	InterruptSource(891);
+	InterruptSource(892);
+	InterruptSource(893);
+	InterruptSource(894);
+	InterruptSource(895);
+	InterruptSource(896);
+	InterruptSource(897);
+	InterruptSource(898);
+	InterruptSource(899);
+	InterruptSource(900);
+	InterruptSource(901);
+	InterruptSource(902);
+	InterruptSource(903);
+	InterruptSource(904);
+	InterruptSource(905);
+	InterruptSource(906);
+	InterruptSource(907);
+	InterruptSource(908);
+	InterruptSource(909);
+	InterruptSource(910);
+	InterruptSource(911);
+	InterruptSource(912);
+	InterruptSource(913);
+	InterruptSource(914);
+	InterruptSource(915);
+	InterruptSource(916);
+	InterruptSource(917);
+	InterruptSource(918);
+	InterruptSource(919);
+	InterruptSource(920);
+	InterruptSource(921);
+	InterruptSource(922);
+	InterruptSource(923);
+	InterruptSource(924);
+	InterruptSource(925);
+	InterruptSource(926);
+	InterruptSource(927);
+	InterruptSource(928);
+	InterruptSource(929);
+	InterruptSource(930);
+	InterruptSource(931);
+	InterruptSource(932);
+	InterruptSource(933);
+	InterruptSource(934);
+	InterruptSource(935);
+	InterruptSource(936);
+	InterruptSource(937);
+	InterruptSource(938);
+	InterruptSource(939);
+	InterruptSource(940);
+	InterruptSource(941);
+	InterruptSource(942);
+	InterruptSource(943);
+	InterruptSource(944);
+	InterruptSource(945);
+	InterruptSource(946);
+	InterruptSource(947);
+	InterruptSource(948);
+	InterruptSource(949);
+	InterruptSource(950);
+	InterruptSource(951);
+	InterruptSource(952);
+	InterruptSource(953);
+	InterruptSource(954);
+	InterruptSource(955);
+	InterruptSource(956);
+	InterruptSource(957);
+	InterruptSource(958);
+	InterruptSource(959);
+	InterruptSource(960);
+	InterruptSource(961);
+	InterruptSource(962);
+	InterruptSource(963);
+	InterruptSource(964);
+
+	
+	
+// 	BindArray(STM_CONFIG::NUM_CHANNELS, "HARDWARE.STM_2.p_irq"       , "HARDWARE.stm_2_cir");
+// 	BindArray(STM_CONFIG::NUM_CHANNELS, "HARDWARE.INTC_0.hw_irq", 44 - INTC::NUM_SW_IRQS, "HARDWARE.stm_2_cir", 0);
 	
 	//=========================================================================
 	//===                        Clients/Services connection                ===
 	//=========================================================================
 
-	cpu2->memory_import >> interconnect->memory_export;
+	peripheral_core_2->memory_import >> interconnect->memory_export;
 
 	(*interconnect->memory_import[0]) >> standby_ram->memory_export;
 	(*interconnect->memory_import[1]) >> system_ram->memory_export;
 	(*interconnect->memory_import[2]) >> flash->memory_export;
-	(*interconnect->memory_import[3]) >> cpu2->memory_export;
-//	cpu2->loader_import >> loader2->loader_export;
+	(*interconnect->memory_import[3]) >> peripheral_core_2->memory_export;
+//	peripheral_core_2->loader_import >> loader2->loader_export;
 		
 	if(enable_inline_debugger || enable_gdb_server)
 	{
 		if(enable_inline_debugger)
 		{
 			// Connect tee-memory-access-reporting to CPU, debugger and profiler
-			cpu2->memory_access_reporting_import >> tee_memory_access_reporting->in;
+			peripheral_core_2->memory_access_reporting_import >> tee_memory_access_reporting->in;
 			*tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
 			*tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
 			profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
 			debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
-			tee_memory_access_reporting->out_control >> cpu2->memory_access_reporting_control_export;
+			tee_memory_access_reporting->out_control >> peripheral_core_2->memory_access_reporting_control_export;
 		}
 		else
 		{
 			// Connect CPU to debugger
-			cpu2->memory_access_reporting_import >> debugger->memory_access_reporting_export;
-			debugger->memory_access_reporting_control_import >> cpu2->memory_access_reporting_control_export;
+			peripheral_core_2->memory_access_reporting_import >> debugger->memory_access_reporting_export;
+			debugger->memory_access_reporting_control_import >> peripheral_core_2->memory_access_reporting_control_export;
 		}
 
 		// Connect debugger to CPU
-		cpu2->debug_control_import >> debugger->debug_control_export;
-		cpu2->trap_reporting_import >> debugger->trap_reporting_export;
-		debugger->disasm_import >> cpu2->disasm_export;
-		debugger->memory_import >> cpu2->memory_export;
-		debugger->registers_import >> cpu2->registers_export;
+		peripheral_core_2->debug_control_import >> debugger->debug_control_export;
+		peripheral_core_2->trap_reporting_import >> debugger->trap_reporting_export;
+		debugger->disasm_import >> peripheral_core_2->disasm_export;
+		debugger->memory_import >> peripheral_core_2->memory_export;
+		debugger->registers_import >> peripheral_core_2->registers_export;
 		debugger->loader_import >> loader->loader_export;
 		debugger->blob_import >> loader->blob_export;
 	}
@@ -278,9 +1241,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*loader->memory_import[0]) >> standby_ram->memory_export;
 	(*loader->memory_import[1]) >> system_ram->memory_export;
 	(*loader->memory_import[2]) >> flash->memory_export;
-	(*loader->memory_import[3]) >> cpu2->memory_export;
-	loader->registers_import >> cpu2->registers_export;
-	cpu2->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
+	(*loader->memory_import[3]) >> peripheral_core_2->memory_export;
+	loader->registers_import >> peripheral_core_2->registers_export;
+	peripheral_core_2->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 	
 	SC_HAS_PROCESS(Simulator);
 	
@@ -289,13 +1252,13 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 
 Simulator::~Simulator()
 {
-	if(cpu2) delete cpu2;
+	if(peripheral_core_2) delete peripheral_core_2;
 	if(standby_ram) delete standby_ram;
 	if(system_ram) delete system_ram;
 	if(flash) delete flash;
 	if(interconnect) delete interconnect;
-	if(intc) delete intc;
-	if(stm2) delete stm2;
+	if(intc_0) delete intc_0;
+	if(stm_2) delete stm_2;
 	if(debugger) delete debugger;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
@@ -326,6 +1289,25 @@ void Simulator::ResetProcess()
 // 	p_extint_b = false;
 // 	wait(sc_core::sc_time(10.0, sc_core::SC_NS));
 // 	p_extint_b = true;
+
+// 	wait(sc_core::sc_time(10.0, sc_core::SC_US));
+// 	std::cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Sending IRQ#33" << std::endl;
+// 	sc_core::sc_signal<bool>& irq = GetSignal<bool>("HARDWARE.irq_33");
+// 	irq = 1;
+	
+}
+
+void Simulator::InterruptSource(unsigned int irq_num, const std::string& source)
+{
+	std::stringstream irq_signal_name_sstr;
+	irq_signal_name_sstr << "HARDWARE.irq_" << irq_num;
+	if(!source.empty())
+	{
+		Bind(source, irq_signal_name_sstr.str());
+	}
+	std::stringstream intc_port_name_sstr;
+	intc_port_name_sstr << "HARDWARE.INTC_0.hw_irq_" << (irq_num - INTC_0::NUM_SW_IRQS);
+	Bind(intc_port_name_sstr.str() , irq_signal_name_sstr.str());
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
@@ -343,39 +1325,49 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//===                     Component run-time configuration              ===
 	//=========================================================================
 
-	//  - Clock
-	simulator->SetVariable("HARDWARE.clk.lazy-clock", "true");
-	simulator->SetVariable("HARDWARE.clk.clock-period", "10 ns");
+	//  - Clocks
+	simulator->SetVariable("HARDWARE.clk_300MHz.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.clk_300MHz.clock-period", "3333 ps");
+	simulator->SetVariable("HARDWARE.clk_200MHz.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.clk_200MHz.clock-period", "5 ns");
+	simulator->SetVariable("HARDWARE.clk_100MHz.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.clk_100MHz.clock-period", "10 ns");
+	simulator->SetVariable("HARDWARE.clk_50MHz.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.clk_50MHz.clock-period", "20 ns");
+
 	
 	//  - e200 PowerPC cores
 
-	// CPU2
-	simulator->SetVariable("HARDWARE.CPU2.clock-multiplier", 1.0);
-	simulator->SetVariable("HARDWARE.CPU2.max-inst", ~uint64_t(0));
-	simulator->SetVariable("HARDWARE.CPU2.nice-time", "200 ns"); // 200 ns (currently geared to the minimum interval between capture trigger samples)
-	simulator->SetVariable("HARDWARE.CPU2.ipc", 2.0);
-	simulator->SetVariable("HARDWARE.CPU2.enable-dmi", true); // Allow CPU to use of SystemC TLM 2.0 DMI
+	// Peripheral_Core_2
+	simulator->SetVariable("HARDWARE.Peripheral_Core_2.clock-multiplier", 1.0);
+	simulator->SetVariable("HARDWARE.Peripheral_Core_2.max-inst", ~uint64_t(0));
+	simulator->SetVariable("HARDWARE.Peripheral_Core_2.nice-time", "200 ns");
+	simulator->SetVariable("HARDWARE.Peripheral_Core_2.ipc", 2.0);
+	simulator->SetVariable("HARDWARE.Peripheral_Core_2.enable-dmi", true);
 
-	simulator->SetVariable("HARDWARE.CPU2.local-memory-base-addr", 0x52000000);
-	simulator->SetVariable("HARDWARE.CPU2.local-memory-size", 8 * 1024 * 1024);
+	simulator->SetVariable("HARDWARE.Peripheral_Core_2.local-memory-base-addr", 0x52000000);
+	simulator->SetVariable("HARDWARE.Peripheral_Core_2.local-memory-size", 8 * 1024 * 1024);
 
-	simulator->SetVariable("HARDWARE.CPU2.DMEM.base-addr", 0x52800000);
-	simulator->SetVariable("HARDWARE.CPU2.DMEM.size", 64 * 1024);
+	simulator->SetVariable("HARDWARE.Peripheral_Core_2.DMEM.base-addr", 0x52800000);
+	simulator->SetVariable("HARDWARE.Peripheral_Core_2.DMEM.size", 64 * 1024);
 
-	simulator->SetVariable("HARDWARE.CPU2.IMEM.base-addr", 0x52000000);
-	simulator->SetVariable("HARDWARE.CPU2.IMEM.size", 16 * 1024);
+	simulator->SetVariable("HARDWARE.Peripheral_Core_2.IMEM.base-addr", 0x52000000);
+	simulator->SetVariable("HARDWARE.Peripheral_Core_2.IMEM.size", 16 * 1024);
 	
-	simulator->SetVariable("HARDWARE.CPU2.processor-version", 0x815f8000);
-	simulator->SetVariable("HARDWARE.CPU2.system-version", 0x0);
-	simulator->SetVariable("HARDWARE.CPU2.system-information", 0x2);
-	simulator->SetVariable("HARDWARE.CPU2.cpuid", 0x2);
+	simulator->SetVariable("HARDWARE.Peripheral_Core_2.processor-version", 0x815f8000);
+	simulator->SetVariable("HARDWARE.Peripheral_Core_2.system-version", 0x0);
+	simulator->SetVariable("HARDWARE.Peripheral_Core_2.system-information", 0x2);
+	simulator->SetVariable("HARDWARE.Peripheral_Core_2.cpuid", 0x2);
 
+	//FIXME: reset address
+	simulator->SetVariable("HARDWARE.Peripheral_Core_2.reset-addr", 0x40040000);
+	
 	// CPU0
 	simulator->SetVariable("HARDWARE.CPU0.clock-multiplier", 1.0);
 	simulator->SetVariable("HARDWARE.CPU0.max-inst", ~uint64_t(0));
-	simulator->SetVariable("HARDWARE.CPU0.nice-time", "200 ns"); // 200 ns (currently geared to the minimum interval between capture trigger samples)
+	simulator->SetVariable("HARDWARE.CPU0.nice-time", "200 ns");
 	simulator->SetVariable("HARDWARE.CPU0.ipc", 1.0);
-	simulator->SetVariable("HARDWARE.CPU0.enable-dmi", true); // Allow CPU to use of SystemC TLM 2.0 DMI
+	simulator->SetVariable("HARDWARE.CPU0.enable-dmi", true);
 
 	simulator->SetVariable("HARDWARE.CPU0.local-memory-base-addr", 0x50000000);
 	simulator->SetVariable("HARDWARE.CPU0.local-memory-size", 8 * 1024 * 1024);
@@ -394,9 +1386,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	// CPU1
 	simulator->SetVariable("HARDWARE.CPU1.clock-multiplier", 1.0);
 	simulator->SetVariable("HARDWARE.CPU1.max-inst", ~uint64_t(0));
-	simulator->SetVariable("HARDWARE.CPU1.nice-time", "200 ns"); // 200 ns (currently geared to the minimum interval between capture trigger samples)
+	simulator->SetVariable("HARDWARE.CPU1.nice-time", "200 ns");
 	simulator->SetVariable("HARDWARE.CPU1.ipc", 1.0);
-	simulator->SetVariable("HARDWARE.CPU1.enable-dmi", true); // Allow CPU to use of SystemC TLM 2.0 DMI
+	simulator->SetVariable("HARDWARE.CPU1.enable-dmi", true);
 
 	simulator->SetVariable("HARDWARE.CPU1.local-memory-base-addr", 0x51000000);
 	simulator->SetVariable("HARDWARE.CPU1.local-memory-size", 8 * 1024 * 1024);
@@ -413,7 +1405,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.CPU1.cpuid", 0x1);
 
 	//  - Interconnect
-	simulator->SetVariable("HARDWARE.INTERCONNECT.cycle_time", "10 ns");
+	simulator->SetVariable("HARDWARE.INTERCONNECT.cycle_time", "5 ns");
 	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_0",  "range_start=\"0x40000000\" range_end=\"0x4000ffff\" output_port=\"0\" translation=\"0x0\""); // Standby RAM
 	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_1",  "range_start=\"0x40010000\" range_end=\"0x401fffff\" output_port=\"1\" translation=\"0x0\""); // System RAM
 	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_2",  "range_start=\"0x00400000\" range_end=\"0x00407fff\" output_port=\"2\" translation=\"0x0\""); // UTEST
@@ -422,10 +1414,13 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_5",  "range_start=\"0x00800000\" range_end=\"0x009fffff\" output_port=\"2\" translation=\"0x0\""); // Data Flash
 	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_6",  "range_start=\"0x00a00000\" range_end=\"0x00ffffff\" output_port=\"2\" translation=\"0x0\""); // Low & Mid Flash Blocks
 	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_7",  "range_start=\"0x01000000\" range_end=\"0x01ffffff\" output_port=\"2\" translation=\"0x0\""); // Large Flash Blocks
-	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_8",  "range_start=\"0x52000000\" range_end=\"0x5fffffff\" output_port=\"3\" translation=\"0x0\""); // CPU2 Local Memory
+	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_8",  "range_start=\"0x52000000\" range_end=\"0x5fffffff\" output_port=\"3\" translation=\"0x0\""); // Peripheral_Core_2 Local Memory
 	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_9",  "range_start=\"0xfc040000\" range_end=\"0xfc04ffff\" output_port=\"4\" translation=\"0x0\""); // INTC
-	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_10", "range_start=\"0xfc070000\" range_end=\"0xfc073fff\" output_port=\"5\" translation=\"0x0\""); // STM2
+	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_10", "range_start=\"0xfc070000\" range_end=\"0xfc073fff\" output_port=\"5\" translation=\"0x0\""); // STM_2
 
+	// - Loader
+	simulator->SetVariable("loader.filename", "soft/bin/boot.elf");
+	
 	// - Loader memory router
 	simulator->SetVariable("loader.memory-mapper.mapping",
 	                       "HARDWARE.STANDBY-RAM:0x40000000-0x4000ffff:+0x0" // Standby RAM
@@ -435,7 +1430,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	                       ",HARDWARE.FLASH:0x00680000-0x007fffff:+0x0"       // HSM Data
 	                       ",HARDWARE.FLASH:0x00800000-0x009fffff:+0x0"       // Low & Mid Flash Blocks
 	                       ",HARDWARE.FLASH:0x01000000-0x01ffffff:+0x0"       // Large Flash Blocks
-	                       ",HARDWARE.CPU2:0x52000000-0x5fffffff:+0x0"        // CPU2 Local Memory
+	                       ",HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x0"        // Peripheral_Core_2 Local Memory
 	                      );
 
 	//  - Standby RAM
@@ -465,7 +1460,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//=========================================================================
 
 	//  - GDB Server run-time configuration
-	simulator->SetVariable("gdb-server.tcp-port", 0);
+	simulator->SetVariable("gdb-server.tcp-port", 12345);
 	simulator->SetVariable("gdb-server.architecture-description-filename", "gdb_powerpc_vle.xml");
 	
 	//  - Debugger run-time configuration
@@ -530,8 +1525,8 @@ void Simulator::Run()
 
 	cerr << "simulation time: " << spent_time << " seconds" << endl;
 	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-	cerr << "target speed: " << ((double) (*cpu2)["instruction-counter"] / ((double) (*cpu2)["run-time"] - (double) (*cpu2)["idle-time"]) / 1000000.0) << " MIPS" << endl;
-	cerr << "host simulation speed: " << ((double) (*cpu2)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
+	cerr << "target speed: " << ((double) (*peripheral_core_2)["instruction-counter"] / ((double) (*peripheral_core_2)["run-time"] - (double) (*peripheral_core_2)["idle-time"]) / 1000000.0) << " MIPS" << endl;
+	cerr << "host simulation speed: " << ((double) (*peripheral_core_2)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
 	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
 }
 

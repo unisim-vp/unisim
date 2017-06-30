@@ -37,6 +37,7 @@
 
 #include <unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.hh>
 #include <unisim/util/reg/core/register.tcc>
+#include <unisim/util/likely/likely.hh>
 
 namespace unisim {
 namespace component {
@@ -47,13 +48,31 @@ namespace mpc57xx {
 namespace stm {
 
 template <typename CONFIG>
+const unsigned int STM<CONFIG>::TLM2_IP_VERSION_MAJOR;
+
+template <typename CONFIG>
+const unsigned int STM<CONFIG>::TLM2_IP_VERSION_MINOR;
+
+template <typename CONFIG>
+const unsigned int STM<CONFIG>::TLM2_IP_VERSION_PATCH;
+
+template <typename CONFIG>
+const unsigned int STM<CONFIG>::NUM_CHANNELS;
+
+template <typename CONFIG>
+const unsigned int STM<CONFIG>::BUSWIDTH;
+
+template <typename CONFIG>
+const bool STM<CONFIG>::threaded_model;
+
+template <typename CONFIG>
 STM<CONFIG>::STM(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_core::sc_module(name)
 	, ahb_if("ahb_if")
 	, m_clk("m_clk")
 	, debug_mode("debug_mode")
-	, p_irq()
+	, irq()
 	, logger(*this)
 	, m_clk_prop_proxy(m_clk)
 	, stm_cr(this)
@@ -69,11 +88,20 @@ STM<CONFIG>::STM(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 	, irq_level()
 	, gen_irq_event()
-	, last_counters_run_time(sc_core::SC_ZERO_TIME)
+	, last_counter_run_time(sc_core::SC_ZERO_TIME)
 	, prescaled_clock_period(sc_core::SC_ZERO_TIME)
-	, counters_run_event("counters_run_event")
+	, counter_run_event("counter_run_event")
 	, freeze(false)
 {
+	std::stringstream description_sstr;
+	description_sstr << "MPC57XX System Timer Module (STM):" << std::endl;
+	description_sstr << "  - " << NUM_CHANNELS << " channel(s)" << std::endl;
+	description_sstr << "  - " << BUSWIDTH << "-bit data bus" << std::endl;
+	description_sstr << "  - SystemC TLM-2.0 IP Version: " << TLM2_IP_VERSION_MAJOR << "." << TLM2_IP_VERSION_MINOR << "." << TLM2_IP_VERSION_PATCH << std::endl;
+	description_sstr << "  - SystemC TLM-2.0 IP Authors: Gilles Mouchard (gilles.mouchard@cea.fr)" << std::endl;
+	description_sstr << "  - Hardware reference manual: MPC5777M Reference Manual, MPC5777MRM, Rev. 4.3, 01/2017, Chapter 42" << std::endl;
+	this->SetDescription(description_sstr.str().c_str());
+	
 	ahb_if(*this); // bind interface
 	
 	unsigned int channel_num;
@@ -82,9 +110,9 @@ STM<CONFIG>::STM(const sc_core::sc_module_name& name, unisim::kernel::service::O
 
 	for(channel_num = 0; channel_num < NUM_CHANNELS; channel_num++)
 	{
-		std::stringstream p_irq_name_sstr;
-		p_irq_name_sstr << "p_irq_" << channel_num;
-		p_irq[channel_num] = new sc_core::sc_out<bool>(p_irq_name_sstr.str().c_str()); 
+		std::stringstream irq_name_sstr;
+		irq_name_sstr << "irq_" << channel_num;
+		irq[channel_num] = new sc_core::sc_out<bool>(irq_name_sstr.str().c_str()); 
 	}
 
 	for(channel_num = 0; channel_num < NUM_CHANNELS; channel_num++)
@@ -94,13 +122,14 @@ STM<CONFIG>::STM(const sc_core::sc_module_name& name, unisim::kernel::service::O
 		gen_irq_event[channel_num] = new sc_core::sc_event(gen_irq_event_name_sstr.str().c_str());
 	}
 
+	// Map STM registers regarding there address offsets
 	reg_addr_map.SetWarningStream(logger.DebugWarningStream());
 	reg_addr_map.SetEndian(endian);
 	reg_addr_map.MapRegister(stm_cr.ADDRESS_OFFSET, &stm_cr);
 	reg_addr_map.MapRegister(stm_cnt.ADDRESS_OFFSET, &stm_cnt);
-	reg_addr_map.MapRegisterFile(STM_CCR::ADDRESS_OFFSET, &stm_ccr, 4, 3 * 4);
-	reg_addr_map.MapRegisterFile(STM_CIR::ADDRESS_OFFSET, &stm_cir, 4, 3 * 4);
-	reg_addr_map.MapRegisterFile(STM_CMP::ADDRESS_OFFSET, &stm_cmp, 4, 3 * 4);
+	reg_addr_map.MapRegisterFile(STM_CCR::ADDRESS_OFFSET, &stm_ccr, /* size */ 4, /* stride */ 16);
+	reg_addr_map.MapRegisterFile(STM_CIR::ADDRESS_OFFSET, &stm_cir, /* size */ 4, /* stride */ 16);
+	reg_addr_map.MapRegisterFile(STM_CMP::ADDRESS_OFFSET, &stm_cmp, /* size */ 4, /* stride */ 16);
 
 	if(threaded_model)
 	{
@@ -111,17 +140,17 @@ STM<CONFIG>::STM(const sc_core::sc_module_name& name, unisim::kernel::service::O
 		SC_METHOD(Process);
 	}
 	
-	// Spawn an P_IRQ_Process for each channel
+	// Spawn an IRQ_Process for each channel
 	for(channel_num = 0; channel_num < NUM_CHANNELS; channel_num++)
 	{
-		sc_core::sc_spawn_options p_irq_process_spawn_options;
-		p_irq_process_spawn_options.spawn_method();
-		p_irq_process_spawn_options.dont_initialize();
-		p_irq_process_spawn_options.set_sensitivity(gen_irq_event[channel_num]);
+		sc_core::sc_spawn_options irq_process_spawn_options;
+		irq_process_spawn_options.spawn_method();
+		irq_process_spawn_options.dont_initialize();
+		irq_process_spawn_options.set_sensitivity(gen_irq_event[channel_num]);
 		
-		std::stringstream p_irq_process_name_sstr;
-		p_irq_process_name_sstr << "P_IRQ_Process_" << channel_num;
-		sc_core::sc_spawn(sc_bind(&STM<CONFIG>::P_IRQ_Process, this, channel_num), p_irq_process_name_sstr.str().c_str(), &p_irq_process_spawn_options);
+		std::stringstream irq_process_name_sstr;
+		irq_process_name_sstr << "IRQ_Process_" << channel_num;
+		sc_core::sc_spawn(sc_bind(&STM<CONFIG>::IRQ_Process, this, channel_num), irq_process_name_sstr.str().c_str(), &irq_process_spawn_options);
 	}
 }
 
@@ -132,7 +161,7 @@ STM<CONFIG>::~STM()
 	
 	for(channel_num = 0; channel_num < NUM_CHANNELS; channel_num++)
 	{
-		delete p_irq[channel_num];
+		delete irq[channel_num];
 	}
 	for(channel_num = 0; channel_num < NUM_CHANNELS; channel_num++)
 	{
@@ -143,6 +172,8 @@ STM<CONFIG>::~STM()
 template <typename CONFIG>
 void STM<CONFIG>::end_of_elaboration()
 {
+	logger << DebugInfo << this->GetDescription() << EndDebugInfo;
+
 	sc_core::sc_time start_time;
 	
 	if(m_clk_prop_proxy.GetClockPosEdgeFirst())
@@ -162,18 +193,20 @@ void STM<CONFIG>::end_of_elaboration()
 		logger << DebugInfo << "First MAIN_CLK rising edge is at " << start_time << EndDebugInfo;
 	}
 
-	last_counters_run_time = start_time;
+	last_counter_run_time = start_time;
 
 	UpdatePrescaledClockPeriod();
 	RefreshFreeze();
 
-	// Spawn an RunCounterProcess sensitive scheduled when counters should be run or clock properties have changed
-	sc_core::sc_spawn_options run_counters_process_spawn_options;
-	run_counters_process_spawn_options.spawn_method();
-	run_counters_process_spawn_options.set_sensitivity(&counters_run_event);
-	run_counters_process_spawn_options.set_sensitivity(&m_clk_prop_proxy.GetClockPropertiesChangedEvent());
+	// Spawn an RunCounterProcess sensitive scheduled when counter should run or clock properties have changed
+	sc_core::sc_spawn_options run_counter_process_spawn_options;
+	run_counter_process_spawn_options.spawn_method();
+	run_counter_process_spawn_options.set_sensitivity(&counter_run_event);
+	run_counter_process_spawn_options.set_sensitivity(&m_clk_prop_proxy.GetClockPropertiesChangedEvent());
 	
-	sc_core::sc_spawn(sc_bind(&STM<CONFIG>::RunCounterProcess, this), "RunCounterProcess", &run_counters_process_spawn_options);
+	sc_core::sc_spawn(sc_bind(&STM<CONFIG>::RunCounterProcess, this), "RunCounterProcess", &run_counter_process_spawn_options);
+	
+	ScheduleCounterRun();
 }
 
 template <typename CONFIG>
@@ -194,6 +227,7 @@ void STM<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_tim
 template <typename CONFIG>
 bool STM<CONFIG>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
 {
+	// Deny direct memory interface access
 	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
 	dmi_data.set_start_address(0);
 	dmi_data.set_end_address(sc_dt::uint64(-1));
@@ -275,7 +309,7 @@ void STM<CONFIG>::ProcessEvent(Event *event)
 		unsigned char *data_ptr = payload->get_data_ptr();
 		unsigned char *byte_enable_ptr = payload->get_byte_enable_ptr();
 		sc_dt::uint64 start_addr = payload->get_address();
-		sc_dt::uint64 end_addr = start_addr + ((streaming_width > data_length) ? data_length : streaming_width) - 1;
+//		sc_dt::uint64 end_addr = start_addr + ((streaming_width > data_length) ? data_length : streaming_width) - 1;
 		
 		if(!data_ptr)
 		{
@@ -417,59 +451,80 @@ void STM<CONFIG>::UpdatePrescaledClockPeriod()
 template <typename CONFIG>
 void STM<CONFIG>::SetIRQLevel(unsigned int channel_num, bool level)
 {
+	// Schedule IRQ output assertion
 	irq_level[channel_num] = level;
 	gen_irq_event[channel_num]->notify(sc_core::SC_ZERO_TIME);
 }
 
 template <typename CONFIG>
-void STM<CONFIG>::TriggerInterrupt(unsigned int channel_num)
+void STM<CONFIG>::CompareCounter()
 {
-	stm_cir[channel_num].template Set<typename STM_CIR::CIF>(1);
-	SetIRQLevel(channel_num, true);
-}
-
-template <typename CONFIG>
-void STM<CONFIG>::AckInterrupt(unsigned int channel_num)
-{
-	SetIRQLevel(channel_num, false);
-}
-
-template <typename CONFIG>
-void STM<CONFIG>::IncrementCounter(sc_dt::uint64 delta)
-{
-	if(stm_cr.template Get<typename STM_CR::TEN>())
+	// Get counter (STM_CNT[CNT])
+	uint32_t cnt = stm_cnt.template Get<typename STM_CNT::CNT>();
+	
+	unsigned int channel_num;
+	
+	// For each channel
+	for(channel_num = 0; channel_num < NUM_CHANNELS; channel_num++)
 	{
-		// counter is enabled
-		uint32_t cnt = stm_cnt.template Get<typename STM_CNT::CNT>();
-		cnt += delta;
-		stm_cnt.template Set<typename STM_CNT::CNT>(cnt);
-		
-		unsigned int channel_num;
-		
-		for(channel_num = 0; channel_num < NUM_CHANNELS; channel_num++)
+		// Check if that channel is enabled
+		if(stm_ccr[channel_num].template Get<typename STM_CCR::CEN>())
 		{
-			if(stm_ccr[channel_num].template Get<typename STM_CCR::CEN>())
+			// Channel is enabled
+			uint32_t cmp = stm_cmp[channel_num].template Get<typename STM_CMP::CMP>();
+			
+			if(cnt == cmp)
 			{
-				// channel is enabled
-				uint32_t cmp = stm_cmp[channel_num].template Get<typename STM_CMP::CMP>();
-				
-				if(cnt == cmp)
+				// Comparison matches: trigger an interrupt
+				if(unlikely(verbose))
 				{
-					TriggerInterrupt(channel_num);
+					logger << DebugInfo << sc_core::sc_time_stamp() << ": channel #" << channel_num << " compare value matches counter (" << cnt << ")" << EndDebugInfo;
 				}
+				
+				// Set STM_CIRn[CIF]
+				stm_cir[channel_num].template Set<typename STM_CIR::CIF>(1);
+				
+				// Set IRQ output level 
+				SetIRQLevel(channel_num, true);
 			}
 		}
 	}
 }
 
 template <typename CONFIG>
-sc_core::sc_time STM<CONFIG>::TimeToNextCountersRun()
+void STM<CONFIG>::IncrementCounter(sc_dt::uint64 delta)
 {
-	sc_dt::int64 min_ticks = 0x7fffffffffffffffLL;
+	// Check that counter is enabled
+	if(stm_cr.template Get<typename STM_CR::TEN>())
+	{
+		// Counter is enabled
+		uint32_t cnt = stm_cnt.template Get<typename STM_CNT::CNT>();
+		
+		// Check that not too much time has elapsed since last counter run
+		// Note: this may happen if other SystemC threads are not nice (i.e. do not call wait for too long time)
+		sc_dt::uint64 ticks_to_next_counter_run = TicksToNextCounterRun();
+		
+		if(delta > ticks_to_next_counter_run)
+		{
+			logger << DebugWarning << "Model has a problem because too much time has elapsed since last counter run, resulting in a counter overflow and/or lost interrupt" << EndDebugWarning;
+		}
+		
+		// Increment counter
+		cnt += delta;
+		stm_cnt.template Set<typename STM_CNT::CNT>(cnt);
+	}
+}
+
+template <typename CONFIG>
+sc_dt::uint64 STM<CONFIG>::TicksToNextCounterRun()
+{
+	// Compute the minimum number of counter ticks to the next potential interrupt
+	sc_dt::int64 max_ticks = sc_dt::uint64(1) << STM_CNT::CNT::GetBitWidth();
+	sc_dt::int64 min_ticks = max_ticks;
 	
 	if(stm_cr.template Get<typename STM_CR::TEN>())
 	{
-		// counter is enabled
+		// Counter is enabled
 		uint32_t cnt = stm_cnt.template Get<typename STM_CNT::CNT>();
 
 		unsigned channel_num;
@@ -478,49 +533,72 @@ sc_core::sc_time STM<CONFIG>::TimeToNextCountersRun()
 		{
 			if(stm_ccr[channel_num].template Get<typename STM_CCR::CEN>())
 			{
+				// Channel is enabled
 				uint32_t cmp = stm_cmp[channel_num].template Get<typename STM_CMP::CMP>();
 				
-				sc_dt::int64 ticks_to_interrupt = (cnt <= cmp) ? (cmp - cnt) : ((0xffffffffUL - cmp + 1) + cmp);
+				sc_dt::int64 ticks_to_interrupt = (cnt < cmp) ? sc_dt::int64(cmp - cnt)
+				                                              : max_ticks;   // roll over
 				
 				if(ticks_to_interrupt < min_ticks) min_ticks = ticks_to_interrupt;
 			}
 		}
 	}
 	
-	return min_ticks * prescaled_clock_period;
+	return min_ticks;
+}
+
+template <typename CONFIG>
+sc_core::sc_time STM<CONFIG>::TimeToNextCounterRun()
+{
+	return TicksToNextCounterRun() * prescaled_clock_period;
 }
 
 template <typename CONFIG>
 void STM<CONFIG>::RunCounterToTime(const sc_core::sc_time& time_stamp)
 {
-	sc_core::sc_time delay_since_last_counters_run(time_stamp);
-	delay_since_last_counters_run -= last_counters_run_time;
-	sc_dt::uint64 delta = delay_since_last_counters_run / prescaled_clock_period;
+	// Compute the elapsed time since last count run
+	sc_core::sc_time delay_since_last_counter_run(time_stamp);
+	delay_since_last_counter_run -= last_counter_run_time;
+	
+	// Compute number of counter ticks since last count run
+	sc_dt::uint64 delta = delay_since_last_counter_run / prescaled_clock_period;
 	sc_core::sc_time run_time(prescaled_clock_period);
 	run_time *= delta;
 
 	if(!freeze)
 	{
-		// in the past, until time stamp, counter was not frozen
+		// in the past, until time stamp, counter was not frozen: incrementer counter
 		IncrementCounter(delta);
 	}
 	
+	// Compare counter
+	CompareCounter();
+	
+	// Latch internal "freeze" value
 	RefreshFreeze();
+	
+	last_counter_run_time += run_time;
 }
 
 template <typename CONFIG>
-void STM<CONFIG>::ScheduleCountersRun()
+void STM<CONFIG>::ScheduleCounterRun()
 {
+	// Clock properties may have changed that may affect time to next counter run
 	UpdatePrescaledClockPeriod();
-	sc_core::sc_time time_next_counters_run = TimeToNextCountersRun();
+	
+	sc_core::sc_time time_to_next_counter_run = TimeToNextCounterRun();
 	if(verbose)
 	{
-		logger << DebugInfo << sc_core::sc_time_stamp() << ": time to next counters run is " << time_next_counters_run << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": time to next counter run is " << time_to_next_counter_run << EndDebugInfo;
 	}
 	const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
-	time_next_counters_run += last_counters_run_time;
-	time_next_counters_run -= time_stamp;
-	counters_run_event.notify(time_next_counters_run); // schedule next counters run
+	time_to_next_counter_run += last_counter_run_time;
+	time_to_next_counter_run -= time_stamp;
+	
+	if(time_to_next_counter_run > sc_core::SC_ZERO_TIME)
+	{
+		counter_run_event.notify(time_to_next_counter_run); // schedule next counter run
+	}
 }
 
 template <typename CONFIG>
@@ -534,18 +612,24 @@ void STM<CONFIG>::RunCounterProcess()
 	}
 	
 	RunCounterToTime(time_stamp);
-	ScheduleCountersRun();
+	ScheduleCounterRun();
 }
 
 template <typename CONFIG>
-void STM<CONFIG>::P_IRQ_Process(unsigned int channel_num)
+void STM<CONFIG>::IRQ_Process(unsigned int channel_num)
 {
-	*p_irq[channel_num] = irq_level[channel_num];
+	// Set IRQ output
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << irq[channel_num]->name() << " <- " << irq_level[channel_num] << EndDebugInfo;
+	}
+	*irq[channel_num] = irq_level[channel_num];
 }
 
 template <typename CONFIG>
 void STM<CONFIG>::RefreshFreeze()
 {
+	// Latch value for internal "freeze"
 	freeze = debug_mode && stm_cr.template Get<typename STM_CR::FRZ>();
 }
 

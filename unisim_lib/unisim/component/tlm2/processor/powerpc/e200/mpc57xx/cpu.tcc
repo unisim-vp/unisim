@@ -32,6 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+#ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_POWERPC_E200_MPC57XX_CPU_TCC__
+#define __UNISIM_COMPONENT_TLM2_PROCESSOR_POWERPC_E200_MPC57XX_CPU_TCC__
+
 #include <unisim/component/tlm2/processor/powerpc/e200/mpc57xx/cpu.hh>
 #include <unistd.h>
 
@@ -46,8 +49,6 @@ namespace processor {
 namespace powerpc {
 namespace e200 {
 namespace mpc57xx {
-
-const bool DEBUG_ENABLE = false;
 
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
@@ -86,7 +87,6 @@ CPU<TYPES, CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, run_time()
 	, idle_time()
 	, enable_host_idle(false)
-	, start_event("start_event")
 	, external_event("external_event")
 	, int_ack_event("int_ack_event")
 	, ipc(1.0)
@@ -123,25 +123,7 @@ CPU<TYPES, CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	SC_HAS_PROCESS(CPU);
 	
 	SC_THREAD(Run);
-	
-	SC_METHOD(P_RESET_B_Process);
-	sensitive << p_reset_b.pos();
 
-	SC_METHOD(P_NMI_B_Process);
-	sensitive << p_nmi_b.neg();
-
-	SC_METHOD(P_MCP_B_Process);
-	sensitive << p_mcp_b.neg();
-
-	SC_METHOD(P_EXTIN_B_Process);
-	sensitive << p_extint_b.neg();
-
-	SC_METHOD(P_CRINT_B_Process);
-	sensitive << p_crint_b.neg();
-	
-	SC_METHOD(P_AVEC_B_Process);
-	sensitive << p_avec_b;
-	
 	SC_METHOD(P_IACK_Process);
 	sensitive << int_ack_event;
 }
@@ -187,7 +169,7 @@ void CPU<TYPES, CONFIG>::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc
 {
 	i_dmi_region_cache.Invalidate(start_range, end_range);
 	d_dmi_region_cache.Invalidate(start_range, end_range);
-	if(DEBUG_ENABLE && debug_dmi)
+	if(CONFIG::DEBUG_ENABLE && debug_dmi)
 	{
 		Super::logger << DebugInfo << "AHB: invalidate granted access for 0x" << std::hex << start_range << "-0x" << end_range << std::dec << EndDebugInfo;
 	}
@@ -357,6 +339,8 @@ void CPU<TYPES, CONFIG>::Synchronize()
 	wait(cpu_time);
 	cpu_time = SC_ZERO_TIME;
 	run_time = sc_time_stamp();
+	
+	SampleInputs();
 }
 
 template <typename TYPES, typename CONFIG>
@@ -410,6 +394,8 @@ void CPU<TYPES, CONFIG>::Idle()
 	
 	// update overall run time
 	run_time = new_time_stamp;
+	
+	SampleInputs();
 }
 
 template <typename TYPES, typename CONFIG>
@@ -511,41 +497,27 @@ void CPU<TYPES, CONFIG>::P_IACK_Process()
 }
 
 template <typename TYPES, typename CONFIG>
-void CPU<TYPES, CONFIG>::P_RESET_B_Process()
+void CPU<TYPES, CONFIG>::SampleInputs()
 {
 	if(p_reset_b.posedge())
 	{
 		this->template ThrowException<typename Super::SystemResetInterrupt::Reset>();
-		this->hid0.template Set<typename Super::HID0::NHR>(0);
 		external_event.notify(sc_core::SC_ZERO_TIME);
-		start_event.notify();
 		//SetResetAddress(sc_dt::sc_uint<30>(p_rstbase).to_uint64() << 2);
 	}
-}
-
-template <typename TYPES, typename CONFIG>
-void CPU<TYPES, CONFIG>::P_NMI_B_Process()
-{
+	
 	if(p_nmi_b.negedge())
 	{
 		this->template ThrowException<typename Super::MachineCheckInterrupt::NMI>();
 		external_event.notify(sc_core::SC_ZERO_TIME);
 	}
-}
-
-template <typename TYPES, typename CONFIG>
-void CPU<TYPES, CONFIG>::P_MCP_B_Process()
-{
+	
 	if(p_mcp_b.negedge() && this->hid0.template Get<typename Super::HID0::EMCP>())
 	{
 		this->template ThrowException<typename Super::MachineCheckInterrupt::AsynchronousMachineCheck>().SetEvent(Super::MachineCheckInterrupt::MCE_MCP);
 		external_event.notify(sc_core::SC_ZERO_TIME);
 	}
-}
-
-template <typename TYPES, typename CONFIG>
-void CPU<TYPES, CONFIG>::P_EXTIN_B_Process()
-{
+	
 	if(p_extint_b)
 	{
 		this->template AckInterrupt<typename Super::ExternalInputInterrupt>();
@@ -555,11 +527,7 @@ void CPU<TYPES, CONFIG>::P_EXTIN_B_Process()
 		this->template ThrowException<typename Super::ExternalInputInterrupt::ExternalInput>();
 		external_event.notify(sc_core::SC_ZERO_TIME);
 	}
-}
-
-template <typename TYPES, typename CONFIG>
-void CPU<TYPES, CONFIG>::P_CRINT_B_Process()
-{
+	
 	if(p_crint_b)
 	{
 		this->template AckInterrupt<typename Super::CriticalInputInterrupt>();
@@ -569,11 +537,6 @@ void CPU<TYPES, CONFIG>::P_CRINT_B_Process()
 		this->template ThrowException<typename Super::CriticalInputInterrupt::CriticalInput>();
 		external_event.notify(sc_core::SC_ZERO_TIME);
 	}
-}
-
-template <typename TYPES, typename CONFIG>
-void CPU<TYPES, CONFIG>::P_AVEC_B_Process()
-{
 	this->SetAutoVector(!p_avec_b); // if p_avec_b is negated when interrupt signal is asserted, interrupt is not autovectored
 	this->SetVectorOffset(sc_dt::sc_uint<14>(p_voffset).to_uint64() << 2);
 }
@@ -584,9 +547,6 @@ void CPU<TYPES, CONFIG>::UpdateSpeed()
 	bus_cycle_time = m_clk_prop_proxy.GetClockPeriod();
 	sc_core::sc_time cpu_cycle_time = bus_cycle_time / clock_multiplier;
 	time_per_instruction = cpu_cycle_time / ipc;
-	std::cerr << "bus_cycle_time=" << bus_cycle_time << std::endl;
-	std::cerr << "clock_multiplier=" << clock_multiplier << std::endl;
-	std::cerr << "time_per_instruction=" << time_per_instruction << std::endl;
 }
 
 template <typename TYPES, typename CONFIG>
@@ -598,7 +558,9 @@ void CPU<TYPES, CONFIG>::ClockPropertiesChangedProcess()
 template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::Run()
 {
-	wait(start_event);
+	wait(p_reset_b.posedge_event()); // wait for reset signal
+	
+	SampleInputs();
 	
 	while(1)
 	{
@@ -628,15 +590,15 @@ bool CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 		
 		if(likely(dmi_region != 0))
 		{
-			if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			
 			if(likely(dmi_region->IsAllowed()))
 			{
-				if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 				tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
 				if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_READ) == tlm::tlm_dmi::DMI_ACCESS_READ))
 				{
-					if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(buffer, dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), size);
 					const sc_time& read_lat = dmi_region->GetReadLatency(size);
 					cpu_time += read_lat;
@@ -645,21 +607,21 @@ bool CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 				}
 				else
 				{
-					if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: granted DMI access does not allow direct read access for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: granted DMI access does not allow direct read access for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 				}
 			}
 			else
 			{
-				if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: DMI access denied for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: DMI access denied for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			}
 		}
 		else
 		{
-			if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 		}
 	}
 	
-	if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: traditional way for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: traditional way for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
 	payload->set_address(physical_addr);
@@ -679,7 +641,7 @@ bool CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 	{
 		if(likely(!dmi_region && payload->is_dmi_allowed()))
 		{
-			if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: target allows DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: target allows DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			
 			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
 			payload->set_address(physical_addr);
@@ -690,7 +652,7 @@ bool CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 		}
 		else
 		{
-			if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 		}
 	}
 	
@@ -712,14 +674,14 @@ bool CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 		
 		if(likely(dmi_region != 0))
 		{
-			if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			if(likely(dmi_region->IsAllowed()))
 			{
-				if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 				tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
 				if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_READ) == tlm::tlm_dmi::DMI_ACCESS_READ))
 				{
-					if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(buffer, dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), size);
 					const sc_time& read_lat = dmi_region->GetReadLatency(size);
 					cpu_time += read_lat;
@@ -728,21 +690,21 @@ bool CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 				}
 				else
 				{
-					if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: granted DMI access does not allow direct read access for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: granted DMI access does not allow direct read access for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 				}
 			}
 			else
 			{
-				if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: DMI access denied for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: DMI access denied for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			}
 		}
 		else
 		{
-			if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 		}
 	}
 
-	if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: traditional way for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: traditional way for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 	
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
@@ -763,7 +725,7 @@ bool CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 	{
 		if(likely(!dmi_region && payload->is_dmi_allowed()))
 		{
-			if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: target allows DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: target allows DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 
 			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
 			payload->set_address(physical_addr);
@@ -774,7 +736,7 @@ bool CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 		}
 		else
 		{
-			if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 		}
 	}
 
@@ -796,14 +758,14 @@ bool CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void
 		
 		if(likely(dmi_region != 0))
 		{
-			if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			if(likely(dmi_region->IsAllowed()))
 			{
-				if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 				tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
 				if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_WRITE) == tlm::tlm_dmi::DMI_ACCESS_WRITE))
 				{
-					if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), buffer, size);
 					const sc_time& write_lat = dmi_region->GetWriteLatency(size);
 					cpu_time += write_lat;
@@ -812,21 +774,21 @@ bool CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void
 				}
 				else
 				{
-					if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: granted DMI access does not allow direct write access for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: granted DMI access does not allow direct write access for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 				}
 			}
 			else
 			{
-				if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: DMI access denied for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: DMI access denied for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			}
 		}
 		else
 		{
-			if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 		}
 	}
 
-	if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: traditional way for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: traditional way for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 	
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
@@ -847,7 +809,7 @@ bool CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void
 	{
 		if(likely(!dmi_region && payload->is_dmi_allowed()))
 		{
-			if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: target allows DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: target allows DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
 			payload->set_address(physical_addr);
 			payload->set_data_length(size);
@@ -857,7 +819,7 @@ bool CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void
 		}
 		else
 		{
-			if(unlikely(DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 		}
 	}
 
@@ -873,3 +835,5 @@ bool CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void
 } // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
+
+#endif // __UNISIM_COMPONENT_TLM2_PROCESSOR_POWERPC_E200_MPC57XX_CPU_TCC__

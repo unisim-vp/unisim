@@ -1,3 +1,6 @@
+#define ICACHE_ENABLE 0
+#define DCACHE_ENABLE 0
+
 #ifdef __ghs__    /* GreenHills */
         .section    .startup, axv
 		.vle
@@ -46,7 +49,7 @@ _start:
 		e_li	r3, 0xD928
 		e_stw	r3, 0x10(r4)
 
-		e_lis	r3, 0x7F00
+		e_lis	r3, 0xFF00
 		e_or2i	r3, 0x010A
 		e_stw	r3, 0(r4)
 #endif
@@ -221,7 +224,7 @@ ROMCPYEND:
 		e_or2i	r6,0x1000
 		mtmsr	r6
 
-#if defined(I_CACHE)
+#if defined(I_CACHE) && (ICACHE_ENABLE == 1)
 ;#****************** Invalidate and Enable the Instruction cache **************
 __icache_cfg:
 		e_li	r5, 0x2
@@ -251,7 +254,8 @@ __icache_no_abort:
 		;#msync
 		mtspr	1011, r5
 #endif
-#if defined(D_CACHE)
+
+#if defined(D_CACHE) && (DCACHE_ENABLE == 1)
 ;#****************** Invalidate and Enable the Data cache **************
 __dcache_cfg:
         e_li r5, 0x2

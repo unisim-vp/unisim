@@ -32,6 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_E200_MPC57XX_CPU_TCC__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_E200_MPC57XX_CPU_TCC__
+
 #include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/cpu.hh>
 #include <unisim/component/cxx/processor/powerpc/cpu.tcc>
 
@@ -78,7 +81,7 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	, param_verbose_data_bus_write("verbose-data-bus-write", this, verbose_data_bus_write, "enable/disable verbosity of data bus write")
 	, verbose_instruction_bus_read(false)
 	, param_verbose_instruction_bus_read("verbose-instruction-bus-read", this, verbose_instruction_bus_read, "enable/disable verbosity of instruction bus read")
-	, enable_auto_vectored_interrupts(false)
+	, enable_auto_vectored_interrupts(true)
 	, vector_offset(0x0)
 	, instruction_buffer_base_addr(~ADDRESS(0))
 	, instruction_buffer()
@@ -232,6 +235,8 @@ template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::ProcessInterrupt(SystemResetInterrupt *system_reset_interrupt)
 {
 	struct B0_29 : Field<void, 0, 29> {};
+	
+	this->hid0.template Set<typename HID0::NHR>(0); // signal to software that this is a hardware reset
 	
 	Reset();
 	
@@ -504,7 +509,6 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(CriticalInputInterrupt *critical_input
 		
 		InterruptAcknowledge();
 	}
-	
 }
 
 template <typename TYPES, typename CONFIG>
@@ -532,6 +536,8 @@ void CPU<TYPES, CONFIG>::ProcessInterrupt(ExternalInputInterrupt *external_input
 		
 		InterruptAcknowledge();
 	}
+	
+	this->Synchronize(); // Force resampling input signals
 }
 
 template <typename TYPES, typename CONFIG>
@@ -670,6 +676,27 @@ void CPU<TYPES, CONFIG>::UpdateExceptionEnable()
 	{
 		this->template DisableInterrupt<DebugInterrupt>();
 	}
+	
+	this->Synchronize(); // Force resampling input signals
+}
+
+template <typename TYPES, typename CONFIG>
+void CPU<TYPES, CONFIG>::SetAutoVector(bool value)
+{
+	if((enable_auto_vectored_interrupts != value))
+	{
+		if(this->verbose_interrupt)
+		{
+			this->logger << DebugInfo << (value ? "Enabling" : "Disabling") << " autovector" << EndDebugInfo;
+		}
+		enable_auto_vectored_interrupts = value;
+	}
+}
+
+template <typename TYPES, typename CONFIG>
+void CPU<TYPES, CONFIG>::SetVectorOffset(ADDRESS value)
+{
+	vector_offset = value & 0xfffffffcUL;
 }
 
 template <typename TYPES, typename CONFIG>
@@ -1158,6 +1185,14 @@ void CPU<TYPES, CONFIG>::StepOneInstruction()
 {
 	this->ProcessExceptions();
 
+	if(unlikely(this->requires_finished_instruction_reporting))
+	{
+		if(unlikely(this->memory_access_reporting_import != 0))
+		{
+			this->memory_access_reporting_import->ReportFetchInstruction(this->cia);
+		}
+	}
+	
 	if(unlikely(this->debug_control_import != 0))
 	{
 		do
@@ -1198,7 +1233,7 @@ void CPU<TYPES, CONFIG>::StepOneInstruction()
 			{
 				if(unlikely(this->memory_access_reporting_import != 0))
 				{
-					this->memory_access_reporting_import->ReportFinishedInstruction(this->cia, this->nia);
+					this->memory_access_reporting_import->ReportCommitInstruction(this->cia);
 				}
 			}
 
@@ -1228,3 +1263,5 @@ void CPU<TYPES, CONFIG>::StepOneInstruction()
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
+
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_E200_MPC57XX_CPU_TCC__

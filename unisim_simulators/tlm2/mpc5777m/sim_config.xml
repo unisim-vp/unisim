@@ -111,8 +111,8 @@
 				<description>GTKWave initialization script that simulators must automatically generate at startup</description>
 			</variable>
 		</object>
-		<object name="HARDWARE.CPU2">
-			<object name="HARDWARE.CPU2.L1I">
+		<object name="HARDWARE.Peripheral_Core_2">
+			<object name="HARDWARE.Peripheral_Core_2.L1I">
 				<variable name="verbose">
 					<type>parameter</type>
 					<data_type>boolean</data_type>
@@ -124,7 +124,7 @@
 					</enumeration>
 				</variable>
 			</object>
-			<object name="HARDWARE.CPU2.IMEM">
+			<object name="HARDWARE.Peripheral_Core_2.IMEM">
 				<variable name="base-addr">
 					<type>parameter</type>
 					<data_type>unsigned 32-bit integer</data_type>
@@ -148,7 +148,7 @@
 					</enumeration>
 				</variable>
 			</object>
-			<object name="HARDWARE.CPU2.DMEM">
+			<object name="HARDWARE.Peripheral_Core_2.DMEM">
 				<variable name="base-addr">
 					<type>parameter</type>
 					<data_type>unsigned 32-bit integer</data_type>
@@ -575,7 +575,7 @@
 			<variable name="cycle_time">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
-				<value>10 ns</value>
+				<value>5 ns</value>
 				<description>Time to process a request/response by the router</description>
 			</variable>
 			<variable name="port_buffer_size">
@@ -701,7 +701,7 @@
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 			</variable>
 		</object>
-		<object name="HARDWARE.INTC">
+		<object name="HARDWARE.INTC_0">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -723,7 +723,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.STM2">
+		<object name="HARDWARE.STM_2">
 			<variable name="endian">
 				<type>parameter</type>
 				<data_type>endianess</data_type>
@@ -745,7 +745,87 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.clk">
+		<object name="HARDWARE.clk_200MHz">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>5 ns</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.clk_300MHz">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>3333 ps</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.clk_100MHz">
 			<variable name="lazy-clock">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -760,6 +840,46 @@
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
 				<value>10 ns</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.clk_50MHz">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
 				<description>clock period</description>
 			</variable>
 			<variable name="clock-duty-cycle">
@@ -840,7 +960,7 @@
 		<variable name="tcp-port">
 			<type>parameter</type>
 			<data_type>signed 32-bit integer</data_type>
-			<value>0</value>
+			<value>12345</value>
 			<description>TCP/IP port to listen waiting for a GDB client connection</description>
 		</variable>
 		<variable name="architecture-description-filename">
@@ -885,7 +1005,7 @@
 			<variable name="mapping">
 				<type>parameter</type>
 				<data_type>string</data_type>
-				<value>HARDWARE.STANDBY-RAM:0x40000000-0x4000ffff:+0x0,HARDWARE.SYSTEM-RAM:0x40010000-0x401fffff:+0x0,HARDWARE.FLASH:0x00400000-0x00407fff:+0x0,HARDWARE.FLASH:0x0060c000-0x0062ffff:+0x0,HARDWARE.FLASH:0x00680000-0x007fffff:+0x0,HARDWARE.FLASH:0x00800000-0x009fffff:+0x0,HARDWARE.FLASH:0x01000000-0x01ffffff:+0x0,HARDWARE.CPU2:0x52000000-0x5fffffff:+0x0</value>
+				<value>HARDWARE.STANDBY-RAM:0x40000000-0x4000ffff:+0x0,HARDWARE.SYSTEM-RAM:0x40010000-0x401fffff:+0x0,HARDWARE.FLASH:0x00400000-0x00407fff:+0x0,HARDWARE.FLASH:0x0060c000-0x0062ffff:+0x0,HARDWARE.FLASH:0x00680000-0x007fffff:+0x0,HARDWARE.FLASH:0x00800000-0x009fffff:+0x0,HARDWARE.FLASH:0x01000000-0x01ffffff:+0x0,HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x0</value>
 				<description>Memory mapping. Syntax: [memory=]&lt;memory1&gt;[:[range=]&lt;low1-high1&gt;][:[translation=]+&lt;translation1&gt;][,... (e.g. ram:0x0-0x00ffff,rom:0xff0000-0xffffff:+0xff0000)</description>
 			</variable>
 		</object>
@@ -893,26 +1013,102 @@
 			<variable name="filename">
 				<type>parameter</type>
 				<data_type>string</data_type>
-				<value>boot.elf</value>
-				<description>Location of the raw file to load.</description>
+				<value>soft/bin/boot.elf</value>
+				<description>the ELF filename to load into memory</description>
 			</variable>
 			<variable name="base-addr">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
 				<value>0x00000000</value>
-				<description>Target base address.</description>
+				<description>if force-base-addr is true force base address for a unique program segment, otherwise ignored</description>
 			</variable>
-			<variable name="size">
+			<variable name="force-base-addr">
 				<type>parameter</type>
-				<data_type>unsigned 32-bit integer</data_type>
-				<value>0x00000000</value>
-				<description>Number of bytes to copy. If 0 then all the file contents will be copied. If smaller than the file, the contents of the file will be cropped. If bigger than the file size, all the file will be copied.</description>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>if true force base address for a unique program segment</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="force-use-virtual-address">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>force use of virtual addresses instead of physical addresses (default false)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="initialize-extra-segment-bytes">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>whether to initialize extra bytes in segments (p_filesz &lt; p_memsz) to zero (true for standard ELF files)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="dump-headers">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>dump headers while loading ELF file</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
 			</variable>
 			<variable name="verbose">
 				<type>parameter</type>
-				<data_type>unsigned 32-bit integer</data_type>
-				<value>0x00000000</value>
-				<description>Set verbose mode (0 not active, otherwise active).</description>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="dwarf-to-html-output-directory">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF v2/v3 to HTML output directory</description>
+			</variable>
+			<variable name="dwarf-to-xml-output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF v2/v3 to XML output filename</description>
+			</variable>
+			<variable name="dwarf-register-number-mapping-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF register number mapping filename</description>
+			</variable>
+			<variable name="parse-dwarf">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable parsing of DWARF debugging informations</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="debug-dwarf">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable debugging of DWARF</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
 			</variable>
 		</object>
 		<variable name="verbose">
@@ -938,7 +1134,7 @@
 		<variable name="filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value>boot.elf</value>
+			<value>soft/bin/boot.elf</value>
 			<description>List of files to load. Syntax: [[filename=]&lt;filename1&gt;[=[format=]&lt;format1&gt;]][,[filename=]&lt;filename2&gt;[=[format=]&lt;format2&gt;]]... (e.g. boot.bin=raw,app.elf)</description>
 		</variable>
 	</object>

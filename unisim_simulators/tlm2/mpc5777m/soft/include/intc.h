@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,45 +31,26 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-op mtspr(31[6]:rs[5]:spr[10]:467[10]:?[1])
-mtspr.execute = {
-	unsigned n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
-	uint32_t result = cpu->GetGPR(rs);
-	switch(n)
-	{
-		case 0x001:
-		{
-			XER& xer = cpu->GetXER();
-			xer = result;
-			break;
-		}
-		case 0x008:
-		{
-			LR& lr = cpu->GetLR();
-			lr = result;
-			break;
-		}
-		case 0x009:
-		{
-			CTR& ctr = cpu->GetCTR();
-			ctr = result;
-			break;
-		}
-		default:
-			return cpu->MoveToSPR(n, result);
-	}
-	
-	return true;
-}
-mtspr.disasm = {
-	unsigned n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
-	switch(n)
-	{
-		case 1: os << "mtxer r" << (unsigned int) rs; return;
-		case 8: os << "mtlr r" << (unsigned int) rs; return;
-		case 9: os << "mtctr r" << (unsigned int) rs; return;
-	}
 
-	os << "mtspr " << n << ", r" << (unsigned int) rs;
-}
+#ifndef __INTC_H__
+#define __INTC_H__
+
+typedef void (*irq_handler_t)();
+
+enum INTC_VEC_MODE
+{
+	INTC_SW_VEC_MODE = 0,
+	INTC_HW_VEC_MODE = 1
+};
+
+void intc_init();
+void intc_set_processor_interrupt_vector_mode(unsigned int prc_num, enum INTC_VEC_MODE intc_vec_mode);
+void intc_acknowledge_interrupt(unsigned int prc_num);
+irq_handler_t intc_set_interrupt_handler(unsigned int irq, irq_handler_t irq_handler);
+void intc_set_current_irq_priority(unsigned int prc_num, unsigned int priority);
+void intc_select_irq_for_processor(unsigned int irq, unsigned int prc_num);
+void intc_deselect_irq_for_processor(unsigned int irq, unsigned int prc_num);
+void intc_set_irq_priority(unsigned int irq, unsigned int priority);
+void intc_enable_external_interrupt();
+
+#endif

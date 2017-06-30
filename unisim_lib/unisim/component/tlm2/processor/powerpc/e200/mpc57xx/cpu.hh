@@ -112,14 +112,9 @@ public:
 	virtual void InterruptAcknowledge();
 	virtual void InvalidateDirectMemPtr(PHYSICAL_ADDRESS start_addr, PHYSICAL_ADDRESS end_addr);
 	
+	void SampleInputs();
 	void UpdateSpeed();
 	
-	void P_RESET_B_Process();
-	void P_NMI_B_Process();
-	void P_MCP_B_Process();
-	void P_EXTIN_B_Process();
-	void P_CRINT_B_Process();
-	void P_AVEC_B_Process();
 	void P_IACK_Process();
 	void ClockPropertiesChangedProcess();
 	void Run();
@@ -145,7 +140,6 @@ private:
 	sc_time run_time;               //<! absolute timer (local time + sc_time_stamp)
 	sc_time idle_time;              //<! total idle time
 	bool enable_host_idle;
-	sc_event start_event;
 	sc_event external_event;
 	sc_event int_ack_event;
 	double ipc;
