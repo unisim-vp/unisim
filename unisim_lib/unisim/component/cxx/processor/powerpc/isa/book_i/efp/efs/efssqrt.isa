@@ -32,65 +32,44 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr), Franck Vedrine (franck.vedrine@cea.fr)
  */
 
-op efssqrt(0b000100[6]:rd[5]:ra[5]:0b00000[5]:0b01011000111[11])
+op efssqrt(0b000100[6]:rd[5]:ra[5]:0b00000[5]:0b01011000111[11]);
+
 efssqrt.execute = {
-	if (!cpu->CheckSPV())
-		return false;
+  if (!cpu->CheckSPV())
+    return false;
 
-	// Read the input operands and update FPSCR
-	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-	Flags flags;
-	flags.setRoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>());
+  // Read the input operands
+  SoftFloat result(cpu->GetGPR(ra));
+        
+  // Check for Invalid Operation/Input errors
+  if (not cpu->EFPProcessInput().set(result).proceed())
+    return false;
+  
+  // Compute the result
+  CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
+  Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
+  if (unlikely(result.isNegative())) {
+    if (likely(not result.isZero()))
+      spefscr.SetInvalid(true);
+    result.clear();
+    result.setNegative();
+  }
+  else {
+    Flags tmpFlags;
+    SoftDouble tmp( result, tmpFlags );
+    tmp.sqrtAssign();
+    result.assign( tmp, flags );
+  };
 
-	SoftFloat result(cpu->GetGPR(ra));
-	// Generate FINV
-	GenSPEFSCR_FINV(spefscr, result);
+  // Handle EFP Specific Signaling/Rounding
+  bool status = cpu->EFPProcessOutput( result, flags );
+	
+  // Write back the result
+  cpu->SetGPR(rd, result.queryValue());
 
-	// Compute the result
-	if (unlikely(result.isNegative())) {
-		if (likely(not result.isZero()))
-			spefscr.Set<CPU::SPEFSCR::FINV>(true);
-		result.clear();
-		result.setNegative();
-	}
-	else {
-		Flags squareFlags;
-		squareFlags.setRoundingMode(RN_NEAREST);
-		SoftFloat a(result);
-		result.sqrtAssign();
-		SoftFloat b(result);
-		b.squareAssign(flags);
-		if (b < a)
-			flags.setDownApproximate();
-		else if (b > a)
-			flags.setUpApproximate();
-		else { // b == a
-			if (squareFlags.isUpApproximate())
-				flags.setDownApproximate();
-			else if (squareFlags.isDownApproximate())
-				flags.setUpApproximate();
-		};
-	};
-
-	if (unlikely((spefscr.Get<CPU::SPEFSCR::FINVE>() == uint32_t(0)) and (spefscr.Get<CPU::SPEFSCR::FINV>() != uint32_t(0))))
-		GenSPEFSCR_DefaultResults(spefscr, result);
-
-	// Generate FOFV, FUNF, FINXS, FG, FX
-	GenSPEFSCR_FINXS(spefscr, flags);
-	GenSPEFSCR_FG(spefscr, flags);
-	GenSPEFSCR_FX(spefscr, flags);
-
-	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely((DoesSPEFSCR_TriggerException(spefscr)))) {
-		GenSPEFSCR_TriggerException(cpu);
-		return false;
-	};
-
-	// Write back the result
-	cpu->SetGPR(rd, result.queryValue());
-
-	return true;
+  return status;
 }
+
 efssqrt.disasm = {
 	os << "efssqrt r" << (unsigned int) rd << ", r" << (unsigned int) ra;
 }

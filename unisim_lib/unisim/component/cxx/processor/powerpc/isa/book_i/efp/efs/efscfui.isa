@@ -32,25 +32,30 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr), Franck Vedrine (franck.vedrine@cea.fr)
  */
 
-op efscfui(4[6]:rd[5]:?[5]:rb[5]:720[11])
+op efscfui(4[6]:rd[5]:?[5]:rb[5]:720[11]);
+
 efscfui.execute = {
 	if (!cpu->CheckSPV())
 		return false;
 
-	// Read the input operands and update FPSCR
+	// Read the input operands
+        uint32_t src( cpu->GetGPR(rb) );
+	
+	// Check for Invalid Operation/Input errors
+	if (not cpu->EFPProcessInput().proceed())
+		return false; // Should not occur
+	
+	// Compute the result
 	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-	Flags flags;
-	flags.setRoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>());
+	Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
 
 	SoftFloat::IntConversion conversion;
-	conversion.assignUnsigned( uint32_t(cpu->GetGPR(rb)) );
+	conversion.setUnsigned().assignUnsigned(src);
 	SoftFloat result(conversion, flags);
 
-	// Generate FINXS, FG, FX
-	GenSPEFSCR_FINXS(spefscr, flags);
-	GenSPEFSCR_FG(spefscr, flags);
-	GenSPEFSCR_FX(spefscr, flags);
-
+	// Handle EFP Specific Signaling/Rounding
+	bool status = cpu->EFPProcessOutput( result, flags );
+	
 	// Write back the result
 	cpu->SetGPR(rd, result.queryValue());
 

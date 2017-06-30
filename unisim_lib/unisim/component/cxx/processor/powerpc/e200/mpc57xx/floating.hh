@@ -98,6 +98,15 @@ static const unsigned int RN_DOWN = 3;
             fEffectiveRoundToEven(rpSource.fEffectiveRoundToEven), fSNaNOperand(rpSource.fSNaNOperand), qnrQNaNResult(rpSource.qnrQNaNResult),
             feExcept(rpSource.feExcept), fDivisionByZero(rpSource.fDivisionByZero) {}
 
+      struct RoundingMode { RoundingMode(unsigned int rm) : mode(rm) {} unsigned int mode; };
+      
+      Flags( RoundingMode const& rm )
+         :  fRoundToEven(true), fUpApproximateInfty(false), rmRound(RMNearest),
+            fKeepSignalingConversion(true), aApproximation(AExact), rrReadResult(RRTotal),
+            fEffectiveRoundToEven(false), fSNaNOperand(false), qnrQNaNResult(QNNRUndefined),
+            feExcept(FENoException), fDivisionByZero(false)
+      { setRoundingMode( rm.mode ); }
+      
       Flags& operator=(const Flags& rpSource)
          {  aApproximation = rpSource.aApproximation;
             rrReadResult = rpSource.rrReadResult;
@@ -114,14 +123,14 @@ static const unsigned int RN_DOWN = 3;
       bool isAllInftyAvoided() const { return true; }
       bool doesAvoidInfty(bool fNegative) const { return true; }
       bool isDenormalizedAvoided() const { return true; }
-      bool keepNaNSign() const { return true; }
+      bool keepNaNSign() const { return false; }
       bool produceMultNaNPositive() const { return true; }
       bool produceDivNaNPositive() const { return true; }
       bool produceAddNaNPositive() const { return true; }
       bool produceSubNaNPositive() const { return true; }
       bool upApproximateInfty() const { return fUpApproximateInfty; }
       bool upApproximateInversionForNear() const { return true; }
-      bool chooseNaNAddBeforeMult() const { return true; }
+      bool chooseNaNAddBeforeMult() const { return false; }
       bool isConvertNaNNegative() const { return true; }
       bool acceptMinusZero() const { return true; }
 
@@ -262,6 +271,8 @@ class IntConversion {
       {  assert(fUnsigned); uSize = 16; memcpy(&biResult.array(0), &value, 4); return *this; }
    IntConversion& assign(unsigned int value)
       {  assert(fUnsigned); biResult.clear(); biResult.array(0) = value; return *this; }
+   IntConversion& assign(int value)
+      {  assert(!fUnsigned); biResult.array(1) = -(value < 0); biResult.array(0) = value; return *this; }
 
    int querySize() const { return uSize; }
    int queryMaxDigits() const { return fUnsigned ? uSize : (uSize-1); }

@@ -32,45 +32,36 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr), Franck Vedrine (franck.vedrine@cea.fr)
  */
 
-op efsmax(0b000100[6]:rd[5]:ra[5]:rb[5]:0b01010110000[11])
+op efsmax(0b000100[6]:rd[5]:ra[5]:rb[5]:0b01010110000[11]);
+
 efsmax.execute = {
-	if (!cpu->CheckSPV())
-		return false;
+  if (!cpu->CheckSPV())
+    return false;
 
-	// Read the input operands and update FPSCR
-	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-	Flags flags;
-	flags.setRoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>());
+  // Read the input operands
+  SoftFloat a(cpu->GetGPR(ra)), b(cpu->GetGPR(rb));
 
-	SoftFloat a(cpu->GetGPR(ra));
-	SoftFloat b(cpu->GetGPR(rb));
-	// Generate FINV
-	GenSPEFSCR_FINV(spefscr, a, &b);
+  // Check for Invalid Operation/Input errors
+  if (not cpu->EFPProcessInput().set(a).set(b).proceed())
+    return false;
+	
+  // Compute the result
+  if (unlikely(a.isZero() and b.isZero()))
+    a.setZero(a.isNegative() and b.isNegative());
+  else if     (b > a)
+    a = b;
+  else if (unlikely(a.isNaN() and not b.isNaN()))
+    a = b;
 
-	// Compute the result
-	SoftFloat result(a);
-	if (b > a)
-		result = b;
-	else if (unlikely(a.isNaN() and not b.isNaN()))
-		result = b;
+  // Update the flags
+  cpu->EFPProcessOutput(a, Flags());
 
-	if (unlikely((spefscr.Get<CPU::SPEFSCR::FINVE>() == uint32_t(0)) and (spefscr.Get<CPU::SPEFSCR::FINV>() != uint32_t(0))))
-		GenSPEFSCR_DefaultResults(spefscr, result);
+  // Write back the result
+  cpu->SetGPR(rd, a.queryValue());
 
-	// Generate FG, FX
-	GenSPEFSCR_FG(spefscr, flags);
-	GenSPEFSCR_FX(spefscr, flags);
-
-	if(unlikely((DoesSPEFSCR_TriggerException(spefscr)))) {
-		GenSPEFSCR_TriggerException(cpu);
-		return false;
-	};
-
-	// Write back the result
-	cpu->SetGPR(rd, result.queryValue());
-
-	return true;
+  return true;
 }
+
 efsmax.disasm = {
 	os << "efsmax r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 }

@@ -36,7 +36,6 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_E200_MPC57XX_GENFFLAGS_HH__
 
 #include <inttypes.h>
-#include <iostream>
 
 namespace unisim {
 namespace component {

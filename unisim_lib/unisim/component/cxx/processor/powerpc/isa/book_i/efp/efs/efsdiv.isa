@@ -32,51 +32,50 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr), Franck Vedrine (franck.vedrine@cea.fr)
  */
 
-op efsdiv(4[6]:rd[5]:ra[5]:rb[5]:713[11])
+op efsdiv(4[6]:rd[5]:ra[5]:rb[5]:713[11]);
+
 efsdiv.execute = {
-	if (!cpu->CheckSPV())
-		return false;
+  if (!cpu->CheckSPV())
+    return false;
 
-	// Read the input operands and update FPSCR
-	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-	Flags flags;
-	flags.setRoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>());
+  // Read the input operands
+  SoftFloat result(cpu->GetGPR(ra)), b(cpu->GetGPR(rb));
 
-	SoftFloat result(cpu->GetGPR(ra));
-	SoftFloat b(cpu->GetGPR(rb));
-	// Generate FINV
-	GenSPEFSCR_FINV(spefscr, result, &b, static_cast<SoftFloat*>(0) /*third */, true /* isDivideOperation */);
+  // Check for Invalid Operation/Input errors
+  if (not cpu->EFPProcessInput().set(result).set(b).proceed())
+    return false;
+  CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
+  if (unlikely(b.isZero() and (spefscr.Get<CPU::SPEFSCR::FINV>() == uint32_t(0))))
+    {
+      if (result.isZero()) spefscr.SetInvalid(true);
+      else                 spefscr.SetDivideByZero(true);
+    }
+        
+  // Compute the result
+  Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
+  if (likely(not b.hasInftyExponent()))
+    {
+      result.divAssign(b, flags);
+      if (unlikely(b.isZero()))
+        flags.clear();
+    }
+  else
+    {
+      bool neg = (result.isNegative() ^ b.isNegative());
+      result.clear();
+      result.setNegative( neg );
+    }
+  
+  
+  // Handle EFP Specific Signaling/Rounding
+  bool status = cpu->EFPProcessOutput( result, flags );
+	
+  // Write back the result
+  cpu->SetGPR(rd, result.queryValue());
 
-	// Compute the result
-	result.divAssign(b, flags);
-
-	if (unlikely(spefscr.Get<CPU::SPEFSCR::FINV>()))
-	{
-		if (likely(not spefscr.Get<CPU::SPEFSCR::FINVE>()))
-			GenSPEFSCR_DefaultResults(spefscr, result);
-	}
-	else
-		GenSPEFSCR_FDBZ(spefscr, flags);
-
-	// Generate FOFV, FUNF, FINXS, FG, FX
-	GenSPEFSCR_FOVF(spefscr, flags);
-	GenSPEFSCR_FUNF(spefscr, flags);
-	GenSPEFSCR_FINXS(spefscr, flags);
-	GenSPEFSCR_FG(spefscr, flags);
-	GenSPEFSCR_FX(spefscr, flags);
-
-	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if (unlikely((DoesSPEFSCR_TriggerException(spefscr))))
-	{
-		GenSPEFSCR_TriggerException(cpu);
-		return false;
-	};
-
-	// Write back the result
-	cpu->SetGPR(rd, result.queryValue());
-
-	return true;
+  return status;
 }
+
 efsdiv.disasm = {
 	os << "efsdiv r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 }

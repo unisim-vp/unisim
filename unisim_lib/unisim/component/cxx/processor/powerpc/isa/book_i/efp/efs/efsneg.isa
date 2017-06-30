@@ -32,33 +32,33 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op efsneg(4[6]:rd[5]:ra[5]:?[5]:710[11])
+op efsneg(4[6]:rd[5]:ra[5]:?[5]:710[11]);
+
 efsneg.execute = {
 	if (!cpu->CheckSPV())
 		return false;
 
-	// Read the input operands and update FPSCR
-	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
+	// Read the input operands
+	SoftFloat a(cpu->GetGPR(ra)), result(a);
 
-	SoftFloat result(cpu->GetGPR(ra));
-
-	// Generate FINV
-	GenSPEFSCR_FINV(spefscr, result);
-
+	// Check for Invalid Operation/Input errors
+	if (not cpu->EFPProcessInput().set(a).proceed())
+		return false;
+	
 	// Compute the result
 	result.setNegative(not result.isNegative());
 
-	if (unlikely((spefscr.Get<CPU::SPEFSCR::FINVE>() == uint32_t(0)) and (spefscr.Get<CPU::SPEFSCR::FINV>() != uint32_t(0))))
-		GenSPEFSCR_DefaultResults(spefscr, result);
-	if(unlikely((DoesSPEFSCR_TriggerException(spefscr)))) {
-		GenSPEFSCR_TriggerException(cpu);
-		return false;
-	};
-
+	// Update the flags
+	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
+	spefscr.SetOverflow( false );
+	spefscr.SetUnderflow( false );
+	
 	// Write back the result
 	cpu->SetGPR(rd, result.queryValue());
+        
 	return true;
 }
+
 efsneg.disasm = {
 	os << "efsneg r" << (unsigned int) rd << ", r" << (unsigned int) ra;
 }

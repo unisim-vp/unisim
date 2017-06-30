@@ -32,36 +32,42 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr), Franck Vedrine (franck.vedrine@cea.fr)
  */
 
-op efscfsf(4[6]:rd[5]:?[5]:rb[5]:723[11])
+op efscfsf(4[6]:rd[5]:?[5]:rb[5]:723[11]);
+
 efscfsf.execute = {
 	if (!cpu->CheckSPV())
 		return false;
 
-	// Read the input operands and update FPSCR
+	// Read the input operands
+	int32_t src( cpu->GetGPR(rb) );
+	
+	// Check for Invalid Operation/Input errors
+	if (not cpu->EFPProcessInput().proceed())
+		return false; // Should not occur
+	
+	// Compute the result
 	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-	Flags flags;
-	flags.setRoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>());
-
+	Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
+	
 	SoftFloat::IntConversion conversion;
-	conversion.assignSigned( int32_t(cpu->GetGPR(rb)) );
+	conversion.setSigned().assignSigned( src );
 	SoftFloat result(conversion, flags);
-	bool isZero = result.querySBasicExponent().sub(32).hasCarry() or result.queryBasicExponent().isZero();
+	bool isZero = result.querySBasicExponent().sub(31).hasCarry() or result.queryBasicExponent().isZero();
 	if (unlikely(isZero and not result.isZero())) // should not occur
 	{
 		flags.setUnderflow();
 		result.clear();
 	}
-
-	// Generate FINXS, FG, FX
-	GenSPEFSCR_FINXS(spefscr, flags);
-	GenSPEFSCR_FG(spefscr, flags);
-	GenSPEFSCR_FX(spefscr, flags);
-
+	
+	// Handle EFP Specific Signaling/Rounding
+	bool status = cpu->EFPProcessOutput( result, flags );
+	
 	// Write back the result
 	cpu->SetGPR(rd, result.queryValue());
 
 	return true;
 }
+
 efscfsf.disasm = {
 	os << "efscfsf r" << (unsigned int) rd << ", r" << (unsigned int) rb;
 }

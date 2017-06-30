@@ -72,8 +72,8 @@ namespace Details { namespace DTDoubleElement {
 
 template <class TypeMantissa, class TypeStatusAndControlFlags>
 Access::Carry
-Access::trightShift(TypeMantissa& mMantissa, int uShift,
-      unsigned int uValue, TypeStatusAndControlFlags& scfFlags, bool fNegative, int uBitSizeMantissa) {
+Access::trightShift(TypeMantissa& mMantissa, int uShift, unsigned int uValue, TypeStatusAndControlFlags& scfFlags, bool fNegative, int uBitSizeMantissa)
+{
    assert((uShift >= 0) && (uBitSizeMantissa >= uShift));
    bool fAdd = false;
    bool fRoundToEven = false;
@@ -98,7 +98,7 @@ Access::trightShift(TypeMantissa& mMantissa, int uShift,
       fApproximate = true;
    };
    mMantissa >>= uShift;
-   bool fOddValue = (uBitSizeMantissa == uShift) && (uValue & 1U);
+   bool fOddValue = (uBitSizeMantissa == uShift) and (uValue & 1U);
    if (fAdd && ((fAdd = (!fRoundToEven
          || (!fOddValue ? mMantissa.cbitArray(0): !mMantissa.cbitArray(0)))) != false)) {
       mMantissa.inc();
@@ -368,34 +368,27 @@ TBuiltDouble<TypeTraits>::setInteger(const IntConversion& icValueSource, StatusA
       icValue.opposite();
    icValue.setUnsigned();
    if (icValue.isDifferentZero()) {
-      int uLogResult = icValue.log_base_2();
-      if ((icValue.querySize() > bitSizeMantissa()) && (uLogResult > bitSizeMantissa()+1)) {
-         trightShift(icValue, (uLogResult-bitSizeMantissa()-1), 0U, scfFlags, fNegative, icValue.querySize());
-         for (unsigned int uIndex = 0; uIndex < (icValue.querySize()-1)/(sizeof(unsigned int)*8)+1;
-               ++uIndex)
-            biMantissa[uIndex] = icValue[uIndex];
-         biMantissa.normalize();
-         biExponent = TypeTraits::getZeroExponent(biExponent);
-         biExponent.add(uLogResult-1);
+      int icBitSizeMantissa = icValue.log_base_2()-1;
+      icValue.setFalseBitArray(icBitSizeMantissa);
+      
+      if (icBitSizeMantissa > bitSizeMantissa()) {
+         trightShift(icValue, (icBitSizeMantissa-bitSizeMantissa()), 0U, scfFlags, fNegative, icValue.querySize());
+         if (icValue.cbitArray(bitSizeMantissa())) {
+            ++icBitSizeMantissa;
+            icValue.setFalseBitArray(bitSizeMantissa());
+            assert(not icValue.isDifferentZero());
+         }
       }
-      else if (uLogResult <= bitSizeMantissa()) {
-         for (unsigned int uIndex = 0; uIndex < (icValue.querySize()-1)/(sizeof(unsigned int)*8)+1;
-               ++uIndex)
-            biMantissa[uIndex] = icValue[uIndex];
-         biMantissa.normalize();
-         biMantissa <<= (bitSizeMantissa()-uLogResult+1);
-         biExponent = TypeTraits::getZeroExponent(biExponent);
-         biExponent.add(uLogResult-1);
-      }
-      else if (icValue.querySize() > bitSizeMantissa()) { // uLogResult == bitSizeMantissa()+1
-         icValue &= (IntConversion().neg() <<= bitSizeMantissa()).neg();
-         for (unsigned int uIndex = 0; uIndex < (icValue.querySize()-1)/(sizeof(unsigned int)*8)+1;
-               ++uIndex)
-            biMantissa[uIndex] = icValue[uIndex];
-         biMantissa.normalize();
-         biExponent = TypeTraits::getZeroExponent(biExponent);
-         biExponent.add(bitSizeMantissa());
-      };
+      
+      for (int uIndex = (bitSizeMantissa()-1)/(sizeof(unsigned int)*8); uIndex >= 0; --uIndex)
+         biMantissa[uIndex] = icValue[uIndex];
+      
+      if (icBitSizeMantissa <= bitSizeMantissa())
+         biMantissa <<= (bitSizeMantissa()-icBitSizeMantissa);
+      
+      biMantissa.normalize();
+      biExponent = TypeTraits::getZeroExponent(biExponent);
+      biExponent.add(icBitSizeMantissa);
    };
 }
 
@@ -660,19 +653,28 @@ TBuiltDouble<TypeTraits>::setFloat(const FloatConversion& fcValue, StatusAndCont
 
 template <class TypeTraits>
 void
-TBuiltDouble<TypeTraits>::retrieveInteger(IntConversion& icResult, StatusAndControlFlags& scfFlags) const {
-   bool fNaN = false;
-   if (isNaN()) {
+TBuiltDouble<TypeTraits>::retrieveInteger(IntConversion& icResult, StatusAndControlFlags& scfFlags, unsigned fbits) const
+{
+   bool fNaN = isNaN();
+   if (fNaN) {
       if (isSNaN())
          scfFlags.setSNaNOperand();
-      fNaN = true;
-   };
+   } else if (fbits > 0) {
+     thisType tmp( *this );
+     if (tmp.biExponent.add(fbits).hasCarry() or tmp.biExponent == TypeTraits::getInftyExponent(biExponent))
+       tmp.setInfty(fNegative);
+     return tmp.retrieveInteger(icResult, scfFlags, 0);
+   }
+   
    if (fNegative && icResult.isUnsigned()) {
       scfFlags.setUpApproximate();
       icResult.assign((unsigned int) 0);
       return;
    };
-   if (biExponent < TypeTraits::getZeroExponent(biExponent)) {
+   
+   int exponent = queryExponentValue();
+   
+   if (exponent < 0) {
       bool fAdd = false;
       if (!isZero()) {
          if (scfFlags.isNearestRound()) {
@@ -694,10 +696,10 @@ TBuiltDouble<TypeTraits>::retrieveInteger(IntConversion& icResult, StatusAndCont
          icResult.assign(fAdd ? (fNegative ? -1 : 1) : 0);
       return;
    };
-   Exponent biDigits = biExponent;
-   biDigits.sub(TypeTraits::getZeroExponent(biExponent));
-   if (biDigits >= (icResult.queryMaxDigits())) {
-      if (!fNegative || (biDigits > (icResult.queryMaxDigits())) || !biMantissa.isZero()) {
+   
+   if (exponent >= icResult.queryMaxDigits()) {
+      // Except for minimal signed value, this is an overflow
+      if (not (fNegative and (exponent == icResult.queryMaxDigits()) and biMantissa.isZero())) {
          scfFlags.setApproximate(fNegative ? StatusAndControlFlags::Up : StatusAndControlFlags::Down);
          scfFlags.setOverflow();
       };
@@ -707,31 +709,41 @@ TBuiltDouble<TypeTraits>::retrieveInteger(IntConversion& icResult, StatusAndCont
          icResult.setMax();
       return;
    };
-
-   Mantissa biResult = biMantissa;
-   if ((unsigned int) bitSizeMantissa() > biDigits.queryValue()) {
-      if (trightShift(biResult, bitSizeMantissa()-biDigits.queryValue(), 1, scfFlags, fNegative, bitSizeMantissa())
-            .hasCarry()
-         || ((bitSizeMantissa() > icResult.queryMaxDigits()) && biResult.cbitArray(icResult.queryMaxDigits()))) {
-         if (!fNegative || ((bitSizeMantissa() > icResult.queryMaxDigits())
-               && !biResult.hasZero(icResult.queryMaxDigits()))) {
-            scfFlags.setApproximate(fNegative ? StatusAndControlFlags::Up : StatusAndControlFlags::Down);
-            scfFlags.setOverflow();
-         };
-         if (fNegative)
-            icResult.setMin();
-         else
-            icResult.setMax();
-         return;
-      };
+   
+   if (bitSizeMantissa() > exponent) {
+      Mantissa biResult = biMantissa;
+      if (trightShift(biResult, bitSizeMantissa()-exponent, 1, scfFlags, fNegative, bitSizeMantissa()).hasCarry() or
+          ((bitSizeMantissa() > icResult.queryMaxDigits()) && biResult.cbitArray(icResult.queryMaxDigits())))
+      {
+         if (bitSizeMantissa() >= icResult.queryMaxDigits()) {
+            if (!fNegative || ((bitSizeMantissa() > icResult.queryMaxDigits())
+                               && !biResult.hasZero(icResult.queryMaxDigits()))) {
+              scfFlags.setApproximate(fNegative ? StatusAndControlFlags::Up : StatusAndControlFlags::Down);
+              scfFlags.setOverflow();
+            };
+            if (fNegative)
+              icResult.setMin();
+            else
+              icResult.setMax();
+            return;
+         }
+         for (int idx = (bitSizeMantissa()-1)/(sizeof(unsigned int)*8); idx >= 0; --idx)
+            icResult[idx] = biResult[idx];
+         icResult.setTrueBitArray(bitSizeMantissa());
+      }
+      else {
+         for (int idx = (std::min(bitSizeMantissa(),icResult.queryMaxDigits())-1)/(sizeof(unsigned int)*8); idx >= 0; --idx)
+            icResult[idx] = biResult[idx];
+      }
    }
    else {
-      biResult <<= (biDigits.queryValue()-bitSizeMantissa());
-      biResult.setTrueBitArray(biDigits.queryValue());
+      // bitSizeMantissa() < icResult.queryMaxDigits()
+      for (int idx = (bitSizeMantissa()-1)/(sizeof(unsigned int)*8); idx >= 0; --idx)
+         icResult[idx] = biMantissa[idx];
+      icResult <<= (exponent-bitSizeMantissa());
+      icResult.setTrueBitArray(exponent);
    };
-   for (unsigned int uIndex = 0; uIndex < (icResult.querySize()-1)/(sizeof(unsigned int)*8)+1;
-         ++uIndex)
-      icResult[uIndex] = biResult[uIndex];
+   
    if (fNegative)
       icResult.opposite();
 }

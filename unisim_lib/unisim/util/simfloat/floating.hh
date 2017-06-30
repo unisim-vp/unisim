@@ -48,8 +48,8 @@
 #include <limits.h>
 #include <float.h>
 #include <math.h>
-#include <stdio.h>
-#include <assert.h>
+#include <cstdio>
+#include <cassert>
 #if defined(__GNUC__)
 #ifdef __SUN__
 #include <ieeefp.h>
@@ -692,7 +692,7 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
 
    void setFloat(const FloatConversion& fcValue, StatusAndControlFlags& scfFlags);
    void setInteger(const IntConversion& icValue, StatusAndControlFlags& scfFlags);
-   void retrieveInteger(IntConversion& icResult, StatusAndControlFlags& scfFlags) const;
+   void retrieveInteger(IntConversion& icResult, StatusAndControlFlags& scfFlags, unsigned fbits=0) const;
    enum ComparisonResult { CRNaN=0, CRLess=1, CREqual=2, CRGreater=3 };
    ComparisonResult compare(const thisType& bdSource) const
       {  ComparisonResult crResult = CRNaN;
@@ -753,7 +753,6 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
    typename TypeTraits::Exponent getOneExponent() const { return TypeTraits::getOneExponent(biExponent); }
    typename TypeTraits::Exponent getMinusOneExponent() const { return TypeTraits::getMinusOneExponent(biExponent); }
    typename TypeTraits::Exponent getInftyExponent() const { return TypeTraits::getInftyExponent(biExponent); }
-   typename TypeTraits::Exponent getMaxExponent() const { return TypeTraits::getMaxExponent(biExponent); }
 
    const typename TypeTraits::Exponent& queryBasicExponent() const { return biExponent; }
    typename TypeTraits::Exponent& querySBasicExponent() { return biExponent; }
@@ -773,9 +772,10 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
             biResult -= biExponent;
          return biResult;
       }
+   int queryExponentValue() const { return queryBasicExponent().queryValue() - getZeroExponent().queryValue(); }
    void setBasicExponent(const typename TypeTraits::Exponent& biExponentSource) { biExponent = biExponentSource; }
-   void setInfty() { fNegative = false; biExponent = TypeTraits::getInftyExponent(biExponent); biMantissa = 0U; }
-   void setZero() { fNegative = false; biExponent = 0U; biMantissa = 0U; }
+   void setInfty(bool negative=false) { fNegative = negative; biExponent = TypeTraits::getInftyExponent(biExponent); biMantissa = 0U; }
+   void setZero(bool negative=false) { fNegative = negative; biExponent = 0U; biMantissa = 0U; }
    void setOne() { fNegative = false; biExponent = TypeTraits::getZeroExponent(biExponent); biMantissa = 0U; }
    void setExponent(const typename TypeTraits::Exponent& biExponentSource, bool fNegative = false)
       {  if (!fNegative) {

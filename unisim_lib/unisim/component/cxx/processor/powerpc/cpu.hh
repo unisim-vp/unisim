@@ -2147,41 +2147,107 @@ protected:
 	{
 		typedef NonPrivilegedSPR<SPEFSCR, 512> Super;
 		
-		struct SOVH  : Field<SOVH,  0>  {}; // Summary Integer overflow high
-		struct OVH   : Field<OVH,   1>  {}; // Embedded Integer overflow high
-		struct FGH   : Field<FGH,   2>  {}; // Embedded floating-point guard bit high
-		struct FXH   : Field<FXH,   3>  {}; // Embedded floating-point inexact bit high
-		struct FINVH : Field<FINVH, 4>  {}; // Embedded Floating-point Invalid Operation / Input error
-		struct FDBZH : Field<FDBZH, 5>  {}; // Embedded Floating-point Divide by Zero
-		struct FUNFH : Field<FUNFH, 6>  {}; // Embedded Floating-point Underflow
-		struct FOVFH : Field<FOVFH, 7>  {}; // Embedded Floating-point Overflow
-		struct FINXS : Field<FINXS, 10> {}; // Embedded Floating-point Inexact Sticky Flag
-		struct FINVS : Field<FINVS, 11> {}; // Enmedded Floating-point Invalid Operation Sticky Flag
-		struct FDBZS : Field<FDBZS, 12> {}; // Embedded Floating-point Divide by Zero Sticky Flag
-		struct FUNFS : Field<FUNFS, 13> {}; // Embedded Floating-point Underflow Sticky Flag
-		struct FOVFS : Field<FOVFS, 14> {}; // Embedded Floating-point Overflow Sticky Flag
-		struct MODE  : Field<MODE , 15> {}; // Embedded Floating-point Operating Mode
-		struct FG    : Field<FG   , 18> {}; // Embedded Floating-point Guard bit
-		struct FX    : Field<FX   , 19> {}; // Embedded Floating-point Sticky bit
-		struct FINV  : Field<FINV , 20> {}; // Embedded Floating-point Invalid Operation / Input error
-		struct FDBZ  : Field<FDBZ , 21> {}; // Embedded Floating-point Divide by Zero
-		struct FUNF  : Field<FUNF , 22> {}; // Embedded Floating-point Underflow
-		struct FOVF  : Field<FOVF , 23> {}; // Embedded Floating-point Overflow
-		struct FINXE : Field<FINXE, 25> {}; // Embedded Floating-point Inexact Exception Enable
-		struct FINVE : Field<FINVE, 26> {}; // Embedded Floating-point Invalid Operation / Input Error Exception Enable
-		struct FDBZE : Field<FDBZE, 27> {}; // Embedded Floating-point Divide by Zero Exception Enable
-		struct FUNFE : Field<FUNFE, 28> {}; // Embedded Floating-point Underflow Exception Enable
-		struct FOVFE : Field<FOVFE, 29> {}; // Embedded Floating-point Overflow Exception Enable
-		struct FRMC  : Field<FRMC , 30> {}; // Embedded Floating-point Rounding Mode Control
+		struct SOVH  : Field<SOVH,      0> {}; // Summary Integer overflow high
+		struct OVH   : Field<OVH,       1> {}; // Integer overflow high
+		struct FGH   : Field<FGH,       2> {}; // Embedded floating-point guard bit high
+		struct FXH   : Field<FXH,       3> {}; // Embedded floating-point inexact bit high
+		struct FINVH : Field<FINVH,     4> {}; // Embedded Floating-point Invalid Operation / Input error
+		struct FDBZH : Field<FDBZH,     5> {}; // Embedded Floating-point Divide by Zero
+		struct FUNFH : Field<FUNFH,     6> {}; // Embedded Floating-point Underflow
+		struct FOVFH : Field<FOVFH,     7> {}; // Embedded Floating-point Overflow
+		struct FINXS : Field<FINXS,    10> {}; // Embedded Floating-point Inexact Sticky Flag
+		struct FINVS : Field<FINVS,    11> {}; // Enmedded Floating-point Invalid Operation Sticky Flag
+		struct FDBZS : Field<FDBZS,    12> {}; // Embedded Floating-point Divide by Zero Sticky Flag
+		struct FUNFS : Field<FUNFS,    13> {}; // Embedded Floating-point Underflow Sticky Flag
+		struct FOVFS : Field<FOVFS,    14> {}; // Embedded Floating-point Overflow Sticky Flag
+		struct MODE  : Field<MODE ,    15> {}; // Embedded Floating-point Operating Mode
+		struct SOV   : Field<MODE ,    16> {}; // Summary Integer overflow
+		struct OV    : Field<MODE ,    17> {}; // Integer overflow
+		struct FG    : Field<FG,       18> {}; // Embedded Floating-point Guard bit
+		struct FX    : Field<FX,       19> {}; // Embedded Floating-point Sticky bit
+		struct FINV  : Field<FINV ,    20> {}; // Embedded Floating-point Invalid Operation / Input error
+		struct FDBZ  : Field<FDBZ ,    21> {}; // Embedded Floating-point Divide by Zero
+		struct FUNF  : Field<FUNF ,    22> {}; // Embedded Floating-point Underflow
+		struct FOVF  : Field<FOVF ,    23> {}; // Embedded Floating-point Overflow
+		struct FINXE : Field<FINXE,    25> {}; // Embedded Floating-point Inexact Exception Enable
+		struct FINVE : Field<FINVE,    26> {}; // Embedded Floating-point Invalid Operation / Input Error Exception Enable
+		struct FDBZE : Field<FDBZE,    27> {}; // Embedded Floating-point Divide by Zero Exception Enable
+		struct FUNFE : Field<FUNFE,    28> {}; // Embedded Floating-point Underflow Exception Enable
+		struct FOVFE : Field<FOVFE,    29> {}; // Embedded Floating-point Overflow Exception Enable
+		struct FRMC  : Field<FRMC,  30,31> {}; // Embedded Floating-point Rounding Mode Control
 		
 		SWITCH_ENUM_TRAIT(Model, _);
-		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<FINXS, FINVS, FDBZS, FUNFS, FOVFS, MODE, FG, FX, FINV, FDBZ, FUNF, FOVF, FINXE, FINVE, FDBZE, FUNFE, FOVFE, FRMC> ALL; };
-		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<FINXS, FINVS, FDBZS, FUNFS, FOVFS, MODE, FG, FX, FINV, FDBZ, FUNF, FOVF, FINXE, FINVE, FDBZE, FUNFE, FOVFE, FRMC> ALL; };
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<FINXS, FINVS, FDBZS, FUNFS, FOVFS, /*MODE,*/ SOV, OV, FG, FX, FINV, FDBZ, FUNF, FOVF, FINXE, FINVE, FDBZE, FUNFE, FOVFE, FRMC> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<FINXS, FINVS, FDBZS, FUNFS, FOVFS, /*MODE,*/ SOV, OV, FG, FX, FINV, FDBZ, FUNF, FOVF, FINXE, FINVE, FDBZE, FUNFE, FOVFE, FRMC> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		SPEFSCR(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
 		SPEFSCR(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
+		
+		bool SetInvalid( bool inv, bool invh=false )
+		{
+			Set<FINV>( inv );
+			Set<FINVH>( invh );
+			if (inv or invh)
+			{
+				Set<FINVS>( true );
+				if (Get<FINVE>())
+				{
+					cpu->ThrowException<ProgramInterrupt::IllegalInstruction>();
+					return false;
+				}
+			}
+			return true;
+		}
+		
+		bool SetDivideByZero( bool dbz, bool dbzh=false )
+		{
+			Set<FDBZ>( dbz );
+			Set<FDBZH>( dbzh );
+			if (dbz or dbzh)
+			{
+				Set<FDBZS>( true );
+				if (Get<FDBZE>())
+				{
+					cpu->ThrowException<ProgramInterrupt::IllegalInstruction>();
+					return false;
+				}
+			}
+			return true;
+		}
+
+		bool SetOverflow( bool ovf, bool ovfh=false )
+		{
+			Set<FOVF>( ovf );
+			Set<FOVFH>( ovfh );
+			if (ovf or ovfh)
+			{
+				Set<FOVFS>( true );
+				if (Get<FOVFE>())
+				{
+					cpu->ThrowException<ProgramInterrupt::IllegalInstruction>();
+					return false;
+				}
+			}
+			return true;
+		}
+		
+		bool SetUnderflow( bool unf, bool unfh=false )
+		{
+			Set<FUNF>( unf );
+			Set<FUNFH>( unfh );
+			if (unf or unfh)
+			{
+				Set<FUNFS>( true );
+				if (Get<FUNFE>())
+				{
+					cpu->ThrowException<ProgramInterrupt::IllegalInstruction>();
+					return false;
+				}
+			}
+			return true;
+		}
 		
 		virtual void Reset() { this->Initialize(0x00000000); }
 	private:
@@ -4090,8 +4156,8 @@ protected:
 	
 	/////////// unisim::service::interfaces::MemoryAccessReporting<> //////////
 	
-    bool requires_memory_access_reporting;        // indicates if the memory accesses require to be reported
-    bool requires_finished_instruction_reporting; // indicates if the finished instructions require to be reported
+	bool requires_memory_access_reporting;        // indicates if the memory accesses require to be reported
+	bool requires_finished_instruction_reporting; // indicates if the finished instructions require to be reported
 	
 	inline void MonitorLoad(typename TYPES::ADDRESS ea, unsigned int size);
 	inline void MonitorStore(typename TYPES::ADDRESS ea, unsigned int size);

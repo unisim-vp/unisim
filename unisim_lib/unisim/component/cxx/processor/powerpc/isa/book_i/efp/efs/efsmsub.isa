@@ -32,46 +32,35 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op efsmsub(0b000100[6]:rd[5]:ra[5]:rb[5]:0b01011000011[11])
+op efsmsub(0b000100[6]:rd[5]:ra[5]:rb[5]:0b01011000011[11]);
+
 efsmsub.execute = {
-	if (!cpu->CheckSPV())
-		return false;
+  if (!cpu->CheckSPV())
+    return false;
 
-	// Read the input operands and update FPSCR
-	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-	Flags flags;
-	flags.setRoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>());
+  // Read the input operands
+  SoftFloat d(cpu->GetGPR(rd)), result(cpu->GetGPR(ra)), b(cpu->GetGPR(rb));
+	
+  // Check for Invalid Operation/Input errors
+  if (not cpu->EFPProcessInput().set(result).set(b).set(d).proceed())
+    return false;
+  if      (result.isZero() and b.isNaN()) b.querySBasicExponent().clear();
+  else if (b.isZero() and result.isNaN()) result.querySBasicExponent().clear();
 
-	SoftFloat d(cpu->GetGPR(rd));
-	SoftFloat result(cpu->GetGPR(ra));
-	SoftFloat b(cpu->GetGPR(rb));
-	// Generate FINV
-	GenSPEFSCR_FINV(spefscr, result, &b, &d);
+  // Compute the result
+  CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
+  Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
+  result.multAndSubAssign(b, d, flags);
 
-	// Compute the result
-	result.multAndSubAssign(b, d, flags);
+  // Handle EFP Specific Signaling/Rounding
+  bool status = cpu->EFPProcessOutput( result, flags );
+	
+  // Write back the result
+  cpu->SetGPR(rd, result.queryValue());
 
-	if (unlikely((spefscr.Get<CPU::SPEFSCR::FINVE>() == uint32_t(0)) and (spefscr.Get<CPU::SPEFSCR::FINV>() != uint32_t(0))))
-		GenSPEFSCR_DefaultResults(spefscr, result);
-
-	// Generate FOFV, FUNF, FINXS, FG, FX
-	GenSPEFSCR_FOVF(spefscr, flags);
-	GenSPEFSCR_FUNF(spefscr, flags);
-	GenSPEFSCR_FINXS(spefscr, flags);
-	GenSPEFSCR_FG(spefscr, flags);
-	GenSPEFSCR_FX(spefscr, flags);
-
-	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely((DoesSPEFSCR_TriggerException(spefscr)))) {
-		GenSPEFSCR_TriggerException(cpu);
-		return false;
-	};
-
-	// Write back the result
-	cpu->SetGPR(rd, result.queryValue());
-
-	return true;
+  return status;
 }
+
 efsmsub.disasm = {
 	os << "efsmsub r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 }

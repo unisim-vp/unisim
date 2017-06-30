@@ -32,54 +32,63 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr), Franck Vedrine (franck.vedrine@cea.fr)
  */
 
-op efststgt(4[6]:bf[3]:?[2]:ra[5]:rb[5]:732[11])
+op efststgt(4[6]:bf[3]:?[2]:ra[5]:rb[5]:732[11]);
+
 efststgt.execute = {
 	if (!cpu->CheckSPV())
 		return false;
 
-	// Read the input operands and update FPSCR
-	SoftFloat a(cpu->GetGPR(ra));
-	SoftFloat b(cpu->GetGPR(rb));
-
+	// Read the input operands
+	uint32_t ua( cpu->GetGPR(ra) ), ub( cpu->GetGPR(rb) );
+	SoftFloat a( ua ), b( ub );
+	
 	// Compute the result
-	bool result;
-	if (unlikely(a.hasInftyExponent() or a.isDenormalized() or b.hasInftyExponent() or b.isDenormalized()))
-		result = int32_t(cpu->GetGPR(ra)) > int32_t(cpu->GetGPR(rb));
-	else
-		result = a > b;
+	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
+	bool result = unlikely(a.hasInftyExponent() or a.isDenormalized() or b.hasInftyExponent() or b.isDenormalized()) ?
+          ((((int32_t(ua) >> 31) & int32_t(0x7fffffff)) ^ int32_t(ua)) > (((int32_t(ub) >> 31) & int32_t(0x7fffffff)) ^ int32_t(ub))) :
+          a > b;
 
 	// Write back the result in CR[bf] bit field
 	CR& cr = cpu->GetCR();
 	switch(bf)
 	{
 		case 0:
+			cr.Set<CR::CR0>(0);
 			cr.Set<CR::CR0::GT>(result);
 			break;
 		case 1:
+			cr.Set<CR::CR1>(0);
 			cr.Set<CR::CR1::GT>(result);
 			break;
 		case 2:
+			cr.Set<CR::CR2>(0);
 			cr.Set<CR::CR2::GT>(result);
 			break;
 		case 3:
+			cr.Set<CR::CR3>(0);
 			cr.Set<CR::CR3::GT>(result);
 			break;
 		case 4:
+			cr.Set<CR::CR4>(0);
 			cr.Set<CR::CR4::GT>(result);
 			break;
 		case 5:
+			cr.Set<CR::CR5>(0);
 			cr.Set<CR::CR5::GT>(result);
 			break;
 		case 6:
+			cr.Set<CR::CR6>(0);
 			cr.Set<CR::CR6::GT>(result);
 			break;
 		case 7:
+			cr.Set<CR::CR7>(0);
 			cr.Set<CR::CR7::GT>(result);
 			break;
 	}
 
 	return true;
 }
+
 efststgt.disasm = {
 	os << "efststgt " << (unsigned int) bf << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
 }

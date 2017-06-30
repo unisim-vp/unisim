@@ -32,44 +32,33 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr), Franck Vedrine (franck.vedrine@cea.fr)
  */
 
-op efscth(0b000100[6]:rd[5]:0b00100[5]:rb[5]:0b01011010101[11])
+op efscth(0b000100[6]:rd[5]:0b00100[5]:rb[5]:0b01011010101[11]);
+
 efscth.execute = {
 	if (!cpu->CheckSPV())
 		return false;
 
-	// Read the input operands and update FPSCR
-	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-	Flags flags;
-	flags.setRoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>());
+	// Read the input operands
+	SoftFloat b( cpu->GetGPR(rb) );
 
-	SoftFloat b(cpu->GetGPR(rb));
-	// Generate FINV
-	GenSPEFSCR_FINV(spefscr, b);
-
+	// Check for Invalid Operation/Input errors
+	if (not cpu->EFPProcessInput().set(b).proceed())
+		return false;
+	
 	// Compute the result
+	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
+	Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
 	SoftHalfFloat result(b, flags);
 
-	if (unlikely((spefscr.Get<CPU::SPEFSCR::FINVE>() == uint32_t(0)) and (spefscr.Get<CPU::SPEFSCR::FINV>() != uint32_t(0))))
-		GenSPEFSCR_DefaultResults(spefscr, result);
-
-	// Generate FOFV, FUNF, FINXS, FG, FX
-	GenSPEFSCR_FOVF(spefscr, flags);
-	GenSPEFSCR_FUNF(spefscr, flags);
-	GenSPEFSCR_FINXS(spefscr, flags);
-	GenSPEFSCR_FG(spefscr, flags);
-	GenSPEFSCR_FX(spefscr, flags);
-
-	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely((DoesSPEFSCR_TriggerException(spefscr)))) {
-		GenSPEFSCR_TriggerException(cpu);
-		return false;
-	};
+	// Handle EFP Specific Signaling/Rounding
+	bool status = cpu->EFPProcessOutput( result, flags );
 
 	// Write back the result
-	cpu->SetGPR(rd, result.queryValue());
+	cpu->SetGPR(rd, uint32_t(result.queryValue()));
 
 	return true;
 }
+
 efscth.disasm = {
 	os << "efscth r" << (unsigned int) rd << ", r" << (unsigned int) rb;
 }
