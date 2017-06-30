@@ -65,7 +65,7 @@ efscfuf.execute = {
 	// Write back the result
 	cpu->SetGPR(rd, result.queryValue());
 
-	return true;
+	return status;
 }
 
 efscfuf.disasm = {

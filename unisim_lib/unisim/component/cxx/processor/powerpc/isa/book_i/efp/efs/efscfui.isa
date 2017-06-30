@@ -59,7 +59,7 @@ efscfui.execute = {
 	// Write back the result
 	cpu->SetGPR(rd, result.queryValue());
 
-	return true;
+	return status;
 }
 efscfui.disasm = {
 	os << "efscfui r" << (unsigned int) rd << ", r" << (unsigned int) rb;
