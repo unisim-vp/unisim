@@ -124,8 +124,8 @@ static const unsigned int RN_DOWN = 3;
       bool doesAvoidInfty(bool fNegative) const { return true; }
       bool isDenormalizedAvoided() const { return true; }
       bool keepNaNSign() const { return false; }
-      bool produceMultNaNPositive() const { return true; }
-      bool produceDivNaNPositive() const { return true; }
+      bool produceMultNaNPositive() const { return false; }
+      bool produceDivNaNPositive() const { return false; }
       bool produceAddNaNPositive() const { return true; }
       bool produceSubNaNPositive() const { return true; }
       bool upApproximateInfty() const { return fUpApproximateInfty; }
