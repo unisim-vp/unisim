@@ -48,9 +48,7 @@ efsmin.execute = {
 	// Compute the result
 	if      (unlikely(a.isZero() and b.isZero()))
 		a.setZero(a.isNegative() or b.isNegative());
-	else if (b < a)
-		a = b;
-	else if (unlikely(a.isNaN() and not b.isNaN()))
+	else if ((b < a) or unlikely(a.isNaN() and (not b.isNaN() or (b.isNegative() and not a.isNegative()))))
 		a = b;
 
 	// Update the flags

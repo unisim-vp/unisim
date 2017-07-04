@@ -702,9 +702,16 @@ public:
 			output.setNegative(neg);
 		}
 		bool inexact = flags.isApproximate() and not spefscr.template Get<typename CPU::SPEFSCR::FINV>();
-		if (not spefscr.template SetOverflow( inexact and flags.isOverflow() ))
+		bool overflow = inexact and flags.isOverflow();
+		if (not spefscr.template SetOverflow( overflow ))
 			return false;
-		if (not spefscr.template SetUnderflow( inexact and flags.isUnderflow() ))
+		bool underflow = inexact and flags.isUnderflow();
+		if (output.isDenormalized())
+		{
+			output.setZero(output.isNegative());
+			inexact = true, underflow = true;
+		}
+		if (not spefscr.template SetUnderflow( underflow ))
 			return false;
 
 		if (inexact)
