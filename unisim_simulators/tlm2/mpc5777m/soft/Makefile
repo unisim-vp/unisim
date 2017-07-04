@@ -10,7 +10,7 @@ CFLAGS    = -g3 $(OPTFLAGS) -fdebug-prefix-map=$(PWD)=../ # -Wall
 LDFLAGS   = -static
 
 LIBS      =
-SRCS      = src/flashrchw.c src/main_Z4_2.c src/intc.c src/stm.c
+SRCS      = src/flashrchw.c src/main_Z4_2.c src/intc.c src/stm.c src/swt.c
 ASMS      = src/startup.S src/intc_sw_handlers.S src/vector.S
 
 COBJS     = $(patsubst %.c,%.o,$(SRCS))
@@ -40,6 +40,7 @@ COMPILER_ARGS= \
 -fsigned-char \
 -ffunction-sections \
 -fdata-sections \
+-fstrict-volatile-bitfields \
 -mcpu=e200z4 \
 -specs=ewl_c9x.specs \
 -mbig \
@@ -55,7 +56,6 @@ ASSEMBLER_ARGS= \
 -DMPC5777M \
 -DHW_INIT \
 -DI_CACHE \
--DDISABLE_SWT2 \
 -mcpu=e200z4 \
 -specs=ewl_c9x.specs \
 -mbig \
@@ -63,8 +63,7 @@ ASSEMBLER_ARGS= \
 -mregnames \
 --sysroot="$(S32DS)/e200_ewl2"
 
-#-DDISABLE_SWT2 \
-
+# -DDISABLE_SWT2
 
 .PHONY: all
 all: $(EXE)

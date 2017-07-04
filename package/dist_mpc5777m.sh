@@ -1019,6 +1019,7 @@ soft/include/derivative.h \
 soft/include/compiler_api.h \
 soft/include/intc.h \
 soft/include/stm.h \
+soft/include/swt.h \
 soft/src/57xx_ram.ld \
 soft/src/startup.S \
 soft/src/main_Z4_2.c \
@@ -1028,6 +1029,7 @@ soft/src/intc_sw_handlers.S \
 soft/src/flashrchw.c \
 soft/src/intc.c \
 soft/src/stm.c \
+soft/src/swt.c \
 soft/bin/boot.elf \
 sim_config.xml \
 gtkwave_init_script.tcl \

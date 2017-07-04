@@ -337,7 +337,7 @@ private:
 		virtual ReadWriteStatus Write(CustomReadWriteArg& custom_rw_arg, const uint32_t& value, const uint32_t& bit_enable)
 		{
 			// Register is read-only if either the SWT_CR[HLK] or SWT_CR[SLK] bits are set
-			if(this->template Get<typename SWT_CR::HLK>() || this->template Get<typename SWT_CR::SLK>())
+			if(this->swt->IsLocked())
 			{
 				// Locked
 				this->swt->logger << DebugWarning << "While writing to " << this->GetName() << ", " << RWS_WROR << " because register is locked" << EndDebugWarning;
@@ -663,6 +663,7 @@ private:
 	void RunDownCounterProcess();
 	void RefreshFreeze();
 	
+	bool IsLocked() const;
 	void UnlockSequence();
 	bool CheckWindow() const;
 	bool ServiceSequence(); 

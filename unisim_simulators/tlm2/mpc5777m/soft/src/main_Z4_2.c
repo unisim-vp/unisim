@@ -42,6 +42,7 @@ void hw_init(void)
 #endif /* defined(DEBUG_SECONDARY_CORES) */
 
 	intc_init();
+	swt_init(2);
 	stm_init(2);
 	intc_enable_external_interrupt();
 }

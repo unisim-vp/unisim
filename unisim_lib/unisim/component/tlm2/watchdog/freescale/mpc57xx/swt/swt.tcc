@@ -689,6 +689,12 @@ void SWT<CONFIG>::RefreshFreeze()
 }
 
 template <typename CONFIG>
+bool SWT<CONFIG>::IsLocked() const
+{
+	return swt_cr.template Get<typename SWT_CR::HLK>() || swt_cr.template Get<typename SWT_CR::SLK>();
+}
+
+template <typename CONFIG>
 void SWT<CONFIG>::UnlockSequence()
 {
 	switch(unlock_sequence_index)
