@@ -36,6 +36,7 @@
 #include "unisim/component/tlm2/interconnect/generic_router/router.tcc"
 #include <unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.tcc>
 #include <unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.tcc>
+#include <unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.tcc>
 
 Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	: unisim::kernel::tlm2::Simulator(name, argc, argv, LoadBuiltInConfig)
@@ -46,6 +47,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, interconnect(0)
 	, intc_0(0)
 	, stm_2(0)
+	, swt_2(0)
+	, swt_3(0)
 	, loader(0)
 	, debugger(0)
 	, gdb_server(0)
@@ -83,6 +86,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	//  - System Timer Module
 	stm_2 = new STM_2("STM_2", this);
+
+	//  - Software Watchdog Timers
+	swt_2 = new SWT_2("SWT_2", this);
+	swt_3 = new SWT_3("SWT_3", this);
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -138,12 +145,26 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	}
 	
 	RegisterPort(stm_2->m_clk);
-	RegisterPort(stm_2->debug_mode);
+	RegisterPort(stm_2->debug);
 	unsigned int channel_num;
 	for(channel_num = 0; channel_num < STM_2_CONFIG::NUM_CHANNELS; channel_num++)
 	{
 		RegisterPort(*stm_2->irq[channel_num]);
 	}
+
+	RegisterPort(swt_2->m_clk);
+	RegisterPort(swt_2->swt_reset_b);
+	RegisterPort(swt_2->stop);
+	RegisterPort(swt_2->debug);
+	RegisterPort(swt_2->irq);
+	RegisterPort(swt_2->reset_b);
+	
+	RegisterPort(swt_3->m_clk);
+	RegisterPort(swt_3->swt_reset_b);
+	RegisterPort(swt_3->stop);
+	RegisterPort(swt_3->debug);
+	RegisterPort(swt_3->irq);
+	RegisterPort(swt_3->reset_b);
 
 	//=========================================================================
 	//===                           Signal creation                         ===
@@ -155,8 +176,11 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateClock("clk_50MHz");
 	
 	CreateSignal("m_por", false);
-	CreateSignal("debug_mode", false);
-	CreateSignal("p_reset_b", false);
+	CreateSignal("stop", false);
+	CreateSignal("debug", false);
+	CreateSignal("reset_b", false);
+	CreateSignal<bool, sc_core::SC_MANY_WRITERS>("p_reset_b_2", false);
+	CreateSignal<bool, sc_core::SC_MANY_WRITERS>("p_reset_b_3", false);
 	CreateSignal("p_nmi_b", true);
 	CreateSignal("p_mcp_b", true);
 	CreateSignal("p_rstbase", sc_dt::sc_uint<30>(0));
@@ -182,11 +206,13 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*interconnect->init_socket[2])(flash->slave_sock);  // Crossbar <-> FLASH
 	(*interconnect->init_socket[3])(peripheral_core_2->s_ahb_if);  // Crossbar <-> S_AHB_IF<Peripheral_Core_2
 	(*interconnect->init_socket[4])(intc_0->peripheral_slave_if);// Crossbar <-> PERIPHERAL_SLAVE_IF<INTC_0
-	(*interconnect->init_socket[5])(stm_2->ahb_if);// Crossbar <-> AHB_IF<STM_2
+	(*interconnect->init_socket[5])(stm_2->peripheral_slave_if);// Crossbar <-> PERIPHERAL_SLAVE_IF<STM_2
+	(*interconnect->init_socket[6])(swt_2->peripheral_slave_if); // Crossbar <-> PERIPHERAL_SLAVE_IF<SWT_2
+	(*interconnect->init_socket[7])(swt_3->peripheral_slave_if); // Crossbar <-> PERIPHERAL_SLAVE_IF<SWT_3
 
 	Bind("HARDWARE.Peripheral_Core_2.m_clk"           , "HARDWARE.clk_200MHz");
 	Bind("HARDWARE.Peripheral_Core_2.m_por"           , "HARDWARE.m_por");
-	Bind("HARDWARE.Peripheral_Core_2.p_reset_b"       , "HARDWARE.p_reset_b");
+	Bind("HARDWARE.Peripheral_Core_2.p_reset_b"       , "HARDWARE.p_reset_b_2");
 	Bind("HARDWARE.Peripheral_Core_2.p_nmi_b"         , "HARDWARE.p_nmi_b");
 	Bind("HARDWARE.Peripheral_Core_2.p_mcp_b"         , "HARDWARE.p_mcp_b");
 	Bind("HARDWARE.Peripheral_Core_2.p_rstbase"       , "HARDWARE.p_rstbase");
@@ -198,14 +224,26 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.Peripheral_Core_2.p_iack"          , "HARDWARE.p_iack_2");
 	
 	Bind("HARDWARE.INTC_0.m_clk"           , "HARDWARE.clk_50MHz");
-	Bind("HARDWARE.INTC_0.reset_b"         , "HARDWARE.p_reset_b");
+	Bind("HARDWARE.INTC_0.reset_b"         , "HARDWARE.reset_b");
 	BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_irq_b"  , "HARDWARE.p_irq_b"  );
 	BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_avec_b" , "HARDWARE.p_avec_b" );
 	BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_voffset", "HARDWARE.p_voffset");
 	BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_iack"   , "HARDWARE.p_iack"   );
 	
 	Bind("HARDWARE.STM_2.m_clk"           , "HARDWARE.clk_50MHz");
-	Bind("HARDWARE.STM_2.debug_mode"      , "HARDWARE.debug_mode");
+	Bind("HARDWARE.STM_2.debug"           , "HARDWARE.debug");
+	
+	Bind("HARDWARE.SWT_2.m_clk"           , "HARDWARE.clk_50MHz");
+	Bind("HARDWARE.SWT_2.swt_reset_b"     , "HARDWARE.reset_b");
+	Bind("HARDWARE.SWT_2.stop"            , "HARDWARE.stop");
+	Bind("HARDWARE.SWT_2.debug"           , "HARDWARE.debug");
+	Bind("HARDWARE.SWT_2.reset_b"         , "HARDWARE.p_reset_b_2");
+	
+	Bind("HARDWARE.SWT_3.m_clk"           , "HARDWARE.clk_50MHz");
+	Bind("HARDWARE.SWT_3.swt_reset_b"     , "HARDWARE.reset_b");
+	Bind("HARDWARE.SWT_3.stop"            , "HARDWARE.stop");
+	Bind("HARDWARE.SWT_3.debug"           , "HARDWARE.debug");
+	Bind("HARDWARE.SWT_3.reset_b"         , "HARDWARE.p_reset_b_3");
 	
 	// Interrupt sources
 	
@@ -216,12 +254,21 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	//  32          TODO
 	//  ..          TODO
-	//  43          TODO
+	//  33          TODO
 	
 	InterruptSource(32);
 	InterruptSource(33);
-	InterruptSource(34);
-	InterruptSource(35);
+	
+	//  34      SWT_2 IR[TIF]
+	//  35      SWT_3 IR[TIF]
+	
+	InterruptSource(34, "HARDWARE.SWT_2.irq");
+	InterruptSource(35, "HARDWARE.SWT_3.irq");
+
+	//  36          TODO
+	//  ..          TODO
+	//  43          TODO
+	
 	InterruptSource(36);
 	InterruptSource(37);
 	InterruptSource(38);
@@ -230,7 +277,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	InterruptSource(41);
 	InterruptSource(42);
 	InterruptSource(43);
-	
+
 	//  44      STM_2 CIR0[CIF]     platform period timer 2_0
 	//  45      STM_2 CIR1[CIF]     platform period timer 2_1
 	//  46      STM_2 CIR2[CIF]     platform period timer 2_2
@@ -241,9 +288,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	InterruptSource(46, "HARDWARE.STM_2.irq_2");
 	InterruptSource(47, "HARDWARE.STM_2.irq_3");
 
-	// 48
+	// 48           TODO
 	// ..           TODO
-	// 964
+	// 964          TODO
 
 	InterruptSource(48);
 	InterruptSource(49);
@@ -1259,6 +1306,8 @@ Simulator::~Simulator()
 	if(interconnect) delete interconnect;
 	if(intc_0) delete intc_0;
 	if(stm_2) delete stm_2;
+	if(swt_2) delete swt_2;
+	if(swt_3) delete swt_3;
 	if(debugger) delete debugger;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
@@ -1273,10 +1322,10 @@ void Simulator::ResetProcess()
 {
 // 	sc_core::sc_signal<sc_dt::sc_uint<30> >& p_rstbase = GetSignal<sc_dt::sc_uint<30> >("HARDWARE.p_rstbase");
 // 	p_rstbase = sc_dt::sc_uint<30>(0x404100 /*0x13a0000*/ /*0x1500000*/ >> 2);
-	sc_core::sc_signal<bool>& p_reset_b = GetSignal<bool>("HARDWARE.p_reset_b");
-	p_reset_b = false;
+	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& p_reset_b_2 = GetSignal<bool, sc_core::SC_MANY_WRITERS>("HARDWARE.p_reset_b_2");
+	p_reset_b_2 = false;
 	wait(sc_core::sc_time(10.0, sc_core::SC_NS));
-	p_reset_b = true;
+	p_reset_b_2 = true;
 	
 // 	wait(sc_core::sc_time(40.0, sc_core::SC_NS));
 // 	sc_core::sc_signal<sc_dt::sc_uint<14> >& p_voffset = GetSignal<sc_dt::sc_uint<14> >("HARDWARE.p_voffset");
@@ -1417,6 +1466,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_8",  "range_start=\"0x52000000\" range_end=\"0x5fffffff\" output_port=\"3\" translation=\"0x0\""); // Peripheral_Core_2 Local Memory
 	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_9",  "range_start=\"0xfc040000\" range_end=\"0xfc04ffff\" output_port=\"4\" translation=\"0x0\""); // INTC
 	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_10", "range_start=\"0xfc070000\" range_end=\"0xfc073fff\" output_port=\"5\" translation=\"0x0\""); // STM_2
+	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_11", "range_start=\"0xfc058000\" range_end=\"0xfc05bfff\" output_port=\"6\" translation=\"0x0\""); // SWT_2
+	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_12", "range_start=\"0xfc05c000\" range_end=\"0xfc05ffff\" output_port=\"7\" translation=\"0x0\""); // SWT_3
 
 	// - Loader
 	simulator->SetVariable("loader.filename", "soft/bin/boot.elf");
@@ -1454,6 +1505,22 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.FLASH.org", 0x0);
 	simulator->SetVariable("HARDWARE.FLASH.bytesize", 8 * 1024 * 1024);
 	simulator->SetVariable("HARDWARE.FLASH.read-only", true);
+
+	//  - SWT_0
+	simulator->SetVariable("HARDWARE.SWT_0.swt-cr-reset-value", 0xff00010a);
+	simulator->SetVariable("HARDWARE.SWT_0.swt-to-reset-value", 0x0005fcd0);
+
+	//  - SWT_1
+	simulator->SetVariable("HARDWARE.SWT_1.swt-cr-reset-value", 0xff00010a);
+	simulator->SetVariable("HARDWARE.SWT_1.swt-to-reset-value", 0x0005fcd0);
+
+	//  - SWT_2
+	simulator->SetVariable("HARDWARE.SWT_2.swt-cr-reset-value", 0xff00011b);
+	simulator->SetVariable("HARDWARE.SWT_2.swt-to-reset-value", 0x0003fde0);
+	
+	//  - SWT_3
+	simulator->SetVariable("HARDWARE.SWT_3.swt-cr-reset-value", 0xff00010a);
+	simulator->SetVariable("HARDWARE.SWT_3.swt-to-reset-value", 0x0005fcd0);
 
 	//=========================================================================
 	//===                      Service run-time configuration               ===

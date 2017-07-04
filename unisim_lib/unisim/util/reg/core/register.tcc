@@ -964,7 +964,7 @@ ReadWriteStatus Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Write(const T
 		rws = ReadWriteStatus(rws | RWS_WOORV);
 	}
 	
-	if(!(_ACCESS & AF_SW_R))
+	if(!(_ACCESS & AF_SW_W))
 	{
 		// writing read-only register
 		rws = ReadWriteStatus(rws | RWS_WROR);

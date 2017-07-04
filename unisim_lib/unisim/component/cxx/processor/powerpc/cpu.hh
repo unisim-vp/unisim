@@ -1417,7 +1417,7 @@ public:
 		struct SPV : Field<SPV,6>  {}; // SP/Embedded FP/Vector available
 		struct WE  : Field<WE ,13> {}; // Wait state (Power management) enable
 		struct CE  : Field<CE ,14> {}; // Critical Interrupt Enable
-		struct EE  : Field<EE ,15> {}; // External Interrupt Enable
+		struct EE  : Field<EE ,16> {}; // External Interrupt Enable
 		struct PR  : Field<PR ,17> {}; // Problem State
 		struct FP  : Field<FP ,18> {}; // Floating-Point Available
 		struct ME  : Field<ME ,19> {}; // Machine Check Enable

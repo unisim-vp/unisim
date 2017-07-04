@@ -47,6 +47,7 @@
 #include <unisim/component/tlm2/interconnect/generic_router/config.hh>
 #include <unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.hh>
 #include <unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.hh>
+#include <unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.hh>
 
 // Class definition of kernel, services and interfaces
 #include <unisim/kernel/service/service.hh>
@@ -126,8 +127,8 @@ private:
 	{
 		typedef FSB_ADDRESS_TYPE ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 2;
-		static const unsigned int OUTPUT_SOCKETS = 6;
-		static const unsigned int MAX_NUM_MAPPINGS = 11;
+		static const unsigned int OUTPUT_SOCKETS = 8;
+		static const unsigned int MAX_NUM_MAPPINGS = 13;
 		static const unsigned int BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;
 	};
@@ -146,6 +147,18 @@ private:
 		static const unsigned int BUSWIDTH = 64; // FIXME: INTC will be on PBRIDGE which is 32-bit width
 	};
 
+	struct SWT_2_CONFIG
+	{
+		static const unsigned int NUM_MASTERS = 8; // FIXME: probably 4
+		static const unsigned int BUSWIDTH = 64; // FIXME: SWT will be on PBRIDGE which is 32-bit width
+	};
+	
+	struct SWT_3_CONFIG
+	{
+		static const unsigned int NUM_MASTERS = 8; // FIXME: probably 4
+		static const unsigned int BUSWIDTH = 64; // FIXME: SWT will be on PBRIDGE which is 32-bit width
+	};
+
 	//=========================================================================
 	//===                     Aliases for components classes                ===
 	//=========================================================================
@@ -160,6 +173,8 @@ private:
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<INTERCONNECT_CONFIG> INTERCONNECT;
 	typedef unisim::component::tlm2::interrupt::freescale::mpc57xx::intc::INTC<INTC_0_CONFIG> INTC_0;
 	typedef unisim::component::tlm2::timer::freescale::mpc57xx::stm::STM<STM_2_CONFIG> STM_2;
+	typedef unisim::component::tlm2::watchdog::freescale::mpc57xx::swt::SWT<SWT_2_CONFIG> SWT_2;
+	typedef unisim::component::tlm2::watchdog::freescale::mpc57xx::swt::SWT<SWT_3_CONFIG> SWT_3;
 
 	//=========================================================================
 	//===                           Components                              ===
@@ -176,8 +191,11 @@ private:
 	INTERCONNECT *interconnect;
 	//  - Interrupt Controller
 	INTC_0 *intc_0;
-	//  - System Timer Mode
+	//  - System Timer Module
 	STM_2 *stm_2;
+	//  - Software Watchdog Timers
+	SWT_2 *swt_2;
+	SWT_3 *swt_3;
 	
 	//=========================================================================
 	//===                            Services                               ===

@@ -89,30 +89,30 @@ public:
 	virtual void Output(std::ostream& os, bool force_output = false) = 0;
 };
 
-template <typename T>
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY = sc_core::SC_ONE_WRITER>
 class InputInstrument : public InputInstrumentBase
 {
 public:
-	InputInstrument(const std::string& name, sc_core::sc_signal<T> *signal);
+	InputInstrument(const std::string& name, sc_core::sc_signal<T, WRITER_POLICY> *signal);
 	
 	virtual void Inject();
 	virtual void Input(std::istream& is);
 private:
-	sc_core::sc_signal<T> *signal;
+	sc_core::sc_signal<T, WRITER_POLICY> *signal;
 	T value;
 	bool value_changed;
 };
 
-template <typename T>
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY = sc_core::SC_ONE_WRITER>
 class OutputInstrument : public OutputInstrumentBase
 {
 public:
-	OutputInstrument(const std::string& name, const sc_core::sc_signal<T> *signal);
+	OutputInstrument(const std::string& name, const sc_core::sc_signal<T, WRITER_POLICY> *signal);
 	
 	virtual void Sample();
 	virtual void Output(std::ostream& os, bool force_output);
 private:
-	const sc_core::sc_signal<T> *signal;
+	const sc_core::sc_signal<T, WRITER_POLICY> *signal;
 	T latched_value;
 	T sample_value;
 };
@@ -129,7 +129,7 @@ public:
 
 class Instrumenter;
 
-template <typename T>
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY = sc_core::SC_ONE_WRITER>
 class Typer : public TyperBase
 {
 public:
@@ -152,8 +152,11 @@ public:
 	
 	Clock& CreateClock(const std::string& clock_name);
 	template <typename T> sc_core::sc_signal<T>& CreateSignal(const T& init_value);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& CreateSignal(const T& init_value);
 	template <typename T> sc_core::sc_signal<T>& CreateSignal(const std::string& signal_name, const T& init_value);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& CreateSignal(const std::string& signal_name, const T& init_value);
 	template <typename T> void CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value);
 
 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void RegisterSignal(sc_core::sc_signal<T, WRITER_POLICY> *signal);
 	void RegisterPort(sc_core::sc_port_base& port);
@@ -224,12 +227,19 @@ public:
 	sc_core::sc_event next_input_instrumentation_event;
 
 	template <typename T> sc_core::sc_signal<T>& GetSignal(const std::string& signal_name);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& GetSignal(const std::string& signal_name);
 	template <typename T> sc_core::sc_signal<T>& GetSignal(const std::string& signal_array_name, unsigned int idx);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& GetSignal(const std::string& signal_array_name, unsigned int idx);
 	template <typename T> sc_core::sc_signal<T> *TryGetSignal(const std::string& signal_name);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY> *TryGetSignal(const std::string& signal_name);
 	template <typename T> sc_core::sc_signal<T> *TryGetSignal(const std::string& signal_array_name, unsigned int idx);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY> *TryGetSignal(const std::string& signal_array_name, unsigned int idx);
 	template <typename T> void MatchSignal(const std::string& signal_name_pattern, std::vector<sc_core::sc_signal<T> *>& vec_signals);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void MatchSignal(const std::string& signal_name_pattern, std::vector<sc_core::sc_signal<T, WRITER_POLICY> *>& vec_signals);
 	template <typename T> bool SignalIsA(const std::string& signal_name, const T& sample);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> bool SignalIsA(const std::string& signal_name, const T& sample);
 	template <typename T> bool TryTraceSignal(const std::string& signal_name);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> bool TryTraceSignal(const std::string& signal_name);
 	bool IsInInputInstrumentSet(const std::string& name) const;
 	void GenerateGTKWaveInitScript(const std::string& filename, int zoom_factor) const;
 	bool Match(const std::string& p, const std::string& s) const;
@@ -240,8 +250,11 @@ public:
 	void OutputInstrumentationProcess();
 	void InputInstrumentationProcess();
 	template <typename T> void SignalTeeProcess(sc_core::sc_signal<T> *original_signal, sc_core::sc_signal<T> *injected_signal, sc_core::sc_signal<T> *signal);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void SignalTeeProcess(sc_core::sc_signal<T, WRITER_POLICY> *original_signal, sc_core::sc_signal<T, WRITER_POLICY> *injected_signal, sc_core::sc_signal<T, WRITER_POLICY> *signal);
 	template <typename T> bool TryInstrumentInputSignal(const std::string& signal_name);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> bool TryInstrumentInputSignal(const std::string& signal_name);
 	template <typename T> bool TryInstrumentOutputSignal(const std::string& signal_name);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> bool TryInstrumentOutputSignal(const std::string& signal_name);
 	void InstrumentOutputSignal(const std::string& signal_name);
 	bool InstrumentInputSignal(const std::string& signal_name);
 	
@@ -261,10 +274,15 @@ public:
 	
 	Clock& CreateClock(const std::string& clock_name);
 	template <typename T> sc_core::sc_signal<T>& CreateSignal(const T& init_value);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& CreateSignal(const T& init_value);
 	template <typename T> sc_core::sc_signal<T>& CreateSignal(const std::string& signal_name, const T& init_value);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& CreateSignal(const std::string& signal_name, const T& init_value);
 	template <typename T> void CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value);
 	template <typename T> sc_core::sc_signal<T>& GetSignal(const std::string& signal_name);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& GetSignal(const std::string& signal_name);
 	template <typename T> sc_core::sc_signal<T>& GetSignal(const std::string& signal_array_name, unsigned int idx);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& GetSignal(const std::string& signal_array_name, unsigned int idx);
 	
 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void RegisterSignal(sc_core::sc_signal<T, WRITER_POLICY> *signal);
 	template <typename T> void RegisterPort(sc_core::sc_port_b<sc_core::sc_signal_in_if<T> >& in_port);
@@ -283,17 +301,32 @@ private:
 
 template <typename T> sc_core::sc_signal<T>& Simulator::CreateSignal(const T& init_value)
 {
-	return instrumenter->CreateSignal(init_value);
+	return instrumenter->CreateSignal<T>(init_value);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& Simulator::CreateSignal(const T& init_value)
+{
+	return instrumenter->CreateSignal<T, WRITER_POLICY>(init_value);
 }
 
 template <typename T> sc_core::sc_signal<T>& Simulator::CreateSignal(const std::string& signal_name, const T& init_value)
 {
-	return instrumenter->CreateSignal(signal_name, init_value);
+	return instrumenter->CreateSignal<T>(signal_name, init_value);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& Simulator::CreateSignal(const std::string& signal_name, const T& init_value)
+{
+	return instrumenter->CreateSignal<T, WRITER_POLICY>(signal_name, init_value);
 }
 
 template <typename T> void Simulator::CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value)
 {
-	instrumenter->CreateSignalArray(signal_array_dim, signal_array_name, init_value);
+	instrumenter->CreateSignalArray<T>(signal_array_dim, signal_array_name, init_value);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void Simulator::CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value)
+{
+	instrumenter->CreateSignalArray<T, WRITER_POLICY>(signal_array_dim, signal_array_name, init_value);
 }
 
 template <typename T> sc_core::sc_signal<T>& Simulator::GetSignal(const std::string& signal_name)
@@ -301,9 +334,19 @@ template <typename T> sc_core::sc_signal<T>& Simulator::GetSignal(const std::str
 	return instrumenter->GetSignal<T>(signal_name);
 }
 
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& Simulator::GetSignal(const std::string& signal_name)
+{
+	return instrumenter->GetSignal<T, WRITER_POLICY>(signal_name);
+}
+
 template <typename T> sc_core::sc_signal<T>& Simulator::GetSignal(const std::string& signal_array_name, unsigned int idx)
 {
 	return instrumenter->GetSignal<T>(signal_array_name, idx);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& Simulator::GetSignal(const std::string& signal_array_name, unsigned int idx)
+{
+	return instrumenter->GetSignal<T, WRITER_POLICY>(signal_array_name, idx);
 }
 
 template <typename T, sc_core::sc_writer_policy WRITER_POLICY> void Simulator::RegisterSignal(sc_core::sc_signal<T, WRITER_POLICY> *signal)
@@ -351,8 +394,8 @@ inline OutputInstrumentBase::OutputInstrumentBase(const std::string& name)
 {
 }
 
-template <typename T>
-InputInstrument<T>::InputInstrument(const std::string& name, sc_core::sc_signal<T> *_signal)
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+InputInstrument<T, WRITER_POLICY>::InputInstrument(const std::string& name, sc_core::sc_signal<T, WRITER_POLICY> *_signal)
 	: InputInstrumentBase(name)
 	, signal(_signal)
 	, value(signal->read())
@@ -360,21 +403,21 @@ InputInstrument<T>::InputInstrument(const std::string& name, sc_core::sc_signal<
 {
 }
 
-template <typename T>
-void InputInstrument<T>::Inject()
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+void InputInstrument<T, WRITER_POLICY>::Inject()
 {
 	if(value_changed)
 	{
 #if DEBUG_INSTRUMENTER >= 2
-		std::cout << "InputInstrument<T>::Inject(): At " << sc_core::sc_time_stamp() << ", " << signal->name() << " <- '" << value << "'" << std::endl;
+		std::cout << "InputInstrument<T, WRITER_POLICY>::Inject(): At " << sc_core::sc_time_stamp() << ", " << signal->name() << " <- '" << value << "'" << std::endl;
 #endif
 		signal->write(value);
 		value_changed = false;
 	}
 }
 
-template <typename T>
-void InputInstrument<T>::Input(std::istream& is)
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+void InputInstrument<T, WRITER_POLICY>::Input(std::istream& is)
 {
 	T tmp_value;
 	
@@ -389,8 +432,8 @@ void InputInstrument<T>::Input(std::istream& is)
 	}
 }
 
-template <typename T>
-OutputInstrument<T>::OutputInstrument(const std::string& name, const sc_core::sc_signal<T> *_signal)
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+OutputInstrument<T, WRITER_POLICY>::OutputInstrument(const std::string& name, const sc_core::sc_signal<T, WRITER_POLICY> *_signal)
 	: OutputInstrumentBase(name)
 	, signal(_signal)
 	, latched_value(signal->read())
@@ -398,14 +441,14 @@ OutputInstrument<T>::OutputInstrument(const std::string& name, const sc_core::sc
 {
 }
 
-template <typename T>
-void OutputInstrument<T>::Sample()
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+void OutputInstrument<T, WRITER_POLICY>::Sample()
 {
 	sample_value = signal->read();
 }
 
-template <typename T>
-void OutputInstrument<T>::Output(std::ostream& os, bool force_output)
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+void OutputInstrument<T, WRITER_POLICY>::Output(std::ostream& os, bool force_output)
 {
 	if(force_output || (sample_value != latched_value))
 	{
@@ -414,53 +457,65 @@ void OutputInstrument<T>::Output(std::ostream& os, bool force_output)
 	}
 }
 
-template <typename T>
-Typer<T>::Typer(Instrumenter *_instrumenter)
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+Typer<T, WRITER_POLICY>::Typer(Instrumenter *_instrumenter)
 	: instrumenter(_instrumenter)
 {
 }
 
-template <typename T>
-bool Typer<T>::TryTraceSignal(const std::string& signal_name)
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+bool Typer<T, WRITER_POLICY>::TryTraceSignal(const std::string& signal_name)
 {
-	return instrumenter->TryTraceSignal<T>(signal_name);
+	return instrumenter->TryTraceSignal<T, WRITER_POLICY>(signal_name);
 }
 
-template <typename T>
-bool Typer<T>::TryInstrumentInputSignal(const std::string& signal_name)
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+bool Typer<T, WRITER_POLICY>::TryInstrumentInputSignal(const std::string& signal_name)
 {
-	return instrumenter->TryInstrumentInputSignal<T>(signal_name);
+	return instrumenter->TryInstrumentInputSignal<T, WRITER_POLICY>(signal_name);
 }
 
-template <typename T>
-bool Typer<T>::TryInstrumentOutputSignal(const std::string& signal_name)
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+bool Typer<T, WRITER_POLICY>::TryInstrumentOutputSignal(const std::string& signal_name)
 {
-	return instrumenter->TryInstrumentOutputSignal<T>(signal_name);
+	return instrumenter->TryInstrumentOutputSignal<T, WRITER_POLICY>(signal_name);
 }
 
-template <typename T>
-bool Typer<T>::TryBind(const std::string& port_name, const std::string& signal_name)
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+bool Typer<T, WRITER_POLICY>::TryBind(const std::string& port_name, const std::string& signal_name)
 {
-	return instrumenter->TryBind<T>(port_name, signal_name);
+	return instrumenter->TryBind<T>(port_name, signal_name); // Note: Binding does not depend on writer policy
 }
 
 template <typename T>
 sc_core::sc_signal<T>& Instrumenter::CreateSignal(const T& init_value)
 {
-	sc_core::sc_signal<T> *signal = new sc_core::sc_signal<T>();
+	return CreateSignal<T, sc_core::SC_ONE_WRITER>(init_value);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+sc_core::sc_signal<T, WRITER_POLICY>& Instrumenter::CreateSignal(const T& init_value)
+{
+	sc_core::sc_signal<T, WRITER_POLICY> *signal = new sc_core::sc_signal<T, WRITER_POLICY>();
 #if DEBUG_INSTRUMENTER >= 1
 	std::cout << "Creating Signal \"" << signal->name() << "\" <- '" << init_value << "'" << std::endl;
 #endif
 	signal_pool[signal->name()] = signal;
 	*signal = init_value;
 	
-	typers[signal->name()] = new Typer<T>(this);
+	typers[signal->name()] = new Typer<T, WRITER_POLICY>(this);
 	
 	return *signal;
 }
 
 template <typename T>
 sc_core::sc_signal<T>& Instrumenter::CreateSignal(const std::string& signal_name, const T& init_value)
+{
+	return CreateSignal<T, sc_core::SC_ONE_WRITER>(signal_name, init_value);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+sc_core::sc_signal<T, WRITER_POLICY>& Instrumenter::CreateSignal(const std::string& signal_name, const T& init_value)
 {
 	std::map<std::string, sc_core::sc_interface *>::iterator signal_pool_it = signal_pool.find(signal_name);
 	if(signal_pool_it != signal_pool.end())
@@ -469,31 +524,31 @@ sc_core::sc_signal<T>& Instrumenter::CreateSignal(const std::string& signal_name
 		throw std::runtime_error("Internal error!");
 	}
 	
-	sc_core::sc_signal<T> *signal = new sc_core::sc_signal<T>(signal_name.c_str());
+	sc_core::sc_signal<T, WRITER_POLICY> *signal = new sc_core::sc_signal<T, WRITER_POLICY>(signal_name.c_str());
 #if DEBUG_INSTRUMENTER >= 1
 	std::cout << "Creating Signal \"" << signal->name() << "\" <- '" << init_value << "'" << std::endl;
 #endif
 	signal_pool[signal->name()] = signal;
 	*signal = init_value;
 	
-	typers[signal->name()] = new Typer<T>(this);
+	typers[signal->name()] = new Typer<T, WRITER_POLICY>(this);
 
 	if(enable_input_instrumentation)
 	{
 		std::string full_signal_name(signal->name());
 		
-		if(IsInInputInstrumentSet(full_signal_name)/* input_instrumentation_set.find(full_signal_name) != input_instrumentation_set.end()*/)
+		if(IsInInputInstrumentSet(full_signal_name))
 		{
 			// signal is instrumented for input
 			std::stringstream original_signal_name_sstr;
 			original_signal_name_sstr << "original_" << signal_name;
-			sc_core::sc_signal<T> *original_signal = new sc_core::sc_signal<T>((signal_name + "_original").c_str());
+			sc_core::sc_signal<T, WRITER_POLICY> *original_signal = new sc_core::sc_signal<T, WRITER_POLICY>((signal_name + "_original").c_str());
 			signal_pool[original_signal->name()] = original_signal;
 			*original_signal = init_value;
 			
 			std::stringstream injected_signal_name_sstr;
 			injected_signal_name_sstr << "injected_" << signal_name;
-			sc_core::sc_signal<T> *injected_signal = new sc_core::sc_signal<T>((signal_name + "_injected").c_str());
+			sc_core::sc_signal<T, WRITER_POLICY> *injected_signal = new sc_core::sc_signal<T, WRITER_POLICY>((signal_name + "_injected").c_str());
 			signal_pool[injected_signal->name()] = injected_signal;
 			*injected_signal = init_value;
 		}
@@ -505,6 +560,12 @@ sc_core::sc_signal<T>& Instrumenter::CreateSignal(const std::string& signal_name
 template <typename T>
 void Instrumenter::CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value)
 {
+	CreateSignalArray<T, sc_core::SC_ONE_WRITER>(signal_array_dim, signal_array_name, init_value);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+void Instrumenter::CreateSignalArray(unsigned int signal_array_dim, const std::string& signal_array_name, const T& init_value)
+{
 	unsigned int signal_array_index;
 	
 	for(signal_array_index = 0; signal_array_index < signal_array_dim; signal_array_index++)
@@ -512,12 +573,18 @@ void Instrumenter::CreateSignalArray(unsigned int signal_array_dim, const std::s
 		std::stringstream sstr;
 		sstr << signal_array_name << "_" << signal_array_index;
 		std::string signal_name(sstr.str());
-		CreateSignal(signal_name, init_value);
+		CreateSignal<T, WRITER_POLICY>(signal_name, init_value);
 	}
 }
 
 template <typename T>
 sc_core::sc_signal<T>& Instrumenter::GetSignal(const std::string& signal_name)
+{
+	return GetSignal<T, sc_core::SC_ONE_WRITER>(signal_name);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+sc_core::sc_signal<T, WRITER_POLICY>& Instrumenter::GetSignal(const std::string& signal_name)
 {
 	std::map<std::string, sc_core::sc_interface *>::iterator signal_pool_it = signal_pool.find(signal_name);
 	if(signal_pool_it != signal_pool.end())
@@ -526,7 +593,7 @@ sc_core::sc_signal<T>& Instrumenter::GetSignal(const std::string& signal_name)
 		
 		if(signal_if)
 		{
-			sc_core::sc_signal<T> *signal = dynamic_cast<sc_core::sc_signal<T> *>(signal_if);
+			sc_core::sc_signal<T, WRITER_POLICY> *signal = dynamic_cast<sc_core::sc_signal<T, WRITER_POLICY> *>(signal_if);
 			
 			if(signal) return *signal;
 			
@@ -537,22 +604,34 @@ sc_core::sc_signal<T>& Instrumenter::GetSignal(const std::string& signal_name)
 	
 	std::cerr << "ERROR! Signal \"" << signal_name << "\" not found" << std::endl;
 	throw std::runtime_error("Internal error!");
-	static sc_core::sc_signal<T> dummy_signal;
+	static sc_core::sc_signal<T, WRITER_POLICY> dummy_signal;
 	return dummy_signal;
 }
 
 template <typename T>
 sc_core::sc_signal<T>& Instrumenter::GetSignal(const std::string& signal_array_name, unsigned int signal_array_index)
 {
+	return GetSignal<T, sc_core::SC_ONE_WRITER>(signal_array_name, signal_array_index);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+sc_core::sc_signal<T, WRITER_POLICY>& Instrumenter::GetSignal(const std::string& signal_array_name, unsigned int signal_array_index)
+{
 	std::stringstream sstr;
 	sstr << signal_array_name << "_" << signal_array_index;
 	std::string signal_name(sstr.str());
 
-	return GetSignal<T>(signal_name);
+	return GetSignal<T, WRITER_POLICY>(signal_name);
 }
 
 template <typename T>
 sc_core::sc_signal<T> *Instrumenter::TryGetSignal(const std::string& signal_name)
+{
+	return TryGetSignal<T, sc_core::SC_ONE_WRITER>(signal_name);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+sc_core::sc_signal<T, WRITER_POLICY> *Instrumenter::TryGetSignal(const std::string& signal_name)
 {
 	std::map<std::string, sc_core::sc_interface *>::iterator signal_pool_it = signal_pool.find(signal_name);
 	if(signal_pool_it != signal_pool.end())
@@ -561,7 +640,7 @@ sc_core::sc_signal<T> *Instrumenter::TryGetSignal(const std::string& signal_name
 		
 		if(signal_if)
 		{
-			sc_core::sc_signal<T> *signal = dynamic_cast<sc_core::sc_signal<T> *>(signal_if);
+			sc_core::sc_signal<T, WRITER_POLICY> *signal = dynamic_cast<sc_core::sc_signal<T, WRITER_POLICY> *>(signal_if);
 			
 			return signal;
 		}
@@ -573,15 +652,27 @@ sc_core::sc_signal<T> *Instrumenter::TryGetSignal(const std::string& signal_name
 template <typename T>
 sc_core::sc_signal<T> *Instrumenter::TryGetSignal(const std::string& signal_array_name, unsigned int signal_array_index)
 {
+	return TryGetSignal<T, sc_core::SC_ONE_WRITER>(signal_array_name, signal_array_index);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+sc_core::sc_signal<T, WRITER_POLICY> *Instrumenter::TryGetSignal(const std::string& signal_array_name, unsigned int signal_array_index)
+{
 	std::stringstream sstr;
 	sstr << signal_array_name << "_" << signal_array_index;
 	std::string signal_name(sstr.str());
 
-	return TryGetSignal<T>(signal_name);
+	return TryGetSignal<T, WRITER_POLICY>(signal_name);
 }
 
 template <typename T>
 void Instrumenter::MatchSignal(const std::string& signal_name_pattern, std::vector<sc_core::sc_signal<T> *>& vec_signals)
+{
+	MatchSignal<T, sc_core::SC_ONE_WRITER>(signal_name_pattern, vec_signals);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+void Instrumenter::MatchSignal(const std::string& signal_name_pattern, std::vector<sc_core::sc_signal<T, WRITER_POLICY> *>& vec_signals)
 {
 	std::map<std::string, sc_core::sc_interface *>::iterator signal_pool_it;
 	
@@ -589,7 +680,7 @@ void Instrumenter::MatchSignal(const std::string& signal_name_pattern, std::vect
 	{
 		sc_core::sc_interface *signal_if = (*signal_pool_it).second;
 		
-		sc_core::sc_signal<T> *candidate_signal = dynamic_cast<sc_core::sc_signal<T> *>(signal_if);
+		sc_core::sc_signal<T, WRITER_POLICY> *candidate_signal = dynamic_cast<sc_core::sc_signal<T, WRITER_POLICY> *>(signal_if);
 		
 		if(candidate_signal)
 		{
@@ -608,6 +699,12 @@ void Instrumenter::MatchSignal(const std::string& signal_name_pattern, std::vect
 template <typename T>
 bool Instrumenter::SignalIsA(const std::string& signal_name, const T& sample)
 {
+	return SignalIsA<T, sc_core::SC_ONE_WRITER>(signal_name, sample);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+bool Instrumenter::SignalIsA(const std::string& signal_name, const T& sample)
+{
 	std::map<std::string, sc_core::sc_interface *>::iterator signal_pool_it = signal_pool.find(signal_name);
 	if(signal_pool_it != signal_pool.end())
 	{
@@ -615,7 +712,7 @@ bool Instrumenter::SignalIsA(const std::string& signal_name, const T& sample)
 		
 		if(signal_if)
 		{
-			sc_core::sc_signal<T> *signal = dynamic_cast<sc_core::sc_signal<T> *>(signal_if);
+			sc_core::sc_signal<T, WRITER_POLICY> *signal = dynamic_cast<sc_core::sc_signal<T, WRITER_POLICY> *>(signal_if);
 			
 			if(signal) return true;
 		}
@@ -627,6 +724,12 @@ bool Instrumenter::SignalIsA(const std::string& signal_name, const T& sample)
 template <typename T>
 bool Instrumenter::TryTraceSignal(const std::string& signal_name)
 {
+	return TryTraceSignal<T, sc_core::SC_ONE_WRITER>(signal_name);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+bool Instrumenter::TryTraceSignal(const std::string& signal_name)
+{
 	std::map<std::string, sc_core::sc_interface *>::iterator signal_pool_it = signal_pool.find(signal_name);
 	if(signal_pool_it != signal_pool.end())
 	{
@@ -634,7 +737,7 @@ bool Instrumenter::TryTraceSignal(const std::string& signal_name)
 		
 		if(signal_if)
 		{
-			sc_core::sc_signal<T> *signal = dynamic_cast<sc_core::sc_signal<T> *>(signal_if);
+			sc_core::sc_signal<T, WRITER_POLICY> *signal = dynamic_cast<sc_core::sc_signal<T, WRITER_POLICY> *>(signal_if);
 			
 			if(signal)
 			{
@@ -657,7 +760,7 @@ void Instrumenter::RegisterSignal(sc_core::sc_signal<T, WRITER_POLICY> *signal)
 	std::cout << "Registering Signal \"" << signal->name() << "\"" << std::endl;
 #endif
 	signal_pool[signal->name()] = signal;
-	typers[signal->name()] = new Typer<T>(this);
+	typers[signal->name()] = new Typer<T, WRITER_POLICY>(this);
 }
 
 template <typename T>
@@ -795,18 +898,24 @@ bool Instrumenter::TryBind(const std::string& port_name, const std::string& sign
 template <typename T>
 bool Instrumenter::TryInstrumentInputSignal(const std::string& signal_name)
 {
-	sc_core::sc_signal<T> *signal = TryGetSignal<T>(signal_name);
+	return TryInstrumentInputSignal<T, sc_core::SC_ONE_WRITER>(signal_name);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+bool Instrumenter::TryInstrumentInputSignal(const std::string& signal_name)
+{
+	sc_core::sc_signal<T, WRITER_POLICY> *signal = TryGetSignal<T, WRITER_POLICY>(signal_name);
 	
 	if(signal)
 	{
-		sc_core::sc_signal<T> *original_signal = TryGetSignal<T>((signal_name + "_original").c_str());
-		sc_core::sc_signal<T> *injected_signal = TryGetSignal<T>((signal_name + "_injected").c_str());
+		sc_core::sc_signal<T, WRITER_POLICY> *original_signal = TryGetSignal<T, WRITER_POLICY>((signal_name + "_original").c_str());
+		sc_core::sc_signal<T, WRITER_POLICY> *injected_signal = TryGetSignal<T, WRITER_POLICY>((signal_name + "_injected").c_str());
 		if(!original_signal || !injected_signal) throw std::runtime_error("Internal error! can't get either original or injected signal");
 		
 #if DEBUG_INSTRUMENTER >= 1
 		std::cout << "Instrumenting Signal \"" << signal->name() << "\" for input" << std::endl;
 #endif
-		InputInstrument<T> *instrument = new InputInstrument<T>(signal_name, injected_signal);
+		InputInstrument<T, WRITER_POLICY> *instrument = new InputInstrument<T, WRITER_POLICY>(signal_name, injected_signal);
 		input_instruments.push_back(instrument);
 		
 		sc_core::sc_spawn_options signal_tee_process_spawn_options;
@@ -814,7 +923,7 @@ bool Instrumenter::TryInstrumentInputSignal(const std::string& signal_name)
 		signal_tee_process_spawn_options.set_sensitivity(original_signal);
 		signal_tee_process_spawn_options.set_sensitivity(injected_signal);
 		
-		sc_core::sc_spawn(sc_bind(&Instrumenter::SignalTeeProcess<T>, this, original_signal, injected_signal, signal), sc_core::sc_gen_unique_name("signal_tee_process"), &signal_tee_process_spawn_options);
+		sc_core::sc_spawn(sc_bind(&Instrumenter::SignalTeeProcess<T, WRITER_POLICY>, this, original_signal, injected_signal, signal), sc_core::sc_gen_unique_name("signal_tee_process"), &signal_tee_process_spawn_options);
 		return true;
 	}
 	
@@ -824,19 +933,25 @@ bool Instrumenter::TryInstrumentInputSignal(const std::string& signal_name)
 template <typename T>
 bool Instrumenter::TryInstrumentOutputSignal(const std::string& signal_name)
 {
+	return TryInstrumentOutputSignal<T, sc_core::SC_ONE_WRITER>(signal_name);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+bool Instrumenter::TryInstrumentOutputSignal(const std::string& signal_name)
+{
 	bool status = false;
-	std::vector<sc_core::sc_signal<T> *> sv;
-	MatchSignal<T>(signal_name, sv);
-	typename std::vector<sc_core::sc_signal<T> *>::const_iterator sv_it;
+	std::vector<sc_core::sc_signal<T, WRITER_POLICY> *> sv;
+	MatchSignal<T, WRITER_POLICY>(signal_name, sv);
+	typename std::vector<sc_core::sc_signal<T, WRITER_POLICY> *>::const_iterator sv_it;
 	for(sv_it = sv.begin(); sv_it != sv.end(); sv_it++)
 	{
 		
-		sc_core::sc_signal<T> *matched_signal = *sv_it;
+		sc_core::sc_signal<T, WRITER_POLICY> *matched_signal = *sv_it;
 #if DEBUG_INSTRUMENTER >= 1
 		std::cout << "Instrumenting Signal \"" << matched_signal->name() << "\" for output" << std::endl;
 #endif
 		std::string matched_signal_name(matched_signal->name());
-		OutputInstrument<T> *instrument = new OutputInstrument<T>(matched_signal_name, matched_signal);
+		OutputInstrument<T, WRITER_POLICY> *instrument = new OutputInstrument<T, WRITER_POLICY>(matched_signal_name, matched_signal);
 		output_instruments.push_back(instrument);
 		output_instrumentation_process_spawn_options.set_sensitivity(matched_signal);
 		status = true;
@@ -847,6 +962,12 @@ bool Instrumenter::TryInstrumentOutputSignal(const std::string& signal_name)
 
 template <typename T>
 void Instrumenter::SignalTeeProcess(sc_core::sc_signal<T> *original_signal, sc_core::sc_signal<T> *injected_signal, sc_core::sc_signal<T> *signal)
+{
+	SignalTeeProcess<T, sc_core::SC_ONE_WRITER>(original_signal, injected_signal, signal);
+}
+
+template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
+void Instrumenter::SignalTeeProcess(sc_core::sc_signal<T, WRITER_POLICY> *original_signal, sc_core::sc_signal<T, WRITER_POLICY> *injected_signal, sc_core::sc_signal<T, WRITER_POLICY> *signal)
 {
 	const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
 	

@@ -515,6 +515,9 @@ private:
 template <typename CUSTOM_RW_ARG>
 class AddressableRegisterBase
 {
+public:
+	virtual void ShortPrettyPrint(std::ostream& os) = 0;
+	virtual void LongPrettyPrint(std::ostream& os) = 0;
 protected:
 	virtual unsigned int __ARB_GetSize__() const = 0;
 	virtual const std::string& __ARB_GetName__() const = 0;
@@ -522,8 +525,6 @@ protected:
 	virtual ReadWriteStatus __ARB_Read__(CUSTOM_RW_ARG *custom_rw_arg, unsigned char *data_ptr, const unsigned char *bit_enable_ptr) = 0;
 	virtual void __ARB_DebugWrite__(CUSTOM_RW_ARG *custom_rw_arg, const unsigned char *data_ptr, const unsigned char *bit_enable_ptr) = 0;
 	virtual void __ARB_DebugRead__(CUSTOM_RW_ARG *custom_rw_arg, unsigned char *data_ptr, const unsigned char *bit_enable_ptr) = 0;
-	virtual void ShortPrettyPrint(std::ostream& os) = 0;
-	virtual void LongPrettyPrint(std::ostream& os) = 0;
 	
 	template <typename ADDRESS, typename _CUSTOM_RW_ARG> friend class AddressableRegisterHandle;
 	template <typename ADDRESS, typename _CUSTOM_RW_ARG> friend class RegisterAddressMap;
@@ -556,6 +557,9 @@ public:
 
 	using Super::operator =;
 
+public:
+	virtual void ShortPrettyPrint(std::ostream& os);
+	virtual void LongPrettyPrint(std::ostream& os);
 protected:
 	virtual ReadWriteStatus Write(const typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
 	virtual ReadWriteStatus Read(typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
@@ -565,8 +569,6 @@ protected:
 	virtual ReadWriteStatus Read(CUSTOM_RW_ARG& custom_rw_arg, typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
 	virtual void DebugWrite(CUSTOM_RW_ARG& custom_rw_arg, const typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
 	virtual void DebugRead(CUSTOM_RW_ARG& custom_rw_arg, typename Super::TYPE& value, const typename Super::TYPE& bit_enable);
-	virtual void ShortPrettyPrint(std::ostream& os);
-	virtual void LongPrettyPrint(std::ostream& os);
 private:
 	virtual unsigned int __ARB_GetSize__() const;
 	virtual const std::string& __ARB_GetName__() const;

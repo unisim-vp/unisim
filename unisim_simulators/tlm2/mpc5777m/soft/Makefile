@@ -55,6 +55,7 @@ ASSEMBLER_ARGS= \
 -DMPC5777M \
 -DHW_INIT \
 -DI_CACHE \
+-DDISABLE_SWT2 \
 -mcpu=e200z4 \
 -specs=ewl_c9x.specs \
 -mbig \

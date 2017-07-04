@@ -43,7 +43,7 @@ namespace tlm2 {
 namespace watchdog {
 namespace freescale {
 namespace mpc57xx {
-namespace intc {
+namespace swt {
 
 template <typename CONFIG>
 const unsigned int SWT<CONFIG>::TLM2_IP_VERSION_MAJOR;
@@ -58,12 +58,34 @@ template <typename CONFIG>
 const unsigned int SWT<CONFIG>::NUM_MASTERS;
 
 template <typename CONFIG>
+const unsigned int SWT<CONFIG>::BUSWIDTH;
+
+template <typename CONFIG>
+const uint16_t SWT<CONFIG>::UNLOCK_SEQUENCE_PRIMARY_KEY;
+
+template <typename CONFIG>
+const uint16_t SWT<CONFIG>::UNLOCK_SEQUENCE_SECONDARY_KEY;
+
+template <typename CONFIG>
+const uint16_t SWT<CONFIG>::FIXED_SERVICE_SEQUENCE_MODE_PRIMARY_KEY;
+
+template <typename CONFIG>
+const uint16_t SWT<CONFIG>::FIXED_SERVICE_SEQUENCE_MODE_SECONDARY_KEY;
+
+template <typename CONFIG>
+const uint32_t SWT<CONFIG>::MIN_DOWN_COUNTER_LOAD_VALUE;
+
+template <typename CONFIG>
+const sc_dt::int64 SWT<CONFIG>::DOWN_COUNTER_RUN_MIN_PERIOD;
+
+template <typename CONFIG>
 SWT<CONFIG>::SWT(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_core::sc_module(name)
 	, peripheral_slave_if("peripheral_slave_if")
 	, m_clk("m_clk")
 	, swt_reset_b("swt_reset_b")
+	, stop("stop")
 	, debug("debug")
 	, irq("irq")
 	, reset_b("reset_b")
@@ -78,6 +100,10 @@ SWT<CONFIG>::SWT(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	, swt_sk(this)
 	, reg_addr_map()
 	, schedule()
+	, got_initial_timeout(false)
+	, unlock_sequence_index(0)
+	, service_sequence_index(0)
+	, down_counter(0)
 	, endian(unisim::util::endian::E_BIG_ENDIAN)
 	, param_endian("endian", this, endian, "endian")
 	, verbose(false)
@@ -85,10 +111,17 @@ SWT<CONFIG>::SWT(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	, swt_cr_reset_value(0x0)
 	, param_swt_cr_reset_value("swt-cr-reset-value", this, swt_cr_reset_value, "SWT_CR register value at reset")
 	, swt_to_reset_value(0x0)
-	, param_swt_to_reset_value("swt-to-reset-value", this, swt_cr_reset_value, "SWT_TO register value at reset")
+	, param_swt_to_reset_value("swt-to-reset-value", this, swt_to_reset_value, "SWT_TO register value at reset")
+	, irq_level(false)
+	, gen_irq_event("gen_irq_event")
+	, reset_level(false)
+	, gen_reset_event("gen_reset_event")
+	, last_down_counter_run_time(sc_core::SC_ZERO_TIME)
+	, down_counter_run_event("down_counter_run_event")
+	, freeze(false)
 	, cycle_time(10.0, sc_core::SC_NS)
-	, watchdog_counter_cycle_time(62500, sc_core::SC_PS) // 16 MHz internal clock
-	, param_watchdog_counter_cycle_time("watchdog-counter-cycle-time", this, watchdog_counter_cycle_time, "Watchdog counter cycle time")
+	, watchdog_down_counter_cycle_time(62500, sc_core::SC_PS) // 16 MHz internal clock
+	, param_watchdog_down_counter_cycle_time("watchdog-down-counter-cycle-time", this, watchdog_down_counter_cycle_time, "Watchdog down counter cycle time")
 {
 	peripheral_slave_if(*this);
 	
@@ -123,8 +156,14 @@ SWT<CONFIG>::SWT(const sc_core::sc_module_name& name, unisim::kernel::service::O
 		SC_METHOD(Process);
 	}
 	
+	SC_METHOD(SWT_RESET_B_Process);
+	sensitive << swt_reset_b.pos();
+	
 	SC_METHOD(RESET_B_Process);
-	sensitive << reset_b.pos();
+	sensitive << gen_reset_event;
+	
+	SC_METHOD(RunDownCounterProcess);
+	sensitive << down_counter_run_event;
 }
 
 template <typename CONFIG>
@@ -145,6 +184,7 @@ void SWT<CONFIG>::end_of_elaboration()
 	}
 	
 	UpdateSpeed();
+	RefreshFreeze();
 	
 	// Spawn ClockPropertiesChangedProcess Process that monitor clock properties modifications
 	sc_core::sc_spawn_options clock_properties_changed_process_spawn_options;
@@ -155,10 +195,11 @@ void SWT<CONFIG>::end_of_elaboration()
 	sc_core::sc_spawn(sc_bind(&SWT<CONFIG>::ClockPropertiesChangedProcess, this), "ClockPropertiesChangedProcess", &clock_properties_changed_process_spawn_options);
 
 	Reset();
+	ScheduleDownCounterRun();
 }
 
 template <typename CONFIG>
-void STM<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
+void SWT<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 {
 	sc_core::sc_event completion_event;
 	sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
@@ -174,7 +215,7 @@ void STM<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_tim
 }
 
 template <typename CONFIG>
-bool STM<CONFIG>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
+bool SWT<CONFIG>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
 {
 	// Deny direct memory interface access
 	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
@@ -184,7 +225,7 @@ bool STM<CONFIG>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm
 }
 
 template <typename CONFIG>
-unsigned int STM<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
+unsigned int SWT<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 {
 	tlm::tlm_command cmd = payload.get_command();
 	unsigned int data_length = payload.get_data_length();
@@ -203,12 +244,16 @@ unsigned int STM<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 		return 0;
 	}
 	
+	CustomReadWriteArg custom_rw_arg;
+	custom_rw_arg.master_id = 0;
+	custom_rw_arg.time_stamp = time_stamp;
+	
 	switch(cmd)
 	{
 		case tlm::TLM_WRITE_COMMAND:
-			return reg_addr_map.DebugWrite(time_stamp, start_addr, data_ptr, data_length);
+			return reg_addr_map.DebugWrite(custom_rw_arg, start_addr, data_ptr, data_length);
 		case tlm::TLM_READ_COMMAND:
-			return reg_addr_map.DebugRead(time_stamp, start_addr, data_ptr, data_length);
+			return reg_addr_map.DebugRead(custom_rw_arg, start_addr, data_ptr, data_length);
 		default:
 			break;
 	}
@@ -217,7 +262,7 @@ unsigned int STM<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 }
 
 template <typename CONFIG>
-tlm::tlm_sync_enum STM<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
+tlm::tlm_sync_enum SWT<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	switch(phase)
 	{
@@ -245,7 +290,7 @@ tlm::tlm_sync_enum STM<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& payloa
 }
 
 template <typename CONFIG>
-void STM<CONFIG>::ProcessEvent(Event *event)
+void SWT<CONFIG>::ProcessEvent(Event *event)
 {
 	tlm::tlm_generic_payload *payload = event->GetPayload();
 	sc_core::sc_time time_stamp(event->GetTimeStamp());
@@ -298,15 +343,17 @@ void STM<CONFIG>::ProcessEvent(Event *event)
 		{
 			ReadWriteStatus rws = RWS_OK;
 		
-			MasterID master_id = event->GetMasterID();
+			CustomReadWriteArg custom_rw_arg;
+			custom_rw_arg.master_id = event->GetMasterID();
+			custom_rw_arg.time_stamp = event->GetTimeStamp();
 			
 			switch(cmd)
 			{
 				case tlm::TLM_WRITE_COMMAND:
-					rws = reg_addr_map.Write(master_id, start_addr, data_ptr, data_length);
+					rws = reg_addr_map.Write(custom_rw_arg, start_addr, data_ptr, data_length);
 					break;
 				case tlm::TLM_READ_COMMAND:
-					rws = reg_addr_map.Read(master_id, start_addr, data_ptr, data_length);
+					rws = reg_addr_map.Read(custom_rw_arg, start_addr, data_ptr, data_length);
 					break;
 				default:
 					break;
@@ -314,8 +361,24 @@ void STM<CONFIG>::ProcessEvent(Event *event)
 			
 			if(IsReadWriteError(rws))
 			{
-				logger << DebugError << "while mapped read/write access, " << rws << std::endl;
-				payload->set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
+				logger << DebugError << "while mapped read/write access, " << std::hex << rws << std::dec << std::endl;
+				if(swt_cr.template Get<typename SWT_CR::WEN>() && swt_cr.template Get<typename SWT_CR::RIA>())
+				{
+					// Invalid access to the SWT causes a system reset if WEN=1
+					TriggerReset();
+					
+					if(cmd == tlm::TLM_READ_COMMAND)
+					{
+						memset(data_ptr, 0, data_length);
+					}
+					payload->set_response_status(tlm::TLM_OK_RESPONSE);
+				}
+				else
+				{
+					//  Invalid access to the SWT generates a bus error
+					payload->set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
+				}
+				
 			}
 			else
 			{
@@ -337,7 +400,7 @@ void STM<CONFIG>::ProcessEvent(Event *event)
 	{
 		tlm::tlm_phase phase = tlm::BEGIN_RESP;
 		
-		tlm::tlm_sync_enum sync = ahb_if->nb_transport_bw(*payload, phase, completion_time);
+		tlm::tlm_sync_enum sync = peripheral_slave_if->nb_transport_bw(*payload, phase, completion_time);
 		
 		switch(sync)
 		{
@@ -352,7 +415,7 @@ void STM<CONFIG>::ProcessEvent(Event *event)
 }
 
 template <typename CONFIG>
-void STM<CONFIG>::ProcessEvents()
+void SWT<CONFIG>::ProcessEvents()
 {
 	const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
 	Event *event = schedule.GetNextEvent();
@@ -375,7 +438,7 @@ void STM<CONFIG>::ProcessEvents()
 }
 
 template <typename CONFIG>
-void STM<CONFIG>::Process()
+void SWT<CONFIG>::Process()
 {
 	if(threaded_model)
 	{
@@ -393,7 +456,7 @@ void STM<CONFIG>::Process()
 }
 
 template <typename CONFIG>
-void INTC<CONFIG>::Reset()
+void SWT<CONFIG>::Reset()
 {
 	schedule.Clear();
 	
@@ -404,6 +467,12 @@ void INTC<CONFIG>::Reset()
 	swt_sr.Initialize(0x0);
 	swt_co.Initialize(0x0);
 	swt_sk.Initialize(0x0);
+	unlock_sequence_index = 0;
+	service_sequence_index = 0;
+	got_initial_timeout = false;
+	SetDownCounter(swt_to);
+	
+	CheckCompatibility();
 }
 
 template <typename CONFIG>
@@ -420,11 +489,385 @@ void SWT<CONFIG>::ClockPropertiesChangedProcess()
 }
 
 template <typename CONFIG>
-void SWT<CONFIG>::RESET_B_Process()
+void SWT<CONFIG>::SWT_RESET_B_Process()
 {
-	if(reset_b.posedge())
+	if(swt_reset_b.posedge())
 	{
 		Reset();
+	}
+}
+
+template <typename CONFIG>
+void SWT<CONFIG>::IRQ_Process()
+{
+	if(verbose)
+	{
+		logger << DebugInfo << irq.name() << " <- " << irq_level << EndDebugInfo;
+	}
+	irq = irq_level;
+}
+
+template <typename CONFIG>
+void SWT<CONFIG>::RESET_B_Process()
+{
+	if(verbose)
+	{
+		logger << DebugInfo << reset_b.name() << " <- " << !reset_level << EndDebugInfo;
+	}
+	reset_b = !reset_level;
+	
+	if(reset_level)
+	{
+		reset_level = false;
+		gen_reset_event.notify(sc_core::sc_time(10.0, sc_core::SC_NS));
+	}
+}
+
+template <typename CONFIG>
+bool SWT<CONFIG>::CheckMasterAccess(unsigned master_id) const
+{
+	switch(master_id)
+	{
+		case 0: return swt_cr.template Get<typename SWT_CR::MAP0>() != 0;
+		case 1: return swt_cr.template Get<typename SWT_CR::MAP1>() != 0;
+		case 2: return swt_cr.template Get<typename SWT_CR::MAP2>() != 0;
+		case 3: return swt_cr.template Get<typename SWT_CR::MAP3>() != 0;
+		case 4: return swt_cr.template Get<typename SWT_CR::MAP4>() != 0;
+		case 5: return swt_cr.template Get<typename SWT_CR::MAP5>() != 0;
+		case 6: return swt_cr.template Get<typename SWT_CR::MAP6>() != 0;
+		case 7: return swt_cr.template Get<typename SWT_CR::MAP7>() != 0;
+	}
+	return false;
+}
+
+template <typename CONFIG>
+void SWT<CONFIG>::SetIRQLevel(bool level)
+{
+	swt_ir.template Set<typename SWT_IR::TIF>(level);
+	
+	// Schedule IRQ output assertion
+	irq_level = level;
+	gen_irq_event.notify(sc_core::SC_ZERO_TIME);
+}
+
+template <typename CONFIG>
+void SWT<CONFIG>::TriggerReset()
+{
+	unlock_sequence_index = 0;
+	service_sequence_index = 0;
+	// Schedule reset_b output assertion
+	reset_level = true;
+	gen_reset_event.notify(sc_core::SC_ZERO_TIME);
+}
+
+template <typename CONFIG>
+void SWT<CONFIG>::DecrementDownCounter(sc_dt::uint64 delta)
+{
+	if(delta)
+	{
+		// Check model consistency
+		if(swt_cr.template Get<typename SWT_CR::WEN>())
+		{
+			// watchdog enabled
+			if(down_counter < delta)
+			{
+				logger << DebugWarning << "Model has a problem because too much time has elapsed since last down counter run, resulting in a down counter underflow" << EndDebugWarning;
+			}
+		}
+		
+		SetDownCounter((down_counter >= delta) ? (down_counter - delta) : 0); // decrement down counter
+
+		// Check time out
+		if(swt_cr.template Get<typename SWT_CR::WEN>())
+		{
+			bool timeout = false;
+			
+			if(down_counter == 0)
+			{
+				timeout = true;
+			}
+			
+			if(timeout)
+			{
+				if(swt_cr.template Get<typename SWT_CR::ITR>())
+				{
+					if(got_initial_timeout)
+					{
+						TriggerReset();
+					}
+					else
+					{
+						SetIRQLevel(true);
+						got_initial_timeout = true;
+					}
+				}
+				else
+				{
+					TriggerReset();
+				}
+			}
+		}
+	}
+}
+
+template <typename CONFIG>
+sc_dt::int64 SWT<CONFIG>::TicksToNextDownCounterRun()
+{
+	if(swt_cr.template Get<typename SWT_CR::WEN>())
+	{
+		// watchdog enabled
+		return down_counter;
+	}
+	
+	return DOWN_COUNTER_RUN_MIN_PERIOD;
+}
+
+template <typename CONFIG>
+sc_core::sc_time SWT<CONFIG>::TimeToNextDownCounterRun()
+{
+	return TicksToNextDownCounterRun() * watchdog_down_counter_cycle_time;
+}
+
+template <typename CONFIG>
+void SWT<CONFIG>::RunDownCounterToTime(const sc_core::sc_time& time_stamp)
+{
+	// Compute the elapsed time since last count run
+	sc_core::sc_time delay_since_last_down_counter_run(time_stamp);
+	delay_since_last_down_counter_run -= last_down_counter_run_time;
+	
+	// Compute number of down counter ticks since last count run
+	sc_dt::uint64 delta = delay_since_last_down_counter_run / watchdog_down_counter_cycle_time;
+	sc_core::sc_time run_time(watchdog_down_counter_cycle_time);
+	run_time *= delta;
+
+	if(!freeze)
+	{
+		// in the past, until time stamp, down counter was not frozen: decrement down counter
+		DecrementDownCounter(delta);
+	}
+	
+	// Latch internal "freeze" value
+	RefreshFreeze();
+	
+	last_down_counter_run_time += run_time;
+}
+
+template <typename CONFIG>
+void SWT<CONFIG>::ScheduleDownCounterRun()
+{
+	sc_core::sc_time time_to_next_down_counter_run = TimeToNextDownCounterRun();
+	if(verbose)
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": time to next down counter run is " << time_to_next_down_counter_run << EndDebugInfo;
+	}
+	const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
+	time_to_next_down_counter_run += last_down_counter_run_time;
+	time_to_next_down_counter_run -= time_stamp;
+	
+	down_counter_run_event.notify(time_to_next_down_counter_run); // schedule next down counter run
+}
+
+template <typename CONFIG>
+void SWT<CONFIG>::RunDownCounterProcess()
+{
+	const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
+	
+	if(verbose)
+	{
+		logger << DebugInfo << time_stamp << ":RunDownCounterProcess()" << EndDebugInfo;
+	}
+	
+	RunDownCounterToTime(time_stamp);
+	ScheduleDownCounterRun();
+}
+
+template <typename CONFIG>
+void SWT<CONFIG>::RefreshFreeze()
+{
+	// Latch value for internal "freeze"
+	freeze = (debug && swt_cr.template Get<typename SWT_CR::FRZ>()) || (stop && swt_cr.template Get<typename SWT_CR::STP>());
+}
+
+template <typename CONFIG>
+void SWT<CONFIG>::UnlockSequence()
+{
+	switch(unlock_sequence_index)
+	{
+		case 0:
+			if(swt_sr.template Get<typename SWT_SR::WSC>() == UNLOCK_SEQUENCE_PRIMARY_KEY)
+			{
+				unlock_sequence_index++;
+			}
+			break;
+		case 1:
+			if(swt_sr.template Get<typename SWT_SR::WSC>() == UNLOCK_SEQUENCE_SECONDARY_KEY)
+			{
+				// end of sequence
+				unlock_sequence_index = 0;
+				
+				if(verbose)
+				{
+					logger << DebugInfo << "End of unlock sequence" << EndDebugInfo;
+				}
+
+				// Unlock
+				if(verbose)
+				{
+					logger << DebugInfo << "Unlocking" << EndDebugInfo;
+				}
+				swt_cr.template Set<typename SWT_CR::SLK>(0);
+			}
+			break;
+	}
+}
+
+template <typename CONFIG>
+bool SWT<CONFIG>::CheckWindow() const
+{
+	if(swt_cr.template Get<typename SWT_CR::WND>())
+	{
+		// window mode is enabled
+		if(down_counter < swt_wn.template Get<typename SWT_WN::WST>())
+		{
+			// When window mode is enabled, the service sequence can only be written when the internal counter is less than SWT_WN[WST]
+			return true;
+		}
+	}
+	else
+	{
+		return true;
+	}
+	
+	return false;
+}
+
+template <typename CONFIG>
+bool SWT<CONFIG>::ServiceSequence()
+{
+	switch(swt_cr.template Get<typename SWT_CR::SMD>())
+	{
+		case SMD_KEYED_SERVICE_SEQUENCE:
+			// Keyed service sequence mode is selected
+			swt_sk.template Set<typename SWT_SK::SK>((17 * swt_sk.template Get<typename SWT_SK::SK>()) + 3);
+			
+			if(swt_sr.template Get<typename SWT_SR::WSC>() == swt_sk.template Get<typename SWT_SK::SK>())
+			{
+				// key match
+				
+				if(++service_sequence_index == 2)
+				{
+					// end of service sequence
+					service_sequence_index = 0;
+					
+					if(!CheckWindow()) return false;
+					
+					if(verbose)
+					{
+						logger << DebugInfo << "End of keyed service sequence" << EndDebugInfo;
+					}
+					
+					// clear SWT_CR[SLK]
+					swt_cr.template Set<typename SWT_CR::SLK>(0);
+					
+					// Rearm down counter
+					RearmDownCounter();
+				}
+			}
+			break;
+			
+		case SMD_FIXED_SERVICE_SEQUENCE:
+			// Fixed service sequence mode is selected
+			switch(service_sequence_index)
+			{
+				case 0:
+					if(swt_sr.template Get<typename SWT_SR::WSC>() == FIXED_SERVICE_SEQUENCE_MODE_PRIMARY_KEY)
+					{
+						// Getting primary key
+						
+						// start of service sequence
+						
+						if(!CheckWindow()) return false;
+
+						service_sequence_index++;
+					}
+					break;
+				
+				case 1:
+					if(swt_sr.template Get<typename SWT_SR::WSC>() == FIXED_SERVICE_SEQUENCE_MODE_SECONDARY_KEY)
+					{
+						// Getting secondary key
+						
+						// end of service sequence
+						
+						if(!CheckWindow()) return false;
+
+						service_sequence_index = 0;
+
+						if(verbose)
+						{
+							logger << DebugInfo << "End of fixed service sequence" << EndDebugInfo;
+						}
+						
+						// clear SWT_CR[SLK]
+						swt_cr.template Set<typename SWT_CR::SLK>(0);
+
+						// Rearm down counter
+						RearmDownCounter();
+					}
+			}
+			break;
+	}
+	
+	return true;
+}
+
+template <typename CONFIG>
+void SWT<CONFIG>::SetDownCounter(uint32_t value)
+{
+	if(verbose)
+	{
+		logger << DebugInfo << "down counter <- " << value << EndDebugInfo;
+	}
+	
+	down_counter = value;
+	
+	// When the watchdog is disabled (SWT_CR[WEN]=0), SWT_CO[CNT] shows the value of the internal down counter
+	// When the watchdog is enabled (SWT_CR[WEN]=1), SW_CO[CNT] is cleared
+	swt_co.template Set<typename SWT_CO::CNT>(swt_cr.template Get<typename SWT_CR::WEN>() ? down_counter : 0);
+}
+
+template <typename CONFIG>
+void SWT<CONFIG>::RearmDownCounter()
+{
+	uint32_t value = swt_to.template Get<typename SWT_TO::WTO>();
+	if(value < MIN_DOWN_COUNTER_LOAD_VALUE)
+	{
+		logger << DebugWarning << "Attempt to load down counter with a value (" << value << ") below the minimum value that is " << MIN_DOWN_COUNTER_LOAD_VALUE << EndDebugWarning;
+		value = MIN_DOWN_COUNTER_LOAD_VALUE;
+	}
+
+	SetDownCounter(value);
+	
+	if(verbose)
+	{
+		logger << DebugInfo << "Rearming down counter (" << swt_to.template Get<typename SWT_TO::WTO>() << ")" << EndDebugInfo;
+	}
+	
+	ScheduleDownCounterRun();
+}
+
+template <typename CONFIG>
+void SWT<CONFIG>::CheckCompatibility()
+{
+	switch(swt_cr.template Get<typename SWT_CR::SMD>())
+	{
+		case SMD_FIXED_ADDRESS_EXECUTION:
+		case SMD_INCREMENTAL_ADDRESS_EXECUTION:
+			logger << DebugError << "Fixed address execution mode and increment address execution mode are unsupported for now" << EndDebugError;
+			unisim::kernel::service::Object::Stop(-1);
+			break;
+		default:
+			break;
 	}
 }
 

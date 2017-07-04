@@ -69,9 +69,9 @@ template <typename CONFIG>
 STM<CONFIG>::STM(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_core::sc_module(name)
-	, ahb_if("ahb_if")
+	, peripheral_slave_if("peripheral_slave_if")
 	, m_clk("m_clk")
-	, debug_mode("debug_mode")
+	, debug("debug")
 	, irq()
 	, logger(*this)
 	, m_clk_prop_proxy(m_clk)
@@ -102,7 +102,7 @@ STM<CONFIG>::STM(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	description_sstr << "  - Hardware reference manual: MPC5777M Reference Manual, MPC5777MRM, Rev. 4.3, 01/2017, Chapter 42" << std::endl;
 	this->SetDescription(description_sstr.str().c_str());
 	
-	ahb_if(*this); // bind interface
+	peripheral_slave_if(*this); // bind interface
 	
 	unsigned int channel_num;
 	
@@ -363,7 +363,7 @@ void STM<CONFIG>::ProcessEvent(Event *event)
 			
 			if(IsReadWriteError(rws))
 			{
-				logger << DebugError << "while mapped read/write access, " << rws << std::endl;
+				logger << DebugError << "while mapped read/write access, " << std::hex << rws << std::dec << std::endl;
 				payload->set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
 			}
 			else
@@ -386,7 +386,7 @@ void STM<CONFIG>::ProcessEvent(Event *event)
 	{
 		tlm::tlm_phase phase = tlm::BEGIN_RESP;
 		
-		tlm::tlm_sync_enum sync = ahb_if->nb_transport_bw(*payload, phase, completion_time);
+		tlm::tlm_sync_enum sync = peripheral_slave_if->nb_transport_bw(*payload, phase, completion_time);
 		
 		switch(sync)
 		{
@@ -630,7 +630,7 @@ template <typename CONFIG>
 void STM<CONFIG>::RefreshFreeze()
 {
 	// Latch value for internal "freeze"
-	freeze = debug_mode && stm_cr.template Get<typename STM_CR::FRZ>();
+	freeze = debug && stm_cr.template Get<typename STM_CR::FRZ>();
 }
 
 } // end of namespace stm

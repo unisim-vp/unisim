@@ -75,6 +75,7 @@ using unisim::util::reg::core::SW_W;
 using unisim::util::reg::core::RWS_OK;
 using unisim::util::reg::core::RWS_ANA;
 using unisim::util::reg::core::Access;
+using unisim::util::reg::core::IsReadWriteError;
 
 template <typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
 struct Field8 : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (7 - OFFSET2) : (7 - OFFSET1)) : (7 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, _ACCESS>
@@ -477,6 +478,10 @@ private:
 				return RWS_ANA;
 			}
 			
+			ReadWriteStatus rws = Super::Read(reader_prc_num, value, bit_enable);
+			
+			if(IsReadWriteError(rws)) return rws;
+			
 			unsigned prc_num = reg_num;
 			// Check vector mode
 			if(!this->intc->IsHardwareVectorEnabled(prc_num))
@@ -490,7 +495,7 @@ private:
 				//this->intc->SetIRQOutput(prc_num, false); // To be removed: already done by IRQAcknowledge
 			}
 			
-			return Super::Read(reader_prc_num, value, bit_enable);
+			return rws;
 		}
 		
 		virtual ReadWriteStatus Write(ProcessorNumber& writter_prc_num, const uint32_t& value, const uint32_t& bit_enable)

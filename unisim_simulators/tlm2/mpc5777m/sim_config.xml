@@ -700,6 +700,18 @@
 				<value>range_start=&quot;0xfc070000&quot; range_end=&quot;0xfc073fff&quot; output_port=&quot;5&quot; translation=&quot;0x0&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 			</variable>
+			<variable name="mapping_11">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc058000&quot; range_end=&quot;0xfc05bfff&quot; output_port=&quot;6&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_12">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc05c000&quot; range_end=&quot;0xfc05ffff&quot; output_port=&quot;7&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
 		</object>
 		<object name="HARDWARE.INTC_0">
 			<variable name="endian">
@@ -743,6 +755,86 @@
 					<item>true</item>
 					<item>false</item>
 				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.SWT_2">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="swt-cr-reset-value">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0xff00011b</value>
+				<description>SWT_CR register value at reset</description>
+			</variable>
+			<variable name="swt-to-reset-value">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x0003fde0</value>
+				<description>SWT_TO register value at reset</description>
+			</variable>
+			<variable name="watchdog-down-counter-cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>62500 ps</value>
+				<description>Watchdog down counter cycle time</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.SWT_3">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="swt-cr-reset-value">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0xff00010a</value>
+				<description>SWT_CR register value at reset</description>
+			</variable>
+			<variable name="swt-to-reset-value">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x0005fcd0</value>
+				<description>SWT_TO register value at reset</description>
+			</variable>
+			<variable name="watchdog-down-counter-cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>62500 ps</value>
+				<description>Watchdog down counter cycle time</description>
 			</variable>
 		</object>
 		<object name="HARDWARE.clk_200MHz">

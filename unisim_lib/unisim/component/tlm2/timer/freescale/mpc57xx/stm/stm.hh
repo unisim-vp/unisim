@@ -103,12 +103,12 @@ public:
 	static const unsigned int BUSWIDTH              = CONFIG::BUSWIDTH;
 	static const bool threaded_model                = false;
 	
-	typedef tlm::tlm_target_socket<BUSWIDTH> ahb_slave_if_type;
+	typedef tlm::tlm_target_socket<BUSWIDTH> peripheral_slave_if_type;
 
-	ahb_slave_if_type      ahb_if;            // AHB slave interface
-	sc_core::sc_in<bool>   m_clk;             // Clock port
-	sc_core::sc_in<bool>   debug_mode;        // debug port
-	sc_core::sc_out<bool> *irq[NUM_CHANNELS]; // IRQ outputs
+	peripheral_slave_if_type  peripheral_slave_if;  // peripheral slave interface
+	sc_core::sc_in<bool>      m_clk;                // Clock port
+	sc_core::sc_in<bool>      debug;                // debug port
+	sc_core::sc_out<bool>    *irq[NUM_CHANNELS];    // IRQ outputs
 	
 	STM(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
 	virtual ~STM();

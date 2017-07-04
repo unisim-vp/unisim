@@ -505,7 +505,7 @@ template <typename TYPES, typename CONFIG>
 template <unsigned int NUM_EXCEPTIONS>
 template <typename INTERRUPT> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::EnableInterrupt()
 {
-	if(cpu->verbose_interrupt)
+	if(cpu->verbose_interrupt && ((exc_mask & INTERRUPT::template GetMask<TYPE>()) == 0))
 	{
 		cpu->GetDebugInfoStream() << "Enabling " << INTERRUPT::GetName() << std::endl;
 	}
@@ -516,7 +516,7 @@ template <typename TYPES, typename CONFIG>
 template <unsigned int NUM_EXCEPTIONS>
 template <typename INTERRUPT> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::DisableInterrupt()
 {
-	if(cpu->verbose_interrupt)
+	if(cpu->verbose_interrupt && ((exc_mask & INTERRUPT::template GetMask<TYPE>()) != 0))
 	{
 		cpu->GetDebugInfoStream() << "Disabling " << INTERRUPT::GetName() << std::endl;
 	}

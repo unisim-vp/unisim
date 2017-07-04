@@ -53,7 +53,7 @@ namespace tlm2 {
 namespace watchdog {
 namespace freescale {
 namespace mpc57xx {
-namespace intc {
+namespace swt {
 
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
@@ -75,6 +75,7 @@ using unisim::util::reg::core::SW_W;
 using unisim::util::reg::core::SW_R_W1C;
 using unisim::util::reg::core::RWS_OK;
 using unisim::util::reg::core::RWS_ANA;
+using unisim::util::reg::core::RWS_WROR;
 using unisim::util::reg::core::Access;
 
 template <typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
@@ -98,17 +99,32 @@ class SWT
 	, public tlm::tlm_fw_transport_if<>
 {
 public:
-	static const unsigned int TLM2_IP_VERSION_MAJOR = 1;
-	static const unsigned int TLM2_IP_VERSION_MINOR = 0;
-	static const unsigned int TLM2_IP_VERSION_PATCH = 0;
-	static const unsigned int NUM_MASTERS           = CONFIG::NUM_MASTERS;
-	static const bool threaded_model                = false;
+	static const unsigned int TLM2_IP_VERSION_MAJOR                 = 1;
+	static const unsigned int TLM2_IP_VERSION_MINOR                 = 0;
+	static const unsigned int TLM2_IP_VERSION_PATCH                 = 0;
+	static const unsigned int NUM_MASTERS                           = CONFIG::NUM_MASTERS;
+	static const unsigned int BUSWIDTH                              = CONFIG::BUSWIDTH;
+	static const uint16_t UNLOCK_SEQUENCE_PRIMARY_KEY               = 0xc520;
+	static const uint16_t UNLOCK_SEQUENCE_SECONDARY_KEY             = 0xd928;
+	static const uint16_t FIXED_SERVICE_SEQUENCE_MODE_PRIMARY_KEY   = 0xa602;
+	static const uint16_t FIXED_SERVICE_SEQUENCE_MODE_SECONDARY_KEY = 0xb480;
+	static const uint32_t MIN_DOWN_COUNTER_LOAD_VALUE               = 0x100;
+	static const sc_dt::int64 DOWN_COUNTER_RUN_MIN_PERIOD           = 16000; // run at least every 1 ms
+	static const bool threaded_model                                = false;
+	enum ServiceMode
+	{
+		SMD_FIXED_SERVICE_SEQUENCE        = 0, // 0b00
+		SMD_KEYED_SERVICE_SEQUENCE        = 1, // 0b01
+		SMD_FIXED_ADDRESS_EXECUTION       = 2, // 0b10
+		SMD_INCREMENTAL_ADDRESS_EXECUTION = 3  // 0b11
+	};
 	
 	typedef tlm::tlm_target_socket<BUSWIDTH>        peripheral_slave_if_type;
 
 	peripheral_slave_if_type                        peripheral_slave_if;       // Peripheral slave interface
 	sc_core::sc_in<bool>                            m_clk;                     // clock port
 	sc_core::sc_in<bool>                            swt_reset_b;               // reset of watchdog
+	sc_core::sc_in<bool>                            stop;                      // stop
 	sc_core::sc_in<bool>                            debug;                     // debug
 	sc_core::sc_out<bool>                           irq;                       // interrupt request
 	sc_core::sc_out<bool>                           reset_b;                   // reset
@@ -250,12 +266,18 @@ private:
 	};
 
 	typedef unsigned int MasterID;
+	
+	struct CustomReadWriteArg
+	{
+		MasterID master_id;
+		sc_core::sc_time time_stamp;
+	};
 
 	// SWT Register
 	template <typename REGISTER, Access _ACCESS>
-	struct SWT_Register : AddressableRegister<REGISTER, 32, _ACCESS, MasterID>
+	struct SWT_Register : AddressableRegister<REGISTER, 32, _ACCESS, CustomReadWriteArg>
 	{
-		typedef AddressableRegister<REGISTER, 32, _ACCESS, MasterID> Super;
+		typedef AddressableRegister<REGISTER, 32, _ACCESS, CustomReadWriteArg> Super;
 		
 		SWT_Register(SWT<CONFIG> *_swt) : Super(), swt(_swt) {}
 		SWT_Register(SWT<CONFIG> *_swt, uint32_t value) : Super(value), swt(_swt) {}
@@ -264,35 +286,96 @@ private:
 		inline bool IsVerboseWrite() const ALWAYS_INLINE { return swt->verbose; }
 		inline std::ostream& GetInfoStream() ALWAYS_INLINE { return swt->logger.DebugInfoStream(); }
 		
+		virtual ReadWriteStatus Read(CustomReadWriteArg& custom_rw_arg, uint32_t& value, const uint32_t& bit_enable)
+		{
+			// Run down counter until read time so that registers reflect precise state of SWT
+			swt->RunDownCounterToTime(custom_rw_arg.time_stamp);
+			
+			if(!swt->CheckMasterAccess(custom_rw_arg.master_id))
+			{
+				// Access for the master is not enabled: access not allowed
+				return RWS_ANA;
+			}
+
+			// Read register
+			return this->Super::Read(custom_rw_arg, value, bit_enable);
+		}
+		
+		virtual ReadWriteStatus Write(CustomReadWriteArg& custom_rw_arg, const uint32_t& value, const uint32_t& bit_enable)
+		{
+			// Run down counter until write time
+			swt->RunDownCounterToTime(custom_rw_arg.time_stamp);
+			
+			if(!swt->CheckMasterAccess(custom_rw_arg.master_id))
+			{
+				// Access for the master is not enabled: access not allowed
+				return RWS_ANA;
+			}
+
+			// Write register
+			ReadWriteStatus rws = this->Super::Write(custom_rw_arg, value, bit_enable);
+			
+			// SWT register changes affect IRQ and Reset output, so schedule a run of down counter that may trigger an IRQ or Reset output
+			swt->ScheduleDownCounterRun();
+			return rws;
+		}
+
 		using Super::operator =;
 	protected:
 		SWT<CONFIG> *swt;
 	};
+
+	// SWT Register
+	template <typename REGISTER, Access _ACCESS>
+	struct SWT_LockableRegister : SWT_Register<REGISTER, _ACCESS>
+	{
+		typedef SWT_Register<REGISTER, _ACCESS> Super;
+		
+		SWT_LockableRegister(SWT<CONFIG> *_swt) : Super(_swt) {}
+		SWT_LockableRegister(SWT<CONFIG> *_swt, uint32_t value) : Super(_swt, value) {}
+		
+		virtual ReadWriteStatus Write(CustomReadWriteArg& custom_rw_arg, const uint32_t& value, const uint32_t& bit_enable)
+		{
+			// Register is read-only if either the SWT_CR[HLK] or SWT_CR[SLK] bits are set
+			if(this->template Get<typename SWT_CR::HLK>() || this->template Get<typename SWT_CR::SLK>())
+			{
+				// Locked
+				this->swt->logger << DebugWarning << "While writing to " << this->GetName() << ", " << RWS_WROR << " because register is locked" << EndDebugWarning;
+				return RWS_WROR;
+			}
+
+			// Write register
+			return this->Super::Write(custom_rw_arg, value, bit_enable);
+		}
+
+		using Super::operator =;
+	};
 	
 	// SWT Control Register (SWT_CR)
-	struct SWT_CR : SWT_Register<SWT_CR, SW_RW>
+	struct SWT_CR : SWT_LockableRegister<SWT_CR, SW_RW>
 	{
-		typedef SWT_Register<SWT_CR, SW_RW> Super;
+		typedef SWT_LockableRegister<SWT_CR, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x0;
 		
-		struct MAP0 : Field<MAP0, 0>     {}; // Master Access Protection for Master 0
-		struct MAP1 : Field<MAP1, 1>     {}; // Master Access Protection for Master 1
-		struct MAP2 : Field<MAP2, 2>     {}; // Master Access Protection for Master 2
-		struct MAP3 : Field<MAP3, 3>     {}; // Master Access Protection for Master 3
-		struct MAP4 : Field<MAP4, 4>     {}; // Master Access Protection for Master 4
-		struct MAP5 : Field<MAP5, 5>     {}; // Master Access Protection for Master 5
-		struct MAP6 : Field<MAP6, 6>     {}; // Master Access Protection for Master 6
-		struct MAP7 : Field<MAP7, 7>     {}; // Master Access Protection for Master 7
-		struct SMD  : Field<SMD, 21, 22> {}; // Service Mode
-		struct RIA  : Field<RIA, 23>     {}; // Reset on Invalid Access
-		struct WND  : Field<WND, 24>     {}; // Window Mode
-		struct ITR  : Field<ITR, 25>     {}; // Interrupt Then Reset
-		struct HLK  : Field<HLK, 26>     {}; // Hard Lock
-		struct SLK  : Field<SLK, 27>     {}; // Soft Lock
-		struct STP  : Field<STP, 29>     {}; // Stop Mode Control
-		struct FRZ  : Field<FRZ, 30>     {}; // Debug Mode Control
-		struct WEN  : Field<WEN, 31>     {}; // Watchdog Enabled
+		struct MAP0     : Field<MAP0, 0>      {}; // Master Access Protection for Master 0
+		struct MAP1     : Field<MAP1, 1>      {}; // Master Access Protection for Master 1
+		struct MAP2     : Field<MAP2, 2>      {}; // Master Access Protection for Master 2
+		struct MAP3     : Field<MAP3, 3>      {}; // Master Access Protection for Master 3
+		struct MAP4     : Field<MAP4, 4>      {}; // Master Access Protection for Master 4
+		struct MAP5     : Field<MAP5, 5>      {}; // Master Access Protection for Master 5
+		struct MAP6     : Field<MAP6, 6>      {}; // Master Access Protection for Master 6
+		struct MAP7     : Field<MAP7, 7>      {}; // Master Access Protection for Master 7
+		struct SMD      : Field<SMD, 21, 22>  {}; // Service Mode
+		struct RIA      : Field<RIA, 23>      {}; // Reset on Invalid Access
+		struct WND      : Field<WND, 24>      {}; // Window Mode
+		struct ITR      : Field<ITR, 25>      {}; // Interrupt Then Reset
+		struct HLK      : Field<HLK, 26>      {}; // Hard Lock
+		struct SLK      : Field<SLK, 27>      {}; // Soft Lock
+		struct Reserved : Field<Reserved, 28> {}; // Reserved
+		struct STP      : Field<STP, 29>      {}; // Stop Mode Control
+		struct FRZ      : Field<FRZ, 30>      {}; // Debug Mode Control
+		struct WEN      : Field<WEN, 31>      {}; // Watchdog Enabled
 		
 		SWITCH_ENUM_TRAIT(unsigned int, _);
 		CASE_ENUM_TRAIT(1, _) { typedef FieldSet<MAP0> ALL; };
@@ -303,7 +386,7 @@ private:
 		CASE_ENUM_TRAIT(6, _) { typedef FieldSet<MAP0, MAP1, MAP2, MAP3, MAP4, MAP5> ALL; };
 		CASE_ENUM_TRAIT(7, _) { typedef FieldSet<MAP0, MAP1, MAP2, MAP3, MAP4, MAP5, MAP6> ALL; };
 		CASE_ENUM_TRAIT(8, _) { typedef FieldSet<MAP0, MAP1, MAP2, MAP3, MAP4, MAP5, MAP6, MAP7> ALL; };
-		typedef FieldSet<typename ENUM_TRAIT(NUM_MASTERS, _)::ALL, SMD, RIA, WND, ITR, HLK, SLK, STP, FRZ, WEN> ALL;
+		typedef FieldSet<typename ENUM_TRAIT(NUM_MASTERS, _)::ALL, SMD, RIA, WND, ITR, HLK, SLK, Reserved, STP, FRZ, WEN> ALL;
 		
 		SWT_CR(SWT<CONFIG> *_swt) : Super(_swt) { Init(); }
 		SWT_CR(SWT<CONFIG> *_swt, uint32_t value) : Super(_swt, value) { Init(); }
@@ -331,6 +414,24 @@ private:
 			WEN ::SetName("WEN");  WEN ::SetDescription("Watchdog Enabled");
 		}
 		
+		virtual ReadWriteStatus Write(CustomReadWriteArg& custom_rw_arg, const uint32_t& value, const uint32_t& bit_enable)
+		{
+			uint32_t new_value = value;
+			
+			if(this->template Get<SWT_CR::HLK>())
+			{
+				// hardware lock: HLK is cleared only at reset
+				new_value = new_value | SWT_CR::HLK::template GetMask<uint32_t>();
+			}
+			
+			// Write STM register
+			ReadWriteStatus rws = this->Super::Write(custom_rw_arg, new_value, bit_enable);
+			
+			this->swt->CheckCompatibility();
+			
+			return rws;
+		}
+		
 		using Super::operator =;
 	};
 	
@@ -354,14 +455,14 @@ private:
 			TIF::SetName("TIF"); TIF::SetDescription("Time-out Interrupt Flag");
 		}
 		
-		virtual ReadWriteStatus Write(MasterID master_id, const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(CustomReadWriteArg& custom_rw_arg, const uint32_t& value, const uint32_t& bit_enable)
 		{
 			// Write STM register
-			ReadWriteStatus rws = this->Super::Write(master_id, value, bit_enable); // this may clear TIF
+			ReadWriteStatus rws = this->Super::Write(custom_rw_arg, value, bit_enable); // this may clear TIF
 			
 			if(IsReadWriteError(rws)) return rws;
 			
-			// TODO: set IRQ level according TIF value
+			this->swt->SetIRQLevel(this->template Get<typename SWT_IR::TIF>());
 			return rws;
 		}
 		
@@ -369,9 +470,9 @@ private:
 	};
 	
 	// SWT Time-out Register (SWT_TO)
-	struct SWT_TO : SWT_Register<SWT_TO, SW_RW>
+	struct SWT_TO : SWT_LockableRegister<SWT_TO, SW_RW>
 	{
-		typedef SWT_Register<SWT_TO, SW_RW> Super;
+		typedef SWT_LockableRegister<SWT_TO, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x8;
 		
@@ -392,9 +493,9 @@ private:
 	};
 	
 	// SWT Window Register (SWT_WN)
-	struct SWT_WN : SWT_Register<SWT_WN, SW_RW>
+	struct SWT_WN : SWT_LockableRegister<SWT_WN, SW_RW>
 	{
-		typedef SWT_Register<SWT_WN, SW_RW> Super;
+		typedef SWT_LockableRegister<SWT_WN, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xc;
 		
@@ -408,14 +509,14 @@ private:
 		void Init()
 		{
 			this->SetName("SWT_WN"); this->SetDescription("SWT Window Register");
-			SWT::SetName("SWT"); SWT::SetDescription("Window Start Value");
+			WST::SetName("WST"); WST::SetDescription("Window Start Value");
 		}
 		
 		using Super::operator =;
 	};
 	
 	// SWT Service Register (SWT_SR)
-	struct SWT_SR : SWT_Register<SWT_SR, SW_W>
+	struct SWT_SR : SWT_Register<SWT_SR, SW_W> // Write only
 	{
 		typedef SWT_Register<SWT_SR, SW_W> Super;
 		
@@ -434,14 +535,20 @@ private:
 			WSC::SetName("WSC"); WSC::SetDescription("Watchdog Service Code");
 		}
 		
-		virtual ReadWriteStatus Write(MasterID master_id, const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(CustomReadWriteArg& custom_rw_arg, const uint32_t& value, const uint32_t& bit_enable)
 		{
 			// Write STM register
-			ReadWriteStatus rws = this->Super::Write(master_id, value, bit_enable); // this may clear CIF
+			ReadWriteStatus rws = this->Super::Write(custom_rw_arg, value, bit_enable); // this may clear CIF
 			
 			if(IsReadWriteError(rws)) return rws;
 			
-			// TODO: side effect
+			this->swt->UnlockSequence();
+			if(!this->swt->ServiceSequence())
+			{
+				this->swt->logger << DebugWarning << "Attempt to perform service sequence while window is closed" << EndDebugWarning;
+				return RWS_ANA;
+			}
+			
 			return rws;
 		}
 		
@@ -472,13 +579,15 @@ private:
 	};
 	
 	// SWT Service Key Register (SWT_SK)
-	struct SWT_SK : SWT_Register<SWT_SK, SW_RW>
+	struct SWT_SK : SWT_LockableRegister<SWT_SK, SW_RW>
 	{
-		typedef SWT_Register<SWT_SK, SW_RW> Super;
+		typedef SWT_LockableRegister<SWT_SK, SW_RW> Super;
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x18;
 		
 		struct SK : Field<SK, 16, 31> {}; // Service Key
+		
+		typedef FieldSet<SK> ALL;
 		
 		SWT_SK(SWT<CONFIG> *_swt) : Super(_swt) { Init(); }
 		SWT_SK(SWT<CONFIG> *_swt, uint32_t value) : Super(_swt, value) { Init(); }
@@ -504,9 +613,14 @@ private:
 	SWT_SK swt_sk; // SWT_SK
 	
 	// SWT registers address map
-	RegisterAddressMap<sc_dt::uint64, MasterID> reg_addr_map;
+	RegisterAddressMap<sc_dt::uint64, CustomReadWriteArg> reg_addr_map;
 	
 	unisim::kernel::tlm2::Schedule<Event> schedule; // Payload (processor requests over AHB interface) schedule
+	
+	bool got_initial_timeout;
+	unsigned int unlock_sequence_index;
+	unsigned int service_sequence_index;
+	uint32_t down_counter;
 	
 	unisim::util::endian::endian_type endian;
 	unisim::kernel::service::Parameter<unisim::util::endian::endian_type> param_endian;
@@ -517,9 +631,16 @@ private:
 	uint32_t swt_to_reset_value;
 	unisim::kernel::service::Parameter<uint32_t> param_swt_to_reset_value;
 	
+	bool irq_level;
+	sc_core::sc_event gen_irq_event;
+	bool reset_level;
+	sc_core::sc_event gen_reset_event;
+	sc_core::sc_time last_down_counter_run_time;         // Last time when down counter ran
+	sc_core::sc_event down_counter_run_event;            // Event to trigger down counter run (RunDownCounterProcess)
+	bool freeze;                                         // Latched value for internal "freeze"
 	sc_core::sc_time cycle_time;                               // cycle time
-	sc_core::sc_time watchdog_counter_cycle_time;              // Watchdog counter cycle time
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_watchdog_counter_cycle_time;
+	sc_core::sc_time watchdog_down_counter_cycle_time;              // Watchdog down counter cycle time
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_watchdog_down_counter_cycle_time;
 
 	void Reset();
 	void ProcessEvent(Event *event);
@@ -527,7 +648,27 @@ private:
 	void Process();
 	void UpdateSpeed();
 	void ClockPropertiesChangedProcess();
+	void SWT_RESET_B_Process();
+	void IRQ_Process();
 	void RESET_B_Process();
+
+	bool CheckMasterAccess(unsigned master_id) const;
+	void SetIRQLevel(bool level);
+	void TriggerReset();
+	void DecrementDownCounter(sc_dt::uint64 delta);
+	sc_dt::int64 TicksToNextDownCounterRun();
+	sc_core::sc_time TimeToNextDownCounterRun();
+	void RunDownCounterToTime(const sc_core::sc_time& time_stamp);
+	void ScheduleDownCounterRun();
+	void RunDownCounterProcess();
+	void RefreshFreeze();
+	
+	void UnlockSequence();
+	bool CheckWindow() const;
+	bool ServiceSequence(); 
+	void SetDownCounter(uint32_t value);
+	void RearmDownCounter();
+	void CheckCompatibility();
 };
 
 } // end of namespace swt
