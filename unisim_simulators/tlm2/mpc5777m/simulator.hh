@@ -48,6 +48,7 @@
 #include <unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.hh>
 #include <unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.hh>
 #include <unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.hh>
+#include <unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.hh>
 
 // Class definition of kernel, services and interfaces
 #include <unisim/kernel/service/service.hh>
@@ -127,8 +128,8 @@ private:
 	{
 		typedef FSB_ADDRESS_TYPE ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 2;
-		static const unsigned int OUTPUT_SOCKETS = 8;
-		static const unsigned int MAX_NUM_MAPPINGS = 13;
+		static const unsigned int OUTPUT_SOCKETS = 10;
+		static const unsigned int MAX_NUM_MAPPINGS = 15;
 		static const unsigned int BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;
 	};
@@ -158,6 +159,26 @@ private:
 		static const unsigned int NUM_MASTERS = 8; // FIXME: probably 4
 		static const unsigned int BUSWIDTH = 64; // FIXME: SWT will be on PBRIDGE which is 32-bit width
 	};
+	
+	struct PIT_0_CONFIG
+	{
+		static const unsigned int MAX_CHANNELS = 8;
+		static const unsigned int NUM_CHANNELS = 8;
+		static const bool HAS_RTI_SUPPORT = true;
+		static const bool HAS_DMA_SUPPORT = true;
+		static const bool HAS_64_BIT_TIMER_SUPPORT = false;
+		static const unsigned int BUSWIDTH = 64; // FIXME: PIT will be on PBRIDGE which is 32-bit width
+	};
+
+	struct PIT_1_CONFIG
+	{
+		static const unsigned int MAX_CHANNELS = 8;
+		static const unsigned int NUM_CHANNELS = 2;
+		static const bool HAS_RTI_SUPPORT = false;
+		static const bool HAS_DMA_SUPPORT = false;
+		static const bool HAS_64_BIT_TIMER_SUPPORT = true;
+		static const unsigned int BUSWIDTH = 64; // FIXME: PIT will be on PBRIDGE which is 32-bit width
+	};
 
 	//=========================================================================
 	//===                     Aliases for components classes                ===
@@ -175,6 +196,8 @@ private:
 	typedef unisim::component::tlm2::timer::freescale::mpc57xx::stm::STM<STM_2_CONFIG> STM_2;
 	typedef unisim::component::tlm2::watchdog::freescale::mpc57xx::swt::SWT<SWT_2_CONFIG> SWT_2;
 	typedef unisim::component::tlm2::watchdog::freescale::mpc57xx::swt::SWT<SWT_3_CONFIG> SWT_3;
+	typedef unisim::component::tlm2::timer::freescale::mpc57xx::pit::PIT<PIT_0_CONFIG> PIT_0;
+	typedef unisim::component::tlm2::timer::freescale::mpc57xx::pit::PIT<PIT_1_CONFIG> PIT_1;
 
 	//=========================================================================
 	//===                           Components                              ===
@@ -196,6 +219,9 @@ private:
 	//  - Software Watchdog Timers
 	SWT_2 *swt_2;
 	SWT_3 *swt_3;
+	//  - Periodic Interrupt Timers
+	PIT_0 *pit_0;
+	PIT_1 *pit_1;
 	
 	//=========================================================================
 	//===                            Services                               ===

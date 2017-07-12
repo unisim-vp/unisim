@@ -842,6 +842,7 @@ unisim/component/tlm2/interconnect/generic_router/config.hh \
 unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.hh \
 unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.hh \
 unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.hh \
+unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.hh \
 "
 
 UNISIM_LIB_MPC5777M_TEMPLATE_FILES="\
@@ -918,6 +919,7 @@ unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.tcc \
 unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.tcc \
 unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.tcc \
+unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.tcc \
 "
 
 UNISIM_LIB_MPC5777M_M4_FILES="\
@@ -1020,6 +1022,7 @@ soft/include/compiler_api.h \
 soft/include/intc.h \
 soft/include/stm.h \
 soft/include/swt.h \
+soft/include/pit.h \
 soft/src/57xx_ram.ld \
 soft/src/startup.S \
 soft/src/main_Z4_2.c \
@@ -1030,6 +1033,7 @@ soft/src/flashrchw.c \
 soft/src/intc.c \
 soft/src/stm.c \
 soft/src/swt.c \
+soft/src/pit.c \
 soft/bin/boot.elf \
 sim_config.xml \
 gtkwave_init_script.tcl \

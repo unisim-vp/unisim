@@ -323,15 +323,6 @@ void INTC<CONFIG>::end_of_elaboration()
 {
 	logger << DebugInfo << this->GetDescription() << EndDebugInfo;
 	
-	if(!m_clk_prop_proxy.IsClockCompatible())
-	{
-		logger << DebugError << "clock port is not bound to a unisim::kernel::tlm2::Clock" << EndDebugError;
-		unisim::kernel::service::Object::Stop(-1);
-		return;
-	}
-	
-	UpdateSpeed();
-	
 	// Spawn ClockPropertiesChangedProcess Process that monitor clock properties modifications
 	sc_core::sc_spawn_options clock_properties_changed_process_spawn_options;
 	
@@ -617,7 +608,6 @@ void INTC<CONFIG>::Process()
 template <typename CONFIG>
 void INTC<CONFIG>::Reset()
 {
-	
 	unsigned int prc_num;
 	unsigned int sw_irq_num;
 	unsigned int hw_irq_num;
@@ -664,6 +654,15 @@ void INTC<CONFIG>::Reset()
 	{
 		intc_psr_hw[hw_irq_num].InitializePriorityTree();
 	}
+	
+	if(!m_clk_prop_proxy.IsClockCompatible())
+	{
+		logger << DebugError << "clock port is not bound to a unisim::kernel::tlm2::Clock" << EndDebugError;
+		unisim::kernel::service::Object::Stop(-1);
+		return;
+	}
+	
+	UpdateSpeed();
 }
 
 template <typename CONFIG>
@@ -1075,6 +1074,10 @@ void INTC<CONFIG>::IRQAcknowledge(unsigned int prc_num)
 	unsigned int priority = IsSW_IRQ(irq_num) ? intc_psr_sw[IRQ2SW_IRQ(irq_num)].template Get<typename INTC_PSR<SW_IRQ>::PRIN>()
 	                                          : intc_psr_hw[IRQ2HW_IRQ(irq_num)].template Get<typename INTC_PSR<HW_IRQ>::PRIN>();
 	
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": Setting Current Priority level to " << priority << " for Processor #" << prc_num << EndDebugInfo;
+	}
 	intc_cpr[prc_num].template Set<typename INTC_CPR::PRI>(priority);
 
 	// For hardware IRQ, on the interrupt acknowledge cycle, the SWTn bit is cleared
@@ -1103,7 +1106,7 @@ void INTC<CONFIG>::EndOfInterrupt(unsigned int prc_num)
 	
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << sc_core::sc_time_stamp() << ": Poping Priority level " << priority << " from LIFO #" << prc_num << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": Poping Priority level " << priority << " from LIFO #" << prc_num << " into current priority for Processor #" << prc_num << EndDebugInfo;
 	}
 
 	intc_cpr[prc_num].template Set<typename INTC_CPR::PRI>(priority);

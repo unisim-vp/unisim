@@ -107,6 +107,7 @@ public:
 
 	peripheral_slave_if_type  peripheral_slave_if;  // peripheral slave interface
 	sc_core::sc_in<bool>      m_clk;                // Clock port
+	sc_core::sc_in<bool>      reset_b;              // reset
 	sc_core::sc_in<bool>      debug;                // debug port
 	sc_core::sc_out<bool>    *irq[NUM_CHANNELS];    // IRQ outputs
 	
@@ -479,11 +480,13 @@ private:
 	sc_core::sc_event counter_run_event;            // Event to trigger counter run (RunCounterProcess)
 	bool freeze;                                    // Latched value for internal "freeze"
 	
+	void Reset();
 	void ProcessEvent(Event *event);
 	void ProcessEvents();
 	void Process();
 	void UpdatePrescaledClockPeriod();
 	void IRQ_Process(unsigned int channel_num);
+	void RESET_B_Process();
 	
 	void SetIRQLevel(unsigned int channel_num, bool level);
 	void CompareCounter();

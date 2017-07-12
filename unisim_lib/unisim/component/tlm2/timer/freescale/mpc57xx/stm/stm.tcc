@@ -71,6 +71,7 @@ STM<CONFIG>::STM(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	, sc_core::sc_module(name)
 	, peripheral_slave_if("peripheral_slave_if")
 	, m_clk("m_clk")
+	, reset_b("reset_b")
 	, debug("debug")
 	, irq()
 	, logger(*this)
@@ -140,6 +141,9 @@ STM<CONFIG>::STM(const sc_core::sc_module_name& name, unisim::kernel::service::O
 		SC_METHOD(Process);
 	}
 	
+	SC_METHOD(RESET_B_Process);
+	sensitive << reset_b.pos();
+
 	// Spawn an IRQ_Process for each channel
 	for(channel_num = 0; channel_num < NUM_CHANNELS; channel_num++)
 	{
@@ -174,6 +178,20 @@ void STM<CONFIG>::end_of_elaboration()
 {
 	logger << DebugInfo << this->GetDescription() << EndDebugInfo;
 
+	// Spawn an RunCounterProcess sensitive scheduled when counter should run or clock properties have changed
+	sc_core::sc_spawn_options run_counter_process_spawn_options;
+	run_counter_process_spawn_options.spawn_method();
+	run_counter_process_spawn_options.set_sensitivity(&counter_run_event);
+	run_counter_process_spawn_options.set_sensitivity(&m_clk_prop_proxy.GetClockPropertiesChangedEvent());
+	
+	sc_core::sc_spawn(sc_bind(&STM<CONFIG>::RunCounterProcess, this), "RunCounterProcess", &run_counter_process_spawn_options);
+	
+	Reset();
+}
+
+template <typename CONFIG>
+void STM<CONFIG>::Reset()
+{
 	sc_core::sc_time start_time;
 	
 	if(m_clk_prop_proxy.GetClockPosEdgeFirst())
@@ -193,19 +211,13 @@ void STM<CONFIG>::end_of_elaboration()
 		logger << DebugInfo << "First MAIN_CLK rising edge is at " << start_time << EndDebugInfo;
 	}
 
-	last_counter_run_time = start_time;
+	if(start_time > last_counter_run_time)
+	{
+		last_counter_run_time = start_time;
+	}
 
 	UpdatePrescaledClockPeriod();
 	RefreshFreeze();
-
-	// Spawn an RunCounterProcess sensitive scheduled when counter should run or clock properties have changed
-	sc_core::sc_spawn_options run_counter_process_spawn_options;
-	run_counter_process_spawn_options.spawn_method();
-	run_counter_process_spawn_options.set_sensitivity(&counter_run_event);
-	run_counter_process_spawn_options.set_sensitivity(&m_clk_prop_proxy.GetClockPropertiesChangedEvent());
-	
-	sc_core::sc_spawn(sc_bind(&STM<CONFIG>::RunCounterProcess, this), "RunCounterProcess", &run_counter_process_spawn_options);
-	
 	ScheduleCounterRun();
 }
 
@@ -624,6 +636,15 @@ void STM<CONFIG>::IRQ_Process(unsigned int channel_num)
 		logger << DebugInfo << irq[channel_num]->name() << " <- " << irq_level[channel_num] << EndDebugInfo;
 	}
 	*irq[channel_num] = irq_level[channel_num];
+}
+
+template <typename CONFIG>
+void STM<CONFIG>::RESET_B_Process()
+{
+	if(reset_b.posedge())
+	{
+		Reset();
+	}
 }
 
 template <typename CONFIG>

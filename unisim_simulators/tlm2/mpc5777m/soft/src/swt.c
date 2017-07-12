@@ -95,9 +95,14 @@ void swt_disable(unsigned int swt_id)
 	swt[swt_id]->CR.B.WEN = 0;
 }
 
-void swt_set_service_mode(unsigned int swt_id, enum SWT_SMD smd)
+void swt_set_service_mode(unsigned int swt_id, SWT_SMD smd)
 {
 	swt[swt_id]->CR.B.SMD = smd;
+}
+
+SWT_SMD swt_get_service_mode(unsigned int swt_id)
+{
+	return (SWT_SMD) swt[swt_id]->CR.B.SMD;
 }
 
 void swt_enable_window_mode(unsigned int swt_id)
@@ -176,9 +181,35 @@ uint32_t swt_get_counter(unsigned int swt_id)
 	return swt[swt_id]->CO.B.CNT;
 }
 
+void swt_set_service_key(unsigned int swt_id, uint16_t value)
+{
+	swt[swt_id]->SK.B.SK = value;
+}
+
 uint16_t swt_get_service_key(unsigned int swt_id)
 {
 	return swt[swt_id]->SK.B.SK;
+}
+
+void swt_service_sequence(unsigned int swt_id)
+{
+	switch(swt_get_service_mode(swt_id))
+	{
+		case SMD_FIXED_SERVICE_SEQUENCE:
+			swt[swt_id]->SR.R = 0xa602;
+			swt[swt_id]->SR.R = 0xb480;
+			break;
+		case SMD_KEYED_SERVICE_SEQUENCE:
+		{
+			uint16_t service_key = swt_get_service_key(swt_id);
+			swt[swt_id]->SR.R = service_key = (17 * service_key) + 3;
+			swt[swt_id]->SR.R = service_key = (17 * service_key) + 3;
+			break;
+		}
+		
+		default:
+			break;
+	}
 }
 
 void swt_clear_interrupt_flag(unsigned int swt_id)

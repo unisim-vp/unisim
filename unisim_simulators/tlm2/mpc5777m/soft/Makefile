@@ -10,7 +10,7 @@ CFLAGS    = -g3 $(OPTFLAGS) -fdebug-prefix-map=$(PWD)=../ # -Wall
 LDFLAGS   = -static
 
 LIBS      =
-SRCS      = src/flashrchw.c src/main_Z4_2.c src/intc.c src/stm.c src/swt.c
+SRCS      = src/flashrchw.c src/main_Z4_2.c src/intc.c src/stm.c src/swt.c src/pit.c
 ASMS      = src/startup.S src/intc_sw_handlers.S src/vector.S
 
 COBJS     = $(patsubst %.c,%.o,$(SRCS))

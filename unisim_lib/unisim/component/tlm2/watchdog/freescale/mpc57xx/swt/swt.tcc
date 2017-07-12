@@ -176,16 +176,6 @@ void SWT<CONFIG>::end_of_elaboration()
 {
 	logger << DebugInfo << this->GetDescription() << EndDebugInfo;
 	
-	if(!m_clk_prop_proxy.IsClockCompatible())
-	{
-		logger << DebugError << "clock port is not bound to a unisim::kernel::tlm2::Clock" << EndDebugError;
-		unisim::kernel::service::Object::Stop(-1);
-		return;
-	}
-	
-	UpdateSpeed();
-	RefreshFreeze();
-	
 	// Spawn ClockPropertiesChangedProcess Process that monitor clock properties modifications
 	sc_core::sc_spawn_options clock_properties_changed_process_spawn_options;
 	
@@ -195,7 +185,6 @@ void SWT<CONFIG>::end_of_elaboration()
 	sc_core::sc_spawn(sc_bind(&SWT<CONFIG>::ClockPropertiesChangedProcess, this), "ClockPropertiesChangedProcess", &clock_properties_changed_process_spawn_options);
 
 	Reset();
-	ScheduleDownCounterRun();
 }
 
 template <typename CONFIG>
@@ -473,6 +462,11 @@ void SWT<CONFIG>::Reset()
 	SetDownCounter(swt_to);
 	
 	CheckCompatibility();
+	
+	UpdateSpeed();
+	RefreshFreeze();
+
+	ScheduleDownCounterRun();
 }
 
 template <typename CONFIG>
@@ -874,6 +868,13 @@ void SWT<CONFIG>::CheckCompatibility()
 			break;
 		default:
 			break;
+	}
+
+	if(!m_clk_prop_proxy.IsClockCompatible())
+	{
+		logger << DebugError << "clock port is not bound to a unisim::kernel::tlm2::Clock" << EndDebugError;
+		unisim::kernel::service::Object::Stop(-1);
+		return;
 	}
 }
 

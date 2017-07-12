@@ -342,7 +342,7 @@ struct NullField
 
 /////////////////////////////// FieldSet<> /////////////////////////////////
 
-template < typename  BF0               , typename  BF1 = NullField, typename  BF2 = NullField, typename  BF3 = NullField
+template < typename  BF0 = NullField, typename  BF1 = NullField, typename  BF2 = NullField, typename  BF3 = NullField
          , typename  BF4 = NullField, typename  BF5 = NullField, typename  BF6 = NullField, typename  BF7 = NullField
          , typename  BF8 = NullField, typename  BF9 = NullField, typename BF10 = NullField, typename BF11 = NullField
          , typename BF12 = NullField, typename BF13 = NullField, typename BF14 = NullField, typename BF15 = NullField

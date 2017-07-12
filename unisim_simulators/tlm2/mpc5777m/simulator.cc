@@ -37,6 +37,7 @@
 #include <unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.tcc>
 #include <unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.tcc>
 #include <unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.tcc>
+#include <unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.tcc>
 
 Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	: unisim::kernel::tlm2::Simulator(name, argc, argv, LoadBuiltInConfig)
@@ -49,6 +50,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, stm_2(0)
 	, swt_2(0)
 	, swt_3(0)
+	, pit_0(0)
+	, pit_1(0)
 	, loader(0)
 	, debugger(0)
 	, gdb_server(0)
@@ -90,6 +93,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//  - Software Watchdog Timers
 	swt_2 = new SWT_2("SWT_2", this);
 	swt_3 = new SWT_3("SWT_3", this);
+	
+	//  - Periodic Interrupt Timers
+	pit_0 = new PIT_0("PIT_0", this);
+	pit_1 = new PIT_1("PIT_1", this);
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -145,6 +152,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	}
 	
 	RegisterPort(stm_2->m_clk);
+	RegisterPort(stm_2->reset_b);
 	RegisterPort(stm_2->debug);
 	unsigned int channel_num;
 	for(channel_num = 0; channel_num < STM_2_CONFIG::NUM_CHANNELS; channel_num++)
@@ -166,6 +174,29 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(swt_3->irq);
 	RegisterPort(swt_3->reset_b);
 
+	RegisterPort(pit_0->m_clk);
+	RegisterPort(pit_0->rti_clk);
+	RegisterPort(pit_0->reset_b);
+	RegisterPort(pit_0->debug);
+	for(channel_num = 0; channel_num < PIT_0_CONFIG::MAX_CHANNELS; channel_num++)
+	{
+		RegisterPort(*pit_0->irq[channel_num]);
+		RegisterPort(*pit_0->dma_trigger[channel_num]);
+	}
+	RegisterPort(pit_0->rtirq);
+	
+	RegisterPort(pit_1->m_clk);
+	RegisterPort(pit_1->rti_clk);
+	RegisterPort(pit_1->reset_b);
+	RegisterPort(pit_1->debug);
+	for(channel_num = 0; channel_num < PIT_0_CONFIG::MAX_CHANNELS; channel_num++)
+	{
+		RegisterPort(*pit_1->irq[channel_num]);
+		RegisterPort(*pit_1->dma_trigger[channel_num]);
+	}
+	RegisterPort(pit_1->rtirq);
+	
+	
 	//=========================================================================
 	//===                           Signal creation                         ===
 	//=========================================================================
@@ -174,6 +205,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateClock("clk_300MHz");
 	CreateClock("clk_100MHz");
 	CreateClock("clk_50MHz");
+	CreateClock("clk_1MHz");
 	
 	CreateSignal("m_por", false);
 	CreateSignal("stop", false);
@@ -194,6 +226,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	CreateSignalArray(INTC_0::NUM_IRQS, "irq", false);
 	CreateSignalArray(STM_2_CONFIG::NUM_CHANNELS, "stm_2_cir", false);
+
+	CreateSignalArray(64, "dma_trigger", false);
 	
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -209,6 +243,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*interconnect->init_socket[5])(stm_2->peripheral_slave_if);// Crossbar <-> PERIPHERAL_SLAVE_IF<STM_2
 	(*interconnect->init_socket[6])(swt_2->peripheral_slave_if); // Crossbar <-> PERIPHERAL_SLAVE_IF<SWT_2
 	(*interconnect->init_socket[7])(swt_3->peripheral_slave_if); // Crossbar <-> PERIPHERAL_SLAVE_IF<SWT_3
+	(*interconnect->init_socket[8])(pit_0->peripheral_slave_if); // Crossbar <-> PERIPHERAL_SLAVE_IF<PIT_0
+	(*interconnect->init_socket[9])(pit_1->peripheral_slave_if); // Crossbar <-> PERIPHERAL_SLAVE_IF<PIT_1
 
 	Bind("HARDWARE.Peripheral_Core_2.m_clk"           , "HARDWARE.clk_200MHz");
 	Bind("HARDWARE.Peripheral_Core_2.m_por"           , "HARDWARE.m_por");
@@ -231,6 +267,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_iack"   , "HARDWARE.p_iack"   );
 	
 	Bind("HARDWARE.STM_2.m_clk"           , "HARDWARE.clk_50MHz");
+	Bind("HARDWARE.STM_2.reset_b"         , "HARDWARE.reset_b");
 	Bind("HARDWARE.STM_2.debug"           , "HARDWARE.debug");
 	
 	Bind("HARDWARE.SWT_2.m_clk"           , "HARDWARE.clk_50MHz");
@@ -245,6 +282,46 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.SWT_3.debug"           , "HARDWARE.debug");
 	Bind("HARDWARE.SWT_3.reset_b"         , "HARDWARE.p_reset_b_3");
 	
+	Bind("HARDWARE.PIT_0.m_clk"           , "HARDWARE.clk_50MHz");
+	Bind("HARDWARE.PIT_0.rti_clk"         , "HARDWARE.clk_1MHz");
+	Bind("HARDWARE.PIT_0.reset_b"         , "HARDWARE.reset_b");
+	Bind("HARDWARE.PIT_0.debug"           , "HARDWARE.debug");
+	
+	Bind("HARDWARE.PIT_0.dma_trigger_0", "HARDWARE.dma_trigger_8");
+	Bind("HARDWARE.PIT_0.dma_trigger_1", "HARDWARE.dma_trigger_9");
+	Bind("HARDWARE.PIT_0.dma_trigger_2", "HARDWARE.dma_trigger_10");
+	Bind("HARDWARE.PIT_0.dma_trigger_3", "HARDWARE.dma_trigger_11");
+	Bind("HARDWARE.PIT_0.dma_trigger_4", "HARDWARE.dma_trigger_12");
+	Bind("HARDWARE.PIT_0.dma_trigger_5", "HARDWARE.dma_trigger_16");
+	Bind("HARDWARE.PIT_0.dma_trigger_6", "HARDWARE.dma_trigger_32");
+	Bind("HARDWARE.PIT_0.dma_trigger_7", "HARDWARE.dma_trigger_48");
+	
+	Bind("HARDWARE.PIT_1.m_clk"           , "HARDWARE.clk_50MHz");
+	Bind("HARDWARE.PIT_1.rti_clk"         , "HARDWARE.pull_down");
+	Bind("HARDWARE.PIT_1.reset_b"         , "HARDWARE.reset_b");
+	Bind("HARDWARE.PIT_1.debug"           , "HARDWARE.debug");
+	
+	Bind("HARDWARE.PIT_1.irq_0"           , "HARDWARE.pull_down");
+	Bind("HARDWARE.PIT_1.irq_1"           , "HARDWARE.pull_down");
+	Bind("HARDWARE.PIT_1.irq_2"           , "HARDWARE.pull_down");
+	Bind("HARDWARE.PIT_1.irq_3"           , "HARDWARE.pull_down");
+	Bind("HARDWARE.PIT_1.irq_4"           , "HARDWARE.pull_down");
+	Bind("HARDWARE.PIT_1.irq_5"           , "HARDWARE.pull_down");
+	Bind("HARDWARE.PIT_1.irq_6"           , "HARDWARE.pull_down");
+	Bind("HARDWARE.PIT_1.irq_7"           , "HARDWARE.pull_down");
+	
+	Bind("HARDWARE.PIT_1.rtirq"           , "HARDWARE.pull_down");
+
+	Bind("HARDWARE.PIT_1.dma_trigger_0"   , "HARDWARE.pull_down");
+	Bind("HARDWARE.PIT_1.dma_trigger_1"   , "HARDWARE.pull_down");
+	Bind("HARDWARE.PIT_1.dma_trigger_2"   , "HARDWARE.pull_down");
+	Bind("HARDWARE.PIT_1.dma_trigger_3"   , "HARDWARE.pull_down");
+	Bind("HARDWARE.PIT_1.dma_trigger_4"   , "HARDWARE.pull_down");
+	Bind("HARDWARE.PIT_1.dma_trigger_5"   , "HARDWARE.pull_down");
+	Bind("HARDWARE.PIT_1.dma_trigger_6"   , "HARDWARE.pull_down");
+	Bind("HARDWARE.PIT_1.dma_trigger_7"   , "HARDWARE.pull_down");
+	
+
 	// Interrupt sources
 	
 	// IRQ # ---- Source name ------------ Description ------------------------- Note --------------
@@ -470,22 +547,49 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	InterruptSource(223);
 	InterruptSource(224);
 	InterruptSource(225);
-	InterruptSource(226);
-	InterruptSource(227);
-	InterruptSource(228);
-	InterruptSource(229);
-	InterruptSource(230);
-	InterruptSource(231);
-	InterruptSource(232);
-	InterruptSource(233);
+	
+	// 226      PIT_0_TFLG0[TIF]    periodic interrupt timer 0_0
+	// 227      PIT_0_TFLG1[TIF]    periodic interrupt timer 0_1
+	// 228      PIT_0_TFLG2[TIF]    periodic interrupt timer 0_2
+	// 229      PIT_0_TFLG3[TIF]    periodic interrupt timer 0_3
+	// 230      PIT_0_TFLG4[TIF]    periodic interrupt timer 0_4
+	// 231      PIT_0_TFLG5[TIF]    periodic interrupt timer 0_5
+	// 232      PIT_0_TFLG6[TIF]    periodic interrupt timer 0_6
+	// 233      PIT_0_TFLG7[TIF]    periodic interrupt timer 0_7
+	
+	InterruptSource(226, "HARDWARE.PIT_0.irq_0");
+	InterruptSource(227, "HARDWARE.PIT_0.irq_1");
+	InterruptSource(228, "HARDWARE.PIT_0.irq_2");
+	InterruptSource(229, "HARDWARE.PIT_0.irq_3");
+	InterruptSource(230, "HARDWARE.PIT_0.irq_4");
+	InterruptSource(231, "HARDWARE.PIT_0.irq_5");
+	InterruptSource(232, "HARDWARE.PIT_0.irq_6");
+	InterruptSource(233, "HARDWARE.PIT_0.irq_7");
+
+	// 234          UNUSED
+	//  ..          UNUSED
+	// 238          UNUSED
+	
 	InterruptSource(234);
 	InterruptSource(235);
 	InterruptSource(236);
 	InterruptSource(237);
 	InterruptSource(238);
-	InterruptSource(239);
-	InterruptSource(240);
-	InterruptSource(241);
+	
+	// 239   PIT_0_RTI_TFLG[TIF]    periodic interrupt timer RTI
+
+	InterruptSource(239, "HARDWARE.PIT_0.rtirq");
+	
+	// 240      PIT_1_TFLG0[TIF]    periodic interrupt timer 1_0
+	// 241      PIT_1_TFLG1[TIF]    periodic interrupt timer 1_1
+	
+	InterruptSource(240, "HARDWARE.PIT_1.irq_0");
+	InterruptSource(241, "HARDWARE.PIT_1.irq_1");
+
+	// 242          TODO
+	//  ..          TODO	
+	// 964          TODO
+
 	InterruptSource(242);
 	InterruptSource(243);
 	InterruptSource(244);
@@ -1210,11 +1314,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	InterruptSource(963);
 	InterruptSource(964);
 
-	
-	
-// 	BindArray(STM_CONFIG::NUM_CHANNELS, "HARDWARE.STM_2.p_irq"       , "HARDWARE.stm_2_cir");
-// 	BindArray(STM_CONFIG::NUM_CHANNELS, "HARDWARE.INTC_0.hw_irq", 44 - INTC::NUM_SW_IRQS, "HARDWARE.stm_2_cir", 0);
-	
 	//=========================================================================
 	//===                        Clients/Services connection                ===
 	//=========================================================================
@@ -1308,6 +1407,8 @@ Simulator::~Simulator()
 	if(stm_2) delete stm_2;
 	if(swt_2) delete swt_2;
 	if(swt_3) delete swt_3;
+	if(pit_0) delete pit_0;
+	if(pit_1) delete pit_1;
 	if(debugger) delete debugger;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
@@ -1383,7 +1484,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.clk_100MHz.clock-period", "10 ns");
 	simulator->SetVariable("HARDWARE.clk_50MHz.lazy-clock", "true");
 	simulator->SetVariable("HARDWARE.clk_50MHz.clock-period", "20 ns");
-
+	simulator->SetVariable("HARDWARE.clk_1MHz.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.clk_1MHz.clock-period", "1 us");
 	
 	//  - e200 PowerPC cores
 
@@ -1468,20 +1570,22 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_10", "range_start=\"0xfc070000\" range_end=\"0xfc073fff\" output_port=\"5\" translation=\"0x0\""); // STM_2
 	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_11", "range_start=\"0xfc058000\" range_end=\"0xfc05bfff\" output_port=\"6\" translation=\"0x0\""); // SWT_2
 	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_12", "range_start=\"0xfc05c000\" range_end=\"0xfc05ffff\" output_port=\"7\" translation=\"0x0\""); // SWT_3
+	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_13", "range_start=\"0xfff84000\" range_end=\"0xfff87fff\" output_port=\"8\" translation=\"0x0\""); // PIT_0
+	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_14", "range_start=\"0xfff80000\" range_end=\"0xfff83fff\" output_port=\"9\" translation=\"0x0\""); // PIT_1
 
 	// - Loader
 	simulator->SetVariable("loader.filename", "soft/bin/boot.elf");
 	
 	// - Loader memory router
 	simulator->SetVariable("loader.memory-mapper.mapping",
-	                       "HARDWARE.STANDBY-RAM:0x40000000-0x4000ffff:+0x0" // Standby RAM
-	                       ",HARDWARE.SYSTEM-RAM:0x40010000-0x401fffff:+0x0"  // System RAM
-	                       ",HARDWARE.FLASH:0x00400000-0x00407fff:+0x0"       // UTEST (UTest NVM Block Space 16 KB + BAF (block0) 16 KB)
-	                       ",HARDWARE.FLASH:0x0060c000-0x0062ffff:+0x0"       // HSM Code
-	                       ",HARDWARE.FLASH:0x00680000-0x007fffff:+0x0"       // HSM Data
-	                       ",HARDWARE.FLASH:0x00800000-0x009fffff:+0x0"       // Low & Mid Flash Blocks
-	                       ",HARDWARE.FLASH:0x01000000-0x01ffffff:+0x0"       // Large Flash Blocks
-	                       ",HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x0"        // Peripheral_Core_2 Local Memory
+	                       "HARDWARE.STANDBY-RAM:0x40000000-0x4000ffff:+0x0"        // Standby RAM
+	                       ",HARDWARE.SYSTEM-RAM:0x40010000-0x401fffff:+0x0"        // System RAM
+	                       ",HARDWARE.FLASH:0x00400000-0x00407fff:+0x0"             // UTEST (UTest NVM Block Space 16 KB + BAF (block0) 16 KB)
+	                       ",HARDWARE.FLASH:0x0060c000-0x0062ffff:+0x0"             // HSM Code
+	                       ",HARDWARE.FLASH:0x00680000-0x007fffff:+0x0"             // HSM Data
+	                       ",HARDWARE.FLASH:0x00800000-0x009fffff:+0x0"             // Low & Mid Flash Blocks
+	                       ",HARDWARE.FLASH:0x01000000-0x01ffffff:+0x0"             // Large Flash Blocks
+	                       ",HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x0" // Peripheral_Core_2 Local Memory
 	                      );
 
 	//  - Standby RAM
@@ -1521,6 +1625,12 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//  - SWT_3
 	simulator->SetVariable("HARDWARE.SWT_3.swt-cr-reset-value", 0xff00010a);
 	simulator->SetVariable("HARDWARE.SWT_3.swt-to-reset-value", 0x0005fcd0);
+
+	//  - PIT_0
+	simulator->SetVariable("HARDWARE.PIT_0.pit-mcr-reset-value", 0x06);
+	
+	//  - PIT_1
+	simulator->SetVariable("HARDWARE.PIT_1.pit-mcr-reset-value", 0x02);
 
 	//=========================================================================
 	//===                      Service run-time configuration               ===

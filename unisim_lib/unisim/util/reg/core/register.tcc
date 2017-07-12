@@ -566,7 +566,7 @@ inline const std::string& FieldSet<  BF0,  BF1,  BF2,  BF3,  BF4,  BF5,  BF6,  B
 	static std::string name;
 	if(!name.empty()) return name;
 	
-	name += BF0::GetName();
+	if(typeid(BF0) == typeid(NullField)) return name; name += BF0::GetName();
 	if(typeid(BF1) == typeid(NullField)) return name; name += ':'; name += BF1::GetName();
 	if(typeid(BF2) == typeid(NullField)) return name; name += ':'; name += BF2::GetName();
 	if(typeid(BF3) == typeid(NullField)) return name; name += ':'; name += BF3::GetName();
@@ -659,7 +659,7 @@ inline void FieldSet<  BF0,  BF1,  BF2,  BF3,  BF4,  BF5,  BF6,  BF7
                     , BF48, BF49, BF50, BF51, BF52, BF53, BF54, BF55
                     , BF56, BF57, BF58, BF59, BF60, BF61, BF62, BF63>::ShortPrettyPrint(std::ostream& os, const T& storage)
 {
-	BF0::ShortPrettyPrint(os, storage);
+	if(typeid(BF0) == typeid(NullField)) return; BF0::ShortPrettyPrint(os, storage);
 	if(typeid(BF1) == typeid(NullField)) return; os << ':'; BF1::ShortPrettyPrint(os, storage);
 	if(typeid(BF2) == typeid(NullField)) return; os << ':'; BF2::ShortPrettyPrint(os, storage);
 	if(typeid(BF3) == typeid(NullField)) return; os << ':'; BF3::ShortPrettyPrint(os, storage);
@@ -751,7 +751,7 @@ inline void FieldSet<  BF0,  BF1,  BF2,  BF3,  BF4,  BF5,  BF6,  BF7
                     , BF48, BF49, BF50, BF51, BF52, BF53, BF54, BF55
                     , BF56, BF57, BF58, BF59, BF60, BF61, BF62, BF63>::LongPrettyPrint(std::ostream& os, const T& storage)
 {
-	BF0::LongPrettyPrint(os, storage);
+	if(typeid(BF0) == typeid(NullField)) return; BF0::LongPrettyPrint(os, storage);
 	if(typeid(BF1) == typeid(NullField)) return; os << std::endl; BF1::LongPrettyPrint(os, storage);
 	if(typeid(BF2) == typeid(NullField)) return; os << std::endl; BF2::LongPrettyPrint(os, storage);
 	if(typeid(BF3) == typeid(NullField)) return; os << std::endl; BF3::LongPrettyPrint(os, storage);
@@ -849,7 +849,7 @@ inline typename Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::TYPE Register
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 inline typename Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::TYPE Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::GetWriteOneClearMask() const
 {
-	return (_ACCESS & AF_SW_W) ? (REGISTER::ALL::template GetWriteOneClearMask<TYPE>() & TYPE_MASK): 0;
+	return (_ACCESS & AF_SW_W) ? ((_ACCESS & AF_SW_W1C) ? REGISTER::ALL::template GetWriteMask<TYPE>() : (REGISTER::ALL::template GetWriteOneClearMask<TYPE>() & TYPE_MASK)) : 0;
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>

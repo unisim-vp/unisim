@@ -87,6 +87,8 @@ Instrumenter::Instrumenter(const char *name, unisim::kernel::service::Object *pa
 	, input_csv_instrument_map()
 	, input_time_stamp(sc_core::SC_ZERO_TIME)
 	, next_input_instrumentation_event("next_input_instrumentation_event")
+	, pull_down_signal(CreateSignal<bool, sc_core::SC_MANY_WRITERS>("pull_down", false))
+	, pull_up_signal(CreateSignal<bool, sc_core::SC_MANY_WRITERS>("pull_up", true))
 {
 	if(enable_input_instrumentation && !instrumentation_input_filename.empty())
 	{
