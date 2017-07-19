@@ -40,6 +40,7 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/kernel/tlm2/clock.hh>
+#include <unisim/kernel/tlm2/master_id.hh>
 #include <inttypes.h>
 #include <stack>
 #include <vector>
@@ -146,6 +147,7 @@ private:
 	double one;
 	bool enable_dmi;
 	bool debug_dmi;
+	unsigned int ahb_master_id;
 
 	Parameter<double> param_clock_multiplier;
 	Parameter<sc_time> param_nice_time;
@@ -158,6 +160,7 @@ private:
 	Statistic<sc_time> stat_idle_time;
 	Formula<double> formula_idle_rate;
 	Formula<double> formula_load_rate;
+	Parameter<unsigned int> param_ahb_master_id;
 	
 	unisim::kernel::tlm2::DMIRegionCache i_dmi_region_cache;
 	unisim::kernel::tlm2::DMIRegionCache d_dmi_region_cache;

@@ -762,6 +762,11 @@ void PIT<CONFIG>::DoRestartRTITimer()
 		
 		uint32_t ldval = pit_rti_ldval.template Get<typename PIT_RTI_LDVAL::TSV>();
 		
+		if(ldval < 32)
+		{
+			logger << DebugWarning << pit_rti_ldval.GetName() << " value should be greater or equal than 32" << EndDebugWarning; 
+		}
+
 		pit_rti_cval.template Set<typename PIT_RTI_CVAL::TVL>(ldval);
 		
 		ScheduleTimersRun();
@@ -829,7 +834,7 @@ void PIT<CONFIG>::DecrementTimers(sc_dt::uint64 delta)
 							uint32_t cval = pit_cval[channel_num].template Get<typename PIT_CVAL::TVL>();
 							if(cval < 1)
 							{
-								logger << DebugWarning << "Model has a problem because too much time has elapsed since last timer run, resulting in a counter underflow and/or lost interrupt" << EndDebugWarning;
+								logger << DebugWarning << "Model has a problem because too much time has elapsed since last timer run, resulting in a counter #" << channel_num << " underflow and/or lost interrupt (delta=" << 1 << ", cval=" << cval << ")" << EndDebugWarning;
 							}
 							
 							cval = (cval > 1) ? (cval - 1) : 0;
@@ -846,7 +851,7 @@ void PIT<CONFIG>::DecrementTimers(sc_dt::uint64 delta)
 						
 						if(cval < delta)
 						{
-							logger << DebugWarning << "Model has a problem because too much time has elapsed since last timer run, resulting in a counter underflow and/or lost interrupt" << EndDebugWarning;
+							logger << DebugWarning << "Model has a problem because too much time has elapsed since last timer run, resulting in a counter #" << channel_num << " underflow and/or lost interrupt (delta=" << delta << ", cval=" << cval << ")" << EndDebugWarning;
 						}
 						
 						cval = (cval > delta) ? (cval - delta) : 0;
@@ -957,12 +962,8 @@ sc_dt::int64 PIT<CONFIG>::TicksToNextTimersRun()
 					if(cval == 1)
 					{
 						ticks_to_expiration = previous_ticks_to_expiration;
-						
-						if(pit_tctrl[channel_num].template Get<typename PIT_TCTRL::TIE>())
-						{
-							sc_dt::int64 ticks_to_interrupt = ticks_to_expiration;
-							if(ticks_to_interrupt < min_ticks) min_ticks = ticks_to_interrupt;
-						}
+
+						if(ticks_to_expiration && (ticks_to_expiration < min_ticks)) min_ticks = ticks_to_expiration;
 					}
 					else
 					{
@@ -977,11 +978,7 @@ sc_dt::int64 PIT<CONFIG>::TicksToNextTimersRun()
 					
 					ticks_to_expiration = cval;
 					
-					if(pit_tctrl[channel_num].template Get<typename PIT_TCTRL::TIE>())
-					{
-						sc_dt::int64 ticks_to_interrupt = ticks_to_expiration;
-						if(ticks_to_interrupt < min_ticks) min_ticks = ticks_to_interrupt;
-					}
+					if(ticks_to_expiration && (ticks_to_expiration < min_ticks)) min_ticks = ticks_to_expiration;
 				}
 			}
 			else
@@ -1014,11 +1011,7 @@ sc_dt::int64 PIT<CONFIG>::TicksToNextRTITimerRun()
 					
 				sc_dt::int64 ticks_to_expiration = cval;
 					
-				if(pit_rti_tctrl.template Get<typename PIT_RTI_TCTRL::TIE>())
-				{
-					sc_dt::int64 ticks_to_interrupt = ticks_to_expiration;
-					return ticks_to_interrupt;
-				}
+				return ticks_to_expiration ? ticks_to_expiration : max_ticks;
 			}
 		}
 	}

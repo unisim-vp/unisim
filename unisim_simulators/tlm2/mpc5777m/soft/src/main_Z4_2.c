@@ -60,9 +60,13 @@ void periodic_task(unsigned int stm_id, unsigned int chan)
 	stm_clear_interrupt_flag(stm_id, chan);
 }
 
+uint64_t lifetime;
+
 void periodic_task2(unsigned int pit_id, unsigned int chan)
 {
 	pit_clear_timer_interrupt_flag(pit_id, chan);
+	
+	lifetime = pit_get_lifetime(1);
 }
 
 int main(void)
@@ -91,6 +95,14 @@ int main(void)
 	pit_enable_timer(0, 0);
 	pit_enable_timer_interrupt(0, 0);
 	pit_enable_timers_clock(0);
+	
+	// lifetime
+	pit_set_timer_load_value(1, 0, 19999);
+	pit_set_timer_load_value(1, 1, 1000);
+	pit_chain_timer(1, 1);
+	pit_enable_timer(1, 0);
+	pit_enable_timer(1, 1);
+	pit_enable_timers_clock(1);
 	
 	/* Loop forever */
 	for(;;) {	   

@@ -189,7 +189,7 @@ public:
 	void free(tlm::tlm_generic_payload *_payload)
 	{
 		PAYLOAD *payload = reinterpret_cast<PAYLOAD *>(_payload);
-		payload->free_all_extensions();
+		//payload->free_all_extensions(); Note: extensions are freed by payload destructor
 		free_list.push(payload);
 	}
 private:

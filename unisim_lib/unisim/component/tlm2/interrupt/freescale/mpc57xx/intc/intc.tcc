@@ -37,6 +37,7 @@
 
 #include <unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.hh>
 #include <unisim/util/reg/core/register.tcc>
+#include <unisim/kernel/tlm2/master_id.hh>
 
 namespace unisim {
 namespace component {
@@ -381,7 +382,8 @@ void INTC<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_ti
 	sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 	notify_time_stamp += t;
 	Event *event = schedule.AllocEvent();
-	event->SetProcessorNumber(2); // FIXME
+	unisim::kernel::tlm2::tlm_master_id *master_id = payload.template get_extension<unisim::kernel::tlm2::tlm_master_id>();
+	event->SetProcessorNumber(master_id ? (int)(*master_id) : 0);
 	event->SetPayload(&payload);
 	event->SetTimeStamp(notify_time_stamp);
 	event->SetCompletionEvent(&completion_event);
@@ -444,7 +446,8 @@ tlm::tlm_sync_enum INTC<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& paylo
 				sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 				notify_time_stamp += t;
 				Event *event = schedule.AllocEvent();
-				event->SetProcessorNumber(2); // FIXME
+				unisim::kernel::tlm2::tlm_master_id *master_id = payload.template get_extension<unisim::kernel::tlm2::tlm_master_id>();
+				event->SetProcessorNumber(master_id ? (int)(*master_id) : 0);
 				event->SetPayload(&payload);
 				event->SetTimeStamp(notify_time_stamp);
 				schedule.Notify(event);
@@ -549,7 +552,6 @@ void INTC<CONFIG>::ProcessEvent(Event *event)
 	{
 		tlm::tlm_phase phase = tlm::BEGIN_RESP;
 		
-		unsigned int prc_num = event->GetProcessorNumber();
 		tlm::tlm_sync_enum sync = peripheral_slave_if->nb_transport_bw(*payload, phase, completion_time);
 		
 		switch(sync)

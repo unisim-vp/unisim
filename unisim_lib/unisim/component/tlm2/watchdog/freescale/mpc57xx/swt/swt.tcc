@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_TLM2_WATCHDOG_FREESCALE_MPC57XX_SWT_SWT_TCC__
 
 #include <unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.hh>
+#include <unisim/kernel/tlm2/master_id.hh>
 
 namespace unisim {
 namespace component {
@@ -196,7 +197,8 @@ void SWT<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_tim
 	Event *event = schedule.AllocEvent();
 	event->SetPayload(&payload);
 	event->SetTimeStamp(notify_time_stamp);
-	event->SetMasterID(2); // FIXME
+	unisim::kernel::tlm2::tlm_master_id *master_id = payload.template get_extension<unisim::kernel::tlm2::tlm_master_id>();
+	event->SetMasterID(master_id ? (int)(*master_id) : 0);
 	event->SetCompletionEvent(&completion_event);
 	schedule.Notify(event);
 	sc_core::wait(completion_event);
@@ -262,6 +264,8 @@ tlm::tlm_sync_enum SWT<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& payloa
 				Event *event = schedule.AllocEvent();
 				event->SetPayload(&payload);
 				event->SetTimeStamp(notify_time_stamp);
+				unisim::kernel::tlm2::tlm_master_id *master_id = payload.template get_extension<unisim::kernel::tlm2::tlm_master_id>();
+				event->SetMasterID(master_id ? (int)(*master_id) : 0);
 				schedule.Notify(event);
 				phase = tlm::END_REQ;
 				return tlm::TLM_UPDATED;

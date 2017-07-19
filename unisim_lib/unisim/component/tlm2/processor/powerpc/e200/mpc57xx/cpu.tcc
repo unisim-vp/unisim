@@ -93,6 +93,7 @@ CPU<TYPES, CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, one(1.0)
 	, enable_dmi(false)
 	, debug_dmi(false)
+	, ahb_master_id(0)
 	, param_clock_multiplier("clock-multiplier", this, clock_multiplier, "clock multiplier")
 	, param_nice_time("nice-time", this, nice_time, "maximum time between synchonizations")
 	, param_ipc("ipc", this, ipc, "maximum instructions per cycle, typically 1 or 2")
@@ -104,6 +105,7 @@ CPU<TYPES, CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, stat_idle_time("idle-time", this, idle_time, "idle time")
 	, formula_idle_rate("idle-rate", this, "/", &stat_idle_time, &stat_run_time, "idle rate")
 	, formula_load_rate("load-rate", this, "-", &stat_one, &formula_idle_rate, "load rate")
+	, param_ahb_master_id("ahb-master-id", this, ahb_master_id, "AHB Master ID")
 	, i_dmi_region_cache()
 	, d_dmi_region_cache()
 {
@@ -624,6 +626,18 @@ bool CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: traditional way for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
+	unisim::kernel::tlm2::tlm_master_id *master_id = 0;
+	payload->get_extension(master_id);
+	if(master_id)
+	{
+		*master_id = ahb_master_id;
+	}
+	else
+	{
+		master_id = new unisim::kernel::tlm2::tlm_master_id(ahb_master_id);
+		payload->set_extension(master_id);
+	}
+	
 	payload->set_address(physical_addr);
 	payload->set_command(tlm::TLM_READ_COMMAND);
 	payload->set_streaming_width(size);
@@ -708,6 +722,18 @@ bool CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 	
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
+	unisim::kernel::tlm2::tlm_master_id *master_id = 0;
+	payload->get_extension(master_id);
+	if(master_id)
+	{
+		*master_id = ahb_master_id;
+	}
+	else
+	{
+		master_id = new unisim::kernel::tlm2::tlm_master_id(ahb_master_id);
+		payload->set_extension(master_id);
+	}
+
 	payload->set_address(physical_addr);
 	payload->set_command(tlm::TLM_READ_COMMAND);
 	payload->set_streaming_width(size);
@@ -792,6 +818,17 @@ bool CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void
 	
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
+	unisim::kernel::tlm2::tlm_master_id *master_id = 0;
+	payload->get_extension(master_id);
+	if(master_id)
+	{
+		*master_id = ahb_master_id;
+	}
+	else
+	{
+		master_id = new unisim::kernel::tlm2::tlm_master_id(ahb_master_id);
+		payload->set_extension(master_id);
+	}
 	payload->set_address(physical_addr);
 	payload->set_command(tlm::TLM_WRITE_COMMAND);
 	payload->set_streaming_width(size);

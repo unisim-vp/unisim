@@ -389,19 +389,19 @@ private:
 		
 		virtual ReadWriteStatus Read(sc_core::sc_time& time_stamp, uint32_t& value, const uint32_t& bit_enable)
 		{
+			// Run timers until read time
+			this->pit->RunTimersToTime(time_stamp);
+
+			// Make PIT_LTMR64H reflect PIT_CVAL1 value
 			uint32_t lth = this->pit->pit_cval[1].template Get<typename PIT_CVAL::TVL>();
-			
 			this->operator = (lth);
 			
 			// Read register
 			ReadWriteStatus rws = this->Super::Read(time_stamp, value, bit_enable);
 			
-			if(this->pit->pit_tctrl[0].template Get<typename PIT_TCTRL::CHN>())
-			{
-				uint32_t ltl = this->pit->pit_cval[0].template Get<typename PIT_CVAL::TVL>();
-				
-				this->pit->pit_ltmr64l.template Set<typename PIT_LTMR64L::LTL>(ltl);
-			}
+			// Make PIT_LTMR64L reflect PIT_CVAL0 value at the time of PIT_LTMR64H read
+			uint32_t ltl = this->pit->pit_cval[0].template Get<typename PIT_CVAL::TVL>();
+			this->pit->pit_ltmr64l.template Set<typename PIT_LTMR64L::LTL>(ltl);
 			
 			return rws;
 		}

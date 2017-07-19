@@ -124,15 +124,47 @@ private:
 	typedef uint32_t FSB_ADDRESS_TYPE;
 	typedef uint32_t CPU_REG_TYPE;
 
-	struct INTERCONNECT_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
+	struct XBAR_0_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
 	{
 		typedef FSB_ADDRESS_TYPE ADDRESS;
-		static const unsigned int INPUT_SOCKETS = 2;
-		static const unsigned int OUTPUT_SOCKETS = 10;
-		static const unsigned int MAX_NUM_MAPPINGS = 15;
+		static const unsigned int INPUT_SOCKETS = 6;
+		static const unsigned int OUTPUT_SOCKETS = 8;
+		static const unsigned int MAX_NUM_MAPPINGS = 11;
 		static const unsigned int BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;
 	};
+	
+	struct XBAR_1_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
+	{
+		typedef FSB_ADDRESS_TYPE ADDRESS;
+		static const unsigned int INPUT_SOCKETS = 4;
+		static const unsigned int OUTPUT_SOCKETS = 4;
+		static const unsigned int MAX_NUM_MAPPINGS = 12;
+		static const unsigned int BUSWIDTH = 64;
+		static const bool VERBOSE = DEBUG_ENABLE;
+	};
+	
+	struct PBRIDGE_A_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
+	{
+		typedef FSB_ADDRESS_TYPE ADDRESS;
+		static const unsigned int INPUT_SOCKETS = 1;
+		static const unsigned int OUTPUT_SOCKETS = 10;
+		static const unsigned int MAX_NUM_MAPPINGS = 10;
+		static const unsigned int BUSWIDTH = 64;
+		static const bool VERBOSE = DEBUG_ENABLE;
+	};
+	
+#if 0
+	struct PBRIDGE_B_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
+	{
+		typedef FSB_ADDRESS_TYPE ADDRESS;
+		static const unsigned int INPUT_SOCKETS = 1;
+		static const unsigned int OUTPUT_SOCKETS = 10;
+		static const unsigned int MAX_NUM_MAPPINGS = 10;
+		static const unsigned int BUSWIDTH = 64;
+		static const bool VERBOSE = DEBUG_ENABLE;
+	};
+#endif
 	
 	struct INTC_0_CONFIG
 	{
@@ -142,10 +174,34 @@ private:
 		static const unsigned int VOFFSET_WIDTH = 14;
 	};
 	
+	struct STM_0_CONFIG
+	{
+		static const unsigned int NUM_CHANNELS = 4;
+		static const unsigned int BUSWIDTH = 64; // FIXME: INTC will be on PBRIDGE which is 32-bit width
+	};
+
+	struct STM_1_CONFIG
+	{
+		static const unsigned int NUM_CHANNELS = 4;
+		static const unsigned int BUSWIDTH = 64; // FIXME: INTC will be on PBRIDGE which is 32-bit width
+	};
+
 	struct STM_2_CONFIG
 	{
 		static const unsigned int NUM_CHANNELS = 4;
 		static const unsigned int BUSWIDTH = 64; // FIXME: INTC will be on PBRIDGE which is 32-bit width
+	};
+
+	struct SWT_0_CONFIG
+	{
+		static const unsigned int NUM_MASTERS = 8; // FIXME: probably 4
+		static const unsigned int BUSWIDTH = 64; // FIXME: SWT will be on PBRIDGE which is 32-bit width
+	};
+
+	struct SWT_1_CONFIG
+	{
+		static const unsigned int NUM_MASTERS = 8; // FIXME: probably 4
+		static const unsigned int BUSWIDTH = 64; // FIXME: SWT will be on PBRIDGE which is 32-bit width
 	};
 
 	struct SWT_2_CONFIG
@@ -184,44 +240,69 @@ private:
 	//===                     Aliases for components classes                ===
 	//=========================================================================
 
-//	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> RAM;
-	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> STANDBY_RAM;
-	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> SYSTEM_RAM;
+	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> SYSTEM_SRAM;
 	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> FLASH;
 	typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::e200z710n3::CPU Main_Core_0;
 	typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::e200z710n3::CPU Main_Core_1;
 	typedef unisim::component::tlm2::processor::powerpc::e200::mpc57xx::e200z425bn3::CPU Peripheral_Core_2;
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<INTERCONNECT_CONFIG> INTERCONNECT;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<XBAR_0_CONFIG> XBAR_0;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<XBAR_1_CONFIG> XBAR_1;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<PBRIDGE_A_CONFIG> PBRIDGE_A;
 	typedef unisim::component::tlm2::interrupt::freescale::mpc57xx::intc::INTC<INTC_0_CONFIG> INTC_0;
+	typedef unisim::component::tlm2::timer::freescale::mpc57xx::stm::STM<STM_0_CONFIG> STM_0;
+	typedef unisim::component::tlm2::timer::freescale::mpc57xx::stm::STM<STM_1_CONFIG> STM_1;
 	typedef unisim::component::tlm2::timer::freescale::mpc57xx::stm::STM<STM_2_CONFIG> STM_2;
+	typedef unisim::component::tlm2::watchdog::freescale::mpc57xx::swt::SWT<SWT_0_CONFIG> SWT_0;
+	typedef unisim::component::tlm2::watchdog::freescale::mpc57xx::swt::SWT<SWT_1_CONFIG> SWT_1;
 	typedef unisim::component::tlm2::watchdog::freescale::mpc57xx::swt::SWT<SWT_2_CONFIG> SWT_2;
 	typedef unisim::component::tlm2::watchdog::freescale::mpc57xx::swt::SWT<SWT_3_CONFIG> SWT_3;
 	typedef unisim::component::tlm2::timer::freescale::mpc57xx::pit::PIT<PIT_0_CONFIG> PIT_0;
 	typedef unisim::component::tlm2::timer::freescale::mpc57xx::pit::PIT<PIT_1_CONFIG> PIT_1;
+	typedef unisim::kernel::tlm2::TargetStub<64> PBRIDGE_B_STUB;
+	typedef unisim::kernel::tlm2::TargetStub<64> EBI_STUB;
+	typedef unisim::kernel::tlm2::TargetStub<64> FLASH_PORT1_STUB;
+	typedef unisim::kernel::tlm2::TargetStub<64> XBAR_0_S6_STUB;
+	typedef unisim::kernel::tlm2::InitiatorStub<64> XBAR_1_M1_STUB;
+	typedef unisim::kernel::tlm2::InitiatorStub<64> XBAR_1_M2_STUB;
 
 	//=========================================================================
 	//===                           Components                              ===
 	//=========================================================================
-	//  - PowerPC processor
+	//  - PowerPC cores
+	Main_Core_0 *main_core_0;
+	Main_Core_1 *main_core_1;
 	Peripheral_Core_2 *peripheral_core_2;
-	//  - Standby RAM
-	STANDBY_RAM *standby_ram;
-	//  - System RAM
-	SYSTEM_RAM *system_ram;
+	//  - System SRAM
+	SYSTEM_SRAM *system_sram;
 	//  - FLASH
 	FLASH *flash;
-	//  - Interconnect
-	INTERCONNECT *interconnect;
+	//  - Crossbars
+	XBAR_0 *xbar_0;
+	XBAR_1 *xbar_1;
+	//  - Peripheral Bridges
+	PBRIDGE_A *pbridge_a;
+	PBRIDGE_B_STUB *pbridge_b_stub;
 	//  - Interrupt Controller
 	INTC_0 *intc_0;
-	//  - System Timer Module
+	//  - System Timer Modules
+	STM_0 *stm_0;
+	STM_1 *stm_1;
 	STM_2 *stm_2;
 	//  - Software Watchdog Timers
+	SWT_0 *swt_0;
+	SWT_1 *swt_1;
 	SWT_2 *swt_2;
 	SWT_3 *swt_3;
 	//  - Periodic Interrupt Timers
 	PIT_0 *pit_0;
 	PIT_1 *pit_1;
+	
+	//  - Stubs
+	EBI_STUB *ebi_stub;
+	FLASH_PORT1_STUB *flash_port1_stub;
+	XBAR_0_S6_STUB *xbar_0_s6_stub;
+	XBAR_1_M1_STUB *xbar_1_m1_stub;
+	XBAR_1_M2_STUB *xbar_1_m2_stub;
 	
 	//=========================================================================
 	//===                            Services                               ===

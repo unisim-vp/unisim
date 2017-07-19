@@ -41,17 +41,30 @@
 
 Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	: unisim::kernel::tlm2::Simulator(name, argc, argv, LoadBuiltInConfig)
+	, main_core_0(0)
+	, main_core_1(0)
 	, peripheral_core_2(0)
-	, standby_ram(0)
-	, system_ram(0)
+	, system_sram(0)
 	, flash(0)
-	, interconnect(0)
+	, xbar_0(0)
+	, xbar_1(0)
+	, pbridge_a(0)
+	, pbridge_b_stub(0)
 	, intc_0(0)
+	, stm_0(0)
+	, stm_1(0)
 	, stm_2(0)
+	, swt_0(0)
+	, swt_1(0)
 	, swt_2(0)
 	, swt_3(0)
 	, pit_0(0)
 	, pit_1(0)
+	, ebi_stub(0)
+	, flash_port1_stub(0)
+	, xbar_0_s6_stub(0)
+	, xbar_1_m1_stub(0)
+	, xbar_1_m2_stub(0)
 	, loader(0)
 	, debugger(0)
 	, gdb_server(0)
@@ -66,37 +79,55 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, exit_status(0)
 {
+	unsigned int channel_num;
+	unsigned int hw_irq_num;
+	unsigned int prc_num;
+
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
 	//  - PowerPC e200 processors
+	main_core_0 = new Main_Core_0("Main_Core_0", this);
+	main_core_1 = new Main_Core_1("Main_Core_1", this);
 	peripheral_core_2 = new Peripheral_Core_2("Peripheral_Core_2", this);
 
-	//  - Standby RAM
-	standby_ram = new STANDBY_RAM("STANDBY-RAM", this);
-	
-	//  - System RAM
-	system_ram = new SYSTEM_RAM("SYSTEM-RAM", this);
+	//  - System SRAM
+	system_sram = new SYSTEM_SRAM("SYSTEM-SRAM", this);
 	
 	//  - FLASH
 	flash = new FLASH("FLASH", this);
 	
-	//  - Interconnect
-	interconnect = new INTERCONNECT("INTERCONNECT", this);
+	//  - Crossbars
+	xbar_0 = new XBAR_0("XBAR_0", this);
+	xbar_1 = new XBAR_1("XBAR_1", this);
+	
+	// Peripheral Bridges
+	pbridge_a = new PBRIDGE_A("PBRIDGE_A", this); 
+	pbridge_b_stub = new PBRIDGE_B_STUB("PBRIDGE_B", this); 
 	
 	//  - Interrupt Controller
 	intc_0 = new INTC_0("INTC_0", this);
 	
 	//  - System Timer Module
+	stm_0 = new STM_0("STM_0", this);
+	stm_1 = new STM_1("STM_1", this);
 	stm_2 = new STM_2("STM_2", this);
 
 	//  - Software Watchdog Timers
+	swt_0 = new SWT_0("SWT_0", this);
+	swt_1 = new SWT_1("SWT_1", this);
 	swt_2 = new SWT_2("SWT_2", this);
 	swt_3 = new SWT_3("SWT_3", this);
 	
 	//  - Periodic Interrupt Timers
 	pit_0 = new PIT_0("PIT_0", this);
 	pit_1 = new PIT_1("PIT_1", this);
+	
+	ebi_stub = new EBI_STUB("EBI", this);
+	flash_port1_stub = new FLASH_PORT1_STUB("FLASH_PORT1", this);
+	xbar_0_s6_stub = new XBAR_0_S6_STUB("XBAR_0_S6", this);
+	xbar_1_m1_stub = new XBAR_1_M1_STUB("XBAR_1_M1", this);
+	xbar_1_m2_stub = new XBAR_1_M2_STUB("XBAR_1_M2", this);
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -121,6 +152,32 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//=========================================================================
 	//===                          Port registration                        ===
 	//=========================================================================
+	RegisterPort(main_core_0->m_clk);
+	RegisterPort(main_core_0->m_por);
+	RegisterPort(main_core_0->p_reset_b);
+	RegisterPort(main_core_0->p_nmi_b);
+	RegisterPort(main_core_0->p_mcp_b);
+	RegisterPort(main_core_0->p_rstbase);
+	RegisterPort(main_core_0->p_cpuid);
+	RegisterPort(main_core_0->p_extint_b);
+	RegisterPort(main_core_0->p_crint_b);
+	RegisterPort(main_core_0->p_avec_b);
+	RegisterPort(main_core_0->p_voffset);
+	RegisterPort(main_core_0->p_iack);
+
+	RegisterPort(main_core_1->m_clk);
+	RegisterPort(main_core_1->m_por);
+	RegisterPort(main_core_1->p_reset_b);
+	RegisterPort(main_core_1->p_nmi_b);
+	RegisterPort(main_core_1->p_mcp_b);
+	RegisterPort(main_core_1->p_rstbase);
+	RegisterPort(main_core_1->p_cpuid);
+	RegisterPort(main_core_1->p_extint_b);
+	RegisterPort(main_core_1->p_crint_b);
+	RegisterPort(main_core_1->p_avec_b);
+	RegisterPort(main_core_1->p_voffset);
+	RegisterPort(main_core_1->p_iack);
+
 	RegisterPort(peripheral_core_2->m_clk);
 	RegisterPort(peripheral_core_2->m_por);
 	RegisterPort(peripheral_core_2->p_reset_b);
@@ -137,12 +194,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(intc_0->m_clk);
 	RegisterPort(intc_0->reset_b);
 	
-	unsigned int hw_irq_num;
 	for(hw_irq_num = 0; hw_irq_num < INTC_0_CONFIG::NUM_HW_IRQS; hw_irq_num++)
 	{
 		RegisterPort(*intc_0->hw_irq[hw_irq_num]);
 	}
-	unsigned int prc_num;
 	for(prc_num = 0; prc_num < INTC_0_CONFIG::NUM_PROCESSORS; prc_num++)
 	{
 		RegisterPort(*intc_0->p_iack[prc_num]);
@@ -151,14 +206,43 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		RegisterPort(*intc_0->p_voffset[prc_num]);
 	}
 	
+	RegisterPort(stm_0->m_clk);
+	RegisterPort(stm_0->reset_b);
+	RegisterPort(stm_0->debug);
+	for(channel_num = 0; channel_num < STM_0_CONFIG::NUM_CHANNELS; channel_num++)
+	{
+		RegisterPort(*stm_0->irq[channel_num]);
+	}
+
+	RegisterPort(stm_1->m_clk);
+	RegisterPort(stm_1->reset_b);
+	RegisterPort(stm_1->debug);
+	for(channel_num = 0; channel_num < STM_1_CONFIG::NUM_CHANNELS; channel_num++)
+	{
+		RegisterPort(*stm_1->irq[channel_num]);
+	}
+
 	RegisterPort(stm_2->m_clk);
 	RegisterPort(stm_2->reset_b);
 	RegisterPort(stm_2->debug);
-	unsigned int channel_num;
 	for(channel_num = 0; channel_num < STM_2_CONFIG::NUM_CHANNELS; channel_num++)
 	{
 		RegisterPort(*stm_2->irq[channel_num]);
 	}
+
+	RegisterPort(swt_0->m_clk);
+	RegisterPort(swt_0->swt_reset_b);
+	RegisterPort(swt_0->stop);
+	RegisterPort(swt_0->debug);
+	RegisterPort(swt_0->irq);
+	RegisterPort(swt_0->reset_b);
+
+	RegisterPort(swt_1->m_clk);
+	RegisterPort(swt_1->swt_reset_b);
+	RegisterPort(swt_1->stop);
+	RegisterPort(swt_1->debug);
+	RegisterPort(swt_1->irq);
+	RegisterPort(swt_1->reset_b);
 
 	RegisterPort(swt_2->m_clk);
 	RegisterPort(swt_2->swt_reset_b);
@@ -211,8 +295,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateSignal("stop", false);
 	CreateSignal("debug", false);
 	CreateSignal("reset_b", false);
-	CreateSignal<bool, sc_core::SC_MANY_WRITERS>("p_reset_b_2", false);
-	CreateSignal<bool, sc_core::SC_MANY_WRITERS>("p_reset_b_3", false);
+	CreateSignal<bool, sc_core::SC_MANY_WRITERS>("p_reset_b_0", true);
+	CreateSignal<bool, sc_core::SC_MANY_WRITERS>("p_reset_b_1", true);
+	CreateSignal<bool, sc_core::SC_MANY_WRITERS>("p_reset_b_2", true);
+	CreateSignal<bool, sc_core::SC_MANY_WRITERS>("p_reset_b_3", true);
 	CreateSignal("p_nmi_b", true);
 	CreateSignal("p_mcp_b", true);
 	CreateSignal("p_rstbase", sc_dt::sc_uint<30>(0));
@@ -233,18 +319,66 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//===                        Components connection                      ===
 	//=========================================================================
 
-	peripheral_core_2->i_ahb_if(*interconnect->targ_socket[0]); // Peripheral_Core_2>I_AHB_IF <-> Crossbar
-	peripheral_core_2->d_ahb_if(*interconnect->targ_socket[1]); // Peripheral_Core_2>D_AHB_IF <-> Crossbar
-	(*interconnect->init_socket[0])(standby_ram->slave_sock); // Crossbar <-> Standby RAM
-	(*interconnect->init_socket[1])(system_ram->slave_sock);  // Crossbar <-> System RAM
-	(*interconnect->init_socket[2])(flash->slave_sock);  // Crossbar <-> FLASH
-	(*interconnect->init_socket[3])(peripheral_core_2->s_ahb_if);  // Crossbar <-> S_AHB_IF<Peripheral_Core_2
-	(*interconnect->init_socket[4])(intc_0->peripheral_slave_if);// Crossbar <-> PERIPHERAL_SLAVE_IF<INTC_0
-	(*interconnect->init_socket[5])(stm_2->peripheral_slave_if);// Crossbar <-> PERIPHERAL_SLAVE_IF<STM_2
-	(*interconnect->init_socket[6])(swt_2->peripheral_slave_if); // Crossbar <-> PERIPHERAL_SLAVE_IF<SWT_2
-	(*interconnect->init_socket[7])(swt_3->peripheral_slave_if); // Crossbar <-> PERIPHERAL_SLAVE_IF<SWT_3
-	(*interconnect->init_socket[8])(pit_0->peripheral_slave_if); // Crossbar <-> PERIPHERAL_SLAVE_IF<PIT_0
-	(*interconnect->init_socket[9])(pit_1->peripheral_slave_if); // Crossbar <-> PERIPHERAL_SLAVE_IF<PIT_1
+	main_core_0->i_ahb_if(*xbar_0->targ_socket[0]);               //       Main_Core_0>I_AHB_IF <-> XBAR_0 M0
+	main_core_0->d_ahb_if(*xbar_0->targ_socket[1]);               //       Main_Core_0>D_AHB_IF <-> XBAR_0 M1
+	main_core_1->i_ahb_if(*xbar_0->targ_socket[2]);               //       Main_Core_1>I_AHB_IF <-> XBAR_0 M2
+	main_core_1->d_ahb_if(*xbar_0->targ_socket[3]);               //       Main_Core_1>D_AHB_IF <-> XBAR_0 M3
+	peripheral_core_2->i_ahb_if(*xbar_0->targ_socket[5]);         // Peripheral_Core_2>I_AHB_IF <-> XBAR_0 M5
+	
+	peripheral_core_2->d_ahb_if(*xbar_1->targ_socket[0]);         // Peripheral_Core_2>D_AHB_IF <-> XBAR_1 M0
+	xbar_1_m1_stub->master_sock(*xbar_1->targ_socket[1]);        // TODO: XBAR_1 M1 <-> DMA and HSM
+	xbar_1_m2_stub->master_sock(*xbar_1->targ_socket[2]);        // TODO: XBAR_1 M2 <-> FEC, LFAST and FlexRay
+	
+	(*xbar_0->init_socket[0])(flash->slave_sock);                 //       XBAR_0 S0 <-> FLASH Port 0
+	(*xbar_0->init_socket[1])(flash_port1_stub->slave_sock);      // TODO: XBAR_0 S1 <-> FLASH Port 1
+	(*xbar_0->init_socket[2])(main_core_0->s_ahb_if);             //       XBAR_0 S2 <-> S_AHB_IF<Main_Core_0
+	(*xbar_0->init_socket[3])(main_core_1->s_ahb_if);             //       XBAR_0 S3 <-> S_AHB_IF<Main_Core_1
+	(*xbar_0->init_socket[4])(system_sram->slave_sock);           //       XBAR_0 S4 <-> System SRAM
+	(*xbar_0->init_socket[5])(ebi_stub->slave_sock);              // TODO: XBAR_0 S5 <-> EBI
+	(*xbar_0->init_socket[6])(xbar_0_s6_stub->slave_sock);        // TODO: XBAR_0 S6 <-> unused
+	(*xbar_0->init_socket[7])(*xbar_1->targ_socket[3]);           //       XBAR_0 S7 <-> XBAR_1 M3
+
+	(*xbar_1->init_socket[0])(*xbar_0->targ_socket[4]);           //       XBAR_1 S0 <-> XBAR_0 M4
+	(*xbar_1->init_socket[1])(peripheral_core_2->s_ahb_if);       //       XBAR_1 S1 <-> S_AHB_IF<Peripheral_Core_2
+	(*xbar_1->init_socket[2])(pbridge_b_stub->slave_sock);        // TODO: XBAR_1 S1 <-> PBRIDGE_B
+	(*xbar_1->init_socket[3])(*pbridge_a->targ_socket[0]);        //       XBAR_1 S0 <-> PBRIDGE_A
+	
+	(*pbridge_a->init_socket[0])(intc_0->peripheral_slave_if);    // PBRIDGE_A <-> INTC_0
+	(*pbridge_a->init_socket[1])(stm_0->peripheral_slave_if);     // PBRIDGE_A <-> STM_0
+	(*pbridge_a->init_socket[2])(stm_1->peripheral_slave_if);     // PBRIDGE_A <-> STM_1
+	(*pbridge_a->init_socket[3])(stm_2->peripheral_slave_if);     // PBRIDGE_A <-> STM_2
+	(*pbridge_a->init_socket[4])(swt_0->peripheral_slave_if);     // PBRIDGE_A <-> SWT_0
+	(*pbridge_a->init_socket[5])(swt_1->peripheral_slave_if);     // PBRIDGE_A <-> SWT_1
+	(*pbridge_a->init_socket[6])(swt_2->peripheral_slave_if);     // PBRIDGE_A <-> SWT_2
+	(*pbridge_a->init_socket[7])(swt_3->peripheral_slave_if);     // PBRIDGE_A <-> SWT_3
+	(*pbridge_a->init_socket[8])(pit_0->peripheral_slave_if);     // PBRIDGE_A <-> PIT_0
+	(*pbridge_a->init_socket[9])(pit_1->peripheral_slave_if);     // PBRIDGE_A <-> PIT_1
+	
+	Bind("HARDWARE.Main_Core_0.m_clk"           , "HARDWARE.clk_300MHz");
+	Bind("HARDWARE.Main_Core_0.m_por"           , "HARDWARE.m_por");
+	Bind("HARDWARE.Main_Core_0.p_reset_b"       , "HARDWARE.p_reset_b_0");
+	Bind("HARDWARE.Main_Core_0.p_nmi_b"         , "HARDWARE.p_nmi_b");
+	Bind("HARDWARE.Main_Core_0.p_mcp_b"         , "HARDWARE.p_mcp_b");
+	Bind("HARDWARE.Main_Core_0.p_rstbase"       , "HARDWARE.p_rstbase");
+	Bind("HARDWARE.Main_Core_0.p_cpuid"         , "HARDWARE.p_cpuid");
+	Bind("HARDWARE.Main_Core_0.p_extint_b"      , "HARDWARE.p_irq_b_0");
+	Bind("HARDWARE.Main_Core_0.p_crint_b"       , "HARDWARE.p_crint_b");
+	Bind("HARDWARE.Main_Core_0.p_avec_b"        , "HARDWARE.p_avec_b_0");
+	Bind("HARDWARE.Main_Core_0.p_voffset"       , "HARDWARE.p_voffset_0");
+	Bind("HARDWARE.Main_Core_0.p_iack"          , "HARDWARE.p_iack_0");
+
+	Bind("HARDWARE.Main_Core_1.m_clk"           , "HARDWARE.clk_300MHz");
+	Bind("HARDWARE.Main_Core_1.m_por"           , "HARDWARE.m_por");
+	Bind("HARDWARE.Main_Core_1.p_reset_b"       , "HARDWARE.p_reset_b_0");
+	Bind("HARDWARE.Main_Core_1.p_nmi_b"         , "HARDWARE.p_nmi_b");
+	Bind("HARDWARE.Main_Core_1.p_mcp_b"         , "HARDWARE.p_mcp_b");
+	Bind("HARDWARE.Main_Core_1.p_rstbase"       , "HARDWARE.p_rstbase");
+	Bind("HARDWARE.Main_Core_1.p_cpuid"         , "HARDWARE.p_cpuid");
+	Bind("HARDWARE.Main_Core_1.p_extint_b"      , "HARDWARE.p_irq_b_1");
+	Bind("HARDWARE.Main_Core_1.p_crint_b"       , "HARDWARE.p_crint_b");
+	Bind("HARDWARE.Main_Core_1.p_avec_b"        , "HARDWARE.p_avec_b_1");
+	Bind("HARDWARE.Main_Core_1.p_voffset"       , "HARDWARE.p_voffset_1");
+	Bind("HARDWARE.Main_Core_1.p_iack"          , "HARDWARE.p_iack_1");
 
 	Bind("HARDWARE.Peripheral_Core_2.m_clk"           , "HARDWARE.clk_200MHz");
 	Bind("HARDWARE.Peripheral_Core_2.m_por"           , "HARDWARE.m_por");
@@ -266,10 +400,30 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_voffset", "HARDWARE.p_voffset");
 	BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_iack"   , "HARDWARE.p_iack"   );
 	
+	Bind("HARDWARE.STM_0.m_clk"           , "HARDWARE.clk_50MHz");
+	Bind("HARDWARE.STM_0.reset_b"         , "HARDWARE.reset_b");
+	Bind("HARDWARE.STM_0.debug"           , "HARDWARE.debug");
+
+	Bind("HARDWARE.STM_1.m_clk"           , "HARDWARE.clk_50MHz");
+	Bind("HARDWARE.STM_1.reset_b"         , "HARDWARE.reset_b");
+	Bind("HARDWARE.STM_1.debug"           , "HARDWARE.debug");
+
 	Bind("HARDWARE.STM_2.m_clk"           , "HARDWARE.clk_50MHz");
 	Bind("HARDWARE.STM_2.reset_b"         , "HARDWARE.reset_b");
 	Bind("HARDWARE.STM_2.debug"           , "HARDWARE.debug");
 	
+	Bind("HARDWARE.SWT_0.m_clk"           , "HARDWARE.clk_50MHz");
+	Bind("HARDWARE.SWT_0.swt_reset_b"     , "HARDWARE.reset_b");
+	Bind("HARDWARE.SWT_0.stop"            , "HARDWARE.stop");
+	Bind("HARDWARE.SWT_0.debug"           , "HARDWARE.debug");
+	Bind("HARDWARE.SWT_0.reset_b"         , "HARDWARE.p_reset_b_0");
+
+	Bind("HARDWARE.SWT_1.m_clk"           , "HARDWARE.clk_50MHz");
+	Bind("HARDWARE.SWT_1.swt_reset_b"     , "HARDWARE.reset_b");
+	Bind("HARDWARE.SWT_1.stop"            , "HARDWARE.stop");
+	Bind("HARDWARE.SWT_1.debug"           , "HARDWARE.debug");
+	Bind("HARDWARE.SWT_1.reset_b"         , "HARDWARE.p_reset_b_1");
+
 	Bind("HARDWARE.SWT_2.m_clk"           , "HARDWARE.clk_50MHz");
 	Bind("HARDWARE.SWT_2.swt_reset_b"     , "HARDWARE.reset_b");
 	Bind("HARDWARE.SWT_2.stop"            , "HARDWARE.stop");
@@ -301,8 +455,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.PIT_1.reset_b"         , "HARDWARE.reset_b");
 	Bind("HARDWARE.PIT_1.debug"           , "HARDWARE.debug");
 	
-	Bind("HARDWARE.PIT_1.irq_0"           , "HARDWARE.pull_down");
-	Bind("HARDWARE.PIT_1.irq_1"           , "HARDWARE.pull_down");
 	Bind("HARDWARE.PIT_1.irq_2"           , "HARDWARE.pull_down");
 	Bind("HARDWARE.PIT_1.irq_3"           , "HARDWARE.pull_down");
 	Bind("HARDWARE.PIT_1.irq_4"           , "HARDWARE.pull_down");
@@ -329,37 +481,37 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//  ..           ..                       ..                                   ..
 	//  31    INTC SSCIR31[CLR]    software settable flag 31            internally routed in INTC
 	
-	//  32          TODO
-	//  ..          TODO
-	//  33          TODO
-	
-	InterruptSource(32);
-	InterruptSource(33);
-	
+	//  32      SWT_0 IR[TIF]
+	//  33      SWT_1 IR[TIF]
 	//  34      SWT_2 IR[TIF]
 	//  35      SWT_3 IR[TIF]
 	
+	InterruptSource(32, "HARDWARE.SWT_0.irq");
+	InterruptSource(33, "HARDWARE.SWT_1.irq");
 	InterruptSource(34, "HARDWARE.SWT_2.irq");
 	InterruptSource(35, "HARDWARE.SWT_3.irq");
 
-	//  36          TODO
-	//  ..          TODO
-	//  43          TODO
-	
-	InterruptSource(36);
-	InterruptSource(37);
-	InterruptSource(38);
-	InterruptSource(39);
-	InterruptSource(40);
-	InterruptSource(41);
-	InterruptSource(42);
-	InterruptSource(43);
-
+	//  36      STM_0 CIR0[CIF]     platform period timer 0_0
+	//  37      STM_0 CIR1[CIF]     platform period timer 0_1
+	//  38      STM_0 CIR2[CIF]     platform period timer 0_2
+	//  39      STM_0 CIR3[CIF]     platform period timer 0_3
+	//  40      STM_1 CIR0[CIF]     platform period timer 1_0
+	//  41      STM_1 CIR1[CIF]     platform period timer 1_1
+	//  42      STM_1 CIR2[CIF]     platform period timer 1_2
+	//  43      STM_1 CIR3[CIF]     platform period timer 1_3
 	//  44      STM_2 CIR0[CIF]     platform period timer 2_0
 	//  45      STM_2 CIR1[CIF]     platform period timer 2_1
 	//  46      STM_2 CIR2[CIF]     platform period timer 2_2
 	//  47      STM_2 CIR3[CIF]     platform period timer 2_3
 	
+	InterruptSource(36, "HARDWARE.STM_0.irq_0");
+	InterruptSource(37, "HARDWARE.STM_0.irq_1");
+	InterruptSource(38, "HARDWARE.STM_0.irq_2");
+	InterruptSource(39, "HARDWARE.STM_0.irq_3");
+	InterruptSource(40, "HARDWARE.STM_1.irq_0");
+	InterruptSource(41, "HARDWARE.STM_1.irq_1");
+	InterruptSource(42, "HARDWARE.STM_1.irq_2");
+	InterruptSource(43, "HARDWARE.STM_1.irq_3");
 	InterruptSource(44, "HARDWARE.STM_2.irq_0");
 	InterruptSource(45, "HARDWARE.STM_2.irq_1");
 	InterruptSource(46, "HARDWARE.STM_2.irq_2");
@@ -1318,13 +1470,17 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//===                        Clients/Services connection                ===
 	//=========================================================================
 
-	peripheral_core_2->memory_import >> interconnect->memory_export;
+	main_core_0->memory_import >> xbar_0->memory_export;
+	main_core_1->memory_import >> xbar_0->memory_export;
+	peripheral_core_2->memory_import >> xbar_1->memory_export;
 
-	(*interconnect->memory_import[0]) >> standby_ram->memory_export;
-	(*interconnect->memory_import[1]) >> system_ram->memory_export;
-	(*interconnect->memory_import[2]) >> flash->memory_export;
-	(*interconnect->memory_import[3]) >> peripheral_core_2->memory_export;
-//	peripheral_core_2->loader_import >> loader2->loader_export;
+	(*xbar_0->memory_import[0]) >> flash->memory_export;
+	(*xbar_0->memory_import[2]) >> main_core_0->memory_export;
+	(*xbar_0->memory_import[3]) >> main_core_1->memory_export;
+	(*xbar_0->memory_import[4]) >> system_sram->memory_export;
+	(*xbar_0->memory_import[7]) >> xbar_1->memory_export;
+	
+	(*xbar_1->memory_import[1]) >> peripheral_core_2->memory_export;
 		
 	if(enable_inline_debugger || enable_gdb_server)
 	{
@@ -1384,10 +1540,11 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		gdb_server->registers_import >> debugger->registers_export;
 	}
 
-	(*loader->memory_import[0]) >> standby_ram->memory_export;
-	(*loader->memory_import[1]) >> system_ram->memory_export;
-	(*loader->memory_import[2]) >> flash->memory_export;
-	(*loader->memory_import[3]) >> peripheral_core_2->memory_export;
+	(*loader->memory_import[0]) >> flash->memory_export;
+	(*loader->memory_import[1]) >> system_sram->memory_export;
+	(*loader->memory_import[2]) >> main_core_0->memory_export;
+	(*loader->memory_import[3]) >> main_core_1->memory_export;
+	(*loader->memory_import[4]) >> peripheral_core_2->memory_export;
 	loader->registers_import >> peripheral_core_2->registers_export;
 	peripheral_core_2->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 	
@@ -1398,17 +1555,30 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 
 Simulator::~Simulator()
 {
+	if(main_core_0) delete main_core_0;
+	if(main_core_1) delete main_core_1;
 	if(peripheral_core_2) delete peripheral_core_2;
-	if(standby_ram) delete standby_ram;
-	if(system_ram) delete system_ram;
+	if(system_sram) delete system_sram;
 	if(flash) delete flash;
-	if(interconnect) delete interconnect;
+	if(xbar_0) delete xbar_0;
+	if(xbar_1) delete xbar_1;
+	if(pbridge_a) delete pbridge_a;
+	if(pbridge_b_stub) delete pbridge_b_stub;
 	if(intc_0) delete intc_0;
+	if(stm_0) delete stm_0;
+	if(stm_1) delete stm_1;
 	if(stm_2) delete stm_2;
+	if(swt_0) delete swt_0;
+	if(swt_1) delete swt_1;
 	if(swt_2) delete swt_2;
 	if(swt_3) delete swt_3;
 	if(pit_0) delete pit_0;
 	if(pit_1) delete pit_1;
+	if(ebi_stub) delete ebi_stub;
+	if(flash_port1_stub) delete flash_port1_stub;
+	if(xbar_0_s6_stub) delete xbar_0_s6_stub;
+	if(xbar_1_m1_stub) delete xbar_1_m1_stub;
+	if(xbar_1_m2_stub) delete xbar_1_m2_stub;
 	if(debugger) delete debugger;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
@@ -1490,6 +1660,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//  - e200 PowerPC cores
 
 	// Peripheral_Core_2
+	simulator->SetVariable("HARDWARE.Peripheral_Core_2.ahb-master-id", 2);
 	simulator->SetVariable("HARDWARE.Peripheral_Core_2.clock-multiplier", 1.0);
 	simulator->SetVariable("HARDWARE.Peripheral_Core_2.max-inst", ~uint64_t(0));
 	simulator->SetVariable("HARDWARE.Peripheral_Core_2.nice-time", "200 ns");
@@ -1513,101 +1684,123 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//FIXME: reset address
 	simulator->SetVariable("HARDWARE.Peripheral_Core_2.reset-addr", 0x40040000);
 	
-	// CPU0
-	simulator->SetVariable("HARDWARE.CPU0.clock-multiplier", 1.0);
-	simulator->SetVariable("HARDWARE.CPU0.max-inst", ~uint64_t(0));
-	simulator->SetVariable("HARDWARE.CPU0.nice-time", "200 ns");
-	simulator->SetVariable("HARDWARE.CPU0.ipc", 1.0);
-	simulator->SetVariable("HARDWARE.CPU0.enable-dmi", true);
+	// Main_Core_0
+	simulator->SetVariable("HARDWARE.Main_Core_0.ahb-master-id", 0);
+	simulator->SetVariable("HARDWARE.Main_Core_0.clock-multiplier", 1.0);
+	simulator->SetVariable("HARDWARE.Main_Core_0.max-inst", ~uint64_t(0));
+	simulator->SetVariable("HARDWARE.Main_Core_0.nice-time", "200 ns");
+	simulator->SetVariable("HARDWARE.Main_Core_0.ipc", 1.0);
+	simulator->SetVariable("HARDWARE.Main_Core_0.enable-dmi", true);
 
-	simulator->SetVariable("HARDWARE.CPU0.local-memory-base-addr", 0x50000000);
-	simulator->SetVariable("HARDWARE.CPU0.local-memory-size", 8 * 1024 * 1024);
+	simulator->SetVariable("HARDWARE.Main_Core_0.local-memory-base-addr", 0x50000000);
+	simulator->SetVariable("HARDWARE.Main_Core_0.local-memory-size", 8 * 1024 * 1024);
 
-	simulator->SetVariable("HARDWARE.CPU0.DMEM.base-addr", 0x50800000);
-	simulator->SetVariable("HARDWARE.CPU0.DMEM.size", 64 * 1024);
+	simulator->SetVariable("HARDWARE.Main_Core_0.DMEM.base-addr", 0x50800000);
+	simulator->SetVariable("HARDWARE.Main_Core_0.DMEM.size", 64 * 1024);
 
-	simulator->SetVariable("HARDWARE.CPU0.IMEM.base-addr", 0x50000000);
-	simulator->SetVariable("HARDWARE.CPU0.IMEM.size", 16 * 1024);
+	simulator->SetVariable("HARDWARE.Main_Core_0.IMEM.base-addr", 0x50000000);
+	simulator->SetVariable("HARDWARE.Main_Core_0.IMEM.size", 16 * 1024);
 	
-	simulator->SetVariable("HARDWARE.CPU0.processor-version", 0x81b00000);
-	simulator->SetVariable("HARDWARE.CPU0.system-version", 0x0);
-	simulator->SetVariable("HARDWARE.CPU0.system-information", 0x0);
-	simulator->SetVariable("HARDWARE.CPU0.cpuid", 0x0);
+	simulator->SetVariable("HARDWARE.Main_Core_0.processor-version", 0x81b00000);
+	simulator->SetVariable("HARDWARE.Main_Core_0.system-version", 0x0);
+	simulator->SetVariable("HARDWARE.Main_Core_0.system-information", 0x0);
+	simulator->SetVariable("HARDWARE.Main_Core_0.cpuid", 0x0);
 	
-	// CPU1
-	simulator->SetVariable("HARDWARE.CPU1.clock-multiplier", 1.0);
-	simulator->SetVariable("HARDWARE.CPU1.max-inst", ~uint64_t(0));
-	simulator->SetVariable("HARDWARE.CPU1.nice-time", "200 ns");
-	simulator->SetVariable("HARDWARE.CPU1.ipc", 1.0);
-	simulator->SetVariable("HARDWARE.CPU1.enable-dmi", true);
+	// Main_Core_1
+	simulator->SetVariable("HARDWARE.Main_Core_1.ahb-master-id", 1);
+	simulator->SetVariable("HARDWARE.Main_Core_1.clock-multiplier", 1.0);
+	simulator->SetVariable("HARDWARE.Main_Core_1.max-inst", ~uint64_t(0));
+	simulator->SetVariable("HARDWARE.Main_Core_1.nice-time", "200 ns");
+	simulator->SetVariable("HARDWARE.Main_Core_1.ipc", 1.0);
+	simulator->SetVariable("HARDWARE.Main_Core_1.enable-dmi", true);
 
-	simulator->SetVariable("HARDWARE.CPU1.local-memory-base-addr", 0x51000000);
-	simulator->SetVariable("HARDWARE.CPU1.local-memory-size", 8 * 1024 * 1024);
+	simulator->SetVariable("HARDWARE.Main_Core_1.local-memory-base-addr", 0x51000000);
+	simulator->SetVariable("HARDWARE.Main_Core_1.local-memory-size", 8 * 1024 * 1024);
 
-	simulator->SetVariable("HARDWARE.CPU1.DMEM.base-addr", 0x51800000);
-	simulator->SetVariable("HARDWARE.CPU1.DMEM.size", 64 * 1024);
+	simulator->SetVariable("HARDWARE.Main_Core_1.DMEM.base-addr", 0x51800000);
+	simulator->SetVariable("HARDWARE.Main_Core_1.DMEM.size", 64 * 1024);
 
-	simulator->SetVariable("HARDWARE.CPU1.IMEM.base-addr", 0x51000000);
-	simulator->SetVariable("HARDWARE.CPU1.IMEM.size", 16 * 1024);
+	simulator->SetVariable("HARDWARE.Main_Core_1.IMEM.base-addr", 0x51000000);
+	simulator->SetVariable("HARDWARE.Main_Core_1.IMEM.size", 16 * 1024);
 	
-	simulator->SetVariable("HARDWARE.CPU1.processor-version", 0x81b00000);
-	simulator->SetVariable("HARDWARE.CPU1.system-version", 0x0);
-	simulator->SetVariable("HARDWARE.CPU1.system-information", 0x1);
-	simulator->SetVariable("HARDWARE.CPU1.cpuid", 0x1);
+	simulator->SetVariable("HARDWARE.Main_Core_1.processor-version", 0x81b00000);
+	simulator->SetVariable("HARDWARE.Main_Core_1.system-version", 0x0);
+	simulator->SetVariable("HARDWARE.Main_Core_1.system-information", 0x1);
+	simulator->SetVariable("HARDWARE.Main_Core_1.cpuid", 0x1);
 
-	//  - Interconnect
-	simulator->SetVariable("HARDWARE.INTERCONNECT.cycle_time", "5 ns");
-	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_0",  "range_start=\"0x40000000\" range_end=\"0x4000ffff\" output_port=\"0\" translation=\"0x0\""); // Standby RAM
-	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_1",  "range_start=\"0x40010000\" range_end=\"0x401fffff\" output_port=\"1\" translation=\"0x0\""); // System RAM
-	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_2",  "range_start=\"0x00400000\" range_end=\"0x00407fff\" output_port=\"2\" translation=\"0x0\""); // UTEST
-	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_3",  "range_start=\"0x0060c000\" range_end=\"0x0062ffff\" output_port=\"2\" translation=\"0x0\""); // HSM Code
-	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_4",  "range_start=\"0x00680000\" range_end=\"0x007fffff\" output_port=\"2\" translation=\"0x0\""); // HSM Data
-	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_5",  "range_start=\"0x00800000\" range_end=\"0x009fffff\" output_port=\"2\" translation=\"0x0\""); // Data Flash
-	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_6",  "range_start=\"0x00a00000\" range_end=\"0x00ffffff\" output_port=\"2\" translation=\"0x0\""); // Low & Mid Flash Blocks
-	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_7",  "range_start=\"0x01000000\" range_end=\"0x01ffffff\" output_port=\"2\" translation=\"0x0\""); // Large Flash Blocks
-	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_8",  "range_start=\"0x52000000\" range_end=\"0x5fffffff\" output_port=\"3\" translation=\"0x0\""); // Peripheral_Core_2 Local Memory
-	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_9",  "range_start=\"0xfc040000\" range_end=\"0xfc04ffff\" output_port=\"4\" translation=\"0x0\""); // INTC
-	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_10", "range_start=\"0xfc070000\" range_end=\"0xfc073fff\" output_port=\"5\" translation=\"0x0\""); // STM_2
-	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_11", "range_start=\"0xfc058000\" range_end=\"0xfc05bfff\" output_port=\"6\" translation=\"0x0\""); // SWT_2
-	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_12", "range_start=\"0xfc05c000\" range_end=\"0xfc05ffff\" output_port=\"7\" translation=\"0x0\""); // SWT_3
-	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_13", "range_start=\"0xfff84000\" range_end=\"0xfff87fff\" output_port=\"8\" translation=\"0x0\""); // PIT_0
-	simulator->SetVariable("HARDWARE.INTERCONNECT.mapping_14", "range_start=\"0xfff80000\" range_end=\"0xfff83fff\" output_port=\"9\" translation=\"0x0\""); // PIT_1
+	//  - XBAR_0
+	simulator->SetVariable("HARDWARE.XBAR_0.cycle_time", "5 ns");
+	
+	simulator->SetVariable("HARDWARE.XBAR_0.mapping_0",  "range_start=\"0x00400000\" range_end=\"0x00407fff\" output_port=\"0\" translation=\"0x0\"");        //   0 KB: UTest NVM Block (32 KB)         -> FLASH (rel address)
+	simulator->SetVariable("HARDWARE.XBAR_0.mapping_1",  "range_start=\"0x0060c000\" range_end=\"0x0062ffff\" output_port=\"0\" translation=\"0x8000\"");     //  32 KB: HSM Code (144 KB)               -> FLASH (rel address)
+	simulator->SetVariable("HARDWARE.XBAR_0.mapping_2",  "range_start=\"0x00680000\" range_end=\"0x00687fff\" output_port=\"0\" translation=\"0x2c000\"");    // 176 KB: HSM Data (32 KB)                -> FLASH (rel address)
+	simulator->SetVariable("HARDWARE.XBAR_0.mapping_3",  "range_start=\"0x00800000\" range_end=\"0x0087ffff\" output_port=\"0\" translation=\"0x34000\"");    // 208 KB: Data Flash (512 KB)             -> FLASH (rel address)
+	simulator->SetVariable("HARDWARE.XBAR_0.mapping_4",  "range_start=\"0x00fc0000\" range_end=\"0x00ffffff\" output_port=\"0\" translation=\"0xb4000\"");    // 720 KB: Low & Mid Flash Blocks (256 KB) -> FLASH (rel address)
+	simulator->SetVariable("HARDWARE.XBAR_0.mapping_5",  "range_start=\"0x01000000\" range_end=\"0x0177ffff\" output_port=\"0\" translation=\"0xf4000\"");    // 976 KB: Large Flash Blocks (7680 KB)    -> FLASH (rel address)
+	simulator->SetVariable("HARDWARE.XBAR_0.mapping_6",  "range_start=\"0x50000000\" range_end=\"0x50ffffff\" output_port=\"2\" translation=\"0x0\"");        // Main_Core_0 Local Memory                -> Main_Core_0 (rel address)
+	simulator->SetVariable("HARDWARE.XBAR_0.mapping_7",  "range_start=\"0x51000000\" range_end=\"0x51ffffff\" output_port=\"3\" translation=\"0x0\"");        // Main_Core_1 Local Memory                -> Main_Core_1 (rel address)
+	simulator->SetVariable("HARDWARE.XBAR_0.mapping_8",  "range_start=\"0x40000000\" range_end=\"0x401fffff\" output_port=\"4\" translation=\"0x0\"");        // System SRAM                             -> SYSTEM_SRAM (rel address)
+	simulator->SetVariable("HARDWARE.XBAR_0.mapping_9",  "range_start=\"0x52000000\" range_end=\"0x5fffffff\" output_port=\"7\" translation=\"0x52000000\""); // Peripheral_Core_2 Local Memory          -> XBAR_1 (abs address)
+	simulator->SetVariable("HARDWARE.XBAR_0.mapping_10", "range_start=\"0xf0000000\" range_end=\"0xffffffff\" output_port=\"7\" translation=\"0xf0000000\""); // Peripherals PBRIDGE_A, PBRIDGE_B        -> XBAR_1 (abs address)
+	
+	//  - XBAR_1
+	simulator->SetVariable("HARDWARE.XBAR_1.cycle_time", "10 ns");
+	simulator->SetVariable("HARDWARE.XBAR_1.mapping_0",  "range_start=\"0x00400000\" range_end=\"0x00407fff\" output_port=\"0\" translation=\"0x00400000\""); // UTest NVM Block (32 KB)         -> XBAR_0 (abs address)
+	simulator->SetVariable("HARDWARE.XBAR_1.mapping_1",  "range_start=\"0x0060c000\" range_end=\"0x0062ffff\" output_port=\"0\" translation=\"0x0060c000\""); // HSM Code (144 KB)               -> XBAR_0 (abs address)
+	simulator->SetVariable("HARDWARE.XBAR_1.mapping_2",  "range_start=\"0x00680000\" range_end=\"0x00687fff\" output_port=\"0\" translation=\"0x00680000\""); // HSM Data (32 KB)                -> XBAR_0 (abs address)
+	simulator->SetVariable("HARDWARE.XBAR_1.mapping_3",  "range_start=\"0x00800000\" range_end=\"0x0087ffff\" output_port=\"0\" translation=\"0x00800000\""); // Data Flash (512 KB)             -> XBAR_0 (abs address)
+	simulator->SetVariable("HARDWARE.XBAR_1.mapping_4",  "range_start=\"0x00fc0000\" range_end=\"0x00ffffff\" output_port=\"0\" translation=\"0x00fc0000\""); // Low & Mid Flash Blocks (256 KB) -> XBAR_0 (abs address)
+	simulator->SetVariable("HARDWARE.XBAR_1.mapping_5",  "range_start=\"0x01000000\" range_end=\"0x0177ffff\" output_port=\"0\" translation=\"0x01000000\""); // Large Flash Blocks (7680 KB)    -> XBAR_0 (abs address)
+	simulator->SetVariable("HARDWARE.XBAR_1.mapping_6",  "range_start=\"0x50000000\" range_end=\"0x50ffffff\" output_port=\"0\" translation=\"0x50000000\""); // Main_Core_0 Local Memory        -> XBAR_0 (abs address)
+	simulator->SetVariable("HARDWARE.XBAR_1.mapping_7",  "range_start=\"0x51000000\" range_end=\"0x51ffffff\" output_port=\"0\" translation=\"0x51000000\""); // Main_Core_1 Local Memory        -> XBAR_0 (abs address)
+	simulator->SetVariable("HARDWARE.XBAR_1.mapping_8",  "range_start=\"0x40000000\" range_end=\"0x401fffff\" output_port=\"0\" translation=\"0x40000000\""); // System SRAM                     -> XBAR_0 (abs address)
+	simulator->SetVariable("HARDWARE.XBAR_1.mapping_9",  "range_start=\"0x52000000\" range_end=\"0x5fffffff\" output_port=\"1\" translation=\"0x0\"");        // Peripheral_Core_2 Local Memory  -> Peripheral_Core_2 (rel address)
+	simulator->SetVariable("HARDWARE.XBAR_1.mapping_10", "range_start=\"0xf0000000\" range_end=\"0xfbffffff\" output_port=\"2\" translation=\"0xf0000000\""); // PBRIDGE_B                       -> PBRIDGE_B (abs address)
+	simulator->SetVariable("HARDWARE.XBAR_1.mapping_11", "range_start=\"0xfc000000\" range_end=\"0xffffffff\" output_port=\"3\" translation=\"0xfc000000\""); // PBRIDGE_A                       -> PBRIDGE_B (abs address)
+	
+	//  - PBRIDGE_A
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.cycle_time", "20 ns");
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_0",  "range_start=\"0xfc040000\" range_end=\"0xfc04ffff\" output_port=\"0\" translation=\"0x0\""); // INTC  -> INTC  (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_1",  "range_start=\"0xfc068000\" range_end=\"0xfc06bfff\" output_port=\"1\" translation=\"0x0\""); // STM_0 -> STM_0 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_2",  "range_start=\"0xfc06c000\" range_end=\"0xfc06ffff\" output_port=\"2\" translation=\"0x0\""); // STM_1 -> STM_1 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_3",  "range_start=\"0xfc070000\" range_end=\"0xfc073fff\" output_port=\"3\" translation=\"0x0\""); // STM_2 -> STM_2 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_4",  "range_start=\"0xfc050000\" range_end=\"0xfc053fff\" output_port=\"4\" translation=\"0x0\""); // SWT_0 -> SWT_0 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_5",  "range_start=\"0xfc054000\" range_end=\"0xfc057fff\" output_port=\"5\" translation=\"0x0\""); // SWT_1 -> SWT_1 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_6",  "range_start=\"0xfc058000\" range_end=\"0xfc05bfff\" output_port=\"6\" translation=\"0x0\""); // SWT_2 -> SWT_2 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_7",  "range_start=\"0xfc05c000\" range_end=\"0xfc05ffff\" output_port=\"7\" translation=\"0x0\""); // SWT_3 -> SWT_3 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_8",  "range_start=\"0xfff84000\" range_end=\"0xfff87fff\" output_port=\"8\" translation=\"0x0\""); // PIT_0 -> PIT_0 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_9",  "range_start=\"0xfff80000\" range_end=\"0xfff83fff\" output_port=\"9\" translation=\"0x0\""); // PIT_1 -> PIT_1 (rel address)
 
 	// - Loader
 	simulator->SetVariable("loader.filename", "soft/bin/boot.elf");
 	
 	// - Loader memory router
 	simulator->SetVariable("loader.memory-mapper.mapping",
-	                       "HARDWARE.STANDBY-RAM:0x40000000-0x4000ffff:+0x0"        // Standby RAM
-	                       ",HARDWARE.SYSTEM-RAM:0x40010000-0x401fffff:+0x0"        // System RAM
-	                       ",HARDWARE.FLASH:0x00400000-0x00407fff:+0x0"             // UTEST (UTest NVM Block Space 16 KB + BAF (block0) 16 KB)
-	                       ",HARDWARE.FLASH:0x0060c000-0x0062ffff:+0x0"             // HSM Code
-	                       ",HARDWARE.FLASH:0x00680000-0x007fffff:+0x0"             // HSM Data
-	                       ",HARDWARE.FLASH:0x00800000-0x009fffff:+0x0"             // Low & Mid Flash Blocks
-	                       ",HARDWARE.FLASH:0x01000000-0x01ffffff:+0x0"             // Large Flash Blocks
-	                       ",HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x0" // Peripheral_Core_2 Local Memory
+	                       "HARDWARE.SYSTEM-SRAM:0x40000000-0x401fffff:+0x0"        // System SRAM                             -> SYSTEM_SRAM       (rel address)
+	                       ",HARDWARE.FLASH:0x00400000-0x00407fff:+0x0"             //   0 KB: UTest NVM Block (32 KB)         -> FLASH             (rel address)
+	                       ",HARDWARE.FLASH:0x0060c000-0x0062ffff:+0x8000"          //  32 KB: HSM Code (144 KB)               -> FLASH             (rel address)
+	                       ",HARDWARE.FLASH:0x00680000-0x00687fff:+0x2c000"         // 176 KB: HSM Data (32 KB)                -> FLASH             (rel address)
+	                       ",HARDWARE.FLASH:0x00800000-0x0087ffff:+0x34000"         // 208 KB: Data Flash (512 KB)             -> FLASH             (rel address)
+	                       ",HARDWARE.FLASH:0x00fc0000-0x00ffffff:+0xb4000"         // 720 KB: Low & Mid Flash Blocks (256 KB) -> FLASH             (rel address)
+	                       ",HARDWARE.FLASH:0x01000000-0x0177ffff:+0xf4000"         // 976 KB: Large Flash Blocks (7680 KB)    -> FLASH             (rel address)
+	                       ",HARDWARE.Main_Core_0:0x50000000-0x50ffffff:+0x0"       // Main_Core_0 Local Memory                -> Main_Core_0       (rel address)
+	                       ",HARDWARE.Main_Core_1:0x51000000-0x51ffffff:+0x0"       // Main_Core_1 Local Memory                -> Main_Core_1       (rel address)
+	                       ",HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x0" // Peripheral_Core_2 Local Memory          -> Peripheral_Core_2 (rel address)
 	                      );
 
-	//  - Standby RAM
-	simulator->SetVariable("HARDWARE.STANDBY-RAM.cycle-time", "10 ns");
-	simulator->SetVariable("HARDWARE.STANDBY-RAM.read-latency", "10 ns");
-	simulator->SetVariable("HARDWARE.STANDBY-RAM.write-latency", "10 ns");
-	simulator->SetVariable("HARDWARE.STANDBY-RAM.org", 0x0);
-	simulator->SetVariable("HARDWARE.STANDBY-RAM.bytesize", 64 * 1024);
-
-	//  - System RAM
-	simulator->SetVariable("HARDWARE.SYSTEM-RAM.cycle-time", "10 ns");
-	simulator->SetVariable("HARDWARE.SYSTEM-RAM.read-latency", "10 ns");
-	simulator->SetVariable("HARDWARE.SYSTEM-RAM.write-latency", "10 ns");
-	simulator->SetVariable("HARDWARE.SYSTEM-RAM.org", 0x0);
-	simulator->SetVariable("HARDWARE.SYSTEM-RAM.bytesize", 340 * 1024);
+	//  - System SRAM
+	simulator->SetVariable("HARDWARE.SYSTEM-SRAM.cycle-time", "10 ns");
+	simulator->SetVariable("HARDWARE.SYSTEM-SRAM.read-latency", "10 ns");
+	simulator->SetVariable("HARDWARE.SYSTEM-SRAM.write-latency", "10 ns");
+	simulator->SetVariable("HARDWARE.SYSTEM-SRAM.org", 0x0);
+	simulator->SetVariable("HARDWARE.SYSTEM-SRAM.bytesize", 404 * 1024);
 	
 	//  - FLASH
 	simulator->SetVariable("HARDWARE.FLASH.cycle-time", "10 ns");
 	simulator->SetVariable("HARDWARE.FLASH.read-latency", "10 ns");
 	simulator->SetVariable("HARDWARE.FLASH.write-latency", "10 ns");
 	simulator->SetVariable("HARDWARE.FLASH.org", 0x0);
-	simulator->SetVariable("HARDWARE.FLASH.bytesize", 8 * 1024 * 1024);
+	simulator->SetVariable("HARDWARE.FLASH.bytesize", (8640 + 16) * 1024); // Note: 8640 KB (main space) + 16 KB OTP (UTEST space)
 	simulator->SetVariable("HARDWARE.FLASH.read-only", true);
 
 	//  - SWT_0
