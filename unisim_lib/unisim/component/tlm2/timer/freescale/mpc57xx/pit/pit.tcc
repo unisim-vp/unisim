@@ -81,6 +81,7 @@ PIT<CONFIG>::PIT(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	, sc_core::sc_module(name)
 	, peripheral_slave_if("peripheral_slave_if")
 	, m_clk("m_clk")
+	, per_clk("per_clk")
 	, rti_clk("rti_clk")
 	, reset_b("reset_b")
 	, debug("debug")
@@ -88,7 +89,8 @@ PIT<CONFIG>::PIT(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	, dma_trigger()
 	, rtirq("rtirq")
 	, logger(*this)
-	, m_clk_prop_proxy(0)
+	, m_clk_prop_proxy(m_clk)
+	, per_clk_prop_proxy(0)
 	, rti_clk_prop_proxy(0)
 	, pit_mcr(this)
 	, pit_ltmr64h(this)
@@ -116,8 +118,9 @@ PIT<CONFIG>::PIT(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	, dma_trigger_level()
 	, gen_dma_pulse_event()
 	, last_timers_run_time(sc_core::SC_ZERO_TIME)
+	, master_clock_period(10.0, sc_core::SC_NS)
 	, rti_clock_period(10.0, sc_core::SC_NS)
-	, clock_period(10.0, sc_core::SC_NS)
+	, per_clock_period(10.0, sc_core::SC_NS)
 	, timers_run_event("timers_run_event")
 	, freeze(false)
 {
@@ -143,7 +146,7 @@ PIT<CONFIG>::PIT(const sc_core::sc_module_name& name, unisim::kernel::service::O
 
 	if(NUM_CHANNELS > 0)
 	{
-		m_clk_prop_proxy = new unisim::kernel::tlm2::ClockPropertiesProxy(m_clk);
+		per_clk_prop_proxy = new unisim::kernel::tlm2::ClockPropertiesProxy(per_clk);
 	}
 	
 	if(HAS_RTI_SUPPORT)
@@ -209,15 +212,6 @@ PIT<CONFIG>::PIT(const sc_core::sc_module_name& name, unisim::kernel::service::O
 		reg_addr_map.MapRegister(PIT_TFLG::ADDRESS_OFFSET + (4 * 4 * channel_num), &pit_tflg[channel_num]);
 	}
 
-	if(threaded_model)
-	{
-		SC_THREAD(Process);
-	}
-	else
-	{
-		SC_METHOD(Process);
-	}
-
 	SC_METHOD(RESET_B_Process);
 	sensitive << reset_b.pos();
 
@@ -254,7 +248,7 @@ PIT<CONFIG>::PIT(const sc_core::sc_module_name& name, unisim::kernel::service::O
 template <typename CONFIG>
 PIT<CONFIG>::~PIT<CONFIG>()
 {
-	if(m_clk_prop_proxy) delete m_clk_prop_proxy;
+	if(per_clk_prop_proxy) delete per_clk_prop_proxy;
 	if(rti_clk_prop_proxy) delete rti_clk_prop_proxy;
 	
 	unsigned int channel_num;
@@ -285,25 +279,33 @@ void PIT<CONFIG>::end_of_elaboration()
 {
 	logger << DebugInfo << this->GetDescription() << EndDebugInfo;
 
+	// Spawn MasterClockPropertiesChangedProcess Process that monitor clock properties modifications
+	sc_core::sc_spawn_options master_clock_properties_changed_process_spawn_options;
+	
+	master_clock_properties_changed_process_spawn_options.spawn_method();
+	master_clock_properties_changed_process_spawn_options.set_sensitivity(&m_clk_prop_proxy.GetClockPropertiesChangedEvent());
+
+	sc_core::sc_spawn(sc_bind(&PIT<CONFIG>::MasterClockPropertiesChangedProcess, this), "MasterClockPropertiesChangedProcess", &master_clock_properties_changed_process_spawn_options);
+
+	// Spawn Process
+	sc_core::sc_spawn_options process_spawn_options;
+	process_spawn_options.spawn_method();
+	process_spawn_options.set_sensitivity(&schedule.GetKernelEvent());
+	
 	if((NUM_CHANNELS > 0) || HAS_RTI_SUPPORT)
 	{
-		// Spawn an RunTimersProcess sensitive scheduled when timers should run or clocks properties have changed
-		sc_core::sc_spawn_options run_timers_process_spawn_options;
-		run_timers_process_spawn_options.spawn_method();
-		run_timers_process_spawn_options.set_sensitivity(&timers_run_event);
-		
 		if(NUM_CHANNELS > 0)
 		{
-			run_timers_process_spawn_options.set_sensitivity(&m_clk_prop_proxy->GetClockPropertiesChangedEvent());
+			process_spawn_options.set_sensitivity(&per_clk_prop_proxy->GetClockPropertiesChangedEvent());
 		}
 		
 		if(HAS_RTI_SUPPORT)
 		{
-			run_timers_process_spawn_options.set_sensitivity(&rti_clk_prop_proxy->GetClockPropertiesChangedEvent());
+			process_spawn_options.set_sensitivity(&rti_clk_prop_proxy->GetClockPropertiesChangedEvent());
 		}
-	
-		sc_core::sc_spawn(sc_bind(&PIT<CONFIG>::RunTimersProcess, this), "RunTimersProcess", &run_timers_process_spawn_options);
 	}
+	
+	sc_core::sc_spawn(sc_bind(&PIT<CONFIG>::Process, this), "Process", &process_spawn_options);
 	
 	Reset();
 }
@@ -337,30 +339,30 @@ void PIT<CONFIG>::Reset()
 		pit_tflg[channel_num].Initialize(0x0);
 	}
 	
-	sc_core::sc_time m_clk_start_time;
+	sc_core::sc_time per_clk_start_time;
 	sc_core::sc_time rti_clk_start_time;
 	
 	if(NUM_CHANNELS > 0)
 	{
 		
-		if(m_clk_prop_proxy->GetClockPosEdgeFirst())
+		if(per_clk_prop_proxy->GetClockPosEdgeFirst())
 		{
 			// clock rising edge comes first
-			m_clk_start_time = m_clk_prop_proxy->GetClockStartTime();
+			per_clk_start_time = per_clk_prop_proxy->GetClockStartTime();
 		}
 		else
 		{
 			// clock falling edge comes first: skip time until first rising edge
-			m_clk_start_time = m_clk_prop_proxy->GetClockStartTime();
-			m_clk_start_time += (1.0 - m_clk_prop_proxy->GetClockDutyCycle()) * m_clk_prop_proxy->GetClockPeriod();
+			per_clk_start_time = per_clk_prop_proxy->GetClockStartTime();
+			per_clk_start_time += (1.0 - per_clk_prop_proxy->GetClockDutyCycle()) * per_clk_prop_proxy->GetClockPeriod();
 		}
 		
 		if(verbose)
 		{
-			logger << DebugInfo << "First master clock rising edge is at " << m_clk_start_time << EndDebugInfo;
+			logger << DebugInfo << "First PER clock rising edge is at " << per_clk_start_time << EndDebugInfo;
 		}
 
-		UpdateClockPeriod();
+		UpdatePERClockPeriod();
 	}
 	
 	if(HAS_RTI_SUPPORT)
@@ -389,7 +391,7 @@ void PIT<CONFIG>::Reset()
 	{
 		if(HAS_RTI_SUPPORT)
 		{
-			sc_core::sc_time start_time = (m_clk_start_time < rti_clk_start_time) ? m_clk_start_time : rti_clk_start_time;
+			sc_core::sc_time start_time = (per_clk_start_time < rti_clk_start_time) ? per_clk_start_time : rti_clk_start_time;
 			if(start_time > last_timers_run_time)
 			{
 				last_timers_run_time = start_time;
@@ -397,9 +399,9 @@ void PIT<CONFIG>::Reset()
 		}
 		else
 		{
-			if(m_clk_start_time > last_timers_run_time)
+			if(per_clk_start_time > last_timers_run_time)
 			{
-				last_timers_run_time = m_clk_start_time;
+				last_timers_run_time = per_clk_start_time;
 			}
 		}
 	}
@@ -635,6 +637,9 @@ void PIT<CONFIG>::ProcessEvent(Event *event)
 			break;
 		}
 		
+		case EV_WAKE_UP:
+			break;
+		
 	}
 }
 
@@ -642,6 +647,9 @@ template <typename CONFIG>
 void PIT<CONFIG>::ProcessEvents()
 {
 	const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
+	
+	RunTimersToTime(time_stamp);
+	
 	Event *event = schedule.GetNextEvent();
 	
 	if(event)
@@ -650,7 +658,7 @@ void PIT<CONFIG>::ProcessEvents()
 		{
 			if(event->GetTimeStamp() != time_stamp)
 			{
-				logger << DebugError << "Internal error: unexpected event time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
+				logger << DebugError << "Internal error: unexpected event of type " << event->GetType() << " at time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
 				unisim::kernel::service::Object::Stop(-1);
 			}
 			
@@ -658,6 +666,11 @@ void PIT<CONFIG>::ProcessEvents()
 			schedule.FreeEvent(event);
 		}
 		while((event = schedule.GetNextEvent()) != 0);
+	}
+	
+	if((NUM_CHANNELS > 0) || HAS_RTI_SUPPORT)
+	{
+		ScheduleTimersRun();
 	}
 }
 
@@ -689,11 +702,26 @@ void PIT<CONFIG>::RESET_B_Process()
 }
 
 template <typename CONFIG>
-void PIT<CONFIG>::UpdateClockPeriod()
+void PIT<CONFIG>::MasterClockPropertiesChangedProcess()
+{
+	UpdateMasterClockPeriod();
+}
+
+template <typename CONFIG>
+void PIT<CONFIG>::UpdateMasterClockPeriod()
 {
 	if(NUM_CHANNELS > 0)
 	{
-		clock_period = m_clk_prop_proxy->GetClockPeriod();
+		master_clock_period = m_clk_prop_proxy.GetClockPeriod();
+	}
+}
+
+template <typename CONFIG>
+void PIT<CONFIG>::UpdatePERClockPeriod()
+{
+	if(NUM_CHANNELS > 0)
+	{
+		per_clock_period = per_clk_prop_proxy->GetClockPeriod();
 	}
 }
 
@@ -711,11 +739,11 @@ void PIT<CONFIG>::RestartTimer(unsigned int channel_num)
 {
 	if(verbose)
 	{
-		logger << DebugInfo << sc_core::sc_time_stamp() << ": Timer #" << channel_num << " will restart in " << clock_period << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": Timer #" << channel_num << " will restart in " << per_clock_period << EndDebugInfo;
 	}
 	Event *event = schedule.AllocEvent();
 	sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
-	notify_time_stamp += clock_period;
+	notify_time_stamp += per_clock_period;
 	event->RestartTimer(channel_num);
 	event->SetTimeStamp(notify_time_stamp);
 	schedule.Notify(event);
@@ -731,8 +759,6 @@ void PIT<CONFIG>::DoRestartTimer(unsigned int channel_num)
 	uint32_t ldval = pit_ldval[channel_num].template Get<typename PIT_LDVAL::TSV>();
 		
 	pit_cval[channel_num].template Set<typename PIT_CVAL::TVL>(ldval);
-	
-	ScheduleTimersRun();
 }
 
 template <typename CONFIG>
@@ -768,8 +794,6 @@ void PIT<CONFIG>::DoRestartRTITimer()
 		}
 
 		pit_rti_cval.template Set<typename PIT_RTI_CVAL::TVL>(ldval);
-		
-		ScheduleTimersRun();
 	}
 }
 
@@ -832,12 +856,22 @@ void PIT<CONFIG>::DecrementTimers(sc_dt::uint64 delta)
 						{
 							// decrement timer one time
 							uint32_t cval = pit_cval[channel_num].template Get<typename PIT_CVAL::TVL>();
-							if(cval < 1)
+							
+							if(cval == 0)
 							{
-								logger << DebugWarning << "Model has a problem because too much time has elapsed since last timer run, resulting in a counter #" << channel_num << " underflow and/or lost interrupt (delta=" << 1 << ", cval=" << cval << ")" << EndDebugWarning;
+								timer_expired = false;
+								continue;
 							}
 							
+							if(verbose)
+							{
+								logger << DebugInfo << sc_core::sc_time_stamp() << ": PIT_CVAL" << channel_num << " decreases from " << cval;
+							}
 							cval = (cval > 1) ? (cval - 1) : 0;
+							if(verbose)
+							{
+								logger << DebugInfo << " to " << cval << EndDebugInfo;
+							}
 							
 							pit_cval[channel_num].template Set<typename PIT_CVAL::TVL>(cval);
 						}
@@ -849,12 +883,21 @@ void PIT<CONFIG>::DecrementTimers(sc_dt::uint64 delta)
 						// decrement timer several times
 						uint32_t cval = pit_cval[channel_num].template Get<typename PIT_CVAL::TVL>();
 						
-						if(cval < delta)
+						if(cval == 0)
 						{
-							logger << DebugWarning << "Model has a problem because too much time has elapsed since last timer run, resulting in a counter #" << channel_num << " underflow and/or lost interrupt (delta=" << delta << ", cval=" << cval << ")" << EndDebugWarning;
+							timer_expired = false;
+							continue;
 						}
 						
+						if(verbose)
+						{
+							logger << DebugInfo << sc_core::sc_time_stamp() << ": PIT_CVAL" << channel_num << " decreases from " << cval;
+						}
 						cval = (cval > delta) ? (cval - delta) : 0;
+						if(verbose)
+						{
+							logger << DebugInfo << " to " << cval << EndDebugInfo;
+						}
 						
 						pit_cval[channel_num].template Set<typename PIT_CVAL::TVL>(cval);
 					}
@@ -1022,12 +1065,12 @@ sc_dt::int64 PIT<CONFIG>::TicksToNextRTITimerRun()
 template <typename CONFIG>
 sc_core::sc_time PIT<CONFIG>::TimeToNextTimersRun()
 {
-	sc_core::sc_time time_to_next_timers_run(clock_period);
+	sc_core::sc_time time_to_next_timers_run(per_clock_period);
 	time_to_next_timers_run *= TicksToNextTimersRun();
 	
 	if(HAS_RTI_SUPPORT)
 	{
-		sc_core::sc_time time_to_next_rti_timer_run(clock_period);
+		sc_core::sc_time time_to_next_rti_timer_run(rti_clock_period);
 		time_to_next_rti_timer_run *= TicksToNextRTITimerRun();
 		
 		return (time_to_next_timers_run < time_to_next_rti_timer_run) ? time_to_next_timers_run : time_to_next_rti_timer_run;
@@ -1047,8 +1090,8 @@ void PIT<CONFIG>::RunTimersToTime(const sc_core::sc_time& time_stamp)
 	delay_since_last_rti_timer_run -= last_rti_timer_run_time;
 
 	// Compute number of timers ticks since last count run
-	sc_dt::uint64 delta = delay_since_last_timers_run / clock_period;
-	sc_core::sc_time run_time(clock_period);
+	sc_dt::uint64 delta = delay_since_last_timers_run / per_clock_period;
+	sc_core::sc_time run_time(per_clock_period);
 	run_time *= delta;
 
 	sc_dt::uint64 rti_delta = delay_since_last_rti_timer_run / rti_clock_period;
@@ -1072,6 +1115,7 @@ void PIT<CONFIG>::RunTimersToTime(const sc_core::sc_time& time_stamp)
 	last_rti_timer_run_time += rti_run_time;
 }
 
+#if 0
 template <typename CONFIG>
 void PIT<CONFIG>::ScheduleTimersRun()
 {
@@ -1097,7 +1141,63 @@ void PIT<CONFIG>::ScheduleTimersRun()
 		timers_run_event.notify(time_to_next_timers_run); // schedule next counter run
 	}
 }
+#endif
 
+template <typename CONFIG>
+void PIT<CONFIG>::ScheduleTimersRun()
+{
+	// Clocks properties may have changed that may affect time to next timers and RTI timer run
+	UpdatePERClockPeriod();
+	
+	if(HAS_RTI_SUPPORT)
+	{
+		UpdateRTIClockPeriod();
+	}
+	
+	const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
+	if(last_timers_run_time > time_stamp)
+	{
+		// Timer not yet started (because of clock)
+		Event *event = schedule.AllocEvent();
+		event->WakeUp();
+		event->SetTimeStamp(last_timers_run_time);
+		schedule.Notify(event);
+		return;
+	}
+	
+	if(last_rti_timer_run_time > time_stamp)
+	{
+		// RTI Timer not yet started (because of clock)
+		Event *event = schedule.AllocEvent();
+		event->WakeUp();
+		event->SetTimeStamp(last_rti_timer_run_time);
+		schedule.Notify(event);
+		return;
+	}
+	
+	sc_core::sc_time time_to_next_timers_run = TimeToNextTimersRun();
+	if(verbose)
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": time to next timers/RTI timer run is " << time_to_next_timers_run << EndDebugInfo;
+	}
+	
+	sc_core::sc_time next_timers_run_time_stamp(last_timers_run_time);
+	next_timers_run_time_stamp += time_to_next_timers_run;
+	
+	if(next_timers_run_time_stamp > time_stamp)
+	{
+		if(verbose)
+		{
+			logger << DebugInfo << sc_core::sc_time_stamp() << ": timers/RTI timer will run at " << next_timers_run_time_stamp << EndDebugInfo;
+		}
+		Event *event = schedule.AllocEvent();
+		event->WakeUp();
+		event->SetTimeStamp(next_timers_run_time_stamp);
+		schedule.Notify(event);
+	}
+}
+
+#if 0
 template <typename CONFIG>
 void PIT<CONFIG>::RunTimersProcess()
 {
@@ -1111,6 +1211,7 @@ void PIT<CONFIG>::RunTimersProcess()
 	RunTimersToTime(time_stamp);
 	ScheduleTimersRun();
 }
+#endif
 
 template <typename CONFIG>
 void PIT<CONFIG>::IRQ_Process(unsigned int channel_num)
@@ -1118,7 +1219,7 @@ void PIT<CONFIG>::IRQ_Process(unsigned int channel_num)
 	// Set IRQ output
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << irq[channel_num]->name() << " <- " << irq_level[channel_num] << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": " << irq[channel_num]->name() << " <- " << irq_level[channel_num] << EndDebugInfo;
 	}
 	*irq[channel_num] = irq_level[channel_num];
 }
@@ -1131,7 +1232,7 @@ void PIT<CONFIG>::RTIRQ_Process()
 		// Set IRQ output
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << rtirq.name() << " <- " << rtirq_level << EndDebugInfo;
+			logger << DebugInfo << sc_core::sc_time_stamp() << ": " << rtirq.name() << " <- " << rtirq_level << EndDebugInfo;
 		}
 		rtirq = rtirq_level;
 	}
@@ -1143,7 +1244,7 @@ void PIT<CONFIG>::DMA_TRIGGER_Process(unsigned int channel_num)
 	// Set DMA trigger output
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << dma_trigger[channel_num]->name() << " <- " << dma_trigger_level[channel_num] << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": " << dma_trigger[channel_num]->name() << " <- " << dma_trigger_level[channel_num] << EndDebugInfo;
 	}
 	
 	*dma_trigger[channel_num] = dma_trigger_level[channel_num];
@@ -1151,7 +1252,7 @@ void PIT<CONFIG>::DMA_TRIGGER_Process(unsigned int channel_num)
 	if(dma_trigger_level[channel_num])
 	{
 		dma_trigger_level[channel_num] = false;
-		gen_dma_pulse_event[channel_num]->notify(clock_period);
+		gen_dma_pulse_event[channel_num]->notify(master_clock_period);
 	}
 }
 

@@ -135,10 +135,12 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, output_buffer_size(0)
 	, memory_atom_size(1)
 	, verbose(false)
+	, monitor_internals()
 	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
 	, param_tcp_port("tcp-port", this, tcp_port, "TCP/IP port to listen waiting for a GDB client connection")
 	, param_architecture_description_filename("architecture-description-filename", this, architecture_description_filename, "filename of a XML description of the connected processor")
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
+	, param_monitor_internals("monitor-internals", this, monitor_internals, "List of internal simulator variables to monitor in GDB Front-End")
 {
 	param_tcp_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_memory_atom_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -736,6 +738,8 @@ void GDBServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> 
 	
 	trap = true;
 	synched = true;
+	
+	DisplayMonitoredInternals();
 }
 
 template <class ADDRESS>
@@ -743,6 +747,7 @@ void GDBServer<ADDRESS>::ReportTrap()
 {
 	trap = true;
 	synched = false;
+	DisplayMonitoredInternals();
 }
 
 template <class ADDRESS>
@@ -797,6 +802,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				if(c == 0x03)
 				{
 					running_mode = GDBSERVER_MODE_WAITING_GDB_CLIENT;
+					DisplayMonitoredInternals();
 					ReportTracePointTrap();
 				}
 			}
@@ -2147,6 +2153,23 @@ std::string GDBServer<ADDRESS>::EscapeString(const std::string& s) const
 	return r;
 }
 
+template <class ADDRESS>
+void GDBServer<ADDRESS>::DisplayMonitoredInternals()
+{
+	std::string variable_name;
+	std::stringstream sstr(monitor_internals);
+
+	while(sstr >> variable_name)
+	{
+		unisim::kernel::service::VariableBase *variable = Object::GetSimulator()->FindVariable(variable_name.c_str());
+		
+		if(!variable->IsVoid())
+		{
+			std::string msg(variable_name + "=" + ((string) *variable));
+			OutputText(msg.c_str(), msg.length());
+		}
+	}
+}
 
 } // end of namespace gdb_server
 } // end of namespace debug

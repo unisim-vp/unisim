@@ -486,7 +486,7 @@ template <unsigned int NUM_EXCEPTIONS>
 template <typename EXCEPTION>
 typename EXCEPTION::INTERRUPT& CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::ThrowException()
 {
-	if(cpu->verbose_exception)
+	if(cpu->verbose_exception && !(exc_flags & EXCEPTION::template GetMask<TYPE>()))
 	{
 		cpu->GetDebugInfoStream() << "Throwing " << EXCEPTION::GetName() << std::endl;
 	}
@@ -498,6 +498,10 @@ template <typename TYPES, typename CONFIG>
 template <unsigned int NUM_EXCEPTIONS>
 template <typename INTERRUPT> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::AckInterrupt()
 {
+	if(cpu->verbose_exception && (exc_flags & INTERRUPT::template GetMask<TYPE>()))
+	{
+		cpu->GetDebugInfoStream() << "Acknowledging " <<INTERRUPT::GetName() << std::endl;
+	}
 	exc_flags = exc_flags & ~INTERRUPT::template GetMask<TYPE>();
 }
 

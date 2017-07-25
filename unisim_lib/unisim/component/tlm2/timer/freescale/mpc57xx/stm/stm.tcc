@@ -192,6 +192,22 @@ void STM<CONFIG>::end_of_elaboration()
 template <typename CONFIG>
 void STM<CONFIG>::Reset()
 {
+	unsigned int channel_num;
+
+	for(channel_num = 0; channel_num < NUM_CHANNELS; channel_num++)
+	{
+		SetIRQLevel(channel_num, false);
+	}
+	
+	stm_cr.Initialize(0x0);
+	stm_cnt.Initialize(0x0);
+	for(channel_num = 0; channel_num < NUM_CHANNELS; channel_num++)
+	{
+		stm_ccr[channel_num].Initialize(0x0);
+		stm_cir[channel_num].Initialize(0x0);
+		stm_cmp[channel_num].Initialize(0x0);
+	}
+
 	sc_core::sc_time start_time;
 	
 	if(m_clk_prop_proxy.GetClockPosEdgeFirst())
@@ -633,7 +649,7 @@ void STM<CONFIG>::IRQ_Process(unsigned int channel_num)
 	// Set IRQ output
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << irq[channel_num]->name() << " <- " << irq_level[channel_num] << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": " << irq[channel_num]->name() << " <- " << irq_level[channel_num] << EndDebugInfo;
 	}
 	*irq[channel_num] = irq_level[channel_num];
 }

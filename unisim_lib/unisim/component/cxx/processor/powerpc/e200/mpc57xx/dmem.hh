@@ -78,6 +78,8 @@ struct DMEM
 		, param_size("size", this, size)
 		, verbose(false)
 		, param_verbose("verbose", this, verbose, "enable/disable verbosity")
+		, stat_num_load_accesses("num-load-accesses", this, this->num_load_accesses, "number of load accesses")
+		, stat_num_store_accesses("num-store-accesses", this, this->num_store_accesses, "number of store accesses")
 	{
 		param_base_addr.SetMutable(false);
 		param_size.SetMutable(false);
@@ -167,6 +169,8 @@ private:
 	unisim::kernel::service::Parameter<unsigned int> param_size;
 	bool verbose;
 	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_load_accesses;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_store_accesses;
 };
 
 } // end of namespace unisim

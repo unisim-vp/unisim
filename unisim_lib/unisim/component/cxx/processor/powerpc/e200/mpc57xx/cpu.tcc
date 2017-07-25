@@ -687,7 +687,7 @@ void CPU<TYPES, CONFIG>::SetAutoVector(bool value)
 	{
 		if(this->verbose_interrupt)
 		{
-			this->logger << DebugInfo << (value ? "Enabling" : "Disabling") << " autovector" << EndDebugInfo;
+			this->logger << DebugInfo << "autovector is " << (value ? "enabled" : "disabled") << EndDebugInfo;
 		}
 		enable_auto_vectored_interrupts = value;
 	}

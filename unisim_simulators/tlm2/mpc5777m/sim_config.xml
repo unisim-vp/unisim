@@ -261,7 +261,7 @@
 			<variable name="reset-addr">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
-				<value>0x00000000</value>
+				<value>0x01000000</value>
 				<description>reset address</description>
 			</variable>
 			<variable name="cpuid">
@@ -565,7 +565,7 @@
 			<variable name="reset-addr">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
-				<value>0x00000000</value>
+				<value>0x01280000</value>
 				<description>reset address</description>
 			</variable>
 			<variable name="cpuid">
@@ -857,7 +857,7 @@
 			<variable name="reset-addr">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
-				<value>0x40040000</value>
+				<value>0x01500000</value>
 				<description>reset address</description>
 			</variable>
 			<variable name="cpuid">
@@ -1953,7 +1953,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.clk_200MHz">
+		<object name="HARDWARE.IOP_CLK">
 			<variable name="lazy-clock">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -1993,7 +1993,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.clk_300MHz">
+		<object name="HARDWARE.COMP_CLK">
 			<variable name="lazy-clock">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -2033,7 +2033,47 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.clk_100MHz">
+		<object name="HARDWARE.FXBAR_CLK">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>5 ns</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.SXBAR_CLK">
 			<variable name="lazy-clock">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -2073,7 +2113,7 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.clk_50MHz">
+		<object name="HARDWARE.PBRIDGEA_CLK">
 			<variable name="lazy-clock">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -2113,7 +2153,87 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.clk_1MHz">
+		<object name="HARDWARE.PBRIDGEB_CLK">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.PER_CLK">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>12500 ps</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.RTI_CLK">
 			<variable name="lazy-clock">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -2227,6 +2347,12 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="monitor-internals">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>List of internal simulator variables to monitor in GDB Front-End</description>
+		</variable>
 	</object>
 	<object name="loader">
 		<object name="loader.memory-mapper">
@@ -2253,7 +2379,7 @@
 			<variable name="mapping">
 				<type>parameter</type>
 				<data_type>string</data_type>
-				<value>HARDWARE.SYSTEM-SRAM:0x40000000-0x401fffff:+0x0,HARDWARE.FLASH:0x00400000-0x00407fff:+0x0,HARDWARE.FLASH:0x0060c000-0x0062ffff:+0x8000,HARDWARE.FLASH:0x00680000-0x00687fff:+0x2c000,HARDWARE.FLASH:0x00800000-0x0087ffff:+0x34000,HARDWARE.FLASH:0x00fc0000-0x00ffffff:+0xb4000,HARDWARE.FLASH:0x01000000-0x0177ffff:+0xf4000,HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x0</value>
+				<value>HARDWARE.SYSTEM-SRAM:0x40000000-0x401fffff:+0x0,HARDWARE.FLASH:0x00400000-0x00407fff:+0x0,HARDWARE.FLASH:0x0060c000-0x0062ffff:+0x8000,HARDWARE.FLASH:0x00680000-0x00687fff:+0x2c000,HARDWARE.FLASH:0x00800000-0x0087ffff:+0x34000,HARDWARE.FLASH:0x00fc0000-0x00ffffff:+0xb4000,HARDWARE.FLASH:0x01000000-0x0177ffff:+0xf4000,HARDWARE.Main_Core_0:0x50000000-0x50ffffff:+0x0,HARDWARE.Main_Core_1:0x51000000-0x51ffffff:+0x0,HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x0</value>
 				<description>Memory mapping. Syntax: [memory=]&lt;memory1&gt;[:[range=]&lt;low1-high1&gt;][:[translation=]+&lt;translation1&gt;][,... (e.g. ram:0x0-0x00ffff,rom:0xff0000-0xffffff:+0xff0000)</description>
 			</variable>
 		</object>
@@ -2261,7 +2387,237 @@
 			<variable name="filename">
 				<type>parameter</type>
 				<data_type>string</data_type>
-				<value>soft/bin/boot.elf</value>
+				<value>baf.bin</value>
+				<description>Location of the raw file to load.</description>
+			</variable>
+			<variable name="base-addr">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00404000</value>
+				<description>Target base address.</description>
+			</variable>
+			<variable name="size">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>Number of bytes to copy. If 0 then all the file contents will be copied. If smaller than the file, the contents of the file will be cropped. If bigger than the file size, all the file will be copied.</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>Set verbose mode (0 not active, otherwise active).</description>
+			</variable>
+		</object>
+		<object name="loader.file1">
+			<variable name="filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>soft/bin/Z4_2/flash_boot.elf</value>
+				<description>the ELF filename to load into memory</description>
+			</variable>
+			<variable name="base-addr">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>if force-base-addr is true force base address for a unique program segment, otherwise ignored</description>
+			</variable>
+			<variable name="force-base-addr">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>if true force base address for a unique program segment</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="force-use-virtual-address">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>force use of virtual addresses instead of physical addresses (default false)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="initialize-extra-segment-bytes">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>whether to initialize extra bytes in segments (p_filesz &lt; p_memsz) to zero (true for standard ELF files)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="dump-headers">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>dump headers while loading ELF file</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="dwarf-to-html-output-directory">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF v2/v3 to HTML output directory</description>
+			</variable>
+			<variable name="dwarf-to-xml-output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF v2/v3 to XML output filename</description>
+			</variable>
+			<variable name="dwarf-register-number-mapping-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF register number mapping filename</description>
+			</variable>
+			<variable name="parse-dwarf">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable parsing of DWARF debugging informations</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="debug-dwarf">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable debugging of DWARF</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="loader.file2">
+			<variable name="filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>soft/bin/Z7_0/flash_boot.elf</value>
+				<description>the ELF filename to load into memory</description>
+			</variable>
+			<variable name="base-addr">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>if force-base-addr is true force base address for a unique program segment, otherwise ignored</description>
+			</variable>
+			<variable name="force-base-addr">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>if true force base address for a unique program segment</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="force-use-virtual-address">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>force use of virtual addresses instead of physical addresses (default false)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="initialize-extra-segment-bytes">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>whether to initialize extra bytes in segments (p_filesz &lt; p_memsz) to zero (true for standard ELF files)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="dump-headers">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>dump headers while loading ELF file</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="dwarf-to-html-output-directory">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF v2/v3 to HTML output directory</description>
+			</variable>
+			<variable name="dwarf-to-xml-output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF v2/v3 to XML output filename</description>
+			</variable>
+			<variable name="dwarf-register-number-mapping-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF register number mapping filename</description>
+			</variable>
+			<variable name="parse-dwarf">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable parsing of DWARF debugging informations</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="debug-dwarf">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable debugging of DWARF</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="loader.file3">
+			<variable name="filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>soft/bin/Z7_1/flash_boot.elf</value>
 				<description>the ELF filename to load into memory</description>
 			</variable>
 			<variable name="base-addr">
@@ -2382,7 +2738,7 @@
 		<variable name="filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value>soft/bin/boot.elf</value>
+			<value>baf.bin,soft/bin/Z4_2/flash_boot.elf,soft/bin/Z7_0/flash_boot.elf,soft/bin/Z7_1/flash_boot.elf</value>
 			<description>List of files to load. Syntax: [[filename=]&lt;filename1&gt;[=[format=]&lt;format1&gt;]][,[filename=]&lt;filename2&gt;[=[format=]&lt;format2&gt;]]... (e.g. boot.bin=raw,app.elf)</description>
 		</variable>
 	</object>

@@ -117,6 +117,7 @@ public:
 
 	peripheral_slave_if_type  peripheral_slave_if;           // peripheral slave interface
 	sc_core::sc_in<bool>      m_clk;                         // Clock port
+	sc_core::sc_in<bool>      per_clk;                       // PER Clock port
 	sc_core::sc_in<bool>      rti_clk;                       // RTI Clock port
 	sc_core::sc_in<bool>      reset_b;                       // reset
 	sc_core::sc_in<bool>      debug;                         // debug port
@@ -140,6 +141,7 @@ private:
 	enum EventType
 	{
 		EV_NONE = 0,
+		EV_WAKE_UP,
 		EV_RTI_TIMER_RESTART,
 		EV_TIMER_RESTART,
 		EV_CPU_PAYLOAD
@@ -242,6 +244,11 @@ private:
 			release_payload = _release_payload;
 		}
 		
+		void WakeUp()
+		{
+			key.SetEventType(EV_WAKE_UP);
+		}
+		
 		void RestartTimer(unsigned int _channel_num)
 		{
 			key.SetEventType(EV_TIMER_RESTART);
@@ -309,6 +316,7 @@ private:
 		inline bool IsVerboseWrite() const ALWAYS_INLINE { return pit->verbose; }
 		inline std::ostream& GetInfoStream() ALWAYS_INLINE { return pit->logger.DebugInfoStream(); }
 
+#if 0
 		virtual ReadWriteStatus Read(sc_core::sc_time& time_stamp, uint32_t& value, const uint32_t& bit_enable)
 		{
 			// Run counter until read time so that registers reflect precise state of PIT
@@ -327,6 +335,7 @@ private:
 			pit->ScheduleTimersRun();
 			return rws;
 		}
+#endif
 
 		using Super::operator =;
 		
@@ -389,8 +398,8 @@ private:
 		
 		virtual ReadWriteStatus Read(sc_core::sc_time& time_stamp, uint32_t& value, const uint32_t& bit_enable)
 		{
-			// Run timers until read time
-			this->pit->RunTimersToTime(time_stamp);
+// 			// Run timers until read time
+// 			this->pit->RunTimersToTime(time_stamp);
 
 			// Make PIT_LTMR64H reflect PIT_CVAL1 value
 			uint32_t lth = this->pit->pit_cval[1].template Get<typename PIT_CVAL::TVL>();
@@ -748,7 +757,8 @@ private:
 		unsigned int reg_num;
 	};
 	
-	unisim::kernel::tlm2::ClockPropertiesProxy *m_clk_prop_proxy; // proxy to get clock properties from master clock port
+	unisim::kernel::tlm2::ClockPropertiesProxy m_clk_prop_proxy; // proxy to get clock properties from master clock port
+	unisim::kernel::tlm2::ClockPropertiesProxy *per_clk_prop_proxy; // proxy to get clock properties from PER clock port
 	unisim::kernel::tlm2::ClockPropertiesProxy *rti_clk_prop_proxy; // proxy to get clock properties from RTI clock port
 	
 	PIT_MCR pit_mcr;                                                                           // PIT_MCR
@@ -782,8 +792,9 @@ private:
 	sc_core::sc_event *gen_dma_pulse_event[MAX_CHANNELS]; // Event to trigger dma pulse (DMA_TRIGGER_Process)
 	sc_core::sc_time last_timers_run_time;                // Last time when timers ran
 	sc_core::sc_time last_rti_timer_run_time;             // Last time when RTI timer ran
-	sc_core::sc_time rti_clock_period;                    // clock period
-	sc_core::sc_time clock_period;                        // clock period
+	sc_core::sc_time master_clock_period;                 // Master clock period
+	sc_core::sc_time rti_clock_period;                    // RTI clock period
+	sc_core::sc_time per_clock_period;                    // PER clock period
 	sc_core::sc_event timers_run_event;                   // Event to trigger timers run (RunTimersProcess)
 	bool freeze;                                          // Latched value for internal "freeze"
 	
@@ -792,7 +803,9 @@ private:
 	void ProcessEvents();
 	void Process();
 	void RESET_B_Process();
-	void UpdateClockPeriod();
+	void MasterClockPropertiesChangedProcess();
+	void UpdateMasterClockPeriod();
+	void UpdatePERClockPeriod();
 	void UpdateRTIClockPeriod();
 	void IRQ_Process(unsigned int channel_num);
 	void RTIRQ_Process();
@@ -812,7 +825,7 @@ private:
 	sc_core::sc_time TimeToNextTimersRun();
 	void RunTimersToTime(const sc_core::sc_time& time_stamp);
 	void ScheduleTimersRun();
-	void RunTimersProcess();
+	
 	void RefreshFreeze();
 };
 

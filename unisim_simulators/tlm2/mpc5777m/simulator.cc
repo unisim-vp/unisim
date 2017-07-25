@@ -259,6 +259,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(swt_3->reset_b);
 
 	RegisterPort(pit_0->m_clk);
+	RegisterPort(pit_0->per_clk);
 	RegisterPort(pit_0->rti_clk);
 	RegisterPort(pit_0->reset_b);
 	RegisterPort(pit_0->debug);
@@ -270,6 +271,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(pit_0->rtirq);
 	
 	RegisterPort(pit_1->m_clk);
+	RegisterPort(pit_1->per_clk);
 	RegisterPort(pit_1->rti_clk);
 	RegisterPort(pit_1->reset_b);
 	RegisterPort(pit_1->debug);
@@ -285,11 +287,14 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//===                           Signal creation                         ===
 	//=========================================================================
 	
-	CreateClock("clk_200MHz");
-	CreateClock("clk_300MHz");
-	CreateClock("clk_100MHz");
-	CreateClock("clk_50MHz");
-	CreateClock("clk_1MHz");
+	CreateClock("IOP_CLK");
+	CreateClock("COMP_CLK");
+	CreateClock("FXBAR_CLK");
+	CreateClock("SXBAR_CLK");
+	CreateClock("PBRIDGEA_CLK");
+	CreateClock("PBRIDGEB_CLK");
+	CreateClock("PER_CLK");
+	CreateClock("RTI_CLK");
 	
 	CreateSignal("m_por", false);
 	CreateSignal("stop", false);
@@ -354,7 +359,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*pbridge_a->init_socket[8])(pit_0->peripheral_slave_if);     // PBRIDGE_A <-> PIT_0
 	(*pbridge_a->init_socket[9])(pit_1->peripheral_slave_if);     // PBRIDGE_A <-> PIT_1
 	
-	Bind("HARDWARE.Main_Core_0.m_clk"           , "HARDWARE.clk_300MHz");
+	Bind("HARDWARE.Main_Core_0.m_clk"           , "HARDWARE.COMP_CLK");
 	Bind("HARDWARE.Main_Core_0.m_por"           , "HARDWARE.m_por");
 	Bind("HARDWARE.Main_Core_0.p_reset_b"       , "HARDWARE.p_reset_b_0");
 	Bind("HARDWARE.Main_Core_0.p_nmi_b"         , "HARDWARE.p_nmi_b");
@@ -367,7 +372,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.Main_Core_0.p_voffset"       , "HARDWARE.p_voffset_0");
 	Bind("HARDWARE.Main_Core_0.p_iack"          , "HARDWARE.p_iack_0");
 
-	Bind("HARDWARE.Main_Core_1.m_clk"           , "HARDWARE.clk_300MHz");
+	Bind("HARDWARE.Main_Core_1.m_clk"           , "HARDWARE.COMP_CLK");
 	Bind("HARDWARE.Main_Core_1.m_por"           , "HARDWARE.m_por");
 	Bind("HARDWARE.Main_Core_1.p_reset_b"       , "HARDWARE.p_reset_b_0");
 	Bind("HARDWARE.Main_Core_1.p_nmi_b"         , "HARDWARE.p_nmi_b");
@@ -380,7 +385,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.Main_Core_1.p_voffset"       , "HARDWARE.p_voffset_1");
 	Bind("HARDWARE.Main_Core_1.p_iack"          , "HARDWARE.p_iack_1");
 
-	Bind("HARDWARE.Peripheral_Core_2.m_clk"           , "HARDWARE.clk_200MHz");
+	Bind("HARDWARE.Peripheral_Core_2.m_clk"           , "HARDWARE.IOP_CLK");
 	Bind("HARDWARE.Peripheral_Core_2.m_por"           , "HARDWARE.m_por");
 	Bind("HARDWARE.Peripheral_Core_2.p_reset_b"       , "HARDWARE.p_reset_b_2");
 	Bind("HARDWARE.Peripheral_Core_2.p_nmi_b"         , "HARDWARE.p_nmi_b");
@@ -393,51 +398,52 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.Peripheral_Core_2.p_voffset"       , "HARDWARE.p_voffset_2");
 	Bind("HARDWARE.Peripheral_Core_2.p_iack"          , "HARDWARE.p_iack_2");
 	
-	Bind("HARDWARE.INTC_0.m_clk"           , "HARDWARE.clk_50MHz");
+	Bind("HARDWARE.INTC_0.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.INTC_0.reset_b"         , "HARDWARE.reset_b");
 	BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_irq_b"  , "HARDWARE.p_irq_b"  );
 	BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_avec_b" , "HARDWARE.p_avec_b" );
 	BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_voffset", "HARDWARE.p_voffset");
 	BindArray(INTC_0_CONFIG::NUM_PROCESSORS, "HARDWARE.INTC_0.p_iack"   , "HARDWARE.p_iack"   );
 	
-	Bind("HARDWARE.STM_0.m_clk"           , "HARDWARE.clk_50MHz");
+	Bind("HARDWARE.STM_0.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.STM_0.reset_b"         , "HARDWARE.reset_b");
 	Bind("HARDWARE.STM_0.debug"           , "HARDWARE.debug");
 
-	Bind("HARDWARE.STM_1.m_clk"           , "HARDWARE.clk_50MHz");
+	Bind("HARDWARE.STM_1.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.STM_1.reset_b"         , "HARDWARE.reset_b");
 	Bind("HARDWARE.STM_1.debug"           , "HARDWARE.debug");
 
-	Bind("HARDWARE.STM_2.m_clk"           , "HARDWARE.clk_50MHz");
+	Bind("HARDWARE.STM_2.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.STM_2.reset_b"         , "HARDWARE.reset_b");
 	Bind("HARDWARE.STM_2.debug"           , "HARDWARE.debug");
 	
-	Bind("HARDWARE.SWT_0.m_clk"           , "HARDWARE.clk_50MHz");
+	Bind("HARDWARE.SWT_0.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.SWT_0.swt_reset_b"     , "HARDWARE.reset_b");
 	Bind("HARDWARE.SWT_0.stop"            , "HARDWARE.stop");
 	Bind("HARDWARE.SWT_0.debug"           , "HARDWARE.debug");
 	Bind("HARDWARE.SWT_0.reset_b"         , "HARDWARE.p_reset_b_0");
 
-	Bind("HARDWARE.SWT_1.m_clk"           , "HARDWARE.clk_50MHz");
+	Bind("HARDWARE.SWT_1.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.SWT_1.swt_reset_b"     , "HARDWARE.reset_b");
 	Bind("HARDWARE.SWT_1.stop"            , "HARDWARE.stop");
 	Bind("HARDWARE.SWT_1.debug"           , "HARDWARE.debug");
 	Bind("HARDWARE.SWT_1.reset_b"         , "HARDWARE.p_reset_b_1");
 
-	Bind("HARDWARE.SWT_2.m_clk"           , "HARDWARE.clk_50MHz");
+	Bind("HARDWARE.SWT_2.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.SWT_2.swt_reset_b"     , "HARDWARE.reset_b");
 	Bind("HARDWARE.SWT_2.stop"            , "HARDWARE.stop");
 	Bind("HARDWARE.SWT_2.debug"           , "HARDWARE.debug");
 	Bind("HARDWARE.SWT_2.reset_b"         , "HARDWARE.p_reset_b_2");
 	
-	Bind("HARDWARE.SWT_3.m_clk"           , "HARDWARE.clk_50MHz");
+	Bind("HARDWARE.SWT_3.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.SWT_3.swt_reset_b"     , "HARDWARE.reset_b");
 	Bind("HARDWARE.SWT_3.stop"            , "HARDWARE.stop");
 	Bind("HARDWARE.SWT_3.debug"           , "HARDWARE.debug");
 	Bind("HARDWARE.SWT_3.reset_b"         , "HARDWARE.p_reset_b_3");
 	
-	Bind("HARDWARE.PIT_0.m_clk"           , "HARDWARE.clk_50MHz");
-	Bind("HARDWARE.PIT_0.rti_clk"         , "HARDWARE.clk_1MHz");
+	Bind("HARDWARE.PIT_0.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.PIT_0.per_clk"         , "HARDWARE.PER_CLK");
+	Bind("HARDWARE.PIT_0.rti_clk"         , "HARDWARE.RTI_CLK");
 	Bind("HARDWARE.PIT_0.reset_b"         , "HARDWARE.reset_b");
 	Bind("HARDWARE.PIT_0.debug"           , "HARDWARE.debug");
 	
@@ -450,8 +456,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.PIT_0.dma_trigger_6", "HARDWARE.dma_trigger_32");
 	Bind("HARDWARE.PIT_0.dma_trigger_7", "HARDWARE.dma_trigger_48");
 	
-	Bind("HARDWARE.PIT_1.m_clk"           , "HARDWARE.clk_50MHz");
-	Bind("HARDWARE.PIT_1.rti_clk"         , "HARDWARE.pull_down");
+	Bind("HARDWARE.PIT_1.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.PIT_1.per_clk"         , "HARDWARE.PER_CLK");
+	Bind("HARDWARE.PIT_1.rti_clk"         , "HARDWARE.RTI_CLK");
 	Bind("HARDWARE.PIT_1.reset_b"         , "HARDWARE.reset_b");
 	Bind("HARDWARE.PIT_1.debug"           , "HARDWARE.debug");
 	
@@ -1594,10 +1601,20 @@ void Simulator::ResetProcess()
 // 	sc_core::sc_signal<sc_dt::sc_uint<30> >& p_rstbase = GetSignal<sc_dt::sc_uint<30> >("HARDWARE.p_rstbase");
 // 	p_rstbase = sc_dt::sc_uint<30>(0x404100 /*0x13a0000*/ /*0x1500000*/ >> 2);
 	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& p_reset_b_2 = GetSignal<bool, sc_core::SC_MANY_WRITERS>("HARDWARE.p_reset_b_2");
+	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& p_reset_b_0 = GetSignal<bool, sc_core::SC_MANY_WRITERS>("HARDWARE.p_reset_b_0");
+	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& p_reset_b_1 = GetSignal<bool, sc_core::SC_MANY_WRITERS>("HARDWARE.p_reset_b_1");
+
 	p_reset_b_2 = false;
 	wait(sc_core::sc_time(10.0, sc_core::SC_NS));
 	p_reset_b_2 = true;
 	
+	wait(sc_core::sc_time(990.0, sc_core::SC_NS));
+	p_reset_b_0 = false;
+	p_reset_b_1 = false;
+	wait(sc_core::sc_time(10.0, sc_core::SC_NS));
+	p_reset_b_0 = true;
+	p_reset_b_1 = true;
+
 // 	wait(sc_core::sc_time(40.0, sc_core::SC_NS));
 // 	sc_core::sc_signal<sc_dt::sc_uint<14> >& p_voffset = GetSignal<sc_dt::sc_uint<14> >("HARDWARE.p_voffset");
 // 	p_voffset = sc_dt::sc_uint<14>(0x1234);
@@ -1646,16 +1663,22 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//=========================================================================
 
 	//  - Clocks
-	simulator->SetVariable("HARDWARE.clk_300MHz.lazy-clock", "true");
-	simulator->SetVariable("HARDWARE.clk_300MHz.clock-period", "3333 ps");
-	simulator->SetVariable("HARDWARE.clk_200MHz.lazy-clock", "true");
-	simulator->SetVariable("HARDWARE.clk_200MHz.clock-period", "5 ns");
-	simulator->SetVariable("HARDWARE.clk_100MHz.lazy-clock", "true");
-	simulator->SetVariable("HARDWARE.clk_100MHz.clock-period", "10 ns");
-	simulator->SetVariable("HARDWARE.clk_50MHz.lazy-clock", "true");
-	simulator->SetVariable("HARDWARE.clk_50MHz.clock-period", "20 ns");
-	simulator->SetVariable("HARDWARE.clk_1MHz.lazy-clock", "true");
-	simulator->SetVariable("HARDWARE.clk_1MHz.clock-period", "1 us");
+	simulator->SetVariable("HARDWARE.COMP_CLK.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.COMP_CLK.clock-period", "3333 ps");   // Computationnal Shell: 300 MHz
+	simulator->SetVariable("HARDWARE.IOP_CLK.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.IOP_CLK.clock-period", "5 ns");       // I/O processor: 200 MHz
+	simulator->SetVariable("HARDWARE.FXBAR_CLK.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.FXBAR_CLK.clock-period", "5 ns");     // Fast crossbar: 200 Mhz
+	simulator->SetVariable("HARDWARE.SXBAR_CLK.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.SXBAR_CLK.clock-period", "10 ns");    // Slow crossbar: 100 Mhz
+	simulator->SetVariable("HARDWARE.PBRIDGEA_CLK.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.PBRIDGEA_CLK.clock-period", "20 ns"); // PBRIDGE_A: 50 Mhz
+	simulator->SetVariable("HARDWARE.PBRIDGEB_CLK.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.PBRIDGEB_CLK.clock-period", "20 ns"); // PBRIDGE_B: 50 Mhz
+	simulator->SetVariable("HARDWARE.PER_CLK.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.PER_CLK.clock-period", "12500 ps");   // PER_CLK: 80 Mhz
+	simulator->SetVariable("HARDWARE.RTI_CLK.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.RTI_CLK.clock-period", "1 us");       // RTI_CLK: 1 Mhz
 	
 	//  - e200 PowerPC cores
 
@@ -1682,7 +1705,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.Peripheral_Core_2.cpuid", 0x2);
 
 	//FIXME: reset address
-	simulator->SetVariable("HARDWARE.Peripheral_Core_2.reset-addr", 0x40040000);
+	simulator->SetVariable("HARDWARE.Peripheral_Core_2.reset-addr", 0x1500000);
+	simulator->SetVariable("HARDWARE.Main_Core_0.reset-addr", 0x1000000);
+	simulator->SetVariable("HARDWARE.Main_Core_1.reset-addr", 0x1280000);
 	
 	// Main_Core_0
 	simulator->SetVariable("HARDWARE.Main_Core_0.ahb-master-id", 0);
@@ -1730,7 +1755,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	//  - XBAR_0
 	simulator->SetVariable("HARDWARE.XBAR_0.cycle_time", "5 ns");
-	
 	simulator->SetVariable("HARDWARE.XBAR_0.mapping_0",  "range_start=\"0x00400000\" range_end=\"0x00407fff\" output_port=\"0\" translation=\"0x0\"");        //   0 KB: UTest NVM Block (32 KB)         -> FLASH (rel address)
 	simulator->SetVariable("HARDWARE.XBAR_0.mapping_1",  "range_start=\"0x0060c000\" range_end=\"0x0062ffff\" output_port=\"0\" translation=\"0x8000\"");     //  32 KB: HSM Code (144 KB)               -> FLASH (rel address)
 	simulator->SetVariable("HARDWARE.XBAR_0.mapping_2",  "range_start=\"0x00680000\" range_end=\"0x00687fff\" output_port=\"0\" translation=\"0x2c000\"");    // 176 KB: HSM Data (32 KB)                -> FLASH (rel address)
@@ -1772,7 +1796,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_9",  "range_start=\"0xfff80000\" range_end=\"0xfff83fff\" output_port=\"9\" translation=\"0x0\""); // PIT_1 -> PIT_1 (rel address)
 
 	// - Loader
-	simulator->SetVariable("loader.filename", "soft/bin/boot.elf");
+	simulator->SetVariable("loader.filename", "baf.bin,soft/bin/Z4_2/flash_boot.elf,soft/bin/Z7_0/flash_boot.elf,soft/bin/Z7_1/flash_boot.elf");
+	simulator->SetVariable("loader.file0.base-addr", 0x00404000UL);
 	
 	// - Loader memory router
 	simulator->SetVariable("loader.memory-mapper.mapping",
@@ -1844,13 +1869,13 @@ void Simulator::Run()
 	
 	double time_start = host_time->GetTime();
 
-#ifndef WIN32
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 	void (*prev_sig_int_handler)(int) = 0;
 #endif
 
 	if(!inline_debugger)
 	{
-#ifdef WIN32
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
 #else
 		prev_sig_int_handler = signal(SIGINT, &Simulator::SigIntHandler);
@@ -1871,7 +1896,7 @@ void Simulator::Run()
 
 	if(!inline_debugger)
 	{
-#ifdef WIN32
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, FALSE);
 #else
 		signal(SIGINT, prev_sig_int_handler);
@@ -1893,10 +1918,14 @@ void Simulator::Run()
 	DumpStatistics(cerr);
 	cerr << endl;
 
+	uint64_t instruction_counter = (uint64_t)(*peripheral_core_2)["instruction-counter"] + (uint64_t)(*main_core_0)["instruction-counter"] + (uint64_t)(*main_core_1)["instruction-counter"];
+	double run_time = (double)(*peripheral_core_2)["run-time"] + (double)(*main_core_0)["run-time"] + (double)(*main_core_1)["run-time"];
+	double idle_time = (double)(*peripheral_core_2)["idle-time"] + (double)(*main_core_0)["idle-time"] + (double)(*main_core_1)["idle-time"];
+	
 	cerr << "simulation time: " << spent_time << " seconds" << endl;
 	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-	cerr << "target speed: " << ((double) (*peripheral_core_2)["instruction-counter"] / ((double) (*peripheral_core_2)["run-time"] - (double) (*peripheral_core_2)["idle-time"]) / 1000000.0) << " MIPS" << endl;
-	cerr << "host simulation speed: " << ((double) (*peripheral_core_2)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
+	cerr << "target speed: " << (instruction_counter / (run_time - idle_time) / 1000000.0) << " MIPS" << endl;
+	cerr << "host simulation speed: " << ((double) instruction_counter / spent_time / 1000000.0) << " MIPS" << endl;
 	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
 }
 
@@ -1948,7 +1977,6 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 	{
 		sc_process_handle h = sc_get_current_process_handle();
 		switch(h.proc_kind())
-// 		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
 		{
 			case SC_THREAD_PROC_: 
 			case SC_CTHREAD_PROC_:
@@ -1965,7 +1993,7 @@ int Simulator::GetExitStatus() const
 	return exit_status;
 }
 
-#ifdef WIN32
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 BOOL WINAPI Simulator::ConsoleCtrlHandler(DWORD dwCtrlType)
 {
 	bool stop = false;

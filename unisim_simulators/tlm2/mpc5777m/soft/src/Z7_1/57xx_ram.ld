@@ -7,78 +7,44 @@ __STACK_SIZE           = 4096 ;
 
 SRAM_SIZE =  128K;    
 /* Define SRAM Base Address */
-SRAM_BASE_ADDR = 0x40040000;
+SRAM_BASE_ADDR = 0x40020000;
   
-/* Define CPU2 Local Instruction SRAM Allocation */  
+/* Define CPU1 Local Instruction SRAM Allocation */  
 LOCALIMEM_SIZE = 16K;
-/* Define CPU2 Local Instruction SRAM Base Address */
-LOCALIMEM_BASE_ADDR = 0x52000000;
+/* Define CPU1 Local Instruction SRAM Base Address */
+LOCALIMEM_BASE_ADDR = 0x51000000;
 
-/* Define CPU2 Local Data SRAM Allocation */
+/* Define CPU1 Local Data SRAM Allocation */
 LOCALDMEM_SIZE = 64K;
-/* Define CPU2 Local Data SRAM Base Address */
-LOCALDMEM_BASE_ADDR = 0x52800000;
+/* Define CPU1 Local Data SRAM Base Address */
+LOCALDMEM_BASE_ADDR = 0x51800000;
     
 MEMORY
 {
-
-    flash_rchw : org = 0x00FC0000,   len = 0x4
-    cpu0_reset_vec : org = 0x00FC0000+0x10,   len = 0x4
-    cpu1_reset_vec : org = 0x00FC0000+0x14,   len = 0x4
-    cpu2_reset_vec : org = 0x00FC0000+0x04,   len = 0x4    
-    cpuc_reset_vec : org = 0x00FC0000+0x18,   len = 0x4    
-        
-    m_text :	org = 0x1500000, len = 2560K  
-    m_data :	org = 0x40040000,   len = 128K
+    SRAM :	org = 0x40020000,   len = 128K
     
-    local_imem  : org = 0x52000000,   len = 16K
-    local_dmem  : org = 0x52800000,   len = 64K   
+    local_imem  : org = 0x51000000,   len = 16K
+    local_dmem  : org = 0x51800000,   len = 64K   
 }
 
 SECTIONS
 {
-    .rchw   : 
-    {
-        KEEP(*(.rchw))
-    } > flash_rchw
-
-    .cpu0_reset_vector  : 
-    {
-        KEEP(*(.cpu0_reset_vector))
-    } > cpu0_reset_vec
-
-    .cpu1_reset_vector  : 
-    {
-        KEEP(*(.cpu1_reset_vector))
-    } > cpu1_reset_vec
-
-    .cpu2_reset_vector  : 
-    {
-        KEEP(*(.cpu2_reset_vector))
-    } > cpu2_reset_vec
-
-    .cpuc_reset_vector  : 
-    {
-        KEEP(*(.cpuc_reset_vector))
-    } > cpuc_reset_vec
-
-    /* Note: if you move the 'startup' section shall modify the RCHW2_2 value for the corresponding core in the flashrchw.c file. */
     .startup : ALIGN(0x400)
     {
     __start = . ;
     	*(.startup)
-    } > m_text
+    } > SRAM
     
     .core_exceptions_table   : ALIGN(4096)
     {
       __IVPR_VALUE = . ;
       KEEP(*(.core_exceptions_table))
-    } > m_text
+    } > SRAM
 
     .intc_vector_table   : ALIGN(4096)
     {
       KEEP(*(.intc_vector_table))
-    } > m_text
+    } > SRAM
       
     .text : 
     {
@@ -88,7 +54,7 @@ SECTIONS
       KEEP (*(.init))
       KEEP (*(.fini))            
       . = ALIGN(16);
-    } > m_text
+    } > SRAM
       
     .ctors :
     {
@@ -112,7 +78,7 @@ SECTIONS
       KEEP (*(SORT(.ctors.*)))
       KEEP (*(.ctors))
       __CTOR_END__ = .;
-    } > m_text
+    } > SRAM
 
     .dtors :
     {
@@ -123,14 +89,14 @@ SECTIONS
       KEEP (*(SORT(.dtors.*)))
       KEEP (*(.dtors))
       __DTOR_END__ = .;
-    } > m_text
+    } > SRAM
         
     .preinit_array :
     {
       PROVIDE_HIDDEN (__preinit_array_start = .);
       KEEP (*(.preinit_array*))
       PROVIDE_HIDDEN (__preinit_array_end = .);
-    } > m_text
+    } > SRAM
 
     .init_array :
     {
@@ -138,7 +104,7 @@ SECTIONS
       KEEP (*(SORT(.init_array.*)))
       KEEP (*(.init_array*))
       PROVIDE_HIDDEN (__init_array_end = .);
-    } > m_text
+    } > SRAM
 
     .fini_array :
     {
@@ -146,41 +112,41 @@ SECTIONS
       KEEP (*(SORT(.fini_array.*)))
       KEEP (*(.fini_array*))
       PROVIDE_HIDDEN (__fini_array_end = .);
-    } > m_text
-          
+    } > SRAM
+        
     .rodata :
     {
       *(.rodata)
       *(.rodata.*)
-    } > m_text
+    } > SRAM
     
-    .eh_frame_hdr : { *(.eh_frame_hdr) } > m_text
-    .eh_frame     : { KEEP (*(.eh_frame)) } > m_text    
+    .eh_frame_hdr : { *(.eh_frame_hdr) } > SRAM
+    .eh_frame     : { KEEP (*(.eh_frame)) } > SRAM    
    
 	.data   : 
 	{
 	  *(.data)
 	  *(.data.*)
-	}  > m_data AT>m_text
+	}  > SRAM
     
     .sdata2  :
 	{  
 	  *(.sdata2)
 	  *(.sdata2.*)
-	} > m_data AT>m_text
+	} > SRAM
 
 	.sbss2    (NOLOAD)   :
 	{
       /* _SDA2_BASE_ = .; */ 
 	  *(.sbss2)
 	  *(.sbss2.*)
-	} > m_data
+	} > SRAM
     
     .sdata  :
 	{
 	  *(.sdata)
 	  *(.sdata.*)
-	} > m_data AT>m_text
+	} > SRAM
     
 	.bss   (NOLOAD)  :
 	{
@@ -191,7 +157,7 @@ SECTIONS
       *(.bss.*)
       *(COMMON)
       __BSS_END = .;
-    } > m_data
+    } > SRAM
     
     .stack (NOLOAD) : ALIGN(16) 
     {

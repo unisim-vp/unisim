@@ -810,7 +810,10 @@ Simulator::Simulator(sc_core::sc_module_name const& name, int argc, char **argv,
 	, unisim::kernel::service::Object(name)
 	, logger(*this)
 	, instrumenter(0)
+	, stat_cur_sim_time("cur-sim-time", this, *const_cast<sc_core::sc_time *>(&sc_core::sc_time_stamp()), "SystemC current simulation time (as returned by sc_core::sc_time_stamp()) ")
 {
+	stat_cur_sim_time.SetMutable(false);
+	stat_cur_sim_time.SetSerializable(false);
 	instrumenter = new Instrumenter("instrumenter", this);
 }
 

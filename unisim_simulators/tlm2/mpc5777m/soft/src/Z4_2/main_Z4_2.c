@@ -13,8 +13,6 @@
 #define KEY_VALUE1 0x5AF0ul
 #define KEY_VALUE2 0xA50Ful
 
-extern void xcptn_xmpl(void);
-
 void hw_init(void)
 {
 #if defined(DEBUG_SECONDARY_CORES)
@@ -45,38 +43,38 @@ void hw_init(void)
 	MC_ME.MCTL.R =  mctl; /* key value 2 always from MCTL */
 #endif /* defined(DEBUG_SECONDARY_CORES) */
 
-	intc_init();
-	swt_init(2);
-	stm_init(2);
-	pit_init(0);
-	pit_init(1);
-	intc_enable_external_interrupt();
+	intc_init(); // initialize interrupt controller
+	swt_init(2); // initialize SWT_2
+	stm_init(2); // initialize STM_2
+	pit_init(0); // initialize PIT_0
+	pit_init(1); // initialize PIt_1
+	intc_enable_external_interrupt(); // Enable processor external interrupts
 }
 
 void periodic_task(unsigned int stm_id, unsigned int chan)
 {
-	swt_service_sequence(2);
-	stm_set_channel_compare(stm_id, chan, stm_get_channel_compare(stm_id, chan) + 10000);
-	stm_clear_interrupt_flag(stm_id, chan);
+	swt_service_sequence(2); // rearm SWT_2
+	stm_set_channel_compare(stm_id, chan, stm_get_channel_compare(stm_id, chan) + 10000); // schedule next STM_2 tic
+	stm_clear_interrupt_flag(stm_id, chan); // clear STM_2 interrupt flag
 }
 
 uint64_t lifetime;
 
 void periodic_task2(unsigned int pit_id, unsigned int chan)
 {
-	pit_clear_timer_interrupt_flag(pit_id, chan);
+	pit_clear_timer_interrupt_flag(pit_id, chan); // clear PIT interrupt flag
 	
-	lifetime = pit_get_lifetime(1);
+	lifetime = pit_get_lifetime(1); // read PIT_1 lifetime
 }
 
 int main(void)
 {
 	unsigned int counter = 0;
 	
-	swt_set_service_mode(2, SMD_KEYED_SERVICE_SEQUENCE);
-	swt_set_service_key(2, 1234);
-	swt_set_timeout(2, 50000);
-	swt_enable(2);
+	swt_set_service_mode(2, SMD_KEYED_SERVICE_SEQUENCE); // select keyed service sequence for SWT_2
+	swt_set_service_key(2, 1234); // set SWT_2 service key
+	swt_set_timeout(2, 50000); // set a timeout of 3.125 ms for SWT_2
+	swt_enable(2); // enable SWT_2
 	
 	
 	stm_set_channel_irq_priority(2, 0, 1); // set STM_2 channel #0 IRQ priority level to 1
@@ -85,27 +83,30 @@ int main(void)
 	pit_set_timer_irq_priority(0, 0, 3); // set PIT_0 timer #0 IRQ priority level to 2
 	pit_select_timer_irq_for_processor(0, 0, 2);
 	
+	// trigger periodic_task every 200 us (with a 50 Mhz clock)
 	stm_set_interrupt_handler(2, 0, periodic_task); // install a hook for STM_2 channel #0 interrupts
 	stm_enable_counter(2); // enable STM_2 counter
-	stm_set_channel_compare(2, 0, 10000); // set STM_2 channel #0 compare value to 10000 cycles
+	stm_set_channel_compare(2, 0, 10000); // set STM_2 channel #0 compare value to 10000 cycles (i.e. 200 us)
 	stm_enable_channel(2, 0); // enable STM_2 channel #0
 	
+	// trigger periodic_task2 every 300 us (with a 80 MHz clock)
 	pit_set_timer_interrupt_handler(0, 0, periodic_task2);
-	pit_set_timer_load_value(0, 0, 14999);
+	pit_set_timer_load_value(0, 0, 24000 - 1);
 	pit_enable_timer(0, 0);
 	pit_enable_timer_interrupt(0, 0);
 	pit_enable_timers_clock(0);
 	
 	// lifetime
-	pit_set_timer_load_value(1, 0, 19999);
-	pit_set_timer_load_value(1, 1, 1000);
-	pit_chain_timer(1, 1);
-	pit_enable_timer(1, 0);
-	pit_enable_timer(1, 1);
-	pit_enable_timers_clock(1);
+	pit_set_timer_load_value(1, 0, 80 - 1);         // SWT_1: 1 us period
+	pit_set_timer_load_value(1, 1, 0xffffffff);     // SWT_1: down counter every 1 us
+	pit_chain_timer(1, 1);                          // SWT_1: chain timer #0 and timer #1
+	pit_enable_timer(1, 0);                         // SWT_1: enable time #0
+	pit_enable_timer(1, 1);                         // SWT_1: enable time #0
+	pit_enable_timers_clock(1);                     // enable SWT_1 timers clock
 	
 	/* Loop forever */
 	for(;;) {	   
-	   	counter++;
+		lifetime = pit_get_lifetime(1);
+		counter++;
 	}
 }

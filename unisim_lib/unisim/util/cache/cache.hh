@@ -311,6 +311,9 @@ struct LocalMemory
 	inline unsigned int GetSize() const;
 
 	///////////////////////////////////////////////////////////////////////////
+protected:
+	uint64_t num_load_accesses;
+	uint64_t num_store_accesses;
 private:
 	uint8_t bytes[CONFIG::SIZE];
 
@@ -533,11 +536,13 @@ struct Cache
 	inline bool ChooseLineToEvict(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
 	inline void UpdateReplacementPolicyOnAccess(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
 	inline void UpdateReplacementPolicyOnFill(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
+	inline void OnAccess(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
 
 	///////////////////////////////////////////////////////////////////////////
+protected:
+	uint64_t num_accesses;
+	uint64_t num_misses;
 private:
-	unsigned int num_accesses;
-	unsigned int num_misses;
 	CacheSet<TYPES, CONFIG> sets[CONFIG::SIZE / CONFIG::BLOCK_SIZE / CONFIG::BLOCKS_PER_LINE / CONFIG::ASSOCIATIVITY];
 
 	template <typename, typename MSS> friend struct MemorySubSystem;
@@ -551,6 +556,7 @@ private:
 	inline bool __MSS_ChooseLineToEvict__(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
 	inline void __MSS_UpdateReplacementPolicyOnAccess__(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
 	inline void __MSS_UpdateReplacementPolicyOnFill__(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
+	inline void __MSS_OnAccess__(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
 };
 
 //////////////////////////// NullCacheConfig //////////////////////////////////
@@ -1029,6 +1035,14 @@ protected:
 	template <typename LOC_MEM_SET, typename LOC_MEM>
 	inline unsigned int DebugStoreInLocalMemory(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size);
 
+	/* Incoming Load (Data Load or Instruction Fetch) from local memories (returns number of bytes transfered) */
+	template <typename LOC_MEM_SET, typename LOC_MEM>
+	inline unsigned int IncomingLoadFromLocalMemory(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size);
+	
+	/* Incoming Store (Data Store) in local memories (returns number of bytes transfered) */
+	template <typename LOC_MEM_SET, typename LOC_MEM>
+	inline unsigned int IncomingStoreInLocalMemory(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size);
+
 	template <typename LOC_MEM_SET, typename LOC_MEM>
 	uint8_t *GetDirectAccessToLocalMemory(typename TYPES::PHYSICAL_ADDRESS phys_addr, typename TYPES::PHYSICAL_ADDRESS& start_phys_addr, typename TYPES::PHYSICAL_ADDRESS& end_phys_addr);
 	
@@ -1335,7 +1349,9 @@ bool AccessController<TYPES, ACCESS_CONTROLLER>::__MSS_ControlAccess__(AccessCon
 
 template <typename TYPES, typename CONFIG, typename LOC_MEM>
 LocalMemory<TYPES, CONFIG, LOC_MEM>::LocalMemory()
-	: bytes()
+	: num_load_accesses(0)
+	, num_store_accesses(0)
+	, bytes()
 {
 	memset(bytes, 0, CONFIG::SIZE);
 }
@@ -1919,14 +1935,16 @@ inline void Cache<TYPES, CONFIG, CACHE>::Lookup(CacheAccess<TYPES, CACHE>& acces
 		access.way = line->GetWay();
 		block = &line->GetBlockBySector(sector);
 		access.block = block->IsValid() ? block : 0;
-
-		return;
 	}
-
-	// line miss
-	access.line = 0;
-	access.block = 0;
-	num_misses++;
+	else
+	{
+		// line miss
+		access.line = 0;
+		access.block = 0;
+		num_misses++;
+	}
+	
+	this->__MSS_OnAccess__(access);
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
@@ -1960,6 +1978,11 @@ inline void Cache<TYPES, CONFIG, CACHE>::UpdateReplacementPolicyOnAccess(CacheAc
 
 template <typename TYPES, typename CONFIG, typename CACHE>
 inline void Cache<TYPES, CONFIG, CACHE>::UpdateReplacementPolicyOnFill(CacheAccess<TYPES, CACHE>& access)
+{
+}
+
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline void Cache<TYPES, CONFIG, CACHE>::OnAccess(CacheAccess<TYPES, CACHE>& access)
 {
 }
 
@@ -2008,6 +2031,12 @@ template <typename TYPES, typename CONFIG, typename CACHE>
 inline void Cache<TYPES, CONFIG, CACHE>::__MSS_UpdateReplacementPolicyOnFill__(CacheAccess<TYPES, CACHE>& access)
 {
 	static_cast<CACHE *>(this)->UpdateReplacementPolicyOnFill(access);
+}
+
+template <typename TYPES, typename CONFIG, typename CACHE>
+inline void Cache<TYPES, CONFIG, CACHE>::__MSS_OnAccess__(CacheAccess<TYPES, CACHE>& access)
+{
+	static_cast<CACHE *>(this)->OnAccess(access);
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
@@ -2222,11 +2251,11 @@ unsigned int MemorySubSystem<TYPES, MSS>::IncomingLoad(typename TYPES::PHYSICAL_
 		{
 			unsigned int sz = 0;
 			
-			sz = DebugLoadFromLocalMemory<typename MSS::INSTRUCTION_LOCAL_MEMORIES, typename MSS::INSTRUCTION_LOCAL_MEMORIES::LOC_MEM1>(phys_addr, buffer, size);
+			sz = IncomingLoadFromLocalMemory<typename MSS::INSTRUCTION_LOCAL_MEMORIES, typename MSS::INSTRUCTION_LOCAL_MEMORIES::LOC_MEM1>(phys_addr, buffer, size);
 			
 			if(!sz)
 			{
-				sz = DebugLoadFromLocalMemory<typename MSS::DATA_LOCAL_MEMORIES, typename MSS::DATA_LOCAL_MEMORIES::LOC_MEM1>(phys_addr, buffer, size);
+				sz = IncomingLoadFromLocalMemory<typename MSS::DATA_LOCAL_MEMORIES, typename MSS::DATA_LOCAL_MEMORIES::LOC_MEM1>(phys_addr, buffer, size);
 			
 				if(!sz)
 				{
@@ -2256,11 +2285,11 @@ unsigned int MemorySubSystem<TYPES, MSS>::IncomingStore(typename TYPES::PHYSICAL
 		{
 			unsigned int sz = 0;
 			
-			sz = DebugStoreInLocalMemory<typename MSS::INSTRUCTION_LOCAL_MEMORIES, typename MSS::INSTRUCTION_LOCAL_MEMORIES::LOC_MEM1>(phys_addr, buffer, size);
+			sz = IncomingStoreInLocalMemory<typename MSS::INSTRUCTION_LOCAL_MEMORIES, typename MSS::INSTRUCTION_LOCAL_MEMORIES::LOC_MEM1>(phys_addr, buffer, size);
 			
 			if(!sz)
 			{
-				sz = DebugStoreInLocalMemory<typename MSS::DATA_LOCAL_MEMORIES, typename MSS::DATA_LOCAL_MEMORIES::LOC_MEM1>(phys_addr, buffer, size);
+				sz = IncomingStoreInLocalMemory<typename MSS::DATA_LOCAL_MEMORIES, typename MSS::DATA_LOCAL_MEMORIES::LOC_MEM1>(phys_addr, buffer, size);
 				
 				if(!sz)
 				{
@@ -2333,6 +2362,7 @@ inline bool MemorySubSystem<TYPES, MSS>::LoadFromMSS(typename TYPES::PHYSICAL_AD
 			}
 			assert((phys_addr + size) <= loc_mem_high_phys_addr);
 			memcpy(buffer, &loc_mem->GetByteByOffset(phys_addr - loc_mem_base_phys_addr), size);
+			loc_mem->num_load_accesses++;
 			return true;
 		}
 	}
@@ -2374,6 +2404,7 @@ inline bool MemorySubSystem<TYPES, MSS>::StoreInMSS(typename TYPES::PHYSICAL_ADD
 			}
 			assert((phys_addr + size) <= loc_mem_high_phys_addr);
 			memcpy(&loc_mem->GetByteByOffset(phys_addr - loc_mem_base_phys_addr), buffer, size);
+			loc_mem->num_store_accesses++;
 			return true;
 		}
 	}
@@ -2606,7 +2637,7 @@ inline unsigned int MemorySubSystem<TYPES, MSS>::DebugStoreInLocalMemory(typenam
 			// (2) Load from that local memory
 			if(unlikely(loc_mem->__MSS_IsVerbose__()))
 			{
-				__MSS_GetDebugInfoStream__() << LOC_MEM::__MSS_GetLocalMemoryName__() << ": debug load at @0x" << std::hex << phys_addr << std::dec << std::endl;
+				__MSS_GetDebugInfoStream__() << LOC_MEM::__MSS_GetLocalMemoryName__() << ": debug store at @0x" << std::hex << phys_addr << std::dec << std::endl;
 			}
 			
 			unsigned int sz = std::min(loc_mem_high_phys_addr - phys_addr, size);
@@ -2620,6 +2651,94 @@ inline unsigned int MemorySubSystem<TYPES, MSS>::DebugStoreInLocalMemory(typenam
 	typedef typename LOC_MEM_SET::template NextLocalMemory<LOC_MEM>::LOC_MEM NLM;
 
 	return DebugStoreInLocalMemory<LOC_MEM_SET, NLM>(phys_addr, buffer, size);
+}
+
+template <typename TYPES, typename MSS>
+template <typename LOC_MEM_SET, typename LOC_MEM>
+inline unsigned int MemorySubSystem<TYPES, MSS>::IncomingLoadFromLocalMemory(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size)
+{
+	// 2 cases:
+	//     - (1) return 0 because access does not target local memories
+	//     - (2) Load from that local memory because access target that local memory
+	//     - (3) Try to load from next local memory because access does not target that local memory
+	
+	if(unlikely(LOC_MEM::IsNullLocalMemory()))
+	{
+		// (1) access does not target local memories
+		return 0;
+	}
+
+	LOC_MEM *loc_mem = __MSS_GetLocalMemory__<LOC_MEM>();
+	typename TYPES::PHYSICAL_ADDRESS loc_mem_base_phys_addr = loc_mem->__MSS_GetBaseAddress__();
+	
+	if(likely(phys_addr >= loc_mem_base_phys_addr))
+	{
+		typename TYPES::PHYSICAL_ADDRESS loc_mem_high_phys_addr = loc_mem_base_phys_addr + loc_mem->__MSS_GetSize__();
+	
+		if(likely(phys_addr < loc_mem_high_phys_addr))
+		{
+			// (2) Load from that local memory
+			if(unlikely(loc_mem->__MSS_IsVerbose__()))
+			{
+				__MSS_GetDebugInfoStream__() << LOC_MEM::__MSS_GetLocalMemoryName__() << ": incoming load at @0x" << std::hex << phys_addr << std::dec << std::endl;
+			}
+			
+			unsigned int sz = std::min(loc_mem_high_phys_addr - phys_addr, size);
+			
+			memcpy(buffer, &loc_mem->GetByteByOffset(phys_addr - loc_mem_base_phys_addr), sz);
+			loc_mem->num_load_accesses++;
+			return sz;
+		}
+	}
+
+	// (3) Try to debug load from next local memory
+	typedef typename LOC_MEM_SET::template NextLocalMemory<LOC_MEM>::LOC_MEM NLM;
+
+	return IncomingLoadFromLocalMemory<LOC_MEM_SET, NLM>(phys_addr, buffer, size);
+}
+
+template <typename TYPES, typename MSS>
+template <typename LOC_MEM_SET, typename LOC_MEM>
+inline unsigned int MemorySubSystem<TYPES, MSS>::IncomingStoreInLocalMemory(typename TYPES::PHYSICAL_ADDRESS phys_addr, const void *buffer, unsigned int size)
+{
+	// 2 cases:
+	//     - (1) return 0 because access does not target local memories
+	//     - (2) debug store in that local memory because access target that local memory
+	//     - (3) Try to debug store in next local memory because access does not target that local memory
+	
+	if(unlikely(LOC_MEM::IsNullLocalMemory()))
+	{
+		// (1) access does not target local memories
+		return 0;
+	}
+
+	LOC_MEM *loc_mem = __MSS_GetLocalMemory__<LOC_MEM>();
+	typename TYPES::PHYSICAL_ADDRESS loc_mem_base_phys_addr = loc_mem->__MSS_GetBaseAddress__();
+	
+	if(likely(phys_addr >= loc_mem_base_phys_addr))
+	{
+		typename TYPES::PHYSICAL_ADDRESS loc_mem_high_phys_addr = loc_mem_base_phys_addr + loc_mem->__MSS_GetSize__();
+	
+		if(likely(phys_addr < loc_mem_high_phys_addr))
+		{
+			// (2) Load from that local memory
+			if(unlikely(loc_mem->__MSS_IsVerbose__()))
+			{
+				__MSS_GetDebugInfoStream__() << LOC_MEM::__MSS_GetLocalMemoryName__() << ": incoming store at @0x" << std::hex << phys_addr << std::dec << std::endl;
+			}
+			
+			unsigned int sz = std::min(loc_mem_high_phys_addr - phys_addr, size);
+			
+			memcpy(&loc_mem->GetByteByOffset(phys_addr - loc_mem_base_phys_addr), buffer, sz);
+			loc_mem->num_store_accesses++;
+			return sz;
+		}
+	}
+
+	// (3) Try to debug load from next local memory
+	typedef typename LOC_MEM_SET::template NextLocalMemory<LOC_MEM>::LOC_MEM NLM;
+
+	return IncomingStoreInLocalMemory<LOC_MEM_SET, NLM>(phys_addr, buffer, size);
 }
 
 template <typename TYPES, typename MSS>
@@ -4015,6 +4134,22 @@ inline bool MemorySubSystem<TYPES, MSS>::GlobalWriteBackLineByAddress(typename T
 			if(likely(cache->__MSS_IsEnabled__()))
 			{
 				CacheAccess<TYPES, CACHE> access;
+				
+				// dummy initializations to avoid compilation warning
+				access.phys_addr = 0;
+				access.storage_attr = typename TYPES::STORAGE_ATTR();
+				access.rwitm = false;
+				access.line_base_phys_addr = 0;
+				access.block_base_phys_addr = 0;
+				access.index = 0;
+				access.way = 0;
+				access.sector = 0;
+				access.offset = 0;
+				access.size_to_block_boundary = 0;
+				access.cache = 0;
+				access.set = 0;
+				access.line = 0;
+				access.block = 0; 
 				
 				access.line_to_write_back_evict = line;
 				

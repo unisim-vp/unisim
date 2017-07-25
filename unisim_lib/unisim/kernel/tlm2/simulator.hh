@@ -299,6 +299,7 @@ protected:
 	unisim::kernel::logger::Logger logger;
 private:
 	Instrumenter *instrumenter;
+	unisim::kernel::service::Statistic<sc_core::sc_time> stat_cur_sim_time;
 };
 
 template <typename T> sc_core::sc_signal<T>& Simulator::CreateSignal(const T& init_value)

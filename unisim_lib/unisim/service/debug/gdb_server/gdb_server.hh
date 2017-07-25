@@ -238,6 +238,8 @@ private:
 	
 	std::string EscapeString(const std::string& s) const;
 
+	void DisplayMonitoredInternals();
+
 	unisim::kernel::logger::Logger logger;
 
 	int tcp_port;
@@ -282,11 +284,13 @@ private:
 
 	unsigned int memory_atom_size;
 	bool verbose;
+	std::string monitor_internals;
 
 	Parameter<unsigned int> param_memory_atom_size;
 	Parameter<int> param_tcp_port;
 	Parameter<string> param_architecture_description_filename;
 	Parameter<bool> param_verbose;
+	Parameter<std::string> param_monitor_internals;
 };
 
 } // end of namespace gdb_server

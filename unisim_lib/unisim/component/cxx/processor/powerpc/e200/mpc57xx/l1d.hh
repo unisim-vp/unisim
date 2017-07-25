@@ -66,6 +66,9 @@ struct L1D
 		, l1finv0(_cpu, this)
 		, verbose(false)
 		, param_verbose("verbose", this, verbose, "enable/disable verbosity")
+		, stat_num_accesses("num-accesses", this, this->num_accesses, "number of cache accesses")
+		, stat_num_misses("num-misses", this, this->num_misses, "number of cache misses")
+		, formula_miss_rate("miss-rate", this, "/", &stat_num_misses, &stat_num_accesses, "cache miss rate")
 	{
 	}
 	
@@ -160,6 +163,9 @@ private:
 	L1FINV0 l1finv0;
 	bool verbose;
 	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_accesses;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_misses;
+	unisim::kernel::service::Formula<double> formula_miss_rate;
 };
 
 } // end of namespace mpc57xx
