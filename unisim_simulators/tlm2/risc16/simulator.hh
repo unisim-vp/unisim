@@ -53,7 +53,7 @@
 //#include <unisim/util/debug/breakpoint_registry.tcc>
 #include <unisim/util/debug/watchpoint_registry.hh>
 //#include <unisim/util/debug/watchpoint_registry.tcc>
-#include <unisim/util/debug/blob/blob.hh>
+#include <unisim/util/blob/blob.hh>
 #include <unisim/util/loader/elf_loader/elf_loader.hh>
 //#include <unisim/util/loader/elf_loader/elf_loader.tcc>
 #include <unisim/service/debug/debugger/debugger.hh>

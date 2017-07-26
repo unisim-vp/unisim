@@ -45,7 +45,6 @@
 #include <unisim/kernel/tlm2/tlm.hh>
 
 #include <unisim/kernel/service/service.hh>
-#include <unisim/kernel/debug/debug.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/loader/elf_loader/elf32_loader.hh>
@@ -604,7 +603,7 @@ void Simulator::Stop(Object *object, int _exit_status)
 	}
 #ifdef DEBUG_PPC440EMU
 	std::cerr << "Call stack:" << std::endl;
-	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 #endif
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();

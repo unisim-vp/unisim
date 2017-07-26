@@ -28,7 +28,6 @@
 
 #include "SocketThread.hpp"
 #include "unisim/util/converter/convert.hh"
-#include <unisim/kernel/debug/debug.hh>
 
 namespace unisim {
 namespace service {

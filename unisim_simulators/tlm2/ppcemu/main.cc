@@ -41,7 +41,6 @@
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 
 #include <unisim/kernel/service/service.hh>
-#include <unisim/kernel/debug/debug.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/profiling/addr_profiler/profiler.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
@@ -639,7 +638,7 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 	}
 #ifdef DEBUG_PPCEMU
 	std::cerr << "Call stack:" << std::endl;
-	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 #endif
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();

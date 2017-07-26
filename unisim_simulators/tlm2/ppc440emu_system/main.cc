@@ -58,7 +58,6 @@
 #include <unisim/component/cxx/com/xilinx/xps_uart_lite/config.hh>
 
 #include <unisim/kernel/service/service.hh>
-#include <unisim/kernel/debug/debug.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/power/cache_power_estimator.hh>
@@ -892,7 +891,7 @@ void Simulator::Stop(Object *object, int _exit_status)
 	}
 #ifdef DEBUG_PPC440EMU_SYSTEM
 	std::cerr << "Call stack:" << std::endl;
-	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 #endif
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();

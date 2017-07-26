@@ -91,8 +91,7 @@ namespace arm {
     , stat_prefetch_accesses("prefetch-accesses", this,
                              prefetch_accesses,
                              "Number of prefetch accesses to the cache.")
-    , form_accesses("accesses", this,
-                    unisim::kernel::service::Formula<uint32_t>::OP_ADD,
+    , form_accesses("accesses", this, "+",
                     &stat_read_accesses, &stat_write_accesses, &stat_prefetch_accesses,
                     "Number of accesses to the cache.")
     , stat_read_hits("read-hits", this,
@@ -104,12 +103,10 @@ namespace arm {
     , stat_prefetch_hits("prefetch-hits", this,
                          prefetch_hits,
                          "Number of prefetch hit accesses to the cache.")
-    , form_hits("hits", this,
-                unisim::kernel::service::Formula<uint32_t>::OP_ADD,
+    , form_hits("hits", this, "+",
                 &stat_read_hits, &stat_write_hits, &stat_prefetch_hits,
                 "Number of hit accesses to the cache.")
-    , form_hit_rate("hit-rate", this,
-                    unisim::kernel::service::Formula<double>::OP_DIV,
+    , form_hit_rate("hit-rate", this, "/",
                     &form_hits, &form_accesses, 0,
                     "Cache hit rate.")
   {

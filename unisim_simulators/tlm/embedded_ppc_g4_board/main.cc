@@ -981,7 +981,7 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 	}
 #ifdef DEBUG_PPCEMU_SYSTEM
 	std::cerr << "Call stack:" << std::endl;
-	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 #endif
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();

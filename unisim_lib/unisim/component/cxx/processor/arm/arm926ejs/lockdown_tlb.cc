@@ -76,15 +76,13 @@ LockdownTLB(const char *name, unisim::kernel::service::Object *parent)
 	, stat_write_accesses("write-accesses", this,
 			write_accesses,
 			"Number of write accesses to the lockdown TLB.")
-	, form_accesses("accesses", this,
-			unisim::kernel::service::Formula<uint64_t>::OP_ADD,
+	, form_accesses("accesses", this, "+",
 			&stat_read_accesses, &stat_write_accesses, 0,
 			"Number of accesses to the lockdown TLB.")
 	, stat_read_hits("read-hits", this,
 			read_hits,
 			"Number of read hit accesses to the lockdown TLB.")
-	, form_hit_rate("hit-rate", this,
-			unisim::kernel::service::Formula<double>::OP_DIV,
+	, form_hit_rate("hit-rate", this, "/",
 			&stat_read_hits, &stat_read_accesses, 0,
 			"Lockdown TLB hit rate.")
 {

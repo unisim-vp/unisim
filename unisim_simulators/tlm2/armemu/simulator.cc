@@ -403,7 +403,7 @@ void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, 
 	}
 #ifdef DEBUG_ARMEMU
 	std::cerr << "Call stack:" << std::endl;
-	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 #endif
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();
