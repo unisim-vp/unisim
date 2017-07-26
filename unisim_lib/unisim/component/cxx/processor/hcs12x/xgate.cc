@@ -706,8 +706,8 @@ unsigned int XGATE::step()
 
 		if(requires_finished_instruction_reporting) {
 			if(memory_access_reporting_import) {
-				memory_access_reporting_import->ReportFinishedInstruction(MMC::getInstance()->getXGATEPagedAddress(lastPC), MMC::getInstance()->getXGATEPagedAddress(getXGPC()));
-
+				memory_access_reporting_import->ReportCommitInstruction(MMC::getInstance()->getXGATEPagedAddress(lastPC));
+				memory_access_reporting_import->ReportFetchInstruction(MMC::getInstance()->getXGATEPagedAddress(getXGPC()));
 			}
 		}
 

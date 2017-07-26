@@ -1546,7 +1546,8 @@ StepInstruction()
 		{
 			if(unlikely(memory_access_reporting_import != 0))
 			{
-				memory_access_reporting_import->ReportFinishedInstruction(4 * GetPC23_0(), 4 * GetNPC23_0());
+				memory_access_reporting_import->ReportCommitInstruction(4 * GetPC23_0());
+				memory_access_reporting_import->ReportFetchInstruction(4 * GetNPC23_0());
 			}
 		}
 		

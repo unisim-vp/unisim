@@ -143,7 +143,8 @@ void CPU::step_instruction()
 	{
 		if(memory_access_reporting_import)
 		{
-			memory_access_reporting_import->ReportFinishedInstruction(2 * cia, 2 * nia);
+			memory_access_reporting_import->ReportCommitInstruction(2 * cia);
+			memory_access_reporting_import->ReportFetchInstruction(2 * nia);
 		}
 	}
 

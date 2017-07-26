@@ -723,7 +723,8 @@ void CPU<CONFIG>::StepOneInstruction()
 	{
 		if(unlikely(memory_access_reporting_import != 0))
 		{
-			memory_access_reporting_import->ReportFinishedInstruction(pc, npc);
+			memory_access_reporting_import->ReportCommitInstruction(pc);
+			memory_access_reporting_import->ReportFetchInstruction(npc);
 		}
 	}
 
