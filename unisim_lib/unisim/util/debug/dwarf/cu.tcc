@@ -357,7 +357,7 @@ bool DWARF_CompilationUnit<MEMORY_ADDR>::GetDefaultBaseAddress(MEMORY_ADDR& base
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_CompilationUnit<MEMORY_ADDR>::GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetFrameBase(unsigned int prc_num, MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const
 {
 	const DWARF_DIE<MEMORY_ADDR> *dw_die_code_portion = FindDIEByAddrRange(0 /* any tag */, pc, 1);
 	if(!dw_die_code_portion)
@@ -368,7 +368,7 @@ bool DWARF_CompilationUnit<MEMORY_ADDR>::GetFrameBase(MEMORY_ADDR pc, MEMORY_ADD
 		}
 		return 0;
 	}
-	return dw_die_code_portion->GetFrameBase(pc, frame_base);
+	return dw_die_code_portion->GetFrameBase(prc_num, pc, frame_base);
 }
 
 template <class MEMORY_ADDR>

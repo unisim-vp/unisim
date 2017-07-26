@@ -76,8 +76,9 @@ const unisim::util::debug::Type *DWARF_DataObjectInfo<MEMORY_ADDR>::GetType() co
 }
 
 template <class MEMORY_ADDR>
-DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *_dw_handler, const char *_data_object_name, const CLocOperationStream& _c_loc_operation_stream, bool _debug)
+DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *_dw_handler, unsigned int _prc_num, const char *_data_object_name, const CLocOperationStream& _c_loc_operation_stream, bool _debug)
 	: dw_handler(_dw_handler)
+	, prc_num(_prc_num)
 	, data_object_name(_data_object_name)
 	, c_loc_operation_stream(_c_loc_operation_stream)
 	, infos()
@@ -99,8 +100,9 @@ DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR>
 }
 
 template <class MEMORY_ADDR>
-DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *_dw_handler, const char *_data_object_name, const CLocOperationStream& _c_loc_operation_stream, MEMORY_ADDR _pc, const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, const unisim::util::debug::Type *_dw_data_object_type, bool _debug)
+DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *_dw_handler, unsigned int _prc_num, const char *_data_object_name, const CLocOperationStream& _c_loc_operation_stream, MEMORY_ADDR _pc, const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, const unisim::util::debug::Type *_dw_data_object_type, bool _debug)
 	: dw_handler(_dw_handler)
+	, prc_num(_prc_num)
 	, data_object_name(_data_object_name)
 	, c_loc_operation_stream(_c_loc_operation_stream)
 	, infos()
@@ -111,8 +113,8 @@ DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR>
 	, dw_data_object_type(_dw_data_object_type)
 	, arch_endianness(dw_handler->GetArchEndianness())
 	, arch_address_size(dw_handler->GetArchAddressSize())
-	, dw_reg_num_mapping(dw_handler->GetRegisterNumberMapping())
-	, mem_if(dw_handler->GetMemoryInterface())
+	, dw_reg_num_mapping(dw_handler->GetRegisterNumberMapping(prc_num))
+	, mem_if(dw_handler->GetMemoryInterface(prc_num))
 	, bv(arch_endianness)
 	, debug(_debug)
 	, debug_info_stream(dw_handler->GetDebugInfoStream())
@@ -248,7 +250,7 @@ void DWARF_DataObject<MEMORY_ADDR>::Seek(MEMORY_ADDR _pc)
 	else
 	{
 		std::string matched_data_object_name;
-		if(dw_handler->FindDataObject(c_loc_operation_stream, pc, matched_data_object_name, dw_data_object_loc, dw_data_object_type))
+		if(dw_handler->FindDataObject(c_loc_operation_stream, prc_num, pc, matched_data_object_name, dw_data_object_loc, dw_data_object_type))
 		{
 			UpdateCache(dw_data_object_loc, dw_data_object_type);
 			exists = true;

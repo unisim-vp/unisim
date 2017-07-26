@@ -39,6 +39,7 @@
 
 typedef void (*stm_int_handler_t)(unsigned int, unsigned int);
 
+void stm_drv_init();
 void stm_init(unsigned int stm_id);
 void stm_set_channel_irq_priority(unsigned int stm_id, unsigned int chan, unsigned int priority);
 void stm_select_channel_irq_for_processor(unsigned int stm_id, unsigned int chan, unsigned int prc_num);

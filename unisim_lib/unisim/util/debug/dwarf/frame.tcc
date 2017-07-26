@@ -98,39 +98,41 @@ std::ostream& operator << (std::ostream& os, const DWARF_RegSet<MEMORY_ADDR>& dw
 }
 
 template <class MEMORY_ADDR>
-DWARF_Frame<MEMORY_ADDR>::DWARF_Frame(const DWARF_Handler<MEMORY_ADDR> *_dw_handler)
+DWARF_Frame<MEMORY_ADDR>::DWARF_Frame(const DWARF_Handler<MEMORY_ADDR> *_dw_handler, unsigned int _prc_num)
 	: dw_handler(_dw_handler)
+	, prc_num(_prc_num)
 	, sp_reg_num(_dw_handler->GetRegisterNumberMapping()->GetSPRegNum())
 	, endianness(_dw_handler->GetArchEndianness())
 	, address_size(_dw_handler->GetArchAddressSize())
 	, dw_cfa_spec(_dw_handler->GetCFA_Specification())
 	, dw_cfa_reg_rule_offset_spec(_dw_handler->GetCFA_RegRuleOffsetSpecification())
-	, mem_if(_dw_handler->GetMemoryInterface())
+	, mem_if(_dw_handler->GetMemoryInterface(prc_num))
 	, pc_is_defined(false)
 	, pc(0)
 	, cfa(0)
 	, reg_num_set()
 	, dw_reg_set()
 {
-	dw_handler->GetRegisterNumberMapping()->EnumRegisterNumbers(reg_num_set);
+	dw_handler->GetRegisterNumberMapping(prc_num)->EnumRegisterNumbers(reg_num_set);
 }
 
 template <class MEMORY_ADDR>
-DWARF_Frame<MEMORY_ADDR>::DWARF_Frame(const DWARF_Handler<MEMORY_ADDR> *_dw_handler, MEMORY_ADDR _pc)
+DWARF_Frame<MEMORY_ADDR>::DWARF_Frame(const DWARF_Handler<MEMORY_ADDR> *_dw_handler, unsigned int _prc_num, MEMORY_ADDR _pc)
 	: dw_handler(_dw_handler)
+	, prc_num(_prc_num)
 	, sp_reg_num(_dw_handler->GetRegisterNumberMapping()->GetSPRegNum())
 	, endianness(_dw_handler->GetArchEndianness())
 	, address_size(_dw_handler->GetArchAddressSize())
 	, dw_cfa_spec(_dw_handler->GetCFA_Specification())
 	, dw_cfa_reg_rule_offset_spec(_dw_handler->GetCFA_RegRuleOffsetSpecification())
-	, mem_if(_dw_handler->GetMemoryInterface())
+	, mem_if(_dw_handler->GetMemoryInterface(prc_num))
 	, pc_is_defined(true)
 	, pc(_pc)
 	, cfa(0)
 	, reg_num_set()
 	, dw_reg_set()
 {
-	dw_handler->GetRegisterNumberMapping()->EnumRegisterNumbers(reg_num_set);
+	dw_handler->GetRegisterNumberMapping(prc_num)->EnumRegisterNumbers(reg_num_set);
 }
 
 template <class MEMORY_ADDR>
@@ -228,7 +230,7 @@ bool DWARF_Frame<MEMORY_ADDR>::ReadAddrFromMemory(MEMORY_ADDR addr, MEMORY_ADDR&
 template <class MEMORY_ADDR>
 bool DWARF_Frame<MEMORY_ADDR>::LoadArchRegs()
 {
-	DWARF_RegisterNumberMapping *reg_num_mapping = dw_handler->GetRegisterNumberMapping();
+	DWARF_RegisterNumberMapping *reg_num_mapping = dw_handler->GetRegisterNumberMapping(prc_num);
 	
 	std::set<unsigned int>::const_iterator iter;
 	
@@ -472,6 +474,12 @@ bool DWARF_Frame<MEMORY_ADDR>::Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, 
 	pc_is_defined = dw_reg_set.ReadRegister(dw_ret_addr_reg_num, pc);
 	
 	return true;
+}
+
+template <class MEMORY_ADDR>
+unsigned int DWARF_Frame<MEMORY_ADDR>::GetProcessorNumber() const
+{
+	return prc_num;
 }
 
 } // end of namespace dwarf

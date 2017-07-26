@@ -43,6 +43,11 @@ void hw_init(void)
 	MC_ME.MCTL.R =  mctl; /* key value 2 always from MCTL */
 #endif /* defined(DEBUG_SECONDARY_CORES) */
 
+	intc_drv_init();
+	stm_drv_init();
+	swt_drv_init();
+	pit_drv_init();
+
 	intc_init(); // initialize interrupt controller
 	swt_init(2); // initialize SWT_2
 	stm_init(2); // initialize STM_2

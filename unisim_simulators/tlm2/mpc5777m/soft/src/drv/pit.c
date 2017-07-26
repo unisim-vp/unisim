@@ -60,44 +60,56 @@ void pit_rti_timer_int_handler_default(unsigned int pit_id)
 	pit_clear_rti_timer_interrupt_flag(pit_id);
 }
 
-static volatile struct PIT_tag *pit[2] = {
-	&PIT_0,
-	&PIT_1
-};
-
-static pit_timer_int_handler_t pit_timer_int_handlers[2][8] = {
-	{ pit_timer_int_handler_default, pit_timer_int_handler_default, pit_timer_int_handler_default, pit_timer_int_handler_default,
-	  pit_timer_int_handler_default, pit_timer_int_handler_default, pit_timer_int_handler_default, pit_timer_int_handler_default },
-	{ pit_timer_int_handler_default, pit_timer_int_handler_default, pit_timer_int_handler_default, pit_timer_int_handler_default,
-	  pit_timer_int_handler_default, pit_timer_int_handler_default, pit_timer_int_handler_default, pit_timer_int_handler_default }
-};
-
-static pit_rti_timer_int_handler_t pit_rti_timer_int_handlers[2] = {
-	pit_rti_timer_int_handler_default, pit_rti_timer_int_handler_default
-};
-
-
-static const unsigned int pit_rti_timer_irq_vector_table[2] = {
-	239, 0
-};
+static volatile struct PIT_tag *pit[2];
+static pit_timer_int_handler_t pit_timer_int_handlers[2][8];
+static pit_rti_timer_int_handler_t pit_rti_timer_int_handlers[2];
+static unsigned int pit_rti_timer_irq_vector_table[2];
+static unsigned int pit_timer_irq_vector_table[2][8];
 
 static unsigned int pit_get_timer_irq_vector(unsigned int pit_id, unsigned int chan)
 {
-	static const unsigned int pit_timer_irq_vector_table[2][8] = {
-		226, 227, 228, 229, 230, 231, 132, 233,
-		240, 241, 0, 0, 0, 0, 0, 0, 
-	};
-	
 	return pit_timer_irq_vector_table[pit_id][chan];
 }
 
 static unsigned int pit_get_rti_timer_irq_vector(unsigned int pit_id)
 {
-	static const unsigned int pit_rti_timer_irq_vector_table[2] = {
-		239, 0
-	};
-	
 	return pit_rti_timer_irq_vector_table[pit_id];
+}
+
+void pit_drv_init()
+{
+	pit[0] = &PIT_0;
+	pit[1] = &PIT_1;
+	unsigned pit_id;
+	for(pit_id = 0; pit_id < 2; pit_id++)
+	{
+		pit_rti_timer_int_handlers[pit_id] = pit_rti_timer_int_handler_default;
+		
+		unsigned int chan;
+		for(chan = 0; chan < 8; chan++)
+		{
+			pit_timer_int_handlers[pit_id][chan] = pit_timer_int_handler_default;
+		}
+	}
+	pit_rti_timer_irq_vector_table[0] = 239;
+	pit_rti_timer_irq_vector_table[1] = 0;
+	pit_timer_irq_vector_table[0][0] = 226;
+	pit_timer_irq_vector_table[1][1] = 227;
+	pit_timer_irq_vector_table[0][2] = 228;
+	pit_timer_irq_vector_table[1][3] = 229;
+	pit_timer_irq_vector_table[0][4] = 230;
+	pit_timer_irq_vector_table[1][5] = 231;
+	pit_timer_irq_vector_table[0][6] = 132;
+	pit_timer_irq_vector_table[1][7] = 233;
+	pit_timer_irq_vector_table[0][0] = 240;
+	pit_timer_irq_vector_table[1][1] = 241;
+	pit_timer_irq_vector_table[0][2] = 0;
+	pit_timer_irq_vector_table[1][3] = 0;
+	pit_timer_irq_vector_table[0][4] = 0;
+	pit_timer_irq_vector_table[1][5] = 0;
+	pit_timer_irq_vector_table[0][6] = 0;
+	pit_timer_irq_vector_table[1][7] = 0;
+	
 }
 
 void pit_init(unsigned int pit_id)

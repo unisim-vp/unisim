@@ -43,6 +43,7 @@ enum INTC_VEC_MODE
 	INTC_HW_VEC_MODE = 1
 };
 
+void intc_drv_init();
 void intc_init();
 void intc_set_processor_interrupt_vector_mode(unsigned int prc_num, enum INTC_VEC_MODE intc_vec_mode);
 void intc_acknowledge_interrupt(unsigned int prc_num);

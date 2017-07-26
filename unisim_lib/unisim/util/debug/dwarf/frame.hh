@@ -67,8 +67,8 @@ template <class MEMORY_ADDR>
 class DWARF_Frame
 {
 public:
-	DWARF_Frame(const DWARF_Handler<MEMORY_ADDR> *dw_handler);
-	DWARF_Frame(const DWARF_Handler<MEMORY_ADDR> *dw_handler, MEMORY_ADDR pc);
+	DWARF_Frame(const DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int prc_num);
+	DWARF_Frame(const DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int prc_num, MEMORY_ADDR pc);
 	~DWARF_Frame();
 	
 	bool LoadArchRegs();
@@ -81,9 +81,10 @@ public:
 	bool ReadAddrFromMemory(MEMORY_ADDR addr, MEMORY_ADDR& read_addr, unsigned int read_size) const;
 	bool GetPC(MEMORY_ADDR& pc_value) const;
 	const DWARF_RegSet<MEMORY_ADDR>& GetRegSet() const;
-
+	unsigned int GetProcessorNumber() const;
 private:
 	const DWARF_Handler<MEMORY_ADDR> *dw_handler;
+	unsigned int prc_num;
 	unsigned int sp_reg_num;
 	unsigned int dw_ret_addr_reg_num;
 	unisim::util::endian::endian_type endianness;

@@ -54,21 +54,28 @@ void stm_int_handler_default(unsigned int stm_id, unsigned int chan)
 	stm_clear_interrupt_flag(stm_id, chan);
 }
 
-static volatile struct STM_tag *stm[3] = {
-	&STM_0,
-	&STM_1,
-	&STM_2
-};
-
-static stm_int_handler_t stm_int_handlers[3][4] = {
-	{ stm_int_handler_default, stm_int_handler_default, stm_int_handler_default, stm_int_handler_default },
-	{ stm_int_handler_default, stm_int_handler_default, stm_int_handler_default, stm_int_handler_default },
-	{ stm_int_handler_default, stm_int_handler_default, stm_int_handler_default, stm_int_handler_default }
-};
+static volatile struct STM_tag *stm[3];
+static stm_int_handler_t stm_int_handlers[3][4];
 
 static unsigned int stm_get_channel_irq_vector(unsigned int stm_id, unsigned int chan)
 {
 	return 36 + (stm_id * 4) + chan;
+}
+
+void stm_drv_init()
+{
+	stm[0] = &STM_0;
+	stm[1] = &STM_1;
+	stm[2] = &STM_2;
+	unsigned stm_id;
+	for(stm_id = 0; stm_id < 3; stm_id++)
+	{
+		unsigned int chan;
+		for(chan = 0; chan < 4; chan++)
+		{
+			stm_int_handlers[stm_id][chan] = stm_int_handler_default;
+		}
+	}
 }
 
 void stm_init(unsigned int stm_id)

@@ -49,6 +49,7 @@ enum _SWT_SMD
 
 typedef enum _SWT_SMD SWT_SMD;
 
+void swt_drv_init();
 void swt_init(unsigned int swt_id);
 void swt_enable(unsigned int swt_id);
 void swt_disable(unsigned int swt_id);

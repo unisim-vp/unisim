@@ -654,7 +654,7 @@ std::string DWARF_Expression<MEMORY_ADDR>::to_string() const
 {
 	std::stringstream sstr;
 	
-	DWARF_ExpressionVM<MEMORY_ADDR> expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu ? dw_cu->GetHandler() : dw_cfp->GetHandler());
+	DWARF_ExpressionVM<MEMORY_ADDR> expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu ? dw_cu->GetHandler() : dw_cfp->GetHandler(), 0U);
 	expr_vm.Disasm(sstr, this);
 	return sstr.str();
 	//return expr_vm.Disasm(sstr, this) ? sstr.str() : std::string("");
