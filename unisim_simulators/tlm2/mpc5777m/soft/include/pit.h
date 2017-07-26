@@ -40,6 +40,8 @@
 typedef void (*pit_timer_int_handler_t)(unsigned int, unsigned int);
 typedef void (*pit_rti_timer_int_handler_t)(unsigned int);
 
+void pit_drv_init();
+
 void pit_init(unsigned int pit_id);
 void pit_enable_timers_clock(unsigned int pit_id);
 void pit_disable_timers_clock(unsigned int pit_id);

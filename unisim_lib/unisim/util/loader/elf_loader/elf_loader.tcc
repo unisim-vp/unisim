@@ -574,10 +574,16 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	
 	if(parse_dwarf)
 	{
-		dw_handler = new unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR>(const_blob, debug_info_stream, debug_warning_stream, debug_error_stream, regs_if, mem_if);
+		dw_handler = new unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR>(const_blob);
 
 		if(dw_handler)
 		{
+			dw_handler->SetDebugInfoStream(debug_info_stream);
+			dw_handler->SetDebugWarningStream(debug_warning_stream);
+			dw_handler->SetDebugErrorStream(debug_error_stream);
+			dw_handler->SetNumProcessors(1);
+			dw_handler->SetRegisterInterface(/* prc_num */ 0, regs_if);
+			dw_handler->SetMemoryInterface(/* prc_num */ 0, mem_if);
 			dw_handler->SetOption(unisim::util::debug::dwarf::OPT_REG_NUM_MAPPING_FILENAME, dwarf_register_number_mapping_filename.c_str());
 			dw_handler->SetOption(unisim::util::debug::dwarf::OPT_VERBOSE, verbose);
 			dw_handler->SetOption(unisim::util::debug::dwarf::OPT_DEBUG, debug_dwarf);
@@ -1427,25 +1433,25 @@ const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, El
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 std::vector<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetBackTrace(MEMORY_ADDR pc) const
 {
-	return dw_handler ? dw_handler->GetBackTrace(pc) : 0;
+	return dw_handler ? dw_handler->GetBackTrace(/* prc_num */ 0, pc) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const
 {
-	return dw_handler ? dw_handler->GetReturnAddress(pc, ret_addr) : false;
+	return dw_handler ? dw_handler->GetReturnAddress(/* prc_num */ 0, pc, ret_addr) : false;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 unisim::util::debug::DataObject<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetDataObject(const char *data_object_name, const char *_filename, const char *compilation_unit_name) const
 {
-	return dw_handler ? dw_handler->GetDataObject(data_object_name, _filename, compilation_unit_name) : 0;
+	return dw_handler ? dw_handler->GetDataObject(/* prc_num */ 0, data_object_name, _filename, compilation_unit_name) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 unisim::util::debug::DataObject<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindDataObject(const char *data_object_name, MEMORY_ADDR pc) const
 {
-	return dw_handler ? dw_handler->FindDataObject(data_object_name, pc) : 0;
+	return dw_handler ? dw_handler->FindDataObject(/* prc_num */ 0, data_object_name, pc) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -1457,7 +1463,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 const unisim::util::debug::SubProgram<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSubProgram(const char *subprogram_name, const char *filename, const char *compilation_unit_name) const
 {
-	return dw_handler ? dw_handler->FindSubProgram(subprogram_name, filename, compilation_unit_name) : 0;
+	return dw_handler ? dw_handler->FindSubProgram(/* prc_num */ 0, subprogram_name, filename, compilation_unit_name) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>

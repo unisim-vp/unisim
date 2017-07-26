@@ -539,7 +539,7 @@ inline void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::ProcessExce
 		assert(interrupt != 0);
 		if(unlikely(cpu->verbose_interrupt))
 		{
-			cpu->GetDebugInfoStream() << "Processing " << interrupt->GetInterruptName() << " (offset 0x" << std::hex << interrupt->GetOffset() << std::dec << ")" << std::endl;
+			cpu->GetDebugInfoStream() << interrupt->GetInterruptName() << " (offset 0x" << std::hex << interrupt->GetOffset() << std::dec << ") is interrupting execution at @0x" << std::hex << cpu->GetCIA() << std::dec << std::endl;
 		}
 		interrupt->ProcessInterrupt(cpu);
 	}

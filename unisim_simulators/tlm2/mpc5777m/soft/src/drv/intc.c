@@ -59,6 +59,15 @@ static void intc_dummy_int_handler()
 	while(1);
 }
 
+void intc_drv_init()
+{
+	unsigned int irq;
+	for(irq = 0; irq < INTC_NUM_IRQS; irq++)
+	{
+		intc_isr_vector_table[irq] = (uint32_t) intc_dummy_int_handler;
+	}
+}
+
 void intc_init()
 {
 	intc_set_ivpr((uint32_t) &VTABLE);
@@ -68,13 +77,6 @@ void intc_init()
 	intc_set_processor_interrupt_vector_mode(core_id, INTC_SW_VEC_MODE);
 	intc_acknowledge_interrupt(core_id);
 	intc_set_interrupt_vector_table_address(core_id, (uint32_t) &intc_isr_vector_table[0]);
-	
-	unsigned int irq;
-	for(irq = 0; irq < INTC_NUM_IRQS; irq++)
-	{
-		intc_set_interrupt_handler(irq, &intc_dummy_int_handler);
-	}
-
 	intc_set_current_irq_priority(core_id, 0);
 }
 

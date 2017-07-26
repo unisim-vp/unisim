@@ -1611,7 +1611,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetCallingConvention(uint8_t& calling_convention) c
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const
+bool DWARF_DIE<MEMORY_ADDR>::GetFrameBase(unsigned int prc_num, MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const
 {
 	const DWARF_Expression<MEMORY_ADDR> *dw_at_frame_base_loc_expr = 0;
 	
@@ -1661,7 +1661,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_bas
 				
 				if(dw_at_frame_base_loc_expr)
 				{
-					DWARF_ExpressionVM<MEMORY_ADDR> loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler());
+					DWARF_ExpressionVM<MEMORY_ADDR> loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler(), prc_num);
 					DWARF_Location<MEMORY_ADDR> frame_base_loc;
 					loc_expr_vm.SetPC(pc);
 					bool loc_expr_vm_status = loc_expr_vm.Execute(dw_at_frame_base_loc_expr, frame_base, &frame_base_loc);
@@ -1677,7 +1677,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_bas
 						case DW_LOC_SIMPLE_REGISTER:
 							{
 								unsigned int dw_reg_num = frame_base_loc.GetRegisterNumber();
-								unisim::service::interfaces::Register *arch_reg = dw_cu->GetHandler()->GetRegisterNumberMapping()->GetArchReg(dw_reg_num);
+								unisim::service::interfaces::Register *arch_reg = dw_cu->GetHandler()->GetRegisterNumberMapping(prc_num)->GetArchReg(dw_reg_num);
 								MEMORY_ADDR reg_value = 0;
 								switch(arch_reg->GetSize())
 								{
@@ -1721,11 +1721,11 @@ bool DWARF_DIE<MEMORY_ADDR>::GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_bas
 			break;
 	}
 	
-	return dw_parent_die ? dw_parent_die->GetFrameBase(pc, frame_base) : false;
+	return dw_parent_die ? dw_parent_die->GetFrameBase(prc_num, pc, frame_base) : false;
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetAttributeStaticDynamicValue(uint16_t dw_at, uint64_t& value) const
+bool DWARF_DIE<MEMORY_ADDR>::GetAttributeStaticDynamicValue(unsigned int prc_num, uint16_t dw_at, uint64_t& value) const
 {
 	const DWARF_Constant<MEMORY_ADDR> *dw_at_const_value = 0;
 	if(GetAttributeValue(dw_at, dw_at_const_value))
@@ -1738,7 +1738,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetAttributeStaticDynamicValue(uint16_t dw_at, uint
 		const DWARF_Expression<MEMORY_ADDR> *dw_at_expr_value = 0;
 		if(GetAttributeValue(dw_at, dw_at_expr_value))
 		{
-			DWARF_ExpressionVM<MEMORY_ADDR> dw_at_expr_value_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler());
+			DWARF_ExpressionVM<MEMORY_ADDR> dw_at_expr_value_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler(), prc_num);
 			MEMORY_ADDR address_size_unsigned_value = 0;
 			bool dw_at_expr_value_status = dw_at_expr_value_vm.Execute(dw_at_expr_value, address_size_unsigned_value, 0);
 			if(dw_at_expr_value_status) value = address_size_unsigned_value;
@@ -1757,7 +1757,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetAttributeStaticDynamicValue(uint16_t dw_at, uint
 				const DWARF_Expression<MEMORY_ADDR> *dw_dwarf_procedure_compute_expr = 0;
 				if(dw_die_dwarf_procedure->GetAttributeValue(DW_AT_location, dw_dwarf_procedure_compute_expr))
 				{
-					DWARF_ExpressionVM<MEMORY_ADDR> dw_dwarf_procedure_compute_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler());
+					DWARF_ExpressionVM<MEMORY_ADDR> dw_dwarf_procedure_compute_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler(), prc_num);
 					MEMORY_ADDR address_size_unsigned_value = 0;
 					bool dw_dwarf_procedure_compute_status = dw_dwarf_procedure_compute_vm.Execute(dw_dwarf_procedure_compute_expr, address_size_unsigned_value, 0);
 					if(dw_dwarf_procedure_compute_status) value = address_size_unsigned_value;
@@ -1770,7 +1770,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetAttributeStaticDynamicValue(uint16_t dw_at, uint
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetAttributeStaticDynamicValue(uint16_t dw_at, int64_t& value) const
+bool DWARF_DIE<MEMORY_ADDR>::GetAttributeStaticDynamicValue(unsigned int prc_num, uint16_t dw_at, int64_t& value) const
 {
 	const DWARF_Constant<MEMORY_ADDR> *dw_at_const_value = 0;
 	if(GetAttributeValue(dw_at, dw_at_const_value))
@@ -1783,7 +1783,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetAttributeStaticDynamicValue(uint16_t dw_at, int6
 		const DWARF_Expression<MEMORY_ADDR> *dw_at_expr_value = 0;
 		if(GetAttributeValue(dw_at, dw_at_expr_value))
 		{
-			DWARF_ExpressionVM<MEMORY_ADDR> dw_at_expr_value_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler());
+			DWARF_ExpressionVM<MEMORY_ADDR> dw_at_expr_value_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler(), prc_num);
 			MEMORY_ADDR address_size_unsigned_value = 0;
 			bool dw_at_expr_value_status = dw_at_expr_value_vm.Execute(dw_at_expr_value, address_size_unsigned_value, 0);
 			if(dw_at_expr_value_status)
@@ -1805,7 +1805,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetAttributeStaticDynamicValue(uint16_t dw_at, int6
 				const DWARF_Expression<MEMORY_ADDR> *dw_dwarf_procedure_compute_expr = 0;
 				if(dw_die_dwarf_procedure->GetAttributeValue(DW_AT_location, dw_dwarf_procedure_compute_expr))
 				{
-					DWARF_ExpressionVM<MEMORY_ADDR> dw_dwarf_procedure_compute_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler());
+					DWARF_ExpressionVM<MEMORY_ADDR> dw_dwarf_procedure_compute_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler(), prc_num);
 					MEMORY_ADDR address_size_unsigned_value = 0;
 					bool dw_dwarf_procedure_compute_status = dw_dwarf_procedure_compute_vm.Execute(dw_dwarf_procedure_compute_expr, address_size_unsigned_value, 0);
 					if(dw_dwarf_procedure_compute_status)
@@ -1821,9 +1821,9 @@ bool DWARF_DIE<MEMORY_ADDR>::GetAttributeStaticDynamicValue(uint16_t dw_at, int6
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetLowerBound(int64_t& lower_bound) const
+bool DWARF_DIE<MEMORY_ADDR>::GetLowerBound(unsigned int prc_num, int64_t& lower_bound) const
 {
-	if(GetAttributeStaticDynamicValue(DW_AT_lower_bound, lower_bound))
+	if(GetAttributeStaticDynamicValue(prc_num, DW_AT_lower_bound, lower_bound))
 	{
 		return true;
 	}
@@ -1832,21 +1832,21 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLowerBound(int64_t& lower_bound) const
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetUpperBound(int64_t& upper_bound) const
+bool DWARF_DIE<MEMORY_ADDR>::GetUpperBound(unsigned int prc_num, int64_t& upper_bound) const
 {
-	return GetAttributeStaticDynamicValue(DW_AT_upper_bound, upper_bound);
+	return GetAttributeStaticDynamicValue(prc_num, DW_AT_upper_bound, upper_bound);
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetCount(uint64_t& count) const
+bool DWARF_DIE<MEMORY_ADDR>::GetCount(unsigned int prc_num, uint64_t& count) const
 {
-	if(GetAttributeStaticDynamicValue(DW_AT_count, count)) return true;
+	if(GetAttributeStaticDynamicValue(prc_num, DW_AT_count, count)) return true;
 
 	int64_t upper_bound = 0;
-	if(GetUpperBound(upper_bound))
+	if(GetUpperBound(prc_num, upper_bound))
 	{
 		int64_t lower_bound = 0;
-		if(!GetLowerBound(lower_bound))
+		if(!GetLowerBound(prc_num, lower_bound))
 		{
 			if(debug)
 			{
@@ -1871,7 +1871,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetCount(uint64_t& count) const
 			dw_die_type = dw_type_ref->GetValue();
 		}
 		
-		return dw_die_type->GetCount(count);
+		return dw_die_type->GetCount(prc_num, count);
 	}
 
 	if(debug)
@@ -1882,7 +1882,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetCount(uint64_t& count) const
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetArrayElementCount(unsigned int dim, uint64_t& count) const
+bool DWARF_DIE<MEMORY_ADDR>::GetArrayElementCount(unsigned int prc_num, unsigned int dim, uint64_t& count) const
 {
 	unsigned int num_children = children.size();
 	
@@ -1916,7 +1916,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetArrayElementCount(unsigned int dim, uint64_t& co
 				if(subrange_num >= dim)
 				{
 					uint64_t subrange_count = 0;
-					if(!child->GetCount(subrange_count)) return false;
+					if(!child->GetCount(prc_num, subrange_count)) return false;
 					
 					count *= subrange_count;
 				}
@@ -1943,9 +1943,9 @@ bool DWARF_DIE<MEMORY_ADDR>::GetArrayElementCount(unsigned int dim, uint64_t& co
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetByteSize(uint64_t& byte_size) const
+bool DWARF_DIE<MEMORY_ADDR>::GetByteSize(unsigned int prc_num, uint64_t& byte_size) const
 {
-	if(GetAttributeStaticDynamicValue(DW_AT_byte_size, byte_size)) return true;
+	if(GetAttributeStaticDynamicValue(prc_num, DW_AT_byte_size, byte_size)) return true;
 	
 	// the case of the arrays
 	switch(GetTag())
@@ -1954,10 +1954,10 @@ bool DWARF_DIE<MEMORY_ADDR>::GetByteSize(uint64_t& byte_size) const
 		case DW_TAG_enumeration_type:
 			{
 				uint64_t count = 0;
-				if(GetArrayElementCount(0, count))
+				if(GetArrayElementCount(prc_num, 0, count))
 				{
 					uint64_t array_element_bit_size = 0;
-					if(GetArrayElementBitSize(array_element_bit_size))
+					if(GetArrayElementBitSize(prc_num, array_element_bit_size))
 					{
 						byte_size = ((count * array_element_bit_size) + 7) / 8;
 						return true;
@@ -1980,33 +1980,33 @@ bool DWARF_DIE<MEMORY_ADDR>::GetByteSize(uint64_t& byte_size) const
 			dw_die_type = dw_type_ref->GetValue();
 		}
 		
-		return dw_die_type->GetByteSize(byte_size);
+		return dw_die_type->GetByteSize(prc_num, byte_size);
 	}
 	
 	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
 	
 	if(dw_at_abstract_origin)
 	{
-		return dw_at_abstract_origin->GetByteSize(byte_size);
+		return dw_at_abstract_origin->GetByteSize(prc_num, byte_size);
 	}
 
 	return false;
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetBitSize(uint64_t& bit_size) const
+bool DWARF_DIE<MEMORY_ADDR>::GetBitSize(unsigned int prc_num, uint64_t& bit_size) const
 {
-	if(GetAttributeStaticDynamicValue(DW_AT_bit_size, bit_size)) return true;
+	if(GetAttributeStaticDynamicValue(prc_num, DW_AT_bit_size, bit_size)) return true;
 
 	switch(GetTag())
 	{
 		case DW_TAG_array_type:
 			{
 				uint64_t count = 0;
-				if(GetArrayElementCount(0, count))
+				if(GetArrayElementCount(prc_num, 0, count))
 				{
 					uint64_t array_element_bit_size = 0;
-					if(GetArrayElementBitSize(array_element_bit_size))
+					if(GetArrayElementBitSize(prc_num, array_element_bit_size))
 					{
 						bit_size = count * array_element_bit_size;
 						return true;
@@ -2031,7 +2031,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetBitSize(uint64_t& bit_size) const
 						dw_die_type = dw_type_ref->GetValue();
 					}
 					
-					if(dw_die_type->GetBitSize(bit_size)) return true;
+					if(dw_die_type->GetBitSize(prc_num, bit_size)) return true;
 				}
 			}
 			break;
@@ -2041,12 +2041,12 @@ bool DWARF_DIE<MEMORY_ADDR>::GetBitSize(uint64_t& bit_size) const
 	
 	if(dw_at_abstract_origin)
 	{
-		return dw_at_abstract_origin->GetBitSize(bit_size);
+		return dw_at_abstract_origin->GetBitSize(prc_num, bit_size);
 	}
 	
 	// fallback
 	uint64_t byte_size = 0;
-	if(GetByteSize(byte_size))
+	if(GetByteSize(prc_num, byte_size))
 	{
 		bit_size = 8 * byte_size;
 		return true;
@@ -2056,7 +2056,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetBitSize(uint64_t& bit_size) const
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetArrayElementBitSize(uint64_t& array_element_bit_size) const
+bool DWARF_DIE<MEMORY_ADDR>::GetArrayElementBitSize(unsigned int prc_num, uint64_t& array_element_bit_size) const
 {
 	const DWARF_Reference<MEMORY_ADDR> *dw_array_element_type_ref = 0;
 	if(!GetAttributeValue(DW_AT_type, dw_array_element_type_ref))
@@ -2065,14 +2065,14 @@ bool DWARF_DIE<MEMORY_ADDR>::GetArrayElementBitSize(uint64_t& array_element_bit_
 		
 		if(dw_at_abstract_origin)
 		{
-			return dw_at_abstract_origin->GetArrayElementBitSize(array_element_bit_size);
+			return dw_at_abstract_origin->GetArrayElementBitSize(prc_num, array_element_bit_size);
 		}
 		return false;
 	}
 	
 	const DWARF_DIE<MEMORY_ADDR> *dw_array_element_type = dw_array_element_type_ref->GetValue();
 	
-	if(GetBitStride(array_element_bit_size))
+	if(GetBitStride(prc_num, array_element_bit_size))
 	{
 		return true;
 	}
@@ -2080,7 +2080,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetArrayElementBitSize(uint64_t& array_element_bit_
 	{
 		uint64_t array_element_byte_size = 0;
 		
-		if(dw_array_element_type->GetByteSize(array_element_byte_size))
+		if(dw_array_element_type->GetByteSize(prc_num, array_element_byte_size))
 		{
 			array_element_bit_size = 8 * array_element_byte_size;
 			return true;
@@ -2111,25 +2111,25 @@ bool DWARF_DIE<MEMORY_ADDR>::GetArrayElementEncoding(uint8_t& encoding) const
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetBitOffset(int64_t& bit_offset) const
+bool DWARF_DIE<MEMORY_ADDR>::GetBitOffset(unsigned int prc_num, int64_t& bit_offset) const
 {
-	return GetAttributeStaticDynamicValue(DW_AT_bit_offset, bit_offset);
+	return GetAttributeStaticDynamicValue(prc_num, DW_AT_bit_offset, bit_offset);
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetBitStride(uint64_t& bit_stride) const
+bool DWARF_DIE<MEMORY_ADDR>::GetBitStride(unsigned int prc_num, uint64_t& bit_stride) const
 {
-	if(GetAttributeStaticDynamicValue(DW_AT_bit_stride /* = DW_AT_stride_size */, bit_stride)) return true;
+	if(GetAttributeStaticDynamicValue(prc_num, DW_AT_bit_stride /* = DW_AT_stride_size */, bit_stride)) return true;
 
 	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
 	
-	return dw_at_abstract_origin ? dw_at_abstract_origin->GetBitStride(bit_stride) : false;
+	return dw_at_abstract_origin ? dw_at_abstract_origin->GetBitStride(prc_num, bit_stride) : false;
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetDataBitOffset(int64_t& data_bit_offset) const
+bool DWARF_DIE<MEMORY_ADDR>::GetDataBitOffset(unsigned int prc_num, int64_t& data_bit_offset) const
 {
-	return GetAttributeStaticDynamicValue(DW_AT_data_bit_offset, data_bit_offset);
+	return GetAttributeStaticDynamicValue(prc_num, DW_AT_data_bit_offset, data_bit_offset);
 }
 
 template <class MEMORY_ADDR>
@@ -2198,7 +2198,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocationExpression(uint16_t dw_at, MEMORY_ADDR p
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetObjectBitSize(uint64_t& bit_size) const
+bool DWARF_DIE<MEMORY_ADDR>::GetObjectBitSize(unsigned int prc_num, uint64_t& bit_size) const
 {
 	const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
 	
@@ -2208,10 +2208,10 @@ bool DWARF_DIE<MEMORY_ADDR>::GetObjectBitSize(uint64_t& bit_size) const
 		
 		if(dw_at_abstract_origin)
 		{
-			return dw_at_abstract_origin->GetObjectBitSize(bit_size);
+			return dw_at_abstract_origin->GetObjectBitSize(prc_num, bit_size);
 		}
 		
-		return GetBitSize(bit_size);
+		return GetBitSize(prc_num, bit_size);
 	}
 	
 	const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
@@ -2222,11 +2222,11 @@ bool DWARF_DIE<MEMORY_ADDR>::GetObjectBitSize(uint64_t& bit_size) const
 		dw_die_type = dw_type_ref->GetValue();
 	}
 	
-	return dw_die_type->GetBitSize(bit_size);
+	return dw_die_type->GetBitSize(prc_num, bit_size);
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, DWARF_Location<MEMORY_ADDR>& loc) const
+bool DWARF_DIE<MEMORY_ADDR>::GetLocation(unsigned int prc_num, MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, DWARF_Location<MEMORY_ADDR>& loc) const
 {
 	const DWARF_Expression<MEMORY_ADDR> *dw_loc_expr = 0;
 	//std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> > ranges;
@@ -2270,7 +2270,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, ME
 			return false;
 		}
 		
-		return dw_defining_die->GetLocation(pc, has_frame_base, frame_base, loc);
+		return dw_defining_die->GetLocation(prc_num, pc, has_frame_base, frame_base, loc);
 	}
 
 	if(!GetLocationExpression(DW_AT_location, pc, dw_loc_expr, loc.GetRanges()))
@@ -2292,7 +2292,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, ME
 	}
 	
 	MEMORY_ADDR addr;
-	DWARF_ExpressionVM<MEMORY_ADDR> dw_loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler());
+	DWARF_ExpressionVM<MEMORY_ADDR> dw_loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler(), prc_num);
 	if(has_frame_base) dw_loc_expr_vm.SetFrameBase(frame_base);
 	dw_loc_expr_vm.SetPC(pc);
 	bool dw_loc_expr_vm_status = dw_loc_expr_vm.Execute(dw_loc_expr, addr, &loc);
@@ -2306,7 +2306,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, ME
 	
 	// Determine the size in bytes (including padding bits)
 	uint64_t dw_byte_size;
-	if(!GetByteSize(dw_byte_size))
+	if(!GetByteSize(prc_num, dw_byte_size))
 	{
 		if(debug)
 		{
@@ -2317,7 +2317,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, ME
 	
 	// Determine the actual size in bits (excluding padding bits)
 	uint64_t dw_bit_size = 0;
-	if(!GetBitSize(dw_bit_size))
+	if(!GetBitSize(prc_num, dw_bit_size))
 	{
 		if(debug)
 		{
@@ -2344,7 +2344,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, ME
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, MEMORY_ADDR object_addr, DWARF_Location<MEMORY_ADDR>& loc) const
+bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(unsigned int prc_num, MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, MEMORY_ADDR object_addr, DWARF_Location<MEMORY_ADDR>& loc) const
 {
 	const DWARF_Constant<MEMORY_ADDR> *dw_at_const_value = 0;
 	if(GetAttributeValue(DW_AT_data_member_location, dw_at_const_value))
@@ -2368,7 +2368,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(MEMORY_ADDR pc, bool has_fram
 			}
 			
 			MEMORY_ADDR addr;
-			DWARF_ExpressionVM<MEMORY_ADDR> dw_loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler());
+			DWARF_ExpressionVM<MEMORY_ADDR> dw_loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler(), prc_num);
 			if(has_frame_base) dw_loc_expr_vm.SetFrameBase(frame_base);
 			dw_loc_expr_vm.SetObjectAddress(object_addr);
 			dw_loc_expr_vm.SetPC(pc);
@@ -2390,7 +2390,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(MEMORY_ADDR pc, bool has_fram
 	}
 	
 	uint64_t dw_byte_size = 0;
-	if(!GetByteSize(dw_byte_size))
+	if(!GetByteSize(prc_num, dw_byte_size))
 	{
 		if(debug)
 		{
@@ -2400,7 +2400,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(MEMORY_ADDR pc, bool has_fram
 	loc.SetByteSize(dw_byte_size);
 
 	uint64_t dw_bit_size = 0;
-	if(!GetBitSize(dw_bit_size))
+	if(!GetBitSize(prc_num, dw_bit_size))
 	{
 		if(debug)
 		{
@@ -2411,11 +2411,11 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(MEMORY_ADDR pc, bool has_fram
 	
 	int64_t dw_bit_offset = 0;
 	int64_t dw_data_member_bit_offset = 0;
-	if(GetBitOffset(dw_data_member_bit_offset))
+	if(GetBitOffset(prc_num, dw_data_member_bit_offset))
 	{
 		dw_bit_offset = (dw_handler->GetArchEndianness() == unisim::util::endian::E_BIG_ENDIAN) ? dw_data_member_bit_offset : (8 * dw_byte_size) - dw_bit_size - dw_data_member_bit_offset;
 	}
-	else if(!GetDataBitOffset(dw_bit_offset))
+	else if(!GetDataBitOffset(prc_num, dw_bit_offset))
 	{
 		dw_bit_offset = 0;
 	}
@@ -2560,7 +2560,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetSpecification() const
 }
 
 template <class MEMORY_ADDR>
-const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(bool following_pointer, unsigned int array_dim) const
+const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(unsigned int prc_num, bool following_pointer, unsigned int array_dim) const
 {
 	uint16_t dw_tag = GetTag();
 	switch(dw_tag)
@@ -2574,7 +2574,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(bool followin
 				}
 				
 				uint64_t bit_size = 0;
-				if(!GetBitSize(bit_size))
+				if(!GetBitSize(prc_num, bit_size))
 				{
 					bit_size = 0;
 				}
@@ -2644,13 +2644,13 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(bool followin
 											uint64_t bit_size = 0;
 											if(dw_die_member_type)
 											{
-												if(!dw_die_member->GetAttributeStaticDynamicValue(DW_AT_bit_size, bit_size))
+												if(!dw_die_member->GetAttributeStaticDynamicValue(prc_num, DW_AT_bit_size, bit_size))
 												{
 													bit_size = 0;
 												}
 											}
 											
-											struct_type->Add(new unisim::util::debug::Member(member_name, dw_die_member_type ? dw_die_member_type->BuildType() : new unisim::util::debug::Type(), bit_size));
+											struct_type->Add(new unisim::util::debug::Member(member_name, dw_die_member_type ? dw_die_member_type->BuildType(prc_num) : new unisim::util::debug::Type(), bit_size));
 										}
 									}
 								}
@@ -2704,16 +2704,16 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(bool followin
 									{
 										const DWARF_DIE<MEMORY_ADDR> *dw_die_subrange_type = dw_child;
 										int64_t lower_bound = 0;
-										if(!dw_die_subrange_type->GetLowerBound(lower_bound))
+										if(!dw_die_subrange_type->GetLowerBound(prc_num, lower_bound))
 										{
 											lower_bound = 0;
 										}
 										
 										int64_t upper_bound = 0;
 										uint64_t count = 0;
-										if(!dw_die_subrange_type->GetUpperBound(upper_bound))
+										if(!dw_die_subrange_type->GetUpperBound(prc_num, upper_bound))
 										{
-											if(dw_die_subrange_type->GetCount(count))
+											if(dw_die_subrange_type->GetCount(prc_num, count))
 											{
 												upper_bound = lower_bound + count - 1;
 											}
@@ -2729,7 +2729,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(bool followin
 										}
 										else
 										{
-											array_type = new unisim::util::debug::ArrayType(dw_die_element_type->BuildType(), lower_bound, upper_bound);
+											array_type = new unisim::util::debug::ArrayType(dw_die_element_type->BuildType(prc_num), lower_bound, upper_bound);
 										}
 									}
 									dim--;
@@ -2750,7 +2750,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(bool followin
 					}
 					while(1);
 					
-					return array_type ? array_type : dw_die_element_type->BuildType();
+					return array_type ? array_type : dw_die_element_type->BuildType(prc_num);
 				}
 			}
 			break;
@@ -2764,7 +2764,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(bool followin
 					dw_die_dereferenced_object_type = dw_dereferenced_object_type_ref->GetValue();
 				}
 					
-				return new unisim::util::debug::PointerType(dw_die_dereferenced_object_type ? dw_die_dereferenced_object_type->BuildType(true) : new unisim::util::debug::UnspecifiedType());
+				return new unisim::util::debug::PointerType(dw_die_dereferenced_object_type ? dw_die_dereferenced_object_type->BuildType(prc_num, true) : new unisim::util::debug::UnspecifiedType());
 			}
 			break;
 		case DW_TAG_typedef:
@@ -2778,7 +2778,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(bool followin
 				}
 				
 				const char *typedef_name = GetName();
-				return new unisim::util::debug::Typedef(dw_die_type ? dw_die_type->BuildType(following_pointer) : new unisim::util::debug::UnspecifiedType(), typedef_name);
+				return new unisim::util::debug::Typedef(dw_die_type ? dw_die_type->BuildType(prc_num, following_pointer) : new unisim::util::debug::UnspecifiedType(), typedef_name);
 			}
 			break;
 		case DW_TAG_subroutine_type:
@@ -2791,7 +2791,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(bool followin
 					dw_die_return_type = dw_type_ref->GetValue();
 				}
 
-				unisim::util::debug::FunctionType *func_type = new unisim::util::debug::FunctionType(dw_die_return_type ? dw_die_return_type->BuildType() : new unisim::util::debug::UnspecifiedType());
+				unisim::util::debug::FunctionType *func_type = new unisim::util::debug::FunctionType(dw_die_return_type ? dw_die_return_type->BuildType(prc_num) : new unisim::util::debug::UnspecifiedType());
 				
 				unsigned int num_children = children.size();
 				unsigned int i;
@@ -2810,7 +2810,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(bool followin
 							dw_die_formal_param_type = dw_formal_param_type_ref->GetValue();
 						}
 						
-						func_type->Add(new unisim::util::debug::FormalParameter(formal_param_name ? formal_param_name :  "", dw_die_formal_param_type ? dw_die_formal_param_type->BuildType() : new unisim::util::debug::UnspecifiedType()));
+						func_type->Add(new unisim::util::debug::FormalParameter(formal_param_name ? formal_param_name :  "", dw_die_formal_param_type ? dw_die_formal_param_type->BuildType(prc_num) : new unisim::util::debug::UnspecifiedType()));
 					}
 				}
 				return func_type;
@@ -2826,7 +2826,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(bool followin
 					dw_die_type = dw_type_ref->GetValue();
 				}
 					
-				return new unisim::util::debug::ConstType(dw_die_type ? dw_die_type->BuildType(following_pointer) : new unisim::util::debug::UnspecifiedType());
+				return new unisim::util::debug::ConstType(dw_die_type ? dw_die_type->BuildType(prc_num, following_pointer) : new unisim::util::debug::UnspecifiedType());
 			}
 			break;
 		case DW_TAG_enumeration_type:
@@ -2866,7 +2866,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(bool followin
 					dw_die_type = dw_type_ref->GetValue();
 				}
 					
-				return new unisim::util::debug::VolatileType(dw_die_type ? dw_die_type->BuildType(following_pointer) : new unisim::util::debug::UnspecifiedType());
+				return new unisim::util::debug::VolatileType(dw_die_type ? dw_die_type->BuildType(prc_num, following_pointer) : new unisim::util::debug::UnspecifiedType());
 			}
 			break;
 		default:
@@ -2878,7 +2878,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(bool followin
 }
 
 template <class MEMORY_ADDR>
-const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildTypeOf() const
+const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildTypeOf(unsigned int prc_num) const
 {
 	const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
 	
@@ -2893,11 +2893,11 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildTypeOf() const
 	
 	const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
 	
-	return dw_die_type->BuildType();
+	return dw_die_type->BuildType(prc_num);
 }
 
 template <class MEMORY_ADDR>
-const unisim::util::debug::SubProgram<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::BuildSubProgram() const
+const unisim::util::debug::SubProgram<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::BuildSubProgram(unsigned int prc_num) const
 {
 	DWARF_SubProgram<MEMORY_ADDR> *dw_subprogram = new DWARF_SubProgram<MEMORY_ADDR>();
 	
@@ -2909,7 +2909,7 @@ const unisim::util::debug::SubProgram<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::Buil
 		dw_die_return_type = dw_type_ref->GetValue();
 	}
 
-	dw_subprogram->SetReturnType(dw_die_return_type ? dw_die_return_type->BuildType() : new unisim::util::debug::UnspecifiedType());
+	dw_subprogram->SetReturnType(dw_die_return_type ? dw_die_return_type->BuildType(prc_num) : new unisim::util::debug::UnspecifiedType());
 
 	unsigned int num_children = children.size();
 	unsigned int i;
@@ -2928,7 +2928,7 @@ const unisim::util::debug::SubProgram<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::Buil
 				dw_die_formal_param_type = dw_formal_param_type_ref->GetValue();
 			}
 			
-			dw_subprogram->AddFormalParameter(new unisim::util::debug::FormalParameter(formal_param_name ? formal_param_name :  "", dw_die_formal_param_type ? dw_die_formal_param_type->BuildType() : new unisim::util::debug::UnspecifiedType()));
+			dw_subprogram->AddFormalParameter(new unisim::util::debug::FormalParameter(formal_param_name ? formal_param_name :  "", dw_die_formal_param_type ? dw_die_formal_param_type->BuildType(prc_num) : new unisim::util::debug::UnspecifiedType()));
 		}
 	}
 	

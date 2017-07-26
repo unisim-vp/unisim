@@ -350,10 +350,102 @@ std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& DWARF_Location<MEMORY_ADDR>::Get
 }
 
 template <class MEMORY_ADDR>
-DWARF_ExpressionVM<MEMORY_ADDR>::DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *_dw_handler)
+std::ostream& operator << (std::ostream& os, const DWARF_Location<MEMORY_ADDR>& dw_loc)
+{
+	switch(dw_loc.GetType())
+	{
+		case DW_LOC_SIMPLE_MEMORY:
+			{
+				MEMORY_ADDR dw_addr = dw_loc.GetAddress();
+				uint64_t dw_byte_size = dw_loc.GetByteSize();
+				int64_t dw_bit_offset = dw_loc.GetBitOffset();
+				uint64_t dw_bit_size = dw_loc.GetBitSize();
+				os << "DW_LOC_SIMPLE_MEMORY: addr=0x" << std::hex << dw_addr << std::dec << ", bit_offset=" << dw_bit_offset << ", bit_size=" << dw_bit_size << ", byte_size=" << dw_byte_size << std::endl;
+			}
+			break;
+		case DW_LOC_SIMPLE_REGISTER:
+			{
+				int64_t dw_bit_offset = dw_loc.GetBitOffset();
+				uint64_t dw_bit_size = dw_loc.GetBitSize();
+
+				unsigned int dw_reg_num = dw_loc.GetRegisterNumber();
+				os << "DW_LOC_SIMPLE_REGISTER: dw_reg_num=" << dw_reg_num << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
+			}
+			break;
+		case DW_LOC_COMPOSITE:
+			{
+				const std::vector<DWARF_LocationPiece<MEMORY_ADDR> *>& dw_loc_pieces = dw_loc.GetLocationPieces();
+
+				typename std::vector<DWARF_LocationPiece<MEMORY_ADDR> *>::const_iterator dw_loc_piece_iter;
+				for(dw_loc_piece_iter = dw_loc_pieces.begin(); dw_loc_piece_iter != dw_loc_pieces.end(); dw_loc_piece_iter++)
+				{
+					DWARF_LocationPiece<MEMORY_ADDR> *dw_loc_piece = *dw_loc_piece_iter;
+					
+					switch(dw_loc_piece->GetType())
+					{
+						case DW_LOC_PIECE_REGISTER:
+							{
+								DWARF_RegisterLocationPiece<MEMORY_ADDR> *dw_reg_loc_piece = (DWARF_RegisterLocationPiece<MEMORY_ADDR> *) dw_loc_piece;
+								
+								unsigned int dw_reg_num = dw_reg_loc_piece->GetRegisterNumber();
+								unsigned int dw_bit_offset = dw_reg_loc_piece->GetBitOffset();
+								unsigned int dw_bit_size = dw_reg_loc_piece->GetBitSize();
+								os << "DW_LOC_PIECE_REGISTER: dw_reg_num=" << dw_reg_num << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
+							}
+							break;
+						case DW_LOC_PIECE_MEMORY:
+							{
+								DWARF_MemoryLocationPiece<MEMORY_ADDR> *dw_mem_loc_piece = (DWARF_MemoryLocationPiece<MEMORY_ADDR> *) dw_loc_piece;
+								
+								MEMORY_ADDR dw_addr = dw_mem_loc_piece->GetAddress();
+								unsigned int dw_bit_offset = dw_mem_loc_piece->GetBitOffset();
+								unsigned int dw_bit_size = dw_mem_loc_piece->GetBitSize();
+								os << "DW_LOC_PIECE_MEMORY: dw_addr=0x" << std::hex << dw_addr << std::dec << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
+							}
+							break;
+					}
+					
+				}
+			}
+			break;
+			
+		case DW_LOC_IMPLICIT_SIMPLE_VALUE:
+			{
+				int64_t dw_bit_offset = dw_loc.GetBitOffset();
+				uint64_t dw_bit_size = dw_loc.GetBitSize();
+
+				MEMORY_ADDR dw_implicit_simple_value = dw_loc.GetImplicitSimpleValue();
+				os << "DW_LOC_IMPLICIT_SIMPLE_VALUE: dw_implicit_simple_value=" << dw_implicit_simple_value << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
+				break;
+			}
+			break;
+		case DW_LOC_IMPLICIT_BLOCK_VALUE:
+			{
+				const DWARF_Block<MEMORY_ADDR> *dw_implicit_block_value = dw_loc.GetImplicitBlockValue();
+				
+				int64_t dw_bit_offset = dw_loc.GetBitOffset();
+				
+				// compute min(die bit size, block bit length)
+				uint64_t dw_bit_size = dw_loc.GetBitSize();
+				uint64_t dw_block_bit_size = 8 * dw_implicit_block_value->GetLength();
+				if(dw_bit_size > dw_block_bit_size) dw_bit_size = dw_block_bit_size;
+				
+				os << "DW_LOC_IMPLICIT_BLOCK_VALUE: dw_implicit_block_value=" << dw_implicit_block_value->GetValue() << ", dw_bit_offset=" << dw_bit_offset << ", dw_bit_size=" << dw_bit_size << std::endl;
+			}
+			break;
+		default:
+			os << "?" << std::endl;
+			break;
+	}
+	return os;
+}
+
+template <class MEMORY_ADDR>
+DWARF_ExpressionVM<MEMORY_ADDR>::DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *_dw_handler, unsigned int _prc_num)
 	: dw_handler(_dw_handler)
-	, reg_num_mapping(_dw_handler->GetRegisterNumberMapping())
-	, mem_if(_dw_handler->GetMemoryInterface())
+	, prc_num(_prc_num)
+	, reg_num_mapping(_dw_handler->GetRegisterNumberMapping(prc_num))
+	, mem_if(_dw_handler->GetMemoryInterface(prc_num))
 	, dw_frame(0)
 	, file_endianness(_dw_handler->GetFileEndianness())
 	, arch_endianness(_dw_handler->GetArchEndianness())
@@ -376,8 +468,9 @@ DWARF_ExpressionVM<MEMORY_ADDR>::DWARF_ExpressionVM(const DWARF_Handler<MEMORY_A
 template <class MEMORY_ADDR>
 DWARF_ExpressionVM<MEMORY_ADDR>::DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *_dw_handler, DWARF_Frame<MEMORY_ADDR> *_dw_frame)
 	: dw_handler(_dw_handler)
-	, reg_num_mapping(_dw_handler->GetRegisterNumberMapping())
-	, mem_if(_dw_handler->GetMemoryInterface())
+	, prc_num(_dw_frame->GetProcessorNumber())
+	, reg_num_mapping(_dw_handler->GetRegisterNumberMapping(prc_num))
+	, mem_if(_dw_handler->GetMemoryInterface(prc_num))
 	, dw_frame(_dw_frame)
 	, file_endianness(_dw_handler->GetFileEndianness())
 	, arch_endianness(_dw_handler->GetArchEndianness())
@@ -1106,7 +1199,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							}
 							
 							MEMORY_ADDR cfa = 0;
-							if(!dw_handler->ComputeCFA(pc, cfa))
+							if(!dw_handler->ComputeCFA(prc_num, pc, cfa))
 							{
 								debug_error_stream << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_frame_cfa: computing of CFA failed" << std::endl;
 								return false;

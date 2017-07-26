@@ -46,27 +46,30 @@ void swt_int_handler_default(unsigned int swt_id)
 	//swt_clear_interrupt_flag(swt_id);
 }
 
-static volatile struct SWT_tag *swt[4] = {
-	&SWT_0,
-	&SWT_1,
-	&SWT_2,
-	&SWT_3
-};
-
-static swt_int_handler_t swt_int_handlers[4] = {
-	swt_int_handler_default,
-	swt_int_handler_default,
-	swt_int_handler_default,
-	swt_int_handler_default
-};
+static volatile struct SWT_tag *swt[4];
+static swt_int_handler_t swt_int_handlers[4];
 
 static unsigned int swt_get_irq_vector(unsigned int swt_id)
 {
 	return 32 + swt_id;
 }
 
+void swt_drv_init()
+{
+	swt[0] = &SWT_0;
+	swt[1] = &SWT_1;
+	swt[2] = &SWT_2;
+	swt[3] = &SWT_3;
+	swt_int_handlers[0] = swt_int_handler_default;
+	swt_int_handlers[1] = swt_int_handler_default;
+	swt_int_handlers[2] = swt_int_handler_default;
+	swt_int_handlers[3] = swt_int_handler_default;
+}
+
 void swt_init(unsigned int swt_id)
 {
+	swt_int_handlers[swt_id] = swt_int_handler_default;
+	
 	if(swt_is_soft_locked(swt_id))
 	{
 		swt_soft_unlock(swt_id);

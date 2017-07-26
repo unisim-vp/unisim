@@ -85,7 +85,7 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByAddrRange(unsigned int dw_tag, MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByName(unsigned int dw_tag, const char *name, bool external) const;
 	bool GetDefaultBaseAddress(MEMORY_ADDR& base_addr) const;
-	bool GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const;
+	bool GetFrameBase(unsigned int prc_num, MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const;
 	const char *GetName() const;
 	uint16_t GetLanguage() const;
 	const char *GetProducer() const;

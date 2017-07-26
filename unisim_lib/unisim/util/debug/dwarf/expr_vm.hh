@@ -100,6 +100,9 @@ const unsigned int DW_LOC_IMPLICIT_SIMPLE_VALUE = 4;
 const unsigned int DW_LOC_IMPLICIT_BLOCK_VALUE  = 5;
 
 template <class MEMORY_ADDR>
+std::ostream& operator << (std::ostream& os, const DWARF_Location<MEMORY_ADDR>& dw_loc);
+
+template <class MEMORY_ADDR>
 class DWARF_Location
 {
 public:
@@ -129,6 +132,8 @@ public:
 	uint8_t GetEncoding() const;
 	const std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& GetRanges() const;
 	std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& GetRanges();
+	
+	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_Location<MEMORY_ADDR>& dw_loc);
 private:
 	unsigned int dw_loc_type;
 	unsigned int dw_reg_num;
@@ -147,7 +152,7 @@ template <class MEMORY_ADDR>
 class DWARF_ExpressionVM
 {
 public:
-	DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *dw_handler);
+	DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int prc_num);
 	DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *dw_handler, DWARF_Frame<MEMORY_ADDR> *dw_frame);
 	~DWARF_ExpressionVM();
 	
@@ -159,6 +164,7 @@ public:
 	void Push(MEMORY_ADDR addr);
 private:
 	const DWARF_Handler<MEMORY_ADDR> *dw_handler;
+	unsigned int prc_num;
 	const DWARF_RegisterNumberMapping *reg_num_mapping;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
 	DWARF_Frame<MEMORY_ADDR> *dw_frame;
