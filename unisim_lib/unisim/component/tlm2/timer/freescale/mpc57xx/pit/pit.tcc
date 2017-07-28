@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_TLM2_TIMER_FREESCALE_MPC57XX_PIT_PIT_TCC__
 
 #include <unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.hh>
+#include <unisim/util/likely/likely.hh>
 
 namespace unisim {
 namespace component {
@@ -117,12 +118,27 @@ PIT<CONFIG>::PIT(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	, gen_rtirq_event("gen_rtirq_event")
 	, dma_trigger_level()
 	, gen_dma_pulse_event()
+	, max_time_to_next_timers_run(1.0, sc_core::SC_MS)
+	, max_time_to_next_rti_timer_run(1.0, sc_core::SC_MS)
 	, last_timers_run_time(sc_core::SC_ZERO_TIME)
+	, last_rti_timer_run_time(sc_core::SC_ZERO_TIME)
 	, master_clock_period(10.0, sc_core::SC_NS)
+	, master_clock_start_time(sc_core::SC_ZERO_TIME)
+	, master_clock_posedge_first(true)
+	, master_clock_duty_cycle(0.5)
 	, rti_clock_period(10.0, sc_core::SC_NS)
+	, rti_clock_start_time(sc_core::SC_ZERO_TIME)
+	, rti_clock_posedge_first(true)
+	, rti_clock_duty_cycle(0.5)
 	, per_clock_period(10.0, sc_core::SC_NS)
+	, per_clock_start_time(sc_core::SC_ZERO_TIME)
+	, per_clock_posedge_first(true)
+	, per_clock_duty_cycle(0.5)
 	, timers_run_event("timers_run_event")
-	, freeze(false)
+	, freeze_timers(false)
+	, freeze_rti_timer(false)
+	, load_timer()
+	, load_rti_timer(false)
 {
 	std::stringstream description_sstr;
 	description_sstr << "MPC57XX Periodic Interrupt Timer (PIT):" << std::endl;
@@ -160,6 +176,11 @@ PIT<CONFIG>::PIT(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	
 	SC_HAS_PROCESS(PIT);
 
+	for(channel_num = 0; channel_num < MAX_CHANNELS; channel_num++)
+	{
+		load_timer[channel_num] = false;
+	}
+	
 	for(channel_num = 0; channel_num < MAX_CHANNELS; channel_num++)
 	{
 		std::stringstream irq_name_sstr;
@@ -291,6 +312,7 @@ void PIT<CONFIG>::end_of_elaboration()
 	sc_core::sc_spawn_options process_spawn_options;
 	process_spawn_options.spawn_method();
 	process_spawn_options.set_sensitivity(&schedule.GetKernelEvent());
+	process_spawn_options.set_sensitivity(&debug.value_changed_event());
 	
 	if((NUM_CHANNELS > 0) || HAS_RTI_SUPPORT)
 	{
@@ -313,7 +335,23 @@ void PIT<CONFIG>::end_of_elaboration()
 template <typename CONFIG>
 void PIT<CONFIG>::Reset()
 {
+	UpdateMasterClock();
+	UpdatePERClock();
+	UpdateRTIClock();
+	
 	unsigned int channel_num;
+	
+	load_rti_timer = false;
+	for(channel_num = 0; channel_num < MAX_CHANNELS; channel_num++)
+	{
+		load_timer[channel_num] = false;
+	}
+	
+	last_timers_run_time = sc_core::sc_time_stamp();
+	unisim::kernel::tlm2::AlignToClock(last_timers_run_time, per_clock_period, per_clock_start_time, per_clock_posedge_first, per_clock_duty_cycle);
+	
+	last_rti_timer_run_time = sc_core::sc_time_stamp();
+	unisim::kernel::tlm2::AlignToClock(last_rti_timer_run_time, rti_clock_period, rti_clock_start_time, rti_clock_posedge_first, rti_clock_duty_cycle);
 	
 	for(channel_num = 0; channel_num < NUM_CHANNELS; channel_num++)
 	{
@@ -357,12 +395,12 @@ void PIT<CONFIG>::Reset()
 			per_clk_start_time += (1.0 - per_clk_prop_proxy->GetClockDutyCycle()) * per_clk_prop_proxy->GetClockPeriod();
 		}
 		
-		if(verbose)
+		if(unlikely(verbose))
 		{
 			logger << DebugInfo << "First PER clock rising edge is at " << per_clk_start_time << EndDebugInfo;
 		}
 
-		UpdatePERClockPeriod();
+		UpdatePERClock();
 	}
 	
 	if(HAS_RTI_SUPPORT)
@@ -379,40 +417,27 @@ void PIT<CONFIG>::Reset()
 			rti_clk_start_time += (1.0 - rti_clk_prop_proxy->GetClockDutyCycle()) * rti_clk_prop_proxy->GetClockPeriod();
 		}
 		
-		if(verbose)
+		if(unlikely(verbose))
 		{
 			logger << DebugInfo << "First RTI clock rising edge is at " << rti_clk_start_time << EndDebugInfo;
 		}
 
-		UpdateRTIClockPeriod();
+		UpdateRTIClock();
 	}
 
 	if(NUM_CHANNELS > 0)
 	{
-		if(HAS_RTI_SUPPORT)
+		if(per_clk_start_time > last_timers_run_time)
 		{
-			sc_core::sc_time start_time = (per_clk_start_time < rti_clk_start_time) ? per_clk_start_time : rti_clk_start_time;
-			if(start_time > last_timers_run_time)
-			{
-				last_timers_run_time = start_time;
-			}
-		}
-		else
-		{
-			if(per_clk_start_time > last_timers_run_time)
-			{
-				last_timers_run_time = per_clk_start_time;
-			}
+			last_timers_run_time = per_clk_start_time;
 		}
 	}
-	else
+
+	if(HAS_RTI_SUPPORT)
 	{
-		if(HAS_RTI_SUPPORT)
+		if(rti_clk_start_time > last_rti_timer_run_time)
 		{
-			if(rti_clk_start_time > last_timers_run_time)
-			{
-				last_timers_run_time = rti_clk_start_time;
-			}
+			last_rti_timer_run_time = per_clk_start_time;
 		}
 	}
 
@@ -420,7 +445,7 @@ void PIT<CONFIG>::Reset()
 	
 	if((NUM_CHANNELS > 0) || HAS_RTI_SUPPORT)
 	{
-		ScheduleTimersRun();
+		ScheduleRun();
 	}
 }
 
@@ -430,6 +455,7 @@ void PIT<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_tim
 	sc_core::sc_event completion_event;
 	sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 	notify_time_stamp += t;
+	unisim::kernel::tlm2::AlignToClock(notify_time_stamp, master_clock_period, master_clock_start_time, master_clock_posedge_first, master_clock_duty_cycle);
 	Event *event = schedule.AllocEvent();
 	event->SetPayload(&payload);
 	event->SetTimeStamp(notify_time_stamp);
@@ -491,6 +517,7 @@ tlm::tlm_sync_enum PIT<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& payloa
 			{
 				sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 				notify_time_stamp += t;
+				unisim::kernel::tlm2::AlignToClock(notify_time_stamp, master_clock_period, master_clock_start_time, master_clock_posedge_first, master_clock_duty_cycle);
 				Event *event = schedule.AllocEvent();
 				event->SetPayload(&payload);
 				event->SetTimeStamp(notify_time_stamp);
@@ -624,19 +651,6 @@ void PIT<CONFIG>::ProcessEvent(Event *event)
 			break;
 		}
 	
-		case EV_TIMER_RESTART:
-		{
-			unsigned int channel_num = event->GetChannelNumber();
-			DoRestartTimer(channel_num);
-			break;
-		}
-		
-		case EV_RTI_TIMER_RESTART:
-		{
-			DoRestartRTITimer();
-			break;
-		}
-		
 		case EV_WAKE_UP:
 			break;
 		
@@ -648,7 +662,7 @@ void PIT<CONFIG>::ProcessEvents()
 {
 	const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
 	
-	RunTimersToTime(time_stamp);
+	RunToTime(time_stamp); // Run to time
 	
 	Event *event = schedule.GetNextEvent();
 	
@@ -670,8 +684,10 @@ void PIT<CONFIG>::ProcessEvents()
 	
 	if((NUM_CHANNELS > 0) || HAS_RTI_SUPPORT)
 	{
-		ScheduleTimersRun();
+		ScheduleRun();
 	}
+
+	RefreshFreeze(); // sample freeze
 }
 
 template <typename CONFIG>
@@ -704,97 +720,85 @@ void PIT<CONFIG>::RESET_B_Process()
 template <typename CONFIG>
 void PIT<CONFIG>::MasterClockPropertiesChangedProcess()
 {
-	UpdateMasterClockPeriod();
+	UpdateMasterClock();
 }
 
 template <typename CONFIG>
-void PIT<CONFIG>::UpdateMasterClockPeriod()
+void PIT<CONFIG>::UpdateMasterClock()
 {
 	if(NUM_CHANNELS > 0)
 	{
 		master_clock_period = m_clk_prop_proxy.GetClockPeriod();
+		master_clock_start_time = m_clk_prop_proxy.GetClockStartTime();
+		master_clock_posedge_first = m_clk_prop_proxy.GetClockPosEdgeFirst();
+		master_clock_duty_cycle = m_clk_prop_proxy.GetClockDutyCycle();
 	}
 }
 
 template <typename CONFIG>
-void PIT<CONFIG>::UpdatePERClockPeriod()
+void PIT<CONFIG>::UpdatePERClock()
 {
 	if(NUM_CHANNELS > 0)
 	{
 		per_clock_period = per_clk_prop_proxy->GetClockPeriod();
+		per_clock_start_time = per_clk_prop_proxy->GetClockStartTime();
+		per_clock_posedge_first = per_clk_prop_proxy->GetClockPosEdgeFirst();
+		per_clock_duty_cycle = per_clk_prop_proxy->GetClockDutyCycle();
 	}
 }
 
 template <typename CONFIG>
-void PIT<CONFIG>::UpdateRTIClockPeriod()
+void PIT<CONFIG>::UpdateRTIClock()
 {
 	if(HAS_RTI_SUPPORT)
 	{
 		rti_clock_period = rti_clk_prop_proxy->GetClockPeriod();
+		rti_clock_start_time = rti_clk_prop_proxy->GetClockStartTime();
+		rti_clock_posedge_first = rti_clk_prop_proxy->GetClockPosEdgeFirst();
+		rti_clock_duty_cycle = rti_clk_prop_proxy->GetClockDutyCycle();
 	}
 }
 
 template <typename CONFIG>
-void PIT<CONFIG>::RestartTimer(unsigned int channel_num)
+void PIT<CONFIG>::WakeUp(const sc_core::sc_time& delay)
 {
-	if(verbose)
-	{
-		logger << DebugInfo << sc_core::sc_time_stamp() << ": Timer #" << channel_num << " will restart in " << per_clock_period << EndDebugInfo;
-	}
 	Event *event = schedule.AllocEvent();
 	sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
-	notify_time_stamp += per_clock_period;
-	event->RestartTimer(channel_num);
+	notify_time_stamp += delay;
+	event->WakeUp();
 	event->SetTimeStamp(notify_time_stamp);
 	schedule.Notify(event);
+	
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": will wake up at " << notify_time_stamp << EndDebugInfo;
+	}
 }
 
 template <typename CONFIG>
-void PIT<CONFIG>::DoRestartTimer(unsigned int channel_num)
+void PIT<CONFIG>::LoadTimer(unsigned int channel_num)
 {
-	if(verbose)
+	load_timer[channel_num] = true;
+	
+	if(unlikely(verbose))
 	{
-		logger << DebugInfo << sc_core::sc_time_stamp() << ": Restarting Timer #" << channel_num << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": Timer #" << channel_num << " will load in " << per_clock_period << EndDebugInfo;
 	}
-	uint32_t ldval = pit_ldval[channel_num].template Get<typename PIT_LDVAL::TSV>();
-		
-	pit_cval[channel_num].template Set<typename PIT_CVAL::TVL>(ldval);
+	
+	WakeUp(per_clock_period);
 }
 
 template <typename CONFIG>
-void PIT<CONFIG>::RestartRTITimer()
+void PIT<CONFIG>::LoadRTITimer()
 {
-	if(verbose)
+	load_rti_timer = true;
+	
+	if(unlikely(verbose))
 	{
-		logger << DebugInfo << sc_core::sc_time_stamp() << ": RTI Timer will restart in " << rti_clock_period << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": RTI Timer will load in " << rti_clock_period << EndDebugInfo;
 	}
-	Event *event = schedule.AllocEvent();
-	sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
-	notify_time_stamp += rti_clock_period;
-	event->RestartRTITimer();
-	event->SetTimeStamp(notify_time_stamp);
-	schedule.Notify(event);
-}
-
-template <typename CONFIG>
-void PIT<CONFIG>::DoRestartRTITimer()
-{
-	if(HAS_RTI_SUPPORT)
-	{
-		if(verbose)
-		{
-			logger << DebugInfo << sc_core::sc_time_stamp() << ": Restarting RTI Timer" << EndDebugInfo;
-		}
-		
-		uint32_t ldval = pit_rti_ldval.template Get<typename PIT_RTI_LDVAL::TSV>();
-		
-		if(ldval < 32)
-		{
-			logger << DebugWarning << pit_rti_ldval.GetName() << " value should be greater or equal than 32" << EndDebugWarning; 
-		}
-
-		pit_rti_cval.template Set<typename PIT_RTI_CVAL::TVL>(ldval);
-	}
+	
+	WakeUp(rti_clock_period);
 }
 
 template <typename CONFIG>
@@ -832,13 +836,18 @@ void PIT<CONFIG>::StartDMAPulse(unsigned int channel_num)
 }
 
 template <typename CONFIG>
-void PIT<CONFIG>::DecrementTimers(sc_dt::uint64 delta)
+void PIT<CONFIG>::LoadAndDecrementTimers(sc_dt::uint64 delta)
 {
 	if(delta)
 	{
 		if(!pit_mcr.template Get<typename PIT_MCR::MDIS>())
 		{
 			// Module is enabled
+			if(unlikely(verbose))
+			{
+				logger << DebugInfo << sc_core::sc_time_stamp() << ": running enabled timers for " << delta << " PER clock cycles" << EndDebugInfo;
+			}
+			
 			unsigned int channel_num;
 			bool previous_timer_expired = false;
 			bool timer_expired = false;
@@ -848,13 +857,56 @@ void PIT<CONFIG>::DecrementTimers(sc_dt::uint64 delta)
 				if(pit_tctrl[channel_num].template Get<typename PIT_TCTRL::TEN>())
 				{
 					// timer is active
-					
-					if((channel_num != 0) && pit_tctrl[channel_num].template Get<typename PIT_TCTRL::CHN>())
+					sc_dt::uint64 dec_amount = delta;
+				
+					if(load_timer[channel_num])
 					{
-						// timer is chained to previous timer
-						if(previous_timer_expired)
+						if(unlikely(verbose))
 						{
-							// decrement timer one time
+							logger << DebugInfo << sc_core::sc_time_stamp() << ": Loading Timer #" << channel_num << EndDebugInfo;
+						}
+						uint32_t ldval = pit_ldval[channel_num].template Get<typename PIT_LDVAL::TSV>();
+							
+						pit_cval[channel_num].template Set<typename PIT_CVAL::TVL>(ldval);
+						
+						dec_amount--;
+						load_timer[channel_num] = false;
+					}
+					
+					if(dec_amount)
+					{
+						if((channel_num != 0) && pit_tctrl[channel_num].template Get<typename PIT_TCTRL::CHN>())
+						{
+							// timer is chained to previous timer
+							if(previous_timer_expired)
+							{
+								// decrement timer one time
+								uint32_t cval = pit_cval[channel_num].template Get<typename PIT_CVAL::TVL>();
+								
+								if(cval == 0)
+								{
+									timer_expired = false;
+									continue;
+								}
+								
+								if(unlikely(verbose))
+								{
+									logger << DebugInfo << sc_core::sc_time_stamp() << ": PIT_CVAL" << channel_num << " decreases from " << cval;
+								}
+								cval = (cval > 1) ? (cval - 1) : 0;
+								if(unlikely(verbose))
+								{
+									logger << DebugInfo << " to " << cval << EndDebugInfo;
+								}
+								
+								pit_cval[channel_num].template Set<typename PIT_CVAL::TVL>(cval);
+							}
+						}
+						else
+						{
+							// timer is not chained
+							
+							// decrement timer several times
 							uint32_t cval = pit_cval[channel_num].template Get<typename PIT_CVAL::TVL>();
 							
 							if(cval == 0)
@@ -863,67 +915,46 @@ void PIT<CONFIG>::DecrementTimers(sc_dt::uint64 delta)
 								continue;
 							}
 							
-							if(verbose)
+							if(unlikely(verbose))
 							{
 								logger << DebugInfo << sc_core::sc_time_stamp() << ": PIT_CVAL" << channel_num << " decreases from " << cval;
 							}
-							cval = (cval > 1) ? (cval - 1) : 0;
-							if(verbose)
+							cval = (cval > dec_amount) ? (cval - dec_amount) : 0;
+							if(unlikely(verbose))
 							{
 								logger << DebugInfo << " to " << cval << EndDebugInfo;
 							}
 							
 							pit_cval[channel_num].template Set<typename PIT_CVAL::TVL>(cval);
 						}
+						
+						timer_expired = (pit_cval[channel_num].template Get<typename PIT_CVAL::TVL>() == 0);
+						
+						if(timer_expired)
+						{
+							// timer expired
+							
+							pit_tflg[channel_num].template Set<typename PIT_TFLG::TIF>(1);
+							
+							if(pit_tctrl[channel_num].template Get<typename PIT_TCTRL::TIE>())
+							{
+								// Timer interrupt requests are enabled
+								SetIRQLevel(channel_num, true);
+							}
+							
+							if(HAS_DMA_SUPPORT)
+							{
+								// start DMA pulse
+								StartDMAPulse(channel_num);
+							}
+							
+							// restart timer
+							LoadTimer(channel_num);
+						}
 					}
 					else
 					{
-						// timer is not chained
-						
-						// decrement timer several times
-						uint32_t cval = pit_cval[channel_num].template Get<typename PIT_CVAL::TVL>();
-						
-						if(cval == 0)
-						{
-							timer_expired = false;
-							continue;
-						}
-						
-						if(verbose)
-						{
-							logger << DebugInfo << sc_core::sc_time_stamp() << ": PIT_CVAL" << channel_num << " decreases from " << cval;
-						}
-						cval = (cval > delta) ? (cval - delta) : 0;
-						if(verbose)
-						{
-							logger << DebugInfo << " to " << cval << EndDebugInfo;
-						}
-						
-						pit_cval[channel_num].template Set<typename PIT_CVAL::TVL>(cval);
-					}
-					
-					timer_expired = (pit_cval[channel_num].template Get<typename PIT_CVAL::TVL>() == 0);
-					
-					if(timer_expired)
-					{
-						// timer expired
-						
-						pit_tflg[channel_num].template Set<typename PIT_TFLG::TIF>(1);
-						
-						if(pit_tctrl[channel_num].template Get<typename PIT_TCTRL::TIE>())
-						{
-							// Timer interrupt requests are enabled
-							SetIRQLevel(channel_num, true);
-						}
-						
-						if(HAS_DMA_SUPPORT)
-						{
-							// start DMA pulse
-							StartDMAPulse(channel_num);
-						}
-						
-						// restart timer
-						RestartTimer(channel_num);
+						timer_expired = false;
 					}
 				}
 				else
@@ -937,7 +968,7 @@ void PIT<CONFIG>::DecrementTimers(sc_dt::uint64 delta)
 }
 
 template <typename CONFIG>
-void PIT<CONFIG>::DecrementRTITimer(sc_dt::uint64 delta)
+void PIT<CONFIG>::LoadAndDecrementRTITimer(sc_dt::uint64 delta)
 {
 	if(!HAS_RTI_SUPPORT) return;
 	
@@ -946,30 +977,54 @@ void PIT<CONFIG>::DecrementRTITimer(sc_dt::uint64 delta)
 		if(!pit_mcr.template Get<typename PIT_MCR::MDIS_RTI>())
 		{
 			// RTI Module is enabled
-				
-			// Decrement RTI timer
-			uint32_t cval = pit_rti_cval.template Get<typename PIT_RTI_CVAL::TVL>();
-			
-			cval = (cval > delta) ? (cval - delta) : 0;
-			
-			pit_rti_cval.template Set<typename PIT_RTI_CVAL::TVL>(cval);
-			
-			bool timer_expired = (pit_rti_cval.template Get<typename PIT_RTI_CVAL::TVL>() == 0);
-			
-			if(timer_expired)
+			if(unlikely(verbose))
 			{
-				// RTI timer expired
-				
-				pit_rti_tflg.template Set<typename PIT_RTI_TFLG::TIF>(1);
-				
-				if(pit_rti_tctrl.template Get<typename PIT_RTI_TCTRL::TIE>())
+				logger << DebugInfo << "running RTI timer for " << delta << " RTI clock cycles" << EndDebugInfo;
+			}
+			
+			sc_dt::uint64 dec_amount = delta;
+			
+			if(load_rti_timer)
+			{
+				uint32_t ldval = pit_rti_ldval.template Get<typename PIT_RTI_LDVAL::TSV>();
+		
+				if(ldval < 32)
 				{
-					// RTI Timer interrupt requests are enabled
-					SetRTIRQLevel(true);
+					logger << DebugWarning << pit_rti_ldval.GetName() << " value should be greater or equal than 32" << EndDebugWarning; 
 				}
+
+				pit_rti_cval.template Set<typename PIT_RTI_CVAL::TVL>(ldval);
+
+				dec_amount--;
+				load_rti_timer = false;
+			}
+			
+			if(dec_amount)
+			{
+				// Decrement RTI timer
+				uint32_t cval = pit_rti_cval.template Get<typename PIT_RTI_CVAL::TVL>();
 				
-				// restart RTI timer
-				RestartRTITimer();
+				cval = (cval > dec_amount) ? (cval - dec_amount) : 0;
+				
+				pit_rti_cval.template Set<typename PIT_RTI_CVAL::TVL>(cval);
+				
+				bool timer_expired = (pit_rti_cval.template Get<typename PIT_RTI_CVAL::TVL>() == 0);
+				
+				if(timer_expired)
+				{
+					// RTI timer expired
+					
+					pit_rti_tflg.template Set<typename PIT_RTI_TFLG::TIF>(1);
+					
+					if(pit_rti_tctrl.template Get<typename PIT_RTI_TCTRL::TIE>())
+					{
+						// RTI Timer interrupt requests are enabled
+						SetRTIRQLevel(true);
+					}
+					
+					// restart RTI timer
+					LoadRTITimer();
+				}
 			}
 		}
 	}
@@ -978,17 +1033,17 @@ void PIT<CONFIG>::DecrementRTITimer(sc_dt::uint64 delta)
 template <typename CONFIG>
 sc_dt::int64 PIT<CONFIG>::TicksToNextTimersRun()
 {
-	static const sc_dt::int64 max_ticks = sc_dt::int64(1) << PIT_CVAL::TVL::GetBitWidth();
+	if(freeze_timers) return 0;
 	
-	sc_dt::int64 min_ticks = max_ticks;
+	sc_dt::int64 ticks_to_next_timers_run = 0;
 	
 	if(!pit_mcr.template Get<typename PIT_MCR::MDIS>())
 	{
 		// Module is enabled
 		
 		unsigned int channel_num;
-		sc_dt::int64 previous_ticks_to_expiration = max_ticks;
-		sc_dt::int64 ticks_to_expiration = max_ticks;
+		sc_dt::int64 previous_ticks_to_expiration = 0;
+		sc_dt::int64 ticks_to_expiration = 0;
 		
 		for(channel_num = 0; channel_num < NUM_CHANNELS; channel_num++, previous_ticks_to_expiration = ticks_to_expiration)
 		{
@@ -1006,11 +1061,11 @@ sc_dt::int64 PIT<CONFIG>::TicksToNextTimersRun()
 					{
 						ticks_to_expiration = previous_ticks_to_expiration;
 
-						if(ticks_to_expiration && (ticks_to_expiration < min_ticks)) min_ticks = ticks_to_expiration;
+						if(ticks_to_expiration && (!ticks_to_next_timers_run || (ticks_to_expiration < ticks_to_next_timers_run))) ticks_to_next_timers_run = ticks_to_expiration;
 					}
 					else
 					{
-						ticks_to_expiration = max_ticks;
+						ticks_to_expiration = 0;
 					}
 				}
 				else
@@ -1021,24 +1076,24 @@ sc_dt::int64 PIT<CONFIG>::TicksToNextTimersRun()
 					
 					ticks_to_expiration = cval;
 					
-					if(ticks_to_expiration && (ticks_to_expiration < min_ticks)) min_ticks = ticks_to_expiration;
+					if(ticks_to_expiration && (!ticks_to_next_timers_run || (ticks_to_expiration < ticks_to_next_timers_run))) ticks_to_next_timers_run = ticks_to_expiration;
 				}
 			}
 			else
 			{
 				// timer is disabled
-				ticks_to_expiration = max_ticks;
+				ticks_to_expiration = 0;
 			}
 		}
 	}
 	
-	return min_ticks;
+	return ticks_to_next_timers_run;
 }
 
 template <typename CONFIG>
 sc_dt::int64 PIT<CONFIG>::TicksToNextRTITimerRun()
 {
-	static const sc_dt::int64 max_ticks = sc_dt::int64(1) << PIT_RTI_CVAL::TVL::GetBitWidth();
+	if(freeze_rti_timer) return 0;
 	
 	if(HAS_RTI_SUPPORT)
 	{
@@ -1054,104 +1109,135 @@ sc_dt::int64 PIT<CONFIG>::TicksToNextRTITimerRun()
 					
 				sc_dt::int64 ticks_to_expiration = cval;
 					
-				return ticks_to_expiration ? ticks_to_expiration : max_ticks;
+				return ticks_to_expiration ? ticks_to_expiration : 0;
 			}
 		}
 	}
 	
-	return max_ticks;
+	return 0;
 }
 
 template <typename CONFIG>
 sc_core::sc_time PIT<CONFIG>::TimeToNextTimersRun()
 {
-	sc_core::sc_time time_to_next_timers_run(per_clock_period);
-	time_to_next_timers_run *= TicksToNextTimersRun();
-	
-	if(HAS_RTI_SUPPORT)
+	if(!pit_mcr.template Get<typename PIT_MCR::MDIS>())
 	{
-		sc_core::sc_time time_to_next_rti_timer_run(rti_clock_period);
-		time_to_next_rti_timer_run *= TicksToNextRTITimerRun();
-		
-		return (time_to_next_timers_run < time_to_next_rti_timer_run) ? time_to_next_timers_run : time_to_next_rti_timer_run;
+		// Module is enabled
+		unsigned int channel_num;
+		for(channel_num = 0; channel_num < NUM_CHANNELS; channel_num++)
+		{
+			if(load_timer[channel_num])
+			{
+				return per_clock_period;
+			}
+		}
+	}
+
+	sc_dt::int64 ticks_to_next_timers_run = TicksToNextTimersRun();
+	
+	if(ticks_to_next_timers_run)
+	{
+		sc_core::sc_time time_to_next_timers_run(per_clock_period);
+		time_to_next_timers_run *= ticks_to_next_timers_run;
+		if(time_to_next_timers_run < max_time_to_next_timers_run) return time_to_next_timers_run;
 	}
 	
-	return time_to_next_timers_run;
+	return max_time_to_next_timers_run;
 }
 
 template <typename CONFIG>
-void PIT<CONFIG>::RunTimersToTime(const sc_core::sc_time& time_stamp)
+sc_core::sc_time PIT<CONFIG>::TimeToNextRTITimerRun()
 {
-	// Compute the elapsed time since last count run
-	sc_core::sc_time delay_since_last_timers_run(time_stamp);
-	delay_since_last_timers_run -= last_timers_run_time;
-	
-	sc_core::sc_time delay_since_last_rti_timer_run(time_stamp);
-	delay_since_last_rti_timer_run -= last_rti_timer_run_time;
-
-	// Compute number of timers ticks since last count run
-	sc_dt::uint64 delta = delay_since_last_timers_run / per_clock_period;
-	sc_core::sc_time run_time(per_clock_period);
-	run_time *= delta;
-
-	sc_dt::uint64 rti_delta = delay_since_last_rti_timer_run / rti_clock_period;
-	sc_core::sc_time rti_run_time(rti_clock_period);
-	rti_run_time *= rti_delta;
-
-	if(!freeze)
+	if(!pit_mcr.template Get<typename PIT_MCR::MDIS>())
 	{
-		// in the past, until time stamp, counter was not frozen: decrement timers
-		DecrementTimers(delta);
-		if(HAS_RTI_SUPPORT)
+		// RTI Module is enabled
+		if(load_rti_timer) return rti_clock_period;
+	}
+	
+	sc_dt::int64 ticks_to_next_rti_timer_run = TicksToNextRTITimerRun();
+	
+	if(ticks_to_next_rti_timer_run)
+	{
+		sc_core::sc_time time_to_next_rti_timer_run(rti_clock_period);
+		time_to_next_rti_timer_run *= ticks_to_next_rti_timer_run;
+		if(time_to_next_rti_timer_run < max_time_to_next_rti_timer_run) return time_to_next_rti_timer_run;
+	}
+	
+	return max_time_to_next_rti_timer_run;
+}
+
+template <typename CONFIG>
+sc_core::sc_time PIT<CONFIG>::TimeToNextRun()
+{
+	sc_core::sc_time time_to_next_timers_run(TimeToNextTimersRun());
+	sc_core::sc_time time_to_next_rti_timer_run(TimeToNextRTITimerRun());
+	
+	return (time_to_next_timers_run < time_to_next_rti_timer_run) ? time_to_next_timers_run : time_to_next_rti_timer_run;
+}
+
+template <typename CONFIG>
+void PIT<CONFIG>::RunToTime(const sc_core::sc_time& time_stamp)
+{
+	if(NUM_CHANNELS > 0)
+	{
+		if(!freeze_timers)
 		{
-			DecrementRTITimer(delta);
+			if(time_stamp > last_timers_run_time)
+			{
+				// Compute the elapsed time since last timers run
+				sc_core::sc_time delay_since_last_timers_run(time_stamp);
+				delay_since_last_timers_run -= last_timers_run_time;
+				
+				// Compute number of timers ticks since last run
+				sc_dt::uint64 delta = delay_since_last_timers_run / per_clock_period;
+				
+				if(delta)
+				{
+					sc_core::sc_time run_time(per_clock_period);
+					run_time *= delta;
+				
+					LoadAndDecrementTimers(delta);
+					last_timers_run_time += run_time;
+				}
+			}
 		}
 	}
 	
-	// Latch internal "freeze" value
-	RefreshFreeze();
-	
-	last_timers_run_time += run_time;
-	last_rti_timer_run_time += rti_run_time;
+	if(HAS_RTI_SUPPORT)
+	{
+		if(!freeze_rti_timer)
+		{
+			if(time_stamp > last_rti_timer_run_time)
+			{
+				// Compute the elapsed time since last RTI timer run
+				sc_core::sc_time delay_since_last_rti_timer_run(time_stamp);
+				delay_since_last_rti_timer_run -= last_rti_timer_run_time;
+				
+				// Compute number of RTI timer ticks since last run
+				sc_dt::uint64 delta = delay_since_last_rti_timer_run / per_clock_period;
+				
+				if(delta)
+				{
+					sc_core::sc_time run_time(rti_clock_period);
+					run_time *= delta;
+					
+					LoadAndDecrementRTITimer(delta);
+					last_rti_timer_run_time += run_time;
+				}
+			}
+		}
+	}
 }
 
-#if 0
 template <typename CONFIG>
-void PIT<CONFIG>::ScheduleTimersRun()
+void PIT<CONFIG>::ScheduleRun()
 {
 	// Clocks properties may have changed that may affect time to next timers and RTI timer run
-	UpdateClockPeriod();
+	UpdatePERClock();
 	
 	if(HAS_RTI_SUPPORT)
 	{
-		UpdateRTIClockPeriod();
-	}
-	
-	sc_core::sc_time time_to_next_timers_run = TimeToNextTimersRun();
-	if(verbose)
-	{
-		logger << DebugInfo << sc_core::sc_time_stamp() << ": time to next timers/RTI timer run is " << time_to_next_timers_run << EndDebugInfo;
-	}
-	const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
-	time_to_next_timers_run += last_timers_run_time;
-	time_to_next_timers_run -= time_stamp;
-	
-	if(time_to_next_timers_run > sc_core::SC_ZERO_TIME)
-	{
-		timers_run_event.notify(time_to_next_timers_run); // schedule next counter run
-	}
-}
-#endif
-
-template <typename CONFIG>
-void PIT<CONFIG>::ScheduleTimersRun()
-{
-	// Clocks properties may have changed that may affect time to next timers and RTI timer run
-	UpdatePERClockPeriod();
-	
-	if(HAS_RTI_SUPPORT)
-	{
-		UpdateRTIClockPeriod();
+		UpdateRTIClock();
 	}
 	
 	const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
@@ -1175,43 +1261,25 @@ void PIT<CONFIG>::ScheduleTimersRun()
 		return;
 	}
 	
-	sc_core::sc_time time_to_next_timers_run = TimeToNextTimersRun();
-	if(verbose)
+	sc_core::sc_time time_to_next_run = TimeToNextRun();
+	if(unlikely(verbose))
 	{
-		logger << DebugInfo << sc_core::sc_time_stamp() << ": time to next timers/RTI timer run is " << time_to_next_timers_run << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": time to next timers/RTI timer run is " << time_to_next_run << EndDebugInfo;
 	}
 	
-	sc_core::sc_time next_timers_run_time_stamp(last_timers_run_time);
-	next_timers_run_time_stamp += time_to_next_timers_run;
+	sc_core::sc_time next_run_time_stamp(sc_core::sc_time_stamp());
+	next_run_time_stamp += time_to_next_run;
 	
-	if(next_timers_run_time_stamp > time_stamp)
+	if(unlikely(verbose))
 	{
-		if(verbose)
-		{
-			logger << DebugInfo << sc_core::sc_time_stamp() << ": timers/RTI timer will run at " << next_timers_run_time_stamp << EndDebugInfo;
-		}
-		Event *event = schedule.AllocEvent();
-		event->WakeUp();
-		event->SetTimeStamp(next_timers_run_time_stamp);
-		schedule.Notify(event);
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": timers/RTI timer will run at " << next_run_time_stamp << EndDebugInfo;
 	}
+	
+	Event *event = schedule.AllocEvent();
+	event->WakeUp();
+	event->SetTimeStamp(next_run_time_stamp);
+	schedule.Notify(event);
 }
-
-#if 0
-template <typename CONFIG>
-void PIT<CONFIG>::RunTimersProcess()
-{
-	const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
-	
-	if(verbose)
-	{
-		logger << DebugInfo << time_stamp << ":RunTimersProcess()" << EndDebugInfo;
-	}
-	
-	RunTimersToTime(time_stamp);
-	ScheduleTimersRun();
-}
-#endif
 
 template <typename CONFIG>
 void PIT<CONFIG>::IRQ_Process(unsigned int channel_num)
@@ -1260,7 +1328,23 @@ template <typename CONFIG>
 void PIT<CONFIG>::RefreshFreeze()
 {
 	// Latch value for internal "freeze"
-	freeze = debug && pit_mcr.template Get<typename PIT_MCR::FRZ>();
+	bool old_freeze_timers = freeze_timers;
+	bool old_freeze_rti_timer = freeze_rti_timer;
+	
+	freeze_timers = pit_mcr.template Get<typename PIT_MCR::MDIS>() || (debug && pit_mcr.template Get<typename PIT_MCR::FRZ>());
+	freeze_rti_timer = pit_mcr.template Get<typename PIT_MCR::MDIS_RTI>() || (debug && pit_mcr.template Get<typename PIT_MCR::FRZ>());
+	
+	if(old_freeze_timers && !freeze_timers)
+	{
+		last_timers_run_time = sc_core::sc_time_stamp();
+		unisim::kernel::tlm2::AlignToClock(last_timers_run_time, per_clock_period, per_clock_start_time, per_clock_posedge_first, per_clock_duty_cycle);
+	}
+	
+	if(old_freeze_rti_timer && !freeze_rti_timer)
+	{
+		last_rti_timer_run_time = sc_core::sc_time_stamp();
+		unisim::kernel::tlm2::AlignToClock(last_rti_timer_run_time, rti_clock_period, rti_clock_start_time, rti_clock_posedge_first, rti_clock_duty_cycle);
+	}
 }
 
 } // end of namespace pit

@@ -126,6 +126,7 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, gdb_client_feature_vfork_events(false)
 	, gdb_client_feature_exec_events(false)
 	, gdb_client_feature_vcont(false)
+	, gdb_client_feature_t32extensions(false)
 	, current_thread_id(0)
 	, no_ack_mode(false)
 	, arch_specific_breakpoint_kinds()
@@ -1067,6 +1068,10 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				{
 					HandleQsThreadInfo();
 				}
+				else if(packet.substr(0, 13) == "qRegisterInfo")
+				{
+					HandleQRegisterInfo(packet.substr(13));
+				}
 				else
 				{
 					if(verbose)
@@ -1930,6 +1935,69 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command)
 	PutPacket("E00");
 }
 
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::HandleQRegisterInfo(std::string hex_reg_order_num)
+{
+	unsigned int reg_order_num = 0;
+	std::stringstream sstr(hex_reg_order_num);
+	sstr >> std::hex;
+	sstr >> reg_order_num;
+	
+	vector<GDBRegister *>::iterator gdb_reg_iter;
+	unsigned int i;
+	unsigned int offset = 0;
+
+	for(gdb_reg_iter = gdb_registers.begin(), i = 0; gdb_reg_iter != gdb_registers.end(); gdb_reg_iter++, i++)
+	{
+		GDBRegister *gdb_reg = *gdb_reg_iter;
+		if(gdb_reg) // there are some holes in the register map
+		{
+			if(i == reg_order_num)
+			{
+				std::stringstream packet_sstr;
+				
+				packet_sstr << "name:" << gdb_reg->GetName();
+				packet_sstr << ";bitsize:" << std::dec << gdb_reg->GetBitSize();
+				packet_sstr << ";offset:" << std::dec << offset;
+				packet_sstr << ";encoding:";
+				
+				if(strncmp(gdb_reg->GetType(), "uint", 4) == 0)
+				{
+					packet_sstr << "uint;format:hex";
+				}
+				else if(strncmp(gdb_reg->GetType(), "int", 3) == 0)
+				{
+					packet_sstr << "sint;format:hex";
+				}
+				else if(strncmp(gdb_reg->GetType(), "ieee_", 5) == 0)
+				{
+					packet_sstr << "ieee754;format:float";
+				}
+				else if(strncmp(gdb_reg->GetType(), "vec", 3) == 0)
+				{
+					packet_sstr << "vector;format:hex";
+				}
+				else
+				{
+					packet_sstr << "uint;format:hex";
+				}
+				
+				if(strlen(gdb_reg->GetGroup()) != 0)
+				{
+					packet_sstr << ";set:" << gdb_reg->GetGroup();
+				}
+				
+				PutPacket(packet_sstr.str());
+				return;
+			}
+			offset += gdb_reg->GetByteSize();
+		}
+	}
+	
+	PutPacket("E00");
+}
+
 template <class ADDRESS>
 void GDBServer<ADDRESS>::SetGDBClientFeature(std::string gdb_client_feature)
 {
@@ -1947,7 +2015,8 @@ void GDBServer<ADDRESS>::SetGDBClientFeature(std::string gdb_client_feature)
 		{ "fork-events", &gdb_client_feature_fork_events },
 		{ "vfork-events", &gdb_client_feature_vfork_events },
 		{ "exec-events", &gdb_client_feature_exec_events },
-		{ "vContSupported", &gdb_client_feature_vcont }
+		{ "vContSupported", &gdb_client_feature_vcont },
+		{ "t32extensions", &gdb_client_feature_vcont }
 	};
 	
 	unsigned int n = sizeof(features) / sizeof(features[0]);

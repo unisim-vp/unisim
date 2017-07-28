@@ -104,7 +104,7 @@ class PIT
 public:
 	static const unsigned int TLM2_IP_VERSION_MAJOR = 1;
 	static const unsigned int TLM2_IP_VERSION_MINOR = 0;
-	static const unsigned int TLM2_IP_VERSION_PATCH = 0;
+	static const unsigned int TLM2_IP_VERSION_PATCH = 1;
 	static const unsigned int MAX_CHANNELS          = CONFIG::MAX_CHANNELS;
 	static const unsigned int NUM_CHANNELS          = CONFIG::NUM_CHANNELS;
 	static const bool HAS_RTI_SUPPORT               = CONFIG::HAS_RTI_SUPPORT;
@@ -142,8 +142,6 @@ private:
 	{
 		EV_NONE = 0,
 		EV_WAKE_UP,
-		EV_RTI_TIMER_RESTART,
-		EV_TIMER_RESTART,
 		EV_CPU_PAYLOAD
 	};
 	
@@ -205,7 +203,6 @@ private:
 			: key()
 			, payload(0)
 			, release_payload(false)
-			, channel_num(0)
 			, completion_event(0)
 		{
 		}
@@ -224,7 +221,6 @@ private:
 			}
 			payload = 0;
 			release_payload = false;
-			channel_num = 0;
 			completion_event  = 0;
 		}
 		
@@ -249,17 +245,6 @@ private:
 			key.SetEventType(EV_WAKE_UP);
 		}
 		
-		void RestartTimer(unsigned int _channel_num)
-		{
-			key.SetEventType(EV_TIMER_RESTART);
-			channel_num = _channel_num;
-		}
-
-		void RestartRTITimer()
-		{
-			key.SetEventType(EV_RTI_TIMER_RESTART);
-		}
-
 		void SetCompletionEvent(sc_core::sc_event *_completion_event)
 		{
 			completion_event = _completion_event;
@@ -280,11 +265,6 @@ private:
 			return payload;
 		}
 		
-		unsigned int GetChannelNumber() const
-		{
-			return channel_num;
-		}
-
 		sc_core::sc_event *GetCompletionEvent() const
 		{
 			return completion_event;
@@ -299,7 +279,6 @@ private:
 		Key key;                             // schedule key (i.e. time stamp)
 		tlm::tlm_generic_payload *payload;   // payload
 		bool release_payload;                // whether payload must be released using payload memory management
-		unsigned int channel_num;            // timer channel number
 		sc_core::sc_event *completion_event; // completion event (for blocking transport interface)
 	};
 
@@ -315,27 +294,6 @@ private:
 		inline bool IsVerboseRead() const ALWAYS_INLINE { return pit->verbose; }
 		inline bool IsVerboseWrite() const ALWAYS_INLINE { return pit->verbose; }
 		inline std::ostream& GetInfoStream() ALWAYS_INLINE { return pit->logger.DebugInfoStream(); }
-
-#if 0
-		virtual ReadWriteStatus Read(sc_core::sc_time& time_stamp, uint32_t& value, const uint32_t& bit_enable)
-		{
-			// Run counter until read time so that registers reflect precise state of PIT
-			pit->RunTimersToTime(time_stamp);
-			// Read register
-			return this->Super::Read(time_stamp, value, bit_enable);
-		}
-		
-		virtual ReadWriteStatus Write(sc_core::sc_time& time_stamp, const uint32_t& value, const uint32_t& bit_enable)
-		{
-			// Run counter until write time
-			pit->RunTimersToTime(time_stamp);
-			// Write register
-			ReadWriteStatus rws = this->Super::Write(time_stamp, value, bit_enable);
-			// PIT register changes affect IRQ output, so schedule a run of timers that may trigger an IRQ output
-			pit->ScheduleTimersRun();
-			return rws;
-		}
-#endif
 
 		using Super::operator =;
 		
@@ -373,6 +331,24 @@ private:
 			FRZ     ::SetName("FRZ");      FRZ     ::SetDescription("Freeze");
 		}
 		
+		virtual ReadWriteStatus Write(sc_core::sc_time& time_stamp, const uint32_t& value, const uint32_t& bit_enable)
+		{
+			bool old_mdis_rti = this->template Get<typename PIT_MCR::MDIS_RTI>();
+			bool old_mdis = this->template Get<typename PIT_MCR::MDIS>();
+			
+			ReadWriteStatus rws = Super::Write(time_stamp, value, bit_enable);
+			
+			bool new_mdis_rti = this->template Get<typename PIT_MCR::MDIS_RTI>();
+			bool new_mdis = this->template Get<typename PIT_MCR::MDIS>();
+			
+			if((old_mdis_rti != new_mdis_rti) || (old_mdis != new_mdis))
+			{
+				this->pit->WakeUp();
+			}
+			
+			return rws;
+		}
+
 		using Super::operator =;
 	};
 	
@@ -398,9 +374,6 @@ private:
 		
 		virtual ReadWriteStatus Read(sc_core::sc_time& time_stamp, uint32_t& value, const uint32_t& bit_enable)
 		{
-// 			// Run timers until read time
-// 			this->pit->RunTimersToTime(time_stamp);
-
 			// Make PIT_LTMR64H reflect PIT_CVAL1 value
 			uint32_t lth = this->pit->pit_cval[1].template Get<typename PIT_CVAL::TVL>();
 			this->operator = (lth);
@@ -532,7 +505,7 @@ private:
 			if(!old_ten && new_ten)
 			{
 				// restart RTI timer
-				this->pit->RestartRTITimer();
+				this->pit->LoadRTITimer();
 			}
 			
 			return rws;
@@ -701,7 +674,7 @@ private:
 			{
 				// restart timer
 				unsigned int channel_num = reg_num;
-				this->pit->RestartTimer(channel_num);
+				this->pit->LoadTimer(channel_num);
 			}
 			
 			return rws;
@@ -790,13 +763,27 @@ private:
 	sc_core::sc_event gen_rtirq_event;
 	bool dma_trigger_level[MAX_CHANNELS];                 // DMA trigger output level for each channel
 	sc_core::sc_event *gen_dma_pulse_event[MAX_CHANNELS]; // Event to trigger dma pulse (DMA_TRIGGER_Process)
+	sc_core::sc_time max_time_to_next_timers_run;
+	sc_core::sc_time max_time_to_next_rti_timer_run;
 	sc_core::sc_time last_timers_run_time;                // Last time when timers ran
 	sc_core::sc_time last_rti_timer_run_time;             // Last time when RTI timer ran
 	sc_core::sc_time master_clock_period;                 // Master clock period
+	sc_core::sc_time master_clock_start_time;             // Master clock start time
+	bool master_clock_posedge_first;                      // Master clock posedge first ?
+	double master_clock_duty_cycle;                       // Master clock duty cycle
 	sc_core::sc_time rti_clock_period;                    // RTI clock period
+	sc_core::sc_time rti_clock_start_time;                // RTI clock start time
+	bool rti_clock_posedge_first;                         // RTI clock posedge first ?
+	double rti_clock_duty_cycle;                          // RTI clock duty cycle
 	sc_core::sc_time per_clock_period;                    // PER clock period
+	sc_core::sc_time per_clock_start_time;                // PER clock start time
+	bool per_clock_posedge_first;                         // PER clock posedge first ?
+	double per_clock_duty_cycle;                          // PER clock duty cycle
 	sc_core::sc_event timers_run_event;                   // Event to trigger timers run (RunTimersProcess)
-	bool freeze;                                          // Latched value for internal "freeze"
+	bool freeze_timers;                                   // Latched value for internal "freeze"
+	bool freeze_rti_timer;                                // Latched value for internal "freeze"
+	bool load_timer[MAX_CHANNELS];
+	bool load_rti_timer;
 	
 	void Reset();
 	void ProcessEvent(Event *event);
@@ -804,27 +791,28 @@ private:
 	void Process();
 	void RESET_B_Process();
 	void MasterClockPropertiesChangedProcess();
-	void UpdateMasterClockPeriod();
-	void UpdatePERClockPeriod();
-	void UpdateRTIClockPeriod();
+	void UpdateMasterClock();
+	void UpdatePERClock();
+	void UpdateRTIClock();
 	void IRQ_Process(unsigned int channel_num);
 	void RTIRQ_Process();
 	void DMA_TRIGGER_Process(unsigned int channel_num);
-	void RestartTimer(unsigned int channel_num);
-	void DoRestartTimer(unsigned int channel_num);
-	void RestartRTITimer();
-	void DoRestartRTITimer();
+	void WakeUp(const sc_core::sc_time& delay = sc_core::SC_ZERO_TIME);
+	void LoadTimer(unsigned int channel_num);
+	void LoadRTITimer();
 	void SetIRQLevel(unsigned int channel_num, bool level);
 	void SetRTIRQLevel(bool level);
 	void SetDMA_TRIGGER_Level(unsigned int channel_num, bool level);
 	void StartDMAPulse(unsigned int channel_num);
-	void DecrementTimers(sc_dt::uint64 delta);
-	void DecrementRTITimer(sc_dt::uint64 delta);
+	void LoadAndDecrementTimers(sc_dt::uint64 delta);
+	void LoadAndDecrementRTITimer(sc_dt::uint64 delta);
 	sc_dt::int64 TicksToNextTimersRun();
 	sc_dt::int64 TicksToNextRTITimerRun();
 	sc_core::sc_time TimeToNextTimersRun();
-	void RunTimersToTime(const sc_core::sc_time& time_stamp);
-	void ScheduleTimersRun();
+	sc_core::sc_time TimeToNextRTITimerRun();
+	sc_core::sc_time TimeToNextRun();
+	void RunToTime(const sc_core::sc_time& time_stamp);
+	void ScheduleRun();
 	
 	void RefreshFreeze();
 };

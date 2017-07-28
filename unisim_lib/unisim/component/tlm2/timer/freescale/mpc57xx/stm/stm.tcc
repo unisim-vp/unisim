@@ -89,9 +89,13 @@ STM<CONFIG>::STM(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 	, irq_level()
 	, gen_irq_event()
+	, max_time_to_next_counter_run(1.0, sc_core::SC_MS)
 	, last_counter_run_time(sc_core::SC_ZERO_TIME)
+	, master_clock_period(10.0, sc_core::SC_NS)
+	, master_clock_start_time(sc_core::SC_ZERO_TIME)
+	, master_clock_posedge_first(true)
+	, master_clock_duty_cycle(0.5)
 	, prescaled_clock_period(sc_core::SC_ZERO_TIME)
-	, counter_run_event("counter_run_event")
 	, freeze(false)
 {
 	std::stringstream description_sstr;
@@ -132,15 +136,6 @@ STM<CONFIG>::STM(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	reg_addr_map.MapRegisterFile(STM_CIR::ADDRESS_OFFSET, &stm_cir, /* size */ 4, /* stride */ 16);
 	reg_addr_map.MapRegisterFile(STM_CMP::ADDRESS_OFFSET, &stm_cmp, /* size */ 4, /* stride */ 16);
 
-	if(threaded_model)
-	{
-		SC_THREAD(Process);
-	}
-	else
-	{
-		SC_METHOD(Process);
-	}
-	
 	SC_METHOD(RESET_B_Process);
 	sensitive << reset_b.pos();
 
@@ -178,14 +173,15 @@ void STM<CONFIG>::end_of_elaboration()
 {
 	logger << DebugInfo << this->GetDescription() << EndDebugInfo;
 
-	// Spawn an RunCounterProcess sensitive scheduled when counter should run or clock properties have changed
-	sc_core::sc_spawn_options run_counter_process_spawn_options;
-	run_counter_process_spawn_options.spawn_method();
-	run_counter_process_spawn_options.set_sensitivity(&counter_run_event);
-	run_counter_process_spawn_options.set_sensitivity(&m_clk_prop_proxy.GetClockPropertiesChangedEvent());
+	// Spawn Process
+	sc_core::sc_spawn_options process_spawn_options;
+	process_spawn_options.spawn_method();
+	process_spawn_options.set_sensitivity(&schedule.GetKernelEvent());
+	process_spawn_options.set_sensitivity(&debug.value_changed_event());
+	process_spawn_options.set_sensitivity(&m_clk_prop_proxy.GetClockPropertiesChangedEvent());
 	
-	sc_core::sc_spawn(sc_bind(&STM<CONFIG>::RunCounterProcess, this), "RunCounterProcess", &run_counter_process_spawn_options);
-	
+	sc_core::sc_spawn(sc_bind(&STM<CONFIG>::Process, this), "Process", &process_spawn_options);
+
 	Reset();
 }
 
@@ -243,6 +239,7 @@ void STM<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_tim
 	sc_core::sc_event completion_event;
 	sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 	notify_time_stamp += t;
+	unisim::kernel::tlm2::AlignToClock(notify_time_stamp, master_clock_period, master_clock_start_time, master_clock_posedge_first, master_clock_duty_cycle);
 	Event *event = schedule.AllocEvent();
 	event->SetPayload(&payload);
 	event->SetTimeStamp(notify_time_stamp);
@@ -304,6 +301,7 @@ tlm::tlm_sync_enum STM<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& payloa
 			{
 				sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 				notify_time_stamp += t;
+				unisim::kernel::tlm2::AlignToClock(notify_time_stamp, master_clock_period, master_clock_start_time, master_clock_posedge_first, master_clock_duty_cycle);
 				Event *event = schedule.AllocEvent();
 				event->SetPayload(&payload);
 				event->SetTimeStamp(notify_time_stamp);
@@ -326,105 +324,119 @@ tlm::tlm_sync_enum STM<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& payloa
 template <typename CONFIG>
 void STM<CONFIG>::ProcessEvent(Event *event)
 {
-	tlm::tlm_generic_payload *payload = event->GetPayload();
-	sc_core::sc_time time_stamp(event->GetTimeStamp());
-	tlm::tlm_command cmd = payload->get_command();
-
-	if(cmd != tlm::TLM_IGNORE_COMMAND)
+	switch(event->GetType())
 	{
-		unsigned int streaming_width = payload->get_streaming_width();
-		unsigned int data_length = payload->get_data_length();
-		unsigned char *data_ptr = payload->get_data_ptr();
-		unsigned char *byte_enable_ptr = payload->get_byte_enable_ptr();
-		sc_dt::uint64 start_addr = payload->get_address();
-//		sc_dt::uint64 end_addr = start_addr + ((streaming_width > data_length) ? data_length : streaming_width) - 1;
+		case EV_NONE:
+			break;
 		
-		if(!data_ptr)
+		case EV_CPU_PAYLOAD:
 		{
-			logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
-			return;
-		}
-		else if(!data_length)
-		{
-			logger << DebugError << "data length range for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
-			return;
-		}
-		else if(byte_enable_ptr)
-		{
-			// byte enable is unsupported
-			logger << DebugWarning << "byte enable for TLM-2.0 GP READ/WRITE command is unsupported" << EndDebugWarning;
-			payload->set_response_status(tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE);
-		}
-		else if(streaming_width < data_length)
-		{
-			// streaming is unsupported
-			logger << DebugWarning << "streaming for TLM-2.0 GP READ/WRITE command is unsupported" << EndDebugWarning;
-			payload->set_response_status(tlm::TLM_BURST_ERROR_RESPONSE);
-		}
-		else if((start_addr & 3) != 0)
-		{
-			logger << DebugWarning << "only 32-bit aligned access to register are allowed" << EndDebugWarning;
-			payload->set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
-		}
-		else if(streaming_width != 4)
-		{
-			logger << DebugWarning << "only 32-bit access to register are allowed" << EndDebugWarning;
-			payload->set_response_status(tlm::TLM_BURST_ERROR_RESPONSE);
-		}
-		else
-		{
-			ReadWriteStatus rws = RWS_OK;
-			
-			switch(cmd)
+			tlm::tlm_generic_payload *payload = event->GetPayload();
+			sc_core::sc_time time_stamp(event->GetTimeStamp());
+			tlm::tlm_command cmd = payload->get_command();
+
+			if(cmd != tlm::TLM_IGNORE_COMMAND)
 			{
-				case tlm::TLM_WRITE_COMMAND:
-					rws = reg_addr_map.Write(time_stamp, start_addr, data_ptr, data_length);
-					break;
-				case tlm::TLM_READ_COMMAND:
-					rws = reg_addr_map.Read(time_stamp, start_addr, data_ptr, data_length);
-					break;
-				default:
-					break;
+				unsigned int streaming_width = payload->get_streaming_width();
+				unsigned int data_length = payload->get_data_length();
+				unsigned char *data_ptr = payload->get_data_ptr();
+				unsigned char *byte_enable_ptr = payload->get_byte_enable_ptr();
+				sc_dt::uint64 start_addr = payload->get_address();
+		//		sc_dt::uint64 end_addr = start_addr + ((streaming_width > data_length) ? data_length : streaming_width) - 1;
+				
+				if(!data_ptr)
+				{
+					logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
+					unisim::kernel::service::Object::Stop(-1);
+					return;
+				}
+				else if(!data_length)
+				{
+					logger << DebugError << "data length range for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
+					unisim::kernel::service::Object::Stop(-1);
+					return;
+				}
+				else if(byte_enable_ptr)
+				{
+					// byte enable is unsupported
+					logger << DebugWarning << "byte enable for TLM-2.0 GP READ/WRITE command is unsupported" << EndDebugWarning;
+					payload->set_response_status(tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE);
+				}
+				else if(streaming_width < data_length)
+				{
+					// streaming is unsupported
+					logger << DebugWarning << "streaming for TLM-2.0 GP READ/WRITE command is unsupported" << EndDebugWarning;
+					payload->set_response_status(tlm::TLM_BURST_ERROR_RESPONSE);
+				}
+				else if((start_addr & 3) != 0)
+				{
+					logger << DebugWarning << "only 32-bit aligned access to register are allowed" << EndDebugWarning;
+					payload->set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
+				}
+				else if(streaming_width != 4)
+				{
+					logger << DebugWarning << "only 32-bit access to register are allowed" << EndDebugWarning;
+					payload->set_response_status(tlm::TLM_BURST_ERROR_RESPONSE);
+				}
+				else
+				{
+					ReadWriteStatus rws = RWS_OK;
+					
+					switch(cmd)
+					{
+						case tlm::TLM_WRITE_COMMAND:
+							rws = reg_addr_map.Write(time_stamp, start_addr, data_ptr, data_length);
+							break;
+						case tlm::TLM_READ_COMMAND:
+							rws = reg_addr_map.Read(time_stamp, start_addr, data_ptr, data_length);
+							break;
+						default:
+							break;
+					}
+					
+					if(IsReadWriteError(rws))
+					{
+						logger << DebugError << "while mapped read/write access, " << std::hex << rws << std::dec << std::endl;
+						payload->set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
+					}
+					else
+					{
+						payload->set_response_status(tlm::TLM_OK_RESPONSE);
+					}
+				}
 			}
+
+			payload->set_dmi_allowed(false);
 			
-			if(IsReadWriteError(rws))
+			sc_core::sc_time completion_time(sc_core::SC_ZERO_TIME);
+			sc_core::sc_event *completion_event = event->GetCompletionEvent();
+			
+			if(completion_event)
 			{
-				logger << DebugError << "while mapped read/write access, " << std::hex << rws << std::dec << std::endl;
-				payload->set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
+				completion_event->notify(completion_time);
 			}
 			else
 			{
-				payload->set_response_status(tlm::TLM_OK_RESPONSE);
+				tlm::tlm_phase phase = tlm::BEGIN_RESP;
+				
+				tlm::tlm_sync_enum sync = peripheral_slave_if->nb_transport_bw(*payload, phase, completion_time);
+				
+				switch(sync)
+				{
+					case tlm::TLM_ACCEPTED:
+						break;
+					case tlm::TLM_UPDATED:
+						break;
+					case tlm::TLM_COMPLETED:
+						break;
+				}
 			}
+			
+			break;
 		}
-	}
-
-	payload->set_dmi_allowed(false);
-	
-	sc_core::sc_time completion_time(sc_core::SC_ZERO_TIME);
-	sc_core::sc_event *completion_event = event->GetCompletionEvent();
-	
-	if(completion_event)
-	{
-		completion_event->notify(completion_time);
-	}
-	else
-	{
-		tlm::tlm_phase phase = tlm::BEGIN_RESP;
 		
-		tlm::tlm_sync_enum sync = peripheral_slave_if->nb_transport_bw(*payload, phase, completion_time);
-		
-		switch(sync)
-		{
-			case tlm::TLM_ACCEPTED:
-				break;
-			case tlm::TLM_UPDATED:
-				break;
-			case tlm::TLM_COMPLETED:
-				break;
-		}
+		case EV_WAKE_UP:
+			break;
 	}
 }
 
@@ -432,6 +444,9 @@ template <typename CONFIG>
 void STM<CONFIG>::ProcessEvents()
 {
 	const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
+	
+	RunCounterToTime(time_stamp);
+	
 	Event *event = schedule.GetNextEvent();
 	
 	if(event)
@@ -449,6 +464,9 @@ void STM<CONFIG>::ProcessEvents()
 		}
 		while((event = schedule.GetNextEvent()) != 0);
 	}
+	
+	ScheduleCounterRun();
+	RefreshFreeze();
 }
 
 template <typename CONFIG>
@@ -472,7 +490,11 @@ void STM<CONFIG>::Process()
 template <typename CONFIG>
 void STM<CONFIG>::UpdatePrescaledClockPeriod()
 {
-	prescaled_clock_period = m_clk_prop_proxy.GetClockPeriod();
+	master_clock_period = m_clk_prop_proxy.GetClockPeriod();
+	master_clock_start_time = m_clk_prop_proxy.GetClockStartTime();
+	master_clock_posedge_first = m_clk_prop_proxy.GetClockPosEdgeFirst();
+	master_clock_duty_cycle = m_clk_prop_proxy.GetClockDutyCycle();
+	prescaled_clock_period = master_clock_period;
 	prescaled_clock_period *= stm_cr.template Get<typename STM_CR::CPS>() + 1;
 }
 
@@ -526,19 +548,23 @@ void STM<CONFIG>::IncrementCounter(sc_dt::uint64 delta)
 	if(stm_cr.template Get<typename STM_CR::TEN>())
 	{
 		// Counter is enabled
-		uint32_t cnt = stm_cnt.template Get<typename STM_CNT::CNT>();
-		
-		// Check that not too much time has elapsed since last counter run
-		// Note: this may happen if other SystemC threads are not nice (i.e. do not call wait for too long time)
-		sc_dt::uint64 ticks_to_next_counter_run = TicksToNextCounterRun();
-		
-		if(delta > ticks_to_next_counter_run)
+		if(unlikely(verbose))
 		{
-			logger << DebugWarning << "Model has a problem because too much time has elapsed since last counter run, resulting in a counter overflow and/or lost interrupt" << EndDebugWarning;
+			logger << DebugInfo << sc_core::sc_time_stamp() << ": running counter for " << delta << " Master clock cycles" << EndDebugInfo;
 		}
 		
+		uint32_t cnt = stm_cnt.template Get<typename STM_CNT::CNT>();
+		
 		// Increment counter
+		if(unlikely(verbose))
+		{
+			logger << DebugInfo << sc_core::sc_time_stamp() << ": STM_CNT increases from " << cnt;
+		}
 		cnt += delta;
+		if(unlikely(verbose))
+		{
+			logger << DebugInfo << " to " << cnt << EndDebugInfo;
+		}
 		stm_cnt.template Set<typename STM_CNT::CNT>(cnt);
 	}
 }
@@ -546,9 +572,10 @@ void STM<CONFIG>::IncrementCounter(sc_dt::uint64 delta)
 template <typename CONFIG>
 sc_dt::uint64 STM<CONFIG>::TicksToNextCounterRun()
 {
+	static const sc_dt::uint64 roll_over_ticks = sc_dt::uint64(1) << STM_CNT::CNT::GetBitWidth();
+	
 	// Compute the minimum number of counter ticks to the next potential interrupt
-	sc_dt::int64 max_ticks = sc_dt::uint64(1) << STM_CNT::CNT::GetBitWidth();
-	sc_dt::int64 min_ticks = max_ticks;
+	sc_dt::int64 ticks_to_next_counter_run = 0;
 	
 	if(stm_cr.template Get<typename STM_CR::TEN>())
 	{
@@ -564,48 +591,57 @@ sc_dt::uint64 STM<CONFIG>::TicksToNextCounterRun()
 				// Channel is enabled
 				uint32_t cmp = stm_cmp[channel_num].template Get<typename STM_CMP::CMP>();
 				
-				sc_dt::int64 ticks_to_interrupt = (cnt < cmp) ? sc_dt::int64(cmp - cnt)
-				                                              : max_ticks;   // roll over
+				sc_dt::int64 ticks_to_interrupt = (cnt < cmp) ? sc_dt::uint64(cmp - cnt)
+				                                              : roll_over_ticks;   // roll over
 				
-				if(ticks_to_interrupt < min_ticks) min_ticks = ticks_to_interrupt;
+				if(ticks_to_interrupt && (!ticks_to_next_counter_run || (ticks_to_interrupt < ticks_to_next_counter_run))) ticks_to_next_counter_run = ticks_to_interrupt;
 			}
 		}
 	}
 	
-	return min_ticks;
+	return ticks_to_next_counter_run;
 }
 
 template <typename CONFIG>
 sc_core::sc_time STM<CONFIG>::TimeToNextCounterRun()
 {
-	return TicksToNextCounterRun() * prescaled_clock_period;
+	sc_dt::uint64 ticks_to_next_counter_run = TicksToNextCounterRun();
+	
+	if(ticks_to_next_counter_run)
+	{
+		sc_core::sc_time time_to_next_counter_run(prescaled_clock_period);
+		time_to_next_counter_run *= ticks_to_next_counter_run;
+		return time_to_next_counter_run;
+	}
+	
+	return max_time_to_next_counter_run;
 }
 
 template <typename CONFIG>
 void STM<CONFIG>::RunCounterToTime(const sc_core::sc_time& time_stamp)
 {
-	// Compute the elapsed time since last count run
-	sc_core::sc_time delay_since_last_counter_run(time_stamp);
-	delay_since_last_counter_run -= last_counter_run_time;
-	
-	// Compute number of counter ticks since last count run
-	sc_dt::uint64 delta = delay_since_last_counter_run / prescaled_clock_period;
-	sc_core::sc_time run_time(prescaled_clock_period);
-	run_time *= delta;
-
 	if(!freeze)
 	{
 		// in the past, until time stamp, counter was not frozen: incrementer counter
-		IncrementCounter(delta);
+		// Compute the elapsed time since last count run
+		sc_core::sc_time delay_since_last_counter_run(time_stamp);
+		delay_since_last_counter_run -= last_counter_run_time;
+		
+		// Compute number of counter ticks since last count run
+		sc_dt::uint64 delta = delay_since_last_counter_run / prescaled_clock_period;
+		
+		if(delta)
+		{
+			sc_core::sc_time run_time(prescaled_clock_period);
+			run_time *= delta;
+
+			IncrementCounter(delta);
+			last_counter_run_time += run_time;
+			
+			// Compare counter
+			CompareCounter();
+		}
 	}
-	
-	// Compare counter
-	CompareCounter();
-	
-	// Latch internal "freeze" value
-	RefreshFreeze();
-	
-	last_counter_run_time += run_time;
 }
 
 template <typename CONFIG>
@@ -614,33 +650,35 @@ void STM<CONFIG>::ScheduleCounterRun()
 	// Clock properties may have changed that may affect time to next counter run
 	UpdatePrescaledClockPeriod();
 	
+	const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
+	if(last_counter_run_time > time_stamp)
+	{
+		// Counter not yet started (because of clock)
+		Event *event = schedule.AllocEvent();
+		event->WakeUp();
+		event->SetTimeStamp(last_counter_run_time);
+		schedule.Notify(event);
+		return;
+	}
+
 	sc_core::sc_time time_to_next_counter_run = TimeToNextCounterRun();
 	if(verbose)
 	{
 		logger << DebugInfo << sc_core::sc_time_stamp() << ": time to next counter run is " << time_to_next_counter_run << EndDebugInfo;
 	}
-	const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
-	time_to_next_counter_run += last_counter_run_time;
-	time_to_next_counter_run -= time_stamp;
-	
-	if(time_to_next_counter_run > sc_core::SC_ZERO_TIME)
-	{
-		counter_run_event.notify(time_to_next_counter_run); // schedule next counter run
-	}
-}
 
-template <typename CONFIG>
-void STM<CONFIG>::RunCounterProcess()
-{
-	const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
+	sc_core::sc_time next_counter_run_time_stamp(sc_core::sc_time_stamp());
+	next_counter_run_time_stamp += time_to_next_counter_run;
 	
-	if(verbose)
+	if(unlikely(verbose))
 	{
-		logger << DebugInfo << time_stamp << ":RunCounterProcess()" << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": counter will run at " << next_counter_run_time_stamp << EndDebugInfo;
 	}
-	
-	RunCounterToTime(time_stamp);
-	ScheduleCounterRun();
+
+	Event *event = schedule.AllocEvent();
+	event->WakeUp();
+	event->SetTimeStamp(next_counter_run_time_stamp);
+	schedule.Notify(event);
 }
 
 template <typename CONFIG>
@@ -667,7 +705,14 @@ template <typename CONFIG>
 void STM<CONFIG>::RefreshFreeze()
 {
 	// Latch value for internal "freeze"
+	bool old_freeze = freeze;
 	freeze = debug && stm_cr.template Get<typename STM_CR::FRZ>();
+	
+	if(old_freeze && !freeze)
+	{
+		last_counter_run_time = sc_core::sc_time_stamp();
+		unisim::kernel::tlm2::AlignToClock(last_counter_run_time, master_clock_period, master_clock_start_time, master_clock_posedge_first, master_clock_duty_cycle);
+	}
 }
 
 } // end of namespace stm

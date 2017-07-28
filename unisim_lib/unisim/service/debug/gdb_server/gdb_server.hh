@@ -122,6 +122,7 @@ public:
 	GDBRegister(unisim::service::interfaces::Register *reg, const string& reg_name, GDBEndian endian, unsigned int reg_num, const std::string& type, const std::string& group);
 	inline const char *GetName() const { return name.c_str(); }
 	inline int GetBitSize() const { return bitsize; }
+	inline int GetByteSize() const { return bitsize / 8; }
 	bool SetValue(const string& hex);
 	bool SetValue(const void *buffer);
 	bool GetValue(string& hex) const;
@@ -132,6 +133,8 @@ public:
 	inline GDBEndian GetEndian() const { return endian; }
 	unsigned int GetRegNum() const { return reg_num; }
 	bool IsEmpty() const { return (bitsize == 0) and (not reg); }
+	const char *GetType() const { return type.c_str(); }
+	const char *GetGroup() const { return group.c_str(); }
 	std::ostream& ToXML(std::ostream& os, unsigned int reg_num) const;
 private:
 	string name;
@@ -231,6 +234,7 @@ private:
 	void HandleQXferFeaturesRead(std::string command);
 	void HandleQfThreadInfo();
 	void HandleQsThreadInfo();
+	void HandleQRegisterInfo(std::string hex_reg_order_num); // LLDB specific
 
 	void Disasm(ADDRESS addr, unsigned int size);
 	
@@ -268,6 +272,7 @@ private:
 	bool gdb_client_feature_vfork_events;
 	bool gdb_client_feature_exec_events;
 	bool gdb_client_feature_vcont;
+	bool gdb_client_feature_t32extensions;
 	unsigned int current_thread_id;
 	bool no_ack_mode;
 	std::map<uint32_t, uint32_t> arch_specific_breakpoint_kinds;
