@@ -971,7 +971,7 @@ std::vector<ADDRESS> *Debugger<ADDRESS>::GetBackTrace(ADDRESS pc) const
 		if(enable_elf32_loaders[i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			std::vector<ADDRESS> *backtrace = elf32_loader->GetBackTrace(pc);
+			std::vector<ADDRESS> *backtrace = elf32_loader->GetBackTrace(/* prc_num */ 0, pc);
 			if(backtrace) return backtrace;
 		}
 	}
@@ -982,7 +982,7 @@ std::vector<ADDRESS> *Debugger<ADDRESS>::GetBackTrace(ADDRESS pc) const
 		if(enable_elf64_loaders[i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			std::vector<ADDRESS> *backtrace = elf64_loader->GetBackTrace(pc);
+			std::vector<ADDRESS> *backtrace = elf64_loader->GetBackTrace(/* prc_num */ 0, pc);
 			if(backtrace) return backtrace;
 		}
 	}
@@ -1001,7 +1001,7 @@ bool Debugger<ADDRESS>::GetReturnAddress(ADDRESS pc, ADDRESS& ret_addr) const
 		if(enable_elf32_loaders[i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			if(elf32_loader->GetReturnAddress(pc, ret_addr)) return true;
+			if(elf32_loader->GetReturnAddress(/* prc_num */ 0, pc, ret_addr)) return true;
 		}
 	}
 
@@ -1011,7 +1011,7 @@ bool Debugger<ADDRESS>::GetReturnAddress(ADDRESS pc, ADDRESS& ret_addr) const
 		if(enable_elf64_loaders[i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			if(elf64_loader->GetReturnAddress(pc, ret_addr)) return true;
+			if(elf64_loader->GetReturnAddress(/* prc_num */ 0, pc, ret_addr)) return true;
 		}
 	}
 	
@@ -1086,8 +1086,13 @@ bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
 			{
 				case 1:
 					{
-						unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream(), registers_import, memory_import);
+						unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>();
 						
+						elf32_loader->SetDebugInfoStream(logger.DebugInfoStream());
+						elf32_loader->SetDebugWarningStream(logger.DebugWarningStream());
+						elf32_loader->SetDebugErrorStream(logger.DebugErrorStream());
+						elf32_loader->SetRegistersInterface(/* prc_num */ 0, registers_import);
+						elf32_loader->SetMemoryInterface(/* prc_num */ 0, memory_import);
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
@@ -1107,8 +1112,13 @@ bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
 					break;
 				case 2:
 					{
-						unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream(), registers_import, memory_import);
+						unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>();
 						
+						elf64_loader->SetDebugInfoStream(logger.DebugInfoStream());
+						elf64_loader->SetDebugWarningStream(logger.DebugWarningStream());
+						elf64_loader->SetDebugErrorStream(logger.DebugErrorStream());
+						elf64_loader->SetRegistersInterface(/* prc_num */ 0, registers_import);
+						elf64_loader->SetMemoryInterface(/* prc_num */ 0, memory_import);
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
@@ -1144,8 +1154,13 @@ bool Debugger<ADDRESS>::SetupDebugInfo(const unisim::util::blob::Blob<ADDRESS> *
 			break;
 		case unisim::util::blob::FFMT_ELF32:
 			{
-				unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream(), registers_import, memory_import, blob);
+				unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(blob);
 				
+				elf32_loader->SetDebugInfoStream(logger.DebugInfoStream());
+				elf32_loader->SetDebugWarningStream(logger.DebugWarningStream());
+				elf32_loader->SetDebugErrorStream(logger.DebugErrorStream());
+				elf32_loader->SetRegistersInterface(/* prc_num */ 0, registers_import);
+				elf32_loader->SetMemoryInterface(/* prc_num */ 0, memory_import);
 				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
 				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
 				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
@@ -1158,8 +1173,13 @@ bool Debugger<ADDRESS>::SetupDebugInfo(const unisim::util::blob::Blob<ADDRESS> *
 			break;
 		case unisim::util::blob::FFMT_ELF64:
 			{
-				unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream(), registers_import, memory_import, blob);
+				unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(blob);
 				
+				elf64_loader->SetDebugInfoStream(logger.DebugInfoStream());
+				elf64_loader->SetDebugWarningStream(logger.DebugWarningStream());
+				elf64_loader->SetDebugErrorStream(logger.DebugErrorStream());
+				elf64_loader->SetRegistersInterface(/* prc_num */ 0, registers_import);
+				elf64_loader->SetMemoryInterface(/* prc_num */ 0, memory_import);
 				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
 				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
 				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
@@ -1215,7 +1235,7 @@ unisim::util::debug::DataObject<ADDRESS> *Debugger<ADDRESS>::GetDataObject(const
 		if(enable_elf32_loaders[i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			unisim::util::debug::DataObject<ADDRESS> *data_object = elf32_loader->GetDataObject(data_object_name, filename, compilation_unit_name);
+			unisim::util::debug::DataObject<ADDRESS> *data_object = elf32_loader->GetDataObject(/* prc_num */ 0, data_object_name, filename, compilation_unit_name);
 			if(data_object) return data_object;
 		}
 	}
@@ -1226,7 +1246,7 @@ unisim::util::debug::DataObject<ADDRESS> *Debugger<ADDRESS>::GetDataObject(const
 		if(enable_elf64_loaders[i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			unisim::util::debug::DataObject<ADDRESS> *data_object = elf64_loader->GetDataObject(data_object_name, filename, compilation_unit_name);
+			unisim::util::debug::DataObject<ADDRESS> *data_object = elf64_loader->GetDataObject(/* prc_num */ 0, data_object_name, filename, compilation_unit_name);
 			if(data_object) return data_object;
 		}
 	}
@@ -1245,7 +1265,7 @@ unisim::util::debug::DataObject<ADDRESS> *Debugger<ADDRESS>::FindDataObject(cons
 		if(enable_elf32_loaders[i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			unisim::util::debug::DataObject<ADDRESS> *data_object = elf32_loader->FindDataObject(data_object_name, pc);
+			unisim::util::debug::DataObject<ADDRESS> *data_object = elf32_loader->FindDataObject(/* prc_num */ 0, data_object_name, pc);
 			if(data_object) return data_object;
 		}
 	}
@@ -1256,7 +1276,7 @@ unisim::util::debug::DataObject<ADDRESS> *Debugger<ADDRESS>::FindDataObject(cons
 		if(enable_elf64_loaders[i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			unisim::util::debug::DataObject<ADDRESS> *data_object = elf64_loader->FindDataObject(data_object_name, pc);
+			unisim::util::debug::DataObject<ADDRESS> *data_object = elf64_loader->FindDataObject(/* prc_num */ 0, data_object_name, pc);
 			if(data_object) return data_object;
 		}
 	}
@@ -1301,7 +1321,7 @@ const unisim::util::debug::SubProgram<ADDRESS> *Debugger<ADDRESS>::FindSubProgra
 		if(enable_elf32_loaders[i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			const unisim::util::debug::SubProgram<ADDRESS> *subprogram = elf32_loader->FindSubProgram(subprogram_name, filename, compilation_unit_name);
+			const unisim::util::debug::SubProgram<ADDRESS> *subprogram = elf32_loader->FindSubProgram(/* prc_num */ 0, subprogram_name, filename, compilation_unit_name);
 			if(subprogram) return subprogram;
 		}
 	}
@@ -1312,7 +1332,7 @@ const unisim::util::debug::SubProgram<ADDRESS> *Debugger<ADDRESS>::FindSubProgra
 		if(enable_elf64_loaders[i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			const unisim::util::debug::SubProgram<ADDRESS> *subprogram = elf64_loader->FindSubProgram(subprogram_name, filename, compilation_unit_name);
+			const unisim::util::debug::SubProgram<ADDRESS> *subprogram = elf64_loader->FindSubProgram(/* prc_num */ 0, subprogram_name, filename, compilation_unit_name);
 			if(subprogram) return subprogram;
 		}
 	}

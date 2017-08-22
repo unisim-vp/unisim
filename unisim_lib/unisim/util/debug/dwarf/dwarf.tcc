@@ -85,7 +85,6 @@ DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::blob::Blob<MEMORY_
 	, reg_num_mapping_filename()
 	, verbose(false)
 	, debug(false)
-	, num_processors(0)
 	, dw_reg_num_mapping()
 	, regs_if()
 	, mem_if()
@@ -267,20 +266,11 @@ void DWARF_Handler<MEMORY_ADDR>::SetDebugErrorStream(std::ostream& _debug_error_
 }
 
 template <class MEMORY_ADDR>
-void DWARF_Handler<MEMORY_ADDR>::SetNumProcessors(unsigned int _num_processors)
-{
-	num_processors = _num_processors;
-	regs_if.resize(num_processors);
-	mem_if.resize(num_processors);
-	dw_reg_num_mapping.resize(num_processors);
-}
-
-template <class MEMORY_ADDR>
-void DWARF_Handler<MEMORY_ADDR>::SetRegisterInterface(unsigned int prc_num, unisim::service::interfaces::Registers *_regs_if)
+void DWARF_Handler<MEMORY_ADDR>::SetRegistersInterface(unsigned int prc_num, unisim::service::interfaces::Registers *_regs_if)
 {
 	if(prc_num >= regs_if.size())
 	{
-		throw std::runtime_error("Internal error! processor number out-of-range while setting register interface");
+		regs_if.resize(prc_num + 1);
 	}
 	regs_if[prc_num] = _regs_if;
 }
@@ -290,7 +280,7 @@ void DWARF_Handler<MEMORY_ADDR>::SetMemoryInterface(unsigned int prc_num, unisim
 {
 	if(prc_num >= mem_if.size())
 	{
-		throw std::runtime_error("Internal error! processor number out-of-range while setting memory interface");
+		mem_if.resize(prc_num + 1);
 	}
 	mem_if[prc_num] = _mem_if;
 }
@@ -846,35 +836,43 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	
 	if(!reg_num_mapping_filename.empty())
 	{
+		unsigned int num_processors = regs_if.size();
 		unsigned int prc_num;
-		for(prc_num = 0; prc_num < num_processors; prc_num++)
+		
+		for(prc_num = 0; prc_num  < num_processors; prc_num++)
 		{
-			if(prc_num >= dw_reg_num_mapping.size())
-			{
-				throw std::runtime_error("Internal error! processor number out-of-range while attempting to parse DWARF register number mapping");
-			}
-			dw_reg_num_mapping[prc_num] = new DWARF_RegisterNumberMapping(GetDebugInfoStream(), GetDebugWarningStream(), GetDebugErrorStream(), GetRegistersInterface(prc_num));
+			unisim::service::interfaces::Registers *_regs_if = GetRegistersInterface(prc_num);
 			
-			if(verbose)
+			if(_regs_if)
 			{
-				GetDebugInfoStream() << "Loading DWARF register number mapping from \"" << reg_num_mapping_filename << "\" for Processor #" << prc_num << std::endl;
-			}
-			const char *architecture = blob->GetArchitecture();
-
-			if(strcmp(architecture, "") != 0)
-			{
-				if(!dw_reg_num_mapping[prc_num]->Load(reg_num_mapping_filename.c_str(), architecture))
+				if(prc_num >= dw_reg_num_mapping.size())
 				{
-					GetDebugWarningStream() << "Can't load DWARF register number mapping from \"" << reg_num_mapping_filename << "\"" << std::endl;
+					dw_reg_num_mapping.resize(prc_num + 1);
+				}
+				
+				dw_reg_num_mapping[prc_num] = new DWARF_RegisterNumberMapping(GetDebugInfoStream(), GetDebugWarningStream(), GetDebugErrorStream(), _regs_if);
+				
+				if(verbose)
+				{
+					GetDebugInfoStream() << "Loading DWARF register number mapping from \"" << reg_num_mapping_filename << "\" for Processor #" << prc_num << std::endl;
+				}
+				const char *architecture = blob->GetArchitecture();
+
+				if(strcmp(architecture, "") != 0)
+				{
+					if(!dw_reg_num_mapping[prc_num]->Load(reg_num_mapping_filename.c_str(), architecture))
+					{
+						GetDebugWarningStream() << "Can't load DWARF register number mapping from \"" << reg_num_mapping_filename << "\"" << std::endl;
+						delete dw_reg_num_mapping[prc_num];
+						dw_reg_num_mapping[prc_num] = 0;
+					}
+				}
+				else
+				{
+					GetDebugWarningStream() << "Unknown architecture" << std::endl;
 					delete dw_reg_num_mapping[prc_num];
 					dw_reg_num_mapping[prc_num] = 0;
 				}
-			}
-			else
-			{
-				GetDebugWarningStream() << "Unknown architecture" << std::endl;
-				delete dw_reg_num_mapping[prc_num];
-				dw_reg_num_mapping[prc_num] = 0;
 			}
 		}
 	}
@@ -2424,21 +2422,13 @@ DWARF_RegisterNumberMapping *DWARF_Handler<MEMORY_ADDR>::GetRegisterNumberMappin
 template <class MEMORY_ADDR>
 unisim::service::interfaces::Registers *DWARF_Handler<MEMORY_ADDR>::GetRegistersInterface(unsigned int prc_num) const
 {
-	if(prc_num >= regs_if.size())
-	{
-		throw std::runtime_error("Internal error! processor number out-of-range while getting registers interface");
-	}
-	return regs_if[prc_num];
+	return (prc_num < regs_if.size()) ? regs_if[prc_num] : 0;
 }
 
 template <class MEMORY_ADDR>
 unisim::service::interfaces::Memory<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetMemoryInterface(unsigned int prc_num) const
 {
-	if(prc_num >= mem_if.size())
-	{
-		throw std::runtime_error("Internal error! processor number out-of-range while getting memory interface");
-	}
-	return mem_if[prc_num];
+	return (prc_num < mem_if.size()) ? mem_if[prc_num] : 0;
 }
 
 template <class MEMORY_ADDR>

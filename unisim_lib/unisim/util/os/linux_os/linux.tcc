@@ -239,8 +239,13 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(char const * const filenam
 
   // check that the file exists and that the elf loader can create a blob from it
   
-  typename unisim::util::loader::elf_loader::StdElf<ADDRESS_TYPE,PARAMETER_TYPE>::Loader loader(debug_info_stream, debug_warning_stream, debug_error_stream, regs_if_, mem_if_);
+  typename unisim::util::loader::elf_loader::StdElf<ADDRESS_TYPE,PARAMETER_TYPE>::Loader loader;
   
+  loader.SetDebugInfoStream(debug_info_stream);
+  loader.SetDebugWarningStream(debug_warning_stream);
+  loader.SetDebugErrorStream(debug_error_stream);
+  loader.SetRegistersInterface(/* prc_num */ 0, regs_if_);
+  loader.SetMemoryInterface(/* prc_num */ 0, mem_if_);
   loader.SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose_);
   loader.SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
   loader.SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf_);

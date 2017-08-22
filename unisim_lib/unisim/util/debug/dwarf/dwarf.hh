@@ -95,8 +95,7 @@ public:
 	void SetDebugInfoStream(std::ostream& debug_info_stream);
 	void SetDebugWarningStream(std::ostream& debug_warning_stream);
 	void SetDebugErrorStream(std::ostream& debug_error_stream);
-	void SetNumProcessors(unsigned int num_processor);
-	void SetRegisterInterface(unsigned int prc_num, unisim::service::interfaces::Registers *regs_if);
+	void SetRegistersInterface(unsigned int prc_num, unisim::service::interfaces::Registers *regs_if);
 	void SetMemoryInterface(unsigned int prc_num, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
 	
 	void SetOption(Option opt, const char *s);
@@ -221,7 +220,6 @@ private:
 // 	DWARF_RegisterNumberMapping *dw_reg_num_mapping;
 // 	unisim::service::interfaces::Registers *regs_if;
 // 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
-	unsigned int num_processors;
 	std::vector<DWARF_RegisterNumberMapping *> dw_reg_num_mapping;
 	std::vector<unisim::service::interfaces::Registers *> regs_if;
 	std::vector<unisim::service::interfaces::Memory<MEMORY_ADDR> *> mem_if;
