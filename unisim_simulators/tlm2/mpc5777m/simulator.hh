@@ -55,6 +55,7 @@
 #include <unisim/kernel/tlm2/simulator.hh>
 #include <unisim/util/backtrace/backtrace.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
+#include <unisim/service/debug/debugger/debugger.tcc>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/profiling/addr_profiler/profiler.hh>
@@ -117,12 +118,22 @@ private:
 	//===                       Constants definitions                       ===
 	//=========================================================================
 
+	static const unsigned int NUM_PROCESSORS = 3;
+	static const unsigned int MAX_FRONT_ENDS = 8;
+	
 	// Front Side Bus template parameters
 	static const unsigned int FSB_WIDTH = 8;
 	static const unsigned int FSB_BURST_SIZE = 32;
 	typedef uint32_t CPU_ADDRESS_TYPE;
 	typedef uint32_t FSB_ADDRESS_TYPE;
 	typedef uint32_t CPU_REG_TYPE;
+	
+	struct DEBUGGER_CONFIG
+	{
+		typedef CPU_ADDRESS_TYPE ADDRESS;
+		static const unsigned int NUM_PROCESSORS = 3;
+		static const unsigned int MAX_FRONT_ENDS = 8;
+	};
 
 	struct XBAR_0_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
 	{
@@ -266,6 +277,14 @@ private:
 	typedef unisim::kernel::tlm2::InitiatorStub<64> XBAR_1_M2_STUB;
 
 	//=========================================================================
+	//===                      Aliases for services classes                 ===
+	//=========================================================================
+
+	typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
+	typedef unisim::service::debug::inline_debugger::InlineDebugger<CPU_ADDRESS_TYPE> INLINE_DEBUGGER;
+	typedef unisim::service::debug::gdb_server::GDBServer<CPU_ADDRESS_TYPE> GDB_SERVER;
+	
+	//=========================================================================
 	//===                           Components                              ===
 	//=========================================================================
 	//  - PowerPC cores
@@ -310,11 +329,11 @@ private:
 	//  - Multiformat loader
 	MultiFormatLoader<CPU_ADDRESS_TYPE> *loader;
 	//  - Debugger
-	Debugger<CPU_ADDRESS_TYPE> *debugger;
+	DEBUGGER *debugger;
 	//  - GDB server
-	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
+	GDB_SERVER *gdb_server[NUM_PROCESSORS];
 	//  - Inline debugger
-	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger;
+	INLINE_DEBUGGER *inline_debugger[NUM_PROCESSORS];
 	//  - profiler
 	Profiler<CPU_ADDRESS_TYPE> *profiler;
 	//  - SystemC Time

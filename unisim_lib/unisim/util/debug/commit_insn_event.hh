@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012,
+ *  Copyright (c) 2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,9 +32,10 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_UTIL_DEBUG_EVENT_HH__
-#define __UNISIM_UTIL_DEBUG_EVENT_HH__
+#ifndef __UNISIM_UTIL_DEBUG_COMMIT_INSN_EVENT_HH__
+#define __UNISIM_UTIL_DEBUG_COMMIT_INSN_EVENT_HH__
 
+#include <unisim/util/debug/event.hh>
 #include <inttypes.h>
 #include <ostream>
 
@@ -42,35 +43,37 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-template <typename ADDRESS>
-class Event
+template <class ADDRESS> class CommitInsnEvent;
+
+template <class ADDRESS>
+std::ostream& operator << (std::ostream& os, const CommitInsnEvent<ADDRESS>& cie);
+
+template <class ADDRESS>
+class CommitInsnEvent : public Event<ADDRESS>
 {
 public:
-	typedef enum
+	CommitInsnEvent()
+		: Event<ADDRESS>(Event<ADDRESS>::EV_COMMIT_INSN)
+		, addr(0)
 	{
-		EV_UNKNOWN = 0,
-		EV_BREAKPOINT,
-		EV_WATCHPOINT,
-		EV_FETCH_INSN,
-		EV_COMMIT_INSN,
-		EV_TRAP
-	} Type;
+	}
+
+	void SetAddress(ADDRESS _addr) { addr = _addr; }
+
+	inline ADDRESS GetAddress() const { return addr; }
 	
-	Event(Type _type) : type(_type), prc_num(-1), front_end_num(-1), ref_count(0) { ref_count = new unsigned int(); *ref_count = 0; }
-	virtual ~Event() { delete ref_count; }
-	Type GetType() const { return type; }
-	int GetProcessorNumber() const { return prc_num; }
-	int GetFrontEndNumber() const { return front_end_num; }
-	void SetProcessorNumber(int _prc_num) { if((prc_num >= 0) || (_prc_num < 0)) return; prc_num = _prc_num; }
-	void SetFrontEndNumber(int _front_end_num) { if((front_end_num >= 0) || (_front_end_num < 0)) return; front_end_num = _front_end_num; }
-	void Catch() const { (*ref_count)++; }
-	void Release() const { if((*ref_count) && --(*ref_count) == 0) delete this; }
-private:
-	Type type;
-	int prc_num;
-	int front_end_num;
-	unsigned int *ref_count;
+	friend std::ostream& operator << <ADDRESS>(std::ostream& os, const CommitInsnEvent<ADDRESS>& cie);
+protected:
+	ADDRESS addr;
 };
+
+template <class ADDRESS>
+inline std::ostream& operator << (std::ostream& os, const CommitInsnEvent<ADDRESS>& cie)
+{
+	os << "Instruction commit at 0x" << std::hex << cie.addr << std::dec << " for processor #" << cie.GetProcessorNumber() << " and front-end #" << cie.GetFrontEndNumber();
+	
+	return os;
+}
 
 } // end of namespace debug
 } // end of namespace util

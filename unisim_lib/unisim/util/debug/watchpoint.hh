@@ -46,23 +46,23 @@ namespace util {
 namespace debug {
 
 
-template <class ADDRESS> class Watchpoint;
+template <typename ADDRESS> class Watchpoint;
 
-template <class ADDRESS>
+template <typename ADDRESS>
 std::ostream& operator << (std::ostream& os, const Watchpoint<ADDRESS>& wp);
 
-template <class ADDRESS>
+template <typename ADDRESS>
 class Watchpoint : public Event<ADDRESS>
 {
 public:
 
-	Watchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
+	Watchpoint(unisim::util::debug::MemoryAccessType _mat, unisim::util::debug::MemoryType _mt, ADDRESS _addr, uint32_t _size)
 		: Event<ADDRESS>(Event<ADDRESS>::EV_WATCHPOINT)
+		, mat(_mat)
+		, mt(_mt)
+		, addr(_addr)
+		, size(_size)
 	{
-		this->mat = mat;
-		this->mt = mt;
-		this->addr = addr;
-		this->size = size;
 	}
 
 	inline typename unisim::util::debug::MemoryAccessType GetMemoryAccessType() const { return mat; }
@@ -89,7 +89,7 @@ private:
 	uint32_t size;
 };
 
-template <class ADDRESS>
+template <typename ADDRESS>
 inline std::ostream& operator << (std::ostream& os, const Watchpoint<ADDRESS>& wp)
 {
 	switch(wp.mt)
@@ -114,7 +114,7 @@ inline std::ostream& operator << (std::ostream& os, const Watchpoint<ADDRESS>& w
 	{
 		os << "read";
 	}
-	os << " at 0x" << std::hex << wp.addr << std::dec << " (" << wp.size << " bytes) watchpoint";
+	os << " at 0x" << std::hex << wp.addr << std::dec << " (" << wp.size << " bytes) watchpoint for processor #" << wp.GetProcessorNumber() << " and front-end #" << wp.GetFrontEndNumber();
 	
 	return os;
 }

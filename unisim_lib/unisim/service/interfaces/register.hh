@@ -36,6 +36,7 @@
 #define __UNISIM_SERVICE_INTERFACES_REGISTER_HH__
 
 #include <unisim/kernel/service/service.hh>
+#include <inttypes.h>
 
 namespace unisim {
 namespace service {
@@ -48,6 +49,19 @@ struct Register : public unisim::kernel::service::ServiceInterface
 	virtual void SetValue(const void *buffer) = 0;
 	inline void Clear();
 	virtual int GetSize() const = 0;
+	
+	inline void GetValue(uint8_t& val) const { GetTypedValue(val); }
+	inline void SetValue(const uint8_t& val) { SetTypedValue(val); }
+	inline void GetValue(uint16_t& val) const { GetTypedValue(val); }
+	inline void SetValue(const uint16_t& val) { SetTypedValue(val); }
+	inline void GetValue(uint32_t& val) const { GetTypedValue(val); }
+	inline void SetValue(const uint32_t& val) { SetTypedValue(val); }
+	inline void GetValue(uint64_t& val) const { GetTypedValue(val); }
+	inline void SetValue(const uint64_t& val) { SetTypedValue(val); }
+	
+private:
+	template <typename T> void GetTypedValue(T& val) const;
+	template <typename T> void SetTypedValue(const T& val);
 };
 
 inline void Register::Clear()
@@ -56,6 +70,74 @@ inline void Register::Clear()
 	char zeros[size];
 	while (--size>=0) zeros[size] = 0;
 	SetValue(&zeros[0]);
+}
+
+template <typename T>
+void Register::GetTypedValue(T& val) const
+{
+	switch(GetSize())
+	{
+		case 1:
+			{
+				uint8_t val8;
+				this->GetValue(&val8);
+				val = val8;
+			}
+			break;
+		case 2:
+			{
+				uint16_t val16;
+				this->GetValue(&val16);
+				val = val16;
+			}
+			break;
+		case 4:
+			{
+				uint32_t val32;
+				this->GetValue(&val32);
+				val = val32;
+			}
+			break;
+		case 8:
+			{
+				uint64_t val64;
+				this->GetValue(&val64);
+				val = val64;
+			}
+			break;
+	}
+}
+
+template <typename T>
+void Register::SetTypedValue(const T& val)
+{
+	switch(GetSize())
+	{
+		case 1:
+			{
+				uint8_t val8 = val;
+				this->SetValue(&val8);
+			}
+			break;
+		case 2:
+			{
+				uint16_t val16 = val;
+				this->SetValue(&val16);
+			}
+			break;
+		case 4:
+			{
+				uint32_t val32 = val;
+				this->SetValue(&val32);
+			}
+			break;
+		case 8:
+			{
+				uint64_t val64 = val;
+				this->SetValue(&val64);
+			}
+			break;
+	}
 }
 
 } // end of namespace interfaces

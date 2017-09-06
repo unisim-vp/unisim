@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012,
+ *  Copyright (c) 2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,9 +32,10 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_UTIL_DEBUG_EVENT_HH__
-#define __UNISIM_UTIL_DEBUG_EVENT_HH__
+#ifndef __UNISIM_UTIL_DEBUG_TRAP_EVENT_HH__
+#define __UNISIM_UTIL_DEBUG_TRAP_EVENT_HH__
 
+#include <unisim/util/debug/event.hh>
 #include <inttypes.h>
 #include <ostream>
 
@@ -42,35 +43,45 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-template <typename ADDRESS>
-class Event
+template <class ADDRESS> class TrapEvent;
+
+template <class ADDRESS>
+std::ostream& operator << (std::ostream& os, const TrapEvent<ADDRESS>& te);
+
+template <class ADDRESS>
+class TrapEvent : public Event<ADDRESS>
 {
 public:
-	typedef enum
+	TrapEvent()
+		: Event<ADDRESS>(Event<ADDRESS>::EV_TRAP)
+		, obj(0)
+		, msg()
 	{
-		EV_UNKNOWN = 0,
-		EV_BREAKPOINT,
-		EV_WATCHPOINT,
-		EV_FETCH_INSN,
-		EV_COMMIT_INSN,
-		EV_TRAP
-	} Type;
+	}
+
+	inline void SetTrapObject(const unisim::kernel::service::Object *_obj) { obj = _obj; }
+	inline void SetTrapMessage(const std::string& _msg) { msg = _msg; }
+	inline void SetTrapMessage(const char * _msg) { msg = _msg; }
 	
-	Event(Type _type) : type(_type), prc_num(-1), front_end_num(-1), ref_count(0) { ref_count = new unsigned int(); *ref_count = 0; }
-	virtual ~Event() { delete ref_count; }
-	Type GetType() const { return type; }
-	int GetProcessorNumber() const { return prc_num; }
-	int GetFrontEndNumber() const { return front_end_num; }
-	void SetProcessorNumber(int _prc_num) { if((prc_num >= 0) || (_prc_num < 0)) return; prc_num = _prc_num; }
-	void SetFrontEndNumber(int _front_end_num) { if((front_end_num >= 0) || (_front_end_num < 0)) return; front_end_num = _front_end_num; }
-	void Catch() const { (*ref_count)++; }
-	void Release() const { if((*ref_count) && --(*ref_count) == 0) delete this; }
-private:
-	Type type;
-	int prc_num;
-	int front_end_num;
-	unsigned int *ref_count;
+	inline const unisim::kernel::service::Object *GetTrapObject() const { return obj; }
+	inline const std::string& GetTrapMessage() const { return msg; }
+	
+	friend std::ostream& operator << <ADDRESS>(std::ostream& os, const TrapEvent<ADDRESS>& te);
+protected:
+	const unisim::kernel::service::Object *obj;
+	std::string msg;
 };
+
+template <class ADDRESS>
+inline std::ostream& operator << (std::ostream& os, const TrapEvent<ADDRESS>& te)
+{
+	os << "trap";
+	if(te.obj) os << " from " << te.obj->GetName();
+	if(!te.msg.empty()) os << " with message \"" << te.msg << "\"";
+	os << " for processor #" << te.GetProcessorNumber() << " and front-end #" << te.GetFrontEndNumber();
+	
+	return os;
+}
 
 } // end of namespace debug
 } // end of namespace util

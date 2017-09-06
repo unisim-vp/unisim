@@ -39,6 +39,8 @@ namespace service {
 namespace debug {
 namespace gdb_server {
 
+bool GDBServerBase::killed = false;
+
 GDBRegister::GDBRegister()
 	: name()
 	, bitsize(0)
@@ -50,7 +52,7 @@ GDBRegister::GDBRegister()
 {
 }
 
-GDBRegister::GDBRegister(const string& reg_name, int reg_bitsize, GDBEndian reg_endian, unsigned int _reg_num, const std::string& _type, const std::string& _group)
+GDBRegister::GDBRegister(const std::string& reg_name, int reg_bitsize, GDBEndian reg_endian, unsigned int _reg_num, const std::string& _type, const std::string& _group)
 	: name(reg_name)
 	, bitsize(reg_bitsize)
 	, reg(0)
@@ -61,7 +63,7 @@ GDBRegister::GDBRegister(const string& reg_name, int reg_bitsize, GDBEndian reg_
 {
 }
 
-GDBRegister::GDBRegister(unisim::service::interfaces::Register *_reg, const string& reg_name, GDBEndian reg_endian, unsigned int _reg_num, const std::string& _type, const std::string& _group)
+GDBRegister::GDBRegister(unisim::service::interfaces::Register *_reg, const std::string& reg_name, GDBEndian reg_endian, unsigned int _reg_num, const std::string& _type, const std::string& _group)
 	: name(reg_name)
 	, bitsize(8 * _reg->GetSize())
 	, reg(_reg)
@@ -72,7 +74,7 @@ GDBRegister::GDBRegister(unisim::service::interfaces::Register *_reg, const stri
 {
 }
 
-bool GDBRegister::SetValue(const string& hex)
+bool GDBRegister::SetValue(const std::string& hex)
 {
 	int i;
 	unsigned int len = hex.length();
@@ -117,7 +119,7 @@ bool GDBRegister::SetValue(const void *buffer)
 	return reg != 0;
 }
 
-bool GDBRegister::GetValue(string& hex) const
+bool GDBRegister::GetValue(std::string& hex) const
 {
 	int i;
 	int size = bitsize / 8;
