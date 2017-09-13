@@ -84,10 +84,9 @@ struct L1D
 		{
 			switch(this->template Get<typename L1FINV0::CCMD>())
 			{
-				case 0x5:
+				case 0x5: // Flush & invalidate & clear lockout
 					l1d->ClearLockoutBySetAndWay(this->template Get<typename L1FINV0::CSET>(), this->template Get<typename L1FINV0::CWAY>());
-					break;
-				case 0x0:
+				case 0x0: // Flush & invalidate
 					l1d->InvalidateLineBySetAndWay(this->template Get<typename L1FINV0::CSET>(), this->template Get<typename L1FINV0::CWAY>());
 					break;
 				default:

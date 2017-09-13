@@ -39,6 +39,7 @@
 #include <unisim/util/xml/xml.hh>
 #include <unisim/service/interfaces/debug_event.hh>
 #include <unisim/service/interfaces/debug_yielding.hh>
+#include <unisim/service/interfaces/debug_selecting.hh>
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/registers.hh>
@@ -72,9 +73,18 @@ namespace service {
 namespace debug {
 namespace gdb_server {
 
-typedef enum { GDBSERVER_MODE_WAITING_GDB_CLIENT, GDBSERVER_MODE_PROCESSING_COMMANDS } GDBServerRunningMode;
+typedef enum
+{
+	GDB_WAIT_CONNECTION_NEVER        = 0,
+	GDB_WAIT_CONNECTION_STARTUP_ONLY = 1,
+	GDB_WAIT_CONNECTION_ALWAYS       = 2
+} GDBWaitConnectionMode;
 
-typedef enum { GDB_LITTLE_ENDIAN, GDB_BIG_ENDIAN } GDBEndian;
+typedef enum
+{
+	GDB_LITTLE_ENDIAN,
+	GDB_BIG_ENDIAN
+} GDBEndian;
 
 inline char Nibble2HexChar(uint8_t v)
 {
@@ -103,29 +113,27 @@ class GDBRegister
 public:
 	GDBRegister();
 	GDBRegister(const std::string& reg_name, int reg_bitsize, GDBEndian endian, unsigned int reg_num, const std::string& type, const std::string& group);
-	GDBRegister(unisim::service::interfaces::Register *reg, const std::string& reg_name, GDBEndian endian, unsigned int reg_num, const std::string& type, const std::string& group);
 	inline const char *GetName() const { return name.c_str(); }
 	inline int GetBitSize() const { return bitsize; }
 	inline int GetByteSize() const { return bitsize / 8; }
-	bool SetValue(const std::string& hex);
-	bool SetValue(const void *buffer);
-	bool GetValue(std::string& hex) const;
-	bool GetValue(void *buffer) const;
-	template <typename T> bool GetValue(T& v) const { if(reg) reg->GetValue(v); return reg != 0; }
-	template <typename T> bool SetValue(const T& v) { if(reg) reg->SetValue(v); return reg != 0; }
+	bool SetValue(unsigned int prc_num, const std::string& hex);
+	bool SetValue(unsigned int prc_num, const void *buffer);
+	bool GetValue(unsigned int prc_num, std::string& hex) const;
+	bool GetValue(unsigned int prc_num, void *buffer) const;
+	template <typename T> bool GetValue(unsigned int prc_num, T& v) const { unisim::service::interfaces::Register *reg = (prc_num < arch_regs.size()) ? arch_regs[prc_num] : 0; if(reg) reg->GetValue(v); return reg != 0; }
+	template <typename T> bool SetValue(unsigned int prc_num, const T& v) { unisim::service::interfaces::Register *reg = (prc_num < arch_regs.size()) ? arch_regs[prc_num] : 0; if(reg) reg->SetValue(v); return reg != 0; }
 	inline int GetHexLength() const { return bitsize / 4; }
-	inline unisim::service::interfaces::Register *GetRegisterInterface() { return reg; }
-	inline void SetRegisterInterface(unisim::service::interfaces::Register *reg) { this->reg = reg; }
+	inline unisim::service::interfaces::Register *GetRegisterInterface(unsigned int prc_num) { unisim::service::interfaces::Register *reg = (prc_num < arch_regs.size()) ? arch_regs[prc_num] : 0; return reg; }
+	void SetRegisterInterface(unsigned int prc_num, unisim::service::interfaces::Register *reg);
 	inline GDBEndian GetEndian() const { return endian; }
 	unsigned int GetRegNum() const { return reg_num; }
-	bool IsEmpty() const { return (bitsize == 0) and (not reg); }
 	const char *GetType() const { return type.c_str(); }
 	const char *GetGroup() const { return group.c_str(); }
 	std::ostream& ToXML(std::ostream& os, unsigned int reg_num) const;
 private:
 	std::string name;
 	int bitsize;
-	unisim::service::interfaces::Register *reg;
+	std::vector<unisim::service::interfaces::Register *> arch_regs;
 	GDBEndian endian;
 	unsigned int reg_num;
 	std::string type;
@@ -156,6 +164,7 @@ class GDBServer
 	: public GDBServerBase
 	, public unisim::kernel::service::Service<unisim::service::interfaces::DebugYielding>
 	, public unisim::kernel::service::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >
+	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugSelecting>
 	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugYieldingRequest>
 	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >
 	, public unisim::kernel::service::Client<unisim::service::interfaces::Memory<ADDRESS> >
@@ -164,7 +173,7 @@ class GDBServer
 	, public unisim::kernel::service::Client<unisim::service::interfaces::Registers>
 {
 public:
-	static const uint64_t SERVER_ACCEPT_POLL_PERIOD_MS      = 1000 /* ms */;  // every 1 sec
+	static const uint64_t SERVER_ACCEPT_POLL_PERIOD_MS      = 100  /* ms */;  // every 100 ms
 	static const uint64_t GDB_INTERRUPT_POLL_PERIOD_MS      = 100  /* ms */;  // every 100 ms
 	static const uint64_t NON_BLOCKING_READ_POLL_PERIOD_MS  = 10   /* ms */;  // every 10 ms
 	static const uint64_t NON_BLOCKING_WRITE_POLL_PERIOD_MS = 10   /* ms */;  // every 10 ms
@@ -173,6 +182,7 @@ public:
 	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_export;
 
 	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugYieldingRequest>         debug_yielding_request_import;
+	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugSelecting>               debug_selecting_import;
 	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >  debug_event_trigger_import;
 	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> >             memory_import;
 	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers>                    registers_import;
@@ -199,13 +209,21 @@ private:
 	bool VisitRegister(unisim::util::xml::Node *xml_node, GDBFeature *gdb_feature);
 	bool VisitProgramCounter(unisim::util::xml::Node *xml_node);
 	
+	bool ParseChar(const std::string& s, std::size_t& pos, char& value);
 	bool ParseHex(const std::string& s, std::size_t& pos, ADDRESS& value);
+	bool ParseSignedHex(const std::string& s, std::size_t& pos, long& value);
 	std::string GetLastErrorString();
 	bool GetChar(char& c, bool blocking);
 	bool PutChar(char c);
-	bool GetPacket(std::string& s, bool blocking);
-	bool PutPacket(const std::string& s);
+	bool GetPacket(char prefix, std::string& s, bool blocking);
+	bool PutPacket(char prefix, const std::string& s);
 	bool FlushOutput();
+	bool GetQuery(std::string& s, bool blocking);
+	bool PutReply(const std::string& s);
+	bool PutNotification(const std::string& s);
+	bool SetCThread(long thread_id);
+	bool SetCAllThreads();
+	bool SetGThread(long thread_id);
 	bool OutputText(const char *s, int count);
 	bool ReadRegisters();
 	bool WriteRegisters(const std::string& hex);
@@ -218,6 +236,7 @@ private:
 	bool ReportProgramExit();
 	bool ReportSignal(unsigned int signum);
 	bool ReportTracePointTrap();
+	void ClearStopEvents();
 	bool SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t kind);
 	bool RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t kind);
 
@@ -231,6 +250,7 @@ private:
 	void HandleQXferFeaturesRead(std::string command);
 	void HandleQfThreadInfo();
 	void HandleQsThreadInfo();
+	void HandleQThreadExtraInfo(std::string thread_id_string);
 	void HandleQRegisterInfo(std::string hex_reg_order_num); // LLDB specific
 
 	void Disasm(ADDRESS addr, unsigned int size);
@@ -241,8 +261,11 @@ private:
 	void Interrupt();
 	bool ListenFetch();
 	bool UnlistenFetch();
+	
+	bool ThreadIdToProcessorNumber(long thread_id, unsigned int& prc_num) const;
 
 	std::string EscapeString(const std::string& s) const;
+	std::string HexEncodeString(const std::string& s) const;
 
 	void DisplayMonitoredInternals();
 
@@ -262,6 +285,9 @@ private:
 	std::vector<GDBFeature *> gdb_features;
 	std::vector<GDBRegister *> gdb_registers;
 	GDBRegister *gdb_pc;
+	unsigned int num_processors;
+	unsigned int g_prc_num;
+	unsigned int c_prc_num;
 	unsigned int session_num;
 	bool sock_error;
 	bool session_terminated;
@@ -269,10 +295,8 @@ private:
 	bool listening_fetch;
 	bool trap;
 	bool synched;
-	GDBServerRunningMode running_mode;
 	bool extended_mode;
-	int32_t counter;
-	int32_t period;
+	bool multiprocess;
 	bool gdb_client_feature_multiprocess;
 	bool gdb_client_feature_xmlregisters;
 	bool gdb_client_feature_qrelocinsn;
@@ -283,14 +307,13 @@ private:
 	bool gdb_client_feature_exec_events;
 	bool gdb_client_feature_vcont;
 	bool gdb_client_feature_t32extensions;
-	unsigned int current_thread_id;
 	bool no_ack_mode;
 	std::map<uint32_t, uint32_t> arch_specific_breakpoint_kinds;
 	
-	unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event;
+	std::vector<unisim::util::debug::FetchInsnEvent<ADDRESS> *> fetch_insn_events;
 	
-	ADDRESS cia;
-
+	std::vector<const unisim::util::debug::Event<ADDRESS> *> stop_events;
+	
 	unsigned int input_buffer_size;
 	unsigned int input_buffer_index;
 	char input_buffer[MAX_BUFFER_SIZE];
@@ -302,7 +325,7 @@ private:
 	bool verbose;
 	bool debug;
 	std::string monitor_internals;
-	bool wait_for_connection_at_startup;
+	GDBWaitConnectionMode wait_connection_mode;
 
 	unisim::kernel::service::Parameter<unsigned int> param_memory_atom_size;
 	unisim::kernel::service::Parameter<int> param_tcp_port;
@@ -310,7 +333,7 @@ private:
 	unisim::kernel::service::Parameter<bool> param_verbose;
 	unisim::kernel::service::Parameter<bool> param_debug;
 	unisim::kernel::service::Parameter<std::string> param_monitor_internals;
-	unisim::kernel::service::Parameter<bool> param_wait_for_connection_at_startup;
+	unisim::kernel::service::Parameter<GDBWaitConnectionMode> param_wait_connection_mode;
 
 	///////////////////////////////////
 	

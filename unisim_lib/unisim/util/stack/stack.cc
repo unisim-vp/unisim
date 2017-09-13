@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017,
+ *  Copyright (c) 2007,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,25 +31,31 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#ifndef __UNISIM_SERVICE_INTERFACES_DEBUG_SELECTING_HH__
-#define __UNISIM_SERVICE_INTERFACES_DEBUG_SELECTING_HH__
 
-#include <unisim/kernel/service/service.hh>
+#include <unisim/util/stack/stack.hh>
+
+#include <sstream>
 
 namespace unisim {
-namespace service {
-namespace interfaces {
+namespace util {
+namespace stack {
 
-class DebugSelecting : public unisim::kernel::service::ServiceInterface
+StackException::StackException(const char *reason, const char *filename, const char *func, unsigned int lineno)
 {
-public:
-	virtual bool DebugSelect(unsigned int prc_num) = 0;
-	virtual unsigned int DebugGetSelected() const = 0;
-};
+	std::stringstream sstr;
+	sstr << reason << " at " << filename << ":Stack<>::" << func << "():line " << lineno;
+	what_str = sstr.str();
+}
 
-} // end of namespace interfaces
-} // end of namespace service
+StackException::~StackException() throw()
+{
+}
+
+const char *StackException::what () const throw ()
+{
+	return what_str.c_str();
+}
+
+} // end of namespace stack
+} // end of namespace util
 } // end of namespace unisim
-
-#endif

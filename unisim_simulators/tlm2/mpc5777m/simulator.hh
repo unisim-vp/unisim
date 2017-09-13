@@ -119,7 +119,7 @@ private:
 	//=========================================================================
 
 	static const unsigned int NUM_PROCESSORS = 3;
-	static const unsigned int MAX_FRONT_ENDS = 8;
+	static const unsigned int MAX_FRONT_ENDS = 6;
 	
 	// Front Side Bus template parameters
 	static const unsigned int FSB_WIDTH = 8;

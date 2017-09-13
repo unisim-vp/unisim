@@ -667,6 +667,14 @@ bool Debugger<CONFIG>::DebugSelect(unsigned int front_end_num, unsigned int prc_
 	return true;
 }
 
+template <typename CONFIG>
+unsigned int Debugger<CONFIG>::DebugGetSelected(unsigned int front_end_num) const
+{
+	if(front_end_num >= MAX_FRONT_ENDS) return 0;
+	
+	return sel_prc_gate[front_end_num]->GetProcessorNumber();
+}
+
 // unisim::service::interfaces::DebugYieldingRequest (tagged)
 template <typename CONFIG>
 void Debugger<CONFIG>::DebugYieldRequest(unsigned int front_end_num)

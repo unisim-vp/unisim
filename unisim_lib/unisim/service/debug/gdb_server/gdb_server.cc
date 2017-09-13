@@ -44,7 +44,7 @@ bool GDBServerBase::killed = false;
 GDBRegister::GDBRegister()
 	: name()
 	, bitsize(0)
-	, reg(0)
+	, arch_regs()
 	, endian(GDB_LITTLE_ENDIAN)
 	, reg_num(0)
 	, type()
@@ -55,7 +55,7 @@ GDBRegister::GDBRegister()
 GDBRegister::GDBRegister(const std::string& reg_name, int reg_bitsize, GDBEndian reg_endian, unsigned int _reg_num, const std::string& _type, const std::string& _group)
 	: name(reg_name)
 	, bitsize(reg_bitsize)
-	, reg(0)
+	, arch_regs()
 	, endian(reg_endian)
 	, reg_num(_reg_num)
 	, type(_type)
@@ -63,6 +63,7 @@ GDBRegister::GDBRegister(const std::string& reg_name, int reg_bitsize, GDBEndian
 {
 }
 
+#if 0
 GDBRegister::GDBRegister(unisim::service::interfaces::Register *_reg, const std::string& reg_name, GDBEndian reg_endian, unsigned int _reg_num, const std::string& _type, const std::string& _group)
 	: name(reg_name)
 	, bitsize(8 * _reg->GetSize())
@@ -73,8 +74,19 @@ GDBRegister::GDBRegister(unisim::service::interfaces::Register *_reg, const std:
 	, group(_group)
 {
 }
+#endif
 
-bool GDBRegister::SetValue(const std::string& hex)
+void GDBRegister::SetRegisterInterface(unsigned int prc_num, unisim::service::interfaces::Register *reg)
+{
+	if(prc_num >= arch_regs.size())
+	{
+		arch_regs.resize(prc_num + 1);
+	}
+	
+	arch_regs[prc_num] = reg;
+}
+
+bool GDBRegister::SetValue(unsigned int prc_num, const std::string& hex)
 {
 	int i;
 	unsigned int len = hex.length();
@@ -109,17 +121,19 @@ bool GDBRegister::SetValue(const std::string& hex)
 		}
 	}
 
+	unisim::service::interfaces::Register *reg = arch_regs[prc_num];
 	if(reg)	reg->SetValue(&value);
 	return reg != 0;
 }
 
-bool GDBRegister::SetValue(const void *buffer)
+bool GDBRegister::SetValue(unsigned int prc_num, const void *buffer)
 {
+	unisim::service::interfaces::Register *reg = arch_regs[prc_num];
 	if(reg) reg->SetValue(buffer);
 	return reg != 0;
 }
 
-bool GDBRegister::GetValue(std::string& hex) const
+bool GDBRegister::GetValue(unsigned int prc_num, std::string& hex) const
 {
 	int i;
 	int size = bitsize / 8;
@@ -128,7 +142,8 @@ bool GDBRegister::GetValue(std::string& hex) const
 	hex.erase();
 	
 	memset(value, 0, size);
-	
+
+	unisim::service::interfaces::Register *reg = arch_regs[prc_num];
 	if(reg)
 	{
 		reg->GetValue(&value);
@@ -177,10 +192,11 @@ bool GDBRegister::GetValue(std::string& hex) const
 	return reg != 0;
 }
 
-bool GDBRegister::GetValue(void *buffer) const
+bool GDBRegister::GetValue(unsigned int prc_num, void *buffer) const
 {
 	int size = bitsize / 8;
 	memset(buffer, 0, size);
+	unisim::service::interfaces::Register *reg = arch_regs[prc_num];
 	if(reg)
 		reg->GetValue(buffer);
 	return reg != 0;
@@ -265,3 +281,144 @@ std::ostream& GDBFeature::ToXML(std::ostream& os, std::string req_filename) cons
 } // end of namespace debug
 } // end of namespace service
 } // end of namespace unisim
+
+namespace unisim {
+namespace kernel {
+namespace service {
+
+using unisim::service::debug::gdb_server::GDBWaitConnectionMode;
+using unisim::service::debug::gdb_server::GDB_WAIT_CONNECTION_NEVER;
+using unisim::service::debug::gdb_server::GDB_WAIT_CONNECTION_STARTUP_ONLY;
+using unisim::service::debug::gdb_server::GDB_WAIT_CONNECTION_ALWAYS;
+
+template <> Variable<GDBWaitConnectionMode>::Variable(const char *_name, Object *_object, GDBWaitConnectionMode& _storage, Type type, const char *_description) :
+	VariableBase(_name, _object, type, _description), storage(&_storage)
+{
+	Simulator::simulator->Initialize(this);
+	AddEnumeratedValue("never");
+	AddEnumeratedValue("startup-only");
+	AddEnumeratedValue("always");
+}
+
+template <>
+const char *Variable<GDBWaitConnectionMode>::GetDataTypeName() const
+{
+	return "gdb-wait-connection-mode";
+}
+
+template <>
+unsigned int Variable<GDBWaitConnectionMode>::GetBitSize() const
+{
+	return 2;
+}
+
+template <> Variable<GDBWaitConnectionMode>::operator bool () const { return *storage != GDB_WAIT_CONNECTION_NEVER; }
+template <> Variable<GDBWaitConnectionMode>::operator long long () const { return *storage; }
+template <> Variable<GDBWaitConnectionMode>::operator unsigned long long () const { return *storage; }
+template <> Variable<GDBWaitConnectionMode>::operator double () const { return (double)(*storage); }
+template <> Variable<GDBWaitConnectionMode>::operator string () const
+{
+	switch(*storage)
+	{
+		case GDB_WAIT_CONNECTION_NEVER: return std::string("never");
+		case GDB_WAIT_CONNECTION_STARTUP_ONLY: return std::string("startup-only");
+		case GDB_WAIT_CONNECTION_ALWAYS: return std::string("always");
+	}
+	return std::string("?");
+}
+
+template <> VariableBase& Variable<GDBWaitConnectionMode>::operator = (bool value)
+{
+	if(IsMutable())
+	{
+		GDBWaitConnectionMode tmp = *storage;
+		switch((unsigned int) value)
+		{
+			case GDB_WAIT_CONNECTION_NEVER:
+			case GDB_WAIT_CONNECTION_STARTUP_ONLY:
+			case GDB_WAIT_CONNECTION_ALWAYS:
+				tmp = (GDBWaitConnectionMode)(unsigned int) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<GDBWaitConnectionMode>::operator = (long long value)
+{
+	if(IsMutable())
+	{
+		GDBWaitConnectionMode tmp = *storage;
+		switch(value)
+		{
+			case GDB_WAIT_CONNECTION_NEVER:
+			case GDB_WAIT_CONNECTION_STARTUP_ONLY:
+			case GDB_WAIT_CONNECTION_ALWAYS:
+				tmp = (GDBWaitConnectionMode) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<GDBWaitConnectionMode>::operator = (unsigned long long value)
+{
+	if(IsMutable())
+	{
+		GDBWaitConnectionMode tmp = *storage;
+		switch(value)
+		{
+			case GDB_WAIT_CONNECTION_NEVER:
+			case GDB_WAIT_CONNECTION_STARTUP_ONLY:
+			case GDB_WAIT_CONNECTION_ALWAYS:
+				tmp = (GDBWaitConnectionMode) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<GDBWaitConnectionMode>::operator = (double value)
+{
+	if(IsMutable())
+	{
+		GDBWaitConnectionMode tmp = *storage;
+		switch((unsigned int) value)
+		{
+			case GDB_WAIT_CONNECTION_NEVER:
+			case GDB_WAIT_CONNECTION_STARTUP_ONLY:
+			case GDB_WAIT_CONNECTION_ALWAYS:
+				tmp = (GDBWaitConnectionMode)(unsigned int) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<GDBWaitConnectionMode>::operator = (const char *value)
+{
+	if(IsMutable())
+	{
+		GDBWaitConnectionMode tmp = *storage;
+		if(std::string(value) == std::string("never")) tmp = GDB_WAIT_CONNECTION_NEVER;
+		else if(std::string(value) == std::string("startup-only")) tmp = GDB_WAIT_CONNECTION_STARTUP_ONLY;
+		else if(std::string(value) == std::string("always")) tmp = GDB_WAIT_CONNECTION_ALWAYS;
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template class Variable<GDBWaitConnectionMode>;
+
+} // end of service namespace
+} // end of kernel namespace
+} // end of unisim namespace

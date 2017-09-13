@@ -157,6 +157,7 @@ private:
 
 	// unisim::service::interfaces::DebugSelecting (tagged)
 	bool DebugSelect(unsigned int front_end_num, unsigned int prc_num);
+	unsigned int DebugGetSelected(unsigned int front_end_num) const;
 
 	// unisim::service::interfaces::DebugEventTrigger<ADDRESS> (tagged)
 	bool Listen(unsigned int front_end_num, unisim::util::debug::Event<ADDRESS> *event);
@@ -425,6 +426,7 @@ private:
 
 		// unisim::service::interfaces::DebugSelecting
 		virtual bool DebugSelect(unsigned int prc_num) { return dbg.DebugSelect(id, prc_num); }
+		virtual unsigned int DebugGetSelected() const { return dbg.DebugGetSelected(id); }
 		
 		// unisim::service::interfaces::DebugEventTrigger<ADDRESS>
 		virtual bool Listen(unisim::util::debug::Event<ADDRESS> *event) { return dbg.Listen(id, event); }

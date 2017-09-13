@@ -1533,33 +1533,35 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		
 		for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
 		{
-			*debugger->debug_event_listener_import[prc_num]         >> inline_debugger[prc_num]->debug_event_listener_export;
-			*debugger->debug_yielding_import      [prc_num]         >> inline_debugger[prc_num]->debug_yielding_export;
-			inline_debugger[prc_num]->debug_yielding_request_import >> *debugger->debug_yielding_request_export[prc_num];
-			inline_debugger[prc_num]->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[prc_num];
-			inline_debugger[prc_num]->disasm_import                 >> *debugger->disasm_export[prc_num];
-			inline_debugger[prc_num]->memory_import                 >> *debugger->memory_export[prc_num];
-			inline_debugger[prc_num]->registers_import              >> *debugger->registers_export[prc_num];
-			inline_debugger[prc_num]->stmt_lookup_import            >> *debugger->stmt_lookup_export[prc_num];
-			inline_debugger[prc_num]->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[prc_num];
-			inline_debugger[prc_num]->backtrace_import              >> *debugger->backtrace_export[prc_num];
-			inline_debugger[prc_num]->debug_info_loading_import     >> *debugger->debug_info_loading_export[prc_num];
-			inline_debugger[prc_num]->data_object_lookup_import     >> *debugger->data_object_lookup_export[prc_num];
-			inline_debugger[prc_num]->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[prc_num];
-			inline_debugger[prc_num]->profiling_import              >> profiler->profiling_export;
+			*debugger->debug_event_listener_import[NUM_PROCESSORS + prc_num] >> inline_debugger[prc_num]->debug_event_listener_export;
+			*debugger->debug_yielding_import[NUM_PROCESSORS + prc_num]       >> inline_debugger[prc_num]->debug_yielding_export;
+			inline_debugger[prc_num]->debug_yielding_request_import          >> *debugger->debug_yielding_request_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->debug_event_trigger_import             >> *debugger->debug_event_trigger_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->disasm_import                          >> *debugger->disasm_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->memory_import                          >> *debugger->memory_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->registers_import                       >> *debugger->registers_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->stmt_lookup_import                     >> *debugger->stmt_lookup_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->symbol_table_lookup_import             >> *debugger->symbol_table_lookup_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->backtrace_import                       >> *debugger->backtrace_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->debug_info_loading_import              >> *debugger->debug_info_loading_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->data_object_lookup_import              >> *debugger->data_object_lookup_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->subprogram_lookup_import               >> *debugger->subprogram_lookup_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->profiling_import                       >> profiler->profiling_export;
 		}
 	}
-	else if(enable_gdb_server)
+	
+	if(enable_gdb_server)
 	{
 		// Connect gdb-server to debugger
 		for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
 		{
-			*debugger->debug_yielding_import[prc_num] >> gdb_server[prc_num]->debug_yielding_export;
-			*debugger->debug_event_listener_import[prc_num] >> gdb_server[prc_num]->debug_event_listener_export;
+			*debugger->debug_yielding_import[prc_num]          >> gdb_server[prc_num]->debug_yielding_export;
+			*debugger->debug_event_listener_import[prc_num]    >> gdb_server[prc_num]->debug_event_listener_export;
 			gdb_server[prc_num]->debug_yielding_request_import >> *debugger->debug_yielding_request_export[prc_num];
-			gdb_server[prc_num]->debug_event_trigger_import >> *debugger->debug_event_trigger_export[prc_num];
-			gdb_server[prc_num]->memory_import >> *debugger->memory_export[prc_num];
-			gdb_server[prc_num]->registers_import >> *debugger->registers_export[prc_num];
+			gdb_server[prc_num]->debug_selecting_import        >> *debugger->debug_selecting_export[prc_num];
+			gdb_server[prc_num]->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[prc_num];
+			gdb_server[prc_num]->memory_import                 >> *debugger->memory_export[prc_num];
+			gdb_server[prc_num]->registers_import              >> *debugger->registers_export[prc_num];
 		}
 	}
 
@@ -1888,6 +1890,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("debugger.sel-cpu[0]", 0);
 	simulator->SetVariable("debugger.sel-cpu[1]", 1);
 	simulator->SetVariable("debugger.sel-cpu[2]", 2);
+	simulator->SetVariable("debugger.sel-cpu[3]", 0);
+	simulator->SetVariable("debugger.sel-cpu[4]", 1);
+	simulator->SetVariable("debugger.sel-cpu[5]", 2);
 }
 
 void Simulator::Run()

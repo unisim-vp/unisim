@@ -195,7 +195,7 @@ bool InlineDebugger<ADDRESS>::EndSetup()
 		LoadMacro(init_macro.c_str());
 	}
 	
-	if(!ListenFetch()) return false;
+	Interrupt();
 	
 	if(!registers_import) return false;
 	
@@ -325,31 +325,30 @@ void InlineDebugger<ADDRESS>::DebugYield()
 		{
 			DeleteBreakpoint(cont_until_addr);
 		}
-		
-		ListenFetch();
 	}
-	else
+	else if(running_mode == INLINE_DEBUGGER_MODE_STEP)
 	{
-		if(running_mode == INLINE_DEBUGGER_MODE_RESET)
-		{
-			running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
-			return;
-		}
-		
-		if(running_mode == INLINE_DEBUGGER_MODE_STEP)
-		{
-			const unisim::util::debug::Statement<ADDRESS> *stmt = FindStatement(cia);
-			if(!stmt || !stmt->IsBeginningOfSourceStatement() || (stmt == last_stmt)) return;
-		}
+		const unisim::util::debug::Statement<ADDRESS> *stmt = FindStatement(cia);
+		if(!stmt || !stmt->IsBeginningOfSourceStatement() || (stmt == last_stmt)) return;
 	}
 
+	if(running_mode == INLINE_DEBUGGER_MODE_STEP)
+	{
+		UnlistenFetch();
+	}
+		
 	PrintTrackedDataObjects();
 	
 	Disasm(cia, 1, next_addr);
 
-	if ((running_mode == INLINE_DEBUGGER_MODE_TRAVERSE) && IsVisited(cia))
+	if(running_mode == INLINE_DEBUGGER_MODE_TRAVERSE)
 	{
-		return;
+		if(IsVisited(cia))
+		{
+			return;
+		}
+		
+		UnlistenFetch();
 	}
 	
 	while(1)
@@ -424,6 +423,7 @@ void InlineDebugger<ADDRESS>::DebugYield()
 				{
 					running_mode = INLINE_DEBUGGER_MODE_STEP_INSTRUCTION;
 					if(interactive) last_line = line;
+					ListenFetch();
 					return;
 				}
 
@@ -431,6 +431,7 @@ void InlineDebugger<ADDRESS>::DebugYield()
 				{
 					running_mode = INLINE_DEBUGGER_MODE_TRAVERSE;
 					if(interactive) last_line = line;
+					ListenFetch();
 					return;
 				}
 
@@ -439,6 +440,7 @@ void InlineDebugger<ADDRESS>::DebugYield()
 					running_mode = INLINE_DEBUGGER_MODE_STEP;
 					if(interactive) last_line = line;
 					last_stmt = FindStatement(cia);
+					ListenFetch();
 					return;
 				}
 
@@ -456,7 +458,7 @@ void InlineDebugger<ADDRESS>::DebugYield()
 						cont_until_addr = cont_addr;
 						SetBreakpoint(cont_until_addr);
 					}
-					UnlistenFetch();
+// 					UnlistenFetch();
 					return;
 				}
 
@@ -464,7 +466,7 @@ void InlineDebugger<ADDRESS>::DebugYield()
 				{
 					running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
 					
-					UnlistenFetch();
+					//UnlistenFetch();
 					
 					if(interactive) last_line = line;
 					return;
@@ -746,7 +748,7 @@ void InlineDebugger<ADDRESS>::DebugYield()
 					if(interactive) last_line = line;
 					cont_until_addr = cont_addr;
 					SetBreakpoint(cont_until_addr);
-					UnlistenFetch();
+					//UnlistenFetch();
 					return;
 				}
 				
