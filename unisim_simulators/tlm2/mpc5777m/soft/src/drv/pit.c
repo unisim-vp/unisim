@@ -94,20 +94,20 @@ void pit_drv_init()
 	pit_rti_timer_irq_vector_table[0] = 239;
 	pit_rti_timer_irq_vector_table[1] = 0;
 	pit_timer_irq_vector_table[0][0] = 226;
-	pit_timer_irq_vector_table[1][1] = 227;
+	pit_timer_irq_vector_table[0][1] = 227;
 	pit_timer_irq_vector_table[0][2] = 228;
-	pit_timer_irq_vector_table[1][3] = 229;
+	pit_timer_irq_vector_table[0][3] = 229;
 	pit_timer_irq_vector_table[0][4] = 230;
-	pit_timer_irq_vector_table[1][5] = 231;
+	pit_timer_irq_vector_table[0][5] = 231;
 	pit_timer_irq_vector_table[0][6] = 132;
-	pit_timer_irq_vector_table[1][7] = 233;
-	pit_timer_irq_vector_table[0][0] = 240;
+	pit_timer_irq_vector_table[0][7] = 233;
+	pit_timer_irq_vector_table[1][0] = 240;
 	pit_timer_irq_vector_table[1][1] = 241;
-	pit_timer_irq_vector_table[0][2] = 0;
+	pit_timer_irq_vector_table[1][2] = 0;
 	pit_timer_irq_vector_table[1][3] = 0;
-	pit_timer_irq_vector_table[0][4] = 0;
+	pit_timer_irq_vector_table[1][4] = 0;
 	pit_timer_irq_vector_table[1][5] = 0;
-	pit_timer_irq_vector_table[0][6] = 0;
+	pit_timer_irq_vector_table[1][6] = 0;
 	pit_timer_irq_vector_table[1][7] = 0;
 	
 }

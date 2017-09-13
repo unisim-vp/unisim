@@ -42,7 +42,7 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
-#include <unisim/service/interfaces/debug_control.hh>
+#include <unisim/service/interfaces/debug_yielding.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/service/interfaces/linux_os.hh>
@@ -423,7 +423,7 @@ private:
 template <typename TYPES, typename CONFIG>
 class CPU
 	: public unisim::kernel::service::Client<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::ADDRESS> >
-	, public unisim::kernel::service::Client<typename unisim::service::interfaces::DebugControl<typename TYPES::ADDRESS> >
+	, public unisim::kernel::service::Client<typename unisim::service::interfaces::DebugYielding>
 	, public unisim::kernel::service::Client<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::ADDRESS> >
 	, public unisim::kernel::service::Client<typename unisim::service::interfaces::TrapReporting>
 	, public unisim::kernel::service::Service<typename unisim::service::interfaces::MemoryAccessReportingControl>
@@ -434,7 +434,7 @@ public:
 	/////////////////////////// service imports ///////////////////////////////
 
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::SymbolTableLookup<typename TYPES::ADDRESS> > symbol_table_lookup_import;
-	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::DebugControl<typename TYPES::ADDRESS> > debug_control_import;
+	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::DebugYielding> debug_yielding_import;
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::MemoryAccessReporting<typename TYPES::ADDRESS> > memory_access_reporting_import;
 	unisim::kernel::service::ServiceImport<typename unisim::service::interfaces::TrapReporting> trap_reporting_import;
 	

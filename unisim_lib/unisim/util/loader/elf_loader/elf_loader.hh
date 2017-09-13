@@ -79,12 +79,18 @@ class ElfLoaderImpl
 {
 public:
 	
-	ElfLoaderImpl(std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if, const unisim::util::blob::Blob<MEMORY_ADDR> *blob = 0);
+	ElfLoaderImpl(const unisim::util::blob::Blob<MEMORY_ADDR> *blob = 0);
 	virtual ~ElfLoaderImpl();
 	
 	bool Load();
 	void ParseSymbols();
 	
+	void SetDebugInfoStream(std::ostream& debug_info_stream);
+	void SetDebugWarningStream(std::ostream& debug_warning_stream);
+	void SetDebugErrorStream(std::ostream& debug_error_stream);
+	void SetRegistersInterface(unsigned int prc_num, unisim::service::interfaces::Registers *regs_if);
+	void SetMemoryInterface(unsigned int prc_num, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
+
 	void SetOption(Option opt, MEMORY_ADDR addr);
 	void SetOption(Option opt, const char *s);
 	void SetOption(Option opt, bool flag);
@@ -107,18 +113,18 @@ public:
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const;
 
-	std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
-	bool GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
+	std::vector<MEMORY_ADDR> *GetBackTrace(unsigned int prc_num, MEMORY_ADDR pc) const;
+	bool GetReturnAddress(unsigned int prc_num, MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
 	
-	unisim::util::debug::DataObject<MEMORY_ADDR> *GetDataObject(const char *data_object_name, const char *filename  = 0, const char *compilation_unit_name = 0) const;
-	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(const char *data_object_name, MEMORY_ADDR pc) const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *GetDataObject(unsigned int prc_num, const char *data_object_name, const char *filename  = 0, const char *compilation_unit_name = 0) const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(unsigned int prc_num, const char *data_object_name, MEMORY_ADDR pc) const;
 	void EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
 	
-	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
+	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(unsigned int prc_num, const char *subprogram_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
 private:
-	std::ostream& debug_info_stream;
-	std::ostream& debug_warning_stream;
-	std::ostream& debug_error_stream;
+	std::ostream *debug_info_stream;
+	std::ostream *debug_warning_stream;
+	std::ostream *debug_error_stream;
 	std::string filename;
 	MEMORY_ADDR base_addr;
 	bool force_base_addr;
@@ -128,8 +134,8 @@ private:
 	const unisim::util::blob::Blob<MEMORY_ADDR> *const_blob;
 	ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym> *symtab_handler;
 	unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *dw_handler;
-	unisim::service::interfaces::Registers *regs_if;
-	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
+	std::vector<unisim::service::interfaces::Registers *> regs_if;
+	std::vector<unisim::service::interfaces::Memory<MEMORY_ADDR> *> mem_if;
 	std::string dwarf_to_html_output_directory;
 	std::string dwarf_to_xml_output_filename;
 	std::string dwarf_register_number_mapping_filename;
@@ -173,6 +179,11 @@ private:
 	void DumpRawData(const void *content, MEMORY_ADDR size);
 	const char *GetArchitecture(const Elf_Ehdr *hdr) const;
 	uint8_t GetAddressSize(const Elf_Ehdr *hdr) const;
+	std::ostream& GetDebugInfoStream() const;
+	std::ostream& GetDebugWarningStream() const;
+	std::ostream& GetDebugErrorStream() const;
+	unisim::service::interfaces::Registers *GetRegistersInterface(unsigned int prc_num = 0) const;
+	unisim::service::interfaces::Memory<MEMORY_ADDR> *GetMemoryInterface(unsigned int prc_num = 0) const;
 };
 
 // base template traits for standard ElfLoaderImpl declination

@@ -53,18 +53,47 @@ namespace unisim {
 namespace kernel {
 namespace tlm2 {
 
-inline const sc_core::sc_time& AlignToClock(sc_core::sc_time& time_stamp, sc_core::sc_time& clk_cycle_time)
+inline const sc_core::sc_time& AlignToClock(sc_core::sc_time& time_stamp, sc_core::sc_time& clock_period, const sc_core::sc_time& clock_start_time = sc_core::SC_ZERO_TIME, bool clock_posedge_first = true, double clock_duty_cycle = 0.5)
 {
+#if 0
 	sc_core::sc_time skew(time_stamp);
-	skew %= clk_cycle_time;
+	skew %= clock_period;
 	
 	if(skew != sc_core::SC_ZERO_TIME)
 	{
-		time_stamp += clk_cycle_time;
+		time_stamp += clock_period;
 		time_stamp -= skew;
 	}
 	
 	return time_stamp;
+#else
+	sc_core::sc_time first_pos_edge_time(clock_start_time);
+	if(!clock_posedge_first)
+	{
+		sc_core::sc_time neg_to_pos_edge_time(clock_period);
+		neg_to_pos_edge_time *= (1.0 - clock_duty_cycle);
+		first_pos_edge_time += neg_to_pos_edge_time;
+	}
+
+	if(time_stamp > first_pos_edge_time)
+	{
+		sc_core::sc_time skew(time_stamp);
+		skew -= first_pos_edge_time;
+		skew %= clock_period;
+		
+		if(skew != sc_core::SC_ZERO_TIME)
+		{
+			time_stamp += clock_period;
+			time_stamp -= skew;
+		}
+	}
+	else
+	{
+		time_stamp = first_pos_edge_time;
+	}
+	
+	return time_stamp;
+#endif
 }
 
 class ManagedPayload

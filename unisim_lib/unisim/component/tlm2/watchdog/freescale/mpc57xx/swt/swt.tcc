@@ -77,9 +77,6 @@ template <typename CONFIG>
 const uint32_t SWT<CONFIG>::MIN_DOWN_COUNTER_LOAD_VALUE;
 
 template <typename CONFIG>
-const sc_dt::int64 SWT<CONFIG>::DOWN_COUNTER_RUN_MIN_PERIOD;
-
-template <typename CONFIG>
 SWT<CONFIG>::SWT(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_core::sc_module(name)
@@ -117,12 +114,16 @@ SWT<CONFIG>::SWT(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	, gen_irq_event("gen_irq_event")
 	, reset_level(false)
 	, gen_reset_event("gen_reset_event")
+	, max_time_to_next_down_counter_run(1.0, sc_core::SC_MS)
 	, last_down_counter_run_time(sc_core::SC_ZERO_TIME)
 	, down_counter_run_event("down_counter_run_event")
 	, freeze(false)
-	, cycle_time(10.0, sc_core::SC_NS)
-	, watchdog_down_counter_cycle_time(62500, sc_core::SC_PS) // 16 MHz internal clock
-	, param_watchdog_down_counter_cycle_time("watchdog-down-counter-cycle-time", this, watchdog_down_counter_cycle_time, "Watchdog down counter cycle time")
+	, master_clock_period(10.0, sc_core::SC_NS)
+	, master_clock_start_time(sc_core::SC_ZERO_TIME)
+	, master_clock_posedge_first(true)
+	, master_clock_duty_cycle(0.5)
+	, watchdog_clock_period(62500, sc_core::SC_PS) // 16 MHz internal clock
+	, param_watchdog_clock_period("watchdog-down-counter-cycle-time", this, watchdog_clock_period, "Watchdog down counter cycle time")
 {
 	peripheral_slave_if(*this);
 	
@@ -194,6 +195,7 @@ void SWT<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_tim
 	sc_core::sc_event completion_event;
 	sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 	notify_time_stamp += t;
+	unisim::kernel::tlm2::AlignToClock(notify_time_stamp, master_clock_period, master_clock_start_time, master_clock_posedge_first, master_clock_duty_cycle);
 	Event *event = schedule.AllocEvent();
 	event->SetPayload(&payload);
 	event->SetTimeStamp(notify_time_stamp);
@@ -261,6 +263,7 @@ tlm::tlm_sync_enum SWT<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& payloa
 			{
 				sc_core::sc_time notify_time_stamp(sc_core::sc_time_stamp());
 				notify_time_stamp += t;
+				unisim::kernel::tlm2::AlignToClock(notify_time_stamp, master_clock_period, master_clock_start_time, master_clock_posedge_first, master_clock_duty_cycle);
 				Event *event = schedule.AllocEvent();
 				event->SetPayload(&payload);
 				event->SetTimeStamp(notify_time_stamp);
@@ -451,6 +454,12 @@ void SWT<CONFIG>::Process()
 template <typename CONFIG>
 void SWT<CONFIG>::Reset()
 {
+	CheckCompatibility();
+	UpdateMasterClock();
+
+	last_down_counter_run_time = sc_core::sc_time_stamp();
+	unisim::kernel::tlm2::AlignToClock(last_down_counter_run_time, watchdog_clock_period);
+
 	schedule.Clear();
 	
 	swt_cr.Initialize(swt_cr_reset_value);
@@ -465,25 +474,25 @@ void SWT<CONFIG>::Reset()
 	got_initial_timeout = false;
 	SetDownCounter(swt_to);
 	
-	CheckCompatibility();
-	
-	UpdateSpeed();
 	RefreshFreeze();
 
 	ScheduleDownCounterRun();
 }
 
 template <typename CONFIG>
-void SWT<CONFIG>::UpdateSpeed()
+void SWT<CONFIG>::UpdateMasterClock()
 {
-	cycle_time = m_clk_prop_proxy.GetClockPeriod();
+	master_clock_period = m_clk_prop_proxy.GetClockPeriod();
+	master_clock_start_time = m_clk_prop_proxy.GetClockStartTime();
+	master_clock_posedge_first = m_clk_prop_proxy.GetClockPosEdgeFirst();
+	master_clock_duty_cycle = m_clk_prop_proxy.GetClockDutyCycle();
 }
 
 template <typename CONFIG>
 void SWT<CONFIG>::ClockPropertiesChangedProcess()
 {
 	// Clock properties have changed
-	UpdateSpeed();
+	UpdateMasterClock();
 }
 
 template <typename CONFIG>
@@ -512,6 +521,11 @@ void SWT<CONFIG>::RESET_B_Process()
 	{
 		logger << DebugInfo << reset_b.name() << " <- " << !reset_level << EndDebugInfo;
 	}
+	if(!reset_b && !reset_level)
+	{
+		Reset();
+	}
+	
 	reset_b = !reset_level;
 	
 	if(reset_level)
@@ -563,6 +577,11 @@ void SWT<CONFIG>::DecrementDownCounter(sc_dt::uint64 delta)
 {
 	if(delta)
 	{
+		if(unlikely(verbose))
+		{
+			logger << DebugInfo << sc_core::sc_time_stamp() << ": running down counter for " << delta << " watchdog clock cycles" << EndDebugInfo;
+		}
+
 		// Check model consistency
 		if(swt_cr.template Get<typename SWT_CR::WEN>())
 		{
@@ -617,37 +636,47 @@ sc_dt::int64 SWT<CONFIG>::TicksToNextDownCounterRun()
 		return down_counter;
 	}
 	
-	return DOWN_COUNTER_RUN_MIN_PERIOD;
+	return 0;
 }
 
 template <typename CONFIG>
 sc_core::sc_time SWT<CONFIG>::TimeToNextDownCounterRun()
 {
-	return TicksToNextDownCounterRun() * watchdog_down_counter_cycle_time;
+	sc_dt::int64 ticks_to_next_down_counter_run = TicksToNextDownCounterRun();
+	
+	if(ticks_to_next_down_counter_run)
+	{
+		sc_core::sc_time time_to_next_down_counter_run(watchdog_clock_period);
+		time_to_next_down_counter_run *= ticks_to_next_down_counter_run;
+		
+		if(time_to_next_down_counter_run < max_time_to_next_down_counter_run) return time_to_next_down_counter_run;
+	}
+	
+	return max_time_to_next_down_counter_run;
 }
 
 template <typename CONFIG>
 void SWT<CONFIG>::RunDownCounterToTime(const sc_core::sc_time& time_stamp)
 {
-	// Compute the elapsed time since last count run
-	sc_core::sc_time delay_since_last_down_counter_run(time_stamp);
-	delay_since_last_down_counter_run -= last_down_counter_run_time;
-	
-	// Compute number of down counter ticks since last count run
-	sc_dt::uint64 delta = delay_since_last_down_counter_run / watchdog_down_counter_cycle_time;
-	sc_core::sc_time run_time(watchdog_down_counter_cycle_time);
-	run_time *= delta;
-
 	if(!freeze)
 	{
 		// in the past, until time stamp, down counter was not frozen: decrement down counter
-		DecrementDownCounter(delta);
+		// Compute the elapsed time since last count run
+		sc_core::sc_time delay_since_last_down_counter_run(time_stamp);
+		delay_since_last_down_counter_run -= last_down_counter_run_time;
+		
+		// Compute number of down counter ticks since last count run
+		sc_dt::uint64 delta = delay_since_last_down_counter_run / watchdog_clock_period;
+		
+		if(delta)
+		{
+			sc_core::sc_time run_time(watchdog_clock_period);
+			run_time *= delta;
+
+			DecrementDownCounter(delta);
+			last_down_counter_run_time += run_time;
+		}
 	}
-	
-	// Latch internal "freeze" value
-	RefreshFreeze();
-	
-	last_down_counter_run_time += run_time;
 }
 
 template <typename CONFIG>
@@ -676,6 +705,7 @@ void SWT<CONFIG>::RunDownCounterProcess()
 	}
 	
 	RunDownCounterToTime(time_stamp);
+	RefreshFreeze();
 	ScheduleDownCounterRun();
 }
 
@@ -683,7 +713,14 @@ template <typename CONFIG>
 void SWT<CONFIG>::RefreshFreeze()
 {
 	// Latch value for internal "freeze"
+	bool old_freeze = freeze;
 	freeze = (debug && swt_cr.template Get<typename SWT_CR::FRZ>()) || (stop && swt_cr.template Get<typename SWT_CR::STP>());
+	
+	if(old_freeze && !freeze)
+	{
+		last_down_counter_run_time = sc_core::sc_time_stamp();
+		unisim::kernel::tlm2::AlignToClock(last_down_counter_run_time, watchdog_clock_period);
+	}
 }
 
 template <typename CONFIG>

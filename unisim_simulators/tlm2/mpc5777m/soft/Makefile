@@ -5,7 +5,7 @@ RM            = rm -f
 CP            = cp
 
 CFLAGS    = -I.
-OPTFLAGS ?= -O0
+OPTFLAGS ?= -O1
 CFLAGS    = -g3 $(OPTFLAGS) -fdebug-prefix-map=$(PWD)=../../ # -Wall
 LDFLAGS   = -static
 

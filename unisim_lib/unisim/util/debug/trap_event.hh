@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,39 +32,58 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_UTIL_LOADER_ELF_LOADER_ELF64_LOADER_HH__
-#define __UNISIM_UTIL_LOADER_ELF_LOADER_ELF64_LOADER_HH__
+#ifndef __UNISIM_UTIL_DEBUG_TRAP_EVENT_HH__
+#define __UNISIM_UTIL_DEBUG_TRAP_EVENT_HH__
 
-#include <unisim/util/loader/elf_loader/elf_loader.hh>
+#include <unisim/util/debug/event.hh>
+#include <inttypes.h>
+#include <ostream>
 
 namespace unisim {
 namespace util {
-namespace loader {
-namespace elf_loader {
+namespace debug {
 
-//typedef ElfLoaderImpl<uint64_t, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym> Elf64Loader;
+template <class ADDRESS> class TrapEvent;
 
-template <class MEMORY_ADDR = uint64_t>
-class Elf64Loader : public ElfLoaderImpl<MEMORY_ADDR, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>
+template <class ADDRESS>
+std::ostream& operator << (std::ostream& os, const TrapEvent<ADDRESS>& te);
+
+template <class ADDRESS>
+class TrapEvent : public Event<ADDRESS>
 {
 public:
-	Elf64Loader(const unisim::util::blob::Blob<MEMORY_ADDR> *blob = 0);
+	TrapEvent()
+		: Event<ADDRESS>(Event<ADDRESS>::EV_TRAP)
+		, obj(0)
+		, msg()
+	{
+	}
+
+	inline void SetTrapObject(const unisim::kernel::service::Object *_obj) { obj = _obj; }
+	inline void SetTrapMessage(const std::string& _msg) { msg = _msg; }
+	inline void SetTrapMessage(const char * _msg) { msg = _msg; }
+	
+	inline const unisim::kernel::service::Object *GetTrapObject() const { return obj; }
+	inline const std::string& GetTrapMessage() const { return msg; }
+	
+	friend std::ostream& operator << <ADDRESS>(std::ostream& os, const TrapEvent<ADDRESS>& te);
+protected:
+	const unisim::kernel::service::Object *obj;
+	std::string msg;
 };
 
-template <class MEMORY_ADDR>
-Elf64Loader<MEMORY_ADDR>::Elf64Loader(const unisim::util::blob::Blob<MEMORY_ADDR> *_blob)
-	: ElfLoaderImpl<MEMORY_ADDR, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>(_blob)
+template <class ADDRESS>
+inline std::ostream& operator << (std::ostream& os, const TrapEvent<ADDRESS>& te)
 {
+	os << "trap";
+	if(te.obj) os << " from " << te.obj->GetName();
+	if(!te.msg.empty()) os << " with message \"" << te.msg << "\"";
+	os << " for processor #" << te.GetProcessorNumber() << " and front-end #" << te.GetFrontEndNumber();
+	
+	return os;
 }
 
-template <class ADDRESS_TYPE>
-struct StdElf<ADDRESS_TYPE,uint64_t>
-{
-  typedef ElfLoaderImpl<ADDRESS_TYPE, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym> Loader;
-};
-
-} // end of namespace elf_loader
-} // end of namespace loader
+} // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
 

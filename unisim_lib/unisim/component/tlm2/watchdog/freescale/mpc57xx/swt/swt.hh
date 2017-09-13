@@ -109,7 +109,6 @@ public:
 	static const uint16_t FIXED_SERVICE_SEQUENCE_MODE_PRIMARY_KEY   = 0xa602;
 	static const uint16_t FIXED_SERVICE_SEQUENCE_MODE_SECONDARY_KEY = 0xb480;
 	static const uint32_t MIN_DOWN_COUNTER_LOAD_VALUE               = 0x100;
-	static const sc_dt::int64 DOWN_COUNTER_RUN_MIN_PERIOD           = 16000; // run at least every 1 ms
 	static const bool threaded_model                                = false;
 	enum ServiceMode
 	{
@@ -635,18 +634,22 @@ private:
 	sc_core::sc_event gen_irq_event;
 	bool reset_level;
 	sc_core::sc_event gen_reset_event;
+	sc_core::sc_time max_time_to_next_down_counter_run;
 	sc_core::sc_time last_down_counter_run_time;         // Last time when down counter ran
 	sc_core::sc_event down_counter_run_event;            // Event to trigger down counter run (RunDownCounterProcess)
 	bool freeze;                                         // Latched value for internal "freeze"
-	sc_core::sc_time cycle_time;                               // cycle time
-	sc_core::sc_time watchdog_down_counter_cycle_time;              // Watchdog down counter cycle time
-	unisim::kernel::service::Parameter<sc_core::sc_time> param_watchdog_down_counter_cycle_time;
+	sc_core::sc_time master_clock_period;                // Master clock period
+	sc_core::sc_time master_clock_start_time;            // Master clock start time
+	bool master_clock_posedge_first;                     // Master clock posedge first ?
+	double master_clock_duty_cycle;                      // Master clock duty cycle
+	sc_core::sc_time watchdog_clock_period;              // Watchdog (down counter) clock period
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_watchdog_clock_period;
 
 	void Reset();
 	void ProcessEvent(Event *event);
 	void ProcessEvents();
 	void Process();
-	void UpdateSpeed();
+	void UpdateMasterClock();
 	void ClockPropertiesChangedProcess();
 	void SWT_RESET_B_Process();
 	void IRQ_Process();

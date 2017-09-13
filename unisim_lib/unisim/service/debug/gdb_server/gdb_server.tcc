@@ -46,6 +46,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <time.h>
 #include <stdexcept>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
@@ -64,17 +65,13 @@
 
 #endif
 
+#include <unisim/util/likely/likely.hh>
+
 namespace unisim {
 namespace service {
 namespace debug {
 namespace gdb_server {
 
-using std::cerr;
-using std::endl;
-using std::hex;
-using std::dec;
-using std::list;
-//using unisim::service::interfaces::operator<<;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
 using unisim::kernel::logger::DebugError;
@@ -83,22 +80,34 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS>
+const uint64_t GDBServer<ADDRESS>::SERVER_ACCEPT_POLL_PERIOD_MS;
+
+template <class ADDRESS>
+const uint64_t GDBServer<ADDRESS>::GDB_INTERRUPT_POLL_PERIOD_MS;
+
+template <class ADDRESS>
+const uint64_t GDBServer<ADDRESS>::NON_BLOCKING_READ_POLL_PERIOD_MS;
+
+template <class ADDRESS>
+const uint64_t GDBServer<ADDRESS>::NON_BLOCKING_WRITE_POLL_PERIOD_MS;
+
+template <class ADDRESS>
 GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	: Object(_name, _parent,
 		"this service implements the GDB server remote serial protocol over TCP/IP. "
 		"Standards GDB clients (e.g. gdb, eclipse, ddd) can connect to the simulator to debug the target application "
 		"that runs within the simulator.")
-	, Service<DebugControl<ADDRESS> >(_name, _parent)
-	, Service<DebugEventListener<ADDRESS> >(_name, _parent)
-	, Service<TrapReporting>(_name, _parent)
-	, Client<DebugEventTrigger<ADDRESS> >(_name, _parent)
-	, Client<Memory<ADDRESS> >(_name, _parent)
-	, Client<Disassembly<ADDRESS> >(_name, _parent)
-	, Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
-	, Client<Registers>(_name, _parent)
-	, debug_control_export("debug-control-export", this)
+	, unisim::kernel::service::Service<unisim::service::interfaces::DebugYielding>(_name, _parent)
+	, unisim::kernel::service::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >(_name, _parent)
+	, unisim::kernel::service::Client<unisim::service::interfaces::DebugYieldingRequest>(_name, _parent)
+	, unisim::kernel::service::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >(_name, _parent)
+	, unisim::kernel::service::Client<unisim::service::interfaces::Memory<ADDRESS> >(_name, _parent)
+	, unisim::kernel::service::Client<unisim::service::interfaces::Disassembly<ADDRESS> >(_name, _parent)
+	, unisim::kernel::service::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::service::Client<unisim::service::interfaces::Registers>(_name, _parent)
+	, debug_yielding_export("debug-yielding-export", this)
 	, debug_event_listener_export("debug-event-listener-export", this)
-	, trap_reporting_export("trap-reporting-export", this)
+	, debug_yielding_request_import("debug-yielding-request-import", this)
 	, debug_event_trigger_import("debug-event-trigger-import", this)
 	, memory_import("memory-import", this)
 	, registers_import("cpu-registers-import", this)
@@ -107,10 +116,18 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, logger(*this)
 	, tcp_port(12345)
 	, architecture_description_filename()
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	, sock(INVALID_SOCKET)
+#else
 	, sock(-1)
+#endif
 	, gdb_registers()
 	, gdb_pc(0)
-	, killed(false)
+	, session_num(0)
+	, sock_error(false)
+	, session_terminated(false)
+	, detached(false)
+	, listening_fetch(false)
 	, trap(false)
 	, synched(false)
 	, running_mode(GDBSERVER_MODE_WAITING_GDB_CLIENT)
@@ -126,21 +143,45 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, gdb_client_feature_vfork_events(false)
 	, gdb_client_feature_exec_events(false)
 	, gdb_client_feature_vcont(false)
+	, gdb_client_feature_t32extensions(false)
 	, current_thread_id(0)
 	, no_ack_mode(false)
 	, arch_specific_breakpoint_kinds()
-	, disasm_addr(0)
+	, fetch_insn_event(0)
+	, cia(0)
 	, input_buffer_size(0)
 	, input_buffer_index(0)
 	, output_buffer_size(0)
 	, memory_atom_size(1)
 	, verbose(false)
+	, debug(false)
 	, monitor_internals()
+	, wait_for_connection_at_startup(true)
 	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
 	, param_tcp_port("tcp-port", this, tcp_port, "TCP/IP port to listen waiting for a GDB client connection")
 	, param_architecture_description_filename("architecture-description-filename", this, architecture_description_filename, "filename of a XML description of the connected processor")
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
+	, param_debug("debug", this, debug, "Enable/Disable debug (intended for developper)")
 	, param_monitor_internals("monitor-internals", this, monitor_internals, "List of internal simulator variables to monitor in GDB Front-End")
+	, param_wait_for_connection_at_startup("wait-for-connection-at-startup", this, wait_for_connection_at_startup, "Whether to wait for connection of GDB client at startup")
+	, thrd_process_cmd()
+	, thrd_process_int()
+	, thrd_process_cmd_create_mutex()
+	, thrd_process_cmd_create_cond()
+	, thrd_process_cmd_alive(false)
+	, stop_process_cmd_thrd(false)
+	, thrd_process_int_create_mutex()
+	, thrd_process_int_create_cond()
+	, thrd_process_int_alive(false)
+	, stop_process_int_thrd(false)
+	, thrd_run_mutex()
+	, thrd_run_cond()
+	, run_cond(false)
+	, thrd_process_cmd_mutex()
+	, thrd_process_cmd_cond()
+	, process_cmd_cond(false)
+	, thrd_mutex()
+	, wait_for_command_processing(true)
 {
 	param_tcp_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_memory_atom_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -157,27 +198,46 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	}
 #endif
 
+	pthread_mutex_init(&thrd_process_cmd_create_mutex, NULL);
+	pthread_mutex_init(&thrd_process_int_create_mutex, NULL);
+	pthread_mutex_init(&thrd_run_mutex, NULL);
+	pthread_mutex_init(&thrd_process_cmd_mutex, NULL);
+	pthread_mutex_init(&thrd_mutex, NULL);
+	
+	pthread_cond_init(&thrd_process_cmd_create_cond, NULL);
+	pthread_cond_init(&thrd_process_int_create_cond, NULL);
+	pthread_cond_init(&thrd_run_cond, NULL);
+	pthread_cond_init(&thrd_process_cmd_cond, NULL);
+	
+	fetch_insn_event = new unisim::util::debug::FetchInsnEvent<ADDRESS>();
+	fetch_insn_event->Catch();
 }
 
 template <class ADDRESS>
 GDBServer<ADDRESS>::~GDBServer()
 {
-	if(sock >= 0)
+	KillFromSimulationRun();
+	
+	if(!StopProcessCmdThrd())
 	{
-		string packet("W00");
-		PutPacket(packet);
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-		closesocket(sock);
-#else
-		close(sock);
-#endif
-		sock = -1;
+		logger << DebugError << "Simulation thread: Can't stop thread processing GDB commands" << EndDebugError;
 	}
 	
 #if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
 	//releases the winsock2 resources
 	WSACleanup();
 #endif
+
+	pthread_mutex_destroy(&thrd_process_cmd_create_mutex);
+	pthread_mutex_destroy(&thrd_process_int_create_mutex);
+	pthread_mutex_destroy(&thrd_run_mutex);
+	pthread_mutex_destroy(&thrd_process_cmd_mutex);
+	pthread_mutex_destroy(&thrd_mutex);
+	
+	pthread_cond_destroy(&thrd_process_cmd_create_cond);
+	pthread_cond_destroy(&thrd_process_int_create_cond);
+	pthread_cond_destroy(&thrd_run_cond);
+	pthread_cond_destroy(&thrd_process_cmd_cond);
 
 	unsigned int i;
 	for(i = 0; i < gdb_registers.size(); i++)
@@ -197,6 +257,8 @@ GDBServer<ADDRESS>::~GDBServer()
 			delete gdb_feature;
 		}
 	}
+	
+	fetch_insn_event->Release();
 }
 
 template <class ADDRESS>
@@ -208,7 +270,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 	   memory_atom_size != 8 &&
 	   memory_atom_size != 16)
 	{
-		cerr << Object::GetName() << "ERROR! memory-atom-size must be either 1, 2, 4, 8 or 16" << endl;
+		std::cerr << Object::GetName() << "ERROR! memory-atom-size must be either 1, 2, 4, 8 or 16" << std::endl;
 		return false;
 	}
 
@@ -227,7 +289,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 
 	if(root_node)
 	{
-		if(root_node->Name() == string("architecture"))
+		if(root_node->Name() == std::string("architecture"))
 		{
 			if(!VisitArchitecture(root_node))
 			{
@@ -250,6 +312,20 @@ bool GDBServer<ADDRESS>::EndSetup()
 		return false;
 	}
 
+	if(!StartProcessCmdThrd())
+	{
+		logger << DebugError << "Failed to start thread processing GDB commands" << EndDebugError;
+	}
+
+	wait_for_command_processing = true;
+	TriggerDebugYield();
+	
+	return true;
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::StartServer()
+{
 	struct sockaddr_in addr;
 	int server_sock;
 
@@ -257,19 +333,48 @@ bool GDBServer<ADDRESS>::EndSetup()
 
 	if(server_sock < 0)
 	{
-		logger << DebugError << "socket failed" << EndDebugError;
+		logger << DebugError << "failed obtaining a server socket" << EndDebugError;
 		return false;
 	}
 
-    /* ask for reusing TCP port */
+	/* Ask for non-blocking accept on server socket */
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	u_long ServerSocketNonBlock = 1;
+	if(ioctlsocket(server_sock, FIONBIO, &ServerSocketNonBlock) != 0)
+	{
+		logger << DebugError << "ioctlsocket(FIONBIO) on server socked failed" << EndDebugError;
+		closesocket(server_sock);
+		return false;
+	}
+#else
+	int server_socket_flag = fcntl(server_sock, F_GETFL, 0);
+
+	if(server_socket_flag < 0)
+	{
+		logger << DebugError << "fcntl(F_GETFL) on server socket failed" << EndDebugError;
+		close(server_sock);
+		return false;
+	}
+
+	if(fcntl(server_sock, F_SETFL, server_socket_flag | O_NONBLOCK) < 0)
+	{
+		logger << DebugError << "fcntl(F_SETFL, O_NONBLOCK) on server socket failed" << EndDebugError;
+		close(server_sock);
+		return false;
+	}
+#endif
+
+#if 1
+	/* ask for reusing TCP port */
     int opt_so_reuseaddr = 1;
     if(setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, (char *) &opt_so_reuseaddr, sizeof(opt_so_reuseaddr)) < 0)
 	{
 		if(verbose)
 		{
-			logger << DebugWarning << "setsockopt failed requesting port reuse" << EndDebugWarning;
+			logger << DebugWarning << "setsockopt(SOL_SOCKET, SO_REUSEADDR) on server socket failed while requesting port reuse" << EndDebugWarning;
 		}
 	}
+#endif
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
@@ -303,11 +408,56 @@ bool GDBServer<ADDRESS>::EndSetup()
 		socklen_t addr_len;
 #endif
 
-	logger << DebugInfo << "Listening on TCP port " << tcp_port << EndDebugInfo;
+	logger << DebugInfo << "Listening on TCP port #" << tcp_port << EndDebugInfo;
 	addr_len = sizeof(addr);
-	sock = accept(server_sock, (struct sockaddr *) &addr, &addr_len);
+	
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	sock = INVALID_SOCKET;
+#else
+	sock = -1;
+#endif
 
+	while(!killed)
+	{
+		sock = accept(server_sock, (struct sockaddr *) &addr, &addr_len);
+	
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+		if(sock != INVALID_SOCKET)
+#else
+		if(sock >= 0)
+#endif
+		{
+			// a client has connected
+			break;
+		}
+			
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+		if(WSAGetLastError() != WSAEWOULDBLOCK)
+#else
+		if((errno != EAGAIN) && (errno != EWOULDBLOCK))
+#endif
+		{
+			break;
+		}
+			
+		WaitTime(SERVER_ACCEPT_POLL_PERIOD_MS); // retry later
+	}
+
+	if(killed)
+	{
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+		closesocket(server_sock);
+#else
+		close(server_sock);
+#endif
+		return false;
+	}
+	
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	if(sock == INVALID_SOCKET)
+#else
 	if(sock < 0)
+#endif
 	{
 		logger << DebugError << "accept failed" << EndDebugError;
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
@@ -317,11 +467,8 @@ bool GDBServer<ADDRESS>::EndSetup()
 #endif
 		return false;
 	}
-
-	if(verbose)
-	{
-		logger << DebugInfo << "Connection with GDB client established" << EndDebugInfo;
-	}
+	
+	logger << DebugInfo << "Connection with GDB client established on TCP Port #" << tcp_port << EndDebugInfo;
 
     /* set short latency */
     int opt_tcp_nodelay = 1;
@@ -329,16 +476,39 @@ bool GDBServer<ADDRESS>::EndSetup()
 	{
 		if(verbose)
 		{
-			logger << DebugWarning << "setsockopt failed requesting short latency" << EndDebugWarning;
+			logger << DebugWarning << "setsockopt(IPPROTO_TCP, TCP_NODELAY) on socket failed while requesting short latency" << EndDebugWarning;
 		}
 	}
 
+#if 0
+    /* unset TCP keep alive */
+    int opt_tcp_keepalive = 0;
+    if(setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (char *) &opt_tcp_keepalive, sizeof(opt_tcp_keepalive)) < 0)
+	{
+		if(verbose)
+		{
+			logger << DebugWarning << "setsockopt(SOL_SOCKET, SO_KEEPALIVE) on socket failed while requesting keep alive off" << EndDebugWarning;
+		}
+	}
+
+	/* set linger */
+	struct linger opt_tcp_linger;
+	opt_tcp_linger.l_onoff = 1;    /* linger active */
+	opt_tcp_linger.l_linger = 5;   /* how many seconds to linger for */
+    if(setsockopt(sock, SOL_SOCKET, SO_LINGER, (char *) &opt_tcp_linger, sizeof(opt_tcp_linger)) < 0)
+	{
+		if(verbose)
+		{
+			logger << DebugWarning << "setsockopt(SOL_SOCKET, SO_LINGER) on socket failed while requesting linger (send output before close or after timeout)" << EndDebugWarning;
+		}
+	}
+#endif
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	u_long NonBlock = 1;
 	if(ioctlsocket(sock, FIONBIO, &NonBlock) != 0)
 	{
-		logger << DebugError << "ioctlsocket failed" << EndDebugError;
+		logger << DebugError << "ioctlsocket(FBIONIO) on socket failed" << EndDebugError;
 		closesocket(server_sock);
 		closesocket(sock);
 		sock = -1;
@@ -349,7 +519,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 
 	if(socket_flag < 0)
 	{
-		logger << DebugError << "fcntl failed" << EndDebugError;
+		logger << DebugError << "fcntl(F_GETFL) on socket failed" << EndDebugError;
 		close(server_sock);
 		close(sock);
 		sock = -1;
@@ -359,7 +529,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 	/* Ask for non-blocking reads on socket */
 	if(fcntl(sock, F_SETFL, socket_flag | O_NONBLOCK) < 0)
 	{
-		logger << DebugError << "fcntl failed" << EndDebugError;
+		logger << DebugError << "fcntl(F_SETFL, O_NONBLOCK) on socket failed" << EndDebugError;
 		close(server_sock);
 		close(sock);
 		sock = -1;
@@ -372,8 +542,843 @@ bool GDBServer<ADDRESS>::EndSetup()
 #else
 	close(server_sock);
 #endif
+	
+	sock_error = false;
+	detached = false;
+	no_ack_mode = false;
+	session_terminated = false;
+	extended_mode = false;
+	synched = false;
+	wait_for_command_processing = true;
+	session_num++;
+	return true;
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::StopServer()
+{
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	if(sock != INVALID_SOCKET)
+#else
+	if(sock >= 0)
+#endif
+	{
+		if(!killed && !session_terminated && !detached)
+		{
+			ReportProgramExit();
+		}
+		
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+		closesocket(sock);
+		sock = INVALID_SOCKET;
+#else
+		close(sock);
+		sock = -1;
+#endif
+		
+		logger << DebugInfo << "Connection with GDB client closed" << EndDebugInfo;
+	}
+	if(unlikely(debug))
+	{
+		logger << DebugInfo << "GDB command processing thread: Unlocking" << EndDebugInfo;
+	}
+	
+#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
+	//releases the winsock2 resources
+	WSACleanup();
+#endif
+	
+	wait_for_command_processing = true;
 
 	return true;
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::Lock()
+{
+	pthread_mutex_lock(&thrd_mutex);
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::Unlock()
+{
+	pthread_mutex_unlock(&thrd_mutex);
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::StartProcessCmdThrd()
+{
+	bool status = true;
+	
+	if(thrd_process_cmd_alive)
+	{
+		logger << DebugError << "Simulation thread: thread that process GDB commands has already started" << EndDebugError;
+		status = false;
+	}
+	else
+	{
+		pthread_attr_t thrd_attr;
+		pthread_attr_init(&thrd_attr);
+		
+	// 	if(stack_size)
+	// 	{
+	// 		pthread_attr_setstacksize(&thrd_attr, stack_size);
+	// 	}
+		
+		pthread_mutex_lock(&thrd_process_cmd_create_mutex);
+
+		thrd_process_cmd_alive = false;
+
+		// Create a communication thread 
+		if(unlikely(debug))
+		{
+			logger << DebugInfo << "Simulation thread: creating thread that process GDB commands" << EndDebugInfo;
+		}
+		if(pthread_create(&thrd_process_cmd, &thrd_attr, &GDBServer<ADDRESS>::ProcessCmdThrdEntryPoint, this) == 0)
+		{
+			// wait for creation of thread that process GDB commands
+			do
+			{
+				pthread_cond_wait(&thrd_process_cmd_create_cond, &thrd_process_cmd_create_mutex);
+			}
+			while(!thrd_process_cmd_alive);
+			
+			if(unlikely(debug))
+			{
+				logger << DebugInfo << "Simulation thread: thread that process GDB command has started" << EndDebugInfo;
+			}
+		}
+		else
+		{
+			// can't create thread that process GDB commands
+			if(unlikely(debug))
+			{
+				logger << DebugInfo << "Simulation thread: can't create thread that process GDB commands" << EndDebugInfo;
+			}
+			status = false;
+		}
+		
+		pthread_mutex_unlock(&thrd_process_cmd_create_mutex);
+
+		pthread_attr_destroy(&thrd_attr);
+	}
+	
+	return status;
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::StopProcessCmdThrd()
+{
+	bool status = true;
+	
+	if(thrd_process_cmd_alive)
+	{
+		stop_process_cmd_thrd = true;
+
+		if(unlikely(debug))
+		{
+			logger << DebugInfo << "Simulation thread: joining thread that process GDB commands" << EndDebugInfo;
+		}
+		
+		if(pthread_join(thrd_process_cmd, NULL) == 0)
+		{
+			// thread that process GDB commands has gracefully exited
+			if(unlikely(debug))
+			{
+				logger << DebugInfo << "Simulation thread: thread that process GDB commands has gracefully exited" << EndDebugInfo;
+			}
+			thrd_process_cmd_alive = false;
+		}
+		else
+		{
+			// can't join thread that process GDB commands
+			if(unlikely(debug))
+			{
+				logger << DebugInfo << "Simulation thread: can't join thread that process GDB commands" << EndDebugInfo;
+			}
+			status = false;
+		}
+	}
+	
+	return status;
+}
+
+template <class ADDRESS>
+void *GDBServer<ADDRESS>::ProcessCmdThrdEntryPoint(void *_self)
+{
+	GDBServer<ADDRESS> *self = static_cast<GDBServer<ADDRESS> *>(_self);
+	pthread_mutex_lock(&self->thrd_process_cmd_create_mutex);
+	self->thrd_process_cmd_alive = true;
+	pthread_cond_signal(&self->thrd_process_cmd_create_cond);
+	pthread_mutex_unlock(&self->thrd_process_cmd_create_mutex);
+	
+	self->ProcessCmdThrd();
+	
+	return 0;
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::StartProcessIntThrd()
+{
+	bool status = true;
+	
+	if(thrd_process_int_alive)
+	{
+		logger << DebugError << "GDB command processing thread: thread that process GDB interrupt has already started" << EndDebugError;
+		status = false;
+	}
+	else
+	{
+		pthread_attr_t thrd_attr;
+		pthread_attr_init(&thrd_attr);
+		
+	// 	if(stack_size)
+	// 	{
+	// 		pthread_attr_setstacksize(&thrd_attr, stack_size);
+	// 	}
+		
+		pthread_mutex_lock(&thrd_process_int_create_mutex);
+
+		thrd_process_int_alive = false;
+
+		// Create a thread that process GDB interrupt
+		
+		if(unlikely(debug))
+		{
+			logger << DebugInfo << "GDB command processing thread: creating thread that process GDB interrupts" << EndDebugInfo;
+		}
+		
+		if(pthread_create(&thrd_process_int, &thrd_attr, &GDBServer<ADDRESS>::ProcessIntThrdEntryPoint, this) == 0)
+		{
+			// wait for creation of thread that process GDB interrupt
+			do
+			{
+				pthread_cond_wait(&thrd_process_int_create_cond, &thrd_process_int_create_mutex);
+			}
+			while(!thrd_process_int_alive);
+			
+			if(unlikely(debug))
+			{
+				logger << DebugInfo << "GDB command processing thread: thread that process GDB interrupts has started" << EndDebugInfo;
+			}
+		}
+		else
+		{
+			// can't create thread that process GDB interrupt
+			if(unlikely(debug))
+			{
+				logger << DebugInfo << "GDB command processing thread: can't create thread that process GDB interrupt" << EndDebugInfo;
+			}
+			status = false;
+		}
+		
+		pthread_mutex_unlock(&thrd_process_int_create_mutex);
+
+		pthread_attr_destroy(&thrd_attr);
+	}
+	
+	return status;
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::StopProcessIntThrd()
+{
+	bool status = true;
+	
+	if(thrd_process_int_alive)
+	{
+		stop_process_int_thrd = true;
+		
+		if(unlikely(debug))
+		{
+			logger << DebugInfo << "GDB command processing thread: joining thread that process GDB interrupts" << EndDebugInfo;
+		}
+
+		if(pthread_join(thrd_process_int, NULL) == 0)
+		{
+			// thread has gracefully exited
+			if(unlikely(debug))
+			{
+				logger << DebugInfo << "GDB command processing thread: thread that process GDB interrupts has gracefully exited" << EndDebugInfo;
+			}
+			thrd_process_int_alive = false;
+		}
+		else
+		{
+			// can't join communication thread
+			if(unlikely(debug))
+			{
+				logger << DebugInfo << "GDB command processing thread: can't join thread that process GDB interrupts" << EndDebugInfo;
+			}
+			status = false;
+		}
+	}
+	
+	return status;
+}
+
+template <class ADDRESS>
+void *GDBServer<ADDRESS>::ProcessIntThrdEntryPoint(void *_self)
+{
+	GDBServer<ADDRESS> *self = static_cast<GDBServer<ADDRESS> *>(_self);
+	pthread_mutex_lock(&self->thrd_process_int_create_mutex);
+	self->thrd_process_int_alive = true;
+	pthread_cond_signal(&self->thrd_process_int_create_cond);
+	pthread_mutex_unlock(&self->thrd_process_int_create_mutex);
+	
+	self->ProcessIntThrd();
+	
+	return 0;
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::UnblockCommandProcessing()
+{
+	if(unlikely(debug))
+	{
+		logger << DebugInfo << "Simulation thread: unblocking GDB command processing thread" << EndDebugInfo;
+	}
+	pthread_mutex_lock(&thrd_process_cmd_mutex);
+	process_cmd_cond = true;
+	pthread_cond_signal(&thrd_process_cmd_cond);
+	pthread_mutex_unlock(&thrd_process_cmd_mutex);
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::WaitForCommandProcessing()
+{
+	if(unlikely(debug))
+	{
+		logger << DebugInfo << "Simulation thread: waiting for GDB command processing (start)" << EndDebugInfo;
+	}
+	if(!killed) // to avoid an interlock in case we've been killed before being able to process any GDB commands (e.g. accept failed in StartServer)
+	{
+		pthread_mutex_lock(&thrd_process_cmd_mutex);
+		process_cmd_cond = true;
+		pthread_cond_signal(&thrd_process_cmd_cond);
+		pthread_mutex_lock(&thrd_run_mutex);
+		run_cond = false;
+		pthread_mutex_unlock(&thrd_process_cmd_mutex);
+		
+		do
+		{
+			pthread_cond_wait(&thrd_run_cond, &thrd_run_mutex);
+		}
+		while(!run_cond);
+		
+		pthread_mutex_unlock(&thrd_run_mutex);
+	}
+	if(unlikely(debug))
+	{
+		logger << DebugInfo << "Simulation thread: waiting for GDB command processing (end)" << EndDebugInfo;
+	}
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::Run()
+{
+	if(unlikely(debug))
+	{
+		logger << DebugInfo << "GDB command processing thread: let simulation run" << EndDebugInfo;
+	}
+	process_cmd_cond = false;
+	pthread_mutex_lock(&thrd_run_mutex);
+	run_cond = true;
+	pthread_cond_signal(&thrd_run_cond);
+	pthread_mutex_unlock(&thrd_run_mutex);
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::WaitForSimulationRun()
+{
+	if(unlikely(debug))
+	{
+		logger << DebugInfo << "GDB command processing thread: waiting for simulation run (start)" << EndDebugInfo;
+	}
+	if(!process_cmd_cond)
+	{
+		pthread_mutex_lock(&thrd_process_cmd_mutex);
+	
+		do
+		{
+			pthread_cond_wait(&thrd_process_cmd_cond, &thrd_process_cmd_mutex);
+		}
+		while(!process_cmd_cond);
+		
+		pthread_mutex_unlock(&thrd_process_cmd_mutex);
+	}
+	if(unlikely(debug))
+	{
+		logger << DebugInfo << "GDB command processing thread: waiting for simulation run (end)" << EndDebugInfo;
+	}
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::ProcessCmdThrd()
+{
+	// Don't allow ProcessIntThrd polling the network socket;
+	// Make it block if it attempts to read network socket
+	if(unlikely(debug))
+	{
+		logger << DebugInfo << "GDB command processing thread: Locking" << EndDebugInfo;
+	}
+	Lock();
+	
+	// start ProcessIntThrd
+	if(!StartProcessIntThrd()) return;
+	
+	// Loop until there's stop or kill requests
+	while(!stop_process_cmd_thrd && !killed)
+	{
+		// let simulation run and wait for command processing if it's first session and GDB server is configured to wait for a GDB client connection
+		wait_for_command_processing = (session_num == 0) && wait_for_connection_at_startup;
+		
+		if(wait_for_command_processing)
+		{
+			Run();
+		}
+		
+		// start TCP/IP server and wait for GDB client connection
+		if(!StartServer())
+		{
+			// server can't be started: kill ourself
+			KillFromThrdProcessCmd();
+			// make simulation call DebugYield so that it can stop simulation
+			break;
+		}
+		
+		// make simulation call us a first time
+		TriggerDebugYield();
+		
+		// process GDB commands (GDB serial remote protocol dialect)
+		ProcessCommands();
+		
+		// Unlisten all events
+		ClearEvents();
+		
+		// stop TCP/IP server
+		StopServer();
+		
+		// let simulation run and finish waiting for command processing, so that we can return from DebugYield
+		Run();
+	}
+	
+	// Make ProcessIntThrd unblock to allow it to gracefully exit
+	if(unlikely(debug))
+	{
+		logger << DebugInfo << "GDB command processing thread: Unlocking" << EndDebugInfo;
+	}
+	Unlock();
+	
+	// Stop ProcessIntThrd
+	StopProcessIntThrd();
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::ProcessCommands()
+{
+	bool extended_mode;
+	ADDRESS addr;
+	ADDRESS size;
+	ADDRESS reg_num;
+	ADDRESS type;
+
+	std::string packet;
+
+	while(!stop_process_cmd_thrd && !session_terminated)
+	{
+		if(unlikely(debug))
+		{
+			logger << DebugInfo << "GDB command processing thread: pseudo-blocking read" << EndDebugInfo;
+		}
+		if(!GetPacket(packet, true))
+		{
+			break;
+		}
+		
+		std::size_t pos = 0;
+		std::size_t len = packet.length();
+
+		switch(packet[pos++])
+		{
+			case 'g':
+				if(!ReadRegisters())
+				{
+					session_terminated = true;
+				}
+				break;
+
+			case 'p':
+				if(!ParseHex(packet, pos, reg_num)) break;
+				if(!ReadRegister(reg_num))
+				{
+					session_terminated = true;
+				}
+				break;
+
+			case 'G':
+				if(!WriteRegisters(packet.substr(1)))
+				{
+					session_terminated = true;
+				}
+				break;
+
+			case 'P':
+				if(!ParseHex(packet, pos, reg_num)) break;
+				if(packet[pos++] != '=') break;
+				if(!WriteRegister(reg_num, packet.substr(pos)))
+				{
+					session_terminated = true;
+				}
+				break;
+
+			case 'm':
+				if(!ParseHex(packet, pos, addr)) break;
+				if(packet[pos++] != ',') break;
+				if(!ParseHex(packet, pos, size)) break;
+				if(pos != len) break;
+				if(!ReadMemoryHex(addr * memory_atom_size, size))
+				{
+					session_terminated = true;
+				}
+				break;
+
+			case 'M':
+				if(!ParseHex(packet, pos, addr)) break;
+				if(packet[pos++] != ',') break;
+				if(!ParseHex(packet, pos, size)) break;
+				if(packet[pos++] != ':') break;
+				if(!WriteMemoryHex(addr * memory_atom_size, packet.substr(pos), size))
+				{
+					session_terminated = true;
+				}
+				break;
+				
+			case 'X':
+				if(!ParseHex(packet, pos, addr)) break;
+				if(packet[pos++] != ',') break;
+				if(!ParseHex(packet, pos, size)) break;
+				if(packet[pos++] != ':') break;
+				if(!WriteMemoryBin(addr * memory_atom_size, packet.substr(pos), size))
+				{
+					session_terminated = true;
+				}
+				break;
+
+			case 's':
+				if(!ParseHex(packet, pos, addr))
+				{
+					synched = false;
+					Step();
+					break;
+				}
+				if(gdb_pc)
+					gdb_pc->SetValue(&addr);
+				else
+				{
+					if(verbose)
+					{
+						logger << DebugWarning << "CPU has no program counter" << EndDebugWarning;
+					}
+				}
+				synched = false;
+				Step();
+				break;
+
+			case 'c':
+				if(!ParseHex(packet, pos, addr))
+				{
+					Continue();
+					break;
+				}
+				addr *= memory_atom_size;
+				if(gdb_pc)
+					gdb_pc->SetValue(&addr);
+				else
+				{
+					if(verbose)
+					{
+						logger << DebugWarning << "CPU has no program counter" << EndDebugWarning;
+					}
+				}
+				Continue();
+				break;
+
+			case 'H':
+				PutPacket("E01");
+				break;
+
+			case 'k':
+
+				KillFromThrdProcessCmd();
+				break;
+				
+			case 'D':
+				detached = true;
+				session_terminated = true;
+				PutPacket("OK");
+				break;
+
+			case 'R':
+				if(extended_mode)
+				{
+					// FIXME: should reset
+				}
+				else
+				{
+					PutPacket("E01");
+				}
+				return;
+
+			case '?':
+				ReportTracePointTrap();
+				break;
+
+			case '!':
+				extended_mode = true;
+				PutPacket("OK");
+				break;
+
+			case 'Z':
+				if(!ParseHex(packet, pos, type)) break;
+				if(packet[pos++] != ',') break;
+				if(!ParseHex(packet, pos, addr)) break;
+				if(packet[pos++] != ',') break;
+				if(!ParseHex(packet, pos, size)) break;
+				if(!SetBreakpointWatchpoint(type, addr * memory_atom_size, size))
+				{
+					session_terminated = true;
+				}
+				break;
+
+			case 'z':
+				if(!ParseHex(packet, pos, type)) break;
+				if(packet[pos++] != ',') break;
+				if(!ParseHex(packet, pos, addr)) break;
+				if(packet[pos++] != ',') break;
+				if(!ParseHex(packet, pos, size)) break;
+				if(!RemoveBreakpointWatchpoint(type, addr * memory_atom_size, size))
+				{
+					session_terminated = true;
+				}
+				break;
+
+			default:
+
+				if(packet == "qSymbol" || packet == "qSymbol::")
+				{
+					PutPacket("OK");
+				}
+				else if(packet == "vCont?")
+				{
+					PutPacket("vCont;c;C;s;S");
+				}
+				else if(packet.substr(0, 7) == "vCont;c")
+				{
+					Continue();
+				}
+				else if(packet.substr(0, 7) == "vCont;s")
+				{
+					synched = false;
+					Step();
+				}
+				else if(packet.substr(0, 5) == "vKill")
+				{
+					KillFromThrdProcessCmd();
+				}
+				else if(packet.substr(0, 6) == "qRcmd,")
+				{
+					HandleQRcmd(packet.substr(6));
+				}
+				else if(packet.substr(0, 10) == "qSupported")
+				{
+					HandleQSupported(packet.substr(10));
+				}
+				else if(packet == "qC")
+				{
+					HandleQC();
+				}
+				else if(packet.substr(0, 9) == "qAttached")
+				{
+					HandleQAttached(packet.substr(9));
+				}
+				else if(packet.substr(0, 8) == "qTStatus")
+				{
+					HandleQTStatus();
+				}
+				else if(packet == "QStartNoAckMode")
+				{
+					HandleQStartNoAckMode();
+				}
+				else if(packet.substr(0, 20) == "qXfer:features:read:")
+				{
+					HandleQXferFeaturesRead(packet.substr(20));
+				}
+				else if(packet == "qfThreadInfo")
+				{
+					HandleQfThreadInfo();
+				}
+				else if(packet == "qsThreadInfo")
+				{
+					HandleQsThreadInfo();
+				}
+				else if(packet.substr(0, 13) == "qRegisterInfo")
+				{
+					HandleQRegisterInfo(packet.substr(13));
+				}
+				else
+				{
+					if(verbose)
+					{
+						logger << DebugWarning << "Received an unknown GDB remote protocol packet" << EndDebugWarning;
+					}
+					PutPacket("");
+				}
+				break;
+		} // end of switch
+	}
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::Step()
+{
+	ListenFetch();
+	if(unlikely(debug))
+	{
+		logger << DebugInfo << "GDB command processing thread: Unlocking" << EndDebugInfo;
+	}
+	Unlock();
+	do
+	{
+		Run();
+		WaitForSimulationRun();
+	}
+	while(!trap && !killed);
+	if(unlikely(debug))
+	{
+		logger << DebugInfo << "GDB command processing thread: Locking" << EndDebugInfo;
+	}
+	Lock();
+	UnlistenFetch();
+	if(!killed)
+	{
+		trap = false;
+		ReportTracePointTrap();
+		DisplayMonitoredInternals();
+	}
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::Continue()
+{
+	if(unlikely(debug))
+	{
+		logger << DebugInfo << "GDB command processing thread: Unlocking" << EndDebugInfo;
+	}
+	Unlock();
+	do
+	{
+		Run();
+		WaitForSimulationRun();
+	}
+	while(!trap && !killed);
+	if(unlikely(debug))
+	{
+		logger << DebugInfo << "GDB command processing thread: Locking" << EndDebugInfo;
+	}
+	Lock();
+	if(!killed)
+	{
+		trap = false;
+		ReportTracePointTrap();
+		DisplayMonitoredInternals();
+	}
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::ClearEvents()
+{
+	if(debug_event_trigger_import)
+	{
+		debug_event_trigger_import->ClearEvents();
+	}
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::WaitTime(unsigned int msec)
+{
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	if(!killed)
+	{
+		Sleep(msec);
+	}
+#else
+	struct timespec tim_req, tim_rem;
+	tim_req.tv_sec = msec / 1000;
+	tim_req.tv_nsec = 1000000 * (msec % 1000);
+	
+	while(!killed)
+	{
+		int status = nanosleep(&tim_req, &tim_rem);
+		
+		if(status == 0) break;
+		
+		if(status != -1) break;
+		
+		if(errno != EINTR) break;
+
+		tim_req.tv_nsec = tim_rem.tv_nsec;
+	}
+#endif
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::ProcessIntThrd()
+{
+	// poll network socket every 100 ms, keep alive between sessions
+	while(!stop_process_int_thrd && !killed)
+	{
+		if(!session_terminated)
+		{
+			if(unlikely(debug))
+			{
+				logger << DebugInfo << "GDB interrupt processing thread: Locking" << EndDebugInfo;
+			}
+			Lock();
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+			if(sock != INVALID_SOCKET)
+#else
+			if(sock >= 0)
+#endif
+			{
+				char c;
+				if(unlikely(debug))
+				{
+					logger << DebugInfo << "GDB interrupt processing thread: non-blocking read" << EndDebugInfo;
+				}
+				if(GetChar(c, false))
+				{
+					if(c == 0x03)
+					{
+						// Interrupted by GDB client
+						if(unlikely(debug))
+						{
+							logger << DebugInfo << "GDB interrupt processing thread: interrupted by GDB client" << EndDebugInfo;
+						}
+						Interrupt();
+					}
+				}
+			}
+			
+			if(unlikely(debug))
+			{
+				logger << DebugInfo << "GDB interrupt processing thread: Unlocking" << EndDebugInfo;
+			}
+			Unlock();
+		}
+		
+		WaitTime(GDB_INTERRUPT_POLL_PERIOD_MS); // retry later
+	}
 }
 
 template <class ADDRESS>
@@ -384,19 +1389,19 @@ bool GDBServer<ADDRESS>::VisitArchitecture(unisim::util::xml::Node *xml_node)
 	std::string architecture_name;
 	endian = GDB_BIG_ENDIAN;
 
-	const list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
+	const std::list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
 
-	list<unisim::util::xml::Property *>::const_iterator xml_node_property;
+	typename std::list<unisim::util::xml::Property *>::const_iterator xml_node_property;
 	for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
 	{
-		if((*xml_node_property)->Name() == string("name"))
+		if((*xml_node_property)->Name() == std::string("name"))
 		{
 			architecture_name = (*xml_node_property)->Value();
 			has_architecture_name = true;
 		}
-		else if((*xml_node_property)->Name() == string("endian"))
+		else if((*xml_node_property)->Name() == std::string("endian"))
 		{
-			const string& architecture_endian = (*xml_node_property)->Value();
+			const std::string& architecture_endian = (*xml_node_property)->Value();
 			if(architecture_endian == "little")
 			{
 				endian = GDB_LITTLE_ENDIAN;
@@ -425,9 +1430,9 @@ bool GDBServer<ADDRESS>::VisitArchitecture(unisim::util::xml::Node *xml_node)
 		logger << DebugWarning << xml_node->Filename() << ":" << xml_node->LineNo() << ":assuming target architecture endian is big endian" << EndDebugWarning;
 	}
 	
-	list<unisim::util::xml::Node *>::const_iterator xml_program_counter_node;
-	const list<unisim::util::xml::Node *> *xml_child_nodes = xml_node->Childs();
-	list<unisim::util::xml::Node *>::const_iterator xml_child_node;
+	typename std::list<unisim::util::xml::Node *>::const_iterator xml_program_counter_node;
+	const std::list<unisim::util::xml::Node *> *xml_child_nodes = xml_node->Childs();
+	typename std::list<unisim::util::xml::Node *>::const_iterator xml_child_node;
 	bool has_program_counter = false;
 
 	for(xml_child_node = xml_child_nodes->begin(); xml_child_node != xml_child_nodes->end(); xml_child_node++)
@@ -458,7 +1463,7 @@ bool GDBServer<ADDRESS>::VisitArchitecture(unisim::util::xml::Node *xml_node)
 		return false;
 	}
 
-	vector<GDBRegister *>::iterator reg_iter;
+	typename std::vector<GDBRegister *>::iterator reg_iter;
 
 	for(reg_iter = gdb_registers.begin(); reg_iter != gdb_registers.end(); reg_iter++)
 	{
@@ -483,12 +1488,12 @@ bool GDBServer<ADDRESS>::VisitFeature(unisim::util::xml::Node *xml_node)
 {
 	std::string feature_name;
 	
-	const list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
+	const std::list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
 
-	list<unisim::util::xml::Property *>::const_iterator xml_node_property;
+	typename std::list<unisim::util::xml::Property *>::const_iterator xml_node_property;
 	for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
 	{
-		if((*xml_node_property)->Name() == string("name"))
+		if((*xml_node_property)->Name() == std::string("name"))
 		{
 			feature_name = (*xml_node_property)->Value();
 		}
@@ -501,8 +1506,8 @@ bool GDBServer<ADDRESS>::VisitFeature(unisim::util::xml::Node *xml_node)
 	GDBFeature *gdb_feature = new GDBFeature(feature_name, gdb_features.size());
 	gdb_features.push_back(gdb_feature);
 	
-	const list<unisim::util::xml::Node *> *xml_child_nodes = xml_node->Childs();
-	list<unisim::util::xml::Node *>::const_iterator xml_child_node;
+	const std::list<unisim::util::xml::Node *> *xml_child_nodes = xml_node->Childs();
+	typename std::list<unisim::util::xml::Node *>::const_iterator xml_child_node;
 	for(xml_child_node = xml_child_nodes->begin(); xml_child_node != xml_child_nodes->end(); xml_child_node++)
 	{
 		if((*xml_child_node)->Name() == std::string("register"))
@@ -522,17 +1527,17 @@ bool GDBServer<ADDRESS>::VisitBreakPointKind(unisim::util::xml::Node *xml_node)
 	uint32_t kind = 0;
 	uint32_t size = 0;
 	
-	const list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
+	const std::list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
 	
-	list<unisim::util::xml::Property *>::const_iterator xml_node_property;
+	typename std::list<unisim::util::xml::Property *>::const_iterator xml_node_property;
 	for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
 	{
-		if((*xml_node_property)->Name() == string("kind"))
+		if((*xml_node_property)->Name() == std::string("kind"))
 		{
 			kind = atoi((*xml_node_property)->Value().c_str());
 			has_kind = true;
 		}
-		else if((*xml_node_property)->Name() == string("size"))
+		else if((*xml_node_property)->Name() == std::string("size"))
 		{
 			size = atoi((*xml_node_property)->Value().c_str());
 			has_size = true;
@@ -564,26 +1569,26 @@ bool GDBServer<ADDRESS>::VisitBreakPointKind(unisim::util::xml::Node *xml_node)
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::VisitRegister(unisim::util::xml::Node *xml_node, GDBFeature *gdb_feature)
 {
-	string reg_name;
+	std::string reg_name;
 	bool has_reg_name = false;
 	int reg_bitsize = 0;
 	bool has_reg_bitsize = false;
 	std::string reg_type;
 	std::string reg_group;
 
-	const list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
+	const std::list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
 
-	list<unisim::util::xml::Property *>::const_iterator xml_node_property;
+	typename std::list<unisim::util::xml::Property *>::const_iterator xml_node_property;
 	for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
 	{
-		if((*xml_node_property)->Name() == string("name"))
+		if((*xml_node_property)->Name() == std::string("name"))
 		{
 			reg_name = (*xml_node_property)->Value();
 			has_reg_name = true;
 		}
 		else
 		{
-			if((*xml_node_property)->Name() == string("bitsize"))
+			if((*xml_node_property)->Name() == std::string("bitsize"))
 			{
 				reg_bitsize = atoi((*xml_node_property)->Value().c_str());
 				has_reg_bitsize = true;
@@ -594,15 +1599,15 @@ bool GDBServer<ADDRESS>::VisitRegister(unisim::util::xml::Node *xml_node, GDBFea
 			}
 			else
 			{
-				if((*xml_node_property)->Name() == string("regnum"))
+				if((*xml_node_property)->Name() == std::string("regnum"))
 				{
 					gdb_arch_reg_num = atoi((*xml_node_property)->Value().c_str());
 				}
-				else if((*xml_node_property)->Name() == string("type"))
+				else if((*xml_node_property)->Name() == std::string("type"))
 				{
 					reg_type = (*xml_node_property)->Value().c_str();
 				}
-				else if((*xml_node_property)->Name() == string("group"))
+				else if((*xml_node_property)->Name() == std::string("group"))
 				{
 					reg_group = (*xml_node_property)->Value().c_str();
 				}
@@ -676,12 +1681,12 @@ template <class ADDRESS>
 bool GDBServer<ADDRESS>::VisitProgramCounter(unisim::util::xml::Node *xml_node)
 {
 	bool has_program_counter_name = false;
-	const list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
+	const std::list<unisim::util::xml::Property *> *xml_node_properties = xml_node->Properties();
 
-	list<unisim::util::xml::Property *>::const_iterator xml_node_property;
+	typename std::list<unisim::util::xml::Property *>::const_iterator xml_node_property;
 	for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
 	{
-		if((*xml_node_property)->Name() == string("name"))
+		if((*xml_node_property)->Name() == std::string("name"))
 		{
 			program_counter_name = (*xml_node_property)->Value();
 			has_program_counter_name = true;
@@ -703,13 +1708,13 @@ void GDBServer<ADDRESS>::OnDisconnect()
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::ParseHex(const string& s, size_t& pos, ADDRESS& value)
+bool GDBServer<ADDRESS>::ParseHex(const std::string& s, std::size_t& pos, ADDRESS& value)
 {
-	size_t len = s.length();
-	size_t n = 0;
+	std::size_t len = s.length();
+	std::size_t n = 0;
 
 	value = 0;
-	while(pos < len && n < 2 * sizeof(ADDRESS))
+	while((pos < len) && (n < (2 * sizeof(ADDRESS))))
 	{
 		uint8_t nibble;
 		if(!IsHexChar(s[pos])) break;
@@ -725,401 +1730,178 @@ bool GDBServer<ADDRESS>::ParseHex(const string& s, size_t& pos, ADDRESS& value)
 template <class ADDRESS>
 void GDBServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event)
 {
-	switch(event->GetType())
-	{
-		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
-			break;
-		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT:
-			break;
-		default:
-			// ignore event
-			return;
-	}
+	typename unisim::util::debug::Event<ADDRESS>::Type event_type = event->GetType();
 	
-	trap = true;
+	if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_FETCH_INSN))
+	{
+		const unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = static_cast<const unisim::util::debug::FetchInsnEvent<ADDRESS> *>(event);
+		if(unlikely(debug))
+		{
+			logger << DebugInfo << "/\\/\\/\\ " << *fetch_insn_event << EndDebugInfo;
+		}
+		
+		cia = fetch_insn_event->GetAddress();
+		trap = true;
+		return;
+	}
+	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_COMMIT_INSN))
+	{
+		if(unlikely(debug))
+		{
+			const unisim::util::debug::CommitInsnEvent<ADDRESS> *commit_insn_event = static_cast<const unisim::util::debug::CommitInsnEvent<ADDRESS> *>(event);
+			logger << DebugInfo << "/\\/\\/\\ " << *commit_insn_event << EndDebugInfo;
+		}
+	}
+	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT))
+	{
+		if(unlikely(debug))
+		{
+			const unisim::util::debug::Breakpoint<ADDRESS> *breakpoint = static_cast<const unisim::util::debug::Breakpoint<ADDRESS> *>(event);
+			logger << DebugInfo << "/\\/\\/\\ " << *breakpoint << EndDebugInfo;
+		}
+		trap = true;
+	}
+	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT))
+	{
+		if(unlikely(debug))
+		{
+			const unisim::util::debug::Watchpoint<ADDRESS> *watchpoint = static_cast<const unisim::util::debug::Watchpoint<ADDRESS> *>(event);
+			logger << DebugInfo << "/\\/\\/\\ " << *watchpoint << EndDebugInfo;
+		}
+		trap = true;
+	}
+	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_TRAP))
+	{
+		if(unlikely(debug))
+		{
+			const unisim::util::debug::TrapEvent<ADDRESS> *trap_event = static_cast<const unisim::util::debug::TrapEvent<ADDRESS> *>(event);
+			logger << DebugInfo << "/\\/\\/\\ " << *trap_event << EndDebugInfo;
+		}
+		trap = true;
+	}
+	else
+	{
+		if(unlikely(debug))
+		{
+			logger << DebugInfo << "/\\/\\/\\ unknown event" << EndDebugInfo;
+		}
+		// ignore event
+		return;
+	}
+
 	synched = true;
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::DebugYield()
+{
+	if(unlikely(debug))
+	{
+		logger << DebugInfo << "debug yield" << EndDebugInfo;
+	}
+	if(likely(wait_for_command_processing))
+	{
+		WaitForCommandProcessing();
+		if(unlikely(killed))
+		{
+			unisim::kernel::service::Object::Stop(-1);
+			return;
+		}
+	}
+}
+
+template <class ADDRESS>
+std::string GDBServer<ADDRESS>::GetLastErrorString()
+{
+	std::stringstream err_sstr;
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	int err_code = WSAGetLastError();
+	err_sstr << "Error #" << err_code << ": ";
+	char *err_c_str = 0;
+	LPTSTR *lptstr_err_str = NULL;
+	if(FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 
+	              NULL,
+	              err_code,
+	              0,
+	              (LPTSTR) &lptstr_err_str,
+	              0,
+	              NULL) == 0)
+	{
+		return err_sstr.str();
+	}
+#if UNICODE
+	size_t error_c_str_length = wcstombs(NULL, lptstr_err_str, 0);
+    err_c_str = new char[error_c_str_length + 1];
+	memset(err_c_str, 0, error_c_str_length);
+    if(wcstombs(err_c_str, lptstr_err_str, error_c_str_length + 1) < 0)
+	{
+		LocalFree(lptstr_err_str);
+		delete[] err_c_str;
+		return err_sstr.str();
+	}
+#else
+	err_c_str = (char *) lptstr_err_str;
+#endif
 	
-	DisplayMonitoredInternals();
-}
-
-template <class ADDRESS>
-void GDBServer<ADDRESS>::ReportTrap()
-{
-	trap = true;
-	synched = false;
-	DisplayMonitoredInternals();
-}
-
-template <class ADDRESS>
-void
-GDBServer<ADDRESS>::
-ReportTrap(const unisim::kernel::service::Object &obj)
-{
-	ReportTrap();
-}
-
-template <class ADDRESS>
-void
-GDBServer<ADDRESS>::
-ReportTrap(const unisim::kernel::service::Object &obj,
-		   const std::string &str)
-{
-	ReportTrap();
-}
-
-template <class ADDRESS>
-void
-GDBServer<ADDRESS>::
-ReportTrap(const unisim::kernel::service::Object &obj,
-		   const char *c_str)
-{
-	ReportTrap();
-}
-
-template <class ADDRESS>
-typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)
-{
-	ADDRESS addr;
-	ADDRESS size;
-	ADDRESS reg_num;
-	ADDRESS type;
-
-	if(running_mode != GDBSERVER_MODE_WAITING_GDB_CLIENT)
-	{
-		if(running_mode == GDBSERVER_MODE_CONTINUE && !trap)
-		{
-			if(--counter > 0)
-			{
-				return DebugControl<ADDRESS>::DBG_STEP;
-			}
-
-			counter = period;
-
-			char c;
-
-			if(GetChar(c, false))
-			{
-				if(c == 0x03)
-				{
-					running_mode = GDBSERVER_MODE_WAITING_GDB_CLIENT;
-					DisplayMonitoredInternals();
-					ReportTracePointTrap();
-				}
-			}
-			else
-			{
-				return DebugControl<ADDRESS>::DBG_STEP;
-			}
-		}
-
-		if((trap || running_mode == GDBSERVER_MODE_STEP) && !synched)
-		{
-			synched = true;
-			return DebugControl<ADDRESS>::DBG_SYNC;
-		}
-
-		if(trap || running_mode == GDBSERVER_MODE_STEP)
-		{
-			ReportTracePointTrap();
-			running_mode = GDBSERVER_MODE_WAITING_GDB_CLIENT;
-			trap = false;
-		}
-	}
-
-	string packet;
-
-	while(!killed)
-	{
-		if(!GetPacket(packet, true))
-		{
-			Object::Stop(0);
-			return DebugControl<ADDRESS>::DBG_KILL;
-		}
-
-		size_t pos = 0;
-		size_t len = packet.length();
-
-		switch(packet[pos++])
-		{
-			case 'g':
-				if(!ReadRegisters())
-				{
-					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
-				}
-				break;
-
-			case 'p':
-				if(!ParseHex(packet, pos, reg_num)) break;
-				if(!ReadRegister(reg_num))
-				{
-					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
-				}
-				break;
-
-			case 'G':
-				if(!WriteRegisters(packet.substr(1)))
-				{
-					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
-				}
-				break;
-
-			case 'P':
-				if(!ParseHex(packet, pos, reg_num)) break;
-				if(packet[pos++] != '=') break;
-				if(!WriteRegister(reg_num, packet.substr(pos)))
-				{
-					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
-				}
-				break;
-
-			case 'm':
-				if(!ParseHex(packet, pos, addr)) break;
-				if(packet[pos++] != ',') break;
-				if(!ParseHex(packet, pos, size)) break;
-				if(pos != len) break;
-				if(!ReadMemoryHex(addr * memory_atom_size, size))
-				{
-					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
-				}
-				break;
-
-			case 'M':
-				if(!ParseHex(packet, pos, addr)) break;
-				if(packet[pos++] != ',') break;
-				if(!ParseHex(packet, pos, size)) break;
-				if(packet[pos++] != ':') break;
-				if(!WriteMemoryHex(addr * memory_atom_size, packet.substr(pos), size))
-				{
-					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
-				}
-				break;
-				
-			case 'X':
-				if(!ParseHex(packet, pos, addr)) break;
-				if(packet[pos++] != ',') break;
-				if(!ParseHex(packet, pos, size)) break;
-				if(packet[pos++] != ':') break;
-				if(!WriteMemoryBin(addr * memory_atom_size, packet.substr(pos), size))
-				{
-					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
-				}
-				break;
-
-			case 's':
-				if(!ParseHex(packet, pos, addr))
-				{
-					running_mode = GDBSERVER_MODE_STEP;
-					synched = false;
-					return DebugControl<ADDRESS>::DBG_STEP;
-				}
-				if(gdb_pc)
-					gdb_pc->SetValue(&addr);
-				else
-				{
-					if(verbose)
-					{
-						logger << DebugWarning << "CPU has no program counter" << EndDebugWarning;
-					}
-				}
-				running_mode = GDBSERVER_MODE_STEP;
-				synched = false;
-				return DebugControl<ADDRESS>::DBG_STEP;
-				break;
-
-			case 'c':
-				if(!ParseHex(packet, pos, addr))
-				{
-					running_mode = GDBSERVER_MODE_CONTINUE;
-					return DebugControl<ADDRESS>::DBG_STEP;
-				}
-				addr *= memory_atom_size;
-				if(gdb_pc)
-					gdb_pc->SetValue(&addr);
-				else
-				{
-					if(verbose)
-					{
-						logger << DebugWarning << "CPU has no program counter" << EndDebugWarning;
-					}
-				}
-				running_mode = GDBSERVER_MODE_CONTINUE;
-				return DebugControl<ADDRESS>::DBG_STEP;
-				break;
-
-			case 'H':
-				PutPacket("E01");
-				break;
-
-			case 'k':
-
-				if(!extended_mode)
-				{
-					Kill();
-					killed = true;
-				}
-				break;
-
-			case 'R':
-				return DebugControl<ADDRESS>::DBG_RESET;
-				break;
-
-			case '?':
-				ReportTracePointTrap();
-				break;
-
-			case '!':
-				extended_mode = true;
-				PutPacket("OK");
-				break;
-
-			case 'Z':
-				if(!ParseHex(packet, pos, type)) break;
-				if(packet[pos++] != ',') break;
-				if(!ParseHex(packet, pos, addr)) break;
-				if(packet[pos++] != ',') break;
-				if(!ParseHex(packet, pos, size)) break;
-				if(!SetBreakpointWatchpoint(type, addr * memory_atom_size, size))
-				{
-					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
-				}
-				break;
-
-			case 'z':
-				if(!ParseHex(packet, pos, type)) break;
-				if(packet[pos++] != ',') break;
-				if(!ParseHex(packet, pos, addr)) break;
-				if(packet[pos++] != ',') break;
-				if(!ParseHex(packet, pos, size)) break;
-				if(!RemoveBreakpointWatchpoint(type, addr * memory_atom_size, size))
-				{
-					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
-				}
-				break;
-
-			default:
-
-				if(packet == "qSymbol" || packet == "qSymbol::")
-				{
-					PutPacket("OK");
-				}
-				else if(packet == "vCont?")
-				{
-					PutPacket("vCont;c;C;s;S");
-				}
-				else if(packet.substr(0, 7) == "vCont;c")
-				{
-					running_mode = GDBSERVER_MODE_CONTINUE;
-					return DebugControl<ADDRESS>::DBG_STEP;
-				}
-				else if(packet.substr(0, 7) == "vCont;s")
-				{
-					running_mode = GDBSERVER_MODE_STEP;
-					synched = false;
-					return DebugControl<ADDRESS>::DBG_STEP;
-				}
-				else if(packet.substr(0, 5) == "vKill")
-				{
-					Kill();
-					killed = true;
-				}
-				else if(packet.substr(0, 6) == "qRcmd,")
-				{
-					HandleQRcmd(packet.substr(6));
-				}
-				else if(packet.substr(0, 10) == "qSupported")
-				{
-					HandleQSupported(packet.substr(10));
-				}
-				else if(packet == "qC")
-				{
-					HandleQC();
-				}
-				else if(packet.substr(0, 9) == "qAttached")
-				{
-					HandleQAttached(packet.substr(9));
-				}
-				else if(packet.substr(0, 8) == "qTStatus")
-				{
-					HandleQTStatus();
-				}
-				else if(packet == "QStartNoAckMode")
-				{
-					HandleQStartNoAckMode();
-				}
-				else if(packet.substr(0, 20) == "qXfer:features:read:")
-				{
-					HandleQXferFeaturesRead(packet.substr(20));
-				}
-				else if(packet == "qfThreadInfo")
-				{
-					HandleQfThreadInfo();
-				}
-				else if(packet == "qsThreadInfo")
-				{
-					HandleQsThreadInfo();
-				}
-				else
-				{
-					if(verbose)
-					{
-						logger << DebugWarning << "Received an unknown GDB remote protocol packet" << EndDebugWarning;
-					}
-					PutPacket("");
-				}
-				break;
-		} // end of switch
-	}
-	Object::Stop(0);
-	return (DebugControl<ADDRESS>::DBG_KILL);
+	err_sstr << err_c_str;
+	
+	LocalFree(lptstr_err_str);
+#if UNICODE
+	delete[] err_c_str;
+#endif
+	
+#else
+	err_sstr << "Error #" << errno << ": " << strerror(errno);
+#endif
+	return err_sstr.str();
 }
 
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::GetChar(char& c, bool blocking)
 {
+	if(sock_error) return false;
+	
 	if(input_buffer_size == 0)
 	{
 		do
 		{
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+			if(sock == INVALID_SOCKET) return false;
 			int r = recv(sock, input_buffer, sizeof(input_buffer), 0);
-			if(r == 0 || r == SOCKET_ERROR)
+			if((r == 0) || (r == SOCKET_ERROR))
 #else
+			if(sock < 0) return false;
 			ssize_t r = read(sock, input_buffer, sizeof(input_buffer));
 			if(r <= 0)
 #endif
 			{
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-				if(r == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
+				if(r == SOCKET_ERROR)
 #else
-				if(r < 0 && errno == EAGAIN)
+				if(r < 0)
 #endif
 				{
-					if(blocking)
-					{
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-						Sleep(1); // sleep for 10ms
+					if(WSAGetLastError() == WSAEWOULDBLOCK)
 #else
-						usleep(1000); // sleep for 10ms
+					if((errno == EAGAIN) || (errno == EWOULDBLOCK))
 #endif
-						continue;
-					}
-					else
 					{
-						return false;
+						if(blocking && !killed)
+						{
+							WaitTime(NON_BLOCKING_READ_POLL_PERIOD_MS);
+							continue;
+						}
+						else
+						{
+							return false;
+						}
 					}
+					
+					logger << DebugError << "can't read from socket (" << GetLastErrorString() << ")" << EndDebugError;
+					sock_error = true;
+					return false;
 				}
-
-				logger << DebugError << "can't read from socket" << EndDebugError;
-				return false;
 			}
 			input_buffer_index = 0;
 			input_buffer_size = r;
@@ -1135,9 +1917,11 @@ bool GDBServer<ADDRESS>::GetChar(char& c, bool blocking)
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::FlushOutput()
 {
+	if(sock_error) return false;
+	
 	if(output_buffer_size > 0)
 	{
-//		cerr << "begin: output_buffer_size = " << output_buffer_size << endl;
+//		std::cerr << "begin: output_buffer_size = " << output_buffer_size << std::endl;
 		unsigned int index = 0;
 		do
 		{
@@ -1149,17 +1933,45 @@ bool GDBServer<ADDRESS>::FlushOutput()
 			if(r <= 0)
 #endif
 			{
-				logger << DebugError << "can't write into socket" << EndDebugError;
-				return false;
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+				if(r == SOCKET_ERROR)
+#else
+				if(r < 0)
+#endif
+				{
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+					if(WSAGetLastError() == WSAEWOULDBLOCK)
+#else
+					if((errno == EAGAIN) || (errno == EWOULDBLOCK))
+#endif
+					{
+						if(!killed)
+						{
+							WaitTime(NON_BLOCKING_WRITE_POLL_PERIOD_MS);
+							continue;
+						}
+						else
+						{
+							return false;
+						}
+					}
+					
+					logger << DebugError << "can't write to socket (" << GetLastErrorString() << ")" << EndDebugError;
+					sock_error = true;
+					return false;
+				}
+				
+				WaitTime(NON_BLOCKING_READ_POLL_PERIOD_MS);
+				continue;
 			}
 
 			index += r;
 			output_buffer_size -= r;
-//			cerr << "output_buffer_size = " << output_buffer_size << endl;
+//			std::cerr << "output_buffer_size = " << output_buffer_size << std::endl;
 		}
 		while(output_buffer_size > 0);
 	}
-//	cerr << "end: output_buffer_size = " << output_buffer_size << endl;
+//	std::cerr << "end: output_buffer_size = " << output_buffer_size << std::endl;
 	return true;
 }
 
@@ -1176,7 +1988,7 @@ bool GDBServer<ADDRESS>::PutChar(char c)
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::GetPacket(string& s, bool blocking)
+bool GDBServer<ADDRESS>::GetPacket(std::string& s, bool blocking)
 {
 	uint8_t checksum;
 	uint8_t received_checksum;
@@ -1266,7 +2078,7 @@ bool GDBServer<ADDRESS>::GetPacket(string& s, bool blocking)
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::PutPacket(const string& s)
+bool GDBServer<ADDRESS>::PutPacket(const std::string& s)
 {
 	uint8_t checksum;
 	unsigned int pos;
@@ -1337,15 +2149,15 @@ template <class ADDRESS>
 bool GDBServer<ADDRESS>::ReadRegisters()
 {
 	unsigned int reg_num;
-	string packet;
-	vector<GDBRegister *>::const_iterator gdb_reg_iter;
+	std::string packet;
+	typename std::vector<GDBRegister *>::const_iterator gdb_reg_iter;
 
 	for(reg_num = 0, gdb_reg_iter = gdb_registers.begin(); gdb_reg_iter != gdb_registers.end(); reg_num++, gdb_reg_iter++)
 	{
 		GDBRegister *gdb_reg = *gdb_reg_iter;
 		if(gdb_reg) // there are some holes in the register map
 		{
-			string hex;
+			std::string hex;
 			gdb_reg->GetValue(hex);
 			if(verbose)
 			{
@@ -1358,10 +2170,10 @@ bool GDBServer<ADDRESS>::ReadRegisters()
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::WriteRegisters(const string& hex)
+bool GDBServer<ADDRESS>::WriteRegisters(const std::string& hex)
 {
 	bool write_error = false;
-	vector<GDBRegister *>::iterator gdb_reg_iter;
+	typename std::vector<GDBRegister *>::iterator gdb_reg_iter;
 	unsigned int pos = 0;
 
 	for(gdb_reg_iter = gdb_registers.begin(); gdb_reg_iter != gdb_registers.end(); gdb_reg_iter++)
@@ -1392,7 +2204,7 @@ bool GDBServer<ADDRESS>::ReadRegister(unsigned int regnum)
 	const GDBRegister *gdb_reg = gdb_registers[regnum];
 	if(gdb_reg)
 	{
-		string packet;
+		std::string packet;
 		if(gdb_reg->GetValue(packet))
 		{
 			return PutPacket(packet);
@@ -1409,7 +2221,7 @@ bool GDBServer<ADDRESS>::ReadRegister(unsigned int regnum)
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::WriteRegister(unsigned int regnum, const string& hex)
+bool GDBServer<ADDRESS>::WriteRegister(unsigned int regnum, const std::string& hex)
 {
 	if(regnum >= gdb_registers.size())
 	{
@@ -1440,7 +2252,7 @@ bool GDBServer<ADDRESS>::ReadMemoryHex(ADDRESS addr, uint32_t size)
 {
 	bool read_error = false;
 	bool overwrapping = false;
-	string packet;
+	std::string packet;
 	char c;
 
 	if(size > 0)
@@ -1476,7 +2288,7 @@ bool GDBServer<ADDRESS>::ReadMemoryHex(ADDRESS addr, uint32_t size)
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::WriteMemoryHex(ADDRESS addr, const string& hex, uint32_t size)
+bool GDBServer<ADDRESS>::WriteMemoryHex(ADDRESS addr, const std::string& hex, uint32_t size)
 {
 	bool write_error = false;
 	bool overwrapping = false;
@@ -1516,7 +2328,7 @@ bool GDBServer<ADDRESS>::ReadMemoryBin(ADDRESS addr, uint32_t size)
 {
 	bool read_error = false;
 	bool overwrapping = false;
-	string packet;
+	std::string packet;
 
 	if(size > 0)
 	{
@@ -1561,7 +2373,7 @@ bool GDBServer<ADDRESS>::ReadMemoryBin(ADDRESS addr, uint32_t size)
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::WriteMemoryBin(ADDRESS addr, const string& bin, uint32_t size)
+bool GDBServer<ADDRESS>::WriteMemoryBin(ADDRESS addr, const std::string& bin, uint32_t size)
 {
 	bool write_error = false;
 	bool malformed_binary_data = false;
@@ -1626,17 +2438,84 @@ bool GDBServer<ADDRESS>::WriteMemoryBin(ADDRESS addr, const string& bin, uint32_
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::Kill()
+void GDBServer<ADDRESS>::KillFromThrdProcessCmd()
 {
-	if(sock >= 0)
+	if(unlikely(debug))
 	{
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-		closesocket(sock);
-#else
-		close(sock);
-#endif
-		sock = -1;
+		logger << DebugInfo << "GDB command processing thread: Kill" << EndDebugInfo;
 	}
+	killed = true;
+	session_terminated = true;
+	wait_for_command_processing = false;
+	Run();
+}
+
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::KillFromSimulationRun()
+{
+	if(unlikely(debug))
+	{
+		logger << DebugInfo << "Simulation thread: Kill" << EndDebugInfo;
+	}
+	killed = true;
+	stop_process_cmd_thrd = true;
+	session_terminated = true;
+	UnblockCommandProcessing();
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::TriggerDebugYield()
+{
+	if(debug_yielding_request_import)
+	{
+		debug_yielding_request_import->DebugYieldRequest();
+	}
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::Interrupt()
+{
+	trap = true;
+	TriggerDebugYield();
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::ListenFetch()
+{
+	if(!fetch_insn_event) return false;
+	if(listening_fetch) return true;
+	
+	if(debug_event_trigger_import)
+	{
+		if(debug_event_trigger_import->Listen(fetch_insn_event))
+		{
+			listening_fetch = true;
+			return true;
+		}
+	}
+
+	logger << DebugError << "Can't track fetched instructions" << EndDebugError;
+	return false;
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::UnlistenFetch()
+{
+	if(!fetch_insn_event) return false;
+	if(!listening_fetch) return true;
+
+	if(debug_event_trigger_import)
+	{
+		if(debug_event_trigger_import->Unlisten(fetch_insn_event))
+		{
+			listening_fetch = false;
+			return true;
+		}
+	}
+
+	logger << DebugError << "Can't untrack fetched instructions" << EndDebugError;
+	return false;
 }
 
 template <class ADDRESS>
@@ -1656,13 +2535,13 @@ bool GDBServer<ADDRESS>::ReportSignal(unsigned int signum)
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::ReportTracePointTrap()
 {
-	string packet("T05");
-	vector<GDBRegister>::const_iterator gdb_reg;
+	std::string packet("T05");
+	typename std::vector<GDBRegister>::const_iterator gdb_reg;
 
 	if(gdb_pc)
 	{
 		std::stringstream sstr;
-		string hex;
+		std::string hex;
 		unsigned int reg_num = gdb_pc->GetRegNum();
 		gdb_pc->GetValue(hex);
 		sstr << std::hex << reg_num;
@@ -1680,7 +2559,7 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 {
 	uint32_t size = 0;
 	
-	std::map<uint32_t, uint32_t>::const_iterator arch_specific_breakpoint_kind = arch_specific_breakpoint_kinds.find(kind);
+	typename std::map<uint32_t, uint32_t>::const_iterator arch_specific_breakpoint_kind = arch_specific_breakpoint_kinds.find(kind);
 	
 	if(arch_specific_breakpoint_kind != arch_specific_breakpoint_kinds.end())
 	{
@@ -1696,7 +2575,7 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 // 	cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
 // 	     << ": type = " << type
 // 	     << " address = 0x" << hex << addr << dec
-// 	     << " size = " << size << endl;
+// 	     << " size = " << size << std::endl;
 
 	switch(type)
 	{
@@ -1777,7 +2656,7 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 {
 	uint32_t size = 0;
 	
-	std::map<uint32_t, uint32_t>::const_iterator arch_specific_breakpoint_kind = arch_specific_breakpoint_kinds.find(kind);
+	typename std::map<uint32_t, uint32_t>::const_iterator arch_specific_breakpoint_kind = arch_specific_breakpoint_kinds.find(kind);
 	
 	if(arch_specific_breakpoint_kind != arch_specific_breakpoint_kinds.end())
 	{
@@ -1793,7 +2672,7 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 // 	cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
 // 	     << ": type = " << type
 // 	     << " address = 0x" << hex << addr << dec
-// 	     << " size = " << size << endl;
+// 	     << " size = " << size << std::endl;
 
 	switch(type)
 	{
@@ -1864,14 +2743,14 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::HandleQRcmd(string command)
+void GDBServer<ADDRESS>::HandleQRcmd(std::string command)
 {
 	std::size_t pos = 0;
 	std::size_t len = command.length();
 	
 	char c;
-	string variable_name;
-	string variable_value;
+	std::string variable_name;
+	std::string variable_value;
 	// skip white characters
 	do
 	{
@@ -1896,7 +2775,7 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command)
 		variable = Object::GetSimulator()->FindVariable(variable_name.c_str());
 		if(variable->IsVoid())
 		{
-			string msg("unknown variable\n");
+			std::string msg("unknown variable\n");
 			OutputText(msg.c_str(), msg.length());
 			PutPacket("OK");
 			return;
@@ -1905,7 +2784,7 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command)
 		if(pos >= len)
 		{
 			// it's a get!
-			string msg(variable_name + "=" + ((string) *variable) + "\n");
+			std::string msg(variable_name + "=" + ((std::string) *variable) + "\n");
 			OutputText(msg.c_str(), msg.length());
 			PutPacket("OK");
 			return;
@@ -1920,13 +2799,76 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command)
 			variable_value.append(1, c);
 		}
 
-		string msg(variable_name + "<-" + variable_value + "\n");
+		std::string msg(variable_name + "<-" + variable_value + "\n");
 		OutputText(msg.c_str(), msg.length());
 		*variable = variable_value.c_str();
 		PutPacket("OK");
 		return;
 	}
 
+	PutPacket("E00");
+}
+
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::HandleQRegisterInfo(std::string hex_reg_order_num)
+{
+	unsigned int reg_order_num = 0;
+	std::stringstream sstr(hex_reg_order_num);
+	sstr >> std::hex;
+	sstr >> reg_order_num;
+	
+	typename std::vector<GDBRegister *>::iterator gdb_reg_iter;
+	unsigned int i;
+	unsigned int offset = 0;
+
+	for(gdb_reg_iter = gdb_registers.begin(), i = 0; gdb_reg_iter != gdb_registers.end(); gdb_reg_iter++, i++)
+	{
+		GDBRegister *gdb_reg = *gdb_reg_iter;
+		if(gdb_reg) // there are some holes in the register map
+		{
+			if(i == reg_order_num)
+			{
+				std::stringstream packet_sstr;
+				
+				packet_sstr << "name:" << gdb_reg->GetName();
+				packet_sstr << ";bitsize:" << std::dec << gdb_reg->GetBitSize();
+				packet_sstr << ";offset:" << std::dec << offset;
+				packet_sstr << ";encoding:";
+				
+				if(strncmp(gdb_reg->GetType(), "uint", 4) == 0)
+				{
+					packet_sstr << "uint;format:hex";
+				}
+				else if(strncmp(gdb_reg->GetType(), "int", 3) == 0)
+				{
+					packet_sstr << "sint;format:hex";
+				}
+				else if(strncmp(gdb_reg->GetType(), "ieee_", 5) == 0)
+				{
+					packet_sstr << "ieee754;format:float";
+				}
+				else if(strncmp(gdb_reg->GetType(), "vec", 3) == 0)
+				{
+					packet_sstr << "vector;format:hex";
+				}
+				else
+				{
+					packet_sstr << "uint;format:hex";
+				}
+				
+				if(strlen(gdb_reg->GetGroup()) != 0)
+				{
+					packet_sstr << ";set:" << gdb_reg->GetGroup();
+				}
+				
+				PutPacket(packet_sstr.str());
+				return;
+			}
+			offset += gdb_reg->GetByteSize();
+		}
+	}
+	
 	PutPacket("E00");
 }
 
@@ -1947,7 +2889,8 @@ void GDBServer<ADDRESS>::SetGDBClientFeature(std::string gdb_client_feature)
 		{ "fork-events", &gdb_client_feature_fork_events },
 		{ "vfork-events", &gdb_client_feature_vfork_events },
 		{ "exec-events", &gdb_client_feature_exec_events },
-		{ "vContSupported", &gdb_client_feature_vcont }
+		{ "vContSupported", &gdb_client_feature_vcont },
+		{ "t32extensions", &gdb_client_feature_vcont }
 	};
 	
 	unsigned int n = sizeof(features) / sizeof(features[0]);
@@ -2165,7 +3108,7 @@ void GDBServer<ADDRESS>::DisplayMonitoredInternals()
 		
 		if(!variable->IsVoid())
 		{
-			std::string msg(variable_name + "=" + ((string) *variable));
+			std::string msg(variable_name + "=" + ((std::string) *variable));
 			OutputText(msg.c_str(), msg.length());
 		}
 	}

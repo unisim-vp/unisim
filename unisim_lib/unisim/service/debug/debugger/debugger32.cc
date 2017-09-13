@@ -43,7 +43,14 @@ namespace service {
 namespace debug {
 namespace debugger {
 
-template class Debugger<uint32_t>;
+struct Debugger32Config
+{
+	typedef uint32_t ADDRESS;
+	static const unsigned int NUM_PROCESSORS = 1;
+	static const unsigned int MAX_FRONT_ENDS = 1;
+};
+
+template class Debugger<Debugger32Config>;
 
 } // end of namespace debugger
 } // end of namespace debug

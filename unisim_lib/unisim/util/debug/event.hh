@@ -42,7 +42,7 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-template <class ADDRESS>
+template <typename ADDRESS>
 class Event
 {
 public:
@@ -51,13 +51,25 @@ public:
 		EV_UNKNOWN = 0,
 		EV_BREAKPOINT,
 		EV_WATCHPOINT,
+		EV_FETCH_INSN,
+		EV_COMMIT_INSN,
+		EV_TRAP
 	} Type;
 	
-	Event(Type _type) : type(_type) {}
-	virtual ~Event() {}
+	Event(Type _type) : type(_type), prc_num(-1), front_end_num(-1), ref_count(0) { ref_count = new unsigned int(); *ref_count = 0; }
+	virtual ~Event() { delete ref_count; }
 	Type GetType() const { return type; }
+	int GetProcessorNumber() const { return prc_num; }
+	int GetFrontEndNumber() const { return front_end_num; }
+	void SetProcessorNumber(int _prc_num) { if((prc_num >= 0) || (_prc_num < 0)) return; prc_num = _prc_num; }
+	void SetFrontEndNumber(int _front_end_num) { if((front_end_num >= 0) || (_front_end_num < 0)) return; front_end_num = _front_end_num; }
+	void Catch() const { (*ref_count)++; }
+	void Release() const { if((*ref_count) && --(*ref_count) == 0) delete this; }
 private:
 	Type type;
+	int prc_num;
+	int front_end_num;
+	unsigned int *ref_count;
 };
 
 } // end of namespace debug

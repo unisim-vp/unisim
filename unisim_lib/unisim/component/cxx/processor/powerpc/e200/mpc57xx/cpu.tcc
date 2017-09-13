@@ -1193,26 +1193,9 @@ void CPU<TYPES, CONFIG>::StepOneInstruction()
 		}
 	}
 	
-	if(unlikely(this->debug_control_import != 0))
+	if(unlikely(this->debug_yielding_import != 0))
 	{
-		do
-		{
-			typename unisim::service::interfaces::DebugControl<ADDRESS>::DebugCommand dbg_cmd;
-
-			dbg_cmd = this->debug_control_import->FetchDebugCommand(this->cia);
-	
-			if(dbg_cmd == unisim::service::interfaces::DebugControl<ADDRESS>::DBG_STEP) break;
-			if(dbg_cmd == unisim::service::interfaces::DebugControl<ADDRESS>::DBG_SYNC)
-			{
-				//Synchronize();
-				continue;
-			}
-
-			if(dbg_cmd == unisim::service::interfaces::DebugControl<ADDRESS>::DBG_KILL) this->Stop(0);
-			if(dbg_cmd == unisim::service::interfaces::DebugControl<ADDRESS>::DBG_RESET)
-			{
-			}
-		} while(1);
+		this->debug_yielding_import->DebugYield();
 	}
 
 	ADDRESS addr = this->cia;
@@ -1222,6 +1205,11 @@ void CPU<TYPES, CONFIG>::StepOneInstruction()
 		operation = vle_decoder.Decode(addr, insn);
 
 		this->nia = this->cia + (operation->GetLength() / 8);
+#if 0
+		std::stringstream sstr;
+		operation->disasm(static_cast<typename CONFIG::CPU *>(this), sstr);
+		this->logger << DebugInfo << "executing instruction #" << this->instruction_counter << ":0x" << std::hex << addr << std::dec << ":" << sstr.str() << EndDebugInfo;
+#endif
 		/* execute the instruction */
 		if(likely(operation->execute(static_cast<typename CONFIG::CPU *>(this))))
 		{

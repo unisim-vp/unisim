@@ -2317,8 +2317,56 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="sel-cpu[0]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000000</value>
+			<description>CPU being debugged by front-end</description>
+		</variable>
+		<variable name="sel-cpu[1]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000001</value>
+			<description>CPU being debugged by front-end</description>
+		</variable>
+		<variable name="sel-cpu[2]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000002</value>
+			<description>CPU being debugged by front-end</description>
+		</variable>
+		<variable name="sel-cpu[3]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000000</value>
+			<description>CPU being debugged by front-end</description>
+		</variable>
+		<variable name="sel-cpu[4]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000000</value>
+			<description>CPU being debugged by front-end</description>
+		</variable>
+		<variable name="sel-cpu[5]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000000</value>
+			<description>CPU being debugged by front-end</description>
+		</variable>
+		<variable name="sel-cpu[6]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000000</value>
+			<description>CPU being debugged by front-end</description>
+		</variable>
+		<variable name="sel-cpu[7]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000000</value>
+			<description>CPU being debugged by front-end</description>
+		</variable>
 	</object>
-	<object name="gdb-server">
+	<object name="gdb-server0">
 		<variable name="memory-atom-size">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
@@ -2347,11 +2395,143 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="debug">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable debug (intended for developper)</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 		<variable name="monitor-internals">
 			<type>parameter</type>
 			<data_type>string</data_type>
 			<value></value>
 			<description>List of internal simulator variables to monitor in GDB Front-End</description>
+		</variable>
+		<variable name="wait-for-connection-at-startup">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>Whether to wait for connection of GDB client at startup</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="gdb-server1">
+		<variable name="memory-atom-size">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>1</value>
+			<description>size of the smallest addressable element in memory</description>
+		</variable>
+		<variable name="tcp-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>12346</value>
+			<description>TCP/IP port to listen waiting for a GDB client connection</description>
+		</variable>
+		<variable name="architecture-description-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>gdb_powerpc_vle.xml</value>
+			<description>filename of a XML description of the connected processor</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="debug">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable debug (intended for developper)</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="monitor-internals">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>List of internal simulator variables to monitor in GDB Front-End</description>
+		</variable>
+		<variable name="wait-for-connection-at-startup">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>Whether to wait for connection of GDB client at startup</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="gdb-server2">
+		<variable name="memory-atom-size">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>1</value>
+			<description>size of the smallest addressable element in memory</description>
+		</variable>
+		<variable name="tcp-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>12347</value>
+			<description>TCP/IP port to listen waiting for a GDB client connection</description>
+		</variable>
+		<variable name="architecture-description-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>gdb_powerpc_vle.xml</value>
+			<description>filename of a XML description of the connected processor</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="debug">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable debug (intended for developper)</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="monitor-internals">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>List of internal simulator variables to monitor in GDB Front-End</description>
+		</variable>
+		<variable name="wait-for-connection-at-startup">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>Whether to wait for connection of GDB client at startup</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
 		</variable>
 	</object>
 	<object name="loader">

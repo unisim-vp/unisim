@@ -706,6 +706,9 @@ unisim/util/debug/data_object.hh \
 unisim/util/debug/type.hh \
 unisim/util/debug/data_object_initializer.hh \
 unisim/util/debug/subprogram.hh \
+unisim/util/debug/fetch_insn_event.hh \
+unisim/util/debug/commit_insn_event.hh \
+unisim/util/debug/trap_event.hh \
 unisim/util/debug/dwarf/abbrev.hh \
 unisim/util/debug/dwarf/attr.hh \
 unisim/util/debug/dwarf/call_frame_vm.hh \
@@ -775,7 +778,8 @@ unisim/util/lexer/lexer.hh \
 unisim/util/parser/parser.hh \
 unisim/util/reg/core/register.hh \
 unisim/util/cache/cache.hh \
-unisim/service/interfaces/debug_control.hh \
+unisim/service/interfaces/debug_yielding.hh \
+unisim/service/interfaces/debug_selecting.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
@@ -997,7 +1001,9 @@ UNISIM_SIMULATORS_MPC5777M_TEMPLATE_FILES="\
 "
 
 UNISIM_SIMULATORS_MPC5777M_EXTRA_FILES="\
-trace32.cmm.in \
+trace32-amp-core0.cmm.in \
+trace32-amp-core1.cmm.in \
+trace32-amp-core2.cmm.in \
 sim_gtkwave.sh.in \
 "
 
@@ -1502,9 +1508,9 @@ if [ "${has_to_build_mpc5777m_configure}" = "yes" ]; then
 	printf "\tCPPFLAGS=\"-U__STRICT_ANSI__ \${CPPFLAGS}\"\n" >> "${MPC5777M_CONFIGURE_AC}"
 	printf "\t;;\n" >> "${MPC5777M_CONFIGURE_AC}"
 	printf "\t*)\n" >> "${MPC5777M_CONFIGURE_AC}"
-	printf "\tUNISIM_CHECK_PTHREAD(main)\n" >> "${MPC5777M_CONFIGURE_AC}"
 	printf "\t;;\n" >> "${MPC5777M_CONFIGURE_AC}"
 	echo "esac" >> "${MPC5777M_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_PTHREAD(main)" >> "${MPC5777M_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_TIMES(main)" >> "${MPC5777M_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_ENDIAN(main)" >> "${MPC5777M_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_CURSES(main)" >> "${MPC5777M_CONFIGURE_AC}"
@@ -1524,7 +1530,9 @@ if [ "${has_to_build_mpc5777m_configure}" = "yes" ]; then
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${MPC5777M_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-mpc5777m-${MPC5777M_VERSION}\"], [path of shared data relative to bin directory])" >> "${MPC5777M_CONFIGURE_AC}"
 	echo "AC_CONFIG_FILES([Makefile])" >> "${MPC5777M_CONFIGURE_AC}"
-	echo "AC_CONFIG_FILES([trace32.cmm])" >> "${MPC5777M_CONFIGURE_AC}"
+	echo "AC_CONFIG_FILES([trace32-amp-core0.cmm])" >> "${MPC5777M_CONFIGURE_AC}"
+	echo "AC_CONFIG_FILES([trace32-amp-core1.cmm])" >> "${MPC5777M_CONFIGURE_AC}"
+	echo "AC_CONFIG_FILES([trace32-amp-core2.cmm])" >> "${MPC5777M_CONFIGURE_AC}"
 	echo "AC_CONFIG_FILES([sim_gtkwave.sh], [chmod +x sim_gtkwave.sh])" >> "${MPC5777M_CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${MPC5777M_CONFIGURE_AC}"
 
@@ -1543,7 +1551,7 @@ if [ "${has_to_build_mpc5777m_configure}" = "yes" ]; then
 	echo "EXTRA_DIST = ${UNISIM_LIB_MPC5777M_M4_FILES}" >> "${MPC5777M_MAKEFILE_AM}"
 	echo "sharedir = \$(prefix)/share/unisim-mpc5777m-${MPC5777M_VERSION}" >> "${MPC5777M_MAKEFILE_AM}"
 	echo "dist_share_DATA = ${UNISIM_LIB_MPC5777M_DATA_FILES} ${UNISIM_SIMULATORS_MPC5777M_TOP_DATA_FILES}" >> "${MPC5777M_MAKEFILE_AM}"
-	echo "nobase_dist_share_DATA = ${UNISIM_SIMULATORS_MPC5777M_DATA_FILES} trace32.cmm sim_gtkwave.sh" >> "${MPC5777M_MAKEFILE_AM}"
+	echo "nobase_dist_share_DATA = ${UNISIM_SIMULATORS_MPC5777M_DATA_FILES} trace32-amp-core0.cmm trace32-amp-core1.cmm trace32-amp-core2.cmm sim_gtkwave.sh" >> "${MPC5777M_MAKEFILE_AM}"
 
 	echo "BUILT_SOURCES=\$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.hh \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.cc \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.hh \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.cc" >> "${MPC5777M_MAKEFILE_AM}"
 	echo "CLEANFILES=\$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.hh \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.cc \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.hh \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.cc" >> "${MPC5777M_MAKEFILE_AM}"

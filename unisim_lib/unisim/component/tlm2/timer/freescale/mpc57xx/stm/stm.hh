@@ -124,6 +124,13 @@ private:
 
 	unisim::kernel::logger::Logger logger;
 	
+	enum EventType
+	{
+		EV_NONE = 0,
+		EV_WAKE_UP,
+		EV_CPU_PAYLOAD
+	};
+	
 	class Event
 	{
 	public:
@@ -132,11 +139,13 @@ private:
 		public:
 			Key()
 				: time_stamp(sc_core::SC_ZERO_TIME)
+				, event_type()
 			{
 			}
 			
-			Key(const sc_core::sc_time& _time_stamp)
+			Key(const sc_core::sc_time& _time_stamp, EventType _event_type)
 				: time_stamp(_time_stamp)
+				, event_type(_event_type)
 			{
 			}
 
@@ -144,24 +153,36 @@ private:
 			{
 				time_stamp = _time_stamp;
 			}
+			
+			void SetEventType(EventType _event_type)
+			{
+				event_type = _event_type;
+			}
 
 			const sc_core::sc_time& GetTimeStamp() const
 			{
 				return time_stamp;
 			}
+			
+			EventType GetEventType() const
+			{
+				return event_type;
+			}
 
 			void Clear()
 			{
 				time_stamp = sc_core::SC_ZERO_TIME;
+				event_type = EV_NONE;
 			}
 			
 			int operator < (const Key& sk) const
 			{
-				return time_stamp < sk.time_stamp;
+				return (time_stamp < sk.time_stamp) || ((time_stamp == sk.time_stamp) && (event_type < sk.event_type));
 			}
 			
 		private:
 			sc_core::sc_time time_stamp;
+			EventType event_type;                      // type of event
 		};
 		
 		Event()
@@ -196,12 +217,18 @@ private:
 		
 		void SetPayload(tlm::tlm_generic_payload *_payload, bool _release_payload = false)
 		{
+			key.SetEventType(EV_CPU_PAYLOAD);
 			if(release_payload)
 			{
 				if(payload && payload->has_mm()) payload->release();
 			}
 			payload = _payload;
 			release_payload = _release_payload;
+		}
+		
+		void WakeUp()
+		{
+			key.SetEventType(EV_WAKE_UP);
 		}
 		
 		void SetCompletionEvent(sc_core::sc_event *_completion_event)
@@ -213,12 +240,17 @@ private:
 		{
 			return key.GetTimeStamp();
 		}
+		
+		EventType GetType() const
+		{
+			return key.GetEventType();
+		}
 
 		tlm::tlm_generic_payload *GetPayload() const
 		{
 			return payload;
 		}
-
+		
 		sc_core::sc_event *GetCompletionEvent() const
 		{
 			return completion_event;
@@ -248,25 +280,6 @@ private:
 		inline bool IsVerboseRead() const ALWAYS_INLINE { return stm->verbose; }
 		inline bool IsVerboseWrite() const ALWAYS_INLINE { return stm->verbose; }
 		inline std::ostream& GetInfoStream() ALWAYS_INLINE { return stm->logger.DebugInfoStream(); }
-
-		virtual ReadWriteStatus Read(sc_core::sc_time& time_stamp, uint32_t& value, const uint32_t& bit_enable)
-		{
-			// Run counter until read time so that registers reflect precise state of STM
-			stm->RunCounterToTime(time_stamp);
-			// Read register
-			return this->Super::Read(time_stamp, value, bit_enable);
-		}
-		
-		virtual ReadWriteStatus Write(sc_core::sc_time& time_stamp, const uint32_t& value, const uint32_t& bit_enable)
-		{
-			// Run counter until write time
-			stm->RunCounterToTime(time_stamp);
-			// Write register
-			ReadWriteStatus rws = this->Super::Write(time_stamp, value, bit_enable);
-			// STM register changes affect IRQ output, so schedule a run of counter and compare that may trigger an IRQ output
-			stm->ScheduleCounterRun();
-			return rws;
-		}
 
 		using Super::operator =;
 		
@@ -475,9 +488,13 @@ private:
 	
 	bool irq_level[NUM_CHANNELS];                   // IRQ output level for each channel
 	sc_core::sc_event *gen_irq_event[NUM_CHANNELS]; // Event to trigger IRQ output (IRQ_Process)
+	sc_core::sc_time max_time_to_next_counter_run;
 	sc_core::sc_time last_counter_run_time;         // Last time when counter ran
+	sc_core::sc_time master_clock_period;           // Master clock period
+	sc_core::sc_time master_clock_start_time;       // Master clock start time
+	bool master_clock_posedge_first;                // Master clock posedge first ?
+	double master_clock_duty_cycle;                 // Master clock duty cycle
 	sc_core::sc_time prescaled_clock_period;        // Prescaled clock period
-	sc_core::sc_event counter_run_event;            // Event to trigger counter run (RunCounterProcess)
 	bool freeze;                                    // Latched value for internal "freeze"
 	
 	void Reset();
@@ -495,7 +512,6 @@ private:
 	sc_core::sc_time TimeToNextCounterRun();
 	void RunCounterToTime(const sc_core::sc_time& time_stamp);
 	void ScheduleCounterRun();
-	void RunCounterProcess();
 	void RefreshFreeze();
 };
 

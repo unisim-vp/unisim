@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,40 +32,29 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_UTIL_LOADER_ELF_LOADER_ELF64_LOADER_HH__
-#define __UNISIM_UTIL_LOADER_ELF_LOADER_ELF64_LOADER_HH__
+#ifndef __UNISIM_SERVICE_INTERFACES_DEBUG_YIELDING_HH__
+#define __UNISIM_SERVICE_INTERFACES_DEBUG_YIELDING_HH__
 
-#include <unisim/util/loader/elf_loader/elf_loader.hh>
+#include <unisim/kernel/service/service.hh>
 
 namespace unisim {
-namespace util {
-namespace loader {
-namespace elf_loader {
+namespace service {
+namespace interfaces {
 
-//typedef ElfLoaderImpl<uint64_t, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym> Elf64Loader;
-
-template <class MEMORY_ADDR = uint64_t>
-class Elf64Loader : public ElfLoaderImpl<MEMORY_ADDR, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>
+class DebugYielding : public unisim::kernel::service::ServiceInterface
 {
 public:
-	Elf64Loader(const unisim::util::blob::Blob<MEMORY_ADDR> *blob = 0);
+	virtual void DebugYield() = 0;
 };
 
-template <class MEMORY_ADDR>
-Elf64Loader<MEMORY_ADDR>::Elf64Loader(const unisim::util::blob::Blob<MEMORY_ADDR> *_blob)
-	: ElfLoaderImpl<MEMORY_ADDR, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>(_blob)
+class DebugYieldingRequest : public unisim::kernel::service::ServiceInterface
 {
-}
-
-template <class ADDRESS_TYPE>
-struct StdElf<ADDRESS_TYPE,uint64_t>
-{
-  typedef ElfLoaderImpl<ADDRESS_TYPE, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym> Loader;
+public:
+	virtual void DebugYieldRequest() = 0;
 };
 
-} // end of namespace elf_loader
-} // end of namespace loader
-} // end of namespace util
+} // end of namespace interfaces
+} // end of namespace service
 } // end of namespace unisim
 
 #endif

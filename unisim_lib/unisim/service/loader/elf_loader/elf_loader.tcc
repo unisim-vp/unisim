@@ -173,8 +173,13 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		elf_loader = 0;
 	}
 
-	elf_loader = new unisim::util::loader::elf_loader::ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>(logger.DebugInfoStream(), logger.DebugWarningStream(), logger.DebugErrorStream(), registers_import, memory_import);
+	elf_loader = new unisim::util::loader::elf_loader::ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>();
 
+	elf_loader->SetDebugInfoStream(logger.DebugInfoStream());
+	elf_loader->SetDebugWarningStream(logger.DebugWarningStream());
+	elf_loader->SetDebugErrorStream(logger.DebugErrorStream());
+	elf_loader->SetRegistersInterface(/* prc_num */ 0, registers_import);
+	elf_loader->SetMemoryInterface(/* prc_num */ 0, memory_import);
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, Object::GetSimulator()->SearchSharedDataFile(filename.c_str()).c_str());
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_FORCE_BASE_ADDR, force_base_addr);
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_FORCE_USE_VIRTUAL_ADDRESS, force_use_virtual_address);
@@ -291,13 +296,13 @@ const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, El
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 std::vector<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetBackTrace(MEMORY_ADDR pc) const
 {
-	return elf_loader ? elf_loader->GetBackTrace(pc) : 0;
+	return elf_loader ? elf_loader->GetBackTrace(/* prc_num */ 0, pc) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const
 {
-	return elf_loader ? elf_loader->GetReturnAddress(pc, ret_addr) : false;
+	return elf_loader ? elf_loader->GetReturnAddress(/* prc_num */ 0, pc, ret_addr) : false;
 }
 
 } // end of namespace elf_loader
