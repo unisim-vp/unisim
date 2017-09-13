@@ -107,6 +107,11 @@ Debugger<CONFIG>::Debugger(const char *name, unisim::kernel::service::Object *pa
 	
 	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
 	{
+		param_sel_cpu[prc_num].SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	}
+	
+	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
+	{
 		std::stringstream debug_yielding_export_name_sstr;
 		debug_yielding_export_name_sstr << "debug-yielding-export[" << prc_num << "]";
 		debug_yielding_export[prc_num] = new unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugYielding>(debug_yielding_export_name_sstr.str().c_str(), this);

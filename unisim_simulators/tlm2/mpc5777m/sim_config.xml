@@ -2320,19 +2320,19 @@
 		<variable name="sel-cpu[0]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000000</value>
+			<value>0</value>
 			<description>CPU being debugged by front-end</description>
 		</variable>
 		<variable name="sel-cpu[1]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000001</value>
+			<value>1</value>
 			<description>CPU being debugged by front-end</description>
 		</variable>
 		<variable name="sel-cpu[2]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000002</value>
+			<value>2</value>
 			<description>CPU being debugged by front-end</description>
 		</variable>
 		<variable name="sel-cpu[3]">

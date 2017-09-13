@@ -222,7 +222,6 @@ private:
 	bool PutReply(const std::string& s);
 	bool PutNotification(const std::string& s);
 	bool SetCThread(long thread_id);
-	bool SetCAllThreads();
 	bool SetGThread(long thread_id);
 	bool OutputText(const char *s, int count);
 	bool ReadRegisters();
