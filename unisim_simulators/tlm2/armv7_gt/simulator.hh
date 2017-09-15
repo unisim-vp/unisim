@@ -97,17 +97,26 @@ struct Simulator : public unisim::kernel::service::Simulator
   virtual unisim::kernel::service::Simulator::SetupStatus Setup();
   virtual void Stop(unisim::kernel::service::Object *object, int exit_status, bool asynchronous = false);
   int GetExitStatus() const;
-
+  
  private:
   static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
   typedef unisim::component::tlm2::processor::arm::cortex_a9::CPU CPU;
   typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> MEMORY;
   //typedef unisim::service::os::linux_os::Linux<uint32_t, uint32_t> LINUX_OS;
-	typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<uint32_t> LOADER;
-
+  typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<uint32_t> LOADER;
+  
+  struct DEBUGGER_CONFIG
+  {
+    typedef uint32_t ADDRESS;
+    static const unsigned int NUM_PROCESSORS = 1;
+    /* gdb_server, inline_debugger and/or monitor */
+    static const unsigned int MAX_FRONT_ENDS = 3;
+  };
+  
+  typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
   typedef unisim::service::debug::gdb_server::GDBServer<uint32_t> GDB_SERVER;
   typedef unisim::service::debug::inline_debugger::InlineDebugger<uint32_t> INLINE_DEBUGGER;
-  typedef unisim::service::debug::debugger::Debugger<uint32_t> DEBUGGER;
+  
   typedef unisim::service::profiling::addr_profiler::Profiler<uint32_t> PROFILER;
   typedef unisim::service::tee::memory_access_reporting::Tee<uint32_t> TEE_MEMORY_ACCESS_REPORTING;
   typedef unisim::service::time::sc_time::ScTime ScTime;
@@ -128,17 +137,16 @@ struct Simulator : public unisim::kernel::service::Simulator
   HostTime                     host_time;
   //LINUX_OS*                    linux_os;
   LOADER                       loader;
-  TEE_MEMORY_ACCESS_REPORTING* tee_memory_access_reporting;
 
   double                       simulation_spent_time;
 
+  DEBUGGER*                    debugger;
   GDB_SERVER*                  gdb_server;
   INLINE_DEBUGGER*             inline_debugger;
-  DEBUGGER*                    debugger;
-  PROFILER*                    profiler;
-  bool                         enable_gdb_server;
+  
+  bool                                     enable_gdb_server;
   unisim::kernel::service::Parameter<bool> param_enable_gdb_server;
-  bool                         enable_inline_debugger;
+  bool                                     enable_inline_debugger;
   unisim::kernel::service::Parameter<bool> param_enable_inline_debugger;
 
   int exit_status;

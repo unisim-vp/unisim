@@ -294,7 +294,7 @@ unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/host_floating.hh \
 unisim/util/ieee754/ieee754.hh \
 unisim/util/inlining/inlining.hh \
-unisim/service/interfaces/debug_control.hh \
+unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
 unisim/service/interfaces/memory_access_reporting.hh \

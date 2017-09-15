@@ -41,7 +41,7 @@
 #include <unisim/component/cxx/processor/arm/models.hh>
 #include <unisim/component/cxx/processor/arm/hostfloat.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
-#include <unisim/service/interfaces/debug_control.hh>
+#include <unisim/service/interfaces/debug_yielding.hh>
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
@@ -81,7 +81,7 @@ struct CPU
   , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryAccessReportingControl>
   , public unisim::kernel::service::Client<unisim::service::interfaces::MemoryAccessReporting<uint32_t> >
   , public unisim::kernel::service::Service<unisim::service::interfaces::MemoryInjection<uint32_t> >
-  , public unisim::kernel::service::Client<unisim::service::interfaces::DebugControl<uint32_t> >
+  , public unisim::kernel::service::Client<unisim::service::interfaces::DebugYielding>
   , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
   , public unisim::kernel::service::Service<unisim::service::interfaces::Disassembly<uint32_t> >
   , public unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint32_t> >
@@ -104,10 +104,8 @@ struct CPU
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryInjection<uint32_t> > memory_injection_export;
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::Memory<uint32_t> > memory_export;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<uint32_t> > memory_import;
-  typedef unisim::service::interfaces::DebugControl<uint32_t> DebugControl;
-  unisim::kernel::service::ServiceImport<DebugControl> debug_control_import;
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> exception_trap_reporting_import;
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> instruction_counter_trap_reporting_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugYielding> debug_yielding_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting> trap_reporting_import;
 
   /** Indicates if the finished instructions require to be reported. */
   bool requires_finished_instruction_reporting;

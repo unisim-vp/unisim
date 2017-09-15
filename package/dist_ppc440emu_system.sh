@@ -267,7 +267,7 @@ unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/host_floating.hh \
 unisim/util/device/register.hh \
 unisim/util/random/random.hh \
-unisim/service/interfaces/debug_control.hh \
+unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/disassembly.hh \
 unisim/service/interfaces/loader.hh \

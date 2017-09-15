@@ -78,37 +78,24 @@ Simulator::Simulator(int argc, char **argv)
   , nrst_signal("nRESETm")
   , time("time")
   , host_time("host-time")
-  // , linux_os(0)
   , loader("loader")
-  , tee_memory_access_reporting(0)
   , simulation_spent_time(0.0)
+  , debugger(0)
   , gdb_server(0)
   , inline_debugger(0)
-  , debugger(0)
-  , profiler(0)
   , enable_gdb_server(false)
   , param_enable_gdb_server( "enable-gdb-server", 0, enable_gdb_server, "Enable GDB server." )
   , enable_inline_debugger(false)
   , param_enable_inline_debugger( "enable-inline-debugger", 0, enable_inline_debugger, "Enable inline debugger." )
   , exit_status(0)
 {
-  //linux_os = new LINUX_OS("linux-os");
-
+  // - debugger
+  if (enable_inline_debugger or enable_gdb_server)
+    debugger = new DEBUGGER( "debugger" );
   if (enable_gdb_server)
     gdb_server = new GDB_SERVER("gdb-server");
-  
   if (enable_inline_debugger)
     inline_debugger = new INLINE_DEBUGGER( "inline-debugger" );
-  
-  // - debugger
-  debugger = new DEBUGGER( "debugger" );
-  // - profiler
-  profiler = enable_inline_debugger ? new PROFILER( "profiler" ) : 0;
-  // - Tee Memory Access Reporting
-  tee_memory_access_reporting = (enable_gdb_server or enable_inline_debugger) ? new TEE_MEMORY_ACCESS_REPORTING("tee-memory-access-reporting") : 0;
-  
-  // In Linux mode, the system is not entirely simulated.
-  // This mode allows to run Linux applications without simulating all the peripherals.
 
   nfiq_signal = true; 
   nirq_signal = true; 
@@ -131,79 +118,59 @@ Simulator::Simulator(int argc, char **argv)
   /* We disable clock (useless in this model and extremely cpu consuming) */
   clock.disable();
   
-  // Connect debugger to CPU
-  cpu.debug_control_import >> debugger->debug_control_export;
-  cpu.instruction_counter_trap_reporting_import >> debugger->trap_reporting_export;
-  //cpu.symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
-	cpu.symbol_table_lookup_import >> loader.symbol_table_lookup_export;
-  debugger->disasm_import >> cpu.disasm_export;
-  debugger->memory_import >> cpu.memory_export;
-	*loader.memory_import[0] >> memory.memory_export;
-  debugger->registers_import >> cpu.registers_export;
-  // debugger->blob_import >> linux_os->blob_export_;
-  debugger->loader_import >> loader.loader_export;
-  debugger->blob_import >> loader.blob_export;
+  cpu.symbol_table_lookup_import >> loader.symbol_table_lookup_export;
+  *loader.memory_import[0] >> memory.memory_export;
 
-  if(enable_inline_debugger)
+  if (enable_inline_debugger or enable_gdb_server)
     {
-      // Connect tee-memory-access-reporting to CPU, debugger and profiler
-      cpu.memory_access_reporting_import >> tee_memory_access_reporting->in;
-      *tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
-      *tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
-      profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
-      debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
-      tee_memory_access_reporting->out_control >> cpu.memory_access_reporting_control_export;
-    }
-  else
-    {
-      cpu.memory_access_reporting_import >> debugger->memory_access_reporting_export;
-      debugger->memory_access_reporting_control_import >> cpu.memory_access_reporting_control_export;
+      // Debugger <-> CPU+peripherals  connections
+      cpu.debug_yielding_import                            >> *debugger->debug_yielding_export[0];
+      cpu.memory_access_reporting_import                   >> *debugger->memory_access_reporting_export[0];
+      cpu.trap_reporting_import                            >> *debugger->trap_reporting_export[0];
+      *debugger->disasm_import[0]                          >> cpu.disasm_export;
+      *debugger->memory_import[0]                          >> cpu.memory_export;
+      *debugger->registers_import[0]                       >> cpu.registers_export;
+      *debugger->memory_access_reporting_control_import[0] >> cpu.memory_access_reporting_control_export;
+      
+      // debug
+      debugger->blob_import >> loader.blob_export;
     }
 
-  if(enable_inline_debugger)
+  if (enable_inline_debugger)
     {
       // Connect inline-debugger to debugger
-      debugger->debug_event_listener_import >> inline_debugger->debug_event_listener_export;
-      debugger->trap_reporting_import >> inline_debugger->trap_reporting_export;
-      debugger->debug_control_import >> inline_debugger->debug_control_export;
-      inline_debugger->debug_event_trigger_import >> debugger->debug_event_trigger_export;
-      inline_debugger->disasm_import >> debugger->disasm_export;
-      inline_debugger->memory_import >> debugger->memory_export;
-      inline_debugger->registers_import >> debugger->registers_export;
-      inline_debugger->stmt_lookup_import >> debugger->stmt_lookup_export;
-      inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
-      inline_debugger->backtrace_import >> debugger->backtrace_export;
-      inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
-      inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
-      inline_debugger->subprogram_lookup_import >> debugger->subprogram_lookup_export;
-      inline_debugger->profiling_import >> profiler->profiling_export;
+      *debugger->debug_event_listener_import[0]      >> inline_debugger->debug_event_listener_export;
+      *debugger->debug_yielding_import[0]            >> inline_debugger->debug_yielding_export;
+      inline_debugger->debug_yielding_request_import >> *debugger->debug_yielding_request_export[0];
+      inline_debugger->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[0];
+      inline_debugger->disasm_import                 >> *debugger->disasm_export[0];
+      inline_debugger->memory_import                 >> *debugger->memory_export[0];
+      inline_debugger->registers_import              >> *debugger->registers_export[0];
+      inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[0];
+      inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[0];
+      inline_debugger->backtrace_import              >> *debugger->backtrace_export[0];
+      inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
+      inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
+      inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
     }
-  else if(enable_gdb_server)
+  
+  if (enable_gdb_server)
     {
       // Connect gdb-server to debugger
-      debugger->debug_control_import >> gdb_server->debug_control_export;
-      debugger->debug_event_listener_import >> gdb_server->debug_event_listener_export;
-      debugger->trap_reporting_import >> gdb_server->trap_reporting_export;
-      gdb_server->debug_event_trigger_import >> debugger->debug_event_trigger_export;
-      gdb_server->memory_import >> debugger->memory_export;
-      gdb_server->registers_import >> debugger->registers_export;
+      *debugger->debug_yielding_import[0]       >> gdb_server->debug_yielding_export;
+      *debugger->debug_event_listener_import[0] >> gdb_server->debug_event_listener_export;
+      gdb_server->debug_yielding_request_import >> *debugger->debug_yielding_request_export[0];
+      gdb_server->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[0];
+      gdb_server->memory_import                 >> *debugger->memory_export[0];
+      gdb_server->registers_import              >> *debugger->registers_export[0];
     }
-
-  // Connect everything
-  // cpu.linux_os_import >> linux_os->linux_os_export_;
-  // linux_os->memory_import_ >> cpu.memory_export;
-  // linux_os->memory_injection_import_ >> cpu.memory_injection_export;
-  // linux_os->registers_import_ >> cpu.registers_export;
 }
 
 Simulator::~Simulator()
 {
-  // delete linux_os;
+  delete debugger;
   delete gdb_server;
   delete inline_debugger;
-  delete debugger;
-  delete profiler;
-  delete tee_memory_access_reporting;
 }
 
 int

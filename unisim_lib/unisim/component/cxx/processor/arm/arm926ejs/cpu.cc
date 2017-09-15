@@ -66,8 +66,8 @@ namespace arm926ejs {
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
+using unisim::service::interfaces::DebugYielding;
 using unisim::service::interfaces::MemoryInjection;
-using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Disassembly;
@@ -96,7 +96,7 @@ CPU::CPU(const char *name, Object *parent)
   , Service<MemoryAccessReportingControl>(name, parent)
   , Client<MemoryAccessReporting<uint64_t> >(name, parent)
   , Service<MemoryInjection<uint64_t> >(name, parent)
-  , Client<DebugControl<uint64_t> >(name, parent)
+  , Client<DebugYielding>(name, parent)
   , Client<TrapReporting>(name, parent)
   , Service<Disassembly<uint64_t> >(name, parent)
   , Service<Memory<uint64_t> >(name, parent)
@@ -106,10 +106,9 @@ CPU::CPU(const char *name, Object *parent)
   , disasm_export("disasm-export", this)
   , memory_injection_export("memory-injection-export", this)
   , memory_export("memory-export", this)
-  , debug_control_import("debug-control-import", this)
+  , debug_yielding_import("debug-yielding-import", this)
   , symbol_table_lookup_import("symbol-table-lookup-import", this)
-  , exception_trap_reporting_import("exception-trap-reporting-import", this)
-  , instruction_counter_trap_reporting_import("instruction-counter-trap-reporting-import", this)
+  , trap_reporting_import("trap-reporting-import", this)
   , linux_os_import("linux-os-import", this)
   , ltlb("lockdown-tlb", this)
   , tlb("tlb", this)
@@ -327,41 +326,15 @@ CPU::StepInstruction()
 
   cur_instruction_address = insn_addr;
 
-  if (unlikely(instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
-    instruction_counter_trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
+  if (unlikely(trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
+    trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
   
   if (unlikely(memory_access_reporting_import))
     memory_access_reporting_import->ReportFetchInstruction(this->current_pc);
   
-  if (debug_control_import)
+  if (debug_yielding_import)
     {
-      DebugControl<uint64_t>::DebugCommand dbg_cmd;
-
-      do 
-        {
-          dbg_cmd = debug_control_import->FetchDebugCommand(insn_addr);
-  
-          if (dbg_cmd == DebugControl<uint64_t>::DBG_STEP) 
-            {
-              /* Nothing to do */
-              break;
-            }
-          if (dbg_cmd == DebugControl<uint64_t>::DBG_SYNC) 
-            {
-              // Sync();
-              continue;
-            }
-
-          if (dbg_cmd == DebugControl<uint64_t>::DBG_KILL) 
-            {
-              Stop(0);
-            }
-          if(dbg_cmd == DebugControl<uint64_t>::DBG_RESET) 
-            {
-              // TODO : memory_interface->Reset(); 
-            }
-        }
-      while(1);
+      debug_yielding_import->DebugYield();
     }
   
   try {
@@ -430,8 +403,8 @@ CPU::StepInstruction()
     
     this->TakeSVCException();
     
-    if (unlikely(trap_on_exception && exception_trap_reporting_import))
-      exception_trap_reporting_import->ReportTrap( *this );
+    if (unlikely(trap_on_exception && trap_reporting_import))
+      trap_reporting_import->ReportTrap( *this );
   }
 }
 

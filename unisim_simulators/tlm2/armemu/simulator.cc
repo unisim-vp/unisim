@@ -31,7 +31,8 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include "simulator.hh"
+#include <simulator.hh>
+#include <unisim/service/debug/debugger/debugger.tcc>
 #include <stdexcept>
 
 bool debug_enabled;
@@ -42,61 +43,34 @@ bool Simulator::enable_monitor = false;
 
 Simulator::Simulator(int argc, char **argv)
   : unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
-  , cpu(0)
-  , memory(0)
-  , time(0)
-  , host_time(0)
-  , linux_os()
-  , tee_memory_access_reporting(0)
+  , cpu("cpu")
+  , memory("memory")
+  , time("time")
+  , host_time("host-time")
+  , linux_os("linux-os")
   , nirq_signal("nIRQm")
   , nfiq_signal("nFIQm")
   , simulation_spent_time(0.0)
+  , debugger(0)
   , gdb_server(0)
   , inline_debugger(0)
-  , debugger(0)
-  , profiler(0)
+  , monitor(0)
   , enable_gdb_server(false)
-  , param_enable_gdb_server(0)
+  , param_enable_gdb_server("enable-gdb-server", 0,enable_gdb_server,"Enable GDB server.")
   , enable_inline_debugger(false)
-  , param_enable_inline_debugger(0)
+  , param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable inline debugger.")
   , exit_status(0)
 {
-  if(enable_monitor)
-  {
-    enable_inline_debugger = false;
-    enable_gdb_server = false;
-  }
-  cpu = new CPU("cpu");
-  memory = new MEMORY("memory");
-  time = new unisim::service::time::sc_time::ScTime("time");
-  host_time = new unisim::service::time::host_time::HostTime("host-time");
-  linux_os = new ArmLinux32("linux-os");
-
-  param_enable_gdb_server = new unisim::kernel::service::Parameter<bool>(
-      "enable-gdb-server", 0,
-      enable_gdb_server,
-      "Enable GDB server.");
-  if ( enable_gdb_server )
+  //  - debugger
+  if (enable_inline_debugger or enable_gdb_server)
+    debugger = new DEBUGGER("debugger");
+  if (enable_gdb_server)
     gdb_server = new GDB_SERVER("gdb-server");
-  param_enable_inline_debugger = new unisim::kernel::service::Parameter<bool>(
-      "enable-inline-debugger", 0,
-      enable_inline_debugger,
-      "Enable inline debugger.");
-  if ( enable_inline_debugger )
+  if (enable_inline_debugger)
     inline_debugger = new INLINE_DEBUGGER("inline-debugger");
   
-  //  - debugger
-  debugger = new DEBUGGER("debugger");
   //  - monitor
   monitor = enable_monitor ? new MONITOR("monitor") : 0;
-  //  - profiler
-  profiler = enable_inline_debugger ? new PROFILER("profiler") : 0;
-  //  - Tee Memory Access Reporting
-  tee_memory_access_reporting = 
-    (enable_gdb_server || enable_inline_debugger) ?
-    new TEE_MEMORY_ACCESS_REPORTING("tee-memory-access-reporting") :
-    0;
-  
   
   nfiq_signal = true; 
   nirq_signal = true; 
@@ -104,114 +78,88 @@ Simulator::Simulator(int argc, char **argv)
   
   // In Linux mode, the system is not entirely simulated.
   // This mode allows to run Linux applications without simulating all the peripherals.
+  cpu.master_socket( memory.slave_sock );
+  cpu.nIRQm( nirq_signal );
+  cpu.nFIQm( nfiq_signal );
+  cpu.nRESETm( nrst_signal );
+  
+  // CPU <-> Memory connections
+  cpu.memory_import >> memory.memory_export;
 
-  cpu->master_socket(memory->slave_sock);
-  cpu->nIRQm( nirq_signal );
-  cpu->nFIQm( nfiq_signal );
-  cpu->nRESETm( nrst_signal );
+  // CPU <-> LinuxOS connections
+  cpu.linux_os_import >> linux_os.linux_os_export_;
+  // cpu.symbol_table_lookup_import >> linux_os.symbol_table_lookup_export;
+  linux_os.memory_import_ >> cpu.memory_export;
+  linux_os.memory_injection_import_ >> cpu.memory_injection_export;
+  linux_os.registers_import_ >> cpu.registers_export;
+  
 
-
-  // Connect debugger to CPU
-  cpu->debug_control_import >> debugger->debug_control_export;
-  cpu->instruction_counter_trap_reporting_import >> debugger->trap_reporting_export;
-  cpu->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
-  cpu->memory_import >> memory->memory_export;
-  debugger->disasm_import >> cpu->disasm_export;
-  debugger->memory_import >> cpu->memory_export;
-  debugger->registers_import >> cpu->registers_export;
-  debugger->blob_import >> linux_os->blob_export_;
-
-  if(enable_inline_debugger)
-  {
-    // Connect tee-memory-access-reporting to CPU, debugger and profiler
-    cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
-    *tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
-    *tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
-    profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
-    debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
-    tee_memory_access_reporting->out_control >> cpu->memory_access_reporting_control_export;
-  }
-  else
-  {
-    cpu->memory_access_reporting_import >> debugger->memory_access_reporting_export;
-    debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
-  }
-
-  if(enable_inline_debugger)
-  {
-    // Connect inline-debugger to debugger
-    debugger->debug_event_listener_import >> inline_debugger->debug_event_listener_export;
-    debugger->trap_reporting_import >> inline_debugger->trap_reporting_export;
-    debugger->debug_control_import >> inline_debugger->debug_control_export;
-    inline_debugger->debug_event_trigger_import >> debugger->debug_event_trigger_export;
-    inline_debugger->disasm_import >> debugger->disasm_export;
-    inline_debugger->memory_import >> debugger->memory_export;
-    inline_debugger->registers_import >> debugger->registers_export;
-    inline_debugger->stmt_lookup_import >> debugger->stmt_lookup_export;
-    inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
-    inline_debugger->backtrace_import >> debugger->backtrace_export;
-    inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
-	inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
-	inline_debugger->subprogram_lookup_import >> debugger->subprogram_lookup_export;
-    inline_debugger->profiling_import >> profiler->profiling_export;
-  }
-  else if(enable_gdb_server)
-  {
-    // Connect gdb-server to debugger
-    debugger->debug_control_import >> gdb_server->debug_control_export;
-    debugger->debug_event_listener_import >> gdb_server->debug_event_listener_export;
-    debugger->trap_reporting_import >> gdb_server->trap_reporting_export;
-    gdb_server->debug_event_trigger_import >> debugger->debug_event_trigger_export;
-    gdb_server->memory_import >> debugger->memory_export;
-    gdb_server->registers_import >> debugger->registers_export;
-  }
-  else if(enable_monitor)
-  {
-    debugger->debug_event_listener_import >> monitor->debug_event_listener_export;
-    monitor->debug_event_trigger_import >> debugger->debug_event_trigger_export;
-    monitor->memory_import >> debugger->memory_export;
-    monitor->registers_import >> debugger->registers_export;
-    monitor->stmt_lookup_import >> debugger->stmt_lookup_export;
-    monitor->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
-    monitor->backtrace_import >> debugger->backtrace_export;
-    monitor->debug_info_loading_import >> debugger->debug_info_loading_export;
-	monitor->data_object_lookup_import >> debugger->data_object_lookup_export;
-	monitor->subprogram_lookup_import >> debugger->subprogram_lookup_export;
-  }
-
-  // Connect everything
-  cpu->linux_os_import >> linux_os->linux_os_export_;
-  linux_os->memory_import_ >> cpu->memory_export;
-  linux_os->memory_injection_import_ >> cpu->memory_injection_export;
-  linux_os->registers_import_ >> cpu->registers_export;
-  // // connecting power estimator
-  // if ( enable_power_estimation )
-  // {
-  //   cpu->icache.power_estimator_import >> il1_power_estimator->power_estimator_export;
-  //   cpu->icache.power_mode_import >> il1_power_estimator->power_mode_export;
-  //   cpu->dcache.power_estimator_import >> dl1_power_estimator->power_estimator_export;
-  //   cpu->dcache.power_mode_import >> dl1_power_estimator->power_mode_export;
-
-  //   il1_power_estimator->time_import >> time->time_export;
-  //   dl1_power_estimator->time_import >> time->time_export;
-  // }
+  if (enable_inline_debugger or enable_gdb_server)
+    {
+      // Debugger <-> CPU connections
+      cpu.debug_yielding_import                            >> *debugger->debug_yielding_export[0];
+      cpu.trap_reporting_import                            >> *debugger->trap_reporting_export[0];
+      cpu.memory_access_reporting_import                   >> *debugger->memory_access_reporting_export[0];
+      *debugger->disasm_import[0]                          >> cpu.disasm_export;
+      *debugger->memory_import[0]                          >> cpu.memory_export;
+      *debugger->registers_import[0]                       >> cpu.registers_export;
+      *debugger->memory_access_reporting_control_import[0] >> cpu.memory_access_reporting_control_export;
+      
+      // Debugger <-> LinuxOS connections
+      debugger->blob_import >> linux_os.blob_export_;
+    }
+  
+  if (enable_inline_debugger)
+    {
+      // inline-debugger <-> debugger connections
+      *debugger->debug_event_listener_import[0]      >> inline_debugger->debug_event_listener_export;
+      *debugger->debug_yielding_import[0]            >> inline_debugger->debug_yielding_export;
+      inline_debugger->debug_yielding_request_import >> *debugger->debug_yielding_request_export[0];
+      inline_debugger->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[0];
+      inline_debugger->disasm_import                 >> *debugger->disasm_export[0];
+      inline_debugger->memory_import                 >> *debugger->memory_export[0];
+      inline_debugger->registers_import              >> *debugger->registers_export[0];
+      inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[0];
+      inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[0];
+      inline_debugger->backtrace_import              >> *debugger->backtrace_export[0];
+      inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
+      inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
+      inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
+    }
+  
+  if (enable_gdb_server)
+    {
+      // gdb-server <-> debugger connections
+      *debugger->debug_event_listener_import[1] >> gdb_server->debug_event_listener_export;
+      *debugger->debug_yielding_import[1]       >> gdb_server->debug_yielding_export;
+      gdb_server->debug_yielding_request_import >> *debugger->debug_yielding_request_export[1];
+      gdb_server->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[1];
+      gdb_server->memory_import                 >> *debugger->memory_export[1];
+      gdb_server->registers_import              >> *debugger->registers_export[1];
+    }
+  
+  if (enable_monitor)
+    {
+      // monitor <-> debugger connections
+      *debugger->debug_event_listener_import[2] >> monitor->debug_event_listener_export;
+      monitor->debug_event_trigger_import       >> *debugger->debug_event_trigger_export[2];
+      monitor->memory_import                    >> *debugger->memory_export[2];
+      monitor->registers_import                 >> *debugger->registers_export[2];
+      monitor->stmt_lookup_import               >> *debugger->stmt_lookup_export[2];
+      monitor->symbol_table_lookup_import       >> *debugger->symbol_table_lookup_export[2];
+      monitor->backtrace_import                 >> *debugger->backtrace_export[2];
+      monitor->debug_info_loading_import        >> *debugger->debug_info_loading_export[2];
+      monitor->data_object_lookup_import        >> *debugger->data_object_lookup_export[2];
+      monitor->subprogram_lookup_import         >> *debugger->subprogram_lookup_export[2];
+    }
 }
 
 Simulator::~Simulator()
 {
-  if ( cpu ) delete cpu;
-  if ( memory ) delete memory;
-  if ( time ) delete time;
-  if ( host_time ) delete host_time;
-  if ( linux_os ) delete linux_os;
-  if ( param_enable_gdb_server ) delete param_enable_gdb_server;
-  if ( gdb_server ) delete gdb_server;
-  if ( param_enable_inline_debugger ) delete param_enable_inline_debugger;
-  if ( inline_debugger ) delete inline_debugger;
-  if ( debugger ) delete debugger;
-  if ( profiler ) delete profiler;
-  if ( tee_memory_access_reporting ) delete tee_memory_access_reporting;
-  if ( monitor ) delete monitor;
+  delete debugger;
+  delete gdb_server;
+  delete inline_debugger;
+  delete monitor;
 }
 
 int
@@ -220,7 +168,7 @@ Run()
 {
   if ( unlikely(SimulationFinished()) ) return 0;
 
-  double time_start = host_time->GetTime();
+  double time_start = host_time.GetTime();
 
 #ifndef WIN32
   void (*prev_sig_int_handler)(int) = 0;
@@ -258,7 +206,7 @@ Run()
 
   cerr << "Simulation finished" << endl;
 
-  double time_stop = host_time->GetTime();
+  double time_stop = host_time.GetTime();
   double spent_time = time_stop - time_start;
   simulation_spent_time += spent_time;
 
@@ -274,7 +222,7 @@ Run()
 
   cerr << "simulation time: " << simulation_spent_time << " seconds" << endl;
   cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-  cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
+  cerr << "host simulation speed: " << ((double) cpu["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
   cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
 
   return exit_status;
@@ -286,7 +234,7 @@ Run(double time, sc_time_unit unit)
 {
   if ( unlikely(SimulationFinished()) ) return 0;
 
-  double time_start = host_time->GetTime();
+  double time_start = host_time.GetTime();
 
 #ifndef WIN32
   void (*prev_sig_int_handler)(int) = 0;
@@ -322,7 +270,7 @@ Run(double time, sc_time_unit unit)
 #endif
   }
 
-  double time_stop = host_time->GetTime();
+  double time_stop = host_time.GetTime();
   double spent_time = time_stop - time_start;
   simulation_spent_time += spent_time;
 
@@ -380,16 +328,6 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 	}
 
 	unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
-	
-	// inline-debugger and gdb-server are exclusive
-	if(enable_inline_debugger && enable_gdb_server)
-	{
-		std::cerr << "ERROR! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " shall not be used together. Use " << param_enable_inline_debugger->GetName() << " and " << param_enable_gdb_server->GetName() << " to enable only one of the two" << std::endl;
-		if(setup_status != unisim::kernel::service::Simulator::ST_OK_DONT_START)
-		{
-			setup_status = unisim::kernel::service::Simulator::ST_ERROR;
-		}
-	}
 	
 	return setup_status;
 }

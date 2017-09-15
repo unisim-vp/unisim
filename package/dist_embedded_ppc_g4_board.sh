@@ -508,7 +508,7 @@ unisim/util/loader/coff_loader/ti/ti.hh \
 unisim/util/dictionary/dictionary.hh \
 unisim/util/lexer/lexer.hh \
 unisim/util/parser/parser.hh \
-unisim/service/interfaces/debug_control.hh \
+unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
 unisim/service/interfaces/memory_access_reporting.hh \

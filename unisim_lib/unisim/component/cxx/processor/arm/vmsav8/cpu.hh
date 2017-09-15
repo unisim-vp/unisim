@@ -43,15 +43,12 @@
 #include <unisim/util/inlining/inlining.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/register.hh>
-#include <unisim/service/interfaces/debug_control.hh>
+#include <unisim/service/interfaces/debug_yielding.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/service/interfaces/linux_os.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
-// #include <unisim/service/interfaces/memory_access_reporting.hh>
-// #include <unisim/service/interfaces/debug_control.hh>
-// #include <unisim/service/interfaces/trap_reporting.hh>
 #include <map>
 #include <set>
 #include <stdexcept>
@@ -104,7 +101,7 @@ namespace vmsav8 {
 template <typename CONFIG>
 struct CPU
   : public virtual unisim::kernel::service::Object
-  , public unisim::kernel::service::Client<unisim::service::interfaces::DebugControl<uint64_t> >
+  , public unisim::kernel::service::Client<unisim::service::interfaces::DebugYielding>
   , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
   , public unisim::kernel::service::Client<unisim::service::interfaces::SymbolTableLookup<uint64_t> >
   , public unisim::kernel::service::Client<unisim::service::interfaces::Memory<uint64_t> >
@@ -185,9 +182,8 @@ struct CPU
   //=                          Service imports                          =
   //=====================================================================
 
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugControl<uint64_t> >          debug_control_import;
-  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting>                    instruction_counter_trap_reporting_import;
-  //unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting>                    exception_trap_reporting_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugYielding>                    debug_yielding_import;
+  unisim::kernel::service::ServiceImport<unisim::service::interfaces::TrapReporting>                    trap_reporting_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint64_t> >     symbol_table_lookup_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<uint64_t> >                memory_import;
   unisim::kernel::service::ServiceImport<unisim::service::interfaces::MemoryAccessReporting<uint64_t> > memory_access_reporting_import;

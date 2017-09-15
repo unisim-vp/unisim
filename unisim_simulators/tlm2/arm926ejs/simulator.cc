@@ -273,10 +273,7 @@ Simulator(int argc, char **argv)
 	// Connect everything
 	*loader->memory_import[0] >> memory->memory_export;
 #ifndef SIM_INLINE_DEBUGGER_SUPPORT
-	cpu->instruction_counter_trap_reporting_import >> 
-		*trap_handler->trap_reporting_export[0];
-	cpu->exception_trap_reporting_import >>
-		*trap_handler->trap_reporting_export[1];
+	cpu->trap_reporting_import >> *trap_handler->trap_reporting_export[0];
 #endif
 	// cpu->irq_trap_reporting_import >> *trap_handler->trap_reporting_export[2];
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
@@ -731,8 +728,7 @@ EnableDebugger()
 	{
 		// Connect debugger to CPU
 		cpu->debug_control_import >> debugger->debug_control_export;
-		cpu->instruction_counter_trap_reporting_import >> debugger->trap_reporting_export;
-		cpu->exception_trap_reporting_import >> debugger->trap_reporting_export;
+		cpu->trap_reporting_import >> debugger->trap_reporting_export;
 		debugger->disasm_import >> cpu->disasm_export;
 		debugger->memory_import >> cpu->memory_export;
 		debugger->registers_import >> cpu->registers_export;

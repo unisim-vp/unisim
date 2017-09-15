@@ -306,7 +306,8 @@ unisim/service/loader/multiformat_loader/multiformat_loader.hh \
 unisim/service/trap_handler/trap_handler.hh \
 unisim/service/trap_handler/trap_handler_identifier.hh \
 unisim/service/trap_handler/trap_handler_identifier_interface.hh \
-unisim/service/interfaces/debug_control.hh \
+unisim/service/interfaces/debug_yielding.hh \
+unisim/service/interfaces/debug_selecting.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
 unisim/service/interfaces/profiling.hh \
@@ -319,7 +320,6 @@ unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/disassembly.hh \
 unisim/service/interfaces/cache_power_estimator.hh \
 unisim/service/interfaces/memory_injection.hh \
-unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/os.hh \
 unisim/service/interfaces/linux_os.hh \
 unisim/service/interfaces/stmt_lookup.hh \

@@ -109,7 +109,7 @@ CPU::CPU(const char *name, Object *parent)
   , Service<MemoryAccessReportingControl>(name, parent)
   , Client<MemoryAccessReporting<uint32_t> >(name, parent)
   , Service<MemoryInjection<uint32_t> >(name, parent)
-  , Client<unisim::service::interfaces::DebugControl<uint32_t> >(name, parent)
+  , Client<unisim::service::interfaces::DebugYielding>(name, parent)
   , Client<TrapReporting>(name, parent)
   , Service<Disassembly<uint32_t> >(name, parent)
   , Service< Memory<uint32_t> >(name, parent)
@@ -122,10 +122,9 @@ CPU::CPU(const char *name, Object *parent)
   , memory_injection_export("memory-injection-export", this)
   , memory_export("memory-export", this)
   , memory_import("memory-import", this)
-  , debug_control_import("debug-control-import", this)
+  , debug_yielding_import("debug-yielding-import", this)
   , symbol_table_lookup_import("symbol-table-lookup-import", this)
-  , exception_trap_reporting_import("exception-trap-reporting-import", this)
-  , instruction_counter_trap_reporting_import("instruction-counter-trap-reporting-import", this)
+  , trap_reporting_import("trap-reporting-import", this)
   , linux_os_import("linux-os-import", this)
   , requires_finished_instruction_reporting(false)
   , requires_memory_access_reporting(false)
@@ -557,31 +556,15 @@ CPU::StepInstruction()
   
   if (insn_addr == halt_on_addr) { Stop(0); return; }
   
-  if (unlikely(instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
-    instruction_counter_trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
+  if (unlikely(trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
+    trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
   
   if (unlikely(requires_finished_instruction_reporting and memory_access_reporting_import))
     memory_access_reporting_import->ReportFetchInstruction(this->current_insn_addr);
     
-  if (debug_control_import)
+  if (debug_yielding_import)
     {
-      for (bool proceed = false; not proceed; )
-        {
-          switch (debug_control_import->FetchDebugCommand( insn_addr ))
-            {
-            case DebugControl::DBG_STEP: 
-              proceed = true;
-              break;
-            case DebugControl::DBG_SYNC:
-              Sync();
-              continue;
-              break;
-            case DebugControl::DBG_RESET: /* TODO : memory_interface->Reset(); */ break;
-            case DebugControl::DBG_KILL:
-              Stop(0);
-              return;
-            }
-        }
+      debug_yielding_import->DebugYield();
     }
   
   try {
@@ -654,8 +637,8 @@ CPU::StepInstruction()
   catch (DataAbortException const& daexc) {
     /* Abort execution, and take processor to data abort handler */
     
-    if (unlikely( exception_trap_reporting_import))
-      exception_trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
+    if (unlikely(trap_reporting_import))
+      trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
     
     this->TakeDataOrPrefetchAbortException(true); // TakeDataAbortException
   }
@@ -663,8 +646,8 @@ CPU::StepInstruction()
   catch (PrefetchAbortException const& paexc) {
     /* Abort execution, and take processor to prefetch abort handler */
     
-    if (unlikely( exception_trap_reporting_import))
-      exception_trap_reporting_import->ReportTrap( *this, "Prefetch Abort Exception" );
+    if (unlikely(trap_reporting_import))
+      trap_reporting_import->ReportTrap( *this, "Prefetch Abort Exception" );
     
     this->TakeDataOrPrefetchAbortException(false); // TakePrefetchAbortException
   }
@@ -672,8 +655,8 @@ CPU::StepInstruction()
   catch (UndefInstrException const& undexc) {
     /* Abort execution, and take processor to undefined handler */
     
-    if (unlikely( exception_trap_reporting_import))
-      exception_trap_reporting_import->ReportTrap( *this, "Undefined Exception" );
+    if (unlikely(trap_reporting_import))
+      trap_reporting_import->ReportTrap( *this, "Undefined Exception" );
     
     this->TakeUndefInstrException();
   }
@@ -1007,7 +990,7 @@ CPU::CallSupervisor( uint16_t imm )
         this->Stop( -1 );
       }
   } else {
-    //instruction_counter_trap_reporting_import->ReportTrap(*this, "CallSupervisor");
+    //trap_reporting_import->ReportTrap(*this, "CallSupervisor");
     
     if (verbose) {
       static struct ArmLinuxOS : public unisim::util::os::linux_os::Linux<uint32_t, uint32_t>
@@ -1465,7 +1448,7 @@ CPU::TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned si
     //   TransAddrDesc tad_chk;
     //   TranslationTableWalk<QuietAccess>( tad_chk, mva, mat, size );
     //   if (tad_chk.pa != tad.pa)
-    //     exception_trap_reporting_import->ReportTrap( *this, "Incoherent TLB access" );
+    //     trap_reporting_import->ReportTrap( *this, "Incoherent TLB access" );
     // }
     
     /* Permission Check */

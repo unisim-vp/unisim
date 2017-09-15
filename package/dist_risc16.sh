@@ -285,7 +285,7 @@ unisim/util/ieee754/ieee754.hh \
 unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/interfaces/subprogram_lookup.hh \
 unisim/service/interfaces/backtrace.hh \
-unisim/service/interfaces/debug_control.hh \
+unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/disassembly.hh \
 unisim/service/interfaces/blob.hh \
