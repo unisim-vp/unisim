@@ -495,6 +495,8 @@ namespace armsec
     bool complete;
   };
   
+#define CP15ENCODE( CRN, OPC1, CRM, OPC2 ) ((OPC1 << 12) | (CRN << 8) | (CRM << 4) | (OPC2 << 0))
+
   struct State
   {
     typedef armsec::F64  F64;
@@ -588,8 +590,12 @@ namespace armsec
           n, z, c, v, itstate, // q, ge0, ge1, ge2, ge3,
           cpsr, spsr,
           fpscr, fpexc,
+          SCTLR, CPACR,
           end
         } code;
+
+      static RegID sreg(int idx) { return RegID(SCTLR) + idx; }
+      static int  const sregs_count = CPACR - SCTLR;
       
       char const* c_str() const
       {
@@ -620,11 +626,14 @@ namespace armsec
           case    spsr: return "spsr";
           case   fpscr: return "fpscr";
           case   fpexc: return "fpexc";
+          case   SCTLR: return "SCTLR";
+          case   CPACR: return "CPACR";
           case      NA: return "NA";
           case     end: break;
           }
         return "INVALID";
       }
+      
       
       RegID( Code _code ) : code(_code) {}
       RegID( char const* _code ) : code(NA) { unisim::util::symbolic::cstr2enum( *this, _code ); }
@@ -689,6 +698,8 @@ namespace armsec
     {
       for (unsigned reg = 0; reg < 15; ++reg)
         reg_values[reg] = U32( Expr( new RegRead( RegID("r0") + reg, 32 ) ) );
+      for (int idx = 0; idx < RegID::sregs_count; ++idx)
+        sregs[idx] = U32( Expr( new RegRead( RegID::sreg(idx), 32 ) ) );
     }
     
     void SetInsnProps( Expr const& _expr, bool is_thumb, unsigned insn_length )
@@ -799,6 +810,8 @@ namespace armsec
     } cpsr;
     
     U32 spsr;
+    
+    U32 sregs[RegID::sregs_count];
     
     void FPTrap( unsigned exc )
     {
@@ -926,9 +939,9 @@ namespace armsec
     void MemWrite16( U32 const& addr, U16 const& value ) { stores.insert( new Store( 2, true, addr.expr, value.expr ) ); }
     void MemWrite8( U32 const& addr, U8 const& value ) { stores.insert( new Store( 1, false, addr.expr, value.expr ) ); }
     
-    void SetExclusiveMonitors( U32 const& address, unsigned size ) { not_implemented(); }
-    bool ExclusiveMonitorsPass( U32 const& address, unsigned size ) { not_implemented(); return false; }
-    void ClearExclusiveLocal() { not_implemented(); }
+    void SetExclusiveMonitors( U32 const& address, unsigned size ) { std::cerr << "SetExclusiveMonitors\n"; }
+    bool ExclusiveMonitorsPass( U32 const& address, unsigned size ) { std::cerr << "ExclusiveMonitorsPass\n"; return true; }
+    void ClearExclusiveLocal() { std::cerr << "ClearExclusiveMonitors\n"; }
     
     void BranchExchange( U32 const& target ) { next_insn_addr = target; }
     void Branch( U32 const& target ) { next_insn_addr = target; }
@@ -1000,9 +1013,62 @@ namespace armsec
     U32  GetBankedRegister( uint8_t foreign_mode, uint32_t idx ) { not_implemented(); return U32(); }
     void SetBankedRegister( uint8_t foreign_mode, uint32_t idx, U32 value ) { not_implemented(); }
     
-    U32         CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { not_implemented(); return U32(); }
-    void        CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, U32 const& value ) { not_implemented(); }
-    char const* CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { return "some CP15 register"; }
+    
+    struct CP15Reg
+    {
+      virtual            ~CP15Reg() {}
+      virtual unsigned    RequiredPL() { return 1; }
+      virtual void        Write( State& cpu, U32 const& value ) { cpu.not_implemented(); }
+      virtual U32         Read( State& cpu ) { cpu.not_implemented(); return U32(); }
+      virtual char const* Describe() = 0;
+    };
+
+    virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
+    {
+      switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
+        {
+          /****************************
+           * Identification registers *
+           ****************************/
+        case CP15ENCODE( 0, 0, 1, 0 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "ID_PFR0, Processor Feature Register 0"; }
+              U32 Read( State& cpu ) {
+                /*        ARM              Thumb2         Jazelle         ThumbEE   */
+                return U32((0b0001 << 0) | (0b0011 << 4) | (0b0000 << 8) | (0b0000 << 12));
+              }
+            } x;
+            return x;
+          } break;
+
+          /****************************
+           * System control registers *
+           ****************************/
+        case CP15ENCODE( 1, 0, 0, 0 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "SCTLR, System Control Register"; }
+              /* TODO: handle SBO(DGP=0x00050078U) and SBZ(DGP=0xfffa0c00U)... */
+              U32 Read( State& cpu ) { return cpu.sregs[RegID::SCTLR]; }
+              void Write( State& cpu, U32 const& value ) { cpu.sregs[RegID::SCTLR] = value; }
+            } x;
+            return x;
+          } break;
+        }
+      
+      static struct CP15Error : public CP15Reg {
+        char const* Describe() { return "Unknown CP15 register"; }
+      } err;
+      return err;
+    }
+    // virtual void     CP15ResetRegisters();
+    
+    U32         CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { return CP15GetRegister( crn, opcode1, crm, opcode2 ).Read( *this ); }
+    void        CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, U32 const& value ) { CP15GetRegister( crn, opcode1, crm, opcode2 ).Write( *this, value ); }
+    char const* CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { return CP15GetRegister( crn, opcode1, crm, opcode2 ).Describe(); }
     
     bool
     close( State const& ref )
@@ -1023,6 +1089,9 @@ namespace armsec
         path->sinks.insert( Expr( new RegWrite( "cpsr", cpsr.bg.expr, 32 ) ) );
       if (spsr.expr != ref.spsr.expr)
         path->sinks.insert( Expr( new RegWrite( "spsr", spsr.expr, 32 ) ) );
+      for (int idx = 0; idx < RegID::sregs_count; ++idx)
+        if (sregs[idx].expr != ref.sregs[idx].expr)
+          path->sinks.insert( Expr( new RegWrite( RegID::sreg(idx), sregs[idx].expr, 32 ) ) );
       if (FPSCR.expr != ref.FPSCR.expr)
         path->sinks.insert( Expr( new RegWrite( "fpscr", FPSCR.expr, 32 ) ) );
       for (unsigned reg = 0; reg < 15; ++reg) {
@@ -1572,7 +1641,8 @@ uint32_t getu32( uint32_t& res, char const* arg )
 
 char const* usage()
 {
-  return "usage: <prog> [arm|thumb] <addr> <code>\n";
+  return
+    "usage: <program> arm|thumb <address> <encoding>\n";
 }
 
 int
@@ -1588,7 +1658,7 @@ main( int argc, char** argv )
   
   if (not getu32(addr, argv[2]) or not getu32(code, argv[3]))
     {
-      std::cerr << "<addr> and <code> whould be 32bits numeric values.\n" << usage();
+      std::cerr << "<addr> and <code> should be 32bits numeric values.\n" << usage();
       return 1;
     }
   
