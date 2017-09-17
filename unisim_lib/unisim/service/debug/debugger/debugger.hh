@@ -497,6 +497,9 @@ private:
 	// Currently selected processor gate
 	ProcessorGate *sel_prc_gate[MAX_FRONT_ENDS];
 
+	bool requires_finished_instruction_reporting[NUM_PROCESSORS];
+	bool requires_memory_access_reporting[NUM_PROCESSORS];
+
 	bool verbose;
 	std::string dwarf_to_html_output_directory;
 	std::string dwarf_register_number_mapping_filename;
@@ -537,6 +540,7 @@ private:
 	void ScheduleFrontEnd(unsigned int front_end_num);
 	void DescheduleFrontEnd(unsigned int front_end_num);
 	bool NextScheduledFrontEnd(unsigned int& front_end_num) const;
+	bool IsFrontEndScheduled(unsigned int front_end_num) const;
 	bool IsScheduleEmpty() const;
 };
 

@@ -1901,19 +1901,6 @@ void Simulator::Run()
 	
 	double time_start = host_time->GetTime();
 
-#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
-	void (*prev_sig_int_handler)(int) = 0;
-#endif
-
-	if(!inline_debugger)
-	{
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-		SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
-#else
-		prev_sig_int_handler = signal(SIGINT, &Simulator::SigIntHandler);
-#endif
-	}
-
 	sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
 	
 	try
@@ -1924,15 +1911,6 @@ void Simulator::Run()
 	{
 		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
 		cerr << e.what() << endl;
-	}
-
-	if(!inline_debugger)
-	{
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-		SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, FALSE);
-#else
-		signal(SIGINT, prev_sig_int_handler);
-#endif
 	}
 
 	cerr << "Simulation finished" << endl;
@@ -2006,7 +1984,10 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 		std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 	}
 	std::cerr << "Program exited with status " << exit_status << std::endl;
-	sc_stop();
+	if(sc_get_status() != SC_STOPPED)
+	{
+		sc_stop();
+	}
 	if(!asynchronous)
 	{
 		sc_process_handle h = sc_get_current_process_handle();
@@ -2027,40 +2008,10 @@ int Simulator::GetExitStatus() const
 	return exit_status;
 }
 
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-BOOL WINAPI Simulator::ConsoleCtrlHandler(DWORD dwCtrlType)
+void Simulator::SigInt()
 {
-	bool stop = false;
-	switch(dwCtrlType)
+	if(!enable_inline_debugger)
 	{
-		case CTRL_C_EVENT:
-			cerr << "Interrupted by Ctrl-C" << endl;
-			stop = true;
-			break;
-		case CTRL_BREAK_EVENT:
-			cerr << "Interrupted by Ctrl-Break" << endl;
-			stop = true;
-			break;
-		case CTRL_CLOSE_EVENT:
-			cerr << "Interrupted by a console close" << endl;
-			stop = true;
-			break;
-		case CTRL_LOGOFF_EVENT:
-			cerr << "Interrupted because of logoff" << endl;
-			stop = true;
-			break;
-		case CTRL_SHUTDOWN_EVENT:
-			cerr << "Interrupted because of shutdown" << endl;
-			stop = true;
-			break;
+		unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
 	}
-	if(stop) sc_stop();
-	return stop ? TRUE : FALSE;
 }
-#else
-void Simulator::SigIntHandler(int signum)
-{
-	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
-}
-#endif

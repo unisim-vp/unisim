@@ -75,6 +75,7 @@ namespace inline_debugger {
 template <class ADDRESS>
 InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	: Object(_name, _parent, "this service implements a built-in debugger in the terminal console")
+	, InlineDebuggerBase(_name, _parent)
 	, unisim::kernel::service::Service<unisim::service::interfaces::DebugYielding>(_name, _parent)
 	, unisim::kernel::service::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >(_name, _parent)
 	, unisim::kernel::service::Client<unisim::service::interfaces::DebugYieldingRequest>(_name, _parent)
@@ -89,7 +90,6 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, unisim::kernel::service::Client<unisim::service::interfaces::DebugInfoLoading>(_name, _parent)
 	, unisim::kernel::service::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >(_name, _parent)
 	, unisim::kernel::service::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >(_name, _parent)
-	, InlineDebuggerBase()
 	, debug_yielding_export("debug-yielding-export", this)
 	, debug_event_listener_export("debug-event-listener-export", this)
 	, debug_yielding_request_import("debug-yielding-request-import", this)
@@ -458,15 +458,12 @@ void InlineDebugger<ADDRESS>::DebugYield()
 						cont_until_addr = cont_addr;
 						SetBreakpoint(cont_until_addr);
 					}
-// 					UnlistenFetch();
 					return;
 				}
 
 				if(IsContinueCommand(parm[0].c_str()))
 				{
 					running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
-					
-					//UnlistenFetch();
 					
 					if(interactive) last_line = line;
 					return;
@@ -574,7 +571,6 @@ void InlineDebugger<ADDRESS>::DebugYield()
 						running_mode = INLINE_DEBUGGER_MODE_CONTINUE_UNTIL;
 						cont_until_addr = ret_addr;
 						SetBreakpoint(cont_until_addr);
-						UnlistenFetch();
 						return;
 					}
 					else
@@ -748,7 +744,6 @@ void InlineDebugger<ADDRESS>::DebugYield()
 					if(interactive) last_line = line;
 					cont_until_addr = cont_addr;
 					SetBreakpoint(cont_until_addr);
-					//UnlistenFetch();
 					return;
 				}
 				

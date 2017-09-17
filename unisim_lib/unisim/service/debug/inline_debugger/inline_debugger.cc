@@ -34,107 +34,24 @@
  
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 
-#ifndef WIN32
-#include <signal.h>
-#endif
-
-#if defined(_WIN32) || defined(_WIN64)
-#include <windows.h>
-#endif
-
-#include <iostream>
-
 namespace unisim {
 namespace service {
 namespace debug {
 namespace inline_debugger {
 
-std::set<InlineDebuggerBase *> InlineDebuggerBase::instances;
-#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
-void (*InlineDebuggerBase::prev_sig_int_handler)(int);
-#endif
-
-InlineDebuggerBase::InlineDebuggerBase()
+InlineDebuggerBase::InlineDebuggerBase(const char *_name, unisim::kernel::service::Object *_parent)
+	: unisim::kernel::service::Object(_name, _parent)
 {
-	if(instances.empty())
-	{
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-		SetConsoleCtrlHandler(&InlineDebuggerBase::ConsoleCtrlHandler, TRUE);
-#else
-		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
-#endif
-	}
-	instances.insert(this);
 }
 
 InlineDebuggerBase::~InlineDebuggerBase()
 {
-	instances.erase(this);
-	if(instances.empty())
-	{
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-		SetConsoleCtrlHandler(&InlineDebuggerBase::ConsoleCtrlHandler, FALSE);
-#else
-		signal(SIGINT, prev_sig_int_handler);
-#endif
-	}
 }
 
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-BOOL WINAPI InlineDebuggerBase::ConsoleCtrlHandler(DWORD dwCtrlType)
+void InlineDebuggerBase::SigInt()
 {
-	bool trap = false;
-	switch(dwCtrlType)
-	{
-		case CTRL_C_EVENT:
-			std::cerr << "Interrupted by Ctrl-C" << std::endl;
-			trap = true;
-			break;
-		case CTRL_BREAK_EVENT:
-			std::cerr << "Interrupted by Ctrl-Break" << std::endl;
-			trap = true;
-			break;
-		case CTRL_CLOSE_EVENT:
-			std::cerr << "Interrupted by a console close" << std::endl;
-			trap = true;
-			break;
-		case CTRL_LOGOFF_EVENT:
-			std::cerr << "Interrupted because of logoff" << std::endl;
-			trap = true;
-			break;
-		case CTRL_SHUTDOWN_EVENT:
-			std::cerr << "Interrupted because of shutdown" << std::endl;
-			trap = true;
-			break;
-	}
-	
-	if(trap)
-	{
-		BroadcastInterrupt();
-	}
-	
-	return trap ? TRUE : FALSE;
+	Interrupt();
 }
-#else
-void InlineDebuggerBase::SigIntHandler(int signum)
-{
-	std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
-	BroadcastInterrupt();
-}
-#endif
-
-void InlineDebuggerBase::BroadcastInterrupt()
-{
-	std::set<InlineDebuggerBase *>::iterator it;
-	
-	for(it = instances.begin(); it != instances.end(); it++)
-	{
-		InlineDebuggerBase *instance = *it;
-		
-		instance->Interrupt();
-	}
-}
-
 
 } // end of namespace inline_debugger
 } // end of namespace debug

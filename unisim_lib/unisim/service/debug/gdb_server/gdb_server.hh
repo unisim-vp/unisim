@@ -153,11 +153,53 @@ private:
 	std::vector<const GDBRegister *> gdb_registers;
 };
 
-class GDBServerBase
+class GDBServerBase : public virtual unisim::kernel::service::Object
 {
+public:
+	GDBServerBase(const char *_name, unisim::kernel::service::Object *_parent);
+	virtual ~GDBServerBase();
+	
+	virtual void SigInt();
 protected:
 	static bool killed;
 };
+
+typedef enum
+{
+	GDB_SERVER_ERROR_EXPECTING_HEX               = 2,
+	GDB_SERVER_ERROR_EXPECTING_COMMA             = 3,
+	GDB_SERVER_ERROR_EXPECTING_COLON             = 4,
+	GDB_SERVER_ERROR_EXPECTING_SEMICOLON         = 5,
+	GDB_SERVER_ERROR_EXPECTING_ASSIGNMENT        = 6,
+	GDB_SERVER_ERROR_GARBAGE                     = 7,
+	GDB_SERVER_ERROR_EXPECTING_THREAD_ID         = 8,
+	GDB_SERVER_ERROR_INVALID_THREAD_ID           = 9,
+	GDB_SERVER_ERROR_EXPECTING_OPERATION         = 10,
+	GDB_SERVER_ERROR_INVALID_OPERATION           = 11,
+	GDB_SERVER_ERROR_CANT_DEBUG_PROCESSOR        = 12,
+	GDB_SERVER_ERROR_UNKNOWN_REGISTER            = 13,
+	GDB_SERVER_ERROR_CANT_READ_REGISTER          = 14,
+	GDB_SERVER_ERROR_CANT_WRITE_REGISTER         = 15,
+	GDB_SERVER_ERROR_CANT_READ_MEMORY            = 16,
+	GDB_SERVER_ERROR_CANT_WRITE_MEMORY           = 17,
+	GDB_SERVER_ERROR_MALFORMED_BINARY_DATA       = 18,
+	GDB_SERVER_CANT_SET_BREAKPOINT_WATCHPOINT    = 19,
+	GDB_SERVER_CANT_REMOVE_BREAKPOINT_WATCHPOINT = 20,
+	GDB_SERVER_ERROR_EXPECTING_ACTION            = 21
+}
+GDBServerError;
+
+std::ostream& operator << (std::ostream& os, const GDBServerError& gdb_server_error);
+
+typedef enum
+{
+	GDB_SERVER_NO_ACTION,
+	GDB_SERVER_ACTION_STEP,
+	GDB_SERVER_ACTION_CONTINUE
+}
+GDBServerAction;
+
+std::ostream& operator << (std::ostream& os, const GDBServerAction& gdb_server_action);
 
 template <class ADDRESS>
 class GDBServer
@@ -177,6 +219,7 @@ public:
 	static const uint64_t GDB_INTERRUPT_POLL_PERIOD_MS      = 100  /* ms */;  // every 100 ms
 	static const uint64_t NON_BLOCKING_READ_POLL_PERIOD_MS  = 10   /* ms */;  // every 10 ms
 	static const uint64_t NON_BLOCKING_WRITE_POLL_PERIOD_MS = 10   /* ms */;  // every 10 ms
+	static const bool ALWAYS_ACCEPT_MULTIPROCESS_NEW_THREAD_ID_SYNTAX = true; // Note: as new thread-id syntax (for multiprocess) is backward compatible with old syntax,
 	
 	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugYielding>                debug_yielding_export;
 	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_export;
@@ -210,8 +253,12 @@ private:
 	bool VisitProgramCounter(unisim::util::xml::Node *xml_node);
 	
 	bool ParseChar(const std::string& s, std::size_t& pos, char& value);
-	bool ParseHex(const std::string& s, std::size_t& pos, ADDRESS& value);
-	bool ParseSignedHex(const std::string& s, std::size_t& pos, long& value);
+	bool MatchChar(const std::string& s, std::size_t& pos, char value);
+	bool MatchChar(const std::string& s, std::size_t& pos, char value1, char value2, char& value);
+	bool MatchString(const std::string& s, std::size_t& pos, const std::string& value);
+	template <typename T> bool ParseHex(const std::string& s, std::size_t& pos, T& value);
+	template <typename T> bool ParseSignedHex(const std::string& s, std::size_t& pos, T& value);
+	bool ParseThreadId(const std::string& s, std::size_t& pos, long& thread_id);
 	std::string GetLastErrorString();
 	bool GetChar(char& c, bool blocking);
 	bool PutChar(char c);
@@ -221,6 +268,8 @@ private:
 	bool GetQuery(std::string& s, bool blocking);
 	bool PutReply(const std::string& s);
 	bool PutNotification(const std::string& s);
+	bool PutErrorReply(GDBServerError gdb_server_error);
+	bool PutErrorReply(GDBServerError gdb_server_error, unsigned int pos);
 	bool SetCThread(long thread_id);
 	bool SetGThread(long thread_id);
 	bool OutputText(const char *s, int count);
@@ -239,34 +288,37 @@ private:
 	bool SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t kind);
 	bool RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t kind);
 
-	void HandleQRcmd(std::string command);
-	void HandleQSupported(std::string features);
+	bool HandleVCont(const std::string& query, std::size_t& pos);
+	bool HandleQRcmd(const std::string& query, std::size_t& pos);
+	bool HandleQSupported(const std::string& query, std::size_t& pos);
 	void SetGDBClientFeature(std::string gdb_client_feature);
-	void HandleQC();
-	void HandleQAttached(std::string command);
-	void HandleQTStatus();
-	void HandleQStartNoAckMode();
-	void HandleQXferFeaturesRead(std::string command);
-	void HandleQfThreadInfo();
-	void HandleQsThreadInfo();
-	void HandleQThreadExtraInfo(std::string thread_id_string);
-	void HandleQRegisterInfo(std::string hex_reg_order_num); // LLDB specific
+	bool HandleQC();
+	bool HandleQAttached(const std::string& query, std::size_t& pos);
+	bool HandleQTStatus();
+	bool HandleQStartNoAckMode();
+	bool HandleQXferFeaturesRead(const std::string& query, std::size_t& pos);
+	bool HandleQXferThreadsRead(const std::string& query, std::size_t& pos);
+	bool HandleQfThreadInfo();
+	bool HandleQsThreadInfo();
+	bool HandleQThreadExtraInfo(const std::string& query, std::size_t& pos);
+	bool HandleQRegisterInfo(const std::string& query, std::size_t& pos); // LLDB specific
 
-	void Disasm(ADDRESS addr, unsigned int size);
-	
 	void KillFromThrdProcessCmd();
 	void KillFromSimulationRun();
 	void TriggerDebugYield();
 	void Interrupt();
+	bool ListenFetch(unsigned int prc_num);
 	bool ListenFetch();
+	bool UnlistenFetch(unsigned int prc_num);
 	bool UnlistenFetch();
 	
 	bool ThreadIdToProcessorNumber(long thread_id, unsigned int& prc_num) const;
+	long ProcessorNumberToThreadId(unsigned int prc_num) const;
 
 	std::string EscapeString(const std::string& s) const;
 	std::string HexEncodeString(const std::string& s) const;
 
-	void DisplayMonitoredInternals();
+	bool DisplayMonitoredInternals();
 
 	unisim::kernel::logger::Logger logger;
 
@@ -287,15 +339,16 @@ private:
 	unsigned int num_processors;
 	unsigned int g_prc_num;
 	unsigned int c_prc_num;
+	std::vector<GDBServerAction> prc_actions;
 	unsigned int session_num;
 	bool sock_error;
 	bool session_terminated;
 	bool detached;
-	bool listening_fetch;
+	std::vector<bool> listening_fetch;
 	bool trap;
+	std::vector<bool> prc_trap;
 	bool synched;
 	bool extended_mode;
-	bool multiprocess;
 	bool gdb_client_feature_multiprocess;
 	bool gdb_client_feature_xmlregisters;
 	bool gdb_client_feature_qrelocinsn;
@@ -306,6 +359,8 @@ private:
 	bool gdb_client_feature_exec_events;
 	bool gdb_client_feature_vcont;
 	bool gdb_client_feature_t32extensions;
+	bool gdb_client_feature_qxfer_features_read;
+	bool gdb_client_feature_qxfer_threads_read;
 	bool no_ack_mode;
 	std::map<uint32_t, uint32_t> arch_specific_breakpoint_kinds;
 	
@@ -325,6 +380,7 @@ private:
 	bool debug;
 	std::string monitor_internals;
 	GDBWaitConnectionMode wait_connection_mode;
+	bool enable_multiprocess_extension;
 
 	unisim::kernel::service::Parameter<unsigned int> param_memory_atom_size;
 	unisim::kernel::service::Parameter<int> param_tcp_port;
@@ -333,6 +389,7 @@ private:
 	unisim::kernel::service::Parameter<bool> param_debug;
 	unisim::kernel::service::Parameter<std::string> param_monitor_internals;
 	unisim::kernel::service::Parameter<GDBWaitConnectionMode> param_wait_connection_mode;
+	unisim::kernel::service::Parameter<bool> param_enable_multiprocess_extension;
 
 	///////////////////////////////////
 	
@@ -378,8 +435,8 @@ private:
 	virtual void ProcessCmdThrd();
 	virtual void ProcessIntThrd();
 	void ProcessCommands();
-	void Step();
-	void Continue();
+	bool Step();
+	bool Continue();
 	void ClearEvents();
 };
 

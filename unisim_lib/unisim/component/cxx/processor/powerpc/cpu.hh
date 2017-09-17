@@ -2197,7 +2197,7 @@ protected:
 				this->template Set<FINVS>( true );
 				if (this->template Get<FINVE>())
 				{
-					this->cpu->ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
+					this->cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
 					return false;
 				}
 			}
@@ -2213,7 +2213,7 @@ protected:
 				this->template Set<FDBZS>( true );
 				if (this->template Get<FDBZE>())
 				{
-					this->cpu->ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
+					this->cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
 					return false;
 				}
 			}
@@ -2229,7 +2229,7 @@ protected:
 				this->template Set<FOVFS>( true );
 				if (this->template Get<FOVFE>())
 				{
-					this->cpu->ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
+					this->cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
 					return false;
 				}
 			}
@@ -2245,7 +2245,7 @@ protected:
 				this->template Set<FUNFS>( true );
 				if (this->template Get<FUNFE>())
 				{
-					this->cpu->ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
+					this->cpu->template ThrowException<typename CONFIG::CPU::ProgramInterrupt::IllegalInstruction>();
 					return false;
 				}
 			}
@@ -3056,7 +3056,7 @@ protected:
 		
 		virtual void Reset()
 		{
-			this->template Set<RO>(0);
+			this->Initialize(0x30); // MAS[26:27]=11b at reset
 		}
 	private:
 		void Init()
@@ -3283,7 +3283,7 @@ protected:
 		typedef PrivilegedSPR<L1FINV1, 959> Super;
 		
 		struct CWAY : Field<CWAY, 7>      {}; // Cache Way
-		struct CSET : Field<CSET, 21, 26> {}; // Cache Set
+		struct CSET : Field<CSET, 19, 26> {}; // Cache Set
 		struct CCMD : Field<CCMD, 29, 31> {}; // Cache Command
 		
 		SWITCH_ENUM_TRAIT(Model, _);

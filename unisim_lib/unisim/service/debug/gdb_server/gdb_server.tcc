@@ -92,11 +92,15 @@ template <class ADDRESS>
 const uint64_t GDBServer<ADDRESS>::NON_BLOCKING_WRITE_POLL_PERIOD_MS;
 
 template <class ADDRESS>
+const bool GDBServer<ADDRESS>::ALWAYS_ACCEPT_MULTIPROCESS_NEW_THREAD_ID_SYNTAX;
+
+template <class ADDRESS>
 GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	: Object(_name, _parent,
 		"this service implements the GDB server remote serial protocol over TCP/IP. "
 		"Standards GDB clients (e.g. gdb, eclipse, ddd) can connect to the simulator to debug the target application "
 		"that runs within the simulator.")
+	, GDBServerBase(_name, _parent)
 	, unisim::kernel::service::Service<unisim::service::interfaces::DebugYielding>(_name, _parent)
 	, unisim::kernel::service::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >(_name, _parent)
 	, unisim::kernel::service::Client<unisim::service::interfaces::DebugSelecting>(_name, _parent)
@@ -132,11 +136,11 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, sock_error(false)
 	, session_terminated(false)
 	, detached(false)
-	, listening_fetch(false)
+	, listening_fetch()
 	, trap(false)
+	, prc_trap()
 	, synched(false)
 	, extended_mode(false)
-	, multiprocess(false)
 	, gdb_client_feature_multiprocess(false)
 	, gdb_client_feature_xmlregisters(false)
 	, gdb_client_feature_qrelocinsn(false)
@@ -147,6 +151,8 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, gdb_client_feature_exec_events(false)
 	, gdb_client_feature_vcont(false)
 	, gdb_client_feature_t32extensions(false)
+	, gdb_client_feature_qxfer_features_read(false)
+	, gdb_client_feature_qxfer_threads_read(false)
 	, no_ack_mode(false)
 	, arch_specific_breakpoint_kinds()
 	, fetch_insn_events()
@@ -159,6 +165,7 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, debug(false)
 	, monitor_internals()
 	, wait_connection_mode(GDB_WAIT_CONNECTION_STARTUP_ONLY)
+	, enable_multiprocess_extension(false)
 	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
 	, param_tcp_port("tcp-port", this, tcp_port, "TCP/IP port to listen waiting for a GDB client connection")
 	, param_architecture_description_filename("architecture-description-filename", this, architecture_description_filename, "filename of a XML description of the connected processor")
@@ -166,6 +173,7 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, param_debug("debug", this, debug, "Enable/Disable debug (intended for developper)")
 	, param_monitor_internals("monitor-internals", this, monitor_internals, "List of internal simulator variables to monitor in GDB Front-End")
 	, param_wait_connection_mode("wait-connection-mode", this, wait_connection_mode, "Whether to wait for connection of GDB client (never, [startup-only], always)")
+	, param_enable_multiprocess_extension("enable-multiprocess-extension", this, enable_multiprocess_extension, "Whether to enable GDB multiprocess extension")
 	, thrd_process_cmd()
 	, thrd_process_int()
 	, thrd_process_cmd_create_mutex()
@@ -297,6 +305,9 @@ bool GDBServer<ADDRESS>::EndSetup()
 	}
 	
 	num_processors = prc_num;
+	prc_actions.resize(num_processors);
+	listening_fetch.resize(num_processors);
+	prc_trap.resize(num_processors);
 	debug_selecting_import->DebugSelect(g_prc_num);
 
 	input_buffer_size = 0;
@@ -506,7 +517,7 @@ bool GDBServer<ADDRESS>::StartServer()
 #else
 		close(server_sock);
 #endif
-		logger << DebugInfo << "Connection with GDB client closed" << EndDebugInfo;
+		logger << DebugInfo << "Server shuts down" << EndDebugInfo;
 		return false;
 	}
 
@@ -582,6 +593,24 @@ bool GDBServer<ADDRESS>::StartServer()
 #else
 	close(server_sock);
 #endif
+
+	c_prc_num = g_prc_num = debug_selecting_import->DebugGetSelected();
+	ClearStopEvents();
+	
+	input_buffer_size = 0;
+	input_buffer_index = 0;
+	output_buffer_size = 0;
+
+	gdb_client_feature_multiprocess = false;
+	gdb_client_feature_xmlregisters = false;
+	gdb_client_feature_qrelocinsn = false;
+	gdb_client_feature_swbreak = false;
+	gdb_client_feature_hwbreak = false;
+	gdb_client_feature_fork_events = false;
+	gdb_client_feature_vfork_events = false;
+	gdb_client_feature_exec_events = false;
+	gdb_client_feature_vcont = false;
+	gdb_client_feature_t32extensions = false;
 	
 	sock_error = false;
 	detached = false;
@@ -617,6 +646,10 @@ bool GDBServer<ADDRESS>::StopServer()
 #endif
 		
 		logger << DebugInfo << "Connection with GDB client closed" << EndDebugInfo;
+		if(killed)
+		{
+			logger << DebugInfo << "Server shuts down" << EndDebugInfo;
+		}
 	}
 	if(unlikely(debug))
 	{
@@ -992,7 +1025,7 @@ void GDBServer<ADDRESS>::ProcessCmdThrd()
 		// make simulation call us a first time
 		TriggerDebugYield();
 		
-		// process GDB commands (GDB serial remote protocol dialect)
+		// process GDB commands (GDB remote serial protocol dialect)
 		ProcessCommands();
 		
 		// Unlisten all events
@@ -1016,17 +1049,16 @@ void GDBServer<ADDRESS>::ProcessCmdThrd()
 template <class ADDRESS>
 void GDBServer<ADDRESS>::ProcessCommands()
 {
-	bool extended_mode;
-	ADDRESS addr;
-	ADDRESS kind;
-	ADDRESS size;
-	ADDRESS reg_num;
-	ADDRESS type;
-	char semicolon;
-	char colon;
-	char comma;
-	char op;
-	long thread_id;
+	bool extended_mode = false;
+	ADDRESS addr = 0;
+	ADDRESS kind = 0;
+	ADDRESS size = 0;
+	ADDRESS reg_num = 0;
+	ADDRESS type = 0;
+	char ch = 0;
+	char op = 0;
+	long thread_id = 0;
+	unsigned int prc_num = 0;
 
 	std::string query;
 
@@ -1044,77 +1076,58 @@ void GDBServer<ADDRESS>::ProcessCommands()
 		std::size_t pos = 0;
 		std::size_t len = query.length();
 
-		switch(query[pos++])
+		if(!ParseChar(query, pos, ch)) { session_terminated = !PutReply(""); continue; }
+		
+		switch(ch)
 		{
 			case 'g':
-				if(!ReadRegisters())
-				{
-					session_terminated = true;
-				}
+				session_terminated = !ReadRegisters();
 				break;
 
 			case 'p':
-				if(!ParseHex(query, pos, reg_num)) break;
-				if(!ReadRegister(reg_num))
-				{
-					session_terminated = true;
-				}
+				if(!ParseHex(query, pos, reg_num)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_HEX, pos); break; }
+				session_terminated = !ReadRegister(reg_num);
 				break;
 
 			case 'G':
-				if(!WriteRegisters(query.substr(1)))
-				{
-					session_terminated = true;
-				}
+				session_terminated = !WriteRegisters(query.substr(1));
 				break;
 
 			case 'P':
-				if(!ParseHex(query, pos, reg_num)) break;
-				if(query[pos++] != '=') break;
-				if(!WriteRegister(reg_num, query.substr(pos)))
-				{
-					session_terminated = true;
-				}
+				if(!ParseHex(query, pos, reg_num)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_HEX, pos); break; }
+				if(!MatchChar(query, pos, '=')) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_ASSIGNMENT); break; }
+				session_terminated = !WriteRegister(reg_num, query.substr(pos));
 				break;
 
 			case 'm':
-				if(!ParseHex(query, pos, addr)) break;
-				if(query[pos++] != ',') break;
-				if(!ParseHex(query, pos, size)) break;
-				if(pos != len) break;
-				if(!ReadMemoryHex(addr * memory_atom_size, size))
-				{
-					session_terminated = true;
-				}
+				if(!ParseHex(query, pos, addr)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_HEX, pos); break; }
+				if(!MatchChar(query, pos, ',')) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_COMMA, pos); break; }
+				if(!ParseHex(query, pos, size)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_HEX, pos); break; }
+				if(pos != len) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_GARBAGE, pos); break; }
+				session_terminated = !ReadMemoryHex(addr * memory_atom_size, size);
 				break;
 
 			case 'M':
-				if(!ParseHex(query, pos, addr)) break;
-				if(query[pos++] != ',') break;
-				if(!ParseHex(query, pos, size)) break;
-				if(query[pos++] != ':') break;
-				if(!WriteMemoryHex(addr * memory_atom_size, query.substr(pos), size))
-				{
-					session_terminated = true;
-				}
+				if(!ParseHex(query, pos, addr)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_HEX, pos); break; }
+				if(!MatchChar(query, pos, ',')) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_COMMA, pos); break; }
+				if(!ParseHex(query, pos, size)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_HEX, pos); break; }
+				if(!MatchChar(query, pos, ':')) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_COLON, pos); break; }
+				session_terminated = !WriteMemoryHex(addr * memory_atom_size, query.substr(pos), size);
 				break;
 				
 			case 'X':
-				if(!ParseHex(query, pos, addr)) break;
-				if(query[pos++] != ',') break;
-				if(!ParseHex(query, pos, size)) break;
-				if(query[pos++] != ':') break;
-				if(!WriteMemoryBin(addr * memory_atom_size, query.substr(pos), size))
-				{
-					session_terminated = true;
-				}
+				if(!ParseHex(query, pos, addr)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_HEX, pos); break; }
+				if(!MatchChar(query, pos, ',')) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_COMMA, pos); break; }
+				if(!ParseHex(query, pos, size)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_HEX, pos); break; }
+				if(!MatchChar(query, pos, ':')) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_COLON, pos); break; }
+				session_terminated = !WriteMemoryBin(addr * memory_atom_size, query.substr(pos), size);
 				break;
 
 			case 's':
 				if(!ParseHex(query, pos, addr))
 				{
 					synched = false;
-					Step();
+					session_terminated = !Step();
 					break;
 				}
 				if(gdb_pc)
@@ -1127,13 +1140,13 @@ void GDBServer<ADDRESS>::ProcessCommands()
 					}
 				}
 				synched = false;
-				Step();
+				session_terminated = !Step();
 				break;
 
 			case 'c':
 				if(!ParseHex(query, pos, addr))
 				{
-					Continue();
+					session_terminated = !Continue();
 					break;
 				}
 				addr *= memory_atom_size;
@@ -1146,153 +1159,140 @@ void GDBServer<ADDRESS>::ProcessCommands()
 						logger << DebugWarning << "CPU has no program counter" << EndDebugWarning;
 					}
 				}
-				Continue();
+				session_terminated = !Continue();
 				break;
 
 			case 'H':
-				if(ParseChar(query, pos, op))
+				if(!MatchChar(query, pos, 'c', 'g', op)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_OPERATION, pos); break; }
+				if(!ParseThreadId(query, pos, thread_id)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_THREAD_ID, pos); break; }
+				if(pos != len) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_GARBAGE, pos); break; }
+				if((thread_id == -1) || (thread_id == 0))
 				{
-					if(ParseSignedHex(query, pos, thread_id))
-					{
-						if(pos == len)
-						{
-							if((thread_id == -1) || (thread_id == 0))
-							{
-								PutReply("OK");
-								break;
-							}
-						
-							if(op == 'c')
-							{
-								SetCThread(thread_id);
-								break;
-							}
-							else if(op == 'g')
-							{
-								SetGThread(thread_id);
-								break;
-							}
-						}
-					}
+					session_terminated = !PutReply("OK");
+					break;
 				}
-				PutReply("E00");
+
+				if(op == 'c')
+				{
+					session_terminated = !SetCThread(thread_id);
+					break;
+				}
+				else if(op == 'g')
+				{
+					session_terminated = !SetGThread(thread_id);
+					break;
+				}
+				else
+				{
+					session_terminated = !PutErrorReply(GDB_SERVER_ERROR_INVALID_OPERATION);
+					break;
+				}
 				break;
 				
 			case 'T':
-				if(ParseSignedHex(query, pos, thread_id))
-				{
-					if(pos == len)
-					{
-						unsigned int prc_num = 0;
-						if(ThreadIdToProcessorNumber(thread_id, prc_num))
-						{
-							PutReply("OK");
-							break;
-						}
-					}
-				}
-				PutReply("E00");
+				if(!ParseThreadId(query, pos, thread_id)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_THREAD_ID, pos); break; }
+				if(pos != len) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_GARBAGE, pos); break; }
+				if(!ThreadIdToProcessorNumber(thread_id, prc_num)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_INVALID_THREAD_ID); break; }
+				session_terminated = !PutReply("OK");
 				break;
 
 			case 'k':
-
 				KillFromThrdProcessCmd();
 				break;
 				
 			case 'D':
 				detached = true;
-				session_terminated = true;
-				PutReply("OK");
+				session_terminated = !PutReply("OK");
 				break;
 
 			case 'R':
 				if(extended_mode)
 				{
 					// FIXME: should reset
+					// Note 'R' is only available in extended mode and has no reply
+					break;
 				}
 				else
 				{
-					PutReply("E01");
+					session_terminated = !PutReply("");
 				}
-				return;
+				break;
 
 			case '?':
-				ReportTracePointTrap();
+				session_terminated = !ReportTracePointTrap();
 				break;
 
 			case '!':
 				extended_mode = true;
-				PutReply("OK");
+				session_terminated = !PutReply("OK");
 				break;
 
 			case 'Z':
-				if(!ParseHex(query, pos, type)) break;
-				if(query[pos++] != ',') break;
-				if(!ParseHex(query, pos, addr)) break;
-				if(query[pos++] != ',') break;
-				if(!ParseHex(query, pos, kind)) break;
-				if(!SetBreakpointWatchpoint(type, addr * memory_atom_size, kind))
-				{
-					session_terminated = true;
-				}
+				if(!ParseHex(query, pos, type)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_HEX, pos); break; }
+				if(!MatchChar(query, pos, ',')) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_COMMA, pos); break; }
+				if(!ParseHex(query, pos, addr)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_HEX, pos); break; }
+				if(!MatchChar(query, pos, ',')) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_COMMA, pos); break; }
+				if(!ParseHex(query, pos, kind)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_HEX, pos); break; }
+				session_terminated = !SetBreakpointWatchpoint(type, addr * memory_atom_size, kind);
 				break;
 
 			case 'z':
-				if(!ParseHex(query, pos, type)) break;
-				if(query[pos++] != ',') break;
-				if(!ParseHex(query, pos, addr)) break;
-				if(query[pos++] != ',') break;
-				if(!ParseHex(query, pos, kind)) break;
-				if(!RemoveBreakpointWatchpoint(type, addr * memory_atom_size, kind))
-				{
-					session_terminated = true;
-				}
+				if(!ParseHex(query, pos, type)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_HEX, pos); break; }
+				if(!MatchChar(query, pos, ',')) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_COMMA, pos); break; }
+				if(!ParseHex(query, pos, addr)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_HEX, pos); break; }
+				if(!MatchChar(query, pos, ',')) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_COMMA, pos); break; }
+				if(!ParseHex(query, pos, kind)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_HEX, pos); break; }
+				session_terminated = !RemoveBreakpointWatchpoint(type, addr * memory_atom_size, kind);
 				break;
 				
 			case 'q':
-				if(query == "qSymbol" || query == "qSymbol::")
+				if((query == "qSymbol::") || (query == "qSymbol::"))
 				{
-					PutReply("OK");
+					session_terminated = !PutReply("OK");
 				}
-				else if(query.substr(0, 6) == "qRcmd,")
+				else if(MatchString(query, pos, "Rcmd,"))
 				{
-					HandleQRcmd(query.substr(6));
+					session_terminated = !HandleQRcmd(query, pos);
 				}
-				else if(query.substr(0, 10) == "qSupported")
+				else if(MatchString(query, pos, "Supported"))
 				{
-					HandleQSupported(query.substr(10));
+					session_terminated = !HandleQSupported(query, pos);
 				}
 				else if(query == "qC")
 				{
-					HandleQC();
+					session_terminated = !HandleQC();
 				}
-				else if(query.substr(0, 9) == "qAttached")
+				else if(MatchString(query, pos, "Attached"))
 				{
-					HandleQAttached(query.substr(9));
+					session_terminated = !HandleQAttached(query, pos);
 				}
-				else if(query.substr(0, 8) == "qTStatus")
+				else if(MatchString(query, pos, "TStatus"))
 				{
-					HandleQTStatus();
+					session_terminated = !HandleQTStatus();
 				}
-				else if(query.substr(0, 20) == "qXfer:features:read:")
+				else if(MatchString(query, pos, "Xfer:features:read:"))
 				{
-					HandleQXferFeaturesRead(query.substr(20));
+					session_terminated = !HandleQXferFeaturesRead(query, pos);
+				}
+				else if(MatchString(query, pos, "Xfer:threads:read::"))
+				{
+					session_terminated = !HandleQXferThreadsRead(query, pos);
 				}
 				else if(query == "qfThreadInfo")
 				{
-					HandleQfThreadInfo();
+					session_terminated = !HandleQfThreadInfo();
 				}
 				else if(query == "qsThreadInfo")
 				{
-					HandleQsThreadInfo();
+					session_terminated = !HandleQsThreadInfo();
 				}
-				else if(query.substr(0, 17) == "qThreadExtraInfo,")
+				else if(MatchString(query, pos, "ThreadExtraInfo,"))
 				{
-					HandleQThreadExtraInfo(query.substr(17));
+					session_terminated = !HandleQThreadExtraInfo(query, pos);
 				}
-				else if(query.substr(0, 13) == "qRegisterInfo")
+				else if(MatchString(query, pos, "RegisterInfo"))
 				{
-					HandleQRegisterInfo(query.substr(13));
+					session_terminated = !HandleQRegisterInfo(query, pos);
 				}
 				else
 				{
@@ -1300,14 +1300,14 @@ void GDBServer<ADDRESS>::ProcessCommands()
 					{
 						logger << DebugWarning << "Received an unknown GDB remote protocol general query" << EndDebugWarning;
 					}
-					PutReply("");
+					session_terminated = !PutReply("");
 				}
 				break;
 				
 			case 'Q':
-				if(query == "QStartNoAckMode")
+				if(MatchString(query, pos, "StartNoAckMode"))
 				{
-					HandleQStartNoAckMode();
+					session_terminated = !HandleQStartNoAckMode();
 				}
 				else
 				{
@@ -1315,26 +1315,20 @@ void GDBServer<ADDRESS>::ProcessCommands()
 					{
 						logger << DebugWarning << "Received an unknown GDB remote protocol set packet" << EndDebugWarning;
 					}
-					PutReply("");
+					session_terminated = !PutReply("");
 				}
 				break;
 
-			default:
-
+			case 'v':
 				if(query == "vCont?")
 				{
-					PutReply("vCont;c;C;s;S");
+					session_terminated = !PutReply("vCont;c;C;s;S");
 				}
-				else if(query.substr(0, 7) == "vCont;c")
+				else if(MatchString(query, pos, "Cont"))
 				{
-					Continue();
+					session_terminated = !HandleVCont(query, pos);
 				}
-				else if(query.substr(0, 7) == "vCont;s")
-				{
-					synched = false;
-					Step();
-				}
-				else if(query.substr(0, 5) == "vKill")
+				else if(MatchString(query, pos, "Kill"))
 				{
 					KillFromThrdProcessCmd();
 				}
@@ -1342,19 +1336,28 @@ void GDBServer<ADDRESS>::ProcessCommands()
 				{
 					if(verbose)
 					{
-						logger << DebugWarning << "Received an unknown GDB remote protocol query" << EndDebugWarning;
+						logger << DebugWarning << "Received an unknown GDB remote protocol 'v' query" << EndDebugWarning;
 					}
-					PutReply("");
+					session_terminated = !PutReply("");
 				}
+				break;
+				
+			default:
+				if(verbose)
+				{
+					logger << DebugWarning << "Received an unknown GDB remote protocol query" << EndDebugWarning;
+				}
+				session_terminated = !PutReply("");
 				break;
 		} // end of switch
 	}
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::Step()
+bool GDBServer<ADDRESS>::Step()
 {
-	ListenFetch();
+	bool status = true;
+	ListenFetch(c_prc_num);
 	if(unlikely(debug))
 	{
 		logger << DebugInfo << "GDB command processing thread: Unlocking" << EndDebugInfo;
@@ -1373,18 +1376,17 @@ void GDBServer<ADDRESS>::Step()
 	Lock();
 	if(!killed)
 	{
-		UnlistenFetch();
-		trap = false;
-		DisplayMonitoredInternals();
-		ReportTracePointTrap();
-		ClearStopEvents();
-		g_prc_num = c_prc_num; // GDB client expects a switch to stopped thread
+		UnlistenFetch(c_prc_num);
+		if(status) status = DisplayMonitoredInternals();
+		if(status) status = ReportTracePointTrap();
 	}
+	return status;
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::Continue()
+bool GDBServer<ADDRESS>::Continue()
 {
+	bool status = true;
 	if(unlikely(debug))
 	{
 		logger << DebugInfo << "GDB command processing thread: Unlocking" << EndDebugInfo;
@@ -1403,12 +1405,10 @@ void GDBServer<ADDRESS>::Continue()
 	Lock();
 	if(!killed)
 	{
-		trap = false;
-		DisplayMonitoredInternals();
-		ReportTracePointTrap();
-		ClearStopEvents();
-		g_prc_num = c_prc_num; // GDB client expects a switch to stopped thread
+		if(status) status = DisplayMonitoredInternals();
+		if(status) status = ReportTracePointTrap();
 	}
+	return status;
 }
 
 template <class ADDRESS>
@@ -1893,13 +1893,67 @@ bool GDBServer<ADDRESS>::ParseChar(const std::string& s, std::size_t& pos, char&
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::ParseHex(const std::string& s, std::size_t& pos, ADDRESS& value)
+bool GDBServer<ADDRESS>::MatchChar(const std::string& s, std::size_t& pos, char value)
+{
+	char ch = 0;
+	if(!ParseChar(s, pos, ch)) return false;
+	if(ch != value)
+	{
+		pos--;
+		return false;
+	}
+	
+	return true;
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::MatchChar(const std::string& s, std::size_t& pos, char value1, char value2, char& value)
+{
+	char ch = 0;
+	if(!ParseChar(s, pos, ch)) return false;
+	if((ch != value1) && (ch != value2))
+	{
+		pos--;
+		return false;
+	}
+	value = ch;
+	return true;
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::MatchString(const std::string& s, std::size_t& _pos, const std::string& value)
+{
+	std::size_t pos = _pos;
+	std::size_t i = 0;
+	std::size_t len = s.length();
+	std::size_t value_len = value.length();
+	
+	for(i = 0; (i < value_len) && (pos < len); i++, pos++)
+	{
+		if(s[pos] != value[i])
+		{
+			return false;
+		}
+	}
+	
+	if(i < value_len)
+	{
+		return false;
+	}
+
+	_pos = pos;
+	return true;
+}
+
+template <class ADDRESS>
+template <typename T>
+bool GDBServer<ADDRESS>::ParseHex(const std::string& s, std::size_t& pos, T& value)
 {
 	std::size_t len = s.length();
 	std::size_t n = 0;
 
 	value = 0;
-	while((pos < len) && (n < (2 * sizeof(ADDRESS))))
+	while((pos < len) && (n < (2 * sizeof(T))))
 	{
 		uint8_t nibble;
 		if(!IsHexChar(s[pos])) break;
@@ -1913,26 +1967,72 @@ bool GDBServer<ADDRESS>::ParseHex(const std::string& s, std::size_t& pos, ADDRES
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::ParseSignedHex(const std::string& s, std::size_t& pos, long& value)
+template <typename T>
+bool GDBServer<ADDRESS>::ParseSignedHex(const std::string& s, std::size_t& pos, T& value)
 {
-	const char *nptr = &s[pos];
-	char *endptr = 0;
-	value = 0;
-	
-	value = strtol(nptr, &endptr, 16);
-	
-	if((value == 0) && (nptr == endptr))
+	char sign = '+';
+	if(!ParseChar(s, pos, sign)) return false;
+	if((sign != '+') && (sign != '-')) { sign = '+'; pos--; }
+	if(!ParseHex(s, pos, value)) return false;
+	if(sign == '-') value = -value;
+	return true;
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::ParseThreadId(const std::string& s, std::size_t& pos, long& thread_id)
+{
+	if(ALWAYS_ACCEPT_MULTIPROCESS_NEW_THREAD_ID_SYNTAX || (enable_multiprocess_extension && gdb_client_feature_multiprocess))
 	{
+		char c = 0;
+		// eat an optional 'p'
+		if(ParseChar(s, pos, c))
+		{
+			if(c != 'p')
+			{
+				pos--;
+			}
+		}
+		
+		if(!ParseSignedHex(s, pos, thread_id))
+		{
+			return false;
+		}
+		
+		if(thread_id < -1) return false;
+
+		if(!ParseChar(s, pos, c))
+		{
+			return true;
+		}
+		
+		if(c != '.')
+		{
+			pos--;
+			return true;
+		}
+		
+		long id = 0;
+		
+		if(!ParseSignedHex(s, pos, id))
+		{
+			return false;
+		}
+		
+		if(id < -1) return false;
+		
+		if((id == -1) || (id == 0) || (id == 1))
+		{
+			return true;
+		}
+		
 		return false;
-	}
-	
-	if(endptr)
-	{
-		pos += endptr - nptr;
 	}
 	else
 	{
-		pos = s.length(); // entire string is valid
+		if(!ParseSignedHex(s, pos, thread_id))
+		{
+			return false;
+		}
 	}
 	
 	return true;
@@ -1945,22 +2045,21 @@ void GDBServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> 
 	
 	unsigned int prc_num = event->GetProcessorNumber();
 	
-	if(prc_num != c_prc_num) return; // ignore
-	
 	if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_FETCH_INSN))
 	{
 		const unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = static_cast<const unisim::util::debug::FetchInsnEvent<ADDRESS> *>(event);
-		if(unlikely(debug))
+		if(unlikely(verbose))
 		{
 			logger << DebugInfo << "/\\/\\/\\ " << *fetch_insn_event << EndDebugInfo;
 		}
 		
+		prc_trap[prc_num] = true;
 		trap = true;
 		return;
 	}
 	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_COMMIT_INSN))
 	{
-		if(unlikely(debug))
+		if(unlikely(verbose))
 		{
 			const unisim::util::debug::CommitInsnEvent<ADDRESS> *commit_insn_event = static_cast<const unisim::util::debug::CommitInsnEvent<ADDRESS> *>(event);
 			logger << DebugInfo << "/\\/\\/\\ " << *commit_insn_event << EndDebugInfo;
@@ -1968,35 +2067,38 @@ void GDBServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS> 
 	}
 	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT))
 	{
-		if(unlikely(debug))
+		if(unlikely(verbose))
 		{
 			const unisim::util::debug::Breakpoint<ADDRESS> *breakpoint = static_cast<const unisim::util::debug::Breakpoint<ADDRESS> *>(event);
 			logger << DebugInfo << "/\\/\\/\\ " << *breakpoint << EndDebugInfo;
 		}
 		event->Catch();
 		stop_events.push_back(event);
+		prc_trap[prc_num] = true;
 		trap = true;
 	}
 	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT))
 	{
-		if(unlikely(debug))
+		if(unlikely(verbose))
 		{
 			const unisim::util::debug::Watchpoint<ADDRESS> *watchpoint = static_cast<const unisim::util::debug::Watchpoint<ADDRESS> *>(event);
 			logger << DebugInfo << "/\\/\\/\\ " << *watchpoint << EndDebugInfo;
 		}
 		event->Catch();
 		stop_events.push_back(event);
+		prc_trap[prc_num] = true;
 		trap = true;
 	}
 	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_TRAP))
 	{
-		if(unlikely(debug))
+		if(unlikely(verbose))
 		{
 			const unisim::util::debug::TrapEvent<ADDRESS> *trap_event = static_cast<const unisim::util::debug::TrapEvent<ADDRESS> *>(event);
 			logger << DebugInfo << "/\\/\\/\\ " << *trap_event << EndDebugInfo;
 		}
 		event->Catch();
 		stop_events.push_back(event);
+		prc_trap[prc_num] = true;
 		trap = true;
 	}
 	else
@@ -2100,36 +2202,33 @@ bool GDBServer<ADDRESS>::GetChar(char& c, bool blocking)
 #else
 			if(sock < 0) return false;
 			ssize_t r = read(sock, input_buffer, sizeof(input_buffer));
-			if(r <= 0)
+#endif
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+			if(r == SOCKET_ERROR)
+#else
+			if(r < 0)
 #endif
 			{
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-				if(r == SOCKET_ERROR)
+				if(WSAGetLastError() == WSAEWOULDBLOCK)
 #else
-				if(r < 0)
+				if((errno == EAGAIN) || (errno == EWOULDBLOCK))
 #endif
 				{
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-					if(WSAGetLastError() == WSAEWOULDBLOCK)
-#else
-					if((errno == EAGAIN) || (errno == EWOULDBLOCK))
-#endif
+					if(blocking && !killed)
 					{
-						if(blocking && !killed)
-						{
-							WaitTime(NON_BLOCKING_READ_POLL_PERIOD_MS);
-							continue;
-						}
-						else
-						{
-							return false;
-						}
+						WaitTime(NON_BLOCKING_READ_POLL_PERIOD_MS);
+						continue;
 					}
-					
-					logger << DebugError << "can't read from socket (" << GetLastErrorString() << ")" << EndDebugError;
-					sock_error = true;
-					return false;
+					else
+					{
+						return false;
+					}
 				}
+				
+				logger << DebugError << "can't read from socket (" << GetLastErrorString() << ")" << EndDebugError;
+				sock_error = true;
+				return false;
 			}
 			input_buffer_index = 0;
 			input_buffer_size = r;
@@ -2137,9 +2236,14 @@ bool GDBServer<ADDRESS>::GetChar(char& c, bool blocking)
 		} while(1);
 	}
 
-	c = input_buffer[input_buffer_index++];
-	input_buffer_size--;
-	return true;
+	if(input_buffer_size)
+	{
+		c = input_buffer[input_buffer_index++];
+		input_buffer_size--;
+		return true;
+	}
+	
+	return false;
 }
 
 template <class ADDRESS>
@@ -2374,6 +2478,38 @@ bool GDBServer<ADDRESS>::PutNotification(const std::string& s)
 }
 
 template <class ADDRESS>
+bool GDBServer<ADDRESS>::PutErrorReply(GDBServerError gdb_server_error)
+{
+	if(verbose)
+	{
+		logger << DebugInfo << "remote serial protocol error: " << gdb_server_error << EndDebugInfo;
+	}
+	
+	std::stringstream sstr;
+	sstr << "E" << std::hex;
+	sstr.width(2);
+	sstr.fill('0');
+	sstr << (unsigned int) gdb_server_error;
+	return PutReply(sstr.str());
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::PutErrorReply(GDBServerError gdb_server_error, unsigned int pos)
+{
+	if(verbose)
+	{
+		logger << DebugInfo << "remote serial protocol error: " << gdb_server_error << " at character #" << pos << EndDebugInfo;
+	}
+	
+	std::stringstream sstr;
+	sstr << "E" << std::hex;
+	sstr.width(2);
+	sstr.fill('0');
+	sstr << (unsigned int) gdb_server_error;
+	return PutReply(sstr.str());
+}
+
+template <class ADDRESS>
 bool GDBServer<ADDRESS>::OutputText(const char *s, int count)
 {
 	int i;
@@ -2396,7 +2532,7 @@ bool GDBServer<ADDRESS>::SetCThread(long thread_id)
 {
 	if(!ThreadIdToProcessorNumber(thread_id, c_prc_num))
 	{
-		return PutReply("E00");
+		return PutErrorReply(GDB_SERVER_ERROR_INVALID_THREAD_ID);
 	}
 	
 	return PutReply("OK");
@@ -2407,12 +2543,12 @@ bool GDBServer<ADDRESS>::SetGThread(long thread_id)
 {
 	if(!ThreadIdToProcessorNumber(thread_id, g_prc_num))
 	{
-		return PutReply("E00");
+		return PutErrorReply(GDB_SERVER_ERROR_INVALID_THREAD_ID);
 	}
 
 	if(!debug_selecting_import->DebugSelect(g_prc_num))
 	{
-		return PutReply("E01");
+		return PutErrorReply(GDB_SERVER_ERROR_CANT_DEBUG_PROCESSOR);
 	}
 
 	return PutReply("OK");
@@ -2463,18 +2599,13 @@ bool GDBServer<ADDRESS>::WriteRegisters(const std::string& hex)
 		}
 	}
 
-	return write_error ? PutReply("E00") : PutReply("OK");
+	return write_error ? PutErrorReply(GDB_SERVER_ERROR_CANT_WRITE_REGISTER) : PutReply("OK");
 }
 
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::ReadRegister(unsigned int regnum)
 {
-	if(regnum >= gdb_registers.size())
-	{
-		logger << DebugError << "Register #" << regnum << " can't be read because it is unknown" << EndDebugError;
-		return PutReply("E00");
-	}
-	const GDBRegister *gdb_reg = gdb_registers[regnum];
+	const GDBRegister *gdb_reg = (regnum < gdb_registers.size()) ? gdb_registers[regnum] : 0;
 	if(gdb_reg)
 	{
 		std::string packet;
@@ -2485,23 +2616,18 @@ bool GDBServer<ADDRESS>::ReadRegister(unsigned int regnum)
 		else
 		{
 			logger << DebugError << "Failed to read Register #" << regnum << EndDebugError;
-			return PutReply("E00");
+			return PutErrorReply(GDB_SERVER_ERROR_CANT_READ_REGISTER);
 		}
 	}
 
 	logger << DebugError << "Register #" << regnum << " can't be read because it is unknown" << EndDebugError;
-	return PutReply("E00");
+	return PutErrorReply(GDB_SERVER_ERROR_UNKNOWN_REGISTER);
 }
 
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::WriteRegister(unsigned int regnum, const std::string& hex)
 {
-	if(regnum >= gdb_registers.size())
-	{
-		logger << DebugError << "Register #" << regnum << " can't be written because it is unknown" << EndDebugError;
-		return PutReply("E00");
-	}
-	GDBRegister *gdb_reg = gdb_registers[regnum];
+	GDBRegister *gdb_reg = (regnum < gdb_registers.size()) ? gdb_registers[regnum] : 0;
 	
 	if(gdb_reg)
 	{
@@ -2512,12 +2638,12 @@ bool GDBServer<ADDRESS>::WriteRegister(unsigned int regnum, const std::string& h
 		else
 		{
 			logger << DebugError << "Failed to write Register #" << regnum << EndDebugError;
-			return PutReply("E00");
+			return PutErrorReply(GDB_SERVER_ERROR_CANT_WRITE_REGISTER);
 		}
 	}
 	
 	logger << DebugError << "Register #" << regnum << " can't be written because it is unknown" << EndDebugError;
-	return PutReply("E00");
+	return PutErrorReply(GDB_SERVER_ERROR_UNKNOWN_REGISTER);
 }
 
 template <class ADDRESS>
@@ -2557,7 +2683,7 @@ bool GDBServer<ADDRESS>::ReadMemoryHex(ADDRESS addr, uint32_t size)
 		}
 	}
 
-	return /*read_error ? PutReply("E00") : PutReply(packet); */PutReply(packet);
+	return /*read_error ? PutErrorReply(GDB_SERVER_ERROR_CANT_READ_MEMORY) : PutReply(packet); */PutReply(packet);
 }
 
 template <class ADDRESS>
@@ -2593,7 +2719,7 @@ bool GDBServer<ADDRESS>::WriteMemoryHex(ADDRESS addr, const std::string& hex, ui
 		}
 	}
 
-	return write_error ? PutReply("E00") :  PutReply("OK");
+	return write_error ? PutErrorReply(GDB_SERVER_ERROR_CANT_WRITE_MEMORY) :  PutReply("OK");
 }
 
 template <class ADDRESS>
@@ -2642,7 +2768,7 @@ bool GDBServer<ADDRESS>::ReadMemoryBin(ADDRESS addr, uint32_t size)
 		}
 	}
 
-	return /*read_error ? PutReply("E00") : PutReply(packet); */PutReply(packet);
+	return /*read_error ? PutErrorReply(GDB_SERVER_ERROR_CANT_READ_MEMORY) : PutReply(packet); */PutReply(packet);
 }
 
 template <class ADDRESS>
@@ -2707,7 +2833,7 @@ bool GDBServer<ADDRESS>::WriteMemoryBin(ADDRESS addr, const std::string& bin, ui
 		logger << DebugWarning << "X packet has extra data !" << EndDebugWarning;
 	}
 	
-	return (write_error || malformed_binary_data) ? PutReply("E00") :  PutReply("OK");
+	return malformed_binary_data ? PutErrorReply(GDB_SERVER_ERROR_MALFORMED_BINARY_DATA) : (write_error ? PutErrorReply(GDB_SERVER_ERROR_CANT_WRITE_MEMORY) : PutReply("OK"));
 }
 
 template <class ADDRESS>
@@ -2749,50 +2875,56 @@ void GDBServer<ADDRESS>::TriggerDebugYield()
 template <class ADDRESS>
 void GDBServer<ADDRESS>::Interrupt()
 {
+	unsigned int prc_num;
+	for(prc_num = 0; prc_num < num_processors; prc_num++)
+	{
+		prc_trap[prc_num] = true;
+	}
 	trap = true;
+	wait_for_command_processing = true;
 	TriggerDebugYield();
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::ListenFetch()
+bool GDBServer<ADDRESS>::ListenFetch(unsigned int prc_num)
 {
-	if(listening_fetch) return true;
+	if(listening_fetch[prc_num]) return true;
 	
-	unsigned int prc_num;
-	for(prc_num = 0; prc_num < num_processors; prc_num++)
+	unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = fetch_insn_events[prc_num];
+	
+	if(unlikely(verbose))
 	{
-		unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = fetch_insn_events[prc_num];
-		
-		if(!debug_event_trigger_import->Listen(fetch_insn_event))
-		{
-			logger << DebugError << "Can't track fetched instructions for Processor #" << prc_num << EndDebugError;
-			return false;
-		}
+		logger << DebugInfo << "prc #" << prc_num << ": stepi on" << EndDebugInfo;
+	}
+	if(!debug_event_trigger_import->Listen(fetch_insn_event))
+	{
+		logger << DebugError << "Can't track fetched instructions for Processor #" << prc_num << EndDebugError;
+		return false;
 	}
 	
-	listening_fetch = true;
+	listening_fetch[prc_num] = true;
 	
 	return true;
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::UnlistenFetch()
+bool GDBServer<ADDRESS>::UnlistenFetch(unsigned int prc_num)
 {
-	if(!listening_fetch) return true;
+	if(!listening_fetch[prc_num]) return true;
 
-	unsigned int prc_num;
-	for(prc_num = 0; prc_num < num_processors; prc_num++)
-	{
-		unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = fetch_insn_events[prc_num];
+	unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = fetch_insn_events[prc_num];
 		
-		if(!debug_event_trigger_import->Unlisten(fetch_insn_event))
-		{
-			logger << DebugError << "Can't untrack fetched instructions for Processor #" << prc_num << EndDebugError;
-			return false;
-		}
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << "prc #" << prc_num << ": stepi off" << EndDebugInfo;
+	}
+	if(!debug_event_trigger_import->Unlisten(fetch_insn_event))
+	{
+		logger << DebugError << "Can't untrack fetched instructions for Processor #" << prc_num << EndDebugError;
+		return false;
 	}
 	
-	listening_fetch = false;
+	listening_fetch[prc_num] = false;
 
 	return true;
 }
@@ -2813,7 +2945,14 @@ bool GDBServer<ADDRESS>::ThreadIdToProcessorNumber(long thread_id, unsigned int&
 	
 	return false;
 }
-	
+
+template <class ADDRESS>
+long GDBServer<ADDRESS>::ProcessorNumberToThreadId(unsigned int prc_num) const
+{
+	return prc_num + 1;
+}
+
+
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::ReportProgramExit()
 {
@@ -2831,14 +2970,46 @@ bool GDBServer<ADDRESS>::ReportSignal(unsigned int signum)
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::ReportTracePointTrap()
 {
+	unsigned int prc_num;
+	
 	std::string packet("T05");
+	
+	if(trap)
+	{
+		// we have a stop event
+		for(prc_num = 0; prc_num < num_processors; prc_num++)
+		{
+			if(prc_trap[prc_num]) break; // pick first processor with a stop event
+		}
+	}
+	else
+	{
+		prc_num = c_prc_num; // stop reply is about currently selected thread
+	}
 	
 	packet += "thread:";
 	
 	std::stringstream thread_id_sstr;
-	thread_id_sstr << std::hex << (c_prc_num + 1);
+	thread_id_sstr << std::hex;
+	
+	if(gdb_client_feature_multiprocess && enable_multiprocess_extension)
+	{
+		thread_id_sstr << "p" << ProcessorNumberToThreadId(prc_num) << ".1";
+	}
+	else
+	{
+		thread_id_sstr << ProcessorNumberToThreadId(prc_num);
+	}
 	
 	packet += thread_id_sstr.str();
+	packet += ';';
+	
+	packet += "core:";
+	
+	std::stringstream core_id_sstr;
+	core_id_sstr << std::hex << prc_num;
+	
+	packet += core_id_sstr.str();
 	packet += ';';
 	
 	if(gdb_pc)
@@ -2846,7 +3017,7 @@ bool GDBServer<ADDRESS>::ReportTracePointTrap()
 		std::stringstream sstr;
 		std::string hex;
 		unsigned int reg_num = gdb_pc->GetRegNum();
-		gdb_pc->GetValue(c_prc_num, hex);
+		gdb_pc->GetValue(prc_num, hex);
 		sstr << std::hex << reg_num;
 		packet += sstr.str();
 		packet += ":";
@@ -2862,44 +3033,53 @@ bool GDBServer<ADDRESS>::ReportTracePointTrap()
 		
 		typename unisim::util::debug::Event<ADDRESS>::Type event_type = event->GetType();
 		
-		if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT))
+		if((unsigned int) event->GetProcessorNumber() == prc_num)
 		{
-			const unisim::util::debug::Watchpoint<ADDRESS> *watchpoint = static_cast<const unisim::util::debug::Watchpoint<ADDRESS> *>(event);
-			
-			unisim::util::debug::MemoryAccessType mat = watchpoint->GetMemoryAccessType();
-			
-			switch(mat)
+			if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT))
 			{
-				case unisim::util::debug::MAT_READ:
-				case unisim::util::debug::MAT_WRITE:
+				const unisim::util::debug::Watchpoint<ADDRESS> *watchpoint = static_cast<const unisim::util::debug::Watchpoint<ADDRESS> *>(event);
+				
+				unisim::util::debug::MemoryAccessType mat = watchpoint->GetMemoryAccessType();
+				
+				switch(mat)
 				{
-					switch(watchpoint->GetMemoryAccessType())
+					case unisim::util::debug::MAT_READ:
+					case unisim::util::debug::MAT_WRITE:
 					{
-						case unisim::util::debug::MAT_READ:
-							packet += 'r';
-							break;
-						case unisim::util::debug::MAT_WRITE:
-							packet += 'a';
-							break;
-						default:
-							break;
+						switch(watchpoint->GetMemoryAccessType())
+						{
+							case unisim::util::debug::MAT_READ:
+								packet += 'r';
+								break;
+							case unisim::util::debug::MAT_WRITE:
+								packet += 'a';
+								break;
+							default:
+								break;
+						}
+						
+						packet += "watch";
+						
+						std::stringstream sstr_watchpoint_address;
+						sstr_watchpoint_address << std::hex << watchpoint->GetAddress();
+						
+						packet += sstr_watchpoint_address.str();
+						
+						packet += ';';
+						break;
 					}
-					
-					packet += "watch";
-					
-					std::stringstream sstr_watchpoint_address;
-					sstr_watchpoint_address << std::hex << watchpoint->GetAddress();
-					
-					packet += sstr_watchpoint_address.str();
-					
-					packet += ';';
-					break;
+						
+					default:
+						break;
 				}
-					
-				default:
-					break;
 			}
 		}
+	}
+	
+	if(trap)
+	{
+		ClearStopEvents();
+		c_prc_num = g_prc_num = prc_num; // automatically select stopped thread so that reply to 'g' query contains registers of stopped thread 
 	}
 	
 	return PutReply(packet);
@@ -2908,6 +3088,14 @@ bool GDBServer<ADDRESS>::ReportTracePointTrap()
 template <class ADDRESS>
 void GDBServer<ADDRESS>::ClearStopEvents()
 {
+	trap = false;
+	
+	unsigned int prc_num;
+	for(prc_num = 0; prc_num < num_processors; prc_num++)
+	{
+		prc_trap[prc_num] = false;
+	}
+	
 	unsigned int num_stop_events = stop_events.size();
 	unsigned int i;
 	for(i = 0; i < num_stop_events; i++)
@@ -2961,13 +3149,13 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 						{
 							logger << DebugWarning << "Can't listen breakpoint event for address 0x" << std::hex << (addr + i) << std::dec << " and processor #" << prc_num << EndDebugWarning;
 							delete brkp;
-							//return PutReply("E00");
+							//return PutErrorReply(GDB_SERVER_CANT_SET_BREAKPOINT_WATCHPOINT);
 						}
 					}
 				}
 				if(!status)
 				{
-					//return PutReply("E00");
+					//return PutErrorReply(GDB_SERVER_CANT_SET_BREAKPOINT_WATCHPOINT);
 				}
 				return PutReply("OK");
 			}
@@ -2982,7 +3170,7 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 					{
 						logger << DebugWarning << "Can't listen write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << " and Processor #" << prc_num << EndDebugWarning;
 						delete wp;
-						//return PutReply("E00");
+						//return PutErrorReply(GDB_SERVER_CANT_SET_BREAKPOINT_WATCHPOINT);
 					}
 				}
 			}
@@ -2998,7 +3186,7 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 					{
 						logger << DebugWarning << "Can't listen read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << " and Processor #" << prc_num << EndDebugWarning;
 						delete wp;
-						//return PutReply("E00");
+						//return PutErrorReply(GDB_SERVER_CANT_SET_BREAKPOINT_WATCHPOINT);
 					}
 				}
 			}
@@ -3031,12 +3219,12 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 				
 				if(!status)
 				{
-					//return PutReply("E00");
+					//return PutErrorReply(GDB_SERVER_CANT_SET_BREAKPOINT_WATCHPOINT);
 				}
 				return PutReply("OK");
 			}
 	}
-	return PutReply("E00");
+	return PutErrorReply(GDB_SERVER_CANT_SET_BREAKPOINT_WATCHPOINT);
 }
 
 template <class ADDRESS>
@@ -3085,7 +3273,7 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 				
 				if(!status)
 				{
-					//return PutReply("E00");
+					//return PutErrorReply(GDB_SERVER_CANT_REMOVE_BREAKPOINT_WATCHPOINT);
 				}
 				return PutReply("OK");
 			}
@@ -3100,7 +3288,7 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 					if(!debug_event_trigger_import->Unlisten(&wp))
 					{
 						logger << DebugWarning << "Can't unlisten write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
-						//return PutReply("E00");
+						//return PutErrorReply(GDB_SERVER_CANT_REMOVE_BREAKPOINT_WATCHPOINT);
 					}
 				}
 			}
@@ -3115,7 +3303,7 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 					if(!debug_event_trigger_import->Unlisten(&wp))
 					{
 						logger << DebugWarning << "Can't unlisten read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
-						//return PutReply("E00");
+						//return PutErrorReply(GDB_SERVER_CANT_REMOVE_BREAKPOINT_WATCHPOINT);
 					}
 				}
 			}
@@ -3143,19 +3331,134 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 				}
 				if(!status)
 				{
-					//return PutReply("E00");
+					//return PutErrorReply(GDB_SERVER_CANT_REMOVE_BREAKPOINT_WATCHPOINT);
 				}
 				return PutReply("OK");
 			}
 	}
-	return PutReply("E00");
+	return PutErrorReply(GDB_SERVER_CANT_REMOVE_BREAKPOINT_WATCHPOINT);
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::HandleQRcmd(std::string command)
+bool GDBServer<ADDRESS>::HandleVCont(const std::string& query, std::size_t& pos)
 {
-	std::size_t pos = 0;
-	std::size_t len = command.length();
+	std::vector<GDBServerAction> new_prc_actions(num_processors);
+	unsigned int prc_num = 0;
+	char ch = 0;
+	unsigned int len = query.length();
+	GDBServerAction action = GDB_SERVER_NO_ACTION;
+	long thread_id;
+	
+	// For each inferior thread, the leftmost action with a matching thread-id is applied
+	do
+	{
+		if(!ParseChar(query, pos, ch) || (ch != ';')) return PutErrorReply(GDB_SERVER_ERROR_EXPECTING_SEMICOLON, pos);
+		if(!ParseChar(query, pos, ch) || ((ch != 'c') && (ch != 's'))) return PutErrorReply(GDB_SERVER_ERROR_EXPECTING_ACTION, pos);
+		action =  (ch == 'c') ? GDB_SERVER_ACTION_CONTINUE :
+		         ((ch == 's') ? GDB_SERVER_ACTION_STEP     : GDB_SERVER_NO_ACTION);
+		thread_id = -1;
+		if(ParseChar(query, pos, ch))
+		{
+			if(ch == ':')
+			{
+				if(!ParseThreadId(query, pos, thread_id)) return PutErrorReply(GDB_SERVER_ERROR_EXPECTING_THREAD_ID, pos);
+			}
+			else
+			{
+				pos--;
+			} 
+		}
+		
+		if(thread_id == -1)
+		{
+			for(prc_num = 0; prc_num < num_processors; prc_num++)
+			{
+				if(new_prc_actions[prc_num] == GDB_SERVER_NO_ACTION)
+				{
+					new_prc_actions[prc_num] = action;
+				}
+			}
+		}
+		else if(thread_id == 0)
+		{
+			for(prc_num = 0; prc_num < num_processors; prc_num++)
+			{
+				if(new_prc_actions[prc_num] == GDB_SERVER_NO_ACTION)
+				{
+					new_prc_actions[prc_num] = action;
+					break;
+				}
+			}
+		}
+		else
+		{
+			if(!ThreadIdToProcessorNumber(thread_id, prc_num)) return PutErrorReply(GDB_SERVER_ERROR_INVALID_THREAD_ID);
+			new_prc_actions[prc_num] = action;
+		}
+	}
+	while(pos < len);
+
+	// Threads that don't match any action remain in their current state
+	for(prc_num = 0; prc_num < num_processors; prc_num++)
+	{
+		if(new_prc_actions[prc_num] != GDB_SERVER_NO_ACTION) prc_actions[prc_num] = new_prc_actions[prc_num];
+	}
+	
+	// For threads stepping, listen for instruction fetch
+	for(prc_num = 0; prc_num < num_processors; prc_num++)
+	{
+		action = prc_actions[prc_num];
+		if(unlikely(verbose))
+		{
+			logger << DebugInfo << "prc #" << prc_num << ": " << action << EndDebugInfo;
+		}
+		
+		if(action == GDB_SERVER_ACTION_STEP)
+		{
+			ListenFetch(prc_num);
+		}
+	}
+	
+	bool status = true;
+	if(unlikely(debug))
+	{
+		logger << DebugInfo << "GDB command processing thread: Unlocking" << EndDebugInfo;
+	}
+	Unlock();
+	do
+	{
+		Run();
+		WaitForSimulationRun();
+	}
+	while(!trap && !killed);
+	if(unlikely(debug))
+	{
+		logger << DebugInfo << "GDB command processing thread: Locking" << EndDebugInfo;
+	}
+	Lock();
+	if(!killed)
+	{
+		// For threads stepping, unlisten instruction fetch
+		for(prc_num = 0; prc_num < num_processors; prc_num++)
+		{
+			action = prc_actions[prc_num];
+			
+			if(action == GDB_SERVER_ACTION_STEP)
+			{
+				UnlistenFetch(prc_num);
+			}
+		}
+		if(status) status = DisplayMonitoredInternals();
+		if(status) status = ReportTracePointTrap();
+	}
+
+	return status;
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::HandleQRcmd(const std::string& query, std::size_t& pos)
+{
+	std::size_t len = query.length();
 	
 	char c;
 	std::string variable_name;
@@ -3163,7 +3466,7 @@ void GDBServer<ADDRESS>::HandleQRcmd(std::string command)
 	// skip white characters
 	do
 	{
-		c = (HexChar2Nibble(command[pos]) << 4) | HexChar2Nibble(command[pos + 1]);
+		c = (HexChar2Nibble(query[pos]) << 4) | HexChar2Nibble(query[pos + 1]);
 		if(c != ' ') break;
 		pos += 2;
 	} while(pos < len);
@@ -3175,7 +3478,7 @@ void GDBServer<ADDRESS>::HandleQRcmd(std::string command)
 		// fill-in parameter name
 		do
 		{
-			c = (HexChar2Nibble(command[pos]) << 4) | HexChar2Nibble(command[pos + 1]);
+			c = (HexChar2Nibble(query[pos]) << 4) | HexChar2Nibble(query[pos + 1]);
 			pos += 2;
 			if(c == '=') break;
 			variable_name.append(1, c);
@@ -3185,45 +3488,46 @@ void GDBServer<ADDRESS>::HandleQRcmd(std::string command)
 		if(variable->IsVoid())
 		{
 			std::string msg("unknown variable\n");
-			OutputText(msg.c_str(), msg.length());
-			PutReply("OK");
-			return;
+			if(!OutputText(msg.c_str(), msg.length())) return false;
+			return PutReply("OK");
 		}
 
 		if(pos >= len)
 		{
 			// it's a get!
 			std::string msg(variable_name + "=" + ((std::string) *variable) + "\n");
-			OutputText(msg.c_str(), msg.length());
-			PutReply("OK");
-			return;
+			if(!OutputText(msg.c_str(), msg.length())) return false;
+			return PutReply("OK");
 		}
 
 		// fill-in parameter value and remove trailing space
 		while(pos < len)
 		{
-			c = (HexChar2Nibble(command[pos]) << 4) | HexChar2Nibble(command[pos + 1]);
+			c = (HexChar2Nibble(query[pos]) << 4) | HexChar2Nibble(query[pos + 1]);
 			if(c == ' ') break;
 			pos += 2;
 			variable_value.append(1, c);
 		}
 
 		std::string msg(variable_name + "<-" + variable_value + "\n");
-		OutputText(msg.c_str(), msg.length());
+		if(!OutputText(msg.c_str(), msg.length())) return false;
 		*variable = variable_value.c_str();
-		PutReply("OK");
-		return;
+		return PutReply("OK");
 	}
 
-	PutReply("E00");
+	if(verbose)
+	{
+		logger << DebugInfo << "Unknown custom remote command" << EndDebugInfo;
+	}
+	return PutReply("");
 }
 
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::HandleQRegisterInfo(std::string hex_reg_order_num)
+bool GDBServer<ADDRESS>::HandleQRegisterInfo(const std::string& query, std::size_t& pos)
 {
 	unsigned int reg_order_num = 0;
-	std::stringstream sstr(hex_reg_order_num);
+	std::stringstream sstr(query.substr(pos));
 	sstr >> std::hex;
 	sstr >> reg_order_num;
 	
@@ -3271,14 +3575,13 @@ void GDBServer<ADDRESS>::HandleQRegisterInfo(std::string hex_reg_order_num)
 					packet_sstr << ";set:" << gdb_reg->GetGroup();
 				}
 				
-				PutReply(packet_sstr.str());
-				return;
+				return PutReply(packet_sstr.str());
 			}
 			offset += gdb_reg->GetByteSize();
 		}
 	}
 	
-	PutReply("E00");
+	return PutErrorReply(GDB_SERVER_ERROR_UNKNOWN_REGISTER);
 }
 
 template <class ADDRESS>
@@ -3299,7 +3602,9 @@ void GDBServer<ADDRESS>::SetGDBClientFeature(std::string gdb_client_feature)
 		{ "vfork-events", &gdb_client_feature_vfork_events },
 		{ "exec-events", &gdb_client_feature_exec_events },
 		{ "vContSupported", &gdb_client_feature_vcont },
-		{ "t32extensions", &gdb_client_feature_vcont }
+		{ "t32extensions", &gdb_client_feature_vcont },
+		{ "qXfer:features:read", &gdb_client_feature_qxfer_features_read },
+		{ "qXfer:threads:read", &gdb_client_feature_qxfer_threads_read },
 	};
 	
 	unsigned int n = sizeof(features) / sizeof(features[0]);
@@ -3331,11 +3636,9 @@ void GDBServer<ADDRESS>::SetGDBClientFeature(std::string gdb_client_feature)
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::HandleQSupported(std::string gdb_client_features)
+bool GDBServer<ADDRESS>::HandleQSupported(const std::string& query, std::size_t& pos)
 {
-	std::size_t pos = 0;
-
-	if((pos < gdb_client_features.length()) && (gdb_client_features[pos] == ':'))
+	if((pos < query.length()) && (query[pos] == ':'))
 	{
 		pos++;
 	
@@ -3343,9 +3646,9 @@ void GDBServer<ADDRESS>::HandleQSupported(std::string gdb_client_features)
 		
 		do
 		{
-			delim_pos = gdb_client_features.find_first_of(';', pos);
+			delim_pos = query.find_first_of(';', pos);
 			
-			std::string gdb_client_feature((delim_pos != std::string::npos) ? gdb_client_features.substr(pos, delim_pos - pos) : gdb_client_features.substr(pos));
+			std::string gdb_client_feature((delim_pos != std::string::npos) ? query.substr(pos, delim_pos - pos) : query.substr(pos));
 			
 			SetGDBClientFeature(gdb_client_feature);
 			
@@ -3354,49 +3657,81 @@ void GDBServer<ADDRESS>::HandleQSupported(std::string gdb_client_features)
 		while(pos != std::string::npos);
 	}
 	
-	PutReply("PacketSize=0fff;vContSupported+;QStartNoAckMode+;qXfer:features:read+");
+	std::stringstream sstr;
+	sstr << "PacketSize=0fff;vContSupported+;QStartNoAckMode+;qXfer:features:read+;qXfer:threads:read+";
+	if(enable_multiprocess_extension)
+	{
+		sstr << "multiprocess+";
+	}
+	return PutReply(sstr.str());
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::HandleQC()
+bool GDBServer<ADDRESS>::HandleQC()
 {
 	std::stringstream sstr;
-	sstr << "QC" << std::hex << c_prc_num;
-	PutReply(sstr.str());
+	sstr << "QC" << std::hex;
+	if(gdb_client_feature_multiprocess && enable_multiprocess_extension)
+	{
+		sstr << "p" << ProcessorNumberToThreadId(g_prc_num) << ".1";
+	}
+	else
+	{
+		sstr << ProcessorNumberToThreadId(g_prc_num);
+	}
+	return PutReply(sstr.str());
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::HandleQTStatus()
+bool GDBServer<ADDRESS>::HandleQTStatus()
 {
-	PutReply("T0"); // there's no experiments running currently
+	return PutReply("T0"); // there's no experiments running currently
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::HandleQAttached(std::string command)
+bool GDBServer<ADDRESS>::HandleQAttached(const std::string& query, std::size_t& pos)
 {
-	PutReply("1"); // The remote server attached to an existing process
+	if(ALWAYS_ACCEPT_MULTIPROCESS_NEW_THREAD_ID_SYNTAX || (gdb_client_feature_multiprocess && enable_multiprocess_extension))
+	{
+		if(MatchChar(query, pos, ':'))
+		{
+			long thread_id = 0;
+			
+			if(!ParseThreadId(query, pos, thread_id))
+			{
+				return PutErrorReply(GDB_SERVER_ERROR_EXPECTING_THREAD_ID, pos);
+			}
+			
+			unsigned int prc_num = 0;
+			if(!ThreadIdToProcessorNumber(thread_id, prc_num))
+			{
+				return PutErrorReply(GDB_SERVER_ERROR_INVALID_THREAD_ID);
+			}
+		}
+	}
+	
+	return PutReply("1"); // The remote server attached to an existing process
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::HandleQStartNoAckMode()
+bool GDBServer<ADDRESS>::HandleQStartNoAckMode()
 {
-	PutReply("OK");
 	no_ack_mode = true;
+	return PutReply("OK");
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::HandleQXferFeaturesRead(std::string command)
+bool GDBServer<ADDRESS>::HandleQXferFeaturesRead(const std::string& query, std::size_t& pos)
 {
-	std::size_t pos = 0;
-	std::size_t delim_pos = command.find_first_of(':');
+	std::size_t delim_pos = query.find_first_of(':', pos);
 	
 	if(delim_pos == std::string::npos)
 	{
 		logger << DebugWarning << "malformed qXfer:features:read request (expecting annex)" << EndDebugWarning;
-		PutReply("E00");
+		return PutErrorReply(GDB_SERVER_ERROR_EXPECTING_COLON, pos);
 	}
 	
-	std::string annex(command.substr(pos, delim_pos - pos));
+	std::string annex(query.substr(pos, delim_pos - pos));
 	
 	if(verbose)
 	{
@@ -3404,15 +3739,15 @@ void GDBServer<ADDRESS>::HandleQXferFeaturesRead(std::string command)
 	}
 	
 	pos = delim_pos + 1;
-	delim_pos = command.find_first_of(',', pos);
+	delim_pos = query.find_first_of(',', pos);
 	
 	if(delim_pos == std::string::npos)
 	{
 		logger << DebugWarning << "malformed qXfer:features:read request (expecting offset)" << EndDebugWarning;
-		PutReply("E00");
+		return PutErrorReply(GDB_SERVER_ERROR_EXPECTING_COMMA, pos);
 	}
 
-	std::stringstream offset_sstr(command.substr(pos, delim_pos - pos));
+	std::stringstream offset_sstr(query.substr(pos, delim_pos - pos));
 	unsigned int offset;
 	offset_sstr >> std::hex >> offset;
 
@@ -3423,7 +3758,7 @@ void GDBServer<ADDRESS>::HandleQXferFeaturesRead(std::string command)
 
 	pos = delim_pos + 1;
 
-	std::stringstream length_sstr(command.substr(pos));
+	std::stringstream length_sstr(query.substr(pos));
 	unsigned int length;
 	length_sstr >> std::hex >> length;
 	
@@ -3463,11 +3798,69 @@ void GDBServer<ADDRESS>::HandleQXferFeaturesRead(std::string command)
 	std::string packet("l");
 	packet.append(EscapeString(sstr.str()), offset, length);
 	
-	PutReply(packet);
+	return PutReply(packet);
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::HandleQfThreadInfo()
+bool GDBServer<ADDRESS>::HandleQXferThreadsRead(const std::string& query, std::size_t& pos)
+{
+	std::size_t delim_pos = query.find_first_of(',', pos);
+	
+	if(delim_pos == std::string::npos)
+	{
+		logger << DebugWarning << "malformed qXfer:threads:read request (expecting offset)" << EndDebugWarning;
+		return PutErrorReply(GDB_SERVER_ERROR_EXPECTING_COMMA, pos);
+	}
+
+	std::stringstream offset_sstr(query.substr(pos, delim_pos - pos));
+	unsigned int offset;
+	offset_sstr >> std::hex >> offset;
+
+	if(verbose)
+	{
+		logger << DebugInfo << "GDB client wants thread list from offset " << offset << std::endl;
+	}
+
+	pos = delim_pos + 1;
+
+	std::stringstream length_sstr(query.substr(pos));
+	unsigned int length;
+	length_sstr >> std::hex >> length;
+	
+	if(verbose)
+	{
+		logger << DebugInfo << "GDB client wants at most " << length << " characters from thread list" << std::endl;
+	}
+
+	std::stringstream sstr;
+	
+	sstr << "<?xml version=\"1.0\"?>";
+	sstr << "<threads>" << std::hex;
+	unsigned int prc_num;
+	for(prc_num = 0; prc_num < num_processors; prc_num++)
+	{
+		sstr << "<thread id=\"";
+		if(gdb_client_feature_multiprocess && enable_multiprocess_extension)
+		{
+			sstr << "p" << ProcessorNumberToThreadId(prc_num) << ".1";
+		}
+		else
+		{
+			sstr << ProcessorNumberToThreadId(prc_num);
+		}
+		
+		sstr << "\" core=\"" << prc_num << "\" name=\"CPU #" << prc_num << "\"/>";
+	}
+	sstr << "</threads>";
+	
+	std::string packet("l");
+	packet.append(EscapeString(sstr.str()), offset, length);
+	
+	return PutReply(packet);
+}
+
+template <class ADDRESS>
+bool GDBServer<ADDRESS>::HandleQfThreadInfo()
 {
 	std::stringstream sstr;
 	
@@ -3477,45 +3870,45 @@ void GDBServer<ADDRESS>::HandleQfThreadInfo()
 	for(prc_num = 0; prc_num < num_processors; prc_num++)
 	{
 		if(prc_num != 0) sstr << ",";
-		sstr << std::hex << (prc_num + 1);
+		sstr << std::hex;
+		if(gdb_client_feature_multiprocess && enable_multiprocess_extension)
+		{
+			sstr << "p" << ProcessorNumberToThreadId(prc_num) << ".1";
+		}
+		else
+		{
+			sstr << ProcessorNumberToThreadId(prc_num);
+		}
 	}
 	
-	PutReply(sstr.str()); // report all threads
+	return PutReply(sstr.str()); // report all threads
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::HandleQsThreadInfo()
+bool GDBServer<ADDRESS>::HandleQsThreadInfo()
 {
-	PutReply("l"); // report end of list
+	return PutReply("l"); // report end of list
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::HandleQThreadExtraInfo(std::string thread_id_string)
+bool GDBServer<ADDRESS>::HandleQThreadExtraInfo(const std::string& query, std::size_t& pos)
 {
 	long thread_id = 0;
-	std::size_t pos = 0;
-	if(ParseSignedHex(thread_id_string, pos, thread_id))
+	if(ParseThreadId(query, pos, thread_id))
 	{
-		if(pos == thread_id_string.length())
-		{
-			if(thread_id >= 1)
-			{
-				unsigned int prc_num = thread_id - 1;
-				
-				if(prc_num < num_processors)
-				{
-					std::stringstream sstr;
+		unsigned int prc_num = 0;
 			
-					sstr << "CPU #" << prc_num;
-					
-					PutReply(HexEncodeString(sstr.str()));
-					return;
-				}
-			}
+		if(ThreadIdToProcessorNumber(thread_id, prc_num))
+		{
+			std::stringstream sstr;
+	
+			sstr << "CPU #" << prc_num;
+			
+			return PutReply(HexEncodeString(sstr.str()));
 		}
 	}
 
-	PutReply(HexEncodeString("invalid thread ID"));
+	return PutReply(HexEncodeString("invalid thread ID"));
 }
 
 template <class ADDRESS>
@@ -3563,7 +3956,7 @@ std::string GDBServer<ADDRESS>::HexEncodeString(const std::string& s) const
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::DisplayMonitoredInternals()
+bool GDBServer<ADDRESS>::DisplayMonitoredInternals()
 {
 	std::string variable_name;
 	std::stringstream sstr(monitor_internals);
@@ -3575,9 +3968,11 @@ void GDBServer<ADDRESS>::DisplayMonitoredInternals()
 		if(!variable->IsVoid())
 		{
 			std::string msg(variable_name + "=" + ((std::string) *variable));
-			OutputText(msg.c_str(), msg.length());
+			if(!OutputText(msg.c_str(), msg.length())) return false;
 		}
 	}
+	
+	return true;
 }
 
 } // end of namespace gdb_server

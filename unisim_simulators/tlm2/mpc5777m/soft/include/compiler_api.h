@@ -45,3 +45,5 @@
 #define VEC_ALIGN          PPCASM (" .align 4 ")
 
 #endif
+
+#define PPC_WAIT               PPCASM volatile (".long 0x7c00007c") // WARNING! Binutils 2.28 emits 0x7c00003c instead of 0x7c00007c for WAIT instruction

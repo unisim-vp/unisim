@@ -2422,6 +2422,16 @@
 				<item>always</item>
 			</enumeration>
 		</variable>
+		<variable name="enable-multiprocess-extension">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to enable GDB multiprocess extension</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 	</object>
 	<object name="gdb-server1">
 		<variable name="memory-atom-size">
@@ -2479,6 +2489,16 @@
 				<item>always</item>
 			</enumeration>
 		</variable>
+		<variable name="enable-multiprocess-extension">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to enable GDB multiprocess extension</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 	</object>
 	<object name="gdb-server2">
 		<variable name="memory-atom-size">
@@ -2534,6 +2554,16 @@
 				<item>never</item>
 				<item>startup-only</item>
 				<item>always</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-multiprocess-extension">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to enable GDB multiprocess extension</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
 			</enumeration>
 		</variable>
 	</object>

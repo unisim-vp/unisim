@@ -41,6 +41,21 @@ namespace gdb_server {
 
 bool GDBServerBase::killed = false;
 
+GDBServerBase::GDBServerBase(const char *_name, unisim::kernel::service::Object *_parent)
+	: unisim::kernel::service::Object(_name, _parent)
+{
+}
+
+GDBServerBase::~GDBServerBase()
+{
+}
+
+void GDBServerBase::SigInt()
+{
+	killed = true;
+}
+
+
 GDBRegister::GDBRegister()
 	: name()
 	, bitsize(0)
@@ -62,19 +77,6 @@ GDBRegister::GDBRegister(const std::string& reg_name, int reg_bitsize, GDBEndian
 	, group(_group)
 {
 }
-
-#if 0
-GDBRegister::GDBRegister(unisim::service::interfaces::Register *_reg, const std::string& reg_name, GDBEndian reg_endian, unsigned int _reg_num, const std::string& _type, const std::string& _group)
-	: name(reg_name)
-	, bitsize(8 * _reg->GetSize())
-	, reg(_reg)
-	, endian(reg_endian)
-	, reg_num(_reg_num)
-	, type(_type)
-	, group(_group)
-{
-}
-#endif
 
 void GDBRegister::SetRegisterInterface(unsigned int prc_num, unisim::service::interfaces::Register *reg)
 {
@@ -272,6 +274,49 @@ std::ostream& GDBFeature::ToXML(std::ostream& os, std::string req_filename) cons
 		{
 			os << "/>";
 		}
+	}
+	
+	return os;
+}
+
+std::ostream& operator << (std::ostream& os, const GDBServerError& gdb_server_error)
+{
+	switch(gdb_server_error)
+	{
+		case GDB_SERVER_ERROR_EXPECTING_HEX              : os << "expecting hexadecimal value"; break;
+		case GDB_SERVER_ERROR_EXPECTING_COMMA            : os << "expecting ','"; break;
+		case GDB_SERVER_ERROR_EXPECTING_COLON            : os << "expecting ':'"; break;
+		case GDB_SERVER_ERROR_EXPECTING_SEMICOLON        : os << "expecting ';'"; break;
+		case GDB_SERVER_ERROR_EXPECTING_ASSIGNMENT       : os << "expecting '='"; break;
+		case GDB_SERVER_ERROR_GARBAGE                    : os << "got garbage (extra characters)"; break;
+		case GDB_SERVER_ERROR_EXPECTING_THREAD_ID        : os << "expecting thread id"; break;
+		case GDB_SERVER_ERROR_INVALID_THREAD_ID          : os << "invalid thread id"; break;
+		case GDB_SERVER_ERROR_EXPECTING_OPERATION        : os << "expecting operation"; break;
+		case GDB_SERVER_ERROR_INVALID_OPERATION          : os << "invalid operation"; break;
+		case GDB_SERVER_ERROR_CANT_DEBUG_PROCESSOR       : os << "can't debug processor"; break;
+		case GDB_SERVER_ERROR_UNKNOWN_REGISTER           : os << "unknown register"; break;
+		case GDB_SERVER_ERROR_CANT_READ_REGISTER         : os << "can't read register"; break;
+		case GDB_SERVER_ERROR_CANT_WRITE_REGISTER        : os << "can't write register"; break;
+		case GDB_SERVER_ERROR_CANT_READ_MEMORY           : os << "can't read memory"; break;
+		case GDB_SERVER_ERROR_CANT_WRITE_MEMORY          : os << "can't write memory"; break;
+		case GDB_SERVER_ERROR_MALFORMED_BINARY_DATA      : os << "malformed binary data"; break;
+		case GDB_SERVER_CANT_SET_BREAKPOINT_WATCHPOINT   : os << "can't set breakpoint/watchpoint"; break;
+		case GDB_SERVER_CANT_REMOVE_BREAKPOINT_WATCHPOINT: os << "can't remove breakpoint/watchpoint"; break;
+		case GDB_SERVER_ERROR_EXPECTING_ACTION           : os << "expecting action"; break;
+		default                                          : os << "?"; break;
+	}
+	
+	return os;
+}
+
+std::ostream& operator << (std::ostream& os, const GDBServerAction& gdb_server_action)
+{
+	switch(gdb_server_action)
+	{
+		case GDB_SERVER_NO_ACTION      : os << "no action"; break;
+		case GDB_SERVER_ACTION_STEP    : os << "step"; break;
+		case GDB_SERVER_ACTION_CONTINUE: os << "continue"; break;
+		default                        : os << "?"; break;
 	}
 	
 	return os;

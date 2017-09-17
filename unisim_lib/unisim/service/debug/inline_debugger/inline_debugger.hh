@@ -91,30 +91,20 @@ typedef enum
 	INLINE_DEBUGGER_MODE_TRAVERSE
 } InlineDebuggerRunningMode;
 
-class InlineDebuggerBase
+class InlineDebuggerBase : public virtual unisim::kernel::service::Object
 {
 public:
-	InlineDebuggerBase();
+	InlineDebuggerBase(const char *_name, unisim::kernel::service::Object *parent);
 	virtual ~InlineDebuggerBase();
+	virtual void SigInt();
 protected:
 	virtual void Interrupt() = 0;
-private:
-	static std::set<InlineDebuggerBase *> instances;
-#ifndef WIN32
-	static void (*prev_sig_int_handler)(int);
-#endif
-#if defined(_WIN32) || defined(_WIN64)
-	static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
-#else
-	static void SigIntHandler(int signum);
-#endif
-	static void BroadcastInterrupt();
-	
 };
 
 template <class ADDRESS>
 class InlineDebugger
-	: public unisim::kernel::service::Service<unisim::service::interfaces::DebugYielding>
+	: public InlineDebuggerBase
+	, public unisim::kernel::service::Service<unisim::service::interfaces::DebugYielding>
 	, public unisim::kernel::service::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >
 	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugYieldingRequest>
 	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >
@@ -128,7 +118,6 @@ class InlineDebugger
 	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugInfoLoading>
 	, public unisim::kernel::service::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >
 	, public unisim::kernel::service::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >
-	, public InlineDebuggerBase
 {
 public:
 	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugYielding>                debug_yielding_export;
