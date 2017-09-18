@@ -590,46 +590,89 @@ namespace armsec
           n, z, c, v, itstate, // q, ge0, ge1, ge2, ge3,
           cpsr, spsr,
           fpscr, fpexc,
-          SCTLR, CPACR,
+          SCTLR, ACTLR,
+          CTR, MPIDR,
+          ID_PFR0, CCSIDR,
+          CPACR, NSACR,
+          TTBR0, TTBR1, TTBCR,
+          DACR,
+          DFSR, IFSR, DFAR, IFAR,
+          ICIALLUIS, BPIALLIS,
+          ICIALLU, ICIMVAU, BPIALL,
+          DCIMVAC, DCISW, DCCMVAC, DCCSW, DCCMVAU, DCCIMVAC,
+          TLBIALLIS, TLBIALL, TLBIASID,
+          DIAGCR, CFGBAR,
           end
         } code;
 
-      static RegID sreg(int idx) { return RegID(SCTLR) + idx; }
-      static int  const sregs_count = CPACR - SCTLR;
+      static RegID sreg_id(int idx) { return RegID(SCTLR) + idx; }
+      int sreg_idx() { return code - SCTLR; }
+      
+      static int  const sregs_count = end - SCTLR;
       
       char const* c_str() const
       {
         switch (code)
           {
-          case      r0: return "r0";
-          case      r1: return "r1";
-          case      r2: return "r2";
-          case      r3: return "r3";
-          case      r4: return "r4";
-          case      r5: return "r5";
-          case      r6: return "r6";
-          case      r7: return "r7";
-          case      r8: return "r8";
-          case      r9: return "r9";
-          case      sl: return "sl";
-          case      fp: return "fp";
-          case      ip: return "ip";
-          case      sp: return "sp";
-          case      lr: return "lr";
-          case     nia: return "pc";
-          case       n: return "n";
-          case       z: return "z";
-          case       c: return "c";
-          case       v: return "v";
-          case itstate: return "itstate";
-          case    cpsr: return "cpsr";
-          case    spsr: return "spsr";
-          case   fpscr: return "fpscr";
-          case   fpexc: return "fpexc";
-          case   SCTLR: return "SCTLR";
-          case   CPACR: return "CPACR";
-          case      NA: return "NA";
-          case     end: break;
+          case        r0: return "r0";
+          case        r1: return "r1";
+          case        r2: return "r2";
+          case        r3: return "r3";
+          case        r4: return "r4";
+          case        r5: return "r5";
+          case        r6: return "r6";
+          case        r7: return "r7";
+          case        r8: return "r8";
+          case        r9: return "r9";
+          case        sl: return "sl";
+          case        fp: return "fp";
+          case        ip: return "ip";
+          case        sp: return "sp";
+          case        lr: return "lr";
+          case       nia: return "pc";
+          case         n: return "n";
+          case         z: return "z";
+          case         c: return "c";
+          case         v: return "v";
+          case   itstate: return "itstate";
+          case      cpsr: return "cpsr";
+          case      spsr: return "spsr";
+          case     fpscr: return "fpscr";
+          case     fpexc: return "fpexc";
+          case     SCTLR: return "sctlr";
+          case     ACTLR: return "actlr";
+          case       CTR: return "ctr";
+          case     MPIDR: return "mpidr";
+          case   ID_PFR0: return "id_pfr0";
+          case    CCSIDR: return "ccsidr";
+          case     CPACR: return "cpacr";
+          case     NSACR: return "nsacr";
+          case     TTBR0: return "ttbr0";
+          case     TTBR1: return "ttbr1";
+          case     TTBCR: return "ttbcr";
+          case      DACR: return "dacr";
+          case      DFSR: return "dfsr";
+          case      IFSR: return "ifsr";
+          case      DFAR: return "dfar";
+          case      IFAR: return "ifar";
+          case ICIALLUIS: return "icialluis";
+          case  BPIALLIS: return "bpiallis";
+          case   ICIALLU: return "iciallu";
+          case   ICIMVAU: return "icimvau";
+          case    BPIALL: return "bpiall";
+          case   DCIMVAC: return "dcimvac";
+          case     DCISW: return "dcisw";
+          case   DCCMVAC: return "dccmvac";
+          case     DCCSW: return "dccsw";
+          case   DCCMVAU: return "dccmvau";
+          case  DCCIMVAC: return "dccimvac";
+          case TLBIALLIS: return "tlbiallis";
+          case   TLBIALL: return "tlbiall";
+          case  TLBIASID: return "tlbiasid";
+          case    DIAGCR: return "diagcr";
+          case    CFGBAR: return "cfgbar";
+          case        NA: return "NA";
+          case       end: break;
           }
         return "INVALID";
       }
@@ -683,6 +726,20 @@ namespace armsec
       unsigned bitsize;
     };
     
+    struct AssertFalse : public ASExprNode
+    {
+      AssertFalse() {}
+      virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const
+      {
+        sink << "assert (false)";
+        return 0;
+      }
+
+      virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
+      virtual unsigned SubCount() const { return 0; }
+      virtual void Repr( std::ostream& sink ) const { sink << "assert (false)"; }
+    };
+    
     State( PathNode* _path )
       : path( _path )
       , next_insn_addr()
@@ -695,11 +752,13 @@ namespace armsec
       , spsr( Expr( new RegRead("spsr",32) ) )
       , FPSCR( Expr( new RegRead("fpscr",32) ) )
       , FPEXC( Expr( new RegRead("fpexc",32) ) )
+      , unpredictable(false)
+      , is_it_assigned(false)
     {
       for (unsigned reg = 0; reg < 15; ++reg)
         reg_values[reg] = U32( Expr( new RegRead( RegID("r0") + reg, 32 ) ) );
       for (int idx = 0; idx < RegID::sregs_count; ++idx)
-        sregs[idx] = U32( Expr( new RegRead( RegID::sreg(idx), 32 ) ) );
+        sregs[idx] = U32( Expr( new RegRead( RegID::sreg_id(idx), 32 ) ) );
     }
     
     void SetInsnProps( Expr const& _expr, bool is_thumb, unsigned insn_length )
@@ -819,6 +878,13 @@ namespace armsec
     U32 spsr;
     
     U32 sregs[RegID::sregs_count];
+    
+    U32& SReg( RegID rid )
+    {
+      if (rid.code == RegID::NA)
+        throw 0;
+      return sregs[rid.sreg_idx()];
+    }
     
     void FPTrap( unsigned exc )
     {
@@ -956,7 +1022,8 @@ namespace armsec
     void WaitForInterrupt() { not_implemented(); }
     void SWI( uint32_t imm ) { not_implemented(); }
     void BKPT( uint32_t imm ) { not_implemented(); }
-    void UnpredictableInsnBehaviour() { not_implemented(); }
+    bool unpredictable;
+    void UnpredictableInsnBehaviour() { unpredictable = true; }
     template <typename OP>
     void UndefinedInstruction( OP* op ) { not_implemented(); }
     void CallSupervisor( uint16_t imm ) { not_implemented(); }
@@ -1015,7 +1082,8 @@ namespace armsec
       
     } mode;
     
-    Mode&  CurrentMode() { not_implemented(); return mode; }
+    Mode&  CurrentMode() { // not_implemented(); 
+      return mode; }
     Mode&  GetMode(uint8_t) { not_implemented(); return mode; }
     U32  GetBankedRegister( uint8_t foreign_mode, uint32_t idx ) { not_implemented(); return U32(); }
     void SetBankedRegister( uint8_t foreign_mode, uint32_t idx, U32 value ) { not_implemented(); }
@@ -1037,18 +1105,46 @@ namespace armsec
           /****************************
            * Identification registers *
            ****************************/
+        case CP15ENCODE( 0, 0, 0, 1 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "CTR, Cache Type Register"; }
+              U32 Read( State& cpu ) { return cpu.SReg("ctr"); }
+            } x;
+            return x;
+          } break;
+          
+        case CP15ENCODE( 0, 0, 0, 5 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "MPIDR, Multiprocessor Affinity Register"; }
+              U32 Read( State& cpu ) { return cpu.SReg("mpidr"); }
+            } x;
+            return x;
+          } break;
+          
         case CP15ENCODE( 0, 0, 1, 0 ):
           {
             static struct : public CP15Reg
             {
               char const* Describe() { return "ID_PFR0, Processor Feature Register 0"; }
-              U32 Read( State& cpu ) {
-                /*        ARM              Thumb2         Jazelle         ThumbEE   */
-                return U32((0b0001 << 0) | (0b0011 << 4) | (0b0000 << 8) | (0b0000 << 12));
-              }
+              U32 Read( State& cpu ) { return cpu.SReg("id_pfr0"); }
             } x;
             return x;
           } break;
+          
+        case CP15ENCODE( 0, 1, 0, 0 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "CCSIDR, Cache Size ID Registers"; }
+              U32 Read( State& cpu ) { return cpu.SReg("ccsidr"); }
+            } x;
+            return x;
+          } break;
+
 
           /****************************
            * System control registers *
@@ -1058,30 +1154,346 @@ namespace armsec
             static struct : public CP15Reg
             {
               char const* Describe() { return "SCTLR, System Control Register"; }
-              /* TODO: handle SBO(DGP=0x00050078U) and SBZ(DGP=0xfffa0c00U)... */
-              U32 Read( State& cpu ) { return cpu.sregs[RegID::SCTLR]; }
-              void Write( State& cpu, U32 const& value ) { cpu.sregs[RegID::SCTLR] = value; }
+              U32 Read( State& cpu ) { return cpu.SReg("sctlr"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("sctlr") = value; }
             } x;
             return x;
           } break;
+
+        case CP15ENCODE( 1, 0, 0, 1 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "ACTLR, Auxiliary Control Register"; }
+              U32 Read( State& cpu ) { return cpu.SReg("actlr"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("actlr") = value; }
+            } x;
+            return x;
+          } break;
+
+        case CP15ENCODE( 1, 0, 0, 2 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "CPACR, Coprocessor Access Control Register"; }
+              U32 Read( State& cpu ) { return cpu.SReg("cpacr"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("cpacr") = value; }
+            } x;
+            return x;
+          } break;
+
+        case CP15ENCODE( 1, 0, 1, 2 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "NSACR, Non-Secure Access Control Register"; }
+              U32 Read( State& cpu ) { return cpu.SReg("nsacr"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("nsacr") = value; }
+            } x;
+            return x;
+          } break;
+
+        case CP15ENCODE( 2, 0, 0, 0 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "TTBR0, Translation Table Base Register 0"; }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("ttbr0") = value; }
+              U32 Read( State& cpu ) { return cpu.SReg("ttbr0"); }
+            } x;
+            return x;
+          } break;
+
+        case CP15ENCODE( 2, 0, 0, 1 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "TTBR1, Translation Table Base Register 1"; }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("ttbr1") = value; }
+              U32 Read( State& cpu ) { return cpu.SReg("ttbr1"); }
+            } x;
+            return x;
+          } break;
+
+        case CP15ENCODE( 2, 0, 0, 2 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "TTBCR, Translation Table Base Control Register"; }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("ttbcr") = value; }
+              U32 Read( State& cpu ) { return cpu.SReg("ttbcr"); }
+            } x;
+            return x;
+          } break;
+
+        case CP15ENCODE( 3, 0, 0, 0 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "DACR, Domain Access Control Register"; }
+              U32 Read( State& cpu ) { return cpu.SReg("dacr"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("dacr") = value; }
+            } x;
+            return x;
+          } break;
+
+
+          /*********************************
+           * Memory system fault registers *
+           *********************************/
+        case CP15ENCODE( 5, 0, 0, 0 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "DFSR, Data Fault Status Register"; }
+              U32 Read( State& cpu ) { return cpu.SReg("dfsr"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("dfsr") = value; }
+            } x;
+            return x;
+          } break;
+
+        case CP15ENCODE( 5, 0, 0, 1 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "IFSR, Instruction Fault Status Register"; }
+              U32 Read( State& cpu ) { return cpu.SReg("ifsr"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("ifsr") = value; }
+            } x;
+            return x;
+          } break;
+
+        case CP15ENCODE( 6, 0, 0, 0 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "DFAR, Data Fault Status Register"; }
+              U32 Read( State& cpu ) { return cpu.SReg("dfar"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("dfar") = value; }
+            } x;
+            return x;
+          } break;
+
+        case CP15ENCODE( 6, 0, 0, 2 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "IFAR, Instruction Fault Status Register"; }
+              U32 Read( State& cpu ) { return cpu.SReg("ifar"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("ifar") = value; }
+            } x;
+            return x;
+          } break;
+
+          /***************************************************************
+           * Cache maintenance, address translation, and other functions *
+           ***************************************************************/
+          
+        case CP15ENCODE( 7, 0, 1, 0 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "ICIALLUIS, Invalidate all instruction caches to PoU Inner Shareable"; }
+              U32 Read( State& cpu ) { return cpu.SReg("icialluis"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("icialluis") = value; }
+            } x;
+            return x;
+          } break;
+
+        case CP15ENCODE( 7, 0, 1, 6 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "BPIALLIS, Invalidate all branch predictors Inner Shareable"; }
+              U32 Read( State& cpu ) { return cpu.SReg("bpiallis"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("bpiallis") = value; }
+            } x;
+            return x;
+          } break;
+
+        case CP15ENCODE( 7, 0, 5, 0 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "ICIALLU, Invalidate all instruction caches to PoU"; }
+              U32 Read( State& cpu ) { return cpu.SReg("iciallu"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("iciallu") = value; }
+            } x;
+            return x;
+          } break;
+
+        case CP15ENCODE( 7, 0, 5, 1 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "ICIMVAU, Clean data* cache line by MVA to PoU"; }
+              U32 Read( State& cpu ) { return cpu.SReg("icimvau"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("icimvau") = value; }
+            } x;
+            return x;
+          } break;
+
+        case CP15ENCODE( 7, 0, 5, 6 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "BPIALL, Invalidate all branch predictors"; }
+              U32 Read( State& cpu ) { return cpu.SReg("bpiall"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("bpiall") = value; }
+            } x;
+            return x;
+          } break;
+
+        case CP15ENCODE( 7, 0, 6, 1 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "DCIMVAC, Invalidate data* cache line by MVA to PoC"; }
+              U32 Read( State& cpu ) { return cpu.SReg("dcimvac"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("dcimvac") = value; }
+            } x;
+            return x;
+          } break;
+
+        case CP15ENCODE( 7, 0, 6, 2 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "DCISW, Invalidate data* cache line by set/way"; }
+              U32 Read( State& cpu ) { return cpu.SReg("dcisw"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("dcisw") = value; }
+            } x;
+            return x;
+          } break;
+          
+        case CP15ENCODE( 7, 0, 10, 1 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "DCCMVAC, Clean data* cache line by MVA to PoC"; }
+              U32 Read( State& cpu ) { return cpu.SReg("dccmvac"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("dccmvac") = value; }
+            } x;
+            return x;
+          } break;
+
+        case CP15ENCODE( 7, 0, 10, 2 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "DCCSW, Clean data* cache line by set/way"; }
+              U32 Read( State& cpu ) { return cpu.SReg("dccsw"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("dccsw") = value; }
+            } x;
+            return x;
+          } break;
+          
+        case CP15ENCODE( 7, 0, 11, 1 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "DCCMVAU, Clean data* cache line by MVA to PoU"; }
+              U32 Read( State& cpu ) { return cpu.SReg("dccmvau"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("dccmvau") = value; }
+            } x;
+            return x;
+          } break;
+
+        case CP15ENCODE( 7, 0, 14, 1 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "DCCIMVAC, Clean and invalidate data* cache line by MVA to PoC"; }
+              U32 Read( State& cpu ) { return cpu.SReg("dccimvac"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("dccimvac") = value; }
+            } x;
+            return x;
+          } break;
+          
+          /******************************
+           * TLB maintenance operations *
+           ******************************/
+
+        case CP15ENCODE( 8, 0, 3, 0 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "TLBIALLIS, Invalidate entire TLB Inner Shareable"; }
+              U32 Read( State& cpu ) { return cpu.SReg("tlbiallis"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("tlbiallis") = value; }
+            } x;
+            return x;
+          } break;
+
+        case CP15ENCODE( 8, 0, 7, 0 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "TLBIALL, invalidate unified TLB"; }
+              U32 Read( State& cpu ) { return cpu.SReg("tlbiall"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("tlbiall") = value; }
+            } x;
+            return x;
+          } break;
+
+        case CP15ENCODE( 8, 0, 7, 2 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "TLBIASID, invalidate unified TLB by ASID match"; }
+              U32 Read( State& cpu ) { return cpu.SReg("tlbiasid"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("tlbiasid") = value; }
+            } x;
+            return x;
+          } break;
+          
+          /* BOARD specific */
+          
+        case CP15ENCODE( 15, 0, 0, 1 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "DIAGCR, undocumented Diagnostic Control register"; }
+              U32 Read( State& cpu ) { return cpu.SReg("diagcr"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("diagcr") = value; }
+            } x;
+            return x;
+          } break;
+          
+        case CP15ENCODE( 15, 4, 0, 0 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "CFGBAR, Configuration Base Address"; }
+              U32 Read( State& cpu ) { return cpu.SReg("cfgbar"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("cfgbar") = value; }
+            } x;
+            return x;
+          } break;
+
         }
-      
+
       static struct CP15Error : public CP15Reg {
         char const* Describe() { return "Unknown CP15 register"; }
       } err;
       return err;
     }
     // virtual void     CP15ResetRegisters();
-    
+
     U32         CP15ReadRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { return CP15GetRegister( crn, opcode1, crm, opcode2 ).Read( *this ); }
     void        CP15WriteRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2, U32 const& value ) { CP15GetRegister( crn, opcode1, crm, opcode2 ).Write( *this, value ); }
     char const* CP15DescribeRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 ) { return CP15GetRegister( crn, opcode1, crm, opcode2 ).Describe(); }
-    
+
     bool
     close( State const& ref )
     {
       bool complete = path->close();
       path->sinks.insert( Expr( new RegWrite( "pc", next_insn_addr.expr, 32 ) ) );
+      if (unpredictable)
+        {
+          path->sinks.insert( Expr( new AssertFalse() ) );
+          return complete;
+        }
       if (cpsr.n != ref.cpsr.n)
         path->sinks.insert( Expr( new RegWrite( "n", cpsr.n, 1 ) ) );
       if (cpsr.z != ref.cpsr.z)
@@ -1098,7 +1510,7 @@ namespace armsec
         path->sinks.insert( Expr( new RegWrite( "spsr", spsr.expr, 32 ) ) );
       for (int idx = 0; idx < RegID::sregs_count; ++idx)
         if (sregs[idx].expr != ref.sregs[idx].expr)
-          path->sinks.insert( Expr( new RegWrite( RegID::sreg(idx), sregs[idx].expr, 32 ) ) );
+          path->sinks.insert( Expr( new RegWrite( RegID::sreg_id(idx), sregs[idx].expr, 32 ) ) );
       if (FPSCR.expr != ref.FPSCR.expr)
         path->sinks.insert( Expr( new RegWrite( "fpscr", FPSCR.expr, 32 ) ) );
       if (FPEXC.expr != ref.FPEXC.expr)
@@ -1118,7 +1530,7 @@ namespace armsec
   //   ConditionTest( unsigned _cond ) : cond( _cond ) {} unsigned cond;
   //   virtual void Repr( std::ostream& sink ) const
   //   {
-      
+
   //     sink << "CTST_" << unisim::component::cxx::processor::arm::DisasmCondition(cond) << "(flags)";
   //   }
   //   virtual intptr_t cmp( ExprNode const& brhs ) const {
@@ -1131,7 +1543,7 @@ namespace armsec
   CheckCondition( State& state, unsigned cond )
   {
     BOOL N = state.cpsr.n, Z = state.cpsr.z, C = state.cpsr.c, V = state.cpsr.v;
-    
+
     switch (cond) {
     case  0: return                   Z; // eq; equal
     case  1: return               not Z; // ne; not equal
@@ -1148,11 +1560,11 @@ namespace armsec
     case 12: return not(Z or (N xor V)); // gt; signed greater than
     case 13: return    (Z or (N xor V)); // le; signed less than or equal
     case 14: return unisim::util::symbolic::make_const( true ); // al; always
-    default: break;                     // nv; never (illegal)     
+    default: break;                     // nv; never (illegal)
     }
-    
+
     throw std::logic_error( "undefined condition" );
-    return unisim::util::symbolic::make_const( false );    
+    return unisim::util::symbolic::make_const( false );
   }
 
   BOOL
@@ -1178,33 +1590,33 @@ namespace armsec
       ((cc == U8(13)) and ((Z or (N xor V)))) or // le; signed less than or equal
       ((cc == U8(14)) and (unisim::util::symbolic::make_const( true )));
   }
-  
+
   // struct GenFlagsID
   // {
   //   enum Code { NA = 0, Sub, Add };
-    
+
   //   template <class E> static void
   //   Enumeration( E& e )
   //   {
   //     case  Sub: return "Sub";
   //     case  Add: return "Add";
   //   }
-    
+
   //   GenFlagsID( Code _code ) : code(_code) {}
   //   GenFlagsID( char const* _code ) : code(NA) { cstr2enum( *this, _code ); }
-    
+
   //   char const* c_str() const { return enum2cstr( *this, "NA" ); }
   //   GenFlagsID operator + ( int offset ) const { return GenFlagsID( Code(int(code) + offset) ); }
   //   int operator - ( GenFlagsID rid ) const { return int(code) - int(rid.code); }
-      
+
   //   Code code;
   // };
-  
+
   // struct GenFlags : public ASExprNode
   // {
   //   GenFlags( GenFlagsID _id, Expr const& _ipsr, Expr const& _lhs, Expr const& _rhs )
   //     : id(_id), ipsr(_ipsr), lhs(_lhs), rhs(_rhs) {}
-    
+
   //   virtual void Repr( std::ostream& sink ) const
   //   {
   //     sink << "GenFlags(" << id.c_str() << ", " << ipsr << ", " << lhs << ", " << rhs << ")";
@@ -1221,7 +1633,7 @@ namespace armsec
   //   Expr ipsr, lhs, rhs;
   // };
 
-  
+
   void
   UpdateStatusSub( State& state, U32 const& res, U32 const& lhs, U32 const& rhs )
   {
@@ -1231,7 +1643,7 @@ namespace armsec
     state.cpsr.c = ( lhs >= rhs ).expr;
     state.cpsr.v = ( neg xor (S32(lhs) < S32(rhs)) ).expr;
   }
-  
+
   void
   UpdateStatusSubWithBorrow( State& state, U32 const& res, U32 const& lhs, U32 const& rhs, U32 const& borrow )
   {
@@ -1249,7 +1661,7 @@ namespace armsec
         state.cpsr.v = ( neg xor (S32(lhs) <  S32(rhs)) ).expr;
       }
   }
-  
+
   void
   UpdateStatusAdd( State& state, U32 const& res, U32 const& lhs, U32 const& rhs )
   {
@@ -1259,7 +1671,7 @@ namespace armsec
     state.cpsr.c = ( lhs >  ~rhs ).expr;
     state.cpsr.v = ( neg xor (S32(lhs) <= S32(~rhs)) ).expr;
   }
-  
+
   void
   UpdateStatusAddWithCarry( State& state, U32 const& res, U32 const& lhs, U32 const& rhs, U32 const& carry )
   {
@@ -1277,14 +1689,14 @@ namespace armsec
         state.cpsr.v = ( neg xor (S32(lhs) <= S32(~rhs)) ).expr;
       }
   }
-  
+
   void
   PathNode::GenCode( Label const& start, Label const& after, Context* _up ) const
   {
     Context ctx( _up );
-    
+
     Expr nia;
-    
+
     struct Head
     {
       Head( Label const& _start, int _after ) : cur(_start), after(_after) {}
@@ -1295,7 +1707,7 @@ namespace armsec
         cur.write( pending );
         pending.clear();
       }
-      
+
       Label& current() { flush(); return cur; }
       void write( std::string const& s )
       {
@@ -1313,7 +1725,7 @@ namespace armsec
       int after;
       std::string pending;
     } head( start, after.GetID() );
-    
+
     {
       /* find common sub expressions */
       struct : public std::map<Expr,unsigned>
@@ -1323,31 +1735,31 @@ namespace armsec
           for (unsigned idx = 0, end = expr->SubCount(); idx < end; ++idx)
             Recurse( expr->GetSub(idx) );
         }
-      
+
         void Recurse( Expr const& expr )
         {
           if (not expr->SubCount())
             return;
-          
+
           if ((*this)[expr]++)
             return;
-          
+
           Process( expr );
         }
       } sestats;
-      
+
       std::map<Expr,char const*> rtmps;
-      
+
       for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
         {
           sestats.Process( *itr );
           if (armsec::State::RegWrite const* rw = dynamic_cast<armsec::State::RegWrite const*>( itr->node ))
             rtmps[rw->value] = rw->id.c_str();
         }
-      
+
       // if (cond.good())
       //   sestats.Process( cond );
-      
+
       struct CSE : public std::multimap<unsigned,Expr>
       {
         void Process( Expr const& expr )
@@ -1362,7 +1774,7 @@ namespace armsec
           return sum;
         }
       } cse;
-      
+
       for (std::map<Expr,unsigned>::iterator itr = sestats.begin(), end = sestats.end(); itr != end; ++itr)
         {
           if (itr->second < 2)
@@ -1371,11 +1783,11 @@ namespace armsec
             continue; // Already defined
           cse.Process(itr->first);
         }
-      
+
       for (std::multimap<unsigned,Expr>::const_iterator itr = cse.begin(), end = cse.end(); itr != end; ++itr)
         {
           std::string tmp_src, tmp_dst;
-          int retsize;          
+          int retsize;
           {
             std::ostringstream buffer;
             retsize = ASExprNode::GenerateCode( itr->second, ctx.vars, head.current(), buffer );
@@ -1391,7 +1803,7 @@ namespace armsec
           }
         }
     }
-    
+
     for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
       {
         if (armsec::State::RegWrite const* rw = dynamic_cast<armsec::State::RegWrite const*>( itr->node ))
@@ -1400,7 +1812,7 @@ namespace armsec
             unsigned             rsz = rw->bitsize;
             Expr value( rw->value );
 
-            
+
             if (not value.ConstSimplify() and not ctx.vars.count(value))
               {
                 std::ostringstream buffer;
@@ -1410,7 +1822,7 @@ namespace armsec
                 head.write( buffer.str() );
                 ctx.addvar( vname, rsz, value );
               }
-          
+
             if (rid.code == rid.nia)
               nia = value;
             else
@@ -1421,12 +1833,12 @@ namespace armsec
             std::ostringstream buffer;
             if (ASExprNode::GenerateCode( *itr, ctx.vars, head.current(), buffer ))
               throw 0;
-            
+
             buffer << "; goto <next>";
             head.write( buffer.str() );
           }
       }
-    
+
     if (not cond.good())
       {
         if (sinks.size() == 0)
@@ -1437,12 +1849,12 @@ namespace armsec
         std::ostringstream buffer;
         Label ifinsn(head.current());
         buffer << "if " << GetCode(cond, ctx.vars, ifinsn) << " ";
-        
+
         // Preparing room for if then else code
         Label endif( after );
         if (nia.good() or (after.valid() and (ctx.has_pending())))
           endif.allocate();
-        
+
         if (not false_nxt) {
           Label ifthen(ifinsn);
           buffer << " goto " << ifthen.allocate() << " else goto " << endif.GetID();
@@ -1460,38 +1872,38 @@ namespace armsec
           true_nxt->GenCode( ifthen, endif, &ctx );
           false_nxt->GenCode( ifelse, endif, &ctx );
         }
-        
+
         head.current() = endif;
       }
-    
+
     for (Context::Pendings::iterator itr = ctx.pendings.begin(), end = ctx.pendings.end(); itr != end; ++itr)
       {
         std::ostringstream buffer;
         if (ASExprNode::GenerateCode( *itr, ctx.vars, head.current(), buffer ))
           throw 0;
-        
+
         buffer << "; goto <next>";
         head.write( buffer.str() );
       }
-    
+
     if (not nia.good())
       return;
-    
+
     Label current( head.current() );
-    
+
     for (Context* uc = ctx.upper; uc; uc = uc->upper)
       {
         for (Context::Pendings::iterator itr = uc->pendings.begin(), end = uc->pendings.end(); itr != end; ++itr)
-          { 
+          {
             std::ostringstream buffer;
             if (ASExprNode::GenerateCode( *itr, ctx.vars, current, buffer ))
               throw 0;
-            
+
             buffer << "; goto <next>";
             current.write( buffer.str() );
           }
       }
-    
+
     std::ostringstream buffer;
     buffer << "goto (" << GetCode(nia, ctx.vars, current) << (nia.ConstSimplify() ? ",0" : "") << ")";
     current.write( buffer.str() );
@@ -1526,20 +1938,20 @@ struct Decoder
     virtual void Repr( std::ostream& sink ) const { sink << "insn_addr"; }
     virtual intptr_t cmp( unisim::util::symbolic::ExprNode const& brhs ) const { dynamic_cast<InstructionAddress const&>( brhs ); return 0; }
   };
-  
+
   template <class ISA>
   void
   translate_isa( ISA& isa, uint32_t addr, uint32_t code )
   {
     std::cout << "(address . " << armsec::dbx( 32, addr ) << ")\n";
-    
+
     struct Translation
     {
       typedef typename ISA::Operation Insn;
       typedef typename armsec::PathNode PathNode;
       typedef typename unisim::util::symbolic::Expr Expr;
       typedef typename armsec::State State;
-      
+
       ~Translation() { delete insn; delete coderoot; }
       Translation( uint32_t _addr )
         : insn(0)
@@ -1547,33 +1959,33 @@ struct Decoder
         , addr( _addr )
         , reference( coderoot )
       {}
-      
+
       int
       decode( ISA& isa, uint32_t _code )
       {
         try { insn = isa.NCDecode( addr, ISA::mkcode( _code ) ); }
-        
+
         catch (unisim::component::cxx::processor::arm::Reject const&) { return 0; }
-        
+
         return insn->GetLength();
       }
-      
+
       void
       disasm( std::ostream& sink )
       {
         try { insn->disasm( reference, sink ); }
-        
+
         catch (...) { sink << "(bad)"; }
       }
-      
+
       bool
       Generate( armsec::Label::Program& program )
       {
         // Expr insn_addr( new InstructionAddress ); //< symbolic instruction address
         Expr insn_addr( unisim::util::symbolic::make_const( addr ) ); //< concrete instruction address
-        
+
         reference.SetInsnProps( insn_addr, ISA::is_thumb, insn->GetLength() );
-        
+
         try
           {
             for (bool end = false; not end;)
@@ -1590,38 +2002,38 @@ struct Decoder
           {
             return false;
           }
-    
+
         coderoot->factorize();
         coderoot->remove_dead_paths();
 
         armsec::Label beglabel(program), endlabel(program);
         beglabel.allocate();
         coderoot->GenCode( beglabel, endlabel, 0 );
-        
+
         return true;
       }
-      
+
       Insn*     insn;
       PathNode* coderoot;
       uint32_t  addr;
       State     reference;
     } trans( addr );
-    
+
     unsigned bitlen = trans.decode( isa, code );
     if (bitlen != 16 and bitlen != 32)
       {
         std::cout << "(opcode . " << armsec::dbx( 32, code ) << ")\n(illegal)\n";
         return;
       }
-    
+
     std::cout << "(opcode . " << armsec::dbx( bitlen, trans.insn->GetEncoding() ) << ")\n(size . " << (bitlen/8) << ")\n";
-    
+
     // std::cout << "(int_name,\"" << trans.insn->GetName() << "\")\n";
-    
+
     std::cout << "(mnemonic . \""; trans.disasm( std::cout ); std::cout << "\")\n";
-    
+
     armsec::Label::Program program;
-    
+
     if (trans.Generate( program ))
       {
         typedef armsec::Label::Program::const_iterator Iterator;
@@ -1662,15 +2074,15 @@ main( int argc, char** argv )
       std::cerr << "Wrong number of CLI arguments.\n" << usage();
       return 1;
     }
-  
+
   uint32_t addr, code;
-  
+
   if (not getu32(addr, argv[2]) or not getu32(code, argv[3]))
     {
       std::cerr << "<addr> and <code> should be 32bits numeric values.\n" << usage();
       return 1;
     }
-  
+
   Decoder decoder;
   std::string iset(argv[1]);
   if        (iset == std::string("arm")) {
@@ -1678,6 +2090,6 @@ main( int argc, char** argv )
   } else if (iset == std::string("thumb")) {
     decoder.translate_thumb( addr, code );
   }
-  
+
   return 0;
 }
