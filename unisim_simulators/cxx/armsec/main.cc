@@ -803,10 +803,17 @@ namespace armsec
       U32 Get( ZRF const& _ ) { return U32(BOOL(z)); }
       U32 Get( CRF const& _ ) { return U32(BOOL(c)); }
       U32 Get( VRF const& _ ) { return U32(BOOL(v)); }
-      
+
+      U32 Get( MRF const& _ ) { return U32(0b11111); /*SYSTEM_MODE*/ }
       // U32 Get( ALL const& _ ) { return (U32(BOOL(n)) << 31) | (U32(BOOL(z)) << 30) | (U32(BOOL(c)) << 29) | (U32(BOOL(v)) << 28) | bg; }
       
-      U32 bits() const { return (U32(BOOL(n)) << 31) | (U32(BOOL(z)) << 30) | (U32(BOOL(c)) << 29) | (U32(BOOL(v)) << 28) | bg; }
+      U32 bits() const
+      {
+        return
+          (U32(BOOL(n)) << 31) | (U32(BOOL(z)) << 30) | (U32(BOOL(c)) << 29) | (U32(BOOL(v)) << 28) |
+          (U32(itstate >> 2) << 10) | (U32(itstate & U8(0b11)) << 25) |
+          bg;
+      }
     } cpsr;
     
     U32 spsr;
@@ -1094,6 +1101,8 @@ namespace armsec
           path->sinks.insert( Expr( new RegWrite( RegID::sreg(idx), sregs[idx].expr, 32 ) ) );
       if (FPSCR.expr != ref.FPSCR.expr)
         path->sinks.insert( Expr( new RegWrite( "fpscr", FPSCR.expr, 32 ) ) );
+      if (FPEXC.expr != ref.FPEXC.expr)
+        path->sinks.insert( Expr( new RegWrite( "fpexc", FPEXC.expr, 32 ) ) );
       for (unsigned reg = 0; reg < 15; ++reg) {
         if (reg_values[reg].expr != ref.reg_values[reg].expr)
           path->sinks.insert( Expr( new RegWrite( RegID("r0") + reg, reg_values[reg].expr, 32 ) ) );
