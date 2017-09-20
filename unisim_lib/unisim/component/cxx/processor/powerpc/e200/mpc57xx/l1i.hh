@@ -112,10 +112,9 @@ struct L1I
 		{
 			switch(this->template Get<typename L1FINV1::CCMD>())
 			{
-				case 0x5:
+				case 0x5: // Invalidate & clear lockout
 					l1i->ClearLockoutBySetAndWay(this->template Get<typename L1FINV1::CSET>(), this->template Get<typename L1FINV1::CWAY>());
-					break;
-				case 0x0:
+				case 0x0: // Invalidate
 					l1i->InvalidateLineBySetAndWay(this->template Get<typename L1FINV1::CSET>(), this->template Get<typename L1FINV1::CWAY>());
 					break;
 				default:

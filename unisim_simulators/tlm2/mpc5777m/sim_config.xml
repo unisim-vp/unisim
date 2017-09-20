@@ -2320,19 +2320,19 @@
 		<variable name="sel-cpu[0]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000000</value>
+			<value>0</value>
 			<description>CPU being debugged by front-end</description>
 		</variable>
 		<variable name="sel-cpu[1]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000001</value>
+			<value>1</value>
 			<description>CPU being debugged by front-end</description>
 		</variable>
 		<variable name="sel-cpu[2]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000002</value>
+			<value>2</value>
 			<description>CPU being debugged by front-end</description>
 		</variable>
 		<variable name="sel-cpu[3]">
@@ -2344,13 +2344,13 @@
 		<variable name="sel-cpu[4]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000000</value>
+			<value>0x00000001</value>
 			<description>CPU being debugged by front-end</description>
 		</variable>
 		<variable name="sel-cpu[5]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000000</value>
+			<value>0x00000002</value>
 			<description>CPU being debugged by front-end</description>
 		</variable>
 		<variable name="sel-cpu[6]">
@@ -2411,11 +2411,22 @@
 			<value></value>
 			<description>List of internal simulator variables to monitor in GDB Front-End</description>
 		</variable>
-		<variable name="wait-for-connection-at-startup">
+		<variable name="wait-connection-mode">
+			<type>parameter</type>
+			<data_type>gdb-wait-connection-mode</data_type>
+			<value>startup-only</value>
+			<description>Whether to wait for connection of GDB client (never, [startup-only], always)</description>
+			<enumeration>
+				<item>never</item>
+				<item>startup-only</item>
+				<item>always</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-multiprocess-extension">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>true</value>
-			<description>Whether to wait for connection of GDB client at startup</description>
+			<value>false</value>
+			<description>Whether to enable GDB multiprocess extension</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
@@ -2467,11 +2478,22 @@
 			<value></value>
 			<description>List of internal simulator variables to monitor in GDB Front-End</description>
 		</variable>
-		<variable name="wait-for-connection-at-startup">
+		<variable name="wait-connection-mode">
+			<type>parameter</type>
+			<data_type>gdb-wait-connection-mode</data_type>
+			<value>startup-only</value>
+			<description>Whether to wait for connection of GDB client (never, [startup-only], always)</description>
+			<enumeration>
+				<item>never</item>
+				<item>startup-only</item>
+				<item>always</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-multiprocess-extension">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>true</value>
-			<description>Whether to wait for connection of GDB client at startup</description>
+			<value>false</value>
+			<description>Whether to enable GDB multiprocess extension</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
@@ -2523,11 +2545,22 @@
 			<value></value>
 			<description>List of internal simulator variables to monitor in GDB Front-End</description>
 		</variable>
-		<variable name="wait-for-connection-at-startup">
+		<variable name="wait-connection-mode">
+			<type>parameter</type>
+			<data_type>gdb-wait-connection-mode</data_type>
+			<value>startup-only</value>
+			<description>Whether to wait for connection of GDB client (never, [startup-only], always)</description>
+			<enumeration>
+				<item>never</item>
+				<item>startup-only</item>
+				<item>always</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-multiprocess-extension">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>true</value>
-			<description>Whether to wait for connection of GDB client at startup</description>
+			<value>false</value>
+			<description>Whether to enable GDB multiprocess extension</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>

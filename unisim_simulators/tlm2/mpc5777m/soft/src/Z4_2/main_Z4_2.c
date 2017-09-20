@@ -115,5 +115,6 @@ int main(void)
 	/* Loop forever */
 	for(;;) {	   
 		counter++;
+		PPC_WAIT;
 	}
 }

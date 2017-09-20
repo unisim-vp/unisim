@@ -119,7 +119,7 @@ private:
 	//=========================================================================
 
 	static const unsigned int NUM_PROCESSORS = 3;
-	static const unsigned int MAX_FRONT_ENDS = 8;
+	static const unsigned int MAX_FRONT_ENDS = 6;
 	
 	// Front Side Bus template parameters
 	static const unsigned int FSB_WIDTH = 8;
@@ -350,15 +350,12 @@ private:
 
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
-#ifdef WIN32
-	static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
-#else
-	static void SigIntHandler(int signum);
-#endif
 	
 	void ResetProcess();
 	
 	void InterruptSource(unsigned int irq_num, const std::string& source = std::string());
+	
+	virtual void SigInt();
 };
 
 #endif // __MPC5777M_SIMULATOR_HH__

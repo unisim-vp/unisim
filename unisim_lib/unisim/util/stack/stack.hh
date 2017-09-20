@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017,
+ *  Copyright (c) 2007,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,25 +31,70 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#ifndef __UNISIM_SERVICE_INTERFACES_DEBUG_SELECTING_HH__
-#define __UNISIM_SERVICE_INTERFACES_DEBUG_SELECTING_HH__
 
-#include <unisim/kernel/service/service.hh>
+#ifndef __UNISIM_UTIL_STACK_STACK_HH__
+#define __UNISIM_UTIL_STACK_STACK_HH__
+
+#include <inttypes.h>
+#include <string.h>
+#include <iosfwd>
+#include <stdexcept>
 
 namespace unisim {
-namespace service {
-namespace interfaces {
+namespace util {
+namespace stack {
 
-class DebugSelecting : public unisim::kernel::service::ServiceInterface
+template <class CONFIG> class Stack;
+template <class CONFIG> std::ostream& operator << (std::ostream& os, Stack<CONFIG>& q);
+
+class StackException : public std::exception
 {
 public:
-	virtual bool DebugSelect(unsigned int prc_num) = 0;
-	virtual unsigned int DebugGetSelected() const = 0;
+	StackException(const char *reason, const char *filename, const char *func, unsigned int lineno);
+	virtual ~StackException() throw();
+	virtual const char * what () const throw ();
+private:
+	std::string what_str;
 };
 
-} // end of namespace interfaces
-} // end of namespace service
+#if 0
+class StackConfig
+{
+public:
+	static const bool DEBUG = true;
+	typedef int *ELEMENT;
+	static const unsigned int SIZE = 6;
+};
+#endif
+
+template <class CONFIG>
+class Stack
+{
+public:
+	Stack();
+	~Stack();
+
+	typename CONFIG::ELEMENT& operator [] (unsigned int idx);
+	const typename CONFIG::ELEMENT& operator [] (unsigned int idx) const;
+	typename CONFIG::ELEMENT *Allocate();
+	void Push(typename CONFIG::ELEMENT& elt);
+	typename CONFIG::ELEMENT& Top();
+	const typename CONFIG::ELEMENT& ConstTop() const;
+	void Pop();
+	unsigned int Size() const;
+	bool Empty() const;
+	bool Full() const;
+	void Clear();
+
+	friend std::ostream& operator << <CONFIG>(std::ostream& os, Stack<CONFIG>& q);
+private:
+	unsigned int top_idx;
+
+	typename CONFIG::ELEMENT buffer[CONFIG::SIZE];
+};
+
+} // end of namespace stack
+} // end of namespace util
 } // end of namespace unisim
 
 #endif

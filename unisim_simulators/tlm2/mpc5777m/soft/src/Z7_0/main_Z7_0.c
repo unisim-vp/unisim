@@ -4,6 +4,7 @@
  */
 
 #include "derivative.h" /* include peripheral declarations */
+#include "compiler_api.h"
 
 int main(void)
 {
@@ -12,5 +13,6 @@ int main(void)
 	/* Loop forever */
 	for(;;) {	   
 	   	counter++;
+//		PPC_WAIT;
 	}
 }

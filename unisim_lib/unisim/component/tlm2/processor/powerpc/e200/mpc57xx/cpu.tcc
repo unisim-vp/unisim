@@ -128,6 +128,9 @@ CPU<TYPES, CONFIG>::CPU(const sc_module_name& name, Object *parent)
 
 	SC_METHOD(P_IACK_Process);
 	sensitive << int_ack_event;
+	
+	SC_METHOD(ExternalEventProcess);
+	sensitive << p_reset_b.pos() << p_nmi_b.neg() << p_mcp_b.neg() << p_extint_b << p_crint_b;
 }
 
 template <typename TYPES, typename CONFIG>
@@ -499,25 +502,36 @@ void CPU<TYPES, CONFIG>::P_IACK_Process()
 }
 
 template <typename TYPES, typename CONFIG>
+void CPU<TYPES, CONFIG>::ExternalEventProcess()
+{
+	if(p_reset_b.posedge()
+	|| p_nmi_b.negedge()
+	|| (p_mcp_b.negedge() && this->hid0.template Get<typename Super::HID0::EMCP>())
+	|| p_extint_b.negedge()
+	|| p_crint_b.negedge())
+	{
+		external_event.notify(sc_core::SC_ZERO_TIME);
+	}
+}
+
+
+template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::SampleInputs()
 {
 	if(p_reset_b.posedge())
 	{
 		this->template ThrowException<typename Super::SystemResetInterrupt::Reset>();
-		external_event.notify(sc_core::SC_ZERO_TIME);
 		//SetResetAddress(sc_dt::sc_uint<30>(p_rstbase).to_uint64() << 2);
 	}
 	
 	if(p_nmi_b.negedge())
 	{
 		this->template ThrowException<typename Super::MachineCheckInterrupt::NMI>();
-		external_event.notify(sc_core::SC_ZERO_TIME);
 	}
 	
 	if(p_mcp_b.negedge() && this->hid0.template Get<typename Super::HID0::EMCP>())
 	{
 		this->template ThrowException<typename Super::MachineCheckInterrupt::AsynchronousMachineCheck>().SetEvent(Super::MachineCheckInterrupt::MCE_MCP);
-		external_event.notify(sc_core::SC_ZERO_TIME);
 	}
 	
 	if(p_extint_b)
@@ -527,7 +541,6 @@ void CPU<TYPES, CONFIG>::SampleInputs()
 	else
 	{
 		this->template ThrowException<typename Super::ExternalInputInterrupt::ExternalInput>();
-		external_event.notify(sc_core::SC_ZERO_TIME);
 	}
 	
 	if(p_crint_b)
@@ -537,7 +550,6 @@ void CPU<TYPES, CONFIG>::SampleInputs()
 	else
 	{
 		this->template ThrowException<typename Super::CriticalInputInterrupt::CriticalInput>();
-		external_event.notify(sc_core::SC_ZERO_TIME);
 	}
 	this->SetAutoVector(!p_avec_b); // if p_avec_b is negated when interrupt signal is asserted, interrupt is not autovectored
 	this->SetVectorOffset(sc_dt::sc_uint<14>(p_voffset).to_uint64() << 2);

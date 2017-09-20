@@ -1533,33 +1533,35 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		
 		for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
 		{
-			*debugger->debug_event_listener_import[prc_num]         >> inline_debugger[prc_num]->debug_event_listener_export;
-			*debugger->debug_yielding_import      [prc_num]         >> inline_debugger[prc_num]->debug_yielding_export;
-			inline_debugger[prc_num]->debug_yielding_request_import >> *debugger->debug_yielding_request_export[prc_num];
-			inline_debugger[prc_num]->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[prc_num];
-			inline_debugger[prc_num]->disasm_import                 >> *debugger->disasm_export[prc_num];
-			inline_debugger[prc_num]->memory_import                 >> *debugger->memory_export[prc_num];
-			inline_debugger[prc_num]->registers_import              >> *debugger->registers_export[prc_num];
-			inline_debugger[prc_num]->stmt_lookup_import            >> *debugger->stmt_lookup_export[prc_num];
-			inline_debugger[prc_num]->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[prc_num];
-			inline_debugger[prc_num]->backtrace_import              >> *debugger->backtrace_export[prc_num];
-			inline_debugger[prc_num]->debug_info_loading_import     >> *debugger->debug_info_loading_export[prc_num];
-			inline_debugger[prc_num]->data_object_lookup_import     >> *debugger->data_object_lookup_export[prc_num];
-			inline_debugger[prc_num]->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[prc_num];
-			inline_debugger[prc_num]->profiling_import              >> profiler->profiling_export;
+			*debugger->debug_event_listener_import[NUM_PROCESSORS + prc_num] >> inline_debugger[prc_num]->debug_event_listener_export;
+			*debugger->debug_yielding_import[NUM_PROCESSORS + prc_num]       >> inline_debugger[prc_num]->debug_yielding_export;
+			inline_debugger[prc_num]->debug_yielding_request_import          >> *debugger->debug_yielding_request_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->debug_event_trigger_import             >> *debugger->debug_event_trigger_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->disasm_import                          >> *debugger->disasm_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->memory_import                          >> *debugger->memory_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->registers_import                       >> *debugger->registers_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->stmt_lookup_import                     >> *debugger->stmt_lookup_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->symbol_table_lookup_import             >> *debugger->symbol_table_lookup_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->backtrace_import                       >> *debugger->backtrace_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->debug_info_loading_import              >> *debugger->debug_info_loading_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->data_object_lookup_import              >> *debugger->data_object_lookup_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->subprogram_lookup_import               >> *debugger->subprogram_lookup_export[NUM_PROCESSORS + prc_num];
+			inline_debugger[prc_num]->profiling_import                       >> profiler->profiling_export;
 		}
 	}
-	else if(enable_gdb_server)
+	
+	if(enable_gdb_server)
 	{
 		// Connect gdb-server to debugger
 		for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
 		{
-			*debugger->debug_yielding_import[prc_num] >> gdb_server[prc_num]->debug_yielding_export;
-			*debugger->debug_event_listener_import[prc_num] >> gdb_server[prc_num]->debug_event_listener_export;
+			*debugger->debug_yielding_import[prc_num]          >> gdb_server[prc_num]->debug_yielding_export;
+			*debugger->debug_event_listener_import[prc_num]    >> gdb_server[prc_num]->debug_event_listener_export;
 			gdb_server[prc_num]->debug_yielding_request_import >> *debugger->debug_yielding_request_export[prc_num];
-			gdb_server[prc_num]->debug_event_trigger_import >> *debugger->debug_event_trigger_export[prc_num];
-			gdb_server[prc_num]->memory_import >> *debugger->memory_export[prc_num];
-			gdb_server[prc_num]->registers_import >> *debugger->registers_export[prc_num];
+			gdb_server[prc_num]->debug_selecting_import        >> *debugger->debug_selecting_export[prc_num];
+			gdb_server[prc_num]->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[prc_num];
+			gdb_server[prc_num]->memory_import                 >> *debugger->memory_export[prc_num];
+			gdb_server[prc_num]->registers_import              >> *debugger->registers_export[prc_num];
 		}
 	}
 
@@ -1888,6 +1890,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("debugger.sel-cpu[0]", 0);
 	simulator->SetVariable("debugger.sel-cpu[1]", 1);
 	simulator->SetVariable("debugger.sel-cpu[2]", 2);
+	simulator->SetVariable("debugger.sel-cpu[3]", 0);
+	simulator->SetVariable("debugger.sel-cpu[4]", 1);
+	simulator->SetVariable("debugger.sel-cpu[5]", 2);
 }
 
 void Simulator::Run()
@@ -1895,19 +1900,6 @@ void Simulator::Run()
 	cerr << "Starting simulation at supervisor privilege level" << endl;
 	
 	double time_start = host_time->GetTime();
-
-#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
-	void (*prev_sig_int_handler)(int) = 0;
-#endif
-
-	if(!inline_debugger)
-	{
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-		SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
-#else
-		prev_sig_int_handler = signal(SIGINT, &Simulator::SigIntHandler);
-#endif
-	}
 
 	sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
 	
@@ -1919,15 +1911,6 @@ void Simulator::Run()
 	{
 		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
 		cerr << e.what() << endl;
-	}
-
-	if(!inline_debugger)
-	{
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-		SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, FALSE);
-#else
-		signal(SIGINT, prev_sig_int_handler);
-#endif
 	}
 
 	cerr << "Simulation finished" << endl;
@@ -2001,7 +1984,10 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 		std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 	}
 	std::cerr << "Program exited with status " << exit_status << std::endl;
-	sc_stop();
+	if(sc_get_status() != SC_STOPPED)
+	{
+		sc_stop();
+	}
 	if(!asynchronous)
 	{
 		sc_process_handle h = sc_get_current_process_handle();
@@ -2022,40 +2008,10 @@ int Simulator::GetExitStatus() const
 	return exit_status;
 }
 
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-BOOL WINAPI Simulator::ConsoleCtrlHandler(DWORD dwCtrlType)
+void Simulator::SigInt()
 {
-	bool stop = false;
-	switch(dwCtrlType)
+	if(!enable_inline_debugger)
 	{
-		case CTRL_C_EVENT:
-			cerr << "Interrupted by Ctrl-C" << endl;
-			stop = true;
-			break;
-		case CTRL_BREAK_EVENT:
-			cerr << "Interrupted by Ctrl-Break" << endl;
-			stop = true;
-			break;
-		case CTRL_CLOSE_EVENT:
-			cerr << "Interrupted by a console close" << endl;
-			stop = true;
-			break;
-		case CTRL_LOGOFF_EVENT:
-			cerr << "Interrupted because of logoff" << endl;
-			stop = true;
-			break;
-		case CTRL_SHUTDOWN_EVENT:
-			cerr << "Interrupted because of shutdown" << endl;
-			stop = true;
-			break;
+		unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
 	}
-	if(stop) sc_stop();
-	return stop ? TRUE : FALSE;
 }
-#else
-void Simulator::SigIntHandler(int signum)
-{
-	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
-}
-#endif

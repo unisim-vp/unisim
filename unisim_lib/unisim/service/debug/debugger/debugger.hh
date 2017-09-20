@@ -157,6 +157,7 @@ private:
 
 	// unisim::service::interfaces::DebugSelecting (tagged)
 	bool DebugSelect(unsigned int front_end_num, unsigned int prc_num);
+	unsigned int DebugGetSelected(unsigned int front_end_num) const;
 
 	// unisim::service::interfaces::DebugEventTrigger<ADDRESS> (tagged)
 	bool Listen(unsigned int front_end_num, unisim::util::debug::Event<ADDRESS> *event);
@@ -425,6 +426,7 @@ private:
 
 		// unisim::service::interfaces::DebugSelecting
 		virtual bool DebugSelect(unsigned int prc_num) { return dbg.DebugSelect(id, prc_num); }
+		virtual unsigned int DebugGetSelected() const { return dbg.DebugGetSelected(id); }
 		
 		// unisim::service::interfaces::DebugEventTrigger<ADDRESS>
 		virtual bool Listen(unisim::util::debug::Event<ADDRESS> *event) { return dbg.Listen(id, event); }
@@ -495,6 +497,9 @@ private:
 	// Currently selected processor gate
 	ProcessorGate *sel_prc_gate[MAX_FRONT_ENDS];
 
+	bool requires_finished_instruction_reporting[NUM_PROCESSORS];
+	bool requires_memory_access_reporting[NUM_PROCESSORS];
+
 	bool verbose;
 	std::string dwarf_to_html_output_directory;
 	std::string dwarf_register_number_mapping_filename;
@@ -535,6 +540,7 @@ private:
 	void ScheduleFrontEnd(unsigned int front_end_num);
 	void DescheduleFrontEnd(unsigned int front_end_num);
 	bool NextScheduledFrontEnd(unsigned int& front_end_num) const;
+	bool IsFrontEndScheduled(unsigned int front_end_num) const;
 	bool IsScheduleEmpty() const;
 };
 

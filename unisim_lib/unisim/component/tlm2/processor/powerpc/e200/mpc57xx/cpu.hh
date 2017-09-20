@@ -117,6 +117,7 @@ public:
 	void UpdateSpeed();
 	
 	void P_IACK_Process();
+	void ExternalEventProcess();
 	void ClockPropertiesChangedProcess();
 	void Run();
 	

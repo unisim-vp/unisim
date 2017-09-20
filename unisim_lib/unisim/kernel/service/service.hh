@@ -48,6 +48,10 @@
 #include <string.h>
 #include <assert.h>
 
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+#include <windef.h>
+#endif
+
 namespace unisim {
 namespace kernel {
 namespace service {
@@ -457,6 +461,22 @@ public:
 	void SetVariable(const char *variable_name, long long variable_value);
 	void SetVariable(const char *variable_name, float variable_value);
 	void SetVariable(const char *variable_name, double variable_value);
+private:
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
+	static void (*sig_int_handler)(int);
+	static void (*prev_sig_int_handler)(int);
+#endif
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
+#else
+	static void SigIntHandler(int signum);
+#endif
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
+	static void (*sig_pipe_handler)(int);
+	static void (*prev_sig_pipe_handler)(int);
+	static void SigPipeHandler(int signum);
+#endif
+	void BroadcastSigInt();
 };
 
 //=============================================================================
@@ -883,6 +903,8 @@ public:
 	                                                       // By contract, BeginSetup has been called before.
 	virtual bool EndSetup(); // can call any import
 	                         // By contract, it is called after Setup(ServiceExportBase&)
+	
+	virtual void SigInt();
 
 	const char *GetName() const;
 	const char *GetObjectName() const;
