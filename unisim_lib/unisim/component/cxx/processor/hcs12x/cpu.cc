@@ -57,7 +57,7 @@ template void EBLB::exchange<uint16_t>(unsigned int rrSrc, unsigned int rrDst);
 CPU::CPU(const char *name, Object *parent):
 	Object(name, parent),
 	Client<Loader>(name,  parent),
-	unisim::kernel::service::Client<DebugControl<physical_address_t> >(name, parent),
+	unisim::kernel::service::Client<DebugYielding>(name, parent),
 	unisim::kernel::service::Client<MemoryAccessReporting<physical_address_t> >(name, parent),
 	unisim::kernel::service::Service<MemoryAccessReportingControl>(name, parent),
 	unisim::kernel::service::Service<Disassembly<physical_address_t> >(name, parent),
@@ -75,7 +75,7 @@ CPU::CPU(const char *name, Object *parent):
 	registers_export("registers_export", this),
 	memory_export("memory_export", this),
 	memory_access_reporting_control_export("memory_access_reporting_control_export", this),
-	debug_control_import("debug_control_import", this),
+	debug_yielding_import("debug_yielding_import", this),
 	memory_access_reporting_import("memory_access_reporting_import", this),
 	memory_import("memory_import", this),
 	symbol_table_lookup_import("symbol-table-lookup-import",  this),
@@ -331,55 +331,10 @@ unsigned int CPU::step()
 		if(debug_enabled && verbose_step)
 			*logger << DebugInfo << "Starting step at PC = 0x" << std::hex << getRegPC() << std::dec << std::endl << EndDebugInfo;
 
-		if(debug_control_import) {
-			DebugControl<physical_address_t>::DebugCommand dbg_cmd;
-
-			do {
-				if(debug_enabled && verbose_step)
-					*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << getRegPC() << std::dec << ")"
-						<< std::endl << EndDebugInfo;
-
-				dbg_cmd = debug_control_import->FetchDebugCommand(MMC::getInstance()->getCPU12XPagedAddress(getRegPC()));
-
-				if(dbg_cmd == DebugControl<physical_address_t>::DBG_STEP) {
-					if(debug_enabled && verbose_step)
-						*logger << DebugInfo
-							<< "Received debug DBG_STEP command (PC = 0x"
-							<< std::hex << getRegPC() << std::dec << ")"
-							<< std::endl << EndDebugInfo;
-					break;
-				}
-				if(dbg_cmd == DebugControl<physical_address_t>::DBG_SYNC) {
-					if(debug_enabled && verbose_step)
-						*logger << DebugInfo
-							<< "Received debug DBG_SYNC command (PC = 0x"
-							<< std::hex << getRegPC() << std::dec << ")"
-							<< std::endl << EndDebugInfo;
-					Sync();
-					continue;
-				}
-
-				if(dbg_cmd == DebugControl<physical_address_t>::DBG_KILL) {
-					if(debug_enabled && verbose_step)
-						*logger << DebugInfo
-							<< "Received debug DBG_KILL command (PC = 0x"
-							<< std::hex << getRegPC() << std::dec << ")"
-							<< std::endl << EndDebugInfo;
-					Stop(0);
-				}
-				if(dbg_cmd == DebugControl<physical_address_t>::DBG_RESET) {
-					if(loader_import)
-					{
-						loader_import->Load();
-					}
-
-					if(debug_enabled && verbose_step)
-						*logger << DebugInfo
-							<< "Received debug DBG_RESET command (PC = 0x"
-							<< std::hex << getRegPC() << std::dec << ")"
-							<< std::endl << EndDebugInfo;
-				}
-			} while(1);
+		if (debug_yielding_import) {
+			if(debug_enabled && verbose_step)
+				*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << getRegPC() << std::dec << ")" << std::endl << EndDebugInfo;
+			debug_yielding_import->DebugYield();
 		}
 
 		if (state != STOP) {

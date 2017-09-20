@@ -143,8 +143,17 @@ private:
 	MultiFormatLoader<CPU_ADDRESS_TYPE> *loader;
 	//  - AVR32 Target to Host syscalls
 	AVR32_T2H_Syscalls<CPU_ADDRESS_TYPE> *avr32_t2h_syscalls;
+	
+	struct DEBUGGER_CONFIG
+	{
+		typedef CPU_ADDRESS_TYPE ADDRESS;
+		static const unsigned int NUM_PROCESSORS = 1;
+		/* gdb_server, inline_debugger and/or monitor */
+		static const unsigned int MAX_FRONT_ENDS = 3;
+	};
+	
 	//  - Debugger
-	Debugger<CPU_ADDRESS_TYPE> *debugger;
+	Debugger<DEBUGGER_CONFIG> *debugger;
 	//  - GDB server
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
 	//  - Inline debugger

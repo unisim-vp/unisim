@@ -82,7 +82,7 @@ CPU<CONFIG, DEBUG> ::
 CPU(const char *name,
 		Object *parent) :
 	Object(name, parent),
-	Client<DebugControl<typename CONFIG::address_t> >(name, parent),
+	Client<DebugYielding>(name, parent),
 	Client<MemoryAccessReporting<typename CONFIG::address_t> >(name, parent),
 	Client<TrapReporting>(name, parent),
 	Client<SymbolTableLookup<typename CONFIG::address_t> >(name, parent),
@@ -102,7 +102,7 @@ CPU(const char *name,
 	memory_access_reporting_control_export(
 		"memory_access_reporting_control_export",
 		this),
-	debug_control_import("debug_control_import", this),
+	debug_yielding_import("debug_yielding_import", this),
 	memory_access_reporting_import("memory_access_reporting_import", this),
 	trap_reporting_import("trap-reporting-import", this),
 	symbol_table_lookup_import("symbol_table_lookup_import", this),
@@ -1301,21 +1301,9 @@ void
 CPU<CONFIG, DEBUG> ::
 StepInstruction()
 {
-	if(unlikely(debug_control_import != 0))
+	if (unlikely(debug_yielding_import))
 	{
-		do
-		{
-			typename DebugControl<typename CONFIG::address_t>::DebugCommand dbg_cmd;
-
-			dbg_cmd = debug_control_import->FetchDebugCommand(4 * GetPC23_0());
-	
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_STEP) break;
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_KILL)
-			{
-				Stop(0);
-				return;
-			}
-		} while(1);
+		debug_yielding_import->DebugYield();
 	}
 
 	try

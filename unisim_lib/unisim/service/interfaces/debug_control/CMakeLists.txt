@@ -1,4 +1,4 @@
-message ( STATUS "Checking unisim::service::interfaces::debug_control" )
+message ( STATUS "Checking unisim::service::interfaces::debug_yielding" )
 
 include ( CheckIncludeFileCXX )
 
@@ -11,14 +11,14 @@ foreach ( CXX_INCLUDE ${CXX_INCLUDES} )
 endforeach ( CXX_INCLUDE )
 
 set_source_files_properties (
-	${CMAKE_SOURCE_DIR}/unisim/service/interfaces/debug_control.hh
+	${CMAKE_SOURCE_DIR}/unisim/service/interfaces/debug_yielding.hh
 	PROPERTIES
 		HEADER_FILE_ONLY TRUE )
 
-add_custom_target ( unisim__service__interfaces__debug_control
+add_custom_target ( unisim__service__interfaces__debug_yielding
 	SOURCES
-		${CMAKE_SOURCE_DIR}/unisim/service/interfaces/debug_control.hh
+		${CMAKE_SOURCE_DIR}/unisim/service/interfaces/debug_yielding.hh
 	)
 
-message ( STATUS "Checking unisim::service::interfaces::debug_control - done" )
+message ( STATUS "Checking unisim::service::interfaces::debug_yielding - done" )
 

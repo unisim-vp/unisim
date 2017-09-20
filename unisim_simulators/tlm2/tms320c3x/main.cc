@@ -36,20 +36,17 @@
 #include "config.h"
 #endif
 
-#include "unisim/component/cxx/processor/tms320c3x/config.hh"
-#include "unisim/component/tlm2/processor/tms320c3x/cpu.hh"
+#include <unisim/component/cxx/processor/tms320c3x/config.hh>
+#include <unisim/component/tlm2/processor/tms320c3x/cpu.hh>
+#include <unisim/service/os/ti_c_io/ti_c_io.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
-
-#include <unisim/kernel/service/service.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
-#include <unisim/service/profiling/addr_profiler/profiler.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
-#include "unisim/service/tee/memory_access_reporting/tee.hh"
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
-#include <unisim/service/os/ti_c_io/ti_c_io.hh>
+#include <unisim/kernel/service/service.hh>
 
 #include <iostream>
 #include <stdexcept>
@@ -110,14 +107,21 @@ private:
 	typedef unisim::kernel::tlm2::InitiatorStub<0, unisim::component::tlm2::interrupt::InterruptProtocolTypes> IRQ_STUB;
 	typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<CPU_CONFIG::address_t> LOADER;
 	typedef unisim::component::tlm2::memory::ram::Memory<32, CPU_CONFIG::address_t, 1, 1024 * 1024, MEMORY_DEBUG> MEMORY;
+	
+	struct DEBUGGER_CONFIG
+	{
+		typedef CPU_CONFIG::address_t ADDRESS;
+		static const unsigned int NUM_PROCESSORS = 1;
+		/* gdb_server, inline_debugger and/or monitor */
+		static const unsigned int MAX_FRONT_ENDS = 2;
+	};
+	
+	typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
 	typedef unisim::service::debug::gdb_server::GDBServer<CPU_CONFIG::address_t> GDB_SERVER;
 	typedef unisim::service::debug::inline_debugger::InlineDebugger<CPU_CONFIG::address_t> INLINE_DEBUGGER;
-	typedef unisim::service::debug::debugger::Debugger<CPU_CONFIG::address_t> DEBUGGER;
-	typedef unisim::service::profiling::addr_profiler::Profiler<CPU_CONFIG::address_t> PROFILER;
 	typedef unisim::service::time::sc_time::ScTime SC_TIME;
 	typedef unisim::service::time::host_time::HostTime HOST_TIME;
 	typedef unisim::service::os::ti_c_io::TI_C_IO<CPU_CONFIG::address_t> TI_C_IO;
-	typedef unisim::service::tee::memory_access_reporting::Tee<CPU_CONFIG::address_t> TEE_MEMORY_ACCESS_REPORTING;
 
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -152,14 +156,10 @@ private:
 	INLINE_DEBUGGER *inline_debugger;
 	//  - debugger
 	DEBUGGER *debugger;
-	//  - profiler
-	PROFILER *profiler;
 	//  - SystemC Time
 	SC_TIME *sim_time;
 	//  - Host Time
 	HOST_TIME *host_time;
-	//  - Tee Memory Access Reporting
-	TEE_MEMORY_ACCESS_REPORTING *tee_memory_access_reporting;
 
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
@@ -192,10 +192,8 @@ Simulator::Simulator(int argc, char **argv)
 	, gdb_server(0)
 	, inline_debugger(0)
 	, debugger(0)
-	, profiler(0)
 	, sim_time(0)
 	, host_time(0)
-	, tee_memory_access_reporting(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
@@ -233,14 +231,12 @@ Simulator::Simulator(int argc, char **argv)
 		SetVariable("loader.filename", (program_name + ",c31boot.out").c_str());
 	}
 
+	//  - Debugger
+	debugger = (enable_gdb_server or enable_inline_debugger) ? new DEBUGGER("debugger") : 0;
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDB_SERVER("gdb-server") : 0;
 	//  - Inline debugger
 	inline_debugger = enable_inline_debugger ? new INLINE_DEBUGGER("inline-debugger") : 0;
-	//  - Debugger
-	debugger = (enable_gdb_server || enable_inline_debugger) ? new DEBUGGER("debugger") : 0;
-	//  - Profiler
-	profiler = enable_inline_debugger ? new PROFILER("profiler") : 0;
 	//  - Multiformat Loader
 	loader = new LOADER("loader");
 	//  - TI C I/O
@@ -249,11 +245,6 @@ Simulator::Simulator(int argc, char **argv)
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
 	host_time = new unisim::service::time::host_time::HostTime("host-time");
-	//  - Tee Memory Access Reporting
-	tee_memory_access_reporting = 
-		(enable_gdb_server || enable_inline_debugger) ?
-			new TEE_MEMORY_ACCESS_REPORTING("tee-memory-access-reporting") :
-			0;
 
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -285,87 +276,74 @@ Simulator::Simulator(int argc, char **argv)
 	ti_c_io->blob_import >> loader->blob_export;
 	*loader->memory_import[0] >> memory->memory_export;
 	
-	if(enable_inline_debugger || enable_gdb_server)
+	if (enable_inline_debugger or enable_gdb_server)
 	{
-		// Connect debugger to CPU
-		cpu->debug_control_import >> debugger->debug_control_export;
-		cpu->trap_reporting_import >> debugger->trap_reporting_export;
-		cpu->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
-		debugger->disasm_import >> cpu->disasm_export;
-		debugger->memory_import >> cpu->memory_export;
-		debugger->registers_import >> cpu->registers_export;
+		// Debugger <-> CPU connections
+		cpu->debug_yielding_import                            >> *debugger->debug_yielding_export[0];
+		cpu->trap_reporting_import                            >> *debugger->trap_reporting_export[0];
+		cpu->memory_access_reporting_import                   >> *debugger->memory_access_reporting_export[0];
+		*debugger->disasm_import[0]                          >> cpu->disasm_export;
+		*debugger->memory_import[0]                          >> cpu->memory_export;
+		*debugger->registers_import[0]                       >> cpu->registers_export;
+		*debugger->memory_access_reporting_control_import[0] >> cpu->memory_access_reporting_control_export;
+		
+		// Debugger <-> Loader connections
 		debugger->blob_import >> loader->blob_export;
-		
-		if(enable_inline_debugger)
+
+		if (enable_inline_debugger)
 		{
-			// Connect tee-memory-access-reporting to CPU, debugger and profiler
-			cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
-			*tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
-			*tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
-			profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
-			debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
-			tee_memory_access_reporting->out_control >> cpu->memory_access_reporting_control_export;
+			// inline-debugger <-> debugger connections
+			*debugger->debug_event_listener_import[0]      >> inline_debugger->debug_event_listener_export;
+			*debugger->debug_yielding_import[0]            >> inline_debugger->debug_yielding_export;
+			inline_debugger->debug_yielding_request_import >> *debugger->debug_yielding_request_export[0];
+			inline_debugger->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[0];
+			inline_debugger->disasm_import                 >> *debugger->disasm_export[0];
+			inline_debugger->memory_import                 >> *debugger->memory_export[0];
+			inline_debugger->registers_import              >> *debugger->registers_export[0];
+			inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[0];
+			inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[0];
+			inline_debugger->backtrace_import              >> *debugger->backtrace_export[0];
+			inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
+			inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
+			inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
 		}
-		else
+	
+		if (enable_gdb_server)
 		{
-			cpu->memory_access_reporting_import >> debugger->memory_access_reporting_export;
-			debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
-		}
-		
-		if(enable_inline_debugger)
-		{
-			// Connect inline-debugger to debugger
-			debugger->debug_event_listener_import >> inline_debugger->debug_event_listener_export;
-			debugger->trap_reporting_import >> inline_debugger->trap_reporting_export;
-			debugger->debug_control_import >> inline_debugger->debug_control_export;
-			inline_debugger->debug_event_trigger_import >> debugger->debug_event_trigger_export;
-			inline_debugger->disasm_import >> debugger->disasm_export;
-			inline_debugger->memory_import >> debugger->memory_export;
-			inline_debugger->registers_import >> debugger->registers_export;
-			inline_debugger->stmt_lookup_import >> debugger->stmt_lookup_export;
-			inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
-			inline_debugger->backtrace_import >> debugger->backtrace_export;
-			inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
-			inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
-			inline_debugger->profiling_import >> profiler->profiling_export;
-		}
-		else if(enable_gdb_server)
-		{
-			// Connect gdb-server to debugger
-			debugger->debug_control_import >> gdb_server->debug_control_export;
-			debugger->debug_event_listener_import >> gdb_server->debug_event_listener_export;
-			debugger->trap_reporting_import >> gdb_server->trap_reporting_export;
-			gdb_server->debug_event_trigger_import >> debugger->debug_event_trigger_export;
-			gdb_server->memory_import >> debugger->memory_export;
-			gdb_server->registers_import >> debugger->registers_export;
+			// gdb-server <-> debugger connections
+			*debugger->debug_event_listener_import[1] >> gdb_server->debug_event_listener_export;
+			*debugger->debug_yielding_import[1]       >> gdb_server->debug_yielding_export;
+			gdb_server->debug_yielding_request_import >> *debugger->debug_yielding_request_export[1];
+			gdb_server->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[1];
+			gdb_server->memory_import                 >> *debugger->memory_export[1];
+			gdb_server->registers_import              >> *debugger->registers_export[1];
 		}
 	}
+	
 }
 
 Simulator::~Simulator()
 {
-	if(memory) delete memory;
-	if(gdb_server) delete gdb_server;
-	if(inline_debugger) delete inline_debugger;
-	if(debugger) delete debugger;
-	if(loader) delete loader;
-	if(ti_c_io) delete ti_c_io;
-	if(profiler) delete profiler;
-	if(cpu) delete cpu;
-	if(int0_stub) delete int0_stub;
-	if(int1_stub) delete int1_stub;
-	if(int2_stub) delete int2_stub;
-	if(int3_stub) delete int3_stub;
-	if(xint0_stub) delete xint0_stub;
-	if(rint0_stub) delete rint0_stub;
-	if(xint1_stub) delete xint1_stub;
-	if(rint1_stub) delete rint1_stub;
-	if(tint0_stub) delete tint0_stub;
-	if(tint1_stub) delete tint1_stub;
-	if(dint_stub) delete dint_stub;
-	if(sim_time) delete sim_time;
-	if(host_time) delete host_time;
-	if(tee_memory_access_reporting) delete tee_memory_access_reporting;
+	delete memory;
+	delete gdb_server;
+	delete inline_debugger;
+	delete debugger;
+	delete loader;
+	delete ti_c_io;
+	delete cpu;
+	delete int0_stub;
+	delete int1_stub;
+	delete int2_stub;
+	delete int3_stub;
+	delete xint0_stub;
+	delete rint0_stub;
+	delete xint1_stub;
+	delete rint1_stub;
+	delete tint0_stub;
+	delete tint1_stub;
+	delete dint_stub;
+	delete sim_time;
+	delete host_time;
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
@@ -556,7 +534,7 @@ int sc_main(int argc, char *argv[])
 	}
 
 	int exit_status = simulator->GetExitStatus();
-	if(simulator) delete simulator;
+	delete simulator;
 #ifdef WIN32
 	// releases the winsock2 resources
 	WSACleanup();

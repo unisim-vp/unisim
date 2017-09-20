@@ -105,7 +105,7 @@ Simulator::Simulator(int argc, char **argv)
       *debugger->registers_import[0]                       >> cpu.registers_export;
       *debugger->memory_access_reporting_control_import[0] >> cpu.memory_access_reporting_control_export;
       
-      // Debugger <-> LinuxOS connections
+      // Debugger <-> Loader connections
       debugger->blob_import >> linux_os.blob_export_;
     }
   

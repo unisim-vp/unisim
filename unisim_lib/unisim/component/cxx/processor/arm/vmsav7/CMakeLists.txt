@@ -29,7 +29,7 @@ set ( cxx_arm_subdirs
 	unisim/service/interfaces/memory
 	unisim/service/interfaces/loader
 	unisim/service/interfaces/linux_os
-	unisim/service/interfaces/debug_control
+	unisim/service/interfaces/debug_yielding
 	unisim/service/interfaces/disassembly
 	unisim/service/interfaces/memory_access_reporting
 	unisim/service/interfaces/symbol_table_lookup
@@ -176,7 +176,7 @@ add_dependencies ( unisim__component__cxx__processor__arm__vmsav7
 	unisim__service__interfaces__memory
 	unisim__service__interfaces__loader
 	unisim__service__interfaces__linux_os
-	unisim__service__interfaces__debug_control
+	unisim__service__interfaces__debug_yielding
 	unisim__service__interfaces__disassembly
 	unisim__service__interfaces__memory_access_reporting
 	unisim__service__interfaces__symbol_table_lookup

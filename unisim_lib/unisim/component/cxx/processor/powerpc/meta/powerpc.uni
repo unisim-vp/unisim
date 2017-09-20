@@ -35,7 +35,7 @@
 			<dep>unisim::component::cxx::tlb</dep>
 			<dep>unisim::service::interfaces::memory</dep>
 			<dep>unisim::service::interfaces::memory_injection</dep>
-			<dep>unisim::service::interfaces::debug_control</dep>
+			<dep>unisim::service::interfaces::debug_yielding</dep>
 			<dep>unisim::service::interfaces::memory_access_reporting</dep>
 			<dep>unisim::service::interfaces::disassembly</dep>
 			<dep>unisim::service::interfaces::loader</dep>

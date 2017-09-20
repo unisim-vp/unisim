@@ -38,7 +38,7 @@
 
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
-#include "unisim/service/interfaces/debug_control.hh"
+#include "unisim/service/interfaces/debug_yielding.hh"
 #include "unisim/service/interfaces/disassembly.hh"
 #include "unisim/service/interfaces/memory_access_reporting.hh"
 #include "unisim/service/interfaces/memory.hh"
@@ -75,7 +75,7 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
 using unisim::kernel::service::Formula;
-using unisim::service::interfaces::DebugControl;
+using unisim::service::interfaces::DebugYielding;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
 using unisim::service::interfaces::TrapReporting;
@@ -122,7 +122,7 @@ static const uint32_t ADDRESS_MASK = 0xffffff; // 24-bit mask
 
 template<class CONFIG, bool DEBUG = false>
 class CPU :
-	public Client<DebugControl<typename CONFIG::address_t> >,
+	public Client<DebugYielding>,
 	public Client<MemoryAccessReporting<typename CONFIG::address_t> >,
 	public Client<TrapReporting>,
 	public Client<SymbolTableLookup<typename CONFIG::address_t> >,
@@ -163,7 +163,7 @@ public:
 	ServiceExport<MemoryInjection<typename CONFIG::address_t> > memory_injection_export;
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 	
-	ServiceImport<DebugControl<typename CONFIG::address_t> > debug_control_import;
+	ServiceImport<DebugYielding> debug_yielding_import;
 	ServiceImport<MemoryAccessReporting<typename CONFIG::address_t> > memory_access_reporting_import;
 	ServiceImport<TrapReporting> trap_reporting_import;
 	ServiceImport<SymbolTableLookup<typename CONFIG::address_t> > symbol_table_lookup_import;

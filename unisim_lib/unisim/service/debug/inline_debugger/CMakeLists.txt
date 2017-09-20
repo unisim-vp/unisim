@@ -23,7 +23,7 @@ endforeach ( CXX_INCLUDE )
 set ( inline_debugger_subdirs
 	unisim/service/interfaces/memory
 	unisim/service/interfaces/memory_access_reporting
-	unisim/service/interfaces/debug_control
+	unisim/service/interfaces/debug_yielding
 	unisim/service/interfaces/registers
 	unisim/service/interfaces/trap_reporting
 	unisim/service/interfaces/disassembly

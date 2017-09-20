@@ -50,14 +50,14 @@ CPU::CPU(const char *name, Object *_parent)
 	, unisim::kernel::service::Service<Memory<uint64_t> > (name, _parent)
 	, unisim::kernel::service::Service<Disassembly<uint64_t> >(name, _parent)
 	, unisim::kernel::service::Service<Registers>(name, _parent)
-	, unisim::kernel::service::Client<DebugControl<uint64_t> >(name, _parent)
+	, unisim::kernel::service::Client<DebugYielding>(name, _parent)
 	, unisim::kernel::service::Client<MemoryAccessReporting<uint64_t> >(name, _parent)
 	, unisim::kernel::service::Client<Memory<uint64_t> > (name, _parent)
 	, memory_export("memory-export", this)
 	, memory_access_reporting_control_export("memory-access-reporting-control-export", this)
 	, disasm_export("disasm_export", this)
 	, registers_export("registers_export", this)
-	, debug_control_import("debug-control-import", this)
+	, debug_yielding_import("debug-control-import", this)
 	, memory_access_reporting_import("memory-access-reporting-import", this)
 	, memory_import("memory-import", this)
 	, trap_reporting_import("trap_reporting_import", this)
@@ -96,7 +96,8 @@ CPU::~CPU()
 	}
 }
 
-uint16_t CPU::fetch(uint16_t addr)
+uint16_t
+CPU::fetch(uint16_t addr)
 {
 	if(requires_memory_access_reporting)
 	{
@@ -109,21 +110,12 @@ uint16_t CPU::fetch(uint16_t addr)
 	return mem_read(addr);
 }
 
-void CPU::step_instruction()
+void
+CPU::step_instruction()
 {
-	if(debug_control_import)
+	if (debug_yielding_import)
 	{
-		DebugControl<uint64_t>::DebugCommand dbg_cmd;
-
-		do
-		{
-			dbg_cmd = debug_control_import->FetchDebugCommand(2 * cia);
-
-			if(dbg_cmd == DebugControl<uint64_t>::DBG_STEP) break;
-			if(dbg_cmd == DebugControl<uint64_t>::DBG_SYNC) continue;
-			if(dbg_cmd == DebugControl<uint64_t>::DBG_KILL) Stop(0);
-		}
-		while(1);
+		debug_yielding_import->DebugYield();
 	}
 
 	uint16_t instruction;

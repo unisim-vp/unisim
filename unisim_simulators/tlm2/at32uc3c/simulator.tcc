@@ -104,7 +104,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	//  - AVR32 Target to Host system calls
 	avr32_t2h_syscalls = enable_avr32_t2h_syscalls ? new AVR32_T2H_Syscalls<CPU_ADDRESS_TYPE>("avr32-t2h-syscalls") : 0;
 	//  - debugger
-	debugger = new Debugger<CPU_ADDRESS_TYPE>("debugger");
+	debugger = new Debugger<DEBUGGER_CONFIG>("debugger");
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
@@ -138,14 +138,50 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	cpu->memory_import >> memory_router->memory_export;
 	*memory_router->memory_import[0] >> ram->memory_export;
 	
-	// Connect debugger to CPU
-	cpu->debug_control_import >> debugger->debug_control_export;
-	cpu->trap_reporting_import >> debugger->trap_reporting_export;
-	cpu->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
-	debugger->disasm_import >> cpu->disasm_export;
-	debugger->memory_import >> cpu->memory_export;
-	debugger->registers_import >> cpu->registers_export;
-	debugger->blob_import >> loader->blob_export;
+	if (enable_inline_debugger or enable_gdb_server)
+	{
+		// Debugger <-> CPU connections
+		cpu->debug_yielding_import                            >> *debugger->debug_yielding_export[0];
+		cpu->trap_reporting_import                            >> *debugger->trap_reporting_export[0];
+		cpu->memory_access_reporting_import                   >> *debugger->memory_access_reporting_export[0];
+		*debugger->disasm_import[0]                          >> cpu->disasm_export;
+		*debugger->memory_import[0]                          >> cpu->memory_export;
+		*debugger->registers_import[0]                       >> cpu->registers_export;
+		*debugger->memory_access_reporting_control_import[0] >> cpu->memory_access_reporting_control_export;
+		
+		// Debugger <-> Loader connections
+		debugger->blob_import >> loader->blob_export;
+
+		if (enable_inline_debugger)
+		{
+			// inline-debugger <-> debugger connections
+			*debugger->debug_event_listener_import[0]      >> inline_debugger->debug_event_listener_export;
+			*debugger->debug_yielding_import[0]            >> inline_debugger->debug_yielding_export;
+			inline_debugger->debug_yielding_request_import >> *debugger->debug_yielding_request_export[0];
+			inline_debugger->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[0];
+			inline_debugger->disasm_import                 >> *debugger->disasm_export[0];
+			inline_debugger->memory_import                 >> *debugger->memory_export[0];
+			inline_debugger->registers_import              >> *debugger->registers_export[0];
+			inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[0];
+			inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[0];
+			inline_debugger->backtrace_import              >> *debugger->backtrace_export[0];
+			inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
+			inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
+			inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
+		}
+	
+		if (enable_gdb_server)
+		{
+			// gdb-server <-> debugger connections
+			*debugger->debug_event_listener_import[1] >> gdb_server->debug_event_listener_export;
+			*debugger->debug_yielding_import[1]       >> gdb_server->debug_yielding_export;
+			gdb_server->debug_yielding_request_import >> *debugger->debug_yielding_request_export[1];
+			gdb_server->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[1];
+			gdb_server->memory_import                 >> *debugger->memory_export[1];
+			gdb_server->registers_import              >> *debugger->registers_export[1];
+		}
+	}
+	
 	
 	if(enable_avr32_t2h_syscalls)
 	{
@@ -153,50 +189,6 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 		avr32_t2h_syscalls->memory_injection_import >> cpu->memory_injection_export;
 		avr32_t2h_syscalls->blob_import >> loader->blob_export;
 		cpu->avr32_t2h_syscalls_import >> avr32_t2h_syscalls->avr32_t2h_syscalls_export;
-	}
-	
-	if(enable_inline_debugger)
-	{
-		// Connect tee-memory-access-reporting to CPU, debugger and profiler
-		cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
-		*tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
-		*tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
-		profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
-		debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
-		tee_memory_access_reporting->out_control >> cpu->memory_access_reporting_control_export;
-	}
-	else
-	{
-		cpu->memory_access_reporting_import >> debugger->memory_access_reporting_export;
-		debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
-	}
-	
-	if(enable_inline_debugger)
-	{
-		// Connect inline-debugger to debugger
-		debugger->debug_event_listener_import >> inline_debugger->debug_event_listener_export;
-		debugger->trap_reporting_import >> inline_debugger->trap_reporting_export;
-		debugger->debug_control_import >> inline_debugger->debug_control_export;
-		inline_debugger->debug_event_trigger_import >> debugger->debug_event_trigger_export;
-		inline_debugger->disasm_import >> debugger->disasm_export;
-		inline_debugger->memory_import >> debugger->memory_export;
-		inline_debugger->registers_import >> debugger->registers_export;
-		inline_debugger->stmt_lookup_import >> debugger->stmt_lookup_export;
-		inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
-		inline_debugger->backtrace_import >> debugger->backtrace_export;
-		inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
-		inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
-		inline_debugger->profiling_import >> profiler->profiling_export;
-	}
-	else if(enable_gdb_server)
-	{
-		// Connect gdb-server to debugger
-		debugger->debug_control_import >> gdb_server->debug_control_export;
-		debugger->debug_event_listener_import >> gdb_server->debug_event_listener_export;
-		debugger->trap_reporting_import >> gdb_server->trap_reporting_export;
-		gdb_server->debug_event_trigger_import >> debugger->debug_event_trigger_export;
-		gdb_server->memory_import >> debugger->memory_export;
-		gdb_server->registers_import >> debugger->registers_export;
 	}
 	
 	*loader->memory_import[0] >> ram->memory_export;

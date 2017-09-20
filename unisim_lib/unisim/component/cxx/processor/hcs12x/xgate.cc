@@ -47,7 +47,7 @@ using unisim::util::debug::SimpleRegister;
 
 XGATE::XGATE(const char *name, Object *parent):
 	Object(name, parent)
-	, unisim::kernel::service::Client<DebugControl<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Client<DebugYielding>(name, parent)
 	, unisim::kernel::service::Service<Registers>(name, parent)
 	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
 	, unisim::kernel::service::Service<MemoryAccessReportingControl>(name, parent)
@@ -59,7 +59,7 @@ XGATE::XGATE(const char *name, Object *parent):
 	, registers_export("registers_export", this)
 	, memory_export("memory_export", this)
 	, memory_access_reporting_control_export("memory_access_reporting_control_export", this)
-	, debug_control_import("debug_control_import", this)
+	, debug_yielding_import("debug_yielding_import", this)
 	, memory_access_reporting_import("memory_access_reporting_import", this)
 	, memory_import("memory_import", this)
 	, trap_reporting_import("trap_reporting_import", this)
@@ -558,51 +558,10 @@ unsigned int XGATE::step()
 		if(debug_enabled && verbose_step)
 			*logger << DebugInfo << "Starting step at PC = 0x" << std::hex << getXGPC() << std::dec << std::endl << EndDebugInfo;
 
-		if(debug_control_import) {
-
-			DebugControl<physical_address_t>::DebugCommand dbg_cmd;
-
-			do {
-				if(debug_enabled && verbose_step)
-					*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << getXGPC() << std::dec << ")"
-						<< std::endl << EndDebugInfo;
-
-				dbg_cmd = debug_control_import->FetchDebugCommand(MMC::getInstance()->getXGATEPagedAddress(getXGPC()));
-
-				if(dbg_cmd == DebugControl<physical_address_t>::DBG_STEP) {
-					if(debug_enabled && verbose_step)
-						*logger << DebugInfo
-							<< "Received debug DBG_STEP command (PC = 0x"
-							<< std::hex << getXGPC() << std::dec << ")"
-							<< std::endl << EndDebugInfo;
-					break;
-				}
-				if(dbg_cmd == DebugControl<physical_address_t>::DBG_SYNC) {
-					if(debug_enabled && verbose_step)
-						*logger << DebugInfo
-							<< "Received debug DBG_SYNC command (PC = 0x"
-							<< std::hex << getXGPC() << std::dec << ")"
-							<< std::endl << EndDebugInfo;
-					Sync();
-					continue;
-				}
-
-				if(dbg_cmd == DebugControl<physical_address_t>::DBG_KILL) {
-					if(debug_enabled && verbose_step)
-						*logger << DebugInfo
-							<< "Received debug DBG_KILL command (PC = 0x"
-							<< std::hex << getXGPC() << std::dec << ")"
-							<< std::endl << EndDebugInfo;
-					Stop(0);
-				}
-				if(dbg_cmd == DebugControl<physical_address_t>::DBG_RESET) {
-					if(debug_enabled && verbose_step)
-						*logger << DebugInfo
-							<< "Received debug DBG_RESET command (PC = 0x"
-							<< std::hex << getXGPC() << std::dec << ")"
-							<< std::endl << EndDebugInfo;
-				}
-			} while(1);
+		if (debug_yielding_import) {
+			if(debug_enabled && verbose_step)
+				*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << getXGPC() << std::dec << ")" << std::endl << EndDebugInfo;
+			debug_yielding_import->DebugYield();
 		}
 
 		if(requires_memory_access_reporting) {

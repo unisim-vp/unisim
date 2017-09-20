@@ -58,15 +58,13 @@
 //#include <unisim/util/loader/elf_loader/elf_loader.tcc>
 #include <unisim/service/debug/debugger/debugger.hh>
 //#include <unisim/service/debug/debugger/debugger.tcc>
-#include <unisim/util/debug/profile.hh>
+//#include <unisim/util/debug/profile.hh>
 //#include <unisim/util/debug/profile.tcc>
 
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 //#include <unisim/service/debug/inline_debugger/inline_debugger.tcc>
 #include <unisim/service/loader/raw_loader/raw_loader.hh>
-#include <unisim/service/tee/memory_access_reporting/tee.hh>
-//#include <unisim/service/tee/memory_access_reporting/tee.tcc>
-#include <unisim/service/profiling/addr_profiler/profiler.hh>
+//#include <unisim/service/profiling/addr_profiler/profiler.hh>
 //#include <unisim/service/profiling/addr_profiler/profiler.tcc>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
@@ -91,7 +89,7 @@ using unisim::kernel::service::VariableBase;
 
 using unisim::service::debug::debugger::Debugger;
 using unisim::service::debug::inline_debugger::InlineDebugger;
-using unisim::service::profiling::addr_profiler::Profiler;
+//using unisim::service::profiling::addr_profiler::Profiler;
 
 class Simulator
 	: public unisim::kernel::service::Simulator
@@ -121,8 +119,6 @@ private:
 
 	typedef unisim::service::loader::raw_loader::RawLoader<uint64_t> RawLoader;
 
-	typedef unisim::service::tee::memory_access_reporting::Tee<uint64_t> MemoryAccessReportingTee;
-
 	//=========================================================================
 	//===                           Components                              ===
 	//=========================================================================
@@ -137,7 +133,16 @@ private:
 	//===                            Services                               ===
 	//=========================================================================
 	// - Debugger
-	Debugger<uint64_t> *debugger;
+	
+	struct DEBUGGER_CONFIG
+	{
+		typedef uint64_t ADDRESS;
+		static const unsigned int NUM_PROCESSORS = 1;
+		/* gdb_server, inline_debugger and/or monitor */
+		static const unsigned int MAX_FRONT_ENDS = 1;
+	};
+	
+	Debugger<DEBUGGER_CONFIG> *debugger;
 	
 	// - Inline-debugger
 	InlineDebugger<uint64_t> *inline_debugger;
@@ -145,11 +150,8 @@ private:
 	// - Raw loader
 	RawLoader* raw_loader;
 
-	// - Tee Memory Access Reporting
-	MemoryAccessReportingTee *tee_memory_access_reporting;
-
 	// - Profiler
-	Profiler<uint64_t> *profiler;
+	//Profiler<uint64_t> *profiler;
 
 	
 	//==========================================================================

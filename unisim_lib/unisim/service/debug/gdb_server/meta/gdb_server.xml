@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <service xmlns="http://www.unisim.org" name="unisim::service::debug::gdb_server::GDBServer">
 	<sockets>
-		<socket name="debug_control_export" direction="in" socket_nature="service"/>
+		<socket name="debug_yielding_export" direction="in" socket_nature="service"/>
 		<socket name="memory_access_reporting_export" direction="in" socket_nature="service"/>
 		<socket name="trap_reporting_export" direction="in" socket_nature="service"/>
 		<socket name="memory_import" direction="out" socket_nature="service"/>
@@ -36,7 +36,7 @@
 		<dep>unistd_h</dep>
 		<dep>bsd_sockets</dep>
 		<dep>unisim::kernel::service</dep>
-		<dep>unisim::service::interfaces::debug_control</dep>
+		<dep>unisim::service::interfaces::debug_yielding</dep>
 		<dep>unisim::service::interfaces::logger</dep>
 		<dep>unisim::service::interfaces::memory_access_reporting</dep>
 		<dep>unisim::service::interfaces::memory</dep>

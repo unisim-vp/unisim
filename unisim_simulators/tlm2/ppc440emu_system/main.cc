@@ -58,6 +58,7 @@
 #include <unisim/component/cxx/com/xilinx/xps_uart_lite/config.hh>
 
 #include <unisim/kernel/service/service.hh>
+#include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/power/cache_power_estimator.hh>
@@ -253,6 +254,18 @@ private:
 	PPCLinuxKernelLoader<CPU_ADDRESS_TYPE> *ppc_linux_kernel_loader;
 	//  - ROM loader (ELF32)
 	Elf32Loader<CPU_ADDRESS_TYPE> *rom_loader;
+	
+	struct DEBUGGER_CONFIG
+	{
+		typedef CPU_ADDRESS_TYPE ADDRESS;
+		static const unsigned int NUM_PROCESSORS = 1;
+		/* gdb_server, inline_debugger and/or monitor */
+		static const unsigned int MAX_FRONT_ENDS = 2;
+	};
+	
+	typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> Debugger;
+	//  - debugger back-end
+	Debugger *debugger;
 	//  - GDB server
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
 	//  - Inline debugger
@@ -313,6 +326,7 @@ Simulator::Simulator(int argc, char **argv)
 	, dmac2_dcr_stub(0)
 	, dmac3_dcr_stub(0)
 	, external_slave_dcr_stub(0)
+	, debugger(0)
 	, gdb_server(0)
 	, inline_debugger(0)
 	, sim_time(0)
@@ -418,6 +432,8 @@ Simulator::Simulator(int argc, char **argv)
 	ppc_linux_kernel_loader = new PPCLinuxKernelLoader<CPU_ADDRESS_TYPE>("ppc-linux-kernel-loader");
 	//  - ROM Loader
 	rom_loader = new Elf32Loader<CPU_ADDRESS_TYPE>("rom-loader");
+	//  - Debugger
+	debugger = (enable_inline_debugger or enable_gdb_server) ? new Debugger("debugger") : 0;
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
@@ -515,31 +531,49 @@ Simulator::Simulator(int argc, char **argv)
 	cpu->loader_import >> ppc_linux_kernel_loader->loader_export;
 	ppc_linux_kernel_loader->registers_import >> cpu->registers_export;
 	
-	if(enable_inline_debugger)
+	if (enable_inline_debugger or enable_gdb_server)
 	{
-		// Connect inline-debugger to CPU
-		cpu->debug_control_import >> inline_debugger->debug_control_export;
-		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
-		cpu->trap_reporting_import >> inline_debugger->trap_reporting_export;
-		inline_debugger->disasm_import >> cpu->disasm_export;
-		inline_debugger->memory_import >> cpu->memory_export;
-		inline_debugger->registers_import >> cpu->registers_export;
-		inline_debugger->memory_access_reporting_control_import >>
-			cpu->memory_access_reporting_control_export;
-		*inline_debugger->loader_import[0] >> ppc_linux_kernel_loader->loader_export;
-		*inline_debugger->stmt_lookup_import[0] >> ppc_linux_kernel_loader->stmt_lookup_export;
-		*inline_debugger->symbol_table_lookup_import[0] >> ppc_linux_kernel_loader->symbol_table_lookup_export;
-	}
-	else if(enable_gdb_server)
-	{
-		// Connect gdb-server to CPU
-		cpu->debug_control_import >> gdb_server->debug_control_export;
-		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
-		cpu->trap_reporting_import >> gdb_server->trap_reporting_export;
-		gdb_server->memory_import >> cpu->memory_export;
-		gdb_server->registers_import >> cpu->registers_export;
-		gdb_server->memory_access_reporting_control_import >>
-			cpu->memory_access_reporting_control_export;
+		// Debugger <-> CPU Connections
+		// Debugger <-> CPU connections
+		cpu->debug_yielding_import                            >> *debugger->debug_yielding_export[0];
+		cpu->trap_reporting_import                            >> *debugger->trap_reporting_export[0];
+		cpu->memory_access_reporting_import                   >> *debugger->memory_access_reporting_export[0];
+		*debugger->disasm_import[0]                          >> cpu->disasm_export;
+		*debugger->memory_import[0]                          >> cpu->memory_export;
+		*debugger->registers_import[0]                       >> cpu->registers_export;
+		*debugger->memory_access_reporting_control_import[0] >> cpu->memory_access_reporting_control_export;
+			
+		// Debugger <-> Loader connections
+		debugger->blob_import >> ppc_linux_kernel_loader->blob_export;
+		
+		if (enable_inline_debugger)
+		{
+			// inline-debugger <-> debugger connections
+			*debugger->debug_event_listener_import[0]      >> inline_debugger->debug_event_listener_export;
+			*debugger->debug_yielding_import[0]            >> inline_debugger->debug_yielding_export;
+			inline_debugger->debug_yielding_request_import >> *debugger->debug_yielding_request_export[0];
+			inline_debugger->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[0];
+			inline_debugger->disasm_import                 >> *debugger->disasm_export[0];
+			inline_debugger->memory_import                 >> *debugger->memory_export[0];
+			inline_debugger->registers_import              >> *debugger->registers_export[0];
+			inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[0];
+			inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[0];
+			inline_debugger->backtrace_import              >> *debugger->backtrace_export[0];
+			inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
+			inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
+			inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
+		}
+		
+		if (enable_gdb_server)
+		{
+			// gdb-server <-> debugger connections
+			*debugger->debug_event_listener_import[1] >> gdb_server->debug_event_listener_export;
+			*debugger->debug_yielding_import[1]       >> gdb_server->debug_yielding_export;
+			gdb_server->debug_yielding_request_import >> *debugger->debug_yielding_request_export[1];
+			gdb_server->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[1];
+			gdb_server->memory_import                 >> *debugger->memory_export[1];
+			gdb_server->registers_import              >> *debugger->registers_export[1];
+		}
 	}
 
 	if(estimate_power)

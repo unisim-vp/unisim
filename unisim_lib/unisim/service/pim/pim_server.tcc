@@ -97,7 +97,7 @@ using unisim::service::pim::PIMThread;
 template <class ADDRESS>
 PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	: Object(_name, _parent, "PIM Server")
-	, Service<DebugControl<ADDRESS> >(_name, _parent)
+	, Service<DebugYielding>(_name, _parent)
 	, Service<TrapReporting>(_name, _parent)
 	, unisim::kernel::service::Client<Memory<ADDRESS> >(_name, _parent)
 	, unisim::kernel::service::Client<Disassembly<ADDRESS> >(_name, _parent)
@@ -111,7 +111,7 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 
 	, VariableBaseListener()
 
-	, debug_control_export("debug-control-export", this)
+	, debug_yielding_export("debug-control-export", this)
 	, memory_access_reporting_export("memory-access-reporting-export", this)
 	, trap_reporting_export("trap-reporting-export", this)
 	, debug_event_listener_export("debug-event-listener-export", this)
@@ -376,7 +376,7 @@ ReportTrap(const unisim::kernel::service::Object &obj,
 }
 
 template <class ADDRESS>
-typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)
+void PIMServer<ADDRESS>::DebugYield()
 {
 	ADDRESS addr;
 	ADDRESS size;

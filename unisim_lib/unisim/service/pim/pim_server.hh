@@ -38,7 +38,7 @@
 
 #include <unisim/util/endian/endian.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
-#include <unisim/service/interfaces/debug_control.hh>
+#include <unisim/service/interfaces/debug_yielding.hh>
 #include <unisim/service/interfaces/debug_event.hh>
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
@@ -78,7 +78,7 @@ namespace pim {
 using std::string;
 using std::vector;
 
-using unisim::service::interfaces::DebugControl;
+using unisim::service::interfaces::DebugYielding;
 using unisim::service::interfaces::DebugEventListener;
 using unisim::service::interfaces::DebugEventTrigger;
 using unisim::service::interfaces::Disassembly;
@@ -121,8 +121,8 @@ typedef enum { GDB_LITTLE_ENDIAN, GDB_BIG_ENDIAN } GDBEndian;
 
 
 template <class ADDRESS>
-class PIMServer :
-	public Service<DebugControl<ADDRESS> >
+class PIMServer
+	: public Service<DebugYielding>
 	, public Service<TrapReporting>
 	, public Client<Memory<ADDRESS> >
 	, public Client<Disassembly<ADDRESS> >
@@ -131,14 +131,12 @@ class PIMServer :
 	, public Client<Registers>
 	, public Service<DebugEventListener<ADDRESS> >
 	, public Client<DebugEventTrigger<ADDRESS> >
-
 	, public Client<Monitor_if<ADDRESS> >
-
 	, public VariableBaseListener
 
 {
 public:
-	ServiceExport<DebugControl<ADDRESS> > debug_control_export;
+	ServiceExport<DebugYielding> debug_yielding_export;
 	ServiceExport<MemoryAccessReporting<ADDRESS> > memory_access_reporting_export;
 	ServiceExport<TrapReporting> trap_reporting_export;
 
@@ -156,8 +154,8 @@ public:
 
 	PIMServer(const char *name, Object *parent = 0);
 	virtual ~PIMServer();
-
-	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
+	
+	virtual void DebugYielding();
 	virtual void ReportTrap();
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj);
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj,

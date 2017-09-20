@@ -53,12 +53,10 @@
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
-#include <unisim/service/profiling/addr_profiler/profiler.hh>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 #include <unisim/service/os/avr32_t2h_syscalls/avr32_t2h_syscalls.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
-#include <unisim/service/tee/memory_access_reporting/tee.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 
@@ -83,7 +81,6 @@ using unisim::service::os::avr32_t2h_syscalls::AVR32_T2H_Syscalls;
 using unisim::service::debug::debugger::Debugger;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
-using unisim::service::profiling::addr_profiler::Profiler;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Variable;
 using unisim::kernel::service::VariableBase;
@@ -143,20 +140,25 @@ private:
 	MultiFormatLoader<CPU_ADDRESS_TYPE> *loader;
 	//  - AVR32 Target to Host syscalls
 	AVR32_T2H_Syscalls<CPU_ADDRESS_TYPE> *avr32_t2h_syscalls;
+	
+	struct DEBUGGER_CONFIG
+	{
+		typedef CPU_ADDRESS_TYPE ADDRESS;
+		static const unsigned int NUM_PROCESSORS = 1;
+		/* gdb_server, inline_debugger and/or monitor */
+		static const unsigned int MAX_FRONT_ENDS = 3;
+	};
+	
 	//  - Debugger
-	Debugger<CPU_ADDRESS_TYPE> *debugger;
+	Debugger<DEBUGGER_CONFIG> *debugger;
 	//  - GDB server
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
 	//  - Inline debugger
 	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger;
-	//  - profiler
-	Profiler<CPU_ADDRESS_TYPE> *profiler;
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
-	//  - Tee Memory Access Reporting
-	unisim::service::tee::memory_access_reporting::Tee<CPU_ADDRESS_TYPE> *tee_memory_access_reporting;
 
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
