@@ -69,7 +69,7 @@ public:
 	
 	Tee(const char *name, Object *parent = 0);
 	virtual ~Tee();
-	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, 
+	virtual bool ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, 
 			typename MemoryAccessReporting<ADDRESS>::MemoryType mt, 
 			ADDRESS addr, uint32_t size);
 	virtual void ReportCommitInstruction(ADDRESS addr);

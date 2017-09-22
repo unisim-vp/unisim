@@ -94,16 +94,25 @@ Tee<ADDRESS, MAX_IMPORTS>::~Tee()
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-void Tee<ADDRESS, MAX_IMPORTS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, 
+bool Tee<ADDRESS, MAX_IMPORTS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, 
 		typename MemoryAccessReporting<ADDRESS>::MemoryType mt, 
 		ADDRESS addr, uint32_t size)
 {
+	bool overlook = true;
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
 	{
 		if(out[i])
-			if(*out[i]) (*out[i])->ReportMemoryAccess(mat, mt, addr, size);
+			if(*out[i])
+			{
+				if(!(*out[i])->ReportMemoryAccess(mat, mt, addr, size))
+				{
+					overlook = false;
+				}
+			}
 	}
+	
+	return overlook;
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>

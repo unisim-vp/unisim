@@ -4163,8 +4163,8 @@ protected:
 	bool requires_memory_access_reporting;        // indicates if the memory accesses require to be reported
 	bool requires_finished_instruction_reporting; // indicates if the finished instructions require to be reported
 	
-	inline void MonitorLoad(typename TYPES::ADDRESS ea, unsigned int size);
-	inline void MonitorStore(typename TYPES::ADDRESS ea, unsigned int size);
+	inline bool MonitorLoad(typename TYPES::ADDRESS ea, unsigned int size);
+	inline bool MonitorStore(typename TYPES::ADDRESS ea, unsigned int size);
 	
 	////////////////////////// Run-time parameters ////////////////////////////
 

@@ -322,6 +322,18 @@ std::ostream& operator << (std::ostream& os, const GDBServerAction& gdb_server_a
 	return os;
 }
 
+std::ostream& operator << (std::ostream& os, const GDBMode& gdb_mode)
+{
+	switch(gdb_mode)
+	{
+		case GDB_MODE_SINGLE_THREAD: os << "SINGLE_THREAD"; break;
+		case GDB_MODE_MULTI_THREAD: os << "MULTI_THREAD"; break;
+		default          : os << "?"; break;
+	}
+	
+	return os;
+}
+
 } // end of namespace gdb_server
 } // end of namespace debug
 } // end of namespace service
@@ -463,6 +475,144 @@ template <> VariableBase& Variable<GDBWaitConnectionMode>::operator = (const cha
 }
 
 template class Variable<GDBWaitConnectionMode>;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+using unisim::service::debug::gdb_server::GDBMode;
+using unisim::service::debug::gdb_server::GDB_MODE_SINGLE_THREAD;
+using unisim::service::debug::gdb_server::GDB_MODE_MULTI_THREAD;
+
+template <> Variable<GDBMode>::Variable(const char *_name, Object *_object, GDBMode& _storage, Type type, const char *_description) :
+	VariableBase(_name, _object, type, _description), storage(&_storage)
+{
+	Simulator::simulator->Initialize(this);
+	AddEnumeratedValue("SINGLE_THREAD");
+	AddEnumeratedValue("MULTI_THREAD");
+}
+
+template <>
+const char *Variable<GDBMode>::GetDataTypeName() const
+{
+	return "gdb-mode";
+}
+
+template <>
+unsigned int Variable<GDBMode>::GetBitSize() const
+{
+	return 2;
+}
+
+template <> Variable<GDBMode>::operator bool () const { return *storage != GDB_MODE_SINGLE_THREAD; }
+template <> Variable<GDBMode>::operator long long () const { return *storage; }
+template <> Variable<GDBMode>::operator unsigned long long () const { return *storage; }
+template <> Variable<GDBMode>::operator double () const { return (double)(*storage); }
+template <> Variable<GDBMode>::operator string () const
+{
+	switch(*storage)
+	{
+		case GDB_MODE_SINGLE_THREAD: return std::string("single-thread");
+		case GDB_MODE_MULTI_THREAD: return std::string("multi-thread");
+	}
+	return std::string("?");
+}
+
+template <> VariableBase& Variable<GDBMode>::operator = (bool value)
+{
+	if(IsMutable())
+	{
+		GDBMode tmp = *storage;
+		switch((unsigned int) value)
+		{
+			case GDB_MODE_SINGLE_THREAD:
+			case GDB_MODE_MULTI_THREAD:
+				tmp = (GDBMode)(unsigned int) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<GDBMode>::operator = (long long value)
+{
+	if(IsMutable())
+	{
+		GDBMode tmp = *storage;
+		switch(value)
+		{
+			case GDB_MODE_SINGLE_THREAD:
+			case GDB_MODE_MULTI_THREAD:
+				tmp = (GDBMode) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<GDBMode>::operator = (unsigned long long value)
+{
+	if(IsMutable())
+	{
+		GDBMode tmp = *storage;
+		switch(value)
+		{
+			case GDB_MODE_SINGLE_THREAD:
+			case GDB_MODE_MULTI_THREAD:
+				tmp = (GDBMode) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<GDBMode>::operator = (double value)
+{
+	if(IsMutable())
+	{
+		GDBMode tmp = *storage;
+		switch((unsigned int) value)
+		{
+			case GDB_MODE_SINGLE_THREAD:
+			case GDB_MODE_MULTI_THREAD:
+				tmp = (GDBMode)(unsigned int) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<GDBMode>::operator = (const char *value)
+{
+	if(IsMutable())
+	{
+		GDBMode tmp = *storage;
+		if(std::string(value) == std::string("single-thread")) tmp = GDB_MODE_SINGLE_THREAD;
+		else if(std::string(value) == std::string("multi-thread")) tmp = GDB_MODE_MULTI_THREAD;
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template class Variable<GDBMode>;
 
 } // end of service namespace
 } // end of kernel namespace

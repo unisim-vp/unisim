@@ -52,7 +52,7 @@ public:
 	typedef unisim::util::debug::MemoryAccessType MemoryAccessType;
 	typedef unisim::util::debug::MemoryType MemoryType;
 
-	virtual void ReportMemoryAccess(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size) = 0;
+	virtual bool ReportMemoryAccess(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size) = 0;
 	void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr);
 	virtual void ReportFetchInstruction(ADDRESS next_addr) = 0;
 	virtual void ReportCommitInstruction(ADDRESS addr) = 0;

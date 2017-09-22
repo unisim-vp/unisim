@@ -166,6 +166,12 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, monitor_internals()
 	, wait_connection_mode(GDB_WAIT_CONNECTION_STARTUP_ONLY)
 	, enable_multiprocess_extension(false)
+	, remote_serial_protocol_input_traffic_recording_filename()
+	, remote_serial_protocol_input_traffic_recording_file()
+	, remote_serial_protocol_output_traffic_recording_filename()
+	, remote_serial_protocol_output_traffic_recording_file()
+	, enable_interrupt(true)
+	, mode(GDB_MODE_SINGLE_THREAD)
 	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
 	, param_tcp_port("tcp-port", this, tcp_port, "TCP/IP port to listen waiting for a GDB client connection")
 	, param_architecture_description_filename("architecture-description-filename", this, architecture_description_filename, "filename of a XML description of the connected processor")
@@ -174,6 +180,10 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, param_monitor_internals("monitor-internals", this, monitor_internals, "List of internal simulator variables to monitor in GDB Front-End")
 	, param_wait_connection_mode("wait-connection-mode", this, wait_connection_mode, "Whether to wait for connection of GDB client (never, [startup-only], always)")
 	, param_enable_multiprocess_extension("enable-multiprocess-extension", this, enable_multiprocess_extension, "Whether to enable GDB multiprocess extension")
+	, param_remote_serial_protocol_input_traffic_recording_filename("remote-serial-protocol-input-traffic-recording-filename", this, remote_serial_protocol_input_traffic_recording_filename, "Filename where to record GDB remote serial protocol input traffic")
+	, param_remote_serial_protocol_output_traffic_recording_filename("remote-serial-protocol-output-traffic-recording-filename", this, remote_serial_protocol_output_traffic_recording_filename, "Filename where to record GDB remote serial protocol input traffic")
+	, param_enable_interrupt("enable-interrupt", this, enable_interrupt, "enable/disable GDB interrupt (Ctrl-C)")
+	, param_mode("mode", this, mode, "debugging mode (single-thread or multi-thread)")
 	, thrd_process_cmd()
 	, thrd_process_int()
 	, thrd_process_cmd_create_mutex()
@@ -195,6 +205,13 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 {
 	param_tcp_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_memory_atom_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	
+	param_memory_atom_size.SetMutable(false);
+	param_tcp_port.SetMutable(false);
+	param_architecture_description_filename.SetMutable(false);
+	param_wait_connection_mode.SetMutable(false);
+	param_enable_multiprocess_extension.SetMutable(false);
+	param_enable_interrupt.SetMutable(false);
 	
 #if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
 	// Loads the winsock2 dll
@@ -227,7 +244,16 @@ GDBServer<ADDRESS>::~GDBServer()
 	{
 		logger << DebugError << "Simulation thread: Can't stop thread processing GDB commands" << EndDebugError;
 	}
-	
+
+	if(remote_serial_protocol_input_traffic_recording_file.is_open())
+	{
+		remote_serial_protocol_input_traffic_recording_file.close();
+	}
+	if(remote_serial_protocol_output_traffic_recording_file.is_open())
+	{
+		remote_serial_protocol_output_traffic_recording_file.close();
+	}
+
 #if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
 	//releases the winsock2 resources
 	WSACleanup();
@@ -376,9 +402,14 @@ bool GDBServer<ADDRESS>::StartServer()
 				wait_for_command_processing = false;
 				Run();
 			}
+			else
+			{
+				logger << DebugInfo << "Simulation is waiting for a GDB client connection" << EndDebugInfo;
+			}
 			break;
 		case GDB_WAIT_CONNECTION_ALWAYS:
 			// don't let simulation run and make simulation wait for command processing
+			logger << DebugInfo << "Simulation is waiting for a GDB client connection" << EndDebugInfo;
 			break;
 	}
 
@@ -594,6 +625,34 @@ bool GDBServer<ADDRESS>::StartServer()
 	close(server_sock);
 #endif
 
+	if(!remote_serial_protocol_input_traffic_recording_filename.empty())
+	{
+		if(verbose)
+		{
+			logger << DebugInfo << "Opening File \"" << remote_serial_protocol_input_traffic_recording_filename << "\" for recording remote serial protocol (RSP) input traffic" << EndDebugInfo;
+		}
+		remote_serial_protocol_input_traffic_recording_file.open(remote_serial_protocol_input_traffic_recording_filename.c_str());
+		
+		if(remote_serial_protocol_input_traffic_recording_file.fail())
+		{
+			logger << DebugWarning << "Can't open File \"" << remote_serial_protocol_input_traffic_recording_filename << "\"" << EndDebugWarning;
+		}
+	}
+	
+	if(!remote_serial_protocol_output_traffic_recording_filename.empty())
+	{
+		if(verbose)
+		{
+			logger << DebugInfo << "Opening File \"" << remote_serial_protocol_output_traffic_recording_filename << "\" for recording remote serial protocol (RSP) output traffic" << EndDebugInfo;
+		}
+		remote_serial_protocol_output_traffic_recording_file.open(remote_serial_protocol_output_traffic_recording_filename.c_str());
+		
+		if(remote_serial_protocol_output_traffic_recording_file.fail())
+		{
+			logger << DebugWarning << "Can't open File \"" << remote_serial_protocol_output_traffic_recording_filename << "\"" << EndDebugWarning;
+		}
+	}
+
 	c_prc_num = g_prc_num = debug_selecting_import->DebugGetSelected();
 	ClearStopEvents();
 	
@@ -661,6 +720,15 @@ bool GDBServer<ADDRESS>::StopServer()
 	WSACleanup();
 #endif
 	
+	if(remote_serial_protocol_input_traffic_recording_file.is_open())
+	{
+		remote_serial_protocol_input_traffic_recording_file.close();
+	}
+	if(remote_serial_protocol_output_traffic_recording_file.is_open())
+	{
+		remote_serial_protocol_output_traffic_recording_file.close();
+	}
+
 	wait_for_command_processing = true;
 
 	// make simulation call DebugYield another time waiting for us
@@ -1003,11 +1071,14 @@ void GDBServer<ADDRESS>::ProcessCmdThrd()
 	}
 	Lock();
 	
-	// start ProcessIntThrd
-	if(!StartProcessIntThrd())
+	if(enable_interrupt)
 	{
-		KillFromThrdProcessCmd();
-		return;
+		// start ProcessIntThrd
+		if(!StartProcessIntThrd())
+		{
+			KillFromThrdProcessCmd();
+			return;
+		}
 	}
 	
 	// Loop until there's stop or kill requests
@@ -1042,8 +1113,11 @@ void GDBServer<ADDRESS>::ProcessCmdThrd()
 	}
 	Unlock();
 	
-	// Stop ProcessIntThrd
-	StopProcessIntThrd();
+	if(enable_interrupt)
+	{
+		// Stop ProcessIntThrd
+		StopProcessIntThrd();
+	}
 }
 
 template <class ADDRESS>
@@ -1163,37 +1237,59 @@ void GDBServer<ADDRESS>::ProcessCommands()
 				break;
 
 			case 'H':
-				if(!MatchChar(query, pos, 'c', 'g', op)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_OPERATION, pos); break; }
-				if(!ParseThreadId(query, pos, thread_id)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_THREAD_ID, pos); break; }
-				if(pos != len) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_GARBAGE, pos); break; }
-				if((thread_id == -1) || (thread_id == 0))
+				if(mode == GDB_MODE_MULTI_THREAD)
 				{
-					session_terminated = !PutReply("OK");
-					break;
-				}
-
-				if(op == 'c')
-				{
-					session_terminated = !SetCThread(thread_id);
-					break;
-				}
-				else if(op == 'g')
-				{
-					session_terminated = !SetGThread(thread_id);
-					break;
+					if(!MatchChar(query, pos, 'c', 'g', op)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_OPERATION, pos); break; }
+					if(!ParseThreadId(query, pos, thread_id)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_THREAD_ID, pos); break; }
+					if(pos != len) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_GARBAGE, pos); break; }
+					if((thread_id == -1) || (thread_id == 0))
+					{
+						session_terminated = !PutReply("OK");
+						break;
+					}
+					
+					if(op == 'c')
+					{
+						session_terminated = !SetCThread(thread_id);
+						break;
+					}
+					else if(op == 'g')
+					{
+						session_terminated = !SetGThread(thread_id);
+						break;
+					}
+					else
+					{
+						session_terminated = !PutErrorReply(GDB_SERVER_ERROR_INVALID_OPERATION);
+						break;
+					}
 				}
 				else
 				{
-					session_terminated = !PutErrorReply(GDB_SERVER_ERROR_INVALID_OPERATION);
-					break;
+					if(verbose)
+					{
+						logger << DebugWarning << "Multi-threading is currently disabled" << EndDebugWarning;
+					}
+					session_terminated = !PutReply("");
 				}
 				break;
 				
 			case 'T':
-				if(!ParseThreadId(query, pos, thread_id)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_THREAD_ID, pos); break; }
-				if(pos != len) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_GARBAGE, pos); break; }
-				if(!ThreadIdToProcessorNumber(thread_id, prc_num)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_INVALID_THREAD_ID); break; }
-				session_terminated = !PutReply("OK");
+				if(mode == GDB_MODE_MULTI_THREAD)
+				{
+					if(!ParseThreadId(query, pos, thread_id)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_EXPECTING_THREAD_ID, pos); break; }
+					if(pos != len) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_GARBAGE, pos); break; }
+					if(!ThreadIdToProcessorNumber(thread_id, prc_num)) { session_terminated = !PutErrorReply(GDB_SERVER_ERROR_INVALID_THREAD_ID); break; }
+					session_terminated = !PutReply("OK");
+				}
+				else
+				{
+					if(verbose)
+					{
+						logger << DebugWarning << "Multi-threading is currently disabled" << EndDebugWarning;
+					}
+					session_terminated = !PutReply("");
+				}
 				break;
 
 			case 'k':
@@ -2011,17 +2107,17 @@ bool GDBServer<ADDRESS>::ParseThreadId(const std::string& s, std::size_t& pos, l
 			return true;
 		}
 		
-		long id = 0;
+		long process_id = thread_id;
 		
-		if(!ParseSignedHex(s, pos, id))
+		if(process_id == PROCESS_ID)
 		{
-			return false;
-		}
+			if(!ParseSignedHex(s, pos, thread_id))
+			{
+				return false;
+			}
 		
-		if(id < -1) return false;
+			if(thread_id < -1) return false;
 		
-		if((id == -1) || (id == 0) || (id == 1))
-		{
 			return true;
 		}
 		
@@ -2240,6 +2336,12 @@ bool GDBServer<ADDRESS>::GetChar(char& c, bool blocking)
 	{
 		c = input_buffer[input_buffer_index++];
 		input_buffer_size--;
+		
+		if(remote_serial_protocol_input_traffic_recording_file.is_open())
+		{
+			remote_serial_protocol_input_traffic_recording_file.put(c);
+		}
+		
 		return true;
 	}
 	
@@ -2297,6 +2399,11 @@ bool GDBServer<ADDRESS>::FlushOutput()
 				continue;
 			}
 
+			if(remote_serial_protocol_output_traffic_recording_file.is_open())
+			{
+				remote_serial_protocol_output_traffic_recording_file.write(output_buffer + index, r);
+			}
+			
 			index += r;
 			output_buffer_size -= r;
 //			std::cerr << "output_buffer_size = " << output_buffer_size << std::endl;
@@ -2974,7 +3081,7 @@ bool GDBServer<ADDRESS>::ReportTracePointTrap()
 	
 	std::string packet("T05");
 	
-	if(trap)
+	if(trap && mode == GDB_MODE_MULTI_THREAD)
 	{
 		// we have a stop event
 		for(prc_num = 0; prc_num < num_processors; prc_num++)
@@ -2987,30 +3094,33 @@ bool GDBServer<ADDRESS>::ReportTracePointTrap()
 		prc_num = c_prc_num; // stop reply is about currently selected thread
 	}
 	
-	packet += "thread:";
-	
-	std::stringstream thread_id_sstr;
-	thread_id_sstr << std::hex;
-	
-	if(gdb_client_feature_multiprocess && enable_multiprocess_extension)
+	if(mode == GDB_MODE_MULTI_THREAD)
 	{
-		thread_id_sstr << "p" << ProcessorNumberToThreadId(prc_num) << ".1";
+		packet += "thread:";
+		
+		std::stringstream thread_id_sstr;
+		thread_id_sstr << std::hex;
+		
+		if(gdb_client_feature_multiprocess && enable_multiprocess_extension)
+		{
+			thread_id_sstr << "p" << PROCESS_ID << "." << ProcessorNumberToThreadId(prc_num);
+		}
+		else
+		{
+			thread_id_sstr << ProcessorNumberToThreadId(prc_num);
+		}
+		
+		packet += thread_id_sstr.str();
+		packet += ';';
+		
+		packet += "core:";
+		
+		std::stringstream core_id_sstr;
+		core_id_sstr << std::hex << prc_num;
+		
+		packet += core_id_sstr.str();
+		packet += ';';
 	}
-	else
-	{
-		thread_id_sstr << ProcessorNumberToThreadId(prc_num);
-	}
-	
-	packet += thread_id_sstr.str();
-	packet += ';';
-	
-	packet += "core:";
-	
-	std::stringstream core_id_sstr;
-	core_id_sstr << std::hex << prc_num;
-	
-	packet += core_id_sstr.str();
-	packet += ';';
 	
 	if(gdb_pc)
 	{
@@ -3058,7 +3168,7 @@ bool GDBServer<ADDRESS>::ReportTracePointTrap()
 								break;
 						}
 						
-						packet += "watch";
+						packet += "watch:";
 						
 						std::stringstream sstr_watchpoint_address;
 						sstr_watchpoint_address << std::hex << watchpoint->GetAddress();
@@ -3079,7 +3189,6 @@ bool GDBServer<ADDRESS>::ReportTracePointTrap()
 	if(trap)
 	{
 		ClearStopEvents();
-		c_prc_num = g_prc_num = prc_num; // automatically select stopped thread so that reply to 'g' query contains registers of stopped thread 
 	}
 	
 	return PutReply(packet);
@@ -3111,6 +3220,10 @@ template <class ADDRESS>
 bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t kind)
 {
 	uint32_t size = 0;
+	uint32_t i;
+	unsigned int prc_num;
+	bool status = true;
+	unsigned int save_cur_prc_num = debug_selecting_import->DebugGetSelected();
 	
 	typename std::map<uint32_t, uint32_t>::const_iterator arch_specific_breakpoint_kind = arch_specific_breakpoint_kinds.find(kind);
 	
@@ -3125,112 +3238,139 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 	
 	size *= memory_atom_size;
 	
-	uint32_t i;
-
-// 	cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
-// 	     << ": type = " << type
-// 	     << " address = 0x" << hex << addr << dec
-// 	     << " size = " << size << std::endl;
-
 	switch(type)
 	{
-		case 0:
-		case 1:
+		case 0: // software breakpoint
+		case 1: // hardware breakpoint
+			for(i = 0; i < size; i++)
 			{
-				bool status = true;
-				for(i = 0; i < size; i++)
+				switch(mode)
 				{
-					unsigned int prc_num;
+					case GDB_MODE_SINGLE_THREAD:
+						if(!debug_event_trigger_import->SetBreakpoint(addr + i))
+						{
+							logger << DebugWarning << "Can't listen breakpoint event for address 0x" << std::hex << (addr + i) << std::dec << EndDebugWarning;
+							status = false;
+						}
+						break;
+						
+					case GDB_MODE_MULTI_THREAD:
+						for(prc_num = 0; prc_num < num_processors; prc_num++)
+						{
+							debug_selecting_import->DebugSelect(prc_num);
+							if(!debug_event_trigger_import->SetBreakpoint(addr + i))
+							{
+								logger << DebugWarning << "Can't listen breakpoint event for address 0x" << std::hex << (addr + i) << std::dec << " and processor #" << prc_num << EndDebugWarning;
+								status = false;
+							}
+						}
+						break;
+				}
+			}
+			break;
+		
+		case 2: // write watchpoint
+			switch(mode)
+			{
+				case GDB_MODE_SINGLE_THREAD:
+					if(!debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size, false))
+					{
+						logger << DebugWarning << "Can't listen write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+						status = false;
+					}
+					break;
+				
+				case GDB_MODE_MULTI_THREAD:
 					for(prc_num = 0; prc_num < num_processors; prc_num++)
 					{
-						unisim::util::debug::Breakpoint<ADDRESS> *brkp = new unisim::util::debug::Breakpoint<ADDRESS>(addr + i);
-						brkp->SetProcessorNumber(prc_num);
-						if(!debug_event_trigger_import->Listen(brkp))
+						debug_selecting_import->DebugSelect(prc_num);
+						if(!debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size, false))
 						{
-							logger << DebugWarning << "Can't listen breakpoint event for address 0x" << std::hex << (addr + i) << std::dec << " and processor #" << prc_num << EndDebugWarning;
-							delete brkp;
-							//return PutErrorReply(GDB_SERVER_CANT_SET_BREAKPOINT_WATCHPOINT);
+							logger << DebugWarning << "Can't listen write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << " and Processor #" << prc_num << EndDebugWarning;
+							status = false;
 						}
 					}
-				}
-				if(!status)
-				{
-					//return PutErrorReply(GDB_SERVER_CANT_SET_BREAKPOINT_WATCHPOINT);
-				}
-				return PutReply("OK");
+					break;
 			}
-		case 2:
+			break;
+		
+		case 3: // read watchpoint
+			switch(mode)
 			{
-				unsigned int prc_num;
-				for(prc_num = 0; prc_num < num_processors; prc_num++)
-				{
-					unisim::util::debug::Watchpoint<ADDRESS> *wp = new unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
-					wp->SetProcessorNumber(prc_num);
-					if(!debug_event_trigger_import->Listen(wp))
+				case GDB_MODE_SINGLE_THREAD:
+					if(!debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size, false))
 					{
-						logger << DebugWarning << "Can't listen write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << " and Processor #" << prc_num << EndDebugWarning;
-						delete wp;
-						//return PutErrorReply(GDB_SERVER_CANT_SET_BREAKPOINT_WATCHPOINT);
-					}
-				}
-			}
-			return PutReply("OK");
-		case 3:
-			{
-				unsigned int prc_num;
-				for(prc_num = 0; prc_num < num_processors; prc_num++)
-				{
-					unisim::util::debug::Watchpoint<ADDRESS> *wp = new unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
-					wp->SetProcessorNumber(prc_num);
-					if(!debug_event_trigger_import->Listen(wp))
-					{
-						logger << DebugWarning << "Can't listen read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << " and Processor #" << prc_num << EndDebugWarning;
-						delete wp;
-						//return PutErrorReply(GDB_SERVER_CANT_SET_BREAKPOINT_WATCHPOINT);
-					}
-				}
-			}
-			return PutReply("OK");
-
-		case 4:
-			{
-				bool status = true;
-				unsigned int prc_num;
-				for(prc_num = 0; prc_num < num_processors; prc_num++)
-				{
-					unisim::util::debug::Watchpoint<ADDRESS> *wp_read = new unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
-					wp_read->SetProcessorNumber(prc_num);
-					if(!debug_event_trigger_import->Listen(wp_read))
-					{
+						logger << DebugWarning << "Can't listen read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
 						status = false;
-						logger << DebugWarning << "Can't listen read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << " and Processor #" << prc_num << EndDebugWarning;
-						delete wp_read;
+					}
+					break;
+				
+				case GDB_MODE_MULTI_THREAD:
+					for(prc_num = 0; prc_num < num_processors; prc_num++)
+					{
+						debug_selecting_import->DebugSelect(prc_num);
+						if(!debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size, false))
+						{
+							logger << DebugWarning << "Can't listen read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << " and Processor #" << prc_num << EndDebugWarning;
+							status = false;
+						}
+					}
+					break;
+			}
+			break;
+
+		case 4: // access watchpoint
+			switch(mode)
+			{
+				case GDB_MODE_SINGLE_THREAD:
+					if(!debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size, false))
+					{
+						logger << DebugWarning << "Can't listen read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+						status = false;
 					}
 					
-					unisim::util::debug::Watchpoint<ADDRESS> *wp_write = new unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
-					wp_write->SetProcessorNumber(prc_num);
-					if(!debug_event_trigger_import->Listen(wp_write))
+					if(!debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size, false))
 					{
+						logger << DebugWarning << "Can't listen write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
 						status = false;
-						logger << DebugWarning << "Can't listen write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << " and Processor #" << prc_num << EndDebugWarning;
-						delete wp_write;
 					}
-				}
+					break;
 				
-				if(!status)
-				{
-					//return PutErrorReply(GDB_SERVER_CANT_SET_BREAKPOINT_WATCHPOINT);
-				}
-				return PutReply("OK");
+				case GDB_MODE_MULTI_THREAD:
+					for(prc_num = 0; prc_num < num_processors; prc_num++)
+					{
+						debug_selecting_import->DebugSelect(prc_num);
+						
+						if(!debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size, false))
+						{
+							logger << DebugWarning << "Can't listen read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << " and Processor #" << prc_num << EndDebugWarning;
+							status = false;
+						}
+						
+						if(!debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size, false))
+						{
+							logger << DebugWarning << "Can't listen write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << " and Processor #" << prc_num << EndDebugWarning;
+							status = false;
+						}
+					}
+					break;
 			}
+			break;
 	}
-	return PutErrorReply(GDB_SERVER_CANT_SET_BREAKPOINT_WATCHPOINT);
+	
+	debug_selecting_import->DebugSelect(save_cur_prc_num);
+	
+	return status ? PutReply("OK") : PutErrorReply(GDB_SERVER_CANT_SET_BREAKPOINT_WATCHPOINT);
 }
 
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t kind)
 {
 	uint32_t size = 0;
+	uint32_t i;
+	unsigned int prc_num;
+	bool status = true;
+	unsigned int save_cur_prc_num = debug_selecting_import->DebugGetSelected();
 	
 	typename std::map<uint32_t, uint32_t>::const_iterator arch_specific_breakpoint_kind = arch_specific_breakpoint_kinds.find(kind);
 	
@@ -3242,101 +3382,132 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 	{
 		size = kind;
 	}
-
-	uint32_t i;
-
-// 	cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
-// 	     << ": type = " << type
-// 	     << " address = 0x" << hex << addr << dec
-// 	     << " size = " << size << std::endl;
-
+	
+	size *= memory_atom_size;
+	
 	switch(type)
 	{
-		case 0:
-		case 1:
+		case 0: // software breakpoint
+		case 1: // hardware breakpoint
+			for(i = 0; i < size; i++)
 			{
-				bool status = true;
-				unsigned int prc_num;
-				for(prc_num = 0; prc_num < num_processors; prc_num++)
+				switch(mode)
 				{
-					for(i = 0; i < size; i++)
-					{
-						unisim::util::debug::Breakpoint<ADDRESS> brkp = unisim::util::debug::Breakpoint<ADDRESS>(addr + i);
-						brkp.SetProcessorNumber(prc_num);
-						if(!debug_event_trigger_import->Unlisten(&brkp))
+					case GDB_MODE_SINGLE_THREAD:
+						if(!debug_event_trigger_import->RemoveBreakpoint(addr + i))
 						{
+							logger << DebugWarning << "Can't listen breakpoint event for address 0x" << std::hex << (addr + i) << std::dec << EndDebugWarning;
 							status = false;
-							logger << DebugWarning << "Can't unlisten breakpoint event for address 0x" << std::hex << (addr + i) << std::dec << EndDebugWarning;
+						}
+						break;
+						
+					case GDB_MODE_MULTI_THREAD:
+						for(prc_num = 0; prc_num < num_processors; prc_num++)
+						{
+							debug_selecting_import->DebugSelect(prc_num);
+							if(!debug_event_trigger_import->RemoveBreakpoint(addr + i))
+							{
+								logger << DebugWarning << "Can't listen breakpoint event for address 0x" << std::hex << (addr + i) << std::dec << " and processor #" << prc_num << EndDebugWarning;
+								status = false;
+							}
+						}
+						break;
+				}
+			}
+			break;
+		
+		case 2: // write watchpoint
+			switch(mode)
+			{
+				case GDB_MODE_SINGLE_THREAD:
+					if(!debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))
+					{
+						logger << DebugWarning << "Can't listen write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+						status = false;
+					}
+					break;
+				
+				case GDB_MODE_MULTI_THREAD:
+					for(prc_num = 0; prc_num < num_processors; prc_num++)
+					{
+						debug_selecting_import->DebugSelect(prc_num);
+						if(!debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))
+						{
+							logger << DebugWarning << "Can't listen write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << " and Processor #" << prc_num << EndDebugWarning;
+							status = false;
 						}
 					}
-				}
+					break;
+			}
+			break;
+		
+		case 3: // read watchpoint
+			switch(mode)
+			{
+				case GDB_MODE_SINGLE_THREAD:
+					if(!debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))
+					{
+						logger << DebugWarning << "Can't listen read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+						status = false;
+					}
+					break;
 				
-				if(!status)
-				{
-					//return PutErrorReply(GDB_SERVER_CANT_REMOVE_BREAKPOINT_WATCHPOINT);
-				}
-				return PutReply("OK");
+				case GDB_MODE_MULTI_THREAD:
+					for(prc_num = 0; prc_num < num_processors; prc_num++)
+					{
+						debug_selecting_import->DebugSelect(prc_num);
+						if(!debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))
+						{
+							logger << DebugWarning << "Can't listen read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << " and Processor #" << prc_num << EndDebugWarning;
+							status = false;
+						}
+					}
+					break;
 			}
+			break;
 
-		case 2:
+		case 4: // access watchpoint
+			switch(mode)
 			{
-				unsigned int prc_num;
-				for(prc_num = 0; prc_num < num_processors; prc_num++)
-				{
-					unisim::util::debug::Watchpoint<ADDRESS> wp = unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
-					wp.SetProcessorNumber(prc_num);
-					if(!debug_event_trigger_import->Unlisten(&wp))
+				case GDB_MODE_SINGLE_THREAD:
+					if(!debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))
 					{
-						logger << DebugWarning << "Can't unlisten write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
-						//return PutErrorReply(GDB_SERVER_CANT_REMOVE_BREAKPOINT_WATCHPOINT);
-					}
-				}
-			}
-			return PutReply("OK");
-		case 3:
-			{
-				unsigned int prc_num;
-				for(prc_num = 0; prc_num < num_processors; prc_num++)
-				{
-					unisim::util::debug::Watchpoint<ADDRESS> wp = unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
-					wp.SetProcessorNumber(prc_num);
-					if(!debug_event_trigger_import->Unlisten(&wp))
-					{
-						logger << DebugWarning << "Can't unlisten read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
-						//return PutErrorReply(GDB_SERVER_CANT_REMOVE_BREAKPOINT_WATCHPOINT);
-					}
-				}
-			}
-			return PutReply("OK");
-		case 4:
-			{
-				bool status = true;
-				unsigned int prc_num;
-				for(prc_num = 0; prc_num < num_processors; prc_num++)
-				{
-					unisim::util::debug::Watchpoint<ADDRESS> wp_read = unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
-					wp_read.SetProcessorNumber(prc_num);
-					if(!debug_event_trigger_import->Unlisten(&wp_read))
-					{
-						logger << DebugWarning << "Can't unlisten read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+						logger << DebugWarning << "Can't listen read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
 						status = false;
 					}
-					unisim::util::debug::Watchpoint<ADDRESS> wp_write = unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
-					wp_write.SetProcessorNumber(prc_num);
-					if(!debug_event_trigger_import->Unlisten(&wp_write))
+					
+					if(!debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))
 					{
-						logger << DebugWarning << "Can't unlisten write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
+						logger << DebugWarning << "Can't listen write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << EndDebugWarning;
 						status = false;
 					}
-				}
-				if(!status)
-				{
-					//return PutErrorReply(GDB_SERVER_CANT_REMOVE_BREAKPOINT_WATCHPOINT);
-				}
-				return PutReply("OK");
+					break;
+				
+				case GDB_MODE_MULTI_THREAD:
+					for(prc_num = 0; prc_num < num_processors; prc_num++)
+					{
+						debug_selecting_import->DebugSelect(prc_num);
+						
+						if(!debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))
+						{
+							logger << DebugWarning << "Can't listen read watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << " and Processor #" << prc_num << EndDebugWarning;
+							status = false;
+						}
+						
+						if(!debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))
+						{
+							logger << DebugWarning << "Can't listen write watchpoint event for address range 0x" << std::hex << addr << "-0x" << (addr + size - 1) << std::dec << " and Processor #" << prc_num << EndDebugWarning;
+							status = false;
+						}
+					}
+					break;
 			}
+			break;
 	}
-	return PutErrorReply(GDB_SERVER_CANT_REMOVE_BREAKPOINT_WATCHPOINT);
+	
+	debug_selecting_import->DebugSelect(save_cur_prc_num);
+	
+	return status ? PutReply("OK") : PutErrorReply(GDB_SERVER_CANT_REMOVE_BREAKPOINT_WATCHPOINT);
 }
 
 template <class ADDRESS>
@@ -3356,6 +3527,7 @@ bool GDBServer<ADDRESS>::HandleVCont(const std::string& query, std::size_t& pos)
 		if(!ParseChar(query, pos, ch) || ((ch != 'c') && (ch != 's'))) return PutErrorReply(GDB_SERVER_ERROR_EXPECTING_ACTION, pos);
 		action =  (ch == 'c') ? GDB_SERVER_ACTION_CONTINUE :
 		         ((ch == 's') ? GDB_SERVER_ACTION_STEP     : GDB_SERVER_NO_ACTION);
+		
 		thread_id = -1;
 		if(ParseChar(query, pos, ch))
 		{
@@ -3368,54 +3540,97 @@ bool GDBServer<ADDRESS>::HandleVCont(const std::string& query, std::size_t& pos)
 				pos--;
 			} 
 		}
-		
-		if(thread_id == -1)
+
+		switch(mode)
 		{
-			for(prc_num = 0; prc_num < num_processors; prc_num++)
-			{
-				if(new_prc_actions[prc_num] == GDB_SERVER_NO_ACTION)
+			case GDB_MODE_SINGLE_THREAD:
+				if(new_prc_actions[c_prc_num] == GDB_SERVER_NO_ACTION)
 				{
+					new_prc_actions[c_prc_num] = action;
+				}
+				break;
+				
+			case GDB_MODE_MULTI_THREAD:
+				if(thread_id == -1)
+				{
+					for(prc_num = 0; prc_num < num_processors; prc_num++)
+					{
+						if(new_prc_actions[prc_num] == GDB_SERVER_NO_ACTION)
+						{
+							new_prc_actions[prc_num] = action;
+						}
+					}
+				}
+				else if(thread_id == 0)
+				{
+					for(prc_num = 0; prc_num < num_processors; prc_num++)
+					{
+						if(new_prc_actions[prc_num] == GDB_SERVER_NO_ACTION)
+						{
+							new_prc_actions[prc_num] = action;
+							break;
+						}
+					}
+				}
+				else
+				{
+					if(!ThreadIdToProcessorNumber(thread_id, prc_num)) return PutErrorReply(GDB_SERVER_ERROR_INVALID_THREAD_ID);
 					new_prc_actions[prc_num] = action;
 				}
-			}
-		}
-		else if(thread_id == 0)
-		{
-			for(prc_num = 0; prc_num < num_processors; prc_num++)
-			{
-				if(new_prc_actions[prc_num] == GDB_SERVER_NO_ACTION)
-				{
-					new_prc_actions[prc_num] = action;
-					break;
-				}
-			}
-		}
-		else
-		{
-			if(!ThreadIdToProcessorNumber(thread_id, prc_num)) return PutErrorReply(GDB_SERVER_ERROR_INVALID_THREAD_ID);
-			new_prc_actions[prc_num] = action;
+				break;
 		}
 	}
 	while(pos < len);
 
 	// Threads that don't match any action remain in their current state
-	for(prc_num = 0; prc_num < num_processors; prc_num++)
+	switch(mode)
 	{
-		if(new_prc_actions[prc_num] != GDB_SERVER_NO_ACTION) prc_actions[prc_num] = new_prc_actions[prc_num];
+		case GDB_MODE_SINGLE_THREAD:
+			if(new_prc_actions[c_prc_num] != GDB_SERVER_NO_ACTION) prc_actions[c_prc_num] = new_prc_actions[c_prc_num];
+			break;
+			
+		case GDB_MODE_MULTI_THREAD:
+			for(prc_num = 0; prc_num < num_processors; prc_num++)
+			{
+				if(new_prc_actions[prc_num] != GDB_SERVER_NO_ACTION) prc_actions[prc_num] = new_prc_actions[prc_num];
+			}
+			break;
 	}
 	
-	// For threads stepping, listen for instruction fetch
-	for(prc_num = 0; prc_num < num_processors; prc_num++)
+	switch(mode)
 	{
-		action = prc_actions[prc_num];
-		if(unlikely(verbose))
+		case GDB_MODE_SINGLE_THREAD:
 		{
-			logger << DebugInfo << "prc #" << prc_num << ": " << action << EndDebugInfo;
+			action = prc_actions[c_prc_num];
+			if(unlikely(verbose))
+			{
+				logger << DebugInfo << "prc #" << c_prc_num << ": " << action << EndDebugInfo;
+			}
+			
+			if(action == GDB_SERVER_ACTION_STEP)
+			{
+				ListenFetch(c_prc_num);
+			}
+			break;
 		}
 		
-		if(action == GDB_SERVER_ACTION_STEP)
+		case GDB_MODE_MULTI_THREAD:
 		{
-			ListenFetch(prc_num);
+			// For threads stepping, listen for instruction fetch
+			for(prc_num = 0; prc_num < num_processors; prc_num++)
+			{
+				action = prc_actions[prc_num];
+				if(unlikely(verbose))
+				{
+					logger << DebugInfo << "prc #" << prc_num << ": " << action << EndDebugInfo;
+				}
+				
+				if(action == GDB_SERVER_ACTION_STEP)
+				{
+					ListenFetch(prc_num);
+				}
+			}
+			break;
 		}
 	}
 	
@@ -3438,14 +3653,32 @@ bool GDBServer<ADDRESS>::HandleVCont(const std::string& query, std::size_t& pos)
 	Lock();
 	if(!killed)
 	{
-		// For threads stepping, unlisten instruction fetch
-		for(prc_num = 0; prc_num < num_processors; prc_num++)
+		switch(mode)
 		{
-			action = prc_actions[prc_num];
-			
-			if(action == GDB_SERVER_ACTION_STEP)
+			case GDB_MODE_SINGLE_THREAD:
 			{
-				UnlistenFetch(prc_num);
+				action = prc_actions[c_prc_num];
+				
+				if(action == GDB_SERVER_ACTION_STEP)
+				{
+					UnlistenFetch(c_prc_num);
+				}
+				break;
+			}
+			
+			case GDB_MODE_MULTI_THREAD:
+			{
+				// For threads stepping, unlisten instruction fetch
+				for(prc_num = 0; prc_num < num_processors; prc_num++)
+				{
+					action = prc_actions[prc_num];
+					
+					if(action == GDB_SERVER_ACTION_STEP)
+					{
+						UnlistenFetch(prc_num);
+					}
+				}
+				break;
 			}
 		}
 		if(status) status = DisplayMonitoredInternals();
@@ -3658,10 +3891,16 @@ bool GDBServer<ADDRESS>::HandleQSupported(const std::string& query, std::size_t&
 	}
 	
 	std::stringstream sstr;
-	sstr << "PacketSize=0fff;vContSupported+;QStartNoAckMode+;qXfer:features:read+;qXfer:threads:read+";
+	sstr << "PacketSize=0fff;vContSupported+;QStartNoAckMode+;qXfer:features:read+";
+	
+	if(mode == GDB_MODE_MULTI_THREAD)
+	{
+		sstr << ";qXfer:threads:read+";
+	}
+	
 	if(enable_multiprocess_extension)
 	{
-		sstr << "multiprocess+";
+		sstr << ";multiprocess+";
 	}
 	return PutReply(sstr.str());
 }
@@ -3669,17 +3908,28 @@ bool GDBServer<ADDRESS>::HandleQSupported(const std::string& query, std::size_t&
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::HandleQC()
 {
-	std::stringstream sstr;
-	sstr << "QC" << std::hex;
-	if(gdb_client_feature_multiprocess && enable_multiprocess_extension)
+	switch(mode)
 	{
-		sstr << "p" << ProcessorNumberToThreadId(g_prc_num) << ".1";
+		case GDB_MODE_SINGLE_THREAD:
+			return PutReply("QC0");
+			
+		case GDB_MODE_MULTI_THREAD:
+		{
+			std::stringstream sstr;
+			sstr << "QC" << std::hex;
+			if(gdb_client_feature_multiprocess && enable_multiprocess_extension)
+			{
+				sstr << "p" << PROCESS_ID << "." << ProcessorNumberToThreadId(g_prc_num);
+			}
+			else
+			{
+				sstr << ProcessorNumberToThreadId(g_prc_num);
+			}
+			return PutReply(sstr.str());
+		}
 	}
-	else
-	{
-		sstr << ProcessorNumberToThreadId(g_prc_num);
-	}
-	return PutReply(sstr.str());
+	
+	return PutReply("");
 }
 
 template <class ADDRESS>
@@ -3691,21 +3941,24 @@ bool GDBServer<ADDRESS>::HandleQTStatus()
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::HandleQAttached(const std::string& query, std::size_t& pos)
 {
-	if(ALWAYS_ACCEPT_MULTIPROCESS_NEW_THREAD_ID_SYNTAX || (gdb_client_feature_multiprocess && enable_multiprocess_extension))
+	if(mode == GDB_MODE_MULTI_THREAD)
 	{
-		if(MatchChar(query, pos, ':'))
+		if(ALWAYS_ACCEPT_MULTIPROCESS_NEW_THREAD_ID_SYNTAX || (gdb_client_feature_multiprocess && enable_multiprocess_extension))
 		{
-			long thread_id = 0;
-			
-			if(!ParseThreadId(query, pos, thread_id))
+			if(MatchChar(query, pos, ':'))
 			{
-				return PutErrorReply(GDB_SERVER_ERROR_EXPECTING_THREAD_ID, pos);
-			}
-			
-			unsigned int prc_num = 0;
-			if(!ThreadIdToProcessorNumber(thread_id, prc_num))
-			{
-				return PutErrorReply(GDB_SERVER_ERROR_INVALID_THREAD_ID);
+				long thread_id = 0;
+				
+				if(!ParseThreadId(query, pos, thread_id))
+				{
+					return PutErrorReply(GDB_SERVER_ERROR_EXPECTING_THREAD_ID, pos);
+				}
+				
+				unsigned int prc_num = 0;
+				if(!ThreadIdToProcessorNumber(thread_id, prc_num))
+				{
+					return PutErrorReply(GDB_SERVER_ERROR_INVALID_THREAD_ID);
+				}
 			}
 		}
 	}
@@ -3842,7 +4095,7 @@ bool GDBServer<ADDRESS>::HandleQXferThreadsRead(const std::string& query, std::s
 		sstr << "<thread id=\"";
 		if(gdb_client_feature_multiprocess && enable_multiprocess_extension)
 		{
-			sstr << "p" << ProcessorNumberToThreadId(prc_num) << ".1";
+			sstr << "p" << PROCESS_ID << "." << ProcessorNumberToThreadId(prc_num);
 		}
 		else
 		{
@@ -3862,26 +4115,33 @@ bool GDBServer<ADDRESS>::HandleQXferThreadsRead(const std::string& query, std::s
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::HandleQfThreadInfo()
 {
-	std::stringstream sstr;
-	
-	sstr << "m";
-	
-	unsigned int prc_num;
-	for(prc_num = 0; prc_num < num_processors; prc_num++)
+	if(mode == GDB_MODE_MULTI_THREAD)
 	{
-		if(prc_num != 0) sstr << ",";
-		sstr << std::hex;
-		if(gdb_client_feature_multiprocess && enable_multiprocess_extension)
+		std::stringstream sstr;
+		
+		sstr << "m";
+		
+		unsigned int prc_num;
+		for(prc_num = 0; prc_num < num_processors; prc_num++)
 		{
-			sstr << "p" << ProcessorNumberToThreadId(prc_num) << ".1";
+			if(prc_num != 0) sstr << ",";
+			sstr << std::hex;
+			if(gdb_client_feature_multiprocess && enable_multiprocess_extension)
+			{
+				sstr << "p" << PROCESS_ID << "." << ProcessorNumberToThreadId(prc_num);
+			}
+			else
+			{
+				sstr << ProcessorNumberToThreadId(prc_num);
+			}
 		}
-		else
-		{
-			sstr << ProcessorNumberToThreadId(prc_num);
-		}
+		
+		return PutReply(sstr.str()); // report all threads
 	}
-	
-	return PutReply(sstr.str()); // report all threads
+	else
+	{
+		return PutReply("");
+	}
 }
 
 template <class ADDRESS>
@@ -3893,22 +4153,27 @@ bool GDBServer<ADDRESS>::HandleQsThreadInfo()
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::HandleQThreadExtraInfo(const std::string& query, std::size_t& pos)
 {
-	long thread_id = 0;
-	if(ParseThreadId(query, pos, thread_id))
+	if(mode == GDB_MODE_MULTI_THREAD)
 	{
-		unsigned int prc_num = 0;
-			
-		if(ThreadIdToProcessorNumber(thread_id, prc_num))
+		long thread_id = 0;
+		if(ParseThreadId(query, pos, thread_id))
 		{
-			std::stringstream sstr;
-	
-			sstr << "CPU #" << prc_num;
-			
-			return PutReply(HexEncodeString(sstr.str()));
+			unsigned int prc_num = 0;
+				
+			if(ThreadIdToProcessorNumber(thread_id, prc_num))
+			{
+				std::stringstream sstr;
+		
+				sstr << "CPU #" << prc_num;
+				
+				return PutReply(HexEncodeString(sstr.str()));
+			}
 		}
-	}
 
-	return PutReply(HexEncodeString("invalid thread ID"));
+		return PutReply(HexEncodeString("invalid thread ID"));
+	}
+	
+	return PutReply("");
 }
 
 template <class ADDRESS>

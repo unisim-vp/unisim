@@ -132,7 +132,6 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, fetch_insn_event(0)
 {
 	param_memory_atom_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	trap = false;
 	
 	fetch_insn_event = new unisim::util::debug::FetchInsnEvent<ADDRESS>();
 	fetch_insn_event->Catch();
@@ -1319,8 +1318,7 @@ bool InlineDebugger<ADDRESS>::HasBreakpoint(ADDRESS addr)
 {
 	if(debug_event_trigger_import)
 	{
-		unisim::util::debug::Breakpoint<ADDRESS> brkp = unisim::util::debug::Breakpoint<ADDRESS>(addr);
-		return debug_event_trigger_import->IsEventListened(&brkp);
+		return debug_event_trigger_import->HasBreakpoints(addr);
 	}
 	return false;
 }
@@ -1330,12 +1328,10 @@ void InlineDebugger<ADDRESS>::SetBreakpoint(ADDRESS addr)
 {
 	if(debug_event_trigger_import)
 	{
-		unisim::util::debug::Breakpoint<ADDRESS> *brkp = new unisim::util::debug::Breakpoint<ADDRESS>(addr);
-		if(debug_event_trigger_import->Listen(brkp))
+		if(debug_event_trigger_import->SetBreakpoint(addr))
 		{
 			return;
 		}
-		delete brkp;
 	}
 	(*std_output_stream) << "Can't set breakpoint at 0x" << std::hex << addr << std::dec << std::endl;
 }
@@ -1345,13 +1341,10 @@ void InlineDebugger<ADDRESS>::SetReadWatchpoint(ADDRESS addr, uint32_t size)
 {
 	if(debug_event_trigger_import)
 	{
-		unisim::util::debug::Watchpoint<ADDRESS> *wp = new unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
-		
-		if(debug_event_trigger_import->Listen(wp))
+		if(debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size, true))
 		{
 			return;
 		}
-		delete wp;
 	}
 	(*std_output_stream) << "Can't set watchpoint at 0x" << std::hex << addr << std::dec << std::endl;
 }
@@ -1361,13 +1354,10 @@ void InlineDebugger<ADDRESS>::SetWriteWatchpoint(ADDRESS addr, uint32_t size)
 {
 	if(debug_event_trigger_import)
 	{
-		unisim::util::debug::Watchpoint<ADDRESS> *wp = new unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
-		
-		if(debug_event_trigger_import->Listen(wp))
+		if(debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size, true))
 		{
 			return;
 		}
-		delete wp;
 	}
 	(*std_output_stream) << "Can't set watchpoint at 0x" << std::hex << addr << std::dec << std::endl;
 }
@@ -1377,8 +1367,7 @@ void InlineDebugger<ADDRESS>::DeleteBreakpoint(ADDRESS addr)
 {
 	if(debug_event_trigger_import)
 	{
-		unisim::util::debug::Breakpoint<ADDRESS> brkp = unisim::util::debug::Breakpoint<ADDRESS>(addr);
-		if(debug_event_trigger_import->Unlisten(&brkp))
+		if(debug_event_trigger_import->RemoveBreakpoint(addr))
 		{
 			return;
 		}
@@ -1391,8 +1380,7 @@ void InlineDebugger<ADDRESS>::DeleteReadWatchpoint(ADDRESS addr, uint32_t size)
 {
 	if(debug_event_trigger_import)
 	{
-		unisim::util::debug::Watchpoint<ADDRESS> wp = unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
-		if(debug_event_trigger_import->Unlisten(&wp))
+		if(debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))
 		{
 			return;
 		}
@@ -1405,8 +1393,7 @@ void InlineDebugger<ADDRESS>::DeleteWriteWatchpoint(ADDRESS addr, uint32_t size)
 {
 	if(debug_event_trigger_import)
 	{
-		unisim::util::debug::Watchpoint<ADDRESS> wp = unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
-		if(debug_event_trigger_import->Unlisten(&wp))
+		if(debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))
 		{
 			return;
 		}

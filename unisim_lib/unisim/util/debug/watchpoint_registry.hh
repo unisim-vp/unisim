@@ -40,6 +40,7 @@
 #include "unisim/util/debug/watchpoint.hh"
 
 #include <list>
+#include <map>
 
 namespace unisim {
 namespace util {
@@ -52,8 +53,8 @@ public:
 	WatchpointMapPage(ADDRESS addr);
 	~WatchpointMapPage();
 
-	void SetWatchpoint(unisim::util::debug::MemoryAccessType mat, uint32_t offset, uint32_t size, unsigned int front_end_num);
-	void RemoveWatchpoint(unisim::util::debug::MemoryAccessType mat, uint32_t offset, uint32_t size, unsigned int front_end_num);
+	unsigned int SetWatchpoint(unisim::util::debug::MemoryAccessType mat, uint32_t offset, uint32_t size, unsigned int front_end_num);
+	unsigned int RemoveWatchpoint(unisim::util::debug::MemoryAccessType mat, uint32_t offset, uint32_t size, unsigned int front_end_num);
 	bool HasWatchpoint(unisim::util::debug::MemoryAccessType mat, uint32_t offset, uint32_t size, unsigned int front_end_num) const;
 	bool HasWatchpoints(unisim::util::debug::MemoryAccessType mat, uint32_t offset, uint32_t size) const;
 
@@ -77,24 +78,32 @@ public:
 	virtual ~WatchpointRegistry();
 
 	void Reset();
+	void Clear(unsigned int front_end_num);
+	bool SetWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, bool overlook, unsigned int prc_num, unsigned int front_end_num);
+	bool RemoveWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num, unsigned int front_end_num);
 	bool SetWatchpoint(Watchpoint<ADDRESS> *wp);
 	bool RemoveWatchpoint(Watchpoint<ADDRESS> *wp);
 	bool HasWatchpoint(Watchpoint<ADDRESS> *wp) const;
 	bool HasWatchpoints(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num) const;
+	bool HasWatchpoints(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num, unsigned int front_end_num) const;
 	bool HasWatchpoints(unsigned int prc_num) const;
 	bool HasWatchpoints() const;
-	Watchpoint<ADDRESS> *FindWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num, unsigned int front_end_num) const;
+	
+	/* struct Visitor { void Visit(Watchpoint<ADDRESS> *) {} }; */
+	template <class VISITOR> bool FindWatchpoints(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num, unsigned int front_end_num, VISITOR& visitor) const;
+	
 	void EnumerateWatchpoints(unsigned int prc_num, unsigned int front_end_num, std::list<Event<ADDRESS> *>& lst) const;
 	void EnumerateWatchpoints(unsigned int front_end_num, std::list<Event<ADDRESS> *>& lst) const;
 	void EnumerateWatchpoints(std::list<Event<ADDRESS> *>& lst) const;
 
 private:
-	bool has_watchpoints[NUM_PROCESSORS][MAX_FRONT_ENDS];
-	std::list<Watchpoint<ADDRESS> *> watchpoints[NUM_PROCESSORS][MAX_FRONT_ENDS];
+	std::multimap<ADDRESS, Watchpoint<ADDRESS> *> watchpoints[NUM_PROCESSORS][MAX_FRONT_ENDS];
+	unsigned int watchpoint_count[NUM_PROCESSORS];
 	mutable WatchpointMapPage<ADDRESS, MAX_FRONT_ENDS> *mru_page[2][NUM_PROCESSORS];
 	mutable WatchpointMapPage<ADDRESS, MAX_FRONT_ENDS> *hash_table[2][NUM_PROCESSORS][NUM_HASH_TABLE_ENTRIES];
 
-	bool HasWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num, unsigned int front_end_num) const;
+	bool SetWatchpointIntoMap(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num, unsigned int front_end_num);
+	bool RemoveWatchpointFromMap(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num, unsigned int front_end_num);
 	void AllocatePage(unisim::util::debug::MemoryType mt, ADDRESS addr, unsigned int prc_num);
 	WatchpointMapPage<ADDRESS, MAX_FRONT_ENDS> *GetPage(unisim::util::debug::MemoryType mt, ADDRESS addr, unsigned int prc_num) const;
 };

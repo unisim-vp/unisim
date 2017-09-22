@@ -76,7 +76,7 @@ public:
 	virtual bool Setup(ServiceExportBase *srv_export);
 	virtual bool EndSetup();
 	
-	virtual void ReportMemoryAccess(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
+	virtual bool ReportMemoryAccess(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
 	virtual void ReportCommitInstruction(ADDRESS addr);
 	virtual void ReportFetchInstruction(ADDRESS next_addr);
 
