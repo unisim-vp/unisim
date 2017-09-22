@@ -85,7 +85,7 @@ CPU::CPU(const char *name, Object *parent)
   , Service<MemoryAccessReportingControl>(name, parent)
   , Client<MemoryAccessReporting<uint32_t> >(name, parent)
   , Service<MemoryInjection<uint32_t> >(name, parent)
-  , Client<unisim::service::interfaces::DebugControl<uint32_t> >(name, parent)
+  , Client<unisim::service::interfaces::DebugYielding>(name, parent)
   , Client<TrapReporting>(name, parent)
   , Service<Disassembly<uint32_t> >(name, parent)
   , Service< Memory<uint32_t> >(name, parent)
@@ -96,9 +96,8 @@ CPU::CPU(const char *name, Object *parent)
   , memory_injection_export("memory-injection-export", this)
   , memory_export("memory-export", this)
   , memory_import("memory-import", this)
-  , debug_control_import("debug-control-import", this)
-  , exception_trap_reporting_import("exception-trap-reporting-import", this)
-  , instruction_counter_trap_reporting_import("instruction-counter-trap-reporting-import", this)
+  , debug_yielding_import("debug-yielding-import", this)
+  , trap_reporting_import("trap-reporting-import", this)
   , requires_finished_instruction_reporting(false)
   , requires_memory_access_reporting(false)
   // , icache("icache", this)
@@ -340,31 +339,15 @@ CPU::StepInstruction()
   /* Instruction boundary next_insn_addr becomes current_insn_addr */
   uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr;
   
-  if (unlikely(instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
-    instruction_counter_trap_reporting_import->ReportTrap(*this);
+  if (unlikely(trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
+    trap_reporting_import->ReportTrap(*this);
   
   if (unlikely(requires_finished_instruction_reporting and memory_access_reporting_import))
     memory_access_reporting_import->ReportFetchInstruction(this->current_insn_addr);
 
-  if (debug_control_import)
+  if (debug_yielding_import)
     {
-      for (bool proceed = false; not proceed; )
-        {
-          switch (debug_control_import->FetchDebugCommand( insn_addr ))
-            {
-            case DebugControl::DBG_STEP: 
-              proceed = true;
-              break;
-            case DebugControl::DBG_SYNC:
-              Sync();
-              continue;
-              break;
-            case DebugControl::DBG_RESET: /* TODO : memory_interface->Reset(); */ break;
-            case DebugControl::DBG_KILL:
-              Stop(0);
-              return;
-            }
-        }
+      debug_yielding_import->DebugYield();
     }
   
   try {
@@ -437,8 +420,8 @@ CPU::StepInstruction()
   catch (UndefInstrException const& undexc) {
     /* Abort execution, and take processor to undefined handler */
     
-    if (unlikely( exception_trap_reporting_import))
-      exception_trap_reporting_import->ReportTrap( *this, "Undefined Exception" );
+    if (unlikely(trap_reporting_import))
+      trap_reporting_import->ReportTrap( *this, "Undefined Exception" );
     
     this->TakeUndefInstrException();
   }
@@ -446,8 +429,8 @@ CPU::StepInstruction()
   catch (DataAbortException const& daexc) {
     /* Abort execution, and take processor to data abort handler */
     
-    if (unlikely( exception_trap_reporting_import))
-      exception_trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
+    if (unlikely(trap_reporting_import))
+      trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
     
     this->TakeDataOrPrefetchAbortException(true); // TakeDataAbortException
   }
@@ -455,8 +438,8 @@ CPU::StepInstruction()
   catch (PrefetchAbortException const& paexc) {
     /* Abort execution, and take processor to prefetch abort handler */
     
-    if (unlikely( exception_trap_reporting_import))
-      exception_trap_reporting_import->ReportTrap( *this, "Prefetch Abort Exception" );
+    if (unlikely(trap_reporting_import))
+      trap_reporting_import->ReportTrap( *this, "Prefetch Abort Exception" );
     
     this->TakeDataOrPrefetchAbortException(false); // TakePrefetchAbortException
   }

@@ -141,7 +141,7 @@ unisim/util/queue/queue.hh \
 unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/floating.hh \
 unisim/util/simfloat/host_floating.hh \
-unisim/service/interfaces/debug_control.hh \
+unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/ti_c_io.hh \
 unisim/service/interfaces/disassembly.hh \

@@ -70,7 +70,7 @@ using unisim::kernel::logger::EndDebugError;
 template <class CONFIG>
 CPU<CONFIG>::CPU(const char *name, Object *parent)
   : unisim::kernel::service::Object(name, parent)
-  , Client<unisim::service::interfaces::DebugControl<uint64_t> >(name, parent)
+  , Client<unisim::service::interfaces::DebugYielding>(name, parent)
   , Client<unisim::service::interfaces::TrapReporting>(name, parent)
   , Client<unisim::service::interfaces::SymbolTableLookup<uint64_t> >(name, parent)
   , Client<unisim::service::interfaces::Memory<uint64_t> >(name, parent)
@@ -88,9 +88,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   , memory_access_reporting_control_export("memory-access-reporting-control-export", this)
   , memory_injection_export("memory-injection-export", this)
     /*Imports*/
-  , debug_control_import("debug-control-import", this)
-  , instruction_counter_trap_reporting_import("instruction-counter-trap-reporting-import", this)
-  //, exception_trap_reporting_import("exception-trap-reporting-import", this)
+  , debug_yielding_import("debug-yielding-import", this)
+  , trap_reporting_import("trap-reporting-import", this)
   , symbol_table_lookup_import("symbol-table-lookup-import", this)
   , memory_import("memory-import", this)
   , memory_access_reporting_import("memory-access-reporting-import", this)
@@ -389,33 +388,15 @@ CPU<CONFIG>::StepInstruction()
   
   //  if (insn_addr == halt_on_addr) { Stop(0); return; }
   
-  // if (unlikely(instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
-  //   instruction_counter_trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
+  // if (unlikely(trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
+  //   trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
   
   if (unlikely(requires_finished_instruction_reporting and memory_access_reporting_import))
     memory_access_reporting_import->ReportFetchInstruction(insn_addr);
 
-  typedef unisim::service::interfaces::DebugControl<uint64_t> DebugControl;
-    
-  if (debug_control_import)
+  if (debug_yielding_import)
     {
-      for (bool proceed = false; not proceed; )
-        {
-          switch (debug_control_import->FetchDebugCommand( insn_addr ))
-            {
-            case DebugControl::DBG_STEP: 
-              proceed = true;
-              break;
-            case DebugControl::DBG_SYNC:
-              Sync();
-              continue;
-              break;
-            case DebugControl::DBG_RESET: /* TODO : memory_interface->Reset(); */ break;
-            case DebugControl::DBG_KILL:
-              Stop(0);
-              return;
-            }
-        }
+      debug_yielding_import->DebugYield();
     }
   
   try {
@@ -470,8 +451,8 @@ CPU<CONFIG>::StepInstruction()
   // catch (DataAbortException const& daexc) {
   //   /* Abort execution, and take processor to data abort handler */
     
-  //   if (unlikely( exception_trap_reporting_import))
-  //     exception_trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
+  //   if (unlikely(trap_reporting_import))
+  //     trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
     
   //   this->TakeDataOrPrefetchAbortException(true); // TakeDataAbortException
   // }
@@ -479,8 +460,8 @@ CPU<CONFIG>::StepInstruction()
   // catch (PrefetchAbortException const& paexc) {
   //   /* Abort execution, and take processor to prefetch abort handler */
     
-  //   if (unlikely( exception_trap_reporting_import))
-  //     exception_trap_reporting_import->ReportTrap( *this, "Prefetch Abort Exception" );
+  //   if (unlikely(trap_reporting_import))
+  //     trap_reporting_import->ReportTrap( *this, "Prefetch Abort Exception" );
     
   //   this->TakeDataOrPrefetchAbortException(false); // TakePrefetchAbortException
   // }
@@ -488,8 +469,8 @@ CPU<CONFIG>::StepInstruction()
   // catch (UndefInstrException const& undexc) {
   //   /* Abort execution, and take processor to undefined handler */
     
-  //   if (unlikely( exception_trap_reporting_import))
-  //     exception_trap_reporting_import->ReportTrap( *this, "Undefined Exception" );
+  //   if (unlikely( trap_reporting_import))
+  //     trap_reporting_import->ReportTrap( *this, "Undefined Exception" );
     
   //   this->TakeUndefInstrException();
   // }
@@ -630,18 +611,23 @@ template <class CONFIG>
 void
 CPU<CONFIG>::CallSupervisor( uint16_t imm )
 {
-  if (linux_os_import) {
-    // we are executing on linux emulation mode, use linux_os_import
-    try {
-      linux_os_import->ExecuteSystemCall(imm);
-      instruction_counter_trap_reporting_import->ReportTrap(*this, "CallSupervisor");
+  if (linux_os_import)
+    {
+      // we are executing on linux emulation mode, use linux_os_import
+      try
+        {
+          linux_os_import->ExecuteSystemCall(imm);
+          if (trap_reporting_import)
+            trap_reporting_import->ReportTrap(*this, "CallSupervisor");
+        }
+      catch (Exception const& e)
+        {
+          std::cerr << e.what() << std::endl;
+          this->Stop( -1 );
+        }
     }
-    catch (Exception const& e)
-      {
-        std::cerr << e.what() << std::endl;
-        this->Stop( -1 );
-      }
-  } else {
+  else
+    {
     // if (verbose) {
     //   static struct ArmLinuxOS : public unisim::util::os::linux_os::Linux<uint32_t, uint32_t>
     //   {

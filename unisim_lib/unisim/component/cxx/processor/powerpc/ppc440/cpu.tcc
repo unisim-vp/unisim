@@ -67,7 +67,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>()
 	, Client<Loader>(name,  parent)
 	, Client<SymbolTableLookup<typename CONFIG::address_t> >(name,  parent)
-	, Client<DebugControl<typename CONFIG::address_t> >(name,  parent)
+	, Client<DebugYielding>(name,  parent)
 	, Client<MemoryAccessReporting<typename CONFIG::address_t> >(name,  parent)
 	, Client<TrapReporting>(name,  parent)
 	, Service<MemoryAccessReportingControl>(name,  parent)
@@ -87,7 +87,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, synchronizable_export("synchronizable-export",  this)
 	, memory_access_reporting_control_export("memory_access_reporting_control_export",  this)
 	, loader_import("loader-import",  this)
-	, debug_control_import("debug-control-import",  this)
+	, debug_yielding_import("debug-control-import",  this)
 	, memory_access_reporting_import("memory-access-reporting-import",  this)
 	, symbol_table_lookup_import("symbol-table-lookup-import",  this)
 	, memory_import("memory-import", this)
@@ -1904,30 +1904,9 @@ bool CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 template <class CONFIG>
 void CPU<CONFIG>::StepOneInstruction()
 {
-	if(unlikely(debug_control_import != 0))
+	if(unlikely(debug_yielding_import != 0))
 	{
-		do
-		{
-			typename DebugControl<typename CONFIG::address_t>::DebugCommand dbg_cmd;
-
-			dbg_cmd = debug_control_import->FetchDebugCommand(GetCIA());
-	
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_STEP) break;
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_SYNC)
-			{
-				Synchronize();
-				continue;
-			}
-
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_KILL) Stop(0);
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_RESET)
-			{
-				if(loader_import)
-				{
-					loader_import->Load();
-				}
-			}
-		} while(1);
+		debug_yielding_import->DebugYield();
 	}
 
 	unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation = 0;
@@ -1983,7 +1962,8 @@ void CPU<CONFIG>::StepOneInstruction()
 	{
 		if(unlikely(memory_access_reporting_import != 0))
 		{
-			memory_access_reporting_import->ReportFinishedInstruction(GetCIA(), GetNIA());
+			memory_access_reporting_import->ReportCommitInstruction(GetCIA());
+			memory_access_reporting_import->ReportFetchInstruction(GetNIA());
 		}
 	}
 

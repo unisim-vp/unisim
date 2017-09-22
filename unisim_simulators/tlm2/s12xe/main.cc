@@ -450,7 +450,7 @@ Simulator::Simulator(int argc, char **argv)
 	if(enable_inline_debugger)
 	{
 		// Connect inline-debugger to CPU
-		cpu->debug_control_import >> inline_debugger->debug_control_export;
+		cpu->debug_yielding_import >> inline_debugger->debug_yielding_export;
 		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
 		cpu->trap_reporting_import >> inline_debugger->trap_reporting_export;
 
@@ -470,7 +470,7 @@ Simulator::Simulator(int argc, char **argv)
 	else if(enable_gdb_server)
 	{
 		// Connect gdb-server to CPU
-		cpu->debug_control_import >> gdb_server->debug_control_export;
+		cpu->debug_yielding_import >> gdb_server->debug_yielding_export;
 		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
 		cpu->trap_reporting_import >> gdb_server->trap_reporting_export;
 

@@ -57,7 +57,7 @@
 
 #include <unisim/service/interfaces/loader.hh>
 #include "unisim/service/interfaces/trap_reporting.hh"
-#include "unisim/service/interfaces/debug_control.hh"
+#include "unisim/service/interfaces/debug_yielding.hh"
 #include "unisim/service/interfaces/disassembly.hh"
 #include "unisim/service/interfaces/memory_access_reporting.hh"
 #include "unisim/service/interfaces/symbol_table_lookup.hh"
@@ -96,7 +96,7 @@ using unisim::kernel::service::CallBackObject;
 
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::TrapReporting;
-using unisim::service::interfaces::DebugControl;
+using unisim::service::interfaces::DebugYielding;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
 using unisim::service::interfaces::Disassembly;
@@ -213,7 +213,7 @@ private:
 class CPU :
 		public Decoder,
 		public Client<Loader>,
-		public Client<DebugControl<physical_address_t> >,
+		public Client<DebugYielding>,
 		public Client<MemoryAccessReporting<physical_address_t> >,
 		public Service<MemoryAccessReportingControl>,
 		public Service<Disassembly<physical_address_t> >,
@@ -256,7 +256,7 @@ public:
 	ServiceExport<Memory<physical_address_t> > memory_export;
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 
-	ServiceImport<DebugControl<physical_address_t> > debug_control_import;
+	ServiceImport<DebugYielding> debug_yielding_import;
 	ServiceImport<MemoryAccessReporting<physical_address_t> > memory_access_reporting_import;
 	ServiceImport<Memory<physical_address_t> > memory_import;
 	ServiceImport<SymbolTableLookup<physical_address_t> > symbol_table_lookup_import;
@@ -546,7 +546,7 @@ public:
 
 	inline address_t getLastPC() {return (lastPC); }
 
-	inline bool isDebuggerConnect() { return (debug_control_import); }
+	inline bool isDebuggerConnect() { return (debug_yielding_import); }
 
 	//protected:
 	class CCR_t *ccr;

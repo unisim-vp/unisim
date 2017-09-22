@@ -88,7 +88,9 @@ namespace simfloat {
     bool isRoundToEven() const { return fRoundToEven && isNearestRound(); }
     bool isPositiveZeroMAdd() { return true; }
     bool isInftyAvoided() const { return true; }
+    bool isAllInftyAvoided() const { return false; }
     bool doesAvoidInfty(bool fNegative) const {  return fNegative ? (rmRound >= RMHighest) : (rmRound & RMLowest); }
+    bool isDenormalizedAvoided() const { return false; }
     bool keepNaNSign() const { return true; }
     bool produceMultNaNPositive() const { return true; }
     bool produceDivNaNPositive() const { return true; }
@@ -284,7 +286,7 @@ namespace simfloat {
         // We need to use Round Towards Zero (default would be round
         // to nearest) because we need to have exact values of
         // mantissa bits rather than good quality approximation
-        xflags.xflags.setZeroRound();
+        xflags.setZeroRound();
         next.divAssign( series_value, xflags );
         next.plusAssign( series_value, xflags );
         next.multAssign( half, xflags );

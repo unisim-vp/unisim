@@ -38,7 +38,7 @@
 #include <stdlib.h>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
-#include <unisim/service/interfaces/debug_control.hh>
+#include <unisim/service/interfaces/debug_yielding.hh>
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/util/debug/simple_register.hh>
@@ -79,7 +79,7 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
-using unisim::service::interfaces::DebugControl;
+using unisim::service::interfaces::DebugYielding;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
@@ -122,7 +122,7 @@ class CPU :
 	public Service<Resetable>,
 	public Service<Runnable>,
 	public Client<Loader<typename CONFIG::physical_address_t> >,
-	public Client<DebugControl<typename CONFIG::address_t> >,
+	public Client<DebugYielding>,
 	public Client<SymbolTableLookup<typename CONFIG::address_t> >,
 	public Client<Memory<typename CONFIG::address_t> >
 //	public Service<Synchronizable>
@@ -167,7 +167,7 @@ public:
 	ServiceExport<Resetable> reset_export;
 	ServiceExport<Runnable> run_export;
 	ServiceImport<Loader<physical_address_t> > kernel_loader_import;
-	ServiceImport<DebugControl<address_t> > debug_control_import;
+	ServiceImport<DebugYielding> debug_yielding_import;
 	ServiceImport<SymbolTableLookup<address_t> > symbol_table_lookup_import;
 	ServiceImport<Memory<physical_address_t> > memory_import;
 

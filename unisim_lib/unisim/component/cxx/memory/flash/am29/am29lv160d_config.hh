@@ -63,6 +63,7 @@ public:
 		ST_ERASE2,
 		ST_CHIP_ERASE,
 		ST_SECTOR_ERASE,
+		ST_WRITE_TO_BUFFER_ABORTED,
 		ST_ANY = 255
 	} STATE;
 
@@ -83,6 +84,17 @@ public:
 	static const ADDRESS SECTOR_PROTECT_VERIFY_ADDR = 0x04;
 	static const unsigned NUM_TRANSITIONS = 36;
 	static const TRANSITION<ADDRESS, MAX_IO_WIDTH, STATE> FSM[NUM_TRANSITIONS];
+	static const unsigned int PAGE_SIZE = 1; // page size in words (write-to-buffer is unused on this model, see FSM)
+	
+	// this model does not support CFI query (see FSM)
+	typedef struct
+	{
+		ADDRESS addr;
+		uint8_t data[MAX_IO_WIDTH];
+	} CFI_QUERY;
+	
+	static const unsigned int NUM_CFI_QUERIES = 1;
+	static const CFI_QUERY CFI_QUERIES[NUM_CFI_QUERIES];
 
 	static const char *GetStateName(STATE state)
 	{

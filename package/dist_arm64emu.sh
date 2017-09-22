@@ -117,8 +117,6 @@ unisim/api/debug/debug_api.cc \
 unisim/service/tee/memory_access_reporting/tee_64.cc \
 unisim/service/debug/inline_debugger/inline_debugger_64.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
-unisim/service/debug/sim_debugger/sim_debugger_64.cc \
-unisim/service/debug/sim_debugger/sim_debugger.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
 unisim/service/debug/debugger/debugger64.cc \
@@ -202,7 +200,6 @@ unisim/kernel/tlm2/tlm.hh \
 unisim/api/debug/debug_api.hh \
 unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
-unisim/service/debug/sim_debugger/sim_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
 unisim/service/debug/monitor/monitor.hh \
@@ -212,7 +209,8 @@ unisim/service/os/linux_os/arm_linux64.hh \
 unisim/service/trap_handler/trap_handler.hh \
 unisim/service/trap_handler/trap_handler_identifier.hh \
 unisim/service/trap_handler/trap_handler_identifier_interface.hh \
-unisim/service/interfaces/debug_control.hh \
+unisim/service/interfaces/debug_yielding.hh \
+unisim/service/interfaces/debug_selecting.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
 unisim/service/interfaces/profiling.hh \
@@ -237,8 +235,13 @@ unisim/service/interfaces/subprogram_lookup.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
 unisim/util/likely/likely.hh \
-unisim/util/debug/symbol.hh \
 unisim/util/debug/data_object.hh \
+unisim/util/debug/commit_insn_event.hh \
+unisim/util/debug/fetch_insn_event.hh \
+unisim/util/debug/memory_access_type.hh \
+unisim/util/debug/symbol_table.hh \
+unisim/util/debug/symbol.hh \
+unisim/util/debug/trap_event.hh \
 unisim/util/debug/dwarf/fwd.hh \
 unisim/util/debug/dwarf/addr_range.hh \
 unisim/util/debug/dwarf/fmt.hh \
@@ -272,8 +275,6 @@ unisim/util/debug/dwarf/cfa.hh \
 unisim/util/debug/dwarf/data_object.hh \
 unisim/util/debug/dwarf/subprogram.hh \
 unisim/util/debug/dwarf/c_loc_expr_parser.hh \
-unisim/util/debug/memory_access_type.hh \
-unisim/util/debug/symbol_table.hh \
 unisim/util/blob/segment.hh \
 unisim/util/blob/blob.hh \
 unisim/util/blob/section.hh \
@@ -331,7 +332,6 @@ unisim/component/cxx/memory/ram/memory.hh \
 UNISIM_LIB_ARM64EMU_TEMPLATE_FILES="\
 unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
-unisim/service/debug/sim_debugger/sim_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \
 unisim/service/debug/monitor/monitor.tcc \

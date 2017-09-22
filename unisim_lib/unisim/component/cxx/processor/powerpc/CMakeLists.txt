@@ -27,7 +27,7 @@ set ( cxx_powerpc_subdirs
 	unisim/component/cxx/tlb
 	unisim/service/interfaces/memory
 	unisim/service/interfaces/memory_injection
-	unisim/service/interfaces/debug_control
+	unisim/service/interfaces/debug_yielding
 	unisim/service/interfaces/memory_access_reporting
 	unisim/service/interfaces/disassembly
 	unisim/service/interfaces/loader
@@ -136,7 +136,7 @@ add_dependencies ( unisim__component__cxx__processor__powerpc
 	unisim__component__cxx__tlb
 	unisim__service__interfaces__memory
 	unisim__service__interfaces__memory_injection
-	unisim__service__interfaces__debug_control
+	unisim__service__interfaces__debug_yielding
 	unisim__service__interfaces__memory_access_reporting
 	unisim__service__interfaces__disassembly
 	unisim__service__interfaces__loader

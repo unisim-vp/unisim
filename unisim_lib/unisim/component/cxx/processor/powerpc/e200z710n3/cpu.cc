@@ -1625,26 +1625,9 @@ void CPU::StepOneInstruction()
 {
 	ProcessExceptions();
 
-	if(unlikely(debug_control_import != 0))
+	if (unlikely(debug_yielding_import != 0))
 	{
-		do
-		{
-			unisim::service::interfaces::DebugControl<ADDRESS>::DebugCommand dbg_cmd;
-
-			dbg_cmd = debug_control_import->FetchDebugCommand(cia);
-	
-			if(dbg_cmd == unisim::service::interfaces::DebugControl<ADDRESS>::DBG_STEP) break;
-			if(dbg_cmd == unisim::service::interfaces::DebugControl<ADDRESS>::DBG_SYNC)
-			{
-				//Synchronize();
-				continue;
-			}
-
-			if(dbg_cmd == unisim::service::interfaces::DebugControl<ADDRESS>::DBG_KILL) Stop(0);
-			if(dbg_cmd == unisim::service::interfaces::DebugControl<ADDRESS>::DBG_RESET)
-			{
-			}
-		} while(1);
+		debug_yielding_import->DebugYielding();
 	}
 
 	ADDRESS addr = cia;

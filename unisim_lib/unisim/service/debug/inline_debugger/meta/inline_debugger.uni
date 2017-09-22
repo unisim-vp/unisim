@@ -12,7 +12,7 @@
 		</files>
 		<depends>
 			<dep>unisim::service::interfaces::memory_access_reporting</dep>
-			<dep>unisim::service::interfaces::debug_control</dep>
+			<dep>unisim::service::interfaces::debug_yielding</dep>
 			<dep>unisim::service::interfaces::disassembly</dep>
 			<dep>unisim::service::interfaces::symbol_table_lookup</dep>
 			<dep>unisim::service::interfaces::registers</dep>

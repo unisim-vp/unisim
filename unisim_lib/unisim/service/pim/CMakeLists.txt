@@ -34,7 +34,7 @@ endif ( NOT LIBXML2_FOUND )
 set ( pim_server_subdirs 
 	unisim/service/interfaces/memory
 	unisim/service/interfaces/memory_access_reporting
-	unisim/service/interfaces/debug_control
+	unisim/service/interfaces/debug_yielding
 	unisim/service/interfaces/registers
 	unisim/service/interfaces/trap_reporting
 	unisim/util/endian

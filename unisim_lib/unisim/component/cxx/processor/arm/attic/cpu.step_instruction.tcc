@@ -101,52 +101,10 @@ StepInstruction() {
 			<< hex << current_pc << dec
 			<< EndDebugInfo;
 	
-	if(debug_control_import) {
-		typename DebugControl<uint64_t>::DebugCommand dbg_cmd;
-
-		do {
-			if(CONFIG::DEBUG_ENABLE && verbose_step)
-				logger << DebugInfo
-					<< "Fetching debug command (PC = 0x"
-					<< hex << current_pc << dec << ")"
-					<< EndDebugInfo;
-			dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
-	
-			if(dbg_cmd == DebugControl<uint64_t>::DBG_STEP) {
-				if(CONFIG::DEBUG_ENABLE && verbose_step)
-					logger << DebugInfo
-						<< "Received debug DBG_STEP command (PC = 0x"
-						<< hex << current_pc << dec << ")"
-						<< EndDebugInfo;
-				break;
-			}
-			if(dbg_cmd == DebugControl<uint64_t>::DBG_SYNC) {
-				if(CONFIG::DEBUG_ENABLE && verbose_step)
-					logger << DebugInfo
-						<< "Received debug DBG_SYNC command (PC = 0x"
-						<< hex << current_pc << dec << ")"
-						<< EndDebugInfo;
-				Sync();
-				continue;
-			}
-
-			if(dbg_cmd == DebugControl<uint64_t>::DBG_KILL) {
-				if(CONFIG::DEBUG_ENABLE && verbose_step)
-					logger << DebugInfo
-						<< "Received debug DBG_KILL command (PC = 0x"
-						<< hex << current_pc << dec << ")"
-						<< EndDebugInfo;
-				Stop(0);
-			}
-			if(dbg_cmd == DebugControl<uint64_t>::DBG_RESET) {
-				if(CONFIG::DEBUG_ENABLE && verbose_step)
-					logger << DebugInfo
-						<< "Received debug DBG_RESET command (PC = 0x"
-						<< hex << current_pc << dec << ")"
-						<< EndDebugInfo;
-				// TODO : memory_interface->Reset(); 
-			}
-		} while(1);
+	if (debug_yielding_import) {
+		if(CONFIG::DEBUG_ENABLE && verbose_step)
+			logger << DebugInfo << "Fetching debug command (PC = 0x" << hex << current_pc << dec << ")" << EndDebugInfo;
+		debug_yielding_import->DebugYield();
 	}
 
 	if(requires_memory_access_reporting) {

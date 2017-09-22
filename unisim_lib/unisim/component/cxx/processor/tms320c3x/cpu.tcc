@@ -82,7 +82,7 @@ CPU<CONFIG, DEBUG> ::
 CPU(const char *name,
 		Object *parent) :
 	Object(name, parent),
-	Client<DebugControl<typename CONFIG::address_t> >(name, parent),
+	Client<DebugYielding>(name, parent),
 	Client<MemoryAccessReporting<typename CONFIG::address_t> >(name, parent),
 	Client<TrapReporting>(name, parent),
 	Client<SymbolTableLookup<typename CONFIG::address_t> >(name, parent),
@@ -102,7 +102,7 @@ CPU(const char *name,
 	memory_access_reporting_control_export(
 		"memory_access_reporting_control_export",
 		this),
-	debug_control_import("debug_control_import", this),
+	debug_yielding_import("debug_yielding_import", this),
 	memory_access_reporting_import("memory_access_reporting_import", this),
 	trap_reporting_import("trap-reporting-import", this),
 	symbol_table_lookup_import("symbol_table_lookup_import", this),
@@ -133,7 +133,7 @@ CPU(const char *name,
 	insn_cache_misses(0),
 	stat_insn_cache_accesses("insn-cache-accesses", this, insn_cache_accesses, "Instruction cache accesses"),
 	stat_insn_cache_misses("insn-cache-misses", this, insn_cache_misses, "Instruction cache misses"),
-	formula_insn_cache_miss_rate("insn-cache-miss-rate", this, Formula<double>::OP_DIV, &stat_insn_cache_misses, &stat_insn_cache_accesses, "instruction cache miss rate"),
+	formula_insn_cache_miss_rate("insn-cache-miss-rate", this, "/", &stat_insn_cache_misses, &stat_insn_cache_accesses, "instruction cache miss rate"),
 	enable_parallel_load_bug(true),
 	param_enable_parallel_load_bug("enable-parallel-load-bug", this, enable_parallel_load_bug,
 		"When using parallel loads (LDF src2, dst2 || LDF src1, dst1) the src1 load doesn't transform incorrect zero values to valid zero representation, instead they copy the contents of the memory to the register. Set to this parameter to false to transform incorrect zero values."),
@@ -1301,21 +1301,9 @@ void
 CPU<CONFIG, DEBUG> ::
 StepInstruction()
 {
-	if(unlikely(debug_control_import != 0))
+	if (unlikely(debug_yielding_import))
 	{
-		do
-		{
-			typename DebugControl<typename CONFIG::address_t>::DebugCommand dbg_cmd;
-
-			dbg_cmd = debug_control_import->FetchDebugCommand(4 * GetPC23_0());
-	
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_STEP) break;
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_KILL)
-			{
-				Stop(0);
-				return;
-			}
-		} while(1);
+		debug_yielding_import->DebugYield();
 	}
 
 	try
@@ -1546,7 +1534,8 @@ StepInstruction()
 		{
 			if(unlikely(memory_access_reporting_import != 0))
 			{
-				memory_access_reporting_import->ReportFinishedInstruction(4 * GetPC23_0(), 4 * GetNPC23_0());
+				memory_access_reporting_import->ReportCommitInstruction(4 * GetPC23_0());
+				memory_access_reporting_import->ReportFetchInstruction(4 * GetNPC23_0());
 			}
 		}
 		

@@ -376,8 +376,8 @@ CPU::Run()
         
         bool exception_taken = this->HandleAsynchronousException( exceptions ) != 0;
         if (exception_taken) {
-          if (exception_trap_reporting_import)
-            exception_trap_reporting_import->ReportTrap(*this,"irq or fiq");
+          if (trap_reporting_import)
+            trap_reporting_import->ReportTrap(*this,"irq or fiq");
         }
       }
     }

@@ -11,7 +11,7 @@ include_HEADERS = \
 	synchronizable.hh \
 	video.hh \
 	cpu_linux_os.hh \
-	debug_control.hh \
+	debug_yielding.hh \
 	keyboard.hh \
 	loader.hh \
 	memory_access_reporting.hh \

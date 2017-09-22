@@ -48,7 +48,7 @@
 
 #include "unisim/service/interfaces/trap_reporting.hh"
 #include "unisim/service/interfaces/disassembly.hh"
-#include "unisim/service/interfaces/debug_control.hh"
+#include "unisim/service/interfaces/debug_yielding.hh"
 #include "unisim/service/interfaces/memory_access_reporting.hh"
 #include <unisim/service/interfaces/memory.hh>
 #include "unisim/service/interfaces/registers.hh"
@@ -64,7 +64,7 @@ namespace risc16 {
 
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Memory;
-using unisim::service::interfaces::DebugControl;
+using unisim::service::interfaces::DebugYielding;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
 using unisim::service::interfaces::Disassembly;
@@ -86,7 +86,7 @@ class CPU
 	, public Service<Memory<uint64_t> >
 	, public Service<Disassembly<uint64_t> >
 	, public Service<Registers>
-	, public Client<DebugControl<uint64_t> >
+	, public Client<DebugYielding>
 	, public Client<MemoryAccessReporting<uint64_t> >
 	, public Client<Memory<uint64_t> >
 {
@@ -99,7 +99,7 @@ public:
 	ServiceExport<Disassembly<uint64_t> > disasm_export;
 	ServiceExport<Registers> registers_export;
 
-	ServiceImport<DebugControl<uint64_t> > debug_control_import;
+	ServiceImport<DebugYielding> debug_yielding_import;
 	ServiceImport<MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
 	ServiceImport<Memory<uint64_t> > memory_import;
 	ServiceImport<TrapReporting > trap_reporting_import;

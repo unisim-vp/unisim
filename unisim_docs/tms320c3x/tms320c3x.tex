@@ -906,7 +906,7 @@ These interfaces are intended for the connection of the simulation components (e
 \noindent Method \texttt{SetValue} sets the register value from a buffer.
 \noindent Method \texttt{GetSize} returns the register size in bytes.
 
-\textbf{Step by step execution}. A simulation component (e.g. a CPU) leaves control to a debugger with the \texttt{unisim::service::interfaces::DebugControl} interface.
+\textbf{Step by step execution}. A simulation component (e.g. a CPU) leaves control to a debugger with the \texttt{unisim::service::interfaces::DebugYielding} interface.
 
 \begin{center}
 	\input{tms320c3x/debug_control_interface}

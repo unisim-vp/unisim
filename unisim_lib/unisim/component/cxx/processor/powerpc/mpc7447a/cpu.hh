@@ -43,7 +43,7 @@
 #include <unisim/component/cxx/tlb/tlb.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
-#include <unisim/service/interfaces/debug_control.hh>
+#include <unisim/service/interfaces/debug_yielding.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/util/debug/simple_register.hh>
@@ -76,7 +76,7 @@ namespace processor {
 namespace powerpc {
 namespace mpc7447a {
 
-using unisim::service::interfaces::DebugControl;
+using unisim::service::interfaces::DebugYielding;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
@@ -276,7 +276,7 @@ class CPU :
 	public unisim::component::cxx::processor::powerpc::mpc7447a::Decoder<CONFIG>,
 	public Client<Loader>,
 	public Client<SymbolTableLookup<typename CONFIG::address_t> >,
-	public Client<DebugControl<typename CONFIG::address_t> >,
+	public Client<DebugYielding>,
 	public Client<MemoryAccessReporting<typename CONFIG::address_t> >,
 	public Client<TrapReporting>,
 	public Service<MemoryAccessReportingControl>,
@@ -303,7 +303,7 @@ public:
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 
 	ServiceImport<Loader> kernel_loader_import;
-	ServiceImport<DebugControl<typename CONFIG::address_t> > debug_control_import;
+	ServiceImport<DebugYielding> debug_yielding_import;
 	ServiceImport<MemoryAccessReporting<typename CONFIG::address_t> > memory_access_reporting_import;
 	ServiceImport<SymbolTableLookup<typename CONFIG::address_t> > symbol_table_lookup_import;
 	ServiceImport<Memory<typename CONFIG::physical_address_t> > memory_import;
