@@ -182,20 +182,11 @@ public:
 
 	~PayloadFabric()
 	{
-<<<<<<< HEAD
-		typename std::vector<PAYLOAD *>::size_type num_payloads = pool.size();
-		typename std::vector<PAYLOAD *>::size_type i;
-		
-		for(i = 0; i < num_payloads; i++)
-		{
-			PAYLOAD *payload = pool[i];
-=======
 		typename std::vector<PAYLOAD *>::iterator it;
 		
 		for(it = payloads.begin(); it != payloads.end(); it++)
 		{
 			PAYLOAD *payload = *it;
->>>>>>> origin/mpc5777m
 			delete payload;
 		}
 // 		while(!free_list.empty())
@@ -236,11 +227,7 @@ public:
 	}
 private:
 	std::stack<PAYLOAD *, std::vector<PAYLOAD *> > free_list;
-<<<<<<< HEAD
-	std::vector<PAYLOAD *> pool;
-=======
 	std::vector<PAYLOAD *> payloads;
->>>>>>> origin/mpc5777m
 };
 
 template <class T>
