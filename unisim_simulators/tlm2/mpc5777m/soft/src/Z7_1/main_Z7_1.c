@@ -11,8 +11,9 @@ int main(void)
 	volatile int counter = 0;
 	
 	/* Loop forever */
-	for(;;) {	   
-	   	counter++;
-		//PPC_WAIT;
+	for(;;)
+	{
+		counter++;
+		PPC_WAIT;
 	}
 }

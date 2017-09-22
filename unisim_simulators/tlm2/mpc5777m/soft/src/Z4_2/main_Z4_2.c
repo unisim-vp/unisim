@@ -113,7 +113,8 @@ int main(void)
 	pit_enable_timers_clock(1);                  // PIT_1: enable PIT_1 timers clock
 	
 	/* Loop forever */
-	for(;;) {	   
+	for(;;)
+	{   
 		counter++;
 		PPC_WAIT;
 	}

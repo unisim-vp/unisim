@@ -1,131 +1,160 @@
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libieee1666.pc systemc.pc tlm.pc
 ACLOCAL_AMFLAGS=-I m4
-AM_CPPFLAGS=-I$(top_srcdir)/ieee1666 -I$(top_builddir)/ieee1666
+AM_CPPFLAGS=-I$(top_srcdir)/libieee1666 -I$(top_builddir)/libieee1666
 AM_CXXFLAGS = -fPIC
 sharedir = $(prefix)/share/libieee1666
+LIBTOOL_DEPS = @LIBTOOL_DEPS@
+libtool: $(LIBTOOL_DEPS)
+	$(SHELL) ./config.status libtool
+
 nobase_include_HEADERS = \
-ieee1666/systemc \
-ieee1666/systemc.h \
-ieee1666/tlm \
-ieee1666/tlm.h \
-ieee1666/core/sensitive.h \
-ieee1666/core/port.h \
-ieee1666/core/interface.h \
-ieee1666/core/fwd.h \
-ieee1666/core/export.h \
-ieee1666/core/prim_channel.h \
-ieee1666/core/event_finder.h \
-ieee1666/core/kernel.h \
-ieee1666/core/event.h \
-ieee1666/core/module_name.h \
-ieee1666/core/attribute.h \
-ieee1666/core/module.h \
-ieee1666/core/process_handle.h \
-ieee1666/core/time.h \
-ieee1666/core/object.h \
-ieee1666/core/process.h \
-ieee1666/core/thread_process.h \
-ieee1666/core/cthread_process.h \
-ieee1666/core/method_process.h \
-ieee1666/core/kernel_event.h \
-ieee1666/core/allocator.h \
-ieee1666/core/spawn.h \
-ieee1666/core/features.h \
-ieee1666/core/reset.h \
-ieee1666/channels/fifo_in.h \
-ieee1666/channels/clock.h \
-ieee1666/channels/fifo_if.h \
-ieee1666/channels/fwd.h \
-ieee1666/channels/in.h \
-ieee1666/channels/fifo_out.h \
-ieee1666/channels/fifo.h \
-ieee1666/channels/semaphore_if.h \
-ieee1666/channels/inout.h \
-ieee1666/channels/buffer.h \
-ieee1666/channels/out.h \
-ieee1666/channels/mutex_if.h \
-ieee1666/channels/event_queue_if.h \
-ieee1666/channels/event_queue.h \
-ieee1666/channels/signal_if.h \
-ieee1666/channels/mutex.h \
-ieee1666/channels/signal.h \
-ieee1666/channels/semaphore.h \
-ieee1666/utilities/fwd.h \
-ieee1666/utilities/trace_file.h \
-ieee1666/utilities/report.h \
-ieee1666/utilities/report_handler.h \
-ieee1666/utilities/version.h \
-ieee1666/utilities/backtrace.h \
-ieee1666/utilities/vector.h \
-ieee1666/tlm2/fwd.h \
-ieee1666/tlm2/interface/blocking_transport.h \
-ieee1666/tlm2/interface/non_blocking_transport.h \
-ieee1666/tlm2/interface/debug_transport.h \
-ieee1666/tlm2/interface/direct_memory.h \
-ieee1666/tlm2/interface/combined.h \
-ieee1666/tlm2/socket/target_socket.h \
-ieee1666/tlm2/socket/initiator_socket.h \
-ieee1666/tlm2/protocol/base_protocol.h \
-ieee1666/tlm2/phase/base_phase.h \
-ieee1666/tlm2/payload/generic_payload.h \
-ieee1666/tlm2/global_quantum/global_quantum.h \
-ieee1666/tlm_utils/simple_initiator_socket.h \
-ieee1666/tlm_utils/simple_target_socket.h \
-ieee1666/tlm_utils/passthrough_target_socket.h \
-ieee1666/tlm_utils/peq_with_get.h \
-ieee1666/tlm_utils/peq_with_cb_and_phase.h \
-ieee1666/tlm_utils/tlm_quantumkeeper.h
+libieee1666/systemc \
+libieee1666/systemc.h \
+libieee1666/tlm \
+libieee1666/tlm.h \
+libieee1666/core/sensitive.h \
+libieee1666/core/port.h \
+libieee1666/core/interface.h \
+libieee1666/core/fwd.h \
+libieee1666/core/export.h \
+libieee1666/core/prim_channel.h \
+libieee1666/core/event_finder.h \
+libieee1666/core/kernel.h \
+libieee1666/core/event.h \
+libieee1666/core/module_name.h \
+libieee1666/core/attribute.h \
+libieee1666/core/module.h \
+libieee1666/core/process_handle.h \
+libieee1666/core/time.h \
+libieee1666/core/object.h \
+libieee1666/core/process.h \
+libieee1666/core/thread_process.h \
+libieee1666/core/cthread_process.h \
+libieee1666/core/method_process.h \
+libieee1666/core/kernel_event.h \
+libieee1666/core/allocator.h \
+libieee1666/core/spawn.h \
+libieee1666/core/features.h \
+libieee1666/core/reset.h \
+libieee1666/core/coroutine.h \
+libieee1666/core/stack.h \
+libieee1666/core/simple_stack.h \
+libieee1666/channels/fifo_in.h \
+libieee1666/channels/clock.h \
+libieee1666/channels/fifo_if.h \
+libieee1666/channels/fwd.h \
+libieee1666/channels/in.h \
+libieee1666/channels/fifo_out.h \
+libieee1666/channels/fifo.h \
+libieee1666/channels/semaphore_if.h \
+libieee1666/channels/inout.h \
+libieee1666/channels/buffer.h \
+libieee1666/channels/out.h \
+libieee1666/channels/mutex_if.h \
+libieee1666/channels/event_queue_if.h \
+libieee1666/channels/event_queue.h \
+libieee1666/channels/signal_if.h \
+libieee1666/channels/mutex.h \
+libieee1666/channels/signal.h \
+libieee1666/channels/semaphore.h \
+libieee1666/utilities/fwd.h \
+libieee1666/utilities/trace_file.h \
+libieee1666/utilities/report.h \
+libieee1666/utilities/report_handler.h \
+libieee1666/utilities/version.h \
+libieee1666/utilities/vector.h \
+libieee1666/tlm2/fwd.h \
+libieee1666/tlm2/interface/blocking_transport.h \
+libieee1666/tlm2/interface/non_blocking_transport.h \
+libieee1666/tlm2/interface/debug_transport.h \
+libieee1666/tlm2/interface/direct_memory.h \
+libieee1666/tlm2/interface/combined.h \
+libieee1666/tlm2/socket/target_socket.h \
+libieee1666/tlm2/socket/initiator_socket.h \
+libieee1666/tlm2/protocol/base_protocol.h \
+libieee1666/tlm2/phase/base_phase.h \
+libieee1666/tlm2/payload/generic_payload.h \
+libieee1666/tlm2/global_quantum/global_quantum.h \
+libieee1666/tlm_utils/simple_initiator_socket.h \
+libieee1666/tlm_utils/simple_target_socket.h \
+libieee1666/tlm_utils/passthrough_target_socket.h \
+libieee1666/tlm_utils/peq_with_get.h \
+libieee1666/tlm_utils/peq_with_cb_and_phase.h \
+libieee1666/tlm_utils/tlm_quantumkeeper.h
+
+noinst_HEADERS = \
+libieee1666/core/sysdep/fcontext_coroutine.h \
+libieee1666/core/sysdep/ucontext_coroutine.h \
+libieee1666/core/sysdep/windows_fiber_coroutine.h \
+libieee1666/core/sysdep/sjlj_except.h \
+libieee1666/core/sysdep/pthread_coroutine.h \
+libieee1666/core/sysdep/posix_guarded_stack.h \
+libieee1666/core/sysdep/windows_guarded_stack.h \
+libieee1666/utilities/backtrace.h \
+libieee1666/utilities/sysdep/backtrace.h
 
 lib_LTLIBRARIES = libieee1666.la
 libieee1666_la_SOURCES = \
-ieee1666/core/attribute.cc \
-ieee1666/core/event.cc \
-ieee1666/core/event_finder.cc \
-ieee1666/core/export.cc \
-ieee1666/core/interface.cc \
-ieee1666/core/kernel.cc \
-ieee1666/core/module.cc \
-ieee1666/core/module_name.cc \
-ieee1666/core/object.cc \
-ieee1666/core/port.cc \
-ieee1666/core/prim_channel.cc \
-ieee1666/core/process_handle.cc \
-ieee1666/core/sensitive.cc \
-ieee1666/core/time.cc \
-ieee1666/core/process.cc \
-ieee1666/core/thread_process.cc \
-ieee1666/core/cthread_process.cc \
-ieee1666/core/method_process.cc \
-ieee1666/core/spawn.cc \
-ieee1666/core/reset.cc \
-ieee1666/channels/buffer.cc \
-ieee1666/channels/clock.cc \
-ieee1666/channels/event_queue.cc \
-ieee1666/channels/event_queue_if.cc \
-ieee1666/channels/fifo.cc \
-ieee1666/channels/fifo_if.cc \
-ieee1666/channels/fifo_in.cc \
-ieee1666/channels/fifo_out.cc \
-ieee1666/channels/in.cc \
-ieee1666/channels/inout.cc \
-ieee1666/channels/mutex.cc \
-ieee1666/channels/mutex_if.cc \
-ieee1666/channels/out.cc \
-ieee1666/channels/semaphore.cc \
-ieee1666/channels/semaphore_if.cc \
-ieee1666/channels/signal.cc \
-ieee1666/channels/signal_if.cc \
-ieee1666/utilities/trace_file.cc \
-ieee1666/utilities/report.cc \
-ieee1666/utilities/report_handler.cc \
-ieee1666/utilities/version.cc \
-ieee1666/utilities/backtrace.cc \
-ieee1666/tlm2/interface/direct_memory.cc \
-ieee1666/tlm2/phase/base_phase.cc \
-ieee1666/tlm2/payload/generic_payload.cc \
-ieee1666/tlm2/global_quantum/global_quantum.cc \
-ieee1666/tlm_utils/tlm_quantumkeeper.cc
+libieee1666/core/attribute.cc \
+libieee1666/core/event.cc \
+libieee1666/core/event_finder.cc \
+libieee1666/core/export.cc \
+libieee1666/core/interface.cc \
+libieee1666/core/kernel.cc \
+libieee1666/core/module.cc \
+libieee1666/core/module_name.cc \
+libieee1666/core/object.cc \
+libieee1666/core/port.cc \
+libieee1666/core/prim_channel.cc \
+libieee1666/core/process_handle.cc \
+libieee1666/core/sensitive.cc \
+libieee1666/core/time.cc \
+libieee1666/core/process.cc \
+libieee1666/core/thread_process.cc \
+libieee1666/core/cthread_process.cc \
+libieee1666/core/method_process.cc \
+libieee1666/core/spawn.cc \
+libieee1666/core/reset.cc \
+libieee1666/core/simple_stack.cc \
+libieee1666/channels/buffer.cc \
+libieee1666/channels/clock.cc \
+libieee1666/channels/event_queue.cc \
+libieee1666/channels/event_queue_if.cc \
+libieee1666/channels/fifo.cc \
+libieee1666/channels/fifo_if.cc \
+libieee1666/channels/fifo_in.cc \
+libieee1666/channels/fifo_out.cc \
+libieee1666/channels/in.cc \
+libieee1666/channels/inout.cc \
+libieee1666/channels/mutex.cc \
+libieee1666/channels/mutex_if.cc \
+libieee1666/channels/out.cc \
+libieee1666/channels/semaphore.cc \
+libieee1666/channels/semaphore_if.cc \
+libieee1666/channels/signal.cc \
+libieee1666/channels/signal_if.cc \
+libieee1666/utilities/trace_file.cc \
+libieee1666/utilities/report.cc \
+libieee1666/utilities/report_handler.cc \
+libieee1666/utilities/version.cc \
+libieee1666/tlm2/interface/direct_memory.cc \
+libieee1666/tlm2/phase/base_phase.cc \
+libieee1666/tlm2/payload/generic_payload.cc \
+libieee1666/tlm2/global_quantum/global_quantum.cc \
+libieee1666/tlm_utils/tlm_quantumkeeper.cc
+
+EXTRA_libieee1666_la_SOURCES = \
+libieee1666/core/sysdep/fcontext_coroutine.cc \
+libieee1666/core/sysdep/ucontext_coroutine.cc \
+libieee1666/core/sysdep/windows_fiber_coroutine.cc \
+libieee1666/core/sysdep/pthread_coroutine.cc \
+libieee1666/core/sysdep/posix_guarded_stack.cc \
+libieee1666/core/sysdep/windows_guarded_stack.cc \
+libieee1666/utilities/sysdep/backtrace.cc
+
+libieee1666_la_LIBADD = $(LIBIEEE1666_SYSDEPS)
+libieee1666_la_DEPENDENCIES = $(LIBIEEE1666_SYSDEPS)
 
 libieee1666_la_LDFLAGS = -release $(PACKAGE_VERSION)
 
@@ -133,9 +162,14 @@ nobase_dist_share_DATA = \
 COPYING
 
 EXTRA_DIST = \
-m4/cxxabi.m4 \
-m4/check_lib.m4 \
-m4/sc_thread_process_backend.m4 \
+bootstrap.sh \
+m4/libtool.m4 \
+m4/lt~obsolete.m4 \
+m4/ltoptions.m4 \
+m4/ltsugar.m4 \
+m4/ltversion.m4 \
+m4/ax_boost_base.m4 \
+m4/ax_boost_context.m4 \
 pkg/pkgconfig/libieee1666.pc.in \
 pkg/pkgconfig/systemc.pc.in \
 pkg/pkgconfig/tlm.pc.in \
@@ -170,3 +204,21 @@ uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(sharedir) || true)
 	(rmdir $(libdir) || true)
+
+if LIBIEEE1666_ENABLE_ACCELLERA_INSTALL_LAYOUT
+install-exec-hook:
+	(test -e $(libdir)/libsystemc.a || (cd $(libdir) && $(LN_S) libieee1666.a libsystemc.a))
+	(test -e $(libdir)/libsystemc.so || (cd $(libdir) && $(LN_S) libieee1666.so libsystemc.so))
+	(test -z $(TARGET_ARCH) || test -e $(prefix)/lib-$(TARGET_ARCH) || (cd $(prefix) && $(LN_S) lib lib-$(TARGET_ARCH)))
+
+install-data-hook:
+	(test -e $(includedir)/systemc || (cd $(includedir) && $(LN_S) libieee1666/systemc systemc))
+	(test -e $(includedir)/systemc.h || (cd $(includedir) && $(LN_S) libieee1666/systemc.h systemc.h))
+	(test -e $(includedir)/tlm || (cd $(includedir) && $(LN_S) libieee1666/tlm tlm))
+	(test -e $(includedir)/tlm.h || (cd $(includedir) && $(LN_S) libieee1666/tlm.h tlm.h))
+	(test -e $(includedir)/tlm_utils || (cd $(includedir) && $(LN_S) libieee1666/tlm_utils tlm_utils))
+	(test -e $(includedir)/core || (cd $(includedir) && $(LN_S) libieee1666/core core))
+	(test -e $(includedir)/channels || (cd $(includedir) && $(LN_S) libieee1666/channels channels))
+	(test -e $(includedir)/utilities || (cd $(includedir) && $(LN_S) libieee1666/utilities utilities))
+	(test -e $(includedir)/tlm2 || (cd $(includedir) && $(LN_S) libieee1666/tlm2 tlm2))
+endif
