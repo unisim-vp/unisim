@@ -57,11 +57,17 @@ public:
 	virtual void ReportCommitInstruction(ADDRESS addr) = 0;
 };
 
+enum MemoryAccessReportingType
+{
+	REPORT_MEM_ACCESS  = 0,
+	REPORT_FETCH_INSN  = 1,
+	REPORT_COMMIT_INSN = 2
+};
+
 class MemoryAccessReportingControl : public unisim::kernel::service::ServiceInterface
 {
 public:
-	virtual void RequiresMemoryAccessReporting(bool report) = 0;
-	virtual void RequiresFinishedInstructionReporting(bool report) = 0;
+	virtual void RequiresMemoryAccessReporting(MemoryAccessReportingType type, bool report) = 0;
 };
 
 } // end of namespace interfaces

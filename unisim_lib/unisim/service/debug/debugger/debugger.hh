@@ -307,8 +307,7 @@ private:
 		inline void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner) { if(registers_import) registers_import->ScanRegisters(scanner); }
 
 		// unisim::service::interfaces::MemoryAccessReportingControl
-		inline void RequiresMemoryAccessReporting(bool report) { if(memory_access_reporting_control_import) memory_access_reporting_control_import->RequiresMemoryAccessReporting(report); }
-		inline void RequiresFinishedInstructionReporting(bool report) { if(memory_access_reporting_control_import) memory_access_reporting_control_import->RequiresFinishedInstructionReporting(report); }
+		inline void RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType type, bool report) { if(memory_access_reporting_control_import) memory_access_reporting_control_import->RequiresMemoryAccessReporting(type, report); }
 	private:
 		Debugger<CONFIG>& dbg;
 		unsigned int id;
@@ -528,7 +527,8 @@ private:
 	// Currently selected processor gate
 	ProcessorGate *sel_prc_gate[MAX_FRONT_ENDS];
 
-	bool requires_finished_instruction_reporting[NUM_PROCESSORS];
+	bool requires_fetch_instruction_reporting[NUM_PROCESSORS];
+	bool requires_commit_instruction_reporting[NUM_PROCESSORS];
 	bool requires_memory_access_reporting[NUM_PROCESSORS];
 
 	bool verbose;

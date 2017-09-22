@@ -133,7 +133,8 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	, synchronizable_export("synchronizable-export", this)
 	, logger(*this)
 	, requires_memory_access_reporting(false)
-	, requires_finished_instruction_reporting(false)
+	, requires_fetch_instruction_reporting(false)
+	, requires_commit_instruction_reporting(false)
 	, instruction_counter(0)
 	, param_instruction_counter("instruction-counter", this, instruction_counter, "number of simulated instructions")
 	, trap_on_instruction_counter(0xffffffffffffffffULL)
@@ -847,15 +848,20 @@ void CPU<TYPES, CONFIG>::Synchronize()
 }
 
 template <typename TYPES, typename CONFIG>
-void CPU<TYPES, CONFIG>::RequiresMemoryAccessReporting(bool report)
+void CPU<TYPES, CONFIG>::RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType type, bool report)
 {
-	requires_memory_access_reporting = report;
-}
-
-template <typename TYPES, typename CONFIG>
-void CPU<TYPES, CONFIG>::RequiresFinishedInstructionReporting(bool report)
-{
-	requires_finished_instruction_reporting = report;
+	switch(type)
+	{
+		case unisim::service::interfaces::REPORT_MEM_ACCESS:
+			requires_memory_access_reporting = report;
+			break;
+		case unisim::service::interfaces::REPORT_FETCH_INSN:
+			requires_fetch_instruction_reporting = report;
+			break;
+		case unisim::service::interfaces::REPORT_COMMIT_INSN:
+			requires_commit_instruction_reporting = report;
+			break;
+	}
 }
 
 template <typename TYPES, typename CONFIG>
