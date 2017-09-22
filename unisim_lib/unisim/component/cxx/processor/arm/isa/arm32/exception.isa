@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2013,
+ *  Copyright (c) 2007-2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr), 
  */
 
 /**********************************************
@@ -458,7 +458,7 @@ adcspc_imm.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
   typedef typename ARCH::U32 U32;
-  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 + op2 + cpu.CPSR().Get( C );
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), carry = cpu.CPSR().Get( C ), res = op1 + op2 + carry;
   
   CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
   
@@ -476,8 +476,8 @@ adcspc_imm_shift.execute = {
 
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
-           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-           res = op1 + op2 + cpu.CPSR().Get( C );
+    op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ), carry = cpu.CPSR().Get( C ),
+    res = op1 + op2 + carry;
   
   CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
   
@@ -495,7 +495,7 @@ sbcspc_imm.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
   typedef typename ARCH::U32 U32;
-  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 - op2 - (cpu.CPSR().Get( C ) ^ U32(1));
+  U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), borrow = cpu.CPSR().Get( C ) ^ U32(1), res = op1 - op2 - borrow;
   
   CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
   
@@ -513,8 +513,8 @@ sbcspc_imm_shift.execute = {
 
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
-           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
-           res = op1 - op2 - (cpu.CPSR().Get( C ) ^ U32(1));
+    op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ), borrow = cpu.CPSR().Get( C ) ^ U32(1),
+    res = op1 - op2 - borrow;
   
   CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
   
@@ -532,7 +532,7 @@ rscspc_imm.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
   typedef typename ARCH::U32 U32;
-  U32 op1 = U32(imm), op2 = cpu.GetGPR( rn ), res = op1 - op2 - (cpu.CPSR().Get( C ) ^ U32(1));
+  U32 op1 = U32(imm), op2 = cpu.GetGPR( rn ), borrow = cpu.CPSR().Get( C ) ^ U32(1), res = op1 - op2 - borrow;
   
   CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
   
@@ -550,8 +550,8 @@ rscspc_imm_shift.execute = {
 
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ),
-           op1 = ComputeImmShift( cpu, rmval, shift, imm ), op2 = cpu.GetGPR( rn ),
-           res = op1 - op2 - (cpu.CPSR().Get( C ) ^ U32(1));
+    op1 = ComputeImmShift( cpu, rmval, shift, imm ), op2 = cpu.GetGPR( rn ), borrow = cpu.CPSR().Get( C ) ^ U32(1),
+    res = op1 - op2 - borrow;
   
   CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
   

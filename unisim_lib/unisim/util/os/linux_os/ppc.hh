@@ -36,11 +36,13 @@
 #define __UNISIM_UTIL_OS_LINUX_PPC_HH__
 
 #include <unisim/util/likely/likely.hh>
-
 #include <unisim/util/os/linux_os/errno.hh>
-#include <errno.h>
 
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
+#include <stdexcept>
+#include <cerrno>
+#include <cstdlib>
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <process.h>
 #include <windows.h>
 #else
@@ -57,13 +59,6 @@ namespace unisim {
 namespace util {
 namespace os {
 namespace linux_os {
-
-  using unisim::kernel::logger::DebugInfo;
-  using unisim::kernel::logger::DebugWarning;
-  using unisim::kernel::logger::DebugError;
-  using unisim::kernel::logger::EndDebugInfo;
-  using unisim::kernel::logger::EndDebugWarning;
-  using unisim::kernel::logger::EndDebugError;
 
   // Register names
   static char const* const kPPC_r3  = "r3";
@@ -187,11 +182,11 @@ namespace linux_os {
       if (not SetRegister(lin, kPPC_cia, lin.GetEntryPoint()))
         return false;
       // Set SP to the base of the created stack
-      unisim::util::debug::blob::Section<address_type> const * sp_section =
+      unisim::util::blob::Section<address_type> const * sp_section =
         lin.GetBlob()->FindSection(".unisim.linux_os.stack.stack_pointer");
       if (sp_section == NULL)
         {
-          lin.Logger() << DebugError << "Could not find the stack pointer section." << EndDebugError;
+          lin.DebugErrorStream() << "Could not find the stack pointer section." << std::endl;
           return false;
         }
       if (not SetRegister(lin, kPPC_sp, sp_section->GetAddr()))
@@ -578,7 +573,7 @@ namespace linux_os {
       if (not SetRegister(_lin, kPPC_r3, val)) return;
     }
     
-    void SetSystemCallStatus(int ret, bool error) const { SetPPCSystemCallStatus(lin, ret, error); }
+    void SetSystemCallStatus(int64_t ret, bool error) const { SetPPCSystemCallStatus(lin, ret, error); }
 
     static parameter_type GetSystemCallParam(LINUX& lin, int id)
     {
@@ -601,7 +596,7 @@ namespace linux_os {
       try { return GetSystemCallParam( lin, id ); }
       
       catch (int x) {
-        lin.Logger() << DebugError << "No syscall argument #" << id << " in " << this->name << " linux" << EndDebugError;
+        lin.DebugErrorStream() << "No syscall argument #" << id << " in " << this->name << " linux" << std::endl;
       }
       
       return 0;
@@ -989,7 +984,7 @@ namespace linux_os {
                 target_errno = SysCall::HostToLinuxErrno(errno);
 
               if (unlikely(lin.GetVerbose()))
-                lin.Logger() << DebugInfo << "times(buf=0x" << std::hex << buf_addr << std::dec << ")" << EndDebugInfo;
+                lin.DebugInfoStream() << "times(buf=0x" << std::hex << buf_addr << std::dec << ")" << std::endl;
   
               SetPPCSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
             }
@@ -1037,10 +1032,10 @@ namespace linux_os {
 
               if(unlikely(lin.GetVerbose()))
                 {
-                  lin.Logger() << DebugInfo
+                  lin.DebugInfoStream()
                               << "gettimeofday(tv = 0x" << std::hex << tv_addr << std::dec
                               << ", tz = 0x" << std::hex << tz_addr << std::dec << ")"
-                              << EndDebugInfo;
+                              << std::endl;
                 }
   
               SetPPCSystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
@@ -1087,10 +1082,10 @@ namespace linux_os {
 
               if(unlikely(lin.GetVerbose()))
                 {
-                  lin.Logger() << DebugInfo
+                  lin.DebugInfoStream()
                               << "fstat(fd=" << target_fd
                               << ", buf_addr=0x" << std::hex << buf_address << std::dec
-                              << ")" << EndDebugInfo;
+                              << ")" << std::endl;
                 }
   
               SetPPCSystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
@@ -1159,9 +1154,9 @@ namespace linux_os {
     
                   if(unlikely(lin.GetVerbose()))
                     {
-                      lin.Logger() << DebugInfo
+                      lin.DebugInfoStream()
                                   << "pathname = \"" << pathname << "\", buf_address = 0x" << std::hex << buf_address << std::dec
-                                  << EndDebugInfo;
+                                  << std::endl;
                     }
                 }
               else
@@ -1215,9 +1210,9 @@ namespace linux_os {
   
               if(unlikely(lin.GetVerbose()))
                 {
-                  lin.Logger() << DebugInfo
+                  lin.DebugInfoStream()
                               << "fd = " << target_fd << ", buf_address = 0x" << std::hex << buf_address << std::dec
-                              << EndDebugInfo;
+                              << std::endl;
                 }
   
               SetPPCSystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
@@ -1230,7 +1225,7 @@ namespace linux_os {
       return 0;
     }
     
-    bool SetSystemBlob( unisim::util::debug::blob::Blob<address_type>* blob ) const { return true; }
+    bool SetSystemBlob( unisim::util::blob::Blob<address_type>* blob ) const { return true; }
   };
 
 } // end of namespace linux_os

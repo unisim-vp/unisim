@@ -82,7 +82,7 @@ public:
 	virtual bool EndSetup();
 
 	virtual bool Load();
-	virtual const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
+	virtual const unisim::util::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
 	virtual void GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;

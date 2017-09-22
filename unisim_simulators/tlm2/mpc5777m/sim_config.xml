@@ -1,0 +1,3166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<variables>
+	<object name="HARDWARE">
+		<object name="HARDWARE.instrumenter">
+			<variable name="enable-output-instrumentation">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable output instrumentation of signals</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="instrumentation-output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Output filename for instrumented signals</description>
+			</variable>
+			<variable name="output-instrumentation">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Instrumented signals to output in the instrumentation output file</description>
+			</variable>
+			<variable name="output-instrumentation-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>Start time for output instrumentation of signals</description>
+			</variable>
+			<variable name="output-instrumentation-end-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>18446744073709551615 ps</value>
+				<description>End time for output instrumentation of signals</description>
+			</variable>
+			<variable name="output-csv-delimiter">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>,</value>
+				<description>CSV delimiter for instrumentation output file</description>
+			</variable>
+			<variable name="enable-input-instrumentation">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable input instrumentation of signals</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="instrumentation-input-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Input filename for instrumented signals</description>
+			</variable>
+			<variable name="input-instrumentation">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Instrumented signals (wildcard '*' is allowed in signal names) that take there input from the instrumentation input file</description>
+			</variable>
+			<variable name="input-instrumentation-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>Start time for input instrumentation of signals</description>
+			</variable>
+			<variable name="input-instrumentation-end-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>18446744073709551615 ps</value>
+				<description>End time for input instrumentation of signals</description>
+			</variable>
+			<variable name="input-csv-delimiter">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>,</value>
+				<description>CSV delimiter for instrumentation input file</description>
+			</variable>
+			<variable name="vcd-trace-file">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>VCD output filename for signals trace</description>
+			</variable>
+			<variable name="trace-signals">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Signals to trace (wildcard '*' is allowed in signal names)</description>
+			</variable>
+			<variable name="enable-trace-signals">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable signals trace</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="gtkwave-init-script">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>GTKWave initialization script that simulators must automatically generate at startup</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.Main_Core_0">
+			<object name="HARDWARE.Main_Core_0.L1I">
+				<variable name="verbose">
+					<type>parameter</type>
+					<data_type>boolean</data_type>
+					<value>false</value>
+					<description>enable/disable verbosity</description>
+					<enumeration>
+						<item>true</item>
+						<item>false</item>
+					</enumeration>
+				</variable>
+			</object>
+			<object name="HARDWARE.Main_Core_0.L1D">
+				<variable name="verbose">
+					<type>parameter</type>
+					<data_type>boolean</data_type>
+					<value>false</value>
+					<description>enable/disable verbosity</description>
+					<enumeration>
+						<item>true</item>
+						<item>false</item>
+					</enumeration>
+				</variable>
+			</object>
+			<object name="HARDWARE.Main_Core_0.IMEM">
+				<variable name="base-addr">
+					<type>parameter</type>
+					<data_type>unsigned 32-bit integer</data_type>
+					<value>0x50000000</value>
+					<description>base address at reset</description>
+				</variable>
+				<variable name="size">
+					<type>parameter</type>
+					<data_type>unsigned 32-bit integer</data_type>
+					<value>16384</value>
+					<description>size in bytes (at most 65536 bytes)</description>
+				</variable>
+				<variable name="verbose">
+					<type>parameter</type>
+					<data_type>boolean</data_type>
+					<value>false</value>
+					<description>enable/disable verbosity</description>
+					<enumeration>
+						<item>true</item>
+						<item>false</item>
+					</enumeration>
+				</variable>
+			</object>
+			<object name="HARDWARE.Main_Core_0.DMEM">
+				<variable name="base-addr">
+					<type>parameter</type>
+					<data_type>unsigned 32-bit integer</data_type>
+					<value>0x50800000</value>
+					<description>base address at reset</description>
+				</variable>
+				<variable name="size">
+					<type>parameter</type>
+					<data_type>unsigned 32-bit integer</data_type>
+					<value>65536</value>
+					<description>size in bytes (at most 65536 bytes)</description>
+				</variable>
+				<variable name="verbose">
+					<type>parameter</type>
+					<data_type>boolean</data_type>
+					<value>false</value>
+					<description>enable/disable verbosity</description>
+					<enumeration>
+						<item>true</item>
+						<item>false</item>
+					</enumeration>
+				</variable>
+			</object>
+			<variable name="instruction-counter">
+				<type>parameter</type>
+				<data_type>unsigned 64-bit integer</data_type>
+				<value>0</value>
+				<description>number of simulated instructions</description>
+			</variable>
+			<variable name="trap-on-instruction-counter">
+				<type>parameter</type>
+				<data_type>unsigned 64-bit integer</data_type>
+				<value>18446744073709551615</value>
+				<description>number of simulated instruction before traping</description>
+			</variable>
+			<variable name="max-inst">
+				<type>parameter</type>
+				<data_type>unsigned 64-bit integer</data_type>
+				<value>18446744073709551615</value>
+				<description>maximum number of instructions to simulate</description>
+			</variable>
+			<variable name="halt-on">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Symbol or address where to stop simulation</description>
+			</variable>
+			<variable name="verbose-setup">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity while setup</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-exception">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of exception</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-move-to-slr">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of move to system level registers (SPRs, and so on)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-move-from-slr">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of move from system level registers (SPRs, and so on)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="reset-addr">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x01000000</value>
+				<description>reset address</description>
+			</variable>
+			<variable name="cpuid">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x00</value>
+				<description>CPU ID at reset</description>
+			</variable>
+			<variable name="processor-version">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x81b00000</value>
+				<description>Processor Version</description>
+			</variable>
+			<variable name="system-version">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>System Version</description>
+			</variable>
+			<variable name="system-information">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>System Information</description>
+			</variable>
+			<variable name="local-memory-base-addr">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x50000000</value>
+				<description>local memory base address</description>
+			</variable>
+			<variable name="local-memory-size">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00800000</value>
+				<description>local memory size</description>
+			</variable>
+			<variable name="verbose-data-load">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of data load</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-data-store">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of data store</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-instruction-fetch">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of instruction fetch</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-data-bus-read">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of data bus read</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-data-bus-write">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of data bus write</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-instruction-bus-read">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of instruction bus read</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-multiplier">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>1</value>
+				<description>clock multiplier</description>
+			</variable>
+			<variable name="nice-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>200 ns</value>
+				<description>maximum time between synchonizations</description>
+			</variable>
+			<variable name="ipc">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>1</value>
+				<description>maximum instructions per cycle, typically 1 or 2</description>
+			</variable>
+			<variable name="enable-host-idle">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable host idle periods when target is idle</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="debug-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable debugging of DMI (Direct Memory Access)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="ahb-master-id">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>AHB Master ID</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.Main_Core_1">
+			<object name="HARDWARE.Main_Core_1.L1I">
+				<variable name="verbose">
+					<type>parameter</type>
+					<data_type>boolean</data_type>
+					<value>false</value>
+					<description>enable/disable verbosity</description>
+					<enumeration>
+						<item>true</item>
+						<item>false</item>
+					</enumeration>
+				</variable>
+			</object>
+			<object name="HARDWARE.Main_Core_1.L1D">
+				<variable name="verbose">
+					<type>parameter</type>
+					<data_type>boolean</data_type>
+					<value>false</value>
+					<description>enable/disable verbosity</description>
+					<enumeration>
+						<item>true</item>
+						<item>false</item>
+					</enumeration>
+				</variable>
+			</object>
+			<object name="HARDWARE.Main_Core_1.IMEM">
+				<variable name="base-addr">
+					<type>parameter</type>
+					<data_type>unsigned 32-bit integer</data_type>
+					<value>0x51000000</value>
+					<description>base address at reset</description>
+				</variable>
+				<variable name="size">
+					<type>parameter</type>
+					<data_type>unsigned 32-bit integer</data_type>
+					<value>16384</value>
+					<description>size in bytes (at most 65536 bytes)</description>
+				</variable>
+				<variable name="verbose">
+					<type>parameter</type>
+					<data_type>boolean</data_type>
+					<value>false</value>
+					<description>enable/disable verbosity</description>
+					<enumeration>
+						<item>true</item>
+						<item>false</item>
+					</enumeration>
+				</variable>
+			</object>
+			<object name="HARDWARE.Main_Core_1.DMEM">
+				<variable name="base-addr">
+					<type>parameter</type>
+					<data_type>unsigned 32-bit integer</data_type>
+					<value>0x51800000</value>
+					<description>base address at reset</description>
+				</variable>
+				<variable name="size">
+					<type>parameter</type>
+					<data_type>unsigned 32-bit integer</data_type>
+					<value>65536</value>
+					<description>size in bytes (at most 65536 bytes)</description>
+				</variable>
+				<variable name="verbose">
+					<type>parameter</type>
+					<data_type>boolean</data_type>
+					<value>false</value>
+					<description>enable/disable verbosity</description>
+					<enumeration>
+						<item>true</item>
+						<item>false</item>
+					</enumeration>
+				</variable>
+			</object>
+			<variable name="instruction-counter">
+				<type>parameter</type>
+				<data_type>unsigned 64-bit integer</data_type>
+				<value>0</value>
+				<description>number of simulated instructions</description>
+			</variable>
+			<variable name="trap-on-instruction-counter">
+				<type>parameter</type>
+				<data_type>unsigned 64-bit integer</data_type>
+				<value>18446744073709551615</value>
+				<description>number of simulated instruction before traping</description>
+			</variable>
+			<variable name="max-inst">
+				<type>parameter</type>
+				<data_type>unsigned 64-bit integer</data_type>
+				<value>18446744073709551615</value>
+				<description>maximum number of instructions to simulate</description>
+			</variable>
+			<variable name="halt-on">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Symbol or address where to stop simulation</description>
+			</variable>
+			<variable name="verbose-setup">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity while setup</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-exception">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of exception</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-move-to-slr">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of move to system level registers (SPRs, and so on)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-move-from-slr">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of move from system level registers (SPRs, and so on)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="reset-addr">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x01280000</value>
+				<description>reset address</description>
+			</variable>
+			<variable name="cpuid">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x01</value>
+				<description>CPU ID at reset</description>
+			</variable>
+			<variable name="processor-version">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x81b00000</value>
+				<description>Processor Version</description>
+			</variable>
+			<variable name="system-version">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>System Version</description>
+			</variable>
+			<variable name="system-information">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000001</value>
+				<description>System Information</description>
+			</variable>
+			<variable name="local-memory-base-addr">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x51000000</value>
+				<description>local memory base address</description>
+			</variable>
+			<variable name="local-memory-size">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00800000</value>
+				<description>local memory size</description>
+			</variable>
+			<variable name="verbose-data-load">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of data load</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-data-store">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of data store</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-instruction-fetch">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of instruction fetch</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-data-bus-read">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of data bus read</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-data-bus-write">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of data bus write</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-instruction-bus-read">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of instruction bus read</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-multiplier">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>1</value>
+				<description>clock multiplier</description>
+			</variable>
+			<variable name="nice-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>200 ns</value>
+				<description>maximum time between synchonizations</description>
+			</variable>
+			<variable name="ipc">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>1</value>
+				<description>maximum instructions per cycle, typically 1 or 2</description>
+			</variable>
+			<variable name="enable-host-idle">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable host idle periods when target is idle</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="debug-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable debugging of DMI (Direct Memory Access)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="ahb-master-id">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000001</value>
+				<description>AHB Master ID</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.Peripheral_Core_2">
+			<object name="HARDWARE.Peripheral_Core_2.L1I">
+				<variable name="verbose">
+					<type>parameter</type>
+					<data_type>boolean</data_type>
+					<value>false</value>
+					<description>enable/disable verbosity</description>
+					<enumeration>
+						<item>true</item>
+						<item>false</item>
+					</enumeration>
+				</variable>
+			</object>
+			<object name="HARDWARE.Peripheral_Core_2.IMEM">
+				<variable name="base-addr">
+					<type>parameter</type>
+					<data_type>unsigned 32-bit integer</data_type>
+					<value>0x52000000</value>
+					<description>base address at reset</description>
+				</variable>
+				<variable name="size">
+					<type>parameter</type>
+					<data_type>unsigned 32-bit integer</data_type>
+					<value>16384</value>
+					<description>size in bytes (at most 65536 bytes)</description>
+				</variable>
+				<variable name="verbose">
+					<type>parameter</type>
+					<data_type>boolean</data_type>
+					<value>false</value>
+					<description>enable/disable verbosity</description>
+					<enumeration>
+						<item>true</item>
+						<item>false</item>
+					</enumeration>
+				</variable>
+			</object>
+			<object name="HARDWARE.Peripheral_Core_2.DMEM">
+				<variable name="base-addr">
+					<type>parameter</type>
+					<data_type>unsigned 32-bit integer</data_type>
+					<value>0x52800000</value>
+					<description>base address at reset</description>
+				</variable>
+				<variable name="size">
+					<type>parameter</type>
+					<data_type>unsigned 32-bit integer</data_type>
+					<value>65536</value>
+					<description>size in bytes (at most 65536 bytes)</description>
+				</variable>
+				<variable name="verbose">
+					<type>parameter</type>
+					<data_type>boolean</data_type>
+					<value>false</value>
+					<description>enable/disable verbosity</description>
+					<enumeration>
+						<item>true</item>
+						<item>false</item>
+					</enumeration>
+				</variable>
+			</object>
+			<variable name="instruction-counter">
+				<type>parameter</type>
+				<data_type>unsigned 64-bit integer</data_type>
+				<value>0</value>
+				<description>number of simulated instructions</description>
+			</variable>
+			<variable name="trap-on-instruction-counter">
+				<type>parameter</type>
+				<data_type>unsigned 64-bit integer</data_type>
+				<value>18446744073709551615</value>
+				<description>number of simulated instruction before traping</description>
+			</variable>
+			<variable name="max-inst">
+				<type>parameter</type>
+				<data_type>unsigned 64-bit integer</data_type>
+				<value>18446744073709551615</value>
+				<description>maximum number of instructions to simulate</description>
+			</variable>
+			<variable name="halt-on">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Symbol or address where to stop simulation</description>
+			</variable>
+			<variable name="verbose-setup">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity while setup</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-exception">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of exception</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-move-to-slr">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of move to system level registers (SPRs, and so on)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-move-from-slr">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of move from system level registers (SPRs, and so on)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="reset-addr">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x01500000</value>
+				<description>reset address</description>
+			</variable>
+			<variable name="cpuid">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x02</value>
+				<description>CPU ID at reset</description>
+			</variable>
+			<variable name="processor-version">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x815f8000</value>
+				<description>Processor Version</description>
+			</variable>
+			<variable name="system-version">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>System Version</description>
+			</variable>
+			<variable name="system-information">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000002</value>
+				<description>System Information</description>
+			</variable>
+			<variable name="local-memory-base-addr">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x52000000</value>
+				<description>local memory base address</description>
+			</variable>
+			<variable name="local-memory-size">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00800000</value>
+				<description>local memory size</description>
+			</variable>
+			<variable name="verbose-data-load">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of data load</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-data-store">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of data store</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-instruction-fetch">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of instruction fetch</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-data-bus-read">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of data bus read</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-data-bus-write">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of data bus write</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-instruction-bus-read">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity of instruction bus read</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-multiplier">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>1</value>
+				<description>clock multiplier</description>
+			</variable>
+			<variable name="nice-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>200 ns</value>
+				<description>maximum time between synchonizations</description>
+			</variable>
+			<variable name="ipc">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>2</value>
+				<description>maximum instructions per cycle, typically 1 or 2</description>
+			</variable>
+			<variable name="enable-host-idle">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable host idle periods when target is idle</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="debug-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable debugging of DMI (Direct Memory Access)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="ahb-master-id">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000002</value>
+				<description>AHB Master ID</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.SYSTEM-SRAM">
+			<variable name="org">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>memory origin/base address</description>
+			</variable>
+			<variable name="bytesize">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>413696</value>
+				<description>memory size in bytes</description>
+			</variable>
+			<variable name="initial-byte-value">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x00</value>
+				<description>initial value for all bytes of memory</description>
+			</variable>
+			<variable name="cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>memory cycle time</description>
+			</variable>
+			<variable name="read-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>memory read latency</description>
+			</variable>
+			<variable name="write-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>memory write latency</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="read-only">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable read-only protection</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.FLASH">
+			<variable name="org">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>memory origin/base address</description>
+			</variable>
+			<variable name="bytesize">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>8863744</value>
+				<description>memory size in bytes</description>
+			</variable>
+			<variable name="initial-byte-value">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x00</value>
+				<description>initial value for all bytes of memory</description>
+			</variable>
+			<variable name="cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>memory cycle time</description>
+			</variable>
+			<variable name="read-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>memory read latency</description>
+			</variable>
+			<variable name="write-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>memory write latency</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="read-only">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>enable/disable read-only protection</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.XBAR_0">
+			<variable name="cycle_time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>5 ns</value>
+				<description>Time to process a request/response by the router</description>
+			</variable>
+			<variable name="port_buffer_size">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0</value>
+				<description>Defines the size of the buffer for incomming requests in each of the input ports (0 = infinite)</description>
+			</variable>
+			<variable name="verbose_all">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Activate all the verbose options</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_setup">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display Object setup information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_tlm">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display TLM blocking/non-blocking transactions information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_tlm_debug">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display TLM debug transactions information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_memory_interface">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display memory interface operations information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="mapping_0">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x400000&quot; range_end=&quot;0x407fff&quot; output_port=&quot;0&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_1">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x60c000&quot; range_end=&quot;0x62ffff&quot; output_port=&quot;0&quot; translation=&quot;0x8000&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_2">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x680000&quot; range_end=&quot;0x687fff&quot; output_port=&quot;0&quot; translation=&quot;0x2c000&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_3">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x800000&quot; range_end=&quot;0x87ffff&quot; output_port=&quot;0&quot; translation=&quot;0x34000&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_4">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc0000&quot; range_end=&quot;0xffffff&quot; output_port=&quot;0&quot; translation=&quot;0xb4000&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_5">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x1000000&quot; range_end=&quot;0x177ffff&quot; output_port=&quot;0&quot; translation=&quot;0xf4000&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_6">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x50000000&quot; range_end=&quot;0x50ffffff&quot; output_port=&quot;2&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_7">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x51000000&quot; range_end=&quot;0x51ffffff&quot; output_port=&quot;3&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_8">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x40000000&quot; range_end=&quot;0x401fffff&quot; output_port=&quot;4&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_9">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x52000000&quot; range_end=&quot;0x5fffffff&quot; output_port=&quot;7&quot; translation=&quot;0x52000000&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_10">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xf0000000&quot; range_end=&quot;0xffffffff&quot; output_port=&quot;7&quot; translation=&quot;0xf0000000&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.XBAR_1">
+			<variable name="cycle_time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>Time to process a request/response by the router</description>
+			</variable>
+			<variable name="port_buffer_size">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0</value>
+				<description>Defines the size of the buffer for incomming requests in each of the input ports (0 = infinite)</description>
+			</variable>
+			<variable name="verbose_all">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Activate all the verbose options</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_setup">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display Object setup information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_tlm">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display TLM blocking/non-blocking transactions information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_tlm_debug">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display TLM debug transactions information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_memory_interface">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display memory interface operations information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="mapping_0">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x400000&quot; range_end=&quot;0x407fff&quot; output_port=&quot;0&quot; translation=&quot;0x400000&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_1">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x60c000&quot; range_end=&quot;0x62ffff&quot; output_port=&quot;0&quot; translation=&quot;0x60c000&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_2">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x680000&quot; range_end=&quot;0x687fff&quot; output_port=&quot;0&quot; translation=&quot;0x680000&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_3">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x800000&quot; range_end=&quot;0x87ffff&quot; output_port=&quot;0&quot; translation=&quot;0x800000&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_4">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc0000&quot; range_end=&quot;0xffffff&quot; output_port=&quot;0&quot; translation=&quot;0xfc0000&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_5">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x1000000&quot; range_end=&quot;0x177ffff&quot; output_port=&quot;0&quot; translation=&quot;0x1000000&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_6">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x50000000&quot; range_end=&quot;0x50ffffff&quot; output_port=&quot;0&quot; translation=&quot;0x50000000&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_7">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x51000000&quot; range_end=&quot;0x51ffffff&quot; output_port=&quot;0&quot; translation=&quot;0x51000000&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_8">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x40000000&quot; range_end=&quot;0x401fffff&quot; output_port=&quot;0&quot; translation=&quot;0x40000000&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_9">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x52000000&quot; range_end=&quot;0x5fffffff&quot; output_port=&quot;1&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_10">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xf0000000&quot; range_end=&quot;0xfbffffff&quot; output_port=&quot;2&quot; translation=&quot;0xf0000000&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_11">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc000000&quot; range_end=&quot;0xffffffff&quot; output_port=&quot;3&quot; translation=&quot;0xfc000000&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.PBRIDGE_A">
+			<variable name="cycle_time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>Time to process a request/response by the router</description>
+			</variable>
+			<variable name="port_buffer_size">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0</value>
+				<description>Defines the size of the buffer for incomming requests in each of the input ports (0 = infinite)</description>
+			</variable>
+			<variable name="verbose_all">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Activate all the verbose options</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_setup">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display Object setup information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_tlm">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display TLM blocking/non-blocking transactions information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_tlm_debug">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display TLM debug transactions information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_memory_interface">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display memory interface operations information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="mapping_0">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc040000&quot; range_end=&quot;0xfc04ffff&quot; output_port=&quot;0&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_1">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc068000&quot; range_end=&quot;0xfc06bfff&quot; output_port=&quot;1&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_2">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc06c000&quot; range_end=&quot;0xfc06ffff&quot; output_port=&quot;2&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_3">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc070000&quot; range_end=&quot;0xfc073fff&quot; output_port=&quot;3&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_4">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc050000&quot; range_end=&quot;0xfc053fff&quot; output_port=&quot;4&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_5">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc054000&quot; range_end=&quot;0xfc057fff&quot; output_port=&quot;5&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_6">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc058000&quot; range_end=&quot;0xfc05bfff&quot; output_port=&quot;6&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_7">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc05c000&quot; range_end=&quot;0xfc05ffff&quot; output_port=&quot;7&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_8">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfff84000&quot; range_end=&quot;0xfff87fff&quot; output_port=&quot;8&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_9">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfff80000&quot; range_end=&quot;0xfff83fff&quot; output_port=&quot;9&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.PBRIDGE_B">
+			<variable name="enable">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable a lazy implementation of TLM 2.0 method interface</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.INTC_0">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.STM_0">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.STM_1">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.STM_2">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.SWT_0">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="swt-cr-reset-value">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0xff00010a</value>
+				<description>SWT_CR register value at reset</description>
+			</variable>
+			<variable name="swt-to-reset-value">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x0005fcd0</value>
+				<description>SWT_TO register value at reset</description>
+			</variable>
+			<variable name="watchdog-down-counter-cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>62500 ps</value>
+				<description>Watchdog down counter cycle time</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.SWT_1">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="swt-cr-reset-value">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0xff00010a</value>
+				<description>SWT_CR register value at reset</description>
+			</variable>
+			<variable name="swt-to-reset-value">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x0005fcd0</value>
+				<description>SWT_TO register value at reset</description>
+			</variable>
+			<variable name="watchdog-down-counter-cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>62500 ps</value>
+				<description>Watchdog down counter cycle time</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.SWT_2">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="swt-cr-reset-value">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0xff00011b</value>
+				<description>SWT_CR register value at reset</description>
+			</variable>
+			<variable name="swt-to-reset-value">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x0003fde0</value>
+				<description>SWT_TO register value at reset</description>
+			</variable>
+			<variable name="watchdog-down-counter-cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>62500 ps</value>
+				<description>Watchdog down counter cycle time</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.SWT_3">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="swt-cr-reset-value">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0xff00010a</value>
+				<description>SWT_CR register value at reset</description>
+			</variable>
+			<variable name="swt-to-reset-value">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x0005fcd0</value>
+				<description>SWT_TO register value at reset</description>
+			</variable>
+			<variable name="watchdog-down-counter-cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>62500 ps</value>
+				<description>Watchdog down counter cycle time</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.PIT_0">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="pit-mcr-reset-value">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000006</value>
+				<description>value of PIT_MCR at reset</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.PIT_1">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="pit-mcr-reset-value">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000002</value>
+				<description>value of PIT_MCR at reset</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.EBI">
+			<variable name="enable">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable a lazy implementation of TLM 2.0 method interface</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.FLASH_PORT1">
+			<variable name="enable">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable a lazy implementation of TLM 2.0 method interface</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.XBAR_0_S6">
+			<variable name="enable">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable a lazy implementation of TLM 2.0 method interface</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.XBAR_1_M1">
+			<variable name="enable">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable a lazy implementation of TLM 2.0 method interface</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.XBAR_1_M2">
+			<variable name="enable">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable a lazy implementation of TLM 2.0 method interface</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.IOP_CLK">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>5 ns</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.COMP_CLK">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>3333 ps</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.FXBAR_CLK">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>5 ns</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.SXBAR_CLK">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.PBRIDGEA_CLK">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.PBRIDGEB_CLK">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.PER_CLK">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>12500 ps</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.RTI_CLK">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>1 us</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+	</object>
+	<object name="debugger">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="dwarf-to-html-output-directory">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>DWARF v2/v3 to HTML output directory</description>
+		</variable>
+		<variable name="dwarf-register-number-mapping-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>powerpc_eabi_gcc_dwarf_register_number_mapping.xml</value>
+			<description>DWARF register number mapping filename</description>
+		</variable>
+		<variable name="parse-dwarf">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable parsing of DWARF debugging informations</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="debug-dwarf">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable debugging of DWARF</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="sel-cpu[0]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0</value>
+			<description>CPU being debugged by front-end</description>
+		</variable>
+		<variable name="sel-cpu[1]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>1</value>
+			<description>CPU being debugged by front-end</description>
+		</variable>
+		<variable name="sel-cpu[2]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>2</value>
+			<description>CPU being debugged by front-end</description>
+		</variable>
+		<variable name="sel-cpu[3]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0</value>
+			<description>CPU being debugged by front-end</description>
+		</variable>
+		<variable name="sel-cpu[4]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>1</value>
+			<description>CPU being debugged by front-end</description>
+		</variable>
+		<variable name="sel-cpu[5]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>2</value>
+			<description>CPU being debugged by front-end</description>
+		</variable>
+		<variable name="sel-cpu[6]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0</value>
+			<description>CPU being debugged by front-end</description>
+		</variable>
+		<variable name="sel-cpu[7]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0</value>
+			<description>CPU being debugged by front-end</description>
+		</variable>
+	</object>
+	<object name="gdb-server0">
+		<variable name="memory-atom-size">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>1</value>
+			<description>size of the smallest addressable element in memory</description>
+		</variable>
+		<variable name="tcp-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>12345</value>
+			<description>TCP/IP port to listen waiting for a GDB client connection</description>
+		</variable>
+		<variable name="architecture-description-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>gdb_powerpc_vle.xml</value>
+			<description>filename of a XML description of the connected processor</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="debug">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable debug (intended for developper)</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="monitor-internals">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>List of internal simulator variables to monitor in GDB Front-End</description>
+		</variable>
+		<variable name="wait-connection-mode">
+			<type>parameter</type>
+			<data_type>gdb-wait-connection-mode</data_type>
+			<value>startup-only</value>
+			<description>Whether to wait for connection of GDB client (never, [startup-only], always)</description>
+			<enumeration>
+				<item>never</item>
+				<item>startup-only</item>
+				<item>always</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-multiprocess-extension">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to enable GDB multiprocess extension</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="remote-serial-protocol-input-traffic-recording-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Filename where to record GDB remote serial protocol input traffic</description>
+		</variable>
+		<variable name="remote-serial-protocol-output-traffic-recording-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Filename where to record GDB remote serial protocol input traffic</description>
+		</variable>
+		<variable name="enable-interrupt">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>enable/disable GDB interrupt (Ctrl-C)</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="mode">
+			<type>parameter</type>
+			<data_type>gdb-mode</data_type>
+			<value>single-thread</value>
+			<description>debugging mode (single-thread or multi-thread)</description>
+			<enumeration>
+				<item>SINGLE_THREAD</item>
+				<item>MULTI_THREAD</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="gdb-server1">
+		<variable name="memory-atom-size">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>1</value>
+			<description>size of the smallest addressable element in memory</description>
+		</variable>
+		<variable name="tcp-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>12346</value>
+			<description>TCP/IP port to listen waiting for a GDB client connection</description>
+		</variable>
+		<variable name="architecture-description-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>gdb_powerpc_vle.xml</value>
+			<description>filename of a XML description of the connected processor</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="debug">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable debug (intended for developper)</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="monitor-internals">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>List of internal simulator variables to monitor in GDB Front-End</description>
+		</variable>
+		<variable name="wait-connection-mode">
+			<type>parameter</type>
+			<data_type>gdb-wait-connection-mode</data_type>
+			<value>startup-only</value>
+			<description>Whether to wait for connection of GDB client (never, [startup-only], always)</description>
+			<enumeration>
+				<item>never</item>
+				<item>startup-only</item>
+				<item>always</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-multiprocess-extension">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to enable GDB multiprocess extension</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="remote-serial-protocol-input-traffic-recording-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Filename where to record GDB remote serial protocol input traffic</description>
+		</variable>
+		<variable name="remote-serial-protocol-output-traffic-recording-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Filename where to record GDB remote serial protocol input traffic</description>
+		</variable>
+		<variable name="enable-interrupt">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>enable/disable GDB interrupt (Ctrl-C)</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="mode">
+			<type>parameter</type>
+			<data_type>gdb-mode</data_type>
+			<value>single-thread</value>
+			<description>debugging mode (single-thread or multi-thread)</description>
+			<enumeration>
+				<item>SINGLE_THREAD</item>
+				<item>MULTI_THREAD</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="gdb-server2">
+		<variable name="memory-atom-size">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>1</value>
+			<description>size of the smallest addressable element in memory</description>
+		</variable>
+		<variable name="tcp-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>12347</value>
+			<description>TCP/IP port to listen waiting for a GDB client connection</description>
+		</variable>
+		<variable name="architecture-description-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>gdb_powerpc_vle.xml</value>
+			<description>filename of a XML description of the connected processor</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="debug">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable debug (intended for developper)</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="monitor-internals">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>List of internal simulator variables to monitor in GDB Front-End</description>
+		</variable>
+		<variable name="wait-connection-mode">
+			<type>parameter</type>
+			<data_type>gdb-wait-connection-mode</data_type>
+			<value>startup-only</value>
+			<description>Whether to wait for connection of GDB client (never, [startup-only], always)</description>
+			<enumeration>
+				<item>never</item>
+				<item>startup-only</item>
+				<item>always</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-multiprocess-extension">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to enable GDB multiprocess extension</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="remote-serial-protocol-input-traffic-recording-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Filename where to record GDB remote serial protocol input traffic</description>
+		</variable>
+		<variable name="remote-serial-protocol-output-traffic-recording-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Filename where to record GDB remote serial protocol input traffic</description>
+		</variable>
+		<variable name="enable-interrupt">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>enable/disable GDB interrupt (Ctrl-C)</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="mode">
+			<type>parameter</type>
+			<data_type>gdb-mode</data_type>
+			<value>single-thread</value>
+			<description>debugging mode (single-thread or multi-thread)</description>
+			<enumeration>
+				<item>SINGLE_THREAD</item>
+				<item>MULTI_THREAD</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="loader">
+		<object name="loader.memory-mapper">
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-parser">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity of parser</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="mapping">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>HARDWARE.SYSTEM-SRAM:0x40000000-0x401fffff:+0x0,HARDWARE.FLASH:0x00400000-0x00407fff:+0x0,HARDWARE.FLASH:0x0060c000-0x0062ffff:+0x8000,HARDWARE.FLASH:0x00680000-0x00687fff:+0x2c000,HARDWARE.FLASH:0x00800000-0x0087ffff:+0x34000,HARDWARE.FLASH:0x00fc0000-0x00ffffff:+0xb4000,HARDWARE.FLASH:0x01000000-0x0177ffff:+0xf4000,HARDWARE.Main_Core_0:0x50000000-0x50ffffff:+0x0,HARDWARE.Main_Core_1:0x51000000-0x51ffffff:+0x0,HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x0</value>
+				<description>Memory mapping. Syntax: [memory=]&lt;memory1&gt;[:[range=]&lt;low1-high1&gt;][:[translation=]+&lt;translation1&gt;][,... (e.g. ram:0x0-0x00ffff,rom:0xff0000-0xffffff:+0xff0000)</description>
+			</variable>
+		</object>
+		<object name="loader.file0">
+			<variable name="filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>baf.bin</value>
+				<description>Location of the raw file to load.</description>
+			</variable>
+			<variable name="base-addr">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00404000</value>
+				<description>Target base address.</description>
+			</variable>
+			<variable name="size">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>Number of bytes to copy. If 0 then all the file contents will be copied. If smaller than the file, the contents of the file will be cropped. If bigger than the file size, all the file will be copied.</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>Set verbose mode (0 not active, otherwise active).</description>
+			</variable>
+		</object>
+		<object name="loader.file1">
+			<variable name="filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>soft/bin/Z4_2/flash_boot.elf</value>
+				<description>the ELF filename to load into memory</description>
+			</variable>
+			<variable name="base-addr">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>if force-base-addr is true force base address for a unique program segment, otherwise ignored</description>
+			</variable>
+			<variable name="force-base-addr">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>if true force base address for a unique program segment</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="force-use-virtual-address">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>force use of virtual addresses instead of physical addresses (default false)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="initialize-extra-segment-bytes">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>whether to initialize extra bytes in segments (p_filesz &lt; p_memsz) to zero (true for standard ELF files)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="dump-headers">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>dump headers while loading ELF file</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="dwarf-to-html-output-directory">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF v2/v3 to HTML output directory</description>
+			</variable>
+			<variable name="dwarf-to-xml-output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF v2/v3 to XML output filename</description>
+			</variable>
+			<variable name="dwarf-register-number-mapping-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF register number mapping filename</description>
+			</variable>
+			<variable name="parse-dwarf">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable parsing of DWARF debugging informations</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="debug-dwarf">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable debugging of DWARF</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="loader.file2">
+			<variable name="filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>soft/bin/Z7_0/flash_boot.elf</value>
+				<description>the ELF filename to load into memory</description>
+			</variable>
+			<variable name="base-addr">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>if force-base-addr is true force base address for a unique program segment, otherwise ignored</description>
+			</variable>
+			<variable name="force-base-addr">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>if true force base address for a unique program segment</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="force-use-virtual-address">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>force use of virtual addresses instead of physical addresses (default false)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="initialize-extra-segment-bytes">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>whether to initialize extra bytes in segments (p_filesz &lt; p_memsz) to zero (true for standard ELF files)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="dump-headers">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>dump headers while loading ELF file</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="dwarf-to-html-output-directory">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF v2/v3 to HTML output directory</description>
+			</variable>
+			<variable name="dwarf-to-xml-output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF v2/v3 to XML output filename</description>
+			</variable>
+			<variable name="dwarf-register-number-mapping-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF register number mapping filename</description>
+			</variable>
+			<variable name="parse-dwarf">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable parsing of DWARF debugging informations</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="debug-dwarf">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable debugging of DWARF</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="loader.file3">
+			<variable name="filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>soft/bin/Z7_1/flash_boot.elf</value>
+				<description>the ELF filename to load into memory</description>
+			</variable>
+			<variable name="base-addr">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>if force-base-addr is true force base address for a unique program segment, otherwise ignored</description>
+			</variable>
+			<variable name="force-base-addr">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>if true force base address for a unique program segment</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="force-use-virtual-address">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>force use of virtual addresses instead of physical addresses (default false)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="initialize-extra-segment-bytes">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>whether to initialize extra bytes in segments (p_filesz &lt; p_memsz) to zero (true for standard ELF files)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="dump-headers">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>dump headers while loading ELF file</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="dwarf-to-html-output-directory">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF v2/v3 to HTML output directory</description>
+			</variable>
+			<variable name="dwarf-to-xml-output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF v2/v3 to XML output filename</description>
+			</variable>
+			<variable name="dwarf-register-number-mapping-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>DWARF register number mapping filename</description>
+			</variable>
+			<variable name="parse-dwarf">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable parsing of DWARF debugging informations</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="debug-dwarf">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable debugging of DWARF</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose-parser">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity of parser</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>baf.bin,soft/bin/Z4_2/flash_boot.elf,soft/bin/Z7_0/flash_boot.elf,soft/bin/Z7_1/flash_boot.elf</value>
+			<description>List of files to load. Syntax: [[filename=]&lt;filename1&gt;[=[format=]&lt;format1&gt;]][,[filename=]&lt;filename2&gt;[=[format=]&lt;format2&gt;]]... (e.g. boot.bin=raw,app.elf)</description>
+		</variable>
+	</object>
+	<variable name="enable-gdb-server">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>true</value>
+		<description>Enable/Disable GDB server instantiation</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-inline-debugger">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable inline debugger instantiation</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-press-enter-at-exit">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>true</value>
+		<description>Enable/Disable pressing key enter at exit</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.file">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Keep logger output in a file</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.filename">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value>logger_output.txt</value>
+		<description>Filename to keep logger output (the option file must be activated)</description>
+	</variable>
+	<variable name="kernel_logger.std_err">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>true</value>
+		<description>Show logger output through the standard error output</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.std_err_color">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Colorize logger output through the standard error output (only works if std_err is active)</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.std_out">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Show logger output through the standard output</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.std_out_color">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Colorize logger output through the standard output (only works if std_out is active)</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.xml_file">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Keep logger output in a file xml formatted</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.xml_file_gzipped">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Compress the xml output (a .gz extension is automatically appended to the xml_filename option)</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.xml_filename">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value>logger_output.xml</value>
+		<description>Filename to keep logger xml output (the option xml_file must be activated)</description>
+	</variable>
+</variables>

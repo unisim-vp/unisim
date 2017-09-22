@@ -61,7 +61,6 @@
 
 // Class definition of kernel, services and interfaces
 #include <unisim/kernel/service/service.hh>
-#include <unisim/kernel/debug/debug.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
@@ -73,7 +72,7 @@
 #include <unisim/service/translator/memory_address/memory/translator.hh>
 #include <unisim/service/tee/memory_access_reporting/tee.hh>
 #include <unisim/service/telnet/telnet.hh>
-#include <unisim/service/os/linux_os/linux.hh>
+#include <unisim/service/os/linux_os/powerpc_linux32.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 
@@ -249,8 +248,17 @@ private:
 	MultiFormatLoader<CPU_ADDRESS_TYPE> *loader;
 	//  - Linux loader and Linux ABI translator
 	Linux<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE> *linux_os;
-	//  - Debugger
-	Debugger<CPU_ADDRESS_TYPE> *debugger;
+	struct DEBUGGER_CONFIG
+	{
+		typedef CPU_ADDRESS_TYPE ADDRESS;
+		static const unsigned int NUM_PROCESSORS = 1;
+		/* gdb_server, inline_debugger and/or monitor */
+		static const unsigned int MAX_FRONT_ENDS = 2;
+	};
+	
+	typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> Debugger;
+	//  - debugger back-end
+	Debugger *debugger;
 	//  - GDB server
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
 	//  - Inline debugger

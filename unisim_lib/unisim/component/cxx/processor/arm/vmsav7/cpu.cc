@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2010-2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -30,12 +30,12 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  *  SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 #include <unisim/component/cxx/processor/arm/vmsav7/cpu.hh>
 #include <unisim/component/cxx/processor/arm/vmsav7/cp15.hh>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
-#include <unisim/kernel/debug/debug.hh>
+#include <unisim/util/backtrace/backtrace.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/truth_table/truth_table.hh>
@@ -109,7 +109,7 @@ CPU::CPU(const char *name, Object *parent)
   , Service<MemoryAccessReportingControl>(name, parent)
   , Client<MemoryAccessReporting<uint32_t> >(name, parent)
   , Service<MemoryInjection<uint32_t> >(name, parent)
-  , Client<unisim::service::interfaces::DebugControl<uint32_t> >(name, parent)
+  , Client<unisim::service::interfaces::DebugYielding>(name, parent)
   , Client<TrapReporting>(name, parent)
   , Service<Disassembly<uint32_t> >(name, parent)
   , Service< Memory<uint32_t> >(name, parent)
@@ -122,13 +122,12 @@ CPU::CPU(const char *name, Object *parent)
   , memory_injection_export("memory-injection-export", this)
   , memory_export("memory-export", this)
   , memory_import("memory-import", this)
-  , debug_control_import("debug-control-import", this)
+  , debug_yielding_import("debug-yielding-import", this)
   , symbol_table_lookup_import("symbol-table-lookup-import", this)
-  , exception_trap_reporting_import("exception-trap-reporting-import", this)
-  , instruction_counter_trap_reporting_import("instruction-counter-trap-reporting-import", this)
+  , trap_reporting_import("trap-reporting-import", this)
   , linux_os_import("linux-os-import", this)
-  , requires_finished_instruction_reporting(true)
-  , requires_memory_access_reporting(true)
+  , requires_finished_instruction_reporting(false)
+  , requires_memory_access_reporting(false)
   // , icache("icache", this)
   // , dcache("dcache", this)
   , arm32_decoder()
@@ -557,31 +556,15 @@ CPU::StepInstruction()
   
   if (insn_addr == halt_on_addr) { Stop(0); return; }
   
-  if (unlikely(instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
-    instruction_counter_trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
+  if (unlikely(trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
+    trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
   
-  if (unlikely(memory_access_reporting_import))
+  if (unlikely(requires_finished_instruction_reporting and memory_access_reporting_import))
     memory_access_reporting_import->ReportFetchInstruction(this->current_insn_addr);
     
-  if (debug_control_import)
+  if (debug_yielding_import)
     {
-      for (bool proceed = false; not proceed; )
-        {
-          switch (debug_control_import->FetchDebugCommand( insn_addr ))
-            {
-            case DebugControl::DBG_STEP: 
-              proceed = true;
-              break;
-            case DebugControl::DBG_SYNC:
-              Sync();
-              continue;
-              break;
-            case DebugControl::DBG_RESET: /* TODO : memory_interface->Reset(); */ break;
-            case DebugControl::DBG_KILL:
-              Stop(0);
-              return;
-            }
-        }
+      debug_yielding_import->DebugYield();
     }
   
   try {
@@ -654,8 +637,8 @@ CPU::StepInstruction()
   catch (DataAbortException const& daexc) {
     /* Abort execution, and take processor to data abort handler */
     
-    if (unlikely( exception_trap_reporting_import))
-      exception_trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
+    if (unlikely(trap_reporting_import))
+      trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
     
     this->TakeDataOrPrefetchAbortException(true); // TakeDataAbortException
   }
@@ -663,19 +646,19 @@ CPU::StepInstruction()
   catch (PrefetchAbortException const& paexc) {
     /* Abort execution, and take processor to prefetch abort handler */
     
-    if (unlikely( exception_trap_reporting_import))
-      exception_trap_reporting_import->ReportTrap( *this, "Prefetch Abort Exception" );
+    if (unlikely(trap_reporting_import))
+      trap_reporting_import->ReportTrap( *this, "Prefetch Abort Exception" );
     
     this->TakeDataOrPrefetchAbortException(false); // TakePrefetchAbortException
   }
   
   catch (UndefInstrException const& undexc) {
-    logger << DebugError << "Undefined instruction"
-           << " pc: " << std::hex << current_insn_addr << std::dec
-           << ", cpsr: " << std::hex << cpsr.bits() << std::dec
-           << " (" << cpsr << ")"
-           << EndDebugError;
-    this->Stop(-1);
+    /* Abort execution, and take processor to undefined handler */
+    
+    if (unlikely(trap_reporting_import))
+      trap_reporting_import->ReportTrap( *this, "Undefined Exception" );
+    
+    this->TakeUndefInstrException();
   }
   
   catch (Exception const& exc) {
@@ -1007,7 +990,7 @@ CPU::CallSupervisor( uint16_t imm )
         this->Stop( -1 );
       }
   } else {
-    //instruction_counter_trap_reporting_import->ReportTrap(*this, "CallSupervisor");
+    //trap_reporting_import->ReportTrap(*this, "CallSupervisor");
     
     if (verbose) {
       static struct ArmLinuxOS : public unisim::util::os::linux_os::Linux<uint32_t, uint32_t>
@@ -1015,10 +998,11 @@ CPU::CallSupervisor( uint16_t imm )
         typedef unisim::util::os::linux_os::ARMTS<unisim::util::os::linux_os::Linux<uint32_t,uint32_t> > ArmTarget;
       
         ArmLinuxOS( CPU* _cpu )
-          : unisim::util::os::linux_os::Linux<uint32_t, uint32_t>( _cpu->logger, _cpu, _cpu, _cpu )
+          : unisim::util::os::linux_os::Linux<uint32_t, uint32_t>( _cpu->logger.DebugInfoStream(), _cpu->logger.DebugWarningStream(), _cpu->logger.DebugErrorStream(), _cpu, _cpu, _cpu )
         {
           SetTargetSystem(new ArmTarget( "arm-eabi", *this ));
         }
+        ~ArmLinuxOS() { delete GetTargetSystem(); }
       } arm_linux_os( this );
     
       logger << DebugInfo << "PC: 0x" << std::hex << GetCIA() << EndDebugInfo;
@@ -1051,7 +1035,10 @@ CPU::UndefinedInstruction( isa::arm32::Operation<CPU>* insn )
          << ": " << oss.str()
          << EndDebugWarning;
   
-  throw UndefInstrException();
+  if (linux_os_import)
+    this->Stop( -1 );
+  else
+    throw UndefInstrException();
 }
 
 void
@@ -1065,7 +1052,10 @@ CPU::UndefinedInstruction( isa::thumb2::Operation<CPU>* insn )
          << ": " << oss.str()
          << EndDebugWarning;
   
-  throw UndefInstrException();
+  if (linux_os_import)
+    this->Stop( -1 );
+  else
+    throw UndefInstrException();
 }
 
 void
@@ -1458,7 +1448,7 @@ CPU::TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned si
     //   TransAddrDesc tad_chk;
     //   TranslationTableWalk<QuietAccess>( tad_chk, mva, mat, size );
     //   if (tad_chk.pa != tad.pa)
-    //     exception_trap_reporting_import->ReportTrap( *this, "Incoherent TLB access" );
+    //     trap_reporting_import->ReportTrap( *this, "Incoherent TLB access" );
     // }
     
     /* Permission Check */
@@ -1570,7 +1560,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "CCSIDR, Cache Size ID Registers"; }
           uint32_t Read( CP15CPU& _cpu ) {
-            CPU& cpu = dynamic_cast<CPU&>( _cpu );
+            CPU& cpu = static_cast<CPU&>( _cpu );
             switch (cpu.csselr) {
               /*              LNSZ      ASSOC       NUMSETS        POLICY      */
             case 0:  return (1 << 0) | (3 << 3) | ( 255 << 13) | (0b0110 << 28); /* L1 dcache */
@@ -1589,7 +1579,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "CLIDR, Cache Level ID Register"; }
           uint32_t Read( CP15CPU& _cpu ) {
-            CPU& cpu = dynamic_cast<CPU&>( _cpu );
+            CPU& cpu = static_cast<CPU&>( _cpu );
             uint32_t
               LoUU =   0b010, /* Level of Unification Uniprocessor  */
               LoC =    0b010, /* Level of Coherency */
@@ -1618,9 +1608,9 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "CSSELR, Cache Size Selection Register"; }
           void Write( CP15CPU& _cpu, uint32_t value ) {
-            dynamic_cast<CPU&>( _cpu ).csselr = value;
+            static_cast<CPU&>( _cpu ).csselr = value;
           }
-          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).csselr; }
+          uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).csselr; }
         } x;
         return x;
       } break;
@@ -1631,9 +1621,9 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "SCTLR, System Control Register"; }
           /* TODO: handle SBO(DGP=0x00050078U) and SBZ(DGP=0xfffa0c00U)... */
-          uint32_t Read( CP15CPU& cpu ) { return dynamic_cast<CPU&>( cpu ).SCTLR; }
+          uint32_t Read( CP15CPU& cpu ) { return static_cast<CPU&>( cpu ).SCTLR; }
           void Write( CP15CPU& _cpu, uint32_t value ) {
-            CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
+            CPU& cpu( static_cast<CPU&>( _cpu ) );
             cpu.SCTLR = value;
             if      (sctlr::HA.Get( value ))
               cpu.Stop(-1);
@@ -1653,8 +1643,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "TTBR0, Translation Table Base Register 0"; }
           /* TODO: handle SBZ(DGP=0x00003fffUL)... */
-          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.ttbr0 = value; }
-          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.ttbr0; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { static_cast<CPU&>( _cpu ).mmu.ttbr0 = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).mmu.ttbr0; }
         } x;
         return x;
       } break;
@@ -1665,8 +1655,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "TTBR1, Translation Table Base Register 1"; }
           /* TODO: handle SBZ(DGP=0x00003fffUL)... */
-          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.ttbr1 = value; }
-          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.ttbr1; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { static_cast<CPU&>( _cpu ).mmu.ttbr1 = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).mmu.ttbr1; }
         } x;
         return x;
       } break;
@@ -1676,8 +1666,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "TTBCR, Translation Table Base Control Register"; }
-          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.ttbcr = value; }
-          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.ttbcr; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { static_cast<CPU&>( _cpu ).mmu.ttbcr = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).mmu.ttbcr; }
         } x;
         return x;
       } break;
@@ -1688,9 +1678,9 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "DACR, Domain Access Control Register"; }
-          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.dacr; }
+          uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).mmu.dacr; }
           void Write( CP15CPU& _cpu, uint32_t value ) {
-            CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
+            CPU& cpu( static_cast<CPU&>( _cpu ) );
             cpu.mmu.dacr = value;
             if (cpu.verbose)
               cpu.logger << DebugInfo << "DACR <- " << std::hex << value << std::dec << EndDebugInfo;
@@ -1707,7 +1697,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "DFSR, Data Fault Status Register"; }
-          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).DFSR; }
+          uint32_t& reg( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).DFSR; }
           uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
           void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
         } x;
@@ -1719,7 +1709,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "IFSR, Instruction Fault Status Register"; }
-          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).IFSR; }
+          uint32_t& reg( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).IFSR; }
           uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
           void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
         } x;
@@ -1731,7 +1721,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "DFAR, Data Fault Status Register"; }
-          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).DFAR; }
+          uint32_t& reg( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).DFAR; }
           uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
           void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
         } x;
@@ -1743,7 +1733,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "IFAR, Instruction Fault Status Register"; }
-          uint32_t& reg( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).IFAR; }
+          uint32_t& reg( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).IFAR; }
           uint32_t Read( CP15CPU& _cpu ) { return reg( _cpu ); }
           void Write( CP15CPU& _cpu, uint32_t value ) { reg( _cpu ) = value; }
         } x;
@@ -1854,7 +1844,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "TLBIALL, invalidate unified TLB"; }
           void Write( CP15CPU& _cpu, uint32_t value )
           {
-            CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
+            CPU& cpu( static_cast<CPU&>( _cpu ) );
             if (cpu.verbose)
               cpu.logger << DebugInfo << "TLBIALL" << EndDebugInfo;
             cpu.tlb.InvalidateAll();
@@ -1870,7 +1860,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "TLBIMVA, invalidate unified TLB entry by MVA and ASID"; }
           void Write( CP15CPU& _cpu, uint32_t value )
           {
-            CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
+            CPU& cpu( static_cast<CPU&>( _cpu ) );
             if (cpu.verbose)
               cpu.logger << DebugInfo << "TLBIMVA(0x" << std::hex << value << std::dec << ")" << EndDebugInfo;
             
@@ -1890,7 +1880,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "TLBIASID, invalidate unified TLB by ASID match"; }
           void Write( CP15CPU& _cpu, uint32_t value )
           {
-            CPU& cpu( dynamic_cast<CPU&>( _cpu ) );
+            CPU& cpu( static_cast<CPU&>( _cpu ) );
             if (cpu.verbose)
               cpu.logger << DebugInfo << "TLBIASID(0x" << std::hex << value << std::dec << ")" << EndDebugInfo;
             
@@ -1911,8 +1901,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "PRRR, Primary Region Remap Register"; }
-          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.prrr = value; }
-          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.prrr; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { static_cast<CPU&>( _cpu ).mmu.prrr = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).mmu.prrr; }
         } x;
         return x;
       } break;
@@ -1922,8 +1912,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "NMRR, Normal Memory Remap Register"; }
-          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).mmu.nmrr = value; }
-          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).mmu.nmrr; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { static_cast<CPU&>( _cpu ).mmu.nmrr = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).mmu.nmrr; }
         } x;
         return x;
       } break;
@@ -1939,7 +1929,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           char const* Describe() { return "TPIDRURO, User Read-Only Thread ID Register"; }
           unsigned RequiredPL() { return 0; /* Reading doesn't requires priviledges */ }
           uint32_t Read( CP15CPU& _cpu )
-          { return dynamic_cast<CPU&>( _cpu ).MemRead32( 0xffff0ff0 ); }
+          { return static_cast<CPU&>( _cpu ).MemRead32( 0xffff0ff0 ); }
         } x;
         /* When using linux os emulation, this register overrides the base one */
         if (linux_os_import)

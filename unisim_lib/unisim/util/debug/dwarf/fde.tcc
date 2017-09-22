@@ -35,8 +35,6 @@
 #ifndef __UNISIM_UTIL_DEBUG_DWARF_FDE_TCC__
 #define __UNISIM_UTIL_DEBUG_DWARF_FDE_TCC__
 
-#include <unisim/kernel/debug/debug.hh>
-
 namespace unisim {
 namespace util {
 namespace debug {

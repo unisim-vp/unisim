@@ -302,14 +302,14 @@ int main(int argc, char *argv[], char **envp) {
 	}
 	
 	if(use_inline_debugger) {
-		cpu->debug_control_import >> inline_debugger->debug_control_export;
+		cpu->debug_yielding_import >> inline_debugger->debug_yielding_export;
 		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
 		inline_debugger->disasm_import >> cpu->disasm_export;
 		inline_debugger->memory_import >> cpu->memory_export;
 		inline_debugger->registers_import >> cpu->registers_export;
 	} else if(use_gdb_server) {
 		// Connect gdb-server to CPU
-		cpu->debug_control_import >> gdb_server->debug_control_export;
+		cpu->debug_yielding_import >> gdb_server->debug_yielding_export;
 		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
 		gdb_server->memory_import >> cpu->memory_export;
 		gdb_server->registers_import >> cpu->registers_export;

@@ -57,13 +57,6 @@ namespace util {
 namespace os {
 namespace linux_os {
 
-  using unisim::kernel::logger::DebugInfo;
-  using unisim::kernel::logger::DebugWarning;
-  using unisim::kernel::logger::DebugError;
-  using unisim::kernel::logger::EndDebugInfo;
-  using unisim::kernel::logger::EndDebugWarning;
-  using unisim::kernel::logger::EndDebugError;
-
   // Register names
   static char const* const kI386_eax = "%eax";
   static char const* const kI386_ecx = "%ecx";
@@ -185,11 +178,11 @@ namespace linux_os {
       if (not SetRegister(lin, kI386_eip, lin.GetEntryPoint()))
         return false;
       // Set ESP to the base of the created stack
-      unisim::util::debug::blob::Section<address_type> const * esp_section =
+      unisim::util::blob::Section<address_type> const * esp_section =
         lin.GetBlob()->FindSection(".unisim.linux_os.stack.stack_pointer");
       if (esp_section == NULL)
         {
-          lin.Logger() << DebugError << "Could not find the stack pointer section." << EndDebugError;
+          lin.DebugErrorStream() << "Could not find the stack pointer section." << std::endl;
           return false;
         }
       if (not SetRegister(lin, kI386_esp, esp_section->GetAddr()))
@@ -198,11 +191,11 @@ namespace linux_os {
       // Pseudo GDT initialization  (flat memory + early TLS)
       SetRegister(lin, "@gdt[1].base", 0 ); // For code segment
       SetRegister(lin, "@gdt[2].base", 0 ); // For data segments
-      unisim::util::debug::blob::Section<address_type> const* etls_section =
+      unisim::util::blob::Section<address_type> const* etls_section =
         lin.GetBlob()->FindSection(".unisim.linux_os.etls.middle_pointer");
       if (not etls_section)
         {
-          lin.Logger() << DebugError << "Could not find the early TLS section." << EndDebugError;
+          lin.DebugErrorStream() << "Could not find the early TLS section." << std::endl;
           return false;
         }
       SetRegister(lin, "@gdt[3].base", etls_section->GetAddr() ); // for early TLS kludge
@@ -328,7 +321,7 @@ namespace linux_os {
     }
 
     static void SetI386SystemCallStatus(LINUX& lin, int ret, bool error) { SetRegister(lin, kI386_eax, (parameter_type) ret); }
-    void SetSystemCallStatus(int ret, bool error) const { SetI386SystemCallStatus( lin, ret, error ); }
+    void SetSystemCallStatus(int64_t ret, bool error) const { SetI386SystemCallStatus( lin, ret, error ); }
     
     static parameter_type GetSystemCallParam(LINUX& lin, int id)
     {
@@ -351,7 +344,7 @@ namespace linux_os {
       try { return GetSystemCallParam( lin, id ); }
       
       catch (int x) {
-        lin.Logger() << DebugError << "No syscall argument #" << id << " in " << this->name << " linux" << EndDebugError;
+        lin.DebugErrorStream() << "No syscall argument #" << id << " in " << this->name << " linux" << std::endl;
       }
       
       return 0;
@@ -781,9 +774,9 @@ namespace linux_os {
 	
               if(unlikely(lin.GetVerbose()))
                 {
-                  lin.Logger() << DebugInfo
-                               << "fd = " << target_fd << ", buf_address = 0x" << std::hex << buf_address << std::dec
-                               << EndDebugInfo;
+                  lin.DebugInfoStream()
+                    << "fd = " << target_fd << ", buf_address = 0x" << std::hex << buf_address << std::dec
+                    << std::endl;
                 }
 	
               SetI386SystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
@@ -836,10 +829,10 @@ namespace linux_os {
       return 0;
     }
     
-    bool SetSystemBlob( unisim::util::debug::blob::Blob<address_type>* blob ) const
+    bool SetSystemBlob( unisim::util::blob::Blob<address_type>* blob ) const
     {
-      typedef unisim::util::debug::blob::Section<address_type> Section;
-      typedef unisim::util::debug::blob::Segment<address_type> Segment;
+      typedef unisim::util::blob::Section<address_type> Section;
+      typedef unisim::util::blob::Segment<address_type> Segment;
           
       // The following code is clearly a hack since linux doesn't
       // allocate any TLS. Allocating the TLS is the libc's

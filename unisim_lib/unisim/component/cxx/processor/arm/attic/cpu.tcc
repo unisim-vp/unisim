@@ -93,7 +93,7 @@ CPU(const char *name,
 	// , Client<Loader<typename CONFIG::address_t> >(name, parent)
 	, Client<LinuxOS>(name, parent)
 	, Service<MemoryInjection<uint64_t> >(name, parent)
-	, Client<DebugControl<uint64_t> >(name, parent)
+	, Client<DebugYielding>(name, parent)
 	, Client<MemoryAccessReporting<uint64_t> >(name, parent)
 	, Client<TrapReporting>(name, parent)
 	, Service<MemoryAccessReportingControl>(name, parent)
@@ -109,7 +109,7 @@ CPU(const char *name,
 	, memory_access_reporting_control_export(
 			"memory-access-reporting-control-export",
 			this)
-	, debug_control_import("debug-control-import", this)
+	, debug_yielding_import("debug-control-import", this)
 	, memory_access_reporting_import("memory-access-reporting-import", this)
 	, symbol_table_lookup_import("symbol-table-lookup-import", this)
 	, linux_os_import("linux-os-import", this)
@@ -494,8 +494,8 @@ Setup() {
 		{
 			logger << DebugInfo;
 			logger << "Setup information:" << endl;
-			logger << " - debug_control service ";
-			if (debug_control_import)
+			logger << " - debug_yielding service ";
+			if (debug_yielding_import)
 				logger << "CONNECTED";
 			else
 				logger << "DISCONNECTED";

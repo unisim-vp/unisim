@@ -36,7 +36,7 @@
 #define __UNISIM_SERVICE_DEBUG_INLINE_DEBUGGER_INLINE_DEBUGGER_HH__
 
 #include <unisim/service/interfaces/memory_access_reporting.hh>
-#include <unisim/service/interfaces/debug_control.hh>
+#include <unisim/service/interfaces/debug_yielding.hh>
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/registers.hh>
@@ -54,6 +54,8 @@
 #include <unisim/util/debug/profile.hh>
 #include <unisim/util/debug/breakpoint.hh>
 #include <unisim/util/debug/watchpoint.hh>
+#include <unisim/util/debug/fetch_insn_event.hh>
+#include <unisim/util/debug/trap_event.hh>
 #include <unisim/util/loader/elf_loader/elf32_loader.hh>
 #include <unisim/util/loader/elf_loader/elf64_loader.hh>
 #include <unisim/util/ieee754/ieee754.hh>
@@ -67,6 +69,7 @@
 #include <queue>
 #include <list>
 #include <stack>
+#include <set>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <windef.h>
@@ -76,40 +79,6 @@ namespace unisim {
 namespace service {
 namespace debug {
 namespace inline_debugger {
-
-using unisim::service::interfaces::DebugControl;
-using unisim::service::interfaces::Disassembly;
-using unisim::service::interfaces::MemoryAccessReporting;
-using unisim::service::interfaces::MemoryAccessReportingControl;
-using unisim::service::interfaces::SymbolTableLookup;
-using unisim::service::interfaces::Registers;
-using unisim::service::interfaces::Memory;
-using unisim::service::interfaces::TrapReporting;
-using unisim::service::interfaces::Loader;
-using unisim::service::interfaces::StatementLookup;
-using unisim::service::interfaces::BackTrace;
-using unisim::service::interfaces::DebugEventTrigger;
-using unisim::service::interfaces::DebugEventListener;
-using unisim::service::interfaces::Profiling;
-using unisim::service::interfaces::DebugInfoLoading;
-using unisim::service::interfaces::DataObjectLookup;
-using unisim::service::interfaces::SubProgramLookup;
-
-using unisim::util::debug::Event;
-using unisim::util::debug::Breakpoint;
-using unisim::util::debug::Watchpoint;
-using unisim::util::debug::Symbol;
-using unisim::util::debug::Statement;
-using unisim::util::debug::DataObject;
-
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Parameter;
-
-using std::string;
 
 typedef enum
 {
@@ -122,98 +91,90 @@ typedef enum
 	INLINE_DEBUGGER_MODE_TRAVERSE
 } InlineDebuggerRunningMode;
 
-class InlineDebuggerBase
+class InlineDebuggerBase : public virtual unisim::kernel::service::Object
 {
 public:
-	InlineDebuggerBase();
+	InlineDebuggerBase(const char *_name, unisim::kernel::service::Object *parent);
 	virtual ~InlineDebuggerBase();
+	virtual void SigInt();
 protected:
-	static bool trap;
-private:
-#ifndef WIN32
-	static void (*prev_sig_int_handler)(int);
-#endif
-	static int alive_instances;
-#if defined(_WIN32) || defined(_WIN64)
-	static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
-#else
-	static void SigIntHandler(int signum);
-#endif
+	virtual void Interrupt() = 0;
 };
 
 template <class ADDRESS>
 class InlineDebugger
-	: public Service<DebugControl<ADDRESS> >
-	, public Service<DebugEventListener<ADDRESS> >
-	, public Service<TrapReporting>
-	, public Client<DebugEventTrigger<ADDRESS> >
-	, public Client<Disassembly<ADDRESS> >
-	, public Client<Memory<ADDRESS> >
-	, public Client<Registers>
-	, public Client<SymbolTableLookup<ADDRESS> >
-	, public Client<StatementLookup<ADDRESS> >
-	, public Client<BackTrace<ADDRESS> >
-	, public Client<Profiling<ADDRESS> >
-	, public Client<DebugInfoLoading>
-	, public Client<DataObjectLookup<ADDRESS> >
-	, public Client<SubProgramLookup<ADDRESS> >
-	, public InlineDebuggerBase
+	: public InlineDebuggerBase
+	, public unisim::kernel::service::Service<unisim::service::interfaces::DebugYielding>
+	, public unisim::kernel::service::Service<unisim::service::interfaces::DebugEventListener<ADDRESS> >
+	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugYieldingRequest>
+	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >
+	, public unisim::kernel::service::Client<unisim::service::interfaces::Disassembly<ADDRESS> >
+	, public unisim::kernel::service::Client<unisim::service::interfaces::Memory<ADDRESS> >
+	, public unisim::kernel::service::Client<unisim::service::interfaces::Registers>
+	, public unisim::kernel::service::Client<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >
+	, public unisim::kernel::service::Client<unisim::service::interfaces::StatementLookup<ADDRESS> >
+	, public unisim::kernel::service::Client<unisim::service::interfaces::BackTrace<ADDRESS> >
+	, public unisim::kernel::service::Client<unisim::service::interfaces::Profiling<ADDRESS> >
+	, public unisim::kernel::service::Client<unisim::service::interfaces::DebugInfoLoading>
+	, public unisim::kernel::service::Client<unisim::service::interfaces::DataObjectLookup<ADDRESS> >
+	, public unisim::kernel::service::Client<unisim::service::interfaces::SubProgramLookup<ADDRESS> >
 {
 public:
-	ServiceExport<DebugControl<ADDRESS> > debug_control_export;
-	ServiceExport<DebugEventListener<ADDRESS> > debug_event_listener_export;
-	ServiceExport<TrapReporting> trap_reporting_export;
-	ServiceImport<DebugEventTrigger<ADDRESS> > debug_event_trigger_import;
-	ServiceImport<Disassembly<ADDRESS> > disasm_import;
-	ServiceImport<Memory<ADDRESS> > memory_import;
-	ServiceImport<Registers> registers_import;
-	ServiceImport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
-	ServiceImport<StatementLookup<ADDRESS> > stmt_lookup_import;
-	ServiceImport<BackTrace<ADDRESS> > backtrace_import;
-	ServiceImport<Profiling<ADDRESS> > profiling_import;
-	ServiceImport<DebugInfoLoading> debug_info_loading_import;
-	ServiceImport<DataObjectLookup<ADDRESS> > data_object_lookup_import;
-	ServiceImport<SubProgramLookup<ADDRESS> > subprogram_lookup_import;
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugYielding>                debug_yielding_export;
+	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_export;
+	
+	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugYieldingRequest>         debug_yielding_request_import;
+	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >  debug_event_trigger_import;
+	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Disassembly<ADDRESS> >        disasm_import;
+	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<ADDRESS> >             memory_import;
+	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers>                    registers_import;
+	unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<ADDRESS> >  symbol_table_lookup_import;
+	unisim::kernel::service::ServiceImport<unisim::service::interfaces::StatementLookup<ADDRESS> >    stmt_lookup_import;
+	unisim::kernel::service::ServiceImport<unisim::service::interfaces::BackTrace<ADDRESS> >          backtrace_import;
+	unisim::kernel::service::ServiceImport<unisim::service::interfaces::Profiling<ADDRESS> >          profiling_import;
+	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugInfoLoading>             debug_info_loading_import;
+	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DataObjectLookup<ADDRESS> >   data_object_lookup_import;
+	unisim::kernel::service::ServiceImport<unisim::service::interfaces::SubProgramLookup<ADDRESS> >   subprogram_lookup_import;
 	
 	InlineDebugger(const char *name, Object *parent = 0);
 	virtual ~InlineDebugger();
 
-	// TrapReporting
-	virtual void ReportTrap();
-	virtual void ReportTrap(const unisim::kernel::service::Object &obj);
-	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
-							const std::string &str);
-	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
-							const char *c_str);
+	// unisim::service::interfaces::DebugYielding
+	virtual void DebugYield();
 	
-	// DebugControlInterface
-	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
-	
-	// DebugEventListener
+	// unisim::service::interfaces::DebugEventListener<ADDRESS>
 	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS> *event);
 
 	virtual bool EndSetup();
 	virtual void OnDisconnect();
+protected:
+	virtual void Interrupt();
 private:
 	unisim::kernel::logger::Logger logger;
 	unsigned int memory_atom_size;
 	std::string search_path;
 	std::string init_macro;
 	std::string output;
-	Parameter<unsigned int> param_memory_atom_size;
-	Parameter<std::string> param_search_path;
-	Parameter<std::string> param_init_macro;
-	Parameter<std::string> param_output;
+	std::string program_counter_name;
+	unisim::kernel::service::Parameter<unsigned int> param_memory_atom_size;
+	unisim::kernel::service::Parameter<std::string> param_search_path;
+	unisim::kernel::service::Parameter<std::string> param_init_macro;
+	unisim::kernel::service::Parameter<std::string> param_output;
+	unisim::kernel::service::Parameter<std::string> param_program_counter_name;
 
+	unisim::service::interfaces::Register *program_counter;
+	bool listening_fetch;
+	bool trap;
 	InlineDebuggerRunningMode running_mode;
 
+	ADDRESS cia;
 	ADDRESS disasm_addr;
 	ADDRESS dump_addr;
 	ADDRESS cont_until_addr;
-	const Statement<ADDRESS> *last_stmt;
+	const unisim::util::debug::Statement<ADDRESS> *last_stmt;
 
 	std::list<std::string> exec_queue;
-	string prompt;
+	std::string prompt;
 	std::string last_line;
 	std::string line;
 	std::vector<std::string> parm;
@@ -222,6 +183,9 @@ private:
 	std::ostream *std_error_stream;
 	
 	std::list<unisim::util::debug::DataObject<ADDRESS> *> tracked_data_objects;
+	
+	unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event;
+	
 	class VisitedInstructionPage
 	{
 	public:
@@ -258,6 +222,7 @@ private:
 	bool IsDeleteCommand(const char *cmd) const;
 	bool IsDeleteWatchCommand(const char *cmd) const;
 	bool IsDumpCommand(const char *cmd) const;
+	bool IsRegistersCommand(const char *cmd) const;
 	bool IsEditCommand(const char *cmd) const;
 	bool IsHelpCommand(const char *cmd) const;
 	bool IsResetCommand(const char *cmd) const;
@@ -289,6 +254,8 @@ private:
 	bool IsInfoSubProgramCommand(const char *cmd) const;
 
 	void Help();
+	bool ListenFetch();
+	bool UnlistenFetch();
 	void Disasm(ADDRESS addr, int count, ADDRESS& next_addr);
 	bool HasBreakpoint(ADDRESS addr);
 	void SetBreakpoint(ADDRESS addr);
@@ -300,6 +267,7 @@ private:
 	void DumpBreakpoints();
 	void DumpWatchpoints();
 	void DumpMemory(ADDRESS addr);
+	void DumpRegisters();
 	bool EditBuffer(ADDRESS addr, std::vector<uint8_t>& buffer);
 	bool EditMemory(ADDRESS addr);
 	void DumpSymbols(const typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& symbols, const char *name = 0);
@@ -315,9 +283,9 @@ private:
 	void LoadMacro(const char *filename);
 	bool LocateFile(const char *file_path, std::string& match_file_path);
 	void DumpSource(const char *filename, unsigned int lineno, unsigned int colno, unsigned int count);
-	void DumpBackTrace(ADDRESS cia);
-	bool GetReturnAddress(ADDRESS cia, ADDRESS& ret_addr) const;
-	const Statement<ADDRESS> *FindStatement(ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt = unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT) const;
+	void DumpBackTrace();
+	bool GetReturnAddress(ADDRESS& ret_addr) const;
+	const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt = unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT) const;
 	void EnableProgramProfiling();
 	void EnableDataReadProfiling();
 	void EnableDataWriteProfiling();
@@ -341,19 +309,19 @@ private:
 	void ListSourceFiles();
 	void EnableBinary(const char *filename, bool enable);
 	void ListBinaryFiles();
-	void DumpDataObject(const char *data_object_name, ADDRESS cia);
-	void PrintDataObject(const char *data_object_name, ADDRESS cia);
-	bool EditDataObject(const char *data_object_name, ADDRESS cia);
-	bool SetDataObject(const char *data_object_name, ADDRESS cia, const char *literal);
-	void ListDataObjects(ADDRESS cia, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope = unisim::service::interfaces::DataObjectLookup<ADDRESS>::SCOPE_BOTH_GLOBAL_AND_LOCAL);
-	void TrackDataObject(const char *data_object_name, ADDRESS cia);
+	void DumpDataObject(const char *data_object_name);
+	void PrintDataObject(const char *data_object_name);
+	bool EditDataObject(const char *data_object_name);
+	bool SetDataObject(const char *data_object_name, const char *literal);
+	void ListDataObjects(typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope = unisim::service::interfaces::DataObjectLookup<ADDRESS>::SCOPE_BOTH_GLOBAL_AND_LOCAL);
+	void TrackDataObject(const char *data_object_name);
 	void UntrackDataObject(const char *data_object_name);
-	void PrintDataObject(unisim::util::debug::DataObject<ADDRESS> *data_object, ADDRESS cia);
-	void PrintTrackedDataObjects(ADDRESS cia);
-	void PrintDataObjectType(unisim::util::debug::DataObject<ADDRESS> *data_object, ADDRESS cia);
-	void PrintDataObjectType(const char *data_object_name, ADDRESS cia);
+	void PrintDataObject(unisim::util::debug::DataObject<ADDRESS> *data_object);
+	void PrintTrackedDataObjects();
+	void PrintDataObjectType(unisim::util::debug::DataObject<ADDRESS> *data_object);
+	void PrintDataObjectType(const char *data_object_name);
 	void InfoSubProgram(const char *subprogram_name);
-	bool IsVisited(ADDRESS cia);
+	bool IsVisited(ADDRESS _cia);
 };
 
 } // end of namespace inline_debugger

@@ -40,12 +40,11 @@
 #include <vector>
 #include <iosfwd>
 #include <unisim/util/debug/dwarf/fwd.hh>
-#include <unisim/util/debug/blob/blob.hh>
+#include <unisim/util/blob/blob.hh>
 #include <unisim/util/debug/stmt.hh>
 #include <unisim/util/debug/data_object.hh>
 #include <unisim/util/debug/subprogram.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/kernel/logger/logger.hh>
 
 #include <unisim/util/debug/dwarf/fmt.hh>
 #include <unisim/util/debug/dwarf/version.hh>
@@ -85,16 +84,20 @@ namespace debug {
 namespace dwarf {
 
 using unisim::util::endian::endian_type;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::EndDebugWarning;
 
 template <class MEMORY_ADDR>
 class DWARF_Handler
 {
 public:
-	DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob, unisim::kernel::logger::Logger& logger, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
+	DWARF_Handler(const unisim::util::blob::Blob<MEMORY_ADDR> *blob);
 	~DWARF_Handler();
 
+	void SetDebugInfoStream(std::ostream& debug_info_stream);
+	void SetDebugWarningStream(std::ostream& debug_warning_stream);
+	void SetDebugErrorStream(std::ostream& debug_error_stream);
+	void SetRegistersInterface(unsigned int prc_num, unisim::service::interfaces::Registers *regs_if);
+	void SetMemoryInterface(unsigned int prc_num, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
+	
 	void SetOption(Option opt, const char *s);
 	void SetOption(Option opt, bool flag);
 
@@ -132,15 +135,15 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramDIE(MEMORY_ADDR pc) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramDIE(const char *sub_program_name, const char *compilation_unit_name) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObjectDIE(const char *name, MEMORY_ADDR pc) const;
-	bool FindDataObject(const CLocOperationStream& _c_loc_operation_stream, MEMORY_ADDR pc, std::string& matched_data_object_name, const DWARF_Location<MEMORY_ADDR> *& dw_data_object_loc, const unisim::util::debug::Type *& dw_data_object_type) const;
+	bool FindDataObject(const CLocOperationStream& _c_loc_operation_stream, unsigned int prc_num, MEMORY_ADDR pc, std::string& matched_data_object_name, const DWARF_Location<MEMORY_ADDR> *& dw_data_object_loc, const unisim::util::debug::Type *& dw_data_object_type) const;
 	unisim::util::debug::SubProgram<MEMORY_ADDR> *GetSubProgram(const char *sub_program_name) const;
 	
-	unisim::util::debug::DataObject<MEMORY_ADDR> *GetDataObject(const char *data_object_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
-	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(const char *data_object_name, MEMORY_ADDR pc) const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *GetDataObject(unsigned int prc_num, const char *data_object_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(unsigned int prc_num, const char *data_object_name, MEMORY_ADDR pc) const;
 	
 	void EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
 	
-	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(const char *data_object_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
+	const unisim::util::debug::SubProgram<MEMORY_ADDR> *FindSubProgram(unsigned int prc_num, const char *data_object_name, const char *filename = 0, const char *compilation_unit_name = 0) const;
 	
 	endian_type GetFileEndianness() const;
 	endian_type GetArchEndianness() const;
@@ -157,18 +160,21 @@ public:
 	
 	bool GetCallingConvention(MEMORY_ADDR pc, uint8_t& calling_convention) const;
 	unsigned int GetReturnAddressSize(MEMORY_ADDR pc) const;
-	bool ComputeCFA(MEMORY_ADDR pc, MEMORY_ADDR& cfa) const;
-	std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
+	bool ComputeCFA(unsigned int prc_num, MEMORY_ADDR pc, MEMORY_ADDR& cfa) const;
+	std::vector<MEMORY_ADDR> *GetBackTrace(unsigned int prc_num, MEMORY_ADDR pc) const;
 	const DWARF_FDE<MEMORY_ADDR> *FindFDEByAddr(MEMORY_ADDR pc) const;
-	bool GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
-	bool GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const;
+	bool GetReturnAddress(unsigned int prc_num, MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
+	bool GetFrameBase(unsigned int prc_num, MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const;
 	DW_CFA_Specification GetCFA_Specification() const;
 	DW_CFA_RegRuleOffsetSpecification GetCFA_RegRuleOffsetSpecification() const;
 	
-	DWARF_RegisterNumberMapping *GetRegisterNumberMapping() const;
-	unisim::service::interfaces::Memory<MEMORY_ADDR> *GetMemoryInterface() const;
+	DWARF_RegisterNumberMapping *GetRegisterNumberMapping(unsigned int prc_num = 0) const;
+	unisim::service::interfaces::Registers *GetRegistersInterface(unsigned int prc_num = 0) const;
+	unisim::service::interfaces::Memory<MEMORY_ADDR> *GetMemoryInterface(unsigned int prc_num = 0) const;
 
-	unisim::kernel::logger::Logger& GetLogger() const;
+	std::ostream& GetDebugInfoStream() const;
+	std::ostream& GetDebugWarningStream() const;
+	std::ostream& GetDebugErrorStream() const;
 private:
 	endian_type file_endianness;
 	endian_type arch_endianness;
@@ -177,18 +183,18 @@ private:
 	bool inclusive_fde_addr_range;
 	
 	// Raw data
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_line_section;     // .debug_line section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_info_section;     // .debug_info section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_abbrev_section;   // .debug_abbrev section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_aranges_section;  // .debug_aranges section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_pubnames_section; // .debug_pubnames section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_pubtypes_section; // .debug_pubtypes section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_macinfo_section;  // .debug_macinfo section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_frame_section;    // .debug_frame section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *eh_frame_section;       // .eh_frame section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_str_section;      // .debug_str section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_loc_section;      // .debug_loc section (raw data)
-	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_ranges_section;   // .debug_ranges section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_line_section;     // .debug_line section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_info_section;     // .debug_info section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_abbrev_section;   // .debug_abbrev section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_aranges_section;  // .debug_aranges section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_pubnames_section; // .debug_pubnames section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_pubtypes_section; // .debug_pubtypes section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_macinfo_section;  // .debug_macinfo section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_frame_section;    // .debug_frame section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *eh_frame_section;       // .eh_frame section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_str_section;      // .debug_str section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_loc_section;      // .debug_loc section (raw data)
+	const unisim::util::blob::Section<MEMORY_ADDR> *debug_ranges_section;   // .debug_ranges section (raw data)
 	
 	std::map<uint64_t, DWARF_StatementProgram<MEMORY_ADDR> *> dw_stmt_progs;   // statement programs from section .debug_line indexed by .debug_line section offset
 	std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> stmt_matrix;               // Result of running dw_stmt_progs on dw_stmt_vms
@@ -204,14 +210,19 @@ private:
 	std::vector<DWARF_Pubs<MEMORY_ADDR> *> dw_pubtypes;                        // from section .debug_pubtypes
 	std::map<uint64_t, DWARF_LocListEntry<MEMORY_ADDR> * > dw_loc_list;        // location lists in section .debug_loc indexed by .debug_loc section offset
 
-	unisim::kernel::logger::Logger& logger;
-	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
+	std::ostream *debug_info_stream;
+	std::ostream *debug_warning_stream;
+	std::ostream *debug_error_stream;
+	const unisim::util::blob::Blob<MEMORY_ADDR> *blob;
 	std::string reg_num_mapping_filename;
 	bool verbose;
 	bool debug;
-	DWARF_RegisterNumberMapping *dw_reg_num_mapping;
-	unisim::service::interfaces::Registers *regs_if;
-	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
+// 	DWARF_RegisterNumberMapping *dw_reg_num_mapping;
+// 	unisim::service::interfaces::Registers *regs_if;
+// 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
+	std::vector<DWARF_RegisterNumberMapping *> dw_reg_num_mapping;
+	std::vector<unisim::service::interfaces::Registers *> regs_if;
+	std::vector<unisim::service::interfaces::Memory<MEMORY_ADDR> *> mem_if;
 	
 	void DumpStatementMatrix();
 	bool IsAbsolutePath(const char *filename) const;

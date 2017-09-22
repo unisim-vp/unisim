@@ -46,7 +46,7 @@
 #include "unisim/kernel/service/service.hh"
 
 #include "unisim/service/interfaces/trap_reporting.hh"
-#include "unisim/service/interfaces/debug_control.hh"
+#include "unisim/service/interfaces/debug_yielding.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/symbol_table_lookup.hh"
@@ -95,7 +95,7 @@ using unisim::kernel::logger::EndDebugError;
 using unisim::kernel::logger::EndDebug;
 
 using unisim::service::interfaces::TrapReporting;
-using unisim::service::interfaces::DebugControl;
+using unisim::service::interfaces::DebugYielding;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
 
@@ -212,7 +212,7 @@ inline void XGCCR_t::setCCR(uint8_t val) {
 
 class XGATE :
 	public CallBackObject,
-	public Client<DebugControl<physical_address_t> >,
+	public Client<DebugYielding>,
 	public Service<Registers>,
 	public Service<Memory<physical_address_t> >,
 	public Service<MemoryAccessReportingControl>,
@@ -280,7 +280,7 @@ public:
 	ServiceExport<Memory<physical_address_t> > memory_export;
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 
-	ServiceImport<DebugControl<physical_address_t> > debug_control_import;
+	ServiceImport<DebugYielding> debug_yielding_import;
 	ServiceImport<MemoryAccessReporting<physical_address_t> > memory_access_reporting_import;
 	ServiceImport<Memory<physical_address_t> > memory_import;
 	ServiceImport<TrapReporting > trap_reporting_import;

@@ -36,7 +36,6 @@
 #define __UNISIM_UTIL_LEXER_LEXER_HH__
 
 #include <unisim/util/dictionary/dictionary.hh>
-#include <unisim/kernel/logger/logger.hh>
 #include <iosfwd>
 #include <string>
 #include <map>
@@ -76,7 +75,7 @@ class Lexer
 public:
 	static const unsigned int TOK_EOF = 256;
 	
-	Lexer(std::istream *stream, unisim::kernel::logger::Logger& logger, bool debug = false);
+	Lexer(std::istream *stream, std::ostream& debug_info_stream, std::ostream& debug_warning_stream, std::ostream& debug_error_stream, bool debug = false);
 	virtual ~Lexer();
 	
 	void EnableToken(const char *text, unsigned int id = 0);
@@ -113,7 +112,9 @@ private:
 	bool enable_eating_eol;
 	std::istream *stream;
 	Location loc;
-	unisim::kernel::logger::Logger& logger;
+	std::ostream& debug_info_stream;
+	std::ostream& debug_warning_stream;
+	std::ostream& debug_error_stream;
 	bool debug;
 	bool finished_scanning_line;
 	

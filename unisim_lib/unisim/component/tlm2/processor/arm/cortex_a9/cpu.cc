@@ -361,8 +361,8 @@ CPU::Run()
         
         bool exception_taken = this->HandleAsynchronousException( exceptions ) != 0;
         if (exception_taken) {
-          if (exception_trap_reporting_import)
-            exception_trap_reporting_import->ReportTrap(*this,"irq or fiq");
+          if (trap_reporting_import)
+            trap_reporting_import->ReportTrap(*this,"irq or fiq");
         }
       }
     }
@@ -434,10 +434,10 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
   if (trans.get_command() == tlm::TLM_IGNORE_COMMAND) 
   {
     PCPU::logger << DebugWarning << "Received nb_transport_bw on master socket" 
-      << ", with an ignore, which the cpu doesn't know how to handle" 
-      << std::endl
-      << TIME(time) << std::endl
-      << PHASE(phase) << std::endl;
+                 << ", with an ignore, which the cpu doesn't know how to handle" 
+                 << std::endl << TIME(time)
+                 << std::endl << PHASE(phase)
+                 << std::endl;
     TRANS(PCPU::logger, trans);
     PCPU::logger << EndDebug;
     return ret;
@@ -451,10 +451,11 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
        * generates cpu requests), neither END_RESP (as it is the cpu which
        * ends responses) */
       PCPU::logger << DebugError << "Received nb_transport_bw on master_socket" 
-        << ", with unexpected phase" << std::endl
-        << LOCATION << std::endl
-        << TIME(time) << std::endl
-        << PHASE(phase) << std::endl;
+                   << ", with unexpected phase"
+                   << std::endl << LOCATION
+                   << std::endl << TIME(time)
+                   << std::endl << PHASE(phase)
+                   << std::endl;
       TRANS(PCPU::logger, trans);
       PCPU::logger << EndDebug;
       Stop(-1);
@@ -601,7 +602,7 @@ CPU::ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
 
   unsigned read_size = master_socket->transport_dbg(*trans);
 
-  return (trans->is_response_ok() and read_size == size);
+  return read_size == size;
 }
 
 /**
@@ -633,7 +634,7 @@ CPU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
 
   unsigned write_size = master_socket->transport_dbg(*trans);
 
-  return (trans->is_response_ok() and (write_size == size));
+  return write_size == size;
 }
 
 /**

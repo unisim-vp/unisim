@@ -25,7 +25,7 @@ if ( NOT ${UNISIM__COMPONENT__CXX__PROCESSOR__TMS320_DEFINED} )
 	set ( cxx_tms320_subdirs
 		unisim/kernel/service
 		unisim/kernel/logger
-		unisim/service/interfaces/debug_control
+		unisim/service/interfaces/debug_yielding
 		unisim/service/interfaces/disassembly
 		unisim/service/interfaces/memory_access_reporting
 		unisim/service/interfaces/memory

@@ -85,7 +85,7 @@ private:
    *   incomming calls.                                                     *
    **************************************************************************/
 
-private:
+ private:
   void SetExternalEvent();
   bool GetExternalEvent();
   

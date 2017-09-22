@@ -52,25 +52,23 @@ public:
 	typedef unisim::util::debug::MemoryAccessType MemoryAccessType;
 	typedef unisim::util::debug::MemoryType MemoryType;
 
-	virtual void ReportMemoryAccess(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size) = 0;
-	void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr);
+	virtual bool ReportMemoryAccess(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size) = 0;
 	virtual void ReportFetchInstruction(ADDRESS next_addr) = 0;
 	virtual void ReportCommitInstruction(ADDRESS addr) = 0;
+};
+
+enum MemoryAccessReportingType
+{
+	REPORT_MEM_ACCESS  = 0,
+	REPORT_FETCH_INSN  = 1,
+	REPORT_COMMIT_INSN = 2
 };
 
 class MemoryAccessReportingControl : public unisim::kernel::service::ServiceInterface
 {
 public:
-	virtual void RequiresMemoryAccessReporting(bool report) = 0;
-	virtual void RequiresFinishedInstructionReporting(bool report) = 0;
+	virtual void RequiresMemoryAccessReporting(MemoryAccessReportingType type, bool report) = 0;
 };
-
-template <class ADDRESS>
-inline void MemoryAccessReporting<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
-{
-	ReportCommitInstruction( addr );
-	ReportFetchInstruction( next_addr );
-}
 
 } // end of namespace interfaces
 } // end of namespace service

@@ -22,59 +22,96 @@
 #include <vector>
 #include <referencecounting.hh>
 
-template <class Type_t>
-struct Vect_t : std::vector<Ptr_t<Type_t> > {
-  Vect_t() {}
-  Vect_t( Type_t* _item ) : std::vector<Ptr_t<Type_t> >( 1,_item ) {}
-  Vect_t( Vect_t<Type_t>& _src ) {
-    if( not &_src ) return;
-    *this = _src;
-  }
-  Vect_t( uintptr_t _size ) : std::vector<Ptr_t<Type_t> >( _size, 0 ) {}
-  
-  Vect_t<Type_t>& operator=( Vect_t<Type_t>& _src ) {
-    if( not &_src ) return *this;
-    this->std::vector<Ptr_t<Type_t> >::operator=( _src );
-    return *this;
-  }
-  Vect_t<Type_t>& append( Vect_t<Type_t>& _src ) {
-    if( not &_src ) return *this;
-    this->reserve( this->size() + _src.size() );
-    typedef typename Vect_t<Type_t>::const_iterator iter_t;
-    for( iter_t iter = _src.begin(); iter < _src.end(); ++ iter ) this->push_back( *iter );
-    return *this;
-  }
-  Vect_t<Type_t>* append( Type_t* _item ) { this->push_back( _item ); return this; }
-};
-
-struct StringVect_t : std::vector<char const*> {
-  StringVect_t() {}
-  StringVect_t( char const* _item ) : std::vector<char const*>( 1,_item ) {}
-  StringVect_t( StringVect_t& _src ) {
-    if( not &_src ) return;
-    *this = _src;
-  }
-  StringVect_t( uintptr_t _size ) : std::vector<char const*>( _size, 0 ) {}
-  
-  StringVect_t& operator=( StringVect_t& _src ) {
-    if( not &_src ) return *this;
-    this->std::vector<char const*>::operator=( _src );
-    return *this;
-  }
-  StringVect_t& append( StringVect_t& _src ) {
-    if( not &_src ) return *this;
-    this->reserve( this->size() + _src.size() );
-    typedef StringVect_t::const_iterator iter_t;
-    for( iter_t iter = _src.begin(); iter < _src.end(); ++ iter ) push_back( *iter );
-    return *this;
-  }
-  StringVect_t* append( char const* _item ) { this->push_back( _item ); return this; }
-
-};
-
-struct UIntVect_t : std::vector<unsigned int>
+template <class TP>
+struct Vector : std::vector<Ptr<TP> >
 {
-  UIntVect_t( unsigned int value ) : std::vector<unsigned int>( 1, value ) {}
+  typedef std::vector<Ptr<TP> > inherited;
+  typedef typename inherited::iterator iterator;
+  typedef typename inherited::const_iterator const_iterator;
+  
+  Vector()
+  {}
+  
+  Vector( TP* _item )
+    : inherited( 1,_item )
+  {}
+  
+  Vector( Vector<TP> const& _src )
+    : inherited( _src )
+  {}
+  
+  Vector( uintptr_t _size )
+    : inherited( _size, (TP*)(0) )
+  {}
+  
+  Vector<TP>& operator=( Vector<TP> const& _src )
+  {
+    inherited::operator=( _src );
+    return *this;
+  }
+  
+  Vector<TP>& append( Vector<TP> const& _src )
+  {
+    inherited::reserve( this->size() + _src.size() );
+    for (const_iterator itr = _src.begin(), stp = _src.end(); itr != stp; ++itr)
+      { this->push_back( *itr ); }
+    return *this;
+  }
+  
+  Vector<TP>& append( TP* _item )
+  {
+    this->push_back( _item );
+    return *this;
+  }
+};
+
+struct StringVector : std::vector<char const*>
+{
+  typedef std::vector<char const*> inherited;
+  typedef typename inherited::iterator iterator;
+  typedef typename inherited::const_iterator const_iterator;
+  
+  StringVector()
+  {}
+  
+  StringVector( char const* _item )
+    : inherited( 1,_item )
+  {}
+  
+  StringVector( StringVector& _src )
+    : inherited( _src )
+  {}
+  
+  StringVector( uintptr_t _size )
+    : inherited( _size, 0 )
+  {}
+  
+  StringVector& operator=( StringVector& _src )
+  {
+    inherited::operator=( _src );
+    return *this;
+  }
+  
+  StringVector& append( StringVector& _src )
+  {
+    inherited::reserve( size() + _src.size() );
+    for (const_iterator iter = _src.begin(); iter != _src.end(); ++ iter)
+      { push_back( *iter ); }
+    return *this;
+  }
+  
+  StringVector& append( char const* _item )
+  {
+    this->push_back( _item );
+    return *this;
+  }
+};
+
+struct UIntVector : std::vector<unsigned int>
+{
+  UIntVector( unsigned int value )
+    : std::vector<unsigned int>( 1, value )
+  {}
 };
 
 #endif // __VECT_HH__

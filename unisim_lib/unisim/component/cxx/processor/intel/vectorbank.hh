@@ -1,12 +1,12 @@
 /*
- *  Copyright (c) 2007-2015,
+ *  Copyright (c) 2007-2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without 
+ *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice, 
+ *   - Redistributions of source code must retain the above copyright notice,
  *     this list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
@@ -14,19 +14,19 @@
  *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *     endorse or promote products derived from this software without specific 
+ *     endorse or promote products derived from this software without specific
  *     prior written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  *  ARE DISCLAIMED.
- *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY 
- *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
- *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND 
- *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
- *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY
+ *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
@@ -76,80 +76,57 @@ namespace intel {
     static void FromBytes( double& dst, uint8_t const* src ) { VectorTypeInfo<uint64_t>::FromBytes( reinterpret_cast<uint64_t&>( dst ), src ); }
   };
   
-  enum ecstate_t { invalid = 0, valid = 1, exclusive = 3 };
-
-  struct Invalidate
+  struct FlushInvalidate
   {
-    unsigned reg;
-  
-    Invalidate( unsigned idx ) : reg( idx ) {}
+    FlushInvalidate( unsigned _idx, uint8_t* _buffer, uint8_t const* _data )
+      : idx(_idx), buffer(_buffer), data(_data)
+    {}
+    
+    unsigned       idx;
+    uint8_t*       buffer;
+    uint8_t const* data;
   };
-
-  struct Copy
-  {
-    unsigned reg, size;
-    uint8_t* buffer;
   
-    template <unsigned sizeT>
-    Copy( unsigned idx, uint8_t (&_buffer) [sizeT] ) : reg( idx ), size( sizeT ), buffer( &_buffer[0] ) {}
-  };
-
   template <typename valT, unsigned _RegCount, unsigned _RegSize>
   struct VectorBankCache
   {
     static uintptr_t const sub_count = _RegSize / VectorTypeInfo<valT>::bytecount;
-    valT        regs[_RegCount][sub_count];
-    uint8_t     state[_RegCount];
+    bool     valid[_RegCount];
     
-    VectorBankCache() { for (unsigned idx = 0; idx < _RegCount; ++idx) state[idx] = invalid; }
+    VectorBankCache() { for (unsigned idx = 0; idx < _RegCount; ++idx) valid[idx] = true; }
     
     template <typename dirT>
-    valT
-    GetReg( dirT& dir, unsigned idx, unsigned sub )
+    valT*
+    GetStorage( dirT& dir, unsigned idx )
     {
+      uint8_t* data = &dir.storage[idx][0];
+      valT* regvec = static_cast<valT*>( data );
+      
       // Force validity
-      if (state[idx] == invalid) {
+      if (not valid[idx]) {
         uint8_t buffer[_RegSize];
-        Copy copy( idx, buffer );
+        FlushInvalidate copy( idx, buffer, data );
         dir.DoAll( copy );
-        state[idx] = valid;
+        valid[idx] = true;
         for (unsigned sub = 0; sub < sub_count; ++sub)
-          VectorTypeInfo<valT>::FromBytes( regs[idx][sub], &buffer[sub*VectorTypeInfo<valT>::bytecount] );
+          VectorTypeInfo<valT>::FromBytes( regvec[sub], &buffer[sub*VectorTypeInfo<valT>::bytecount] );
       }
-      return regs[idx][sub];
-    }
-  
-    template <typename dirT>
-    void
-    SetReg( dirT& dir, unsigned idx, unsigned sub, valT value )
-    {
-      // Force exclusivity
-      if (state[idx] != exclusive) {
-        GetReg( dir, idx, sub );
-        Invalidate invalidate( idx );
-        dir.DoAll( invalidate );
-        state[idx] = exclusive;
-      }
-      regs[idx][sub] = value;
+      
+      return regvec;
     }
     
-    void Do( Invalidate& inval )
+    void Do( FlushInvalidate& copy )
     {
-      unsigned idx = inval.reg;
-      if (idx >= _RegCount) return;
-      state[idx] = invalid;
-    }
-  
-    void Do( Copy& copy )
-    {
-      unsigned idx = copy.reg;
-      if (idx >= _RegCount) return;
-      if (copy.size != _RegSize) throw 0;
-      if (state[idx] == invalid) return;
-      state[idx] = valid;
+      unsigned idx = copy.idx;
+      valT* regvec = static_cast<valT*>( copy.data );
+      
+      if (not valid[idx]) return;
+      valid[idx] = false;
       if (not copy.buffer) return;
+      
       for (unsigned sub = 0; sub < sub_count; ++sub)
-        VectorTypeInfo<valT>::ToBytes( &copy.buffer[sub*VectorTypeInfo<valT>::bytecount], regs[idx][sub] );
+        VectorTypeInfo<valT>::ToBytes( &copy.buffer[sub*VectorTypeInfo<valT>::bytecount], regvec[sub] );
+      
       copy.buffer = 0;
     }
   };

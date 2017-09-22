@@ -270,7 +270,7 @@ void DWARF_AddressRanges<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handle
 	dw_cu = dw_handler->FindCompilationUnit(debug_info_offset);
 	if(!dw_cu)
 	{
-		dw_handler->GetLogger() << DebugWarning << "While resolving [address ranges entry -> CU] reference, can't find .debug_info CU (Compilation Unit) at offset " << debug_info_offset << EndDebugWarning;
+		dw_handler->GetDebugWarningStream() << "While resolving [address ranges entry -> CU] reference, can't find .debug_info CU (Compilation Unit) at offset " << debug_info_offset << std::endl;
 	}
 }
 

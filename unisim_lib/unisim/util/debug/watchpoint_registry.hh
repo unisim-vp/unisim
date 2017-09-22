@@ -36,36 +36,39 @@
 #ifndef __UNISIM_UTIL_DEBUG_WATCHPOINT_REGISTRY_HH__
 #define __UNISIM_UTIL_DEBUG_WATCHPOINT_REGISTRY_HH__
 
-#include <list>
-
 #include "unisim/util/debug/memory_access_type.hh"
 #include "unisim/util/debug/watchpoint.hh"
+
+#include <list>
+#include <map>
 
 namespace unisim {
 namespace util {
 namespace debug {
 
-using unisim::util::debug::Watchpoint;
-using std::list;
-
-template <class ADDRESS>
+template <typename ADDRESS, unsigned int MAX_FRONT_ENDS = 1>
 class WatchpointMapPage
 {
 public:
 	WatchpointMapPage(ADDRESS addr);
 	~WatchpointMapPage();
 
-	void SetWatchpoint(unisim::util::debug::MemoryAccessType mat, uint32_t offset, uint32_t size);
-	void RemoveWatchpoint(unisim::util::debug::MemoryAccessType mat, uint32_t offset, uint32_t size);
-	bool HasWatchpoint(unisim::util::debug::MemoryAccessType mat, uint32_t offset, uint32_t size) const;
+	unsigned int SetWatchpoint(unisim::util::debug::MemoryAccessType mat, uint32_t offset, uint32_t size, unsigned int front_end_num);
+	unsigned int RemoveWatchpoint(unisim::util::debug::MemoryAccessType mat, uint32_t offset, uint32_t size, unsigned int front_end_num);
+	bool HasWatchpoint(unisim::util::debug::MemoryAccessType mat, uint32_t offset, uint32_t size, unsigned int front_end_num) const;
+	bool HasWatchpoints(unisim::util::debug::MemoryAccessType mat, uint32_t offset, uint32_t size) const;
 
-	static const uint32_t NUM_WATCHPOINTS_PER_PAGE = 128;//32768; // MUST BE a power of two !
+	typedef uint64_t WORD;
+	static const unsigned int NUM_WATCHPOINTS_PER_PAGE = 128; // MUST BE a power of two !
+	static const unsigned int BITS_PER_WATCHPOINT = 2;
+	static const unsigned int BITS_PER_WATCHPOINTS = BITS_PER_WATCHPOINT * MAX_FRONT_ENDS;
+	static const unsigned int WATCHPOINTS_PER_WORD = (8 * sizeof(WORD)) / BITS_PER_WATCHPOINTS;
 	ADDRESS base_addr;			/*< base effective address */
-	uint32_t *map;			/*< an array of watchpoint masks for 16 consecutive effective addresses */
+	WORD *map;			/*< an array of watchpoint masks for 32 consecutive effective addresses */
 	WatchpointMapPage *next;	/*< next watchpoint map page with the same hash index */
 };
 
-template <class ADDRESS>
+template <typename ADDRESS, unsigned int NUM_PROCESSORS = 1, unsigned int MAX_FRONT_ENDS = 1>
 class WatchpointRegistry
 {
 public:
@@ -75,24 +78,34 @@ public:
 	virtual ~WatchpointRegistry();
 
 	void Reset();
-	bool SetWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
-	bool RemoveWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
-	bool HasWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size) const;
-	bool SetWatchpoint(const Watchpoint<ADDRESS> *wp);
-	bool RemoveWatchpoint(const Watchpoint<ADDRESS> *wp);
-	bool HasWatchpoint(const Watchpoint<ADDRESS> *wp) const;
+	void Clear(unsigned int front_end_num);
+	bool SetWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, bool overlook, unsigned int prc_num, unsigned int front_end_num);
+	bool RemoveWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num, unsigned int front_end_num);
+	bool SetWatchpoint(Watchpoint<ADDRESS> *wp);
+	bool RemoveWatchpoint(Watchpoint<ADDRESS> *wp);
+	bool HasWatchpoint(Watchpoint<ADDRESS> *wp) const;
+	bool HasWatchpoints(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num) const;
+	bool HasWatchpoints(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num, unsigned int front_end_num) const;
+	bool HasWatchpoints(unsigned int prc_num) const;
 	bool HasWatchpoints() const;
-	const Watchpoint<ADDRESS> *FindWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size) const;
-	const std::list<const Watchpoint<ADDRESS> *>& GetWatchpoints() const;
+	
+	/* struct Visitor { void Visit(Watchpoint<ADDRESS> *) {} }; */
+	template <class VISITOR> bool FindWatchpoints(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num, unsigned int front_end_num, VISITOR& visitor) const;
+	
+	void EnumerateWatchpoints(unsigned int prc_num, unsigned int front_end_num, std::list<Event<ADDRESS> *>& lst) const;
+	void EnumerateWatchpoints(unsigned int front_end_num, std::list<Event<ADDRESS> *>& lst) const;
+	void EnumerateWatchpoints(std::list<Event<ADDRESS> *>& lst) const;
 
 private:
-	bool has_watchpoints;
-	std::list<const Watchpoint<ADDRESS> *> watchpoints;
-	WatchpointMapPage<ADDRESS> *hash_table[2][NUM_HASH_TABLE_ENTRIES];
+	std::multimap<ADDRESS, Watchpoint<ADDRESS> *> watchpoints[NUM_PROCESSORS][MAX_FRONT_ENDS];
+	unsigned int watchpoint_count[NUM_PROCESSORS];
+	mutable WatchpointMapPage<ADDRESS, MAX_FRONT_ENDS> *mru_page[2][NUM_PROCESSORS];
+	mutable WatchpointMapPage<ADDRESS, MAX_FRONT_ENDS> *hash_table[2][NUM_PROCESSORS][NUM_HASH_TABLE_ENTRIES];
 
-	void AllocatePage(unisim::util::debug::MemoryType mt, ADDRESS addr);
-	const WatchpointMapPage<ADDRESS> *GetPage(unisim::util::debug::MemoryType mt, ADDRESS addr) const;
-	WatchpointMapPage<ADDRESS> *GetPage(unisim::util::debug::MemoryType mt, ADDRESS addr);
+	bool SetWatchpointIntoMap(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num, unsigned int front_end_num);
+	bool RemoveWatchpointFromMap(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, unsigned int prc_num, unsigned int front_end_num);
+	void AllocatePage(unisim::util::debug::MemoryType mt, ADDRESS addr, unsigned int prc_num);
+	WatchpointMapPage<ADDRESS, MAX_FRONT_ENDS> *GetPage(unisim::util::debug::MemoryType mt, ADDRESS addr, unsigned int prc_num) const;
 };
 
 } // end of namespace debug

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
 /**********************************************
@@ -54,13 +54,15 @@ mla.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
   U32 res = cpu.GetGPR(rm) * cpu.GetGPR(rs) + cpu.GetGPR(rn);
   cpu.SetGPR( rd, res );
   
   if (s)
     {
-      cpu.CPSR().Set( N, (res >> 31) & U32(1) );
-      cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      cpu.CPSR().Set( N, S32(res) < S32(0) );
+      cpu.CPSR().Set( Z,     res == U32(0) );
     }
 };
 
@@ -108,13 +110,15 @@ mul.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
   
   typedef typename ARCH::U32 U32;
+  typedef typename ARCH::S32 S32;
+  
   U32 res = cpu.GetGPR(rn) * cpu.GetGPR(rm);
   cpu.SetGPR(rd, res);
   
   if (s)
     {
-      cpu.CPSR().Set( N, (res >> 31) & U32(1) );
-      cpu.CPSR().Set( Z, U32(res == U32(0)) );
+      cpu.CPSR().Set( N, S32(res) < S32(0) );
+      cpu.CPSR().Set( Z,     res == U32(0) );
     }
 };
 
@@ -154,8 +158,8 @@ smlal.execute = {
 
   if (s)
     {
-      cpu.CPSR().Set( N, U32(res >> 63) & U32(1) );
-      cpu.CPSR().Set( Z, U32(res == S64(0)) );
+      cpu.CPSR().Set( N, res <  S64(0) );
+      cpu.CPSR().Set( Z, res == S64(0) );
     }
 };
 
@@ -190,8 +194,8 @@ smull.execute = {
   
   if (s)
     {
-      cpu.CPSR().Set( N, U32(res >> 63) & U32(1) );
-      cpu.CPSR().Set( Z, U32(res == S64(0)) );
+      cpu.CPSR().Set( N, res <  S64(0) );
+      cpu.CPSR().Set( Z, res == S64(0) );
     }
 };
 
@@ -218,7 +222,9 @@ umlal.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
   typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
+  
   U64 res = ((U64(cpu.GetGPR( rdlo ))) <<  0) | ((U64(cpu.GetGPR( rdhi ))) << 32);
   res += U64(cpu.GetGPR( rn )) * U64(cpu.GetGPR( rm ));
   
@@ -227,8 +233,8 @@ umlal.execute = {
 
   if (s)
     {
-      cpu.CPSR().Set( N, U32(res >> 63) & U32(1) );
-      cpu.CPSR().Set( Z, U32(res == U64(0)) );
+      cpu.CPSR().Set( N, S64(res) < S64(0) );
+      cpu.CPSR().Set( Z, res == U64(0) );
     }
 };
 
@@ -288,15 +294,17 @@ umull.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cond) )) return;
 
   typedef typename ARCH::U64 U64;
+  typedef typename ARCH::S64 S64;
   typedef typename ARCH::U32 U32;
+  
   U64 res = U64(cpu.GetGPR( rn )) * U64(cpu.GetGPR( rm ));
   cpu.SetGPR( rdlo, U32(res >> 0) );
   cpu.SetGPR( rdhi, U32(res >> 32) );
 
   if (s)
     {
-      cpu.CPSR().Set( N, U32(res >> 63) & U32(1) );
-      cpu.CPSR().Set( Z, U32(res == U64(0)) );
+      cpu.CPSR().Set( N, S64(res) < S64(0) );
+      cpu.CPSR().Set( Z,     res == U64(0) );
     }
 };
 

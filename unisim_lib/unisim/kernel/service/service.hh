@@ -48,6 +48,10 @@
 #include <string.h>
 #include <assert.h>
 
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+#include <windef.h>
+#endif
+
 namespace unisim {
 namespace kernel {
 namespace service {
@@ -150,8 +154,8 @@ public:
 	typedef enum { FMT_DEFAULT, FMT_HEX, FMT_DEC } Format;
 
 	VariableBase();
-	VariableBase(const char *name, Object *owner, Type type, const char *description);
-	VariableBase(const char *name, VariableBase *container, Type type, const char *description);
+	VariableBase(const char *name, Object *owner, Type type, const char *description = 0);
+	VariableBase(const char *name, VariableBase *container, Type type, const char *description = 0);
 	virtual ~VariableBase();
 
 	Object *GetOwner() const;
@@ -168,6 +172,7 @@ public:
 	void GetEnumeratedValues(vector<string> &values) const;
 	bool AddEnumeratedValue(const char *value);
 	bool RemoveEnumeratedValue(const char *value);
+	void SetDescription(const char *description);
 	void SetFormat(Format fmt);
 	bool IsVoid() const;
 
@@ -456,6 +461,22 @@ public:
 	void SetVariable(const char *variable_name, long long variable_value);
 	void SetVariable(const char *variable_name, float variable_value);
 	void SetVariable(const char *variable_name, double variable_value);
+private:
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
+	static void (*sig_int_handler)(int);
+	static void (*prev_sig_int_handler)(int);
+#endif
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
+#else
+	static void SigIntHandler(int signum);
+#endif
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
+	static void (*sig_pipe_handler)(int);
+	static void (*prev_sig_pipe_handler)(int);
+	static void SigPipeHandler(int signum);
+#endif
+	void BroadcastSigInt();
 };
 
 //=============================================================================
@@ -553,12 +574,20 @@ class Register : public Variable<TYPE>
 {
 public:
 	Register(const char *name, Object *owner, TYPE& storage, const char *description = NULL)
-	  : Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description) {}
+	  : Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description)
+	  , m_callback( 0 )
+	{}
+	
+	~Register()
+	{
+	  delete m_callback;
+	}
 	
 	typedef TCallBack<TYPE> TCB;
 	void setCallBack(CallBackObject *owner, unsigned int offset, typename TCB::cbwrite _write, typename TCB::cbread _read)
 	{
-		m_callback.reset(new TCB(owner, offset, _write, _read));
+		if (m_callback) delete m_callback;
+		m_callback = new TCB(owner, offset, _write, _read);
 	}
 
 	virtual void Set( TYPE const& value ) { if (not WriteBack(value)) Variable<TYPE>::Set( value ); }
@@ -575,18 +604,18 @@ public:
 protected:
 	bool WriteBack(TYPE const& storage)
 	{
-		bool status = m_callback.get() and m_callback->Write(storage);
+		bool status = (m_callback and m_callback->Write(storage));
 		if (status) this->NotifyListeners();
 		return status;
 	}
 
 	bool ReadBack(TYPE& storage) const
 	{
-		return (m_callback.get() and m_callback->Read(storage));
+		return (m_callback and m_callback->Read(storage));
 	}
 
 private:
-	std::auto_ptr<TCB> m_callback;
+	TCB* m_callback;
 };
 
 template <class TYPE>
@@ -874,6 +903,8 @@ public:
 	                                                       // By contract, BeginSetup has been called before.
 	virtual bool EndSetup(); // can call any import
 	                         // By contract, it is called after Setup(ServiceExportBase&)
+	
+	virtual void SigInt();
 
 	const char *GetName() const;
 	const char *GetObjectName() const;

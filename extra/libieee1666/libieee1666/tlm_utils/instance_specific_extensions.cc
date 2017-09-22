@@ -61,24 +61,27 @@ proxy<instance_specific_extension_set>& embedded_instance_specific_extension::ge
 	return *instance_specific_extensions->proxies[accessor_id];
 }
 
+//////////////////////////////// instance_specific_extension_base //////////////////////////////////////
+
 
 unsigned int instance_specific_extension_base::allocate_instance_specific_extension_id()
 {
-	return next_instance_specific_extension_id++;
+	return num_extensions++;
 }
+
 
 
 //////////////////////////////// instance_specific_extension_accessor //////////////////////////////////////
 
-static unsigned int allocate_instance_specific_extension_accessor_id()
+unsigned int instance_specific_extension_accessor::num_accessor_instances = 0;
+
+unsigned int instance_specific_extension_accessor::allocate_id()
 {
-	static unsigned int next_instance_specific_extension_accessor_id = 0;
-	
-	return next_instance_specific_extension_accessor_id++;
+	return num_accessor_instances++;
 }
 	
 instance_specific_extension_accessor::instance_specific_extension_accessor()
-	: id(allocate_instance_specific_extension_accessor_id())
+	: id(allocate_id())
 {
 }
 

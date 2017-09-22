@@ -69,19 +69,17 @@ public:
 	
 	Tee(const char *name, Object *parent = 0);
 	virtual ~Tee();
-	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, 
+	virtual bool ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, 
 			typename MemoryAccessReporting<ADDRESS>::MemoryType mt, 
 			ADDRESS addr, uint32_t size);
 	virtual void ReportCommitInstruction(ADDRESS addr);
 	virtual void ReportFetchInstruction(ADDRESS next_addr);
 	
-//	virtual void RequiresMemoryAccessReporting(bool report);
-//	virtual void RequiresFinishedInstructionReporting(bool report);
-
 private:
 	ControlSelector<MAX_IMPORTS> *control_selector[MAX_IMPORTS];
 	bool requires_memory_access_reporting[MAX_IMPORTS];
-	bool requires_finished_instruction_reporting[MAX_IMPORTS];
+	bool requires_fetch_instruction_reporting[MAX_IMPORTS];
+	bool requires_commit_instruction_reporting[MAX_IMPORTS];
 };
 
 template <unsigned int MAX_IMPORTS>
@@ -95,16 +93,17 @@ public:
 
 	ControlSelector(unsigned int index,
 			bool *requires_memory_access_reporting,
-			bool *requires_finished_instruction_reporting,
+			bool *requires_fetch_instruction_reporting,
+			bool *requires_commit_instruction_reporting,
 			const char *name, Object *parent = 0);
 	~ControlSelector();
 	
-	virtual void RequiresMemoryAccessReporting(bool report);
-	virtual void RequiresFinishedInstructionReporting(bool report);
+	virtual void RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType, bool report);
 private:
 	unsigned int index;
 	bool *requires_memory_access_reporting;
-	bool *requires_finished_instruction_reporting;
+	bool *requires_fetch_instruction_reporting;
+	bool *requires_commit_instruction_reporting;
 };
 
 } // end of namespace memory_access_reporting

@@ -97,7 +97,7 @@ unisim/util/debug/breakpoint_registry_32.cc \
 unisim/util/debug/breakpoint_registry_64.cc \
 unisim/util/debug/profile_32.cc \
 unisim/util/debug/profile_64.cc \
-unisim/util/endian/endian.cc \
+unisim/kernel/service/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/component/cxx/scheduler/cuda_scheduler/cuda_scheduler.cc \
 unisim/component/cxx/processor/tesla/cpu.cc \
@@ -141,7 +141,7 @@ unisim/util/queue/queue.hh \
 unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/floating.hh \
 unisim/util/simfloat/host_floating.hh \
-unisim/service/interfaces/debug_control.hh \
+unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/ti_c_io.hh \
 unisim/service/interfaces/disassembly.hh \

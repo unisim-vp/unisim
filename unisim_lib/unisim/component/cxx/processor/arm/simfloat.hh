@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_FLOATING_HH__
@@ -88,7 +88,9 @@ namespace simfloat {
     bool isRoundToEven() const { return fRoundToEven && isNearestRound(); }
     bool isPositiveZeroMAdd() { return true; }
     bool isInftyAvoided() const { return true; }
+    bool isAllInftyAvoided() const { return false; }
     bool doesAvoidInfty(bool fNegative) const {  return fNegative ? (rmRound >= RMHighest) : (rmRound & RMLowest); }
+    bool isDenormalizedAvoided() const { return false; }
     bool keepNaNSign() const { return true; }
     bool produceMultNaNPositive() const { return true; }
     bool produceDivNaNPositive() const { return true; }
@@ -226,18 +228,113 @@ namespace simfloat {
     bool fDivisionByZero;
 
   };
-
-  struct BuiltDoubleTraits : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11>
+  
+  template <int BitSizeMantissa, int BitSizeExponent>
+  struct SoftFPTraits
+    : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<BitSizeMantissa, BitSizeExponent>
   {
+    static const int UBitSizeMantissa = BitSizeMantissa;
+    static const int UBitSizeExponent = BitSizeExponent;
     typedef Flags StatusAndControlFlags;
     
-    struct MultExtension : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11>::MultExtension
+    struct MultExtension
+      : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<BitSizeMantissa, BitSizeExponent>::MultExtension
     {
       typedef Flags StatusAndControlFlags;
     };
   };
+  
+  template <class FPTraits>
+  void Sqrt( unisim::util::simfloat::Numerics::Double::TBuiltDouble<FPTraits>& acc, Flags& flags )
+  {
+    typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<FPTraits> SOFTDBL;
+    static int const bitSizeMantissa = FPTraits::UBitSizeMantissa;
+    static int const bitSizeExponent = FPTraits::UBitSizeExponent;
+    static int const bitSizeExtMantissa = bitSizeMantissa + 5;
+    static int const bitSizeExtExponent = bitSizeExponent + 2;
+    typedef SoftFPTraits<bitSizeExtMantissa,bitSizeExtExponent> SQRTFPTraits;
+    typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<SQRTFPTraits> WorkFP;
+      
+    Flags xflags;
+    typename WorkFP::FloatConversion xconv;
+    xconv.setSizeMantissa(bitSizeMantissa).setSizeExponent(bitSizeExponent);
+    //xconv.setNegative(acc.isNegative());
+    {
+      typename SOFTDBL::Exponent const& exp = acc.queryBasicExponent();
+      for (int idx = exp.queryCellSize(); --idx >= 0; )
+        xconv.exponent()[idx] = exp[idx];
+    }
+    {
+      typename SOFTDBL::Mantissa const& man = acc.queryMantissa();
+      for (int idx = man.queryCellSize(); --idx >= 0; )
+        xconv.mantissa()[idx] = man[idx];
+    }
+      
+    WorkFP input_value( xconv, xflags );
+    WorkFP series_value( input_value );
+    // Initial guess by halving exponent
+    series_value.querySBasicExponent() >>= 1;
+    series_value.querySBasicExponent().plusAssign(series_value.getZeroExponent() >>= 1);
+    
+    WorkFP half;
+    half.querySBasicExponent() = half.getMinusOneExponent();
+    
+    for (int ttl = 3; ttl >= 0;)
+      {
+        WorkFP next( input_value );
+        xflags.clear();
+        // We need to use Round Towards Zero (default would be round
+        // to nearest) because we need to have exact values of
+        // mantissa bits rather than good quality approximation
+        xflags.setZeroRound();
+        next.divAssign( series_value, xflags );
+        next.plusAssign( series_value, xflags );
+        next.multAssign( half, xflags );
+          
+        WorkFP last( series_value );
+        series_value = next;
+          
+        if (next.queryBasicExponent() != last.queryBasicExponent())
+          { ttl = 3; continue; }
+        typename WorkFP::Mantissa
+          lm( last.queryMantissa() ),
+          nm( next.queryMantissa() );
+        {
+          bool strong_diff = false;
+          for (int idx = lm.queryCellSize(); --idx > 0;)
+            if (lm[idx] != nm[idx])
+              { strong_diff = true; break; }
+          if (strong_diff) { ttl = 3; continue; }
+        }
+        unsigned lm0 = lm[0], nm0 = nm[0], diff = lm0 > nm0 ? (lm0 - nm0) : (nm0 - lm0);
+        if (diff >= 4) { ttl = 3; continue; }
+        if (diff == 0) break;
+        ttl -= 1;
+      }
+    
+      
+    typename SOFTDBL::FloatConversion fconv;
+    fconv.setSizeMantissa(bitSizeExtMantissa).setSizeExponent(bitSizeExtExponent);
+    {
+      typename WorkFP::Exponent const& exp = series_value.queryBasicExponent();
+      for (int idx = exp.queryCellSize(); --idx >= 0; )
+        fconv.exponent()[idx] = exp[idx];
+    }
+    {
+      typename WorkFP::Mantissa const& man = series_value.queryMantissa();
+      for (int idx = man.queryCellSize(); --idx >= 0; )
+        fconv.mantissa()[idx] = man[idx];
+    }
+    
+    if (xflags.isApproximate())
+      fconv.mantissa()[0] |= 1;
+    
+    acc.setFloat(fconv, flags);
+  }
+    
+  typedef SoftFPTraits<52,11> SoftDoubleTraits;
 
-  struct SoftDouble : public unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltDoubleTraits>
+  struct SoftDouble : public unisim::util::simfloat::Numerics::Double::TBuiltDouble<SoftDoubleTraits>
   {
     SoftDouble() : inherited() {}
     SoftDouble(const SoftFloat& sfFloat, Flags& rpParams);
@@ -245,26 +342,21 @@ namespace simfloat {
     SoftDouble(VFPExpandImm const& imm);
     SoftDouble& operator=(const SoftDouble& sdSource) { return (SoftDouble&) inherited::operator=(sdSource); }
     SoftDouble& assign(const SoftDouble& sdSource) { return (SoftDouble&) inherited::operator=(sdSource); }
-    SoftDouble& assign(const SoftFloat& sfFloat, Flags& rpParams);
+    SoftDouble& assign(const SoftDouble& sdSource, Flags& rpParams) { return (SoftDouble&) inherited::operator=(sdSource); }
+    SoftDouble& assign(const SoftFloat& sfSource, Flags& rpParams);
     uint64_t queryValue() const
     { uint64_t uResult; fillChunk(&uResult, unisim::util::endian::IsHostLittleEndian()); return uResult; }
     void ToBytes( uint8_t* bytes ) const;
     void FromBytes( uint8_t const* bytes );
+    void SquareRoot( Flags& rpParams );
     
   private:
-    typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltDoubleTraits> inherited;
+    typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<SoftDoubleTraits> inherited;
   };
 
-  struct BuiltFloatTraits : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<23, 8>
-  {
-    typedef Flags StatusAndControlFlags;
-    struct MultExtension : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<23, 8>::MultExtension
-    {
-      typedef Flags StatusAndControlFlags;
-    };
-  };
-
-  struct SoftFloat : public unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltFloatTraits>
+  typedef SoftFPTraits<23,8> SoftFloatTraits;
+  
+  struct SoftFloat : public unisim::util::simfloat::Numerics::Double::TBuiltDouble<SoftFloatTraits>
   {
     SoftFloat() : inherited() {}
     SoftFloat(const SoftDouble& sdDouble, Flags& rpParams);
@@ -279,9 +371,11 @@ namespace simfloat {
     uint32_t queryValue() const
     {  uint32_t uResult; fillChunk(&uResult, unisim::util::endian::IsHostLittleEndian()); return uResult; }
     void ToBytes( uint8_t* bytes ) const;
-    void FromBytes( uint8_t const* bytes );
+    void FromBytes( uint8_t const* bytes ); 
+    void SquareRoot( Flags& rpParams );
+    
   private:
-    typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltFloatTraits> inherited;
+    typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<SoftFloatTraits> inherited;
   };
 
   inline SoftDouble&
@@ -347,7 +441,7 @@ namespace simfloat {
   private:
     SoftDouble& storage;
   };
-
+  
   struct FP
   {
     typedef SoftDouble F64;
@@ -379,17 +473,36 @@ namespace simfloat {
     {
       op.querySMantissa().setTrueBitArray(op.bitSizeMantissa()-1);
     } 
-    
-    static inline
-    void Sqrt( SoftDouble& acc, uint32_t fpscr_val )
-    {
-      throw std::logic_error("TODO: sqrt");
-    }
 
-    static inline
-    void Sqrt( SoftFloat& acc, uint32_t fpscr_val )
+    template <class SOFTDBL, class ARCH> static
+    void Sqrt( SOFTDBL& acc, ARCH& arch, uint32_t fpscr_val )
     {
-      throw std::logic_error("TODO: sqrt");
+      bool negative = acc.isNegative();
+      if (acc.isZero() or (acc.isInfty() and not negative))
+        return;
+      if (negative) {
+        SetDefaultNan( acc );
+        FPProcessException( arch, IOC, fpscr_val );
+        return;
+      }
+      
+      Flags flags;
+      flags.setRoundingMode( RMode.Get( fpscr_val ) );
+      //flags.setRoundingMode( arm::RoundTowardsZero );
+      acc.SquareRoot( flags );
+      // Process exceptions (Underflow, Overflow, InvalidOp, Inexact)
+      if (FZ.Get( fpscr_val ) and (FlushToZero( acc, fpscr_val ) or (acc.isZero() and flags.isApproximate()))) {
+        FPProcessException( arch, UFC, 0 );
+        return;
+      }
+      if (flags.hasQNaNResult())
+        FPProcessException( arch, IOC, fpscr_val );
+      if (flags.isApproximate()) {
+        if      (flags.isOverflow())     FPProcessException( arch, OFC, fpscr_val );
+        else if (flags.isUnderflow())    FPProcessException( arch, UFC, fpscr_val );
+        FPProcessException( arch, IXC, fpscr_val );
+      }
+      
     }
 
     template <typename SOFTDBL> static
@@ -653,32 +766,36 @@ namespace simfloat {
     template <typename SOFTDBL, class ARCH> static
     void ItoF( SOFTDBL& dst, int64_t src, int fracbits, ARCH& arch, uint32_t fpscr_val )
     {
-      dst.clear();
+      SoftDouble tmp;
+      tmp.clear();
       
       if (src == 0)
         return;
-      
-      SOFTDBL const two( VFPExpandImm( 0, 0, 0 ) );
-      SOFTDBL const one( VFPExpandImm( 0, 7, 0 ) );
-      
-      Flags flags;
       
       bool negative = (src < 0);
       if (negative)
         src = -src;
       
-      while (src)
+      SoftDouble two( VFPExpandImm( 0, 0, 0 ) );
+      Flags flags;
+      
+      for (SoftDouble bit( VFPExpandImm( 0, 7, 0 ) ); src; )
         {
           if (src & 1)
-            dst.plusAssign( one, flags );
-          dst.multAssign( two, flags );
+            tmp.plusAssign( bit, flags );
+          bit.multAssign( two, flags );
           src >>= 1;
         }
       
       while (fracbits)
         {
-          dst.divAssign( two, flags );
+          tmp.divAssign( two, flags );
+          fracbits -= 1;
         }
+      
+      tmp.setNegative(negative);
+      
+      FtoF( dst, tmp, arch, fpscr_val );
     }
   };
 

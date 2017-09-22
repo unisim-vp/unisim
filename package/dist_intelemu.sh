@@ -41,12 +41,12 @@ unisim/util/debug/dwarf/dwarf32.cc \
 unisim/util/debug/dwarf/register_number_mapping.cc \
 unisim/util/debug/dwarf/data_object.cc \
 unisim/util/debug/dwarf/c_loc_expr_parser.cc \
-unisim/util/debug/blob/section32.cc \
-unisim/util/debug/blob/blob32.cc \
-unisim/util/debug/blob/section64.cc \
-unisim/util/debug/blob/segment32.cc \
-unisim/util/debug/blob/segment64.cc \
-unisim/util/debug/blob/blob64.cc \
+unisim/util/blob/section32.cc \
+unisim/util/blob/blob32.cc \
+unisim/util/blob/section64.cc \
+unisim/util/blob/segment32.cc \
+unisim/util/blob/segment64.cc \
+unisim/util/blob/blob64.cc \
 unisim/util/debug/stmt_32.cc \
 unisim/util/debug/elf_symtab/elf_symtab32.cc \
 unisim/util/debug/stmt_64.cc \
@@ -55,7 +55,6 @@ unisim/util/debug/symbol_32.cc \
 unisim/util/debug/type.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/os/linux_os/environment.cc \
-unisim/util/os/linux_os/linux.cc \
 unisim/util/lexer/lexer.cc \
 unisim/util/xml/xml.cc \
 unisim/component/cxx/processor/intel/disasm.cc \
@@ -65,7 +64,7 @@ unisim/component/cxx/processor/intel/math.cc \
 
 UNISIM_LIB_INTELEMU_HEADER_FILES="\
 unisim/kernel/api/api.hh \
-unisim/kernel/debug/debug.hh \
+unisim/util/backtrace/backtrace.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/service/service.hh \
@@ -77,12 +76,12 @@ unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/register.hh \
 unisim/service/interfaces/stmt_lookup.hh \
 unisim/util/arithmetic/arithmetic.hh \
-unisim/util/debug/blob/blob.hh \
-unisim/util/debug/blob/blob.tcc \
-unisim/util/debug/blob/section.hh \
-unisim/util/debug/blob/section.tcc \
-unisim/util/debug/blob/segment.hh \
-unisim/util/debug/blob/segment.tcc \
+unisim/util/blob/blob.hh \
+unisim/util/blob/blob.tcc \
+unisim/util/blob/section.hh \
+unisim/util/blob/section.tcc \
+unisim/util/blob/segment.hh \
+unisim/util/blob/segment.tcc \
 unisim/util/debug/data_object.hh \
 unisim/util/debug/dwarf/abbrev.hh \
 unisim/util/debug/dwarf/addr_range.hh \
@@ -179,7 +178,6 @@ unisim/component/cxx/processor/intel/arch.hh \
 unisim/component/cxx/processor/intel/segments.hh \
 unisim/component/cxx/processor/intel/vectorbank.hh \
 unisim/component/cxx/processor/intel/math.hh \
-unisim/component/cxx/processor/intel/fwd.hh \
 unisim/component/cxx/processor/intel/isa/string.hh \
 unisim/component/cxx/processor/intel/isa/special.hh \
 unisim/component/cxx/processor/intel/isa/integer.hh \
@@ -256,9 +254,12 @@ string \
 
 UNISIM_SIMULATORS_INTELEMU_SOURCE_FILES="\
 main.cc \
+linuxsystem.cc \
 "
 
-UNISIM_SIMULATORS_INTELEMU_HEADER_FILES=""
+UNISIM_SIMULATORS_INTELEMU_HEADER_FILES="\
+linuxsystem.hh \
+"
 
 UNISIM_SIMULATORS_INTELEMU_EXTRA_FILES="\
 config.h.in \

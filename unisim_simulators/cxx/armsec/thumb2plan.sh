@@ -1,3 +1,4 @@
+set -ex
 ${ARMSEC} thumb 0x40c8 0x4149 # adcs	r1, r1
 ${ARMSEC} thumb 0x40ca 0x4149 # adcs	r1, r1
 ${ARMSEC} thumb 0x40c8 0x4143 # adcs	r3, r0

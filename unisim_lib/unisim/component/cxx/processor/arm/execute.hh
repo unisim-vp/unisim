@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2010-2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,12 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
-
-/**************************************************************/
-/* Disassembling methods                                      */
-/**************************************************************/
 
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXECUTE_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_EXECUTE_HH__
@@ -78,13 +74,13 @@ namespace arm {
     util::truth_table::InBit<uint16_t,1> const C;
     util::truth_table::InBit<uint16_t,0> const V;
     
+    typedef typename coreT::U8  U8;
     typedef typename coreT::U16 U16;
-    typedef typename coreT::U32 U32;
 
     static U16 const condition_truth_tables[] = {
       U16((                  Z).tt), // eq; equal
       U16((              not Z).tt), // ne; not equal
-      U16((                  C).tt), // cs/hs; unsigned higuer or same
+      U16((                  C).tt), // cs/hs; unsigned higher or same
       U16((              not C).tt), // cc/lo; unsigned lower
       U16((                  N).tt), // mi; negative
       U16((              not N).tt), // pl; positive or zero
@@ -100,7 +96,7 @@ namespace arm {
       U16(                  0x0000),    // <und>; never (illegal)
     };
     if (cond >= 15) throw std::logic_error("invalid condition code");
-    U32 nzcv = core.CPSR().Get( NZCV );
+    U8 nzcv( core.GetNZCV() );
     return ((condition_truth_tables[cond] >> nzcv) & U16(1)) != U16(0);
   }
   
@@ -135,10 +131,14 @@ namespace arm {
   UpdateStatusImmShift( coreT& core, typename coreT::U32 const& res, typename coreT::U32 const& shift_lhs, unsigned shift, unsigned shift_rhs )
   {
     typedef typename coreT::U32 U32;
+    typedef typename coreT::S32 S32;
+    typedef typename coreT::BOOL BOOL;
+    
     U32 carry(0);
+    bool write_carry = true;
 
     if      ((shift_rhs == 0) and (shift == 0)) /* MOVS */
-      carry = core.CPSR().Get( C );
+      write_carry = false;
     else if ((shift_rhs == 0) and (shift == 3)) /* RRX */
       carry = (shift_lhs & U32(1));
     else if (shift == 0)                        /* LSL */
@@ -146,9 +146,10 @@ namespace arm {
     else                                        /* LSR, ASR, ROR */
       carry = (shift_lhs >> ((shift_rhs - 1) & 0x1f)) & U32(1);
 
-    core.CPSR().Set( N, (res >> 31) & U32(1) );
-    core.CPSR().Set( Z, U32(res == U32(0)) );
-    core.CPSR().Set( C, carry );
+    core.CPSR().Set( N, S32(res) < S32(0) );
+    core.CPSR().Set( Z,     res == U32(0) );
+    if (write_carry)
+      core.CPSR().Set( C, BOOL( carry ) );
     /* CPSR.V unaltered */
   }
 
@@ -179,6 +180,8 @@ namespace arm {
   {
     typedef typename coreT::U32 U32;
     typedef typename coreT::S32 S32;
+    typedef typename coreT::BOOL BOOL;
+    
     U32 shift8 = shift_val & U32(0xff);
     // Wether output carry is input carry
     U32 select_carry = U32(shift8 == U32(0));
@@ -197,9 +200,9 @@ namespace arm {
     
     carry = (carry & ~select_carry) | (core.CPSR().Get( C ) & select_carry);
 
-    core.CPSR().Set( N, (res >> 31) & U32(1) );
-    core.CPSR().Set( Z, U32(res == U32(0)) );
-    core.CPSR().Set( C, carry );
+    core.CPSR().Set( N, S32(res) < S32(0) );
+    core.CPSR().Set( Z,     res == U32(0) );
+    core.CPSR().Set( C, BOOL( carry ) );
     /* CPSR.V unaltered */
   }
   
@@ -213,7 +216,14 @@ namespace arm {
     core.CPSR().Set( C, ((lhs & rhs) | ((~res) & (lhs | rhs))) >> 31 );
     core.CPSR().Set( V, ((lhs & rhs & (~res)) | ((~lhs) & (~rhs) & res)) >> 31 );
   }
-
+  
+  template <typename coreT>
+  void
+  UpdateStatusAddWithCarry( coreT& core, typename coreT::U32 const& res, typename coreT::U32 const& lhs, typename coreT::U32 const& rhs, typename coreT::U32 const& carry )
+  {
+    UpdateStatusAdd( core, res, lhs, rhs );
+  }
+  
   /* In ARM isa, the substraction carry correspond to the complementary                                                                          
    * addition's carry.                                                                                                                           
    */
@@ -226,6 +236,13 @@ namespace arm {
     core.CPSR().Set( Z, U32(res == U32(0)) );
     core.CPSR().Set( C, ((lhs & (~rhs)) | ((~res) & (lhs | (~rhs)))) >> 31 );
     core.CPSR().Set( V, ((lhs & (~rhs) & (~res)) | ((~lhs) & rhs & res)) >> 31 );
+  }
+  
+  template <typename coreT>
+  void
+  UpdateStatusSubWithBorrow( coreT& core, typename coreT::U32 const& res, typename coreT::U32 const& lhs, typename coreT::U32 const& rhs, typename coreT::U32 const& borrow )
+  {
+    UpdateStatusSub( core, res, lhs, rhs );
   }
   
   template <unsigned SIZE> struct _SWP_MSB { static uint32_t const mask = (_SWP_MSB<SIZE*2>::mask >> SIZE) | _SWP_MSB<SIZE*2>::mask; };
@@ -346,7 +363,7 @@ namespace arm {
     // have reserved it. The definition of UNPREDICTABLE does not
     // permit the resulting behavior to be a security hole.
 
-    U32 new_cpsr = (core.CPSR().Get( ALL32 ) & ~write_mask) | (value & write_mask);
+    U32 new_cpsr = (core.CPSR().bits() & ~write_mask) | (value & write_mask);
     
     core.CurrentMode().Swap(core); // OUT
     core.CPSR().Set( ALL32, new_cpsr );
@@ -597,7 +614,7 @@ namespace arm {
     }
     if (FPProcessNaN( arch, fpscr_val, acc )) return;
     
-    ARCH::FP::Sqrt( acc, fpscr_val );
+    ARCH::FP::Sqrt( acc, arch, fpscr_val );
   }
   
   template <typename INT, typename FPT, typename ARCH, typename FPCTRL>

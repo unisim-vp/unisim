@@ -146,6 +146,10 @@ public:
 	////////////////////////////////////////
 private:
 	unsigned int id;
+	
+	static unsigned int num_accessors;
+	
+	static unsigned int allocate_instance_specific_extension_accessor_id();
 };
 
 template <typename T> proxy<instance_specific_extension_set>& instance_specific_extension_accessor::operator () (T& trans)

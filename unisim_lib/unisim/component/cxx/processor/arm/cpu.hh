@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2015,
+ *  Copyright (c) 2007-2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -42,7 +42,6 @@
 #include <unisim/component/cxx/processor/arm/hostfloat.hh>
 #include <unisim/component/cxx/processor/arm/simfloat.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
-#include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/inlining/inlining.hh>
@@ -247,6 +246,8 @@ struct CPU
    */
   PSR&  CPSR() { return cpsr; };
   
+  uint32_t GetNZCV() const { return cpsr.Get( NZCV ); }
+  
   /** Get the endian configuration of the processor.
    *
    * @return the endian being used
@@ -357,7 +358,8 @@ protected:
   virtual void BranchToFIQorIRQvector( bool isIRQ );
   void         TakeSVCException();
   void         TakeDataOrPrefetchAbortException( bool isdata );
-  
+  void         TakeUndefInstrException();
+
   /************************************************************************/
   /* Exception handling                                               END */
   /************************************************************************/
@@ -441,7 +443,8 @@ public:
   
   U32 FPSCR, FPEXC;
 
-  U32 RoundTowardsZeroFPSCR() const { return RMode.Insert( FPSCR, U32(RoundTowardsZero) ); }
+  U32 RoundTowardsZeroFPSCR() const { U32 fpscr = FPSCR; RMode.Set( fpscr, U32(RoundTowardsZero) ); return fpscr; }
+  U32 RoundToNearestFPSCR() const   { U32 fpscr = FPSCR; RMode.Set( fpscr, U32(RoundToNearest) ); return fpscr; }
   U32 StandardValuedFPSCR() const   { return AHP.Mask( FPSCR ) | 0x03000000; }
   
   struct ExtRegBank
@@ -469,7 +472,7 @@ public:
   void        SetVSR(  unsigned idx, F32 const& val ) { erb.ef32.SetReg( erb, idx, val ); }
   F64 const&  GetVDR(  unsigned idx )                 { return erb.ef64.GetReg( erb, idx ); }
   void        SetVDR(  unsigned idx, F64 const& val ) { erb.ef64.SetReg( erb, idx, val ); }
-
+  
   /*************************************/
   /* Debug Registers             START */
   /*************************************/

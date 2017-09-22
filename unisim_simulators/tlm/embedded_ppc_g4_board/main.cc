@@ -573,7 +573,7 @@ Simulator::Simulator(int argc, char **argv)
 		}
 		
 		// Connect debugger to CPU
-		cpu->debug_control_import >> debugger->debug_control_export;
+		cpu->debug_yielding_import >> debugger->debug_yielding_export;
 		cpu->trap_reporting_import >> debugger->trap_reporting_export;
 		debugger->disasm_import >> cpu->disasm_export;
 		debugger->memory_import >> cpu->memory_export;
@@ -587,7 +587,7 @@ Simulator::Simulator(int argc, char **argv)
 		// Connect inline-debugger to debugger
 		debugger->debug_event_listener_import >> inline_debugger->debug_event_listener_export;
 		debugger->trap_reporting_import >> inline_debugger->trap_reporting_export;
-		debugger->debug_control_import >> inline_debugger->debug_control_export;
+		debugger->debug_yielding_import >> inline_debugger->debug_yielding_export;
 		inline_debugger->debug_event_trigger_import >> debugger->debug_event_trigger_export;
 		inline_debugger->disasm_import >> debugger->disasm_export;
 		inline_debugger->memory_import >> debugger->memory_export;
@@ -597,12 +597,13 @@ Simulator::Simulator(int argc, char **argv)
 		inline_debugger->backtrace_import >> debugger->backtrace_export;
 		inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
 		inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
+		inline_debugger->subprogram_lookup_import >> debugger->subprogram_lookup_export;
 		inline_debugger->profiling_import >> profiler->profiling_export;
 	}
 	else if(enable_gdb_server)
 	{
 		// Connect gdb-server to debugger
-		debugger->debug_control_import >> gdb_server->debug_control_export;
+		debugger->debug_yielding_import >> gdb_server->debug_yielding_export;
 		debugger->debug_event_listener_import >> gdb_server->debug_event_listener_export;
 		debugger->trap_reporting_import >> gdb_server->trap_reporting_export;
 		gdb_server->debug_event_trigger_import >> debugger->debug_event_trigger_export;
@@ -980,7 +981,7 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 	}
 #ifdef DEBUG_PPCEMU_SYSTEM
 	std::cerr << "Call stack:" << std::endl;
-	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 #endif
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();

@@ -45,7 +45,6 @@
 #include <map>
 #include <getopt.h>
 #include <unisim/kernel/service/service.hh>
-#include <unisim/kernel/debug/debug.hh>
 #include <stdlib.h>
 #include <unisim/service/power/cache_power_estimator.hh>
 #include <unisim/component/tlm/memory/ram/memory.hh>
@@ -630,7 +629,7 @@ Simulator::Simulator(int argc, char **argv)
 		}
 		
 		// Connect debugger to CPU
-		cpu->debug_control_import >> debugger->debug_control_export;
+		cpu->debug_yielding_import >> debugger->debug_yielding_export;
 		cpu->trap_reporting_import >> debugger->trap_reporting_export;
 		debugger->disasm_import >> cpu->disasm_export;
 		debugger->memory_import >> cpu->memory_export;
@@ -644,7 +643,7 @@ Simulator::Simulator(int argc, char **argv)
 		// Connect inline-debugger to debugger
 		debugger->debug_event_listener_import >> inline_debugger->debug_event_listener_export;
 		debugger->trap_reporting_import >> inline_debugger->trap_reporting_export;
-		debugger->debug_control_import >> inline_debugger->debug_control_export;
+		debugger->debug_yielding_import >> inline_debugger->debug_yielding_export;
 		inline_debugger->debug_event_trigger_import >> debugger->debug_event_trigger_export;
 		inline_debugger->disasm_import >> debugger->disasm_export;
 		inline_debugger->memory_import >> debugger->memory_export;
@@ -654,12 +653,13 @@ Simulator::Simulator(int argc, char **argv)
 		inline_debugger->backtrace_import >> debugger->backtrace_export;
 		inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
 		inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
+		inline_debugger->subprogram_lookup_import >> debugger->subprogram_lookup_export;
 		inline_debugger->profiling_import >> profiler->profiling_export;
 	}
 	else if(enable_gdb_server)
 	{
 		// Connect gdb-server to debugger
-		debugger->debug_control_import >> gdb_server->debug_control_export;
+		debugger->debug_yielding_import >> gdb_server->debug_yielding_export;
 		debugger->debug_event_listener_import >> gdb_server->debug_event_listener_export;
 		debugger->trap_reporting_import >> gdb_server->trap_reporting_export;
 		gdb_server->debug_event_trigger_import >> debugger->debug_event_trigger_export;
@@ -754,7 +754,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	const char *filename = "vmlinux";
 	const char *kernel_params = "/dev/ram0 rw";
 	const char *device_tree_filename = "device_tree_pmac_g4.xml";
-	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
+	const char *gdb_server_arch_filename = "gdb_powerpc_32.xml";
 	const char *dwarf_register_number_mapping_filename = "powerpc_eabi_gcc_dwarf_register_number_mapping.xml";
 	const char *ramdisk_filename = "initrd.img";
 	const char *bmp_out_filename = "";
@@ -1038,7 +1038,7 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 	}
 #ifdef DEBUG_PPCEMU_SYSTEM
 	std::cerr << "Call stack:" << std::endl;
-	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 #endif
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();

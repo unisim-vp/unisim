@@ -60,6 +60,10 @@
 #include <dlfcn.h>
 #endif
 
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
+#include <signal.h>
+#endif
+
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <windows.h>
 #endif
@@ -74,7 +78,7 @@
 #include <boost/graph/graphviz.hpp>
 
 #include "unisim/kernel/service/xml_helper.hh"
-#include "unisim/kernel/debug/debug.hh"
+#include "unisim/util/backtrace/backtrace.hh"
 #include "unisim/util/likely/likely.hh"
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
@@ -87,28 +91,28 @@ int _CRT_fmode = _O_BINARY;
 void *operator new(std::size_t size)
 {
 	std::cerr << "malloc(" << size << ")" << std::endl;
-	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 	return malloc(size);
 }
 
 void *operator new[](std::size_t size)
 {
 	std::cerr << "malloc(" << size << ")" << std::endl;
-	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 	return malloc(size);
 }
 
 void operator delete(void *storage, std::size_t size)
 {
 	std::cerr << "free(" << size << ")" << std::endl;
-	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 	free(storage);
 }
 
 void operator delete[](void *storage, std::size_t size)
 {
 	std::cerr << "free(" << size << ")" << std::endl;
-	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+	std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 	free(storage);
 }
 #endif
@@ -439,6 +443,11 @@ bool VariableBase::RemoveEnumeratedValue(const char *value) {
 		}
 	}
 	return false;
+}
+
+void VariableBase::SetDescription(const char *_description)
+{
+	description = _description;
 }
 
 void VariableBase::SetFormat(Format _fmt)
@@ -1839,6 +1848,10 @@ bool Object::EndSetup()
 	return true;
 }
 
+void Object::SigInt()
+{
+}
+
 void Object::OnDisconnect()
 {
 //	cerr << "WARNING! Using default OnDisconnect for " << GetName() << endl;
@@ -2007,6 +2020,13 @@ int Simulator::CommandLineOption::operator == (const char *arg) const
 	return 0;
 }
 
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
+void (*Simulator::sig_pipe_handler)(int) = 0;
+void (*Simulator::prev_sig_pipe_handler)(int) = 0;
+void (*Simulator::sig_int_handler)(int) = 0;
+void (*Simulator::prev_sig_int_handler)(int) = 0;
+#endif
+
 Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator *))
 	: void_variable(0)
 	, shared_data_dir()
@@ -2049,6 +2069,18 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, param_cmd_args(0)
 	, logger(0)
 {
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
+#else
+	sig_int_handler = &Simulator::SigIntHandler;
+	prev_sig_int_handler = signal(SIGINT, sig_int_handler);
+#endif
+
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
+	sig_pipe_handler = &Simulator::SigPipeHandler;
+	prev_sig_pipe_handler = signal(SIGPIPE, sig_pipe_handler);
+#endif
+
 	bool has_share_data_dir_hint = false;
 	string shared_data_dir_hint;
 
@@ -2067,8 +2099,16 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 		LoadBuiltInConfig(this);
 	}
 	
+	if(simulator)
+	{
+		throw std::runtime_error("No more than one instance of unisim::kernel::service::Simulator is allowed");
+	}
+	
 	simulator = this;
 	void_variable = new VariableBase("void", (Object *) 0, VariableBase::VAR_VOID, "unknown variable");
+	void_variable->SetMutable(false);
+	void_variable->SetVisible(false);
+	void_variable->SetSerializable(false);
 
 	var_authors = new Parameter<string>("authors", 0, authors, "Authors");
 	var_authors->SetMutable(false);
@@ -2445,27 +2485,27 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	param_cmd_args->SetSerializable(false);
 	
 	// Setup logger
-        logger = new unisim::kernel::logger::Logger( "kernel_logger" );
-        unisim::kernel::logger::LoggerServer& logserv = *(logger->GetServerInstance());
+	logger = new unisim::kernel::logger::Logger( "kernel_logger" );
+	unisim::kernel::logger::LoggerServer& logserv = *(logger->GetServerInstance());
 	param_logger_std_err = new Parameter<bool>( "kernel_logger.std_err", 0, logserv.opt_std_err_,
-                                                    "Show logger output through the standard error output" );
+	                                            "Show logger output through the standard error output" );
 	param_logger_std_out = new Parameter<bool>( "kernel_logger.std_out", 0, logserv.opt_std_out_,
-                                                    "Show logger output through the standard output" );
+	                                            "Show logger output through the standard output" );
 	param_logger_std_err_color = new Parameter<bool>( "kernel_logger.std_err_color", 0, logserv.opt_std_err_color_,
-                                                          "Colorize logger output through the standard error output _(only works if std_err is active)" );
+	                                                  "Colorize logger output through the standard error output (only works if std_err is active)" );
 	param_logger_std_out_color = new Parameter<bool>( "kernel_logger.std_out_color", 0, logserv.opt_std_out_color_,
-                                                          "Colorize logger output through the standard output _(only works if std_out is active)" );
+	                                                  "Colorize logger output through the standard output (only works if std_out is active)" );
 	param_logger_file = new Parameter<bool>( "kernel_logger.file", 0, logserv.opt_file_,
-                                                 "Keep logger output in a file" );
+	                                         "Keep logger output in a file" );
 	param_logger_filename = new Parameter<std::string>( "kernel_logger.filename", 0, logserv.opt_filename_,
-                                                            "Filename to keep logger output _(the option file must be activated)" );
+	                                                    "Filename to keep logger output (the option file must be activated)" );
 	param_logger_xml_file = new Parameter<bool>( "kernel_logger.xml_file", 0, logserv.opt_xml_file_,
-                                                     "Keep logger output in a file xml formatted" );
+	                                             "Keep logger output in a file xml formatted" );
 	param_logger_xml_filename = new Parameter<std::string>( "kernel_logger.xml_filename", 0, logserv.opt_xml_filename_,
-                                                                "Filename to keep logger xml output _(the option xml_file must be activated)" );
+	                                                        "Filename to keep logger xml output (the option xml_file must be activated)" );
 	param_logger_xml_file_gzipped = new Parameter<bool>( "kernel_logger.xml_file_gzipped", 0, logserv.opt_xml_file_gzipped_,
-                                                             "Compress the xml output (a .gz extension is automatically appended to the xml_filename option)" );
-        logserv.Setup();
+	                                                     "Compress the xml output (a .gz extension is automatically appended to the xml_filename option)" );
+	logserv.Setup();
 }
 
 Simulator::~Simulator()
@@ -2541,6 +2581,20 @@ Simulator::~Simulator()
 	delete param_logger_xml_file;
 	delete param_logger_xml_filename;
 	delete param_logger_xml_file_gzipped;
+	
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
+	if(sig_pipe_handler)
+	{
+		signal(SIGPIPE, prev_sig_pipe_handler);
+		sig_pipe_handler = 0;
+	}
+#endif
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, FALSE);
+#else
+	signal(SIGINT, prev_sig_int_handler);
+	sig_int_handler = 0;
+#endif
 }
 
 void Simulator::Version(ostream& os) const
@@ -3757,6 +3811,67 @@ GetAPIs()
 {
 	return 0;
 }
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+BOOL WINAPI Simulator::ConsoleCtrlHandler(DWORD dwCtrlType)
+{
+	bool interrupted = false;
+	switch(dwCtrlType)
+	{
+		case CTRL_C_EVENT:
+			std::cerr << "Interrupted by Ctrl-C" << std::endl;
+			interrupted = true;
+			break;
+		case CTRL_BREAK_EVENT:
+			std::cerr << "Interrupted by Ctrl-Break" << std::endl;
+			interrupted = true;
+			break;
+		case CTRL_CLOSE_EVENT:
+			std::cerr << "Interrupted by a console close" << std::endl;
+			interrupted = true;
+			break;
+		case CTRL_LOGOFF_EVENT:
+			std::cerr << "Interrupted because of logoff" << std::endl;
+			interrupted = true;
+			break;
+		case CTRL_SHUTDOWN_EVENT:
+			std::cerr << "Interrupted because of shutdown" << std::endl;
+			interrupted = true;
+			break;
+	}
+	
+	if(interrupted)
+	{
+		simulator->BroadcastSigInt();
+	}
+	
+	return interrupted ? TRUE : FALSE;
+}
+#else
+void Simulator::SigIntHandler(int signum)
+{
+	std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
+	simulator->BroadcastSigInt();
+}
+#endif
+
+#if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
+void Simulator::SigPipeHandler(int signum)
+{
+	/* do nothing */
+}
+#endif
+
+void Simulator::BroadcastSigInt()
+{
+	std::map<const char *, Object *, ltstr>::iterator object_iter;
+	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
+	{
+		Object *object = (*object_iter).second;
+		object->SigInt();
+	}
+}
+
 
 } // end of namespace service
 } // end of namespace kernel

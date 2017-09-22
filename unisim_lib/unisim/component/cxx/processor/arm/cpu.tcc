@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2015,
+ *  Copyright (c) 2007-2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -559,9 +559,64 @@ CPU<CONFIG>::TakeReset()
   Branch(ExcVectorBase() + 0);
 }
 
+/** Take Undefined Exception
+ *  Implements how the processor takes the undefined exception
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::TakeUndefInstrException()
+{
+  //   Determine return information.  SPSR is to be the current CPSR,
+  // and LR is to be the current instruction address +4 for ARM or +2
+  // for THUMB.
+
+  uint32_t new_lr_value = GetCIA() + (cpsr.Get( T ) ? 2 : 4);
+  uint32_t new_spsr_value = cpsr.Get( ALL32 );
+  uint32_t vect_offset = 0x4;
+
+  // Check whether to take exception to Hyp mode
+  // if in Hyp mode then stay in Hyp mode
+  // take_to_hyp = HaveVirtExt() && HaveSecurityExt() && SCR.NS == '1' && CPSR.M == '11010';
+  // if HCR.TGE is set, take to Hyp mode through Hyp Trap vector
+  // route_to_hyp = (HaveVirtExt() && HaveSecurityExt() && !IsSecure() && HCR.TGE == '1'
+  //                && CPSR.M == '10000'); // User mode
+  // if HCR.TGE == '1' and in a Non-secure PL1 mode, the effect is UNPREDICTABLE
+  // return_offset = if CPSR.T == '1' then 2 else 4;
+  // preferred_exceptn_return = new_lr_value - return_offset;
+  // if take_to_hyp then
+  //     Note that whatever called TakeUndefInstrException() will have set the HSR
+  //     EnterHypMode(new_spsr_value, preferred_exceptn_return, vect_offset);
+  // elsif route_to_hyp then
+  //     Note that whatever called TakeUndefInstrException() will have set the HSR
+  //     EnterHypMode(new_spsr_value, preferred_exceptn_return, 20);
+  // else
+
+  // Enter Undefined ('11011') mode, and ensure Secure state if initially in Monitor
+  // ('10110') mode. This affects the Banked versions of various registers accessed later
+  // in the code.
+
+  // if CPSR.M == '10110' then SCR.NS = '0';
+  CurrentMode().Swap( *this ); // OUT
+  cpsr.Set( M, UNDEFINED_MODE ); // CPSR.M = '11011';
+  Mode& newmode = CurrentMode();
+  newmode.Swap( *this ); // IN
+  
+  // Write return information to registers, and make further CPSR changes: IRQs disabled,
+  // IT state reset, instruction set and endianness set to SCTLR-configured values.
+  newmode.SetSPSR( new_spsr_value );
+  SetGPR( 14, new_lr_value );
+  cpsr.Set( I, 1 );
+  cpsr.ITSetState( 0b0000, 0b0000 );
+  cpsr.Set( J, 0 );
+  cpsr.Set( T, sctlr::TE.Get( SCTLR ) ); // TE=0: ARM, TE=1: Thumb
+  cpsr.Set( E, sctlr::EE.Get( SCTLR ) ); // EE=0: little-endian, EE=1: big-endian
+  // Branch to Undefined Instruction vector.
+  Branch(ExcVectorBase() + vect_offset);
+}
+
 /** Take Data Abort Exception
  *
- * Implementes how the processor takes the data abort exception
+ * Implements how the processor takes the data abort exception
  */
 template <class CONFIG>
 void
@@ -650,9 +705,9 @@ CPU<CONFIG>::TakeSVCException()
   
   // Check whether to take exception to Hyp mode
   // if in Hyp mode then stay in Hyp mode
-  //take_to_hyp = (HaveVirtExt() && HaveSecurityExt() && SCR.NS == '1' && CPSR.M == '11010');
+  // take_to_hyp = (HaveVirtExt() && HaveSecurityExt() && SCR.NS == '1' && CPSR.M == '11010');
   // if HCR.TGE is set to 1, take to Hyp mode through Hyp Trap vector
-  //route_to_hyp = (HaveVirtExt() && HaveSecurityExt() && !IsSecure() && HCR.TGE == '1'
+  // route_to_hyp = (HaveVirtExt() && HaveSecurityExt() && !IsSecure() && HCR.TGE == '1'
   //                && CPSR.M == '10000'); // User mode
   // if HCR.TGE == '1' and in a Non-secure PL1 mode, the effect is UNPREDICTABLE
   // preferred_exceptn_return = new_lr_value;

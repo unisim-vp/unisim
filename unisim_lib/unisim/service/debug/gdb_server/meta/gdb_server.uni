@@ -18,7 +18,7 @@
 		<depends>
 			<dep>unisim::util::endian</dep>
 			<dep>unisim::service::interfaces::memory_access_reporting</dep>
-			<dep>unisim::service::interfaces::debug_control</dep>
+			<dep>unisim::service::interfaces::debug_yielding</dep>
 			<dep>unisim::service::interfaces::registers</dep>
 			<dep>unisim::service::interfaces::memory</dep>
 			<dep>unisim::service::interfaces::trap_reporting</dep>

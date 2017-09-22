@@ -1,0 +1,46 @@
+impl {
+#include <unisim/component/cxx/processor/powerpc/isa/book_i/lsp/lsp.hh>
+}
+
+os << " r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+
+os << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+
+os << " r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+
+os << "" << (m ? "m" : "") << "x r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+
+os << "" << (m ? "m" : "") << "x r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+
+os << "" << (u ? "u" : "") << " r" << (unsigned int) rd << ", " << displacement << "(r" << (unsigned int) ra << ")";
+
+os << "" << (u ? "u" : "") << " r" << (unsigned int) rs << ", " << displacement << "(r" << (unsigned int) ra << ")";
+
+var ill : {bool} = {
+	   (rd & 1)  // rd odd is illegal
+	|| (!ra && u) // ra=0 & u=1 is illegal
+	|| (!ra && m) // ra=0 & m=1 is illegal
+	|| (!uimm && u) // uimm=0 & u=1 is illegal
+}
+
+var unpred : {bool} = {
+	   (hs == 3) // behavior when hs=11b is unspecified
+	|| ((acc == 0) || (acc == 3)) // behavior when acc=00b or acc=11b is unspecified
+	|| (acc) // behavior when acc is not 00b is unspecified
+	|| (ty != 3) // behavior when ty is not 11b is unspecified
+}
+
+	if(unlikely(ill))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		return false;
+	}
+	if(unlikely(unpred))
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_UNPREDICTABLE_BEHAVIOR);
+		return false;
+	}
+
+var displacement : { uint32_t } = { uimm * 8 }
+var displacement : { uint32_t } = { uimm * 4 }
+var displacement : { uint32_t } = { uimm * 2 }

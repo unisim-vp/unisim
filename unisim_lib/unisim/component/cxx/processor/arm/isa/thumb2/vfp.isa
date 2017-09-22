@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2014,
+ *  Copyright (c) 2007-2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
 /**********************************************
@@ -416,8 +416,7 @@ vcvt_f32s16i.execute = {
   typename ARCH::S32 op = typename ARCH::S32( typename ARCH::S16( cpu.GetVU32( vd ) ) );
   typename ARCH::F32 res;
   
-  // TODO: Rounding
-  ARCH::FP::ItoF( res, op, imm, cpu, cpu.FPSCR );
+  ARCH::FP::ItoF( res, op, imm, cpu, cpu.RoundToNearestFPSCR() );
   
   cpu.SetVSR( vd, res );
 };
@@ -435,8 +434,7 @@ vcvt_f32s32i.execute = {
   typename ARCH::S32 op = typename ARCH::S32( cpu.GetVU32( vd ) );
   typename ARCH::F32 res;
   
-  // TODO: Rounding
-  ARCH::FP::ItoF( res, op, imm, cpu, cpu.FPSCR );
+  ARCH::FP::ItoF( res, op, imm, cpu, cpu.RoundToNearestFPSCR() );
   
   cpu.SetVSR( vd, res );
 };
@@ -454,8 +452,7 @@ vcvt_f64s16i.execute = {
   typename ARCH::S32 op = typename ARCH::S32( typename ARCH::S16( cpu.GetVU32( 2*vd ) ) );
   typename ARCH::F64 res;
   
-  // TODO: Rounding
-  ARCH::FP::ItoF( res, op, imm, cpu, cpu.FPSCR );
+  ARCH::FP::ItoF( res, op, imm, cpu, cpu.RoundToNearestFPSCR() );
   
   cpu.SetVDR( vd, res );
 };
@@ -471,12 +468,11 @@ vcvt_f64s32i.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
   typename ARCH::S32 op = typename ARCH::S32( cpu.GetVU32( 2*vd ) );
-  typename ARCH::F32 res;
+  typename ARCH::F64 res;
   
-  // TODO: Rounding
-  ARCH::FP::ItoF( res, op, imm, cpu, cpu.FPSCR );
+  ARCH::FP::ItoF( res, op, imm, cpu, cpu.RoundToNearestFPSCR() );
   
-  cpu.SetVSR( vd, res );
+  cpu.SetVDR( vd, res );
 };
 
 op vcvt_f32u16i( 0b11101110[8]: 0b1[1]: vd0[1]: 0b11[2]: 0b1011[4]:> <: shl<1> vd1[4]: 0b1010[4]: 0b01[2]: imm0[1]: 0b0[1]: shl<1> imm1[4] );
@@ -492,8 +488,7 @@ vcvt_f32u16i.execute = {
   typename ARCH::U32 op = typename ARCH::U32( typename ARCH::U16( cpu.GetVU32( vd ) ) );
   typename ARCH::F32 res;
   
-  // TODO: Rounding
-  ARCH::FP::ItoF( res, op, imm, cpu, cpu.FPSCR );
+  ARCH::FP::ItoF( res, op, imm, cpu, cpu.RoundToNearestFPSCR() );
   
   cpu.SetVSR( vd, res );
 };
@@ -511,8 +506,7 @@ vcvt_f32u32i.execute = {
   typename ARCH::U32 op = cpu.GetVU32( vd );
   typename ARCH::F32 res;
   
-  // TODO: Rounding
-  ARCH::FP::ItoF( res, op, imm, cpu, cpu.FPSCR );
+  ARCH::FP::ItoF( res, op, imm, cpu, cpu.RoundToNearestFPSCR() );
   
   cpu.SetVSR( vd, res );
 };
@@ -530,8 +524,7 @@ vcvt_f64u16i.execute = {
   typename ARCH::U32 op = typename ARCH::U32( typename ARCH::U16( cpu.GetVU32( 2*vd ) ) );
   typename ARCH::F64 res;
   
-  // TODO: Rounding
-  ARCH::FP::ItoF( res, op, imm, cpu, cpu.FPSCR );
+  ARCH::FP::ItoF( res, op, imm, cpu, cpu.RoundToNearestFPSCR() );
   
   cpu.SetVDR( vd, res );
 };
@@ -549,8 +542,7 @@ vcvt_f64u32i.execute = {
   typename ARCH::U32 op = typename ARCH::U32( cpu.GetVU32( 2*vd ) );
   typename ARCH::F64 res;
   
-  // TODO: Rounding
-  ARCH::FP::ItoF( res, op, imm, cpu, cpu.FPSCR );
+  ARCH::FP::ItoF( res, op, imm, cpu, cpu.RoundToNearestFPSCR() );
   
   cpu.SetVDR( vd, res );
 };
@@ -568,8 +560,7 @@ vcvt_s16f32i.execute = {
   typename ARCH::F32 op = cpu.GetVSR( vd );
   typename ARCH::S16 res;
   
-  // TODO: Rounding
-  FPToInt( res, op, imm, cpu, cpu.FPSCR );
+  FPToInt( res, op, imm, cpu, cpu.RoundTowardsZeroFPSCR() );
   
   cpu.SetVU32( vd, typename ARCH::U32( typename ARCH::S32( res ) ) );
 };
@@ -587,8 +578,7 @@ vcvt_s16f64i.execute = {
   typename ARCH::F64 op = cpu.GetVDR( vd );
   typename ARCH::S16 res;
   
-  // TODO: Rounding
-  FPToInt( res, op, imm, cpu, cpu.FPSCR );
+  FPToInt( res, op, imm, cpu, cpu.RoundTowardsZeroFPSCR() );
   
   cpu.SetVU64( vd, typename ARCH::U64( typename ARCH::S64( res ) ) );
 };
@@ -606,8 +596,7 @@ vcvt_s32f32i.execute = {
   typename ARCH::F32 op = cpu.GetVSR( vd );
   typename ARCH::S32 res;
   
-  // TODO: Rounding
-  FPToInt( res, op, imm, cpu, cpu.FPSCR );
+  FPToInt( res, op, imm, cpu, cpu.RoundTowardsZeroFPSCR() );
   
   cpu.SetVU32( vd, typename ARCH::U32( res ) );
 };
@@ -625,8 +614,7 @@ vcvt_s32f64i.execute = {
   typename ARCH::F64 op = cpu.GetVDR( vd );
   typename ARCH::S32 res;
   
-  // TODO: Rounding
-  FPToInt( res, op, imm, cpu, cpu.FPSCR );
+  FPToInt( res, op, imm, cpu, cpu.RoundTowardsZeroFPSCR() );
   
   cpu.SetVU64( vd, typename ARCH::U64( typename ARCH::S64( res ) ) );
 };
@@ -644,8 +632,7 @@ vcvt_u16f32i.execute = {
   typename ARCH::F32 op = cpu.GetVSR( vd );
   typename ARCH::U16 res;
   
-  // TODO: Rounding
-  FPToInt( res, op, imm, cpu, cpu.FPSCR );
+  FPToInt( res, op, imm, cpu, cpu.RoundTowardsZeroFPSCR() );
   
   cpu.SetVU32( vd, typename ARCH::U32( res ) );
 };
@@ -663,8 +650,7 @@ vcvt_u16f64i.execute = {
   typename ARCH::F64 op = cpu.GetVDR( vd );
   typename ARCH::U16 res;
   
-  // TODO: Rounding
-  FPToInt( res, op, imm, cpu, cpu.FPSCR );
+  FPToInt( res, op, imm, cpu, cpu.RoundTowardsZeroFPSCR() );
   
   cpu.SetVU64( vd, typename ARCH::U64( res ) );
 };
@@ -682,8 +668,7 @@ vcvt_u32f32i.execute = {
   typename ARCH::F32 op = cpu.GetVSR( vd );
   typename ARCH::U32 res;
   
-  // TODO: Rounding
-  FPToInt( res, op, imm, cpu, cpu.FPSCR );
+  FPToInt( res, op, imm, cpu, cpu.RoundTowardsZeroFPSCR() );
   
   cpu.SetVU32( vd, res );
 };
@@ -701,8 +686,7 @@ vcvt_u32f64i.execute = {
   typename ARCH::F64 op = cpu.GetVDR( vd );
   typename ARCH::U32 res;
   
-  // TODO: Rounding
-  FPToInt( res, op, imm, cpu, cpu.FPSCR );
+  FPToInt( res, op, imm, cpu, cpu.RoundTowardsZeroFPSCR() );
   
   cpu.SetVU64( vd, typename ARCH::U64( res ) );
 };

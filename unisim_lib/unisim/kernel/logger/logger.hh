@@ -29,13 +29,15 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: Daniel Gracia Perez (daniel.gracia-perez@cea.fr) 
+ * Author: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *         Gilles Mouchard (gilles.mouchard@cea.fr)
+ *         Yves Lhuillier (yves.lhuillier@cea.fr) 
  */
 
-#ifndef __UNISIM_KERNEL_LOGGER_HH__
-#define __UNISIM_KERNEL_LOGGER_HH__
+#ifndef __UNISIM_KERNEL_LOGGER_LOGGER_HH__
+#define __UNISIM_KERNEL_LOGGER_LOGGER_HH__
 
-
+#include <unisim/kernel/service/service.hh>
 #include <string>
 #include <ios>
 #include <ostream>
@@ -45,61 +47,56 @@ namespace unisim {
 namespace kernel {
 namespace logger {
 
-class LoggerServer;
+struct LoggerServer;
+struct Logger;
+
+typedef void (LoggerServer::*LoggerServerOutputMethodPtr)(std::string, const char *);
+
+class LoggerStreamBuffer : public std::streambuf
+{
+public:
+	LoggerStreamBuffer(Logger& owner, LoggerServerOutputMethodPtr logger_server_output_method_ptr);
+	~LoggerStreamBuffer();
+	
+protected:
+	virtual int_type overflow(int_type c);
+	virtual std::streamsize xsputn(const char* s, std::streamsize n);
+	
+private:
+	void Append(char c);
+	void Flush();
+	
+	Logger& owner;
+	LoggerServerOutputMethodPtr logger_server_output_method_ptr;
+	std::string buffer;
+};
+
+class LoggerStream : public std::ostream
+{
+public:
+	LoggerStream(Logger& owner, LoggerServerOutputMethodPtr logger_server_output_method_ptr);
+	~LoggerStream();
+	
+private:
+	LoggerStreamBuffer logger_stream_buffer;
+};
 
 struct Logger
 {
-	Logger( std::string _name )
-	  : name( _name )
-	  , buffer_()
-	  , mode_( NO_MODE )
-	  , server_()
-	{ GetServerInstance(); }
-	
-	Logger( char const* _name )
-	  : name( _name )
-	  , buffer_()
-	  , mode_( NO_MODE )
-	  , server_()
-	{ GetServerInstance(); }
-	
-	template <typename OBJ>
-	Logger( OBJ const& obj )
-	  : name( obj.GetName() )
-	  , buffer_()
-	  , mode_( NO_MODE )
-	  , server_()
-	{ GetServerInstance(); }
-	
+	Logger(const std::string& name);
+	Logger(const char *name);
+	Logger(const unisim::kernel::service::Object& object);
 	~Logger();
 	
 	friend Logger& operator << (Logger& logger, std::ios_base& (*f)(std::ios_base &));
 	friend Logger& operator << (Logger& logger, std::ostream& (*f)(std::ostream &));
 	friend Logger& operator << (Logger& logger, Logger& (*f)(Logger &));
 
-	template<typename T> Logger& operator << (const T& t) {
-		buffer_ << t;
+	template<typename T> Logger& operator << (const T& t)
+	{
+		buffer << t;
 		return *this;
 	}
-
-	// Returns the raw STL output stream that is used to print out the log.
-	// Use this method with caution. Before handling the stream one of the open
-	// debug tags should have been used, and after the close of the debug tags the
-	// stream should not be used any longer.
-	// Example of usage:
-	//   logger << DebugInfo; // start debug info message
-	//   {
-	//     std::ostream& log_stream = logger.GetStream(); // get the raw output
-	//                                                    // stream
-	//     // send whatever you want to the output stream
-	//     log_stream << "Hello world";
-	//     // ...
-	//   } // we ensure that the log_stream liveness is in between DebugInfo and
-	//     // EndDebugInfo tags, so it is not used outside that scope
-	//   logger << EndDebugInfo;
-	//
-	// More tricky usages are possible, but not recommended.
-	std::ostream& GetStream() { return buffer_; }
 
 	void DebugInfo();
 	void EndDebugInfo();
@@ -108,18 +105,28 @@ struct Logger
 	void DebugError();
 	void EndDebugError();
 	void EndDebug();
-
+	
+	LoggerStream& DebugInfoStream() { return info_stream; }
+	LoggerStream& DebugWarningStream() { return warning_stream; }
+	LoggerStream& DebugErrorStream() { return error_stream; }
+	
+	const std::string& GetName() const { return name; }
+private:
+	friend class LoggerStreamBuffer;
+	friend class unisim::kernel::service::Simulator;
+	
 	unisim::kernel::logger::LoggerServer* GetServerInstance();
 	static unisim::kernel::logger::LoggerServer* StaticServerInstance();
-private:
 	void PrintMode();
-	
-	std::string name;
-	std::stringstream buffer_;
-	enum mode_t { NO_MODE = 0, INFO_MODE, WARNING_MODE, ERROR_MODE };
-	mode_t mode_;
 
-	unisim::kernel::logger::LoggerServer *server_;
+	std::string name;
+	std::stringstream buffer;
+	enum mode_t { NO_MODE = 0, INFO_MODE, WARNING_MODE, ERROR_MODE };
+	mode_t mode;
+	unisim::kernel::logger::LoggerServer *server;
+	LoggerStream info_stream;
+	LoggerStream warning_stream;
+	LoggerStream error_stream;
 };
 
 Logger& DebugInfo(Logger&);
@@ -134,5 +141,5 @@ Logger& EndDebug(Logger&);
 } // end of namespace kernel
 } // end of namespace unisim
 
-#endif // __UNISIM_KERNEL_LOGGER_HH__
+#endif // __UNISIM_KERNEL_LOGGER_LOGGER_HH__
 

@@ -102,7 +102,9 @@ public:
 	typename CONFIG::ELEMENT& Front();
 	const typename CONFIG::ELEMENT& ConstFront() const;
 	void Pop();
+	void Pop(unsigned int num_elts);
 	unsigned int Size() const;
+	unsigned int Available() const;
 	bool Empty() const;
 	bool Full() const;
 	void Remove(unsigned int idx);

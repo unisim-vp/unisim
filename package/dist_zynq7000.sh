@@ -105,7 +105,7 @@ unistd.h \
 vector"
 
 UNISIM_LIB_ZYNQ7000_SOURCE_FILES="\
-unisim/kernel/debug/debug.cc \
+unisim/util/backtrace/backtrace.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/kernel/api/api.cc \
@@ -137,22 +137,18 @@ unisim/service/tee/stmt_lookup/tee_32.cc \
 unisim/service/tee/stmt_lookup/tee_64.cc \
 unisim/service/tee/symbol_table_lookup/tee_32.cc \
 unisim/service/tee/symbol_table_lookup/tee_64.cc \
-unisim/service/debug/sim_debugger/sim_debugger_64.cc \
-unisim/service/debug/sim_debugger/sim_debugger_32.cc \
-unisim/service/debug/sim_debugger/sim_debugger.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
 unisim/service/debug/debugger/debugger32.cc \
 unisim/service/profiling/addr_profiler/profiler32.cc \
-unisim/service/os/linux_os/linux.cc \
+unisim/service/os/linux_os/arm_linux32.cc \
 unisim/service/trap_handler/trap_handler.cc \
 unisim/service/trap_handler/trap_handler_identifier.cc \
 unisim/service/telnet/telnet.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
-unisim/util/debug/symbol_table_64.cc \
-unisim/util/debug/symbol_table_32.cc \
+unisim/util/debug/breakpoint_registry_64.cc \
 unisim/util/debug/dwarf/class.cc \
 unisim/util/debug/dwarf/dwarf64.cc \
 unisim/util/debug/dwarf/encoding.cc \
@@ -165,13 +161,14 @@ unisim/util/debug/dwarf/dwarf32.cc \
 unisim/util/debug/dwarf/register_number_mapping.cc \
 unisim/util/debug/dwarf/data_object.cc \
 unisim/util/debug/dwarf/c_loc_expr_parser.cc \
-unisim/util/debug/breakpoint_registry_64.cc \
-unisim/util/debug/blob/section32.cc \
-unisim/util/debug/blob/blob32.cc \
-unisim/util/debug/blob/section64.cc \
-unisim/util/debug/blob/segment32.cc \
-unisim/util/debug/blob/segment64.cc \
-unisim/util/debug/blob/blob64.cc \
+unisim/util/debug/symbol_table_32.cc \
+unisim/util/debug/symbol_table_64.cc \
+unisim/util/blob/section32.cc \
+unisim/util/blob/blob32.cc \
+unisim/util/blob/section64.cc \
+unisim/util/blob/segment32.cc \
+unisim/util/blob/segment64.cc \
+unisim/util/blob/blob64.cc \
 unisim/util/debug/profile_64.cc \
 unisim/util/debug/watchpoint_registry_32.cc \
 unisim/util/debug/stmt_32.cc \
@@ -193,7 +190,7 @@ unisim/util/os/linux_os/linux.cc \
 unisim/util/lexer/lexer.cc \
 unisim/util/ieee754/ieee754.cc \
 unisim/util/xml/xml.cc \
-unisim/util/endian/endian.cc \
+unisim/kernel/service/endian.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/random/random.cc \
 unisim/util/queue/queue.cc \
@@ -259,7 +256,7 @@ unisim/component/cxx/processor/arm/isa/arm32/arm32.isa"
 UNISIM_LIB_ZYNQ7000_ISA_FILES="${UNISIM_LIB_ZYNQ7000_ISA_THUMB_FILES} ${UNISIM_LIB_ZYNQ7000_ISA_ARM32_FILES}"
 
 UNISIM_LIB_ZYNQ7000_HEADER_FILES="${UNISIM_LIB_ZYNQ7000_ISA_FILES} \
-unisim/kernel/debug/debug.hh \
+unisim/util/backtrace/backtrace.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/api/api.hh \
@@ -282,16 +279,17 @@ unisim/service/tee/backtrace/tee.hh \
 unisim/service/tee/symbol_table_lookup/tee.hh \
 unisim/service/tee/stmt_lookup/tee.hh \
 unisim/service/tee/loader/tee.hh \
-unisim/service/debug/sim_debugger/sim_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
 unisim/service/profiling/addr_profiler/profiler.hh \
 unisim/service/os/linux_os/linux.hh \
+unisim/service/os/linux_os/arm_linux32.hh \
 unisim/service/trap_handler/trap_handler.hh \
 unisim/service/trap_handler/trap_handler_identifier.hh \
 unisim/service/trap_handler/trap_handler_identifier_interface.hh \
 unisim/service/telnet/telnet.hh \
-unisim/service/interfaces/debug_control.hh \
+unisim/service/interfaces/debug_yielding.hh \
+unisim/service/interfaces/debug_selecting.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
 unisim/service/interfaces/profiling.hh \
@@ -316,7 +314,6 @@ unisim/service/interfaces/char_io.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
 unisim/util/likely/likely.hh \
-unisim/util/debug/symbol.hh \
 unisim/util/debug/data_object.hh \
 unisim/util/debug/dwarf/fwd.hh \
 unisim/util/debug/dwarf/addr_range.hh \
@@ -351,11 +348,15 @@ unisim/util/debug/dwarf/cfa.hh \
 unisim/util/debug/dwarf/data_object.hh \
 unisim/util/debug/dwarf/subprogram.hh \
 unisim/util/debug/dwarf/c_loc_expr_parser.hh \
+unisim/util/debug/fetch_insn_event.hh \
+unisim/util/debug/commit_insn_event.hh \
 unisim/util/debug/memory_access_type.hh \
+unisim/util/debug/symbol.hh \
 unisim/util/debug/symbol_table.hh \
-unisim/util/debug/blob/segment.hh \
-unisim/util/debug/blob/blob.hh \
-unisim/util/debug/blob/section.hh \
+unisim/util/debug/trap_event.hh \
+unisim/util/blob/segment.hh \
+unisim/util/blob/blob.hh \
+unisim/util/blob/section.hh \
 unisim/util/debug/stmt.hh \
 unisim/util/debug/breakpoint_registry.hh \
 unisim/service/interfaces/register.hh \
@@ -383,8 +384,6 @@ unisim/util/os/linux_os/aux_table.hh \
 unisim/util/os/linux_os/environment.hh \
 unisim/util/os/linux_os/files_flags.hh \
 unisim/util/os/linux_os/linux.hh \
-unisim/util/os/linux_os/ppc.hh \
-unisim/util/os/linux_os/i386.hh \
 unisim/util/os/linux_os/errno.hh \
 unisim/util/dictionary/dictionary.hh \
 unisim/util/lexer/lexer.hh \
@@ -437,7 +436,6 @@ unisim/service/tee/backtrace/tee.tcc \
 unisim/service/tee/symbol_table_lookup/tee.tcc \
 unisim/service/tee/stmt_lookup/tee.tcc \
 unisim/service/tee/loader/tee.tcc \
-unisim/service/debug/sim_debugger/sim_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \
 unisim/service/profiling/addr_profiler/profiler.tcc \
@@ -466,9 +464,9 @@ unisim/util/debug/dwarf/subprogram.tcc \
 unisim/util/debug/watchpoint_registry.tcc \
 unisim/util/debug/breakpoint_registry.tcc \
 unisim/util/debug/symbol_table.tcc \
-unisim/util/debug/blob/section.tcc \
-unisim/util/debug/blob/blob.tcc \
-unisim/util/debug/blob/segment.tcc \
+unisim/util/blob/section.tcc \
+unisim/util/blob/blob.tcc \
+unisim/util/blob/segment.tcc \
 unisim/util/debug/symbol.tcc \
 unisim/util/debug/elf_symtab/elf_symtab.tcc \
 unisim/util/debug/coff_symtab/coff_symtab.tcc \

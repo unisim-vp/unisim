@@ -376,8 +376,8 @@ CPU::Run()
         
         bool exception_taken = this->HandleAsynchronousException( exceptions ) != 0;
         if (exception_taken) {
-          if (exception_trap_reporting_import)
-            exception_trap_reporting_import->ReportTrap(*this,"irq or fiq");
+          if (trap_reporting_import)
+            trap_reporting_import->ReportTrap(*this,"irq or fiq");
         }
       }
     }
@@ -396,6 +396,9 @@ CPU::Run()
     // cpu_time += time_per_instruction;
     quantum_time += time_per_instruction;
     cpsr_cleared_bits &= ~(CPSR().bits());
+    
+    /* In cortex R5F many FPSCR bits stick to 0 */
+    FPSCR &= 0xffc0009f;
     
     if ( unlikely(verbose_tlm) )
     {

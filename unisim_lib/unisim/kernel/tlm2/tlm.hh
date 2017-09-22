@@ -47,11 +47,54 @@
 
 // to remove asap
 #include <iostream>
-#include <unisim/kernel/debug/debug.hh>
+#include <unisim/util/backtrace/backtrace.hh>
 
 namespace unisim {
 namespace kernel {
 namespace tlm2 {
+
+inline const sc_core::sc_time& AlignToClock(sc_core::sc_time& time_stamp, sc_core::sc_time& clock_period, const sc_core::sc_time& clock_start_time = sc_core::SC_ZERO_TIME, bool clock_posedge_first = true, double clock_duty_cycle = 0.5)
+{
+#if 0
+	sc_core::sc_time skew(time_stamp);
+	skew %= clock_period;
+	
+	if(skew != sc_core::SC_ZERO_TIME)
+	{
+		time_stamp += clock_period;
+		time_stamp -= skew;
+	}
+	
+	return time_stamp;
+#else
+	sc_core::sc_time first_pos_edge_time(clock_start_time);
+	if(!clock_posedge_first)
+	{
+		sc_core::sc_time neg_to_pos_edge_time(clock_period);
+		neg_to_pos_edge_time *= (1.0 - clock_duty_cycle);
+		first_pos_edge_time += neg_to_pos_edge_time;
+	}
+
+	if(time_stamp > first_pos_edge_time)
+	{
+		sc_core::sc_time skew(time_stamp);
+		skew -= first_pos_edge_time;
+		skew %= clock_period;
+		
+		if(skew != sc_core::SC_ZERO_TIME)
+		{
+			time_stamp += clock_period;
+			time_stamp -= skew;
+		}
+	}
+	else
+	{
+		time_stamp = first_pos_edge_time;
+	}
+	
+	return time_stamp;
+#endif
+}
 
 class ManagedPayload
 {
@@ -139,14 +182,28 @@ public:
 
 	~PayloadFabric()
 	{
+<<<<<<< HEAD
 		typename std::vector<PAYLOAD *>::size_type num_payloads = pool.size();
 		typename std::vector<PAYLOAD *>::size_type i;
 		
 		for(i = 0; i < num_payloads; i++)
 		{
 			PAYLOAD *payload = pool[i];
+=======
+		typename std::vector<PAYLOAD *>::iterator it;
+		
+		for(it = payloads.begin(); it != payloads.end(); it++)
+		{
+			PAYLOAD *payload = *it;
+>>>>>>> origin/mpc5777m
 			delete payload;
 		}
+// 		while(!free_list.empty())
+// 		{
+// 			PAYLOAD *payload = free_list.top();
+// 			free_list.pop();
+// 			delete payload;
+// 		}
 	}
 
 	PAYLOAD *allocate()
@@ -167,18 +224,23 @@ public:
 		}
 
 		payload->acquire();
+		payloads.push_back(payload);
 		return payload;
 	}
 
 	void free(tlm::tlm_generic_payload *_payload)
 	{
 		PAYLOAD *payload = reinterpret_cast<PAYLOAD *>(_payload);
-		payload->free_all_extensions();
+		//payload->free_all_extensions(); Note: extensions are freed by payload destructor
 		free_list.push(payload);
 	}
 private:
 	std::stack<PAYLOAD *, std::vector<PAYLOAD *> > free_list;
+<<<<<<< HEAD
 	std::vector<PAYLOAD *> pool;
+=======
+	std::vector<PAYLOAD *> payloads;
+>>>>>>> origin/mpc5777m
 };
 
 template <class T>
@@ -323,6 +385,8 @@ public:
 		: schedule()
 		, free_list()
 		, kernel_event("schedule_kernel_event")
+		, paused(false)
+		, pause_time_stamp(sc_core::SC_ZERO_TIME)
 	{
 	}
 	
@@ -350,8 +414,31 @@ public:
 		schedule.insert(std::pair<typename EVENT::Key, EVENT *>(event->GetKey(), event));
 		sc_time t(time_stamp);
 		t -= sc_time_stamp();
-//		std::cerr << "notify(" << t << ") from" << std::endl << unisim::kernel::debug::BackTrace() << std::endl;
 		kernel_event.notify(t);
+	}
+	
+	void Cancel(EVENT *event)
+	{
+		typename std::multimap<typename EVENT::Key, EVENT *>::iterator it = schedule.find(event->GetKey());
+		
+		if(it != schedule.end())
+		{
+			schedule.erase(it);
+			
+			if(schedule.empty())
+			{
+				kernel_event.cancel();
+			}
+			else
+			{
+				it = schedule.begin();
+				const sc_time& time_stamp = sc_time_stamp();
+				const sc_time& event_time_stamp = (*it).first.GetTimeStamp();
+				sc_time t(event_time_stamp);
+				t -= time_stamp;
+				kernel_event.notify(t);
+			}
+		}
 	}
 	
 	bool Empty() const
@@ -414,12 +501,63 @@ public:
 		}
 		schedule.clear();
 		kernel_event.cancel();
+		paused = false;
 	}
 
+	void Pause()
+	{
+		if(schedule.empty()) return;
+		
+		kernel_event.cancel();
+		
+		pause_time_stamp = sc_core::sc_time_stamp();
+		paused = true;
+	}
+	
+	void Unpause()
+	{
+		if(!paused) return;
+		
+		if(schedule.empty()) return;
+
+		sc_core::sc_time unpause_time_stamp = sc_core::sc_time_stamp();
+		
+		sc_core::sc_time time_shift(unpause_time_stamp);
+		time_shift -= pause_time_stamp;
+		
+		typename std::multimap<typename EVENT::Key, EVENT *>::iterator it = schedule.begin();
+		
+		do
+		{
+			EVENT *event = (*it).second;
+			
+			sc_core::sc_time shifted_time_stamp(event->GetTimeStamp());
+			shifted_time_stamp += time_shift;
+			event->SetTimeStamp(shifted_time_stamp);
+			schedule.insert(std::pair<typename EVENT::Key, EVENT *>(event->GetKey(), event));
+			
+			typename std::multimap<typename EVENT::Key, EVENT *>::iterator erase_it = it++;
+			schedule.erase(erase_it);
+		}
+		while(it != schedule.end());
+
+		it = schedule.begin();
+		
+		const sc_time& event_time_stamp = (*it).first.GetTimeStamp();
+		
+		sc_time t(event_time_stamp);
+		t -= unpause_time_stamp;
+		
+		kernel_event.notify(t);
+		
+		paused = false;
+	}
 private:
 	std::multimap<typename EVENT::Key, EVENT *> schedule;
 	std::stack<EVENT *, std::vector<EVENT *> > free_list;
 	sc_event kernel_event;
+	bool paused;
+	sc_time pause_time_stamp;
 };
 
 template <unsigned int BUSWIDTH = 32, class TYPES = tlm::tlm_base_protocol_types>

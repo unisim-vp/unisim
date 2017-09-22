@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2010-2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -30,12 +30,12 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  *  SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 #include <unisim/component/cxx/processor/arm/pmsav7/cpu.hh>
 #include <unisim/component/cxx/processor/arm/pmsav7/cp15.hh>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
-#include <unisim/kernel/debug/debug.hh>
+#include <unisim/util/backtrace/backtrace.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/truth_table/truth_table.hh>
@@ -85,7 +85,7 @@ CPU::CPU(const char *name, Object *parent)
   , Service<MemoryAccessReportingControl>(name, parent)
   , Client<MemoryAccessReporting<uint32_t> >(name, parent)
   , Service<MemoryInjection<uint32_t> >(name, parent)
-  , Client<unisim::service::interfaces::DebugControl<uint32_t> >(name, parent)
+  , Client<unisim::service::interfaces::DebugYielding>(name, parent)
   , Client<TrapReporting>(name, parent)
   , Service<Disassembly<uint32_t> >(name, parent)
   , Service< Memory<uint32_t> >(name, parent)
@@ -96,11 +96,10 @@ CPU::CPU(const char *name, Object *parent)
   , memory_injection_export("memory-injection-export", this)
   , memory_export("memory-export", this)
   , memory_import("memory-import", this)
-  , debug_control_import("debug-control-import", this)
-  , exception_trap_reporting_import("exception-trap-reporting-import", this)
-  , instruction_counter_trap_reporting_import("instruction-counter-trap-reporting-import", this)
-  , requires_finished_instruction_reporting(true)
-  , requires_memory_access_reporting(true)
+  , debug_yielding_import("debug-yielding-import", this)
+  , trap_reporting_import("trap-reporting-import", this)
+  , requires_finished_instruction_reporting(false)
+  , requires_memory_access_reporting(false)
   // , icache("icache", this)
   // , dcache("dcache", this)
   , arm32_decoder()
@@ -112,7 +111,7 @@ CPU::CPU(const char *name, Object *parent)
   , IFAR(0)
   , mpu()
   , instruction_counter(0)
-  , trap_on_instruction_counter(0)
+  , trap_on_instruction_counter((uint64_t) -1)
   , ipb_base_address( -1 )
   , param_verbose("verbose", this, this->PCPU::verbose, "Activate the verbose system (0 = inactive, different than 0 = active).")
   , param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter,
@@ -340,31 +339,15 @@ CPU::StepInstruction()
   /* Instruction boundary next_insn_addr becomes current_insn_addr */
   uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr;
   
-  if (unlikely(instruction_counter_trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
-    instruction_counter_trap_reporting_import->ReportTrap(*this);
+  if (unlikely(trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
+    trap_reporting_import->ReportTrap(*this);
   
-  if (unlikely(memory_access_reporting_import))
+  if (unlikely(requires_finished_instruction_reporting and memory_access_reporting_import))
     memory_access_reporting_import->ReportFetchInstruction(this->current_insn_addr);
 
-  if (debug_control_import)
+  if (debug_yielding_import)
     {
-      for (bool proceed = false; not proceed; )
-        {
-          switch (debug_control_import->FetchDebugCommand( insn_addr ))
-            {
-            case DebugControl::DBG_STEP: 
-              proceed = true;
-              break;
-            case DebugControl::DBG_SYNC:
-              Sync();
-              continue;
-              break;
-            case DebugControl::DBG_RESET: /* TODO : memory_interface->Reset(); */ break;
-            case DebugControl::DBG_KILL:
-              Stop(0);
-              return;
-            }
-        }
+      debug_yielding_import->DebugYield();
     }
   
   try {
@@ -435,19 +418,19 @@ CPU::StepInstruction()
   }
   
   catch (UndefInstrException const& undexc) {
-    logger << DebugError << "Undefined instruction"
-           << " pc: " << std::hex << current_insn_addr << std::dec
-           << ", cpsr: " << std::hex << cpsr.bits() << std::dec
-           << " (" << cpsr << ")"
-           << EndDebugError;
-    this->Stop(-1);
+    /* Abort execution, and take processor to undefined handler */
+    
+    if (unlikely(trap_reporting_import))
+      trap_reporting_import->ReportTrap( *this, "Undefined Exception" );
+    
+    this->TakeUndefInstrException();
   }
   
   catch (DataAbortException const& daexc) {
     /* Abort execution, and take processor to data abort handler */
     
-    if (unlikely( exception_trap_reporting_import))
-      exception_trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
+    if (unlikely(trap_reporting_import))
+      trap_reporting_import->ReportTrap( *this, "Data Abort Exception" );
     
     this->TakeDataOrPrefetchAbortException(true); // TakeDataAbortException
   }
@@ -455,8 +438,8 @@ CPU::StepInstruction()
   catch (PrefetchAbortException const& paexc) {
     /* Abort execution, and take processor to prefetch abort handler */
     
-    if (unlikely( exception_trap_reporting_import))
-      exception_trap_reporting_import->ReportTrap( *this, "Prefetch Abort Exception" );
+    if (unlikely(trap_reporting_import))
+      trap_reporting_import->ReportTrap( *this, "Prefetch Abort Exception" );
     
     this->TakeDataOrPrefetchAbortException(false); // TakePrefetchAbortException
   }
@@ -970,7 +953,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "CCSIDR, Cache Size ID Registers"; }
           uint32_t Read( CP15CPU& _cpu ) {
-            CPU& cpu = dynamic_cast<CPU&>( _cpu );
+            CPU& cpu = static_cast<CPU&>( _cpu );
             switch (cpu.csselr) {
               /*              LNSZ      ASSOC       NUMSETS        POLICY      */
             case 0:  return (1 << 0) | (3 << 3) | ( 255 << 13) | (0b0110 << 28); /* L1 dcache */
@@ -989,7 +972,7 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "CLIDR, Cache Level ID Register"; }
           uint32_t Read( CP15CPU& _cpu ) {
-            CPU& cpu = dynamic_cast<CPU&>( _cpu );
+            CPU& cpu = static_cast<CPU&>( _cpu );
             uint32_t
               LoUU =   0b010, /* Level of Unification Uniprocessor  */
               LoC =    0b010, /* Level of Coherency */
@@ -1018,9 +1001,9 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "CSSELR, Cache Size Selection Register"; }
           void Write( CP15CPU& _cpu, uint32_t value ) {
-            dynamic_cast<CPU&>( _cpu ).csselr = value;
+            static_cast<CPU&>( _cpu ).csselr = value;
           }
-          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).csselr; }
+          uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).csselr; }
         } x;
         return x;
       } break;
@@ -1033,8 +1016,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "DFSR, Data Fault Status Register"; }
-          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).DFSR = value; }
-          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).DFSR; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { static_cast<CPU&>( _cpu ).DFSR = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).DFSR; }
         } x;
         return x;
       } break;
@@ -1044,8 +1027,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "IFSR, Instruction Fault Status Register"; }
-          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).IFSR = value; }
-          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).IFSR; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { static_cast<CPU&>( _cpu ).IFSR = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).IFSR; }
         } x;
         return x;
       } break;
@@ -1055,8 +1038,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "DFAR, Data Fault Address Register"; }
-          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).DFAR = value; }
-          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).DFAR; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { static_cast<CPU&>( _cpu ).DFAR = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).DFAR; }
         } x;
         return x;
       } break;
@@ -1066,8 +1049,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "IFAR, Instruction Fault Address Register"; }
-          void Write( CP15CPU& _cpu, uint32_t value ) { dynamic_cast<CPU&>( _cpu ).IFAR = value; }
-          uint32_t Read( CP15CPU& _cpu ) { return dynamic_cast<CPU&>( _cpu ).IFAR; }
+          void Write( CP15CPU& _cpu, uint32_t value ) { static_cast<CPU&>( _cpu ).IFAR = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).IFAR; }
         } x;
         return x;
       } break;
@@ -1078,8 +1061,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "DRBAR, Data Region Base Address Register"; }
           uint32_t& reg( CPU& cpu ) { return cpu.mpu.DR[cpu.mpu.RGNR].base_address; }
-          void Write( CP15CPU& _cpu, uint32_t value ) { reg( dynamic_cast<CPU&>( _cpu ) ) = value; }
-          uint32_t Read( CP15CPU& _cpu ) { return reg( dynamic_cast<CPU&>( _cpu ) ); }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( static_cast<CPU&>( _cpu ) ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( static_cast<CPU&>( _cpu ) ); }
         } x;
         return x;
       } break;
@@ -1090,8 +1073,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "IRBAR, Instruction Region Base Address Register"; }
           uint32_t& reg( CPU& cpu ) { return cpu.mpu.IR[cpu.mpu.RGNR].base_address; }
-          void Write( CP15CPU& _cpu, uint32_t value ) { reg( dynamic_cast<CPU&>( _cpu ) ) = value; }
-          uint32_t Read( CP15CPU& _cpu ) { return reg( dynamic_cast<CPU&>( _cpu ) ); }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( static_cast<CPU&>( _cpu ) ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( static_cast<CPU&>( _cpu ) ); }
         } x;
         return x;
       } break;
@@ -1102,8 +1085,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "DRSR, Data Region Size and Enable Register"; }
           uint32_t& reg( CPU& cpu ) { return cpu.mpu.DR[cpu.mpu.RGNR].size_enable; }
-          void Write( CP15CPU& _cpu, uint32_t value ) { reg( dynamic_cast<CPU&>( _cpu ) ) = value; }
-          uint32_t Read( CP15CPU& _cpu ) { return reg( dynamic_cast<CPU&>( _cpu ) ); }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( static_cast<CPU&>( _cpu ) ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( static_cast<CPU&>( _cpu ) ); }
         } x;
         return x;
       } break;
@@ -1114,8 +1097,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "IRSR, Instruction Region Size and Enable Register"; }
           uint32_t& reg( CPU& cpu ) { return cpu.mpu.IR[cpu.mpu.RGNR].size_enable; }
-          void Write( CP15CPU& _cpu, uint32_t value ) { reg( dynamic_cast<CPU&>( _cpu ) ) = value; }
-          uint32_t Read( CP15CPU& _cpu ) { return reg( dynamic_cast<CPU&>( _cpu ) ); }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( static_cast<CPU&>( _cpu ) ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( static_cast<CPU&>( _cpu ) ); }
         } x;
         return x;
       } break;
@@ -1126,8 +1109,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "DRACR, Data Region Access Control Register"; }
           uint32_t& reg( CPU& cpu ) { return cpu.mpu.DR[cpu.mpu.RGNR].access_control; }
-          void Write( CP15CPU& _cpu, uint32_t value ) { reg( dynamic_cast<CPU&>( _cpu ) ) = value; }
-          uint32_t Read( CP15CPU& _cpu ) { return reg( dynamic_cast<CPU&>( _cpu ) ); }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( static_cast<CPU&>( _cpu ) ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( static_cast<CPU&>( _cpu ) ); }
         } x;
         return x;
       } break;
@@ -1138,8 +1121,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "IRACR, Instruction Region Access Control Register"; }
           uint32_t& reg( CPU& cpu ) { return cpu.mpu.IR[cpu.mpu.RGNR].access_control; }
-          void Write( CP15CPU& _cpu, uint32_t value ) { reg( dynamic_cast<CPU&>( _cpu ) ) = value; }
-          uint32_t Read( CP15CPU& _cpu ) { return reg( dynamic_cast<CPU&>( _cpu ) ); }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( static_cast<CPU&>( _cpu ) ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( static_cast<CPU&>( _cpu ) ); }
         } x;
         return x;
       } break;
@@ -1150,8 +1133,8 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         {
           char const* Describe() { return "RGNR, MPU Region Number Register"; }
           uint32_t& reg( CPU& cpu ) { return cpu.mpu.RGNR; }
-          void Write( CP15CPU& _cpu, uint32_t value ) { reg( dynamic_cast<CPU&>( _cpu ) ) = value; }
-          uint32_t Read( CP15CPU& _cpu ) { return reg( dynamic_cast<CPU&>( _cpu ) ); }
+          void Write( CP15CPU& _cpu, uint32_t value ) { reg( static_cast<CPU&>( _cpu ) ) = value; }
+          uint32_t Read( CP15CPU& _cpu ) { return reg( static_cast<CPU&>( _cpu ) ); }
         } x;
         return x;
       } break;

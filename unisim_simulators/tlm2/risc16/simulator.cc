@@ -42,8 +42,6 @@ Simulator::Simulator(int argc, char **argv)
 	, debugger(0)
 	, inline_debugger(0)
 	, raw_loader(0)
-	, tee_memory_access_reporting(0)
-	, profiler(0)
 	, exit_status(0)
 {
 	//=========================================================================
@@ -60,7 +58,7 @@ Simulator::Simulator(int argc, char **argv)
 	//=========================================================================
 
 	// - Debugger
-	debugger = new Debugger<uint64_t>("debugger");
+	debugger = new Debugger<DEBUGGER_CONFIG>("debugger");
 	
 	// - Built-in console debugger (Inline-debugger)
 	inline_debugger = new InlineDebugger<uint64_t>("inline-debugger");
@@ -68,12 +66,6 @@ Simulator::Simulator(int argc, char **argv)
 	// - Raw loader
 	raw_loader = new RawLoader("raw-loader");
 	
-	// - Tee Memory Access Reporting (broadcast memory access reports of CPU to debugger and profiler)
-	tee_memory_access_reporting = new MemoryAccessReportingTee("tee-memory-access-reporting");
-
-	// - Profiler
-	profiler = new Profiler<uint64_t>("profiler");
-
 	//=========================================================================
 	//===                        Components connection                      ===
 	//=========================================================================
@@ -86,51 +78,43 @@ Simulator::Simulator(int argc, char **argv)
 
 	// CPU imports
 	cpu->memory_import >> memory->memory_export;                    // memory
-	cpu->debug_control_import >> debugger->debug_control_export;    // makes debugger control CPU execution
-	cpu->trap_reporting_import >> debugger->trap_reporting_export;  // report trap
-	cpu->memory_access_reporting_import >> tee_memory_access_reporting->in; // memory access reports of CPU
 	
 	// raw-loader imports
 	raw_loader->memory_import >> memory->memory_export;    // memory
-
-	// tee imports
-	*tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
-	*tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
-	tee_memory_access_reporting->out_control >> cpu->memory_access_reporting_control_export;
-
-	// profiler imports
-	profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
-
-	// central debugger imports
-	debugger->blob_import >> raw_loader->blob_export;                                     // blob (binary large object), i.e. executable binary files
-	debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1]; // turn on/off memory access reporting
-	debugger->disasm_import >> cpu->disasm_export;                                        // disassemble
-	debugger->memory_import >> cpu->memory_export;                                        // memory (programmer's view)
-	debugger->registers_import >> cpu->registers_export;                                  // CPU registers
-	debugger->debug_control_import >> inline_debugger->debug_control_export;              // passthrough debug control
-	debugger->debug_event_listener_import >> inline_debugger->debug_event_listener_export; // notify debug events to listeners
-	debugger->trap_reporting_import >> inline_debugger->trap_reporting_export;             // report trap
 	
-	// built-in console debugger imports
-	inline_debugger->debug_event_trigger_import >> debugger->debug_event_trigger_export;   // listen of debugging events
-	inline_debugger->disasm_import >> debugger->disasm_export;                             // disassemble
-	inline_debugger->memory_import >> debugger->memory_export;                             // memory
-	inline_debugger->registers_import >> debugger->registers_export;                       // access to registers
-	inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;     // lookup of data object (if debug info is available)
-	inline_debugger->stmt_lookup_import >> debugger->stmt_lookup_export;                   // lookup instruction/source statements (if debug info is available)                  
-	inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;   // lookup symbol table
-	inline_debugger->backtrace_import >> debugger->backtrace_export;                       // backtrace (if debug info is available)
-	inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;     // on-demand loading of debug info
-	inline_debugger->profiling_import >> profiler->profiling_export;                       // profiling
+	// Debugger <-> CPU connections
+	cpu->debug_yielding_import                           >> *debugger->debug_yielding_export[0];
+	cpu->trap_reporting_import                           >> *debugger->trap_reporting_export[0];
+	cpu->memory_access_reporting_import                  >> *debugger->memory_access_reporting_export[0];
+	*debugger->disasm_import[0]                          >> cpu->disasm_export;
+	*debugger->memory_import[0]                          >> cpu->memory_export;
+	*debugger->registers_import[0]                       >> cpu->registers_export;
+	*debugger->memory_access_reporting_control_import[0] >> cpu->memory_access_reporting_control_export;
+	
+	// Debugger <-> Loader connections
+	debugger->blob_import >> raw_loader->blob_export;
+
+	// inline-debugger <-> debugger connections
+	*debugger->debug_event_listener_import[0]      >> inline_debugger->debug_event_listener_export;
+	*debugger->debug_yielding_import[0]            >> inline_debugger->debug_yielding_export;
+	inline_debugger->debug_yielding_request_import >> *debugger->debug_yielding_request_export[0];
+	inline_debugger->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[0];
+	inline_debugger->disasm_import                 >> *debugger->disasm_export[0];
+	inline_debugger->memory_import                 >> *debugger->memory_export[0];
+	inline_debugger->registers_import              >> *debugger->registers_export[0];
+	inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[0];
+	inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[0];
+	inline_debugger->backtrace_import              >> *debugger->backtrace_export[0];
+	inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
+	inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
+	inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
 }
 
 Simulator::~Simulator()
 {
-	if(cpu) delete cpu;
-	if(memory) delete memory;
-	if(raw_loader) delete raw_loader;
-	if(tee_memory_access_reporting) delete tee_memory_access_reporting;
-	if(profiler) delete profiler;
+	delete cpu;
+	delete memory;
+	delete raw_loader;
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)

@@ -1,202 +1,46 @@
-// TODO: cpuid should be handled be the architecture
-struct CpuID : public Operation
+template <class ARCH>
+struct CpuID : public Operation<ARCH>
 {
-  CpuID( OpBase const& opbase ) : Operation( opbase ) {}
+  CpuID( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "cpuid"; }
-  void execute( Arch& arch ) const
-  {
-    switch (mkint( arch.regread32( 0 ) )) {
-    case 0: {
-      arch.regwrite<32>( 0, u32_t( 1 ) );
-  
-      char const* name = "GenuineIntel";
-      { uint32_t word = 0;
-        int idx = 12;
-        while (--idx >= 0) {
-          word = (word << 8) | name[idx];
-          if (idx % 4) continue;
-          arch.regwrite<32>( 3 - (idx/4), u32_t( word ) );
-          word = 0;
-        }
-      }
-    } break;
-    case 1: {
-      uint32_t const eax =
-        (6  << 0 /* stepping id */) |
-        (0  << 4 /* model */) |
-        (15 << 8 /* family */) |
-        (0  << 12 /* processor type */) |
-        (0  << 16 /* extended model */) |
-        (0  << 20 /* extended family */);
-      arch.regwrite<32>( 0, u32_t( eax ) );
-    
-      uint32_t const ebx =
-        (0 <<  0 /* Brand index */) |
-        (4 <<  8 /* Cache line size (/ 64bits) */) |
-        (1 << 16 /* Maximum number of addressable IDs for logical processors in this physical package* */) |
-        (0 << 24 /* Initial APIC ID */);
-      arch.regwrite<32>( 3, u32_t( ebx ) );
-    
-      uint32_t const ecx =
-        (0 << 0x00 /* Streaming SIMD Extensions 3 (SSE3) */) |
-        (0 << 0x01 /* PCLMULQDQ Available */) |
-        (0 << 0x02 /* 64-bit DS Area */) |
-        (0 << 0x03 /* MONITOR/MWAIT */) |
-        (0 << 0x04 /* CPL Qualified Debug Store */) |
-        (0 << 0x05 /* Virtual Machine Extensions */) |
-        (0 << 0x06 /* Safer Mode Extensions */) |
-        (0 << 0x07 /* Enhanced Intel SpeedStep® technology */) |
-        (0 << 0x08 /* Thermal Monitor 2 */) |
-        (0 << 0x09 /* Supplemental Streaming SIMD Extensions 3 (SSSE3) */) |
-        (0 << 0x0a /* L1 Context ID */) |
-        (0 << 0x0b /* Reserved */) |
-        (0 << 0x0c /* FMA */) |
-        (0 << 0x0d /* CMPXCHG16B Available */) |
-        (0 << 0x0e /* xTPR Update Control */) |
-        (0 << 0x0f /* Perfmon and Debug Capability */) |
-        (0 << 0x10 /* Reserved */) |
-        (0 << 0x11 /* Process-context identifiers */) |
-        (0 << 0x12 /* DCA */) |
-        (0 << 0x13 /* SSE4.1 */) |
-        (0 << 0x14 /* SSE4.2 */) |
-        (0 << 0x15 /* x2APIC */) |
-        (1 << 0x16 /* MOVBE Available */) |
-        (1 << 0x17 /* POPCNT Available */) |
-        (0 << 0x18 /* TSC-Deadline */) |
-        (0 << 0x19 /* AESNI */) |
-        (0 << 0x1a /* XSAVE */) |
-        (0 << 0x1b /* OSXSAVE */) |
-        (0 << 0x1c /* AVX */) |
-        (1 << 0x1d /* F16C */) |
-        (1 << 0x1e /* RDRAND Available */) |
-        (1 << 0x1f /* Is virtual machine */);
-      arch.regwrite<32>( 1, u32_t( ecx ) );
-    
-      uint32_t const edx =
-        (1 << 0x00 /* Floating Point Unit On-Chip */) |
-        (0 << 0x01 /* Virtual 8086 Mode Enhancements */) |
-        (0 << 0x02 /* Debugging Extensions */) |
-        (0 << 0x03 /* Page Size Extension */) |
-        (0 << 0x04 /* Time Stamp Counter */) |
-        (0 << 0x05 /* Model Specific Registers RDMSR and WRMSR Instructions */) |
-        (0 << 0x06 /* Physical Address Extension */) |
-        (0 << 0x07 /* Machine Check Exception */) |
-        (0 << 0x08 /* CMPXCHG8B Available */) |
-        (0 << 0x09 /* APIC On-Chip */) |
-        (0 << 0x0a /* Reserved */) |
-        (0 << 0x0b /* SYSENTER and SYSEXIT Instructions */) |
-        (0 << 0x0c /* Memory Type Range Registers */) |
-        (0 << 0x0d /* Page Global Bit */) |
-        (0 << 0x0e /* Machine Check Architecture */) |
-        (1 << 0x0f /* Conditional Move Instructions */) |
-        (0 << 0x10 /* Page Attribute Table */) |
-        (0 << 0x11 /* 36-Bit Page Size Extension */) |
-        (0 << 0x12 /* Processor Serial Number */) |
-        (0 << 0x13 /* CLFLUSH Instruction */) |
-        (0 << 0x14 /* Reserved */) |
-        (0 << 0x15 /* Debug Store */) |
-        (0 << 0x16 /* Thermal Monitor and Software Controlled Clock Facilities */) |
-        (0 << 0x17 /* Intel MMX Technology */) |
-        (0 << 0x18 /* FXSAVE and FXRSTOR Instructions */) |
-        (0 << 0x19 /* SSE */) |
-        (0 << 0x1a /* SSE2 */) |
-        (0 << 0x1b /* Self Snoop */) |
-        (0 << 0x1c /* Max APIC IDs reserved field is Valid */) |
-        (0 << 0x1d /* Thermal Monitor */) |
-        (0 << 0x1e /* Resrved */) |
-        (0 << 0x1f /* Pending Break Enable */);
-      arch.regwrite<32>( 2, u32_t( edx ) );
-    
-    } break;
-    case 2: {
-      arch.regwrite<32>( 0, u32_t( 0 ) );
-      arch.regwrite<32>( 3, u32_t( 0 ) );
-      arch.regwrite<32>( 1, u32_t( 0 ) );
-      arch.regwrite<32>( 2, u32_t( 0 ) );
-    } break;
-    case 4: {
-      // Small cache config
-      switch (mkint( arch.regread32( 1 ) )) { // %ecx holds requested cache id
-      case 0: { // L1 D-CACHE
-        arch.regwrite<32>( 0, u32_t( (1 << 26) | (0 << 14) | (1 << 8) | (1 << 5) | (1 << 0) ) ); // 0x4000121
-        arch.regwrite<32>( 3, u32_t( (0 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x1c0003f
-        arch.regwrite<32>( 1, u32_t( (0 << 22) | (0x03f << 0) ) ); // 0x000003f
-        arch.regwrite<32>( 2, u32_t( 0x0000001 ) ); // 0x0000001
-      } break;
-      case 1: { // L1 I-CACHE
-        arch.regwrite<32>( 0, u32_t( (1 << 26) | (0 << 14) | (1 << 8) | (1 << 5) | (2 << 0) ) ); // 0x4000122
-        arch.regwrite<32>( 3, u32_t( (0 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x1c0003f
-        arch.regwrite<32>( 1, u32_t( (0 << 22) | (0x03f << 0) ) ); // 0x000003f
-        arch.regwrite<32>( 2, u32_t( 0x0000001 ) ); // 0x0000001
-      } break;
-      case 2: { // L2 U-CACHE
-        arch.regwrite<32>( 0, u32_t( (1 << 26) | (1 << 14) | (1 << 8) | (2 << 5) | (3 << 0) ) ); // 0x4000143
-        arch.regwrite<32>( 3, u32_t( (1 << 26) | (3 << 22) | (0 << 12) | (0x3f << 0) ) ); // 0x5c0003f
-        arch.regwrite<32>( 1, u32_t( (0 << 22) | (0xfff << 0) ) ); // 0x0000fff
-        arch.regwrite<32>( 2, u32_t( 0x0000001 ) ); // 0x0000001
-      } break;
-      case 3: { // TERMINATING NULL ENTRY
-        // 0, 0, 0, 0
-        arch.regwrite<32>( 0, u32_t( 0 ) );
-        arch.regwrite<32>( 3, u32_t( 0 ) );
-        arch.regwrite<32>( 1, u32_t( 0 ) );
-        arch.regwrite<32>( 2, u32_t( 0 ) );
-      } break;
-      }
-    } break;
-  
-    case 0x80000000: {
-      arch.regwrite<32>( 0, u32_t( 0x80000001 ) );
-      arch.regwrite<32>( 3, u32_t( 0 ) );
-      arch.regwrite<32>( 1, u32_t( 0 ) );
-      arch.regwrite<32>( 2, u32_t( 0 ) );
-    } break;
-    case 0x80000001: {
-      arch.regwrite<32>( 0, u32_t( 0 ) );
-      arch.regwrite<32>( 3, u32_t( 0 ) );
-      arch.regwrite<32>( 1, u32_t( 0 ) );
-      arch.regwrite<32>( 2, u32_t( 0 ) );
-    } break;
-    default:
-      std::cerr << "Unknown cmd for cpuid, " << std::hex
-                << "%eax=0x" << mkint( arch.regread32( 0 ) ) << ", "
-                << "%eip=0x" << this->address << "\n";
-      throw "not implemented";
-      break;
-    }
-  }
+  void execute( ARCH& arch ) const { arch.cpuid(); }
 };
 
-template <> Operation* decode<CPUID>( CodeBase const& cb )
+template <class ARCH> struct DC<ARCH,CPUID> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (cb.lock_f0) return 0;
+  if (ic.lock_f0) return 0;
   
-  if (auto _ = match( cb, opcode( "\x0f\xa2" ) )) return new CpuID( _.opbase() );
+  if (auto _ = match( ic, opcode( "\x0f\xa2" ) )) return new CpuID<ARCH>( _.opbase() );
   
   return 0;
-}
+}};
 
-struct RdTSC : public Operation
+template <class ARCH>
+struct RdTSC : public Operation<ARCH>
 {
-  RdTSC( OpBase const& opbase ) : Operation( opbase ) {}
+  RdTSC( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   
   void disasm( std::ostream& sink ) const { sink << "rdtsc"; }
   
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
-    arch.regwrite<32>( 0, u32_t( arch.m_instcount >> 0 ) );
-    arch.regwrite<32>( 2, u32_t( arch.m_instcount >> 32 ) );
+    typedef typename ARCH::u64_t u64_t;
+    typedef typename ARCH::u32_t u32_t;
+    
+    u64_t tsc = arch.tscread();
+    arch.template regwrite<32>( 0, u32_t( tsc >> 0 ) );
+    arch.template regwrite<32>( 2, u32_t( tsc >> 32 ) );
   }
 };
 
-template <> Operation* decode<RDTSC>( CodeBase const& cb )
+template <class ARCH> struct DC<ARCH,RDTSC> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (cb.lock_f0) return 0;
+  if (ic.lock_f0) return 0;
   
-  if (auto _ = match( cb, opcode( "\x0f\x31" ) )) return new RdTSC( _.opbase() );
+  if (auto _ = match( ic, opcode( "\x0f\x31" ) )) return new RdTSC<ARCH>( _.opbase() );
   
   return 0;
-}
+}};
 
 // 
 // op wrmsr( 0x0f[8]:> <:0x30[8] );

@@ -1,16 +1,16 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <package>
 	<unit>
-		<name>unisim::service::interfaces::debug_control</name>
+		<name>unisim::service::interfaces::debug_yielding</name>
 		<files>
-			<file>unisim/service/interfaces/debug_control.hh</file>
-			<file>unisim/service/interfaces/debug_control/CMakeLists.txt</file>
+			<file>unisim/service/interfaces/debug_yielding.hh</file>
+			<file>unisim/service/interfaces/debug_yielding/CMakeLists.txt</file>
 		</files>
 		<depends>
 			<dep>stl_string</dep>
 		</depends>
 		<autotools>
-			<automake>unisim/service/interfaces/meta/debug_control.am</automake>
+			<automake>unisim/service/interfaces/meta/debug_yielding.am</automake>
 		</autotools>
 	</unit>
 	<unit>

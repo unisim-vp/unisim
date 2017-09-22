@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2016,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr), Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
 #include <unisim/component/cxx/processor/arm/simfloat.hh>
@@ -69,6 +69,11 @@ namespace simfloat {
     setChunk( (void*)(bytes), true );
   }
   void
+  SoftDouble::SquareRoot( Flags& flags )
+  {
+    Sqrt( *this, flags );
+  }
+  void
   SoftFloat::ToBytes( uint8_t* bytes ) const
   {
     fillChunk( (void*)(bytes), true );
@@ -77,6 +82,11 @@ namespace simfloat {
   SoftFloat::FromBytes( uint8_t const* bytes )
   {
     setChunk( (void*)(bytes), true );
+  }
+  void
+  SoftFloat::SquareRoot( Flags& flags )
+  {
+    Sqrt( *this, flags );
   }
 
   FloatingPointRegisterInterface::FloatingPointRegisterInterface(const char *_name, SoftDouble *_value)
@@ -214,8 +224,8 @@ namespace util {
 namespace simfloat {
 namespace Numerics {
 namespace Double {
-  template class TBuiltDouble<component::cxx::processor::arm::simfloat::BuiltFloatTraits>;
-  template class TBuiltDouble<component::cxx::processor::arm::simfloat::BuiltDoubleTraits>;
+  template class TBuiltDouble<component::cxx::processor::arm::simfloat::SoftFloatTraits>;
+  template class TBuiltDouble<component::cxx::processor::arm::simfloat::SoftDoubleTraits>;
 } // end of namespace Double
 } // end of namespace Numerics
 } // end of namespace simfloat

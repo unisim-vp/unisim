@@ -105,7 +105,7 @@ unistd.h \
 vector"
 
 UNISIM_LIB_ARMV7_GT_SOURCE_FILES="\
-unisim/kernel/debug/debug.cc \
+unisim/util/backtrace/backtrace.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/kernel/api/api.cc \
@@ -150,7 +150,7 @@ unisim/service/power/cache_dynamic_power.cc \
 unisim/service/power/cache_leakage_power.cc \
 unisim/service/power/cache_power_estimator.cc \
 unisim/service/power/cache_dynamic_energy.cc \
-unisim/service/os/linux_os/linux.cc \
+unisim/service/os/linux_os/arm_linux32.cc \
 unisim/service/trap_handler/trap_handler.cc \
 unisim/service/trap_handler/trap_handler_identifier.cc \
 unisim/service/time/host_time/time.cc \
@@ -170,12 +170,12 @@ unisim/util/debug/dwarf/register_number_mapping.cc \
 unisim/util/debug/dwarf/data_object.cc \
 unisim/util/debug/dwarf/c_loc_expr_parser.cc \
 unisim/util/debug/breakpoint_registry_64.cc \
-unisim/util/debug/blob/section32.cc \
-unisim/util/debug/blob/blob32.cc \
-unisim/util/debug/blob/section64.cc \
-unisim/util/debug/blob/segment32.cc \
-unisim/util/debug/blob/segment64.cc \
-unisim/util/debug/blob/blob64.cc \
+unisim/util/blob/section32.cc \
+unisim/util/blob/blob32.cc \
+unisim/util/blob/section64.cc \
+unisim/util/blob/segment32.cc \
+unisim/util/blob/segment64.cc \
+unisim/util/blob/blob64.cc \
 unisim/util/debug/profile_64.cc \
 unisim/util/debug/watchpoint_registry_32.cc \
 unisim/util/debug/stmt_32.cc \
@@ -197,7 +197,7 @@ unisim/util/os/linux_os/linux.cc \
 unisim/util/lexer/lexer.cc \
 unisim/util/ieee754/ieee754.cc \
 unisim/util/xml/xml.cc \
-unisim/util/endian/endian.cc \
+unisim/kernel/service/endian.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/random/random.cc \
 unisim/util/queue/queue.cc \
@@ -265,7 +265,7 @@ unisim/component/cxx/processor/arm/isa/arm32/arm32.isa"
 UNISIM_LIB_ARMV7_GT_ISA_FILES="${UNISIM_LIB_ARMV7_GT_ISA_THUMB_FILES} ${UNISIM_LIB_ARMV7_GT_ISA_ARM32_FILES}"
 
 UNISIM_LIB_ARMV7_GT_HEADER_FILES="${UNISIM_LIB_ARMV7_GT_ISA_FILES} \
-unisim/kernel/debug/debug.hh \
+unisim/util/backtrace/backtrace.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/api/api.hh \
@@ -298,10 +298,11 @@ unisim/service/power/cache_dynamic_power.hh \
 unisim/service/power/cache_leakage_power.hh \
 unisim/service/power/cache_dynamic_energy.hh \
 unisim/service/os/linux_os/linux.hh \
+unisim/service/os/linux_os/arm_linux32.hh \
 unisim/service/trap_handler/trap_handler.hh \
 unisim/service/trap_handler/trap_handler_identifier.hh \
 unisim/service/trap_handler/trap_handler_identifier_interface.hh \
-unisim/service/interfaces/debug_control.hh \
+unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
 unisim/service/interfaces/profiling.hh \
@@ -363,9 +364,9 @@ unisim/util/debug/dwarf/subprogram.hh \
 unisim/util/debug/dwarf/c_loc_expr_parser.hh \
 unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/symbol_table.hh \
-unisim/util/debug/blob/segment.hh \
-unisim/util/debug/blob/blob.hh \
-unisim/util/debug/blob/section.hh \
+unisim/util/blob/segment.hh \
+unisim/util/blob/blob.hh \
+unisim/util/blob/section.hh \
 unisim/util/debug/stmt.hh \
 unisim/util/debug/breakpoint_registry.hh \
 unisim/util/debug/register.hh \
@@ -393,8 +394,6 @@ unisim/util/os/linux_os/aux_table.hh \
 unisim/util/os/linux_os/environment.hh \
 unisim/util/os/linux_os/files_flags.hh \
 unisim/util/os/linux_os/linux.hh \
-unisim/util/os/linux_os/ppc.hh \
-unisim/util/os/linux_os/i386.hh \
 unisim/util/os/linux_os/errno.hh \
 unisim/util/dictionary/dictionary.hh \
 unisim/util/lexer/lexer.hh \
@@ -478,9 +477,9 @@ unisim/util/debug/dwarf/subprogram.tcc \
 unisim/util/debug/watchpoint_registry.tcc \
 unisim/util/debug/breakpoint_registry.tcc \
 unisim/util/debug/symbol_table.tcc \
-unisim/util/debug/blob/section.tcc \
-unisim/util/debug/blob/blob.tcc \
-unisim/util/debug/blob/segment.tcc \
+unisim/util/blob/section.tcc \
+unisim/util/blob/blob.tcc \
+unisim/util/blob/segment.tcc \
 unisim/util/debug/symbol.tcc \
 unisim/util/debug/elf_symtab/elf_symtab.tcc \
 unisim/util/debug/coff_symtab/coff_symtab.tcc \

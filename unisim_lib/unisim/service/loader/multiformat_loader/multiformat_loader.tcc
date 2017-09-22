@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_LOADER_MULTIFORMAT_LOADER_MULTIFORMAT_LOADER_TCC__
 #define __UNISIM_SERVICE_LOADER_MULTIFORMAT_LOADER_MULTIFORMAT_LOADER_TCC__
 
-#include <unisim/kernel/debug/debug.hh>
+#include <unisim/util/backtrace/backtrace.hh>
 #include <string.h>
 #include <limits>
 #include <algorithm>

@@ -38,29 +38,35 @@
 
 #include <unisim/util/debug/breakpoint.hh>
 #include <list>
+#include <map>
 
 namespace unisim {
 namespace util {
 namespace debug {
 
-template <class ADDRESS>
+template <typename ADDRESS, unsigned int MAX_FRONT_ENDS = 1>
 class BreakpointMapPage
 {
 public:
 	BreakpointMapPage(ADDRESS addr);
 	~BreakpointMapPage();
 
-	void SetBreakpoint(uint32_t offset);
-	void RemoveBreakpoint(uint32_t offset);
-	bool HasBreakpoint(uint32_t offset) const;
+	unsigned int SetBreakpoint(uint32_t offset, unsigned int front_end_num);
+	unsigned int RemoveBreakpoint(uint32_t offset, unsigned int front_end_num);
+	bool HasBreakpoint(uint32_t offset, unsigned int front_end_num) const;
+	bool HasBreakpoints(uint32_t offset) const;
 
-	static const uint32_t NUM_BREAKPOINTS_PER_PAGE = 256;// MUST BE a power of two !
+	typedef uint64_t WORD;
+	static const unsigned int NUM_BREAKPOINTS_PER_PAGE = 256;// MUST BE a power of two !
+	static const unsigned int BITS_PER_BREAKPOINT = 1;
+	static const unsigned int BITS_PER_BREAKPOINTS = BITS_PER_BREAKPOINT * MAX_FRONT_ENDS;
+	static const unsigned int BREAKPOINTS_PER_WORD = (8 * sizeof(WORD)) / BITS_PER_BREAKPOINTS;
 	ADDRESS base_addr;			/*< base effective address */
-	uint32_t *map;			/*< an array of breakpoint masks for 32 consecutive effective addresses */
+	WORD *map;			/*< an array of breakpoint masks for 64 consecutive effective addresses */
 	BreakpointMapPage *next;	/*< next breakpoint map page with the same hash index */
 };
 
-template <class ADDRESS>
+template <typename ADDRESS, unsigned int NUM_PROCESSORS = 1, unsigned int MAX_FRONT_ENDS = 1>
 class BreakpointRegistry
 {
 public:
@@ -70,25 +76,32 @@ public:
 	virtual ~BreakpointRegistry();
 
 	void Reset();
-	bool SetBreakpoint(ADDRESS addr);
-	bool RemoveBreakpoint(ADDRESS addr);
-	bool HasBreakpoint(ADDRESS addr) const;
-	bool SetBreakpoint(const Breakpoint<ADDRESS> *brkp);
-	bool RemoveBreakpoint(const Breakpoint<ADDRESS> *brkp);
+	void Clear(unsigned int front_end_num);
+	bool SetBreakpoint(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num);
+	bool RemoveBreakpoint(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num);
+	bool SetBreakpoint(Breakpoint<ADDRESS> *brkp);
+	bool RemoveBreakpoint(Breakpoint<ADDRESS> *brkp);
+	bool HasBreakpoint(Breakpoint<ADDRESS> *brkp) const;
+	bool HasBreakpoints(ADDRESS addr, unsigned int prc_num) const;
+	bool HasBreakpoints(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num) const;
+	bool HasBreakpoints(unsigned int prc_num) const;
 	bool HasBreakpoints() const;
-	bool HasBreakpoint(const Breakpoint<ADDRESS> *brkp) const;
-	const Breakpoint<ADDRESS> *FindBreakpoint(ADDRESS addr) const;
-	const std::list<const Breakpoint<ADDRESS> *>& GetBreakpoints() const;
+	void EnumerateBreakpoints(unsigned int prc_num, unsigned int front_end_num, std::list<Event<ADDRESS> *>& lst) const;
+	void EnumerateBreakpoints(unsigned int front_end_num, std::list<Event<ADDRESS> *>& lst) const;
+	void EnumerateBreakpoints(std::list<Event<ADDRESS> *>& lst) const;
 
+	/* struct Visitor { void Visit(Breakpoint<ADDRESS> *) {} }; */
+	template <class VISITOR> bool FindBreakpoints(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num, VISITOR& visitor);
 private:
-	bool has_breakpoints;
-	std::list<const Breakpoint<ADDRESS> *> breakpoints;
-	BreakpointMapPage<ADDRESS> *hash_table[NUM_HASH_TABLE_ENTRIES];
+	std::multimap<ADDRESS, Breakpoint<ADDRESS> *> breakpoints[NUM_PROCESSORS][MAX_FRONT_ENDS];
+	unsigned int breakpoint_count[NUM_PROCESSORS];
+	mutable BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS> *mru_page[NUM_PROCESSORS];
+	mutable BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS> *hash_table[NUM_PROCESSORS][NUM_HASH_TABLE_ENTRIES];
 
-	void AllocatePage(ADDRESS addr);
-	BreakpointMapPage<ADDRESS> *GetPage(ADDRESS addr);
-	const BreakpointMapPage<ADDRESS> *GetPage(ADDRESS addr) const;
-	
+	bool SetBreakpointIntoMap(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num);
+	bool RemoveBreakpointFromMap(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num);
+	void AllocatePage(ADDRESS addr, unsigned int prc_num);
+	BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS> *GetPage(ADDRESS addr, unsigned int prc_num) const;
 };
 
 } // end of namespace debug

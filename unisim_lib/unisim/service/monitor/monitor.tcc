@@ -67,7 +67,8 @@ void Monitor<ADDRESS>::OnDisconnect()
 template <class ADDRESS>
 bool Monitor<ADDRESS>::BeginSetup()
 {
-	int result = generate_monitor_spec(xml_spec_file_path.c_str());
+	// int result =
+          generate_monitor_spec(xml_spec_file_path.c_str());
 
 	stringSplit(propertyList, " ", properties);
 
@@ -115,7 +116,7 @@ bool Monitor<ADDRESS>::EndSetup()
 				ADDRESS addr = symb->GetAddress();
 				uint32_t size = symb->GetSize();
 
-				if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
+				if(debug_event_trigger_import->Listen(new unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
 				{
 	//				std::cout << "EndSetup (4)" << std::endl;
 

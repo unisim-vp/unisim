@@ -48,8 +48,8 @@
 #include <limits.h>
 #include <float.h>
 #include <math.h>
-#include <stdio.h>
-#include <assert.h>
+#include <cstdio>
+#include <cassert>
 #if !defined(__GNUC__) || !defined(__SUN__)
 #include <string.h>
 #include <ctype.h>
@@ -105,7 +105,8 @@ class CellIntegerTraitsContract {
 };
 
 template <int uSize>
-class TBasicCellIntegerTraits : public CellIntegerTraitsContract {
+class TBasicCellIntegerTraits : public CellIntegerTraitsContract
+{
   private:
    unsigned int auArray[uSize];
    typedef TBasicCellIntegerTraits<uSize> thisType;

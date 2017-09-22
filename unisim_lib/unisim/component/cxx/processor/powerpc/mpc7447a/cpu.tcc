@@ -66,7 +66,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, unisim::component::cxx::processor::powerpc::mpc7447a::Decoder<CONFIG>()
 	, Client<Loader>(name,  parent)
 	, Client<SymbolTableLookup<typename CONFIG::address_t> >(name,  parent)
-	, Client<DebugControl<typename CONFIG::address_t> >(name,  parent)
+	, Client<DebugYielding>(name,  parent)
 	, Client<MemoryAccessReporting<typename CONFIG::address_t> >(name,  parent)
 	, Client<TrapReporting>(name,  parent)
 	, Service<MemoryAccessReportingControl>(name,  parent)
@@ -86,7 +86,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, synchronizable_export("synchronizable-export",  this)
 	, memory_access_reporting_control_export("memory_access_reporting_control_export",  this)
 	, kernel_loader_import("kernel-loader-import",  this)
-	, debug_control_import("debug-control-import",  this)
+	, debug_yielding_import("debug-control-import",  this)
 	, memory_access_reporting_import("memory-access-reporting-import",  this)
 	, symbol_table_lookup_import("symbol-table-lookup-import",  this)
 	, memory_import("memory-import",  this)
@@ -225,25 +225,25 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, stat_timer_cycle("timer-cycle",  this,  timer_cycle, "number of simulated timer cycles")
 	, stat_num_il1_accesses("num-il1-accesses", this, num_il1_accesses, "number of accesses to L1 instruction cache")
 	, stat_num_il1_misses("num-il1-misses", this, num_il1_misses, "number of misses to L1 instruction cache")
-	, formula_il1_miss_rate("il1-miss-rate", this, Formula<double>::OP_DIV, &stat_num_il1_misses, &stat_num_il1_accesses)
+	, formula_il1_miss_rate("il1-miss-rate", this, "/", &stat_num_il1_misses, &stat_num_il1_accesses)
 	, stat_num_dl1_accesses("num-dl1-accesses", this, num_dl1_accesses, "number of accesses to L1 data cache")
 	, stat_num_dl1_misses("num-dl1-misses", this, num_dl1_misses, "number of misses to L1 data cache")
-	, formula_dl1_miss_rate("dl1-miss-rate", this, Formula<double>::OP_DIV, &stat_num_dl1_misses, &stat_num_dl1_accesses)
+	, formula_dl1_miss_rate("dl1-miss-rate", this, "/", &stat_num_dl1_misses, &stat_num_dl1_accesses)
 	, stat_num_l2_accesses("num-l2-accesses", this, num_l2_accesses, "number of accesses to unified L2 cache")
 	, stat_num_l2_misses("num-l2-misses", this, num_l2_misses, "number of misses to unified L2 cache")
-	, formula_l2_miss_rate("l2-miss-rate", this, Formula<double>::OP_DIV, &stat_num_l2_misses, &stat_num_l2_accesses)
+	, formula_l2_miss_rate("l2-miss-rate", this, "/", &stat_num_l2_misses, &stat_num_l2_accesses)
 	, stat_num_ibat_accesses("num-ibat-accesses", this, num_ibat_accesses, "number of accesses to IBATs")
 	, stat_num_ibat_misses("num-ibat-misses", this, num_ibat_misses, "number of misses to IBATs")
-	, formula_ibat_miss_rate("ibat-miss-rate", this, Formula<double>::OP_DIV, &stat_num_ibat_misses, &stat_num_ibat_accesses)
+	, formula_ibat_miss_rate("ibat-miss-rate", this, "/", &stat_num_ibat_misses, &stat_num_ibat_accesses)
 	, stat_num_dbat_accesses("num-dbat-accesses", this, num_dbat_accesses, "number of accesses to DBATs")
 	, stat_num_dbat_misses("num-dbat-misses", this, num_dbat_misses, "number of misses to DBATs")
-	, formula_dbat_miss_rate("dbat-miss-rate", this, Formula<double>::OP_DIV, &stat_num_dbat_misses, &stat_num_dbat_accesses)
+	, formula_dbat_miss_rate("dbat-miss-rate", this, "/", &stat_num_dbat_misses, &stat_num_dbat_accesses)
 	, stat_num_itlb_accesses("num-itlb-accesses", this, num_itlb_accesses, "number of accesses to ITLB")
 	, stat_num_itlb_misses("num-itlb-misses", this, num_itlb_misses, "number of misses to ITLB")
-	, formula_itlb_miss_rate("itlb-miss-rate", this, Formula<double>::OP_DIV, &stat_num_itlb_misses, &stat_num_itlb_accesses)
+	, formula_itlb_miss_rate("itlb-miss-rate", this, "/", &stat_num_itlb_misses, &stat_num_itlb_accesses)
 	, stat_num_dtlb_accesses("num-dtlb-accesses", this, num_dtlb_accesses, "number of accesses to DTLB")
 	, stat_num_dtlb_misses("num-dtlb-misses", this, num_dtlb_misses, "number of misses to DTLB")
-	, formula_dtlb_miss_rate("dtlb-miss-rate", this, Formula<double>::OP_DIV, &stat_num_dtlb_misses, &stat_num_dtlb_accesses)
+	, formula_dtlb_miss_rate("dtlb-miss-rate", this, "/", &stat_num_dtlb_misses, &stat_num_dtlb_accesses)
 	, stat_num_interrupts("num-interrupts", this, num_interrupts, "Number of interrupts")
 	, stat_num_system_reset_interrupts("num-system-reset-interrupts", this, num_system_reset_interrupts, "Number of system reset interrupts")
 	, stat_num_machine_check_interrupts("num-machine-check-interrupts", this, num_machine_check_interrupts, "Number of machine check interrupts")
@@ -1779,30 +1779,9 @@ bool CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 template <class CONFIG>
 void CPU<CONFIG>::StepOneInstruction()
 {
-	if(unlikely(debug_control_import != 0))
+	if (unlikely(debug_yielding_import))
 	{
-		do
-		{
-			typename DebugControl<typename CONFIG::address_t>::DebugCommand dbg_cmd;
-
-			dbg_cmd = debug_control_import->FetchDebugCommand(GetCIA());
-	
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_STEP) break;
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_SYNC)
-			{
-				Synchronize();
-				continue;
-			}
-
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_KILL) Stop(0);
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_RESET)
-			{
-				if(kernel_loader_import)
-				{
-					kernel_loader_import->Load();
-				}
-			}
-		} while(1);
+		debug_yielding_import->DebugYield();
 	}
 
 	unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation = 0;
@@ -1861,7 +1840,8 @@ void CPU<CONFIG>::StepOneInstruction()
 				{
 					if(unlikely(memory_access_reporting_import != 0))
 					{
-						memory_access_reporting_import->ReportFinishedInstruction(GetCIA(), GetNIA());
+						memory_access_reporting_import->ReportCommitInstruction(GetCIA());
+						memory_access_reporting_import->ReportFetchInstruction(GetNIA());
 					}
 				}
 			}

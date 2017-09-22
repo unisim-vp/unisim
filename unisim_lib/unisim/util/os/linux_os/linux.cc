@@ -42,4 +42,5 @@
 #include "unisim/util/os/linux_os/linux.tcc"
 #include "unisim/util/os/linux_os/calls.tcc"
 
-template class unisim::util::os::linux_os::Linux<uint32_t, uint32_t>;
+template struct unisim::util::os::linux_os::Linux<uint32_t, uint32_t>;
+template struct unisim::util::os::linux_os::Linux<uint64_t, uint64_t>;

@@ -46,16 +46,11 @@ namespace util {
 namespace loader {
 namespace elf_loader {
 
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugInfo;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::EndDebugError;
-
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(unisim::kernel::logger::Logger& _logger, unisim::service::interfaces::Registers *_regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *_mem_if, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob)
-	: logger(_logger)
+ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(const unisim::util::blob::Blob<MEMORY_ADDR> *_blob)
+	: debug_info_stream(&std::cout)
+	, debug_warning_stream(&std::cerr)
+	, debug_error_stream(&std::cerr)
 	, filename()
 	, base_addr(0)
 	, force_base_addr(false)
@@ -65,8 +60,8 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, const_blob(_blob)
 	, symtab_handler(0)
 	, dw_handler(0)
-	, regs_if(_regs_if)
-	, mem_if(_mem_if)
+	, regs_if()
+	, mem_if()
 	, verbose(false)
 	, endianness(E_LITTLE_ENDIAN)
 	, parse_dwarf(false)
@@ -101,6 +96,44 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::~E
 	{
 		delete symtab_handler;
 	}
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SetDebugInfoStream(std::ostream& _debug_info_stream)
+{
+	debug_info_stream = &_debug_info_stream;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SetDebugWarningStream(std::ostream& _debug_warning_stream)
+{
+	debug_warning_stream = &_debug_warning_stream;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SetDebugErrorStream(std::ostream& _debug_error_stream)
+{
+	debug_error_stream = &_debug_error_stream;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SetRegistersInterface(unsigned int prc_num, unisim::service::interfaces::Registers *_regs_if)
+{
+	if(prc_num >= regs_if.size())
+	{
+		regs_if.resize(prc_num + 1);
+	}
+	regs_if[prc_num] = _regs_if;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SetMemoryInterface(unsigned int prc_num, unisim::service::interfaces::Memory<MEMORY_ADDR> *_mem_if)
+{
+	if(prc_num >= mem_if.size())
+	{
+		mem_if.resize(prc_num + 1);
+	}
+	mem_if[prc_num] = _mem_if;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -251,33 +284,33 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 
 	if(filename.empty())
 	{
-		logger << DebugError << "Don't know which executable file to load." << EndDebugError;
+		GetDebugErrorStream() << "Don't know which executable file to load." << std::endl;
 		return false;
 	}
 	
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << "Opening \"" << filename << "\"" << EndDebugInfo;
+		GetDebugInfoStream() << "Opening \"" << filename << "\"" << std::endl;
 	}
 
 	std::ifstream is(filename.c_str(), std::ifstream::in | std::ifstream::binary);
 	
 	if(is.fail())
 	{
-		logger << DebugError << "Can't open executable \"" << filename << "\"" << EndDebugError;
+		GetDebugErrorStream() << "Can't open executable \"" << filename << "\"" << std::endl;
 		return false;
 	}
 	
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << "Reading ELF header" << EndDebugInfo;
+		GetDebugInfoStream() << "Reading ELF header" << std::endl;
 	}
 
 	hdr = ReadElfHeader(is);
 
 	if(!hdr)
 	{
-		logger << DebugError << "Could not read ELF header or \"" << filename << "\" is not an ELF file." << EndDebugError;
+		GetDebugErrorStream() << "Could not read ELF header or \"" << filename << "\" is not an ELF file." << std::endl;
 		return false;
 	}
 
@@ -296,13 +329,13 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << "File \"" << filename << "\" is for \"" << architecture_name << "\"" << EndDebugInfo;
+		GetDebugInfoStream() << "File \"" << filename << "\" is for \"" << architecture_name << "\"" << std::endl;
 	}
 
 	phdr_table = ReadProgramHeaders(hdr, is);
 	if(!phdr_table)
 	{
-		logger << DebugError << "Can't read program headers" << EndDebugError;
+		GetDebugErrorStream() << "Can't read program headers" << std::endl;
 		free(hdr);
 		return false;
 	}
@@ -310,18 +343,18 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	shdr_table = ReadSectionHeaders(hdr, is);
 	if(!shdr_table)
 	{
-		logger << DebugWarning << " Can't read section headers" << EndDebugWarning;
+		GetDebugWarningStream() << " Can't read section headers" << std::endl;
 	}
 	else
 	{
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << "Loading section header string table" << EndDebugInfo;
+			GetDebugInfoStream() << "Loading section header string table" << std::endl;
 		}
 		sh_string_table = LoadSectionHeaderStringTable(hdr, shdr_table, is);
 		if(!sh_string_table)
 		{
-			logger << DebugWarning << " Can't load section header string table" << EndDebugWarning;
+			GetDebugWarningStream() << " Can't load section header string table" << std::endl;
 		}
 	}
 
@@ -329,18 +362,18 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	{
 		std::stringstream hdr_sstr;
 		DumpElfHeader(hdr, hdr_sstr);
-		logger << DebugInfo << hdr_sstr.str() << EndDebugInfo;
+		GetDebugInfoStream() << hdr_sstr.str() << std::endl;
 		for(i = 0, phdr = phdr_table; i < hdr->e_phnum; i++, phdr++)
 		{
 			std::stringstream phdr_sstr;
 			DumpProgramHeader(phdr, phdr_sstr);
-			logger << DebugInfo << phdr_sstr.str() << EndDebugInfo;
+			GetDebugInfoStream() << phdr_sstr.str() << std::endl;
 		}
 		for(i = 0, shdr = shdr_table; i < hdr->e_shnum; shdr = GetNextSectionHeader(hdr, shdr),i++)
 		{
 			std::stringstream shdr_sstr;
 			DumpSectionHeader(shdr, sh_string_table, shdr_sstr);
-			logger << DebugInfo << shdr_sstr.str() << EndDebugInfo;
+			GetDebugInfoStream() << shdr_sstr.str() << std::endl;
 		}
 	}
 
@@ -361,14 +394,14 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		
 		if(num_loadable_segment > 1)
 		{
-			logger << DebugWarning << " More than one loadable segments...ignoring specified base address" << EndDebugWarning;
+			GetDebugWarningStream() << " More than one loadable segments...ignoring specified base address" << std::endl;
 			force_base_addr = false;
 		}
 		else
 		{
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << "Forcing base address to 0x" << std::hex << base_addr << std::dec << EndDebugInfo;
+				GetDebugInfoStream() << "Forcing base address to 0x" << std::hex << base_addr << std::dec << std::endl;
 			}
 		}
 	}
@@ -377,10 +410,10 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << "Program entry point at 0x" << std::hex << entry_point << std::dec << EndDebugInfo;
+		GetDebugInfoStream() << "Program entry point at 0x" << std::hex << entry_point << std::dec << std::endl;
 	}
 
-	blob = new typename unisim::util::debug::blob::Blob<MEMORY_ADDR>();
+	blob = new typename unisim::util::blob::Blob<MEMORY_ADDR>();
 	blob->Catch();
 	
 	blob->SetEntryPoint(entry_point);
@@ -389,9 +422,9 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	blob->SetEndian(endianness);
 	blob->SetAddressSize(GetAddressSize(hdr));
 	if(Elf_Class == ELFCLASS32)
-		blob->SetFileFormat(unisim::util::debug::blob::FFMT_ELF32);
+		blob->SetFileFormat(unisim::util::blob::FFMT_ELF32);
 	else if(Elf_Class == ELFCLASS64)
-		blob->SetFileFormat(unisim::util::debug::blob::FFMT_ELF64);
+		blob->SetFileFormat(unisim::util::blob::FFMT_ELF64);
 	blob->SetELF_PHOFF(hdr->e_phoff);
 	blob->SetELF_PHENT(sizeof(Elf_Phdr));
         blob->SetELF_PHNUM(hdr->e_phnum);
@@ -413,11 +446,11 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			
 			const char *sh_name = GetSectionName(shdr, sh_string_table);
 			
-			typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Type section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_UNKNOWN;
+			typename unisim::util::blob::Section<MEMORY_ADDR>::Type section_type = unisim::util::blob::Section<MEMORY_ADDR>::TY_UNKNOWN;
 			switch(sh_type)
 			{
 				case SHT_NULL:
-					section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_NULL;
+					section_type = unisim::util::blob::Section<MEMORY_ADDR>::TY_NULL;
 					sh_size = 0;
 					sh_addr = 0;
 					sh_flags = 0;
@@ -425,30 +458,30 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 					sh_link = 0;
 					break;
 				case SHT_PROGBITS:
-					section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_PROGBITS;
+					section_type = unisim::util::blob::Section<MEMORY_ADDR>::TY_PROGBITS;
 					break;
 				case SHT_SYMTAB:
-					section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_ELF_SYMTAB;
+					section_type = unisim::util::blob::Section<MEMORY_ADDR>::TY_ELF_SYMTAB;
 					break;
 				case SHT_STRTAB:
-					section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_STRTAB;
+					section_type = unisim::util::blob::Section<MEMORY_ADDR>::TY_STRTAB;
 					break;
 				case SHT_NOBITS:
-					section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_NOBITS;
+					section_type = unisim::util::blob::Section<MEMORY_ADDR>::TY_NOBITS;
 					break;
 			}
 			
-			typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Attribute section_attr = unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_NULL;
-			if(sh_flags & SHF_WRITE) section_attr = (typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Attribute)(section_attr | unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_W);
-			if(sh_flags & SHF_ALLOC) section_attr = (typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Attribute)(section_attr | unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_A);
-			if(sh_flags & SHF_EXECINSTR) section_attr = (typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Attribute)(section_attr | unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_X);
+			typename unisim::util::blob::Section<MEMORY_ADDR>::Attribute section_attr = unisim::util::blob::Section<MEMORY_ADDR>::SA_NULL;
+			if(sh_flags & SHF_WRITE) section_attr = (typename unisim::util::blob::Section<MEMORY_ADDR>::Attribute)(section_attr | unisim::util::blob::Section<MEMORY_ADDR>::SA_W);
+			if(sh_flags & SHF_ALLOC) section_attr = (typename unisim::util::blob::Section<MEMORY_ADDR>::Attribute)(section_attr | unisim::util::blob::Section<MEMORY_ADDR>::SA_A);
+			if(sh_flags & SHF_EXECINSTR) section_attr = (typename unisim::util::blob::Section<MEMORY_ADDR>::Attribute)(section_attr | unisim::util::blob::Section<MEMORY_ADDR>::SA_X);
 			
 			if((sh_type != SHT_NULL) && verbose)
 			{
-				logger << DebugInfo << "Loading section " << sh_name;
-				if(sh_flags & SHF_ALLOC) logger << " at 0x" << std::hex << sh_addr << std::dec;
-				logger << " (" << sh_size << " bytes) ";
-				logger << EndDebugInfo;
+				GetDebugInfoStream() << "Loading section " << sh_name;
+				if(sh_flags & SHF_ALLOC) GetDebugInfoStream() << " at 0x" << std::hex << sh_addr << std::dec;
+				GetDebugInfoStream() << " (" << sh_size << " bytes) ";
+				GetDebugInfoStream() << std::endl;
 			}
 
 			void *sh_data = (sh_size && (sh_type != SHT_NOBITS)) ? calloc(sh_size + 1, 1) : 0; // Allocate one additional byte for zero-terminated strings
@@ -457,12 +490,12 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			{
 				if(!LoadSection(hdr, shdr, sh_data, is))
 				{
-					logger << DebugWarning << " Can't load section " << sh_name << EndDebugWarning;
+					GetDebugWarningStream() << " Can't load section " << sh_name << std::endl;
 					success = false;
 				}
 			}
 			
-			unisim::util::debug::blob::Section<MEMORY_ADDR> *section = new unisim::util::debug::blob::Section<MEMORY_ADDR>(
+			unisim::util::blob::Section<MEMORY_ADDR> *section = new unisim::util::blob::Section<MEMORY_ADDR>(
 				section_type,
 				section_attr,
 				sh_name,
@@ -489,38 +522,38 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			MEMORY_ADDR segment_alignment = GetSegmentAlignment(phdr);
 			
 		
-			typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Type segment_type = unisim::util::debug::blob::Segment<MEMORY_ADDR>::TY_UNKNOWN;
+			typename unisim::util::blob::Segment<MEMORY_ADDR>::Type segment_type = unisim::util::blob::Segment<MEMORY_ADDR>::TY_UNKNOWN;
 			
 			switch(ph_type)
 			{
 				case PT_LOAD:
-					segment_type = unisim::util::debug::blob::Segment<MEMORY_ADDR>::TY_LOADABLE;
+					segment_type = unisim::util::blob::Segment<MEMORY_ADDR>::TY_LOADABLE;
 					break;
 				default:
-					segment_type = unisim::util::debug::blob::Segment<MEMORY_ADDR>::TY_UNKNOWN;
+					segment_type = unisim::util::blob::Segment<MEMORY_ADDR>::TY_UNKNOWN;
 					break;
 			}
 			
 			
-			typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Attribute segment_attr = unisim::util::debug::blob::Segment<MEMORY_ADDR>::SA_NULL;
-			if(ph_flags & PF_W) segment_attr = (typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Attribute)(segment_attr | unisim::util::debug::blob::Segment<MEMORY_ADDR>::SA_W);
-			if(ph_flags & PF_R) segment_attr = (typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Attribute)(segment_attr | unisim::util::debug::blob::Segment<MEMORY_ADDR>::SA_R);
-			if(ph_flags & PF_X) segment_attr = (typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Attribute)(segment_attr | unisim::util::debug::blob::Segment<MEMORY_ADDR>::SA_X);
+			typename unisim::util::blob::Segment<MEMORY_ADDR>::Attribute segment_attr = unisim::util::blob::Segment<MEMORY_ADDR>::SA_NULL;
+			if(ph_flags & PF_W) segment_attr = (typename unisim::util::blob::Segment<MEMORY_ADDR>::Attribute)(segment_attr | unisim::util::blob::Segment<MEMORY_ADDR>::SA_W);
+			if(ph_flags & PF_R) segment_attr = (typename unisim::util::blob::Segment<MEMORY_ADDR>::Attribute)(segment_attr | unisim::util::blob::Segment<MEMORY_ADDR>::SA_R);
+			if(ph_flags & PF_X) segment_attr = (typename unisim::util::blob::Segment<MEMORY_ADDR>::Attribute)(segment_attr | unisim::util::blob::Segment<MEMORY_ADDR>::SA_X);
 			
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << "Loading segment at 0x" << std::hex << segment_addr << std::dec << " (" << segment_file_size << " bytes) " << EndDebugInfo;
+				GetDebugInfoStream() << "Loading segment at 0x" << std::hex << segment_addr << std::dec << " (" << segment_file_size << " bytes) " << std::endl;
 			}
 			
 			void *segment_data = calloc(segment_mem_size + 1, 1); // Allocate one additional byte for zero-terminated strings
 			
 			if(!LoadSegment(hdr, phdr, segment_data, is))
 			{
-				logger << DebugError << "Can't load segment" << EndDebugError;
+				GetDebugErrorStream() << "Can't load segment" << std::endl;
 				success = false;
 			}
 
-			unisim::util::debug::blob::Segment<MEMORY_ADDR> *segment = new unisim::util::debug::blob::Segment<MEMORY_ADDR>(
+			unisim::util::blob::Segment<MEMORY_ADDR> *segment = new unisim::util::blob::Segment<MEMORY_ADDR>(
 				segment_type,
 				segment_attr,
 				segment_alignment,
@@ -566,37 +599,62 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		delete symtab_handler;
 	}
 
-	symtab_handler = new ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>(logger, const_blob);
+	symtab_handler = new ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>(GetDebugInfoStream(), GetDebugWarningStream(), GetDebugErrorStream(), const_blob);
 	
 	if(symtab_handler)
 	{
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << "Building symbol table" << EndDebugInfo;
+			GetDebugInfoStream() << "Building symbol table" << std::endl;
 		}
 		symtab_handler->Parse();
 	}
 	
 	if(parse_dwarf)
 	{
-		dw_handler = new unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR>(const_blob, logger, regs_if, mem_if);
+		dw_handler = new unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR>(const_blob);
 
 		if(dw_handler)
 		{
+			dw_handler->SetDebugInfoStream(GetDebugInfoStream());
+			dw_handler->SetDebugWarningStream(GetDebugWarningStream());
+			dw_handler->SetDebugErrorStream(GetDebugErrorStream());
+			unsigned int num_regs_if = regs_if.size();
+			unsigned int num_mem_if = mem_if.size();
+			unsigned int prc_num;
+			
+			for(prc_num = 0; prc_num  < num_regs_if; prc_num++)
+			{
+				unisim::service::interfaces::Registers *_regs_if = GetRegistersInterface(prc_num);
+				if(_regs_if)
+				{
+					dw_handler->SetRegistersInterface(prc_num, _regs_if);
+				}
+			}
+			
+			for(prc_num = 0; prc_num  < num_mem_if; prc_num++)
+			{
+				unisim::service::interfaces::Memory<MEMORY_ADDR> *_mem_if = GetMemoryInterface(prc_num);
+				if(_mem_if)
+				{
+					dw_handler->SetMemoryInterface(prc_num, _mem_if);
+				}
+			}
+			
 			dw_handler->SetOption(unisim::util::debug::dwarf::OPT_REG_NUM_MAPPING_FILENAME, dwarf_register_number_mapping_filename.c_str());
 			dw_handler->SetOption(unisim::util::debug::dwarf::OPT_VERBOSE, verbose);
 			dw_handler->SetOption(unisim::util::debug::dwarf::OPT_DEBUG, debug_dwarf);
 			
 			if(verbose)
 			{
-				logger << DebugInfo << "Parsing DWARF debugging informations" << EndDebugInfo;
+				GetDebugInfoStream() << "Parsing DWARF debugging informations" << std::endl;
 			}
 			dw_handler->Parse();
 			if(!dwarf_to_html_output_directory.empty())
 			{
 				if(unlikely(verbose))
 				{
-					logger << DebugInfo << "Dumping DWARF debugging informations as HTML into directory " << dwarf_to_html_output_directory << EndDebugInfo;
+					GetDebugInfoStream() << "Dumping DWARF debugging informations as HTML into directory " << dwarf_to_html_output_directory << std::endl;
 				}
 				dw_handler->to_HTML(dwarf_to_html_output_directory.c_str());
 			}
@@ -604,7 +662,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			{
 				if(unlikely(verbose))
 				{
-					logger << DebugInfo << "Dumping DWARF debugging informations as XML into file " << dwarf_to_xml_output_filename << EndDebugInfo;
+					GetDebugInfoStream() << "Dumping DWARF debugging informations as XML into file " << dwarf_to_xml_output_filename << std::endl;
 				}
 				dw_handler->to_XML(dwarf_to_xml_output_filename.c_str());
 			}
@@ -613,7 +671,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const typename unisim::util::debug::blob::Blob<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetBlob() const
+const typename unisim::util::blob::Blob<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetBlob() const
 {
 	return blob ? blob : const_blob;
 }
@@ -1430,27 +1488,27 @@ const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, El
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-std::vector<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetBackTrace(MEMORY_ADDR pc) const
+std::vector<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetBackTrace(unsigned int prc_num, MEMORY_ADDR pc) const
 {
-	return dw_handler ? dw_handler->GetBackTrace(pc) : 0;
+	return dw_handler ? dw_handler->GetBackTrace(prc_num, pc) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const
+bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetReturnAddress(unsigned int prc_num, MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const
 {
-	return dw_handler ? dw_handler->GetReturnAddress(pc, ret_addr) : false;
+	return dw_handler ? dw_handler->GetReturnAddress(prc_num, pc, ret_addr) : false;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-unisim::util::debug::DataObject<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetDataObject(const char *data_object_name, const char *_filename, const char *compilation_unit_name) const
+unisim::util::debug::DataObject<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetDataObject(unsigned int prc_num, const char *data_object_name, const char *_filename, const char *compilation_unit_name) const
 {
-	return dw_handler ? dw_handler->GetDataObject(data_object_name, _filename, compilation_unit_name) : 0;
+	return dw_handler ? dw_handler->GetDataObject(prc_num, data_object_name, _filename, compilation_unit_name) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-unisim::util::debug::DataObject<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindDataObject(const char *data_object_name, MEMORY_ADDR pc) const
+unisim::util::debug::DataObject<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindDataObject(unsigned int prc_num, const char *data_object_name, MEMORY_ADDR pc) const
 {
-	return dw_handler ? dw_handler->FindDataObject(data_object_name, pc) : 0;
+	return dw_handler ? dw_handler->FindDataObject(prc_num, data_object_name, pc) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -1460,9 +1518,9 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const unisim::util::debug::SubProgram<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSubProgram(const char *subprogram_name, const char *filename, const char *compilation_unit_name) const
+const unisim::util::debug::SubProgram<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSubProgram(unsigned int prc_num, const char *subprogram_name, const char *filename, const char *compilation_unit_name) const
 {
-	return dw_handler ? dw_handler->FindSubProgram(subprogram_name, filename, compilation_unit_name) : 0;
+	return dw_handler ? dw_handler->FindSubProgram(prc_num, subprogram_name, filename, compilation_unit_name) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -1780,6 +1838,36 @@ uint8_t ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 		case EM_OLD_AVR32: return sizeof(uint32_t);
 	}
 	return sizeof(uint32_t);
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+std::ostream& ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetDebugInfoStream() const
+{
+	return *debug_info_stream;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+std::ostream& ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetDebugWarningStream() const
+{
+	return *debug_warning_stream;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+std::ostream& ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetDebugErrorStream() const
+{
+	return *debug_error_stream;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+unisim::service::interfaces::Registers *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetRegistersInterface(unsigned int prc_num) const
+{
+	return (prc_num < regs_if.size()) ? regs_if[prc_num] : 0;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+unisim::service::interfaces::Memory<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetMemoryInterface(unsigned int prc_num) const
+{
+	return (prc_num < mem_if.size()) ? mem_if[prc_num] : 0;
 }
 
 } // end of namespace elf_loader

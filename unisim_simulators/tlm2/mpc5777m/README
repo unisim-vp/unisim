@@ -1,0 +1,4 @@
+This package contains:
+  - UNISIM GenISSLib: an instruction set simulator generator
+  - UNISIM MPC5777M Simulator: a full system e200z-like simulator.
+See INSTALL for installation instructions.

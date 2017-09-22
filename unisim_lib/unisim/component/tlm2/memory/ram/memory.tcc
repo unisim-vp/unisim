@@ -155,7 +155,7 @@ bool Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::get_direct_mem_p
 
 	dmi_data.set_start_address(dmi_start_addr);
 	dmi_data.set_end_address(dmi_end_addr);
-	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+	dmi_data.set_granted_access(read_only ? tlm::tlm_dmi::DMI_ACCESS_READ : tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
 
 	if(dmi_ptr)
 	{
@@ -223,12 +223,12 @@ unsigned int Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transpor
 			break;
 		case tlm::TLM_IGNORE_COMMAND:
 			// transport_dbg should not receive such a command
-			logger << DebugInfo << LOCATION
+			logger << DebugWarning << LOCATION
 					<< ":" << sc_time_stamp().to_string() 
 					<< " : received an unexpected TLM_IGNORE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
-					<< EndDebugInfo;
+					<< EndDebugWarning;
 			Object::Stop(-1);
 			break;
 	}
@@ -246,10 +246,10 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb
 {
 	if(phase != tlm::BEGIN_REQ)
 	{
-		logger << DebugInfo << LOCATION
+		logger << DebugWarning << LOCATION
 				<< ":" << (sc_time_stamp() + t).to_string() 
 				<< " : received an unexpected phase " << phase << std::endl
-				<< EndDebugInfo;
+				<< EndDebugWarning;
 		Object::Stop(-1);
 	}
 
@@ -302,9 +302,8 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb
 			if(read_only)
 			{
 				status = true;
-				logger << DebugWarning << LOCATION
-					<< ":" << (sc_time_stamp() + t).to_string()
-					<< ": Attempt to write into a read-only memory"
+				logger << DebugWarning << (sc_time_stamp() + t).to_string()
+					<< ": Attempt to write into a read-only memory at @0x" << std::hex << addr << std::dec
 					<< EndDebugWarning;
 			}
 			else
@@ -409,9 +408,8 @@ b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 			if(read_only)
 			{
 				status = true;
-				logger << DebugWarning << LOCATION
-					<< ":" << (sc_time_stamp() + t).to_string()
-					<< ": Attempt to write into a read-only memory"
+				logger << DebugWarning << (sc_time_stamp() + t).to_string()
+					<< ": Attempt to write into a read-only memory at @0x" << std::hex << addr << std::dec
 					<< EndDebugWarning;
 			}
 			else

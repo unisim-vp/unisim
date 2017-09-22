@@ -388,42 +388,44 @@
 // movdqa_wdq_vdq.disasm = { _sink << "movdqa " << DisasmRdq( gn ) << ',' << DisasmWdq( rmop ); };
 
 /* MOVDQU -- Move Unaligned Double Quadword */
-struct MovdquVW : public Operation
+template <class ARCH>
+struct MovdquVW : public Operation<ARCH>
 {
-  MovdquVW( OpBase const& opbase, MOp* _rmop, uint8_t _gn ) : Operation( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp rmop; uint8_t gn;
+  MovdquVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   void disasm( std::ostream& sink ) const { sink << "movdqu " << DisasmWdq( rmop ) << ',' << DisasmRdq( gn ); }
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
-    arch.xmm_uwrite<64>( gn, 0,  arch.xmm_uread<64>( rmop, 0 ) );
-    arch.xmm_uwrite<64>( gn, 1,  arch.xmm_uread<64>( rmop, 1 ) );
+    arch.template xmm_uwrite<64>( gn, 0,  arch.template xmm_uread<64>( rmop, 0 ) );
+    arch.template xmm_uwrite<64>( gn, 1,  arch.template xmm_uread<64>( rmop, 1 ) );
   }
 };
 
-struct MovdquWV : public Operation
+template <class ARCH>
+struct MovdquWV : public Operation<ARCH>
 {
-  MovdquWV( OpBase const& opbase, MOp* _rmop, uint8_t _gn ) : Operation( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp rmop; uint8_t gn;
+  MovdquWV( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   void disasm( std::ostream& sink ) const { sink << "movdqu " << DisasmRdq( gn ) << ',' << DisasmWdq( rmop ); }
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
-    arch.xmm_uwrite<64>( rmop, 0,  arch.xmm_uread<64>( gn, 0 ) );
-    arch.xmm_uwrite<64>( rmop, 1,  arch.xmm_uread<64>( gn, 1 ) );
+    arch.template xmm_uwrite<64>( rmop, 0,  arch.template xmm_uread<64>( gn, 0 ) );
+    arch.template xmm_uwrite<64>( rmop, 1,  arch.template xmm_uread<64>( gn, 1 ) );
   }
 };
 
-template <> Operation* decode<MOVDQU>( CodeBase const& cb )
+template <class ARCH> struct DC<ARCH,MOVDQU> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (cb.f0()) return 0;
+  if (ic.f0()) return 0;
   
-  if (auto _ = match( cb, RPF3() & opcode( "\x0f\x6f" ) & RM() ))
+  if (auto _ = match( ic, RPF3() & opcode( "\x0f\x6f" ) & RM() ))
     
-    return new MovdquVW( _.opbase(), _.rmop(), _.greg() );
+    return new MovdquVW<ARCH>( _.opbase(), _.rmop(), _.greg() );
   
-  if (auto _ = match( cb, RPF3() & opcode( "\x0f\x7f" ) & RM() ))
+  if (auto _ = match( ic, RPF3() & opcode( "\x0f\x7f" ) & RM() ))
     
-    return new MovdquWV( _.opbase(), _.rmop(), _.greg() );
+    return new MovdquWV<ARCH>( _.opbase(), _.rmop(), _.greg() );
   
   return 0;
-}
+}};
 
 // op movdqu_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x6f[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
@@ -548,32 +550,33 @@ template <> Operation* decode<MOVDQU>( CodeBase const& cb )
 // 
 // movsd_wdq_vdq.disasm = { _sink << "movsd " << DisasmRdq( gn ) << ',' << DisasmWdq( rmop ); };
 // 
-struct Movsd : public Operation
+template <class ARCH>
+struct Movsd : public Operation<ARCH>
 {
-  Movsd( OpBase const& opbase, MOp* _dst, MOp* _src ) : Operation( opbase ), dst( _dst ), src( _src ) {} RMOp dst; RMOp src;
+  Movsd( OpBase<ARCH> const& opbase, MOp<ARCH> const* _dst, MOp<ARCH> const* _src ) : Operation<ARCH>( opbase ), dst( _dst ), src( _src ) {} RMOp<ARCH> dst; RMOp<ARCH> src;
   void disasm( std::ostream& sink ) const { sink << "movsd " << DisasmWdq( src ) << ',' << DisasmWdq( dst ); }
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
-    arch.xmm_uwrite<64>( dst, 0,  arch.xmm_uread<64>( src, 0 ) );
+    arch.template xmm_uwrite<64>( dst, 0,  arch.template xmm_uread<64>( src, 0 ) );
     if (not dst.is_memory_operand())
-      arch.xmm_uwrite<64>( dst, 1, 0 );
+      arch.template xmm_uwrite<64>( dst, 1, typename ARCH::u64_t(0) );
   }
 };
 
-template <> Operation* decode<VMOVSD>( CodeBase const& cb )
+template <class ARCH> struct DC<ARCH,VMOVSD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (cb.f0()) return 0;
+  if (ic.f0()) return 0;
   
-  if (auto _ = match( cb, RPF2() & opcode( "\x0f\x10" ) & RM() ))
+  if (auto _ = match( ic, RPF2() & opcode( "\x0f\x10" ) & RM() ))
     
-    return new Movsd( _.opbase(), RM::MkReg( _.greg() ), _.rmop() );
+    return new Movsd<ARCH>( _.opbase(), make_rop<ARCH>( _.greg() ), _.rmop() );
   
-  if (auto _ = match( cb, RPF2() & opcode( "\x0f\x11" ) & RM() ))
+  if (auto _ = match( ic, RPF2() & opcode( "\x0f\x11" ) & RM() ))
     
-    return new Movsd( _.opbase(), _.rmop(), RM::MkReg( _.greg() ) );
+    return new Movsd<ARCH>( _.opbase(), _.rmop(), make_rop<ARCH>( _.greg() ) );
   
   return 0;
-}
+}};
 
 // /* MOVSHDUP -- Move Packed Single-FP High and Duplicate */
 // op movshdup_vdq_wdq( 0xf3[8]:> <:0x0f[8]:> <:0x16[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
@@ -846,49 +849,47 @@ template <> Operation* decode<VMOVSD>( CodeBase const& cb )
 // 
 
 /* PCMPEQB/PCMPEQW/PCMPEQD/PCMEQQ -- Compare Packed Data for Equal */
-template <unsigned OPSIZE>
-struct PCmpEqVW : public Operation
+template <class ARCH, unsigned OPSIZE>
+struct PCmpEqVW : public Operation<ARCH>
 {
-  PCmpEqVW( OpBase const& opbase, MOp* _rmop, uint8_t _gn ) : Operation( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp rmop; uint8_t gn;
+  PCmpEqVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   void disasm( std::ostream& sink ) const {
     sink << "pcmpeq" << ("bwdq"[SB<OPSIZE/8>::begin]) << ' ' << DisasmWdq( rmop ) << ',' << DisasmRdq( gn );
   }
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
-    typedef typename TypeFor<OPSIZE>::u utype;
-    u64_t const cmpout[2] = { u64_t(utype(~utype(0))), u64_t(utype(0)) };
+    typedef typename TypeFor<ARCH,OPSIZE>::u u_type;
     
-    for (unsigned sub = 0; sub < 2; ++sub) {
-      u64_t cmp = arch.xmm_uread<64>( gn, sub ) ^ arch.xmm_uread<64>( rmop, sub ), res = 0;
-      for (unsigned pos = 0; pos < 64; pos += OPSIZE)
-        res |= (cmpout[bool(utype(cmp>>pos))]) << pos;
-      arch.xmm_uwrite<64>( gn, sub, res );
-    }
+    for (unsigned sub = 0; sub < (128/OPSIZE); ++sub)
+      {
+        u_type msk = u_type(arch.template xmm_uread<OPSIZE>( gn, sub ) != arch.template xmm_uread<OPSIZE>( rmop, sub )) - u_type(1);
+        arch.template xmm_uwrite<OPSIZE>( gn, sub, msk );
+      }
   }
 };
 
-template <> Operation* decode<PCMPEQ>( CodeBase const& cb )
+template <class ARCH> struct DC<ARCH,PCMPEQ> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (cb.f0()) return 0;
+  if (ic.f0()) return 0;
   
-  if (auto _ = match( cb, RP_() & OP66() & opcode( "\x0f\x74" ) & RM() ))
+  if (auto _ = match( ic, RP_() & OP66() & opcode( "\x0f\x74" ) & RM() ))
     
-    return new PCmpEqVW<8>( _.opbase(), _.rmop(), _.greg() );
+    return new PCmpEqVW<ARCH,8>( _.opbase(), _.rmop(), _.greg() );
   
-  if (auto _ = match( cb, RP_() & OP66() & opcode( "\x0f\x75" ) & RM() ))
+  if (auto _ = match( ic, RP_() & OP66() & opcode( "\x0f\x75" ) & RM() ))
     
-    return new PCmpEqVW<16>( _.opbase(), _.rmop(), _.greg() );
+    return new PCmpEqVW<ARCH,16>( _.opbase(), _.rmop(), _.greg() );
   
-  if (auto _ = match( cb, RP_() & OP66() & opcode( "\x0f\x76" ) & RM() ))
+  if (auto _ = match( ic, RP_() & OP66() & opcode( "\x0f\x76" ) & RM() ))
     
-    return new PCmpEqVW<32>( _.opbase(), _.rmop(), _.greg() );
+    return new PCmpEqVW<ARCH,32>( _.opbase(), _.rmop(), _.greg() );
   
-  if (auto _ = match( cb, RP_() & OP66() & opcode( "\x0f\x38\x29" ) & RM() ))
+  if (auto _ = match( ic, RP_() & OP66() & opcode( "\x0f\x38\x29" ) & RM() ))
     
-    return new PCmpEqVW<64>( _.opbase(), _.rmop(), _.greg() );
+    return new PCmpEqVW<ARCH,64>( _.opbase(), _.rmop(), _.greg() );
   
   return 0;
-}
+}};
 // op pcmpeqb_pq_qq( 0x0f[8]:> <:0x74[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );
 // 
 // pcmpeqb_pq_qq.disasm = { _sink << "pcmpeqb " << DisasmQq( rmop ) << ',' << DisasmRq( gn ); };
@@ -1134,41 +1135,44 @@ template <> Operation* decode<PCMPEQ>( CodeBase const& cb )
 // 
 
 // /* PMOVMSKB -- Move Byte Mask */
-struct PMovMskBRP : public Operation
+template <class ARCH>
+struct PMovMskBRP : public Operation<ARCH>
 {
-  PMovMskBRP( OpBase const& opbase, uint8_t _rm, uint8_t _gn ) : Operation( opbase ), rm( _rm ), gn( _gn ) {} uint8_t rm; uint8_t gn;
+  PMovMskBRP( OpBase<ARCH> const& opbase, uint8_t _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} uint8_t rm; uint8_t gn;
   void disasm( std::ostream& sink ) const { sink << "pmovmskb " << DisasmRq( rm ) << ',' << DisasmRd( gn ); }
 };
  
-struct PMovMskBRV : public Operation
+template <class ARCH>
+struct PMovMskBRV : public Operation<ARCH>
 {
-  PMovMskBRV( OpBase const& opbase, uint8_t _rm, uint8_t _gn ) : Operation( opbase ), rm( _rm ), gn( _gn ) {} uint8_t rm; uint8_t gn;
+  PMovMskBRV( OpBase<ARCH> const& opbase, uint8_t _rm, uint8_t _gn ) : Operation<ARCH>( opbase ), rm( _rm ), gn( _gn ) {} uint8_t rm; uint8_t gn;
   void disasm( std::ostream& sink ) const { sink << "pmovmskb " << DisasmRdq( rm ) << ',' << DisasmRd( gn ); }
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
-    u32_t res = 0;
-    for (unsigned sub = 0; sub < 2; ++sub) {
-      u64_t op = arch.xmm_uread<64>( rm, sub );
-      for (unsigned byte = 0; byte < 8; ++byte)
-        res |= (((op >> (8*byte+7))&1) << (8*sub+byte));
-    }
-    arch.regwrite<32>( gn, res );
+    typedef typename ARCH::u32_t u32_t;
+    
+    u32_t res = u32_t(0);
+    
+    for (unsigned sub = 0; sub < 16; ++sub)
+      res |= u32_t(arch.template xmm_uread<8>( rm, sub ) >> 7) << sub;
+    
+    arch.template regwrite<32>( gn, res );
   }
 };
 
-template <> Operation* decode<PMOVMSKB>( CodeBase const& cb )
+template <class ARCH> struct DC<ARCH,PMOVMSKB> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (cb.f0()) return 0;
+  if (ic.f0()) return 0;
   
-  if (auto _ = match( cb, RP_() & opcode( "\x0f\xd7" ) & RM_reg() ))
+  if (auto _ = match( ic, RP_() & opcode( "\x0f\xd7" ) & RM_reg() ))
     
     {
-      if (cb._66()) return new PMovMskBRV( _.opbase(), _.ereg(), _.greg() );
-      else          return new PMovMskBRP( _.opbase(), _.ereg(), _.greg() );
+      if (ic._66()) return new PMovMskBRV<ARCH>( _.opbase(), _.ereg(), _.greg() );
+      else          return new PMovMskBRP<ARCH>( _.opbase(), _.ereg(), _.greg() );
     }
   
   return 0;
-}
+}};
 
 // 
 // /* PMOVSX -- Packed Move with Sign Extend */
@@ -1620,37 +1624,39 @@ template <> Operation* decode<PMOVMSKB>( CodeBase const& cb )
 // punpcklqdq_vdq_wdq.disasm = { _sink << "punpcklqdq " << DisasmWdq( rmop ) << ',' << DisasmRdq( gn ); };
 // 
 
-struct PXorPQ : public Operation
+template <class ARCH>
+struct PXorPQ : public Operation<ARCH>
 {
-  PXorPQ( OpBase const& opbase, MOp* _rmop, uint8_t _gn ) : Operation( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp rmop; uint8_t gn;
+  PXorPQ( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   void disasm( std::ostream& sink ) const { sink << "pxor " << DisasmQq( rmop ) << ',' << DisasmRq( gn ); }
 };
 
-struct PXorVW : public Operation
+template <class ARCH>
+struct PXorVW : public Operation<ARCH>
 {
-  PXorVW( OpBase const& opbase, MOp* _rmop, uint8_t _gn ) : Operation( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp rmop; uint8_t gn;
+  PXorVW( OpBase<ARCH> const& opbase, MOp<ARCH> const* _rmop, uint8_t _gn ) : Operation<ARCH>( opbase ), rmop( _rmop ), gn( _gn ) {} RMOp<ARCH> rmop; uint8_t gn;
   void disasm( std::ostream& sink ) const { sink << "pxor " << DisasmWdq( rmop ) << ',' << DisasmRdq( gn ); }
-  void execute( Arch& arch ) const
+  void execute( ARCH& arch ) const
   {
-    arch.xmm_uwrite<64>( gn, 0,  arch.xmm_uread<64>( gn, 0 ) ^ arch.xmm_uread<64>( rmop, 0 ) );
-    arch.xmm_uwrite<64>( gn, 1,  arch.xmm_uread<64>( gn, 1 ) ^ arch.xmm_uread<64>( rmop, 1 ) );
+    arch.template xmm_uwrite<64>( gn, 0,  arch.template xmm_uread<64>( gn, 0 ) ^ arch.template xmm_uread<64>( rmop, 0 ) );
+    arch.template xmm_uwrite<64>( gn, 1,  arch.template xmm_uread<64>( gn, 1 ) ^ arch.template xmm_uread<64>( rmop, 1 ) );
   }
 };
 
 /* PXOR -- Logical Exclusive OR */
-template <> Operation* decode<PXOR>( CodeBase const& cb )
+template <class ARCH> struct DC<ARCH,PXOR> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
 {
-  if (cb.f0()) return 0;
+  if (ic.f0()) return 0;
   
-  if (auto _ = match( cb, RP_() & opcode( "\x0f\xef" ) & RM() ))
+  if (auto _ = match( ic, RP_() & opcode( "\x0f\xef" ) & RM() ))
     
     {
-      if (cb._66()) return new PXorVW( _.opbase(), _.rmop(), _.greg() );
-      else          return new PXorPQ( _.opbase(), _.rmop(), _.greg() );
+      if (ic._66()) return new PXorVW<ARCH>( _.opbase(), _.rmop(), _.greg() );
+      else          return new PXorPQ<ARCH>( _.opbase(), _.rmop(), _.greg() );
     }
   
   return 0;
-}
+}};
 
 // /* RCPPS -- Compute Reciprocals of Packed Single-Precision Floating-Point Values */
 // op rcpps_vdq_wdq( 0x0f[8]:> <:0x53[8]:> <:?[2]:gn[3]:?[3]:> rewind <:*modrm[ModRM] );

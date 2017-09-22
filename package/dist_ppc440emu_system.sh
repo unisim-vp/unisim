@@ -109,7 +109,7 @@ unisim/kernel/service/xml_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
-unisim/kernel/debug/debug.cc \
+unisim/util/backtrace/backtrace.cc \
 unisim/util/xml/xml.cc \
 unisim/util/debug/profile_32.cc \
 unisim/util/debug/symbol_32.cc \
@@ -126,9 +126,9 @@ unisim/util/debug/dwarf/encoding.cc \
 unisim/util/debug/dwarf/filename.cc \
 unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
-unisim/util/debug/blob/blob32.cc \
-unisim/util/debug/blob/section32.cc \
-unisim/util/endian/endian.cc \
+unisim/util/blob/blob32.cc \
+unisim/util/blob/section32.cc \
+unisim/kernel/service/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/random/random.cc \
@@ -219,7 +219,7 @@ unisim/kernel/service/xml_helper.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/tlm2/tlm.hh \
-unisim/kernel/debug/debug.hh \
+unisim/util/backtrace/backtrace.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/debug/breakpoint.hh \
 unisim/util/debug/profile.hh \
@@ -255,8 +255,8 @@ unisim/util/debug/dwarf/loc.hh \
 unisim/util/debug/dwarf/ml.hh \
 unisim/util/debug/dwarf/range.hh \
 unisim/util/debug/dwarf/stmt_vm.hh \
-unisim/util/debug/blob/blob.hh \
-unisim/util/debug/blob/section.hh \
+unisim/util/blob/blob.hh \
+unisim/util/blob/section.hh \
 unisim/util/endian/endian.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/hash_table/hash_table.hh \
@@ -267,7 +267,7 @@ unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/host_floating.hh \
 unisim/util/device/register.hh \
 unisim/util/random/random.hh \
-unisim/service/interfaces/debug_control.hh \
+unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/disassembly.hh \
 unisim/service/interfaces/loader.hh \
@@ -363,8 +363,8 @@ unisim/util/debug/dwarf/fde.tcc \
 unisim/util/debug/dwarf/macinfo.tcc \
 unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
-unisim/util/debug/blob/blob.tcc \
-unisim/util/debug/blob/section.tcc \
+unisim/util/blob/blob.tcc \
+unisim/util/blob/section.tcc \
 unisim/util/queue/queue.tcc \
 unisim/util/simfloat/floating.tcc \
 unisim/util/simfloat/integer.tcc \

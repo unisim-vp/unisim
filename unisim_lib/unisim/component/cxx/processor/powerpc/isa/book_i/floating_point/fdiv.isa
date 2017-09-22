@@ -1,0 +1,106 @@
+/*
+ *  Copyright (c) 2007,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ */
+ 
+impl {
+#include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
+}
+
+op fdiv(63[6]:fd[5]:fa[5]:fb[5]:?[5]:18[5]:rc[1])
+fdiv.execute = {
+	if(!CONFIG::HAS_FPU)
+	{
+		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		return false;
+	}
+	// Check if FPU is enabled
+	uint32_t msr = cpu->GetMSR();
+	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	{
+		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		return false;
+	}
+
+	// Read the input operands
+	uint32_t fpscr = cpu->GetFPSCR();
+	uint32_t old_fpscr = fpscr;
+	Flags flags;
+	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
+	SoftDouble result = cpu->GetFPR(fa);
+	const SoftDouble& b = cpu->GetFPR(fb);
+
+	// Compute the result
+	result.divAssign(b, flags);
+
+	// Generate OX, UX, ZX, VXSNAN, VXIDI, VXZDZ, FR, FI, FPRF, XX, FX, VX, FEX
+	GenFPSCR_OX<CONFIG>(fpscr, flags);
+	GenFPSCR_UX<CONFIG>(fpscr, flags);
+	GenFPSCR_ZX<CONFIG>(fpscr, flags);
+	GenFPSCR_VXSNAN<CONFIG>(fpscr, flags);
+	GenFPSCR_VXIDI<CONFIG>(fpscr, flags);
+	GenFPSCR_VXZDZ<CONFIG>(fpscr, flags);
+	GenFPSCR_FR<CONFIG, SoftDouble>(fpscr, result, flags);
+	GenFPSCR_FI<CONFIG>(fpscr, flags);
+	GenFPSCR_FPRF<CONFIG, SoftDouble>(fpscr, result);
+	GenFPSCR_XX<CONFIG>(fpscr);
+	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);
+	GenFPSCR_VX<CONFIG>(fpscr);
+	GenFPSCR_FEX<CONFIG>(fpscr);
+
+	// Update FPSCR
+	cpu->SetFPSCR(fpscr);
+
+	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
+	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
+	            (msr & CONFIG::MSR_FE1_MASK)) &&
+	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
+	{
+		// Raise a floating point exception
+		cpu->SetException(CONFIG::EXC_PROGRAM_FLOATING_POINT);
+		return false;
+	}
+
+	// Write back the result
+	cpu->SetFPR(fd, result);
+
+	// Copy FX, FEX, VX, OX to CR1
+	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
+	
+	return true;
+}
+fdiv.disasm = {
+	os << "fdiv" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fb;
+}
+
+specialize fdiv(rc=0)
+specialize fdiv(rc=1)
