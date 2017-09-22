@@ -335,11 +335,14 @@ sc_fifo<T>::sc_fifo( const sc_fifo<T>& )
 template <class T>
 sc_fifo<T>& sc_fifo<T>::operator= ( const sc_fifo<T>& )
 {
+	return *this;
 }
 
 template <class T>
 inline std::ostream& operator << (std::ostream& os, const sc_fifo<T>& fifo)
 {
+	fifo.print(os);
+	return os;
 }
 
 } // end of namespace sc_core

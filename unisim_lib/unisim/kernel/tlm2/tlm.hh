@@ -176,7 +176,7 @@ class PayloadFabric : public tlm::tlm_mm_interface
 public:
 	PayloadFabric()
 		: free_list()
-		, pool()
+		, payloads()
 	{
 	}
 
@@ -201,19 +201,17 @@ public:
 	{
 		PAYLOAD *payload;
 
-		if(free_list.empty())
-		{
-			payload = new PAYLOAD();
-			pool.push_back(payload);
-			payload->set_mm(this);
-		}
-		else
+		if(!free_list.empty())
 		{
 			payload = free_list.top();
 			free_list.pop();
 			assert(payload->get_ref_count() == 0);
+			payload->acquire();
+			return payload;
 		}
 
+		payload = new PAYLOAD();
+		payload->set_mm(this);
 		payload->acquire();
 		payloads.push_back(payload);
 		return payload;

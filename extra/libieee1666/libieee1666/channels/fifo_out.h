@@ -115,7 +115,7 @@ sc_event_finder& sc_fifo_out<T>::data_read() const
 template <class T>
 int sc_fifo_out<T>::num_free() const
 {
-	(*this)->num_free();
+	return (*this)->num_free();
 }
 
 template <class T>
