@@ -58,6 +58,7 @@
 
 #include <string>
 #include <vector>
+#include <fstream>
 
 #include <pthread.h>
 #include <inttypes.h>
@@ -201,6 +202,15 @@ GDBServerAction;
 
 std::ostream& operator << (std::ostream& os, const GDBServerAction& gdb_server_action);
 
+typedef enum
+{
+	GDB_MODE_SINGLE_THREAD,
+	GDB_MODE_MULTI_THREAD
+}
+GDBMode;
+
+std::ostream& operator << (std::ostream& os, const GDBMode& gdb_mode);
+
 template <class ADDRESS>
 class GDBServer
 	: public GDBServerBase
@@ -219,7 +229,8 @@ public:
 	static const uint64_t GDB_INTERRUPT_POLL_PERIOD_MS      = 100  /* ms */;  // every 100 ms
 	static const uint64_t NON_BLOCKING_READ_POLL_PERIOD_MS  = 10   /* ms */;  // every 10 ms
 	static const uint64_t NON_BLOCKING_WRITE_POLL_PERIOD_MS = 10   /* ms */;  // every 10 ms
-	static const bool ALWAYS_ACCEPT_MULTIPROCESS_NEW_THREAD_ID_SYNTAX = true; // Note: as new thread-id syntax (for multiprocess) is backward compatible with old syntax,
+	static const bool ALWAYS_ACCEPT_MULTIPROCESS_NEW_THREAD_ID_SYNTAX = true; // Note: as new thread-id syntax (for multiprocess) is backward compatible with old syntax
+	static const long PROCESS_ID = 1;
 	
 	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugYielding>                debug_yielding_export;
 	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_export;
@@ -381,6 +392,12 @@ private:
 	std::string monitor_internals;
 	GDBWaitConnectionMode wait_connection_mode;
 	bool enable_multiprocess_extension;
+	std::string remote_serial_protocol_input_traffic_recording_filename;
+	std::ofstream remote_serial_protocol_input_traffic_recording_file;
+	std::string remote_serial_protocol_output_traffic_recording_filename;
+	std::ofstream remote_serial_protocol_output_traffic_recording_file;
+	bool enable_interrupt;
+	GDBMode mode;
 
 	unisim::kernel::service::Parameter<unsigned int> param_memory_atom_size;
 	unisim::kernel::service::Parameter<int> param_tcp_port;
@@ -390,6 +407,10 @@ private:
 	unisim::kernel::service::Parameter<std::string> param_monitor_internals;
 	unisim::kernel::service::Parameter<GDBWaitConnectionMode> param_wait_connection_mode;
 	unisim::kernel::service::Parameter<bool> param_enable_multiprocess_extension;
+	unisim::kernel::service::Parameter<std::string> param_remote_serial_protocol_input_traffic_recording_filename;
+	unisim::kernel::service::Parameter<std::string> param_remote_serial_protocol_output_traffic_recording_filename;
+	unisim::kernel::service::Parameter<bool> param_enable_interrupt;
+	unisim::kernel::service::Parameter<GDBMode> param_mode;
 
 	///////////////////////////////////
 	

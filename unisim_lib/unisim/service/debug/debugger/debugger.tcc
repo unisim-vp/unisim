@@ -75,7 +75,8 @@ Debugger<CONFIG>::Debugger(const char *name, unisim::kernel::service::Object *pa
 	, prc_gate()
 	, front_end_gate()
 	, sel_prc_gate()
-	, requires_finished_instruction_reporting()
+	, requires_fetch_instruction_reporting()
+	, requires_commit_instruction_reporting()
 	, requires_memory_access_reporting()
 	, verbose(false)
 	, dwarf_to_html_output_directory()
@@ -333,7 +334,8 @@ bool Debugger<CONFIG>::BeginSetup()
 	unsigned int prc_num;
 	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
 	{
-		requires_finished_instruction_reporting[prc_num] = false;
+		requires_fetch_instruction_reporting[prc_num] = false;
+		requires_commit_instruction_reporting[prc_num] = false;
 		requires_memory_access_reporting[prc_num] = false;
 	}
 	
@@ -469,11 +471,13 @@ bool Debugger<CONFIG>::SetupDebugInfo()
 template <typename CONFIG>
 void Debugger<CONFIG>::UpdateReportingRequirements(unsigned int prc_num)
 {
-	requires_finished_instruction_reporting[prc_num] = breakpoint_registry.HasBreakpoints(prc_num) || !fetch_insn_event_set[prc_num].empty() || !commit_insn_event_set[prc_num].empty();
+	requires_fetch_instruction_reporting[prc_num] = breakpoint_registry.HasBreakpoints(prc_num) || !fetch_insn_event_set[prc_num].empty();
+	requires_commit_instruction_reporting[prc_num] = !commit_insn_event_set[prc_num].empty();
 	requires_memory_access_reporting[prc_num] = watchpoint_registry.HasWatchpoints(prc_num);
 
-	prc_gate[prc_num]->RequiresFinishedInstructionReporting(requires_finished_instruction_reporting[prc_num]);
-	prc_gate[prc_num]->RequiresMemoryAccessReporting(requires_memory_access_reporting[prc_num]);
+	prc_gate[prc_num]->RequiresMemoryAccessReporting(unisim::service::interfaces::REPORT_MEM_ACCESS, requires_memory_access_reporting[prc_num]);
+	prc_gate[prc_num]->RequiresMemoryAccessReporting(unisim::service::interfaces::REPORT_FETCH_INSN, requires_fetch_instruction_reporting[prc_num]);
+	prc_gate[prc_num]->RequiresMemoryAccessReporting(unisim::service::interfaces::REPORT_COMMIT_INSN, requires_commit_instruction_reporting[prc_num]);
 }
 
 template <typename CONFIG>
@@ -525,13 +529,17 @@ void Debugger<CONFIG>::DebugYield(unsigned int prc_num)
 
 // unisim::service::interfaces::MemoryAccessReporting<ADDRESS> (tagged)
 template <typename CONFIG>
-void Debugger<CONFIG>::ReportMemoryAccess(unsigned int prc_num, unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
+bool Debugger<CONFIG>::ReportMemoryAccess(unsigned int prc_num, unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
 {
+	bool overlook = true;
+	
+#if 0
 	if(unlikely(!requires_memory_access_reporting[prc_num]))
 	{
 		logger << DebugWarning << "Processor #" << prc_num << " reports memory access even if it has been asked not to" << EndDebugWarning;
-		return;
+		return overlook;
 	}
+#endif
 	
 	if(unlikely(watchpoint_registry.HasWatchpoints(mat, mt, addr, size, prc_num)))
 	{
@@ -539,24 +547,28 @@ void Debugger<CONFIG>::ReportMemoryAccess(unsigned int prc_num, unisim::util::de
 		
 		for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
 		{
-			const typename unisim::util::debug::Watchpoint<ADDRESS> *watchpoint = watchpoint_registry.FindWatchpoint(mat, mt, addr, size, prc_num, front_end_num);
-				
-			if(watchpoint)
+			Dispatcher<unisim::util::debug::Watchpoint<ADDRESS> > watchpoint_dispatcher(*this, front_end_num, overlook);
+			
+			// Note: this function may alter local variable "overlook"
+			if(watchpoint_registry.template FindWatchpoints<Dispatcher<unisim::util::debug::Watchpoint<ADDRESS> > >(mat, mt, addr, size, prc_num, front_end_num, watchpoint_dispatcher))
 			{
-				front_end_gate[front_end_num]->OnDebugEvent(watchpoint);
 				ScheduleFrontEnd(front_end_num);
 			}
 		}
 	}
+	
+	return overlook;
 }
 
 template <typename CONFIG>
 void Debugger<CONFIG>::ReportCommitInstruction(unsigned int prc_num, ADDRESS addr)
 {
-	if(unlikely(!requires_finished_instruction_reporting[prc_num]))
+#if 0
+	if(unlikely(!requires_commit_instruction_reporting[prc_num]))
 	{
 		logger << DebugWarning << "Processor #" << prc_num << " reports instruction commit even if it has been asked not to" << EndDebugWarning;
 	}
+#endif
 
 	if(unlikely(!commit_insn_event_set[prc_num].empty()))
 	{
@@ -576,21 +588,22 @@ void Debugger<CONFIG>::ReportCommitInstruction(unsigned int prc_num, ADDRESS add
 template <typename CONFIG>
 void Debugger<CONFIG>::ReportFetchInstruction(unsigned int prc_num, ADDRESS next_addr)
 {
-	if(unlikely(!requires_finished_instruction_reporting[prc_num]))
+#if 0
+	if(unlikely(!requires_fetch_instruction_reporting[prc_num]))
 	{
 		logger << DebugWarning << "Processor #" << prc_num << " reports instruction fetch even if it has been asked not to" << EndDebugWarning;
 	}
+#endif
 	if(unlikely(breakpoint_registry.HasBreakpoints(next_addr, prc_num)))
 	{
 		unsigned int front_end_num;
 		
 		for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
 		{
-			const typename unisim::util::debug::Breakpoint<ADDRESS> *breakpoint = breakpoint_registry.FindBreakpoint(next_addr, prc_num, front_end_num);
-				
-			if(breakpoint)
+			Dispatcher<unisim::util::debug::Breakpoint<ADDRESS> > breakpoint_dispatcher(*this, front_end_num);
+			
+			if(breakpoint_registry.template FindBreakpoints<Dispatcher<unisim::util::debug::Breakpoint<ADDRESS> > >(next_addr, prc_num, front_end_num, breakpoint_dispatcher))
 			{
-				front_end_gate[front_end_num]->OnDebugEvent(breakpoint);
 				ScheduleFrontEnd(front_end_num);
 			}
 		}
@@ -1026,6 +1039,56 @@ void Debugger<CONFIG>::ClearEvents(unsigned int front_end_num)
 		unisim::util::debug::Event<ADDRESS> *event = *it;
 		Unlisten(front_end_num, event);
 	}
+}
+
+template <typename CONFIG>
+bool Debugger<CONFIG>::SetBreakpoint(unsigned int front_end_num, ADDRESS addr)
+{
+	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
+	bool status = breakpoint_registry.SetBreakpoint(addr, prc_num, front_end_num);
+	UpdateReportingRequirements(prc_num);
+	return status;
+}
+
+template <typename CONFIG>
+bool Debugger<CONFIG>::RemoveBreakpoint(unsigned int front_end_num, ADDRESS addr)
+{
+	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
+	bool status = breakpoint_registry.RemoveBreakpoint(addr, prc_num, front_end_num);
+	UpdateReportingRequirements(prc_num);
+	return status;
+}
+
+template <typename CONFIG>
+bool Debugger<CONFIG>::HasBreakpoints(unsigned int front_end_num, ADDRESS addr)
+{
+	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
+	return breakpoint_registry.HasBreakpoints(addr, prc_num, front_end_num);
+}
+
+template <typename CONFIG>
+bool Debugger<CONFIG>::SetWatchpoint(unsigned int front_end_num, unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, bool overlook)
+{
+	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
+	bool status = watchpoint_registry.SetWatchpoint(mat, mt, addr, size, overlook, prc_num, front_end_num);
+	UpdateReportingRequirements(prc_num);
+	return status;
+}
+
+template <typename CONFIG>
+bool Debugger<CONFIG>::RemoveWatchpoint(unsigned int front_end_num, unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
+{
+	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
+	bool status = watchpoint_registry.RemoveWatchpoint(mat, mt, addr, size, prc_num, front_end_num);
+	UpdateReportingRequirements(prc_num);
+	return status;
+}
+
+template <typename CONFIG>
+bool Debugger<CONFIG>::HasWatchpoints(unsigned int front_end_num, unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
+{
+	unsigned int prc_num = sel_prc_gate[front_end_num]->GetProcessorNumber();
+	return watchpoint_registry.HasWatchpoints(mat, mt, addr, size, prc_num, front_end_num);
 }
 
 // unisim::service::interfaces::Disassembly<ADDRESS> (tagged)

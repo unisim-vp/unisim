@@ -474,8 +474,7 @@ public:
 
 	//////////////// unisim::service::interface::DebugControl /////////////////
 	
-	virtual void RequiresMemoryAccessReporting(bool report);
-	virtual void RequiresFinishedInstructionReporting(bool report);
+	virtual void RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType type, bool report);
 	
 	/////////////// unisim::service::interface::Synchronizable ////////////////
 	
@@ -4160,11 +4159,12 @@ protected:
 	
 	/////////// unisim::service::interfaces::MemoryAccessReporting<> //////////
 	
-	bool requires_memory_access_reporting;        // indicates if the memory accesses require to be reported
-	bool requires_finished_instruction_reporting; // indicates if the finished instructions require to be reported
+	bool requires_memory_access_reporting;      // indicates if the memory accesses require to be reported
+	bool requires_fetch_instruction_reporting;  // indicates if the fetched instructions require to be reported
+	bool requires_commit_instruction_reporting; // indicates if the committed instructions require to be reported
 	
-	inline void MonitorLoad(typename TYPES::ADDRESS ea, unsigned int size);
-	inline void MonitorStore(typename TYPES::ADDRESS ea, unsigned int size);
+	inline bool MonitorLoad(typename TYPES::ADDRESS ea, unsigned int size);
+	inline bool MonitorStore(typename TYPES::ADDRESS ea, unsigned int size);
 	
 	////////////////////////// Run-time parameters ////////////////////////////
 

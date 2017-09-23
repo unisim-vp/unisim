@@ -50,6 +50,8 @@ namespace mpc57xx {
 
 struct MPU_ENTRY
 {
+	MPU_ENTRY() : mas0(0x30), mas1(0), mas2(0), mas3(0) {}
+	
 	uint32_t mas0;
 	uint32_t mas1;
 	uint32_t mas2;
@@ -253,10 +255,10 @@ void MPU<TYPES, CONFIG>::ReadEntry()
 		}
 	}
 	
-	mas0 = mpu_entry ? mpu_entry->mas0 : 0;
-	mas1 = mpu_entry ? mpu_entry->mas1 : 0;
-	mas2 = mpu_entry ? mpu_entry->mas2 : 0;
-	mas3 = mpu_entry ? mpu_entry->mas3 : 0;
+	mas0.Initialize(mpu_entry ? mpu_entry->mas0 : 0); // Note: using Initialize to bypass bit protection because bits 26-27 must also be written into mas0
+	mas1.Initialize(mpu_entry ? mpu_entry->mas1 : 0);
+	mas2.Initialize(mpu_entry ? mpu_entry->mas2 : 0);
+	mas3.Initialize(mpu_entry ? mpu_entry->mas3 : 0);
 }
 
 template <typename TYPES, typename CONFIG>
@@ -271,7 +273,7 @@ void MPU<TYPES, CONFIG>::Invalidate()
 		
 		if(force || !MAS0::IPROT::Get(mpu_entry->mas0))
 		{
-			mpu_entry->mas0 = 0;
+			mpu_entry->mas0 = 0x30;
 			mpu_entry->mas1 = 0;
 			mpu_entry->mas2 = 0;
 			mpu_entry->mas3 = 0;
@@ -286,7 +288,7 @@ void MPU<TYPES, CONFIG>::Invalidate()
 		MPU_ENTRY *mpu_entry = &data_mpu_entries[esel];
 		if(force || !MAS0::IPROT::Get(mpu_entry->mas0))
 		{
-			mpu_entry->mas0 = 0;
+			mpu_entry->mas0 = 0x30;
 			mpu_entry->mas1 = 0;
 			mpu_entry->mas2 = 0;
 			mpu_entry->mas3 = 0;
@@ -300,7 +302,7 @@ void MPU<TYPES, CONFIG>::Invalidate()
 		MPU_ENTRY *mpu_entry = &shd_mpu_entries[esel];
 		if(force || !MAS0::IPROT::Get(mpu_entry->mas0))
 		{
-			mpu_entry->mas0 = 0;
+			mpu_entry->mas0 = 0x30;
 			mpu_entry->mas1 = 0;
 			mpu_entry->mas2 = 0;
 			mpu_entry->mas3 = 0;

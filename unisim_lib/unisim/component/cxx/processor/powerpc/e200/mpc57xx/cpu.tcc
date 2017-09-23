@@ -1185,7 +1185,7 @@ void CPU<TYPES, CONFIG>::StepOneInstruction()
 {
 	this->ProcessExceptions();
 
-	if(unlikely(this->requires_finished_instruction_reporting))
+	if(unlikely(this->requires_fetch_instruction_reporting))
 	{
 		if(unlikely(this->memory_access_reporting_import != 0))
 		{
@@ -1217,7 +1217,7 @@ void CPU<TYPES, CONFIG>::StepOneInstruction()
 			this->instruction_counter++;
 			
 			/* report a finished instruction */
-			if(unlikely(this->requires_finished_instruction_reporting))
+			if(unlikely(this->requires_commit_instruction_reporting))
 			{
 				if(unlikely(this->memory_access_reporting_import != 0))
 				{

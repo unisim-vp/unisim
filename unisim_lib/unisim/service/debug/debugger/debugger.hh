@@ -140,7 +140,7 @@ private:
 	void DebugYield(unsigned int prc_num);
 	
 	// unisim::service::interfaces::MemoryAccessReporting<ADDRESS> (tagged)
-	void ReportMemoryAccess(unsigned int prc_num, unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
+	bool ReportMemoryAccess(unsigned int prc_num, unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
 	void ReportCommitInstruction(unsigned int prc_num, ADDRESS addr);
 	void ReportFetchInstruction(unsigned int prc_num, ADDRESS next_addr);
 	
@@ -165,6 +165,12 @@ private:
 	bool IsEventListened(unsigned int front_end_num, unisim::util::debug::Event<ADDRESS> *event) const;
 	void EnumerateListenedEvents(unsigned int front_end_num, std::list<unisim::util::debug::Event<ADDRESS> *>& lst, typename unisim::util::debug::Event<ADDRESS>::Type ev_type) const;
 	void ClearEvents(unsigned int front_end_num);
+	bool SetBreakpoint(unsigned int front_end_num, ADDRESS addr);
+	bool RemoveBreakpoint(unsigned int front_end_num, ADDRESS addr);
+	bool HasBreakpoints(unsigned int front_end_num, ADDRESS addr);
+	bool SetWatchpoint(unsigned int front_end_num, unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, bool overlook);
+	bool RemoveWatchpoint(unsigned int front_end_num, unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
+	bool HasWatchpoints(unsigned int front_end_num, unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
 	
 	// unisim::service::interfaces::Disassembly<ADDRESS> (tagged)
 	std::string Disasm(unsigned int front_end_num, ADDRESS addr, ADDRESS& next_addr);
@@ -276,7 +282,7 @@ private:
 		virtual void DebugYield() { return dbg.DebugYield(id); }
 		
 		// unisim::service::interfaces::MemoryAccessReporting<ADDRESS>
-		virtual void ReportMemoryAccess(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size) { dbg.ReportMemoryAccess(id, mat, mt, addr, size); }
+		virtual bool ReportMemoryAccess(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size) { return dbg.ReportMemoryAccess(id, mat, mt, addr, size); }
 		virtual void ReportCommitInstruction(ADDRESS addr) { dbg.ReportCommitInstruction(id, addr); }
 		virtual void ReportFetchInstruction(ADDRESS next_addr) { dbg.ReportFetchInstruction(id, next_addr); }
 		
@@ -301,8 +307,7 @@ private:
 		inline void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner) { if(registers_import) registers_import->ScanRegisters(scanner); }
 
 		// unisim::service::interfaces::MemoryAccessReportingControl
-		inline void RequiresMemoryAccessReporting(bool report) { if(memory_access_reporting_control_import) memory_access_reporting_control_import->RequiresMemoryAccessReporting(report); }
-		inline void RequiresFinishedInstructionReporting(bool report) { if(memory_access_reporting_control_import) memory_access_reporting_control_import->RequiresFinishedInstructionReporting(report); }
+		inline void RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType type, bool report) { if(memory_access_reporting_control_import) memory_access_reporting_control_import->RequiresMemoryAccessReporting(type, report); }
 	private:
 		Debugger<CONFIG>& dbg;
 		unsigned int id;
@@ -434,6 +439,12 @@ private:
 		virtual bool IsEventListened(unisim::util::debug::Event<ADDRESS> *event) const { return dbg.IsEventListened(id, event); }
 		virtual void EnumerateListenedEvents(std::list<unisim::util::debug::Event<ADDRESS> *>& lst, typename unisim::util::debug::Event<ADDRESS>::Type ev_type) const { dbg.EnumerateListenedEvents(id, lst, ev_type); }
 		virtual void ClearEvents() { dbg.ClearEvents(id); }
+		virtual bool SetBreakpoint(ADDRESS addr) { return dbg.SetBreakpoint(id, addr); }
+		virtual bool RemoveBreakpoint(ADDRESS addr) { return dbg.RemoveBreakpoint(id, addr); }
+		virtual bool HasBreakpoints(ADDRESS addr) { return dbg.HasBreakpoints(id, addr); }
+		virtual bool SetWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size, bool overlook) { return dbg.SetWatchpoint(id, mat, mt, addr, size, overlook); }
+		virtual bool RemoveWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size) { return dbg.RemoveWatchpoint(id, mat, mt, addr, size); }
+		virtual bool HasWatchpoints(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size) { return dbg.HasWatchpoints(id, mat, mt, addr, size); }
 		
 		// unisim::service::interfaces::Disassembly<ADDRESS>
 		virtual std::string Disasm(ADDRESS addr, ADDRESS& next_addr) { return dbg.Disasm(id, addr, next_addr); }
@@ -491,13 +502,33 @@ private:
 		unsigned int id;
 	};
 	
+	template <typename T, bool dummy = true>
+	struct Dispatcher
+	{
+		Dispatcher(Debugger<CONFIG>& _dbg, unsigned int _front_end_num) : dbg(_dbg), front_end_num(_front_end_num) {}
+		void Visit(T *ev) { dbg.front_end_gate[front_end_num]->OnDebugEvent(ev); }
+		Debugger<CONFIG>& dbg;
+		unsigned int front_end_num;
+	};
+	
+	template <bool dummy>
+	struct Dispatcher<unisim::util::debug::Watchpoint<ADDRESS>, dummy>
+	{
+		Dispatcher(Debugger<CONFIG>& _dbg, unsigned int _front_end_num, bool& _overlook) : dbg(_dbg), front_end_num(_front_end_num), overlook(_overlook) {}
+		void Visit(unisim::util::debug::Watchpoint<ADDRESS> *wp) { if(!wp->Overlooks()) { overlook = false; } dbg.front_end_gate[front_end_num]->OnDebugEvent(wp); }
+		Debugger<CONFIG>& dbg;
+		unsigned int front_end_num;
+		bool& overlook;
+	};
+
 	ProcessorGate *prc_gate[NUM_PROCESSORS];
 	FrontEndGate *front_end_gate[MAX_FRONT_ENDS];
 	
 	// Currently selected processor gate
 	ProcessorGate *sel_prc_gate[MAX_FRONT_ENDS];
 
-	bool requires_finished_instruction_reporting[NUM_PROCESSORS];
+	bool requires_fetch_instruction_reporting[NUM_PROCESSORS];
+	bool requires_commit_instruction_reporting[NUM_PROCESSORS];
 	bool requires_memory_access_reporting[NUM_PROCESSORS];
 
 	bool verbose;

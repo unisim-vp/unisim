@@ -133,7 +133,8 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	, synchronizable_export("synchronizable-export", this)
 	, logger(*this)
 	, requires_memory_access_reporting(false)
-	, requires_finished_instruction_reporting(false)
+	, requires_fetch_instruction_reporting(false)
+	, requires_commit_instruction_reporting(false)
 	, instruction_counter(0)
 	, param_instruction_counter("instruction-counter", this, instruction_counter, "number of simulated instructions")
 	, trap_on_instruction_counter(0xffffffffffffffffULL)
@@ -553,33 +554,37 @@ template <typename EXCEPTION> bool CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_E
 }
 
 template <typename TYPES, typename CONFIG>
-inline void CPU<TYPES, CONFIG>::MonitorLoad(typename TYPES::ADDRESS ea, unsigned int size)
+inline bool CPU<TYPES, CONFIG>::MonitorLoad(typename TYPES::ADDRESS ea, unsigned int size)
 {
 	// Memory access reporting
 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{
-		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, ea, size);
+		return memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, ea, size);
 	}
+	
+	return true;
 }
 
 template <typename TYPES, typename CONFIG>
-inline void CPU<TYPES, CONFIG>::MonitorStore(typename TYPES::ADDRESS ea, unsigned int size)
+inline bool CPU<TYPES, CONFIG>::MonitorStore(typename TYPES::ADDRESS ea, unsigned int size)
 {
 	// Memory access reporting
 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{
-		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, ea, size);
+		return memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, ea, size);
 	}
+	
+	return true;
 }
 
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int8Load(unsigned int rd, typename TYPES::ADDRESS ea)
 {
 	uint8_t value;
+	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint8_t, false, false>(value, ea);
 	if(unlikely(!status)) return false;
 	gpr[rd] = (uint32_t) value; // 8-bit to 32-bit zero extension
-	MonitorLoad(ea, sizeof(value));
 	return true;
 }
 
@@ -587,10 +592,10 @@ template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int16Load(unsigned int rd, typename TYPES::ADDRESS ea)
 {
 	uint16_t value;
+	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, false, false>(value, ea);
 	if(unlikely(!status)) return false;
 	gpr[rd] = (uint32_t) value; // 16-bit to 32-bit zero extension
-	MonitorLoad(ea, sizeof(value));
 	return true;
 }
 
@@ -598,10 +603,10 @@ template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::SInt16Load(unsigned int rd, typename TYPES::ADDRESS ea)
 {
 	uint16_t value;
+	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, false, false>(value, ea);
 	if(unlikely(!status)) return false;
 	gpr[rd] = (uint32_t) (int16_t) value; // 16-bit to 32-bit sign extension
-	MonitorLoad(ea, sizeof(value));
 	return true;
 }
 
@@ -609,10 +614,10 @@ template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int32Load(unsigned int rd, typename TYPES::ADDRESS ea)
 {
 	uint32_t value;
+	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, false>(value, ea);
 	if(unlikely(!status)) return false;
 	gpr[rd] = value;
-	MonitorLoad(ea, sizeof(value));
 	return true;
 }
 
@@ -620,10 +625,10 @@ template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int16LoadByteReverse(unsigned int rd, typename TYPES::ADDRESS ea)
 {
 	uint16_t value;
+	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint16_t, true, false>(value, ea); // reversed
 	if(unlikely(!status)) return false;
 	gpr[rd] = (uint32_t) value; // 16-bit to 32-bit zero extension
-	MonitorLoad(ea, sizeof(value));
 	return true;
 }
 
@@ -631,16 +636,18 @@ template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int32LoadByteReverse(unsigned int rd, typename TYPES::ADDRESS ea)
 {
 	uint32_t value;
+	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, true, false>(value, ea); // reversed
 	if(unlikely(!status)) return false;
 	gpr[rd] = value;
-	MonitorLoad(ea, sizeof(value));
 	return true;
 }
 
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::IntLoadMSBFirst(unsigned int rd, typename TYPES::ADDRESS ea, uint32_t size)
 {
+	if(unlikely(!MonitorLoad(ea, size))) return false;
+
 	switch(size)
 	{
 		case 1:
@@ -684,7 +691,6 @@ bool CPU<TYPES, CONFIG>::IntLoadMSBFirst(unsigned int rd, typename TYPES::ADDRES
 		default:
 			return false;
 	}
-	MonitorLoad(ea, size);
 	return true;
 }
 
@@ -693,10 +699,10 @@ template <typename REGISTER>
 bool CPU<TYPES, CONFIG>::SpecialLoad(REGISTER& reg, typename TYPES::ADDRESS ea)
 {
 	uint32_t value;
+	if(unlikely(!MonitorLoad(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataLoad<uint32_t, false, false>(value, ea);
 	if(unlikely(!status)) return false;
 	reg = value;
-	MonitorLoad(ea, sizeof(value));
 	return true;
 }
 
@@ -704,9 +710,9 @@ template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int8Store(unsigned int rs, typename TYPES::ADDRESS ea)
 {
 	uint8_t value = gpr[rs];
+	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint8_t, false, false>(value, ea);
 	if(unlikely(!status)) return false;
-	MonitorStore(ea, sizeof(value));
 	return true;
 }
 
@@ -714,9 +720,9 @@ template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int16Store(unsigned int rs, typename TYPES::ADDRESS ea)
 {
 	uint16_t value = (uint16_t) gpr[rs];
+	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint16_t, false, false>(value, ea);
 	if(unlikely(!status)) return false;
-	MonitorStore(ea, sizeof(value));
 	return true;
 }
 
@@ -724,9 +730,9 @@ template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int32Store(unsigned int rs, typename TYPES::ADDRESS ea)
 {
 	uint32_t value = gpr[rs];
+	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, false>(value, ea);
 	if(unlikely(!status)) return false;
-	MonitorStore(ea, sizeof(value));
 	return true;
 }
 
@@ -734,9 +740,9 @@ template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int16StoreByteReverse(unsigned int rs, typename TYPES::ADDRESS ea)
 {
 	uint16_t value = (uint16_t) gpr[rs];
+	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint16_t, true, false>(value, ea); // reversed
 	if(unlikely(!status)) return false;
-	MonitorStore(ea, sizeof(value));
 	return true;
 }
 
@@ -744,15 +750,17 @@ template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::Int32StoreByteReverse(unsigned int rs, typename TYPES::ADDRESS ea)
 {
 	uint32_t value = gpr[rs];
+	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, true, false>(value, ea); // reversed
 	if(unlikely(!status)) return false;
-	MonitorStore(ea, sizeof(value));
 	return true;
 }
 
 template <typename TYPES, typename CONFIG>
 bool CPU<TYPES, CONFIG>::IntStoreMSBFirst(unsigned int rs, typename TYPES::ADDRESS ea, uint32_t size)
 {
+	if(unlikely(!MonitorStore(ea, size))) return false;
+	
 	switch(size)
 	{
 		case 1:
@@ -796,7 +804,6 @@ bool CPU<TYPES, CONFIG>::IntStoreMSBFirst(unsigned int rs, typename TYPES::ADDRE
 			return false;
 	}
 
-	MonitorStore(ea, size);
 	return true;
 }
 
@@ -805,9 +812,9 @@ template <typename REGISTER>
 bool CPU<TYPES, CONFIG>::SpecialStore(const REGISTER& reg, typename TYPES::ADDRESS ea)
 {
 	uint32_t value = reg;
+	if(unlikely(!MonitorStore(ea, sizeof(value)))) return false;
 	bool status = static_cast<typename CONFIG::CPU *>(this)->template DataStore<uint32_t, false, false>(value, ea);
 	if(unlikely(!status)) return false;
-	MonitorStore(ea, sizeof(value));
 	return true;
 }
 
@@ -841,15 +848,20 @@ void CPU<TYPES, CONFIG>::Synchronize()
 }
 
 template <typename TYPES, typename CONFIG>
-void CPU<TYPES, CONFIG>::RequiresMemoryAccessReporting(bool report)
+void CPU<TYPES, CONFIG>::RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType type, bool report)
 {
-	requires_memory_access_reporting = report;
-}
-
-template <typename TYPES, typename CONFIG>
-void CPU<TYPES, CONFIG>::RequiresFinishedInstructionReporting(bool report)
-{
-	requires_finished_instruction_reporting = report;
+	switch(type)
+	{
+		case unisim::service::interfaces::REPORT_MEM_ACCESS:
+			requires_memory_access_reporting = report;
+			break;
+		case unisim::service::interfaces::REPORT_FETCH_INSN:
+			requires_fetch_instruction_reporting = report;
+			break;
+		case unisim::service::interfaces::REPORT_COMMIT_INSN:
+			requires_commit_instruction_reporting = report;
+			break;
+	}
 }
 
 template <typename TYPES, typename CONFIG>

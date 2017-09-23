@@ -2338,31 +2338,31 @@
 		<variable name="sel-cpu[3]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000000</value>
+			<value>0</value>
 			<description>CPU being debugged by front-end</description>
 		</variable>
 		<variable name="sel-cpu[4]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000001</value>
+			<value>1</value>
 			<description>CPU being debugged by front-end</description>
 		</variable>
 		<variable name="sel-cpu[5]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000002</value>
+			<value>2</value>
 			<description>CPU being debugged by front-end</description>
 		</variable>
 		<variable name="sel-cpu[6]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000000</value>
+			<value>0</value>
 			<description>CPU being debugged by front-end</description>
 		</variable>
 		<variable name="sel-cpu[7]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000000</value>
+			<value>0</value>
 			<description>CPU being debugged by front-end</description>
 		</variable>
 	</object>
@@ -2432,6 +2432,38 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="remote-serial-protocol-input-traffic-recording-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Filename where to record GDB remote serial protocol input traffic</description>
+		</variable>
+		<variable name="remote-serial-protocol-output-traffic-recording-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Filename where to record GDB remote serial protocol input traffic</description>
+		</variable>
+		<variable name="enable-interrupt">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>enable/disable GDB interrupt (Ctrl-C)</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="mode">
+			<type>parameter</type>
+			<data_type>gdb-mode</data_type>
+			<value>single-thread</value>
+			<description>debugging mode (single-thread or multi-thread)</description>
+			<enumeration>
+				<item>SINGLE_THREAD</item>
+				<item>MULTI_THREAD</item>
+			</enumeration>
+		</variable>
 	</object>
 	<object name="gdb-server1">
 		<variable name="memory-atom-size">
@@ -2499,6 +2531,38 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="remote-serial-protocol-input-traffic-recording-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Filename where to record GDB remote serial protocol input traffic</description>
+		</variable>
+		<variable name="remote-serial-protocol-output-traffic-recording-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Filename where to record GDB remote serial protocol input traffic</description>
+		</variable>
+		<variable name="enable-interrupt">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>enable/disable GDB interrupt (Ctrl-C)</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="mode">
+			<type>parameter</type>
+			<data_type>gdb-mode</data_type>
+			<value>single-thread</value>
+			<description>debugging mode (single-thread or multi-thread)</description>
+			<enumeration>
+				<item>SINGLE_THREAD</item>
+				<item>MULTI_THREAD</item>
+			</enumeration>
+		</variable>
 	</object>
 	<object name="gdb-server2">
 		<variable name="memory-atom-size">
@@ -2564,6 +2628,38 @@
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="remote-serial-protocol-input-traffic-recording-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Filename where to record GDB remote serial protocol input traffic</description>
+		</variable>
+		<variable name="remote-serial-protocol-output-traffic-recording-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Filename where to record GDB remote serial protocol input traffic</description>
+		</variable>
+		<variable name="enable-interrupt">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>enable/disable GDB interrupt (Ctrl-C)</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="mode">
+			<type>parameter</type>
+			<data_type>gdb-mode</data_type>
+			<value>single-thread</value>
+			<description>debugging mode (single-thread or multi-thread)</description>
+			<enumeration>
+				<item>SINGLE_THREAD</item>
+				<item>MULTI_THREAD</item>
 			</enumeration>
 		</variable>
 	</object>

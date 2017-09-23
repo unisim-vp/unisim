@@ -43,9 +43,6 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-using std::cerr;
-using std::endl;
-
 template <typename ADDRESS, unsigned int MAX_FRONT_ENDS>
 BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS>::BreakpointMapPage(ADDRESS addr)
 {
@@ -62,17 +59,21 @@ BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS>::~BreakpointMapPage()
 }
 
 template <typename ADDRESS, unsigned int MAX_FRONT_ENDS>
-void BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS>::SetBreakpoint(uint32_t offset, unsigned int front_end_num)
+unsigned int BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS>::SetBreakpoint(uint32_t offset, unsigned int front_end_num)
 {
+	unsigned int breakpoint_count_increment = HasBreakpoint(offset, front_end_num) ? 0 : 1;
 	WORD mask = 1ULL << front_end_num;
 	map[offset / BREAKPOINTS_PER_WORD] |= mask << (offset % BREAKPOINTS_PER_WORD);
+	return breakpoint_count_increment;
 }
 
 template <typename ADDRESS, unsigned int MAX_FRONT_ENDS>
-void BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS>::RemoveBreakpoint(uint32_t offset, unsigned int front_end_num)
+unsigned int BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS>::RemoveBreakpoint(uint32_t offset, unsigned int front_end_num)
 {
+	unsigned int breakpoint_count_decrement = HasBreakpoint(offset, front_end_num) ? 1 : 0;
 	WORD mask = 1ULL << front_end_num;
 	map[offset / BREAKPOINTS_PER_WORD] &= ~(mask << (offset % BREAKPOINTS_PER_WORD));
+	return breakpoint_count_decrement;
 }
 
 template <typename ADDRESS, unsigned int MAX_FRONT_ENDS>
@@ -98,8 +99,8 @@ bool BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS>::HasBreakpoints(uint32_t offset)
 
 template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
 BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::BreakpointRegistry()
-	: has_breakpoints()
-	, breakpoints()
+	: breakpoints()
+	, breakpoint_count()
 	, mru_page()
 	, hash_table()
 {
@@ -138,22 +139,131 @@ void BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::Reset()
 			
 		mru_page[prc_num] = 0;
 		
+		breakpoint_count[prc_num] = 0;
+		
 		for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
 		{
-			typename std::list<Breakpoint<ADDRESS> *>::const_iterator breakpoint_it;
+			typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::iterator breakpoint_it;
 
 			for(breakpoint_it = breakpoints[prc_num][front_end_num].begin(); breakpoint_it != breakpoints[prc_num][front_end_num].end(); breakpoint_it++)
 			{
-				Breakpoint<ADDRESS> *breakpoint = *breakpoint_it;
-				if(breakpoint)
-				{
-					delete breakpoint;
-				}
+				Breakpoint<ADDRESS> *breakpoint = (*breakpoint_it).second;
+				breakpoint->Release();
 			}
+		}
+		
+		breakpoints[prc_num][front_end_num].clear();
+	}
+}
 
-			has_breakpoints[prc_num][front_end_num] = false;
+template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
+void BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::Clear(unsigned int front_end_num)
+{
+	unsigned int prc_num;
+	
+	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
+	{
+		for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
+		{
+			typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::iterator breakpoint_it = breakpoints[prc_num][front_end_num].begin();
+			
+			do
+			{
+				Breakpoint<ADDRESS> *breakpoint = (*breakpoint_it).second;
+				if(!RemoveBreakpoint(breakpoint))
+				{
+					std::cerr << "breakpoint was not removed" << std::endl;
+				}
+				breakpoint_it = breakpoints[prc_num][front_end_num].begin();
+			}
+			while(breakpoint_it != breakpoints[prc_num][front_end_num].end());
 		}
 	}
+}
+
+template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
+bool BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::SetBreakpointIntoMap(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num)
+{
+	if(prc_num >= NUM_PROCESSORS) return false;
+	if(front_end_num >= MAX_FRONT_ENDS) return false;
+	
+	AllocatePage(addr, prc_num);
+	BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS> *page = GetPage(addr, prc_num);
+	if(!page)
+	{
+		std::cerr << "Internal error: breakpoint page has not been allocated" << std::endl;
+		return false;
+	}
+	breakpoint_count[prc_num] += page->SetBreakpoint(addr & (BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS>::NUM_BREAKPOINTS_PER_PAGE - 1), front_end_num);
+	
+	return true;
+}
+
+template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
+bool BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::RemoveBreakpointFromMap(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num)
+{
+	if(prc_num >= NUM_PROCESSORS) return false;
+	if(front_end_num >= MAX_FRONT_ENDS) return false;
+
+	BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS> *page = GetPage(addr, prc_num);
+	if(!page) return false;
+	breakpoint_count[prc_num] -= page->RemoveBreakpoint(addr & (BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS>::NUM_BREAKPOINTS_PER_PAGE - 1), front_end_num);
+
+	return true;
+}
+
+template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
+bool BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::SetBreakpoint(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num)
+{
+	if(prc_num >= NUM_PROCESSORS) return false;
+	if(front_end_num >= MAX_FRONT_ENDS) return false;
+	
+	if(!SetBreakpointIntoMap(addr, prc_num, front_end_num)) return false;
+	
+	typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::iterator breakpoint_it = breakpoints[prc_num][front_end_num].find(addr);
+	
+	if(breakpoint_it == breakpoints[prc_num][front_end_num].end())
+	{
+		Breakpoint<ADDRESS> *breakpoint = new Breakpoint<ADDRESS>(addr);
+		breakpoint->SetProcessorNumber(prc_num);
+		breakpoint->SetFrontEndNumber(front_end_num);
+		breakpoint->Catch();
+		breakpoints[prc_num][front_end_num].insert(std::pair<ADDRESS, Breakpoint<ADDRESS> *>(addr, breakpoint));
+	}
+	
+	return true;
+}
+
+template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
+bool BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::RemoveBreakpoint(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num)
+{
+	if(prc_num >= NUM_PROCESSORS) return false;
+	if(front_end_num >= MAX_FRONT_ENDS) return false;
+
+	// invalidate breakpoint events that match the address
+	typename std::pair<typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::iterator, typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::iterator> range = breakpoints[prc_num][front_end_num].equal_range(addr);
+	
+	if(range.first != range.second)
+	{
+		// at least one breakpoint event is registered for this address, processor and front-end
+		typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::iterator breakpoint_it = range.first;
+		
+		while(breakpoint_it != range.second)
+		{
+			typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::iterator next_breakpoint_it = breakpoint_it;
+			next_breakpoint_it++;
+			
+			Breakpoint<ADDRESS> *breakpoint = (*breakpoint_it).second;
+
+			// invalidate
+			breakpoint->Release();
+			breakpoints[prc_num][front_end_num].erase(breakpoint_it);
+			
+			breakpoint_it = next_breakpoint_it;
+		}
+	}
+
+	return RemoveBreakpointFromMap(addr, prc_num, front_end_num);
 }
 
 template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
@@ -165,23 +275,13 @@ bool BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::SetBreakpoint(
 	
 	if(prc_num >= NUM_PROCESSORS) return false;
 	if(front_end_num >= MAX_FRONT_ENDS) return false;
+
+	if(!SetBreakpointIntoMap(addr, prc_num, front_end_num)) return false;
+
+	breakpoints[prc_num][front_end_num].insert(std::pair<ADDRESS, Breakpoint<ADDRESS> *>(addr, brkp));
+	brkp->Catch();
 	
-	if(!HasBreakpoint(addr, prc_num, front_end_num))
-	{
-		AllocatePage(addr, prc_num);
-		BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS> *page = GetPage(addr, prc_num);
-		if(!page)
-		{
-			cerr << "Internal error: breakpoint page has not been allocated" << endl;
-			return false;
-		}
-		page->SetBreakpoint(addr & (BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS>::NUM_BREAKPOINTS_PER_PAGE - 1), front_end_num);
-		breakpoints[prc_num][front_end_num].push_back(brkp);
-		brkp->Catch();
-		has_breakpoints[prc_num][front_end_num] = true;
-		return true;
-	}
-	return false;
+	return true;
 }
 
 template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
@@ -194,25 +294,21 @@ bool BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::RemoveBreakpoi
 	if(prc_num >= NUM_PROCESSORS) return false;
 	if(front_end_num >= MAX_FRONT_ENDS) return false;
 
-	BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS> *page = GetPage(addr, prc_num);
-	if(!page) return false;
-	page->RemoveBreakpoint(addr & (BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS>::NUM_BREAKPOINTS_PER_PAGE - 1), front_end_num);
-
-	typename std::list<Breakpoint<ADDRESS> *>::iterator breakpoint_it;
-
-	for(breakpoint_it = breakpoints[prc_num][front_end_num].begin(); breakpoint_it != breakpoints[prc_num][front_end_num].end(); breakpoint_it++)
+	// search breakpoint events that match the address
+	typename std::pair<typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::iterator, typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::iterator> range = breakpoints[prc_num][front_end_num].equal_range(addr);
+	
+	typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::iterator breakpoint_it;
+	
+	for(breakpoint_it = range.first; breakpoint_it != range.second; breakpoint_it++)
 	{
-		Breakpoint<ADDRESS> *breakpoint = *breakpoint_it;
-		if(breakpoint->GetAddress() == addr)
+		Breakpoint<ADDRESS> *breakpoint = (*breakpoint_it).second;
+		
+		if(breakpoint == brkp)
 		{
-			breakpoint->Release();
-			breakpoints[prc_num][front_end_num].erase(breakpoint_it);
-			if(breakpoints[prc_num][front_end_num].empty())
-				has_breakpoints[prc_num][front_end_num] = false;
-			return true;
+			return RemoveBreakpoint(addr, prc_num, front_end_num);
 		}
 	}
-
+	
 	return false;
 }
 
@@ -226,7 +322,22 @@ bool BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::HasBreakpoint(
 	if(prc_num >= NUM_PROCESSORS) return false;
 	if(front_end_num >= MAX_FRONT_ENDS) return false;
 	
-	return HasBreakpoint(addr, prc_num, front_end_num);
+	typename std::pair<typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::const_iterator, typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::const_iterator> range = breakpoints[prc_num][front_end_num].equal_range(addr);
+	
+	if(range.first != range.second)
+	{
+		// at least one breakpoint event is registered for this address, processor and front-end
+		typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::const_iterator breakpoint_it;
+		
+		for(breakpoint_it = range.first; breakpoint_it != range.second; breakpoint_it++)
+		{
+			Breakpoint<ADDRESS> *breakpoint = (*breakpoint_it).second;
+			
+			if(breakpoint == brkp) return true;
+		}
+	}
+	
+	return false;
 }
 
 template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
@@ -241,57 +352,30 @@ bool BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::HasBreakpoints
 template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
 bool BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::HasBreakpoints(unsigned int prc_num) const
 {
-	unsigned int front_end_num;
-	
-	for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
-	{
-		if(has_breakpoints[prc_num][front_end_num]) return true;
-	}
-	
-	return false;
+	return breakpoint_count[prc_num] != 0;
 }
 
 template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
 bool BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::HasBreakpoints() const
 {
 	unsigned int prc_num;
-	unsigned int front_end_num;
 	
 	for(prc_num = 0; prc_num < NUM_PROCESSORS; prc_num++)
 	{
-		for(front_end_num = 0; front_end_num < MAX_FRONT_ENDS; front_end_num++)
-		{
-			if(has_breakpoints[prc_num][front_end_num]) return true;
-		}
+		if(breakpoint_count[prc_num] != 0) return true;
 	}
 	
 	return false;
 }
 
 template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
-Breakpoint<ADDRESS> *BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::FindBreakpoint(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num) const
-{
-	if(HasBreakpoint(addr, prc_num, front_end_num))
-	{
-		typename std::list<Breakpoint<ADDRESS> *>::const_iterator breakpoint_it;
-
-		for(breakpoint_it = breakpoints[prc_num][front_end_num].begin(); breakpoint_it != breakpoints[prc_num][front_end_num].end(); breakpoint_it++)
-		{
-			Breakpoint<ADDRESS> *breakpoint = *breakpoint_it;
-			if(breakpoint->GetAddress() == addr) return breakpoint;
-		}
-	}
-	return 0;
-}
-
-template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
 void BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::EnumerateBreakpoints(unsigned int prc_num, unsigned int front_end_num, std::list<Event<ADDRESS> *>& lst) const
 {
-	typename std::list<Breakpoint<ADDRESS> *>::const_iterator breakpoint_it;
+	typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::const_iterator breakpoint_it;
 	
 	for(breakpoint_it = breakpoints[prc_num][front_end_num].begin(); breakpoint_it != breakpoints[prc_num][front_end_num].end(); breakpoint_it++)
 	{
-		Breakpoint<ADDRESS> *breakpoint = *breakpoint_it;
+		Breakpoint<ADDRESS> *breakpoint = (*breakpoint_it).second;
 		
 		lst.push_back(breakpoint);
 	}
@@ -320,11 +404,37 @@ void BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::EnumerateBreak
 }
 
 template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
-bool BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::HasBreakpoint(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num) const
+template <class VISITOR>
+bool BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::FindBreakpoints(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num, VISITOR& visitor)
+{
+	if(!HasBreakpoints(addr, prc_num, front_end_num)) return false;
+	
+	bool found = false;
+	
+	typename std::pair<typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::iterator, typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::iterator> range = breakpoints[prc_num][front_end_num].equal_range(addr);
+	
+	if(range.first != range.second)
+	{
+		// at least one breakpoint event is registered for this address, processor and front-end
+		typename std::multimap<ADDRESS, Breakpoint<ADDRESS> *>::iterator breakpoint_it;
+		
+		for(breakpoint_it = range.first; breakpoint_it != range.second; breakpoint_it++)
+		{
+			found = true;
+			Breakpoint<ADDRESS> *breakpoint = (*breakpoint_it).second;
+			visitor.Visit(breakpoint);
+		}
+	}
+
+	return found;
+}
+
+template <typename ADDRESS, unsigned int NUM_PROCESSORS, unsigned int MAX_FRONT_ENDS>
+bool BreakpointRegistry<ADDRESS, NUM_PROCESSORS, MAX_FRONT_ENDS>::HasBreakpoints(ADDRESS addr, unsigned int prc_num, unsigned int front_end_num) const
 {
 	if(prc_num >= NUM_PROCESSORS) return false;
 	if(front_end_num >= MAX_FRONT_ENDS) return false;
-	if(!has_breakpoints[prc_num][front_end_num]) return false;
+	if(!HasBreakpoints(prc_num)) return false;
 	const BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS> *page = GetPage(addr, prc_num);
 	if(!page) return false;
 	return page->HasBreakpoint(addr & (BreakpointMapPage<ADDRESS, MAX_FRONT_ENDS>::NUM_BREAKPOINTS_PER_PAGE - 1), front_end_num);
