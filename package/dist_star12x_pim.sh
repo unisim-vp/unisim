@@ -2,7 +2,7 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 <destination directory> [ln|cp]"
+	echo "  $0 <destination directory>"
 }
 
 if [ -z "$1" ]; then
@@ -10,33 +10,20 @@ if [ -z "$1" ]; then
 	exit -1
 fi
 
-HERE=`pwd`
-MY_DIR=`dirname $0`
-if test ${MY_DIR} = "."; then
-	MY_DIR=${HERE}
-elif test ${MY_DIR} = ".."; then
-	MY_DIR=${HERE}/..
-fi
+UNISIM_DIR=$(cd $(dirname $(dirname $0)); pwd)
+DEST_DIR=$(cd $1; pwd)
+mkdir -p ${DEST_DIR}
+UNISIM_TOOLS_DIR=${UNISIM_DIR}/unisim_tools
+UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
 
-CPLN="cp -f"
-if [ -z "$2" ]; then
-	CPLN="cp -f"
-elif test $2 = "ln"; then
-	CPLN="ln -s"
-elif test $2 = "cp"; then
-	CPLN="cp -f"
-else
-	Usage
-	exit -1
-fi
+UNISIM_SIMULATOR_DIR=${UNISIM_DIR}/unisim_simulators/tlm2/s12x
 
-DEST_DIR=$1
-UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
-UNISIM_LIB_DIR=${MY_DIR}/../unisim_lib
-UNISIM_SIMULATORS_DIR=${MY_DIR}/../unisim_simulators/tlm2/s12x
-
-STAR12X_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
+STAR12X_VERSION=$(cat ${UNISIM_SIMULATOR_DIR}/VERSION)
 GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-star12x-${STAR12X_VERSION}
+
+if test -z "${DISTCOPY}"; then
+    DISTCOPY=cp
+fi
 
 UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
 action.hh \
@@ -629,7 +616,7 @@ for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_TOOLS_DIR}/genisslib/${file} ==> ${DEST_DIR}/genisslib/${file}"
-		${CPLN} "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}" || exit
+		${DISTCOPY} "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}" || exit
 	fi
 done
 
@@ -647,7 +634,7 @@ for file in ${UNISIM_LIB_STAR12X_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/star12x/${file}"
-		${CPLN} "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/star12x/${file}" || exit
+		${DISTCOPY} "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/star12x/${file}" || exit
 	fi
 done
 
@@ -657,15 +644,15 @@ for file in ${UNISIM_SIMULATORS_STAR12X_FILES}; do
 	mkdir -p "${DEST_DIR}/star12x/`dirname ${file}`"
 	has_to_copy=no
 	if [ -e "${DEST_DIR}/star12x/${file}" ]; then
-		if [ "${UNISIM_SIMULATORS_DIR}/${file}" -nt "${DEST_DIR}/star12x/${file}" ]; then
+		if [ "${UNISIM_SIMULATOR_DIR}/${file}" -nt "${DEST_DIR}/star12x/${file}" ]; then
 			has_to_copy=yes
 		fi
 	else
 		has_to_copy=yes
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/star12x/${file}"
-		${CPLN} "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/star12x/${file}" || exit
+		echo "${UNISIM_SIMULATOR_DIR}/${file} ==> ${DEST_DIR}/star12x/${file}"
+		${DISTCOPY} "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/star12x/${file}" || exit
 	fi
 done
 
@@ -673,15 +660,15 @@ for file in ${UNISIM_SIMULATORS_STAR12X_DATA_FILES}; do
 	mkdir -p "${DEST_DIR}/`dirname ${file}`"
 	has_to_copy=no
 	if [ -e "${DEST_DIR}/${file}" ]; then
-		if [ "${UNISIM_SIMULATORS_DIR}/${file}" -nt "${DEST_DIR}/${file}" ]; then
+		if [ "${UNISIM_SIMULATOR_DIR}/${file}" -nt "${DEST_DIR}/${file}" ]; then
 			has_to_copy=yes
 		fi
 	else
 		has_to_copy=yes
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/${file}"
-		${CPLN} "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/${file}" || exit
+		echo "${UNISIM_SIMULATOR_DIR}/${file} ==> ${DEST_DIR}/${file}"
+		${DISTCOPY} "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}" || exit
 	fi
 done
 
@@ -703,7 +690,7 @@ for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_TOOLS_DIR}/${file} ==> ${DEST_DIR}/genisslib/${file}"
-		${CPLN} "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}" || exit
+		${DISTCOPY} "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}" || exit
 		has_to_build_genisslib_configure=yes
 	fi
 done
@@ -719,7 +706,7 @@ for file in ${UNISIM_LIB_STAR12X_M4_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/star12x/${file}"
-		${CPLN} "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/star12x/${file}" || exit
+		${DISTCOPY} "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/star12x/${file}" || exit
 		has_to_build_star12x_configure=yes
 	fi
 done

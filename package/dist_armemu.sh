@@ -10,16 +10,15 @@ if [ -z "$1" ]; then
 	exit -1
 fi
 
-MY_DIR=$(cd $(dirname $0); pwd)
-DEST_DIR=$1
+UNISIM_DIR=$(cd $(dirname $(dirname $0)); pwd)
+DEST_DIR=$(cd $1; pwd)
 mkdir -p ${DEST_DIR}
-DEST_DIR=$(cd $DEST_DIR; pwd)
-UNISIM_DIR=$(cd ${MY_DIR}/..; pwd)
 UNISIM_TOOLS_DIR=${UNISIM_DIR}/unisim_tools
 UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
-UNISIM_SIMULATORS_DIR=${UNISIM_DIR}/unisim_simulators/tlm2/armemu
 
-ARMEMU_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
+UNISIM_SIMULATOR_DIR=${UNISIM_DIR}/unisim_simulators/tlm2/armemu
+
+ARMEMU_VERSION=$(cat ${UNISIM_SIMULATOR_DIR}/VERSION)
 GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-armemu-${ARMEMU_VERSION}
 
 if test -z "${DISTCOPY}"; then
@@ -574,30 +573,30 @@ UNISIM_SIMULATORS_ARMEMU_FILES="${UNISIM_SIMULATORS_ARMEMU_MAIN_SOURCE_FILES} ${
 for file in ${UNISIM_SIMULATORS_ARMEMU_FILES}; do
 	has_to_copy=no
 	if [ -e "${DEST_DIR}/armemu/${file}" ]; then
-		if [ "${UNISIM_SIMULATORS_DIR}/${file}" -nt "${DEST_DIR}/armemu/${file}" ]; then
+		if [ "${UNISIM_SIMULATOR_DIR}/${file}" -nt "${DEST_DIR}/armemu/${file}" ]; then
 			has_to_copy=yes
 		fi
 	else
 		has_to_copy=yes
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/armemu/${file}"
-		${DISTCOPY} -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/armemu/${file}" || exit
+		echo "${UNISIM_SIMULATOR_DIR}/${file} ==> ${DEST_DIR}/armemu/${file}"
+		${DISTCOPY} -f "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/armemu/${file}" || exit
 	fi
 done
 
 for file in ${UNISIM_SIMULATORS_ARMEMU_DATA_FILES}; do
 	has_to_copy=no
 	if [ -e "${DEST_DIR}/${file}" ]; then
-		if [ "${UNISIM_SIMULATORS_DIR}/${file}" -nt "${DEST_DIR}/${file}" ]; then
+		if [ "${UNISIM_SIMULATOR_DIR}/${file}" -nt "${DEST_DIR}/${file}" ]; then
 			has_to_copy=yes
 		fi
 	else
 		has_to_copy=yes
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/${file}"
-		${DISTCOPY} -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/${file}" || exit
+		echo "${UNISIM_SIMULATOR_DIR}/${file} ==> ${DEST_DIR}/${file}"
+		${DISTCOPY} -f "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}" || exit
 	fi
 done
 
