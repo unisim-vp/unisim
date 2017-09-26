@@ -255,7 +255,7 @@ void MPU<TYPES, CONFIG>::ReadEntry()
 		}
 	}
 	
-	mas0.Initialize(mpu_entry ? mpu_entry->mas0 : 0); // Note: using Initialize to bypass bit protection because bits 26-27 must also be written into mas0
+	mas0.Initialize((mpu_entry ? mpu_entry->mas0 : 0) | 0x30); // Note: using Initialize to bypass bit protection because bits 26-27 must also be written into mas0
 	mas1.Initialize(mpu_entry ? mpu_entry->mas1 : 0);
 	mas2.Initialize(mpu_entry ? mpu_entry->mas2 : 0);
 	mas3.Initialize(mpu_entry ? mpu_entry->mas3 : 0);
