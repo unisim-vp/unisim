@@ -592,7 +592,7 @@ namespace armsec
           fpscr, fpexc,
           SCTLR, ACTLR,
           CTR, MPIDR,
-          ID_PFR0, CCSIDR,
+          ID_PFR0, CCSIDR, CLIDR, CSSELR,
           CPACR, NSACR,
           TTBR0, TTBR1, TTBCR,
           DACR,
@@ -601,6 +601,8 @@ namespace armsec
           ICIALLU, ICIMVAU, BPIALL,
           DCIMVAC, DCISW, DCCMVAC, DCCSW, DCCMVAU, DCCIMVAC,
           TLBIALLIS, TLBIALL, TLBIASID,
+          VBAR,
+          CONTEXTIDR,
           DIAGCR, CFGBAR,
           end
         } code;
@@ -614,65 +616,69 @@ namespace armsec
       {
         switch (code)
           {
-          case        r0: return "r0";
-          case        r1: return "r1";
-          case        r2: return "r2";
-          case        r3: return "r3";
-          case        r4: return "r4";
-          case        r5: return "r5";
-          case        r6: return "r6";
-          case        r7: return "r7";
-          case        r8: return "r8";
-          case        r9: return "r9";
-          case        sl: return "sl";
-          case        fp: return "fp";
-          case        ip: return "ip";
-          case        sp: return "sp";
-          case        lr: return "lr";
-          case       nia: return "pc";
-          case         n: return "n";
-          case         z: return "z";
-          case         c: return "c";
-          case         v: return "v";
-          case   itstate: return "itstate";
-          case      cpsr: return "cpsr";
-          case      spsr: return "spsr";
-          case     fpscr: return "fpscr";
-          case     fpexc: return "fpexc";
-          case     SCTLR: return "sctlr";
-          case     ACTLR: return "actlr";
-          case       CTR: return "ctr";
-          case     MPIDR: return "mpidr";
-          case   ID_PFR0: return "id_pfr0";
-          case    CCSIDR: return "ccsidr";
-          case     CPACR: return "cpacr";
-          case     NSACR: return "nsacr";
-          case     TTBR0: return "ttbr0";
-          case     TTBR1: return "ttbr1";
-          case     TTBCR: return "ttbcr";
-          case      DACR: return "dacr";
-          case      DFSR: return "dfsr";
-          case      IFSR: return "ifsr";
-          case      DFAR: return "dfar";
-          case      IFAR: return "ifar";
-          case ICIALLUIS: return "icialluis";
-          case  BPIALLIS: return "bpiallis";
-          case   ICIALLU: return "iciallu";
-          case   ICIMVAU: return "icimvau";
-          case    BPIALL: return "bpiall";
-          case   DCIMVAC: return "dcimvac";
-          case     DCISW: return "dcisw";
-          case   DCCMVAC: return "dccmvac";
-          case     DCCSW: return "dccsw";
-          case   DCCMVAU: return "dccmvau";
-          case  DCCIMVAC: return "dccimvac";
-          case TLBIALLIS: return "tlbiallis";
-          case   TLBIALL: return "tlbiall";
-          case  TLBIASID: return "tlbiasid";
-          case    DIAGCR: return "diagcr";
-          case    CFGBAR: return "cfgbar";
-          case        NA: return "NA";
-          case       end: break;
+          case         r0: return "r0";
+          case         r1: return "r1";
+          case         r2: return "r2";
+          case         r3: return "r3";
+          case         r4: return "r4";
+          case         r5: return "r5";
+          case         r6: return "r6";
+          case         r7: return "r7";
+          case         r8: return "r8";
+          case         r9: return "r9";
+          case         sl: return "sl";
+          case         fp: return "fp";
+          case         ip: return "ip";
+          case         sp: return "sp";
+          case         lr: return "lr";
+          case        nia: return "pc";
+          case          n: return "n";
+          case          z: return "z";
+          case          c: return "c";
+          case          v: return "v";
+          case    itstate: return "itstate";
+          case       cpsr: return "cpsr";
+          case       spsr: return "spsr";
+          case      fpscr: return "fpscr";
+          case      fpexc: return "fpexc";
+          case      SCTLR: return "sctlr";
+          case      ACTLR: return "actlr";
+          case        CTR: return "ctr";
+          case      MPIDR: return "mpidr";
+          case    ID_PFR0: return "id_pfr0";
+          case     CCSIDR: return "ccsidr";
+          case      CLIDR: return "clidr";
+          case     CSSELR: return "csselr";
+          case      CPACR: return "cpacr";
+          case      NSACR: return "nsacr";
+          case      TTBR0: return "ttbr0";
+          case      TTBR1: return "ttbr1";
+          case      TTBCR: return "ttbcr";
+          case       DACR: return "dacr";
+          case       DFSR: return "dfsr";
+          case       IFSR: return "ifsr";
+          case       DFAR: return "dfar";
+          case       IFAR: return "ifar";
+          case  ICIALLUIS: return "icialluis";
+          case   BPIALLIS: return "bpiallis";
+          case    ICIALLU: return "iciallu";
+          case    ICIMVAU: return "icimvau";
+          case     BPIALL: return "bpiall";
+          case    DCIMVAC: return "dcimvac";
+          case      DCISW: return "dcisw";
+          case    DCCMVAC: return "dccmvac";
+          case      DCCSW: return "dccsw";
+          case    DCCMVAU: return "dccmvau";
+          case   DCCIMVAC: return "dccimvac";
+          case  TLBIALLIS: return "tlbiallis";
+          case    TLBIALL: return "tlbiall";
+          case   TLBIASID: return "tlbiasid";
+          case       VBAR: return "vbar";
+          case CONTEXTIDR: return "contextidr";
+          case     DIAGCR: return "diagcr";
+          case     CFGBAR: return "cfgbar";
+          case         NA: return "NA";
+          case        end: break;
           }
         return "INVALID";
       }
@@ -1145,7 +1151,27 @@ namespace armsec
             return x;
           } break;
 
+        case CP15ENCODE( 0, 1, 0, 1 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "CLIDR, Cache Level ID Register"; }
+              U32 Read( State& cpu ) { return cpu.SReg("clidr"); }
+            } x;
+            return x;
+          } break;
 
+        case CP15ENCODE( 0, 2, 0, 0 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "CSSELR, Cache Size Selection Register"; }
+              U32 Read( State& cpu ) { return cpu.SReg("csselr"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("csselr") = value; }
+            } x;
+            return x;
+          } break;
+      
           /****************************
            * System control registers *
            ****************************/
@@ -1193,6 +1219,9 @@ namespace armsec
             return x;
           } break;
 
+      /*******************************************
+       * Memory protection and control registers *
+       *******************************************/
         case CP15ENCODE( 2, 0, 0, 0 ):
           {
             static struct : public CP15Reg
@@ -1447,6 +1476,32 @@ namespace armsec
             return x;
           } break;
           
+        case CP15ENCODE( 12, 0, 0, 0 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "VBAR, Vector Base Address Register"; }
+              U32 Read( State& cpu ) { return cpu.SReg("vbar"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("vbar") = value; }
+            } x;
+            return x;
+          } break;
+          
+          /***********************************/
+          /* Context and thread ID registers */
+          /***********************************/
+
+        case CP15ENCODE( 13, 0, 0, 1 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "CONTEXTIDR, Context ID Register"; }
+              U32 Read( State& cpu ) { return cpu.SReg("contextidr"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("contextidr") = value; }
+            } x;
+            return x;
+          } break;
+
           /* BOARD specific */
           
         case CP15ENCODE( 15, 0, 0, 1 ):

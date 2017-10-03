@@ -174,8 +174,7 @@ Simulator::~Simulator()
 }
 
 int
-Simulator ::
-Run()
+Simulator::Run()
 {
   if ( unlikely(SimulationFinished()) ) return 0;
 
@@ -240,8 +239,7 @@ Run()
 }
 
 int
-Simulator ::
-Run(double time, sc_time_unit unit)
+Simulator::Run(double time, sc_time_unit unit)
 {
   if ( unlikely(SimulationFinished()) ) return 0;
 
@@ -293,22 +291,19 @@ Run(double time, sc_time_unit unit)
 }
 
 bool
-Simulator ::
-IsRunning() const
+Simulator::IsRunning() const
 {
   return sc_is_running();
 }
 
 bool
-Simulator ::
-SimulationStarted() const
+Simulator::SimulationStarted() const
 {
   return sc_start_of_simulation_invoked();
 }
 
 bool
-Simulator ::
-SimulationFinished() const
+Simulator::SimulationFinished() const
 {
   return sc_end_of_simulation_invoked();
 }
@@ -374,8 +369,7 @@ void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, 
 }
 
 void
-Simulator ::
-DefaultConfiguration(unisim::kernel::service::Simulator *sim)
+Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 {
   sim->SetVariable( "program-name", SIM_PROGRAM_NAME );
   sim->SetVariable( "authors", SIM_AUTHOR );
