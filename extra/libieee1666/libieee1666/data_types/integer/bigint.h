@@ -36,25 +36,11 @@
 #define __LIBIEEE1666_DATA_TYPES_INTEGER_BIGINT_H__
 
 #include <data_types/fwd.h>
-#include <data_types/bit/bv.h>
-#include <data_types/bit/lv.h>
-#include <data_types/bit/lv_base.h>
-#include <data_types/bit/bv_base.h>
-#include <data_types/integer/unsigned_subref.h>
 #include <data_types/integer/signed.h>
-#include <data_types/integer/int_base.h>
-#include <data_types/integer/uint.h>
-#include <data_types/integer/generic_base.h>
-#include <data_types/integer/signed_subref.h>
-#include <data_types/integer/int.h>
-#include <data_types/integer/unsigned.h>
-#include <data_types/integer/uint_base.h>
-#include <data_types/fixed_point/fxnum_fast.h>
-#include <data_types/fixed_point/fxval.h>
-#include <data_types/fixed_point/fxval_fast.h>
-#include <data_types/fixed_point/fxnum.h>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 template <int W>
 class sc_bigint : public sc_signed
@@ -110,6 +96,231 @@ public:
 	sc_bigint<W>& operator = (const sc_fxnum& v);
 	sc_bigint<W>& operator = (const sc_fxnum_fast& v);
 };
+
+///////////////////////////////// definition //////////////////////////////////
+
+// Constructors
+template <int W>
+sc_bigint<W>::sc_bigint()
+{
+}
+
+template <int W>
+sc_bigint<W>::sc_bigint(const sc_bigint<W>& v)
+{
+}
+
+template <int W>
+sc_bigint<W>::sc_bigint(const sc_signed& v)
+{
+}
+
+template <int W>
+sc_bigint<W>::sc_bigint(const sc_signed_subref& v)
+{
+}
+
+template <int W>
+template <class T> sc_bigint<W>::sc_bigint(const sc_generic_base<T>& a)
+{
+}
+
+template <int W>
+sc_bigint<W>::sc_bigint(const sc_unsigned& v)
+{
+}
+
+template <int W>
+sc_bigint<W>::sc_bigint(const sc_unsigned_subref& v)
+{
+}
+
+template <int W>
+sc_bigint<W>::sc_bigint(const char *v)
+{
+}
+
+template <int W>
+sc_bigint<W>::sc_bigint(int64 v)
+{
+}
+
+template <int W>
+sc_bigint<W>::sc_bigint(uint64 v)
+{
+}
+
+template <int W>
+sc_bigint<W>::sc_bigint(long v)
+{
+}
+
+template <int W>
+sc_bigint<W>::sc_bigint(unsigned long v)
+{
+}
+
+template <int W>
+sc_bigint<W>::sc_bigint(int v)
+{
+}
+
+template <int W>
+sc_bigint<W>::sc_bigint(unsigned int v)
+{
+}
+
+template <int W>
+sc_bigint<W>::sc_bigint(double v)
+{
+}
+
+template <int W>
+sc_bigint<W>::sc_bigint(const sc_bv_base& v)
+{
+}
+
+template <int W>
+sc_bigint<W>::sc_bigint(const sc_lv_base& v)
+{
+}
+
+template <int W>
+sc_bigint<W>::sc_bigint(const sc_fxval& v)
+{
+}
+
+template <int W>
+sc_bigint<W>::sc_bigint(const sc_fxval_fast& v)
+{
+}
+
+template <int W>
+sc_bigint<W>::sc_bigint(const sc_fxnum& v)
+{
+}
+
+template <int W>
+sc_bigint<W>::sc_bigint(const sc_fxnum_fast& v)
+{
+}
+
+// Destructor
+template <int W>
+sc_bigint<W>::~sc_bigint()
+{
+}
+
+// Assignment operators
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (const sc_bigint<W>& v)
+{
+}
+
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (const sc_signed& v)
+{
+}
+
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (const sc_signed_subref& v)
+{
+}
+
+template <int W>
+template <class T> sc_bigint<W>& sc_bigint<W>::operator = (const sc_generic_base<T>& a)
+{
+}
+
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (const sc_unsigned& v)
+{
+}
+
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (const sc_unsigned_subref& v)
+{
+}
+
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (const char *v)
+{
+}
+
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (int64 v)
+{
+}
+
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (uint64 v)
+{
+}
+
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (long v)
+{
+}
+
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (unsigned long v)
+{
+}
+
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (int v)
+{
+}
+
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (unsigned int v)
+{
+}
+
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (double v)
+{
+}
+
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (const sc_bv_base& v)
+{
+}
+
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (const sc_lv_base& v)
+{
+}
+
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (const sc_int_base& v)
+{
+}
+
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (const sc_uint_base& v)
+{
+}
+
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (const sc_fxval& v)
+{
+}
+
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (const sc_fxval_fast& v)
+{
+}
+
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (const sc_fxnum& v)
+{
+}
+
+template <int W>
+sc_bigint<W>& sc_bigint<W>::operator = (const sc_fxnum_fast& v)
+{
+}
 
 } // end of namespace sc_dt
 

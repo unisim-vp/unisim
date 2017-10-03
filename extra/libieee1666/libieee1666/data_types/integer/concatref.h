@@ -36,14 +36,8 @@
 #define __LIBIEEE1666_DATA_TYPES_INTEGER_CONCATREF_H__
 
 #include <data_types/fwd.h>
-#include <data_types/bit/bv.h>
-#include <data_types/bit/lv.h>
-#include <data_types/bit/lv_base.h>
-#include <data_types/bit/bv_base.h>
-#include <data_types/integer/signed.h>
-#include <data_types/integer/generic_base.h>
-#include <data_types/integer/unsigned.h>
 #include <data_types/integer/value_base.h>
+#include <data_types/integer/generic_base.h>
 #include <iostream>
 
 namespace sc_dt {
@@ -73,9 +67,9 @@ public:
 	operator const sc_unsigned&() const;
 
 	// Unary operators
-	sc_unsigned operator+ () const;
-	sc_unsigned operator- () const;
-	sc_unsigned operator~ () const;
+	sc_unsigned operator + () const;
+	sc_unsigned operator - () const;
+	sc_unsigned operator ~ () const;
 
 	// Explicit conversion to character string
 	const std::string to_string(sc_numrep numrep = SC_DEC) const;
@@ -109,7 +103,7 @@ public:
 
 private:
 	sc_concatref(const sc_concatref&);
-	~sc_concatref();
+	sc_concatref();
 };
 
 sc_concatref& concat(sc_value_base & a, sc_value_base& b);

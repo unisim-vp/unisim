@@ -36,22 +36,11 @@
 #define __LIBIEEE1666_DATA_TYPES_FIXED_POINT_FXNUM_FAST_SUBREF_H__
 
 #include <data_types/fwd.h>
-#include <data_types/bit/bv.h>
-#include <data_types/bit/lv.h>
-#include <data_types/bit/lv_base.h>
-#include <data_types/bit/bv_base.h>
-#include <data_types/integer/signed.h>
-#include <data_types/integer/int_base.h>
-#include <data_types/integer/uint.h>
-#include <data_types/integer/int.h>
-#include <data_types/integer/unsigned.h>
-#include <data_types/integer/uint_base.h>
-#include <data_types/fixed_point/fxnum_fast.h>
-#include <data_types/fixed_point/fxnum_subref.h>
-#include <data_types/fixed_point/fxnum.h>
 #include <iostream>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 class sc_fxnum_fast_subref
 {
@@ -60,7 +49,7 @@ class sc_fxnum_fast_subref
 
 public:
 	// Copy constructor
-	sc_fxnum_fast_subref (const sc_fxnum_fast_subref&);
+	sc_fxnum_fast_subref(const sc_fxnum_fast_subref&);
 
 	// Destructor
 	~sc_fxnum_fast_subref();
@@ -73,10 +62,10 @@ public:
 	DECL_ASN_OP_T(const sc_fxnum_fast_subref&)
 	DECL_ASN_OP_T(const sc_bv_base&)
 	DECL_ASN_OP_T(const sc_lv_base&)
-	DECL_ASN_OP_T(const char*)
-	DECL_ASN_OP_T(const bool*)
+	DECL_ASN_OP_T(const char *)
+	DECL_ASN_OP_T(const bool *)
 	DECL_ASN_OP_T(const sc_signed&)
-	DECL_ASN_OP_T((const sc_unsigned&)
+	DECL_ASN_OP_T(const sc_unsigned&)
 	DECL_ASN_OP_T(const sc_int_base&)
 	DECL_ASN_OP_T(const sc_uint_base&)
 	DECL_ASN_OP_T(int64)
@@ -163,8 +152,8 @@ public:
 private:
 	// Disabled
 	// Constructor
-	sc_fxnum_fast_subref (sc_fxnum_fast&, int, int);
-	sc_fxnum_fast_subref ();
+	sc_fxnum_fast_subref(sc_fxnum_fast&, int, int);
+	sc_fxnum_fast_subref();
 };
 
 } // end of namespace sc_dt

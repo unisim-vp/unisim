@@ -39,6 +39,8 @@
 
 namespace sc_dt {
 
+//////////////////////////////// declaration //////////////////////////////////
+
 template <class T>
 class sc_generic_base
 {
@@ -46,6 +48,18 @@ public:
 	inline const T *operator -> () const;
 	inline T *operator -> ();
 };
+
+///////////////////////////////// definition //////////////////////////////////
+
+template <class T>
+inline const T *sc_generic_base<T>::operator -> () const
+{
+}
+
+template <class T>
+inline T *sc_generic_base<T>::operator -> ()
+{
+}
 
 } // end of namespace sc_dt
 

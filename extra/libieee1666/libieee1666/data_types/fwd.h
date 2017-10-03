@@ -35,12 +35,9 @@
 #ifndef __LIBIEEE1666_DATA_TYPES_FWD_H__
 #define __LIBIEEE1666_DATA_TYPES_FWD_H__
 
-namespace sc_dt {
+#include <data_types/native.h>
 
-typedef int_fast64_t int_type;
-typedef uint_fast64_t uint_type;
-typedef int64_t int64;
-typedef uint64_t uint64;
+namespace sc_dt {
 
 enum sc_numrep
 {
@@ -91,6 +88,22 @@ enum sc_fmt
 	SC_F,
 	SC_E
 };
+
+enum sc_switch
+{
+    SC_OFF,
+    SC_ON
+};
+
+enum sc_context_begin
+{
+	SC_NOW,
+	SC_LATER
+};
+
+const sc_q_mode SC_DEFAULT_Q_MODE_ = SC_TRN;
+const sc_o_mode SC_DEFAULT_O_MODE_ = SC_WRAP;
+const int SC_DEFAULT_N_BITS_ = 0;
 
 template <class T1, class T2> class sc_concref;
 class sc_logic;

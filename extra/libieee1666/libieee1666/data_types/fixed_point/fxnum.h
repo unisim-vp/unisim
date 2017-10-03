@@ -36,24 +36,11 @@
 #define __LIBIEEE1666_DATA_TYPES_FIXED_POINT_FXNUM_H__
 
 #include <data_types/fwd.h>
-#include <data_types/integer/signed.h>
-#include <data_types/integer/int_base.h>
-#include <data_types/integer/uint.h>
-#include <data_types/integer/int.h>
-#include <data_types/integer/unsigned.h>
-#include <data_types/integer/uint_base.h>
-#include <data_types/fixed_point/fxnum_fast.h>
-#include <data_types/fixed_point/fxval.h>
-#include <data_types/fixed_point/fxnum_subref.h>
-#include <data_types/fixed_point/fxval_fast.h>
-#include <data_types/fixed_point/fxnum_bitref.h>
-#include <data_types/fixed_point/fxnum_fast_subref.h>
-#include <data_types/fixed_point/fxnum_fast_bitref.h>
-#include <data_types/context/fxcast_switch.h>
-#include <data_types/context/fxtype_params.h>
 #include <iostream>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 class sc_fxnum
 {
@@ -110,7 +97,9 @@ public:
 	// Relational (including equality) operators
 #define DECL_REL_OP_T(op, tp) \
 	friend bool operator op (const sc_fxnum&, tp); \
-	friend bool operator op (tp, const sc_fxnum&); \
+	friend bool operator op (tp, const sc_fxnum&);
+	
+#define DECL_REL_OP_OTHER(op) \
 	DECL_REL_OP_T(op, int64) \
 	DECL_REL_OP_T(op, uint64) \
 	DECL_REL_OP_T(op, const sc_int_base&) \
@@ -145,7 +134,9 @@ public:
 
 	// Assignment operators
 #define DECL_ASN_OP_T(op, tp) \
-	sc_fxnum& operator op(tp); \
+	sc_fxnum& operator op(tp);
+	
+#define DECL_ASN_OP_OTHER(op) \
 	DECL_ASN_OP_T(op, int64) \
 	DECL_ASN_OP_T(op, uint64) \
 	DECL_ASN_OP_T(op, const sc_int_base&) \
@@ -251,6 +242,8 @@ private:
 	// Disabled
 	sc_fxnum();
 	sc_fxnum(const sc_fxnum&);
+	
+	friend class sc_fix; // <-- temporary HACK (to be removed)
 };
 
 } // end of namespace sc_dt

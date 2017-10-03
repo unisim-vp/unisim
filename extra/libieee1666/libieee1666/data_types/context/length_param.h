@@ -40,6 +40,8 @@
 
 namespace sc_dt {
 
+//////////////////////////////// declaration //////////////////////////////////
+
 class sc_length_param
 {
 public:
@@ -48,7 +50,7 @@ public:
 	sc_length_param(const sc_length_param&);
 	sc_length_param& operator = (const sc_length_param&);
 	friend bool operator == (const sc_length_param&, const sc_length_param&);
-	friend bool operator!= (const sc_length_param&, const sc_length_param&);
+	friend bool operator != (const sc_length_param&, const sc_length_param&);
 	int len() const;
 	void len(int);
 	const std::string to_string() const;

@@ -36,12 +36,12 @@
 #define __LIBIEEE1666_DATA_TYPES_INTEGER_SIGNED_BITREF_R_H__
 
 #include <data_types/fwd.h>
-#include <data_types/integer/signed.h>
-#include <data_types/integer/signed_bitref.h>
 #include <data_types/integer/value_base.h>
 #include <iostream>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 class sc_signed_bitref_r : public sc_value_base
 {
@@ -68,7 +68,8 @@ public:
 
 	// Other methods
 	void print(std::ostream& os = std::cout) const;
-	protected:
+	
+protected:
 	sc_signed_bitref_r();
 
 private:

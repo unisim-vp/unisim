@@ -36,13 +36,11 @@
 #define __LIBIEEE1666_DATA_TYPES_BIT_SUBREF_R_H__
 
 #include <data_types/fwd.h>
-#include <data_types/bit/logic.h>
-#include <data_types/bit/subref.h>
-#include <data_types/bit/bitref.h>
-#include <data_types/bit/bitref_r.h>
 #include <iostream>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 template <class T>
 class sc_subref_r
@@ -93,6 +91,142 @@ private:
 	sc_subref_r<T>& operator = (const sc_subref_r<T>&);
 };
 
+///////////////////////////////// definition //////////////////////////////////
+
+// Copy constructor
+template <class T>
+sc_subref_r<T>::sc_subref_r(const sc_subref_r<T>& a)
+{
+}
+
+// Bit selection
+template <class T>
+sc_bitref_r<sc_subref_r<T> > sc_subref_r<T>::operator [] (int i) const
+{
+}
+
+// Part selection
+template <class T>
+sc_subref_r<sc_subref_r<T> > sc_subref_r<T>::operator () (int hi, int lo) const
+{
+}
+
+template <class T>
+sc_subref_r<sc_subref_r<T> > sc_subref_r<T>::range(int hi, int lo) const
+{
+}
+
+// Reduce functions
+template <class T>
+sc_logic_value_t sc_subref_r<T>::and_reduce() const
+{
+}
+
+template <class T>
+sc_logic_value_t sc_subref_r<T>::nand_reduce() const
+{
+}
+
+template <class T>
+sc_logic_value_t sc_subref_r<T>::or_reduce() const
+{
+}
+
+template <class T>
+sc_logic_value_t sc_subref_r<T>::nor_reduce() const
+{
+}
+
+template <class T>
+sc_logic_value_t sc_subref_r<T>::xor_reduce() const
+{
+}
+
+template <class T>
+sc_logic_value_t sc_subref_r<T>::xnor_reduce() const
+{
+}
+
+// Common methods
+template <class T>
+int sc_subref_r<T>::length() const
+{
+}
+
+// Explicit conversions to character string
+template <class T>
+const std::string sc_subref_r<T>::to_string() const
+{
+}
+
+template <class T>
+const std::string sc_subref_r<T>::to_string(sc_numrep) const
+{
+}
+
+template <class T>
+const std::string sc_subref_r<T>::to_string(sc_numrep, bool) const
+{
+}
+
+// Explicit conversions
+
+template <class T>
+int sc_subref_r<T>::to_int() const
+{
+}
+
+template <class T>
+unsigned int sc_subref_r<T>::to_uint() const
+{
+}
+
+template <class T>
+long sc_subref_r<T>::to_long() const
+{
+}
+
+template <class T>
+unsigned long sc_subref_r<T>::to_ulong() const
+{
+}
+
+template <class T>
+int64 sc_subref_r<T>::to_int64() const
+{
+}
+
+template <class T>
+uint64 sc_subref_r<T>::to_uint64() const
+{
+}
+
+template <class T>
+bool sc_subref_r<T>::is_01() const
+{
+}
+
+// Other methods
+template <class T>
+void sc_subref_r<T>::print(std::ostream& os) const
+{
+}
+
+template <class T>
+bool sc_subref_r<T>::reversed() const
+{
+}
+
+// Disabled
+template <class T>
+sc_subref_r<T>::sc_subref_r()
+{
+}
+
+template <class T>
+sc_subref_r<T>& sc_subref_r<T>::operator = (const sc_subref_r<T>&)
+{
+}
 
 } // end of namespace sc_dt
 

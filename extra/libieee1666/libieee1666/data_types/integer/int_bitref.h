@@ -36,20 +36,19 @@
 #define __LIBIEEE1666_DATA_TYPES_INTEGER_INT_BITREF_H__
 
 #include <data_types/fwd.h>
-#include <data_types/integer/int_base.h>
-#include <data_types/integer/int.h>
 #include <data_types/integer/int_bitref_r.h>
 #include <iostream>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 class sc_int_bitref : public sc_int_bitref_r
 {
 	friend class sc_int_base;
 
 public:
-	// Copy constructor
-		
+	// Copy constructor		
 	sc_int_bitref(const sc_int_bitref& a);
 
 	// Assignment operators

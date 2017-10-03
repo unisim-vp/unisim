@@ -35,7 +35,7 @@
 #ifndef __LIBIEEE1666_CORE_FWD_H__
 #define __LIBIEEE1666_CORE_FWD_H__
 
-#include <inttypes.h>
+#include <data_types/native.h>
 #include "core/features.h"
 
 #if defined(ALWAYS_INLINE)
@@ -74,11 +74,6 @@
 #define likely(x) (x)
 #define unlikely(x) (x)
 #endif
-
-namespace sc_dt {
-	typedef ::uint64_t uint64;
-	typedef ::int64_t int64;
-} // end of namespace sc_dt
 
 namespace sc_core {
 

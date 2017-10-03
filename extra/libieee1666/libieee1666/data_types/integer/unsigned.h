@@ -36,36 +36,13 @@
 #define __LIBIEEE1666_DATA_TYPES_INTEGER_UNSIGNED_H__
 
 #include <data_types/fwd.h>
-#include <data_types/bit/bv.h>
-#include <data_types/bit/lv.h>
-#include <data_types/bit/lv_base.h>
-#include <data_types/bit/bv_base.h>
-#include <data_types/integer/unsigned_subref.h>
-#include <data_types/integer/signed.h>
-#include <data_types/integer/int_base.h>
-#include <data_types/integer/unsigned_subref_r.h>
-#include <data_types/integer/uint_subref.h>
-#include <data_types/integer/uint.h>
-#include <data_types/integer/generic_base.h>
-#include <data_types/integer/int_subref.h>
-#include <data_types/integer/unsigned_bitref.h>
-#include <data_types/integer/unsigned_bitref_r.h>
-#include <data_types/integer/signed_subref.h>
-#include <data_types/integer/int.h>
-#include <data_types/integer/concatref.h>
-#include <data_types/integer/int_subref_r.h>
-#include <data_types/integer/uint_base.h>
-#include <data_types/integer/uint_subref_r.h>
-#include <data_types/integer/value_base.h>
-#include <data_types/integer/signed_subref_r.h>
-#include <data_types/fixed_point/fxnum_fast.h>
-#include <data_types/fixed_point/fxval.h>
-#include <data_types/fixed_point/fxval_fast.h>
-#include <data_types/fixed_point/fxnum.h>
 #include <data_types/context/length_param.h>
+#include <data_types/integer/value_base.h>
 #include <iostream>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 class sc_unsigned : public sc_value_base
 {
@@ -166,6 +143,11 @@ public:
 
 };
 
+//////////////////////////////// declaration //////////////////////////////////
+
+template <class T> sc_unsigned::sc_unsigned(const sc_generic_base<T>& v)
+{
+}
 
 } // end of namespace sc_dt
 

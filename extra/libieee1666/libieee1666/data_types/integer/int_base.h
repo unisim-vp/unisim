@@ -36,28 +36,118 @@
 #define __LIBIEEE1666_DATA_TYPES_INTEGER_INT_BASE_H__
 
 #include <data_types/fwd.h>
-#include <data_types/integer/signed.h>
-#include <data_types/integer/unsigned.h>
-#include <data_types/integer/concatref.h>
+#include <data_types/context/length_param.h>
 #include <data_types/integer/value_base.h>
+#include <iostream>
 
 namespace sc_dt {
 
-class sc_value_base
+//////////////////////////////// declaration //////////////////////////////////
+
+class sc_int_base : public sc_value_base
 {
-	friend class sc_concatref;
+	friend class sc_uint_bitref_r;
+	friend class sc_uint_bitref;
+	friend class sc_uint_subref_r;
+	friend class sc_uint_subref;
+public:
+	// Constructors
+	explicit sc_int_base(int w = sc_length_param().len());
+	sc_int_base(int_type v, int w);
+	sc_int_base(const sc_int_base& a);
+	template <typename T> explicit sc_int_base(const sc_generic_base<T>& a);
+	explicit sc_int_base(const sc_int_subref_r& a);
+	explicit sc_int_base(const sc_signed& a);
+	explicit sc_int_base(const sc_unsigned& a);
+	explicit sc_int_base(const sc_bv_base& v);
+	explicit sc_int_base(const sc_lv_base& v);
+	explicit sc_int_base(const sc_uint_subref_r& v);
+	explicit sc_int_base(const sc_signed_subref_r& v);
+	explicit sc_int_base(const sc_unsigned_subref_r& v);
 	
-private:
-	virtual void concat_clear_data(bool to_ones=false);
-	virtual bool concat_get_ctrl(implementation-defined *dst_p, int low_i) const;
-	virtual bool concat_get_data(implementation-defined *dst_p, int low_i) const;
-	virtual uint64 concat_get_uint64() const;
-	virtual int concat_length(bool *xz_present_p = 0) const;
-	virtual void concat_set(int64 src, int low_i);
-	virtual void concat_set(const sc_signed& src, int low_i);
-	virtual void concat_set(const sc_unsigned& src, int low_i);
-	virtual void concat_set(uint64 src, int low_i);
+	// Destructor
+	~sc_int_base();
+	
+	// Assignment operators
+	sc_int_base& operator = (int_type v);
+	sc_int_base& operator = (const sc_int_base& a);
+	sc_int_base& operator = (const sc_int_subref_r & a);
+	template <class T> sc_int_base& operator = (const sc_generic_base<T>& a);
+	sc_int_base& operator = (const sc_signed& a);
+	sc_int_base& operator = (const sc_unsigned& a);
+	sc_int_base& operator = (const sc_fxval& a);
+	sc_int_base& operator = (const sc_fxval_fast& a);
+	sc_int_base& operator = (const sc_fxnum& a);
+	sc_int_base& operator = (const sc_fxnum_fast& a);
+	sc_int_base& operator = (const sc_bv_base& a);
+	sc_int_base& operator = (const sc_lv_base& a);
+	sc_int_base& operator = (const char *a);
+	sc_int_base& operator = (unsigned long a);
+	sc_int_base& operator = (long a);
+	sc_int_base& operator = (unsigned int a);
+	sc_int_base& operator = (int a);
+	sc_int_base& operator = (uint64 a);
+	sc_int_base& operator = (double a);
+	
+	// Prefix and postfix increment and decrement operators
+	sc_int_base& operator ++ ();         // Prefix
+	const sc_int_base operator ++ (int); // Postfix
+	sc_int_base& operator -- ();         // Prefix
+	const sc_int_base operator -- (int); // Postfix
+	
+	// Bit selection
+	sc_int_bitref operator [] (int i);
+	sc_int_bitref_r operator [] (int i) const;
+	
+	// Part selection
+	sc_int_subref operator () (int left, int right);
+	sc_int_subref_r operator () (int left, int right) const;
+	sc_int_subref range(int left, int right);
+	sc_int_subref_r range(int left, int right) const;
+	
+	// Capacity
+	int length() const;
+	
+	// Reduce methods
+	bool and_reduce() const;
+	bool nand_reduce() const;
+	bool or_reduce() const;
+	bool nor_reduce() const;
+	bool xor_reduce() const;
+	bool xnor_reduce() const;
+	
+	// Implicit conversion to int_type
+	operator int_type() const;
+	
+	// Explicit conversions
+	int to_int() const;
+	unsigned int to_uint() const;
+	long to_long() const;
+	unsigned long to_ulong() const;
+	int64 to_int64() const;
+	uint64 to_uint64() const;
+	double to_double() const;
+	
+	// Explicit conversion to character string
+	const std::string to_string(sc_numrep numrep = SC_DEC) const;
+	const std::string to_string(sc_numrep numrep, bool w_prefix) const;
+	
+	// Other methods
+	void print(std::ostream& os = std::cout) const;
+	void scan(std::istream& is = std::cin);
 };
+
+///////////////////////////////// definition //////////////////////////////////
+
+// Constructors
+template <typename T> sc_int_base::sc_int_base(const sc_generic_base<T>& a)
+{
+}
+
+// Assignment operators
+template <class T> sc_int_base& sc_int_base::operator = (const sc_generic_base<T>& a)
+{
+}
 
 } // end of namespace sc_dt
 

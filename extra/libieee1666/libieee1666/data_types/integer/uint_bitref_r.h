@@ -36,13 +36,12 @@
 #define __LIBIEEE1666_DATA_TYPES_INTEGER_UINT_BITREF_R_H__
 
 #include <data_types/fwd.h>
-#include <data_types/integer/uint_bitref.h>
-#include <data_types/integer/uint.h>
-#include <data_types/integer/uint_base.h>
 #include <data_types/integer/value_base.h>
 #include <iostream>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 class sc_uint_bitref_r : public sc_value_base
 {

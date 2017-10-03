@@ -36,19 +36,12 @@
 #define __LIBIEEE1666_DATA_TYPES_INTEGER_UINT_SUBREF_H__
 
 #include <data_types/fwd.h>
-#include <data_types/bit/bv.h>
-#include <data_types/bit/lv.h>
-#include <data_types/bit/lv_base.h>
-#include <data_types/bit/bv_base.h>
-#include <data_types/integer/signed.h>
-#include <data_types/integer/uint.h>
-#include <data_types/integer/generic_base.h>
-#include <data_types/integer/unsigned.h>
-#include <data_types/integer/uint_base.h>
 #include <data_types/integer/uint_subref_r.h>
 #include <iostream>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 class sc_uint_subref : public sc_uint_subref_r
 {
@@ -82,6 +75,12 @@ public:
 protected:
 	sc_uint_subref();
 };
+
+///////////////////////////////// definition //////////////////////////////////
+
+template <class T> sc_uint_subref& sc_uint_subref::operator = (const sc_generic_base<T>& a)
+{
+}
 
 } // end of namespace sc_dt
 

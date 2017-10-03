@@ -36,26 +36,12 @@
 #define __LIBIEEE1666_DATA_TYPES_BIT_LV_BASE_H__
 
 #include <data_types/fwd.h>
-#include <data_types/bit/concref.h>
-#include <data_types/bit/logic.h>
-#include <data_types/bit/bv.h>
-#include <data_types/bit/subref.h>
-#include <data_types/bit/subref_r.h>
-#include <data_types/bit/lv.h>
-#include <data_types/bit/bitref.h>
-#include <data_types/bit/concref_r.h>
-#include <data_types/bit/bv_base.h>
-#include <data_types/bit/bitref_r.h>
-#include <data_types/integer/signed.h>
-#include <data_types/integer/int_base.h>
-#include <data_types/integer/uint.h>
-#include <data_types/integer/int.h>
-#include <data_types/integer/unsigned.h>
-#include <data_types/integer/uint_base.h>
 #include <data_types/context/length_param.h>
 #include <iostream>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 class sc_lv_base
 {
@@ -108,7 +94,7 @@ public:
 	// Part selection
 	sc_subref<sc_lv_base> operator () (int hi, int lo);
 	sc_subref_r<sc_lv_base> operator () (int hi, int lo) const;
-	sc_subref<sc_lv_base> range(int h i, int lo);
+	sc_subref<sc_lv_base> range(int hi, int lo);
 	sc_subref_r<sc_lv_base> range(int hi, int lo) const;
 
 	// Reduce functions
@@ -140,6 +126,26 @@ public:
 	void print(std::ostream& os = std::cout) const;
 	void scan(std::istream& is = std::cin);
 };
+
+///////////////////////////////// definition //////////////////////////////////
+
+// Constructors
+template <class X> sc_lv_base::sc_lv_base(const sc_subref_r<X>& a)
+{
+}
+
+template <class T1, class T2> sc_lv_base::sc_lv_base(const sc_concref_r<T1,T2>& a)
+{
+}
+
+// Assignment operators
+template <class X> sc_lv_base& sc_lv_base::operator = (const sc_subref_r<X>& a)
+{
+}
+
+template <class T1, class T2> sc_lv_base& sc_lv_base::operator = (const sc_concref_r<T1,T2>& a)
+{
+}
 
 } // end of namespace sc_dt
 

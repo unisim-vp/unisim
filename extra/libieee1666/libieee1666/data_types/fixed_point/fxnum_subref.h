@@ -36,24 +36,12 @@
 #define __LIBIEEE1666_DATA_TYPES_FIXED_POINT_FXNUM_SUBREF_H__
 
 #include <data_types/fwd.h>
-#include <data_types/bit/bv.h>
-#include <data_types/bit/lv.h>
-#include <data_types/bit/lv_base.h>
-#include <data_types/bit/bv_base.h>
-#include <data_types/integer/signed.h>
-#include <data_types/integer/int_base.h>
-#include <data_types/integer/uint.h>
-#include <data_types/integer/int.h>
-#include <data_types/integer/unsigned.h>
-#include <data_types/integer/uint_base.h>
-#include <data_types/fixed_point/fxnum_fast.h>
-#include <data_types/fixed_point/fxnum_fast_subref.h>
-#include <data_types/fixed_point/fxnum.h>
 #include <iostream>
 
 namespace sc_dt {
 
-namespace sc_dt {
+//////////////////////////////// declaration //////////////////////////////////
+
 class sc_fxnum_subref
 {
 	friend class sc_fxnum;
@@ -68,7 +56,7 @@ public:
 
 	// Assignment operators
 #define DECL_ASN_OP_T(tp) \
-	sc_fxnum_subref & operator = (tp);
+	sc_fxnum_subref& operator = (tp);
 
 	DECL_ASN_OP_T(const sc_fxnum_subref&)
 	DECL_ASN_OP_T(const sc_fxnum_fast_subref&)
@@ -91,10 +79,10 @@ public:
 #undef DECL_ASN_OP_T
 	
 #define DECL_ASN_OP_T_A(op, tp) \
-	sc_fxnum_subref & operator op ## = (tp);
+	sc_fxnum_subref& operator op ## = (tp);
 
 #define DECL_ASN_OP_A(op) \
-	DECL_ASN_OP_T_A(op, const sc_fxnum_subref &) \
+	DECL_ASN_OP_T_A(op, const sc_fxnum_subref&) \
 	DECL_ASN_OP_T_A(op, const sc_fxnum_fast_subref&) \
 	DECL_ASN_OP_T_A(op, const sc_bv_base&) \
 	DECL_ASN_OP_T_A(op, const sc_lv_base&)

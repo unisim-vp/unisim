@@ -37,10 +37,11 @@
 
 #include <data_types/fwd.h>
 #include <data_types/integer/unsigned_bitref_r.h>
-#include <data_types/integer/unsigned.h>
 #include <iostream>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 class sc_unsigned_bitref : public sc_unsigned_bitref_r
 {
@@ -64,7 +65,6 @@ public:
 protected:
 	sc_unsigned_bitref();
 };
-
 
 } // end of namespace sc_dt
 

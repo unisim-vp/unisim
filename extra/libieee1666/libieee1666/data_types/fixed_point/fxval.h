@@ -36,18 +36,11 @@
 #define __LIBIEEE1666_DATA_TYPES_FIXED_POINT_FXVAL_H__
 
 #include <data_types/fwd.h>
-#include <data_types/integer/signed.h>
-#include <data_types/integer/int_base.h>
-#include <data_types/integer/uint.h>
-#include <data_types/integer/int.h>
-#include <data_types/integer/unsigned.h>
-#include <data_types/integer/uint_base.h>
-#include <data_types/fixed_point/fxnum_fast.h>
-#include <data_types/fixed_point/fxval_fast.h>
-#include <data_types/fixed_point/fxnum.h>
 #include <iostream>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 class sc_fxval
 {
@@ -109,6 +102,10 @@ public:
 	DECL_BIN_OP(-, sub)
 	DECL_BIN_OP(/, div)
 
+#undef DECL_BIN_OP_T
+#undef DECL_BIN_OP_OTHER
+#undef DECL_BIN_OP
+	
 	friend const sc_fxval operator << (const sc_fxval&, int);
 	friend const sc_fxval operator >> (const sc_fxval&, int);
 
@@ -117,7 +114,7 @@ public:
 	friend bool operator op (const sc_fxval&, tp); \
 	friend bool operator op (tp, const sc_fxval&);
 
-	#define DECL_REL_OP_OTHER(op) \
+#define DECL_REL_OP_OTHER(op) \
 	DECL_REL_OP_T(op, int64) \
 	DECL_REL_OP_T(op, uint64) \
 	DECL_REL_OP_T(op, const sc_int_base&) \
@@ -145,6 +142,10 @@ public:
 	DECL_REL_OP(==)
 	DECL_REL_OP(!=)
 
+#undef DECL_REL_OP_T
+#undef DECL_REL_OP_OTHER
+#undef DECL_REL_OP
+	
 	// Assignment operators
 #define DECL_ASN_OP_T(op, tp) \
 	sc_fxval& operator op(tp);
@@ -179,6 +180,10 @@ public:
 	DECL_ASN_OP_T(<<=, int)
 	DECL_ASN_OP_T(>>=, int)
 
+#undef DECL_ASN_OP_T
+#undef DECL_ASN_OP_OTHER
+#undef DECL_ASN_OP
+	
 	// Auto-increment and auto-decrement
 	const sc_fxval operator ++ (int);
 	const sc_fxval operator -- (int);

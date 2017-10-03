@@ -36,12 +36,11 @@
 #define __LIBIEEE1666_DATA_TYPES_INTEGER_INT_SUBREF_R_H__
 
 #include <data_types/fwd.h>
-#include <data_types/integer/int_base.h>
-#include <data_types/integer/int_subref.h>
-#include <data_types/integer/int.h>
 #include <iostream>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 class sc_int_subref_r
 {
@@ -53,7 +52,7 @@ public:
 	sc_int_subref_r(const sc_int_subref_r& a);
 
 	// Destructor
-	virtual ~sc_int_subref_r ();
+	virtual ~sc_int_subref_r();
 
 	// Capacity
 	int length() const;

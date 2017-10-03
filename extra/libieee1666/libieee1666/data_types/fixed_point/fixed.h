@@ -36,19 +36,8 @@
 #define __LIBIEEE1666_DATA_TYPES_FIXED_POINT_FIXED_H__
 
 #include <data_types/fwd.h>
-#include <data_types/integer/signed.h>
-#include <data_types/integer/int_base.h>
-#include <data_types/integer/uint.h>
-#include <data_types/integer/int.h>
-#include <data_types/integer/unsigned.h>
-#include <data_types/integer/uint_base.h>
-#include <data_types/fixed_point/fxnum_fast.h>
 #include <data_types/fixed_point/fix.h>
-#include <data_types/fixed_point/fix_fast.h>
 #include <data_types/fixed_point/fxval.h>
-#include <data_types/fixed_point/fxval_fast.h>
-#include <data_types/fixed_point/fxnum.h>
-#include <data_types/context/fxcast_switch.h>
 
 namespace sc_dt {
 
@@ -87,10 +76,14 @@ public:
 	DECL_CTORS_T_B(const sc_uint_base&)
 	DECL_CTORS_T_B(const sc_signed&)
 	DECL_CTORS_T_B(const sc_unsigned&)
+
+#undef DECL_CTORS_T_A
+#undef DECL_CTORS_T_B
+
 	sc_fixed(const sc_fixed<W, I, Q, O, N>&);
 
 	// Operators
-	sc_fixed& operator = (const sc_fixed<W,I,Q,O,N>&);
+	sc_fixed& operator = (const sc_fixed<W, I, Q, O, N>&);
 
 #define DECL_ASN_OP_T(op, tp) \
 	sc_fixed& operator op (tp);
@@ -130,11 +123,149 @@ public:
 	DECL_ASN_OP_T(|=, const sc_fix_fast&)
 	DECL_ASN_OP_T(^=, const sc_fix&)
 	DECL_ASN_OP_T(^=, const sc_fix_fast&)
+
+#undef DECL_ASN_OP_T
+#undef DECL_ASN_OP_OTHER
+#undef DECL_ASN_OP
+
 	const sc_fxval operator ++ (int);
 	const sc_fxval operator -- (int);
 	sc_fixed& operator ++ ();
 	sc_fixed& operator -- ();
 };
+
+///////////////////////////////// definition //////////////////////////////////
+
+// Constructors
+template <int W, int I, sc_q_mode Q, sc_o_mode O, int N>
+sc_fixed<W, I, Q, O, N>::sc_fixed()
+{
+}
+
+template <int W, int I, sc_q_mode Q, sc_o_mode O, int N>
+sc_fixed<W, I, Q, O, N>::sc_fixed(const sc_fxcast_switch&)
+{
+}
+
+#define DEF_CTORS_T_A(tp) \
+template <int W, int I, sc_q_mode Q, sc_o_mode O, int N> \
+sc_fixed<W, I, Q, O, N>::sc_fixed(tp) \
+{ \
+} \
+  \
+template <int W, int I, sc_q_mode Q, sc_o_mode O, int N> \
+sc_fixed<W, I, Q, O, N>::sc_fixed(tp, const sc_fxcast_switch&) \
+{ \
+}
+
+#define DEF_CTORS_T_B(tp) \
+template <int W, int I, sc_q_mode Q, sc_o_mode O, int N> \
+sc_fixed<W, I, Q, O, N>::sc_fixed(tp) \
+{ \
+} \
+  \
+template <int W, int I, sc_q_mode Q, sc_o_mode O, int N> \
+sc_fixed<W, I, Q, O, N>::sc_fixed(tp, const sc_fxcast_switch&) \
+{ \
+}
+
+DEF_CTORS_T_A(int)
+DEF_CTORS_T_A(unsigned int)
+DEF_CTORS_T_A(long)
+DEF_CTORS_T_A(unsigned long)
+DEF_CTORS_T_A(float)
+DEF_CTORS_T_A(double)
+DEF_CTORS_T_A(const char *)
+DEF_CTORS_T_A(const sc_fxval&)
+DEF_CTORS_T_A(const sc_fxval_fast&)
+DEF_CTORS_T_A(const sc_fxnum&)
+DEF_CTORS_T_A(const sc_fxnum_fast&)
+DEF_CTORS_T_B(int64)
+DEF_CTORS_T_B(uint64)
+DEF_CTORS_T_B(const sc_int_base&)
+DEF_CTORS_T_B(const sc_uint_base&)
+DEF_CTORS_T_B(const sc_signed&)
+DEF_CTORS_T_B(const sc_unsigned&)
+
+#undef DEF_CTORS_T_A
+#undef DEF_CTORS_T_B
+
+template <int W, int I, sc_q_mode Q, sc_o_mode O, int N>
+sc_fixed<W, I, Q, O, N>::sc_fixed(const sc_fixed<W, I, Q, O, N>&)
+{
+}
+
+// Operators
+template <int W, int I, sc_q_mode Q, sc_o_mode O, int N>
+sc_fixed<W, I, Q, O, N>& sc_fixed<W, I, Q, O, N>::operator = (const sc_fixed<W, I, Q, O, N>&)
+{
+}
+
+#define DEF_ASN_OP_T(op, tp) \
+template <int W, int I, sc_q_mode Q, sc_o_mode O, int N> \
+sc_fixed<W, I, Q, O, N>& sc_fixed<W, I, Q, O, N>::operator op (tp) \
+{ \
+}
+
+#define DEF_ASN_OP_OTHER(op) \
+DEF_ASN_OP_T(op, int64) \
+DEF_ASN_OP_T(op, uint64) \
+DEF_ASN_OP_T(op, const sc_int_base&) \
+DEF_ASN_OP_T(op, const sc_uint_base&) \
+DEF_ASN_OP_T(op, const sc_signed&) \
+DEF_ASN_OP_T(op, const sc_unsigned&)
+
+#define DEF_ASN_OP(op) \
+DEF_ASN_OP_T(op, int) \
+DEF_ASN_OP_T(op, unsigned int) \
+DEF_ASN_OP_T(op, long) \
+DEF_ASN_OP_T(op, unsigned long) \
+DEF_ASN_OP_T(op, float) \
+DEF_ASN_OP_T(op, double) \
+DEF_ASN_OP_T(op, const char *) \
+DEF_ASN_OP_T(op, const sc_fxval&) \
+DEF_ASN_OP_T(op, const sc_fxval_fast&) \
+DEF_ASN_OP_T(op, const sc_fxnum&) \
+DEF_ASN_OP_T(op, const sc_fxnum_fast&) \
+DEF_ASN_OP_OTHER(op)
+
+DEF_ASN_OP(=)
+DEF_ASN_OP(*=)
+DEF_ASN_OP(/=)
+DEF_ASN_OP(+=)
+DEF_ASN_OP(-=)
+DEF_ASN_OP_T(<<=, int)
+DEF_ASN_OP_T(>>=, int)
+DEF_ASN_OP_T(&=, const sc_fix&)
+DEF_ASN_OP_T(&=, const sc_fix_fast&)
+DEF_ASN_OP_T(|=, const sc_fix&)
+DEF_ASN_OP_T(|=, const sc_fix_fast&)
+DEF_ASN_OP_T(^=, const sc_fix&)
+DEF_ASN_OP_T(^=, const sc_fix_fast&)
+
+#undef DEF_ASN_OP_T
+#undef DEF_ASN_OP_OTHER
+#undef DEF_ASN_OP
+
+template <int W, int I, sc_q_mode Q, sc_o_mode O, int N>
+const sc_fxval sc_fixed<W, I, Q, O, N>::operator ++ (int)
+{
+}
+
+template <int W, int I, sc_q_mode Q, sc_o_mode O, int N>
+const sc_fxval sc_fixed<W, I, Q, O, N>::operator -- (int)
+{
+}
+
+template <int W, int I, sc_q_mode Q, sc_o_mode O, int N>
+sc_fixed<W, I, Q, O, N>& sc_fixed<W, I, Q, O, N>::operator ++ ()
+{
+}
+
+template <int W, int I, sc_q_mode Q, sc_o_mode O, int N>
+sc_fixed<W, I, Q, O, N>& sc_fixed<W, I, Q, O, N>::operator -- ()
+{
+}
 
 } // end of namespace sc_dt
 

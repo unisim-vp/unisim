@@ -36,22 +36,11 @@
 #define __LIBIEEE1666_DATA_TYPES_FIXED_POINT_UFIXED_FAST_H__
 
 #include <data_types/fwd.h>
-#include <data_types/integer/signed.h>
-#include <data_types/integer/int_base.h>
-#include <data_types/integer/uint.h>
-#include <data_types/integer/int.h>
-#include <data_types/integer/unsigned.h>
-#include <data_types/integer/uint_base.h>
-#include <data_types/fixed_point/fxnum_fast.h>
-#include <data_types/fixed_point/ufixed.h>
-#include <data_types/fixed_point/fxval.h>
-#include <data_types/fixed_point/ufix.h>
-#include <data_types/fixed_point/fxval_fast.h>
 #include <data_types/fixed_point/ufix_fast.h>
-#include <data_types/fixed_point/fxnum.h>
-#include <data_types/context/fxcast_switch.h>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 template <int W, int I,
           sc_q_mode Q = SC_DEFAULT_Q_MODE_,
@@ -111,16 +100,16 @@ public:
 
 #define DECL_ASN_OP(op) \
 	DECL_ASN_OP_T(op, int) \
-	DECL_ASN_OP_T(op, unsigned int)\
+	DECL_ASN_OP_T(op, unsigned int) \
 	DECL_ASN_OP_T(op, long) \
 	DECL_ASN_OP_T(op, unsigned long) \
 	DECL_ASN_OP_T(op, float) \
 	DECL_ASN_OP_T(op, double) \
-	DECL_ASN_OP_T(op, const char *)\
+	DECL_ASN_OP_T(op, const char *) \
 	DECL_ASN_OP_T(op, const sc_fxval&) \
 	DECL_ASN_OP_T(op, const sc_fxval_fast&) \
 	DECL_ASN_OP_T(op, const sc_fxnum&) \
-	DECL_ASN_OP_T(op, const sc_fxnum_fast& \
+	DECL_ASN_OP_T(op, const sc_fxnum_fast&) \
 	DECL_ASN_OP_OTHER(op)
 
 	DECL_ASN_OP(=)

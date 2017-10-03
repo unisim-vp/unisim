@@ -36,22 +36,11 @@
 #define __LIBIEEE1666_DATA_TYPES_INTEGER_INT_H__
 
 #include <data_types/fwd.h>
-#include <data_types/bit/bv.h>
-#include <data_types/bit/lv.h>
-#include <data_types/bit/lv_base.h>
-#include <data_types/bit/bv_base.h>
-#include <data_types/integer/signed.h>
 #include <data_types/integer/int_base.h>
-#include <data_types/integer/generic_base.h>
-#include <data_types/integer/int_subref.h>
-#include <data_types/integer/unsigned.h>
-#include <data_types/integer/int_subref_r.h>
-#include <data_types/fixed_point/fxnum_fast.h>
-#include <data_types/fixed_point/fxval.h>
-#include <data_types/fixed_point/fxval_fast.h>
-#include <data_types/fixed_point/fxnum.h>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 template <int W>
 class sc_int : public sc_int_base
@@ -108,6 +97,238 @@ public:
 	sc_int<W>& operator -- ();         // Prefix
 	const sc_int<W> operator -- (int); // Postfix
 };
+
+///////////////////////////////// definition //////////////////////////////////
+
+// Constructors
+
+template <int W>
+sc_int<W>::sc_int()
+{
+}
+
+template <int W>
+sc_int<W>::sc_int(int_type v)
+{
+}
+
+template <int W>
+sc_int<W>::sc_int(const sc_int<W>& a)
+{
+}
+
+template <int W>
+sc_int<W>::sc_int(const sc_int_base& a)
+{
+}
+
+template <int W>
+sc_int<W>::sc_int(const sc_int_subref_r& a)
+{
+}
+
+template <int W>
+template <class T> sc_int<W>::sc_int(const sc_generic_base<T>& a)
+{
+}
+
+template <int W>
+sc_int<W>::sc_int(const sc_signed& a)
+{
+}
+
+template <int W>
+sc_int<W>::sc_int(const sc_unsigned& a)
+{
+}
+
+template <int W>
+sc_int<W>::sc_int(const sc_fxval& a)
+{
+}
+
+template <int W>
+sc_int<W>::sc_int(const sc_fxval_fast& a)
+{
+}
+
+template <int W>
+sc_int<W>::sc_int(const sc_fxnum& a)
+{
+}
+
+template <int W>
+sc_int<W>::sc_int(const sc_fxnum_fast& a)
+{
+}
+
+template <int W>
+sc_int<W>::sc_int(const sc_bv_base& a)
+{
+}
+
+template <int W>
+sc_int<W>::sc_int(const sc_lv_base& a)
+{
+}
+
+template <int W>
+sc_int<W>::sc_int(const char *a)
+{
+}
+
+template <int W>
+sc_int<W>::sc_int(unsigned long a)
+{
+}
+
+template <int W>
+sc_int<W>::sc_int(long a)
+{
+}
+
+template <int W>
+sc_int<W>::sc_int(unsigned int a)
+{
+}
+
+template <int W>
+sc_int<W>::sc_int(int a)
+{
+}
+
+template <int W>
+sc_int<W>::sc_int(uint64 a)
+{
+}
+
+template <int W>
+sc_int<W>::sc_int(double a)
+{
+}
+
+// Assignment operators
+template <int W>
+sc_int<W>& sc_int<W>::operator = (int_type v)
+{
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator = (const sc_int_base& a)
+{
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator = (const sc_int_subref_r& a)
+{
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator = (const sc_int<W>& a)
+{
+}
+
+template <int W>
+template <class T> sc_int<W>& sc_int<W>::operator = (const sc_generic_base<T>& a)
+{
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator = (const sc_signed& a)
+{
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator = (const sc_unsigned& a)
+{
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator = (const sc_fxval& a)
+{
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator = (const sc_fxval_fast& a)
+{
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator = (const sc_fxnum& a)
+{
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator = (const sc_fxnum_fast& a)
+{
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator = (const sc_bv_base& a)
+{
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator = (const sc_lv_base& a)
+{
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator = (const char *a)
+{
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator = (unsigned long a)
+{
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator = (long a)
+{
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator = (unsigned int a)
+{
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator = (int a)
+{
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator = (uint64 a)
+{
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator = (double a)
+{
+}
+
+// Prefix and postfix increment and decrement operators
+
+template <int W>
+sc_int<W>& sc_int<W>::operator ++ ()          // Prefix
+{
+}
+
+template <int W>
+const sc_int<W> sc_int<W>::operator ++ (int)  // Postfix
+{
+}
+
+template <int W>
+sc_int<W>& sc_int<W>::operator -- ()          // Prefix
+{
+}
+
+template <int W>
+const sc_int<W> sc_int<W>::operator -- (int)  // Postfix
+{
+}
 
 } // end of namespace sc_dt
 

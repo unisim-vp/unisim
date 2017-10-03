@@ -36,19 +36,12 @@
 #define __LIBIEEE1666_DATA_TYPES_INTEGER_SIGNED_SUBREF_H__
 
 #include <data_types/fwd.h>
-#include <data_types/integer/unsigned_subref.h>
-#include <data_types/integer/signed.h>
-#include <data_types/integer/int_base.h>
-#include <data_types/integer/unsigned_subref_r.h>
-#include <data_types/integer/uint.h>
-#include <data_types/integer/generic_base.h>
-#include <data_types/integer/int.h>
-#include <data_types/integer/unsigned.h>
-#include <data_types/integer/uint_base.h>
 #include <data_types/integer/signed_subref_r.h>
 #include <iostream>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 class sc_signed_subref : public sc_signed_subref_r
 {
@@ -83,6 +76,12 @@ private:
 	// Disabled
 	sc_signed_subref();
 };
+
+///////////////////////////////// definition //////////////////////////////////
+
+template <class T> sc_signed_subref & sc_signed_subref::operator = (const sc_generic_base<T>& a)
+{
+}
 
 } // end of namespace sc_dt
 

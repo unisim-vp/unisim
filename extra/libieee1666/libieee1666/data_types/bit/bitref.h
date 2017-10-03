@@ -36,15 +36,12 @@
 #define __LIBIEEE1666_DATA_TYPES_BIT_BITREF_H__
 
 #include <data_types/fwd.h>
-#include <data_types/bit/logic.h>
-#include <data_types/bit/bv.h>
-#include <data_types/bit/lv.h>
-#include <data_types/bit/lv_base.h>
-#include <data_types/bit/bv_base.h>
 #include <data_types/bit/bitref_r.h>
 #include <iostream>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 template <class T>
 class sc_bitref : public sc_bitref_r<T>
@@ -92,6 +89,130 @@ private:
 	// Disabled
 	sc_bitref();
 };
+
+///////////////////////////////// definition //////////////////////////////////
+
+// Copy constructor
+template <class T>
+sc_bitref<T>::sc_bitref(const sc_bitref<T>& a)
+{
+}
+
+// Assignment operators
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator = (const sc_bitref_r<T>& a)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator = (const sc_bitref<T>& a)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator = (const sc_logic& a)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator = (sc_logic_value_t v)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator = (bool a)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator = (char a)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator = (int a)
+{
+}
+
+// Bitwise assignment operators
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator &= (const sc_bitref_r<T>& a)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator &= (const sc_logic& a)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator &= (sc_logic_value_t v)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator &= (bool a)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator &= (char a)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator &= (int a)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator |= (const sc_bitref_r<T>& a)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator |= (const sc_logic& a)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator |= (sc_logic_value_t v)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator |= (bool a)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator |= (char a)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator |= (int a)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator ^= (const sc_bitref_r<T>& a)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator ^= (const sc_logic& a)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator ^= (sc_logic_value_t v)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator ^= (bool a)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator ^= (char a)
+{
+}
+template <class T>
+sc_bitref<T>& sc_bitref<T>::operator ^= (int a)
+{
+}
+
+// Other methods
+template <class T>
+void sc_bitref<T>::scan(std::istream& is)
+{
+}
+
+// Disabled
+template <class T>
+sc_bitref<T>::sc_bitref()
+{
+}
 
 } // end of namespace sc_dt
 

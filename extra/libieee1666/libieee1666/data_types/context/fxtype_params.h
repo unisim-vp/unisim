@@ -40,6 +40,8 @@
 
 namespace sc_dt {
 
+//////////////////////////////// declaration //////////////////////////////////
+
 class sc_fxtype_params
 {
 public:
@@ -55,7 +57,7 @@ public:
 	// Operators
 	sc_fxtype_params& operator = (const sc_fxtype_params&);
 	friend bool operator == (const sc_fxtype_params&, const sc_fxtype_params&);
-	friend bool operator!= (const sc_fxtype_params&, const sc_fxtype_params&);
+	friend bool operator != (const sc_fxtype_params&, const sc_fxtype_params&);
 
 	// Methods
 	int wl() const;

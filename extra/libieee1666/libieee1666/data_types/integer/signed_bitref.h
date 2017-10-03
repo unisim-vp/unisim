@@ -36,11 +36,12 @@
 #define __LIBIEEE1666_DATA_TYPES_INTEGER_SIGNED_BITREF_H__
 
 #include <data_types/fwd.h>
-#include <data_types/integer/signed.h>
 #include <data_types/integer/signed_bitref_r.h>
 #include <iostream>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 class sc_signed_bitref : public sc_signed_bitref_r
 {
@@ -48,21 +49,21 @@ class sc_signed_bitref : public sc_signed_bitref_r
 
 public:
 	// Copy constructor
-	sc_signed_bitref (const sc_signed_bitref& a);
+	sc_signed_bitref(const sc_signed_bitref& a);
 
 	// Assignment operators
-	sc_signed_bitref & operator = (const sc_signed_bitref_r&);
-	sc_signed_bitref & operator = (const sc_signed_bitref&);
-	sc_signed_bitref & operator = (bool);
-	sc_signed_bitref & operator&= (bool);
-	sc_signed_bitref & operator|= (bool);
-	sc_signed_bitref & operator^= (bool);
+	sc_signed_bitref& operator = (const sc_signed_bitref_r&);
+	sc_signed_bitref& operator = (const sc_signed_bitref&);
+	sc_signed_bitref& operator = (bool);
+	sc_signed_bitref& operator &= (bool);
+	sc_signed_bitref& operator |= (bool);
+	sc_signed_bitref& operator ^= (bool);
 
 	// Other methods
 	void scan(std::istream& is = std::cin);
 
 protected:
-	sc_signed_bitref ();
+	sc_signed_bitref();
 };
 
 } // end of namespace sc_dt

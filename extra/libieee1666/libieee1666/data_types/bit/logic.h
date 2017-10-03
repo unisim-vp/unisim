@@ -40,6 +40,8 @@
 
 namespace sc_dt {
 
+//////////////////////////////// declaration //////////////////////////////////
+
 class sc_logic
 {
 public:
@@ -66,6 +68,8 @@ public:
 	char to_char() const;
 	bool to_bool() const;
 	bool is_01() const;
+	
+	// Other methods
 	void print(std::ostream& os = std::cout) const;
 	void scan(std::istream& is = std::cin);
 

@@ -36,21 +36,11 @@
 #define __LIBIEEE1666_DATA_TYPES_FIXED_POINT_UFIX_H__
 
 #include <data_types/fwd.h>
-#include <data_types/integer/signed.h>
-#include <data_types/integer/int_base.h>
-#include <data_types/integer/uint.h>
-#include <data_types/integer/int.h>
-#include <data_types/integer/unsigned.h>
-#include <data_types/integer/uint_base.h>
-#include <data_types/fixed_point/fxnum_fast.h>
-#include <data_types/fixed_point/fxval.h>
-#include <data_types/fixed_point/fxval_fast.h>
-#include <data_types/fixed_point/ufix_fast.h>
 #include <data_types/fixed_point/fxnum.h>
-#include <data_types/context/fxcast_switch.h>
-#include <data_types/context/fxtype_params.h>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 class sc_ufix : public sc_fxnum
 {

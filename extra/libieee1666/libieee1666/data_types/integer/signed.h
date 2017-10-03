@@ -36,36 +36,13 @@
 #define __LIBIEEE1666_DATA_TYPES_INTEGER_SIGNED_H__
 
 #include <data_types/fwd.h>
-#include <data_types/bit/bv.h>
-#include <data_types/bit/lv.h>
-#include <data_types/bit/lv_base.h>
-#include <data_types/bit/bv_base.h>
-#include <data_types/integer/unsigned_subref.h>
-#include <data_types/integer/signed_bitref_r.h>
-#include <data_types/integer/int_base.h>
-#include <data_types/integer/unsigned_subref_r.h>
-#include <data_types/integer/uint_subref.h>
-#include <data_types/integer/uint.h>
-#include <data_types/integer/generic_base.h>
-#include <data_types/integer/int_subref.h>
-#include <data_types/integer/signed_subref.h>
-#include <data_types/integer/int.h>
-#include <data_types/integer/unsigned.h>
-#include <data_types/integer/signed_bitref.h>
-#include <data_types/integer/concatref.h>
-#include <data_types/integer/int_subref_r.h>
-#include <data_types/integer/uint_base.h>
-#include <data_types/integer/uint_subref_r.h>
-#include <data_types/integer/value_base.h>
-#include <data_types/integer/signed_subref_r.h>
-#include <data_types/fixed_point/fxnum_fast.h>
-#include <data_types/fixed_point/fxval.h>
-#include <data_types/fixed_point/fxval_fast.h>
-#include <data_types/fixed_point/fxnum.h>
 #include <data_types/context/length_param.h>
+#include <data_types/integer/value_base.h>
 #include <iostream>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 class sc_signed : public sc_value_base
 {
@@ -131,7 +108,7 @@ public:
 	// Part selection
 	sc_signed_subref range(int i, int j);
 	sc_signed_subref_r range(int i, int j) const;
-	sc_signed_subref  operator() (int i, int j);
+	sc_signed_subref operator() (int i, int j);
 	sc_signed_subref_r operator() (int i, int j) const;
 
 	// Explicit conversions
@@ -165,6 +142,16 @@ public:
 	// Overloaded operators
 
 };
+
+///////////////////////////////// definition //////////////////////////////////
+
+template <class T> sc_signed::sc_signed(const sc_generic_base<T>& v)
+{
+}
+
+template <class T> sc_signed& sc_signed::operator = (const sc_generic_base<T>& a)
+{
+}
 
 } // end of namespace sc_dt
 

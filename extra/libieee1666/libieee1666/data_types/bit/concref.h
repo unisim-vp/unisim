@@ -36,24 +36,12 @@
 #define __LIBIEEE1666_DATA_TYPES_BIT_CONCREF_H__
 
 #include <data_types/fwd.h>
-#include <data_types/bit/logic.h>
-#include <data_types/bit/bv.h>
-#include <data_types/bit/subref.h>
-#include <data_types/bit/subref_r.h>
-#include <data_types/bit/lv.h>
-#include <data_types/bit/lv_base.h>
-#include <data_types/bit/bitref.h>
 #include <data_types/bit/concref_r.h>
-#include <data_types/bit/bv_base.h>
-#include <data_types/integer/signed.h>
-#include <data_types/integer/int_base.h>
-#include <data_types/integer/uint.h>
-#include <data_types/integer/int.h>
-#include <data_types/integer/unsigned.h>
-#include <data_types/integer/uint_base.h>
 #include <iostream>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 template <class T1, class T2>
 class sc_concref : public sc_concref_r<T1,T2>
@@ -64,7 +52,7 @@ public:
 
 	// Assignment operators
 	template <class T> sc_concref <T1,T2>& operator = (const sc_subref_r<T>& a);
-	template <class T1, class T2> sc_concref <T1,T2>& operator = (const sc_concref_r<T1,T2>& a);
+	template <class U1, class U2> sc_concref <T1,T2>& operator = (const sc_concref_r<U1,U2>& a);
 	sc_concref <T1,T2>& operator = (const sc_bv_base& a);
 	sc_concref <T1,T2>& operator = (const sc_lv_base& a);
 	sc_concref <T1,T2>& operator = (const sc_concref<T1,T2>& a);
@@ -111,6 +99,171 @@ template <typename C1, typename C2> sc_concref_r<C1,C2> concat(C1, C2);
 // l-value concatenation operators and functions
 template <typename C1, typename C2> sc_concref<C1,C2> operator , (C1, C2);
 template <typename C1, typename C2> sc_concref<C1,C2> concat(C1, C2);
+
+///////////////////////////////// definition //////////////////////////////////
+
+// Copy constructor
+template <class T1, class T2>
+sc_concref<T1,T2>::sc_concref(const sc_concref<T1,T2>& a)
+{
+}
+
+// Assignment operators
+template <class T1, class T2>
+template <class T> sc_concref <T1,T2>& sc_concref<T1,T2>::operator = (const sc_subref_r<T>& a)
+{
+}
+
+template <class T1, class T2>
+template <class U1, class U2> sc_concref <T1,T2>& sc_concref<T1,T2>::operator = (const sc_concref_r<U1,U2>& a)
+{
+}
+
+template <class T1, class T2>
+sc_concref <T1,T2>& sc_concref<T1,T2>::operator = (const sc_bv_base& a)
+{
+}
+
+template <class T1, class T2>
+sc_concref <T1,T2>& sc_concref<T1,T2>::operator = (const sc_lv_base& a)
+{
+}
+
+template <class T1, class T2>
+sc_concref <T1,T2>& sc_concref<T1,T2>::operator = (const sc_concref<T1,T2>& a)
+{
+}
+
+template <class T1, class T2>
+sc_concref <T1,T2>& sc_concref<T1,T2>::operator = (const char *a)
+{
+}
+
+template <class T1, class T2>
+sc_concref <T1,T2>& sc_concref<T1,T2>::operator = (const bool* a)
+{
+}
+
+template <class T1, class T2>
+sc_concref <T1,T2>& sc_concref<T1,T2>::operator = (const sc_logic* a)
+{
+}
+
+template <class T1, class T2>
+sc_concref <T1,T2>& sc_concref<T1,T2>::operator = (const sc_unsigned& a)
+{
+}
+
+template <class T1, class T2>
+sc_concref <T1,T2>& sc_concref<T1,T2>::operator = (const sc_signed& a)
+{
+}
+
+template <class T1, class T2>
+sc_concref <T1,T2>& sc_concref<T1,T2>::operator = (const sc_uint_base& a)
+{
+}
+
+template <class T1, class T2>
+sc_concref <T1,T2>& sc_concref<T1,T2>::operator = (const sc_int_base& a)
+{
+}
+
+template <class T1, class T2>
+sc_concref <T1,T2>& sc_concref<T1,T2>::operator = (unsigned long a)
+{
+}
+
+template <class T1, class T2>
+sc_concref <T1,T2>& sc_concref<T1,T2>::operator = (long a)
+{
+}
+
+template <class T1, class T2>
+sc_concref <T1,T2>& sc_concref<T1,T2>::operator = (unsigned int a)
+{
+}
+
+template <class T1, class T2>
+sc_concref <T1,T2>& sc_concref<T1,T2>::operator = (int a)
+{
+}
+
+template <class T1, class T2>
+sc_concref <T1,T2>& sc_concref<T1,T2>::operator = (uint64 a)
+{
+}
+
+template <class T1, class T2>
+sc_concref <T1,T2>& sc_concref<T1,T2>::operator = (int64 a)
+{
+}
+
+// Bitwise rotations
+template <class T1, class T2>
+sc_concref <T1,T2>& sc_concref<T1,T2>::lrotate(int n)
+{
+}
+
+template <class T1, class T2>
+sc_concref <T1,T2>& sc_concref<T1,T2>::rrotate(int n)
+{
+}
+
+
+// Bitwise reverse
+template <class T1, class T2>
+sc_concref <T1,T2>& sc_concref<T1,T2>::reverse()
+{
+}
+
+
+// Bit selection
+template <class T1, class T2>
+sc_bitref<sc_concref<T1,T2> > sc_concref<T1,T2>::operator [] (int i)
+{
+}
+
+// Part selection
+template <class T1, class T2>
+sc_subref<sc_concref<T1,T2> > sc_concref<T1,T2>::operator () (int hi, int lo)
+{
+}
+
+template <class T1, class T2>
+sc_subref<sc_concref<T1,T2> > sc_concref<T1,T2>::range(int hi, int lo)
+{
+}
+
+// Other methods
+template <class T1, class T2>
+void sc_concref<T1,T2>::scan(std::istream& is)
+{
+}
+
+// Disabled
+template <class T1, class T2>
+sc_concref<T1,T2>::sc_concref()
+{
+}
+
+// r-value concatenation operators and functions
+template <typename C1, typename C2> sc_concref_r<C1,C2> operator , (C1, C2)
+{
+}
+
+template <typename C1, typename C2> sc_concref_r<C1,C2> concat(C1, C2)
+{
+}
+
+// l-value concatenation operators and functions
+template <typename C1, typename C2> sc_concref<C1,C2> operator , (C1, C2)
+{
+}
+
+template <typename C1, typename C2> sc_concref<C1,C2> concat(C1, C2)
+{
+}
 
 } // end of namespace sc_dt
 

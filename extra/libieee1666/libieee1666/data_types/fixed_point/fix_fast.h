@@ -36,19 +36,7 @@
 #define __LIBIEEE1666_DATA_TYPES_FIXED_POINT_FIX_FAST_H__
 
 #include <data_types/fwd.h>
-#include <data_types/integer/signed.h>
-#include <data_types/integer/int_base.h>
-#include <data_types/integer/uint.h>
-#include <data_types/integer/int.h>
-#include <data_types/integer/unsigned.h>
-#include <data_types/integer/uint_base.h>
 #include <data_types/fixed_point/fxnum_fast.h>
-#include <data_types/fixed_point/fix.h>
-#include <data_types/fixed_point/fxval.h>
-#include <data_types/fixed_point/fxval_fast.h>
-#include <data_types/fixed_point/fxnum.h>
-#include <data_types/context/fxcast_switch.h>
-#include <data_types/context/fxtype_params.h>
 
 namespace sc_dt {
 
@@ -80,7 +68,7 @@ public:
 	sc_fix_fast(tp, const sc_fxcast_switch&); \
 	sc_fix_fast(tp, int, int, const sc_fxcast_switch&); \
 	sc_fix_fast(tp, sc_q_mode, sc_o_mode, const sc_fxcast_switch&); \
-	sc_fix_fast(tp, sc_q_mod e, sc_o_mode, int, const sc_fxcast_switch&); \
+	sc_fix_fast(tp, sc_q_mode, sc_o_mode, int, const sc_fxcast_switch&); \
 	sc_fix_fast(tp, int, int, sc_q_mode, sc_o_mode, const sc_fxcast_switch&); \
 	sc_fix_fast(tp, int, int, sc_q_mode, sc_o_mode, int, const sc_fxcast_switch&); \
 	sc_fix_fast(tp, const sc_fxtype_params&); \
@@ -112,6 +100,10 @@ public:
 	DECL_CTORS_T_B(const sc_signed&)
 	DECL_CTORS_T_B(const sc_unsigned&)
 
+#undef DECL_CTORS_T
+#undef DECL_CTORS_T_A
+#undef DECL_CTORS_T_B
+	
 	// Copy constructor
 	sc_fix_fast(const sc_fix_fast&);
 
@@ -160,6 +152,11 @@ public:
 	DECL_ASN_OP_T(|=, const sc_fix_fast&)
 	DECL_ASN_OP_T(^=, const sc_fix&)
 	DECL_ASN_OP_T(^=, const sc_fix_fast&)
+	
+#undef DECL_ASN_OP_T
+#undef DECL_ASN_OP_OTHER
+#undef DECL_ASN_OP
+	
 	const sc_fxval_fast operator ++ (int);
 	const sc_fxval_fast operator -- (int);
 	sc_fix_fast& operator ++ ();

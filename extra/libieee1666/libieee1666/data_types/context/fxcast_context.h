@@ -36,9 +36,10 @@
 #define __LIBIEEE1666_DATA_TYPES_CONTEXT_FXCAST_CONTEXT_H__
 
 #include <data_types/fwd.h>
-#include <data_types/context/fxcast_switch.h>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 class sc_fxcast_context
 {

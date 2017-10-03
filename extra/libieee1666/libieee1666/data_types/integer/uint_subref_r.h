@@ -36,12 +36,11 @@
 #define __LIBIEEE1666_DATA_TYPES_INTEGER_UINT_SUBREF_R_H__
 
 #include <data_types/fwd.h>
-#include <data_types/integer/uint_subref.h>
-#include <data_types/integer/uint.h>
-#include <data_types/integer/uint_base.h>
 #include <iostream>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 class sc_uint_subref_r
 {

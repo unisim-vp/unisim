@@ -36,15 +36,11 @@
 #define __LIBIEEE1666_DATA_TYPES_BIT_CONCREF_R_H__
 
 #include <data_types/fwd.h>
-#include <data_types/bit/concref.h>
-#include <data_types/bit/logic.h>
-#include <data_types/bit/subref.h>
-#include <data_types/bit/subref_r.h>
-#include <data_types/bit/bitref.h>
-#include <data_types/bit/bitref_r.h>
 #include <iostream>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 template <class T1, class T2>
 class sc_concref_r 
@@ -93,10 +89,146 @@ public:
 
 private:
 	// Disabled
-	sc_concref();
+	sc_concref_r();
 	sc_concref_r<T1,T2>& operator = (const sc_concref_r<T1,T2>&);
 };
 
+///////////////////////////////// definition //////////////////////////////////
+
+// Copy constructor
+template <class T1, class T2>
+sc_concref_r<T1,T2>::sc_concref_r(const sc_concref_r<T1,T2>& a)
+{
+}
+
+// Destructor
+template <class T1, class T2>
+sc_concref_r<T1,T2>::~sc_concref_r()
+{
+}
+
+// Bit selection
+template <class T1, class T2>
+sc_bitref_r<sc_concref_r<T1,T2> > sc_concref_r<T1,T2>::operator [] (int i) const
+{
+}
+
+// Part selection
+template <class T1, class T2>
+sc_subref_r<sc_concref_r<T1,T2> > sc_concref_r<T1,T2>::operator () (int hi, int lo) const
+{
+}
+
+template <class T1, class T2>
+sc_subref_r<sc_concref_r<T1,T2> > sc_concref_r<T1,T2>::range(int hi, int lo) const
+{
+}
+
+// Reduce functions
+template <class T1, class T2>
+sc_logic_value_t sc_concref_r<T1,T2>::and_reduce() const
+{
+}
+
+template <class T1, class T2>
+sc_logic_value_t sc_concref_r<T1,T2>::nand_reduce() const
+{
+}
+
+template <class T1, class T2>
+sc_logic_value_t sc_concref_r<T1,T2>::or_reduce() const
+{
+}
+
+template <class T1, class T2>
+sc_logic_value_t sc_concref_r<T1,T2>::nor_reduce() const
+{
+}
+
+template <class T1, class T2>
+sc_logic_value_t sc_concref_r<T1,T2>::xor_reduce() const
+{
+}
+
+template <class T1, class T2>
+sc_logic_value_t sc_concref_r<T1,T2>::xnor_reduce() const
+{
+}
+
+// Common methods
+template <class T1, class T2>
+int sc_concref_r<T1,T2>::length() const
+{
+}
+
+// Explicit conversions to character string
+template <class T1, class T2>
+const std::string sc_concref_r<T1,T2>::to_string() const
+{
+}
+
+template <class T1, class T2>
+const std::string sc_concref_r<T1,T2>::to_string(sc_numrep) const
+{
+}
+
+template <class T1, class T2>
+const std::string sc_concref_r<T1,T2>::to_string(sc_numrep, bool) const
+{
+}
+
+// Explicit conversions
+template <class T1, class T2>
+int sc_concref_r<T1,T2>::to_int() const
+{
+}
+
+template <class T1, class T2>
+unsigned int sc_concref_r<T1,T2>::to_uint() const
+{
+}
+
+template <class T1, class T2>
+long sc_concref_r<T1,T2>::to_long() const
+{
+}
+
+template <class T1, class T2>
+unsigned long sc_concref_r<T1,T2>::to_ulong() const
+{
+}
+
+template <class T1, class T2>
+int64 sc_concref_r<T1,T2>::to_int64() const
+{
+}
+
+template <class T1, class T2>
+uint64 sc_concref_r<T1,T2>::to_uint64() const
+{
+}
+
+template <class T1, class T2>
+bool sc_concref_r<T1,T2>::is_01() const
+{
+}
+
+// Other methods
+template <class T1, class T2>
+void sc_concref_r<T1,T2>::print(std::ostream& os) const
+{
+}
+
+// Disabled
+template <class T1, class T2>
+sc_concref_r<T1,T2>::sc_concref_r()
+{
+}
+
+template <class T1, class T2>
+sc_concref_r<T1,T2>& sc_concref_r<T1,T2>::operator = (const sc_concref_r<T1,T2>&)
+{
+}
 
 } // end of namespace sc_dt
 

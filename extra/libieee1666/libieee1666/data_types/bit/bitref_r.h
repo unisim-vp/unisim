@@ -37,20 +37,17 @@
 
 #include <data_types/fwd.h>
 #include <data_types/bit/logic.h>
-#include <data_types/bit/bv.h>
-#include <data_types/bit/lv.h>
-#include <data_types/bit/lv_base.h>
-#include <data_types/bit/bitref.h>
-#include <data_types/bit/bv_base.h>
 #include <iostream>
 
 namespace sc_dt {
 
+//////////////////////////////// declaration //////////////////////////////////
+
 template <class T>
 class sc_bitref_r
 {
-friend class sc_bv_base;
-friend class sc_lv_base;
+	friend class sc_bv_base;
+	friend class sc_lv_base;
 
 public:
 	// Copy constructor
@@ -78,6 +75,62 @@ private:
 	sc_bitref_r();
 	sc_bitref_r<T>& operator = (const sc_bitref_r<T>&);
 };
+
+///////////////////////////////// definition //////////////////////////////////
+
+// Copy constructor
+template <class T>
+sc_bitref_r<T>::sc_bitref_r(const sc_bitref_r<T>& a)
+{
+}
+
+// Bitwise complement
+template <class T>
+const sc_logic sc_bitref_r<T>::operator ~ () const
+{
+}
+
+// Implicit conversion to sc_logic
+template <class T>
+sc_bitref_r<T>::operator const sc_logic() const
+{
+}
+
+// Explicit conversions
+template <class T>
+bool sc_bitref_r<T>::is_01() const
+{
+}
+template <class T>
+bool sc_bitref_r<T>::to_bool() const
+{
+}
+template <class T>
+char sc_bitref_r<T>::to_char() const
+{
+}
+
+// Common methods
+template <class T>
+int sc_bitref_r<T>::length() const
+{
+}
+
+// Other methods
+template <class T>
+void sc_bitref_r<T>::print(std::ostream& os) const
+{
+}
+
+// Disabled
+template <class T>
+sc_bitref_r<T>::sc_bitref_r()
+{
+}
+template <class T>
+sc_bitref_r<T>& sc_bitref_r<T>::operator = (const sc_bitref_r<T>&)
+{
+}
 
 } // end of namespace sc_dt
 

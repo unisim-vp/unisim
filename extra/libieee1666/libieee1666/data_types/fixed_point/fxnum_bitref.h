@@ -36,12 +36,11 @@
 #define __LIBIEEE1666_DATA_TYPES_FIXED_POINT_FXNUM_BITREF_H__
 
 #include <data_types/fwd.h>
-#include <data_types/fixed_point/fxnum_fast.h>
-#include <data_types/fixed_point/fxnum_fast_bitref.h>
-#include <data_types/fixed_point/fxnum.h>
 #include <iostream>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 class sc_fxnum_bitref
 {

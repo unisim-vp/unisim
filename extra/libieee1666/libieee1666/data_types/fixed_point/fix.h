@@ -36,21 +36,11 @@
 #define __LIBIEEE1666_DATA_TYPES_FIXED_POINT_FIX_H__
 
 #include <data_types/fwd.h>
-#include <data_types/integer/signed.h>
-#include <data_types/integer/int_base.h>
-#include <data_types/integer/uint.h>
-#include <data_types/integer/int.h>
-#include <data_types/integer/unsigned.h>
-#include <data_types/integer/uint_base.h>
-#include <data_types/fixed_point/fxnum_fast.h>
-#include <data_types/fixed_point/fix_fast.h>
-#include <data_types/fixed_point/fxval.h>
-#include <data_types/fixed_point/fxval_fast.h>
 #include <data_types/fixed_point/fxnum.h>
-#include <data_types/context/fxcast_switch.h>
-#include <data_types/context/fxtype_params.h>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 class sc_fix : public sc_fxnum
 {
@@ -58,7 +48,7 @@ public:
 	// Constructors and destructor
 	sc_fix();
 	sc_fix(int, int);
-	sc_fix(sc_q_mode, sc_o_mod e);
+	sc_fix(sc_q_mode, sc_o_mode);
 	sc_fix(sc_q_mode, sc_o_mode, int);
 	sc_fix(int, int, sc_q_mode, sc_o_mode);
 	sc_fix(int, int, sc_q_mode, sc_o_mode, int);
@@ -80,7 +70,7 @@ public:
 	sc_fix(tp, const sc_fxcast_switch&); \
 	sc_fix(tp, int, int, const sc_fxcast_switch&); \
 	sc_fix(tp, sc_q_mode, sc_o_mode, const sc_fxcast_switch&); \
-	sc_fix(tp, sc_q_mode, sc_o_mode, in, const sc_fxcast_switch&); \
+	sc_fix(tp, sc_q_mode, sc_o_mode, int, const sc_fxcast_switch&); \
 	sc_fix(tp, int, int, sc_q_mode, sc_o_mode, const sc_fxcast_switch&); \
 	sc_fix(tp, int, int, sc_q_mode, sc_o_mode, int, const sc_fxcast_switch&); \
 	sc_fix(tp, const sc_fxtype_params&); \
@@ -111,21 +101,26 @@ public:
 	DECL_CTORS_T_B(const sc_uint_base&)
 	DECL_CTORS_T_B(const sc_signed&)
 	DECL_CTORS_T_B(const sc_unsigned&)
+
+#undef DECL_CTORS_T
+#undef DECL_CTORS_T_A
+#undef DECL_CTORS_T_B
+
 	sc_fix(const sc_fix&);
 
 	// Unary bitwise operators
 	const sc_fix operator~ () const;
 
 	// Binary bitwise operators
-	friend const sc_fix operator& (const sc_fix&, const sc_fix&);
-	friend const sc_fix operator& (const sc_fix&, const sc_fix_fast&);
-	friend const sc_fix operator& (const sc_fix_fast&, const sc_fix&);
-	friend const sc_fix operator| (const sc_fix&, const sc_fix&);
-	friend const sc_fix operator| (const sc_fix&, const sc_fix_fast&);
-	friend const sc_fix operator| (const sc_fix_fast&, const sc_fix&);
-	friend const sc_fix operator^ (const sc_fix&, const sc_fix&);
-	friend const sc_fix operator^ (const sc_fix&, const sc_fix_fast&);
-	friend const sc_fix operator^ (const sc_fix_fast&, const sc_fix&);
+	friend const sc_fix operator & (const sc_fix&, const sc_fix&);
+	friend const sc_fix operator & (const sc_fix&, const sc_fix_fast&);
+	friend const sc_fix operator & (const sc_fix_fast&, const sc_fix&);
+	friend const sc_fix operator | (const sc_fix&, const sc_fix&);
+	friend const sc_fix operator | (const sc_fix&, const sc_fix_fast&);
+	friend const sc_fix operator | (const sc_fix_fast&, const sc_fix&);
+	friend const sc_fix operator ^ (const sc_fix&, const sc_fix&);
+	friend const sc_fix operator ^ (const sc_fix&, const sc_fix_fast&);
+	friend const sc_fix operator ^ (const sc_fix_fast&, const sc_fix&);
 	
 	sc_fix& operator = (const sc_fix&);
 
@@ -147,7 +142,7 @@ public:
 	DECL_ASN_OP_T(op, unsigned long) \
 	DECL_ASN_OP_T(op, float) \
 	DECL_ASN_OP_T(op, double) \
-	DECL_ASN_OP_T(op, const char*)\
+	DECL_ASN_OP_T(op, const char *)\
 	DECL_ASN_OP_T(op, const sc_fxval&)\
 	DECL_ASN_OP_T(op, const sc_fxval_fast&)\
 	DECL_ASN_OP_T(op, const sc_fxnum&) \
@@ -167,6 +162,11 @@ public:
 	DECL_ASN_OP_T(|=, const sc_fix_fast&)
 	DECL_ASN_OP_T(^=, const sc_fix&)
 	DECL_ASN_OP_T(^=, const sc_fix_fast&)
+
+#undef DECL_ASN_OP_T
+#undef DECL_ASN_OP_OTHER
+#undef DECL_ASN_OP
+
 	const sc_fxval operator ++ (int);
 	const sc_fxval operator -- (int);
 	sc_fix& operator ++ ();

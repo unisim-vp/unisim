@@ -36,22 +36,11 @@
 #define __LIBIEEE1666_DATA_TYPES_BIT_BV_H__
 
 #include <data_types/fwd.h>
-#include <data_types/bit/concref.h>
-#include <data_types/bit/logic.h>
-#include <data_types/bit/subref.h>
-#include <data_types/bit/subref_r.h>
-#include <data_types/bit/lv.h>
-#include <data_types/bit/lv_base.h>
-#include <data_types/bit/concref_r.h>
 #include <data_types/bit/bv_base.h>
-#include <data_types/integer/signed.h>
-#include <data_types/integer/int_base.h>
-#include <data_types/integer/uint.h>
-#include <data_types/integer/int.h>
-#include <data_types/integer/unsigned.h>
-#include <data_types/integer/uint_base.h>
 
 namespace sc_dt {
+
+//////////////////////////////// declaration //////////////////////////////////
 
 template <int W>
 class sc_bv : public sc_bv_base
@@ -100,6 +89,206 @@ public:
 	sc_bv<W>& operator = (uint64 a);
 	sc_bv<W>& operator = (int64 a);
 };
+
+///////////////////////////////// definition //////////////////////////////////
+
+// Constructors
+template <int W>
+sc_bv<W>::sc_bv()
+{
+}
+
+template <int W>
+sc_bv<W>::sc_bv(bool init_value)
+{
+}
+
+template <int W>
+sc_bv<W>::sc_bv(char init_value)
+{
+}
+
+template <int W>
+sc_bv<W>::sc_bv(const char *a)
+{
+}
+
+template <int W>
+sc_bv<W>::sc_bv(const bool *a)
+{
+}
+
+template <int W>
+sc_bv<W>::sc_bv(const sc_logic *a)
+{
+}
+
+template <int W>
+sc_bv<W>::sc_bv(const sc_unsigned& a)
+{
+}
+
+template <int W>
+sc_bv<W>::sc_bv(const sc_signed& a)
+{
+}
+
+template <int W>
+sc_bv<W>::sc_bv(const sc_uint_base& a)
+{
+}
+
+template <int W>
+sc_bv<W>::sc_bv(const sc_int_base& a)
+{
+}
+
+template <int W>
+sc_bv<W>::sc_bv(unsigned long a)
+{
+}
+
+template <int W>
+sc_bv<W>::sc_bv(long a)
+{
+}
+
+template <int W>
+sc_bv<W>::sc_bv(unsigned int a)
+{
+}
+
+template <int W>
+sc_bv<W>::sc_bv(int a)
+{
+}
+
+template <int W>
+sc_bv<W>::sc_bv(uint64 a)
+{
+}
+
+template <int W>
+sc_bv<W>::sc_bv(int64 a)
+{
+}
+
+template <int W>
+template <class X> sc_bv<W>::sc_bv(const sc_subref_r<X>& a)
+{
+}
+
+template <int W>
+template <class T1, class T2> sc_bv<W>::sc_bv(const sc_concref_r<T1,T2>& a)
+{
+}
+
+template <int W>
+sc_bv<W>::sc_bv(const sc_bv_base& a)
+{
+}
+
+template <int W>
+sc_bv<W>::sc_bv(const sc_lv_base& a)
+{
+}
+
+template <int W>
+sc_bv<W>::sc_bv(const sc_bv<W>& a)
+{
+}
+
+
+// Assignment operators
+template <int W>
+template <class X> sc_bv<W>& sc_bv<W>::operator = (const sc_subref_r<X>& a)
+{
+}
+
+template <int W>
+template <class T1, class T2> sc_bv<W>& sc_bv<W>::operator = (const sc_concref_r <T1,T2>& a)
+{
+}
+
+template <int W>
+sc_bv<W>& sc_bv<W>::operator = (const sc_bv_base& a)
+{
+}
+
+template <int W>
+sc_bv<W>& sc_bv<W>::operator = (const sc_lv_base& a)
+{
+}
+
+template <int W>
+sc_bv<W>& sc_bv<W>::operator = (const sc_bv<W>& a)
+{
+}
+
+template <int W>
+sc_bv<W>& sc_bv<W>::operator = (const char *a)
+{
+}
+
+template <int W>
+sc_bv<W>& sc_bv<W>::operator = (const bool *a)
+{
+}
+
+template <int W>
+sc_bv<W>& sc_bv<W>::operator = (const sc_logic *a)
+{
+}
+
+template <int W>
+sc_bv<W>& sc_bv<W>::operator = (const sc_unsigned& a)
+{
+}
+
+template <int W>
+sc_bv<W>& sc_bv<W>::operator = (const sc_signed& a)
+{
+}
+
+template <int W>
+sc_bv<W>& sc_bv<W>::operator = (const sc_uint_base& a)
+{
+}
+
+template <int W>
+sc_bv<W>& sc_bv<W>::operator = (const sc_int_base& a)
+{
+}
+
+template <int W>
+sc_bv<W>& sc_bv<W>::operator = (unsigned long a)
+{
+}
+
+template <int W>
+sc_bv<W>& sc_bv<W>::operator = (long a)
+{
+}
+
+template <int W>
+sc_bv<W>& sc_bv<W>::operator = (unsigned int a)
+{
+}
+
+template <int W>
+sc_bv<W>& sc_bv<W>::operator = (int a)
+{
+}
+
+template <int W>
+sc_bv<W>& sc_bv<W>::operator = (uint64 a)
+{
+}
+
+template <int W>
+sc_bv<W>& sc_bv<W>::operator = (int64 a)
+{
+}
 
 } // end of namespace sc_dt
 
