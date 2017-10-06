@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015,
+ *  Copyright (c) 2014,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,27 +32,41 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __LIBIEEE1666_TLM__
-#define __LIBIEEE1666_TLM__
+#ifndef __LIBIEEE1666_TLM1_INTERFACE_FIFO_IFS_H__
+#define __LIBIEEE1666_TLM1_INTERFACE_FIFO_IFS_H__
 
-#include "tlm1/fwd.h"
-#include "tlm1/interface/analysis_ifs.h"
-#include "tlm1/interface/fifo_ifs.h"
-#include "tlm1/interface/message_passing_ifs.h"
-#include "tlm1/channels/fifo.h"
-#include "tlm1/analysis/analysis_fifo.h"
-#include "tlm1/analysis/analysis_port.h"
-#include "tlm2/fwd.h"
-#include "tlm2/interface/blocking_transport.h"
-#include "tlm2/interface/non_blocking_transport.h"
-#include "tlm2/interface/debug_transport.h"
-#include "tlm2/interface/direct_memory.h"
-#include "tlm2/interface/combined.h"
-#include "tlm2/socket/initiator_socket.h"
-#include "tlm2/socket/target_socket.h"
-#include "tlm2/protocol/base_protocol.h"
-#include "tlm2/phase/base_phase.h"
-#include "tlm2/payload/generic_payload.h"
-#include "tlm2/global_quantum/global_quantum.h"
+#include <tlm1/fwd.h>
+#include <systemc>
+
+namespace tlm {
+
+// Fifo debug interface
+template <typename T>
+class tlm_fifo_debug_if : public virtual sc_core::sc_interface
+{
+public:
+	virtual int used() const = 0;
+	virtual int size() const = 0;
+	virtual void debug() const = 0;
+	virtual bool nb_peek(T&, int n) const = 0;
+	virtual bool nb_poke(const T&, int n = 0) = 0;
+};
+
+// Fifo interfaces
+template <typename T>
+class tlm_fifo_put_if
+	: public virtual tlm_put_if<T>
+	, public virtual tlm_fifo_debug_if<T>
+{
+};
+
+template < typename T >
+class tlm_fifo_get_if
+	: public virtual tlm_get_peek_if<T>
+	, public virtual tlm_fifo_debug_if<T>
+{
+};
+
+} // end of namespace tlm
 
 #endif

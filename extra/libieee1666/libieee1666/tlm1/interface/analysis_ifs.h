@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015,
+ *  Copyright (c) 2014,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,27 +32,28 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __LIBIEEE1666_TLM__
-#define __LIBIEEE1666_TLM__
+#ifndef __LIBIEEE1666_TLM1_INTERFACE_ANALYSIS_ANALYSIS_IFS_H__
+#define __LIBIEEE1666_TLM1_INTERFACE_ANALYSIS_ANALYSIS_IFS_H__
 
-#include "tlm1/fwd.h"
-#include "tlm1/interface/analysis_ifs.h"
-#include "tlm1/interface/fifo_ifs.h"
-#include "tlm1/interface/message_passing_ifs.h"
-#include "tlm1/channels/fifo.h"
-#include "tlm1/analysis/analysis_fifo.h"
-#include "tlm1/analysis/analysis_port.h"
-#include "tlm2/fwd.h"
-#include "tlm2/interface/blocking_transport.h"
-#include "tlm2/interface/non_blocking_transport.h"
-#include "tlm2/interface/debug_transport.h"
-#include "tlm2/interface/direct_memory.h"
-#include "tlm2/interface/combined.h"
-#include "tlm2/socket/initiator_socket.h"
-#include "tlm2/socket/target_socket.h"
-#include "tlm2/protocol/base_protocol.h"
-#include "tlm2/phase/base_phase.h"
-#include "tlm2/payload/generic_payload.h"
-#include "tlm2/global_quantum/global_quantum.h"
+#include <tlm1/fwd.h>
+#include <systemc>
+
+namespace tlm {
+
+// Write interface
+template <typename T>
+class tlm_write_if : public virtual sc_core::sc_interface
+{
+public:
+	virtual void write(const T&) = 0;
+};
+
+// Analysis interface
+template <typename T>
+class tlm_analysis_if : public virtual tlm_write_if<T>
+{
+};
+
+} // end of namespace tlm
 
 #endif

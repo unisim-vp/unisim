@@ -126,6 +126,12 @@ libieee1666/utilities/report.h \
 libieee1666/utilities/report_handler.h \
 libieee1666/utilities/version.h \
 libieee1666/utilities/vector.h \
+libieee1666/tlm1/interface/analysis_ifs.h \
+libieee1666/tlm1/interface/fifo_ifs.h \
+libieee1666/tlm1/interface/message_passing_ifs.h \
+libieee1666/tlm1/channels/fifo.h \
+libieee1666/tlm1/analysis/analysis_fifo.h \
+libieee1666/tlm1/analysis/analysis_port.h \
 libieee1666/tlm2/fwd.h \
 libieee1666/tlm2/interface/blocking_transport.h \
 libieee1666/tlm2/interface/non_blocking_transport.h \

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015,
+ *  Copyright (c) 2014,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,27 +32,66 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __LIBIEEE1666_TLM__
-#define __LIBIEEE1666_TLM__
+#ifndef __LIBIEEE1666_TLM1_ANALYSIS_ANALYSIS_PORT_H__
+#define __LIBIEEE1666_TLM1_ANALYSIS_ANALYSIS_PORT_H__
 
-#include "tlm1/fwd.h"
-#include "tlm1/interface/analysis_ifs.h"
-#include "tlm1/interface/fifo_ifs.h"
-#include "tlm1/interface/message_passing_ifs.h"
-#include "tlm1/channels/fifo.h"
-#include "tlm1/analysis/analysis_fifo.h"
-#include "tlm1/analysis/analysis_port.h"
-#include "tlm2/fwd.h"
-#include "tlm2/interface/blocking_transport.h"
-#include "tlm2/interface/non_blocking_transport.h"
-#include "tlm2/interface/debug_transport.h"
-#include "tlm2/interface/direct_memory.h"
-#include "tlm2/interface/combined.h"
-#include "tlm2/socket/initiator_socket.h"
-#include "tlm2/socket/target_socket.h"
-#include "tlm2/protocol/base_protocol.h"
-#include "tlm2/phase/base_phase.h"
-#include "tlm2/payload/generic_payload.h"
-#include "tlm2/global_quantum/global_quantum.h"
+#include <tlm1/fwd.h>
+#include <systemc>
+
+namespace tlm {
+
+//////////////////////////////// declaration //////////////////////////////////
+
+// Analysis port
+template <typename T>
+class tlm_analysis_port
+	: public sc_core::sc_object
+	, public virtual tlm_analysis_if<T>
+{
+public:
+	tlm_analysis_port();
+	tlm_analysis_port(const char *);
+	
+	// bind and () work for both interfaces and analysis ports,
+	// since analysis ports implement the analysis interface
+	virtual void bind(tlm_analysis_if<T>&);
+	void operator () (tlm_analysis_if<T>&);
+	virtual bool unbind(tlm_analysis_if<T> &);
+	void write(const T&);
+};
+
+///////////////////////////////// definition //////////////////////////////////
+
+template <typename T>
+tlm_analysis_port<T>::tlm_analysis_port()
+{
+}
+
+template <typename T>
+tlm_analysis_port<T>::tlm_analysis_port(const char *)
+{
+}
+
+template <typename T>
+void tlm_analysis_port<T>::bind(tlm_analysis_if<T>&)
+{
+}
+
+template <typename T>
+void tlm_analysis_port<T>::operator () (tlm_analysis_if<T>&)
+{
+}
+
+template <typename T>
+bool tlm_analysis_port<T>::unbind(tlm_analysis_if<T> &)
+{
+}
+
+template <typename T>
+void tlm_analysis_port<T>::write(const T&)
+{
+}
+
+} // end of namespace tlm
 
 #endif

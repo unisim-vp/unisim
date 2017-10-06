@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015,
+ *  Copyright (c) 2014,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,27 +32,34 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __LIBIEEE1666_TLM__
-#define __LIBIEEE1666_TLM__
+#ifndef __LIBIEEE1666_TLM1_FWD_H__
+#define __LIBIEEE1666_TLM1_FWD_H__
 
-#include "tlm1/fwd.h"
-#include "tlm1/interface/analysis_ifs.h"
-#include "tlm1/interface/fifo_ifs.h"
-#include "tlm1/interface/message_passing_ifs.h"
-#include "tlm1/channels/fifo.h"
-#include "tlm1/analysis/analysis_fifo.h"
-#include "tlm1/analysis/analysis_port.h"
-#include "tlm2/fwd.h"
-#include "tlm2/interface/blocking_transport.h"
-#include "tlm2/interface/non_blocking_transport.h"
-#include "tlm2/interface/debug_transport.h"
-#include "tlm2/interface/direct_memory.h"
-#include "tlm2/interface/combined.h"
-#include "tlm2/socket/initiator_socket.h"
-#include "tlm2/socket/target_socket.h"
-#include "tlm2/protocol/base_protocol.h"
-#include "tlm2/phase/base_phase.h"
-#include "tlm2/payload/generic_payload.h"
-#include "tlm2/global_quantum/global_quantum.h"
+namespace tlm {
+
+template <typename T> class tlm_analysis_fifo;
+template <typename T> class tlm_analysis_port;
+template <typename T> class tlm_fifo_debug_if;
+template <typename T> class tlm_fifo_put_if;
+template <typename T> class tlm_fifo_get_if;
+template <class T> class tlm_tag;
+template <typename T> class tlm_blocking_put_if;
+template <typename T> class tlm_blocking_get_if;
+template <typename T> class tlm_blocking_peek_if;
+template <typename T> class tlm_nonblocking_put_if;
+template <typename T> class tlm_nonblocking_get_if;
+template <typename T> class tlm_nonblocking_peek_if;
+template <typename T> class tlm_put_if;
+template <typename T> class tlm_get_if;
+template <typename T> class tlm_peek_if;
+template <typename T> class tlm_blocking_get_peek_if;
+template <typename T> class tlm_nonblocking_get_peek_if;
+template <typename T> class tlm_get_peek_if;
+template <typename REQ, typename RSP> class tlm_transport_if;
+template <typename T> class tlm_write_if;
+template <typename T> class tlm_analysis_if;
+template <typename T> class tlm_fifo;
+
+} // end of namespace tlm
 
 #endif
