@@ -36,6 +36,16 @@
 
 namespace sc_core {
 
-} // end of namespace sc_core
+const char *sc_vector_base::kind() const
+{
+}
 
-#endif
+sc_vector_base::size_type sc_vector_base::size() const
+{
+}
+
+const std::vector<sc_object *>& sc_vector_base::get_elements() const
+{
+}
+
+} // end of namespace sc_core

@@ -130,7 +130,7 @@
 #include "utilities/trace_file.h"
 #include "utilities/report.h"
 #include "utilities/report_handler.h"
-//#include "utilities/vector.h"
+#include "utilities/vector.h"
 #include "utilities/version.h"
 
 #endif

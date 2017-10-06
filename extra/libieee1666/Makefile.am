@@ -247,6 +247,7 @@ libieee1666/utilities/trace_file.cc \
 libieee1666/utilities/report.cc \
 libieee1666/utilities/report_handler.cc \
 libieee1666/utilities/version.cc \
+libieee1666/utilities/vector.cc \
 libieee1666/tlm2/interface/direct_memory.cc \
 libieee1666/tlm2/phase/base_phase.cc \
 libieee1666/tlm2/payload/generic_payload.cc \
