@@ -166,6 +166,10 @@ class sc_fxcast_switch;
 class sc_fxtype_params;
 class sc_fxcast_context;
 
+template <class T> const T sc_abs(const T& v);
+template <class T> const T sc_max(const T& a, const T& b);
+template <class T> const T sc_min(const T& a, const T& b);
+
 } // end of namespace sc_dt
 
 #endif

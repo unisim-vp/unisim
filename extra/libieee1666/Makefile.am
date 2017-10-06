@@ -58,6 +58,7 @@ libieee1666/channels/signal_if.h \
 libieee1666/channels/mutex.h \
 libieee1666/channels/signal.h \
 libieee1666/channels/semaphore.h \
+libieee1666/data_types/algorithm.h \
 libieee1666/data_types/native.h \
 libieee1666/data_types/fwd.h \
 libieee1666/data_types/bit/concref.h \

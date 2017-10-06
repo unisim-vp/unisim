@@ -67,6 +67,7 @@
 #include "channels/semaphore_if.h"
 #include "channels/signal.h"
 #include "channels/signal_if.h"
+#include "data_types/algorithm.h"
 #include "data_types/context/fxtype_context.h"
 #include "data_types/context/length_param.h"
 #include "data_types/context/length_context.h"
