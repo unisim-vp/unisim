@@ -41,33 +41,141 @@ namespace unisim {
 namespace util {
 namespace debug {
 
-template <class ADDRESS, uint32_t PAGE_SIZE>
-ProfilePage<ADDRESS, PAGE_SIZE>::ProfilePage(ADDRESS _key) :
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE>::ProfilePage(ADDRESS _key) :
 	key(_key),
 	next(0)
 {
-	weights = new uint64_t[PAGE_SIZE];
-	memset(weights, 0, sizeof(uint64_t) * PAGE_SIZE);
+	weight_coverage_map = new uint64_t[(2 * PAGE_SIZE) / 64]();
+	weights = new WEIGHT[PAGE_SIZE]();
 }
 
-template <class ADDRESS, uint32_t PAGE_SIZE>
-ProfilePage<ADDRESS, PAGE_SIZE>::~ProfilePage()
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE>::~ProfilePage()
 {
+	delete[] weight_coverage_map;
 	delete[] weights;
 }
 
-template <class ADDRESS, uint32_t PAGE_SIZE>
-std::ostream& operator << (std::ostream& os, const ProfilePage<ADDRESS, PAGE_SIZE>& page)
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+bool ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE>::IsCovered(ADDRESS offset) const
 {
-	ADDRESS base_addr = page.key * PAGE_SIZE;
+	uint64_t mask = uint64_t(1) << ((2 * offset) % 64);
+	return (weight_coverage_map[(2 * offset) / 64] & mask) != 0;
+}
+
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+bool ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE>::HasWeight(ADDRESS offset) const
+{
+	uint64_t mask = uint64_t(2) << ((2 * offset) % 64);
+	return (weight_coverage_map[(2 * offset) / 64] & mask) != 0;
+}
+
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+ADDRESS ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE>::GetBaseAddress() const
+{
+	return key * PAGE_SIZE;
+}
+
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+const WEIGHT& ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE>::GetWeight(unsigned int offset) const
+{
+	return weights[offset];
+}
+
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+void ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE>::Cover(ADDRESS offset, unsigned int length)
+{
+	if(length > 0)
+	{
+		do
+		{
+			uint64_t mask = uint64_t(1) << ((2 * offset) % 64);
+			weight_coverage_map[(2 * offset) / 64] |= mask;
+		}
+		while(++offset, (--length > 0));
+	}
+}
+
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+void ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE>::Accumulate(ADDRESS offset, const WEIGHT& weight)
+{
+	uint64_t mask = uint64_t(2) << ((2 * offset) % 64);
+	weight_coverage_map[(2 * offset) / 64] |= mask;
+	weights[offset] += weight;
+}
+
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+void ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE>::GetAddressRanges(std::vector<std::pair<ADDRESS, ADDRESS> >& addr_ranges) const
+{
+	ADDRESS base_addr = GetBaseAddress();
+	bool addr_range_in_progress = false;
+	std::pair<ADDRESS, ADDRESS> *prev_addr_range = 0;
+	std::pair<ADDRESS, ADDRESS> addr_range;
+	
+	// prologue
+	if(IsCovered(0) && !addr_ranges.empty())
+	{
+		std::pair<ADDRESS, ADDRESS>& _prev_addr_range = addr_ranges.back();
+		
+		if(base_addr && ((base_addr - 1) == _prev_addr_range.second))
+		{
+			prev_addr_range = &_prev_addr_range;
+			addr_range_in_progress = true;
+		}
+	}
+	
+	ADDRESS offset;
+	for(offset = 0; offset < PAGE_SIZE; offset++)
+	{
+		bool is_covered = IsCovered(offset);
+		
+		if(!addr_range_in_progress && is_covered)
+		{
+			ADDRESS addr = base_addr + offset;
+			(prev_addr_range ? prev_addr_range : &addr_range)->first = addr;
+			addr_range_in_progress = true;
+		}
+		else if(addr_range_in_progress && !is_covered)
+		{
+			ADDRESS addr = base_addr + offset - 1;
+			(prev_addr_range ? prev_addr_range : &addr_range)->second = addr;
+			if(prev_addr_range)
+			{
+				prev_addr_range = 0;
+			}
+			else
+			{
+				addr_ranges.push_back(addr_range);
+			}
+			addr_range_in_progress = false;
+		}
+	}
+	
+	// epilogue
+	if(addr_range_in_progress)
+	{
+		(prev_addr_range ? prev_addr_range : &addr_range)->second = base_addr + offset - 1;
+		if(!prev_addr_range)
+		{
+			addr_ranges.push_back(addr_range);
+		}
+	}
+}
+
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+std::ostream& operator << (std::ostream& os, const ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE>& page)
+{
+	ADDRESS base_addr = page.GetBaseAddress();
 	ADDRESS offset;
 	bool first = true;
 
 	for(offset = 0; offset < PAGE_SIZE; offset++)
 	{
-		uint64_t weight = page.weights[offset];
-		if(weight > 0)
+		if(page.HasWeight(offset))
 		{
+			const WEIGHT& weight = page.GetWeight(offset);
+			
 			if(!first)
 			{
 				os << std::endl;
@@ -82,45 +190,128 @@ std::ostream& operator << (std::ostream& os, const ProfilePage<ADDRESS, PAGE_SIZ
 	return os;
 }
 
-template <class ADDRESS, uint32_t PAGE_SIZE>
-Profile<ADDRESS, PAGE_SIZE>::Profile()
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+Profile<ADDRESS, WEIGHT, PAGE_SIZE>::Profile()
+	: hash_table()
+	, page_map()
 {
 }
 
-template <class ADDRESS, uint32_t PAGE_SIZE>
-Profile<ADDRESS, PAGE_SIZE>::~Profile()
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+Profile<ADDRESS, WEIGHT, PAGE_SIZE>::~Profile()
 {
 }
 
-template <class ADDRESS, uint32_t PAGE_SIZE>
-void Profile<ADDRESS, PAGE_SIZE>::Clear()
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+void Profile<ADDRESS, WEIGHT, PAGE_SIZE>::Clear()
 {
 	hash_table.Reset();
+	page_map.clear();
 }
 
-template <class ADDRESS, uint32_t PAGE_SIZE>
-void Profile<ADDRESS, PAGE_SIZE>::Accumulate(ADDRESS addr, uint64_t weight)
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *Profile<ADDRESS, WEIGHT, PAGE_SIZE>::AllocatePage(ADDRESS addr)
 {
-	ProfilePage<ADDRESS, PAGE_SIZE> *page;
+	ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *page = GetPage(addr);
+
+	if(!page)
+	{
+		ADDRESS key = addr / PAGE_SIZE;
+		page = new ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE>(key);
+		hash_table.Insert(page);
+		page_map.insert(std::pair<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *>(addr & ~(PAGE_SIZE - 1), page));
+	}
+	
+	return page;
+}
+
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *Profile<ADDRESS, WEIGHT, PAGE_SIZE>::GetPage(ADDRESS addr) const
+{
+	ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *page;
 
 	ADDRESS key = addr / PAGE_SIZE;
 
 	page = hash_table.Find(key);
-	if(!page)
-	{
-		page = new ProfilePage<ADDRESS, PAGE_SIZE>(key);
-		hash_table.Insert(page);
-	}
-
-	page->weights[addr & (PAGE_SIZE - 1)] += weight;
+	
+	return page;
 }
 
-template <class ADDRESS, uint32_t PAGE_SIZE>
-std::ostream& operator << (std::ostream& os, const Profile<ADDRESS, PAGE_SIZE>& prof)
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+void Profile<ADDRESS, WEIGHT, PAGE_SIZE>::Cover(ADDRESS addr, unsigned int length)
+{
+	if(length > 0)
+	{
+		do
+		{
+			ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *page = AllocatePage(addr);
+			
+			ADDRESS offset = addr & (PAGE_SIZE - 1);
+			ADDRESS size_to_page_boundary = PAGE_SIZE - offset;
+			unsigned int l = (length < size_to_page_boundary) ? length : size_to_page_boundary;
+			page->Cover(offset, l);
+
+			addr += l;
+			length -= l;
+		}
+		while(length > 0);
+	}
+}
+
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+bool Profile<ADDRESS, WEIGHT, PAGE_SIZE>::IsCovered(ADDRESS addr) const
+{
+	ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *page = GetPage(addr);
+
+	if(!page) return false;
+	
+	ADDRESS offset = addr & (PAGE_SIZE - 1);
+	return page->IsCovered(offset);
+}
+
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+void Profile<ADDRESS, WEIGHT, PAGE_SIZE>::Accumulate(ADDRESS addr, const WEIGHT& weight)
+{
+	ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *page = AllocatePage(addr);
+
+	ADDRESS offset = addr & (PAGE_SIZE - 1);
+	page->Accumulate(offset, weight);
+}
+
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+bool Profile<ADDRESS, WEIGHT, PAGE_SIZE>::GetWeight(ADDRESS addr, WEIGHT& weight) const
+{
+	ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *page = GetPage(addr);
+
+	if(!page) return false;
+
+	ADDRESS offset = addr & (PAGE_SIZE - 1);
+	if(!page->HasWeight(offset)) return false;
+	
+	weight = page->GetWeight(offset);
+	
+	return true;
+}
+
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+void Profile<ADDRESS, WEIGHT, PAGE_SIZE>::GetAddressRanges(std::vector<std::pair<ADDRESS, ADDRESS> >& addr_ranges) const
+{
+	typename std::map<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *>::const_iterator page_map_it;
+	
+	for(page_map_it = page_map.begin(); page_map_it != page_map.end(); page_map_it++)
+	{
+		ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *page = (*page_map_it).second;
+		
+		page->GetAddressRanges(addr_ranges);
+	}
+}
+
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+std::ostream& operator << (std::ostream& os, const Profile<ADDRESS, WEIGHT, PAGE_SIZE>& prof)
 {
 	bool first = true;
-	typename std::map<ADDRESS, ProfilePage<ADDRESS, PAGE_SIZE> *>::map map = prof.hash_table;
-	typename std::map<ADDRESS, ProfilePage<ADDRESS, PAGE_SIZE> *>::const_iterator iter;
+	typename std::map<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *>::map map = prof.hash_table;
+	typename std::map<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *>::const_iterator iter;
 
 	for(iter = map.begin(); iter != map.end(); iter++)
 	{
@@ -138,27 +329,27 @@ std::ostream& operator << (std::ostream& os, const Profile<ADDRESS, PAGE_SIZE>& 
 	return os;
 }
 
-template <class ADDRESS, uint32_t PAGE_SIZE>
-Profile<ADDRESS, PAGE_SIZE>::operator std::map<ADDRESS, uint64_t>() const
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+Profile<ADDRESS, WEIGHT, PAGE_SIZE>::operator std::map<ADDRESS, WEIGHT>() const
 {
-	std::map<ADDRESS, uint64_t> map;
+	std::map<ADDRESS, WEIGHT> map;
 
-	typename std::map<ADDRESS, ProfilePage<ADDRESS, PAGE_SIZE> *>::map page_map = hash_table;
-	typename std::map<ADDRESS, ProfilePage<ADDRESS, PAGE_SIZE> *>::const_iterator iter;
+	typename std::map<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *>::map page_map = hash_table;
+	typename std::map<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *>::const_iterator iter;
 
 	for(iter = page_map.begin(); iter != page_map.end(); iter++)
 	{
-		ProfilePage<ADDRESS, PAGE_SIZE> *page = (*iter).second;
+		ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *page = (*iter).second;
 
-		ADDRESS base_addr = page->key * PAGE_SIZE;
+		ADDRESS base_addr = page->GetBaseAddress();
 		ADDRESS offset;
 
 		for(offset = 0; offset < PAGE_SIZE; offset++)
 		{
-			uint64_t weight = page->weights[offset];
-			if(weight > 0)
+			if(page->HasWeight(offset))
 			{
-				map.insert(std::pair<ADDRESS, uint64_t>(base_addr + offset, weight));
+				const WEIGHT& weight = page->GetWeight(offset);
+				map.insert(std::pair<ADDRESS, WEIGHT>(base_addr + offset, weight));
 			}
 		}
 	}

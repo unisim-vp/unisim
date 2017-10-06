@@ -50,7 +50,7 @@ namespace mpc57xx {
 
 struct MPU_ENTRY
 {
-	MPU_ENTRY() : mas0(0x30), mas1(0), mas2(0), mas3(0) {}
+	MPU_ENTRY() : mas0(0), mas1(0), mas2(0), mas3(0) {}
 	
 	uint32_t mas0;
 	uint32_t mas1;
@@ -65,7 +65,6 @@ struct MPU : unisim::util::cache::AccessController<TYPES, MPU<TYPES, CONFIG> >
 	typedef typename TYPES::ADDRESS ADDRESS;
 	typedef typename TYPES::PHYSICAL_ADDRESS PHYSICAL_ADDRESS;
 	typedef typename TYPES::STORAGE_ATTR STORAGE_ATTR;
-	typedef typename CPU::MAS0 MAS0;
 	typedef typename CPU::MAS1 MAS1;
 	typedef typename CPU::MAS2 MAS2;
 	typedef typename CPU::MAS3 MAS3;
@@ -84,6 +83,21 @@ struct MPU : unisim::util::cache::AccessController<TYPES, MPU<TYPES, CONFIG> >
 	void DumpEntry(std::ostream& os, MPU_ENTRY *mpu_entry);
 	void Dump(std::ostream& os);
 protected:
+	struct MAS0 : CPU::MAS0
+	{
+		typedef typename CPU::MAS0 Super;
+		
+		MAS0(CPU *_cpu) : Super(_cpu) {}
+		MAS0(CPU *_cpu, uint32_t _value) : Super(_cpu, _value) {}
+		
+		virtual void Reset()
+		{
+			this->Initialize(Super::VLE::template GetMask<uint32_t>() | Super::W::template GetMask<uint32_t>()); // VLE and W sticked to 1
+		}
+		
+		using Super::operator =;
+	};
+	
 	struct MMUCFG : CPU::MMUCFG
 	{
 		typedef typename CPU::MMUCFG Super;
@@ -255,10 +269,10 @@ void MPU<TYPES, CONFIG>::ReadEntry()
 		}
 	}
 	
-	mas0.Initialize((mpu_entry ? mpu_entry->mas0 : 0) | 0x30); // Note: using Initialize to bypass bit protection because bits 26-27 must also be written into mas0
-	mas1.Initialize(mpu_entry ? mpu_entry->mas1 : 0);
-	mas2.Initialize(mpu_entry ? mpu_entry->mas2 : 0);
-	mas3.Initialize(mpu_entry ? mpu_entry->mas3 : 0);
+	mas0 = (mpu_entry ? mpu_entry->mas0 : 0);
+	mas1 = (mpu_entry ? mpu_entry->mas1 : 0);
+	mas2 = (mpu_entry ? mpu_entry->mas2 : 0);
+	mas3 = (mpu_entry ? mpu_entry->mas3 : 0);
 }
 
 template <typename TYPES, typename CONFIG>
@@ -273,7 +287,7 @@ void MPU<TYPES, CONFIG>::Invalidate()
 		
 		if(force || !MAS0::IPROT::Get(mpu_entry->mas0))
 		{
-			mpu_entry->mas0 = 0x30;
+			mpu_entry->mas0 = 0;
 			mpu_entry->mas1 = 0;
 			mpu_entry->mas2 = 0;
 			mpu_entry->mas3 = 0;
@@ -288,7 +302,7 @@ void MPU<TYPES, CONFIG>::Invalidate()
 		MPU_ENTRY *mpu_entry = &data_mpu_entries[esel];
 		if(force || !MAS0::IPROT::Get(mpu_entry->mas0))
 		{
-			mpu_entry->mas0 = 0x30;
+			mpu_entry->mas0 = 0;
 			mpu_entry->mas1 = 0;
 			mpu_entry->mas2 = 0;
 			mpu_entry->mas3 = 0;
@@ -302,7 +316,7 @@ void MPU<TYPES, CONFIG>::Invalidate()
 		MPU_ENTRY *mpu_entry = &shd_mpu_entries[esel];
 		if(force || !MAS0::IPROT::Get(mpu_entry->mas0))
 		{
-			mpu_entry->mas0 = 0x30;
+			mpu_entry->mas0 = 0;
 			mpu_entry->mas1 = 0;
 			mpu_entry->mas2 = 0;
 			mpu_entry->mas3 = 0;

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009,
+ *  Copyright (c) 2017,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,18 +32,17 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <unisim/util/debug/profile.hh>
-#include <unisim/util/debug/profile.tcc>
-#include <inttypes.h>
+#include <unisim/service/debug/profiler/profiler.hh>
+#include <unisim/service/debug/profiler/profiler.tcc>
 
 namespace unisim {
-namespace util {
+namespace service {
 namespace debug {
+namespace profiler {
 
-template class Profile<uint32_t, uint64_t, DEFAULT_PROFILE_PAGE_SIZE>;
+template class Profiler<uint32_t>;
 
-template std::ostream& operator << (std::ostream& os, const Profile<uint32_t, uint64_t, DEFAULT_PROFILE_PAGE_SIZE>& prof);
-
+} // end of namespace profiler
 } // end of namespace debug
-} // end of namespace util
+} // end of namespace service
 } // end of namespace unisim

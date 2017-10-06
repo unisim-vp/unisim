@@ -6,9 +6,10 @@
 #include "derivative.h" /* include peripheral declarations */
 #include "compiler_api.h"
 
-int main(void)
+volatile int counter = 0;
+
+int main_Z7_0(void)
 {
-	volatile int counter = 0;
 	
 	/* Loop forever */
 	for(;;)

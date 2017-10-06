@@ -141,7 +141,7 @@ private:
 	
 	// unisim::service::interfaces::MemoryAccessReporting<ADDRESS> (tagged)
 	bool ReportMemoryAccess(unsigned int prc_num, unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
-	void ReportCommitInstruction(unsigned int prc_num, ADDRESS addr);
+	void ReportCommitInstruction(unsigned int prc_num, ADDRESS addr, unsigned int length);
 	void ReportFetchInstruction(unsigned int prc_num, ADDRESS next_addr);
 	
 	// unisim::service::interfaces::TrapReporting (tagged)
@@ -193,8 +193,9 @@ private:
 	const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(unsigned int front_end_num, ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const;
 	
 	// unisim::service::interfaces::StatementLookup<ADDRESS> (tagged)
-	void GetStatements(unsigned int front_end_num, std::map<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& stmts) const;
+	void GetStatements(unsigned int front_end_num, std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& stmts) const;
 	const unisim::util::debug::Statement<ADDRESS> *FindStatement(unsigned int front_end_num, ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const;
+	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const;
 	const unisim::util::debug::Statement<ADDRESS> *FindStatement(unsigned int front_end_num, const char *filename, unsigned int lineno, unsigned int colno) const;
 	const unisim::util::debug::Statement<ADDRESS> *FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const;
 	
@@ -283,7 +284,7 @@ private:
 		
 		// unisim::service::interfaces::MemoryAccessReporting<ADDRESS>
 		virtual bool ReportMemoryAccess(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size) { return dbg.ReportMemoryAccess(id, mat, mt, addr, size); }
-		virtual void ReportCommitInstruction(ADDRESS addr) { dbg.ReportCommitInstruction(id, addr); }
+		virtual void ReportCommitInstruction(ADDRESS addr, unsigned int length) { dbg.ReportCommitInstruction(id, addr, length); }
 		virtual void ReportFetchInstruction(ADDRESS next_addr) { dbg.ReportFetchInstruction(id, next_addr); }
 		
 		// unisim::service::interfaces::TrapReporting
@@ -467,8 +468,9 @@ private:
 		virtual const typename unisim::util::debug::Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr, typename unisim::util::debug::Symbol<ADDRESS>::Type type) const { return dbg.FindSymbolByAddr(id, addr, type); }
 		
 		// unisim::service::interfaces::StatementLookup<ADDRESS>
-		virtual void GetStatements(std::map<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& stmts) const { dbg.GetStatements(id, stmts); }
+		virtual void GetStatements(std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& stmts) const { dbg.GetStatements(id, stmts); }
 		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { return dbg.FindStatement(id, addr, opt); }
+		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const { return dbg.FindStatements(id, stmts, addr, opt); }
 		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const { return dbg.FindStatement(id, filename, lineno, colno); }
 		virtual const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const { return dbg.FindStatements(id, stmts, filename, lineno, colno); }
 		

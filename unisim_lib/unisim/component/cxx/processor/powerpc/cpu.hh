@@ -177,10 +177,10 @@ struct CEIL_LOG2
 
 //////////////////////////////////// Field<> //////////////////////////////////
 
-template <typename FIELD, int OFFSET1, int OFFSET2 = -1>
-struct Field : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1>
+template <typename FIELD, int OFFSET1, int OFFSET2 = -1, unisim::util::reg::core::Access ACCESS = unisim::util::reg::core::SW_RW>
+struct Field : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, ACCESS>
 {
-	typedef unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1> Super;
+	typedef unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, ACCESS> Super;
 };
 
 //////////////////////////////// Register /////////////////////////////////
@@ -3026,58 +3026,69 @@ protected:
 	{
 		typedef PrivilegedSPR<MAS0, 624> Super;
 		
-		struct VALID : Field<VALID, 0>      {}; // MPU Entry Valid
-		struct IPROT : Field<IPROT, 1>      {}; // Invalidation Protect
-		struct SEL   : Field<SEL  , 2, 3>   {}; // Selects MPU for access
-		struct RO    : Field<RO   , 5>      {}; // Read-Only
-		struct DEBUG : Field<DEBUG, 6>      {}; // Debug Control for Entry
-		struct INST  : Field<INST , 7>      {}; // Instruction Entry
-		struct SHD   : Field<SHD  , 8>      {}; // Shared Entry Select
-		struct ESEL  : Field<ESEL , 12, 15> {}; // Entry select for MPU
-		struct UAMSK : Field<UAMSK, 17, 19> {}; // Upper Address Mask Control
-		struct UW    : Field<UW   , 20>     {}; // User Mode Write Permission
-		struct SW    : Field<SW   , 21>     {}; // Supervisor Mode Write / Read Permission
-		struct UX_UR : Field<UX_UR, 22>     {}; // User Mode Execute / Read Permission
-		struct SX_SR : Field<SX_SR, 23>     {}; // Supervisor Mode Execute / Read Permission
-		struct IOVR  : Field<IOVR , 24>     {}; // Cache-Inihibit attribute Override
-		struct GOVR  : Field<GOVR , 25>     {}; // G attribute Override
-		struct I     : Field<I    , 28>     {}; // Cache Inhibited
-		struct G     : Field<G    , 30>     {}; // Guarded
+		struct VALID  : Field<VALID, 0>                                     {}; // MPU Entry Valid
+		struct IPROT  : Field<IPROT, 1>                                     {}; // Invalidation Protect
+		struct SEL    : Field<SEL  , 2, 3>                                  {}; // Selects MPU for access
+		struct RO     : Field<RO   , 5>                                     {}; // Read-Only
+		struct DEBUG  : Field<DEBUG, 6>                                     {}; // Debug Control for Entry
+		struct INST   : Field<INST , 7>                                     {}; // Instruction Entry
+		struct SHD    : Field<SHD  , 8>                                     {}; // Shared Entry Select
+		struct ESEL   : Field<ESEL , 12, 15>                                {}; // Entry select for MPU
+		struct UAMSK  : Field<UAMSK, 17, 19>                                {}; // Upper Address Mask Control
+		struct UW     : Field<UW   , 20>                                    {}; // User Mode Write Permission
+		struct SW     : Field<SW   , 21>                                    {}; // Supervisor Mode Write / Read Permission
+		struct UX_UR  : Field<UX_UR, 22>                                    {}; // User Mode Execute / Read Permission
+		struct SX_SR  : Field<SX_SR, 23>                                    {}; // Supervisor Mode Execute / Read Permission
+		struct IOVR   : Field<IOVR , 24>                                    {}; // Cache-Inihibit attribute Override
+		struct GOVR   : Field<GOVR , 25>                                    {}; // G attribute Override
+		struct VLE    : Field<VLE  , 26>                                    {}; // VLE (0=standard book E, 1=Power ISA VLE)
+		struct VLE_RO : Field<VLE  , 26, 26, unisim::util::reg::core::SW_R> {};
+		struct W      : Field<W    , 27>                                    {}; // Write-through
+		struct W_RO   : Field<W    , 27, 27, unisim::util::reg::core::SW_R> {};
+		struct I      : Field<I    , 28>                                    {}; // Cache Inhibited
+		struct M      : Field<M    , 29>                                    {}; // Memory coherency enforced
+		struct M_RO   : Field<M    , 29, 29, unisim::util::reg::core::SW_R> {};
+		struct G      : Field<G    , 30>                                    {}; // Guarded
+		struct E      : Field<E    , 31>                                    {}; // Endian (0=big-endian, 1=little-endian)
+		struct E_RO   : Field<E    , 31, 31, unisim::util::reg::core::SW_R> {};
 		
 		SWITCH_ENUM_TRAIT(Model, _);
-		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<VALID, IPROT, SEL, RO, DEBUG, INST, SHD, ESEL, UAMSK, UW, SW, UX_UR, SX_SR, IOVR, GOVR, I, G> ALL; };
-		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<VALID, IPROT, SEL, RO, DEBUG, INST, SHD, ESEL, UAMSK, UW, SW, UX_UR, SX_SR, IOVR, GOVR, I, G> ALL; };
+		CASE_ENUM_TRAIT(E200Z710N3, _)  { typedef FieldSet<VALID, IPROT, SEL, RO, DEBUG, INST, SHD, ESEL, UAMSK, UW, SW, UX_UR, SX_SR, IOVR, GOVR, VLE_RO, W_RO, I, M_RO, G, E_RO> ALL; };
+		CASE_ENUM_TRAIT(E200Z425BN3, _) { typedef FieldSet<VALID, IPROT, SEL, RO, DEBUG, INST, SHD, ESEL, UAMSK, UW, SW, UX_UR, SX_SR, IOVR, GOVR, VLE_RO, W_RO, I, M_RO, G, E_RO> ALL; };
 		typedef typename ENUM_TRAIT(CONFIG::MODEL, _)::ALL ALL;
 		
 		MAS0(typename CONFIG::CPU *_cpu) : Super(_cpu) { Init(); }
 		MAS0(typename CONFIG::CPU *_cpu, uint32_t _value) : Super(_cpu, _value) { Init(); }
 		using Super::operator =;
-		
-		virtual void Reset()
-		{
-			this->Initialize(0x30); // MAS[26:27]=11b at reset
-		}
 	private:
 		void Init()
 		{
 			       this->SetName("mas0");         this->SetDescription("MPU Assist Register 0");
-			VALID::SetName("valid"); VALID::SetDescription("MPU Entry Valid");
-			IPROT::SetName("iprot"); IPROT::SetDescription("Invalidation Protect");
-			SEL  ::SetName("sel");   SEL  ::SetDescription("Selects MPU for access");
-			RO   ::SetName("ro");    RO   ::SetDescription("Read-Only");
-			DEBUG::SetName("debug"); DEBUG::SetDescription("Debug Control for Entry");
-			INST ::SetName("inst");  INST ::SetDescription("Instruction Entry");
-			SHD  ::SetName("shd");   SHD  ::SetDescription("Shared Entry Select");
-			ESEL ::SetName("esel");  ESEL ::SetDescription("Entry select for MPU");
-			UAMSK::SetName("uamsk"); UAMSK::SetDescription("Upper Address Mask Control");
-			UW   ::SetName("uw");    UW   ::SetDescription("User Mode Write Permission");
-			SW   ::SetName("sw");    SW   ::SetDescription("Supervisor Mode Write / Read Permission");
-			UX_UR::SetName("ux_ur"); UX_UR::SetDescription("User Mode Execute / Read Permission");
-			SX_SR::SetName("sx_sr"); SX_SR::SetDescription("Supervisor Mode Execute / Read Permission");
-			IOVR ::SetName("iovr");  IOVR ::SetDescription("Cache-Inihibit attribute Override");
-			GOVR ::SetName("govr");  GOVR ::SetDescription("G attribute Override");
-			I    ::SetName("i");     I    ::SetDescription("Cache Inhibited");
-			G    ::SetName("g");     G    ::SetDescription("Guarded");
+			VALID ::SetName("valid"); VALID ::SetDescription("MPU Entry Valid");
+			IPROT ::SetName("iprot"); IPROT ::SetDescription("Invalidation Protect");
+			SEL   ::SetName("sel");   SEL   ::SetDescription("Selects MPU for access");
+			RO    ::SetName("ro");    RO    ::SetDescription("Read-Only");
+			DEBUG ::SetName("debug"); DEBUG ::SetDescription("Debug Control for Entry");
+			INST  ::SetName("inst");  INST  ::SetDescription("Instruction Entry");
+			SHD   ::SetName("shd");   SHD   ::SetDescription("Shared Entry Select");
+			ESEL  ::SetName("esel");  ESEL  ::SetDescription("Entry select for MPU");
+			UAMSK ::SetName("uamsk"); UAMSK ::SetDescription("Upper Address Mask Control");
+			UW    ::SetName("uw");    UW    ::SetDescription("User Mode Write Permission");
+			SW    ::SetName("sw");    SW    ::SetDescription("Supervisor Mode Write / Read Permission");
+			UX_UR ::SetName("ux_ur"); UX_UR ::SetDescription("User Mode Execute / Read Permission");
+			SX_SR ::SetName("sx_sr"); SX_SR ::SetDescription("Supervisor Mode Execute / Read Permission");
+			IOVR  ::SetName("iovr");  IOVR  ::SetDescription("Cache-Inihibit attribute Override");
+			GOVR  ::SetName("govr");  GOVR  ::SetDescription("G attribute Override");
+			VLE   ::SetName("vle");   VLE   ::SetDescription("PowerISA VLE");
+			VLE_RO::SetName("vle");   VLE_RO::SetDescription("PowerISA VLE");
+			W     ::SetName("w");     W     ::SetDescription("Write-through Required");
+			W_RO  ::SetName("w");     W_RO  ::SetDescription("Write-through Required");
+			I     ::SetName("i");     I     ::SetDescription("Cache Inhibited");
+			M     ::SetName("m");     M     ::SetDescription("Memory Coherence Required");
+			M_RO  ::SetName("m");     M_RO  ::SetDescription("Memory Coherence Required");
+			G     ::SetName("g");     G     ::SetDescription("Guarded");
+			E     ::SetName("e");     E     ::SetDescription("Endianness");
+			E_RO  ::SetName("e");     E_RO  ::SetDescription("Endianness");
 		}
 	};
 	
@@ -4166,11 +4177,13 @@ protected:
 	inline bool MonitorLoad(typename TYPES::ADDRESS ea, unsigned int size);
 	inline bool MonitorStore(typename TYPES::ADDRESS ea, unsigned int size);
 	
-	////////////////////////// Run-time parameters ////////////////////////////
+	//////////////////////////// Statistics ///////////////////////////////////
 
 	uint64_t instruction_counter;
-	unisim::kernel::service::Parameter<uint64_t> param_instruction_counter;
-	
+	unisim::kernel::service::Statistic<uint64_t> stat_instruction_counter;
+
+	////////////////////////// Run-time parameters ////////////////////////////
+
 	uint64_t trap_on_instruction_counter;
 	unisim::kernel::service::Parameter<uint64_t> param_trap_on_instruction_counter;
 	

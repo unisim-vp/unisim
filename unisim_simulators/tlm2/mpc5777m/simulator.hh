@@ -58,11 +58,11 @@
 #include <unisim/service/debug/debugger/debugger.tcc>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
-#include <unisim/service/profiling/addr_profiler/profiler.hh>
+#include <unisim/service/debug/profiler/profiler.hh>
+#include <unisim/service/debug/profiler/profiler.tcc>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
-#include <unisim/service/tee/memory_access_reporting/tee.hh>
 #include <unisim/service/telnet/telnet.hh>
 #include <unisim/service/os/linux_os/powerpc_linux32.hh>
 #include <unisim/kernel/logger/logger.hh>
@@ -81,20 +81,6 @@
 #else
 #include <signal.h>
 #endif
-
-using namespace std;
-using unisim::util::endian::E_BIG_ENDIAN;
-using unisim::service::loader::multiformat_loader::MultiFormatLoader;
-using unisim::service::debug::debugger::Debugger;
-using unisim::service::debug::gdb_server::GDBServer;
-using unisim::service::debug::inline_debugger::InlineDebugger;
-using unisim::service::profiling::addr_profiler::Profiler;
-using unisim::service::telnet::Telnet;
-using unisim::service::os::linux_os::Linux;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Variable;
-using unisim::kernel::service::VariableBase;
-using unisim::kernel::service::Object;
 
 static const bool DEBUG_ENABLE = true;
 
@@ -119,7 +105,10 @@ private:
 	//=========================================================================
 
 	static const unsigned int NUM_PROCESSORS = 3;
-	static const unsigned int MAX_FRONT_ENDS = 6;
+	static const unsigned int MAX_FRONT_ENDS = NUM_PROCESSORS // for gdb-server
+	                                         + NUM_PROCESSORS // for inline-debugger
+	                                         + NUM_PROCESSORS // for profiler
+	                                         ;
 	
 	// Front Side Bus template parameters
 	static const unsigned int FSB_WIDTH = 8;
@@ -131,8 +120,8 @@ private:
 	struct DEBUGGER_CONFIG
 	{
 		typedef CPU_ADDRESS_TYPE ADDRESS;
-		static const unsigned int NUM_PROCESSORS = 3;
-		static const unsigned int MAX_FRONT_ENDS = 8;
+		static const unsigned int NUM_PROCESSORS = Simulator::NUM_PROCESSORS;
+		static const unsigned int MAX_FRONT_ENDS = Simulator::MAX_FRONT_ENDS;
 	};
 
 	struct XBAR_0_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
@@ -283,6 +272,8 @@ private:
 	typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
 	typedef unisim::service::debug::inline_debugger::InlineDebugger<CPU_ADDRESS_TYPE> INLINE_DEBUGGER;
 	typedef unisim::service::debug::gdb_server::GDBServer<CPU_ADDRESS_TYPE> GDB_SERVER;
+	typedef unisim::service::debug::profiler::Profiler<CPU_ADDRESS_TYPE> PROFILER;
+	typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<CPU_ADDRESS_TYPE> LOADER;
 	
 	//=========================================================================
 	//===                           Components                              ===
@@ -326,8 +317,8 @@ private:
 	//=========================================================================
 	//===                            Services                               ===
 	//=========================================================================
-	//  - Multiformat loader
-	MultiFormatLoader<CPU_ADDRESS_TYPE> *loader;
+	//  - Loader
+	LOADER *loader;
 	//  - Debugger
 	DEBUGGER *debugger;
 	//  - GDB server
@@ -335,18 +326,18 @@ private:
 	//  - Inline debugger
 	INLINE_DEBUGGER *inline_debugger[NUM_PROCESSORS];
 	//  - profiler
-	Profiler<CPU_ADDRESS_TYPE> *profiler;
+	PROFILER *profiler[NUM_PROCESSORS];
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
-	//  - Tee Memory Access Reporting
-	unisim::service::tee::memory_access_reporting::Tee<CPU_ADDRESS_TYPE> *tee_memory_access_reporting;
 
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
-	Parameter<bool> param_enable_gdb_server;
-	Parameter<bool> param_enable_inline_debugger;
+	bool enable_profiler;
+	unisim::kernel::service::Parameter<bool> param_enable_gdb_server;
+	unisim::kernel::service::Parameter<bool> param_enable_inline_debugger;
+	unisim::kernel::service::Parameter<bool> param_enable_profiler;
 
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);

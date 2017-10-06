@@ -128,7 +128,7 @@ DWARF_Handler<MEMORY_ADDR>::~DWARF_Handler()
 	unsigned int i;
 	unsigned int j;
 
-	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
+	typename std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
 
 	for(stmt_iter = stmt_matrix.begin(); stmt_iter != stmt_matrix.end(); stmt_iter++)
 	{
@@ -2216,7 +2216,7 @@ void DWARF_Handler<MEMORY_ADDR>::UnRegister(DWARF_DIE<MEMORY_ADDR> *dw_die)
 template <class MEMORY_ADDR>
 void DWARF_Handler<MEMORY_ADDR>::DumpStatementMatrix()
 {
-	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
+	typename std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
 
 	for(stmt_iter = stmt_matrix.begin(); stmt_iter != stmt_matrix.end(); stmt_iter++)
 	{
@@ -2228,17 +2228,95 @@ void DWARF_Handler<MEMORY_ADDR>::DumpStatementMatrix()
 }
 
 template <class MEMORY_ADDR>
-const std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& DWARF_Handler<MEMORY_ADDR>::GetStatements() const
+const std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& DWARF_Handler<MEMORY_ADDR>::GetStatements() const
 {
 	return stmt_matrix;
 }
 
 template <class MEMORY_ADDR>
-const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const
+const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> *stmts, MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const
 {
 	if(stmt_matrix.empty()) return 0;
+
+	const unisim::util::debug::Statement<MEMORY_ADDR> *ret = 0;
 	
-	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
+	typename std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
+	switch(opt)
+	{
+		case unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT:
+		{
+			// check whether addr is not below
+			stmt_iter = stmt_matrix.begin();
+			if(stmt_iter != stmt_matrix.end())
+			{
+				if((*stmt_iter).first > addr) break;
+			}
+			
+			stmt_iter = stmt_matrix.lower_bound(addr);
+			if(stmt_iter == stmt_matrix.end()) break; // check whether addr is above
+			if((*stmt_iter).first > addr)
+			{
+				stmt_iter--;
+			}
+			
+			addr = (*stmt_iter).first; // addr is valid and lower or equal to the requested address
+			std::pair<typename std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator, typename std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator> range = stmt_matrix.equal_range(addr);
+			for(stmt_iter = range.first; stmt_iter != range.second; stmt_iter++)
+			{
+				const unisim::util::debug::Statement<MEMORY_ADDR> *stmt = (*stmt_iter).second;
+				if(!stmts) return stmt;
+				if(!ret) ret = stmt;
+				stmts->push_back(stmt);
+			}
+			break;
+		}
+		
+		case unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::OPT_FIND_EXACT_STMT:
+		{
+			std::pair<typename std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator, typename std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator> range = stmt_matrix.equal_range(addr);
+			for(stmt_iter = range.first; stmt_iter != range.second; stmt_iter++)
+			{
+				const unisim::util::debug::Statement<MEMORY_ADDR> *stmt = (*stmt_iter).second;
+				if(!stmts) return stmt;
+				if(!ret) ret = stmt;
+				stmts->push_back(stmt);
+			}
+			break;
+		}
+		case unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::OPT_FIND_NEXT_STMT:
+		{
+			stmt_iter = stmt_matrix.upper_bound(addr);
+			if(stmt_iter == stmt_matrix.end()) break;
+			
+			addr = (*stmt_iter).first;
+			std::pair<typename std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator, typename std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator> range = stmt_matrix.equal_range(addr);
+			for(stmt_iter = range.first; stmt_iter != range.second; stmt_iter++)
+			{
+				const unisim::util::debug::Statement<MEMORY_ADDR> *stmt = (*stmt_iter).second;
+				if(!stmts) return stmt;
+				if(!ret) ret = stmt;
+				stmts->push_back(stmt);
+			}
+			break;
+		}
+	}
+	
+	return ret;
+}
+
+template <class MEMORY_ADDR>
+const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *>& stmts, MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const
+{
+	return FindStatements(&stmts, addr, opt);
+}
+
+template <class MEMORY_ADDR>
+const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const
+{
+#if 0
+	if(stmt_matrix.empty()) return 0;
+	
+	typename std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
 	switch(opt)
 	{
 		case unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT:
@@ -2266,6 +2344,8 @@ const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::F
 			break;
 	}
 	return (stmt_iter != stmt_matrix.end()) ? (*stmt_iter).second : 0;
+#endif
+	return FindStatements(0, addr, opt);
 }
 
 template <class MEMORY_ADDR>
@@ -2291,7 +2371,7 @@ const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::F
 	} while(*(p++));
 	int hierarchical_requested_filename_depth = hierarchical_requested_filename.size();
 
-	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
+	typename std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
 	
 	for(stmt_iter = stmt_matrix.begin(); stmt_iter != stmt_matrix.end(); stmt_iter++)
 	{

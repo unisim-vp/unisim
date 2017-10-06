@@ -54,7 +54,7 @@ public:
 
 	virtual bool ReportMemoryAccess(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size) = 0;
 	virtual void ReportFetchInstruction(ADDRESS next_addr) = 0;
-	virtual void ReportCommitInstruction(ADDRESS addr) = 0;
+	virtual void ReportCommitInstruction(ADDRESS addr, unsigned int length /* in bytes */) = 0;
 };
 
 enum MemoryAccessReportingType

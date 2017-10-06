@@ -7,7 +7,7 @@
  
         .align 3  ;# 8 bytes
 		
-		.extern   main
+		.extern   main_Z4_2
 		.extern __SRAM_SIZE
 		.extern __SRAM_BASE_ADDR
 		.extern __LOCAL_DMEM_SIZE
@@ -319,8 +319,8 @@ bss_Init_end:
 		e_stwu	r0,-64(r1)			;# Terminate stack.
  
 #if defined(HW_INIT)
-;# perform hardware init prior to main
+;# perform hardware init prior to main_Z4_2
 		e_bl   hw_init
 #endif
 ;# Jump to Main
-		e_bl	main
+		e_bl	main_Z4_2

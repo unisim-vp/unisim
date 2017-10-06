@@ -729,6 +729,25 @@ public:
 	}
 	
 protected:
+	/////////////////////////////// Statistics ////////////////////////////////
+	
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_load_accesses;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_store_accesses;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_fetch_accesses;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_load_accesses;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_store_accesses;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_read_accesses;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_write_accesses;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_bus_read_accesses;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_load_xfered_bytes;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_store_xfered_bytes;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_fetch_xfered_bytes;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_load_xfered_bytes;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_incoming_store_xfered_bytes;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_read_xfered_bytes;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_bus_write_xfered_bytes;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_instruction_bus_read_xfered_bytes;
+
 	////////////////////////// Run-time parameters ////////////////////////////
 	
 	uint8_t cpuid;

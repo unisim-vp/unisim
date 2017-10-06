@@ -561,7 +561,7 @@ bool Debugger<CONFIG>::ReportMemoryAccess(unsigned int prc_num, unisim::util::de
 }
 
 template <typename CONFIG>
-void Debugger<CONFIG>::ReportCommitInstruction(unsigned int prc_num, ADDRESS addr)
+void Debugger<CONFIG>::ReportCommitInstruction(unsigned int prc_num, ADDRESS addr, unsigned int length)
 {
 #if 0
 	if(unlikely(!requires_commit_instruction_reporting[prc_num]))
@@ -579,6 +579,7 @@ void Debugger<CONFIG>::ReportCommitInstruction(unsigned int prc_num, ADDRESS add
 			unisim::util::debug::CommitInsnEvent<ADDRESS> *commit_insn_event = *it;
 			unsigned int front_end_num = commit_insn_event->GetFrontEndNumber();
 			commit_insn_event->SetAddress(addr);
+			commit_insn_event->SetLength(length);
 			front_end_gate[front_end_num]->OnDebugEvent(commit_insn_event);
 			ScheduleFrontEnd(front_end_num);
 		}
@@ -1371,9 +1372,9 @@ const typename unisim::util::debug::Symbol<typename CONFIG::ADDRESS> *Debugger<C
 
 // unisim::service::interfaces::StatementLookup<ADDRESS> (tagged)
 template <typename CONFIG>
-void Debugger<CONFIG>::GetStatements(unsigned int front_end_num, std::map<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& stmts) const
+void Debugger<CONFIG>::GetStatements(unsigned int front_end_num, std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& stmts) const
 {
-	typename std::map<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>::const_iterator iter;
+	typename std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>::const_iterator iter;
 	unsigned int i;
 	
 	unsigned int num_elf32_loaders = elf32_loaders.size();
@@ -1382,7 +1383,7 @@ void Debugger<CONFIG>::GetStatements(unsigned int front_end_num, std::map<ADDRES
 		if(enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-			const typename std::map<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& elf32_stmts = elf32_loader->GetStatements();
+			const typename std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& elf32_stmts = elf32_loader->GetStatements();
 			for(iter = elf32_stmts.begin(); iter != elf32_stmts.end(); iter++)
 			{
 				stmts.insert(std::pair<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>((*iter).first, (*iter).second));
@@ -1396,7 +1397,7 @@ void Debugger<CONFIG>::GetStatements(unsigned int front_end_num, std::map<ADDRES
 		if(enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-			const typename std::map<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& elf64_stmts = elf64_loader->GetStatements();
+			const typename std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& elf64_stmts = elf64_loader->GetStatements();
 			for(iter = elf64_stmts.begin(); iter != elf64_stmts.end(); iter++)
 			{
 				stmts.insert(std::pair<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>((*iter).first, (*iter).second));
@@ -1449,6 +1450,77 @@ const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatement(addr, opt);
+			if(stmt)
+			{
+				switch(opt)
+				{
+					case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT:
+						if(stmt->GetAddress() <= addr)
+						{
+							if(!ret_stmt || ((addr - stmt->GetAddress()) < (addr - ret_stmt->GetAddress()))) ret_stmt = stmt;
+						}
+						break;
+					case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEXT_STMT:
+						if(stmt->GetAddress() > addr)
+						{
+							if(!ret_stmt || ((stmt->GetAddress() - addr) < (ret_stmt->GetAddress() - addr))) ret_stmt = stmt;
+						}
+						break;
+					case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT:
+						return stmt;
+						break;
+				}
+			}
+		}
+	}
+	
+	return ret_stmt;
+}
+
+template <typename CONFIG>
+const unisim::util::debug::Statement<typename CONFIG::ADDRESS> *Debugger<CONFIG>::FindStatements(unsigned int front_end_num, std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const
+{
+	const unisim::util::debug::Statement<ADDRESS> *ret_stmt = 0;
+	unsigned int i;
+	
+	unsigned int num_elf32_loaders = elf32_loaders.size();
+	for(i = 0; i < num_elf32_loaders; i++)
+	{
+		if(enable_elf32_loaders[front_end_num][i])
+		{
+			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatements(stmts, addr, opt);
+			if(stmt)
+			{
+				switch(opt)
+				{
+					case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT:
+						if(stmt->GetAddress() <= addr)
+						{
+							if(!ret_stmt || ((addr - stmt->GetAddress()) < (addr - ret_stmt->GetAddress()))) ret_stmt = stmt;
+						}
+						break;
+					case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEXT_STMT:
+						if(stmt->GetAddress() > addr)
+						{
+							if(!ret_stmt || ((stmt->GetAddress() - addr) < (ret_stmt->GetAddress() - addr))) ret_stmt = stmt;
+						}
+						break;
+					case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT:
+						return stmt;
+						break;
+				}
+			}
+		}
+	}
+
+	unsigned int num_elf64_loaders = elf64_loaders.size();
+	for(i = 0; i < num_elf64_loaders; i++)
+	{
+		if(enable_elf64_loaders[front_end_num][i])
+		{
+			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatements(stmts, addr, opt);
 			if(stmt)
 			{
 				switch(opt)

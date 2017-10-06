@@ -232,9 +232,11 @@ public:
 	static const bool ALWAYS_ACCEPT_MULTIPROCESS_NEW_THREAD_ID_SYNTAX = true; // Note: as new thread-id syntax (for multiprocess) is backward compatible with old syntax
 	static const long PROCESS_ID = 1;
 	
+	// Exports to debugger
 	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugYielding>                debug_yielding_export;
 	unisim::kernel::service::ServiceExport<unisim::service::interfaces::DebugEventListener<ADDRESS> > debug_event_listener_export;
 
+	// Imports from debugger
 	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugYieldingRequest>         debug_yielding_request_import;
 	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugSelecting>               debug_selecting_import;
 	unisim::kernel::service::ServiceImport<unisim::service::interfaces::DebugEventTrigger<ADDRESS> >  debug_event_trigger_import;
