@@ -1688,7 +1688,7 @@ bool Profiler<ADDRESS>::EndSetup()
 			}
 			else if((strcmp(var->GetDataTypeName(), "sc_time") == 0) && TryProfile<sc_core::sc_time>(var))
 			{
-				logger << DebugInfo << "Profiling for time Statistic \"" << var_name << "\"" << EndDebugInfo;
+				logger << DebugInfo << "Profiling for Variable \"" << var_name << "\"" << EndDebugInfo;
 			}
 			else
 			{

@@ -319,6 +319,7 @@ private:
 	void KillFromThrdProcessCmd();
 	void KillFromSimulationRun();
 	void TriggerDebugYield();
+	void Barrier();
 	void Interrupt();
 	bool ListenFetch(unsigned int prc_num);
 	bool ListenFetch();

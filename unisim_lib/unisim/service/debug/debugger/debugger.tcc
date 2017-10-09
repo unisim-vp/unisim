@@ -92,11 +92,13 @@ Debugger<CONFIG>::Debugger(const char *name, unisim::kernel::service::Object *pa
 	, param_sel_cpu("sel-cpu", this, sel_cpu, MAX_FRONT_ENDS, "CPU being debugged by front-end")
 	, logger(*this)
 	, setup_debug_info_done(false)
+	, mutex()
 	, breakpoint_registry()
 	, watchpoint_registry()
 	, fetch_insn_event_set()
 	, commit_insn_event_set()
 	, trap_event_set()
+	, schedule_mutex()
 	, schedule(0)
 	, elf32_loaders()
 	, elf64_loaders()
@@ -105,6 +107,9 @@ Debugger<CONFIG>::Debugger(const char *name, unisim::kernel::service::Object *pa
 	, enable_elf64_loaders()
 	, enable_coff_loaders()
 {
+	pthread_mutex_init(&mutex, NULL);
+	pthread_mutex_init(&schedule_mutex, NULL);
+	
 	unsigned int prc_num;
 	unsigned int front_end_num;
 	
@@ -326,6 +331,9 @@ Debugger<CONFIG>::~Debugger()
 	{
 		delete front_end_gate[front_end_num];
 	}
+	
+	pthread_mutex_destroy(&schedule_mutex);
+	pthread_mutex_destroy(&mutex);
 }
 
 template <typename CONFIG>
@@ -483,25 +491,23 @@ void Debugger<CONFIG>::UpdateReportingRequirements(unsigned int prc_num)
 template <typename CONFIG>
 void Debugger<CONFIG>::ScheduleFrontEnd(unsigned int front_end_num)
 {
+	pthread_mutex_lock(&schedule_mutex);
 	schedule |= 1 << front_end_num;
+	pthread_mutex_unlock(&schedule_mutex);
 }
 
 template <typename CONFIG>
-void Debugger<CONFIG>::DescheduleFrontEnd(unsigned int front_end_num)
+bool Debugger<CONFIG>::NextScheduledFrontEnd(unsigned int& front_end_num)
 {
-	schedule &= ~(1 << front_end_num);
-}
-
-template <typename CONFIG>
-bool Debugger<CONFIG>::NextScheduledFrontEnd(unsigned int& front_end_num) const
-{
-	return unisim::util::arithmetic::BitScanForward(front_end_num, schedule);
-}
-
-template <typename CONFIG>
-bool Debugger<CONFIG>::IsFrontEndScheduled(unsigned int front_end_num) const
-{
-	return (schedule & (1 << front_end_num)) != 0;
+	pthread_mutex_lock(&schedule_mutex);
+	if(unisim::util::arithmetic::BitScanForward(front_end_num, schedule))
+	{
+		schedule &= ~(1 << front_end_num);
+		pthread_mutex_unlock(&schedule_mutex);
+		return true;
+	}
+	pthread_mutex_unlock(&schedule_mutex);
+	return false;
 }
 
 template <typename CONFIG>
@@ -522,7 +528,6 @@ void Debugger<CONFIG>::DebugYield(unsigned int prc_num)
 	
 	while(NextScheduledFrontEnd(front_end_num))
 	{
-		DescheduleFrontEnd(front_end_num);
 		front_end_gate[front_end_num]->DebugYield();
 	}
 }
@@ -729,11 +734,8 @@ template <typename CONFIG>
 void Debugger<CONFIG>::DebugYieldRequest(unsigned int front_end_num)
 {
 	if(front_end_num >= MAX_FRONT_ENDS) return;
-	
-	while(!IsFrontEndScheduled(front_end_num))
-	{
-		ScheduleFrontEnd(front_end_num);
-	}
+
+	ScheduleFrontEnd(front_end_num);
 }
 
 // unisim::service::interfaces::DebugEventTrigger<ADDRESS> (tagged)
@@ -2088,6 +2090,18 @@ const unisim::util::debug::SubProgram<typename CONFIG::ADDRESS> *Debugger<CONFIG
 	}
 	
 	return 0;
+}
+
+template <typename CONFIG>
+void Debugger<CONFIG>::Lock()
+{
+	pthread_mutex_lock(&mutex);
+}
+
+template <typename CONFIG>
+void Debugger<CONFIG>::Unlock()
+{
+	pthread_mutex_unlock(&mutex);
 }
 
 } // end of namespace debugger
