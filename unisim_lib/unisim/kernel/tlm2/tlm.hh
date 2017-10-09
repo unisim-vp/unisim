@@ -175,6 +175,8 @@ class PayloadFabric : public tlm::tlm_mm_interface
 {
 public:
 	PayloadFabric()
+		: free_list()
+		, payloads()
 	{
 	}
 

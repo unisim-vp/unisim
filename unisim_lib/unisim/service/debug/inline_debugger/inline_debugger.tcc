@@ -273,6 +273,7 @@ void InlineDebugger<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDR
 		const unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event = static_cast<const unisim::util::debug::FetchInsnEvent<ADDRESS> *>(event);
 		
 		cia = fetch_insn_event->GetAddress();
+		trap = true;
 	}
 	else if(likely(event_type == unisim::util::debug::Event<ADDRESS>::EV_COMMIT_INSN))
 	{
@@ -309,6 +310,10 @@ void InlineDebugger<ADDRESS>::Tokenize(const std::string& str, std::vector<std::
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DebugYield()
 {
+	if(!trap) return;
+	
+	// Ctrl-C, breakpoint or watchpoint condition occured
+	
 	bool recognized = false;
 	ADDRESS addr;
 	ADDRESS cont_addr;
@@ -317,21 +322,20 @@ void InlineDebugger<ADDRESS>::DebugYield()
 
 	program_counter->GetValue(cia);
 	
-	if(trap)
+	if(running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL)
 	{
-		// Ctrl-C, breakpoint or watchpoint condition occured
-		if(running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL)
-		{
-			DeleteBreakpoint(cont_until_addr);
-		}
+		DeleteBreakpoint(cont_until_addr);
 	}
-	else if(running_mode == INLINE_DEBUGGER_MODE_STEP)
+
+	if(running_mode == INLINE_DEBUGGER_MODE_STEP)
 	{
 		const unisim::util::debug::Statement<ADDRESS> *stmt = FindStatement(cia);
 		if(!stmt || !stmt->IsBeginningOfSourceStatement() || (stmt == last_stmt)) return;
 	}
 
-	if(running_mode == INLINE_DEBUGGER_MODE_STEP)
+	if((running_mode == INLINE_DEBUGGER_MODE_STEP_INSTRUCTION) ||
+	   (running_mode == INLINE_DEBUGGER_MODE_STEP) ||
+	   (running_mode == INLINE_DEBUGGER_MODE_TRAVERSE))
 	{
 		UnlistenFetch();
 	}
@@ -1252,6 +1256,10 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count, ADDRESS &next_addr
 {
 	if(count > 0)
 	{
+		std::streamsize width = (*std_output_stream).width();
+		std::ostream::char_type fill = (*std_output_stream).fill();
+		std::ios_base::fmtflags flags = (*std_output_stream).flags();
+		
 		bool first = true;
 		const unisim::util::debug::Symbol<ADDRESS> *last_symbol = 0;
 		do
@@ -1287,7 +1295,7 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count, ADDRESS &next_addr
 				if(symbol != last_symbol)
 				{
 					(*std_output_stream) << "0x" << std::hex;
-					(*std_output_stream).width(8);
+					(*std_output_stream).width((2 * sizeof(ADDRESS)) / memory_atom_size);
 					(*std_output_stream) << (addr / memory_atom_size) << std::dec;
 					(*std_output_stream) << " <";
 					(*std_output_stream) << symbol->GetFriendlyName(addr);
@@ -1306,10 +1314,36 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count, ADDRESS &next_addr
 				}
 			}
 			(*std_output_stream) << "0x" << std::hex;
-			(*std_output_stream).width(8);
-			(*std_output_stream) << (addr / memory_atom_size) << ":" << std::dec << s << std::endl;
+			(*std_output_stream).width((2 * sizeof(ADDRESS)) / memory_atom_size);
+			(*std_output_stream) << (addr / memory_atom_size) << ":" << std::dec;
+			
+			(*std_output_stream).fill('0');
+			(*std_output_stream) << std::hex;
+			while(addr < next_addr)
+			{
+				uint8_t value = 0;
+				if(memory_import->ReadMemory(addr, &value, 1))
+				{
+					(*std_output_stream).width(2);
+					(*std_output_stream) << (unsigned int) value;
+				}
+				else
+				{
+					(*std_output_stream) << "??";
+				}
+				(*std_output_stream) << " ";
+				
+				addr++;
+			}
+			
+			(*std_output_stream) << " " << s << std::endl;
 			(*std_output_stream).fill(' ');
+			(*std_output_stream).width(width);
 		} while(addr = next_addr, --count > 0);
+		
+		(*std_output_stream).width(width);
+		(*std_output_stream).fill(fill);
+		(*std_output_stream).flags(flags);
 	}
 }
 
@@ -1529,7 +1563,11 @@ void InlineDebugger<ADDRESS>::DumpMemory(ADDRESS addr)
 	(*std_output_stream) << std::endl;
 	for(i = 0; i < 16; i++)
 	{
-		(*std_output_stream) << std::hex; (*std_output_stream).fill('0'); (*std_output_stream).width(2 * sizeof(addr)); (*std_output_stream) << (addr / memory_atom_size) << " "; (*std_output_stream).fill(' ');
+		(*std_output_stream) << std::hex;
+		(*std_output_stream).fill('0');
+		(*std_output_stream).width(2 * sizeof(addr));
+		(*std_output_stream) << (addr / memory_atom_size) << " ";
+		(*std_output_stream).fill(' ');
 		for(j = 0; j < 16; j++, addr++)
 		{
 			uint8_t value = 0;
@@ -2564,9 +2602,9 @@ template <class ADDRESS>
 void InlineDebugger<ADDRESS>::ListSourceFiles()
 {
 	std::set<std::string> source_filenames;
-	std::map<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *> stmts;
+	std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *> stmts;
 	stmt_lookup_import->GetStatements(stmts);
-	typename std::map<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>::const_iterator stmt_iter;
+	typename std::multimap<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>::const_iterator stmt_iter;
 	for(stmt_iter = stmts.begin(); stmt_iter != stmts.end(); stmt_iter++)
 	{
 		const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_iter).second;

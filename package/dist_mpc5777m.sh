@@ -164,7 +164,8 @@ unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
 unisim/service/debug/debugger/debugger32.cc \
-unisim/service/profiling/addr_profiler/profiler32.cc \
+unisim/service/debug/profiler/profiler.cc \
+unisim/service/debug/profiler/profiler32.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
 unisim/service/loader/elf_loader/elf32_loader.cc \
@@ -179,7 +180,6 @@ unisim/service/tee/symbol_table_lookup/tee_32.cc \
 unisim/service/tee/blob/tee_32.cc \
 unisim/service/tee/stmt_lookup/tee_32.cc \
 unisim/service/tee/backtrace/tee_32.cc \
-unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/service/telnet/telnet.cc \
 unisim/service/os/linux_os/powerpc_linux32.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/floating.cc \
@@ -806,7 +806,7 @@ unisim/service/interfaces/subprogram_lookup.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
-unisim/service/profiling/addr_profiler/profiler.hh \
+unisim/service/debug/profiler/profiler.hh \
 unisim/service/loader/elf_loader/elf_loader.hh \
 unisim/service/loader/elf_loader/elf32_loader.hh \
 unisim/service/loader/elf_loader/elf64_loader.hh \
@@ -821,7 +821,6 @@ unisim/service/tee/symbol_table_lookup/tee.hh \
 unisim/service/tee/blob/tee.hh \
 unisim/service/tee/stmt_lookup/tee.hh \
 unisim/service/tee/backtrace/tee.hh \
-unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/telnet/telnet.hh \
 unisim/service/os/linux_os/linux.hh \
 unisim/service/os/linux_os/powerpc_linux32.hh \
@@ -898,7 +897,7 @@ unisim/util/reg/core/register.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \
-unisim/service/profiling/addr_profiler/profiler.tcc \
+unisim/service/debug/profiler/profiler.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/elf_loader/elf32_loader.tcc \
 unisim/service/loader/elf_loader/elf64_loader.tcc \
@@ -911,7 +910,6 @@ unisim/service/tee/symbol_table_lookup/tee.tcc \
 unisim/service/tee/blob/tee.tcc \
 unisim/service/tee/stmt_lookup/tee.tcc \
 unisim/service/tee/backtrace/tee.tcc \
-unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/service/os/linux_os/linux.tcc \
 unisim/service/os/linux_os/powerpc_linux32.tcc \
 unisim/component/cxx/processor/powerpc/cpu.tcc \
@@ -944,8 +942,8 @@ m4/pthread.m4"
 
 UNISIM_LIB_MPC5777M_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_powerpc_vle.xml \
-unisim/util/debug/dwarf/powerpc_eabi_dwarf_register_number_mapping.xml \
-unisim/util/debug/dwarf/powerpc_eabi_gcc_dwarf_register_number_mapping.xml"
+unisim/util/debug/dwarf/powerpc_e500_dwarf_register_number_mapping.xml \
+unisim/util/debug/dwarf/powerpc_e500_gcc_dwarf_register_number_mapping.xml"
 
 MPC5777M_EXTERNAL_HEADERS="\
 assert.h \

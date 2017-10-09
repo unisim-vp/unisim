@@ -39,6 +39,8 @@ namespace service {
 namespace debug {
 namespace gdb_server {
 
+/////////////////////////////// GDBServerBase /////////////////////////////////
+
 bool GDBServerBase::killed = false;
 
 GDBServerBase::GDBServerBase(const char *_name, unisim::kernel::service::Object *_parent)
@@ -55,6 +57,7 @@ void GDBServerBase::SigInt()
 	killed = true;
 }
 
+//////////////////////////////// GDBRegister //////////////////////////////////
 
 GDBRegister::GDBRegister()
 	: name()
@@ -224,6 +227,8 @@ std::ostream& GDBRegister::ToXML(std::ostream& os, unsigned int _reg_num) const
 	return os;
 }
 
+///////////////////////////////// GDBFeature //////////////////////////////////
+
 GDBFeature::GDBFeature(const std::string& _name, unsigned int _id)
 	: name(_name)
 	, id(_id)
@@ -342,6 +347,8 @@ std::ostream& operator << (std::ostream& os, const GDBMode& gdb_mode)
 namespace unisim {
 namespace kernel {
 namespace service {
+
+//////////////////// Variable<GDBWaitConnectionMode> //////////////////////////
 
 using unisim::service::debug::gdb_server::GDBWaitConnectionMode;
 using unisim::service::debug::gdb_server::GDB_WAIT_CONNECTION_NEVER;
@@ -476,18 +483,7 @@ template <> VariableBase& Variable<GDBWaitConnectionMode>::operator = (const cha
 
 template class Variable<GDBWaitConnectionMode>;
 
-
-
-
-
-
-
-
-
-
-
-
-
+//////////////////////////// Variable<GDBMode> ////////////////////////////////
 
 using unisim::service::debug::gdb_server::GDBMode;
 using unisim::service::debug::gdb_server::GDB_MODE_SINGLE_THREAD;
@@ -497,8 +493,8 @@ template <> Variable<GDBMode>::Variable(const char *_name, Object *_object, GDBM
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
 	Simulator::simulator->Initialize(this);
-	AddEnumeratedValue("SINGLE_THREAD");
-	AddEnumeratedValue("MULTI_THREAD");
+	AddEnumeratedValue("single-thread");
+	AddEnumeratedValue("multi-thread");
 }
 
 template <>

@@ -940,6 +940,23 @@ private:
 	typedef __MSS_AccessController__ ACCESS_CONTROLLER;
 	
 protected:
+	uint64_t num_data_load_accesses;
+	uint64_t num_data_store_accesses;
+	uint64_t num_instruction_fetch_accesses;
+	uint64_t num_incoming_load_accesses;
+	uint64_t num_incoming_store_accesses;
+	uint64_t num_data_bus_read_accesses;
+	uint64_t num_data_bus_write_accesses;
+	uint64_t num_instruction_bus_read_accesses;
+	uint64_t num_data_load_xfered_bytes;
+	uint64_t num_data_store_xfered_bytes;
+	uint64_t num_instruction_fetch_xfered_bytes;
+	uint64_t num_incoming_load_xfered_bytes;
+	uint64_t num_incoming_store_xfered_bytes;
+	uint64_t num_data_bus_read_xfered_bytes;
+	uint64_t num_data_bus_write_xfered_bytes;
+	uint64_t num_instruction_bus_read_xfered_bytes;
+	
 	///////////////// To be overriden by derived class ////////////////////////
 
 	// mandatory
@@ -2121,6 +2138,22 @@ inline unsigned int Cache<TYPES, CONFIG, CACHE>::NumSectors()
 
 template <typename TYPES, typename MSS>
 MemorySubSystem<TYPES, MSS>::MemorySubSystem()
+	: num_data_load_accesses(0)
+	, num_data_store_accesses(0)
+	, num_instruction_fetch_accesses(0)
+	, num_incoming_load_accesses(0)
+	, num_incoming_store_accesses(0)
+	, num_data_bus_read_accesses(0)
+	, num_data_bus_write_accesses(0)
+	, num_instruction_bus_read_accesses(0)
+	, num_data_load_xfered_bytes(0)
+	, num_data_store_xfered_bytes(0)
+	, num_instruction_fetch_xfered_bytes(0)
+	, num_incoming_load_xfered_bytes(0)
+	, num_incoming_store_xfered_bytes(0)
+	, num_data_bus_read_xfered_bytes(0)
+	, num_data_bus_write_xfered_bytes(0)
+	, num_instruction_bus_read_xfered_bytes(0)
 {
 }
 
@@ -2157,6 +2190,9 @@ bool MemorySubSystem<TYPES, MSS>::DataLoad(typename TYPES::ADDRESS addr, void *b
 	
 	if(unlikely(__MSS_IsVerboseDataLoad__())) Trace("Loading Data", addr, buffer, size);
 	
+	num_data_load_accesses++;
+	num_data_load_xfered_bytes += size;
+	
 	return true;
 }
 
@@ -2188,6 +2224,9 @@ bool MemorySubSystem<TYPES, MSS>::DataStore(typename TYPES::ADDRESS addr, const 
 	}
 	while(unlikely(rem_size));
 	
+	num_data_store_accesses++;
+	num_data_store_xfered_bytes += size;
+	
 	return true;
 }
 
@@ -2218,6 +2257,9 @@ bool MemorySubSystem<TYPES, MSS>::InstructionFetch(typename TYPES::ADDRESS addr,
 	while(unlikely(rem_size));
 		
 	if(unlikely(__MSS_IsVerboseInstructionFetch__())) Trace("Fetching Instruction", addr, buffer, size);
+	
+	num_instruction_fetch_accesses++;
+	num_instruction_fetch_xfered_bytes += size;
 	
 	return true;
 }
@@ -2271,6 +2313,9 @@ unsigned int MemorySubSystem<TYPES, MSS>::IncomingLoad(typename TYPES::PHYSICAL_
 		while(size);
 	}
 	
+	num_incoming_load_accesses++;
+	num_incoming_load_xfered_bytes += read_bytes;
+	
 	return read_bytes;
 }
 
@@ -2304,6 +2349,9 @@ unsigned int MemorySubSystem<TYPES, MSS>::IncomingStore(typename TYPES::PHYSICAL
 		}
 		while(size);
 	}
+	
+	num_incoming_store_accesses++;
+	num_incoming_store_xfered_bytes += written_bytes;
 	
 	return written_bytes;
 }
@@ -3665,6 +3713,8 @@ inline bool MemorySubSystem<TYPES, MSS>::__MSS_DataBusRead__(typename TYPES::PHY
 	if(!static_cast<MSS *>(this)->DataBusRead(phys_addr, buffer, size, storage_attr, rwitm)) return false;
 
 	if(unlikely(__MSS_IsVerboseDataBusRead__())) Trace("Reading from Bus Data", phys_addr, buffer, size);
+	
+	num_data_bus_read_accesses++;
 
 	return true;
 }
@@ -3674,7 +3724,11 @@ inline bool MemorySubSystem<TYPES, MSS>::__MSS_DataBusWrite__(typename TYPES::PH
 {
 	if(unlikely(__MSS_IsVerboseDataBusWrite__())) Trace("Writing to Bus Data", phys_addr, buffer, size);
 
-	return static_cast<MSS *>(this)->DataBusWrite(phys_addr, buffer, size, storage_attr);
+	if(!static_cast<MSS *>(this)->DataBusWrite(phys_addr, buffer, size, storage_attr)) return false;
+	
+	num_data_bus_write_accesses++;
+
+	return true;
 }
 
 template <typename TYPES, typename MSS>
@@ -3683,6 +3737,8 @@ inline bool MemorySubSystem<TYPES, MSS>::__MSS_InstructionBusRead__(typename TYP
 	if(!static_cast<MSS *>(this)->InstructionBusRead(phys_addr, buffer, size, storage_attr)) return false;
 
 	if(unlikely(__MSS_IsVerboseInstructionBusRead__())) Trace("Reading from Bus Instruction", phys_addr, buffer, size);
+	
+	num_instruction_bus_read_accesses++;
 	
 	return true;
 }

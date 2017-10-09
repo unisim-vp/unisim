@@ -366,6 +366,7 @@ std::ostream& DWARF_FDE<MEMORY_ADDR>::to_HTML(std::ostream& os) const
 	if(cfi)
 	{
 		sstr_cfi << *cfi;
+		delete cfi;
 	}
 	else
 	{

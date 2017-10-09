@@ -74,10 +74,11 @@ void periodic_task2(unsigned int pit_id, unsigned int chan)
 	pit_clear_timer_interrupt_flag(pit_id, chan); // clear PIT_0 interrupt flag
 }
 
-int main(void)
+volatile unsigned int counter = 0;
+
+int main_Z4_2(void)
 {
 	ticks_1us = 0;
-	unsigned int counter = 0;
 	
 	swt_set_service_mode(2, SMD_KEYED_SERVICE_SEQUENCE); // SWT_2: select keyed service sequence for SWT_2
 	swt_set_service_key(2, 1234);                        // SWT_2: set SWT_2 service key
@@ -113,7 +114,8 @@ int main(void)
 	pit_enable_timers_clock(1);                  // PIT_1: enable PIT_1 timers clock
 	
 	/* Loop forever */
-	for(;;) {	   
+	for(;;)
+	{   
 		counter++;
 		PPC_WAIT;
 	}

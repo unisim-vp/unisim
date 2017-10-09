@@ -184,12 +184,6 @@
 					</enumeration>
 				</variable>
 			</object>
-			<variable name="instruction-counter">
-				<type>parameter</type>
-				<data_type>unsigned 64-bit integer</data_type>
-				<value>0</value>
-				<description>number of simulated instructions</description>
-			</variable>
 			<variable name="trap-on-instruction-counter">
 				<type>parameter</type>
 				<data_type>unsigned 64-bit integer</data_type>
@@ -488,12 +482,6 @@
 					</enumeration>
 				</variable>
 			</object>
-			<variable name="instruction-counter">
-				<type>parameter</type>
-				<data_type>unsigned 64-bit integer</data_type>
-				<value>0</value>
-				<description>number of simulated instructions</description>
-			</variable>
 			<variable name="trap-on-instruction-counter">
 				<type>parameter</type>
 				<data_type>unsigned 64-bit integer</data_type>
@@ -780,12 +768,6 @@
 					</enumeration>
 				</variable>
 			</object>
-			<variable name="instruction-counter">
-				<type>parameter</type>
-				<data_type>unsigned 64-bit integer</data_type>
-				<value>0</value>
-				<description>number of simulated instructions</description>
-			</variable>
 			<variable name="trap-on-instruction-counter">
 				<type>parameter</type>
 				<data_type>unsigned 64-bit integer</data_type>
@@ -2294,13 +2276,13 @@
 		<variable name="dwarf-register-number-mapping-filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value>powerpc_eabi_gcc_dwarf_register_number_mapping.xml</value>
+			<value>powerpc_e500_gcc_dwarf_register_number_mapping.xml</value>
 			<description>DWARF register number mapping filename</description>
 		</variable>
 		<variable name="parse-dwarf">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>false</value>
+			<value>true</value>
 			<description>Enable/Disable parsing of DWARF debugging informations</description>
 			<enumeration>
 				<item>true</item>
@@ -2362,7 +2344,13 @@
 		<variable name="sel-cpu[7]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0</value>
+			<value>1</value>
+			<description>CPU being debugged by front-end</description>
+		</variable>
+		<variable name="sel-cpu[8]">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>2</value>
 			<description>CPU being debugged by front-end</description>
 		</variable>
 	</object>
@@ -2460,8 +2448,8 @@
 			<value>single-thread</value>
 			<description>debugging mode (single-thread or multi-thread)</description>
 			<enumeration>
-				<item>SINGLE_THREAD</item>
-				<item>MULTI_THREAD</item>
+				<item>single-thread</item>
+				<item>multi-thread</item>
 			</enumeration>
 		</variable>
 	</object>
@@ -2559,8 +2547,8 @@
 			<value>single-thread</value>
 			<description>debugging mode (single-thread or multi-thread)</description>
 			<enumeration>
-				<item>SINGLE_THREAD</item>
-				<item>MULTI_THREAD</item>
+				<item>single-thread</item>
+				<item>multi-thread</item>
 			</enumeration>
 		</variable>
 	</object>
@@ -2658,9 +2646,105 @@
 			<value>single-thread</value>
 			<description>debugging mode (single-thread or multi-thread)</description>
 			<enumeration>
-				<item>SINGLE_THREAD</item>
-				<item>MULTI_THREAD</item>
+				<item>single-thread</item>
+				<item>multi-thread</item>
 			</enumeration>
+		</variable>
+	</object>
+	<object name="inline-debugger0">
+		<variable name="memory-atom-size">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>1</value>
+			<description>size of the smallest addressable element in memory</description>
+		</variable>
+		<variable name="search-path">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Search path for source (separated by ';')</description>
+		</variable>
+		<variable name="init-macro">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>path to initial macro to run when debugger starts</description>
+		</variable>
+		<variable name="output">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>path to output file where to redirect the debugger outputs</description>
+		</variable>
+		<variable name="program-counter-name">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>pc</value>
+			<description>name of program counter</description>
+		</variable>
+	</object>
+	<object name="inline-debugger1">
+		<variable name="memory-atom-size">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>1</value>
+			<description>size of the smallest addressable element in memory</description>
+		</variable>
+		<variable name="search-path">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Search path for source (separated by ';')</description>
+		</variable>
+		<variable name="init-macro">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>path to initial macro to run when debugger starts</description>
+		</variable>
+		<variable name="output">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>path to output file where to redirect the debugger outputs</description>
+		</variable>
+		<variable name="program-counter-name">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>pc</value>
+			<description>name of program counter</description>
+		</variable>
+	</object>
+	<object name="inline-debugger2">
+		<variable name="memory-atom-size">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>1</value>
+			<description>size of the smallest addressable element in memory</description>
+		</variable>
+		<variable name="search-path">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Search path for source (separated by ';')</description>
+		</variable>
+		<variable name="init-macro">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>path to initial macro to run when debugger starts</description>
+		</variable>
+		<variable name="output">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>path to output file where to redirect the debugger outputs</description>
+		</variable>
+		<variable name="program-counter-name">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>pc</value>
+			<description>name of program counter</description>
 		</variable>
 	</object>
 	<object name="loader">
@@ -3051,6 +3135,132 @@
 			<description>List of files to load. Syntax: [[filename=]&lt;filename1&gt;[=[format=]&lt;format1&gt;]][,[filename=]&lt;filename2&gt;[=[format=]&lt;format2&gt;]]... (e.g. boot.bin=raw,app.elf)</description>
 		</variable>
 	</object>
+	<object name="profiler0">
+		<variable name="search-path">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Search path for source (separated by ';')</description>
+		</variable>
+		<variable name="filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>List of (binary) files (preferably ELF) to profile (separated by ',')</description>
+		</variable>
+		<variable name="sampled-variables">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Variables to sample (separated by spaces)</description>
+		</variable>
+		<variable name="output-directory">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Output directory where to generate profiling report</description>
+		</variable>
+		<variable name="output-format">
+			<type>parameter</type>
+			<data_type>output-format</data_type>
+			<value>text</value>
+			<description>Output format (text, html or csv)</description>
+			<enumeration>
+				<item>text</item>
+				<item>html</item>
+			</enumeration>
+		</variable>
+		<variable name="csv-delimiter">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>,</value>
+			<description>CSV delimiter</description>
+		</variable>
+	</object>
+	<object name="profiler1">
+		<variable name="search-path">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Search path for source (separated by ';')</description>
+		</variable>
+		<variable name="filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>List of (binary) files (preferably ELF) to profile (separated by ',')</description>
+		</variable>
+		<variable name="sampled-variables">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Variables to sample (separated by spaces)</description>
+		</variable>
+		<variable name="output-directory">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Output directory where to generate profiling report</description>
+		</variable>
+		<variable name="output-format">
+			<type>parameter</type>
+			<data_type>output-format</data_type>
+			<value>text</value>
+			<description>Output format (text, html or csv)</description>
+			<enumeration>
+				<item>text</item>
+				<item>html</item>
+			</enumeration>
+		</variable>
+		<variable name="csv-delimiter">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>,</value>
+			<description>CSV delimiter</description>
+		</variable>
+	</object>
+	<object name="profiler2">
+		<variable name="search-path">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Search path for source (separated by ';')</description>
+		</variable>
+		<variable name="filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>List of (binary) files (preferably ELF) to profile (separated by ',')</description>
+		</variable>
+		<variable name="sampled-variables">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Variables to sample (separated by spaces)</description>
+		</variable>
+		<variable name="output-directory">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Output directory where to generate profiling report</description>
+		</variable>
+		<variable name="output-format">
+			<type>parameter</type>
+			<data_type>output-format</data_type>
+			<value>text</value>
+			<description>Output format (text, html or csv)</description>
+			<enumeration>
+				<item>text</item>
+				<item>html</item>
+			</enumeration>
+		</variable>
+		<variable name="csv-delimiter">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>,</value>
+			<description>CSV delimiter</description>
+		</variable>
+	</object>
 	<variable name="enable-gdb-server">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
@@ -3076,6 +3286,16 @@
 		<data_type>boolean</data_type>
 		<value>true</value>
 		<description>Enable/Disable pressing key enter at exit</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-profiler">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable profiling</description>
 		<enumeration>
 			<item>true</item>
 			<item>false</item>

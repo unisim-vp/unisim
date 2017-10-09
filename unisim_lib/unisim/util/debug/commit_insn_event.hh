@@ -55,22 +55,26 @@ public:
 	CommitInsnEvent()
 		: Event<ADDRESS>(Event<ADDRESS>::EV_COMMIT_INSN)
 		, addr(0)
+		, length(0)
 	{
 	}
 
 	void SetAddress(ADDRESS _addr) { addr = _addr; }
+	void SetLength(unsigned int _length) { length = _length; }
 
 	inline ADDRESS GetAddress() const { return addr; }
+	inline unsigned int GetLength() const { return length; }
 	
 	friend std::ostream& operator << <ADDRESS>(std::ostream& os, const CommitInsnEvent<ADDRESS>& cie);
 protected:
 	ADDRESS addr;
+	unsigned int length;
 };
 
 template <class ADDRESS>
 inline std::ostream& operator << (std::ostream& os, const CommitInsnEvent<ADDRESS>& cie)
 {
-	os << "Instruction commit at 0x" << std::hex << cie.addr << std::dec << " for processor #" << cie.GetProcessorNumber() << " and front-end #" << cie.GetFrontEndNumber();
+	os << "Instruction commit of " << cie.GetLength() << "-byte length at 0x" << std::hex << cie.addr << std::dec << " for processor #" << cie.GetProcessorNumber() << " and front-end #" << cie.GetFrontEndNumber();
 	
 	return os;
 }

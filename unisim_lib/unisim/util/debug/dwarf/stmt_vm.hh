@@ -49,7 +49,7 @@ public:
 	DWARF_StatementVM(const DWARF_Handler<MEMORY_ADDR> *dw_handler);
 	~DWARF_StatementVM();
 
-	bool Run(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::ostream *os, std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> *matrix, const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = 0);
+	bool Run(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::ostream *os, std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> *matrix, const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = 0);
 private:
 	const DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	std::ostream& debug_info_stream;
@@ -73,7 +73,7 @@ private:
 	std::vector<DWARF_Filename> filenames; // filenames (filenames in statement program prologue + those added by extended opcode DW_LNE_define_file)
 
 	bool IsAbsolutePath(const char *filename) const;
-	void AddRow(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& matrix, const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu);
+	void AddRow(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& matrix, const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu);
 };
 
 } // end of namespace dwarf

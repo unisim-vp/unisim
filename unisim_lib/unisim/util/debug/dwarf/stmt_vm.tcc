@@ -85,7 +85,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::IsAbsolutePath(const char *filename) const
 }
 
 template <class MEMORY_ADDR>
-void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix, const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu)
+void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix, const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu)
 {
 	if(dw_cu && !dw_cu->HasOverlap(address, 1)) return; // do not insert row if address is not in current compilation unit
 	
@@ -116,13 +116,25 @@ void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_
 	// At this point, if dirname is null we know that source filename is an absolute path or it is relative to the current directory of the compilation
 	
 	// Check that there's no duplicated entry in the statement matrix
-	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::iterator stmt_matrix_iter = stmt_matrix.find(address);
+	std::pair<typename std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::iterator, typename std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::iterator> stmt_matrix_equal_range = stmt_matrix.equal_range(address);
 	
-	// If there's already a row, I suppose that overwritting it is the correct behavior
-	if(stmt_matrix_iter != stmt_matrix.end())
+	typename std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::iterator stmt_matrix_iter = stmt_matrix_equal_range.first;
+	
+	while(stmt_matrix_iter != stmt_matrix_equal_range.second)
 	{
-		delete (*stmt_matrix_iter).second;
-		stmt_matrix.erase(stmt_matrix_iter);
+		typename std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::iterator next_stmt_matrix_iter = stmt_matrix_iter;
+		next_stmt_matrix_iter++;
+		
+		const Statement<MEMORY_ADDR> *existing_stmt = (*stmt_matrix_iter).second;
+		
+		if(existing_stmt->GetDiscriminator() == discriminator)
+		{
+			// If there's already a row, I suppose that overwritting it is the correct behavior
+			delete (*stmt_matrix_iter).second;
+			stmt_matrix.erase(stmt_matrix_iter);
+		}
+			
+		stmt_matrix_iter = next_stmt_matrix_iter;
 	}
 	
 	Statement<MEMORY_ADDR> *stmt = new Statement<MEMORY_ADDR>(address, is_stmt, basic_block, dirname, filename, line, column, isa, discriminator);
@@ -130,7 +142,7 @@ void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::ostream *os, std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> *matrix, const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu)
+bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::ostream *os, std::multimap<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> *matrix, const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu)
 {
 	// Initialize machine state
 	address = 0;

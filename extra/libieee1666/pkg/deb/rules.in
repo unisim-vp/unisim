@@ -2,9 +2,8 @@
 %:
 	dh $@
 
-# temporary rule waiting for debian fixing bug while linking with boost coroutine
-# override_dh_auto_configure:
-# 	dh_auto_configure -- --enable-pthreads
+override_dh_auto_configure:
+	dh_auto_configure -- --disable-accellera-install-layout
 
 override_dh_strip:
 	dh_strip --dbg-package=libieee1666-@PACKAGE_VERSION@-dbg --no-automatic-dbgsym

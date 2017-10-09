@@ -136,7 +136,7 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	, requires_fetch_instruction_reporting(false)
 	, requires_commit_instruction_reporting(false)
 	, instruction_counter(0)
-	, param_instruction_counter("instruction-counter", this, instruction_counter, "number of simulated instructions")
+	, stat_instruction_counter("instruction-counter", this, instruction_counter, "number of simulated instructions")
 	, trap_on_instruction_counter(0xffffffffffffffffULL)
 	, param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter, "number of simulated instruction before traping")
 	, max_inst(0xffffffffffffffffULL)
@@ -172,7 +172,7 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	, ctr()
 	, cr()
 {
-	param_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 

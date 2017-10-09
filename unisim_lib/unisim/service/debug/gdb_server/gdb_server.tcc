@@ -1205,7 +1205,10 @@ void GDBServer<ADDRESS>::ProcessCommands()
 					break;
 				}
 				if(gdb_pc)
+				{
+					Barrier();
 					gdb_pc->SetValue(c_prc_num, &addr);
+				}
 				else
 				{
 					if(verbose)
@@ -1225,7 +1228,10 @@ void GDBServer<ADDRESS>::ProcessCommands()
 				}
 				addr *= memory_atom_size;
 				if(gdb_pc)
+				{
+					Barrier();
 					gdb_pc->SetValue(c_prc_num, &addr);
+				}
 				else
 				{
 					if(verbose)
@@ -1452,6 +1458,8 @@ void GDBServer<ADDRESS>::ProcessCommands()
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::Step()
 {
+	Barrier();
+
 	bool status = true;
 	ListenFetch(c_prc_num);
 	if(unlikely(debug))
@@ -1482,6 +1490,8 @@ bool GDBServer<ADDRESS>::Step()
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::Continue()
 {
+	Barrier();
+
 	bool status = true;
 	if(unlikely(debug))
 	{
@@ -2648,6 +2658,8 @@ bool GDBServer<ADDRESS>::SetCThread(long thread_id)
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::SetGThread(long thread_id)
 {
+	Barrier();
+	
 	if(!ThreadIdToProcessorNumber(thread_id, g_prc_num))
 	{
 		return PutErrorReply(GDB_SERVER_ERROR_INVALID_THREAD_ID);
@@ -2763,6 +2775,8 @@ bool GDBServer<ADDRESS>::ReadMemoryHex(ADDRESS addr, uint32_t size)
 
 	if(size > 0)
 	{
+		Barrier();
+		
 		do
 		{
 			uint8_t value = 0;
@@ -2803,6 +2817,8 @@ bool GDBServer<ADDRESS>::WriteMemoryHex(ADDRESS addr, const std::string& hex, ui
 
 	if(size > 0 && len > 0)
 	{
+		Barrier();
+		
 		do
 		{
 			uint8_t value;
@@ -2838,6 +2854,8 @@ bool GDBServer<ADDRESS>::ReadMemoryBin(ADDRESS addr, uint32_t size)
 
 	if(size > 0)
 	{
+		Barrier();
+		
 		do
 		{
 			char value = 0;
@@ -2976,6 +2994,19 @@ void GDBServer<ADDRESS>::TriggerDebugYield()
 	if(debug_yielding_request_import)
 	{
 		debug_yielding_request_import->DebugYieldRequest();
+	}
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::Barrier()
+{
+	// In rare condition, at startup, server is interacting with GDB client, and simulation is still running.
+	// before sending commands to simulation, we should ask for simulation to yield and make it gracefully wait command processing
+	if(!process_cmd_cond)
+	{
+		wait_for_command_processing = true;
+		TriggerDebugYield();
+		WaitForSimulationRun();
 	}
 }
 
@@ -3219,6 +3250,8 @@ void GDBServer<ADDRESS>::ClearStopEvents()
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t kind)
 {
+	Barrier();
+	
 	uint32_t size = 0;
 	uint32_t i;
 	unsigned int prc_num;
@@ -3366,6 +3399,8 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t kind)
 {
+	Barrier();
+	
 	uint32_t size = 0;
 	uint32_t i;
 	unsigned int prc_num;
@@ -3513,6 +3548,8 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::HandleVCont(const std::string& query, std::size_t& pos)
 {
+	Barrier();
+
 	std::vector<GDBServerAction> new_prc_actions(num_processors);
 	unsigned int prc_num = 0;
 	char ch = 0;
@@ -3691,6 +3728,8 @@ bool GDBServer<ADDRESS>::HandleVCont(const std::string& query, std::size_t& pos)
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::HandleQRcmd(const std::string& query, std::size_t& pos)
 {
+	Barrier();
+
 	std::size_t len = query.length();
 	
 	char c;
@@ -3759,6 +3798,8 @@ bool GDBServer<ADDRESS>::HandleQRcmd(const std::string& query, std::size_t& pos)
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::HandleQRegisterInfo(const std::string& query, std::size_t& pos)
 {
+	Barrier();
+
 	unsigned int reg_order_num = 0;
 	std::stringstream sstr(query.substr(pos));
 	sstr >> std::hex;

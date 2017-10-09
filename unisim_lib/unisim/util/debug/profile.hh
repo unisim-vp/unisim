@@ -38,6 +38,8 @@
 #include <unisim/util/hash_table/hash_table.hh>
 #include <inttypes.h>
 #include <iosfwd>
+#include <map>
+#include <vector>
 
 namespace unisim {
 namespace util {
@@ -45,36 +47,46 @@ namespace debug {
 
 const uint32_t DEFAULT_PROFILE_PAGE_SIZE = 1024;
 
-template <class ADDRESS, uint32_t PAGE_SIZE>
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
 class Profile;
 
-template <class ADDRESS, uint32_t PAGE_SIZE>
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
 class ProfilePage;
 
-template <class ADDRESS, uint32_t PAGE_SIZE>
-std::ostream& operator << (std::ostream& os, const Profile<ADDRESS, PAGE_SIZE>& prof);
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+std::ostream& operator << (std::ostream& os, const Profile<ADDRESS, WEIGHT, PAGE_SIZE>& prof);
 
-template <class ADDRESS, uint32_t PAGE_SIZE>
-std::ostream& operator << (std::ostream& os, const ProfilePage<ADDRESS, PAGE_SIZE>& page);
+template <typename ADDRESS, typename WEIGHT, uint32_t PAGE_SIZE>
+std::ostream& operator << (std::ostream& os, const ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE>& page);
 
-template <class ADDRESS, uint32_t PAGE_SIZE = DEFAULT_PROFILE_PAGE_SIZE>
+template <typename ADDRESS, typename WEIGHT = uint64_t, uint32_t PAGE_SIZE = DEFAULT_PROFILE_PAGE_SIZE>
 class ProfilePage
 {
 public:
 	ProfilePage(ADDRESS _key);
 	~ProfilePage();
 
-	friend std::ostream& operator << <ADDRESS, PAGE_SIZE> (std::ostream& os, const ProfilePage<ADDRESS, PAGE_SIZE>& page);
+	bool IsCovered(ADDRESS offset) const;
+	bool HasWeight(ADDRESS offset) const;
+	void GetAddressRanges(std::vector<std::pair<ADDRESS, ADDRESS> >& addr_ranges) const;
+	ADDRESS GetBaseAddress() const;
+	void Cover(ADDRESS offset, unsigned int length);
+	void Accumulate(ADDRESS offset, const WEIGHT& weight);
+	const WEIGHT& GetWeight(unsigned int offset) const;
+	
+	//friend std::ostream& operator << <ADDRESS, WEIGHT, PAGE_SIZE> (std::ostream& os, const ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE>& page);
 private:
-	friend class unisim::util::hash_table::HashTable<ADDRESS, ProfilePage<ADDRESS, PAGE_SIZE> >;
-	friend class Profile<ADDRESS, PAGE_SIZE>;
+	friend class unisim::util::hash_table::HashTable<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> >;
+	friend class Profile<ADDRESS, WEIGHT, PAGE_SIZE>;
 
 	ADDRESS key;
-	ProfilePage<ADDRESS> *next;
-	uint64_t *weights;
+	ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *next;
+	
+	uint64_t *weight_coverage_map;
+	WEIGHT *weights;
 };
 
-template <class ADDRESS, uint32_t PAGE_SIZE = DEFAULT_PROFILE_PAGE_SIZE>
+template <typename ADDRESS, typename WEIGHT = uint64_t, uint32_t PAGE_SIZE = DEFAULT_PROFILE_PAGE_SIZE>
 class Profile
 {
 public:
@@ -82,12 +94,20 @@ public:
 	~Profile();
 	
 	void Clear();
-	void Accumulate(ADDRESS addr, uint64_t weight);
-	friend std::ostream& operator << <ADDRESS, PAGE_SIZE> (std::ostream& os, const Profile<ADDRESS, PAGE_SIZE>& prof);
-	operator std::map<ADDRESS, uint64_t>() const;
+	void Cover(ADDRESS addr, unsigned int length);
+	bool IsCovered(ADDRESS addr) const;
+	void Accumulate(ADDRESS addr, const WEIGHT& weight);
+	bool GetWeight(ADDRESS addr, WEIGHT& weight) const;
+	void GetAddressRanges(std::vector<std::pair<ADDRESS, ADDRESS> >& addr_ranges) const;
+	friend std::ostream& operator << <ADDRESS, WEIGHT, PAGE_SIZE> (std::ostream& os, const Profile<ADDRESS, WEIGHT, PAGE_SIZE>& prof);
+	operator std::map<ADDRESS, WEIGHT>() const;
 
 private:
-	unisim::util::hash_table::HashTable<ADDRESS, ProfilePage<ADDRESS, PAGE_SIZE> > hash_table;
+	unisim::util::hash_table::HashTable<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> > hash_table;
+	std::map<ADDRESS, ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *> page_map;
+	
+	ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *AllocatePage(ADDRESS addr);
+	ProfilePage<ADDRESS, WEIGHT, PAGE_SIZE> *GetPage(ADDRESS addr) const;
 };
 
 } // end of namespace debug
