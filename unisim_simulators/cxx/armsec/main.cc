@@ -876,7 +876,7 @@ namespace armsec
       {
         return
           (U32(BOOL(n)) << 31) | (U32(BOOL(z)) << 30) | (U32(BOOL(c)) << 29) | (U32(BOOL(v)) << 28) |
-          (U32(itstate >> 2) << 10) | (U32(itstate & U8(0b11)) << 25) |
+          (U32(itstate >> U8(2)) << 10) | (U32(itstate & U8(0b11)) << 25) |
           bg;
       }
     } cpsr;
