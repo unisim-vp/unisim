@@ -3717,6 +3717,7 @@ inline bool MemorySubSystem<TYPES, MSS>::__MSS_DataBusRead__(typename TYPES::PHY
 	if(unlikely(__MSS_IsVerboseDataBusRead__())) Trace("Reading from Bus Data", phys_addr, buffer, size);
 	
 	num_data_bus_read_accesses++;
+	num_data_bus_read_xfered_bytes += size;
 
 	return true;
 }
@@ -3729,6 +3730,7 @@ inline bool MemorySubSystem<TYPES, MSS>::__MSS_DataBusWrite__(typename TYPES::PH
 	if(!static_cast<MSS *>(this)->DataBusWrite(phys_addr, buffer, size, storage_attr)) return false;
 	
 	num_data_bus_write_accesses++;
+	num_data_bus_write_xfered_bytes += size;
 
 	return true;
 }
@@ -3741,6 +3743,7 @@ inline bool MemorySubSystem<TYPES, MSS>::__MSS_InstructionBusRead__(typename TYP
 	if(unlikely(__MSS_IsVerboseInstructionBusRead__())) Trace("Reading from Bus Instruction", phys_addr, buffer, size);
 	
 	num_instruction_bus_read_accesses++;
+	num_instruction_bus_read_xfered_bytes += size;
 	
 	return true;
 }
