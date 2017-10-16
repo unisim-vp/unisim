@@ -35,6 +35,7 @@
 #ifndef __UNISIM_KERNEL_LOGGER_LOGGER_SERVER_HH__
 #define __UNISIM_KERNEL_LOGGER_LOGGER_SERVER_HH__
 
+#include <unisim/kernel/service/service.hh>
 #include <string>
 #include <fstream>
 #include <set>
@@ -49,10 +50,10 @@ namespace logger {
 
 struct Logger;
 
-struct LoggerServer
+struct LoggerServer : public unisim::kernel::service::Object
 {
 	/** Constructor */
-	LoggerServer();
+	LoggerServer(const char *name, unisim::kernel::service::Object *parent = 0);
 	/** Destructor */
 	~LoggerServer();
 
@@ -147,6 +148,16 @@ public:
 	std::string opt_xml_filename_;
 	bool opt_xml_file_gzipped_;
 
+	unisim::kernel::service::Parameter<bool>        param_std_err;
+	unisim::kernel::service::Parameter<bool>        param_std_out;
+	unisim::kernel::service::Parameter<bool>        param_std_err_color;
+	unisim::kernel::service::Parameter<bool>        param_std_out_color;
+	unisim::kernel::service::Parameter<bool>        param_file;
+	unisim::kernel::service::Parameter<std::string> param_filename;
+	unisim::kernel::service::Parameter<bool>        param_xml_file;
+	unisim::kernel::service::Parameter<std::string> param_xml_filename;
+	unisim::kernel::service::Parameter<bool>        param_xml_file_gzipped;
+	
 	/***************************************************************************
 	 * Parameters                                                          END *
 	 ***************************************************************************/

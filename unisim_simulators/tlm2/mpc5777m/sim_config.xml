@@ -3551,7 +3551,7 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
-	<variable name="kernel_logger.file">
+	<variable name="file">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
@@ -3561,13 +3561,13 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
-	<variable name="kernel_logger.filename">
+	<variable name="filename">
 		<type>parameter</type>
 		<data_type>string</data_type>
 		<value>logger_output.txt</value>
 		<description>Filename to keep logger output (the option file must be activated)</description>
 	</variable>
-	<variable name="kernel_logger.std_err">
+	<variable name="std_err">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>true</value>
@@ -3577,7 +3577,7 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
-	<variable name="kernel_logger.std_err_color">
+	<variable name="std_err_color">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
@@ -3587,7 +3587,7 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
-	<variable name="kernel_logger.std_out">
+	<variable name="std_out">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
@@ -3597,7 +3597,7 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
-	<variable name="kernel_logger.std_out_color">
+	<variable name="std_out_color">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
@@ -3607,7 +3607,7 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
-	<variable name="kernel_logger.xml_file">
+	<variable name="xml_file">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
@@ -3617,7 +3617,7 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
-	<variable name="kernel_logger.xml_file_gzipped">
+	<variable name="xml_file_gzipped">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
@@ -3627,7 +3627,7 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
-	<variable name="kernel_logger.xml_filename">
+	<variable name="xml_filename">
 		<type>parameter</type>
 		<data_type>string</data_type>
 		<value>logger_output.xml</value>

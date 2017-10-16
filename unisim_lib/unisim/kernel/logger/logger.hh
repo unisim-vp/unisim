@@ -117,6 +117,7 @@ private:
 	
 	unisim::kernel::logger::LoggerServer* GetServerInstance();
 	static unisim::kernel::logger::LoggerServer* StaticServerInstance();
+	static void ReleaseStaticServiceInstance();
 	void PrintMode();
 
 	std::string name;
@@ -127,6 +128,8 @@ private:
 	LoggerStream info_stream;
 	LoggerStream warning_stream;
 	LoggerStream error_stream;
+	
+	static LoggerServer *static_server_instance;
 };
 
 Logger& DebugInfo(Logger&);
