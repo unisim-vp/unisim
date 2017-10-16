@@ -167,8 +167,7 @@ struct CPU
   //=====================================================================
 
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::MemoryAccessReportingControl> memory_access_reporting_control_export;
-  virtual void RequiresFinishedInstructionReporting( bool report );
-  virtual void RequiresMemoryAccessReporting( bool report );
+  virtual void RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report );
   
   //=====================================================================
   //=                Memory injection interface methods                 =
@@ -505,10 +504,9 @@ private:
   virtual bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
   virtual bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
 
-  /** Indicates if the finished instructions require to be reported. */
-  bool requires_finished_instruction_reporting;
-  /** Indicates if the memory accesses require to be reported. */
-  bool requires_memory_access_reporting;
+  bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
+  bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported
+  bool requires_commit_instruction_reporting; //< indicates if the committed instructions require to be reported
   
   void ReportMemoryAccess( unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mtp,
                            uint64_t addr, uint32_t size )

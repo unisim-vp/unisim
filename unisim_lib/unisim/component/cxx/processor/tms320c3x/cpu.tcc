@@ -108,8 +108,9 @@ CPU(const char *name,
 	symbol_table_lookup_import("symbol_table_lookup_import", this),
 	memory_import("memory_import", this),
 	ti_c_io_import("ti-c-io-import", this),
-	requires_memory_access_reporting(true),
-	requires_finished_instruction_reporting(true),
+	requires_memory_access_reporting(false),
+	requires_fetch_instruction_reporting(false),
+	requires_commit_instruction_reporting(false),
 	instruction_counter(0),
 	trap_on_instruction_counter(0xffffffffffffffffULL),
 	max_inst(0xffffffffffffffffULL),
@@ -273,7 +274,8 @@ BeginSetup()
 		if (VerboseSetup())
 			logger << "- memory access reporting not active";
 		requires_memory_access_reporting = false;
-		requires_finished_instruction_reporting = false;
+		requires_fetch_instruction_reporting = false;
+		requires_commit_instruction_reporting = false;
 	}
 
 	Reset();
@@ -307,18 +309,14 @@ OnDisconnect()
 
 template<class CONFIG, bool DEBUG>
 void
-CPU<CONFIG, DEBUG> ::
-RequiresMemoryAccessReporting(bool report)
+CPU<CONFIG, DEBUG>::RequiresMemoryAccessReporting(MemoryAccessReportingType type, bool report)
 {
-	requires_memory_access_reporting = report;
-}
-
-template<class CONFIG, bool DEBUG>
-void
-CPU<CONFIG, DEBUG> ::
-RequiresFinishedInstructionReporting(bool report)
-{
-	requires_finished_instruction_reporting = report;
+	switch (type) {
+	case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
+	case unisim::service::interfaces::REPORT_FETCH_INSN:  requires_fetch_instruction_reporting = report; break;
+	case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
+	default: throw 0;
+	}
 }
 
 //===============================================================
@@ -484,17 +482,22 @@ GetRegister(const char *name)
 	return (reg_iter != registers_registry.end()) ? (*reg_iter).second : 0;
 }
 
-  /**
-   * Provide Available Registers
-   *
-   * @param scanner  the registry where registers are declared
-   */
+/**
+ * Provide Available Registers
+ *
+ * @param scanner  the registry where registers are declared
+ */
 
 template<class CONFIG, bool DEBUG>
 void
 CPU<CONFIG, DEBUG>::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
 {
-  // TODO
+	typedef typename map<string, unisim::service::interfaces::Register *>::iterator iterator;
+	
+	for (iterator reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
+	{
+		scanner.Append( reg_iter->second );
+	}
 }
 
 //===============================================================
@@ -1301,11 +1304,6 @@ void
 CPU<CONFIG, DEBUG> ::
 StepInstruction()
 {
-	if (unlikely(debug_yielding_import))
-	{
-		debug_yielding_import->DebugYield();
-	}
-
 	try
 	{
 		if(unlikely(reset))
@@ -1441,6 +1439,11 @@ StepInstruction()
 							SetIR(Fetch(GetPC23_0()));
 							first_time_through_repeat_single = false;
 						}
+						else if (unlikely(debug_yielding_import))
+						{
+							// Give hand to debuggers during (potentially long) repeat single instructions
+							debug_yielding_import->DebugYield();
+						}
 
 						// Decrement RC
 						SetRC(GetRC() - 1);
@@ -1510,7 +1513,8 @@ StepInstruction()
 
 		// Decode the instruction
 		// Note: GenISSLib generated decoder handle byte address not word address
-		typename isa::tms320c3x::Operation<CONFIG, DEBUG> *operation = decoder.Decode(4 * GetPC23_0(), GetIR());
+		address_t current_instruction_address = 4 * GetPC23_0();
+		typename isa::tms320c3x::Operation<CONFIG, DEBUG> *operation = decoder.Decode(current_instruction_address, GetIR());
 
 		// Execute the instruction
 		operation->execute(*this);
@@ -1530,13 +1534,9 @@ StepInstruction()
 			}
 		}
 
-		if(unlikely(requires_finished_instruction_reporting))
+		if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import != 0))
 		{
-			if(unlikely(memory_access_reporting_import != 0))
-			{
-				memory_access_reporting_import->ReportCommitInstruction(4 * GetPC23_0());
-				memory_access_reporting_import->ReportFetchInstruction(4 * GetNPC23_0());
-			}
+			memory_access_reporting_import->ReportCommitInstruction(current_instruction_address, 4);
 		}
 		
 		/* go to the next instruction */
@@ -1545,18 +1545,20 @@ StepInstruction()
 		/* update the instruction counter */
 		instruction_counter++;
 
-		if(unlikely(trap_reporting_import && instruction_counter == trap_on_instruction_counter))
+		if(unlikely(trap_reporting_import and (instruction_counter == trap_on_instruction_counter)))
 		{
 			trap_reporting_import->ReportTrap();
 		}
+
+		if (unlikely(instruction_counter >= max_inst))
+			Stop(0);
 	}
-	catch(Exception& exc)
+
+	catch (Exception& exc)
 	{
 		logger << DebugError << "Unpredictable behavior: " << exc.what() << EndDebugError;
 		Stop(-1);
 	}
-
-	if(unlikely(instruction_counter >= max_inst)) Stop(0);
 }
 
 //===============================================================
@@ -1703,6 +1705,16 @@ uint32_t
 CPU<CONFIG, DEBUG> ::
 Fetch(address_t addr)
 {
+	if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
+	{
+		memory_access_reporting_import->ReportFetchInstruction(4 * addr);
+	}
+		
+	if (unlikely(debug_yielding_import))
+	{
+		debug_yielding_import->DebugYield();
+	}
+
 	// Memory access reporting
 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{

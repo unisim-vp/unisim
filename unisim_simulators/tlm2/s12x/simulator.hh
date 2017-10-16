@@ -33,8 +33,6 @@
 #include <unisim/service/loader/s19_loader/s19_loader.hh>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 
-#include <unisim/service/tee/memory_access_reporting/tee.hh>
-
 #include <unisim/service/tee/registers/registers_tee.hh>
 #include <unisim/service/tee/memory_import_export/memory_import_export_tee.hh>
 
@@ -68,7 +66,6 @@
 #include <unisim/service/pim/pim_server.hh>
 
 #include <unisim/service/monitor/monitor.hh>
-#include <unisim/service/tee/debug_event/debug_event_tee.hh>
 
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 
@@ -87,10 +84,6 @@
 
 #endif
 
-using namespace std;
-using namespace sc_core;
-using namespace sc_dt;
-
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using unisim::component::cxx::processor::hcs12x::service_address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
@@ -106,7 +99,6 @@ using unisim::component::tlm2::processor::hcs12x::S12SCI;
 using unisim::component::tlm2::processor::hcs12x::S12SPI;
 using unisim::component::tlm2::processor::hcs12x::S12MSCAN;
 
-using unisim::service::debug::debugger::Debugger;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 
@@ -116,8 +108,6 @@ using unisim::service::loader::multiformat_loader::MultiFormatLoader;
 
 using unisim::service::pim::PIM;
 using unisim::service::pim::PIMServer;
-
-using unisim::service::tee::debug_event::DebugEventTee;
 
 using unisim::service::monitor::Monitor;
 
@@ -278,9 +268,7 @@ private:
 
 	typedef unisim::service::tee::registers::RegistersTee<32> RegistersTee;
 	typedef unisim::service::tee::memory_import_export::MemoryImportExportTee<physical_address_t, 32> MemoryImportExportTee;
-	typedef unisim::service::tee::memory_access_reporting::Tee<CPU_ADDRESS_TYPE> MemoryAccessReportingTee;
 
-	typedef unisim::service::tee::debug_event::DebugEventTee<CPU_ADDRESS_TYPE> EVENT_TEE;
 	typedef unisim::service::monitor::Monitor<CPU_ADDRESS_TYPE> MONITOR;
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -320,9 +308,6 @@ private:
 
 	MemoryImportExportTee* memoryImportExportTee;
 
-	//  - Tee Memory Access Reporting
-	MemoryAccessReportingTee *tee_memory_access_reporting;
-
 #ifdef HAVE_RTBCOB
 	RTBStub *rtbStub;
 #else
@@ -339,40 +324,32 @@ private:
 //	S19_Loader<CPU_ADDRESS_TYPE> *loaderS19;
 //	Elf32Loader *loaderELF;
 
-	EVENT_TEE *evTee;
-
-	// Monitoring tool: ARTiMon or EACSEL
-	MONITOR *monitor;
-
 	//  - Multiformat loader
-	MultiFormatLoader<CPU_ADDRESS_TYPE> *loader;
-
-	//  - profiler
-	Profiler<CPU_ADDRESS_TYPE> *profiler;
-
-	//  - Debugger
-	Debugger<CPU_ADDRESS_TYPE> *debugger;
-
-	//  - GDB server
-	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
-
-	// PIM server
-	PIMServer<CPU_ADDRESS_TYPE> *pim_server;
-
-	//  - Inline debugger
-	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger;
+	MultiFormatLoader<CPU_ADDRESS_TYPE>* loader;
+	
+	struct DEBUGGER_CONFIG
+	{
+		typedef uint32_t ADDRESS;
+		static const unsigned int NUM_PROCESSORS = 1;
+		/* gdb_server, inline_debugger and/or monitor */
+		static const unsigned int MAX_FRONT_ENDS = 4;
+	};
+	typedef typename unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> Debugger;
+	
+	Debugger*                         debugger;        //< Debugger
+	GDBServer<CPU_ADDRESS_TYPE>*      gdb_server;      //< GDB server
+	PIMServer<CPU_ADDRESS_TYPE>*      pim_server;      //< PIM server
+	InlineDebugger<CPU_ADDRESS_TYPE>* inline_debugger; //< Inline debugger
+	MONITOR*                          monitor;         //< Monitoring tool: ARTiMon or EACSEL
 
 	// - telnet
-	unisim::service::telnet::Telnet *sci_telnet;
-	unisim::service::telnet::Telnet *spi_telnet;
+	unisim::service::telnet::Telnet* sci_telnet;
+	unisim::service::telnet::Telnet* spi_telnet;
 
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
-
-//	string filename;
-//	string symbol_filename;
 
 	bool enable_pim_server;
 	bool enable_gdb_server;
@@ -395,13 +372,13 @@ private:
 	Parameter<string> *param_pc_reg_name;
 
 	int exit_status;
-//	bool isS19;
 
 	bool dump_parameters;
-	Parameter<bool> param_dump_parameters;
 	bool dump_formulas;
-	Parameter<bool> param_dump_formulas;
 	bool dump_statistics;
+	
+	Parameter<bool> param_dump_parameters;
+	Parameter<bool> param_dump_formulas;
 	Parameter<bool> param_dump_statistics;
 
 	double null_stat_var;
@@ -421,7 +398,6 @@ private:
 
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
 
-	void (*prev_sig_int_handler)(int);
 	double spent_time;
 	bool isStop;
 

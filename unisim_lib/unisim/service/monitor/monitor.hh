@@ -79,7 +79,7 @@ public:
 	virtual ~Monitor();
 
 	// DebugEventListener
-	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event);
+	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS>* event);
 
 	virtual void OnDisconnect();
 	virtual bool BeginSetup();

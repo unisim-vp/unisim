@@ -54,88 +54,80 @@ template uint16_t EBLB::getter<uint16_t>(unsigned int rr);
 template void EBLB::exchange<uint8_t>(unsigned int rrSrc, unsigned int rrDst);
 template void EBLB::exchange<uint16_t>(unsigned int rrSrc, unsigned int rrDst);
 
-CPU::CPU(const char *name, Object *parent):
-	Object(name, parent),
-	Client<Loader>(name,  parent),
-	unisim::kernel::service::Client<DebugYielding>(name, parent),
-	unisim::kernel::service::Client<MemoryAccessReporting<physical_address_t> >(name, parent),
-	unisim::kernel::service::Service<MemoryAccessReportingControl>(name, parent),
-	unisim::kernel::service::Service<Disassembly<physical_address_t> >(name, parent),
-	unisim::kernel::service::Service<Registers>(name, parent),
-	unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent),
-	unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent),
-	unisim::kernel::service::Client<SymbolTableLookup<physical_address_t> >(name, parent),
-	unisim::kernel::service::Client<TrapReporting>(name, parent),
-	queueCurrentAddress(0xFFFE),
-	queueFirst(-1),
-	queueNElement(0),
-
-	loader_import("loader-import",  this),
-	disasm_export("disasm_export", this),
-	registers_export("registers_export", this),
-	memory_export("memory_export", this),
-	memory_access_reporting_control_export("memory_access_reporting_control_export", this),
-	debug_yielding_import("debug_yielding_import", this),
-	memory_access_reporting_import("memory_access_reporting_import", this),
-	memory_import("memory_import", this),
-	symbol_table_lookup_import("symbol-table-lookup-import",  this),
-	logger(0),
-	trap_reporting_import("trap_reporting_import", this),
-	cpu_cycle(0),
-	bus_cycle(0),
-	verbose_all(false),
-	param_verbose_all("verbose-all", this, verbose_all),
-	verbose_setup(false),
-	param_verbose_setup("verbose-setup", this, verbose_setup),
-	verbose_step(false),
-	param_verbose_step("verbose-step", this, verbose_step),
-	verbose_dump_regs_start(false),
-	param_verbose_dump_regs_start("verbose-dump-regs-start", this, verbose_dump_regs_start),
-	verbose_dump_regs_end(false),
-	param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end),
-	verbose_exception(false),
-	param_verbose_exception("verbose-exception", this, verbose_exception),
-
-	enable_trace(false),
-	param_enable_trace("enable-trace", this, enable_trace),
-
-	enable_file_trace(false),
-	param_enable_file_trace("enable-file-trace", this, enable_file_trace),
-
-	periodic_trap(-1),
-	param_periodic_trap("periodic-trap", this, periodic_trap),
-
-	requires_memory_access_reporting(false),
-	param_requires_memory_access_reporting("requires-memory-access-reporting", this, requires_memory_access_reporting),
-	requires_finished_instruction_reporting(false),
-	param_requires_finished_instruction_reporting("requires-finished-instruction-reporting", this, requires_finished_instruction_reporting),
-	debug_enabled(false),
-	param_debug_enabled("debug-enabled", this, debug_enabled),
-	asynchronous_interrupt(false),
-	maskableIbit_interrupt(false),
-	nonMaskableXIRQ_interrupt(false),
-	nonMaskableAccessError_interrupt(false),
-	nonMascableSWI_interrupt(false),
-	trap_interrupt(false),
-	reset(false),
-	mpuAccessError_interrupt(false),
-	syscall_interrupt(false),
-	spurious_interrupt(false),
-	state(CPU::RUNNING),
-	lastPC(0),
-	instruction_counter(0),
-	cycles_counter(0),
-	data_load_counter(0),
-	data_store_counter(0),
-	max_inst((uint64_t) -1),
-	stat_instruction_counter("instruction-counter", this, instruction_counter),
-	stat_cycles_counter("cycles-counter", this, cycles_counter),
-	stat_load_counter("data-load-counter", this, data_load_counter),
-	stat_store_counter("data-store-counter", this, data_store_counter),
-
-	param_max_inst("max-inst",this,max_inst)
-
-
+CPU::CPU(const char *name, Object *parent)
+	: Object(name, parent)
+	, Client<Loader>(name,  parent)
+	, unisim::kernel::service::Client<DebugYielding>(name, parent)
+	, unisim::kernel::service::Client<MemoryAccessReporting<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Service<MemoryAccessReportingControl>(name, parent)
+	, unisim::kernel::service::Service<Disassembly<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Service<Registers>(name, parent)
+	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Client<SymbolTableLookup<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Client<TrapReporting>(name, parent)
+	, queueCurrentAddress(0xFFFE)
+	, queueFirst(-1)
+	, queueNElement(0)
+, 
+	loader_import("loader-import",  this)
+	, disasm_export("disasm_export", this)
+	, registers_export("registers_export", this)
+	, memory_export("memory_export", this)
+	, memory_access_reporting_control_export("memory_access_reporting_control_export", this)
+	, debug_yielding_import("debug_yielding_import", this)
+	, memory_access_reporting_import("memory_access_reporting_import", this)
+	, memory_import("memory_import", this)
+	, symbol_table_lookup_import("symbol-table-lookup-import",  this)
+	, logger(0)
+	, trap_reporting_import("trap_reporting_import", this)
+	, cpu_cycle(0)
+	, bus_cycle(0)
+	, verbose_all(false)
+	, param_verbose_all("verbose-all", this, verbose_all)
+	, verbose_setup(false)
+	, param_verbose_setup("verbose-setup", this, verbose_setup)
+	, verbose_step(false)
+	, param_verbose_step("verbose-step", this, verbose_step)
+	, verbose_dump_regs_start(false)
+	, param_verbose_dump_regs_start("verbose-dump-regs-start", this, verbose_dump_regs_start)
+	, verbose_dump_regs_end(false)
+	, param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end)
+	, verbose_exception(false)
+	, param_verbose_exception("verbose-exception", this, verbose_exception)
+	, enable_trace(false)
+	, param_enable_trace("enable-trace", this, enable_trace)
+	, enable_file_trace(false)
+	, param_enable_file_trace("enable-file-trace", this, enable_file_trace)
+	, periodic_trap(-1)
+	, param_periodic_trap("periodic-trap", this, periodic_trap)
+	, requires_memory_access_reporting(false)
+	, requires_fetch_instruction_reporting(false)
+	, requires_commit_instruction_reporting(false)
+	, debug_enabled(false)
+	, param_debug_enabled("debug-enabled", this, debug_enabled)
+	, asynchronous_interrupt(false)
+	, maskableIbit_interrupt(false)
+	, nonMaskableXIRQ_interrupt(false)
+	, nonMaskableAccessError_interrupt(false)
+	, nonMascableSWI_interrupt(false)
+	, trap_interrupt(false)
+	, reset(false)
+	, mpuAccessError_interrupt(false)
+	, syscall_interrupt(false)
+	, spurious_interrupt(false)
+	, state(CPU::RUNNING)
+	, lastPC(0)
+	, instruction_counter(0)
+	, cycles_counter(0)
+	, data_load_counter(0)
+	, data_store_counter(0)
+	, max_inst((uint64_t) -1)
+	, stat_instruction_counter("instruction-counter", this, instruction_counter)
+	, stat_cycles_counter("cycles-counter", this, cycles_counter)
+	, stat_load_counter("data-load-counter", this, data_load_counter)
+	, stat_store_counter("data-store-counter", this, data_store_counter)
+	, param_max_inst("max-inst",this,max_inst)
 {
 	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_periodic_trap.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -317,153 +309,152 @@ void CPU::Sync()
 
 unsigned int CPU::step()
 {
-
-	uint8_t 	buffer[MAX_INS_SIZE];
-
-	Operation 	*op;
-	unsigned int	opCycles = 0;
-
 	try
 	{
-
-		VerboseDumpRegsStart();
-
-		if(debug_enabled && verbose_step)
-			*logger << DebugInfo << "Starting step at PC = 0x" << std::hex << getRegPC() << std::dec << std::endl << EndDebugInfo;
-
-		if (debug_yielding_import) {
-			if(debug_enabled && verbose_step)
-				*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << getRegPC() << std::dec << ")" << std::endl << EndDebugInfo;
-			debug_yielding_import->DebugYield();
-		}
-
-		if (state != STOP) {
-			if(requires_memory_access_reporting) {
-				if(memory_access_reporting_import) {
-					if(debug_enabled && verbose_step)
-						*logger << DebugInfo
-							<< "Reporting memory access for fetch at address 0x"
-							<< std::hex << getRegPC() << std::dec
-							<< std::endl << EndDebugInfo;
-
-					memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, getRegPC(), MAX_INS_SIZE);
-				}
-			}
-
-
-			if(debug_enabled && verbose_step)
-			{
-				*logger << DebugInfo
-					<< "Fetching (reading) instruction at address 0x"
-					<< std::hex << getRegPC() << std::dec
-					<< std::endl << EndDebugInfo;
-			}
-
-			queueFetch(getRegPC(), buffer, MAX_INS_SIZE);
-			CodeType 	insn( buffer, MAX_INS_SIZE*8);
-
-			/* Decode current PC */
-			if(debug_enabled && verbose_step)
-			{
-				stringstream ctstr;
-				ctstr << insn;
-				*logger << DebugInfo
-					<< "Decoding instruction at 0x"
-					<< std::hex << getRegPC() << std::dec
-					<< " (0x" << std::hex << ctstr.str() << std::dec << ")"
-					<< std::endl << EndDebugInfo;
-			}
-
-			op = this->Decode(MMC::getInstance()->getCPU12XPagedAddress(getRegPC()), insn);
-			lastPC = getRegPC();
-	        unsigned int insn_length = op->GetLength();
-	        if (insn_length % 8) throw "InternalError";
-
-			queueFlush(insn_length/8);
-
-			/* Execute instruction */
-
-			if (debug_enabled && verbose_step) {
-				stringstream disasm_str;
-				stringstream ctstr;
-
-				op->disasm(disasm_str);
-
-				ctstr << op->GetEncoding();
-				*logger << DebugInfo << (Object::GetSimulator()->GetSimTime())
-					<< " : Executing instruction "
-					<< disasm_str.str()
-					<< " at PC = 0x" << std::hex << getRegPC() << std::dec
-					<< " (0x" << std::hex << ctstr.str() << std::dec << ") , Instruction Counter = " << instruction_counter
-					<< "  " << EndDebugInfo	<< std::endl;
-			}
-
-			setRegPC(getRegPC() + (insn_length/8));
-
-			if (enable_trace) {
-				stringstream disasm_str;
-				stringstream ctstr;
-
-				ctstr << op->GetEncoding();
-
-				disasm_str << "Cycles = " << std::dec << cycles_counter
-					<< " : Time = " << std::dec << (Object::GetSimulator()->GetSimTime())
-					<< " : PC = 0x" << std::hex << lastPC << std::dec << " : "
-					<< getFunctionFriendlyName(lastPC) << " : ";
-
-				op->disasm(disasm_str);
-
-				disasm_str	<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) "
-					<< std::endl;
-
-				if (enable_file_trace) {
-					trace << disasm_str.str();
-				} else {
-					std::cout << disasm_str.str();
-				}
-			}
-
-			opCycles = op->execute(this);
-
-			cycles_counter += opCycles;
-
-			VerboseDumpRegsEnd();
-
-			instruction_counter++;
-
-			if ((trap_reporting_import) && ((instruction_counter % periodic_trap) == 0)) {
-				trap_reporting_import->ReportTrap();
-			}
-
-		}
-
-		if(hasAsynchronousInterrupt())
-		{
+		if (hasAsynchronousInterrupt())
 			throw AsynchronousException();
-		}
-		else if (state == STOP) {
+                
+		if (state == STOP)
+		{
 			reportTrap("CPU is in STOP mode");
+			return 0;
 		}
 
+		address_t curPC = getRegPC();
+
+		if (verbose_step)
+			*logger << DebugInfo << "Starting step at PC = 0x" << std::hex << curPC << std::dec << std::endl << EndDebugInfo;
+
+                if (requires_fetch_instruction_reporting and memory_access_reporting_import)
+			memory_access_reporting_import->ReportFetchInstruction(MMC::getInstance()->getCPU12XPagedAddress(curPC));
+		
+		if (debug_enabled)
+			VerboseDumpRegsStart();
+		
+		if (debug_yielding_import)
+			debug_yielding_import->DebugYield();
+		
+
+		if (requires_memory_access_reporting and memory_access_reporting_import)
+			memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, curPC, MAX_INS_SIZE);
+
+
+		if (debug_enabled && verbose_step)
+		{
+			*logger << DebugInfo
+				<< "Fetching (reading) instruction at address 0x"
+				<< std::hex << curPC << std::dec
+				<< std::endl << EndDebugInfo;
+		}
+
+		CodeType insn;
+		queueFetch(curPC, &insn.str[0], CodeType::capacity);
+
+		/* Decode current PC */
+		if (debug_enabled && verbose_step)
+		{
+			stringstream ctstr;
+			ctstr << insn;
+			*logger << DebugInfo
+				<< "Decoding instruction at 0x"
+				<< std::hex << curPC << std::dec
+				<< " (0x" << std::hex << ctstr.str() << std::dec << ")"
+				<< std::endl << EndDebugInfo;
+		}
+
+		Operation* op = this->Decode(MMC::getInstance()->getCPU12XPagedAddress(curPC), insn);
+		unsigned int insn_length = op->GetLength();
+		if (insn_length % 8) throw "InternalError";
+
+		queueFlush(insn_length/8);
+
+		/* Execute instruction */
+
+		if (debug_enabled && verbose_step) {
+			stringstream disasm_str;
+			stringstream ctstr;
+
+			op->disasm(disasm_str);
+
+			ctstr << op->GetEncoding();
+			*logger << DebugInfo << (Object::GetSimulator()->GetSimTime())
+				<< " : Executing instruction "
+				<< disasm_str.str()
+				<< " at PC = 0x" << std::hex << curPC << std::dec
+				<< " (0x" << std::hex << ctstr.str() << std::dec << ") , Instruction Counter = " << instruction_counter
+				<< "  " << EndDebugInfo	<< std::endl;
+		}
+
+		lastPC = curPC;
+		setRegPC(curPC + (insn_length/8));
+
+		if (enable_trace) {
+			stringstream disasm_str;
+			stringstream ctstr;
+
+			ctstr << op->GetEncoding();
+
+			disasm_str << "Cycles = " << std::dec << cycles_counter
+				<< " : Time = " << std::dec << (Object::GetSimulator()->GetSimTime())
+				<< " : PC = 0x" << std::hex << curPC << std::dec << " : "
+				<< getFunctionFriendlyName(curPC) << " : ";
+
+			op->disasm(disasm_str);
+
+			disasm_str	<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) "
+				<< std::endl;
+
+			if (enable_file_trace) {
+				trace << disasm_str.str();
+			} else {
+				std::cout << disasm_str.str();
+			}
+		}
+
+		unsigned opCycles = op->execute(this);
+
+		cycles_counter += opCycles;
+
+		VerboseDumpRegsEnd();
+
+		instruction_counter++;
+
+		if (trap_reporting_import and ((instruction_counter % periodic_trap) == 0))
+			trap_reporting_import->ReportTrap();
+
+		if (requires_commit_instruction_reporting and memory_access_reporting_import)
+			memory_access_reporting_import->ReportCommitInstruction(MMC::getInstance()->getCPU12XPagedAddress(curPC), (insn_length/8));
+
+		if (instruction_counter >= max_inst)
+			Stop(0);
+
+		return opCycles;
 	}
+
 	catch (AsynchronousException& exc) {
 		handleException(exc);
 	}
+
 	catch (NonMaskableAccessErrorInterrupt& exc) {
 		handleException(exc);
 	}
+
 	catch (NonMaskableSWIInterrupt& exc) {
 		handleException(exc);
 	}
+
 	catch (TrapException& exc) {
 		handleException(exc);
 	}
+
 	catch (SysCallInterrupt& exc) {
 		handleException(exc);
 	}
+
 	catch (SpuriousInterrupt& exc) {
 		handleException(exc);
 	}
+
 	catch(Exception& e)
 	{
 		if(debug_enabled && verbose_step)
@@ -471,16 +462,7 @@ unsigned int CPU::step()
 		Stop(1);
 	}
 
-	if(requires_finished_instruction_reporting) {
-		if(memory_access_reporting_import) {
-			memory_access_reporting_import->ReportCommitInstruction(MMC::getInstance()->getCPU12XPagedAddress(lastPC));
-			memory_access_reporting_import->ReportFetchInstruction(MMC::getInstance()->getCPU12XPagedAddress(getRegPC()));
-		}
-	}
-
-	if (instruction_counter >= max_inst) Stop(0);
-
-	return (opCycles);
+	return 0;
 }
 
 //=====================================================================
@@ -1069,9 +1051,11 @@ bool CPU::BeginSetup() {
 
 bool CPU::Setup(ServiceExportBase *srv_export) {
 
-	if(!memory_access_reporting_import) {
+	if (not memory_access_reporting_import)
+	{
 		requires_memory_access_reporting = false;
-		requires_finished_instruction_reporting = false;
+		requires_commit_instruction_reporting = false;
+		requires_fetch_instruction_reporting = false;
 	}
 
 	return (true);
@@ -1089,14 +1073,20 @@ void CPU::OnDisconnect()
 //=             memory access reporting control interface methods     =
 //=====================================================================
 
-void CPU::RequiresMemoryAccessReporting(bool report)
+/** Set/unset the reporting of memory accesses.
+ *
+ * @param report if true/false sets/unsets the reporting of memory
+ *        acesseses
+ */
+void
+CPU::RequiresMemoryAccessReporting( MemoryAccessReportingType type, bool report )
 {
-	requires_memory_access_reporting = report;
-}
-
-void CPU::RequiresFinishedInstructionReporting(bool report)
-{
-	requires_finished_instruction_reporting = report;
+	switch (type) {
+	case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
+	case unisim::service::interfaces::REPORT_FETCH_INSN:  requires_fetch_instruction_reporting = report; break;
+	case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
+	default: throw 0;
+	}
 }
 
 /**************************************************************/
@@ -1244,20 +1234,15 @@ Register* CPU::GetRegister(const char *name)
  */
 string CPU::Disasm(physical_address_t service_addr, physical_address_t &next_addr)
 {
-	Operation *op = NULL;
-
-	uint8_t 	buffer[CodeType::capacity];
-
-	ReadMemory(service_addr, buffer, CodeType::capacity);
-	CodeType 	insn( buffer, CodeType::capacity*8 );
-
-	op = this->Decode(service_addr, insn);
+	CodeType 	insn;
+	ReadMemory(service_addr, &insn.str[0], CodeType::capacity);
+	Operation* op = this->Decode(service_addr, insn);
 
 	stringstream disasmBuffer;
 	op->disasm(disasmBuffer);
 
-        unsigned int insn_length = op->GetLength();
-        if (insn_length % 8) throw "InternalError";
+	unsigned int insn_length = op->GetLength();
+	if (insn_length % 8) throw "InternalError";
 	next_addr = service_addr + (insn_length/8);
 
 	return (disasmBuffer.str());

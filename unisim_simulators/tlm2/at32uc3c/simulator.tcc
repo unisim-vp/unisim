@@ -49,7 +49,6 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	, profiler(0)
 	, sim_time(0)
 	, host_time(0)
-	, tee_memory_access_reporting(0)
 	, enable_avr32_t2h_syscalls(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
@@ -115,8 +114,6 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
 	host_time = new unisim::service::time::host_time::HostTime("host-time");
-	//  - Tee Memory Access Reporting
-	tee_memory_access_reporting = enable_inline_debugger ? new unisim::service::tee::memory_access_reporting::Tee<CPU_ADDRESS_TYPE>("tee-memory-access-reporting") : 0;
 	
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -208,7 +205,6 @@ Simulator<CONFIG>::~Simulator()
 	if(host_time) delete host_time;
 	if(loader) delete loader;
 	if(avr32_t2h_syscalls) delete avr32_t2h_syscalls;
-	if(tee_memory_access_reporting) delete tee_memory_access_reporting;
 	if(nmireq_stub) delete nmireq_stub;
 	unsigned int irq;
 	for(irq = 0; irq < CONFIG::CPU_CONFIG::NUM_IRQS; irq++)
@@ -291,19 +287,6 @@ void Simulator<CONFIG>::Run()
 	
 	double time_start = host_time->GetTime();
 
-#ifndef WIN32
-	void (*prev_sig_int_handler)(int) = 0;
-#endif
-
-	if(!inline_debugger)
-	{
-#ifdef WIN32
-		SetConsoleCtrlHandler(&Simulator<CONFIG>::ConsoleCtrlHandler, TRUE);
-#else
-		prev_sig_int_handler = signal(SIGINT, &Simulator<CONFIG>::SigIntHandler);
-#endif
-	}
-
 	sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
 	
 	try
@@ -314,15 +297,6 @@ void Simulator<CONFIG>::Run()
 	{
 		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
 		cerr << e.what() << endl;
-	}
-
-	if(!inline_debugger)
-	{
-#ifdef WIN32
-		SetConsoleCtrlHandler(&Simulator<CONFIG>::ConsoleCtrlHandler, FALSE);
-#else
-		signal(SIGINT, prev_sig_int_handler);
-#endif
 	}
 
 	cerr << "Simulation finished" << endl;

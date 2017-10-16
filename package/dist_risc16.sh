@@ -179,8 +179,6 @@ unisim/service/profiling/addr_profiler/profiler32.cc \
 unisim/service/profiling/addr_profiler/profiler64.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
-unisim/service/tee/memory_access_reporting/tee_64.cc \
-unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/component/cxx/processor/risc16/cpu.cc \
 unisim/component/tlm2/processor/risc16/cpu.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
@@ -303,7 +301,6 @@ unisim/service/loader/elf_loader/elf_loader.hh \
 unisim/service/loader/elf_loader/elf32_loader.hh \
 unisim/service/loader/elf_loader/elf64_loader.hh \
 unisim/service/loader/raw_loader/raw_loader.hh \
-unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/debugger/debugger.hh \
 unisim/service/profiling/addr_profiler/profiler.hh \
@@ -365,7 +362,6 @@ unisim/service/loader/elf_loader/elf32_loader.tcc \
 unisim/service/loader/elf_loader/elf64_loader.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/raw_loader/raw_loader.tcc \
-unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \

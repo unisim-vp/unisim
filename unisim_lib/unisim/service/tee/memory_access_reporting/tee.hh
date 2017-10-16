@@ -72,9 +72,9 @@ public:
 	virtual bool ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, 
 			typename MemoryAccessReporting<ADDRESS>::MemoryType mt, 
 			ADDRESS addr, uint32_t size);
-	virtual void ReportCommitInstruction(ADDRESS addr);
+	virtual void ReportCommitInstruction(ADDRESS addr, unsigned int length /* in bytes */);
 	virtual void ReportFetchInstruction(ADDRESS next_addr);
-	
+
 private:
 	ControlSelector<MAX_IMPORTS> *control_selector[MAX_IMPORTS];
 	bool requires_memory_access_reporting[MAX_IMPORTS];

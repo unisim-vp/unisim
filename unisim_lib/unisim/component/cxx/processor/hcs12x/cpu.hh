@@ -99,6 +99,7 @@ using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::DebugYielding;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
+using unisim::service::interfaces::MemoryAccessReportingType;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Memory;
@@ -483,8 +484,7 @@ public:
 	//=             memory access reporting control interface methods     =
 	//=====================================================================
 
-	virtual void RequiresMemoryAccessReporting(bool report);
-	virtual void RequiresFinishedInstructionReporting(bool report) ;
+	virtual void RequiresMemoryAccessReporting( MemoryAccessReportingType type, bool report );
 
 	inline void monitorStore(address_t logicalAddress, uint32_t size, bool isGlobal);
 	inline void monitorLoad(address_t logicalAddress, uint32_t size, bool isGlobal);
@@ -594,14 +594,10 @@ protected:
 	inline void VerboseDumpRegsStart() GCC_INLINE;
 	inline void VerboseDumpRegsEnd() GCC_INLINE;
 
-	/** indicates if the memory accesses require to be reported */
-	bool requires_memory_access_reporting;
-	Parameter<bool> param_requires_memory_access_reporting;
-
-	/** indicates if the finished instructions require to be reported */
-	bool requires_finished_instruction_reporting;
-	Parameter<bool> param_requires_finished_instruction_reporting;
-
+	bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
+	bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported
+	bool requires_commit_instruction_reporting; //< indicates if the committed instructions require to be reported
+  
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
 

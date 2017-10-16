@@ -155,7 +155,7 @@ public:
 	PIMServer(const char *name, Object *parent = 0);
 	virtual ~PIMServer();
 	
-	virtual void DebugYielding();
+	virtual void DebugYield();
 	virtual void ReportTrap();
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj);
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
@@ -164,7 +164,7 @@ public:
 							const char *c_str);
 
 	// DebugEventListener
-	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event);
+	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS>* event);
 
 	virtual void OnDisconnect();
 	virtual bool BeginSetup();
@@ -227,7 +227,6 @@ private:
 
 	bool killed;
 	bool trap;
-	bool synched;
 	const Watchpoint<ADDRESS> *watchpoint_hit;
 
 	BreakpointRegistry<ADDRESS> breakpoint_registry;

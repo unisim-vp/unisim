@@ -67,6 +67,7 @@ using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::DebugYielding;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
+using unisim::service::interfaces::MemoryAccessReportingType;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::Registers;
 
@@ -131,8 +132,7 @@ public:
 	//=             memory access reporting control interface methods     =
 	//=====================================================================
 
-	virtual void RequiresMemoryAccessReporting(bool report);
-	virtual void RequiresFinishedInstructionReporting(bool report);
+	virtual void RequiresMemoryAccessReporting(MemoryAccessReportingType type, bool report);
 
 	//=====================================================================
 	//=             memory interface methods                              =
@@ -170,11 +170,9 @@ public:
 	uint16_t gpr[16];
 private:
 
-	/** indicates if the memory accesses require to be reported */
-	bool requires_memory_access_reporting;
-
-	/** indicates if the finished instructions require to be reported */
-	bool requires_finished_instruction_reporting;
+	bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
+	bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported
+	bool requires_commit_instruction_reporting; //< indicates if the committed instructions require to be reported
 
 	// the kernel logger
 	unisim::kernel::logger::Logger logger;

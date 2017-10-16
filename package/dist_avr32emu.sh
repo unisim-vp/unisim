@@ -172,7 +172,6 @@ unisim/service/tee/symbol_table_lookup/tee_32.cc \
 unisim/service/tee/blob/tee_32.cc \
 unisim/service/tee/stmt_lookup/tee_32.cc \
 unisim/service/tee/backtrace/tee_32.cc \
-unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/component/cxx/processor/avr32/config.cc \
 unisim/component/cxx/processor/avr32/avr32a/config.cc \
 unisim/component/cxx/processor/avr32/avr32a/avr32uc/cpu.cc \
@@ -326,7 +325,6 @@ unisim/service/tee/symbol_table_lookup/tee.hh \
 unisim/service/tee/blob/tee.hh \
 unisim/service/tee/stmt_lookup/tee.hh \
 unisim/service/tee/backtrace/tee.hh \
-unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/component/cxx/memory/ram/memory.hh \
 unisim/component/cxx/processor/avr32/config.hh \
 unisim/component/cxx/processor/avr32/avr32a/config.hh \
@@ -399,7 +397,6 @@ unisim/service/tee/symbol_table_lookup/tee.tcc \
 unisim/service/tee/blob/tee.tcc \
 unisim/service/tee/stmt_lookup/tee.tcc \
 unisim/service/tee/backtrace/tee.tcc \
-unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/component/cxx/processor/avr32/avr32a/avr32uc/cpu.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
 unisim/component/tlm2/processor/avr32/avr32uc/cpu.tcc \

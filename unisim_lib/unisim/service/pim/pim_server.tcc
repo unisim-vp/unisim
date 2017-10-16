@@ -137,7 +137,6 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, endian (GDB_BIG_ENDIAN)
 	, killed(false)
 	, trap(false)
-	, synched(false)
 
 	, watchpoint_hit(NULL)
 
@@ -201,12 +200,10 @@ bool PIMServer<ADDRESS>::Setup(ServiceExportBase *srv_export) {
 
 	if(memory_access_reporting_control_import)
 	{
-		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-				false);
-		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
-				false);
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(unisim::service::interfaces::REPORT_MEM_ACCESS, false);
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(unisim::service::interfaces::REPORT_FETCH_INSN, false);
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(unisim::service::interfaces::REPORT_COMMIT_INSN, false);
 	}
-
 
 	return (true);
 }
@@ -324,14 +321,14 @@ void PIMServer<ADDRESS>::OnDisconnect()
 }
 
 template <class ADDRESS>
-void PIMServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event)
+void PIMServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>* event)
 {
-	switch(event.GetType())
+	switch(event->GetType())
 	{
 		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
 			break;
 		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT:
-			watchpoint_hit = dynamic_cast<const Watchpoint<ADDRESS> *> (&event);
+			watchpoint_hit = dynamic_cast<const Watchpoint<ADDRESS> *> (event);
 			break;
 		default:
 			// ignore event
@@ -339,14 +336,12 @@ void PIMServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>&
 	}
 
 	trap = true;
-	synched = true;
 }
 
 template <class ADDRESS>
 void PIMServer<ADDRESS>::ReportTrap()
 {
 	trap = true;
-	synched = false;
 }
 
 template <class ADDRESS>
@@ -387,7 +382,7 @@ void PIMServer<ADDRESS>::DebugYield()
 	{
 		if(--counter > 0)
 		{
-			return (DebugControl<ADDRESS>::DBG_STEP);
+			return;
 		}
 
 		counter = period;
@@ -403,14 +398,8 @@ void PIMServer<ADDRESS>::DebugYield()
 		}
 		else
 		{
-			return (DebugControl<ADDRESS>::DBG_STEP);
+			return;
 		}
-	}
-
-	if((trap || running_mode == GDBSERVER_MODE_STEP) && !synched)
-	{
-		synched = true;
-		return (DebugControl<ADDRESS>::DBG_SYNC);
 	}
 
 	if(trap || running_mode == GDBSERVER_MODE_STEP)
@@ -426,7 +415,7 @@ void PIMServer<ADDRESS>::DebugYield()
 		if (request == NULL)
 		{
 			Object::Stop(0);
-			return (DebugControl<ADDRESS>::DBG_KILL);
+			return;
 		}
 
 		switch (request->getCommand())
@@ -552,11 +541,10 @@ void PIMServer<ADDRESS>::DebugYield()
 				std::string addr_str = request->getAttribute(DBGData::ADDRESS_ATTR);
 				if (addr_str.empty()) {
 					running_mode = GDBSERVER_MODE_STEP;
-					synched = false;
 
 					if (request) { delete request; request = NULL; }
 
-					return (DebugControl<ADDRESS>::DBG_STEP);
+					return;
 				}
 
 				addr = convertTo<ADDRESS>(addr_str);
@@ -571,11 +559,10 @@ void PIMServer<ADDRESS>::DebugYield()
 					}
 				}
 				running_mode = GDBSERVER_MODE_STEP;
-				synched = false;
 
 				if (request) { delete request; request = NULL; }
 
-				return (DebugControl<ADDRESS>::DBG_STEP);
+				return;
 			}
 				break;
 
@@ -586,7 +573,7 @@ void PIMServer<ADDRESS>::DebugYield()
 
 					if (request) { delete request; request = NULL; }
 
-					return (DebugControl<ADDRESS>::DBG_STEP);
+					return;
 				}
 
 				addr = convertTo<ADDRESS>(addr_str);
@@ -604,7 +591,7 @@ void PIMServer<ADDRESS>::DebugYield()
 
 				if (request) { delete request; request = NULL; }
 
-				return (DebugControl<ADDRESS>::DBG_STEP);
+				return;
 			}
 				break;
 
@@ -625,7 +612,7 @@ void PIMServer<ADDRESS>::DebugYield()
 			case DBGData::DBG_RESET_COMMAND: {
 				if (request) { delete request; request = NULL; }
 
-				return (DebugControl<ADDRESS>::DBG_RESET);
+				return;
 			}
 				break;
 
@@ -845,16 +832,15 @@ void PIMServer<ADDRESS>::DebugYield()
 
 					if (request) { delete request; request = NULL; }
 
-					return (DebugControl<ADDRESS>::DBG_STEP);
+					return;
 				}
 				else if(request->getCommand() == DBGData::DBG_VERBOSE_RESUME_STEP)
 				{
 					running_mode = GDBSERVER_MODE_STEP;
-					synched = false;
 
 					if (request) { delete request; request = NULL; }
 
-					return (DebugControl<ADDRESS>::DBG_STEP);
+					return;
 				}
 				else if (!HandleQRcmd(request)) {
 					if(verbose)
@@ -875,7 +861,6 @@ void PIMServer<ADDRESS>::DebugYield()
 	} // end of while(!killed)
 
 	Object::Stop(0);
-	return (DebugControl<ADDRESS>::DBG_KILL);
 }
 
 template <class ADDRESS>
@@ -1114,12 +1099,12 @@ bool PIMServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 		case 1:
 			for(i = 0; i < size; i++)
 			{
-				if(!debug_event_trigger_import->Listen(unisim::util::debug::Breakpoint<ADDRESS>(addr + i))) return (false);
+				if(!debug_event_trigger_import->SetBreakpoint(addr + i)) return (false);
 			}
 			return (true);
 
 		case 2:
-			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
+			if(debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size, false))
 			{
 				return (true);
 			}
@@ -1129,7 +1114,7 @@ bool PIMServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 			}
 
 		case 3:
-			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
+			if(debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size, false))
 			{
 				return (true);
 			}
@@ -1140,18 +1125,18 @@ bool PIMServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 
 
 		case 4:
-			if(!debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
+			if(!debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size, false))
 			{
 				return (false);
 			}
 
-			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
+			if(debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size, false))
 			{
 				return (true);
 			}
 			else
 			{
-				debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size));
+				debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
 				return (false);
 			}
 
@@ -1175,36 +1160,21 @@ bool PIMServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 		case 1:
 			for(i = 0; i < size; i++)
 			{
-				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Breakpoint<ADDRESS>(addr + i))) return (false);
+				if(!debug_event_trigger_import->RemoveBreakpoint(addr + i)) return (false);
 			}
 			return (true);
 
 		case 2:
-			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
-			{
-				return (true);
-			}
-			else
-			{
-				return (false);
-			}
+			return debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
 
 		case 3:
-			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
-			{
-				return (true);
-			}
-			else
-			{
-				return (false);
-			}
+			return debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
 
 		case 4:
 			{
-				bool status = true;
-				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))) status = false;
-				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))) status = false;
-				return (status);
+				return
+				  debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size) and
+				  debug_event_trigger_import->RemoveWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
 			}
 
 	}

@@ -184,8 +184,6 @@ unisim/service/tee/stmt_lookup/tee_32.cc \
 unisim/service/tee/stmt_lookup/tee_64.cc \
 unisim/service/tee/backtrace/tee_32.cc \
 unisim/service/tee/backtrace/tee_64.cc \
-unisim/service/tee/memory_access_reporting/tee_32.cc \
-unisim/service/tee/memory_access_reporting/tee_64.cc \
 unisim/component/cxx/processor/tms320c3x/cpu_tms320vc33.cc \
 unisim/component/cxx/processor/tms320c3x/cpu_tms320vc33_debug.cc \
 unisim/component/cxx/processor/tms320c3x/register.cc \
@@ -308,7 +306,6 @@ unisim/service/debug/debugger/debugger.hh \
 unisim/service/profiling/addr_profiler/profiler.hh \
 unisim/service/os/ti_c_io/ti_c_io.hh \
 unisim/service/time/host_time/time.hh \
-unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/tee/loader/tee.hh \
 unisim/service/tee/blob/tee.hh \
 unisim/service/tee/symbol_table_lookup/tee.hh \
@@ -375,7 +372,6 @@ unisim/service/tee/symbol_table_lookup/tee.tcc \
 unisim/service/tee/blob/tee.tcc \
 unisim/service/tee/stmt_lookup/tee.tcc \
 unisim/service/tee/backtrace/tee.tcc \
-unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/component/cxx/processor/tms320c3x/cpu.tcc \
 unisim/component/cxx/processor/tms320c3x/exception.tcc \
 unisim/component/cxx/memory/ram/memory.tcc"

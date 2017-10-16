@@ -45,8 +45,8 @@ namespace s12xgate {
 
 using unisim::util::debug::SimpleRegister;
 
-XGATE::XGATE(const char *name, Object *parent):
-	Object(name, parent)
+XGATE::XGATE(const char *name, Object *parent)
+	: Object(name, parent)
 	, unisim::kernel::service::Client<DebugYielding>(name, parent)
 	, unisim::kernel::service::Service<Registers>(name, parent)
 	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
@@ -85,10 +85,9 @@ XGATE::XGATE(const char *name, Object *parent):
 	, verbose_exception(false)
 	, param_verbose_exception("verbose-exception", this, verbose_exception)
 
-	, requires_memory_access_reporting(true)
-	, param_requires_memory_access_reporting("requires-memory-access-reporting", this, requires_memory_access_reporting)
-	, requires_finished_instruction_reporting(true)
-	, param_requires_finished_instruction_reporting("requires-finished-instruction-reporting", this, requires_finished_instruction_reporting)
+	, requires_memory_access_reporting(false)
+	, requires_fetch_instruction_reporting(false)
+	, requires_commit_instruction_reporting(false)
 
 	, enable_trace(false)
 	, param_enable_trace("enable-trace", this, enable_trace)
@@ -487,9 +486,10 @@ bool XGATE::BeginSetup() {
 
 bool XGATE::Setup(ServiceExportBase *srv_export) {
 
-	if (!memory_access_reporting_import) {
+	if (not memory_access_reporting_import) {
 		requires_memory_access_reporting = false;
-		requires_finished_instruction_reporting = false;
+		requires_fetch_instruction_reporting = false;
+		requires_commit_instruction_reporting = false;
 	}
 
 	return (true);
@@ -544,68 +544,52 @@ Decoder decoder;
 
 unsigned int XGATE::step()
 {
-
-	uint8_t 	buffer[MAX_INS_SIZE];
-
-	Operation 	*op;
-	unsigned int	opCycles = 0;
-
 	try
 	{
+		address_t curPC = getXGPC();
 
-		VerboseDumpRegsStart();
+		if (verbose_step)
+			*logger << DebugInfo << "Starting step at PC = 0x" << std::hex << curPC << std::dec << std::endl << EndDebugInfo;
 
-		if(debug_enabled && verbose_step)
-			*logger << DebugInfo << "Starting step at PC = 0x" << std::hex << getXGPC() << std::dec << std::endl << EndDebugInfo;
+		if (requires_fetch_instruction_reporting and memory_access_reporting_import)
+			memory_access_reporting_import->ReportFetchInstruction(MMC::getInstance()->getXGATEPagedAddress(curPC));
 
-		if (debug_yielding_import) {
-			if(debug_enabled && verbose_step)
-				*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << getXGPC() << std::dec << ")" << std::endl << EndDebugInfo;
+		if (debug_enabled)
+			VerboseDumpRegsStart();
+
+		if (debug_yielding_import)
 			debug_yielding_import->DebugYield();
-		}
 
-		if(requires_memory_access_reporting) {
-			if(memory_access_reporting_import) {
-				if(debug_enabled && verbose_step)
-					*logger << DebugInfo
-						<< "Reporting memory access for fetch at address 0x"
-						<< std::hex << getXGPC() << std::dec
-						<< std::endl << EndDebugInfo;
-
-				memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, getXGPC(), MAX_INS_SIZE);
-			}
-		}
+		if (requires_memory_access_reporting and memory_access_reporting_import)
+			memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, curPC, MAX_INS_SIZE);
 
 
-		if(debug_enabled && verbose_step)
+		if (debug_enabled && verbose_step)
 		{
 			*logger << DebugInfo
 				<< "Fetching (reading) instruction at address 0x"
-				<< std::hex << getXGPC() << std::dec
+				<< std::hex << curPC << std::dec
 				<< std::endl << EndDebugInfo;
 		}
 
-		fetchInstruction(getXGPC(), buffer, MAX_INS_SIZE);
-		CodeType 	insn( buffer, MAX_INS_SIZE*8);
+		CodeType 	insn;
+		fetchInstruction(curPC, &insn.str[0], CodeType::capacity);
 
 		/* Decode current PC */
-		if(debug_enabled && verbose_step)
+		if (debug_enabled && verbose_step)
 		{
 			stringstream ctstr;
 			ctstr << insn;
 			*logger << DebugInfo
 				<< "Decoding instruction at 0x"
-				<< std::hex << getXGPC() << std::dec
+				<< std::hex << curPC << std::dec
 				<< " (0x" << std::hex << ctstr.str() << std::dec << ")"
 				<< std::endl << EndDebugInfo;
 		}
 
-//		op = this->Decode(getRegPC(), insn);
-		op = decoder.Decode(MMC::getInstance()->getXGATEPagedAddress(getXGPC()), insn);
-
-		lastPC = getXGPC();
-        unsigned int insn_length = op->GetLength();
-        if (insn_length % 8) throw "InternalError";
+		Operation* op = decoder.Decode(MMC::getInstance()->getXGATEPagedAddress(curPC), insn);
+		unsigned int insn_length = op->GetLength();
+		if (insn_length % 8) throw "InternalError";
 
 		/* Execute instruction */
 
@@ -619,12 +603,13 @@ unsigned int XGATE::step()
 			*logger << DebugInfo << (Object::GetSimulator()->GetSimTime())
 				<< " : Executing instruction "
 				<< disasm_str.str()
-				<< " at PC = 0x" << std::hex << getXGPC() << std::dec
+				<< " at PC = 0x" << std::hex << curPC << std::dec
 				<< " (0x" << std::hex << ctstr.str() << std::dec << ") , Instruction Counter = " << instruction_counter
 				<< "  " << EndDebugInfo	<< std::endl;
 		}
 
-		setXGPC(getXGPC() + (insn_length/8));
+		lastPC = curPC;
+		setXGPC(curPC + (insn_length/8));
 
 		if (enable_trace) {
 			stringstream disasm_str;
@@ -634,8 +619,8 @@ unsigned int XGATE::step()
 
 			disasm_str << "Cycles = " << std::dec << cycles_counter
 				<< " : Time = " << std::dec << (Object::GetSimulator()->GetSimTime())
-				<< " : PC = 0x" << std::hex << lastPC << std::dec << " : "
-				<< getFunctionFriendlyName(lastPC) << " : ";
+				<< " : PC = 0x" << std::hex << curPC << std::dec << " : "
+				<< getFunctionFriendlyName(curPC) << " : ";
 
 			op->disasm(disasm_str);
 
@@ -651,7 +636,7 @@ unsigned int XGATE::step()
 
 		op->execute(this);
 
-		opCycles = op->getCycles();
+		unsigned opCycles = op->getCycles();
 
 		cycles_counter += opCycles;
 
@@ -663,24 +648,23 @@ unsigned int XGATE::step()
 			trap_reporting_import->ReportTrap();
 		}
 
-		if(requires_finished_instruction_reporting) {
-			if(memory_access_reporting_import) {
-				memory_access_reporting_import->ReportCommitInstruction(MMC::getInstance()->getXGATEPagedAddress(lastPC));
-				memory_access_reporting_import->ReportFetchInstruction(MMC::getInstance()->getXGATEPagedAddress(getXGPC()));
-			}
-		}
+		if (requires_commit_instruction_reporting and memory_access_reporting_import)
+			memory_access_reporting_import->ReportCommitInstruction(MMC::getInstance()->getXGATEPagedAddress(curPC), (insn_length/8));
 
+		if (instruction_counter >= max_inst)
+			Stop(0);
+		
+		return opCycles;
 	}
-	catch(Exception& e)
+
+	catch (Exception& e)
 	{
 		if(debug_enabled && verbose_step)
 			*logger << DebugError << "uncaught processor exception :" << e.what() << std::endl << EndDebugError;
 		Stop(1);
 	}
 
-	if (instruction_counter >= max_inst) Stop(0);
-
-	return (opCycles);
+	return 0;
 
 }
 
@@ -753,16 +737,15 @@ bool XGATE::unlockSemaphore(TOWNER::OWNER owner, unsigned int index) {
 //=             memory access reporting control interface methods     =
 //=====================================================================
 
-void XGATE::RequiresMemoryAccessReporting(bool report)
+void XGATE::RequiresMemoryAccessReporting( MemoryAccessReportingType type, bool report )
 {
-	requires_memory_access_reporting = report;
+	switch (type) {
+	case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
+	case unisim::service::interfaces::REPORT_FETCH_INSN:  requires_fetch_instruction_reporting = report; break;
+	case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
+	default: throw 0;
+	}
 }
-
-void XGATE::RequiresFinishedInstructionReporting(bool report)
-{
-	requires_finished_instruction_reporting = report;
-}
-
 
 bool XGATE::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 

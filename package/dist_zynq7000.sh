@@ -114,7 +114,6 @@ unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/api/debug/debug_api.cc \
-unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/inline_debugger/inline_debugger_64.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
@@ -265,7 +264,6 @@ unisim/kernel/service/service.hh \
 unisim/kernel/service/xml_helper.hh \
 unisim/kernel/tlm2/tlm.hh \
 unisim/api/debug/debug_api.hh \
-unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/loader/multiformat_loader/multiformat_loader.hh \
 unisim/service/loader/elf_loader/elf32_loader.hh \
@@ -422,7 +420,6 @@ unisim/component/cxx/memory/ram/memory.hh \
 "
 
 UNISIM_LIB_ZYNQ7000_TEMPLATE_FILES="\
-unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/loader/multiformat_loader/multiformat_loader.tcc \
 unisim/service/loader/elf_loader/elf32_loader.tcc \

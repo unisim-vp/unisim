@@ -156,8 +156,6 @@ unisim/service/debug/debugger/debugger32.cc \
 unisim/service/debug/debugger/debugger64.cc \
 unisim/service/profiling/addr_profiler/profiler32.cc \
 unisim/service/profiling/addr_profiler/profiler64.cc \
-unisim/service/tee/memory_access_reporting/tee_64.cc \
-unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
@@ -294,7 +292,6 @@ unisim/service/tee/backtrace/tee.hh \
 unisim/service/tee/registers/registers_tee.hh \
 unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
 unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
-unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/debug/debugger/debugger.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
@@ -354,7 +351,6 @@ unisim/util/debug/dwarf/macinfo.tcc \
 unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
 unisim/service/profiling/addr_profiler/profiler.tcc \
-unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/debugger/debugger.tcc \
 unisim/util/debug/dwarf/frame.tcc \

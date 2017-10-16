@@ -60,7 +60,6 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
 using unisim::service::interfaces::MemoryInjection;
-using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::Memory;
@@ -107,7 +106,7 @@ CPU::CPU(const char *name, Object *parent)
   : unisim::kernel::service::Object(name, parent)
   , unisim::component::cxx::processor::arm::CPU<ARMv7emu>(name, parent)
   , Service<MemoryAccessReportingControl>(name, parent)
-  , Client<MemoryAccessReporting<uint32_t> >(name, parent)
+  , Client<unisim::service::interfaces::MemoryAccessReporting<uint32_t> >(name, parent)
   , Service<MemoryInjection<uint32_t> >(name, parent)
   , Client<unisim::service::interfaces::DebugYielding>(name, parent)
   , Client<TrapReporting>(name, parent)
@@ -126,8 +125,9 @@ CPU::CPU(const char *name, Object *parent)
   , symbol_table_lookup_import("symbol-table-lookup-import", this)
   , trap_reporting_import("trap-reporting-import", this)
   , linux_os_import("linux-os-import", this)
-  , requires_finished_instruction_reporting(false)
   , requires_memory_access_reporting(false)
+  , requires_fetch_instruction_reporting(false)
+  , requires_commit_instruction_reporting(false)
   // , icache("icache", this)
   // , dcache("dcache", this)
   , arm32_decoder()
@@ -240,7 +240,7 @@ CPU::~CPU()
  * 
  * @return true on success, false otherwise
  */
-bool 
+bool
 CPU::BeginSetup()
 {
   if (verbose)
@@ -291,7 +291,8 @@ CPU::EndSetup()
    */
   if(!memory_access_reporting_import) {
     requires_memory_access_reporting = false;
-    requires_finished_instruction_reporting = false;
+    requires_fetch_instruction_reporting = false;
+    requires_commit_instruction_reporting = false;
   }
   
   typedef unisim::util::debug::Symbol<uint32_t> Symbol;
@@ -552,40 +553,35 @@ void
 CPU::StepInstruction()
 {
   /* Instruction boundary next_insn_addr becomes current_insn_addr */
-  uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr;
+  uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr, insn_length = 0;
   
   if (insn_addr == halt_on_addr) { Stop(0); return; }
   
   if (unlikely(trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
     trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
   
-  if (unlikely(requires_finished_instruction_reporting and memory_access_reporting_import))
+  if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
     memory_access_reporting_import->ReportFetchInstruction(this->current_insn_addr);
     
   if (debug_yielding_import)
-    {
-      debug_yielding_import->DebugYield();
-    }
+    debug_yielding_import->DebugYield();
   
   try {
     // Instruction Fetch Decode and Execution (may generate exceptions
     // known as synchronous aborts since their occurences are a direct
     // consequence of the instruction execution).
-    
     if (cpsr.Get( T )) {
       /* Thumb state */
       isa::thumb2::CodeType insn;
       ReadInsn(insn_addr, insn);
     
       /* Decode current PC */
-      isa::thumb2::Operation<CPU>* op;
-      op = thumb_decoder.Decode(insn_addr, insn);
-      unsigned insn_length = op->GetLength();
-      if (insn_length % 16) throw std::logic_error("Bad T2 instruction length");
+      isa::thumb2::Operation<CPU>* op = thumb_decoder.Decode(insn_addr, insn);
     
       /* update PC register value before execution */
-      this->gpr[15] = this->next_insn_addr + 4;
-      this->next_insn_addr += insn_length / 8;
+      insn_length = op->GetLength() / 8;
+      this->gpr[15] = insn_addr + 4;
+      this->next_insn_addr = insn_addr + insn_length;
     
       /* Execute instruction */
       asm volatile( "thumb2_operation_execute:" );
@@ -603,12 +599,12 @@ CPU::StepInstruction()
       ReadInsn(insn_addr, insn);
       
       /* Decode current PC */
-      isa::arm32::Operation<CPU>* op;
-      op = arm32_decoder.Decode(insn_addr, insn);
+      isa::arm32::Operation<CPU>* op = arm32_decoder.Decode(insn_addr, insn);
     
       /* update PC register value before execution */
-      this->gpr[15] = this->next_insn_addr + 8;
-      this->next_insn_addr += 4;
+      insn_length = op->GetLength() / 8;
+      this->gpr[15] = insn_addr + 8;
+      this->next_insn_addr = insn_addr + insn_length;
     
       /* Execute instruction */
       asm volatile( "arm32_operation_execute:" );
@@ -616,8 +612,8 @@ CPU::StepInstruction()
       //op->profile(profile);
     }
     
-    if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
-      memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr);
+    if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
+      memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, insn_length);
     
     instruction_counter++; /* Instruction regularly finished */
   }
@@ -626,8 +622,8 @@ CPU::StepInstruction()
     /* Resuming execution, since SVC exceptions are explicitly
      * requested from regular instructions. ITState will be updated as
      * needed by TakeSVCException (as done in the ARM spec). */
-    if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
-      memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr);
+    if (unlikely( requires_commit_instruction_reporting and memory_access_reporting_import ))
+      memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, insn_length);
 
     instruction_counter++; /* Instruction regularly finished */
     
@@ -720,26 +716,21 @@ CPU::InjectWriteMemory( uint32_t addr, void const* buffer, uint32_t size )
   return true;
 }
 
-/** Set/unset the reporting of finishing instructions.
- * 
- * @param report if true set the reporting of finishing instructions, 
- *   unset otherwise
- */
-void 
-CPU::RequiresFinishedInstructionReporting( bool report )
-{
-  requires_finished_instruction_reporting = report;
-}
-
 /** Set/unset the reporting of memory accesses.
  *
+ * @param type specify the type of report that are being modified
  * @param report if true/false sets/unsets the reporting of memory
- *        acesseses
+ * acesseses
  */
 void
-CPU::RequiresMemoryAccessReporting( bool report )
+CPU::RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report )
 {
-  requires_memory_access_reporting = report;
+  switch (type) {
+  case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
+  case unisim::service::interfaces::REPORT_FETCH_INSN:  requires_fetch_instruction_reporting = report; break;
+  case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
+  default: throw 0;
+  }
 }
 
 /** Perform a non intrusive read access.

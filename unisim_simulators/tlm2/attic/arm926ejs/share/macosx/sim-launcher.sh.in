@@ -1,8 +1,0 @@
-#!/bin/sh
-
-UA_BUNDLE="`echo "$0" | sed -e 's/\/Contents\/MacOS\/UNISIM\ @SIM_UA_UNISIM_SIM_NAME@//'`"
-UA_RESOURCES="$UA_BUNDLE/Contents/Resources"
-UA_SHARE_DIRECTORY="$UA_RESOURCES/@RELATIVE_SHARE_DIRECTORY@"
-
-exec "osascript" "$UA_SHARE_DIRECTORY/macosx/sim-launcher.scpt" "\"@SIM_PROGRAM_NAME@\"" "$UA_RESOURCES/bin/@SIM_EXEC_NAME@"
-

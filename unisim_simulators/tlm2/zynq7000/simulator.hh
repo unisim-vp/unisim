@@ -47,7 +47,6 @@
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/profiling/addr_profiler/profiler.hh>
-#include <unisim/service/tee/memory_access_reporting/tee.hh>
 #include <unisim/service/interfaces/char_io.hh>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/util/likely/likely.hh>

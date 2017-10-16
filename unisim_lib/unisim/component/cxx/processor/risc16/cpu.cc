@@ -65,7 +65,8 @@ CPU::CPU(const char *name, Object *_parent)
 	, nia(0)
 	, gpr()
 	, requires_memory_access_reporting(false)
-	, requires_finished_instruction_reporting(false)
+	, requires_fetch_instruction_reporting(false)
+	, requires_commit_instruction_reporting(false)
 	, logger(*this)
 {
 	Reset();
@@ -113,31 +114,29 @@ CPU::fetch(uint16_t addr)
 void
 CPU::step_instruction()
 {
+	if (requires_fetch_instruction_reporting and memory_access_reporting_import)
+	{
+		memory_access_reporting_import->ReportFetchInstruction(2 * nia);
+	}
+	
 	if (debug_yielding_import)
 	{
 		debug_yielding_import->DebugYield();
 	}
 
-	uint16_t instruction;
-	Operation *operation;
+	uint16_t instruction = fetch(cia);
+	Operation* operation = Decode(2 * cia, instruction);
+
 	char disasm_buffer[265];
-
-	instruction = fetch(cia);
-	operation = Decode(2 * cia, instruction);
-
 	operation->disasm(cia, disasm_buffer);
 
 	nia = cia + 1;
 
-	operation->execute((CPU *) this);
+	operation->execute(this);
 
-	if(requires_finished_instruction_reporting)
+	if (requires_commit_instruction_reporting and memory_access_reporting_import)
 	{
-		if(memory_access_reporting_import)
-		{
-			memory_access_reporting_import->ReportCommitInstruction(2 * cia);
-			memory_access_reporting_import->ReportFetchInstruction(2 * nia);
-		}
+		memory_access_reporting_import->ReportCommitInstruction(2 * cia, 2);
 	}
 
 	cia = nia;
@@ -154,7 +153,8 @@ bool CPU::BeginSetup()
 	if(!memory_access_reporting_import)
 	{
 		requires_memory_access_reporting = false;
-		requires_finished_instruction_reporting = false;
+		requires_fetch_instruction_reporting = false;
+		requires_commit_instruction_reporting = false;
 	}
 
 	return true;
@@ -179,14 +179,14 @@ void CPU::OnDisconnect()
 //=             memory access reporting control interface methods     =
 //=====================================================================
 
-void CPU::RequiresMemoryAccessReporting(bool report)
+void CPU::RequiresMemoryAccessReporting(MemoryAccessReportingType type, bool report)
 {
-	requires_memory_access_reporting = report;
-}
-
-void CPU::RequiresFinishedInstructionReporting(bool report)
-{
-	requires_finished_instruction_reporting = report;
+	switch (type) {
+	case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
+	case unisim::service::interfaces::REPORT_FETCH_INSN:  requires_fetch_instruction_reporting = report; break;
+	case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
+	default: throw 0;
+	}
 }
 
 //=====================================================================
@@ -248,7 +248,12 @@ unisim::service::interfaces::Register *CPU::GetRegister(const char *name)
 void
 CPU::ScanRegisters( unisim::service::interfaces::RegisterScanner& scanner )
 {
-  // TODO:
+	typedef std::map<std::string, unisim::service::interfaces::Register *>::iterator iterator;
+
+	for(iterator reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
+	{
+		scanner.Append( reg_iter->second );
+	}
 }
 
 

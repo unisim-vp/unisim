@@ -187,8 +187,6 @@ unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
 unisim/service/tee/registers/registers_tee.cc \
 unisim/service/tee/memory_import_export/memory_import_export_tee.cc \
-unisim/service/tee/memory_access_reporting/tee_64.cc \
-unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/component/cxx/processor/risc16/initCPU.cc \
 unisim/component/tlm2/processor/risc16/initCPU_tlm2.cc \
 unisim/component/tlm2/processor/risc16/switch.cc \
@@ -317,7 +315,6 @@ unisim/service/loader/raw_loader/raw_loader.hh \
 unisim/service/tee/backtrace/tee.hh \
 unisim/service/tee/registers/registers_tee.hh \
 unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
-unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/debugger/debugger.hh \
@@ -391,7 +388,6 @@ unisim/service/loader/elf_loader/elf64_loader.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/s19_loader/s19_loader.tcc \
 unisim/service/loader/raw_loader/raw_loader.tcc \
-unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \

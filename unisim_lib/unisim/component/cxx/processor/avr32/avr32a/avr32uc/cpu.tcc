@@ -87,8 +87,9 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, trap_reporting_import("trap-reporting-import",  this)
 	, avr32_t2h_syscalls_import("avr32-t2h-syscalls-import", this)
 	, logger(*this)
-	, requires_memory_access_reporting(true)
-	, requires_finished_instruction_reporting(true)
+	, requires_memory_access_reporting(false)
+	, requires_fetch_instruction_reporting(false)
+	, requires_commit_instruction_reporting(false)
 	, verbose_all(false)
 	, verbose_setup(false)
 	, verbose_interrupt(false)
@@ -181,7 +182,8 @@ bool CPU<CONFIG>::BeginSetup()
 {
 	if(!memory_access_reporting_import) {
 		requires_memory_access_reporting = false;
-		requires_finished_instruction_reporting = false;
+		requires_fetch_instruction_reporting = false;
+		requires_commit_instruction_reporting = false;
 	}
 
 	Reset();
@@ -230,15 +232,15 @@ bool CPU<CONFIG>::EndSetup()
 //=====================================================================
 
 template<class CONFIG>
-void 
-CPU<CONFIG>::RequiresMemoryAccessReporting(bool report) {
-	requires_memory_access_reporting = report;
-}
-
-template<class CONFIG>
-void 
-CPU<CONFIG>::RequiresFinishedInstructionReporting(bool report) {
-	requires_finished_instruction_reporting = report;
+void
+CPU<CONFIG>::RequiresMemoryAccessReporting(MemoryAccessReportingType type, bool report)
+{
+	switch (type) {
+	case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
+	case unisim::service::interfaces::REPORT_FETCH_INSN:  requires_fetch_instruction_reporting = report; break;
+	case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
+	default: throw 0;
+	}
 }
 
 //=====================================================================
@@ -657,7 +659,13 @@ bool CPU<CONFIG>::EvaluateCond(uint8_t cond)
 template <class CONFIG>
 void CPU<CONFIG>::StepOneInstruction()
 {
-	uint32_t pc = gpr[REG_PC];
+  uint32_t pc = gpr[REG_PC], insn_size;
+
+	/* report a finished instruction */
+	if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
+	{
+		memory_access_reporting_import->ReportFetchInstruction(pc);
+	}
 
 	if (unlikely(debug_yielding_import != 0))
 	{
@@ -667,11 +675,9 @@ void CPU<CONFIG>::StepOneInstruction()
 	unisim::component::cxx::processor::avr32::avr32a::avr32uc::Operation<CONFIG> *operation = 0;
 
 	//std::cerr << "pc before Fetch = 0x" << std::hex << pc << std::dec << std::endl;
-	uint8_t buffer[4];
-	if(likely(Fetch(pc, buffer, sizeof(buffer))))
+	CodeType insn;
+	if (likely(Fetch(pc, &insn.str[0], CodeType::capacity)))
 	{
-		CodeType insn(buffer, sizeof(buffer) * 8);
-	  
 		operation = unisim::component::cxx::processor::avr32::avr32a::avr32uc::Decoder<CONFIG>::Decode(pc, insn);
 
 		if(unlikely(IsVerboseStep()))
@@ -684,7 +690,8 @@ void CPU<CONFIG>::StepOneInstruction()
  	        /* update PC register value before execution */
 //	        gpr[15] = pc;
 		/* update NPC */
-	        npc += operation->GetLength() / 8;
+		insn_size = operation->GetLength() / 8;
+	        npc += insn_size;
 		//std::cerr << "npc before execute = 0x" << std::hex << npc << std::dec << std::endl;
 		/* execute the instruction */
 		if(likely(operation->execute(this)))
@@ -699,21 +706,17 @@ void CPU<CONFIG>::StepOneInstruction()
 	ProcessExceptions(operation);
 
 	/* report a finished instruction */
-	if(unlikely(requires_finished_instruction_reporting))
+	if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
 	{
-		if(unlikely(memory_access_reporting_import != 0))
-		{
-			memory_access_reporting_import->ReportCommitInstruction(pc);
-			memory_access_reporting_import->ReportFetchInstruction(npc);
-		}
+		memory_access_reporting_import->ReportCommitInstruction(pc, insn_size);
 	}
 
-	if(unlikely(trap_reporting_import && (instruction_counter == trap_on_instruction_counter)))
+	if (unlikely(trap_reporting_import && (instruction_counter == trap_on_instruction_counter)))
 	{
 		trap_reporting_import->ReportTrap();
 	}
 	
-	if(unlikely((instruction_counter >= max_inst) || (npc == halt_on_addr))) Stop(0);
+	if (unlikely((instruction_counter >= max_inst) || (npc == halt_on_addr))) Stop(0);
 
 	gpr[REG_PC] = npc;
 }

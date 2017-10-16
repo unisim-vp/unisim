@@ -114,7 +114,6 @@ unisim/kernel/service/endian.cc \
 unisim/kernel/service/xml_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/api/debug/debug_api.cc \
-unisim/service/tee/memory_access_reporting/tee_64.cc \
 unisim/service/debug/inline_debugger/inline_debugger_64.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
@@ -198,7 +197,6 @@ unisim/kernel/service/service.hh \
 unisim/kernel/service/xml_helper.hh \
 unisim/kernel/tlm2/tlm.hh \
 unisim/api/debug/debug_api.hh \
-unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
@@ -330,7 +328,6 @@ unisim/component/cxx/memory/ram/memory.hh \
 "
 
 UNISIM_LIB_ARM64EMU_TEMPLATE_FILES="\
-unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \

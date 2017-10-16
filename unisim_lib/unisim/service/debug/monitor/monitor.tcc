@@ -82,7 +82,7 @@ void HardwareBreakpoint<ADDRESS>::Report() const
 
 template <typename ADDRESS>
 HardwareWatchpoint<ADDRESS>::HardwareWatchpoint(unisim::util::debug::MemoryAccessType _mat, unisim::util::debug::MemoryType _mt, ADDRESS _addr, uint32_t _size, int _handle, void (*_callback)(int))
-	: unisim::util::debug::Watchpoint<ADDRESS>(_mat, _mt, _addr, _size)
+  : unisim::util::debug::Watchpoint<ADDRESS>(_mat, _mt, _addr, _size, true)
 	, handle(_handle)
 	, callback(_callback)
 {
@@ -187,6 +187,7 @@ DataObjectWatchpoint<ADDRESS>::DataObjectWatchpoint(const char *data_location, t
 		ADDRESS hw_watchpoint_size = symbol->GetSize();
 		
 		HardwareWatchpoint<ADDRESS> *hw_wp = new HardwareWatchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, hw_watchpoint_addr, hw_watchpoint_size, handle, callback);
+		hw_wp->Catch();
 		
 		if(debug_event_trigger_if->Listen(hw_wp))
 		{
@@ -194,7 +195,7 @@ DataObjectWatchpoint<ADDRESS>::DataObjectWatchpoint(const char *data_location, t
 		}
 		else
 		{
-			delete hw_wp;
+			hw_wp->Release();
 		}
 	}
 }

@@ -118,13 +118,13 @@ bool Tee<ADDRESS, MAX_IMPORTS>::ReportMemoryAccess(typename MemoryAccessReportin
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-void Tee<ADDRESS, MAX_IMPORTS>::ReportCommitInstruction(ADDRESS addr)
+void Tee<ADDRESS, MAX_IMPORTS>::ReportCommitInstruction(ADDRESS addr, unsigned int size)
 {
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
 	{
 		if(out[i])
-			if(*out[i]) (*out[i])->ReportCommitInstruction(addr);
+                  if(*out[i]) (*out[i])->ReportCommitInstruction(addr, size);
 	}
 }
 

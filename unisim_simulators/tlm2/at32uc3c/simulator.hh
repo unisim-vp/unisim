@@ -58,7 +58,6 @@
 #include <unisim/service/os/avr32_t2h_syscalls/avr32_t2h_syscalls.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
-#include <unisim/service/tee/memory_access_reporting/tee.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 
@@ -164,8 +163,6 @@ private:
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
-	//  - Tee Memory Access Reporting
-	unisim::service::tee::memory_access_reporting::Tee<CPU_ADDRESS_TYPE> *tee_memory_access_reporting;
 
 	bool enable_avr32_t2h_syscalls;
 	bool enable_gdb_server;

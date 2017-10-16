@@ -98,8 +98,9 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
   , logger(*this)
   , verbose(false)
   , ipb_base_address( -1 )
-  , requires_finished_instruction_reporting(false)
   , requires_memory_access_reporting(false)
+  , requires_fetch_instruction_reporting(false)
+  , requires_commit_instruction_reporting(false)
   // , instruction_counter(0)
   // , trap_on_instruction_counter(0)
   // , linux_printk_buf_addr( 0 )
@@ -296,18 +297,6 @@ CPU<CONFIG>::Disasm(uint64_t addr, uint64_t& next_addr)
   return buffer.str();
 }
 
-/** Set/unset the reporting of finishing instructions.
- * 
- * @param report if true set the reporting of finishing instructions, 
- *   unset otherwise
- */
-template <class CONFIG>
-void 
-CPU<CONFIG>::RequiresFinishedInstructionReporting( bool report )
-{
-  requires_finished_instruction_reporting = report;
-}
-
 /** Set/unset the reporting of memory accesses.
  *
  * @param report if true/false sets/unsets the reporting of memory
@@ -315,9 +304,14 @@ CPU<CONFIG>::RequiresFinishedInstructionReporting( bool report )
  */
 template <class CONFIG>
 void
-CPU<CONFIG>::RequiresMemoryAccessReporting( bool report )
+CPU<CONFIG>::RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report )
 {
-  requires_memory_access_reporting = report;
+  switch (type) {
+  case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
+  case unisim::service::interfaces::REPORT_FETCH_INSN:  requires_fetch_instruction_reporting = report; break;
+  case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
+  default: throw 0;
+  }
 }
 
 /** Inject an intrusive read memory operation.
@@ -391,7 +385,7 @@ CPU<CONFIG>::StepInstruction()
   // if (unlikely(trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
   //   trap_reporting_import->ReportTrap(*this,"Reached instruction counter");
   
-  if (unlikely(requires_finished_instruction_reporting and memory_access_reporting_import))
+  if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
     memory_access_reporting_import->ReportFetchInstruction(insn_addr);
 
   if (debug_yielding_import)
@@ -430,8 +424,8 @@ CPU<CONFIG>::StepInstruction()
     //   std::cerr << std::hex  << "  SP: 0x" << oldspval << " => 0x" << newspval << std::endl;
     // }
     
-    if (unlikely( requires_finished_instruction_reporting and memory_access_reporting_import ))
-      memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr);
+    if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
+      memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, 4);
     
     //instruction_counter++; /* Instruction regularly finished */
   }

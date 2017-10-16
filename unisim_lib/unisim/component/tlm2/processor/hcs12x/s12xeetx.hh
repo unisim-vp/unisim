@@ -90,8 +90,8 @@ using unisim::component::cxx::processor::hcs12x::CONFIG;
 #define WORD_SIZE 2
 
 template <unsigned int CMD_PIPELINE_SIZE = DEFAULT_CMD_PIPELINE_SIZE, unsigned int BUSWIDTH = DEFAULT_BUSWIDTH, class ADDRESS = DEFAULT_ADDRESS, unsigned int BURST_LENGTH = DEFAULT_BURST_LENGTH, uint32_t PAGE_SIZE = DEFAULT_PAGE_SIZE, bool DEBUG = DEFAULT_DEBUG>
-class S12XEETX :
-	public unisim::component::tlm2::memory::ram::Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>
+class S12XEETX
+	: public unisim::component::tlm2::memory::ram::Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>
 	, public CallBackObject
 	, public Service<Registers>
 	, virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>

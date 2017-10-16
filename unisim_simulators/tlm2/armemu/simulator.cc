@@ -61,16 +61,15 @@ Simulator::Simulator(int argc, char **argv)
   , param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable inline debugger.")
   , exit_status(0)
 {
-  //  - debugger
-  if (enable_inline_debugger or enable_gdb_server)
+  //  - Debug and Monitor
+  if (enable_inline_debugger or enable_gdb_server or enable_monitor)
     debugger = new DEBUGGER("debugger");
   if (enable_gdb_server)
     gdb_server = new GDB_SERVER("gdb-server");
   if (enable_inline_debugger)
     inline_debugger = new INLINE_DEBUGGER("inline-debugger");
-  
-  //  - monitor
-  monitor = enable_monitor ? new MONITOR("monitor") : 0;
+  if (enable_monitor)
+    monitor = new MONITOR("monitor");
   
   nfiq_signal = true; 
   nirq_signal = true; 
@@ -94,7 +93,7 @@ Simulator::Simulator(int argc, char **argv)
   linux_os.registers_import_ >> cpu.registers_export;
   
 
-  if (enable_inline_debugger or enable_gdb_server)
+  if (debugger)
     {
       // Debugger <-> CPU connections
       cpu.debug_yielding_import                            >> *debugger->debug_yielding_export[0];
@@ -169,19 +168,6 @@ Simulator::Run()
 
   double time_start = host_time.GetTime();
 
-#ifndef WIN32
-  void (*prev_sig_int_handler)(int) = 0;
-#endif
-  
-  if ( ! inline_debugger )
-  {
-#ifdef WIN32
-    SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
-#else
-    prev_sig_int_handler = signal(SIGINT, &Simulator::SigIntHandler);
-#endif
-  }
-
   sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
   
   try
@@ -192,15 +178,6 @@ Simulator::Run()
   {
     cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
     cerr << e.what() << endl;
-  }
-
-  if ( !inline_debugger )
-  {
-#ifdef WIN32
-    SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, FALSE);
-#else
-    signal(SIGINT, prev_sig_int_handler);
-#endif
   }
 
   cerr << "Simulation finished" << endl;
@@ -234,19 +211,6 @@ Simulator::Run(double time, sc_time_unit unit)
 
   double time_start = host_time.GetTime();
 
-#ifndef WIN32
-  void (*prev_sig_int_handler)(int) = 0;
-#endif
-
-  if ( ! inline_debugger )
-  {
-#ifdef WIN32
-    SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
-#else
-    prev_sig_int_handler = signal(SIGINT, &Simulator::SigIntHandler);
-#endif
-  }
-
   sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
 
   try
@@ -257,15 +221,6 @@ Simulator::Run(double time, sc_time_unit unit)
   {
     cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
     cerr << e.what() << endl;
-  }
-
-  if ( !inline_debugger )
-  {
-#ifdef WIN32
-    SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, FALSE);
-#else
-    signal(SIGINT, prev_sig_int_handler);
-#endif
   }
 
   double time_stop = host_time.GetTime();

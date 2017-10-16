@@ -81,17 +81,13 @@ Simulator::Simulator(int argc, char **argv)
 	, tranceiver3(0)
 	, tranceiver4(0)
 
-	, monitor(0)
-
-//	, loaderS19(0)
-//	, loaderELF(0)
 	, loader(0)
 
-	, profiler(0)
 	, debugger(0)
 	, gdb_server(0)
 	, pim_server(0)
 	, inline_debugger(0)
+	, monitor(0)
 
 	, sim_time(0)
 	, host_time(0)
@@ -130,8 +126,6 @@ Simulator::Simulator(int argc, char **argv)
 	, null_stat_var(0)
 	, stat_data_load_ratio(*this)
 	, stat_data_store_ratio(*this)
-
-	, prev_sig_int_handler(0)
 
 	, spent_time(0)
 	, isStop(false)
@@ -227,15 +221,6 @@ Simulator::Simulator(int argc, char **argv)
 
 	memoryImportExportTee = new MemoryImportExportTee("memoryImportExportTee");
 
-	//  - Tee Memory Access Reporting
-	tee_memory_access_reporting = enable_inline_debugger ? new MemoryAccessReportingTee("tee-memory-access-reporting") : 0;
-
-	//  - profiler
-	profiler = enable_inline_debugger ? new Profiler<CPU_ADDRESS_TYPE>("profiler") : 0;
-
-	//  - debugger
-	debugger = (enable_inline_debugger || enable_gdb_server || enable_pim_server || enable_monitor) ? new Debugger<CPU_ADDRESS_TYPE>("debugger") : 0;
-
 #ifdef HAVE_RTBCOB
 	rtbStub = new RTBStub("atd-pwm-stub"/*, fsb_cycle_time*/);
 #else
@@ -253,31 +238,23 @@ Simulator::Simulator(int argc, char **argv)
 	//===                         Service instantiations                    ===
 	//=========================================================================
 
-//	isS19 = (filename.find(".s19") != std::string::npos) ||
-//		 (filename.find(".S19") != std::string::npos);
-//
-//	if (isS19) {
-//		loaderS19 = new S19_Loader<CPU_ADDRESS_TYPE>("S19_Loader");
-//		loaderELF = new Elf32Loader("elf32-loader");
-//	} else {
-//		loaderELF = new Elf32Loader("elf32-loader");
-//	}
-
-	evTee = new EVENT_TEE("debugEventTee");
-
-	// Monitoring tool: ARTiMon or EACSEL
-	monitor = (enable_monitor)? new MONITOR("Monitor"): 0;
-
 	//  - Multiformat loader
 	loader = new MultiFormatLoader<CPU_ADDRESS_TYPE>("loader");
+
+	//  - debugger
+	debugger = (enable_inline_debugger || enable_gdb_server || enable_pim_server || enable_monitor) ? new Debugger("debugger") : 0;
+
+	//  - GDB server
+	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 
 	//  - PIM server
 	pim_server = enable_pim_server ? new PIMServer<CPU_ADDRESS_TYPE>("pim-server") : 0;
 
-	//  - GDB server
-	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
 	inline_debugger = enable_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
+
+	// Monitoring tool: ARTiMon or EACSEL
+	monitor = (enable_monitor)? new MONITOR("Monitor"): 0;
 
 	// - telnet
 	sci_telnet = (sci_enable_telnet) ? new unisim::service::telnet::Telnet("sci-telnet") : 0;
@@ -560,109 +537,86 @@ Simulator::Simulator(int argc, char **argv)
 // ***********************************************************
 	cpu->loader_import >> loader->loader_export;
 
-	if(enable_inline_debugger || enable_gdb_server || enable_pim_server || enable_monitor)
+        if (debugger)
+          {
+            // Debugger <-> CPU connections
+            cpu->debug_yielding_import                            >> *debugger->debug_yielding_export[0];
+            cpu->trap_reporting_import                            >> *debugger->trap_reporting_export[0];
+            cpu->memory_access_reporting_import                   >> *debugger->memory_access_reporting_export[0];
+            *debugger->disasm_import[0]                          >> cpu->disasm_export;
+            *debugger->memory_import[0]                          >> cpu->memory_export;
+            *debugger->registers_import[0]                       >> cpu->registers_export;
+            *debugger->memory_access_reporting_control_import[0] >> cpu->memory_access_reporting_control_export;
+            
+            // Debugger <-> Peripheral connections
+            pwm->trap_reporting_import               >> *debugger->trap_reporting_export[0];
+            atd0->trap_reporting_import              >> *debugger->trap_reporting_export[0];
+            atd1->trap_reporting_import              >> *debugger->trap_reporting_export[0];
+            xgate->trap_reporting_import             >> *debugger->trap_reporting_export[0];
+            mmc->trap_reporting_import               >> *debugger->trap_reporting_export[0];
+                
+           // Debugger <-> Loader connections
+            debugger->blob_import >> loader->blob_export;
+          }
+
+        if (enable_gdb_server)
+          {
+            // gdb-server <-> debugger connections
+            *debugger->debug_event_listener_import[1] >> gdb_server->debug_event_listener_export;
+            *debugger->debug_yielding_import[1]       >> gdb_server->debug_yielding_export;
+            gdb_server->debug_yielding_request_import >> *debugger->debug_yielding_request_export[1];
+            gdb_server->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[1];
+            gdb_server->memory_import                 >> *debugger->memory_export[1];
+            gdb_server->registers_import              >> *debugger->registers_export[1];
+          }
+  
+        if (enable_inline_debugger)
+          {
+            // inline-debugger <-> debugger connections
+            *debugger->debug_event_listener_import[0]      >> inline_debugger->debug_event_listener_export;
+            *debugger->debug_yielding_import[0]            >> inline_debugger->debug_yielding_export;
+            inline_debugger->debug_yielding_request_import >> *debugger->debug_yielding_request_export[0];
+            inline_debugger->debug_event_trigger_import    >> *debugger->debug_event_trigger_export[0];
+            inline_debugger->disasm_import                 >> *debugger->disasm_export[0];
+            inline_debugger->memory_import                 >> *debugger->memory_export[0];
+            inline_debugger->registers_import              >> *debugger->registers_export[0];
+            inline_debugger->stmt_lookup_import            >> *debugger->stmt_lookup_export[0];
+            inline_debugger->symbol_table_lookup_import    >> *debugger->symbol_table_lookup_export[0];
+            inline_debugger->backtrace_import              >> *debugger->backtrace_export[0];
+            inline_debugger->debug_info_loading_import     >> *debugger->debug_info_loading_export[0];
+            inline_debugger->data_object_lookup_import     >> *debugger->data_object_lookup_export[0];
+            inline_debugger->subprogram_lookup_import      >> *debugger->subprogram_lookup_export[0];
+          }
+  
+	if (enable_pim_server)
 	{
-		if(enable_inline_debugger)
-		{
-			// Connect tee-memory-access-reporting to CPU, debugger and profiler
-			cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
-			*tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
-			*tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
-			profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
-			debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
-			tee_memory_access_reporting->out_control >> cpu->memory_access_reporting_control_export;
-
-		}
-		else
-		{
-			// Connect CPU to debugger
-			cpu->memory_access_reporting_import >> debugger->memory_access_reporting_export;
-			debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
-		}
-
-		// Connect debugger to CPU
-
-		cpu->debug_yielding_import >> debugger->debug_yielding_export;
-		cpu->trap_reporting_import >> debugger->trap_reporting_export;
-		debugger->disasm_import >> cpu->disasm_export;
-		debugger->memory_import >> cpu->memory_export;
-
-		debugger->registers_import >> registersTee->registers_export;
-		debugger->loader_import >> loader->loader_export;
-		debugger->blob_import >> loader->blob_export;
-
-		pwm->trap_reporting_import >> debugger->trap_reporting_export;
-		atd0->trap_reporting_import >> debugger->trap_reporting_export;
-		atd1->trap_reporting_import >> debugger->trap_reporting_export;
-		xgate->trap_reporting_import >> debugger->trap_reporting_export;
-
-		mmc->trap_reporting_import >> debugger->trap_reporting_export;
-
-		debugger->debug_event_listener_import >> evTee->debug_event_listener_export;
-		evTee->debug_event_trigger_import >> debugger->debug_event_trigger_export;
-
+          // pim server <-> debugger connections
+          *debugger->debug_event_listener_import[3] >> pim_server->debug_event_listener_export;
+          *debugger->debug_yielding_import[3] >> pim_server->debug_yielding_export;
+          
+          pim_server->debug_event_trigger_import >> *debugger->debug_event_trigger_export[3];
+          pim_server->disasm_import              >> *debugger->disasm_export[3];
+          pim_server->memory_import              >> *debugger->memory_export[3];
+          pim_server->registers_import           >> *debugger->registers_export[3];
+          pim_server->stmt_lookup_import         >> *debugger->stmt_lookup_export[3];
+          pim_server->symbol_table_lookup_import >> *debugger->symbol_table_lookup_export[3];
 	}
 
-	if (enable_monitor) {
-		// Connect monitor to debugger
-		*(evTee->debug_event_listener_import[0]) >> monitor->debug_event_listener_export;
-		monitor->debug_event_trigger_import >> evTee->debug_event_trigger_export;
-
-		monitor->symbol_table_lookup_import  >> debugger->symbol_table_lookup_export;
-		monitor->memory_import >> debugger->memory_export;
-		monitor->registers_import >> debugger->registers_export;
-	}
-
-	if(enable_inline_debugger)
-	{
-		// Connect inline-debugger to debugger
-		*(evTee->debug_event_listener_import[1]) >> inline_debugger->debug_event_listener_export;
-		inline_debugger->debug_event_trigger_import >> evTee->debug_event_trigger_export;
-
-		debugger->trap_reporting_import >> inline_debugger->trap_reporting_export;
-		debugger->debug_yielding_import >> inline_debugger->debug_yielding_export;
-		inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
-		inline_debugger->disasm_import >> debugger->disasm_export;
-		inline_debugger->memory_import >> debugger->memory_export;
-		inline_debugger->registers_import >> debugger->registers_export;
-		inline_debugger->stmt_lookup_import >> debugger->stmt_lookup_export;
-		inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
-
-		inline_debugger->backtrace_import >> debugger->backtrace_export;
-		inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
-
-		inline_debugger->profiling_import >> profiler->profiling_export;
-
-	}
-	else if(enable_gdb_server)
-	{
-		// Connect gdb-server to debugger
-		*(evTee->debug_event_listener_import[1]) >> gdb_server->debug_event_listener_export;
-		gdb_server->debug_event_trigger_import >> evTee->debug_event_trigger_export;
-
-		debugger->debug_yielding_import >> gdb_server->debug_yielding_export;
-		debugger->trap_reporting_import >> gdb_server->trap_reporting_export;
-		gdb_server->memory_import >> debugger->memory_export;
-		gdb_server->registers_import >> debugger->registers_export;
-		gdb_server->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
-	}
-	else if (enable_pim_server)
-	{
-		// Connect pim-server to debugger
-		*(evTee->debug_event_listener_import[1]) >> pim_server->debug_event_listener_export;
-		pim_server->debug_event_trigger_import >> evTee->debug_event_trigger_export;
-
-		debugger->trap_reporting_import >> pim_server->trap_reporting_export;
-		debugger->debug_yielding_import >> pim_server->debug_yielding_export;
-
-		pim_server->disasm_import >> debugger->disasm_export;
-		pim_server->memory_import >> debugger->memory_export;
-		pim_server->registers_import >> debugger->registers_export;
-		pim_server->stmt_lookup_import >> debugger->stmt_lookup_export;
-		pim_server->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
-
-	}
-
+        if (enable_monitor)
+          {
+            // monitor <-> debugger connections
+            *debugger->debug_event_listener_import[2] >> monitor->debug_event_listener_export;
+            monitor->debug_event_trigger_import       >> *debugger->debug_event_trigger_export[2];
+            monitor->memory_import                    >> *debugger->memory_export[2];
+            monitor->registers_import                 >> *debugger->registers_export[2];
+            // monitor->stmt_lookup_import               >> *debugger->stmt_lookup_export[2];
+            // monitor->symbol_table_lookup_import       >> *debugger->symbol_table_lookup_export[2];
+            // monitor->backtrace_import                 >> *debugger->backtrace_export[2];
+            // monitor->debug_info_loading_import        >> *debugger->debug_info_loading_export[2];
+            // monitor->data_object_lookup_import        >> *debugger->data_object_lookup_export[2];
+            // monitor->subprogram_lookup_import         >> *debugger->subprogram_lookup_export[2];
+          }
+        
 	if (sci_enable_telnet)
 	{
 		sci0->char_io_import >> sci_telnet->char_io_export;
@@ -683,11 +637,6 @@ Simulator::~Simulator()
 {
 
 // ************
-	if(!inline_debugger)
-	{
-		signal(SIGINT, prev_sig_int_handler);
-	}
-
 	if (dump_parameters) {
 		cerr << "Simulation run-time parameters:" << endl;
 		DumpParameters(cerr);
@@ -865,12 +814,6 @@ Simulator::SetupStatus Simulator::Setup()
 	cpu->setEntryPoint(cpu_address);
 
 	EnableDebug();
-	prev_sig_int_handler = 0;
-
-	if(!inline_debugger)
-	{
-		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
-	}
 
 	isStop = false;
 
