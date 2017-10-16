@@ -125,7 +125,7 @@ std::string c_string_to_HTML(const char *s)
 
 std::string c_string_to_URL(const char *s)
 {
-	static const char reserved_char[] = { ';', '|', '?', ':', '@', '&', '=', '+', '$', ',' };
+	static const char reserved_char[] = { ';', '/', '|', '?', ':', '@', '&', '=', '+', '$', ',', '%', '#' };
 	static const char hex_digit[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 	
 	std::stringstream sstr;
@@ -149,7 +149,7 @@ std::string c_string_to_URL(const char *s)
 			
 			if(!is_reserved_char)
 			{
-				if((c >= 32) && (c < 127) && (c != '/'))
+				if((c >= 32) && (c < 127))
 				{
 					sstr << c;
 				}
@@ -205,6 +205,22 @@ void MakeDir(const char *dirname)
 #else
 	mkdir(dirname, S_IRWXU);
 #endif
+}
+
+//////////////////////////// FilenameIndex ////////////////////////////////////
+
+unsigned int FilenameIndex::IndexFilename(const char *filename)
+{
+	typename std::map<std::string, unsigned int>::const_iterator it = index.find(filename);
+	
+	if(it != index.end())
+	{
+		return (*it).second;
+	}
+	
+	unsigned int filename_id = index.size();
+	index.insert(std::pair<std::string, unsigned int>(filename, filename_id));
+	return filename_id;
 }
 
 } // end of namespace profiler

@@ -33,11 +33,6 @@
  */
 
 #include <simulator.hh>
-#include "unisim/component/tlm2/interconnect/generic_router/router.tcc"
-#include <unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.tcc>
-#include <unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.tcc>
-#include <unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.tcc>
-#include <unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.tcc>
 
 Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	: unisim::kernel::tlm2::Simulator(name, argc, argv, LoadBuiltInConfig)
@@ -49,7 +44,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, xbar_0(0)
 	, xbar_1(0)
 	, pbridge_a(0)
-	, pbridge_b_stub(0)
+	, pbridge_b(0)
 	, intc_0(0)
 	, stm_0(0)
 	, stm_1(0)
@@ -60,6 +55,12 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, swt_3(0)
 	, pit_0(0)
 	, pit_1(0)
+	, linflexd_0(0)
+    , linflexd_1(0)
+    , linflexd_2(0)
+    , linflexd_14(0)
+    , linflexd_15(0)
+    , linflexd_16(0)
 	, ebi_stub(0)
 	, flash_port1_stub(0)
 	, xbar_0_s6_stub(0)
@@ -82,6 +83,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 {
 	unsigned int channel_num;
 	unsigned int hw_irq_num;
+	unsigned int irq_num;
 	unsigned int prc_num;
 
 	//=========================================================================
@@ -104,7 +106,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	// Peripheral Bridges
 	pbridge_a = new PBRIDGE_A("PBRIDGE_A", this); 
-	pbridge_b_stub = new PBRIDGE_B_STUB("PBRIDGE_B", this); 
+	pbridge_b = new PBRIDGE_B("PBRIDGE_B", this); 
 	
 	//  - Interrupt Controller
 	intc_0 = new INTC_0("INTC_0", this);
@@ -123,6 +125,14 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//  - Periodic Interrupt Timers
 	pit_0 = new PIT_0("PIT_0", this);
 	pit_1 = new PIT_1("PIT_1", this);
+	
+	//  - LINFlexD
+	linflexd_0 = new LINFLEXD_0("LINFlexD_0", this);
+	linflexd_1 = new LINFLEXD_1("LINFlexD_1", this);
+	linflexd_2 = new LINFLEXD_2("LINFlexD_2", this);
+	linflexd_14 = new LINFLEXD_14("LINFlexD_14", this);
+	linflexd_15 = new LINFLEXD_15("LINFlexD_15", this);
+	linflexd_16 = new LINFLEXD_16("LINFlexD_16", this);
 	
 	ebi_stub = new EBI_STUB("EBI", this);
 	flash_port1_stub = new FLASH_PORT1_STUB("FLASH_PORT1", this);
@@ -287,7 +297,54 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	}
 	RegisterPort(pit_1->rtirq);
 	
-	
+	RegisterPort(linflexd_0->m_clk);
+	RegisterPort(linflexd_0->lin_clk);
+	RegisterPort(linflexd_0->reset_b);
+	for(irq_num = 0; irq_num < LINFLEXD_0::NUM_IRQS; irq_num++)
+	{
+		RegisterPort(*linflexd_0->irq[irq_num]);
+	}
+
+	RegisterPort(linflexd_1->m_clk);
+	RegisterPort(linflexd_1->lin_clk);
+	RegisterPort(linflexd_1->reset_b);
+	for(irq_num = 0; irq_num < LINFLEXD_1::NUM_IRQS; irq_num++)
+	{
+		RegisterPort(*linflexd_1->irq[irq_num]);
+	}
+
+	RegisterPort(linflexd_2->m_clk);
+	RegisterPort(linflexd_2->lin_clk);
+	RegisterPort(linflexd_2->reset_b);
+	for(irq_num = 0; irq_num < LINFLEXD_2::NUM_IRQS; irq_num++)
+	{
+		RegisterPort(*linflexd_2->irq[irq_num]);
+	}
+
+	RegisterPort(linflexd_14->m_clk);
+	RegisterPort(linflexd_14->lin_clk);
+	RegisterPort(linflexd_14->reset_b);
+	for(irq_num = 0; irq_num < LINFLEXD_14::NUM_IRQS; irq_num++)
+	{
+		RegisterPort(*linflexd_14->irq[irq_num]);
+	}
+
+	RegisterPort(linflexd_15->m_clk);
+	RegisterPort(linflexd_15->lin_clk);
+	RegisterPort(linflexd_15->reset_b);
+	for(irq_num = 0; irq_num < LINFLEXD_15::NUM_IRQS; irq_num++)
+	{
+		RegisterPort(*linflexd_15->irq[irq_num]);
+	}
+
+	RegisterPort(linflexd_16->m_clk);
+	RegisterPort(linflexd_16->lin_clk);
+	RegisterPort(linflexd_16->reset_b);
+	for(irq_num = 0; irq_num < LINFLEXD_16::NUM_IRQS; irq_num++)
+	{
+		RegisterPort(*linflexd_16->irq[irq_num]);
+	}
+
 	//=========================================================================
 	//===                           Signal creation                         ===
 	//=========================================================================
@@ -300,6 +357,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateClock("PBRIDGEB_CLK");
 	CreateClock("PER_CLK");
 	CreateClock("RTI_CLK");
+	CreateClock("LIN_CLK");
 	
 	CreateSignal("m_por", false);
 	CreateSignal("stop", false);
@@ -329,40 +387,47 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//===                        Components connection                      ===
 	//=========================================================================
 
-	main_core_0->i_ahb_if(*xbar_0->targ_socket[0]);               //       Main_Core_0>I_AHB_IF <-> XBAR_0 M0
-	main_core_0->d_ahb_if(*xbar_0->targ_socket[1]);               //       Main_Core_0>D_AHB_IF <-> XBAR_0 M1
-	main_core_1->i_ahb_if(*xbar_0->targ_socket[2]);               //       Main_Core_1>I_AHB_IF <-> XBAR_0 M2
-	main_core_1->d_ahb_if(*xbar_0->targ_socket[3]);               //       Main_Core_1>D_AHB_IF <-> XBAR_0 M3
-	peripheral_core_2->i_ahb_if(*xbar_0->targ_socket[5]);         // Peripheral_Core_2>I_AHB_IF <-> XBAR_0 M5
+	main_core_0->i_ahb_if(*xbar_0->targ_socket[0]);                  //       Main_Core_0>I_AHB_IF <-> XBAR_0 M0
+	main_core_0->d_ahb_if(*xbar_0->targ_socket[1]);                  //       Main_Core_0>D_AHB_IF <-> XBAR_0 M1
+	main_core_1->i_ahb_if(*xbar_0->targ_socket[2]);                  //       Main_Core_1>I_AHB_IF <-> XBAR_0 M2
+	main_core_1->d_ahb_if(*xbar_0->targ_socket[3]);                  //       Main_Core_1>D_AHB_IF <-> XBAR_0 M3
+	peripheral_core_2->i_ahb_if(*xbar_0->targ_socket[5]);            // Peripheral_Core_2>I_AHB_IF <-> XBAR_0 M5
 	
-	peripheral_core_2->d_ahb_if(*xbar_1->targ_socket[0]);         // Peripheral_Core_2>D_AHB_IF <-> XBAR_1 M0
-	xbar_1_m1_stub->master_sock(*xbar_1->targ_socket[1]);        // TODO: XBAR_1 M1 <-> DMA and HSM
-	xbar_1_m2_stub->master_sock(*xbar_1->targ_socket[2]);        // TODO: XBAR_1 M2 <-> FEC, LFAST and FlexRay
+	peripheral_core_2->d_ahb_if(*xbar_1->targ_socket[0]);            // Peripheral_Core_2>D_AHB_IF <-> XBAR_1 M0
+	xbar_1_m1_stub->master_sock(*xbar_1->targ_socket[1]);            // TODO: XBAR_1 M1 <-> DMA and HSM
+	xbar_1_m2_stub->master_sock(*xbar_1->targ_socket[2]);            // TODO: XBAR_1 M2 <-> FEC, LFAST and FlexRay
 	
-	(*xbar_0->init_socket[0])(flash->slave_sock);                 //       XBAR_0 S0 <-> FLASH Port 0
-	(*xbar_0->init_socket[1])(flash_port1_stub->slave_sock);      // TODO: XBAR_0 S1 <-> FLASH Port 1
-	(*xbar_0->init_socket[2])(main_core_0->s_ahb_if);             //       XBAR_0 S2 <-> S_AHB_IF<Main_Core_0
-	(*xbar_0->init_socket[3])(main_core_1->s_ahb_if);             //       XBAR_0 S3 <-> S_AHB_IF<Main_Core_1
-	(*xbar_0->init_socket[4])(system_sram->slave_sock);           //       XBAR_0 S4 <-> System SRAM
-	(*xbar_0->init_socket[5])(ebi_stub->slave_sock);              // TODO: XBAR_0 S5 <-> EBI
-	(*xbar_0->init_socket[6])(xbar_0_s6_stub->slave_sock);        // TODO: XBAR_0 S6 <-> unused
-	(*xbar_0->init_socket[7])(*xbar_1->targ_socket[3]);           //       XBAR_0 S7 <-> XBAR_1 M3
-
-	(*xbar_1->init_socket[0])(*xbar_0->targ_socket[4]);           //       XBAR_1 S0 <-> XBAR_0 M4
-	(*xbar_1->init_socket[1])(peripheral_core_2->s_ahb_if);       //       XBAR_1 S1 <-> S_AHB_IF<Peripheral_Core_2
-	(*xbar_1->init_socket[2])(pbridge_b_stub->slave_sock);        // TODO: XBAR_1 S1 <-> PBRIDGE_B
-	(*xbar_1->init_socket[3])(*pbridge_a->targ_socket[0]);        //       XBAR_1 S0 <-> PBRIDGE_A
+	(*xbar_0->init_socket[0])(flash->slave_sock);                    //       XBAR_0 S0 <-> FLASH Port 0
+	(*xbar_0->init_socket[1])(flash_port1_stub->slave_sock);         // TODO: XBAR_0 S1 <-> FLASH Port 1
+	(*xbar_0->init_socket[2])(main_core_0->s_ahb_if);                //       XBAR_0 S2 <-> S_AHB_IF<Main_Core_0
+	(*xbar_0->init_socket[3])(main_core_1->s_ahb_if);                //       XBAR_0 S3 <-> S_AHB_IF<Main_Core_1
+	(*xbar_0->init_socket[4])(system_sram->slave_sock);              //       XBAR_0 S4 <-> System SRAM
+	(*xbar_0->init_socket[5])(ebi_stub->slave_sock);                 // TODO: XBAR_0 S5 <-> EBI
+	(*xbar_0->init_socket[6])(xbar_0_s6_stub->slave_sock);           //       XBAR_0 S6 <-> unused
+	(*xbar_0->init_socket[7])(*xbar_1->targ_socket[3]);              //       XBAR_0 S7 <-> XBAR_1 M3
+                                                                     
+	(*xbar_1->init_socket[0])(*xbar_0->targ_socket[4]);              //       XBAR_1 S0 <-> XBAR_0 M4
+	(*xbar_1->init_socket[1])(peripheral_core_2->s_ahb_if);          //       XBAR_1 S1 <-> S_AHB_IF<Peripheral_Core_2
+	(*xbar_1->init_socket[2])(*pbridge_b->targ_socket[0]);           //       XBAR_1 S2 <-> PBRIDGE_B
+	(*xbar_1->init_socket[3])(*pbridge_a->targ_socket[0]);           //       XBAR_1 S3 <-> PBRIDGE_A
 	
-	(*pbridge_a->init_socket[0])(intc_0->peripheral_slave_if);    // PBRIDGE_A <-> INTC_0
-	(*pbridge_a->init_socket[1])(stm_0->peripheral_slave_if);     // PBRIDGE_A <-> STM_0
-	(*pbridge_a->init_socket[2])(stm_1->peripheral_slave_if);     // PBRIDGE_A <-> STM_1
-	(*pbridge_a->init_socket[3])(stm_2->peripheral_slave_if);     // PBRIDGE_A <-> STM_2
-	(*pbridge_a->init_socket[4])(swt_0->peripheral_slave_if);     // PBRIDGE_A <-> SWT_0
-	(*pbridge_a->init_socket[5])(swt_1->peripheral_slave_if);     // PBRIDGE_A <-> SWT_1
-	(*pbridge_a->init_socket[6])(swt_2->peripheral_slave_if);     // PBRIDGE_A <-> SWT_2
-	(*pbridge_a->init_socket[7])(swt_3->peripheral_slave_if);     // PBRIDGE_A <-> SWT_3
-	(*pbridge_a->init_socket[8])(pit_0->peripheral_slave_if);     // PBRIDGE_A <-> PIT_0
-	(*pbridge_a->init_socket[9])(pit_1->peripheral_slave_if);     // PBRIDGE_A <-> PIT_1
+	(*pbridge_a->init_socket[0])(intc_0->peripheral_slave_if);       // PBRIDGE_A <-> INTC_0
+	(*pbridge_a->init_socket[1])(stm_0->peripheral_slave_if);        // PBRIDGE_A <-> STM_0
+	(*pbridge_a->init_socket[2])(stm_1->peripheral_slave_if);        // PBRIDGE_A <-> STM_1
+	(*pbridge_a->init_socket[3])(stm_2->peripheral_slave_if);        // PBRIDGE_A <-> STM_2
+	(*pbridge_a->init_socket[4])(swt_0->peripheral_slave_if);        // PBRIDGE_A <-> SWT_0
+	(*pbridge_a->init_socket[5])(swt_1->peripheral_slave_if);        // PBRIDGE_A <-> SWT_1
+	(*pbridge_a->init_socket[6])(swt_2->peripheral_slave_if);        // PBRIDGE_A <-> SWT_2
+	(*pbridge_a->init_socket[7])(swt_3->peripheral_slave_if);        // PBRIDGE_A <-> SWT_3
+	(*pbridge_a->init_socket[8])(pit_0->peripheral_slave_if);        // PBRIDGE_A <-> PIT_0
+	(*pbridge_a->init_socket[9])(pit_1->peripheral_slave_if);        // PBRIDGE_A <-> PIT_1
+	(*pbridge_a->init_socket[10])(linflexd_0->peripheral_slave_if);  // PBRIDGE_A <-> LINFlexD_0
+	(*pbridge_a->init_socket[11])(linflexd_1->peripheral_slave_if);  // PBRIDGE_A <-> LINFlexD_1
+	(*pbridge_a->init_socket[12])(linflexd_14->peripheral_slave_if); // PBRIDGE_A <-> LINFlexD_14
+	(*pbridge_a->init_socket[13])(linflexd_16->peripheral_slave_if); // PBRIDGE_A <-> LINFlexD_16
+	
+	(*pbridge_b->init_socket[0])(linflexd_2->peripheral_slave_if);   // PBRIDGE_B <-> LINFlexD_2
+	(*pbridge_b->init_socket[1])(linflexd_15->peripheral_slave_if);  // PBRIDGE_B <-> LINFlexD_15
 	
 	Bind("HARDWARE.Main_Core_0.m_clk"           , "HARDWARE.COMP_CLK");
 	Bind("HARDWARE.Main_Core_0.m_por"           , "HARDWARE.m_por");
@@ -485,7 +550,30 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.PIT_1.dma_trigger_6"   , "HARDWARE.pull_down");
 	Bind("HARDWARE.PIT_1.dma_trigger_7"   , "HARDWARE.pull_down");
 	
+	Bind("HARDWARE.LINFlexD_0.m_clk"      , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.LINFlexD_0.lin_clk"    , "HARDWARE.LIN_CLK");
+	Bind("HARDWARE.LINFlexD_0.reset_b"    , "HARDWARE.reset_b");
 
+	Bind("HARDWARE.LINFlexD_1.m_clk"      , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.LINFlexD_1.lin_clk"    , "HARDWARE.LIN_CLK");
+	Bind("HARDWARE.LINFlexD_1.reset_b"    , "HARDWARE.reset_b");
+
+	Bind("HARDWARE.LINFlexD_14.m_clk"      , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.LINFlexD_14.lin_clk"    , "HARDWARE.LIN_CLK");
+	Bind("HARDWARE.LINFlexD_14.reset_b"    , "HARDWARE.reset_b");
+
+	Bind("HARDWARE.LINFlexD_16.m_clk"      , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.LINFlexD_16.lin_clk"    , "HARDWARE.LIN_CLK");
+	Bind("HARDWARE.LINFlexD_16.reset_b"    , "HARDWARE.reset_b");
+
+	Bind("HARDWARE.LINFlexD_2.m_clk"      , "HARDWARE.PBRIDGEB_CLK");
+	Bind("HARDWARE.LINFlexD_2.lin_clk"    , "HARDWARE.LIN_CLK");
+	Bind("HARDWARE.LINFlexD_2.reset_b"    , "HARDWARE.reset_b");
+
+	Bind("HARDWARE.LINFlexD_15.m_clk"      , "HARDWARE.PBRIDGEB_CLK");
+	Bind("HARDWARE.LINFlexD_15.lin_clk"    , "HARDWARE.LIN_CLK");
+	Bind("HARDWARE.LINFlexD_15.reset_b"    , "HARDWARE.reset_b");
+	
 	// Interrupt sources
 	
 	// IRQ # ---- Source name ------------ Description ------------------------- Note --------------
@@ -888,17 +976,43 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	InterruptSource(373);
 	InterruptSource(374);
 	InterruptSource(375);
-	InterruptSource(376);
-	InterruptSource(377);
-	InterruptSource(378);
+	
+	// 376      LINFlexD_0 RXI
+	// 377      LINFlexD_0 TXI
+	// 378      LINFlexD_0 ERR
+
+	InterruptSource(376, "HARDWARE.LINFlexD_0.irq_0");
+	InterruptSource(377, "HARDWARE.LINFlexD_0.irq_1");
+	InterruptSource(378, "HARDWARE.LINFlexD_0.irq_2");
+	
+	// 379      unused
+	
 	InterruptSource(379);
-	InterruptSource(380);
-	InterruptSource(381);
-	InterruptSource(382);
+	
+	// 380      LINFlexD_1 RXI
+	// 381      LINFlexD_1 TXI
+	// 382      LINFlexD_1 ERR
+
+	InterruptSource(380, "HARDWARE.LINFlexD_1.irq_0");
+	InterruptSource(381, "HARDWARE.LINFlexD_1.irq_1");
+	InterruptSource(382, "HARDWARE.LINFlexD_1.irq_2");
+
+	// 383      unused
+	
 	InterruptSource(383);
-	InterruptSource(384);
-	InterruptSource(385);
-	InterruptSource(386);
+
+	// 384      LINFlexD_2 RXI
+	// 385      LINFlexD_2 TXI
+	// 386      LINFlexD_2 ERR
+	
+	InterruptSource(384, "HARDWARE.LINFlexD_2.irq_0");
+	InterruptSource(385, "HARDWARE.LINFlexD_2.irq_1");
+	InterruptSource(386, "HARDWARE.LINFlexD_2.irq_2");
+
+	// 387      TODO
+	// ..       TODO
+	// 415      TODO
+
 	InterruptSource(387);
 	InterruptSource(388);
 	InterruptSource(389);
@@ -928,9 +1042,19 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	InterruptSource(413);
 	InterruptSource(414);
 	InterruptSource(415);
-	InterruptSource(416);
-	InterruptSource(417);
-	InterruptSource(418);
+	
+	// 416      LINFlexD_16 RXI
+	// 417      LINFlexD_16 TXI
+	// 418      LINFlexD_16 ERR
+
+	InterruptSource(416, "HARDWARE.LINFlexD_16.irq_0");
+	InterruptSource(417, "HARDWARE.LINFlexD_16.irq_1");
+	InterruptSource(418, "HARDWARE.LINFlexD_16.irq_2");
+
+	// 419      unused
+	// ..       unused
+	// 431      unused
+	
 	InterruptSource(419);
 	InterruptSource(420);
 	InterruptSource(421);
@@ -944,13 +1068,31 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	InterruptSource(429);
 	InterruptSource(430);
 	InterruptSource(431);
-	InterruptSource(432);
-	InterruptSource(433);
-	InterruptSource(434);
+	
+	// 432      LINFlexD_14 RXI
+	// 433      LINFlexD_14 TXI
+	// 434      LINFlexD_14 ERR
+	
+	InterruptSource(432, "HARDWARE.LINFlexD_14.irq_0");
+	InterruptSource(433, "HARDWARE.LINFlexD_14.irq_1");
+	InterruptSource(434, "HARDWARE.LINFlexD_14.irq_2");
+
+	// 435      unused
+	
 	InterruptSource(435);
-	InterruptSource(436);
-	InterruptSource(437);
-	InterruptSource(438);
+	
+	// 436      LINFlexD_14 RXI
+	// 437      LINFlexD_14 TXI
+	// 438      LINFlexD_14 ERR
+	
+	InterruptSource(436, "HARDWARE.LINFlexD_15.irq_0");
+	InterruptSource(437, "HARDWARE.LINFlexD_15.irq_1");
+	InterruptSource(438, "HARDWARE.LINFlexD_15.irq_2");
+
+	// 439      TODO
+	// ..       TODO
+	// 964
+	
 	InterruptSource(439);
 	InterruptSource(440);
 	InterruptSource(441);
@@ -1623,7 +1765,7 @@ Simulator::~Simulator()
 	if(xbar_0) delete xbar_0;
 	if(xbar_1) delete xbar_1;
 	if(pbridge_a) delete pbridge_a;
-	if(pbridge_b_stub) delete pbridge_b_stub;
+	if(pbridge_b) delete pbridge_b;
 	if(intc_0) delete intc_0;
 	if(stm_0) delete stm_0;
 	if(stm_1) delete stm_1;
@@ -1634,6 +1776,12 @@ Simulator::~Simulator()
 	if(swt_3) delete swt_3;
 	if(pit_0) delete pit_0;
 	if(pit_1) delete pit_1;
+	if(linflexd_0) delete linflexd_0; 
+	if(linflexd_1) delete linflexd_1; 
+	if(linflexd_2) delete linflexd_2; 
+	if(linflexd_14) delete linflexd_14;
+	if(linflexd_15) delete linflexd_15;
+	if(linflexd_16) delete linflexd_16;
 	if(ebi_stub) delete ebi_stub;
 	if(flash_port1_stub) delete flash_port1_stub;
 	if(xbar_0_s6_stub) delete xbar_0_s6_stub;
@@ -1737,6 +1885,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PER_CLK.clock-period", "12500 ps");   // PER_CLK: 80 Mhz
 	simulator->SetVariable("HARDWARE.RTI_CLK.lazy-clock", "true");
 	simulator->SetVariable("HARDWARE.RTI_CLK.clock-period", "1 us");       // RTI_CLK: 1 Mhz
+	simulator->SetVariable("HARDWARE.LIN_CLK.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.LIN_CLK.clock-period", "12500 ps");      // LIN_CLK: 80 Mhz ((2/3) * LIN_CLK > PBRIDGEx_CLK > (1/3) * LIN_CLK)
 	
 	//  - e200 PowerPC cores
 
@@ -1842,17 +1992,27 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	
 	//  - PBRIDGE_A
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.cycle_time", "20 ns");
-	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_0",  "range_start=\"0xfc040000\" range_end=\"0xfc04ffff\" output_port=\"0\" translation=\"0x0\""); // INTC  -> INTC  (rel address)
-	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_1",  "range_start=\"0xfc068000\" range_end=\"0xfc06bfff\" output_port=\"1\" translation=\"0x0\""); // STM_0 -> STM_0 (rel address)
-	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_2",  "range_start=\"0xfc06c000\" range_end=\"0xfc06ffff\" output_port=\"2\" translation=\"0x0\""); // STM_1 -> STM_1 (rel address)
-	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_3",  "range_start=\"0xfc070000\" range_end=\"0xfc073fff\" output_port=\"3\" translation=\"0x0\""); // STM_2 -> STM_2 (rel address)
-	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_4",  "range_start=\"0xfc050000\" range_end=\"0xfc053fff\" output_port=\"4\" translation=\"0x0\""); // SWT_0 -> SWT_0 (rel address)
-	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_5",  "range_start=\"0xfc054000\" range_end=\"0xfc057fff\" output_port=\"5\" translation=\"0x0\""); // SWT_1 -> SWT_1 (rel address)
-	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_6",  "range_start=\"0xfc058000\" range_end=\"0xfc05bfff\" output_port=\"6\" translation=\"0x0\""); // SWT_2 -> SWT_2 (rel address)
-	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_7",  "range_start=\"0xfc05c000\" range_end=\"0xfc05ffff\" output_port=\"7\" translation=\"0x0\""); // SWT_3 -> SWT_3 (rel address)
-	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_8",  "range_start=\"0xfff84000\" range_end=\"0xfff87fff\" output_port=\"8\" translation=\"0x0\""); // PIT_0 -> PIT_0 (rel address)
-	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_9",  "range_start=\"0xfff80000\" range_end=\"0xfff83fff\" output_port=\"9\" translation=\"0x0\""); // PIT_1 -> PIT_1 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_0",  "range_start=\"0xfc040000\" range_end=\"0xfc04ffff\" output_port=\"0\"  translation=\"0x0\""); // INTC        -> INTC  (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_1",  "range_start=\"0xfc068000\" range_end=\"0xfc06bfff\" output_port=\"1\"  translation=\"0x0\""); // STM_0       -> STM_0 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_2",  "range_start=\"0xfc06c000\" range_end=\"0xfc06ffff\" output_port=\"2\"  translation=\"0x0\""); // STM_1       -> STM_1 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_3",  "range_start=\"0xfc070000\" range_end=\"0xfc073fff\" output_port=\"3\"  translation=\"0x0\""); // STM_2       -> STM_2 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_4",  "range_start=\"0xfc050000\" range_end=\"0xfc053fff\" output_port=\"4\"  translation=\"0x0\""); // SWT_0       -> SWT_0 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_5",  "range_start=\"0xfc054000\" range_end=\"0xfc057fff\" output_port=\"5\"  translation=\"0x0\""); // SWT_1       -> SWT_1 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_6",  "range_start=\"0xfc058000\" range_end=\"0xfc05bfff\" output_port=\"6\"  translation=\"0x0\""); // SWT_2       -> SWT_2 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_7",  "range_start=\"0xfc05c000\" range_end=\"0xfc05ffff\" output_port=\"7\"  translation=\"0x0\""); // SWT_3       -> SWT_3 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_8",  "range_start=\"0xfff84000\" range_end=\"0xfff87fff\" output_port=\"8\"  translation=\"0x0\""); // PIT_0       -> PIT_0 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_9",  "range_start=\"0xfff80000\" range_end=\"0xfff83fff\" output_port=\"9\"  translation=\"0x0\""); // PIT_1       -> PIT_1 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_10", "range_start=\"0xffe8c000\" range_end=\"0xffe8ffff\" output_port=\"10\" translation=\"0x0\""); // LINFlexD_0  -> LINFlexD_0 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_11", "range_start=\"0xffe90000\" range_end=\"0xffe93fff\" output_port=\"11\" translation=\"0x0\""); // LINFlexD_1  -> LINFlexD_1 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_12", "range_start=\"0xffea8000\" range_end=\"0xffeabfff\" output_port=\"12\" translation=\"0x0\""); // LINFlexD_14 -> LINFlexD_14 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_13", "range_start=\"0xffeac000\" range_end=\"0xffeaffff\" output_port=\"13\" translation=\"0x0\""); // LINFlexD_16 -> LINFlexD_16 (rel address)
 
+	//  - PBRIDGE_B
+	simulator->SetVariable("HARDWARE.PBRIDGE_B.cycle_time", "20 ns");
+	simulator->SetVariable("HARDWARE.PBRIDGE_B.mapping_0",  "range_start=\"0xfbe8c000\" range_end=\"0xfbe8ffff\" output_port=\"0\" translation=\"0x0\""); //  LINFlexD_2 -> LINFlexD_2 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_B.mapping_1",  "range_start=\"0xfbea8000\" range_end=\"0xfbeabfff\" output_port=\"1\" translation=\"0x0\""); // LINFlexD_15 -> LINFlexD_15 (rel address)
+	
+	
 	// - Loader
 	simulator->SetVariable("loader.filename", "baf.bin,soft/bin/Z4_2/flash_boot.elf,soft/bin/Z7_0/flash_boot.elf,soft/bin/Z7_1/flash_boot.elf");
 	simulator->SetVariable("loader.file0.base-addr", 0x00404000UL);

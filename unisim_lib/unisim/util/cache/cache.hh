@@ -527,6 +527,8 @@ struct Cache
 	static inline unsigned int NumSets() ALWAYS_INLINE;
 	static inline unsigned int NumWays() ALWAYS_INLINE;
 	static inline unsigned int NumSectors() ALWAYS_INLINE;
+
+	inline void Access() { num_accesses++; }
 	
 	///////////////// To be overriden by derived class ////////////////////////
 

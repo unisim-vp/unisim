@@ -135,6 +135,7 @@ enum Access
 {
 	HW_RO = 0,                                                       // hardware read-only/no software access
 	HW_RW = AF_HW_W,                                                 // hardware read-write/no software access
+	SW_R_HW_RO = AF_SW_R,                                            // hardware read-only/software read access
 	SW_R = AF_SW_R | AF_HW_W,                                        // hardware read-write/software read access
 	SW_W = AF_SW_W | AF_HW_W,                                        // hardware read-write/software write access
 	SW_RW = AF_SW_R | AF_SW_W | AF_HW_W,                             // hardware read-write/software read-write access (default)
@@ -201,6 +202,23 @@ template < typename  BF0, typename  BF1, typename  BF2, typename  BF3
          , typename BF52, typename BF53, typename BF54, typename BF55
          , typename BF56, typename BF57, typename BF58, typename BF59
          , typename BF60, typename BF61, typename BF62, typename BF63> struct FieldSet;
+
+template < typename  BF0, typename  BF1, typename  BF2, typename  BF3
+         , typename  BF4, typename  BF5, typename  BF6, typename  BF7
+         , typename  BF8, typename  BF9, typename BF10, typename BF11
+         , typename BF12, typename BF13, typename BF14, typename BF15
+         , typename BF16, typename BF17, typename BF18, typename BF19
+         , typename BF20, typename BF21, typename BF22, typename BF23
+         , typename BF24, typename BF25, typename BF26, typename BF27
+         , typename BF28, typename BF29, typename BF30, typename BF31
+         , typename BF32, typename BF33, typename BF34, typename BF35
+         , typename BF36, typename BF37, typename BF38, typename BF39
+         , typename BF40, typename BF41, typename BF42, typename BF43
+         , typename BF44, typename BF45, typename BF46, typename BF47
+         , typename BF48, typename BF49, typename BF50, typename BF51
+         , typename BF52, typename BF53, typename BF54, typename BF55
+         , typename BF56, typename BF57, typename BF58, typename BF59
+         , typename BF60, typename BF61, typename BF62, typename BF63> struct IntersectionFieldSet;
 
 template <typename ADDRESS, typename CUSTOM_RW_ARG> class RegisterAddressMap;
 
@@ -300,6 +318,7 @@ public:
 	template <typename T> static inline T Mask(const T& storage) ALWAYS_INLINE;
 	template <typename T> static inline T Get(const T& storage) ALWAYS_INLINE;
 	template <typename T> static void inline Set(T& storage, T field_value) ALWAYS_INLINE;
+	template <typename T> static inline T MakeValue(T field_value) ALWAYS_INLINE;
 	static inline void SetName(const std::string& name);
 	static inline void SetDisplayName(const std::string& disp_name);
 	static inline void SetDescription(const std::string& desc);
@@ -372,6 +391,35 @@ struct FieldSet
 	template <typename T> static inline void LongPrettyPrint(std::ostream& os, const T& storage);
 };
 
+/////////////////////////// IntersectionFieldSet<> ////////////////////////////
+
+template < typename  BF0 = NullField, typename  BF1 = NullField, typename  BF2 = NullField, typename  BF3 = NullField
+         , typename  BF4 = NullField, typename  BF5 = NullField, typename  BF6 = NullField, typename  BF7 = NullField
+         , typename  BF8 = NullField, typename  BF9 = NullField, typename BF10 = NullField, typename BF11 = NullField
+         , typename BF12 = NullField, typename BF13 = NullField, typename BF14 = NullField, typename BF15 = NullField
+         , typename BF16 = NullField, typename BF17 = NullField, typename BF18 = NullField, typename BF19 = NullField
+         , typename BF20 = NullField, typename BF21 = NullField, typename BF22 = NullField, typename BF23 = NullField
+         , typename BF24 = NullField, typename BF25 = NullField, typename BF26 = NullField, typename BF27 = NullField
+         , typename BF28 = NullField, typename BF29 = NullField, typename BF30 = NullField, typename BF31 = NullField
+         , typename BF32 = NullField, typename BF33 = NullField, typename BF34 = NullField, typename BF35 = NullField
+         , typename BF36 = NullField, typename BF37 = NullField, typename BF38 = NullField, typename BF39 = NullField
+         , typename BF40 = NullField, typename BF41 = NullField, typename BF42 = NullField, typename BF43 = NullField
+         , typename BF44 = NullField, typename BF45 = NullField, typename BF46 = NullField, typename BF47 = NullField
+         , typename BF48 = NullField, typename BF49 = NullField, typename BF50 = NullField, typename BF51 = NullField
+         , typename BF52 = NullField, typename BF53 = NullField, typename BF54 = NullField, typename BF55 = NullField
+         , typename BF56 = NullField, typename BF57 = NullField, typename BF58 = NullField, typename BF59 = NullField
+         , typename BF60 = NullField, typename BF61 = NullField, typename BF62 = NullField, typename BF63 = NullField>
+struct IntersectionFieldSet
+{
+	template <typename T> static inline T GetMask() ALWAYS_INLINE;
+	template <typename T> static inline T GetAssignMask() ALWAYS_INLINE;
+	template <typename T> static inline T GetWriteMask() ALWAYS_INLINE;
+	template <typename T> static inline T GetWriteOneClearMask() ALWAYS_INLINE;
+	template <typename T> static inline T GetReadMask() ALWAYS_INLINE;
+	template <typename T> static inline T Get(const T& storage) ALWAYS_INLINE;
+	template <typename T> static inline void Set(T& storage, T bitfied_value) ALWAYS_INLINE;
+};
+
 ///////////////////////////// TypeForByteSize<> ///////////////////////////////
 
 template <unsigned int BYTE_SIZE> struct TypeForByteSize {};
@@ -432,6 +480,7 @@ public:
 	inline operator TYPE () const ALWAYS_INLINE;
 	inline TYPE operator [] (unsigned int bit_offset) const ALWAYS_INLINE;
 	ReadWriteStatus Write(const TYPE& value, const TYPE& bit_enable = (~TYPE(0) & TYPE_MASK));
+	template <typename PRESERVED_FIELD> ReadWriteStatus WritePreserve(const TYPE& value, const TYPE& bit_enable);
 	ReadWriteStatus Read(TYPE& value, const TYPE& bit_enable = (~TYPE(0) & TYPE_MASK));
 	void DebugWrite(const TYPE& value, const TYPE& bit_enable = (~TYPE(0) & TYPE_MASK));
 	void DebugRead(TYPE& value, const TYPE& bit_enable = (~TYPE(0) & TYPE_MASK));
