@@ -372,7 +372,7 @@ private:
 			this->SetName(name_sstr.str());
 			std::stringstream description_sstr;
 			description_sstr << "STM Channel Control Register #" << reg_num;
-			this->SetDescription(name_sstr.str());
+			this->SetDescription(description_sstr.str());
 			
 			CEN::SetName("CEN");
 			CEN::SetDescription("Channel Enable");
@@ -408,7 +408,7 @@ private:
 			this->SetName(name_sstr.str());
 			std::stringstream description_sstr;
 			description_sstr << "STM Channel Interrupt Register #" << reg_num;
-			this->SetDescription(name_sstr.str());
+			this->SetDescription(description_sstr.str());
 			
 			CIF::SetName("CIF");
 			CIF::SetDescription("Channel Interrupt Flag");
@@ -454,7 +454,7 @@ private:
 			this->SetName(name_sstr.str());
 			std::stringstream description_sstr;
 			description_sstr << "STM Channel Compare Register #" << reg_num;
-			this->SetDescription(name_sstr.str());
+			this->SetDescription(description_sstr.str());
 			
 			CMP::SetName("CMP");
 			std::stringstream cmp_description_sstr;

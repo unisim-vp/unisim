@@ -58,6 +58,7 @@ std::ostream& operator << (std::ostream& os, const Access& access)
 	{
 		case HW_RO      : os << "hardware read-only/no software access"; break;
 		case HW_RW      : os << "hardware read-write/no software access"; break;
+		case SW_R_HW_RO : os << "hardware read-only/software read access"; break;
 		case SW_R       : os << "hardware read-write/software read access"; break;
 		case SW_W       : os << "hardware read-write/software write access"; break;
 		case SW_RW      : os << "hardware read-write/software read-write access"; break;
@@ -215,12 +216,15 @@ void LongPrettyPrinter::PrintFieldRange(std::ostream& os, unsigned int bitoffset
 	std::stringstream sstr_field_range;
 	
 	sstr_field_range << '[';
-	if(bitwidth != 1)
+	if(bitwidth)
 	{
-		sstr_field_range << (bitoffset + bitwidth - 1);
-		sstr_field_range << "..";
+		if(bitwidth != 1)
+		{
+			sstr_field_range << (bitoffset + bitwidth - 1);
+			sstr_field_range << "..";
+		}
+		sstr_field_range << bitoffset;
 	}
-	sstr_field_range << bitoffset;
 	sstr_field_range << ']';
 	
 	std::string str_field_range(sstr_field_range.str());

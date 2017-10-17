@@ -421,7 +421,9 @@ unsigned int INTC<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 		return 0;
 	}
 	
-	ProcessorNumber prc_num = 2; // FIXME
+	unisim::kernel::tlm2::tlm_master_id *master_id = payload.template get_extension<unisim::kernel::tlm2::tlm_master_id>();
+	
+	ProcessorNumber prc_num = master_id ? (int)(*master_id) : 0;
 	
 	switch(cmd)
 	{

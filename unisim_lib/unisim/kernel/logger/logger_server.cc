@@ -49,8 +49,9 @@ namespace logger {
 
 static const char *XML_ENCODING = "UTF-8"; 
 
-LoggerServer::LoggerServer()
-  : xml_writer_(0)
+LoggerServer::LoggerServer(const char *name, unisim::kernel::service::Object *parent)
+  : unisim::kernel::service::Object(name, parent)
+  , xml_writer_(0)
   , opt_std_err_(true)
   , opt_std_out_(false)
   , opt_std_err_color_(false)
@@ -60,6 +61,15 @@ LoggerServer::LoggerServer()
   , opt_xml_file_(false)
   , opt_xml_filename_("logger_output.xml")
   , opt_xml_file_gzipped_(false)
+  , param_std_err("std_err", this, opt_std_err_, "Show logger output through the standard error output")
+  , param_std_out("std_out", this, opt_std_out_, "Show logger output through the standard output")
+  , param_std_err_color("std_err_color", this, opt_std_err_color_, "Colorize logger output through the standard error output (only works if std_err is active)")
+  , param_std_out_color("std_out_color", this, opt_std_out_color_, "Colorize logger output through the standard output (only works if std_out is active)")
+  , param_file("file", this, opt_file_, "Keep logger output in a file")
+  , param_filename("filename", this, opt_filename_, "Filename to keep logger output (the option file must be activated)")
+  , param_xml_file("xml_file", this, opt_xml_file_, "Keep logger output in a file xml formatted")
+  , param_xml_filename("xml_filename", this, opt_xml_filename_, "Filename to keep logger xml output (the option xml_file must be activated)")
+  , param_xml_file_gzipped("xml_file_gzipped", this, opt_xml_file_gzipped_, "Compress the xml output (a .gz extension is automatically appended to the xml_filename option)")
 {
 }
 

@@ -43,10 +43,25 @@ namespace unisim {
 namespace kernel {
 namespace logger {
 
+LoggerServer *Logger::static_server_instance = 0;
+
 unisim::kernel::logger::LoggerServer *Logger::StaticServerInstance()
 {
-	static LoggerServer static_server_instance;
-	return &static_server_instance;
+	if(!static_server_instance)
+	{
+		static_server_instance = new LoggerServer("logger");
+	}
+	
+	return static_server_instance;
+}
+
+void Logger::ReleaseStaticServiceInstance()
+{
+	if(static_server_instance)
+	{
+		delete static_server_instance;
+		static_server_instance = 0;
+	}
 }
 
 unisim::kernel::logger::LoggerServer *Logger::GetServerInstance()

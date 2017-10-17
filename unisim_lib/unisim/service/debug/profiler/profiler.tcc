@@ -277,11 +277,13 @@ void AddressProfile<ADDRESS, T>::Print(std::ostream& os, OutputFormat o_fmt, con
 	switch(o_fmt)
 	{
 		case O_FMT_TEXT:
+			os << "Instruction profile report - By address [" << GetSampledVariableName() << "]" << std::endl;
 			os << (*(Super *) this) << std::endl;
 			break;
 			
 		case O_FMT_CSV:
 		{
+			os << "Instruction profile report - By address [" << c_string_to_CSV(GetSampledVariableName()) << "]" << std::endl;
 			os << "Address" << csv_delimiter << "Value" << std::endl;
 			
 			std::map<ADDRESS, T> value_per_addr_map = *(Super *) this;
@@ -425,9 +427,9 @@ InstructionProfileBase *AddressProfile<ADDRESS, T>::CreateInstructionProfile(con
 }
 
 template <typename ADDRESS, typename T>
-FunctionInstructionProfileBase *AddressProfile<ADDRESS, T>::CreateFunctionInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv) const
+FunctionInstructionProfileBase *AddressProfile<ADDRESS, T>::CreateFunctionInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const
 {
-	return new FunctionInstructionProfile<ADDRESS, T>(this, func_name_loc_conv, symbol_table_lookup_if);
+	return new FunctionInstructionProfile<ADDRESS, T>(this, func_name_loc_conv, filename_index, symbol_table_lookup_if);
 }
 
 template <typename ADDRESS, typename T>
@@ -497,6 +499,7 @@ void InstructionProfile<ADDRESS, T>::Print(std::ostream& os, OutputFormat o_fmt,
 	{
 		case O_FMT_TEXT:
 		{
+			os << "Instruction profile report - Annotated disassembly [" << GetSampledVariableName() << "]" << std::endl;
 			typename std::vector<std::pair<ADDRESS, ADDRESS> >::const_iterator addr_range_it;
 			
 			for(addr_range_it = addr_ranges.begin(); addr_range_it < addr_ranges.end(); addr_range_it++)
@@ -538,6 +541,7 @@ void InstructionProfile<ADDRESS, T>::Print(std::ostream& os, OutputFormat o_fmt,
 		
 		case O_FMT_CSV:
 		{
+			os << "Instruction profile report - Annotated disassembly [" << c_string_to_CSV(GetSampledVariableName()) << "]" << std::endl;
 			typename std::vector<std::pair<ADDRESS, ADDRESS> >::const_iterator addr_range_it;
 			
 			for(addr_range_it = addr_ranges.begin(); addr_range_it < addr_ranges.end(); addr_range_it++)
@@ -693,9 +697,10 @@ void InstructionProfile<ADDRESS, T>::Print(std::ostream& os, OutputFormat o_fmt,
 /////////////////////// FunctionInstructionProfile<> //////////////////////////
 
 template <typename ADDRESS, typename T>
-FunctionInstructionProfile<ADDRESS, T>::FunctionInstructionProfile(const AddressProfile<ADDRESS, T> *_addr_profile, const FunctionNameLocationConversionBase<ADDRESS> *_func_name_loc_conv, unisim::service::interfaces::SymbolTableLookup<ADDRESS> *_symbol_table_lookup_if)
+FunctionInstructionProfile<ADDRESS, T>::FunctionInstructionProfile(const AddressProfile<ADDRESS, T> *_addr_profile, const FunctionNameLocationConversionBase<ADDRESS> *_func_name_loc_conv, FilenameIndex *_filename_index, unisim::service::interfaces::SymbolTableLookup<ADDRESS> *_symbol_table_lookup_if)
 	: addr_profile(_addr_profile)
 	, func_name_loc_conv(_func_name_loc_conv)
+	, filename_index(_filename_index)
 	, symbol_table_lookup_if(_symbol_table_lookup_if)
 	, func_insn_profile()
 	, value_range()
@@ -710,6 +715,7 @@ void FunctionInstructionProfile<ADDRESS, T>::Print(std::ostream& os, OutputForma
 	{
 		case O_FMT_TEXT:
 		{
+			os << "Instruction profile report - By function [" << GetSampledVariableName() << "]" << std::endl;
 			typename std::map<std::string, T>::const_iterator func_prof_it;
 			
 			for(func_prof_it = func_insn_profile.begin(); func_prof_it != func_insn_profile.end(); func_prof_it++)
@@ -724,6 +730,7 @@ void FunctionInstructionProfile<ADDRESS, T>::Print(std::ostream& os, OutputForma
 		
 		case O_FMT_CSV:
 		{
+			os << "Instruction profile report - By function [" << c_string_to_CSV(GetSampledVariableName()) << "]" << std::endl;
 			typename std::map<std::string, T>::const_iterator func_prof_it;
 			
 			for(func_prof_it = func_insn_profile.begin(); func_prof_it != func_insn_profile.end(); func_prof_it++)
@@ -788,7 +795,7 @@ void FunctionInstructionProfile<ADDRESS, T>::Print(std::ostream& os, OutputForma
 					
 					if(sloc)
 					{
-						svg << "<a href=\"" << c_string_to_URL(sloc->GetFilename()) << ".html#" << c_string_to_URL(func_name.c_str()) << "\">" << std::endl;
+						svg << "<a href=\"source" << filename_index->IndexFilename(sloc->GetFilename()) << ".html#" << c_string_to_URL(func_name.c_str()) << "\">" << std::endl;
 					}
 					
 					unsigned int svg_bar_height = histogram_quant.Quantize(value);
@@ -842,7 +849,7 @@ void FunctionInstructionProfile<ADDRESS, T>::Print(std::ostream& os, OutputForma
 				
 				if(sloc)
 				{
-					html << "<a href=\"" << c_string_to_URL(sloc->GetFilename()) << ".html#" << c_string_to_URL(func_name.c_str()) << "\">" << c_string_to_HTML(sloc->GetFilename()) << "</a>";
+					html << "<a href=\"source" << filename_index->IndexFilename(sloc->GetFilename()) << ".html#" << c_string_to_URL(func_name.c_str()) << "\">" << c_string_to_HTML(sloc->GetFilename()) << "</a>";
 				}
 				else
 				{
@@ -1127,9 +1134,9 @@ void SourceCodeProfile<ADDRESS, T>::Update()
 }
 
 template <typename ADDRESS, typename T>
-AnnotatedSourceCodeFileSetBase *SourceCodeProfile<ADDRESS, T>::CreateAnnotatedSourceCodeFileSet(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, const char *search_path) const
+AnnotatedSourceCodeFileSetBase *SourceCodeProfile<ADDRESS, T>::CreateAnnotatedSourceCodeFileSet(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, const char *search_path) const
 {
-	return new AnnotatedSourceCodeFileSet<ADDRESS, T>(this, func_name_loc_conv, search_path);
+	return new AnnotatedSourceCodeFileSet<ADDRESS, T>(this, func_name_loc_conv, filename_index, search_path);
 }
 
 template <typename ADDRESS, typename T>
@@ -1175,6 +1182,7 @@ void AnnotatedSourceCodeFile<ADDRESS, T>::Print(std::ostream& os, OutputFormat o
 	{
 		case O_FMT_TEXT:
 		{
+			os << "Instruction profile report - Annotated Source Code - [" << GetSampledVariableName() << "]" << std::endl;
 			unsigned int num_lines = content.size();
 			unsigned int i;
 			for(i = 0; i < num_lines; i++)
@@ -1207,6 +1215,7 @@ void AnnotatedSourceCodeFile<ADDRESS, T>::Print(std::ostream& os, OutputFormat o
 		
 		case O_FMT_CSV:
 		{
+			os << "Instruction profile report - Annotated Source Code - [" << c_string_to_CSV(GetSampledVariableName()) << "]" << std::endl;
 			os << "Line number" << csv_delimiter << "Value" << csv_delimiter << "Annotated source code" << std::endl;
 			unsigned int num_lines = content.size();
 			unsigned int i;
@@ -1350,7 +1359,11 @@ void AnnotatedSourceCodeFile<ADDRESS, T>::Init()
 	{
 		std::ifstream f(real_filename.c_str(), std::ifstream::in);
 		
-		if(!f.fail())
+		if(f.fail())
+		{
+			std::cerr << "WARNING! Can't open \"" << real_filename << "\"" << std::endl;
+		}
+		else
 		{
 			std::string line;
 			
@@ -1361,9 +1374,13 @@ void AnnotatedSourceCodeFile<ADDRESS, T>::Init()
 			
 			if(!f.eof())
 			{
-				std::cerr << "I/O error while reading \"" << real_filename << "\"" << std::endl;
+				std::cerr << "WARNING! I/O error while reading \"" << real_filename << "\"" << std::endl;
 			}
 		}
+	}
+	else
+	{
+		std::cerr << "WARNING! File \"" << filename << "\" not found" << std::endl;
 	}
 	
 	value_range = source_code_profile->GetValueRange();
@@ -1456,9 +1473,10 @@ bool AnnotatedSourceCodeFile<ADDRESS, T>::LocateFile(const char *filename, std::
 }
 
 template <typename ADDRESS, typename T>
-AnnotatedSourceCodeFileSet<ADDRESS, T>::AnnotatedSourceCodeFileSet(const SourceCodeProfile<ADDRESS, T> *_source_code_profile, const FunctionNameLocationConversionBase<ADDRESS> *_func_name_loc_conv, const char *_search_path)
+AnnotatedSourceCodeFileSet<ADDRESS, T>::AnnotatedSourceCodeFileSet(const SourceCodeProfile<ADDRESS, T> *_source_code_profile, const FunctionNameLocationConversionBase<ADDRESS> *_func_name_loc_conv, FilenameIndex *_filename_index, const char *_search_path)
 	: source_code_profile(_source_code_profile)
 	, func_name_loc_conv(_func_name_loc_conv)
+	, filename_index(_filename_index)
 	, search_path(_search_path)
 	, annotated_source_code_files()
 {
@@ -1495,11 +1513,24 @@ void AnnotatedSourceCodeFileSet<ADDRESS, T>::Output(const char *output_directory
 	{
 		const AnnotatedSourceCodeFile<ADDRESS, T> *annotated_source_code_file = (*annotated_source_code_file_it).second;
 		
-		std::string output_filename(std::string(output_directory) + "/" + c_string_to_URL(annotated_source_code_file->GetFilename()) + OutputFormatSuffix(o_fmt));
+		
+		std::stringstream output_filename_sstr;
+		output_filename_sstr << output_directory << "/source" << filename_index->IndexFilename(annotated_source_code_file->GetFilename()) << OutputFormatSuffix(o_fmt);
+		
+		//std::string output_filename(std::string(output_directory) + "/" + c_string_to_URL(annotated_source_code_file->GetFilename()) + OutputFormatSuffix(o_fmt));
+		
+		std::string output_filename = output_filename_sstr.str();
 		
 		std::ofstream output(output_filename.c_str(), std::ios::out);
 		
-		annotated_source_code_file->Print(output, o_fmt, csv_delimiter);
+		if(output.fail())
+		{
+			std::cerr << "WARNING! Can't create \"" << output_filename << "\"" << std::endl;
+		}
+		else
+		{
+			annotated_source_code_file->Print(output, o_fmt, csv_delimiter);
+		}
 	}
 }
 
@@ -1514,6 +1545,8 @@ void AnnotatedSourceCodeFileSet<ADDRESS, T>::Init()
 	for(source_filename_set_it = source_filename_set.begin(); source_filename_set_it != source_filename_set.end(); source_filename_set_it++)
 	{
 		const std::string& source_filename = *source_filename_set_it;
+		
+		filename_index->IndexFilename(source_filename.c_str());
 
 		annotated_source_code_files[source_filename] = new AnnotatedSourceCodeFile<ADDRESS, T>(source_filename.c_str(), source_code_profile, func_name_loc_conv, search_path.c_str());
 	}
@@ -1589,6 +1622,7 @@ Profiler<ADDRESS>::Profiler(const char *_name, Object *_parent)
 	, instruction_profiles()
 	, source_code_profiles()
 	, annotated_source_code_file_sets()
+	, filename_indexes()
 {
 	commit_insn_event = new unisim::util::debug::CommitInsnEvent<ADDRESS>();
 	commit_insn_event->Catch();
@@ -1639,6 +1673,13 @@ Profiler<ADDRESS>::~Profiler()
 	{
 		AddressProfileBase<ADDRESS> *addr_profile = addr_profiles[i];
 		delete addr_profile;
+	}
+	
+	unsigned int num_filename_indexes = filename_indexes.size();
+	for(i = 0; i < num_filename_indexes; i++)
+	{
+		FilenameIndex *filename_index = filename_indexes[i];
+		delete filename_index;
 	}
 
 	if(commit_insn_event) commit_insn_event->Release();
@@ -1783,6 +1824,9 @@ template <typename T> bool Profiler<ADDRESS>::TryProfile(unisim::kernel::service
 	
 	if(typed_var)
 	{
+		FilenameIndex *filename_index = new FilenameIndex();
+		filename_indexes.push_back(filename_index);
+		
 		AddressProfile<ADDRESS, T> *addr_profile = new AddressProfile<ADDRESS, T>(typed_var, disasm_import, stmt_lookup_import, symbol_table_lookup_import);
 		addr_profiles.push_back(addr_profile);
 		
@@ -1876,25 +1920,25 @@ void Profiler<ADDRESS>::Update()
 	}
 	annotated_source_code_file_sets.clear();
 	
-	unsigned int num_addr_profiles = addr_profiles.size();
-	
-	for(i = 0; i < num_addr_profiles; i++)
+	for(i = 0; i < num_sampled_variables; i++)
 	{
 		AddressProfileBase<ADDRESS> *addr_profile = addr_profiles[i];
 		
-		FunctionInstructionProfileBase *func_insn_profile = addr_profile->CreateFunctionInstructionProfile(func_name_loc_conv);
+		FilenameIndex *filename_index = filename_indexes[i];
+		
+		FunctionInstructionProfileBase *func_insn_profile = addr_profile->CreateFunctionInstructionProfile(func_name_loc_conv, filename_index);
 		func_insn_profiles.push_back(func_insn_profile);
 	}
 	
-	unsigned int num_source_code_profiles = source_code_profiles.size();
-	
-	for(i = 0; i < num_source_code_profiles; i++)
+	for(i = 0; i < num_sampled_variables; i++)
 	{
 		SourceCodeProfileBase<ADDRESS> *source_code_profile = source_code_profiles[i];
 		
 		source_code_profile->Update();
 		
-		AnnotatedSourceCodeFileSetBase *annotated_source_code_file_set = source_code_profile->CreateAnnotatedSourceCodeFileSet(func_name_loc_conv, search_path.c_str());
+		FilenameIndex *filename_index = filename_indexes[i];
+		
+		AnnotatedSourceCodeFileSetBase *annotated_source_code_file_set = source_code_profile->CreateAnnotatedSourceCodeFileSet(func_name_loc_conv, filename_index, search_path.c_str());
 		annotated_source_code_file_sets.push_back(annotated_source_code_file_set);
 	}
 }
@@ -1964,57 +2008,64 @@ void Profiler<ADDRESS>::Output()
 			
 			std::ofstream index(index_filename.c_str(), std::ios::out);
 			
-			index << "<!DOCTYPE HTML>" << std::endl;
-			index << "<html lang=\"en\">" << std::endl;
-			index << "<head>" << std::endl;
-			index << "<meta name=\"description\" content=\"Instruction profile report - By variable\">" << std::endl;
-			index << "<meta name=\"keywords\" content=\"profiling\">" << std::endl;
-			index << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-			index << "<title>Instruction profile report - By variable</title>" << std::endl;
-			index << "<style type=\"text/css\">" << std::endl;
-			index << "<!--" << std::endl;
-			index << "body{ font-family:Arial, Helvetica, sans-serif;font-style:normal;font-size:14px;text-align:left;font-weight:400;color:#000;margin-left:auto;margin-right:auto;background:#FFF; }" << std::endl;
-			index << "table{ width:1280px; margin-left:auto; margin-right:auto; }" << std::endl;
-			index << "table th { text-align:center; }" << std::endl;
-			index << "table th { font-weight:bold; }" << std::endl;
-			index << "table td { text-align:left; }" << std::endl;
-			index << "table { border-style:solid; }" << std::endl;
-			index << "table { border-width:1px; }" << std::endl;
-			index << "table { border-collapse: collapse; }" << std::endl;
-			index << "th, td { margin:0; }" << std::endl;
-			index << "th, td { border-style:solid; }" << std::endl;
-			index << "th, td { border-width:1px; }" << std::endl;
-			index << "th, td { border-width:1px; }" << std::endl;
-			index << "a:link { text-decoration:none }" << std::endl;
-			index << "#title { text-align:center; } " << std::endl;
-			index << "#content { width:1280px; margin-left:auto; margin-right:auto; }" << std::endl;
-			index << "-->" << std::endl;
-			index << "</style>" << std::endl;
-			index << "</head>" << std::endl;
-			index << "<body>" << std::endl;
-			index << "<div id=\"content\">" << std::endl;
-			index << "<h1 id=\"title\">Instruction profile report - By variable</h1>" << std::endl;
-			index << "<table>" << std::endl;
-			index << "<tr>" << std::endl;
-			index << "<th>Variable</th><th>Description</th><th>Value</th><th>Raw data</th><th>Profile</th>" << std::endl;
-			index << "</tr>" << std::endl;
-			for(i = 0; i < num_sampled_variables; i++)
+			if(index.fail())
 			{
-				AddressProfileBase<ADDRESS> *addr_profile = addr_profiles[i];
-				
-				index << "<tr>" << std::endl;
-				index << "<td>" << c_string_to_HTML(addr_profile->GetSampledVariableName()) << "</td>" << std::endl;
-				index << "<td>" << c_string_to_HTML(addr_profile->GetSampledVariable()->GetDescription()) << "</td>" << std::endl;
-				index << "<td>" << c_string_to_HTML(((std::string) *addr_profile->GetSampledVariable()).c_str()) << "</td>" << std::endl;
-				index << "<td><a href=\"" << c_string_to_URL(addr_profile->GetSampledVariableName()) << "/by_address.html\">By address</a></td>" << std::endl;
-				index << "<td><a href=\"" << c_string_to_URL(addr_profile->GetSampledVariableName()) << "/by_function.html\">By function</a></td>" << std::endl;
-				index << "</tr>" << std::endl;
+				logger << DebugWarning << "Can't create \"" << index_filename << "\"" << EndDebugWarning;
 			}
-			index << "</table>" << std::endl;
-			
-			index << "</body>" << std::endl;
-			index << "</div>" << std::endl;
-			index << "</html>" << std::endl;
+			else
+			{
+				index << "<!DOCTYPE HTML>" << std::endl;
+				index << "<html lang=\"en\">" << std::endl;
+				index << "<head>" << std::endl;
+				index << "<meta name=\"description\" content=\"Instruction profile report - By variable\">" << std::endl;
+				index << "<meta name=\"keywords\" content=\"profiling\">" << std::endl;
+				index << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+				index << "<title>Instruction profile report - By variable</title>" << std::endl;
+				index << "<style type=\"text/css\">" << std::endl;
+				index << "<!--" << std::endl;
+				index << "body{ font-family:Arial, Helvetica, sans-serif;font-style:normal;font-size:14px;text-align:left;font-weight:400;color:#000;margin-left:auto;margin-right:auto;background:#FFF; }" << std::endl;
+				index << "table{ width:1280px; margin-left:auto; margin-right:auto; }" << std::endl;
+				index << "table th { text-align:center; }" << std::endl;
+				index << "table th { font-weight:bold; }" << std::endl;
+				index << "table td { text-align:left; }" << std::endl;
+				index << "table { border-style:solid; }" << std::endl;
+				index << "table { border-width:1px; }" << std::endl;
+				index << "table { border-collapse: collapse; }" << std::endl;
+				index << "th, td { margin:0; }" << std::endl;
+				index << "th, td { border-style:solid; }" << std::endl;
+				index << "th, td { border-width:1px; }" << std::endl;
+				index << "th, td { border-width:1px; }" << std::endl;
+				index << "a:link { text-decoration:none }" << std::endl;
+				index << "#title { text-align:center; } " << std::endl;
+				index << "#content { width:1280px; margin-left:auto; margin-right:auto; }" << std::endl;
+				index << "-->" << std::endl;
+				index << "</style>" << std::endl;
+				index << "</head>" << std::endl;
+				index << "<body>" << std::endl;
+				index << "<div id=\"content\">" << std::endl;
+				index << "<h1 id=\"title\">Instruction profile report - By variable</h1>" << std::endl;
+				index << "<table>" << std::endl;
+				index << "<tr>" << std::endl;
+				index << "<th>Variable</th><th>Description</th><th>Value</th><th>Raw data</th><th>Profile</th>" << std::endl;
+				index << "</tr>" << std::endl;
+				for(i = 0; i < num_sampled_variables; i++)
+				{
+					AddressProfileBase<ADDRESS> *addr_profile = addr_profiles[i];
+					
+					index << "<tr>" << std::endl;
+					index << "<td>" << c_string_to_HTML(addr_profile->GetSampledVariableName()) << "</td>" << std::endl;
+					index << "<td>" << c_string_to_HTML(addr_profile->GetSampledVariable()->GetDescription()) << "</td>" << std::endl;
+					index << "<td>" << c_string_to_HTML(((std::string) *addr_profile->GetSampledVariable()).c_str()) << "</td>" << std::endl;
+					index << "<td><a href=\"" << c_string_to_URL(addr_profile->GetSampledVariableName()) << "/by_address.html\">By address</a></td>" << std::endl;
+					index << "<td><a href=\"" << c_string_to_URL(addr_profile->GetSampledVariableName()) << "/by_function.html\">By function</a></td>" << std::endl;
+					index << "</tr>" << std::endl;
+				}
+				index << "</table>" << std::endl;
+				
+				index << "</body>" << std::endl;
+				index << "</div>" << std::endl;
+				index << "</html>" << std::endl;
+			}
 			break;
 		}
 	}
@@ -2031,7 +2082,14 @@ void Profiler<ADDRESS>::Output()
 		
 		std::ofstream by_addr(by_addr_filename.c_str(), std::ios::out);
 		
-		addr_profile->Print(by_addr, output_format, csv_delimiter.c_str());
+		if(by_addr.fail())
+		{
+			logger << DebugWarning << "Can't create \"" << by_addr_filename << "\"" << EndDebugWarning;
+		}
+		else
+		{
+			addr_profile->Print(by_addr, output_format, csv_delimiter.c_str());
+		}
 	}
 
 	for(i = 0; i < num_sampled_variables; i++)
@@ -2046,14 +2104,28 @@ void Profiler<ADDRESS>::Output()
 		
 		std::ofstream by_function(by_function_filename.c_str(), std::ios::out);
 		
-		func_insn_profile->Print(by_function, output_format, csv_delimiter.c_str());
+		if(by_function.fail())
+		{
+			logger << DebugWarning << "Can't create \"" << by_function_filename << "\"" << EndDebugWarning;
+		}
+		else
+		{
+			func_insn_profile->Print(by_function, output_format, csv_delimiter.c_str());
+		}
 		
 		std::string disassembly_filename(variable_output_directory + "/disassembly" + OutputFormatSuffix(output_format));
 		
 		std::ofstream disassembly(disassembly_filename.c_str(), std::ios::out);
-		
-		InstructionProfileBase *instruction_profile = instruction_profiles[i];
-		instruction_profile->Print(disassembly, output_format, csv_delimiter.c_str());
+
+		if(disassembly.fail())
+		{
+			logger << DebugWarning << "Can't create \"" << disassembly_filename << "\"" << EndDebugWarning;
+		}
+		else
+		{
+			InstructionProfileBase *instruction_profile = instruction_profiles[i];
+			instruction_profile->Print(disassembly, output_format, csv_delimiter.c_str());
+		}
 		
 		AnnotatedSourceCodeFileSetBase *annotated_source_code_file_set = annotated_source_code_file_sets[i];
 		

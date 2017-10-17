@@ -96,6 +96,7 @@ template <typename ADDRESS, typename T> class AnnotatedSourceCodeFile;
 class AnnotatedSourceCodeFileSetBase;
 template <typename ADDRESS, typename T> class AnnotatedSourceCodeFileSet;
 template <typename ADDRESS> class Profiler;
+class FilenameIndex;
 
 //////////////////////////////// Format ///////////////////////////////////////
 
@@ -137,6 +138,16 @@ private:
 	std::ostream& os;
 	std::ostream::char_type fill;
 	std::ios_base::fmtflags flags;
+};
+
+//////////////////////////// FilenameIndex ////////////////////////////////////
+
+class FilenameIndex
+{
+public:
+	unsigned int IndexFilename(const char *filename);
+private:
+	std::map<std::string, unsigned int> index;
 };
 
 //////////////////////////////// Sample ///////////////////////////////////////
@@ -264,7 +275,7 @@ public:
 	virtual unisim::kernel::service::VariableBase *GetSampledVariable() const = 0;
 	virtual void Print(std::ostream& os, OutputFormat o_fmt = O_FMT_TEXT, const char *csv_delimiter = ",") const = 0;
 	virtual InstructionProfileBase *CreateInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv) const = 0;
-	virtual FunctionInstructionProfileBase *CreateFunctionInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv) const = 0;
+	virtual FunctionInstructionProfileBase *CreateFunctionInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const = 0;
 	virtual SourceCodeProfileBase<ADDRESS> *CreateSourceCodeProfile() const = 0;
 };
 
@@ -283,7 +294,7 @@ public:
 	virtual unisim::kernel::service::VariableBase *GetSampledVariable() const { return sample.GetSampledVariable(); }
 	virtual void Print(std::ostream& os, OutputFormat o_fmt, const char *csv_delimiter) const;
 	virtual InstructionProfileBase *CreateInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv) const;
-	virtual FunctionInstructionProfileBase *CreateFunctionInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv) const;
+	virtual FunctionInstructionProfileBase *CreateFunctionInstructionProfile(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index) const;
 	virtual SourceCodeProfileBase<ADDRESS> *CreateSourceCodeProfile() const;
 	
 	bool GetValue(ADDRESS addr, T& value) const;
@@ -306,7 +317,7 @@ public:
 	virtual const char *GetSampledVariableName() const = 0;
 	virtual void Print(std::ostream& os) const = 0;
 	virtual void Update() = 0;
-	virtual AnnotatedSourceCodeFileSetBase *CreateAnnotatedSourceCodeFileSet(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, const char *search_path) const = 0;
+	virtual AnnotatedSourceCodeFileSetBase *CreateAnnotatedSourceCodeFileSet(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, const char *search_path) const = 0;
 };
 
 ///////////////////////// FunctionInstructionProfileBase /////////////////////////////////
@@ -357,13 +368,14 @@ template <typename ADDRESS, typename T>
 class FunctionInstructionProfile : public FunctionInstructionProfileBase
 {
 public:
-	FunctionInstructionProfile(const AddressProfile<ADDRESS, T> *addr_profile, const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if);
+	FunctionInstructionProfile(const AddressProfile<ADDRESS, T> *addr_profile, const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if);
 	
 	virtual const char *GetSampledVariableName() const { return addr_profile->GetSampledVariableName(); }
 	virtual void Print(std::ostream& os, OutputFormat o_fmt, const char *csv_delimiter) const;
 private:
 	const AddressProfile<ADDRESS, T> *addr_profile;
 	const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv;
+	FilenameIndex *filename_index;
 	unisim::service::interfaces::SymbolTableLookup<ADDRESS> *symbol_table_lookup_if;
 	std::map<std::string, T> func_insn_profile;
 	std::pair<T, T> value_range;
@@ -382,7 +394,7 @@ public:
 	virtual const char *GetSampledVariableName() const { return addr_profile->GetSampledVariableName(); }
 	virtual void Print(std::ostream& os) const;
 	virtual void Update();
-	virtual AnnotatedSourceCodeFileSetBase *CreateAnnotatedSourceCodeFileSet(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, const char *search_path) const;
+	virtual AnnotatedSourceCodeFileSetBase *CreateAnnotatedSourceCodeFileSet(const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, const char *search_path) const;
 	
 	const std::set<std::string>& GetSourceFilenameSet() const { return source_filename_set; }
 	const T& GetValue(const char *filename, unsigned int lineno) const;
@@ -454,7 +466,7 @@ template <typename ADDRESS, typename T>
 class AnnotatedSourceCodeFileSet : public AnnotatedSourceCodeFileSetBase
 {
 public:
-	AnnotatedSourceCodeFileSet(const SourceCodeProfile<ADDRESS, T> *source_code_profile, const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, const char *search_path);
+	AnnotatedSourceCodeFileSet(const SourceCodeProfile<ADDRESS, T> *source_code_profile, const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv, FilenameIndex *filename_index, const char *search_path);
 	virtual ~AnnotatedSourceCodeFileSet();
 	
 	virtual const char *GetSampledVariableName() { return source_code_profile->GetSampledVariableName(); }
@@ -463,6 +475,7 @@ public:
 private:
 	const SourceCodeProfile<ADDRESS, T> *source_code_profile;
 	const FunctionNameLocationConversionBase<ADDRESS> *func_name_loc_conv;
+	FilenameIndex *filename_index;
 	std::string search_path;
 	std::map<std::string, const AnnotatedSourceCodeFile<ADDRESS, T> *> annotated_source_code_files;
 	
@@ -552,6 +565,7 @@ private:
 	std::vector<InstructionProfileBase *> instruction_profiles; // instruction profile for each variable
 	std::vector<SourceCodeProfileBase<ADDRESS> *> source_code_profiles; // source code profile for each variable
 	std::vector<AnnotatedSourceCodeFileSetBase *> annotated_source_code_file_sets; // annotated source code file set for each variable
+	std::vector<FilenameIndex *> filename_indexes; // filename index for each variable
 	
 	bool ListenCommit();
 	bool UnlistenCommit();

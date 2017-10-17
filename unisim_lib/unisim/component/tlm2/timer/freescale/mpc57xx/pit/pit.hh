@@ -571,7 +571,7 @@ private:
 			this->SetName(name_sstr.str());
 			std::stringstream description_sstr;
 			description_sstr << "PIT Timer Load Value Register #" << reg_num;
-			this->SetDescription(name_sstr.str());
+			this->SetDescription(description_sstr.str());
 			
 			TSV::SetName("TSV");
 			TSV::SetDescription("Timer Start Value Bits");
@@ -607,7 +607,7 @@ private:
 			this->SetName(name_sstr.str());
 			std::stringstream description_sstr;
 			description_sstr << "PIT Current Timer Value Register #" << reg_num;
-			this->SetDescription(name_sstr.str());
+			this->SetDescription(description_sstr.str());
 			
 			TVL::SetName("TVL");
 			TVL::SetDescription("Current Timer Value");
@@ -645,7 +645,7 @@ private:
 			this->SetName(name_sstr.str());
 			std::stringstream description_sstr;
 			description_sstr << "PIT Timer Control Register #" << reg_num;
-			this->SetDescription(name_sstr.str());
+			this->SetDescription(description_sstr.str());
 			
 			CHN::SetName("CHN"); CHN::SetDescription("Chain Mode Bit");
 			TIE::SetName("TIE"); TIE::SetDescription("Timer Interrupt Enable Bit");
@@ -710,7 +710,7 @@ private:
 			this->SetName(name_sstr.str());
 			std::stringstream description_sstr;
 			description_sstr << "PIT Timer Flag Register #" << reg_num;
-			this->SetDescription(name_sstr.str());
+			this->SetDescription(description_sstr.str());
 			
 			TIF::SetName("TIF"); TIF::SetDescription("Timer Interrupt Flag");
 		}

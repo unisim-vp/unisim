@@ -49,17 +49,16 @@
 #include <unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.hh>
 #include <unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.hh>
 #include <unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.hh>
+#include <unisim/component/tlm2/com/freescale/mpc57xx/linflexd/linflexd.hh>
 
 // Class definition of kernel, services and interfaces
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/tlm2/simulator.hh>
 #include <unisim/util/backtrace/backtrace.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
-#include <unisim/service/debug/debugger/debugger.tcc>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/profiler/profiler.hh>
-#include <unisim/service/debug/profiler/profiler.tcc>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
@@ -148,23 +147,21 @@ private:
 	{
 		typedef FSB_ADDRESS_TYPE ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 10;
-		static const unsigned int MAX_NUM_MAPPINGS = 10;
+		static const unsigned int OUTPUT_SOCKETS = 14;
+		static const unsigned int MAX_NUM_MAPPINGS = 14;
 		static const unsigned int BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;
 	};
 	
-#if 0
 	struct PBRIDGE_B_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
 	{
 		typedef FSB_ADDRESS_TYPE ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 10;
-		static const unsigned int MAX_NUM_MAPPINGS = 10;
+		static const unsigned int OUTPUT_SOCKETS = 2;
+		static const unsigned int MAX_NUM_MAPPINGS = 2;
 		static const unsigned int BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;
 	};
-#endif
 	
 	struct INTC_0_CONFIG
 	{
@@ -235,6 +232,78 @@ private:
 		static const bool HAS_64_BIT_TIMER_SUPPORT = true;
 		static const unsigned int BUSWIDTH = 64; // FIXME: PIT will be on PBRIDGE which is 32-bit width
 	};
+	
+	struct LINFLEXD_0_CONFIG
+	{
+		static const unsigned int NUM_IRQS = 3;
+		static const unsigned int TX_CH_NUM = 0;
+		static const unsigned int RX_CH_NUM = 0;
+		static const unsigned int NUM_FILTERS = 16;
+		static const bool GENERIC_SLAVE = true;
+		static const bool GENERIC_PSI5 = false;
+		static const bool HAS_AUTO_SYNCHRONIZATION_SUPPORT = true;
+		static const unsigned int BUSWIDTH = 64; // FIXME: LINFlexD will be on PBRIDGE which is 32-bit width
+	};
+
+	struct LINFLEXD_1_CONFIG
+	{
+		static const unsigned int NUM_IRQS = 3;
+		static const unsigned int TX_CH_NUM = 0;
+		static const unsigned int RX_CH_NUM = 0;
+		static const unsigned int NUM_FILTERS = 0;
+		static const bool GENERIC_SLAVE = false;
+		static const bool GENERIC_PSI5 = false;
+		static const bool HAS_AUTO_SYNCHRONIZATION_SUPPORT = false;
+		static const unsigned int BUSWIDTH = 64; // FIXME: LINFlexD will be on PBRIDGE which is 32-bit width
+	};
+
+	struct LINFLEXD_2_CONFIG
+	{
+		static const unsigned int NUM_IRQS = 3;
+		static const unsigned int TX_CH_NUM = 0;
+		static const unsigned int RX_CH_NUM = 0;
+		static const unsigned int NUM_FILTERS = 0;
+		static const bool GENERIC_SLAVE = false;
+		static const bool GENERIC_PSI5 = false;
+		static const bool HAS_AUTO_SYNCHRONIZATION_SUPPORT = false;
+		static const unsigned int BUSWIDTH = 64; // FIXME: LINFlexD will be on PBRIDGE which is 32-bit width
+	};
+
+	struct LINFLEXD_14_CONFIG
+	{
+		static const unsigned int NUM_IRQS = 3;
+		static const unsigned int TX_CH_NUM = 0;
+		static const unsigned int RX_CH_NUM = 0;
+		static const unsigned int NUM_FILTERS = 0;
+		static const bool GENERIC_SLAVE = false;
+		static const bool GENERIC_PSI5 = false;
+		static const bool HAS_AUTO_SYNCHRONIZATION_SUPPORT = false;
+		static const unsigned int BUSWIDTH = 64; // FIXME: LINFlexD will be on PBRIDGE which is 32-bit width
+	};
+
+	struct LINFLEXD_15_CONFIG
+	{
+		static const unsigned int NUM_IRQS = 3;
+		static const unsigned int TX_CH_NUM = 0;
+		static const unsigned int RX_CH_NUM = 0;
+		static const unsigned int NUM_FILTERS = 0;
+		static const bool GENERIC_SLAVE = false;
+		static const bool GENERIC_PSI5 = false;
+		static const bool HAS_AUTO_SYNCHRONIZATION_SUPPORT = false;
+		static const unsigned int BUSWIDTH = 64; // FIXME: LINFlexD will be on PBRIDGE which is 32-bit width
+	};
+
+	struct LINFLEXD_16_CONFIG
+	{
+		static const unsigned int NUM_IRQS = 3;
+		static const unsigned int TX_CH_NUM = 0;
+		static const unsigned int RX_CH_NUM = 0;
+		static const unsigned int NUM_FILTERS = 0;
+		static const bool GENERIC_SLAVE = false;
+		static const bool GENERIC_PSI5 = false;
+		static const bool HAS_AUTO_SYNCHRONIZATION_SUPPORT = false;
+		static const unsigned int BUSWIDTH = 64; // FIXME: LINFlexD will be on PBRIDGE which is 32-bit width
+	};
 
 	//=========================================================================
 	//===                     Aliases for components classes                ===
@@ -248,6 +317,7 @@ private:
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<XBAR_0_CONFIG> XBAR_0;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<XBAR_1_CONFIG> XBAR_1;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<PBRIDGE_A_CONFIG> PBRIDGE_A;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<PBRIDGE_B_CONFIG> PBRIDGE_B;
 	typedef unisim::component::tlm2::interrupt::freescale::mpc57xx::intc::INTC<INTC_0_CONFIG> INTC_0;
 	typedef unisim::component::tlm2::timer::freescale::mpc57xx::stm::STM<STM_0_CONFIG> STM_0;
 	typedef unisim::component::tlm2::timer::freescale::mpc57xx::stm::STM<STM_1_CONFIG> STM_1;
@@ -258,7 +328,12 @@ private:
 	typedef unisim::component::tlm2::watchdog::freescale::mpc57xx::swt::SWT<SWT_3_CONFIG> SWT_3;
 	typedef unisim::component::tlm2::timer::freescale::mpc57xx::pit::PIT<PIT_0_CONFIG> PIT_0;
 	typedef unisim::component::tlm2::timer::freescale::mpc57xx::pit::PIT<PIT_1_CONFIG> PIT_1;
-	typedef unisim::kernel::tlm2::TargetStub<64> PBRIDGE_B_STUB;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFLEXD_0_CONFIG> LINFLEXD_0;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFLEXD_1_CONFIG> LINFLEXD_1;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFLEXD_2_CONFIG> LINFLEXD_2;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFLEXD_14_CONFIG> LINFLEXD_14;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFLEXD_15_CONFIG> LINFLEXD_15;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFLEXD_16_CONFIG> LINFLEXD_16;
 	typedef unisim::kernel::tlm2::TargetStub<64> EBI_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<64> FLASH_PORT1_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<64> XBAR_0_S6_STUB;
@@ -291,7 +366,7 @@ private:
 	XBAR_1 *xbar_1;
 	//  - Peripheral Bridges
 	PBRIDGE_A *pbridge_a;
-	PBRIDGE_B_STUB *pbridge_b_stub;
+	PBRIDGE_B *pbridge_b;
 	//  - Interrupt Controller
 	INTC_0 *intc_0;
 	//  - System Timer Modules
@@ -306,6 +381,13 @@ private:
 	//  - Periodic Interrupt Timers
 	PIT_0 *pit_0;
 	PIT_1 *pit_1;
+	//  - LINFlexD
+	LINFLEXD_0 *linflexd_0;
+	LINFLEXD_1 *linflexd_1;
+	LINFLEXD_2 *linflexd_2;
+	LINFLEXD_14 *linflexd_14;
+	LINFLEXD_15 *linflexd_15;
+	LINFLEXD_16 *linflexd_16;
 	
 	//  - Stubs
 	EBI_STUB *ebi_stub;

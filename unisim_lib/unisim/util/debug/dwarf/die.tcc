@@ -968,15 +968,10 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 			max_size -= sz;
 			size += sz;
 			
-			if(!dw_die->IsNull())
-			{
-				children.push_back(dw_die);
-				dw_cu->Register(dw_die);
-			}
+			children.push_back(dw_die);
+			dw_cu->Register(dw_die);
 		}
 		while(!dw_die->IsNull());
-		
-		delete dw_die;
 	}
 	
 	abbrev = dw_abbrev;

@@ -515,7 +515,11 @@ inline bool MPU<TYPES, CONFIG>::ControlAccess(unisim::util::cache::AccessControl
 	
 	if(unlikely(!mpu_entry))
 	{
-		if(!DEBUG)
+		if(DEBUG)
+		{
+			mpu_entry = &hole_mpu_entry;
+		}
+		else
 		{
 			switch(access_control.mem_access_type)
 			{
@@ -527,8 +531,8 @@ inline bool MPU<TYPES, CONFIG>::ControlAccess(unisim::util::cache::AccessControl
 					cpu->template ThrowException<typename CPU::InstructionStorageInterrupt::AccessControl>();
 					break;
 			}
+			return false;
 		}
-		return false;
 	}
 	
 	access_control.size_to_protection_boundary = MAS2::UPPER_BOUND::Get(mpu_entry->mas2) - access_control.addr + 1;

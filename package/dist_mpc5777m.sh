@@ -847,6 +847,7 @@ unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.hh \
 unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.hh \
 unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.hh \
 unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.hh \
+unisim/component/tlm2/com/freescale/mpc57xx/linflexd/linflexd.hh \
 "
 
 UNISIM_LIB_MPC5777M_TEMPLATE_FILES="\
@@ -923,6 +924,7 @@ unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.tcc \
 unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.tcc \
 unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.tcc \
 unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.tcc \
+unisim/component/tlm2/com/freescale/mpc57xx/linflexd/linflexd.tcc \
 "
 
 UNISIM_LIB_MPC5777M_M4_FILES="\
@@ -990,6 +992,27 @@ set"
 
 UNISIM_SIMULATORS_MPC5777M_SOURCE_FILES="\
 simulator.cc \
+debugger.cc \
+xbar_0.cc \
+xbar_1.cc \
+pbridge_a.cc \
+pbridge_b.cc \
+intc_0.cc \
+stm_0.cc \
+stm_1.cc \
+stm_2.cc \
+swt_0.cc \
+swt_1.cc \
+swt_2.cc \
+swt_3.cc \
+pit_0.cc \
+pit_1.cc \
+linflexd_0.cc \
+linflexd_1.cc \
+linflexd_2.cc \
+linflexd_14.cc \
+linflexd_15.cc \
+linflexd_16.cc \
 "
 UNISIM_SIMULATORS_MPC5777M_HEADER_FILES="\
 simulator.hh \

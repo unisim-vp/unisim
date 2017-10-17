@@ -1498,27 +1498,105 @@
 				<value>range_start=&quot;0xfff80000&quot; range_end=&quot;0xfff83fff&quot; output_port=&quot;9&quot; translation=&quot;0x0&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 			</variable>
+			<variable name="mapping_10">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xffe8c000&quot; range_end=&quot;0xffe8ffff&quot; output_port=&quot;10&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_11">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xffe90000&quot; range_end=&quot;0xffe93fff&quot; output_port=&quot;11&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_12">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xffea8000&quot; range_end=&quot;0xffeabfff&quot; output_port=&quot;12&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_13">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xffeac000&quot; range_end=&quot;0xffeaffff&quot; output_port=&quot;13&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
 		</object>
 		<object name="HARDWARE.PBRIDGE_B">
-			<variable name="enable">
+			<variable name="cycle_time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>Time to process a request/response by the router</description>
+			</variable>
+			<variable name="port_buffer_size">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0</value>
+				<description>Defines the size of the buffer for incomming requests in each of the input ports (0 = infinite)</description>
+			</variable>
+			<variable name="verbose_all">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
-				<value>true</value>
-				<description>Enable/Disable a lazy implementation of TLM 2.0 method interface</description>
+				<value>false</value>
+				<description>Activate all the verbose options</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
 				</enumeration>
 			</variable>
-			<variable name="verbose">
+			<variable name="verbose_setup">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>Enable/Disable verbosity</description>
+				<description>Display Object setup information</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
 				</enumeration>
+			</variable>
+			<variable name="verbose_tlm">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display TLM blocking/non-blocking transactions information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_tlm_debug">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display TLM debug transactions information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose_memory_interface">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Display memory interface operations information</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="mapping_0">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfbe8c000&quot; range_end=&quot;0xfbe8ffff&quot; output_port=&quot;0&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_1">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfbea8000&quot; range_end=&quot;0xfbeabfff&quot; output_port=&quot;1&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 			</variable>
 		</object>
 		<object name="HARDWARE.INTC_0">
@@ -1823,6 +1901,138 @@
 				<data_type>unsigned 32-bit integer</data_type>
 				<value>0x00000002</value>
 				<description>value of PIT_MCR at reset</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.LINFlexD_0">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.LINFlexD_1">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.LINFlexD_2">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.LINFlexD_14">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.LINFlexD_15">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.LINFlexD_16">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
 			</variable>
 		</object>
 		<object name="HARDWARE.EBI">
@@ -2230,6 +2440,46 @@
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
 				<value>1 us</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.LIN_CLK">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>12500 ps</value>
 				<description>clock period</description>
 			</variable>
 			<variable name="clock-duty-cycle">
@@ -3301,7 +3551,7 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
-	<variable name="kernel_logger.file">
+	<variable name="file">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
@@ -3311,13 +3561,13 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
-	<variable name="kernel_logger.filename">
+	<variable name="filename">
 		<type>parameter</type>
 		<data_type>string</data_type>
 		<value>logger_output.txt</value>
 		<description>Filename to keep logger output (the option file must be activated)</description>
 	</variable>
-	<variable name="kernel_logger.std_err">
+	<variable name="std_err">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>true</value>
@@ -3327,7 +3577,7 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
-	<variable name="kernel_logger.std_err_color">
+	<variable name="std_err_color">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
@@ -3337,7 +3587,7 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
-	<variable name="kernel_logger.std_out">
+	<variable name="std_out">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
@@ -3347,7 +3597,7 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
-	<variable name="kernel_logger.std_out_color">
+	<variable name="std_out_color">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
@@ -3357,7 +3607,7 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
-	<variable name="kernel_logger.xml_file">
+	<variable name="xml_file">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
@@ -3367,7 +3617,7 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
-	<variable name="kernel_logger.xml_file_gzipped">
+	<variable name="xml_file_gzipped">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
@@ -3377,7 +3627,7 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
-	<variable name="kernel_logger.xml_filename">
+	<variable name="xml_filename">
 		<type>parameter</type>
 		<data_type>string</data_type>
 		<value>logger_output.xml</value>

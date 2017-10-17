@@ -409,7 +409,7 @@ private:
 			this->SetName(name_sstr.str());
 			std::stringstream description_sstr;
 			description_sstr << "INTC Current Priority Register for Processor " << reg_num;
-			this->SetDescription(name_sstr.str());
+			this->SetDescription(description_sstr.str());
 			
 			PRI::SetName("PRI");
 			PRI::SetDescription("Priority of the currently executing ISR");
@@ -463,7 +463,7 @@ private:
 			this->SetName(name_sstr.str());
 			std::stringstream description_sstr;
 			description_sstr << "INTC Interrupt Acknowledge Register for Processor " << reg_num;
-			this->SetDescription(name_sstr.str());
+			this->SetDescription(description_sstr.str());
 			
 			VTBA  ::SetName("VTBA");   VTBA  ::SetDescription("Vector table base address");
 			INTVEC::SetName("INTVEC"); INTVEC::SetDescription("Interrupt vector");
@@ -539,7 +539,7 @@ private:
 			this->SetName(name_sstr.str());
 			std::stringstream description_sstr;
 			description_sstr << "INTC End Of Interrupt Register for Processor " << reg_num;
-			this->SetDescription(name_sstr.str());
+			this->SetDescription(description_sstr.str());
 			
 			EOI::SetName("EOI");
 			EOI::SetDescription("End of Interrupt");
@@ -595,7 +595,7 @@ private:
 			this->SetName(name_sstr.str());
 			std::stringstream description_sstr;
 			description_sstr << "INTC Software Set/Clear Interrupt Register " << reg_num;
-			this->SetDescription(name_sstr.str());
+			this->SetDescription(description_sstr.str());
 			
 			SET::SetName("SET"); SET::SetDescription("Set flag bits");
 			CLR::SetName("CLR"); CLR::SetDescription("Clear flag bits; CLR is the flag bit");
@@ -696,7 +696,7 @@ private:
 			this->SetName(name_sstr.str());
 			std::stringstream description_sstr;
 			description_sstr << "INTC Priority Select Register " << reg_num;
-			this->SetDescription(name_sstr.str());
+			this->SetDescription(description_sstr.str());
 			
 			PRC_SELN0::SetName("PRC_SELN0"); PRC_SELN0::SetDescription("Processor select 0");
 			PRC_SELN1::SetName("PRC_SELN1"); PRC_SELN1::SetDescription("Processor select 1");
