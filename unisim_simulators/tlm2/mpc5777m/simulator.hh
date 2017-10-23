@@ -233,7 +233,7 @@ private:
 		static const unsigned int BUSWIDTH = 64; // FIXME: PIT will be on PBRIDGE which is 32-bit width
 	};
 	
-	struct LINFLEXD_0_CONFIG
+	struct LINFlexD_0_CONFIG
 	{
 		static const unsigned int NUM_IRQS = 3;
 		static const unsigned int TX_CH_NUM = 0;
@@ -245,7 +245,7 @@ private:
 		static const unsigned int BUSWIDTH = 64; // FIXME: LINFlexD will be on PBRIDGE which is 32-bit width
 	};
 
-	struct LINFLEXD_1_CONFIG
+	struct LINFlexD_1_CONFIG
 	{
 		static const unsigned int NUM_IRQS = 3;
 		static const unsigned int TX_CH_NUM = 0;
@@ -257,7 +257,7 @@ private:
 		static const unsigned int BUSWIDTH = 64; // FIXME: LINFlexD will be on PBRIDGE which is 32-bit width
 	};
 
-	struct LINFLEXD_2_CONFIG
+	struct LINFlexD_2_CONFIG
 	{
 		static const unsigned int NUM_IRQS = 3;
 		static const unsigned int TX_CH_NUM = 0;
@@ -269,7 +269,7 @@ private:
 		static const unsigned int BUSWIDTH = 64; // FIXME: LINFlexD will be on PBRIDGE which is 32-bit width
 	};
 
-	struct LINFLEXD_14_CONFIG
+	struct LINFlexD_14_CONFIG
 	{
 		static const unsigned int NUM_IRQS = 3;
 		static const unsigned int TX_CH_NUM = 0;
@@ -281,7 +281,7 @@ private:
 		static const unsigned int BUSWIDTH = 64; // FIXME: LINFlexD will be on PBRIDGE which is 32-bit width
 	};
 
-	struct LINFLEXD_15_CONFIG
+	struct LINFlexD_15_CONFIG
 	{
 		static const unsigned int NUM_IRQS = 3;
 		static const unsigned int TX_CH_NUM = 0;
@@ -293,7 +293,7 @@ private:
 		static const unsigned int BUSWIDTH = 64; // FIXME: LINFlexD will be on PBRIDGE which is 32-bit width
 	};
 
-	struct LINFLEXD_16_CONFIG
+	struct LINFlexD_16_CONFIG
 	{
 		static const unsigned int NUM_IRQS = 3;
 		static const unsigned int TX_CH_NUM = 0;
@@ -328,12 +328,24 @@ private:
 	typedef unisim::component::tlm2::watchdog::freescale::mpc57xx::swt::SWT<SWT_3_CONFIG> SWT_3;
 	typedef unisim::component::tlm2::timer::freescale::mpc57xx::pit::PIT<PIT_0_CONFIG> PIT_0;
 	typedef unisim::component::tlm2::timer::freescale::mpc57xx::pit::PIT<PIT_1_CONFIG> PIT_1;
-	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFLEXD_0_CONFIG> LINFLEXD_0;
-	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFLEXD_1_CONFIG> LINFLEXD_1;
-	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFLEXD_2_CONFIG> LINFLEXD_2;
-	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFLEXD_14_CONFIG> LINFLEXD_14;
-	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFLEXD_15_CONFIG> LINFLEXD_15;
-	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFLEXD_16_CONFIG> LINFLEXD_16;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFlexD_0_CONFIG> LINFlexD_0;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFlexD_1_CONFIG> LINFlexD_1;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFlexD_2_CONFIG> LINFlexD_2;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFlexD_14_CONFIG> LINFlexD_14;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFlexD_15_CONFIG> LINFlexD_15;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFlexD_16_CONFIG> LINFlexD_16;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_0_TX;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_0_RX;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_1_TX;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_1_RX;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_2_TX;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_2_RX;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_14_TX;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_14_RX;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_15_TX;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_15_RX;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_16_TX;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_16_RX;
 	typedef unisim::kernel::tlm2::TargetStub<64> EBI_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<64> FLASH_PORT1_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<64> XBAR_0_S6_STUB;
@@ -382,13 +394,24 @@ private:
 	PIT_0 *pit_0;
 	PIT_1 *pit_1;
 	//  - LINFlexD
-	LINFLEXD_0 *linflexd_0;
-	LINFLEXD_1 *linflexd_1;
-	LINFLEXD_2 *linflexd_2;
-	LINFLEXD_14 *linflexd_14;
-	LINFLEXD_15 *linflexd_15;
-	LINFLEXD_16 *linflexd_16;
-	
+	LINFlexD_0 *linflexd_0;
+	LINFlexD_1 *linflexd_1;
+	LINFlexD_2 *linflexd_2;
+	LINFlexD_14 *linflexd_14;
+	LINFlexD_15 *linflexd_15;
+	LINFlexD_16 *linflexd_16;
+	LINFlexD_0_TX *linflexd_0_tx;
+	LINFlexD_0_RX *linflexd_0_rx;
+	LINFlexD_1_TX *linflexd_1_tx;
+	LINFlexD_1_RX *linflexd_1_rx;
+	LINFlexD_2_TX *linflexd_2_tx;
+	LINFlexD_2_RX *linflexd_2_rx;
+	LINFlexD_14_TX *linflexd_14_tx;
+	LINFlexD_14_RX *linflexd_14_rx;
+	LINFlexD_15_TX *linflexd_15_tx;
+	LINFlexD_15_RX *linflexd_15_rx;
+	LINFlexD_16_TX *linflexd_16_tx;
+	LINFlexD_16_RX *linflexd_16_rx;
 	//  - Stubs
 	EBI_STUB *ebi_stub;
 	FLASH_PORT1_STUB *flash_port1_stub;
@@ -427,6 +450,7 @@ private:
 	void ResetProcess();
 	
 	void InterruptSource(unsigned int irq_num, const std::string& source = std::string());
+	void DMASource(unsigned int mux_num, unsigned int source_num, const std::string& source = std::string());
 	
 	virtual void SigInt();
 };

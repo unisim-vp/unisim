@@ -686,6 +686,7 @@ unisim/kernel/tlm2/tlm.hh \
 unisim/kernel/tlm2/simulator.hh \
 unisim/kernel/tlm2/clock.hh \
 unisim/kernel/tlm2/master_id.hh \
+unisim/kernel/tlm2/tlm_serial.hh \
 unisim/util/backtrace/backtrace.hh \
 unisim/kernel/api/api.hh \
 unisim/util/likely/likely.hh \
