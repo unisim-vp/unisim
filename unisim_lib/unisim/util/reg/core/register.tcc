@@ -1252,9 +1252,17 @@ template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGIST
 template <typename PRESERVED_FIELD>
 ReadWriteStatus Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::WritePreserve(const TYPE& _value, const TYPE& bit_enable)
 {
+	ReadWriteStatus rws(RWS_OK);
 	TYPE new_value = _value;
-	PRESERVED_FIELD::template Set<TYPE>(new_value, this->template Get<PRESERVED_FIELD>());
-	return this->Write(new_value, bit_enable);
+	TYPE preserved_fields = this->template Get<PRESERVED_FIELD>();
+	TYPE preserved_fields_mask = PRESERVED_FIELD::template GetMask<TYPE>();
+	if((new_value & bit_enable & preserved_fields_mask) != (value & bit_enable & preserved_fields_mask))
+	{
+		// writing read-only bits
+		rws = ReadWriteStatus(rws | RWS_WROB);
+	}
+	PRESERVED_FIELD::template Set<TYPE>(new_value, preserved_fields);
+	return ReadWriteStatus(rws | this->Write(new_value, bit_enable));
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>

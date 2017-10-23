@@ -1,0 +1,1640 @@
+/*
+ *  Copyright (c) 2017,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ */
+
+#ifndef __UNISIM_COMPONENT_TLM2_COM_FREESCALE_MPC57XX_LINFLEXD_LINFLEXD_HH__
+#define __UNISIM_COMPONENT_TLM2_COM_FREESCALE_MPC57XX_LINFLEXD_LINFLEXD_HH__
+
+#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/logger/logger.hh>
+#include <unisim/kernel/tlm2/tlm.hh>
+#include <unisim/kernel/tlm2/tlm_serial.hh>
+#include <unisim/kernel/tlm2/clock.hh>
+#include <unisim/util/reg/core/register.hh>
+#include <unisim/util/likely/likely.hh>
+#include <stack>
+
+#define SWITCH_ENUM_TRAIT(ENUM_TYPE, CLASS_NAME) template <ENUM_TYPE, bool __SWITCH_TRAIT_DUMMY__ = true> struct CLASS_NAME {}
+#define CASE_ENUM_TRAIT(ENUM_VALUE, CLASS_NAME) template <bool __SWITCH_TRAIT_DUMMY__> struct CLASS_NAME<ENUM_VALUE, __SWITCH_TRAIT_DUMMY__>
+#define ENUM_TRAIT(ENUM_VALUE, CLASS_NAME) CLASS_NAME<ENUM_VALUE>
+
+namespace unisim {
+namespace component {
+namespace tlm2 {
+namespace com {
+namespace freescale {
+namespace mpc57xx {
+namespace linflexd {
+
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
+
+using unisim::util::reg::core::Register;
+using unisim::util::reg::core::AddressableRegister;
+using unisim::util::reg::core::AddressableRegisterHandle;
+using unisim::util::reg::core::RegisterAddressMap;
+using unisim::util::reg::core::FieldSet;
+using unisim::util::reg::core::AddressableRegisterFile;
+using unisim::util::reg::core::ReadWriteStatus;
+using unisim::util::reg::core::SW_RW;
+using unisim::util::reg::core::SW_R;
+using unisim::util::reg::core::SW_R_HW_RO;
+using unisim::util::reg::core::SW_R_W1C;
+using unisim::util::reg::core::SW_W;
+using unisim::util::reg::core::RWS_OK;
+using unisim::util::reg::core::RWS_ANA;
+using unisim::util::reg::core::Access;
+using unisim::util::reg::core::IsReadWriteError;
+
+template <typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
+struct Field : unisim::util::reg::core::Field<FIELD
+                                             , ((OFFSET1 >= 0) && (OFFSET1 < 32)) ? ((OFFSET2 >= 0) ? ((OFFSET2 < 32) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : 0) : 1) : 0
+                                             , ((OFFSET1 >= 0) && (OFFSET1 < 32)) ? ((OFFSET2 >= 0) ? ((OFFSET2 < 32) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 0) : 1) : 0
+                                             , _ACCESS>
+{
+};
+
+enum LINFlexD_OperatingMode
+{
+	LINFLEXD_INIT_MODE   = 0,
+	LINFLEXD_NORMAL_MODE = 1,
+	LINFLEXD_SLEEP_MODE  = 2
+};
+
+enum LIN_OperationMode
+{
+	LIN_MASTER_MODE = 0,
+	LIN_SLAVE_MODE  = 1
+};
+
+enum LINFlexD_IRQ_Type
+{
+	LINFLEXD_IRQ_RX  = 0,
+	LINFLEXD_IRQ_TX  = 1,
+	LINFLEXD_IRQ_ERR = 2
+};
+
+enum LIN_State
+{
+	LINS_SLEEP_MODE                    = 0x0, // 0000
+	LINS_INIT_MODE                     = 0x1, // 0001
+	LINS_IDLE_MODE                     = 0x2, // 0010
+	LINS_SYNC_BREAK                    = 0x3, // 0011
+	LINS_SYNC_DEL                      = 0x4, // 0100
+	LINS_SYNC_FIELD                    = 0x5, // 0101
+	LINS_IDENTIFIER_FIELD              = 0x6, // 0110
+	LINS_HEADER_RECEPTION_TRANSMISSION = 0x7, // 0111
+	LINS_DATA_RECEPTION_TRANSMISSION   = 0x8, // 1000
+	LINS_CHECKSUM                      = 0x9  // 1001
+};
+
+#if 0
+struct CONFIG
+{
+	static const unsigned int BUSWIDTH = 32;
+	static const unsigned int NUM_IRQS = 3;
+	static const unsigned int TX_CH_NUM = 0;
+	static const unsigned int RX_CH_NUM = 0;
+	static const unsigned int NUM_FILTERS = 16;
+	static const bool GENERIC_SLAVE = true; /* false: master-only, true: master/slave */
+	static const bool GENERIC_PSI5 = false;
+	static const bool HAS_AUTO_SYNCHRONIZATION_SUPPORT = true;
+};
+#endif
+
+template <typename CONFIG>
+class LINFlexD
+	: unisim::kernel::service::Object
+	, public sc_core::sc_module
+	, public tlm::tlm_fw_transport_if<>
+{
+public:
+	static const unsigned int TLM2_IP_VERSION_MAJOR    = 1;
+	static const unsigned int TLM2_IP_VERSION_MINOR    = 0;
+	static const unsigned int TLM2_IP_VERSION_PATCH    = 0;
+	static const unsigned int BUSWIDTH                 = CONFIG::BUSWIDTH;
+	static const unsigned int NUM_TX_DMA_CHANNELS      = 1 << CONFIG::TX_CH_NUM;
+	static const unsigned int NUM_RX_DMA_CHANNELS      = 1 << CONFIG::RX_CH_NUM;
+	static const unsigned int NUM_FILTERS              = CONFIG::NUM_FILTERS;
+	static const bool GENERIC_SLAVE                    = CONFIG::GENERIC_SLAVE;
+	static const bool GENERIC_PSI5                     = CONFIG::GENERIC_PSI5;
+	static const bool HAS_AUTO_SYNCHRONIZATION_SUPPORT = CONFIG::HAS_AUTO_SYNCHRONIZATION_SUPPORT;
+	static const unsigned int NUM_IRQS                 = CONFIG::NUM_IRQS;
+	static const unsigned int NUM_IDENTIFIERS          = (GENERIC_SLAVE == 1) ? 16 : 0;
+	static const bool threaded_model                   = false;
+	
+	enum SerialInterface
+	{
+		LINTX_IF,
+		LINRX_IF
+	};
+	
+	typedef tlm::tlm_target_socket<BUSWIDTH>                     peripheral_slave_if_type;
+	typedef unisim::kernel::tlm2::tlm_serial_peripheral_socket_tagged<LINFlexD<CONFIG> > LINTX_type;
+	typedef unisim::kernel::tlm2::tlm_serial_peripheral_socket_tagged<LINFlexD<CONFIG> > LINRX_type;
+	
+	peripheral_slave_if_type                         peripheral_slave_if;             // Peripheral slave interface
+	LINTX_type                                       LINTX;                           // Tx Serial interface
+	LINRX_type                                       LINRX;                           // Rx Serial interface
+	sc_core::sc_in<bool>                             m_clk;                           // clock port
+	sc_core::sc_in<bool>                             lin_clk;                         // LIN Clock port
+	sc_core::sc_in<bool>                             reset_b;                         // reset
+	sc_core::sc_out<bool>                            INT_RX;                          // Interrupt Request
+	sc_core::sc_out<bool>                            INT_TX;                          // Interrupt Request
+	sc_core::sc_out<bool>                            INT_ERR;                         // Interrupt Request
+	sc_core::sc_out<bool>                           *tx_dma_req[NUM_TX_DMA_CHANNELS]; // Tx DMA request
+	sc_core::sc_out<bool>                           *rx_dma_req[NUM_RX_DMA_CHANNELS]; // Rx DMA request
+	
+	LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
+	virtual ~LINFlexD();
+	
+	virtual void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
+	virtual bool get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data);
+	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& payload);
+	virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
+
+	void nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload& payload);
+	
+private:
+	virtual void end_of_elaboration();
+	
+	unisim::kernel::logger::Logger logger;
+	
+	class Event
+	{
+	public:
+		class Key
+		{
+		public:
+			Key()
+				: time_stamp(sc_core::SC_ZERO_TIME)
+			{
+			}
+			
+			Key(const sc_core::sc_time& _time_stamp)
+				: time_stamp(_time_stamp)
+			{
+			}
+
+			void SetTimeStamp(const sc_core::sc_time& _time_stamp)
+			{
+				time_stamp = _time_stamp;
+			}
+
+			const sc_core::sc_time& GetTimeStamp() const
+			{
+				return time_stamp;
+			}
+
+			void Clear()
+			{
+				time_stamp = sc_core::SC_ZERO_TIME;
+			}
+			
+			int operator < (const Key& sk) const
+			{
+				return time_stamp < sk.time_stamp;
+			}
+			
+		private:
+			sc_core::sc_time time_stamp;
+		};
+		
+		Event()
+			: key()
+			, payload(0)
+			, release_payload(false)
+			, completion_event(0)
+		{
+		}
+		
+		~Event()
+		{
+			Clear();
+		}
+		
+		void Clear()
+		{
+			key.Clear();
+			if(release_payload)
+			{
+				if(payload && payload->has_mm()) payload->release();
+			}
+			payload = 0;
+			release_payload = false;
+			completion_event  = 0;
+		}
+		
+		void SetTimeStamp(const sc_core::sc_time& _time_stamp)
+		{
+			key.SetTimeStamp(_time_stamp);
+		}
+		
+		void SetPayload(tlm::tlm_generic_payload *_payload, bool _release_payload = false)
+		{
+			if(release_payload)
+			{
+				if(payload && payload->has_mm()) payload->release();
+			}
+			payload = _payload;
+			release_payload = _release_payload;
+		}
+		
+		void SetCompletionEvent(sc_core::sc_event *_completion_event)
+		{
+			completion_event = _completion_event;
+		}
+
+		const sc_core::sc_time& GetTimeStamp() const
+		{
+			return key.GetTimeStamp();
+		}
+		
+		tlm::tlm_generic_payload *GetPayload() const
+		{
+			return payload;
+		}
+
+		sc_core::sc_event *GetCompletionEvent() const
+		{
+			return completion_event;
+		}
+
+		const Key& GetKey() const
+		{
+			return key;
+		}
+		
+	private:
+		Key key;                             // schedule key (i.e. time stamp)
+		tlm::tlm_generic_payload *payload;   // payload
+		bool release_payload;                // whether payload must be released using payload memory management
+		sc_core::sc_event *completion_event; // completion event (for blocking transport interface)
+	};
+
+	// LINFlexD Register
+	template <typename REGISTER, Access _ACCESS>
+	struct LINFlexD_Register : AddressableRegister<REGISTER, 32, _ACCESS>
+	{
+		typedef AddressableRegister<REGISTER, 32, _ACCESS> Super;
+		
+		LINFlexD_Register(LINFlexD<CONFIG> *_linflexd) : Super(), linflexd(_linflexd) {}
+		LINFlexD_Register(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(value), linflexd(_linflexd) {}
+		
+		inline bool IsVerboseRead() const ALWAYS_INLINE { return linflexd->verbose; }
+		inline bool IsVerboseWrite() const ALWAYS_INLINE { return linflexd->verbose; }
+		inline std::ostream& GetInfoStream() ALWAYS_INLINE { return linflexd->logger.DebugInfoStream(); }
+		
+		using Super::operator =;
+	protected:
+		LINFlexD<CONFIG> *linflexd;
+	};
+	
+	//  LIN Control Register 1 (LINFlexD_LINCR1)
+	struct LINFlexD_LINCR1 : LINFlexD_Register<LINFlexD_LINCR1, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_LINCR1, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x0;
+		
+		struct CCD    : Field<CCD   , 16>                                         {}; // Checksum Calculation disable
+		struct CFD    : Field<CFD   , 17>                                         {}; // Checksum field disable
+		struct LASE   : Field<LASE  , 18>                                         {}; // LIN Autosynchronization Enable
+		struct AUTOWU : Field<AUTOWU, 19>                                         {}; // Auto Wakeup
+		struct MBL    : Field<MBL   , 20, 23>                                     {}; // Master Break Length
+		struct BF     : Field<BF    , 24>                                         {}; // By-passfilter
+		struct LBKM   : Field<LBKM  , 26>                                         {}; // Loop Back mode
+		struct MME    : Field<MME   , 27, 27, GENERIC_SLAVE ? SW_RW : SW_R_HW_RO> {}; // Master mode enable
+		struct SSBL   : Field<SSBL  , 28>                                         {}; // Slave Mode Sync Break Length
+		struct RBLM   : Field<RBLM  , 29>                                         {}; // Receiver Buffer Locked mode
+		struct SLEEP  : Field<SLEEP , 30>                                         {}; // Sleep Mode Request
+		struct INIT   : Field<INIT  , 31>                                         {}; // Initialization Mode Request
+		
+		typedef FieldSet<CCD, CFD, LASE, AUTOWU, MBL, BF, LBKM, MME, SSBL, RBLM, SLEEP, INIT> ALL;
+		
+		typedef FieldSet<CCD, CFD, LASE, AUTOWU, MBL, BF, LBKM, MME, SSBL, RBLM> INIT_MODE_ONLY_WRITEABLE;
+		
+		LINFlexD_LINCR1(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_LINCR1(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+		
+		void Init()
+		{
+			this->SetName("LINFlexD_LINCR1"); this->SetDescription("LIN Control Register 1");
+			CCD   ::SetName("CCD");    CCD   ::SetDescription("Checksum Calculation disable");
+			CFD   ::SetName("CFD");    CFD   ::SetDescription("Checksum field disable");
+			LASE  ::SetName("LASE");   LASE  ::SetDescription("LIN Autosynchronization Enable");
+			AUTOWU::SetName("AUTOWU"); AUTOWU::SetDescription("Auto Wakeup");
+			MBL   ::SetName("MBL");    MBL   ::SetDescription("Master Break Length");
+			BF    ::SetName("BF");     BF    ::SetDescription("By-passfilter");
+			LBKM  ::SetName("LBKM");   LBKM  ::SetDescription("Loop Back mode");
+			MME   ::SetName("MME");    MME   ::SetDescription("Master mode enable");
+			SSBL  ::SetName("SSBL");   SSBL  ::SetDescription("Slave Mode Sync Break Length");
+			RBLM  ::SetName("RBLM");   RBLM  ::SetDescription("Receiver Buffer Locked mode");
+			SLEEP ::SetName("SLEEP");  SLEEP ::SetDescription("Sleep Mode Request");
+			INIT  ::SetName("INIT");   INIT  ::SetDescription("Initialization Mode Request");
+		}
+		
+		void Reset()
+		{
+			this->template Set<CCD   >(0);
+			this->template Set<CFD   >(0);
+			this->template Set<LASE  >(0);
+			this->template Set<AUTOWU>(0);
+			this->template Set<MBL   >(0);
+			this->template Set<BF    >(1);
+			this->template Set<LBKM  >(0);
+			this->template Set<MME   >(GENERIC_SLAVE ? 0 : 1);
+			this->template Set<SSBL  >(0);
+			this->template Set<RBLM  >(0);
+			this->template Set<SLEEP >(1);
+			this->template Set<INIT  >(0);
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = this->linflexd->InitMode() ? Super::Write(value, bit_enable)
+			                                                 : Super::template WritePreserve<INIT_MODE_ONLY_WRITEABLE>(value, bit_enable);
+			
+			return rws;
+		}
+		
+		using Super::operator =;
+	};
+	
+	// LIN Interrupt enable register (LINFlexD_LINIER)
+	struct LINFlexD_LINIER : LINFlexD_Register<LINFlexD_LINIER, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_LINIER, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x4;
+		
+		struct SZIE      : Field<SZIE     , 16>                                         {}; // Stuck at zero Interrupt Enable
+		struct OCIE      : Field<OCIE     , 17>                                         {}; // Output Compare Interrupt Enable
+		struct BEIE      : Field<BEIE     , 18>                                         {}; // Bit Error Interrupt Enable
+		struct CEIE      : Field<CEIE     , 19>                                         {}; // Checksum Error Interrupt Enable
+		struct HEIE      : Field<HEIE     , 20>                                         {}; // Header Error Interrupt Enable
+		struct FEIE      : Field<FEIE     , 23>                                         {}; // Frame Error Interrupt Enable
+		struct BOIE      : Field<BOIE     , 24>                                         {}; // Buffer Overrun Error Interrupt Enable
+		struct LSIE      : Field<LSIE     , 25>                                         {}; // LIN state Interrupt enable
+		struct WUIE      : Field<WUIE     , 26>                                         {}; // Wakeup interrupt enable
+		struct DBFIE     : Field<DBFIE    , 27>                                         {}; // Data Buffer Full Interrupt enable
+		struct DBEIETOIE : Field<DBEIETOIE, 28>                                         {}; // Data Buffer Empty Interrupt enable/Timeout Interrupt Enable
+		struct DRIE      : Field<DRIE     , 29>                                         {}; // Data Reception complete Interrupt enable
+		struct DTIE      : Field<DTIE     , 30>                                         {}; // Data Transmitted Interrupt enable
+		struct HRIE      : Field<HRIE     , 31, 31, GENERIC_SLAVE ? SW_RW : SW_R_HW_RO> {}; // Header Received Interrupt
+		
+		typedef FieldSet<SZIE, OCIE, BEIE, CEIE, HEIE, FEIE, BOIE, LSIE, WUIE, DBFIE, DBEIETOIE, DRIE, DTIE, HRIE> ALL;
+		
+		LINFlexD_LINIER(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_LINIER(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+		
+		void Init()
+		{
+			this->SetName("LINFlexD_LINIER"); this->SetDescription("LIN Interrupt enable register");
+			SZIE     ::SetName("SZIE");      SZIE     ::SetDescription("Stuck at zero Interrupt Enable");
+			OCIE     ::SetName("OCIE");      OCIE     ::SetDescription("Output Compare Interrupt Enable");
+			BEIE     ::SetName("BEIE");      BEIE     ::SetDescription("Bit Error Interrupt Enable");
+			CEIE     ::SetName("CEIE");      CEIE     ::SetDescription("Checksum Error Interrupt Enable");
+			HEIE     ::SetName("HEIE");      HEIE     ::SetDescription("Header Error Interrupt Enable");
+			FEIE     ::SetName("FEIE");      FEIE     ::SetDescription("Frame Error Interrupt Enable");
+			BOIE     ::SetName("BOIE");      BOIE     ::SetDescription("Buffer Overrun Error Interrupt Enable");
+			LSIE     ::SetName("LSIE");      LSIE     ::SetDescription("LIN state Interrupt enable");
+			WUIE     ::SetName("WUIE");      WUIE     ::SetDescription("Wakeup interrupt enable");
+			DBFIE    ::SetName("DBFIE");     DBFIE    ::SetDescription("Data Buffer Full Interrupt enable");
+			DBEIETOIE::SetName("DBEIETOIE"); DBEIETOIE::SetDescription("Data Buffer Empty Interrupt enable/Timeout Interrupt Enable");
+			DRIE     ::SetName("DRIE");      DRIE     ::SetDescription("Data Reception complete Interrupt enable");
+			DTIE     ::SetName("DTIE");      DTIE     ::SetDescription("Data Transmitted Interrupt enable");
+			HRIE     ::SetName("HRIE");      HRIE     ::SetDescription("Header Received Interrupt");
+		}
+		
+		void Reset()
+		{
+			this->Initialize(0x0);
+			UpdateInterrupts();
+		}
+		
+		LINFlexD_LINIER& operator = (const uint32_t& value)
+		{
+			Super::operator = (value);
+			UpdateInterrupts();
+			return *this;
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			UpdateInterrupts();
+			return rws;
+		}
+		
+		void UpdateInterrupts()
+		{
+			this->linflexd->UpdateINT_RX();
+			this->linflexd->UpdateINT_TX();
+			this->linflexd->UpdateINT_ERR();
+		}
+	};
+	
+	// LIN Status Register (LINFlexD_LINSR)
+	struct LINFlexD_LINSR : LINFlexD_Register<LINFlexD_LINSR, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_LINSR, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x8;
+		
+		struct AUTOSYNC_COMP : Field<AUTOSYNC_COMP, 12    , SW_R_W1C> {}; // Autosynchronization complete
+		struct RDC           : Field<RDC          , 13, 15, SW_R    > {}; // Receive Data Byte Count
+		struct LINS          : Field<LINS         , 16, 19, SW_R    > {}; // LIN state
+		struct RMB           : Field<RMB          , 22    , SW_R_W1C> {}; // Release Message Buffer
+		struct DRBNE         : Field<DRBNE        , 23    , SW_R_W1C> {}; // Data Reception Buffer Not Empty Flag
+		struct RXbusy        : Field<RXbusy       , 24    , SW_R    > {}; // Receiver Busy flag
+		struct RDI           : Field<RDI          , 25    , SW_R    > {}; // LIN Receive signal
+		struct WUF           : Field<WUF          , 26    , SW_R_W1C> {}; // Wakeup flag
+		struct DBFF          : Field<DBFF         , 27    , SW_R_W1C> {}; // Data Buffer full flag
+		struct DBEF          : Field<DBEF         , 28    , SW_R_W1C> {}; // Data Buffer empty flag
+		struct DRF           : Field<DRF          , 29    , SW_R_W1C> {}; // Data Reception Completed flag
+		struct DTF           : Field<DTF          , 30    , SW_R_W1C> {}; // Data Transmission Completed flag
+		struct HRF           : Field<HRF          , 31    , SW_R_W1C> {}; // Header Received flag
+		
+		SWITCH_ENUM_TRAIT(bool, _);
+		CASE_ENUM_TRAIT(false, _) { typedef FieldSet<RDC, LINS, RMB, DRBNE, RXbusy, RDI, WUF, DBFF, DBEF, DRF, DTF, HRF> ALL; };
+		CASE_ENUM_TRAIT(true, _) { typedef FieldSet<AUTOSYNC_COMP, RDC, LINS, RMB, DRBNE, RXbusy, RDI, WUF, DBFF, DBEF, DRF, DTF, HRF> ALL; };
+		typedef typename ENUM_TRAIT(HAS_AUTO_SYNCHRONIZATION_SUPPORT, _)::ALL ALL;
+		
+		LINFlexD_LINSR(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_LINSR(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+		
+		void Init()
+		{
+			this->SetName("LINFlexD_LINSR"); this->SetDescription("LIN Status Register");
+			AUTOSYNC_COMP::SetName("AUTOSYNC_COMP"); AUTOSYNC_COMP::SetDescription("Autosynchronization complete");
+			RDC          ::SetName("RDC");           RDC          ::SetDescription("Receive Data Byte Count");
+			LINS         ::SetName("LINS");          LINS         ::SetDescription("LIN state");
+			RMB          ::SetName("RMB");           RMB          ::SetDescription("Release Message Buffer");
+			DRBNE        ::SetName("DRBNE");         DRBNE        ::SetDescription("Data Reception Buffer Not Empty Flag");
+			RXbusy       ::SetName("RXbusy");        RXbusy       ::SetDescription("Receiver Busy flag");
+			RDI          ::SetName("RDI");           RDI          ::SetDescription("LIN Receive signal");
+			WUF          ::SetName("WUF");           WUF          ::SetDescription("Wakeup flag");
+			DBFF         ::SetName("DBFF");          DBFF         ::SetDescription("Data Buffer full flag");
+			DBEF         ::SetName("DBEF");          DBEF         ::SetDescription("Data Buffer empty flag");
+			DRF          ::SetName("DRF");           DRF          ::SetDescription("Data Reception Completed flag");
+			DTF          ::SetName("DTF");           DTF          ::SetDescription("Data Transmission Completed flag");
+			HRF          ::SetName("HRF");           HRF          ::SetDescription("Header Received flag");
+		}
+		
+		void Reset()
+		{
+			this->Initialize(0x0);
+			UpdateInterrupts();
+		}
+		
+		LINFlexD_LINSR& operator = (const uint32_t& value)
+		{
+			Super::operator = (value);
+			UpdateInterrupts();
+			return *this;
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			if((LINFlexD_LINSR::LINS::template Get<uint32_t>(value) == 0xf) && this->linflexd->LINS_INT_RX())
+			{
+				// Clear Rx interrupt, only when set due to the LIN state event
+				this->linflexd->lins_int_rx_mask = true;
+			}
+			
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			UpdateInterrupts();
+			return rws;
+		}
+		
+		void SoftReset()
+		{
+			//  All fields except RXbusy and AUTOSYNC_COMP are reset
+			this->template Set<RDC  >(0);        
+			this->template Set<LINS >(0);        
+			this->template Set<RMB  >(0);        
+			this->template Set<DRBNE>(0);        
+			this->template Set<RDI  >(0);        
+			this->template Set<WUF  >(0);        
+			this->template Set<DBFF >(0);        
+			this->template Set<DBEF >(0);        
+			this->template Set<DRF  >(0);        
+			this->template Set<DTF  >(0);        
+			this->template Set<HRF  >(0);        
+			UpdateInterrupts();
+		}
+		
+		void UpdateInterrupts()
+		{
+			this->linflexd->UpdateINT_RX();
+			this->linflexd->UpdateINT_TX();
+		}
+	};
+	
+	// LIN Error Status Register (LINFlexD_LINESR)
+	struct LINFlexD_LINESR : LINFlexD_Register<LINFlexD_LINESR, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_LINESR, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0xc;
+		
+		struct SZF      : Field<SZF  , 16, 16, SW_R_W1C>                              {}; // Stuck at Zero flag
+		struct OCF      : Field<OCF  , 17, 17, SW_R_W1C>                              {}; // Output Compare Flag
+		struct BEF      : Field<BEF  , 18, 18, SW_R_W1C>                              {}; // Bit Error flag
+		struct CEF      : Field<CEF  , 19, 19, SW_R_W1C>                              {}; // Checksum Error flag
+		struct SFEF     : Field<SFEF , 20, 20, GENERIC_SLAVE ? SW_R_W1C : SW_R_HW_RO> {}; // Sync Field Error flag
+		struct SDEF     : Field<SDEF , 21, 21, GENERIC_SLAVE ? SW_R_W1C : SW_R_HW_RO> {}; // Sync Delimiter Error flag
+		struct IDPEF    : Field<IDPEF, 22, 22, GENERIC_SLAVE ? SW_R_W1C : SW_R_HW_RO> {}; // ID Parity Error flag
+		struct FEF      : Field<FEF  , 23, 23, SW_R_W1C>                              {}; // Framing Error flag
+		struct BOF      : Field<BOF  , 24, 24, SW_R_W1C>                              {}; // Buffer overrun flag
+		struct NF       : Field<NF   , 31, 31, SW_R_W1C>                              {}; // Noise flag
+
+		typedef FieldSet<SZF, OCF, BEF, CEF, SFEF, SDEF, IDPEF, FEF, BOF, NF> ALL;
+		
+		LINFlexD_LINESR(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_LINESR(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+		
+		void Init()
+		{
+			this->SetName("LINFlexD_LINESR"); this->SetDescription("LIN Error Status Register");
+			SZF     ::SetName("SZF");   SZF     ::SetDescription("Stuck at Zero flag");
+			OCF     ::SetName("OCF");   OCF     ::SetDescription("Output Compare Flag");
+			BEF     ::SetName("BEF");   BEF     ::SetDescription("Bit Error flag");
+			CEF     ::SetName("CEF");   CEF     ::SetDescription("Checksum Error flag");
+			SFEF    ::SetName("SFEF");  SFEF    ::SetDescription("Sync Field Error flag");
+			SDEF    ::SetName("SDEF");  SDEF    ::SetDescription("Sync Delimiter Error flag");
+			IDPEF   ::SetName("IDPEF"); IDPEF   ::SetDescription("ID Parity Error flag");
+			FEF     ::SetName("FEF");   FEF     ::SetDescription("Framing Error flag");
+			BOF     ::SetName("BOF");   BOF     ::SetDescription("Buffer overrun flag");
+			NF      ::SetName("NF");    NF      ::SetDescription("Noise flag");
+		}
+		
+		void Reset()
+		{
+			this->Initialize(0x0);
+			UpdateInterrupts();
+		}
+		
+		void SoftReset()
+		{
+			this->Initialize(0x0);
+			UpdateInterrupts();
+		}
+		
+		LINFlexD_LINESR& operator = (const uint32_t& value)
+		{
+			Super::operator = (value);
+			UpdateInterrupts();
+			return *this;
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			UpdateInterrupts();
+			return rws;
+		}
+		
+		void UpdateInterrupts()
+		{
+			this->linflexd->UpdateINT_ERR();
+		}
+	};
+	
+	// UART Mode Control Register (LINFlexD_UARTCR)
+	struct LINFlexD_UARTCR : LINFlexD_Register<LINFlexD_UARTCR, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_UARTCR, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x10;
+		
+		struct MIS        : Field<MIS       , 0     > {}; // Monitor Idle State
+		struct CSP        : Field<CSP       , 1, 3  > {}; // Configurable Sample Point
+		struct OSR        : Field<OSR       , 4, 7  > {}; // Over Sampling Rate
+		struct ROSE       : Field<ROSE      , 8     > {}; // Reduced Over Sampling EnableRegister bit can be read in any mode, written only in initialization mode
+		struct NEF        : Field<NEF       , 9, 11 > {}; // Number of expected frame
+		struct DTU_PCETX  : Field<DTU_PCETX , 12    > {}; // Disable Timeout in UART mode/Parity transmission and checking
+		struct SBUR       : Field<SBUR      , 13, 14> {}; // Stop bits in UART reception mode
+		struct WLS        : Field<WLS       , 15    > {}; // Special Word Length in UART mode
+		struct TDFL_TFC   : Field<TDFL_TFC  , 16, 18> {}; // Transmitter Data Field Length / TX FIFO Counter
+		struct TDFL_TFC_0 : Field<TDFL_TFC_0, 16, 16> {};
+		struct TDFL       : Field<TDFL      , 17, 18> {}; // Transmitter Data Field Length
+		struct TFC        : Field<TFC       , 16, 18> {}; // TX FIFO Counter
+		struct RDFL_RFC   : Field<RDFL_RFC  , 19, 21> {}; // Reception Data Field Length / RX FIFO Counter
+		struct RDFL_RFC_0 : Field<RDFL_RFC_0, 19, 19> {};
+		struct RDFL       : Field<RDFL      , 20, 21> {}; // Reception Data Field Length
+		struct RFC        : Field<RFC       , 19, 21> {}; // RX FIFO Counter
+		struct RFBM       : Field<RFBM      , 22    > {}; // Rx Fifo/Buffer mode
+		struct TFBM       : Field<TFBM      , 23    > {}; // Tx Fifo/Buffer mode
+		struct WL1        : Field<WL1       , 24    > {}; // Word Length in UART mode
+		struct PC1        : Field<PC1       , 25    > {}; // Parity Control
+		struct RxEn       : Field<RxEn      , 26    > {}; // Receiver Enable
+		struct TxEn       : Field<TxEn      , 27    > {}; // Transmitter Enable
+		struct PC0        : Field<PC0       , 28    > {}; // Parity Control
+		struct PCE        : Field<PCE       , 29    > {}; // Parity Control Enable
+		struct WL0        : Field<WL0       , 30    > {}; // Word Length in UART mode
+		struct UART       : Field<UART      , 31    > {}; // UART Mode
+		
+		typedef FieldSet<MIS, CSP, OSR, ROSE, NEF, DTU_PCETX, SBUR, WLS, TDFL_TFC, RDFL_RFC, RFBM, TFBM, WL1, PC1, RxEn, TxEn, PC0, PCE, WL0, UART> ALL;
+		
+		typedef FieldSet<MIS, CSP, OSR, ROSE, DTU_PCETX, SBUR, WLS, TDFL_TFC, RDFL_RFC, RFBM, TFBM, WL1, PC1, RxEn, TxEn, PC0, PCE, WL0, UART> NOT_INIT_AND_NOT_UART_PRESERVED_FIELDS;
+		typedef FieldSet<WLS, TDFL_TFC, RDFL_RFC, RFBM, TFBM, WL1, PC1, RxEn, TxEn, PC0, PCE, WL0> INIT_AND_NOT_UART_PRESERVED_FIELDS;
+		typedef FieldSet<MIS, CSP, OSR, ROSE, NEF, DTU_PCETX, SBUR, WLS, TDFL_TFC, RDFL_RFC, RFBM, TFBM, WL1, PC1, PC0, PCE, WL0, UART> NOT_INIT_AND_UART_PRESERVED_FIELDS;
+		typedef FieldSet<TDFL_TFC, RDFL_RFC> INIT_AND_UART_AND_NOT_TXBUF_AND_NOT_RXBUF_PRESERVED_FIELDS;
+		typedef FieldSet<TDFL_TFC, RDFL_RFC_0> INIT_AND_UART_AND_TXBUF_AND_NOT_RXBUF_PRESERVED_FIELDS;
+		typedef FieldSet<TDFL_TFC_0, RDFL_RFC> INIT_AND_UART_AND_NOT_TXBUF_AND_RXBUF_PRESERVED_FIELDS;
+		typedef FieldSet<TDFL_TFC_0, RDFL_RFC_0> INIT_AND_UART_AND_TXBUF_AND_RXBUF_PRESERVED_FIELDS;
+		
+		LINFlexD_UARTCR(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_UARTCR(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+		
+		void Init()
+		{
+			this->SetName("LINFlexD_UARTCR"); this->SetDescription("UART Mode Control Register");
+			MIS      ::SetName("MIS");       MIS      ::SetDescription("Monitor Idle State");
+			CSP      ::SetName("CSP");       CSP      ::SetDescription("Configurable Sample Point");
+			OSR      ::SetName("OSR");       OSR      ::SetDescription("Over Sampling Rate");
+			ROSE     ::SetName("ROSE");      ROSE     ::SetDescription("Reduced Over Sampling EnableRegister bit can be read in any mode, written only in initialization mode");
+			NEF      ::SetName("NEF");       NEF      ::SetDescription("Number of expected frame");
+			DTU_PCETX::SetName("DTU_PCETX"); DTU_PCETX::SetDescription("Disable Timeout in UART mode/Parity transmission and checking");
+			SBUR     ::SetName("SBUR");      SBUR     ::SetDescription("Stop bits in UART reception mode");
+			WLS      ::SetName("WLS");       WLS      ::SetDescription("Special Word Length in UART mode");
+			TDFL_TFC ::SetName("TDFL_TFC");  TDFL_TFC ::SetDescription("Transmitter Data Field Length/TX FIFO Counter");
+			RDFL_RFC ::SetName("RDFL_RFC");  RDFL_RFC ::SetDescription("Reception Data Field Length /RX FIFO Counter");
+			RFBM     ::SetName("RFBM");      RFBM     ::SetDescription("Rx Fifo/Buffer mode");
+			TFBM     ::SetName("TFBM");      TFBM     ::SetDescription("Tx Fifo/Buffer mode");
+			WL1      ::SetName("WL1");       WL1      ::SetDescription("Word Length in UART mode");
+			PC1      ::SetName("PC1");       PC1      ::SetDescription("Parity Control");
+			RxEn     ::SetName("RxEn");      RxEn     ::SetDescription("Receiver Enable");
+			TxEn     ::SetName("TxEn");      TxEn     ::SetDescription("Transmitter Enable");
+			PC0      ::SetName("PC0");       PC0      ::SetDescription("Parity Control");
+			PCE      ::SetName("PCE");       PCE      ::SetDescription("Parity Control Enable");
+			WL0      ::SetName("WL0");       WL0      ::SetDescription("Word Length in UART mode");
+			UART     ::SetName("UART");      UART     ::SetDescription("UART Mode");
+		}
+		
+		void Reset()
+		{
+			this->Initialize(0x0);
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws =
+				/* !INIT && !UART */
+				(!this->linflexd->InitMode() && !this->linflexd->UARTMode()) ?
+				Super::template WritePreserve<NOT_INIT_AND_NOT_UART_PRESERVED_FIELDS>(value, bit_enable) :
+				/* INIT & !UART */
+				((this->linflexd->InitMode() && !this->linflexd->UARTMode()) ?
+				Super::template WritePreserve<INIT_AND_NOT_UART_PRESERVED_FIELDS>(value, bit_enable) :
+				/* !INIT & UART */
+				((!this->linflexd->InitMode() && this->linflexd->UARTMode()) ?
+				Super::template WritePreserve<NOT_INIT_AND_UART_PRESERVED_FIELDS>(value, bit_enable) :
+				/* INIT & UART & !TXBUF & !RXBUF */
+				((this->linflexd->InitMode() && this->linflexd->UARTMode() && !this->linflexd->UART_TX_BufferMode() && !this->linflexd->UART_RX_BufferMode()) ?
+				Super::template WritePreserve<INIT_AND_UART_AND_NOT_TXBUF_AND_NOT_RXBUF_PRESERVED_FIELDS>(value, bit_enable) :
+				/* INIT & UART & TXBUF & !RXBUF */
+				((this->linflexd->InitMode() && this->linflexd->UARTMode() && this->linflexd->UART_TX_BufferMode()  && !this->linflexd->UART_RX_BufferMode()) ?
+				Super::template WritePreserve<INIT_AND_UART_AND_TXBUF_AND_NOT_RXBUF_PRESERVED_FIELDS>(value, bit_enable) :
+				/* INIT & UART & !TXBUF & RXBUF */
+				((this->linflexd->InitMode() && this->linflexd->UARTMode() && !this->linflexd->UART_TX_BufferMode() && this->linflexd->UART_RX_BufferMode()) ?
+				Super::template WritePreserve<INIT_AND_UART_AND_NOT_TXBUF_AND_RXBUF_PRESERVED_FIELDS>(value, bit_enable) :
+				/* INIT & UART & TXBUF & RXBUF */
+				((this->linflexd->InitMode() && this->linflexd->UARTMode() && this->linflexd->UART_TX_BufferMode()  && this->linflexd->UART_RX_BufferMode()) ?
+				Super::template WritePreserve<INIT_AND_UART_AND_TXBUF_AND_RXBUF_PRESERVED_FIELDS>(value, bit_enable) :
+				/* other: always false */
+				RWS_ANA))))));
+			
+			if(this->template Get<WLS>() && !this->template Get<WL1>())
+			{
+				this->linflexd->logger << DebugWarning << "In " << this->GetName() << ", when WLS bit = 1, WL = 0 or 1 should not be used, since this will lead to incorrect reception of data" << EndDebugWarning;
+			}
+			
+			return rws;
+		}
+		
+		void SoftReset()
+		{
+			// Only TFC & RFC are reset
+			this->template Set<TDFL_TFC>(0);
+			this->template Set<RDFL_RFC>(0);
+		}
+
+		using Super::operator =;
+	};
+	
+	// UART Mode Status Register (LINFlexD_UARTSR)
+	struct LINFlexD_UARTSR : LINFlexD_Register<LINFlexD_UARTSR, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_UARTSR, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x14;
+		
+		struct SZF    : Field<SZF   , 16    , SW_R_W1C> {}; // Stuck at Zero flag
+		struct OCF    : Field<OCF   , 17    , SW_R_W1C> {}; // Output Compare Flag
+		struct PE     : Field<PE    , 18, 21, SW_R_W1C> {}; // Parity Error flag
+		struct RMB    : Field<RMB   , 22    , SW_R_W1C> {}; // Release Message Buffer
+		struct FEF    : Field<FEF   , 23    , SW_R_W1C> {}; // Framing Error flag
+		struct BOF    : Field<BOF   , 24    , SW_R_W1C> {}; // FIFO/Buffer overrun flag
+		struct RDI    : Field<RDI   , 25    , SW_R_W1C> {}; // Receiver Data Input signal
+		struct WUF    : Field<WUF   , 26    , SW_R_W1C> {}; // Wakeup flag
+		struct RFNE   : Field<RFNE  , 27    , SW_R    > {}; // Receive FIFO Not Empty
+		struct TO     : Field<TO    , 28    , SW_R_W1C> {}; // Timeout
+		struct DRFRFE : Field<DRFRFE, 29    , SW_RW   > {}; // Data Reception Completed Flag / Rx FIFO Empty Flag
+		struct DTFTFF : Field<DTFTFF, 30    , SW_RW   > {}; // Data Transmission Completed Flag/ TX FIFO Full Flag
+		struct NF     : Field<NF    , 31    , SW_R_W1C> {}; // Noise flag
+
+		typedef FieldSet<SZF, OCF, PE, RMB, FEF, BOF, RDI, WUF, RFNE, TO, DRFRFE, DTFTFF, NF> ALL;
+		
+		LINFlexD_UARTSR(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_UARTSR(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+		
+		void Init()
+		{
+			this->SetName("LINFlexD_UARTSR"); this->SetDescription("UART Mode Status Register");
+			SZF   ::SetName("SZF");    SZF   ::SetDescription("Stuck at Zero flag");
+			OCF   ::SetName("OCF");    OCF   ::SetDescription("Output Compare Flag");
+			PE    ::SetName("PE");     PE    ::SetDescription("Parity Error flag");
+			RMB   ::SetName("RMB");    RMB   ::SetDescription("Release Message Buffer");
+			FEF   ::SetName("FEF");    FEF   ::SetDescription("Framing Error flag");
+			BOF   ::SetName("BOF");    BOF   ::SetDescription("FIFO/Buffer overrun flag");
+			RDI   ::SetName("RDI");    RDI   ::SetDescription("Receiver Data Input signal");
+			WUF   ::SetName("WUF");    WUF   ::SetDescription("Wakeup flag");
+			RFNE  ::SetName("RFNE");   RFNE  ::SetDescription("Receive FIFO Not Empty");
+			TO    ::SetName("TO");     TO    ::SetDescription("Timeout");
+			DRFRFE::SetName("DRFRFE"); DRFRFE::SetDescription("Data Reception Completed Flag / Rx FIFO Empty Flag");
+			DTFTFF::SetName("DTFTFF"); DTFTFF::SetDescription("Data Transmission Completed Flag / TX FIFO Full Flag");
+			NF    ::SetName("NF");     NF    ::SetDescription("Noise flag");
+		}
+		
+		void SoftReset()
+		{
+			//  All fields except RFE & TFF are reset
+			this->template Set<SZF   >(0);
+			this->template Set<OCF   >(0);
+			this->template Set<PE    >(0);
+			this->template Set<RMB   >(0);
+			this->template Set<FEF   >(0);
+			this->template Set<BOF   >(0);
+			this->template Set<RDI   >(0);
+			this->template Set<WUF   >(0);
+			this->template Set<RFNE  >(0);
+			this->template Set<TO    >(0);
+			this->template Set<NF    >(0);
+			this->linflexd->UpdateINT_ERR();
+		}
+		
+		LINFlexD_UARTSR& operator = (const uint32_t& value)
+		{
+			Super::operator = (value);
+			this->linflexd->UpdateINT_ERR();
+			return *this;
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			this->linflexd->UpdateINT_ERR();
+			return rws;
+		}
+	};
+	
+	// LIN Time-Out Control Status Register (LINFlexD_LINTCSR)
+	struct LINFlexD_LINTCSR : LINFlexD_Register<LINFlexD_LINTCSR, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_LINTCSR, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x18;
+		
+		struct MODE : Field<MODE, 21    , SW_RW> {}; // Time-out counter mode
+		struct IOT  : Field<IOT , 22    , SW_RW> {}; // Idle on timeout
+		struct TOCE : Field<TOCE, 23    , SW_RW> {}; // Time-out counter enable
+		struct CNT  : Field<CNT , 24, 31, SW_R > {}; // Counter Value
+		
+		typedef FieldSet<MODE, IOT, TOCE, CNT> ALL;
+		
+		typedef FieldSet<MODE, IOT> INIT_MODE_ONLY_WRITEABLE;
+		
+		LINFlexD_LINTCSR(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_LINTCSR(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+		
+		void Init()
+		{
+			this->SetName("LINFlexD_LINTCSR"); this->SetDescription("LIN Time-Out Control Status Register");
+			MODE::SetName("MODE"); MODE::SetDescription("MODE");
+			IOT ::SetName("IOT");  IOT ::SetDescription("IOT");
+			TOCE::SetName("TOCE"); TOCE::SetDescription("TOCE");
+			CNT ::SetName("CNT");  CNT ::SetDescription("CNT");
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = this->linflexd->InitMode()
+			            ? (this->linflexd->LINTimeoutCounterMode() ? Super::Write(value, bit_enable)
+			                                                       : Super::template WritePreserve<TOCE>(value, bit_enable))
+			            : Super::template WritePreserve<INIT_MODE_ONLY_WRITEABLE>(value, bit_enable);
+			
+			return rws;
+		}
+		
+		void SoftReset()
+		{
+			this->template Set<CNT>(0);
+		}
+		
+		using Super::operator =;
+	};
+	
+	// LIN Output Compare Register (LINFlexD_LINOCR)
+	struct LINFlexD_LINOCR : LINFlexD_Register<LINFlexD_LINOCR, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_LINOCR, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x1c;
+		
+		struct OC1 : Field<OC1, 16, 23> {}; // Output compare value 2
+		struct OC2 : Field<OC2, 24, 31> {}; // Output compare value 1
+		
+		typedef FieldSet<OC1, OC2> ALL;
+		
+		LINFlexD_LINOCR(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_LINOCR(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+		
+		void Init()
+		{
+			this->SetName("LINFlexD_LINOCR"); this->SetDescription("LIN Output Compare Register");
+			OC1::SetName("OC1"); OC1::SetDescription("OC1");
+			OC2::SetName("OC2"); OC2::SetDescription("OC2");
+		}
+		
+		using Super::operator =;
+	};
+	
+	// LIN Time-Out Control Register (LINFlexD_LINTOCR)
+	struct LINFlexD_LINTOCR : LINFlexD_Register<LINFlexD_LINTOCR, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_LINTOCR, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x20;
+		
+		struct RTO : Field<RTO, 20, 23> {}; // Response timeout value
+		struct HTO : Field<HTO, 25, 31> {}; // Header timeout value
+		
+		typedef FieldSet<RTO, HTO> ALL;
+		
+		LINFlexD_LINTOCR(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_LINTOCR(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+		
+		void Init()
+		{
+			this->SetName("LINFlexD_LINTOCR"); this->SetDescription("LIN Time-Out Control Register");
+			RTO::SetName("RTO"); RTO::SetDescription("Response timeout value");
+			HTO::SetName("HTO"); HTO::SetDescription("Header timeout value");
+		}
+		
+		using Super::operator =;
+	};
+	
+	// LIN Fractional Baud Rate Register (LINFlexD_LINFBRR)
+	struct LINFlexD_LINFBRR : LINFlexD_Register<LINFlexD_LINFBRR, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_LINFBRR, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x24;
+		
+		struct FBR : Field<FBR, 28, 31> {}; // Fractional Baud rates
+		
+		typedef FieldSet<FBR> ALL;
+		
+		LINFlexD_LINFBRR(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_LINFBRR(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+		
+		void Init()
+		{
+			this->SetName("LINFlexD_LINFBRR"); this->SetDescription("LIN Fractional Baud Rate Register");
+			FBR::SetName("FBR"); FBR::SetDescription("Fractional Baud rates");
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = this->linflexd->InitMode() ? Super::Write(value, bit_enable)
+			                                                 : Super::template WritePreserve<FBR>(value, bit_enable);
+			
+			return rws;
+		}
+
+		using Super::operator =;
+	};
+	
+	// LIN Integer Baud Rate Register (LINFlexD_LINIBRR)
+	struct LINFlexD_LINIBRR : LINFlexD_Register<LINFlexD_LINIBRR, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_LINIBRR, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x28;
+		
+		struct IBR : Field<IBR, 12, 31> {}; // Integer Baud rates
+
+		typedef FieldSet<IBR> ALL;
+		
+		LINFlexD_LINIBRR(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_LINIBRR(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+		
+		void Init()
+		{
+			this->SetName("LINFlexD_LINIBRR"); this->SetDescription("LIN Integer Baud Rate Register");
+			IBR::SetName("IBR"); IBR::SetDescription("Integer Baud rates");
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = this->linflexd->InitMode() ? Super::Write(value, bit_enable)
+			                                                 : Super::template WritePreserve<IBR>(value, bit_enable);
+			
+			return rws;
+		}
+
+		using Super::operator =;
+	};
+	
+	// LIN Checksum Field Register (LINFlexD_LINCFR)
+	struct LINFlexD_LINCFR : LINFlexD_Register<LINFlexD_LINCFR, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_LINCFR, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x2c;
+		
+		struct CF : Field<CF, 24, 31> {}; //  Checksum bits
+		
+		typedef FieldSet<CF> ALL;
+		
+		LINFlexD_LINCFR(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_LINCFR(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+		
+		void Init()
+		{
+			this->SetName("LINFlexD_LINCFR"); this->SetDescription("LIN Checksum Field Register");
+			CF::SetName("CF"); CF::SetDescription("LIN Checksum Field Register");
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = this->linflexd->SoftwareChecksumCalculation() ? Super::Write(value, bit_enable)
+			                                                                    : Super::template WritePreserve<CF>(value, bit_enable);
+			
+			return rws;
+		}
+
+		using Super::operator =;
+	};
+	
+	// LIN Control Register 2 (LINFlexD_LINCR2)
+	struct LINFlexD_LINCR2 : LINFlexD_Register<LINFlexD_LINCR2, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_LINCR2, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x30;
+		
+		struct TBDE : Field<TBDE, 16> {}; // Two Bit delimiter bit
+		struct IOBE : Field<IOBE, 17> {}; // Idle on Bit Error
+		struct IOPE : Field<IOPE, 18> {}; // Idle on Identifier Parity Error
+		struct WURQ : Field<WURQ, 19> {}; // Wakeup Generate Request
+		struct DDRQ : Field<DDRQ, 20> {}; // Data Discard request
+		struct DTRQ : Field<DTRQ, 21> {}; // Data Transmission Request
+		struct ABRQ : Field<ABRQ, 22> {}; // Abort Request
+		struct HTRQ : Field<HTRQ, 23> {}; // Header Transmission Request
+		
+		typedef FieldSet<TBDE, IOBE, IOPE, WURQ, DDRQ, DTRQ, ABRQ, HTRQ> ALL;
+		
+		typedef FieldSet<TBDE, IOBE, IOPE> INIT_MODE_ONLY_WRITEABLE;
+		
+		LINFlexD_LINCR2(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_LINCR2(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+		
+		void Init()
+		{
+			this->SetName("LINFlexD_LINCR2"); this->SetDescription("LIN Control Register 2");
+			TBDE::SetName("TBDE"); TBDE::SetDescription("Two Bit delimiter bit");
+			IOBE::SetName("IOBE"); IOBE::SetDescription("Idle on Bit Error");
+			IOPE::SetName("IOPE"); IOPE::SetDescription("Idle on Identifier Parity Error");
+			WURQ::SetName("WURQ"); WURQ::SetDescription("Wakeup Generate Request");
+			DDRQ::SetName("DDRQ"); DDRQ::SetDescription("Data Discard request");
+			DTRQ::SetName("DTRQ"); DTRQ::SetDescription("Data Transmission Request");
+			ABRQ::SetName("ABRQ"); ABRQ::SetDescription("Abort Request");
+			HTRQ::SetName("HTRQ"); HTRQ::SetDescription("Header Transmission Request");
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = this->linflexd->InitMode() ? Super::Write(value, bit_enable)
+			                                                 : Super::template WritePreserve<INIT_MODE_ONLY_WRITEABLE>(value, bit_enable);
+			
+			return rws;
+		}
+
+		using Super::operator =;
+	};
+	
+	// Buffer Identifier Register (LINFlexD_BIDR)
+	struct LINFlexD_BIDR : LINFlexD_Register<LINFlexD_BIDR, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_BIDR, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x34;
+		
+		struct DFL : Field<DFL, 16, 21> {}; // Data Field Length
+		struct DIR : Field<DIR, 22    > {}; // Direction
+		struct CCS : Field<CCS, 23    > {}; // Classic Checksum
+		struct ID  : Field<ID , 26, 31> {}; // Identifier
+
+		typedef FieldSet<DFL, DIR, CCS, ID> ALL;
+		
+		LINFlexD_BIDR(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_BIDR(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+		
+		void Init()
+		{
+			this->SetName("LINFlexD_BIDR"); this->SetDescription("Buffer Identifier Register");
+			DFL::SetName("DFL"); DFL::SetDescription("Data Field Length");
+			DIR::SetName("DIR"); DIR::SetDescription("Direction");
+			CCS::SetName("CCS"); CCS::SetDescription("Classic Checksum");
+			ID ::SetName("ID");  ID ::SetDescription("Identifier");
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = this->linflexd->LIN_MasterMode() ? Super::Write(value, bit_enable)
+			                                                   : Super::template WritePreserve<ID>(value, bit_enable);
+			
+			return rws;
+		}
+
+		using Super::operator =;
+	};
+	
+	// Buffer Data Register Least Significant (LINFlexD_BDRL)
+	struct LINFlexD_BDRL : LINFlexD_Register<LINFlexD_BDRL, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_BDRL, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x38;
+		
+		struct DATA3 : Field<DATA3,  0, 7 > {}; // Data Byte 3
+		struct DATA2 : Field<DATA2,  8, 15> {}; // Data Byte 2
+		struct DATA1 : Field<DATA1, 16, 23> {}; // Data Byte 1
+		struct DATA0 : Field<DATA0, 24, 31> {}; // Data Byte 0
+		
+		typedef FieldSet<DATA3, DATA2, DATA1, DATA0> ALL;
+		
+		LINFlexD_BDRL(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_BDRL(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+		
+		void Init()
+		{
+			this->SetName("LINFlexD_BDRL"); this->SetDescription("Buffer Data Register Least Significant");
+			DATA3::SetName("DATA3"); DATA3::SetDescription("Data Byte 3");
+			DATA2::SetName("DATA2"); DATA2::SetDescription("Data Byte 2");
+			DATA1::SetName("DATA1"); DATA1::SetDescription("Data Byte 1");
+			DATA0::SetName("DATA0"); DATA0::SetDescription("Data Byte 0");
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			if(this->linflexd->UARTMode())
+			{
+				if(this->linflexd->UART_TX_FIFO_Mode())
+				{
+					switch(this->linflexd->UARTWordLength())
+					{
+						case 1: if(bit_enable & FieldSet<DATA3, DATA2, DATA1>::template GetMask<uint32_t>()) return RWS_ANA; break;
+						case 2: if(bit_enable & FieldSet<DATA3, DATA2>::template GetMask<uint32_t>()) return RWS_ANA; break;
+					}
+				}
+			}
+			
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
+// 			if(!IsReadWriteError(rws))
+// 			{
+// 				this->linflexd->
+// 			}
+			
+			return rws;
+		}
+
+		using Super::operator =;
+	};
+	
+	// Buffer Data Register Most Significant (LINFlexD_BDRM)
+	struct LINFlexD_BDRM : LINFlexD_Register<LINFlexD_BDRM, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_BDRM, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x3c;
+		
+		struct DATA7 : Field<DATA7,  0,  7> {}; // Data Byte 7
+		struct DATA6 : Field<DATA6,  8, 15> {}; // Data Byte 6
+		struct DATA5 : Field<DATA5, 16, 23> {}; // Data Byte 5
+		struct DATA4 : Field<DATA4, 24, 31> {}; // Data Byte 4
+		
+		typedef FieldSet<DATA7, DATA6, DATA5, DATA4> ALL;
+		
+		LINFlexD_BDRM(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }		
+		LINFlexD_BDRM(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+		
+		void Init()
+		{
+			this->SetName("LINFlexD_BDRM"); this->SetDescription("Buffer Data Register Most Significant");
+			DATA7::SetName("DATA7"); DATA7::SetDescription("Data Byte 7");
+			DATA6::SetName("DATA6"); DATA6::SetDescription("Data Byte 6");
+			DATA5::SetName("DATA5"); DATA5::SetDescription("Data Byte 5");
+			DATA4::SetName("DATA4"); DATA4::SetDescription("Data Byte 4");
+		}
+		
+		virtual ReadWriteStatus Read(uint32_t& value, const uint32_t& bit_enable)
+		{
+			if(this->linflexd->UARTMode())
+			{
+				if(this->linflexd->UART_RX_FIFO_Mode())
+				{
+					switch(this->linflexd->UARTWordLength())
+					{
+						case 1: if(bit_enable & FieldSet<DATA7, DATA6, DATA5>::template GetMask<uint32_t>()) return RWS_ANA; break;
+						case 2: if(bit_enable & FieldSet<DATA7, DATA6>::template GetMask<uint32_t>()) return RWS_ANA; break;
+					}
+				}
+			}
+			
+			ReadWriteStatus rws = Super::Read(value, bit_enable);
+			
+			return rws;
+		}
+
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = this->linflexd->UARTMode() ? RWS_ANA : Super::Write(value, bit_enable);
+			
+			return rws;
+		}
+
+		using Super::operator =;
+	};
+	
+	// Identifier Filter Enable Register (LINFlexD_IFER)
+	struct LINFlexD_IFER : LINFlexD_Register<LINFlexD_IFER, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_IFER, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x40;
+		
+		struct FACT : Field<FACT, (32 - NUM_FILTERS), 31> {}; // Filter active
+		
+		typedef FieldSet<FACT> ALL;
+		
+		LINFlexD_IFER(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_IFER(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+		
+		void Init()
+		{
+			this->SetName("LINFlexD_IFER"); this->SetDescription("Identifier Filter Enable Register");
+			FACT::SetName("FACT"); FACT::SetDescription("Filter active");
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = this->linflexd->InitMode() ? Super::Write(value, bit_enable)
+			                                                 : Super::template WritePreserve<FACT>(value, bit_enable);
+			
+			return rws;
+		}
+
+		using Super::operator =;
+	};
+	
+	// Identifier Filter Match Index (LINFlexD_IFMI)
+	struct LINFlexD_IFMI : LINFlexD_Register<LINFlexD_IFMI, SW_R>
+	{
+		typedef LINFlexD_Register<LINFlexD_IFMI, SW_R> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x44;
+		
+		struct IFMI : Field<IFMI, 27, 31, SW_R> {}; // Filter match index
+		
+		typedef FieldSet<IFMI> ALL;
+		
+		LINFlexD_IFMI(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_IFMI(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+
+		void Init()
+		{
+			this->SetName("LINFlexD_IFMI"); this->SetDescription("Identifier Filter Match Index");
+			IFMI::SetName("IFMI"); IFMI::SetDescription("Filter match index");
+		}
+		
+		using Super::operator =;
+	};
+	
+	// Identifier Filter Mode Register (LINFlexD_IFMR)
+	struct LINFlexD_IFMR : LINFlexD_Register<LINFlexD_IFMR, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_IFMR, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x48;
+		
+		struct IFM : Field<IFM, 24, 31> {}; // Filter mode
+		
+		typedef FieldSet<IFM> ALL;
+		
+		LINFlexD_IFMR(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_IFMR(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+
+		void Init()
+		{
+			this->SetName("LINFlexD_IFMR"); this->SetDescription("Identifier Filter Mode Register");
+			IFM::SetName("IFM"); IFM::SetDescription("Filter mode");
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = this->linflexd->InitMode() ? Super::Write(value, bit_enable)
+			                                                 : Super::template WritePreserve<IFM>(value, bit_enable);
+			
+			return rws;
+		}
+
+		using Super::operator =;
+	};
+	
+	// Identifier Filter Control Register (LINFlexD_IFCRn)
+	struct LINFlexD_IFCR : LINFlexD_Register<LINFlexD_IFCR, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_IFCR, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x4c;
+		
+		struct DFL : Field<DFL, 16, 21> {}; // Data Field Length
+		struct DIR : Field<DIR, 22    > {}; // Direction
+		struct CCS : Field<CCS, 23    > {}; // Classic Checksum
+		struct ID  : Field<ID , 26, 31> {}; // Identifier
+		
+		typedef FieldSet<DFL, DIR, CCS, ID> ALL;
+		
+		typedef FieldSet<DFL, DIR, CCS, ID> INIT_MODE_ONLY_WRITEABLE;
+		
+		LINFlexD_IFCR() : Super(0), reg_num(0) {}
+		LINFlexD_IFCR(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd), reg_num(0) {}
+		LINFlexD_IFCR(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value), reg_num(0) {}
+		
+		void WithinRegisterFileCtor(unsigned int _reg_num, LINFlexD<CONFIG> *_linflexd)
+		{
+			this->linflexd = _linflexd;
+			reg_num = _reg_num;
+			
+			std::stringstream name_sstr;
+			name_sstr << "LINFlexD_IFCR" << reg_num;
+			this->SetName(name_sstr.str());
+			std::stringstream description_sstr;
+			description_sstr << "Identifier Filter Control Register " << reg_num;
+			this->SetDescription(description_sstr.str());
+			
+			DFL::SetName("DFL"); DFL::SetDescription("Data Field Length");
+			DIR::SetName("DIR"); DIR::SetDescription("Direction");
+			CCS::SetName("CCS"); CCS::SetDescription("Classic Checksum");
+			ID ::SetName("ID "); ID ::SetDescription("Identifier");
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = this->linflexd->InitMode() ? Super::Write(value, bit_enable)
+			                                                 : Super::template WritePreserve<INIT_MODE_ONLY_WRITEABLE>(value, bit_enable);
+			
+			return rws;
+		}
+
+		using Super::operator =;
+	private:
+		unsigned int reg_num;
+	};
+	
+	// Global Control Register (LINFlexD_GCR)
+	struct LINFlexD_GCR : LINFlexD_Register<LINFlexD_GCR, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_GCR, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = (GENERIC_SLAVE == 0) ? 0x4c : 0x8c;
+		
+		struct TDFBM : Field<TDFBM, 26>           {}; // Transmit data first bit MSB
+		struct RDFBM : Field<RDFBM, 27>           {}; // Received data first bit MSB
+		struct TDLIS : Field<TDLIS, 28>           {}; // Transmit data level inversion selection
+		struct RDLIS : Field<RDLIS, 29>           {}; // Received data level inversion selection
+		struct STOP  : Field<STOP , 30>           {}; // 1/2 stop bit configuration
+		struct SR    : Field<SR   , 31, 31, SW_W> {}; // Soft reset
+	
+		typedef FieldSet<TDFBM, RDFBM, TDLIS, RDLIS, STOP, SR> ALL;
+		
+		typedef FieldSet<TDFBM, RDFBM, TDLIS, RDLIS, STOP, SR> INIT_MODE_ONLY_WRITEABLE;
+		
+		LINFlexD_GCR(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_GCR(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+		
+		void Init()
+		{
+			this->SetName("LINFlexD_GCR"); this->SetDescription("Global Control Register");
+			TDFBM::SetName("TDFBM"); TDFBM::SetDescription("Transmit data first bit MSB");
+			RDFBM::SetName("RDFBM"); RDFBM::SetDescription("Received data first bit MSB");
+			TDLIS::SetName("TDLIS"); TDLIS::SetDescription("Transmit data level inversion selection");
+			RDLIS::SetName("RDLIS"); RDLIS::SetDescription("Received data level inversion selection");
+			STOP ::SetName("STOP");  STOP ::SetDescription("1/2 stop bit configuration");
+			SR   ::SetName("SR");    SR   ::SetDescription("Soft reset");
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = this->linflexd->InitMode() ? Super::Write(value, bit_enable)
+			                                                 : Super::template WritePreserve<INIT_MODE_ONLY_WRITEABLE>(value, bit_enable);
+			
+			if(this->template Get<SR>())
+			{
+				this->linflexd->SoftReset();
+			}
+			return rws;
+		}
+
+		using Super::operator =;
+	};
+	
+	// UART Preset Timeout Register (LINFlexD_UARTPTO)
+	struct LINFlexD_UARTPTO : LINFlexD_Register<LINFlexD_UARTPTO, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_UARTPTO, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = (GENERIC_SLAVE == 0) ? 0x50 : 0x90;
+		
+		struct PTO : Field<PTO, 20, 31> {}; // Preset Timeout
+		
+		typedef FieldSet<PTO> ALL;
+		
+		LINFlexD_UARTPTO(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_UARTPTO(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+		
+		void Init()
+		{
+			this->SetName("LINFlexD_UARTPTO"); this->SetDescription("UART Preset Timeout Register");
+			PTO::SetName("PTO"); PTO::SetDescription("Preset Timeout");
+		}
+		
+		using Super::operator =;
+	};
+
+	// UART Current Timeout Register (LINFlexD_UARTCTO)
+	struct LINFlexD_UARTCTO : LINFlexD_Register<LINFlexD_UARTCTO, SW_R>
+	{
+		typedef LINFlexD_Register<LINFlexD_UARTCTO, SW_R> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = (GENERIC_SLAVE == 0) ? 0x54 : 0x94;
+		
+		struct CTO : Field<CTO, 20, 31, SW_R> {}; // Current Timeout
+		
+		typedef FieldSet<CTO> ALL;
+		
+		LINFlexD_UARTCTO(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_UARTCTO(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+		
+		void Init()
+		{
+			this->SetName("CTO"); this->SetDescription("UART Current Timeout Register");
+			CTO::SetName("CTO"); CTO::SetDescription("Current Timeout");
+		}
+		
+		void SoftReset()
+		{
+			//  All fields are reset
+			this->Initialize(0x0);
+		}
+		
+		using Super::operator =;
+	};
+	
+	// DMA Tx Enable Register (LINFlexD_DMATXE)
+	struct LINFlexD_DMATXE : LINFlexD_Register<LINFlexD_DMATXE, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_DMATXE, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = (GENERIC_SLAVE == 0) ? 0x58 : 0x98;
+		
+		struct DTE : Field<DTE, (32 - NUM_TX_DMA_CHANNELS), 31> {}; // DMA Tx channel Y enable
+
+		typedef FieldSet<DTE> ALL;
+		
+		LINFlexD_DMATXE(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_DMATXE(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+
+		void Init()
+		{
+			this->SetName("LINFlexD_DMATXE"); this->SetDescription("DMA Tx Enable Register");
+			DTE::SetName("DTE"); DTE::SetDescription("DMA Tx channel Y enable");
+		}
+		
+		using Super::operator =;
+	};
+	
+	// DMA Rx Enable Register (LINFlexD_DMARXE)
+	struct LINFlexD_DMARXE : LINFlexD_Register<LINFlexD_DMARXE, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_DMARXE, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = (GENERIC_SLAVE == 0) ? 0x5c : 0x9c;
+		
+		struct DRE : Field<DRE, (32 - NUM_RX_DMA_CHANNELS), 31> {}; // DMA Rx channel Y enable
+
+		typedef FieldSet<DRE> ALL;
+		
+		LINFlexD_DMARXE(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_DMARXE(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+
+		void Init()
+		{
+			this->SetName("LINFlexD_DMARXE"); this->SetDescription("DMA Rx Enable Register");
+			DRE::SetName("DRE"); DRE::SetDescription("DMA Rx channel Y enable");
+		}
+		
+		using Super::operator =;
+	};
+	
+	// PSI5-S Tx Delay register (LINFlexD_PTD)
+	struct LINFlexD_PTD : LINFlexD_Register<LINFlexD_PTD, SW_RW>
+	{
+		typedef LINFlexD_Register<LINFlexD_PTD, SW_RW> Super;
+		
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0xa0;
+		
+		struct IFD    : Field<IFD, 27, 30>             {}; // Interframe Delay
+		struct IFD_RO : Field<IFD, 27, 30, SW_R_HW_RO> {}; // Interframe Delay (read-only)
+		struct EN     : Field<EN , 31    >             {}; // Enable
+		struct EN_RO  : Field<EN , 31, 31, SW_R_HW_RO> {}; // Enable (read-only)
+		
+		SWITCH_ENUM_TRAIT(bool, _);
+		CASE_ENUM_TRAIT(false, _) { typedef FieldSet<IFD_RO, EN_RO> ALL; };
+		CASE_ENUM_TRAIT(true, _)  { typedef FieldSet<IFD, EN> ALL; };
+		typedef typename ENUM_TRAIT(GENERIC_PSI5, _)::ALL ALL;
+		
+		LINFlexD_PTD(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
+		LINFlexD_PTD(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
+
+		void Init()
+		{
+			this->SetName("LINFlexD_PTD"); this->SetDescription("PSI5-S Tx Delay register");
+			IFD::SetName("IFD"); IFD::SetDescription("Interframe Delay");
+			EN ::SetName("EN");  EN ::SetDescription("Enable");
+		}
+		
+		using Super::operator =;
+	};
+	
+	unisim::kernel::tlm2::ClockPropertiesProxy m_clk_prop_proxy; // proxy to get clock properties from master clock port
+	unisim::kernel::tlm2::ClockPropertiesProxy lin_clk_prop_proxy; // proxy to get clock properties from LIN clock port
+	
+	// LINFlexD registers
+	LINFlexD_LINCR1                                                                                  linflexd_lincr1;   // LINFlexD_LINCR1
+	LINFlexD_LINIER                                                                                  linflexd_linier;   // LINFlexD_LINIER
+	LINFlexD_LINSR                                                                                   linflexd_linsr;    // LINFlexD_LINSR
+	LINFlexD_LINESR                                                                                  linflexd_linesr;   // LINFlexD_LINESR
+	LINFlexD_UARTCR                                                                                  linflexd_uartcr;   // LINFlexD_UARTCR
+	LINFlexD_UARTSR                                                                                  linflexd_uartsr;   // LINFlexD_UARTSR
+	LINFlexD_LINTCSR                                                                                 linflexd_lintcsr;  // LINFlexD_LINTCSR
+	LINFlexD_LINOCR                                                                                  linflexd_linocr;   // LINFlexD_LINOCR
+	LINFlexD_LINTOCR                                                                                 linflexd_lintocr;  // LINFlexD_LINTOCR
+	LINFlexD_LINFBRR                                                                                 linflexd_linfbrr;  // LINFlexD_LINFBRR
+	LINFlexD_LINIBRR                                                                                 linflexd_linibrr;  // LINFlexD_LINIBRR
+	LINFlexD_LINCFR                                                                                  linflexd_lincfr;   // LINFlexD_LINCFR
+	LINFlexD_LINCR2                                                                                  linflexd_lincr2;   // LINFlexD_LINCR2
+	LINFlexD_BIDR                                                                                    linflexd_bidr;     // LINFlexD_BIDR
+	LINFlexD_BDRL                                                                                    linflexd_bdrl;     // LINFlexD_BDRL
+	LINFlexD_BDRM                                                                                    linflexd_bdrm;     // LINFlexD_BDRM
+	LINFlexD_IFER                                                                                    linflexd_ifer;     // LINFlexD_IFER
+	LINFlexD_IFMI                                                                                    linflexd_ifmi;     // LINFlexD_IFMI
+	LINFlexD_IFMR                                                                                    linflexd_ifmr;     // LINFlexD_IFMR
+	AddressableRegisterFile<LINFlexD_IFCR, NUM_IDENTIFIERS ? NUM_IDENTIFIERS : 1, LINFlexD<CONFIG> > linflexd_ifcr;     // LINFlexD_IFCRn
+	LINFlexD_GCR                                                                                     linflexd_gcr;      // LINFlexD_GCR
+	LINFlexD_UARTPTO                                                                                 linflexd_uartpto;  // LINFlexD_UARTPTO
+	LINFlexD_UARTCTO                                                                                 linflexd_uartcto;  // LINFlexD_UARTCTO
+	LINFlexD_DMATXE                                                                                  linflexd_dmatxe;   // LINFlexD_DMATXE
+	LINFlexD_DMARXE                                                                                  linflexd_dmarxe;   // LINFlexD_DMARXE
+	LINFlexD_PTD                                                                                     linflexd_ptd;      // LINFlexD_PTD
+	
+	std::queue<bool, std::vector<bool> > rx_fifo;
+	std::queue<bool, std::vector<bool> > tx_fifo;
+	sc_core::sc_event rx_event;
+	sc_core::sc_event tx_event;
+	sc_core::sc_event gen_int_rx_event;
+	sc_core::sc_event gen_int_tx_event;
+	sc_core::sc_event gen_int_err_event;
+	bool lins_int_rx_mask;
+	
+	// LINFlexD registers address map
+	RegisterAddressMap<sc_dt::uint64> reg_addr_map;
+	
+	unisim::kernel::tlm2::Schedule<Event> schedule;         // Payload (processor requests over AHB interface) schedule
+	
+	unisim::util::endian::endian_type endian;
+	unisim::kernel::service::Parameter<unisim::util::endian::endian_type> param_endian;
+	bool verbose;
+	unisim::kernel::service::Parameter<bool> param_verbose;
+	
+	sc_core::sc_time master_clock_period;                 // Master clock period
+	sc_core::sc_time master_clock_start_time;             // Master clock start time
+	bool master_clock_posedge_first;                      // Master clock posedge first ?
+	double master_clock_duty_cycle;                       // Master clock duty cycle
+
+	sc_core::sc_time lin_clock_period;                    // LIN clock period
+	sc_core::sc_time lin_clock_start_time;                // LIN clock start time
+	bool lin_clock_posedge_first;                         // LIN clock posedge first ?
+	double lin_clock_duty_cycle;                          // LIN clock duty cycle
+	
+	void EnableLINS_INT_TX();
+	void DisableLINS_INT_TX();
+	LINFlexD_OperatingMode GetOperatingMode() const;
+	bool InitMode() const;
+	bool SleepMode() const;
+	bool NormalMode() const;
+	bool UARTMode() const;
+	bool LINTimeoutCounterMode() const;
+	bool OutputCompareTimeoutCounterMode() const;
+	bool HardwareChecksumCalculation() const;
+	bool SoftwareChecksumCalculation() const;
+	bool LIN_MasterMode() const;
+	bool LIN_SlaveMode() const;
+	bool UART_RX_BufferMode() const;
+	bool UART_RX_FIFO_Mode() const;
+	bool UART_TX_BufferMode() const;
+	bool UART_TX_FIFO_Mode() const;
+	unsigned int UARTWordLength() const;
+	bool LINS_INT_RX() const;
+
+	void Reset();
+	void SoftReset();
+	void SetState(LIN_State lin_state);
+	
+	void UpdateINT_RX();
+	void UpdateINT_TX();
+	void UpdateINT_ERR();
+
+	void ProcessEvent(Event *event);
+	void ProcessEvents();
+	void Process();
+	void UpdateMasterClock();
+	void UpdateLINClock();
+	void ClockPropertiesChangedProcess();
+	void RESET_B_Process();
+	
+	void TX_Process();
+	void RX_Process();
+	void INT_RX_Process();
+	void INT_TX_Process();
+	void INT_ERR_Process();
+};
+
+} // end of namespace intc
+} // end of namespace linflexd
+} // end of namespace freescale
+} // end of namespace com
+} // end of namespace tlm2
+} // end of namespace component
+} // end of namespace unisim
+
+#endif // __UNISIM_COMPONENT_TLM2_COM_FREESCALE_MPC57XX_LINFLEXD_LINFLEXD_HH__

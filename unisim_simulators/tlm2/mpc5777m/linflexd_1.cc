@@ -35,4 +35,4 @@
 #include <simulator.hh>
 #include <unisim/component/tlm2/com/freescale/mpc57xx/linflexd/linflexd.tcc>
 
-template class unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<Simulator::LINFLEXD_1_CONFIG>;
+template class unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<Simulator::LINFlexD_1_CONFIG>;

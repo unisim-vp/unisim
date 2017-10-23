@@ -61,6 +61,18 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
     , linflexd_14(0)
     , linflexd_15(0)
     , linflexd_16(0)
+	, linflexd_0_tx(0)
+	, linflexd_0_rx(0)
+	, linflexd_1_tx(0)
+	, linflexd_1_rx(0)
+	, linflexd_2_tx(0)
+	, linflexd_2_rx(0)
+	, linflexd_14_tx(0)
+	, linflexd_14_rx(0)
+	, linflexd_15_tx(0)
+	, linflexd_15_rx(0)
+	, linflexd_16_tx(0)
+	, linflexd_16_rx(0)
 	, ebi_stub(0)
 	, flash_port1_stub(0)
 	, xbar_0_s6_stub(0)
@@ -85,6 +97,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	unsigned int hw_irq_num;
 	unsigned int irq_num;
 	unsigned int prc_num;
+	unsigned int dma_req_num;
 
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -127,12 +140,24 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	pit_1 = new PIT_1("PIT_1", this);
 	
 	//  - LINFlexD
-	linflexd_0 = new LINFLEXD_0("LINFlexD_0", this);
-	linflexd_1 = new LINFLEXD_1("LINFlexD_1", this);
-	linflexd_2 = new LINFLEXD_2("LINFlexD_2", this);
-	linflexd_14 = new LINFLEXD_14("LINFlexD_14", this);
-	linflexd_15 = new LINFLEXD_15("LINFlexD_15", this);
-	linflexd_16 = new LINFLEXD_16("LINFlexD_16", this);
+	linflexd_0 = new LINFlexD_0("LINFlexD_0", this);
+	linflexd_1 = new LINFlexD_1("LINFlexD_1", this);
+	linflexd_2 = new LINFlexD_2("LINFlexD_2", this);
+	linflexd_14 = new LINFlexD_14("LINFlexD_14", this);
+	linflexd_15 = new LINFlexD_15("LINFlexD_15", this);
+	linflexd_16 = new LINFlexD_16("LINFlexD_16", this);
+	linflexd_0_tx = new LINFlexD_0_TX("LINFlexD_0_tx");
+	linflexd_0_rx = new LINFlexD_0_RX("LINFlexD_0_rx");
+	linflexd_1_tx = new LINFlexD_1_TX("LINFlexD_1_tx");
+	linflexd_1_rx = new LINFlexD_1_RX("LINFlexD_1_rx");
+	linflexd_2_tx = new LINFlexD_2_TX("LINFlexD_2_tx");
+	linflexd_2_rx = new LINFlexD_2_RX("LINFlexD_2_rx");
+	linflexd_14_tx = new LINFlexD_14_TX("LINFlexD_14_tx");
+	linflexd_14_rx = new LINFlexD_14_RX("LINFlexD_14_rx");
+	linflexd_15_tx = new LINFlexD_15_TX("LINFlexD_15_tx");
+	linflexd_15_rx = new LINFlexD_15_RX("LINFlexD_15_rx");
+	linflexd_16_tx = new LINFlexD_16_TX("LINFlexD_16_tx");
+	linflexd_16_rx = new LINFlexD_16_RX("LINFlexD_16_rx");
 	
 	ebi_stub = new EBI_STUB("EBI", this);
 	flash_port1_stub = new FLASH_PORT1_STUB("FLASH_PORT1", this);
@@ -300,49 +325,91 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(linflexd_0->m_clk);
 	RegisterPort(linflexd_0->lin_clk);
 	RegisterPort(linflexd_0->reset_b);
-	for(irq_num = 0; irq_num < LINFLEXD_0::NUM_IRQS; irq_num++)
+	RegisterPort(linflexd_0->INT_RX);
+	RegisterPort(linflexd_0->INT_TX);
+	RegisterPort(linflexd_0->INT_ERR);
+	for(dma_req_num = 0; dma_req_num < LINFlexD_0::NUM_TX_DMA_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_0->irq[irq_num]);
+		RegisterPort(*linflexd_0->tx_dma_req[dma_req_num]);
+	}
+	for(dma_req_num = 0; dma_req_num < LINFlexD_0::NUM_RX_DMA_CHANNELS; dma_req_num++)
+	{
+		RegisterPort(*linflexd_0->rx_dma_req[dma_req_num]);
 	}
 
 	RegisterPort(linflexd_1->m_clk);
 	RegisterPort(linflexd_1->lin_clk);
 	RegisterPort(linflexd_1->reset_b);
-	for(irq_num = 0; irq_num < LINFLEXD_1::NUM_IRQS; irq_num++)
+	RegisterPort(linflexd_1->INT_RX);
+	RegisterPort(linflexd_1->INT_TX);
+	RegisterPort(linflexd_1->INT_ERR);
+	for(dma_req_num = 0; dma_req_num < LINFlexD_1::NUM_TX_DMA_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_1->irq[irq_num]);
+		RegisterPort(*linflexd_1->tx_dma_req[dma_req_num]);
+	}
+	for(dma_req_num = 0; dma_req_num < LINFlexD_1::NUM_RX_DMA_CHANNELS; dma_req_num++)
+	{
+		RegisterPort(*linflexd_1->rx_dma_req[dma_req_num]);
 	}
 
 	RegisterPort(linflexd_2->m_clk);
 	RegisterPort(linflexd_2->lin_clk);
 	RegisterPort(linflexd_2->reset_b);
-	for(irq_num = 0; irq_num < LINFLEXD_2::NUM_IRQS; irq_num++)
+	RegisterPort(linflexd_2->INT_RX);
+	RegisterPort(linflexd_2->INT_TX);
+	RegisterPort(linflexd_2->INT_ERR);
+	for(dma_req_num = 0; dma_req_num < LINFlexD_2::NUM_TX_DMA_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_2->irq[irq_num]);
+		RegisterPort(*linflexd_2->tx_dma_req[dma_req_num]);
+	}
+	for(dma_req_num = 0; dma_req_num < LINFlexD_2::NUM_RX_DMA_CHANNELS; dma_req_num++)
+	{
+		RegisterPort(*linflexd_2->rx_dma_req[dma_req_num]);
 	}
 
 	RegisterPort(linflexd_14->m_clk);
 	RegisterPort(linflexd_14->lin_clk);
 	RegisterPort(linflexd_14->reset_b);
-	for(irq_num = 0; irq_num < LINFLEXD_14::NUM_IRQS; irq_num++)
+	RegisterPort(linflexd_14->INT_RX);
+	RegisterPort(linflexd_14->INT_TX);
+	RegisterPort(linflexd_14->INT_ERR);
+	for(dma_req_num = 0; dma_req_num < LINFlexD_14::NUM_TX_DMA_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_14->irq[irq_num]);
+		RegisterPort(*linflexd_14->tx_dma_req[dma_req_num]);
+	}
+	for(dma_req_num = 0; dma_req_num < LINFlexD_14::NUM_RX_DMA_CHANNELS; dma_req_num++)
+	{
+		RegisterPort(*linflexd_14->rx_dma_req[dma_req_num]);
 	}
 
 	RegisterPort(linflexd_15->m_clk);
 	RegisterPort(linflexd_15->lin_clk);
 	RegisterPort(linflexd_15->reset_b);
-	for(irq_num = 0; irq_num < LINFLEXD_15::NUM_IRQS; irq_num++)
+	RegisterPort(linflexd_15->INT_RX);
+	RegisterPort(linflexd_15->INT_TX);
+	RegisterPort(linflexd_15->INT_ERR);
+	for(dma_req_num = 0; dma_req_num < LINFlexD_15::NUM_TX_DMA_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_15->irq[irq_num]);
+		RegisterPort(*linflexd_15->tx_dma_req[dma_req_num]);
+	}
+	for(dma_req_num = 0; dma_req_num < LINFlexD_15::NUM_RX_DMA_CHANNELS; dma_req_num++)
+	{
+		RegisterPort(*linflexd_15->rx_dma_req[dma_req_num]);
 	}
 
 	RegisterPort(linflexd_16->m_clk);
 	RegisterPort(linflexd_16->lin_clk);
 	RegisterPort(linflexd_16->reset_b);
-	for(irq_num = 0; irq_num < LINFLEXD_16::NUM_IRQS; irq_num++)
+	RegisterPort(linflexd_16->INT_RX);
+	RegisterPort(linflexd_16->INT_TX);
+	RegisterPort(linflexd_16->INT_ERR);
+	for(dma_req_num = 0; dma_req_num < LINFlexD_16::NUM_TX_DMA_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_16->irq[irq_num]);
+		RegisterPort(*linflexd_16->tx_dma_req[dma_req_num]);
+	}
+	for(dma_req_num = 0; dma_req_num < LINFlexD_16::NUM_RX_DMA_CHANNELS; dma_req_num++)
+	{
+		RegisterPort(*linflexd_16->rx_dma_req[dma_req_num]);
 	}
 
 	//=========================================================================
@@ -382,6 +449,19 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateSignalArray(STM_2_CONFIG::NUM_CHANNELS, "stm_2_cir", false);
 
 	CreateSignalArray(64, "dma_trigger", false);
+	
+	CreateSignalArray(LINFlexD_0::NUM_RX_DMA_CHANNELS, "LINFlexD_0_RX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_0::NUM_TX_DMA_CHANNELS, "LINFlexD_0_TX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_1::NUM_RX_DMA_CHANNELS, "LINFlexD_1_RX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_1::NUM_TX_DMA_CHANNELS, "LINFlexD_1_TX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_2::NUM_RX_DMA_CHANNELS, "LINFlexD_2_RX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_2::NUM_TX_DMA_CHANNELS, "LINFlexD_2_TX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_14::NUM_RX_DMA_CHANNELS, "LINFlexD_14_RX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_14::NUM_TX_DMA_CHANNELS, "LINFlexD_14_TX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_15::NUM_RX_DMA_CHANNELS, "LINFlexD_15_RX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_15::NUM_TX_DMA_CHANNELS, "LINFlexD_15_TX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_16::NUM_RX_DMA_CHANNELS, "LINFlexD_16_RX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_16::NUM_TX_DMA_CHANNELS, "LINFlexD_16_TX_DMA_REQ", false);
 	
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -428,6 +508,19 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	(*pbridge_b->init_socket[0])(linflexd_2->peripheral_slave_if);   // PBRIDGE_B <-> LINFlexD_2
 	(*pbridge_b->init_socket[1])(linflexd_15->peripheral_slave_if);  // PBRIDGE_B <-> LINFlexD_15
+	
+	linflexd_0->LINTX(linflexd_0_tx->serial_socket);
+	linflexd_0->LINRX(linflexd_0_rx->serial_socket);
+	linflexd_1->LINTX(linflexd_1_tx->serial_socket);
+	linflexd_1->LINRX(linflexd_1_rx->serial_socket);
+	linflexd_2->LINTX(linflexd_2_tx->serial_socket);
+	linflexd_2->LINRX(linflexd_2_rx->serial_socket);
+	linflexd_14->LINTX(linflexd_14_tx->serial_socket);
+	linflexd_14->LINRX(linflexd_14_rx->serial_socket);
+	linflexd_15->LINTX(linflexd_15_tx->serial_socket);
+	linflexd_15->LINRX(linflexd_15_rx->serial_socket);
+	linflexd_16->LINTX(linflexd_16_tx->serial_socket);
+	linflexd_16->LINRX(linflexd_16_rx->serial_socket);
 	
 	Bind("HARDWARE.Main_Core_0.m_clk"           , "HARDWARE.COMP_CLK");
 	Bind("HARDWARE.Main_Core_0.m_por"           , "HARDWARE.m_por");
@@ -550,29 +643,41 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.PIT_1.dma_trigger_6"   , "HARDWARE.pull_down");
 	Bind("HARDWARE.PIT_1.dma_trigger_7"   , "HARDWARE.pull_down");
 	
-	Bind("HARDWARE.LINFlexD_0.m_clk"      , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.LINFlexD_0.lin_clk"    , "HARDWARE.LIN_CLK");
-	Bind("HARDWARE.LINFlexD_0.reset_b"    , "HARDWARE.reset_b");
+	Bind("HARDWARE.LINFlexD_0.m_clk"        , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.LINFlexD_0.lin_clk"      , "HARDWARE.LIN_CLK");
+	Bind("HARDWARE.LINFlexD_0.reset_b"      , "HARDWARE.reset_b");
+	Bind("HARDWARE.LINFlexD_0.rx_dma_req_0" , "HARDWARE.LINFlexD_0_RX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_0.tx_dma_req_0" , "HARDWARE.LINFlexD_0_TX_DMA_REQ_0");
 
-	Bind("HARDWARE.LINFlexD_1.m_clk"      , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.LINFlexD_1.lin_clk"    , "HARDWARE.LIN_CLK");
-	Bind("HARDWARE.LINFlexD_1.reset_b"    , "HARDWARE.reset_b");
+	Bind("HARDWARE.LINFlexD_1.m_clk"        , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.LINFlexD_1.lin_clk"      , "HARDWARE.LIN_CLK");
+	Bind("HARDWARE.LINFlexD_1.reset_b"      , "HARDWARE.reset_b");
+	Bind("HARDWARE.LINFlexD_1.rx_dma_req_0" , "HARDWARE.LINFlexD_1_RX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_1.tx_dma_req_0" , "HARDWARE.LINFlexD_1_TX_DMA_REQ_0");
 
-	Bind("HARDWARE.LINFlexD_14.m_clk"      , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.LINFlexD_14.lin_clk"    , "HARDWARE.LIN_CLK");
-	Bind("HARDWARE.LINFlexD_14.reset_b"    , "HARDWARE.reset_b");
+	Bind("HARDWARE.LINFlexD_14.m_clk"        , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.LINFlexD_14.lin_clk"      , "HARDWARE.LIN_CLK");
+	Bind("HARDWARE.LINFlexD_14.reset_b"      , "HARDWARE.reset_b");
+	Bind("HARDWARE.LINFlexD_14.rx_dma_req_0" , "HARDWARE.LINFlexD_14_RX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_14.tx_dma_req_0" , "HARDWARE.LINFlexD_14_TX_DMA_REQ_0");
 
-	Bind("HARDWARE.LINFlexD_16.m_clk"      , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.LINFlexD_16.lin_clk"    , "HARDWARE.LIN_CLK");
-	Bind("HARDWARE.LINFlexD_16.reset_b"    , "HARDWARE.reset_b");
+	Bind("HARDWARE.LINFlexD_16.m_clk"        , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.LINFlexD_16.lin_clk"      , "HARDWARE.LIN_CLK");
+	Bind("HARDWARE.LINFlexD_16.reset_b"      , "HARDWARE.reset_b");
+	Bind("HARDWARE.LINFlexD_16.rx_dma_req_0" , "HARDWARE.LINFlexD_16_RX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_16.tx_dma_req_0" , "HARDWARE.LINFlexD_16_TX_DMA_REQ_0");
 
-	Bind("HARDWARE.LINFlexD_2.m_clk"      , "HARDWARE.PBRIDGEB_CLK");
-	Bind("HARDWARE.LINFlexD_2.lin_clk"    , "HARDWARE.LIN_CLK");
-	Bind("HARDWARE.LINFlexD_2.reset_b"    , "HARDWARE.reset_b");
+	Bind("HARDWARE.LINFlexD_2.m_clk"        , "HARDWARE.PBRIDGEB_CLK");
+	Bind("HARDWARE.LINFlexD_2.lin_clk"      , "HARDWARE.LIN_CLK");
+	Bind("HARDWARE.LINFlexD_2.reset_b"      , "HARDWARE.reset_b");
+	Bind("HARDWARE.LINFlexD_2.rx_dma_req_0" , "HARDWARE.LINFlexD_2_RX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_2.tx_dma_req_0" , "HARDWARE.LINFlexD_2_TX_DMA_REQ_0");
 
-	Bind("HARDWARE.LINFlexD_15.m_clk"      , "HARDWARE.PBRIDGEB_CLK");
-	Bind("HARDWARE.LINFlexD_15.lin_clk"    , "HARDWARE.LIN_CLK");
-	Bind("HARDWARE.LINFlexD_15.reset_b"    , "HARDWARE.reset_b");
+	Bind("HARDWARE.LINFlexD_15.m_clk"        , "HARDWARE.PBRIDGEB_CLK");
+	Bind("HARDWARE.LINFlexD_15.lin_clk"      , "HARDWARE.LIN_CLK");
+	Bind("HARDWARE.LINFlexD_15.reset_b"      , "HARDWARE.reset_b");
+	Bind("HARDWARE.LINFlexD_15.rx_dma_req_0" , "HARDWARE.LINFlexD_15_RX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_15.tx_dma_req_0" , "HARDWARE.LINFlexD_15_TX_DMA_REQ_0");
 	
 	// Interrupt sources
 	
@@ -981,9 +1086,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	// 377      LINFlexD_0 TXI
 	// 378      LINFlexD_0 ERR
 
-	InterruptSource(376, "HARDWARE.LINFlexD_0.irq_0");
-	InterruptSource(377, "HARDWARE.LINFlexD_0.irq_1");
-	InterruptSource(378, "HARDWARE.LINFlexD_0.irq_2");
+	InterruptSource(376, "HARDWARE.LINFlexD_0.INT_RX");
+	InterruptSource(377, "HARDWARE.LINFlexD_0.INT_TX");
+	InterruptSource(378, "HARDWARE.LINFlexD_0.INT_ERR");
 	
 	// 379      unused
 	
@@ -993,9 +1098,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	// 381      LINFlexD_1 TXI
 	// 382      LINFlexD_1 ERR
 
-	InterruptSource(380, "HARDWARE.LINFlexD_1.irq_0");
-	InterruptSource(381, "HARDWARE.LINFlexD_1.irq_1");
-	InterruptSource(382, "HARDWARE.LINFlexD_1.irq_2");
+	InterruptSource(380, "HARDWARE.LINFlexD_1.INT_RX");
+	InterruptSource(381, "HARDWARE.LINFlexD_1.INT_TX");
+	InterruptSource(382, "HARDWARE.LINFlexD_1.INT_ERR");
 
 	// 383      unused
 	
@@ -1005,9 +1110,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	// 385      LINFlexD_2 TXI
 	// 386      LINFlexD_2 ERR
 	
-	InterruptSource(384, "HARDWARE.LINFlexD_2.irq_0");
-	InterruptSource(385, "HARDWARE.LINFlexD_2.irq_1");
-	InterruptSource(386, "HARDWARE.LINFlexD_2.irq_2");
+	InterruptSource(384, "HARDWARE.LINFlexD_2.INT_RX");
+	InterruptSource(385, "HARDWARE.LINFlexD_2.INT_TX");
+	InterruptSource(386, "HARDWARE.LINFlexD_2.INT_ERR");
 
 	// 387      TODO
 	// ..       TODO
@@ -1047,9 +1152,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	// 417      LINFlexD_16 TXI
 	// 418      LINFlexD_16 ERR
 
-	InterruptSource(416, "HARDWARE.LINFlexD_16.irq_0");
-	InterruptSource(417, "HARDWARE.LINFlexD_16.irq_1");
-	InterruptSource(418, "HARDWARE.LINFlexD_16.irq_2");
+	InterruptSource(416, "HARDWARE.LINFlexD_16.INT_RX");
+	InterruptSource(417, "HARDWARE.LINFlexD_16.INT_TX");
+	InterruptSource(418, "HARDWARE.LINFlexD_16.INT_ERR");
 
 	// 419      unused
 	// ..       unused
@@ -1073,9 +1178,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	// 433      LINFlexD_14 TXI
 	// 434      LINFlexD_14 ERR
 	
-	InterruptSource(432, "HARDWARE.LINFlexD_14.irq_0");
-	InterruptSource(433, "HARDWARE.LINFlexD_14.irq_1");
-	InterruptSource(434, "HARDWARE.LINFlexD_14.irq_2");
+	InterruptSource(432, "HARDWARE.LINFlexD_14.INT_RX");
+	InterruptSource(433, "HARDWARE.LINFlexD_14.INT_TX");
+	InterruptSource(434, "HARDWARE.LINFlexD_14.INT_ERR");
 
 	// 435      unused
 	
@@ -1085,9 +1190,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	// 437      LINFlexD_14 TXI
 	// 438      LINFlexD_14 ERR
 	
-	InterruptSource(436, "HARDWARE.LINFlexD_15.irq_0");
-	InterruptSource(437, "HARDWARE.LINFlexD_15.irq_1");
-	InterruptSource(438, "HARDWARE.LINFlexD_15.irq_2");
+	InterruptSource(436, "HARDWARE.LINFlexD_15.INT_RX");
+	InterruptSource(437, "HARDWARE.LINFlexD_15.INT_TX");
+	InterruptSource(438, "HARDWARE.LINFlexD_15.INT_ERR");
 
 	// 439      TODO
 	// ..       TODO
@@ -1620,6 +1725,55 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	InterruptSource(963);
 	InterruptSource(964);
 
+	// DMA sources
+	
+	// DMAMUX_0
+	DMASource(0, 16, "HARDWARE.LINFlexD_0_RX_DMA_REQ_0");
+	DMASource(0, 17, "HARDWARE.LINFlexD_0_TX_DMA_REQ_0");
+	DMASource(0, 18, "HARDWARE.LINFlexD_14_RX_DMA_REQ_0");
+	
+	// DMAMUX_1
+	DMASource(1,  3, "HARDWARE.LINFlexD_0_RX_DMA_REQ_0");
+	DMASource(1,  4, "HARDWARE.LINFlexD_0_TX_DMA_REQ_0");
+	DMASource(1,  5, "HARDWARE.LINFlexD_1_RX_DMA_REQ_0");
+	DMASource(1,  6, "HARDWARE.LINFlexD_1_TX_DMA_REQ_0");
+	DMASource(1,  7, "HARDWARE.LINFlexD_14_RX_DMA_REQ_0");
+	DMASource(1,  8, "HARDWARE.LINFlexD_14_TX_DMA_REQ_0");
+	DMASource(1, 45, "HARDWARE.LINFlexD_15_RX_DMA_REQ_0");
+	DMASource(1, 46, "HARDWARE.LINFlexD_15_TX_DMA_REQ_0");
+	
+	// DMAMUX_2
+	DMASource(2, 45, "HARDWARE.LINFlexD_2_RX_DMA_REQ_0");
+	DMASource(2, 46, "HARDWARE.LINFlexD_2_TX_DMA_REQ_0");
+	
+	// DMAMUX_3
+	DMASource(3,  4, "HARDWARE.LINFlexD_2_RX_DMA_REQ_0");
+	DMASource(3,  5, "HARDWARE.LINFlexD_2_TX_DMA_REQ_0");
+	
+	// DMAMUX_4
+	DMASource(4,  7, "HARDWARE.LINFlexD_0_RX_DMA_REQ_0");
+	DMASource(4,  8, "HARDWARE.LINFlexD_0_TX_DMA_REQ_0");
+	DMASource(4,  9, "HARDWARE.LINFlexD_14_RX_DMA_REQ_0");
+	DMASource(4, 10, "HARDWARE.LINFlexD_14_TX_DMA_REQ_0");
+	
+	// DMAMUX_5
+	DMASource(5,  6, "HARDWARE.LINFlexD_1_RX_DMA_REQ_0");
+	DMASource(5,  7, "HARDWARE.LINFlexD_1_TX_DMA_REQ_0");
+	DMASource(5,  8, "HARDWARE.LINFlexD_15_RX_DMA_REQ_0");
+	DMASource(5,  9, "HARDWARE.LINFlexD_15_TX_DMA_REQ_0");
+	DMASource(5, 39, "HARDWARE.LINFlexD_2_RX_DMA_REQ_0");
+	DMASource(5, 40, "HARDWARE.LINFlexD_2_TX_DMA_REQ_0");
+	
+	// DMAMUX_6
+	DMASource(6, 16, "HARDWARE.LINFlexD_16_RX_DMA_REQ_0");
+	DMASource(6, 17, "HARDWARE.LINFlexD_16_TX_DMA_REQ_0");
+	
+	// DMAMUX_7
+	
+	// DMAMUX_8
+	
+	// DMAMUX_9
+	
 	//=========================================================================
 	//===                        Clients/Services connection                ===
 	//=========================================================================
@@ -1782,6 +1936,18 @@ Simulator::~Simulator()
 	if(linflexd_14) delete linflexd_14;
 	if(linflexd_15) delete linflexd_15;
 	if(linflexd_16) delete linflexd_16;
+	if(linflexd_0_tx) delete linflexd_0_tx;
+	if(linflexd_0_rx) delete linflexd_0_rx;
+	if(linflexd_1_tx) delete linflexd_1_tx;
+	if(linflexd_1_rx) delete linflexd_1_rx;
+	if(linflexd_2_tx) delete linflexd_2_tx;
+	if(linflexd_2_rx) delete linflexd_2_rx;
+	if(linflexd_14_tx) delete linflexd_14_tx;
+	if(linflexd_14_rx) delete linflexd_14_rx;
+	if(linflexd_15_tx) delete linflexd_15_tx;
+	if(linflexd_15_rx) delete linflexd_15_rx;
+	if(linflexd_16_tx) delete linflexd_16_tx;
+	if(linflexd_16_rx) delete linflexd_16_rx;
 	if(ebi_stub) delete ebi_stub;
 	if(flash_port1_stub) delete flash_port1_stub;
 	if(xbar_0_s6_stub) delete xbar_0_s6_stub;
@@ -1851,6 +2017,13 @@ void Simulator::InterruptSource(unsigned int irq_num, const std::string& source)
 	std::stringstream intc_port_name_sstr;
 	intc_port_name_sstr << "HARDWARE.INTC_0.hw_irq_" << (irq_num - INTC_0::NUM_SW_IRQS);
 	Bind(intc_port_name_sstr.str() , irq_signal_name_sstr.str());
+}
+
+void Simulator::DMASource(unsigned int dmamux_num, unsigned int source_num, const std::string& source)
+{
+// 	std::stringstream dmamux_port_name_sstr;
+// 	dmamux_port_name_sstr << "HARDWARE.DMAMUX_" << dmamux_num << ".source_" << source_num;
+// 	Bind(dmamux_port_name_sstr.str() , source);
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
