@@ -95,7 +95,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 {
 	unsigned int channel_num;
 	unsigned int hw_irq_num;
-	unsigned int irq_num;
 	unsigned int prc_num;
 	unsigned int dma_req_num;
 

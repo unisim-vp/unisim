@@ -15,7 +15,6 @@ DEST_DIR=$(cd $1; pwd)
 mkdir -p ${DEST_DIR}
 UNISIM_TOOLS_DIR=${UNISIM_DIR}/unisim_tools
 UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
-
 UNISIM_SIMULATOR_DIR=${UNISIM_DIR}/unisim_simulators/tlm2/armemu
 
 ARMEMU_VERSION=$(cat ${UNISIM_SIMULATOR_DIR}/VERSION)
