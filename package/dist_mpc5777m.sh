@@ -15,7 +15,7 @@ DEST_DIR=$(cd $1; pwd)
 mkdir -p ${DEST_DIR}
 UNISIM_TOOLS_DIR=${UNISIM_DIR}/unisim_tools
 UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
-UNISIM_SIMULATOR_DIR=${UNISIM_DIR}/unisim_simulators/tlm2/armemu
+UNISIM_SIMULATOR_DIR=${UNISIM_DIR}/unisim_simulators/tlm2/mpc5777m
 
 MPC5777M_VERSION=$(cat ${UNISIM_SIMULATOR_DIR}/VERSION)
 GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-mpc5777m-${MPC5777M_VERSION}
@@ -1386,10 +1386,10 @@ EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}
 # Note that parser_tokens.hh has been added to BUILT_SOURCES above
 # assumption: parser.cc and either parser.h or parser.hh are generated at the same time
 \$(top_builddir)/parser_tokens.hh: \$(top_builddir)/parser.cc
-	if test -f "\$(top_builddir)/parser.h"; then
-		cp -f "\$(top_builddir)/parser.h" "\$(top_builddir)/parser_tokens.hh"
-	elif test -f "\$(top_builddir)/parser.hh"; then
-		cp -f "\$(top_builddir)/parser.hh" "\$(top_builddir)/parser_tokens.hh"
+	if test -f "\$(top_builddir)/parser.h"; then\
+		cp -f "\$(top_builddir)/parser.h" "\$(top_builddir)/parser_tokens.hh";\
+	elif test -f "\$(top_builddir)/parser.hh"; then\
+		cp -f "\$(top_builddir)/parser.hh" "\$(top_builddir)/parser_tokens.hh";\
 	fi
 EOF
 
