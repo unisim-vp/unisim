@@ -593,7 +593,7 @@ EOF
 
 cat << EOF > "${DEST_DIR}/README"
 This package contains:
-  - armemu: an ARMV7 user level simulator
+  - armemu: an ARMv7 application level simulator (LinuxOS emulation)
   - GenISSLib (will not be installed): an instruction set simulator generator
 See INSTALL for installation instructions.
 EOF
