@@ -1097,11 +1097,6 @@ has_to_build() {
     [ ! -e "$1" -o "$2" -nt "$1" ]
 }
 
-mkdir -p ${DEST_DIR}/genisslib
-mkdir -p ${DEST_DIR}/mpc5777m
-
-UNISIM_TOOLS_GENISSLIB_FILES="${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES} ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES} ${UNISIM_TOOLS_GENISSLIB_DATA_FILES}"
-
 dist_copy() {
     if has_to_build "$2" "$1"; then
 	echo "$1 ==> $2"
@@ -1111,6 +1106,11 @@ dist_copy() {
     fi
     false
 }
+
+mkdir -p ${DEST_DIR}/genisslib
+mkdir -p ${DEST_DIR}/mpc5777m
+
+UNISIM_TOOLS_GENISSLIB_FILES="${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES} ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES} ${UNISIM_TOOLS_GENISSLIB_DATA_FILES}"
 
 for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
     dist_copy "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}"
@@ -1131,7 +1131,6 @@ done
 for file in ${UNISIM_SIMULATORS_MPC5777M_TOP_DATA_FILES}; do
     dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
-
 
 mkdir -p ${DEST_DIR}/config
 mkdir -p ${DEST_DIR}/mpc5777m/config
@@ -1198,8 +1197,8 @@ MAKEFILE_AM="${DEST_DIR}/Makefile.am"
 CONFIGURE_CROSS="${DEST_DIR}/configure.cross"
 
 if has_to_build "${CONFIGURE_AC}" "$0" || has_to_build "${MAKEFILE_AM}" "$0"; then
-	echo "Generating configure.ac"
-	cat <<EOF > "${CONFIGURE_AC}"
+    echo "Generating configure.ac"
+    cat <<EOF > "${CONFIGURE_AC}"
 AC_INIT([UNISIM MPC5777M Simulator Package], [${MPC5777M_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves Lhuillier <yves.lhuillier@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-mpc5777m])
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_BUILD
@@ -1368,8 +1367,8 @@ AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 EOF
     
-    echo "Generating GENISSLIB Makefile.am"
     AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
+    echo "Generating GENISSLIB Makefile.am"
     cat <<EOF > "${GENISSLIB_MAKEFILE_AM}"
 ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4
 BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}
@@ -1397,7 +1396,6 @@ EOF
 	${SHELL} -c "cd ${DEST_DIR}/genisslib && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
 fi
 
-
 # mpc5777m
 
 MPC5777M_CONFIGURE_AC="${DEST_DIR}/mpc5777m/configure.ac"
@@ -1408,8 +1406,8 @@ if has_to_build "${MPC5777M_CONFIGURE_AC}" "$0" || has_to_build "${MPC5777M_MAKE
 fi
 
 if [ "${has_to_build_mpc5777m_configure}" = "yes" ]; then
-	echo "Generating mpc5777m configure.ac"
-	cat <<EOF > "${MPC5777M_CONFIGURE_AC}"
+    echo "Generating mpc5777m configure.ac"
+    cat <<EOF > "${MPC5777M_CONFIGURE_AC}"
 AC_INIT([UNISIM MPC5777M Standalone simulator], [${MPC5777M_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>], [unisim-mpc5777m-core])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
@@ -1463,14 +1461,15 @@ AC_CONFIG_FILES([sim_gtkwave.sh], [chmod +x sim_gtkwave.sh])
 AC_OUTPUT
 EOF
 
-	AM_MPC5777M_VERSION=$(printf ${MPC5777M_VERSION} | sed -e 's/\./_/g')
-	echo "Generating mpc5777m Makefile.am"
-        cat <<EOF > "${MPC5777M_MAKEFILE_AM}"
+    AM_MPC5777M_VERSION=$(printf ${MPC5777M_VERSION} | sed -e 's/\./_/g')
+    echo "Generating mpc5777m Makefile.am"
+    cat <<EOF > "${MPC5777M_MAKEFILE_AM}"
 ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4
 AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)
 noinst_LIBRARIES = libunisim-mpc5777m-${MPC5777M_VERSION}.a
 libunisim_mpc5777m_${AM_MPC5777M_VERSION}_a_SOURCES = ${UNISIM_LIB_MPC5777M_SOURCE_FILES}
 nodist_libunisim_mpc5777m_${AM_MPC5777M_VERSION}_a_SOURCES = unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.cc unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.cc
+
 bin_PROGRAMS = unisim-mpc5777m-${MPC5777M_VERSION}
 unisim_mpc5777m_${AM_MPC5777M_VERSION}_SOURCES = main.cc ${UNISIM_SIMULATORS_MPC5777M_SOURCE_FILES}
 unisim_mpc5777m_${AM_MPC5777M_VERSION}_LDADD = libunisim-mpc5777m-${MPC5777M_VERSION}.a
@@ -1481,9 +1480,18 @@ sharedir = \$(prefix)/share/unisim-mpc5777m-${MPC5777M_VERSION}
 dist_share_DATA = ${UNISIM_LIB_MPC5777M_DATA_FILES} ${UNISIM_SIMULATORS_MPC5777M_TOP_DATA_FILES}
 nobase_dist_share_DATA = ${UNISIM_SIMULATORS_MPC5777M_DATA_FILES} trace32-core0.cmm trace32-core1.cmm trace32-core2.cmm trace32-multi.cmm sim_gtkwave.sh
 
-BUILT_SOURCES=\$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.hh \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.cc \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.hh \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.cc
-CLEANFILES=\$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.hh \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.cc \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.hh \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.cc
-	
+BUILT_SOURCES=\
+    \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.hh\
+    \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.cc\
+    \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.hh\
+    \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.cc
+
+CLEANFILES=\
+    \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.hh\
+    \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.cc\
+    \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.hh\
+    \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.cc
+
 \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.cc: \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.hh
 \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.hh: ${UNISIM_LIB_MPC5777M_ISA_FILES}
 	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3 -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/isa/vle/e200z710n3.isa
@@ -1492,8 +1500,9 @@ CLEANFILES=\$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/
 \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.hh: ${UNISIM_LIB_MPC5777M_ISA_FILES}
 	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3 -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z425bn3/isa/vle/e200z425bn3.isa
 EOF
-	echo "Building powerpc configure"
-	${SHELL} -c "cd ${DEST_DIR}/mpc5777m && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
+       
+    echo "Building powerpc configure"
+    ${SHELL} -c "cd ${DEST_DIR}/mpc5777m && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
 fi
 
 echo "Distribution is up-to-date"

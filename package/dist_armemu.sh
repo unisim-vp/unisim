@@ -514,6 +514,9 @@ config.h.in \
 
 UNISIM_SIMULATORS_ARMEMU_TEMPLATE_FILES=
 UNISIM_SIMULATORS_ARMEMU_DATA_FILES="\
+INSTALL \
+README \
+AUTHORS \
 COPYING \
 NEWS \
 ChangeLog \
@@ -521,9 +524,19 @@ ChangeLog \
 
 UNISIM_SIMULATORS_ARMEMU_TESTBENCH_FILES=""
 
-has_to_build_configure=no
-has_to_build_genisslib_configure=no
-has_to_build_armemu_configure=no
+has_to_build() {
+    [ ! -e "$1" -o "$2" -nt "$1" ]
+}
+
+dist_copy() {
+    if has_to_build "$2" "$1"; then
+	echo "$1 ==> $2"
+	mkdir -p "$(dirname $2)"
+	${DISTCOPY} -f "$1" "$2" || exit
+        true
+    fi
+    false
+}
 
 mkdir -p ${DEST_DIR}/genisslib
 mkdir -p ${DEST_DIR}/armemu
@@ -531,71 +544,24 @@ mkdir -p ${DEST_DIR}/armemu
 UNISIM_TOOLS_GENISSLIB_FILES="${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES} ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES} ${UNISIM_TOOLS_GENISSLIB_DATA_FILES}"
 
 for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
-	mkdir -p "${DEST_DIR}/$(dirname ${file})"
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/genisslib/${file}" ]; then
-		if [ "${UNISIM_TOOLS_DIR}/genisslib/${file}" -nt "${DEST_DIR}/genisslib/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_TOOLS_DIR}/genisslib/${file} ==> ${DEST_DIR}/genisslib/${file}"
-		${DISTCOPY} -f "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}" || exit
-	fi
+    dist_copy "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}"
 done
 
 UNISIM_LIB_ARMEMU_FILES="${UNISIM_LIB_ARMEMU_SOURCE_FILES} ${UNISIM_LIB_ARMEMU_HEADER_FILES} ${UNISIM_LIB_ARMEMU_TEMPLATE_FILES} ${UNISIM_LIB_ARMEMU_DATA_FILES}"
 
 for file in ${UNISIM_LIB_ARMEMU_FILES}; do
-	mkdir -p "${DEST_DIR}/armemu/$(dirname ${file})"
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/armemu/${file}" ]; then
-		if [ "${UNISIM_LIB_DIR}/${file}" -nt "${DEST_DIR}/armemu/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/armemu/${file}"
-		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/armemu/${file}" || exit
-	fi
+    dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/armemu/${file}"
 done
 
 UNISIM_SIMULATORS_ARMEMU_FILES="${UNISIM_SIMULATORS_ARMEMU_MAIN_SOURCE_FILES} ${UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES} ${UNISIM_SIMULATORS_ARMEMU_HEADER_FILES} ${UNISIM_SIMULATORS_ARMEMU_EXTRA_FILES} ${UNISIM_SIMULATORS_ARMEMU_TEMPLATE_FILES} ${UNISIM_SIMULATORS_ARMEMU_DATA_FILES} ${UNISIM_SIMULATORS_ARMEMU_TESTBENCH_FILES}"
 
 for file in ${UNISIM_SIMULATORS_ARMEMU_FILES}; do
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/armemu/${file}" ]; then
-		if [ "${UNISIM_SIMULATOR_DIR}/${file}" -nt "${DEST_DIR}/armemu/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_SIMULATOR_DIR}/${file} ==> ${DEST_DIR}/armemu/${file}"
-		${DISTCOPY} -f "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/armemu/${file}" || exit
-	fi
+    dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/armemu/${file}"
 done
 
 for file in ${UNISIM_SIMULATORS_ARMEMU_DATA_FILES}; do
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/${file}" ]; then
-		if [ "${UNISIM_SIMULATOR_DIR}/${file}" -nt "${DEST_DIR}/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_SIMULATOR_DIR}/${file} ==> ${DEST_DIR}/${file}"
-		${DISTCOPY} -f "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}" || exit
-	fi
+    dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
-
 
 mkdir -p ${DEST_DIR}/config
 mkdir -p ${DEST_DIR}/armemu/config
@@ -603,49 +569,31 @@ mkdir -p ${DEST_DIR}/armemu/m4
 mkdir -p ${DEST_DIR}/genisslib/config
 mkdir -p ${DEST_DIR}/genisslib/m4
 
+has_to_build_genisslib_configure=no
 for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/genisslib/${file}" ]; then
-		if [ "${UNISIM_TOOLS_DIR}/${file}" -nt  "${DEST_DIR}/genisslib/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_TOOLS_DIR}/${file} ==> ${DEST_DIR}/genisslib/${file}"
-		${DISTCOPY} -f "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}" || exit
-		has_to_build_genisslib_configure=yes
-	fi
+    if dist_copy "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}"; then
+	has_to_build_genisslib_configure=yes
+    fi
 done
 
+has_to_build_armemu_configure=no
 for file in ${UNISIM_LIB_ARMEMU_M4_FILES}; do
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/armemu/${file}" ]; then
-		if [ "${UNISIM_LIB_DIR}/${file}" -nt  "${DEST_DIR}/armemu/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/armemu/${file}"
-		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/armemu/${file}" || exit
-		has_to_build_armemu_configure=yes
-	fi
+    if dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/armemu/${file}"; then
+	has_to_build_armemu_configure=yes
+    fi
 done
 
 # Top level
 
 cat << EOF > "${DEST_DIR}/AUTHORS"
-Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>
+Yves Lhuillier <yves.lhuillier@cea.fr>
 Gilles Mouchard <gilles.mouchard@cea.fr>
-Réda Nouacer <reda.nouacer@cea.fr>
+Reda Nouacer <reda.nouacer@cea.fr>
 EOF
 
 cat << EOF > "${DEST_DIR}/README"
 This package contains:
-  - armemu: an ARM V5 user level simulator
+  - armemu: an ARMV7 user level simulator
   - GenISSLib (will not be installed): an instruction set simulator generator
 See INSTALL for installation instructions.
 EOF
@@ -667,11 +615,10 @@ Requirements:
   - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
   - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
   - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
-  - Core SystemC Language >= 2.3.0 (http://www.systemc.org)
-
+  - Core SystemC Language >= 2.3 (http://www.systemc.org)
 
 Building instructions:
-  $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-tlm20=<path-to-TLM-library-install-dir>
+  $ ./configure --with-systemc=<path-to-systemc-install-dir>
   $ make
 
 Installing (optional):
@@ -682,62 +629,42 @@ CONFIGURE_AC="${DEST_DIR}/configure.ac"
 MAKEFILE_AM="${DEST_DIR}/Makefile.am"
 CONFIGURE_CROSS="${DEST_DIR}/configure.cross"
 
-if [ ! -e "${CONFIGURE_AC}" ]; then
-	has_to_build_configure=yes
-else
-	if [ "$0" -nt "${CONFIGURE_AC}" ]; then
-		has_to_build_configure=yes
-	fi
-fi
-
-if [ ! -e "${MAKEFILE_AM}" ]; then
-	has_to_build_configure=yes
-else
-	if [ "$0" -nt "${MAKEFILE_AM}" ]; then
-		has_to_build_configure=yes
-	fi
-fi
-
-if [ ! -e "${CONFIGURE_CROSS}" ]; then
-	has_to_build_configure_cross=yes
-else
-	if [ "$0" -nt "${CONFIGURE_CROSS}" ]; then
-		has_to_build_configure_cross=yes
-	fi
-fi
-
-if [ "${has_to_build_configure}" = "yes" ]; then
-	echo "Generating configure.ac"
-	echo "AC_INIT([UNISIM ARMemu Standalone simulator], [${ARMEMU_VERSION}], [Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Réda Nouacer <reda.nouacer@cea.fr>], [unisim-armemu])" > "${DEST_DIR}/configure.ac"
-	echo "AC_CONFIG_AUX_DIR(config)" >> "${CONFIGURE_AC}"
-	echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
-	echo "AC_CANONICAL_HOST" >> "${CONFIGURE_AC}"
-	echo "AC_CANONICAL_TARGET" >> "${CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${CONFIGURE_AC}"
-	echo "AC_PATH_PROGS(SH, sh)" >> "${CONFIGURE_AC}"
-	echo "AC_PROG_INSTALL" >> "${CONFIGURE_AC}"
-	echo "AC_PROG_LN_S" >> "${CONFIGURE_AC}"
-	echo "AC_CONFIG_SUBDIRS([genisslib])"  >> "${CONFIGURE_AC}" 
-	echo "AC_CONFIG_SUBDIRS([armemu])"  >> "${CONFIGURE_AC}" 
-	echo "AC_CONFIG_FILES([Makefile])" >> "${CONFIGURE_AC}"
-	echo "AC_OUTPUT" >> "${CONFIGURE_AC}"
+if has_to_build "${CONFIGURE_AC}" "$0" || has_to_build "${MAKEFILE_AM}" "$0"; then
+    echo "Generating configure.ac"
+    cat <<EOF > "${CONFIGURE_AC}"
+AC_INIT([UNISIM ARMemu Standalone simulator], [${ARMEMU_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-armemu])
+AC_CONFIG_AUX_DIR(config)
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
+AM_INIT_AUTOMAKE([subdir-objects tar-pax])
+AC_PATH_PROGS(SH, sh)
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_CONFIG_SUBDIRS([genisslib]) 
+AC_CONFIG_SUBDIRS([armemu]) 
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
+EOF
 
 	echo "Generating Makefile.am"
-	echo "SUBDIRS=genisslib armemu" > "${MAKEFILE_AM}"
-	echo "EXTRA_DIST = configure.cross" >> "${MAKEFILE_AM}"
+	cat <<EOF > "${MAKEFILE_AM}"
+SUBDIRS=genisslib armemu
+EXTRA_DIST = configure.cross
+EOF
 
 	echo "Building configure"
 	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
 fi
 
-if [ "${has_to_build_configure_cross}" = "yes" ]; then
+if has_to_build "${CONFIGURE_CROSS}" "$0"; then
 	echo "Building configure.cross"
 	cat << EOF_CONFIGURE_CROSS > "${CONFIGURE_CROSS}"
 #!/bin/bash
 HERE=\$(pwd)
 MY_DIR=\$(cd \$(dirname \$0); pwd)
 
-# remove --host, --with-systemc, --with-tlm20, --with-zlib, --with-libxml2, --with-boost, --with-ncurses, --with-libedit from command line arguments
+# remove --host, --with-systemc, --with-zlib, --with-libxml2, --with-boost, --with-ncurses, --with-libedit from command line arguments
 host=""
 help=""
 i=0
@@ -748,7 +675,7 @@ do
 		--host=*)
 			host=\$(printf "%s" "\${arg}" | cut -f 2- -d '=')
 			;;
-		--with-systemc=* | --with-tlm20=* | --with-zlib=* | --with-libxml2=* | --with-boost=* | --with-ncurses=* | --with-libedit=*)
+		--with-systemc=* | --with-zlib=* | --with-libxml2=* | --with-boost=* | --with-ncurses=* | --with-libedit=*)
 			;;
 		--help=* | --help)
 			help="yes"
@@ -839,246 +766,182 @@ chmod +x Makefile.cross
 echo "\$(basename \$0): run 'make -f \${HERE}/Makefile.cross' or '\${HERE}/Makefile.cross' to build for \${host} host system type"
 EOF_CONFIGURE_CROSS
 	chmod +x "${CONFIGURE_CROSS}"
-fi  # has_to_build_configure_cross = "yes"
+fi  # has to build configure cross
 
 # GENISSLIB
 
 GENISSLIB_CONFIGURE_AC="${DEST_DIR}/genisslib/configure.ac"
 GENISSLIB_MAKEFILE_AM="${DEST_DIR}/genisslib/Makefile.am"
 
-
-if [ ! -e "${GENISSLIB_CONFIGURE_AC}" ]; then
-	has_to_build_genisslib_configure=yes
-else
-	if [ "$0" -nt "${GENISSLIB_CONFIGURE_AC}" ]; then
-		has_to_build_genisslib_configure=yes
-	fi
-fi
-
-if [ ! -e "${GENISSLIB_MAKEFILE_AM}" ]; then
-	has_to_build_genisslib_configure=yes
-else
-	if [ "$0" -nt "${GENISSLIB_MAKEFILE_AM}" ]; then
-		has_to_build_genisslib_configure=yes
-	fi
+if has_to_build "${GENISSLIB_CONFIGURE_AC}" "$0" || has_to_build "${GENISSLIB_MAKEFILE_AM}" "$0"; then
+    has_to_build_genisslib_configure=yes
 fi
 
 if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
-	echo "Generating GENISSLIB configure.ac"
-	echo "AC_INIT([UNISIM GENISSLIB], [${GENISSLIB_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves  Lhuillier <yves.lhuillier@cea.fr>], [genisslib])" > "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CONFIG_AUX_DIR(config)" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CONFIG_HEADERS([config.h])" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CANONICAL_BUILD" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CANONICAL_HOST" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CANONICAL_TARGET" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_PATH_PROGS(SH, sh)" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_PROG_CXX" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_PROG_INSTALL" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_PROG_LN_S" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_LANG([C++])" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CHECK_HEADERS([${GENISSLIB_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LEXER_GENERATOR" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_PARSER_GENERATOR" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CONFIG_FILES([Makefile])" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_OUTPUT" >> "${GENISSLIB_CONFIGURE_AC}"
+    echo "Generating GENISSLIB configure.ac"
+    cat <<EOF > "${GENISSLIB_CONFIGURE_AC}"
+AC_INIT([UNISIM GENISSLIB], [${GENISSLIB_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves  Lhuillier <yves.lhuillier@cea.fr>], [genisslib])
+AC_CONFIG_MACRO_DIR([m4])
+AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
+AM_INIT_AUTOMAKE([subdir-objects tar-pax])
+AC_PATH_PROGS(SH, sh)
+AC_PROG_CXX
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_LANG([C++])
+AC_CHECK_HEADERS([${GENISSLIB_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))
+UNISIM_CHECK_LEXER_GENERATOR
+UNISIM_CHECK_PARSER_GENERATOR
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
+EOF
 
-	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
-	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
-	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "AM_LFLAGS = -l" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "noinst_PROGRAMS = genisslib" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\\\"${GENISSLIB_VERSION}\\\"" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
+    AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
+    echo "Generating GENISSLIB Makefile.am"
+    cat <<EOF > "${GENISSLIB_MAKEFILE_AM}"
+ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4
+BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}
+CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}
+AM_YFLAGS = -d -p yy
+AM_LFLAGS = -l
+AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)
+noinst_PROGRAMS = genisslib
+genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}
+genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\"${GENISSLIB_VERSION}\"
+noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}
+EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}
 # The following lines are a workaround caused by a bugFix in AUTOMAKE 1.12
 # Note that parser_tokens.hh has been added to BUILT_SOURCES above
 # assumption: parser.cc and either parser.h or parser.hh are generated at the same time
-    echo "\$(top_builddir)/parser_tokens.hh: \$(top_builddir)/parser.cc" >> "${GENISSLIB_MAKEFILE_AM}"
-    printf "\tif test -f \"\$(top_builddir)/parser.h\"; then \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
-    printf "\t\tcp -f \"\$(top_builddir)/parser.h\" \"\$(top_builddir)/parser_tokens.hh\"; \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
-    printf "\telif test -f \"\$(top_builddir)/parser.hh\"; then \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
-    printf "\t\tcp -f \"\$(top_builddir)/parser.hh\" \"\$(top_builddir)/parser_tokens.hh\"; \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
-    printf "\tfi\n" >> "${GENISSLIB_MAKEFILE_AM}"
+\$(top_builddir)/parser_tokens.hh: \$(top_builddir)/parser.cc
+	if test -f "\$(top_builddir)/parser.h"; then\
+		cp -f "\$(top_builddir)/parser.h" "\$(top_builddir)/parser_tokens.hh";\
+	elif test -f "\$(top_builddir)/parser.hh"; then\
+		cp -f "\$(top_builddir)/parser.hh" "\$(top_builddir)/parser_tokens.hh";\
+	fi
+EOF
 
-	echo "Building GENISSLIB configure"
+    echo "Building GENISSLIB configure"
 	${SHELL} -c "cd ${DEST_DIR}/genisslib && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
 fi
-
 
 # armemu
 
 ARMEMU_CONFIGURE_AC="${DEST_DIR}/armemu/configure.ac"
 ARMEMU_MAKEFILE_AM="${DEST_DIR}/armemu/Makefile.am"
 
-
-if [ ! -e "${ARMEMU_CONFIGURE_AC}" ]; then
-	has_to_build_armemu_configure=yes
-else
-	if [ "$0" -nt "${ARMEMU_CONFIGURE_AC}" ]; then
-		has_to_build_armemu_configure=yes
-	fi
-fi
-
-if [ ! -e "${ARMEMU_MAKEFILE_AM}" ]; then
-	has_to_build_armemu_configure=yes
-else
-	if [ "$0" -nt "${ARMEMU_MAKEFILE_AM}" ]; then
-		has_to_build_armemu_configure=yes
-	fi
+if has_to_build "${ARMEMU_CONFIGURE_AC}" "$0" || has_to_build "${ARMEMU_MAKEFILE_AM}" "$0"; then
+    has_to_build_armemu_configure=yes
 fi
 
 if [ "${has_to_build_armemu_configure}" = "yes" ]; then
-	echo "Generating armemu configure.ac"
-	echo "AC_INIT([UNISIM ARMemu C++ simulator], [${ARMEMU_VERSION}], [Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Réda Nouacer <reda.nouacer@cea.fr>], [unisim-armemu-core])" > "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_CONFIG_AUX_DIR(config)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_CONFIG_HEADERS([config.h])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_CANONICAL_BUILD" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_CANONICAL_HOST" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_CANONICAL_TARGET" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_PATH_PROGS(SH, sh)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_PROG_CXX" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_PROG_INSTALL" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "LT_INIT" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_SUBST(LIBTOOL_DEPS)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_PROG_LN_S" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_LANG([C++])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AM_PROG_CC_C_O" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_CHECK_HEADERS([${ARMEMU_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_PTHREAD(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TIMES(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ENDIAN(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CURSES(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBEDIT(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BSD_SOCKETS(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ZLIB(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBXML2(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CXXABI(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_WITH_BOOST(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CACTI(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_SYSTEMC" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_SUBST(GENISSLIB_PATH)" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-armemu-${ARMEMU_VERSION}\"], [path of shared data relative to bin directory])" >> "${ARMEMU_CONFIGURE_AC}"
-	SIM_VERSION_MAJOR=$(printf "${ARMEMU_VERSION}" | cut -f 1 -d .)
-	SIM_VERSION_MINOR=$(printf "${ARMEMU_VERSION}" | cut -f 2 -d .)
-	SIM_VERSION_PATCH=$(printf "${ARMEMU_VERSION}" | cut -f 3 -d .)
-	SIM_VERSION="${ARMEMU_VERSION}"
-	SIM_VERSION_CODENAME="Triumphalis Tarraco"
-	SIM_AUTHOR="Daniel Gracia Perez (daniel.gracia-perez@cea.fr)"
-	SIM_PROGRAM_NAME="UNISIM ARMEmu"
-	SIM_LICENSE="BSD (See file COPYING)"
-	SIM_COPYRIGHT="Copyright (C) 2007-2010, Commissariat a l'Energie Atomique"
-	SIM_DESCRIPTION="UNISIM ARMv5 User Level Simulator"
-	SIM_SCHEMATIC="armemu/fig_schematic.pdf"
-	echo "AC_DEFINE([SIM_VERSION_MAJOR], [${SIM_VERSION_MAJOR}], [Version major number])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_VERSION_MINOR], [${SIM_VERSION_MINOR}], [Version minor number])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_VERSION_PATCH], [${SIM_VERSION_PATCH}], [Version patch number])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_VERSION], [\"${SIM_VERSION}\"], [Version])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_VERSION_CODENAME], [\"${SIM_VERSION_CODENAME}\"], [Version code name])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_AUTHOR], [\"${SIM_AUTHOR}\"], [Author])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_PROGRAM_NAME], [\"${SIM_PROGRAM_NAME}\"], [Program name])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_COPYRIGHT], [\"${SIM_COPYRIGHT}\"], [Copyright])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_LICENSE], [\"${SIM_LICENSE}\"], [License])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_DESCRIPTION], [\"${SIM_DESCRIPTION}\"], [Description])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_SCHEMATIC], [\"${SIM_SCHEMATIC}\"], [Schematic])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_CONFIG_FILES([Makefile])" >> "${ARMEMU_CONFIGURE_AC}"
-	echo "AC_OUTPUT" >> "${ARMEMU_CONFIGURE_AC}"
+    echo "Generating armemu configure.ac"
+    cat <<EOF > "${ARMEMU_CONFIGURE_AC}"
+AC_INIT([UNISIM ARMemu C++ simulator], [${ARMEMU_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-armemu-core])
+AC_CONFIG_MACRO_DIR([m4])
+AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
+AM_INIT_AUTOMAKE([subdir-objects tar-pax])
+AC_PATH_PROGS(SH, sh)
+AC_PROG_CXX
+AC_PROG_INSTALL
+LT_INIT
+AC_SUBST(LIBTOOL_DEPS)
+AC_PROG_LN_S
+AC_LANG([C++])
+AM_PROG_CC_C_O
+AC_CHECK_HEADERS([${ARMEMU_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))
+case "\${host}" in
+	*mingw*)
+		CPPFLAGS="-U__STRICT_ANSI__ \${CPPFLAGS}"
+		;;
+	*)
+		;;
+esac
+UNISIM_CHECK_PTHREAD(main)
+UNISIM_CHECK_TIMES(main)
+UNISIM_CHECK_ENDIAN(main)
+UNISIM_CHECK_CURSES(main)
+UNISIM_CHECK_LIBEDIT(main)
+UNISIM_CHECK_BSD_SOCKETS(main)
+UNISIM_CHECK_ZLIB(main)
+UNISIM_CHECK_LIBXML2(main)
+UNISIM_CHECK_CXXABI(main)
+UNISIM_WITH_BOOST(main)
+UNISIM_CHECK_BOOST_GRAPH(main)
+UNISIM_CHECK_CACTI(main)
+UNISIM_CHECK_GET_EXECUTABLE_PATH(main)
+UNISIM_CHECK_REAL_PATH(main)
+UNISIM_CHECK_SYSTEMC
+GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
+AC_SUBST(GENISSLIB_PATH)
+AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-armemu-${ARMEMU_VERSION}"], [path of shared data relative to bin directory])
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
+EOF
 
-	AM_ARMEMU_VERSION=$(printf ${ARMEMU_VERSION} | sed -e 's/\./_/g')
-	echo "Generating armemu Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I m4" > "${ARMEMU_MAKEFILE_AM}"
-	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "LIBTOOL_DEPS = @LIBTOOL_DEPS@" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "libtool: \$(LIBTOOL_DEPS)" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\t\$(SHELL) ./config.status libtool\n" >> "${ARMEMU_MAKEFILE_AM}"
-	# armemu
-	echo "bin_PROGRAMS = unisim-armemu-${ARMEMU_VERSION}" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "unisim_armemu_${AM_ARMEMU_VERSION}_CPPFLAGS = -DSIM_EXECUTABLE" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "unisim_armemu_${AM_ARMEMU_VERSION}_LDFLAGS = -DSIM_EXECUTABLE -static-libtool-libs" >> "${ARMEMU_MAKEFILE_AM}"
- 	echo "unisim_armemu_${AM_ARMEMU_VERSION}_SOURCES = ${UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "unisim_armemu_${AM_ARMEMU_VERSION}_LDADD = libunisim-armemu-${ARMEMU_VERSION}.la" >> "${ARMEMU_MAKEFILE_AM}"
-	# libunisim-armemu
-	echo "noinst_LTLIBRARIES = libunisim-armemu-${ARMEMU_VERSION}.la" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "libunisim_armemu_${AM_ARMEMU_VERSION}_la_SOURCES = ${UNISIM_LIB_ARMEMU_SOURCE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "libunisim_armemu_${AM_ARMEMU_VERSION}_la_LDFLAGS = -static" >> "${ARMEMU_MAKEFILE_AM}"
-	# libunisim-armemu-plugin
-	echo "lib_LTLIBRARIES = libunisim-armemu-plugin-${ARMEMU_VERSION}.la" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "libunisim_armemu_plugin_${AM_ARMEMU_VERSION}_la_SOURCES = ${UNISIM_LIB_ARMEMU_SOURCE_FILES} ${UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "libunisim_armemu_plugin_${AM_ARMEMU_VERSION}_la_CPPFLAGS = -DSIM_PLUGIN" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "libunisim_armemu_plugin_${AM_ARMEMU_VERSION}_la_LDFLAGS = -shared -no-undefined" >> "${ARMEMU_MAKEFILE_AM}"
+    AM_ARMEMU_VERSION=$(printf ${ARMEMU_VERSION} | sed -e 's/\./_/g')
+    echo "Generating armemu Makefile.am"
+    cat <<EOF > "${ARMEMU_MAKEFILE_AM}"
+ACLOCAL_AMFLAGS=-I m4
+AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)
+LIBTOOL_DEPS = @LIBTOOL_DEPS@
+libtool: \$(LIBTOOL_DEPS)
+	\$(SHELL) ./config.status libtool
+
+# armemu
+bin_PROGRAMS = unisim-armemu-${ARMEMU_VERSION}
+unisim_armemu_${AM_ARMEMU_VERSION}_CPPFLAGS = -DSIM_EXECUTABLE
+unisim_armemu_${AM_ARMEMU_VERSION}_LDFLAGS = -DSIM_EXECUTABLE -static-libtool-libs
+unisim_armemu_${AM_ARMEMU_VERSION}_SOURCES = ${UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES}
+unisim_armemu_${AM_ARMEMU_VERSION}_LDADD = libunisim-armemu-${ARMEMU_VERSION}.la
+
+# libunisim-armemu
+noinst_LTLIBRARIES = libunisim-armemu-${ARMEMU_VERSION}.la
+libunisim_armemu_${AM_ARMEMU_VERSION}_la_SOURCES = ${UNISIM_LIB_ARMEMU_SOURCE_FILES}
+libunisim_armemu_${AM_ARMEMU_VERSION}_la_LDFLAGS = -static
+
+# libunisim-armemu-plugin
+lib_LTLIBRARIES = libunisim-armemu-plugin-${ARMEMU_VERSION}.la
+libunisim_armemu_plugin_${AM_ARMEMU_VERSION}_la_SOURCES = ${UNISIM_LIB_ARMEMU_SOURCE_FILES} ${UNISIM_SIMULATORS_ARMEMU_SOURCE_FILES}
+libunisim_armemu_plugin_${AM_ARMEMU_VERSION}_la_CPPFLAGS = -DSIM_PLUGIN
+libunisim_armemu_plugin_${AM_ARMEMU_VERSION}_la_LDFLAGS = -shared -no-undefined
 	
-	echo "noinst_HEADERS = ${UNISIM_LIB_ARMEMU_HEADER_FILES} ${UNISIM_LIB_ARMEMU_TEMPLATE_FILES} ${UNISIM_SIMULATORS_ARMEMU_HEADER_FILES} ${UNISIM_SIMULATORS_ARMEMU_TEMPLATE_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "EXTRA_DIST = ${UNISIM_LIB_ARMEMU_M4_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "sharedir = \$(prefix)/share/unisim-armemu-${ARMEMU_VERSION}" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "dist_share_DATA = ${UNISIM_LIB_ARMEMU_DATA_FILES} ${UNISIM_SIMULATORS_ARMEMU_DATA_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
+noinst_HEADERS = ${UNISIM_LIB_ARMEMU_HEADER_FILES} ${UNISIM_LIB_ARMEMU_TEMPLATE_FILES} ${UNISIM_SIMULATORS_ARMEMU_HEADER_FILES} ${UNISIM_SIMULATORS_ARMEMU_TEMPLATE_FILES}
+EXTRA_DIST = ${UNISIM_LIB_ARMEMU_M4_FILES}
+sharedir = \$(prefix)/share/unisim-armemu-${ARMEMU_VERSION}
+dist_share_DATA = ${UNISIM_LIB_ARMEMU_DATA_FILES} ${UNISIM_SIMULATORS_ARMEMU_DATA_FILES}
 
-	echo -n "BUILT_SOURCES=" >> "${ARMEMU_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh " >> "${ARMEMU_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc " >> "${ARMEMU_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh " >> "${ARMEMU_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc " >> "${ARMEMU_MAKEFILE_AM}"
-	echo >> "${ARMEMU_MAKEFILE_AM}"
+BUILT_SOURCES=\
+    \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh\
+    \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc\
+    \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh\
+    \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc\
 	
-	echo -n "CLEANFILES=" >> "${ARMEMU_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh " >> "${ARMEMU_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc " >> "${ARMEMU_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh " >> "${ARMEMU_MAKEFILE_AM}"
-	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc " >> "${ARMEMU_MAKEFILE_AM}"
-	echo >> "${ARMEMU_MAKEFILE_AM}"
+CLEANFILES=\
+    \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh\
+    \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc\
+    \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh\
+    \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc
 	
-	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh: ${UNISIM_LIB_ARMEMU_ISA_ARM32_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\t" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32 -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.isa" >> "${ARMEMU_MAKEFILE_AM}"
+\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh
+\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh: ${UNISIM_LIB_ARMEMU_ISA_ARM32_FILES}
+	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32 -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.isa
 
-	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh: ${UNISIM_LIB_ARMEMU_ISA_THUMB_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\t" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb2 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb2/thumb.isa" >> "${ARMEMU_MAKEFILE_AM}"
+\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh
+\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh: ${UNISIM_LIB_ARMEMU_ISA_THUMB_FILES}
+	\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb2 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb2/thumb.isa
+EOF
 
-	echo "all-local: all-local-bin all-local-share" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "clean-local: clean-local-bin clean-local-share" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "all-local-bin: \$(bin_PROGRAMS)" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\t@PROGRAMS='\$(bin_PROGRAMS)'; \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\trm -f \"\$(top_builddir)/bin/\$\$(basename \$\${PROGRAM})\"; \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\tcp -f \"\$(top_builddir)/\$\${PROGRAM}\" \$(top_builddir)/bin/\$\$(basename \"\$\${PROGRAM}\"); \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\tdone\n" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "clean-local-bin:" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\trm -rf '\$(top_builddir)/bin'; \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\tfi\n" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "all-local-share: \$(dist_share_DATA)" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\t@SHARED_DATAS='\$(dist_share_DATA)'; \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\trm -f \"\$(top_builddir)/share/unisim-armemu-${ARMEMU_VERSION}/\$\$(basename \$\${SHARED_DATA})\"; \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(top_builddir)/share/unisim-armemu-${ARMEMU_VERSION}'; \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\tcp -f \"\$(top_srcdir)/\$\${SHARED_DATA}\" \$(top_builddir)/share/unisim-armemu-${ARMEMU_VERSION}/\$\$(basename \"\$\${SHARED_DATA}\"); \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\tdone\n" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "clean-local-share:" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\trm -rf '\$(top_builddir)/share'; \\\\\n" >> "${ARMEMU_MAKEFILE_AM}"
-	printf "\tfi\n" >> "${ARMEMU_MAKEFILE_AM}"
-
-	${DISTCOPY} ${DEST_DIR}/INSTALL ${DEST_DIR}/armemu
-	${DISTCOPY} ${DEST_DIR}/README ${DEST_DIR}/armemu
-	${DISTCOPY} ${DEST_DIR}/AUTHORS ${DEST_DIR}/armemu
-	
-	echo "Building armemu configure"
-	${SHELL} -c "cd ${DEST_DIR}/armemu && aclocal -I m4 && libtoolize --force && autoconf --force && automake -ac"
+    echo "Building armemu configure"
+    ${SHELL} -c "cd ${DEST_DIR}/armemu && aclocal -I m4 && libtoolize --force && autoconf --force && automake -ac"
 fi
 
 echo "Distribution is up-to-date"
