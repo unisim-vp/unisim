@@ -1,4 +1,4 @@
 This package contains:
-  - armemu: an ARM V5 user level simulator
+  - armemu: an ARMv7 application level simulator (LinuxOS emulation)
   - GenISSLib (will not be installed): an instruction set simulator generator
 See INSTALL for installation instructions.
