@@ -230,9 +230,9 @@ unisim/component/cxx/processor/arm/isa/arm32/vfp.isa \
 unisim/component/cxx/processor/arm/isa/arm32/xscale.isa \
 unisim/component/cxx/processor/arm/isa/arm32/arm32.isa"
 
-UNISIM_LIB_ARMEMU_ISA_FILES="${UNISIM_LIB_ARMEMU_ISA_THUMB_FILES} ${UNISIM_LIB_ARMEMU_ISA_ARM32_FILES}"
-
-UNISIM_LIB_ARMEMU_HEADER_FILES="${UNISIM_LIB_ARMEMU_ISA_FILES} \
+UNISIM_LIB_ARMEMU_HEADER_FILES="
+${UNISIM_LIB_ARMEMU_ISA_THUMB_FILES} \
+${UNISIM_LIB_ARMEMU_ISA_ARM32_FILES} \
 unisim/util/backtrace/backtrace.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
@@ -661,14 +661,14 @@ AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 EOF
 
-	echo "Generating Makefile.am"
-	cat <<EOF > "${MAKEFILE_AM}"
+    echo "Generating Makefile.am"
+    cat <<EOF > "${MAKEFILE_AM}"
 SUBDIRS=genisslib armemu
 EXTRA_DIST = configure.cross
 EOF
 
-	echo "Building configure"
-	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
+    echo "Building configure"
+    ${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
 fi
 
 if has_to_build "${CONFIGURE_CROSS}" "$0"; then
@@ -837,6 +837,7 @@ EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}
 	elif test -f "\$(top_builddir)/parser.hh"; then\
 		cp -f "\$(top_builddir)/parser.hh" "\$(top_builddir)/parser_tokens.hh";\
 	fi
+\$(top_builddir)/genisslib-scanner.o: CXXFLAGS+=-Wno-error
 EOF
 
     echo "Building GENISSLIB configure"
