@@ -495,6 +495,7 @@ namespace armsec
     bool complete;
   };
   
+
 #define CP15ENCODE( CRN, OPC1, CRM, OPC2 ) ((OPC1 << 12) | (CRN << 8) | (CRM << 4) | (OPC2 << 0))
 
   struct State
@@ -590,6 +591,30 @@ namespace armsec
           n, z, c, v, itstate, // q, ge0, ge1, ge2, ge3,
           cpsr, spsr,
           fpscr, fpexc,
+          r8_fiq,
+          r9_fiq,
+          sl_fiq,
+          fp_fiq,
+          ip_fiq,
+          sp_fiq,
+          lr_fiq,
+          r8_usr,
+          r9_usr,
+          sl_usr,
+          fp_usr,
+          ip_usr,
+          sp_usr,
+          lr_usr,
+          sp_irq,
+          sp_svc,
+          sp_abt,
+          sp_hyp,
+          sp_und,
+          lr_irq,
+          lr_svc,
+          lr_abt,
+          lr_hyp,
+          lr_und,
           SCTLR, ACTLR,
           CTR, MPIDR,
           ID_PFR0, CCSIDR, CLIDR, CSSELR,
@@ -641,6 +666,30 @@ namespace armsec
           case       spsr: return "spsr";
           case      fpscr: return "fpscr";
           case      fpexc: return "fpexc";
+          case     r8_fiq: return "r8_fiq";
+          case     r9_fiq: return "r9_fiq";
+          case     sl_fiq: return "sl_fiq";
+          case     fp_fiq: return "fp_fiq";
+          case     ip_fiq: return "ip_fiq";
+          case     sp_fiq: return "sp_fiq";
+          case     lr_fiq: return "lr_fiq";
+          case     r8_usr: return "r8_usr";
+          case     r9_usr: return "r9_usr";
+          case     sl_usr: return "sl_usr";
+          case     fp_usr: return "fp_usr";
+          case     ip_usr: return "ip_usr";
+          case     sp_usr: return "sp_usr";
+          case     lr_usr: return "lr_usr";
+          case     sp_irq: return "sp_irq";
+          case     sp_svc: return "sp_svc";
+          case     sp_abt: return "sp_abt";
+          case     sp_hyp: return "sp_hyp";
+          case     sp_und: return "sp_und";
+          case     lr_irq: return "lr_irq";
+          case     lr_svc: return "lr_svc";
+          case     lr_abt: return "lr_abt";
+          case     lr_hyp: return "lr_hyp";
+          case     lr_und: return "lr_und";
           case      SCTLR: return "sctlr";
           case      ACTLR: return "actlr";
           case        CTR: return "ctr";
@@ -754,7 +803,8 @@ namespace armsec
               Expr( new RegRead("c",1) ),
               Expr( new RegRead("v",1) ),
               Expr( new RegRead("itstate",8) ),
-              Expr( new RegRead("cpsr",32) ) )
+              Expr( new RegRead("cpsr",32) ),
+              SUPERVISOR_MODE)
       , spsr( Expr( new RegRead("spsr",32) ) )
       , FPSCR( Expr( new RegRead("fpscr",32) ) )
       , FPEXC( Expr( new RegRead("fpexc",32) ) )
@@ -784,12 +834,13 @@ namespace armsec
     //struct psr_type : public FieldRegisterU32
     struct psr_type
     {
-      psr_type( Expr const& _n, Expr const& _z, Expr const& _c, Expr const& _v, Expr const& _itstate, Expr const& _bg )
-        : n(_n), z(_z), c(_c), v(_v), itstate(_itstate), bg(_bg)
+      psr_type( Expr const& _n, Expr const& _z, Expr const& _c, Expr const& _v, Expr const& _itstate, Expr const& _bg, uint32_t _mode )
+        : n(_n), z(_z), c(_c), v(_v), itstate(_itstate), bg(_bg), mode(_mode)
       {}
       Expr n, z, c, v;
       U8 itstate;
       U32 bg;
+      uint32_t mode;
       
       typedef unisim::component::cxx::processor::arm::RegisterField<31,1> NRF; /* Negative Integer Condition Flag */
       typedef unisim::component::cxx::processor::arm::RegisterField<30,1> ZRF; /* Zero     Integer Condition Flag */
@@ -869,7 +920,7 @@ namespace armsec
       U32 Get( CRF const& _ ) { return U32(BOOL(c)); }
       U32 Get( VRF const& _ ) { return U32(BOOL(v)); }
 
-      U32 Get( MRF const& _ ) { return U32(0b11111); /*SYSTEM_MODE*/ }
+      U32 Get( MRF const& _ ) { return U32(mode); }
       // U32 Get( ALL const& _ ) { return (U32(BOOL(n)) << 31) | (U32(BOOL(z)) << 30) | (U32(BOOL(c)) << 29) | (U32(BOOL(v)) << 28) | bg; }
       
       U32 bits() const
@@ -1067,33 +1118,86 @@ namespace armsec
         }
     }
 
-    // /* masks for the different running modes */
-    // static uint32_t const RUNNING_MODE_MASK = 0x1F;
-    // static uint32_t const USER_MODE = 0x10;
-    // static uint32_t const FIQ_MODE = 0x11;
-    // static uint32_t const IRQ_MODE = 0x12;
-    // static uint32_t const SUPERVISOR_MODE = 0x13;
-    // static uint32_t const ABORT_MODE = 0x17;
-    // static uint32_t const UNDEFINED_MODE = 0x1B;
-    // static uint32_t const SYSTEM_MODE = 0x1F;
-    
     struct Mode
     {
       Mode() {}
       bool     HasBR( unsigned index ) { return false; }
       bool     HasSPSR() { return false; }
-      void     SetSPSR(U32 value) {};
+      void     SetSPSR(U32 const& value) {};
       U32      GetSPSR() { return U32(); };
       void     Swap( State& ) {};
-      
     } mode;
     
     Mode&  CurrentMode() { // not_implemented(); 
       return mode; }
     Mode&  GetMode(uint8_t) { not_implemented(); return mode; }
-    U32  GetBankedRegister( uint8_t foreign_mode, uint32_t idx ) { not_implemented(); return U32(); }
-    void SetBankedRegister( uint8_t foreign_mode, uint32_t idx, U32 value ) { not_implemented(); }
     
+    struct ForeignRegister : public ASExprNode
+    {
+      ForeignRegister( uint8_t _mode, unsigned _idx ) : mode(_mode), idx(_idx) { if (mode == SYSTEM_MODE) mode = USER_MODE; }
+      char const* mode_ident() const
+      {
+        switch (mode)
+          {
+          case USER_MODE: return "usr";
+          case FIQ_MODE: return "fiq";
+          case IRQ_MODE: return "irq";
+          case SUPERVISOR_MODE: return "svc";
+          case MONITOR_MODE: return "mon";
+          case ABORT_MODE: return "abt";
+          case HYPERVISOR_MODE: return "hyp";
+          case UNDEFINED_MODE: return "und";
+          }
+        throw 0;
+        return "";
+      }
+      virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const
+      { Repr(sink); sink << "<32>"; return 32; }
+      virtual intptr_t cmp( ExprNode const& brhs ) const
+      {
+        ForeignRegister const& rhs =  dynamic_cast<ForeignRegister const&>( brhs );
+        if (int delta = int(mode) - int(rhs.mode)) return delta;
+        return idx - rhs.idx;
+      }
+      
+      virtual unsigned SubCount() const { return 0; }
+      virtual void Repr( std::ostream& sink ) const
+      { sink << (RegID("r0") + idx).c_str() << '_' << mode_ident(); }
+      uint8_t mode;
+      unsigned idx;
+    };
+    typedef std::map<std::pair<uint8_t,uint32_t>,Expr> ForeignRegisters;
+    ForeignRegisters foreign_registers;
+    
+    Expr& GetForeignRegister( uint8_t foreign_mode, uint32_t idx )
+    {
+      Expr& result = foreign_registers[std::make_pair( foreign_mode, idx )];
+      if (not result.node)
+        result = new ForeignRegister( foreign_mode, idx );
+      return result;
+    }
+    
+    U32  GetBankedRegister( uint8_t foreign_mode, uint32_t idx )
+    {
+      if ((cpsr.mode == foreign_mode) or
+          (idx < 8) or
+          (idx >= 15) or
+          ((foreign_mode != FIQ_MODE) and (cpsr.mode != FIQ_MODE) and (idx < 13))
+          )
+        return GetGPR( idx );
+      return U32( GetForeignRegister( foreign_mode, idx ) );
+    }
+    
+    void SetBankedRegister( uint8_t foreign_mode, uint32_t idx, U32 value )
+    {
+      if ((cpsr.mode == foreign_mode) or
+          (idx < 8) or
+          (idx >= 15) or
+          ((foreign_mode != FIQ_MODE) and (cpsr.mode != FIQ_MODE) and (idx < 13))
+          )
+        return SetGPR( idx, value );
+      GetForeignRegister( foreign_mode, idx ) = value.expr;
+    }
     
     struct CP15Reg
     {
@@ -1574,6 +1678,16 @@ namespace armsec
         if (reg_values[reg].expr != ref.reg_values[reg].expr)
           path->sinks.insert( Expr( new RegWrite( RegID("r0") + reg, reg_values[reg].expr, 32 ) ) );
       }
+      for (ForeignRegisters::iterator itr = foreign_registers.begin(), end = foreign_registers.end(); itr != end; ++itr)
+        {
+          ForeignRegister ref(itr->first.first, itr->first.second);
+          ref.Retain();
+          Expr xref( new ForeignRegister(itr->first.first, itr->first.second) );
+          if (itr->second == Expr(&ref)) continue;
+          std::ostringstream buf;
+          ref.Repr( buf );
+          path->sinks.insert( Expr( new RegWrite( RegID(buf.str().c_str()), itr->second, 32 ) ) );
+        }
       for (std::set<Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
         path->sinks.insert( *itr );
       return complete;
