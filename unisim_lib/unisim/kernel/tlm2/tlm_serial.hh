@@ -64,6 +64,28 @@ public:
 	virtual ~tlm_serial_mm_interface() {}
 };
 
+class tlm_serial_extension_base
+{
+public:
+	virtual tlm_serial_extension_base *clone() const = 0;
+	virtual void free() { delete this; }
+	virtual void copy_from(tlm_serial_extension_base const &) = 0;
+protected:
+	virtual ~tlm_serial_extension_base() {}
+public:
+	static inline unsigned int num_extensions(bool allocate = false);
+};
+
+template <typename T>
+class tlm_serial_extension : public tlm_serial_extension_base
+{
+public:
+	virtual tlm_serial_extension_base* clone() const = 0;
+	virtual void copy_from(tlm_serial_extension_base const &) = 0;
+	virtual ~tlm_serial_extension() {}
+	const static unsigned int ID;
+};
+
 class tlm_serial_payload
 {
 public:
@@ -80,7 +102,8 @@ public:
 	// Access methods
 	inline void set_data(const std::vector<bool>& _data) { data = _data; }
 	inline void set_period(const sc_core::sc_time& _period) { period = _period; }
-	inline const std::vector<bool> get_data() const { return data; }
+	inline std::vector<bool>& get_data() { return data; }
+	inline const std::vector<bool>& get_data() const { return data; }
 	inline const sc_core::sc_time& get_period() const { return period; }
 	
 	// Memory management
@@ -95,34 +118,416 @@ public:
 
 	// Extension mechanism
 	template <typename T> T *set_extension(T *);
-	tlm::tlm_extension_base *set_extension(unsigned int, tlm::tlm_extension_base *);
+	inline tlm_serial_extension_base *set_extension(unsigned int, tlm_serial_extension_base *);
 	template <typename T> T *set_auto_extension(T *);
-	tlm::tlm_extension_base *set_auto_extension(unsigned int, tlm::tlm_extension_base *);
+	inline tlm_serial_extension_base *set_auto_extension(unsigned int, tlm_serial_extension_base *);
 	template <typename T> void get_extension(T *&) const;
 	template <typename T> T* get_extension() const;
-	tlm::tlm_extension_base *get_extension(unsigned int) const;
+	inline tlm_serial_extension_base *get_extension(unsigned int) const;
 	template <typename T> void clear_extension(const T *);
 	template <typename T> void clear_extension();
 	template <typename T> void release_extension(T *);
 	template <typename T> void release_extension();
-	void resize_extensions();
+	inline void resize_extensions();
 private:
 	std::vector<bool> data;
 	sc_core::sc_time period;
 	tlm_serial_mm_interface *mm;
 	unsigned int ref_count;
 	
-	struct tlm_extension_slot
+	struct tlm_serial_extension_slot
 	{
-		tlm_extension_slot();
+		inline tlm_serial_extension_slot();
 		
-		tlm::tlm_extension_base *extension;
+		tlm_serial_extension_base *extension;
 		bool sticky;
 	};
 	
-	std::vector<tlm_extension_slot> extension_slots;
+	std::vector<tlm_serial_extension_slot> extension_slots;
 	
-	void free_auto_extensions();
+	inline void free_auto_extensions();
+};
+
+enum tlm_bitstream_sync_status
+{
+	TLM_BITSTREAM_SYNC_OK    = 0,
+	TLM_BITSTREAM_NEED_SYNC  = 1,
+};
+
+class tlm_bitstream
+{
+public:
+	tlm_bitstream(bool init_value = true)
+		: curr_value(init_value)
+		, status(TLM_BITSTREAM_NEED_SYNC)
+		, curr_time_stamp(sc_core::SC_ZERO_TIME)
+		, timed_serial_payloads()
+		, free_timed_serial_payloads()
+		, next_bit_event(sc_core::sc_gen_unique_name("next_bit_event"))
+		, mm()
+	{
+	}
+	
+	virtual ~tlm_bitstream()
+	{
+		std::map<sc_core::sc_time, timed_serial_payload *>::iterator it = timed_serial_payloads.begin();
+		
+		while(it != timed_serial_payloads.end())
+		{
+			std::map<sc_core::sc_time, timed_serial_payload *>::iterator next_it = it;
+			next_it++;
+			
+			timed_serial_payload *tsp = (*it).second;
+			
+			delete tsp;
+			
+			timed_serial_payloads.erase(it);
+			
+			it = next_it;
+		}
+		
+		std::vector<timed_serial_payload *>::size_type num_free_timed_serial_payloads = free_timed_serial_payloads.size();
+		std::vector<timed_serial_payload *>::size_type i;
+		for(i = 0; i < num_free_timed_serial_payloads; i++)
+		{
+			timed_serial_payload *tsp = free_timed_serial_payloads[i];
+			delete tsp;
+		}
+	}
+	
+	sc_core::sc_event& event() { return next_bit_event; }
+	
+	void fill(tlm_serial_payload& payload)
+	{
+		if(payload.get_data().empty()) return;
+		
+		sc_core::sc_time time_stamp(sc_core::sc_time_stamp());
+		
+		// check time stamp validity (i.e. not in the past or present)
+		assert(time_stamp <= curr_time_stamp);
+		
+		// check if there's no conflicts with previously inserted payloads
+		assert(!conflicts(time_stamp, payload));
+		
+		tlm_serial_payload *p = 0;
+		
+		if(payload.has_mm()) // payload has memory manager ?
+		{
+			p = &payload;
+		}
+		else
+		{
+			// payload has no memory manager
+			p = mm.allocate();
+			p->deep_copy_from(payload);
+			p->set_mm(&mm);
+		}
+		
+		// insert a new timed serial payload
+		timed_serial_payload *new_tsp = allocate_timed_serial_payload(time_stamp, p);
+		timed_serial_payloads.insert(std::pair<sc_core::sc_time, timed_serial_payload *>(time_stamp, new_tsp));
+
+		// value may change, until trigger
+		std::map<sc_core::sc_time, timed_serial_payload *>::iterator it = timed_serial_payloads.begin();
+		timed_serial_payload *tsp = (*it).second;
+		tlm_serial_payload *serial_payload = tsp->serial_payload;
+		const std::vector<bool>& serial_data = serial_payload->get_data();
+		curr_value = serial_data[tsp->bit_offset];
+		curr_time_stamp = tsp->bit_time_stamp;
+			
+		notify(tsp);
+	}
+	
+	bool read() const { return curr_value; }
+	
+	const sc_core::sc_time& get_time_stamp() const { return curr_time_stamp; }
+	
+	tlm_bitstream_sync_status seek(const sc_core::sc_time& t)
+	{
+		sc_core::sc_time time_stamp(sc_core::sc_time_stamp());
+		time_stamp += t;
+		
+		// check time stamp validity (i.e. not in the past)
+		assert(time_stamp < curr_time_stamp);
+		
+		// search a payload matching requested time while droping old payloads
+		std::map<sc_core::sc_time, timed_serial_payload *>::iterator it = timed_serial_payloads.begin();
+		
+		while(it != timed_serial_payloads.end())
+		{
+			timed_serial_payload *tsp = (*it).second;
+		
+			if(likely(tsp->next_time_stamp > curr_time_stamp))
+			{
+				// found a payload which ends after requested time stamp
+				timed_serial_payload *tsp = (*it).second;
+				
+				if(time_stamp > tsp->bit_time_stamp)
+				{
+					// payload match requested time stamp
+					tlm_serial_payload *serial_payload = tsp->serial_payload;
+					
+					const std::vector<bool>& serial_data = serial_payload->get_data();
+					std::vector<bool>::size_type serial_data_length = serial_data.size();
+					do
+					{
+						curr_value = serial_data[tsp->bit_offset];
+						curr_time_stamp = tsp->bit_time_stamp;
+						
+						tsp->bit_offset++;
+						tsp->bit_time_stamp += serial_payload->get_period();
+					}
+					while(curr_time_stamp > tsp->bit_time_stamp);
+					
+					status = TLM_BITSTREAM_SYNC_OK;
+				}
+				else
+				{
+					notify(tsp);
+					status = TLM_BITSTREAM_NEED_SYNC; // need wait or next_trigger
+				}
+				
+				return status;
+			}
+
+			// drop old payload
+			std::map<sc_core::sc_time, timed_serial_payload *>::iterator next_it = it;
+			next_it++;
+			free_timed_serial_payload(tsp);
+			timed_serial_payloads.erase(it);
+			
+			it = next_it;
+		}
+		
+		status = TLM_BITSTREAM_NEED_SYNC; // need wait or next_trigger
+
+		return status;
+	}
+	
+	tlm_bitstream_sync_status next()
+	{
+		std::map<sc_core::sc_time, timed_serial_payload *>::iterator it = timed_serial_payloads.begin();
+
+		if(it != timed_serial_payloads.end())
+		{
+			// there's a current payload
+			timed_serial_payload *tsp = (*it).second;
+			tlm_serial_payload *serial_payload = tsp->serial_payload;
+			
+			const std::vector<bool>& serial_data = serial_payload->get_data();
+			std::vector<bool>::size_type serial_data_length = serial_data.size();
+			tsp->bit_offset++;
+			tsp->bit_time_stamp += serial_payload->get_period();
+			
+			if(tsp->bit_offset >= serial_data_length) // end of payload ?
+			{
+				// payload is no longer needed
+				delete tsp;
+				timed_serial_payloads.erase(it);
+				
+				// search for next payload
+				it = timed_serial_payloads.begin();
+				if(it == timed_serial_payloads.end())
+				{
+					// no payload available: a fill is needed
+					status = TLM_BITSTREAM_NEED_SYNC; // need wait or next_trigger
+				}
+				else
+				{
+					tsp = (*it).second;
+					tlm_serial_payload *next_serial_payload = tsp->serial_payload;
+					const std::vector<bool>& next_serial_data = next_serial_payload->get_data();
+					curr_value = next_serial_data[tsp->bit_offset];
+					curr_time_stamp = tsp->bit_time_stamp;
+					status = TLM_BITSTREAM_SYNC_OK;
+				}
+			}
+			else
+			{
+				curr_value = serial_data[tsp->bit_offset];
+				curr_time_stamp = tsp->bit_time_stamp;
+				status = TLM_BITSTREAM_SYNC_OK;
+			}
+		}
+		else
+		{
+			// no payload: need a fill
+			status = TLM_BITSTREAM_NEED_SYNC; // need wait or next_trigger
+		}
+		
+		return status;
+	}
+	
+	void drop_before(const sc_core::sc_time& t = sc_core::SC_ZERO_TIME)
+	{
+		sc_core::sc_time time_stamp(sc_core::sc_time_stamp());
+		time_stamp += t;
+		
+		std::map<sc_core::sc_time, timed_serial_payload *>::iterator it = timed_serial_payloads.begin();
+		
+		while(it != timed_serial_payloads.end())
+		{
+			std::map<sc_core::sc_time, timed_serial_payload *>::iterator next_it = it;
+			next_it++;
+			
+			timed_serial_payload *tsp = (*it).second;
+			
+			if(likely(tsp->next_time_stamp > time_stamp)) break;
+
+			free_timed_serial_payload(tsp);
+			timed_serial_payloads.erase(it);
+			
+			it = next_it;
+		}
+	}
+	
+private:
+	struct memory_manager : public tlm_serial_mm_interface
+	{
+		virtual void free(tlm_serial_payload *serial_payload)
+		{
+			free_serial_payloads.push_back(serial_payload);
+		}
+		
+		tlm_serial_payload *allocate()
+		{
+			tlm_serial_payload *serial_payload = 0;
+			
+			std::vector<tlm_serial_payload *>::size_type num_free_serial_payloads = free_serial_payloads.size();
+			
+			if(num_free_serial_payloads)
+			{
+				serial_payload = free_serial_payloads[num_free_serial_payloads - 1];
+				free_serial_payloads.resize(num_free_serial_payloads - 1);
+			}
+			else
+			{
+				serial_payload = new tlm_serial_payload();
+				auto_serial_payloads.push_back(serial_payload);
+			}
+			
+			return serial_payload;
+		}
+		
+		std::vector<tlm_serial_payload *> free_serial_payloads;
+		std::vector<tlm_serial_payload *> auto_serial_payloads;
+	};
+	
+	struct timed_serial_payload
+	{
+		timed_serial_payload(const sc_core::sc_time& _time_stamp, tlm_serial_payload *_serial_payload)
+			: time_stamp()
+			, next_time_stamp()
+			, serial_payload(0)
+			, bit_offset(0)
+			, bit_time_stamp()
+		{
+			initialize(_time_stamp, _serial_payload);
+		}
+		
+		void initialize(const sc_core::sc_time& _time_stamp, tlm_serial_payload *_serial_payload)
+		{
+			time_stamp = _time_stamp;
+			serial_payload = _serial_payload;
+			bit_offset = 0;
+			bit_time_stamp = time_stamp;
+			next_time_stamp = serial_payload->get_period();
+			next_time_stamp *= serial_payload->get_data().size();
+			next_time_stamp += time_stamp;
+			
+			serial_payload->acquire();
+		}
+		
+		void clear()
+		{
+			serial_payload->release();
+
+			time_stamp = sc_core::SC_ZERO_TIME;
+			serial_payload = 0;
+			bit_offset = 0;
+			bit_time_stamp = sc_core::SC_ZERO_TIME;
+			next_time_stamp = sc_core::SC_ZERO_TIME;
+		}
+		
+		~timed_serial_payload()
+		{
+			clear();
+		}
+		
+		bool conflicts(const sc_core::sc_time& other_time_stamp, const tlm_serial_payload& other_serial_payload) const
+		{
+			sc_core::sc_time other_next_time_stamp(other_serial_payload.get_period());
+			other_next_time_stamp *= other_serial_payload.get_data().size();
+			other_next_time_stamp += other_time_stamp;
+			
+			const sc_core::sc_time& a_lo = time_stamp;
+			const sc_core::sc_time& a_hi = next_time_stamp;
+			const sc_core::sc_time& b_lo = other_time_stamp;
+			const sc_core::sc_time& b_hi = other_next_time_stamp;
+			sc_core::sc_time max_lo = (a_lo > b_lo) ? a_lo : b_lo;
+			sc_core::sc_time min_hi = (a_hi < b_hi) ? a_hi : b_hi;
+			
+			return max_lo < min_hi;
+		}
+		
+		sc_core::sc_time time_stamp;
+		sc_core::sc_time next_time_stamp;
+		tlm_serial_payload *serial_payload;
+		unsigned int bit_offset;
+		sc_core::sc_time bit_time_stamp;
+	};
+	
+	timed_serial_payload *allocate_timed_serial_payload(const sc_core::sc_time& time_stamp, tlm_serial_payload *serial_payload)
+	{
+		timed_serial_payload *tsp = 0;
+		
+		if(free_timed_serial_payloads.empty())
+		{
+			tsp = new timed_serial_payload(time_stamp, serial_payload);
+		}
+		else
+		{
+			tsp = free_timed_serial_payloads.back();
+			free_timed_serial_payloads.resize(free_timed_serial_payloads.size() - 1);
+			tsp->initialize(time_stamp, serial_payload);
+		}
+		
+		return tsp;
+	}
+	
+	void free_timed_serial_payload(timed_serial_payload *tsp)
+	{
+		tsp->clear();
+		free_timed_serial_payloads.push_back(tsp);
+	}
+	
+	bool conflicts(const sc_core::sc_time& time_stamp, const tlm_serial_payload& serial_payload) const
+	{
+		std::map<sc_core::sc_time, timed_serial_payload *>::const_iterator it;
+		for(it = timed_serial_payloads.begin(); it != timed_serial_payloads.end(); it++)
+		{
+			timed_serial_payload *tsp = (*it).second;
+			if(tsp->conflicts(time_stamp, serial_payload)) return true;
+		}
+		
+		return false;
+	}
+	
+	void notify(timed_serial_payload *tsp)
+	{
+		// notify event
+		sc_core::sc_time notify_delay(tsp->time_stamp);
+		notify_delay -= sc_core::sc_time_stamp();
+		next_bit_event.notify(notify_delay);
+	}
+
+	bool curr_value;
+	tlm_bitstream_sync_status status;
+	sc_core::sc_time curr_time_stamp;
+	std::map<sc_core::sc_time, timed_serial_payload *> timed_serial_payloads;
+	std::vector<timed_serial_payload *> free_timed_serial_payloads;
+	sc_core::sc_event next_bit_event;
+	memory_manager mm;
 };
 
 struct tlm_default_serial_protocol
@@ -267,18 +672,18 @@ inline void tlm_serial_payload::deep_copy_from(const tlm_serial_payload& other)
 	period = other.period;
 	
 	extension_slots.reserve(other.extension_slots.capacity());
-	typename std::vector<tlm_extension_slot>::size_type num_extensions = other.extension_slots.size();
+	typename std::vector<tlm_serial_extension_slot>::size_type num_extensions = other.extension_slots.size();
 	
 	if(num_extensions > extension_slots.size())
 	{
 		extension_slots.resize(num_extensions);
 	}
 	
-	typename std::vector<tlm_extension_slot>::size_type extension_id;
+	typename std::vector<tlm_serial_extension_slot>::size_type extension_id;
 	
 	for(extension_id = 0; extension_id < num_extensions; extension_id++)
 	{
-		const tlm_extension_slot& orig_extension_slot = other.extension_slots[extension_id];
+		const tlm_serial_extension_slot& orig_extension_slot = other.extension_slots[extension_id];
 		
 		if(orig_extension_slot.extension)
 		{
@@ -288,7 +693,7 @@ inline void tlm_serial_payload::deep_copy_from(const tlm_serial_payload& other)
 			}
 			else
 			{
-				tlm::tlm_extension_base *cloned_extension = other.extension_slots[extension_id].extension->clone();
+				tlm_serial_extension_base *cloned_extension = other.extension_slots[extension_id].extension->clone();
 				
 				if(cloned_extension)
 				{
@@ -308,12 +713,12 @@ inline void tlm_serial_payload::deep_copy_from(const tlm_serial_payload& other)
 
 inline void tlm_serial_payload::update_extensions_from(const tlm_serial_payload& other)
 {
-	typename std::vector<tlm_extension_slot>::size_type num_extensions = other.extension_slots.size();
-	typename std::vector<tlm_extension_slot>::size_type extension_id;
+	typename std::vector<tlm_serial_extension_slot>::size_type num_extensions = other.extension_slots.size();
+	typename std::vector<tlm_serial_extension_slot>::size_type extension_id;
 	
 	for(extension_id = 0; extension_id < num_extensions; extension_id++)
 	{
-		const tlm_extension_slot& orig_extension_slot = other.extension_slots[extension_id];
+		const tlm_serial_extension_slot& orig_extension_slot = other.extension_slots[extension_id];
 		
 		if(orig_extension_slot.extension)
 		{
@@ -327,12 +732,12 @@ inline void tlm_serial_payload::update_extensions_from(const tlm_serial_payload&
 
 inline void tlm_serial_payload::free_all_extensions()
 {
-	typename std::vector<tlm_extension_slot>::size_type num_extensions = extension_slots.size();
-	typename std::vector<tlm_extension_slot>::size_type extension_id;
+	typename std::vector<tlm_serial_extension_slot>::size_type num_extensions = extension_slots.size();
+	typename std::vector<tlm_serial_extension_slot>::size_type extension_id;
 	
 	for(extension_id = 0; extension_id < num_extensions; extension_id++)
 	{
-		const tlm_extension_slot& extension_slot = extension_slots[extension_id];
+		const tlm_serial_extension_slot& extension_slot = extension_slots[extension_id];
 		
 		if(extension_slot.extension)
 		{
@@ -345,12 +750,12 @@ inline void tlm_serial_payload::free_all_extensions()
 
 inline void tlm_serial_payload::free_auto_extensions()
 {
-	typename std::vector<tlm_extension_slot>::size_type num_extensions = extension_slots.size();
-	typename std::vector<tlm_extension_slot>::size_type extension_id;
+	typename std::vector<tlm_serial_extension_slot>::size_type num_extensions = extension_slots.size();
+	typename std::vector<tlm_serial_extension_slot>::size_type extension_id;
 
 	for(extension_id = 0; extension_id < num_extensions; extension_id++)
 	{
-		tlm_extension_slot& extension_slot = extension_slots[extension_id];
+		tlm_serial_extension_slot& extension_slot = extension_slots[extension_id];
 		
 		if(!extension_slot.sticky && extension_slot.extension)
 		{
@@ -398,6 +803,49 @@ template <typename T> void tlm_serial_payload::release_extension(T *)
 template <typename T> void tlm_serial_payload::release_extension()
 {
 	release_extension(T::ID);
+}
+
+inline tlm_serial_extension_base *tlm_serial_payload::set_extension(unsigned int id, tlm_serial_extension_base *extension)
+{
+	tlm_serial_extension_base *old_extension = (id < extension_slots.size()) ? extension_slots[id].extension : 0;
+	extension_slots[id].extension = extension;
+	extension_slots[id].sticky = true;
+	return old_extension;
+}
+
+inline tlm_serial_extension_base* tlm_serial_payload::set_auto_extension(unsigned int id, tlm_serial_extension_base *extension)
+{
+	if(!mm) throw std::runtime_error("call to tlm_serial_payload::set_auto_extension while payload has no memory management"); 
+	tlm_serial_extension_base *old_extension = (id < extension_slots.size()) ? extension_slots[id].extension : 0;
+	extension_slots[id].extension = extension;
+	extension_slots[id].sticky = false;
+	return old_extension;
+}
+
+inline tlm_serial_extension_base* tlm_serial_payload::get_extension(unsigned int id) const
+{
+	return (id < extension_slots.size()) ? extension_slots[id].extension : 0;
+}
+
+inline void tlm_serial_payload::resize_extensions()
+{
+	if(tlm_serial_extension_base::num_extensions() > extension_slots.size())
+	{
+		extension_slots.resize(tlm_serial_extension_base::num_extensions());
+	}
+}
+
+inline unsigned int tlm_serial_extension_base::num_extensions(bool allocate)
+{
+	static unsigned int num_extensions = 0;
+	if(allocate) num_extensions++;
+	return num_extensions;
+}
+
+inline tlm_serial_payload::tlm_serial_extension_slot::tlm_serial_extension_slot()
+	: extension(0)
+	, sticky(false)
+{
 }
 
 } // end of namespace tlm2
