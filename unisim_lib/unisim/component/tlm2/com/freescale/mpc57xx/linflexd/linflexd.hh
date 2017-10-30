@@ -88,13 +88,6 @@ struct Field : unisim::util::reg::core::Field<FIELD
 {
 };
 
-enum LINFlexD_OperatingMode
-{
-	LINFLEXD_INIT_MODE   = 0,
-	LINFLEXD_NORMAL_MODE = 1,
-	LINFLEXD_SLEEP_MODE  = 2
-};
-
 enum LIN_OperationMode
 {
 	LIN_MASTER_MODE = 0,
@@ -110,24 +103,37 @@ enum LINFlexD_IRQ_Type
 
 enum LIN_State
 {
-	LINS_SLEEP_MODE                    = 0x0, // 0000
-	LINS_INIT_MODE                     = 0x1, // 0001
-	LINS_IDLE_MODE                     = 0x2, // 0010
-	LINS_SYNC_BREAK                    = 0x3, // 0011
-	LINS_SYNC_DEL                      = 0x4, // 0100
-	LINS_SYNC_FIELD                    = 0x5, // 0101
-	LINS_IDENTIFIER_FIELD              = 0x6, // 0110
-	LINS_HEADER_RECEPTION_TRANSMISSION = 0x7, // 0111
-	LINS_DATA_RECEPTION_TRANSMISSION   = 0x8, // 1000
-	LINS_CHECKSUM                      = 0x9  // 1001
+	LINS_SLEEP_MODE                       = 0x0, // 0000
+	LINS_INIT_MODE                        = 0x1, // 0001
+	LINS_IDLE_MODE                        = 0x2, // 0010
+	LINS_SYNC_BREAK                       = 0x3, // 0011
+	LINS_SYNC_DEL                         = 0x4, // 0100
+	LINS_SYNC_FIELD                       = 0x5, // 0101
+	LINS_IDENTIFIER_FIELD                 = 0x6, // 0110
+	LINS_HEADER_RECEPTION_TRANSMISSION    = 0x7, // 0111
+	LINS_DATA_RECEPTION_DATA_TRANSMISSION = 0x8, // 1000
+	LINS_CHECKSUM                         = 0x9  // 1001
 };
 
-enum RX_State
+inline std::ostream& operator << (std::ostream& os, const LIN_State& lins)
 {
-	RX_SOF,
-	RX_STOP,
-	RX_EOF
-};
+	switch(lins)
+	{
+		case LINS_SLEEP_MODE                      : os << "sleep mode LIN state"; break;
+		case LINS_INIT_MODE                       : os << "init mode LIN state"; break;
+		case LINS_IDLE_MODE                       : os << "idle mode LIN state"; break;
+		case LINS_SYNC_BREAK                      : os << "sync break LIN state"; break;
+		case LINS_SYNC_DEL                        : os << "sync del LIN state"; break;
+		case LINS_SYNC_FIELD                      : os << "sync field LIN state"; break;
+		case LINS_IDENTIFIER_FIELD                : os << "identifier field LIN state"; break;
+		case LINS_HEADER_RECEPTION_TRANSMISSION   : os << "header reception/transmission LIN state"; break;
+		case LINS_DATA_RECEPTION_DATA_TRANSMISSION: os << "data reception/data transmission LIN state"; break;
+		case LINS_CHECKSUM                        : os << "checksum LIN state"; break;
+		default                                   : os << "unknown LIN state"; break;
+	}
+	
+	return os;
+}
 
 #if 0
 struct CONFIG
@@ -428,6 +434,8 @@ private:
 			ReadWriteStatus rws = this->linflexd->InitMode() ? Super::Write(value, bit_enable)
 			                                                 : Super::template WritePreserve<INIT_MODE_ONLY_WRITEABLE>(value, bit_enable);
 			
+			this->linflexd->UpdateState();
+			
 			return rws;
 		}
 		
@@ -486,13 +494,6 @@ private:
 			UpdateInterrupts();
 		}
 		
-		LINFlexD_LINIER& operator = (const uint32_t& value)
-		{
-			Super::operator = (value);
-			UpdateInterrupts();
-			return *this;
-		}
-		
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
 			ReadWriteStatus rws = Super::Write(value, bit_enable);
@@ -506,6 +507,8 @@ private:
 			this->linflexd->UpdateINT_TX();
 			this->linflexd->UpdateINT_ERR();
 		}
+		
+		using Super::operator =;
 	};
 	
 	// LIN Status Register (LINFlexD_LINSR)
@@ -561,23 +564,23 @@ private:
 			UpdateInterrupts();
 		}
 		
-		LINFlexD_LINSR& operator = (const uint32_t& value)
-		{
-			Super::operator = (value);
-			UpdateInterrupts();
-			return *this;
-		}
-		
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
-			if((LINFlexD_LINSR::LINS::template Get<uint32_t>(value) == 0xf) && this->linflexd->LINS_INT_RX())
+			ReadWriteStatus rws = RWS_OK;
+			
+			if((LINS::template Get<uint32_t>(value) == 0xf) && this->linflexd->LINS_INT_RX())
 			{
 				// Clear Rx interrupt, only when set due to the LIN state event
 				this->linflexd->lins_int_rx_mask = true;
+				rws = Super::template WritePreserve<LINS>(value, bit_enable);
+			}
+			else
+			{
+				rws = Super::Write(value, bit_enable);
 			}
 			
-			ReadWriteStatus rws = Super::Write(value, bit_enable);
 			UpdateInterrupts();
+			
 			return rws;
 		}
 		
@@ -603,6 +606,8 @@ private:
 			this->linflexd->UpdateINT_RX();
 			this->linflexd->UpdateINT_TX();
 		}
+		
+		using Super::operator =;
 	};
 	
 	// LIN Error Status Register (LINFlexD_LINESR)
@@ -655,16 +660,10 @@ private:
 			UpdateInterrupts();
 		}
 		
-		LINFlexD_LINESR& operator = (const uint32_t& value)
-		{
-			Super::operator = (value);
-			UpdateInterrupts();
-			return *this;
-		}
-		
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
 			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
 			UpdateInterrupts();
 			return rws;
 		}
@@ -673,6 +672,8 @@ private:
 		{
 			this->linflexd->UpdateINT_ERR();
 		}
+		
+		using Super::operator =;
 	};
 	
 	// UART Mode Control Register (LINFlexD_UARTCR)
@@ -758,25 +759,25 @@ private:
 			
 			ReadWriteStatus rws =
 				/* !INIT && !UART */
-				(!this->linflexd->InitMode() && !this->linflexd->UARTMode()) ?
+				(!this->linflexd->InitMode() && !this->linflexd->UART_Mode()) ?
 				Super::template WritePreserve<NOT_INIT_AND_NOT_UART_PRESERVED_FIELDS>(value, bit_enable) :
 				/* INIT & !UART */
-				((this->linflexd->InitMode() && !this->linflexd->UARTMode()) ?
+				((this->linflexd->InitMode() && !this->linflexd->UART_Mode()) ?
 				Super::template WritePreserve<INIT_AND_NOT_UART_PRESERVED_FIELDS>(value, bit_enable) :
 				/* !INIT & UART */
-				((!this->linflexd->InitMode() && this->linflexd->UARTMode()) ?
+				((!this->linflexd->InitMode() && this->linflexd->UART_Mode()) ?
 				Super::template WritePreserve<NOT_INIT_AND_UART_PRESERVED_FIELDS>(value, bit_enable) :
 				/* INIT & UART & !TXBUF & !RXBUF */
-				((this->linflexd->InitMode() && this->linflexd->UARTMode() && !this->linflexd->UART_TX_BufferMode() && !this->linflexd->UART_RX_BufferMode()) ?
+				((this->linflexd->InitMode() && this->linflexd->UART_Mode() && !this->linflexd->UART_TX_BufferMode() && !this->linflexd->UART_RX_BufferMode()) ?
 				Super::template WritePreserve<INIT_AND_UART_AND_NOT_TXBUF_AND_NOT_RXBUF_PRESERVED_FIELDS>(value, bit_enable) :
 				/* INIT & UART & TXBUF & !RXBUF */
-				((this->linflexd->InitMode() && this->linflexd->UARTMode() && this->linflexd->UART_TX_BufferMode()  && !this->linflexd->UART_RX_BufferMode()) ?
+				((this->linflexd->InitMode() && this->linflexd->UART_Mode() && this->linflexd->UART_TX_BufferMode()  && !this->linflexd->UART_RX_BufferMode()) ?
 				Super::template WritePreserve<INIT_AND_UART_AND_TXBUF_AND_NOT_RXBUF_PRESERVED_FIELDS>(value, bit_enable) :
 				/* INIT & UART & !TXBUF & RXBUF */
-				((this->linflexd->InitMode() && this->linflexd->UARTMode() && !this->linflexd->UART_TX_BufferMode() && this->linflexd->UART_RX_BufferMode()) ?
+				((this->linflexd->InitMode() && this->linflexd->UART_Mode() && !this->linflexd->UART_TX_BufferMode() && this->linflexd->UART_RX_BufferMode()) ?
 				Super::template WritePreserve<INIT_AND_UART_AND_NOT_TXBUF_AND_RXBUF_PRESERVED_FIELDS>(value, bit_enable) :
 				/* INIT & UART & TXBUF & RXBUF */
-				((this->linflexd->InitMode() && this->linflexd->UARTMode() && this->linflexd->UART_TX_BufferMode()  && this->linflexd->UART_RX_BufferMode()) ?
+				((this->linflexd->InitMode() && this->linflexd->UART_Mode() && this->linflexd->UART_TX_BufferMode()  && this->linflexd->UART_RX_BufferMode()) ?
 				Super::template WritePreserve<INIT_AND_UART_AND_TXBUF_AND_RXBUF_PRESERVED_FIELDS>(value, bit_enable) :
 				/* other: always false */
 				RWS_ANA))))));
@@ -786,6 +787,11 @@ private:
 			if(this->template Get<WLS>() && !this->template Get<WL1>())
 			{
 				this->linflexd->logger << DebugWarning << "In " << this->GetName() << ", when WLS bit = 1, WL = 0 or 1 should not be used, since this will lead to incorrect reception of data" << EndDebugWarning;
+			}
+			
+			if(this->linflexd->UART_RX_BufferMode() && (this->template Get<WLS>() || this->template Get<WL0>()) && (this->template Get<RDFL_RFC>() & 1))
+			{
+				this->linflexd->logger << DebugWarning << "In " << this->GetName() << ", only configuration " << RDFL_RFC::GetName() << " = 10 or " << RDFL_RFC::GetName() << " are allowed when WLS bit = 1 or WL = 1x" << EndDebugWarning;
 			}
 			
 			if(!old_RxEn && new_RxEn)
@@ -816,10 +822,10 @@ private:
 		struct SZF    : Field<SZF   , 16    , SW_R_W1C> {}; // Stuck at Zero flag
 		struct OCF    : Field<OCF   , 17    , SW_R_W1C> {}; // Output Compare Flag
 		struct PE     : Field<PE    , 18, 21, SW_R_W1C> {}; // Parity Error flag
-		struct PE0    : Field<PE    , 18>               {};
-		struct PE1    : Field<PE    , 19>               {};
-		struct PE2    : Field<PE    , 20>               {};
-		struct PE3    : Field<PE    , 21>               {};
+		struct PE3    : Field<PE    , 18>               {};
+		struct PE2    : Field<PE    , 19>               {};
+		struct PE1    : Field<PE    , 20>               {};
+		struct PE0    : Field<PE    , 21>               {};
 		struct RMB    : Field<RMB   , 22    , SW_R_W1C> {}; // Release Message Buffer
 		struct FEF    : Field<FEF   , 23    , SW_R_W1C> {}; // Framing Error flag
 		struct BOF    : Field<BOF   , 24    , SW_R_W1C> {}; // FIFO/Buffer overrun flag
@@ -881,27 +887,63 @@ private:
 			this->linflexd->UpdateINT_ERR();
 		}
 		
-		LINFlexD_UARTSR& operator = (const uint32_t& value)
+		uint32_t Compound()
 		{
-			Super::operator = (value);
-			this->linflexd->UpdateINT_ERR();
-			return *this;
+			uint32_t compound = 0;
+			SZF   ::template Set<uint32_t>(compound, this->linflexd->linflexd_linesr.template Get<typename LINFlexD_LINESR::SZF>());
+			OCF   ::template Set<uint32_t>(compound, this->linflexd->linflexd_linesr.template Get<typename LINFlexD_LINESR::OCF>());
+			PE3   ::template Set<uint32_t>(compound, this->linflexd->linflexd_linesr.template Get<typename LINFlexD_LINESR::BEF>());
+			PE2   ::template Set<uint32_t>(compound, this->linflexd->linflexd_linesr.template Get<typename LINFlexD_LINESR::CEF>());
+			PE1   ::template Set<uint32_t>(compound, this->linflexd->linflexd_linesr.template Get<typename LINFlexD_LINESR::SFEF>());
+			PE0   ::template Set<uint32_t>(compound, this->linflexd->linflexd_linesr.template Get<typename LINFlexD_LINESR::SDEF>());
+			RMB   ::template Set<uint32_t>(compound, this->linflexd->linflexd_linesr.template Get<typename LINFlexD_LINESR::IDPEF>());
+			FEF   ::template Set<uint32_t>(compound, this->linflexd->linflexd_linesr.template Get<typename LINFlexD_LINESR::FEF>());
+			BOF   ::template Set<uint32_t>(compound, this->linflexd->linflexd_linesr.template Get<typename LINFlexD_LINESR::BOF>());
+			RDI   ::template Set<uint32_t>(compound, this->template Get<RDI>());
+			WUF   ::template Set<uint32_t>(compound, this->linflexd->linflexd_linsr.template Get<typename LINFlexD_LINSR::WUF>());
+			TO    ::template Set<uint32_t>(compound, this->template Get<TO>());
+			DRFRFE::template Set<uint32_t>(compound, this->linflexd->linflexd_linsr.template Get<typename LINFlexD_LINSR::DRF>());
+			DTFTFF::template Set<uint32_t>(compound, this->linflexd->linflexd_linsr.template Get<typename LINFlexD_LINSR::DTF>());
+			NF    ::template Set<uint32_t>(compound, this->linflexd->linflexd_linesr.template Get<typename LINFlexD_LINESR::NF>());
+			return compound;
 		}
 		
+		virtual ReadWriteStatus Read(uint32_t& value, const uint32_t& bit_enable)
+		{
+			if(this->linflexd->InitMode() && this->linflexd->UART_Mode())
+			{
+				// Init mode and UART mode: value of UARTSR is a compound because lot of flags reflects flags in LINSR and LINESR
+				value = (value & ~bit_enable) | (Compound() & bit_enable);
+				return RWS_OK;
+			}
+			else
+			{
+				return Super::Read(value, bit_enable);
+			}
+		}
+
+		virtual void DebugRead(uint32_t& value, const uint32_t& bit_enable)
+		{
+			if(this->linflexd->InitMode() && this->linflexd->UART_Mode())
+			{
+				// Init mode and UART mode: value of UARTSR is a compound because lot of flags reflects flags in LINSR and LINESR
+				value = (value & ~bit_enable) | (Compound() & bit_enable);
+			}
+			else
+			{
+				Super::DebugRead(value, bit_enable);
+			}
+		}
+
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
 			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
 			this->linflexd->UpdateINT_ERR();
 			return rws;
 		}
 		
-		void ShiftPE()
-		{
-			this->template Set<PE0>(this->template Get<PE1>());
-			this->template Set<PE1>(this->template Get<PE2>());
-			this->template Set<PE2>(this->template Get<PE3>());
-			this->template Set<PE3>(0);
-		}
+		using Super::operator =;
 	};
 	
 	// LIN Time-Out Control Status Register (LINFlexD_LINTCSR)
@@ -1265,7 +1307,7 @@ private:
 
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
-			if(this->linflexd->UARTMode())
+			if(this->linflexd->UART_Mode())
 			{
 				if(this->linflexd->UART_TX_FIFO_Mode())
 				{
@@ -1281,7 +1323,7 @@ private:
 			
 			ReadWriteStatus rws = Super::Write(value, bit_enable);
 			
-			if(!IsReadWriteError(rws) && this->linflexd->UARTMode())
+			if(!IsReadWriteError(rws) && this->linflexd->UART_Mode())
 			{
 				// Writing to BDRM make UART transmit buffer if Tx is enabled
 				this->linflexd->Transmit();
@@ -1326,7 +1368,7 @@ private:
 
 		virtual ReadWriteStatus Read(uint32_t& value, const uint32_t& bit_enable)
 		{
-			if(this->linflexd->UARTMode())
+			if(this->linflexd->UART_Mode())
 			{
 				if(this->linflexd->UART_RX_FIFO_Mode())
 				{
@@ -1340,7 +1382,7 @@ private:
 			
 			ReadWriteStatus rws = Super::Read(value, bit_enable);
 			
-			if(this->linflexd->UARTMode())
+			if(this->linflexd->UART_Mode())
 			{
 				if(this->linflexd->UART_RX_FIFO_Mode())
 				{
@@ -1353,17 +1395,9 @@ private:
 
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = this->linflexd->UARTMode() ? RWS_ANA : Super::Write(value, bit_enable);
+			ReadWriteStatus rws = this->linflexd->UART_Mode() ? RWS_ANA : Super::Write(value, bit_enable);
 			
 			return rws;
-		}
-		
-		void ShiftData()
-		{
-			this->template Set<DATA4>(this->template Get<DATA5>());
-			this->template Set<DATA5>(this->template Get<DATA6>());
-			this->template Set<DATA6>(this->template Get<DATA7>());
-			this->template Set<DATA7>(0);
 		}
 
 		using Super::operator =;
@@ -1604,6 +1638,13 @@ private:
 
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
+			if((value == 0) & ((bit_enable & PTO::template GetMask<uint32_t>()) == PTO::template GetMask<uint32_t>())) // writing zero to PTO field ?
+			{
+				// zero is forbidden
+				this->linflexd->Timeout(); // timeout occurs immediately
+				return RWS_OK;
+			}
+
 			ReadWriteStatus rws = Super::Write(value, bit_enable);
 
 			if(!IsReadWriteError(rws))
@@ -1768,8 +1809,28 @@ private:
 	LINFlexD_DMARXE                                                                                  linflexd_dmarxe;   // LINFlexD_DMARXE
 	LINFlexD_PTD                                                                                     linflexd_ptd;      // LINFlexD_PTD
 	
+	// Flags
+	// Shared    LINESR only    UARTSR only
+	bool SZF;    
+	bool OCF;    
+	             bool BEF;      bool PE3;
+	             bool CEF;      bool PE2;
+	             bool SPEF;     bool PE1;
+	             bool SDEF;     bool PE0;
+	             bool IDPEF;    bool RMB;
+	bool FEF;    
+	bool BOF;    
+	                            bool RDI;
+	                            bool WUF;
+	                            bool TO;
+	                            bool DRFRFE;
+	                            bool DTFTFF;
+	bool NF;
+	
 	unisim::kernel::tlm2::tlm_bitstream rx_input; // Rx timed input bit stream
-	uint8_t window3;                              // 3-bit window of received bits
+	bool rx_prev_input_status;                    // Previous status of Rx pin
+	bool rx_input_status;                         // Current status of Rx pin
+	unsigned int rx_dominant_bits_cnt;            // number of consecutive dominant bits (i.e zero bits) received
 	unsigned int rx_fifo_cnt;                     // Rx FIFO counter
 	sc_core::sc_event gen_int_rx_event;           // INT_RX event
 	sc_core::sc_event gen_int_tx_event;           // INT_TX event
@@ -1778,6 +1839,8 @@ private:
 	bool lins_int_rx_mask;                        // whether to mask INT_RX due to LINS
 	sc_core::sc_time last_run_time;               // last time timeout counter was run
 	sc_core::sc_time tx_ready_time;               // Tx ready time
+	bool data_reception_in_progress;
+	bool data_transmission_in_progress;
 	
 	// LINFlexD registers address map
 	RegisterAddressMap<sc_dt::uint64> reg_addr_map;
@@ -1803,11 +1866,10 @@ private:
 	
 	void EnableLINS_INT_TX();
 	void DisableLINS_INT_TX();
-	LINFlexD_OperatingMode GetOperatingMode() const;
 	bool InitMode() const;
 	bool SleepMode() const;
 	bool NormalMode() const;
-	bool UARTMode() const;
+	bool UART_Mode() const;
 	bool LINTimeoutCounterMode() const;
 	bool OutputCompareTimeoutCounterMode() const;
 	bool HardwareChecksumCalculation() const;
@@ -1824,13 +1886,16 @@ private:
 	void Reset();
 	void SoftReset();
 	void ResetTimeout();
+	LIN_State GetState();
 	void SetState(LIN_State lin_state);
+	void UpdateState();
 	
 	void UpdateINT_RX();
 	void UpdateINT_TX();
 	void UpdateINT_ERR();
 	
 	void RunToTime(const sc_core::sc_time& time_stamp);
+	void Timeout();
 	void IncrementTimeout(sc_dt::uint64 delta);
 	sc_dt::int64 TicksToNextRun();
 	sc_core::sc_time TimeToNextRun();
@@ -1848,7 +1913,8 @@ private:
 	void INT_TX_Process();
 	void INT_ERR_Process();
 	void RX_FIFO_Pop();
-	void UpdateUART_SZF(bool bit_value);
+	bool RX_InputStatus();
+	bool RX_FallingEdge();
 	void RX_Process();
 	void TX_FIFO_Push();
 	void Transmit();
