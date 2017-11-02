@@ -1197,6 +1197,7 @@ inline typename Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::TYPE Register
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 ReadWriteStatus Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Write(const TYPE& _value, const TYPE& bit_enable)
 {
+#if 0
 	if(unlikely(__IsVerboseWrite__()))
 	{
 		std::ostream& os = __GetInfoStream__();
@@ -1234,6 +1235,57 @@ ReadWriteStatus Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Write(const T
 	}
 	
 	value = (old_value & ~write_mask) | (_value & write_mask & ~write_one_clear_mask);
+	
+	if(unlikely(__IsVerboseWrite__()))
+	{
+		std::ostream& os = __GetInfoStream__();
+		std::ios_base::fmtflags ff = os.flags();
+		os << " => " << std::hex;
+		ShortPrettyPrint(os);
+		os << ", " << rws << std::endl;
+		os.flags(ff);
+	}
+
+	return rws;
+#endif
+	if(unlikely(__IsVerboseWrite__()))
+	{
+		std::ostream& os = __GetInfoStream__();
+		std::ios_base::fmtflags ff = os.flags();
+		os << "writing " << GetName() << " <- 0x" << std::hex << (uint64_t)(_value & bit_enable);
+		if(bit_enable != (~TYPE(0) & TYPE_MASK))
+		{
+			os << " (bit_enable=0x" << bit_enable << ")";
+		}
+		os.flags(ff);
+	}
+
+	ReadWriteStatus rws(RWS_OK);
+	const TYPE write_mask = bit_enable & GetWriteMask();
+	const TYPE unwritable_mask = bit_enable & ~GetWriteMask();
+	const TYPE write_one_clear_mask = bit_enable & GetWriteOneClearMask();
+	const TYPE copy_mask = write_mask & ~write_one_clear_mask;
+	
+	TYPE old_value = value & TYPE_MASK;
+	
+	if((_value & bit_enable & TYPE_MASK) != (_value & bit_enable))
+	{
+		// writing out-of-range register value
+		rws = ReadWriteStatus(rws | RWS_WOORV);
+	}
+	
+	if(!(_ACCESS & AF_SW_W))
+	{
+		// writing read-only register
+		rws = ReadWriteStatus(rws | RWS_WROR);
+	}
+	else if((_value & unwritable_mask) != (old_value & unwritable_mask))
+	{
+		// writing read-only bits
+		rws = ReadWriteStatus(rws | RWS_WROB);
+	}
+	
+	value = ((old_value & ~copy_mask) | (_value & copy_mask)) & ~(_value & write_one_clear_mask);
 	
 	if(unlikely(__IsVerboseWrite__()))
 	{

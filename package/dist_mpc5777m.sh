@@ -1053,6 +1053,7 @@ soft/include/intc.h \
 soft/include/stm.h \
 soft/include/swt.h \
 soft/include/pit.h \
+soft/include/linflexd.h \
 soft/src/Z4_2/57xx_ram.ld \
 soft/src/Z4_2/startup.S \
 soft/src/Z4_2/main_Z4_2.c \
@@ -1076,6 +1077,7 @@ soft/src/drv/intc.c \
 soft/src/drv/stm.c \
 soft/src/drv/swt.c \
 soft/src/drv/pit.c \
+soft/src/drv/linflexd.c \
 soft/bin/Z4_2/ram_boot.elf \
 soft/bin/Z4_2/flash_boot.elf \
 soft/bin/Z7_0/ram_boot.elf \

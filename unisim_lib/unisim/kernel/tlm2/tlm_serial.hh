@@ -204,7 +204,7 @@ public:
 		sc_core::sc_time time_stamp(sc_core::sc_time_stamp());
 		
 		// check time stamp validity (i.e. not in the past or present)
-		assert(time_stamp <= curr_time_stamp);
+		assert(time_stamp > curr_time_stamp);
 		
 		// check if there's no conflicts with previously inserted payloads
 		assert(!conflicts(time_stamp, payload));
@@ -248,7 +248,7 @@ public:
 		time_stamp += t;
 		
 		// check time stamp validity (i.e. not in the past)
-		assert(time_stamp < curr_time_stamp);
+		assert(time_stamp >= curr_time_stamp);
 		
 		// search a payload matching requested time while droping old payloads
 		std::map<sc_core::sc_time, timed_serial_payload *>::iterator it = timed_serial_payloads.begin();
@@ -262,7 +262,7 @@ public:
 				// found a payload which ends after requested time stamp
 				timed_serial_payload *tsp = (*it).second;
 				
-				if(time_stamp > tsp->bit_time_stamp)
+				if(time_stamp >= tsp->bit_time_stamp)
 				{
 					// payload match requested time stamp
 					tlm_serial_payload *serial_payload = tsp->serial_payload;
@@ -277,7 +277,7 @@ public:
 						tsp->bit_offset++;
 						tsp->bit_time_stamp += serial_payload->get_period();
 					}
-					while(curr_time_stamp > tsp->bit_time_stamp);
+					while(time_stamp >= tsp->bit_time_stamp);
 					
 					status = TLM_BITSTREAM_SYNC_OK;
 				}
@@ -384,6 +384,18 @@ public:
 private:
 	struct memory_manager : public tlm_serial_mm_interface
 	{
+		virtual ~memory_manager()
+		{
+			std::vector<tlm_serial_payload *>::size_type num_auto_serial_payloads = auto_serial_payloads.size();
+			std::vector<tlm_serial_payload *>::size_type i;
+			
+			for(i = 0; i < num_auto_serial_payloads; i++)
+			{
+				tlm_serial_payload *serial_payload = auto_serial_payloads[i];
+				delete serial_payload;
+			}
+		}
+		
 		virtual void free(tlm_serial_payload *serial_payload)
 		{
 			free_serial_payloads.push_back(serial_payload);
