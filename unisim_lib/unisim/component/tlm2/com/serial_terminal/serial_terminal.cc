@@ -1,0 +1,691 @@
+/*
+ *  Copyright (c) 2017,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ */
+
+#include <unisim/component/tlm2/com/serial_terminal/serial_terminal.hh>
+
+namespace unisim {
+namespace component {
+namespace tlm2 {
+namespace com {
+namespace serial_terminal {
+
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
+
+using unisim::kernel::tlm2::TLM_BITSTREAM_NEED_SYNC;
+
+SerialTerminal::SerialTerminal(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
+	: unisim::kernel::service::Object(name, parent)
+	, sc_core::sc_module(name)
+	, unisim::kernel::service::Client<unisim::service::interfaces::CharIO>(name, parent)
+	, TX("TX")
+	, RX("RX")
+	, CLK("CLK")
+	, char_io_import("char-io-import", this)
+	, logger(*this)
+	, clk_prop_proxy(CLK)
+	, clock_period(10.0, sc_core::SC_NS)
+	, clock_start_time()
+	, clock_posedge_first(true)
+	, clock_duty_cycle(0.5)
+	, polling_event("polling_event")
+	, tx_event("tx_event")
+	, tx_fifo()
+	, rx_fifo()
+	, polling_period(10.0, sc_core::SC_MS)
+	, param_polling_period("polling-period", this, polling_period, "polling period")
+	, verbose(false)
+	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
+	, parity_type(PARITY_TYPE_NONE)
+	, param_parity_type("parity-type", this, parity_type, "parity type (none, even, odd)")
+	, num_stop_bits(1)
+	, param_num_stop_bits("num-stop-bits", this, num_stop_bits, "number of stop bits (1, 2, ...)")
+	, bit_order(MSB)
+	, param_bit_order("bit-order", this, bit_order, "first bit in reception/transmission (lsb, msb)")
+	, num_data_bits(8)
+	, param_num_data_bits("num-data-bits", this, num_data_bits, "number of data bits (1-8; typically 7 or 8)")
+{
+	param_polling_period.SetMutable(false);
+	param_parity_type.SetMutable(false);
+	param_num_stop_bits.SetMutable(false);
+	param_bit_order.SetMutable(false);
+	
+	TX.register_nb_receive(this, &SerialTerminal::nb_receive, TX_IF);
+	RX.register_nb_receive(this, &SerialTerminal::nb_receive, RX_IF);
+
+	SC_HAS_PROCESS(SerialTerminal);
+	
+	SC_METHOD(PollingProcess);
+	sensitive << polling_event;
+	
+	SC_THREAD(TX_Process);
+	sensitive << tx_event;
+	
+	SC_THREAD(RX_Process);
+	sensitive << rx_input.event();
+}
+
+SerialTerminal::~SerialTerminal()
+{
+}
+
+bool SerialTerminal::EndSetup()
+{
+	bool setup_status = true;
+	
+	if(!num_data_bits || (num_data_bits > 8))
+	{
+		logger << DebugError << param_num_data_bits.GetName() << " shall be >= 1 and <= 8" << EndDebugError;
+		setup_status = false;
+	}
+	
+	if(!num_stop_bits)
+	{
+		logger << DebugError << param_num_stop_bits.GetName() << " shall be >= 1" << EndDebugError;
+		setup_status = false;
+	}
+	
+	if(!char_io_import)
+	{
+		setup_status = false;
+	}
+	
+	return setup_status;
+}
+
+void SerialTerminal::end_of_elaboration()
+{
+	// Spawn ClockPropertiesChangedProcess Process that monitor clock properties modifications
+	sc_core::sc_spawn_options clock_properties_changed_process_spawn_options;
+	
+	clock_properties_changed_process_spawn_options.spawn_method();
+	clock_properties_changed_process_spawn_options.set_sensitivity(&clk_prop_proxy.GetClockPropertiesChangedEvent());
+
+	sc_core::sc_spawn(sc_bind(&SerialTerminal::ClockPropertiesChangedProcess, this), "ClockPropertiesChangedProcess", &clock_properties_changed_process_spawn_options);
+}
+
+void SerialTerminal::ClockPropertiesChangedProcess()
+{
+	clock_period = clk_prop_proxy.GetClockPeriod();
+	clock_start_time = clk_prop_proxy.GetClockStartTime();
+	clock_posedge_first = clk_prop_proxy.GetClockPosEdgeFirst();
+	clock_duty_cycle = clk_prop_proxy.GetClockDutyCycle();
+}
+
+void SerialTerminal::nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload& payload)
+{
+	if(id == RX_IF)
+	{
+		const std::vector<bool>& data = payload.get_data();
+		const sc_core::sc_time& period = payload.get_period();
+		
+		if(verbose)
+		{
+			logger << DebugInfo << sc_core::sc_time_stamp() << ": receiving [";
+			std::vector<bool>::size_type data_length = data.size();
+			std::vector<bool>::size_type i;
+			for(i = 0; i < data_length; i++)
+			{
+				if(i != 0) logger << " ";
+				logger << data[i];
+			}
+			logger << "] over RX with a period of " << period << EndDebugInfo;
+		}
+
+		if(period != clock_period)
+		{
+			logger << DebugWarning << "Receiving over " << RX.name() << " with a period " << period << " instead of " << clock_period << EndDebugWarning;
+		}
+		
+		rx_input.fill(payload);
+	}
+}
+
+void SerialTerminal::TX_Process()
+{
+	while(1)
+	{
+		wait();
+		
+		assert(sc_core::sc_time_stamp() >= tx_ready_time);
+		
+		tx_ready_time = sc_core::sc_time_stamp();
+		
+		if(!tx_fifo.empty())
+		{
+			unisim::kernel::tlm2::tlm_serial_payload payload;
+			std::vector<bool>& data = payload.get_data();
+
+			payload.set_period(clock_period);
+			
+			do
+			{
+				data.push_back(0); // start bit
+				tx_ready_time += clock_period;
+
+				uint8_t value = tx_fifo.front();
+				tx_fifo.pop();
+
+				bool parity = (parity_type == PARITY_TYPE_EVEN) ? false : true;
+				unsigned int i;
+				for(i = 0; i < num_data_bits; i++)
+				{
+					bool bit_value = (bit_order == MSB) ? ((value >> (num_data_bits - 1 - i)) & 1) : ((value >> i) & 1);
+					data.push_back(bit_value);
+					tx_ready_time += clock_period;
+					parity ^= bit_value;
+				}
+				
+				if(parity_type != PARITY_TYPE_NONE)
+				{
+					data.push_back(parity); // parity bit
+				}
+				
+				for(i = 0; i < num_stop_bits; i++)
+				{
+					data.push_back(1); // stop bit
+					tx_ready_time += clock_period;
+				}
+			}
+			while(!tx_fifo.empty());
+			
+			if(verbose)
+			{
+				logger << DebugInfo << sc_core::sc_time_stamp() << ": transmitting [";
+				std::vector<bool>::size_type data_length = data.size();
+				std::vector<bool>::size_type i;
+				for(i = 0; i < data_length; i++)
+				{
+					if(i != 0) logger << " ";
+					logger << data[i];
+				}
+				logger << "] over TX with a period of " << clock_period << EndDebugInfo;
+			}
+			
+			TX->b_send(payload);
+			
+			if(sc_core::sc_time_stamp() > tx_ready_time)
+			{
+				tx_ready_time = sc_core::sc_time_stamp();
+			}
+		}
+	}
+}
+
+void SerialTerminal::RX_Process()
+{
+	wait();
+	
+	sc_core::sc_time rx_time = sc_core::SC_ZERO_TIME;
+	
+	while(1)
+	{
+		bool bit_value = rx_input.read();
+		if(verbose)
+		{
+			logger << DebugInfo << rx_input.get_time_stamp() << ": RX=" << bit_value << EndDebugInfo;
+		}
+		rx_time += clock_period;
+		if(!bit_value) // start bit ?
+		{
+			// received start bit
+			unsigned int i;
+			uint8_t value = 0;
+			bool parity = (parity_type == PARITY_TYPE_EVEN) ? false : true;
+			for(i = 0; i < num_data_bits; i++)
+			{
+				if(rx_input.seek(rx_time) == TLM_BITSTREAM_NEED_SYNC)
+				{
+					wait(rx_time);
+					rx_time = sc_core::SC_ZERO_TIME;
+				}
+				if(bit_order == MSB)
+				{
+					value <<= 1;
+				}
+				else
+				{
+					value >>= 1;
+				}
+				bit_value = rx_input.read();
+				if(verbose)
+				{
+					logger << DebugInfo << rx_input.get_time_stamp() << ": RX=" << bit_value << EndDebugInfo;
+				}
+				rx_time += clock_period;
+				if(bit_order == MSB)
+				{
+					value |= bit_value;
+				}
+				else
+				{
+					value |= (bit_value << (num_data_bits - 1));
+				}
+				parity ^= bit_value;
+			}
+			
+			bool parity_error = false;
+			if(parity_type != PARITY_TYPE_NONE)
+			{
+				if(rx_input.seek(rx_time) == TLM_BITSTREAM_NEED_SYNC)
+				{
+					wait(rx_time);
+					rx_time = sc_core::SC_ZERO_TIME;
+				}
+				bit_value = rx_input.read();
+				if(verbose)
+				{
+					logger << DebugInfo << rx_input.get_time_stamp() << ": RX=" << bit_value << EndDebugInfo;
+				}
+				
+				parity_error = (parity != bit_value);
+			}
+			
+			unsigned int rec_stop_bits;
+			for(rec_stop_bits = 0; rec_stop_bits < num_stop_bits; rec_stop_bits++)
+			{
+				if(rx_input.seek(rx_time) == TLM_BITSTREAM_NEED_SYNC)
+				{
+					wait(rx_time);
+					rx_time = sc_core::SC_ZERO_TIME;
+				}
+				bit_value = rx_input.read();
+				if(verbose)
+				{
+					logger << DebugInfo << rx_input.get_time_stamp() << ": RX=" << bit_value << EndDebugInfo;
+				}
+				rx_time += clock_period;
+				if(!bit_value) // not a stop bit
+				{
+					break;
+				}
+			}
+			
+			if(!parity_error && (rec_stop_bits == num_stop_bits))
+			{
+				rx_fifo.push(value);
+			}
+		}
+		
+		if(rx_input.next() == TLM_BITSTREAM_NEED_SYNC)
+		{
+			wait();
+			rx_time = sc_core::SC_ZERO_TIME;
+		}
+	}
+}
+
+void SerialTerminal::ProcessInput()
+{
+	char c;
+	uint8_t v;
+	
+	if(!char_io_import->GetChar(c)) return;
+	
+	v = (uint8_t) c;
+	if(verbose)
+	{
+		logger << DebugInfo << "Receiving ";
+		if(v >= 32)
+			logger << "character '" << c << "'";
+		else
+			logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
+		logger << " from telnet client" << EndDebugInfo;
+	}
+
+	tx_fifo.push(v);
+
+	if(sc_core::sc_time_stamp() < tx_ready_time)
+	{
+		sc_core::sc_time notify_delay(tx_ready_time);
+		notify_delay -= sc_core::sc_time_stamp();
+		tx_event.notify(notify_delay);
+	}
+	else
+	{	
+		tx_event.notify(sc_core::SC_ZERO_TIME);
+	}
+}
+
+void SerialTerminal::ProcessOutput()
+{
+	char c;
+	uint8_t v;
+	
+	if(!rx_fifo.empty())
+	{
+		do
+		{
+			v = rx_fifo.front();
+			rx_fifo.pop();
+			c = (char) v;
+			if(verbose)
+			{
+				logger << DebugInfo << "Sending ";
+				if(v >= 32)
+					logger << "character '" << c << "'";
+				else
+					logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
+				logger << " to telnet client" << EndDebugInfo;
+			}
+			char_io_import->PutChar(c);
+		}
+		while(!rx_fifo.empty());
+	}
+	
+	char_io_import->FlushChars();
+}
+
+void SerialTerminal::PollingProcess()
+{
+	ProcessInput();
+	ProcessOutput();
+	polling_event.notify(polling_period);
+}
+
+} // end of namespace serial_terminal
+} // end of namespace com
+} // end of namespace tlm2
+} // end of namespace component
+} // end of namespace unisim
+
+namespace unisim {
+namespace kernel {
+namespace service {
+
+using unisim::component::tlm2::com::serial_terminal::ParityType;
+using unisim::component::tlm2::com::serial_terminal::PARITY_TYPE_NONE;
+using unisim::component::tlm2::com::serial_terminal::PARITY_TYPE_EVEN;
+using unisim::component::tlm2::com::serial_terminal::PARITY_TYPE_ODD;
+
+template <> Variable<ParityType>::Variable(const char *_name, Object *_object, ParityType& _storage, Type type, const char *_description) :
+	VariableBase(_name, _object, type, _description), storage(&_storage)
+{
+	Simulator::simulator->Initialize(this);
+	AddEnumeratedValue("none");
+	AddEnumeratedValue("even");
+	AddEnumeratedValue("odd");
+}
+
+template <>
+const char *Variable<ParityType>::GetDataTypeName() const
+{
+	return "parity-type";
+}
+
+template <>
+unsigned int Variable<ParityType>::GetBitSize() const
+{
+	return 2;
+}
+
+template <> Variable<ParityType>::operator bool () const { return *storage != PARITY_TYPE_NONE; }
+template <> Variable<ParityType>::operator long long () const { return *storage; }
+template <> Variable<ParityType>::operator unsigned long long () const { return *storage; }
+template <> Variable<ParityType>::operator double () const { return (double)(*storage); }
+template <> Variable<ParityType>::operator string () const
+{
+	switch(*storage)
+	{
+		case PARITY_TYPE_NONE: return std::string("none");
+		case PARITY_TYPE_EVEN: return std::string("even");
+		case PARITY_TYPE_ODD : return std::string("odd");
+	}
+	return std::string("?");
+}
+
+template <> VariableBase& Variable<ParityType>::operator = (bool value)
+{
+	if(IsMutable())
+	{
+		ParityType tmp = *storage;
+		switch((unsigned int) value)
+		{
+			case PARITY_TYPE_NONE:
+			case PARITY_TYPE_EVEN:
+			case PARITY_TYPE_ODD :
+				tmp = (ParityType)(unsigned int) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<ParityType>::operator = (long long value)
+{
+	if(IsMutable())
+	{
+		ParityType tmp = *storage;
+		switch(value)
+		{
+			case PARITY_TYPE_NONE:
+			case PARITY_TYPE_EVEN:
+			case PARITY_TYPE_ODD :
+				tmp = (ParityType) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<ParityType>::operator = (unsigned long long value)
+{
+	if(IsMutable())
+	{
+		ParityType tmp = *storage;
+		switch(value)
+		{
+			case PARITY_TYPE_NONE:
+			case PARITY_TYPE_EVEN:
+			case PARITY_TYPE_ODD :
+				tmp = (ParityType) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<ParityType>::operator = (double value)
+{
+	if(IsMutable())
+	{
+		ParityType tmp = *storage;
+		switch((unsigned int) value)
+		{
+			case PARITY_TYPE_NONE:
+			case PARITY_TYPE_EVEN:
+			case PARITY_TYPE_ODD :
+				tmp = (ParityType)(unsigned int) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<ParityType>::operator = (const char *value)
+{
+	if(IsMutable())
+	{
+		ParityType tmp = *storage;
+		if(std::string(value) == std::string("none")) tmp = PARITY_TYPE_NONE;
+		else if(std::string(value) == std::string("even")) tmp = PARITY_TYPE_EVEN;
+		else if(std::string(value) == std::string("odd")) tmp = PARITY_TYPE_ODD;
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template class Variable<ParityType>;
+
+using unisim::component::tlm2::com::serial_terminal::BitOrder;
+using unisim::component::tlm2::com::serial_terminal::LSB;
+using unisim::component::tlm2::com::serial_terminal::MSB;
+
+template <> Variable<BitOrder>::Variable(const char *_name, Object *_object, BitOrder& _storage, Type type, const char *_description) :
+	VariableBase(_name, _object, type, _description), storage(&_storage)
+{
+	Simulator::simulator->Initialize(this);
+	AddEnumeratedValue("lsb");
+	AddEnumeratedValue("msb");
+}
+
+template <>
+const char *Variable<BitOrder>::GetDataTypeName() const
+{
+	return "bit-order";
+}
+
+template <>
+unsigned int Variable<BitOrder>::GetBitSize() const
+{
+	return 1;
+}
+
+template <> Variable<BitOrder>::operator bool () const { return *storage != LSB; }
+template <> Variable<BitOrder>::operator long long () const { return *storage; }
+template <> Variable<BitOrder>::operator unsigned long long () const { return *storage; }
+template <> Variable<BitOrder>::operator double () const { return (double)(*storage); }
+template <> Variable<BitOrder>::operator string () const
+{
+	switch(*storage)
+	{
+		case LSB: return std::string("lsb");
+		case MSB: return std::string("msb");
+	}
+	return std::string("?");
+}
+
+template <> VariableBase& Variable<BitOrder>::operator = (bool value)
+{
+	if(IsMutable())
+	{
+		BitOrder tmp = *storage;
+		switch((unsigned int) value)
+		{
+			case LSB:
+			case MSB:
+				tmp = (BitOrder)(unsigned int) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<BitOrder>::operator = (long long value)
+{
+	if(IsMutable())
+	{
+		BitOrder tmp = *storage;
+		switch(value)
+		{
+			case LSB:
+			case MSB:
+				tmp = (BitOrder) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<BitOrder>::operator = (unsigned long long value)
+{
+	if(IsMutable())
+	{
+		BitOrder tmp = *storage;
+		switch(value)
+		{
+			case LSB:
+			case MSB:
+				tmp = (BitOrder) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<BitOrder>::operator = (double value)
+{
+	if(IsMutable())
+	{
+		BitOrder tmp = *storage;
+		switch((unsigned int) value)
+		{
+			case LSB:
+			case MSB:
+				tmp = (BitOrder)(unsigned int) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<BitOrder>::operator = (const char *value)
+{
+	if(IsMutable())
+	{
+		BitOrder tmp = *storage;
+		if(std::string(value) == std::string("lsb")) tmp = LSB;
+		else if(std::string(value) == std::string("msb")) tmp = MSB;
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template class Variable<BitOrder>;
+
+} // end of service namespace
+} // end of kernel namespace
+} // end of unisim namespace

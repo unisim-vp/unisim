@@ -50,6 +50,7 @@
 #include <unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.hh>
 #include <unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.hh>
 #include <unisim/component/tlm2/com/freescale/mpc57xx/linflexd/linflexd.hh>
+#include <unisim/component/tlm2/com/serial_terminal/serial_terminal.hh>
 
 // Class definition of kernel, services and interfaces
 #include <unisim/kernel/service/service.hh>
@@ -334,6 +335,7 @@ private:
 	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFlexD_14_CONFIG> LINFlexD_14;
 	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFlexD_15_CONFIG> LINFlexD_15;
 	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFlexD_16_CONFIG> LINFlexD_16;
+	typedef unisim::component::tlm2::com::serial_terminal::SerialTerminal SERIAL_TERMINAL;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_0_TX;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_0_RX;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_1_TX;
@@ -361,6 +363,7 @@ private:
 	typedef unisim::service::debug::gdb_server::GDBServer<CPU_ADDRESS_TYPE> GDB_SERVER;
 	typedef unisim::service::debug::profiler::Profiler<CPU_ADDRESS_TYPE> PROFILER;
 	typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<CPU_ADDRESS_TYPE> LOADER;
+	typedef unisim::service::telnet::Telnet TELNET;
 	
 	//=========================================================================
 	//===                           Components                              ===
@@ -412,6 +415,8 @@ private:
 	LINFlexD_15_RX *linflexd_15_rx;
 	LINFlexD_16_TX *linflexd_16_tx;
 	LINFlexD_16_RX *linflexd_16_rx;
+	//  - Serial Terminal
+	SERIAL_TERMINAL *serial_terminal;
 	//  - Stubs
 	EBI_STUB *ebi_stub;
 	FLASH_PORT1_STUB *flash_port1_stub;
@@ -436,13 +441,17 @@ private:
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
+	//  - Telnet
+	TELNET *telnet;
 
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
 	bool enable_profiler;
+	bool enable_serial_terminal;
 	unisim::kernel::service::Parameter<bool> param_enable_gdb_server;
 	unisim::kernel::service::Parameter<bool> param_enable_inline_debugger;
 	unisim::kernel::service::Parameter<bool> param_enable_profiler;
+	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal;
 
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);

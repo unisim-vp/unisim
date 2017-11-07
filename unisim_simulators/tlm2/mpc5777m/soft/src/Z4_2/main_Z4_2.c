@@ -9,6 +9,7 @@
 #include "stm.h"
 #include "swt.h"
 #include "pit.h"
+#include "linflexd.h"
 
 #define KEY_VALUE1 0x5AF0ul
 #define KEY_VALUE2 0xA50Ful
@@ -47,12 +48,14 @@ void hw_init(void)
 	stm_drv_init();
 	swt_drv_init();
 	pit_drv_init();
+	linflexd_drv_init();
 
-	intc_init(); // initialize interrupt controller
-	swt_init(2); // initialize SWT_2
-	stm_init(2); // initialize STM_2
-	pit_init(0); // initialize PIT_0
-	pit_init(1); // initialize PIt_1
+	intc_init();      // initialize interrupt controller
+	swt_init(2);      // initialize SWT_2
+	stm_init(2);      // initialize STM_2
+	pit_init(0);      // initialize PIT_0
+	pit_init(1);      // initialize PIT_1
+	linflexd_init(0); // initialize LINFlexD_0
 	intc_enable_external_interrupt(); // Enable processor external interrupts
 }
 
@@ -74,6 +77,34 @@ void periodic_task2(unsigned int pit_id, unsigned int chan)
 	pit_clear_timer_interrupt_flag(pit_id, chan); // clear PIT_0 interrupt flag
 }
 
+void linflexd_0_int_rx(unsigned int linflexd_id, enum LINFlexD_INT linflexd_int)
+{
+	if(linflexd_get_uart_data_received_interrupt_flag(linflexd_id))
+	{
+		linflexd_clear_uart_data_received_interrupt_flag(linflexd_id); // LINFlexD_0 (Normal mode): clear data received interrupt flag
+		
+		char ch = 0;
+		linflexd_uart_rx_buffer_read_byte(linflexd_id, &ch, 0);        // LINFlexD_0 (Normal mode): receive character
+			
+		linflexd_release_uart_rx_buffer(linflexd_id);                  // LINFlexD_0 (Normal mode): release message buffer
+		
+		linflexd_uart_tx_buffer_write_byte(linflexd_id, &ch, 0);       // LINFlexD_0 (Normal mode): send character
+	}
+}
+
+void linflexd_0_int_tx(unsigned int linflexd_id, enum LINFlexD_INT linflexd_int)
+{
+	if(linflexd_get_uart_data_transmitted_interrupt_flag(linflexd_id))
+	{
+		linflexd_clear_uart_data_transmitted_interrupt_flag(linflexd_id);       // LINFlexD_0 (Normal mode): clear transmission complete flag
+	}
+}
+
+void linflexd_0_int_err(unsigned int linflexd_id, enum LINFlexD_INT linflexd_int)
+{
+	while(1);
+}
+
 volatile unsigned int counter = 0;
 
 int main_Z4_2(void)
@@ -90,7 +121,14 @@ int main_Z4_2(void)
 	stm_select_channel_irq_for_processor(2, 0, 2);  // STM_2: select STM_2 channel #0 IRQ for processor #2
 
 	pit_set_timer_irq_priority(0, 0, 2);            // PIT_0: set PIT_0 timer #0 IRQ priority level to 2
-	pit_select_timer_irq_for_processor(0, 0, 2);    // PIT_0: select in PIT_0 timer #0 IRQ for Processor #2
+	pit_select_timer_irq_for_processor(0, 0, 2);    // PIT_0: select PIT_0 timer #0 IRQ for Processor #2
+	
+	linflexd_set_irq_priority(0, LINFlexD_INT_RX, 4);         // LINFlexD_0: set LINFlexD_0 INT_RX priority level to 4
+	linflexd_select_irq_for_processor(0, LINFlexD_INT_RX, 2); // LINFlexD_0: select LINFlexD_0 INT_RX for Processor #2
+	linflexd_set_irq_priority(0, LINFlexD_INT_TX, 5);         // LINFlexD_0: set LINFlexD_0 INT_TX priority level to 5
+	linflexd_select_irq_for_processor(0, LINFlexD_INT_TX, 2); // LINFlexD_0: select LINFlexD_0 INT_TX for Processor #2
+	linflexd_set_irq_priority(0, LINFlexD_INT_ERR, 3);         // LINFlexD_0: set LINFlexD_0 INT_ERR priority level to 3
+	linflexd_select_irq_for_processor(0, LINFlexD_INT_ERR, 2); // LINFlexD_0: select LINFlexD_0 INT_ERR for Processor #2
 	
 	// trigger periodic_task every 200 us (with a 50 Mhz clock)
 	stm_set_interrupt_handler(2, 0, periodic_task); // STM_2: install a hook for STM_2 channel #0 interrupts
@@ -113,6 +151,43 @@ int main_Z4_2(void)
 	pit_enable_timer(1, 1);                      // PIT_1: enable timer #1
 	pit_enable_timers_clock(1);                  // PIT_1: enable PIT_1 timers clock
 	
+	// install LINFlexD_0 interrupt handlers
+	linflexd_set_interrupt_handler(0, LINFlexD_INT_RX, &linflexd_0_int_rx);
+	linflexd_set_interrupt_handler(0, LINFlexD_INT_TX, &linflexd_0_int_tx);
+	linflexd_set_interrupt_handler(0, LINFlexD_INT_ERR, &linflexd_0_int_err);
+	
+	// configure LINFlexD_0
+	linflexd_request_to_enter_init_mode(0);                      // LINFlexD_0  (sleep mode): request enter init mode
+	linflexd_request_to_exit_sleep_mode(0);                      // LINFlexD_0  (sleep mode): request leaving sleep mode
+	linflexd_enable_uart_mode(0);                                // LINFlexD_0   (init mode): enable UART mode
+	linflexd_enable_uart_tx(0);                                  // LINFlexD_0   (init mode): enable UART Tx
+	linflexd_enable_uart_rx(0);                                  // LINFlexD_0   (init mode): enable UART Rx
+	
+	linflexd_receive_msb_first(0);                               // LINFlexD_0   (init mode): receive MSB first
+	linflexd_transmit_msb_first(0);                              // LINFlexD_0   (init mode): transmit MSB first
+	
+	// set baud rate to 10000 bauds (assuming LIN_CLK = 80 Mhz)
+	// ROSE=0: baud rate = LIN_CLK / ( 16 * LDIV)
+	// ROSE=1: baud rate = LIN_CLK / (OSR * LDIV)
+	linflexd_disable_uart_reduced_over_sampling(0);              // LINFlexD_0   (init mode): disable UART reduced over sampling (ROSE=0)
+	linflexd_set_lin_clock_divisor(0, 500, 0);                   // LINFlexD_0   (init mode): set LDIV (LDIV=500+0/16=500.0)
+	                                                             
+	linflexd_select_tx_stop_bits(0, 1);                          // LINFlexD_0   (init mode): 1 stop bit for transmission
+	linflexd_select_uart_rx_stop_bits(0, 1);                     // LINFlexD_0   (init mode): 1 stop bit for reception
+	    
+	linflexd_select_uart_tx_buffer_mode(0);                      // LINFlexD_0   (init mode): select UART Tx buffer mode
+	linflexd_set_uart_tx_buffer_length(0, 1);                    // LINFlexD_0   (init mode): set UART Tx buffer length to 1 byte
+	                                                             
+	linflexd_select_uart_rx_buffer_mode(0);                      // LINFlexD_0   (init mode): select UART Rx buffer mode
+	linflexd_set_uart_rx_buffer_length(0, 1);                    // LINFlexD_0   (init mode): set UART Rx buffer length to 1 byte
+	
+	linflexd_select_uart_word_length(0, LINFlexD_WORD_LENGTH_8); // LINFlexD_0   (init mode): 8-bit data word length without parity
+	
+	linflexd_enable_data_received_interrupt(0);                  // LINFlexD_0   (init mode): enable data received interrupt (caught by linflexd_0_int_rx)
+	linflexd_enable_data_transmitted_interrupt(0);               // LINFlexD_0   (init mode): enable data transmitted interrupt (caught by linflexd_0_int_tx)
+	
+	linflexd_request_to_exit_init_mode(0);                       // LINFlexD_0   (init mode): request leaving init mode (i.e. entering normal mode)
+
 	/* Loop forever */
 	for(;;)
 	{   

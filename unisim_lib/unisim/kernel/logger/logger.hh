@@ -50,6 +50,8 @@ namespace logger {
 struct LoggerServer;
 struct Logger;
 
+enum mode_t { NO_MODE = 0, INFO_MODE, WARNING_MODE, ERROR_MODE };
+
 typedef void (LoggerServer::*LoggerServerOutputMethodPtr)(std::string, const char *);
 
 class LoggerStreamBuffer : public std::streambuf
@@ -122,7 +124,6 @@ private:
 
 	std::string name;
 	std::stringstream buffer;
-	enum mode_t { NO_MODE = 0, INFO_MODE, WARNING_MODE, ERROR_MODE };
 	mode_t mode;
 	unisim::kernel::logger::LoggerServer *server;
 	LoggerStream info_stream;

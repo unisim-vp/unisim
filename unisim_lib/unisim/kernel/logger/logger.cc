@@ -148,8 +148,8 @@ Logger::Logger(const std::string& _name)
 	, mode(NO_MODE)
 	, server(0)
 	, info_stream(*this, &unisim::kernel::logger::LoggerServer::DebugInfo)
-	, warning_stream(*this, &unisim::kernel::logger::LoggerServer::DebugInfo)
-	, error_stream(*this, &unisim::kernel::logger::LoggerServer::DebugInfo)
+	, warning_stream(*this, &unisim::kernel::logger::LoggerServer::DebugWarning)
+	, error_stream(*this, &unisim::kernel::logger::LoggerServer::DebugError)
 {
 	GetServerInstance();
 }
@@ -160,8 +160,8 @@ Logger::Logger(const char * _name)
 	, mode(NO_MODE)
 	, server(0)
 	, info_stream(*this, &unisim::kernel::logger::LoggerServer::DebugInfo)
-	, warning_stream(*this, &unisim::kernel::logger::LoggerServer::DebugInfo)
-	, error_stream(*this, &unisim::kernel::logger::LoggerServer::DebugInfo)
+	, warning_stream(*this, &unisim::kernel::logger::LoggerServer::DebugWarning)
+	, error_stream(*this, &unisim::kernel::logger::LoggerServer::DebugError)
 {
 	GetServerInstance();
 }
@@ -172,8 +172,8 @@ Logger::Logger(const unisim::kernel::service::Object& object)
 	, mode(NO_MODE)
 	, server(0)
 	, info_stream(*this, &unisim::kernel::logger::LoggerServer::DebugInfo)
-	, warning_stream(*this, &unisim::kernel::logger::LoggerServer::DebugInfo)
-	, error_stream(*this, &unisim::kernel::logger::LoggerServer::DebugInfo)
+	, warning_stream(*this, &unisim::kernel::logger::LoggerServer::DebugWarning)
+	, error_stream(*this, &unisim::kernel::logger::LoggerServer::DebugError)
 {
 	GetServerInstance();
 }
@@ -185,14 +185,14 @@ Logger::~Logger()
 
 Logger& operator <<(Logger& logger, std::ostream& (*f)(std::ostream &))
 {
-	if (logger.mode == Logger::NO_MODE) return logger;
+	if (logger.mode == NO_MODE) return logger;
 	logger.buffer << f;
 	return logger;
 }
 
 Logger& operator <<(Logger& logger, std::ios_base& (*f)(std::ios_base &))
 {
-	if (logger.mode == Logger::NO_MODE) return logger;
+	if (logger.mode == NO_MODE) return logger;
 	logger.buffer << f;
 	return logger;
 }

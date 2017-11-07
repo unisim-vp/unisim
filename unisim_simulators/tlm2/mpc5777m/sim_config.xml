@@ -2035,6 +2035,57 @@
 				</enumeration>
 			</variable>
 		</object>
+		<object name="HARDWARE.SERIAL_TERMINAL">
+			<variable name="polling-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ms</value>
+				<description>polling period</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="parity-type">
+				<type>parameter</type>
+				<data_type>parity-type</data_type>
+				<value>none</value>
+				<description>parity type (none, even, odd)</description>
+				<enumeration>
+					<item>none</item>
+					<item>even</item>
+					<item>odd</item>
+				</enumeration>
+			</variable>
+			<variable name="num-stop-bits">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000001</value>
+				<description>number of stop bits (1, 2, ...)</description>
+			</variable>
+			<variable name="bit-order">
+				<type>parameter</type>
+				<data_type>bit-order</data_type>
+				<value>msb</value>
+				<description>first bit in reception/transmission (lsb, msb)</description>
+				<enumeration>
+					<item>lsb</item>
+					<item>msb</item>
+				</enumeration>
+			</variable>
+			<variable name="num-data-bits">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000008</value>
+				<description>number of data bits (1-8; typically 7 or 8)</description>
+			</variable>
+		</object>
 		<object name="HARDWARE.EBI">
 			<variable name="enable">
 				<type>parameter</type>
@@ -2480,6 +2531,46 @@
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
 				<value>12500 ps</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.SERIAL_TERMINAL_CLK">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>100 us</value>
 				<description>clock period</description>
 			</variable>
 			<variable name="clock-duty-cycle">
@@ -3385,6 +3476,90 @@
 			<description>List of files to load. Syntax: [[filename=]&lt;filename1&gt;[=[format=]&lt;format1&gt;]][,[filename=]&lt;filename2&gt;[=[format=]&lt;format2&gt;]]... (e.g. boot.bin=raw,app.elf)</description>
 		</variable>
 	</object>
+	<object name="logger">
+		<variable name="std_err">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>Show logger output through the standard error output</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="std_out">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Show logger output through the standard output</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="std_err_color">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Colorize logger output through the standard error output (only works if std_err is active)</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="std_out_color">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Colorize logger output through the standard output (only works if std_out is active)</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="file">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Keep logger output in a file</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>logger_output.txt</value>
+			<description>Filename to keep logger output (the option file must be activated)</description>
+		</variable>
+		<variable name="xml_file">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Keep logger output in a file xml formatted</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="xml_filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>logger_output.xml</value>
+			<description>Filename to keep logger xml output (the option xml_file must be activated)</description>
+		</variable>
+		<variable name="xml_file_gzipped">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Compress the xml output (a .gz extension is automatically appended to the xml_filename option)</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
 	<object name="profiler0">
 		<variable name="search-path">
 			<type>parameter</type>
@@ -3511,6 +3686,54 @@
 			<description>CSV delimiter</description>
 		</variable>
 	</object>
+	<object name="telnet">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-tcp-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>12348</value>
+			<description>TCP/IP port of telnet</description>
+		</variable>
+		<variable name="enable-negotiation">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>Enable negotiation with client</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-null-character">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter null character</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-line-feed">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter line feed</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
 	<variable name="enable-gdb-server">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
@@ -3551,86 +3774,14 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
-	<variable name="file">
-		<type>parameter</type>
-		<data_type>boolean</data_type>
-		<value>false</value>
-		<description>Keep logger output in a file</description>
-		<enumeration>
-			<item>true</item>
-			<item>false</item>
-		</enumeration>
-	</variable>
-	<variable name="filename">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>logger_output.txt</value>
-		<description>Filename to keep logger output (the option file must be activated)</description>
-	</variable>
-	<variable name="std_err">
+	<variable name="enable-serial-terminal">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>true</value>
-		<description>Show logger output through the standard error output</description>
+		<description>Enable/Disable serial terminal instantiation</description>
 		<enumeration>
 			<item>true</item>
 			<item>false</item>
 		</enumeration>
-	</variable>
-	<variable name="std_err_color">
-		<type>parameter</type>
-		<data_type>boolean</data_type>
-		<value>false</value>
-		<description>Colorize logger output through the standard error output (only works if std_err is active)</description>
-		<enumeration>
-			<item>true</item>
-			<item>false</item>
-		</enumeration>
-	</variable>
-	<variable name="std_out">
-		<type>parameter</type>
-		<data_type>boolean</data_type>
-		<value>false</value>
-		<description>Show logger output through the standard output</description>
-		<enumeration>
-			<item>true</item>
-			<item>false</item>
-		</enumeration>
-	</variable>
-	<variable name="std_out_color">
-		<type>parameter</type>
-		<data_type>boolean</data_type>
-		<value>false</value>
-		<description>Colorize logger output through the standard output (only works if std_out is active)</description>
-		<enumeration>
-			<item>true</item>
-			<item>false</item>
-		</enumeration>
-	</variable>
-	<variable name="xml_file">
-		<type>parameter</type>
-		<data_type>boolean</data_type>
-		<value>false</value>
-		<description>Keep logger output in a file xml formatted</description>
-		<enumeration>
-			<item>true</item>
-			<item>false</item>
-		</enumeration>
-	</variable>
-	<variable name="xml_file_gzipped">
-		<type>parameter</type>
-		<data_type>boolean</data_type>
-		<value>false</value>
-		<description>Compress the xml output (a .gz extension is automatically appended to the xml_filename option)</description>
-		<enumeration>
-			<item>true</item>
-			<item>false</item>
-		</enumeration>
-	</variable>
-	<variable name="xml_filename">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>logger_output.xml</value>
-		<description>Filename to keep logger xml output (the option xml_file must be activated)</description>
 	</variable>
 </variables>

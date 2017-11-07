@@ -73,6 +73,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, linflexd_15_rx(0)
 	, linflexd_16_tx(0)
 	, linflexd_16_rx(0)
+	, serial_terminal(0)
 	, ebi_stub(0)
 	, flash_port1_stub(0)
 	, xbar_0_s6_stub(0)
@@ -85,12 +86,15 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, profiler()
 	, sim_time(0)
 	, host_time(0)
+	, telnet(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
 	, enable_profiler(false)
+	, enable_serial_terminal(false)
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable/Disable profiling")
+	, param_enable_serial_terminal("enable-serial-terminal", 0, enable_serial_terminal, "Enable/Disable serial terminal instantiation")
 	, exit_status(0)
 {
 	unsigned int channel_num;
@@ -145,6 +149,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	linflexd_14 = new LINFlexD_14("LINFlexD_14", this);
 	linflexd_15 = new LINFlexD_15("LINFlexD_15", this);
 	linflexd_16 = new LINFlexD_16("LINFlexD_16", this);
+	
+	//  - LIN Serial Buses
 	linflexd_0_tx = new LINFlexD_0_TX("LINFlexD_0_tx");
 	linflexd_0_rx = new LINFlexD_0_RX("LINFlexD_0_rx");
 	linflexd_1_tx = new LINFlexD_1_TX("LINFlexD_1_tx");
@@ -158,6 +164,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	linflexd_16_tx = new LINFlexD_16_TX("LINFlexD_16_tx");
 	linflexd_16_rx = new LINFlexD_16_RX("LINFlexD_16_rx");
 	
+	//  - Serial Terminal
+	serial_terminal = enable_serial_terminal ? new SERIAL_TERMINAL("SERIAL_TERMINAL", this) : 0;
+	
+	//  - Stubs
 	ebi_stub = new EBI_STUB("EBI", this);
 	flash_port1_stub = new FLASH_PORT1_STUB("FLASH_PORT1", this);
 	xbar_0_s6_stub = new XBAR_0_S6_STUB("XBAR_0_S6", this);
@@ -187,6 +197,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
 	host_time = new unisim::service::time::host_time::HostTime("host-time");
+	//  - Telnet
+	telnet = enable_serial_terminal ? new TELNET("telnet") : 0;
 	
 	//=========================================================================
 	//===                          Port registration                        ===
@@ -327,13 +339,13 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(linflexd_0->INT_RX);
 	RegisterPort(linflexd_0->INT_TX);
 	RegisterPort(linflexd_0->INT_ERR);
-	for(dma_req_num = 0; dma_req_num < LINFlexD_0::NUM_TX_DMA_CHANNELS; dma_req_num++)
+	for(dma_req_num = 0; dma_req_num < LINFlexD_0::NUM_DMA_TX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_0->tx_dma_req[dma_req_num]);
+		RegisterPort(*linflexd_0->DMA_TX[dma_req_num]);
 	}
-	for(dma_req_num = 0; dma_req_num < LINFlexD_0::NUM_RX_DMA_CHANNELS; dma_req_num++)
+	for(dma_req_num = 0; dma_req_num < LINFlexD_0::NUM_DMA_RX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_0->rx_dma_req[dma_req_num]);
+		RegisterPort(*linflexd_0->DMA_RX[dma_req_num]);
 	}
 
 	RegisterPort(linflexd_1->m_clk);
@@ -342,13 +354,13 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(linflexd_1->INT_RX);
 	RegisterPort(linflexd_1->INT_TX);
 	RegisterPort(linflexd_1->INT_ERR);
-	for(dma_req_num = 0; dma_req_num < LINFlexD_1::NUM_TX_DMA_CHANNELS; dma_req_num++)
+	for(dma_req_num = 0; dma_req_num < LINFlexD_1::NUM_DMA_TX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_1->tx_dma_req[dma_req_num]);
+		RegisterPort(*linflexd_1->DMA_TX[dma_req_num]);
 	}
-	for(dma_req_num = 0; dma_req_num < LINFlexD_1::NUM_RX_DMA_CHANNELS; dma_req_num++)
+	for(dma_req_num = 0; dma_req_num < LINFlexD_1::NUM_DMA_RX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_1->rx_dma_req[dma_req_num]);
+		RegisterPort(*linflexd_1->DMA_RX[dma_req_num]);
 	}
 
 	RegisterPort(linflexd_2->m_clk);
@@ -357,13 +369,13 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(linflexd_2->INT_RX);
 	RegisterPort(linflexd_2->INT_TX);
 	RegisterPort(linflexd_2->INT_ERR);
-	for(dma_req_num = 0; dma_req_num < LINFlexD_2::NUM_TX_DMA_CHANNELS; dma_req_num++)
+	for(dma_req_num = 0; dma_req_num < LINFlexD_2::NUM_DMA_TX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_2->tx_dma_req[dma_req_num]);
+		RegisterPort(*linflexd_2->DMA_TX[dma_req_num]);
 	}
-	for(dma_req_num = 0; dma_req_num < LINFlexD_2::NUM_RX_DMA_CHANNELS; dma_req_num++)
+	for(dma_req_num = 0; dma_req_num < LINFlexD_2::NUM_DMA_RX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_2->rx_dma_req[dma_req_num]);
+		RegisterPort(*linflexd_2->DMA_RX[dma_req_num]);
 	}
 
 	RegisterPort(linflexd_14->m_clk);
@@ -372,13 +384,13 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(linflexd_14->INT_RX);
 	RegisterPort(linflexd_14->INT_TX);
 	RegisterPort(linflexd_14->INT_ERR);
-	for(dma_req_num = 0; dma_req_num < LINFlexD_14::NUM_TX_DMA_CHANNELS; dma_req_num++)
+	for(dma_req_num = 0; dma_req_num < LINFlexD_14::NUM_DMA_TX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_14->tx_dma_req[dma_req_num]);
+		RegisterPort(*linflexd_14->DMA_TX[dma_req_num]);
 	}
-	for(dma_req_num = 0; dma_req_num < LINFlexD_14::NUM_RX_DMA_CHANNELS; dma_req_num++)
+	for(dma_req_num = 0; dma_req_num < LINFlexD_14::NUM_DMA_RX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_14->rx_dma_req[dma_req_num]);
+		RegisterPort(*linflexd_14->DMA_RX[dma_req_num]);
 	}
 
 	RegisterPort(linflexd_15->m_clk);
@@ -387,13 +399,13 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(linflexd_15->INT_RX);
 	RegisterPort(linflexd_15->INT_TX);
 	RegisterPort(linflexd_15->INT_ERR);
-	for(dma_req_num = 0; dma_req_num < LINFlexD_15::NUM_TX_DMA_CHANNELS; dma_req_num++)
+	for(dma_req_num = 0; dma_req_num < LINFlexD_15::NUM_DMA_TX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_15->tx_dma_req[dma_req_num]);
+		RegisterPort(*linflexd_15->DMA_TX[dma_req_num]);
 	}
-	for(dma_req_num = 0; dma_req_num < LINFlexD_15::NUM_RX_DMA_CHANNELS; dma_req_num++)
+	for(dma_req_num = 0; dma_req_num < LINFlexD_15::NUM_DMA_RX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_15->rx_dma_req[dma_req_num]);
+		RegisterPort(*linflexd_15->DMA_RX[dma_req_num]);
 	}
 
 	RegisterPort(linflexd_16->m_clk);
@@ -402,13 +414,18 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(linflexd_16->INT_RX);
 	RegisterPort(linflexd_16->INT_TX);
 	RegisterPort(linflexd_16->INT_ERR);
-	for(dma_req_num = 0; dma_req_num < LINFlexD_16::NUM_TX_DMA_CHANNELS; dma_req_num++)
+	for(dma_req_num = 0; dma_req_num < LINFlexD_16::NUM_DMA_TX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_16->tx_dma_req[dma_req_num]);
+		RegisterPort(*linflexd_16->DMA_TX[dma_req_num]);
 	}
-	for(dma_req_num = 0; dma_req_num < LINFlexD_16::NUM_RX_DMA_CHANNELS; dma_req_num++)
+	for(dma_req_num = 0; dma_req_num < LINFlexD_16::NUM_DMA_RX_CHANNELS; dma_req_num++)
 	{
-		RegisterPort(*linflexd_16->rx_dma_req[dma_req_num]);
+		RegisterPort(*linflexd_16->DMA_RX[dma_req_num]);
+	}
+	
+	if(enable_serial_terminal)
+	{
+		RegisterPort(serial_terminal->CLK);
 	}
 
 	//=========================================================================
@@ -424,6 +441,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateClock("PER_CLK");
 	CreateClock("RTI_CLK");
 	CreateClock("LIN_CLK");
+	CreateClock("SERIAL_TERMINAL_CLK");
 	
 	CreateSignal("m_por", false);
 	CreateSignal("stop", false);
@@ -449,18 +467,18 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 
 	CreateSignalArray(64, "dma_trigger", false);
 	
-	CreateSignalArray(LINFlexD_0::NUM_RX_DMA_CHANNELS, "LINFlexD_0_RX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_0::NUM_TX_DMA_CHANNELS, "LINFlexD_0_TX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_1::NUM_RX_DMA_CHANNELS, "LINFlexD_1_RX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_1::NUM_TX_DMA_CHANNELS, "LINFlexD_1_TX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_2::NUM_RX_DMA_CHANNELS, "LINFlexD_2_RX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_2::NUM_TX_DMA_CHANNELS, "LINFlexD_2_TX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_14::NUM_RX_DMA_CHANNELS, "LINFlexD_14_RX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_14::NUM_TX_DMA_CHANNELS, "LINFlexD_14_TX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_15::NUM_RX_DMA_CHANNELS, "LINFlexD_15_RX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_15::NUM_TX_DMA_CHANNELS, "LINFlexD_15_TX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_16::NUM_RX_DMA_CHANNELS, "LINFlexD_16_RX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_16::NUM_TX_DMA_CHANNELS, "LINFlexD_16_TX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_0::NUM_DMA_RX_CHANNELS, "LINFlexD_0_RX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_0::NUM_DMA_TX_CHANNELS, "LINFlexD_0_TX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_1::NUM_DMA_RX_CHANNELS, "LINFlexD_1_RX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_1::NUM_DMA_TX_CHANNELS, "LINFlexD_1_TX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_2::NUM_DMA_RX_CHANNELS, "LINFlexD_2_RX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_2::NUM_DMA_TX_CHANNELS, "LINFlexD_2_TX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_14::NUM_DMA_RX_CHANNELS, "LINFlexD_14_RX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_14::NUM_DMA_TX_CHANNELS, "LINFlexD_14_TX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_15::NUM_DMA_RX_CHANNELS, "LINFlexD_15_RX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_15::NUM_DMA_TX_CHANNELS, "LINFlexD_15_TX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_16::NUM_DMA_RX_CHANNELS, "LINFlexD_16_RX_DMA_REQ", false);
+	CreateSignalArray(LINFlexD_16::NUM_DMA_TX_CHANNELS, "LINFlexD_16_TX_DMA_REQ", false);
 	
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -520,6 +538,12 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	linflexd_15->LINRX(linflexd_15_rx->serial_socket);
 	linflexd_16->LINTX(linflexd_16_tx->serial_socket);
 	linflexd_16->LINRX(linflexd_16_rx->serial_socket);
+	
+	if(serial_terminal)
+	{
+		serial_terminal->RX(linflexd_0_tx->serial_socket);
+		serial_terminal->TX(linflexd_0_rx->serial_socket);
+	}
 	
 	Bind("HARDWARE.Main_Core_0.m_clk"           , "HARDWARE.COMP_CLK");
 	Bind("HARDWARE.Main_Core_0.m_por"           , "HARDWARE.m_por");
@@ -645,38 +669,43 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.LINFlexD_0.m_clk"        , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.LINFlexD_0.lin_clk"      , "HARDWARE.LIN_CLK");
 	Bind("HARDWARE.LINFlexD_0.reset_b"      , "HARDWARE.reset_b");
-	Bind("HARDWARE.LINFlexD_0.rx_dma_req_0" , "HARDWARE.LINFlexD_0_RX_DMA_REQ_0");
-	Bind("HARDWARE.LINFlexD_0.tx_dma_req_0" , "HARDWARE.LINFlexD_0_TX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_0.DMA_RX_0" , "HARDWARE.LINFlexD_0_RX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_0.DMA_TX_0" , "HARDWARE.LINFlexD_0_TX_DMA_REQ_0");
 
 	Bind("HARDWARE.LINFlexD_1.m_clk"        , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.LINFlexD_1.lin_clk"      , "HARDWARE.LIN_CLK");
 	Bind("HARDWARE.LINFlexD_1.reset_b"      , "HARDWARE.reset_b");
-	Bind("HARDWARE.LINFlexD_1.rx_dma_req_0" , "HARDWARE.LINFlexD_1_RX_DMA_REQ_0");
-	Bind("HARDWARE.LINFlexD_1.tx_dma_req_0" , "HARDWARE.LINFlexD_1_TX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_1.DMA_RX_0" , "HARDWARE.LINFlexD_1_RX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_1.DMA_TX_0" , "HARDWARE.LINFlexD_1_TX_DMA_REQ_0");
 
 	Bind("HARDWARE.LINFlexD_14.m_clk"        , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.LINFlexD_14.lin_clk"      , "HARDWARE.LIN_CLK");
 	Bind("HARDWARE.LINFlexD_14.reset_b"      , "HARDWARE.reset_b");
-	Bind("HARDWARE.LINFlexD_14.rx_dma_req_0" , "HARDWARE.LINFlexD_14_RX_DMA_REQ_0");
-	Bind("HARDWARE.LINFlexD_14.tx_dma_req_0" , "HARDWARE.LINFlexD_14_TX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_14.DMA_RX_0" , "HARDWARE.LINFlexD_14_RX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_14.DMA_TX_0" , "HARDWARE.LINFlexD_14_TX_DMA_REQ_0");
 
 	Bind("HARDWARE.LINFlexD_16.m_clk"        , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.LINFlexD_16.lin_clk"      , "HARDWARE.LIN_CLK");
 	Bind("HARDWARE.LINFlexD_16.reset_b"      , "HARDWARE.reset_b");
-	Bind("HARDWARE.LINFlexD_16.rx_dma_req_0" , "HARDWARE.LINFlexD_16_RX_DMA_REQ_0");
-	Bind("HARDWARE.LINFlexD_16.tx_dma_req_0" , "HARDWARE.LINFlexD_16_TX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_16.DMA_RX_0" , "HARDWARE.LINFlexD_16_RX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_16.DMA_TX_0" , "HARDWARE.LINFlexD_16_TX_DMA_REQ_0");
 
 	Bind("HARDWARE.LINFlexD_2.m_clk"        , "HARDWARE.PBRIDGEB_CLK");
 	Bind("HARDWARE.LINFlexD_2.lin_clk"      , "HARDWARE.LIN_CLK");
 	Bind("HARDWARE.LINFlexD_2.reset_b"      , "HARDWARE.reset_b");
-	Bind("HARDWARE.LINFlexD_2.rx_dma_req_0" , "HARDWARE.LINFlexD_2_RX_DMA_REQ_0");
-	Bind("HARDWARE.LINFlexD_2.tx_dma_req_0" , "HARDWARE.LINFlexD_2_TX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_2.DMA_RX_0" , "HARDWARE.LINFlexD_2_RX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_2.DMA_TX_0" , "HARDWARE.LINFlexD_2_TX_DMA_REQ_0");
 
 	Bind("HARDWARE.LINFlexD_15.m_clk"        , "HARDWARE.PBRIDGEB_CLK");
 	Bind("HARDWARE.LINFlexD_15.lin_clk"      , "HARDWARE.LIN_CLK");
 	Bind("HARDWARE.LINFlexD_15.reset_b"      , "HARDWARE.reset_b");
-	Bind("HARDWARE.LINFlexD_15.rx_dma_req_0" , "HARDWARE.LINFlexD_15_RX_DMA_REQ_0");
-	Bind("HARDWARE.LINFlexD_15.tx_dma_req_0" , "HARDWARE.LINFlexD_15_TX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_15.DMA_RX_0" , "HARDWARE.LINFlexD_15_RX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_15.DMA_TX_0" , "HARDWARE.LINFlexD_15_TX_DMA_REQ_0");
+	
+	if(enable_serial_terminal)
+	{
+		Bind("HARDWARE.SERIAL_TERMINAL.CLK", "HARDWARE.SERIAL_TERMINAL_CLK");
+	}
 	
 	// Interrupt sources
 	
@@ -1903,6 +1932,11 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	loader->registers_import >> peripheral_core_2->registers_export;
 	peripheral_core_2->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 	
+	if(enable_serial_terminal)
+	{
+		serial_terminal->char_io_import >> telnet->char_io_export;
+	}
+	
 	SC_HAS_PROCESS(Simulator);
 	
 	SC_THREAD(ResetProcess);
@@ -1947,6 +1981,7 @@ Simulator::~Simulator()
 	if(linflexd_15_rx) delete linflexd_15_rx;
 	if(linflexd_16_tx) delete linflexd_16_tx;
 	if(linflexd_16_rx) delete linflexd_16_rx;
+	if(serial_terminal) delete serial_terminal;
 	if(ebi_stub) delete ebi_stub;
 	if(flash_port1_stub) delete flash_port1_stub;
 	if(xbar_0_s6_stub) delete xbar_0_s6_stub;
@@ -1965,6 +2000,7 @@ Simulator::~Simulator()
 	if(sim_time) delete sim_time;
 	if(host_time) delete host_time;
 	if(loader) delete loader;
+	if(telnet) delete telnet;
 }
 
 void Simulator::ResetProcess()
@@ -2059,6 +2095,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.RTI_CLK.clock-period", "1 us");       // RTI_CLK: 1 Mhz
 	simulator->SetVariable("HARDWARE.LIN_CLK.lazy-clock", "true");
 	simulator->SetVariable("HARDWARE.LIN_CLK.clock-period", "12500 ps");      // LIN_CLK: 80 Mhz ((2/3) * LIN_CLK > PBRIDGEx_CLK > (1/3) * LIN_CLK)
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL_CLK.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL_CLK.clock-period", "100000000 ps"); // SERIAL_TERMINAL_CLK: 10000 baud
 	
 	//  - e200 PowerPC cores
 
@@ -2264,6 +2302,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("debugger.sel-cpu[6]", 0); // profiler
 	simulator->SetVariable("debugger.sel-cpu[7]", 1); // profiler
 	simulator->SetVariable("debugger.sel-cpu[8]", 2); // profiler
+	
+	simulator->SetVariable("telnet.telnet-tcp-port", 12348);
 }
 
 void Simulator::Run()

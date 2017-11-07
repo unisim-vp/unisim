@@ -173,6 +173,7 @@ unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
+unisim/component/tlm2/com/serial_terminal/serial_terminal.cc \
 "
 
 UNISIM_LIB_SIMULATOR_ISA_FILES="\
@@ -832,6 +833,7 @@ unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.hh \
 unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.hh \
 unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.hh \
 unisim/component/tlm2/com/freescale/mpc57xx/linflexd/linflexd.hh \
+unisim/component/tlm2/com/serial_terminal/serial_terminal.hh \
 "
 
 UNISIM_LIB_SIMULATOR_TEMPLATE_FILES="\
@@ -1039,6 +1041,7 @@ soft/include/intc.h \
 soft/include/stm.h \
 soft/include/swt.h \
 soft/include/pit.h \
+soft/include/linflexd.h \
 soft/src/Z4_2/57xx_ram.ld \
 soft/src/Z4_2/startup.S \
 soft/src/Z4_2/main_Z4_2.c \
@@ -1062,6 +1065,7 @@ soft/src/drv/intc.c \
 soft/src/drv/stm.c \
 soft/src/drv/swt.c \
 soft/src/drv/pit.c \
+soft/src/drv/linflexd.c \
 soft/bin/Z4_2/ram_boot.elf \
 soft/bin/Z4_2/flash_boot.elf \
 soft/bin/Z7_0/ram_boot.elf \

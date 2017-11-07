@@ -82,17 +82,10 @@ using unisim::util::reg::core::IsReadWriteError;
 
 template <typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
 struct Field : unisim::util::reg::core::Field<FIELD
-                                             , ((OFFSET1 >= 0) && (OFFSET1 < 32)) ? ((OFFSET2 >= 0) ? ((OFFSET2 < 32) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : 0) : 1) : 0
+                                             , ((OFFSET1 >= 0) && (OFFSET1 < 32)) ? ((OFFSET2 >= 0) ? ((OFFSET2 < 32) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1)) : (31 - OFFSET1)) : 0
                                              , ((OFFSET1 >= 0) && (OFFSET1 < 32)) ? ((OFFSET2 >= 0) ? ((OFFSET2 < 32) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 0) : 1) : 0
                                              , _ACCESS>
 {
-};
-
-enum LINFlexD_OperatingMode
-{
-	LINFLEXD_INIT_MODE   = 0,
-	LINFLEXD_NORMAL_MODE = 1,
-	LINFLEXD_SLEEP_MODE  = 2
 };
 
 enum LIN_OperationMode
@@ -110,17 +103,37 @@ enum LINFlexD_IRQ_Type
 
 enum LIN_State
 {
-	LINS_SLEEP_MODE                    = 0x0, // 0000
-	LINS_INIT_MODE                     = 0x1, // 0001
-	LINS_IDLE_MODE                     = 0x2, // 0010
-	LINS_SYNC_BREAK                    = 0x3, // 0011
-	LINS_SYNC_DEL                      = 0x4, // 0100
-	LINS_SYNC_FIELD                    = 0x5, // 0101
-	LINS_IDENTIFIER_FIELD              = 0x6, // 0110
-	LINS_HEADER_RECEPTION_TRANSMISSION = 0x7, // 0111
-	LINS_DATA_RECEPTION_TRANSMISSION   = 0x8, // 1000
-	LINS_CHECKSUM                      = 0x9  // 1001
+	LINS_SLEEP_MODE                       = 0x0, // 0000
+	LINS_INIT_MODE                        = 0x1, // 0001
+	LINS_IDLE_MODE                        = 0x2, // 0010
+	LINS_SYNC_BREAK                       = 0x3, // 0011
+	LINS_SYNC_DEL                         = 0x4, // 0100
+	LINS_SYNC_FIELD                       = 0x5, // 0101
+	LINS_IDENTIFIER_FIELD                 = 0x6, // 0110
+	LINS_HEADER_RECEPTION_TRANSMISSION    = 0x7, // 0111
+	LINS_DATA_RECEPTION_DATA_TRANSMISSION = 0x8, // 1000
+	LINS_CHECKSUM                         = 0x9  // 1001
 };
+
+inline std::ostream& operator << (std::ostream& os, const LIN_State& lins)
+{
+	switch(lins)
+	{
+		case LINS_SLEEP_MODE                      : os << "sleep mode LIN state"; break;
+		case LINS_INIT_MODE                       : os << "init mode LIN state"; break;
+		case LINS_IDLE_MODE                       : os << "idle mode LIN state"; break;
+		case LINS_SYNC_BREAK                      : os << "sync break LIN state"; break;
+		case LINS_SYNC_DEL                        : os << "sync del LIN state"; break;
+		case LINS_SYNC_FIELD                      : os << "sync field LIN state"; break;
+		case LINS_IDENTIFIER_FIELD                : os << "identifier field LIN state"; break;
+		case LINS_HEADER_RECEPTION_TRANSMISSION   : os << "header reception/transmission LIN state"; break;
+		case LINS_DATA_RECEPTION_DATA_TRANSMISSION: os << "data reception/data transmission LIN state"; break;
+		case LINS_CHECKSUM                        : os << "checksum LIN state"; break;
+		default                                   : os << "unknown LIN state"; break;
+	}
+	
+	return os;
+}
 
 #if 0
 struct CONFIG
@@ -147,8 +160,8 @@ public:
 	static const unsigned int TLM2_IP_VERSION_MINOR    = 0;
 	static const unsigned int TLM2_IP_VERSION_PATCH    = 0;
 	static const unsigned int BUSWIDTH                 = CONFIG::BUSWIDTH;
-	static const unsigned int NUM_TX_DMA_CHANNELS      = 1 << CONFIG::TX_CH_NUM;
-	static const unsigned int NUM_RX_DMA_CHANNELS      = 1 << CONFIG::RX_CH_NUM;
+	static const unsigned int NUM_DMA_TX_CHANNELS      = 1 << CONFIG::TX_CH_NUM;
+	static const unsigned int NUM_DMA_RX_CHANNELS      = 1 << CONFIG::RX_CH_NUM;
 	static const unsigned int NUM_FILTERS              = CONFIG::NUM_FILTERS;
 	static const bool GENERIC_SLAVE                    = CONFIG::GENERIC_SLAVE;
 	static const bool GENERIC_PSI5                     = CONFIG::GENERIC_PSI5;
@@ -167,17 +180,17 @@ public:
 	typedef unisim::kernel::tlm2::tlm_serial_peripheral_socket_tagged<LINFlexD<CONFIG> > LINTX_type;
 	typedef unisim::kernel::tlm2::tlm_serial_peripheral_socket_tagged<LINFlexD<CONFIG> > LINRX_type;
 	
-	peripheral_slave_if_type                         peripheral_slave_if;             // Peripheral slave interface
-	LINTX_type                                       LINTX;                           // Tx Serial interface
-	LINRX_type                                       LINRX;                           // Rx Serial interface
-	sc_core::sc_in<bool>                             m_clk;                           // clock port
-	sc_core::sc_in<bool>                             lin_clk;                         // LIN Clock port
-	sc_core::sc_in<bool>                             reset_b;                         // reset
-	sc_core::sc_out<bool>                            INT_RX;                          // Interrupt Request
-	sc_core::sc_out<bool>                            INT_TX;                          // Interrupt Request
-	sc_core::sc_out<bool>                            INT_ERR;                         // Interrupt Request
-	sc_core::sc_out<bool>                           *tx_dma_req[NUM_TX_DMA_CHANNELS]; // Tx DMA request
-	sc_core::sc_out<bool>                           *rx_dma_req[NUM_RX_DMA_CHANNELS]; // Rx DMA request
+	peripheral_slave_if_type                         peripheral_slave_if;         // Peripheral slave interface
+	LINTX_type                                       LINTX;                       // Tx Serial interface
+	LINRX_type                                       LINRX;                       // Rx Serial interface
+	sc_core::sc_in<bool>                             m_clk;                       // clock port
+	sc_core::sc_in<bool>                             lin_clk;                     // LIN Clock port
+	sc_core::sc_in<bool>                             reset_b;                     // reset
+	sc_core::sc_out<bool>                            INT_RX;                      // Interrupt Request
+	sc_core::sc_out<bool>                            INT_TX;                      // Interrupt Request
+	sc_core::sc_out<bool>                            INT_ERR;                     // Interrupt Request
+	sc_core::sc_out<bool>                           *DMA_RX[NUM_DMA_TX_CHANNELS]; // Rx DMA request
+	sc_core::sc_out<bool>                           *DMA_TX[NUM_DMA_RX_CHANNELS]; // Tx DMA request
 	
 	LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
 	virtual ~LINFlexD();
@@ -194,6 +207,13 @@ private:
 	
 	unisim::kernel::logger::Logger logger;
 	
+	enum EventType
+	{
+		EV_NONE = 0,
+		EV_WAKE_UP,
+		EV_CPU_PAYLOAD
+	};
+
 	class Event
 	{
 	public:
@@ -202,11 +222,13 @@ private:
 		public:
 			Key()
 				: time_stamp(sc_core::SC_ZERO_TIME)
+				, event_type()
 			{
 			}
 			
-			Key(const sc_core::sc_time& _time_stamp)
+			Key(const sc_core::sc_time& _time_stamp, EventType _event_type)
 				: time_stamp(_time_stamp)
+				, event_type(_event_type)
 			{
 			}
 
@@ -215,23 +237,35 @@ private:
 				time_stamp = _time_stamp;
 			}
 
+			void SetEventType(EventType _event_type)
+			{
+				event_type = _event_type;
+			}
+
 			const sc_core::sc_time& GetTimeStamp() const
 			{
 				return time_stamp;
 			}
 
+			EventType GetEventType() const
+			{
+				return event_type;
+			}
+
 			void Clear()
 			{
 				time_stamp = sc_core::SC_ZERO_TIME;
+				event_type = EV_NONE;
 			}
 			
 			int operator < (const Key& sk) const
 			{
-				return time_stamp < sk.time_stamp;
+				return (time_stamp < sk.time_stamp) || ((time_stamp == sk.time_stamp) && (event_type < sk.event_type));
 			}
 			
 		private:
 			sc_core::sc_time time_stamp;
+			EventType event_type;                      // type of event
 		};
 		
 		Event()
@@ -266,6 +300,7 @@ private:
 		
 		void SetPayload(tlm::tlm_generic_payload *_payload, bool _release_payload = false)
 		{
+			key.SetEventType(EV_CPU_PAYLOAD);
 			if(release_payload)
 			{
 				if(payload && payload->has_mm()) payload->release();
@@ -274,6 +309,11 @@ private:
 			release_payload = _release_payload;
 		}
 		
+		void WakeUp()
+		{
+			key.SetEventType(EV_WAKE_UP);
+		}
+
 		void SetCompletionEvent(sc_core::sc_event *_completion_event)
 		{
 			completion_event = _completion_event;
@@ -284,6 +324,11 @@ private:
 			return key.GetTimeStamp();
 		}
 		
+		EventType GetType() const
+		{
+			return key.GetEventType();
+		}
+
 		tlm::tlm_generic_payload *GetPayload() const
 		{
 			return payload;
@@ -389,6 +434,8 @@ private:
 			ReadWriteStatus rws = this->linflexd->InitMode() ? Super::Write(value, bit_enable)
 			                                                 : Super::template WritePreserve<INIT_MODE_ONLY_WRITEABLE>(value, bit_enable);
 			
+			this->linflexd->UpdateState();
+			
 			return rws;
 		}
 		
@@ -447,13 +494,6 @@ private:
 			UpdateInterrupts();
 		}
 		
-		LINFlexD_LINIER& operator = (const uint32_t& value)
-		{
-			Super::operator = (value);
-			UpdateInterrupts();
-			return *this;
-		}
-		
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
 			ReadWriteStatus rws = Super::Write(value, bit_enable);
@@ -467,6 +507,8 @@ private:
 			this->linflexd->UpdateINT_TX();
 			this->linflexd->UpdateINT_ERR();
 		}
+		
+		using Super::operator =;
 	};
 	
 	// LIN Status Register (LINFlexD_LINSR)
@@ -476,19 +518,19 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x8;
 		
-		struct AUTOSYNC_COMP : Field<AUTOSYNC_COMP, 12    , SW_R_W1C> {}; // Autosynchronization complete
+		struct AUTOSYNC_COMP : Field<AUTOSYNC_COMP, 12, 12, SW_R_W1C> {}; // Autosynchronization complete
 		struct RDC           : Field<RDC          , 13, 15, SW_R    > {}; // Receive Data Byte Count
 		struct LINS          : Field<LINS         , 16, 19, SW_R    > {}; // LIN state
-		struct RMB           : Field<RMB          , 22    , SW_R_W1C> {}; // Release Message Buffer
-		struct DRBNE         : Field<DRBNE        , 23    , SW_R_W1C> {}; // Data Reception Buffer Not Empty Flag
-		struct RXbusy        : Field<RXbusy       , 24    , SW_R    > {}; // Receiver Busy flag
-		struct RDI           : Field<RDI          , 25    , SW_R    > {}; // LIN Receive signal
-		struct WUF           : Field<WUF          , 26    , SW_R_W1C> {}; // Wakeup flag
-		struct DBFF          : Field<DBFF         , 27    , SW_R_W1C> {}; // Data Buffer full flag
-		struct DBEF          : Field<DBEF         , 28    , SW_R_W1C> {}; // Data Buffer empty flag
-		struct DRF           : Field<DRF          , 29    , SW_R_W1C> {}; // Data Reception Completed flag
-		struct DTF           : Field<DTF          , 30    , SW_R_W1C> {}; // Data Transmission Completed flag
-		struct HRF           : Field<HRF          , 31    , SW_R_W1C> {}; // Header Received flag
+		struct RMB           : Field<RMB          , 22, 22, SW_R_W1C> {}; // Release Message Buffer
+		struct DRBNE         : Field<DRBNE        , 23, 23, SW_R_W1C> {}; // Data Reception Buffer Not Empty Flag
+		struct RXbusy        : Field<RXbusy       , 24, 24, SW_R    > {}; // Receiver Busy flag
+		struct RDI           : Field<RDI          , 25, 25, SW_R    > {}; // LIN Receive signal
+		struct WUF           : Field<WUF          , 26, 26, SW_R_W1C> {}; // Wakeup flag
+		struct DBFF          : Field<DBFF         , 27, 27, SW_R_W1C> {}; // Data Buffer full flag
+		struct DBEF          : Field<DBEF         , 28, 28, SW_R_W1C> {}; // Data Buffer empty flag
+		struct DRF           : Field<DRF          , 29, 29, SW_R_W1C> {}; // Data Reception Completed flag
+		struct DTF           : Field<DTF          , 30, 30, SW_R_W1C> {}; // Data Transmission Completed flag
+		struct HRF           : Field<HRF          , 31, 31, SW_R_W1C> {}; // Header Received flag
 		
 		SWITCH_ENUM_TRAIT(bool, _);
 		CASE_ENUM_TRAIT(false, _) { typedef FieldSet<RDC, LINS, RMB, DRBNE, RXbusy, RDI, WUF, DBFF, DBEF, DRF, DTF, HRF> ALL; };
@@ -522,23 +564,23 @@ private:
 			UpdateInterrupts();
 		}
 		
-		LINFlexD_LINSR& operator = (const uint32_t& value)
-		{
-			Super::operator = (value);
-			UpdateInterrupts();
-			return *this;
-		}
-		
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
-			if((LINFlexD_LINSR::LINS::template Get<uint32_t>(value) == 0xf) && this->linflexd->LINS_INT_RX())
+			ReadWriteStatus rws = RWS_OK;
+			
+			if((LINS::template Get<uint32_t>(value) == 0xf) && this->linflexd->LINS_INT_RX())
 			{
 				// Clear Rx interrupt, only when set due to the LIN state event
 				this->linflexd->lins_int_rx_mask = true;
+				rws = Super::template WritePreserve<LINS>(value, bit_enable);
+			}
+			else
+			{
+				rws = Super::Write(value, bit_enable);
 			}
 			
-			ReadWriteStatus rws = Super::Write(value, bit_enable);
 			UpdateInterrupts();
+			
 			return rws;
 		}
 		
@@ -564,6 +606,8 @@ private:
 			this->linflexd->UpdateINT_RX();
 			this->linflexd->UpdateINT_TX();
 		}
+		
+		using Super::operator =;
 	};
 	
 	// LIN Error Status Register (LINFlexD_LINESR)
@@ -616,16 +660,10 @@ private:
 			UpdateInterrupts();
 		}
 		
-		LINFlexD_LINESR& operator = (const uint32_t& value)
-		{
-			Super::operator = (value);
-			UpdateInterrupts();
-			return *this;
-		}
-		
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
 			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
 			UpdateInterrupts();
 			return rws;
 		}
@@ -634,6 +672,8 @@ private:
 		{
 			this->linflexd->UpdateINT_ERR();
 		}
+		
+		using Super::operator =;
 	};
 	
 	// UART Mode Control Register (LINFlexD_UARTCR)
@@ -646,9 +686,11 @@ private:
 		struct MIS        : Field<MIS       , 0     > {}; // Monitor Idle State
 		struct CSP        : Field<CSP       , 1, 3  > {}; // Configurable Sample Point
 		struct OSR        : Field<OSR       , 4, 7  > {}; // Over Sampling Rate
-		struct ROSE       : Field<ROSE      , 8     > {}; // Reduced Over Sampling EnableRegister bit can be read in any mode, written only in initialization mode
+		struct ROSE       : Field<ROSE      , 8     > {}; // Reduced Over Sampling Enable
 		struct NEF        : Field<NEF       , 9, 11 > {}; // Number of expected frame
 		struct DTU_PCETX  : Field<DTU_PCETX , 12    > {}; // Disable Timeout in UART mode/Parity transmission and checking
+		struct DTU        : Field<DTU       , 12    > {}; // Disable Timeout in UART mode
+		struct PCETX      : Field<PCETX     , 12    > {}; // Parity transmission and checking
 		struct SBUR       : Field<SBUR      , 13, 14> {}; // Stop bits in UART reception mode
 		struct WLS        : Field<WLS       , 15    > {}; // Special Word Length in UART mode
 		struct TDFL_TFC   : Field<TDFL_TFC  , 16, 18> {}; // Transmitter Data Field Length / TX FIFO Counter
@@ -672,14 +714,57 @@ private:
 		
 		typedef FieldSet<MIS, CSP, OSR, ROSE, NEF, DTU_PCETX, SBUR, WLS, TDFL_TFC, RDFL_RFC, RFBM, TFBM, WL1, PC1, RxEn, TxEn, PC0, PCE, WL0, UART> ALL;
 		
+		// fields protection per mode:
+		//
+		//                !INIT & !UART    INIT & !UART   !INIT & UART     INIT & UART &    INIT & UART &     INIT & UART &    INIT & UART &
+		//                                                               TXFIFO & RXFIFO    TXBUF & RXFIFO    TXFIFO & RXBUF   TXBUF & RXBUF
+		// MIS                 RO               RW             RO               RW               RW                 RW              RW
+		// CSP                 RO               RW             RO               RW               RW                 RW              RW
+		// OSR                 RO               RW             RO               RW               RW                 RW              RW
+		// ROSE                RO               RW             RO               RW               RW                 RW              RW
+		// NEF                 RW               RW             RW               RW               RW                 RW              RW
+		// DTU_PCETX           RO               RO             RO               RW               RW                 RW              RW
+		// SBUR                RO               RW             RO               RW               RW                 RW              RW
+		// WLS                 RO               RO             RO               RW               RW                 RW              RW
+		// TFDL_TFC[0]         RO               RO             RO               RO               RO                 RO              RO
+		// TDFL_TFC[1:2]       RO               RO             RO               RO               RW                 RO              RW
+		// RDFL_RFC[0]         RO               RO             RO               RO               RO                 RO              RO
+		// RDFL_RFC[1:2]       RO               RO             RO               RO               RO                 RW              RW
+		// RFBM                RO               RO             RO               RW               RW                 RW              RW
+		// TFBM                RO               RO             RO               RW               RW                 RW              RW
+		// WL1                 RO               RO             RO               RW               RW                 RW              RW
+		// PC1                 RO               RO             RO               RW               RW                 RW              RW
+		// RxEn                RO               RO             RW               RW               RW                 RW              RW
+		// TxEn                RO               RO             RW               RW               RW                 RW              RW
+		// PC0                 RO               RO             RO               RW               RW                 RW              RW
+		// PCE                 RO               RO             RO               RW               RW                 RW              RW
+		// WL0                 RO               RO             RO               RW               RW                 RW              RW
+		// UART                RO               RW             RO               RW               RW                 RW              RW
+
+		// MIS, CSP, OSR, ROSE, DTU_PCETX, SBUR, WLS, TDFL_TFC, RDFL_RFC, RFBM, TFBM, WL1, PC1, RxEn, TxEn, PC0, PCE, WL0, and UART
+		// are read-only when not in init mode and not in UART mode
 		typedef FieldSet<MIS, CSP, OSR, ROSE, DTU_PCETX, SBUR, WLS, TDFL_TFC, RDFL_RFC, RFBM, TFBM, WL1, PC1, RxEn, TxEn, PC0, PCE, WL0, UART> NOT_INIT_AND_NOT_UART_PRESERVED_FIELDS;
-		typedef FieldSet<WLS, TDFL_TFC, RDFL_RFC, RFBM, TFBM, WL1, PC1, RxEn, TxEn, PC0, PCE, WL0> INIT_AND_NOT_UART_PRESERVED_FIELDS;
-		typedef FieldSet<MIS, CSP, OSR, ROSE, NEF, DTU_PCETX, SBUR, WLS, TDFL_TFC, RDFL_RFC, RFBM, TFBM, WL1, PC1, PC0, PCE, WL0, UART> NOT_INIT_AND_UART_PRESERVED_FIELDS;
-		typedef FieldSet<TDFL_TFC, RDFL_RFC> INIT_AND_UART_AND_NOT_TXBUF_AND_NOT_RXBUF_PRESERVED_FIELDS;
-		typedef FieldSet<TDFL_TFC, RDFL_RFC_0> INIT_AND_UART_AND_TXBUF_AND_NOT_RXBUF_PRESERVED_FIELDS;
-		typedef FieldSet<TDFL_TFC_0, RDFL_RFC> INIT_AND_UART_AND_NOT_TXBUF_AND_RXBUF_PRESERVED_FIELDS;
-		typedef FieldSet<TDFL_TFC_0, RDFL_RFC_0> INIT_AND_UART_AND_TXBUF_AND_RXBUF_PRESERVED_FIELDS;
 		
+		// DTU_PCETX, WLS, TDFL_TFC, RDFL_RFC, RFBM, TFBM, WL1, PC1, RxEn, TxEn, PC0, PCE, WL0
+		// are read-only in init mode and not in UART mode
+		typedef FieldSet<DTU_PCETX, WLS, TDFL_TFC, RDFL_RFC, RFBM, TFBM, WL1, PC1, RxEn, TxEn, PC0, PCE, WL0> INIT_AND_NOT_UART_PRESERVED_FIELDS;
+		
+		// MIS, CSP, OSR, ROSE, DTU_PCETX, SBUR, WLS, TDFL_TFC, RDFL_RFC, RFBM, TFBM, WL1, PC1, PC0, PCE, WL0, and UART
+		// are read-only when not in init mode and in UART mode 
+		typedef FieldSet<MIS, CSP, OSR, ROSE, DTU_PCETX, SBUR, WLS, TDFL_TFC, RDFL_RFC, RFBM, TFBM, WL1, PC1, PC0, PCE, WL0, UART> NOT_INIT_AND_UART_PRESERVED_FIELDS;
+		
+		// TFC is read-only is Tx FIFO mode, and RFC is read-only Rx FIFO mode
+		typedef FieldSet<TFC, RFC> INIT_AND_UART_AND_TXFIFO_AND_RXFIFO_PRESERVED_FIELDS;
+		
+		// upper bit of TDFL_TFC is read-only in Tx buffer mode, and RFC is read-only in Rx FIFO mode
+		typedef FieldSet<TDFL_TFC_0, RFC> INIT_AND_UART_AND_TXBUF_AND_RXFIFO_PRESERVED_FIELDS;
+		
+		// TFC is read-only in Tx FIFO mode, and upper bit of RDFL_RFC is read-only is Tx buffer mode
+		typedef FieldSet<TFC, RDFL_RFC_0> INIT_AND_UART_AND_TXFIFO_AND_RXBUF_PRESERVED_FIELDS;
+		
+		// upper bit of TDFL_TFC is read-only in Tx buffer mode, and upper bit of RDFL_RFC is read-only in Rx buffer mode
+		typedef FieldSet<TDFL_TFC_0, RDFL_RFC_0> INIT_AND_UART_AND_TXBUF_AND_RXBUF_PRESERVED_FIELDS;
+
 		LINFlexD_UARTCR(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
 		LINFlexD_UARTCR(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
 		
@@ -689,13 +774,19 @@ private:
 			MIS      ::SetName("MIS");       MIS      ::SetDescription("Monitor Idle State");
 			CSP      ::SetName("CSP");       CSP      ::SetDescription("Configurable Sample Point");
 			OSR      ::SetName("OSR");       OSR      ::SetDescription("Over Sampling Rate");
-			ROSE     ::SetName("ROSE");      ROSE     ::SetDescription("Reduced Over Sampling EnableRegister bit can be read in any mode, written only in initialization mode");
+			ROSE     ::SetName("ROSE");      ROSE     ::SetDescription("Reduced Over Sampling Enable");
 			NEF      ::SetName("NEF");       NEF      ::SetDescription("Number of expected frame");
 			DTU_PCETX::SetName("DTU_PCETX"); DTU_PCETX::SetDescription("Disable Timeout in UART mode/Parity transmission and checking");
+			DTU      ::SetName("DTU");       DTU      ::SetDescription("Disable Timeout in UART mode");
+			PCETX    ::SetName("PCETX");     PCETX    ::SetDescription("Parity transmission and checking");
 			SBUR     ::SetName("SBUR");      SBUR     ::SetDescription("Stop bits in UART reception mode");
 			WLS      ::SetName("WLS");       WLS      ::SetDescription("Special Word Length in UART mode");
 			TDFL_TFC ::SetName("TDFL_TFC");  TDFL_TFC ::SetDescription("Transmitter Data Field Length/TX FIFO Counter");
+			TDFL     ::SetName("TDFL");      TDFL     ::SetDescription("Transmitter Data Field Length");
+			TFC      ::SetName("TFC");       TFC      ::SetDescription("TX FIFO Counter");
 			RDFL_RFC ::SetName("RDFL_RFC");  RDFL_RFC ::SetDescription("Reception Data Field Length /RX FIFO Counter");
+			RDFL     ::SetName("RDFL");      RDFL     ::SetDescription("Reception Data Field Length");
+			RFC      ::SetName("RFC");       RFC      ::SetDescription("RX FIFO Counter");
 			RFBM     ::SetName("RFBM");      RFBM     ::SetDescription("Rx Fifo/Buffer mode");
 			TFBM     ::SetName("TFBM");      TFBM     ::SetDescription("Tx Fifo/Buffer mode");
 			WL1      ::SetName("WL1");       WL1      ::SetDescription("Word Length in UART mode");
@@ -715,35 +806,51 @@ private:
 		
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
+			bool old_RxEn = this->template Get<RxEn>();
+			
 			ReadWriteStatus rws =
 				/* !INIT && !UART */
-				(!this->linflexd->InitMode() && !this->linflexd->UARTMode()) ?
+				(!this->linflexd->InitMode() && !this->linflexd->UART_Mode()) ?
 				Super::template WritePreserve<NOT_INIT_AND_NOT_UART_PRESERVED_FIELDS>(value, bit_enable) :
 				/* INIT & !UART */
-				((this->linflexd->InitMode() && !this->linflexd->UARTMode()) ?
+				((this->linflexd->InitMode() && !this->linflexd->UART_Mode()) ?
 				Super::template WritePreserve<INIT_AND_NOT_UART_PRESERVED_FIELDS>(value, bit_enable) :
 				/* !INIT & UART */
-				((!this->linflexd->InitMode() && this->linflexd->UARTMode()) ?
+				((!this->linflexd->InitMode() && this->linflexd->UART_Mode()) ?
 				Super::template WritePreserve<NOT_INIT_AND_UART_PRESERVED_FIELDS>(value, bit_enable) :
-				/* INIT & UART & !TXBUF & !RXBUF */
-				((this->linflexd->InitMode() && this->linflexd->UARTMode() && !this->linflexd->UART_TX_BufferMode() && !this->linflexd->UART_RX_BufferMode()) ?
-				Super::template WritePreserve<INIT_AND_UART_AND_NOT_TXBUF_AND_NOT_RXBUF_PRESERVED_FIELDS>(value, bit_enable) :
-				/* INIT & UART & TXBUF & !RXBUF */
-				((this->linflexd->InitMode() && this->linflexd->UARTMode() && this->linflexd->UART_TX_BufferMode()  && !this->linflexd->UART_RX_BufferMode()) ?
-				Super::template WritePreserve<INIT_AND_UART_AND_TXBUF_AND_NOT_RXBUF_PRESERVED_FIELDS>(value, bit_enable) :
-				/* INIT & UART & !TXBUF & RXBUF */
-				((this->linflexd->InitMode() && this->linflexd->UARTMode() && !this->linflexd->UART_TX_BufferMode() && this->linflexd->UART_RX_BufferMode()) ?
-				Super::template WritePreserve<INIT_AND_UART_AND_NOT_TXBUF_AND_RXBUF_PRESERVED_FIELDS>(value, bit_enable) :
+				/* INIT & UART & TXFIFO & RXFIFO */
+				((this->linflexd->InitMode() && this->linflexd->UART_Mode() && this->linflexd->UART_TX_FIFO_Mode() && this->linflexd->UART_RX_FIFO_Mode()) ?
+				Super::template WritePreserve<INIT_AND_UART_AND_TXFIFO_AND_RXFIFO_PRESERVED_FIELDS>(value, bit_enable) :
+				/* INIT & UART & TXBUF & RXFIFO */
+				((this->linflexd->InitMode() && this->linflexd->UART_Mode() && this->linflexd->UART_TX_BufferMode()  && this->linflexd->UART_RX_FIFO_Mode()) ?
+				Super::template WritePreserve<INIT_AND_UART_AND_TXBUF_AND_RXFIFO_PRESERVED_FIELDS>(value, bit_enable) :
+				/* INIT & UART & TXFIFO & RXBUF */
+				((this->linflexd->InitMode() && this->linflexd->UART_Mode() && this->linflexd->UART_TX_FIFO_Mode() && this->linflexd->UART_RX_BufferMode()) ?
+				Super::template WritePreserve<INIT_AND_UART_AND_TXFIFO_AND_RXBUF_PRESERVED_FIELDS>(value, bit_enable) :
 				/* INIT & UART & TXBUF & RXBUF */
-				((this->linflexd->InitMode() && this->linflexd->UARTMode() && this->linflexd->UART_TX_BufferMode()  && this->linflexd->UART_RX_BufferMode()) ?
+				((this->linflexd->InitMode() && this->linflexd->UART_Mode() && this->linflexd->UART_TX_BufferMode()  && this->linflexd->UART_RX_BufferMode()) ?
 				Super::template WritePreserve<INIT_AND_UART_AND_TXBUF_AND_RXBUF_PRESERVED_FIELDS>(value, bit_enable) :
 				/* other: always false */
 				RWS_ANA))))));
+			
+			bool new_RxEn = this->template Get<RxEn>();
 			
 			if(this->template Get<WLS>() && !this->template Get<WL1>())
 			{
 				this->linflexd->logger << DebugWarning << "In " << this->GetName() << ", when WLS bit = 1, WL = 0 or 1 should not be used, since this will lead to incorrect reception of data" << EndDebugWarning;
 			}
+			
+			if(this->linflexd->UART_RX_BufferMode() && (this->template Get<WLS>() || this->template Get<WL1>()) && ((this->template Get<RDFL_RFC>() == 0) || (this->template Get<RDFL_RFC>() == 2)))
+			{
+				this->linflexd->logger << DebugWarning << "In " << this->GetName() << ", only configuration " << RDFL_RFC::GetName() << " = x01b or " << RDFL_RFC::GetName() << " = x11b are allowed when WLS bit = 1 or WL = 1xb" << EndDebugWarning;
+			}
+			
+			if(!old_RxEn && new_RxEn)
+			{
+				this->linflexd->ResetTimeout();
+			}
+			
+			this->linflexd->UpdateLINClock(); // ROSE and OSR affects baud period that also depends on LIN clock
 			
 			return rws;
 		}
@@ -765,21 +872,33 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x14;
 		
-		struct SZF    : Field<SZF   , 16    , SW_R_W1C> {}; // Stuck at Zero flag
-		struct OCF    : Field<OCF   , 17    , SW_R_W1C> {}; // Output Compare Flag
+		struct SZF    : Field<SZF   , 16, 16, SW_R_W1C> {}; // Stuck at Zero flag
+		struct OCF    : Field<OCF   , 17, 17, SW_R_W1C> {}; // Output Compare Flag
 		struct PE     : Field<PE    , 18, 21, SW_R_W1C> {}; // Parity Error flag
-		struct RMB    : Field<RMB   , 22    , SW_R_W1C> {}; // Release Message Buffer
-		struct FEF    : Field<FEF   , 23    , SW_R_W1C> {}; // Framing Error flag
-		struct BOF    : Field<BOF   , 24    , SW_R_W1C> {}; // FIFO/Buffer overrun flag
-		struct RDI    : Field<RDI   , 25    , SW_R_W1C> {}; // Receiver Data Input signal
-		struct WUF    : Field<WUF   , 26    , SW_R_W1C> {}; // Wakeup flag
-		struct RFNE   : Field<RFNE  , 27    , SW_R    > {}; // Receive FIFO Not Empty
-		struct TO     : Field<TO    , 28    , SW_R_W1C> {}; // Timeout
-		struct DRFRFE : Field<DRFRFE, 29    , SW_RW   > {}; // Data Reception Completed Flag / Rx FIFO Empty Flag
-		struct DTFTFF : Field<DTFTFF, 30    , SW_RW   > {}; // Data Transmission Completed Flag/ TX FIFO Full Flag
-		struct NF     : Field<NF    , 31    , SW_R_W1C> {}; // Noise flag
+		struct PE3    : Field<PE    , 18>               {};
+		struct PE2    : Field<PE    , 19>               {};
+		struct PE1    : Field<PE    , 20>               {};
+		struct PE0    : Field<PE    , 21>               {};
+		struct RMB    : Field<RMB   , 22, 22, SW_R_W1C> {}; // Release Message Buffer
+		struct FEF    : Field<FEF   , 23, 23, SW_R_W1C> {}; // Framing Error flag
+		struct BOF    : Field<BOF   , 24, 24, SW_R_W1C> {}; // FIFO/Buffer overrun flag
+		struct RDI    : Field<RDI   , 25, 25, SW_R_W1C> {}; // Receiver Data Input signal
+		struct WUF    : Field<WUF   , 26, 26, SW_R_W1C> {}; // Wakeup flag
+		struct RFNE   : Field<RFNE  , 27, 27, SW_R    > {}; // Receive FIFO Not Empty
+		struct TO     : Field<TO    , 28, 28, SW_R_W1C> {}; // Timeout
+		struct DRFRFE : Field<DRFRFE, 29, 29, SW_R_W1C> {}; // Data Reception Completed Flag / Rx FIFO Empty Flag
+		struct DRF    : Field<DRF   , 29>               {}; // Data Reception Completed Flag
+		struct RFE    : Field<RFE   , 29>               {}; // Rx FIFO Empty Flag
+		struct DTFTFF : Field<DTFTFF, 30, 30, SW_R_W1C> {}; // Data Transmission Completed Flag/ TX FIFO Full Flag
+		struct DTF    : Field<DTF   , 30>               {}; // Data Transmission Completed Flag
+		struct TFF    : Field<TFF   , 30>               {}; // TX FIFO Full Flag
+		struct NF     : Field<NF    , 31, 31, SW_R_W1C> {}; // Noise flag
 
 		typedef FieldSet<SZF, OCF, PE, RMB, FEF, BOF, RDI, WUF, RFNE, TO, DRFRFE, DTFTFF, NF> ALL;
+		
+		typedef FieldSet<RFE, TFF> RX_TX_FIFO_MODE_PRESERVED_FIELDS; // RFE and TFF are read-only when Rx and Tx are in FIFO mode
+		typedef FieldSet<RFE> RX_FIFO_MODE_PRESERVED_FIELDS;         // RFE is read-only when Rx is in FIFO mode
+		typedef FieldSet<TFF> TX_FIFO_MODE_PRESERVED_FIELDS;         // TFF is read-only when Tx is in FIFO mode
 		
 		LINFlexD_UARTSR(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
 		LINFlexD_UARTSR(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
@@ -798,8 +917,18 @@ private:
 			RFNE  ::SetName("RFNE");   RFNE  ::SetDescription("Receive FIFO Not Empty");
 			TO    ::SetName("TO");     TO    ::SetDescription("Timeout");
 			DRFRFE::SetName("DRFRFE"); DRFRFE::SetDescription("Data Reception Completed Flag / Rx FIFO Empty Flag");
+			DRF   ::SetName("DRF");    DRF   ::SetDescription("Data Reception Completed Flag");
+			RFE   ::SetName("RFE");    RFE   ::SetDescription("Rx FIFO Empty Flag");
 			DTFTFF::SetName("DTFTFF"); DTFTFF::SetDescription("Data Transmission Completed Flag / TX FIFO Full Flag");
+			DTF   ::SetName("DTF");    DTF   ::SetDescription("Data Transmission Completed Flag");
+			TFF   ::SetName("TFF");    TFF   ::SetDescription("TX FIFO Full Flag");
 			NF    ::SetName("NF");     NF    ::SetDescription("Noise flag");
+		}
+		
+		void Reset()
+		{
+			this->Initialize(0x0);
+			UpdateInterrupts();
 		}
 		
 		void SoftReset()
@@ -816,22 +945,76 @@ private:
 			this->template Set<RFNE  >(0);
 			this->template Set<TO    >(0);
 			this->template Set<NF    >(0);
-			this->linflexd->UpdateINT_ERR();
+			UpdateInterrupts();
 		}
 		
-		LINFlexD_UARTSR& operator = (const uint32_t& value)
+		uint32_t Compound()
 		{
-			Super::operator = (value);
-			this->linflexd->UpdateINT_ERR();
-			return *this;
+			uint32_t compound = 0;
+			SZF   ::template Set<uint32_t>(compound, this->linflexd->linflexd_linesr.template Get<typename LINFlexD_LINESR::SZF>());
+			OCF   ::template Set<uint32_t>(compound, this->linflexd->linflexd_linesr.template Get<typename LINFlexD_LINESR::OCF>());
+			PE3   ::template Set<uint32_t>(compound, this->linflexd->linflexd_linesr.template Get<typename LINFlexD_LINESR::BEF>());
+			PE2   ::template Set<uint32_t>(compound, this->linflexd->linflexd_linesr.template Get<typename LINFlexD_LINESR::CEF>());
+			PE1   ::template Set<uint32_t>(compound, this->linflexd->linflexd_linesr.template Get<typename LINFlexD_LINESR::SFEF>());
+			PE0   ::template Set<uint32_t>(compound, this->linflexd->linflexd_linesr.template Get<typename LINFlexD_LINESR::SDEF>());
+			RMB   ::template Set<uint32_t>(compound, this->linflexd->linflexd_linesr.template Get<typename LINFlexD_LINESR::IDPEF>());
+			FEF   ::template Set<uint32_t>(compound, this->linflexd->linflexd_linesr.template Get<typename LINFlexD_LINESR::FEF>());
+			BOF   ::template Set<uint32_t>(compound, this->linflexd->linflexd_linesr.template Get<typename LINFlexD_LINESR::BOF>());
+			RDI   ::template Set<uint32_t>(compound, this->template Get<RDI>());
+			WUF   ::template Set<uint32_t>(compound, this->linflexd->linflexd_linsr.template Get<typename LINFlexD_LINSR::WUF>());
+			TO    ::template Set<uint32_t>(compound, this->template Get<TO>());
+			DRFRFE::template Set<uint32_t>(compound, this->linflexd->linflexd_linsr.template Get<typename LINFlexD_LINSR::DRF>());
+			DTFTFF::template Set<uint32_t>(compound, this->linflexd->linflexd_linsr.template Get<typename LINFlexD_LINSR::DTF>());
+			NF    ::template Set<uint32_t>(compound, this->linflexd->linflexd_linesr.template Get<typename LINFlexD_LINESR::NF>());
+			return compound;
 		}
 		
+		virtual ReadWriteStatus Read(uint32_t& value, const uint32_t& bit_enable)
+		{
+			if(this->linflexd->InitMode() && this->linflexd->UART_Mode())
+			{
+				// Init mode and UART mode: value of UARTSR is a compound because lot of flags reflects flags in LINSR and LINESR
+				value = (value & ~bit_enable) | (Compound() & bit_enable);
+				return RWS_OK;
+			}
+			else
+			{
+				return Super::Read(value, bit_enable);
+			}
+		}
+
+		virtual void DebugRead(uint32_t& value, const uint32_t& bit_enable)
+		{
+			if(this->linflexd->InitMode() && this->linflexd->UART_Mode())
+			{
+				// Init mode and UART mode: value of UARTSR is a compound because lot of UARTSR flags reflects flags in LINSR and LINESR
+				value = (value & ~bit_enable) | (Compound() & bit_enable);
+			}
+			else
+			{
+				Super::DebugRead(value, bit_enable);
+			}
+		}
+
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(value, bit_enable);
-			this->linflexd->UpdateINT_ERR();
+			ReadWriteStatus rws = ( this->linflexd->UART_RX_FIFO_Mode() &&  this->linflexd->UART_TX_FIFO_Mode() ) ? Super::template WritePreserve<RX_TX_FIFO_MODE_PRESERVED_FIELDS>(value, bit_enable) :
+			                      ((!this->linflexd->UART_RX_FIFO_Mode() &&  this->linflexd->UART_TX_FIFO_Mode()) ? Super::template WritePreserve<TX_FIFO_MODE_PRESERVED_FIELDS>(value, bit_enable)    :
+								  (( this->linflexd->UART_RX_FIFO_Mode() && !this->linflexd->UART_TX_FIFO_Mode()) ? Super::template WritePreserve<RX_FIFO_MODE_PRESERVED_FIELDS>(value, bit_enable)    :
+								  Super::Write(value, bit_enable)));
+			
+			UpdateInterrupts();
 			return rws;
 		}
+		
+		void UpdateInterrupts()
+		{
+			this->linflexd->UpdateINT_RX();
+			this->linflexd->UpdateINT_TX();
+			this->linflexd->UpdateINT_ERR();
+		}
+		
+		using Super::operator =;
 	};
 	
 	// LIN Time-Out Control Status Register (LINFlexD_LINTCSR)
@@ -841,9 +1024,9 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x18;
 		
-		struct MODE : Field<MODE, 21    , SW_RW> {}; // Time-out counter mode
-		struct IOT  : Field<IOT , 22    , SW_RW> {}; // Idle on timeout
-		struct TOCE : Field<TOCE, 23    , SW_RW> {}; // Time-out counter enable
+		struct MODE : Field<MODE, 21, 21, SW_RW> {}; // Time-out counter mode
+		struct IOT  : Field<IOT , 22, 22, SW_RW> {}; // Idle on timeout
+		struct TOCE : Field<TOCE, 23, 23, SW_RW> {}; // Time-out counter enable
 		struct CNT  : Field<CNT , 24, 31, SW_R > {}; // Counter Value
 		
 		typedef FieldSet<MODE, IOT, TOCE, CNT> ALL;
@@ -860,6 +1043,11 @@ private:
 			IOT ::SetName("IOT");  IOT ::SetDescription("IOT");
 			TOCE::SetName("TOCE"); TOCE::SetDescription("TOCE");
 			CNT ::SetName("CNT");  CNT ::SetDescription("CNT");
+		}
+		
+		void Reset()
+		{
+			this->Initialize(0x0);
 		}
 		
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
@@ -902,6 +1090,12 @@ private:
 			OC2::SetName("OC2"); OC2::SetDescription("OC2");
 		}
 		
+		void Reset()
+		{
+			this->template Set<OC1>(~uint32_t(0));
+			this->template Set<OC2>(~uint32_t(0));
+		}
+		
 		using Super::operator =;
 	};
 	
@@ -927,6 +1121,12 @@ private:
 			HTO::SetName("HTO"); HTO::SetDescription("Header timeout value");
 		}
 		
+		void Reset()
+		{
+			this->template Set<RTO>(0xe);
+			this->template Set<HTO>(GENERIC_SLAVE ? 0x2c : 0x1c);
+		}
+		
 		using Super::operator =;
 	};
 	
@@ -948,6 +1148,11 @@ private:
 		{
 			this->SetName("LINFlexD_LINFBRR"); this->SetDescription("LIN Fractional Baud Rate Register");
 			FBR::SetName("FBR"); FBR::SetDescription("Fractional Baud rates");
+		}
+		
+		void Reset()
+		{
+			this->Initialize(0x0);
 		}
 		
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
@@ -981,10 +1186,18 @@ private:
 			IBR::SetName("IBR"); IBR::SetDescription("Integer Baud rates");
 		}
 		
+		void Reset()
+		{
+			this->Initialize(0x0);
+			this->linflexd->UpdateLINClock();
+		}
+
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
 			ReadWriteStatus rws = this->linflexd->InitMode() ? Super::Write(value, bit_enable)
 			                                                 : Super::template WritePreserve<IBR>(value, bit_enable);
+			
+			this->linflexd->UpdateLINClock();
 			
 			return rws;
 		}
@@ -1012,10 +1225,18 @@ private:
 			CF::SetName("CF"); CF::SetDescription("LIN Checksum Field Register");
 		}
 		
+		void Reset()
+		{
+			this->Initialize(0x0);
+			this->linflexd->UpdateLINClock();
+		}
+
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
 			ReadWriteStatus rws = this->linflexd->SoftwareChecksumCalculation() ? Super::Write(value, bit_enable)
 			                                                                    : Super::template WritePreserve<CF>(value, bit_enable);
+			
+			this->linflexd->UpdateLINClock();
 			
 			return rws;
 		}
@@ -1059,6 +1280,18 @@ private:
 			HTRQ::SetName("HTRQ"); HTRQ::SetDescription("Header Transmission Request");
 		}
 		
+		void Reset()
+		{
+			this->template Set<TBDE>(0);
+			this->template Set<IOBE>(1);
+			this->template Set<IOPE>(GENERIC_SLAVE ? 1 : 0);
+			this->template Set<WURQ>(0);
+			this->template Set<DDRQ>(0);
+			this->template Set<DTRQ>(0);
+			this->template Set<ABRQ>(0);
+			this->template Set<HTRQ>(0);
+		}
+		
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
 			ReadWriteStatus rws = this->linflexd->InitMode() ? Super::Write(value, bit_enable)
@@ -1096,6 +1329,11 @@ private:
 			ID ::SetName("ID");  ID ::SetDescription("Identifier");
 		}
 		
+		void Reset()
+		{
+			this->Initialize(0x0);
+		}
+		
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
 			ReadWriteStatus rws = this->linflexd->LIN_MasterMode() ? Super::Write(value, bit_enable)
@@ -1103,7 +1341,7 @@ private:
 			
 			return rws;
 		}
-
+		
 		using Super::operator =;
 	};
 	
@@ -1133,9 +1371,30 @@ private:
 			DATA0::SetName("DATA0"); DATA0::SetDescription("Data Byte 0");
 		}
 		
+		void Reset()
+		{
+			this->Initialize(0x0);
+		}
+
+		virtual ReadWriteStatus Read(uint32_t& value, const uint32_t& bit_enable)
+		{
+			if(this->linflexd->UART_Mode())
+			{
+				if(this->linflexd->UART_TX_FIFO_Mode())
+				{
+					// In UART FIFO mode (UARTCR[TFBM] = 1), any read operation causes an IPS transfer error.
+					return RWS_ANA;
+				}
+			}
+			
+			ReadWriteStatus rws = Super::Read(value, bit_enable);
+			
+			return rws;
+		}
+
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
-			if(this->linflexd->UARTMode())
+			if(this->linflexd->UART_Mode())
 			{
 				if(this->linflexd->UART_TX_FIFO_Mode())
 				{
@@ -1144,15 +1403,18 @@ private:
 						case 1: if(bit_enable & FieldSet<DATA3, DATA2, DATA1>::template GetMask<uint32_t>()) return RWS_ANA; break;
 						case 2: if(bit_enable & FieldSet<DATA3, DATA2>::template GetMask<uint32_t>()) return RWS_ANA; break;
 					}
+					
+					this->linflexd->TX_FIFO_Push();
 				}
 			}
 			
 			ReadWriteStatus rws = Super::Write(value, bit_enable);
 			
-// 			if(!IsReadWriteError(rws))
-// 			{
-// 				this->linflexd->
-// 			}
+			if(!IsReadWriteError(rws) && this->linflexd->UART_Mode())
+			{
+				// Writing to BDRL make UART transmit buffer if Tx is enabled
+				this->linflexd->Transmit();
+			}
 			
 			return rws;
 		}
@@ -1186,9 +1448,14 @@ private:
 			DATA4::SetName("DATA4"); DATA4::SetDescription("Data Byte 4");
 		}
 		
+		void Reset()
+		{
+			this->Initialize(0x0);
+		}
+
 		virtual ReadWriteStatus Read(uint32_t& value, const uint32_t& bit_enable)
 		{
-			if(this->linflexd->UARTMode())
+			if(this->linflexd->UART_Mode())
 			{
 				if(this->linflexd->UART_RX_FIFO_Mode())
 				{
@@ -1202,16 +1469,24 @@ private:
 			
 			ReadWriteStatus rws = Super::Read(value, bit_enable);
 			
+			if(this->linflexd->UART_Mode())
+			{
+				if(this->linflexd->UART_RX_FIFO_Mode())
+				{
+					this->linflexd->RX_FIFO_Pop();
+				}
+			}
+			
 			return rws;
 		}
 
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = this->linflexd->UARTMode() ? RWS_ANA : Super::Write(value, bit_enable);
+			ReadWriteStatus rws = this->linflexd->UART_Mode() ? RWS_ANA : Super::Write(value, bit_enable);
 			
 			return rws;
 		}
-
+		
 		using Super::operator =;
 	};
 	
@@ -1235,6 +1510,11 @@ private:
 			FACT::SetName("FACT"); FACT::SetDescription("Filter active");
 		}
 		
+		void Reset()
+		{
+			this->Initialize(0x0);
+		}
+
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
 			ReadWriteStatus rws = this->linflexd->InitMode() ? Super::Write(value, bit_enable)
@@ -1266,6 +1546,11 @@ private:
 			IFMI::SetName("IFMI"); IFMI::SetDescription("Filter match index");
 		}
 		
+		void Reset()
+		{
+			this->Initialize(0x0);
+		}
+
 		using Super::operator =;
 	};
 	
@@ -1295,6 +1580,11 @@ private:
 			                                                 : Super::template WritePreserve<IFM>(value, bit_enable);
 			
 			return rws;
+		}
+
+		void Reset()
+		{
+			this->Initialize(0x0);
 		}
 
 		using Super::operator =;
@@ -1338,6 +1628,11 @@ private:
 			ID ::SetName("ID "); ID ::SetDescription("Identifier");
 		}
 		
+		void Reset()
+		{
+			this->Initialize(0x0);
+		}
+
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
 			ReadWriteStatus rws = this->linflexd->InitMode() ? Super::Write(value, bit_enable)
@@ -1383,6 +1678,11 @@ private:
 			SR   ::SetName("SR");    SR   ::SetDescription("Soft reset");
 		}
 		
+		void Reset()
+		{
+			this->Initialize(0x0);
+		}
+
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
 			ReadWriteStatus rws = this->linflexd->InitMode() ? Super::Write(value, bit_enable)
@@ -1418,6 +1718,30 @@ private:
 			PTO::SetName("PTO"); PTO::SetDescription("Preset Timeout");
 		}
 		
+		void Reset()
+		{
+			this->template Set<PTO>(~uint32_t(0));
+		}
+
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			if((value == 0) & ((bit_enable & PTO::template GetMask<uint32_t>()) == PTO::template GetMask<uint32_t>())) // writing zero to PTO field ?
+			{
+				// zero is forbidden
+				this->linflexd->Timeout(); // timeout occurs immediately
+				return RWS_OK;
+			}
+
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+
+			if(!IsReadWriteError(rws))
+			{
+				this->linflexd->linflexd_uartcto.Reset();
+			}
+			
+			return rws;
+		}
+
 		using Super::operator =;
 	};
 
@@ -1441,6 +1765,11 @@ private:
 			CTO::SetName("CTO"); CTO::SetDescription("Current Timeout");
 		}
 		
+		void Reset()
+		{
+			this->Initialize(0x0);
+		}
+
 		void SoftReset()
 		{
 			//  All fields are reset
@@ -1457,7 +1786,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = (GENERIC_SLAVE == 0) ? 0x58 : 0x98;
 		
-		struct DTE : Field<DTE, (32 - NUM_TX_DMA_CHANNELS), 31> {}; // DMA Tx channel Y enable
+		struct DTE : Field<DTE, (32 - NUM_DMA_TX_CHANNELS), 31> {}; // DMA Tx channel Y enable
 
 		typedef FieldSet<DTE> ALL;
 		
@@ -1470,6 +1799,11 @@ private:
 			DTE::SetName("DTE"); DTE::SetDescription("DMA Tx channel Y enable");
 		}
 		
+		void Reset()
+		{
+			this->Initialize(0x0);
+		}
+
 		using Super::operator =;
 	};
 	
@@ -1480,7 +1814,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = (GENERIC_SLAVE == 0) ? 0x5c : 0x9c;
 		
-		struct DRE : Field<DRE, (32 - NUM_RX_DMA_CHANNELS), 31> {}; // DMA Rx channel Y enable
+		struct DRE : Field<DRE, (32 - NUM_DMA_RX_CHANNELS), 31> {}; // DMA Rx channel Y enable
 
 		typedef FieldSet<DRE> ALL;
 		
@@ -1493,6 +1827,11 @@ private:
 			DRE::SetName("DRE"); DRE::SetDescription("DMA Rx channel Y enable");
 		}
 		
+		void Reset()
+		{
+			this->Initialize(0x0);
+		}
+
 		using Super::operator =;
 	};
 	
@@ -1503,15 +1842,10 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xa0;
 		
-		struct IFD    : Field<IFD, 27, 30>             {}; // Interframe Delay
-		struct IFD_RO : Field<IFD, 27, 30, SW_R_HW_RO> {}; // Interframe Delay (read-only)
-		struct EN     : Field<EN , 31    >             {}; // Enable
-		struct EN_RO  : Field<EN , 31, 31, SW_R_HW_RO> {}; // Enable (read-only)
+		struct IFD    : Field<IFD, 27, 30, GENERIC_PSI5 ? SW_RW : SW_R_HW_RO> {}; // Interframe Delay
+		struct EN     : Field<EN , 31, 31, GENERIC_PSI5 ? SW_RW : SW_R_HW_RO> {}; // Enable
 		
-		SWITCH_ENUM_TRAIT(bool, _);
-		CASE_ENUM_TRAIT(false, _) { typedef FieldSet<IFD_RO, EN_RO> ALL; };
-		CASE_ENUM_TRAIT(true, _)  { typedef FieldSet<IFD, EN> ALL; };
-		typedef typename ENUM_TRAIT(GENERIC_PSI5, _)::ALL ALL;
+		typedef FieldSet<IFD, EN> ALL;
 		
 		LINFlexD_PTD(LINFlexD<CONFIG> *_linflexd) : Super(_linflexd) { Init(); }
 		LINFlexD_PTD(LINFlexD<CONFIG> *_linflexd, uint32_t value) : Super(_linflexd, value) { Init(); }
@@ -1523,6 +1857,11 @@ private:
 			EN ::SetName("EN");  EN ::SetDescription("Enable");
 		}
 		
+		void Reset()
+		{
+			this->Initialize(0x0);
+		}
+
 		using Super::operator =;
 	};
 	
@@ -1557,14 +1896,24 @@ private:
 	LINFlexD_DMARXE                                                                                  linflexd_dmarxe;   // LINFlexD_DMARXE
 	LINFlexD_PTD                                                                                     linflexd_ptd;      // LINFlexD_PTD
 	
-	std::queue<bool, std::vector<bool> > rx_fifo;
-	std::queue<bool, std::vector<bool> > tx_fifo;
-	sc_core::sc_event rx_event;
-	sc_core::sc_event tx_event;
-	sc_core::sc_event gen_int_rx_event;
-	sc_core::sc_event gen_int_tx_event;
-	sc_core::sc_event gen_int_err_event;
-	bool lins_int_rx_mask;
+	unisim::kernel::tlm2::tlm_bitstream rx_input; // Rx timed input bit stream
+	bool rx_prev_input_status;                    // Previous status of Rx pin
+	bool rx_input_status;                         // Current status of Rx pin
+	unsigned int rx_dominant_bits_cnt;            // number of consecutive dominant bits (i.e zero bits) received
+	unsigned int rx_fifo_cnt;                     // Rx FIFO counter
+	uint8_t rx_parity_error_reg;                  // 4-bit parity error register
+	sc_core::sc_event gen_int_rx_event;           // INT_RX event
+	sc_core::sc_event gen_int_tx_event;           // INT_TX event
+	sc_core::sc_event gen_int_err_event;          // INT_ERR event
+	sc_core::sc_event gen_dma_rx_event;           // DMA_RX event
+	sc_core::sc_event gen_dma_tx_event;           // DMA_TX event
+	sc_core::sc_event tx_event;                   // Tx event
+	bool pending_tx_request;                      // whether there's a pending transmission request
+	bool lins_int_rx_mask;                        // whether to mask INT_RX due to LINS
+	sc_core::sc_time last_run_time;               // last time timeout counter was run
+	sc_core::sc_time rx_time;                     // Rx time offset relative to current simulation time
+	bool data_reception_in_progress;
+	bool data_transmission_in_progress;
 	
 	// LINFlexD registers address map
 	RegisterAddressMap<sc_dt::uint64> reg_addr_map;
@@ -1586,13 +1935,14 @@ private:
 	bool lin_clock_posedge_first;                         // LIN clock posedge first ?
 	double lin_clock_duty_cycle;                          // LIN clock duty cycle
 	
+	sc_core::sc_time baud_period;
+	
 	void EnableLINS_INT_TX();
 	void DisableLINS_INT_TX();
-	LINFlexD_OperatingMode GetOperatingMode() const;
 	bool InitMode() const;
 	bool SleepMode() const;
 	bool NormalMode() const;
-	bool UARTMode() const;
+	bool UART_Mode() const;
 	bool LINTimeoutCounterMode() const;
 	bool OutputCompareTimeoutCounterMode() const;
 	bool HardwareChecksumCalculation() const;
@@ -1605,28 +1955,48 @@ private:
 	bool UART_TX_FIFO_Mode() const;
 	unsigned int UARTWordLength() const;
 	bool LINS_INT_RX() const;
+	bool LIN_ClockEnabled() const;
 
 	void Reset();
 	void SoftReset();
+	void ResetTimeout();
+	LIN_State GetState();
 	void SetState(LIN_State lin_state);
+	void UpdateState();
 	
 	void UpdateINT_RX();
 	void UpdateINT_TX();
 	void UpdateINT_ERR();
+	void UpdateDMA_RX();
+	void UpdateDMA_TX();
+	
+	void Timeout();
+	void IncrementTimeoutCounter(sc_dt::uint64 delta);
+	sc_dt::int64 TicksToNextTimeoutCounterRun();
+	sc_core::sc_time TimeToNextTimeoutCounterRun();
+	void RunTimeoutCounterToTime(const sc_core::sc_time& time_stamp);
+	void ScheduleTimeoutCounterRun();
 
 	void ProcessEvent(Event *event);
 	void ProcessEvents();
 	void Process();
 	void UpdateMasterClock();
 	void UpdateLINClock();
-	void ClockPropertiesChangedProcess();
+	void MasterClockPropertiesChangedProcess();
 	void RESET_B_Process();
 	
-	void TX_Process();
-	void RX_Process();
 	void INT_RX_Process();
 	void INT_TX_Process();
 	void INT_ERR_Process();
+	void DMA_RX_Process();
+	void DMA_TX_Process();
+	void RX_FIFO_Pop();
+	bool RX_InputStatus();
+	bool RX_FallingEdge();
+	void RX_Process();
+	void TX_FIFO_Push();
+	void Transmit();
+	void TX_Process();
 };
 
 } // end of namespace intc

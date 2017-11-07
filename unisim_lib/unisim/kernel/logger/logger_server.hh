@@ -36,6 +36,8 @@
 #define __UNISIM_KERNEL_LOGGER_LOGGER_SERVER_HH__
 
 #include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/logger/logger.hh>
+#include <pthread.h>
 #include <string>
 #include <fstream>
 #include <set>
@@ -80,6 +82,28 @@ struct LoggerServer : public unisim::kernel::service::Object
 	 *  loggers when being destroyed.
 	 */
 	void RemoveClient( Logger const* client );
+
+	/** Message debug log command
+	 * Loggers should call this method (using the handle obtained with GetInstance)
+	 *   to log a debug message.
+	 *
+	 * @param os output stream
+	 * @param opt_color whether to color message
+	 * @param mode type of debug message (info, warning or error)
+	 * @param obj the unisim::kernel::service::Object that is sending the debug message
+	 * @param buffer the debug message
+	 */
+	void Print(std::ostream& os, bool opt_color, mode_t mode, std::string name, const char *buffer);
+	
+	/** Message debug log command
+	 * Loggers should call this method (using the handle obtained with GetInstance)
+	 *   to log a debug message.
+	 *
+	 * @param mode type of debug message (info, warning or error)
+	 * @param obj the unisim::kernel::service::Object that is sending the debug message
+	 * @param buffer the debug message
+	 */
+	void Print( mode_t mode, std::string name, const char *buffer );
 
 	/** Message debug info log command
 	 * Loggers should call this method (using the handle obtained with GetInstance)
@@ -147,6 +171,7 @@ public:
 	bool opt_xml_file_;
 	std::string opt_xml_filename_;
 	bool opt_xml_file_gzipped_;
+	pthread_mutex_t mutex;
 
 	unisim::kernel::service::Parameter<bool>        param_std_err;
 	unisim::kernel::service::Parameter<bool>        param_std_out;
