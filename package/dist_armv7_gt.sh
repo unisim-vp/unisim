@@ -574,7 +574,6 @@ GenericTimer.hh \
 "
 
 UNISIM_SIMULATORS_ARMV7_GT_EXTRA_FILES="\
-config.h.in \
 "
 
 UNISIM_SIMULATORS_ARMV7_GT_TEMPLATE_FILES=
@@ -1069,7 +1068,6 @@ if [ "${has_to_build_armv7_gt_configure}" = "yes" ]; then
 	echo "libarmv7_gt_${AM_ARMV7_GT_VERSION}_a_SOURCES = ${UNISIM_LIB_ARMV7_GT_SOURCE_FILES}" >> "${ARMV7_GT_MAKEFILE_AM}"
 	echo "bin_PROGRAMS = unisim-armv7_gt-${ARMV7_GT_VERSION}" >> "${ARMV7_GT_MAKEFILE_AM}"
 	echo "unisim_armv7_gt_${AM_ARMV7_GT_VERSION}_SOURCES = ${UNISIM_SIMULATORS_ARMV7_GT_SOURCE_FILES}" >> "${ARMV7_GT_MAKEFILE_AM}"
-	echo "unisim_armv7_gt_${AM_ARMV7_GT_VERSION}_CPPFLAGS = -DSIM_EXECUTABLE" >> "${ARMV7_GT_MAKEFILE_AM}"
 	echo "unisim_armv7_gt_${AM_ARMV7_GT_VERSION}_LDADD = libarmv7_gt-${ARMV7_GT_VERSION}.a" >> "${ARMV7_GT_MAKEFILE_AM}"
 
 	echo "noinst_HEADERS = ${UNISIM_LIB_ARMV7_GT_HEADER_FILES} ${UNISIM_LIB_ARMV7_GT_TEMPLATE_FILES} ${UNISIM_SIMULATORS_ARMV7_GT_HEADER_FILES} ${UNISIM_SIMULATORS_ARMV7_GT_TEMPLATE_FILES}" >> "${ARMV7_GT_MAKEFILE_AM}"
@@ -1131,7 +1129,7 @@ if [ "${has_to_build_armv7_gt_configure}" = "yes" ]; then
 	${DISTCOPY} ${DEST_DIR}/AUTHORS ${DEST_DIR}/armv7_gt
 	
 	echo "Building armv7_gt configure"
-	${SHELL} -c "cd ${DEST_DIR}/armv7_gt && aclocal -I m4 && autoconf --force && automake -ac"
+	${SHELL} -c "cd ${DEST_DIR}/armv7_gt && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
 fi
 
 echo "Distribution is up-to-date"

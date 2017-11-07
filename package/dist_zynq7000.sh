@@ -559,7 +559,6 @@ simulator.hh \
 "
 
 UNISIM_SIMULATORS_ZYNQ7000_EXTRA_FILES="\
-config.h.in \
 "
 
 UNISIM_SIMULATORS_ZYNQ7000_TEMPLATE_FILES=
@@ -1053,7 +1052,6 @@ if [ "${has_to_build_zynq7000_configure}" = "yes" ]; then
 	echo "libzynq7000_${AM_ZYNQ7000_VERSION}_a_SOURCES = ${UNISIM_LIB_ZYNQ7000_SOURCE_FILES}" >> "${ZYNQ7000_MAKEFILE_AM}"
 	echo "bin_PROGRAMS = unisim-zynq7000-${ZYNQ7000_VERSION}" >> "${ZYNQ7000_MAKEFILE_AM}"
 	echo "unisim_zynq7000_${AM_ZYNQ7000_VERSION}_SOURCES = ${UNISIM_SIMULATORS_ZYNQ7000_SOURCE_FILES}" >> "${ZYNQ7000_MAKEFILE_AM}"
-	echo "unisim_zynq7000_${AM_ZYNQ7000_VERSION}_CPPFLAGS = -DSIM_EXECUTABLE" >> "${ZYNQ7000_MAKEFILE_AM}"
 	echo "unisim_zynq7000_${AM_ZYNQ7000_VERSION}_LDADD = libzynq7000-${ZYNQ7000_VERSION}.a" >> "${ZYNQ7000_MAKEFILE_AM}"
 
 	echo "noinst_HEADERS = ${UNISIM_LIB_ZYNQ7000_HEADER_FILES} ${UNISIM_LIB_ZYNQ7000_TEMPLATE_FILES} ${UNISIM_SIMULATORS_ZYNQ7000_HEADER_FILES} ${UNISIM_SIMULATORS_ZYNQ7000_TEMPLATE_FILES}" >> "${ZYNQ7000_MAKEFILE_AM}"
@@ -1115,7 +1113,7 @@ if [ "${has_to_build_zynq7000_configure}" = "yes" ]; then
 	${DISTCOPY} ${DEST_DIR}/AUTHORS ${DEST_DIR}/zynq7000
 	
 	echo "Building zynq7000 configure"
-	${SHELL} -c "cd ${DEST_DIR}/zynq7000 && aclocal -I m4 && autoconf --force && automake -ac"
+	${SHELL} -c "cd ${DEST_DIR}/zynq7000 && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
 fi
 
 echo "Distribution is up-to-date"

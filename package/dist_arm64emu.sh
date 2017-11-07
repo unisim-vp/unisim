@@ -453,7 +453,6 @@ simulator.hh \
 "
 
 UNISIM_SIMULATORS_ARM64EMU_EXTRA_FILES="\
-config.h.in \
 "
 
 UNISIM_SIMULATORS_ARM64EMU_TEMPLATE_FILES=
@@ -949,9 +948,8 @@ if [ "${has_to_build_arm64emu_configure}" = "yes" ]; then
 	printf "\t\$(SHELL) ./config.status libtool\n" >> "${ARM64EMU_MAKEFILE_AM}"
 	# arm64emu
 	echo "bin_PROGRAMS = unisim-arm64emu-${ARM64EMU_VERSION}" >> "${ARM64EMU_MAKEFILE_AM}"
-	echo "unisim_arm64emu_${AM_ARM64EMU_VERSION}_CPPFLAGS = -DSIM_EXECUTABLE" >> "${ARM64EMU_MAKEFILE_AM}"
-	echo "unisim_arm64emu_${AM_ARM64EMU_VERSION}_LDFLAGS = -DSIM_EXECUTABLE -static-libtool-libs" >> "${ARM64EMU_MAKEFILE_AM}"
  	echo "unisim_arm64emu_${AM_ARM64EMU_VERSION}_SOURCES = ${UNISIM_SIMULATORS_ARM64EMU_SOURCE_FILES}" >> "${ARM64EMU_MAKEFILE_AM}"
+	echo "unisim_arm64emu_${AM_ARM64EMU_VERSION}_LDFLAGS = -static-libtool-libs" >> "${ARM64EMU_MAKEFILE_AM}"
 	echo "unisim_arm64emu_${AM_ARM64EMU_VERSION}_LDADD = libunisim-arm64emu-${ARM64EMU_VERSION}.la" >> "${ARM64EMU_MAKEFILE_AM}"
 	# libunisim-arm64emu
 	echo "noinst_LTLIBRARIES = libunisim-arm64emu-${ARM64EMU_VERSION}.la" >> "${ARM64EMU_MAKEFILE_AM}"
@@ -1013,7 +1011,7 @@ if [ "${has_to_build_arm64emu_configure}" = "yes" ]; then
 	${DISTCOPY} ${DEST_DIR}/AUTHORS ${DEST_DIR}/arm64emu
 	
 	echo "Building arm64emu configure"
-	${SHELL} -c "cd ${DEST_DIR}/arm64emu && aclocal -I m4 && libtoolize --force && autoconf --force && automake -ac"
+	${SHELL} -c "cd ${DEST_DIR}/arm64emu && aclocal -I m4 && libtoolize --force && autoconf --force && autoheader && automake -ac"
 fi
 
 echo "Distribution is up-to-date"
