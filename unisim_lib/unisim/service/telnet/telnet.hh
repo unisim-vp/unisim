@@ -71,10 +71,9 @@ public:
 private:
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
-	std::string guest_os;
 	bool enable_negotiation;
-	bool remove_null_character;
-	bool remove_line_feed;
+	bool filter_null_character;
+	bool filter_line_feed;
 
 	int telnet_tcp_port;
 	int telnet_sock;
@@ -84,8 +83,9 @@ private:
 
 	Parameter<bool> param_verbose;
 	Parameter<int> param_telnet_tcp_port;
-	Parameter<std::string> param_guest_os;
 	Parameter<bool> param_enable_negotiation;
+	Parameter<bool> param_filter_null_character;
+	Parameter<bool> param_filter_line_feed;
 
 	unsigned int telnet_input_buffer_size;
 	unsigned int telnet_input_buffer_index;

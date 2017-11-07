@@ -190,6 +190,7 @@ unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
+unisim/component/tlm2/com/serial_terminal/serial_terminal.cc \
 "
 
 UNISIM_LIB_MPC5777M_ISA_FILES="\
@@ -849,6 +850,7 @@ unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.hh \
 unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.hh \
 unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.hh \
 unisim/component/tlm2/com/freescale/mpc57xx/linflexd/linflexd.hh \
+unisim/component/tlm2/com/serial_terminal/serial_terminal.hh \
 "
 
 UNISIM_LIB_MPC5777M_TEMPLATE_FILES="\

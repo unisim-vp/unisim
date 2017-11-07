@@ -79,12 +79,25 @@ void periodic_task2(unsigned int pit_id, unsigned int chan)
 
 void linflexd_0_int_rx(unsigned int linflexd_id, enum LINFlexD_INT linflexd_int)
 {
-	while(1);
+	if(linflexd_get_uart_data_received_interrupt_flag(linflexd_id))
+	{
+		linflexd_clear_uart_data_received_interrupt_flag(linflexd_id); // LINFlexD_0 (Normal mode): clear data received interrupt flag
+		
+		char ch = 0;
+		linflexd_uart_rx_buffer_read_byte(linflexd_id, &ch, 0);        // LINFlexD_0 (Normal mode): receive character
+			
+		linflexd_release_uart_rx_buffer(linflexd_id);                  // LINFlexD_0 (Normal mode): release message buffer
+		
+		linflexd_uart_tx_buffer_write_byte(linflexd_id, &ch, 0);       // LINFlexD_0 (Normal mode): send character
+	}
 }
 
 void linflexd_0_int_tx(unsigned int linflexd_id, enum LINFlexD_INT linflexd_int)
 {
-	while(1);
+	if(linflexd_get_uart_data_transmitted_interrupt_flag(linflexd_id))
+	{
+		linflexd_clear_uart_data_transmitted_interrupt_flag(linflexd_id);       // LINFlexD_0 (Normal mode): clear transmission complete flag
+	}
 }
 
 void linflexd_0_int_err(unsigned int linflexd_id, enum LINFlexD_INT linflexd_int)
@@ -149,44 +162,31 @@ int main_Z4_2(void)
 	linflexd_enable_uart_mode(0);                                // LINFlexD_0   (init mode): enable UART mode
 	linflexd_enable_uart_tx(0);                                  // LINFlexD_0   (init mode): enable UART Tx
 	linflexd_enable_uart_rx(0);                                  // LINFlexD_0   (init mode): enable UART Rx
-	linflexd_enable_loop_back_mode(0);                           // LINFlexD_0   (init mode): enable loop back mode (Tx -> Rx)
 	
-	// set baud rate to 1 Mbit/s (assuming LIN_CLK = 80 Mhz)
+	linflexd_receive_msb_first(0);                               // LINFlexD_0   (init mode): receive MSB first
+	linflexd_transmit_msb_first(0);                              // LINFlexD_0   (init mode): transmit MSB first
+	
+	// set baud rate to 10000 bauds (assuming LIN_CLK = 80 Mhz)
 	// ROSE=0: baud rate = LIN_CLK / ( 16 * LDIV)
 	// ROSE=1: baud rate = LIN_CLK / (OSR * LDIV)
-	linflexd_enable_uart_reduced_over_sampling(0);               // LINFlexD_0   (init mode): enable UART reduced over sampling (ROSE=1)
-	linflexd_set_uart_over_sampling_rate(0, 4);                  // LINFlexD_0   (init mode): set UART over sampling (OSR=4)
-	linflexd_set_lin_clock_divisor(0, 20, 0);                    // LINFlexD_0   (init mode): set LDIV (LDIV=20.0)
+	linflexd_disable_uart_reduced_over_sampling(0);              // LINFlexD_0   (init mode): disable UART reduced over sampling (ROSE=0)
+	linflexd_set_lin_clock_divisor(0, 500, 0);                   // LINFlexD_0   (init mode): set LDIV (LDIV=500+0/16=500.0)
 	                                                             
 	linflexd_select_tx_stop_bits(0, 1);                          // LINFlexD_0   (init mode): 1 stop bit for transmission
 	linflexd_select_uart_rx_stop_bits(0, 1);                     // LINFlexD_0   (init mode): 1 stop bit for reception
 	    
 	linflexd_select_uart_tx_buffer_mode(0);                      // LINFlexD_0   (init mode): select UART Tx buffer mode
-	linflexd_set_uart_tx_buffer_length(0, 2);                    // LINFlexD_0   (init mode): set UART Tx buffer length to 1 byte
+	linflexd_set_uart_tx_buffer_length(0, 1);                    // LINFlexD_0   (init mode): set UART Tx buffer length to 1 byte
 	                                                             
 	linflexd_select_uart_rx_buffer_mode(0);                      // LINFlexD_0   (init mode): select UART Rx buffer mode
-	linflexd_set_uart_rx_buffer_length(0, 2);                    // LINFlexD_0   (init mode): set UART Rx buffer length to 1 byte
+	linflexd_set_uart_rx_buffer_length(0, 1);                    // LINFlexD_0   (init mode): set UART Rx buffer length to 1 byte
 	
-	linflexd_select_uart_word_length(0, LINFlexD_WORD_LENGTH_16); // LINFlexD_0   (init mode): 8-bit data word length without parity
+	linflexd_select_uart_word_length(0, LINFlexD_WORD_LENGTH_8); // LINFlexD_0   (init mode): 8-bit data word length without parity
+	
+	linflexd_enable_data_received_interrupt(0);                  // LINFlexD_0   (init mode): enable data received interrupt (caught by linflexd_0_int_rx)
+	linflexd_enable_data_transmitted_interrupt(0);               // LINFlexD_0   (init mode): enable data transmitted interrupt (caught by linflexd_0_int_tx)
 	
 	linflexd_request_to_exit_init_mode(0);                       // LINFlexD_0   (init mode): request leaving init mode (i.e. entering normal mode)
-	
-	uint16_t sent_msg[] = { 'H', 'e', 'l', 'o' };
-	uint16_t rec_msg[] = { 0, 0, 0, 0 };
-	unsigned int i;
-	for(i = 0; i < (sizeof(sent_msg) / sizeof(sent_msg[0])); i++)
-	{
-		linflexd_uart_tx_buffer_write_half_word(0, sent_msg + i, 0);  // LINFlexD_0 (Normal mode): send character/word
-		
-		while(!linflexd_is_uart_rx_buffer_ready(0));                  // LINFlexD_0 (Normal mode): wait for reception
-		
-		linflexd_uart_rx_buffer_read_half_word(0, rec_msg + i, 0);    // LINFlexD_0 (Normal mode): receive character/word
-		
-		linflexd_release_uart_rx_buffer(0);                           
-		
-		while(!linflexd_get_uart_data_transmitted_interrupt_flag(0)); // LINFlexD_0 (Normal mode): wait for transmission complete
-		linflexd_clear_uart_data_transmitted_interrupt_flag(0);       // LINFlexD_0 (Normal mode): clear transmission complete flag
-	}
 
 	/* Loop forever */
 	for(;;)

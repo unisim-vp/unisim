@@ -61,6 +61,7 @@ LoggerServer::LoggerServer(const char *name, unisim::kernel::service::Object *pa
   , opt_xml_file_(false)
   , opt_xml_filename_("logger_output.xml")
   , opt_xml_file_gzipped_(false)
+  , mutex()
   , param_std_err("std_err", this, opt_std_err_, "Show logger output through the standard error output")
   , param_std_out("std_out", this, opt_std_out_, "Show logger output through the standard output")
   , param_std_err_color("std_err_color", this, opt_std_err_color_, "Colorize logger output through the standard error output (only works if std_err is active)")
@@ -71,11 +72,13 @@ LoggerServer::LoggerServer(const char *name, unisim::kernel::service::Object *pa
   , param_xml_filename("xml_filename", this, opt_xml_filename_, "Filename to keep logger xml output (the option xml_file must be activated)")
   , param_xml_file_gzipped("xml_file_gzipped", this, opt_xml_file_gzipped_, "Compress the xml output (a .gz extension is automatically appended to the xml_filename option)")
 {
+	pthread_mutex_init(&mutex, NULL);
 }
 
 LoggerServer::~LoggerServer()
 {
   Close();
+  pthread_mutex_destroy(&mutex);
 }
 
 void
@@ -211,143 +214,91 @@ LoggerServer::XmlDebug(const char *type, std::string name, const char *buffer)
     std::cerr << "Error(LoggerServer): could not close debug message of type \"" << type << "\"" << std::endl;
 }
 
-void
-LoggerServer::DebugInfo(std::string name, const char *buffer)
+void LoggerServer::Print(std::ostream& os, bool opt_color, mode_t mode, std::string name, const char *buffer)
 {
-  if (opt_std_out_) {
-    if (opt_std_out_color_) std::cout << "\033[36m";
+	if(opt_color)
+	{
+		switch(mode)
+		{
+			case INFO_MODE: os << "\033[36m"; break;
+			case WARNING_MODE: os << "\033[33m"; break;
+			case ERROR_MODE: os << "\033[31m"; break;
+			default: break;
+		}
+	}
 
-    std::cout << name << ": ";
-    int prefix_length = name.size() + 2;
-    std::string prefix(prefix_length, ' ');
-    const char *b = buffer;
-    for (const char *p = strchr(b, '\n');
-         p != NULL;
-         p = strchr(b, '\n')) {
-      std::cout.write(b, p - b);
-      std::cout << std::endl << prefix;
-      b = p + 1;
-    }
-    std::cout << b << std::endl;
+	os << name << ": ";
+	switch(mode)
+	{
+		case WARNING_MODE: os << "WARNING! "; break;
+		case ERROR_MODE: os << "ERROR! "; break;
+		default: break;
+	}
+	int prefix_length = name.size() + 2;
+	std::string prefix(prefix_length, ' ');
+	const char *b = buffer;
+	for (const char *p = strchr(b, '\n'); p != NULL; p = strchr(b, '\n'))
+	{
+		os.write(b, p - b);
+		os << std::endl << prefix;
+		b = p + 1;
+	}
+	os << b << std::endl;
 		
-    if (opt_std_out_color_) std::cout << "\033[0m";
-  }
-  if (opt_std_err_) {
-    if (opt_std_err_color_) std::cerr << "\033[36m";
+	if (opt_color) os << "\033[0m";
+}
 
-    std::cerr << name << ": ";
-    int prefix_length = name.size() + 2;
-    std::string prefix(prefix_length, ' ');
-    const char *b = buffer;
-    for ( const char *p = strchr(b, '\n');
-          p != NULL;
-          p = strchr(b, '\n') ) {
-      std::cerr.write(b, p - b);
-      std::cerr << std::endl << prefix;
-      b = p + 1;
-    }
-    std::cerr << b << std::endl;
+void LoggerServer::Print(mode_t mode, std::string name, const char *buffer)
+{
+	pthread_mutex_lock(&mutex);
+	
+	if(opt_std_out_)
+	{
+		Print(std::cout, opt_std_out_color_, mode, name, buffer);
+	}
+	if (opt_std_err_)
+	{
+		Print(std::cerr, opt_std_err_color_, mode, name, buffer);
+	}
+	if(opt_xml_file_)
+	{
+		switch(mode)
+		{
+			case INFO_MODE: XmlDebug("info", name, buffer); break;
+			case WARNING_MODE: XmlDebug("warning", name, buffer); break;
+			case ERROR_MODE: XmlDebug("error", name, buffer); break;
+			default: break;
+		}
 		
-    if (opt_std_err_color_) std::cerr << "\033[0m";
-  }
-  if (opt_xml_file_) {
-    XmlDebug("info", name, buffer);
-  }
-  if (opt_file_) {
-    text_file_ << name << ": " << buffer << std::endl;
-  }
+	}
+	if(opt_file_)
+	{
+		text_file_ << name << ": ";
+		switch(mode)
+		{
+			case WARNING_MODE: text_file_ << "WARNING! "; break;
+			case ERROR_MODE: text_file_ << "ERROR! "; break;
+			default: break;
+		}
+		text_file_ << buffer << std::endl;
+	}
+	
+	pthread_mutex_unlock(&mutex);
+}
+
+void LoggerServer::DebugInfo(std::string name, const char *buffer)
+{
+	Print(INFO_MODE, name, buffer);
 }
 
 void LoggerServer::DebugWarning(std::string name, const char *buffer)
 {
-  if (opt_std_out_) {
-    if (opt_std_out_color_) std::cout << "\033[33m";
-
-    std::cout << name << ": WARNING! ";
-    int prefix_length = name.size() + 2;
-    std::string prefix(prefix_length, ' ');
-    const char *b = buffer;
-    for (const char *p = strchr(b, '\n');
-         p != NULL;
-         p = strchr(b, '\n')) {
-      std::cout.write(b, p - b);
-      std::cout << std::endl << prefix;
-      b = p + 1;
-    }
-    std::cout << b << std::endl;
-		
-    if (opt_std_out_color_) std::cout << "\033[0m";
-  }
-  if (opt_std_err_) {
-    if (opt_std_err_color_) std::cerr << "\033[33m";
-
-    std::cerr << name << ": WARNING! ";
-    int prefix_length = name.size() + 2;
-    std::string prefix(prefix_length, ' ');
-    const char *b = buffer;
-    for (const char *p = strchr(b, '\n');
-         p != NULL;
-         p = strchr(b, '\n')) {
-      std::cerr.write(b, p - b);
-      std::cerr << std::endl << prefix;
-      b = p + 1;
-    }
-    std::cerr << b << std::endl;
-		
-    if (opt_std_err_color_) std::cerr << "\033[0m";
-  }
-  if (opt_xml_file_) {
-    XmlDebug("warning", name, buffer);
-  }
-  if (opt_file_) {
-    text_file_ << name << ": WARNING! " << buffer << std::endl;
-  }
+	Print(WARNING_MODE, name, buffer);
 }
 
 void LoggerServer::DebugError(std::string name, const char *buffer)
 {
-  if (opt_std_out_) {
-    if (opt_std_out_color_) std::cout << "\033[31m";
-
-    std::cout << name << ": ERROR! ";
-    int prefix_length = name.size() + 2;
-    std::string prefix(prefix_length, ' ');
-    const char *b = buffer;
-    for (const char *p = strchr(b, '\n');
-         p != NULL;
-         p = strchr(b, '\n')) {
-      std::cout.write(b, p - b);
-      std::cout << std::endl << prefix;
-      b = p + 1;
-    }
-    std::cout << b << std::endl;
-		
-    if (opt_std_out_color_) std::cout << "\033[0m";
-  }
-  if (opt_std_err_) {
-    if (opt_std_err_color_) std::cerr << "\033[31m";
-
-    std::cerr << name << ": ERROR! ";
-    int prefix_length = name.size() + 2;
-    std::string prefix(prefix_length, ' ');
-    const char *b = buffer;
-    for (const char *p = strchr(b, '\n');
-         p != NULL;
-         p = strchr(b, '\n')) {
-      std::cerr.write(b, p - b);
-      std::cerr << std::endl << prefix;
-      b = p + 1;
-    }
-    std::cerr << b << std::endl;
-		
-    if (opt_std_err_color_) std::cerr << "\033[0m";
-  }
-  if (opt_xml_file_) {
-    XmlDebug("error", name, buffer);
-  }
-  if (opt_file_) {
-    text_file_ << name << ": ERROR! " << buffer << std::endl;
-  }
+	Print(ERROR_MODE, name, buffer);
 }
 
 } // end of namespace logger

@@ -73,6 +73,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, linflexd_15_rx(0)
 	, linflexd_16_tx(0)
 	, linflexd_16_rx(0)
+	, serial_terminal(0)
 	, ebi_stub(0)
 	, flash_port1_stub(0)
 	, xbar_0_s6_stub(0)
@@ -85,12 +86,15 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, profiler()
 	, sim_time(0)
 	, host_time(0)
+	, telnet(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
 	, enable_profiler(false)
+	, enable_serial_terminal(false)
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable/Disable profiling")
+	, param_enable_serial_terminal("enable-serial-terminal", 0, enable_serial_terminal, "Enable/Disable serial terminal instantiation")
 	, exit_status(0)
 {
 	unsigned int channel_num;
@@ -146,6 +150,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	linflexd_14 = new LINFlexD_14("LINFlexD_14", this);
 	linflexd_15 = new LINFlexD_15("LINFlexD_15", this);
 	linflexd_16 = new LINFlexD_16("LINFlexD_16", this);
+	
+	//  - LIN Serial Buses
 	linflexd_0_tx = new LINFlexD_0_TX("LINFlexD_0_tx");
 	linflexd_0_rx = new LINFlexD_0_RX("LINFlexD_0_rx");
 	linflexd_1_tx = new LINFlexD_1_TX("LINFlexD_1_tx");
@@ -159,6 +165,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	linflexd_16_tx = new LINFlexD_16_TX("LINFlexD_16_tx");
 	linflexd_16_rx = new LINFlexD_16_RX("LINFlexD_16_rx");
 	
+	//  - Serial Terminal
+	serial_terminal = enable_serial_terminal ? new SERIAL_TERMINAL("SERIAL_TERMINAL", this) : 0;
+	
+	//  - Stubs
 	ebi_stub = new EBI_STUB("EBI", this);
 	flash_port1_stub = new FLASH_PORT1_STUB("FLASH_PORT1", this);
 	xbar_0_s6_stub = new XBAR_0_S6_STUB("XBAR_0_S6", this);
@@ -188,6 +198,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
 	host_time = new unisim::service::time::host_time::HostTime("host-time");
+	//  - Telnet
+	telnet = enable_serial_terminal ? new TELNET("telnet") : 0;
 	
 	//=========================================================================
 	//===                          Port registration                        ===
@@ -411,6 +423,11 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	{
 		RegisterPort(*linflexd_16->DMA_RX[dma_req_num]);
 	}
+	
+	if(enable_serial_terminal)
+	{
+		RegisterPort(serial_terminal->CLK);
+	}
 
 	//=========================================================================
 	//===                           Signal creation                         ===
@@ -425,6 +442,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateClock("PER_CLK");
 	CreateClock("RTI_CLK");
 	CreateClock("LIN_CLK");
+	CreateClock("SERIAL_TERMINAL_CLK");
 	
 	CreateSignal("m_por", false);
 	CreateSignal("stop", false);
@@ -521,6 +539,12 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	linflexd_15->LINRX(linflexd_15_rx->serial_socket);
 	linflexd_16->LINTX(linflexd_16_tx->serial_socket);
 	linflexd_16->LINRX(linflexd_16_rx->serial_socket);
+	
+	if(serial_terminal)
+	{
+		serial_terminal->RX(linflexd_0_tx->serial_socket);
+		serial_terminal->TX(linflexd_0_rx->serial_socket);
+	}
 	
 	Bind("HARDWARE.Main_Core_0.m_clk"           , "HARDWARE.COMP_CLK");
 	Bind("HARDWARE.Main_Core_0.m_por"           , "HARDWARE.m_por");
@@ -678,6 +702,11 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.LINFlexD_15.reset_b"      , "HARDWARE.reset_b");
 	Bind("HARDWARE.LINFlexD_15.DMA_RX_0" , "HARDWARE.LINFlexD_15_RX_DMA_REQ_0");
 	Bind("HARDWARE.LINFlexD_15.DMA_TX_0" , "HARDWARE.LINFlexD_15_TX_DMA_REQ_0");
+	
+	if(enable_serial_terminal)
+	{
+		Bind("HARDWARE.SERIAL_TERMINAL.CLK", "HARDWARE.SERIAL_TERMINAL_CLK");
+	}
 	
 	// Interrupt sources
 	
@@ -1904,6 +1933,11 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	loader->registers_import >> peripheral_core_2->registers_export;
 	peripheral_core_2->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 	
+	if(enable_serial_terminal)
+	{
+		serial_terminal->char_io_import >> telnet->char_io_export;
+	}
+	
 	SC_HAS_PROCESS(Simulator);
 	
 	SC_THREAD(ResetProcess);
@@ -1948,6 +1982,7 @@ Simulator::~Simulator()
 	if(linflexd_15_rx) delete linflexd_15_rx;
 	if(linflexd_16_tx) delete linflexd_16_tx;
 	if(linflexd_16_rx) delete linflexd_16_rx;
+	if(serial_terminal) delete serial_terminal;
 	if(ebi_stub) delete ebi_stub;
 	if(flash_port1_stub) delete flash_port1_stub;
 	if(xbar_0_s6_stub) delete xbar_0_s6_stub;
@@ -1966,6 +2001,7 @@ Simulator::~Simulator()
 	if(sim_time) delete sim_time;
 	if(host_time) delete host_time;
 	if(loader) delete loader;
+	if(telnet) delete telnet;
 }
 
 void Simulator::ResetProcess()
@@ -2060,6 +2096,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.RTI_CLK.clock-period", "1 us");       // RTI_CLK: 1 Mhz
 	simulator->SetVariable("HARDWARE.LIN_CLK.lazy-clock", "true");
 	simulator->SetVariable("HARDWARE.LIN_CLK.clock-period", "12500 ps");      // LIN_CLK: 80 Mhz ((2/3) * LIN_CLK > PBRIDGEx_CLK > (1/3) * LIN_CLK)
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL_CLK.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL_CLK.clock-period", "100000000 ps"); // SERIAL_TERMINAL_CLK: 10000 baud
 	
 	//  - e200 PowerPC cores
 
@@ -2265,6 +2303,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("debugger.sel-cpu[6]", 0); // profiler
 	simulator->SetVariable("debugger.sel-cpu[7]", 1); // profiler
 	simulator->SetVariable("debugger.sel-cpu[8]", 2); // profiler
+	
+	simulator->SetVariable("telnet.telnet-tcp-port", 12348);
 }
 
 void Simulator::Run()

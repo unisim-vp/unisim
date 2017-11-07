@@ -1114,12 +1114,12 @@ void LINFlexD<CONFIG>::INT_RX_Process()
 	              ( UART_Mode() &&                      linflexd_linier.template Get<typename LINFlexD_LINIER::WUIE>()  && linflexd_uartsr.template Get<typename LINFlexD_UARTSR::WUF>()                        ) ||
 	              (!UART_Mode() &&                      linflexd_linier.template Get<typename LINFlexD_LINIER::WUIE>()  && linflexd_linsr.template Get<typename LINFlexD_LINSR::WUF>()                          ) ||
 	              (                                     linflexd_linier.template Get<typename LINFlexD_LINIER::DBFIE>() && linflexd_linsr.template Get<typename LINFlexD_LINSR::DBFF>()                         ) ||
-	              ( UART_Mode() &&                      linflexd_linier.template Get<typename LINFlexD_LINIER::DRIE>()  && linflexd_linsr.template Get<typename LINFlexD_UARTSR::DRFRFE>()                      ) ||
+	              ( UART_Mode() &&                      linflexd_linier.template Get<typename LINFlexD_LINIER::DRIE>()  && linflexd_uartsr.template Get<typename LINFlexD_UARTSR::DRFRFE>()                      ) ||
 	              (!UART_Mode() &&                      linflexd_linier.template Get<typename LINFlexD_LINIER::DRIE>()  && linflexd_linsr.template Get<typename LINFlexD_LINSR::DRF>()                          ) ||
 	              (                                     linflexd_linier.template Get<typename LINFlexD_LINIER::HRIE>()  && linflexd_linsr.template Get<typename LINFlexD_LINSR::HRF>()                          );
 	if(verbose)
 	{
-		logger << DebugInfo << sc_core::sc_time_stamp() << ": INT_RX <- " << int_rx << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": " << INT_RX.name() << " <- " << int_rx << EndDebugInfo;
 	}
 	
 	INT_RX = int_rx;
@@ -1129,14 +1129,14 @@ template <typename CONFIG>
 void LINFlexD<CONFIG>::INT_TX_Process()
 {
 	//             Mode                            Enable                                                                    Flag
-	bool int_tx = ( UART_Mode() && linflexd_linier.template Get<typename LINFlexD_LINIER::DTIE>()      && linflexd_linsr.template Get<typename LINFlexD_UARTSR::DTFTFF>()) ||
+	bool int_tx = ( UART_Mode() && linflexd_linier.template Get<typename LINFlexD_LINIER::DTIE>()      && linflexd_uartsr.template Get<typename LINFlexD_UARTSR::DTFTFF>()) ||
 	              (!UART_Mode() && linflexd_linier.template Get<typename LINFlexD_LINIER::DTIE>()      && linflexd_linsr.template Get<typename LINFlexD_LINSR::DTF>()    ) ||
 	              (                linflexd_linier.template Get<typename LINFlexD_LINIER::DBEIETOIE>() && linflexd_linsr.template Get<typename LINFlexD_LINSR::DBEF>()   ) ||
 	              (                linflexd_linier.template Get<typename LINFlexD_LINIER::HRIE>()      && linflexd_linsr.template Get<typename LINFlexD_LINSR::HRF>()    );
 
 	if(verbose)
 	{
-		logger << DebugInfo << sc_core::sc_time_stamp() << ": INT_TX <- " << int_tx << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": " << INT_TX.name() << " <- " << int_tx << EndDebugInfo;
 	}
 	
 	INT_TX = int_tx;
@@ -1163,7 +1163,7 @@ void LINFlexD<CONFIG>::INT_ERR_Process()
 
 	if(verbose)
 	{
-		logger << DebugInfo << sc_core::sc_time_stamp() << ": INT_ERR <- " << int_err << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": " << INT_ERR.name() << " <- " << int_err << EndDebugInfo;
 	}
 	
 	INT_ERR = int_err;
@@ -1483,7 +1483,7 @@ void LINFlexD<CONFIG>::RX_Process()
 								{
 									if(rx_input.seek(rx_time) == TLM_BITSTREAM_NEED_SYNC)
 									{
-										wait();
+										wait(rx_time);
 										rx_time = sc_core::SC_ZERO_TIME;
 									}
 									bool bit_value = RX_InputStatus(); // read bitstream
@@ -1512,7 +1512,7 @@ void LINFlexD<CONFIG>::RX_Process()
 							{
 								if(rx_input.seek(rx_time) == TLM_BITSTREAM_NEED_SYNC)
 								{
-									wait();
+									wait(rx_time);
 									rx_time = sc_core::SC_ZERO_TIME;
 								}
 								bool bit_value = RX_InputStatus();
@@ -1551,7 +1551,7 @@ void LINFlexD<CONFIG>::RX_Process()
 							{
 								if(rx_input.seek(rx_time) == TLM_BITSTREAM_NEED_SYNC)
 								{
-									wait();
+									wait(rx_time);
 									rx_time = sc_core::SC_ZERO_TIME;
 								}
 								bool bit_value = RX_InputStatus();
@@ -1596,8 +1596,11 @@ void LINFlexD<CONFIG>::RX_Process()
 										if(end_of_message)  // end of message ?
 										{
 											// wait reception time before updating state
-											wait(rx_time);
-											rx_time = sc_core::SC_ZERO_TIME;
+											if(rx_time != sc_core::SC_ZERO_TIME)
+											{
+												wait(rx_time);
+												rx_time = sc_core::SC_ZERO_TIME;
+											}
 											
 											// check for buffer overrun
 											if(UART_RX_BufferMode())
@@ -1735,7 +1738,7 @@ void LINFlexD<CONFIG>::RX_Process()
 												
 												num_of_frames = 0;
 
-												unsigned int dtu = linflexd_uartcr.template Get<typename LINFlexD_UARTCR::DTU_PCETX>();
+												unsigned int dtu = linflexd_uartcr.template Get<typename LINFlexD_UARTCR::DTU>();
 												
 												// if DTU bit is set, then the UART timeout counter will be reset after the configured number of frames have been received
 												if(dtu)

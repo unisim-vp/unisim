@@ -689,6 +689,8 @@ private:
 		struct ROSE       : Field<ROSE      , 8     > {}; // Reduced Over Sampling Enable
 		struct NEF        : Field<NEF       , 9, 11 > {}; // Number of expected frame
 		struct DTU_PCETX  : Field<DTU_PCETX , 12    > {}; // Disable Timeout in UART mode/Parity transmission and checking
+		struct DTU        : Field<DTU       , 12    > {}; // Disable Timeout in UART mode
+		struct PCETX      : Field<PCETX     , 12    > {}; // Parity transmission and checking
 		struct SBUR       : Field<SBUR      , 13, 14> {}; // Stop bits in UART reception mode
 		struct WLS        : Field<WLS       , 15    > {}; // Special Word Length in UART mode
 		struct TDFL_TFC   : Field<TDFL_TFC  , 16, 18> {}; // Transmitter Data Field Length / TX FIFO Counter
@@ -775,10 +777,16 @@ private:
 			ROSE     ::SetName("ROSE");      ROSE     ::SetDescription("Reduced Over Sampling Enable");
 			NEF      ::SetName("NEF");       NEF      ::SetDescription("Number of expected frame");
 			DTU_PCETX::SetName("DTU_PCETX"); DTU_PCETX::SetDescription("Disable Timeout in UART mode/Parity transmission and checking");
+			DTU      ::SetName("DTU");       DTU      ::SetDescription("Disable Timeout in UART mode");
+			PCETX    ::SetName("PCETX");     PCETX    ::SetDescription("Parity transmission and checking");
 			SBUR     ::SetName("SBUR");      SBUR     ::SetDescription("Stop bits in UART reception mode");
 			WLS      ::SetName("WLS");       WLS      ::SetDescription("Special Word Length in UART mode");
 			TDFL_TFC ::SetName("TDFL_TFC");  TDFL_TFC ::SetDescription("Transmitter Data Field Length/TX FIFO Counter");
+			TDFL     ::SetName("TDFL");      TDFL     ::SetDescription("Transmitter Data Field Length");
+			TFC      ::SetName("TFC");       TFC      ::SetDescription("TX FIFO Counter");
 			RDFL_RFC ::SetName("RDFL_RFC");  RDFL_RFC ::SetDescription("Reception Data Field Length /RX FIFO Counter");
+			RDFL     ::SetName("RDFL");      RDFL     ::SetDescription("Reception Data Field Length");
+			RFC      ::SetName("RFC");       RFC      ::SetDescription("RX FIFO Counter");
 			RFBM     ::SetName("RFBM");      RFBM     ::SetDescription("Rx Fifo/Buffer mode");
 			TFBM     ::SetName("TFBM");      TFBM     ::SetDescription("Tx Fifo/Buffer mode");
 			WL1      ::SetName("WL1");       WL1      ::SetDescription("Word Length in UART mode");
@@ -909,14 +917,18 @@ private:
 			RFNE  ::SetName("RFNE");   RFNE  ::SetDescription("Receive FIFO Not Empty");
 			TO    ::SetName("TO");     TO    ::SetDescription("Timeout");
 			DRFRFE::SetName("DRFRFE"); DRFRFE::SetDescription("Data Reception Completed Flag / Rx FIFO Empty Flag");
+			DRF   ::SetName("DRF");    DRF   ::SetDescription("Data Reception Completed Flag");
+			RFE   ::SetName("RFE");    RFE   ::SetDescription("Rx FIFO Empty Flag");
 			DTFTFF::SetName("DTFTFF"); DTFTFF::SetDescription("Data Transmission Completed Flag / TX FIFO Full Flag");
+			DTF   ::SetName("DTF");    DTF   ::SetDescription("Data Transmission Completed Flag");
+			TFF   ::SetName("TFF");    TFF   ::SetDescription("TX FIFO Full Flag");
 			NF    ::SetName("NF");     NF    ::SetDescription("Noise flag");
 		}
 		
 		void Reset()
 		{
 			this->Initialize(0x0);
-			this->linflexd->UpdateINT_ERR();
+			UpdateInterrupts();
 		}
 		
 		void SoftReset()
@@ -933,7 +945,7 @@ private:
 			this->template Set<RFNE  >(0);
 			this->template Set<TO    >(0);
 			this->template Set<NF    >(0);
-			this->linflexd->UpdateINT_ERR();
+			UpdateInterrupts();
 		}
 		
 		uint32_t Compound()
@@ -991,8 +1003,15 @@ private:
 								  (( this->linflexd->UART_RX_FIFO_Mode() && !this->linflexd->UART_TX_FIFO_Mode()) ? Super::template WritePreserve<RX_FIFO_MODE_PRESERVED_FIELDS>(value, bit_enable)    :
 								  Super::Write(value, bit_enable)));
 			
-			this->linflexd->UpdateINT_ERR();
+			UpdateInterrupts();
 			return rws;
+		}
+		
+		void UpdateInterrupts()
+		{
+			this->linflexd->UpdateINT_RX();
+			this->linflexd->UpdateINT_TX();
+			this->linflexd->UpdateINT_ERR();
 		}
 		
 		using Super::operator =;

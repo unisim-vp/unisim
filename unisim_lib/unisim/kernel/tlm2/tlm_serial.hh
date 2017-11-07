@@ -35,8 +35,10 @@
 #ifndef __UNISIM_KERNEL_TLM2_TLM_SERIAL_HH__
 #define __UNISIM_KERNEL_TLM2_TLM_SERIAL_HH__
 
+#include <unisim/util/likely/likely.hh>
 #include <tlm>
 #include <iostream>
+#include <stdexcept>
 #include <string.h>
 #include <assert.h>
 
