@@ -950,7 +950,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 
 	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
 	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -1062,7 +1062,7 @@ if [ "${has_to_build_armv7_gt_configure}" = "yes" ]; then
 
 	AM_ARMV7_GT_VERSION=$(printf ${ARMV7_GT_VERSION} | sed -e 's/\./_/g')
 	echo "Generating armv7_gt Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${ARMV7_GT_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${ARMV7_GT_MAKEFILE_AM}"
 	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${ARMV7_GT_MAKEFILE_AM}"
 	echo "noinst_LIBRARIES = libarmv7_gt-${ARMV7_GT_VERSION}.a" >> "${ARMV7_GT_MAKEFILE_AM}"
 	echo "libarmv7_gt_${AM_ARMV7_GT_VERSION}_a_SOURCES = ${UNISIM_LIB_ARMV7_GT_SOURCE_FILES}" >> "${ARMV7_GT_MAKEFILE_AM}"

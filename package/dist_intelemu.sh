@@ -419,7 +419,7 @@ if [ "${has_to_build_configure}" = "yes" ]; then
     AM_INTELEMU_VERSION=$(printf ${INTELEMU_VERSION} | sed -e 's/\./_/g')
     echo "Generating intelemu Makefile.am"
     exec 5> "${INTELEMU_MAKEFILE_AM}"
-    echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" >&5
+    echo "ACLOCAL_AMFLAGS=-I m4" >&5
     echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >&5
     echo "noinst_LIBRARIES = libintelemu-${INTELEMU_VERSION}.a" >&5
     echo "libintelemu_${AM_INTELEMU_VERSION}_a_SOURCES = ${UNISIM_LIB_INTELEMU_SOURCE_FILES}" >&5

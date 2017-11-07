@@ -859,7 +859,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 
 	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
 	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -954,7 +954,7 @@ if [ "${has_to_build_at32uc3c_configure}" = "yes" ]; then
 
 	AM_AT32UC3C_VERSION=$(printf ${AT32UC3C_VERSION} | sed -e 's/\./_/g')
 	echo "Generating at32uc3c Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${AT32UC3C_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${AT32UC3C_MAKEFILE_AM}"
 	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${AT32UC3C_MAKEFILE_AM}"
 	echo "noinst_LIBRARIES = libat32uc3c-${AT32UC3C_VERSION}.a" >> "${AT32UC3C_MAKEFILE_AM}"
 	echo "libat32uc3c_${AM_AT32UC3C_VERSION}_a_SOURCES = ${UNISIM_LIB_AT32UC3C_SOURCE_FILES}" >> "${AT32UC3C_MAKEFILE_AM}"

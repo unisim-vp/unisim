@@ -919,7 +919,7 @@ EOF
 	AM_SIMULATOR_VERSION=$(printf ${SIMULATOR_VERSION} | sed -e 's/\./_/g')
 	echo "Generating ${SIMPKG} Makefile.am"
 	cat <<EOF > "${SIMULATOR_MAKEFILE_AM}"
-ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4
+ACLOCAL_AMFLAGS=-I m4
 AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)
 LIBTOOL_DEPS = @LIBTOOL_DEPS@
 libtool: \$(LIBTOOL_DEPS)

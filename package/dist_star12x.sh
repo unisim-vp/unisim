@@ -685,7 +685,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 
 	AM_GENISSLIB_VERSION=`printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -760,7 +760,7 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 
 	AM_STAR12X_VERSION=`printf ${STAR12X_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating star12x Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${STAR12X_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${STAR12X_MAKEFILE_AM}"
 	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${STAR12X_MAKEFILE_AM}"
 	echo "noinst_LIBRARIES = libstar12x-${STAR12X_VERSION}.a" >> "${STAR12X_MAKEFILE_AM}"
 	echo "nodist_libstar12x_${AM_STAR12X_VERSION}_a_SOURCES = unisim/component/cxx/processor/hcs12x/xb.cc unisim/component/cxx/processor/hcs12x/hcs12x.cc" >> "${STAR12X_MAKEFILE_AM}"

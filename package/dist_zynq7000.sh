@@ -935,7 +935,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 
 	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
 	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -1046,7 +1046,7 @@ if [ "${has_to_build_zynq7000_configure}" = "yes" ]; then
 
 	AM_ZYNQ7000_VERSION=$(printf ${ZYNQ7000_VERSION} | sed -e 's/\./_/g')
 	echo "Generating zynq7000 Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${ZYNQ7000_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${ZYNQ7000_MAKEFILE_AM}"
 	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${ZYNQ7000_MAKEFILE_AM}"
 	echo "noinst_LIBRARIES = libzynq7000-${ZYNQ7000_VERSION}.a" >> "${ZYNQ7000_MAKEFILE_AM}"
 	echo "libzynq7000_${AM_ZYNQ7000_VERSION}_a_SOURCES = ${UNISIM_LIB_ZYNQ7000_SOURCE_FILES}" >> "${ZYNQ7000_MAKEFILE_AM}"

@@ -1063,7 +1063,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 
 	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
 	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -1158,7 +1158,7 @@ if [ "${has_to_build_ppcemu_configure}" = "yes" ]; then
 
 	AM_PPCEMU_VERSION=$(printf ${PPCEMU_VERSION} | sed -e 's/\./_/g')
 	echo "Generating ppcemu Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${PPCEMU_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${PPCEMU_MAKEFILE_AM}"
 	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${PPCEMU_MAKEFILE_AM}"
 	echo "noinst_LIBRARIES = libppcemu-${PPCEMU_VERSION}.a" >> "${PPCEMU_MAKEFILE_AM}"
 	echo "libppcemu_${AM_PPCEMU_VERSION}_a_SOURCES = ${UNISIM_LIB_PPCEMU_SOURCE_FILES}" >> "${PPCEMU_MAKEFILE_AM}"

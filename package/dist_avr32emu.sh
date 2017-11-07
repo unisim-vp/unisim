@@ -866,7 +866,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 
 	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
 	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -962,7 +962,7 @@ if [ "${has_to_build_avr32emu_configure}" = "yes" ]; then
 
 	AM_AVR32EMU_VERSION=$(printf ${AVR32EMU_VERSION} | sed -e 's/\./_/g')
 	echo "Generating avr32emu Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${AVR32EMU_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${AVR32EMU_MAKEFILE_AM}"
 	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${AVR32EMU_MAKEFILE_AM}"
 	echo "noinst_LIBRARIES = libavr32emu-${AVR32EMU_VERSION}.a" >> "${AVR32EMU_MAKEFILE_AM}"
 	echo "libavr32emu_${AM_AVR32EMU_VERSION}_a_SOURCES = ${UNISIM_LIB_AVR32EMU_SOURCE_FILES}" >> "${AVR32EMU_MAKEFILE_AM}"
