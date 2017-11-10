@@ -181,6 +181,7 @@ unisim/service/tee/blob/tee_32.cc \
 unisim/service/tee/stmt_lookup/tee_32.cc \
 unisim/service/tee/backtrace/tee_32.cc \
 unisim/service/telnet/telnet.cc \
+unisim/service/netcat/netcat.cc \
 unisim/service/os/linux_os/powerpc_linux32.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/floating.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/cpu.cc \
@@ -824,6 +825,7 @@ unisim/service/tee/blob/tee.hh \
 unisim/service/tee/stmt_lookup/tee.hh \
 unisim/service/tee/backtrace/tee.hh \
 unisim/service/telnet/telnet.hh \
+unisim/service/netcat/netcat.hh \
 unisim/service/os/linux_os/linux.hh \
 unisim/service/os/linux_os/powerpc_linux32.hh \
 unisim/component/cxx/memory/ram/memory.hh \
@@ -851,6 +853,7 @@ unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.hh \
 unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.hh \
 unisim/component/tlm2/com/freescale/mpc57xx/linflexd/linflexd.hh \
 unisim/component/tlm2/com/serial_terminal/serial_terminal.hh \
+unisim/component/tlm2/dma/freescale/mpc57xx/dmamux/dmamux.hh \
 "
 
 UNISIM_LIB_MPC5777M_TEMPLATE_FILES="\
@@ -928,6 +931,7 @@ unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.tcc \
 unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.tcc \
 unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.tcc \
 unisim/component/tlm2/com/freescale/mpc57xx/linflexd/linflexd.tcc \
+unisim/component/tlm2/dma/freescale/mpc57xx/dmamux/dmamux.tcc \
 "
 
 UNISIM_LIB_MPC5777M_M4_FILES="\
@@ -1016,6 +1020,16 @@ linflexd_2.cc \
 linflexd_14.cc \
 linflexd_15.cc \
 linflexd_16.cc \
+dmamux_0.cc \
+dmamux_1.cc \
+dmamux_2.cc \
+dmamux_3.cc \
+dmamux_4.cc \
+dmamux_5.cc \
+dmamux_6.cc \
+dmamux_7.cc \
+dmamux_8.cc \
+dmamux_9.cc \
 "
 UNISIM_SIMULATORS_MPC5777M_HEADER_FILES="\
 simulator.hh \

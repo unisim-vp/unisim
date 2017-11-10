@@ -73,7 +73,12 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, linflexd_15_rx(0)
 	, linflexd_16_tx(0)
 	, linflexd_16_rx(0)
-	, serial_terminal(0)
+	, serial_terminal0(0)
+	, serial_terminal1(0)
+	, serial_terminal2(0)
+	, serial_terminal14(0)
+	, serial_terminal15(0)
+	, serial_terminal16(0)
 	, ebi_stub(0)
 	, flash_port1_stub(0)
 	, xbar_0_s6_stub(0)
@@ -86,15 +91,48 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, profiler()
 	, sim_time(0)
 	, host_time(0)
-	, telnet(0)
+	, telnet0(0)
+	, telnet1(0)
+	, telnet2(0)
+	, telnet14(0)
+	, telnet15(0)
+	, telnet16(0)
+	, netcat0(0)
+	, netcat1(0)
+	, netcat2(0)
+	, netcat14(0)
+	, netcat15(0)
+	, netcat16(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
 	, enable_profiler(false)
-	, enable_serial_terminal(false)
+	, enable_serial_terminal0(false)
+	, enable_serial_terminal1(false)
+	, enable_serial_terminal2(false)
+	, enable_serial_terminal14(false)
+	, enable_serial_terminal15(false)
+	, enable_serial_terminal16(false)
+	, serial_terminal_protocol0(SERIAL_TERMINAL_PROTOCOL_TELNET)
+	, serial_terminal_protocol1(SERIAL_TERMINAL_PROTOCOL_TELNET)
+	, serial_terminal_protocol2(SERIAL_TERMINAL_PROTOCOL_TELNET)
+	, serial_terminal_protocol14(SERIAL_TERMINAL_PROTOCOL_TELNET)
+	, serial_terminal_protocol15(SERIAL_TERMINAL_PROTOCOL_TELNET)
+	, serial_terminal_protocol16(SERIAL_TERMINAL_PROTOCOL_TELNET)
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable/Disable profiling")
-	, param_enable_serial_terminal("enable-serial-terminal", 0, enable_serial_terminal, "Enable/Disable serial terminal instantiation")
+	, param_enable_serial_terminal0("enable-serial-terminal0", 0, enable_serial_terminal0, "Enable/Disable serial terminal over LINFlexD_0 UART serial interface")
+	, param_enable_serial_terminal1("enable-serial-terminal1", 0, enable_serial_terminal1, "Enable/Disable serial terminal over LINFlexD_1 UART serial interface")
+	, param_enable_serial_terminal2("enable-serial-terminal2", 0, enable_serial_terminal2, "Enable/Disable serial terminal over LINFlexD_2 UART serial interface")
+	, param_enable_serial_terminal14("enable-serial-terminal14", 0, enable_serial_terminal14, "Enable/Disable serial terminal over LINFlexD_14 UART serial interface")
+	, param_enable_serial_terminal15("enable-serial-terminal15", 0, enable_serial_terminal15, "Enable/Disable serial terminal over LINFlexD_15 UART serial interface")
+	, param_enable_serial_terminal16("enable-serial-terminal16", 0, enable_serial_terminal16, "Enable/Disable serial terminal over LINFlexD_16 UART serial interface")
+	, param_serial_terminal_protocol0("serial-terminal-protocol0", 0, serial_terminal_protocol0, "Host network protocol to communicate with guest serial terminal over LINFlexD_0 UART serial interface (telnet or netcat)")
+	, param_serial_terminal_protocol1("serial-terminal-protocol1", 0, serial_terminal_protocol1, "Host network protocol to communicate with guest serial terminal over LINFlexD_1 UART serial interface (telnet or netcat)")
+	, param_serial_terminal_protocol2("serial-terminal-protocol2", 0, serial_terminal_protocol2, "Host network protocol to communicate with guest serial terminal over LINFlexD_2 UART serial interface (telnet or netcat)")
+	, param_serial_terminal_protocol14("serial-terminal-protocol14", 0, serial_terminal_protocol14, "Host network protocol to communicate with guest serial terminal over LINFlexD_14 UART serial interface (telnet or netcat)")
+	, param_serial_terminal_protocol15("serial-terminal-protocol15", 0, serial_terminal_protocol15, "Host network protocol to communicate with guest serial terminal over LINFlexD_15 UART serial interface (telnet or netcat)")
+	, param_serial_terminal_protocol16("serial-terminal-protocol16", 0, serial_terminal_protocol16, "Host network protocol to communicate with guest serial terminal over LINFlexD_16 UART serial interface (telnet or netcat)")
 	, exit_status(0)
 {
 	unsigned int channel_num;
@@ -102,6 +140,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	unsigned int irq_num;
 	unsigned int prc_num;
 	unsigned int dma_req_num;
+	unsigned int dma_source_num;
+	unsigned int dma_always_num;
+	unsigned int dma_trigger_num;
+	unsigned int dma_channel_num;
 
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -166,7 +208,24 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	linflexd_16_rx = new LINFlexD_16_RX("LINFlexD_16_rx");
 	
 	//  - Serial Terminal
-	serial_terminal = enable_serial_terminal ? new SERIAL_TERMINAL("SERIAL_TERMINAL", this) : 0;
+	serial_terminal0 = enable_serial_terminal0 ? new SERIAL_TERMINAL("SERIAL_TERMINAL0", this) : 0;
+	serial_terminal1 = enable_serial_terminal1 ? new SERIAL_TERMINAL("SERIAL_TERMINAL1", this) : 0;
+	serial_terminal2 = enable_serial_terminal2 ? new SERIAL_TERMINAL("SERIAL_TERMINAL2", this) : 0;
+	serial_terminal14 = enable_serial_terminal14 ? new SERIAL_TERMINAL("SERIAL_TERMINAL14", this) : 0;
+	serial_terminal15 = enable_serial_terminal15 ? new SERIAL_TERMINAL("SERIAL_TERMINAL15", this) : 0;
+	serial_terminal16 = enable_serial_terminal16 ? new SERIAL_TERMINAL("SERIAL_TERMINAL16", this) : 0;
+	
+	//  - DMAMUX
+	dmamux_0 = new DMAMUX_0("DMAMUX_0", this);
+	dmamux_1 = new DMAMUX_1("DMAMUX_1", this);
+	dmamux_2 = new DMAMUX_2("DMAMUX_2", this);
+	dmamux_3 = new DMAMUX_3("DMAMUX_3", this);
+	dmamux_4 = new DMAMUX_4("DMAMUX_4", this);
+	dmamux_5 = new DMAMUX_5("DMAMUX_5", this);
+	dmamux_6 = new DMAMUX_6("DMAMUX_6", this);
+	dmamux_7 = new DMAMUX_7("DMAMUX_7", this);
+	dmamux_8 = new DMAMUX_8("DMAMUX_8", this);
+	dmamux_9 = new DMAMUX_9("DMAMUX_9", this);
 	
 	//  - Stubs
 	ebi_stub = new EBI_STUB("EBI", this);
@@ -199,11 +258,24 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//  - Host Time
 	host_time = new unisim::service::time::host_time::HostTime("host-time");
 	//  - Telnet
-	telnet = enable_serial_terminal ? new TELNET("telnet") : 0;
+	telnet0 = (enable_serial_terminal0 && (serial_terminal_protocol0 == SERIAL_TERMINAL_PROTOCOL_TELNET)) ? new TELNET("telnet0") : 0;
+	telnet1 = (enable_serial_terminal1 && (serial_terminal_protocol1 == SERIAL_TERMINAL_PROTOCOL_TELNET)) ? new TELNET("telnet1") : 0;
+	telnet2 = (enable_serial_terminal2 && (serial_terminal_protocol2 == SERIAL_TERMINAL_PROTOCOL_TELNET)) ? new TELNET("telnet2") : 0;
+	telnet14 = (enable_serial_terminal14 && (serial_terminal_protocol14 == SERIAL_TERMINAL_PROTOCOL_TELNET)) ? new TELNET("telnet14") : 0;
+	telnet15 = (enable_serial_terminal15 && (serial_terminal_protocol15 == SERIAL_TERMINAL_PROTOCOL_TELNET)) ? new TELNET("telnet15") : 0;
+	telnet16 = (enable_serial_terminal16 && (serial_terminal_protocol16 == SERIAL_TERMINAL_PROTOCOL_TELNET)) ? new TELNET("telnet16") : 0;
+	//  - Netcat
+	netcat0 = (enable_serial_terminal0 && (serial_terminal_protocol0 == SERIAL_TERMINAL_PROTOCOL_NETCAT)) ? new NETCAT("netcat0") : 0;
+	netcat1 = (enable_serial_terminal1 && (serial_terminal_protocol1 == SERIAL_TERMINAL_PROTOCOL_NETCAT)) ? new NETCAT("netcat1") : 0;
+	netcat2 = (enable_serial_terminal2 && (serial_terminal_protocol2 == SERIAL_TERMINAL_PROTOCOL_NETCAT)) ? new NETCAT("netcat2") : 0;
+	netcat14 = (enable_serial_terminal14 && (serial_terminal_protocol14 == SERIAL_TERMINAL_PROTOCOL_NETCAT)) ? new NETCAT("netcat14") : 0;
+	netcat15 = (enable_serial_terminal15 && (serial_terminal_protocol15 == SERIAL_TERMINAL_PROTOCOL_NETCAT)) ? new NETCAT("netcat15") : 0;
+	netcat16 = (enable_serial_terminal16 && (serial_terminal_protocol16 == SERIAL_TERMINAL_PROTOCOL_NETCAT)) ? new NETCAT("netcat16") : 0;
 	
 	//=========================================================================
 	//===                          Port registration                        ===
 	//=========================================================================
+	// - Main_Core_0
 	RegisterPort(main_core_0->m_clk);
 	RegisterPort(main_core_0->m_por);
 	RegisterPort(main_core_0->p_reset_b);
@@ -216,7 +288,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(main_core_0->p_avec_b);
 	RegisterPort(main_core_0->p_voffset);
 	RegisterPort(main_core_0->p_iack);
-
+	
+	// - Main_Core_1
 	RegisterPort(main_core_1->m_clk);
 	RegisterPort(main_core_1->m_por);
 	RegisterPort(main_core_1->p_reset_b);
@@ -230,6 +303,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(main_core_1->p_voffset);
 	RegisterPort(main_core_1->p_iack);
 
+	// - Peripheral_Core_2
 	RegisterPort(peripheral_core_2->m_clk);
 	RegisterPort(peripheral_core_2->m_por);
 	RegisterPort(peripheral_core_2->p_reset_b);
@@ -243,6 +317,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(peripheral_core_2->p_voffset);
 	RegisterPort(peripheral_core_2->p_iack);
 	
+	// - INTC_0
 	RegisterPort(intc_0->m_clk);
 	RegisterPort(intc_0->reset_b);
 	
@@ -258,6 +333,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		RegisterPort(*intc_0->p_voffset[prc_num]);
 	}
 	
+	// - STM_0
 	RegisterPort(stm_0->m_clk);
 	RegisterPort(stm_0->reset_b);
 	RegisterPort(stm_0->debug);
@@ -266,6 +342,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		RegisterPort(*stm_0->irq[channel_num]);
 	}
 
+	// - STM_1
 	RegisterPort(stm_1->m_clk);
 	RegisterPort(stm_1->reset_b);
 	RegisterPort(stm_1->debug);
@@ -274,6 +351,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		RegisterPort(*stm_1->irq[channel_num]);
 	}
 
+	// - STM_2
 	RegisterPort(stm_2->m_clk);
 	RegisterPort(stm_2->reset_b);
 	RegisterPort(stm_2->debug);
@@ -282,6 +360,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		RegisterPort(*stm_2->irq[channel_num]);
 	}
 
+	// - SWT_0
 	RegisterPort(swt_0->m_clk);
 	RegisterPort(swt_0->swt_reset_b);
 	RegisterPort(swt_0->stop);
@@ -289,6 +368,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(swt_0->irq);
 	RegisterPort(swt_0->reset_b);
 
+	// - STM_1
 	RegisterPort(swt_1->m_clk);
 	RegisterPort(swt_1->swt_reset_b);
 	RegisterPort(swt_1->stop);
@@ -296,6 +376,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(swt_1->irq);
 	RegisterPort(swt_1->reset_b);
 
+	// - STM_2
 	RegisterPort(swt_2->m_clk);
 	RegisterPort(swt_2->swt_reset_b);
 	RegisterPort(swt_2->stop);
@@ -303,6 +384,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(swt_2->irq);
 	RegisterPort(swt_2->reset_b);
 	
+	// - STM_3
 	RegisterPort(swt_3->m_clk);
 	RegisterPort(swt_3->swt_reset_b);
 	RegisterPort(swt_3->stop);
@@ -310,6 +392,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(swt_3->irq);
 	RegisterPort(swt_3->reset_b);
 
+	// - PIT_0
 	RegisterPort(pit_0->m_clk);
 	RegisterPort(pit_0->per_clk);
 	RegisterPort(pit_0->rti_clk);
@@ -322,6 +405,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	}
 	RegisterPort(pit_0->rtirq);
 	
+	// - PIT_1
 	RegisterPort(pit_1->m_clk);
 	RegisterPort(pit_1->per_clk);
 	RegisterPort(pit_1->rti_clk);
@@ -334,6 +418,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	}
 	RegisterPort(pit_1->rtirq);
 	
+	// - LINFlexD_0
 	RegisterPort(linflexd_0->m_clk);
 	RegisterPort(linflexd_0->lin_clk);
 	RegisterPort(linflexd_0->reset_b);
@@ -349,6 +434,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		RegisterPort(*linflexd_0->DMA_RX[dma_req_num]);
 	}
 
+	// - LINFlexD_1
 	RegisterPort(linflexd_1->m_clk);
 	RegisterPort(linflexd_1->lin_clk);
 	RegisterPort(linflexd_1->reset_b);
@@ -364,6 +450,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		RegisterPort(*linflexd_1->DMA_RX[dma_req_num]);
 	}
 
+	// - LINFlexD_2
 	RegisterPort(linflexd_2->m_clk);
 	RegisterPort(linflexd_2->lin_clk);
 	RegisterPort(linflexd_2->reset_b);
@@ -379,6 +466,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		RegisterPort(*linflexd_2->DMA_RX[dma_req_num]);
 	}
 
+	// - LINFlexD_14
 	RegisterPort(linflexd_14->m_clk);
 	RegisterPort(linflexd_14->lin_clk);
 	RegisterPort(linflexd_14->reset_b);
@@ -394,6 +482,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		RegisterPort(*linflexd_14->DMA_RX[dma_req_num]);
 	}
 
+	// - LINFlexD_15
 	RegisterPort(linflexd_15->m_clk);
 	RegisterPort(linflexd_15->lin_clk);
 	RegisterPort(linflexd_15->reset_b);
@@ -409,6 +498,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		RegisterPort(*linflexd_15->DMA_RX[dma_req_num]);
 	}
 
+	// - LINFlexD_16
 	RegisterPort(linflexd_16->m_clk);
 	RegisterPort(linflexd_16->lin_clk);
 	RegisterPort(linflexd_16->reset_b);
@@ -424,9 +514,230 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		RegisterPort(*linflexd_16->DMA_RX[dma_req_num]);
 	}
 	
-	if(enable_serial_terminal)
+	// - SERIAL_TERMINAL
+	if(enable_serial_terminal0)
 	{
-		RegisterPort(serial_terminal->CLK);
+		RegisterPort(serial_terminal0->CLK);
+	}
+	if(enable_serial_terminal1)
+	{
+		RegisterPort(serial_terminal1->CLK);
+	}
+	if(enable_serial_terminal2)
+	{
+		RegisterPort(serial_terminal2->CLK);
+	}
+	if(enable_serial_terminal14)
+	{
+		RegisterPort(serial_terminal14->CLK);
+	}
+	if(enable_serial_terminal15)
+	{
+		RegisterPort(serial_terminal15->CLK);
+	}
+	if(enable_serial_terminal16)
+	{
+		RegisterPort(serial_terminal16->CLK);
+	}
+
+	// - DMAMUX_0
+	RegisterPort(dmamux_0->m_clk);
+	RegisterPort(dmamux_0->reset_b);
+	for(dma_source_num = 0; dma_source_num < DMAMUX_0::NUM_DMA_SOURCES; dma_source_num++)
+	{
+		RegisterPort(*dmamux_0->dma_source[dma_source_num]);
+	}
+	for(dma_always_num = 0; dma_always_num < DMAMUX_0::NUM_DMA_ALWAYS_ON; dma_always_num++)
+	{
+		RegisterPort(*dmamux_0->dma_always_on[dma_always_num]);
+	}
+	for(dma_trigger_num = 0; dma_trigger_num < DMAMUX_0::NUM_DMA_TRIGGERS; dma_trigger_num++)
+	{
+		RegisterPort(*dmamux_0->dma_trigger[dma_trigger_num]);
+	}
+	for(dma_channel_num = 0; dma_channel_num < DMAMUX_0::NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		RegisterPort(*dmamux_0->dma_channel[dma_channel_num]);
+	}
+	
+	// - DMAMUX_1
+	RegisterPort(dmamux_1->m_clk);
+	RegisterPort(dmamux_1->reset_b);
+	for(dma_source_num = 0; dma_source_num < DMAMUX_1::NUM_DMA_SOURCES; dma_source_num++)
+	{
+		RegisterPort(*dmamux_1->dma_source[dma_source_num]);
+	}
+	for(dma_always_num = 0; dma_always_num < DMAMUX_1::NUM_DMA_ALWAYS_ON; dma_always_num++)
+	{
+		RegisterPort(*dmamux_1->dma_always_on[dma_always_num]);
+	}
+	for(dma_trigger_num = 0; dma_trigger_num < DMAMUX_1::NUM_DMA_TRIGGERS; dma_trigger_num++)
+	{
+		RegisterPort(*dmamux_1->dma_trigger[dma_trigger_num]);
+	}
+	for(dma_channel_num = 0; dma_channel_num < DMAMUX_1::NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		RegisterPort(*dmamux_1->dma_channel[dma_channel_num]);
+	}
+
+	// - DMAMUX_2
+	RegisterPort(dmamux_2->m_clk);
+	RegisterPort(dmamux_2->reset_b);
+	for(dma_source_num = 0; dma_source_num < DMAMUX_2::NUM_DMA_SOURCES; dma_source_num++)
+	{
+		RegisterPort(*dmamux_2->dma_source[dma_source_num]);
+	}
+	for(dma_always_num = 0; dma_always_num < DMAMUX_2::NUM_DMA_ALWAYS_ON; dma_always_num++)
+	{
+		RegisterPort(*dmamux_2->dma_always_on[dma_always_num]);
+	}
+	for(dma_trigger_num = 0; dma_trigger_num < DMAMUX_2::NUM_DMA_TRIGGERS; dma_trigger_num++)
+	{
+		RegisterPort(*dmamux_2->dma_trigger[dma_trigger_num]);
+	}
+	for(dma_channel_num = 0; dma_channel_num < DMAMUX_2::NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		RegisterPort(*dmamux_2->dma_channel[dma_channel_num]);
+	}
+
+	// - DMAMUX_3
+	RegisterPort(dmamux_3->m_clk);
+	RegisterPort(dmamux_3->reset_b);
+	for(dma_source_num = 0; dma_source_num < DMAMUX_3::NUM_DMA_SOURCES; dma_source_num++)
+	{
+		RegisterPort(*dmamux_3->dma_source[dma_source_num]);
+	}
+	for(dma_always_num = 0; dma_always_num < DMAMUX_3::NUM_DMA_ALWAYS_ON; dma_always_num++)
+	{
+		RegisterPort(*dmamux_3->dma_always_on[dma_always_num]);
+	}
+	for(dma_trigger_num = 0; dma_trigger_num < DMAMUX_3::NUM_DMA_TRIGGERS; dma_trigger_num++)
+	{
+		RegisterPort(*dmamux_3->dma_trigger[dma_trigger_num]);
+	}
+	for(dma_channel_num = 0; dma_channel_num < DMAMUX_3::NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		RegisterPort(*dmamux_3->dma_channel[dma_channel_num]);
+	}
+
+	// - DMAMUX_4
+	RegisterPort(dmamux_4->m_clk);
+	RegisterPort(dmamux_4->reset_b);
+	for(dma_source_num = 0; dma_source_num < DMAMUX_4::NUM_DMA_SOURCES; dma_source_num++)
+	{
+		RegisterPort(*dmamux_4->dma_source[dma_source_num]);
+	}
+	for(dma_always_num = 0; dma_always_num < DMAMUX_4::NUM_DMA_ALWAYS_ON; dma_always_num++)
+	{
+		RegisterPort(*dmamux_4->dma_always_on[dma_always_num]);
+	}
+	for(dma_trigger_num = 0; dma_trigger_num < DMAMUX_4::NUM_DMA_TRIGGERS; dma_trigger_num++)
+	{
+		RegisterPort(*dmamux_4->dma_trigger[dma_trigger_num]);
+	}
+	for(dma_channel_num = 0; dma_channel_num < DMAMUX_4::NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		RegisterPort(*dmamux_4->dma_channel[dma_channel_num]);
+	}
+
+	// - DMAMUX_5
+	RegisterPort(dmamux_5->m_clk);
+	RegisterPort(dmamux_5->reset_b);
+	for(dma_source_num = 0; dma_source_num < DMAMUX_5::NUM_DMA_SOURCES; dma_source_num++)
+	{
+		RegisterPort(*dmamux_5->dma_source[dma_source_num]);
+	}
+	for(dma_always_num = 0; dma_always_num < DMAMUX_5::NUM_DMA_ALWAYS_ON; dma_always_num++)
+	{
+		RegisterPort(*dmamux_5->dma_always_on[dma_always_num]);
+	}
+	for(dma_trigger_num = 0; dma_trigger_num < DMAMUX_5::NUM_DMA_TRIGGERS; dma_trigger_num++)
+	{
+		RegisterPort(*dmamux_5->dma_trigger[dma_trigger_num]);
+	}
+	for(dma_channel_num = 0; dma_channel_num < DMAMUX_5::NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		RegisterPort(*dmamux_5->dma_channel[dma_channel_num]);
+	}
+	
+	// - DMAMUX_6
+	RegisterPort(dmamux_6->m_clk);
+	RegisterPort(dmamux_6->reset_b);
+	for(dma_source_num = 0; dma_source_num < DMAMUX_6::NUM_DMA_SOURCES; dma_source_num++)
+	{
+		RegisterPort(*dmamux_6->dma_source[dma_source_num]);
+	}
+	for(dma_always_num = 0; dma_always_num < DMAMUX_6::NUM_DMA_ALWAYS_ON; dma_always_num++)
+	{
+		RegisterPort(*dmamux_6->dma_always_on[dma_always_num]);
+	}
+	for(dma_trigger_num = 0; dma_trigger_num < DMAMUX_6::NUM_DMA_TRIGGERS; dma_trigger_num++)
+	{
+		RegisterPort(*dmamux_6->dma_trigger[dma_trigger_num]);
+	}
+	for(dma_channel_num = 0; dma_channel_num < DMAMUX_6::NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		RegisterPort(*dmamux_6->dma_channel[dma_channel_num]);
+	}
+
+	// - DMAMUX_7
+	RegisterPort(dmamux_7->m_clk);
+	RegisterPort(dmamux_7->reset_b);
+	for(dma_source_num = 0; dma_source_num < DMAMUX_7::NUM_DMA_SOURCES; dma_source_num++)
+	{
+		RegisterPort(*dmamux_7->dma_source[dma_source_num]);
+	}
+	for(dma_always_num = 0; dma_always_num < DMAMUX_7::NUM_DMA_ALWAYS_ON; dma_always_num++)
+	{
+		RegisterPort(*dmamux_7->dma_always_on[dma_always_num]);
+	}
+	for(dma_trigger_num = 0; dma_trigger_num < DMAMUX_7::NUM_DMA_TRIGGERS; dma_trigger_num++)
+	{
+		RegisterPort(*dmamux_7->dma_trigger[dma_trigger_num]);
+	}
+	for(dma_channel_num = 0; dma_channel_num < DMAMUX_7::NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		RegisterPort(*dmamux_7->dma_channel[dma_channel_num]);
+	}
+
+	// - DMAMUX_8
+	RegisterPort(dmamux_8->m_clk);
+	RegisterPort(dmamux_8->reset_b);
+	for(dma_source_num = 0; dma_source_num < DMAMUX_8::NUM_DMA_SOURCES; dma_source_num++)
+	{
+		RegisterPort(*dmamux_8->dma_source[dma_source_num]);
+	}
+	for(dma_always_num = 0; dma_always_num < DMAMUX_8::NUM_DMA_ALWAYS_ON; dma_always_num++)
+	{
+		RegisterPort(*dmamux_8->dma_always_on[dma_always_num]);
+	}
+	for(dma_trigger_num = 0; dma_trigger_num < DMAMUX_8::NUM_DMA_TRIGGERS; dma_trigger_num++)
+	{
+		RegisterPort(*dmamux_8->dma_trigger[dma_trigger_num]);
+	}
+	for(dma_channel_num = 0; dma_channel_num < DMAMUX_8::NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		RegisterPort(*dmamux_8->dma_channel[dma_channel_num]);
+	}
+
+	// - DMAMUX_9
+	RegisterPort(dmamux_9->m_clk);
+	RegisterPort(dmamux_9->reset_b);
+	for(dma_source_num = 0; dma_source_num < DMAMUX_9::NUM_DMA_SOURCES; dma_source_num++)
+	{
+		RegisterPort(*dmamux_9->dma_source[dma_source_num]);
+	}
+	for(dma_always_num = 0; dma_always_num < DMAMUX_9::NUM_DMA_ALWAYS_ON; dma_always_num++)
+	{
+		RegisterPort(*dmamux_9->dma_always_on[dma_always_num]);
+	}
+	for(dma_trigger_num = 0; dma_trigger_num < DMAMUX_9::NUM_DMA_TRIGGERS; dma_trigger_num++)
+	{
+		RegisterPort(*dmamux_9->dma_trigger[dma_trigger_num]);
+	}
+	for(dma_channel_num = 0; dma_channel_num < DMAMUX_9::NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		RegisterPort(*dmamux_9->dma_channel[dma_channel_num]);
 	}
 
 	//=========================================================================
@@ -442,7 +753,12 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateClock("PER_CLK");
 	CreateClock("RTI_CLK");
 	CreateClock("LIN_CLK");
-	CreateClock("SERIAL_TERMINAL_CLK");
+	CreateClock("SERIAL_TERMINAL0_CLK");
+	CreateClock("SERIAL_TERMINAL1_CLK");
+	CreateClock("SERIAL_TERMINAL2_CLK");
+	CreateClock("SERIAL_TERMINAL14_CLK");
+	CreateClock("SERIAL_TERMINAL15_CLK");
+	CreateClock("SERIAL_TERMINAL16_CLK");
 	
 	CreateSignal("m_por", false);
 	CreateSignal("stop", false);
@@ -463,23 +779,38 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateSignalArray(INTC_0_CONFIG::NUM_PROCESSORS, "p_voffset", sc_dt::sc_uint<INTC_0_CONFIG::VOFFSET_WIDTH>(0));
 	CreateSignalArray(INTC_0_CONFIG::NUM_PROCESSORS, "p_iack", false);
 	
+	CreateSignalArray(PIT_0::NUM_CHANNELS, "PIT_0_DMA_TRIGGER", false);
+	
 	CreateSignalArray(INTC_0::NUM_IRQS, "irq", false);
 	CreateSignalArray(STM_2_CONFIG::NUM_CHANNELS, "stm_2_cir", false);
 
-	CreateSignalArray(64, "dma_trigger", false);
+	CreateSignalArray(LINFlexD_0::NUM_DMA_RX_CHANNELS, "LINFlexD_0_DMA_RX", false);
+	CreateSignalArray(LINFlexD_0::NUM_DMA_TX_CHANNELS, "LINFlexD_0_DMA_TX", false);
+	CreateSignalArray(LINFlexD_1::NUM_DMA_RX_CHANNELS, "LINFlexD_1_DMA_RX", false);
+	CreateSignalArray(LINFlexD_1::NUM_DMA_TX_CHANNELS, "LINFlexD_1_DMA_TX", false);
+	CreateSignalArray(LINFlexD_2::NUM_DMA_RX_CHANNELS, "LINFlexD_2_DMA_RX", false);
+	CreateSignalArray(LINFlexD_2::NUM_DMA_TX_CHANNELS, "LINFlexD_2_DMA_TX", false);
+	CreateSignalArray(LINFlexD_14::NUM_DMA_RX_CHANNELS, "LINFlexD_14_DMA_RX", false);
+	CreateSignalArray(LINFlexD_14::NUM_DMA_TX_CHANNELS, "LINFlexD_14_DMA_TX", false);
+	CreateSignalArray(LINFlexD_15::NUM_DMA_RX_CHANNELS, "LINFlexD_15_DMA_RX", false);
+	CreateSignalArray(LINFlexD_15::NUM_DMA_TX_CHANNELS, "LINFlexD_15_DMA_TX", false);
+	CreateSignalArray(LINFlexD_16::NUM_DMA_RX_CHANNELS, "LINFlexD_16_DMA_RX", false);
+	CreateSignalArray(LINFlexD_16::NUM_DMA_TX_CHANNELS, "LINFlexD_16_DMA_TX", false);
+
+// 	CreateSignalArray( DMAMUX_0::NUM_DMA_SOURCES,  "DMAMUX_0_DMA_SOURCE", false);
+// 	CreateSignalArray( DMAMUX_1::NUM_DMA_SOURCES,  "DMAMUX_1_DMA_SOURCE", false);
+// 	CreateSignalArray( DMAMUX_2::NUM_DMA_SOURCES,  "DMAMUX_2_DMA_SOURCE", false);
+// 	CreateSignalArray( DMAMUX_3::NUM_DMA_SOURCES,  "DMAMUX_3_DMA_SOURCE", false);
+// 	CreateSignalArray( DMAMUX_4::NUM_DMA_SOURCES,  "DMAMUX_4_DMA_SOURCE", false);
+// 	CreateSignalArray( DMAMUX_5::NUM_DMA_SOURCES,  "DMAMUX_5_DMA_SOURCE", false);
+// 	CreateSignalArray( DMAMUX_6::NUM_DMA_SOURCES,  "DMAMUX_6_DMA_SOURCE", false);
+// 	CreateSignalArray( DMAMUX_7::NUM_DMA_SOURCES,  "DMAMUX_7_DMA_SOURCE", false);
+// 	CreateSignalArray( DMAMUX_8::NUM_DMA_SOURCES,  "DMAMUX_8_DMA_SOURCE", false);
+// 	CreateSignalArray( DMAMUX_9::NUM_DMA_SOURCES,  "DMAMUX_9_DMA_SOURCE", false);
 	
-	CreateSignalArray(LINFlexD_0::NUM_DMA_RX_CHANNELS, "LINFlexD_0_RX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_0::NUM_DMA_TX_CHANNELS, "LINFlexD_0_TX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_1::NUM_DMA_RX_CHANNELS, "LINFlexD_1_RX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_1::NUM_DMA_TX_CHANNELS, "LINFlexD_1_TX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_2::NUM_DMA_RX_CHANNELS, "LINFlexD_2_RX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_2::NUM_DMA_TX_CHANNELS, "LINFlexD_2_TX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_14::NUM_DMA_RX_CHANNELS, "LINFlexD_14_RX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_14::NUM_DMA_TX_CHANNELS, "LINFlexD_14_TX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_15::NUM_DMA_RX_CHANNELS, "LINFlexD_15_RX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_15::NUM_DMA_TX_CHANNELS, "LINFlexD_15_TX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_16::NUM_DMA_RX_CHANNELS, "LINFlexD_16_RX_DMA_REQ", false);
-	CreateSignalArray(LINFlexD_16::NUM_DMA_TX_CHANNELS, "LINFlexD_16_TX_DMA_REQ", false);
+	CreateSignalArray(NUM_DMA_CHANNELS, "DMA_CHANNEL", false);
+	
+	CreateSignalArray(NUM_DMA_ALWAYS_ON, "DMA_ALWAYS_ON", true);
 	
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -523,6 +854,16 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*pbridge_a->init_socket[11])(linflexd_1->peripheral_slave_if);  // PBRIDGE_A <-> LINFlexD_1
 	(*pbridge_a->init_socket[12])(linflexd_14->peripheral_slave_if); // PBRIDGE_A <-> LINFlexD_14
 	(*pbridge_a->init_socket[13])(linflexd_16->peripheral_slave_if); // PBRIDGE_A <-> LINFlexD_16
+	(*pbridge_a->init_socket[14])(dmamux_0->peripheral_slave_if);    // PBRIDGE_A <-> DMAMUX_0
+	(*pbridge_a->init_socket[15])(dmamux_1->peripheral_slave_if);    // PBRIDGE_A <-> DMAMUX_1
+	(*pbridge_a->init_socket[16])(dmamux_2->peripheral_slave_if);    // PBRIDGE_A <-> DMAMUX_2
+	(*pbridge_a->init_socket[17])(dmamux_3->peripheral_slave_if);    // PBRIDGE_A <-> DMAMUX_3
+	(*pbridge_a->init_socket[18])(dmamux_4->peripheral_slave_if);    // PBRIDGE_A <-> DMAMUX_4
+	(*pbridge_a->init_socket[19])(dmamux_5->peripheral_slave_if);    // PBRIDGE_A <-> DMAMUX_5
+	(*pbridge_a->init_socket[20])(dmamux_6->peripheral_slave_if);    // PBRIDGE_A <-> DMAMUX_6
+	(*pbridge_a->init_socket[21])(dmamux_7->peripheral_slave_if);    // PBRIDGE_A <-> DMAMUX_7
+	(*pbridge_a->init_socket[22])(dmamux_8->peripheral_slave_if);    // PBRIDGE_A <-> DMAMUX_8
+	(*pbridge_a->init_socket[23])(dmamux_9->peripheral_slave_if);    // PBRIDGE_A <-> DMAMUX_9
 	
 	(*pbridge_b->init_socket[0])(linflexd_2->peripheral_slave_if);   // PBRIDGE_B <-> LINFlexD_2
 	(*pbridge_b->init_socket[1])(linflexd_15->peripheral_slave_if);  // PBRIDGE_B <-> LINFlexD_15
@@ -540,10 +881,35 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	linflexd_16->LINTX(linflexd_16_tx->serial_socket);
 	linflexd_16->LINRX(linflexd_16_rx->serial_socket);
 	
-	if(serial_terminal)
+	if(serial_terminal0)
 	{
-		serial_terminal->RX(linflexd_0_tx->serial_socket);
-		serial_terminal->TX(linflexd_0_rx->serial_socket);
+		serial_terminal0->RX(linflexd_0_tx->serial_socket);
+		serial_terminal0->TX(linflexd_0_rx->serial_socket);
+	}
+	if(serial_terminal1)
+	{
+		serial_terminal1->RX(linflexd_1_tx->serial_socket);
+		serial_terminal1->TX(linflexd_1_rx->serial_socket);
+	}
+	if(serial_terminal2)
+	{
+		serial_terminal2->RX(linflexd_2_tx->serial_socket);
+		serial_terminal2->TX(linflexd_2_rx->serial_socket);
+	}
+	if(serial_terminal14)
+	{
+		serial_terminal14->RX(linflexd_14_tx->serial_socket);
+		serial_terminal14->TX(linflexd_14_rx->serial_socket);
+	}
+	if(serial_terminal15)
+	{
+		serial_terminal15->RX(linflexd_15_tx->serial_socket);
+		serial_terminal15->TX(linflexd_15_rx->serial_socket);
+	}
+	if(serial_terminal16)
+	{
+		serial_terminal16->RX(linflexd_16_tx->serial_socket);
+		serial_terminal16->TX(linflexd_16_rx->serial_socket);
 	}
 	
 	Bind("HARDWARE.Main_Core_0.m_clk"           , "HARDWARE.COMP_CLK");
@@ -634,14 +1000,14 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.PIT_0.reset_b"         , "HARDWARE.reset_b");
 	Bind("HARDWARE.PIT_0.debug"           , "HARDWARE.debug");
 	
-	Bind("HARDWARE.PIT_0.dma_trigger_0", "HARDWARE.dma_trigger_8");
-	Bind("HARDWARE.PIT_0.dma_trigger_1", "HARDWARE.dma_trigger_9");
-	Bind("HARDWARE.PIT_0.dma_trigger_2", "HARDWARE.dma_trigger_10");
-	Bind("HARDWARE.PIT_0.dma_trigger_3", "HARDWARE.dma_trigger_11");
-	Bind("HARDWARE.PIT_0.dma_trigger_4", "HARDWARE.dma_trigger_12");
-	Bind("HARDWARE.PIT_0.dma_trigger_5", "HARDWARE.dma_trigger_16");
-	Bind("HARDWARE.PIT_0.dma_trigger_6", "HARDWARE.dma_trigger_32");
-	Bind("HARDWARE.PIT_0.dma_trigger_7", "HARDWARE.dma_trigger_48");
+	Bind("HARDWARE.PIT_0.dma_trigger_0"   , "HARDWARE.PIT_0_DMA_TRIGGER_0");
+	Bind("HARDWARE.PIT_0.dma_trigger_1"   , "HARDWARE.PIT_0_DMA_TRIGGER_1");
+	Bind("HARDWARE.PIT_0.dma_trigger_2"   , "HARDWARE.PIT_0_DMA_TRIGGER_2");
+	Bind("HARDWARE.PIT_0.dma_trigger_3"   , "HARDWARE.PIT_0_DMA_TRIGGER_3");
+	Bind("HARDWARE.PIT_0.dma_trigger_4"   , "HARDWARE.PIT_0_DMA_TRIGGER_4");
+	Bind("HARDWARE.PIT_0.dma_trigger_5"   , "HARDWARE.PIT_0_DMA_TRIGGER_5");
+	Bind("HARDWARE.PIT_0.dma_trigger_6"   , "HARDWARE.PIT_0_DMA_TRIGGER_6");
+	Bind("HARDWARE.PIT_0.dma_trigger_7"   , "HARDWARE.PIT_0_DMA_TRIGGER_7");
 	
 	Bind("HARDWARE.PIT_1.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.PIT_1.per_clk"         , "HARDWARE.PER_CLK");
@@ -667,47 +1033,116 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.PIT_1.dma_trigger_6"   , "HARDWARE.pull_down");
 	Bind("HARDWARE.PIT_1.dma_trigger_7"   , "HARDWARE.pull_down");
 	
-	Bind("HARDWARE.LINFlexD_0.m_clk"        , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.LINFlexD_0.lin_clk"      , "HARDWARE.LIN_CLK");
-	Bind("HARDWARE.LINFlexD_0.reset_b"      , "HARDWARE.reset_b");
-	Bind("HARDWARE.LINFlexD_0.DMA_RX_0" , "HARDWARE.LINFlexD_0_RX_DMA_REQ_0");
-	Bind("HARDWARE.LINFlexD_0.DMA_TX_0" , "HARDWARE.LINFlexD_0_TX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_0.m_clk"    , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.LINFlexD_0.lin_clk"  , "HARDWARE.LIN_CLK");
+	Bind("HARDWARE.LINFlexD_0.reset_b"  , "HARDWARE.reset_b");
+	Bind("HARDWARE.LINFlexD_0.DMA_RX_0" , "HARDWARE.LINFlexD_0_DMA_RX_0");
+	Bind("HARDWARE.LINFlexD_0.DMA_TX_0" , "HARDWARE.LINFlexD_0_DMA_TX_0");
 
-	Bind("HARDWARE.LINFlexD_1.m_clk"        , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.LINFlexD_1.lin_clk"      , "HARDWARE.LIN_CLK");
-	Bind("HARDWARE.LINFlexD_1.reset_b"      , "HARDWARE.reset_b");
-	Bind("HARDWARE.LINFlexD_1.DMA_RX_0" , "HARDWARE.LINFlexD_1_RX_DMA_REQ_0");
-	Bind("HARDWARE.LINFlexD_1.DMA_TX_0" , "HARDWARE.LINFlexD_1_TX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_1.m_clk"    , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.LINFlexD_1.lin_clk"  , "HARDWARE.LIN_CLK");
+	Bind("HARDWARE.LINFlexD_1.reset_b"  , "HARDWARE.reset_b");
+	Bind("HARDWARE.LINFlexD_1.DMA_RX_0" , "HARDWARE.LINFlexD_1_DMA_RX_0");
+	Bind("HARDWARE.LINFlexD_1.DMA_TX_0" , "HARDWARE.LINFlexD_1_DMA_TX_0");
 
-	Bind("HARDWARE.LINFlexD_14.m_clk"        , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.LINFlexD_14.lin_clk"      , "HARDWARE.LIN_CLK");
-	Bind("HARDWARE.LINFlexD_14.reset_b"      , "HARDWARE.reset_b");
-	Bind("HARDWARE.LINFlexD_14.DMA_RX_0" , "HARDWARE.LINFlexD_14_RX_DMA_REQ_0");
-	Bind("HARDWARE.LINFlexD_14.DMA_TX_0" , "HARDWARE.LINFlexD_14_TX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_14.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.LINFlexD_14.lin_clk" , "HARDWARE.LIN_CLK");
+	Bind("HARDWARE.LINFlexD_14.reset_b" , "HARDWARE.reset_b");
+	Bind("HARDWARE.LINFlexD_14.DMA_RX_0" , "HARDWARE.LINFlexD_14_DMA_RX_0");
+	Bind("HARDWARE.LINFlexD_14.DMA_TX_0" , "HARDWARE.LINFlexD_14_DMA_TX_0");
 
-	Bind("HARDWARE.LINFlexD_16.m_clk"        , "HARDWARE.PBRIDGEA_CLK");
-	Bind("HARDWARE.LINFlexD_16.lin_clk"      , "HARDWARE.LIN_CLK");
-	Bind("HARDWARE.LINFlexD_16.reset_b"      , "HARDWARE.reset_b");
-	Bind("HARDWARE.LINFlexD_16.DMA_RX_0" , "HARDWARE.LINFlexD_16_RX_DMA_REQ_0");
-	Bind("HARDWARE.LINFlexD_16.DMA_TX_0" , "HARDWARE.LINFlexD_16_TX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_16.m_clk"   , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.LINFlexD_16.lin_clk" , "HARDWARE.LIN_CLK");
+	Bind("HARDWARE.LINFlexD_16.reset_b" , "HARDWARE.reset_b");
+	Bind("HARDWARE.LINFlexD_16.DMA_RX_0" , "HARDWARE.LINFlexD_16_DMA_RX_0");
+	Bind("HARDWARE.LINFlexD_16.DMA_TX_0" , "HARDWARE.LINFlexD_16_DMA_TX_0");
 
-	Bind("HARDWARE.LINFlexD_2.m_clk"        , "HARDWARE.PBRIDGEB_CLK");
-	Bind("HARDWARE.LINFlexD_2.lin_clk"      , "HARDWARE.LIN_CLK");
-	Bind("HARDWARE.LINFlexD_2.reset_b"      , "HARDWARE.reset_b");
-	Bind("HARDWARE.LINFlexD_2.DMA_RX_0" , "HARDWARE.LINFlexD_2_RX_DMA_REQ_0");
-	Bind("HARDWARE.LINFlexD_2.DMA_TX_0" , "HARDWARE.LINFlexD_2_TX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_2.m_clk"    , "HARDWARE.PBRIDGEB_CLK");
+	Bind("HARDWARE.LINFlexD_2.lin_clk"  , "HARDWARE.LIN_CLK");
+	Bind("HARDWARE.LINFlexD_2.reset_b"  , "HARDWARE.reset_b");
+	Bind("HARDWARE.LINFlexD_2.DMA_RX_0" , "HARDWARE.LINFlexD_2_DMA_RX_0");
+	Bind("HARDWARE.LINFlexD_2.DMA_TX_0" , "HARDWARE.LINFlexD_2_DMA_TX_0");
 
-	Bind("HARDWARE.LINFlexD_15.m_clk"        , "HARDWARE.PBRIDGEB_CLK");
-	Bind("HARDWARE.LINFlexD_15.lin_clk"      , "HARDWARE.LIN_CLK");
-	Bind("HARDWARE.LINFlexD_15.reset_b"      , "HARDWARE.reset_b");
-	Bind("HARDWARE.LINFlexD_15.DMA_RX_0" , "HARDWARE.LINFlexD_15_RX_DMA_REQ_0");
-	Bind("HARDWARE.LINFlexD_15.DMA_TX_0" , "HARDWARE.LINFlexD_15_TX_DMA_REQ_0");
+	Bind("HARDWARE.LINFlexD_15.m_clk"   , "HARDWARE.PBRIDGEB_CLK");
+	Bind("HARDWARE.LINFlexD_15.lin_clk" , "HARDWARE.LIN_CLK");
+	Bind("HARDWARE.LINFlexD_15.reset_b" , "HARDWARE.reset_b");
+	Bind("HARDWARE.LINFlexD_15.DMA_RX_0" , "HARDWARE.LINFlexD_15_DMA_RX_0");
+	Bind("HARDWARE.LINFlexD_15.DMA_TX_0" , "HARDWARE.LINFlexD_15_DMA_TX_0");
 	
-	if(enable_serial_terminal)
+	if(enable_serial_terminal0)
 	{
-		Bind("HARDWARE.SERIAL_TERMINAL.CLK", "HARDWARE.SERIAL_TERMINAL_CLK");
+		Bind("HARDWARE.SERIAL_TERMINAL0.CLK", "HARDWARE.SERIAL_TERMINAL0_CLK");
+	}
+	if(enable_serial_terminal1)
+	{
+		Bind("HARDWARE.SERIAL_TERMINAL1.CLK", "HARDWARE.SERIAL_TERMINAL1_CLK");
+	}
+	if(enable_serial_terminal2)
+	{
+		Bind("HARDWARE.SERIAL_TERMINAL2.CLK", "HARDWARE.SERIAL_TERMINAL2_CLK");
+	}
+	if(enable_serial_terminal14)
+	{
+		Bind("HARDWARE.SERIAL_TERMINAL14.CLK", "HARDWARE.SERIAL_TERMINAL14_CLK");
+	}
+	if(enable_serial_terminal15)
+	{
+		Bind("HARDWARE.SERIAL_TERMINAL15.CLK", "HARDWARE.SERIAL_TERMINAL15_CLK");
+	}
+	if(enable_serial_terminal16)
+	{
+		Bind("HARDWARE.SERIAL_TERMINAL16.CLK", "HARDWARE.SERIAL_TERMINAL16_CLK");
 	}
 	
+	BindArray(DMAMUX_0::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_0.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
+	BindArray(DMAMUX_1::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_1.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 59); // Always 59 - 63
+	BindArray(DMAMUX_2::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_2.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
+	BindArray(DMAMUX_3::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_3.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
+	BindArray(DMAMUX_4::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_4.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
+	BindArray(DMAMUX_5::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_5.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
+	BindArray(DMAMUX_6::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_6.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
+	BindArray(DMAMUX_7::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_7.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
+	BindArray(DMAMUX_8::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_8.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
+	BindArray(DMAMUX_9::NUM_DMA_ALWAYS_ON, "HARDWARE.DMAMUX_9.dma_always_on", 0, "HARDWARE.DMA_ALWAYS_ON", 63); // Always 63
+	
+	BindArray(DMAMUX_1::NUM_DMA_TRIGGERS, "HARDWARE.DMAMUX_1.dma_trigger", 0, "HARDWARE.PIT_0_DMA_TRIGGER", 0); // PIT_0 Trigger 0 - 4
+	BindArray(DMAMUX_2::NUM_DMA_TRIGGERS, "HARDWARE.DMAMUX_2.dma_trigger", 0, "HARDWARE.PIT_0_DMA_TRIGGER", 5); // PIT_0 Trigger 5
+	BindArray(DMAMUX_4::NUM_DMA_TRIGGERS, "HARDWARE.DMAMUX_4.dma_trigger", 0, "HARDWARE.PIT_0_DMA_TRIGGER", 6); // PIT_0 Trigger 6
+	BindArray(DMAMUX_5::NUM_DMA_TRIGGERS, "HARDWARE.DMAMUX_5.dma_trigger", 0, "HARDWARE.PIT_0_DMA_TRIGGER", 7); // PIT_0 Trigger 7
+	
+	BindArray(DMAMUX_0::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_0.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 0);   // DMA channels 0 - 7
+	BindArray(DMAMUX_1::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_1.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 8);   // DMA channels 0 - 15
+	BindArray(DMAMUX_2::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_2.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 16);  // DMA channels 16 - 23
+	BindArray(DMAMUX_3::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_3.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 24);  // DMA channels 24 - 31
+	BindArray(DMAMUX_4::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_4.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 32);  // DMA channels 32 - 47
+	BindArray(DMAMUX_5::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_5.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 48);  // DMA channels 48 - 63
+	BindArray(DMAMUX_6::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_6.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 64);  // DMA channels 64 - 79
+	BindArray(DMAMUX_7::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_7.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 80);  // DMA channels 80 - 95
+	BindArray(DMAMUX_8::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_8.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 96);  // DMA channels 96 - 111
+	BindArray(DMAMUX_9::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_9.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 112); // DMA channels 112 - 127
+	
+	Bind("HARDWARE.DMAMUX_0.reset_b", "HARDWARE.reset_b");
+	Bind("HARDWARE.DMAMUX_1.reset_b", "HARDWARE.reset_b");
+	Bind("HARDWARE.DMAMUX_2.reset_b", "HARDWARE.reset_b");
+	Bind("HARDWARE.DMAMUX_3.reset_b", "HARDWARE.reset_b");
+	Bind("HARDWARE.DMAMUX_4.reset_b", "HARDWARE.reset_b");
+	Bind("HARDWARE.DMAMUX_5.reset_b", "HARDWARE.reset_b");
+	Bind("HARDWARE.DMAMUX_6.reset_b", "HARDWARE.reset_b");
+	Bind("HARDWARE.DMAMUX_7.reset_b", "HARDWARE.reset_b");
+	Bind("HARDWARE.DMAMUX_8.reset_b", "HARDWARE.reset_b");
+	Bind("HARDWARE.DMAMUX_9.reset_b", "HARDWARE.reset_b");
+	
+	Bind("HARDWARE.DMAMUX_0.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.DMAMUX_1.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.DMAMUX_2.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.DMAMUX_3.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.DMAMUX_4.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.DMAMUX_5.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.DMAMUX_6.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.DMAMUX_7.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.DMAMUX_8.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.DMAMUX_9.m_clk", "HARDWARE.PBRIDGEA_CLK");
+
 	// Interrupt sources
 	
 	// IRQ # ---- Source name ------------ Description ------------------------- Note --------------
@@ -1757,51 +2192,664 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	// DMA sources
 	
 	// DMAMUX_0
-	DMASource(0, 16, "HARDWARE.LINFlexD_0_RX_DMA_REQ_0");
-	DMASource(0, 17, "HARDWARE.LINFlexD_0_TX_DMA_REQ_0");
-	DMASource(0, 18, "HARDWARE.LINFlexD_14_RX_DMA_REQ_0");
+	DMASource(0, 0);
+	DMASource(0, 1);
+	DMASource(0, 2);
+	DMASource(0, 3);
+	DMASource(0, 4);
+	DMASource(0, 5);
+	DMASource(0, 6);
+	DMASource(0, 7);
+	DMASource(0, 8);
+	DMASource(0, 9);
+	DMASource(0, 10);
+	DMASource(0, 11);
+	DMASource(0, 12);
+	DMASource(0, 13);
+	DMASource(0, 14);
+	DMASource(0, 15);
+	DMASource(0, 16, "HARDWARE.LINFlexD_0_DMA_RX_0");
+	DMASource(0, 17, "HARDWARE.LINFlexD_0_DMA_TX_0");
+	DMASource(0, 18, "HARDWARE.LINFlexD_14_DMA_RX_0");
+	DMASource(0, 19);
+	DMASource(0, 20);
+	DMASource(0, 21);
+	DMASource(0, 22);
+	DMASource(0, 23);
+	DMASource(0, 24);
+	DMASource(0, 25);
+	DMASource(0, 26);
+	DMASource(0, 27);
+	DMASource(0, 28);
+	DMASource(0, 29);
+	DMASource(0, 30);
+	DMASource(0, 31);
+	DMASource(0, 32);
+	DMASource(0, 33);
+	DMASource(0, 34);
+	DMASource(0, 35);
+	DMASource(0, 36);
+	DMASource(0, 37);
+	DMASource(0, 38);
+	DMASource(0, 39);
+	DMASource(0, 40);
+	DMASource(0, 41);
+	DMASource(0, 42);
+	DMASource(0, 43);
+	DMASource(0, 44);
+	DMASource(0, 45);
+	DMASource(0, 46);
+	DMASource(0, 47);
+	DMASource(0, 48);
+	DMASource(0, 49);
+	DMASource(0, 50);
+	DMASource(0, 51);
+	DMASource(0, 52);
+	DMASource(0, 53);
+	DMASource(0, 54);
+	DMASource(0, 55);
+	DMASource(0, 56);
+	DMASource(0, 57);
+	DMASource(0, 58);
+	DMASource(0, 59);
+	DMASource(0, 60);
+	DMASource(0, 61);
+	DMASource(0, 62);
+	DMASource(0, 63);
 	
 	// DMAMUX_1
-	DMASource(1,  3, "HARDWARE.LINFlexD_0_RX_DMA_REQ_0");
-	DMASource(1,  4, "HARDWARE.LINFlexD_0_TX_DMA_REQ_0");
-	DMASource(1,  5, "HARDWARE.LINFlexD_1_RX_DMA_REQ_0");
-	DMASource(1,  6, "HARDWARE.LINFlexD_1_TX_DMA_REQ_0");
-	DMASource(1,  7, "HARDWARE.LINFlexD_14_RX_DMA_REQ_0");
-	DMASource(1,  8, "HARDWARE.LINFlexD_14_TX_DMA_REQ_0");
-	DMASource(1, 45, "HARDWARE.LINFlexD_15_RX_DMA_REQ_0");
-	DMASource(1, 46, "HARDWARE.LINFlexD_15_TX_DMA_REQ_0");
+	DMASource(1, 0);                                                                                                                                                                                        
+	DMASource(1, 1);                                                                                                                                                                                        
+	DMASource(1, 2);                                                                                                                                                                                        
+	DMASource(1,  3, "HARDWARE.LINFlexD_0_DMA_RX_0");
+	DMASource(1,  4, "HARDWARE.LINFlexD_0_DMA_TX_0");
+	DMASource(1,  5, "HARDWARE.LINFlexD_1_DMA_RX_0");
+	DMASource(1,  6, "HARDWARE.LINFlexD_1_DMA_TX_0");
+	DMASource(1,  7, "HARDWARE.LINFlexD_14_DMA_RX_0");
+	DMASource(1,  8, "HARDWARE.LINFlexD_14_DMA_TX_0");
+	DMASource(1, 9);
+	DMASource(1, 10);
+	DMASource(1, 11);
+	DMASource(1, 12);
+	DMASource(1, 13);
+	DMASource(1, 14);
+	DMASource(1, 15);
+	DMASource(1, 16);
+	DMASource(1, 17);
+	DMASource(1, 18);
+	DMASource(1, 19);
+	DMASource(1, 20);
+	DMASource(1, 21);
+	DMASource(1, 22);
+	DMASource(1, 23);
+	DMASource(1, 24);
+	DMASource(1, 25);
+	DMASource(1, 26);
+	DMASource(1, 27);
+	DMASource(1, 28);
+	DMASource(1, 29);
+	DMASource(1, 30);
+	DMASource(1, 31);
+	DMASource(1, 32);
+	DMASource(1, 33);
+	DMASource(1, 34);
+	DMASource(1, 35);
+	DMASource(1, 36);
+	DMASource(1, 37);
+	DMASource(1, 38);
+	DMASource(1, 39);
+	DMASource(1, 40);
+	DMASource(1, 41);
+	DMASource(1, 42);
+	DMASource(1, 43);
+	DMASource(1, 44);
+	DMASource(1, 45, "HARDWARE.LINFlexD_15_DMA_RX_0");
+	DMASource(1, 46, "HARDWARE.LINFlexD_15_DMA_TX_0");
+	DMASource(1, 47);
+	DMASource(1, 48);
+	DMASource(1, 49);
+	DMASource(1, 50);
+	DMASource(1, 51);
+	DMASource(1, 52);
+	DMASource(1, 53);
+	DMASource(1, 54);
+	DMASource(1, 55);
+	DMASource(1, 56);
+	DMASource(1, 57);
+	DMASource(1, 58);
+	DMASource(1, 59);
+	DMASource(1, 60);
+	DMASource(1, 61);
+	DMASource(1, 62);
+	DMASource(1, 63);
 	
 	// DMAMUX_2
-	DMASource(2, 45, "HARDWARE.LINFlexD_2_RX_DMA_REQ_0");
-	DMASource(2, 46, "HARDWARE.LINFlexD_2_TX_DMA_REQ_0");
+	DMASource(2, 0);
+	DMASource(2, 1);
+	DMASource(2, 2);
+	DMASource(2, 3);
+	DMASource(2, 4);
+	DMASource(2, 5);
+	DMASource(2, 6);
+	DMASource(2, 7);
+	DMASource(2, 8);
+	DMASource(2, 9);
+	DMASource(2, 10);
+	DMASource(2, 11);
+	DMASource(2, 12);
+	DMASource(2, 13);
+	DMASource(2, 14);
+	DMASource(2, 15);
+	DMASource(2, 16);
+	DMASource(2, 17);
+	DMASource(2, 18);
+	DMASource(2, 19);
+	DMASource(2, 20);
+	DMASource(2, 21);
+	DMASource(2, 22);
+	DMASource(2, 23);
+	DMASource(2, 24);
+	DMASource(2, 25);
+	DMASource(2, 26);
+	DMASource(2, 27);
+	DMASource(2, 28);
+	DMASource(2, 29);
+	DMASource(2, 30);
+	DMASource(2, 31);
+	DMASource(2, 32);
+	DMASource(2, 33);
+	DMASource(2, 34);
+	DMASource(2, 35);
+	DMASource(2, 36);
+	DMASource(2, 37);
+	DMASource(2, 38);
+	DMASource(2, 39);
+	DMASource(2, 40);
+	DMASource(2, 41);
+	DMASource(2, 42);
+	DMASource(2, 43);
+	DMASource(2, 44);
+	DMASource(2, 45, "HARDWARE.LINFlexD_2_DMA_RX_0");
+	DMASource(2, 46, "HARDWARE.LINFlexD_2_DMA_TX_0");
+	DMASource(2, 47);
+	DMASource(2, 48);
+	DMASource(2, 49);
+	DMASource(2, 50);
+	DMASource(2, 51);
+	DMASource(2, 52);
+	DMASource(2, 53);
+	DMASource(2, 54);
+	DMASource(2, 55);
+	DMASource(2, 56);
+	DMASource(2, 57);
+	DMASource(2, 58);
+	DMASource(2, 59);
+	DMASource(2, 60);
+	DMASource(2, 61);
+	DMASource(2, 62);
+	DMASource(2, 63);
 	
 	// DMAMUX_3
-	DMASource(3,  4, "HARDWARE.LINFlexD_2_RX_DMA_REQ_0");
-	DMASource(3,  5, "HARDWARE.LINFlexD_2_TX_DMA_REQ_0");
+	DMASource(3, 0);
+	DMASource(3, 1);
+	DMASource(3, 2);
+	DMASource(3, 3);
+	DMASource(3,  4, "HARDWARE.LINFlexD_2_DMA_RX_0");
+	DMASource(3,  5, "HARDWARE.LINFlexD_2_DMA_TX_0");
+	DMASource(3, 6);
+	DMASource(3, 7);
+	DMASource(3, 8);
+	DMASource(3, 9);
+	DMASource(3, 10);
+	DMASource(3, 11);
+	DMASource(3, 12);
+	DMASource(3, 13);
+	DMASource(3, 14);
+	DMASource(3, 15);
+	DMASource(3, 16);
+	DMASource(3, 17);
+	DMASource(3, 18);
+	DMASource(3, 19);
+	DMASource(3, 20);
+	DMASource(3, 21);
+	DMASource(3, 22);
+	DMASource(3, 23);
+	DMASource(3, 24);
+	DMASource(3, 25);
+	DMASource(3, 26);
+	DMASource(3, 27);
+	DMASource(3, 28);
+	DMASource(3, 29);
+	DMASource(3, 30);
+	DMASource(3, 31);
+	DMASource(3, 32);
+	DMASource(3, 33);
+	DMASource(3, 34);
+	DMASource(3, 35);
+	DMASource(3, 36);
+	DMASource(3, 37);
+	DMASource(3, 38);
+	DMASource(3, 39);
+	DMASource(3, 40);
+	DMASource(3, 41);
+	DMASource(3, 42);
+	DMASource(3, 43);
+	DMASource(3, 44);
+	DMASource(3, 45);
+	DMASource(3, 46);
+	DMASource(3, 47);
+	DMASource(3, 48);
+	DMASource(3, 49);
+	DMASource(3, 50);
+	DMASource(3, 51);
+	DMASource(3, 52);
+	DMASource(3, 53);
+	DMASource(3, 54);
+	DMASource(3, 55);
+	DMASource(3, 56);
+	DMASource(3, 57);
+	DMASource(3, 58);
+	DMASource(3, 59);
+	DMASource(3, 60);
+	DMASource(3, 61);
+	DMASource(3, 62);
+	DMASource(3, 63);
 	
 	// DMAMUX_4
-	DMASource(4,  7, "HARDWARE.LINFlexD_0_RX_DMA_REQ_0");
-	DMASource(4,  8, "HARDWARE.LINFlexD_0_TX_DMA_REQ_0");
-	DMASource(4,  9, "HARDWARE.LINFlexD_14_RX_DMA_REQ_0");
-	DMASource(4, 10, "HARDWARE.LINFlexD_14_TX_DMA_REQ_0");
+	DMASource(4, 0);
+	DMASource(4, 1);
+	DMASource(4, 2);
+	DMASource(4, 3);
+	DMASource(4, 4);
+	DMASource(4, 5);
+	DMASource(4, 6);
+	DMASource(4,  7, "HARDWARE.LINFlexD_0_DMA_RX_0");
+	DMASource(4,  8, "HARDWARE.LINFlexD_0_DMA_TX_0");
+	DMASource(4,  9, "HARDWARE.LINFlexD_14_DMA_RX_0");
+	DMASource(4, 10, "HARDWARE.LINFlexD_14_DMA_TX_0");
+	DMASource(4, 11);
+	DMASource(4, 12);
+	DMASource(4, 13);
+	DMASource(4, 14);
+	DMASource(4, 15);
+	DMASource(4, 16);
+	DMASource(4, 17);
+	DMASource(4, 18);
+	DMASource(4, 19);
+	DMASource(4, 20);
+	DMASource(4, 21);
+	DMASource(4, 22);
+	DMASource(4, 23);
+	DMASource(4, 24);
+	DMASource(4, 25);
+	DMASource(4, 26);
+	DMASource(4, 27);
+	DMASource(4, 28);
+	DMASource(4, 29);
+	DMASource(4, 30);
+	DMASource(4, 31);
+	DMASource(4, 32);
+	DMASource(4, 33);
+	DMASource(4, 34);
+	DMASource(4, 35);
+	DMASource(4, 36);
+	DMASource(4, 37);
+	DMASource(4, 38);
+	DMASource(4, 39);
+	DMASource(4, 40);
+	DMASource(4, 41);
+	DMASource(4, 42);
+	DMASource(4, 43);
+	DMASource(4, 44);
+	DMASource(4, 45);
+	DMASource(4, 46);
+	DMASource(4, 47);
+	DMASource(4, 48);
+	DMASource(4, 49);
+	DMASource(4, 50);
+	DMASource(4, 51);
+	DMASource(4, 52);
+	DMASource(4, 53);
+	DMASource(4, 54);
+	DMASource(4, 55);
+	DMASource(4, 56);
+	DMASource(4, 57);
+	DMASource(4, 58);
+	DMASource(4, 59);
+	DMASource(4, 60);
+	DMASource(4, 61);
+	DMASource(4, 62);
+	DMASource(4, 63);
 	
 	// DMAMUX_5
-	DMASource(5,  6, "HARDWARE.LINFlexD_1_RX_DMA_REQ_0");
-	DMASource(5,  7, "HARDWARE.LINFlexD_1_TX_DMA_REQ_0");
-	DMASource(5,  8, "HARDWARE.LINFlexD_15_RX_DMA_REQ_0");
-	DMASource(5,  9, "HARDWARE.LINFlexD_15_TX_DMA_REQ_0");
-	DMASource(5, 39, "HARDWARE.LINFlexD_2_RX_DMA_REQ_0");
-	DMASource(5, 40, "HARDWARE.LINFlexD_2_TX_DMA_REQ_0");
+	DMASource(5, 0);
+	DMASource(5, 1);
+	DMASource(5, 2);
+	DMASource(5, 3);
+	DMASource(5, 4);
+	DMASource(5, 5);
+	DMASource(5,  6, "HARDWARE.LINFlexD_1_DMA_RX_0");
+	DMASource(5,  7, "HARDWARE.LINFlexD_1_DMA_TX_0");
+	DMASource(5,  8, "HARDWARE.LINFlexD_15_DMA_RX_0");
+	DMASource(5,  9, "HARDWARE.LINFlexD_15_DMA_TX_0");
+	DMASource(5, 10);
+	DMASource(5, 11);
+	DMASource(5, 12);
+	DMASource(5, 13);
+	DMASource(5, 14);
+	DMASource(5, 15);
+	DMASource(5, 16);
+	DMASource(5, 17);
+	DMASource(5, 18);
+	DMASource(5, 19);
+	DMASource(5, 20);
+	DMASource(5, 21);
+	DMASource(5, 22);
+	DMASource(5, 23);
+	DMASource(5, 24);
+	DMASource(5, 25);
+	DMASource(5, 26);
+	DMASource(5, 27);
+	DMASource(5, 28);
+	DMASource(5, 29);
+	DMASource(5, 30);
+	DMASource(5, 31);
+	DMASource(5, 32);
+	DMASource(5, 33);
+	DMASource(5, 34);
+	DMASource(5, 35);
+	DMASource(5, 36);
+	DMASource(5, 37);
+	DMASource(5, 38);
+	DMASource(5, 39, "HARDWARE.LINFlexD_2_DMA_RX_0");
+	DMASource(5, 40, "HARDWARE.LINFlexD_2_DMA_TX_0");
+	DMASource(5, 41);
+	DMASource(5, 42);
+	DMASource(5, 43);
+	DMASource(5, 44);
+	DMASource(5, 45);
+	DMASource(5, 46);
+	DMASource(5, 47);
+	DMASource(5, 48);
+	DMASource(5, 49);
+	DMASource(5, 50);
+	DMASource(5, 51);
+	DMASource(5, 52);
+	DMASource(5, 53);
+	DMASource(5, 54);
+	DMASource(5, 55);
+	DMASource(5, 56);
+	DMASource(5, 57);
+	DMASource(5, 58);
+	DMASource(5, 59);
+	DMASource(5, 60);
+	DMASource(5, 61);
+	DMASource(5, 62);
+	DMASource(5, 63);
 	
 	// DMAMUX_6
-	DMASource(6, 16, "HARDWARE.LINFlexD_16_RX_DMA_REQ_0");
-	DMASource(6, 17, "HARDWARE.LINFlexD_16_TX_DMA_REQ_0");
+	DMASource(6, 0);
+	DMASource(6, 1);
+	DMASource(6, 2);
+	DMASource(6, 3);
+	DMASource(6, 4);
+	DMASource(6, 5);
+	DMASource(6, 6);
+	DMASource(6, 7);
+	DMASource(6, 8);
+	DMASource(6, 9);
+	DMASource(6, 10);
+	DMASource(6, 11);
+	DMASource(6, 12);
+	DMASource(6, 13);
+	DMASource(6, 14);
+	DMASource(6, 15);
+	DMASource(6, 16, "HARDWARE.LINFlexD_16_DMA_RX_0");
+	DMASource(6, 17, "HARDWARE.LINFlexD_16_DMA_TX_0");
+	DMASource(6, 18);
+	DMASource(6, 19);
+	DMASource(6, 20);
+	DMASource(6, 21);
+	DMASource(6, 22);
+	DMASource(6, 23);
+	DMASource(6, 24);
+	DMASource(6, 25);
+	DMASource(6, 26);
+	DMASource(6, 27);
+	DMASource(6, 28);
+	DMASource(6, 29);
+	DMASource(6, 30);
+	DMASource(6, 31);
+	DMASource(6, 32);
+	DMASource(6, 33);
+	DMASource(6, 34);
+	DMASource(6, 35);
+	DMASource(6, 36);
+	DMASource(6, 37);
+	DMASource(6, 38);
+	DMASource(6, 39);
+	DMASource(6, 40);
+	DMASource(6, 41);
+	DMASource(6, 42);
+	DMASource(6, 43);
+	DMASource(6, 44);
+	DMASource(6, 45);
+	DMASource(6, 46);
+	DMASource(6, 47);
+	DMASource(6, 48);
+	DMASource(6, 49);
+	DMASource(6, 50);
+	DMASource(6, 51);
+	DMASource(6, 52);
+	DMASource(6, 53);
+	DMASource(6, 54);
+	DMASource(6, 55);
+	DMASource(6, 56);
+	DMASource(6, 57);
+	DMASource(6, 58);
+	DMASource(6, 59);
+	DMASource(6, 60);
+	DMASource(6, 61);
+	DMASource(6, 62);
+	DMASource(6, 63);
 	
 	// DMAMUX_7
+	DMASource(7, 0);
+	DMASource(7, 1);
+	DMASource(7, 2);
+	DMASource(7, 3);
+	DMASource(7, 4);
+	DMASource(7, 5);
+	DMASource(7, 6);
+	DMASource(7, 7);
+	DMASource(7, 8);
+	DMASource(7, 9);
+	DMASource(7, 10);
+	DMASource(7, 11);
+	DMASource(7, 12);
+	DMASource(7, 13);
+	DMASource(7, 14);
+	DMASource(7, 15);
+	DMASource(7, 16);
+	DMASource(7, 17);
+	DMASource(7, 18);
+	DMASource(7, 19);
+	DMASource(7, 20);
+	DMASource(7, 21);
+	DMASource(7, 22);
+	DMASource(7, 23);
+	DMASource(7, 24);
+	DMASource(7, 25);
+	DMASource(7, 26);
+	DMASource(7, 27);
+	DMASource(7, 28);
+	DMASource(7, 29);
+	DMASource(7, 30);
+	DMASource(7, 31);
+	DMASource(7, 32);
+	DMASource(7, 33);
+	DMASource(7, 34);
+	DMASource(7, 35);
+	DMASource(7, 36);
+	DMASource(7, 37);
+	DMASource(7, 38);
+	DMASource(7, 39);
+	DMASource(7, 40);
+	DMASource(7, 41);
+	DMASource(7, 42);
+	DMASource(7, 43);
+	DMASource(7, 44);
+	DMASource(7, 45);
+	DMASource(7, 46);
+	DMASource(7, 47);
+	DMASource(7, 48);
+	DMASource(7, 49);
+	DMASource(7, 50);
+	DMASource(7, 51);
+	DMASource(7, 52);
+	DMASource(7, 53);
+	DMASource(7, 54);
+	DMASource(7, 55);
+	DMASource(7, 56);
+	DMASource(7, 57);
+	DMASource(7, 58);
+	DMASource(7, 59);
+	DMASource(7, 60);
+	DMASource(7, 61);
+	DMASource(7, 62);
+	DMASource(7, 63);
 	
 	// DMAMUX_8
+	DMASource(8, 0);
+	DMASource(8, 1);
+	DMASource(8, 2);
+	DMASource(8, 3);
+	DMASource(8, 4);
+	DMASource(8, 5);
+	DMASource(8, 6);
+	DMASource(8, 7);
+	DMASource(8, 8);
+	DMASource(8, 9);
+	DMASource(8, 10);
+	DMASource(8, 11);
+	DMASource(8, 12);
+	DMASource(8, 13);
+	DMASource(8, 14);
+	DMASource(8, 15);
+	DMASource(8, 16);
+	DMASource(8, 17);
+	DMASource(8, 18);
+	DMASource(8, 19);
+	DMASource(8, 20);
+	DMASource(8, 21);
+	DMASource(8, 22);
+	DMASource(8, 23);
+	DMASource(8, 24);
+	DMASource(8, 25);
+	DMASource(8, 26);
+	DMASource(8, 27);
+	DMASource(8, 28);
+	DMASource(8, 29);
+	DMASource(8, 30);
+	DMASource(8, 31);
+	DMASource(8, 32);
+	DMASource(8, 33);
+	DMASource(8, 34);
+	DMASource(8, 35);
+	DMASource(8, 36);
+	DMASource(8, 37);
+	DMASource(8, 38);
+	DMASource(8, 39);
+	DMASource(8, 40);
+	DMASource(8, 41);
+	DMASource(8, 42);
+	DMASource(8, 43);
+	DMASource(8, 44);
+	DMASource(8, 45);
+	DMASource(8, 46);
+	DMASource(8, 47);
+	DMASource(8, 48);
+	DMASource(8, 49);
+	DMASource(8, 50);
+	DMASource(8, 51);
+	DMASource(8, 52);
+	DMASource(8, 53);
+	DMASource(8, 54);
+	DMASource(8, 55);
+	DMASource(8, 56);
+	DMASource(8, 57);
+	DMASource(8, 58);
+	DMASource(8, 59);
+	DMASource(8, 60);
+	DMASource(8, 61);
+	DMASource(8, 62);
+	DMASource(8, 63);
 	
 	// DMAMUX_9
+	DMASource(9, 0);
+	DMASource(9, 1);
+	DMASource(9, 2);
+	DMASource(9, 3);
+	DMASource(9, 4);
+	DMASource(9, 5);
+	DMASource(9, 6);
+	DMASource(9, 7);
+	DMASource(9, 8);
+	DMASource(9, 9);
+	DMASource(9, 10);
+	DMASource(9, 11);
+	DMASource(9, 12);
+	DMASource(9, 13);
+	DMASource(9, 14);
+	DMASource(9, 15);
+	DMASource(9, 16);
+	DMASource(9, 17);
+	DMASource(9, 18);
+	DMASource(9, 19);
+	DMASource(9, 20);
+	DMASource(9, 21);
+	DMASource(9, 22);
+	DMASource(9, 23);
+	DMASource(9, 24);
+	DMASource(9, 25);
+	DMASource(9, 26);
+	DMASource(9, 27);
+	DMASource(9, 28);
+	DMASource(9, 29);
+	DMASource(9, 30);
+	DMASource(9, 31);
+	DMASource(9, 32);
+	DMASource(9, 33);
+	DMASource(9, 34);
+	DMASource(9, 35);
+	DMASource(9, 36);
+	DMASource(9, 37);
+	DMASource(9, 38);
+	DMASource(9, 39);
+	DMASource(9, 40);
+	DMASource(9, 41);
+	DMASource(9, 42);
+	DMASource(9, 43);
+	DMASource(9, 44);
+	DMASource(9, 45);
+	DMASource(9, 46);
+	DMASource(9, 47);
+	DMASource(9, 48);
+	DMASource(9, 49);
+	DMASource(9, 50);
+	DMASource(9, 51);
+	DMASource(9, 52);
+	DMASource(9, 53);
+	DMASource(9, 54);
+	DMASource(9, 55);
+	DMASource(9, 56);
+	DMASource(9, 57);
+	DMASource(9, 58);
+	DMASource(9, 59);
+	DMASource(9, 60);
+	DMASource(9, 61);
+	DMASource(9, 62);
+	DMASource(9, 63);
 	
 	//=========================================================================
 	//===                        Clients/Services connection                ===
@@ -1933,9 +2981,77 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	loader->registers_import >> peripheral_core_2->registers_export;
 	peripheral_core_2->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 	
-	if(enable_serial_terminal)
+	if(enable_serial_terminal0)
 	{
-		serial_terminal->char_io_import >> telnet->char_io_export;
+		switch(serial_terminal_protocol0)
+		{
+			case SERIAL_TERMINAL_PROTOCOL_TELNET:
+				serial_terminal0->char_io_import >> telnet0->char_io_export;
+				break;
+			case SERIAL_TERMINAL_PROTOCOL_NETCAT:
+				serial_terminal0->char_io_import >> netcat0->char_io_export;
+				break;
+		}
+	}
+	if(enable_serial_terminal1)
+	{
+		switch(serial_terminal_protocol1)
+		{
+			case SERIAL_TERMINAL_PROTOCOL_TELNET:
+				serial_terminal1->char_io_import >> telnet1->char_io_export;
+				break;
+			case SERIAL_TERMINAL_PROTOCOL_NETCAT:
+				serial_terminal1->char_io_import >> netcat1->char_io_export;
+				break;
+		}
+	}
+	if(enable_serial_terminal2)
+	{
+		switch(serial_terminal_protocol2)
+		{
+			case SERIAL_TERMINAL_PROTOCOL_TELNET:
+				serial_terminal2->char_io_import >> telnet2->char_io_export;
+				break;
+			case SERIAL_TERMINAL_PROTOCOL_NETCAT:
+				serial_terminal2->char_io_import >> netcat2->char_io_export;
+				break;
+		}
+	}
+	if(enable_serial_terminal14)
+	{
+		switch(serial_terminal_protocol14)
+		{
+			case SERIAL_TERMINAL_PROTOCOL_TELNET:
+				serial_terminal14->char_io_import >> telnet14->char_io_export;
+				break;
+			case SERIAL_TERMINAL_PROTOCOL_NETCAT:
+				serial_terminal14->char_io_import >> netcat14->char_io_export;
+				break;
+		}
+	}
+	if(enable_serial_terminal15)
+	{
+		switch(serial_terminal_protocol15)
+		{
+			case SERIAL_TERMINAL_PROTOCOL_TELNET:
+				serial_terminal15->char_io_import >> telnet15->char_io_export;
+				break;
+			case SERIAL_TERMINAL_PROTOCOL_NETCAT:
+				serial_terminal15->char_io_import >> netcat15->char_io_export;
+				break;
+		}
+	}
+	if(enable_serial_terminal16)
+	{
+		switch(serial_terminal_protocol16)
+		{
+			case SERIAL_TERMINAL_PROTOCOL_TELNET:
+				serial_terminal16->char_io_import >> telnet16->char_io_export;
+				break;
+			case SERIAL_TERMINAL_PROTOCOL_NETCAT:
+				serial_terminal16->char_io_import >> netcat16->char_io_export;
+				break;
+		}
 	}
 	
 	SC_HAS_PROCESS(Simulator);
@@ -1982,7 +3098,22 @@ Simulator::~Simulator()
 	if(linflexd_15_rx) delete linflexd_15_rx;
 	if(linflexd_16_tx) delete linflexd_16_tx;
 	if(linflexd_16_rx) delete linflexd_16_rx;
-	if(serial_terminal) delete serial_terminal;
+	if(serial_terminal0) delete serial_terminal0;
+	if(serial_terminal1) delete serial_terminal1;
+	if(serial_terminal2) delete serial_terminal2;
+	if(serial_terminal14) delete serial_terminal14;
+	if(serial_terminal15) delete serial_terminal15;
+	if(serial_terminal16) delete serial_terminal16;
+	if(dmamux_0) delete dmamux_0;
+	if(dmamux_1) delete dmamux_1;
+	if(dmamux_2) delete dmamux_2;
+	if(dmamux_3) delete dmamux_3;
+	if(dmamux_4) delete dmamux_4;
+	if(dmamux_5) delete dmamux_5;
+	if(dmamux_6) delete dmamux_6;
+	if(dmamux_7) delete dmamux_7;
+	if(dmamux_8) delete dmamux_8;
+	if(dmamux_9) delete dmamux_9;
 	if(ebi_stub) delete ebi_stub;
 	if(flash_port1_stub) delete flash_port1_stub;
 	if(xbar_0_s6_stub) delete xbar_0_s6_stub;
@@ -2001,7 +3132,18 @@ Simulator::~Simulator()
 	if(sim_time) delete sim_time;
 	if(host_time) delete host_time;
 	if(loader) delete loader;
-	if(telnet) delete telnet;
+	if(telnet0) delete telnet0;
+	if(telnet1) delete telnet1;
+	if(telnet2) delete telnet2;
+	if(telnet14) delete telnet14;
+	if(telnet15) delete telnet15;
+	if(telnet16) delete telnet16;
+	if(netcat0) delete netcat0;
+	if(netcat1) delete netcat1;
+	if(netcat2) delete netcat2;
+	if(netcat14) delete netcat14;
+	if(netcat15) delete netcat15;
+	if(netcat16) delete netcat16;
 }
 
 void Simulator::ResetProcess()
@@ -2055,11 +3197,18 @@ void Simulator::InterruptSource(unsigned int irq_num, const std::string& source)
 	Bind(intc_port_name_sstr.str() , irq_signal_name_sstr.str());
 }
 
-void Simulator::DMASource(unsigned int dmamux_num, unsigned int source_num, const std::string& source)
+void Simulator::DMASource(unsigned int dmamux_num, unsigned int dma_source_num, const std::string& source)
 {
-// 	std::stringstream dmamux_port_name_sstr;
-// 	dmamux_port_name_sstr << "HARDWARE.DMAMUX_" << dmamux_num << ".source_" << source_num;
-// 	Bind(dmamux_port_name_sstr.str() , source);
+	std::stringstream dmamux_port_name_sstr;
+	dmamux_port_name_sstr << "HARDWARE.DMAMUX_" << dmamux_num << ".dma_source_" << dma_source_num;
+	if(!source.empty())
+	{
+		Bind(dmamux_port_name_sstr.str(), source);
+	}
+	else
+	{
+		Bind(dmamux_port_name_sstr.str(), "HARDWARE.pull_down");
+	}
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
@@ -2096,8 +3245,18 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.RTI_CLK.clock-period", "1 us");       // RTI_CLK: 1 Mhz
 	simulator->SetVariable("HARDWARE.LIN_CLK.lazy-clock", "true");
 	simulator->SetVariable("HARDWARE.LIN_CLK.clock-period", "12500 ps");      // LIN_CLK: 80 Mhz ((2/3) * LIN_CLK > PBRIDGEx_CLK > (1/3) * LIN_CLK)
-	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL_CLK.lazy-clock", "true");
-	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL_CLK.clock-period", "100000000 ps"); // SERIAL_TERMINAL_CLK: 10000 baud
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL0_CLK.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL0_CLK.clock-period", "100000000 ps"); // SERIAL_TERMINAL0_CLK: 10000 baud
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL1_CLK.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL1_CLK.clock-period", "100000000 ps"); // SERIAL_TERMINAL1_CLK: 10000 baud
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL2_CLK.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL2_CLK.clock-period", "100000000 ps"); // SERIAL_TERMINAL2_CLK: 10000 baud
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL14_CLK.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL14_CLK.clock-period", "100000000 ps"); // SERIAL_TERMINAL14_CLK: 10000 baud
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL15_CLK.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL15_CLK.clock-period", "100000000 ps"); // SERIAL_TERMINAL15_CLK: 10000 baud
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL16_CLK.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL16_CLK.clock-period", "100000000 ps"); // SERIAL_TERMINAL16_CLK: 10000 baud
 	
 	//  - e200 PowerPC cores
 
@@ -2217,6 +3376,16 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_11", "range_start=\"0xffe90000\" range_end=\"0xffe93fff\" output_port=\"11\" translation=\"0x0\""); // LINFlexD_1  -> LINFlexD_1 (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_12", "range_start=\"0xffea8000\" range_end=\"0xffeabfff\" output_port=\"12\" translation=\"0x0\""); // LINFlexD_14 -> LINFlexD_14 (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_13", "range_start=\"0xffeac000\" range_end=\"0xffeaffff\" output_port=\"13\" translation=\"0x0\""); // LINFlexD_16 -> LINFlexD_16 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_14", "range_start=\"0xfff6c000\" range_end=\"0xfff6c1ff\" output_port=\"14\" translation=\"0x0\""); // DMAMUX_0    -> DMAMUX_0 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_15", "range_start=\"0xfff6c200\" range_end=\"0xfff6c3ff\" output_port=\"15\" translation=\"0x0\""); // DMAMUX_1    -> DMAMUX_1 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_16", "range_start=\"0xfff6c400\" range_end=\"0xfff6c5ff\" output_port=\"16\" translation=\"0x0\""); // DMAMUX_2    -> DMAMUX_2 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_17", "range_start=\"0xfff6c600\" range_end=\"0xfff6c7ff\" output_port=\"17\" translation=\"0x0\""); // DMAMUX_3    -> DMAMUX_3 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_18", "range_start=\"0xfff6c800\" range_end=\"0xfff6c9ff\" output_port=\"18\" translation=\"0x0\""); // DMAMUX_4    -> DMAMUX_4 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_19", "range_start=\"0xfff6ca00\" range_end=\"0xfff6cbff\" output_port=\"19\" translation=\"0x0\""); // DMAMUX_5    -> DMAMUX_5 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_20", "range_start=\"0xfff6cc00\" range_end=\"0xfff6cdff\" output_port=\"20\" translation=\"0x0\""); // DMAMUX_6    -> DMAMUX_6 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_21", "range_start=\"0xfff6ce00\" range_end=\"0xfff6cfff\" output_port=\"21\" translation=\"0x0\""); // DMAMUX_7    -> DMAMUX_7 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_22", "range_start=\"0xfff6d000\" range_end=\"0xfff6d1ff\" output_port=\"22\" translation=\"0x0\""); // DMAMUX_8    -> DMAMUX_8 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_23", "range_start=\"0xfff6d200\" range_end=\"0xfff6d3ff\" output_port=\"23\" translation=\"0x0\""); // DMAMUX_9    -> DMAMUX_9 (rel address)
 
 	//  - PBRIDGE_B
 	simulator->SetVariable("HARDWARE.PBRIDGE_B.cycle_time", "20 ns");
@@ -2304,7 +3473,19 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("debugger.sel-cpu[7]", 1); // profiler
 	simulator->SetVariable("debugger.sel-cpu[8]", 2); // profiler
 	
-	simulator->SetVariable("telnet.telnet-tcp-port", 12348);
+	simulator->SetVariable("telnet0.telnet-tcp-port", 12348);
+	simulator->SetVariable("telnet1.telnet-tcp-port", 12349);
+	simulator->SetVariable("telnet2.telnet-tcp-port", 12350);
+	simulator->SetVariable("telnet14.telnet-tcp-port", 12351);
+	simulator->SetVariable("telnet15.telnet-tcp-port", 12352);
+	simulator->SetVariable("telnet16.telnet-tcp-port", 12353);
+
+	simulator->SetVariable("netcat0.tcp-port", 12348);
+	simulator->SetVariable("netcat1.tcp-port", 12349);
+	simulator->SetVariable("netcat2.tcp-port", 12350);
+	simulator->SetVariable("netcat14.tcp-port", 12351);
+	simulator->SetVariable("netcat15.tcp-port", 12352);
+	simulator->SetVariable("netcat16.tcp-port", 12353);
 }
 
 void Simulator::Run()
@@ -2422,3 +3603,132 @@ void Simulator::SigInt()
 		unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
 	}
 }
+
+namespace unisim {
+namespace kernel {
+namespace service {
+
+template <> Variable<SerialTerminalProtocol>::Variable(const char *_name, Object *_object, SerialTerminalProtocol& _storage, Type type, const char *_description) :
+	VariableBase(_name, _object, type, _description), storage(&_storage)
+{
+	Simulator::simulator->Initialize(this);
+	AddEnumeratedValue("telnet");
+	AddEnumeratedValue("netcat");
+}
+
+template <>
+const char *Variable<SerialTerminalProtocol>::GetDataTypeName() const
+{
+	return "serial-terminal-protocol";
+}
+
+template <>
+unsigned int Variable<SerialTerminalProtocol>::GetBitSize() const
+{
+	return 1;
+}
+
+template <> Variable<SerialTerminalProtocol>::operator bool () const { return *storage != SERIAL_TERMINAL_PROTOCOL_TELNET; }
+template <> Variable<SerialTerminalProtocol>::operator long long () const { return *storage; }
+template <> Variable<SerialTerminalProtocol>::operator unsigned long long () const { return *storage; }
+template <> Variable<SerialTerminalProtocol>::operator double () const { return (double)(*storage); }
+template <> Variable<SerialTerminalProtocol>::operator string () const
+{
+	switch(*storage)
+	{
+		case SERIAL_TERMINAL_PROTOCOL_TELNET: return std::string("telnet");
+		case SERIAL_TERMINAL_PROTOCOL_NETCAT: return std::string("netcat");
+	}
+	return std::string("?");
+}
+
+template <> VariableBase& Variable<SerialTerminalProtocol>::operator = (bool value)
+{
+	if(IsMutable())
+	{
+		SerialTerminalProtocol tmp = *storage;
+		switch((unsigned int) value)
+		{
+			case SERIAL_TERMINAL_PROTOCOL_TELNET:
+			case SERIAL_TERMINAL_PROTOCOL_NETCAT:
+				tmp = (SerialTerminalProtocol)(unsigned int) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<SerialTerminalProtocol>::operator = (long long value)
+{
+	if(IsMutable())
+	{
+		SerialTerminalProtocol tmp = *storage;
+		switch(value)
+		{
+			case SERIAL_TERMINAL_PROTOCOL_TELNET:
+			case SERIAL_TERMINAL_PROTOCOL_NETCAT:
+				tmp = (SerialTerminalProtocol) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<SerialTerminalProtocol>::operator = (unsigned long long value)
+{
+	if(IsMutable())
+	{
+		SerialTerminalProtocol tmp = *storage;
+		switch(value)
+		{
+			case SERIAL_TERMINAL_PROTOCOL_TELNET:
+			case SERIAL_TERMINAL_PROTOCOL_NETCAT:
+				tmp = (SerialTerminalProtocol) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<SerialTerminalProtocol>::operator = (double value)
+{
+	if(IsMutable())
+	{
+		SerialTerminalProtocol tmp = *storage;
+		switch((unsigned int) value)
+		{
+			case SERIAL_TERMINAL_PROTOCOL_TELNET:
+			case SERIAL_TERMINAL_PROTOCOL_NETCAT:
+				tmp = (SerialTerminalProtocol)(unsigned int) value;
+				break;
+		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<SerialTerminalProtocol>::operator = (const char *value)
+{
+	if(IsMutable())
+	{
+		SerialTerminalProtocol tmp = *storage;
+		if(std::string(value) == std::string("telnet")) tmp = SERIAL_TERMINAL_PROTOCOL_TELNET;
+		else if(std::string(value) == std::string("netcat")) tmp = SERIAL_TERMINAL_PROTOCOL_NETCAT;
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template class Variable<SerialTerminalProtocol>;
+
+} // end of service namespace
+} // end of kernel namespace
+} // end of unisim namespace

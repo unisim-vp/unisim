@@ -203,6 +203,7 @@ public:
 	void nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload& payload);
 	
 private:
+	virtual bool EndSetup();
 	virtual void end_of_elaboration();
 	
 	unisim::kernel::logger::Logger logger;
@@ -1924,6 +1925,8 @@ private:
 	unisim::kernel::service::Parameter<unisim::util::endian::endian_type> param_endian;
 	bool verbose;
 	unisim::kernel::service::Parameter<bool> param_verbose;
+	double baud_tolerance;
+	unisim::kernel::service::Parameter<double> param_baud_tolerance;
 	
 	sc_core::sc_time master_clock_period;                 // Master clock period
 	sc_core::sc_time master_clock_start_time;             // Master clock start time
@@ -1935,7 +1938,9 @@ private:
 	bool lin_clock_posedge_first;                         // LIN clock posedge first ?
 	double lin_clock_duty_cycle;                          // LIN clock duty cycle
 	
+	sc_core::sc_time baud_period_lower_bound;
 	sc_core::sc_time baud_period;
+	sc_core::sc_time baud_period_upper_bound;
 	
 	void EnableLINS_INT_TX();
 	void DisableLINS_INT_TX();
@@ -1991,6 +1996,7 @@ private:
 	void DMA_RX_Process();
 	void DMA_TX_Process();
 	void RX_FIFO_Pop();
+	void IncrementRxTime();
 	bool RX_InputStatus();
 	bool RX_FallingEdge();
 	void RX_Process();

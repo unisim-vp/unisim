@@ -1522,6 +1522,66 @@
 				<value>range_start=&quot;0xffeac000&quot; range_end=&quot;0xffeaffff&quot; output_port=&quot;13&quot; translation=&quot;0x0&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 			</variable>
+			<variable name="mapping_14">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfff6c000&quot; range_end=&quot;0xfff6c1ff&quot; output_port=&quot;14&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_15">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfff6c200&quot; range_end=&quot;0xfff6c3ff&quot; output_port=&quot;15&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_16">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfff6c400&quot; range_end=&quot;0xfff6c5ff&quot; output_port=&quot;16&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_17">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfff6c600&quot; range_end=&quot;0xfff6c7ff&quot; output_port=&quot;17&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_18">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfff6c800&quot; range_end=&quot;0xfff6c9ff&quot; output_port=&quot;18&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_19">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfff6ca00&quot; range_end=&quot;0xfff6cbff&quot; output_port=&quot;19&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_20">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfff6cc00&quot; range_end=&quot;0xfff6cdff&quot; output_port=&quot;20&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_21">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfff6ce00&quot; range_end=&quot;0xfff6cfff&quot; output_port=&quot;21&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_22">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfff6d000&quot; range_end=&quot;0xfff6d1ff&quot; output_port=&quot;22&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_23">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfff6d200&quot; range_end=&quot;0xfff6d3ff&quot; output_port=&quot;23&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
 		</object>
 		<object name="HARDWARE.PBRIDGE_B">
 			<variable name="cycle_time">
@@ -1924,6 +1984,12 @@
 					<item>false</item>
 				</enumeration>
 			</variable>
+			<variable name="baud-tolerance">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>2</value>
+				<description>Baud tolerance (up to 5 %) in reception (fraction in percents of baud period); Tolerate +/- X % drift</description>
+			</variable>
 		</object>
 		<object name="HARDWARE.LINFlexD_1">
 			<variable name="endian">
@@ -1945,6 +2011,12 @@
 					<item>true</item>
 					<item>false</item>
 				</enumeration>
+			</variable>
+			<variable name="baud-tolerance">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>2</value>
+				<description>Baud tolerance (up to 5 %) in reception (fraction in percents of baud period); Tolerate +/- X % drift</description>
 			</variable>
 		</object>
 		<object name="HARDWARE.LINFlexD_2">
@@ -1968,6 +2040,12 @@
 					<item>false</item>
 				</enumeration>
 			</variable>
+			<variable name="baud-tolerance">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>2</value>
+				<description>Baud tolerance (up to 5 %) in reception (fraction in percents of baud period); Tolerate +/- X % drift</description>
+			</variable>
 		</object>
 		<object name="HARDWARE.LINFlexD_14">
 			<variable name="endian">
@@ -1989,6 +2067,12 @@
 					<item>true</item>
 					<item>false</item>
 				</enumeration>
+			</variable>
+			<variable name="baud-tolerance">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>2</value>
+				<description>Baud tolerance (up to 5 %) in reception (fraction in percents of baud period); Tolerate +/- X % drift</description>
 			</variable>
 		</object>
 		<object name="HARDWARE.LINFlexD_15">
@@ -2012,6 +2096,12 @@
 					<item>false</item>
 				</enumeration>
 			</variable>
+			<variable name="baud-tolerance">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>2</value>
+				<description>Baud tolerance (up to 5 %) in reception (fraction in percents of baud period); Tolerate +/- X % drift</description>
+			</variable>
 		</object>
 		<object name="HARDWARE.LINFlexD_16">
 			<variable name="endian">
@@ -2034,8 +2124,14 @@
 					<item>false</item>
 				</enumeration>
 			</variable>
+			<variable name="baud-tolerance">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>2</value>
+				<description>Baud tolerance (up to 5 %) in reception (fraction in percents of baud period); Tolerate +/- X % drift</description>
+			</variable>
 		</object>
-		<object name="HARDWARE.SERIAL_TERMINAL">
+		<object name="HARDWARE.SERIAL_TERMINAL0">
 			<variable name="polling-period">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
@@ -2066,7 +2162,7 @@
 			<variable name="num-stop-bits">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
-				<value>0x00000001</value>
+				<value>1</value>
 				<description>number of stop bits (1, 2, ...)</description>
 			</variable>
 			<variable name="bit-order">
@@ -2082,8 +2178,555 @@
 			<variable name="num-data-bits">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
-				<value>0x00000008</value>
+				<value>8</value>
 				<description>number of data bits (1-8; typically 7 or 8)</description>
+			</variable>
+			<variable name="baud-tolerance">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>2</value>
+				<description>Baud tolerance (up to 5 %) in reception (fraction in percents of baud period); Tolerate +/- X % drift</description>
+			</variable>
+			<variable name="boot-receive-delay">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>Boot receive delay (guest delay to be ready for receiving characters)</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.SERIAL_TERMINAL1">
+			<variable name="polling-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ms</value>
+				<description>polling period</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="parity-type">
+				<type>parameter</type>
+				<data_type>parity-type</data_type>
+				<value>none</value>
+				<description>parity type (none, even, odd)</description>
+				<enumeration>
+					<item>none</item>
+					<item>even</item>
+					<item>odd</item>
+				</enumeration>
+			</variable>
+			<variable name="num-stop-bits">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>1</value>
+				<description>number of stop bits (1, 2, ...)</description>
+			</variable>
+			<variable name="bit-order">
+				<type>parameter</type>
+				<data_type>bit-order</data_type>
+				<value>msb</value>
+				<description>first bit in reception/transmission (lsb, msb)</description>
+				<enumeration>
+					<item>lsb</item>
+					<item>msb</item>
+				</enumeration>
+			</variable>
+			<variable name="num-data-bits">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>8</value>
+				<description>number of data bits (1-8; typically 7 or 8)</description>
+			</variable>
+			<variable name="baud-tolerance">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>2</value>
+				<description>Baud tolerance (up to 5 %) in reception (fraction in percents of baud period); Tolerate +/- X % drift</description>
+			</variable>
+			<variable name="boot-receive-delay">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>Boot receive delay (guest delay to be ready for receiving characters)</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.SERIAL_TERMINAL2">
+			<variable name="polling-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ms</value>
+				<description>polling period</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="parity-type">
+				<type>parameter</type>
+				<data_type>parity-type</data_type>
+				<value>none</value>
+				<description>parity type (none, even, odd)</description>
+				<enumeration>
+					<item>none</item>
+					<item>even</item>
+					<item>odd</item>
+				</enumeration>
+			</variable>
+			<variable name="num-stop-bits">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>1</value>
+				<description>number of stop bits (1, 2, ...)</description>
+			</variable>
+			<variable name="bit-order">
+				<type>parameter</type>
+				<data_type>bit-order</data_type>
+				<value>msb</value>
+				<description>first bit in reception/transmission (lsb, msb)</description>
+				<enumeration>
+					<item>lsb</item>
+					<item>msb</item>
+				</enumeration>
+			</variable>
+			<variable name="num-data-bits">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>8</value>
+				<description>number of data bits (1-8; typically 7 or 8)</description>
+			</variable>
+			<variable name="baud-tolerance">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>2</value>
+				<description>Baud tolerance (up to 5 %) in reception (fraction in percents of baud period); Tolerate +/- X % drift</description>
+			</variable>
+			<variable name="boot-receive-delay">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>Boot receive delay (guest delay to be ready for receiving characters)</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.SERIAL_TERMINAL14">
+			<variable name="polling-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ms</value>
+				<description>polling period</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="parity-type">
+				<type>parameter</type>
+				<data_type>parity-type</data_type>
+				<value>none</value>
+				<description>parity type (none, even, odd)</description>
+				<enumeration>
+					<item>none</item>
+					<item>even</item>
+					<item>odd</item>
+				</enumeration>
+			</variable>
+			<variable name="num-stop-bits">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>1</value>
+				<description>number of stop bits (1, 2, ...)</description>
+			</variable>
+			<variable name="bit-order">
+				<type>parameter</type>
+				<data_type>bit-order</data_type>
+				<value>msb</value>
+				<description>first bit in reception/transmission (lsb, msb)</description>
+				<enumeration>
+					<item>lsb</item>
+					<item>msb</item>
+				</enumeration>
+			</variable>
+			<variable name="num-data-bits">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>8</value>
+				<description>number of data bits (1-8; typically 7 or 8)</description>
+			</variable>
+			<variable name="baud-tolerance">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>2</value>
+				<description>Baud tolerance (up to 5 %) in reception (fraction in percents of baud period); Tolerate +/- X % drift</description>
+			</variable>
+			<variable name="boot-receive-delay">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>Boot receive delay (guest delay to be ready for receiving characters)</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.SERIAL_TERMINAL15">
+			<variable name="polling-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ms</value>
+				<description>polling period</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="parity-type">
+				<type>parameter</type>
+				<data_type>parity-type</data_type>
+				<value>none</value>
+				<description>parity type (none, even, odd)</description>
+				<enumeration>
+					<item>none</item>
+					<item>even</item>
+					<item>odd</item>
+				</enumeration>
+			</variable>
+			<variable name="num-stop-bits">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>1</value>
+				<description>number of stop bits (1, 2, ...)</description>
+			</variable>
+			<variable name="bit-order">
+				<type>parameter</type>
+				<data_type>bit-order</data_type>
+				<value>msb</value>
+				<description>first bit in reception/transmission (lsb, msb)</description>
+				<enumeration>
+					<item>lsb</item>
+					<item>msb</item>
+				</enumeration>
+			</variable>
+			<variable name="num-data-bits">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>8</value>
+				<description>number of data bits (1-8; typically 7 or 8)</description>
+			</variable>
+			<variable name="baud-tolerance">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>2</value>
+				<description>Baud tolerance (up to 5 %) in reception (fraction in percents of baud period); Tolerate +/- X % drift</description>
+			</variable>
+			<variable name="boot-receive-delay">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>Boot receive delay (guest delay to be ready for receiving characters)</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.SERIAL_TERMINAL16">
+			<variable name="polling-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ms</value>
+				<description>polling period</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="parity-type">
+				<type>parameter</type>
+				<data_type>parity-type</data_type>
+				<value>none</value>
+				<description>parity type (none, even, odd)</description>
+				<enumeration>
+					<item>none</item>
+					<item>even</item>
+					<item>odd</item>
+				</enumeration>
+			</variable>
+			<variable name="num-stop-bits">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>1</value>
+				<description>number of stop bits (1, 2, ...)</description>
+			</variable>
+			<variable name="bit-order">
+				<type>parameter</type>
+				<data_type>bit-order</data_type>
+				<value>msb</value>
+				<description>first bit in reception/transmission (lsb, msb)</description>
+				<enumeration>
+					<item>lsb</item>
+					<item>msb</item>
+				</enumeration>
+			</variable>
+			<variable name="num-data-bits">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>8</value>
+				<description>number of data bits (1-8; typically 7 or 8)</description>
+			</variable>
+			<variable name="baud-tolerance">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>2</value>
+				<description>Baud tolerance (up to 5 %) in reception (fraction in percents of baud period); Tolerate +/- X % drift</description>
+			</variable>
+			<variable name="boot-receive-delay">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>Boot receive delay (guest delay to be ready for receiving characters)</description>
+			</variable>
+		</object>
+		<object name="HARDWARE.DMAMUX_0">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.DMAMUX_1">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.DMAMUX_2">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.DMAMUX_3">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.DMAMUX_4">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.DMAMUX_5">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.DMAMUX_6">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.DMAMUX_7">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.DMAMUX_8">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.DMAMUX_9">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
 			</variable>
 		</object>
 		<object name="HARDWARE.EBI">
@@ -2556,7 +3199,207 @@
 				</enumeration>
 			</variable>
 		</object>
-		<object name="HARDWARE.SERIAL_TERMINAL_CLK">
+		<object name="HARDWARE.SERIAL_TERMINAL0_CLK">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>100 us</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.SERIAL_TERMINAL1_CLK">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>100 us</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.SERIAL_TERMINAL2_CLK">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>100 us</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.SERIAL_TERMINAL14_CLK">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>100 us</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.SERIAL_TERMINAL15_CLK">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>100 us</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.SERIAL_TERMINAL16_CLK">
 			<variable name="lazy-clock">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -3560,6 +4403,210 @@
 			</enumeration>
 		</variable>
 	</object>
+	<object name="netcat0">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="tcp-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>12348</value>
+			<description>TCP/IP port</description>
+		</variable>
+		<variable name="is-server">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>if 1, act as a server, otherwise act as a client</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="server-name">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>localhost</value>
+			<description>if acting as a client, name of server to connect to</description>
+		</variable>
+	</object>
+	<object name="netcat1">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="tcp-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>12349</value>
+			<description>TCP/IP port</description>
+		</variable>
+		<variable name="is-server">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>if 1, act as a server, otherwise act as a client</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="server-name">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>localhost</value>
+			<description>if acting as a client, name of server to connect to</description>
+		</variable>
+	</object>
+	<object name="netcat14">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="tcp-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>12351</value>
+			<description>TCP/IP port</description>
+		</variable>
+		<variable name="is-server">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>if 1, act as a server, otherwise act as a client</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="server-name">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>localhost</value>
+			<description>if acting as a client, name of server to connect to</description>
+		</variable>
+	</object>
+	<object name="netcat15">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="tcp-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>12352</value>
+			<description>TCP/IP port</description>
+		</variable>
+		<variable name="is-server">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>if 1, act as a server, otherwise act as a client</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="server-name">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>localhost</value>
+			<description>if acting as a client, name of server to connect to</description>
+		</variable>
+	</object>
+	<object name="netcat16">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="tcp-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>12353</value>
+			<description>TCP/IP port</description>
+		</variable>
+		<variable name="is-server">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>if 1, act as a server, otherwise act as a client</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="server-name">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>localhost</value>
+			<description>if acting as a client, name of server to connect to</description>
+		</variable>
+	</object>
+	<object name="netcat2">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="tcp-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>12350</value>
+			<description>TCP/IP port</description>
+		</variable>
+		<variable name="is-server">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>if 1, act as a server, otherwise act as a client</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="server-name">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>localhost</value>
+			<description>if acting as a client, name of server to connect to</description>
+		</variable>
+	</object>
 	<object name="profiler0">
 		<variable name="search-path">
 			<type>parameter</type>
@@ -3686,7 +4733,7 @@
 			<description>CSV delimiter</description>
 		</variable>
 	</object>
-	<object name="telnet">
+	<object name="telnet0">
 		<variable name="verbose">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
@@ -3701,6 +4748,246 @@
 			<type>parameter</type>
 			<data_type>signed 32-bit integer</data_type>
 			<value>12348</value>
+			<description>TCP/IP port of telnet</description>
+		</variable>
+		<variable name="enable-negotiation">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>Enable negotiation with client</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-null-character">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter null character</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-line-feed">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter line feed</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="telnet1">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-tcp-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>12349</value>
+			<description>TCP/IP port of telnet</description>
+		</variable>
+		<variable name="enable-negotiation">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>Enable negotiation with client</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-null-character">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter null character</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-line-feed">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter line feed</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="telnet14">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-tcp-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>12351</value>
+			<description>TCP/IP port of telnet</description>
+		</variable>
+		<variable name="enable-negotiation">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>Enable negotiation with client</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-null-character">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter null character</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-line-feed">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter line feed</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="telnet15">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-tcp-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>12352</value>
+			<description>TCP/IP port of telnet</description>
+		</variable>
+		<variable name="enable-negotiation">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>Enable negotiation with client</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-null-character">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter null character</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-line-feed">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter line feed</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="telnet16">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-tcp-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>12353</value>
+			<description>TCP/IP port of telnet</description>
+		</variable>
+		<variable name="enable-negotiation">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>Enable negotiation with client</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-null-character">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter null character</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-line-feed">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter line feed</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="telnet2">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="telnet-tcp-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>12350</value>
 			<description>TCP/IP port of telnet</description>
 		</variable>
 		<variable name="enable-negotiation">
@@ -3774,14 +5061,124 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
-	<variable name="enable-serial-terminal">
+	<variable name="enable-serial-terminal0">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>true</value>
-		<description>Enable/Disable serial terminal instantiation</description>
+		<description>Enable/Disable serial terminal over LINFlexD_0 UART serial interface</description>
 		<enumeration>
 			<item>true</item>
 			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-serial-terminal1">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable serial terminal over LINFlexD_1 UART serial interface</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-serial-terminal14">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable serial terminal over LINFlexD_14 UART serial interface</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-serial-terminal15">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable serial terminal over LINFlexD_15 UART serial interface</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-serial-terminal16">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable serial terminal over LINFlexD_16 UART serial interface</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-serial-terminal2">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable serial terminal over LINFlexD_2 UART serial interface</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="serial-terminal-protocol0">
+		<type>parameter</type>
+		<data_type>serial-terminal-protocol</data_type>
+		<value>telnet</value>
+		<description>Host network protocol to communicate with guest serial terminal over LINFlexD_0 UART serial interface (telnet or netcat)</description>
+		<enumeration>
+			<item>telnet</item>
+			<item>netcat</item>
+		</enumeration>
+	</variable>
+	<variable name="serial-terminal-protocol1">
+		<type>parameter</type>
+		<data_type>serial-terminal-protocol</data_type>
+		<value>telnet</value>
+		<description>Host network protocol to communicate with guest serial terminal over LINFlexD_1 UART serial interface (telnet or netcat)</description>
+		<enumeration>
+			<item>telnet</item>
+			<item>netcat</item>
+		</enumeration>
+	</variable>
+	<variable name="serial-terminal-protocol14">
+		<type>parameter</type>
+		<data_type>serial-terminal-protocol</data_type>
+		<value>telnet</value>
+		<description>Host network protocol to communicate with guest serial terminal over LINFlexD_14 UART serial interface (telnet or netcat)</description>
+		<enumeration>
+			<item>telnet</item>
+			<item>netcat</item>
+		</enumeration>
+	</variable>
+	<variable name="serial-terminal-protocol15">
+		<type>parameter</type>
+		<data_type>serial-terminal-protocol</data_type>
+		<value>telnet</value>
+		<description>Host network protocol to communicate with guest serial terminal over LINFlexD_15 UART serial interface (telnet or netcat)</description>
+		<enumeration>
+			<item>telnet</item>
+			<item>netcat</item>
+		</enumeration>
+	</variable>
+	<variable name="serial-terminal-protocol16">
+		<type>parameter</type>
+		<data_type>serial-terminal-protocol</data_type>
+		<value>telnet</value>
+		<description>Host network protocol to communicate with guest serial terminal over LINFlexD_16 UART serial interface (telnet or netcat)</description>
+		<enumeration>
+			<item>telnet</item>
+			<item>netcat</item>
+		</enumeration>
+	</variable>
+	<variable name="serial-terminal-protocol2">
+		<type>parameter</type>
+		<data_type>serial-terminal-protocol</data_type>
+		<value>telnet</value>
+		<description>Host network protocol to communicate with guest serial terminal over LINFlexD_2 UART serial interface (telnet or netcat)</description>
+		<enumeration>
+			<item>telnet</item>
+			<item>netcat</item>
 		</enumeration>
 	</variable>
 </variables>

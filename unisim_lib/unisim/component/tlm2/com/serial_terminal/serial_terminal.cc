@@ -63,6 +63,11 @@ SerialTerminal::SerialTerminal(const sc_core::sc_module_name& name, unisim::kern
 	, clock_start_time()
 	, clock_posedge_first(true)
 	, clock_duty_cycle(0.5)
+	, rx_input()
+	, rx_time(sc_core::SC_ZERO_TIME)
+	, baud_period_lower_bound(sc_core::SC_ZERO_TIME)
+	, baud_period(sc_core::SC_ZERO_TIME)
+	, baud_period_upper_bound(sc_core::SC_ZERO_TIME)
 	, polling_event("polling_event")
 	, tx_event("tx_event")
 	, tx_fifo()
@@ -79,11 +84,19 @@ SerialTerminal::SerialTerminal(const sc_core::sc_module_name& name, unisim::kern
 	, param_bit_order("bit-order", this, bit_order, "first bit in reception/transmission (lsb, msb)")
 	, num_data_bits(8)
 	, param_num_data_bits("num-data-bits", this, num_data_bits, "number of data bits (1-8; typically 7 or 8)")
+	, baud_tolerance(2.0)
+	, param_baud_tolerance("baud-tolerance", this, baud_tolerance, "Baud tolerance (up to 5 %) in reception (fraction in percents of baud period); Tolerate +/- X % drift")
+	, boot_receive_delay(sc_core::SC_ZERO_TIME)
+	, param_boot_receive_delay("boot-receive-delay", this, boot_receive_delay, "Boot receive delay (guest delay to be ready for receiving characters)")
 {
+	param_baud_tolerance.SetMutable(false);
 	param_polling_period.SetMutable(false);
 	param_parity_type.SetMutable(false);
 	param_num_stop_bits.SetMutable(false);
+	param_num_data_bits.SetMutable(false);
 	param_bit_order.SetMutable(false);
+	param_num_stop_bits.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_num_data_bits.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
 	TX.register_nb_receive(this, &SerialTerminal::nb_receive, TX_IF);
 	RX.register_nb_receive(this, &SerialTerminal::nb_receive, RX_IF);
@@ -120,6 +133,17 @@ bool SerialTerminal::EndSetup()
 		setup_status = false;
 	}
 	
+	if(baud_tolerance < 0.0)
+	{
+		baud_tolerance = 0.0;
+		logger << DebugWarning << "Parameter " << param_baud_tolerance.GetName() << " should be > " << baud_tolerance << "; using " << param_baud_tolerance.GetName() << " = " << baud_tolerance << " %" << EndDebugWarning;
+	}
+	if(baud_tolerance > 5.0)
+	{
+		baud_tolerance = 5.0;
+		logger << DebugWarning << "Parameter " << param_baud_tolerance.GetName() << " should be <= " << baud_tolerance << "; using " << param_baud_tolerance.GetName() << " = " << baud_tolerance << " %" << EndDebugWarning;
+	}
+
 	if(!char_io_import)
 	{
 		setup_status = false;
@@ -145,6 +169,13 @@ void SerialTerminal::ClockPropertiesChangedProcess()
 	clock_start_time = clk_prop_proxy.GetClockStartTime();
 	clock_posedge_first = clk_prop_proxy.GetClockPosEdgeFirst();
 	clock_duty_cycle = clk_prop_proxy.GetClockDutyCycle();
+	
+	baud_period = clock_period;
+	sc_core::sc_time baud_period_tolerance = baud_period * (baud_tolerance / 100.0);
+	baud_period_lower_bound = baud_period;
+	baud_period_lower_bound -= baud_period_tolerance;
+	baud_period_upper_bound = baud_period;
+	baud_period_upper_bound += baud_period_tolerance;
 }
 
 void SerialTerminal::nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload& payload)
@@ -167,9 +198,9 @@ void SerialTerminal::nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload
 			logger << "] over RX with a period of " << period << EndDebugInfo;
 		}
 
-		if(period != clock_period)
+		if((period < baud_period_lower_bound) || (period >= baud_period_upper_bound))
 		{
-			logger << DebugWarning << "Receiving over " << RX.name() << " with a period " << period << " instead of " << clock_period << EndDebugWarning;
+			logger << DebugWarning << "Receiving over " << RX.name() << " with a period " << period << " instead of " << baud_period << " with a tolerance of " << baud_tolerance << " %" << EndDebugWarning;
 		}
 		
 		rx_input.fill(payload);
@@ -247,20 +278,45 @@ void SerialTerminal::TX_Process()
 	}
 }
 
+bool SerialTerminal::RX_InputStatus()
+{
+	unsigned int miss_count = rx_input.get_miss_count();
+	
+	if(miss_count)
+	{
+		logger << DebugWarning << (sc_core::sc_time_stamp() + rx_time) << ": " << miss_count << " bit(s) lost from " << RX.name() << EndDebugWarning;
+	}
+	
+	return rx_input.read();
+}
+
+void SerialTerminal::IncrementRxTime()
+{
+	const sc_core::sc_time& input_period = rx_input.get_period();
+	if((input_period >= baud_period_lower_bound) && (input_period <= baud_period_upper_bound))
+	{
+		rx_time += input_period;
+	}
+	else
+	{
+		rx_time += baud_period;
+	}
+}
+
 void SerialTerminal::RX_Process()
 {
 	wait();
 	
-	sc_core::sc_time rx_time = sc_core::SC_ZERO_TIME;
+	rx_time = sc_core::SC_ZERO_TIME;
 	
 	while(1)
 	{
-		bool bit_value = rx_input.read();
+		bool bit_value = RX_InputStatus();
 		if(verbose)
 		{
 			logger << DebugInfo << rx_input.get_time_stamp() << ": RX=" << bit_value << EndDebugInfo;
 		}
-		rx_time += clock_period;
+		IncrementRxTime();
 		if(!bit_value) // start bit ?
 		{
 			// received start bit
@@ -274,6 +330,7 @@ void SerialTerminal::RX_Process()
 					wait(rx_time);
 					rx_time = sc_core::SC_ZERO_TIME;
 				}
+				
 				if(bit_order == MSB)
 				{
 					value <<= 1;
@@ -282,12 +339,12 @@ void SerialTerminal::RX_Process()
 				{
 					value >>= 1;
 				}
-				bit_value = rx_input.read();
+				bit_value = RX_InputStatus();
 				if(verbose)
 				{
 					logger << DebugInfo << rx_input.get_time_stamp() << ": RX=" << bit_value << EndDebugInfo;
 				}
-				rx_time += clock_period;
+				IncrementRxTime();
 				if(bit_order == MSB)
 				{
 					value |= bit_value;
@@ -307,7 +364,7 @@ void SerialTerminal::RX_Process()
 					wait(rx_time);
 					rx_time = sc_core::SC_ZERO_TIME;
 				}
-				bit_value = rx_input.read();
+				bit_value = RX_InputStatus();
 				if(verbose)
 				{
 					logger << DebugInfo << rx_input.get_time_stamp() << ": RX=" << bit_value << EndDebugInfo;
@@ -324,12 +381,12 @@ void SerialTerminal::RX_Process()
 					wait(rx_time);
 					rx_time = sc_core::SC_ZERO_TIME;
 				}
-				bit_value = rx_input.read();
+				bit_value = RX_InputStatus();
 				if(verbose)
 				{
 					logger << DebugInfo << rx_input.get_time_stamp() << ": RX=" << bit_value << EndDebugInfo;
 				}
-				rx_time += clock_period;
+				IncrementRxTime();
 				if(!bit_value) // not a stop bit
 				{
 					break;
@@ -413,7 +470,10 @@ void SerialTerminal::ProcessOutput()
 
 void SerialTerminal::PollingProcess()
 {
-	ProcessInput();
+	if(sc_core::sc_time_stamp() >= boot_receive_delay)
+	{
+		ProcessInput();
+	}
 	ProcessOutput();
 	polling_event.notify(polling_period);
 }

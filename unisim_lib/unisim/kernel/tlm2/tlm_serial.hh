@@ -161,8 +161,10 @@ class tlm_bitstream
 public:
 	tlm_bitstream(bool init_value = true)
 		: curr_value(init_value)
+		, miss_count(0)
 		, status(TLM_BITSTREAM_NEED_SYNC)
 		, curr_time_stamp(sc_core::SC_ZERO_TIME)
+		, curr_period(sc_core::SC_ZERO_TIME)
 		, timed_serial_payloads()
 		, free_timed_serial_payloads()
 		, next_bit_event(sc_core::sc_gen_unique_name("next_bit_event"))
@@ -236,13 +238,18 @@ public:
 		const std::vector<bool>& serial_data = serial_payload->get_data();
 		curr_value = serial_data[tsp->bit_offset];
 		curr_time_stamp = tsp->bit_time_stamp;
-			
+		curr_period = serial_payload->get_period();
+		
 		notify(tsp);
 	}
 	
 	bool read() const { return curr_value; }
 	
+	unsigned int get_miss_count() const { return miss_count; }
+	
 	const sc_core::sc_time& get_time_stamp() const { return curr_time_stamp; }
+	
+	const sc_core::sc_time& get_period() const { return curr_period; }
 	
 	tlm_bitstream_sync_status seek(const sc_core::sc_time& t)
 	{
@@ -271,15 +278,26 @@ public:
 					
 					const std::vector<bool>& serial_data = serial_payload->get_data();
 					std::vector<bool>::size_type serial_data_length = serial_data.size();
+					
+					unsigned int num_sampled_values = 0;
 					do
 					{
 						curr_value = serial_data[tsp->bit_offset];
 						curr_time_stamp = tsp->bit_time_stamp;
+						curr_period = serial_payload->get_period();
+						
+						if(tsp->started)
+						{
+							num_sampled_values++;
+						}
 						
 						tsp->bit_offset++;
 						tsp->bit_time_stamp += serial_payload->get_period();
+						tsp->started = true;
 					}
 					while(time_stamp >= tsp->bit_time_stamp);
+					
+					miss_count = num_sampled_values ? (num_sampled_values - 1) : 0;
 					
 					status = TLM_BITSTREAM_SYNC_OK;
 				}
@@ -308,6 +326,8 @@ public:
 	
 	tlm_bitstream_sync_status next()
 	{
+		miss_count = 0;
+
 		std::map<sc_core::sc_time, timed_serial_payload *>::iterator it = timed_serial_payloads.begin();
 
 		if(it != timed_serial_payloads.end())
@@ -320,6 +340,7 @@ public:
 			std::vector<bool>::size_type serial_data_length = serial_data.size();
 			tsp->bit_offset++;
 			tsp->bit_time_stamp += serial_payload->get_period();
+			tsp->started = true;
 			
 			if(tsp->bit_offset >= serial_data_length) // end of payload ?
 			{
@@ -341,6 +362,7 @@ public:
 					const std::vector<bool>& next_serial_data = next_serial_payload->get_data();
 					curr_value = next_serial_data[tsp->bit_offset];
 					curr_time_stamp = tsp->bit_time_stamp;
+					curr_period = next_serial_payload->get_period();
 					status = TLM_BITSTREAM_SYNC_OK;
 				}
 			}
@@ -348,6 +370,7 @@ public:
 			{
 				curr_value = serial_data[tsp->bit_offset];
 				curr_time_stamp = tsp->bit_time_stamp;
+				curr_period = serial_payload->get_period();
 				status = TLM_BITSTREAM_SYNC_OK;
 			}
 		}
@@ -430,7 +453,8 @@ private:
 	struct timed_serial_payload
 	{
 		timed_serial_payload(const sc_core::sc_time& _time_stamp, tlm_serial_payload *_serial_payload)
-			: time_stamp()
+			: started(false)
+			, time_stamp()
 			, next_time_stamp()
 			, serial_payload(0)
 			, bit_offset(0)
@@ -441,6 +465,7 @@ private:
 		
 		void initialize(const sc_core::sc_time& _time_stamp, tlm_serial_payload *_serial_payload)
 		{
+			started = false;
 			time_stamp = _time_stamp;
 			serial_payload = _serial_payload;
 			bit_offset = 0;
@@ -456,6 +481,7 @@ private:
 		{
 			serial_payload->release();
 
+			started = false;
 			time_stamp = sc_core::SC_ZERO_TIME;
 			serial_payload = 0;
 			bit_offset = 0;
@@ -484,6 +510,7 @@ private:
 			return max_lo < min_hi;
 		}
 		
+		bool started;
 		sc_core::sc_time time_stamp;
 		sc_core::sc_time next_time_stamp;
 		tlm_serial_payload *serial_payload;
@@ -536,8 +563,10 @@ private:
 	}
 
 	bool curr_value;
+	unsigned int miss_count;
 	tlm_bitstream_sync_status status;
 	sc_core::sc_time curr_time_stamp;
+	sc_core::sc_time curr_period;
 	std::map<sc_core::sc_time, timed_serial_payload *> timed_serial_payloads;
 	std::vector<timed_serial_payload *> free_timed_serial_payloads;
 	sc_core::sc_event next_bit_event;

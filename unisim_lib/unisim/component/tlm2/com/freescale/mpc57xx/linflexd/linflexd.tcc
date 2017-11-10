@@ -136,6 +136,8 @@ LINFlexD<CONFIG>::LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::
 	, param_endian("endian", this, endian, "endian")
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
+	, baud_tolerance(2.0)
+	, param_baud_tolerance("baud-tolerance", this, baud_tolerance, "Baud tolerance (up to 5 %) in reception (fraction in percents of baud period); Tolerate +/- X % drift")
 	, master_clock_period(10.0, sc_core::SC_NS)
 	, master_clock_start_time(sc_core::SC_ZERO_TIME)
 	, master_clock_posedge_first(true)
@@ -144,8 +146,12 @@ LINFlexD<CONFIG>::LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::
 	, lin_clock_start_time(sc_core::SC_ZERO_TIME)
 	, lin_clock_posedge_first(true)
 	, lin_clock_duty_cycle(0.5)
+	, baud_period_lower_bound(sc_core::SC_ZERO_TIME)
 	, baud_period(sc_core::SC_ZERO_TIME)
+	, baud_period_upper_bound(sc_core::SC_ZERO_TIME)
 {
+	param_baud_tolerance.SetMutable(false);
+	
 	peripheral_slave_if(*this);
 	
 	LINTX.register_nb_receive(this, &LINFlexD<CONFIG>::nb_receive, LINTX_IF);
@@ -263,6 +269,23 @@ LINFlexD<CONFIG>::~LINFlexD()
 	{
 		delete DMA_RX[dma_rx_num];
 	}
+}
+
+template <typename CONFIG>
+bool LINFlexD<CONFIG>::EndSetup()
+{
+	if(baud_tolerance < 0.0)
+	{
+		baud_tolerance = 0.0;
+		logger << DebugWarning << "Parameter " << param_baud_tolerance.GetName() << " should be > " << baud_tolerance << "; using " << param_baud_tolerance.GetName() << " = " << baud_tolerance << " %" << EndDebugWarning;
+	}
+	if(baud_tolerance > 5.0)
+	{
+		baud_tolerance = 5.0;
+		logger << DebugWarning << "Parameter " << param_baud_tolerance.GetName() << " should be <= " << baud_tolerance << "; using " << param_baud_tolerance.GetName() << " = " << baud_tolerance << " %" << EndDebugWarning;
+	}
+	
+	return true;
 }
 
 template <typename CONFIG>
@@ -384,7 +407,7 @@ tlm::tlm_sync_enum LINFlexD<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& p
 template <typename CONFIG>
 void LINFlexD<CONFIG>::nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload& payload)
 {
-	if(((id == LINRX_IF) && !linflexd_lincr1.template Get<typename LINFlexD_LINCR1::LBKM>()) || // from LINRX (loop back mode disabled)                                                                   // from LINRX
+	if(((id == LINRX_IF) && !linflexd_lincr1.template Get<typename LINFlexD_LINCR1::LBKM>()) || // from LINRX (loop back mode disabled)
 	   ((id == LINTX_IF) && linflexd_lincr1.template Get<typename LINFlexD_LINCR1::LBKM>())) // from LINTX (loop back mode enabled)
 	{
 		if(linflexd_uartcr.template Get<typename LINFlexD_UARTCR::RxEn>()) // receiver enable ?
@@ -407,9 +430,9 @@ void LINFlexD<CONFIG>::nb_receive(int id, unisim::kernel::tlm2::tlm_serial_paylo
 
 			if(LIN_ClockEnabled())
 			{
-				if(period != baud_period)
+				if((period < baud_period_lower_bound) || (period >= baud_period_upper_bound))
 				{
-					logger << DebugWarning << "Receiving over " << LINRX.name() << " with a period " << period << " instead of " << baud_period << EndDebugWarning;
+					logger << DebugWarning << "Receiving over " << LINRX.name() << " with a period " << period << " instead of " << baud_period << " with a tolerance of " << baud_tolerance << " %" << EndDebugWarning;
 				}
 			}
 			else
@@ -1079,11 +1102,18 @@ void LINFlexD<CONFIG>::UpdateLINClock()
 		unsigned int period_multiplicator_x16 = ((16 * ibr) + (rose ? 0 : fbr)) * (rose ? osr : 16);
 		baud_period = lin_clock_period;
 		baud_period *= (double) period_multiplicator_x16 / 16.0;
+		sc_core::sc_time baud_period_tolerance = baud_period * (baud_tolerance / 100.0);
+		baud_period_lower_bound = baud_period;
+		baud_period_lower_bound -= baud_period_tolerance;
+		baud_period_upper_bound = baud_period;
+		baud_period_upper_bound += baud_period_tolerance;
 	}
 	else
 	{
 		// LIN clock disabled
 		baud_period = sc_core::SC_ZERO_TIME;
+		baud_period_lower_bound = sc_core::SC_ZERO_TIME;
+		baud_period_upper_bound = sc_core::SC_ZERO_TIME;
 	}
 }
 
@@ -1250,8 +1280,40 @@ void LINFlexD<CONFIG>::RX_FIFO_Pop()
 }
 
 template <typename CONFIG>
+void LINFlexD<CONFIG>::IncrementRxTime()
+{
+	const sc_core::sc_time& input_period = rx_input.get_period();
+	if((input_period >= baud_period_lower_bound) && (input_period <= baud_period_upper_bound))
+	{
+		rx_time += input_period;
+	}
+	else
+	{
+		rx_time += baud_period;
+		if(UART_Mode())
+		{
+			if(!linflexd_uartcr.template Get<typename LINFlexD_UARTCR::ROSE>() || (linflexd_uartcr.template Get<typename LINFlexD_UARTCR::OSR>() == 8))
+			{
+				// NF is set by hardware when noise is detected in the received character. It should be cleared by
+				// software. This bit will reflect the same value as in LINESR when in Initialization mode and the UART bit is
+				// set. During reduced oversampling (ROSE bit = 1), it is enabled only when OSR = 8.
+				linflexd_uartsr.template Set<typename LINFlexD_UARTSR::NF>(1); // noise flag
+			}
+		}
+		UpdateINT_ERR();
+	}
+}
+
+template <typename CONFIG>
 bool LINFlexD<CONFIG>::RX_InputStatus()
 {
+	unsigned int miss_count = rx_input.get_miss_count();
+	
+	if(miss_count)
+	{
+		logger << DebugWarning << (sc_core::sc_time_stamp() + rx_time) << ": " << miss_count << " bit(s) lost from LINRX" << EndDebugWarning;
+	}
+	
 	rx_prev_input_status = rx_input_status;
 	rx_input_status = rx_input.read();
 	
@@ -1346,7 +1408,7 @@ void LINFlexD<CONFIG>::RX_Process()
 					if(config_ok) 
 					{
 						bool bit_value = RX_InputStatus();
-						rx_time += baud_period;
+						IncrementRxTime();
 						if(!bit_value) // start bit ?
 						{
 							// received start bit
@@ -1487,7 +1549,7 @@ void LINFlexD<CONFIG>::RX_Process()
 										rx_time = sc_core::SC_ZERO_TIME;
 									}
 									bool bit_value = RX_InputStatus(); // read bitstream
-									rx_time += baud_period;
+									IncrementRxTime();
 									if(rdlis) bit_value = !bit_value; // invert received data if requested
 									if(rdfbm)
 									{
@@ -1516,7 +1578,7 @@ void LINFlexD<CONFIG>::RX_Process()
 									rx_time = sc_core::SC_ZERO_TIME;
 								}
 								bool bit_value = RX_InputStatus();
-								rx_time += baud_period;
+								IncrementRxTime();
 								
 								bool parity_error = false;
 								if(linflexd_uartcr.template Get<typename LINFlexD_UARTCR::PC1>())
@@ -1555,7 +1617,7 @@ void LINFlexD<CONFIG>::RX_Process()
 									rx_time = sc_core::SC_ZERO_TIME;
 								}
 								bool bit_value = RX_InputStatus();
-								rx_time += baud_period;
+								IncrementRxTime();
 								if(bit_value) // stop bit ?
 								{
 									// received a stop bit
@@ -1659,7 +1721,7 @@ void LINFlexD<CONFIG>::RX_Process()
 											if(!discard_message)
 											{
 												// extract message from receiver shift register
-												rx_msg = rdfbm ? unisim::util::endian::ByteSwap(rx_shift_reg) : (rx_shift_reg >> (32 - rx_msg_length));
+												rx_msg = (rdfbm ? unisim::util::endian::ByteSwap(rx_shift_reg) : rx_shift_reg) >> (32 - rx_msg_length);
 
 												// make parity error flags available to software
 												linflexd_uartsr.template Set<typename LINFlexD_UARTSR::PE>(rx_parity_error_reg);
@@ -1672,7 +1734,7 @@ void LINFlexD<CONFIG>::RX_Process()
 												{
 													// latch received message into BDRM
 													uint32_t write_mask = ~uint32_t(0) >> (32 - rx_msg_length);
-													linflexd_bdrm = (rx_msg & ~write_mask) | (rx_shift_reg & write_mask);
+													linflexd_bdrm = (rx_msg & ~write_mask) | (rx_msg & write_mask);
 												}
 													
 												if(!discard_message)
