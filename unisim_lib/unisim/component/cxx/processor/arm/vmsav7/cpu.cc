@@ -35,6 +35,7 @@
 #include <unisim/component/cxx/processor/arm/vmsav7/cpu.hh>
 #include <unisim/component/cxx/processor/arm/vmsav7/cp15.hh>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
+#include <unisim/component/cxx/processor/arm/execute.hh>
 #include <unisim/util/backtrace/backtrace.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
@@ -810,59 +811,74 @@ std::string
 CPU::Disasm(uint32_t addr, uint32_t& next_addr)
 {
   std::stringstream buffer;
-  if (cpsr.Get( T ))
-    {
-      buffer << "[THUMB2]";
+  try {
+    if (cpsr.Get( T ))
+      {
+        buffer << "[THUMB2]";
     
-      uint8_t insn_bytes[4];
-      isa::thumb2::CodeType insn;
-      isa::thumb2::Operation<CPU> *op = 0;
-      if (not ReadMemory(addr, insn_bytes, 4))
-        {
-          buffer << "Could not read from memory";
-          return buffer.str();
-        }
+        uint8_t insn_bytes[4];
+        isa::thumb2::CodeType insn;
+        
+        if (not ReadMemory(addr, &insn_bytes[0], 4))
+          {
+            buffer << "??";
+            return buffer.str();
+          }
   
-      // Instruction fetch ignores "Endianness execution state bit"
-      insn.str[0] = insn_bytes[0];
-      insn.str[1] = insn_bytes[1];
-      insn.str[2] = insn_bytes[2];
-      insn.str[3] = insn_bytes[3];
-      insn.size = 32;
+        // Instruction fetch ignores "Endianness execution state bit"
+        insn.str[0] = insn_bytes[0];
+        insn.str[1] = insn_bytes[1];
+        insn.str[2] = insn_bytes[2];
+        insn.str[3] = insn_bytes[3];
+        insn.size = 32;
     
-      op = thumb_decoder.Decode(addr, insn);
-      unsigned insn_length = op->GetLength();
-      if (insn_length % 16) throw std::logic_error("Bad T2 instruction size");
+        struct OP {
+          OP() : ptr(0) {} isa::thumb2::Operation<CPU>* ptr;
+          ~OP() { delete ptr; }
+        } op;
+        op.ptr = thumb_decoder.NCDecode(addr, insn);
+        unsigned insn_length = op.ptr->GetLength();
+        if (insn_length % 16) throw std::logic_error("Bad T2 instruction size");
     
-      buffer << "0x";
-      buffer << op->GetEncoding() << " ";
-      op->disasm(*this, buffer);
+        buffer << "0x";
+        buffer << op.ptr->GetEncoding() << " ";
+        op.ptr->disasm(*this, buffer);
 
-      next_addr = addr + (insn_length / 8);
-    } 
-  else 
+        next_addr = addr + (insn_length / 8);
+      } 
+    else 
+      {
+        buffer << "[ARM32]";
+    
+        uint32_t insn;
+        if (not ReadMemory(addr, &insn, 4))
+          {
+            buffer << "??";
+            return buffer.str();
+          }
+        if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN)
+          insn = BigEndian2Host(insn);
+        else
+          insn = LittleEndian2Host(insn);
+
+        struct OP {
+          OP() : ptr(0) {} isa::arm32::Operation<CPU>* ptr;
+          ~OP() { delete ptr; }
+        } op;
+        op.ptr = arm32_decoder.NCDecode(addr, insn);
+        buffer << "0x" << std::hex;
+        buffer.fill('0'); buffer.width(8); 
+        buffer << op.ptr->GetEncoding() << std::dec << " ";
+        op.ptr->disasm(*this, buffer);
+
+        next_addr = addr + 4;
+      }
+  }
+  
+  catch (arm::Reject const&)
     {
-      buffer << "[ARM32]";
-    
-      isa::arm32::Operation<CPU> * op = NULL;
-      uint32_t insn;
-      if (not ReadMemory(addr, &insn, 4))
-        {
-          buffer << "Could not read from memory";
-          return buffer.str();
-        }
-      if (GetEndianness() == unisim::util::endian::E_BIG_ENDIAN)
-        insn = BigEndian2Host(insn);
-      else
-        insn = LittleEndian2Host(insn);
-
-      op = arm32_decoder.Decode(addr, insn);
-      buffer << "0x" << std::hex;
-      buffer.fill('0'); buffer.width(8); 
-      buffer << op->GetEncoding() << std::dec << " ";
-      op->disasm(*this, buffer);
-
       next_addr = addr + 4;
+      buffer << "??";
     }
 
   return buffer.str();

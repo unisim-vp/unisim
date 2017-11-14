@@ -102,10 +102,8 @@ unisim/service/debug/gdb_server/gdb_server.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
 unisim/service/debug/debugger/debugger32.cc \
-unisim/service/debug/monitor/monitor.cc \
-unisim/service/debug/monitor/monitor_32.cc \
-unisim/service/debug/monitor/monitor_64.cc \
-unisim/service/profiling/addr_profiler/profiler32.cc \
+unisim/service/debug/profiler/profiler.cc \
+unisim/service/debug/profiler/profiler32.cc \
 unisim/service/os/linux_os/arm_linux32.cc \
 unisim/service/trap_handler/trap_handler.cc \
 unisim/service/trap_handler/trap_handler_identifier.cc \
@@ -252,8 +250,7 @@ unisim/api/debug/debug_api.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
-unisim/service/debug/monitor/monitor.hh \
-unisim/service/profiling/addr_profiler/profiler.hh \
+unisim/service/debug/profiler/profiler.hh \
 unisim/service/os/linux_os/linux.hh \
 unisim/service/os/linux_os/arm_linux32.hh \
 unisim/service/trap_handler/trap_handler.hh \
@@ -409,8 +406,7 @@ UNISIM_LIB_SIMULATOR_TEMPLATE_FILES="\
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \
-unisim/service/debug/monitor/monitor.tcc \
-unisim/service/profiling/addr_profiler/profiler.tcc \
+unisim/service/debug/profiler/profiler.tcc \
 unisim/service/os/linux_os/linux.tcc \
 unisim/util/debug/profile.tcc \
 unisim/util/debug/data_object_initializer.tcc \

@@ -314,12 +314,12 @@ void
 Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 {
   // meta information
-  simulator->SetVariable("program-name", "UNISIM ARMEMU");
-  simulator->SetVariable("copyright", "Copyright (C) 2017, Commissariat a l'Energie Atomique (CEA)");
-  simulator->SetVariable("license", "BSD (see file COPYING)");
-  simulator->SetVariable("authors", "Yves Lhuillier <yves.lhuillier@cea.fr>");
-  simulator->SetVariable("version", VERSION);
-  simulator->SetVariable("description", "UNISIM ARMEMU, ARMv7 generic simulator with linux emulation.");
+  sim->SetVariable("program-name", "UNISIM ARMEMU");
+  sim->SetVariable("copyright", "Copyright (C) 2017, Commissariat a l'Energie Atomique (CEA)");
+  sim->SetVariable("license", "BSD (see file COPYING)");
+  sim->SetVariable("authors", "Yves Lhuillier <yves.lhuillier@cea.fr>");
+  sim->SetVariable("version", VERSION);
+  sim->SetVariable("description", "UNISIM ARMEMU, ARMv7 generic simulator with linux emulation.");
 
   //=========================================================================
   //===                     Component run-time configuration              ===
