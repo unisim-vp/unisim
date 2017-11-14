@@ -495,6 +495,7 @@ namespace armsec
     bool complete;
   };
   
+  enum InstructionSet { Arm, Thumb, Jazelle, ThumbEE};
 
 #define CP15ENCODE( CRN, OPC1, CRM, OPC2 ) ((OPC1 << 12) | (CRN << 8) | (CRM << 4) | (OPC2 << 0))
 
@@ -795,16 +796,21 @@ namespace armsec
       virtual void Repr( std::ostream& sink ) const { sink << "assert (false)"; }
     };
     
-    State( PathNode* _path )
+    
+    
+    State( PathNode* _path, InstructionSet iset, bool is_big, unsigned running_mode )
       : path( _path )
       , next_insn_addr()
-      , cpsr( Expr( new RegRead("n",1) ),
+      , cpsr( *this,
+              Expr( new RegRead("n",1) ),
               Expr( new RegRead("z",1) ),
               Expr( new RegRead("c",1) ),
               Expr( new RegRead("v",1) ),
               Expr( new RegRead("itstate",8) ),
               Expr( new RegRead("cpsr",32) ),
-              SUPERVISOR_MODE)
+              iset,
+              is_big,
+              running_mode)
       , spsr( Expr( new RegRead("spsr",32) ) )
       , FPSCR( Expr( new RegRead("fpscr",32) ) )
       , FPEXC( Expr( new RegRead("fpexc",32) ) )
@@ -817,12 +823,12 @@ namespace armsec
         sregs[idx] = U32( Expr( new RegRead( RegID::sreg_id(idx), 32 ) ) );
     }
     
-    void SetInsnProps( Expr const& _expr, bool is_thumb, unsigned insn_length )
+    void SetInsnProps( Expr const& _expr, unsigned insn_length )
     {
-      if ((insn_length != 32) and ((insn_length != 16) or not is_thumb))
+      if ((insn_length != 32) and ((insn_length != 16) or not cpsr.IsThumb()))
         throw std::logic_error( "Bad instruction length" );
       U32 insn_addr = _expr;
-      reg_values[15] = insn_addr + U32( is_thumb ? 4 : 8 );
+      reg_values[15] = insn_addr + U32( cpsr.IsThumb() ? 4 : 8 );
       next_insn_addr = insn_addr + U32( insn_length / 8 );
     }
     
@@ -834,14 +840,21 @@ namespace armsec
     //struct psr_type : public FieldRegisterU32
     struct psr_type
     {
-      psr_type( Expr const& _n, Expr const& _z, Expr const& _c, Expr const& _v, Expr const& _itstate, Expr const& _bg, uint32_t _mode )
-        : n(_n), z(_z), c(_c), v(_v), itstate(_itstate), bg(_bg), mode(_mode)
+      psr_type( State& _cpu, Expr const& _n, Expr const& _z, Expr const& _c, Expr const& _v, Expr const& _itstate, Expr const& _bg, InstructionSet _iset, bool _bigendian, uint8_t _mode )
+        : cpu(_cpu), n(_n), z(_z), c(_c), v(_v), itstate(_itstate), bg(_bg), iset(_iset), bigendian(_bigendian), mode(_mode)
       {}
-      Expr n, z, c, v;
+      State& cpu;
+      Expr n, z, c, v; /* TODO: should handle q */
       U8 itstate;
       U32 bg;
-      uint32_t mode;
+      InstructionSet iset;
+      bool bigendian;
+      uint8_t mode;
       
+      bool GetJ() const { return (iset == Jazelle) or (iset == ThumbEE); }
+      bool GetT() const { return (iset ==   Thumb) or (iset == ThumbEE); }
+      bool IsThumb() const { return iset == Thumb; }
+
       typedef unisim::component::cxx::processor::arm::RegisterField<31,1> NRF; /* Negative Integer Condition Flag */
       typedef unisim::component::cxx::processor::arm::RegisterField<30,1> ZRF; /* Zero     Integer Condition Flag */
       typedef unisim::component::cxx::processor::arm::RegisterField<29,1> CRF; /* Carry    Integer Condition Flag */
@@ -850,6 +863,10 @@ namespace armsec
       typedef unisim::component::cxx::processor::arm::RegisterField<28,4> NZCVRF; /* Grouped Integer Condition Flags */
       
       typedef unisim::component::cxx::processor::arm::RegisterField<27,1> QRF; /* Cumulative saturation flag */
+
+      typedef unisim::component::cxx::processor::arm::RegisterField<24,1> JRF; /* Jazelle execution state bit */
+      //typedef unisim::component::cxx::processor::arm::RegisterField< 9,1> ERF; /* Endianness execution state */
+      typedef unisim::component::cxx::processor::arm::RegisterField< 5,1> TRF; /* Thumb execution state bit */
       
       typedef unisim::component::cxx::processor::arm::RegisterField< 9,1> ERF; /* Endianness execution state */
       typedef unisim::component::cxx::processor::arm::RegisterField< 0,5> MRF; /* Mode field */
@@ -859,30 +876,28 @@ namespace armsec
       
       typedef unisim::component::cxx::processor::arm::RegisterField< 0,32> ALL;
       
+      static uint32_t const bg_mask = 0x08ff01c0; /* Q, 23-20, GE[3:0], A, I, F, are not handled for now */
+      
       template <typename RF>
       void Set( RF const& _, U32 const& value )
       {
         unisim::util::symbolic::StaticAssert<(RF::pos > 31) or ((RF::pos + RF::size) <= 28)>::check(); // NZCV
-        unisim::util::symbolic::StaticAssert<(RF::pos > 26) or ((RF::pos + RF::size) <= 25)>::check(); // ITLO
-        unisim::util::symbolic::StaticAssert<(RF::pos > 15) or ((RF::pos + RF::size) <= 10)>::check(); // ITHI
+        unisim::util::symbolic::StaticAssert<(RF::pos > 26) or ((RF::pos + RF::size) <= 24)>::check(); // ITLO, J
+        unisim::util::symbolic::StaticAssert<(RF::pos > 15) or ((RF::pos + RF::size) <=  9)>::check(); // ITHI, E
+        unisim::util::symbolic::StaticAssert<(RF::pos >  5) or ((RF::pos + RF::size) <=  0)>::check(); // T, MODE
         
         return _.Set( bg, value );
       }
       
-      void Set( NRF const& _, BOOL const& value ) { n = value.expr; }
-      void Set( ZRF const& _, BOOL const& value ) { z = value.expr; }
-      void Set( CRF const& _, BOOL const& value ) { c = value.expr; }
-      void Set( VRF const& _, BOOL const& value ) { v = value.expr; }
-
-      //void Set( QRF const& _, U32 const& value ) { unisim::util::symbolic::StaticAssert<false>::check();_.Set( bg, value ); }
-      void Set( ERF const& _, U32 const& value ) { _.Set( bg, value ); }
-      
-      void Set( NZCVRF const& _, U32 const& value )
+      template <typename RF>
+      U32 Get( RF const& _ )
       {
-        n = BOOL( unisim::component::cxx::processor::arm::RegisterField< 3,1>().Get( value ) ).expr;
-        z = BOOL( unisim::component::cxx::processor::arm::RegisterField< 2,1>().Get( value ) ).expr;
-        c = BOOL( unisim::component::cxx::processor::arm::RegisterField< 1,1>().Get( value ) ).expr;
-        v = BOOL( unisim::component::cxx::processor::arm::RegisterField< 0,1>().Get( value ) ).expr;
+        unisim::util::symbolic::StaticAssert<(RF::pos > 31) or ((RF::pos + RF::size) <= 28)>::check(); // NZCV
+        unisim::util::symbolic::StaticAssert<(RF::pos > 26) or ((RF::pos + RF::size) <= 24)>::check(); // ITLO, J
+        unisim::util::symbolic::StaticAssert<(RF::pos > 15) or ((RF::pos + RF::size) <=  9)>::check(); // ITHI, E
+        unisim::util::symbolic::StaticAssert<(RF::pos >  5) or ((RF::pos + RF::size) <=  0)>::check(); // T, MODE
+        
+        return _.Get( bg );
       }
       
       void Set( ALL const& _, U32 const& value )
@@ -894,7 +909,41 @@ namespace armsec
         
         itstate = U8((ITHIRF().Get( value ) << 2) | ITLORF().Get( value ));
         
-        unisim::component::cxx::processor::arm::RegisterField<0,28>().Set( bg, value );
+        if (cpu.Cond((MRF().Get(value) != U32(mode)) or
+                     (JRF().Get(value) != U32(GetJ())) or
+                     (TRF().Get(value) != U32(GetT())) or
+                     (ERF().Get(value) != U32(bigendian))))
+          cpu.UnpredictableInsnBehaviour();
+        
+        bg = value & U32(bg_mask);
+      }
+      
+      U32 bits() const
+      {
+        return
+          (U32(BOOL(n)) << 31) | (U32(BOOL(z)) << 30) | (U32(BOOL(c)) << 29) | (U32(BOOL(v)) << 28) |
+          (U32(itstate >> U8(2)) << 10) | (U32(itstate & U8(0b11)) << 25) |
+          bg | U32((uint32_t(GetJ()) << 24) | (uint32_t(GetT()) << 5) | uint32_t(mode));
+      }
+      
+      void Set( NRF const& _, BOOL const& value ) { n = value.expr; }
+      void Set( ZRF const& _, BOOL const& value ) { z = value.expr; }
+      void Set( CRF const& _, BOOL const& value ) { c = value.expr; }
+      void Set( VRF const& _, BOOL const& value ) { v = value.expr; }
+
+      //void Set( QRF const& _, U32 const& value ) { unisim::util::symbolic::StaticAssert<false>::check();_.Set( bg, value ); }
+      void Set( ERF const& _, U32 const& value )
+      {
+        if (cpu.Cond(value != U32(bigendian)))
+          cpu.UnpredictableInsnBehaviour();
+      }
+      
+      void Set( NZCVRF const& _, U32 const& value )
+      {
+        n = BOOL( unisim::component::cxx::processor::arm::RegisterField< 3,1>().Get( value ) ).expr;
+        z = BOOL( unisim::component::cxx::processor::arm::RegisterField< 2,1>().Get( value ) ).expr;
+        c = BOOL( unisim::component::cxx::processor::arm::RegisterField< 1,1>().Get( value ) ).expr;
+        v = BOOL( unisim::component::cxx::processor::arm::RegisterField< 0,1>().Get( value ) ).expr;
       }
       
       void
@@ -905,31 +954,21 @@ namespace armsec
       
       BOOL InITBlock() const { return (itstate & U8(0b1111)) != U8(0); }
       
-      template <typename RF>
-      U32 Get( RF const& _ )
-      {
-        unisim::util::symbolic::StaticAssert<(RF::pos > 31) or ((RF::pos + RF::size) <= 28)>::check(); // NZCV
-        unisim::util::symbolic::StaticAssert<(RF::pos > 26) or ((RF::pos + RF::size) <= 25)>::check(); // ITLO
-        unisim::util::symbolic::StaticAssert<(RF::pos > 15) or ((RF::pos + RF::size) <= 10)>::check(); // ITHI
-        
-        return _.Get( bg );
-      }
-      
       U32 Get( NRF const& _ ) { return U32(BOOL(n)); }
       U32 Get( ZRF const& _ ) { return U32(BOOL(z)); }
       U32 Get( CRF const& _ ) { return U32(BOOL(c)); }
       U32 Get( VRF const& _ ) { return U32(BOOL(v)); }
-
+      
+      /* ISetState */
+      U32 Get( JRF const& _ ) { return U32(GetJ()); }
+      U32 Get( TRF const& _ ) { return U32(GetT()); }
+      
+      /* Endianness */
+      U32 Get( ERF const& _ ) { return U32(bigendian); }
+      
       U32 Get( MRF const& _ ) { return U32(mode); }
       // U32 Get( ALL const& _ ) { return (U32(BOOL(n)) << 31) | (U32(BOOL(z)) << 30) | (U32(BOOL(c)) << 29) | (U32(BOOL(v)) << 28) | bg; }
       
-      U32 bits() const
-      {
-        return
-          (U32(BOOL(n)) << 31) | (U32(BOOL(z)) << 30) | (U32(BOOL(c)) << 29) | (U32(BOOL(v)) << 28) |
-          (U32(itstate >> U8(2)) << 10) | (U32(itstate & U8(0b11)) << 25) |
-          bg;
-      }
     } cpsr;
     
     U32 spsr;
@@ -2085,6 +2124,7 @@ struct ARMISA : public unisim::component::cxx::processor::arm::isa::arm32::Decod
   typedef unisim::component::cxx::processor::arm::isa::arm32::Operation<armsec::State> Operation;
   static CodeType mkcode( uint32_t code ) { return CodeType( code ); }
   static bool const is_thumb = false;
+  static armsec::InstructionSet const iset = armsec::Arm;
 };
 
 struct THUMBISA : public unisim::component::cxx::processor::arm::isa::thumb2::Decoder<armsec::State>
@@ -2093,6 +2133,7 @@ struct THUMBISA : public unisim::component::cxx::processor::arm::isa::thumb2::De
   typedef unisim::component::cxx::processor::arm::isa::thumb2::Operation<armsec::State> Operation;
   static CodeType mkcode( uint32_t code ) { return CodeType( code ); }
   static bool const is_thumb = true;
+  static armsec::InstructionSet const iset = armsec::Thumb;
 };
 
 
@@ -2110,7 +2151,7 @@ struct Decoder
 
   template <class ISA>
   void
-  translate_isa( ISA& isa, uint32_t addr, uint32_t code )
+  translate_isa( ISA& isa, uint32_t addr, uint32_t code, bool bigendian, unsigned running_mode )
   {
     std::cout << "(address . " << armsec::dbx( 32, addr ) << ")\n";
 
@@ -2122,11 +2163,11 @@ struct Decoder
       typedef typename armsec::State State;
 
       ~Translation() { delete insn; delete coderoot; }
-      Translation( uint32_t _addr )
+      Translation( uint32_t _addr, bool bigendian, unsigned running_mode )
         : insn(0)
         , coderoot(new armsec::PathNode)
         , addr( _addr )
-        , reference( coderoot )
+        , reference( coderoot, ISA::iset, bigendian, running_mode )
       {}
 
       int
@@ -2153,14 +2194,15 @@ struct Decoder
         // Expr insn_addr( new InstructionAddress ); //< symbolic instruction address
         Expr insn_addr( unisim::util::symbolic::make_const( addr ) ); //< concrete instruction address
 
-        reference.SetInsnProps( insn_addr, ISA::is_thumb, insn->GetLength() );
+        reference.SetInsnProps( insn_addr, insn->GetLength() );
 
         try
           {
             for (bool end = false; not end;)
               {
-                State state( coderoot );
-                state.SetInsnProps( insn_addr, ISA::is_thumb, insn->GetLength() );
+                
+                State state( coderoot, ISA::iset, reference.cpsr.bigendian, reference.cpsr.mode );
+                state.SetInsnProps( insn_addr, insn->GetLength() );
                 insn->execute( state );
                 if (ISA::is_thumb)
                   state.ITAdvance();
@@ -2186,7 +2228,7 @@ struct Decoder
       PathNode* coderoot;
       uint32_t  addr;
       State     reference;
-    } trans( addr );
+    } trans( addr, bigendian, running_mode );
 
     unsigned bitlen = trans.decode( isa, code );
     if (bitlen != 16 and bitlen != 32)
@@ -2214,9 +2256,17 @@ struct Decoder
         std::cout << "(unimplemented)\n";
       }
   }
-
-  void  translate_arm( uint32_t addr, uint32_t code )   { translate_isa( armisa, addr, code ); }
-  void  translate_thumb( uint32_t addr, uint32_t code ) { translate_isa( thumbisa, addr, code ); }
+  
+  void
+  translate( armsec::InstructionSet iset, uint32_t addr, uint32_t code, bool bigendian, unsigned running_mode )
+  {
+    switch (iset)
+      {
+      case armsec::Arm:   translate_isa( armisa, addr, code, bigendian, running_mode ); break;
+      case armsec::Thumb: translate_isa( thumbisa, addr, code, bigendian, running_mode ); break;
+      default: throw 0;
+      }
+  }
 };
 
 uint32_t getu32( uint32_t& res, char const* arg )
@@ -2253,12 +2303,42 @@ main( int argc, char** argv )
     }
 
   Decoder decoder;
-  std::string iset(argv[1]);
-  if        (iset == std::string("arm")) {
-    decoder.translate_arm( addr, code );
-  } else if (iset == std::string("thumb")) {
-    decoder.translate_thumb( addr, code );
-  }
+  std::string exec_flags(argv[1]);
+  
+  exec_flags += ',';
+  
+  armsec::InstructionSet instruction_set = armsec::Arm;
+  bool is_big_endian = false;
+  unsigned running_mode = armsec::State::SUPERVISOR_MODE;
+  
+  for (std::string::iterator cur = exec_flags.begin(), end = exec_flags.end(), nxt; cur != end; cur = nxt+1 )
+    {
+      nxt = std::find( cur, end, ',' );
+      std::string flag( cur, nxt );
+      if (flag.size() == 0)
+        continue;
+      if      (flag == "arm")        { instruction_set = armsec::Arm; }
+      else if (flag == "thumb")      { instruction_set = armsec::Thumb; }
+      else if (flag == "little")     { is_big_endian = false; }
+      else if (flag == "big")        { is_big_endian = true; }
+      else if (flag == "user")       { running_mode = armsec::State::USER_MODE; }
+      else if (flag == "fiq")        { running_mode = armsec::State::FIQ_MODE; }
+      else if (flag == "irq")        { running_mode = armsec::State::IRQ_MODE; }
+      else if (flag == "supervisor") { running_mode = armsec::State::SUPERVISOR_MODE; }
+      else if (flag == "monitor")    { running_mode = armsec::State::MONITOR_MODE; }
+      else if (flag == "abort")      { running_mode = armsec::State::ABORT_MODE; }
+      else if (flag == "hypervisor") { running_mode = armsec::State::HYPERVISOR_MODE; }
+      else if (flag == "undefined")  { running_mode = armsec::State::UNDEFINED_MODE; }
+      else if (flag == "system")     { running_mode = armsec::State::SYSTEM_MODE; }
+      else
+        {
+          std::cerr << "Unknown execution state flag: " << flag << std::endl;
+          return 1;
+        }
+
+    }
+  
+  decoder.translate( instruction_set, addr, code, is_big_endian, running_mode );
 
   return 0;
 }
