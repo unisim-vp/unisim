@@ -328,9 +328,10 @@ namespace arm {
                    ((mask & 4 ? 0xff : 0) << 16) |
                    ((mask & 8 ? 0xff : 0) << 24));
     
-    if (core.Cond( (value & write_mask & U32(core.PSR_UNALLOC_MASK)) != U32(0) ))
-      core.UnpredictableInsnBehaviour();
-
+    // bits <23:20> are reserved SBZP bits
+    // if (core.Cond( (value & write_mask & U32(core.PSR_UNALLOC_MASK)) != U32(0) ))
+    //   core.UnpredictableInsnBehaviour();
+    write_mask &= U32(0xff0fffff);
     
     BOOL const is_secure( true ); // IsSecure()
     BOOL const nmfi( false ); // Non Maskable FIQ (SCTLR.NMFI == '1');
