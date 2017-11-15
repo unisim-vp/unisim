@@ -77,22 +77,12 @@ using unisim::util::reg::core::RWS_ANA;
 using unisim::util::reg::core::Access;
 using unisim::util::reg::core::IsReadWriteError;
 
-template <typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
-struct Field8 : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (7 - OFFSET2) : (7 - OFFSET1)) : (7 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, _ACCESS>
+template <typename REGISTER, typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
+struct Field : unisim::util::reg::core::Field<FIELD
+                                             , ((OFFSET1 >= 0) && (OFFSET1 < REGISTER::SIZE)) ? ((OFFSET2 >= 0) ? ((OFFSET2 < REGISTER::SIZE) ? ((OFFSET1 < OFFSET2) ? ((REGISTER::SIZE - 1) - OFFSET2) : ((REGISTER::SIZE - 1) - OFFSET1)) : ((REGISTER::SIZE - 1) - OFFSET1)) : ((REGISTER::SIZE - 1) - OFFSET1)) : 0
+                                             , ((OFFSET1 >= 0) && (OFFSET1 < REGISTER::SIZE)) ? ((OFFSET2 >= 0) ? ((OFFSET2 < REGISTER::SIZE) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 0) : 1) : 0
+                                             , _ACCESS>
 {
-	typedef unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (7 - OFFSET2) : (7 - OFFSET1)) : (7 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1> Super;
-};
-
-template <typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
-struct Field16 : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (15 - OFFSET2) : (15 - OFFSET1)) : (15 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, _ACCESS>
-{
-	typedef unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (15 - OFFSET2) : (15 - OFFSET1)) : (15 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1> Super;
-};
-
-template <typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
-struct Field32 : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, _ACCESS>
-{
-	typedef unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1> Super;
 };
 
 #if 0
@@ -309,10 +299,10 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x0;
 		
-		struct HVEN3 : Field32<HVEN3, 19>    {}; // Hardware vector enable for processor 3
-		struct HVEN2 : Field32<HVEN3, 23>    {}; // Hardware vector enable for processor 2
-		struct HVEN1 : Field32<HVEN3, 27>    {}; // Hardware vector enable for processor 1
-		struct HVEN0 : Field32<HVEN3, 31>    {}; // Hardware vector enable for processor 0
+		struct HVEN3 : Field<INTC_BCR, HVEN3, 19>    {}; // Hardware vector enable for processor 3
+		struct HVEN2 : Field<INTC_BCR, HVEN3, 23>    {}; // Hardware vector enable for processor 2
+		struct HVEN1 : Field<INTC_BCR, HVEN3, 27>    {}; // Hardware vector enable for processor 1
+		struct HVEN0 : Field<INTC_BCR, HVEN3, 31>    {}; // Hardware vector enable for processor 0
 		
 		SWITCH_ENUM_TRAIT(unsigned int, _);
 		CASE_ENUM_TRAIT(1, _) { typedef FieldSet<HVEN0> ALL; };
@@ -355,8 +345,8 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x4;
 
-		struct ID    : Field32<ID, 26, 27> {}; // ID
-		struct MPROT : Field32<MPROT, 31>  {}; // Master Protection
+		struct ID    : Field<INTC_MPROT, ID, 26, 27> {}; // ID
+		struct MPROT : Field<INTC_MPROT, MPROT, 31>  {}; // Master Protection
 		
 		INTC_MPROT(INTC<CONFIG> *_intc) : Super(_intc) { Init(); }
 		INTC_MPROT(INTC<CONFIG> *_intc, uint32_t value) : Super(_intc, value) { Init(); }
@@ -392,7 +382,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x10;
 
-		struct PRI : Field32<PRI, 26, 31> {}; // Priority of the currently executing ISR
+		struct PRI : Field<INTC_CPR, PRI, 26, 31> {}; // Priority of the currently executing ISR
 		
 		typedef FieldSet<PRI> ALL;
 		
@@ -445,8 +435,8 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x20;
 
-		struct VTBA   : Field32<VTBA, 0, 19>    {};
-		struct INTVEC : Field32<INTVEC, 20, 29, SW_R> {};
+		struct VTBA   : Field<INTC_IACK, VTBA, 0, 19>    {};
+		struct INTVEC : Field<INTC_IACK, INTVEC, 20, 29, SW_R> {};
 		
 		typedef FieldSet<VTBA, INTVEC> ALL;
 		
@@ -522,7 +512,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x30;
 
-		struct EOI : Field32<EOI, 0, 31> {}; // End of Interrupt
+		struct EOI : Field<INTC_EOIR, EOI, 0, 31> {}; // End of Interrupt
 		
 		typedef FieldSet<EOI> ALL;
 		
@@ -577,8 +567,8 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x40;
 
-		struct SET : Field8<SET, 6> {}; // Set flag bits
-		struct CLR : Field8<SET, 7> {}; // Clear flag bits; CLR is the flag bit
+		struct SET : Field<INTC_SSCIR, SET, 6> {}; // Set flag bits
+		struct CLR : Field<INTC_SSCIR, SET, 7> {}; // Clear flag bits; CLR is the flag bit
 		
 		typedef FieldSet<SET, CLR> ALL;
 		
@@ -661,13 +651,13 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = (IRQ_TYPE == HW_IRQ) ? (0x60 + (NUM_SW_IRQS * 2)) : 0x60;
 
-		struct PRC_SELN0 : Field16<PRC_SELN0, 0>   {};  // Processor select 0
-		struct PRC_SELN1 : Field16<PRC_SELN1, 1>   {};  // Processor select 1
-		struct PRC_SELN2 : Field16<PRC_SELN2, 2>   {};  // Processor select 2
-		struct PRC_SELN3 : Field16<PRC_SELN3, 3>   {};  // Processor select 3
-		struct PRC_SELN  : Field16<PRC_SELN, 0, 3> {};  // Processor Select mask
-		struct SWTN      : Field16<SWTN, 7>        {};  // Software trigger
-		struct PRIN      : Field16<PRIN, 10, 15>   {};  // Priority Select
+		struct PRC_SELN0 : Field<INTC_PSR, PRC_SELN0, 0>   {};  // Processor select 0
+		struct PRC_SELN1 : Field<INTC_PSR, PRC_SELN1, 1>   {};  // Processor select 1
+		struct PRC_SELN2 : Field<INTC_PSR, PRC_SELN2, 2>   {};  // Processor select 2
+		struct PRC_SELN3 : Field<INTC_PSR, PRC_SELN3, 3>   {};  // Processor select 3
+		struct PRC_SELN  : Field<INTC_PSR, PRC_SELN, 0, 3> {};  // Processor Select mask
+		struct SWTN      : Field<INTC_PSR, SWTN, 7>        {};  // Software trigger
+		struct PRIN      : Field<INTC_PSR, PRIN, 10, 15>   {};  // Priority Select
 		
 		// Note: Actual PRC_SELN bits depends on the effective number of processors in the system
 		SWITCH_ENUM_TRAIT(unsigned int, _N);

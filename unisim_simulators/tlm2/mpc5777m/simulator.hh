@@ -52,6 +52,7 @@
 #include <unisim/component/tlm2/com/freescale/mpc57xx/linflexd/linflexd.hh>
 #include <unisim/component/tlm2/com/serial_terminal/serial_terminal.hh>
 #include <unisim/component/tlm2/dma/freescale/mpc57xx/dmamux/dmamux.hh>
+#include <unisim/component/tlm2/dma/freescale/mpc57xx/edma/edma.hh>
 
 // Class definition of kernel, services and interfaces
 #include <unisim/kernel/service/service.hh>
@@ -160,8 +161,8 @@ private:
 	{
 		typedef FSB_ADDRESS_TYPE ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 24;
-		static const unsigned int MAX_NUM_MAPPINGS = 24;
+		static const unsigned int OUTPUT_SOCKETS = 26;
+		static const unsigned int MAX_NUM_MAPPINGS = 26;
 		static const unsigned int BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;
 	};
@@ -172,6 +173,16 @@ private:
 		static const unsigned int INPUT_SOCKETS = 1;
 		static const unsigned int OUTPUT_SOCKETS = 2;
 		static const unsigned int MAX_NUM_MAPPINGS = 2;
+		static const unsigned int BUSWIDTH = 64;
+		static const bool VERBOSE = DEBUG_ENABLE;
+	};
+	
+	struct XBAR_1_M1_CONCENTRATOR_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
+	{
+		typedef FSB_ADDRESS_TYPE ADDRESS;
+		static const unsigned int INPUT_SOCKETS = 2;
+		static const unsigned int OUTPUT_SOCKETS = 1;
+		static const unsigned int MAX_NUM_MAPPINGS = 1;
 		static const unsigned int BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;
 	};
@@ -407,6 +418,18 @@ private:
 		static const unsigned int NUM_DMA_TRIGGERS  = 0;  // No trigger
 		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
 	};
+	
+	struct EDMA_0_CONFIG
+	{
+		static const unsigned int NUM_DMA_CHANNELS = 64;
+		static const unsigned int BUSWIDTH         = 64; // FIXME: EDMA will be on PBRIDGE which is 32-bit width
+	};
+
+	struct EDMA_1_CONFIG
+	{
+		static const unsigned int NUM_DMA_CHANNELS = 64;
+		static const unsigned int BUSWIDTH         = 64; // FIXME: EDMA will be on PBRIDGE which is 32-bit width
+	};
 
 	//=========================================================================
 	//===                     Aliases for components classes                ===
@@ -421,6 +444,7 @@ private:
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<XBAR_1_CONFIG> XBAR_1;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<PBRIDGE_A_CONFIG> PBRIDGE_A;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<PBRIDGE_B_CONFIG> PBRIDGE_B;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<XBAR_1_M1_CONCENTRATOR_CONFIG> XBAR_1_M1_CONCENTRATOR;
 	typedef unisim::component::tlm2::interrupt::freescale::mpc57xx::intc::INTC<INTC_0_CONFIG> INTC_0;
 	typedef unisim::component::tlm2::timer::freescale::mpc57xx::stm::STM<STM_0_CONFIG> STM_0;
 	typedef unisim::component::tlm2::timer::freescale::mpc57xx::stm::STM<STM_1_CONFIG> STM_1;
@@ -448,6 +472,8 @@ private:
 	typedef unisim::component::tlm2::dma::freescale::mpc57xx::dmamux::DMAMUX<DMAMUX_7_CONFIG> DMAMUX_7;
 	typedef unisim::component::tlm2::dma::freescale::mpc57xx::dmamux::DMAMUX<DMAMUX_8_CONFIG> DMAMUX_8;
 	typedef unisim::component::tlm2::dma::freescale::mpc57xx::dmamux::DMAMUX<DMAMUX_9_CONFIG> DMAMUX_9;
+	typedef unisim::component::tlm2::dma::freescale::mpc57xx::edma::EDMA<EDMA_0_CONFIG> EDMA_0;
+	typedef unisim::component::tlm2::dma::freescale::mpc57xx::edma::EDMA<EDMA_1_CONFIG> EDMA_1;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_0_TX;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_0_RX;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_1_TX;
@@ -463,7 +489,6 @@ private:
 	typedef unisim::kernel::tlm2::TargetStub<64> EBI_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<64> FLASH_PORT1_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<64> XBAR_0_S6_STUB;
-	typedef unisim::kernel::tlm2::InitiatorStub<64> XBAR_1_M1_STUB;
 	typedef unisim::kernel::tlm2::InitiatorStub<64> XBAR_1_M2_STUB;
 
 	//=========================================================================
@@ -495,6 +520,8 @@ private:
 	//  - Peripheral Bridges
 	PBRIDGE_A *pbridge_a;
 	PBRIDGE_B *pbridge_b;
+	//  - Concentrators
+	XBAR_1_M1_CONCENTRATOR *xbar_1_m1_concentrator;
 	//  - Interrupt Controller
 	INTC_0 *intc_0;
 	//  - System Timer Modules
@@ -547,11 +574,13 @@ private:
 	DMAMUX_7 *dmamux_7;
 	DMAMUX_8 *dmamux_8;
 	DMAMUX_9 *dmamux_9;
+	//  - EDMA
+	EDMA_0 *edma_0;
+	EDMA_1 *edma_1;
 	//  - Stubs
 	EBI_STUB *ebi_stub;
 	FLASH_PORT1_STUB *flash_port1_stub;
 	XBAR_0_S6_STUB *xbar_0_s6_stub;
-	XBAR_1_M1_STUB *xbar_1_m1_stub;
 	XBAR_1_M2_STUB *xbar_1_m2_stub;
 	
 	//=========================================================================

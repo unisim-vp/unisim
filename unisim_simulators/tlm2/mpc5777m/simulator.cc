@@ -45,6 +45,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, xbar_1(0)
 	, pbridge_a(0)
 	, pbridge_b(0)
+	, xbar_1_m1_concentrator(0)
 	, intc_0(0)
 	, stm_0(0)
 	, stm_1(0)
@@ -82,7 +83,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, ebi_stub(0)
 	, flash_port1_stub(0)
 	, xbar_0_s6_stub(0)
-	, xbar_1_m1_stub(0)
 	, xbar_1_m2_stub(0)
 	, loader(0)
 	, debugger(0)
@@ -163,9 +163,12 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	xbar_0 = new XBAR_0("XBAR_0", this);
 	xbar_1 = new XBAR_1("XBAR_1", this);
 	
-	// Peripheral Bridges
+	//  - Peripheral Bridges
 	pbridge_a = new PBRIDGE_A("PBRIDGE_A", this); 
 	pbridge_b = new PBRIDGE_B("PBRIDGE_B", this); 
+	
+	//  - Concentrators
+	xbar_1_m1_concentrator = new XBAR_1_M1_CONCENTRATOR("XBAR_1_M1_CONCENTRATOR", this);
 	
 	//  - Interrupt Controller
 	intc_0 = new INTC_0("INTC_0", this);
@@ -227,11 +230,14 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	dmamux_8 = new DMAMUX_8("DMAMUX_8", this);
 	dmamux_9 = new DMAMUX_9("DMAMUX_9", this);
 	
+	//  - EDMA
+	edma_0 = new EDMA_0("eDMA_0", this);
+	edma_1 = new EDMA_1("eDMA_1", this);
+	
 	//  - Stubs
 	ebi_stub = new EBI_STUB("EBI", this);
 	flash_port1_stub = new FLASH_PORT1_STUB("FLASH_PORT1", this);
 	xbar_0_s6_stub = new XBAR_0_S6_STUB("XBAR_0_S6", this);
-	xbar_1_m1_stub = new XBAR_1_M1_STUB("XBAR_1_M1", this);
 	xbar_1_m2_stub = new XBAR_1_M2_STUB("XBAR_1_M2", this);
 
 	//=========================================================================
@@ -739,7 +745,31 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	{
 		RegisterPort(*dmamux_9->dma_channel[dma_channel_num]);
 	}
+	
+	// - EDMA_0
+	RegisterPort(edma_0->m_clk);
+	RegisterPort(edma_0->reset_b);
+	for(dma_channel_num = 0; dma_channel_num < EDMA_0::NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		RegisterPort(*edma_0->dma_channel[dma_channel_num]);
+	}
+	for(dma_channel_num = 0; dma_channel_num < EDMA_0::NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		RegisterPort(*edma_0->irq[dma_channel_num]);
+	}
 
+	// - EDMA_1
+	RegisterPort(edma_1->m_clk);
+	RegisterPort(edma_1->reset_b);
+	for(dma_channel_num = 0; dma_channel_num < EDMA_1::NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		RegisterPort(*edma_1->dma_channel[dma_channel_num]);
+	}
+	for(dma_channel_num = 0; dma_channel_num < EDMA_1::NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		RegisterPort(*edma_1->irq[dma_channel_num]);
+	}
+	
 	//=========================================================================
 	//===                           Signal creation                         ===
 	//=========================================================================
@@ -816,70 +846,75 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	//===                        Components connection                      ===
 	//=========================================================================
 
-	main_core_0->i_ahb_if(*xbar_0->targ_socket[0]);                  //       Main_Core_0>I_AHB_IF <-> XBAR_0 M0
-	main_core_0->d_ahb_if(*xbar_0->targ_socket[1]);                  //       Main_Core_0>D_AHB_IF <-> XBAR_0 M1
-	main_core_1->i_ahb_if(*xbar_0->targ_socket[2]);                  //       Main_Core_1>I_AHB_IF <-> XBAR_0 M2
-	main_core_1->d_ahb_if(*xbar_0->targ_socket[3]);                  //       Main_Core_1>D_AHB_IF <-> XBAR_0 M3
-	peripheral_core_2->i_ahb_if(*xbar_0->targ_socket[5]);            // Peripheral_Core_2>I_AHB_IF <-> XBAR_0 M5
+	main_core_0->i_ahb_if(*xbar_0->targ_socket[0]);                     //       Main_Core_0>I_AHB_IF <-> XBAR_0 M0
+	main_core_0->d_ahb_if(*xbar_0->targ_socket[1]);                     //       Main_Core_0>D_AHB_IF <-> XBAR_0 M1
+	main_core_1->i_ahb_if(*xbar_0->targ_socket[2]);                     //       Main_Core_1>I_AHB_IF <-> XBAR_0 M2
+	main_core_1->d_ahb_if(*xbar_0->targ_socket[3]);                     //       Main_Core_1>D_AHB_IF <-> XBAR_0 M3
+	peripheral_core_2->i_ahb_if(*xbar_0->targ_socket[5]);               // Peripheral_Core_2>I_AHB_IF <-> XBAR_0 M5
 	
-	peripheral_core_2->d_ahb_if(*xbar_1->targ_socket[0]);            // Peripheral_Core_2>D_AHB_IF <-> XBAR_1 M0
-	xbar_1_m1_stub->master_sock(*xbar_1->targ_socket[1]);            // TODO: XBAR_1 M1 <-> DMA and HSM
-	xbar_1_m2_stub->master_sock(*xbar_1->targ_socket[2]);            // TODO: XBAR_1 M2 <-> FEC, LFAST and FlexRay
+	peripheral_core_2->d_ahb_if(*xbar_1->targ_socket[0]);               // Peripheral_Core_2>D_AHB_IF <-> XBAR_1 M0
+	(*xbar_1_m1_concentrator->init_socket[0])(*xbar_1->targ_socket[1]); //       XBAR_1 M1 <-> DMA and HSM
+	xbar_1_m2_stub->master_sock(*xbar_1->targ_socket[2]);               // TODO: XBAR_1 M2 <-> FEC, LFAST and FlexRay
 	
-	(*xbar_0->init_socket[0])(flash->slave_sock);                    //       XBAR_0 S0 <-> FLASH Port 0
-	(*xbar_0->init_socket[1])(flash_port1_stub->slave_sock);         // TODO: XBAR_0 S1 <-> FLASH Port 1
-	(*xbar_0->init_socket[2])(main_core_0->s_ahb_if);                //       XBAR_0 S2 <-> S_AHB_IF<Main_Core_0
-	(*xbar_0->init_socket[3])(main_core_1->s_ahb_if);                //       XBAR_0 S3 <-> S_AHB_IF<Main_Core_1
-	(*xbar_0->init_socket[4])(system_sram->slave_sock);              //       XBAR_0 S4 <-> System SRAM
-	(*xbar_0->init_socket[5])(ebi_stub->slave_sock);                 // TODO: XBAR_0 S5 <-> EBI
-	(*xbar_0->init_socket[6])(xbar_0_s6_stub->slave_sock);           //       XBAR_0 S6 <-> unused
-	(*xbar_0->init_socket[7])(*xbar_1->targ_socket[3]);              //       XBAR_0 S7 <-> XBAR_1 M3
+	(*xbar_0->init_socket[0])(flash->slave_sock);                       //       XBAR_0 S0 <-> FLASH Port 0
+	(*xbar_0->init_socket[1])(flash_port1_stub->slave_sock);            // TODO: XBAR_0 S1 <-> FLASH Port 1
+	(*xbar_0->init_socket[2])(main_core_0->s_ahb_if);                   //       XBAR_0 S2 <-> S_AHB_IF<Main_Core_0
+	(*xbar_0->init_socket[3])(main_core_1->s_ahb_if);                   //       XBAR_0 S3 <-> S_AHB_IF<Main_Core_1
+	(*xbar_0->init_socket[4])(system_sram->slave_sock);                 //       XBAR_0 S4 <-> System SRAM
+	(*xbar_0->init_socket[5])(ebi_stub->slave_sock);                    // TODO: XBAR_0 S5 <-> EBI
+	(*xbar_0->init_socket[6])(xbar_0_s6_stub->slave_sock);              //       XBAR_0 S6 <-> unused
+	(*xbar_0->init_socket[7])(*xbar_1->targ_socket[3]);                 //       XBAR_0 S7 <-> XBAR_1 M3
                                                                      
-	(*xbar_1->init_socket[0])(*xbar_0->targ_socket[4]);              //       XBAR_1 S0 <-> XBAR_0 M4
-	(*xbar_1->init_socket[1])(peripheral_core_2->s_ahb_if);          //       XBAR_1 S1 <-> S_AHB_IF<Peripheral_Core_2
-	(*xbar_1->init_socket[2])(*pbridge_b->targ_socket[0]);           //       XBAR_1 S2 <-> PBRIDGE_B
-	(*xbar_1->init_socket[3])(*pbridge_a->targ_socket[0]);           //       XBAR_1 S3 <-> PBRIDGE_A
+	(*xbar_1->init_socket[0])(*xbar_0->targ_socket[4]);                 //       XBAR_1 S0 <-> XBAR_0 M4
+	(*xbar_1->init_socket[1])(peripheral_core_2->s_ahb_if);             //       XBAR_1 S1 <-> S_AHB_IF<Peripheral_Core_2
+	(*xbar_1->init_socket[2])(*pbridge_b->targ_socket[0]);              //       XBAR_1 S2 <-> PBRIDGE_B
+	(*xbar_1->init_socket[3])(*pbridge_a->targ_socket[0]);              //       XBAR_1 S3 <-> PBRIDGE_A
 	
-	(*pbridge_a->init_socket[0])(intc_0->peripheral_slave_if);       // PBRIDGE_A <-> INTC_0
-	(*pbridge_a->init_socket[1])(stm_0->peripheral_slave_if);        // PBRIDGE_A <-> STM_0
-	(*pbridge_a->init_socket[2])(stm_1->peripheral_slave_if);        // PBRIDGE_A <-> STM_1
-	(*pbridge_a->init_socket[3])(stm_2->peripheral_slave_if);        // PBRIDGE_A <-> STM_2
-	(*pbridge_a->init_socket[4])(swt_0->peripheral_slave_if);        // PBRIDGE_A <-> SWT_0
-	(*pbridge_a->init_socket[5])(swt_1->peripheral_slave_if);        // PBRIDGE_A <-> SWT_1
-	(*pbridge_a->init_socket[6])(swt_2->peripheral_slave_if);        // PBRIDGE_A <-> SWT_2
-	(*pbridge_a->init_socket[7])(swt_3->peripheral_slave_if);        // PBRIDGE_A <-> SWT_3
-	(*pbridge_a->init_socket[8])(pit_0->peripheral_slave_if);        // PBRIDGE_A <-> PIT_0
-	(*pbridge_a->init_socket[9])(pit_1->peripheral_slave_if);        // PBRIDGE_A <-> PIT_1
-	(*pbridge_a->init_socket[10])(linflexd_0->peripheral_slave_if);  // PBRIDGE_A <-> LINFlexD_0
-	(*pbridge_a->init_socket[11])(linflexd_1->peripheral_slave_if);  // PBRIDGE_A <-> LINFlexD_1
-	(*pbridge_a->init_socket[12])(linflexd_14->peripheral_slave_if); // PBRIDGE_A <-> LINFlexD_14
-	(*pbridge_a->init_socket[13])(linflexd_16->peripheral_slave_if); // PBRIDGE_A <-> LINFlexD_16
-	(*pbridge_a->init_socket[14])(dmamux_0->peripheral_slave_if);    // PBRIDGE_A <-> DMAMUX_0
-	(*pbridge_a->init_socket[15])(dmamux_1->peripheral_slave_if);    // PBRIDGE_A <-> DMAMUX_1
-	(*pbridge_a->init_socket[16])(dmamux_2->peripheral_slave_if);    // PBRIDGE_A <-> DMAMUX_2
-	(*pbridge_a->init_socket[17])(dmamux_3->peripheral_slave_if);    // PBRIDGE_A <-> DMAMUX_3
-	(*pbridge_a->init_socket[18])(dmamux_4->peripheral_slave_if);    // PBRIDGE_A <-> DMAMUX_4
-	(*pbridge_a->init_socket[19])(dmamux_5->peripheral_slave_if);    // PBRIDGE_A <-> DMAMUX_5
-	(*pbridge_a->init_socket[20])(dmamux_6->peripheral_slave_if);    // PBRIDGE_A <-> DMAMUX_6
-	(*pbridge_a->init_socket[21])(dmamux_7->peripheral_slave_if);    // PBRIDGE_A <-> DMAMUX_7
-	(*pbridge_a->init_socket[22])(dmamux_8->peripheral_slave_if);    // PBRIDGE_A <-> DMAMUX_8
-	(*pbridge_a->init_socket[23])(dmamux_9->peripheral_slave_if);    // PBRIDGE_A <-> DMAMUX_9
+	(*pbridge_a->init_socket[0])(intc_0->peripheral_slave_if);          // PBRIDGE_A <-> INTC_0
+	(*pbridge_a->init_socket[1])(stm_0->peripheral_slave_if);           // PBRIDGE_A <-> STM_0
+	(*pbridge_a->init_socket[2])(stm_1->peripheral_slave_if);           // PBRIDGE_A <-> STM_1
+	(*pbridge_a->init_socket[3])(stm_2->peripheral_slave_if);           // PBRIDGE_A <-> STM_2
+	(*pbridge_a->init_socket[4])(swt_0->peripheral_slave_if);           // PBRIDGE_A <-> SWT_0
+	(*pbridge_a->init_socket[5])(swt_1->peripheral_slave_if);           // PBRIDGE_A <-> SWT_1
+	(*pbridge_a->init_socket[6])(swt_2->peripheral_slave_if);           // PBRIDGE_A <-> SWT_2
+	(*pbridge_a->init_socket[7])(swt_3->peripheral_slave_if);           // PBRIDGE_A <-> SWT_3
+	(*pbridge_a->init_socket[8])(pit_0->peripheral_slave_if);           // PBRIDGE_A <-> PIT_0
+	(*pbridge_a->init_socket[9])(pit_1->peripheral_slave_if);           // PBRIDGE_A <-> PIT_1
+	(*pbridge_a->init_socket[10])(linflexd_0->peripheral_slave_if);     // PBRIDGE_A <-> LINFlexD_0
+	(*pbridge_a->init_socket[11])(linflexd_1->peripheral_slave_if);     // PBRIDGE_A <-> LINFlexD_1
+	(*pbridge_a->init_socket[12])(linflexd_14->peripheral_slave_if);    // PBRIDGE_A <-> LINFlexD_14
+	(*pbridge_a->init_socket[13])(linflexd_16->peripheral_slave_if);    // PBRIDGE_A <-> LINFlexD_16
+	(*pbridge_a->init_socket[14])(dmamux_0->peripheral_slave_if);       // PBRIDGE_A <-> DMAMUX_0
+	(*pbridge_a->init_socket[15])(dmamux_1->peripheral_slave_if);       // PBRIDGE_A <-> DMAMUX_1
+	(*pbridge_a->init_socket[16])(dmamux_2->peripheral_slave_if);       // PBRIDGE_A <-> DMAMUX_2
+	(*pbridge_a->init_socket[17])(dmamux_3->peripheral_slave_if);       // PBRIDGE_A <-> DMAMUX_3
+	(*pbridge_a->init_socket[18])(dmamux_4->peripheral_slave_if);       // PBRIDGE_A <-> DMAMUX_4
+	(*pbridge_a->init_socket[19])(dmamux_5->peripheral_slave_if);       // PBRIDGE_A <-> DMAMUX_5
+	(*pbridge_a->init_socket[20])(dmamux_6->peripheral_slave_if);       // PBRIDGE_A <-> DMAMUX_6
+	(*pbridge_a->init_socket[21])(dmamux_7->peripheral_slave_if);       // PBRIDGE_A <-> DMAMUX_7
+	(*pbridge_a->init_socket[22])(dmamux_8->peripheral_slave_if);       // PBRIDGE_A <-> DMAMUX_8
+	(*pbridge_a->init_socket[23])(dmamux_9->peripheral_slave_if);       // PBRIDGE_A <-> DMAMUX_9
+	(*pbridge_a->init_socket[24])(edma_0->peripheral_slave_if);         // PBRIDGE_A <-> EDMA_0
+	(*pbridge_a->init_socket[25])(edma_1->peripheral_slave_if);         // PBRIDGE_A <-> EDMA_1
 	
-	(*pbridge_b->init_socket[0])(linflexd_2->peripheral_slave_if);   // PBRIDGE_B <-> LINFlexD_2
-	(*pbridge_b->init_socket[1])(linflexd_15->peripheral_slave_if);  // PBRIDGE_B <-> LINFlexD_15
+	(*pbridge_b->init_socket[0])(linflexd_2->peripheral_slave_if);      // PBRIDGE_B <-> LINFlexD_2
+	(*pbridge_b->init_socket[1])(linflexd_15->peripheral_slave_if);     // PBRIDGE_B <-> LINFlexD_15
+
+	edma_0->master_if(*xbar_1_m1_concentrator->targ_socket[0]);         // EDMA_0 <-> XBAR_1 M1 Concentrator
+	edma_1->master_if(*xbar_1_m1_concentrator->targ_socket[1]);         // EDMA_1 <-> XBAR_1 M1 Concentrator
 	
-	linflexd_0->LINTX(linflexd_0_tx->serial_socket);
-	linflexd_0->LINRX(linflexd_0_rx->serial_socket);
-	linflexd_1->LINTX(linflexd_1_tx->serial_socket);
-	linflexd_1->LINRX(linflexd_1_rx->serial_socket);
-	linflexd_2->LINTX(linflexd_2_tx->serial_socket);
-	linflexd_2->LINRX(linflexd_2_rx->serial_socket);
-	linflexd_14->LINTX(linflexd_14_tx->serial_socket);
-	linflexd_14->LINRX(linflexd_14_rx->serial_socket);
-	linflexd_15->LINTX(linflexd_15_tx->serial_socket);
-	linflexd_15->LINRX(linflexd_15_rx->serial_socket);
-	linflexd_16->LINTX(linflexd_16_tx->serial_socket);
-	linflexd_16->LINRX(linflexd_16_rx->serial_socket);
+	linflexd_0->LINTX(linflexd_0_tx->serial_socket);                    //  LINFlexD_0 TX <->  LINFlexD_0 TX serial bus
+	linflexd_0->LINRX(linflexd_0_rx->serial_socket);                    //  LINFlexD_0 RX <->  LINFlexD_0 RX serial bus
+	linflexd_1->LINTX(linflexd_1_tx->serial_socket);                    //  LINFlexD_1 TX <->  LINFlexD_1 TX serial bus
+	linflexd_1->LINRX(linflexd_1_rx->serial_socket);                    //  LINFlexD_1 RX <->  LINFlexD_1 RX serial bus
+	linflexd_2->LINTX(linflexd_2_tx->serial_socket);                    //  LINFlexD_2 TX <->  LINFlexD_2 TX serial bus
+	linflexd_2->LINRX(linflexd_2_rx->serial_socket);                    //  LINFlexD_2 RX <->  LINFlexD_2 RX serial bus
+	linflexd_14->LINTX(linflexd_14_tx->serial_socket);                  // LINFlexD_14 TX <-> LINFlexD_14 TX serial bus
+	linflexd_14->LINRX(linflexd_14_rx->serial_socket);                  // LINFlexD_14 RX <-> LINFlexD_14 RX serial bus
+	linflexd_15->LINTX(linflexd_15_tx->serial_socket);                  // LINFlexD_15 TX <-> LINFlexD_15 TX serial bus
+	linflexd_15->LINRX(linflexd_15_rx->serial_socket);                  // LINFlexD_15 RX <-> LINFlexD_15 RX serial bus
+	linflexd_16->LINTX(linflexd_16_tx->serial_socket);                  // LINFlexD_16 TX <-> LINFlexD_16 TX serial bus
+	linflexd_16->LINRX(linflexd_16_rx->serial_socket);                  // LINFlexD_16 RX <-> LINFlexD_16 RX serial bus
 	
 	if(serial_terminal0)
 	{
@@ -1121,6 +1156,14 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	BindArray(DMAMUX_8::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_8.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 96);  // DMA channels 96 - 111
 	BindArray(DMAMUX_9::NUM_DMA_CHANNELS, "HARDWARE.DMAMUX_9.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 112); // DMA channels 112 - 127
 	
+	Bind("HARDWARE.eDMA_0.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.eDMA_0.reset_b"         , "HARDWARE.reset_b");
+	BindArray(EDMA_0::NUM_DMA_CHANNELS, "HARDWARE.eDMA_0.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 0);  // DMA channels  0 - 63
+	
+	Bind("HARDWARE.eDMA_1.m_clk"           , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.eDMA_1.reset_b"         , "HARDWARE.reset_b");
+	BindArray(EDMA_1::NUM_DMA_CHANNELS, "HARDWARE.eDMA_1.dma_channel", 0, "HARDWARE.DMA_CHANNEL", 64); // DMA channels 64 - 127
+	
 	Bind("HARDWARE.DMAMUX_0.reset_b", "HARDWARE.reset_b");
 	Bind("HARDWARE.DMAMUX_1.reset_b", "HARDWARE.reset_b");
 	Bind("HARDWARE.DMAMUX_2.reset_b", "HARDWARE.reset_b");
@@ -1188,141 +1231,276 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 
 	// 48           TODO
 	// ..           TODO
-	// 964          TODO
+	// 52           TODO
 
 	InterruptSource(48);
 	InterruptSource(49);
 	InterruptSource(50);
 	InterruptSource(51);
 	InterruptSource(52);
-	InterruptSource(53);
-	InterruptSource(54);
-	InterruptSource(55);
-	InterruptSource(56);
-	InterruptSource(57);
-	InterruptSource(58);
-	InterruptSource(59);
-	InterruptSource(60);
-	InterruptSource(61);
-	InterruptSource(62);
-	InterruptSource(63);
-	InterruptSource(64);
-	InterruptSource(65);
-	InterruptSource(66);
-	InterruptSource(67);
-	InterruptSource(68);
-	InterruptSource(69);
-	InterruptSource(70);
-	InterruptSource(71);
-	InterruptSource(72);
-	InterruptSource(73);
-	InterruptSource(74);
-	InterruptSource(75);
-	InterruptSource(76);
-	InterruptSource(77);
-	InterruptSource(78);
-	InterruptSource(79);
-	InterruptSource(80);
-	InterruptSource(81);
-	InterruptSource(82);
-	InterruptSource(83);
-	InterruptSource(84);
-	InterruptSource(85);
-	InterruptSource(86);
-	InterruptSource(87);
-	InterruptSource(88);
-	InterruptSource(89);
-	InterruptSource(90);
-	InterruptSource(91);
-	InterruptSource(92);
-	InterruptSource(93);
-	InterruptSource(94);
-	InterruptSource(95);
-	InterruptSource(96);
-	InterruptSource(97);
-	InterruptSource(98);
-	InterruptSource(99);
-	InterruptSource(100);
-	InterruptSource(101);
-	InterruptSource(102);
-	InterruptSource(103);
-	InterruptSource(104);
-	InterruptSource(105);
-	InterruptSource(106);
-	InterruptSource(107);
-	InterruptSource(108);
-	InterruptSource(109);
-	InterruptSource(110);
-	InterruptSource(111);
-	InterruptSource(112);
-	InterruptSource(113);
-	InterruptSource(114);
-	InterruptSource(115);
-	InterruptSource(116);
-	InterruptSource(117);
-	InterruptSource(118);
-	InterruptSource(119);
-	InterruptSource(120);
-	InterruptSource(121);
-	InterruptSource(122);
-	InterruptSource(123);
-	InterruptSource(124);
-	InterruptSource(125);
-	InterruptSource(126);
-	InterruptSource(127);
-	InterruptSource(128);
-	InterruptSource(129);
-	InterruptSource(130);
-	InterruptSource(131);
-	InterruptSource(132);
-	InterruptSource(133);
-	InterruptSource(134);
-	InterruptSource(135);
-	InterruptSource(136);
-	InterruptSource(137);
-	InterruptSource(138);
-	InterruptSource(139);
-	InterruptSource(140);
-	InterruptSource(141);
-	InterruptSource(142);
-	InterruptSource(143);
-	InterruptSource(144);
-	InterruptSource(145);
-	InterruptSource(146);
-	InterruptSource(147);
-	InterruptSource(148);
-	InterruptSource(149);
-	InterruptSource(150);
-	InterruptSource(151);
-	InterruptSource(152);
-	InterruptSource(153);
-	InterruptSource(154);
-	InterruptSource(155);
-	InterruptSource(156);
-	InterruptSource(157);
-	InterruptSource(158);
-	InterruptSource(159);
-	InterruptSource(160);
-	InterruptSource(161);
-	InterruptSource(162);
-	InterruptSource(163);
-	InterruptSource(164);
-	InterruptSource(165);
-	InterruptSource(166);
-	InterruptSource(167);
-	InterruptSource(168);
-	InterruptSource(169);
-	InterruptSource(170);
-	InterruptSource(171);
-	InterruptSource(172);
-	InterruptSource(173);
-	InterruptSource(174);
-	InterruptSource(175);
-	InterruptSource(176);
-	InterruptSource(177);
-	InterruptSource(178);
-	InterruptSource(179);
-	InterruptSource(180);
+	
+	// 53       eDMA_0 INT[0]       eDMA Channel 0
+	// 54       eDMA_0 INT[1]       eDMA Channel 1
+	// 55       eDMA_0 INT[2]       eDMA Channel 2
+	// 56       eDMA_0 INT[3]       eDMA Channel 3
+	// 57       eDMA_0 INT[4]       eDMA Channel 4
+	// 58       eDMA_0 INT[5]       eDMA Channel 5
+	// 59       eDMA_0 INT[6]       eDMA Channel 6
+	// 60       eDMA_0 INT[7]       eDMA Channel 7
+	// 61       eDMA_0 INT[8]       eDMA Channel 8
+	// 62       eDMA_0 INT[9]       eDMA Channel 9
+	// 63       eDMA_0 INT[10]      eDMA Channel 10
+	// 64       eDMA_0 INT[11]      eDMA Channel 11
+	// 65       eDMA_0 INT[12]      eDMA Channel 12
+	// 66       eDMA_0 INT[13]      eDMA Channel 13
+	// 67       eDMA_0 INT[14]      eDMA Channel 14
+	// 68       eDMA_0 INT[15]      eDMA Channel 15
+	// 69       eDMA_0 INT[16]      eDMA Channel 16
+	// 70       eDMA_0 INT[17]      eDMA Channel 17
+	// 71       eDMA_0 INT[18]      eDMA Channel 18
+	// 72       eDMA_0 INT[19]      eDMA Channel 19
+	// 73       eDMA_0 INT[20]      eDMA Channel 20
+	// 74       eDMA_0 INT[21]      eDMA Channel 21
+	// 75       eDMA_0 INT[22]      eDMA Channel 22
+	// 76       eDMA_0 INT[23]      eDMA Channel 23
+	// 77       eDMA_0 INT[24]      eDMA Channel 24
+	// 78       eDMA_0 INT[25]      eDMA Channel 25
+	// 79       eDMA_0 INT[26]      eDMA Channel 26
+	// 80       eDMA_0 INT[27]      eDMA Channel 27
+	// 81       eDMA_0 INT[28]      eDMA Channel 28
+	// 82       eDMA_0 INT[29]      eDMA Channel 29
+	// 83       eDMA_0 INT[30]      eDMA Channel 30
+	// 84       eDMA_0 INT[31]      eDMA Channel 31
+	// 85       eDMA_0 INT[32]      eDMA Channel 32
+	// 86       eDMA_0 INT[33]      eDMA Channel 33
+	// 87       eDMA_0 INT[34]      eDMA Channel 34
+	// 88       eDMA_0 INT[35]      eDMA Channel 35
+	// 89       eDMA_0 INT[36]      eDMA Channel 36
+	// 90       eDMA_0 INT[37]      eDMA Channel 37
+	// 91       eDMA_0 INT[38]      eDMA Channel 38
+	// 92       eDMA_0 INT[39]      eDMA Channel 39
+	// 93       eDMA_0 INT[40]      eDMA Channel 40
+	// 94       eDMA_0 INT[41]      eDMA Channel 41
+	// 95       eDMA_0 INT[42]      eDMA Channel 42
+	// 96       eDMA_0 INT[43]      eDMA Channel 43
+	// 97       eDMA_0 INT[44]      eDMA Channel 44
+	// 98       eDMA_0 INT[45]      eDMA Channel 45
+	// 99       eDMA_0 INT[46]      eDMA Channel 46
+	// 100       eDMA_0 INT[47]     eDMA Channel 47
+	// 101       eDMA_0 INT[48]     eDMA Channel 48
+	// 102       eDMA_0 INT[49]     eDMA Channel 49
+	// 103       eDMA_0 INT[50]     eDMA Channel 50
+	// 104       eDMA_0 INT[51]     eDMA Channel 51
+	// 105       eDMA_0 INT[52]     eDMA Channel 52
+	// 106       eDMA_0 INT[53]     eDMA Channel 53
+	// 107       eDMA_0 INT[54]     eDMA Channel 54
+	// 108       eDMA_0 INT[55]     eDMA Channel 55
+	// 109       eDMA_0 INT[56]     eDMA Channel 56
+	// 110       eDMA_0 INT[57]     eDMA Channel 57
+	// 111       eDMA_0 INT[58]     eDMA Channel 58
+	// 112       eDMA_0 INT[59]     eDMA Channel 59
+	// 113       eDMA_0 INT[60]     eDMA Channel 60
+	// 114       eDMA_0 INT[61]     eDMA Channel 61
+	// 115       eDMA_0 INT[62]     eDMA Channel 62
+	// 116       eDMA_0 INT[63]     eDMA Channel 63
+	// 117       eDMA_1 INT[0]      eDMA Channel 64
+	// 118       eDMA_1 INT[1]      eDMA Channel 65
+	// 119       eDMA_1 INT[2]      eDMA Channel 66
+	// 120       eDMA_1 INT[3]      eDMA Channel 67
+	// 121       eDMA_1 INT[4]      eDMA Channel 68
+	// 122       eDMA_1 INT[5]      eDMA Channel 69
+	// 123       eDMA_1 INT[6]      eDMA Channel 70
+	// 124       eDMA_1 INT[7]      eDMA Channel 71
+	// 125       eDMA_1 INT[8]      eDMA Channel 72
+	// 126       eDMA_1 INT[9]      eDMA Channel 73
+	// 127       eDMA_1 INT[10]     eDMA Channel 74
+	// 128       eDMA_1 INT[11]     eDMA Channel 75
+	// 129       eDMA_1 INT[12]     eDMA Channel 76
+	// 130       eDMA_1 INT[13]     eDMA Channel 77
+	// 131       eDMA_1 INT[14]     eDMA Channel 78
+	// 132       eDMA_1 INT[15]     eDMA Channel 79
+	// 133       eDMA_1 INT[16]     eDMA Channel 80
+	// 134       eDMA_1 INT[17]     eDMA Channel 81
+	// 135       eDMA_1 INT[18]     eDMA Channel 82
+	// 136       eDMA_1 INT[19]     eDMA Channel 83
+	// 137       eDMA_1 INT[20]     eDMA Channel 84
+	// 138       eDMA_1 INT[21]     eDMA Channel 85
+	// 139       eDMA_1 INT[22]     eDMA Channel 86
+	// 140       eDMA_1 INT[23]     eDMA Channel 87
+	// 141       eDMA_1 INT[24]     eDMA Channel 88
+	// 142       eDMA_1 INT[25]     eDMA Channel 89
+	// 143       eDMA_1 INT[26]     eDMA Channel 90
+	// 144       eDMA_1 INT[27]     eDMA Channel 91
+	// 145       eDMA_1 INT[28]     eDMA Channel 92
+	// 146       eDMA_1 INT[29]     eDMA Channel 93
+	// 147       eDMA_1 INT[30]     eDMA Channel 94
+	// 148       eDMA_1 INT[31]     eDMA Channel 95
+	// 149       eDMA_1 INT[32]     eDMA Channel 96
+	// 150       eDMA_1 INT[33]     eDMA Channel 97
+	// 151       eDMA_1 INT[34]     eDMA Channel 98
+	// 152       eDMA_1 INT[35]     eDMA Channel 99
+	// 153       eDMA_1 INT[36]     eDMA Channel 100
+	// 154       eDMA_1 INT[37]     eDMA Channel 101
+	// 155       eDMA_1 INT[38]     eDMA Channel 102
+	// 156       eDMA_1 INT[39]     eDMA Channel 103
+	// 157       eDMA_1 INT[40]     eDMA Channel 104
+	// 158       eDMA_1 INT[41]     eDMA Channel 105
+	// 159       eDMA_1 INT[42]     eDMA Channel 106
+	// 160       eDMA_1 INT[43]     eDMA Channel 107
+	// 161       eDMA_1 INT[44]     eDMA Channel 108
+	// 162       eDMA_1 INT[45]     eDMA Channel 109
+	// 163       eDMA_1 INT[46]     eDMA Channel 110
+	// 164       eDMA_1 INT[47]     eDMA Channel 111
+	// 165       eDMA_1 INT[48]     eDMA Channel 112
+	// 166       eDMA_1 INT[49]     eDMA Channel 113
+	// 167       eDMA_1 INT[50]     eDMA Channel 114
+	// 168       eDMA_1 INT[51]     eDMA Channel 115
+	// 169       eDMA_1 INT[52]     eDMA Channel 116
+	// 170       eDMA_1 INT[53]     eDMA Channel 117
+	// 171       eDMA_1 INT[54]     eDMA Channel 118
+	// 172       eDMA_1 INT[55]     eDMA Channel 119
+	// 173       eDMA_1 INT[56]     eDMA Channel 120
+	// 174       eDMA_1 INT[57]     eDMA Channel 121
+	// 175       eDMA_1 INT[58]     eDMA Channel 122
+	// 176       eDMA_1 INT[59]     eDMA Channel 123
+	// 177       eDMA_1 INT[60]     eDMA Channel 124
+	// 178       eDMA_1 INT[61]     eDMA Channel 125
+	// 179       eDMA_1 INT[62]     eDMA Channel 126
+	// 180       eDMA_1 INT[63]     eDMA Channel 127
+
+	InterruptSource(53, "HARDWARE.eDMA_0.irq_0");
+	InterruptSource(54, "HARDWARE.eDMA_0.irq_1");
+	InterruptSource(55, "HARDWARE.eDMA_0.irq_2");
+	InterruptSource(56, "HARDWARE.eDMA_0.irq_3");
+	InterruptSource(57, "HARDWARE.eDMA_0.irq_4");
+	InterruptSource(58, "HARDWARE.eDMA_0.irq_5");
+	InterruptSource(59, "HARDWARE.eDMA_0.irq_6");
+	InterruptSource(60, "HARDWARE.eDMA_0.irq_7");
+	InterruptSource(61, "HARDWARE.eDMA_0.irq_8");
+	InterruptSource(62, "HARDWARE.eDMA_0.irq_9");
+	InterruptSource(63, "HARDWARE.eDMA_0.irq_10");
+	InterruptSource(64, "HARDWARE.eDMA_0.irq_11");
+	InterruptSource(65, "HARDWARE.eDMA_0.irq_12");
+	InterruptSource(66, "HARDWARE.eDMA_0.irq_13");
+	InterruptSource(67, "HARDWARE.eDMA_0.irq_14");
+	InterruptSource(68, "HARDWARE.eDMA_0.irq_15");
+	InterruptSource(69, "HARDWARE.eDMA_0.irq_16");
+	InterruptSource(70, "HARDWARE.eDMA_0.irq_17");
+	InterruptSource(71, "HARDWARE.eDMA_0.irq_18");
+	InterruptSource(72, "HARDWARE.eDMA_0.irq_19");
+	InterruptSource(73, "HARDWARE.eDMA_0.irq_20");
+	InterruptSource(74, "HARDWARE.eDMA_0.irq_21");
+	InterruptSource(75, "HARDWARE.eDMA_0.irq_22");
+	InterruptSource(76, "HARDWARE.eDMA_0.irq_23");
+	InterruptSource(77, "HARDWARE.eDMA_0.irq_24");
+	InterruptSource(78, "HARDWARE.eDMA_0.irq_25");
+	InterruptSource(79, "HARDWARE.eDMA_0.irq_26");
+	InterruptSource(80, "HARDWARE.eDMA_0.irq_27");
+	InterruptSource(81, "HARDWARE.eDMA_0.irq_28");
+	InterruptSource(82, "HARDWARE.eDMA_0.irq_29");
+	InterruptSource(83, "HARDWARE.eDMA_0.irq_30");
+	InterruptSource(84, "HARDWARE.eDMA_0.irq_31");
+	InterruptSource(85, "HARDWARE.eDMA_0.irq_32");
+	InterruptSource(86, "HARDWARE.eDMA_0.irq_33");
+	InterruptSource(87, "HARDWARE.eDMA_0.irq_34");
+	InterruptSource(88, "HARDWARE.eDMA_0.irq_35");
+	InterruptSource(89, "HARDWARE.eDMA_0.irq_36");
+	InterruptSource(90, "HARDWARE.eDMA_0.irq_37");
+	InterruptSource(91, "HARDWARE.eDMA_0.irq_38");
+	InterruptSource(92, "HARDWARE.eDMA_0.irq_39");
+	InterruptSource(93, "HARDWARE.eDMA_0.irq_40");
+	InterruptSource(94, "HARDWARE.eDMA_0.irq_41");
+	InterruptSource(95, "HARDWARE.eDMA_0.irq_42");
+	InterruptSource(96, "HARDWARE.eDMA_0.irq_43");
+	InterruptSource(97, "HARDWARE.eDMA_0.irq_44");
+	InterruptSource(98, "HARDWARE.eDMA_0.irq_45");
+	InterruptSource(99, "HARDWARE.eDMA_0.irq_46");
+	InterruptSource(100, "HARDWARE.eDMA_0.irq_47");
+	InterruptSource(101, "HARDWARE.eDMA_0.irq_48");
+	InterruptSource(102, "HARDWARE.eDMA_0.irq_49");
+	InterruptSource(103, "HARDWARE.eDMA_0.irq_50");
+	InterruptSource(104, "HARDWARE.eDMA_0.irq_51");
+	InterruptSource(105, "HARDWARE.eDMA_0.irq_52");
+	InterruptSource(106, "HARDWARE.eDMA_0.irq_53");
+	InterruptSource(107, "HARDWARE.eDMA_0.irq_54");
+	InterruptSource(108, "HARDWARE.eDMA_0.irq_55");
+	InterruptSource(109, "HARDWARE.eDMA_0.irq_56");
+	InterruptSource(110, "HARDWARE.eDMA_0.irq_57");
+	InterruptSource(111, "HARDWARE.eDMA_0.irq_58");
+	InterruptSource(112, "HARDWARE.eDMA_0.irq_59");
+	InterruptSource(113, "HARDWARE.eDMA_0.irq_60");
+	InterruptSource(114, "HARDWARE.eDMA_0.irq_61");
+	InterruptSource(115, "HARDWARE.eDMA_0.irq_62");
+	InterruptSource(116, "HARDWARE.eDMA_0.irq_63");
+	InterruptSource(117, "HARDWARE.eDMA_1.irq_0");                                                                                                                                                       
+	InterruptSource(118, "HARDWARE.eDMA_1.irq_1");                                                                                                                                                       
+	InterruptSource(119, "HARDWARE.eDMA_1.irq_2");                                                                                                                                                       
+	InterruptSource(120, "HARDWARE.eDMA_1.irq_3");                                                                                                                                                       
+	InterruptSource(121, "HARDWARE.eDMA_1.irq_4");                                                                                                                                                       
+	InterruptSource(122, "HARDWARE.eDMA_1.irq_5");                                                                                                                                                       
+	InterruptSource(123, "HARDWARE.eDMA_1.irq_6");                                                                                                                                                       
+	InterruptSource(124, "HARDWARE.eDMA_1.irq_7");                                                                                                                                                       
+	InterruptSource(125, "HARDWARE.eDMA_1.irq_8");                                                                                                                                                       
+	InterruptSource(126, "HARDWARE.eDMA_1.irq_9");                                                                                                                                                       
+	InterruptSource(127, "HARDWARE.eDMA_1.irq_10");                                                                                                                                                      
+	InterruptSource(128, "HARDWARE.eDMA_1.irq_11");                                                                                                                                                      
+	InterruptSource(129, "HARDWARE.eDMA_1.irq_12");                                                                                                                                                      
+	InterruptSource(130, "HARDWARE.eDMA_1.irq_13");                                                                                                                                                      
+	InterruptSource(131, "HARDWARE.eDMA_1.irq_14");                                                                                                                                                      
+	InterruptSource(132, "HARDWARE.eDMA_1.irq_15");                                                                                                                                                      
+	InterruptSource(133, "HARDWARE.eDMA_1.irq_16");                                                                                                                                                      
+	InterruptSource(134, "HARDWARE.eDMA_1.irq_17");
+	InterruptSource(135, "HARDWARE.eDMA_1.irq_18");
+	InterruptSource(136, "HARDWARE.eDMA_1.irq_19");
+	InterruptSource(137, "HARDWARE.eDMA_1.irq_20");
+	InterruptSource(138, "HARDWARE.eDMA_1.irq_21");
+	InterruptSource(139, "HARDWARE.eDMA_1.irq_22");
+	InterruptSource(140, "HARDWARE.eDMA_1.irq_23");
+	InterruptSource(141, "HARDWARE.eDMA_1.irq_24");
+	InterruptSource(142, "HARDWARE.eDMA_1.irq_25");
+	InterruptSource(143, "HARDWARE.eDMA_1.irq_26");
+	InterruptSource(144, "HARDWARE.eDMA_1.irq_27");
+	InterruptSource(145, "HARDWARE.eDMA_1.irq_28");
+	InterruptSource(146, "HARDWARE.eDMA_1.irq_29");
+	InterruptSource(147, "HARDWARE.eDMA_1.irq_30");
+	InterruptSource(148, "HARDWARE.eDMA_1.irq_31");
+	InterruptSource(149, "HARDWARE.eDMA_1.irq_32");
+	InterruptSource(150, "HARDWARE.eDMA_1.irq_33");
+	InterruptSource(151, "HARDWARE.eDMA_1.irq_34");
+	InterruptSource(152, "HARDWARE.eDMA_1.irq_35");
+	InterruptSource(153, "HARDWARE.eDMA_1.irq_36");
+	InterruptSource(154, "HARDWARE.eDMA_1.irq_37");
+	InterruptSource(155, "HARDWARE.eDMA_1.irq_38");
+	InterruptSource(156, "HARDWARE.eDMA_1.irq_39");
+	InterruptSource(157, "HARDWARE.eDMA_1.irq_40");
+	InterruptSource(158, "HARDWARE.eDMA_1.irq_41");
+	InterruptSource(159, "HARDWARE.eDMA_1.irq_42");
+	InterruptSource(160, "HARDWARE.eDMA_1.irq_43");
+	InterruptSource(161, "HARDWARE.eDMA_1.irq_44");
+	InterruptSource(162, "HARDWARE.eDMA_1.irq_45");
+	InterruptSource(163, "HARDWARE.eDMA_1.irq_46");
+	InterruptSource(164, "HARDWARE.eDMA_1.irq_47");
+	InterruptSource(165, "HARDWARE.eDMA_1.irq_48");
+	InterruptSource(166, "HARDWARE.eDMA_1.irq_49");
+	InterruptSource(167, "HARDWARE.eDMA_1.irq_50");
+	InterruptSource(168, "HARDWARE.eDMA_1.irq_51");
+	InterruptSource(169, "HARDWARE.eDMA_1.irq_52");
+	InterruptSource(170, "HARDWARE.eDMA_1.irq_53");
+	InterruptSource(171, "HARDWARE.eDMA_1.irq_54");
+	InterruptSource(172, "HARDWARE.eDMA_1.irq_55");
+	InterruptSource(173, "HARDWARE.eDMA_1.irq_56");
+	InterruptSource(174, "HARDWARE.eDMA_1.irq_57");
+	InterruptSource(175, "HARDWARE.eDMA_1.irq_58");
+	InterruptSource(176, "HARDWARE.eDMA_1.irq_59");
+	InterruptSource(177, "HARDWARE.eDMA_1.irq_60");
+	InterruptSource(178, "HARDWARE.eDMA_1.irq_61");
+	InterruptSource(179, "HARDWARE.eDMA_1.irq_62");
+	InterruptSource(180, "HARDWARE.eDMA_1.irq_63");
+	
+	// 181          TODO
+	// ..           TODO
+	// 964          TODO
+
 	InterruptSource(181);
 	InterruptSource(182);
 	InterruptSource(183);
@@ -3070,6 +3248,7 @@ Simulator::~Simulator()
 	if(xbar_1) delete xbar_1;
 	if(pbridge_a) delete pbridge_a;
 	if(pbridge_b) delete pbridge_b;
+	if(xbar_1_m1_concentrator) delete xbar_1_m1_concentrator;
 	if(intc_0) delete intc_0;
 	if(stm_0) delete stm_0;
 	if(stm_1) delete stm_1;
@@ -3114,10 +3293,11 @@ Simulator::~Simulator()
 	if(dmamux_7) delete dmamux_7;
 	if(dmamux_8) delete dmamux_8;
 	if(dmamux_9) delete dmamux_9;
+	if(edma_0) delete edma_0;
+	if(edma_1) delete edma_1;
 	if(ebi_stub) delete ebi_stub;
 	if(flash_port1_stub) delete flash_port1_stub;
 	if(xbar_0_s6_stub) delete xbar_0_s6_stub;
-	if(xbar_1_m1_stub) delete xbar_1_m1_stub;
 	if(xbar_1_m2_stub) delete xbar_1_m2_stub;
 	if(gdb_server[0]) delete gdb_server[0];
 	if(gdb_server[1]) delete gdb_server[1];
@@ -3386,12 +3566,17 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_21", "range_start=\"0xfff6ce00\" range_end=\"0xfff6cfff\" output_port=\"21\" translation=\"0x0\""); // DMAMUX_7    -> DMAMUX_7 (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_22", "range_start=\"0xfff6d000\" range_end=\"0xfff6d1ff\" output_port=\"22\" translation=\"0x0\""); // DMAMUX_8    -> DMAMUX_8 (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_23", "range_start=\"0xfff6d200\" range_end=\"0xfff6d3ff\" output_port=\"23\" translation=\"0x0\""); // DMAMUX_9    -> DMAMUX_9 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_24", "range_start=\"0xfc0a0000\" range_end=\"0xfc0a3fff\" output_port=\"24\" translation=\"0x0\""); // EDMA_0      -> EDMA_0   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_25", "range_start=\"0xfc0a4000\" range_end=\"0xfc0a7fff\" output_port=\"25\" translation=\"0x0\""); // EDMA_1      -> EDMA_1   (rel address)
 
 	//  - PBRIDGE_B
 	simulator->SetVariable("HARDWARE.PBRIDGE_B.cycle_time", "20 ns");
 	simulator->SetVariable("HARDWARE.PBRIDGE_B.mapping_0",  "range_start=\"0xfbe8c000\" range_end=\"0xfbe8ffff\" output_port=\"0\" translation=\"0x0\""); //  LINFlexD_2 -> LINFlexD_2 (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_B.mapping_1",  "range_start=\"0xfbea8000\" range_end=\"0xfbeabfff\" output_port=\"1\" translation=\"0x0\""); // LINFlexD_15 -> LINFlexD_15 (rel address)
 	
+	//  - XBAR_1_M1_CONCENTRATOR
+	simulator->SetVariable("HARDWARE.XBAR_1_M1_CONCENTRATOR.cycle_time", "10 ns");
+	simulator->SetVariable("HARDWARE.XBAR_1_M1_CONCENTRATOR.mapping_0", "range_start=\"0x0\" range_end=\"0xffffffff\" output_port=\"0\" translation=\"0x0\"");
 	
 	// - Loader
 	simulator->SetVariable("loader.filename", "baf.bin,soft/bin/Z4_2/flash_boot.elf,soft/bin/Z7_0/flash_boot.elf,soft/bin/Z7_1/flash_boot.elf");

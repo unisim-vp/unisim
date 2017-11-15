@@ -75,10 +75,12 @@ using unisim::util::reg::core::SW_R_W1C;
 using unisim::util::reg::core::RWS_OK;
 using unisim::util::reg::core::RWS_ANA;
 
-template <typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
-struct Field : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (7 - OFFSET2) : (7 - OFFSET1)) : (7 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, _ACCESS>
+template <typename REGISTER, typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
+struct Field : unisim::util::reg::core::Field<FIELD
+                                             , ((OFFSET1 >= 0) && (OFFSET1 < REGISTER::SIZE)) ? ((OFFSET2 >= 0) ? ((OFFSET2 < REGISTER::SIZE) ? ((OFFSET1 < OFFSET2) ? ((REGISTER::SIZE - 1) - OFFSET2) : ((REGISTER::SIZE - 1) - OFFSET1)) : ((REGISTER::SIZE - 1) - OFFSET1)) : ((REGISTER::SIZE - 1) - OFFSET1)) : 0
+                                             , ((OFFSET1 >= 0) && (OFFSET1 < REGISTER::SIZE)) ? ((OFFSET2 >= 0) ? ((OFFSET2 < REGISTER::SIZE) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 0) : 1) : 0
+                                             , _ACCESS>
 {
-	typedef unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (7 - OFFSET2) : (7 - OFFSET1)) : (7 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, _ACCESS> Super;
 };
 
 #if 0
@@ -270,9 +272,9 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x0;
 		
-		struct ENBL   : Field<ENBL, 0>      {}; // DMA Channel Enable
-		struct TRIG   : Field<TRIG, 1>      {}; // DMA Channel Trigger Enable
-		struct SOURCE : Field<SOURCE, 2, 7> {}; // DMA Channel Source (Slot)
+		struct ENBL   : Field<DMAMUX_CHCFG, ENBL, 0>      {}; // DMA Channel Enable
+		struct TRIG   : Field<DMAMUX_CHCFG, TRIG, 1>      {}; // DMA Channel Trigger Enable
+		struct SOURCE : Field<DMAMUX_CHCFG, SOURCE, 2, 7> {}; // DMA Channel Source (Slot)
 		
 		typedef FieldSet<ENBL, TRIG, SOURCE> ALL;
 		

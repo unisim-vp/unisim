@@ -854,6 +854,7 @@ unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.hh \
 unisim/component/tlm2/com/freescale/mpc57xx/linflexd/linflexd.hh \
 unisim/component/tlm2/com/serial_terminal/serial_terminal.hh \
 unisim/component/tlm2/dma/freescale/mpc57xx/dmamux/dmamux.hh \
+unisim/component/tlm2/dma/freescale/mpc57xx/edma/edma.hh \
 "
 
 UNISIM_LIB_MPC5777M_TEMPLATE_FILES="\
@@ -932,6 +933,7 @@ unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.tcc \
 unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.tcc \
 unisim/component/tlm2/com/freescale/mpc57xx/linflexd/linflexd.tcc \
 unisim/component/tlm2/dma/freescale/mpc57xx/dmamux/dmamux.tcc \
+unisim/component/tlm2/dma/freescale/mpc57xx/edma/edma.tcc \
 "
 
 UNISIM_LIB_MPC5777M_M4_FILES="\
@@ -1004,6 +1006,7 @@ xbar_0.cc \
 xbar_1.cc \
 pbridge_a.cc \
 pbridge_b.cc \
+xbar_1_m1_concentrator.cc \
 intc_0.cc \
 stm_0.cc \
 stm_1.cc \
@@ -1030,6 +1033,8 @@ dmamux_6.cc \
 dmamux_7.cc \
 dmamux_8.cc \
 dmamux_9.cc \
+edma_0.cc \
+edma_1.cc \
 "
 UNISIM_SIMULATORS_MPC5777M_HEADER_FILES="\
 simulator.hh \
