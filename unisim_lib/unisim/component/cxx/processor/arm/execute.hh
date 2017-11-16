@@ -319,19 +319,15 @@ namespace arm {
   
   template <typename coreT>
   void
-  CPSRWriteByInstr( coreT& core, typename coreT::U32 const& value, uint8_t mask, bool is_excpt_return )
+  CPSRWriteByInstr( coreT& core, typename coreT::U32 const& psr_bits, uint32_t psr_mask )
   {
     typedef typename coreT::U32 U32;
     typedef typename coreT::BOOL BOOL;
-    U32 write_mask(((mask & 1 ? 0xff : 0) <<  0) |
-                   ((mask & 2 ? 0xff : 0) <<  8) |
-                   ((mask & 4 ? 0xff : 0) << 16) |
-                   ((mask & 8 ? 0xff : 0) << 24));
     
     // bits <23:20> are reserved SBZP bits
-    // if (core.Cond( (value & write_mask & U32(core.PSR_UNALLOC_MASK)) != U32(0) ))
+    // if (core.Cond( (psr_bits & psr_mask & U32(core.PSR_UNALLOC_MASK)) != U32(0) ))
     //   core.UnpredictableInsnBehaviour();
-    write_mask &= U32(0xff0fffff);
+    psr_mask &= 0xff0fffff;
     
     BOOL const is_secure( true ); // IsSecure()
     BOOL const nmfi( false ); // Non Maskable FIQ (SCTLR.NMFI == '1');
@@ -341,22 +337,21 @@ namespace arm {
 
     BOOL privileged = core.CPSR().Get(M) != U32(core.USER_MODE);
     
-    // ITSTATE, ISETSTATE are only written when returning from exception
-    if (not is_excpt_return) {
-      RegisterField<10,6>().Set( write_mask, 0 ); // IT<7:2>
-      RegisterField<25,2>().Set( write_mask, 0 ); // IT<1:0>
-      J.Set( write_mask, 0 );
-      T.Set( write_mask, 0 );
-    }
+    if (A.Get( psr_mask ) and not core.Cond
+        (privileged and (is_secure or  scr_aw or have_virt_ext)))
+      A.Set( psr_mask, 0u );
     
-    BOOL writeA = BOOL(A.Get( write_mask )) and (privileged and (is_secure or  scr_aw or have_virt_ext));
-    A.Set( write_mask, U32(writeA) );
-    BOOL writeI = BOOL(I.Get( write_mask )) and (privileged);
-    I.Set( write_mask, U32(writeI) );
-    BOOL writeF = BOOL(F.Get( write_mask )) and (privileged and (not nmfi or not BOOL(F.Get( value ))) and (is_secure or scr_fw or have_virt_ext));
-    F.Set( write_mask, U32(writeF) );
-    BOOL writeM = BOOL(M.Get( write_mask )) and (privileged);
-    M.Set( write_mask, -U32(writeM) );
+    if (I.Get( psr_mask ) and not core.Cond
+        (privileged))
+      I.Set( psr_mask, 0u );
+    
+    if (F.Get( psr_mask ) and not core.Cond
+        (privileged and (not nmfi or not BOOL(F.Get( psr_bits ))) and (is_secure or scr_fw or have_virt_ext)))
+      F.Set( psr_mask, 0u );
+    
+    if (M.Get( psr_mask ) and not core.Cond
+        (privileged))
+      M.Set( psr_mask, 0u );
     
     // TODO: Check for attempts to enter modes only permitted in
     // Secure state from Non-secure state. These are Monitor mode
@@ -364,24 +359,16 @@ namespace arm {
     // have reserved it. The definition of UNPREDICTABLE does not
     // permit the resulting behavior to be a security hole.
 
-    U32 new_cpsr = (core.CPSR().bits() & ~write_mask) | (value & write_mask);
-    
-    core.CurrentMode().Swap(core); // OUT
-    core.CPSR().Set( ALL32, new_cpsr );
-    core.CurrentMode().Swap(core); // IN
+    core.SetCPSR( psr_bits, psr_mask );
   }
   
   template <typename coreT>
   void
-  SPSRWriteByInstr( coreT& core, typename coreT::U32 const& value, uint8_t mask )
+  SPSRWriteByInstr( coreT& core, typename coreT::U32 const& psr_bits, uint32_t psr_mask )
   {
     typedef typename coreT::U32 U32;
-    U32 write_mask(((mask & 1 ? 0xff : 0) <<  0) |
-                   ((mask & 2 ? 0xff : 0) <<  8) |
-                   ((mask & 4 ? 0xff : 0) << 16) |
-                   ((mask & 8 ? 0xff : 0) << 24));
     U32 spsr = core.CurrentMode().GetSPSR();
-    spsr = (spsr & ~write_mask) | (value & write_mask);
+    spsr = (spsr & U32(~psr_mask)) | (psr_bits & U32(psr_mask));
     core.CurrentMode().SetSPSR( spsr );
   }
 

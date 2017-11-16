@@ -862,19 +862,18 @@ namespace armsec
       
       typedef unisim::component::cxx::processor::arm::RegisterField<28,4> NZCVRF; /* Grouped Integer Condition Flags */
       
-      typedef unisim::component::cxx::processor::arm::RegisterField<27,1> QRF; /* Cumulative saturation flag */
-
+      //typedef unisim::component::cxx::processor::arm::RegisterField<27,1> QRF; /* Cumulative saturation flag */
+      
       typedef unisim::component::cxx::processor::arm::RegisterField<24,1> JRF; /* Jazelle execution state bit */
-      //typedef unisim::component::cxx::processor::arm::RegisterField< 9,1> ERF; /* Endianness execution state */
+      typedef unisim::component::cxx::processor::arm::RegisterField< 9,1> ERF; /* Endianness execution state */
       typedef unisim::component::cxx::processor::arm::RegisterField< 5,1> TRF; /* Thumb execution state bit */
       
-      typedef unisim::component::cxx::processor::arm::RegisterField< 9,1> ERF; /* Endianness execution state */
       typedef unisim::component::cxx::processor::arm::RegisterField< 0,5> MRF; /* Mode field */
       
       typedef unisim::component::cxx::processor::arm::RegisterField<10,6> ITHIRF;
       typedef unisim::component::cxx::processor::arm::RegisterField<25,2> ITLORF;
       
-      typedef unisim::component::cxx::processor::arm::RegisterField< 0,32> ALL;
+      typedef unisim::component::cxx::processor::arm::RegisterField< 0,32> ALLRF;
       
       static uint32_t const bg_mask = 0x08ff01c0; /* Q, 23-20, GE[3:0], A, I, F, are not handled for now */
       
@@ -900,30 +899,50 @@ namespace armsec
         return _.Get( bg );
       }
       
-      void Set( ALL const& _, U32 const& value )
+      void SetBits( U32 const& bits, uint32_t mask )
       {
-        n = BOOL( NRF().Get( value ) ).expr;
-        z = BOOL( ZRF().Get( value ) ).expr;
-        c = BOOL( CRF().Get( value ) ).expr;
-        v = BOOL( VRF().Get( value ) ).expr;
+        if (NRF().Get(mask)) { n = BOOL( NRF().Get(bits) ).expr; NRF().Set(mask, 0u); }
+        if (ZRF().Get(mask)) { z = BOOL( ZRF().Get(bits) ).expr; ZRF().Set(mask, 0u); }
+        if (CRF().Get(mask)) { c = BOOL( CRF().Get(bits) ).expr; CRF().Set(mask, 0u); }
+        if (VRF().Get(mask)) { v = BOOL( VRF().Get(bits) ).expr; VRF().Set(mask, 0u); }
         
-        itstate = U8((ITHIRF().Get( value ) << 2) | ITLORF().Get( value ));
+        if (ITHIRF().Get(mask) or ITLORF().Get(mask))
+          {
+            itstate = U8((ITHIRF().Get(bits) << 2) | ITLORF().Get(bits));
+            uint32_t itmask = ITHIRF().getmask<uint32_t>() | ITLORF().getmask<uint32_t>();
+            if ((mask & itmask) != itmask)
+              throw 0;
+            mask &= ~itmask;
+            ITHIRF().Set(mask, 0u); ITLORF().Set(mask, 0u);
+          }
         
-        if (cpu.Cond((MRF().Get(value) != U32(mode)) or
-                     (JRF().Get(value) != U32(GetJ())) or
-                     (TRF().Get(value) != U32(GetT())) or
-                     (ERF().Get(value) != U32(bigendian))))
-          cpu.UnpredictableInsnBehaviour();
+        if (MRF().Get(mask))
+          {
+            U32       nmode = MRF().Get(bits);
+            if (MRF().Get(mask) == 0x1f)
+              throw 0;
+            MRF().Set(mask, 0u);
+            if (cpu.Cond(nmode != U32(mode)))
+              cpu.UnpredictableInsnBehaviour();
+          }
         
-        bg = value & U32(bg_mask);
+        if (JRF().Get(mask)) { if (cpu.Cond(JRF().Get(bits) != U32(GetJ())))    { cpu.UnpredictableInsnBehaviour(); } JRF().Set(mask, 0u); }
+        if (TRF().Get(mask)) { if (cpu.Cond(TRF().Get(bits) != U32(GetT())))    { cpu.UnpredictableInsnBehaviour(); } TRF().Set(mask, 0u); }
+        if (ERF().Get(mask)) { if (cpu.Cond(ERF().Get(bits) != U32(bigendian))) { cpu.UnpredictableInsnBehaviour(); } ERF().Set(mask, 0u); }
+        
+        bg = (bg & U32(~mask)) | (bits & U32(mask));
       }
       
-      U32 bits() const
+      U32 Get( ALLRF const& _ )
       {
         return
-          (U32(BOOL(n)) << 31) | (U32(BOOL(z)) << 30) | (U32(BOOL(c)) << 29) | (U32(BOOL(v)) << 28) |
+          (U32(BOOL(n)) << 31) |
+          (U32(BOOL(z)) << 30) |
+          (U32(BOOL(c)) << 29) |
+          (U32(BOOL(v)) << 28) |
           (U32(itstate >> U8(2)) << 10) | (U32(itstate & U8(0b11)) << 25) |
-          bg | U32((uint32_t(GetJ()) << 24) | (uint32_t(GetT()) << 5) | uint32_t(mode));
+          U32((uint32_t(GetJ()) << 24) | (uint32_t(GetT()) << 5) | uint32_t(mode)) |
+          bg;
       }
       
       void Set( NRF const& _, BOOL const& value ) { n = value.expr; }
@@ -1029,9 +1048,15 @@ namespace armsec
     U32 GetNIA() { return next_insn_addr; }
 
     psr_type& CPSR() { return cpsr; };
+    
+    void SetCPSR( U32 const& bits, uint32_t mask )
+    {
+      cpsr.SetBits( bits, mask );
+    }
+    
     U32& SPSR() { not_implemented(); return spsr; };
     
-    void SetGPRMapping( uint32_t src_mode, uint32_t tar_mode ) { /* system related */ not_implemented(); }
+    //    void SetGPRMapping( uint32_t src_mode, uint32_t tar_mode ) { /* system related */ not_implemented(); }
     
     struct Load : public ASExprNode
     {

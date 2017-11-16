@@ -364,7 +364,29 @@ CPU<CONFIG>::~CPU()
     delete *itr;
   for (typename ModeMap::iterator itr = modes.begin(), end = modes.end(); itr != end; ++itr)
     delete itr->second;
+
+/** Modify CPSR internal value with proper side effects
+ *
+ * @param bits the value of the modified bits
+ * @param mask the location of the modified bits
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::SetCPSR( uint32_t bits, uint32_t mask )
+{
+  uint32_t old_psr = cpsr.m_value;
+  uint32_t new_psr = (old_psr & ~mask) | (bits & mask);
+
+  if (M.Get(old_psr ^ new_psr))
+    {
+      CurrentMode().Swap(core); // OUT
+      cpsr.m_value = new_psr;
+      core.CurrentMode().Swap(core); // IN
+    }
+  else
+    cpsr.m_value = new_psr;
 }
+
 
 /** Get a register by its name.
  * Gets a register interface to the register specified by name.
@@ -413,7 +435,7 @@ CPU<CONFIG>::GetPL()
     }
   return 0;
 }
-  
+
 /** Assert privilege level
  *
  * Throws if the current privilege level according to the running mode

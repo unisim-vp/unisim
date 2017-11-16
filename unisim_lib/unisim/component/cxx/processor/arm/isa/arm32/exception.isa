@@ -134,6 +134,8 @@ cps.var reject : {Reject} = {(not chmod and (mode != 0)) or
                              (chitm xor (a or i or f)) or
                              (not (chmod or chitm)) or
                              (not chitm and dis)};
+cps.var psr_mask : {uint32_t} = {a*A.getmask<uint32_t>()|i*I.getmask<uint32_t>()|f*F.getmask<uint32_t>()|chmod*M.getmask<uint32_t>()};
+cps.var psr_bits : {uint32_t} = {dis*(A.getmask<uint32_t>()|I.getmask<uint32_t>()|F.getmask<uint32_t>())|mode};
 
 cps.disasm = {
   buffer << "cps";
@@ -149,19 +151,11 @@ cps.disasm = {
 cps.execute = {
   typedef typename ARCH::U32 U32;
   
-  U32 runmode = cpu.CPSR().Get(M);
-  if (cpu.Cond( runmode == U32(cpu.USER_MODE) ))
+  if (cpu.Cond( cpu.CPSR().Get(M) == U32(cpu.USER_MODE) ))
     return;
   
-  U32 cpsr_val = cpu.CPSR().bits(), disable( dis );
-  
-  if (a)     A.Set( cpsr_val, disable );
-  if (i)     I.Set( cpsr_val, disable );
-  if (f)     F.Set( cpsr_val, disable );
-  if (chmod) M.Set( cpsr_val, U32(mode) );
-  
   // CPSRWriteByInstr() checks for illegal mode changes
-  CPSRWriteByInstr( cpu, cpsr_val, 0b1111, false );
+  CPSRWriteByInstr( cpu, U32(psr_bits), psr_mask );
 };
 
 /*
@@ -229,7 +223,7 @@ subspc_imm.execute = {
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 - op2;
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -248,7 +242,7 @@ subspc_imm_shift.execute = {
       op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
       res = op1 - op2;
 
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -268,7 +262,7 @@ movspc_imm.execute = {
   typedef typename ARCH::U32 U32;
   U32 res = U32(imm);
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -294,7 +288,7 @@ movspc_imm_shift.execute = {
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), res = ComputeImmShift( cpu, rmval, shift, imm );
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -312,7 +306,7 @@ andspc_imm.execute = {
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 & op2;
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -331,7 +325,7 @@ andspc_imm_shift.execute = {
       op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
       res = op1 & op2;
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -349,7 +343,7 @@ eorspc_imm.execute = {
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 ^ op2;
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -368,7 +362,7 @@ eorspc_imm_shift.execute = {
            op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
            res = op1 ^ op2;
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -386,7 +380,7 @@ rsbspc_imm.execute = {
   typedef typename ARCH::U32 U32;
   U32 op1 = U32(imm), op2 = cpu.GetGPR( rn ), res = op1 - op2;
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -405,7 +399,7 @@ rsbspc_imm_shift.execute = {
            op1 = ComputeImmShift( cpu, rmval, shift, imm ), op2 = cpu.GetGPR( rn ),
            res = op1 - op2;
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -423,7 +417,7 @@ addspc_imm.execute = {
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 + op2;
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -442,7 +436,7 @@ addspc_imm_shift.execute = {
            op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
            res = op1 + op2;
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -460,7 +454,7 @@ adcspc_imm.execute = {
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), carry = cpu.CPSR().Get( C ), res = op1 + op2 + carry;
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -479,7 +473,7 @@ adcspc_imm_shift.execute = {
     op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ), carry = cpu.CPSR().Get( C ),
     res = op1 + op2 + carry;
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -497,7 +491,7 @@ sbcspc_imm.execute = {
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), borrow = cpu.CPSR().Get( C ) ^ U32(1), res = op1 - op2 - borrow;
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -516,7 +510,7 @@ sbcspc_imm_shift.execute = {
     op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ), borrow = cpu.CPSR().Get( C ) ^ U32(1),
     res = op1 - op2 - borrow;
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -534,7 +528,7 @@ rscspc_imm.execute = {
   typedef typename ARCH::U32 U32;
   U32 op1 = U32(imm), op2 = cpu.GetGPR( rn ), borrow = cpu.CPSR().Get( C ) ^ U32(1), res = op1 - op2 - borrow;
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -553,7 +547,7 @@ rscspc_imm_shift.execute = {
     op1 = ComputeImmShift( cpu, rmval, shift, imm ), op2 = cpu.GetGPR( rn ), borrow = cpu.CPSR().Get( C ) ^ U32(1),
     res = op1 - op2 - borrow;
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -571,7 +565,7 @@ orrspc_imm.execute = {
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 | op2;
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -590,7 +584,7 @@ orrspc_imm_shift.execute = {
            op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
            res = op1 | op2;
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -608,7 +602,7 @@ bicspc_imm.execute = {
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( rn ), op2 = U32(imm), res = op1 & ~op2;
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -627,7 +621,7 @@ bicspc_imm_shift.execute = {
            op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
            res = op1 & ~op2;
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -645,7 +639,7 @@ mvnspc_imm.execute = {
   typedef typename ARCH::U32 U32;
   U32 res = U32(~imm);
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };
@@ -662,7 +656,7 @@ mvnspc_imm_shift.execute = {
   typedef typename ARCH::U32 U32;
   U32 rmval = cpu.GetGPR( rm ), res = ~(ComputeImmShift( cpu, rmval, shift, imm ));
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };

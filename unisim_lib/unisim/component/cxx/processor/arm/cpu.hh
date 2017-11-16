@@ -246,6 +246,7 @@ struct CPU
    */
   PSR&  CPSR() { return cpsr; };
   
+  void SetCPSR( uint32_t bits, uint32_t mask );
   uint32_t GetNZCV() const { return cpsr.Get( NZCV ); }
   
   /** Get the endian configuration of the processor.
