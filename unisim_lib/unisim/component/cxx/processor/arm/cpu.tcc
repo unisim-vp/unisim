@@ -46,6 +46,8 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/simple_register.hh>
+#include <unisim/util/backtrace/backtrace.hh>
+
 
 namespace unisim {
 namespace component {
@@ -364,6 +366,7 @@ CPU<CONFIG>::~CPU()
     delete *itr;
   for (typename ModeMap::iterator itr = modes.begin(), end = modes.end(); itr != end; ++itr)
     delete itr->second;
+}
 
 /** Modify CPSR internal value with proper side effects
  *
@@ -379,14 +382,13 @@ CPU<CONFIG>::SetCPSR( uint32_t bits, uint32_t mask )
 
   if (M.Get(old_psr ^ new_psr))
     {
-      CurrentMode().Swap(core); // OUT
+      CurrentMode().Swap(*this); // OUT
       cpsr.m_value = new_psr;
-      core.CurrentMode().Swap(core); // IN
+      CurrentMode().Swap(*this); // IN
     }
   else
     cpsr.m_value = new_psr;
 }
-
 
 /** Get a register by its name.
  * Gets a register interface to the register specified by name.
@@ -435,7 +437,7 @@ CPU<CONFIG>::GetPL()
     }
   return 0;
 }
-
+  
 /** Assert privilege level
  *
  * Throws if the current privilege level according to the running mode
@@ -510,7 +512,7 @@ CPU<CONFIG>::HandleAsynchronousException( uint32_t exceptions )
   // - IRQ
   
   // If we reached this point at least one exception is pending (but maybe masked).
-  exceptions &= ~(cpsr.Get(ALL32));
+  exceptions &= ~GetCPSR();
   
   if (A.Get( exceptions ))
     {
@@ -651,7 +653,7 @@ CPU<CONFIG>::TakeDataOrPrefetchAbortException( bool isdata )
 
   uint32_t preferred_exceptn_return = GetCIA();
   uint32_t new_lr_value = preferred_exceptn_return + (isdata ? 8 : 4);
-  uint32_t new_spsr_value = cpsr.bits();
+  uint32_t new_spsr_value = GetCPSR();
   uint32_t vect_offset = isdata ? 16 : 12;
   
   // preferred_exceptn_return = new_lr_value - 8;
@@ -1054,9 +1056,10 @@ void
 CPU<CONFIG>::UnpredictableInsnBehaviour()
 {
   logger << DebugWarning
+         << unisim::util::backtrace::BackTrace()
          << "Trying to execute unpredictable behavior instruction."
          << " PC: " << std::hex << current_insn_addr << std::dec
-         << ", CPSR: " << std::hex << cpsr.bits() << std::dec
+         << ", CPSR: " << std::hex << GetCPSR() << std::dec
          << " (" << cpsr << ")"
          << EndDebugWarning;
   this->Stop( -1 );

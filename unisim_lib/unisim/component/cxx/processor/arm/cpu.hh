@@ -244,10 +244,12 @@ struct CPU
    *
    * @return the CPSR structured register.
    */
-  PSR&  CPSR() { return cpsr; };
+  PSR&     CPSR() { return cpsr; };
   
-  void SetCPSR( uint32_t bits, uint32_t mask );
-  uint32_t GetNZCV() const { return cpsr.Get( NZCV ); }
+  void     SetCPSR( uint32_t bits, uint32_t mask );
+  
+  uint32_t GetCPSR() const { return cpsr.Get(ALL32); }
+  uint32_t GetNZCV() const { return cpsr.Get(NZCV); }
   
   /** Get the endian configuration of the processor.
    *

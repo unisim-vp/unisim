@@ -297,9 +297,9 @@ ARM926EJS::Run()
   /* compute the average time of each instruction */
   for (;;)
   {
-    uint32_t unmasked_interrupts = CPSR().bits();
+    uint32_t unmasked_interrupts = GetCPSR();
     StepInstruction();
-    unmasked_interrupts &= ~(CPSR().bits());
+    unmasked_interrupts &= ~GetCPSR();
     if (unisim::component::cxx::processor::arm::I.Get( unmasked_interrupts ) or
         unisim::component::cxx::processor::arm::F.Get( unmasked_interrupts ))
       {

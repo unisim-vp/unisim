@@ -376,10 +376,10 @@ CPU::Run()
         << EndDebugInfo;
     }
     
-    uint32_t cpsr_cleared_bits = CPSR().bits();
+    uint32_t cpsr_cleared_bits = GetCPSR();
     StepInstruction();
     quantum_time += time_per_instruction;
-    cpsr_cleared_bits &= ~(CPSR().bits());
+    cpsr_cleared_bits &= ~GetCPSR();
     
     if ( unlikely(verbose_tlm) )
     {

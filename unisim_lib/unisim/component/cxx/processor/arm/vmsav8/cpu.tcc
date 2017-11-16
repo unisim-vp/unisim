@@ -472,8 +472,6 @@ CPU<CONFIG>::StepInstruction()
   catch (std::exception const& exc) {
     logger << DebugError << "Unimplemented exception (" << exc.what() << ")"
            << " pc: " << std::hex << current_insn_addr << std::dec
-           // << ", cpsr: " << std::hex << cpsr.bits() << std::dec
-           // << " (" << cpsr << ")"
            << EndDebugError;
     this->Stop(-1);
   }
