@@ -188,8 +188,8 @@ struct CPU
   void SetGPR(uint32_t id, uint32_t val)
   {
     if (id != 15) gpr[id] = val;
-    else if (cpsr.Get( T )) this->Branch( val );
-    else this->BranchExchange( val );
+    else if (cpsr.Get( T )) this->Branch( val, B_JMP );
+    else this->BranchExchange( val, B_JMP );
   }
 	
   /** Assign a GPR with a value coming from the Memory stage.  From
@@ -202,24 +202,25 @@ struct CPU
   void SetGPR_mem(uint32_t id, uint32_t val)
   {
     if (id != 15) gpr[id] = val;
-    else this->BranchExchange( val );
+    else this->BranchExchange( val, B_JMP );
   }
   
+  enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE };
   /** Sets the PC (and potentially exchanges mode ARM<->Thumb)
    *
    * @param val the value to set PC
    */
-  void BranchExchange(uint32_t target)
+  void BranchExchange(uint32_t target, branch_type_t branch_type)
   {
     this->cpsr.Set( T, target & 1 );
-    this->Branch( target );
+    this->Branch( target, branch_type );
   }
 	
   /** Sets the PC (fixing alignment and preserving mode)
    *
    * @param val the value to set PC
    */
-  void Branch(uint32_t target)
+  void Branch(uint32_t target, branch_type_t branch_type)
   {
     this->next_insn_addr = target & (this->cpsr.Get( T ) ? -2 : -4);
   }

@@ -219,7 +219,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
       ProgramCounterRegister( CPU& _cpu ) : cpu(_cpu) {}
       virtual const char *GetName() const { return "pc"; }
       virtual void GetValue( void* buffer ) const { *((uint32_t*)buffer) = cpu.next_insn_addr; }
-      virtual void SetValue( void const* buffer ) { uint32_t address = *((uint32_t*)buffer); cpu.BranchExchange( address ); }
+      virtual void SetValue( void const* buffer ) { uint32_t address = *((uint32_t*)buffer); cpu.BranchExchange( address, CPU::B_DBG ); }
       virtual int  GetSize() const { return 4; }
       virtual void Clear() { /* Clear is meaningless for PC */ }
       CPU&        cpu;
@@ -580,7 +580,7 @@ CPU<CONFIG>::TakeReset()
   // return information registers R14_svc and SPSR_svc have UNKNOWN values, so that
   // it is impossible to return from a reset in an architecturally defined way.
   // Branch to Reset vector.
-  Branch(ExcVectorBase() + 0);
+  Branch(ExcVectorBase() + 0, B_EXC);
 }
 
 /** Take Undefined Exception
@@ -635,7 +635,7 @@ CPU<CONFIG>::TakeUndefInstrException()
   cpsr.Set( T, sctlr::TE.Get( SCTLR ) ); // TE=0: ARM, TE=1: Thumb
   cpsr.Set( E, sctlr::EE.Get( SCTLR ) ); // EE=0: little-endian, EE=1: big-endian
   // Branch to Undefined Instruction vector.
-  Branch(ExcVectorBase() + vect_offset);
+  Branch(ExcVectorBase() + vect_offset, B_EXC);
 }
 
 /** Take Data Abort Exception
@@ -707,7 +707,7 @@ CPU<CONFIG>::TakeDataOrPrefetchAbortException( bool isdata )
   cpsr.Set( T, sctlr::TE.Get( SCTLR ) ); // TE=0: ARM, TE=1: Thumb
   cpsr.Set( E, sctlr::EE.Get( SCTLR ) ); // EE=0: little-endian, EE=1: big-endian
   // Branch to Abort vector.
-  Branch(ExcVectorBase() + vect_offset);
+  Branch(ExcVectorBase() + vect_offset, B_EXC);
 }
 
 /** Take Reset Exception
@@ -761,7 +761,7 @@ CPU<CONFIG>::TakeSVCException()
   cpsr.Set( T, sctlr::TE.Get( SCTLR ) ); // TE=0: ARM, TE=1: Thumb
   cpsr.Set( E, sctlr::EE.Get( SCTLR ) ); // EE=0: little-endian, EE=1: big-endian
   // Branch to SVC vector.
-  Branch(ExcVectorBase() + vect_offset);
+  Branch(ExcVectorBase() + vect_offset, B_EXC);
 }
 
 /** Take Physical FIQ or IRQ Exception
@@ -825,7 +825,7 @@ void
 CPU<CONFIG>::BranchToFIQorIRQvector( bool isIRQ )
 {
   uint32_t vect_offset = isIRQ ? 0x18 : 0x1c;
-  Branch(ExcVectorBase() + vect_offset);
+  Branch(ExcVectorBase() + vect_offset, B_EXC);
 }
 
 /** Read the value of a CP15 coprocessor register

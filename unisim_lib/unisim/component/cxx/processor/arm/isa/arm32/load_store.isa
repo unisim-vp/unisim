@@ -1066,7 +1066,7 @@ ldm_rfe.execute = {
                 (cpu.CPSR().Get(J) == U32(1)) and (cpu.CPSR().Get(T) == U32(1)) ))
     cpu.UnpredictableInsnBehaviour();
   
-  cpu.BranchExchange( new_pc_value );
+  cpu.BranchExchange( new_pc_value, ARCH::B_RFE );
 };
 
 /*

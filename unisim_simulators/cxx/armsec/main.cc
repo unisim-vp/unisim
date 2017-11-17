@@ -782,6 +782,13 @@ namespace armsec
       unsigned bitsize;
     };
     
+    enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE };
+    struct PCWrite : public RegWrite
+    {
+      PCWrite( Expr const& _value, branch_type_t bt ) : RegWrite( "pc", _value, 32 ), branch_type(bt) {}
+      branch_type_t branch_type;
+    };
+
     struct AssertFalse : public ASExprNode
     {
       AssertFalse() {}
@@ -829,13 +836,14 @@ namespace armsec
         throw std::logic_error( "Bad instruction length" );
       U32 insn_addr = _expr;
       reg_values[15] = insn_addr + U32( cpsr.IsThumb() ? 4 : 8 );
-      next_insn_addr = insn_addr + U32( insn_length / 8 );
+      SetNIA( insn_addr + U32( insn_length / 8 ), B_JMP );
     }
     
     PathNode* path;
     
     U32 reg_values[16];
     U32 next_insn_addr;
+    branch_type_t branch_type;
     //typedef unisim::component::cxx::processor::arm::FieldRegister<U32> FieldRegisterU32;
     //struct psr_type : public FieldRegisterU32
     struct psr_type
@@ -933,7 +941,7 @@ namespace armsec
         bg = (bg & U32(~mask)) | (bits & U32(mask));
       }
       
-      U32 Get( ALLRF const& _ )
+      U32 GetBits()
       {
         return
           (U32(BOOL(n)) << 31) |
@@ -1036,23 +1044,22 @@ namespace armsec
       if (id != 15)
         reg_values[id] = value;
       else
-        next_insn_addr = value;
+        SetNIA( value, B_JMP );
     }
     void SetGPR( uint32_t id, U32 const& value ) {
       if (id != 15)
         reg_values[id] = value;
       else
-        next_insn_addr = value;
+        SetNIA( value, B_JMP );
     }
     
-    U32 GetNIA() { return next_insn_addr; }
+    U32  GetNIA() { return next_insn_addr; }
+    void SetNIA( U32 const& nia, branch_type_t bt ) { next_insn_addr = nia; branch_type = bt; }
 
     psr_type& CPSR() { return cpsr; };
     
-    void SetCPSR( U32 const& bits, uint32_t mask )
-    {
-      cpsr.SetBits( bits, mask );
-    }
+    U32  GetCPSR()                                 { return cpsr.GetBits(); }
+    void SetCPSR( U32 const& bits, uint32_t mask ) { cpsr.SetBits( bits, mask ); }
     
     U32& SPSR() { not_implemented(); return spsr; };
     
@@ -1137,8 +1144,8 @@ namespace armsec
     bool ExclusiveMonitorsPass( U32 const& address, unsigned size ) { std::cerr << "ExclusiveMonitorsPass\n"; return true; }
     void ClearExclusiveLocal() { std::cerr << "ClearExclusiveMonitors\n"; }
     
-    void BranchExchange( U32 const& target ) { next_insn_addr = target; }
-    void Branch( U32 const& target ) { next_insn_addr = target; }
+    void BranchExchange( U32 const& target, branch_type_t branch_type ) { SetNIA( target, branch_type ); }
+    void Branch( U32 const& target, branch_type_t branch_type ) { SetNIA( target, branch_type ); }
     
     void WaitForInterrupt() { not_implemented(); }
     void SWI( uint32_t imm ) { not_implemented(); }
@@ -1711,7 +1718,7 @@ namespace armsec
     close( State const& ref )
     {
       bool complete = path->close();
-      path->sinks.insert( Expr( new RegWrite( "pc", next_insn_addr.expr, 32 ) ) );
+      path->sinks.insert( Expr( new PCWrite( next_insn_addr.expr, branch_type ) ) );
       if (unpredictable)
         {
           path->sinks.insert( Expr( new AssertFalse() ) );
@@ -1929,6 +1936,7 @@ namespace armsec
     Context ctx( _up );
 
     Expr nia;
+    armsec::State::branch_type_t bt;
 
     struct Head
     {
@@ -2057,7 +2065,7 @@ namespace armsec
               }
 
             if (rid.code == rid.nia)
-              nia = value;
+              { nia = value; bt = dynamic_cast<armsec::State::PCWrite const&>( *rw ).branch_type; }
             else
               ctx.add_pending( *itr );
           }
@@ -2139,6 +2147,7 @@ namespace armsec
 
     std::ostringstream buffer;
     buffer << "goto (" << GetCode(nia, ctx.vars, current) << (nia.ConstSimplify() ? ",0" : "") << ")";
+    if (bt == armsec::State::B_CALL) buffer << " // call";
     current.write( buffer.str() );
   }
 }

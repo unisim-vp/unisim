@@ -537,7 +537,7 @@ mov_3_pc.disasm = {
 mov_3_pc.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.Branch( cpu.GetGPR( rm ) );
+  cpu.Branch( cpu.GetGPR( rm ), ARCH::B_JMP );
 };
 
 /*
