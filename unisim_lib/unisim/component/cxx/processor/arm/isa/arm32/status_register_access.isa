@@ -118,7 +118,7 @@ msr_reg.disasm = {
 
 op msr_reg_psr( cond[4]: 0b00010[5]: write_spsr[1]: 0b10[2]: mask[4]: 0b1111[4]: 0b00[2]: 0b00[2]: 0b0000[4]: rn[4] );
 msr_reg_psr.var psr_mask : {uint32_t} = {(((mask*0x00204081)&0x01010101)*0xff) &
-                                         ~0x0700fc20 /* Does not affect execution state bits other than E */};
+                                         (write_spsr ? -1 : ~0x0700fc20) /* Does not affect execution state bits other than E */};
 
 msr_reg_psr.disasm = {
   buffer << "msr" << DisasmCondition(cond) << '\t' << DisasmPSRMask(write_spsr,mask) << ", " << DisasmRegister(rn);
@@ -137,7 +137,7 @@ msr_reg_psr.execute = {
 op msr_imm_psr( cond[4]: 0b00110[5]: write_spsr[1]: 0b10[2]: mask[4]: 0b1111[4]: shl<1> imr[4]: imb[8] );
 msr_imm_psr.var imm : {uint32_t} = {unisim::util::arithmetic::RotateRight( uint32_t( imb ), imr )};
 msr_imm_psr.var psr_mask : {uint32_t} = {(((mask*0x00204081)&0x01010101)*0xff) &
-                                         ~0x0700fc20 /* Does not affect execution state bits other than E */};
+                                         (write_spsr ? -1 : ~0x0700fc20) /* Does not affect execution state bits other than E */};
 
 msr_imm_psr.disasm = {
   buffer << "msr" << DisasmCondition(cond) << '\t' << DisasmPSRMask(write_spsr,mask) << ", #"

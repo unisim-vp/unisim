@@ -156,7 +156,7 @@ msr_reg.disasm = {
 
 op msr_reg_psr( 0b11110011[8]: 0b100[3]: write_spsr[1]: rn[4]:> <: 0b1000[4]: mask[4]: 0b00000000[8] );
 msr_reg_psr.var psr_mask : {uint32_t} = {(((mask*0x00204081)&0x01010101)*0xff) &
-                                         ~0x0700fc20 /* Does not affect execution state bits other than E */};
+                                         (write_spsr ? -1 : ~0x0700fc20) /* Does not affect execution state bits other than E */};
 
 msr_reg_psr.disasm = {
   buffer << "msr\t" << DisasmPSRMask(write_spsr,mask) << ", " << DisasmRegister(rn);
