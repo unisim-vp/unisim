@@ -53,6 +53,7 @@
 #include <unisim/component/tlm2/com/serial_terminal/serial_terminal.hh>
 #include <unisim/component/tlm2/dma/freescale/mpc57xx/dmamux/dmamux.hh>
 #include <unisim/component/tlm2/dma/freescale/mpc57xx/edma/edma.hh>
+#include <unisim/component/tlm2/operators/associative_operator.hh>
 
 // Class definition of kernel, services and interfaces
 #include <unisim/kernel/service/service.hh>
@@ -583,6 +584,8 @@ private:
 	XBAR_0_S6_STUB *xbar_0_s6_stub;
 	XBAR_1_M2_STUB *xbar_1_m2_stub;
 	
+	unisim::component::tlm2::operators::LogicalOrOperator<bool, NUM_DMA_CHANNELS> *dma_err_irq_combinator;
+	
 	//=========================================================================
 	//===                            Services                               ===
 	//=========================================================================
@@ -614,7 +617,7 @@ private:
 	NETCAT *netcat14;
 	NETCAT *netcat15;
 	NETCAT *netcat16;
-
+	
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
 	bool enable_profiler;

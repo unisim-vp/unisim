@@ -474,6 +474,7 @@ public:
 	
 	Register();
 	Register(TYPE value);
+	Register(const Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>& r);
 	void WithinRegisterFileCtor(unsigned int index, void *custom_ctor_arg);
 	void Initialize(TYPE value);
 	inline Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>& operator = (const TYPE& value) ALWAYS_INLINE;
@@ -603,6 +604,7 @@ public:
 	
 	AddressableRegister();
 	AddressableRegister(typename Super::TYPE value);
+	AddressableRegister(const AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>& ar);
 
 	using Super::operator =;
 

@@ -1131,7 +1131,8 @@ inline typename Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::TYPE Register
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 inline void Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Set(unsigned int bit_offset, TYPE bit_value)
 {
-	value = (value | (TYPE(1) << bit_offset)) & GetMask();
+	TYPE mask = (TYPE(1) << bit_offset) & GetMask();
+	value = (value & ~mask) | ((TYPE(bit_value & 1) << bit_offset) & mask);
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
@@ -1161,6 +1162,12 @@ Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Register()
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
 Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Register(TYPE _value)
 	: value(_value & TYPE_MASK)
+{
+}
+
+template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
+Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Register(const Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>& r)
+	: value(r.value)
 {
 }
 
@@ -1264,9 +1271,7 @@ ReadWriteStatus Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Write(const T
 	const TYPE write_mask = bit_enable & GetWriteMask();
 	const TYPE unwritable_mask = bit_enable & ~GetWriteMask();
 	const TYPE write_one_clear_mask = bit_enable & GetWriteOneClearMask();
-	const TYPE copy_mask = write_mask & ~write_one_clear_mask;
-	
-	TYPE old_value = value & TYPE_MASK;
+	const TYPE copy_mask = bit_enable & write_mask & ~write_one_clear_mask;
 	
 	if((_value & bit_enable & TYPE_MASK) != (_value & bit_enable))
 	{
@@ -1279,13 +1284,14 @@ ReadWriteStatus Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Write(const T
 		// writing read-only register
 		rws = ReadWriteStatus(rws | RWS_WROR);
 	}
-	else if((_value & unwritable_mask) != (old_value & unwritable_mask))
+	else if((_value & unwritable_mask) != (value & unwritable_mask))
 	{
 		// writing read-only bits
 		rws = ReadWriteStatus(rws | RWS_WROB);
 	}
 	
-	value = ((old_value & ~copy_mask) | (_value & copy_mask)) & ~(_value & write_one_clear_mask);
+	value = (value & ~copy_mask) | (_value & copy_mask);
+	value = value & ~(_value & write_one_clear_mask);
 	
 	if(unlikely(__IsVerboseWrite__()))
 	{
@@ -1304,17 +1310,55 @@ template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGIST
 template <typename PRESERVED_FIELD>
 ReadWriteStatus Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::WritePreserve(const TYPE& _value, const TYPE& bit_enable)
 {
+	if(unlikely(__IsVerboseWrite__()))
+	{
+		std::ostream& os = __GetInfoStream__();
+		std::ios_base::fmtflags ff = os.flags();
+		os << "writing " << GetName() << " <- 0x" << std::hex << (uint64_t)(_value & bit_enable);
+		if(bit_enable != (~TYPE(0) & TYPE_MASK))
+		{
+			os << " (bit_enable=0x" << bit_enable << ")";
+		}
+		os.flags(ff);
+	}
+
 	ReadWriteStatus rws(RWS_OK);
-	TYPE new_value = _value;
-	TYPE preserved_fields = this->template Get<PRESERVED_FIELD>();
-	TYPE preserved_fields_mask = PRESERVED_FIELD::template GetMask<TYPE>();
-	if((new_value & bit_enable & preserved_fields_mask) != (value & bit_enable & preserved_fields_mask))
+	const TYPE write_mask = bit_enable & GetWriteMask() & ~PRESERVED_FIELD::template GetMask<TYPE>();
+	const TYPE unwritable_mask = bit_enable & (~GetWriteMask() | PRESERVED_FIELD::template GetMask<TYPE>());
+	const TYPE write_one_clear_mask = bit_enable & (GetWriteOneClearMask() & ~PRESERVED_FIELD::template GetMask<TYPE>());
+	const TYPE copy_mask = bit_enable & write_mask & ~write_one_clear_mask;
+	
+	if((_value & bit_enable & TYPE_MASK) != (_value & bit_enable))
+	{
+		// writing out-of-range register value
+		rws = ReadWriteStatus(rws | RWS_WOORV);
+	}
+	
+	if(!(_ACCESS & AF_SW_W))
+	{
+		// writing read-only register
+		rws = ReadWriteStatus(rws | RWS_WROR);
+	}
+	else if((_value & unwritable_mask) != (value & unwritable_mask))
 	{
 		// writing read-only bits
 		rws = ReadWriteStatus(rws | RWS_WROB);
 	}
-	PRESERVED_FIELD::template Set<TYPE>(new_value, preserved_fields);
-	return ReadWriteStatus(rws | this->Write(new_value, bit_enable));
+	
+	value = (value & ~copy_mask) | (_value & copy_mask);
+	value = value & ~(_value & write_one_clear_mask);
+	
+	if(unlikely(__IsVerboseWrite__()))
+	{
+		std::ostream& os = __GetInfoStream__();
+		std::ios_base::fmtflags ff = os.flags();
+		os << " => " << std::hex;
+		ShortPrettyPrint(os);
+		os << ", " << rws << std::endl;
+		os.flags(ff);
+	}
+
+	return rws;
 }
 
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename REGISTER_BASE>
@@ -1665,6 +1709,12 @@ AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::AddressableRegiste
 template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename CUSTOM_RW_ARG>
 AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::AddressableRegister(typename Super::TYPE value)
 	: Super(value)
+{
+}
+
+template <typename REGISTER, unsigned int _SIZE, Access _ACCESS, typename CUSTOM_RW_ARG>
+AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>::AddressableRegister(const AddressableRegister<REGISTER, _SIZE, _ACCESS, CUSTOM_RW_ARG>& ar)
+	: Super(ar)
 {
 }
 
@@ -2153,6 +2203,85 @@ ReadWriteStatus RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Read(CUSTOM_RW_ARG *
 		unsigned int reg_size = arh->GetSize();
 		unsigned int reg_size_minus_1 = reg_size - 1;
 		unsigned char reg_value[reg_size];
+		unsigned char reg_be[reg_size];
+		
+		memset(reg_value, 0, sizeof(reg_value));
+		memset(reg_be, 0, sizeof(reg_be));
+
+		unsigned int byte_pos = byte_addr - reg_addr;
+		
+		unsigned int sz = std::min(data_length - byte_offset, reg_size - byte_pos);
+		
+		do
+		{
+			if(host_endian != data_endian)
+			{
+				reg_be[reg_size_minus_1 - byte_pos] = 0xff;
+			}
+			else
+			{
+				reg_be[byte_pos] = 0xff;
+			}
+			
+			byte_pos++;
+		}
+		while(--sz);
+
+		//std::cerr << "Reading \"" << arh->GetName() << "\"" << std::endl;
+		ReadWriteStatus rws = arh->__ARH_Read__(custom_rw_arg, reg_value, reg_be);
+		
+		if(rws)
+		{
+			if(warning_stream)
+			{
+				(*warning_stream) << "while reading to " << arh->GetName() << ", " << rws << "; See below " << arh->GetName() << " content after mapped read access: " << std::endl;
+				arh->LongPrettyPrint(*warning_stream);
+				(*warning_stream) << std::endl;
+			}
+			
+			if(IsReadWriteError(rws)) return rws;
+		}
+
+		byte_pos = byte_addr - reg_addr;
+		
+		sz = std::min(data_length - byte_offset, reg_size - byte_pos);
+		
+		do
+		{
+			uint8_t byte_value = (host_endian != data_endian) ? reg_value[reg_size_minus_1 - byte_pos] : reg_value[byte_pos];
+			data_ptr[byte_offset] = byte_value;
+			
+			byte_offset++;
+			byte_pos++;
+		}
+		while(--sz);
+	}
+	
+	return RWS_OK;
+}
+
+
+#if 0
+template <typename ADDRESS, typename CUSTOM_RW_ARG>
+ReadWriteStatus RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Read(CUSTOM_RW_ARG *custom_rw_arg, ADDRESS addr, unsigned char *data_ptr, unsigned int data_length)
+{
+	unsigned int byte_offset;
+	
+	unisim::util::endian::endian_type host_endian = unisim::util::endian::GetHostEndian();
+	
+	for(byte_offset = 0; byte_offset < data_length;)
+	{
+		ADDRESS byte_addr = addr + byte_offset;
+		
+		AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *arh = FindAddressableRegister(byte_addr);
+		
+		if(!arh) return RWS_UA;
+		
+		ADDRESS reg_addr = arh->GetAddress();
+		
+		unsigned int reg_size = arh->GetSize();
+		unsigned int reg_size_minus_1 = reg_size - 1;
+		unsigned char reg_value[reg_size];
 		
 		//std::cerr << "Reading \"" << arh->GetName() << "\"" << std::endl;
 		ReadWriteStatus rws = arh->__ARH_Read__(custom_rw_arg, reg_value, /* bit enable */ 0);
@@ -2186,6 +2315,7 @@ ReadWriteStatus RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Read(CUSTOM_RW_ARG *
 	
 	return RWS_OK;
 }
+#endif
 
 template <typename ADDRESS, typename CUSTOM_RW_ARG>
 unsigned int RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::DebugWrite(CUSTOM_RW_ARG *custom_rw_arg, ADDRESS addr, unsigned char *data_ptr, unsigned int data_length)

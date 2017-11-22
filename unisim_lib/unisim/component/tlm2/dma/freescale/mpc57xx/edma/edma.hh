@@ -99,12 +99,14 @@ class EDMA
 	, public tlm::tlm_bw_transport_if<>
 {
 public:
-	static const unsigned int TLM2_IP_VERSION_MAJOR = 1;
-	static const unsigned int TLM2_IP_VERSION_MINOR = 0;
-	static const unsigned int TLM2_IP_VERSION_PATCH = 0;
-	static const unsigned int NUM_DMA_CHANNELS      = CONFIG::NUM_DMA_CHANNELS;
-	static const unsigned int BUSWIDTH              = CONFIG::BUSWIDTH;
-	static const bool threaded_model                = false;
+	static const unsigned int TLM2_IP_VERSION_MAJOR  = 1;
+	static const unsigned int TLM2_IP_VERSION_MINOR  = 0;
+	static const unsigned int TLM2_IP_VERSION_PATCH  = 0;
+	static const unsigned int NUM_DMA_CHANNELS       = CONFIG::NUM_DMA_CHANNELS;
+	static const unsigned int BUSWIDTH               = CONFIG::BUSWIDTH;
+	static const unsigned int NUM_GROUPS             = 4;
+	static const unsigned int NUM_CHANNELS_PER_GROUP = 16;
+	static const bool threaded_model                 = false;
 	
 	typedef tlm::tlm_target_socket<BUSWIDTH> peripheral_slave_if_type;
 	typedef tlm::tlm_initiator_socket<BUSWIDTH> master_if_type;
@@ -115,6 +117,7 @@ public:
 	sc_core::sc_in<bool>      reset_b;                          // reset
 	sc_core::sc_in<bool>     *dma_channel[NUM_DMA_CHANNELS];    // DMA channels (peripheral requests)
 	sc_core::sc_out<bool>    *irq[NUM_DMA_CHANNELS];            // Interrupt requests
+	sc_core::sc_out<bool>    *err_irq[NUM_DMA_CHANNELS];        // Error Interrupt requests
 	
 	EDMA(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
 	virtual ~EDMA();
@@ -278,6 +281,7 @@ private:
 		struct GRP2PRI : Field<EDMA_CR, GRP2PRI, 18, 19> {}; // Channel group 2 priority
 		struct GRP1PRI : Field<EDMA_CR, GRP1PRI, 20, 21> {}; // Channel group 1 priority
 		struct GRP0PRI : Field<EDMA_CR, GRP0PRI, 22, 23> {}; // Channel group 0 priority
+		struct GRPPRI  : Field<EDMA_CR, GRPPRI , 16, 23> {};
 		struct EMLM    : Field<EDMA_CR, EMLM   , 24    > {}; // Enable minor loop mapping
 		struct CLM     : Field<EDMA_CR, CLM    , 25    > {}; // Continuous Link mode
 		struct HALT    : Field<EDMA_CR, HALT   , 26    > {}; // Halt DMA operations
@@ -313,6 +317,19 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x0);
+			this->edma->UpdateGroupPriority();
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				this->edma->UpdateGroupPriority();
+			}
+			
+			return rws;
 		}
 		
 		using Super::operator =;
@@ -777,6 +794,30 @@ private:
 		{
 			this->Initialize(0x0);
 		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				if(!this->template Get<NOP>())
+				{
+					if(this->template Get<SAER>())
+					{
+						this->edma->EnableAllRequests();
+					}
+					else
+					{
+						this->edma->EnableRequest(this->template Get<SERQ>());
+					}
+				}
+			
+				this->Reset();
+			}
+			
+			return rws;
+		}
 
 		using Super::operator =;
 	};
@@ -809,6 +850,30 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x0);
+		}
+
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				if(!this->template Get<NOP>())
+				{
+					if(this->template Get<CAER>())
+					{
+						this->edma->DisableAllRequests();
+					}
+					else
+					{
+						this->edma->DisableRequest(this->template Get<CERQ>());
+					}
+				}
+			
+				this->Reset();
+			}
+			
+			return rws;
 		}
 
 		using Super::operator =;
@@ -844,6 +909,30 @@ private:
 			this->Initialize(0x0);
 		}
 
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				if(!this->template Get<NOP>())
+				{
+					if(this->template Get<SAEE>())
+					{
+						this->edma->EnableAllErrorInterrupts();
+					}
+					else
+					{
+						this->edma->EnableErrorInterrupt(this->template Get<SEEI>());
+					}
+				}
+			
+				this->Reset();
+			}
+			
+			return rws;
+		}
+
 		using Super::operator =;
 	};
 	
@@ -875,6 +964,30 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x0);
+		}
+
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				if(!this->template Get<NOP>())
+				{
+					if(this->template Get<CAEE>())
+					{
+						this->edma->DisableAllErrorInterrupts();
+					}
+					else
+					{
+						this->edma->DisableErrorInterrupt(this->template Get<CEEI>());
+					}
+				}
+			
+				this->Reset();
+			}
+			
+			return rws;
 		}
 
 		using Super::operator =;
@@ -910,6 +1023,30 @@ private:
 			this->Initialize(0x0);
 		}
 
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				if(!this->template Get<NOP>())
+				{
+					if(this->template Get<CAIR>())
+					{
+						this->edma->ClearAllInterruptRequests();
+					}
+					else
+					{
+						this->edma->ClearInterruptRequest(this->template Get<CINT>());
+					}
+				}
+			
+				this->Reset();
+			}
+			
+			return rws;
+		}
+
 		using Super::operator =;
 	};
 	
@@ -941,6 +1078,30 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x0);
+		}
+
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				if(!this->template Get<NOP>())
+				{
+					if(this->template Get<CAEI>())
+					{
+						this->edma->ClearAllErrorIndicators();
+					}
+					else
+					{
+						this->edma->ClearErrorIndicator(this->template Get<CERR>());
+					}
+				}
+			
+				this->Reset();
+			}
+			
+			return rws;
 		}
 
 		using Super::operator =;
@@ -976,6 +1137,30 @@ private:
 			this->Initialize(0x0);
 		}
 
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				if(!this->template Get<NOP>())
+				{
+					if(this->template Get<SAST>())
+					{
+						this->edma->SetAllStartBits();
+					}
+					else
+					{
+						this->edma->SetStartBit(this->template Get<SSRT>());
+					}
+				}
+			
+				this->Reset();
+			}
+			
+			return rws;
+		}
+
 		using Super::operator =;
 	};
 	
@@ -1007,6 +1192,30 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x0);
+		}
+
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				if(!this->template Get<NOP>())
+				{
+					if(this->template Get<CADN>())
+					{
+						this->edma->ClearAllDoneBits();
+					}
+					else
+					{
+						this->edma->ClearDoneBit(this->template Get<CDNE>());
+					}
+				}
+			
+				this->Reset();
+			}
+			
+			return rws;
 		}
 
 		using Super::operator =;
@@ -1291,6 +1500,18 @@ private:
 			this->Initialize(0x0);
 		}
 
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				this->edma->UpdateVLD();
+			}
+			
+			return rws;
+		}
+		
 		using Super::operator =;
 	};
 	
@@ -1383,6 +1604,18 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x0);
+		}
+
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				this->edma->UpdateVLD();
+			}
+			
+			return rws;
 		}
 
 		using Super::operator =;
@@ -1583,10 +1816,10 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x100;
 		
-		struct ECP    : Field<EDMA_DCHPRI, ECP   , 0   > {}; // Enable channel preemption
-		struct DPA    : Field<EDMA_DCHPRI, DPA   , 1   > {}; // Disable preempt ability
-		struct GRPPRI : Field<EDMA_DCHPRI, GRPPRI, 2, 3> {}; // Channel n current group priority
-		struct CHPRI  : Field<EDMA_DCHPRI, CHPRI , 4, 7> {}; // Channel n arbitration priority
+		struct ECP    : Field<EDMA_DCHPRI, ECP   , 0         > {}; // Enable channel preemption
+		struct DPA    : Field<EDMA_DCHPRI, DPA   , 1         > {}; // Disable preempt ability
+		struct GRPPRI : Field<EDMA_DCHPRI, GRPPRI, 2, 3, SW_R> {}; // Channel n current group priority
+		struct CHPRI  : Field<EDMA_DCHPRI, CHPRI , 4, 7      > {}; // Channel n arbitration priority
 		
 		typedef FieldSet<ECP, DPA, GRPPRI, CHPRI> ALL;
 		
@@ -1616,10 +1849,23 @@ private:
 		{
 			this->template Set<ECP>(0);
 			this->template Set<DPA>(0);
-			this->template Set<GRPPRI>(reg_num / 16);
-			this->template Set<CHPRI>(reg_num & 15);
+			this->template Set<GRPPRI>(reg_num / NUM_CHANNELS_PER_GROUP);
+			this->template Set<CHPRI>(reg_num % NUM_CHANNELS_PER_GROUP);
+			this->edma->UpdateChannelPriority(reg_num);
 		}
 		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				this->edma->UpdateChannelPriority(reg_num);
+			}
+			
+			return rws;
+		}
+
 		using Super::operator =;
 		
 	private:
@@ -1676,7 +1922,7 @@ private:
 	{
 		typedef EDMA_Register<EDMA_TCD_SADDR, 32, SW_RW> Super;
 		
-		static const sc_dt::uint64 ADDRESS_OFFSET = 0x1000;
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x0;
 		
 		struct SADDR : Field<EDMA_TCD_SADDR, SADDR, 0, 31> {}; // Source address
 		
@@ -1717,7 +1963,7 @@ private:
 	{
 		typedef EDMA_Register<EDMA_TCD_ATTR, 16, SW_RW> Super;
 		
-		static const sc_dt::uint64 ADDRESS_OFFSET = 0x1004;
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x4;
 		
 		struct SMOD  : Field<EDMA_TCD_ATTR, SMOD ,  0, 4 > {}; // Source address modulo
 		struct SSIZE : Field<EDMA_TCD_ATTR, SSIZE,  5, 7 > {}; // Source data transfer size
@@ -1764,7 +2010,7 @@ private:
 	{
 		typedef EDMA_Register<EDMA_TCD_SOFF, 16, SW_RW> Super;
 		
-		static const sc_dt::uint64 ADDRESS_OFFSET = 0x1006;
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x6;
 		
 		struct SOFF : Field<EDMA_TCD_SOFF, SOFF, 0, 15> {}; // Source address signed offset
 		
@@ -1800,17 +2046,14 @@ private:
 		unsigned int reg_num;
 	};
 	
-	// TCD Word 2 (eDMA_TCDn_NBYTES_MLNO/eDMA_TCDn_NBYTES_MLOFFNO/eDMA_TCDn_NBYTES_MLOFFYES)
+	// TCD BYTES (eDMA_TCDn_NBYTES_MLNO/eDMA_TCDn_NBYTES_MLOFFNO/eDMA_TCDn_NBYTES_MLOFFYES)
 	struct EDMA_TCD_NBYTES : EDMA_Register<EDMA_TCD_NBYTES, 32, SW_RW>
 	{
 		typedef EDMA_Register<EDMA_TCD_NBYTES, 32, SW_RW> Super;
 		
-		static const sc_dt::uint64 ADDRESS_OFFSET = 0x1008;
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x8;
 		
 		struct ALL : Field<EDMA_TCD_NBYTES, ALL, 0, 31> {};
-		
-		struct SMLOE  : Field<EDMA_TCD_NBYTES, SMLOE , 0    > {}; // Source minor loop offset enable
-		struct DMLOE  : Field<EDMA_TCD_NBYTES, DMLOE , 1    > {}; // Destination minor loop offset enable
 		
 		struct MLNO
 		{
@@ -1819,11 +2062,15 @@ private:
 		
 		struct MLOFFNO
 		{
+			struct SMLOE  : Field<EDMA_TCD_NBYTES, SMLOE , 0    > {}; // Source minor loop offset enable
+			struct DMLOE  : Field<EDMA_TCD_NBYTES, DMLOE , 1    > {}; // Destination minor loop offset enable
 			struct NBYTES : Field<EDMA_TCD_NBYTES, NBYTES, 2, 31> {}; // Minor byte transfer count
 		};
 		
 		struct MLOFFYES
 		{
+			struct SMLOE  : Field<EDMA_TCD_NBYTES, SMLOE , 0    > {};  // Source minor loop offset enable
+			struct DMLOE  : Field<EDMA_TCD_NBYTES, DMLOE , 1    > {};  // Destination minor loop offset enable
 			struct MLOFF  : Field<EDMA_TCD_NBYTES, MLOFF , 2, 21 > {}; // Minor loop offset
 			struct NBYTES : Field<EDMA_TCD_NBYTES, NBYTES, 22, 31> {}; // Minor byte transfer count
 		};
@@ -1838,10 +2085,10 @@ private:
 			reg_num = _reg_num;
 			
 			std::stringstream name_sstr;
-			name_sstr << "eDMA_TCD" << reg_num << " Word 2";
+			name_sstr << "eDMA_TCD" << reg_num << "_NBYTES";
 			this->SetName(name_sstr.str());
 			std::stringstream description_sstr;
-			description_sstr << "TCD #" << reg_num << " Word 2";
+			description_sstr << "TCD #" << reg_num << " Minor byte transfert count / Minor loop offset";
 			this->SetDescription(description_sstr.str());
 		}
 		
@@ -1861,7 +2108,7 @@ private:
 	{
 		typedef EDMA_Register<EDMA_TCD_SLAST, 32, SW_RW> Super;
 		
-		static const sc_dt::uint64 ADDRESS_OFFSET = 0x100c;
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0xc;
 		
 		struct SLAST : Field<EDMA_TCD_SLAST, SLAST, 0, 31> {}; // Last source address adjustment
 		
@@ -1902,7 +2149,7 @@ private:
 	{
 		typedef EDMA_Register<EDMA_TCD_DADDR, 32, SW_RW> Super;
 		
-		static const sc_dt::uint64 ADDRESS_OFFSET = 0x1010;
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x10;
 		
 		struct DADDR : Field<EDMA_TCD_DADDR, DADDR, 0, 31> {}; // Destination address
 		
@@ -1943,7 +2190,7 @@ private:
 	{
 		typedef EDMA_Register<EDMA_TCD_CITER, 16, SW_RW> Super;
 		
-		static const sc_dt::uint64 ADDRESS_OFFSET = 0x1014;
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x14;
 		
 		struct ELINK : Field<EDMA_TCD_CITER, ELINK, 0> {}; // Enable channel-to-channel linking on minor-loop complete
 		
@@ -1993,7 +2240,7 @@ private:
 	{
 		typedef EDMA_Register<EDMA_TCD_DOFF, 16, SW_RW> Super;
 		
-		static const sc_dt::uint64 ADDRESS_OFFSET = 0x1016;
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x16;
 		
 		struct DOFF : Field<EDMA_TCD_DOFF, DOFF, 0, 15> {}; // Destination address signed offset
 		
@@ -2034,7 +2281,7 @@ private:
 	{
 		typedef EDMA_Register<EDMA_TCD_DLASTSGA, 32, SW_RW> Super;
 		
-		static const sc_dt::uint64 ADDRESS_OFFSET = 0x1018;
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x18;
 		
 		struct DLASTSGA : Field<EDMA_TCD_DLASTSGA, DLASTSGA, 0, 31> {}; // Destination last address adjustment or the memory address for the next transfer control descriptor to be loaded into this channel (scatter/gather)
 		
@@ -2075,7 +2322,7 @@ private:
 	{
 		typedef EDMA_Register<EDMA_TCD_BITER, 16, SW_RW> Super;
 		
-		static const sc_dt::uint64 ADDRESS_OFFSET = 0x101c;
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x1c;
 		
 		struct ELINK : Field<EDMA_TCD_BITER, ELINK, 0> {}; // Enables channel-to-channel linking on minor loop complete
 		
@@ -2125,7 +2372,7 @@ private:
 	{
 		typedef EDMA_Register<EDMA_TCD_CSR, 16, SW_RW> Super;
 		
-		static const sc_dt::uint64 ADDRESS_OFFSET = 0x101e;
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x1e;
 		
 		struct BWC         : Field<EDMA_TCD_CSR, BWC        , 0, 1> {}; // Bandwidth control
 		struct MAJORLINKCH : Field<EDMA_TCD_CSR, MAJORLINKCH, 2, 7> {}; // Link channel number
@@ -2179,6 +2426,136 @@ private:
 		unsigned int reg_num;
 	};
 	
+	struct EDMA_TCD
+	{
+		static const sc_dt::uint64 ADDRESS_OFFSET = 0x1000;
+		
+		EDMA_TCD()
+			: edma(0)
+			, edma_tcd_saddr   ()
+			, edma_tcd_attr    ()
+			, edma_tcd_soff    ()
+			, edma_tcd_nbytes  ()
+			, edma_tcd_slast   ()
+			, edma_tcd_daddr   ()
+			, edma_tcd_citer   ()
+			, edma_tcd_doff    ()
+			, edma_tcd_dlastsga()
+			, edma_tcd_biter   ()
+			, edma_tcd_csr     ()
+		{
+		}
+		
+		EDMA_TCD(unsigned int _dma_channel_num, EDMA<CONFIG> *_edma)
+			: edma(_edma)
+			, dma_channel_num(_dma_channel_num)
+			, edma_tcd_saddr()
+			, edma_tcd_attr()
+			, edma_tcd_soff()
+			, edma_tcd_nbytes()
+			, edma_tcd_slast()
+			, edma_tcd_daddr()
+			, edma_tcd_citer()
+			, edma_tcd_doff()
+			, edma_tcd_dlastsga()
+			, edma_tcd_biter()
+			, edma_tcd_csr()
+		{
+			edma_tcd_saddr   .WithinRegisterFileCtor(dma_channel_num, edma);
+			edma_tcd_attr    .WithinRegisterFileCtor(dma_channel_num, edma);
+			edma_tcd_soff    .WithinRegisterFileCtor(dma_channel_num, edma);
+			edma_tcd_nbytes  .WithinRegisterFileCtor(dma_channel_num, edma);
+			edma_tcd_slast   .WithinRegisterFileCtor(dma_channel_num, edma);
+			edma_tcd_daddr   .WithinRegisterFileCtor(dma_channel_num, edma);
+			edma_tcd_citer   .WithinRegisterFileCtor(dma_channel_num, edma);
+			edma_tcd_doff    .WithinRegisterFileCtor(dma_channel_num, edma);
+			edma_tcd_dlastsga.WithinRegisterFileCtor(dma_channel_num, edma);
+			edma_tcd_biter   .WithinRegisterFileCtor(dma_channel_num, edma);
+			edma_tcd_csr     .WithinRegisterFileCtor(dma_channel_num, edma);
+		}
+		
+		EDMA_TCD& operator = (const EDMA_TCD& edma_tcd)
+		{
+			edma              = edma_tcd.edma;
+			dma_channel_num   = edma_tcd.dma_channel_num;
+			edma_tcd_saddr    = edma_tcd.edma_tcd_saddr;
+			edma_tcd_attr     = edma_tcd.edma_tcd_attr;
+			edma_tcd_soff     = edma_tcd.edma_tcd_soff;
+			edma_tcd_nbytes   = edma_tcd.edma_tcd_nbytes;
+			edma_tcd_slast    = edma_tcd.edma_tcd_slast;
+			edma_tcd_daddr    = edma_tcd.edma_tcd_daddr;
+			edma_tcd_citer    = edma_tcd.edma_tcd_citer;
+			edma_tcd_doff     = edma_tcd.edma_tcd_doff;
+			edma_tcd_dlastsga = edma_tcd.edma_tcd_dlastsga;
+			edma_tcd_biter    = edma_tcd.edma_tcd_biter;
+			edma_tcd_csr      = edma_tcd.edma_tcd_csr;
+			return *this;
+		}
+		
+		void Reset()
+		{
+			edma_tcd_saddr   .Reset();
+			edma_tcd_attr    .Reset();
+			edma_tcd_soff    .Reset();
+			edma_tcd_nbytes  .Reset();
+			edma_tcd_slast   .Reset();
+			edma_tcd_daddr   .Reset();
+			edma_tcd_citer   .Reset();
+			edma_tcd_doff    .Reset();
+			edma_tcd_dlastsga.Reset();
+			edma_tcd_biter   .Reset();
+			edma_tcd_csr     .Reset();
+		}
+		
+		EDMA<CONFIG> *edma;
+		unsigned int dma_channel_num;
+		EDMA_TCD_SADDR    edma_tcd_saddr;    // eDMA_TCDn_SADDR   
+		EDMA_TCD_ATTR     edma_tcd_attr;     // eDMA_TCDn_ATTR    
+		EDMA_TCD_SOFF     edma_tcd_soff;     // eDMA_TCDn_SOFF    
+		EDMA_TCD_NBYTES   edma_tcd_nbytes;   // eDMA_TCDn_NBYTES_MLNO / eDMA_TCDn_NBYTES_MLOFFNO / eDMA_TCDn_NBYTES_MLOFFYES
+		EDMA_TCD_SLAST    edma_tcd_slast;    // eDMA_TCDn_SLAST   
+		EDMA_TCD_DADDR    edma_tcd_daddr;    // eDMA_TCDn_DADDR   
+		EDMA_TCD_CITER    edma_tcd_citer;    // eDMA_TCDn_CITER_ELINKYES / eDMA_TCDn_CITER_ELINKNO
+		EDMA_TCD_DOFF     edma_tcd_doff;     // eDMA_TCDn_DOFF    
+		EDMA_TCD_DLASTSGA edma_tcd_dlastsga; // eDMA_TCDn_DLASTSGA
+		EDMA_TCD_BITER    edma_tcd_biter;    // eDMA_TCDn_BITER_ELINKYES / eDMA_TCDn_BITER_ELINKNO
+		EDMA_TCD_CSR      edma_tcd_csr;      // eDMA_TCDn_CSR     
+	};
+	
+	struct EDMA_TCD_File
+	{
+		EDMA_TCD_File(EDMA<CONFIG> *edma)
+		{
+			unsigned int dma_channel_num;
+			for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+			{
+				edma_tcd[dma_channel_num] = new EDMA_TCD(dma_channel_num, edma);
+			}
+		}
+		
+		~EDMA_TCD_File()
+		{
+			unsigned int dma_channel_num;
+			for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+			{
+				delete edma_tcd[dma_channel_num];
+			}
+		}
+		
+		void Reset()
+		{
+			unsigned int dma_channel_num;
+			for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+			{
+				edma_tcd[dma_channel_num]->Reset();
+			}
+		}
+		
+		EDMA_TCD& operator [] (unsigned int dma_channel_num) { return *edma_tcd[dma_channel_num]; }
+		
+		EDMA_TCD *edma_tcd[NUM_DMA_CHANNELS];
+	};
+	
 	unisim::kernel::tlm2::ClockPropertiesProxy m_clk_prop_proxy; // proxy to get clock properties from master clock port
 	
 	EDMA_CR                                                                     edma_cr;           // eDMA_CR  
@@ -2203,17 +2580,7 @@ private:
 	EDMA_HRSL                                                                   edma_hrsl;         // eDMA_HRSL
 	AddressableRegisterFile<EDMA_DCHPRI      , NUM_DMA_CHANNELS, EDMA<CONFIG> > edma_dchpri;       // eDMA_DCHPRIn      
 	AddressableRegisterFile<EDMA_DCHMID      , NUM_DMA_CHANNELS, EDMA<CONFIG> > edma_dchmid;       // eDMA_DCHMIDn      
-	AddressableRegisterFile<EDMA_TCD_SADDR   , NUM_DMA_CHANNELS, EDMA<CONFIG> > edma_tcd_saddr;    // eDMA_TCDn_SADDR   
-	AddressableRegisterFile<EDMA_TCD_ATTR    , NUM_DMA_CHANNELS, EDMA<CONFIG> > edma_tcd_attr;     // eDMA_TCDn_ATTR    
-	AddressableRegisterFile<EDMA_TCD_SOFF    , NUM_DMA_CHANNELS, EDMA<CONFIG> > edma_tcd_soff;     // eDMA_TCDn_SOFF    
-	AddressableRegisterFile<EDMA_TCD_NBYTES  , NUM_DMA_CHANNELS, EDMA<CONFIG> > edma_tcd_nbytes;   // eDMA_TCDn_NBYTES_MLNO / eDMA_TCDn_NBYTES_MLOFFNO / eDMA_TCDn_NBYTES_MLOFFYES
-	AddressableRegisterFile<EDMA_TCD_SLAST   , NUM_DMA_CHANNELS, EDMA<CONFIG> > edma_tcd_slast;    // eDMA_TCDn_SLAST   
-	AddressableRegisterFile<EDMA_TCD_DADDR   , NUM_DMA_CHANNELS, EDMA<CONFIG> > edma_tcd_daddr;    // eDMA_TCDn_DADDR   
-	AddressableRegisterFile<EDMA_TCD_CITER   , NUM_DMA_CHANNELS, EDMA<CONFIG> > edma_tcd_citer;    // eDMA_TCDn_CITER_ELINKYES / eDMA_TCDn_CITER_ELINKNO
-	AddressableRegisterFile<EDMA_TCD_DOFF    , NUM_DMA_CHANNELS, EDMA<CONFIG> > edma_tcd_doff;     // eDMA_TCDn_DOFF    
-	AddressableRegisterFile<EDMA_TCD_DLASTSGA, NUM_DMA_CHANNELS, EDMA<CONFIG> > edma_tcd_dlastsga; // eDMA_TCDn_DLASTSGA
-	AddressableRegisterFile<EDMA_TCD_BITER   , NUM_DMA_CHANNELS, EDMA<CONFIG> > edma_tcd_biter;    // eDMA_TCDn_BITER_ELINKYES / eDMA_TCDn_BITER_ELINKNO
-	AddressableRegisterFile<EDMA_TCD_CSR     , NUM_DMA_CHANNELS, EDMA<CONFIG> > edma_tcd_csr;      // eDMA_TCDn_CSR     
+	EDMA_TCD_File                                                               edma_tcd_file;     // eDMA TCDs
 	
 	RegisterAddressMap<sc_dt::uint64> reg_addr_map;
 	
@@ -2223,17 +2590,57 @@ private:
 	unisim::kernel::service::Parameter<unisim::util::endian::endian_type> param_endian;
 	bool verbose;
 	unisim::kernel::service::Parameter<bool> param_verbose;
+	unsigned int master_id;
+	unisim::kernel::service::Parameter<unsigned int> param_master_id;
 	
 	sc_core::sc_time master_clock_period;                 // Master clock period
 	sc_core::sc_time master_clock_start_time;             // Master clock start time
 	bool master_clock_posedge_first;                      // Master clock posedge first ?
 	double master_clock_duty_cycle;                       // Master clock duty cycle
 	
+	unsigned int sel_grp;
+	unsigned int sel_ch_per_grp[NUM_CHANNELS_PER_GROUP];
+	unsigned int grp_per_prio[NUM_GROUPS];
+	unsigned int ch_per_prio[NUM_CHANNELS_PER_GROUP];
+	
+	EDMA_TCD channel_x_tcd;
+	EDMA_TCD channel_y_tcd;
+	EDMA_TCD *channel_tcd; // points to either channel x or y
+	
 	void Reset();
+	void EnableAllRequests();
+	void EnableRequest(unsigned int dma_channel_num);
+	void DisableAllRequests();
+	void DisableRequest(unsigned int dma_channel_num);
+	void EnableAllErrorInterrupts();
+	void EnableErrorInterrupt(unsigned int dma_channel_num);
+	void DisableAllErrorInterrupts();
+	void DisableErrorInterrupt(unsigned int dma_channel_num);
+	void ClearAllInterruptRequests();
+	void ClearInterruptRequest(unsigned int dma_channel_num);
+	void ClearAllErrorIndicators();
+	void ClearErrorIndicator(unsigned int dma_channel_num);
+	void SetAllStartBits();
+	void SetStartBit(unsigned int dma_channel_num);
+	void ClearAllDoneBits();
+	void ClearDoneBit(unsigned int dma_channel_num);
+	bool HardwareRequestStatus(unsigned int dma_channel_num);
+	void UpdateHardwareRequestStatus(unsigned int dma_channel_num);
+	bool RequestStatus(unsigned int dma_channel_num);
+	void UpdateVLD();
+	void UpdateChannelPriority(unsigned int dma_channel_num);
+	void UpdateGroupPriority();
+	bool SelectGroup(unsigned int& dma_gpr_num);
+	bool SelectChannel(unsigned int dma_grp_num, unsigned int& dma_channel_num);
+	bool SelectChannel(unsigned int& dma_channel_num);
 	void ProcessEvent(Event *event);
 	void ProcessEvents();
 	void Process();
 	void RESET_B_Process();
+	void DMA_CHANNEL_Process(unsigned int dma_channel_num);
+	void Transfer(tlm::tlm_command cmd, sc_dt::uint64 addr, uint8_t *data_ptr, unsigned int size, unsigned int tsize, sc_core::sc_time& t);
+	void DMA_Engine_Process();
+
 	void UpdateMasterClock();
 	void MasterClockPropertiesChangedProcess();
 };

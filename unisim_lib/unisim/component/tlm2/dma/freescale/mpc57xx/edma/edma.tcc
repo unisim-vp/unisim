@@ -38,6 +38,7 @@
 #include <unisim/component/tlm2/dma/freescale/mpc57xx/edma/edma.hh>
 #include <unisim/util/reg/core/register.tcc>
 #include <unisim/kernel/tlm2/master_id.hh>
+#include <unisim/util/arithmetic/arithmetic.hh>
 
 namespace unisim {
 namespace component {
@@ -60,6 +61,12 @@ template <typename CONFIG>
 const unsigned int EDMA<CONFIG>::NUM_DMA_CHANNELS;
 
 template <typename CONFIG>
+const unsigned int EDMA<CONFIG>::NUM_GROUPS;
+
+template <typename CONFIG>
+const unsigned int EDMA<CONFIG>::NUM_CHANNELS_PER_GROUP;
+
+template <typename CONFIG>
 const unsigned int EDMA<CONFIG>::BUSWIDTH;
 
 template <typename CONFIG>
@@ -75,6 +82,7 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, reset_b("reset_b")
 	, dma_channel()
 	, irq()
+	, err_irq()
 	, logger(*this)
 	, m_clk_prop_proxy(m_clk)
 	, edma_cr(this)  
@@ -99,27 +107,23 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, edma_hrsl(this)
 	, edma_dchpri(this)      
 	, edma_dchmid(this)      
-	, edma_tcd_saddr(this)   
-	, edma_tcd_attr(this)    
-	, edma_tcd_soff(this)    
-	, edma_tcd_nbytes(this)  
-	, edma_tcd_slast(this)   
-	, edma_tcd_daddr(this)   
-	, edma_tcd_citer(this)   
-	, edma_tcd_doff(this)    
-	, edma_tcd_dlastsga(this)
-	, edma_tcd_biter(this)   
-	, edma_tcd_csr(this)
+	, edma_tcd_file(this)
 	, reg_addr_map()
 	, schedule()
 	, endian(unisim::util::endian::E_BIG_ENDIAN)
 	, param_endian("endian", this, endian, "endian")
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
+	, master_id(0)
+	, param_master_id("master-id", this, master_id, "master ID")
 	, master_clock_period(10.0, sc_core::SC_NS)
 	, master_clock_start_time(sc_core::SC_ZERO_TIME)
 	, master_clock_posedge_first(true)
 	, master_clock_duty_cycle(0.5)
+	, sel_grp(0)
+	, sel_ch_per_grp()
+	, grp_per_prio()
+	, ch_per_prio()
 {
 	peripheral_slave_if(*this);
 	master_if(*this);
@@ -151,6 +155,13 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 		irq[dma_channel_num] = new sc_core::sc_out<bool>(irq_name_sstr.str().c_str()); 
 	}
 
+	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		std::stringstream err_irq_name_sstr;
+		err_irq_name_sstr << "err_irq_" << dma_channel_num;
+		err_irq[dma_channel_num] = new sc_core::sc_out<bool>(err_irq_name_sstr.str().c_str()); 
+	}
+
 	// Map EDMA registers regarding there address offsets
 	reg_addr_map.SetWarningStream(logger.DebugWarningStream());
 	reg_addr_map.SetEndian(endian);
@@ -176,18 +187,23 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 	reg_addr_map.MapRegister(edma_hrsl.ADDRESS_OFFSET, &edma_hrsl);
 	reg_addr_map.MapRegisterFile(EDMA_DCHPRI      ::ADDRESS_OFFSET, &edma_dchpri      );
 	reg_addr_map.MapRegisterFile(EDMA_DCHMID      ::ADDRESS_OFFSET, &edma_dchmid      );
-	reg_addr_map.MapRegisterFile(EDMA_TCD_SADDR   ::ADDRESS_OFFSET, &edma_tcd_saddr   , /* reg size */ 4, /* stride */ 32);
-	reg_addr_map.MapRegisterFile(EDMA_TCD_ATTR    ::ADDRESS_OFFSET, &edma_tcd_attr    , /* reg size */ 2, /* stride */ 32);
-	reg_addr_map.MapRegisterFile(EDMA_TCD_SOFF    ::ADDRESS_OFFSET, &edma_tcd_soff    , /* reg size */ 2, /* stride */ 32);
-	reg_addr_map.MapRegisterFile(EDMA_TCD_NBYTES  ::ADDRESS_OFFSET, &edma_tcd_nbytes  , /* reg size */ 4, /* stride */ 32);
-	reg_addr_map.MapRegisterFile(EDMA_TCD_SLAST   ::ADDRESS_OFFSET, &edma_tcd_slast   , /* reg size */ 4, /* stride */ 32);
-	reg_addr_map.MapRegisterFile(EDMA_TCD_DADDR   ::ADDRESS_OFFSET, &edma_tcd_daddr   , /* reg size */ 4, /* stride */ 32);
-	reg_addr_map.MapRegisterFile(EDMA_TCD_CITER   ::ADDRESS_OFFSET, &edma_tcd_citer   , /* reg size */ 2, /* stride */ 32);
-	reg_addr_map.MapRegisterFile(EDMA_TCD_DOFF    ::ADDRESS_OFFSET, &edma_tcd_doff    , /* reg size */ 2, /* stride */ 32);
-	reg_addr_map.MapRegisterFile(EDMA_TCD_DLASTSGA::ADDRESS_OFFSET, &edma_tcd_dlastsga, /* reg size */ 4, /* stride */ 32);
-	reg_addr_map.MapRegisterFile(EDMA_TCD_BITER   ::ADDRESS_OFFSET, &edma_tcd_biter   , /* reg size */ 2, /* stride */ 32);
-	reg_addr_map.MapRegisterFile(EDMA_TCD_CSR     ::ADDRESS_OFFSET, &edma_tcd_csr     , /* reg size */ 2, /* stride */ 32);
-
+	
+	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		reg_addr_map.MapRegister(EDMA_TCD::ADDRESS_OFFSET + EDMA_TCD_SADDR   ::ADDRESS_OFFSET + (32 * dma_channel_num), &edma_tcd_file[dma_channel_num].edma_tcd_saddr   );
+		reg_addr_map.MapRegister(EDMA_TCD::ADDRESS_OFFSET + EDMA_TCD_ATTR    ::ADDRESS_OFFSET + (32 * dma_channel_num), &edma_tcd_file[dma_channel_num].edma_tcd_attr    );
+		reg_addr_map.MapRegister(EDMA_TCD::ADDRESS_OFFSET + EDMA_TCD_SOFF    ::ADDRESS_OFFSET + (32 * dma_channel_num), &edma_tcd_file[dma_channel_num].edma_tcd_soff    );
+		reg_addr_map.MapRegister(EDMA_TCD::ADDRESS_OFFSET + EDMA_TCD_NBYTES  ::ADDRESS_OFFSET + (32 * dma_channel_num), &edma_tcd_file[dma_channel_num].edma_tcd_nbytes  );
+		reg_addr_map.MapRegister(EDMA_TCD::ADDRESS_OFFSET + EDMA_TCD_SLAST   ::ADDRESS_OFFSET + (32 * dma_channel_num), &edma_tcd_file[dma_channel_num].edma_tcd_slast   );
+		reg_addr_map.MapRegister(EDMA_TCD::ADDRESS_OFFSET + EDMA_TCD_DADDR   ::ADDRESS_OFFSET + (32 * dma_channel_num), &edma_tcd_file[dma_channel_num].edma_tcd_daddr   );
+		reg_addr_map.MapRegister(EDMA_TCD::ADDRESS_OFFSET + EDMA_TCD_CITER   ::ADDRESS_OFFSET + (32 * dma_channel_num), &edma_tcd_file[dma_channel_num].edma_tcd_citer   );
+		reg_addr_map.MapRegister(EDMA_TCD::ADDRESS_OFFSET + EDMA_TCD_DOFF    ::ADDRESS_OFFSET + (32 * dma_channel_num), &edma_tcd_file[dma_channel_num].edma_tcd_doff    );
+		reg_addr_map.MapRegister(EDMA_TCD::ADDRESS_OFFSET + EDMA_TCD_DLASTSGA::ADDRESS_OFFSET + (32 * dma_channel_num), &edma_tcd_file[dma_channel_num].edma_tcd_dlastsga);
+		reg_addr_map.MapRegister(EDMA_TCD::ADDRESS_OFFSET + EDMA_TCD_BITER   ::ADDRESS_OFFSET + (32 * dma_channel_num), &edma_tcd_file[dma_channel_num].edma_tcd_biter   );
+		reg_addr_map.MapRegister(EDMA_TCD::ADDRESS_OFFSET + EDMA_TCD_CSR     ::ADDRESS_OFFSET + (32 * dma_channel_num), &edma_tcd_file[dma_channel_num].edma_tcd_csr     );
+	}
+	
+	
 	if(threaded_model)
 	{
 		SC_THREAD(Process);
@@ -202,6 +218,17 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 	SC_METHOD(RESET_B_Process);
 	sensitive << reset_b.pos();
 	
+	// Spawn an DMA_CHANNEL_Process for each DMA channel
+	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		sc_core::sc_spawn_options dma_channel_process_spawn_options;
+		dma_channel_process_spawn_options.spawn_method();
+		dma_channel_process_spawn_options.set_sensitivity(dma_channel[dma_channel_num]);
+		
+		std::stringstream dma_channel_process_name_sstr;
+		dma_channel_process_name_sstr << "DMA_CHANNEL_Process_" << dma_channel_num;
+		sc_core::sc_spawn(sc_bind(&EDMA<CONFIG>::DMA_CHANNEL_Process, this, dma_channel_num), dma_channel_process_name_sstr.str().c_str(), &dma_channel_process_spawn_options);
+	}
 // 	// Spawn an HW_IRQ_Process for each HW IRQ
 // 	for(hw_irq_num = 0; hw_irq_num < NUM_HW_IRQS; hw_irq_num++)
 // 	{
@@ -229,6 +256,11 @@ EDMA<CONFIG>::~EDMA()
 	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
 	{
 		delete irq[dma_channel_num];
+	}
+	
+	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		delete err_irq[dma_channel_num];
 	}
 }
 
@@ -492,6 +524,21 @@ void EDMA<CONFIG>::Process()
 template <typename CONFIG>
 void EDMA<CONFIG>::Reset()
 {
+	unsigned int i;
+	sel_grp = 0;
+	for(i = 0; i < NUM_CHANNELS_PER_GROUP; i++)
+	{
+		sel_ch_per_grp[i] = 0;
+	}
+	for(i = 0; i < NUM_GROUPS; i++)
+	{
+		grp_per_prio[i] = 0;
+	}
+	for(i = 0; i < NUM_CHANNELS_PER_GROUP; i++)
+	{
+		ch_per_prio[i] = 0;
+	}
+
 	edma_cr  .Reset();
 	edma_es  .Reset();
 	edma_erqh.Reset();
@@ -519,18 +566,9 @@ void EDMA<CONFIG>::Reset()
 	{
 		edma_dchpri      [dma_channel_num].Reset();
 		edma_dchmid      [dma_channel_num].Reset();
-		edma_tcd_saddr   [dma_channel_num].Reset();
-		edma_tcd_attr    [dma_channel_num].Reset();
-		edma_tcd_soff    [dma_channel_num].Reset();
-		edma_tcd_nbytes  [dma_channel_num].Reset();
-		edma_tcd_slast   [dma_channel_num].Reset();
-		edma_tcd_daddr   [dma_channel_num].Reset();
-		edma_tcd_citer   [dma_channel_num].Reset();
-		edma_tcd_doff    [dma_channel_num].Reset();
-		edma_tcd_dlastsga[dma_channel_num].Reset();
-		edma_tcd_biter   [dma_channel_num].Reset();
-		edma_tcd_csr     [dma_channel_num].Reset();
 	}
+
+	edma_tcd_file.Reset();
 
 	schedule.Clear();
 	
@@ -545,6 +583,307 @@ void EDMA<CONFIG>::Reset()
 }
 
 template <typename CONFIG>
+void EDMA<CONFIG>::EnableAllRequests()
+{
+	edma_erqh = ~uint32_t(0);
+	edma_erql = ~uint32_t(0);
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::EnableRequest(unsigned int dma_channel_num)
+{
+	if(dma_channel_num >= 32)
+	{
+		edma_erqh.Set(dma_channel_num - 32, 1);
+	}
+	else
+	{
+		edma_erql.Set(dma_channel_num, 1);
+	}
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::DisableAllRequests()
+{
+	edma_erqh = 0;
+	edma_erql = 0;
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::DisableRequest(unsigned int dma_channel_num)
+{
+	if(dma_channel_num >= 32)
+	{
+		edma_erqh.Set(dma_channel_num - 32, 0);
+	}
+	else
+	{
+		edma_erql.Set(dma_channel_num, 0);
+	}
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::EnableAllErrorInterrupts()
+{
+	edma_eeih = ~uint32_t(0);
+	edma_eeil = ~uint32_t(0);
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::EnableErrorInterrupt(unsigned int dma_channel_num)
+{
+	if(dma_channel_num >= 32)
+	{
+		edma_eeih.Set(dma_channel_num - 32, 1);
+	}
+	else
+	{
+		edma_eeil.Set(dma_channel_num, 1);
+	}
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::DisableAllErrorInterrupts()
+{
+	edma_eeih = 0;
+	edma_eeil = 0;
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::DisableErrorInterrupt(unsigned int dma_channel_num)
+{
+	if(dma_channel_num >= 32)
+	{
+		edma_eeih.Set(dma_channel_num - 32, 0);
+	}
+	else
+	{
+		edma_eeil.Set(dma_channel_num, 0);
+	}
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::ClearAllInterruptRequests()
+{
+	edma_inth = 0;
+	edma_intl = 0;
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::ClearInterruptRequest(unsigned int dma_channel_num)
+{
+	if(dma_channel_num >= 32)
+	{
+		edma_inth.Set(dma_channel_num - 32, 0);
+	}
+	else
+	{
+		edma_intl.Set(dma_channel_num, 0);
+	}
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::ClearAllErrorIndicators()
+{
+	edma_errh = 0;
+	edma_errl = 0;
+	UpdateVLD();
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::ClearErrorIndicator(unsigned int dma_channel_num)
+{
+	if(dma_channel_num >= 32)
+	{
+		edma_errh.Set(dma_channel_num - 32, 0);
+	}
+	else
+	{
+		edma_errl.Set(dma_channel_num, 0);
+	}
+	
+	UpdateVLD();
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::SetAllStartBits()
+{
+	unsigned int dma_channel_num;
+	
+	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		edma_tcd_file[dma_channel_num].edma_tcd_csr.template Set<typename EDMA_TCD_CSR::START>(1);
+	}
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::SetStartBit(unsigned int dma_channel_num)
+{
+	edma_tcd_file[dma_channel_num].edma_tcd_csr.template Set<typename EDMA_TCD_CSR::START>(1);
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::ClearAllDoneBits()
+{
+	unsigned int dma_channel_num;
+	
+	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		edma_tcd_file[dma_channel_num].edma_tcd_csr.template Set<typename EDMA_TCD_CSR::DONE>(0);
+	}
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::ClearDoneBit(unsigned int dma_channel_num)
+{
+	edma_tcd_file[dma_channel_num].edma_tcd_csr.template Set<typename EDMA_TCD_CSR::DONE>(0);
+}
+
+template <typename CONFIG>
+bool EDMA<CONFIG>::HardwareRequestStatus(unsigned int dma_channel_num)
+{
+	if(dma_channel_num >= 32)
+	{
+		return edma_hrsh.Get(dma_channel_num - 32);
+	}
+	else
+	{
+		return edma_hrsl.Get(dma_channel_num);
+	}
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::UpdateHardwareRequestStatus(unsigned int dma_channel_num)
+{
+	if(dma_channel_num >= 32)
+	{
+		edma_hrsh.Set(dma_channel_num - 32, edma_erqh.Get(dma_channel_num - 32) && dma_channel[dma_channel_num]->read());
+	}
+	else
+	{
+		edma_hrsl.Set(edma_erqh.Get(dma_channel_num) && dma_channel_num, dma_channel[dma_channel_num]->read());
+	}
+}
+
+template <typename CONFIG>
+bool EDMA<CONFIG>::RequestStatus(unsigned int dma_channel_num)
+{
+	return edma_tcd_file[dma_channel_num].edma_tcd_csr.template Get<typename EDMA_TCD_CSR::START>() || HardwareRequestStatus(dma_channel_num);
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::UpdateVLD()
+{
+	if((edma_errh != 0) || (edma_errl != 0))
+	{
+		edma_es.template Set<typename EDMA_ES::VLD>(0); // No ERR bits are set
+	}
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::UpdateChannelPriority(unsigned int dma_channel_num)
+{
+	unsigned int i;
+	unsigned int dma_grp_num = dma_channel_num / NUM_CHANNELS_PER_GROUP;
+	for(i = 0; i < NUM_CHANNELS_PER_GROUP; i++)
+	{
+		unsigned int ch = (NUM_CHANNELS_PER_GROUP * dma_grp_num) + i;
+		ch_per_prio[edma_dchpri[ch].template Get<typename EDMA_DCHPRI::CHPRI>()] = ch;
+	}
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::UpdateGroupPriority()
+{
+	unsigned int gprpri = edma_cr.template Get<typename EDMA_CR::GRPPRI>();
+	unsigned int i;
+	for(i = 0; i < NUM_GROUPS; i++)
+	{
+		grp_per_prio[(gprpri / (NUM_GROUPS << i)) % NUM_GROUPS] = i;
+	}
+}
+
+template <typename CONFIG>
+bool EDMA<CONFIG>::SelectChannel(unsigned int dma_grp_num, unsigned int& dma_channel_num)
+{
+	if(edma_cr.template Get<typename EDMA_CR::ERCA>()) // round-robin channel arbitration ?
+	{
+		// round-robin channel arbitration
+		unsigned int i;
+		unsigned int ch = sel_ch_per_grp[dma_grp_num];
+		for(i = 0; i < NUM_CHANNELS_PER_GROUP; i++)
+		{
+			ch = (ch + 1) % NUM_CHANNELS_PER_GROUP;
+			
+			if(RequestStatus(ch))
+			{
+				sel_ch_per_grp[dma_grp_num] = ch;
+				return true;
+			}
+		}
+	}
+	else
+	{
+		// fixed-priority channel arbitration
+		unsigned int i;
+		for(i = 0; i < NUM_CHANNELS_PER_GROUP; i++)
+		{
+			unsigned int ch = ch_per_prio[(NUM_CHANNELS_PER_GROUP * dma_grp_num) + i];
+			if(RequestStatus(ch))
+			{
+				sel_ch_per_grp[dma_grp_num] = ch;
+				return true;
+			}
+		}
+	}
+	
+	return false;
+}
+
+template <typename CONFIG>
+bool EDMA<CONFIG>::SelectChannel(unsigned int& dma_channel_num)
+{
+	if(edma_cr.template Get<typename EDMA_CR::ERGA>()) // round-robin group arbitration ?
+	{
+		// round-robin group arbitration
+		unsigned int i;
+		unsigned int grp = sel_grp;
+		for(i = 0; i < NUM_GROUPS; i++)
+		{
+			grp = (grp + 1) % NUM_GROUPS;
+			
+			if(SelectChannel(grp, dma_channel_num))
+			{
+				sel_grp = grp;
+				return true;
+			}
+		}
+	}
+	else
+	{
+		// fixed-priority group arbitration
+		unsigned int gprpri = edma_cr.template Get<typename EDMA_CR::GRPPRI>();
+		unsigned int i;
+		for(i = 0; i < NUM_GROUPS; i++)
+		{
+			grp_per_prio[(gprpri / (NUM_GROUPS << i)) % NUM_GROUPS] = i;
+		}
+		
+		for(i = 0; i < NUM_GROUPS; i++)
+		{
+			unsigned int grp = grp_per_prio[i];
+			if(SelectChannel(grp, dma_channel_num))
+			{
+				sel_grp = grp;
+				return true;
+			}
+		}
+	}
+	
+	return false;
+}
+
+template <typename CONFIG>
 void EDMA<CONFIG>::RESET_B_Process()
 {
 	if(reset_b.posedge())
@@ -552,6 +891,190 @@ void EDMA<CONFIG>::RESET_B_Process()
 		Reset();
 	}
 }
+
+template <typename CONFIG>
+void EDMA<CONFIG>::DMA_CHANNEL_Process(unsigned int dma_channel_num)
+{
+	UpdateHardwareRequestStatus(dma_channel_num);
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::Transfer(tlm::tlm_command cmd, sc_dt::uint64 addr, uint8_t *data_ptr, unsigned int size, unsigned int tsize, sc_core::sc_time& t)
+{
+	while(size > 0)
+	{
+		tlm::tlm_generic_payload payload;
+		
+		payload.set_address(addr);
+		payload.set_data_length(tsize);
+		payload.set_streaming_width(tsize);
+		payload.set_data_ptr(data_ptr);
+		payload.set_command(cmd);
+		
+		master_if->b_transport(payload, t);
+		
+		addr += tsize;
+		size -= tsize;
+		data_ptr += tsize;
+	}
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::DMA_Engine_Process()
+{
+	while(1)
+	{
+		if(channel_tcd)
+		{
+			if(channel_tcd == &channel_y_tcd)
+			{
+				// channel x is active
+				if(edma_dchpri[channel_tcd->dma_channel_num].template Get<typename EDMA_DCHPRI::ECP>())
+				{
+					// channel x preemption is enabled
+					if(!edma_cr.template Get<typename EDMA_CR::ERCA>() && !edma_cr.template Get<typename EDMA_CR::ERGA>())
+					{
+						// Fixed-priority arbitration for both groups and channels
+						unsigned int dma_channel_num = 0;
+						
+						if(SelectChannel(dma_channel_num))
+						{
+							// a channel can be selected
+							if(dma_channel_num != channel_tcd->dma_channel_num)
+							{
+								// a channel different from current channel can be selected
+								if(edma_dchpri[dma_channel_num].template Get<typename EDMA_DCHPRI::DPA>())
+								{
+									// new channel have preempt ability
+									
+									// preempt channel x
+									
+									// start channel y
+									edma_tcd_file[dma_channel_num].edma_tcd_csr.template Set<typename EDMA_TCD_CSR::ACTIVE>(1); // channel y is active
+									
+									channel_y_tcd = edma_tcd_file[dma_channel_num];
+									channel_tcd = &channel_y_tcd;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			unsigned int dma_channel_num = 0;
+			
+			if(SelectChannel(dma_channel_num))
+			{
+				// start channel x
+				channel_x_tcd = edma_tcd_file[dma_channel_num];
+				channel_tcd = &channel_x_tcd;
+			}
+		}
+		
+		if(channel_tcd)
+		{
+			uint32_t nbytes = (edma_cr.template Get<typename EDMA_CR::EMLM>()) ? channel_tcd->edma_tcd_nbytes.template Get<typename EDMA_TCD_NBYTES::MLOFFNO::NBYTES>()
+			                                                                   : channel_tcd->edma_tcd_nbytes.template Get<typename EDMA_TCD_NBYTES::MLNO::NBYTES>();
+			
+			if(nbytes > 0)
+			{
+				sc_core::sc_time t;
+				
+				uint32_t saddr = channel_tcd->edma_tcd_saddr.template Get<typename EDMA_TCD_SADDR::SADDR>();
+				uint32_t daddr = channel_tcd->edma_tcd_daddr.template Get<typename EDMA_TCD_DADDR::DADDR>();
+
+				unsigned int ssize = channel_tcd->edma_tcd_attr.template Get<typename EDMA_TCD_ATTR::SSIZE>();
+				unsigned int dsize = channel_tcd->edma_tcd_attr.template Get<typename EDMA_TCD_ATTR::DSIZE>();
+				
+				unsigned int size = 1 << ((ssize > dsize) ? ssize : dsize);
+				uint8_t data[size];
+				
+				Transfer(tlm::TLM_READ_COMMAND, saddr, data, size, ssize, t);
+				Transfer(tlm::TLM_WRITE_COMMAND, daddr, data, size, dsize, t);
+				
+				nbytes -= size;
+			}
+		}
+	}
+}
+
+#if 0
+template <typename CONFIG>
+void EDMA<CONFIG>::MinorLoop()
+{
+	uint32_t nbytes = (edma->edma_cr.template Get<typename EDMA_CR::EMLM>()) ? edma_tcd_nbytes.template Get<typename EDMA_TCD_NBYTES::MLOFFNO::NBYTES>() : edma_tcd_nbytes.template Get<typename EDMA_TCD_NBYTES::MLNO::NBYTES>();
+	unsigned int byte_num = 0;
+	uint32_t saddr = edma_tcd_saddr.template Get<typename EDMA_TCD_SADDR::SADDR>();
+	uint32_t daddr = edma_tcd_daddr.template Get<typename EDMA_TCD_DADDR::DADDR>();
+	int32_t soff = edma_tcd_soff.template Get<typename EDMA_TCD_SOFF::SOFF>();
+	int32_t doff = edma_tcd_doff.template Get<typename EDMA_TCD_DOFF::DOFF>();
+	unsigned int ssize = edma_tcd_attr.template Get<typename EDMA_TCD_ATTR::SSIZE>();
+	unsigned int dsize = edma_tcd_attr.template Get<typename EDMA_TCD_ATTR::DSIZE>();
+	unsigned int smod = edma_tcd_attr.template Get<typename EDMA_TCD_ATTR::SMOD>();
+	unsigned int dmod = edma_tcd_attr.template Get<typename EDMA_TCD_ATTR::DMOD>();
+	unsigned int smod_mask = smod ? ((uint32_t(1) << smod) - 1 : ~uint32_t(0);
+	unsigned int dmod_mask = dmod ? (uint32_t(1) << dmod) - 1 : ~uint32_t(0);
+		
+	while(source_byte_num < nbytes)
+	{
+		src_payload.set_data_length(ssize);
+		
+		edma->b_transport(src_payload, t);
+		
+		saddr = (sadd & ~smod_mask) | ((saddr + soff) & smod_mask);
+		source_byte_num += ssize;
+		
+		while(dest_byte_num < nbytes)
+		{
+			dest_payload.set_data_length(dsize);
+			
+			
+			edma->b_transport(dst_payload, t);
+			daddr = (dadd & ~dmod_mask) | ((daddr + doff) & dmod_mask);
+			dest_byte_num += dsize;
+		}
+	}
+	
+	if(edma_tcd_csr.template Get<typename EDMA_TCD_CSR::ESG>())
+	{
+		// scatter/gather
+		uint32_t tcd_addr = edma_tcd_dlastsga.template Get<typename EDMA_TCD_DLASTSGA::DLASTSGA>();
+	}
+	else
+	{
+		daddr += edma_tcd_dlastsga.template Get<typename EDMA_TCD_DLASTSGA::DLASTSGA>();
+		edma_tcd_saddr.template Set<typename EDMA_TCD_SADDR::SADDR>(saddr);
+		edma_tcd_daddr.template Set<typename EDMA_TCD_SADDR::DADDR>(daddr);
+	}
+	
+	if(edma->edma_cr.template Get<typename EDMA_CR::EMLM>())
+	{
+		// minor loop mapping
+		unsigned int smloe = edma_tcd_nbytes.template Get<typename EDMA_TCD_NBYTES::MLOFFNO::SMLOE>();
+		unsigned int dmloe = edma_tcd_nbytes.template Get<typename EDMA_TCD_NBYTES::MLOFFNO::DMLOE>();
+		
+		if(smloe || dmloe)
+		{
+			int32_t mloff = unisim::util::arithmetic::SignExtend(edma_tcd_nbytes.template Get<typename EDMA_TCD_NBYTES::MLOFFYES::MLOFF>(), 6);
+			if(smloe)
+			{
+				saddr = saddr + mloff;
+			}
+			
+			if(dmloe)
+			{
+				daddr = daddr + mloff;
+			}
+		}
+	}
+	
+	unsigned int citer = edma_tcd_citer.template Get<typename EDMA_TCD_CITER::CITER>();
+	citer = citer - 1;
+	edma_tcd_citer.template Set<typename EDMA_TCD_CITER::CITER>(citer);
+}
+#endif
 
 template <typename CONFIG>
 void EDMA<CONFIG>::UpdateMasterClock()

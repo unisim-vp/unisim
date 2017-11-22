@@ -273,31 +273,32 @@ public:
 				
 				if(time_stamp >= tsp->bit_time_stamp)
 				{
-					// payload match requested time stamp
-					tlm_serial_payload *serial_payload = tsp->serial_payload;
-					
-					const std::vector<bool>& serial_data = serial_payload->get_data();
-					std::vector<bool>::size_type serial_data_length = serial_data.size();
-					
-					unsigned int num_sampled_values = 0;
-					do
+					if(time_stamp > tsp->bit_time_stamp)
 					{
-						curr_value = serial_data[tsp->bit_offset];
-						curr_time_stamp = tsp->bit_time_stamp;
-						curr_period = serial_payload->get_period();
+						// payload match requested time stamp
+						tlm_serial_payload *serial_payload = tsp->serial_payload;
 						
-						if(tsp->started)
+						const std::vector<bool>& serial_data = serial_payload->get_data();
+						std::vector<bool>::size_type serial_data_length = serial_data.size();
+						
+						unsigned int num_sampled_values = 0;
+						do
 						{
+							tsp->bit_offset++;
+							tsp->bit_time_stamp += serial_payload->get_period();
+							curr_value = serial_data[tsp->bit_offset];
+							curr_time_stamp = tsp->bit_time_stamp;
+							curr_period = serial_payload->get_period();
 							num_sampled_values++;
 						}
+						while(time_stamp > tsp->bit_time_stamp);
 						
-						tsp->bit_offset++;
-						tsp->bit_time_stamp += serial_payload->get_period();
-						tsp->started = true;
+						miss_count = num_sampled_values - 1;
 					}
-					while(time_stamp >= tsp->bit_time_stamp);
-					
-					miss_count = num_sampled_values ? (num_sampled_values - 1) : 0;
+					else
+					{
+						assert(time_stamp == curr_time_stamp);
+					}
 					
 					status = TLM_BITSTREAM_SYNC_OK;
 				}
@@ -479,7 +480,7 @@ private:
 		
 		void clear()
 		{
-			serial_payload->release();
+			if(serial_payload) serial_payload->release();
 
 			started = false;
 			time_stamp = sc_core::SC_ZERO_TIME;

@@ -84,6 +84,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, flash_port1_stub(0)
 	, xbar_0_s6_stub(0)
 	, xbar_1_m2_stub(0)
+	, dma_err_irq_combinator(0)
 	, loader(0)
 	, debugger(0)
 	, gdb_server()
@@ -240,6 +241,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	xbar_0_s6_stub = new XBAR_0_S6_STUB("XBAR_0_S6", this);
 	xbar_1_m2_stub = new XBAR_1_M2_STUB("XBAR_1_M2", this);
 
+	dma_err_irq_combinator = new unisim::component::tlm2::operators::LogicalOrOperator<bool, NUM_DMA_CHANNELS>("DMA_ERR_IRQ_COMBINATOR");
+	
 	//=========================================================================
 	//===                         Service instantiations                    ===
 	//=========================================================================
@@ -757,6 +760,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	{
 		RegisterPort(*edma_0->irq[dma_channel_num]);
 	}
+	for(dma_channel_num = 0; dma_channel_num < EDMA_0::NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		RegisterPort(*edma_0->err_irq[dma_channel_num]);
+	}
 
 	// - EDMA_1
 	RegisterPort(edma_1->m_clk);
@@ -769,6 +776,16 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	{
 		RegisterPort(*edma_1->irq[dma_channel_num]);
 	}
+	for(dma_channel_num = 0; dma_channel_num < EDMA_1::NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		RegisterPort(*edma_1->err_irq[dma_channel_num]);
+	}
+	
+	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		RegisterPort(dma_err_irq_combinator->in[dma_channel_num]);
+	}
+	RegisterPort(dma_err_irq_combinator->out);
 	
 	//=========================================================================
 	//===                           Signal creation                         ===
@@ -841,6 +858,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateSignalArray(NUM_DMA_CHANNELS, "DMA_CHANNEL", false);
 	
 	CreateSignalArray(NUM_DMA_ALWAYS_ON, "DMA_ALWAYS_ON", true);
+	
+	CreateSignalArray(NUM_DMA_CHANNELS, "DMA_ERR_IRQ", false);
+	
+	
 	
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -1185,6 +1206,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DMAMUX_7.m_clk", "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.DMAMUX_8.m_clk", "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.DMAMUX_9.m_clk", "HARDWARE.PBRIDGEA_CLK");
+	
+	BindArray(EDMA_0::NUM_DMA_CHANNELS, "HARDWARE.eDMA_0.err_irq", 0, "HARDWARE.DMA_ERR_IRQ", 0);
+	BindArray(EDMA_1::NUM_DMA_CHANNELS, "HARDWARE.eDMA_1.err_irq", 0, "HARDWARE.DMA_ERR_IRQ", 64);
+	BindArray(NUM_DMA_CHANNELS, "HARDWARE.DMA_ERR_IRQ_COMBINATOR.in", "HARDWARE.DMA_ERR_IRQ");
 
 	// Interrupt sources
 	
@@ -1237,7 +1262,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	InterruptSource(49);
 	InterruptSource(50);
 	InterruptSource(51);
-	InterruptSource(52);
+	
+	// 52       eDMA ERR            eDMA combined error 127-0
+	InterruptSource(52, "HARDWARE.DMA_ERR_IRQ_COMBINATOR.out");
 	
 	// 53       eDMA_0 INT[0]       eDMA Channel 0
 	// 54       eDMA_0 INT[1]       eDMA Channel 1
@@ -3299,6 +3326,7 @@ Simulator::~Simulator()
 	if(flash_port1_stub) delete flash_port1_stub;
 	if(xbar_0_s6_stub) delete xbar_0_s6_stub;
 	if(xbar_1_m2_stub) delete xbar_1_m2_stub;
+	if(dma_err_irq_combinator) delete dma_err_irq_combinator;
 	if(gdb_server[0]) delete gdb_server[0];
 	if(gdb_server[1]) delete gdb_server[1];
 	if(gdb_server[2]) delete gdb_server[2];

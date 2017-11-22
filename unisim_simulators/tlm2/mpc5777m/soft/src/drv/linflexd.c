@@ -524,6 +524,7 @@ void linflexd_release_uart_rx_buffer(unsigned int linflexd_id)
 {
 	LINFlexD_UARTSR_tag uartsr;
 	uartsr.R = 0;
+	uartsr.B.RFNE = linflexd[linflexd_id]->UARTSR.B.RFNE;
 	uartsr.B.RMB = 1;
 	linflexd[linflexd_id]->UARTSR = uartsr;
 }
@@ -579,6 +580,7 @@ void linflexd_clear_uart_stuck_at_zero_interrupt_flag(unsigned int linflexd_id)
 {
 	LINFlexD_UARTSR_tag uartsr;
 	uartsr.R = 0;
+	uartsr.B.RFNE = linflexd[linflexd_id]->UARTSR.B.RFNE;
 	uartsr.B.SZF = 1;
 	linflexd[linflexd_id]->UARTSR = uartsr;
 }
@@ -602,6 +604,7 @@ void linflexd_clear_uart_output_compare_interrupt_flag(unsigned int linflexd_id)
 {
 	LINFlexD_UARTSR_tag uartsr;
 	uartsr.R = 0;
+	uartsr.B.RFNE = linflexd[linflexd_id]->UARTSR.B.RFNE;
 	uartsr.B.OCF = 1;
 	linflexd[linflexd_id]->UARTSR = uartsr;
 }
@@ -625,6 +628,7 @@ void linflexd_clear_uart_frame_error_interrupt_flag(unsigned int linflexd_id)
 {
 	LINFlexD_UARTSR_tag uartsr;
 	uartsr.R = 0;
+	uartsr.B.RFNE = linflexd[linflexd_id]->UARTSR.B.RFNE;
 	uartsr.B.FEF = 1;
 	linflexd[linflexd_id]->UARTSR = uartsr;
 }
@@ -648,6 +652,7 @@ void linflexd_clear_uart_buffer_overrun_error_interrupt_flag(unsigned int linfle
 {
 	LINFlexD_UARTSR_tag uartsr;
 	uartsr.R = 0;
+	uartsr.B.RFNE = linflexd[linflexd_id]->UARTSR.B.RFNE;
 	uartsr.B.BOF = 1;
 	linflexd[linflexd_id]->UARTSR = uartsr;
 }
@@ -671,6 +676,7 @@ void linflexd_clear_uart_wakeup_interrupt_flag(unsigned int linflexd_id)
 {
 	LINFlexD_UARTSR_tag uartsr;
 	uartsr.R = 0;
+	uartsr.B.RFNE = linflexd[linflexd_id]->UARTSR.B.RFNE;
 	uartsr.B.WUF = 1;
 	linflexd[linflexd_id]->UARTSR = uartsr;
 }
@@ -694,6 +700,7 @@ void linflexd_clear_uart_timeout_interrupt_flag(unsigned int linflexd_id)
 {
 	LINFlexD_UARTSR_tag uartsr;
 	uartsr.R = 0;
+	uartsr.B.RFNE = linflexd[linflexd_id]->UARTSR.B.RFNE;
 	uartsr.B.TO = 1;
 	linflexd[linflexd_id]->UARTSR = uartsr;
 }
@@ -717,6 +724,7 @@ void linflexd_clear_uart_data_received_interrupt_flag(unsigned int linflexd_id)
 {
 	LINFlexD_UARTSR_tag uartsr;
 	uartsr.R = 0;
+	uartsr.B.RFNE = linflexd[linflexd_id]->UARTSR.B.RFNE;
 	uartsr.B.DRFRFE = 1;
 	linflexd[linflexd_id]->UARTSR = uartsr;
 }
@@ -740,6 +748,7 @@ void linflexd_clear_uart_data_transmitted_interrupt_flag(unsigned int linflexd_i
 {
 	LINFlexD_UARTSR_tag uartsr;
 	uartsr.R = 0;
+	uartsr.B.RFNE = linflexd[linflexd_id]->UARTSR.B.RFNE;
 	uartsr.B.DTFTFF = 1;
 	linflexd[linflexd_id]->UARTSR = uartsr;
 }

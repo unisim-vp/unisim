@@ -320,6 +320,15 @@ void SerialTerminal::RX_Process()
 		if(!bit_value) // start bit ?
 		{
 			// received start bit
+			if(verbose)
+			{
+				logger << DebugInfo << rx_input.get_time_stamp() << ": received start bit" << EndDebugInfo;
+			}
+			
+			if(verbose)
+			{
+				logger << DebugInfo << rx_input.get_time_stamp() << ": expecting " << num_data_bits << " data bits" << EndDebugInfo;
+			}
 			unsigned int i;
 			uint8_t value = 0;
 			bool parity = (parity_type == PARITY_TYPE_EVEN) ? false : true;
@@ -359,6 +368,11 @@ void SerialTerminal::RX_Process()
 			bool parity_error = false;
 			if(parity_type != PARITY_TYPE_NONE)
 			{
+				if(verbose)
+				{
+					logger << DebugInfo << rx_input.get_time_stamp() << ": expecting parity bit" << EndDebugInfo;
+				}
+				
 				if(rx_input.seek(rx_time) == TLM_BITSTREAM_NEED_SYNC)
 				{
 					wait(rx_time);
@@ -373,6 +387,10 @@ void SerialTerminal::RX_Process()
 				parity_error = (parity != bit_value);
 			}
 			
+			if(verbose)
+			{
+				logger << DebugInfo << rx_input.get_time_stamp() << ": expecting " << num_stop_bits << " stop bits" << EndDebugInfo;
+			}
 			unsigned int rec_stop_bits;
 			for(rec_stop_bits = 0; rec_stop_bits < num_stop_bits; rec_stop_bits++)
 			{
@@ -391,10 +409,19 @@ void SerialTerminal::RX_Process()
 				{
 					break;
 				}
+				
+				if(verbose)
+				{
+					logger << DebugInfo << rx_input.get_time_stamp() << ": received stop bit" << EndDebugInfo;
+				}
 			}
 			
 			if(!parity_error && (rec_stop_bits == num_stop_bits))
 			{
+				if(verbose)
+				{
+					logger << DebugInfo << rx_input.get_time_stamp() << ": received all stop bits" << EndDebugInfo;
+				}
 				rx_fifo.push(value);
 			}
 		}

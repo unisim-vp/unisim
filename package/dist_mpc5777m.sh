@@ -855,6 +855,7 @@ unisim/component/tlm2/com/freescale/mpc57xx/linflexd/linflexd.hh \
 unisim/component/tlm2/com/serial_terminal/serial_terminal.hh \
 unisim/component/tlm2/dma/freescale/mpc57xx/dmamux/dmamux.hh \
 unisim/component/tlm2/dma/freescale/mpc57xx/edma/edma.hh \
+unisim/component/tlm2/operators/associative_operator.hh \
 "
 
 UNISIM_LIB_MPC5777M_TEMPLATE_FILES="\
@@ -1075,6 +1076,8 @@ soft/include/stm.h \
 soft/include/swt.h \
 soft/include/pit.h \
 soft/include/linflexd.h \
+soft/include/dmamux.h \
+soft/include/edma.h \
 soft/src/Z4_2/57xx_ram.ld \
 soft/src/Z4_2/startup.S \
 soft/src/Z4_2/main_Z4_2.c \
@@ -1099,6 +1102,8 @@ soft/src/drv/stm.c \
 soft/src/drv/swt.c \
 soft/src/drv/pit.c \
 soft/src/drv/linflexd.c \
+soft/src/drv/dmamux.c \
+soft/src/drv/edma.c \
 soft/bin/Z4_2/ram_boot.elf \
 soft/bin/Z4_2/flash_boot.elf \
 soft/bin/Z7_0/ram_boot.elf \
