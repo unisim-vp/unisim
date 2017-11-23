@@ -40,9 +40,9 @@ int sc_main(int argc, char *argv[])
 {
 	int ret = 0;
 
-	Simulator *simulator = new Simulator(argc, argv);
+	Simulator simulator(argc, argv);
 
-	switch ( simulator->Setup() )
+	switch ( simulator.Setup() )
 	{
 	case unisim::kernel::service::Simulator::ST_ERROR:
 		cerr << "ERROR: Can't start simulation because of previous erros" << endl;
@@ -50,7 +50,7 @@ int sc_main(int argc, char *argv[])
 		break;
 	case unisim::kernel::service::Simulator::ST_OK_DONT_START:
 #ifdef SIM_PIM_SUPPORT
-		simulator->GeneratePim();
+		simulator.GeneratePim();
 #endif
 		cerr << "Successfully configured the simulator." << endl;
 		ret = 0;
@@ -61,10 +61,9 @@ int sc_main(int argc, char *argv[])
 			<< "the simulation." << endl;
 	case unisim::kernel::service::Simulator::ST_OK_TO_START:
 		cerr << "Starting simulation." << endl;
-		ret = simulator->Run();
+		ret = simulator.Run();
 		break;
 	}
 
-	if (simulator) delete simulator;
 	return ret;
 }
