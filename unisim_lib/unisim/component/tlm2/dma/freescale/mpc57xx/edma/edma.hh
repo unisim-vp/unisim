@@ -137,6 +137,8 @@ private:
 
 	unisim::kernel::logger::Logger logger;
 	
+	typedef unsigned int MasterID;
+	
 	class Event
 	{
 	public:
@@ -179,6 +181,7 @@ private:
 		
 		Event()
 			: key()
+			, master_id(0)
 			, payload(0)
 			, release_payload(false)
 			, completion_event(0)
@@ -193,6 +196,7 @@ private:
 		void Clear()
 		{
 			key.Clear();
+			master_id = 0;
 			if(release_payload)
 			{
 				if(payload && payload->has_mm()) payload->release();
@@ -217,6 +221,11 @@ private:
 			release_payload = _release_payload;
 		}
 		
+		void SetMasterID(MasterID _master_id)
+		{
+			master_id = _master_id;
+		}
+		
 		void SetCompletionEvent(sc_core::sc_event *_completion_event)
 		{
 			completion_event = _completion_event;
@@ -225,6 +234,11 @@ private:
 		const sc_core::sc_time& GetTimeStamp() const
 		{
 			return key.GetTimeStamp();
+		}
+		
+		MasterID GetMasterID() const
+		{
+			return master_id;
 		}
 		
 		tlm::tlm_generic_payload *GetPayload() const
@@ -244,6 +258,7 @@ private:
 		
 	private:
 		Key key;                             // schedule key (i.e. time stamp)
+		MasterID master_id;                  // master ID
 		tlm::tlm_generic_payload *payload;   // payload
 		bool release_payload;                // whether payload must be released using payload memory management
 		sc_core::sc_event *completion_event; // completion event (for blocking transport interface)
@@ -251,9 +266,9 @@ private:
 
 	// Common EDMA register representation
 	template <typename REGISTER, unsigned int _SIZE, Access _ACCESS>
-	struct EDMA_Register : AddressableRegister<REGISTER, _SIZE, _ACCESS>
+	struct EDMA_Register : AddressableRegister<REGISTER, _SIZE, _ACCESS, MasterID>
 	{
-		typedef AddressableRegister<REGISTER, _SIZE, _ACCESS> Super;
+		typedef AddressableRegister<REGISTER, _SIZE, _ACCESS, MasterID> Super;
 		
 		EDMA_Register(EDMA<CONFIG> *_edma) : Super(), edma(_edma) {}
 		EDMA_Register(EDMA<CONFIG> *_edma, uint32_t value) : Super(value), edma(_edma) {}
@@ -320,12 +335,19 @@ private:
 			this->edma->UpdateGroupPriority();
 		}
 		
-		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			bool old_halt = this->template Get<HALT>();
+			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			bool new_halt = this->template Get<HALT>();
 			
 			if(!IsReadWriteError(rws))
 			{
+				if(old_halt && !new_halt)
+				{
+					this->edma->NotifyEngine();
+				}
+				
 				this->edma->UpdateGroupPriority();
 			}
 			
@@ -795,9 +817,9 @@ private:
 			this->Initialize(0x0);
 		}
 		
-		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -852,9 +874,9 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -909,9 +931,9 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -966,9 +988,9 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -1023,9 +1045,9 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -1080,9 +1102,9 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -1137,9 +1159,9 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -1194,9 +1216,9 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -1310,6 +1332,19 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x0);
+			this->edma->UpdateInterruptRequests();
+		}
+
+		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				this->edma->UpdateInterruptRequests();
+			}
+			
+			return rws;
 		}
 
 		using Super::operator =;
@@ -1404,6 +1439,19 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x0);
+			this->edma->UpdateInterruptRequests();
+		}
+
+		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				this->edma->UpdateInterruptRequests();
+			}
+			
+			return rws;
 		}
 
 		using Super::operator =;
@@ -1498,15 +1546,17 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x0);
+			this->edma->UpdateErrors();
 		}
 
-		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
 				this->edma->UpdateVLD();
+				this->edma->UpdateErrors();
 			}
 			
 			return rws;
@@ -1604,15 +1654,17 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x0);
+			this->edma->UpdateErrors();
 		}
 
-		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
 				this->edma->UpdateVLD();
+				this->edma->UpdateErrors();
 			}
 			
 			return rws;
@@ -1854,9 +1906,9 @@ private:
 			this->edma->UpdateChannelPriority(reg_num);
 		}
 		
-		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
 		{
-			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
@@ -2192,17 +2244,17 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x14;
 		
-		struct ELINK : Field<EDMA_TCD_CITER, ELINK, 0> {}; // Enable channel-to-channel linking on minor-loop complete
-		
 		struct ELINKYES
 		{
+			struct ELINK  : Field<EDMA_TCD_CITER, ELINK , 0>     {}; // Enable channel-to-channel linking on minor-loop complete
 			struct LINKCH : Field<EDMA_TCD_CITER, LINKCH, 1, 6 > {}; // Link channel number
 			struct CITER  : Field<EDMA_TCD_CITER, CITER , 7, 15> {}; // Current major iterator count
 		};
 		
 		struct ELINKNO
 		{
-			struct CITER  : Field<EDMA_TCD_CITER, CITER , 1, 15> {}; // Current major iterator count
+			struct ELINK  : Field<EDMA_TCD_CITER, ELINK, 0>       {}; // Enable channel-to-channel linking on minor-loop complete
+			struct CITER  : Field<EDMA_TCD_CITER, CITER , 1, 15>  {}; // Current major iterator count
 		};
 		
 		struct ALL : Field<EDMA_TCD_CITER, ALL, 0, 15> {};
@@ -2324,16 +2376,16 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x1c;
 		
-		struct ELINK : Field<EDMA_TCD_BITER, ELINK, 0> {}; // Enables channel-to-channel linking on minor loop complete
-		
 		struct ELINKYES
 		{
+			struct ELINK  : Field<EDMA_TCD_BITER, ELINK , 0>    {}; // Enables channel-to-channel linking on minor loop complete
 			struct LINKCH : Field<EDMA_TCD_BITER, LINKCH, 1, 6> {}; // Link channel number
 			struct BITER  : Field<EDMA_TCD_BITER, BITER, 7, 15> {}; // Starting major iteration count
 		};
 		
 		struct ELINKNO
 		{
+			struct ELINK  : Field<EDMA_TCD_BITER, ELINK, 0>     {}; // Enables channel-to-channel linking on minor loop complete
 			struct BITER  : Field<EDMA_TCD_BITER, BITER, 1, 15> {}; // Starting major iteration count
 		};
 		
@@ -2420,6 +2472,26 @@ private:
 			// undefined
 		}
 
+		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		{
+			bool old_start = this->template Get<START>();
+			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			bool new_start = this->template Get<START>();
+			
+			if(!IsReadWriteError(rws))
+			{
+				// Capture Master ID used to write CSR
+				this->edma->SetMasterID(reg_num, mid);
+				
+				if(!old_start && new_start)
+				{
+					this->edma->NotifyEngine();
+				}
+			}
+			
+			return rws;
+		}
+
 		using Super::operator =;
 		
 	private:
@@ -2429,6 +2501,7 @@ private:
 	struct EDMA_TCD
 	{
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x1000;
+		static const unsigned int SIZE = 32;
 		
 		EDMA_TCD()
 			: edma(0)
@@ -2507,6 +2580,153 @@ private:
 			edma_tcd_csr     .Reset();
 		}
 		
+		uint64_t GetNBYTES() const
+		{
+			// Note: An NBYTES value of 0x0000_0000 is interpreted as a 4 GB transfer.
+			
+			if(edma->edma_cr.template Get<typename EDMA_CR::EMLM>()) // minor loop link mode ?
+			{
+				if(edma_tcd_nbytes.template Get<typename EDMA_TCD_NBYTES::MLOFFNO::SMLOE>() || edma_tcd_nbytes.template Get<typename EDMA_TCD_NBYTES::MLOFFNO::DMLOE>())
+				{
+					uint32_t nbytes = edma_tcd_nbytes.template Get<typename EDMA_TCD_NBYTES::MLOFFYES::NBYTES>();
+					return nbytes ? nbytes : (uint64_t(1) << 32);
+				}
+				else
+				{
+					uint32_t nbytes = edma_tcd_nbytes.template Get<typename EDMA_TCD_NBYTES::MLOFFNO::NBYTES>();
+					return nbytes ? nbytes : (uint64_t(1) << 32);
+				}
+			}
+			else
+			{
+				uint32_t nbytes = edma_tcd_nbytes.template Get<typename EDMA_TCD_NBYTES::MLNO::NBYTES>();
+				return nbytes ? nbytes : (uint64_t(1) << 32);
+			}
+		}
+		
+		void SetNBYTES(uint32_t v)
+		{
+			if(edma->edma_cr.template Get<typename EDMA_CR::EMLM>()) // minor loop link mode ?
+			{
+				if(edma_tcd_nbytes.template Get<typename EDMA_TCD_NBYTES::MLOFFNO::SMLOE>() || edma_tcd_nbytes.template Get<typename EDMA_TCD_NBYTES::MLOFFNO::DMLOE>())
+				{
+					edma_tcd_nbytes.template Set<typename EDMA_TCD_NBYTES::MLOFFYES::NBYTES>(v);
+				}
+				else
+				{
+					edma_tcd_nbytes.template Set<typename EDMA_TCD_NBYTES::MLOFFNO::NBYTES>(v);
+				}
+			}
+			else
+			{
+				edma_tcd_nbytes.template Set<typename EDMA_TCD_NBYTES::MLNO::NBYTES>(v);
+			}
+		}
+		
+		uint32_t GetCITER() const
+		{
+			if(edma_tcd_citer.template Get<typename EDMA_TCD_CITER::ELINKNO::ELINK>()) //  channel-to-channel linking on minor-loop complete ?
+			{
+				return edma_tcd_citer.template Get<typename EDMA_TCD_CITER::ELINKYES::CITER>();
+			}
+			else
+			{
+				return edma_tcd_citer.template Get<typename EDMA_TCD_CITER::ELINKNO::CITER>();
+			}
+		}
+		
+		void SetCITER(uint32_t v)
+		{
+			if(edma_tcd_citer.template Get<typename EDMA_TCD_CITER::ELINKNO::ELINK>()) //  channel-to-channel linking on minor-loop complete ?
+			{
+				edma_tcd_citer.template Set<typename EDMA_TCD_CITER::ELINKYES::CITER>(v);
+			}
+			else
+			{
+				edma_tcd_citer.template Set<typename EDMA_TCD_CITER::ELINKNO::CITER>(v);
+			}
+		}
+
+		uint32_t GetBITER() const
+		{
+			if(edma_tcd_biter.template Get<typename EDMA_TCD_BITER::ELINKNO::ELINK>()) //  channel-to-channel linking on minor-loop complete ?
+			{
+				return edma_tcd_biter.template Get<typename EDMA_TCD_BITER::ELINKYES::BITER>();
+			}
+			else
+			{
+				return edma_tcd_biter.template Get<typename EDMA_TCD_BITER::ELINKNO::BITER>();
+			}
+		}
+		
+		bool CheckSourceDataTransferSize() const
+		{
+			switch(edma_tcd_attr.template Get<typename EDMA_TCD_ATTR::SSIZE>())
+			{
+				case 0: case 1: case 2: case 4: return true;
+			}
+			
+			return false;
+		}
+		
+		bool CheckDestinationDataTransferSize() const
+		{
+			switch(edma_tcd_attr.template Get<typename EDMA_TCD_ATTR::DSIZE>())
+			{
+				case 0: case 1: case 2: case 4: return true;
+			}
+			
+			return false;
+		}
+
+		unsigned int GetSourceDataTransferSize() const
+		{
+			return 1 << edma_tcd_attr.template Get<typename EDMA_TCD_ATTR::SSIZE>();
+		}
+		
+		unsigned int GetDestinationDataTransferSize() const
+		{
+			return 1 << edma_tcd_attr.template Get<typename EDMA_TCD_ATTR::DSIZE>();
+		}
+		
+		bool CheckSourceAddress() const
+		{
+			return CheckSourceDataTransferSize() && ((edma_tcd_saddr.template Get<typename EDMA_TCD_SADDR::SADDR>() & (GetSourceDataTransferSize() - 1)) == 0);
+		}
+		
+		bool CheckSourceOffset() const
+		{
+			return CheckSourceDataTransferSize() && ((edma_tcd_soff.template Get<typename EDMA_TCD_SOFF::SOFF>() & (GetSourceDataTransferSize() - 1)) == 0);
+		}
+
+		bool CheckDestinationAddress() const
+		{
+			return GetDestinationDataTransferSize() && ((edma_tcd_daddr.template Get<typename EDMA_TCD_DADDR::DADDR>() & (GetDestinationDataTransferSize() - 1)) == 0);
+		}
+
+		bool CheckDestinationOffset() const
+		{
+			return GetDestinationDataTransferSize() && ((edma_tcd_doff.template Get<typename EDMA_TCD_DOFF::DOFF>() & (GetDestinationDataTransferSize() - 1)) == 0);
+		}
+		
+		bool CheckMinorLoopByteCount() const
+		{
+			uint32_t citer = GetCITER();
+			
+			return CheckSourceDataTransferSize() && GetDestinationDataTransferSize() && ((citer & (GetSourceDataTransferSize() - 1)) == 0) && ((citer & (GetDestinationDataTransferSize() - 1)) == 0);
+		}
+		
+		bool CheckMinorLoopChannelLinking() const
+		{
+			return edma_tcd_citer.template Get<typename EDMA_TCD_CITER::ELINKNO::ELINK>() == edma_tcd_biter.template Get<typename EDMA_TCD_BITER::ELINKNO::ELINK>();
+		}
+		
+		bool CheckScatterGatherAddress() const
+		{
+			// Check TCD alignment
+			return (edma_tcd_dlastsga.template Get<typename EDMA_TCD_DLASTSGA::DLASTSGA>() % SIZE) == 0;
+		}
+
 		EDMA<CONFIG> *edma;
 		unsigned int dma_channel_num;
 		EDMA_TCD_SADDR    edma_tcd_saddr;    // eDMA_TCDn_SADDR   
@@ -2558,31 +2778,31 @@ private:
 	
 	unisim::kernel::tlm2::ClockPropertiesProxy m_clk_prop_proxy; // proxy to get clock properties from master clock port
 	
-	EDMA_CR                                                                     edma_cr;           // eDMA_CR  
-	EDMA_ES                                                                     edma_es;           // eDMA_ES  
-	EDMA_ERQH                                                                   edma_erqh;         // eDMA_ERQH
-	EDMA_ERQL                                                                   edma_erql;         // eDMA_ERQL
-	EDMA_EEIH                                                                   edma_eeih;         // eDMA_EEIH
-	EDMA_EEIL                                                                   edma_eeil;         // eDMA_EEIL
-	EDMA_SERQ                                                                   edma_serq;         // eDMA_SERQ
-	EDMA_CERQ                                                                   edma_cerq;         // eDMA_CERQ
-	EDMA_SEEI                                                                   edma_seei;         // eDMA_SEEI
-	EDMA_CEEI                                                                   edma_ceei;         // eDMA_CEEI
-	EDMA_CINT                                                                   edma_cint;         // eDMA_CINT
-	EDMA_CERR                                                                   edma_cerr;         // eDMA_CERR
-	EDMA_SSRT                                                                   edma_ssrt;         // eDMA_SSRT
-	EDMA_CDNE                                                                   edma_cdne;         // eDMA_CDNE
-	EDMA_INTH                                                                   edma_inth;         // eDMA_INTH
-	EDMA_INTL                                                                   edma_intl;         // eDMA_INTL
-	EDMA_ERRH                                                                   edma_errh;         // eDMA_ERRH
-	EDMA_ERRL                                                                   edma_errl;         // eDMA_ERRL
-	EDMA_HRSH                                                                   edma_hrsh;         // eDMA_HRSH
-	EDMA_HRSL                                                                   edma_hrsl;         // eDMA_HRSL
-	AddressableRegisterFile<EDMA_DCHPRI      , NUM_DMA_CHANNELS, EDMA<CONFIG> > edma_dchpri;       // eDMA_DCHPRIn      
-	AddressableRegisterFile<EDMA_DCHMID      , NUM_DMA_CHANNELS, EDMA<CONFIG> > edma_dchmid;       // eDMA_DCHMIDn      
-	EDMA_TCD_File                                                               edma_tcd_file;     // eDMA TCDs
+	EDMA_CR                                                                        edma_cr;           // eDMA_CR  
+	EDMA_ES                                                                        edma_es;           // eDMA_ES  
+	EDMA_ERQH                                                                      edma_erqh;         // eDMA_ERQH
+	EDMA_ERQL                                                                      edma_erql;         // eDMA_ERQL
+	EDMA_EEIH                                                                      edma_eeih;         // eDMA_EEIH
+	EDMA_EEIL                                                                      edma_eeil;         // eDMA_EEIL
+	EDMA_SERQ                                                                      edma_serq;         // eDMA_SERQ
+	EDMA_CERQ                                                                      edma_cerq;         // eDMA_CERQ
+	EDMA_SEEI                                                                      edma_seei;         // eDMA_SEEI
+	EDMA_CEEI                                                                      edma_ceei;         // eDMA_CEEI
+	EDMA_CINT                                                                      edma_cint;         // eDMA_CINT
+	EDMA_CERR                                                                      edma_cerr;         // eDMA_CERR
+	EDMA_SSRT                                                                      edma_ssrt;         // eDMA_SSRT
+	EDMA_CDNE                                                                      edma_cdne;         // eDMA_CDNE
+	EDMA_INTH                                                                      edma_inth;         // eDMA_INTH
+	EDMA_INTL                                                                      edma_intl;         // eDMA_INTL
+	EDMA_ERRH                                                                      edma_errh;         // eDMA_ERRH
+	EDMA_ERRL                                                                      edma_errl;         // eDMA_ERRL
+	EDMA_HRSH                                                                      edma_hrsh;         // eDMA_HRSH
+	EDMA_HRSL                                                                      edma_hrsl;         // eDMA_HRSL
+	AddressableRegisterFile<EDMA_DCHPRI, NUM_DMA_CHANNELS, EDMA<CONFIG>, MasterID> edma_dchpri;       // eDMA_DCHPRIn      
+	AddressableRegisterFile<EDMA_DCHMID, NUM_DMA_CHANNELS, EDMA<CONFIG>, MasterID> edma_dchmid;       // eDMA_DCHMIDn      
+	EDMA_TCD_File                                                                  edma_tcd_file;     // eDMA TCDs
 	
-	RegisterAddressMap<sc_dt::uint64> reg_addr_map;
+	RegisterAddressMap<sc_dt::uint64, MasterID> reg_addr_map;
 	
 	unisim::kernel::tlm2::Schedule<Event> schedule; // Payload (processor requests over AHB interface) schedule
 	
@@ -2590,18 +2810,25 @@ private:
 	unisim::kernel::service::Parameter<unisim::util::endian::endian_type> param_endian;
 	bool verbose;
 	unisim::kernel::service::Parameter<bool> param_verbose;
-	unsigned int master_id;
-	unisim::kernel::service::Parameter<unsigned int> param_master_id;
+	MasterID master_id;
+	unisim::kernel::service::Parameter<MasterID> param_master_id;
 	
 	sc_core::sc_time master_clock_period;                 // Master clock period
 	sc_core::sc_time master_clock_start_time;             // Master clock start time
 	bool master_clock_posedge_first;                      // Master clock posedge first ?
 	double master_clock_duty_cycle;                       // Master clock duty cycle
 	
-	unsigned int sel_grp;
-	unsigned int sel_ch_per_grp[NUM_CHANNELS_PER_GROUP];
-	unsigned int grp_per_prio[NUM_GROUPS];
-	unsigned int ch_per_prio[NUM_CHANNELS_PER_GROUP];
+	sc_core::sc_event dma_engine_event;
+	sc_core::sc_event *gen_irq_event[NUM_DMA_CHANNELS];
+	sc_core::sc_event *gen_err_event[NUM_DMA_CHANNELS];
+	
+	bool grp_per_prio_error;
+	bool ch_per_prio_error[NUM_GROUPS];
+	
+	unsigned int sel_grp;                                         // round-robin
+	unsigned int sel_ch_per_grp[NUM_CHANNELS_PER_GROUP];          // robin-robin
+	unsigned int grp_per_prio[NUM_GROUPS];                        // fixed-priority
+	unsigned int ch_per_prio[NUM_GROUPS][NUM_CHANNELS_PER_GROUP]; // fixed-priority
 	
 	EDMA_TCD channel_x_tcd;
 	EDMA_TCD channel_y_tcd;
@@ -2616,8 +2843,10 @@ private:
 	void EnableErrorInterrupt(unsigned int dma_channel_num);
 	void DisableAllErrorInterrupts();
 	void DisableErrorInterrupt(unsigned int dma_channel_num);
+	void SetInterruptRequest(unsigned int dma_channel_num);
 	void ClearAllInterruptRequests();
 	void ClearInterruptRequest(unsigned int dma_channel_num);
+	void SetErrorIndicator(unsigned int dma_channel_num);
 	void ClearAllErrorIndicators();
 	void ClearErrorIndicator(unsigned int dma_channel_num);
 	void SetAllStartBits();
@@ -2627,18 +2856,30 @@ private:
 	bool HardwareRequestStatus(unsigned int dma_channel_num);
 	void UpdateHardwareRequestStatus(unsigned int dma_channel_num);
 	bool RequestStatus(unsigned int dma_channel_num);
+	bool InterruptRequestStatus(unsigned int dma_channel_num);
+	bool ErrorStatus(unsigned int dma_channel_num);
+	void UpdateInterruptRequests();
+	void UpdateInterruptRequest(unsigned int dma_channel_num);
+	void UpdateErrors();
+	void UpdateError(unsigned int dma_channel_num);
+	void NotifyEngine();
 	void UpdateVLD();
 	void UpdateChannelPriority(unsigned int dma_channel_num);
 	void UpdateGroupPriority();
-	bool SelectGroup(unsigned int& dma_gpr_num);
-	bool SelectChannel(unsigned int dma_grp_num, unsigned int& dma_channel_num);
-	bool SelectChannel(unsigned int& dma_channel_num);
+	bool SelectChannel(unsigned int dma_grp_num, unsigned int& dma_channel_num, bool preempt = false);
+	bool SelectChannel(unsigned int& dma_channel_num, bool preempt = false);
 	void ProcessEvent(Event *event);
 	void ProcessEvents();
 	void Process();
 	void RESET_B_Process();
 	void DMA_CHANNEL_Process(unsigned int dma_channel_num);
-	void Transfer(tlm::tlm_command cmd, sc_dt::uint64 addr, uint8_t *data_ptr, unsigned int size, unsigned int tsize, sc_core::sc_time& t);
+	void IRQ_Process(unsigned int dma_channel_num);
+	void ERR_IRQ_Process(unsigned int dma_channel_num);
+	void SetMasterID(unsigned int dma_channel_num, MasterID mid);
+	MasterID GetMasterID(unsigned int dma_channel_num);
+	bool Transfer(tlm::tlm_command cmd, int mid, uint32_t& addr, uint8_t *data_ptr, unsigned int size, unsigned int tsize, int32_t addr_signed_offset, uint32_t addr_mask, sc_core::sc_time& t);
+	bool LoadTCD(unsigned int dma_channel_num, sc_dt::uint64 addr, sc_core::sc_time& t);
+	bool CheckTCD(EDMA_TCD& tcd);
 	void DMA_Engine_Process();
 
 	void UpdateMasterClock();

@@ -3661,6 +3661,12 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//  - PIT_1
 	simulator->SetVariable("HARDWARE.PIT_1.pit-mcr-reset-value", 0x02);
 
+	//  - eDMA_0
+	simulator->SetVariable("HARDWARE.eDMA_0.master-id", 3);
+
+	//  - eDMA_1
+	simulator->SetVariable("HARDWARE.eDMA_1.master-id", 11);
+	
 	//=========================================================================
 	//===                      Service run-time configuration               ===
 	//=========================================================================
