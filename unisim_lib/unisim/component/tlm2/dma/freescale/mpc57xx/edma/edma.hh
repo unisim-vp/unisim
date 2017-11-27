@@ -802,7 +802,7 @@ private:
 		typedef FieldSet<NOP, SAER, SERQ> ALL;
 		
 		EDMA_SERQ(EDMA<CONFIG> *_edma) : Super(_edma) { Init(); }
-		EDMA_SERQ(EDMA<CONFIG> *_edma, uint32_t value) : Super(_edma, value) { Init(); }
+		EDMA_SERQ(EDMA<CONFIG> *_edma, uint8_t value) : Super(_edma, value) { Init(); }
 		
 		void Init()
 		{
@@ -817,7 +817,7 @@ private:
 			this->Initialize(0x0);
 		}
 		
-		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint8_t& value, const uint8_t& bit_enable)
 		{
 			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
 			
@@ -858,7 +858,7 @@ private:
 		typedef FieldSet<NOP, CAER, CERQ> ALL;
 		
 		EDMA_CERQ(EDMA<CONFIG> *_edma) : Super(_edma) { Init(); }
-		EDMA_CERQ(EDMA<CONFIG> *_edma, uint32_t value) : Super(_edma, value) { Init(); }
+		EDMA_CERQ(EDMA<CONFIG> *_edma, uint8_t value) : Super(_edma, value) { Init(); }
 		
 		void Init()
 		{
@@ -874,7 +874,7 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint8_t& value, const uint8_t& bit_enable)
 		{
 			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
 			
@@ -915,7 +915,7 @@ private:
 		typedef FieldSet<NOP, SAEE, SEEI> ALL;
 		
 		EDMA_SEEI(EDMA<CONFIG> *_edma) : Super(_edma) { Init(); }
-		EDMA_SEEI(EDMA<CONFIG> *_edma, uint32_t value) : Super(_edma, value) { Init(); }
+		EDMA_SEEI(EDMA<CONFIG> *_edma, uint8_t value) : Super(_edma, value) { Init(); }
 		
 		void Init()
 		{
@@ -931,7 +931,7 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint8_t& value, const uint8_t& bit_enable)
 		{
 			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
 			
@@ -972,7 +972,7 @@ private:
 		typedef FieldSet<NOP, CAEE, CEEI> ALL;
 		
 		EDMA_CEEI(EDMA<CONFIG> *_edma) : Super(_edma) { Init(); }
-		EDMA_CEEI(EDMA<CONFIG> *_edma, uint32_t value) : Super(_edma, value) { Init(); }
+		EDMA_CEEI(EDMA<CONFIG> *_edma, uint8_t value) : Super(_edma, value) { Init(); }
 		
 		void Init()
 		{
@@ -988,7 +988,7 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint8_t& value, const uint8_t& bit_enable)
 		{
 			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
 			
@@ -1029,7 +1029,7 @@ private:
 		typedef FieldSet<NOP, CAIR, CINT> ALL;
 		
 		EDMA_CINT(EDMA<CONFIG> *_edma) : Super(_edma) { Init(); }
-		EDMA_CINT(EDMA<CONFIG> *_edma, uint32_t value) : Super(_edma, value) { Init(); }
+		EDMA_CINT(EDMA<CONFIG> *_edma, uint8_t value) : Super(_edma, value) { Init(); }
 		
 		void Init()
 		{
@@ -1045,7 +1045,7 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint8_t& value, const uint8_t& bit_enable)
 		{
 			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
 			
@@ -1086,7 +1086,7 @@ private:
 		typedef FieldSet<NOP, CAEI, CERR> ALL;
 		
 		EDMA_CERR(EDMA<CONFIG> *_edma) : Super(_edma) { Init(); }
-		EDMA_CERR(EDMA<CONFIG> *_edma, uint32_t value) : Super(_edma, value) { Init(); }
+		EDMA_CERR(EDMA<CONFIG> *_edma, uint8_t value) : Super(_edma, value) { Init(); }
 		
 		void Init()
 		{
@@ -1102,7 +1102,7 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint8_t& value, const uint8_t& bit_enable)
 		{
 			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
 			
@@ -1143,7 +1143,7 @@ private:
 		typedef FieldSet<NOP, SAST, SSRT> ALL;
 		
 		EDMA_SSRT(EDMA<CONFIG> *_edma) : Super(_edma) { Init(); }
-		EDMA_SSRT(EDMA<CONFIG> *_edma, uint32_t value) : Super(_edma, value) { Init(); }
+		EDMA_SSRT(EDMA<CONFIG> *_edma, uint8_t value) : Super(_edma, value) { Init(); }
 		
 		void Init()
 		{
@@ -1159,7 +1159,7 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint8_t& value, const uint8_t& bit_enable)
 		{
 			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
 			
@@ -1200,7 +1200,7 @@ private:
 		typedef FieldSet<NOP, CADN, CDNE> ALL;
 		
 		EDMA_CDNE(EDMA<CONFIG> *_edma) : Super(_edma) { Init(); }
-		EDMA_CDNE(EDMA<CONFIG> *_edma, uint32_t value) : Super(_edma, value) { Init(); }
+		EDMA_CDNE(EDMA<CONFIG> *_edma, uint8_t value) : Super(_edma, value) { Init(); }
 		
 		void Init()
 		{
@@ -1216,7 +1216,7 @@ private:
 			this->Initialize(0x0);
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint8_t& value, const uint8_t& bit_enable)
 		{
 			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
 			
@@ -1877,7 +1877,7 @@ private:
 		
 		EDMA_DCHPRI() : Super(0), reg_num(0) {}
 		EDMA_DCHPRI(EDMA<CONFIG> *_edma) : Super(_edma), reg_num(0) {}
-		EDMA_DCHPRI(EDMA<CONFIG> *_edma, uint32_t value) : Super(_edma, value), reg_num(0) {}
+		EDMA_DCHPRI(EDMA<CONFIG> *_edma, uint8_t value) : Super(_edma, value), reg_num(0) {}
 		
 		void WithinRegisterFileCtor(unsigned int _reg_num, EDMA<CONFIG> *_edma)
 		{
@@ -1906,7 +1906,7 @@ private:
 			this->edma->UpdateChannelPriority(reg_num);
 		}
 		
-		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint8_t& value, const uint8_t& bit_enable)
 		{
 			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
 			
@@ -1939,7 +1939,7 @@ private:
 		
 		EDMA_DCHMID() : Super(0), reg_num(0) {}
 		EDMA_DCHMID(EDMA<CONFIG> *_edma) : Super(_edma), reg_num(0) {}
-		EDMA_DCHMID(EDMA<CONFIG> *_edma, uint32_t value) : Super(_edma, value), reg_num(0) {}
+		EDMA_DCHMID(EDMA<CONFIG> *_edma, uint8_t value) : Super(_edma, value), reg_num(0) {}
 		
 		void WithinRegisterFileCtor(unsigned int _reg_num, EDMA<CONFIG> *_edma)
 		{
@@ -2026,7 +2026,7 @@ private:
 		
 		EDMA_TCD_ATTR() : Super(0), reg_num(0) {}
 		EDMA_TCD_ATTR(EDMA<CONFIG> *_edma) : Super(_edma), reg_num(0) {}
-		EDMA_TCD_ATTR(EDMA<CONFIG> *_edma, uint32_t value) : Super(_edma, value), reg_num(0) {}
+		EDMA_TCD_ATTR(EDMA<CONFIG> *_edma, uint16_t value) : Super(_edma, value), reg_num(0) {}
 		
 		void WithinRegisterFileCtor(unsigned int _reg_num, EDMA<CONFIG> *_edma)
 		{
@@ -2070,7 +2070,7 @@ private:
 		
 		EDMA_TCD_SOFF() : Super(0), reg_num(0) {}
 		EDMA_TCD_SOFF(EDMA<CONFIG> *_edma) : Super(_edma), reg_num(0) {}
-		EDMA_TCD_SOFF(EDMA<CONFIG> *_edma, uint32_t value) : Super(_edma, value), reg_num(0) {}
+		EDMA_TCD_SOFF(EDMA<CONFIG> *_edma, uint16_t value) : Super(_edma, value), reg_num(0) {}
 		
 		void WithinRegisterFileCtor(unsigned int _reg_num, EDMA<CONFIG> *_edma)
 		{
@@ -2261,7 +2261,7 @@ private:
 		
 		EDMA_TCD_CITER() : Super(0), reg_num(0) {}
 		EDMA_TCD_CITER(EDMA<CONFIG> *_edma) : Super(_edma), reg_num(0) {}
-		EDMA_TCD_CITER(EDMA<CONFIG> *_edma, uint32_t value) : Super(_edma, value), reg_num(0) {}
+		EDMA_TCD_CITER(EDMA<CONFIG> *_edma, uint16_t value) : Super(_edma, value), reg_num(0) {}
 		
 		void WithinRegisterFileCtor(unsigned int _reg_num, EDMA<CONFIG> *_edma)
 		{
@@ -2300,7 +2300,7 @@ private:
 		
 		EDMA_TCD_DOFF() : Super(0), reg_num(0) {}
 		EDMA_TCD_DOFF(EDMA<CONFIG> *_edma) : Super(_edma), reg_num(0) {}
-		EDMA_TCD_DOFF(EDMA<CONFIG> *_edma, uint32_t value) : Super(_edma, value), reg_num(0) {}
+		EDMA_TCD_DOFF(EDMA<CONFIG> *_edma, uint16_t value) : Super(_edma, value), reg_num(0) {}
 		
 		void WithinRegisterFileCtor(unsigned int _reg_num, EDMA<CONFIG> *_edma)
 		{
@@ -2393,7 +2393,7 @@ private:
 		
 		EDMA_TCD_BITER() : Super(0), reg_num(0) {}
 		EDMA_TCD_BITER(EDMA<CONFIG> *_edma) : Super(_edma), reg_num(0) {}
-		EDMA_TCD_BITER(EDMA<CONFIG> *_edma, uint32_t value) : Super(_edma, value), reg_num(0) {}
+		EDMA_TCD_BITER(EDMA<CONFIG> *_edma, uint16_t value) : Super(_edma, value), reg_num(0) {}
 		
 		void WithinRegisterFileCtor(unsigned int _reg_num, EDMA<CONFIG> *_edma)
 		{
@@ -2441,7 +2441,7 @@ private:
 		
 		EDMA_TCD_CSR() : Super(0), reg_num(0) {}
 		EDMA_TCD_CSR(EDMA<CONFIG> *_edma) : Super(_edma), reg_num(0) {}
-		EDMA_TCD_CSR(EDMA<CONFIG> *_edma, uint32_t value) : Super(_edma, value), reg_num(0) {}
+		EDMA_TCD_CSR(EDMA<CONFIG> *_edma, uint16_t value) : Super(_edma, value), reg_num(0) {}
 		
 		void WithinRegisterFileCtor(unsigned int _reg_num, EDMA<CONFIG> *_edma)
 		{
@@ -2472,7 +2472,7 @@ private:
 			// undefined
 		}
 
-		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(MasterID& mid, const uint16_t& value, const uint16_t& bit_enable)
 		{
 			bool old_start = this->template Get<START>();
 			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
@@ -2711,9 +2711,8 @@ private:
 		
 		bool CheckMinorLoopByteCount() const
 		{
-			uint32_t citer = GetCITER();
-			
-			return CheckSourceDataTransferSize() && GetDestinationDataTransferSize() && ((citer & (GetSourceDataTransferSize() - 1)) == 0) && ((citer & (GetDestinationDataTransferSize() - 1)) == 0);
+			uint64_t nbytes = GetNBYTES();
+			return CheckSourceDataTransferSize() && GetDestinationDataTransferSize() && ((nbytes & (GetSourceDataTransferSize() - 1)) == 0) && ((nbytes & (GetDestinationDataTransferSize() - 1)) == 0);
 		}
 		
 		bool CheckMinorLoopChannelLinking() const
@@ -2833,6 +2832,8 @@ private:
 	EDMA_TCD channel_x_tcd;
 	EDMA_TCD channel_y_tcd;
 	EDMA_TCD *channel_tcd; // points to either channel x or y
+	
+	sc_core::sc_time dma_engine_time;
 	
 	void Reset();
 	void EnableAllRequests();

@@ -83,6 +83,8 @@ void periodic_task2(unsigned int pit_id, unsigned int chan)
 	pit_clear_timer_interrupt_flag(pit_id, chan); // clear PIT_0 interrupt flag
 }
 
+#define FIFO_MODE 0
+
 void linflexd_0_int_rx(unsigned int linflexd_id, enum LINFlexD_INT linflexd_int)
 {
 	if(linflexd_get_uart_data_received_interrupt_flag(linflexd_id))
@@ -100,10 +102,10 @@ void linflexd_0_int_rx(unsigned int linflexd_id, enum LINFlexD_INT linflexd_int)
 
 void linflexd_0_int_tx(unsigned int linflexd_id, enum LINFlexD_INT linflexd_int)
 {
-// 	if(linflexd_get_uart_data_transmitted_interrupt_flag(linflexd_id))
-// 	{
-// 		linflexd_clear_uart_data_transmitted_interrupt_flag(linflexd_id);       // LINFlexD_0 (Normal mode): clear transmission complete flag
-// 	}
+	if(linflexd_get_uart_data_transmitted_interrupt_flag(linflexd_id))
+	{
+		linflexd_clear_uart_data_transmitted_interrupt_flag(linflexd_id);       // LINFlexD_0 (Normal mode): clear transmission complete flag
+	}
 }
 
 void linflexd_0_int_err(unsigned int linflexd_id, enum LINFlexD_INT linflexd_int)
@@ -116,7 +118,6 @@ volatile unsigned int counter = 0;
 uint32_t source[4];
 uint32_t dest[4];
 
-#define FIFO_MODE 1
 
 int main_Z4_2(void)
 {
@@ -228,7 +229,6 @@ int main_Z4_2(void)
 	}
 #endif
 	
-#if 0
 	source[0] = 0x1234;
 	source[1] = 0x5678;
 	source[2] = 0x4321;
@@ -237,8 +237,20 @@ int main_Z4_2(void)
 	dest[1] = 0;
 	dest[2] = 0;
 	dest[3] = 0;
-	edma_set_tcd_starting_major_iteration_count(0, 0, 16);
-	edma_set_tcd_current_major_iteration_count(0, 0, 16);
+	unsigned int grp;
+	for(grp = 0; grp < 4; grp++)
+	{
+		edma_set_channel_group_priority(0, grp, 3 - grp);
+	}
+	unsigned int chan;
+	for(chan = 0; chan < 64; chan++)
+	{
+		edma_set_channel_arbitration_priority(0, chan, 15 - (chan & 15));
+	}
+	
+	edma_set_tcd_starting_major_iteration_count(0, 0, 1);
+	edma_set_tcd_current_major_iteration_count(0, 0, 1);
+	edma_set_tcd_minor_byte_count(0, 0, 16);
 	edma_set_tcd_source_address(0, 0, (uint32_t) source);
 	edma_set_tcd_signed_source_address_offset(0, 0, 1);
 	edma_set_tcd_source_data_transfer_size(0, 0, 1);
@@ -249,7 +261,6 @@ int main_Z4_2(void)
 	edma_set_tcd_last_destination_address_adjustment(0, 0, -16);
 	edma_enable_tcd_major_complete_interrupt(0, 0);
 	edma_set_start_bit(0, 0);
-#endif
 	
 	/* Loop forever */
 	for(;;)
