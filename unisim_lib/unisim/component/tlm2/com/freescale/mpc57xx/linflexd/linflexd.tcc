@@ -1202,9 +1202,11 @@ void LINFlexD<CONFIG>::INT_ERR_Process()
 template <typename CONFIG>
 void LINFlexD<CONFIG>::DMA_RX_Process()
 {
+	// A DMA request is triggered by FIFO and not by empty (Rx) status signals
+
 	unsigned int dre = linflexd_dmarxe.template Get<typename LINFlexD_DMARXE::DRE>(); // DMA Tx channel Y enable
 	
-	unsigned int rfne = linflexd_uartsr.template Get<typename LINFlexD_UARTSR::RFE>(); // Rx FIFO empty
+	unsigned int rfne = linflexd_uartsr.template Get<typename LINFlexD_UARTSR::RFNE>(); // Receive FIFO Not Empty
 	
 	unsigned int dma_rx_num;
 	for(dma_rx_num = 0; dma_rx_num < NUM_DMA_RX_CHANNELS; dma_rx_num++)
@@ -1224,6 +1226,8 @@ void LINFlexD<CONFIG>::DMA_RX_Process()
 template <typename CONFIG>
 void LINFlexD<CONFIG>::DMA_TX_Process()
 {
+	// A DMA request is triggered by FIFO-not-full (TX) status signals
+	
 	unsigned int dte = linflexd_dmatxe.template Get<typename LINFlexD_DMATXE::DTE>(); // DMA Tx channel Y enable
 	
 	unsigned int tff = linflexd_uartsr.template Get<typename LINFlexD_UARTSR::TFF>(); // Tx FIFO full
@@ -1232,7 +1236,7 @@ void LINFlexD<CONFIG>::DMA_TX_Process()
 	for(dma_tx_num = 0; dma_tx_num < NUM_DMA_RX_CHANNELS; dma_tx_num++)
 	{
 		bool dma_tx_enable = ((dte >> dma_tx_num) & 1) != 0;
-		bool dma_tx = tff && dma_tx_enable;
+		bool dma_tx = !tff && dma_tx_enable;
 		
 		if(verbose)
 		{

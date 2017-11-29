@@ -753,6 +753,25 @@ void linflexd_clear_uart_data_transmitted_interrupt_flag(unsigned int linflexd_i
 	linflexd[linflexd_id]->UARTSR = uartsr;
 }
 
+void linflexd_enable_dma_tx(unsigned int linflexd_id, unsigned int chan)
+{
+	linflexd[linflexd_id]->DMATXE.R = linflexd[linflexd_id]->DMATXE.R | (1 << chan);
+}
+
+void linflexd_disable_dma_tx(unsigned int linflexd_id, unsigned int chan)
+{
+	linflexd[linflexd_id]->DMATXE.R = linflexd[linflexd_id]->DMATXE.R & ~(1 << chan);
+}
+
+void linflexd_enable_dma_rx(unsigned int linflexd_id, unsigned int chan)
+{
+	linflexd[linflexd_id]->DMARXE.R = linflexd[linflexd_id]->DMARXE.R | (1 << chan);
+}
+
+void linflexd_disable_dma_rx(unsigned int linflexd_id, unsigned int chan)
+{
+	linflexd[linflexd_id]->DMARXE.R = linflexd[linflexd_id]->DMARXE.R & ~(1 << chan);
+}
 
 static void __linflexd_0_int_rx__()
 {

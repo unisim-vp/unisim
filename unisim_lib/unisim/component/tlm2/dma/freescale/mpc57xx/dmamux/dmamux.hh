@@ -302,7 +302,7 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x0);
-			this->dmamux->UpdateRoutingTable(reg_num);
+			this->dmamux->UpdateChannel(reg_num);
 		}
 
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
@@ -310,7 +310,7 @@ private:
 			ReadWriteStatus rws = (reg_num < NUM_DMA_TRIGGERS) ? Super::Write(value, bit_enable)
 			                                                   : Super::template WritePreserve<TRIG>(value, bit_enable);
 			
-			this->dmamux->UpdateRoutingTable(reg_num);
+			this->dmamux->UpdateChannel(reg_num);
 			
 			return rws;
 		}
@@ -329,8 +329,8 @@ private:
 	
 	unisim::kernel::tlm2::Schedule<Event> schedule; // Payload (processor requests over AHB interface) schedule
 	
-	sc_core::sc_signal<bool> *filtered_dma_trigger[NUM_DMA_TRIGGERS]; // filtered DMA trigger: signal goes high when both source and trigger are high; signal goes when source goes low
-	sc_core::sc_event *dma_chcfg_event[NUM_DMA_CHANNELS];             // configuration change event per DMA channel
+	sc_core::sc_event *dma_source_routing_change_event[NUM_DMA_SOURCES]; // configuration change event per DMA channel
+	sc_core::sc_event *dma_chcfg_event[NUM_DMA_CHANNELS];
 	sc_core::sc_event *dma_source_event[NUM_DMA_CHANNELS];            // source change event per DMA channel
 	
 	unsigned int routing_table[NUM_DMA_SOURCES];
@@ -351,11 +351,10 @@ private:
 	void Process();
 	void RESET_B_Process();
 	void DMA_SOURCE_Process(unsigned int dma_source_num);
-	void DMA_TRIGGER_Process(unsigned int dma_trigger_num);
 	void DMA_CHANNEL_Process(unsigned int dma_channel_num);
 	void MasterClockPropertiesChangedProcess();
 	void UpdateMasterClock();
-	void UpdateRoutingTable(unsigned int dma_channel_num);
+	void UpdateChannel(unsigned int dma_channel_num);
 };
 
 } // end of namespace dmamux

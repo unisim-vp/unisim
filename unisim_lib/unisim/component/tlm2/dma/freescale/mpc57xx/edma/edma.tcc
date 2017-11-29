@@ -657,6 +657,11 @@ void EDMA<CONFIG>::EnableAllRequests()
 template <typename CONFIG>
 void EDMA<CONFIG>::EnableRequest(unsigned int dma_channel_num)
 {
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": enabling request #" << dma_channel_num << EndDebugInfo;
+	}
+	
 	if(dma_channel_num >= 32)
 	{
 		edma_erqh.Set(dma_channel_num - 32, 1);
@@ -670,6 +675,11 @@ void EDMA<CONFIG>::EnableRequest(unsigned int dma_channel_num)
 template <typename CONFIG>
 void EDMA<CONFIG>::DisableAllRequests()
 {
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": disabling all requests" << EndDebugInfo;
+	}
+	
 	edma_erqh = 0;
 	edma_erql = 0;
 }
@@ -677,6 +687,11 @@ void EDMA<CONFIG>::DisableAllRequests()
 template <typename CONFIG>
 void EDMA<CONFIG>::DisableRequest(unsigned int dma_channel_num)
 {
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": disabling request #" << dma_channel_num << EndDebugInfo;
+	}
+
 	if(dma_channel_num >= 32)
 	{
 		edma_erqh.Set(dma_channel_num - 32, 0);
@@ -690,6 +705,11 @@ void EDMA<CONFIG>::DisableRequest(unsigned int dma_channel_num)
 template <typename CONFIG>
 void EDMA<CONFIG>::EnableAllErrorInterrupts()
 {
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": enabling all error interrupts" << EndDebugInfo;
+	}
+	
 	edma_eeih = ~uint32_t(0);
 	edma_eeil = ~uint32_t(0);
 }
@@ -697,6 +717,11 @@ void EDMA<CONFIG>::EnableAllErrorInterrupts()
 template <typename CONFIG>
 void EDMA<CONFIG>::EnableErrorInterrupt(unsigned int dma_channel_num)
 {
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": enabling error interrupt #" << dma_channel_num << EndDebugInfo;
+	}
+
 	if(dma_channel_num >= 32)
 	{
 		edma_eeih.Set(dma_channel_num - 32, 1);
@@ -710,6 +735,11 @@ void EDMA<CONFIG>::EnableErrorInterrupt(unsigned int dma_channel_num)
 template <typename CONFIG>
 void EDMA<CONFIG>::DisableAllErrorInterrupts()
 {
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": disable all error interrupts" << EndDebugInfo;
+	}
+	
 	edma_eeih = 0;
 	edma_eeil = 0;
 }
@@ -717,6 +747,11 @@ void EDMA<CONFIG>::DisableAllErrorInterrupts()
 template <typename CONFIG>
 void EDMA<CONFIG>::DisableErrorInterrupt(unsigned int dma_channel_num)
 {
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": disable error interrupt #" << dma_channel_num << EndDebugInfo;
+	}
+	
 	if(dma_channel_num >= 32)
 	{
 		edma_eeih.Set(dma_channel_num - 32, 0);
@@ -730,6 +765,11 @@ void EDMA<CONFIG>::DisableErrorInterrupt(unsigned int dma_channel_num)
 template <typename CONFIG>
 void EDMA<CONFIG>::SetInterruptRequest(unsigned int dma_channel_num)
 {
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": setting interrupt request #" << dma_channel_num << EndDebugInfo;
+	}
+
 	if(dma_channel_num >= 32)
 	{
 		edma_inth.Set(dma_channel_num - 32, 1);
@@ -745,6 +785,11 @@ void EDMA<CONFIG>::SetInterruptRequest(unsigned int dma_channel_num)
 template <typename CONFIG>
 void EDMA<CONFIG>::ClearAllInterruptRequests()
 {
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": clearing all interrupt requests" << EndDebugInfo;
+	}
+	
 	edma_inth = 0;
 	edma_intl = 0;
 }
@@ -752,6 +797,11 @@ void EDMA<CONFIG>::ClearAllInterruptRequests()
 template <typename CONFIG>
 void EDMA<CONFIG>::ClearInterruptRequest(unsigned int dma_channel_num)
 {
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": clearing interrupt request #" << dma_channel_num << EndDebugInfo;
+	}
+
 	if(dma_channel_num >= 32)
 	{
 		edma_inth.Set(dma_channel_num - 32, 0);
@@ -767,6 +817,11 @@ void EDMA<CONFIG>::ClearInterruptRequest(unsigned int dma_channel_num)
 template <typename CONFIG>
 void EDMA<CONFIG>::SetErrorIndicator(unsigned int dma_channel_num)
 {
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": setting error indicator #" << dma_channel_num << EndDebugInfo;
+	}
+
 	if(dma_channel_num >= 32)
 	{
 		edma_errh.Set(dma_channel_num - 32, 1);
@@ -785,6 +840,11 @@ void EDMA<CONFIG>::SetErrorIndicator(unsigned int dma_channel_num)
 template <typename CONFIG>
 void EDMA<CONFIG>::ClearAllErrorIndicators()
 {
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": clearing all error indicators" << EndDebugInfo;
+	}
+	
 	edma_errh = 0;
 	edma_errl = 0;
 	UpdateVLD();
@@ -799,6 +859,11 @@ void EDMA<CONFIG>::ClearAllErrorIndicators()
 template <typename CONFIG>
 void EDMA<CONFIG>::ClearErrorIndicator(unsigned int dma_channel_num)
 {
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": clear error indicator" << dma_channel_num << EndDebugInfo;
+	}
+
 	if(dma_channel_num >= 32)
 	{
 		edma_errh.Set(dma_channel_num - 32, 0);
@@ -815,6 +880,11 @@ void EDMA<CONFIG>::ClearErrorIndicator(unsigned int dma_channel_num)
 template <typename CONFIG>
 void EDMA<CONFIG>::SetAllStartBits()
 {
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": setting all START bits" << EndDebugInfo;
+	}
+
 	unsigned int dma_channel_num;
 	
 	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
@@ -828,6 +898,11 @@ void EDMA<CONFIG>::SetAllStartBits()
 template <typename CONFIG>
 void EDMA<CONFIG>::SetStartBit(unsigned int dma_channel_num)
 {
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": setting START bit #" << dma_channel_num << EndDebugInfo;
+	}
+
 	edma_tcd_file[dma_channel_num].edma_tcd_csr.template Set<typename EDMA_TCD_CSR::START>(1);
 	NotifyEngine();
 }
@@ -835,6 +910,11 @@ void EDMA<CONFIG>::SetStartBit(unsigned int dma_channel_num)
 template <typename CONFIG>
 void EDMA<CONFIG>::ClearAllDoneBits()
 {
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": clearing all DONE bits" << EndDebugInfo;
+	}
+
 	unsigned int dma_channel_num;
 	
 	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
@@ -846,6 +926,11 @@ void EDMA<CONFIG>::ClearAllDoneBits()
 template <typename CONFIG>
 void EDMA<CONFIG>::ClearDoneBit(unsigned int dma_channel_num)
 {
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": clearing DONE bit #" << dma_channel_num << EndDebugInfo;
+	}
+	
 	edma_tcd_file[dma_channel_num].edma_tcd_csr.template Set<typename EDMA_TCD_CSR::DONE>(0);
 }
 
@@ -865,13 +950,20 @@ bool EDMA<CONFIG>::HardwareRequestStatus(unsigned int dma_channel_num)
 template <typename CONFIG>
 void EDMA<CONFIG>::UpdateHardwareRequestStatus(unsigned int dma_channel_num)
 {
+	bool dma_channel_value = dma_channel[dma_channel_num]->read();
+	
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": " << dma_channel[dma_channel_num]->name() << " = " << dma_channel_value << EndDebugInfo;
+	}
+	
 	if(dma_channel_num >= 32)
 	{
-		edma_hrsh.Set(dma_channel_num - 32, edma_erqh.Get(dma_channel_num - 32) && dma_channel[dma_channel_num]->read());
+		edma_hrsh.Set(dma_channel_num - 32, edma_erqh.Get(dma_channel_num - 32) && dma_channel_value);
 	}
 	else
 	{
-		edma_hrsl.Set(edma_erqh.Get(dma_channel_num) && dma_channel_num, dma_channel[dma_channel_num]->read());
+		edma_hrsl.Set(dma_channel_num, edma_erql.Get(dma_channel_num) && dma_channel_value);
 	}
 	
 	if(edma_hrsh || edma_hrsl)
@@ -947,6 +1039,11 @@ void EDMA<CONFIG>::UpdateError(unsigned int dma_channel_num)
 template <typename CONFIG>
 void EDMA<CONFIG>::NotifyEngine()
 {
+	if(verbose)
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": notifying DMA engine" << EndDebugInfo;
+	}
+	
 	dma_engine_event.notify(sc_core::SC_ZERO_TIME);
 }
 
@@ -981,7 +1078,7 @@ void EDMA<CONFIG>::UpdateGroupPriority()
 	unsigned int grp;
 	for(grp = 0; grp < NUM_GROUPS; grp++)
 	{
-		unsigned int prio = (grppri / (NUM_GROUPS << grp)) % NUM_GROUPS;
+		unsigned int prio = (grppri >> (CeilLog2<NUM_GROUPS>::value * grp)) % NUM_GROUPS;
 		prio_coverage_map |= (1 << prio);
 		grp_per_prio[prio] = grp;
 	}
@@ -1003,7 +1100,7 @@ bool EDMA<CONFIG>::SelectChannel(unsigned int dma_grp_num, unsigned int& dma_cha
 			
 			if(RequestStatus(ch))
 			{
-				sel_ch_per_grp[dma_grp_num] = ch;
+				dma_channel_num = sel_ch_per_grp[dma_grp_num] = ch;
 				return true;
 			}
 		}
@@ -1028,7 +1125,7 @@ bool EDMA<CONFIG>::SelectChannel(unsigned int dma_grp_num, unsigned int& dma_cha
 			{
 				if(RequestStatus(ch))
 				{
-					sel_ch_per_grp[dma_grp_num] = ch;
+					dma_channel_num = sel_ch_per_grp[dma_grp_num] = ch;
 					return true;
 				}
 			}
@@ -1174,6 +1271,7 @@ bool EDMA<CONFIG>::Transfer(tlm::tlm_command cmd, int mid, uint32_t& addr, uint8
 		
 		if(payload.get_response_status() != tlm::TLM_OK_RESPONSE)
 		{
+			t += master_clock_period;
 			return false;
 		}
 		
@@ -1203,6 +1301,7 @@ bool EDMA<CONFIG>::LoadTCD(unsigned int dma_channel_num, sc_dt::uint64 addr, sc_
 	
 	if(payload.get_response_status() != tlm::TLM_OK_RESPONSE)
 	{
+		t += master_clock_period;
 		return false;
 	}
 	
@@ -1301,7 +1400,7 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 								
 									if(verbose)
 									{
-										logger << DebugInfo << sc_core::sc_time_stamp() << "channel #" << channel_tcd->dma_channel_num << ": channel #" << dma_channel_num << " preempts" << EndDebugInfo;
+										logger << DebugInfo << sc_core::sc_time_stamp() << ":channel #" << channel_tcd->dma_channel_num << ": channel #" << dma_channel_num << " preempts" << EndDebugInfo;
 									}
 									
 									// preempt channel x
@@ -1312,7 +1411,7 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 										// start channel y
 										if(verbose)
 										{
-											logger << DebugInfo << sc_core::sc_time_stamp() << "channel #" << dma_channel_num << ": beginning" << EndDebugInfo;
+											logger << DebugInfo << sc_core::sc_time_stamp() << ":channel #" << dma_channel_num << ": beginning" << EndDebugInfo;
 										}
 										
 										edma_tcd_file[dma_channel_num].edma_tcd_csr.template Set<typename EDMA_TCD_CSR::ACTIVE>(1); // channel y is active
@@ -1334,7 +1433,7 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 				// DMA engine is idle waiting for a DMA request
 				if(verbose)
 				{
-					logger << DebugInfo << sc_core::sc_time_stamp() << ":waiting for request" << EndDebugInfo;
+					logger << DebugInfo << sc_core::sc_time_stamp() << ": waiting for request" << EndDebugInfo;
 				}
 				wait();
 				
@@ -1345,7 +1444,7 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 			{
 				if(verbose)
 				{
-					logger << DebugInfo << sc_core::sc_time_stamp() << ":DMA operations halted" << EndDebugInfo;
+					logger << DebugInfo << sc_core::sc_time_stamp() << ": DMA operations halted" << EndDebugInfo;
 				}
 				idle = true;
 			}
@@ -1357,7 +1456,7 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 				{
 					if(verbose)
 					{
-						logger << DebugInfo << sc_core::sc_time_stamp() << ":selecting channel #" << dma_channel_num << EndDebugInfo;
+						logger << DebugInfo << sc_core::sc_time_stamp() << ": selecting channel #" << dma_channel_num << EndDebugInfo;
 					}
 					
 					if(CheckTCD(edma_tcd_file[dma_channel_num]))
@@ -1366,7 +1465,7 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 						
 						if(verbose)
 						{
-							logger << DebugInfo << sc_core::sc_time_stamp() << "channel #" << dma_channel_num << ": beginning" << EndDebugInfo;
+							logger << DebugInfo << sc_core::sc_time_stamp() << ":channel #" << dma_channel_num << ": beginning" << EndDebugInfo;
 						}
 						
 						// START=0
@@ -1406,7 +1505,7 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 			{
 				if(verbose)
 				{
-					logger << DebugInfo << (sc_core::sc_time_stamp() + t) << "channel #" << dma_channel_num << ": cancelling" << EndDebugInfo;
+					logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": cancelling" << EndDebugInfo;
 				}
 				
 				// force minor loop to finish
@@ -1488,8 +1587,17 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 				}
 				else
 				{
-					logger << DebugWarning << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": null major-iterator count" << EndDebugWarning;
-					idle = true;
+					logger << DebugWarning << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": null major-loop iteration count" << EndDebugWarning;
+					if(channel_tcd == &channel_y_tcd)
+					{
+						// resume preempted channel x
+						channel_tcd = &channel_x_tcd;
+					}
+					else
+					{
+						channel_tcd = 0;
+						idle = true;
+					}
 				}
 			}
 			
@@ -1672,82 +1780,6 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 		}
 	}
 }
-
-#if 0
-template <typename CONFIG>
-void EDMA<CONFIG>::MinorLoop()
-{
-	uint32_t nbytes = (edma->edma_cr.template Get<typename EDMA_CR::EMLM>()) ? edma_tcd_nbytes.template Get<typename EDMA_TCD_NBYTES::MLOFFNO::NBYTES>() : edma_tcd_nbytes.template Get<typename EDMA_TCD_NBYTES::MLNO::NBYTES>();
-	unsigned int byte_num = 0;
-	uint32_t saddr = edma_tcd_saddr.template Get<typename EDMA_TCD_SADDR::SADDR>();
-	uint32_t daddr = edma_tcd_daddr.template Get<typename EDMA_TCD_DADDR::DADDR>();
-	int32_t soff = edma_tcd_soff.template Get<typename EDMA_TCD_SOFF::SOFF>();
-	int32_t doff = edma_tcd_doff.template Get<typename EDMA_TCD_DOFF::DOFF>();
-	unsigned int ssize = edma_tcd_attr.template Get<typename EDMA_TCD_ATTR::SSIZE>();
-	unsigned int dsize = edma_tcd_attr.template Get<typename EDMA_TCD_ATTR::DSIZE>();
-	unsigned int smod = edma_tcd_attr.template Get<typename EDMA_TCD_ATTR::SMOD>();
-	unsigned int dmod = edma_tcd_attr.template Get<typename EDMA_TCD_ATTR::DMOD>();
-	unsigned int smod_mask = smod ? ((uint32_t(1) << smod) - 1 : ~uint32_t(0);
-	unsigned int dmod_mask = dmod ? (uint32_t(1) << dmod) - 1 : ~uint32_t(0);
-		
-	while(source_byte_num < nbytes)
-	{
-		src_payload.set_data_length(ssize);
-		
-		edma->b_transport(src_payload, t);
-		
-		saddr = (sadd & ~smod_mask) | ((saddr + soff) & smod_mask);
-		source_byte_num += ssize;
-		
-		while(dest_byte_num < nbytes)
-		{
-			dest_payload.set_data_length(dsize);
-			
-			
-			edma->b_transport(dst_payload, t);
-			daddr = (dadd & ~dmod_mask) | ((daddr + doff) & dmod_mask);
-			dest_byte_num += dsize;
-		}
-	}
-	
-	if(edma_tcd_csr.template Get<typename EDMA_TCD_CSR::ESG>())
-	{
-		// scatter/gather
-		uint32_t tcd_addr = edma_tcd_dlastsga.template Get<typename EDMA_TCD_DLASTSGA::DLASTSGA>();
-	}
-	else
-	{
-		daddr += edma_tcd_dlastsga.template Get<typename EDMA_TCD_DLASTSGA::DLASTSGA>();
-		edma_tcd_saddr.template Set<typename EDMA_TCD_SADDR::SADDR>(saddr);
-		edma_tcd_daddr.template Set<typename EDMA_TCD_SADDR::DADDR>(daddr);
-	}
-	
-	if(edma->edma_cr.template Get<typename EDMA_CR::EMLM>())
-	{
-		// minor loop mapping
-		unsigned int smloe = edma_tcd_nbytes.template Get<typename EDMA_TCD_NBYTES::MLOFFNO::SMLOE>();
-		unsigned int dmloe = edma_tcd_nbytes.template Get<typename EDMA_TCD_NBYTES::MLOFFNO::DMLOE>();
-		
-		if(smloe || dmloe)
-		{
-			int32_t mloff = unisim::util::arithmetic::SignExtend(edma_tcd_nbytes.template Get<typename EDMA_TCD_NBYTES::MLOFFYES::MLOFF>(), 6);
-			if(smloe)
-			{
-				saddr = saddr + mloff;
-			}
-			
-			if(dmloe)
-			{
-				daddr = daddr + mloff;
-			}
-		}
-	}
-	
-	unsigned int citer = edma_tcd_citer.template Get<typename EDMA_TCD_CITER::CITER>();
-	citer = citer - 1;
-	edma_tcd_citer.template Set<typename EDMA_TCD_CITER::CITER>(citer);
-}
-#endif
 
 template <typename CONFIG>
 void EDMA<CONFIG>::UpdateMasterClock()

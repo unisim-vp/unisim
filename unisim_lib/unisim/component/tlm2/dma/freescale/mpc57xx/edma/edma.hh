@@ -91,6 +91,24 @@ struct CONFIG
 };
 #endif
 
+template <unsigned long long N>
+struct Log2
+{
+    static const unsigned int value = Log2<N / 2>::value + 1;
+};
+
+template <>
+struct Log2<1>
+{
+    static const unsigned int value = 0;
+};
+
+template <unsigned long long N>
+struct CeilLog2
+{
+    static const unsigned int value = (N > (1 << Log2<N>::value)) ? Log2<N>::value + 1 : Log2<N>::value;
+};
+
 template <typename CONFIG>
 class EDMA
 	: unisim::kernel::service::Object

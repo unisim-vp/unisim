@@ -160,6 +160,11 @@ void linflexd_release_uart_rx_buffer(unsigned int linflexd_id);
 unsigned int linflexd_get_uart_receiver_data_input_signal(unsigned int linflexd_id);
 unsigned int linflexd_is_uart_rx_fifo_no_empty(unsigned int linflexd_id);
 
+void linflexd_enable_dma_tx(unsigned int linflexd_id, unsigned int chan);
+void linflexd_disable_dma_tx(unsigned int linflexd_id, unsigned int chan);
+void linflexd_enable_dma_rx(unsigned int linflexd_id, unsigned int chan);
+void linflexd_disable_dma_rx(unsigned int linflexd_id, unsigned int chan);
+
 linflexd_int_handler_t linflexd_set_interrupt_handler(unsigned int linflexd_id, enum LINFlexD_INT linflexd_int, linflexd_int_handler_t linflexd_int_handler);
 void linflexd_set_irq_priority(unsigned int linflexd_id, enum LINFlexD_INT linflexd_int, unsigned int priority);
 void linflexd_select_irq_for_processor(unsigned int linflexd_id, enum LINFlexD_INT linflexd_int, unsigned int prc_num);
