@@ -329,16 +329,20 @@ private:
 	
 	unisim::kernel::tlm2::Schedule<Event> schedule; // Payload (processor requests over AHB interface) schedule
 	
+	bool disable_dma_source[NUM_DMA_SOURCES];
 	sc_core::sc_event *dma_source_routing_change_event[NUM_DMA_SOURCES]; // configuration change event per DMA channel
 	sc_core::sc_event *dma_chcfg_event[NUM_DMA_CHANNELS];
 	sc_core::sc_event *dma_source_event[NUM_DMA_CHANNELS];            // source change event per DMA channel
 	
+	bool conf_chk;
+	bool conf_ok;
 	unsigned int routing_table[NUM_DMA_SOURCES];
 	
 	unisim::util::endian::endian_type endian;
 	unisim::kernel::service::Parameter<unisim::util::endian::endian_type> param_endian;
 	bool verbose;
 	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::service::ParameterArray<bool> param_disable_dma_source;
 	
 	sc_core::sc_time master_clock_period;                 // Master clock period
 	sc_core::sc_time master_clock_start_time;             // Master clock start time
@@ -355,6 +359,7 @@ private:
 	void MasterClockPropertiesChangedProcess();
 	void UpdateMasterClock();
 	void UpdateChannel(unsigned int dma_channel_num);
+	bool CheckConfiguration();
 };
 
 } // end of namespace dmamux

@@ -618,6 +618,12 @@ private:
 	NETCAT *netcat15;
 	NETCAT *netcat16;
 	
+	bool enable_core0_reset;
+	bool enable_core1_reset;
+	bool enable_core2_reset;
+	sc_core::sc_time core0_reset_time;
+	sc_core::sc_time core1_reset_time;
+	sc_core::sc_time core2_reset_time;
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
 	bool enable_profiler;
@@ -633,6 +639,13 @@ private:
 	SerialTerminalProtocol serial_terminal_protocol14;
 	SerialTerminalProtocol serial_terminal_protocol15;
 	SerialTerminalProtocol serial_terminal_protocol16;
+	
+	unisim::kernel::service::Parameter<bool> param_enable_core0_reset;
+	unisim::kernel::service::Parameter<bool> param_enable_core1_reset;
+	unisim::kernel::service::Parameter<bool> param_enable_core2_reset;
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_core0_reset_time;
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_core1_reset_time;
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_core2_reset_time;
 	unisim::kernel::service::Parameter<bool> param_enable_gdb_server;
 	unisim::kernel::service::Parameter<bool> param_enable_inline_debugger;
 	unisim::kernel::service::Parameter<bool> param_enable_profiler;
@@ -652,7 +665,9 @@ private:
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
 	
-	void ResetProcess();
+	void Core0ResetProcess();
+	void Core1ResetProcess();
+	void Core2ResetProcess();
 	
 	void InterruptSource(unsigned int irq_num, const std::string& source = std::string());
 	void DMASource(unsigned int dmamux_num, unsigned int dma_source_num, const std::string& source = std::string());

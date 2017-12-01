@@ -201,7 +201,7 @@ int main_Z4_2(void)
 	linflexd_select_uart_rx_buffer_mode(0);                      // LINFlexD_0   (init mode): select UART Rx buffer mode
 	linflexd_set_uart_rx_buffer_length(0, 1);                    // LINFlexD_0   (init mode): set UART Rx buffer length to 1 byte
 #endif
-	
+
 #if UART_FIFO_MODE && UART_RX_FIFO_DMA_MODE
 	linflexd_enable_dma_rx(0, 0);                                // LINFlexD_0   (init mode): enable DMA Rx (#0 of 1)
 	dmamux_set_dma_channel_source(0, 0, 16);                     // DMAMUX_0                : route source #16 (LINFlexD_0 DMA Rx) to channel #0

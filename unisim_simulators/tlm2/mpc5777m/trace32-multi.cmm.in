@@ -6,7 +6,7 @@ SYStem.GDBFILE C:\unisim-mpc5777m-@PACKAGE_VERSION@\sim\share\unisim-mpc5777m-@P
 
 OS.screen C:\unisim-mpc5777m-@PACKAGE_VERSION@\sim\bin\unisim-mpc5777m-@PACKAGE_VERSION@.exe -c sim_config.xml -s gdb-server0.wait-connection-mode=never -s gdb-server1.wait-connection-mode=never -s gdb-server2.mode=multi-thread
 
-wait 7.
+wait 14.
 SYStem.Mode Attach
 
 Data.LOAD.ELF C:\unisim-mpc5777m-@PACKAGE_VERSION@\sim\share\unisim-mpc5777m-@PACKAGE_VERSION@\soft\bin\Z7_0\flash_boot.elf /NOCODE /NOCLEAR

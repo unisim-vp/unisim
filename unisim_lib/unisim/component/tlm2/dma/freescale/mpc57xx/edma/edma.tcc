@@ -110,6 +110,7 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, edma_dchmid(this)      
 	, edma_tcd_file(this)
 	, reg_addr_map()
+	, payload_fabric()
 	, schedule()
 	, endian(unisim::util::endian::E_BIG_ENDIAN)
 	, param_endian("endian", this, endian, "endian")
@@ -1256,20 +1257,33 @@ bool EDMA<CONFIG>::Transfer(tlm::tlm_command cmd, int mid, uint32_t& addr, uint8
 			logger << " @0x" << std::hex << addr << std::dec << " (" << tsize << " bytes)" << EndDebugInfo;
 		}
 		
-		tlm::tlm_generic_payload payload;
+		tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 		
-		payload.set_address(addr);
-		payload.set_data_length(tsize);
-		payload.set_streaming_width(tsize);
-		payload.set_data_ptr(data_ptr);
-		payload.set_command(cmd);
+		payload->set_address(addr);
+		payload->set_data_length(tsize);
+		payload->set_streaming_width(tsize);
+		payload->set_data_ptr(data_ptr);
+		payload->set_command(cmd);
 		
-		unisim::kernel::tlm2::tlm_master_id *master_id_ext = new unisim::kernel::tlm2::tlm_master_id(mid);
-		payload.set_extension(master_id_ext);
+		unisim::kernel::tlm2::tlm_master_id *master_id_ext = 0;
+		payload->get_extension(master_id_ext);
+		if(master_id_ext)
+		{
+			*master_id_ext = mid;
+		}
+		else
+		{
+			master_id_ext = new unisim::kernel::tlm2::tlm_master_id(mid);
+			payload->set_extension(master_id_ext);
+		}
 
-		master_if->b_transport(payload, t);
+		master_if->b_transport(*payload, t);
 		
-		if(payload.get_response_status() != tlm::TLM_OK_RESPONSE)
+		tlm::tlm_response_status resp_status = payload->get_response_status();
+		
+		payload->release();
+		
+		if(resp_status != tlm::TLM_OK_RESPONSE)
 		{
 			t += master_clock_period;
 			return false;
@@ -1287,19 +1301,33 @@ template <typename CONFIG>
 bool EDMA<CONFIG>::LoadTCD(unsigned int dma_channel_num, sc_dt::uint64 addr, sc_core::sc_time& t)
 {
 	uint8_t data[EDMA_TCD::SIZE];
-	tlm::tlm_generic_payload payload;
+	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
-	payload.set_address(addr);
-	payload.set_data_length(EDMA_TCD::SIZE);
-	payload.set_streaming_width(EDMA_TCD::SIZE);
-	payload.set_data_ptr((unsigned char *) data);
-	payload.set_command(tlm::TLM_READ_COMMAND);
-	unisim::kernel::tlm2::tlm_master_id *master_id_ext = new unisim::kernel::tlm2::tlm_master_id(master_id);
-	payload.set_extension(master_id_ext);
+	payload->set_address(addr);
+	payload->set_data_length(EDMA_TCD::SIZE);
+	payload->set_streaming_width(EDMA_TCD::SIZE);
+	payload->set_data_ptr((unsigned char *) data);
+	payload->set_command(tlm::TLM_READ_COMMAND);
 	
-	master_if->b_transport(payload, t);
+	unisim::kernel::tlm2::tlm_master_id *master_id_ext = 0;
+	payload->get_extension(master_id_ext);
+	if(master_id_ext)
+	{
+		*master_id_ext = master_id;
+	}
+	else
+	{
+		master_id_ext = new unisim::kernel::tlm2::tlm_master_id(master_id);
+		payload->set_extension(master_id_ext);
+	}
 	
-	if(payload.get_response_status() != tlm::TLM_OK_RESPONSE)
+	master_if->b_transport(*payload, t);
+	
+	tlm::tlm_response_status resp_status = payload->get_response_status();
+	
+	payload->release();
+	
+	if(resp_status != tlm::TLM_OK_RESPONSE)
 	{
 		t += master_clock_period;
 		return false;

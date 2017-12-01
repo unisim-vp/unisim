@@ -89,20 +89,25 @@ DMAMUX<CONFIG>::DMAMUX(const sc_core::sc_module_name& name, unisim::kernel::serv
 	, dmamux_chcfg(this)
 	, reg_addr_map()
 	, schedule()
-	//, filtered_dma_trigger()
+	, disable_dma_source()
 	, dma_source_routing_change_event()
 	, dma_chcfg_event()
 	, dma_source_event()
+	, conf_chk(false)
+	, conf_ok(false)
 	, routing_table()
 	, endian(unisim::util::endian::E_BIG_ENDIAN)
 	, param_endian("endian", this, endian, "endian")
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
+	, param_disable_dma_source("disable-dma-source", this, disable_dma_source, NUM_DMA_SOURCES, "disable/enable DMA source")
 	, master_clock_period(10.0, sc_core::SC_NS)
 	, master_clock_start_time(sc_core::SC_ZERO_TIME)
 	, master_clock_posedge_first(true)
 	, master_clock_duty_cycle(0.5)
 {
+	param_disable_dma_source.SetMutable(false);
+	
 	std::stringstream description_sstr;
 	description_sstr << "MPC57XX Direct Memory Access Multiplexer (DMAMUX):" << std::endl;
 	description_sstr << "  - " << NUM_DMA_CHANNELS << " DMA channel(s)" << std::endl;
@@ -221,11 +226,6 @@ DMAMUX<CONFIG>::~DMAMUX<CONFIG>()
 		delete dma_channel[dma_channel_num];
 	}
 
-// 	for(dma_trigger_num = 0; dma_trigger_num < NUM_DMA_TRIGGERS; dma_trigger_num++)
-// 	{
-// 		delete filtered_dma_trigger[dma_trigger_num];
-// 	}
-	
 	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_SOURCES; dma_channel_num++)
 	{
 		delete dma_source_routing_change_event[dma_channel_num];
@@ -297,6 +297,9 @@ void DMAMUX<CONFIG>::Reset()
 	{
 		dmamux_chcfg[dma_channel_num].Reset();
 	}
+	
+	conf_chk = false;
+	conf_ok = false;
 }
 
 template <typename CONFIG>
@@ -536,27 +539,27 @@ void DMAMUX<CONFIG>::RESET_B_Process()
 template <typename CONFIG>
 void DMAMUX<CONFIG>::DMA_SOURCE_Process(unsigned int dma_source_num)
 {
-	if(unlikely(verbose))
+	if(!disable_dma_source[dma_source_num])
 	{
-		logger << DebugInfo << sc_core::sc_time_stamp() << ":DMA_SOURCE_Process(" << dma_source_num <<")" << EndDebugInfo;
+		if(!conf_chk && !CheckConfiguration())
+		{
+			logger << DebugWarning << sc_core::sc_time_stamp() << ": setting multiple CHCFG registers with the same source value will result in unpredictable behavior; This is true, even if a channel is disabled (ENBL==0)" << EndDebugWarning;
+		}
+		
+		unsigned int dma_channel_num = routing_table[dma_source_num];
+		
+		if(unlikely(verbose))
+		{
+			logger << DebugInfo << sc_core::sc_time_stamp() << ": routing source #" << dma_source_num << " -> channel #" << dma_channel_num << EndDebugInfo;
+		}
+		
+		dma_source_event[dma_channel_num]->notify(sc_core::SC_ZERO_TIME);
 	}
-	unsigned int dma_channel_num = routing_table[dma_source_num];
-	
-	if(unlikely(verbose))
-	{
-		logger << DebugInfo << sc_core::sc_time_stamp() << ": routing source #" << dma_source_num << " -> channel #" << dma_channel_num << EndDebugInfo;
-	}
-	
-	dma_source_event[dma_channel_num]->notify(sc_core::SC_ZERO_TIME);
 }
 
 template <typename CONFIG>
 void DMAMUX<CONFIG>::DMA_CHANNEL_Process(unsigned int dma_channel_num)
 {
-	if(unlikely(verbose))
-	{
-		logger << DebugInfo << sc_core::sc_time_stamp() << ":DMA_CHANNEL_Process(" << dma_channel_num <<")" << EndDebugInfo;
-	}
 	const DMAMUX_CHCFG& chcfg = dmamux_chcfg[dma_channel_num];
 	
 	bool dma_channel_value = false;
@@ -565,30 +568,33 @@ void DMAMUX<CONFIG>::DMA_CHANNEL_Process(unsigned int dma_channel_num)
 	{
 		// DMA channel enabled
 		unsigned int dma_source_num = chcfg.template Get<typename DMAMUX_CHCFG::SOURCE>();
-			
-		bool dma_source_value = dma_source[dma_source_num]->read();
 		
-		if(unlikely(verbose))
+		if(!disable_dma_source[dma_source_num])
 		{
-			logger << DebugInfo << sc_core::sc_time_stamp() << ": " << dma_source[dma_source_num]->name() << " = " << dma_source_value << EndDebugInfo;
-		}
-			
-		if(dma_source_num >= NUM_DMA_TRIGGERS) // last sources are not triggered
-		{
-			dma_channel_value = dma_source_value;
-		}
-		else
-		{
-			bool dma_trigger_value = dma_trigger[dma_channel_num]->read();
+			bool dma_source_value = dma_source[dma_source_num]->read();
 			
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << sc_core::sc_time_stamp() << ": " << dma_trigger[dma_channel_num]->name() << " = " << dma_trigger_value << EndDebugInfo;
+				logger << DebugInfo << sc_core::sc_time_stamp() << ": " << dma_source[dma_source_num]->name() << " = " << dma_source_value << EndDebugInfo;
 			}
-			
-			if(chcfg.template Get<typename DMAMUX_CHCFG::TRIG>()) // channel is triggered ?
+				
+			if(dma_source_num >= NUM_DMA_TRIGGERS) // last sources are not triggered
 			{
-				dma_channel_value = dma_trigger[dma_channel_num]->posedge() && dma_source_value;
+				dma_channel_value = dma_source_value;
+			}
+			else
+			{
+				bool dma_trigger_value = dma_trigger[dma_channel_num]->read();
+				
+				if(unlikely(verbose))
+				{
+					logger << DebugInfo << sc_core::sc_time_stamp() << ": " << dma_trigger[dma_channel_num]->name() << " = " << dma_trigger_value << EndDebugInfo;
+				}
+				
+				if(chcfg.template Get<typename DMAMUX_CHCFG::TRIG>()) // channel is triggered ?
+				{
+					dma_channel_value = dma_trigger[dma_channel_num]->posedge() && dma_source_value;
+				}
 			}
 		}
 	}
@@ -628,6 +634,46 @@ void DMAMUX<CONFIG>::UpdateChannel(unsigned int dma_channel_num)
 	}
 	
 	dma_chcfg_event[dma_channel_num]->notify(sc_core::SC_ZERO_TIME);
+	
+	conf_chk = false;
+}
+
+template <typename CONFIG>
+bool DMAMUX<CONFIG>::CheckConfiguration()
+{
+	if(conf_chk) return conf_ok;
+	
+	unsigned int dma_source_num;
+	unsigned int dma_channel_num;
+	bool coverage_map[NUM_DMA_SOURCES];
+	
+	for(dma_source_num = 0; dma_source_num < NUM_DMA_SOURCES; dma_source_num++)
+	{
+		coverage_map[dma_source_num] = false;
+	}
+	
+	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		const DMAMUX_CHCFG& chcfg = dmamux_chcfg[dma_channel_num];
+		
+		dma_source_num = chcfg.template Get<typename DMAMUX_CHCFG::SOURCE>();
+		
+		if(!disable_dma_source[dma_source_num])
+		{
+			if(coverage_map[dma_source_num])
+			{
+				conf_chk = true;
+				conf_ok = false;
+				return false;
+			}
+			
+			coverage_map[dma_source_num] = true;
+		}
+	}
+	
+	conf_chk = true;
+	conf_ok = true;
+	return true;
 }
 
 } // end of namespace dmamux

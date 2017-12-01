@@ -104,6 +104,12 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, netcat14(0)
 	, netcat15(0)
 	, netcat16(0)
+	, enable_core0_reset(true)
+	, enable_core1_reset(true)
+	, enable_core2_reset(true)
+	, core0_reset_time(sc_core::sc_time(1000, sc_core::SC_NS))
+	, core1_reset_time(sc_core::sc_time(1000, sc_core::SC_NS))
+	, core2_reset_time(sc_core::SC_ZERO_TIME)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
 	, enable_profiler(false)
@@ -119,6 +125,12 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, serial_terminal_protocol14(SERIAL_TERMINAL_PROTOCOL_TELNET)
 	, serial_terminal_protocol15(SERIAL_TERMINAL_PROTOCOL_TELNET)
 	, serial_terminal_protocol16(SERIAL_TERMINAL_PROTOCOL_TELNET)
+	, param_enable_core0_reset("enable-core0-reset", this, enable_core0_reset, "Enable/Disable Core #0 reset")
+	, param_enable_core1_reset("enable-core1-reset", this, enable_core1_reset, "Enable/Disable Core #1 reset")
+	, param_enable_core2_reset("enable-core2-reset", this, enable_core2_reset, "Enable/Disable Core #2 reset")
+	, param_core0_reset_time("core0-reset-time", this, core0_reset_time, "When Core #0 receives reset signal")
+	, param_core1_reset_time("core1-reset-time", this, core1_reset_time, "When Core #1 receives reset signal")
+	, param_core2_reset_time("core2-reset-time", this, core2_reset_time, "When Core #2 receives reset signal")
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, param_enable_profiler("enable-profiler", 0, enable_profiler, "Enable/Disable profiling")
@@ -138,7 +150,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 {
 	unsigned int channel_num;
 	unsigned int hw_irq_num;
-	unsigned int irq_num;
 	unsigned int prc_num;
 	unsigned int dma_req_num;
 	unsigned int dma_source_num;
@@ -3261,7 +3272,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	SC_HAS_PROCESS(Simulator);
 	
-	SC_THREAD(ResetProcess);
+	SC_THREAD(Core0ResetProcess);
+	SC_THREAD(Core1ResetProcess);
+	SC_THREAD(Core2ResetProcess);
 }
 
 Simulator::~Simulator()
@@ -3354,6 +3367,43 @@ Simulator::~Simulator()
 	if(netcat16) delete netcat16;
 }
 
+void Simulator::Core0ResetProcess()
+{
+	if(enable_core0_reset)
+	{
+		sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& p_reset_b_0 = GetSignal<bool, sc_core::SC_MANY_WRITERS>("HARDWARE.p_reset_b_0");
+		wait(core0_reset_time);
+		p_reset_b_0 = false;
+		wait(sc_core::sc_time(10.0, sc_core::SC_NS));
+		p_reset_b_0 = true;
+	}
+}
+
+void Simulator::Core1ResetProcess()
+{
+	if(enable_core1_reset)
+	{
+		sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& p_reset_b_1 = GetSignal<bool, sc_core::SC_MANY_WRITERS>("HARDWARE.p_reset_b_1");
+		wait(core1_reset_time);
+		p_reset_b_1 = false;
+		wait(sc_core::sc_time(10.0, sc_core::SC_NS));
+		p_reset_b_1 = true;
+	}
+}
+
+void Simulator::Core2ResetProcess()
+{
+	if(enable_core2_reset)
+	{
+		sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& p_reset_b_2 = GetSignal<bool, sc_core::SC_MANY_WRITERS>("HARDWARE.p_reset_b_2");
+		wait(core2_reset_time);
+		p_reset_b_2 = false;
+		wait(sc_core::sc_time(10.0, sc_core::SC_NS));
+		p_reset_b_2 = true;
+	}
+}
+
+#if 0
 void Simulator::ResetProcess()
 {
 // 	sc_core::sc_signal<sc_dt::sc_uint<30> >& p_rstbase = GetSignal<sc_dt::sc_uint<30> >("HARDWARE.p_rstbase");
@@ -3391,6 +3441,7 @@ void Simulator::ResetProcess()
 // 	irq = 1;
 	
 }
+#endif
 
 void Simulator::InterruptSource(unsigned int irq_num, const std::string& source)
 {
@@ -3660,6 +3711,213 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	
 	//  - PIT_1
 	simulator->SetVariable("HARDWARE.PIT_1.pit-mcr-reset-value", 0x02);
+
+	//  - DMAMUX_0
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[0]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[21]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[22]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[23]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[24]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[25]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[26]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[27]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[28]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[29]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[30]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[31]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[32]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[33]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[34]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[35]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[36]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[37]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[38]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[39]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[40]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[41]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[42]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[43]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[44]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[45]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[46]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[47]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[48]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[49]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[50]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[51]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[52]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[53]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[54]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[55]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[56]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[57]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[58]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[59]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[60]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[61]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_0.disable-dma-source[62]", true);
+	
+	//  - DMAMUX_1
+	simulator->SetVariable("HARDWARE.DMAMUX_1.disable-dma-source[0]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_1.disable-dma-source[51]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_1.disable-dma-source[52]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_1.disable-dma-source[58]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_1.disable-dma-source[59]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_1.disable-dma-source[60]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_1.disable-dma-source[61]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_1.disable-dma-source[62]", true);
+
+	//  - DMAMUX_2
+	simulator->SetVariable("HARDWARE.DMAMUX_2.disable-dma-source[0]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_2.disable-dma-source[51]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_2.disable-dma-source[52]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_2.disable-dma-source[53]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_2.disable-dma-source[54]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_2.disable-dma-source[55]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_2.disable-dma-source[56]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_2.disable-dma-source[57]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_2.disable-dma-source[58]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_2.disable-dma-source[59]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_2.disable-dma-source[60]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_2.disable-dma-source[61]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_2.disable-dma-source[62]", true);
+
+	//  - DMAMUX_3
+	simulator->SetVariable("HARDWARE.DMAMUX_3.disable-dma-source[0]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_3.disable-dma-source[51]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_3.disable-dma-source[52]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_3.disable-dma-source[53]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_3.disable-dma-source[54]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_3.disable-dma-source[55]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_3.disable-dma-source[56]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_3.disable-dma-source[57]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_3.disable-dma-source[58]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_3.disable-dma-source[59]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_3.disable-dma-source[60]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_3.disable-dma-source[61]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_3.disable-dma-source[62]", true);
+
+	//  - DMAMUX_4
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[0]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[42]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[43]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[44]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[45]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[46]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[47]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[48]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[49]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[50]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[51]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[52]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[53]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[54]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[55]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[56]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[57]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[58]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[59]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[60]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[61]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_4.disable-dma-source[62]", true);
+
+	//  - DMAMUX_5
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[0]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[42]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[43]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[44]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[45]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[46]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[47]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[48]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[49]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[50]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[51]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[52]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[53]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[54]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[55]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[56]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[57]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[58]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[59]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[60]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[61]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_5.disable-dma-source[62]", true);
+
+	//  - DMAMUX_6
+	simulator->SetVariable("HARDWARE.DMAMUX_6.disable-dma-source[0]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_6.disable-dma-source[48]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_6.disable-dma-source[49]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_6.disable-dma-source[50]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_6.disable-dma-source[51]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_6.disable-dma-source[52]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_6.disable-dma-source[53]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_6.disable-dma-source[54]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_6.disable-dma-source[55]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_6.disable-dma-source[56]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_6.disable-dma-source[57]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_6.disable-dma-source[58]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_6.disable-dma-source[59]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_6.disable-dma-source[60]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_6.disable-dma-source[61]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_6.disable-dma-source[62]", true);
+
+	//  - DMAMUX_7
+	simulator->SetVariable("HARDWARE.DMAMUX_7.disable-dma-source[0]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_7.disable-dma-source[51]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_7.disable-dma-source[52]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_7.disable-dma-source[53]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_7.disable-dma-source[54]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_7.disable-dma-source[55]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_7.disable-dma-source[56]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_7.disable-dma-source[57]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_7.disable-dma-source[58]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_7.disable-dma-source[59]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_7.disable-dma-source[60]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_7.disable-dma-source[61]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_7.disable-dma-source[62]", true);
+
+	//  - DMAMUX_8
+	simulator->SetVariable("HARDWARE.DMAMUX_8.disable-dma-source[0]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_8.disable-dma-source[46]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_8.disable-dma-source[47]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_8.disable-dma-source[48]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_8.disable-dma-source[49]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_8.disable-dma-source[50]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_8.disable-dma-source[51]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_8.disable-dma-source[52]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_8.disable-dma-source[53]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_8.disable-dma-source[54]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_8.disable-dma-source[55]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_8.disable-dma-source[56]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_8.disable-dma-source[57]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_8.disable-dma-source[58]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_8.disable-dma-source[59]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_8.disable-dma-source[60]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_8.disable-dma-source[61]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_8.disable-dma-source[62]", true);
+
+	//  - DMAMUX_9
+	simulator->SetVariable("HARDWARE.DMAMUX_9.disable-dma-source[0]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_9.disable-dma-source[45]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_9.disable-dma-source[46]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_9.disable-dma-source[47]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_9.disable-dma-source[48]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_9.disable-dma-source[49]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_9.disable-dma-source[50]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_9.disable-dma-source[51]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_9.disable-dma-source[52]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_9.disable-dma-source[53]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_9.disable-dma-source[54]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_9.disable-dma-source[55]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_9.disable-dma-source[56]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_9.disable-dma-source[57]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_9.disable-dma-source[58]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_9.disable-dma-source[59]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_9.disable-dma-source[60]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_9.disable-dma-source[61]", true);
+	simulator->SetVariable("HARDWARE.DMAMUX_9.disable-dma-source[62]", true);
 
 	//  - eDMA_0
 	simulator->SetVariable("HARDWARE.eDMA_0.master-id", 3);

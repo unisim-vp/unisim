@@ -10,7 +10,6 @@ volatile int counter = 0;
 
 int main_Z7_0(void)
 {
-	
 	/* Loop forever */
 	for(;;)
 	{

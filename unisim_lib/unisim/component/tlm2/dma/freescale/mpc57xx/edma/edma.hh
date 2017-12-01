@@ -2821,6 +2821,8 @@ private:
 	
 	RegisterAddressMap<sc_dt::uint64, MasterID> reg_addr_map;
 	
+	unisim::kernel::tlm2::PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
+	
 	unisim::kernel::tlm2::Schedule<Event> schedule; // Payload (processor requests over AHB interface) schedule
 	
 	unisim::util::endian::endian_type endian;
