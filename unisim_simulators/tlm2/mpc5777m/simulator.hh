@@ -51,6 +51,9 @@
 #include <unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.hh>
 #include <unisim/component/tlm2/com/freescale/mpc57xx/linflexd/linflexd.hh>
 #include <unisim/component/tlm2/com/serial_terminal/serial_terminal.hh>
+#include <unisim/component/tlm2/dma/freescale/mpc57xx/dmamux/dmamux.hh>
+#include <unisim/component/tlm2/dma/freescale/mpc57xx/edma/edma.hh>
+#include <unisim/component/tlm2/operators/associative_operator.hh>
 
 // Class definition of kernel, services and interfaces
 #include <unisim/kernel/service/service.hh>
@@ -64,6 +67,7 @@
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 #include <unisim/service/telnet/telnet.hh>
+#include <unisim/service/netcat/netcat.hh>
 #include <unisim/service/os/linux_os/powerpc_linux32.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
@@ -88,6 +92,12 @@ static const bool DEBUG_ENABLE = true;
 //===                        Top level class                            ===
 //=========================================================================
 
+enum SerialTerminalProtocol
+{
+	SERIAL_TERMINAL_PROTOCOL_TELNET,
+	SERIAL_TERMINAL_PROTOCOL_NETCAT
+};
+
 class Simulator : public unisim::kernel::tlm2::Simulator
 {
 public:
@@ -109,6 +119,10 @@ private:
 	                                         + NUM_PROCESSORS // for inline-debugger
 	                                         + NUM_PROCESSORS // for profiler
 	                                         ;
+
+	static const unsigned int NUM_DMA_CHANNELS  = 128;
+	static const unsigned int NUM_DMA_TRIGGERS  = 8;
+	static const unsigned int NUM_DMA_ALWAYS_ON = 64;
 	
 	// Front Side Bus template parameters
 	static const unsigned int FSB_WIDTH = 8;
@@ -148,8 +162,8 @@ private:
 	{
 		typedef FSB_ADDRESS_TYPE ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 14;
-		static const unsigned int MAX_NUM_MAPPINGS = 14;
+		static const unsigned int OUTPUT_SOCKETS = 26;
+		static const unsigned int MAX_NUM_MAPPINGS = 26;
 		static const unsigned int BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;
 	};
@@ -160,6 +174,16 @@ private:
 		static const unsigned int INPUT_SOCKETS = 1;
 		static const unsigned int OUTPUT_SOCKETS = 2;
 		static const unsigned int MAX_NUM_MAPPINGS = 2;
+		static const unsigned int BUSWIDTH = 64;
+		static const bool VERBOSE = DEBUG_ENABLE;
+	};
+	
+	struct XBAR_1_M1_CONCENTRATOR_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
+	{
+		typedef FSB_ADDRESS_TYPE ADDRESS;
+		static const unsigned int INPUT_SOCKETS = 2;
+		static const unsigned int OUTPUT_SOCKETS = 1;
+		static const unsigned int MAX_NUM_MAPPINGS = 1;
 		static const unsigned int BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;
 	};
@@ -306,6 +330,108 @@ private:
 		static const unsigned int BUSWIDTH = 64; // FIXME: LINFlexD will be on PBRIDGE which is 32-bit width
 	};
 
+	struct DMAMUX_0_CONFIG
+	{
+		static const unsigned int NUM_DMA_CHANNELS  = 8;  // DMA Channels 0 - 7
+		static const unsigned int NUM_DMA_SOURCES   = 64; // Sources 1 - 20
+		static const unsigned int NUM_DMA_ALWAYS_ON = 1;  // Always 63
+		static const unsigned int NUM_DMA_TRIGGERS  = 0;  // No trigger
+		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
+	};
+	
+	struct DMAMUX_1_CONFIG
+	{
+		static const unsigned int NUM_DMA_CHANNELS  = 8;  // DMA Channels 8 - 15
+		static const unsigned int NUM_DMA_SOURCES   = 64; // Sources 1 - 57
+		static const unsigned int NUM_DMA_ALWAYS_ON = 5;  // Always 59 - 63
+		static const unsigned int NUM_DMA_TRIGGERS  = 5;  // PIT_0 Triggers 0 - 4
+		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
+	};
+
+	struct DMAMUX_2_CONFIG
+	{
+		static const unsigned int NUM_DMA_CHANNELS  = 8;  // DMA Channels 16 - 23
+		static const unsigned int NUM_DMA_SOURCES   = 64; // Sources 1 - 48
+		static const unsigned int NUM_DMA_ALWAYS_ON = 1;  // Always 63
+		static const unsigned int NUM_DMA_TRIGGERS  = 1;  // PIT_0 Trigger 5
+		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
+	};
+
+	struct DMAMUX_3_CONFIG
+	{
+		static const unsigned int NUM_DMA_CHANNELS  = 8;  // DMA Channels 24 - 31
+		static const unsigned int NUM_DMA_SOURCES   = 64; // Sources 1 - 49
+		static const unsigned int NUM_DMA_ALWAYS_ON = 1;  // Always 63
+		static const unsigned int NUM_DMA_TRIGGERS  = 0;  // No trigger
+		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
+	};
+	
+	struct DMAMUX_4_CONFIG
+	{
+		static const unsigned int NUM_DMA_CHANNELS  = 16; // DMA Channels 32 - 47
+		static const unsigned int NUM_DMA_SOURCES   = 64; // Sources 1 - 41
+		static const unsigned int NUM_DMA_ALWAYS_ON = 1;  // Always 63
+		static const unsigned int NUM_DMA_TRIGGERS  = 1;  // PIT_0 Trigger 6
+		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
+	};
+
+	struct DMAMUX_5_CONFIG
+	{
+		static const unsigned int NUM_DMA_CHANNELS  = 16; // DMA Channels 48 - 63
+		static const unsigned int NUM_DMA_SOURCES   = 64; // Sources 1 - 41
+		static const unsigned int NUM_DMA_ALWAYS_ON = 1;  // Always 63
+		static const unsigned int NUM_DMA_TRIGGERS  = 1;  // PIT_0 Trigger 7
+		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
+	};
+
+	struct DMAMUX_6_CONFIG
+	{
+		static const unsigned int NUM_DMA_CHANNELS  = 16; // DMA Channels 64 - 79
+		static const unsigned int NUM_DMA_SOURCES   = 64; // Sources 1 - 47
+		static const unsigned int NUM_DMA_ALWAYS_ON = 1;  // Always 63
+		static const unsigned int NUM_DMA_TRIGGERS  = 0;  // No trigger
+		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
+	};
+
+	struct DMAMUX_7_CONFIG
+	{
+		static const unsigned int NUM_DMA_CHANNELS  = 16; // DMA Channels 80 - 95
+		static const unsigned int NUM_DMA_SOURCES   = 64; // Sources 1 - 50
+		static const unsigned int NUM_DMA_ALWAYS_ON = 1;  // Always 63
+		static const unsigned int NUM_DMA_TRIGGERS  = 0;  // No trigger
+		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
+	};
+	
+	struct DMAMUX_8_CONFIG
+	{
+		static const unsigned int NUM_DMA_CHANNELS  = 16; // DMA Channels 96 - 111
+		static const unsigned int NUM_DMA_SOURCES   = 64; // Sources 1 - 45
+		static const unsigned int NUM_DMA_ALWAYS_ON = 1;  // Always 63
+		static const unsigned int NUM_DMA_TRIGGERS  = 0;  // No trigger
+		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
+	};
+	
+	struct DMAMUX_9_CONFIG
+	{
+		static const unsigned int NUM_DMA_CHANNELS  = 16; // DMA Channels 112 - 127
+		static const unsigned int NUM_DMA_SOURCES   = 64; // Sources 1 - 43
+		static const unsigned int NUM_DMA_ALWAYS_ON = 1;  // Always 63
+		static const unsigned int NUM_DMA_TRIGGERS  = 0;  // No trigger
+		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
+	};
+	
+	struct EDMA_0_CONFIG
+	{
+		static const unsigned int NUM_DMA_CHANNELS = 64;
+		static const unsigned int BUSWIDTH         = 64; // FIXME: EDMA will be on PBRIDGE which is 32-bit width
+	};
+
+	struct EDMA_1_CONFIG
+	{
+		static const unsigned int NUM_DMA_CHANNELS = 64;
+		static const unsigned int BUSWIDTH         = 64; // FIXME: EDMA will be on PBRIDGE which is 32-bit width
+	};
+
 	//=========================================================================
 	//===                     Aliases for components classes                ===
 	//=========================================================================
@@ -319,6 +445,7 @@ private:
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<XBAR_1_CONFIG> XBAR_1;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<PBRIDGE_A_CONFIG> PBRIDGE_A;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<PBRIDGE_B_CONFIG> PBRIDGE_B;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<XBAR_1_M1_CONCENTRATOR_CONFIG> XBAR_1_M1_CONCENTRATOR;
 	typedef unisim::component::tlm2::interrupt::freescale::mpc57xx::intc::INTC<INTC_0_CONFIG> INTC_0;
 	typedef unisim::component::tlm2::timer::freescale::mpc57xx::stm::STM<STM_0_CONFIG> STM_0;
 	typedef unisim::component::tlm2::timer::freescale::mpc57xx::stm::STM<STM_1_CONFIG> STM_1;
@@ -336,6 +463,18 @@ private:
 	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFlexD_15_CONFIG> LINFlexD_15;
 	typedef unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<LINFlexD_16_CONFIG> LINFlexD_16;
 	typedef unisim::component::tlm2::com::serial_terminal::SerialTerminal SERIAL_TERMINAL;
+	typedef unisim::component::tlm2::dma::freescale::mpc57xx::dmamux::DMAMUX<DMAMUX_0_CONFIG> DMAMUX_0;
+	typedef unisim::component::tlm2::dma::freescale::mpc57xx::dmamux::DMAMUX<DMAMUX_1_CONFIG> DMAMUX_1;
+	typedef unisim::component::tlm2::dma::freescale::mpc57xx::dmamux::DMAMUX<DMAMUX_2_CONFIG> DMAMUX_2;
+	typedef unisim::component::tlm2::dma::freescale::mpc57xx::dmamux::DMAMUX<DMAMUX_3_CONFIG> DMAMUX_3;
+	typedef unisim::component::tlm2::dma::freescale::mpc57xx::dmamux::DMAMUX<DMAMUX_4_CONFIG> DMAMUX_4;
+	typedef unisim::component::tlm2::dma::freescale::mpc57xx::dmamux::DMAMUX<DMAMUX_5_CONFIG> DMAMUX_5;
+	typedef unisim::component::tlm2::dma::freescale::mpc57xx::dmamux::DMAMUX<DMAMUX_6_CONFIG> DMAMUX_6;
+	typedef unisim::component::tlm2::dma::freescale::mpc57xx::dmamux::DMAMUX<DMAMUX_7_CONFIG> DMAMUX_7;
+	typedef unisim::component::tlm2::dma::freescale::mpc57xx::dmamux::DMAMUX<DMAMUX_8_CONFIG> DMAMUX_8;
+	typedef unisim::component::tlm2::dma::freescale::mpc57xx::dmamux::DMAMUX<DMAMUX_9_CONFIG> DMAMUX_9;
+	typedef unisim::component::tlm2::dma::freescale::mpc57xx::edma::EDMA<EDMA_0_CONFIG> EDMA_0;
+	typedef unisim::component::tlm2::dma::freescale::mpc57xx::edma::EDMA<EDMA_1_CONFIG> EDMA_1;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_0_TX;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_0_RX;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_1_TX;
@@ -351,7 +490,6 @@ private:
 	typedef unisim::kernel::tlm2::TargetStub<64> EBI_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<64> FLASH_PORT1_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<64> XBAR_0_S6_STUB;
-	typedef unisim::kernel::tlm2::InitiatorStub<64> XBAR_1_M1_STUB;
 	typedef unisim::kernel::tlm2::InitiatorStub<64> XBAR_1_M2_STUB;
 
 	//=========================================================================
@@ -364,6 +502,7 @@ private:
 	typedef unisim::service::debug::profiler::Profiler<CPU_ADDRESS_TYPE> PROFILER;
 	typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<CPU_ADDRESS_TYPE> LOADER;
 	typedef unisim::service::telnet::Telnet TELNET;
+	typedef unisim::service::netcat::Netcat NETCAT;
 	
 	//=========================================================================
 	//===                           Components                              ===
@@ -382,6 +521,8 @@ private:
 	//  - Peripheral Bridges
 	PBRIDGE_A *pbridge_a;
 	PBRIDGE_B *pbridge_b;
+	//  - Concentrators
+	XBAR_1_M1_CONCENTRATOR *xbar_1_m1_concentrator;
 	//  - Interrupt Controller
 	INTC_0 *intc_0;
 	//  - System Timer Modules
@@ -403,6 +544,7 @@ private:
 	LINFlexD_14 *linflexd_14;
 	LINFlexD_15 *linflexd_15;
 	LINFlexD_16 *linflexd_16;
+	//  - LINFlexD serial buses
 	LINFlexD_0_TX *linflexd_0_tx;
 	LINFlexD_0_RX *linflexd_0_rx;
 	LINFlexD_1_TX *linflexd_1_tx;
@@ -416,13 +558,33 @@ private:
 	LINFlexD_16_TX *linflexd_16_tx;
 	LINFlexD_16_RX *linflexd_16_rx;
 	//  - Serial Terminal
-	SERIAL_TERMINAL *serial_terminal;
+	SERIAL_TERMINAL *serial_terminal0;
+	SERIAL_TERMINAL *serial_terminal1;
+	SERIAL_TERMINAL *serial_terminal2;
+	SERIAL_TERMINAL *serial_terminal14;
+	SERIAL_TERMINAL *serial_terminal15;
+	SERIAL_TERMINAL *serial_terminal16;
+	//  - DMAMUX
+	DMAMUX_0 *dmamux_0;
+	DMAMUX_1 *dmamux_1;
+	DMAMUX_2 *dmamux_2;
+	DMAMUX_3 *dmamux_3;
+	DMAMUX_4 *dmamux_4;
+	DMAMUX_5 *dmamux_5;
+	DMAMUX_6 *dmamux_6;
+	DMAMUX_7 *dmamux_7;
+	DMAMUX_8 *dmamux_8;
+	DMAMUX_9 *dmamux_9;
+	//  - EDMA
+	EDMA_0 *edma_0;
+	EDMA_1 *edma_1;
 	//  - Stubs
 	EBI_STUB *ebi_stub;
 	FLASH_PORT1_STUB *flash_port1_stub;
 	XBAR_0_S6_STUB *xbar_0_s6_stub;
-	XBAR_1_M1_STUB *xbar_1_m1_stub;
 	XBAR_1_M2_STUB *xbar_1_m2_stub;
+	
+	unisim::component::tlm2::operators::LogicalOrOperator<bool, NUM_DMA_CHANNELS> *dma_err_irq_combinator;
 	
 	//=========================================================================
 	//===                            Services                               ===
@@ -442,24 +604,73 @@ private:
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
 	//  - Telnet
-	TELNET *telnet;
-
+	TELNET *telnet0;
+	TELNET *telnet1;
+	TELNET *telnet2;
+	TELNET *telnet14;
+	TELNET *telnet15;
+	TELNET *telnet16;
+	//  - Netcat
+	NETCAT *netcat0;
+	NETCAT *netcat1;
+	NETCAT *netcat2;
+	NETCAT *netcat14;
+	NETCAT *netcat15;
+	NETCAT *netcat16;
+	
+	bool enable_core0_reset;
+	bool enable_core1_reset;
+	bool enable_core2_reset;
+	sc_core::sc_time core0_reset_time;
+	sc_core::sc_time core1_reset_time;
+	sc_core::sc_time core2_reset_time;
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
 	bool enable_profiler;
-	bool enable_serial_terminal;
+	bool enable_serial_terminal0;
+	bool enable_serial_terminal1;
+	bool enable_serial_terminal2;
+	bool enable_serial_terminal14;
+	bool enable_serial_terminal15;
+	bool enable_serial_terminal16;
+	SerialTerminalProtocol serial_terminal_protocol0;
+	SerialTerminalProtocol serial_terminal_protocol1;
+	SerialTerminalProtocol serial_terminal_protocol2;
+	SerialTerminalProtocol serial_terminal_protocol14;
+	SerialTerminalProtocol serial_terminal_protocol15;
+	SerialTerminalProtocol serial_terminal_protocol16;
+	
+	unisim::kernel::service::Parameter<bool> param_enable_core0_reset;
+	unisim::kernel::service::Parameter<bool> param_enable_core1_reset;
+	unisim::kernel::service::Parameter<bool> param_enable_core2_reset;
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_core0_reset_time;
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_core1_reset_time;
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_core2_reset_time;
 	unisim::kernel::service::Parameter<bool> param_enable_gdb_server;
 	unisim::kernel::service::Parameter<bool> param_enable_inline_debugger;
 	unisim::kernel::service::Parameter<bool> param_enable_profiler;
-	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal;
+	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal0;
+	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal1;
+	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal2;
+	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal14;
+	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal15;
+	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal16;
+	unisim::kernel::service::Parameter<SerialTerminalProtocol> param_serial_terminal_protocol0;
+	unisim::kernel::service::Parameter<SerialTerminalProtocol> param_serial_terminal_protocol1;
+	unisim::kernel::service::Parameter<SerialTerminalProtocol> param_serial_terminal_protocol2;
+	unisim::kernel::service::Parameter<SerialTerminalProtocol> param_serial_terminal_protocol14;
+	unisim::kernel::service::Parameter<SerialTerminalProtocol> param_serial_terminal_protocol15;
+	unisim::kernel::service::Parameter<SerialTerminalProtocol> param_serial_terminal_protocol16;
 
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
 	
-	void ResetProcess();
+	void Core0ResetProcess();
+	void Core1ResetProcess();
+	void Core2ResetProcess();
 	
 	void InterruptSource(unsigned int irq_num, const std::string& source = std::string());
-	void DMASource(unsigned int mux_num, unsigned int source_num, const std::string& source = std::string());
+	void DMASource(unsigned int dmamux_num, unsigned int dma_source_num, const std::string& source = std::string());
 	
 	virtual void SigInt();
 };

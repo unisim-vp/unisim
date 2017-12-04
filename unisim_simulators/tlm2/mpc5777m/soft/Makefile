@@ -9,7 +9,7 @@ OPTFLAGS ?= -O1
 CFLAGS    = -g3 $(OPTFLAGS) -fdebug-prefix-map=$(PWD)=../../ # -Wall
 LDFLAGS   = -static
 
-DRV_SRC        = src/drv/intc.c src/drv/stm.c src/drv/swt.c src/drv/pit.c src/drv/linflexd.c
+DRV_SRC        = src/drv/intc.c src/drv/stm.c src/drv/swt.c src/drv/pit.c src/drv/linflexd.c src/drv/dmamux.c src/drv/edma.c
 
 Z4_2_LIBS      =
 Z4_2_SRCS      = src/Z4_2/flashrchw.c src/Z4_2/main_Z4_2.c $(DRV_SRC)

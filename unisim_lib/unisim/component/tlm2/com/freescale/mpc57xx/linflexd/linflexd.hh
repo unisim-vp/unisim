@@ -80,10 +80,10 @@ using unisim::util::reg::core::RWS_ANA;
 using unisim::util::reg::core::Access;
 using unisim::util::reg::core::IsReadWriteError;
 
-template <typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
+template <typename REGISTER, typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
 struct Field : unisim::util::reg::core::Field<FIELD
-                                             , ((OFFSET1 >= 0) && (OFFSET1 < 32)) ? ((OFFSET2 >= 0) ? ((OFFSET2 < 32) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1)) : (31 - OFFSET1)) : 0
-                                             , ((OFFSET1 >= 0) && (OFFSET1 < 32)) ? ((OFFSET2 >= 0) ? ((OFFSET2 < 32) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 0) : 1) : 0
+                                             , ((OFFSET1 >= 0) && (OFFSET1 < REGISTER::SIZE)) ? ((OFFSET2 >= 0) ? ((OFFSET2 < REGISTER::SIZE) ? ((OFFSET1 < OFFSET2) ? ((REGISTER::SIZE - 1) - OFFSET2) : ((REGISTER::SIZE - 1) - OFFSET1)) : ((REGISTER::SIZE - 1) - OFFSET1)) : ((REGISTER::SIZE - 1) - OFFSET1)) : 0
+                                             , ((OFFSET1 >= 0) && (OFFSET1 < REGISTER::SIZE)) ? ((OFFSET2 >= 0) ? ((OFFSET2 < REGISTER::SIZE) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 0) : 1) : 0
                                              , _ACCESS>
 {
 };
@@ -203,6 +203,7 @@ public:
 	void nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload& payload);
 	
 private:
+	virtual bool EndSetup();
 	virtual void end_of_elaboration();
 	
 	unisim::kernel::logger::Logger logger;
@@ -376,18 +377,18 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x0;
 		
-		struct CCD    : Field<CCD   , 16>                                         {}; // Checksum Calculation disable
-		struct CFD    : Field<CFD   , 17>                                         {}; // Checksum field disable
-		struct LASE   : Field<LASE  , 18>                                         {}; // LIN Autosynchronization Enable
-		struct AUTOWU : Field<AUTOWU, 19>                                         {}; // Auto Wakeup
-		struct MBL    : Field<MBL   , 20, 23>                                     {}; // Master Break Length
-		struct BF     : Field<BF    , 24>                                         {}; // By-passfilter
-		struct LBKM   : Field<LBKM  , 26>                                         {}; // Loop Back mode
-		struct MME    : Field<MME   , 27, 27, GENERIC_SLAVE ? SW_RW : SW_R_HW_RO> {}; // Master mode enable
-		struct SSBL   : Field<SSBL  , 28>                                         {}; // Slave Mode Sync Break Length
-		struct RBLM   : Field<RBLM  , 29>                                         {}; // Receiver Buffer Locked mode
-		struct SLEEP  : Field<SLEEP , 30>                                         {}; // Sleep Mode Request
-		struct INIT   : Field<INIT  , 31>                                         {}; // Initialization Mode Request
+		struct CCD    : Field<LINFlexD_LINCR1, CCD   , 16>                                         {}; // Checksum Calculation disable
+		struct CFD    : Field<LINFlexD_LINCR1, CFD   , 17>                                         {}; // Checksum field disable
+		struct LASE   : Field<LINFlexD_LINCR1, LASE  , 18>                                         {}; // LIN Autosynchronization Enable
+		struct AUTOWU : Field<LINFlexD_LINCR1, AUTOWU, 19>                                         {}; // Auto Wakeup
+		struct MBL    : Field<LINFlexD_LINCR1, MBL   , 20, 23>                                     {}; // Master Break Length
+		struct BF     : Field<LINFlexD_LINCR1, BF    , 24>                                         {}; // By-passfilter
+		struct LBKM   : Field<LINFlexD_LINCR1, LBKM  , 26>                                         {}; // Loop Back mode
+		struct MME    : Field<LINFlexD_LINCR1, MME   , 27, 27, GENERIC_SLAVE ? SW_RW : SW_R_HW_RO> {}; // Master mode enable
+		struct SSBL   : Field<LINFlexD_LINCR1, SSBL  , 28>                                         {}; // Slave Mode Sync Break Length
+		struct RBLM   : Field<LINFlexD_LINCR1, RBLM  , 29>                                         {}; // Receiver Buffer Locked mode
+		struct SLEEP  : Field<LINFlexD_LINCR1, SLEEP , 30>                                         {}; // Sleep Mode Request
+		struct INIT   : Field<LINFlexD_LINCR1, INIT  , 31>                                         {}; // Initialization Mode Request
 		
 		typedef FieldSet<CCD, CFD, LASE, AUTOWU, MBL, BF, LBKM, MME, SSBL, RBLM, SLEEP, INIT> ALL;
 		
@@ -449,20 +450,20 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x4;
 		
-		struct SZIE      : Field<SZIE     , 16>                                         {}; // Stuck at zero Interrupt Enable
-		struct OCIE      : Field<OCIE     , 17>                                         {}; // Output Compare Interrupt Enable
-		struct BEIE      : Field<BEIE     , 18>                                         {}; // Bit Error Interrupt Enable
-		struct CEIE      : Field<CEIE     , 19>                                         {}; // Checksum Error Interrupt Enable
-		struct HEIE      : Field<HEIE     , 20>                                         {}; // Header Error Interrupt Enable
-		struct FEIE      : Field<FEIE     , 23>                                         {}; // Frame Error Interrupt Enable
-		struct BOIE      : Field<BOIE     , 24>                                         {}; // Buffer Overrun Error Interrupt Enable
-		struct LSIE      : Field<LSIE     , 25>                                         {}; // LIN state Interrupt enable
-		struct WUIE      : Field<WUIE     , 26>                                         {}; // Wakeup interrupt enable
-		struct DBFIE     : Field<DBFIE    , 27>                                         {}; // Data Buffer Full Interrupt enable
-		struct DBEIETOIE : Field<DBEIETOIE, 28>                                         {}; // Data Buffer Empty Interrupt enable/Timeout Interrupt Enable
-		struct DRIE      : Field<DRIE     , 29>                                         {}; // Data Reception complete Interrupt enable
-		struct DTIE      : Field<DTIE     , 30>                                         {}; // Data Transmitted Interrupt enable
-		struct HRIE      : Field<HRIE     , 31, 31, GENERIC_SLAVE ? SW_RW : SW_R_HW_RO> {}; // Header Received Interrupt
+		struct SZIE      : Field<LINFlexD_LINIER, SZIE     , 16>                                         {}; // Stuck at zero Interrupt Enable
+		struct OCIE      : Field<LINFlexD_LINIER, OCIE     , 17>                                         {}; // Output Compare Interrupt Enable
+		struct BEIE      : Field<LINFlexD_LINIER, BEIE     , 18>                                         {}; // Bit Error Interrupt Enable
+		struct CEIE      : Field<LINFlexD_LINIER, CEIE     , 19>                                         {}; // Checksum Error Interrupt Enable
+		struct HEIE      : Field<LINFlexD_LINIER, HEIE     , 20>                                         {}; // Header Error Interrupt Enable
+		struct FEIE      : Field<LINFlexD_LINIER, FEIE     , 23>                                         {}; // Frame Error Interrupt Enable
+		struct BOIE      : Field<LINFlexD_LINIER, BOIE     , 24>                                         {}; // Buffer Overrun Error Interrupt Enable
+		struct LSIE      : Field<LINFlexD_LINIER, LSIE     , 25>                                         {}; // LIN state Interrupt enable
+		struct WUIE      : Field<LINFlexD_LINIER, WUIE     , 26>                                         {}; // Wakeup interrupt enable
+		struct DBFIE     : Field<LINFlexD_LINIER, DBFIE    , 27>                                         {}; // Data Buffer Full Interrupt enable
+		struct DBEIETOIE : Field<LINFlexD_LINIER, DBEIETOIE, 28>                                         {}; // Data Buffer Empty Interrupt enable/Timeout Interrupt Enable
+		struct DRIE      : Field<LINFlexD_LINIER, DRIE     , 29>                                         {}; // Data Reception complete Interrupt enable
+		struct DTIE      : Field<LINFlexD_LINIER, DTIE     , 30>                                         {}; // Data Transmitted Interrupt enable
+		struct HRIE      : Field<LINFlexD_LINIER, HRIE     , 31, 31, GENERIC_SLAVE ? SW_RW : SW_R_HW_RO> {}; // Header Received Interrupt
 		
 		typedef FieldSet<SZIE, OCIE, BEIE, CEIE, HEIE, FEIE, BOIE, LSIE, WUIE, DBFIE, DBEIETOIE, DRIE, DTIE, HRIE> ALL;
 		
@@ -518,19 +519,19 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x8;
 		
-		struct AUTOSYNC_COMP : Field<AUTOSYNC_COMP, 12, 12, SW_R_W1C> {}; // Autosynchronization complete
-		struct RDC           : Field<RDC          , 13, 15, SW_R    > {}; // Receive Data Byte Count
-		struct LINS          : Field<LINS         , 16, 19, SW_R    > {}; // LIN state
-		struct RMB           : Field<RMB          , 22, 22, SW_R_W1C> {}; // Release Message Buffer
-		struct DRBNE         : Field<DRBNE        , 23, 23, SW_R_W1C> {}; // Data Reception Buffer Not Empty Flag
-		struct RXbusy        : Field<RXbusy       , 24, 24, SW_R    > {}; // Receiver Busy flag
-		struct RDI           : Field<RDI          , 25, 25, SW_R    > {}; // LIN Receive signal
-		struct WUF           : Field<WUF          , 26, 26, SW_R_W1C> {}; // Wakeup flag
-		struct DBFF          : Field<DBFF         , 27, 27, SW_R_W1C> {}; // Data Buffer full flag
-		struct DBEF          : Field<DBEF         , 28, 28, SW_R_W1C> {}; // Data Buffer empty flag
-		struct DRF           : Field<DRF          , 29, 29, SW_R_W1C> {}; // Data Reception Completed flag
-		struct DTF           : Field<DTF          , 30, 30, SW_R_W1C> {}; // Data Transmission Completed flag
-		struct HRF           : Field<HRF          , 31, 31, SW_R_W1C> {}; // Header Received flag
+		struct AUTOSYNC_COMP : Field<LINFlexD_LINSR, AUTOSYNC_COMP, 12, 12, SW_R_W1C> {}; // Autosynchronization complete
+		struct RDC           : Field<LINFlexD_LINSR, RDC          , 13, 15, SW_R    > {}; // Receive Data Byte Count
+		struct LINS          : Field<LINFlexD_LINSR, LINS         , 16, 19, SW_R    > {}; // LIN state
+		struct RMB           : Field<LINFlexD_LINSR, RMB          , 22, 22, SW_R_W1C> {}; // Release Message Buffer
+		struct DRBNE         : Field<LINFlexD_LINSR, DRBNE        , 23, 23, SW_R_W1C> {}; // Data Reception Buffer Not Empty Flag
+		struct RXbusy        : Field<LINFlexD_LINSR, RXbusy       , 24, 24, SW_R    > {}; // Receiver Busy flag
+		struct RDI           : Field<LINFlexD_LINSR, RDI          , 25, 25, SW_R    > {}; // LIN Receive signal
+		struct WUF           : Field<LINFlexD_LINSR, WUF          , 26, 26, SW_R_W1C> {}; // Wakeup flag
+		struct DBFF          : Field<LINFlexD_LINSR, DBFF         , 27, 27, SW_R_W1C> {}; // Data Buffer full flag
+		struct DBEF          : Field<LINFlexD_LINSR, DBEF         , 28, 28, SW_R_W1C> {}; // Data Buffer empty flag
+		struct DRF           : Field<LINFlexD_LINSR, DRF          , 29, 29, SW_R_W1C> {}; // Data Reception Completed flag
+		struct DTF           : Field<LINFlexD_LINSR, DTF          , 30, 30, SW_R_W1C> {}; // Data Transmission Completed flag
+		struct HRF           : Field<LINFlexD_LINSR, HRF          , 31, 31, SW_R_W1C> {}; // Header Received flag
 		
 		SWITCH_ENUM_TRAIT(bool, _);
 		CASE_ENUM_TRAIT(false, _) { typedef FieldSet<RDC, LINS, RMB, DRBNE, RXbusy, RDI, WUF, DBFF, DBEF, DRF, DTF, HRF> ALL; };
@@ -617,16 +618,16 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xc;
 		
-		struct SZF      : Field<SZF  , 16, 16, SW_R_W1C>                              {}; // Stuck at Zero flag
-		struct OCF      : Field<OCF  , 17, 17, SW_R_W1C>                              {}; // Output Compare Flag
-		struct BEF      : Field<BEF  , 18, 18, SW_R_W1C>                              {}; // Bit Error flag
-		struct CEF      : Field<CEF  , 19, 19, SW_R_W1C>                              {}; // Checksum Error flag
-		struct SFEF     : Field<SFEF , 20, 20, GENERIC_SLAVE ? SW_R_W1C : SW_R_HW_RO> {}; // Sync Field Error flag
-		struct SDEF     : Field<SDEF , 21, 21, GENERIC_SLAVE ? SW_R_W1C : SW_R_HW_RO> {}; // Sync Delimiter Error flag
-		struct IDPEF    : Field<IDPEF, 22, 22, GENERIC_SLAVE ? SW_R_W1C : SW_R_HW_RO> {}; // ID Parity Error flag
-		struct FEF      : Field<FEF  , 23, 23, SW_R_W1C>                              {}; // Framing Error flag
-		struct BOF      : Field<BOF  , 24, 24, SW_R_W1C>                              {}; // Buffer overrun flag
-		struct NF       : Field<NF   , 31, 31, SW_R_W1C>                              {}; // Noise flag
+		struct SZF      : Field<LINFlexD_LINESR, SZF  , 16, 16, SW_R_W1C>                              {}; // Stuck at Zero flag
+		struct OCF      : Field<LINFlexD_LINESR, OCF  , 17, 17, SW_R_W1C>                              {}; // Output Compare Flag
+		struct BEF      : Field<LINFlexD_LINESR, BEF  , 18, 18, SW_R_W1C>                              {}; // Bit Error flag
+		struct CEF      : Field<LINFlexD_LINESR, CEF  , 19, 19, SW_R_W1C>                              {}; // Checksum Error flag
+		struct SFEF     : Field<LINFlexD_LINESR, SFEF , 20, 20, GENERIC_SLAVE ? SW_R_W1C : SW_R_HW_RO> {}; // Sync Field Error flag
+		struct SDEF     : Field<LINFlexD_LINESR, SDEF , 21, 21, GENERIC_SLAVE ? SW_R_W1C : SW_R_HW_RO> {}; // Sync Delimiter Error flag
+		struct IDPEF    : Field<LINFlexD_LINESR, IDPEF, 22, 22, GENERIC_SLAVE ? SW_R_W1C : SW_R_HW_RO> {}; // ID Parity Error flag
+		struct FEF      : Field<LINFlexD_LINESR, FEF  , 23, 23, SW_R_W1C>                              {}; // Framing Error flag
+		struct BOF      : Field<LINFlexD_LINESR, BOF  , 24, 24, SW_R_W1C>                              {}; // Buffer overrun flag
+		struct NF       : Field<LINFlexD_LINESR, NF   , 31, 31, SW_R_W1C>                              {}; // Noise flag
 
 		typedef FieldSet<SZF, OCF, BEF, CEF, SFEF, SDEF, IDPEF, FEF, BOF, NF> ALL;
 		
@@ -683,34 +684,34 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x10;
 		
-		struct MIS        : Field<MIS       , 0     > {}; // Monitor Idle State
-		struct CSP        : Field<CSP       , 1, 3  > {}; // Configurable Sample Point
-		struct OSR        : Field<OSR       , 4, 7  > {}; // Over Sampling Rate
-		struct ROSE       : Field<ROSE      , 8     > {}; // Reduced Over Sampling Enable
-		struct NEF        : Field<NEF       , 9, 11 > {}; // Number of expected frame
-		struct DTU_PCETX  : Field<DTU_PCETX , 12    > {}; // Disable Timeout in UART mode/Parity transmission and checking
-		struct DTU        : Field<DTU       , 12    > {}; // Disable Timeout in UART mode
-		struct PCETX      : Field<PCETX     , 12    > {}; // Parity transmission and checking
-		struct SBUR       : Field<SBUR      , 13, 14> {}; // Stop bits in UART reception mode
-		struct WLS        : Field<WLS       , 15    > {}; // Special Word Length in UART mode
-		struct TDFL_TFC   : Field<TDFL_TFC  , 16, 18> {}; // Transmitter Data Field Length / TX FIFO Counter
-		struct TDFL_TFC_0 : Field<TDFL_TFC_0, 16, 16> {};
-		struct TDFL       : Field<TDFL      , 17, 18> {}; // Transmitter Data Field Length
-		struct TFC        : Field<TFC       , 16, 18> {}; // TX FIFO Counter
-		struct RDFL_RFC   : Field<RDFL_RFC  , 19, 21> {}; // Reception Data Field Length / RX FIFO Counter
-		struct RDFL_RFC_0 : Field<RDFL_RFC_0, 19, 19> {};
-		struct RDFL       : Field<RDFL      , 20, 21> {}; // Reception Data Field Length
-		struct RFC        : Field<RFC       , 19, 21> {}; // RX FIFO Counter
-		struct RFBM       : Field<RFBM      , 22    > {}; // Rx Fifo/Buffer mode
-		struct TFBM       : Field<TFBM      , 23    > {}; // Tx Fifo/Buffer mode
-		struct WL1        : Field<WL1       , 24    > {}; // Word Length in UART mode
-		struct PC1        : Field<PC1       , 25    > {}; // Parity Control
-		struct RxEn       : Field<RxEn      , 26    > {}; // Receiver Enable
-		struct TxEn       : Field<TxEn      , 27    > {}; // Transmitter Enable
-		struct PC0        : Field<PC0       , 28    > {}; // Parity Control
-		struct PCE        : Field<PCE       , 29    > {}; // Parity Control Enable
-		struct WL0        : Field<WL0       , 30    > {}; // Word Length in UART mode
-		struct UART       : Field<UART      , 31    > {}; // UART Mode
+		struct MIS        : Field<LINFlexD_UARTCR, MIS       , 0     > {}; // Monitor Idle State
+		struct CSP        : Field<LINFlexD_UARTCR, CSP       , 1, 3  > {}; // Configurable Sample Point
+		struct OSR        : Field<LINFlexD_UARTCR, OSR       , 4, 7  > {}; // Over Sampling Rate
+		struct ROSE       : Field<LINFlexD_UARTCR, ROSE      , 8     > {}; // Reduced Over Sampling Enable
+		struct NEF        : Field<LINFlexD_UARTCR, NEF       , 9, 11 > {}; // Number of expected frame
+		struct DTU_PCETX  : Field<LINFlexD_UARTCR, DTU_PCETX , 12    > {}; // Disable Timeout in UART mode/Parity transmission and checking
+		struct DTU        : Field<LINFlexD_UARTCR, DTU       , 12    > {}; // Disable Timeout in UART mode
+		struct PCETX      : Field<LINFlexD_UARTCR, PCETX     , 12    > {}; // Parity transmission and checking
+		struct SBUR       : Field<LINFlexD_UARTCR, SBUR      , 13, 14> {}; // Stop bits in UART reception mode
+		struct WLS        : Field<LINFlexD_UARTCR, WLS       , 15    > {}; // Special Word Length in UART mode
+		struct TDFL_TFC   : Field<LINFlexD_UARTCR, TDFL_TFC  , 16, 18> {}; // Transmitter Data Field Length / TX FIFO Counter
+		struct TDFL_TFC_0 : Field<LINFlexD_UARTCR, TDFL_TFC_0, 16, 16> {};
+		struct TDFL       : Field<LINFlexD_UARTCR, TDFL      , 17, 18> {}; // Transmitter Data Field Length
+		struct TFC        : Field<LINFlexD_UARTCR, TFC       , 16, 18> {}; // TX FIFO Counter
+		struct RDFL_RFC   : Field<LINFlexD_UARTCR, RDFL_RFC  , 19, 21> {}; // Reception Data Field Length / RX FIFO Counter
+		struct RDFL_RFC_0 : Field<LINFlexD_UARTCR, RDFL_RFC_0, 19, 19> {};
+		struct RDFL       : Field<LINFlexD_UARTCR, RDFL      , 20, 21> {}; // Reception Data Field Length
+		struct RFC        : Field<LINFlexD_UARTCR, RFC       , 19, 21> {}; // RX FIFO Counter
+		struct RFBM       : Field<LINFlexD_UARTCR, RFBM      , 22    > {}; // Rx Fifo/Buffer mode
+		struct TFBM       : Field<LINFlexD_UARTCR, TFBM      , 23    > {}; // Tx Fifo/Buffer mode
+		struct WL1        : Field<LINFlexD_UARTCR, WL1       , 24    > {}; // Word Length in UART mode
+		struct PC1        : Field<LINFlexD_UARTCR, PC1       , 25    > {}; // Parity Control
+		struct RxEn       : Field<LINFlexD_UARTCR, RxEn      , 26    > {}; // Receiver Enable
+		struct TxEn       : Field<LINFlexD_UARTCR, TxEn      , 27    > {}; // Transmitter Enable
+		struct PC0        : Field<LINFlexD_UARTCR, PC0       , 28    > {}; // Parity Control
+		struct PCE        : Field<LINFlexD_UARTCR, PCE       , 29    > {}; // Parity Control Enable
+		struct WL0        : Field<LINFlexD_UARTCR, WL0       , 30    > {}; // Word Length in UART mode
+		struct UART       : Field<LINFlexD_UARTCR, UART      , 31    > {}; // UART Mode
 		
 		typedef FieldSet<MIS, CSP, OSR, ROSE, NEF, DTU_PCETX, SBUR, WLS, TDFL_TFC, RDFL_RFC, RFBM, TFBM, WL1, PC1, RxEn, TxEn, PC0, PCE, WL0, UART> ALL;
 		
@@ -872,27 +873,27 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x14;
 		
-		struct SZF    : Field<SZF   , 16, 16, SW_R_W1C> {}; // Stuck at Zero flag
-		struct OCF    : Field<OCF   , 17, 17, SW_R_W1C> {}; // Output Compare Flag
-		struct PE     : Field<PE    , 18, 21, SW_R_W1C> {}; // Parity Error flag
-		struct PE3    : Field<PE    , 18>               {};
-		struct PE2    : Field<PE    , 19>               {};
-		struct PE1    : Field<PE    , 20>               {};
-		struct PE0    : Field<PE    , 21>               {};
-		struct RMB    : Field<RMB   , 22, 22, SW_R_W1C> {}; // Release Message Buffer
-		struct FEF    : Field<FEF   , 23, 23, SW_R_W1C> {}; // Framing Error flag
-		struct BOF    : Field<BOF   , 24, 24, SW_R_W1C> {}; // FIFO/Buffer overrun flag
-		struct RDI    : Field<RDI   , 25, 25, SW_R_W1C> {}; // Receiver Data Input signal
-		struct WUF    : Field<WUF   , 26, 26, SW_R_W1C> {}; // Wakeup flag
-		struct RFNE   : Field<RFNE  , 27, 27, SW_R    > {}; // Receive FIFO Not Empty
-		struct TO     : Field<TO    , 28, 28, SW_R_W1C> {}; // Timeout
-		struct DRFRFE : Field<DRFRFE, 29, 29, SW_R_W1C> {}; // Data Reception Completed Flag / Rx FIFO Empty Flag
-		struct DRF    : Field<DRF   , 29>               {}; // Data Reception Completed Flag
-		struct RFE    : Field<RFE   , 29>               {}; // Rx FIFO Empty Flag
-		struct DTFTFF : Field<DTFTFF, 30, 30, SW_R_W1C> {}; // Data Transmission Completed Flag/ TX FIFO Full Flag
-		struct DTF    : Field<DTF   , 30>               {}; // Data Transmission Completed Flag
-		struct TFF    : Field<TFF   , 30>               {}; // TX FIFO Full Flag
-		struct NF     : Field<NF    , 31, 31, SW_R_W1C> {}; // Noise flag
+		struct SZF    : Field<LINFlexD_UARTSR, SZF   , 16, 16, SW_R_W1C> {}; // Stuck at Zero flag
+		struct OCF    : Field<LINFlexD_UARTSR, OCF   , 17, 17, SW_R_W1C> {}; // Output Compare Flag
+		struct PE     : Field<LINFlexD_UARTSR, PE    , 18, 21, SW_R_W1C> {}; // Parity Error flag
+		struct PE3    : Field<LINFlexD_UARTSR, PE    , 18>               {};
+		struct PE2    : Field<LINFlexD_UARTSR, PE    , 19>               {};
+		struct PE1    : Field<LINFlexD_UARTSR, PE    , 20>               {};
+		struct PE0    : Field<LINFlexD_UARTSR, PE    , 21>               {};
+		struct RMB    : Field<LINFlexD_UARTSR, RMB   , 22, 22, SW_R_W1C> {}; // Release Message Buffer
+		struct FEF    : Field<LINFlexD_UARTSR, FEF   , 23, 23, SW_R_W1C> {}; // Framing Error flag
+		struct BOF    : Field<LINFlexD_UARTSR, BOF   , 24, 24, SW_R_W1C> {}; // FIFO/Buffer overrun flag
+		struct RDI    : Field<LINFlexD_UARTSR, RDI   , 25, 25, SW_R_W1C> {}; // Receiver Data Input signal
+		struct WUF    : Field<LINFlexD_UARTSR, WUF   , 26, 26, SW_R_W1C> {}; // Wakeup flag
+		struct RFNE   : Field<LINFlexD_UARTSR, RFNE  , 27, 27, SW_R    > {}; // Receive FIFO Not Empty
+		struct TO     : Field<LINFlexD_UARTSR, TO    , 28, 28, SW_R_W1C> {}; // Timeout
+		struct DRFRFE : Field<LINFlexD_UARTSR, DRFRFE, 29, 29, SW_R_W1C> {}; // Data Reception Completed Flag / Rx FIFO Empty Flag
+		struct DRF    : Field<LINFlexD_UARTSR, DRF   , 29>               {}; // Data Reception Completed Flag
+		struct RFE    : Field<LINFlexD_UARTSR, RFE   , 29>               {}; // Rx FIFO Empty Flag
+		struct DTFTFF : Field<LINFlexD_UARTSR, DTFTFF, 30, 30, SW_R_W1C> {}; // Data Transmission Completed Flag/ TX FIFO Full Flag
+		struct DTF    : Field<LINFlexD_UARTSR, DTF   , 30>               {}; // Data Transmission Completed Flag
+		struct TFF    : Field<LINFlexD_UARTSR, TFF   , 30>               {}; // TX FIFO Full Flag
+		struct NF     : Field<LINFlexD_UARTSR, NF    , 31, 31, SW_R_W1C> {}; // Noise flag
 
 		typedef FieldSet<SZF, OCF, PE, RMB, FEF, BOF, RDI, WUF, RFNE, TO, DRFRFE, DTFTFF, NF> ALL;
 		
@@ -1024,10 +1025,10 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x18;
 		
-		struct MODE : Field<MODE, 21, 21, SW_RW> {}; // Time-out counter mode
-		struct IOT  : Field<IOT , 22, 22, SW_RW> {}; // Idle on timeout
-		struct TOCE : Field<TOCE, 23, 23, SW_RW> {}; // Time-out counter enable
-		struct CNT  : Field<CNT , 24, 31, SW_R > {}; // Counter Value
+		struct MODE : Field<LINFlexD_LINTCSR, MODE, 21, 21, SW_RW> {}; // Time-out counter mode
+		struct IOT  : Field<LINFlexD_LINTCSR, IOT , 22, 22, SW_RW> {}; // Idle on timeout
+		struct TOCE : Field<LINFlexD_LINTCSR, TOCE, 23, 23, SW_RW> {}; // Time-out counter enable
+		struct CNT  : Field<LINFlexD_LINTCSR, CNT , 24, 31, SW_R > {}; // Counter Value
 		
 		typedef FieldSet<MODE, IOT, TOCE, CNT> ALL;
 		
@@ -1075,8 +1076,8 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x1c;
 		
-		struct OC1 : Field<OC1, 16, 23> {}; // Output compare value 2
-		struct OC2 : Field<OC2, 24, 31> {}; // Output compare value 1
+		struct OC1 : Field<LINFlexD_LINOCR, OC1, 16, 23> {}; // Output compare value 2
+		struct OC2 : Field<LINFlexD_LINOCR, OC2, 24, 31> {}; // Output compare value 1
 		
 		typedef FieldSet<OC1, OC2> ALL;
 		
@@ -1106,8 +1107,8 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x20;
 		
-		struct RTO : Field<RTO, 20, 23> {}; // Response timeout value
-		struct HTO : Field<HTO, 25, 31> {}; // Header timeout value
+		struct RTO : Field<LINFlexD_LINTOCR, RTO, 20, 23> {}; // Response timeout value
+		struct HTO : Field<LINFlexD_LINTOCR, HTO, 25, 31> {}; // Header timeout value
 		
 		typedef FieldSet<RTO, HTO> ALL;
 		
@@ -1137,7 +1138,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x24;
 		
-		struct FBR : Field<FBR, 28, 31> {}; // Fractional Baud rates
+		struct FBR : Field<LINFlexD_LINFBRR, FBR, 28, 31> {}; // Fractional Baud rates
 		
 		typedef FieldSet<FBR> ALL;
 		
@@ -1173,7 +1174,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x28;
 		
-		struct IBR : Field<IBR, 12, 31> {}; // Integer Baud rates
+		struct IBR : Field<LINFlexD_LINIBRR, IBR, 12, 31> {}; // Integer Baud rates
 
 		typedef FieldSet<IBR> ALL;
 		
@@ -1212,7 +1213,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x2c;
 		
-		struct CF : Field<CF, 24, 31> {}; //  Checksum bits
+		struct CF : Field<LINFlexD_LINCFR, CF, 24, 31> {}; //  Checksum bits
 		
 		typedef FieldSet<CF> ALL;
 		
@@ -1251,14 +1252,14 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x30;
 		
-		struct TBDE : Field<TBDE, 16> {}; // Two Bit delimiter bit
-		struct IOBE : Field<IOBE, 17> {}; // Idle on Bit Error
-		struct IOPE : Field<IOPE, 18> {}; // Idle on Identifier Parity Error
-		struct WURQ : Field<WURQ, 19> {}; // Wakeup Generate Request
-		struct DDRQ : Field<DDRQ, 20> {}; // Data Discard request
-		struct DTRQ : Field<DTRQ, 21> {}; // Data Transmission Request
-		struct ABRQ : Field<ABRQ, 22> {}; // Abort Request
-		struct HTRQ : Field<HTRQ, 23> {}; // Header Transmission Request
+		struct TBDE : Field<LINFlexD_LINCR2, TBDE, 16> {}; // Two Bit delimiter bit
+		struct IOBE : Field<LINFlexD_LINCR2, IOBE, 17> {}; // Idle on Bit Error
+		struct IOPE : Field<LINFlexD_LINCR2, IOPE, 18> {}; // Idle on Identifier Parity Error
+		struct WURQ : Field<LINFlexD_LINCR2, WURQ, 19> {}; // Wakeup Generate Request
+		struct DDRQ : Field<LINFlexD_LINCR2, DDRQ, 20> {}; // Data Discard request
+		struct DTRQ : Field<LINFlexD_LINCR2, DTRQ, 21> {}; // Data Transmission Request
+		struct ABRQ : Field<LINFlexD_LINCR2, ABRQ, 22> {}; // Abort Request
+		struct HTRQ : Field<LINFlexD_LINCR2, HTRQ, 23> {}; // Header Transmission Request
 		
 		typedef FieldSet<TBDE, IOBE, IOPE, WURQ, DDRQ, DTRQ, ABRQ, HTRQ> ALL;
 		
@@ -1310,10 +1311,10 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x34;
 		
-		struct DFL : Field<DFL, 16, 21> {}; // Data Field Length
-		struct DIR : Field<DIR, 22    > {}; // Direction
-		struct CCS : Field<CCS, 23    > {}; // Classic Checksum
-		struct ID  : Field<ID , 26, 31> {}; // Identifier
+		struct DFL : Field<LINFlexD_BIDR, DFL, 16, 21> {}; // Data Field Length
+		struct DIR : Field<LINFlexD_BIDR, DIR, 22    > {}; // Direction
+		struct CCS : Field<LINFlexD_BIDR, CCS, 23    > {}; // Classic Checksum
+		struct ID  : Field<LINFlexD_BIDR, ID , 26, 31> {}; // Identifier
 
 		typedef FieldSet<DFL, DIR, CCS, ID> ALL;
 		
@@ -1352,10 +1353,10 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x38;
 		
-		struct DATA3 : Field<DATA3,  0, 7 > {}; // Data Byte 3
-		struct DATA2 : Field<DATA2,  8, 15> {}; // Data Byte 2
-		struct DATA1 : Field<DATA1, 16, 23> {}; // Data Byte 1
-		struct DATA0 : Field<DATA0, 24, 31> {}; // Data Byte 0
+		struct DATA3 : Field<LINFlexD_BDRL, DATA3,  0, 7 > {}; // Data Byte 3
+		struct DATA2 : Field<LINFlexD_BDRL, DATA2,  8, 15> {}; // Data Byte 2
+		struct DATA1 : Field<LINFlexD_BDRL, DATA1, 16, 23> {}; // Data Byte 1
+		struct DATA0 : Field<LINFlexD_BDRL, DATA0, 24, 31> {}; // Data Byte 0
 		
 		typedef FieldSet<DATA3, DATA2, DATA1, DATA0> ALL;
 		
@@ -1429,10 +1430,10 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x3c;
 		
-		struct DATA7 : Field<DATA7,  0,  7> {}; // Data Byte 7
-		struct DATA6 : Field<DATA6,  8, 15> {}; // Data Byte 6
-		struct DATA5 : Field<DATA5, 16, 23> {}; // Data Byte 5
-		struct DATA4 : Field<DATA4, 24, 31> {}; // Data Byte 4
+		struct DATA7 : Field<LINFlexD_BDRM, DATA7,  0,  7> {}; // Data Byte 7
+		struct DATA6 : Field<LINFlexD_BDRM, DATA6,  8, 15> {}; // Data Byte 6
+		struct DATA5 : Field<LINFlexD_BDRM, DATA5, 16, 23> {}; // Data Byte 5
+		struct DATA4 : Field<LINFlexD_BDRM, DATA4, 24, 31> {}; // Data Byte 4
 		
 		typedef FieldSet<DATA7, DATA6, DATA5, DATA4> ALL;
 		
@@ -1497,7 +1498,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x40;
 		
-		struct FACT : Field<FACT, (32 - NUM_FILTERS), 31> {}; // Filter active
+		struct FACT : Field<LINFlexD_IFER, FACT, (32 - NUM_FILTERS), 31> {}; // Filter active
 		
 		typedef FieldSet<FACT> ALL;
 		
@@ -1533,7 +1534,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x44;
 		
-		struct IFMI : Field<IFMI, 27, 31, SW_R> {}; // Filter match index
+		struct IFMI : Field<LINFlexD_IFMI, IFMI, 27, 31, SW_R> {}; // Filter match index
 		
 		typedef FieldSet<IFMI> ALL;
 		
@@ -1561,7 +1562,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x48;
 		
-		struct IFM : Field<IFM, 24, 31> {}; // Filter mode
+		struct IFM : Field<LINFlexD_IFMR, IFM, 24, 31> {}; // Filter mode
 		
 		typedef FieldSet<IFM> ALL;
 		
@@ -1597,10 +1598,10 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x4c;
 		
-		struct DFL : Field<DFL, 16, 21> {}; // Data Field Length
-		struct DIR : Field<DIR, 22    > {}; // Direction
-		struct CCS : Field<CCS, 23    > {}; // Classic Checksum
-		struct ID  : Field<ID , 26, 31> {}; // Identifier
+		struct DFL : Field<LINFlexD_IFCR, DFL, 16, 21> {}; // Data Field Length
+		struct DIR : Field<LINFlexD_IFCR, DIR, 22    > {}; // Direction
+		struct CCS : Field<LINFlexD_IFCR, CCS, 23    > {}; // Classic Checksum
+		struct ID  : Field<LINFlexD_IFCR, ID , 26, 31> {}; // Identifier
 		
 		typedef FieldSet<DFL, DIR, CCS, ID> ALL;
 		
@@ -1653,12 +1654,12 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = (GENERIC_SLAVE == 0) ? 0x4c : 0x8c;
 		
-		struct TDFBM : Field<TDFBM, 26>           {}; // Transmit data first bit MSB
-		struct RDFBM : Field<RDFBM, 27>           {}; // Received data first bit MSB
-		struct TDLIS : Field<TDLIS, 28>           {}; // Transmit data level inversion selection
-		struct RDLIS : Field<RDLIS, 29>           {}; // Received data level inversion selection
-		struct STOP  : Field<STOP , 30>           {}; // 1/2 stop bit configuration
-		struct SR    : Field<SR   , 31, 31, SW_W> {}; // Soft reset
+		struct TDFBM : Field<LINFlexD_GCR, TDFBM, 26>           {}; // Transmit data first bit MSB
+		struct RDFBM : Field<LINFlexD_GCR, RDFBM, 27>           {}; // Received data first bit MSB
+		struct TDLIS : Field<LINFlexD_GCR, TDLIS, 28>           {}; // Transmit data level inversion selection
+		struct RDLIS : Field<LINFlexD_GCR, RDLIS, 29>           {}; // Received data level inversion selection
+		struct STOP  : Field<LINFlexD_GCR, STOP , 30>           {}; // 1/2 stop bit configuration
+		struct SR    : Field<LINFlexD_GCR, SR   , 31, 31, SW_W> {}; // Soft reset
 	
 		typedef FieldSet<TDFBM, RDFBM, TDLIS, RDLIS, STOP, SR> ALL;
 		
@@ -1705,7 +1706,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = (GENERIC_SLAVE == 0) ? 0x50 : 0x90;
 		
-		struct PTO : Field<PTO, 20, 31> {}; // Preset Timeout
+		struct PTO : Field<LINFlexD_UARTPTO, PTO, 20, 31> {}; // Preset Timeout
 		
 		typedef FieldSet<PTO> ALL;
 		
@@ -1752,7 +1753,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = (GENERIC_SLAVE == 0) ? 0x54 : 0x94;
 		
-		struct CTO : Field<CTO, 20, 31, SW_R> {}; // Current Timeout
+		struct CTO : Field<LINFlexD_UARTCTO, CTO, 20, 31, SW_R> {}; // Current Timeout
 		
 		typedef FieldSet<CTO> ALL;
 		
@@ -1786,7 +1787,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = (GENERIC_SLAVE == 0) ? 0x58 : 0x98;
 		
-		struct DTE : Field<DTE, (32 - NUM_DMA_TX_CHANNELS), 31> {}; // DMA Tx channel Y enable
+		struct DTE : Field<LINFlexD_DMATXE, DTE, (32 - NUM_DMA_TX_CHANNELS), 31> {}; // DMA Tx channel Y enable
 
 		typedef FieldSet<DTE> ALL;
 		
@@ -1814,7 +1815,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = (GENERIC_SLAVE == 0) ? 0x5c : 0x9c;
 		
-		struct DRE : Field<DRE, (32 - NUM_DMA_RX_CHANNELS), 31> {}; // DMA Rx channel Y enable
+		struct DRE : Field<LINFlexD_DMARXE, DRE, (32 - NUM_DMA_RX_CHANNELS), 31> {}; // DMA Rx channel Y enable
 
 		typedef FieldSet<DRE> ALL;
 		
@@ -1842,8 +1843,8 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xa0;
 		
-		struct IFD    : Field<IFD, 27, 30, GENERIC_PSI5 ? SW_RW : SW_R_HW_RO> {}; // Interframe Delay
-		struct EN     : Field<EN , 31, 31, GENERIC_PSI5 ? SW_RW : SW_R_HW_RO> {}; // Enable
+		struct IFD    : Field<LINFlexD_PTD, IFD, 27, 30, GENERIC_PSI5 ? SW_RW : SW_R_HW_RO> {}; // Interframe Delay
+		struct EN     : Field<LINFlexD_PTD, EN , 31, 31, GENERIC_PSI5 ? SW_RW : SW_R_HW_RO> {}; // Enable
 		
 		typedef FieldSet<IFD, EN> ALL;
 		
@@ -1924,6 +1925,8 @@ private:
 	unisim::kernel::service::Parameter<unisim::util::endian::endian_type> param_endian;
 	bool verbose;
 	unisim::kernel::service::Parameter<bool> param_verbose;
+	double baud_tolerance;
+	unisim::kernel::service::Parameter<double> param_baud_tolerance;
 	
 	sc_core::sc_time master_clock_period;                 // Master clock period
 	sc_core::sc_time master_clock_start_time;             // Master clock start time
@@ -1935,7 +1938,9 @@ private:
 	bool lin_clock_posedge_first;                         // LIN clock posedge first ?
 	double lin_clock_duty_cycle;                          // LIN clock duty cycle
 	
+	sc_core::sc_time baud_period_lower_bound;
 	sc_core::sc_time baud_period;
+	sc_core::sc_time baud_period_upper_bound;
 	
 	void EnableLINS_INT_TX();
 	void DisableLINS_INT_TX();
@@ -1991,6 +1996,7 @@ private:
 	void DMA_RX_Process();
 	void DMA_TX_Process();
 	void RX_FIFO_Pop();
+	void IncrementRxTime();
 	bool RX_InputStatus();
 	bool RX_FallingEdge();
 	void RX_Process();

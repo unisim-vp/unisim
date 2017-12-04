@@ -10,9 +10,14 @@
 #include "swt.h"
 #include "pit.h"
 #include "linflexd.h"
+#include "dmamux.h"
+#include "edma.h"
 
 #define KEY_VALUE1 0x5AF0ul
 #define KEY_VALUE2 0xA50Ful
+
+#define UART_FIFO_MODE 1
+#define UART_RX_FIFO_DMA_MODE 1
 
 void hw_init(void)
 {
@@ -45,12 +50,16 @@ void hw_init(void)
 #endif /* defined(DEBUG_SECONDARY_CORES) */
 
 	intc_drv_init();
+	dmamux_drv_init();
+	edma_drv_init();
 	stm_drv_init();
 	swt_drv_init();
 	pit_drv_init();
 	linflexd_drv_init();
 
 	intc_init();      // initialize interrupt controller
+	edma_init(0);     // initialize eDMA_0
+	edma_init(1);     // initialize eDMA_1
 	swt_init(2);      // initialize SWT_2
 	stm_init(2);      // initialize STM_2
 	pit_init(0);      // initialize PIT_0
@@ -106,6 +115,10 @@ void linflexd_0_int_err(unsigned int linflexd_id, enum LINFlexD_INT linflexd_int
 }
 
 volatile unsigned int counter = 0;
+
+uint32_t source[4];
+uint32_t dest[4];
+
 
 int main_Z4_2(void)
 {
@@ -174,12 +187,27 @@ int main_Z4_2(void)
 	                                                             
 	linflexd_select_tx_stop_bits(0, 1);                          // LINFlexD_0   (init mode): 1 stop bit for transmission
 	linflexd_select_uart_rx_stop_bits(0, 1);                     // LINFlexD_0   (init mode): 1 stop bit for reception
-	    
+	
+#if UART_FIFO_MODE
+	linflexd_select_uart_tx_fifo_mode(0);                        // LINFlexD_0   (init mode): select UART Tx FIFO mode
+#else
 	linflexd_select_uart_tx_buffer_mode(0);                      // LINFlexD_0   (init mode): select UART Tx buffer mode
 	linflexd_set_uart_tx_buffer_length(0, 1);                    // LINFlexD_0   (init mode): set UART Tx buffer length to 1 byte
+#endif
 	                                                             
+#if UART_FIFO_MODE
+	linflexd_select_uart_rx_fifo_mode(0);                        // LINFlexD_0   (init mode): select UART Rx FIFO
+#else
 	linflexd_select_uart_rx_buffer_mode(0);                      // LINFlexD_0   (init mode): select UART Rx buffer mode
 	linflexd_set_uart_rx_buffer_length(0, 1);                    // LINFlexD_0   (init mode): set UART Rx buffer length to 1 byte
+#endif
+
+#if UART_FIFO_MODE && UART_RX_FIFO_DMA_MODE
+	linflexd_enable_dma_rx(0, 0);                                // LINFlexD_0   (init mode): enable DMA Rx (#0 of 1)
+	dmamux_set_dma_channel_source(0, 0, 16);                     // DMAMUX_0                : route source #16 (LINFlexD_0 DMA Rx) to channel #0
+	dmamux_enable_dma_channel(0, 0);                             // DMAMUX_0                : enable DMA channel #0
+	edma_enable_request(0, 0);                                   // EDMA_0                  : enable DMA request #0 (DMAMUX_0 channel #0)
+#endif
 	
 	linflexd_select_uart_word_length(0, LINFlexD_WORD_LENGTH_8); // LINFlexD_0   (init mode): 8-bit data word length without parity
 	
@@ -188,6 +216,87 @@ int main_Z4_2(void)
 	
 	linflexd_request_to_exit_init_mode(0);                       // LINFlexD_0   (init mode): request leaving init mode (i.e. entering normal mode)
 
+	unsigned int grp;
+	for(grp = 0; grp < 4; grp++)
+	{
+		edma_set_channel_group_priority(0, grp, 3 - grp);        // eDMA0                   : set channel group priority (higher to lower)
+	}
+	unsigned int chan;
+	for(chan = 0; chan < 64; chan++)
+	{
+		edma_set_channel_arbitration_priority(0, chan, 15 - (chan & 15)); // eDMA0          : set channel priority in group (higher to lower)
+	}
+
+#if UART_FIFO_MODE
+#if UART_RX_FIFO_DMA_MODE
+	edma_set_tcd_starting_major_iteration_count(0, 0, 1);                                      // eDMA_0: channel #0, BITER=1
+	edma_set_tcd_current_major_iteration_count(0, 0, 1);                                       // eDMA_0: channel #0, CITER=1
+	edma_set_tcd_minor_byte_count(0, 0, 1);                                                    // eDMA_0: channel #0, NBYTES=1
+	edma_set_tcd_source_address(0, 0, (uint32_t)((uint8_t *) &LINFlexD_0.BDRM.R + 3));         // eDMA_0: channel #0, SOURCE ADDR=@LINFlexD_0 Rx FIFO
+	edma_set_tcd_signed_source_address_offset(0, 0, 1);                                        // eDMA_0: channel #0, SOURCE OFS=+1
+	edma_set_tcd_source_data_transfer_size(0, 0, 1);                                           // eDMA_0: channel #0, SOURCE TRANSFER SIZE=1 byte
+	edma_set_tcd_last_source_address_adjustment(0, 0, -1);                                     // eDMA_0: channel #0, LAST SOURCE ADDR ADJUSTMENT=-1
+	edma_set_tcd_destination_address(0, 0, (uint32_t)((uint8_t *) &LINFlexD_0.BDRL.R + 3));    // eDMA_0: channel #0, DEST ADDR=@LINFlexD_0 Tx FIFO
+	edma_set_tcd_signed_destination_address_offset(0, 0, 1);                                   // eDMA_0: channel #0, DEST OFS=+1
+	edma_set_tcd_destination_data_transfer_size(0, 0, 1);                                      // eDMA_0: channel #0, DEST TRANSFER SIZE=1 byte
+	edma_set_tcd_last_destination_address_adjustment(0, 0, -1);                                // eDMA_0: channel #0, LAST DEST ADDR ADJUSTMENT=-1
+#else
+	char msg[4] = "helo";
+	linflexd_uart_tx_buffer_write_byte(0, &msg[0], 0);
+	linflexd_uart_tx_buffer_write_byte(0, &msg[1], 0);
+	linflexd_uart_tx_buffer_write_byte(0, &msg[2], 0);
+	linflexd_uart_tx_buffer_write_byte(0, &msg[3], 0);
+	
+	while(1)
+	{
+		if(linflexd_is_uart_rx_fifo_not_empty(0))
+		{
+			char ch = 0;
+			linflexd_uart_rx_buffer_read_byte(0, &ch, 0);
+			
+			while(linflexd_is_uart_tx_fifo_full(0));
+			
+			linflexd_uart_tx_buffer_write_byte(0, &ch, 0);
+		}
+	}
+#endif // UART_RX_FIFO_DMA_MODE
+#endif // UART_FIFO_MODE
+	
+#if 0
+	source[0] = 0x1234;
+	source[1] = 0x5678;
+	source[2] = 0x4321;
+	source[3] = 0x8765;
+	dest[0] = 0;
+	dest[1] = 0;
+	dest[2] = 0;
+	dest[3] = 0;
+	unsigned int grp;
+	for(grp = 0; grp < 4; grp++)
+	{
+		edma_set_channel_group_priority(0, grp, 3 - grp);
+	}
+	unsigned int chan;
+	for(chan = 0; chan < 64; chan++)
+	{
+		edma_set_channel_arbitration_priority(0, chan, 15 - (chan & 15));
+	}
+	
+	edma_set_tcd_starting_major_iteration_count(0, 0, 1);
+	edma_set_tcd_current_major_iteration_count(0, 0, 1);
+	edma_set_tcd_minor_byte_count(0, 0, 16);
+	edma_set_tcd_source_address(0, 0, (uint32_t) source);
+	edma_set_tcd_signed_source_address_offset(0, 0, 1);
+	edma_set_tcd_source_data_transfer_size(0, 0, 1);
+	edma_set_tcd_last_source_address_adjustment(0, 0, -16);
+	edma_set_tcd_destination_address(0, 0, (uint32_t) dest);
+	edma_set_tcd_signed_destination_address_offset(0, 0, 4);
+	edma_set_tcd_destination_data_transfer_size(0, 0, 4);
+	edma_set_tcd_last_destination_address_adjustment(0, 0, -16);
+	edma_enable_tcd_major_complete_interrupt(0, 0);
+	edma_set_start_bit(0, 0);
+#endif
+	
 	/* Loop forever */
 	for(;;)
 	{   

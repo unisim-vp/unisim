@@ -99,6 +99,10 @@ private:
 	bool clock_posedge_first;                      // Master clock posedge first ?
 	double clock_duty_cycle;                       // Master clock duty cycle
 	unisim::kernel::tlm2::tlm_bitstream rx_input; // Rx timed input bit stream
+	sc_core::sc_time rx_time;
+	sc_core::sc_time baud_period_lower_bound;
+	sc_core::sc_time baud_period;
+	sc_core::sc_time baud_period_upper_bound;
 	sc_core::sc_event polling_event;
 	sc_core::sc_event tx_event;
 	sc_core::sc_time tx_ready_time;
@@ -116,9 +120,15 @@ private:
 	unisim::kernel::service::Parameter<BitOrder> param_bit_order;
 	unsigned int num_data_bits;
 	unisim::kernel::service::Parameter<unsigned int> param_num_data_bits;
+	double baud_tolerance;
+	unisim::kernel::service::Parameter<double> param_baud_tolerance;
+	sc_core::sc_time boot_receive_delay;
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_boot_receive_delay;
 	
 	void ClockPropertiesChangedProcess();
 	void TX_Process();
+	bool RX_InputStatus();
+	void IncrementRxTime();
 	void RX_Process();
 	void ProcessInput();
 	void ProcessOutput();

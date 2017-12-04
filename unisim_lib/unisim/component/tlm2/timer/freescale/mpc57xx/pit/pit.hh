@@ -77,10 +77,12 @@ using unisim::util::reg::core::SW_R_W1C;
 using unisim::util::reg::core::RWS_OK;
 using unisim::util::reg::core::RWS_ANA;
 
-template <typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
-struct Field : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, _ACCESS>
+template <typename REGISTER, typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
+struct Field : unisim::util::reg::core::Field<FIELD
+                                             , ((OFFSET1 >= 0) && (OFFSET1 < REGISTER::SIZE)) ? ((OFFSET2 >= 0) ? ((OFFSET2 < REGISTER::SIZE) ? ((OFFSET1 < OFFSET2) ? ((REGISTER::SIZE - 1) - OFFSET2) : ((REGISTER::SIZE - 1) - OFFSET1)) : ((REGISTER::SIZE - 1) - OFFSET1)) : ((REGISTER::SIZE - 1) - OFFSET1)) : 0
+                                             , ((OFFSET1 >= 0) && (OFFSET1 < REGISTER::SIZE)) ? ((OFFSET2 >= 0) ? ((OFFSET2 < REGISTER::SIZE) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 0) : 1) : 0
+                                             , _ACCESS>
 {
-	typedef unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, _ACCESS> Super;
 };
 
 #if 0
@@ -308,9 +310,9 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x0;
 		
-		struct MDIS_RTI : Field<MDIS_RTI, 29> {}; // Module Disable - RTI section
-		struct MDIS     : Field<MDIS    , 30> {}; // Module Disable
-		struct FRZ      : Field<FRZ     , 31> {}; // Freeze
+		struct MDIS_RTI : Field<PIT_MCR, MDIS_RTI, 29> {}; // Module Disable - RTI section
+		struct MDIS     : Field<PIT_MCR, MDIS    , 30> {}; // Module Disable
+		struct FRZ      : Field<PIT_MCR, FRZ     , 31> {}; // Freeze
 		
 		SWITCH_ENUM_TRAIT(unsigned int, _);
 		CASE_ENUM_TRAIT(0, _) { typedef FieldSet<> ALL; };
@@ -359,7 +361,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xe0;
 
-		struct LTH : Field<LTH, 0, 31> {}; // Life Timer value
+		struct LTH : Field<PIT_LTMR64H, LTH, 0, 31> {}; // Life Timer value
 		
 		typedef FieldSet<LTH> ALL;
 		
@@ -398,7 +400,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xe4;
 
-		struct LTL : Field<LTL, 0, 31> {}; // Life Timer value
+		struct LTL : Field<PIT_LTMR64L, LTL, 0, 31> {}; // Life Timer value
 		
 		typedef FieldSet<LTL> ALL;
 		
@@ -421,7 +423,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xf0;
 
-		struct TSV : Field<TSV, 0, 31> {}; // Timer Start Value Bits
+		struct TSV : Field<PIT_RTI_LDVAL, TSV, 0, 31> {}; // Timer Start Value Bits
 
 		typedef FieldSet<TSV> ALL;
 		
@@ -444,7 +446,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xf4;
 
-		struct TVL : Field<TVL, 0, 31> {}; // Current Timer Value
+		struct TVL : Field<PIT_RTI_CVAL, TVL, 0, 31> {}; // Current Timer Value
 
 		typedef FieldSet<TVL> ALL;
 		
@@ -467,9 +469,9 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xf8;
 
-		struct CHN : Field<CHN, 29> {}; // Chain Mode Bit
-		struct TIE : Field<TIE, 30> {}; // Timer Interrupt Enable Bit
-		struct TEN : Field<TEN, 31> {}; // Timer Enable Bit
+		struct CHN : Field<PIT_RTI_TCTRL, CHN, 29> {}; // Chain Mode Bit
+		struct TIE : Field<PIT_RTI_TCTRL, TIE, 30> {}; // Timer Interrupt Enable Bit
+		struct TEN : Field<PIT_RTI_TCTRL, TEN, 31> {}; // Timer Enable Bit
 
 		typedef FieldSet<CHN, TIE, TEN> ALL;
 		
@@ -521,7 +523,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xfc;
 
-		struct TIF : Field<TIF, 31, 31, SW_R_W1C> {}; // Timer Interrupt Flag
+		struct TIF : Field<PIT_RTI_TFLG, TIF, 31, 31, SW_R_W1C> {}; // Timer Interrupt Flag
 
 		typedef FieldSet<TIF> ALL;
 		
@@ -553,7 +555,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x100;
 
-		struct TSV : Field<TSV, 0, 31> {}; // Timer Start Value Bits
+		struct TSV : Field<PIT_LDVAL, TSV, 0, 31> {}; // Timer Start Value Bits
 
 		typedef FieldSet<TSV> ALL;
 		
@@ -589,7 +591,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x104;
 
-		struct TVL : Field<TVL, 0, 31> {}; // Current Timer Value
+		struct TVL : Field<PIT_CVAL, TVL, 0, 31> {}; // Current Timer Value
 
 		typedef FieldSet<TVL> ALL;
 		
@@ -625,9 +627,9 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x108;
 
-		struct CHN : Field<CHN, 29> {}; // Chain Mode Bit
-		struct TIE : Field<TIE, 30> {}; // Timer Interrupt Enable Bit
-		struct TEN : Field<TEN, 31> {}; // Timer Enable Bit
+		struct CHN : Field<PIT_TCTRL, CHN, 29> {}; // Chain Mode Bit
+		struct TIE : Field<PIT_TCTRL, TIE, 30> {}; // Timer Interrupt Enable Bit
+		struct TEN : Field<PIT_TCTRL, TEN, 31> {}; // Timer Enable Bit
 
 		typedef FieldSet<CHN, TIE, TEN> ALL;
 		
@@ -692,7 +694,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x10c;
 
-		struct TIF : Field<TIF, 31, 31, SW_R_W1C> {}; // Timer Interrupt Flag
+		struct TIF : Field<PIT_TFLG, TIF, 31, 31, SW_R_W1C> {}; // Timer Interrupt Flag
 
 		typedef FieldSet<TIF> ALL;
 		

@@ -882,7 +882,7 @@ bool Instrumenter::TryBind(const std::string& port_name, const std::string& sign
 		else
 		{
 #if DEBUG_INSTRUMENTER >= 1
-			std::cout << "WARNING! While binding, signal \"" << signal_name << "\" either does not exist" << std::endl;
+			std::cout << "WARNING! While binding, signal \"" << signal_name << "\" does not exist" << std::endl;
 #endif
 		}
 	}

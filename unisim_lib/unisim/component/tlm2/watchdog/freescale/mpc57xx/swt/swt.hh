@@ -78,10 +78,12 @@ using unisim::util::reg::core::RWS_ANA;
 using unisim::util::reg::core::RWS_WROR;
 using unisim::util::reg::core::Access;
 
-template <typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
-struct Field : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, _ACCESS>
+template <typename REGISTER, typename FIELD, int OFFSET1, int OFFSET2 = -1, Access _ACCESS = SW_RW>
+struct Field : unisim::util::reg::core::Field<FIELD
+                                             , ((OFFSET1 >= 0) && (OFFSET1 < REGISTER::SIZE)) ? ((OFFSET2 >= 0) ? ((OFFSET2 < REGISTER::SIZE) ? ((OFFSET1 < OFFSET2) ? ((REGISTER::SIZE - 1) - OFFSET2) : ((REGISTER::SIZE - 1) - OFFSET1)) : ((REGISTER::SIZE - 1) - OFFSET1)) : ((REGISTER::SIZE - 1) - OFFSET1)) : 0
+                                             , ((OFFSET1 >= 0) && (OFFSET1 < REGISTER::SIZE)) ? ((OFFSET2 >= 0) ? ((OFFSET2 < REGISTER::SIZE) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 0) : 1) : 0
+                                             , _ACCESS>
 {
-	typedef unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1> Super;
 };
 
 #if 0
@@ -357,24 +359,24 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x0;
 		
-		struct MAP0     : Field<MAP0, 0>      {}; // Master Access Protection for Master 0
-		struct MAP1     : Field<MAP1, 1>      {}; // Master Access Protection for Master 1
-		struct MAP2     : Field<MAP2, 2>      {}; // Master Access Protection for Master 2
-		struct MAP3     : Field<MAP3, 3>      {}; // Master Access Protection for Master 3
-		struct MAP4     : Field<MAP4, 4>      {}; // Master Access Protection for Master 4
-		struct MAP5     : Field<MAP5, 5>      {}; // Master Access Protection for Master 5
-		struct MAP6     : Field<MAP6, 6>      {}; // Master Access Protection for Master 6
-		struct MAP7     : Field<MAP7, 7>      {}; // Master Access Protection for Master 7
-		struct SMD      : Field<SMD, 21, 22>  {}; // Service Mode
-		struct RIA      : Field<RIA, 23>      {}; // Reset on Invalid Access
-		struct WND      : Field<WND, 24>      {}; // Window Mode
-		struct ITR      : Field<ITR, 25>      {}; // Interrupt Then Reset
-		struct HLK      : Field<HLK, 26>      {}; // Hard Lock
-		struct SLK      : Field<SLK, 27>      {}; // Soft Lock
-		struct Reserved : Field<Reserved, 28> {}; // Reserved
-		struct STP      : Field<STP, 29>      {}; // Stop Mode Control
-		struct FRZ      : Field<FRZ, 30>      {}; // Debug Mode Control
-		struct WEN      : Field<WEN, 31>      {}; // Watchdog Enabled
+		struct MAP0     : Field<SWT_CR, MAP0, 0>      {}; // Master Access Protection for Master 0
+		struct MAP1     : Field<SWT_CR, MAP1, 1>      {}; // Master Access Protection for Master 1
+		struct MAP2     : Field<SWT_CR, MAP2, 2>      {}; // Master Access Protection for Master 2
+		struct MAP3     : Field<SWT_CR, MAP3, 3>      {}; // Master Access Protection for Master 3
+		struct MAP4     : Field<SWT_CR, MAP4, 4>      {}; // Master Access Protection for Master 4
+		struct MAP5     : Field<SWT_CR, MAP5, 5>      {}; // Master Access Protection for Master 5
+		struct MAP6     : Field<SWT_CR, MAP6, 6>      {}; // Master Access Protection for Master 6
+		struct MAP7     : Field<SWT_CR, MAP7, 7>      {}; // Master Access Protection for Master 7
+		struct SMD      : Field<SWT_CR, SMD, 21, 22>  {}; // Service Mode
+		struct RIA      : Field<SWT_CR, RIA, 23>      {}; // Reset on Invalid Access
+		struct WND      : Field<SWT_CR, WND, 24>      {}; // Window Mode
+		struct ITR      : Field<SWT_CR, ITR, 25>      {}; // Interrupt Then Reset
+		struct HLK      : Field<SWT_CR, HLK, 26>      {}; // Hard Lock
+		struct SLK      : Field<SWT_CR, SLK, 27>      {}; // Soft Lock
+		struct Reserved : Field<SWT_CR, Reserved, 28> {}; // Reserved
+		struct STP      : Field<SWT_CR, STP, 29>      {}; // Stop Mode Control
+		struct FRZ      : Field<SWT_CR, FRZ, 30>      {}; // Debug Mode Control
+		struct WEN      : Field<SWT_CR, WEN, 31>      {}; // Watchdog Enabled
 		
 		SWITCH_ENUM_TRAIT(unsigned int, _);
 		CASE_ENUM_TRAIT(1, _) { typedef FieldSet<MAP0> ALL; };
@@ -441,7 +443,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x4;
 		
-		struct TIF : Field<TIF, 31, 31, SW_R_W1C> {}; // Time-out Interrupt Flag
+		struct TIF : Field<SWT_IR, TIF, 31, 31, SW_R_W1C> {}; // Time-out Interrupt Flag
 		
 		typedef FieldSet<TIF> ALL;
 		
@@ -475,7 +477,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x8;
 		
-		struct WTO : Field<WTO, 0, 31> {}; // Watchdog time-out period in clock cycles
+		struct WTO : Field<SWT_TO, WTO, 0, 31> {}; // Watchdog time-out period in clock cycles
 		
 		typedef FieldSet<WTO> ALL;
 		
@@ -498,7 +500,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xc;
 		
-		struct WST : Field<WST, 0, 31> {}; // Window Start Value
+		struct WST : Field<SWT_WN, WST, 0, 31> {}; // Window Start Value
 		
 		typedef FieldSet<WST> ALL;
 		
@@ -521,7 +523,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x10;
 		
-		struct WSC : Field<WSC, 16, 31> {}; // Watchdog Service Code
+		struct WSC : Field<SWT_SR, WSC, 16, 31> {}; // Watchdog Service Code
 		
 		typedef FieldSet<WSC> ALL;
 		
@@ -561,7 +563,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x14;
 		
-		struct CNT : Field<CNT, 0, 31> {}; // Watchdog count
+		struct CNT : Field<SWT_CO, CNT, 0, 31> {}; // Watchdog count
 		
 		typedef FieldSet<CNT> ALL;
 		
@@ -584,7 +586,7 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x18;
 		
-		struct SK : Field<SK, 16, 31> {}; // Service Key
+		struct SK : Field<SWT_SK, SK, 16, 31> {}; // Service Key
 		
 		typedef FieldSet<SK> ALL;
 		

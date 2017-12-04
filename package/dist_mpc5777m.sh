@@ -164,6 +164,7 @@ unisim/service/tee/blob/tee_32.cc \
 unisim/service/tee/stmt_lookup/tee_32.cc \
 unisim/service/tee/backtrace/tee_32.cc \
 unisim/service/telnet/telnet.cc \
+unisim/service/netcat/netcat.cc \
 unisim/service/os/linux_os/powerpc_linux32.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/floating.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/cpu.cc \
@@ -807,6 +808,7 @@ unisim/service/tee/blob/tee.hh \
 unisim/service/tee/stmt_lookup/tee.hh \
 unisim/service/tee/backtrace/tee.hh \
 unisim/service/telnet/telnet.hh \
+unisim/service/netcat/netcat.hh \
 unisim/service/os/linux_os/linux.hh \
 unisim/service/os/linux_os/powerpc_linux32.hh \
 unisim/component/cxx/memory/ram/memory.hh \
@@ -834,6 +836,9 @@ unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.hh \
 unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.hh \
 unisim/component/tlm2/com/freescale/mpc57xx/linflexd/linflexd.hh \
 unisim/component/tlm2/com/serial_terminal/serial_terminal.hh \
+unisim/component/tlm2/dma/freescale/mpc57xx/dmamux/dmamux.hh \
+unisim/component/tlm2/dma/freescale/mpc57xx/edma/edma.hh \
+unisim/component/tlm2/operators/associative_operator.hh \
 "
 
 UNISIM_LIB_SIMULATOR_TEMPLATE_FILES="\
@@ -911,6 +916,8 @@ unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.tcc \
 unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.tcc \
 unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.tcc \
 unisim/component/tlm2/com/freescale/mpc57xx/linflexd/linflexd.tcc \
+unisim/component/tlm2/dma/freescale/mpc57xx/dmamux/dmamux.tcc \
+unisim/component/tlm2/dma/freescale/mpc57xx/edma/edma.tcc \
 "
 
 UNISIM_LIB_SIMULATOR_M4_FILES="\
@@ -986,6 +993,7 @@ xbar_0.cc \
 xbar_1.cc \
 pbridge_a.cc \
 pbridge_b.cc \
+xbar_1_m1_concentrator.cc \
 intc_0.cc \
 stm_0.cc \
 stm_1.cc \
@@ -1002,6 +1010,18 @@ linflexd_2.cc \
 linflexd_14.cc \
 linflexd_15.cc \
 linflexd_16.cc \
+dmamux_0.cc \
+dmamux_1.cc \
+dmamux_2.cc \
+dmamux_3.cc \
+dmamux_4.cc \
+dmamux_5.cc \
+dmamux_6.cc \
+dmamux_7.cc \
+dmamux_8.cc \
+dmamux_9.cc \
+edma_0.cc \
+edma_1.cc \
 "
 UNISIM_SIMULATOR_HEADER_FILES="\
 simulator.hh \
@@ -1042,6 +1062,8 @@ soft/include/stm.h \
 soft/include/swt.h \
 soft/include/pit.h \
 soft/include/linflexd.h \
+soft/include/dmamux.h \
+soft/include/edma.h \
 soft/src/Z4_2/57xx_ram.ld \
 soft/src/Z4_2/startup.S \
 soft/src/Z4_2/main_Z4_2.c \
@@ -1066,6 +1088,8 @@ soft/src/drv/stm.c \
 soft/src/drv/swt.c \
 soft/src/drv/pit.c \
 soft/src/drv/linflexd.c \
+soft/src/drv/dmamux.c \
+soft/src/drv/edma.c \
 soft/bin/Z4_2/ram_boot.elf \
 soft/bin/Z4_2/flash_boot.elf \
 soft/bin/Z7_0/ram_boot.elf \

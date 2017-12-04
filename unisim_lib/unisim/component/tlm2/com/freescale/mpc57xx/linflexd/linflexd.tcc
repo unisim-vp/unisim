@@ -136,6 +136,8 @@ LINFlexD<CONFIG>::LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::
 	, param_endian("endian", this, endian, "endian")
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
+	, baud_tolerance(2.0)
+	, param_baud_tolerance("baud-tolerance", this, baud_tolerance, "Baud tolerance (up to 5 %) in reception (fraction in percents of baud period); Tolerate +/- X % drift")
 	, master_clock_period(10.0, sc_core::SC_NS)
 	, master_clock_start_time(sc_core::SC_ZERO_TIME)
 	, master_clock_posedge_first(true)
@@ -144,8 +146,12 @@ LINFlexD<CONFIG>::LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::
 	, lin_clock_start_time(sc_core::SC_ZERO_TIME)
 	, lin_clock_posedge_first(true)
 	, lin_clock_duty_cycle(0.5)
+	, baud_period_lower_bound(sc_core::SC_ZERO_TIME)
 	, baud_period(sc_core::SC_ZERO_TIME)
+	, baud_period_upper_bound(sc_core::SC_ZERO_TIME)
 {
+	param_baud_tolerance.SetMutable(false);
+	
 	peripheral_slave_if(*this);
 	
 	LINTX.register_nb_receive(this, &LINFlexD<CONFIG>::nb_receive, LINTX_IF);
@@ -263,6 +269,23 @@ LINFlexD<CONFIG>::~LINFlexD()
 	{
 		delete DMA_RX[dma_rx_num];
 	}
+}
+
+template <typename CONFIG>
+bool LINFlexD<CONFIG>::EndSetup()
+{
+	if(baud_tolerance < 0.0)
+	{
+		baud_tolerance = 0.0;
+		logger << DebugWarning << "Parameter " << param_baud_tolerance.GetName() << " should be > " << baud_tolerance << "; using " << param_baud_tolerance.GetName() << " = " << baud_tolerance << " %" << EndDebugWarning;
+	}
+	if(baud_tolerance > 5.0)
+	{
+		baud_tolerance = 5.0;
+		logger << DebugWarning << "Parameter " << param_baud_tolerance.GetName() << " should be <= " << baud_tolerance << "; using " << param_baud_tolerance.GetName() << " = " << baud_tolerance << " %" << EndDebugWarning;
+	}
+	
+	return true;
 }
 
 template <typename CONFIG>
@@ -384,7 +407,7 @@ tlm::tlm_sync_enum LINFlexD<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& p
 template <typename CONFIG>
 void LINFlexD<CONFIG>::nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload& payload)
 {
-	if(((id == LINRX_IF) && !linflexd_lincr1.template Get<typename LINFlexD_LINCR1::LBKM>()) || // from LINRX (loop back mode disabled)                                                                   // from LINRX
+	if(((id == LINRX_IF) && !linflexd_lincr1.template Get<typename LINFlexD_LINCR1::LBKM>()) || // from LINRX (loop back mode disabled)
 	   ((id == LINTX_IF) && linflexd_lincr1.template Get<typename LINFlexD_LINCR1::LBKM>())) // from LINTX (loop back mode enabled)
 	{
 		if(linflexd_uartcr.template Get<typename LINFlexD_UARTCR::RxEn>()) // receiver enable ?
@@ -407,9 +430,9 @@ void LINFlexD<CONFIG>::nb_receive(int id, unisim::kernel::tlm2::tlm_serial_paylo
 
 			if(LIN_ClockEnabled())
 			{
-				if(period != baud_period)
+				if((period < baud_period_lower_bound) || (period >= baud_period_upper_bound))
 				{
-					logger << DebugWarning << "Receiving over " << LINRX.name() << " with a period " << period << " instead of " << baud_period << EndDebugWarning;
+					logger << DebugWarning << "Receiving over " << LINRX.name() << " with a period " << period << " instead of " << baud_period << " with a tolerance of " << baud_tolerance << " %" << EndDebugWarning;
 				}
 			}
 			else
@@ -1079,11 +1102,18 @@ void LINFlexD<CONFIG>::UpdateLINClock()
 		unsigned int period_multiplicator_x16 = ((16 * ibr) + (rose ? 0 : fbr)) * (rose ? osr : 16);
 		baud_period = lin_clock_period;
 		baud_period *= (double) period_multiplicator_x16 / 16.0;
+		sc_core::sc_time baud_period_tolerance = baud_period * (baud_tolerance / 100.0);
+		baud_period_lower_bound = baud_period;
+		baud_period_lower_bound -= baud_period_tolerance;
+		baud_period_upper_bound = baud_period;
+		baud_period_upper_bound += baud_period_tolerance;
 	}
 	else
 	{
 		// LIN clock disabled
 		baud_period = sc_core::SC_ZERO_TIME;
+		baud_period_lower_bound = sc_core::SC_ZERO_TIME;
+		baud_period_upper_bound = sc_core::SC_ZERO_TIME;
 	}
 }
 
@@ -1106,17 +1136,17 @@ void LINFlexD<CONFIG>::RESET_B_Process()
 template <typename CONFIG>
 void LINFlexD<CONFIG>::INT_RX_Process()
 {
-	//             Mode              Mask                                 Enable                                                                    Flag/Condition
-	bool int_rx = (                !lins_int_rx_mask && linflexd_linier.template Get<typename LINFlexD_LINIER::LSIE>()  && linflexd_linsr.template Get<typename LINFlexD_LINSR::LINS>() == LINS_SYNC_DEL        ) ||
-	              (                !lins_int_rx_mask && linflexd_linier.template Get<typename LINFlexD_LINIER::LSIE>()  && linflexd_linsr.template Get<typename LINFlexD_LINSR::LINS>() == LINS_SYNC_FIELD      ) ||
-	              (                !lins_int_rx_mask && linflexd_linier.template Get<typename LINFlexD_LINIER::LSIE>()  && linflexd_linsr.template Get<typename LINFlexD_LINSR::LINS>() == LINS_IDENTIFIER_FIELD) ||
-	              (                !lins_int_rx_mask && linflexd_linier.template Get<typename LINFlexD_LINIER::LSIE>()  && linflexd_linsr.template Get<typename LINFlexD_LINSR::LINS>() == LINS_CHECKSUM        ) ||
-	              ( UART_Mode() &&                      linflexd_linier.template Get<typename LINFlexD_LINIER::WUIE>()  && linflexd_uartsr.template Get<typename LINFlexD_UARTSR::WUF>()                        ) ||
-	              (!UART_Mode() &&                      linflexd_linier.template Get<typename LINFlexD_LINIER::WUIE>()  && linflexd_linsr.template Get<typename LINFlexD_LINSR::WUF>()                          ) ||
-	              (                                     linflexd_linier.template Get<typename LINFlexD_LINIER::DBFIE>() && linflexd_linsr.template Get<typename LINFlexD_LINSR::DBFF>()                         ) ||
-	              ( UART_Mode() &&                      linflexd_linier.template Get<typename LINFlexD_LINIER::DRIE>()  && linflexd_uartsr.template Get<typename LINFlexD_UARTSR::DRFRFE>()                      ) ||
-	              (!UART_Mode() &&                      linflexd_linier.template Get<typename LINFlexD_LINIER::DRIE>()  && linflexd_linsr.template Get<typename LINFlexD_LINSR::DRF>()                          ) ||
-	              (                                     linflexd_linier.template Get<typename LINFlexD_LINIER::HRIE>()  && linflexd_linsr.template Get<typename LINFlexD_LINSR::HRF>()                          );
+	//             Mode                                           Mask                                 Enable                                                                    Flag/Condition
+	bool int_rx = (                                     !lins_int_rx_mask && linflexd_linier.template Get<typename LINFlexD_LINIER::LSIE>()  && linflexd_linsr.template Get<typename LINFlexD_LINSR::LINS>() == LINS_SYNC_DEL        ) ||
+	              (                                     !lins_int_rx_mask && linflexd_linier.template Get<typename LINFlexD_LINIER::LSIE>()  && linflexd_linsr.template Get<typename LINFlexD_LINSR::LINS>() == LINS_SYNC_FIELD      ) ||
+	              (                                     !lins_int_rx_mask && linflexd_linier.template Get<typename LINFlexD_LINIER::LSIE>()  && linflexd_linsr.template Get<typename LINFlexD_LINSR::LINS>() == LINS_IDENTIFIER_FIELD) ||
+	              (                                     !lins_int_rx_mask && linflexd_linier.template Get<typename LINFlexD_LINIER::LSIE>()  && linflexd_linsr.template Get<typename LINFlexD_LINSR::LINS>() == LINS_CHECKSUM        ) ||
+	              ( UART_Mode() &&                                           linflexd_linier.template Get<typename LINFlexD_LINIER::WUIE>()  && linflexd_uartsr.template Get<typename LINFlexD_UARTSR::WUF>()                        ) ||
+	              (!UART_Mode() &&                                           linflexd_linier.template Get<typename LINFlexD_LINIER::WUIE>()  && linflexd_linsr.template Get<typename LINFlexD_LINSR::WUF>()                          ) ||
+	              (                                                          linflexd_linier.template Get<typename LINFlexD_LINIER::DBFIE>() && linflexd_linsr.template Get<typename LINFlexD_LINSR::DBFF>()                         ) ||
+	              ( UART_Mode() && UART_RX_BufferMode()                   && linflexd_linier.template Get<typename LINFlexD_LINIER::DRIE>()  && linflexd_uartsr.template Get<typename LINFlexD_UARTSR::DRFRFE>()                      ) ||
+	              (!UART_Mode() &&                                           linflexd_linier.template Get<typename LINFlexD_LINIER::DRIE>()  && linflexd_linsr.template Get<typename LINFlexD_LINSR::DRF>()                          ) ||
+	              (                                                          linflexd_linier.template Get<typename LINFlexD_LINIER::HRIE>()  && linflexd_linsr.template Get<typename LINFlexD_LINSR::HRF>()                          );
 	if(verbose)
 	{
 		logger << DebugInfo << sc_core::sc_time_stamp() << ": " << INT_RX.name() << " <- " << int_rx << EndDebugInfo;
@@ -1128,11 +1158,11 @@ void LINFlexD<CONFIG>::INT_RX_Process()
 template <typename CONFIG>
 void LINFlexD<CONFIG>::INT_TX_Process()
 {
-	//             Mode                            Enable                                                                    Flag
-	bool int_tx = ( UART_Mode() && linflexd_linier.template Get<typename LINFlexD_LINIER::DTIE>()      && linflexd_uartsr.template Get<typename LINFlexD_UARTSR::DTFTFF>()) ||
-	              (!UART_Mode() && linflexd_linier.template Get<typename LINFlexD_LINIER::DTIE>()      && linflexd_linsr.template Get<typename LINFlexD_LINSR::DTF>()    ) ||
-	              (                linflexd_linier.template Get<typename LINFlexD_LINIER::DBEIETOIE>() && linflexd_linsr.template Get<typename LINFlexD_LINSR::DBEF>()   ) ||
-	              (                linflexd_linier.template Get<typename LINFlexD_LINIER::HRIE>()      && linflexd_linsr.template Get<typename LINFlexD_LINSR::HRF>()    );
+	//             Mode                            Enable                                                                                                          Flag
+	bool int_tx = ( UART_Mode() && UART_TX_BufferMode() && linflexd_linier.template Get<typename LINFlexD_LINIER::DTIE>()      && linflexd_uartsr.template Get<typename LINFlexD_UARTSR::DTFTFF>()) ||
+	              (!UART_Mode() &&                         linflexd_linier.template Get<typename LINFlexD_LINIER::DTIE>()      && linflexd_linsr.template Get<typename LINFlexD_LINSR::DTF>()    ) ||
+	              (                                        linflexd_linier.template Get<typename LINFlexD_LINIER::DBEIETOIE>() && linflexd_linsr.template Get<typename LINFlexD_LINSR::DBEF>()   ) ||
+	              (                                        linflexd_linier.template Get<typename LINFlexD_LINIER::HRIE>()      && linflexd_linsr.template Get<typename LINFlexD_LINSR::HRF>()    );
 
 	if(verbose)
 	{
@@ -1172,9 +1202,11 @@ void LINFlexD<CONFIG>::INT_ERR_Process()
 template <typename CONFIG>
 void LINFlexD<CONFIG>::DMA_RX_Process()
 {
+	// A DMA request is triggered by FIFO and not by empty (Rx) status signals
+
 	unsigned int dre = linflexd_dmarxe.template Get<typename LINFlexD_DMARXE::DRE>(); // DMA Tx channel Y enable
 	
-	unsigned int rfne = linflexd_uartsr.template Get<typename LINFlexD_UARTSR::RFE>(); // Rx FIFO empty
+	unsigned int rfne = linflexd_uartsr.template Get<typename LINFlexD_UARTSR::RFNE>(); // Receive FIFO Not Empty
 	
 	unsigned int dma_rx_num;
 	for(dma_rx_num = 0; dma_rx_num < NUM_DMA_RX_CHANNELS; dma_rx_num++)
@@ -1194,6 +1226,8 @@ void LINFlexD<CONFIG>::DMA_RX_Process()
 template <typename CONFIG>
 void LINFlexD<CONFIG>::DMA_TX_Process()
 {
+	// A DMA request is triggered by FIFO-not-full (TX) status signals
+	
 	unsigned int dte = linflexd_dmatxe.template Get<typename LINFlexD_DMATXE::DTE>(); // DMA Tx channel Y enable
 	
 	unsigned int tff = linflexd_uartsr.template Get<typename LINFlexD_UARTSR::TFF>(); // Tx FIFO full
@@ -1202,7 +1236,7 @@ void LINFlexD<CONFIG>::DMA_TX_Process()
 	for(dma_tx_num = 0; dma_tx_num < NUM_DMA_RX_CHANNELS; dma_tx_num++)
 	{
 		bool dma_tx_enable = ((dte >> dma_tx_num) & 1) != 0;
-		bool dma_tx = tff && dma_tx_enable;
+		bool dma_tx = !tff && dma_tx_enable;
 		
 		if(verbose)
 		{
@@ -1226,6 +1260,11 @@ void LINFlexD<CONFIG>::RX_FIFO_Pop()
 			unsigned int wls = linflexd_uartcr.template Get<typename LINFlexD_UARTCR::WLS>();
 			unsigned int wl1 = linflexd_uartcr.template Get<typename LINFlexD_UARTCR::WL1>();
 		
+			if(verbose)
+			{
+				logger << DebugInfo << sc_core::sc_time_stamp() << ": Poping " << ((wls || wl1) ? 2 : 1) << " byte(s) from Rx FIFO" << EndDebugInfo;
+			}
+			
 			// pop front of Rx FIFO in BDRM
 			linflexd_bdrm = linflexd_bdrm >> ((wls || wl1) ? 16 : 8);
 			
@@ -1237,6 +1276,15 @@ void LINFlexD<CONFIG>::RX_FIFO_Pop()
 			// decrement Rx FIFO count
 			unsigned int rx_fifo_cnt = linflexd_uartcr.template Get<typename LINFlexD_UARTCR::RFC>();
 			rx_fifo_cnt -= ((wls || wl1) ? 2 : 1);
+			
+			if(rx_fifo_cnt == 0)
+			{
+				if(verbose)
+				{
+					logger << DebugInfo << rx_input.get_time_stamp() << ": Rx FIFO is empty" << EndDebugInfo;
+				}
+			}
+			
 			linflexd_uartcr.template Set<typename LINFlexD_UARTCR::RFC>(rx_fifo_cnt);
 			
 			linflexd_uartsr.template Set<typename LINFlexD_UARTSR::RFE>(rx_fifo_cnt == 0); // Rx FIFO Empty ?
@@ -1250,8 +1298,40 @@ void LINFlexD<CONFIG>::RX_FIFO_Pop()
 }
 
 template <typename CONFIG>
+void LINFlexD<CONFIG>::IncrementRxTime()
+{
+	const sc_core::sc_time& input_period = rx_input.get_period();
+	if((input_period >= baud_period_lower_bound) && (input_period <= baud_period_upper_bound))
+	{
+		rx_time += input_period;
+	}
+	else
+	{
+		rx_time += baud_period;
+		if(UART_Mode())
+		{
+			if(!linflexd_uartcr.template Get<typename LINFlexD_UARTCR::ROSE>() || (linflexd_uartcr.template Get<typename LINFlexD_UARTCR::OSR>() == 8))
+			{
+				// NF is set by hardware when noise is detected in the received character. It should be cleared by
+				// software. This bit will reflect the same value as in LINESR when in Initialization mode and the UART bit is
+				// set. During reduced oversampling (ROSE bit = 1), it is enabled only when OSR = 8.
+				linflexd_uartsr.template Set<typename LINFlexD_UARTSR::NF>(1); // noise flag
+			}
+		}
+		UpdateINT_ERR();
+	}
+}
+
+template <typename CONFIG>
 bool LINFlexD<CONFIG>::RX_InputStatus()
 {
+	unsigned int miss_count = rx_input.get_miss_count();
+	
+	if(miss_count)
+	{
+		logger << DebugWarning << (sc_core::sc_time_stamp() + rx_time) << ": " << miss_count << " bit(s) lost from LINRX" << EndDebugWarning;
+	}
+	
 	rx_prev_input_status = rx_input_status;
 	rx_input_status = rx_input.read();
 	
@@ -1346,7 +1426,7 @@ void LINFlexD<CONFIG>::RX_Process()
 					if(config_ok) 
 					{
 						bool bit_value = RX_InputStatus();
-						rx_time += baud_period;
+						IncrementRxTime();
 						if(!bit_value) // start bit ?
 						{
 							// received start bit
@@ -1487,7 +1567,7 @@ void LINFlexD<CONFIG>::RX_Process()
 										rx_time = sc_core::SC_ZERO_TIME;
 									}
 									bool bit_value = RX_InputStatus(); // read bitstream
-									rx_time += baud_period;
+									IncrementRxTime();
 									if(rdlis) bit_value = !bit_value; // invert received data if requested
 									if(rdfbm)
 									{
@@ -1516,7 +1596,7 @@ void LINFlexD<CONFIG>::RX_Process()
 									rx_time = sc_core::SC_ZERO_TIME;
 								}
 								bool bit_value = RX_InputStatus();
-								rx_time += baud_period;
+								IncrementRxTime();
 								
 								bool parity_error = false;
 								if(linflexd_uartcr.template Get<typename LINFlexD_UARTCR::PC1>())
@@ -1555,7 +1635,7 @@ void LINFlexD<CONFIG>::RX_Process()
 									rx_time = sc_core::SC_ZERO_TIME;
 								}
 								bool bit_value = RX_InputStatus();
-								rx_time += baud_period;
+								IncrementRxTime();
 								if(bit_value) // stop bit ?
 								{
 									// received a stop bit
@@ -1659,7 +1739,7 @@ void LINFlexD<CONFIG>::RX_Process()
 											if(!discard_message)
 											{
 												// extract message from receiver shift register
-												rx_msg = rdfbm ? unisim::util::endian::ByteSwap(rx_shift_reg) : (rx_shift_reg >> (32 - rx_msg_length));
+												rx_msg = (rdfbm ? unisim::util::endian::ByteSwap(rx_shift_reg) : rx_shift_reg) >> (32 - rx_msg_length);
 
 												// make parity error flags available to software
 												linflexd_uartsr.template Set<typename LINFlexD_UARTSR::PE>(rx_parity_error_reg);
@@ -1672,7 +1752,7 @@ void LINFlexD<CONFIG>::RX_Process()
 												{
 													// latch received message into BDRM
 													uint32_t write_mask = ~uint32_t(0) >> (32 - rx_msg_length);
-													linflexd_bdrm = (rx_msg & ~write_mask) | (rx_shift_reg & write_mask);
+													linflexd_bdrm = (rx_msg & ~write_mask) | (rx_msg & write_mask);
 												}
 													
 												if(!discard_message)
@@ -1711,7 +1791,7 @@ void LINFlexD<CONFIG>::RX_Process()
 													
 													if(verbose)
 													{
-														logger << DebugInfo << rx_input.get_time_stamp() << ": receive FIFO not empty" << EndDebugInfo;
+														logger << DebugInfo << rx_input.get_time_stamp() << ": Rx FIFO not empty" << EndDebugInfo;
 													}
 
 													linflexd_uartsr.template Set<typename LINFlexD_UARTSR::RFE>(0); // Rx FIFO is not empty
@@ -1793,11 +1873,16 @@ void LINFlexD<CONFIG>::TX_FIFO_Push()
 		if(linflexd_uartsr.template Get<typename LINFlexD_UARTSR::TFF>()) // Tx FIFO Full ?
 		{
 			// If TFF bit is set and a write is performed to the FIFO, the data transmitted may be erroneous.
-			logger << DebugWarning << "The data transmitted may be erroneous if " << linflexd_uartsr.GetName() << " is set and a write is performed to the FIFO" << EndDebugWarning;
+			logger << DebugWarning << "The data transmitted may be erroneous if " << LINFlexD_UARTSR::TFF::GetName() << " bit is set and a write is performed to the FIFO" << EndDebugWarning;
 			return;
 		}
 		
 		unsigned int wl1 = linflexd_uartcr.template Get<typename LINFlexD_UARTCR::WL1>();
+		
+		if(verbose)
+		{
+			logger << DebugInfo << sc_core::sc_time_stamp() << ": Pushing " << (wl1 ? 2 : 1) << " byte(s) onto Tx FIFO" << EndDebugInfo;
+		}
 		
 		// Push Tx FIFO elements in BDRL, to make space
 		linflexd_bdrl = linflexd_bdrl << (wl1 ? 16 : 8);
@@ -1811,6 +1896,11 @@ void LINFlexD<CONFIG>::TX_FIFO_Push()
 		
 		if(tx_fifo_cnt >= 4)
 		{
+			if(verbose)
+			{
+				logger << DebugInfo << sc_core::sc_time_stamp() << ": Tx FIFO is full" << EndDebugInfo;
+			}
+			
 			// Tx FIFO Full
 			linflexd_uartsr.template Set<typename LINFlexD_UARTSR::TFF>(1);
 			
@@ -1868,11 +1958,11 @@ void LINFlexD<CONFIG>::Transmit()
 							// software did not clear DTF
 							logger << DebugWarning << "software should clear " << LINFlexD_UARTSR::DTF::GetName() << EndDebugWarning; 
 						}
-					}
 					
-					if(pending_tx_request)
-					{
-						logger << DebugWarning << sc_core::sc_time_stamp() << ": there's already a pending transmission request; the data transmitted may be erroneous" << EndDebugWarning;
+						if(pending_tx_request)
+						{
+							logger << DebugWarning << sc_core::sc_time_stamp() << ": there's already a pending transmission request; the data transmitted may be erroneous" << EndDebugWarning;
+						}
 					}
 					
 					pending_tx_request = true; 
@@ -2034,15 +2124,21 @@ void LINFlexD<CONFIG>::TX_Process()
 								unsigned int tx_fifo_cnt = linflexd_uartcr.template Get<typename LINFlexD_UARTCR::TFC>();
 								
 								// extract message word by word from BDRL in reverse order, from back to front of Tx FIFO
+								unsigned int insert_bit_offset = 0; // bit offset in message where to insert extracted word
 								while(tx_fifo_cnt > 0)
 								{
 									unsigned int extract_bit_offset = 8 * (tx_fifo_cnt - (wl1 ? 2 : 1)); // offset of right most bit of word to extract 
-									unsigned int insert_bit_offset = tx_msg_length - extract_bit_offset; // bit offset in message where to insert extracted word
 									uint32_t extract_mask = (wl1 ? 0xffff : 0xff); // mask of extracted word
 									
 									tx_msg |= (((linflexd_bdrl >> extract_bit_offset) & extract_mask) << insert_bit_offset); // extract word from BDRL and insert it into message
 									
-									tx_fifo_cnt -= (wl1 ? 16 : 8); // decrement Tx FIFO counter
+									tx_fifo_cnt -= (wl1 ? 2 : 1); // decrement Tx FIFO counter
+									insert_bit_offset += (wl1 ? 16 : 8);
+								}
+								
+								if(verbose)
+								{
+									logger << DebugInfo << sc_core::sc_time_stamp() << ": Tx FIFO is empty" << EndDebugInfo;
 								}
 								
 								// Tx FIFO is empty
@@ -2160,10 +2256,13 @@ void LINFlexD<CONFIG>::TX_Process()
 								logger << DebugInfo << sc_core::sc_time_stamp() << ": data transmission completed" << EndDebugInfo;
 							}
 						
-							linflexd_uartsr.template Set<typename LINFlexD_UARTSR::DTF>(1); // Data transmission completed
+							if(UART_TX_BufferMode())
+							{
+								linflexd_uartsr.template Set<typename LINFlexD_UARTSR::DTF>(1); // Data transmission completed
 							
-							// update interrupt signals
-							UpdateINT_TX();
+								// update interrupt signals
+								UpdateINT_TX();
+							}
 						
 							data_transmission_in_progress = false;
 							UpdateState();
