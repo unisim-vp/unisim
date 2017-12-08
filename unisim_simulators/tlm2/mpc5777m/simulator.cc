@@ -994,7 +994,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 
 	Bind("HARDWARE.Main_Core_1.m_clk"           , "HARDWARE.COMP_CLK");
 	Bind("HARDWARE.Main_Core_1.m_por"           , "HARDWARE.m_por");
-	Bind("HARDWARE.Main_Core_1.p_reset_b"       , "HARDWARE.p_reset_b_0");
+	Bind("HARDWARE.Main_Core_1.p_reset_b"       , "HARDWARE.p_reset_b_1");
 	Bind("HARDWARE.Main_Core_1.p_nmi_b"         , "HARDWARE.p_nmi_b");
 	Bind("HARDWARE.Main_Core_1.p_mcp_b"         , "HARDWARE.p_mcp_b");
 	Bind("HARDWARE.Main_Core_1.p_rstbase"       , "HARDWARE.p_rstbase");

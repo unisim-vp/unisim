@@ -154,6 +154,8 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	, param_verbose_move_to_slr("verbose-move-to-slr", this, verbose_move_to_slr, "enable/disable verbosity of move to system level registers (SPRs, and so on)")
 	, verbose_move_from_slr(false)
 	, param_verbose_move_from_slr("verbose-move-from-slr", this, verbose_move_from_slr, "enable/disable verbosity of move from system level registers (SPRs, and so on)")
+	, enable_insn_trace(false)
+	, param_enable_insn_trace("enable-insn-trace", this, enable_insn_trace, "enable/disable instruction trace")
 	, registers_registry()
 	, exception_dispatcher(static_cast<typename CONFIG::CPU *>(this))
 	, invalid_spr(static_cast<typename CONFIG::CPU *>(this))

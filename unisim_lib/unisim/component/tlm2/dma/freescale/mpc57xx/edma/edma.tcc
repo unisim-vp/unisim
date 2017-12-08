@@ -653,6 +653,7 @@ void EDMA<CONFIG>::EnableAllRequests()
 {
 	edma_erqh = ~uint32_t(0);
 	edma_erql = ~uint32_t(0);
+	UpdateAllHardwareRequestStatus();
 }
 
 template <typename CONFIG>
@@ -671,6 +672,8 @@ void EDMA<CONFIG>::EnableRequest(unsigned int dma_channel_num)
 	{
 		edma_erql.Set(dma_channel_num, 1);
 	}
+	
+	UpdateHardwareRequestStatus(dma_channel_num);
 }
 
 template <typename CONFIG>
@@ -683,6 +686,8 @@ void EDMA<CONFIG>::DisableAllRequests()
 	
 	edma_erqh = 0;
 	edma_erql = 0;
+	
+	UpdateAllHardwareRequestStatus();
 }
 
 template <typename CONFIG>
@@ -701,6 +706,8 @@ void EDMA<CONFIG>::DisableRequest(unsigned int dma_channel_num)
 	{
 		edma_erql.Set(dma_channel_num, 0);
 	}
+	
+	UpdateHardwareRequestStatus(dma_channel_num);
 }
 
 template <typename CONFIG>
@@ -713,6 +720,8 @@ void EDMA<CONFIG>::EnableAllErrorInterrupts()
 	
 	edma_eeih = ~uint32_t(0);
 	edma_eeil = ~uint32_t(0);
+	
+	UpdateAllHardwareRequestStatus();
 }
 
 template <typename CONFIG>
@@ -945,6 +954,17 @@ bool EDMA<CONFIG>::HardwareRequestStatus(unsigned int dma_channel_num)
 	else
 	{
 		return edma_hrsl.Get(dma_channel_num);
+	}
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::UpdateAllHardwareRequestStatus()
+{
+	unsigned int dma_channel_num;
+	
+	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		UpdateHardwareRequestStatus(dma_channel_num);
 	}
 }
 

@@ -1245,41 +1245,45 @@ void CPU<TYPES, CONFIG>::StepOneInstruction()
 
 		unsigned int length = operation->GetLength() / 8;
 		this->nia = this->cia + length;
-#if 0
-		std::stringstream sstr;
-		operation->disasm(static_cast<typename CONFIG::CPU *>(this), sstr);
-		this->logger << DebugInfo << "executing instruction #" << this->instruction_counter << ":0x" << std::hex << addr << std::dec << ":" << sstr.str() << EndDebugInfo;
-#endif
-		/* execute the instruction */
-		if(likely(operation->execute(static_cast<typename CONFIG::CPU *>(this))))
-		{
-			/* update the instruction counter */
-			this->instruction_counter++;
-			
-			/* report a finished instruction */
-			if(unlikely(this->requires_commit_instruction_reporting))
-			{
-				if(unlikely(this->memory_access_reporting_import != 0))
-				{
-					this->memory_access_reporting_import->ReportCommitInstruction(this->cia, length);
-				}
-			}
-
-			/* go to the next instruction */
-			this->cia = this->nia;
-
-			if(unlikely(this->trap_reporting_import && (this->instruction_counter == this->trap_on_instruction_counter)))
-			{
-				this->trap_reporting_import->ReportTrap();
-			}
-			
-			if(unlikely((this->instruction_counter >= this->max_inst) || (this->cia == this->halt_on_addr))) this->Stop(0);
-		}
-		else if(unlikely(this->verbose_exception))
+		if(unlikely(this->enable_insn_trace))
 		{
 			std::stringstream sstr;
 			operation->disasm(static_cast<typename CONFIG::CPU *>(this), sstr);
-			this->logger << DebugInfo << "Aborted instruction #" << this->instruction_counter << ":0x" << std::hex << addr << std::dec << ":" << sstr.str() << EndDebugInfo;
+			this->logger << DebugInfo << "executing instruction #" << this->instruction_counter << ":0x" << std::hex << addr << std::dec << ":" << sstr.str() << EndDebugInfo;
+		}
+		else
+		{
+			/* execute the instruction */
+			if(likely(operation->execute(static_cast<typename CONFIG::CPU *>(this))))
+			{
+				/* update the instruction counter */
+				this->instruction_counter++;
+				
+				/* report a finished instruction */
+				if(unlikely(this->requires_commit_instruction_reporting))
+				{
+					if(unlikely(this->memory_access_reporting_import != 0))
+					{
+						this->memory_access_reporting_import->ReportCommitInstruction(this->cia, length);
+					}
+				}
+
+				/* go to the next instruction */
+				this->cia = this->nia;
+
+				if(unlikely(this->trap_reporting_import && (this->instruction_counter == this->trap_on_instruction_counter)))
+				{
+					this->trap_reporting_import->ReportTrap();
+				}
+				
+				if(unlikely((this->instruction_counter >= this->max_inst) || (this->cia == this->halt_on_addr))) this->Stop(0);
+			}
+			else if(unlikely(this->verbose_exception))
+			{
+				std::stringstream sstr;
+				operation->disasm(static_cast<typename CONFIG::CPU *>(this), sstr);
+				this->logger << DebugInfo << "Aborted instruction #" << this->instruction_counter << ":0x" << std::hex << addr << std::dec << ":" << sstr.str() << EndDebugInfo;
+			}
 		}
 	}
 }

@@ -4208,6 +4208,9 @@ protected:
 
 	bool verbose_move_from_slr;
 	unisim::kernel::service::Parameter<bool> param_verbose_move_from_slr;
+	
+	bool enable_insn_trace;
+	unisim::kernel::service::Parameter<bool> param_enable_insn_trace;
 
 private:
 	/////////////////////////// Registers Registry ////////////////////////////

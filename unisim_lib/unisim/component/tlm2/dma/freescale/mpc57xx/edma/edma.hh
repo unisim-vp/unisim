@@ -519,8 +519,18 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x0);
+			this->edma->UpdateAllHardwareRequestStatus();
 		}
 
+		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			
+			this->edma->UpdateAllHardwareRequestStatus();
+			
+			return rws;
+		}
+		
 		using Super::operator =;
 	};
 
@@ -613,6 +623,16 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x0);
+			this->edma->UpdateAllHardwareRequestStatus();
+		}
+
+		virtual ReadWriteStatus Write(MasterID& mid, const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(mid, value, bit_enable);
+			
+			this->edma->UpdateAllHardwareRequestStatus();
+			
+			return rws;
 		}
 
 		using Super::operator =;
@@ -2875,6 +2895,7 @@ private:
 	void ClearAllDoneBits();
 	void ClearDoneBit(unsigned int dma_channel_num);
 	bool HardwareRequestStatus(unsigned int dma_channel_num);
+	void UpdateAllHardwareRequestStatus();
 	void UpdateHardwareRequestStatus(unsigned int dma_channel_num);
 	bool RequestStatus(unsigned int dma_channel_num);
 	bool InterruptRequestStatus(unsigned int dma_channel_num);
