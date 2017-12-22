@@ -408,9 +408,9 @@ CPU<CONFIG>::StepInstruction()
     
     this->next_insn_addr += 4;
     
-    std::cerr << "@" << std::hex << insn_addr << ": " << std::hex << std::setfill('0') << std::setw(8) << insn << "; ";
-    op->disasm( *this, std::cerr );
-    std::cerr << std::endl;
+    // std::cerr << "@" << std::hex << insn_addr << ": " << std::hex << std::setfill('0') << std::setw(8) << insn << "; ";
+    // op->disasm( *this, std::cerr );
+    // std::cerr << std::endl;
     
     // uint64_t oldspval = GetGSR(31);
     

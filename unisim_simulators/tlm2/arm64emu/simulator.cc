@@ -285,15 +285,18 @@ void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, 
 void
 Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 {
-  sim->SetVariable("program-name", SIM_PROGRAM_NAME);
-  sim->SetVariable("authors", SIM_AUTHOR);
-  sim->SetVariable("version", SIM_VERSION);
-  sim->SetVariable("copyright", SIM_COPYRIGHT);
-  sim->SetVariable("license", SIM_LICENSE);
-  sim->SetVariable("description", SIM_DESCRIPTION);
-  sim->SetVariable("schematic", SIM_SCHEMATIC);
+  // meta information
+  sim->SetVariable("program-name", "UNISIM ARMEMU");
+  sim->SetVariable("copyright", "Copyright (C) 2017, Commissariat a l'Energie Atomique (CEA)");
+  sim->SetVariable("license", "BSD (see file COPYING)");
+  sim->SetVariable("authors", "Yves Lhuillier <yves.lhuillier@cea.fr>");
+  sim->SetVariable("version", VERSION);
+  sim->SetVariable("description", "UNISIM ARMEMU, ARMv8 generic simulator with linux emulation.");
 
-
+  //=========================================================================
+  //===                     Component run-time configuration              ===
+  //=========================================================================
+  
   sim->SetVariable("kernel_logger.std_err", true);
   sim->SetVariable("kernel_logger.std_err_color", true);
 
