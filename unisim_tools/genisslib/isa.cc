@@ -244,6 +244,12 @@ Isa::sanity_checks() const
       return false;
     }
   
+  if (m_operations.size() == 0)
+    {
+      std::cerr << "error: no operation ins ISA descriptions." << std::endl;
+      return false;
+    }
+  
   // Checking operations
   for (Vector<Operation>::const_iterator op = m_operations.begin(); op < m_operations.end(); ++ op) {
     // Looking for bitfield conflicts

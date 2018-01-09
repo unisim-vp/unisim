@@ -922,7 +922,8 @@ Such memory trace is useful for a debugger to monitor memory access.
 \end{center}
 
 Method \texttt{ReportMemoryAccess} takes as arguments the memory access type (either read or write), the memory type (either data or instruction memory), the address of the access, and the size of the memory access.
-Method \texttt{ReportFinishedInstruction} takes as argument the address of next instruction to be executed.
+Method \texttt{ReportFetchInstruction} takes as argument the address of instruction to be fetched.
+Method \texttt{ReportCommitInstruction} takes as argument the address of instruction to be finalized along with its size.
 
 \textbf{Trap reporting}. An instrumented simulation component informs a debugger about an important event using the \texttt{unisim::service::interfaces::TrapReporting} interface.
 Such event is useful for a debugger to pause simulation when such event occurs.
@@ -1193,7 +1194,7 @@ It provides instruction level debugging of the target program.
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_access\_reporting\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{MemoryAccessReporting<ADDRESS>}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service export should be connected to a CPU module. The CPU module calls methods \texttt{ReportMemoryAccess} and \texttt{ReportFinishedInstruction} through its service import. This allows the debugger to spy memory accesses and thus handle breakpoints and watchpoints.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service export should be connected to a CPU module. The CPU module calls methods \texttt{ReportMemoryAccess}, \texttt{ReportFetchInstruction} and \texttt{ReportCommitInstruction} through its service import. This allows the debugger to spy memory accesses and thus handle breakpoints and watchpoints.}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{trap\_reporting\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::TrapReporting}}\\
 		\multicolumn{2}{|l|}{}\\
@@ -1292,7 +1293,7 @@ A sample configuration file for a dummy \texttt{XYZ} big-endian architecture, wi
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_access\_reporting\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{MemoryAccessReporting<ADDRESS>}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service export should be connected to a CPU module. The CPU module calls methods \texttt{ReportMemoryAccess} and \texttt{ReportFinishedInstruction} through its service import. This allows the debugger to spy memory accesses and thus handle breakpoints and watchpoints.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service export should be connected to a CPU module. The CPU module calls methods \texttt{ReportMemoryAccess}, \texttt{ReportFetchInstruction} and \texttt{ReportCommitInstruction} through its service import. This allows the debugger to spy memory accesses and thus handle breakpoints and watchpoints.}\\
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{trap\_reporting\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::TrapReporting}}\\
 		\multicolumn{2}{|l|}{}\\

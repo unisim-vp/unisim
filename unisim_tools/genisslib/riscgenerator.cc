@@ -92,7 +92,8 @@ RiscGenerator::~RiscGenerator()
 /** Process the isa structure and computes RISC specific data 
 */
 void
-RiscGenerator::finalize() {
+RiscGenerator::finalize()
+{
   // Finalize size information
   if ((*m_insnsizes.rbegin()) > 64) {
     std::cerr << "error: can't process encodings wider than 64 bits (" << (*m_insnsizes.rbegin()) << " bits).";

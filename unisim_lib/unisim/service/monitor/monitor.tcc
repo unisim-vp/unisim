@@ -116,7 +116,7 @@ bool Monitor<ADDRESS>::EndSetup()
 				ADDRESS addr = symb->GetAddress();
 				uint32_t size = symb->GetSize();
 
-				if(debug_event_trigger_import->Listen(new unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
+				if(debug_event_trigger_import->SetWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size, false))
 				{
 	//				std::cout << "EndSetup (4)" << std::endl;
 
@@ -151,15 +151,15 @@ void Monitor<ADDRESS>::getProperties(std::vector<std::string>& vect) {
 }
 
 template <class ADDRESS>
-void Monitor<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event)
+void Monitor<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>* event)
 {
 
-	switch(event.GetType())
+	switch(event->GetType())
 	{
 		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
 			break;
 		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT: {
-			const Watchpoint<ADDRESS> *watchpoint_hit = dynamic_cast<const Watchpoint<ADDRESS> *> (&event);
+			const Watchpoint<ADDRESS> *watchpoint_hit = dynamic_cast<const Watchpoint<ADDRESS> *> (event);
 
 			string name;
 

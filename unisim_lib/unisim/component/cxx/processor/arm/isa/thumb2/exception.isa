@@ -99,13 +99,15 @@ hvc_i.disasm = { buffer << "hvc\t" << DisasmI(imm); };
  * and the CPSR.M mode field, without changing the other CPSR bits.
  */ 
 
-op cps_w( 0b11110[5]: 0b0[1]: 0b1110[4]: 0b101111[6]:> <: 0b10000[5]: chitm[1]: dis[1]: chmod[1]: a[1]: i[1]: f[1]: mode[5] );
-cps_w.var reject : {Reject} = {(not chmod and (mode != 0)) or
+op cps( 0b11110[5]: 0b0[1]: 0b1110[4]: 0b101111[6]:> <: 0b10000[5]: chitm[1]: dis[1]: chmod[1]: a[1]: i[1]: f[1]: mode[5] );
+cps.var reject : {Reject} = {(not chmod and (mode != 0)) or
                              (chitm xor (a or i or f)) or
                              (not (chmod or chitm)) or
                              (not chitm and dis)};
+cps.var psr_mask : {uint32_t} = {a*A.getmask<uint32_t>()|i*I.getmask<uint32_t>()|f*F.getmask<uint32_t>()|chmod*M.getmask<uint32_t>()};
+cps.var psr_bits : {uint32_t} = {dis*(A.getmask<uint32_t>()|I.getmask<uint32_t>()|F.getmask<uint32_t>())|mode};
 
-cps_w.disasm = {
+cps.disasm = {
   buffer << "cps";
   char const* sep = "\t";
   if (chitm) {
@@ -116,21 +118,14 @@ cps_w.disasm = {
     buffer << sep << DisasmI( mode );
 };
 
-cps_w.execute = {
+cps.execute = {
   typedef typename ARCH::U32 U32;
   
   if (cpu.Cond( cpu.CPSR().Get(M) == U32(cpu.USER_MODE) ))
     return;
   
-  U32 cpsr_val = cpu.CPSR().bits(), disable( dis );
-  
-  if (a)     A.Set( cpsr_val, disable );
-  if (i)     I.Set( cpsr_val, disable );
-  if (f)     F.Set( cpsr_val, disable );
-  if (chmod) M.Set( cpsr_val, U32(mode) );
-  
   // CPSRWriteByInstr() checks for illegal mode changes
-  CPSRWriteByInstr( cpu, cpsr_val, 0b1111, false );
+  CPSRWriteByInstr( cpu, U32(psr_bits), psr_mask );
 };
 
 /*
@@ -156,7 +151,7 @@ subspc.execute = {
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR( 14 ), op2 = U32(imm), res = op1 - op2;
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   
   cpu.SetGPR( 15, res );
 };

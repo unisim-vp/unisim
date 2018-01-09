@@ -172,7 +172,6 @@ unisim/service/tee/symbol_table_lookup/tee_32.cc \
 unisim/service/tee/blob/tee_32.cc \
 unisim/service/tee/stmt_lookup/tee_32.cc \
 unisim/service/tee/backtrace/tee_32.cc \
-unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/component/cxx/processor/avr32/config.cc \
 unisim/component/cxx/processor/avr32/avr32a/config.cc \
 unisim/component/cxx/processor/avr32/avr32a/avr32uc/cpu.cc \
@@ -321,7 +320,6 @@ unisim/service/tee/symbol_table_lookup/tee.hh \
 unisim/service/tee/blob/tee.hh \
 unisim/service/tee/stmt_lookup/tee.hh \
 unisim/service/tee/backtrace/tee.hh \
-unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/component/cxx/memory/ram/memory.hh \
 unisim/component/cxx/processor/avr32/config.hh \
 unisim/component/cxx/processor/avr32/avr32a/config.hh \
@@ -393,7 +391,6 @@ unisim/service/tee/symbol_table_lookup/tee.tcc \
 unisim/service/tee/blob/tee.tcc \
 unisim/service/tee/stmt_lookup/tee.tcc \
 unisim/service/tee/backtrace/tee.tcc \
-unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/component/cxx/processor/avr32/avr32a/avr32uc/cpu.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
 unisim/component/tlm2/processor/avr32/avr32uc/cpu.tcc \
@@ -862,7 +859,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 
 	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
 	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -957,7 +954,7 @@ if [ "${has_to_build_at32uc3c_configure}" = "yes" ]; then
 
 	AM_AT32UC3C_VERSION=$(printf ${AT32UC3C_VERSION} | sed -e 's/\./_/g')
 	echo "Generating at32uc3c Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${AT32UC3C_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${AT32UC3C_MAKEFILE_AM}"
 	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${AT32UC3C_MAKEFILE_AM}"
 	echo "noinst_LIBRARIES = libat32uc3c-${AT32UC3C_VERSION}.a" >> "${AT32UC3C_MAKEFILE_AM}"
 	echo "libat32uc3c_${AM_AT32UC3C_VERSION}_a_SOURCES = ${UNISIM_LIB_AT32UC3C_SOURCE_FILES}" >> "${AT32UC3C_MAKEFILE_AM}"

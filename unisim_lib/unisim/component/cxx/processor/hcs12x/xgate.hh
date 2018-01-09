@@ -98,6 +98,7 @@ using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::DebugYielding;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
+using unisim::service::interfaces::MemoryAccessReportingType;
 
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
@@ -356,8 +357,7 @@ public:
 	//=                  Memory Access Reportings methods                 =
 	//=====================================================================
 
-	virtual void RequiresMemoryAccessReporting(bool report);
-	virtual void RequiresFinishedInstructionReporting(bool report) ;
+	virtual void RequiresMemoryAccessReporting( MemoryAccessReportingType type, bool report );
 
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
@@ -444,14 +444,10 @@ protected:
 	bool verbose_exception;
 	Parameter<bool> param_verbose_exception;
 
-	/** indicates if the memory accesses require to be reported */
-	bool requires_memory_access_reporting;
-	Parameter<bool> param_requires_memory_access_reporting;
-
-	/** indicates if the finished instructions require to be reported */
-	bool requires_finished_instruction_reporting;
-	Parameter<bool> param_requires_finished_instruction_reporting;
-
+	bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
+	bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported
+	bool requires_commit_instruction_reporting; //< indicates if the committed instructions require to be reported
+  
 	bool enable_trace;
 	Parameter<bool> param_enable_trace;
 

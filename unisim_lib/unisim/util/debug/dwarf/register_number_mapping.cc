@@ -106,7 +106,7 @@ bool DWARF_RegisterNumberMapping::Load(unisim::util::xml::Node *root_node)
 {
 	const std::list<unisim::util::xml::Node *> *xml_nodes = root_node->Childs();
 	std::list<unisim::util::xml::Node *>::const_iterator xml_node;
-	unsigned int dw_reg_num;
+	unsigned int dw_reg_num = unsigned(-1);
 	std::string arch_reg_name;
 
 	for(xml_node = xml_nodes->begin(); xml_node != xml_nodes->end(); xml_node++)

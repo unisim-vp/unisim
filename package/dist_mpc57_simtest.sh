@@ -654,7 +654,6 @@ testutils.hh \
 "
 
 UNISIM_SIMULATOR_MPC57_SIMTEST_EXTRA_FILES="\
-config.h.in \
 "
 
 UNISIM_SIMULATOR_MPC57_SIMTEST_TEMPLATE_FILES=
@@ -1024,7 +1023,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 
 	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
 	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -1121,13 +1120,12 @@ if [ "${has_to_build_mpc57_simtest_configure}" = "yes" ]; then
 
 	AM_MPC57_SIMTEST_VERSION=$(printf ${MPC57_SIMTEST_VERSION} | sed -e 's/\./_/g')
 	echo "Generating mpc57_simtest Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${MPC57_SIMTEST_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${MPC57_SIMTEST_MAKEFILE_AM}"
 	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
 	echo "noinst_LIBRARIES = libmpc57_simtest-${MPC57_SIMTEST_VERSION}.a" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
 	echo "libmpc57_simtest_${AM_MPC57_SIMTEST_VERSION}_a_SOURCES = ${UNISIM_LIB_MPC57_SIMTEST_SOURCE_FILES}" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
 	echo "bin_PROGRAMS = unisim-mpc57_simtest-${MPC57_SIMTEST_VERSION}" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
 	echo "unisim_mpc57_simtest_${AM_MPC57_SIMTEST_VERSION}_SOURCES = ${UNISIM_SIMULATOR_MPC57_SIMTEST_SOURCE_FILES} top_mpc57.cc" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo "unisim_mpc57_simtest_${AM_MPC57_SIMTEST_VERSION}_CPPFLAGS = -DSIM_EXECUTABLE" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
 	echo "unisim_mpc57_simtest_${AM_MPC57_SIMTEST_VERSION}_LDADD = libmpc57_simtest-${MPC57_SIMTEST_VERSION}.a" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
 
 	echo "noinst_HEADERS = ${UNISIM_LIB_MPC57_SIMTEST_HEADER_FILES} ${UNISIM_LIB_MPC57_SIMTEST_TEMPLATE_FILES} ${UNISIM_SIMULATOR_MPC57_SIMTEST_HEADER_FILES} ${UNISIM_SIMULATOR_MPC57_SIMTEST_TEMPLATE_FILES}" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
@@ -1182,7 +1180,7 @@ if [ "${has_to_build_mpc57_simtest_configure}" = "yes" ]; then
 	${DISTCOPY} ${DEST_DIR}/AUTHORS ${DEST_DIR}/mpc57_simtest
 	
 	echo "Building mpc57_simtest configure"
-	${SHELL} -c "cd ${DEST_DIR}/mpc57_simtest && aclocal -I m4 && autoconf --force && automake -ac"
+	${SHELL} -c "cd ${DEST_DIR}/mpc57_simtest && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
 fi
 
 echo "Distribution is up-to-date"

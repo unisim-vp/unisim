@@ -46,6 +46,8 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/simple_register.hh>
+#include <unisim/util/backtrace/backtrace.hh>
+
 
 namespace unisim {
 namespace component {
@@ -217,7 +219,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
       ProgramCounterRegister( CPU& _cpu ) : cpu(_cpu) {}
       virtual const char *GetName() const { return "pc"; }
       virtual void GetValue( void* buffer ) const { *((uint32_t*)buffer) = cpu.next_insn_addr; }
-      virtual void SetValue( void const* buffer ) { uint32_t address = *((uint32_t*)buffer); cpu.BranchExchange( address ); }
+      virtual void SetValue( void const* buffer ) { uint32_t address = *((uint32_t*)buffer); cpu.BranchExchange( address, CPU::B_DBG ); }
       virtual int  GetSize() const { return 4; }
       virtual void Clear() { /* Clear is meaningless for PC */ }
       CPU&        cpu;
@@ -366,6 +368,28 @@ CPU<CONFIG>::~CPU()
     delete itr->second;
 }
 
+/** Modify CPSR internal value with proper side effects
+ *
+ * @param bits the value of the modified bits
+ * @param mask the location of the modified bits
+ */
+template <class CONFIG>
+void
+CPU<CONFIG>::SetCPSR( uint32_t bits, uint32_t mask )
+{
+  uint32_t old_psr = cpsr.m_value;
+  uint32_t new_psr = (old_psr & ~mask) | (bits & mask);
+
+  if (M.Get(old_psr ^ new_psr))
+    {
+      CurrentMode().Swap(*this); // OUT
+      cpsr.m_value = new_psr;
+      CurrentMode().Swap(*this); // IN
+    }
+  else
+    cpsr.m_value = new_psr;
+}
+
 /** Get a register by its name.
  * Gets a register interface to the register specified by name.
  *
@@ -488,7 +512,7 @@ CPU<CONFIG>::HandleAsynchronousException( uint32_t exceptions )
   // - IRQ
   
   // If we reached this point at least one exception is pending (but maybe masked).
-  exceptions &= ~(cpsr.Get(ALL32));
+  exceptions &= ~GetCPSR();
   
   if (A.Get( exceptions ))
     {
@@ -556,7 +580,7 @@ CPU<CONFIG>::TakeReset()
   // return information registers R14_svc and SPSR_svc have UNKNOWN values, so that
   // it is impossible to return from a reset in an architecturally defined way.
   // Branch to Reset vector.
-  Branch(ExcVectorBase() + 0);
+  Branch(ExcVectorBase() + 0, B_EXC);
 }
 
 /** Take Undefined Exception
@@ -611,7 +635,7 @@ CPU<CONFIG>::TakeUndefInstrException()
   cpsr.Set( T, sctlr::TE.Get( SCTLR ) ); // TE=0: ARM, TE=1: Thumb
   cpsr.Set( E, sctlr::EE.Get( SCTLR ) ); // EE=0: little-endian, EE=1: big-endian
   // Branch to Undefined Instruction vector.
-  Branch(ExcVectorBase() + vect_offset);
+  Branch(ExcVectorBase() + vect_offset, B_EXC);
 }
 
 /** Take Data Abort Exception
@@ -629,7 +653,7 @@ CPU<CONFIG>::TakeDataOrPrefetchAbortException( bool isdata )
 
   uint32_t preferred_exceptn_return = GetCIA();
   uint32_t new_lr_value = preferred_exceptn_return + (isdata ? 8 : 4);
-  uint32_t new_spsr_value = cpsr.bits();
+  uint32_t new_spsr_value = GetCPSR();
   uint32_t vect_offset = isdata ? 16 : 12;
   
   // preferred_exceptn_return = new_lr_value - 8;
@@ -683,7 +707,7 @@ CPU<CONFIG>::TakeDataOrPrefetchAbortException( bool isdata )
   cpsr.Set( T, sctlr::TE.Get( SCTLR ) ); // TE=0: ARM, TE=1: Thumb
   cpsr.Set( E, sctlr::EE.Get( SCTLR ) ); // EE=0: little-endian, EE=1: big-endian
   // Branch to Abort vector.
-  Branch(ExcVectorBase() + vect_offset);
+  Branch(ExcVectorBase() + vect_offset, B_EXC);
 }
 
 /** Take Reset Exception
@@ -737,7 +761,7 @@ CPU<CONFIG>::TakeSVCException()
   cpsr.Set( T, sctlr::TE.Get( SCTLR ) ); // TE=0: ARM, TE=1: Thumb
   cpsr.Set( E, sctlr::EE.Get( SCTLR ) ); // EE=0: little-endian, EE=1: big-endian
   // Branch to SVC vector.
-  Branch(ExcVectorBase() + vect_offset);
+  Branch(ExcVectorBase() + vect_offset, B_EXC);
 }
 
 /** Take Physical FIQ or IRQ Exception
@@ -801,7 +825,7 @@ void
 CPU<CONFIG>::BranchToFIQorIRQvector( bool isIRQ )
 {
   uint32_t vect_offset = isIRQ ? 0x18 : 0x1c;
-  Branch(ExcVectorBase() + vect_offset);
+  Branch(ExcVectorBase() + vect_offset, B_EXC);
 }
 
 /** Read the value of a CP15 coprocessor register
@@ -1032,9 +1056,10 @@ void
 CPU<CONFIG>::UnpredictableInsnBehaviour()
 {
   logger << DebugWarning
+         << unisim::util::backtrace::BackTrace()
          << "Trying to execute unpredictable behavior instruction."
          << " PC: " << std::hex << current_insn_addr << std::dec
-         << ", CPSR: " << std::hex << cpsr.bits() << std::dec
+         << ", CPSR: " << std::hex << GetCPSR() << std::dec
          << " (" << cpsr << ")"
          << EndDebugWarning;
   this->Stop( -1 );

@@ -425,7 +425,7 @@ lsl_reg.execute = {
   
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR(rdn), op2 = cpu.GetGPR(rm),
-           res = ComputeRegShift( cpu, op1, /*lsl*/0, op2 );;
+           res = ComputeRegShift( cpu, op1, /*lsl*/0, op2 );
   cpu.SetGPR( rdn, res );
   if (not cpu.itblock()) UpdateStatusRegShift( cpu, res, op1, /*lsl*/0, op2 );
 };
@@ -449,7 +449,7 @@ lsr_reg.execute = {
   
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR(rdn), op2 = cpu.GetGPR(rm),
-           res = ComputeRegShift( cpu, op1, /*lsr*/1, op2 );;
+           res = ComputeRegShift( cpu, op1, /*lsr*/1, op2 );
   cpu.SetGPR( rdn, res );
   if (not cpu.itblock()) UpdateStatusRegShift( cpu, res, op1, /*lsr*/1, op2 );
 };
@@ -537,7 +537,7 @@ mov_3_pc.disasm = {
 mov_3_pc.execute = {
   if (cpu.Cond( not CheckCondition(cpu, cpu.itcond()) )) return;
   
-  cpu.Branch( cpu.GetGPR( rm ) );
+  cpu.Branch( cpu.GetGPR( rm ), ARCH::B_JMP );
 };
 
 /*
@@ -642,7 +642,7 @@ ror_reg.execute = {
   
   typedef typename ARCH::U32 U32;
   U32 op1 = cpu.GetGPR(rdn), op2 = cpu.GetGPR(rm),
-           res = ComputeRegShift( cpu, op1, /*ror*/3, op2 );;
+           res = ComputeRegShift( cpu, op1, /*ror*/3, op2 );
   cpu.SetGPR( rdn, res );
   if (not cpu.itblock()) UpdateStatusRegShift( cpu, res, op1, /*ror*/3, op2 );
 };

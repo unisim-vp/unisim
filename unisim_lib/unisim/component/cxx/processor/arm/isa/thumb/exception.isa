@@ -82,26 +82,22 @@ bkpt.execute = {
  *******************************************************************/
 
 { ARCH::Config::insns6 }:                               \
-op cps( 0b10110110011[11]: dis[1]: 0[1]: a[1]: i[1]: f[1] );
-cps.var reject : {Reject} = {(not (a or i or f))};
-/* chmod = 0, chitm = 1, mode = 0 */
+op cpsi( 0b10110110011[11]: dis[1]: 0[1]: a[1]: i[1]: f[1] );
+cpsi.var reject : {Reject} = {(not (a or i or f))};
+cpsi.var psr_mask : {uint32_t} = {a*A.getmask<uint32_t>()|i*I.getmask<uint32_t>()|f*F.getmask<uint32_t>()};
+cpsi.var psr_bits : {uint32_t} = {dis*(A.getmask<uint32_t>()|I.getmask<uint32_t>()|F.getmask<uint32_t>())};
 
-cps.disasm = {
+cpsi.disasm = {
   buffer << "cps" << (dis?"id":"ie") << '\t' << (a?"a":"") << (i?"i":"") << (f?"f":"");
 };
 
-cps.execute = {
+cpsi.execute = {
   typedef typename ARCH::U32 U32;
   
   if (cpu.Cond( cpu.CPSR().Get(M) == U32(cpu.USER_MODE) ))
     return;
   
-  U32 cpsr_val = cpu.CPSR().bits(), disable( dis );
-  if (a) A.Set( cpsr_val, disable );
-  if (i) I.Set( cpsr_val, disable );
-  if (f) F.Set( cpsr_val, disable );
-  
   // CPSRWriteByInstr() checks for illegal mode changes
-  CPSRWriteByInstr( cpu, cpsr_val, 0b1111, false );
+  CPSRWriteByInstr( cpu, U32(psr_bits), psr_mask );
 };
 

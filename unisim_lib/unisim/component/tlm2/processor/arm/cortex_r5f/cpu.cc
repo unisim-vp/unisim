@@ -391,11 +391,11 @@ CPU::Run()
         << EndDebugInfo;
     }
     
-    uint32_t cpsr_cleared_bits = CPSR().bits();
+    uint32_t cpsr_cleared_bits = GetCPSR();
     StepInstruction();
     // cpu_time += time_per_instruction;
     quantum_time += time_per_instruction;
-    cpsr_cleared_bits &= ~(CPSR().bits());
+    cpsr_cleared_bits &= ~GetCPSR();
     
     /* In cortex R5F many FPSCR bits stick to 0 */
     FPSCR &= 0xffc0009f;

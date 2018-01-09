@@ -238,7 +238,6 @@ testutils.hh \
 "
 
 UNISIM_SIMULATOR_ARM_SIMTEST_EXTRA_FILES="\
-config.h.in \
 "
 
 UNISIM_SIMULATOR_ARM_SIMTEST_TEMPLATE_FILES=
@@ -609,7 +608,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 
 	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
 	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -706,13 +705,12 @@ if [ "${has_to_build_arm_simtest_configure}" = "yes" ]; then
 
 	AM_ARM_SIMTEST_VERSION=$(printf ${ARM_SIMTEST_VERSION} | sed -e 's/\./_/g')
 	echo "Generating arm_simtest Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${ARM_SIMTEST_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${ARM_SIMTEST_MAKEFILE_AM}"
 	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${ARM_SIMTEST_MAKEFILE_AM}"
 	echo "noinst_LIBRARIES = libarm_simtest-${ARM_SIMTEST_VERSION}.a" >> "${ARM_SIMTEST_MAKEFILE_AM}"
 	echo "libarm_simtest_${AM_ARM_SIMTEST_VERSION}_a_SOURCES = ${UNISIM_LIB_ARM_SIMTEST_SOURCE_FILES}" >> "${ARM_SIMTEST_MAKEFILE_AM}"
 	echo "bin_PROGRAMS = unisim-arm_simtest-${ARM_SIMTEST_VERSION}" >> "${ARM_SIMTEST_MAKEFILE_AM}"
 	echo "unisim_arm_simtest_${AM_ARM_SIMTEST_VERSION}_SOURCES = ${UNISIM_SIMULATOR_ARM_SIMTEST_SOURCE_FILES}" >> "${ARM_SIMTEST_MAKEFILE_AM}"
-	echo "unisim_arm_simtest_${AM_ARM_SIMTEST_VERSION}_CPPFLAGS = -DSIM_EXECUTABLE" >> "${ARM_SIMTEST_MAKEFILE_AM}"
 	echo "unisim_arm_simtest_${AM_ARM_SIMTEST_VERSION}_LDADD = libarm_simtest-${ARM_SIMTEST_VERSION}.a" >> "${ARM_SIMTEST_MAKEFILE_AM}"
 
 	echo "noinst_HEADERS = ${UNISIM_LIB_ARM_SIMTEST_HEADER_FILES} ${UNISIM_LIB_ARM_SIMTEST_TEMPLATE_FILES} ${UNISIM_SIMULATOR_ARM_SIMTEST_HEADER_FILES} ${UNISIM_SIMULATOR_ARM_SIMTEST_TEMPLATE_FILES}" >> "${ARM_SIMTEST_MAKEFILE_AM}"
@@ -774,7 +772,7 @@ if [ "${has_to_build_arm_simtest_configure}" = "yes" ]; then
 	${DISTCOPY} ${DEST_DIR}/AUTHORS ${DEST_DIR}/arm_simtest
 	
 	echo "Building arm_simtest configure"
-	${SHELL} -c "cd ${DEST_DIR}/arm_simtest && aclocal -I m4 && autoconf --force && automake -ac"
+	${SHELL} -c "cd ${DEST_DIR}/arm_simtest && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
 fi
 
 echo "Distribution is up-to-date"

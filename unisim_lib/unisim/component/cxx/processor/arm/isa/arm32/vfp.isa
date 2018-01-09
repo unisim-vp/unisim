@@ -1357,7 +1357,7 @@ vmov_rrss.execute = {
 /* VMOV; Move between two ARM core registers and a doubleword extension register */
 
 op vmov_rrd( cond[4]: 0b1100[4]: 0b0101[4]: rt2[4]: rt[4]: 0b1011[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vmov_rrd.var vm : {uint32_t} = {vm0|vm1}
+vmov_rrd.var vm : {uint32_t} = {vm0|vm1};
 
 vmov_rrd.disasm = {
   buffer << "vmov" << DisasmCondition(cond) << "\t" << DisasmRegister(rt) << ", " << DisasmRegister(rt2) << ", d" << vm;
@@ -1371,7 +1371,7 @@ vmov_rrd.execute = {
 };
 
 op vmov_drr( cond[4]: 0b1100[4]: 0b0100[4]: rt2[4]: rt[4]: 0b1011[4]: 0b00[2]: shl<4> vm1[1]: 0b1[1]: vm0[4] );
-vmov_drr.var vm : {uint32_t} = {vm0|vm1}
+vmov_drr.var vm : {uint32_t} = {vm0|vm1};
 
 vmov_drr.disasm = {
   buffer << "vmov" << DisasmCondition(cond) << "\td" << vm << ", " << DisasmRegister(rt) << ", " << DisasmRegister(rt2);

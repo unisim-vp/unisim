@@ -98,8 +98,9 @@ CPU::CPU(const char *name, Object *parent)
   , memory_import("memory-import", this)
   , debug_yielding_import("debug-yielding-import", this)
   , trap_reporting_import("trap-reporting-import", this)
-  , requires_finished_instruction_reporting(false)
   , requires_memory_access_reporting(false)
+  , requires_commit_instruction_reporting(false)
+  , requires_fetch_instruction_reporting(false)
   // , icache("icache", this)
   // , dcache("dcache", this)
   , arm32_decoder()
@@ -176,7 +177,8 @@ CPU::EndSetup()
    */
   if(!memory_access_reporting_import) {
     requires_memory_access_reporting = false;
-    requires_finished_instruction_reporting = false;
+    requires_fetch_instruction_reporting = false;
+    requires_commit_instruction_reporting = false;
   }
   
   return true;
@@ -337,12 +339,12 @@ void
 CPU::StepInstruction()
 {
   /* Instruction boundary next_insn_addr becomes current_insn_addr */
-  uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr;
+  uint32_t insn_addr = this->current_insn_addr = this->next_insn_addr, insn_length = 0;
   
   if (unlikely(trap_reporting_import and (trap_on_instruction_counter == instruction_counter)))
     trap_reporting_import->ReportTrap(*this);
   
-  if (unlikely(requires_finished_instruction_reporting and memory_access_reporting_import))
+  if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
     memory_access_reporting_import->ReportFetchInstruction(this->current_insn_addr);
 
   if (debug_yielding_import)
@@ -361,14 +363,12 @@ CPU::StepInstruction()
       ReadInsn(insn_addr, insn);
     
       /* Decode current PC */
-      isa::thumb2::Operation<CPU>* op;
-      op = thumb_decoder.Decode(insn_addr, insn);
-      unsigned insn_length = op->GetLength();
-      if (insn_length % 16) throw std::logic_error("Bad T2 instruction length");
+      isa::thumb2::Operation<CPU>* op = thumb_decoder.Decode(insn_addr, insn);
     
       /* update PC register value before execution */
-      this->gpr[15] = this->next_insn_addr + 4;
-      this->next_insn_addr += insn_length / 8;
+      insn_length = op->GetLength() / 8;
+      this->gpr[15] = insn_addr + 4;
+      this->next_insn_addr = insn_addr + insn_length;
     
       /* Execute instruction */
       asm volatile( "thumb2_operation_execute:" );
@@ -386,12 +386,12 @@ CPU::StepInstruction()
       ReadInsn(insn_addr, insn);
       
       /* Decode current PC */
-      isa::arm32::Operation<CPU>* op;
-      op = arm32_decoder.Decode(insn_addr, insn);
+      isa::arm32::Operation<CPU>* op = arm32_decoder.Decode(insn_addr, insn);
     
       /* update PC register value before execution */
-      this->gpr[15] = this->next_insn_addr + 8;
-      this->next_insn_addr += 4;
+      insn_length = op->GetLength() / 8;
+      this->gpr[15] = insn_addr + 8;
+      this->next_insn_addr = insn_addr + insn_length;
     
       /* Execute instruction */
       asm volatile( "arm32_operation_execute:" );
@@ -399,8 +399,8 @@ CPU::StepInstruction()
       //op->profile(profile);
     }
     
-    if (unlikely(requires_finished_instruction_reporting and memory_access_reporting_import))
-      memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr);
+    if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
+      memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, insn_length);
     
     instruction_counter++;
   }
@@ -409,8 +409,8 @@ CPU::StepInstruction()
     /* Resuming execution, since SVC exceptions are explicitly
      * requested from regular instructions. ITState will be updated by
      * TakeSVCException (as done in the ARM spec). */
-    if (unlikely(requires_finished_instruction_reporting and memory_access_reporting_import))
-      memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr);
+    if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
+      memory_access_reporting_import->ReportCommitInstruction(this->current_insn_addr, insn_length);
 
     instruction_counter++;
     
@@ -447,8 +447,6 @@ CPU::StepInstruction()
   catch (Exception const& exc) {
     logger << DebugError << "Unimplemented exception (" << exc.what() << ")"
            << " pc: " << std::hex << current_insn_addr << std::dec
-           << ", cpsr: " << std::hex << cpsr.bits() << std::dec
-           << " (" << cpsr << ")"
            << EndDebugError;
     this->Stop(-1);
   }
@@ -503,26 +501,21 @@ CPU::InjectWriteMemory( uint32_t addr, void const* buffer, uint32_t size )
   return true;
 }
 
-/** Set/unset the reporting of finishing instructions.
- * 
- * @param report if true set the reporting of finishing instructions, 
- *   unset otherwise
- */
-void 
-CPU::RequiresFinishedInstructionReporting( bool report )
-{
-  requires_finished_instruction_reporting = report;
-}
-
 /** Set/unset the reporting of memory accesses.
  *
+ * @param type specify the type of report that are being modified
  * @param report if true/false sets/unsets the reporting of memory
- *        acesseses
+ * acesseses
  */
 void
-CPU::RequiresMemoryAccessReporting( bool report )
+CPU::RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report )
 {
-  requires_memory_access_reporting = report;
+  switch (type) {
+  case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
+  case unisim::service::interfaces::REPORT_FETCH_INSN:  requires_fetch_instruction_reporting = report; break;
+  case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
+  default: throw 0;
+  }
 }
 
 /** Perform a non intrusive read access.

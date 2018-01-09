@@ -495,6 +495,8 @@ namespace armsec
     bool complete;
   };
   
+  enum InstructionSet { Arm, Thumb, Jazelle, ThumbEE};
+
 #define CP15ENCODE( CRN, OPC1, CRM, OPC2 ) ((OPC1 << 12) | (CRN << 8) | (CRM << 4) | (OPC2 << 0))
 
   struct State
@@ -590,9 +592,33 @@ namespace armsec
           n, z, c, v, itstate, // q, ge0, ge1, ge2, ge3,
           cpsr, spsr,
           fpscr, fpexc,
+          r8_fiq,
+          r9_fiq,
+          sl_fiq,
+          fp_fiq,
+          ip_fiq,
+          sp_fiq,
+          lr_fiq,
+          r8_usr,
+          r9_usr,
+          sl_usr,
+          fp_usr,
+          ip_usr,
+          sp_usr,
+          lr_usr,
+          sp_irq,
+          sp_svc,
+          sp_abt,
+          sp_hyp,
+          sp_und,
+          lr_irq,
+          lr_svc,
+          lr_abt,
+          lr_hyp,
+          lr_und,
           SCTLR, ACTLR,
           CTR, MPIDR,
-          ID_PFR0, CCSIDR,
+          ID_PFR0, CCSIDR, CLIDR, CSSELR,
           CPACR, NSACR,
           TTBR0, TTBR1, TTBCR,
           DACR,
@@ -601,6 +627,8 @@ namespace armsec
           ICIALLU, ICIMVAU, BPIALL,
           DCIMVAC, DCISW, DCCMVAC, DCCSW, DCCMVAU, DCCIMVAC,
           TLBIALLIS, TLBIALL, TLBIASID,
+          VBAR,
+          CONTEXTIDR,
           DIAGCR, CFGBAR,
           end
         } code;
@@ -614,65 +642,93 @@ namespace armsec
       {
         switch (code)
           {
-          case        r0: return "r0";
-          case        r1: return "r1";
-          case        r2: return "r2";
-          case        r3: return "r3";
-          case        r4: return "r4";
-          case        r5: return "r5";
-          case        r6: return "r6";
-          case        r7: return "r7";
-          case        r8: return "r8";
-          case        r9: return "r9";
-          case        sl: return "sl";
-          case        fp: return "fp";
-          case        ip: return "ip";
-          case        sp: return "sp";
-          case        lr: return "lr";
-          case       nia: return "pc";
-          case         n: return "n";
-          case         z: return "z";
-          case         c: return "c";
-          case         v: return "v";
-          case   itstate: return "itstate";
-          case      cpsr: return "cpsr";
-          case      spsr: return "spsr";
-          case     fpscr: return "fpscr";
-          case     fpexc: return "fpexc";
-          case     SCTLR: return "sctlr";
-          case     ACTLR: return "actlr";
-          case       CTR: return "ctr";
-          case     MPIDR: return "mpidr";
-          case   ID_PFR0: return "id_pfr0";
-          case    CCSIDR: return "ccsidr";
-          case     CPACR: return "cpacr";
-          case     NSACR: return "nsacr";
-          case     TTBR0: return "ttbr0";
-          case     TTBR1: return "ttbr1";
-          case     TTBCR: return "ttbcr";
-          case      DACR: return "dacr";
-          case      DFSR: return "dfsr";
-          case      IFSR: return "ifsr";
-          case      DFAR: return "dfar";
-          case      IFAR: return "ifar";
-          case ICIALLUIS: return "icialluis";
-          case  BPIALLIS: return "bpiallis";
-          case   ICIALLU: return "iciallu";
-          case   ICIMVAU: return "icimvau";
-          case    BPIALL: return "bpiall";
-          case   DCIMVAC: return "dcimvac";
-          case     DCISW: return "dcisw";
-          case   DCCMVAC: return "dccmvac";
-          case     DCCSW: return "dccsw";
-          case   DCCMVAU: return "dccmvau";
-          case  DCCIMVAC: return "dccimvac";
-          case TLBIALLIS: return "tlbiallis";
-          case   TLBIALL: return "tlbiall";
-          case  TLBIASID: return "tlbiasid";
-          case    DIAGCR: return "diagcr";
-          case    CFGBAR: return "cfgbar";
-          case        NA: return "NA";
-          case       end: break;
+          case         r0: return "r0";
+          case         r1: return "r1";
+          case         r2: return "r2";
+          case         r3: return "r3";
+          case         r4: return "r4";
+          case         r5: return "r5";
+          case         r6: return "r6";
+          case         r7: return "r7";
+          case         r8: return "r8";
+          case         r9: return "r9";
+          case         sl: return "sl";
+          case         fp: return "fp";
+          case         ip: return "ip";
+          case         sp: return "sp";
+          case         lr: return "lr";
+          case        nia: return "pc";
+          case          n: return "n";
+          case          z: return "z";
+          case          c: return "c";
+          case          v: return "v";
+          case    itstate: return "itstate";
+          case       cpsr: return "cpsr";
+          case       spsr: return "spsr";
+          case      fpscr: return "fpscr";
+          case      fpexc: return "fpexc";
+          case     r8_fiq: return "r8_fiq";
+          case     r9_fiq: return "r9_fiq";
+          case     sl_fiq: return "sl_fiq";
+          case     fp_fiq: return "fp_fiq";
+          case     ip_fiq: return "ip_fiq";
+          case     sp_fiq: return "sp_fiq";
+          case     lr_fiq: return "lr_fiq";
+          case     r8_usr: return "r8_usr";
+          case     r9_usr: return "r9_usr";
+          case     sl_usr: return "sl_usr";
+          case     fp_usr: return "fp_usr";
+          case     ip_usr: return "ip_usr";
+          case     sp_usr: return "sp_usr";
+          case     lr_usr: return "lr_usr";
+          case     sp_irq: return "sp_irq";
+          case     sp_svc: return "sp_svc";
+          case     sp_abt: return "sp_abt";
+          case     sp_hyp: return "sp_hyp";
+          case     sp_und: return "sp_und";
+          case     lr_irq: return "lr_irq";
+          case     lr_svc: return "lr_svc";
+          case     lr_abt: return "lr_abt";
+          case     lr_hyp: return "lr_hyp";
+          case     lr_und: return "lr_und";
+          case      SCTLR: return "sctlr";
+          case      ACTLR: return "actlr";
+          case        CTR: return "ctr";
+          case      MPIDR: return "mpidr";
+          case    ID_PFR0: return "id_pfr0";
+          case     CCSIDR: return "ccsidr";
+          case      CLIDR: return "clidr";
+          case     CSSELR: return "csselr";
+          case      CPACR: return "cpacr";
+          case      NSACR: return "nsacr";
+          case      TTBR0: return "ttbr0";
+          case      TTBR1: return "ttbr1";
+          case      TTBCR: return "ttbcr";
+          case       DACR: return "dacr";
+          case       DFSR: return "dfsr";
+          case       IFSR: return "ifsr";
+          case       DFAR: return "dfar";
+          case       IFAR: return "ifar";
+          case  ICIALLUIS: return "icialluis";
+          case   BPIALLIS: return "bpiallis";
+          case    ICIALLU: return "iciallu";
+          case    ICIMVAU: return "icimvau";
+          case     BPIALL: return "bpiall";
+          case    DCIMVAC: return "dcimvac";
+          case      DCISW: return "dcisw";
+          case    DCCMVAC: return "dccmvac";
+          case      DCCSW: return "dccsw";
+          case    DCCMVAU: return "dccmvau";
+          case   DCCIMVAC: return "dccimvac";
+          case  TLBIALLIS: return "tlbiallis";
+          case    TLBIALL: return "tlbiall";
+          case   TLBIASID: return "tlbiasid";
+          case       VBAR: return "vbar";
+          case CONTEXTIDR: return "contextidr";
+          case     DIAGCR: return "diagcr";
+          case     CFGBAR: return "cfgbar";
+          case         NA: return "NA";
+          case        end: break;
           }
         return "INVALID";
       }
@@ -726,6 +782,13 @@ namespace armsec
       unsigned bitsize;
     };
     
+    enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE };
+    struct PCWrite : public RegWrite
+    {
+      PCWrite( Expr const& _value, branch_type_t bt ) : RegWrite( "pc", _value, 32 ), branch_type(bt) {}
+      branch_type_t branch_type;
+    };
+
     struct AssertFalse : public ASExprNode
     {
       AssertFalse() {}
@@ -740,15 +803,21 @@ namespace armsec
       virtual void Repr( std::ostream& sink ) const { sink << "assert (false)"; }
     };
     
-    State( PathNode* _path )
+    
+    
+    State( PathNode* _path, InstructionSet iset, bool is_big, unsigned running_mode )
       : path( _path )
       , next_insn_addr()
-      , cpsr( Expr( new RegRead("n",1) ),
+      , cpsr( *this,
+              Expr( new RegRead("n",1) ),
               Expr( new RegRead("z",1) ),
               Expr( new RegRead("c",1) ),
               Expr( new RegRead("v",1) ),
               Expr( new RegRead("itstate",8) ),
-              Expr( new RegRead("cpsr",32) ) )
+              Expr( new RegRead("cpsr",32) ),
+              iset,
+              is_big,
+              running_mode)
       , spsr( Expr( new RegRead("spsr",32) ) )
       , FPSCR( Expr( new RegRead("fpscr",32) ) )
       , FPEXC( Expr( new RegRead("fpexc",32) ) )
@@ -761,30 +830,39 @@ namespace armsec
         sregs[idx] = U32( Expr( new RegRead( RegID::sreg_id(idx), 32 ) ) );
     }
     
-    void SetInsnProps( Expr const& _expr, bool is_thumb, unsigned insn_length )
+    void SetInsnProps( Expr const& _expr, unsigned insn_length )
     {
-      if ((insn_length != 32) and ((insn_length != 16) or not is_thumb))
+      if ((insn_length != 32) and ((insn_length != 16) or not cpsr.IsThumb()))
         throw std::logic_error( "Bad instruction length" );
       U32 insn_addr = _expr;
-      reg_values[15] = insn_addr + U32( is_thumb ? 4 : 8 );
-      next_insn_addr = insn_addr + U32( insn_length / 8 );
+      reg_values[15] = insn_addr + U32( cpsr.IsThumb() ? 4 : 8 );
+      SetNIA( insn_addr + U32( insn_length / 8 ), B_JMP );
     }
     
     PathNode* path;
     
     U32 reg_values[16];
     U32 next_insn_addr;
+    branch_type_t branch_type;
     //typedef unisim::component::cxx::processor::arm::FieldRegister<U32> FieldRegisterU32;
     //struct psr_type : public FieldRegisterU32
     struct psr_type
     {
-      psr_type( Expr const& _n, Expr const& _z, Expr const& _c, Expr const& _v, Expr const& _itstate, Expr const& _bg )
-        : n(_n), z(_z), c(_c), v(_v), itstate(_itstate), bg(_bg)
+      psr_type( State& _cpu, Expr const& _n, Expr const& _z, Expr const& _c, Expr const& _v, Expr const& _itstate, Expr const& _bg, InstructionSet _iset, bool _bigendian, uint8_t _mode )
+        : cpu(_cpu), n(_n), z(_z), c(_c), v(_v), itstate(_itstate), bg(_bg), iset(_iset), bigendian(_bigendian), mode(_mode)
       {}
-      Expr n, z, c, v;
+      State& cpu;
+      Expr n, z, c, v; /* TODO: should handle q */
       U8 itstate;
       U32 bg;
+      InstructionSet iset;
+      bool bigendian;
+      uint8_t mode;
       
+      bool GetJ() const { return (iset == Jazelle) or (iset == ThumbEE); }
+      bool GetT() const { return (iset ==   Thumb) or (iset == ThumbEE); }
+      bool IsThumb() const { return iset == Thumb; }
+
       typedef unisim::component::cxx::processor::arm::RegisterField<31,1> NRF; /* Negative Integer Condition Flag */
       typedef unisim::component::cxx::processor::arm::RegisterField<30,1> ZRF; /* Zero     Integer Condition Flag */
       typedef unisim::component::cxx::processor::arm::RegisterField<29,1> CRF; /* Carry    Integer Condition Flag */
@@ -792,24 +870,87 @@ namespace armsec
       
       typedef unisim::component::cxx::processor::arm::RegisterField<28,4> NZCVRF; /* Grouped Integer Condition Flags */
       
-      typedef unisim::component::cxx::processor::arm::RegisterField<27,1> QRF; /* Cumulative saturation flag */
+      //typedef unisim::component::cxx::processor::arm::RegisterField<27,1> QRF; /* Cumulative saturation flag */
       
+      typedef unisim::component::cxx::processor::arm::RegisterField<24,1> JRF; /* Jazelle execution state bit */
       typedef unisim::component::cxx::processor::arm::RegisterField< 9,1> ERF; /* Endianness execution state */
+      typedef unisim::component::cxx::processor::arm::RegisterField< 5,1> TRF; /* Thumb execution state bit */
+      
       typedef unisim::component::cxx::processor::arm::RegisterField< 0,5> MRF; /* Mode field */
       
       typedef unisim::component::cxx::processor::arm::RegisterField<10,6> ITHIRF;
       typedef unisim::component::cxx::processor::arm::RegisterField<25,2> ITLORF;
       
-      typedef unisim::component::cxx::processor::arm::RegisterField< 0,32> ALL;
+      typedef unisim::component::cxx::processor::arm::RegisterField< 0,32> ALLRF;
+      
+      static uint32_t const bg_mask = 0x08ff01c0; /* Q, 23-20, GE[3:0], A, I, F, are not handled for now */
       
       template <typename RF>
       void Set( RF const& _, U32 const& value )
       {
         unisim::util::symbolic::StaticAssert<(RF::pos > 31) or ((RF::pos + RF::size) <= 28)>::check(); // NZCV
-        unisim::util::symbolic::StaticAssert<(RF::pos > 26) or ((RF::pos + RF::size) <= 25)>::check(); // ITLO
-        unisim::util::symbolic::StaticAssert<(RF::pos > 15) or ((RF::pos + RF::size) <= 10)>::check(); // ITHI
+        unisim::util::symbolic::StaticAssert<(RF::pos > 26) or ((RF::pos + RF::size) <= 24)>::check(); // ITLO, J
+        unisim::util::symbolic::StaticAssert<(RF::pos > 15) or ((RF::pos + RF::size) <=  9)>::check(); // ITHI, E
+        unisim::util::symbolic::StaticAssert<(RF::pos >  5) or ((RF::pos + RF::size) <=  0)>::check(); // T, MODE
         
         return _.Set( bg, value );
+      }
+      
+      template <typename RF>
+      U32 Get( RF const& _ )
+      {
+        unisim::util::symbolic::StaticAssert<(RF::pos > 31) or ((RF::pos + RF::size) <= 28)>::check(); // NZCV
+        unisim::util::symbolic::StaticAssert<(RF::pos > 26) or ((RF::pos + RF::size) <= 24)>::check(); // ITLO, J
+        unisim::util::symbolic::StaticAssert<(RF::pos > 15) or ((RF::pos + RF::size) <=  9)>::check(); // ITHI, E
+        unisim::util::symbolic::StaticAssert<(RF::pos >  5) or ((RF::pos + RF::size) <=  0)>::check(); // T, MODE
+        
+        return _.Get( bg );
+      }
+      
+      void SetBits( U32 const& bits, uint32_t mask )
+      {
+        if (NRF().Get(mask)) { n = BOOL( NRF().Get(bits) ).expr; NRF().Set(mask, 0u); }
+        if (ZRF().Get(mask)) { z = BOOL( ZRF().Get(bits) ).expr; ZRF().Set(mask, 0u); }
+        if (CRF().Get(mask)) { c = BOOL( CRF().Get(bits) ).expr; CRF().Set(mask, 0u); }
+        if (VRF().Get(mask)) { v = BOOL( VRF().Get(bits) ).expr; VRF().Set(mask, 0u); }
+        
+        if (ITHIRF().Get(mask) or ITLORF().Get(mask))
+          {
+            itstate = U8((ITHIRF().Get(bits) << 2) | ITLORF().Get(bits));
+            uint32_t itmask = ITHIRF().getmask<uint32_t>() | ITLORF().getmask<uint32_t>();
+            if ((mask & itmask) != itmask)
+              throw 0;
+            mask &= ~itmask;
+            ITHIRF().Set(mask, 0u); ITLORF().Set(mask, 0u);
+          }
+        
+        if (MRF().Get(mask))
+          {
+            U32       nmode = MRF().Get(bits);
+            if (MRF().Get(mask) == 0x1f)
+              throw 0;
+            MRF().Set(mask, 0u);
+            if (cpu.Cond(nmode != U32(mode)))
+              cpu.UnpredictableInsnBehaviour();
+          }
+        
+        if (JRF().Get(mask)) { if (cpu.Cond(JRF().Get(bits) != U32(GetJ())))    { cpu.UnpredictableInsnBehaviour(); } JRF().Set(mask, 0u); }
+        if (TRF().Get(mask)) { if (cpu.Cond(TRF().Get(bits) != U32(GetT())))    { cpu.UnpredictableInsnBehaviour(); } TRF().Set(mask, 0u); }
+        if (ERF().Get(mask)) { if (cpu.Cond(ERF().Get(bits) != U32(bigendian))) { cpu.UnpredictableInsnBehaviour(); } ERF().Set(mask, 0u); }
+        
+        bg = (bg & U32(~mask)) | (bits & U32(mask));
+      }
+      
+      U32 GetBits()
+      {
+        return
+          (U32(BOOL(n)) << 31) |
+          (U32(BOOL(z)) << 30) |
+          (U32(BOOL(c)) << 29) |
+          (U32(BOOL(v)) << 28) |
+          (U32(itstate >> U8(2)) << 10) | (U32(itstate & U8(0b11)) << 25) |
+          U32((uint32_t(GetJ()) << 24) | (uint32_t(GetT()) << 5) | uint32_t(mode)) |
+          bg;
       }
       
       void Set( NRF const& _, BOOL const& value ) { n = value.expr; }
@@ -818,7 +959,11 @@ namespace armsec
       void Set( VRF const& _, BOOL const& value ) { v = value.expr; }
 
       //void Set( QRF const& _, U32 const& value ) { unisim::util::symbolic::StaticAssert<false>::check();_.Set( bg, value ); }
-      void Set( ERF const& _, U32 const& value ) { _.Set( bg, value ); }
+      void Set( ERF const& _, U32 const& value )
+      {
+        if (cpu.Cond(value != U32(bigendian)))
+          cpu.UnpredictableInsnBehaviour();
+      }
       
       void Set( NZCVRF const& _, U32 const& value )
       {
@@ -826,18 +971,6 @@ namespace armsec
         z = BOOL( unisim::component::cxx::processor::arm::RegisterField< 2,1>().Get( value ) ).expr;
         c = BOOL( unisim::component::cxx::processor::arm::RegisterField< 1,1>().Get( value ) ).expr;
         v = BOOL( unisim::component::cxx::processor::arm::RegisterField< 0,1>().Get( value ) ).expr;
-      }
-      
-      void Set( ALL const& _, U32 const& value )
-      {
-        n = BOOL( NRF().Get( value ) ).expr;
-        z = BOOL( ZRF().Get( value ) ).expr;
-        c = BOOL( CRF().Get( value ) ).expr;
-        v = BOOL( VRF().Get( value ) ).expr;
-        
-        itstate = U8((ITHIRF().Get( value ) << 2) | ITLORF().Get( value ));
-        
-        unisim::component::cxx::processor::arm::RegisterField<0,28>().Set( bg, value );
       }
       
       void
@@ -848,31 +981,21 @@ namespace armsec
       
       BOOL InITBlock() const { return (itstate & U8(0b1111)) != U8(0); }
       
-      template <typename RF>
-      U32 Get( RF const& _ )
-      {
-        unisim::util::symbolic::StaticAssert<(RF::pos > 31) or ((RF::pos + RF::size) <= 28)>::check(); // NZCV
-        unisim::util::symbolic::StaticAssert<(RF::pos > 26) or ((RF::pos + RF::size) <= 25)>::check(); // ITLO
-        unisim::util::symbolic::StaticAssert<(RF::pos > 15) or ((RF::pos + RF::size) <= 10)>::check(); // ITHI
-        
-        return _.Get( bg );
-      }
-      
       U32 Get( NRF const& _ ) { return U32(BOOL(n)); }
       U32 Get( ZRF const& _ ) { return U32(BOOL(z)); }
       U32 Get( CRF const& _ ) { return U32(BOOL(c)); }
       U32 Get( VRF const& _ ) { return U32(BOOL(v)); }
-
-      U32 Get( MRF const& _ ) { return U32(0b11111); /*SYSTEM_MODE*/ }
+      
+      /* ISetState */
+      U32 Get( JRF const& _ ) { return U32(GetJ()); }
+      U32 Get( TRF const& _ ) { return U32(GetT()); }
+      
+      /* Endianness */
+      U32 Get( ERF const& _ ) { return U32(bigendian); }
+      
+      U32 Get( MRF const& _ ) { return U32(mode); }
       // U32 Get( ALL const& _ ) { return (U32(BOOL(n)) << 31) | (U32(BOOL(z)) << 30) | (U32(BOOL(c)) << 29) | (U32(BOOL(v)) << 28) | bg; }
       
-      U32 bits() const
-      {
-        return
-          (U32(BOOL(n)) << 31) | (U32(BOOL(z)) << 30) | (U32(BOOL(c)) << 29) | (U32(BOOL(v)) << 28) |
-          (U32(itstate >> 2) << 10) | (U32(itstate & U8(0b11)) << 25) |
-          bg;
-      }
     } cpsr;
     
     U32 spsr;
@@ -921,21 +1044,26 @@ namespace armsec
       if (id != 15)
         reg_values[id] = value;
       else
-        next_insn_addr = value;
+        SetNIA( value, B_JMP );
     }
     void SetGPR( uint32_t id, U32 const& value ) {
       if (id != 15)
         reg_values[id] = value;
       else
-        next_insn_addr = value;
+        SetNIA( value, B_JMP );
     }
     
-    U32 GetNIA() { return next_insn_addr; }
+    U32  GetNIA() { return next_insn_addr; }
+    void SetNIA( U32 const& nia, branch_type_t bt ) { next_insn_addr = nia; branch_type = bt; }
 
     psr_type& CPSR() { return cpsr; };
+    
+    U32  GetCPSR()                                 { return cpsr.GetBits(); }
+    void SetCPSR( U32 const& bits, uint32_t mask ) { cpsr.SetBits( bits, mask ); }
+    
     U32& SPSR() { not_implemented(); return spsr; };
     
-    void SetGPRMapping( uint32_t src_mode, uint32_t tar_mode ) { /* system related */ not_implemented(); }
+    //    void SetGPRMapping( uint32_t src_mode, uint32_t tar_mode ) { /* system related */ not_implemented(); }
     
     struct Load : public ASExprNode
     {
@@ -1016,8 +1144,8 @@ namespace armsec
     bool ExclusiveMonitorsPass( U32 const& address, unsigned size ) { std::cerr << "ExclusiveMonitorsPass\n"; return true; }
     void ClearExclusiveLocal() { std::cerr << "ClearExclusiveMonitors\n"; }
     
-    void BranchExchange( U32 const& target ) { next_insn_addr = target; }
-    void Branch( U32 const& target ) { next_insn_addr = target; }
+    void BranchExchange( U32 const& target, branch_type_t branch_type ) { SetNIA( target, branch_type ); }
+    void Branch( U32 const& target, branch_type_t branch_type ) { SetNIA( target, branch_type ); }
     
     void WaitForInterrupt() { not_implemented(); }
     void SWI( uint32_t imm ) { not_implemented(); }
@@ -1061,33 +1189,86 @@ namespace armsec
         }
     }
 
-    // /* masks for the different running modes */
-    // static uint32_t const RUNNING_MODE_MASK = 0x1F;
-    // static uint32_t const USER_MODE = 0x10;
-    // static uint32_t const FIQ_MODE = 0x11;
-    // static uint32_t const IRQ_MODE = 0x12;
-    // static uint32_t const SUPERVISOR_MODE = 0x13;
-    // static uint32_t const ABORT_MODE = 0x17;
-    // static uint32_t const UNDEFINED_MODE = 0x1B;
-    // static uint32_t const SYSTEM_MODE = 0x1F;
-    
     struct Mode
     {
       Mode() {}
       bool     HasBR( unsigned index ) { return false; }
       bool     HasSPSR() { return false; }
-      void     SetSPSR(U32 value) {};
+      void     SetSPSR(U32 const& value) {};
       U32      GetSPSR() { return U32(); };
       void     Swap( State& ) {};
-      
     } mode;
     
     Mode&  CurrentMode() { // not_implemented(); 
       return mode; }
     Mode&  GetMode(uint8_t) { not_implemented(); return mode; }
-    U32  GetBankedRegister( uint8_t foreign_mode, uint32_t idx ) { not_implemented(); return U32(); }
-    void SetBankedRegister( uint8_t foreign_mode, uint32_t idx, U32 value ) { not_implemented(); }
     
+    struct ForeignRegister : public ASExprNode
+    {
+      ForeignRegister( uint8_t _mode, unsigned _idx ) : mode(_mode), idx(_idx) { if (mode == SYSTEM_MODE) mode = USER_MODE; }
+      char const* mode_ident() const
+      {
+        switch (mode)
+          {
+          case USER_MODE: return "usr";
+          case FIQ_MODE: return "fiq";
+          case IRQ_MODE: return "irq";
+          case SUPERVISOR_MODE: return "svc";
+          case MONITOR_MODE: return "mon";
+          case ABORT_MODE: return "abt";
+          case HYPERVISOR_MODE: return "hyp";
+          case UNDEFINED_MODE: return "und";
+          }
+        throw 0;
+        return "";
+      }
+      virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const
+      { Repr(sink); sink << "<32>"; return 32; }
+      virtual intptr_t cmp( ExprNode const& brhs ) const
+      {
+        ForeignRegister const& rhs =  dynamic_cast<ForeignRegister const&>( brhs );
+        if (int delta = int(mode) - int(rhs.mode)) return delta;
+        return idx - rhs.idx;
+      }
+      
+      virtual unsigned SubCount() const { return 0; }
+      virtual void Repr( std::ostream& sink ) const
+      { sink << (RegID("r0") + idx).c_str() << '_' << mode_ident(); }
+      uint8_t mode;
+      unsigned idx;
+    };
+    typedef std::map<std::pair<uint8_t,uint32_t>,Expr> ForeignRegisters;
+    ForeignRegisters foreign_registers;
+    
+    Expr& GetForeignRegister( uint8_t foreign_mode, uint32_t idx )
+    {
+      Expr& result = foreign_registers[std::make_pair( foreign_mode, idx )];
+      if (not result.node)
+        result = new ForeignRegister( foreign_mode, idx );
+      return result;
+    }
+    
+    U32  GetBankedRegister( uint8_t foreign_mode, uint32_t idx )
+    {
+      if ((cpsr.mode == foreign_mode) or
+          (idx < 8) or
+          (idx >= 15) or
+          ((foreign_mode != FIQ_MODE) and (cpsr.mode != FIQ_MODE) and (idx < 13))
+          )
+        return GetGPR( idx );
+      return U32( GetForeignRegister( foreign_mode, idx ) );
+    }
+    
+    void SetBankedRegister( uint8_t foreign_mode, uint32_t idx, U32 value )
+    {
+      if ((cpsr.mode == foreign_mode) or
+          (idx < 8) or
+          (idx >= 15) or
+          ((foreign_mode != FIQ_MODE) and (cpsr.mode != FIQ_MODE) and (idx < 13))
+          )
+        return SetGPR( idx, value );
+      GetForeignRegister( foreign_mode, idx ) = value.expr;
+    }
     
     struct CP15Reg
     {
@@ -1145,7 +1326,27 @@ namespace armsec
             return x;
           } break;
 
+        case CP15ENCODE( 0, 1, 0, 1 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "CLIDR, Cache Level ID Register"; }
+              U32 Read( State& cpu ) { return cpu.SReg("clidr"); }
+            } x;
+            return x;
+          } break;
 
+        case CP15ENCODE( 0, 2, 0, 0 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "CSSELR, Cache Size Selection Register"; }
+              U32 Read( State& cpu ) { return cpu.SReg("csselr"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("csselr") = value; }
+            } x;
+            return x;
+          } break;
+      
           /****************************
            * System control registers *
            ****************************/
@@ -1193,6 +1394,9 @@ namespace armsec
             return x;
           } break;
 
+      /*******************************************
+       * Memory protection and control registers *
+       *******************************************/
         case CP15ENCODE( 2, 0, 0, 0 ):
           {
             static struct : public CP15Reg
@@ -1447,6 +1651,32 @@ namespace armsec
             return x;
           } break;
           
+        case CP15ENCODE( 12, 0, 0, 0 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "VBAR, Vector Base Address Register"; }
+              U32 Read( State& cpu ) { return cpu.SReg("vbar"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("vbar") = value; }
+            } x;
+            return x;
+          } break;
+          
+          /***********************************/
+          /* Context and thread ID registers */
+          /***********************************/
+
+        case CP15ENCODE( 13, 0, 0, 1 ):
+          {
+            static struct : public CP15Reg
+            {
+              char const* Describe() { return "CONTEXTIDR, Context ID Register"; }
+              U32 Read( State& cpu ) { return cpu.SReg("contextidr"); }
+              void Write( State& cpu, U32 const& value ) { cpu.SReg("contextidr") = value; }
+            } x;
+            return x;
+          } break;
+
           /* BOARD specific */
           
         case CP15ENCODE( 15, 0, 0, 1 ):
@@ -1488,7 +1718,7 @@ namespace armsec
     close( State const& ref )
     {
       bool complete = path->close();
-      path->sinks.insert( Expr( new RegWrite( "pc", next_insn_addr.expr, 32 ) ) );
+      path->sinks.insert( Expr( new PCWrite( next_insn_addr.expr, branch_type ) ) );
       if (unpredictable)
         {
           path->sinks.insert( Expr( new AssertFalse() ) );
@@ -1519,6 +1749,16 @@ namespace armsec
         if (reg_values[reg].expr != ref.reg_values[reg].expr)
           path->sinks.insert( Expr( new RegWrite( RegID("r0") + reg, reg_values[reg].expr, 32 ) ) );
       }
+      for (ForeignRegisters::iterator itr = foreign_registers.begin(), end = foreign_registers.end(); itr != end; ++itr)
+        {
+          ForeignRegister ref(itr->first.first, itr->first.second);
+          ref.Retain();
+          Expr xref( new ForeignRegister(itr->first.first, itr->first.second) );
+          if (itr->second == Expr(&ref)) continue;
+          std::ostringstream buf;
+          ref.Repr( buf );
+          path->sinks.insert( Expr( new RegWrite( RegID(buf.str().c_str()), itr->second, 32 ) ) );
+        }
       for (std::set<Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
         path->sinks.insert( *itr );
       return complete;
@@ -1696,6 +1936,7 @@ namespace armsec
     Context ctx( _up );
 
     Expr nia;
+    armsec::State::branch_type_t bt;
 
     struct Head
     {
@@ -1824,7 +2065,7 @@ namespace armsec
               }
 
             if (rid.code == rid.nia)
-              nia = value;
+              { nia = value; bt = dynamic_cast<armsec::State::PCWrite const&>( *rw ).branch_type; }
             else
               ctx.add_pending( *itr );
           }
@@ -1906,6 +2147,7 @@ namespace armsec
 
     std::ostringstream buffer;
     buffer << "goto (" << GetCode(nia, ctx.vars, current) << (nia.ConstSimplify() ? ",0" : "") << ")";
+    if (bt == armsec::State::B_CALL) buffer << " // call";
     current.write( buffer.str() );
   }
 }
@@ -1916,6 +2158,7 @@ struct ARMISA : public unisim::component::cxx::processor::arm::isa::arm32::Decod
   typedef unisim::component::cxx::processor::arm::isa::arm32::Operation<armsec::State> Operation;
   static CodeType mkcode( uint32_t code ) { return CodeType( code ); }
   static bool const is_thumb = false;
+  static armsec::InstructionSet const iset = armsec::Arm;
 };
 
 struct THUMBISA : public unisim::component::cxx::processor::arm::isa::thumb2::Decoder<armsec::State>
@@ -1924,6 +2167,7 @@ struct THUMBISA : public unisim::component::cxx::processor::arm::isa::thumb2::De
   typedef unisim::component::cxx::processor::arm::isa::thumb2::Operation<armsec::State> Operation;
   static CodeType mkcode( uint32_t code ) { return CodeType( code ); }
   static bool const is_thumb = true;
+  static armsec::InstructionSet const iset = armsec::Thumb;
 };
 
 
@@ -1941,7 +2185,7 @@ struct Decoder
 
   template <class ISA>
   void
-  translate_isa( ISA& isa, uint32_t addr, uint32_t code )
+  translate_isa( ISA& isa, uint32_t addr, uint32_t code, bool bigendian, unsigned running_mode )
   {
     std::cout << "(address . " << armsec::dbx( 32, addr ) << ")\n";
 
@@ -1953,11 +2197,11 @@ struct Decoder
       typedef typename armsec::State State;
 
       ~Translation() { delete insn; delete coderoot; }
-      Translation( uint32_t _addr )
+      Translation( uint32_t _addr, bool bigendian, unsigned running_mode )
         : insn(0)
         , coderoot(new armsec::PathNode)
         , addr( _addr )
-        , reference( coderoot )
+        , reference( coderoot, ISA::iset, bigendian, running_mode )
       {}
 
       int
@@ -1984,14 +2228,15 @@ struct Decoder
         // Expr insn_addr( new InstructionAddress ); //< symbolic instruction address
         Expr insn_addr( unisim::util::symbolic::make_const( addr ) ); //< concrete instruction address
 
-        reference.SetInsnProps( insn_addr, ISA::is_thumb, insn->GetLength() );
+        reference.SetInsnProps( insn_addr, insn->GetLength() );
 
         try
           {
             for (bool end = false; not end;)
               {
-                State state( coderoot );
-                state.SetInsnProps( insn_addr, ISA::is_thumb, insn->GetLength() );
+                
+                State state( coderoot, ISA::iset, reference.cpsr.bigendian, reference.cpsr.mode );
+                state.SetInsnProps( insn_addr, insn->GetLength() );
                 insn->execute( state );
                 if (ISA::is_thumb)
                   state.ITAdvance();
@@ -2017,7 +2262,7 @@ struct Decoder
       PathNode* coderoot;
       uint32_t  addr;
       State     reference;
-    } trans( addr );
+    } trans( addr, bigendian, running_mode );
 
     unsigned bitlen = trans.decode( isa, code );
     if (bitlen != 16 and bitlen != 32)
@@ -2045,9 +2290,17 @@ struct Decoder
         std::cout << "(unimplemented)\n";
       }
   }
-
-  void  translate_arm( uint32_t addr, uint32_t code )   { translate_isa( armisa, addr, code ); }
-  void  translate_thumb( uint32_t addr, uint32_t code ) { translate_isa( thumbisa, addr, code ); }
+  
+  void
+  translate( armsec::InstructionSet iset, uint32_t addr, uint32_t code, bool bigendian, unsigned running_mode )
+  {
+    switch (iset)
+      {
+      case armsec::Arm:   translate_isa( armisa, addr, code, bigendian, running_mode ); break;
+      case armsec::Thumb: translate_isa( thumbisa, addr, code, bigendian, running_mode ); break;
+      default: throw 0;
+      }
+  }
 };
 
 uint32_t getu32( uint32_t& res, char const* arg )
@@ -2084,12 +2337,42 @@ main( int argc, char** argv )
     }
 
   Decoder decoder;
-  std::string iset(argv[1]);
-  if        (iset == std::string("arm")) {
-    decoder.translate_arm( addr, code );
-  } else if (iset == std::string("thumb")) {
-    decoder.translate_thumb( addr, code );
-  }
+  std::string exec_flags(argv[1]);
+  
+  exec_flags += ',';
+  
+  armsec::InstructionSet instruction_set = armsec::Arm;
+  bool is_big_endian = false;
+  unsigned running_mode = armsec::State::SUPERVISOR_MODE;
+  
+  for (std::string::iterator cur = exec_flags.begin(), end = exec_flags.end(), nxt; cur != end; cur = nxt+1 )
+    {
+      nxt = std::find( cur, end, ',' );
+      std::string flag( cur, nxt );
+      if (flag.size() == 0)
+        continue;
+      if      (flag == "arm")        { instruction_set = armsec::Arm; }
+      else if (flag == "thumb")      { instruction_set = armsec::Thumb; }
+      else if (flag == "little")     { is_big_endian = false; }
+      else if (flag == "big")        { is_big_endian = true; }
+      else if (flag == "user")       { running_mode = armsec::State::USER_MODE; }
+      else if (flag == "fiq")        { running_mode = armsec::State::FIQ_MODE; }
+      else if (flag == "irq")        { running_mode = armsec::State::IRQ_MODE; }
+      else if (flag == "supervisor") { running_mode = armsec::State::SUPERVISOR_MODE; }
+      else if (flag == "monitor")    { running_mode = armsec::State::MONITOR_MODE; }
+      else if (flag == "abort")      { running_mode = armsec::State::ABORT_MODE; }
+      else if (flag == "hypervisor") { running_mode = armsec::State::HYPERVISOR_MODE; }
+      else if (flag == "undefined")  { running_mode = armsec::State::UNDEFINED_MODE; }
+      else if (flag == "system")     { running_mode = armsec::State::SYSTEM_MODE; }
+      else
+        {
+          std::cerr << "Unknown execution state flag: " << flag << std::endl;
+          return 1;
+        }
+
+    }
+  
+  decoder.translate( instruction_set, addr, code, is_big_endian, running_mode );
 
   return 0;
 }

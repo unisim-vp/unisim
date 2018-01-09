@@ -82,6 +82,7 @@ using unisim::service::interfaces::DebugYielding;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
+using unisim::service::interfaces::MemoryAccessReportingType;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::CachePowerEstimator;
@@ -367,11 +368,10 @@ public:
 	//=             memory access reporting control interface methods     =
 	//=====================================================================
 
-	virtual void RequiresMemoryAccessReporting(bool report);
-	virtual void RequiresFinishedInstructionReporting(bool report) ;
+	virtual void RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType type, bool report);
 
 	// Endian interface
-    virtual endian_type GetEndianess();
+	virtual endian_type GetEndianess();
 	
 	//=====================================================================
 	//=               Programmer view memory access methods               =
@@ -982,10 +982,10 @@ protected:
 	//=====================================================================
 
 	Logger logger;
-    /** indicates if the memory accesses require to be reported */
-    bool requires_memory_access_reporting;
-    /** indicates if the finished instructions require to be reported */
-    bool requires_finished_instruction_reporting;
+	bool requires_memory_access_reporting;      //< indicates if the memory accesses require to be reported
+	bool requires_fetch_instruction_reporting;  //< indicates if the fetched instructions require to be reported
+	bool requires_commit_instruction_reporting; //< indicates if the committed instructions require to be reported
+  
 	
 	inline bool IsVerboseSetup() const ALWAYS_INLINE { return verbose_all || verbose_setup; }
 	inline bool IsVerboseStep() const ALWAYS_INLINE { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STEP_ENABLE && (verbose_all || verbose_step); }

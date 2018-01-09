@@ -82,7 +82,7 @@ bl_h2.execute = {
   
   uint32_t address = cpu.GetGPR(cpu.LR_reg) + imm0;
   cpu.SetGPR( cpu.LR_reg, cpu.GetNIA() | 1 );
-  cpu.Branch( address );
+  cpu.Branch( address, ARCH::B_CALL );
 };
 
 /*
@@ -110,7 +110,7 @@ blx_h3.execute = {
   
   uint32_t address = (cpu.GetGPR(cpu.LR_reg) + imm0) & -4;
   cpu.SetGPR( cpu.LR_reg, cpu.GetNIA() | 1 );
-  cpu.BranchExchange( address );
+  cpu.BranchExchange( address, ARCH::B_CALL );
 };
 
 /*

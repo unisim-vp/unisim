@@ -157,7 +157,7 @@ bool Profiler<ADDRESS>::ReportMemoryAccess(unisim::util::debug::MemoryAccessType
 }
 
 template <class ADDRESS>
-void Profiler<ADDRESS>::ReportCommitInstruction(ADDRESS addr)
+void Profiler<ADDRESS>::ReportCommitInstruction(ADDRESS addr, unsigned size)
 {
 	if(enable_prof[unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_EXEC])
 	{

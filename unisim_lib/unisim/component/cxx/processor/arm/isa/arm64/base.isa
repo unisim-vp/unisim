@@ -3040,7 +3040,7 @@ op hint( 0b11010101000000110010[20] : imm[7] : 0b11111[5] );
 hint.var format : {char const*} = {"base,2885"};
 
 hint.disasm = {
-  sink << "hint\t" << DisasmI(imm,16);;
+  sink << "hint\t" << DisasmI(imm,16);
 };
 
 /*

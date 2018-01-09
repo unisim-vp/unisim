@@ -156,8 +156,6 @@ unisim/service/debug/debugger/debugger32.cc \
 unisim/service/debug/debugger/debugger64.cc \
 unisim/service/profiling/addr_profiler/profiler32.cc \
 unisim/service/profiling/addr_profiler/profiler64.cc \
-unisim/service/tee/memory_access_reporting/tee_64.cc \
-unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
@@ -294,7 +292,6 @@ unisim/service/tee/backtrace/tee.hh \
 unisim/service/tee/registers/registers_tee.hh \
 unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
 unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
-unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/debug/debugger/debugger.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
@@ -354,7 +351,6 @@ unisim/util/debug/dwarf/macinfo.tcc \
 unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
 unisim/service/profiling/addr_profiler/profiler.tcc \
-unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/debugger/debugger.tcc \
 unisim/util/debug/dwarf/frame.tcc \
@@ -689,7 +685,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 
 	AM_GENISSLIB_VERSION=`printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -764,7 +760,7 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 
 	AM_STAR12X_VERSION=`printf ${STAR12X_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating star12x Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${STAR12X_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${STAR12X_MAKEFILE_AM}"
 	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${STAR12X_MAKEFILE_AM}"
 	echo "noinst_LIBRARIES = libstar12x-${STAR12X_VERSION}.a" >> "${STAR12X_MAKEFILE_AM}"
 	echo "nodist_libstar12x_${AM_STAR12X_VERSION}_a_SOURCES = unisim/component/cxx/processor/hcs12x/xb.cc unisim/component/cxx/processor/hcs12x/hcs12x.cc" >> "${STAR12X_MAKEFILE_AM}"

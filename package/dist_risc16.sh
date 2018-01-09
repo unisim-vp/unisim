@@ -179,8 +179,6 @@ unisim/service/profiling/addr_profiler/profiler32.cc \
 unisim/service/profiling/addr_profiler/profiler64.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
-unisim/service/tee/memory_access_reporting/tee_64.cc \
-unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/component/cxx/processor/risc16/cpu.cc \
 unisim/component/tlm2/processor/risc16/cpu.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
@@ -303,7 +301,6 @@ unisim/service/loader/elf_loader/elf_loader.hh \
 unisim/service/loader/elf_loader/elf32_loader.hh \
 unisim/service/loader/elf_loader/elf64_loader.hh \
 unisim/service/loader/raw_loader/raw_loader.hh \
-unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/debugger/debugger.hh \
 unisim/service/profiling/addr_profiler/profiler.hh \
@@ -365,7 +362,6 @@ unisim/service/loader/elf_loader/elf32_loader.tcc \
 unisim/service/loader/elf_loader/elf64_loader.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/raw_loader/raw_loader.tcc \
-unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
@@ -671,7 +667,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 
 	AM_GENISSLIB_VERSION=`printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES} parser.h" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -756,7 +752,7 @@ if [ "${has_to_build_risc16_configure}" = "yes" ]; then
 
 	AM_RISC16_VERSION=`printf ${RISC16_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating risc16 Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${RISC16_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${RISC16_MAKEFILE_AM}"
 	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${RISC16_MAKEFILE_AM}"
 	echo "noinst_LIBRARIES = librisc16-${RISC16_VERSION}.a" >> "${RISC16_MAKEFILE_AM}"
 	echo "nodist_librisc16_${AM_RISC16_VERSION}_a_SOURCES = unisim/component/cxx/processor/risc16/isa.cc" >> "${RISC16_MAKEFILE_AM}"

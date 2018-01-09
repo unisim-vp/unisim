@@ -47,7 +47,6 @@
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/monitor/monitor.hh>
-#include <unisim/service/profiling/addr_profiler/profiler.hh>
 
 #include <iostream>
 #include <sstream>

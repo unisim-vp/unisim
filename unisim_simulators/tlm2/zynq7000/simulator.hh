@@ -45,9 +45,8 @@
 #include <unisim/service/telnet/telnet.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
+#include <unisim/service/debug/profiler/profiler.hh>
 #include <unisim/service/debug/debugger/debugger.hh>
-#include <unisim/service/profiling/addr_profiler/profiler.hh>
-#include <unisim/service/tee/memory_access_reporting/tee.hh>
 #include <unisim/service/interfaces/char_io.hh>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/util/likely/likely.hh>
@@ -307,14 +306,14 @@ struct Simulator : public unisim::kernel::service::Simulator
   {
     typedef uint32_t ADDRESS;
     static const unsigned int NUM_PROCESSORS = 1;
-    /* gdb_server, inline_debugger and/or monitor */
+    /* gdb_server, inline_debugger and/or profiler */
     static const unsigned int MAX_FRONT_ENDS = 3;
   };
   
   typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
-  typedef unisim::service::debug::gdb_server::GDBServer<uint32_t> GDB_SERVER;
-  typedef unisim::service::debug::inline_debugger::InlineDebugger<uint32_t> INLINE_DEBUGGER;
-  typedef unisim::service::profiling::addr_profiler::Profiler<uint32_t> PROFILER;
+  typedef unisim::service::debug::gdb_server::GDBServer<DEBUGGER_CONFIG::ADDRESS> GDB_SERVER;
+  typedef unisim::service::debug::inline_debugger::InlineDebugger<DEBUGGER_CONFIG::ADDRESS> INLINE_DEBUGGER;
+  typedef unisim::service::debug::profiler::Profiler<DEBUGGER_CONFIG::ADDRESS> PROFILER;
   typedef unisim::service::time::sc_time::ScTime ScTime;
   typedef unisim::service::time::host_time::HostTime HostTime;
   typedef unisim::service::telnet::Telnet Telnet;
@@ -347,18 +346,17 @@ struct Simulator : public unisim::kernel::service::Simulator
   DEBUGGER*                    debugger;
   GDB_SERVER*                  gdb_server;
   INLINE_DEBUGGER*             inline_debugger;
+  PROFILER*                    profiler;
   
   bool                                     enable_gdb_server;
   unisim::kernel::service::Parameter<bool> param_enable_gdb_server;
   bool                                     enable_inline_debugger;
   unisim::kernel::service::Parameter<bool> param_enable_inline_debugger;
+  bool                                     enable_profiler;
+  unisim::kernel::service::Parameter<bool> param_enable_profiler;
 
   int exit_status;
-#ifdef WIN32
-  static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
-#else
-  static void SigIntHandler(int signum);
-#endif
+  virtual void SigInt();
 };
 
 #endif /* SIMULATOR_HH_ */

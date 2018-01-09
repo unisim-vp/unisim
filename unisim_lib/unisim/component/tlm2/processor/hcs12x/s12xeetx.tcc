@@ -29,12 +29,11 @@ namespace hcs12x {
 /* Constructor */
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
-S12XEETX(const sc_module_name& name, Object *parent) :
-	Object(name, parent, "this module implements a memory")
+S12XEETX(const sc_module_name& name, Object *parent)
+	: Object(name, parent, "this module implements a memory")
 	, unisim::component::tlm2::memory::ram::Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>(name, parent)
 	, unisim::kernel::service::Service<Registers>(name, parent)
 
-	, unisim::kernel::service::Service<unisim::service::interfaces::Memory<ADDRESS> >(name, parent)
 	, registers_export("registers_export", this)
 
 	, bus_clock_socket("Bus-Clock")

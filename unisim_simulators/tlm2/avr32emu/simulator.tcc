@@ -282,19 +282,6 @@ void Simulator<CONFIG>::Run()
 	
 	double time_start = host_time->GetTime();
 
-#ifndef WIN32
-	void (*prev_sig_int_handler)(int) = 0;
-#endif
-
-	if(!inline_debugger)
-	{
-#ifdef WIN32
-		SetConsoleCtrlHandler(&Simulator<CONFIG>::ConsoleCtrlHandler, TRUE);
-#else
-		prev_sig_int_handler = signal(SIGINT, &Simulator<CONFIG>::SigIntHandler);
-#endif
-	}
-
 	sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
 	
 	try
@@ -305,15 +292,6 @@ void Simulator<CONFIG>::Run()
 	{
 		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
 		cerr << e.what() << endl;
-	}
-
-	if(!inline_debugger)
-	{
-#ifdef WIN32
-		SetConsoleCtrlHandler(&Simulator<CONFIG>::ConsoleCtrlHandler, FALSE);
-#else
-		signal(SIGINT, prev_sig_int_handler);
-#endif
 	}
 
 	cerr << "Simulation finished" << endl;
@@ -347,16 +325,6 @@ unisim::kernel::service::Simulator::SetupStatus Simulator<CONFIG>::Setup()
 	}
 	
 	unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
-	
-	// inline-debugger and gdb-server are exclusive
-	if(enable_inline_debugger && enable_gdb_server)
-	{
-		std::cerr << "ERROR! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " shall not be used together. Use " << param_enable_inline_debugger.GetName() << " and " << param_enable_gdb_server.GetName() << " to enable only one of the two" << std::endl;
-		if(setup_status != unisim::kernel::service::Simulator::ST_OK_DONT_START)
-		{
-			setup_status = unisim::kernel::service::Simulator::ST_ERROR;
-		}
-	}
 	
 	return setup_status;
 }

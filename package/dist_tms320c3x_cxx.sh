@@ -184,8 +184,6 @@ unisim/service/tee/stmt_lookup/tee_32.cc \
 unisim/service/tee/stmt_lookup/tee_64.cc \
 unisim/service/tee/backtrace/tee_32.cc \
 unisim/service/tee/backtrace/tee_64.cc \
-unisim/service/tee/memory_access_reporting/tee_32.cc \
-unisim/service/tee/memory_access_reporting/tee_64.cc \
 unisim/component/cxx/processor/tms320c3x/cpu_tms320vc33.cc \
 unisim/component/cxx/processor/tms320c3x/cpu_tms320vc33_debug.cc \
 unisim/component/cxx/processor/tms320c3x/register.cc \
@@ -308,7 +306,6 @@ unisim/service/debug/debugger/debugger.hh \
 unisim/service/profiling/addr_profiler/profiler.hh \
 unisim/service/os/ti_c_io/ti_c_io.hh \
 unisim/service/time/host_time/time.hh \
-unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/tee/loader/tee.hh \
 unisim/service/tee/blob/tee.hh \
 unisim/service/tee/symbol_table_lookup/tee.hh \
@@ -375,7 +372,6 @@ unisim/service/tee/symbol_table_lookup/tee.tcc \
 unisim/service/tee/blob/tee.tcc \
 unisim/service/tee/stmt_lookup/tee.tcc \
 unisim/service/tee/backtrace/tee.tcc \
-unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/component/cxx/processor/tms320c3x/cpu.tcc \
 unisim/component/cxx/processor/tms320c3x/exception.tcc \
 unisim/component/cxx/memory/ram/memory.tcc"
@@ -738,7 +734,7 @@ fi
 # 	echo "AC_OUTPUT" >> "${DOCS_CONFIGURE_AC}"
 # 
 # 	echo "Generating docs Makefile.am"
-# 	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${DOCS_MAKEFILE_AM}"
+# 	echo "ACLOCAL_AMFLAGS=-I m4" > "${DOCS_MAKEFILE_AM}"
 # 	echo "EXTRA_DIST = ${UNISIM_DOCS_FILES}" >> "${DOCS_MAKEFILE_AM}"
 # 	echo "sharedir = \$(prefix)/share/unisim-tms320c3x-${TMS320C3X_VERSION}" >> "${DOCS_MAKEFILE_AM}"
 # 	echo "share_DATA = tms320c3x_manual.pdf" >> "${DOCS_MAKEFILE_AM}"
@@ -849,7 +845,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 
 	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
 	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -933,7 +929,7 @@ if [ "${has_to_build_tms320c3x_configure}" = "yes" ]; then
 
 	AM_TMS320C3X_VERSION=$(printf ${TMS320C3X_VERSION} | sed -e 's/\./_/g')
 	echo "Generating TMS320C3X Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${TMS320C3X_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${TMS320C3X_MAKEFILE_AM}"
 	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${TMS320C3X_MAKEFILE_AM}"
 	echo "noinst_LIBRARIES = libtms320c3x-${TMS320C3X_VERSION}.a" >> "${TMS320C3X_MAKEFILE_AM}"
 	echo "libtms320c3x_${AM_TMS320C3X_VERSION}_a_SOURCES = ${UNISIM_LIB_TMS320C3X_SOURCE_FILES}" >> "${TMS320C3X_MAKEFILE_AM}"

@@ -507,7 +507,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "AC_OUTPUT" >> "${GENISSLIB_CONFIGURE_AC}"
 
 	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -574,7 +574,7 @@ if [ "${has_to_build_barra_configure}" = "yes" ]; then
 	echo "AC_OUTPUT" >> "${BARRA_CONFIGURE_AC}"
 
 	echo "Generating Barra Makefile.am"
-#	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${BARRA_MAKEFILE_AM}"
+#	echo "ACLOCAL_AMFLAGS=-I m4" > "${BARRA_MAKEFILE_AM}"
 	echo "ACLOCAL_AMFLAGS=-I m4" > "${BARRA_MAKEFILE_AM}"
 	echo "barra_la_INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${BARRA_MAKEFILE_AM}"
 	echo "lib_LTLIBRARIES = libbarra.la" >> "${BARRA_MAKEFILE_AM}"

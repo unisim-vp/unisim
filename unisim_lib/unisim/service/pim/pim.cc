@@ -48,8 +48,8 @@ PIM::PIM(const char *name, Object *parent) :
 
 }
 
-PIM::~PIM() {
-
+PIM::~PIM()
+{
 	for (unsigned int i=0; i < pim_model.size(); i++) {
 		if (pim_model[i]) { delete pim_model[i]; pim_model[i] = NULL;}
 	}

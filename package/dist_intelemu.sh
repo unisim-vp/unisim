@@ -262,7 +262,6 @@ linuxsystem.hh \
 "
 
 UNISIM_SIMULATORS_INTELEMU_EXTRA_FILES="\
-config.h.in \
 "
 
 UNISIM_SIMULATORS_INTELEMU_DATA_FILES="\
@@ -420,13 +419,12 @@ if [ "${has_to_build_configure}" = "yes" ]; then
     AM_INTELEMU_VERSION=$(printf ${INTELEMU_VERSION} | sed -e 's/\./_/g')
     echo "Generating intelemu Makefile.am"
     exec 5> "${INTELEMU_MAKEFILE_AM}"
-    echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" >&5
+    echo "ACLOCAL_AMFLAGS=-I m4" >&5
     echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >&5
     echo "noinst_LIBRARIES = libintelemu-${INTELEMU_VERSION}.a" >&5
     echo "libintelemu_${AM_INTELEMU_VERSION}_a_SOURCES = ${UNISIM_LIB_INTELEMU_SOURCE_FILES}" >&5
     echo "bin_PROGRAMS = unisim-intelemu-${INTELEMU_VERSION}" >&5
     echo "unisim_intelemu_${AM_INTELEMU_VERSION}_SOURCES = ${UNISIM_SIMULATORS_INTELEMU_SOURCE_FILES}" >&5
-    echo "unisim_intelemu_${AM_INTELEMU_VERSION}_CPPFLAGS = -DSIM_EXECUTABLE" >&5
     echo "unisim_intelemu_${AM_INTELEMU_VERSION}_LDADD = libintelemu-${INTELEMU_VERSION}.a" >&5
 
     echo "noinst_HEADERS = ${UNISIM_LIB_INTELEMU_HEADER_FILES} ${UNISIM_SIMULATORS_INTELEMU_HEADER_FILES}" >&5
@@ -461,7 +459,7 @@ if [ "${has_to_build_configure}" = "yes" ]; then
     exec 5>&-
         
     echo "Building intelemu configure"
-    ${SHELL} -c "cd ${DEST_DIR} && aclocal -I m4 && autoconf --force && automake -ac"
+    ${SHELL} -c "cd ${DEST_DIR} && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
 fi
 
 echo "Distribution is up-to-date"

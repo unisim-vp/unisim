@@ -54,7 +54,7 @@ mrs.execute = {
   
   switch (sr) {
   default: cpu.UnpredictableInsnBehaviour(); break;
-  case 0b0001111: cpu.SetGPR(rd, cpu.CPSR().bits()); break;
+  case 0b0001111: cpu.SetGPR(rd, cpu.GetCPSR()); break;
   case 0b1001111: cpu.SetGPR(rd, cpu.CurrentMode().GetSPSR()); break;
   
   case 0b0100000: cpu.SetGPR(rd, cpu.GetBankedRegister(cpu.USER_MODE, 8)); break;
@@ -155,6 +155,8 @@ msr_reg.disasm = {
 };
 
 op msr_reg_psr( 0b11110011[8]: 0b100[3]: write_spsr[1]: rn[4]:> <: 0b1000[4]: mask[4]: 0b00000000[8] );
+msr_reg_psr.var psr_mask : {uint32_t} = {(((mask*0x00204081)&0x01010101)*0xff) &
+                                         (write_spsr ? -1 : ~0x0700fc20) /* Does not affect execution state bits other than E */};
 
 msr_reg_psr.disasm = {
   buffer << "msr\t" << DisasmPSRMask(write_spsr,mask) << ", " << DisasmRegister(rn);
@@ -165,9 +167,9 @@ msr_reg_psr.execute = {
   
   typedef typename ARCH::U32 U32;
   if (write_spsr) {
-    SPSRWriteByInstr( cpu, cpu.GetGPR(rn), mask );
+    SPSRWriteByInstr( cpu, cpu.GetGPR(rn), psr_mask );
   } else {
-    CPSRWriteByInstr( cpu, cpu.GetGPR(rn), mask, false ); // Does not affect execution state bits other than E
+    CPSRWriteByInstr( cpu, cpu.GetGPR(rn), psr_mask );
     // Cannot return to Hyp mode and ThumbEE state
     if (cpu.Cond( (cpu.CPSR().Get(M) == U32(cpu.HYPERVISOR_MODE)) and
                   (cpu.CPSR().Get(J) == U32(1)) and (cpu.CPSR().Get(T) == U32(1)) ))

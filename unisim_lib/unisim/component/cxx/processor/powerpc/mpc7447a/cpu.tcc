@@ -102,11 +102,12 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, l2_power_mode_import("l2-power-mode-import",  this)
 	, dtlb_power_mode_import("dtlb-power-mode-import",  this)
 	, itlb_power_mode_import("itlb-power-mode-import",  this)
-    , linux_printk_buf_addr(0)
-    , linux_printk_buf_size(0)
+	, linux_printk_buf_addr(0)
+	, linux_printk_buf_size(0)
 	, logger(*this)
 	, requires_memory_access_reporting(true)
-	, requires_finished_instruction_reporting(true)
+	, requires_fetch_instruction_reporting(true)
+	, requires_commit_instruction_reporting(true)
 	, cpu_cycle_time(0)
 	, voltage(0)
 	, cpu_cycle(0)
@@ -524,7 +525,8 @@ bool CPU<CONFIG>::BeginSetup()
 {
 	if(!memory_access_reporting_import) {
 		requires_memory_access_reporting = false;
-		requires_finished_instruction_reporting = false;
+		requires_fetch_instruction_reporting = false;
+		requires_commit_instruction_reporting = false;
 	}
 	
 	if(!FloatingPointSelfTest())
@@ -754,14 +756,14 @@ bool CPU<CONFIG>::EndSetup()
 
 template<class CONFIG>
 void 
-CPU<CONFIG>::RequiresMemoryAccessReporting(bool report) {
-	requires_memory_access_reporting = report;
-}
-
-template<class CONFIG>
-void 
-CPU<CONFIG>::RequiresFinishedInstructionReporting(bool report) {
-	requires_finished_instruction_reporting = report;
+CPU<CONFIG>::RequiresMemoryAccessReporting(unisim::service::interfaces::MemoryAccessReportingType type, bool report)
+{
+	switch (type) {
+	case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
+	case unisim::service::interfaces::REPORT_FETCH_INSN:  requires_fetch_instruction_reporting = report; break;
+	case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
+	default: throw 0;
+	}
 }
 
 //=====================================================================
@@ -1779,15 +1781,20 @@ bool CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 template <class CONFIG>
 void CPU<CONFIG>::StepOneInstruction()
 {
+	unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation = 0;
+
+	typename CONFIG::address_t addr = GetCIA();
+	SetNIA(addr + 4);
+
+	if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
+	{
+		memory_access_reporting_import->ReportFetchInstruction(addr);
+	}
 	if (unlikely(debug_yielding_import))
 	{
 		debug_yielding_import->DebugYield();
 	}
 
-	unisim::component::cxx::processor::powerpc::mpc7447a::Operation<CONFIG> *operation = 0;
-
-	typename CONFIG::address_t addr = GetCIA();
-	SetNIA(addr + 4);
 	uint32_t insn;
 	if(likely(EmuFetch(addr, insn)))
 	{
@@ -1836,13 +1843,9 @@ void CPU<CONFIG>::StepOneInstruction()
 				instruction_counter++;
 				
 				/* report a finished instruction */
-				if(unlikely(requires_finished_instruction_reporting))
+				if(unlikely(requires_commit_instruction_reporting and memory_access_reporting_import != 0))
 				{
-					if(unlikely(memory_access_reporting_import != 0))
-					{
-						memory_access_reporting_import->ReportCommitInstruction(GetCIA());
-						memory_access_reporting_import->ReportFetchInstruction(GetNIA());
-					}
+					memory_access_reporting_import->ReportCommitInstruction(GetCIA(),operation->GetLength()/8);
 				}
 			}
 		}
@@ -2275,40 +2278,40 @@ unisim::service::interfaces::Register *CPU<CONFIG>::GetRegister(const char *name
 template <class CONFIG>
 void CPU<CONFIG>::ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
 {
-  scanner.Append(this->GetRegister("r0"));
-  scanner.Append(this->GetRegister("r1"));
-  scanner.Append(this->GetRegister("r2"));
-  scanner.Append(this->GetRegister("r3"));
-  scanner.Append(this->GetRegister("r4"));
-  scanner.Append(this->GetRegister("r5"));
-  scanner.Append(this->GetRegister("r6"));
-  scanner.Append(this->GetRegister("r7"));
-  scanner.Append(this->GetRegister("r8"));
-  scanner.Append(this->GetRegister("r9"));
-  scanner.Append(this->GetRegister("r10"));
-  scanner.Append(this->GetRegister("r11"));
-  scanner.Append(this->GetRegister("r12"));
-  scanner.Append(this->GetRegister("r13"));
-  scanner.Append(this->GetRegister("r14"));
-  scanner.Append(this->GetRegister("r15"));
-  scanner.Append(this->GetRegister("r16"));
-  scanner.Append(this->GetRegister("r17"));
-  scanner.Append(this->GetRegister("r18"));
-  scanner.Append(this->GetRegister("r19"));
-  scanner.Append(this->GetRegister("r20"));
-  scanner.Append(this->GetRegister("r21"));
-  scanner.Append(this->GetRegister("r22"));
-  scanner.Append(this->GetRegister("r23"));
-  scanner.Append(this->GetRegister("r24"));
-  scanner.Append(this->GetRegister("r25"));
-  scanner.Append(this->GetRegister("r26"));
-  scanner.Append(this->GetRegister("r27"));
-  scanner.Append(this->GetRegister("r28"));
-  scanner.Append(this->GetRegister("r29"));
-  scanner.Append(this->GetRegister("r30"));
-  scanner.Append(this->GetRegister("r31"));
-  scanner.Append(this->GetRegister("cr"));
-  scanner.Append(this->GetRegister("cia"));
+	scanner.Append(this->GetRegister("r0"));
+	scanner.Append(this->GetRegister("r1"));
+	scanner.Append(this->GetRegister("r2"));
+	scanner.Append(this->GetRegister("r3"));
+	scanner.Append(this->GetRegister("r4"));
+	scanner.Append(this->GetRegister("r5"));
+	scanner.Append(this->GetRegister("r6"));
+	scanner.Append(this->GetRegister("r7"));
+	scanner.Append(this->GetRegister("r8"));
+	scanner.Append(this->GetRegister("r9"));
+	scanner.Append(this->GetRegister("r10"));
+	scanner.Append(this->GetRegister("r11"));
+	scanner.Append(this->GetRegister("r12"));
+	scanner.Append(this->GetRegister("r13"));
+	scanner.Append(this->GetRegister("r14"));
+	scanner.Append(this->GetRegister("r15"));
+	scanner.Append(this->GetRegister("r16"));
+	scanner.Append(this->GetRegister("r17"));
+	scanner.Append(this->GetRegister("r18"));
+	scanner.Append(this->GetRegister("r19"));
+	scanner.Append(this->GetRegister("r20"));
+	scanner.Append(this->GetRegister("r21"));
+	scanner.Append(this->GetRegister("r22"));
+	scanner.Append(this->GetRegister("r23"));
+	scanner.Append(this->GetRegister("r24"));
+	scanner.Append(this->GetRegister("r25"));
+	scanner.Append(this->GetRegister("r26"));
+	scanner.Append(this->GetRegister("r27"));
+	scanner.Append(this->GetRegister("r28"));
+	scanner.Append(this->GetRegister("r29"));
+	scanner.Append(this->GetRegister("r30"));
+	scanner.Append(this->GetRegister("r31"));
+	scanner.Append(this->GetRegister("cr"));
+	scanner.Append(this->GetRegister("cia"));
 }
 
 template <class CONFIG>

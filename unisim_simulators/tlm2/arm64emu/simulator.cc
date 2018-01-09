@@ -140,19 +140,6 @@ Simulator::Run()
 
   //  double time_start = host_time->GetTime();
 
-#ifndef WIN32
-  void (*prev_sig_int_handler)(int) = 0;
-#endif
-  
-  if ( ! inline_debugger )
-    {
-#ifdef WIN32
-      SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
-#else
-      prev_sig_int_handler = signal(SIGINT, &Simulator::SigIntHandler);
-#endif
-    }
-
   sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
   
   try
@@ -163,15 +150,6 @@ Simulator::Run()
     {
       std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
       std::cerr << e.what() << std::endl;
-    }
-
-  if ( !inline_debugger )
-    {
-#ifdef WIN32
-      SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, FALSE);
-#else
-      signal(SIGINT, prev_sig_int_handler);
-#endif
     }
 
   std::cerr << "Simulation finished" << std::endl;
@@ -205,19 +183,6 @@ Simulator::Run(double time, sc_time_unit unit)
 
   // double time_start = host_time->GetTime();
 
-#ifndef WIN32
-  void (*prev_sig_int_handler)(int) = 0;
-#endif
-
-  if ( ! inline_debugger )
-    {
-#ifdef WIN32
-      SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
-#else
-      prev_sig_int_handler = signal(SIGINT, &Simulator::SigIntHandler);
-#endif
-    }
-
   sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
 
   try
@@ -228,15 +193,6 @@ Simulator::Run(double time, sc_time_unit unit)
     {
       std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
       std::cerr << e.what() << std::endl;
-    }
-
-  if ( !inline_debugger )
-    {
-#ifdef WIN32
-      SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, FALSE);
-#else
-      signal(SIGINT, prev_sig_int_handler);
-#endif
     }
 
   // double time_stop = host_time->GetTime();
@@ -251,22 +207,19 @@ Simulator::Run(double time, sc_time_unit unit)
 }
 
 bool
-Simulator ::
-IsRunning() const
+Simulator::IsRunning() const
 {
   return sc_is_running();
 }
 
 bool
-Simulator ::
-SimulationStarted() const
+Simulator::SimulationStarted() const
 {
   return sc_start_of_simulation_invoked();
 }
 
 bool
-Simulator ::
-SimulationFinished() const
+Simulator::SimulationFinished() const
 {
   return sc_end_of_simulation_invoked();
 }
@@ -330,18 +283,20 @@ void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, 
 }
 
 void
-Simulator ::
-DefaultConfiguration(unisim::kernel::service::Simulator *sim)
+Simulator::DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 {
-  sim->SetVariable("program-name", SIM_PROGRAM_NAME);
-  sim->SetVariable("authors", SIM_AUTHOR);
-  sim->SetVariable("version", SIM_VERSION);
-  sim->SetVariable("copyright", SIM_COPYRIGHT);
-  sim->SetVariable("license", SIM_LICENSE);
-  sim->SetVariable("description", SIM_DESCRIPTION);
-  sim->SetVariable("schematic", SIM_SCHEMATIC);
+  // meta information
+  sim->SetVariable("program-name", "UNISIM ARMEMU");
+  sim->SetVariable("copyright", "Copyright (C) 2017, Commissariat a l'Energie Atomique (CEA)");
+  sim->SetVariable("license", "BSD (see file COPYING)");
+  sim->SetVariable("authors", "Yves Lhuillier <yves.lhuillier@cea.fr>");
+  sim->SetVariable("version", VERSION);
+  sim->SetVariable("description", "UNISIM ARMEMU, ARMv8 generic simulator with linux emulation.");
 
-
+  //=========================================================================
+  //===                     Component run-time configuration              ===
+  //=========================================================================
+  
   sim->SetVariable("kernel_logger.std_err", true);
   sim->SetVariable("kernel_logger.std_err_color", true);
 

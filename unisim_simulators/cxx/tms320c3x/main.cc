@@ -52,7 +52,6 @@
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/loader/coff_loader/coff_loader.hh>
 #include <unisim/service/os/ti_c_io/ti_c_io.hh>
-#include <unisim/service/tee/memory_access_reporting/tee.hh>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 
 #ifdef WIN32
@@ -113,7 +112,6 @@ private:
 	typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DEBUGGER;
 	typedef unisim::service::debug::gdb_server::GDBServer<CPU_CONFIG::address_t> GDB_SERVER;
 	typedef unisim::service::debug::inline_debugger::InlineDebugger<CPU_CONFIG::address_t> INLINE_DEBUGGER;
-	typedef unisim::service::tee::memory_access_reporting::Tee<CPU_CONFIG::address_t> TEE_MEMORY_ACCESS_REPORTING;
 	typedef unisim::service::time::host_time::HostTime HOST_TIME;
 	typedef unisim::service::os::ti_c_io::TI_C_IO<CPU_CONFIG::address_t> TI_C_IO;
 
@@ -308,11 +306,6 @@ void Simulator::Run()
 {
 	double time_start = host_time->GetTime();
 
-	void (*prev_sig_int_handler)(int) = 0;
-
-	if(!enable_inline_debugger)
-		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
-
 	try
 	{
 		simulating = true;
@@ -326,9 +319,6 @@ void Simulator::Run()
 		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
 		cerr << e.what() << endl;
 	}
-
-	if(!enable_inline_debugger)
-		signal(SIGINT, prev_sig_int_handler);
 
 	cerr << "Simulation finished" << endl;
 	
@@ -364,13 +354,6 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 	
 	unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
 
-	// inline-debugger and gdb-server are exclusive
-	if(enable_inline_debugger && enable_gdb_server)
-	{
-		std::cerr << "ERROR! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " shall not be used together. Use " << param_enable_inline_debugger.GetName() << " and " << param_enable_gdb_server.GetName() << " to enable only one of the two" << std::endl;
-		return unisim::kernel::service::Simulator::ST_ERROR;
-	}
-	
 	return setup_status;
 }
 

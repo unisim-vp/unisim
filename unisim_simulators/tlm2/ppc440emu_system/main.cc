@@ -850,13 +850,6 @@ void Simulator::Run()
 {
 	double time_start = host_time->GetTime();
 
-	void (*prev_sig_int_handler)(int) = 0;
-
-	if(!inline_debugger)
-	{
-		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
-	}
-
 	try
 	{
 		sc_start();
@@ -865,11 +858,6 @@ void Simulator::Run()
 	{
 		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
 		cerr << e.what() << endl;
-	}
-
-	if(!inline_debugger)
-	{
-		signal(SIGINT, prev_sig_int_handler);
 	}
 
 	cerr << "Simulation finished" << endl;

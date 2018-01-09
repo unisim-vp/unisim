@@ -1060,13 +1060,13 @@ ldm_rfe.execute = {
   }
   if (w) cpu.SetGPR( rn, base + U32(itr.offset()) );
   
-  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0b1111, true );
+  CPSRWriteByInstr( cpu, cpu.CurrentMode().GetSPSR(), 0xffffffff );
   // Cannot return to Hyp mode and ThumbEE state
   if (cpu.Cond( (cpu.CPSR().Get(M) == U32(cpu.HYPERVISOR_MODE)) and
                 (cpu.CPSR().Get(J) == U32(1)) and (cpu.CPSR().Get(T) == U32(1)) ))
     cpu.UnpredictableInsnBehaviour();
   
-  cpu.BranchExchange( new_pc_value );
+  cpu.BranchExchange( new_pc_value, ARCH::B_RFE );
 };
 
 /*
