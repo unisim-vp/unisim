@@ -286,6 +286,7 @@ public:
 						{
 							tsp->bit_offset++;
 							tsp->bit_time_stamp += serial_payload->get_period();
+							assert(tsp->bit_offset < serial_data_length);
 							curr_value = serial_data[tsp->bit_offset];
 							curr_time_stamp = tsp->bit_time_stamp;
 							curr_period = serial_payload->get_period();

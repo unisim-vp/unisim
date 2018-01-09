@@ -34,7 +34,7 @@
 
 #include "unisim/kernel/tlm2/tlm.hh"
 #include "unisim/kernel/service/service.hh"
-#include <systemc.h>
+#include <systemc>
 #include <stdlib.h>
 #include <string.h>
 
@@ -44,86 +44,86 @@ namespace kernel {
 namespace service {
 
 template <> 
-Variable<sc_time>::Variable(const char *_name, Object *_object, sc_time& _storage, Type type, const char *_description)
+Variable<sc_core::sc_time>::Variable(const char *_name, Object *_object, sc_core::sc_time& _storage, Type type, const char *_description)
 	: VariableBase(_name, _object, type, _description), storage(&_storage)
 {
 	Simulator::simulator->Initialize(this);
 }
 
 template <>
-const char *Variable<sc_time>::GetDataTypeName() const
+const char *Variable<sc_core::sc_time>::GetDataTypeName() const
 {
 	return "sc_time";
 }
 
 template <>
-unsigned int Variable<sc_time>::GetBitSize() const { return sizeof(sc_dt::uint64) * 8; }
+unsigned int Variable<sc_core::sc_time>::GetBitSize() const { return sizeof(sc_dt::uint64) * 8; }
 
 template <> 
-Variable<sc_time>::operator bool () const
+Variable<sc_core::sc_time>::operator bool () const
 { 
-	return Get() != SC_ZERO_TIME; 
+	return Get() != sc_core::SC_ZERO_TIME; 
 }
 
 template <> 
-Variable<sc_time>::operator long long () const
+Variable<sc_core::sc_time>::operator long long () const
 {
 	return (long long) Get().to_seconds();
 }
 
 template <> 
-Variable<sc_time>::operator unsigned long long () const
+Variable<sc_core::sc_time>::operator unsigned long long () const
 {
 	return (unsigned long long) Get().to_seconds();
 }
 
 template <> 
-Variable<sc_time>::operator double () const
+Variable<sc_core::sc_time>::operator double () const
 {
 	return Get().to_seconds();
 }
 
 template <> 
-Variable<sc_time>::operator string () const
+Variable<sc_core::sc_time>::operator string () const
 {
 	return Get().to_string();
 }
 
 template <> 
-VariableBase& Variable<sc_time>::operator = (bool value)
+VariableBase& Variable<sc_core::sc_time>::operator = (bool value)
 { 
-	if (IsMutable()) Set( sc_time(value ? 1.0 : 0.0, SC_SEC) );
+	if (IsMutable()) Set( sc_core::sc_time(value ? 1.0 : 0.0, sc_core::SC_SEC) );
 	return *this;
 }
 
 template <> 
-VariableBase& Variable<sc_time>::operator = (long long value)
+VariableBase& Variable<sc_core::sc_time>::operator = (long long value)
 {
-	if (IsMutable()) Set( sc_time((double) value, SC_SEC) );
+	if (IsMutable()) Set( sc_core::sc_time((double) value, sc_core::SC_SEC) );
 	return *this;
 }
 
 template <> 
-VariableBase& Variable<sc_time>::operator = (unsigned long long value)
+VariableBase& Variable<sc_core::sc_time>::operator = (unsigned long long value)
 {
-	if (IsMutable()) Set( sc_time((double) value, SC_SEC) );
+	if (IsMutable()) Set( sc_core::sc_time((double) value, sc_core::SC_SEC) );
 	return *this;
 }
 
 template <> 
-VariableBase& Variable<sc_time>::operator = (double value)
+VariableBase& Variable<sc_core::sc_time>::operator = (double value)
 {
-	if (IsMutable()) Set( sc_time(value, SC_SEC) );
+	if (IsMutable()) Set( sc_core::sc_time(value, sc_core::SC_SEC) );
 	return *this;
 }
 
 template <> 
-VariableBase& Variable<sc_time>::operator = (const char *value)
+VariableBase& Variable<sc_core::sc_time>::operator = (const char *value)
 {
 	if(IsMutable())
 	{
 		double v = 0.0;
-		sc_time_unit unit = SC_SEC;
+		sc_core::sc_time_unit unit = sc_core::SC_SEC;
 		
 		char *end;
 		
@@ -134,20 +134,20 @@ VariableBase& Variable<sc_time>::operator = (const char *value)
 			// skip spaces
 			while(*end == ' ') end++;
 			
-			if(strncmp(end, "fs", 2) == 0) unit = SC_FS; else
-			if(strncmp(end, "ps", 2) == 0) unit = SC_PS; else
-			if(strncmp(end, "ns", 2) == 0) unit = SC_NS; else
-			if(strncmp(end, "us", 2) == 0) unit = SC_US; else
-			if(strncmp(end, "ms", 2) == 0) unit = SC_MS; else
-			if(strncmp(end, "s", 1) == 0) unit = SC_SEC;
+			if(strncmp(end, "fs", 2) == 0) unit = sc_core::SC_FS; else
+			if(strncmp(end, "ps", 2) == 0) unit = sc_core::SC_PS; else
+			if(strncmp(end, "ns", 2) == 0) unit = sc_core::SC_NS; else
+			if(strncmp(end, "us", 2) == 0) unit = sc_core::SC_US; else
+			if(strncmp(end, "ms", 2) == 0) unit = sc_core::SC_MS; else
+			if(strncmp(end, "s", 1) == 0) unit = sc_core::SC_SEC;
 		}
 		
-		Set( sc_time(v, unit) );
+		Set( sc_core::sc_time(v, unit) );
 	}
 	return *this; 
 }
 
-template class Variable<sc_time>;
+template class Variable<sc_core::sc_time>;
 
 
 } // end of namespace service

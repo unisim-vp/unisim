@@ -74,12 +74,7 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, filename()
 	, base_addr(0)
 	, force_base_addr(false)
-	, force_use_virtual_address(true)
-//	, initialize_extra_segment_bytes(true)
-	/*
-	 * REDA: le binaire HECOSIM en a besoin à FALSE
-	 *   une autre possibilité est de démarrer malgré tout la simulation mais en levant des warnings
-	 */
+	, force_use_virtual_address(false)
 	, initialize_extra_segment_bytes(false)
 	, dump_headers(false)
 	, logger(*this)

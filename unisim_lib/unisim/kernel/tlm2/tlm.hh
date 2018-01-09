@@ -39,8 +39,8 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/hash_table/hash_table.hh>
 #include <unisim/util/likely/likely.hh>
-#include <systemc.h>
-#include <tlm.h>
+#include <systemc>
+#include <tlm>
 #include <stack>
 #include <vector>
 #include <map>
@@ -395,10 +395,10 @@ public:
 	
 	void Notify(EVENT *event)
 	{
-		const sc_time& time_stamp = event->GetTimeStamp();
+		const sc_core::sc_time& time_stamp = event->GetTimeStamp();
 		schedule.insert(std::pair<typename EVENT::Key, EVENT *>(event->GetKey(), event));
-		sc_time t(time_stamp);
-		t -= sc_time_stamp();
+		sc_core::sc_time t(time_stamp);
+		t -= sc_core::sc_time_stamp();
 		kernel_event.notify(t);
 	}
 	
@@ -417,9 +417,9 @@ public:
 			else
 			{
 				it = schedule.begin();
-				const sc_time& time_stamp = sc_time_stamp();
-				const sc_time& event_time_stamp = (*it).first.GetTimeStamp();
-				sc_time t(event_time_stamp);
+				const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
+				const sc_core::sc_time& event_time_stamp = (*it).first.GetTimeStamp();
+				sc_core::sc_time t(event_time_stamp);
 				t -= time_stamp;
 				kernel_event.notify(t);
 			}
@@ -436,8 +436,8 @@ public:
 		if(schedule.empty()) return 0;
 		
 		typename std::multimap<typename EVENT::Key, EVENT *>::iterator it = schedule.begin();
-		const sc_time& time_stamp = sc_time_stamp();
-		const sc_time& event_time_stamp = (*it).first.GetTimeStamp();
+		const sc_core::sc_time& time_stamp = sc_core::sc_time_stamp();
+		const sc_core::sc_time& event_time_stamp = (*it).first.GetTimeStamp();
 		if(event_time_stamp <= time_stamp)
 		{
 			EVENT *event = (*it).second;
@@ -445,7 +445,7 @@ public:
 			return event;
 		}
 		
-		sc_time t(event_time_stamp);
+		sc_core::sc_time t(event_time_stamp);
 		t -= time_stamp;
 		kernel_event.notify(t);
 		
@@ -470,7 +470,7 @@ public:
 		free_list.push(event);
 	}
 	
-	const sc_event& GetKernelEvent() const
+	const sc_core::sc_event& GetKernelEvent() const
 	{
 		return kernel_event;
 	}
@@ -528,9 +528,9 @@ public:
 
 		it = schedule.begin();
 		
-		const sc_time& event_time_stamp = (*it).first.GetTimeStamp();
+		const sc_core::sc_time& event_time_stamp = (*it).first.GetTimeStamp();
 		
-		sc_time t(event_time_stamp);
+		sc_core::sc_time t(event_time_stamp);
 		t -= unpause_time_stamp;
 		
 		kernel_event.notify(t);
@@ -540,21 +540,21 @@ public:
 private:
 	std::multimap<typename EVENT::Key, EVENT *> schedule;
 	std::stack<EVENT *, std::vector<EVENT *> > free_list;
-	sc_event kernel_event;
+	sc_core::sc_event kernel_event;
 	bool paused;
-	sc_time pause_time_stamp;
+	sc_core::sc_time pause_time_stamp;
 };
 
 template <unsigned int BUSWIDTH = 32, class TYPES = tlm::tlm_base_protocol_types>
 class InitiatorStub
 	: public virtual unisim::kernel::service::Object
-	, public sc_module
+	, public sc_core::sc_module
 	, tlm::tlm_bw_transport_if<TYPES>
 {
 public:
 	tlm::tlm_initiator_socket<BUSWIDTH, TYPES> master_sock;
 	
-	InitiatorStub(const sc_module_name& name, unisim::kernel::service::Object *parent = 0);
+	InitiatorStub(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent = 0);
 
 	virtual tlm::tlm_sync_enum nb_transport_bw(typename TYPES::tlm_payload_type& trans, typename TYPES::tlm_phase_type& phase, sc_core::sc_time& t);
 	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
@@ -567,9 +567,9 @@ private:
 };
 
 template <unsigned int BUSWIDTH, class TYPES>
-InitiatorStub<BUSWIDTH, TYPES>::InitiatorStub(const sc_module_name& name, unisim::kernel::service::Object *parent)
+InitiatorStub<BUSWIDTH, TYPES>::InitiatorStub(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent, "An initiator stub")
-	, sc_module(name)
+	, sc_core::sc_module(name)
 	, master_sock("master-sock")
 	, logger(*this)
 	, enable(true)
@@ -618,13 +618,13 @@ void InitiatorStub<BUSWIDTH, TYPES>::invalidate_direct_mem_ptr(sc_dt::uint64 sta
 template <unsigned int BUSWIDTH = 32, class TYPES = tlm::tlm_base_protocol_types>
 class TargetStub
 	: public virtual unisim::kernel::service::Object
-	, public sc_module
+	, public sc_core::sc_module
 	, tlm::tlm_fw_transport_if<TYPES>
 {
 public:
 	tlm::tlm_target_socket<BUSWIDTH, TYPES> slave_sock;
 	
-	TargetStub(const sc_module_name& name, unisim::kernel::service::Object *parent = 0);
+	TargetStub(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent = 0);
 
 	virtual void b_transport(typename TYPES::tlm_payload_type& trans, sc_core::sc_time& t);
 	virtual tlm::tlm_sync_enum nb_transport_fw(typename TYPES::tlm_payload_type& trans, typename TYPES::tlm_phase_type& phase, sc_core::sc_time& t);
@@ -639,9 +639,9 @@ private:
 };
 
 template <unsigned int BUSWIDTH, class TYPES>
-TargetStub<BUSWIDTH, TYPES>::TargetStub(const sc_module_name& name, unisim::kernel::service::Object *parent)
+TargetStub<BUSWIDTH, TYPES>::TargetStub(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent, "A target stub")
-	, sc_module(name)
+	, sc_core::sc_module(name)
 	, slave_sock("slave-sock")
 	, logger(*this)
 	, enable(true)
@@ -680,7 +680,7 @@ void TargetStub<BUSWIDTH, TYPES>::b_transport(typename TYPES::tlm_payload_type& 
 	{
 		if(verbose)
 		{
-			logger << unisim::kernel::logger::DebugInfo << "b_transport(" << trans << ", " << (sc_time_stamp() + t).to_string() << ")" << unisim::kernel::logger::EndDebugInfo;
+			logger << unisim::kernel::logger::DebugInfo << "b_transport(" << trans << ", " << (sc_core::sc_time_stamp() + t).to_string() << ")" << unisim::kernel::logger::EndDebugInfo;
 		}
 	}
 	else
@@ -699,7 +699,7 @@ tlm::tlm_sync_enum TargetStub<BUSWIDTH, TYPES>::nb_transport_fw(typename TYPES::
 		{
 			std::stringstream sstr_phase;
 			sstr_phase << phase;
-			logger << unisim::kernel::logger::DebugInfo << "nb_transport_fw(" << trans << ", " << sstr_phase.str() << ", " << (sc_time_stamp() + t).to_string() << ")" << unisim::kernel::logger::EndDebugInfo;
+			logger << unisim::kernel::logger::DebugInfo << "nb_transport_fw(" << trans << ", " << sstr_phase.str() << ", " << (sc_core::sc_time_stamp() + t).to_string() << ")" << unisim::kernel::logger::EndDebugInfo;
 		}
 	}
 	else
@@ -749,13 +749,13 @@ bool TargetStub<BUSWIDTH, TYPES>::get_direct_mem_ptr(typename TYPES::tlm_payload
 template <unsigned int BUSWIDTH>
 class TargetStub<BUSWIDTH, tlm::tlm_base_protocol_types>
 	: public virtual unisim::kernel::service::Object
-	, public sc_module
+	, public sc_core::sc_module
 	, tlm::tlm_fw_transport_if<tlm::tlm_base_protocol_types>
 {
 public:
 	tlm::tlm_target_socket<BUSWIDTH, tlm::tlm_base_protocol_types> slave_sock;
 	
-	TargetStub(const sc_module_name& name, unisim::kernel::service::Object *parent = 0);
+	TargetStub(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent = 0);
 
 	virtual void b_transport(typename tlm::tlm_generic_payload& trans, sc_core::sc_time& t);
 	virtual tlm::tlm_sync_enum nb_transport_fw(typename tlm::tlm_generic_payload& trans, typename tlm::tlm_phase& phase, sc_core::sc_time& t);
@@ -770,9 +770,9 @@ private:
 };
 
 template <unsigned int BUSWIDTH>
-TargetStub<BUSWIDTH, tlm::tlm_base_protocol_types>::TargetStub(const sc_module_name& name, unisim::kernel::service::Object *parent)
+TargetStub<BUSWIDTH, tlm::tlm_base_protocol_types>::TargetStub(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent, "A target stub")
-	, sc_module(name)
+	, sc_core::sc_module(name)
 	, slave_sock("slave-sock")
 	, logger(*this)
 	, enable(true)
@@ -885,23 +885,23 @@ class LatencyLookupTable
 {
 public:
 	inline LatencyLookupTable();
-	inline LatencyLookupTable(const sc_time& base_lat);
+	inline LatencyLookupTable(const sc_core::sc_time& base_lat);
 	inline ~LatencyLookupTable();
-	inline void SetBaseLatency(const sc_time& base_lat);
-	inline const sc_time& Lookup(unsigned int n); // returns n * base_lat
+	inline void SetBaseLatency(const sc_core::sc_time& base_lat);
+	inline const sc_core::sc_time& Lookup(unsigned int n); // returns n * base_lat
 private:
 	static const unsigned int NUM_LATENCY_FAST_LOOKUP = 16; // 0 <= n < 16 for fast lookup
-	sc_time base_lat;
-	sc_time latency_fast_lookup[NUM_LATENCY_FAST_LOOKUP];
-	std::map<unsigned int, sc_time> latency_slow_lookup;
+	sc_core::sc_time base_lat;
+	sc_core::sc_time latency_fast_lookup[NUM_LATENCY_FAST_LOOKUP];
+	std::map<unsigned int, sc_core::sc_time> latency_slow_lookup;
 };
 
 LatencyLookupTable::LatencyLookupTable()
-	: base_lat(SC_ZERO_TIME)
+	: base_lat(sc_core::SC_ZERO_TIME)
 {
 }
 
-LatencyLookupTable::LatencyLookupTable(const sc_time& _base_lat)
+LatencyLookupTable::LatencyLookupTable(const sc_core::sc_time& _base_lat)
 {
 	SetBaseLatency(_base_lat);
 }
@@ -910,7 +910,7 @@ LatencyLookupTable::~LatencyLookupTable()
 {
 }
 
-inline void LatencyLookupTable::SetBaseLatency(const sc_time& _base_lat)
+inline void LatencyLookupTable::SetBaseLatency(const sc_core::sc_time& _base_lat)
 {
 	base_lat = _base_lat;
 	
@@ -923,7 +923,7 @@ inline void LatencyLookupTable::SetBaseLatency(const sc_time& _base_lat)
 	latency_slow_lookup.clear();
 }
 
-const sc_time& LatencyLookupTable::Lookup(unsigned int n)
+const sc_core::sc_time& LatencyLookupTable::Lookup(unsigned int n)
 {
 	if(n < NUM_LATENCY_FAST_LOOKUP)
 	{
@@ -932,14 +932,14 @@ const sc_time& LatencyLookupTable::Lookup(unsigned int n)
 	
 	do
 	{
-		std::map<unsigned int, sc_time>::iterator iter = latency_slow_lookup.find(n);
+		std::map<unsigned int, sc_core::sc_time>::iterator iter = latency_slow_lookup.find(n);
 		
 		if(iter != latency_slow_lookup.end())
 		{
 			return (*iter).second;
 		}
 		
-		sc_time latency = n * base_lat;
+		sc_core::sc_time latency = n * base_lat;
 		latency_slow_lookup[n] = latency;
 	}
 	while(1);
@@ -958,8 +958,8 @@ public:
 	inline bool IsDenied() const;
 	inline DMIGrant GetGrant() const;
 	inline tlm::tlm_dmi *GetDMI() const;
-	inline const sc_time& GetReadLatency(unsigned int data_length);
-	inline const sc_time& GetWriteLatency(unsigned int data_length);
+	inline const sc_core::sc_time& GetReadLatency(unsigned int data_length);
+	inline const sc_core::sc_time& GetWriteLatency(unsigned int data_length);
 private:
 	friend class DMIRegionCache;
 	DMIGrant dmi_grant;
@@ -1003,12 +1003,12 @@ inline tlm::tlm_dmi *DMIRegion::GetDMI() const
 	return dmi_data;
 }
 
-inline const sc_time& DMIRegion::GetReadLatency(unsigned int data_length)
+inline const sc_core::sc_time& DMIRegion::GetReadLatency(unsigned int data_length)
 {
 	return read_lat_lut.Lookup(data_length);
 }
 
-inline const sc_time& DMIRegion::GetWriteLatency(unsigned int data_length)
+inline const sc_core::sc_time& DMIRegion::GetWriteLatency(unsigned int data_length)
 {
 	return write_lat_lut.Lookup(data_length);
 }

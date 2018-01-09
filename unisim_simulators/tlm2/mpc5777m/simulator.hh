@@ -66,8 +66,7 @@
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
-#include <unisim/service/telnet/telnet.hh>
-#include <unisim/service/netcat/netcat.hh>
+#include <unisim/service/netstreamer/netstreamer.hh>
 #include <unisim/service/os/linux_os/powerpc_linux32.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
@@ -501,8 +500,7 @@ private:
 	typedef unisim::service::debug::gdb_server::GDBServer<CPU_ADDRESS_TYPE> GDB_SERVER;
 	typedef unisim::service::debug::profiler::Profiler<CPU_ADDRESS_TYPE> PROFILER;
 	typedef unisim::service::loader::multiformat_loader::MultiFormatLoader<CPU_ADDRESS_TYPE> LOADER;
-	typedef unisim::service::telnet::Telnet TELNET;
-	typedef unisim::service::netcat::Netcat NETCAT;
+	typedef unisim::service::netstreamer::NetStreamer NETSTREAMER;
 	
 	//=========================================================================
 	//===                           Components                              ===
@@ -603,20 +601,13 @@ private:
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
-	//  - Telnet
-	TELNET *telnet0;
-	TELNET *telnet1;
-	TELNET *telnet2;
-	TELNET *telnet14;
-	TELNET *telnet15;
-	TELNET *telnet16;
-	//  - Netcat
-	NETCAT *netcat0;
-	NETCAT *netcat1;
-	NETCAT *netcat2;
-	NETCAT *netcat14;
-	NETCAT *netcat15;
-	NETCAT *netcat16;
+	//  - NetStreamer
+	NETSTREAMER *netstreamer0;
+	NETSTREAMER *netstreamer1;
+	NETSTREAMER *netstreamer2;
+	NETSTREAMER *netstreamer14;
+	NETSTREAMER *netstreamer15;
+	NETSTREAMER *netstreamer16;
 	
 	bool enable_core0_reset;
 	bool enable_core1_reset;
@@ -633,12 +624,6 @@ private:
 	bool enable_serial_terminal14;
 	bool enable_serial_terminal15;
 	bool enable_serial_terminal16;
-	SerialTerminalProtocol serial_terminal_protocol0;
-	SerialTerminalProtocol serial_terminal_protocol1;
-	SerialTerminalProtocol serial_terminal_protocol2;
-	SerialTerminalProtocol serial_terminal_protocol14;
-	SerialTerminalProtocol serial_terminal_protocol15;
-	SerialTerminalProtocol serial_terminal_protocol16;
 	
 	unisim::kernel::service::Parameter<bool> param_enable_core0_reset;
 	unisim::kernel::service::Parameter<bool> param_enable_core1_reset;
@@ -655,12 +640,6 @@ private:
 	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal14;
 	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal15;
 	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal16;
-	unisim::kernel::service::Parameter<SerialTerminalProtocol> param_serial_terminal_protocol0;
-	unisim::kernel::service::Parameter<SerialTerminalProtocol> param_serial_terminal_protocol1;
-	unisim::kernel::service::Parameter<SerialTerminalProtocol> param_serial_terminal_protocol2;
-	unisim::kernel::service::Parameter<SerialTerminalProtocol> param_serial_terminal_protocol14;
-	unisim::kernel::service::Parameter<SerialTerminalProtocol> param_serial_terminal_protocol15;
-	unisim::kernel::service::Parameter<SerialTerminalProtocol> param_serial_terminal_protocol16;
 
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);

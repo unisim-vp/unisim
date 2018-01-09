@@ -45,12 +45,12 @@ namespace generic_router {
 
 template<typename OWNER, class CONFIG>
 RouterDispatcher<OWNER, CONFIG>::
-RouterDispatcher(const sc_module_name &name, unsigned int id, OWNER *owner, cb_t cb) :
-sc_module(name),
+RouterDispatcher(const sc_core::sc_module_name &name, unsigned int id, OWNER *owner, cb_t cb) :
+sc_core::sc_module(name),
 m_owner(owner),
 m_cb(cb),
 m_id(id),
-m_cycle_time(SC_ZERO_TIME),
+m_cycle_time(sc_core::SC_ZERO_TIME),
 m_queue(),
 m_event("m_event"),
 m_complete_event("m_complete_event"),

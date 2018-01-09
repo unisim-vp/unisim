@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM2_MEMORY_RAM_MEMORY_HH__
 #define __UNISIM_COMPONENT_TLM2_MEMORY_RAM_MEMORY_HH__
 
-#include <systemc.h>
+#include <systemc>
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
@@ -68,7 +68,7 @@ const bool DEFAULT_DEBUG = false; // no debug
  */
 template <unsigned int BUSWIDTH = DEFAULT_BUSWIDTH, class ADDRESS = DEFAULT_ADDRESS, unsigned int BURST_LENGTH = DEFAULT_BURST_LENGTH, uint32_t PAGE_SIZE = DEFAULT_PAGE_SIZE, bool DEBUG = DEFAULT_DEBUG>
 class Memory :
-	public sc_module,
+	public sc_core::sc_module,
 	public unisim::component::cxx::memory::ram::Memory<ADDRESS, PAGE_SIZE>,
 	public tlm::tlm_fw_transport_if<>
 {
@@ -85,7 +85,7 @@ public:
 	 * @param name the name of the module
 	 * @param parent the parent service
 	 */
-	Memory(const sc_module_name& name, Object *parent = 0);
+	Memory(const sc_core::sc_module_name& name, Object *parent = 0);
 	/**
 	 * Destructor
 	 */
@@ -120,22 +120,22 @@ protected:
 
 
 private:
-	void UpdateTime(unsigned int data_length, const sc_time& latency, sc_time& t);
+	void UpdateTime(unsigned int data_length, const sc_core::sc_time& latency, sc_core::sc_time& t);
 
 	/** Verbosity */
 	bool verbose;
 	/** The cycle time */
-	sc_time cycle_time;
+	sc_core::sc_time cycle_time;
 	/** Latencies */
-	sc_time read_latency;
-	sc_time write_latency;
+	sc_core::sc_time read_latency;
+	sc_core::sc_time write_latency;
 	/** read-only flag */
 	bool read_only;
 	/** The parameter to set frequency */
-	Parameter<sc_time> param_cycle_time;
+	Parameter<sc_core::sc_time> param_cycle_time;
 	/** The parameters to set the latencies */
-	Parameter<sc_time> param_read_latency;
-	Parameter<sc_time> param_write_latency;
+	Parameter<sc_core::sc_time> param_read_latency;
+	Parameter<sc_core::sc_time> param_write_latency;
 	/** The parameter to set the verbosity */
 	Parameter<bool> param_verbose;
 	/** The parameter to set read-only */

@@ -42,7 +42,7 @@
 #include <iostream>
 
 #define LOCATION 	" - location = " << __FUNCTION__ << ":unisim_lib/unisim/component/tlm2/interconnect/generic_router/router.tcc:" << __LINE__
-#define TIME(X) 	" - time = " << sc_time_stamp() + (X)
+#define TIME(X) 	" - time = " << sc_core::sc_time_stamp() + (X)
 #define PHASE(X) 	" - phase = " << 	( (X) == tlm::BEGIN_REQ  ? 	"BEGIN_REQ" : \
 										( (X) == tlm::END_REQ    ? 	"END_REQ" : \
 										( (X) == tlm::BEGIN_RESP ? 	"BEGIN_RESP" : \
@@ -138,15 +138,15 @@ template <class CONFIG> const unsigned int unisim::component::tlm2::interconnect
 
 template<class CONFIG>
 Router<CONFIG>::
-Router(const sc_module_name &name, Object *parent) :
+Router(const sc_core::sc_module_name &name, Object *parent) :
 unisim::kernel::service::Object(name, parent, "A memory-mapped router"),
 unisim::kernel::service::Service<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >(name, parent),
 unisim::kernel::service::Client<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >(name, parent),
-sc_module(name),
+sc_core::sc_module(name),
 memory_export("memory-export", this),
 m_req_dispatcher(),
 m_rsp_dispatcher(),
-cycle_time(SC_ZERO_TIME),
+cycle_time(sc_core::SC_ZERO_TIME),
 param_cycle_time("cycle_time", this, cycle_time, "Time to process a request/response by the router"),
 port_buffer_size(0),
 param_port_buffer_size("port_buffer_size", this, port_buffer_size, "Defines the size of the buffer for incomming requests in each of the input ports (0 = infinite)"),
@@ -328,7 +328,7 @@ BeginSetup()
 
 	SetVerboseAll();
 
-	if (cycle_time == SC_ZERO_TIME) 
+	if (cycle_time == sc_core::SC_ZERO_TIME) 
 	{
 		logger << DebugError << "PARAMETER ERROR: the " << param_cycle_time.GetName() << " parameter must be bigger than 0" << endl
 			<< LOCATION << EndDebug;
@@ -362,9 +362,9 @@ BeginSetup()
 
 	/* initialize ready queues */
 	for (unsigned int i = 0; i < INPUT_SOCKETS; i++)
-		m_targ_req_ready.push_back(SC_ZERO_TIME);
+		m_targ_req_ready.push_back(sc_core::SC_ZERO_TIME);
 	for (unsigned int i = 0; i < OUTPUT_SOCKETS; i++)
-		m_init_rsp_ready.push_back(SC_ZERO_TIME);
+		m_init_rsp_ready.push_back(sc_core::SC_ZERO_TIME);
 	
 	/* display the configuration of the router */
 	if (VerboseSetup()) 
@@ -431,16 +431,16 @@ I_nb_transport_bw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 					logger << EndDebug;
 				}
 				/* check when the request can be accepted by the router */
-				sc_core::sc_time cur_time = sc_time_stamp() + time;
+				sc_core::sc_time cur_time = sc_core::sc_time_stamp() + time;
 				if (cur_time <= m_init_rsp_ready[id]) {
 					/* the init port is not ready to receive the response, get the time when it will be ready */
-					time = m_init_rsp_ready[id] - sc_time_stamp();
+					time = m_init_rsp_ready[id] - sc_core::sc_time_stamp();
 					m_init_rsp_ready[id] = m_init_rsp_ready[id] + cycle_time;
 				} else {
 					/* the inti port is ready for the time the response is received, however we have to make sure
 					 *   that the incomming transactions is synchronized with the router cycle_time */
 					sc_core::sc_time t_time = ((cycle_time * floor(cur_time / cycle_time)) + cycle_time);
-					time = t_time - sc_time_stamp();
+					time = t_time - sc_core::sc_time_stamp();
 					m_init_rsp_ready[id] = t_time + cycle_time;
 				}
 				/* push the response into the response dispatcher */
@@ -540,16 +540,16 @@ T_nb_transport_fw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 				logger << EndDebug;
 			}
 			/* check when the request can be accepted by the router */
-			sc_core::sc_time cur_time = sc_time_stamp() + time;
+			sc_core::sc_time cur_time = sc_core::sc_time_stamp() + time;
 			if (cur_time <= m_targ_req_ready[id]) {
 				/* the target port is not ready, get the time when it will be ready */
-				time = m_targ_req_ready[id] - sc_time_stamp();
+				time = m_targ_req_ready[id] - sc_core::sc_time_stamp();
 				m_targ_req_ready[id] = m_targ_req_ready[id] + cycle_time;
 			} else {
 				/* the target port is ready for the time the request is received, however we have to make sure
 				 *   that the incomming transactions is synchronized with the router cycle_time */
 				sc_core::sc_time t_time = ((cycle_time * floor(cur_time / cycle_time)) + cycle_time);
-				time = t_time - sc_time_stamp();
+				time = t_time - sc_core::sc_time_stamp();
 				m_targ_req_ready[id] = t_time + cycle_time;
 			}
 
@@ -1029,7 +1029,7 @@ SendReq(unsigned int id, transaction_type &trans) {
 	/* a request is ready to be sent through the init_port
 	 *   prepare phase and time */
 	phase_type phase = tlm::BEGIN_REQ;
-	sc_core::sc_time time(SC_ZERO_TIME);
+	sc_core::sc_time time(sc_core::SC_ZERO_TIME);
 	
 	if (VerboseTLM()) {
 		logger << DebugInfo << "Sending transaction request through init_socket[" << id << "]" << endl
@@ -1095,16 +1095,16 @@ SendReq(unsigned int id, transaction_type &trans) {
 							logger << EndDebug;
 						}
 						/* check when the request can be accepted by the router */
-						sc_core::sc_time cur_time = sc_time_stamp() + time;
+						sc_core::sc_time cur_time = sc_core::sc_time_stamp() + time;
 						if (cur_time <= m_init_rsp_ready[id]) {
 							/* the init port is not ready to receive the response, get the time when it will be ready */
-							time = m_init_rsp_ready[id] - sc_time_stamp();
+							time = m_init_rsp_ready[id] - sc_core::sc_time_stamp();
 							m_init_rsp_ready[id] = m_init_rsp_ready[id] + cycle_time;
 						} else {
 							/* the inti port is ready for the time the response is received, however we have to make sure
 							 *   that the incomming transactions is synchronized with the router cycle_time */
 							sc_core::sc_time t_time = ((cycle_time * floor(cur_time / cycle_time)) + cycle_time);
-							time = t_time - sc_time_stamp();
+							time = t_time - sc_core::sc_time_stamp();
 							m_init_rsp_ready[id] = t_time + cycle_time;
 						}
 						/* push the response into the response dispatcher */
@@ -1158,16 +1158,16 @@ SendReq(unsigned int id, transaction_type &trans) {
 					logger << EndDebug;
 				}
 				/* check when the request can be accepted by the router */
-				sc_core::sc_time cur_time = sc_time_stamp() + time;
+				sc_core::sc_time cur_time = sc_core::sc_time_stamp() + time;
 				if (cur_time <= m_init_rsp_ready[id]) {
 					/* the init port is not ready to receive the response, get the time when it will be ready */
-					time = m_init_rsp_ready[id] - sc_time_stamp();
+					time = m_init_rsp_ready[id] - sc_core::sc_time_stamp();
 					m_init_rsp_ready[id] = m_init_rsp_ready[id] + cycle_time;
 				} else {
 					/* the init port is ready for the time the response is received, however we have to make sure
 						*   that the incomming transactions is synchronized with the router cycle_time */
 					sc_core::sc_time t_time = ((cycle_time * floor(cur_time / cycle_time)) + cycle_time);
-					time = t_time - sc_time_stamp();
+					time = t_time - sc_core::sc_time_stamp();
 					m_init_rsp_ready[id] = t_time + cycle_time;
 				}
 				/* push the response into the response dispatcher */
@@ -1184,7 +1184,7 @@ SendRsp(unsigned int id, transaction_type &trans) {
 	/* a response is ready to be sent through the targ_port[id]
 	 *   prepare phase and time */
 	phase_type phase = tlm::BEGIN_RESP;
-	sc_core::sc_time time(SC_ZERO_TIME);
+	sc_core::sc_time time(sc_core::SC_ZERO_TIME);
 	
 	if (VerboseTLM()) {
 		logger << DebugInfo << "Sending transaction response through targ_socket[" << id << "]" << endl
@@ -1235,14 +1235,14 @@ SendRsp(unsigned int id, transaction_type &trans) {
  *************************************************************************/
 
 template<class CONFIG>
-inline sc_time
+inline sc_core::sc_time
 Router<CONFIG>::
-Sync(const sc_time &time) {
+Sync(const sc_core::sc_time &time) {
 	sc_core::sc_time wait_time;
-	wait_time = time + sc_time_stamp();
+	wait_time = time + sc_core::sc_time_stamp();
 	double div = wait_time / cycle_time;
 	wait_time = cycle_time * (std::floor(div) + 1);
-	wait_time = wait_time - sc_time_stamp();
+	wait_time = wait_time - sc_core::sc_time_stamp();
 	//dispatch_event.notify(wait_time);
 	return wait_time;
 /*		sc_core::sc_time wait_time;

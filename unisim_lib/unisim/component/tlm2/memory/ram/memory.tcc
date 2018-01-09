@@ -55,9 +55,9 @@ using unisim::kernel::logger::EndDebugError;
 /* Constructor */
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
-Memory(const sc_module_name& name, Object *parent)
+Memory(const sc_core::sc_module_name& name, Object *parent)
 	: Object(name, parent, "this module implements a memory")
-	, sc_module(name)
+	, sc_core::sc_module(name)
 	, unisim::component::cxx::memory::ram::Memory<ADDRESS, PAGE_SIZE>(name, parent)
 	, slave_sock("slave-sock")
 	, logger(*this)
@@ -66,7 +66,7 @@ Memory(const sc_module_name& name, Object *parent)
 	, verbose(false)
 	, cycle_time()
 	, read_latency(cycle_time)
-	, write_latency(SC_ZERO_TIME)
+	, write_latency(sc_core::SC_ZERO_TIME)
 	, read_only(false)
 	, param_cycle_time("cycle-time", this, cycle_time, "memory cycle time")
 	, param_read_latency("read-latency", this, read_latency, "memory read latency")
@@ -105,7 +105,7 @@ BeginSetup() {
 		logger << DebugInfo << LOCATION
 			<< " cycle time of " << cycle_time 
 			<< std::endl << EndDebugInfo;
-	if(cycle_time == SC_ZERO_TIME) {
+	if(cycle_time == sc_core::SC_ZERO_TIME) {
 		logger << DebugError << LOCATION
 				<< "cycle time must be different than 0" << std::endl
 				<< EndDebugError;
@@ -120,7 +120,7 @@ BeginSetup() {
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void 
 Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
-UpdateTime(unsigned int data_length, const sc_time& latency, sc_time& t)
+UpdateTime(unsigned int data_length, const sc_core::sc_time& latency, sc_core::sc_time& t)
 {
 	if(data_length)
 	{
@@ -162,8 +162,8 @@ bool Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::get_direct_mem_p
 		//std::cerr << sc_module::name() << ": grant 0x" << std::hex << dmi_start_addr << "-0x" << dmi_end_addr << std::dec << std::endl;
 		dmi_data.set_dmi_ptr(dmi_ptr);
 		// set latency per byte (with a typical burst of BURST_LENGTH * BUSWIDTH bits)
-		sc_time read_burst_time = (BURST_LENGTH * cycle_time) + read_latency;
-		sc_time write_burst_time = (BURST_LENGTH * cycle_time) + write_latency;
+		sc_core::sc_time read_burst_time = (BURST_LENGTH * cycle_time) + read_latency;
+		sc_core::sc_time write_burst_time = (BURST_LENGTH * cycle_time) + write_latency;
 		dmi_data.set_read_latency(read_burst_time / ((BURST_LENGTH * BUSWIDTH) / 8));
 		dmi_data.set_write_latency(write_burst_time / ((BURST_LENGTH * BUSWIDTH) / 8));
 		return true;
@@ -192,7 +192,7 @@ unsigned int Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transpor
 			if(IsVerbose())
 			{
 				logger << DebugInfo << LOCATION
-					<< ":" << sc_time_stamp().to_string()
+					<< ":" << sc_core::sc_time_stamp().to_string()
 					<< ": received a TLM_READ_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -209,7 +209,7 @@ unsigned int Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transpor
 			if(IsVerbose())
 			{
 				logger << DebugInfo << LOCATION
-					<< ":" << sc_time_stamp().to_string()
+					<< ":" << sc_core::sc_time_stamp().to_string()
 					<< ": received a TLM_WRITE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -224,7 +224,7 @@ unsigned int Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transpor
 		case tlm::TLM_IGNORE_COMMAND:
 			// transport_dbg should not receive such a command
 			logger << DebugWarning << LOCATION
-					<< ":" << sc_time_stamp().to_string() 
+					<< ":" << sc_core::sc_time_stamp().to_string() 
 					<< " : received an unexpected TLM_IGNORE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -247,7 +247,7 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb
 	if(phase != tlm::BEGIN_REQ)
 	{
 		logger << DebugWarning << LOCATION
-				<< ":" << (sc_time_stamp() + t).to_string() 
+				<< ":" << (sc_core::sc_time_stamp() + t).to_string() 
 				<< " : received an unexpected phase " << phase << std::endl
 				<< EndDebugWarning;
 		Object::Stop(-1);
@@ -270,7 +270,7 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb
 			if(IsVerbose())
 			{
 				logger << DebugInfo << LOCATION
-					<< ":" << (sc_time_stamp() + t).to_string()
+					<< ":" << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": received a TLM_READ_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -292,7 +292,7 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb
 			if(IsVerbose())
 			{
 				logger << DebugInfo << LOCATION
-					<< ":" << (sc_time_stamp() + t).to_string()
+					<< ":" << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": received a TLM_WRITE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -302,7 +302,7 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb
 			if(read_only)
 			{
 				status = true;
-				logger << DebugWarning << (sc_time_stamp() + t).to_string()
+				logger << DebugWarning << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": Attempt to write into a read-only memory at @0x" << std::hex << addr << std::dec
 					<< EndDebugWarning;
 			}
@@ -324,7 +324,7 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb
 			if(IsVerbose())
 			{
 				logger << DebugInfo << LOCATION
-					<< ":" << (sc_time_stamp() + t).to_string()
+					<< ":" << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": received a TLM_IGNORE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -367,7 +367,7 @@ b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 			if(IsVerbose())
 			{
 				logger << DebugInfo << LOCATION
-					<< ":" << (sc_time_stamp() + t).to_string()
+					<< ":" << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": received a TLM_READ_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length"
@@ -398,7 +398,7 @@ b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 			if(IsVerbose())
 			{
 				logger << DebugInfo << LOCATION
-					<< ":" << (sc_time_stamp() + t).to_string()
+					<< ":" << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": received a TLM_WRITE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -408,7 +408,7 @@ b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 			if(read_only)
 			{
 				status = true;
-				logger << DebugWarning << (sc_time_stamp() + t).to_string()
+				logger << DebugWarning << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": Attempt to write into a read-only memory at @0x" << std::hex << addr << std::dec
 					<< EndDebugWarning;
 			}
@@ -430,7 +430,7 @@ b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 			if(IsVerbose())
 			{
 				logger << DebugInfo << LOCATION
-					<< ":" << (sc_time_stamp() + t).to_string()
+					<< ":" << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": received a TLM_IGNORE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl

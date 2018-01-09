@@ -39,7 +39,7 @@
 #include <unisim/component/tlm2/processor/powerpc/e200/mpc57xx/cpu.tcc>
 #include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/cpu.tcc>
 #include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/cpu.hh>
-#include <systemc.h>
+#include <systemc>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>

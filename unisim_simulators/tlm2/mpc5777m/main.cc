@@ -44,7 +44,7 @@ int sc_main(int argc, char *argv[])
 	WSADATA wsaData;
 	if(WSAStartup(wVersionRequested, &wsaData) != 0)
 	{
-		cerr << "WSAStartup failed" << endl;
+		std::cerr << "WSAStartup failed" << std::endl;
 		return -1;
 	}
 #endif
@@ -55,12 +55,12 @@ int sc_main(int argc, char *argv[])
 		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
 			break;
 		case unisim::kernel::service::Simulator::ST_WARNING:
-			cerr << "Some warnings occurred during setup" << endl;
+			std::cerr << "Some warnings occurred during setup" << std::endl;
 		case unisim::kernel::service::Simulator::ST_OK_TO_START:
 			simulator->Run();
 			break;
 		case unisim::kernel::service::Simulator::ST_ERROR:
-			cerr << "Can't start simulation because of previous errors" << endl;
+			std::cerr << "Can't start simulation because of previous errors" << std::endl;
 			break;
 	}
 

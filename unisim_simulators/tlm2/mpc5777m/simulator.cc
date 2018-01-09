@@ -92,18 +92,12 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, profiler()
 	, sim_time(0)
 	, host_time(0)
-	, telnet0(0)
-	, telnet1(0)
-	, telnet2(0)
-	, telnet14(0)
-	, telnet15(0)
-	, telnet16(0)
-	, netcat0(0)
-	, netcat1(0)
-	, netcat2(0)
-	, netcat14(0)
-	, netcat15(0)
-	, netcat16(0)
+	, netstreamer0(0)
+	, netstreamer1(0)
+	, netstreamer2(0)
+	, netstreamer14(0)
+	, netstreamer15(0)
+	, netstreamer16(0)
 	, enable_core0_reset(true)
 	, enable_core1_reset(true)
 	, enable_core2_reset(true)
@@ -119,12 +113,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, enable_serial_terminal14(false)
 	, enable_serial_terminal15(false)
 	, enable_serial_terminal16(false)
-	, serial_terminal_protocol0(SERIAL_TERMINAL_PROTOCOL_TELNET)
-	, serial_terminal_protocol1(SERIAL_TERMINAL_PROTOCOL_TELNET)
-	, serial_terminal_protocol2(SERIAL_TERMINAL_PROTOCOL_TELNET)
-	, serial_terminal_protocol14(SERIAL_TERMINAL_PROTOCOL_TELNET)
-	, serial_terminal_protocol15(SERIAL_TERMINAL_PROTOCOL_TELNET)
-	, serial_terminal_protocol16(SERIAL_TERMINAL_PROTOCOL_TELNET)
 	, param_enable_core0_reset("enable-core0-reset", this, enable_core0_reset, "Enable/Disable Core #0 reset")
 	, param_enable_core1_reset("enable-core1-reset", this, enable_core1_reset, "Enable/Disable Core #1 reset")
 	, param_enable_core2_reset("enable-core2-reset", this, enable_core2_reset, "Enable/Disable Core #2 reset")
@@ -140,12 +128,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, param_enable_serial_terminal14("enable-serial-terminal14", 0, enable_serial_terminal14, "Enable/Disable serial terminal over LINFlexD_14 UART serial interface")
 	, param_enable_serial_terminal15("enable-serial-terminal15", 0, enable_serial_terminal15, "Enable/Disable serial terminal over LINFlexD_15 UART serial interface")
 	, param_enable_serial_terminal16("enable-serial-terminal16", 0, enable_serial_terminal16, "Enable/Disable serial terminal over LINFlexD_16 UART serial interface")
-	, param_serial_terminal_protocol0("serial-terminal-protocol0", 0, serial_terminal_protocol0, "Host network protocol to communicate with guest serial terminal over LINFlexD_0 UART serial interface (telnet or netcat)")
-	, param_serial_terminal_protocol1("serial-terminal-protocol1", 0, serial_terminal_protocol1, "Host network protocol to communicate with guest serial terminal over LINFlexD_1 UART serial interface (telnet or netcat)")
-	, param_serial_terminal_protocol2("serial-terminal-protocol2", 0, serial_terminal_protocol2, "Host network protocol to communicate with guest serial terminal over LINFlexD_2 UART serial interface (telnet or netcat)")
-	, param_serial_terminal_protocol14("serial-terminal-protocol14", 0, serial_terminal_protocol14, "Host network protocol to communicate with guest serial terminal over LINFlexD_14 UART serial interface (telnet or netcat)")
-	, param_serial_terminal_protocol15("serial-terminal-protocol15", 0, serial_terminal_protocol15, "Host network protocol to communicate with guest serial terminal over LINFlexD_15 UART serial interface (telnet or netcat)")
-	, param_serial_terminal_protocol16("serial-terminal-protocol16", 0, serial_terminal_protocol16, "Host network protocol to communicate with guest serial terminal over LINFlexD_16 UART serial interface (telnet or netcat)")
 	, exit_status(0)
 {
 	unsigned int channel_num;
@@ -277,20 +259,13 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
 	host_time = new unisim::service::time::host_time::HostTime("host-time");
-	//  - Telnet
-	telnet0 = (enable_serial_terminal0 && (serial_terminal_protocol0 == SERIAL_TERMINAL_PROTOCOL_TELNET)) ? new TELNET("telnet0") : 0;
-	telnet1 = (enable_serial_terminal1 && (serial_terminal_protocol1 == SERIAL_TERMINAL_PROTOCOL_TELNET)) ? new TELNET("telnet1") : 0;
-	telnet2 = (enable_serial_terminal2 && (serial_terminal_protocol2 == SERIAL_TERMINAL_PROTOCOL_TELNET)) ? new TELNET("telnet2") : 0;
-	telnet14 = (enable_serial_terminal14 && (serial_terminal_protocol14 == SERIAL_TERMINAL_PROTOCOL_TELNET)) ? new TELNET("telnet14") : 0;
-	telnet15 = (enable_serial_terminal15 && (serial_terminal_protocol15 == SERIAL_TERMINAL_PROTOCOL_TELNET)) ? new TELNET("telnet15") : 0;
-	telnet16 = (enable_serial_terminal16 && (serial_terminal_protocol16 == SERIAL_TERMINAL_PROTOCOL_TELNET)) ? new TELNET("telnet16") : 0;
-	//  - Netcat
-	netcat0 = (enable_serial_terminal0 && (serial_terminal_protocol0 == SERIAL_TERMINAL_PROTOCOL_NETCAT)) ? new NETCAT("netcat0") : 0;
-	netcat1 = (enable_serial_terminal1 && (serial_terminal_protocol1 == SERIAL_TERMINAL_PROTOCOL_NETCAT)) ? new NETCAT("netcat1") : 0;
-	netcat2 = (enable_serial_terminal2 && (serial_terminal_protocol2 == SERIAL_TERMINAL_PROTOCOL_NETCAT)) ? new NETCAT("netcat2") : 0;
-	netcat14 = (enable_serial_terminal14 && (serial_terminal_protocol14 == SERIAL_TERMINAL_PROTOCOL_NETCAT)) ? new NETCAT("netcat14") : 0;
-	netcat15 = (enable_serial_terminal15 && (serial_terminal_protocol15 == SERIAL_TERMINAL_PROTOCOL_NETCAT)) ? new NETCAT("netcat15") : 0;
-	netcat16 = (enable_serial_terminal16 && (serial_terminal_protocol16 == SERIAL_TERMINAL_PROTOCOL_NETCAT)) ? new NETCAT("netcat16") : 0;
+	//  - NetStreamer
+	netstreamer0 = enable_serial_terminal0 ? new NETSTREAMER("netstreamer0") : 0;
+	netstreamer1 = enable_serial_terminal1 ? new NETSTREAMER("netstreamer1") : 0;
+	netstreamer2 = enable_serial_terminal2 ? new NETSTREAMER("netstreamer2") : 0;
+	netstreamer14 = enable_serial_terminal14 ? new NETSTREAMER("netstreamer14") : 0;
+	netstreamer15 = enable_serial_terminal15 ? new NETSTREAMER("netstreamer15") : 0;
+	netstreamer16 = enable_serial_terminal16 ? new NETSTREAMER("netstreamer16") : 0;
 	
 	//=========================================================================
 	//===                          Port registration                        ===
@@ -3199,75 +3174,27 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	if(enable_serial_terminal0)
 	{
-		switch(serial_terminal_protocol0)
-		{
-			case SERIAL_TERMINAL_PROTOCOL_TELNET:
-				serial_terminal0->char_io_import >> telnet0->char_io_export;
-				break;
-			case SERIAL_TERMINAL_PROTOCOL_NETCAT:
-				serial_terminal0->char_io_import >> netcat0->char_io_export;
-				break;
-		}
+		serial_terminal0->char_io_import >> netstreamer0->char_io_export;
 	}
 	if(enable_serial_terminal1)
 	{
-		switch(serial_terminal_protocol1)
-		{
-			case SERIAL_TERMINAL_PROTOCOL_TELNET:
-				serial_terminal1->char_io_import >> telnet1->char_io_export;
-				break;
-			case SERIAL_TERMINAL_PROTOCOL_NETCAT:
-				serial_terminal1->char_io_import >> netcat1->char_io_export;
-				break;
-		}
+		serial_terminal1->char_io_import >> netstreamer1->char_io_export;
 	}
 	if(enable_serial_terminal2)
 	{
-		switch(serial_terminal_protocol2)
-		{
-			case SERIAL_TERMINAL_PROTOCOL_TELNET:
-				serial_terminal2->char_io_import >> telnet2->char_io_export;
-				break;
-			case SERIAL_TERMINAL_PROTOCOL_NETCAT:
-				serial_terminal2->char_io_import >> netcat2->char_io_export;
-				break;
-		}
+		serial_terminal2->char_io_import >> netstreamer2->char_io_export;
 	}
 	if(enable_serial_terminal14)
 	{
-		switch(serial_terminal_protocol14)
-		{
-			case SERIAL_TERMINAL_PROTOCOL_TELNET:
-				serial_terminal14->char_io_import >> telnet14->char_io_export;
-				break;
-			case SERIAL_TERMINAL_PROTOCOL_NETCAT:
-				serial_terminal14->char_io_import >> netcat14->char_io_export;
-				break;
-		}
+		serial_terminal14->char_io_import >> netstreamer14->char_io_export;
 	}
 	if(enable_serial_terminal15)
 	{
-		switch(serial_terminal_protocol15)
-		{
-			case SERIAL_TERMINAL_PROTOCOL_TELNET:
-				serial_terminal15->char_io_import >> telnet15->char_io_export;
-				break;
-			case SERIAL_TERMINAL_PROTOCOL_NETCAT:
-				serial_terminal15->char_io_import >> netcat15->char_io_export;
-				break;
-		}
+		serial_terminal15->char_io_import >> netstreamer15->char_io_export;
 	}
 	if(enable_serial_terminal16)
 	{
-		switch(serial_terminal_protocol16)
-		{
-			case SERIAL_TERMINAL_PROTOCOL_TELNET:
-				serial_terminal16->char_io_import >> telnet16->char_io_export;
-				break;
-			case SERIAL_TERMINAL_PROTOCOL_NETCAT:
-				serial_terminal16->char_io_import >> netcat16->char_io_export;
-				break;
-		}
+		serial_terminal16->char_io_import >> netstreamer16->char_io_export;
 	}
 	
 	SC_HAS_PROCESS(Simulator);
@@ -3353,18 +3280,12 @@ Simulator::~Simulator()
 	if(sim_time) delete sim_time;
 	if(host_time) delete host_time;
 	if(loader) delete loader;
-	if(telnet0) delete telnet0;
-	if(telnet1) delete telnet1;
-	if(telnet2) delete telnet2;
-	if(telnet14) delete telnet14;
-	if(telnet15) delete telnet15;
-	if(telnet16) delete telnet16;
-	if(netcat0) delete netcat0;
-	if(netcat1) delete netcat1;
-	if(netcat2) delete netcat2;
-	if(netcat14) delete netcat14;
-	if(netcat15) delete netcat15;
-	if(netcat16) delete netcat16;
+	if(netstreamer0) delete netstreamer0;
+	if(netstreamer1) delete netstreamer1;
+	if(netstreamer2) delete netstreamer2;
+	if(netstreamer14) delete netstreamer14;
+	if(netstreamer15) delete netstreamer15;
+	if(netstreamer16) delete netstreamer16;
 }
 
 void Simulator::Core0ResetProcess()
@@ -3402,46 +3323,6 @@ void Simulator::Core2ResetProcess()
 		p_reset_b_2 = true;
 	}
 }
-
-#if 0
-void Simulator::ResetProcess()
-{
-// 	sc_core::sc_signal<sc_dt::sc_uint<30> >& p_rstbase = GetSignal<sc_dt::sc_uint<30> >("HARDWARE.p_rstbase");
-// 	p_rstbase = sc_dt::sc_uint<30>(0x404100 /*0x13a0000*/ /*0x1500000*/ >> 2);
-	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& p_reset_b_2 = GetSignal<bool, sc_core::SC_MANY_WRITERS>("HARDWARE.p_reset_b_2");
-	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& p_reset_b_0 = GetSignal<bool, sc_core::SC_MANY_WRITERS>("HARDWARE.p_reset_b_0");
-	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& p_reset_b_1 = GetSignal<bool, sc_core::SC_MANY_WRITERS>("HARDWARE.p_reset_b_1");
-
-	p_reset_b_2 = false;
-	wait(sc_core::sc_time(10.0, sc_core::SC_NS));
-	p_reset_b_2 = true;
-	
-	wait(sc_core::sc_time(990.0, sc_core::SC_NS));
-	p_reset_b_0 = false;
-	p_reset_b_1 = false;
-	wait(sc_core::sc_time(10.0, sc_core::SC_NS));
-	p_reset_b_0 = true;
-	p_reset_b_1 = true;
-
-// 	wait(sc_core::sc_time(40.0, sc_core::SC_NS));
-// 	sc_core::sc_signal<sc_dt::sc_uint<14> >& p_voffset = GetSignal<sc_dt::sc_uint<14> >("HARDWARE.p_voffset");
-// 	p_voffset = sc_dt::sc_uint<14>(0x1234);
-// 
-// 	sc_core::sc_signal<bool>& p_avec_b = GetSignal<bool>("HARDWARE.p_avec_b");
-// 	p_avec_b = true;
-// 
-// 	sc_core::sc_signal<bool>& p_extint_b = GetSignal<bool>("HARDWARE.p_extint_b");
-// 	p_extint_b = false;
-// 	wait(sc_core::sc_time(10.0, sc_core::SC_NS));
-// 	p_extint_b = true;
-
-// 	wait(sc_core::sc_time(10.0, sc_core::SC_US));
-// 	std::cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Sending IRQ#33" << std::endl;
-// 	sc_core::sc_signal<bool>& irq = GetSignal<bool>("HARDWARE.irq_33");
-// 	irq = 1;
-	
-}
-#endif
 
 void Simulator::InterruptSource(unsigned int irq_num, const std::string& source)
 {
@@ -3950,63 +3831,56 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("debugger.sel-cpu[7]", 1); // profiler
 	simulator->SetVariable("debugger.sel-cpu[8]", 2); // profiler
 	
-	simulator->SetVariable("telnet0.telnet-tcp-port", 12348);
-	simulator->SetVariable("telnet1.telnet-tcp-port", 12349);
-	simulator->SetVariable("telnet2.telnet-tcp-port", 12350);
-	simulator->SetVariable("telnet14.telnet-tcp-port", 12351);
-	simulator->SetVariable("telnet15.telnet-tcp-port", 12352);
-	simulator->SetVariable("telnet16.telnet-tcp-port", 12353);
-
-	simulator->SetVariable("netcat0.tcp-port", 12348);
-	simulator->SetVariable("netcat1.tcp-port", 12349);
-	simulator->SetVariable("netcat2.tcp-port", 12350);
-	simulator->SetVariable("netcat14.tcp-port", 12351);
-	simulator->SetVariable("netcat15.tcp-port", 12352);
-	simulator->SetVariable("netcat16.tcp-port", 12353);
+	simulator->SetVariable("netstreamer0.tcp-port", 12348);
+	simulator->SetVariable("netstreamer1.tcp-port", 12349);
+	simulator->SetVariable("netstreamer2.tcp-port", 12350);
+	simulator->SetVariable("netstreamer14.tcp-port", 12351);
+	simulator->SetVariable("netstreamer15.tcp-port", 12352);
+	simulator->SetVariable("netstreamer16.tcp-port", 12353);
 }
 
 void Simulator::Run()
 {
-	cerr << "Starting simulation at supervisor privilege level" << endl;
+	std::cerr << "Starting simulation at supervisor privilege level" << std::endl;
 	
 	double time_start = host_time->GetTime();
 
-	sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
+	sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
 	
 	try
 	{
-		sc_start();
+		sc_core::sc_start();
 	}
 	catch(std::runtime_error& e)
 	{
-		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
-		cerr << e.what() << endl;
+		std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
+		std::cerr << e.what() << std::endl;
 	}
 
-	cerr << "Simulation finished" << endl;
+	std::cerr << "Simulation finished" << std::endl;
 
 	double time_stop = host_time->GetTime();
 	double spent_time = time_stop - time_start;
 
-	cerr << "Simulation run-time parameters:" << endl;
-	DumpParameters(cerr);
-	cerr << endl;
-	cerr << "Simulation formulas:" << endl;
-	DumpFormulas(cerr);
-	cerr << endl;
-	cerr << "Simulation statistics:" << endl;
-	DumpStatistics(cerr);
-	cerr << endl;
+	std::cerr << "Simulation run-time parameters:" << std::endl;
+	DumpParameters(std::cerr);
+	std::cerr << std::endl;
+	std::cerr << "Simulation formulas:" << std::endl;
+	DumpFormulas(std::cerr);
+	std::cerr << std::endl;
+	std::cerr << "Simulation statistics:" << std::endl;
+	DumpStatistics(std::cerr);
+	std::cerr << std::endl;
 
 	uint64_t instruction_counter = (uint64_t)(*peripheral_core_2)["instruction-counter"] + (uint64_t)(*main_core_0)["instruction-counter"] + (uint64_t)(*main_core_1)["instruction-counter"];
 	double run_time = (double)(*peripheral_core_2)["run-time"] + (double)(*main_core_0)["run-time"] + (double)(*main_core_1)["run-time"];
 	double idle_time = (double)(*peripheral_core_2)["idle-time"] + (double)(*main_core_0)["idle-time"] + (double)(*main_core_1)["idle-time"];
 	
-	cerr << "simulation time: " << spent_time << " seconds" << endl;
-	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-	cerr << "target speed: " << (instruction_counter / (run_time - idle_time) / 1000000.0) << " MIPS" << endl;
-	cerr << "host simulation speed: " << ((double) instruction_counter / spent_time / 1000000.0) << " MIPS" << endl;
-	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+	std::cerr << "simulation time: " << spent_time << " seconds" << std::endl;
+	std::cerr << "simulated time : " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << std::endl;
+	std::cerr << "target speed: " << (instruction_counter / (run_time - idle_time) / 1000000.0) << " MIPS" << std::endl;
+	std::cerr << "host simulation speed: " << ((double) instruction_counter / spent_time / 1000000.0) << " MIPS" << std::endl;
+	std::cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
 	
 	if(enable_profiler)
 	{
@@ -4049,17 +3923,17 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 		std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 	}
 	std::cerr << "Program exited with status " << exit_status << std::endl;
-	if(sc_get_status() != SC_STOPPED)
+	if(sc_core::sc_get_status() != sc_core::SC_STOPPED)
 	{
-		sc_stop();
+		sc_core::sc_stop();
 	}
 	if(!asynchronous)
 	{
-		sc_process_handle h = sc_get_current_process_handle();
+		sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
 		switch(h.proc_kind())
 		{
-			case SC_THREAD_PROC_: 
-			case SC_CTHREAD_PROC_:
+			case sc_core::SC_THREAD_PROC_: 
+			case sc_core::SC_CTHREAD_PROC_:
 				sc_core::wait();
 				break;
 			default:
@@ -4080,132 +3954,3 @@ void Simulator::SigInt()
 		unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
 	}
 }
-
-namespace unisim {
-namespace kernel {
-namespace service {
-
-template <> Variable<SerialTerminalProtocol>::Variable(const char *_name, Object *_object, SerialTerminalProtocol& _storage, Type type, const char *_description) :
-	VariableBase(_name, _object, type, _description), storage(&_storage)
-{
-	Simulator::simulator->Initialize(this);
-	AddEnumeratedValue("telnet");
-	AddEnumeratedValue("netcat");
-}
-
-template <>
-const char *Variable<SerialTerminalProtocol>::GetDataTypeName() const
-{
-	return "serial-terminal-protocol";
-}
-
-template <>
-unsigned int Variable<SerialTerminalProtocol>::GetBitSize() const
-{
-	return 1;
-}
-
-template <> Variable<SerialTerminalProtocol>::operator bool () const { return *storage != SERIAL_TERMINAL_PROTOCOL_TELNET; }
-template <> Variable<SerialTerminalProtocol>::operator long long () const { return *storage; }
-template <> Variable<SerialTerminalProtocol>::operator unsigned long long () const { return *storage; }
-template <> Variable<SerialTerminalProtocol>::operator double () const { return (double)(*storage); }
-template <> Variable<SerialTerminalProtocol>::operator string () const
-{
-	switch(*storage)
-	{
-		case SERIAL_TERMINAL_PROTOCOL_TELNET: return std::string("telnet");
-		case SERIAL_TERMINAL_PROTOCOL_NETCAT: return std::string("netcat");
-	}
-	return std::string("?");
-}
-
-template <> VariableBase& Variable<SerialTerminalProtocol>::operator = (bool value)
-{
-	if(IsMutable())
-	{
-		SerialTerminalProtocol tmp = *storage;
-		switch((unsigned int) value)
-		{
-			case SERIAL_TERMINAL_PROTOCOL_TELNET:
-			case SERIAL_TERMINAL_PROTOCOL_NETCAT:
-				tmp = (SerialTerminalProtocol)(unsigned int) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
-	}
-	return *this;
-}
-
-template <> VariableBase& Variable<SerialTerminalProtocol>::operator = (long long value)
-{
-	if(IsMutable())
-	{
-		SerialTerminalProtocol tmp = *storage;
-		switch(value)
-		{
-			case SERIAL_TERMINAL_PROTOCOL_TELNET:
-			case SERIAL_TERMINAL_PROTOCOL_NETCAT:
-				tmp = (SerialTerminalProtocol) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
-	}
-	return *this;
-}
-
-template <> VariableBase& Variable<SerialTerminalProtocol>::operator = (unsigned long long value)
-{
-	if(IsMutable())
-	{
-		SerialTerminalProtocol tmp = *storage;
-		switch(value)
-		{
-			case SERIAL_TERMINAL_PROTOCOL_TELNET:
-			case SERIAL_TERMINAL_PROTOCOL_NETCAT:
-				tmp = (SerialTerminalProtocol) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
-	}
-	return *this;
-}
-
-template <> VariableBase& Variable<SerialTerminalProtocol>::operator = (double value)
-{
-	if(IsMutable())
-	{
-		SerialTerminalProtocol tmp = *storage;
-		switch((unsigned int) value)
-		{
-			case SERIAL_TERMINAL_PROTOCOL_TELNET:
-			case SERIAL_TERMINAL_PROTOCOL_NETCAT:
-				tmp = (SerialTerminalProtocol)(unsigned int) value;
-				break;
-		}
-		SetModified(*storage != tmp);
-		*storage = tmp;
-	}
-	return *this;
-}
-
-template <> VariableBase& Variable<SerialTerminalProtocol>::operator = (const char *value)
-{
-	if(IsMutable())
-	{
-		SerialTerminalProtocol tmp = *storage;
-		if(std::string(value) == std::string("telnet")) tmp = SERIAL_TERMINAL_PROTOCOL_TELNET;
-		else if(std::string(value) == std::string("netcat")) tmp = SERIAL_TERMINAL_PROTOCOL_NETCAT;
-		SetModified(*storage != tmp);
-		*storage = tmp;
-	}
-	return *this;
-}
-
-template class Variable<SerialTerminalProtocol>;
-
-} // end of service namespace
-} // end of kernel namespace
-} // end of unisim namespace

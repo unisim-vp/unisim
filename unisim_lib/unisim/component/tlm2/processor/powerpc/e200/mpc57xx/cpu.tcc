@@ -58,9 +58,9 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <typename TYPES, typename CONFIG>
-CPU<TYPES, CONFIG>::CPU(const sc_module_name& name, Object *parent)
+CPU<TYPES, CONFIG>::CPU(const sc_core::sc_module_name& name, Object *parent)
 	: Object(name, parent, "this module implements a e200 CPU core of MPC57XX SoC")
-	, sc_module(name)
+	, sc_core::sc_module(name)
 	, Super(name, parent)
 	, i_ahb_if("i_ahb_if")
 	, d_ahb_if("d_ahb_if")
@@ -342,8 +342,8 @@ template <typename TYPES, typename CONFIG>
 void CPU<TYPES, CONFIG>::Synchronize()
 {
 	wait(cpu_time);
-	cpu_time = SC_ZERO_TIME;
-	run_time = sc_time_stamp();
+	cpu_time = sc_core::SC_ZERO_TIME;
+	run_time = sc_core::sc_time_stamp();
 	
 	SampleInputs();
 }
@@ -358,18 +358,18 @@ inline void CPU<TYPES, CONFIG>::AlignToBusClock()
 	
 	sc_dt::uint64 time_alignment_tu = bus_cycle_time_tu - modulo;
 	//sc_time time_alignment(time_alignment_tu, false);
-	sc_time time_alignment(sc_get_time_resolution());
+	sc_core::sc_time time_alignment(sc_core::sc_get_time_resolution());
 	time_alignment *= time_alignment_tu;
 	cpu_time += time_alignment;
 	run_time += time_alignment;
 }
 
 template <typename TYPES, typename CONFIG>
-void CPU<TYPES, CONFIG>::AlignToBusClock(sc_time& t)
+void CPU<TYPES, CONFIG>::AlignToBusClock(sc_core::sc_time& t)
 {
-	sc_time modulo(t);
+	sc_core::sc_time modulo(t);
 	modulo %= bus_cycle_time;
-	if(modulo == SC_ZERO_TIME) return; // already aligned
+	if(modulo == sc_core::SC_ZERO_TIME) return; // already aligned
 	t += bus_cycle_time - modulo;
 }
 
@@ -382,12 +382,12 @@ void CPU<TYPES, CONFIG>::Idle()
 	Synchronize();
 	
 	// wait for an external event
-	sc_time old_time_stamp(sc_time_stamp());
+	sc_core::sc_time old_time_stamp(sc_core::sc_time_stamp());
 	wait(external_event);
-	sc_time new_time_stamp(sc_time_stamp());
+	sc_core::sc_time new_time_stamp(sc_core::sc_time_stamp());
 	
 	// compute the time spent by the SystemC wait
-	sc_time delta_time(new_time_stamp);
+	sc_core::sc_time delta_time(new_time_stamp);
 	delta_time -= old_time_stamp;
 	
 	if(enable_host_idle)
@@ -614,7 +614,7 @@ bool CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 				{
 					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Instruction Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(buffer, dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), size);
-					const sc_time& read_lat = dmi_region->GetReadLatency(size);
+					const sc_core::sc_time& read_lat = dmi_region->GetReadLatency(size);
 					cpu_time += read_lat;
 					run_time += read_lat;
 					return true;
@@ -658,7 +658,7 @@ bool CPU<TYPES, CONFIG>::AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 	
 	i_ahb_if->b_transport(*payload, cpu_time);
 	
-	run_time = sc_time_stamp();
+	run_time = sc_core::sc_time_stamp();
 	run_time += cpu_time;
 	
 	tlm::tlm_response_status status = payload->get_response_status();
@@ -709,7 +709,7 @@ bool CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 				{
 					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(buffer, dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), size);
-					const sc_time& read_lat = dmi_region->GetReadLatency(size);
+					const sc_core::sc_time& read_lat = dmi_region->GetReadLatency(size);
 					cpu_time += read_lat;
 					run_time += read_lat;
 					return true;
@@ -754,7 +754,7 @@ bool CPU<TYPES, CONFIG>::AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffe
 	
 	d_ahb_if->b_transport(*payload, cpu_time);
 	
-	run_time = sc_time_stamp();
+	run_time = sc_core::sc_time_stamp();
 	run_time += cpu_time;
 
 	tlm::tlm_response_status status = payload->get_response_status();
@@ -805,7 +805,7 @@ bool CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void
 				{
 					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) Super::logger << DebugInfo << "AHB Data Write: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), buffer, size);
-					const sc_time& write_lat = dmi_region->GetWriteLatency(size);
+					const sc_core::sc_time& write_lat = dmi_region->GetWriteLatency(size);
 					cpu_time += write_lat;
 					run_time += write_lat;
 					return true;
@@ -849,7 +849,7 @@ bool CPU<TYPES, CONFIG>::AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void
 	
 	d_ahb_if->b_transport(*payload, cpu_time);
 	
-	run_time = sc_time_stamp();
+	run_time = sc_core::sc_time_stamp();
 	run_time += cpu_time;
 
 	tlm::tlm_response_status status = payload->get_response_status();

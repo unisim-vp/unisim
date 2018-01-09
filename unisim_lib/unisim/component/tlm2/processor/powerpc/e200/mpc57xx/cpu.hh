@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_POWERPC_E200_MPC57XX_CPU_HH__
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_POWERPC_E200_MPC57XX_CPU_HH__
 
-#include <systemc.h>
+#include <systemc>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
@@ -63,7 +63,7 @@ using unisim::kernel::logger::Logger;
 
 template <typename TYPES, typename CONFIG>
 class CPU
-	: public sc_module
+	: public sc_core::sc_module
 	, public CONFIG::CPU
 	, public tlm::tlm_bw_transport_if<>
 	, public tlm::tlm_fw_transport_if<>
@@ -92,7 +92,7 @@ public:
 	sc_core::sc_in<sc_dt::sc_uint<14> > p_voffset;        // Interrupt vector offset for vectored interrupts
 	sc_core::sc_out<bool>               p_iack;           // interrupt acknowledge
 	
-	CPU(const sc_module_name& name, Object *parent = 0);
+	CPU(const sc_core::sc_module_name& name, Object *parent = 0);
 	virtual ~CPU();
 	
 	virtual void end_of_elaboration();
@@ -122,7 +122,7 @@ public:
 	void Run();
 	
 protected:
-	sc_time GetBurstLatency(uint32_t size, const sc_time& latency) const;
+	sc_core::sc_time GetBurstLatency(uint32_t size, const sc_core::sc_time& latency) const;
 	virtual bool AHBInsnRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
 	virtual bool AHBDataRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, STORAGE_ATTR storage_attr, bool rwitm);
 	virtual bool AHBDataWrite(PHYSICAL_ADDRESS physical_addr, const void *buffer, uint32_t size, STORAGE_ATTR storage_attr);
@@ -133,17 +133,17 @@ protected:
 private:
 	unisim::kernel::tlm2::ClockPropertiesProxy m_clk_prop_proxy;
 	PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
-	sc_time time_per_instruction;
+	sc_core::sc_time time_per_instruction;
 	double clock_multiplier;
-	sc_time bus_cycle_time;         //<! Bus (AHB) cycle time
-	sc_time cpu_time;               //<! local time (relative to sc_time_stamp)
-	sc_time timer_time;             //<! absolute time from the internal timers point of view
-	sc_time nice_time;              //<! period of synchronization with other threads
-	sc_time run_time;               //<! absolute timer (local time + sc_time_stamp)
-	sc_time idle_time;              //<! total idle time
+	sc_core::sc_time bus_cycle_time;         //<! Bus (AHB) cycle time
+	sc_core::sc_time cpu_time;               //<! local time (relative to sc_time_stamp)
+	sc_core::sc_time timer_time;             //<! absolute time from the internal timers point of view
+	sc_core::sc_time nice_time;              //<! period of synchronization with other threads
+	sc_core::sc_time run_time;               //<! absolute timer (local time + sc_time_stamp)
+	sc_core::sc_time idle_time;              //<! total idle time
 	bool enable_host_idle;
-	sc_event external_event;
-	sc_event int_ack_event;
+	sc_core::sc_event external_event;
+	sc_core::sc_event int_ack_event;
 	double ipc;
 	double one;
 	bool enable_dmi;
@@ -151,14 +151,14 @@ private:
 	unsigned int ahb_master_id;
 
 	Parameter<double> param_clock_multiplier;
-	Parameter<sc_time> param_nice_time;
+	Parameter<sc_core::sc_time> param_nice_time;
 	Parameter<double> param_ipc;
 	Parameter<bool> param_enable_host_idle;
 	Parameter<bool> param_enable_dmi;
 	Parameter<bool> param_debug_dmi;
 	Statistic<double> stat_one;
-	Statistic<sc_time> stat_run_time;
-	Statistic<sc_time> stat_idle_time;
+	Statistic<sc_core::sc_time> stat_run_time;
+	Statistic<sc_core::sc_time> stat_idle_time;
 	Formula<double> formula_idle_rate;
 	Formula<double> formula_load_rate;
 	Parameter<unsigned int> param_ahb_master_id;
@@ -167,7 +167,7 @@ private:
 	unisim::kernel::tlm2::DMIRegionCache d_dmi_region_cache;
 
 	inline void AlignToBusClock() ALWAYS_INLINE;
-	void AlignToBusClock(sc_time& t);
+	void AlignToBusClock(sc_core::sc_time& t);
 };
 
 } // end of namespace mpc57xx

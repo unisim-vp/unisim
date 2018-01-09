@@ -180,8 +180,7 @@ unisim/service/tee/symbol_table_lookup/tee_32.cc \
 unisim/service/tee/blob/tee_32.cc \
 unisim/service/tee/stmt_lookup/tee_32.cc \
 unisim/service/tee/backtrace/tee_32.cc \
-unisim/service/telnet/telnet.cc \
-unisim/service/netcat/netcat.cc \
+unisim/service/netstreamer/netstreamer.cc \
 unisim/service/os/linux_os/powerpc_linux32.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/floating.cc \
 unisim/component/cxx/processor/powerpc/e200/mpc57xx/e200z710n3/cpu.cc \
@@ -824,8 +823,7 @@ unisim/service/tee/symbol_table_lookup/tee.hh \
 unisim/service/tee/blob/tee.hh \
 unisim/service/tee/stmt_lookup/tee.hh \
 unisim/service/tee/backtrace/tee.hh \
-unisim/service/telnet/telnet.hh \
-unisim/service/netcat/netcat.hh \
+unisim/service/netstreamer/netstreamer.hh \
 unisim/service/os/linux_os/linux.hh \
 unisim/service/os/linux_os/powerpc_linux32.hh \
 unisim/component/cxx/memory/ram/memory.hh \
@@ -1117,6 +1115,8 @@ gtkwave.ini \
 config.t32 \
 baf.bin \
 "
+
+# soft/src/syscalls/syscalls.c
 
 UNISIM_SIMULATORS_MPC5777M_TESTBENCH_FILES="\
 main.cc \

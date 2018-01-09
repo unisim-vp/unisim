@@ -10606,7 +10606,7 @@
 			<variable name="force-use-virtual-address">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
-				<value>true</value>
+				<value>false</value>
 				<description>force use of virtual addresses instead of physical addresses (default false)</description>
 				<enumeration>
 					<item>true</item>
@@ -10708,7 +10708,7 @@
 			<variable name="force-use-virtual-address">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
-				<value>true</value>
+				<value>false</value>
 				<description>force use of virtual addresses instead of physical addresses (default false)</description>
 				<enumeration>
 					<item>true</item>
@@ -10810,7 +10810,7 @@
 			<variable name="force-use-virtual-address">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
-				<value>true</value>
+				<value>false</value>
 				<description>force use of virtual addresses instead of physical addresses (default false)</description>
 				<enumeration>
 					<item>true</item>
@@ -10997,12 +10997,22 @@
 			</enumeration>
 		</variable>
 	</object>
-	<object name="netcat0">
+	<object name="netstreamer0">
 		<variable name="verbose">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
 			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="debug">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable debug (intended for developper)</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
@@ -11030,13 +11040,127 @@
 			<value>localhost</value>
 			<description>if acting as a client, name of server to connect to</description>
 		</variable>
+		<variable name="protocol">
+			<type>parameter</type>
+			<data_type>netstreamer-protocol</data_type>
+			<value>telnet</value>
+			<description>network protocol (raw or telnet)</description>
+			<enumeration>
+				<item>raw</item>
+				<item>telnet</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-null-character">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter null character</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-line-feed">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter line feed</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 	</object>
-	<object name="netcat14">
+	<object name="netstreamer1">
 		<variable name="verbose">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
 			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="debug">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable debug (intended for developper)</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="tcp-port">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>12349</value>
+			<description>TCP/IP port</description>
+		</variable>
+		<variable name="is-server">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>if 1, act as a server, otherwise act as a client</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="server-name">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>localhost</value>
+			<description>if acting as a client, name of server to connect to</description>
+		</variable>
+		<variable name="protocol">
+			<type>parameter</type>
+			<data_type>netstreamer-protocol</data_type>
+			<value>raw</value>
+			<description>network protocol (raw or telnet)</description>
+			<enumeration>
+				<item>raw</item>
+				<item>telnet</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-null-character">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter null character</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-line-feed">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter line feed</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="netstreamer14">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="debug">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable debug (intended for developper)</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
@@ -11064,13 +11188,53 @@
 			<value>localhost</value>
 			<description>if acting as a client, name of server to connect to</description>
 		</variable>
+		<variable name="protocol">
+			<type>parameter</type>
+			<data_type>netstreamer-protocol</data_type>
+			<value>raw</value>
+			<description>network protocol (raw or telnet)</description>
+			<enumeration>
+				<item>raw</item>
+				<item>telnet</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-null-character">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter null character</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-line-feed">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter line feed</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 	</object>
-	<object name="netcat15">
+	<object name="netstreamer15">
 		<variable name="verbose">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
 			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="debug">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable debug (intended for developper)</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
@@ -11098,13 +11262,53 @@
 			<value>localhost</value>
 			<description>if acting as a client, name of server to connect to</description>
 		</variable>
+		<variable name="protocol">
+			<type>parameter</type>
+			<data_type>netstreamer-protocol</data_type>
+			<value>raw</value>
+			<description>network protocol (raw or telnet)</description>
+			<enumeration>
+				<item>raw</item>
+				<item>telnet</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-null-character">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter null character</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-line-feed">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter line feed</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 	</object>
-	<object name="netcat16">
+	<object name="netstreamer16">
 		<variable name="verbose">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
 			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="debug">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable debug (intended for developper)</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
@@ -11132,13 +11336,53 @@
 			<value>localhost</value>
 			<description>if acting as a client, name of server to connect to</description>
 		</variable>
+		<variable name="protocol">
+			<type>parameter</type>
+			<data_type>netstreamer-protocol</data_type>
+			<value>raw</value>
+			<description>network protocol (raw or telnet)</description>
+			<enumeration>
+				<item>raw</item>
+				<item>telnet</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-null-character">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter null character</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-line-feed">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter line feed</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 	</object>
-	<object name="netcat2">
+	<object name="netstreamer2">
 		<variable name="verbose">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
 			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="debug">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable debug (intended for developper)</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
@@ -11165,6 +11409,36 @@
 			<data_type>string</data_type>
 			<value>localhost</value>
 			<description>if acting as a client, name of server to connect to</description>
+		</variable>
+		<variable name="protocol">
+			<type>parameter</type>
+			<data_type>netstreamer-protocol</data_type>
+			<value>raw</value>
+			<description>network protocol (raw or telnet)</description>
+			<enumeration>
+				<item>raw</item>
+				<item>telnet</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-null-character">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter null character</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filter-line-feed">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Whether to filter line feed</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
 		</variable>
 	</object>
 	<object name="profiler0">
@@ -11293,294 +11567,6 @@
 			<description>CSV delimiter</description>
 		</variable>
 	</object>
-	<object name="telnet0">
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="telnet-tcp-port">
-			<type>parameter</type>
-			<data_type>signed 32-bit integer</data_type>
-			<value>12348</value>
-			<description>TCP/IP port of telnet</description>
-		</variable>
-		<variable name="enable-negotiation">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>true</value>
-			<description>Enable negotiation with client</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="filter-null-character">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Whether to filter null character</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="filter-line-feed">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Whether to filter line feed</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-	</object>
-	<object name="telnet1">
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="telnet-tcp-port">
-			<type>parameter</type>
-			<data_type>signed 32-bit integer</data_type>
-			<value>12349</value>
-			<description>TCP/IP port of telnet</description>
-		</variable>
-		<variable name="enable-negotiation">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>true</value>
-			<description>Enable negotiation with client</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="filter-null-character">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Whether to filter null character</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="filter-line-feed">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Whether to filter line feed</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-	</object>
-	<object name="telnet14">
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="telnet-tcp-port">
-			<type>parameter</type>
-			<data_type>signed 32-bit integer</data_type>
-			<value>12351</value>
-			<description>TCP/IP port of telnet</description>
-		</variable>
-		<variable name="enable-negotiation">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>true</value>
-			<description>Enable negotiation with client</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="filter-null-character">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Whether to filter null character</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="filter-line-feed">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Whether to filter line feed</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-	</object>
-	<object name="telnet15">
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="telnet-tcp-port">
-			<type>parameter</type>
-			<data_type>signed 32-bit integer</data_type>
-			<value>12352</value>
-			<description>TCP/IP port of telnet</description>
-		</variable>
-		<variable name="enable-negotiation">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>true</value>
-			<description>Enable negotiation with client</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="filter-null-character">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Whether to filter null character</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="filter-line-feed">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Whether to filter line feed</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-	</object>
-	<object name="telnet16">
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="telnet-tcp-port">
-			<type>parameter</type>
-			<data_type>signed 32-bit integer</data_type>
-			<value>12353</value>
-			<description>TCP/IP port of telnet</description>
-		</variable>
-		<variable name="enable-negotiation">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>true</value>
-			<description>Enable negotiation with client</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="filter-null-character">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Whether to filter null character</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="filter-line-feed">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Whether to filter line feed</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-	</object>
-	<object name="telnet2">
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="telnet-tcp-port">
-			<type>parameter</type>
-			<data_type>signed 32-bit integer</data_type>
-			<value>12350</value>
-			<description>TCP/IP port of telnet</description>
-		</variable>
-		<variable name="enable-negotiation">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>true</value>
-			<description>Enable negotiation with client</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="filter-null-character">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Whether to filter null character</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="filter-line-feed">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Whether to filter line feed</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-	</object>
 	<variable name="enable-gdb-server">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
@@ -11679,66 +11665,6 @@
 		<enumeration>
 			<item>true</item>
 			<item>false</item>
-		</enumeration>
-	</variable>
-	<variable name="serial-terminal-protocol0">
-		<type>parameter</type>
-		<data_type>serial-terminal-protocol</data_type>
-		<value>telnet</value>
-		<description>Host network protocol to communicate with guest serial terminal over LINFlexD_0 UART serial interface (telnet or netcat)</description>
-		<enumeration>
-			<item>telnet</item>
-			<item>netcat</item>
-		</enumeration>
-	</variable>
-	<variable name="serial-terminal-protocol1">
-		<type>parameter</type>
-		<data_type>serial-terminal-protocol</data_type>
-		<value>telnet</value>
-		<description>Host network protocol to communicate with guest serial terminal over LINFlexD_1 UART serial interface (telnet or netcat)</description>
-		<enumeration>
-			<item>telnet</item>
-			<item>netcat</item>
-		</enumeration>
-	</variable>
-	<variable name="serial-terminal-protocol14">
-		<type>parameter</type>
-		<data_type>serial-terminal-protocol</data_type>
-		<value>telnet</value>
-		<description>Host network protocol to communicate with guest serial terminal over LINFlexD_14 UART serial interface (telnet or netcat)</description>
-		<enumeration>
-			<item>telnet</item>
-			<item>netcat</item>
-		</enumeration>
-	</variable>
-	<variable name="serial-terminal-protocol15">
-		<type>parameter</type>
-		<data_type>serial-terminal-protocol</data_type>
-		<value>telnet</value>
-		<description>Host network protocol to communicate with guest serial terminal over LINFlexD_15 UART serial interface (telnet or netcat)</description>
-		<enumeration>
-			<item>telnet</item>
-			<item>netcat</item>
-		</enumeration>
-	</variable>
-	<variable name="serial-terminal-protocol16">
-		<type>parameter</type>
-		<data_type>serial-terminal-protocol</data_type>
-		<value>telnet</value>
-		<description>Host network protocol to communicate with guest serial terminal over LINFlexD_16 UART serial interface (telnet or netcat)</description>
-		<enumeration>
-			<item>telnet</item>
-			<item>netcat</item>
-		</enumeration>
-	</variable>
-	<variable name="serial-terminal-protocol2">
-		<type>parameter</type>
-		<data_type>serial-terminal-protocol</data_type>
-		<value>telnet</value>
-		<description>Host network protocol to communicate with guest serial terminal over LINFlexD_2 UART serial interface (telnet or netcat)</description>
-		<enumeration>
-			<item>telnet</item>
-			<item>netcat</item>
 		</enumeration>
 	</variable>
 </variables>

@@ -35,8 +35,8 @@
 #ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_HH__
 #define __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_HH__
 
-#include <systemc.h>
-#include <tlm.h>
+#include <systemc>
+#include <tlm>
 #include <tlm_utils/simple_initiator_socket.h>
 #include <tlm_utils/passthrough_target_socket.h>
 #include <inttypes.h>
@@ -145,7 +145,7 @@ template<class CONFIG>
 class Router :
 	public unisim::kernel::service::Service<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >,
 	public unisim::kernel::service::Client<unisim::service::interfaces::Memory<typename CONFIG::ADDRESS> >,
-	public sc_module {
+	public sc_core::sc_module {
 private:
 	typedef unisim::kernel::service::Object Object;
 	static const unsigned int INPUT_SOCKETS = CONFIG::INPUT_SOCKETS;
@@ -160,7 +160,7 @@ private:
 
 public:
 	SC_HAS_PROCESS(Router);
-	Router(const sc_module_name &name, Object *parent = 0);
+	Router(const sc_core::sc_module_name &name, Object *parent = 0);
 	~Router();
 
 	/** Router initiator port sockets */
@@ -224,8 +224,8 @@ protected:
 	 * Ready times for each incomming queue                            START *
 	 *************************************************************************/
 
-	std::vector<sc_time> m_targ_req_ready;
-	std::vector<sc_time> m_init_rsp_ready;
+	std::vector<sc_core::sc_time> m_targ_req_ready;
+	std::vector<sc_core::sc_time> m_init_rsp_ready;
 
 	/*************************************************************************
 	 * Ready times for each incomming queue                              END *
@@ -254,7 +254,7 @@ protected:
 	 * @param  time   the delay against sc_time_stamp
 	 * @return        the delay against sc_time_stamp once synchronized
 	 */
-	sc_time Sync(const sc_time &time);
+	sc_core::sc_time Sync(const sc_core::sc_time &time);
 
 	/**
 	 * Apply mapping function over an address range
@@ -379,7 +379,7 @@ protected:
 	 *************************************************************************/
 
 	sc_core::sc_time cycle_time;
-	unisim::kernel::service::Parameter<sc_time> param_cycle_time;
+	unisim::kernel::service::Parameter<sc_core::sc_time> param_cycle_time;
 //	unsigned int num_input_sockets;
 //	unisim::kernel::service::Parameter<unsigned int> param_num_input_sockets;
 //	unsigned int num_output_sockets;
