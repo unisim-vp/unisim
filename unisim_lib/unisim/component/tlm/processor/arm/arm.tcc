@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM_PROCESSOR_ARM_TCC__
 #define __UNISIM_COMPONENT_TLM_PROCESSOR_ARM_TCC__
 
-#include <systemc.h>
+#include <systemc>
 #include "unisim/kernel/tlm/tlm.hh"
 #include "unisim/component/tlm/message/simple_fsb.hh"
 #include "unisim/kernel/logger/logger.hh"

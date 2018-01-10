@@ -33,7 +33,7 @@
  */
  
 #define __STDC_CONSTANT_MACROS
-#include <systemc.h>
+#include <systemc>
 #include "unisim/kernel/service/service.hh"
 #include "unisim/component/tlm2/processor/arm/arm9tdmi/arm9tdmi.hh"
 #include "unisim/component/tlm2/processor/arm/arm.tcc"

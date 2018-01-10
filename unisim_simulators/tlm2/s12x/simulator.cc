@@ -7,6 +7,7 @@
 
 #include <simulator.hh>
 #include <unisim/util/endian/endian.hh>
+#include <unisim/service/debug/debugger/debugger.tcc>
 
 bool debug_enabled = false;
 
@@ -608,15 +609,15 @@ Simulator::~Simulator()
 
 		cerr << endl;
 
-		cerr << "Target Simulated time  : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-//		cerr << "Target speed (MHz)     : " << (((double) (((uint64_t) (*cpu)["cycles-counter"]) + ((uint64_t) (*xgate)["cycles-counter"])) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
-//		cerr << "Target speed (MIPS)    : " << ((((double) (*cpu)["instruction-counter"] + (double) (*xgate)["instruction-counter"]) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
+		cerr << "Target Simulated time  : " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << endl;
+//		cerr << "Target speed (MHz)     : " << (((double) (((uint64_t) (*cpu)["cycles-counter"]) + ((uint64_t) (*xgate)["cycles-counter"])) / sc_core::sc_time_stamp().to_seconds()) / 1000000.0) << endl;
+//		cerr << "Target speed (MIPS)    : " << ((((double) (*cpu)["instruction-counter"] + (double) (*xgate)["instruction-counter"]) / sc_core::sc_time_stamp().to_seconds()) / 1000000.0) << endl;
 
 		cerr << "Host simulation time   : " << spent_time << " seconds" << endl;
 //		cerr << "Host simulation speed  : " << ((((double) (*cpu)["instruction-counter"] + (double) (*xgate)["instruction-counter"]) / spent_time) / 1000000.0) << " MIPS" << endl;
 		cerr << "Host simulation speed  : " << (((double) (*cpu)["instruction-counter"] / spent_time) / 1000000.0) << " MIPS" << endl;
 
-		cerr << "Time dilation          : " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+		cerr << "Time dilation          : " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
 		cerr << endl;
 
 	}
@@ -778,7 +779,7 @@ bool Simulator::RunSample(double inVal) {
 
 		try
 		{
-			sc_start(inVal, SC_MS);
+			sc_core::sc_start(inVal, SC_MS);
 		}
 		catch(std::runtime_error& e)
 		{
@@ -806,7 +807,7 @@ void Simulator::Run() {
 
 	try
 	{
-		sc_start();
+		sc_core::sc_start();
 	}
 	catch(std::runtime_error& e)
 	{
@@ -834,14 +835,15 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 	}
 
 	std::cerr << "Program exited with status " << exit_status << std::endl;
-	sc_stop();
+	sc_core::sc_stop();
 	if(!asynchronous)
 	{
-		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
+		switch(h.proc_kind())
 		{
-			case SC_THREAD_PROC_:
-			case SC_CTHREAD_PROC_:
-				wait();
+			case sc_core::SC_THREAD_PROC_: 
+			case sc_core::SC_CTHREAD_PROC_:
+				sc_core::wait();
 				break;
 			default:
 				break;

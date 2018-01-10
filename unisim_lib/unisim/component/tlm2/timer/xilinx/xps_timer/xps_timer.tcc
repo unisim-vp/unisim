@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM2_TIMER_XILINX_XPS_TIMER_XPS_TIMER_TCC__
 #define __UNISIM_COMPONENT_TLM2_TIMER_XILINX_XPS_TIMER_XPS_TIMER_TCC__
 
-#include <systemc.h>
+#include <systemc>
 #include <unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.hh>
 #include <math.h>
 

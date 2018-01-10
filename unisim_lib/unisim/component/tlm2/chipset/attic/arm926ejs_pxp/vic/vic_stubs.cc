@@ -32,8 +32,8 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include <systemc.h>
-#include <tlm.h>
+#include <systemc>
+#include <tlm>
 #include <tlm_utils/passthrough_target_socket.h>
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"

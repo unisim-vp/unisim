@@ -1,7 +1,7 @@
 #ifndef __UNISIM_COMPONENT_TLM_CHIPSET_MPC107_EPIC_TIMER_HH__
 #define __UNISIM_COMPONENT_TLM_CHIPSET_MPC107_EPIC_TIMER_HH__
 
-#include <systemc.h>
+#include <systemc>
 #include <list>
 
 namespace unisim {

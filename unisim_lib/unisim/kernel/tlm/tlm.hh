@@ -36,7 +36,7 @@
 #ifndef __UNISIM_KERNEL_TLM_TLM_HH__
 #define __UNISIM_KERNEL_TLM_TLM_HH__
 
-#include <systemc.h>
+#include <systemc>
 #include <unisim/util/garbage_collector/garbage_collector.hh>
 #include <list>
 #include <vector>

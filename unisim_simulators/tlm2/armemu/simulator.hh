@@ -75,7 +75,7 @@ class Simulator
   Simulator(int argc, char **argv);
   virtual ~Simulator();
   int Run();
-  int Run(double time, sc_time_unit unit);
+  int Run(double time, sc_core::sc_time_unit unit);
   bool IsRunning() const;
   bool SimulationStarted() const;
   bool SimulationFinished() const;
@@ -113,9 +113,9 @@ class Simulator
   HostTime              host_time;
   ArmLinux32            linux_os;
 
-  sc_signal<bool>       nirq_signal;
-  sc_signal<bool>       nfiq_signal;
-  sc_signal<bool>       nrst_signal;
+  sc_core::sc_signal<bool>       nirq_signal;
+  sc_core::sc_signal<bool>       nfiq_signal;
+  sc_core::sc_signal<bool>       nrst_signal;
   
   double                simulation_spent_time;
 

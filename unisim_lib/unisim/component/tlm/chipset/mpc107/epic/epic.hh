@@ -36,7 +36,7 @@
 #define __UNISIM_COMPONENT_TLM_CHIPSET_MPC107_EPIC_EPIC_HH__
 
 #include <inttypes.h>
-#include <systemc.h>
+#include <systemc>
 #include "unisim/kernel/tlm/tlm.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"

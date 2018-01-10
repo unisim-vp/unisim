@@ -232,7 +232,7 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Process()
 
 		// wait command launch ...
 		while (!isCommandLaunched()) {
-			wait(command_launch_event);
+			sc_module::wait(command_launch_event);
 		}
 
 		uint8_t cmd = (uint8_t) (fccob_reg[0] >> 8);

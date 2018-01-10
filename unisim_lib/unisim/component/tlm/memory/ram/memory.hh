@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM_MEMORY_RAM_MEMORY_HH__
 #define __UNISIM_COMPONENT_TLM_MEMORY_RAM_MEMORY_HH__
 
-#include <systemc.h>
+#include <systemc>
 #include "unisim/kernel/tlm/tlm.hh"
 #include "unisim/component/tlm/message/memory.hh"
 #include "unisim/component/cxx/memory/ram/memory.hh"

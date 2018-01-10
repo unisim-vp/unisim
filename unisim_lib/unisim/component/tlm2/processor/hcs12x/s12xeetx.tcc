@@ -152,7 +152,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 		// wait command launch by clearing ESTAT::CBEIF flag
 		while (((estat_reg & 0x80) != 0) /*|| cmd_queue.empty()*/) {
-			wait(command_launch_event);
+			sc_module::wait(command_launch_event);
 		}
 
 		fetchCommand();
@@ -218,7 +218,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 		// isn't sector_erase_abort
 		if ((ecmd_reg & 0x7F) != 0x47) {
-			wait(bus_cycle_time * 4);
+			sc_module::wait(bus_cycle_time * 4);
 		}
 
 		// set CBEIF flag when address, data, command buffers are empty. This enable new write sequence.
@@ -266,7 +266,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	 * If the EEPROM block is erased,
 	 * the BLANK flag in the ESTAT register will set upon command completion
 	 */
-	wait(bus_cycle_time * (inherited::bytesize/2 + 14));
+	sc_module::wait(bus_cycle_time * (inherited::bytesize/2 + 14));
 
 	// is all words erased successfully ?
 	if ((rand() % 101) > (erase_fail_ratio * 100)) {
@@ -304,7 +304,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 	if (WriteMemory(inherited::org + (eaddr_reg & 0xFFFE), &edata_reg, 2)) {
 
-		wait(bus_cycle_time * (1 + 14));
+		sc_module::wait(bus_cycle_time * (1 + 14));
 	}
 
 	inherited::write_counter++;
@@ -351,7 +351,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 		if (WriteMemory(inherited::org + (eaddr_reg & 0xFFFC) + i, &data[i], 1)) {
 
-			wait(bus_cycle_time);
+			sc_module::wait(bus_cycle_time);
 
 		}
 	}
@@ -362,7 +362,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 	inherited::write_counter++;
 
-	wait(bus_cycle_time * 14);
+	sc_module::wait(bus_cycle_time * 14);
 
 	sector_erase_modify_active = false;
 
@@ -391,7 +391,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 	inherited::write_counter++;
 
-	wait(bus_cycle_time * (inherited::bytesize/2 + 14));
+	sc_module::wait(bus_cycle_time * (inherited::bytesize/2 + 14));
 
 }
 
@@ -407,7 +407,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 	sector_erase_abort_active = true;
 
-	wait(bus_cycle_time * (1 + 14));
+	sc_module::wait(bus_cycle_time * (1 + 14));
 
 	sector_erase_abort_active = false;
 
@@ -454,7 +454,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 		if (WriteMemory(inherited::org + (eaddr_reg & 0xFFFC) + i, &data[i], 1)) {
 
-			wait(bus_cycle_time);
+			sc_module::wait(bus_cycle_time);
 		}
 	}
 
@@ -464,7 +464,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 		// program word at global_address while byte address bit 0 is ignored
 		if (WriteMemory(inherited::org + (eaddr_reg & 0xFFFE), &edata_reg, 2)) {
 
-			wait(bus_cycle_time * (14 + 1));
+			sc_module::wait(bus_cycle_time * (14 + 1));
 		}
 	}
 

@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM2_INTERRUPT_XILINX_XPS_INTC_XPS_INTC_TCC__
 #define __UNISIM_COMPONENT_TLM2_INTERRUPT_XILINX_XPS_INTC_XPS_INTC_TCC__
 
-#include <systemc.h>
+#include <systemc>
 #include <unisim/component/cxx/interrupt/xilinx/xps_intc/xps_intc.hh>
 
 #define LOCATION __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "

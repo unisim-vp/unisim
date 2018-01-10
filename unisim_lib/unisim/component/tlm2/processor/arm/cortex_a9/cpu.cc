@@ -39,8 +39,8 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/likely/likely.hh>
 
-#include <systemc.h>
-#include <tlm.h>
+#include <systemc>
+#include <tlm>
 
 #define LOCATION \
   " - location = " \
@@ -49,8 +49,8 @@
   << __LINE__
 #define TIME(X) \
   " - time = " \
-  << sc_time_stamp() + (X) \
-  << " (current time = " << sc_time_stamp() << ")"
+  << sc_core::sc_time_stamp() + (X) \
+  << " (current time = " << sc_core::sc_time_stamp() << ")"
 #define PHASE(X)   " - phase = " \
   << ( (X) == tlm::BEGIN_REQ  ?   "BEGIN_REQ" : \
      ( (X) == tlm::END_REQ    ?   "END_REQ" : \
@@ -125,9 +125,9 @@ namespace cortex_a9 {
 
 using namespace unisim::kernel::logger;
 
-CPU::CPU( sc_module_name const& name, Object* parent )
+CPU::CPU( sc_core::sc_module_name const& name, Object* parent )
   : unisim::kernel::service::Object(name, parent)
-  , sc_module(name)
+  , sc_core::sc_module(name)
   , unisim::component::cxx::processor::arm::vmsav7::CPU(name, parent)
   , master_socket("master_socket")
   , check_external_event(false)
@@ -138,12 +138,12 @@ CPU::CPU( sc_module_name const& name, Object* parent )
   , end_read_rsp_event()
   , payload_fabric()
   , tmp_time()
-  , cpu_time(SC_ZERO_TIME)
-  , bus_time(SC_ZERO_TIME)
-  , quantum_time(SC_ZERO_TIME)
-  , cpu_cycle_time(62500.0, SC_PS)
-  , bus_cycle_time(62500.0, SC_PS)
-  , nice_time(1.0, SC_MS)
+  , cpu_time(sc_core::SC_ZERO_TIME)
+  , bus_time(sc_core::SC_ZERO_TIME)
+  , quantum_time(sc_core::SC_ZERO_TIME)
+  , cpu_cycle_time(62500.0, sc_core::SC_PS)
+  , bus_cycle_time(62500.0, sc_core::SC_PS)
+  , nice_time(1.0, sc_core::SC_MS)
   , ipc(2.0)
   , enable_dmi(false)
   , stat_cpu_time("cpu-time", this, cpu_time, "The processor time")
@@ -206,8 +206,8 @@ CPU::EndSetup()
     return false;
   }
 
-  cpu_time = SC_ZERO_TIME;
-  bus_time = SC_ZERO_TIME;
+  cpu_time = sc_core::SC_ZERO_TIME;
+  bus_time = sc_core::SC_ZERO_TIME;
   
   if (verbose_tlm)
   {
@@ -235,7 +235,7 @@ CPU::Stop(int ret)
  */
 
 void
-CPU::Wait( sc_event const& evt )
+CPU::Wait( sc_core::sc_event const& evt )
 {
   //if (quantum_time != SC_ZERO_TIME)
   // Sync();
@@ -243,7 +243,7 @@ CPU::Wait( sc_event const& evt )
   sc_core::sc_time delta( sc_core::sc_time_stamp() );
   delta -= cpu_time;
   if (delta > quantum_time) {
-    quantum_time = SC_ZERO_TIME;
+    quantum_time = sc_core::SC_ZERO_TIME;
   } else {
     quantum_time -= delta;
   }
@@ -266,8 +266,8 @@ CPU::Sync()
       << EndDebugInfo;
   }
   wait(quantum_time);
-  cpu_time = sc_time_stamp();
-  quantum_time = SC_ZERO_TIME;
+  cpu_time = sc_core::sc_time_stamp();
+  quantum_time = sc_core::SC_ZERO_TIME;
   
   if (unlikely(verbose_tlm))
     PCPU::logger << DebugInfo
@@ -302,7 +302,7 @@ CPU::BusSynchronize()
   //   (cpu_time + quantum_time);
   
 #if 0
-  sc_time deadline(cpu_time);
+  sc_core::sc_time deadline(cpu_time);
   deadline += quantum_time;
   while ( bus_time < deadline )
     bus_time += bus_cycle_time;
@@ -494,7 +494,7 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
         Stop(-1);
         break;
       }
-      tmp_time = sc_time_stamp();
+      tmp_time = sc_core::sc_time_stamp();
 	  tmp_time += time;
       /* TODO: increase tmp_time depending on the size of the transaction. */
       end_read_rsp_event.notify(time);
@@ -542,7 +542,7 @@ CPU::IRQHandler()
     PCPU::logger << DebugInfo
                       << "IRQ level change:" << std::endl
                       << " - nIRQm = " << nIRQm << std::endl
-                      << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
+                      << " - sc_time_stamp() = " << sc_core::sc_time_stamp() << std::endl
                       << EndDebugInfo;
 }
 
@@ -555,7 +555,7 @@ CPU::FIQHandler()
     PCPU::logger << DebugInfo
                       << "FIQ level change:" << std::endl
                       << " - nFIQm = " << nFIQm << std::endl
-                      << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
+                      << " - sc_time_stamp() = " << sc_core::sc_time_stamp() << std::endl
                       << EndDebugInfo;
 }
   
@@ -568,7 +568,7 @@ CPU::ResetHandler()
     PCPU::logger << DebugInfo
                       << "RESET level change:" << std::endl
                       << " - nRESETm = " << nRESETm << std::endl
-                      << " - sc_time_stamp() = " << sc_time_stamp() << std::endl
+                      << " - sc_time_stamp() = " << sc_core::sc_time_stamp() << std::endl
                       << EndDebugInfo;
 }
   

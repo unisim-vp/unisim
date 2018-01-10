@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM_BRIDGE_PCI_ISA_BRIDGE_HH__
 #define __UNISIM_COMPONENT_TLM_BRIDGE_PCI_ISA_BRIDGE_HH__
 
-#include <systemc.h>
+#include <systemc>
 #include "unisim/kernel/tlm/tlm.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"

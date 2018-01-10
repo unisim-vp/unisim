@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM_PROCESSOR_POWERPC_MPC7447A_CPU_HH__
 #define __UNISIM_COMPONENT_TLM_PROCESSOR_POWERPC_MPC7447A_CPU_HH__
 
-#include <systemc.h>
+#include <systemc>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu.hh>
 #include <unisim/component/tlm/message/snooping_fsb.hh>

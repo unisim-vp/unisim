@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_BRIDGE_HH__
 #define __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_BRIDGE_HH__
 
-#include <systemc.h>
+#include <systemc>
 #include "unisim/component/tlm/message/simple_fsb.hh"
 #include "unisim/component/tlm/message/memory.hh"
 #include "unisim/kernel/tlm/tlm.hh"

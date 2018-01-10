@@ -32,7 +32,7 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include <systemc.h>
+#include <systemc>
 #include "unisim/kernel/service/service.hh"
 #include "unisim/component/tlm2/processor/arm/arm7tdmi/arm7tdmi.hh"
 #include "unisim/component/tlm2/processor/arm/arm.hh"

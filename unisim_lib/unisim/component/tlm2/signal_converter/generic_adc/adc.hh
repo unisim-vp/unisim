@@ -37,8 +37,8 @@
 #ifndef __UNISIM_COMPONENT_TLM2_SIGNAL_CONVERTER_GENERIC_ADC_ADC_HH__
 #define __UNISIM_COMPONENT_TLM2_SIGNAL_CONVERTER_GENERIC_ADC_ADC_HH__
 
-#include <systemc.h>
-#include <tlm.h>
+#include <systemc>
+#include <tlm>
 #include <tlm_utils/simple_target_socket.h>
 #include <tlm_utils/simple_initiator_socket.h>
 #include <inttypes.h>

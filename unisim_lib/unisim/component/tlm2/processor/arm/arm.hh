@@ -35,8 +35,8 @@
 #ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_HH__
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_HH__
 
-#include <systemc.h>
-#include <tlm.h>
+#include <systemc>
+#include <tlm>
 #include <tlm_utils/passthrough_target_socket.h>
 #include <tlm_utils/peq_with_get.h>
 #include "unisim/component/cxx/processor/arm/cpu.hh"

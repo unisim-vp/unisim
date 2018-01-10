@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM2_GPIO_XILINX_XPS_GPIO_GPIO_SWITCHES_HH__
 #define __UNISIM_COMPONENT_TLM2_GPIO_XILINX_XPS_GPIO_GPIO_SWITCHES_HH__
 
-#include <systemc.h>
+#include <systemc>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/component/cxx/com/xilinx/xps_gpio/xps_gpio.hh>
 #include <unisim/component/tlm2/interrupt/types.hh>

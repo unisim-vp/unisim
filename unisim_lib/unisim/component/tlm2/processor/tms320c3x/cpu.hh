@@ -36,7 +36,7 @@
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_TMS320C3X_CPU_HH__
 
 #include <unisim/component/cxx/processor/tms320c3x/cpu.hh>
-#include <systemc.h>
+#include <systemc>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>

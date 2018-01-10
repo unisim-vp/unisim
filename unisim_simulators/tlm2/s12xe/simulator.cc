@@ -7,6 +7,7 @@
 
 #include <simulator.hh>
 #include <unisim/util/endian/endian.hh>
+#include <unisim/service/debug/debugger/debugger.tcc>
 
 bool debug_enabled = false;
 
@@ -22,7 +23,7 @@ void DisableDebug()
 
 void SigIntHandler(int signum)
 {
-	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
+	std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
 //	sc_stop();
 	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
 }
@@ -638,54 +639,54 @@ Simulator::~Simulator()
 
 // ************
 	if (dump_parameters) {
-		cerr << "Simulation run-time parameters:" << endl;
-		DumpParameters(cerr);
-		cerr << endl;
+		std::cerr << "Simulation run-time parameters:" << std::endl;
+		DumpParameters(std::cerr);
+		std::cerr << std::endl;
 	}
 
 	if (dump_formulas) {
-		cerr << "Simulation formulas:" << endl;
-		DumpFormulas(cerr);
-		cerr << endl;
+		std::cerr << "Simulation formulas:" << std::endl;
+		DumpFormulas(std::cerr);
+		std::cerr << std::endl;
 	}
 
 	if (dump_statistics) {
 
-		cerr << "Simulation statistics:" << endl;
-		DumpStatistics(cerr);
-		cerr << endl;
+		std::cerr << "Simulation statistics:" << std::endl;
+		DumpStatistics(std::cerr);
+		std::cerr << std::endl;
 
-		cerr << "CPU Clock   (MHz)      : " << (double) (1 / (double) (*cpu)["core-clock"] * 1000000)  << endl;
-		cerr << "CPU CPI                : " << (double) ((uint64_t) (*cpu)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;
+		std::cerr << "CPU Clock   (MHz)      : " << (double) (1 / (double) (*cpu)["core-clock"] * 1000000)  << std::endl;
+		std::cerr << "CPU CPI                : " << (double) ((uint64_t) (*cpu)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << std::endl;
 
 		uint64_t total_load = (uint64_t) (*cpu)["instruction-counter"] + (uint64_t) (*cpu)["data-load-counter"];
 		uint64_t total_access = total_load + (uint64_t) (*cpu)["store-counter"];
 		total_access = ((total_access == 0)? 1: total_access);
 
-		cerr << "CPU data-load ratio    : " << (double) ((uint64_t) (*cpu)["data-load-counter"])/(total_access)*100 << " %" << endl;
-		cerr << "CPU data-store ratio   : " << (double) ((uint64_t) (*cpu)["data-store-counter"])/(total_access)*100 << " %" << endl;
+		std::cerr << "CPU data-load ratio    : " << (double) ((uint64_t) (*cpu)["data-load-counter"])/(total_access)*100 << " %" << std::endl;
+		std::cerr << "CPU data-store ratio   : " << (double) ((uint64_t) (*cpu)["data-store-counter"])/(total_access)*100 << " %" << std::endl;
 
-		cerr << endl;
+		std::cerr << endl;
 
-		cerr << "XGATE Clock (MHz)      : " << (double) (1 / (double) (*xgate)["core-clock"] * 1000000)  << endl;
-		cerr << "XGATE CPI              : " << (double) ((uint64_t) (*xgate)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;
+		std::cerr << "XGATE Clock (MHz)      : " << (double) (1 / (double) (*xgate)["core-clock"] * 1000000)  << std::endl;
+		std::cerr << "XGATE CPI              : " << (double) ((uint64_t) (*xgate)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << std::endl;
 
 		total_load = (uint64_t) (*xgate)["instruction-counter"] + (uint64_t) (*xgate)["data-load-counter"];
 		total_access = total_load + (uint64_t) (*xgate)["store-counter"];
 		total_access = ((total_access == 0)? 1: total_access);
 
-		cerr << "XGATE data-load ratio    : " << (double) ((uint64_t) (*xgate)["data-load-counter"])/(total_access)*100 << " %" << endl;
-		cerr << "XGATE data-store ratio   : " << (double) ((uint64_t) (*xgate)["data-store-counter"])/(total_access)*100 << " %" << endl;
+		std::cerr << "XGATE data-load ratio    : " << (double) ((uint64_t) (*xgate)["data-load-counter"])/(total_access)*100 << " %" << std::endl;
+		std::cerr << "XGATE data-store ratio   : " << (double) ((uint64_t) (*xgate)["data-store-counter"])/(total_access)*100 << " %" << std::endl;
 
-		cerr << endl;
+		std::cerr << std::endl;
 
-		cerr << "Target Simulated time  : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
+		std::cerr << "Target Simulated time  : " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << std::endl;
 
-		cerr << "Host simulation time   : " << spent_time << " seconds" << endl;
-		cerr << "Host simulation speed  : " << (((double) (*cpu)["instruction-counter"] / spent_time) / 1000000.0) << " MIPS" << endl;
+		std::cerr << "Host simulation time   : " << spent_time << " seconds" << std::endl;
+		std::cerr << "Host simulation speed  : " << (((double) (*cpu)["instruction-counter"] / spent_time) / 1000000.0) << " MIPS" << std::endl;
 
-		cerr << "Time dilation          : " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
-		cerr << endl;
+		std::cerr << "Time dilation          : " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
+		std::cerr << std::endl;
 
 	}
 
@@ -786,7 +787,7 @@ Simulator::SetupStatus Simulator::Setup()
 	WSADATA wsaData;
 	if(WSAStartup(wVersionRequested, &wsaData) != 0)
 	{
-		cerr << "WSAStartup failed" << endl;
+		std::cerr << "WSAStartup failed" << std::endl;
 		return unisim::kernel::service::Simulator::ST_ERROR;
 	}
 #endif
@@ -823,25 +824,25 @@ Simulator::SetupStatus Simulator::Setup()
 bool Simulator::RunSample(double inVal) {
 
 	if (!isStop) {
-		cerr << "Starting simulation RunSample ..." << endl;
+		std::cerr << "Starting simulation RunSample ..." << std::endl;
 
 		double time_start = host_time->GetTime();
 
 		try
 		{
-			sc_start(inVal, SC_MS);
+			sc_core::sc_start(inVal, SC_MS);
 		}
 		catch(std::runtime_error& e)
 		{
-			cerr << "FATAL ERROR! an abnormal error occurred during simulation. Bailing out..." << endl;
-			cerr << e.what() << endl;
+			std::cerr << "FATAL ERROR! an abnormal error occurred during simulation. Bailing out..." << std::endl;
+			std::cerr << e.what() << std::endl;
 		}
 
 		double time_stop = host_time->GetTime();
 
 		spent_time += time_stop - time_start;
 
-		cerr << "Finishing simulation RunSample " << endl;
+		std::cerr << "Finishing simulation RunSample " << std::endl;
 
 		return true;
 	}
@@ -851,25 +852,25 @@ bool Simulator::RunSample(double inVal) {
 
 void Simulator::Run() {
 
-	cerr << "Starting simulation ..." << endl;
+	std::cerr << "Starting simulation ..." << std::endl;
 
 	double time_start = host_time->GetTime();
 
 	try
 	{
-		sc_start();
+		sc_core::sc_start();
 	}
 	catch(std::runtime_error& e)
 	{
-		cerr << "FATAL ERROR! an abnormal error occurred during simulation. Bailing out..." << endl;
-		cerr << e.what() << endl;
+		std::cerr << "FATAL ERROR! an abnormal error occurred during simulation. Bailing out..." << std::endl;
+		std::cerr << e.what() << std::endl;
 	}
 
 	double time_stop = host_time->GetTime();
 
 	spent_time += time_stop - time_start;
 
-	cerr << "Simulation finished" << endl << endl;
+	std::cerr << "Simulation finished" << endl << endl;
 
 
 }
@@ -885,14 +886,15 @@ void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 	}
 
 	std::cerr << "Program exited with status " << exit_status << std::endl;
-	sc_stop();
+	sc_core::sc_stop();
 	if(!asynchronous)
 	{
-		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		sc_core::sc_process_handle h = sc_core::sc_get_current_process_handle();
+		switch(h.proc_kind())
 		{
-			case SC_THREAD_PROC_:
-			case SC_CTHREAD_PROC_:
-				wait();
+			case sc_core::SC_THREAD_PROC_: 
+			case sc_core::SC_CTHREAD_PROC_:
+				sc_core::wait();
 				break;
 			default:
 				break;

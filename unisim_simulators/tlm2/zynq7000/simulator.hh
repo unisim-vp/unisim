@@ -87,7 +87,7 @@ struct ZynqRouter : public unisim::component::tlm2::interconnect::generic_router
 };
 
 struct MMDevice
-  : public sc_module
+  : public sc_core::sc_module
   , public unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>
   , public tlm::tlm_fw_transport_if<>
 {
@@ -98,7 +98,7 @@ struct MMDevice
   bool verbose, hardfail;
   
   
-  MMDevice( sc_module_name const& name, unisim::kernel::service::Object* parent );
+  MMDevice( sc_core::sc_module_name const& name, unisim::kernel::service::Object* parent );
     
   struct Data
   {
@@ -144,7 +144,7 @@ struct MMDevice
 struct MPCore : public MMDevice
 {
   //typedef tlm::tlm_base_protocol_types TYPES;
-  MPCore(sc_module_name const& name, unisim::kernel::service::Object* parent = 0);
+  MPCore(sc_core::sc_module_name const& name, unisim::kernel::service::Object* parent = 0);
 
   bool AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time );
   
@@ -180,7 +180,7 @@ struct Simulator;
 
 struct SLCR : public MMDevice
 {
-  SLCR( sc_module_name const& name, Simulator& _simulator, unisim::kernel::service::Object* parent = 0 );
+  SLCR( sc_core::sc_module_name const& name, Simulator& _simulator, unisim::kernel::service::Object* parent = 0 );
   
   Simulator& simulator;
   uint32_t ARM_PLL_CTRL, DDR_PLL_CTRL, IO_PLL_CTRL, ARM_CLK_CTRL, DDR_CLK_CTRL, CLK_621_TRUE, UART_CLK_CTRL;
@@ -190,7 +190,7 @@ struct SLCR : public MMDevice
 
 struct TTC : public MMDevice
 {
-  TTC( sc_module_name const& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, unsigned _id, unsigned _base_it );
+  TTC( sc_core::sc_module_name const& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, unsigned _id, unsigned _base_it );
   
   MPCore& mpcore;
   unsigned id, base_it;
@@ -220,7 +220,7 @@ struct TTC : public MMDevice
 
 struct PS_UART : public MMDevice, public unisim::kernel::service::Client<unisim::service::interfaces::CharIO>
 {
-  PS_UART( sc_module_name const& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, int _it_line );
+  PS_UART( sc_core::sc_module_name const& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, int _it_line );
   
   bool AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& update_time );
 
@@ -260,7 +260,7 @@ struct PS_UART : public MMDevice, public unisim::kernel::service::Client<unisim:
 
 struct L2C : public MMDevice
 {
-  L2C( sc_module_name const& name, unisim::kernel::service::Object* parent );
+  L2C( sc_core::sc_module_name const& name, unisim::kernel::service::Object* parent );
   
   uint32_t reg1_control;
   
@@ -284,7 +284,7 @@ struct Simulator : public unisim::kernel::service::Simulator
   virtual ~Simulator();
   
   int Run();
-  int Run(double time, sc_time_unit unit);
+  int Run(double time, sc_core::sc_time_unit unit);
   bool IsRunning() const;
   bool SimulationStarted() const;
   bool SimulationFinished() const;
@@ -332,9 +332,9 @@ struct Simulator : public unisim::kernel::service::Simulator
   L2C                          l2c;
   Telnet                       telnet;
   
-  sc_signal<bool>              nirq_signal;
-  sc_signal<bool>              nfiq_signal;
-  sc_signal<bool>              nrst_signal;
+  sc_core::sc_signal<bool>              nirq_signal;
+  sc_core::sc_signal<bool>              nfiq_signal;
+  sc_core::sc_signal<bool>              nrst_signal;
   
   ScTime                       time;
   HostTime                     host_time;

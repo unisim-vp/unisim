@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM2_TIMER_XILINX_XPS_TIMER_XPS_TIMER_HH__
 #define __UNISIM_COMPONENT_TLM2_TIMER_XILINX_XPS_TIMER_XPS_TIMER_HH__
 
-#include <systemc.h>
+#include <systemc>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.hh>
 #include <unisim/component/tlm2/interrupt/types.hh>

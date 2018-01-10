@@ -38,7 +38,7 @@
 #include <inttypes.h>
 #include <list>
 #include <string>
-#include <systemc.h>
+#include <systemc>
 #include "unisim/kernel/tlm/tlm.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"

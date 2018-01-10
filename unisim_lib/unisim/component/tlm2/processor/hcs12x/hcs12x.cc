@@ -34,7 +34,7 @@
  */
 
 
-#include <systemc.h>
+#include <systemc>
 #include "unisim/kernel/tlm2/tlm.hh"
 #include "unisim/component/tlm2/processor/hcs12x/hcs12x.hh"
 #include "unisim/component/tlm2/processor/hcs12x/xint.hh"

@@ -38,7 +38,7 @@
 #include <unisim/component/cxx/interconnect/xilinx/crossbar/crossbar.hh>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
-#include <systemc.h>
+#include <systemc>
 
 namespace unisim {
 namespace component {
