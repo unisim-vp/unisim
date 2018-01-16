@@ -1348,6 +1348,7 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
     tad.domain = RegisterField<5,4>().Get( l1desc );
     tad.level = 2;
     tad.pxn = RegisterField<2,1>().Get( l1desc );
+    //tad.NS = RegisterField<3,1>().Get( l1desc );
     // Obtain Second level descriptor.
     uint32_t l2descaddr = ((l1desc & 0xfffffc00) | ((mva << 12) >> 22)) & -4;
     {
@@ -1362,16 +1363,19 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
     if ((l2desc&3) == 0) {
       DataAbort(mva, 0, tad.domain, 2, mat, DAbort_Translation, false, false, false, false, false);
     }
+    //tad.S = RegisterField<10,1>().Get( l1desc );
     tad.ap = (RegisterField<9,1>().Get( l2desc ) << 2) | RegisterField<4,2>().Get( l2desc );
     tad.nG = RegisterField<11,1>().Get( l2desc );
     if (l2desc & 2) {
       // Small page (4kB)
+      // tad.texcb = (RegisterField<12,3>().Get( l1desc ) << 2) | (RegisterField<3,1>().Get( l1desc ) << 1) | RegisterField<2,1>().Get( l1desc );
       tad.xn = RegisterField<0,1>().Get( l2desc );
       tad.lsb = 12;
       tad.pa = (l2desc & 0xfffff000) | (mva & 0x00000fff);
     }
     else {
       // Large page (64kB)
+      // tad.texcb = (RegisterField<6,3>().Get( l1desc ) << 2) | (RegisterField<3,1>().Get( l1desc ) << 1) | RegisterField<2,1>().Get( l1desc );
       tad.xn = RegisterField<15,1>().Get( l2desc );
       tad.lsb = 16;
       tad.pa = (l2desc & 0xffff0000) | (mva & 0x0000ffff);
@@ -1380,11 +1384,14 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
     
   case 2: case 3: {
     // Section or Supersection
+    // tad.texcb = (RegisterField<12,3>().Get( l1desc ) << 2) | (RegisterField<3,1>().Get( l1desc ) << 1) | RegisterField<2,1>().Get( l1desc );
+    // tad.S = RegisterField<16,1>().Get( l1desc )
     tad.ap = (RegisterField<15,1>().Get( l1desc ) << 2) | RegisterField<10,2>().Get( l1desc );
     tad.xn = RegisterField<4,1>().Get( l1desc );
     tad.pxn = RegisterField<0,1>().Get( l1desc );
     tad.nG = RegisterField<17,1>().Get( l1desc );
     tad.level = 1;
+    // tad.NS = RegisterField<19,1>().Get( l1desc )
     
     if ((l1desc >> 18) & 1) {
       // Supersection (16MB)
