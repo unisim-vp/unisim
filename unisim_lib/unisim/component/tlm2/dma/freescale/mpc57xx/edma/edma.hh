@@ -1801,6 +1801,11 @@ private:
 		{
 			this->Initialize(0x0);
 		}
+		
+// 		virtual ReadWriteStatus Read(uint32_t& value, const uint32_t& bit_enable)
+// 		{
+// 			return this->edma->HardwareRequestStatus(this->
+// 		}
 
 		using Super::operator =;
 	};

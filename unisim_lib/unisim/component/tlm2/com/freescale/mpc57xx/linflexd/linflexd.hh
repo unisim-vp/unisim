@@ -1803,8 +1803,21 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x0);
+			this->linflexd->UpdateDMA_TX();
 		}
 
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+
+			if(!IsReadWriteError(rws))
+			{
+				this->linflexd->UpdateDMA_TX();
+			}
+			
+			return rws;
+		}
+		
 		using Super::operator =;
 	};
 	
@@ -1831,6 +1844,19 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x0);
+			this->linflexd->UpdateDMA_TX();
+		}
+
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+
+			if(!IsReadWriteError(rws))
+			{
+				this->linflexd->UpdateDMA_RX();
+			}
+			
+			return rws;
 		}
 
 		using Super::operator =;
