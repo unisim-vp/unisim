@@ -496,7 +496,7 @@ struct WriteDF : public Operation<ARCH>
 {
   WriteDF( OpBase<ARCH> const& opbase, uint8_t _df ) : Operation<ARCH>( opbase ), df( _df ) {} uint8_t df;
   void disasm( std::ostream& sink ) const { sink << (df ? "std" : "cld"); }
-  void execute( ARCH& arch ) const { arch.flagwrite( ARCH::DF, typename ARCH::bit_t( df ) ); }
+  void execute( ARCH& arch ) const { arch.flagwrite( ARCH::FLAG::DF, typename ARCH::bit_t( df ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,STD> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -532,7 +532,7 @@ struct CmpXchg : public Operation<ARCH>
   {
     typename TypeFor<ARCH,OPSIZE>::u mem_operand = arch.template rmread<OPSIZE>( rmop );
     typename ARCH::bit_t equal = (arch.template regread<OPSIZE>( 0 ) == mem_operand);
-    arch.flagwrite( ARCH::ZF, equal );
+    arch.flagwrite( ARCH::FLAG::ZF, equal );
     if (arch.Cond( equal )) arch.template rmwrite<OPSIZE>( rmop, arch.template regread<OPSIZE>( gn ) );
     else                 arch.template regwrite<OPSIZE>( 0, mem_operand );
   }
@@ -726,7 +726,7 @@ struct BtImm : public Operation<ARCH>
   // void execute( ARCH& arch ) const {
   //   unsigned bitoffset = imm % OPSIZE;
   //   u_type opr = arch.template rmread<OPSIZE>( rmop )
-  //   arch.flagwrite( ARCH::CF, bit_t( (opr >> bitoffset) & u_type( 1 ) ) );
+  //   arch.flagwrite( ARCH::FLAG::CF, bit_t( (opr >> bitoffset) & u_type( 1 ) ) );
   // }
 };
 
@@ -742,7 +742,7 @@ struct BtRM : public Operation<ARCH>
   //   int64_t addr_offset = int64_t( (bt_offset >> TypeFor<ARCH,OPSIZE>::logsize) * (OPSIZE / 8) );
   //   u_type str_opr = arch.template rmstrread<OPSIZE>( rmop, addr_offset );
   //   u_type opr_bit = u_type( str_bit % OPSIZE );
-  //   arch.flagwrite( ARCH::CF, bit_t( (str_opr >> opr_bit) & u_type( 1 ) ) );
+  //   arch.flagwrite( ARCH::FLAG::CF, bit_t( (str_opr >> opr_bit) & u_type( 1 ) ) );
   // }
 };
 
@@ -779,7 +779,7 @@ struct BtcImm : public Operation<ARCH>
   // void execute( ARCH& arch ) const {
   //   unsigned bitoffset = imm % OPSIZE;
   //   u_type opr = arch.template rmread<OPSIZE>( rmop )
-  //   arch.flagwrite( ARCH::CF, bit_t( (opr >> bitoffset) & u_type( 1 ) ) );
+  //   arch.flagwrite( ARCH::FLAG::CF, bit_t( (opr >> bitoffset) & u_type( 1 ) ) );
   //   arch.template rmwrite<OPSIZE>( rmop, opr ^ (u_type( 1 ) << bitoffset) );
   // }
 };
@@ -796,7 +796,7 @@ struct BtcRM : public Operation<ARCH>
   //   int64_t addr_offset = int64_t( (bt_offset >> TypeFor<ARCH,OPSIZE>::logsize) * (OPSIZE / 8) );
   //   u_type str_opr = arch.template rmstrread<OPSIZE>( rmop, addr_offset );
   //   u_type opr_bit = u_type( str_bit % OPSIZE );
-  //   arch.flagwrite( ARCH::CF, bit_t( (str_opr >> opr_bit) & u_type( 1 ) ) );
+  //   arch.flagwrite( ARCH::FLAG::CF, bit_t( (str_opr >> opr_bit) & u_type( 1 ) ) );
   //   arch.template rmstrwrite<OPSIZE>( rmop, addr_offset, str_opr ^ (u_type( 1 ) << opr_bit) );
   // }
 };
@@ -835,7 +835,7 @@ struct BtrImm : public Operation<ARCH>
   // void execute( ARCH& arch ) const {
   //   unsigned bitoffset = imm % OPSIZE;
   //   u_type opr = arch.template rmread<OPSIZE>( rmop )
-  //   arch.flagwrite( ARCH::CF, bit_t( (opr >> bitoffset) & u_type( 1 ) ) );
+  //   arch.flagwrite( ARCH::FLAG::CF, bit_t( (opr >> bitoffset) & u_type( 1 ) ) );
   //   arch.template rmwrite<OPSIZE>( rmop, opr & ~(u_type( 1 ) << bitoffset) );
   // }
 };
@@ -852,7 +852,7 @@ struct BtrRM : public Operation<ARCH>
   //   int64_t addr_offset = int64_t( (bt_offset >> TypeFor<ARCH,OPSIZE>::logsize) * (OPSIZE / 8) );
   //   u_type str_opr = arch.template rmstrread<OPSIZE>( rmop, addr_offset );
   //   u_type opr_bit = u_type( str_bit % OPSIZE );
-  //   arch.flagwrite( ARCH::CF, bit_t( (str_opr >> opr_bit) & u_type( 1 ) ) );
+  //   arch.flagwrite( ARCH::FLAG::CF, bit_t( (str_opr >> opr_bit) & u_type( 1 ) ) );
   //   arch.template rmstrwrite<OPSIZE>( rmop, addr_offset, str_opr & ~(u_type( 1 ) << opr_bit) );
   // }
 };
@@ -891,7 +891,7 @@ struct BtsImm : public Operation<ARCH>
   // void execute( ARCH& arch ) const {
   //   unsigned bitoffset = imm % OPSIZE;
   //   u_type opr = arch.template rmread<OPSIZE>( rmop )
-  //   arch.flagwrite( ARCH::CF, bit_t( (opr >> bitoffset) & u_type( 1 ) ) );
+  //   arch.flagwrite( ARCH::FLAG::CF, bit_t( (opr >> bitoffset) & u_type( 1 ) ) );
   //   arch.template rmwrite<OPSIZE>( rmop, opr | (u_type( 1 ) << bitoffset) );
   // }
 };
@@ -908,7 +908,7 @@ struct BtsRM : public Operation<ARCH>
   //   int64_t addr_offset = int64_t( (bt_offset >> TypeFor<ARCH,OPSIZE>::logsize) * (OPSIZE / 8) );
   //   u_type str_opr = arch.template rmstrread<OPSIZE>( rmop, addr_offset );
   //   u_type opr_bit = u_type( str_bit % OPSIZE );
-  //   arch.flagwrite( ARCH::CF, bit_t( (str_opr >> opr_bit) & u_type( 1 ) ) );
+  //   arch.flagwrite( ARCH::FLAG::CF, bit_t( (str_opr >> opr_bit) & u_type( 1 ) ) );
   //   arch.template rmstrwrite<OPSIZE>( rmop, addr_offset, str_opr | (u_type( 1 ) << opr_bit) );
   // }
 };

@@ -1,3 +1,4 @@
+set -ex
 ${ARMSEC} arm 0x40c8 0xe2a33a9c # adc	r3, r3, #638976
 ${ARMSEC} arm 0x40c8 0xe2b11912 # adcs	r1, r1, #294912
 ${ARMSEC} arm 0x40c8 0xe2a230cf # adc	r3, r2, #207

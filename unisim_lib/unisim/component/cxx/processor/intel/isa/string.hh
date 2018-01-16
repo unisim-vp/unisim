@@ -86,7 +86,7 @@ struct Movs : public Operation<ARCH>
     
     arch.template rmwrite<OPSIZE>( str->getdst(), arch.template rmread<OPSIZE>( str->getsrc( segment ) ) );
     
-    int32_t step = arch.Cond( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
+    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
     str->addsrc( arch, step );
     str->adddst( arch, step );
     
@@ -133,7 +133,7 @@ struct Stos : public Operation<ARCH>
     
     arch.template rmwrite<OPSIZE>( str->getdst(), arch.template regread<OPSIZE>( 0 ) );
 
-    int32_t step = arch.Cond( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
+    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
     str->adddst( arch, step );
     
     if (REP) {
@@ -184,13 +184,13 @@ struct Cmps : public Operation<ARCH>
     
     eval_sub( arch, arch.template rmread<OPSIZE>( str->getsrc( segment ) ), arch.template rmread<OPSIZE>( str->getdst() ) );
     
-    int32_t step = arch.Cond( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
+    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
     str->adddst( arch, step );
     str->addsrc( arch, step );
     
     if (REP) {
       str->deccounter( arch );
-      if (arch.Cond( bit_t( REP&1 ) ^ arch.flagread( ARCH::ZF ) )) return;
+      if (arch.Cond( bit_t( REP&1 ) ^ arch.flagread( ARCH::FLAG::ZF ) )) return;
       arch.seteip( u32_t( Operation<ARCH>::address ) );
     }
   }
@@ -247,12 +247,12 @@ struct Scas : public Operation<ARCH>
     
     eval_sub( arch, arch.template rmread<OPSIZE>( str->getdst() ), arch.template regread<OPSIZE>( 0 ) );
 
-    int32_t step = arch.Cond( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
+    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
     str->adddst( arch, step );
     
     if (REP) {
       str->deccounter( arch );
-      if (arch.Cond( bit_t( REP&1 ) ^arch.flagread( ARCH::ZF ) )) return;
+      if (arch.Cond( bit_t( REP&1 ) ^arch.flagread( ARCH::FLAG::ZF ) )) return;
       arch.seteip( u32_t( Operation<ARCH>::address ) );
     }
   }
@@ -308,7 +308,7 @@ struct Lods : public Operation<ARCH>
     
     arch.template regwrite<OPSIZE>( 0, arch.template rmread<OPSIZE>( str->getsrc( segment ) ) );
     
-    int32_t step = arch.Cond( arch.flagread( ARCH::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
+    int32_t step = arch.Cond( arch.flagread( ARCH::FLAG::DF ) ) ? -int32_t(OPSIZE/8) : +int32_t(OPSIZE/8);
     str->addsrc( arch, step );
     
     if (REP) {

@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <sstream>
 #include <cstdlib>
+#include <cstdio>
 
 namespace armsec
 {
@@ -582,115 +583,30 @@ namespace armsec
     
     /* mask for valid bits in processor control and status registers */
     static uint32_t const PSR_UNALLOC_MASK = 0x00f00000;
-    
-    struct RegID
-    {
-      enum Code
-        {
-          NA = 0,
-          r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr, nia,
-          n, z, c, v, itstate, // q, ge0, ge1, ge2, ge3,
-          cpsr, spsr,
-          fpscr, fpexc,
-          r8_fiq,
-          r9_fiq,
-          sl_fiq,
-          fp_fiq,
-          ip_fiq,
-          sp_fiq,
-          lr_fiq,
-          r8_usr,
-          r9_usr,
-          sl_usr,
-          fp_usr,
-          ip_usr,
-          sp_usr,
-          lr_usr,
-          sp_irq,
-          sp_svc,
-          sp_abt,
-          sp_hyp,
-          sp_und,
-          lr_irq,
-          lr_svc,
-          lr_abt,
-          lr_hyp,
-          lr_und,
-          SCTLR, ACTLR,
-          CTR, MPIDR,
-          ID_PFR0, CCSIDR, CLIDR, CSSELR,
-          CPACR, NSACR,
-          TTBR0, TTBR1, TTBCR,
-          DACR,
-          DFSR, IFSR, DFAR, IFAR,
-          ICIALLUIS, BPIALLIS,
-          ICIALLU, ICIMVAU, BPIALL,
-          DCIMVAC, DCISW, DCCMVAC, DCCSW, DCCMVAU, DCCIMVAC,
-          TLBIALLIS, TLBIALL, TLBIASID,
-          VBAR,
-          CONTEXTIDR,
-          DIAGCR, CFGBAR,
-          end
-        } code;
 
-      static RegID sreg_id(int idx) { return RegID(SCTLR) + idx; }
-      int sreg_idx() { return code - SCTLR; }
-      
-      static int  const sregs_count = end - SCTLR;
-      
+    struct SRegID : public unisim::util::symbolic::Identifier<SRegID>
+    {
+      enum Code {
+        SCTLR, ACTLR,
+        CTR, MPIDR,
+        ID_PFR0, CCSIDR, CLIDR, CSSELR,
+        CPACR, NSACR,
+        TTBR0, TTBR1, TTBCR,
+        DACR,
+        DFSR, IFSR, DFAR, IFAR,
+        ICIALLUIS, BPIALLIS,
+        ICIALLU, ICIMVAU, BPIALL,
+        DCIMVAC, DCISW, DCCMVAC, DCCSW, DCCMVAU, DCCIMVAC,
+        TLBIALLIS, TLBIALL, TLBIASID,
+        VBAR,
+        CONTEXTIDR,
+        DIAGCR, CFGBAR, end
+      } code;
+
       char const* c_str() const
       {
         switch (code)
           {
-          case         r0: return "r0";
-          case         r1: return "r1";
-          case         r2: return "r2";
-          case         r3: return "r3";
-          case         r4: return "r4";
-          case         r5: return "r5";
-          case         r6: return "r6";
-          case         r7: return "r7";
-          case         r8: return "r8";
-          case         r9: return "r9";
-          case         sl: return "sl";
-          case         fp: return "fp";
-          case         ip: return "ip";
-          case         sp: return "sp";
-          case         lr: return "lr";
-          case        nia: return "pc";
-          case          n: return "n";
-          case          z: return "z";
-          case          c: return "c";
-          case          v: return "v";
-          case    itstate: return "itstate";
-          case       cpsr: return "cpsr";
-          case       spsr: return "spsr";
-          case      fpscr: return "fpscr";
-          case      fpexc: return "fpexc";
-          case     r8_fiq: return "r8_fiq";
-          case     r9_fiq: return "r9_fiq";
-          case     sl_fiq: return "sl_fiq";
-          case     fp_fiq: return "fp_fiq";
-          case     ip_fiq: return "ip_fiq";
-          case     sp_fiq: return "sp_fiq";
-          case     lr_fiq: return "lr_fiq";
-          case     r8_usr: return "r8_usr";
-          case     r9_usr: return "r9_usr";
-          case     sl_usr: return "sl_usr";
-          case     fp_usr: return "fp_usr";
-          case     ip_usr: return "ip_usr";
-          case     sp_usr: return "sp_usr";
-          case     lr_usr: return "lr_usr";
-          case     sp_irq: return "sp_irq";
-          case     sp_svc: return "sp_svc";
-          case     sp_abt: return "sp_abt";
-          case     sp_hyp: return "sp_hyp";
-          case     sp_und: return "sp_und";
-          case     lr_irq: return "lr_irq";
-          case     lr_svc: return "lr_svc";
-          case     lr_abt: return "lr_abt";
-          case     lr_hyp: return "lr_hyp";
-          case     lr_und: return "lr_und";
           case      SCTLR: return "sctlr";
           case      ACTLR: return "actlr";
           case        CTR: return "ctr";
@@ -727,65 +643,191 @@ namespace armsec
           case CONTEXTIDR: return "contextidr";
           case     DIAGCR: return "diagcr";
           case     CFGBAR: return "cfgbar";
-          case         NA: return "NA";
+          case end:        break;
+          }
+        return "NA";
+      }
+
+      SRegID() : code(end) {}
+      SRegID( Code _code ) : code(_code) {}
+      SRegID( char const* _code ) : code(end) { init(_code); }
+    };
+    
+    struct RegID : public unisim::util::symbolic::Identifier<RegID>
+    {
+      enum Code
+        {
+          NA = 0,
+          r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, sp, lr,
+          n, z, c, v, itstate, // q, ge0, ge1, ge2, ge3,
+          cpsr, spsr,
+          fpscr, fpexc,
+          r8_fiq,
+          r9_fiq,
+          sl_fiq,
+          fp_fiq,
+          ip_fiq,
+          sp_fiq,
+          lr_fiq,
+          r8_usr,
+          r9_usr,
+          sl_usr,
+          fp_usr,
+          ip_usr,
+          sp_usr,
+          lr_usr,
+          sp_irq,
+          sp_svc,
+          sp_abt,
+          sp_hyp,
+          sp_und,
+          lr_irq,
+          lr_svc,
+          lr_abt,
+          lr_hyp,
+          lr_und,
+          end
+        } code;
+
+      char const* c_str() const
+      {
+        switch (code)
+          {
+          case         r0: return "r0";
+          case         r1: return "r1";
+          case         r2: return "r2";
+          case         r3: return "r3";
+          case         r4: return "r4";
+          case         r5: return "r5";
+          case         r6: return "r6";
+          case         r7: return "r7";
+          case         r8: return "r8";
+          case         r9: return "r9";
+          case         sl: return "sl";
+          case         fp: return "fp";
+          case         ip: return "ip";
+          case         sp: return "sp";
+          case         lr: return "lr";
+          case          n: return "n";
+          case          z: return "z";
+          case          c: return "c";
+          case          v: return "v";
+          case    itstate: return "itstate";
+          case       cpsr: return "cpsr";
+          case       spsr: return "spsr";
+          case      fpscr: return "fpscr";
+          case      fpexc: return "fpexc";
+          case     r8_fiq: return "r8_fiq";
+          case     r9_fiq: return "r9_fiq";
+          case     sl_fiq: return "sl_fiq";
+          case     fp_fiq: return "fp_fiq";
+          case     ip_fiq: return "ip_fiq";
+          case     sp_fiq: return "sp_fiq";
+          case     lr_fiq: return "lr_fiq";
+          case     r8_usr: return "r8_usr";
+          case     r9_usr: return "r9_usr";
+          case     sl_usr: return "sl_usr";
+          case     fp_usr: return "fp_usr";
+          case     ip_usr: return "ip_usr";
+          case     sp_usr: return "sp_usr";
+          case     lr_usr: return "lr_usr";
+          case     sp_irq: return "sp_irq";
+          case     sp_svc: return "sp_svc";
+          case     sp_abt: return "sp_abt";
+          case     sp_hyp: return "sp_hyp";
+          case     sp_und: return "sp_und";
+          case     lr_irq: return "lr_irq";
+          case     lr_svc: return "lr_svc";
+          case     lr_abt: return "lr_abt";
+          case     lr_hyp: return "lr_hyp";
+          case     lr_und: return "lr_und";
+          case         NA:
           case        end: break;
           }
-        return "INVALID";
+        return "NA";
       }
       
-      
+      RegID() : code(end) {}
       RegID( Code _code ) : code(_code) {}
-      RegID( char const* _code ) : code(NA) { unisim::util::symbolic::cstr2enum( *this, _code ); }
-      
-      RegID operator + ( int offset ) const { return RegID( Code(int(code) + offset) ); }
-      //int operator - ( RegID rid ) const { return int(code) - int(rid.code); }
-      //bool operator == ( RegID rid ) const { return code == rid.code; }
-      intptr_t cmp( RegID rhs ) const { return intptr_t(code) - intptr_t(rhs.code); }
+      RegID( char const* _code ) : code(end) { init( _code ); }
     };
     
-    struct RegRead : public ASExprNode
+    struct RegReadBase : public ASExprNode
     {
-      RegRead( RegID _id, unsigned _bitsize ) : id(_id), bitsize(_bitsize) {}
-      RegRead( char const* name, unsigned _bitsize ) : id( name ), bitsize(_bitsize) {}
-      virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const { sink << id.c_str() << "<" << bitsize << ">"; return bitsize; }
-      virtual intptr_t cmp( ExprNode const& brhs ) const { return id.cmp( dynamic_cast<RegRead const&>( brhs ).id ); }
-      
+      RegReadBase( unsigned _bitsize ) : bitsize(_bitsize) {}
       virtual unsigned SubCount() const { return 0; }
-      virtual void Repr( std::ostream& sink ) const { sink << id.c_str(); }
-      RegID id;
       unsigned bitsize;
     };
-    
-    struct RegWrite : public ASExprNode
+
+    template <typename RID>
+    struct RegRead : public RegReadBase
     {
-      RegWrite( RegID _id, Expr const& _value, unsigned _bitsize ) : id(_id), value(_value), bitsize(_bitsize) {}
-      RegWrite( char const* name, Expr const& _value, unsigned _bitsize ) : id(name), value(_value), bitsize(_bitsize) {}
-      virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const
-      {
-        sink << id.c_str() << "<" << std::dec << bitsize << "> := " << GetCode(value, vars, label);
-        return 0;
-      }
-      
-      virtual intptr_t cmp( ExprNode const& brhs ) const
-      {
-        RegWrite const& rhs = dynamic_cast<RegWrite const&>( brhs );
-        if (intptr_t delta = id.cmp( rhs.id )) return delta;
-        return value.cmp( rhs.value );
-      }
+      RegRead( RID _id, unsigned bitsize ) : RegReadBase(bitsize), id(_id) {}
+      virtual intptr_t cmp( ExprNode const& brhs ) const { return id.cmp( dynamic_cast<RegRead const&>( brhs ).id ); }
+      virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const { sink << id.c_str() << "<" << bitsize << ">"; return bitsize; }
+      virtual void Repr( std::ostream& sink ) const { sink << id.c_str(); }
+      RID id;
+    };
+
+    template <typename RID>
+    RegRead<RID>* newRegRead( RID id, unsigned bitsize ) { return new RegRead<RID>( id, bitsize ); }
+
+    struct RegWriteBase : public ASExprNode
+    {
+      RegWriteBase( Expr const& _value, unsigned _bitsize ) : value(_value), bitsize(_bitsize) {}
       
       virtual unsigned SubCount() const { return 1; }
       virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
-      virtual void Repr( std::ostream& sink ) const { sink << id.c_str() << " := "; value->Repr(sink); }
       
-      RegID id;
+      virtual intptr_t cmp( ExprNode const& brhs ) const
+      {
+        RegWriteBase const& rhs = dynamic_cast<RegWriteBase const&>( brhs );
+        if (intptr_t delta = int(bitsize) - int(rhs.bitsize)) return delta;
+        return value.cmp( rhs.value );
+      }
+      
+      virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const
+      {
+        sink << GetRegName() << "<" << std::dec << bitsize << "> := " << GetCode(value, vars, label);
+        return 0;
+      }
+      
+      virtual void Repr( std::ostream& sink ) const { sink << GetRegName() << " := "; value->Repr(sink); }
+      
+      virtual char const* GetRegName() const = 0;
+      
       Expr value;
       unsigned bitsize;
     };
+
+    template <typename RID>
+    struct RegWrite : public RegWriteBase
+    {
+      RegWrite( RID _id, Expr const& _value, unsigned _bitsize ) : RegWriteBase(_value, _bitsize), id(_id) {}
+      
+      virtual intptr_t cmp( ExprNode const& brhs ) const
+      {
+        if (intptr_t delta = id.cmp( dynamic_cast<RegWrite const&>( brhs ).id )) return delta;
+        return this->RegWriteBase::cmp( brhs );
+      }
+      
+      virtual char const* GetRegName() const { return id.c_str(); }
+      
+      RID id;
+    };
+
+    template <typename RID>
+    RegWrite<RID>* newRegWrite( RID id, Expr const& value, unsigned bitsize )
+    { return new RegWrite<RID>( id, value, bitsize ); }
     
     enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE };
-    struct PCWrite : public RegWrite
+    
+    struct PCWrite : public RegWriteBase
     {
-      PCWrite( Expr const& _value, branch_type_t bt ) : RegWrite( "pc", _value, 32 ), branch_type(bt) {}
+      PCWrite( Expr const& _value, branch_type_t bt ) : RegWriteBase( _value, 32 ), branch_type(bt) {}
+      
+      virtual char const* GetRegName() const { return "pc"; }
+      
       branch_type_t branch_type;
     };
 
@@ -809,25 +851,25 @@ namespace armsec
       : path( _path )
       , next_insn_addr()
       , cpsr( *this,
-              Expr( new RegRead("n",1) ),
-              Expr( new RegRead("z",1) ),
-              Expr( new RegRead("c",1) ),
-              Expr( new RegRead("v",1) ),
-              Expr( new RegRead("itstate",8) ),
-              Expr( new RegRead("cpsr",32) ),
+              Expr( newRegRead(RegID("n"),1) ),
+              Expr( newRegRead(RegID("z"),1) ),
+              Expr( newRegRead(RegID("c"),1) ),
+              Expr( newRegRead(RegID("v"),1) ),
+              Expr( newRegRead(RegID("itstate"),8) ),
+              Expr( newRegRead(RegID("cpsr"),32) ),
               iset,
               is_big,
               running_mode)
-      , spsr( Expr( new RegRead("spsr",32) ) )
-      , FPSCR( Expr( new RegRead("fpscr",32) ) )
-      , FPEXC( Expr( new RegRead("fpexc",32) ) )
+      , spsr( Expr( newRegRead(RegID("spsr"),32) ) )
+      , FPSCR( Expr( newRegRead(RegID("fpscr"),32) ) )
+      , FPEXC( Expr( newRegRead(RegID("fpexc"),32) ) )
       , unpredictable(false)
       , is_it_assigned(false)
     {
       for (unsigned reg = 0; reg < 15; ++reg)
-        reg_values[reg] = U32( Expr( new RegRead( RegID("r0") + reg, 32 ) ) );
-      for (int idx = 0; idx < RegID::sregs_count; ++idx)
-        sregs[idx] = U32( Expr( new RegRead( RegID::sreg_id(idx), 32 ) ) );
+        reg_values[reg] = U32( Expr( newRegRead( RegID("r0") + reg, 32 ) ) );
+      for (SRegID reg; reg.next();)
+        sregs[reg.idx()] = U32( Expr( newRegRead( reg, 32 ) ) );
     }
     
     void SetInsnProps( Expr const& _expr, unsigned insn_length )
@@ -1000,13 +1042,13 @@ namespace armsec
     
     U32 spsr;
     
-    U32 sregs[RegID::sregs_count];
+    U32 sregs[SRegID::end];
     
-    U32& SReg( RegID rid )
+    U32& SReg( SRegID reg )
     {
-      if (rid.code == RegID::NA)
+      if (reg.code == SRegID::end)
         throw 0;
-      return sregs[rid.sreg_idx()];
+      return sregs[reg.idx()];
     }
     
     void FPTrap( unsigned exc )
@@ -1725,39 +1767,39 @@ namespace armsec
           return complete;
         }
       if (cpsr.n != ref.cpsr.n)
-        path->sinks.insert( Expr( new RegWrite( "n", cpsr.n, 1 ) ) );
+        path->sinks.insert( Expr( newRegWrite( RegID("n"), cpsr.n, 1 ) ) );
       if (cpsr.z != ref.cpsr.z)
-        path->sinks.insert( Expr( new RegWrite( "z", cpsr.z, 1 ) ) );
+        path->sinks.insert( Expr( newRegWrite( RegID("z"), cpsr.z, 1 ) ) );
       if (cpsr.c != ref.cpsr.c)
-        path->sinks.insert( Expr( new RegWrite( "c", cpsr.c, 1 ) ) );
+        path->sinks.insert( Expr( newRegWrite( RegID("c"), cpsr.c, 1 ) ) );
       if (cpsr.v != ref.cpsr.v)
-        path->sinks.insert( Expr( new RegWrite( "v", cpsr.v, 1 ) ) );
+        path->sinks.insert( Expr( newRegWrite( RegID("v"), cpsr.v, 1 ) ) );
       if (cpsr.itstate.expr != ref.cpsr.itstate.expr)
-        path->sinks.insert( Expr( new RegWrite( "itstate", cpsr.itstate.expr, 8 ) ) );
+        path->sinks.insert( Expr( newRegWrite( RegID("itstate"), cpsr.itstate.expr, 8 ) ) );
       if (cpsr.bg.expr != ref.cpsr.bg.expr)
-        path->sinks.insert( Expr( new RegWrite( "cpsr", cpsr.bg.expr, 32 ) ) );
+        path->sinks.insert( Expr( newRegWrite( RegID("cpsr"), cpsr.bg.expr, 32 ) ) );
       if (spsr.expr != ref.spsr.expr)
-        path->sinks.insert( Expr( new RegWrite( "spsr", spsr.expr, 32 ) ) );
-      for (int idx = 0; idx < RegID::sregs_count; ++idx)
-        if (sregs[idx].expr != ref.sregs[idx].expr)
-          path->sinks.insert( Expr( new RegWrite( RegID::sreg_id(idx), sregs[idx].expr, 32 ) ) );
+        path->sinks.insert( Expr( newRegWrite( RegID("spsr"), spsr.expr, 32 ) ) );
+      for (SRegID reg; reg.next();)
+        if (sregs[reg.idx()].expr != ref.sregs[reg.idx()].expr)
+          path->sinks.insert( Expr( newRegWrite( reg, sregs[reg.idx()].expr, 32 ) ) );
       if (FPSCR.expr != ref.FPSCR.expr)
-        path->sinks.insert( Expr( new RegWrite( "fpscr", FPSCR.expr, 32 ) ) );
+        path->sinks.insert( Expr( newRegWrite( RegID("fpscr"), FPSCR.expr, 32 ) ) );
       if (FPEXC.expr != ref.FPEXC.expr)
-        path->sinks.insert( Expr( new RegWrite( "fpexc", FPEXC.expr, 32 ) ) );
+        path->sinks.insert( Expr( newRegWrite( RegID("fpexc"), FPEXC.expr, 32 ) ) );
       for (unsigned reg = 0; reg < 15; ++reg) {
         if (reg_values[reg].expr != ref.reg_values[reg].expr)
-          path->sinks.insert( Expr( new RegWrite( RegID("r0") + reg, reg_values[reg].expr, 32 ) ) );
+          path->sinks.insert( Expr( newRegWrite( RegID("r0") + reg, reg_values[reg].expr, 32 ) ) );
       }
       for (ForeignRegisters::iterator itr = foreign_registers.begin(), end = foreign_registers.end(); itr != end; ++itr)
         {
           ForeignRegister ref(itr->first.first, itr->first.second);
-          ref.Retain();
+          ref.Retain(); // Prevent deletion of this static instance
           Expr xref( new ForeignRegister(itr->first.first, itr->first.second) );
           if (itr->second == Expr(&ref)) continue;
           std::ostringstream buf;
           ref.Repr( buf );
-          path->sinks.insert( Expr( new RegWrite( RegID(buf.str().c_str()), itr->second, 32 ) ) );
+          path->sinks.insert( Expr( newRegWrite( RegID(buf.str().c_str()), itr->second, 32 ) ) );
         }
       for (std::set<Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
         path->sinks.insert( *itr );
@@ -1831,49 +1873,6 @@ namespace armsec
       ((cc == U8(14)) and (unisim::util::symbolic::make_const( true )));
   }
 
-  // struct GenFlagsID
-  // {
-  //   enum Code { NA = 0, Sub, Add };
-
-  //   template <class E> static void
-  //   Enumeration( E& e )
-  //   {
-  //     case  Sub: return "Sub";
-  //     case  Add: return "Add";
-  //   }
-
-  //   GenFlagsID( Code _code ) : code(_code) {}
-  //   GenFlagsID( char const* _code ) : code(NA) { cstr2enum( *this, _code ); }
-
-  //   char const* c_str() const { return enum2cstr( *this, "NA" ); }
-  //   GenFlagsID operator + ( int offset ) const { return GenFlagsID( Code(int(code) + offset) ); }
-  //   int operator - ( GenFlagsID rid ) const { return int(code) - int(rid.code); }
-
-  //   Code code;
-  // };
-
-  // struct GenFlags : public ASExprNode
-  // {
-  //   GenFlags( GenFlagsID _id, Expr const& _ipsr, Expr const& _lhs, Expr const& _rhs )
-  //     : id(_id), ipsr(_ipsr), lhs(_lhs), rhs(_rhs) {}
-
-  //   virtual void Repr( std::ostream& sink ) const
-  //   {
-  //     sink << "GenFlags(" << id.c_str() << ", " << ipsr << ", " << lhs << ", " << rhs << ")";
-  //   }
-  //   virtual intptr_t cmp( ExprNode const& bright ) const
-  //   {
-  //     GenFlags const& right = dynamic_cast<GenFlags const&>( bright );
-  //     if (int delta = id - right.id) return delta;
-  //     if (intptr_t delta = ipsr.cmp(right.ipsr)) return delta;
-  //     if (intptr_t delta = lhs.cmp(right.lhs)) return delta;
-  //     return rhs.cmp(right.rhs);
-  //   }
-  //   GenFlagsID id;
-  //   Expr ipsr, lhs, rhs;
-  // };
-
-
   void
   UpdateStatusSub( State& state, U32 const& res, U32 const& lhs, U32 const& rhs )
   {
@@ -1937,7 +1936,10 @@ namespace armsec
 
     Expr nia;
     armsec::State::branch_type_t bt;
-
+    
+    // Using a delayed writing mechanism so that the last code line
+    // produced is linked to the next code line given by the upper
+    // context instead of a fresh new one
     struct Head
     {
       Head( Label const& _start, int _after ) : cur(_start), after(_after) {}
@@ -1994,8 +1996,8 @@ namespace armsec
       for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
         {
           sestats.Process( *itr );
-          if (armsec::State::RegWrite const* rw = dynamic_cast<armsec::State::RegWrite const*>( itr->node ))
-            rtmps[rw->value] = rw->id.c_str();
+          if (armsec::State::RegWriteBase const* rw = dynamic_cast<armsec::State::RegWriteBase const*>( itr->node ))
+            rtmps[rw->value] = rw->GetRegName();
         }
 
       // if (cond.good())
@@ -2047,25 +2049,24 @@ namespace armsec
 
     for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
       {
-        if (armsec::State::RegWrite const* rw = dynamic_cast<armsec::State::RegWrite const*>( itr->node ))
+        if (armsec::State::RegWriteBase const* rw = dynamic_cast<armsec::State::RegWriteBase const*>( itr->node ))
           {
-            armsec::State::RegID rid = rw->id;
-            unsigned             rsz = rw->bitsize;
-            Expr value( rw->value );
-
+            char const* rname = rw->GetRegName();
+            unsigned    rsize = rw->bitsize;
+            Expr        value = rw->value;
 
             if (not value.ConstSimplify() and not ctx.vars.count(value))
               {
                 std::ostringstream buffer;
-                buffer << "nxt_" << rid.c_str() << "<" << rsz << ">";
+                buffer << "nxt_" << rname << "<" << rsize << ">";
                 std::string vname = buffer.str();
                 buffer << " := " << GetCode(value, ctx.vars, head.current()) << "; goto <next>";
                 head.write( buffer.str() );
-                ctx.addvar( vname, rsz, value );
+                ctx.addvar( vname, rsize, value );
               }
 
-            if (rid.code == rid.nia)
-              { nia = value; bt = dynamic_cast<armsec::State::PCWrite const&>( *rw ).branch_type; }
+            if (armsec::State::PCWrite const* jmp = dynamic_cast<armsec::State::PCWrite const*>( rw ))
+              { nia = value; bt = jmp->branch_type; }
             else
               ctx.add_pending( *itr );
           }
@@ -2271,7 +2272,11 @@ struct Decoder
         return;
       }
 
-    std::cout << "(opcode . " << armsec::dbx( bitlen, trans.insn->GetEncoding() ) << ")\n(size . " << (bitlen/8) << ")\n";
+    uint32_t encoding =  trans.insn->GetEncoding();
+    if (bitlen == 16)
+      encoding &= 0xffff;
+    
+    std::cout << "(opcode . " << armsec::dbx( bitlen, encoding ) << ")\n(size . " << (bitlen/8) << ")\n";
 
     // std::cout << "(int_name,\"" << trans.insn->GetName() << "\")\n";
 

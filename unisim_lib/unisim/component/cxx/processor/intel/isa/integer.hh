@@ -1500,8 +1500,8 @@ struct IMulGEI : public Operation<ARCH>
     twice res  = twice( imm ) * twice( s_type( arch.template rmread<OPSIZE>( rmop ) ) );
     arch.template rmwrite<OPSIZE>( rmop, u_type( res ) );
     bit_t flag = res != twice( s_type( res ) );
-    arch.flagwrite( ARCH::OF, flag );
-    arch.flagwrite( ARCH::CF, flag );
+    arch.flagwrite( ARCH::FLAG::OF, flag );
+    arch.flagwrite( ARCH::FLAG::CF, flag );
   }
 };
 
@@ -1589,9 +1589,9 @@ struct Inc : public Operation<ARCH>
   {
     typedef typename ARCH::bit_t bit_t;
     // CF is not affected
-    bit_t savedCF = arch.flagread( ARCH::CF );
+    bit_t savedCF = arch.flagread( ARCH::FLAG::CF );
     arch.template rmwrite<OPSIZE>( rmop, eval_add( arch, arch.template rmread<OPSIZE>( rmop ), u_type( 1 ) ) );
-    arch.flagwrite( ARCH::CF, savedCF );
+    arch.flagwrite( ARCH::FLAG::CF, savedCF );
   }
 };
 
@@ -1607,9 +1607,9 @@ struct Dec : public Operation<ARCH>
   {
     typedef typename ARCH::bit_t bit_t;
     // CF is not affected
-    bit_t savedCF = arch.flagread( ARCH::CF );
+    bit_t savedCF = arch.flagread( ARCH::FLAG::CF );
     arch.template rmwrite<OPSIZE>( rmop, eval_sub( arch, arch.template rmread<OPSIZE>( rmop ), u_type( 1 ) ) );
-    arch.flagwrite( ARCH::CF, savedCF );
+    arch.flagwrite( ARCH::FLAG::CF, savedCF );
   }
 };
 
@@ -1803,7 +1803,7 @@ struct BitScan : public Operation<ARCH>
     u_type src = arch.template rmread<OPSIZE>( rmop );
     
     bit_t src_is_zero = (src == u_type( 0 ));
-    arch.flagwrite( ARCH::ZF, src_is_zero );
+    arch.flagwrite( ARCH::FLAG::ZF, src_is_zero );
     if (arch.Cond( src_is_zero )) return;
     
     u_type res = LEAD ? (BitScanReverse( src )) : BitScanForward( src );
@@ -1826,15 +1826,15 @@ struct CountZeros : public Operation<ARCH>
     u_type src = arch.template rmread<OPSIZE>( rmop ), res;
     
     bit_t src_is_zero = (src == u_type( 0 ));
-    arch.flagwrite( ARCH::CF, src_is_zero );
+    arch.flagwrite( ARCH::FLAG::CF, src_is_zero );
     
     if (arch.Cond( src_is_zero )) {
       res = u_type( OPSIZE );
-      arch.flagwrite( ARCH::ZF, bit_t(0) );
+      arch.flagwrite( ARCH::FLAG::ZF, bit_t(0) );
     }
     else {
       res = LEAD ? (u_type(OPSIZE-1) - BitScanReverse( src )) : BitScanForward( src );
-      arch.flagwrite( ARCH::ZF, res == u_type(0) );
+      arch.flagwrite( ARCH::FLAG::ZF, res == u_type(0) );
     }
     
     arch.template regwrite<OPSIZE>( gn, res );
@@ -1919,7 +1919,7 @@ struct Cmc : public Operation<ARCH>
 {
   Cmc( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "cmc"; }
-  void execute( ARCH& arch ) const { arch.flagwrite( ARCH::CF, not arch.flagread( ARCH::CF ) ); }
+  void execute( ARCH& arch ) const { arch.flagwrite( ARCH::FLAG::CF, not arch.flagread( ARCH::FLAG::CF ) ); }
 };
 
 template <class ARCH> struct DC<ARCH,CMC> { Operation<ARCH>* get( InputCode<ARCH> const& ic )
@@ -1941,11 +1941,11 @@ struct Sahf : public Operation<ARCH>
   {
     typedef typename ARCH::bit_t bit_t;
     u8_t ah = arch.regread8( 4 );
-    arch.flagwrite( ARCH::SF, bit_t( (ah >> 7) & u8_t( 1 ) ) );
-    arch.flagwrite( ARCH::ZF, bit_t( (ah >> 6) & u8_t( 1 ) ) );
-    arch.flagwrite( ARCH::AF, bit_t( (ah >> 4) & u8_t( 1 ) ) );
-    arch.flagwrite( ARCH::PF, bit_t( (ah >> 2) & u8_t( 1 ) ) );
-    arch.flagwrite( ARCH::CF, bit_t( (ah >> 0) & u8_t( 1 ) ) );
+    arch.flagwrite( ARCH::FLAG::SF, bit_t( (ah >> 7) & u8_t( 1 ) ) );
+    arch.flagwrite( ARCH::FLAG::ZF, bit_t( (ah >> 6) & u8_t( 1 ) ) );
+    arch.flagwrite( ARCH::FLAG::AF, bit_t( (ah >> 4) & u8_t( 1 ) ) );
+    arch.flagwrite( ARCH::FLAG::PF, bit_t( (ah >> 2) & u8_t( 1 ) ) );
+    arch.flagwrite( ARCH::FLAG::CF, bit_t( (ah >> 0) & u8_t( 1 ) ) );
   }
 };
 
@@ -1958,14 +1958,14 @@ struct Lahf : public Operation<ARCH>
   void execute( ARCH& arch ) const
   {
     u8_t ah =
-      (u8_t( arch.flagread( ARCH::SF ) ) << 7) |
-      (u8_t( arch.flagread( ARCH::ZF ) ) << 6) |
+      (u8_t( arch.flagread( ARCH::FLAG::SF ) ) << 7) |
+      (u8_t( arch.flagread( ARCH::FLAG::ZF ) ) << 6) |
       (u8_t(                 0   ) << 5) |
-      (u8_t( arch.flagread( ARCH::AF ) ) << 4) |
+      (u8_t( arch.flagread( ARCH::FLAG::AF ) ) << 4) |
       (u8_t(                 0   ) << 3) |
-      (u8_t( arch.flagread( ARCH::PF ) ) << 2) |
+      (u8_t( arch.flagread( ARCH::FLAG::PF ) ) << 2) |
       (u8_t(                 1   ) << 1) |
-      (u8_t( arch.flagread( ARCH::CF ) ) << 0);
+      (u8_t( arch.flagread( ARCH::FLAG::CF ) ) << 0);
     arch.template regwrite<8>( 4, ah );
   }
 };

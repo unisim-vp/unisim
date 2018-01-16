@@ -177,14 +177,14 @@ struct Fcmovcc : public Operation<ARCH>
     typedef typename ARCH::bit_t bit_t;
     bit_t ok( false );
     switch (COND) {
-    case 0: ok = arch.flagread( ARCH::CF ); break; // fcmovb
-    case 1: ok = not arch.flagread( ARCH::CF ); break; // fcmovnb
-    case 2: ok = arch.flagread( ARCH::ZF ); break; // fcmove
-    case 3: ok = not arch.flagread( ARCH::ZF ); break; // fcmovne
-    case 4: ok = arch.flagread( ARCH::CF ) or arch.flagread( ARCH::ZF ); break; // fcmovbe
-    case 5: ok = not arch.flagread( ARCH::CF ) and not arch.flagread( ARCH::ZF ); break; // fcmovnbe
-    case 6: ok = arch.flagread( ARCH::PF ); break; // fcmovu
-    case 7: ok = not arch.flagread( ARCH::PF ); break; // fcmovnu
+    case 0: ok = arch.flagread( ARCH::FLAG::CF ); break; // fcmovb
+    case 1: ok = not arch.flagread( ARCH::FLAG::CF ); break; // fcmovnb
+    case 2: ok = arch.flagread( ARCH::FLAG::ZF ); break; // fcmove
+    case 3: ok = not arch.flagread( ARCH::FLAG::ZF ); break; // fcmovne
+    case 4: ok = arch.flagread( ARCH::FLAG::CF ) or arch.flagread( ARCH::FLAG::ZF ); break; // fcmovbe
+    case 5: ok = not arch.flagread( ARCH::FLAG::CF ) and not arch.flagread( ARCH::FLAG::ZF ); break; // fcmovnbe
+    case 6: ok = arch.flagread( ARCH::FLAG::PF ); break; // fcmovu
+    case 7: ok = not arch.flagread( ARCH::FLAG::PF ); break; // fcmovnu
     }
     if (arch.Cond( ok ))
       arch.fwrite( 0, arch.fread( stidx ) );
@@ -245,9 +245,9 @@ struct Fcom_m32 : public Operation<ARCH>
     bit_t notle = not (a <= b);
     bit_t notge = not (a >= b);
     
-    arch.flagwrite( ARCH::C3, notge == notle );
-    arch.flagwrite( ARCH::C2, notge and notle );
-    arch.flagwrite( ARCH::C0, notge );
+    arch.flagwrite( ARCH::FLAG::C3, notge == notle );
+    arch.flagwrite( ARCH::FLAG::C2, notge and notle );
+    arch.flagwrite( ARCH::FLAG::C0, notge );
     if (P) arch.fpop();
   }
 };
@@ -267,9 +267,9 @@ struct Fcom_m64 : public Operation<ARCH>
     bit_t notle = not (a <= b);
     bit_t notge = not (a >= b);
 
-    arch.flagwrite( ARCH::C3, notge == notle );
-    arch.flagwrite( ARCH::C2, notge and notle );
-    arch.flagwrite( ARCH::C0, notge );
+    arch.flagwrite( ARCH::FLAG::C3, notge == notle );
+    arch.flagwrite( ARCH::FLAG::C2, notge and notle );
+    arch.flagwrite( ARCH::FLAG::C0, notge );
     if (P) arch.fpop();
   }
 };
@@ -290,9 +290,9 @@ struct Fcom_stn_st0 : public Operation<ARCH>
     bit_t notle = not (a <= b);
     bit_t notge = not (a >= b);
 
-    arch.flagwrite( ARCH::C3, notge == notle );
-    arch.flagwrite( ARCH::C2, notge and notle );
-    arch.flagwrite( ARCH::C0, notge );
+    arch.flagwrite( ARCH::FLAG::C3, notge == notle );
+    arch.flagwrite( ARCH::FLAG::C2, notge and notle );
+    arch.flagwrite( ARCH::FLAG::C0, notge );
     if (P) arch.fpop();
   }
 };
@@ -313,9 +313,9 @@ struct Fcompp : public Operation<ARCH>
     bit_t notle = not (a <= b);
     bit_t notge = not (a >= b);
 
-    arch.flagwrite( ARCH::C3, notge == notle );
-    arch.flagwrite( ARCH::C2, notge and notle );
-    arch.flagwrite( ARCH::C0, notge );
+    arch.flagwrite( ARCH::FLAG::C3, notge == notle );
+    arch.flagwrite( ARCH::FLAG::C2, notge and notle );
+    arch.flagwrite( ARCH::FLAG::C0, notge );
   }
 };
 
@@ -370,9 +370,9 @@ struct Fcomi_st0_stn : public Operation<ARCH>
     bit_t notle = not (a <= b);
     bit_t notge = not (a >= b);
 
-    arch.flagwrite( ARCH::ZF, notge == notle );
-    arch.flagwrite( ARCH::PF, notge and notle );
-    arch.flagwrite( ARCH::CF, notge );
+    arch.flagwrite( ARCH::FLAG::ZF, notge == notle );
+    arch.flagwrite( ARCH::FLAG::PF, notge and notle );
+    arch.flagwrite( ARCH::FLAG::CF, notge );
     if (P) arch.fpop();
   }
 };
@@ -393,9 +393,9 @@ struct Fucomi_st0_stn : public Operation<ARCH>
     bit_t notle = not (a <= b);
     bit_t notge = not (a >= b);
 
-    arch.flagwrite( ARCH::ZF, notge == notle );
-    arch.flagwrite( ARCH::PF, notge and notle );
-    arch.flagwrite( ARCH::CF, notge );
+    arch.flagwrite( ARCH::FLAG::ZF, notge == notle );
+    arch.flagwrite( ARCH::FLAG::PF, notge and notle );
+    arch.flagwrite( ARCH::FLAG::CF, notge );
     if (P) arch.fpop();
   }
 };
@@ -1065,7 +1065,7 @@ struct Fpatan : public Operation<ARCH>
   //         r += f64_t( 3.14159265358979323846 );
   //     }
   //   }
-  //   arch.flagwrite( ARCH::C0, bit_t( 0 ) );
+  //   arch.flagwrite( ARCH::FLAG::C0, bit_t( 0 ) );
   //   arch.fwrite( 1, r );
   //   arch.fpop();
   // }
@@ -1081,7 +1081,7 @@ struct Fptan : public Operation<ARCH>
   // {
   //   arch.fwrite( 1, tangent( arch.fread( 0 ) ) );
   //   arch.fpush( f64_t( 1.0 ) );
-  //   arch.flagwrite( ARCH::C2, bit_t( 0 ) );
+  //   arch.flagwrite( ARCH::FLAG::C2, bit_t( 0 ) );
   // }
 };
 
@@ -1184,10 +1184,10 @@ struct Fprem1 : public Operation<ARCH>
         f64_t quotient = firound( dividend / modulus, intel::x87frnd_nearest );
         arch.fwrite( 0, fmodulo( dividend, modulus ) );
         u64_t uq = (arch.Cond( quotient < f64_t( 0.0 ) )) ? u64_t( -quotient ) : u64_t( quotient );
-        arch.flagwrite( ARCH::C2, bit_t( false ) );
-        arch.flagwrite( ARCH::C0, bit_t( (uq >> 2) & u64_t( 1 ) ) );
-        arch.flagwrite( ARCH::C3, bit_t( (uq >> 1) & u64_t( 1 ) ) );
-        arch.flagwrite( ARCH::C1, bit_t( (uq >> 0) & u64_t( 1 ) ) );
+        arch.flagwrite( ARCH::FLAG::C2, bit_t( false ) );
+        arch.flagwrite( ARCH::FLAG::C0, bit_t( (uq >> 2) & u64_t( 1 ) ) );
+        arch.flagwrite( ARCH::FLAG::C3, bit_t( (uq >> 1) & u64_t( 1 ) ) );
+        arch.flagwrite( ARCH::FLAG::C1, bit_t( (uq >> 0) & u64_t( 1 ) ) );
       }
     else
       {
@@ -1195,7 +1195,7 @@ struct Fprem1 : public Operation<ARCH>
         f64_t pmodulus = modulus;
         while (arch.Cond( (pmodulus *step) <= dividend )) pmodulus = pmodulus * f64_t( 2. );
         arch.fwrite( 0, fmodulo( dividend, pmodulus ) );
-        arch.flagwrite( ARCH::C2, bit_t( true ) );
+        arch.flagwrite( ARCH::FLAG::C2, bit_t( true ) );
       }
   }
 };
@@ -1218,16 +1218,16 @@ struct Fprem : public Operation<ARCH>
       f64_t quotient = firound( dividend / modulus, intel::x87frnd_toward0 );
       arch.fwrite( 0, fmodulo( dividend, modulus ) );
       u64_t uq = (arch.Cond( quotient < f64_t( 0.0 ) )) ? u64_t( -quotient ) : u64_t( quotient );
-      arch.flagwrite( ARCH::C2, bit_t( false ) );
-      arch.flagwrite( ARCH::C0, bit_t( (uq >> 2) & u64_t( 1 ) ) );
-      arch.flagwrite( ARCH::C3, bit_t( (uq >> 1) & u64_t( 1 ) ) );
-      arch.flagwrite( ARCH::C1, bit_t( (uq >> 0) & u64_t( 1 ) ) );
+      arch.flagwrite( ARCH::FLAG::C2, bit_t( false ) );
+      arch.flagwrite( ARCH::FLAG::C0, bit_t( (uq >> 2) & u64_t( 1 ) ) );
+      arch.flagwrite( ARCH::FLAG::C3, bit_t( (uq >> 1) & u64_t( 1 ) ) );
+      arch.flagwrite( ARCH::FLAG::C1, bit_t( (uq >> 0) & u64_t( 1 ) ) );
     } else {
       f64_t const step = power( f64_t( 2. ), f64_t( 32. ) ); // should be 2**32
       f64_t pmodulus = modulus;
       while (arch.Cond( (pmodulus *step) <= dividend )) pmodulus = pmodulus * f64_t( 2. );
       arch.fwrite( 0, fmodulo( dividend, pmodulus ) );
-      arch.flagwrite( ARCH::C2, bit_t( true ) );
+      arch.flagwrite( ARCH::FLAG::C2, bit_t( true ) );
     }
   }
 };
@@ -1568,9 +1568,9 @@ struct Fucom_st0_stn : public Operation<ARCH>
   //   bit_t notle = not (a <= b);
   //   bit_t notge = not (a >= b);
 
-  //   arch.flagwrite( ARCH::C3, notge == notle );
-  //   arch.flagwrite( ARCH::C2, notge and notle );
-  //   arch.flagwrite( ARCH::C0, notge );
+  //   arch.flagwrite( ARCH::FLAG::C3, notge == notle );
+  //   arch.flagwrite( ARCH::FLAG::C2, notge and notle );
+  //   arch.flagwrite( ARCH::FLAG::C0, notge );
   //   if (P) arch.fpop();
   // }
 };
@@ -1587,9 +1587,9 @@ struct Fucompp : public Operation<ARCH>
   //   bit_t notle = not (a <= b);
   //   bit_t notge = not (a >= b);
 
-  //   arch.flagwrite( ARCH::C3, notge == notle );
-  //   arch.flagwrite( ARCH::C2, notge and notle );
-  //   arch.flagwrite( ARCH::C0, notge );
+  //   arch.flagwrite( ARCH::FLAG::C3, notge == notle );
+  //   arch.flagwrite( ARCH::FLAG::C2, notge and notle );
+  //   arch.flagwrite( ARCH::FLAG::C0, notge );
   // }
 };
 

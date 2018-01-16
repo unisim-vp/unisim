@@ -78,19 +78,29 @@ namespace symbolic {
     virtual OpNodeBase const* AsOpNode() const { return 0; }
   };
   
-  template <class EnumCLASS>
-  void cstr2enum( EnumCLASS& ecl, char const* src )
+  template <typename T>
+  struct Identifier
   {
-    for (int idx = 1, end = EnumCLASS::end; idx != end; ++idx)
-      {
-        typedef typename EnumCLASS::Code Code;
-        Code code = Code(idx);
-        if (strcmp(EnumCLASS(code).c_str(), src) == 0)
-          { ecl.code = code; break; }
-      }
-  }
-
-  struct Op
+    void init( char const* src )
+    {
+      T& self( *static_cast<T*>(this) );
+      for (self.code = T::end; next();)
+        if (strcmp(self.c_str(), src) == 0)
+          return;
+    }
+    intptr_t cmp( T rhs ) const { return int(static_cast<T const*>(this)->code) - int(rhs.code); }
+    T operator + ( int offset ) const { return T( typename T::Code(int(static_cast<T const*>(this)->code) + offset) ); }
+    bool next()
+    {
+      typedef typename T::Code Code;
+      Code& code = static_cast<T*>(this)->code;
+      code = Code( code == T::end ? 0 : int(code) + 1 );
+      return code != T::end;
+    }
+    int idx() const { return int(static_cast<T const*>(this)->code); }
+  };
+  
+  struct Op : public Identifier<Op>
   {
     enum Code
       {
@@ -104,7 +114,6 @@ namespace symbolic {
         Cast,
         end
       } code;
-    
     
     char const* c_str() const
     {
@@ -145,16 +154,16 @@ namespace symbolic {
         case FSqrt: return "FSqrt";
         case  FAbs: return "FAbs";
         case  FDen: return "FDen";
-        case    NA: return "NA";
         case  Cast: return "Cast";
+        case    NA: return "NA";
         case   end: break;
         }
       return "INVALID";
     }
     
+    Op() : code(end) {}
     Op( Code _code ) : code(_code) {}
-    Op( char const* _code ) : code(NA) { cstr2enum( *this, _code ); }
-    intptr_t cmp( Op rhs ) const { return intptr_t(code) - intptr_t(rhs.code); }
+    Op( char const* _code ) : code(end) { init( _code ); }
   };
   
   struct ScalarType
@@ -409,6 +418,7 @@ namespace symbolic {
     
     intptr_t cmp( Expr const& rhs ) const
     {
+      if (not node or not rhs.node) return node ? 1 : -1;
       /* First compare actual types */
       const std::type_info& til = typeid(*node);
       const std::type_info& tir = typeid(*rhs.node);
