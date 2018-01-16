@@ -1390,6 +1390,10 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       }
       void Execute( Linux& lin, int syscall_id ) const
       {
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
+        lin.SetSystemCallStatus(-LINUX_ENOSYS, true);
+        return;
+#else
         // long sys_fcntl64(unsigned int fd, unsigned int cmd, unsigned long arg);
         int32_t target_fd = SysCall::GetParam(lin, 0);
         int32_t cmd = SysCall::GetParam(lin, 1);
@@ -1406,10 +1410,6 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
             return;
           }
         
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
-        lin.SetSystemCallStatus(-LINUX_ENOSYS, true);
-        return;
-#else
         switch(cmd)
           {
             // Safe fcntl commands
@@ -1436,8 +1436,8 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
             break;
             return;
           }
-#endif
         lin.SetSystemCallStatus(-LINUX_EINVAL, true);
+#endif
       }
     };
   
