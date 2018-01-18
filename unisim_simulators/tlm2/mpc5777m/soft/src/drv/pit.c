@@ -229,7 +229,7 @@ uint32_t pit_get_rti_timer_value(unsigned int pit_id)
 
 int pit_get_rti_timer_interrupt_flag(unsigned int pit_id)
 {
-	pit[pit_id]->RTI_TFLG.B.TIF;
+	return pit[pit_id]->RTI_TFLG.B.TIF;
 }
 
 void pit_clear_rti_timer_interrupt_flag(unsigned int pit_id)

@@ -13284,7 +13284,7 @@ typedef union LINFlexD_PTD_union_tag { /* PSI5-S Tx Delay register */
   } B;
 } LINFlexD_PTD_tag;
 
-struct LINFlexD_tag {
+struct LINFlexD_master_slave_tag {
   LINFlexD_LINCR1_tag LINCR1;          /* LIN Control Register 1 */
   LINFlexD_LINIER_tag LINIER;          /* LIN Interrupt enable register */
   LINFlexD_LINSR_tag LINSR;            /* LIN Status Register */
@@ -13313,6 +13313,69 @@ struct LINFlexD_tag {
   LINFlexD_PTD_tag PTD;                /* PSI5-S Tx Delay register */
 };
 
+struct LINFlexD_master_tag {
+  LINFlexD_LINCR1_tag LINCR1;          /* LIN Control Register 1 */
+  LINFlexD_LINIER_tag LINIER;          /* LIN Interrupt enable register */
+  LINFlexD_LINSR_tag LINSR;            /* LIN Status Register */
+  LINFlexD_LINESR_tag LINESR;          /* LIN Error Status Register */
+  LINFlexD_UARTCR_tag UARTCR;          /* UART Mode Control Register */
+  LINFlexD_UARTSR_tag UARTSR;          /* UART Mode Status Register */
+  LINFlexD_LINTCSR_tag LINTCSR;        /* LIN Time-Out Control Status Register */
+  LINFlexD_LINOCR_tag LINOCR;          /* LIN Output Compare Register */
+  LINFlexD_LINTOCR_tag LINTOCR;        /* LIN Time-Out Control Register */
+  LINFlexD_LINFBRR_tag LINFBRR;        /* LIN Fractional Baud Rate Register */
+  LINFlexD_LINIBRR_tag LINIBRR;        /* LIN Integer Baud Rate Register */
+  LINFlexD_LINCFR_tag LINCFR;          /* LIN Checksum Field Register */
+  LINFlexD_LINCR2_tag LINCR2;          /* LIN Control Register 2 */
+  LINFlexD_BIDR_tag BIDR;              /* Buffer Identifier Register */
+  LINFlexD_BDRL_tag BDRL;              /* Buffer Data Register Least Significant */
+  LINFlexD_BDRM_tag BDRM;              /* Buffer Data Register Most Significant */
+  LINFlexD_IFER_tag IFER;              /* Identifier Filter Enable Register */
+  LINFlexD_IFMI_tag IFMI;              /* Identifier Filter Match Index */
+  LINFlexD_IFMR_tag IFMR;              /* Identifier Filter Mode Register */
+  LINFlexD_GCR_tag GCR;                /* Global Control Register */
+  LINFlexD_UARTPTO_tag UARTPTO;        /* UART Preset Timeout Register */
+  LINFlexD_UARTCTO_tag UARTCTO;        /* UART Current Timeout Register */
+  LINFlexD_DMATXE_tag DMATXE;          /* DMA Tx Enable Register */
+  LINFlexD_DMARXE_tag DMARXE;          /* DMA Rx Enable Register */
+  LINFlexD_PTD_tag PTD;                /* PSI5-S Tx Delay register */
+};
+
+union LINFlexD_tag {
+	struct LINFlexD_master_slave_tag MS;
+	struct LINFlexD_master_tag M;
+};
+
+#if 0
+struct LINFlexD_tag {
+  LINFlexD_LINCR1_tag LINCR1;          /* LIN Control Register 1 */
+  LINFlexD_LINIER_tag LINIER;          /* LIN Interrupt enable register */
+  LINFlexD_LINSR_tag LINSR;            /* LIN Status Register */
+  LINFlexD_LINESR_tag LINESR;          /* LIN Error Status Register */
+  LINFlexD_UARTCR_tag UARTCR;          /* UART Mode Control Register */
+  LINFlexD_UARTSR_tag UARTSR;          /* UART Mode Status Register */
+  LINFlexD_LINTCSR_tag LINTCSR;        /* LIN Time-Out Control Status Register */
+  LINFlexD_LINOCR_tag LINOCR;          /* LIN Output Compare Register */
+  LINFlexD_LINTOCR_tag LINTOCR;        /* LIN Time-Out Control Register */
+  LINFlexD_LINFBRR_tag LINFBRR;        /* LIN Fractional Baud Rate Register */
+  LINFlexD_LINIBRR_tag LINIBRR;        /* LIN Integer Baud Rate Register */
+  LINFlexD_LINCFR_tag LINCFR;          /* LIN Checksum Field Register */
+  LINFlexD_LINCR2_tag LINCR2;          /* LIN Control Register 2 */
+  LINFlexD_BIDR_tag BIDR;              /* Buffer Identifier Register */
+  LINFlexD_BDRL_tag BDRL;              /* Buffer Data Register Least Significant */
+  LINFlexD_BDRM_tag BDRM;              /* Buffer Data Register Most Significant */
+  LINFlexD_IFER_tag IFER;              /* Identifier Filter Enable Register */
+  LINFlexD_IFMI_tag IFMI;              /* Identifier Filter Match Index */
+  LINFlexD_IFMR_tag IFMR;              /* Identifier Filter Mode Register */
+  LINFlexD_IFCR_tag IFCR[16];          /* Identifier Filter Control Register */
+  LINFlexD_GCR_tag GCR;                /* Global Control Register */
+  LINFlexD_UARTPTO_tag UARTPTO;        /* UART Preset Timeout Register */
+  LINFlexD_UARTCTO_tag UARTCTO;        /* UART Current Timeout Register */
+  LINFlexD_DMATXE_tag DMATXE;          /* DMA Tx Enable Register */
+  LINFlexD_DMARXE_tag DMARXE;          /* DMA Rx Enable Register */
+  LINFlexD_PTD_tag PTD;                /* PSI5-S Tx Delay register */
+};
+#endif
 
 /* ============================================================================
    =============================== Module: MC_CGM =============================
@@ -25979,12 +26042,12 @@ struct eDMA_tag {
 #define JDC (*(volatile struct JDC_tag *) 0xFFF3C000UL)
 #define JTAGM (*(volatile struct JTAGM_tag *) 0xFFF48000UL)
 #define LFAST_0 (*(volatile struct LFAST_tag *) 0xFFFD8000UL)
-#define LINFlexD_0 (*(volatile struct LINFlexD_tag *) 0xFFE8C000UL)
-#define LINFlexD_1 (*(volatile struct LINFlexD_tag *) 0xFFE90000UL)
-#define LINFlexD_14 (*(volatile struct LINFlexD_tag *) 0xFFEA8000UL)
-#define LINFlexD_15 (*(volatile struct LINFlexD_tag *) 0xFBEA8000UL)
-#define LINFlexD_16 (*(volatile struct LINFlexD_tag *) 0xFFEAC000UL)
-#define LINFlexD_2 (*(volatile struct LINFlexD_tag *) 0xFBE8C000UL)
+#define LINFlexD_0 (*(volatile union LINFlexD_tag *) 0xFFE8C000UL)
+#define LINFlexD_1 (*(volatile union LINFlexD_tag *) 0xFFE90000UL)
+#define LINFlexD_14 (*(volatile union LINFlexD_tag *) 0xFFEA8000UL)
+#define LINFlexD_15 (*(volatile union LINFlexD_tag *) 0xFBEA8000UL)
+#define LINFlexD_16 (*(volatile union LINFlexD_tag *) 0xFFEAC000UL)
+#define LINFlexD_2 (*(volatile union LINFlexD_tag *) 0xFBE8C000UL)
 #define MC_CGM (*(volatile struct MC_CGM_tag *) 0xFFFB0000UL)
 #define MC_ME (*(volatile struct MC_ME_tag *) 0xFFFB8000UL)
 #define MC_PCU (*(volatile struct MC_PCU_tag *) 0xFFFA0000UL)

@@ -122,6 +122,7 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, master_clock_start_time(sc_core::SC_ZERO_TIME)
 	, master_clock_posedge_first(true)
 	, master_clock_duty_cycle(0.5)
+	, dma_engine_time(sc_core::SC_ZERO_TIME)
 	, dma_engine_event("dma_engine_event")
 	, gen_irq_event()
 	, gen_err_event()
@@ -848,6 +849,12 @@ void EDMA<CONFIG>::SetErrorIndicator(unsigned int dma_channel_num)
 }
 
 template <typename CONFIG>
+bool EDMA<CONFIG>::ErrorIndicator(unsigned int dma_channel_num)
+{
+	return (dma_channel_num >= 32) ? edma_errh.Get(dma_channel_num - 32) : edma_errl.Get(dma_channel_num);
+}
+
+template <typename CONFIG>
 void EDMA<CONFIG>::ClearAllErrorIndicators()
 {
 	if(unlikely(verbose))
@@ -871,7 +878,7 @@ void EDMA<CONFIG>::ClearErrorIndicator(unsigned int dma_channel_num)
 {
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << sc_core::sc_time_stamp() << ": clear error indicator" << dma_channel_num << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": clear error indicator #" << dma_channel_num << EndDebugInfo;
 	}
 
 	if(dma_channel_num >= 32)
@@ -1118,7 +1125,7 @@ bool EDMA<CONFIG>::SelectChannel(unsigned int dma_grp_num, unsigned int& dma_cha
 		{
 			ch = (ch + 1) % NUM_CHANNELS_PER_GROUP;
 			
-			if(RequestStatus(ch))
+			if(RequestStatus(ch) && !ErrorIndicator(ch))
 			{
 				dma_channel_num = sel_ch_per_grp[dma_grp_num] = ch;
 				return true;
@@ -1143,7 +1150,7 @@ bool EDMA<CONFIG>::SelectChannel(unsigned int dma_grp_num, unsigned int& dma_cha
 			
 			if(!preempt || edma_dchpri[ch].template Get<typename EDMA_DCHPRI::DPA>()) // not preempting or preempt ability ?
 			{
-				if(RequestStatus(ch))
+				if(RequestStatus(ch) && !ErrorIndicator(ch))
 				{
 					dma_channel_num = sel_ch_per_grp[dma_grp_num] = ch;
 					return true;
@@ -1848,12 +1855,15 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 						// Fixed-priority arbitration for both groups and channels
 						
 						// give a chance to another channel to preempt channel x
-						wait(sc_core::SC_ZERO_TIME);
+						//wait(sc_core::SC_ZERO_TIME);
 						
 						// Select a channel that have preempt ability
 						unsigned int dma_channel_num = 0;
 						if(SelectChannel(dma_channel_num, /* preempt */ true))
 						{
+							dma_engine_time += master_clock_period;
+							dma_engine_time += master_clock_period;
+							
 							// a channel can be selected
 							if(dma_channel_num != channel_tcd->dma_channel_num)
 							{
@@ -1873,6 +1883,8 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 									if(CheckTCD(edma_tcd_file[dma_channel_num]))
 									{
 										// start channel y
+										dma_engine_time += master_clock_period;
+										dma_engine_time += master_clock_period;
 										if(verbose)
 										{
 											logger << DebugInfo << sc_core::sc_time_stamp() << ":channel #" << dma_channel_num << ": beginning" << EndDebugInfo;
@@ -1905,6 +1917,9 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 				unsigned int dma_channel_num = 0;
 				if(SelectChannel(dma_channel_num))
 				{
+					dma_engine_time += master_clock_period;
+					dma_engine_time += master_clock_period;
+					
 					if(verbose)
 					{
 						logger << DebugInfo << sc_core::sc_time_stamp() << ": selecting channel #" << dma_channel_num << EndDebugInfo;
@@ -1913,6 +1928,8 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 					if(CheckTCD(edma_tcd_file[dma_channel_num]))
 					{
 						// Start channel x
+						dma_engine_time += master_clock_period;
+						dma_engine_time += master_clock_period;
 						
 						if(verbose)
 						{
@@ -1940,7 +1957,7 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 			unsigned int dma_channel_num = channel_tcd->dma_channel_num;
 			bool end_of_minor_loop = false;
 			bool transfer_error = false;
-			sc_core::sc_time t;
+			//sc_core::sc_time t;
 			uint32_t saddr = channel_tcd->edma_tcd_saddr.template Get<typename EDMA_TCD_SADDR::SADDR>();
 			uint32_t daddr = channel_tcd->edma_tcd_daddr.template Get<typename EDMA_TCD_DADDR::DADDR>();
 			
@@ -1948,7 +1965,7 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 			{
 				if(verbose)
 				{
-					logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": cancelling" << EndDebugInfo;
+					logger << DebugInfo << (sc_core::sc_time_stamp() + dma_engine_time) << ":channel #" << dma_channel_num << ": cancelling" << EndDebugInfo;
 				}
 				
 				// force minor loop to finish
@@ -1996,12 +2013,12 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 					
 					if(verbose)
 					{
-						logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": minor-loop byte count of " << nbytes << " bytes" << EndDebugInfo;
+						logger << DebugInfo << (sc_core::sc_time_stamp() + dma_engine_time) << ":channel #" << dma_channel_num << ": minor-loop byte count of " << nbytes << " bytes" << EndDebugInfo;
 					}
 					
-					if(Transfer(tlm::TLM_READ_COMMAND, GetMasterID(dma_channel_num), saddr, data, size, ssize, soff, saddr_mask, t))
+					if(Transfer(tlm::TLM_READ_COMMAND, GetMasterID(dma_channel_num), saddr, data, size, ssize, soff, saddr_mask, dma_engine_time))
 					{
-						if(Transfer(tlm::TLM_WRITE_COMMAND, GetMasterID(dma_channel_num), daddr, data, size, dsize, doff, daddr_mask, t))
+						if(Transfer(tlm::TLM_WRITE_COMMAND, GetMasterID(dma_channel_num), daddr, data, size, dsize, doff, daddr_mask, dma_engine_time))
 						{
 							// Decrement minor loop byte transfer counter
 							nbytes -= size;
@@ -2014,23 +2031,27 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 						}
 						else
 						{
-							logger << DebugWarning << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": destination bus error" << EndDebugWarning;
+							logger << DebugWarning << (sc_core::sc_time_stamp() + dma_engine_time) << ":channel #" << dma_channel_num << ": destination bus error" << EndDebugWarning;
 							
 							transfer_error = true;
 							edma_es.template Set<typename EDMA_ES::DBE>(1); // destination bus error
+
+							SetErrorIndicator(dma_channel_num);
 						}
 					}
 					else
 					{
-						logger << DebugWarning << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": source bus error" << EndDebugWarning;
+						logger << DebugWarning << (sc_core::sc_time_stamp() + dma_engine_time) << ":channel #" << dma_channel_num << ": source bus error" << EndDebugWarning;
 						
 						transfer_error = true;
 						edma_es.template Set<typename EDMA_ES::SBE>(1); // source bus error
+
+						SetErrorIndicator(dma_channel_num);
 					}
 				}
 				else
 				{
-					logger << DebugWarning << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": null major-loop iteration count" << EndDebugWarning;
+					logger << DebugWarning << (sc_core::sc_time_stamp() + dma_engine_time) << ":channel #" << dma_channel_num << ": null major-loop iteration count" << EndDebugWarning;
 					if(channel_tcd == &channel_y_tcd)
 					{
 						// resume preempted channel x
@@ -2038,6 +2059,10 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 					}
 					else
 					{
+						// exit
+						dma_engine_time += master_clock_period;
+						dma_engine_time += master_clock_period;
+						dma_engine_time += master_clock_period;
 						channel_tcd = 0;
 					}
 				}
@@ -2071,6 +2096,10 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 				}
 				else
 				{
+					// exit
+					dma_engine_time += master_clock_period;
+					dma_engine_time += master_clock_period;
+					dma_engine_time += master_clock_period;
 					channel_tcd = 0;
 				}
 
@@ -2079,8 +2108,8 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 					// end of minor-loop
 					if(verbose)
 					{
-						logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": end of minor-loop" << EndDebugInfo;
-						logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": current major-loop count is " << citer << EndDebugInfo;
+						logger << DebugInfo << (sc_core::sc_time_stamp() + dma_engine_time) << ":channel #" << dma_channel_num << ": end of minor-loop" << EndDebugInfo;
+						logger << DebugInfo << (sc_core::sc_time_stamp() + dma_engine_time) << ":channel #" << dma_channel_num << ": current major-loop count is " << citer << EndDebugInfo;
 					}
 					
 					if(citer == 0)
@@ -2088,7 +2117,7 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 						// end of major-loop
 						if(verbose)
 						{
-							logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": end of major-loop" << EndDebugInfo;
+							logger << DebugInfo << (sc_core::sc_time_stamp() + dma_engine_time) << ":channel #" << dma_channel_num << ": end of major-loop" << EndDebugInfo;
 						}
 						
 						// DONE=1
@@ -2103,7 +2132,7 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 						{
 							if(verbose)
 							{
-								logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": autodisabling DMA requests" << EndDebugInfo;
+								logger << DebugInfo << (sc_core::sc_time_stamp() + dma_engine_time) << ":channel #" << dma_channel_num << ": autodisabling DMA requests" << EndDebugInfo;
 							}
 							DisableRequest(dma_channel_num);
 						}
@@ -2113,19 +2142,19 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 							// scatter/gather
 							if(verbose)
 							{
-								logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ":scatter/gather" << EndDebugInfo;
+								logger << DebugInfo << (sc_core::sc_time_stamp() + dma_engine_time) << ":channel #" << dma_channel_num << ":scatter/gather" << EndDebugInfo;
 							}
 							if(edma_tcd_file[dma_channel_num].CheckScatterGatherAddress())
 							{
 								uint32_t tcd_addr = edma_tcd_file[dma_channel_num].edma_tcd_dlastsga.template Get<typename EDMA_TCD_DLASTSGA::DLASTSGA>();
-								if(!LoadTCD(dma_channel_num, tcd_addr, t))
+								if(!LoadTCD(dma_channel_num, tcd_addr, dma_engine_time))
 								{
-									logger << DebugWarning << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": TCD transfer error while scatter/gather" << EndDebugWarning;
+									logger << DebugWarning << (sc_core::sc_time_stamp() + dma_engine_time) << ":channel #" << dma_channel_num << ": TCD transfer error while scatter/gather" << EndDebugWarning;
 								}
 							}
 							else
 							{
-								logger << DebugWarning << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": scatter/gather configuration error" << EndDebugWarning;
+								logger << DebugWarning << (sc_core::sc_time_stamp() + dma_engine_time) << ":channel #" << dma_channel_num << ": scatter/gather configuration error" << EndDebugWarning;
 								
 								edma_es.template Set<typename EDMA_ES::SGE>(1);
 								SetErrorIndicator(dma_channel_num);
@@ -2138,7 +2167,7 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 							saddr += slast;
 							if(verbose)
 							{
-								logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": last source address adjustment @0x" << std::hex << saddr << std::dec << EndDebugInfo;
+								logger << DebugInfo << (sc_core::sc_time_stamp() + dma_engine_time) << ":channel #" << dma_channel_num << ": last source address adjustment @0x" << std::hex << saddr << std::dec << EndDebugInfo;
 							}
 							edma_tcd_file[dma_channel_num].edma_tcd_saddr.template Set<typename EDMA_TCD_SADDR::SADDR>(saddr);
 							
@@ -2147,7 +2176,7 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 							daddr += dlast;
 							if(verbose)
 							{
-								logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ":channel #" << dma_channel_num << ": last destination address adjustment @0x" << std::hex << daddr << std::dec << EndDebugInfo;
+								logger << DebugInfo << (sc_core::sc_time_stamp() + dma_engine_time) << ":channel #" << dma_channel_num << ": last destination address adjustment @0x" << std::hex << daddr << std::dec << EndDebugInfo;
 							}
 							edma_tcd_file[dma_channel_num].edma_tcd_daddr.template Set<typename EDMA_TCD_DADDR::DADDR>(daddr);
 							
@@ -2216,9 +2245,12 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 					}
 				}
 			}
-			
-			t += master_clock_period;
-			wait(t);
+		}
+		
+		if(dma_engine_time != sc_core::SC_ZERO_TIME)
+		{
+			wait(dma_engine_time);
+			dma_engine_time = sc_core::SC_ZERO_TIME;
 		}
 		else
 		{

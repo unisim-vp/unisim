@@ -43,6 +43,12 @@
 #include <inttypes.h>
 #include <pthread.h>
 
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+
+#include <winsock2.h>
+
+#endif
+
 namespace unisim {
 namespace service {
 namespace netstreamer {
@@ -91,7 +97,11 @@ private:
 	bool filter_line_feed;
 
 	int tcp_port;
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	SOCKET sock;
+#else
 	int sock;
+#endif
 	int state;
 	uint8_t telnet_sb_opt;
 	std::vector<uint8_t> telnet_sb_params;
@@ -124,6 +134,7 @@ private:
 	std::vector<uint8_t> output_buffer;
 	
 	bool StartConnThread();
+	bool JoinConnThread();
 	static void *ConnThrdEntryPoint(void *_self);
 	void Lock();
 	void Unlock();

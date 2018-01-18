@@ -1,30 +1,33 @@
 S32DS         = /opt/NXP/S32DS_Power_v1.2/S32DS
-CROSS_COMPILE = powerpc-eabivle-
+CROSS_TOOLS   = $(S32DS)/../Cross_Tools/powerpc-eabivle-4_9
+CROSS_COMPILE = $(CROSS_TOOLS)/bin/powerpc-eabivle-
+INCLUDES      = $(CROSS_TOOLS)/include
 CC            = $(CROSS_COMPILE)gcc
 RM            = rm -f
 CP            = cp
 
-CFLAGS    = -I.
-OPTFLAGS ?= -O1
-CFLAGS    = -g3 $(OPTFLAGS) -fdebug-prefix-map=$(PWD)=../../ # -Wall
+CFLAGS    = -I. -I$(INCLUDES)
+OPTFLAGS ?= -O0
+CFLAGS    = -g3 $(OPTFLAGS) -fdebug-prefix-map=$(PWD)=../../ -Wall
 LDFLAGS   = -static
 
-DRV_SRC        = src/drv/intc.c src/drv/stm.c src/drv/swt.c src/drv/pit.c src/drv/linflexd.c src/drv/dmamux.c src/drv/edma.c
+DRV_SRC        = src/drv/intc.c src/drv/stm.c src/drv/swt.c src/drv/pit.c src/drv/linflexd.c src/drv/dmamux.c src/drv/edma.c src/drv/console.c
+SYSCALLS_SRC   = src/syscalls/syscalls.c
 
 Z4_2_LIBS      =
-Z4_2_SRCS      = src/Z4_2/flashrchw.c src/Z4_2/main_Z4_2.c $(DRV_SRC)
+Z4_2_SRCS      = src/Z4_2/flashrchw.c src/Z4_2/main_Z4_2.c $(DRV_SRC) $(SYSCALLS_SRC)
 Z4_2_ASMS      = src/Z4_2/startup.S src/Z4_2/intc_sw_handlers.S src/Z4_2/vector.S
 Z4_2_EXE_RAM   = bin/Z4_2/ram_boot.elf
 Z4_2_EXE_FLASH = bin/Z4_2/flash_boot.elf
 
 Z7_0_LIBS      =
-Z7_0_SRCS      = src/Z7_0/main_Z7_0.c $(DRV_SRC)
+Z7_0_SRCS      = src/Z7_0/main_Z7_0.c $(DRV_SRC) $(SYSCALLS_SRC)
 Z7_0_ASMS      = src/Z7_0/startup.S src/Z7_0/intc_sw_handlers.S src/Z7_0/vector.S
 Z7_0_EXE_RAM   = bin/Z7_0/ram_boot.elf
 Z7_0_EXE_FLASH = bin/Z7_0/flash_boot.elf
 
 Z7_1_LIBS      =
-Z7_1_SRCS      = src/Z7_1/main_Z7_1.c $(DRV_SRC)
+Z7_1_SRCS      = src/Z7_1/main_Z7_1.c $(DRV_SRC) $(SYSCALLS_SRC)
 Z7_1_ASMS      = src/Z7_1/startup.S src/Z7_1/intc_sw_handlers.S src/Z7_1/vector.S
 Z7_1_EXE_RAM   = bin/Z7_1/ram_boot.elf
 Z7_1_EXE_FLASH = bin/Z7_1/flash_boot.elf
@@ -54,23 +57,22 @@ Z4_2_RAM_LINKER_ARGS= \
 -Xlinker \
 --gc-sections \
 -mcpu=e200z4 \
--specs=ewl_c9x.specs \
+-specs=nosys.specs \
 -mhard-float \
---sysroot="$(S32DS)/e200_ewl2"
+--sysroot="$(CROSS_TOOLS)/powerpc-eabivle/newlib"
 
 Z4_2_FLASH_LINKER_ARGS= \
 -T src/Z4_2/57xx_flash.ld \
 -Xlinker \
 --gc-sections \
 -mcpu=e200z4 \
--specs=ewl_c9x.specs \
+-specs=nosys.specs \
 -mhard-float \
---sysroot="$(S32DS)/e200_ewl2"
+--sysroot="$(CROSS_TOOLS)/powerpc-eabivle/newlib"
 
 Z4_2_COMPILER_ARGS= \
 -Iinclude \
--I"$(S32DS)/e200_ewl2/EWL_C/include" \
--I"$(S32DS)/e200_ewl2/EWL_C/include/pa" \
+-I"$(CROSS_TOOLS)/include" \
 -DMPC5777M \
 -fmessage-length=0 \
 -fsigned-char \
@@ -78,49 +80,47 @@ Z4_2_COMPILER_ARGS= \
 -fdata-sections \
 -fstrict-volatile-bitfields \
 -mcpu=e200z4 \
--specs=ewl_c9x.specs \
+-specs=nosys.specs \
 -mbig \
 -mvle \
 -mregnames \
 -mhard-float \
---sysroot="$(S32DS)/e200_ewl2"
+--sysroot="$(CROSS_TOOLS)/powerpc-eabivle/newlib"
 
 Z4_2_ASSEMBLER_ARGS= \
 -Iinclude \
--I"$(S32DS)/e200_ewl2/EWL_C/include" \
--I"$(S32DS)/e200_ewl2/EWL_C/include/pa" \
+-I"$(CROSS_TOOLS)/include" \
 -DMPC5777M \
 -DHW_INIT \
 -DI_CACHE \
 -mcpu=e200z4 \
--specs=ewl_c9x.specs \
+-specs=nosys.specs \
 -mbig \
 -mvle \
 -mregnames \
---sysroot="$(S32DS)/e200_ewl2"
+--sysroot="$(CROSS_TOOLS)/powerpc-eabivle/newlib"
 
 Z7_0_RAM_LINKER_ARGS= \
 -T src/Z7_0/57xx_ram.ld \
 -Xlinker \
 --gc-sections \
 -mcpu=e200z7 \
--specs=ewl_c9x.specs \
+-specs=nosys.specs \
 -mhard-float \
---sysroot="$(S32DS)/e200_ewl2"
+--sysroot="$(CROSS_TOOLS)/powerpc-eabivle/newlib"
 
 Z7_0_FLASH_LINKER_ARGS= \
 -T src/Z7_0/57xx_flash.ld \
 -Xlinker \
 --gc-sections \
 -mcpu=e200z7 \
--specs=ewl_c9x.specs \
+-specs=nosys.specs \
 -mhard-float \
---sysroot="$(S32DS)/e200_ewl2"
+--sysroot="$(CROSS_TOOLS)/powerpc-eabivle/newlib"
 
 Z7_0_COMPILER_ARGS= \
 -Iinclude \
--I"$(S32DS)/e200_ewl2/EWL_C/include" \
--I"$(S32DS)/e200_ewl2/EWL_C/include/pa" \
+-I"$(CROSS_TOOLS)/include" \
 -DMPC5777M \
 -fmessage-length=0 \
 -fsigned-char \
@@ -128,49 +128,47 @@ Z7_0_COMPILER_ARGS= \
 -fdata-sections \
 -fstrict-volatile-bitfields \
 -mcpu=e200z7 \
--specs=ewl_c9x.specs \
+-specs=nosys.specs \
 -mbig \
 -mvle \
 -mregnames \
 -mhard-float \
---sysroot="$(S32DS)/e200_ewl2"
+--sysroot="$(CROSS_TOOLS)/powerpc-eabivle/newlib"
 
 Z7_0_ASSEMBLER_ARGS= \
 -Iinclude \
--I"$(S32DS)/e200_ewl2/EWL_C/include" \
--I"$(S32DS)/e200_ewl2/EWL_C/include/pa" \
+-I"$(CROSS_TOOLS)/include" \
 -DMPC5777M \
 -DI_CACHE \
 -DD_CACHE \
 -mcpu=e200z7 \
--specs=ewl_c9x.specs \
+-specs=nosys.specs \
 -mbig \
 -mvle \
 -mregnames \
---sysroot="$(S32DS)/e200_ewl2"
+--sysroot="$(CROSS_TOOLS)/powerpc-eabivle/newlib"
 
 Z7_1_RAM_LINKER_ARGS= \
 -T src/Z7_1/57xx_ram.ld \
 -Xlinker \
 --gc-sections \
 -mcpu=e200z7 \
--specs=ewl_c9x.specs \
+-specs=nosys.specs \
 -mhard-float \
---sysroot="$(S32DS)/e200_ewl2"
+--sysroot="$(CROSS_TOOLS)/powerpc-eabivle/newlib"
 
 Z7_1_FLASH_LINKER_ARGS= \
 -T src/Z7_1/57xx_flash.ld \
 -Xlinker \
 --gc-sections \
 -mcpu=e200z7 \
--specs=ewl_c9x.specs \
+-specs=nosys.specs \
 -mhard-float \
---sysroot="$(S32DS)/e200_ewl2"
+--sysroot="$(CROSS_TOOLS)/powerpc-eabivle/newlib"
 
 Z7_1_COMPILER_ARGS= \
 -Iinclude \
--I"$(S32DS)/e200_ewl2/EWL_C/include" \
--I"$(S32DS)/e200_ewl2/EWL_C/include/pa" \
+-I"$(CROSS_TOOLS)/include" \
 -DMPC5777M \
 -fmessage-length=0 \
 -fsigned-char \
@@ -178,27 +176,24 @@ Z7_1_COMPILER_ARGS= \
 -fdata-sections \
 -fstrict-volatile-bitfields \
 -mcpu=e200z7 \
--specs=ewl_c9x.specs \
+-specs=nosys.specs \
 -mbig \
 -mvle \
 -mregnames \
 -mhard-float \
---sysroot="$(S32DS)/e200_ewl2"
+--sysroot="$(CROSS_TOOLS)/powerpc-eabivle/newlib"
 
 Z7_1_ASSEMBLER_ARGS= \
 -Iinclude \
--I"$(S32DS)/e200_ewl2/EWL_C/include" \
--I"$(S32DS)/e200_ewl2/EWL_C/include/pa" \
 -DMPC5777M \
 -DI_CACHE \
 -DD_CACHE \
 -mcpu=e200z7 \
--specs=ewl_c9x.specs \
+-specs=nosys.specs \
 -mbig \
 -mvle \
 -mregnames \
---sysroot="$(S32DS)/e200_ewl2"
-
+--sysroot="$(CROSS_TOOLS)/powerpc-eabivle/newlib"
 
 # -DDISABLE_SWT2
 

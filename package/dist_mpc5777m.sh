@@ -1062,6 +1062,7 @@ soft/include/pit.h \
 soft/include/linflexd.h \
 soft/include/dmamux.h \
 soft/include/edma.h \
+soft/include/console.h \
 soft/src/Z4_2/57xx_ram.ld \
 soft/src/Z4_2/startup.S \
 soft/src/Z4_2/main_Z4_2.c \
@@ -1088,6 +1089,8 @@ soft/src/drv/pit.c \
 soft/src/drv/linflexd.c \
 soft/src/drv/dmamux.c \
 soft/src/drv/edma.c \
+soft/src/drv/console.c \
+soft/src/syscalls/syscalls.c \
 soft/bin/Z4_2/ram_boot.elf \
 soft/bin/Z4_2/flash_boot.elf \
 soft/bin/Z7_0/ram_boot.elf \
@@ -1101,8 +1104,6 @@ gtkwave.ini \
 config.t32 \
 baf.bin \
 "
-
-# soft/src/syscalls/syscalls.c
 
 UNISIM_SIMULATOR_TESTBENCH_FILES="\
 main.cc \

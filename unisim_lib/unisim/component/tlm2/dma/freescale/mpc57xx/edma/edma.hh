@@ -349,7 +349,7 @@ private:
 		
 		void Reset()
 		{
-			this->Initialize(0x0);
+			this->Initialize(0x0000e400UL);
 			this->edma->UpdateGroupPriority();
 		}
 		
@@ -2502,7 +2502,7 @@ private:
 			MAJORLINKCH::SetName("MAJORLINKCH"); MAJORLINKCH::SetDescription("Link channel number");
 			DONE       ::SetName("DONE");        DONE       ::SetDescription("Channel done");
 			ACTIVE     ::SetName("ACTIVE");      ACTIVE     ::SetDescription("Channel active");
-			MAJORELINK ::SetName("MAJORELINK "); MAJORELINK ::SetDescription("Enable channel-to-channel linking on major loop complete");
+			MAJORELINK ::SetName("MAJORELINK");  MAJORELINK ::SetDescription("Enable channel-to-channel linking on major loop complete");
 			ESG        ::SetName("ESG");         ESG        ::SetDescription("Enable scatter/gather processing");
 			DREQ       ::SetName("DREQ");        DREQ       ::SetDescription("Disable request {H,L}");
 			INTHALF    ::SetName("INTHALF");     INTHALF    ::SetDescription("Enable an interrupt when major counter is half complete");
@@ -2862,6 +2862,7 @@ private:
 	bool master_clock_posedge_first;                      // Master clock posedge first ?
 	double master_clock_duty_cycle;                       // Master clock duty cycle
 	
+	sc_core::sc_time dma_engine_time;
 	sc_core::sc_event dma_engine_event;
 	sc_core::sc_event *gen_irq_event[NUM_DMA_CHANNELS];
 	sc_core::sc_event *gen_err_event[NUM_DMA_CHANNELS];
@@ -2878,8 +2879,6 @@ private:
 	EDMA_TCD channel_y_tcd;
 	EDMA_TCD *channel_tcd; // points to either channel x or y
 	
-	sc_core::sc_time dma_engine_time;
-	
 	void Reset();
 	void EnableAllRequests();
 	void EnableRequest(unsigned int dma_channel_num);
@@ -2893,6 +2892,7 @@ private:
 	void ClearAllInterruptRequests();
 	void ClearInterruptRequest(unsigned int dma_channel_num);
 	void SetErrorIndicator(unsigned int dma_channel_num);
+	bool ErrorIndicator(unsigned int dma_channel_num);
 	void ClearAllErrorIndicators();
 	void ClearErrorIndicator(unsigned int dma_channel_num);
 	void SetAllStartBits();

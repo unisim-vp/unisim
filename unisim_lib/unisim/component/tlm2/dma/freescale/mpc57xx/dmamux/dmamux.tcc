@@ -632,7 +632,7 @@ void DMAMUX<CONFIG>::UpdateChannel(unsigned int dma_channel_num)
 	{
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << sc_core::sc_time_stamp() << "route change: source #" << dma_source_num << " -> channel #" << dma_channel_num << EndDebugInfo;
+			logger << DebugInfo << sc_core::sc_time_stamp() << ":route change: source #" << dma_source_num << " -> channel #" << dma_channel_num << EndDebugInfo;
 		}
 		
 		routing_table[dma_source_num] = dma_channel_num;

@@ -414,7 +414,11 @@ bool GDBServer<ADDRESS>::StartServer()
 	}
 
 	struct sockaddr_in addr;
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	SOCKET server_sock;
+#else
 	int server_sock;
+#endif
 
 	server_sock = socket(AF_INET, SOCK_STREAM, 0);
 
