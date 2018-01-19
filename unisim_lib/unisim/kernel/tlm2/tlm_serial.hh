@@ -598,6 +598,7 @@ public:
 	tlm_serial_peripheral_socket() : tlm::tlm_base_initiator_socket<BUSWIDTH, tlm_serial_fw_if, tlm_serial_bw_if, N, POL>(sc_core::sc_gen_unique_name("tlm_serial_peripheral_socket")) {}
 	explicit tlm_serial_peripheral_socket(const char *name) : tlm::tlm_base_initiator_socket<BUSWIDTH, tlm_serial_fw_if, tlm_serial_bw_if, N, POL>(sc_core::sc_gen_unique_name(name)) {}
 	virtual const char *kind() const { return "tlm_serial_peripheral_socket"; }
+	virtual sc_core::sc_type_index get_protocol_types() const { return typeid(PROTOCOL); }
 };
 
 template <unsigned int BUSWIDTH = 1, typename PROTOCOL = tlm_default_serial_protocol, int N = 0, sc_core::sc_port_policy POL = sc_core::SC_ZERO_OR_MORE_BOUND>
@@ -607,6 +608,7 @@ public:
 	tlm_serial_bus_socket() : tlm::tlm_base_target_socket<BUSWIDTH, tlm_serial_fw_if, tlm_serial_bw_if, N, POL>(sc_core::sc_gen_unique_name("tlm_serial_bus_socket")) {}
 	explicit tlm_serial_bus_socket(const char *name) : tlm::tlm_base_target_socket<BUSWIDTH, tlm_serial_fw_if, tlm_serial_bw_if, N, POL>(sc_core::sc_gen_unique_name(name)) {}
 	virtual const char *kind() const { return "tlm_serial_bus_socket"; }
+	virtual sc_core::sc_type_index get_protocol_types() const { return typeid(PROTOCOL); }
 };
 
 template <typename MODULE, unsigned int BUSWIDTH = 1, typename PROTOCOL = tlm_default_serial_protocol, int N = 1, sc_core::sc_port_policy POL = sc_core::SC_ONE_OR_MORE_BOUND>
