@@ -270,10 +270,11 @@ unisim/util/debug/watchpoint_registry.hh \
 unisim/util/debug/type.hh \
 unisim/util/debug/data_object_initializer.hh \
 unisim/util/debug/subprogram.hh \
+unisim/util/loader/elf_loader/elf32_loader.hh \
 unisim/util/loader/elf_loader/elf64_loader.hh \
 unisim/util/loader/elf_loader/elf_loader.hh \
-unisim/util/loader/elf_loader/elf64_loader.hh \
 unisim/util/loader/elf_loader/elf_common.h \
+unisim/util/loader/elf_loader/elf32.h \
 unisim/util/loader/elf_loader/elf64.h \
 unisim/util/loader/coff_loader/coff_loader.hh \
 unisim/util/loader/coff_loader/ti/ti.hh \
@@ -301,6 +302,10 @@ unisim/util/ieee754/ieee754.hh \
 unisim/util/inlining/inlining.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
 unisim/component/tlm2/processor/arm/cortex_a53/cpu.hh \
+unisim/component/cxx/processor/arm/exception.hh \
+unisim/component/cxx/processor/arm/execute.hh \
+unisim/component/cxx/processor/arm/psr.hh \
+unisim/component/cxx/processor/arm/register_field.hh \
 unisim/component/cxx/processor/arm/vmsav8/cpu.hh \
 unisim/component/cxx/processor/arm/isa/arm64/execute.hh \
 unisim/component/cxx/processor/arm/isa/arm64/decode.hh \

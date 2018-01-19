@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_SYMBOLIC_SYMBOLIC_HH__
 
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/symbolic/identifier.hh>
 #include <ostream>
 #include <stdexcept>
 #include <limits>
@@ -76,28 +77,6 @@ namespace symbolic {
     virtual intptr_t cmp( ExprNode const& ) const = 0;
     virtual ConstNodeBase const* GetConstNode() const { return 0; };
     virtual OpNodeBase const* AsOpNode() const { return 0; }
-  };
-  
-  template <typename T>
-  struct Identifier
-  {
-    void init( char const* src )
-    {
-      T& self( *static_cast<T*>(this) );
-      for (self.code = T::end; next();)
-        if (strcmp(self.c_str(), src) == 0)
-          return;
-    }
-    intptr_t cmp( T rhs ) const { return int(static_cast<T const*>(this)->code) - int(rhs.code); }
-    T operator + ( int offset ) const { return T( typename T::Code(int(static_cast<T const*>(this)->code) + offset) ); }
-    bool next()
-    {
-      typedef typename T::Code Code;
-      Code& code = static_cast<T*>(this)->code;
-      code = Code( code == T::end ? 0 : int(code) + 1 );
-      return code != T::end;
-    }
-    int idx() const { return int(static_cast<T const*>(this)->code); }
   };
   
   struct Op : public Identifier<Op>

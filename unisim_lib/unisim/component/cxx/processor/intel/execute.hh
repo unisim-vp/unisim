@@ -99,6 +99,8 @@ namespace intel {
     
     eval_PSZ( arch, res );
     
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
+    
     return res;
   }
 
@@ -111,6 +113,8 @@ namespace intel {
     
     arch.flagwrite( ARCH::FLAG::OF, bit_t( false ) );
     arch.flagwrite( ARCH::FLAG::CF, bit_t( false ) );
+    
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
     
     eval_PSZ( arch, res );
       
@@ -129,6 +133,8 @@ namespace intel {
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (((arg1 & op2 & ~res) | (~arg1 & ~op2 & res)) & msbmask) == msbmask ) );
     arch.flagwrite( ARCH::FLAG::CF, bit_t( ((((arg1 | op2) & ~res) | (arg1 & op2 & res)) & msbmask) == msbmask ) );
     
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
+    
     eval_PSZ( arch, res );
       
     return res;
@@ -146,6 +152,8 @@ namespace intel {
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (((arg1 & ~op2 & ~res) | (~arg1 & op2 & res)) & msbmask) == msbmask ) );
     arch.flagwrite( ARCH::FLAG::CF, bit_t( ((((~arg1 | op2) & res) | (~arg1 & op2 & ~res)) & msbmask) == msbmask ) );
     
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
+    
     eval_PSZ( arch, res );
       
     return res;
@@ -160,6 +168,8 @@ namespace intel {
     
     arch.flagwrite( ARCH::FLAG::OF, bit_t( false ) );
     arch.flagwrite( ARCH::FLAG::CF, bit_t( false ) );
+    
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
     
     eval_PSZ( arch, res );
       
@@ -176,6 +186,8 @@ namespace intel {
     INT const msbmask( INT( 1 ) << (atpinfo<ARCH,INT>::bitsize-1) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (((arg1 & ~arg2 & ~res) | (~arg1 & arg2 & res)) & msbmask) == msbmask ) );
     arch.flagwrite( ARCH::FLAG::CF, bit_t( ((((~arg1 | arg2) & res) | (~arg1 & arg2 & ~res)) & msbmask) == msbmask ) );
+
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
     
     eval_PSZ( arch, res );
       
@@ -191,6 +203,8 @@ namespace intel {
     
     arch.flagwrite( ARCH::FLAG::OF, bit_t( false ) );
     arch.flagwrite( ARCH::FLAG::CF, bit_t( false ) );
+    
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
     
     eval_PSZ( arch, res );
       
@@ -219,6 +233,8 @@ namespace intel {
     arch.flagwrite( ARCH::FLAG::CF, bit_t( res & INT( 1 ) ) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
       
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
+    
     eval_PSZ( arch, res );
       
     return res;
@@ -242,6 +258,8 @@ namespace intel {
     arch.flagwrite( ARCH::FLAG::CF, bit_t( res & msb ) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
       
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
+    
     eval_PSZ( arch, res );
       
     return res;
@@ -267,6 +285,8 @@ namespace intel {
     arch.flagwrite( ARCH::FLAG::CF, bit_t( (tmp >> bitsize) & typename atpinfo<ARCH,INT>::twice( 1 ) ) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
       
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
+    
     eval_PSZ( arch, res );
       
     return res;
@@ -295,6 +315,8 @@ namespace intel {
     arch.flagwrite( ARCH::FLAG::CF, bit_t( (tmp >> bitsize) & typename atpinfo<ARCH,INT>::twice( 1 ) ) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
       
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
+    
     eval_PSZ( arch, res );
       
     return res;
@@ -319,6 +341,8 @@ namespace intel {
     arch.flagwrite( ARCH::FLAG::CF, bit_t( arch.Cond( sharg >= u8_t( 1 ) ) ? ((arg1 << (sharg - u8_t( 1 ))) & msb) : INT( 0 ) ) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( (arg1 ^ res) & msb ) );
       
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
+    
     eval_PSZ( arch, res );
       
     return res;
@@ -340,6 +364,8 @@ namespace intel {
     arch.flagwrite( ARCH::FLAG::CF, bit_t( arch.Cond( sharg >= u8_t( 1 ) ) ? ((arg1 >> (sharg - u8_t( 1 ))) & INT( 1 )) : INT( 0 ) ) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( arg1 & msb ) );
       
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
+    
     eval_PSZ( arch, res );
       
     return res;
@@ -361,6 +387,8 @@ namespace intel {
     arch.flagwrite( ARCH::FLAG::CF, bit_t( arch.Cond( sharg >= u8_t( 1 ) ) ? ((arg1 >> (sharg - u8_t( 1 ))) & INT( 1 )) : INT( 0 ) ) );
     arch.flagwrite( ARCH::FLAG::OF, bit_t( false ) );
       
+    arch.flagwrite( ARCH::FLAG::AF, bit_t(0) ); /*:TODO:*/
+    
     eval_PSZ( arch, res );
       
     return res;

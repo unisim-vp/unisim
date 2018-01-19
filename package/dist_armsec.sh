@@ -143,6 +143,7 @@ unisim/util/endian/endian.hh \
 unisim/util/inlining/inlining.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/symbolic/symbolic.hh \
+unisim/util/symbolic/identifier.hh \
 unisim/component/cxx/processor/arm/disasm.hh \
 unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \

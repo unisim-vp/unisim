@@ -671,7 +671,7 @@ struct Fninit : public Operation<ARCH>
   typedef typename ARCH::f64_t f64_t;
   Fninit( OpBase<ARCH> const& opbase ) : Operation<ARCH>( opbase ) {}
   void disasm( std::ostream& sink ) const { sink << "fninit"; }
-  void execute( ARCH& arch ) const { /* XXX: FPU initialization */ }
+  void execute( ARCH& arch ) const { arch.finit(); }
 };
 
 template <class ARCH> struct DC<ARCH,FINIT> { Operation<ARCH>* get( InputCode<ARCH> const& ic )

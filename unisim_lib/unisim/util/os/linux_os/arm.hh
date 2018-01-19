@@ -1261,7 +1261,7 @@ namespace linux_os {
           void Describe( LINUX& lin, std::ostream& sink ) const
           {
             uint32_t addr = GetSystemCallParam(lin, 0);
-            address_type buf = GetSystemCallParam(lin, 1);
+            //address_type buf = GetSystemCallParam(lin, 1);
             sink << "(void *tls_addr=" << std::hex << addr << std::dec << ")";
           }
           void Execute( LINUX& lin, int syscall_id ) const

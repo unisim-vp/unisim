@@ -239,6 +239,7 @@ UNISIM_LIB_SIMULATOR_HEADER_FILES="\
 ${UNISIM_LIB_SIMULATOR_ISA_THUMB_FILES} \
 ${UNISIM_LIB_SIMULATOR_ISA_ARM32_FILES} \
 unisim/util/backtrace/backtrace.hh \
+unisim/util/cache/cache.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/api/api.hh \

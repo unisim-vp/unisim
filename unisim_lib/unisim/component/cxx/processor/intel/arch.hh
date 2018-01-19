@@ -598,6 +598,15 @@ namespace intel {
     { f64_t value = m_fregs[m_ftop++]; m_ftop &= 0x7; fnanchk( value ); return value; }
     f64_t                       fread( uint32_t idx )
     { uint32_t fidx = (m_ftop + idx) & 0x7; f64_t value = m_fregs[fidx]; fnanchk( value ); return value; }
+    void                        finit()
+    {
+      m_ftop = 0;
+      m_fcw = 0x37f;
+      flagwrite( FLAG::C0, 0 );
+      flagwrite( FLAG::C1, 0 );
+      flagwrite( FLAG::C2, 0 );
+      flagwrite( FLAG::C3, 0 );
+    }
     
     void
     fxam()

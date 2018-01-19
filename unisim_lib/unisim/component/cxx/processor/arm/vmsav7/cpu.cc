@@ -1590,8 +1590,9 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "CLIDR, Cache Level ID Register"; }
-          uint32_t Read( CP15CPU& _cpu ) {
-            CPU& cpu = static_cast<CPU&>( _cpu );
+          uint32_t Read( CP15CPU& _cpu )
+          {
+            //CPU& cpu = static_cast<CPU&>( _cpu );
             uint32_t
               LoUU =   0b010, /* Level of Unification Uniprocessor  */
               LoC =    0b010, /* Level of Coherency */

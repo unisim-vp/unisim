@@ -97,11 +97,17 @@ unisim/component/cxx/processor/arm/isa/arm64/arm64.isa \
 
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
 ${UNISIM_LIB_SIMULATOR_ISA_FILES} \
+unisim/component/cxx/processor/arm/execute.hh \
+unisim/component/cxx/processor/arm/isa/arm64/execute.hh \
+unisim/component/cxx/processor/arm/isa/arm64/decode.hh \
+unisim/component/cxx/processor/arm/isa/arm64/disasm.hh \
+unisim/component/cxx/processor/arm/isa/arm64/disasm.hh \
 unisim/util/truth_table/truth_table.hh \
 unisim/util/endian/endian.hh \
 unisim/util/inlining/inlining.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/symbolic/symbolic.hh \
+unisim/util/symbolic/identifier.hh \
 "
 
 UNISIM_LIB_SIMULATOR_TEMPLATE_FILES="\

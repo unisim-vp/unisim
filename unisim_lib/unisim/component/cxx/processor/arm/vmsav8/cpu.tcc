@@ -612,7 +612,7 @@ CPU<CONFIG>::CallSupervisor( uint16_t imm )
           if (trap_reporting_import)
             trap_reporting_import->ReportTrap(*this, "CallSupervisor");
         }
-      catch (Exception const& e)
+      catch (std::exception const& e)
         {
           std::cerr << e.what() << std::endl;
           this->Stop( -1 );
