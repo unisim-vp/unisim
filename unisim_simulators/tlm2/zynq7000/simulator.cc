@@ -608,7 +608,7 @@ PS_UART::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& u
       d.Access( IMR ); return true;
     case 0x14: {
       if (d.wnr) {
-        uint32_t disable_mask;
+        uint32_t disable_mask = 0;
         d.Access( disable_mask );
         ISR &= ~disable_mask;
         // if (disable_mask & 0x100)
