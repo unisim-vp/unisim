@@ -36,8 +36,8 @@
 #define __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_BUS_BUS_HH__
 
 #include <map>
-#include <systemc.h>
-#include <tlm.h>
+#include <systemc>
+#include <tlm>
 #include <tlm_utils/multi_passthrough_target_socket.h>
 #include <tlm_utils/simple_initiator_socket.h>
 #include "unisim/kernel/service/service.hh"

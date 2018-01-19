@@ -71,7 +71,7 @@ ZynqRouter::ZynqRouter(const char* name, unisim::kernel::service::Object* parent
 }
 
 namespace {
-  std::string NameSocketFromModule( sc_module_name const& name )
+  std::string NameSocketFromModule( sc_core::sc_module_name const& name )
   {
     std::string res( name );
     res += "_socket";
@@ -79,9 +79,9 @@ namespace {
   }
 }
 
-MMDevice::MMDevice( sc_module_name const& name, unisim::kernel::service::Object* parent )
+MMDevice::MMDevice( sc_core::sc_module_name const& name, unisim::kernel::service::Object* parent )
   : unisim::kernel::service::Object( name, parent )
-  , sc_module( name )
+  , sc_core::sc_module( name )
   , unisim::kernel::service::Client<unisim::service::interfaces::TrapReporting>( name, parent )
   , socket( NameSocketFromModule( name ).c_str() )
   , trap_reporting_import("trap-reporting-import", this)
@@ -189,7 +189,7 @@ template <> struct ITP<0u> { static void Register( MPCore& mpcore ) {} };
  * @param name the name of the module
  * @param parent the parent service
  */
-MPCore::MPCore(const sc_module_name& name, unisim::kernel::service::Object* parent)
+MPCore::MPCore(const sc_core::sc_module_name& name, unisim::kernel::service::Object* parent)
   : unisim::kernel::service::Object( name, parent )
   , MMDevice( name, parent )
   , nIRQ("nIRQ")
@@ -383,7 +383,7 @@ MPCore::ReadGICC_IAR()
   return int_id;
 }
 
-TTC::TTC( const sc_module_name& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, unsigned _id, unsigned _base_it )
+TTC::TTC( const sc_core::sc_module_name& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, unsigned _id, unsigned _base_it )
   : unisim::kernel::service::Object( name, parent )
   , MMDevice( name, parent )
   , mpcore( _mpcore )
@@ -535,7 +535,7 @@ TTC::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& updat
   return true;
 }
 
-PS_UART::PS_UART( sc_module_name const& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, int _it_line )
+PS_UART::PS_UART( sc_core::sc_module_name const& name, unisim::kernel::service::Object* parent, MPCore& _mpcore, int _it_line )
   : unisim::kernel::service::Object( name, parent )
   , MMDevice( name, parent )
   , unisim::kernel::service::Client<unisim::service::interfaces::CharIO>( name, parent )
@@ -730,7 +730,7 @@ PS_UART::ExchangeProcess()
     mpcore.interrupt_line_events[it_line].notify(sc_core::SC_ZERO_TIME);
 }
 
-SLCR::SLCR(const sc_module_name& name, Simulator& _simulator, unisim::kernel::service::Object* parent )
+SLCR::SLCR(const sc_core::sc_module_name& name, Simulator& _simulator, unisim::kernel::service::Object* parent )
   : unisim::kernel::service::Object( name, parent )
   , MMDevice( name, parent )
   , simulator(_simulator)
@@ -767,7 +767,7 @@ SLCR::AccessRegister( uint32_t addr, Data const& d, sc_core::sc_time const& upda
   return false;
 }
 
-L2C::L2C( const sc_module_name& name, unisim::kernel::service::Object* parent )
+L2C::L2C( const sc_core::sc_module_name& name, unisim::kernel::service::Object* parent )
   : unisim::kernel::service::Object( name, parent )
   , MMDevice( name, parent )
 {
@@ -948,19 +948,19 @@ Simulator::Run()
 
   double time_start = host_time.GetTime();
 
-  sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
+  sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
   
   try
     {
-      sc_start();
+      sc_core::sc_start();
     }
   catch(std::runtime_error& e)
     {
-      cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
-      cerr << e.what() << endl;
+      std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
+      std::cerr << e.what() << std::endl;
     }
 
-  cerr << "Simulation finished" << endl;
+  std::cerr << "Simulation finished" << std::endl;
 
   double time_stop = host_time.GetTime();
   double spent_time = time_stop - time_start;
@@ -976,11 +976,11 @@ Simulator::Run()
   // DumpStatistics(cerr);
   // cerr << endl;
 
-  cerr << "simulation time: " << simulation_spent_time << " seconds" << endl;
-  cerr << "simulated time: " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
+  std::cerr << "simulation time: " << simulation_spent_time << " seconds" << std::endl;
+  std::cerr << "simulated time: " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << std::endl;
   std::cerr << "guest instructions: " << uint64_t(cpu["instruction-counter"]) << std::endl;
-  cerr << "host simulation speed: " << ((double) cpu["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
-  cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+  std::cerr << "host simulation speed: " << ((double) cpu["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << std::endl;
+  std::cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
   
   if (profiler) profiler->Output();
   
@@ -988,31 +988,31 @@ Simulator::Run()
 }
 
 int
-Simulator::Run(double time, sc_time_unit unit)
+Simulator::Run(double time, sc_core::sc_time_unit unit)
 {
   if ( unlikely(SimulationFinished()) ) return 0;
 
   double time_start = host_time.GetTime();
 
-  sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
+  sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
 
   try
     {
-      sc_start(time, unit);
+      sc_core::sc_start(time, unit);
     }
   catch(std::runtime_error& e)
     {
-      cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
-      cerr << e.what() << endl;
+      std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
+      std::cerr << e.what() << std::endl;
     }
 
   double time_stop = host_time.GetTime();
   double spent_time = time_stop - time_start;
   simulation_spent_time += spent_time;
 
-  cerr << "Simulation statistics:" << endl;
-  DumpStatistics(cerr);
-  cerr << endl;
+  std::cerr << "Simulation statistics:" << std::endl;
+  DumpStatistics(std::cerr);
+  std::cerr << std::endl;
 
   return exit_status;
 }
@@ -1020,19 +1020,19 @@ Simulator::Run(double time, sc_time_unit unit)
 bool
 Simulator::IsRunning() const
 {
-  return sc_is_running();
+  return sc_core::sc_is_running();
 }
 
 bool
 Simulator::SimulationStarted() const
 {
-  return sc_start_of_simulation_invoked();
+  return sc_core::sc_start_of_simulation_invoked();
 }
 
 bool
 Simulator::SimulationFinished() const
 {
-  return sc_end_of_simulation_invoked();
+  return sc_core::sc_end_of_simulation_invoked();
 }
 
 void
@@ -1136,14 +1136,14 @@ void Simulator::Stop(unisim::kernel::service::Object *object, int _exit_status, 
   std::cerr << unisim::util::backtrace::BackTrace() << std::endl;
 #endif
   std::cerr << "Program exited with status " << exit_status << std::endl;
-  sc_stop();
+  sc_core::sc_stop();
   if(!asynchronous)
     {
-      switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+      switch(sc_core::sc_get_curr_simcontext()->get_curr_proc_info()->kind)
         {
-        case SC_THREAD_PROC_: 
-        case SC_CTHREAD_PROC_:
-          wait();
+        case sc_core::SC_THREAD_PROC_: 
+        case sc_core::SC_CTHREAD_PROC_:
+          sc_core::wait();
           break;
         default:
           break;

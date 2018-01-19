@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM_BRIDGE_SNOOPINGFSBTOMEM_BRIDGE_HH__
 #define __UNISIM_COMPONENT_TLM_BRIDGE_SNOOPINGFSBTOMEM_BRIDGE_HH__
 
-#include <systemc.h>
+#include <systemc>
 #include "unisim/component/tlm/message/snooping_fsb.hh"
 #include "unisim/component/tlm/message/memory.hh"
 #include "unisim/kernel/tlm/tlm.hh"

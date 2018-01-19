@@ -195,7 +195,6 @@ unisim/service/tee/stmt_lookup/tee_32.cc \
 unisim/service/tee/backtrace/tee_32.cc \
 unisim/service/tee/memory_import_export/memory_import_export_tee.cc \
 unisim/service/tee/registers/registers_tee.cc \
-unisim/service/tee/debug_event/debug_event_tee.cc \
 unisim/component/cxx/processor/hcs12x/xgate.cc \
 unisim/component/cxx/processor/hcs12x/ccr.cc \
 unisim/component/cxx/processor/hcs12x/cpu.cc \
@@ -295,6 +294,9 @@ unisim/util/debug/stmt.hh \
 unisim/util/debug/subprogram.hh \
 unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/debug/event.hh \
+unisim/util/debug/fetch_insn_event.hh \
+unisim/util/debug/commit_insn_event.hh \
+unisim/util/debug/trap_event.hh \
 unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/dwarf/abbrev.hh \
 unisim/util/debug/dwarf/attr.hh \
@@ -361,6 +363,7 @@ unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/char_io.hh \
 unisim/service/interfaces/debug_yielding.hh \
+unisim/service/interfaces/debug_selecting.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/ti_c_io.hh \
 unisim/service/interfaces/disassembly.hh \
@@ -408,7 +411,6 @@ unisim/service/tee/stmt_lookup/tee.hh \
 unisim/service/tee/backtrace/tee.hh \
 unisim/service/tee/registers/registers_tee.hh \
 unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
-unisim/service/tee/debug_event/debug_event_tee.hh \
 unisim/service/telnet/telnet.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
@@ -510,7 +512,6 @@ unisim/service/tee/symbol_table_lookup/tee.tcc \
 unisim/service/tee/blob/tee.tcc \
 unisim/service/tee/stmt_lookup/tee.tcc \
 unisim/service/tee/backtrace/tee.tcc \
-unisim/service/tee/debug_event/debug_event_tee.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
@@ -597,6 +598,7 @@ xml_atd_pwm_stub.hh \
 rtb_unisim.hh \
 can_stub.hh \
 tle72xxSL.hh \
+tle8264_2e.hh \
 simulator_if.h \
 "
 

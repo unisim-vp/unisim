@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM2_INTERRUPT_TYPES_HH__
 #define __UNISIM_COMPONENT_TLM2_INTERRUPT_TYPES_HH__
 
-#include <tlm.h>
+#include <tlm>
 
 #include "unisim/kernel/tlm2/tlm.hh"
 

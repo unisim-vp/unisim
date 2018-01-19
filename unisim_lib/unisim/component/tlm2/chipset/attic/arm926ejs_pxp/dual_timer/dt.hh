@@ -36,8 +36,8 @@
 #define __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_DUAL_TIMER_DT_HH__
 
 #include <inttypes.h>
-#include <systemc.h>
-#include <tlm.h>
+#include <systemc>
+#include <tlm>
 #include <tlm_utils/passthrough_target_socket.h>
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"

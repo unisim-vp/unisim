@@ -37,7 +37,7 @@
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_AVR32_AVR32UC_CPU_HH__
 
 #include <unisim/component/cxx/processor/avr32/avr32a/avr32uc/cpu.hh>
-#include <systemc.h>
+#include <systemc>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>

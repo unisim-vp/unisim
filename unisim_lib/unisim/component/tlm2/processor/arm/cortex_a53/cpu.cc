@@ -38,8 +38,8 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/likely/likely.hh>
 
-#include <systemc.h>
-#include <tlm.h>
+#include <systemc>
+#include <tlm>
 
 namespace unisim {
 namespace component {

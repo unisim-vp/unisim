@@ -111,6 +111,7 @@ irq_handler_t intc_set_interrupt_handler(unsigned int irq, irq_handler_t irq_han
 {
 	irq_handler_t old_irq_handler = (irq_handler_t) intc_isr_vector_table[irq];
 	intc_isr_vector_table[irq] = (uint32_t) irq_handler;
+	return old_irq_handler;
 }
 
 void intc_set_current_irq_priority(unsigned int prc_num, unsigned int priority)

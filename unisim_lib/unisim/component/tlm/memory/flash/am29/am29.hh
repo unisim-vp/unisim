@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM_MEMORY_FLASH_AM29_AM29_HH__
 #define __UNISIM_COMPONENT_TLM_MEMORY_FLASH_AM29_AM29_HH__
 
-#include <systemc.h>
+#include <systemc>
 #include "unisim/component/tlm/message/memory.hh"
 #include "unisim/kernel/tlm/tlm.hh"
 #include "unisim/component/cxx/memory/flash/am29/am29.hh"

@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM2_GPIO_XILINX_XPS_GPIO_XPS_GPIO_TCC__
 #define __UNISIM_COMPONENT_TLM2_GPIO_XILINX_XPS_GPIO_XPS_GPIO_TCC__
 
-#include <systemc.h>
+#include <systemc>
 #include <unisim/component/cxx/com/xilinx/xps_gpio/xps_gpio.hh>
 
 namespace unisim {

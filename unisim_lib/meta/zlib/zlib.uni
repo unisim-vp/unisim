@@ -1,9 +1,0 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<package>
-	<unit>
-		<name>zlib</name>
-		<autotools>
-			<autoconf>meta/zlib/zlib.ac</autoconf>
-		</autotools>
-	</unit>
-</package>

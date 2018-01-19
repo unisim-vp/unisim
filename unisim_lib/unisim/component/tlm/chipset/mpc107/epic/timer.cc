@@ -1,5 +1,5 @@
 #include "unisim/component/tlm/chipset/mpc107/epic/timer.hh"
-#include <systemc.h>
+#include <systemc>
 
 namespace unisim {
 namespace component {

@@ -37,8 +37,8 @@
 #ifndef __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_UART_PL011_PL011_HH__
 #define __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_UART_PL011_PL011_HH__
 
-#include <systemc.h>
-#include <tlm.h>
+#include <systemc>
+#include <tlm>
 #include <tlm_utils/passthrough_target_socket.h>
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"

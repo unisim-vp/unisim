@@ -553,7 +553,7 @@ void DMAMUX<CONFIG>::DMA_SOURCE_Process(unsigned int dma_source_num)
 			logger << DebugInfo << sc_core::sc_time_stamp() << ": routing source #" << dma_source_num << " -> channel #" << dma_channel_num << EndDebugInfo;
 		}
 		
-		dma_source_event[dma_channel_num]->notify(sc_core::SC_ZERO_TIME);
+		dma_source_event[dma_channel_num]->notify(/*sc_core::SC_ZERO_TIME*/);
 	}
 }
 
@@ -627,9 +627,17 @@ void DMAMUX<CONFIG>::UpdateChannel(unsigned int dma_channel_num)
 {
 	const DMAMUX_CHCFG& chcfg = dmamux_chcfg[dma_channel_num];
 	unsigned int dma_source_num = chcfg.template Get<typename DMAMUX_CHCFG::SOURCE>();
-	if(routing_table[dma_source_num] != dma_channel_num)
+	unsigned int old_dma_channel_num = routing_table[dma_source_num];
+	if(old_dma_channel_num != dma_channel_num)
 	{
+		if(unlikely(verbose))
+		{
+			logger << DebugInfo << sc_core::sc_time_stamp() << ":route change: source #" << dma_source_num << " -> channel #" << dma_channel_num << EndDebugInfo;
+		}
+		
 		routing_table[dma_source_num] = dma_channel_num;
+		
+		dma_chcfg_event[old_dma_channel_num]->notify(sc_core::SC_ZERO_TIME);
 		dma_source_routing_change_event[dma_source_num]->notify(sc_core::SC_ZERO_TIME);
 	}
 	

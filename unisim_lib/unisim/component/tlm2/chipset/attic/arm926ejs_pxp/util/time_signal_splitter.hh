@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_UTIL_TSS_HH__
 #define __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_UTIL_TSS_HH__
 
-#include <systemc.h>
+#include <systemc>
 #include <inttypes.h>
 
 namespace unisim {

@@ -35,8 +35,8 @@
 #ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_TCC__
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_TCC__
 
-#include <systemc.h>
-#include <tlm.h>
+#include <systemc>
+#include <tlm>
 #include "unisim/kernel/tlm2/tlm.hh"
 #include "unisim/kernel/logger/logger.hh"
 // #include "unisim/component/cxx/processor/arm/cpu.tcc"

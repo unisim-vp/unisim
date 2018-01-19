@@ -1,6 +1,0 @@
-function (libxml2 INCDIR LIBS DEFS)
-	include (FindLibXml2)
-	set (${INCDIR} ${LIBXML2_INCLUDE_DIR} PARENT_SCOPE)
-	set (${LIBS} ${LIBXML2_LIBRARIES} PARENT_SCOPE)
-	set (${DEFS} ${LIBXML2_DEFINITIONS} PARENT_SCOPE)
-endfunction (libxml2)

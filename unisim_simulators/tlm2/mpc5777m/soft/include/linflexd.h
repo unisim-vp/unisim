@@ -152,6 +152,9 @@ void linflexd_uart_tx_buffer_write_word(unsigned int linflexd_id, const uint32_t
 void linflexd_uart_tx_fifo_write_byte(unsigned int linflexd_id, const uint8_t *data_ptr);
 void linflexd_uart_tx_fifo_write_half_word(unsigned int linflexd_id, const uint16_t *data_ptr);
 
+void *linflexd_uart_rx_fifo_byte_direct_ptr(unsigned int linflexd_id);
+void *linflexd_uart_tx_fifo_byte_direct_ptr(unsigned int linflexd_id);
+
 unsigned int linflexd_get_uart_byte_parity_error(unsigned int linflexd_id, unsigned int byte_index); // byte_index in {0,1,2,3}
 unsigned int linflexd_get_uart_half_word_parity_error(unsigned int linflexd_id, unsigned int half_word_index); // half_word_index in {0,1}
 

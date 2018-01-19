@@ -113,7 +113,11 @@ NetStreamer::NetStreamer(const char *name, Object *parent)
 	, filter_null_character(false)
 	, filter_line_feed(false)
 	, tcp_port(0)
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+	, sock(INVALID_SOCKET)
+#else
 	, sock(-1)
+#endif
 	, state(0)
 	, telnet_sb_opt(0)
 	, telnet_sb_params()
@@ -158,6 +162,11 @@ NetStreamer::~NetStreamer()
 	
 	CloseConnection();
 	
+	if(!JoinConnThread())
+	{
+		logger << DebugError << "Simulation thread: Can't join thread that handle connection" << EndDebugError;
+	}
+
 	pthread_mutex_destroy(&thrd_conn_create_mutex);
 	pthread_mutex_destroy(&thrd_conn_close_mutex);
 	pthread_mutex_destroy(&mutex);
@@ -221,6 +230,40 @@ bool NetStreamer::StartConnThread()
 		pthread_mutex_unlock(&thrd_conn_create_mutex);
 
 		pthread_attr_destroy(&thrd_attr);
+	}
+	
+	return status;
+}
+
+bool NetStreamer::JoinConnThread()
+{
+	bool status = true;
+	
+	if(thrd_conn_alive)
+	{
+		if(unlikely(debug))
+		{
+			logger << DebugInfo << "Simulation thread: joining thread that handle connection" << EndDebugInfo;
+		}
+		
+		if(pthread_join(thrd_conn, NULL) == 0)
+		{
+			// thread that handle connection has gracefully exited
+			if(unlikely(debug))
+			{
+				logger << DebugInfo << "Simulation thread: thread that handle connection has gracefully exited" << EndDebugInfo;
+			}
+			thrd_conn_alive = false;
+		}
+		else
+		{
+			// can't join thread that handle connection
+			if(unlikely(debug))
+			{
+				logger << DebugInfo << "Simulation thread: can't join thread that handle connection" << EndDebugInfo;
+			}
+			status = false;
+		}
 	}
 	
 	return status;
@@ -439,11 +482,19 @@ bool NetStreamer::Connect()
 		// Starting a server
 		
 		struct sockaddr_in addr;
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+		SOCKET server_sock;
+#else
 		int server_sock;
+#endif
 
 		server_sock = socket(AF_INET, SOCK_STREAM, 0);
 
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+		if(server_sock == INVALID_SOCKET)
+#else
 		if(server_sock < 0)
+#endif
 		{
 			logger << DebugError << "socket failed" << EndDebugError;
 			return false;
@@ -572,7 +623,11 @@ bool NetStreamer::Connect()
 
 		sock = socket(PF_INET, SOCK_STREAM, 0);
 
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+		if(sock == INVALID_SOCKET)
+#else
 		if(sock < 0)
+#endif
 		{
 			logger << DebugError << "Can't create socket for connection to " << server_name << ":" << tcp_port << EndDebugError;
 			return false;

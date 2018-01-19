@@ -35,8 +35,8 @@
 #ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_CORTEX_R5F_CPU_HH__
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_CORTEX_R5F_CPU_HH__
 
-#include <systemc.h>
-#include <tlm.h>
+#include <systemc>
+#include <tlm>
 #include "unisim/component/cxx/processor/arm/pmsav7/cpu.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
 #include <inttypes.h>

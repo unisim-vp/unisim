@@ -12,12 +12,17 @@
 #include "linflexd.h"
 #include "dmamux.h"
 #include "edma.h"
+#include "console.h"
+
+#include <stdio.h>
 
 #define KEY_VALUE1 0x5AF0ul
 #define KEY_VALUE2 0xA50Ful
 
 #define UART_FIFO_MODE 1
 #define UART_RX_FIFO_DMA_MODE 1
+
+struct con_t con;
 
 void hw_init(void)
 {
@@ -66,6 +71,22 @@ void hw_init(void)
 	pit_init(1);      // initialize PIT_1
 	linflexd_init(0); // initialize LINFlexD_0
 	intc_enable_external_interrupt(); // Enable processor external interrupts
+	
+	stm_set_channel_irq_priority(2, 0, 1);          // STM_2: set STM_2 channel #0 IRQ priority level to 1
+	stm_select_channel_irq_for_processor(2, 0, 2);  // STM_2: select STM_2 channel #0 IRQ for processor #2
+
+	pit_set_timer_irq_priority(0, 0, 2);            // PIT_0: set PIT_0 timer #0 IRQ priority level to 2
+	pit_select_timer_irq_for_processor(0, 0, 2);    // PIT_0: select PIT_0 timer #0 IRQ for Processor #2
+	
+
+	linflexd_set_irq_priority(0, LINFlexD_INT_RX, 4);         // LINFlexD_0: set LINFlexD_0 INT_RX priority level to 4
+	linflexd_select_irq_for_processor(0, LINFlexD_INT_RX, 2); // LINFlexD_0: select LINFlexD_0 INT_RX for Processor #2
+	linflexd_set_irq_priority(0, LINFlexD_INT_TX, 5);         // LINFlexD_0: set LINFlexD_0 INT_TX priority level to 5
+	linflexd_select_irq_for_processor(0, LINFlexD_INT_TX, 2); // LINFlexD_0: select LINFlexD_0 INT_TX for Processor #2
+	linflexd_set_irq_priority(0, LINFlexD_INT_ERR, 3);         // LINFlexD_0: set LINFlexD_0 INT_ERR priority level to 3
+	linflexd_select_irq_for_processor(0, LINFlexD_INT_ERR, 2); // LINFlexD_0: select LINFlexD_0 INT_ERR for Processor #2
+	
+	con_init(&con, 0); // initialize console #0 (on LINFlexD_0)
 }
 
 uint32_t ticks_1us;
@@ -93,11 +114,11 @@ void linflexd_0_int_rx(unsigned int linflexd_id, enum LINFlexD_INT linflexd_int)
 		linflexd_clear_uart_data_received_interrupt_flag(linflexd_id); // LINFlexD_0 (Normal mode): clear data received interrupt flag
 		
 		char ch = 0;
-		linflexd_uart_rx_buffer_read_byte(linflexd_id, &ch, 0);        // LINFlexD_0 (Normal mode): receive character
+		linflexd_uart_rx_buffer_read_byte(linflexd_id, (uint8_t *) &ch, 0);        // LINFlexD_0 (Normal mode): receive character
 			
 		linflexd_release_uart_rx_buffer(linflexd_id);                  // LINFlexD_0 (Normal mode): release message buffer
 		
-		linflexd_uart_tx_buffer_write_byte(linflexd_id, &ch, 0);       // LINFlexD_0 (Normal mode): send character
+		linflexd_uart_tx_buffer_write_byte(linflexd_id, (uint8_t *) &ch, 0);       // LINFlexD_0 (Normal mode): send character
 	}
 }
 
@@ -129,20 +150,6 @@ int main_Z4_2(void)
 	swt_set_timeout(2, 50000);                           // SWT_2: set a timeout of 3.125 ms for SWT_2
 	swt_enable(2);                                       // SWT_2: enable SWT_2
 	
-	
-	stm_set_channel_irq_priority(2, 0, 1);          // STM_2: set STM_2 channel #0 IRQ priority level to 1
-	stm_select_channel_irq_for_processor(2, 0, 2);  // STM_2: select STM_2 channel #0 IRQ for processor #2
-
-	pit_set_timer_irq_priority(0, 0, 2);            // PIT_0: set PIT_0 timer #0 IRQ priority level to 2
-	pit_select_timer_irq_for_processor(0, 0, 2);    // PIT_0: select PIT_0 timer #0 IRQ for Processor #2
-	
-	linflexd_set_irq_priority(0, LINFlexD_INT_RX, 4);         // LINFlexD_0: set LINFlexD_0 INT_RX priority level to 4
-	linflexd_select_irq_for_processor(0, LINFlexD_INT_RX, 2); // LINFlexD_0: select LINFlexD_0 INT_RX for Processor #2
-	linflexd_set_irq_priority(0, LINFlexD_INT_TX, 5);         // LINFlexD_0: set LINFlexD_0 INT_TX priority level to 5
-	linflexd_select_irq_for_processor(0, LINFlexD_INT_TX, 2); // LINFlexD_0: select LINFlexD_0 INT_TX for Processor #2
-	linflexd_set_irq_priority(0, LINFlexD_INT_ERR, 3);         // LINFlexD_0: set LINFlexD_0 INT_ERR priority level to 3
-	linflexd_select_irq_for_processor(0, LINFlexD_INT_ERR, 2); // LINFlexD_0: select LINFlexD_0 INT_ERR for Processor #2
-	
 	// trigger periodic_task every 200 us (with a 50 Mhz clock)
 	stm_set_interrupt_handler(2, 0, periodic_task); // STM_2: install a hook for STM_2 channel #0 interrupts
 	stm_enable_counter(2);                          // STM_2: enable STM_2 counter
@@ -169,133 +176,34 @@ int main_Z4_2(void)
 	linflexd_set_interrupt_handler(0, LINFlexD_INT_TX, &linflexd_0_int_tx);
 	linflexd_set_interrupt_handler(0, LINFlexD_INT_ERR, &linflexd_0_int_err);
 	
-	// configure LINFlexD_0
-	linflexd_request_to_enter_init_mode(0);                      // LINFlexD_0  (sleep mode): request enter init mode
-	linflexd_request_to_exit_sleep_mode(0);                      // LINFlexD_0  (sleep mode): request leaving sleep mode
-	linflexd_enable_uart_mode(0);                                // LINFlexD_0   (init mode): enable UART mode
-	linflexd_enable_uart_tx(0);                                  // LINFlexD_0   (init mode): enable UART Tx
-	linflexd_enable_uart_rx(0);                                  // LINFlexD_0   (init mode): enable UART Rx
+//	con_init();
 	
-	linflexd_receive_msb_first(0);                               // LINFlexD_0   (init mode): receive MSB first
-	linflexd_transmit_msb_first(0);                              // LINFlexD_0   (init mode): transmit MSB first
-	
-	// set baud rate to 10000 bauds (assuming LIN_CLK = 80 Mhz)
-	// ROSE=0: baud rate = LIN_CLK / ( 16 * LDIV)
-	// ROSE=1: baud rate = LIN_CLK / (OSR * LDIV)
-	linflexd_disable_uart_reduced_over_sampling(0);              // LINFlexD_0   (init mode): disable UART reduced over sampling (ROSE=0)
-	linflexd_set_lin_clock_divisor(0, 500, 0);                   // LINFlexD_0   (init mode): set LDIV (LDIV=500+0/16=500.0)
-	                                                             
-	linflexd_select_tx_stop_bits(0, 1);                          // LINFlexD_0   (init mode): 1 stop bit for transmission
-	linflexd_select_uart_rx_stop_bits(0, 1);                     // LINFlexD_0   (init mode): 1 stop bit for reception
-	
-#if UART_FIFO_MODE
-	linflexd_select_uart_tx_fifo_mode(0);                        // LINFlexD_0   (init mode): select UART Tx FIFO mode
-#else
-	linflexd_select_uart_tx_buffer_mode(0);                      // LINFlexD_0   (init mode): select UART Tx buffer mode
-	linflexd_set_uart_tx_buffer_length(0, 1);                    // LINFlexD_0   (init mode): set UART Tx buffer length to 1 byte
-#endif
-	                                                             
-#if UART_FIFO_MODE
-	linflexd_select_uart_rx_fifo_mode(0);                        // LINFlexD_0   (init mode): select UART Rx FIFO
-#else
-	linflexd_select_uart_rx_buffer_mode(0);                      // LINFlexD_0   (init mode): select UART Rx buffer mode
-	linflexd_set_uart_rx_buffer_length(0, 1);                    // LINFlexD_0   (init mode): set UART Rx buffer length to 1 byte
-#endif
+	const char boot_msg[] = "HAL 9000...booting..............................\r\n"
+						"I'm ready to control Discovery One spacecraft.\r\n\r\n"
+						"Dave, Discovery One is approaching Jupiter.\r\n"
+						"What should I do ?\r\n";
 
-#if UART_FIFO_MODE && UART_RX_FIFO_DMA_MODE
-	linflexd_enable_dma_rx(0, 0);                                // LINFlexD_0   (init mode): enable DMA Rx (#0 of 1)
-	dmamux_set_dma_channel_source(0, 0, 16);                     // DMAMUX_0                : route source #16 (LINFlexD_0 DMA Rx) to channel #0
-	dmamux_enable_dma_channel(0, 0);                             // DMAMUX_0                : enable DMA channel #0
-	edma_enable_request(0, 0);                                   // EDMA_0                  : enable DMA request #0 (DMAMUX_0 channel #0)
-#endif
-	
-	linflexd_select_uart_word_length(0, LINFlexD_WORD_LENGTH_8); // LINFlexD_0   (init mode): 8-bit data word length without parity
-	
-	linflexd_enable_data_received_interrupt(0);                  // LINFlexD_0   (init mode): enable data received interrupt (caught by linflexd_0_int_rx)
-	linflexd_enable_data_transmitted_interrupt(0);               // LINFlexD_0   (init mode): enable data transmitted interrupt (caught by linflexd_0_int_tx)
-	
-	linflexd_request_to_exit_init_mode(0);                       // LINFlexD_0   (init mode): request leaving init mode (i.e. entering normal mode)
+	const char prompt[] = "HAL> ";
 
-	unsigned int grp;
-	for(grp = 0; grp < 4; grp++)
-	{
-		edma_set_channel_group_priority(0, grp, 3 - grp);        // eDMA0                   : set channel group priority (higher to lower)
-	}
-	unsigned int chan;
-	for(chan = 0; chan < 64; chan++)
-	{
-		edma_set_channel_arbitration_priority(0, chan, 15 - (chan & 15)); // eDMA0          : set channel priority in group (higher to lower)
-	}
-
-#if UART_FIFO_MODE
-#if UART_RX_FIFO_DMA_MODE
-	edma_set_tcd_starting_major_iteration_count(0, 0, 1);                                      // eDMA_0: channel #0, BITER=1
-	edma_set_tcd_current_major_iteration_count(0, 0, 1);                                       // eDMA_0: channel #0, CITER=1
-	edma_set_tcd_minor_byte_count(0, 0, 1);                                                    // eDMA_0: channel #0, NBYTES=1
-	edma_set_tcd_source_address(0, 0, (uint32_t)((uint8_t *) &LINFlexD_0.BDRM.R + 3));         // eDMA_0: channel #0, SOURCE ADDR=@LINFlexD_0 Rx FIFO
-	edma_set_tcd_signed_source_address_offset(0, 0, 1);                                        // eDMA_0: channel #0, SOURCE OFS=+1
-	edma_set_tcd_source_data_transfer_size(0, 0, 1);                                           // eDMA_0: channel #0, SOURCE TRANSFER SIZE=1 byte
-	edma_set_tcd_last_source_address_adjustment(0, 0, -1);                                     // eDMA_0: channel #0, LAST SOURCE ADDR ADJUSTMENT=-1
-	edma_set_tcd_destination_address(0, 0, (uint32_t)((uint8_t *) &LINFlexD_0.BDRL.R + 3));    // eDMA_0: channel #0, DEST ADDR=@LINFlexD_0 Tx FIFO
-	edma_set_tcd_signed_destination_address_offset(0, 0, 1);                                   // eDMA_0: channel #0, DEST OFS=+1
-	edma_set_tcd_destination_data_transfer_size(0, 0, 1);                                      // eDMA_0: channel #0, DEST TRANSFER SIZE=1 byte
-	edma_set_tcd_last_destination_address_adjustment(0, 0, -1);                                // eDMA_0: channel #0, LAST DEST ADDR ADJUSTMENT=-1
-#else
-	char msg[4] = "helo";
-	linflexd_uart_tx_buffer_write_byte(0, &msg[0], 0);
-	linflexd_uart_tx_buffer_write_byte(0, &msg[1], 0);
-	linflexd_uart_tx_buffer_write_byte(0, &msg[2], 0);
-	linflexd_uart_tx_buffer_write_byte(0, &msg[3], 0);
+	const char response[] = "I'm sorry Dave, I'm afraid I can't do that.\r\n"
+					"I know you and Frank were planning to disconnect me.\r\n"
+					"And that's something I cannot allow to happen.\r\n"
+					"Look Dave, I can see you're really upset about this.\r\n"
+					"I honestly think you ought to sit down calmly, take a stress pill, and think things over.\r\n";
 	
-	while(1)
+	fputs(boot_msg, stdout);
+					
+	do
 	{
-		if(linflexd_is_uart_rx_fifo_not_empty(0))
-		{
-			char ch = 0;
-			linflexd_uart_rx_buffer_read_byte(0, &ch, 0);
+		fputs(prompt, stdout);
+		
+		char line[256];
 			
-			while(linflexd_is_uart_tx_fifo_full(0));
-			
-			linflexd_uart_tx_buffer_write_byte(0, &ch, 0);
-		}
+		if(!fgets(line, sizeof(line), stdin)) break;
+
+		fputs(response, stdout);
 	}
-#endif // UART_RX_FIFO_DMA_MODE
-#endif // UART_FIFO_MODE
-	
-#if 0
-	source[0] = 0x1234;
-	source[1] = 0x5678;
-	source[2] = 0x4321;
-	source[3] = 0x8765;
-	dest[0] = 0;
-	dest[1] = 0;
-	dest[2] = 0;
-	dest[3] = 0;
-	unsigned int grp;
-	for(grp = 0; grp < 4; grp++)
-	{
-		edma_set_channel_group_priority(0, grp, 3 - grp);
-	}
-	unsigned int chan;
-	for(chan = 0; chan < 64; chan++)
-	{
-		edma_set_channel_arbitration_priority(0, chan, 15 - (chan & 15));
-	}
-	
-	edma_set_tcd_starting_major_iteration_count(0, 0, 1);
-	edma_set_tcd_current_major_iteration_count(0, 0, 1);
-	edma_set_tcd_minor_byte_count(0, 0, 16);
-	edma_set_tcd_source_address(0, 0, (uint32_t) source);
-	edma_set_tcd_signed_source_address_offset(0, 0, 1);
-	edma_set_tcd_source_data_transfer_size(0, 0, 1);
-	edma_set_tcd_last_source_address_adjustment(0, 0, -16);
-	edma_set_tcd_destination_address(0, 0, (uint32_t) dest);
-	edma_set_tcd_signed_destination_address_offset(0, 0, 4);
-	edma_set_tcd_destination_data_transfer_size(0, 0, 4);
-	edma_set_tcd_last_destination_address_adjustment(0, 0, -16);
-	edma_enable_tcd_major_complete_interrupt(0, 0);
-	edma_set_start_bit(0, 0);
-#endif
+	while(1);
 	
 	/* Loop forever */
 	for(;;)

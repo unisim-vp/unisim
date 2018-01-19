@@ -35,8 +35,8 @@
 #ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_ARM926EJS_ARM926EJS_HH__
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_ARM926EJS_ARM926EJS_HH__
 
-#include <systemc.h>
-#include <tlm.h>
+#include <systemc>
+#include <tlm>
 #include "unisim/component/cxx/processor/arm/arm926ejs/cpu.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
 #include <inttypes.h>

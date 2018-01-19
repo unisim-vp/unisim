@@ -2010,7 +2010,7 @@ unisim::util::debug::DataObject<typename CONFIG::ADDRESS> *Debugger<CONFIG>::Fin
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[i][front_end_num])
+		if(enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			unisim::util::debug::DataObject<ADDRESS> *data_object = elf32_loader->FindDataObject(prc_num, data_object_name, pc);
@@ -2021,7 +2021,7 @@ unisim::util::debug::DataObject<typename CONFIG::ADDRESS> *Debugger<CONFIG>::Fin
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[i][front_end_num])
+		if(enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			unisim::util::debug::DataObject<ADDRESS> *data_object = elf64_loader->FindDataObject(prc_num, data_object_name, pc);
@@ -2070,7 +2070,7 @@ const unisim::util::debug::SubProgram<typename CONFIG::ADDRESS> *Debugger<CONFIG
 	unsigned int num_elf32_loaders = elf32_loaders.size();
 	for(i = 0; i < num_elf32_loaders; i++)
 	{
-		if(enable_elf32_loaders[i][front_end_num])
+		if(enable_elf32_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 			const unisim::util::debug::SubProgram<ADDRESS> *subprogram = elf32_loader->FindSubProgram(prc_num, subprogram_name, filename, compilation_unit_name);
@@ -2081,7 +2081,7 @@ const unisim::util::debug::SubProgram<typename CONFIG::ADDRESS> *Debugger<CONFIG
 	unsigned int num_elf64_loaders = elf64_loaders.size();
 	for(i = 0; i < num_elf64_loaders; i++)
 	{
-		if(enable_elf64_loaders[i][front_end_num])
+		if(enable_elf64_loaders[front_end_num][i])
 		{
 			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 			const unisim::util::debug::SubProgram<ADDRESS> *subprogram = elf64_loader->FindSubProgram(prc_num, subprogram_name, filename, compilation_unit_name);

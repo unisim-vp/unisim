@@ -187,8 +187,8 @@ private:
 		xml_atd_pwm_stub->Inject_ATD0(anValue);
 #endif
 
-		sc_time t;
-		sc_get_curr_simcontext()->next_time(t);
+		sc_core::sc_time t;
+		sc_core::sc_get_curr_simcontext()->next_time(t);
 		return (t.to_seconds());
 	};
 
@@ -200,8 +200,8 @@ private:
 		xml_atd_pwm_stub->Inject_ATD1(anValue);
 #endif
 
-		sc_time t;
-		sc_get_curr_simcontext()->next_time(t);
+		sc_core::sc_time t;
+		sc_core::sc_get_curr_simcontext()->next_time(t);
 		return (t.to_seconds());
 	};
 
@@ -213,8 +213,8 @@ private:
 		xml_atd_pwm_stub->Get_PWM(pwmValue);
 #endif
 
-		sc_time t;
-		sc_get_curr_simcontext()->next_time(t);
+		sc_core::sc_time t;
+		sc_core::sc_get_curr_simcontext()->next_time(t);
 		return (t.to_seconds());
 	};
 
@@ -222,8 +222,8 @@ private:
 	{
 		can_stub->Inject_CAN(msg);
 
-		sc_time t;
-		sc_get_curr_simcontext()->next_time(t);
+		sc_core::sc_time t;
+		sc_core::sc_get_curr_simcontext()->next_time(t);
 		return (t.to_seconds());
 	}
 
@@ -232,8 +232,8 @@ private:
 
 		can_stub->Get_CAN(msg);
 
-		sc_time t;
-		sc_get_curr_simcontext()->next_time(t);
+		sc_core::sc_time t;
+		sc_core::sc_get_curr_simcontext()->next_time(t);
 		return (t.to_seconds());
 	}
 
@@ -241,8 +241,8 @@ private:
 	{
 		can_stub->Inject_CANArray(msg);
 
-		sc_time t;
-		sc_get_curr_simcontext()->next_time(t);
+		sc_core::sc_time t;
+		sc_core::sc_get_curr_simcontext()->next_time(t);
 		return (t.to_seconds());
 	}
 
@@ -250,8 +250,8 @@ private:
     {
     	can_stub->getCANArray(msg);
 
-		sc_time t;
-		sc_get_curr_simcontext()->next_time(t);
+		sc_core::sc_time t;
+		sc_core::sc_get_curr_simcontext()->next_time(t);
 		return (t.to_seconds());
     }
 

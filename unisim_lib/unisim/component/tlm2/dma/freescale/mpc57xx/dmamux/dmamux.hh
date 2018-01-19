@@ -305,7 +305,7 @@ private:
 			this->dmamux->UpdateChannel(reg_num);
 		}
 
-		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		virtual ReadWriteStatus Write(const uint8_t& value, const uint8_t& bit_enable)
 		{
 			ReadWriteStatus rws = (reg_num < NUM_DMA_TRIGGERS) ? Super::Write(value, bit_enable)
 			                                                   : Super::template WritePreserve<TRIG>(value, bit_enable);
