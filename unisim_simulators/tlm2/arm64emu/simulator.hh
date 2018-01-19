@@ -74,7 +74,7 @@ struct Simulator
   Simulator(int argc, char **argv);
   virtual ~Simulator();
   int Run();
-  int Run(double time, sc_time_unit unit);
+  int Run(double time, sc_core::sc_time_unit unit);
   bool IsRunning() const;
   bool SimulationStarted() const;
   bool SimulationFinished() const;

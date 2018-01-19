@@ -50,18 +50,18 @@ namespace cortex_a53 {
 
 using namespace unisim::kernel::logger;
 
-CPU::CPU( sc_module_name const& name, Object* parent )
+CPU::CPU( sc_core::sc_module_name const& name, Object* parent )
   : unisim::kernel::service::Object(name, parent)
-  , sc_module(name)
+  , sc_core::sc_module(name)
   , unisim::component::cxx::processor::arm::vmsav8::CPU<ConfigCA53>(name, parent)
   , master_socket("master_socket")
-  , cpu_time(SC_ZERO_TIME)
-  , bus_time(SC_ZERO_TIME)
-  , quantum_time(SC_ZERO_TIME)
-  , cpu_cycle_time(62500.0, SC_PS)
-  , bus_cycle_time(62500.0, SC_PS)
-  , nice_time(1.0, SC_MS)
-  , time_per_instruction(62500.0, SC_PS)
+  , cpu_time(sc_core::SC_ZERO_TIME)
+  , bus_time(sc_core::SC_ZERO_TIME)
+  , quantum_time(sc_core::SC_ZERO_TIME)
+  , cpu_cycle_time(62500.0, sc_core::SC_PS)
+  , bus_cycle_time(62500.0, sc_core::SC_PS)
+  , nice_time(1.0, sc_core::SC_MS)
+  , time_per_instruction(62500.0, sc_core::SC_PS)
   , ipc(2.0)
   , enable_dmi(true)
   , verbose_tlm(false)
@@ -176,7 +176,7 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
         Stop(-1);
         break;
       }
-      sc_time tmp_time = sc_time_stamp();
+      sc_core::sc_time tmp_time = sc_core::sc_time_stamp();
       tmp_time += time;
       /* TODO: increase tmp_time depending on the size of the transaction. */
       end_read_rsp_event.notify(time);
@@ -225,15 +225,15 @@ CPU::Reset()
  */
 
 void
-CPU::Wait( sc_event const& evt )
+CPU::Wait( sc_core::sc_event const& evt )
 {
-  //if (quantum_time != SC_ZERO_TIME)
+  //if (quantum_time != sc_core::SC_ZERO_TIME)
   // Sync();
   wait( evt );
   sc_core::sc_time delta( sc_core::sc_time_stamp() );
   delta -= cpu_time;
   if (delta > quantum_time) {
-    quantum_time = SC_ZERO_TIME;
+    quantum_time = sc_core::SC_ZERO_TIME;
   } else {
     quantum_time -= delta;
   }
@@ -256,8 +256,8 @@ CPU::Sync()
       << EndDebugInfo;
   }
   wait(quantum_time);
-  cpu_time = sc_time_stamp();
-  quantum_time = SC_ZERO_TIME;
+  cpu_time = sc_core::sc_time_stamp();
+  quantum_time = sc_core::SC_ZERO_TIME;
   
   if (unlikely(verbose_tlm))
     PCPU::logger << DebugInfo
@@ -292,7 +292,7 @@ CPU::BusSynchronize()
   //   (cpu_time + quantum_time);
   
 #if 0
-  sc_time deadline(cpu_time);
+  sc_core::sc_time deadline(cpu_time);
   deadline += quantum_time;
   while ( bus_time < deadline )
     bus_time += bus_cycle_time;
@@ -388,7 +388,7 @@ CPU::PrRead( uint64_t addr, uint8_t* buffer, unsigned size )
   if (not trans->is_response_ok())
     return false;
   
-  // cpu_time = sc_time_stamp() + quantum_time;
+  // cpu_time = sc_core::sc_time_stamp() + quantum_time;
   if (quantum_time > nice_time)
     Sync();
 

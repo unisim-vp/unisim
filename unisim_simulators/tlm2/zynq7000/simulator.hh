@@ -86,7 +86,7 @@ struct CPU
   : public unisim::component::tlm2::processor::arm::cortex_a9::CPU
   , public unisim::util::cache::MemorySubSystem<MSSConfig, CPU>
 {
-  CPU(const sc_module_name& name, Object* parent = 0)
+  CPU(const sc_core::sc_module_name& name, Object* parent = 0)
     : unisim::kernel::service::Object(name, parent)
     , unisim::component::tlm2::processor::arm::cortex_a9::CPU(name, parent)
   {}
