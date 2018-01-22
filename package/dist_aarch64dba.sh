@@ -86,6 +86,7 @@ vector \
 "
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
+unisim/component/cxx/processor/arm/isa/arm64/disasm.cc \
 unisim/util/symbolic/symbolic.cc \
 "
 
@@ -98,9 +99,10 @@ unisim/component/cxx/processor/arm/isa/arm64/arm64.isa \
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
 ${UNISIM_LIB_SIMULATOR_ISA_FILES} \
 unisim/component/cxx/processor/arm/execute.hh \
+unisim/component/cxx/processor/arm/psr.hh \
+unisim/component/cxx/processor/arm/register_field.hh \
 unisim/component/cxx/processor/arm/isa/arm64/execute.hh \
 unisim/component/cxx/processor/arm/isa/arm64/decode.hh \
-unisim/component/cxx/processor/arm/isa/arm64/disasm.hh \
 unisim/component/cxx/processor/arm/isa/arm64/disasm.hh \
 unisim/util/truth_table/truth_table.hh \
 unisim/util/endian/endian.hh \
@@ -606,12 +608,8 @@ CLEANFILES=\
 	\$(top_builddir)/aarch64dec.tcc
 
 \$(top_builddir)/aarch64dec.tcc: \$(top_builddir)/aarch64dec.hh
-\$(top_builddir)/aarch64dec.hh: ${UNISIM_SIMULATOR_ISA_ARM32_FILES}
+\$(top_builddir)/aarch64dec.hh: ${UNISIM_LIB_SIMULATOR_ISA_FILES} ${UNISIM_SIMULATOR_ISA_FILES}
 	\$(GENISSLIB_PATH) -o \$(top_builddir)/aarch64dec -w 8 -I \$(top_srcdir) \$(top_srcdir)/aarch64dec.isa
-
-\$(top_builddir)/top_thumb.tcc: \$(top_builddir)/top_thumb.hh
-\$(top_builddir)/top_thumb.hh: ${UNISIM_SIMULATOR_ISA_THUMB_FILES}
-	\$(GENISSLIB_PATH) -o \$(top_builddir)/top_thumb -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_thumb.isa
 	 
 EOF
 

@@ -38,6 +38,7 @@
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/symbolic/identifier.hh>
 #include <ostream>
+#include <set>
 #include <stdexcept>
 #include <limits>
 #include <typeinfo>
@@ -574,19 +575,19 @@ namespace symbolic {
     
     this_type& operator = ( this_type const& other ) { expr = other.expr; return *this; }
     
-    template <typename SHIFT_TYPE>
-    this_type operator << ( SHIFT_TYPE shift ) const { return this_type( Expr( new BONode( "Lsl", expr, make_const( shift ) ) ) ); }
-    template <typename SHIFT_TYPE>
-    this_type operator >> ( SHIFT_TYPE shift ) const { return this_type( Expr( new BONode(is_signed?"Asr":"Lsr",expr,make_const(shift)) ) ); }
-    template <typename SHIFT_TYPE>
-    this_type& operator <<= ( SHIFT_TYPE shift ) { expr = new BONode( "Lsl", expr, make_const( shift ) ); return *this; }
-    template <typename SHIFT_TYPE>
-    this_type& operator >>= ( SHIFT_TYPE shift ) { expr = new BONode(is_signed?"Asr":"Lsr",expr,make_const(shift)); return *this; }
+    template <typename SHT>
+    this_type operator << ( SHT sh ) const { return this_type( Expr( new BONode( "Lsl", expr, make_const<uint8_t>(sh) ) ) ); }
+    template <typename SHT>
+    this_type operator >> ( SHT sh ) const { return this_type( Expr( new BONode( is_signed?"Asr":"Lsr",expr,make_const<uint8_t>(sh) ) ) ); }
+    template <typename SHT>
+    this_type& operator <<= ( SHT sh ) { expr = new BONode( "Lsl", expr, make_const<uint8_t>(sh) ); return *this; }
+    template <typename SHT>
+    this_type& operator >>= ( SHT sh ) { expr = new BONode( is_signed?"Asr":"Lsr", expr, make_const<uint8_t>(sh) ); return *this; }
     
-    template <typename SHIFT_TYPE>
-    this_type operator << ( SmartValue<SHIFT_TYPE> const& other ) const { return this_type( Expr( new BONode( "Lsl", expr, other.expr ) ) ); }
-    template <typename SHIFT_TYPE>
-    this_type operator >> ( SmartValue<SHIFT_TYPE> const& other ) const { return this_type( Expr( new BONode(is_signed?"Asr":"Lsr",expr,other.expr) ) ); }
+    template <typename SHT>
+    this_type operator << ( SmartValue<SHT> const& sh ) const { return this_type( Expr( new BONode( "Lsl", expr, SmartValue<uint8_t>(sh).expr ) ) ); }
+    template <typename SHT>
+    this_type operator >> ( SmartValue<SHT> const& sh ) const {return this_type( Expr( new BONode( is_signed?"Asr":"Lsr", expr, SmartValue<uint8_t>(sh).expr ) ) ); }
     
     this_type operator - () const { return this_type( Expr( new UONode( "Neg", expr ) ) ); }
     this_type operator ~ () const { return this_type( Expr( new UONode( "Not", expr ) ) ); }
@@ -630,14 +631,14 @@ namespace symbolic {
   UTP ByteSwap( UTP const& value ) { return UTP( new UONode( "BSwp", value.expr ) ); }
   
   template <typename UTP>
-  UTP RotateRight( UTP const& value, unsigned shift ) { return UTP( new BONode( "Ror", value.expr, make_const( shift ) ) ); }
+  UTP RotateRight( UTP const& value, uint8_t sh ) { return UTP( new BONode( "Ror", value.expr, make_const<uint8_t>(sh) ) ); }
   template <typename UTP>
-  UTP RotateRight( UTP const& value, UTP const& shift ) { return UTP( new BONode( "Ror", value.expr, shift.expr ) ); }
+  UTP RotateRight( UTP const& value, UTP const& sh ) { return UTP( new BONode( "Ror", value.expr, SmartValue<uint8_t>(sh).expr ) ); }
   
   template <typename UTP>
-  UTP RotateLeft( UTP const& value, unsigned shift ) { return UTP( new BONode( "Rol", value.expr, make_const( shift ) ) ); }
+  UTP RotateLeft( UTP const& value, uint8_t sh ) { return UTP( new BONode( "Rol", value.expr, make_const<uint8_t>(sh) ) ); }
   template <typename UTP>
-  UTP RotateLeft( UTP const& value, UTP const& shift ) { return UTP( new BONode( "Rol", value.expr, shift.expr ) ); }
+  UTP RotateLeft( UTP const& value, UTP const& sh ) { return UTP( new BONode( "Rol", value.expr, SmartValue<uint8_t>(sh).expr ) ); }
   
   template <typename UTP>
   UTP BitScanReverse( UTP const& value ) { return UTP( new UONode( "BSR", value.expr ) ); }
@@ -903,6 +904,25 @@ namespace symbolic {
       dst = SmartValue<fpT>( Expr( new ItoFNode( src.expr, TypeInfo<intT>::bitsize(), TypeInfo<fpT>::bitsize(), fracbits ) ) );
     }
     
+  };
+
+  struct ActionNode
+  {
+    ActionNode( ActionNode* _previous=0 );
+    ~ActionNode();
+  
+    bool        proceed( Expr const& _cond );
+    ActionNode* next( bool predicate ) const { return predicate ? true_nxt : false_nxt; }
+    bool        close();
+    bool        remove_dead_paths();
+    void        factorize();
+  
+    Expr           cond;
+    std::set<Expr> sinks;
+    ActionNode*    previous;
+    ActionNode*    true_nxt;
+    ActionNode*    false_nxt;
+    bool           complete;
   };
 
 } /* end of namespace symbolic */

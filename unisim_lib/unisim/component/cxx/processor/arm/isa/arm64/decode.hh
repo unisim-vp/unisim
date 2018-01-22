@@ -45,8 +45,6 @@ namespace arm {
 namespace isa {
 namespace arm64 {
 
-struct Reject { void operator = ( bool condition ) const { if (condition) throw *this; } };
-
 struct FPImm
 {
   FPImm() : smallfp(0) {}

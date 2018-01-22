@@ -157,8 +157,9 @@ namespace armsec
           {
           case 2: {
             int retsz = GenerateCode( node->GetSub(0), vars, label, sink << '(' );
-        
-        
+
+            Expr rhs = node->GetSub(1);
+
             switch (node->op.code)
               {
               default:                sink << " [" << node->op.c_str() << "] "; break;
@@ -185,16 +186,28 @@ namespace armsec
         
               case Op::Tgt:     sink << " >s "; retsz = 1; break;
               case Op::Tgtu:    sink << " >u "; retsz = 1; break;
-      
-              case Op::Lsl:     sink << " lshift "; break;
-              case Op::Asr:     sink << " rshifts "; break;
-              case Op::Lsr:     sink << " rshiftu "; break;
-              case Op::Ror:     sink << " rrotate "; break;
+
+                struct
+                {
+                  Expr operator() (U8 x, int s)
+                  {
+                    if (s==16) return U16(x).expr;
+                    if (s==32) return U32(x).expr;
+                    if (s==64) return U64(x).expr;
+                    return x.expr;
+                  }
+                } fixsh;
+            
+              case Op::Lsl:     sink << " lshift ";  rhs = fixsh( rhs, retsz ); break;
+              case Op::Asr:     sink << " rshifts "; rhs = fixsh( rhs, retsz ); break;
+              case Op::Lsr:     sink << " rshiftu "; rhs = fixsh( rhs, retsz ); break;
+              case Op::Ror:     sink << " rrotate "; rhs = fixsh( rhs, retsz ); break;
+                 
                 // case Op::Mod: break;
                 // case Op::Div: break;
               }
-          
-            sink << GetCode( node->GetSub(1), vars, label ) << ')';
+
+            sink << GetCode( rhs, vars, label ) << ')';
             return retsz;
           }
             
@@ -327,177 +340,58 @@ namespace armsec
   // virtual int IsNaNNode::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
   //     { sink << "Is" << (signaling?'S':'Q') << "NaN( " << GetCode(src,label) << " )"; return 1; }
 
-  struct Label;
-  
-  struct PathNode
+  struct Context
   {
-    typedef unisim::util::symbolic::Expr Expr;
-    typedef unisim::util::symbolic::ExprNode ExprNode;
+    typedef unisim::util::symbolic::Expr       Expr;
+    typedef unisim::util::symbolic::ExprNode   ExprNode;
+    typedef unisim::util::symbolic::ActionNode ActionNode;
     
-    PathNode( PathNode* _previous=0 )
-      : cond(), sinks(), previous(_previous), true_nxt(), false_nxt(), complete(false)
-    {}
-    
-    PathNode* proceed( Expr const& _cond, bool& result )
+    Context() : upper(0) {}
+    Context( Context* _up ) : upper(_up)
     {
-      if (not cond.good())
-        {
-          cond = _cond;
-          false_nxt = new PathNode(this);
-          true_nxt = new PathNode(this);
-          result = false;
-          return false_nxt;
-        }
-      
-      if (cond != _cond)
-        throw std::logic_error( "unexpected condition" );
-      
-      if (not false_nxt->complete)
-        {
-          result = false;
-          return false_nxt;
-        }
-      
-      if (true_nxt->complete)
-        throw std::logic_error( "unexpected path" );
-      
-      result = true;
-      return true_nxt;
+      if (_up) next_tmp = _up->next_tmp;
+      if (_up) vars = _up->vars;
     }
-    
-    bool close()
+      
+    void add_pending( Expr e ) { pendings.push_back(e); }
+    bool has_pending() const { return pendings.size() > 0; }
+      
+    struct TmpVar : public armsec::ASExprNode
     {
-      complete = true;
-      if (not previous)
-        return true;
-      if (this == previous->true_nxt)
-        return previous->close();
-      return false;
-    }
-    
-    bool remove_dead_paths()
-    {
-      if (cond.good()) {
-        bool leaf = true;
-        if (false_nxt) {
-          if (false_nxt->remove_dead_paths())
-            {
-              delete false_nxt;
-              false_nxt = 0;
-            }
-          else
-            leaf = false;
-        }
-        if (true_nxt) {
-          if (true_nxt->remove_dead_paths())
-            {
-              delete true_nxt;
-              true_nxt = 0;
-            }
-          else
-            leaf = false;
-        }
-        if (not leaf)
-          return false;
-        else
-          cond = Expr();
-      }
-      // This is a leaf; if no local sinks, signal dead path to parent
-      return sinks.size() == 0;
-    }
-    
-    void factorize()
-    {
-      if (not cond.good())
-        return;
-      
-      false_nxt->factorize();
-      true_nxt->factorize();
-      
-      std::vector<Expr> isect;
-      {
-        isect.resize( std::max( false_nxt->sinks.size(), true_nxt->sinks.size() ) );
-        std::vector<Expr>::iterator end =
-          std::set_intersection( false_nxt->sinks.begin(), false_nxt->sinks.end(),
-                                 true_nxt->sinks.begin(), true_nxt->sinks.end(),
-                                 isect.begin() );
-        isect.resize( end - isect.begin() );
-      }
-      
-      for (std::vector<Expr>::const_iterator itr = isect.begin(), end = isect.end(); itr != end; ++itr) {
-        sinks.insert( *itr );
-        false_nxt->sinks.erase( *itr );
-        true_nxt->sinks.erase( *itr );
-      }
-      
-      // If condition begins with a logical not, remove the not and
-      //   swap if then else branches
-      typedef unisim::util::symbolic::UONode UONode;
-      if (UONode const* uon = dynamic_cast<UONode const*>( cond.node ))
-        if (uon->op.cmp( unisim::util::symbolic::Op("Not") ) == 0) {
-          cond = uon->GetSub(0);
-          std::swap( false_nxt, true_nxt );
-        }
-    }
-  
-    struct Context
-    {
-      Context() : upper(0) {}
-      Context( Context* _up ) : upper(_up)
-      {
-        if (_up) next_tmp = _up->next_tmp;
-        if (_up) vars = _up->vars;
-      }
-      
-      void add_pending( Expr e ) { pendings.push_back(e); }
-      bool has_pending() const { return pendings.size() > 0; }
-      
-      struct TmpVar : public armsec::ASExprNode
-      {
-        TmpVar( std::string const& _ref, unsigned rsz )
-          : ref(_ref), dsz(rsz)
-        {}
-        virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const { sink << ref; return dsz; }
-        virtual intptr_t cmp( ExprNode const& rhs ) const { return ref.compare( dynamic_cast<TmpVar const&>( rhs ).ref ); }
-        virtual unsigned SubCount() const { return 0; }
-        virtual void Repr( std::ostream& sink ) const { sink << ref; }
-        std::string ref;
-        int dsz;
-      };
-      
-      Expr const&
-      addvar( std::string const& name, unsigned size, Expr const& expr )
-      {
-        Expr& place = vars[expr];
-        if (place.good())
-          throw std::logic_error( "multiple temporary definitions" );
-        place = new TmpVar( name, size );
-        return place;
-      }
-      
-      std::string nxtname( char const* rname, unsigned size ) { std::ostringstream buffer; buffer << "nxt_" << rname << "<" << size << ">"; return buffer.str(); }
-      
-      std::string tmpname( unsigned size ) { std::ostringstream buffer; buffer << "tmp" << size << '_' << (next_tmp[size]++) << "<" << size << ">"; return buffer.str(); }
-      
-      Context* upper;
-      typedef std::vector<Expr> Pendings;
-      Pendings pendings;
-      Variables vars;
-      std::map<unsigned,unsigned> next_tmp;
+      TmpVar( std::string const& _ref, unsigned rsz )
+        : ref(_ref), dsz(rsz)
+      {}
+      virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const { sink << ref; return dsz; }
+      virtual intptr_t cmp( ExprNode const& rhs ) const { return ref.compare( dynamic_cast<TmpVar const&>( rhs ).ref ); }
+      virtual unsigned SubCount() const { return 0; }
+      virtual void Repr( std::ostream& sink ) const { sink << ref; }
+      std::string ref;
+      int dsz;
     };
+      
+    Expr const&
+    addvar( std::string const& name, unsigned size, Expr const& expr )
+    {
+      Expr& place = vars[expr];
+      if (place.good())
+        throw std::logic_error( "multiple temporary definitions" );
+      place = new TmpVar( name, size );
+      return place;
+    }
+      
+    std::string nxtname( char const* rname, unsigned size ) { std::ostringstream buffer; buffer << "nxt_" << rname << "<" << size << ">"; return buffer.str(); }
+      
+    std::string tmpname( unsigned size ) { std::ostringstream buffer; buffer << "tmp" << size << '_' << (next_tmp[size]++) << "<" << size << ">"; return buffer.str(); }
 
-    void GenCode( Label const&, Label const&, Context* ) const;
-    
-    Expr cond;
-    std::set<Expr> sinks;
-    PathNode* previous;
-    PathNode* true_nxt;
-    PathNode* false_nxt;
-    bool complete;
+    void GenCode( ActionNode const* pn, Label const&, Label const& );
+
+    Context* upper;
+    typedef std::vector<Expr> Pendings;
+    Pendings pendings;
+    Variables vars;
+    std::map<unsigned,unsigned> next_tmp;
   };
   
-  enum InstructionSet { Arm, Thumb, Jazelle, ThumbEE};
-
 #define CP15ENCODE( CRN, OPC1, CRM, OPC2 ) ((OPC1 << 12) | (CRN << 8) | (CRM << 4) | (OPC2 << 0))
 
   struct State
@@ -514,8 +408,9 @@ namespace armsec
     typedef armsec::S32  S32;
     typedef armsec::S64  S64;
     
-    typedef unisim::util::symbolic::FP   FP;
-    typedef unisim::util::symbolic::Expr Expr;
+    typedef unisim::util::symbolic::FP         FP;
+    typedef unisim::util::symbolic::Expr       Expr;
+    typedef unisim::util::symbolic::ActionNode ActionNode;
     
     template <typename T>
     bool Cond( unisim::util::symbolic::SmartValue<T> const& cond )
@@ -527,9 +422,9 @@ namespace armsec
       if (unisim::util::symbolic::ConstNodeBase const* cnode = cexp.ConstSimplify())
         return cnode->GetBoolean();
       
-      bool result;
-      path = path->proceed( cexp, result );
-      return result;
+      bool predicate = path->proceed( cexp );
+      path = path->next( predicate );
+      return predicate;
     }
     
     struct Config
@@ -770,7 +665,7 @@ namespace armsec
     };
 
     template <typename RID>
-    RegRead<RID>* newRegRead( RID id, unsigned bitsize ) { return new RegRead<RID>( id, bitsize ); }
+    static RegRead<RID>* newRegRead( RID id, unsigned bitsize ) { return new RegRead<RID>( id, bitsize ); }
 
     struct RegWriteBase : public ASExprNode
     {
@@ -817,7 +712,7 @@ namespace armsec
     };
 
     template <typename RID>
-    RegWrite<RID>* newRegWrite( RID id, Expr const& value, unsigned bitsize )
+    static RegWrite<RID>* newRegWrite( RID id, Expr const& value, unsigned bitsize )
     { return new RegWrite<RID>( id, value, bitsize ); }
     
     enum branch_type_t { B_JMP = 0, B_CALL, B_RET, B_EXC, B_DBG, B_RFE };
@@ -845,21 +740,40 @@ namespace armsec
       virtual void Repr( std::ostream& sink ) const { sink << "assert (false)"; }
     };
     
+    struct ProcessStatusRegister
+    {
+      enum InstructionSet { Arm, Thumb, Jazelle, ThumbEE };
+      
+      typedef unisim::util::symbolic::Expr       Expr;
+      ProcessStatusRegister()
+        : n(newRegRead(RegID("n"),1)),
+          z(newRegRead(RegID("z"),1)),
+          c(newRegRead(RegID("c"),1)),
+          v(newRegRead(RegID("v"),1)),
+          itstate(newRegRead(RegID("itstate"),8)),
+          bg(newRegRead(RegID("cpsr"),32)),
+          iset(Arm),                // Default is ARM instruction set
+          bigendian(false),         // Default is Little Endian
+          mode(SUPERVISOR_MODE)     // Default is SUPERVISOR_MODE
+      {}
+
+      void fix_itstate( unsigned is )
+      {
+        itstate = U8(is);
+      }
+      
+      Expr n, z, c, v; /* TODO: should handle q */
+      U8 itstate;
+      U32 bg;
+      InstructionSet iset;
+      bool bigendian;
+      uint8_t mode;
+    };
     
-    
-    State( PathNode* _path, InstructionSet iset, bool is_big, unsigned running_mode )
+    State( ActionNode* _path, ProcessStatusRegister const& ref_psr )
       : path( _path )
       , next_insn_addr()
-      , cpsr( *this,
-              Expr( newRegRead(RegID("n"),1) ),
-              Expr( newRegRead(RegID("z"),1) ),
-              Expr( newRegRead(RegID("c"),1) ),
-              Expr( newRegRead(RegID("v"),1) ),
-              Expr( newRegRead(RegID("itstate"),8) ),
-              Expr( newRegRead(RegID("cpsr"),32) ),
-              iset,
-              is_big,
-              running_mode)
+      , cpsr( ref_psr, *this )
       , spsr( Expr( newRegRead(RegID("spsr"),32) ) )
       , FPSCR( Expr( newRegRead(RegID("fpscr"),32) ) )
       , FPEXC( Expr( newRegRead(RegID("fpexc"),32) ) )
@@ -881,25 +795,21 @@ namespace armsec
       SetNIA( insn_addr + U32( insn_length / 8 ), B_JMP );
     }
     
-    PathNode* path;
+    ActionNode* path;
     
     U32 reg_values[16];
     U32 next_insn_addr;
     branch_type_t branch_type;
+    
     //typedef unisim::component::cxx::processor::arm::FieldRegister<U32> FieldRegisterU32;
     //struct psr_type : public FieldRegisterU32
-    struct psr_type
+    struct psr_type : public ProcessStatusRegister
     {
-      psr_type( State& _cpu, Expr const& _n, Expr const& _z, Expr const& _c, Expr const& _v, Expr const& _itstate, Expr const& _bg, InstructionSet _iset, bool _bigendian, uint8_t _mode )
-        : cpu(_cpu), n(_n), z(_z), c(_c), v(_v), itstate(_itstate), bg(_bg), iset(_iset), bigendian(_bigendian), mode(_mode)
+      psr_type( ProcessStatusRegister const& ref, State& _cpu )
+        : ProcessStatusRegister(ref), cpu(_cpu)
       {}
+      
       State& cpu;
-      Expr n, z, c, v; /* TODO: should handle q */
-      U8 itstate;
-      U32 bg;
-      InstructionSet iset;
-      bool bigendian;
-      uint8_t mode;
       
       bool GetJ() const { return (iset == Jazelle) or (iset == ThumbEE); }
       bool GetT() const { return (iset ==   Thumb) or (iset == ThumbEE); }
@@ -968,9 +878,9 @@ namespace armsec
         
         if (MRF().Get(mask))
           {
-            U32       nmode = MRF().Get(bits);
-            if (MRF().Get(mask) == 0x1f)
+            if (MRF().Get(mask) != 0x1f)
               throw 0;
+            U32       nmode = MRF().Get(bits);
             MRF().Set(mask, 0u);
             if (cpu.Cond(nmode != U32(mode)))
               cpu.UnpredictableInsnBehaviour();
@@ -1930,10 +1840,8 @@ namespace armsec
   }
 
   void
-  PathNode::GenCode( Label const& start, Label const& after, Context* _up ) const
+  Context::GenCode( unisim::util::symbolic::ActionNode const* pn, Label const& start, Label const& after )
   {
-    Context ctx( _up );
-
     Expr nia;
     armsec::State::branch_type_t bt;
     
@@ -1993,7 +1901,7 @@ namespace armsec
 
       std::map<Expr,char const*> rtmps;
 
-      for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
+      for (std::set<Expr>::const_iterator itr = pn->sinks.begin(), end = pn->sinks.end(); itr != end; ++itr)
         {
           sestats.Process( *itr );
           if (armsec::State::RegWriteBase const* rw = dynamic_cast<armsec::State::RegWriteBase const*>( itr->node ))
@@ -2022,7 +1930,7 @@ namespace armsec
         {
           if (itr->second < 2)
             continue; // No reuse
-          if (ctx.vars.count(itr->first))
+          if (this->vars.count(itr->first))
             continue; // Already defined
           cse.Process(itr->first);
         }
@@ -2033,11 +1941,11 @@ namespace armsec
           int retsize;
           {
             std::ostringstream buffer;
-            retsize = ASExprNode::GenerateCode( itr->second, ctx.vars, head.current(), buffer );
+            retsize = ASExprNode::GenerateCode( itr->second, this->vars, head.current(), buffer );
             tmp_src = buffer.str();
             std::map<Expr,char const*>::const_iterator rtmp = rtmps.find(itr->second);
-            tmp_dst = rtmp != rtmps.end() ? ctx.nxtname( rtmp->second, retsize ) : ctx.tmpname( retsize );
-            ctx.addvar( tmp_dst, retsize, itr->second );
+            tmp_dst = rtmp != rtmps.end() ? this->nxtname( rtmp->second, retsize ) : this->tmpname( retsize );
+            this->addvar( tmp_dst, retsize, itr->second );
           }
           {
             std::ostringstream buffer;
@@ -2047,7 +1955,7 @@ namespace armsec
         }
     }
 
-    for (std::set<Expr>::const_iterator itr = sinks.begin(), end = sinks.end(); itr != end; ++itr)
+    for (std::set<Expr>::const_iterator itr = pn->sinks.begin(), end = pn->sinks.end(); itr != end; ++itr)
       {
         if (armsec::State::RegWriteBase const* rw = dynamic_cast<armsec::State::RegWriteBase const*>( itr->node ))
           {
@@ -2055,25 +1963,25 @@ namespace armsec
             unsigned    rsize = rw->bitsize;
             Expr        value = rw->value;
 
-            if (not value.ConstSimplify() and not ctx.vars.count(value))
+            if (not value.ConstSimplify() and not this->vars.count(value))
               {
                 std::ostringstream buffer;
                 buffer << "nxt_" << rname << "<" << rsize << ">";
                 std::string vname = buffer.str();
-                buffer << " := " << GetCode(value, ctx.vars, head.current()) << "; goto <next>";
+                buffer << " := " << GetCode(value, this->vars, head.current()) << "; goto <next>";
                 head.write( buffer.str() );
-                ctx.addvar( vname, rsize, value );
+                this->addvar( vname, rsize, value );
               }
 
             if (armsec::State::PCWrite const* jmp = dynamic_cast<armsec::State::PCWrite const*>( rw ))
               { nia = value; bt = jmp->branch_type; }
             else
-              ctx.add_pending( *itr );
+              this->add_pending( *itr );
           }
         else
           {
             std::ostringstream buffer;
-            if (ASExprNode::GenerateCode( *itr, ctx.vars, head.current(), buffer ))
+            if (ASExprNode::GenerateCode( *itr, this->vars, head.current(), buffer ))
               throw 0;
 
             buffer << "; goto <next>";
@@ -2081,47 +1989,55 @@ namespace armsec
           }
       }
 
-    if (not cond.good())
+    if (not pn->cond.good())
       {
-        if (sinks.size() == 0)
+        if (pn->sinks.size() == 0)
           throw std::logic_error( "empty leaf" );
       }
     else
       {
         std::ostringstream buffer;
         Label ifinsn(head.current());
-        buffer << "if " << GetCode(cond, ctx.vars, ifinsn) << " ";
+        buffer << "if " << GetCode(pn->cond, this->vars, ifinsn) << " ";
 
         // Preparing room for if then else code
         Label endif( after );
-        if (nia.good() or (after.valid() and (ctx.has_pending())))
+        if (nia.good() or (after.valid() and (this->has_pending())))
           endif.allocate();
 
-        if (not false_nxt) {
+        if (not pn->false_nxt) {
           Label ifthen(ifinsn);
           buffer << " goto " << ifthen.allocate() << " else goto " << endif.GetID();
           ifinsn.write( buffer.str() );
-          true_nxt->GenCode( ifthen, endif, &ctx );
-        } else if (not true_nxt) {
+          Context nxt(this);
+          nxt.GenCode( pn->true_nxt, ifthen, endif );
+        } else if (not pn->true_nxt) {
           Label ifelse(ifinsn);
           buffer << " goto " << endif.GetID() << " else goto " << ifelse.allocate();
           ifinsn.write( buffer.str() );
-          false_nxt->GenCode( ifelse, endif, &ctx );
+          Context nxt(this);
+          nxt.GenCode( pn->false_nxt, ifelse, endif );
         } else {
           Label ifthen(ifinsn), ifelse(ifinsn);
           buffer << " goto " << ifthen.allocate() << " else goto " << ifelse.allocate();
           ifinsn.write( buffer.str() );
-          true_nxt->GenCode( ifthen, endif, &ctx );
-          false_nxt->GenCode( ifelse, endif, &ctx );
+          {
+            Context nxt(this);
+            nxt.GenCode( pn->true_nxt, ifthen, endif );
+          }
+          {
+            Context nxt(this);
+            nxt.GenCode( pn->false_nxt, ifelse, endif );
+          }
         }
 
         head.current() = endif;
       }
 
-    for (Context::Pendings::iterator itr = ctx.pendings.begin(), end = ctx.pendings.end(); itr != end; ++itr)
+    for (Context::Pendings::iterator itr = this->pendings.begin(), end = this->pendings.end(); itr != end; ++itr)
       {
         std::ostringstream buffer;
-        if (ASExprNode::GenerateCode( *itr, ctx.vars, head.current(), buffer ))
+        if (ASExprNode::GenerateCode( *itr, this->vars, head.current(), buffer ))
           throw 0;
 
         buffer << "; goto <next>";
@@ -2133,12 +2049,12 @@ namespace armsec
 
     Label current( head.current() );
 
-    for (Context* uc = ctx.upper; uc; uc = uc->upper)
+    for (Context* uc = this->upper; uc; uc = uc->upper)
       {
         for (Context::Pendings::iterator itr = uc->pendings.begin(), end = uc->pendings.end(); itr != end; ++itr)
           {
             std::ostringstream buffer;
-            if (ASExprNode::GenerateCode( *itr, ctx.vars, current, buffer ))
+            if (ASExprNode::GenerateCode( *itr, this->vars, current, buffer ))
               throw 0;
 
             buffer << "; goto <next>";
@@ -2147,7 +2063,7 @@ namespace armsec
       }
 
     std::ostringstream buffer;
-    buffer << "goto (" << GetCode(nia, ctx.vars, current) << (nia.ConstSimplify() ? ",0" : "") << ")";
+    buffer << "goto (" << GetCode(nia, this->vars, current) << (nia.ConstSimplify() ? ",0" : "") << ")";
     if (bt == armsec::State::B_CALL) buffer << " // call";
     current.write( buffer.str() );
   }
@@ -2159,7 +2075,7 @@ struct ARMISA : public unisim::component::cxx::processor::arm::isa::arm32::Decod
   typedef unisim::component::cxx::processor::arm::isa::arm32::Operation<armsec::State> Operation;
   static CodeType mkcode( uint32_t code ) { return CodeType( code ); }
   static bool const is_thumb = false;
-  static armsec::InstructionSet const iset = armsec::Arm;
+  //  static armsec::InstructionSet const iset = armsec::State::ProcessStatusRegister::Arm;
 };
 
 struct THUMBISA : public unisim::component::cxx::processor::arm::isa::thumb2::Decoder<armsec::State>
@@ -2168,7 +2084,7 @@ struct THUMBISA : public unisim::component::cxx::processor::arm::isa::thumb2::De
   typedef unisim::component::cxx::processor::arm::isa::thumb2::Operation<armsec::State> Operation;
   static CodeType mkcode( uint32_t code ) { return CodeType( code ); }
   static bool const is_thumb = true;
-  static armsec::InstructionSet const iset = armsec::Thumb;
+  //  static armsec::InstructionSet const iset = armsec::State::ProcessStatusRegister::Thumb;
 };
 
 
@@ -2186,23 +2102,23 @@ struct Decoder
 
   template <class ISA>
   void
-  translate_isa( ISA& isa, uint32_t addr, uint32_t code, bool bigendian, unsigned running_mode )
+  translate_isa( ISA& isa, uint32_t addr, uint32_t code, armsec::State::ProcessStatusRegister const& psr_ref )
   {
     std::cout << "(address . " << armsec::dbx( 32, addr ) << ")\n";
-
+    
     struct Translation
     {
-      typedef typename ISA::Operation Insn;
-      typedef typename armsec::PathNode PathNode;
-      typedef typename unisim::util::symbolic::Expr Expr;
-      typedef typename armsec::State State;
+      typedef typename unisim::util::symbolic::ActionNode ActionNode;
+      typedef typename unisim::util::symbolic::Expr       Expr;
+      typedef typename ISA::Operation                     Insn;
+      typedef typename armsec::State                      State;
 
       ~Translation() { delete insn; delete coderoot; }
-      Translation( uint32_t _addr, bool bigendian, unsigned running_mode )
+      Translation( uint32_t _addr, armsec::State::ProcessStatusRegister const& psr_ref )
         : insn(0)
-        , coderoot(new armsec::PathNode)
+        , coderoot(new ActionNode)
         , addr( _addr )
-        , reference( coderoot, ISA::iset, bigendian, running_mode )
+        , reference( coderoot, psr_ref )
       {}
 
       int
@@ -2230,13 +2146,13 @@ struct Decoder
         Expr insn_addr( unisim::util::symbolic::make_const( addr ) ); //< concrete instruction address
 
         reference.SetInsnProps( insn_addr, insn->GetLength() );
-
+        
         try
           {
             for (bool end = false; not end;)
               {
                 
-                State state( coderoot, ISA::iset, reference.cpsr.bigendian, reference.cpsr.mode );
+                State state( coderoot, reference.cpsr );
                 state.SetInsnProps( insn_addr, insn->GetLength() );
                 insn->execute( state );
                 if (ISA::is_thumb)
@@ -2254,16 +2170,17 @@ struct Decoder
 
         armsec::Label beglabel(program), endlabel(program);
         beglabel.allocate();
-        coderoot->GenCode( beglabel, endlabel, 0 );
+        armsec::Context ctx;
+        ctx.GenCode( coderoot, beglabel, endlabel );
 
         return true;
       }
 
-      Insn*     insn;
-      PathNode* coderoot;
-      uint32_t  addr;
-      State     reference;
-    } trans( addr, bigendian, running_mode );
+      Insn*       insn;
+      ActionNode* coderoot;
+      uint32_t    addr;
+      State       reference;
+    } trans( addr, psr_ref );
 
     unsigned bitlen = trans.decode( isa, code );
     if (bitlen != 16 and bitlen != 32)
@@ -2297,12 +2214,12 @@ struct Decoder
   }
   
   void
-  translate( armsec::InstructionSet iset, uint32_t addr, uint32_t code, bool bigendian, unsigned running_mode )
+  translate( armsec::State::ProcessStatusRegister const& psr_ref, uint32_t addr, uint32_t code )
   {
-    switch (iset)
+    switch (psr_ref.iset)
       {
-      case armsec::Arm:   translate_isa( armisa, addr, code, bigendian, running_mode ); break;
-      case armsec::Thumb: translate_isa( thumbisa, addr, code, bigendian, running_mode ); break;
+      case armsec::State::ProcessStatusRegister::Arm:   translate_isa( armisa, addr, code, psr_ref ); break;
+      case armsec::State::ProcessStatusRegister::Thumb: translate_isa( thumbisa, addr, code, psr_ref ); break;
       default: throw 0;
       }
   }
@@ -2346,9 +2263,7 @@ main( int argc, char** argv )
   
   exec_flags += ',';
   
-  armsec::InstructionSet instruction_set = armsec::Arm;
-  bool is_big_endian = false;
-  unsigned running_mode = armsec::State::SUPERVISOR_MODE;
+  armsec::State::ProcessStatusRegister psr;
   
   for (std::string::iterator cur = exec_flags.begin(), end = exec_flags.end(), nxt; cur != end; cur = nxt+1 )
     {
@@ -2356,19 +2271,20 @@ main( int argc, char** argv )
       std::string flag( cur, nxt );
       if (flag.size() == 0)
         continue;
-      if      (flag == "arm")        { instruction_set = armsec::Arm; }
-      else if (flag == "thumb")      { instruction_set = armsec::Thumb; }
-      else if (flag == "little")     { is_big_endian = false; }
-      else if (flag == "big")        { is_big_endian = true; }
-      else if (flag == "user")       { running_mode = armsec::State::USER_MODE; }
-      else if (flag == "fiq")        { running_mode = armsec::State::FIQ_MODE; }
-      else if (flag == "irq")        { running_mode = armsec::State::IRQ_MODE; }
-      else if (flag == "supervisor") { running_mode = armsec::State::SUPERVISOR_MODE; }
-      else if (flag == "monitor")    { running_mode = armsec::State::MONITOR_MODE; }
-      else if (flag == "abort")      { running_mode = armsec::State::ABORT_MODE; }
-      else if (flag == "hypervisor") { running_mode = armsec::State::HYPERVISOR_MODE; }
-      else if (flag == "undefined")  { running_mode = armsec::State::UNDEFINED_MODE; }
-      else if (flag == "system")     { running_mode = armsec::State::SYSTEM_MODE; }
+      if      (flag == "arm")        { psr.iset = psr.Arm; }
+      else if (flag == "thumb")      { psr.iset = psr.Thumb; }
+      else if (flag == "little")     { psr.bigendian = false; }
+      else if (flag == "big")        { psr.bigendian = true; }
+      else if (flag == "user")       { psr.mode = armsec::State::USER_MODE; }
+      else if (flag == "fiq")        { psr.mode = armsec::State::FIQ_MODE; }
+      else if (flag == "irq")        { psr.mode = armsec::State::IRQ_MODE; }
+      else if (flag == "supervisor") { psr.mode = armsec::State::SUPERVISOR_MODE; }
+      else if (flag == "monitor")    { psr.mode = armsec::State::MONITOR_MODE; }
+      else if (flag == "abort")      { psr.mode = armsec::State::ABORT_MODE; }
+      else if (flag == "hypervisor") { psr.mode = armsec::State::HYPERVISOR_MODE; }
+      else if (flag == "undefined")  { psr.mode = armsec::State::UNDEFINED_MODE; }
+      else if (flag == "system")     { psr.mode = armsec::State::SYSTEM_MODE; }
+      else if (flag == "outitb")     { psr.fix_itstate(0); }
       else
         {
           std::cerr << "Unknown execution state flag: " << flag << std::endl;
@@ -2377,7 +2293,7 @@ main( int argc, char** argv )
 
     }
   
-  decoder.translate( instruction_set, addr, code, is_big_endian, running_mode );
+  decoder.translate( psr, addr, code );
 
   return 0;
 }
