@@ -304,6 +304,7 @@ unisim/component/tlm2/memory/ram/memory.hh \
 unisim/component/tlm2/processor/arm/cortex_a53/cpu.hh \
 unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \
+unisim/component/cxx/processor/arm/isa/decode.hh \
 unisim/component/cxx/processor/arm/psr.hh \
 unisim/component/cxx/processor/arm/register_field.hh \
 unisim/component/cxx/processor/arm/vmsav8/cpu.hh \

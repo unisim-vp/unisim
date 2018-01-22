@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010-2016,
+ *  Copyright (c) 2010-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -664,8 +664,6 @@ namespace arm {
     }
   }
 
-  struct Reject { void operator = ( bool condition ) const { if (condition) throw *this; } };
-  
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx

@@ -2126,7 +2126,7 @@ struct Decoder
       {
         try { insn = isa.NCDecode( addr, ISA::mkcode( _code ) ); }
 
-        catch (unisim::component::cxx::processor::arm::Reject const&) { return 0; }
+        catch (unisim::component::cxx::processor::arm::isa::Reject const&) { return 0; }
 
         return insn->GetLength();
       }

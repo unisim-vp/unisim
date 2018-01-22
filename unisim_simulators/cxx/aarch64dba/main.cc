@@ -47,7 +47,7 @@ namespace armsec
     typedef unisim::util::symbolic::ActionNode ActionNode;
 
     template <typename OPER>
-    void UndefinedInstruction(OPER const*) { throw unisim::component::cxx::processor::arm::Reject(); }
+    void UndefinedInstruction(OPER const*) { throw unisim::component::cxx::processor::arm::isa::Reject(); }
     
     template <typename T>
     bool Cond( unisim::util::symbolic::SmartValue<T> const& cond )

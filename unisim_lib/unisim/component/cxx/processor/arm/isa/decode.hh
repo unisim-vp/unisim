@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007-2016,
+ *  Copyright (c) 2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,46 +31,24 @@
  *
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
-/**********************************************
 
-             ARM64 TOP ISA DESCRIPTION
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ISA_DECODE_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ISA_DECODE_HH__
 
-**********************************************/
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace arm {
+namespace isa {
 
-namespace unisim::component::cxx::processor::arm::isa::arm64
-set endianness little
-set addressclass {uint64_t}
-template <{typename} {ARCH}>
+  struct Reject { void operator = ( bool condition ) const { if (condition) throw *this; } };
 
-decl {
-#include <iosfwd>
-#include <stdint.h>
-} // end of decl
+} // end of namespace isa
+} // end of namespace arm
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 
-impl {
-#include <unisim/component/cxx/processor/arm/isa/arm64/decode.hh>
-#include <unisim/component/cxx/processor/arm/isa/arm64/disasm.hh>
-#include <unisim/util/arithmetic/arithmetic.hh>
-#include <iostream>
-
-using unisim::util::arithmetic::RotateRight;
-using unisim::util::arithmetic::BitScanReverse;
-
-#include <unisim/component/cxx/processor/arm/isa/arm64/execute.hh>
-#include <unisim/component/cxx/processor/arm/execute.hh>
-}
-
-action {void} execute({ARCH &} {cpu}) {
-  cpu.UndefinedInstruction(this);
-}
-
-action {void} disasm({ARCH &} {cpu}, {std::ostream&} {sink}) {
-  sink << "; Unknown AARCH64 instruction";
-}
-
-impl {
-} // end of impl
-
-include "base.isa"
-include "simd_fp.isa"
+#endif /* __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_DECODE_HH__ */

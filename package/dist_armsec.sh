@@ -147,6 +147,7 @@ unisim/util/symbolic/identifier.hh \
 unisim/component/cxx/processor/arm/disasm.hh \
 unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \
+unisim/component/cxx/processor/arm/isa/decode.hh \
 unisim/component/cxx/processor/arm/models.hh \
 unisim/component/cxx/processor/arm/psr.hh \
 unisim/component/cxx/processor/arm/register_field.hh \

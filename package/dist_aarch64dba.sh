@@ -99,6 +99,7 @@ unisim/component/cxx/processor/arm/isa/arm64/arm64.isa \
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
 ${UNISIM_LIB_SIMULATOR_ISA_FILES} \
 unisim/component/cxx/processor/arm/execute.hh \
+unisim/component/cxx/processor/arm/isa/decode.hh \
 unisim/component/cxx/processor/arm/psr.hh \
 unisim/component/cxx/processor/arm/register_field.hh \
 unisim/component/cxx/processor/arm/isa/arm64/execute.hh \

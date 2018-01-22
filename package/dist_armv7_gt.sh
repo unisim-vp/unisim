@@ -423,6 +423,7 @@ unisim/component/cxx/processor/arm/vmsav7/cp15.hh \
 unisim/component/cxx/processor/arm/memory_op.hh \
 unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \
+unisim/component/cxx/processor/arm/isa/decode.hh \
 unisim/component/cxx/processor/arm/models.hh \
 unisim/component/cxx/processor/arm/disasm.hh \
 unisim/component/cxx/processor/arm/simfloat.hh \

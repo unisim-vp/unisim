@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016,
+ *  Copyright (c) 2016-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -35,6 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ISA_ARM64_DECODE_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_ISA_ARM64_DECODE_HH__
 
+#include <unisim/component/cxx/processor/arm/isa/decode.hh>
 #include <inttypes.h>
 
 namespace unisim {

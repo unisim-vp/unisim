@@ -36,6 +36,7 @@
 #include <unisim/component/cxx/processor/arm/vmsav7/cp15.hh>
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
 #include <unisim/component/cxx/processor/arm/execute.hh>
+#include <unisim/component/cxx/processor/arm/isa/decode.hh>
 #include <unisim/util/backtrace/backtrace.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
@@ -873,7 +874,7 @@ CPU::Disasm(uint32_t addr, uint32_t& next_addr)
       }
   }
   
-  catch (arm::Reject const&)
+  catch (isa::Reject const&)
     {
       next_addr = addr + 4;
       buffer << "??";
