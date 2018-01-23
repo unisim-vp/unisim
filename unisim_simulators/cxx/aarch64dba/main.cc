@@ -46,6 +46,30 @@ namespace armsec
     typedef unisim::util::symbolic::Expr       Expr;
     typedef unisim::util::symbolic::ActionNode ActionNode;
 
+    struct ProcessStatusRegister
+    {
+      typedef unisim::util::symbolic::Expr       Expr;
+      ProcessStatusRegister()
+        // : n(newRegRead(RegID("n"),1))
+        // , z(newRegRead(RegID("z"),1))
+        // , c(newRegRead(RegID("c"),1))
+        // , v(newRegRead(RegID("v"),1))
+        // , itstate(newRegRead(RegID("itstate"),8))
+        // , bg(newRegRead(RegID("cpsr"),32))
+      {}
+    };
+  
+    State( ActionNode* _path, ProcessStatusRegister const& ref_psr )
+      : path( _path )
+      // , next_insn_addr()
+      // , cpsr( ref_psr, *this )
+      // , spsr( Expr( newRegRead(RegID("spsr"),32) ) )
+      // , FPSCR( Expr( newRegRead(RegID("fpscr"),32) ) )
+      // , FPEXC( Expr( newRegRead(RegID("fpexc"),32) ) )
+      // , unpredictable(false)
+      // , is_it_assigned(false)
+    {}        
+
     template <typename OPER>
     void UndefinedInstruction(OPER const*) { throw unisim::component::cxx::processor::arm::isa::Reject(); }
     
@@ -343,6 +367,10 @@ main( int argc, char** argv )
     }
 
   Decoder decoder;
+
+  armsec::State::ProcessStatusRegister psr;
+  
+  
   
   decoder.translate( addr, code/*, running_mode*/ );
 

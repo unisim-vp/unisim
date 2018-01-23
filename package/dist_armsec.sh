@@ -87,6 +87,7 @@ vector \
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
 unisim/component/cxx/processor/arm/disasm.cc \
+unisim/util/symbolic/binsec/binsec.cc \
 unisim/util/symbolic/symbolic.cc \
 "
 
@@ -143,6 +144,7 @@ unisim/util/endian/endian.hh \
 unisim/util/inlining/inlining.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/symbolic/symbolic.hh \
+unisim/util/symbolic/binsec/binsec.hh \
 unisim/util/symbolic/identifier.hh \
 unisim/component/cxx/processor/arm/disasm.hh \
 unisim/component/cxx/processor/arm/exception.hh \
