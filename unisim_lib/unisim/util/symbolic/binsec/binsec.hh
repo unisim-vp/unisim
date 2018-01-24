@@ -165,6 +165,20 @@ namespace binsec {
     Branch( Expr const& value, unsigned bitsize, type_t bt ) : RegWrite( value, bitsize ), type(bt) {}
   };
   
+  struct AssertFalse : public ASExprNode
+  {
+    AssertFalse() {}
+    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const
+    {
+      sink << "assert (false)";
+      return 0;
+    }
+
+    virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
+    virtual unsigned SubCount() const { return 0; }
+    virtual void Repr( std::ostream& sink ) const { sink << "assert (false)"; }
+  };
+    
 } /* end of namespace binsec */
 } /* end of namespace symbolic */
 } /* end of namespace util */

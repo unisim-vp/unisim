@@ -286,7 +286,7 @@ namespace binsec {
       void GenCode( ActionNode const* action_tree, Label const& start, Label const& after )
       {
         Expr nia;
-        Branch::type_t bt;
+        Branch::type_t bt = Branch::Jump;
     
         // Using a delayed writing mechanism so that the last code line
         // produced is linked to the next code line given by the upper
