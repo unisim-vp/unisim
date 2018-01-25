@@ -398,7 +398,10 @@ namespace symbolic {
     
     intptr_t cmp( Expr const& rhs ) const
     {
-      if (not node or not rhs.node) return node ? 1 : -1;
+      // Do not compare null expressions
+      if (not rhs.node) return     node ?  1 : 0;
+      if (not     node) return rhs.node ? -1 : 0;
+      
       /* First compare actual types */
       const std::type_info& til = typeid(*node);
       const std::type_info& tir = typeid(*rhs.node);
@@ -426,6 +429,12 @@ namespace symbolic {
     
     bool good() const { return node; }
     friend std::ostream& operator << (std::ostream&, Expr const&);
+  };
+
+  struct GetRepr
+  {
+    GetRepr( Expr const& _x ) : x(_x) {} Expr const& x;
+    friend std::ostream& operator << ( std::ostream& sink, GetRepr const& gr );
   };
   
   template <typename VALUE_TYPE>
@@ -508,7 +517,7 @@ namespace symbolic {
       return src.cmp( rhs.src );
     }
     
-    virtual void Repr( std::ostream& sink ) const { sink << ScalarType( TypeInfo<DST_VALUE_TYPE>::GetType() ).name; sink << "( "; src->Repr(sink); sink << " )"; }
+    virtual void Repr( std::ostream& sink ) const { sink << ScalarType( TypeInfo<DST_VALUE_TYPE>::GetType() ).name; sink << "( " << GetRepr(src) << " )"; }
     
     virtual ConstNodeBase const* GetConstNode() const
     {
@@ -697,7 +706,7 @@ namespace symbolic {
     struct IsNaNNode : public ExprNode
     {
       IsNaNNode( Expr const& _src, bool _signaling ) : src(_src), signaling(_signaling) {} Expr src; bool signaling;
-      virtual void Repr( std::ostream& sink ) const { sink << "IsNaN("; src->Repr(sink); sink << ")"; }
+      virtual void Repr( std::ostream& sink ) const { sink << "IsNaN(" << GetRepr(src) << ")"; }
       intptr_t cmp( ExprNode const& brhs ) const
       {
         IsNaNNode const& rhs = dynamic_cast<IsNaNNode const&>( brhs );
@@ -757,17 +766,7 @@ namespace symbolic {
       virtual unsigned SubCount() const { return 3; };
       virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return acc; case 1: return left; case 2: return right; } return ExprNode::GetSub(idx); };
       
-      virtual void Repr( std::ostream& sink ) const
-      {
-        sink << "MulAdd( ";
-        acc->Repr(sink);
-        sink << ", ";
-        left->Repr(sink);
-        sink << ", ";
-        right->Repr(sink);
-        sink << " )";
-      }
-      
+      virtual void Repr( std::ostream& sink ) const { sink << "MulAdd( " << GetRepr(acc) << ", " << GetRepr(left) << ", " << GetRepr(right) << " )"; }
       
       intptr_t cmp( ExprNode const& brhs ) const
       {
@@ -794,16 +793,7 @@ namespace symbolic {
       virtual unsigned SubCount() const { return 3; };
       virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return acc; case 1: return left; case 2: return right; } return ExprNode::GetSub(idx); };
       
-      virtual void Repr( std::ostream& sink ) const
-      {
-        sink << "IsInvalidMulAdd( ";
-        acc->Repr(sink);
-        sink << ", ";
-        left->Repr(sink);
-        sink << ", ";
-        right->Repr(sink);
-        sink << " )";
-      }
+      virtual void Repr( std::ostream& sink ) const { sink << "IsInvalidMulAdd( " << GetRepr(acc) << ", " << GetRepr(left) << ", " << GetRepr(right) << " )"; }
       
       intptr_t cmp( ExprNode const& brhs ) const
       {
@@ -836,7 +826,7 @@ namespace symbolic {
         : src( _src ), ssz( _ssz ), dsz( _dsz )
       {} Expr src; int ssz; int dsz;
       
-      virtual void Repr( std::ostream& sink ) const { sink << "FtoF( "; src->Repr(sink); sink << " )"; }
+      virtual void Repr( std::ostream& sink ) const { sink << "FtoF( " << GetRepr(src) << " )"; }
       virtual unsigned SubCount() const { return 1; }
       virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return src; }
       intptr_t cmp( ExprNode const& brhs ) const
@@ -860,7 +850,7 @@ namespace symbolic {
         : src( _src ), fsz( _fsz ), isz( _isz ), fb( _fb )
       {} Expr src; int fsz; int isz; int fb; 
       
-      virtual void Repr( std::ostream& sink ) const { sink << "FtoI( "; src->Repr(sink); sink << " )"; }
+      virtual void Repr( std::ostream& sink ) const { sink << "FtoI( " << GetRepr(src) << " )"; }
       virtual unsigned SubCount() const { return 1; }
       virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return src; }
       intptr_t cmp( ExprNode const& brhs ) const
@@ -885,7 +875,7 @@ namespace symbolic {
         : src( _src ), isz( _isz ), fsz( _fsz ), fb( _fb )
       {} Expr src; int isz; int fsz; int fb;
       
-      virtual void Repr( std::ostream& sink ) const { sink << "ItoF( "; src->Repr(sink); sink << " )"; }
+      virtual void Repr( std::ostream& sink ) const { sink << "ItoF( " << GetRepr(src) << " )"; }
       virtual unsigned SubCount() const { return 1; }
       virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return src; }
       intptr_t cmp( ExprNode const& brhs ) const

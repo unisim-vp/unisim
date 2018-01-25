@@ -134,26 +134,37 @@ namespace binsec {
       return sink;
     }
   };
-  
+
+  struct RegRead : public ASExprNode
+  {
+    RegRead( unsigned _bitsize ) : bitsize(_bitsize) {}
+
+    virtual char const* GetRegName() const = 0;
+      
+    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
+    virtual void Repr( std::ostream& sink ) const;
+    virtual unsigned SubCount() const { return 0; }
+    virtual intptr_t cmp( ExprNode const& brhs ) const { return int(bitsize) - int(dynamic_cast<RegRead const&>( brhs ).bitsize); }
+    
+    unsigned bitsize;
+  };
+
   struct RegWrite : public ASExprNode
   {
     RegWrite( Expr const& _value, unsigned _bitsize ) : value(_value), bitsize(_bitsize) {}
       
+    virtual char const* GetRegName() const = 0;
+      
+    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
+    virtual void Repr( std::ostream& sink ) const;
     virtual unsigned SubCount() const { return 1; }
     virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return value; }
-      
     virtual intptr_t cmp( ExprNode const& brhs ) const
     {
       RegWrite const& rhs = dynamic_cast<RegWrite const&>( brhs );
       if (intptr_t delta = int(bitsize) - int(rhs.bitsize)) return delta;
       return value.cmp( rhs.value );
     }
-      
-    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
-      
-    virtual void Repr( std::ostream& sink ) const { sink << GetRegName() << " := "; value->Repr(sink); }
-      
-    virtual char const* GetRegName() const = 0;
       
     Expr value;
     unsigned bitsize;
@@ -177,6 +188,61 @@ namespace binsec {
     virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
     virtual unsigned SubCount() const { return 0; }
     virtual void Repr( std::ostream& sink ) const { sink << "assert (false)"; }
+  };
+    
+  struct Load : public ASExprNode
+  {
+    Load( Expr const& _addr, unsigned _size, unsigned _alignment, bool _bigendian )
+      : addr(_addr), size(_size), alignment(_alignment), bigendian(_bigendian)
+    {}
+    
+    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
+    unsigned bitsize() const { return 1<<size; }
+    virtual void Repr( std::ostream& sink ) const;
+    intptr_t cmp( ExprNode const& brhs ) const
+    {
+      Load const& rhs = dynamic_cast<Load const&>( brhs );
+      if (intptr_t delta = addr.cmp( rhs.addr )) return delta;
+      if (intptr_t delta = int(size - rhs.size)) return delta;
+      if (intptr_t delta = int(alignment - rhs.alignment)) return delta;
+      return (int(bigendian) - int(rhs.bigendian));
+    }
+    virtual unsigned SubCount() const { return 1; }
+    virtual Expr const& GetSub(unsigned idx) const { if (idx != 0) return ExprNode::GetSub(idx); return addr; }
+    
+    Expr addr;
+    uint32_t size      :  4; // (log2) [1,2,4,8,...,32768] bytes
+    uint32_t alignment :  4; // (log2) [1,2,4,8,...,32768] bytes
+    uint32_t bigendian :  1; // 0=little-endian
+    uint32_t reserved  : 23; // reserved
+  };
+    
+  struct Store : public ASExprNode
+  {
+    Store( Expr const& _addr, Expr const& _value, unsigned _size, unsigned _alignment, bool _bigendian )
+      : value(_value), addr(_addr), size(_size), alignment(_alignment), bigendian(_bigendian)
+    {}
+      
+    virtual int GenCode( Label& label, Variables& vars, std::ostream& sink ) const;
+    unsigned bitsize() const { return 1<<size; }
+    virtual void Repr( std::ostream& sink ) const;
+    intptr_t cmp( ExprNode const& brhs ) const
+    {
+      Store const& rhs = dynamic_cast<Store const&>( brhs );
+      if (intptr_t delta = value.cmp( rhs.value )) return delta;
+      if (intptr_t delta = addr.cmp( rhs.addr )) return delta;
+      if (intptr_t delta = int(size - rhs.size)) return delta;
+      if (intptr_t delta = int(alignment - rhs.alignment)) return delta;
+      return (int(bigendian) - int(rhs.bigendian));
+    }
+    virtual unsigned SubCount() const { return 2; }
+    virtual Expr const& GetSub(unsigned idx) const { switch (idx) { case 0: return addr; case 1: return value; } return ExprNode::GetSub(idx); }
+      
+    Expr value, addr;
+    uint32_t size      :  4; // (log2) [1,2,4,8,...,32768] bytes
+    uint32_t alignment :  4; // (log2) [1,2,4,8,...,32768] bytes
+    uint32_t bigendian :  1; // 0=little-endian
+    uint32_t reserved  : 23; // reserved
   };
     
 } /* end of namespace binsec */

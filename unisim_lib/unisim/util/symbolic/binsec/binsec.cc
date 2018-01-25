@@ -60,13 +60,6 @@ namespace binsec {
   }
 
   int
-  RegWrite::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
-  {
-    sink << GetRegName() << "<" << std::dec << bitsize << "> := " << GetCode(value, vars, label);
-    return 0;
-  }
-
-  int
   ASExprNode::GenerateCode(Expr const& expr, Variables& vars, Label& label, std::ostream& sink)
   {
     /*** Pre expression process ***/
@@ -242,6 +235,61 @@ namespace binsec {
     return 0;
   }
 
+  int
+  RegRead::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
+  {
+    sink << GetRegName() << "<" << bitsize << ">";
+    return bitsize;
+  }
+  
+  void
+  RegRead::Repr( std::ostream& sink ) const
+  {
+    sink << GetRegName();
+  }
+  
+  int
+  RegWrite::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
+  {
+    sink << GetRegName() << "<" << std::dec << bitsize << "> := " << GetCode(value, vars, label);
+    return 0;
+  }
+  
+  void
+  RegWrite::Repr( std::ostream& sink ) const
+  {
+    sink << GetRegName() << " := "; value->Repr(sink);
+  }
+  
+  int
+  Load::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
+  {
+    /* TODO: exploit alignment info */
+    sink << "@[" << GetCode(addr, vars, label) << ',' << (bigendian?"->":"<-") << ',' << bitsize() << "]";
+    return 8*bitsize();
+  }
+
+  void
+  Load::Repr( std::ostream& sink ) const
+  {
+    sink << "[" << GetRepr(addr) << ',' << bitsize() << ",^" << alignment << ',' << (bigendian ? "be" : "le") << "]";
+  }
+  
+  int
+  Store::GenCode( Label& label, Variables& vars, std::ostream& sink ) const
+  {
+    /* TODO: exploit alignment info */
+    sink << "@[" << GetCode(addr, vars, label) << ',' << (bigendian?"->":"<-") << ',' << bitsize() << "] := " << GetCode(value, vars, label);
+    return 0;
+  }
+
+  void
+  Store::Repr( std::ostream& sink ) const
+  {
+    sink << "[" << GetRepr(addr) << ',' << size << ",^" << alignment << ',' << (bigendian ? "be" : "le") << "] := " << GetRepr(value);
+  }
+  
+      
   void
   Program::Generate( ActionNode const* action_tree )
   {

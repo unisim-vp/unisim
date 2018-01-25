@@ -7,6 +7,10 @@
 
 struct Processor
 {
+  //   =====================================================================
+  //   =                             Data Types                            =
+  //   =====================================================================
+    
   typedef unisim::util::symbolic::SmartValue<double>   F64;
   typedef unisim::util::symbolic::SmartValue<float>    F32;
   typedef unisim::util::symbolic::SmartValue<bool>     BOOL;
@@ -19,10 +23,54 @@ struct Processor
   typedef unisim::util::symbolic::SmartValue<int32_t>  S32;
   typedef unisim::util::symbolic::SmartValue<int64_t>  S64;
     
-  typedef unisim::util::symbolic::FP         FP;
-  typedef unisim::util::symbolic::Expr       Expr;
-  typedef unisim::util::symbolic::ActionNode ActionNode;
+  typedef unisim::util::symbolic::FP                   FP;
+  typedef unisim::util::symbolic::Expr                 Expr;
+  typedef unisim::util::symbolic::ActionNode           ActionNode;
 
+  typedef unisim::util::symbolic::binsec::Load         Load;
+  typedef unisim::util::symbolic::binsec::Store        Store;
+  typedef unisim::util::symbolic::binsec::Branch       Branch;
+  
+  template <typename RID>
+  struct RegRead : public unisim::util::symbolic::binsec::RegRead
+  {
+    typedef unisim::util::symbolic::binsec::RegRead Super;
+    RegRead( RID _id, unsigned _bitsize ) : Super(_bitsize), id(_id) {}
+    
+    virtual char const* GetRegName() const { return id.c_str(); }
+    virtual intptr_t cmp( ExprNode const& brhs ) const { return id.cmp( dynamic_cast<RegRead const&>( brhs ).id ); }
+    unsigned bitsize;
+    RID id;
+  };
+
+  template <typename RID>
+  static RegRead<RID>* newRegRead( RID id, unsigned bitsize ) { return new RegRead<RID>( id, bitsize ); }
+
+  template <typename RID>
+  struct RegWrite : public unisim::util::symbolic::binsec::RegWrite
+  {
+    typedef unisim::util::symbolic::binsec::RegWrite Super;
+    RegWrite( RID _id, Expr const& _value, unsigned _bitsize ) : Super(_value, _bitsize), id(_id) {}
+    virtual intptr_t cmp( ExprNode const& brhs ) const
+    { if (intptr_t delta = id.cmp( dynamic_cast<RegWrite const&>( brhs ).id )) return delta; return Super::cmp( brhs ); }
+    virtual char const* GetRegName() const { return id.c_str(); }
+    RID id;
+  };
+  
+  template <typename RID>
+  static RegWrite<RID>* newRegWrite( RID id, Expr const& value, unsigned bitsize )
+  { return new RegWrite<RID>( id, value, bitsize ); }
+  
+  struct PCWrite : public unisim::util::symbolic::binsec::Branch
+  {
+    PCWrite( Expr const& value, unisim::util::symbolic::binsec::Branch::type_t bt ) : Branch( value, 64, bt ) {}
+    virtual char const* GetRegName() const { return "pc"; }
+  };
+  
+  //   =====================================================================
+  //   =                      Construction/Destruction                     =
+  //   =====================================================================
+    
   struct StatusRegister
   {
     typedef unisim::util::symbolic::Expr       Expr;
@@ -35,15 +83,45 @@ struct Processor
     , flags()
     , current_instruction_address(insn_addr)
     , next_instruction_address(insn_addr + U64(4))
-    , branch_type(unisim::util::symbolic::binsec::Branch::Jump)
+    , branch_type(Branch::Jump)
+    , stores()
     , unpredictable( false )
   {
     for (GPR reg; reg.next();)
       gpr[reg.idx()] = newRegRead(reg, 64);
     for (Flag flag; flag.next();)
-      gpr[flag.idx()] = newRegRead(flag, 1);
+      flags[flag.idx()] = newRegRead(flag, 1);
+  }
+  
+  bool
+  close( Processor const& ref )
+  {
+    bool complete = path->close();
+    path->sinks.insert( Expr( new PCWrite( next_instruction_address.expr, branch_type ) ) );
+    if (unpredictable)
+      {
+        path->sinks.insert( Expr( new unisim::util::symbolic::binsec::AssertFalse() ) );
+        return complete;
+      }
+    
+    for (GPR reg; reg.next();)
+      if (gpr[reg.idx()] != ref.gpr[reg.idx()])
+        path->sinks.insert( Expr( newRegWrite( reg, gpr[reg.idx()], 64 ) ) );
+    
+    for (Flag flag; flag.next();)
+      if (flags[flag.idx()] != ref.flags[flag.idx()])
+        path->sinks.insert( Expr( newRegWrite( flag, flags[flag.idx()], 64 ) ) );
+
+    for (std::set<Expr>::const_iterator itr = stores.begin(), end = stores.end(); itr != end; ++itr)
+      path->sinks.insert( *itr );
+    
+    return complete;
   }
 
+  //   =====================================================================
+  //   =                 Internal Instruction Control Flow                 =
+  //   =====================================================================
+    
   template <typename OPER>
   void UndefinedInstruction(OPER const*) { throw unisim::component::cxx::processor::arm::isa::Reject(); }
     
@@ -73,6 +151,22 @@ struct Processor
   template <typename T>
   void SetGZR(unsigned id, unisim::util::symbolic::SmartValue<T> const& val) { if (id == 31) return; gpr[id] = U64(val).expr; }
   
+  //   =====================================================================
+  //   =                  Arithmetic Flags access methods                  =
+  //   =====================================================================
+  void SetNZCV(BOOL const& N, BOOL const& Z, BOOL const& C, BOOL const& V)
+  {
+    flags[3] = N.expr; flags[2] = Z.expr; flags[1] = C.expr; flags[0] = V.expr;
+  }
+  U8   GetNZCV() const
+  {
+    U8 res = U8(BOOL(flags[0]));
+    for (int idx = 1; idx < 4; ++idx)
+      res = res | (U8(BOOL(flags[idx])) << idx );
+    return res;
+  }
+  BOOL GetCarry() const { return BOOL(flags[1]); }
+    
   //   ====================================================================
   //   =                 Vector  Registers access methods                 
   //   ====================================================================
@@ -110,19 +204,6 @@ struct Processor
   //   =              Special/System Registers access methods              =
   //   =====================================================================
 
-  void SetNZCV(BOOL const& N, BOOL const& Z, BOOL const& C, BOOL const& V)
-  {
-    flags[3] = N.expr; flags[2] = Z.expr; flags[1] = C.expr; flags[0] = V.expr;
-  }
-  U8   GetNZCV() const
-  {
-    U8 res = U8(BOOL(flags[0]));
-    for (int idx = 1; idx < 4; ++idx)
-      res = res | (U8(BOOL(flags[idx])) << idx );
-    return res;
-  }
-  BOOL GetCarry() const { return BOOL(flags[1]); }
-    
   U64  GetPC() const { return current_instruction_address; }
   U64  GetNPC() const { return next_instruction_address; }
 
@@ -131,67 +212,42 @@ struct Processor
   void        WriteSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2, U64 value ) { throw 0; }
   char const* DescribeSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 ) { throw 0; return "???"; }
   char const* NameSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 ) { throw 0; return "???"; }
-  //   char const* NameSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
   
   //   =====================================================================
   //   =                      Control Transfer methods                     =
   //   =====================================================================
   
-  // Set the next Program Counter
   enum branch_type_t { B_JMP = 0, B_CALL, B_RET };
-  void BranchTo(U64 const& npc, branch_type_t branch_type) const {}
+  void BranchTo(U64 const& npc, branch_type_t bt)
+  {
+    next_instruction_address = npc;
+    branch_type = (bt == B_CALL) ? Branch::Call : (bt == B_RET) ? Branch::Return : Branch::Jump;
+  }
   
   void CallSupervisor( uint16_t imm ) { throw 0;  }
   
   //   =====================================================================
   //   =                       Memory access methods                       =
   //   =====================================================================
-    
-  // template <typename T>
-  // T
-  // MemReadT(U64 addr)
-  // {
-  //   unsigned const size = sizeof (T);
-  //   U8 buffer[size];
-  //   MemRead( &buffer[0], addr, size );
-  //   T res(0);
-  //   for (unsigned idx = size; --idx < size; )
-  //     res = (res << 8) | T(buffer[idx]);
-  //   return res;
-  // }
-
-  U64 MemRead64(U64 addr) { return U64(0); }
-  U32 MemRead32(U64 addr) { return U32(0); }
-  U16 MemRead16(U64 addr) { return U16(0); }
-  U8  MemRead8 (U64 addr) { return U8 (0); }
-    
-  // void MemRead( U8* buffer, U64 addr, unsigned size );
   
-  // template <typename T>
-  // void
-  // MemWriteT(U64 addr, T val)
-  // {
-  //   unsigned const size = sizeof (T);
-  //   U8 buffer[size];
-  //   for (unsigned idx = 0; idx < size; ++idx)
-  //     { buffer[idx] = val; val >>= 8; }
-  //   MemWrite( addr, &buffer[0], size );
-  // }
+  U64  MemRead64(U64 addr) { return U64( Expr( new Load( addr.expr, 3, 0, false ) ) ); }
+  U32  MemRead32(U64 addr) { return U32( Expr( new Load( addr.expr, 2, 0, false ) )); }
+  U16  MemRead16(U64 addr) { return U16( Expr( new Load( addr.expr, 1, 0, false ) ) ); }
+  U8   MemRead8 (U64 addr) { return U8 ( Expr( new Load( addr.expr, 0, 0, false ) ) ); }
     
-  void MemWrite64(U64 addr, U64 val) {  }
-  void MemWrite32(U64 addr, U32 val) {  }
-  void MemWrite16(U64 addr, U16 val) {  }
-  void MemWrite8 (U64 addr, U8  val) {  }
+  void MemWrite64(U64 addr, U64 value) { stores.insert( new Store( addr.expr, value.expr, 3, 0, false ) ); }
+  void MemWrite32(U64 addr, U32 value) { stores.insert( new Store( addr.expr, value.expr, 2, 0, false ) ); }
+  void MemWrite16(U64 addr, U16 value) { stores.insert( new Store( addr.expr, value.expr, 1, 0, false ) ); }
+  void MemWrite8 (U64 addr, U8  value) { stores.insert( new Store( addr.expr, value.expr, 0, 0, false ) ); }
     
-  // void MemWrite( U64 addr, U8 const* buffer, unsigned size );
-
   void ClearExclusiveLocal() { throw 0; }
   void SetExclusiveMonitors( U64, unsigned size ) { throw 0; }
   bool ExclusiveMonitorsPass( U64 addr, unsigned size ) { throw 0; }
   
-  //   virtual SysReg&  GetSystemRegister( uint8_t op0, uint8_t op1, uint8_t crn, uint8_t crm, uint8_t op2 );
-  //   virtual void     ResetSystemRegisters();
-
+  //   =====================================================================
+  //   =                         Processor Storage                         =
+  //   =====================================================================
+  
   struct GPR : public unisim::util::symbolic::Identifier<GPR>
   {
     enum Code
@@ -230,75 +286,14 @@ struct Processor
     Flag( char const* _code ) : code(end) { init( _code ); }
   };
 
-  template <typename RID>
-  struct RegRead : public unisim::util::symbolic::binsec::ASExprNode
-  {
-    RegRead( RID _id, unsigned _bitsize ) : bitsize(_bitsize), id(_id) {}
-    virtual unsigned SubCount() const { return 0; }
-    virtual intptr_t cmp( ExprNode const& brhs ) const { return id.cmp( dynamic_cast<RegRead const&>( brhs ).id ); }
-    virtual int GenCode( unisim::util::symbolic::binsec::Label& label, unisim::util::symbolic::binsec::Variables& vars, std::ostream& sink ) const
-    { sink << id.c_str() << "<" << bitsize << ">"; return bitsize; }
-    virtual void Repr( std::ostream& sink ) const { sink << id.c_str(); }
-    unsigned bitsize;
-    RID id;
-  };
-
-  template <typename RID>
-  static RegRead<RID>* newRegRead( RID id, unsigned bitsize ) { return new RegRead<RID>( id, bitsize ); }
-
-  template <typename RID>
-  struct RegWrite : public unisim::util::symbolic::binsec::RegWrite
-  {
-    RegWrite( RID _id, Expr const& _value, unsigned _bitsize ) : unisim::util::symbolic::binsec::RegWrite(_value, _bitsize), id(_id) {}
-
-    virtual intptr_t cmp( ExprNode const& brhs ) const
-    {
-      if (intptr_t delta = id.cmp( dynamic_cast<RegWrite const&>( brhs ).id )) return delta;
-      return this->unisim::util::symbolic::binsec::RegWrite::cmp( brhs );
-    }
-
-    virtual char const* GetRegName() const { return id.c_str(); }
-
-    RID id;
-  };
-  
-  template <typename RID>
-  static RegWrite<RID>* newRegWrite( RID id, Expr const& value, unsigned bitsize )
-  { return new RegWrite<RID>( id, value, bitsize ); }
-  
-  struct PCWrite : public unisim::util::symbolic::binsec::Branch
-  {
-    PCWrite( Expr const& value, unisim::util::symbolic::binsec::Branch::type_t bt ) : Branch( value, 64, bt ) {}
-    virtual char const* GetRegName() const { return "pc"; }
-  };
-  
-  bool
-  close( Processor const& ref )
-  {
-    bool complete = path->close();
-    path->sinks.insert( Expr( new PCWrite( next_instruction_address.expr, branch_type ) ) );
-    if (unpredictable)
-      {
-        path->sinks.insert( Expr( new unisim::util::symbolic::binsec::AssertFalse() ) );
-        return complete;
-      }
-    for (GPR reg; reg.next();)
-      if (gpr[reg.idx()] != ref.gpr[reg.idx()])
-        path->sinks.insert( Expr( newRegWrite( reg, gpr[reg.idx()], 64 ) ) );
-    for (Flag flag; flag.next();)
-      if (flags[flag.idx()] != ref.flags[flag.idx()])
-        path->sinks.insert( Expr( newRegWrite( flag, flags[flag.idx()], 64 ) ) );
-    
-    return complete;
-  }
-
-  ActionNode* path;
-  Expr gpr[GPR::end];
-  Expr flags[Flag::end];
-  U64  current_instruction_address;
-  U64  next_instruction_address;
-  unisim::util::symbolic::binsec::Branch::type_t branch_type;
-  bool unpredictable;
+  ActionNode*      path;
+  Expr             gpr[GPR::end];
+  Expr             flags[Flag::end];
+  U64              current_instruction_address;
+  U64              next_instruction_address;
+  Branch::type_t   branch_type;
+  std::set<Expr>   stores;
+  bool             unpredictable;
 };
 
 struct Translator
@@ -316,7 +311,7 @@ struct Translator
   void
   translate( std::ostream& sink )
   {
-    sink << "(address . " << unisim::util::symbolic::binsec::dbx( 64, addr ) << ")\n";
+    sink << "(address . " << unisim::util::symbolic::binsec::dbx(8, addr) << ")\n";
     sink << "(opcode . " << unisim::util::symbolic::binsec::dbx(4, code) << ")\n";
     sink << "(size . 4)\n";
     
@@ -375,6 +370,13 @@ struct Translator
         sink << "(unimplemented)\n";
         return;
       }
+
+    // Translate to DBA
+    unisim::util::symbolic::binsec::Program program;
+    program.Generate( coderoot );
+    typedef unisim::util::symbolic::binsec::Program::const_iterator Iterator;
+    for (Iterator itr = program.begin(), end = program.end(); itr != end; ++itr)
+      sink << "(" << unisim::util::symbolic::binsec::dbx(8, addr) << ',' << itr->first << ") " << itr->second << std::endl;
   }
 
   Processor::StatusRegister status;
