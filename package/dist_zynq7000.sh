@@ -374,6 +374,7 @@ unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh \
 unisim/component/cxx/processor/arm/psr.hh \
 unisim/component/cxx/processor/arm/register_field.hh \
 unisim/component/cxx/processor/arm/cpu.hh \
+unisim/component/cxx/processor/arm/memattrs.hh \
 unisim/component/cxx/processor/arm/vmsav7/cpu.hh \
 unisim/component/cxx/processor/arm/cp15.hh \
 unisim/component/cxx/processor/arm/vmsav7/cp15.hh \

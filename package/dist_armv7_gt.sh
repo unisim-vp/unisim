@@ -416,6 +416,7 @@ unisim/component/tlm2/interconnect/generic_router/router.hh \
 unisim/component/cxx/processor/arm/psr.hh \
 unisim/component/cxx/processor/arm/register_field.hh \
 unisim/component/cxx/processor/arm/cpu.hh \
+unisim/component/cxx/processor/arm/memattrs.hh \
 unisim/component/cxx/processor/arm/vmsav7/cpu.hh \
 unisim/component/cxx/processor/arm/cache.hh \
 unisim/component/cxx/processor/arm/cp15.hh \
