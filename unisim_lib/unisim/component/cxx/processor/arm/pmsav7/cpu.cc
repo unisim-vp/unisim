@@ -254,7 +254,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
                     
   // There is no data cache or data should not be cached.
   // Just send the request to the memory interface
-  if (not PrWrite( write_addr, data, size )) {
+  if (not PhysicalWriteMemory( write_addr, data, size )) {
     DataAbort( addr, mat_write, DAbort_SyncExternal );
   }
   
@@ -308,7 +308,7 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
   uint8_t data[4];
 
   // just read the data from the memory system
-  if (not PrRead(read_addr, &data[0], size)) {
+  if (not PhysicalReadMemory(read_addr, &data[0], size)) {
     DataAbort( addr, mat_read, DAbort_SyncExternal );
   }
   
@@ -470,7 +470,7 @@ CPU::InjectReadMemory( uint32_t addr, void* buffer, uint32_t size )
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       uint32_t ef_addr = addr + index;
-      if (not PrRead(ef_addr, &rbuffer[index], 1))
+      if (not PhysicalReadMemory(ef_addr, &rbuffer[index], 1))
         return false;
     }
   
@@ -494,7 +494,7 @@ CPU::InjectWriteMemory( uint32_t addr, void const* buffer, uint32_t size )
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       uint32_t ef_addr = addr + index;
-      if (not PrWrite( ef_addr, &wbuffer[index], 1 ))
+      if (not PhysicalWriteMemory( ef_addr, &wbuffer[index], 1 ))
         return false;
     }
 
@@ -661,7 +661,7 @@ CPU::RefillInsnPrefetchBuffer(uint32_t base_address)
   
   CheckPermissions( base_address, cpsr.Get(M) != USER_MODE, mat_exec, IPB_LINE_SIZE );
   
-  if (not PrRead(base_address, &this->ipb_bytes[0], IPB_LINE_SIZE)) {
+  if (not PhysicalReadMemory(base_address, &this->ipb_bytes[0], IPB_LINE_SIZE)) {
     DataAbort( base_address, mat_exec, DAbort_SyncExternal );
   }
 

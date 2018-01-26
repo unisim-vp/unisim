@@ -498,8 +498,8 @@ private:
   unisim::component::cxx::processor::arm::isa::arm64::Decoder<CPU> decoder;
   
   // Intrusive memory accesses
-  virtual bool              PrRead( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
-  virtual bool             PrWrite( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
+  virtual bool  PhysicalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
+  virtual bool PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;
   // Non-itrusive memory accesses
   virtual bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size ) = 0;
   virtual bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size ) = 0;

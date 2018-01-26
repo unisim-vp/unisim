@@ -163,8 +163,8 @@ struct CPU
   typedef unisim::util::cache::CacheHierarchy<MSSConfig, L1D> DATA_CACHE_HIERARCHY;
   typedef unisim::util::cache::CacheHierarchy<MSSConfig, L1I> INSTRUCTION_CACHE_HIERARCHY;
 
-  // virtual bool PrWrite(uint32_t addr, const uint8_t* buffer, uint32_t size) { return DataStore(addr, buffer, size); }
-  // virtual bool PrRead(uint32_t addr, uint8_t* buffer, uint32_t size) { return DataLoad(addr, buffer, size); }
+  // virtual bool PhysicalWriteMemory(uint32_t addr, const uint8_t* buffer, uint32_t size) { return DataStore(addr, buffer, size); }
+  // virtual bool PhysicalReadMemory(uint32_t addr, uint8_t* buffer, uint32_t size) { return DataLoad(addr, buffer, size); }
 	
   // virtual bool ExternalReadMemory(uint32_t addr, void* buffer, uint32_t size) { return DebugDataLoad(addr, buffer, size); }
   // virtual bool ExternalWriteMemory(uint32_t addr, void const* buffer, uint32_t size) { return DebugDataStore(addr, buffer, size); }

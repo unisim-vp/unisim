@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009,
+ *  Copyright (c) 2013-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,36 +29,43 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
-#define __STDC_CONSTANT_MACROS
-#include <systemc>
-#include "unisim/kernel/service/service.hh"
-#include "unisim/component/tlm2/processor/arm/arm9tdmi/arm9tdmi.hh"
-#include "unisim/component/tlm2/processor/arm/arm.tcc"
+
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_MEMORY_ATTRIBUTES_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_MEMORY_ATTRIBUTES_HH__
+
+#include <unisim/component/cxx/processor/arm/register_field.hh>
+#include <inttypes.h>
 
 namespace unisim {
 namespace component {
-namespace tlm2 {
+namespace cxx {
 namespace processor {
 namespace arm {
-namespace arm9tdmi {
 
-ARM9TDMI ::
-ARM9TDMI(const sc_module_name& name, unisim::kernel::service::Object* parent) :
-	unisim::kernel::service::Object(name, parent),
-	ARM<unisim::component::cxx::processor::arm::ARM9TDMI_Config, true>(name, parent)
-{
-}
-
-ARM9TDMI ::
-~ARM9TDMI()
-{}
-
-} // end of namespace arm9tdmi
+  /*** Memory Attributes ***/
+  struct MemAttrs
+  {
+    enum type_t { Normal, Device, StronglyOrdered };
+    enum attr_t { Non_cacheable = 0b00, Write_Through = 0b10, Write_Back = 0b11 /* 0b01: RESERVED */ };
+    enum hint_t { No_Allocate = 0b00, Write_Allocate = 0b01, Read_Allocate = 0b10, RW_Allocate = 0b11 };
+    
+    typedef RegisterField< 0,2> type;
+    typedef RegisterField< 2,2> innerattrs;
+    typedef RegisterField< 4,2> outerattrs;
+    typedef RegisterField< 6,2> innerhints;
+    typedef RegisterField< 8,2> outerhints;
+    typedef RegisterField<10,1> innertransient;
+    typedef RegisterField<11,1> outertransient;
+    typedef RegisterField<12,1> shareable;
+    typedef RegisterField<13,1> outershareable;
+  };
+  
 } // end of namespace arm
 } // end of namespace processor
-} // end of namespace tlm2
+} // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
+
+#endif /* __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_MEMORY_ATTRIBUTES_HH__ */

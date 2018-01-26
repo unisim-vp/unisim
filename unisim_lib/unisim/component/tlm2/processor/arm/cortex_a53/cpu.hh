@@ -111,7 +111,7 @@ private:
    **************************/
 
   /** Event used to signalize the end of a read transaction.
-   * Method PrRead waits for this event once the read transaction has been 
+   * Method PhysicalReadMemory waits for this event once the read transaction has been 
    *   sent, and the nb_transport_bw notifies on it when the read transaction 
    *   is finished. 
    */
@@ -151,8 +151,8 @@ private:
   void         BusSynchronize();
 
   // Intrusive memory accesses
-  virtual bool              PrRead( uint64_t addr, uint8_t*       buffer, unsigned size );
-  virtual bool             PrWrite( uint64_t addr, uint8_t const* buffer, unsigned size );
+  virtual bool  PhysicalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size );
+  virtual bool PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size );
   // Non-itrusive memory accesses
   virtual bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size );
   virtual bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size );

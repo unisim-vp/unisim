@@ -497,7 +497,7 @@ CPU::nb_transport_bw (transaction_type& trans, phase_type& phase, sc_core::sc_ti
       /* Starting the response phase.
        * If the request is a write report an error and stop, we should not have received it.
        * The target has initiated the response to a read request, compute when the request can
-       *   be completely accepted and send a TLM_COMPLETED back. Send an event to the PrRead
+       *   be completely accepted and send a TLM_COMPLETED back. Send an event to the PhysicalReadMemory
        *   method to unlock the thread that originated the read transaction (using the end_read_event).
        */
       trans.acquire();
@@ -702,11 +702,11 @@ CPU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
  * @param size    the size of the read
  */
 bool
-CPU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
+CPU::PhysicalReadMemory(uint32_t addr, uint8_t *buffer, uint32_t size)
 {
   if (unlikely(verbose_tlm))
     PCPU::logger << DebugInfo
-      << "Starting PrRead:" << std::endl
+      << "Starting PhysicalReadMemory:" << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
       << " - quantum_time = " << quantum_time
       << EndDebugInfo;
@@ -783,7 +783,7 @@ CPU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
 
   if ( unlikely(verbose_tlm) )
     PCPU::logger << DebugInfo
-      << "Finished PrRead:" << std::endl
+      << "Finished PhysicalReadMemory:" << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
       << " - quantum_time = " << quantum_time
       << EndDebugInfo;
@@ -792,11 +792,11 @@ CPU::PrRead(uint32_t addr, uint8_t *buffer, uint32_t size)
 }
 
 bool
-CPU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
+CPU::PhysicalWriteMemory(uint32_t addr, const uint8_t *buffer, uint32_t size)
 {
   if ( unlikely(verbose_tlm) )
     PCPU::logger << DebugInfo
-      << "Starting PrWrite:" << std::endl
+      << "Starting PhysicalWriteMemory:" << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
       << " - quantum_time = " << quantum_time
       << EndDebugInfo;
@@ -870,7 +870,7 @@ CPU::PrWrite(uint32_t addr, const uint8_t *buffer, uint32_t size)
 
   if ( unlikely(verbose_tlm) )
     PCPU::logger << DebugInfo
-      << "Finished PrWrite:" << std::endl
+      << "Finished PhysicalWriteMemory:" << std::endl
       << " - cpu_time     = " << cpu_time << std::endl
       << " - quantum_time = " << quantum_time
       << EndDebugInfo;
