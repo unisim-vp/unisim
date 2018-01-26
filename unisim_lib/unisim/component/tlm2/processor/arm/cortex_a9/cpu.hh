@@ -135,8 +135,8 @@ public:
 
   virtual void Reset();
 	
-  virtual bool PhysicalWriteMemory(uint32_t addr, const uint8_t *buffer, uint32_t size);
-  virtual bool PhysicalReadMemory(uint32_t addr, uint8_t *buffer, uint32_t size);
+  virtual bool PhysicalWriteMemory(uint32_t addr, const uint8_t *buffer, uint32_t size, uint32_t attrs);
+  virtual bool PhysicalReadMemory(uint32_t addr, uint8_t *buffer, uint32_t size, uint32_t attrs);
 	
   void SetCycleTime( sc_core::sc_time const& cycle_time );
   void SetBusCycleTime( sc_core::sc_time const& cycle_time );

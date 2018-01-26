@@ -651,7 +651,7 @@ CPU::ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
  * @param size    the size of the read
  */
 bool
-CPU::PhysicalReadMemory(uint32_t addr, uint8_t *buffer, uint32_t size)
+CPU::PhysicalReadMemory(uint32_t addr, uint8_t *buffer, uint32_t size, uint32_t attrs)
 {
   if ( unlikely(verbose_tlm) )
     PCPU::logger << DebugInfo
@@ -742,7 +742,7 @@ CPU::PhysicalReadMemory(uint32_t addr, uint8_t *buffer, uint32_t size)
 }
 
 bool
-CPU::PhysicalWriteMemory(uint32_t addr, const uint8_t *buffer, uint32_t size)
+CPU::PhysicalWriteMemory(uint32_t addr, const uint8_t *buffer, uint32_t size, uint32_t attrs)
 {
   if ( unlikely(verbose_tlm) )
     PCPU::logger << DebugInfo

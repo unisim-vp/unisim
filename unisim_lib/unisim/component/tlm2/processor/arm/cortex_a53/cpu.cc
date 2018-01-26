@@ -333,7 +333,7 @@ CPU::BusSynchronize()
  * @param size    the size of the read
  */
 bool
-CPU::PhysicalReadMemory( uint64_t addr, uint8_t* buffer, unsigned size )
+CPU::PhysicalReadMemory( uint64_t addr, uint8_t* buffer, unsigned size, uint32_t attrs )
 {
   /* Use blocking transactions.
    * Steps:
@@ -419,7 +419,7 @@ CPU::PhysicalReadMemory( uint64_t addr, uint8_t* buffer, unsigned size )
   
 
 bool
-CPU::PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size )
+CPU::PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size, uint32_t attrs )
 {
   if ( unlikely(verbose_tlm) )
     PCPU::logger << DebugInfo

@@ -462,7 +462,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
   
   // There is no data cache or data should not be cached.
   // Just send the request to the memory interface
-  if (not PhysicalWriteMemory( write_addr, data, size )) {
+  if (not PhysicalWriteMemory( write_addr, data, size, 0 )) {
     // TODO: domain assigned with a regular value ?
     DataAbort(addr, write_addr, 0, 0, mat_write, DAbort_SyncExternal, false, false, true, false, false);
   }
@@ -525,7 +525,7 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
   uint8_t data[4];
 
   // just read the data from the memory system
-  if (not PhysicalReadMemory(read_addr, &data[0], size)) {
+  if (not PhysicalReadMemory(read_addr, &data[0], size, 0)) {
     DataAbort(addr, read_addr, 0, 0, mat_read, DAbort_SyncExternal, false, false, true, false, false);
   }
 
@@ -685,7 +685,7 @@ CPU::InjectReadMemory( uint32_t addr, void* buffer, uint32_t size )
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       uint32_t ef_addr = addr + index;
-      if (not PhysicalReadMemory(ef_addr, &rbuffer[index], 1))
+      if (not PhysicalReadMemory(ef_addr, &rbuffer[index], 1, 0))
         return false;
     }
 
@@ -709,7 +709,7 @@ CPU::InjectWriteMemory( uint32_t addr, void const* buffer, uint32_t size )
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       uint32_t ef_addr = addr + index;
-      if (not PhysicalWriteMemory( ef_addr, &wbuffer[index], 1 ))
+      if (not PhysicalWriteMemory( ef_addr, &wbuffer[index], 1, 0 ))
         return false;
     }
 
@@ -913,7 +913,7 @@ CPU::RefillInsnPrefetchBuffer(uint32_t mva, uint32_t base_address)
   
   // No instruction cache present, just request the insn to the
   // memory system.
-  if (not PhysicalReadMemory(base_address, &this->ipb_bytes[0], IPB_LINE_SIZE)) {
+  if (not PhysicalReadMemory(base_address, &this->ipb_bytes[0], IPB_LINE_SIZE, 0)) {
     DataAbort(mva, base_address, 0, 0, mat_exec, DAbort_SyncExternal, false, false, true, false, false);
   }
   
@@ -1333,7 +1333,7 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
   {
     bool success;
     if (POLICY::DEBUG) success = ExternalReadMemory( l1descaddr, erd.data(), 4 );
-    else               success = PhysicalReadMemory( l1descaddr, erd.data(), 4 );
+    else               success = PhysicalReadMemory( l1descaddr, erd.data(), 4, 0 );
     if (not success)
       DataAbort(l1descaddr, l1descaddr, 0, 0, mat_read, DAbort_SyncExternalonWalk, false, false, false, false, false);
   }
@@ -1355,7 +1355,7 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
     {
       bool success;
       if (POLICY::DEBUG) success = ExternalReadMemory( l2descaddr, erd.data(), 4 );
-      else               success = PhysicalReadMemory( l2descaddr, erd.data(), 4 );
+      else               success = PhysicalReadMemory( l2descaddr, erd.data(), 4, 0 );
       if (not success)
         DataAbort(l2descaddr, 0, tad.domain, 0, mat_read, DAbort_SyncExternalonWalk, false,false,false,false,false);
     }
