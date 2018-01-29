@@ -349,6 +349,7 @@ namespace simfloat {
     void ToBytes( uint8_t* bytes ) const;
     void FromBytes( uint8_t const* bytes );
     void SquareRoot( Flags& rpParams );
+    ComparisonResult compare( SoftDouble const& sdSource ) const;
     
   private:
     typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<SoftDoubleTraits> inherited;
@@ -373,6 +374,7 @@ namespace simfloat {
     void ToBytes( uint8_t* bytes ) const;
     void FromBytes( uint8_t const* bytes ); 
     void SquareRoot( Flags& rpParams );
+    ComparisonResult compare( SoftFloat const& sfSource ) const;
     
   private:
     typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<SoftFloatTraits> inherited;

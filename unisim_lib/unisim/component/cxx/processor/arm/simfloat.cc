@@ -73,6 +73,12 @@ namespace simfloat {
   {
     Sqrt( *this, flags );
   }
+  SoftDouble::ComparisonResult
+  SoftDouble::compare( SoftDouble const& sdSource ) const
+  {
+    return inherited::compare( sdSource );
+  }
+  
   void
   SoftFloat::ToBytes( uint8_t* bytes ) const
   {
@@ -88,6 +94,12 @@ namespace simfloat {
   {
     Sqrt( *this, flags );
   }
+  SoftFloat::ComparisonResult
+  SoftFloat::compare( SoftFloat const& sfSource ) const
+  {
+    return inherited::compare( sfSource );
+  }
+  
 
   FloatingPointRegisterInterface::FloatingPointRegisterInterface(const char *_name, SoftDouble *_value)
     : name(_name)
