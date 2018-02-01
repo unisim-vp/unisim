@@ -1057,23 +1057,23 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.PIT_1.reset_b"         , "HARDWARE.reset_b");
 	Bind("HARDWARE.PIT_1.debug"           , "HARDWARE.debug");
 	
-	Bind("HARDWARE.PIT_1.irq_2"           , "HARDWARE.pull_down");
-	Bind("HARDWARE.PIT_1.irq_3"           , "HARDWARE.pull_down");
-	Bind("HARDWARE.PIT_1.irq_4"           , "HARDWARE.pull_down");
-	Bind("HARDWARE.PIT_1.irq_5"           , "HARDWARE.pull_down");
-	Bind("HARDWARE.PIT_1.irq_6"           , "HARDWARE.pull_down");
-	Bind("HARDWARE.PIT_1.irq_7"           , "HARDWARE.pull_down");
+	Bind("HARDWARE.PIT_1.irq_2"           , "HARDWARE.unused");
+	Bind("HARDWARE.PIT_1.irq_3"           , "HARDWARE.unused");
+	Bind("HARDWARE.PIT_1.irq_4"           , "HARDWARE.unused");
+	Bind("HARDWARE.PIT_1.irq_5"           , "HARDWARE.unused");
+	Bind("HARDWARE.PIT_1.irq_6"           , "HARDWARE.unused");
+	Bind("HARDWARE.PIT_1.irq_7"           , "HARDWARE.unused");
 	
-	Bind("HARDWARE.PIT_1.rtirq"           , "HARDWARE.pull_down");
+	Bind("HARDWARE.PIT_1.rtirq"           , "HARDWARE.unused");
 
-	Bind("HARDWARE.PIT_1.dma_trigger_0"   , "HARDWARE.pull_down");
-	Bind("HARDWARE.PIT_1.dma_trigger_1"   , "HARDWARE.pull_down");
-	Bind("HARDWARE.PIT_1.dma_trigger_2"   , "HARDWARE.pull_down");
-	Bind("HARDWARE.PIT_1.dma_trigger_3"   , "HARDWARE.pull_down");
-	Bind("HARDWARE.PIT_1.dma_trigger_4"   , "HARDWARE.pull_down");
-	Bind("HARDWARE.PIT_1.dma_trigger_5"   , "HARDWARE.pull_down");
-	Bind("HARDWARE.PIT_1.dma_trigger_6"   , "HARDWARE.pull_down");
-	Bind("HARDWARE.PIT_1.dma_trigger_7"   , "HARDWARE.pull_down");
+	Bind("HARDWARE.PIT_1.dma_trigger_0"   , "HARDWARE.unused");
+	Bind("HARDWARE.PIT_1.dma_trigger_1"   , "HARDWARE.unused");
+	Bind("HARDWARE.PIT_1.dma_trigger_2"   , "HARDWARE.unused");
+	Bind("HARDWARE.PIT_1.dma_trigger_3"   , "HARDWARE.unused");
+	Bind("HARDWARE.PIT_1.dma_trigger_4"   , "HARDWARE.unused");
+	Bind("HARDWARE.PIT_1.dma_trigger_5"   , "HARDWARE.unused");
+	Bind("HARDWARE.PIT_1.dma_trigger_6"   , "HARDWARE.unused");
+	Bind("HARDWARE.PIT_1.dma_trigger_7"   , "HARDWARE.unused");
 	
 	Bind("HARDWARE.LINFlexD_0.m_clk"    , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.LINFlexD_0.lin_clk"  , "HARDWARE.LIN_CLK");
@@ -3169,7 +3169,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*loader->memory_import[2]) >> main_core_0->memory_export;
 	(*loader->memory_import[3]) >> main_core_1->memory_export;
 	(*loader->memory_import[4]) >> peripheral_core_2->memory_export;
+	(*loader->memory_import[5]) >> ebi_stub->memory_export;
 	loader->registers_import >> peripheral_core_2->registers_export;
+	main_core_0->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
+	main_core_1->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 	peripheral_core_2->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 	
 	if(enable_serial_terminal0)
@@ -3386,17 +3389,17 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.LIN_CLK.lazy-clock", "true");
 	simulator->SetVariable("HARDWARE.LIN_CLK.clock-period", "12500 ps");      // LIN_CLK: 80 Mhz ((2/3) * LIN_CLK > PBRIDGEx_CLK > (1/3) * LIN_CLK)
 	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL0_CLK.lazy-clock", "true");
-	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL0_CLK.clock-period", "100000000 ps"); // SERIAL_TERMINAL0_CLK: 10000 baud
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL0_CLK.clock-period", "4340278 ps"); // SERIAL_TERMINAL0_CLK: 230400 baud
 	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL1_CLK.lazy-clock", "true");
-	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL1_CLK.clock-period", "100000000 ps"); // SERIAL_TERMINAL1_CLK: 10000 baud
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL1_CLK.clock-period", "4340278 ps"); // SERIAL_TERMINAL1_CLK: 230400 baud
 	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL2_CLK.lazy-clock", "true");
-	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL2_CLK.clock-period", "100000000 ps"); // SERIAL_TERMINAL2_CLK: 10000 baud
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL2_CLK.clock-period", "4340278 ps"); // SERIAL_TERMINAL2_CLK: 230400 baud
 	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL14_CLK.lazy-clock", "true");
-	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL14_CLK.clock-period", "100000000 ps"); // SERIAL_TERMINAL14_CLK: 10000 baud
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL14_CLK.clock-period", "4340278 ps"); // SERIAL_TERMINAL14_CLK: 230400 baud
 	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL15_CLK.lazy-clock", "true");
-	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL15_CLK.clock-period", "100000000 ps"); // SERIAL_TERMINAL15_CLK: 10000 baud
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL15_CLK.clock-period", "4340278 ps"); // SERIAL_TERMINAL15_CLK: 230400 baud
 	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL16_CLK.lazy-clock", "true");
-	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL16_CLK.clock-period", "100000000 ps"); // SERIAL_TERMINAL16_CLK: 10000 baud
+	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL16_CLK.clock-period", "4340278 ps"); // SERIAL_TERMINAL16_CLK: 230400 baud
 	
 	//  - e200 PowerPC cores
 
@@ -3484,6 +3487,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.XBAR_0.mapping_8",  "range_start=\"0x40000000\" range_end=\"0x401fffff\" output_port=\"4\" translation=\"0x0\"");        // System SRAM                             -> SYSTEM_SRAM (rel address)
 	simulator->SetVariable("HARDWARE.XBAR_0.mapping_9",  "range_start=\"0x52000000\" range_end=\"0x5fffffff\" output_port=\"7\" translation=\"0x52000000\""); // Peripheral_Core_2 Local Memory          -> XBAR_1 (abs address)
 	simulator->SetVariable("HARDWARE.XBAR_0.mapping_10", "range_start=\"0xf0000000\" range_end=\"0xffffffff\" output_port=\"7\" translation=\"0xf0000000\""); // Peripherals PBRIDGE_A, PBRIDGE_B        -> XBAR_1 (abs address)
+	simulator->SetVariable("HARDWARE.XBAR_0.mapping_11", "range_start=\"0x20000000\" range_end=\"0x2fffffff\" output_port=\"5\" translation=\"0x0\"");        // EBI                                     -> EBI (rel address)
 	
 	//  - XBAR_1
 	simulator->SetVariable("HARDWARE.XBAR_1.cycle_time", "10 ns");
@@ -3499,6 +3503,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.XBAR_1.mapping_9",  "range_start=\"0x52000000\" range_end=\"0x5fffffff\" output_port=\"1\" translation=\"0x0\"");        // Peripheral_Core_2 Local Memory  -> Peripheral_Core_2 (rel address)
 	simulator->SetVariable("HARDWARE.XBAR_1.mapping_10", "range_start=\"0xf0000000\" range_end=\"0xfbffffff\" output_port=\"2\" translation=\"0xf0000000\""); // PBRIDGE_B                       -> PBRIDGE_B (abs address)
 	simulator->SetVariable("HARDWARE.XBAR_1.mapping_11", "range_start=\"0xfc000000\" range_end=\"0xffffffff\" output_port=\"3\" translation=\"0xfc000000\""); // PBRIDGE_A                       -> PBRIDGE_B (abs address)
+	simulator->SetVariable("HARDWARE.XBAR_1.mapping_12", "range_start=\"0x20000000\" range_end=\"0x2fffffff\" output_port=\"0\" translation=\"0x20000000\""); // EBI                             -> XBAR_0 (abs address)
 	
 	//  - PBRIDGE_A
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.cycle_time", "20 ns");
@@ -3539,8 +3544,16 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.XBAR_1_M1_CONCENTRATOR.mapping_0", "range_start=\"0x0\" range_end=\"0xffffffff\" output_port=\"0\" translation=\"0x0\"");
 	
 	// - Loader
-	simulator->SetVariable("loader.filename", "baf.bin,soft/bin/Z4_2/flash_boot.elf,soft/bin/Z7_0/flash_boot.elf,soft/bin/Z7_1/flash_boot.elf");
-	simulator->SetVariable("loader.file0.base-addr", 0x00404000UL);
+	simulator->SetVariable("loader.filename", "baf.bin,soft/app/Z4_2/boot.elf,soft/app/Z7_0/boot.elf,soft/app/Z7_1/boot.elf");
+	simulator->SetVariable("loader.file0.base-addr", 0x00404000UL); // base address of BAF
+	simulator->SetVariable("loader.file4.base-addr", 0x20000000UL); // base address of ramdisk #0
+	simulator->SetVariable("loader.file5.base-addr", 0x21000000UL); // base address of ramdisk #1
+	simulator->SetVariable("loader.file6.base-addr", 0x22000000UL); // base address of ramdisk #2
+	
+	// - Inline Debugger
+	simulator->SetVariable("inline-debugger0.search-path", "app/Z7_0;libsys");
+	simulator->SetVariable("inline-debugger1.search-path", "app/Z7_1;libsys");
+	simulator->SetVariable("inline-debugger2.search-path", "app/Z4_2;libsys");
 	
 	// - Loader memory router
 	simulator->SetVariable("loader.memory-mapper.mapping",
@@ -3554,6 +3567,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	                       ",HARDWARE.Main_Core_0:0x50000000-0x50ffffff:+0x0"       // Main_Core_0 Local Memory                -> Main_Core_0       (rel address)
 	                       ",HARDWARE.Main_Core_1:0x51000000-0x51ffffff:+0x0"       // Main_Core_1 Local Memory                -> Main_Core_1       (rel address)
 	                       ",HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x0" // Peripheral_Core_2 Local Memory          -> Peripheral_Core_2 (rel address)
+	                       ",HARDWARE.EBI:0x20000000-0x2fffffff:+0x0"               // EBI                                     -> EBI               (rel address)
 	                      );
 
 	//  - System SRAM
@@ -3805,6 +3819,13 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	//  - eDMA_1
 	simulator->SetVariable("HARDWARE.eDMA_1.master-id", 11);
+	
+	//  - EBI_STUB
+	simulator->SetVariable("HARDWARE.EBI.cycle-time", "10 ns");
+	simulator->SetVariable("HARDWARE.EBI.read-latency", "10 ns");
+	simulator->SetVariable("HARDWARE.EBI.write-latency", "10 ns");
+	simulator->SetVariable("HARDWARE.EBI.org", 0x0);
+	simulator->SetVariable("HARDWARE.EBI.bytesize", 256 * 1024 * 1024);
 	
 	//=========================================================================
 	//===                      Service run-time configuration               ===

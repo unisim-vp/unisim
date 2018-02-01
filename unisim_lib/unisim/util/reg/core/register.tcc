@@ -1272,9 +1272,9 @@ ReadWriteStatus Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Write(const T
 
 	ReadWriteStatus rws(RWS_OK);
 	const TYPE write_mask = bit_enable & GetWriteMask();
-	const TYPE unwritable_mask = bit_enable & ~GetWriteMask();
 	const TYPE write_one_clear_mask = bit_enable & GetWriteOneClearMask();
 	const TYPE copy_mask = bit_enable & write_mask & ~write_one_clear_mask;
+	const TYPE unwritable_mask = bit_enable & ~write_mask & ~write_one_clear_mask;
 	
 	if((_value & bit_enable & TYPE_MASK) != (_value & bit_enable))
 	{
@@ -1327,9 +1327,9 @@ ReadWriteStatus Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::WritePreserve
 
 	ReadWriteStatus rws(RWS_OK);
 	const TYPE write_mask = bit_enable & GetWriteMask() & ~PRESERVED_FIELD::template GetMask<TYPE>();
-	const TYPE unwritable_mask = bit_enable & (~GetWriteMask() | PRESERVED_FIELD::template GetMask<TYPE>());
-	const TYPE write_one_clear_mask = bit_enable & (GetWriteOneClearMask() & ~PRESERVED_FIELD::template GetMask<TYPE>());
+	const TYPE write_one_clear_mask = bit_enable & GetWriteOneClearMask() & ~PRESERVED_FIELD::template GetMask<TYPE>();
 	const TYPE copy_mask = bit_enable & write_mask & ~write_one_clear_mask;
+	const TYPE unwritable_mask = bit_enable & ~write_mask & ~write_one_clear_mask;
 	
 	if((_value & bit_enable & TYPE_MASK) != (_value & bit_enable))
 	{

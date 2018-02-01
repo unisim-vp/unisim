@@ -110,6 +110,7 @@ public:
 	
 	virtual void Synchronize();
 	virtual void Idle();
+	virtual void Halt();
 	virtual void InterruptAcknowledge();
 	virtual void InvalidateDirectMemPtr(PHYSICAL_ADDRESS start_addr, PHYSICAL_ADDRESS end_addr);
 	

@@ -105,6 +105,7 @@ public:
 	
 	virtual void InterruptAcknowledge() {}
 	virtual void Idle() {}
+	virtual void Halt() {}
 	
 	////////////////////////// Machine State Register /////////////////////////
 	
@@ -785,6 +786,45 @@ protected:
 	
 	bool verbose_instruction_bus_read;
 	unisim::kernel::service::Parameter<bool> param_verbose_instruction_bus_read;
+	
+	bool trap_system_reset_interrupt;
+	unisim::kernel::service::Parameter<bool> param_trap_system_reset_interrupt;
+
+	bool trap_machine_check_interrupt;
+	unisim::kernel::service::Parameter<bool> param_trap_machine_check_interrupt;
+	
+	bool trap_data_storage_interrupt;
+	unisim::kernel::service::Parameter<bool> param_trap_data_storage_interrupt;
+	
+	bool trap_instruction_storage_interrupt;
+	unisim::kernel::service::Parameter<bool> param_trap_instruction_storage_interrupt;
+	
+	bool trap_alignment_interrupt;
+	unisim::kernel::service::Parameter<bool> param_trap_alignment_interrupt;
+	
+	bool trap_program_interrupt;
+	unisim::kernel::service::Parameter<bool> param_trap_program_interrupt;
+	
+	bool trap_embedded_floating_point_data_interrupt;
+	unisim::kernel::service::Parameter<bool> param_trap_embedded_floating_point_data_interrupt;
+	
+	bool trap_embedded_floating_point_round_interrupt;
+	unisim::kernel::service::Parameter<bool> param_trap_embedded_floating_point_round_interrupt;
+	
+	bool trap_system_call_interrupt;
+	unisim::kernel::service::Parameter<bool> param_trap_system_call_interrupt;
+	
+	bool trap_critical_input_interrupt;
+	unisim::kernel::service::Parameter<bool> param_trap_critical_input_interrupt;
+	
+	bool trap_external_input_interrupt;
+	unisim::kernel::service::Parameter<bool> param_trap_external_input_interrupt;
+	
+	bool trap_performance_monitor_interrupt;
+	unisim::kernel::service::Parameter<bool> param_trap_performance_monitor_interrupt;
+	
+	bool trap_debug_interrupt;
+	unisim::kernel::service::Parameter<bool> param_trap_debug_interrupt;
 	
 	///////////////////////////// Interrupts //////////////////////////////////
 	

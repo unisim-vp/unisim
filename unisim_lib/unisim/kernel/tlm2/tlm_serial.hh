@@ -266,7 +266,7 @@ public:
 		{
 			timed_serial_payload *tsp = (*it).second;
 		
-			if(likely(tsp->next_time_stamp > curr_time_stamp))
+			if(likely(tsp->next_time_stamp > time_stamp))
 			{
 				// found a payload which ends after requested time stamp
 				timed_serial_payload *tsp = (*it).second;

@@ -44,7 +44,6 @@ namespace memory {
 namespace ram {
 
 //using unisim::service::interfaces::operator<<;
-using unisim::kernel::logger::Logger;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
 using unisim::kernel::logger::DebugError;
@@ -60,10 +59,8 @@ Memory(const sc_core::sc_module_name& name, Object *parent)
 	, sc_core::sc_module(name)
 	, unisim::component::cxx::memory::ram::Memory<ADDRESS, PAGE_SIZE>(name, parent)
 	, slave_sock("slave-sock")
-	, logger(*this)
 	, read_counter(0)
 	, write_counter(0)
-	, verbose(false)
 	, cycle_time()
 	, read_latency(cycle_time)
 	, write_latency(sc_core::SC_ZERO_TIME)
@@ -71,7 +68,6 @@ Memory(const sc_core::sc_module_name& name, Object *parent)
 	, param_cycle_time("cycle-time", this, cycle_time, "memory cycle time")
 	, param_read_latency("read-latency", this, read_latency, "memory read latency")
 	, param_write_latency("write-latency", this, write_latency, "memory write latency")
-	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 	, param_read_only("read-only", this, read_only, "enable/disable read-only protection")
 	, stat_read_counter("read-counter", this, read_counter, "read access counter (not accurate when using SystemC TLM 2.0 DMI)")
 	, stat_write_counter("write-counter", this, write_counter, "write access counter (not accurate when using SystemC TLM 2.0 DMI)")
@@ -102,11 +98,11 @@ template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint3
 bool Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 BeginSetup() {
 	if(IsVerbose())
-		logger << DebugInfo << LOCATION
+		this->logger << DebugInfo << LOCATION
 			<< " cycle time of " << cycle_time 
 			<< std::endl << EndDebugInfo;
 	if(cycle_time == sc_core::SC_ZERO_TIME) {
-		logger << DebugError << LOCATION
+		this->logger << DebugError << LOCATION
 				<< "cycle time must be different than 0" << std::endl
 				<< EndDebugError;
 		return false;
@@ -191,7 +187,7 @@ unsigned int Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transpor
 		case tlm::TLM_READ_COMMAND:
 			if(IsVerbose())
 			{
-				logger << DebugInfo << LOCATION
+				this->logger << DebugInfo << LOCATION
 					<< ":" << sc_core::sc_time_stamp().to_string()
 					<< ": received a TLM_READ_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
@@ -208,7 +204,7 @@ unsigned int Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transpor
 		case tlm::TLM_WRITE_COMMAND:
 			if(IsVerbose())
 			{
-				logger << DebugInfo << LOCATION
+				this->logger << DebugInfo << LOCATION
 					<< ":" << sc_core::sc_time_stamp().to_string()
 					<< ": received a TLM_WRITE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
@@ -223,7 +219,7 @@ unsigned int Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transpor
 			break;
 		case tlm::TLM_IGNORE_COMMAND:
 			// transport_dbg should not receive such a command
-			logger << DebugWarning << LOCATION
+			this->logger << DebugWarning << LOCATION
 					<< ":" << sc_core::sc_time_stamp().to_string() 
 					<< " : received an unexpected TLM_IGNORE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
@@ -246,7 +242,7 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb
 {
 	if(phase != tlm::BEGIN_REQ)
 	{
-		logger << DebugWarning << LOCATION
+		this->logger << DebugWarning << LOCATION
 				<< ":" << (sc_core::sc_time_stamp() + t).to_string() 
 				<< " : received an unexpected phase " << phase << std::endl
 				<< EndDebugWarning;
@@ -269,7 +265,7 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb
 		case tlm::TLM_READ_COMMAND:
 			if(IsVerbose())
 			{
-				logger << DebugInfo << LOCATION
+				this->logger << DebugInfo << LOCATION
 					<< ":" << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": received a TLM_READ_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
@@ -291,7 +287,7 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb
 		case tlm::TLM_WRITE_COMMAND:
 			if(IsVerbose())
 			{
-				logger << DebugInfo << LOCATION
+				this->logger << DebugInfo << LOCATION
 					<< ":" << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": received a TLM_WRITE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
@@ -302,7 +298,7 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb
 			if(read_only)
 			{
 				status = true;
-				logger << DebugWarning << (sc_core::sc_time_stamp() + t).to_string()
+				this->logger << DebugWarning << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": Attempt to write into a read-only memory at @0x" << std::hex << addr << std::dec
 					<< EndDebugWarning;
 			}
@@ -323,7 +319,7 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb
 		case tlm::TLM_IGNORE_COMMAND:
 			if(IsVerbose())
 			{
-				logger << DebugInfo << LOCATION
+				this->logger << DebugInfo << LOCATION
 					<< ":" << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": received a TLM_IGNORE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
@@ -366,7 +362,7 @@ b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 		case tlm::TLM_READ_COMMAND:
 			if(IsVerbose())
 			{
-				logger << DebugInfo << LOCATION
+				this->logger << DebugInfo << LOCATION
 					<< ":" << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": received a TLM_READ_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
@@ -385,19 +381,19 @@ b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 
 			if (status && IsVerbose())
 			{
-				logger << DebugInfo << LOCATION
+				this->logger << DebugInfo << LOCATION
 					<< ": raw data read (0x" << std::hex << addr << std::dec
 					<< ", " << data_length << ") = 0x";
 				for (unsigned int i = 0; i < data_length; i++)
-					logger << (unsigned int)(uint8_t)data_ptr[i] << " ";
-				logger << EndDebugInfo;
+					this->logger << (unsigned int)(uint8_t)data_ptr[i] << " ";
+				this->logger << EndDebugInfo;
 			}
 			UpdateTime(data_length, read_latency, t);
 			break;
 		case tlm::TLM_WRITE_COMMAND:
 			if(IsVerbose())
 			{
-				logger << DebugInfo << LOCATION
+				this->logger << DebugInfo << LOCATION
 					<< ":" << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": received a TLM_WRITE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
@@ -408,7 +404,7 @@ b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 			if(read_only)
 			{
 				status = true;
-				logger << DebugWarning << (sc_core::sc_time_stamp() + t).to_string()
+				this->logger << DebugWarning << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": Attempt to write into a read-only memory at @0x" << std::hex << addr << std::dec
 					<< EndDebugWarning;
 			}
@@ -429,7 +425,7 @@ b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 		case tlm::TLM_IGNORE_COMMAND:
 			if(IsVerbose())
 			{
-				logger << DebugInfo << LOCATION
+				this->logger << DebugInfo << LOCATION
 					<< ":" << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": received a TLM_IGNORE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec

@@ -364,6 +364,136 @@
 					<item>false</item>
 				</enumeration>
 			</variable>
+			<variable name="trap-system-reset-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of system reset interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-machine-check-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of machine check interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-data-storage-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of data storage interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-instruction-storage-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of instruction storage interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-alignment-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of alignment interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-program-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of program interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-embedded-floating-point-data-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of embedded floating-point data interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-embedded-floating-point-round-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of embedded floating-point round interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-system-call-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of system call interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-critical-input-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of critical input interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-external-input-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of extern input interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-performance-monitor-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of permformance monitor interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-debug-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of debug interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
 			<variable name="clock-multiplier">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -672,6 +802,136 @@
 					<item>false</item>
 				</enumeration>
 			</variable>
+			<variable name="trap-system-reset-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of system reset interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-machine-check-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of machine check interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-data-storage-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of data storage interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-instruction-storage-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of instruction storage interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-alignment-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of alignment interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-program-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of program interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-embedded-floating-point-data-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of embedded floating-point data interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-embedded-floating-point-round-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of embedded floating-point round interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-system-call-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of system call interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-critical-input-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of critical input interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-external-input-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of extern input interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-performance-monitor-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of permformance monitor interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-debug-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of debug interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
 			<variable name="clock-multiplier">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -968,6 +1228,136 @@
 					<item>false</item>
 				</enumeration>
 			</variable>
+			<variable name="trap-system-reset-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of system reset interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-machine-check-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of machine check interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-data-storage-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of data storage interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-instruction-storage-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of instruction storage interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-alignment-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of alignment interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-program-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of program interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-embedded-floating-point-data-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of embedded floating-point data interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-embedded-floating-point-round-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of embedded floating-point round interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-system-call-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of system call interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-critical-input-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of critical input interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-external-input-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of extern input interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-performance-monitor-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of permformance monitor interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="trap-debug-interrupt">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable trap (in debugger) of debug interrupt</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
 			<variable name="clock-multiplier">
 				<type>parameter</type>
 				<data_type>double precision floating-point</data_type>
@@ -1036,11 +1426,33 @@
 				<value>413696</value>
 				<description>memory size in bytes</description>
 			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
 			<variable name="initial-byte-value">
 				<type>parameter</type>
 				<data_type>unsigned 8-bit integer</data_type>
 				<value>0x00</value>
 				<description>initial value for all bytes of memory</description>
+			</variable>
+			<variable name="input-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Input filename</description>
+			</variable>
+			<variable name="output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>output filename</description>
 			</variable>
 			<variable name="cycle-time">
 				<type>parameter</type>
@@ -1059,16 +1471,6 @@
 				<data_type>sc_time</data_type>
 				<value>10 ns</value>
 				<description>memory write latency</description>
-			</variable>
-			<variable name="verbose">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>enable/disable verbosity</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
 			</variable>
 			<variable name="read-only">
 				<type>parameter</type>
@@ -1094,11 +1496,33 @@
 				<value>8863744</value>
 				<description>memory size in bytes</description>
 			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
 			<variable name="initial-byte-value">
 				<type>parameter</type>
 				<data_type>unsigned 8-bit integer</data_type>
 				<value>0x00</value>
 				<description>initial value for all bytes of memory</description>
+			</variable>
+			<variable name="input-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Input filename</description>
+			</variable>
+			<variable name="output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>output filename</description>
 			</variable>
 			<variable name="cycle-time">
 				<type>parameter</type>
@@ -1117,16 +1541,6 @@
 				<data_type>sc_time</data_type>
 				<value>10 ns</value>
 				<description>memory write latency</description>
-			</variable>
-			<variable name="verbose">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>enable/disable verbosity</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
 			</variable>
 			<variable name="read-only">
 				<type>parameter</type>
@@ -1268,6 +1682,12 @@
 				<value>range_start=&quot;0xf0000000&quot; range_end=&quot;0xffffffff&quot; output_port=&quot;7&quot; translation=&quot;0xf0000000&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 			</variable>
+			<variable name="mapping_11">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x20000000&quot; range_end=&quot;0x2fffffff&quot; output_port=&quot;5&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
 		</object>
 		<object name="HARDWARE.XBAR_1">
 			<variable name="cycle_time">
@@ -1402,6 +1822,12 @@
 				<type>parameter</type>
 				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
 				<value>range_start=&quot;0xfc000000&quot; range_end=&quot;0xffffffff&quot; output_port=&quot;3&quot; translation=&quot;0xfc000000&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_12">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0x20000000&quot; range_end=&quot;0x2fffffff&quot; output_port=&quot;0&quot; translation=&quot;0x20000000&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 			</variable>
 		</object>
@@ -2370,195 +2796,6 @@
 			</variable>
 		</object>
 		<object name="HARDWARE.SERIAL_TERMINAL2">
-			<variable name="polling-period">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>10 ms</value>
-				<description>polling period</description>
-			</variable>
-			<variable name="verbose">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>enable/disable verbosity</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="parity-type">
-				<type>parameter</type>
-				<data_type>parity-type</data_type>
-				<value>none</value>
-				<description>parity type (none, even, odd)</description>
-				<enumeration>
-					<item>none</item>
-					<item>even</item>
-					<item>odd</item>
-				</enumeration>
-			</variable>
-			<variable name="num-stop-bits">
-				<type>parameter</type>
-				<data_type>unsigned 32-bit integer</data_type>
-				<value>1</value>
-				<description>number of stop bits (1, 2, ...)</description>
-			</variable>
-			<variable name="bit-order">
-				<type>parameter</type>
-				<data_type>bit-order</data_type>
-				<value>msb</value>
-				<description>first bit in reception/transmission (lsb, msb)</description>
-				<enumeration>
-					<item>lsb</item>
-					<item>msb</item>
-				</enumeration>
-			</variable>
-			<variable name="num-data-bits">
-				<type>parameter</type>
-				<data_type>unsigned 32-bit integer</data_type>
-				<value>8</value>
-				<description>number of data bits (1-8; typically 7 or 8)</description>
-			</variable>
-			<variable name="baud-tolerance">
-				<type>parameter</type>
-				<data_type>double precision floating-point</data_type>
-				<value>2</value>
-				<description>Baud tolerance (up to 5 %) in reception (fraction in percents of baud period); Tolerate +/- X % drift</description>
-			</variable>
-			<variable name="boot-receive-delay">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>0 s</value>
-				<description>Boot receive delay (guest delay to be ready for receiving characters)</description>
-			</variable>
-		</object>
-		<object name="HARDWARE.SERIAL_TERMINAL14">
-			<variable name="polling-period">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>10 ms</value>
-				<description>polling period</description>
-			</variable>
-			<variable name="verbose">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>enable/disable verbosity</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="parity-type">
-				<type>parameter</type>
-				<data_type>parity-type</data_type>
-				<value>none</value>
-				<description>parity type (none, even, odd)</description>
-				<enumeration>
-					<item>none</item>
-					<item>even</item>
-					<item>odd</item>
-				</enumeration>
-			</variable>
-			<variable name="num-stop-bits">
-				<type>parameter</type>
-				<data_type>unsigned 32-bit integer</data_type>
-				<value>1</value>
-				<description>number of stop bits (1, 2, ...)</description>
-			</variable>
-			<variable name="bit-order">
-				<type>parameter</type>
-				<data_type>bit-order</data_type>
-				<value>msb</value>
-				<description>first bit in reception/transmission (lsb, msb)</description>
-				<enumeration>
-					<item>lsb</item>
-					<item>msb</item>
-				</enumeration>
-			</variable>
-			<variable name="num-data-bits">
-				<type>parameter</type>
-				<data_type>unsigned 32-bit integer</data_type>
-				<value>8</value>
-				<description>number of data bits (1-8; typically 7 or 8)</description>
-			</variable>
-			<variable name="baud-tolerance">
-				<type>parameter</type>
-				<data_type>double precision floating-point</data_type>
-				<value>2</value>
-				<description>Baud tolerance (up to 5 %) in reception (fraction in percents of baud period); Tolerate +/- X % drift</description>
-			</variable>
-			<variable name="boot-receive-delay">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>0 s</value>
-				<description>Boot receive delay (guest delay to be ready for receiving characters)</description>
-			</variable>
-		</object>
-		<object name="HARDWARE.SERIAL_TERMINAL15">
-			<variable name="polling-period">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>10 ms</value>
-				<description>polling period</description>
-			</variable>
-			<variable name="verbose">
-				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>false</value>
-				<description>enable/disable verbosity</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
-			</variable>
-			<variable name="parity-type">
-				<type>parameter</type>
-				<data_type>parity-type</data_type>
-				<value>none</value>
-				<description>parity type (none, even, odd)</description>
-				<enumeration>
-					<item>none</item>
-					<item>even</item>
-					<item>odd</item>
-				</enumeration>
-			</variable>
-			<variable name="num-stop-bits">
-				<type>parameter</type>
-				<data_type>unsigned 32-bit integer</data_type>
-				<value>1</value>
-				<description>number of stop bits (1, 2, ...)</description>
-			</variable>
-			<variable name="bit-order">
-				<type>parameter</type>
-				<data_type>bit-order</data_type>
-				<value>msb</value>
-				<description>first bit in reception/transmission (lsb, msb)</description>
-				<enumeration>
-					<item>lsb</item>
-					<item>msb</item>
-				</enumeration>
-			</variable>
-			<variable name="num-data-bits">
-				<type>parameter</type>
-				<data_type>unsigned 32-bit integer</data_type>
-				<value>8</value>
-				<description>number of data bits (1-8; typically 7 or 8)</description>
-			</variable>
-			<variable name="baud-tolerance">
-				<type>parameter</type>
-				<data_type>double precision floating-point</data_type>
-				<value>2</value>
-				<description>Baud tolerance (up to 5 %) in reception (fraction in percents of baud period); Tolerate +/- X % drift</description>
-			</variable>
-			<variable name="boot-receive-delay">
-				<type>parameter</type>
-				<data_type>sc_time</data_type>
-				<value>0 s</value>
-				<description>Boot receive delay (guest delay to be ready for receiving characters)</description>
-			</variable>
-		</object>
-		<object name="HARDWARE.SERIAL_TERMINAL16">
 			<variable name="polling-period">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
@@ -9298,21 +9535,69 @@
 			</variable>
 		</object>
 		<object name="HARDWARE.EBI">
-			<variable name="enable">
+			<variable name="org">
 				<type>parameter</type>
-				<data_type>boolean</data_type>
-				<value>true</value>
-				<description>Enable/Disable a lazy implementation of TLM 2.0 method interface</description>
-				<enumeration>
-					<item>true</item>
-					<item>false</item>
-				</enumeration>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>memory origin/base address</description>
+			</variable>
+			<variable name="bytesize">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>268435456</value>
+				<description>memory size in bytes</description>
 			</variable>
 			<variable name="verbose">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
 				<value>false</value>
-				<description>Enable/Disable verbosity</description>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="initial-byte-value">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x00</value>
+				<description>initial value for all bytes of memory</description>
+			</variable>
+			<variable name="input-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Input filename</description>
+			</variable>
+			<variable name="output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>output filename</description>
+			</variable>
+			<variable name="cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>memory cycle time</description>
+			</variable>
+			<variable name="read-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>memory read latency</description>
+			</variable>
+			<variable name="write-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>10 ns</value>
+				<description>memory write latency</description>
+			</variable>
+			<variable name="read-only">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable read-only protection</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -9759,7 +10044,7 @@
 			<variable name="clock-period">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
-				<value>100 us</value>
+				<value>4340278 ps</value>
 				<description>clock period</description>
 			</variable>
 			<variable name="clock-duty-cycle">
@@ -9799,7 +10084,7 @@
 			<variable name="clock-period">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
-				<value>100 us</value>
+				<value>4340278 ps</value>
 				<description>clock period</description>
 			</variable>
 			<variable name="clock-duty-cycle">
@@ -9839,7 +10124,7 @@
 			<variable name="clock-period">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
-				<value>100 us</value>
+				<value>4340278 ps</value>
 				<description>clock period</description>
 			</variable>
 			<variable name="clock-duty-cycle">
@@ -9879,7 +10164,7 @@
 			<variable name="clock-period">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
-				<value>100 us</value>
+				<value>4340278 ps</value>
 				<description>clock period</description>
 			</variable>
 			<variable name="clock-duty-cycle">
@@ -9919,7 +10204,7 @@
 			<variable name="clock-period">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
-				<value>100 us</value>
+				<value>4340278 ps</value>
 				<description>clock period</description>
 			</variable>
 			<variable name="clock-duty-cycle">
@@ -9959,7 +10244,7 @@
 			<variable name="clock-period">
 				<type>parameter</type>
 				<data_type>sc_time</data_type>
-				<value>100 us</value>
+				<value>4340278 ps</value>
 				<description>clock period</description>
 			</variable>
 			<variable name="clock-duty-cycle">
@@ -10439,7 +10724,7 @@
 		<variable name="search-path">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value></value>
+			<value>app/Z7_0;libsys</value>
 			<description>Search path for source (separated by ';')</description>
 		</variable>
 		<variable name="init-macro">
@@ -10471,7 +10756,7 @@
 		<variable name="search-path">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value></value>
+			<value>app/Z7_1;libsys</value>
 			<description>Search path for source (separated by ';')</description>
 		</variable>
 		<variable name="init-macro">
@@ -10503,7 +10788,7 @@
 		<variable name="search-path">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value></value>
+			<value>app/Z4_2;libsys</value>
 			<description>Search path for source (separated by ';')</description>
 		</variable>
 		<variable name="init-macro">
@@ -10550,7 +10835,7 @@
 			<variable name="mapping">
 				<type>parameter</type>
 				<data_type>string</data_type>
-				<value>HARDWARE.SYSTEM-SRAM:0x40000000-0x401fffff:+0x0,HARDWARE.FLASH:0x00400000-0x00407fff:+0x0,HARDWARE.FLASH:0x0060c000-0x0062ffff:+0x8000,HARDWARE.FLASH:0x00680000-0x00687fff:+0x2c000,HARDWARE.FLASH:0x00800000-0x0087ffff:+0x34000,HARDWARE.FLASH:0x00fc0000-0x00ffffff:+0xb4000,HARDWARE.FLASH:0x01000000-0x0177ffff:+0xf4000,HARDWARE.Main_Core_0:0x50000000-0x50ffffff:+0x0,HARDWARE.Main_Core_1:0x51000000-0x51ffffff:+0x0,HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x0</value>
+				<value>HARDWARE.SYSTEM-SRAM:0x40000000-0x401fffff:+0x0,HARDWARE.FLASH:0x00400000-0x00407fff:+0x0,HARDWARE.FLASH:0x0060c000-0x0062ffff:+0x8000,HARDWARE.FLASH:0x00680000-0x00687fff:+0x2c000,HARDWARE.FLASH:0x00800000-0x0087ffff:+0x34000,HARDWARE.FLASH:0x00fc0000-0x00ffffff:+0xb4000,HARDWARE.FLASH:0x01000000-0x0177ffff:+0xf4000,HARDWARE.Main_Core_0:0x50000000-0x50ffffff:+0x0,HARDWARE.Main_Core_1:0x51000000-0x51ffffff:+0x0,HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x0,HARDWARE.EBI:0x20000000-0x2fffffff:+0x0</value>
 				<description>Memory mapping. Syntax: [memory=]&lt;memory1&gt;[:[range=]&lt;low1-high1&gt;][:[translation=]+&lt;translation1&gt;][,... (e.g. ram:0x0-0x00ffff,rom:0xff0000-0xffffff:+0xff0000)</description>
 			</variable>
 		</object>
@@ -10576,7 +10861,7 @@
 			<variable name="verbose">
 				<type>parameter</type>
 				<data_type>unsigned 32-bit integer</data_type>
-				<value>0x00000000</value>
+				<value>0x00000001</value>
 				<description>Set verbose mode (0 not active, otherwise active).</description>
 			</variable>
 		</object>
@@ -10584,7 +10869,7 @@
 			<variable name="filename">
 				<type>parameter</type>
 				<data_type>string</data_type>
-				<value>soft/bin/Z4_2/flash_boot.elf</value>
+				<value>soft/app/Z4_2/boot.elf</value>
 				<description>the ELF filename to load into memory</description>
 			</variable>
 			<variable name="base-addr">
@@ -10636,7 +10921,7 @@
 			<variable name="verbose">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
-				<value>false</value>
+				<value>true</value>
 				<description>enable/disable verbosity</description>
 				<enumeration>
 					<item>true</item>
@@ -10686,7 +10971,7 @@
 			<variable name="filename">
 				<type>parameter</type>
 				<data_type>string</data_type>
-				<value>soft/bin/Z7_0/flash_boot.elf</value>
+				<value>soft/app/Z7_0/boot.elf</value>
 				<description>the ELF filename to load into memory</description>
 			</variable>
 			<variable name="base-addr">
@@ -10738,7 +11023,7 @@
 			<variable name="verbose">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
-				<value>false</value>
+				<value>true</value>
 				<description>enable/disable verbosity</description>
 				<enumeration>
 					<item>true</item>
@@ -10788,7 +11073,7 @@
 			<variable name="filename">
 				<type>parameter</type>
 				<data_type>string</data_type>
-				<value>soft/bin/Z7_1/flash_boot.elf</value>
+				<value>soft/app/Z7_1/boot.elf</value>
 				<description>the ELF filename to load into memory</description>
 			</variable>
 			<variable name="base-addr">
@@ -10840,7 +11125,7 @@
 			<variable name="verbose">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
-				<value>false</value>
+				<value>true</value>
 				<description>enable/disable verbosity</description>
 				<enumeration>
 					<item>true</item>
@@ -10889,7 +11174,7 @@
 		<variable name="verbose">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>false</value>
+			<value>true</value>
 			<description>Enable/Disable verbosity</description>
 			<enumeration>
 				<item>true</item>
@@ -10909,7 +11194,7 @@
 		<variable name="filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value>baf.bin,soft/bin/Z4_2/flash_boot.elf,soft/bin/Z7_0/flash_boot.elf,soft/bin/Z7_1/flash_boot.elf</value>
+			<value>baf.bin,soft/app/Z4_2/boot.elf,soft/app/Z7_0/boot.elf,soft/app/Z7_1/boot.elf</value>
 			<description>List of files to load. Syntax: [[filename=]&lt;filename1&gt;[=[format=]&lt;format1&gt;]][,[filename=]&lt;filename2&gt;[=[format=]&lt;format2&gt;]]... (e.g. boot.bin=raw,app.elf)</description>
 		</variable>
 	</object>
@@ -11043,7 +11328,7 @@
 		<variable name="protocol">
 			<type>parameter</type>
 			<data_type>netstreamer-protocol</data_type>
-			<value>telnet</value>
+			<value>raw</value>
 			<description>network protocol (raw or telnet)</description>
 			<enumeration>
 				<item>raw</item>
@@ -11065,6 +11350,46 @@
 			<data_type>boolean</data_type>
 			<value>false</value>
 			<description>Whether to filter line feed</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-telnet-binary">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>enable/disable telnet binary option</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-telnet-echo">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>enable/disable telnet echo option</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-telnet-suppress-go-ahead">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>enable/disable telnet suppress go ahead option</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-telnet-linemode">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable telnet linemode option</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
@@ -11144,223 +11469,41 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
-	</object>
-	<object name="netstreamer14">
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="debug">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable debug (intended for developper)</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="tcp-port">
-			<type>parameter</type>
-			<data_type>signed 32-bit integer</data_type>
-			<value>12351</value>
-			<description>TCP/IP port</description>
-		</variable>
-		<variable name="is-server">
+		<variable name="enable-telnet-binary">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>true</value>
-			<description>if 1, act as a server, otherwise act as a client</description>
+			<description>enable/disable telnet binary option</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="server-name">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>localhost</value>
-			<description>if acting as a client, name of server to connect to</description>
-		</variable>
-		<variable name="protocol">
-			<type>parameter</type>
-			<data_type>netstreamer-protocol</data_type>
-			<value>raw</value>
-			<description>network protocol (raw or telnet)</description>
-			<enumeration>
-				<item>raw</item>
-				<item>telnet</item>
-			</enumeration>
-		</variable>
-		<variable name="filter-null-character">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Whether to filter null character</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="filter-line-feed">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Whether to filter line feed</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-	</object>
-	<object name="netstreamer15">
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="debug">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable debug (intended for developper)</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="tcp-port">
-			<type>parameter</type>
-			<data_type>signed 32-bit integer</data_type>
-			<value>12352</value>
-			<description>TCP/IP port</description>
-		</variable>
-		<variable name="is-server">
+		<variable name="enable-telnet-echo">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>true</value>
-			<description>if 1, act as a server, otherwise act as a client</description>
+			<description>enable/disable telnet echo option</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="server-name">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>localhost</value>
-			<description>if acting as a client, name of server to connect to</description>
-		</variable>
-		<variable name="protocol">
-			<type>parameter</type>
-			<data_type>netstreamer-protocol</data_type>
-			<value>raw</value>
-			<description>network protocol (raw or telnet)</description>
-			<enumeration>
-				<item>raw</item>
-				<item>telnet</item>
-			</enumeration>
-		</variable>
-		<variable name="filter-null-character">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Whether to filter null character</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="filter-line-feed">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Whether to filter line feed</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-	</object>
-	<object name="netstreamer16">
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="debug">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable debug (intended for developper)</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="tcp-port">
-			<type>parameter</type>
-			<data_type>signed 32-bit integer</data_type>
-			<value>12353</value>
-			<description>TCP/IP port</description>
-		</variable>
-		<variable name="is-server">
+		<variable name="enable-telnet-suppress-go-ahead">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>true</value>
-			<description>if 1, act as a server, otherwise act as a client</description>
+			<description>enable/disable telnet suppress go ahead option</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="server-name">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>localhost</value>
-			<description>if acting as a client, name of server to connect to</description>
-		</variable>
-		<variable name="protocol">
-			<type>parameter</type>
-			<data_type>netstreamer-protocol</data_type>
-			<value>raw</value>
-			<description>network protocol (raw or telnet)</description>
-			<enumeration>
-				<item>raw</item>
-				<item>telnet</item>
-			</enumeration>
-		</variable>
-		<variable name="filter-null-character">
+		<variable name="enable-telnet-linemode">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
-			<description>Whether to filter null character</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="filter-line-feed">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Whether to filter line feed</description>
+			<description>enable/disable telnet linemode option</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
@@ -11440,18 +11583,58 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="enable-telnet-binary">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>enable/disable telnet binary option</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-telnet-echo">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>enable/disable telnet echo option</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-telnet-suppress-go-ahead">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>enable/disable telnet suppress go ahead option</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-telnet-linemode">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable telnet linemode option</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 	</object>
 	<object name="profiler0">
 		<variable name="search-path">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value></value>
+			<value>app/Z7_0;libsys</value>
 			<description>Search path for source (separated by ';')</description>
 		</variable>
 		<variable name="filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value></value>
+			<value>soft/app/Z7_0/boot.elf</value>
 			<description>List of (binary) files (preferably ELF) to profile (separated by ',')</description>
 		</variable>
 		<variable name="sampled-variables">
@@ -11463,13 +11646,13 @@
 		<variable name="output-directory">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value></value>
+			<value>profile_Z7_0</value>
 			<description>Output directory where to generate profiling report</description>
 		</variable>
 		<variable name="output-format">
 			<type>parameter</type>
 			<data_type>output-format</data_type>
-			<value>text</value>
+			<value>html</value>
 			<description>Output format (text, html or csv)</description>
 			<enumeration>
 				<item>text</item>
@@ -11487,13 +11670,13 @@
 		<variable name="search-path">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value></value>
+			<value>app/Z7_1;libsys</value>
 			<description>Search path for source (separated by ';')</description>
 		</variable>
 		<variable name="filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value></value>
+			<value>soft/app/Z7_1/boot.elf</value>
 			<description>List of (binary) files (preferably ELF) to profile (separated by ',')</description>
 		</variable>
 		<variable name="sampled-variables">
@@ -11505,13 +11688,13 @@
 		<variable name="output-directory">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value></value>
+			<value>profile_Z7_1</value>
 			<description>Output directory where to generate profiling report</description>
 		</variable>
 		<variable name="output-format">
 			<type>parameter</type>
 			<data_type>output-format</data_type>
-			<value>text</value>
+			<value>html</value>
 			<description>Output format (text, html or csv)</description>
 			<enumeration>
 				<item>text</item>
@@ -11529,13 +11712,13 @@
 		<variable name="search-path">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value></value>
+			<value>app/Z4_2;libsys</value>
 			<description>Search path for source (separated by ';')</description>
 		</variable>
 		<variable name="filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value></value>
+			<value>soft/app/Z4_2/boot.elf</value>
 			<description>List of (binary) files (preferably ELF) to profile (separated by ',')</description>
 		</variable>
 		<variable name="sampled-variables">
@@ -11547,13 +11730,13 @@
 		<variable name="output-directory">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value></value>
+			<value>profile_Z4_2</value>
 			<description>Output directory where to generate profiling report</description>
 		</variable>
 		<variable name="output-format">
 			<type>parameter</type>
 			<data_type>output-format</data_type>
-			<value>text</value>
+			<value>html</value>
 			<description>Output format (text, html or csv)</description>
 			<enumeration>
 				<item>text</item>
@@ -11590,7 +11773,7 @@
 	<variable name="enable-press-enter-at-exit">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
-		<value>true</value>
+		<value>false</value>
 		<description>Enable/Disable pressing key enter at exit</description>
 		<enumeration>
 			<item>true</item>
@@ -11620,7 +11803,7 @@
 	<variable name="enable-serial-terminal1">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
-		<value>false</value>
+		<value>true</value>
 		<description>Enable/Disable serial terminal over LINFlexD_1 UART serial interface</description>
 		<enumeration>
 			<item>true</item>
@@ -11660,7 +11843,7 @@
 	<variable name="enable-serial-terminal2">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
-		<value>false</value>
+		<value>true</value>
 		<description>Enable/Disable serial terminal over LINFlexD_2 UART serial interface</description>
 		<enumeration>
 			<item>true</item>

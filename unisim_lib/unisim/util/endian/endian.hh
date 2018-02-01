@@ -40,15 +40,38 @@
 
 #if defined(__APPLE_CC__)
 #include <sys/types.h>
-#elif defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-#define __LITTLE_ENDIAN 1234
-#define __BIG_ENDIAN    4321
-#define LITTLE_ENDIAN __LITTLE_ENDIAN
-#define BIG_ENDIAN __BIG_ENDIAN
-#define __BYTE_ORDER __LITTLE_ENDIAN
-#define BYTE_ORDER LITTLE_ENDIAN
 #else
-#include <endian.h>
+#include <sys/param.h>
+#endif
+
+#if !defined(BYTE_ORDER)
+#if defined(__BYTE_ORDER)
+#define BYTE_ORDER __BYTE_ORDER
+#elif defined(__BYTE_ORDER__)
+#define BYTE_ORDER __BYTE_ORDER__
+#else
+#error "Unknown host byte order"
+#endif
+#endif
+
+#if !defined(LITTLE_ENDIAN)
+#if defined(__LITTLE_ENDIAN)
+#define LITTLE_ENDIAN __LITTLE_ENDIAN
+#elif defined(__LITTLE_ENDIAN__)
+#define LITTLE_ENDIAN __LITTLE_ENDIAN__
+#else
+#error "Unknown host byte order"
+#endif
+#endif
+
+#if !defined(BIG_ENDIAN)
+#if defined(__BIG_ENDIAN)
+#define BIG_ENDIAN __BIG_ENDIAN
+#elif defined(__BIG_ENDIAN__)
+#define BIG_ENDIAN __BIG_ENDIAN__
+#else
+#error "Unknown host byte order"
+#endif
 #endif
 
 #include <unisim/util/inlining/inlining.hh>

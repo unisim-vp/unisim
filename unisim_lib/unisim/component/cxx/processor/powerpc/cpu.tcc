@@ -467,6 +467,8 @@ CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::ExceptionDispatcher(typ
 	, exc_flags(0)
 	, exc_mask(0)
 	, interrupts()
+	, trap_control_flags()
+	, trapped()
 {
 }
 
@@ -478,10 +480,11 @@ CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::~ExceptionDispatcher()
 
 template <typename TYPES, typename CONFIG>
 template <unsigned int NUM_EXCEPTIONS>
-void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::InstallInterrupt(unsigned int priority, InterruptBase *interrupt)
+void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::InstallInterrupt(unsigned int priority, InterruptBase *interrupt, bool *trap_control_flag)
 {
 	assert(interrupts[priority] == 0);
 	interrupts[priority] = interrupt;
+	trap_control_flags[priority] = trap_control_flag;
 }
 
 template <typename TYPES, typename CONFIG>
@@ -532,6 +535,14 @@ template <typename INTERRUPT> void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_E
 
 template <typename TYPES, typename CONFIG>
 template <unsigned int NUM_EXCEPTIONS>
+inline bool CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::HasPendingInterrupts() const
+{
+	unsigned int exception_priority;
+	return unisim::util::arithmetic::BitScanForward(exception_priority, exc_flags & exc_mask);
+}
+
+template <typename TYPES, typename CONFIG>
+template <unsigned int NUM_EXCEPTIONS>
 inline void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::ProcessExceptions()
 {
 	unsigned int exception_priority;
@@ -544,6 +555,30 @@ inline void CPU<TYPES, CONFIG>::ExceptionDispatcher<NUM_EXCEPTIONS>::ProcessExce
 		{
 			cpu->GetDebugInfoStream() << interrupt->GetInterruptName() << " (offset 0x" << std::hex << interrupt->GetOffset() << std::dec << ") is interrupting execution at @0x" << std::hex << cpu->GetCIA() << std::dec << std::endl;
 		}
+		
+		bool *p_trap_control_flag = trap_control_flags[exception_priority];
+		
+		if(p_trap_control_flag)
+		{
+			bool trap_control_flag = *p_trap_control_flag;
+			
+			if(trap_control_flag)
+			{
+				bool& _trapped = trapped[exception_priority];
+				
+				if(_trapped)
+				{
+					_trapped = false;
+				}
+				else
+				{
+					cpu->trap_reporting_import->ReportTrap(*cpu, interrupt->GetInterruptName());
+					_trapped = true;
+					return;
+				}
+			}
+		}
+			
 		interrupt->ProcessInterrupt(cpu);
 	}
 }

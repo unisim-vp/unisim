@@ -670,10 +670,10 @@ void INTC<CONFIG>::Reset()
 }
 
 template <typename CONFIG>
-void INTC<CONFIG>::UpdateIRQSelect(unsigned int prc_num)
+void INTC<CONFIG>::UpdateIRQSelect(unsigned int prc_num, const sc_core::sc_time& delay)
 {
 	// Schedule an update of IRQ input selection
-	irq_select_event[prc_num]->notify(sc_core::SC_ZERO_TIME);
+	irq_select_event[prc_num]->notify(delay);
 }
 
 template <typename CONFIG>
@@ -713,6 +713,11 @@ void INTC<CONFIG>::SetIRQOutput(unsigned int prc_num, bool value, IRQ_Type irq_t
 		
 		// Schedule an update of IRQ output (trigger IRQ_B_Process after a delay)
 		gen_irq_b_event[prc_num]->notify(notify_delay);
+		
+		if(unlikely(verbose))
+		{
+			logger << DebugInfo << sc_core::sc_time_stamp() << ": assertion will occur after " << notify_delay << EndDebugInfo;
+		}
 	}
 	else
 	{
@@ -794,29 +799,41 @@ void INTC<CONFIG>::IRQ_Select_Process(unsigned int prc_num)
 	if(unlikely(verbose))
 	{
 		logger << DebugInfo << sc_core::sc_time_stamp() << ": Looking for an IRQ to select for Processor #" << prc_num << EndDebugInfo;
+		DumpPriorityTree(prc_num);
 	}
-	if(SelectIRQInput(prc_num, selected_irq_num[prc_num]))
+	
+	if(irq_b[prc_num])
 	{
-		if(unlikely(verbose))
+		if(SelectIRQInput(prc_num, selected_irq_num[prc_num]))
 		{
-			logger << DebugInfo << sc_core::sc_time_stamp() << ": Selecting IRQ#" << selected_irq_num[prc_num] << " for Processor #" << prc_num << EndDebugInfo;
-		}
-		
-		// Set IRQ output and provide vector of IRQ (in Process IRQ_B_Process)
-		if(IsSW_IRQ(selected_irq_num[prc_num]))
-		{
-			SetIRQOutput(prc_num, true, SW_IRQ);
+			if(unlikely(verbose))
+			{
+				logger << DebugInfo << sc_core::sc_time_stamp() << ": Selecting IRQ#" << selected_irq_num[prc_num] << " for Processor #" << prc_num << EndDebugInfo;
+			}
+			
+			// Set IRQ output and provide vector of IRQ (in Process IRQ_B_Process)
+			if(IsSW_IRQ(selected_irq_num[prc_num]))
+			{
+				SetIRQOutput(prc_num, true, SW_IRQ);
+			}
+			else
+			{
+				SetIRQOutput(prc_num, true, HW_IRQ);
+			}
 		}
 		else
 		{
-			SetIRQOutput(prc_num, true, HW_IRQ);
+			if(unlikely(verbose))
+			{
+				logger << DebugInfo << sc_core::sc_time_stamp() << ": No IRQ selected for Processor #" << prc_num << EndDebugInfo;
+			}
 		}
 	}
 	else
 	{
 		if(unlikely(verbose))
 		{
-			logger << DebugInfo << sc_core::sc_time_stamp() << ": No IRQ selected for Processor #" << prc_num << EndDebugInfo;
+			logger << DebugInfo << sc_core::sc_time_stamp() << ": Can't select yet an IRQ for Processor #" << prc_num << " because IRQ output is already asserted" << EndDebugInfo;
 		}
 	}
 }
@@ -872,6 +889,17 @@ void INTC<CONFIG>::IRQ_B_Process(unsigned int prc_num)
 					*p_avec_b[prc_num] = !true;
 				}
 			}
+			else
+			{
+				sc_core::sc_time notify_delay(last_irq_b_time_stamp[prc_num]);
+				notify_delay += cycle_time;
+				notify_delay -= sc_core::sc_time_stamp();
+				gen_irq_b_event[prc_num]->notify(notify_delay);
+				if(unlikely(verbose))
+				{
+					logger << DebugInfo << sc_core::sc_time_stamp() << ": IRQ output is currently negated, but IRQ output shall negate for at least one clock cycle; assertion will occur after " << notify_delay << EndDebugInfo;
+				}
+			}
 		}
 	}
 	else
@@ -891,6 +919,9 @@ void INTC<CONFIG>::IRQ_B_Process(unsigned int prc_num)
 		
 		// keep time stamp when IRQ output was negated, because IRQ output shall negate for at least one clock cycle
 		last_irq_b_time_stamp[prc_num] = sc_core::sc_time_stamp();
+		
+		// after negating IRQ output one cycle, we can select another IRQ input
+		UpdateIRQSelect(prc_num, cycle_time);
 	}
 }
 
@@ -1127,6 +1158,22 @@ void INTC<CONFIG>::RESET_B_Process()
 	if(reset_b.posedge())
 	{
 		Reset();
+	}
+}
+
+template <typename CONFIG>
+void INTC<CONFIG>::DumpPriorityTree(unsigned int prc_num)
+{
+	typename std::set<IRQPriority>::const_iterator it;
+	
+	// Scan the priority tree, where IRQ inputs are ordered from higher priority to lower priority
+	for(it = priority_tree[prc_num].begin(); it != priority_tree[prc_num].end(); it++)
+	{
+		const IRQPriority& irq_priority = *it;
+		unsigned int priority = irq_priority.GetPriority();
+		unsigned int irq_num = irq_priority.GetIRQ();
+		
+		logger << DebugInfo << "PRI #" << priority << ": IRQ #" << irq_num << EndDebugInfo;
 	}
 }
 

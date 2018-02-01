@@ -97,6 +97,32 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	, param_verbose_data_bus_write("verbose-data-bus-write", this, verbose_data_bus_write, "enable/disable verbosity of data bus write")
 	, verbose_instruction_bus_read(false)
 	, param_verbose_instruction_bus_read("verbose-instruction-bus-read", this, verbose_instruction_bus_read, "enable/disable verbosity of instruction bus read")
+	, trap_system_reset_interrupt(false)
+	, param_trap_system_reset_interrupt("trap-system-reset-interrupt", this, trap_system_reset_interrupt, "enable/disable trap (in debugger) of system reset interrupt")
+	, trap_machine_check_interrupt(false)
+	, param_trap_machine_check_interrupt("trap-machine-check-interrupt", this, trap_machine_check_interrupt, "enable/disable trap (in debugger) of machine check interrupt")
+	, trap_data_storage_interrupt(false)
+	, param_trap_data_storage_interrupt("trap-data-storage-interrupt", this, trap_data_storage_interrupt, "enable/disable trap (in debugger) of data storage interrupt")
+	, trap_instruction_storage_interrupt(false)
+	, param_trap_instruction_storage_interrupt("trap-instruction-storage-interrupt", this, trap_instruction_storage_interrupt, "enable/disable trap (in debugger) of instruction storage interrupt")
+	, trap_alignment_interrupt(false)
+	, param_trap_alignment_interrupt("trap-alignment-interrupt", this, trap_alignment_interrupt, "enable/disable trap (in debugger) of alignment interrupt")
+	, trap_program_interrupt(false)
+	, param_trap_program_interrupt("trap-program-interrupt", this, trap_program_interrupt, "enable/disable trap (in debugger) of program interrupt")
+	, trap_embedded_floating_point_data_interrupt(false)
+	, param_trap_embedded_floating_point_data_interrupt("trap-embedded-floating-point-data-interrupt", this, trap_embedded_floating_point_data_interrupt, "enable/disable trap (in debugger) of embedded floating-point data interrupt")
+	, trap_embedded_floating_point_round_interrupt(false)
+	, param_trap_embedded_floating_point_round_interrupt("trap-embedded-floating-point-round-interrupt", this, trap_embedded_floating_point_round_interrupt, "enable/disable trap (in debugger) of embedded floating-point round interrupt")
+	, trap_system_call_interrupt(false)
+	, param_trap_system_call_interrupt("trap-system-call-interrupt", this, trap_system_call_interrupt, "enable/disable trap (in debugger) of system call interrupt")
+	, trap_critical_input_interrupt(false)
+	, param_trap_critical_input_interrupt("trap-critical-input-interrupt", this, trap_critical_input_interrupt, "enable/disable trap (in debugger) of critical input interrupt")
+	, trap_external_input_interrupt(false)
+	, param_trap_external_input_interrupt("trap-external-input-interrupt", this, trap_external_input_interrupt, "enable/disable trap (in debugger) of extern input interrupt")
+	, trap_performance_monitor_interrupt(false)
+	, param_trap_performance_monitor_interrupt("trap-performance-monitor-interrupt", this, trap_performance_monitor_interrupt, "enable/disable trap (in debugger) of permformance monitor interrupt")
+	, trap_debug_interrupt(false)
+	, param_trap_debug_interrupt("trap-debug-interrupt", this, trap_debug_interrupt, "enable/disable trap (in debugger) of debug interrupt")
 	, enable_auto_vectored_interrupts(true)
 	, vector_offset(0x0)
 	, instruction_buffer_base_addr(~ADDRESS(0))
@@ -202,19 +228,19 @@ CPU<TYPES, CONFIG>::CPU(const char *name, unisim::kernel::service::Object *paren
 	svr.Initialize(system_version);
 	sir.Initialize(system_information);
 	
-	this->SuperCPU::template InstallInterrupt<SystemResetInterrupt>();
-	this->SuperCPU::template InstallInterrupt<MachineCheckInterrupt>();
-	this->SuperCPU::template InstallInterrupt<DataStorageInterrupt>();
-	this->SuperCPU::template InstallInterrupt<InstructionStorageInterrupt>();
-	this->SuperCPU::template InstallInterrupt<AlignmentInterrupt>();
-	this->SuperCPU::template InstallInterrupt<ProgramInterrupt>();
-	this->SuperCPU::template InstallInterrupt<EmbeddedFloatingPointDataInterrupt>();
-	this->SuperCPU::template InstallInterrupt<EmbeddedFloatingPointRoundInterrupt>();
-	this->SuperCPU::template InstallInterrupt<SystemCallInterrupt>();
-	this->SuperCPU::template InstallInterrupt<CriticalInputInterrupt>();
-	this->SuperCPU::template InstallInterrupt<ExternalInputInterrupt>();
-	this->SuperCPU::template InstallInterrupt<PerformanceMonitorInterrupt>();
-	this->SuperCPU::template InstallInterrupt<DebugInterrupt>();
+	this->SuperCPU::template InstallInterrupt<SystemResetInterrupt>(trap_system_reset_interrupt);
+	this->SuperCPU::template InstallInterrupt<MachineCheckInterrupt>(trap_machine_check_interrupt);
+	this->SuperCPU::template InstallInterrupt<DataStorageInterrupt>(trap_data_storage_interrupt);
+	this->SuperCPU::template InstallInterrupt<InstructionStorageInterrupt>(trap_instruction_storage_interrupt);
+	this->SuperCPU::template InstallInterrupt<AlignmentInterrupt>(trap_alignment_interrupt);
+	this->SuperCPU::template InstallInterrupt<ProgramInterrupt>(trap_program_interrupt);
+	this->SuperCPU::template InstallInterrupt<EmbeddedFloatingPointDataInterrupt>(trap_embedded_floating_point_data_interrupt);
+	this->SuperCPU::template InstallInterrupt<EmbeddedFloatingPointRoundInterrupt>(trap_embedded_floating_point_round_interrupt);
+	this->SuperCPU::template InstallInterrupt<SystemCallInterrupt>(trap_system_call_interrupt);
+	this->SuperCPU::template InstallInterrupt<CriticalInputInterrupt>(trap_critical_input_interrupt);
+	this->SuperCPU::template InstallInterrupt<ExternalInputInterrupt>(trap_external_input_interrupt);
+	this->SuperCPU::template InstallInterrupt<PerformanceMonitorInterrupt>(trap_performance_monitor_interrupt);
+	this->SuperCPU::template InstallInterrupt<DebugInterrupt>(trap_debug_interrupt);
 
 	this->SuperCPU::template EnableInterrupt<SystemResetInterrupt>();
 	this->SuperCPU::template EnableInterrupt<typename MachineCheckInterrupt::NMI>();
@@ -1276,7 +1302,7 @@ void CPU<TYPES, CONFIG>::StepOneInstruction()
 					this->trap_reporting_import->ReportTrap();
 				}
 				
-				if(unlikely((this->instruction_counter >= this->max_inst) || (this->cia == this->halt_on_addr))) this->Stop(0);
+				if(unlikely((this->instruction_counter >= this->max_inst) || (this->cia == this->halt_on_addr))) this->Halt();
 			}
 			else if(unlikely(this->verbose_exception))
 			{

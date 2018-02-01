@@ -142,7 +142,7 @@ private:
 		typedef FSB_ADDRESS_TYPE ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 6;
 		static const unsigned int OUTPUT_SOCKETS = 8;
-		static const unsigned int MAX_NUM_MAPPINGS = 11;
+		static const unsigned int MAX_NUM_MAPPINGS = 12;
 		static const unsigned int BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;
 	};
@@ -152,7 +152,7 @@ private:
 		typedef FSB_ADDRESS_TYPE ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 4;
 		static const unsigned int OUTPUT_SOCKETS = 4;
-		static const unsigned int MAX_NUM_MAPPINGS = 12;
+		static const unsigned int MAX_NUM_MAPPINGS = 13;
 		static const unsigned int BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;
 	};
@@ -486,7 +486,8 @@ private:
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_15_RX;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_16_TX;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_16_RX;
-	typedef unisim::kernel::tlm2::TargetStub<64> EBI_STUB;
+	//typedef unisim::kernel::tlm2::TargetStub<64> EBI_STUB;
+	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<64> FLASH_PORT1_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<64> XBAR_0_S6_STUB;
 	typedef unisim::kernel::tlm2::InitiatorStub<64> XBAR_1_M2_STUB;

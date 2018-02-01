@@ -89,6 +89,7 @@ Instrumenter::Instrumenter(const char *name, unisim::kernel::service::Object *pa
 	, next_input_instrumentation_event("next_input_instrumentation_event")
 	, pull_down_signal(CreateSignal<bool, sc_core::SC_MANY_WRITERS>("pull_down", false))
 	, pull_up_signal(CreateSignal<bool, sc_core::SC_MANY_WRITERS>("pull_up", true))
+	, unused_signal(CreateSignal<bool, sc_core::SC_MANY_WRITERS>("unused", false))
 {
 	if(enable_input_instrumentation && !instrumentation_input_filename.empty())
 	{

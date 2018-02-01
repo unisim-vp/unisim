@@ -237,7 +237,7 @@ PIT<CONFIG>::PIT(const sc_core::sc_module_name& name, unisim::kernel::service::O
 	sensitive << reset_b.pos();
 
 	// Spawn an IRQ_Process for each channel
-	for(channel_num = 0; channel_num < MAX_CHANNELS; channel_num++)
+	for(channel_num = 0; channel_num < NUM_CHANNELS; channel_num++)
 	{
 		sc_core::sc_spawn_options irq_process_spawn_options;
 		irq_process_spawn_options.spawn_method();
@@ -249,17 +249,20 @@ PIT<CONFIG>::PIT(const sc_core::sc_module_name& name, unisim::kernel::service::O
 		sc_core::sc_spawn(sc_bind(&PIT<CONFIG>::IRQ_Process, this, channel_num), irq_process_name_sstr.str().c_str(), &irq_process_spawn_options);
 	}
 	
-	// Spawn an DMA_TRIGGER_Process for each channel
-	for(channel_num = 0; channel_num < MAX_CHANNELS; channel_num++)
+	if(HAS_DMA_SUPPORT)
 	{
-		sc_core::sc_spawn_options dma_trigger_process_spawn_options;
-		dma_trigger_process_spawn_options.spawn_method();
-		dma_trigger_process_spawn_options.dont_initialize();
-		dma_trigger_process_spawn_options.set_sensitivity(gen_dma_pulse_event[channel_num]);
-		
-		std::stringstream dma_trigger_process_name_sstr;
-		dma_trigger_process_name_sstr << "DMA_TRIGGER_Process_" << channel_num;
-		sc_core::sc_spawn(sc_bind(&PIT<CONFIG>::DMA_TRIGGER_Process, this, channel_num), dma_trigger_process_name_sstr.str().c_str(), &dma_trigger_process_spawn_options);
+		// Spawn an DMA_TRIGGER_Process for each channel
+		for(channel_num = 0; channel_num < NUM_CHANNELS; channel_num++)
+		{
+			sc_core::sc_spawn_options dma_trigger_process_spawn_options;
+			dma_trigger_process_spawn_options.spawn_method();
+			dma_trigger_process_spawn_options.dont_initialize();
+			dma_trigger_process_spawn_options.set_sensitivity(gen_dma_pulse_event[channel_num]);
+			
+			std::stringstream dma_trigger_process_name_sstr;
+			dma_trigger_process_name_sstr << "DMA_TRIGGER_Process_" << channel_num;
+			sc_core::sc_spawn(sc_bind(&PIT<CONFIG>::DMA_TRIGGER_Process, this, channel_num), dma_trigger_process_name_sstr.str().c_str(), &dma_trigger_process_spawn_options);
+		}
 	}
 
 	SC_METHOD(RTIRQ_Process);
