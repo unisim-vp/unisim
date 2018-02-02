@@ -47,20 +47,41 @@ namespace arm {
   /*** Memory Attributes ***/
   struct MemAttrs
   {
-    enum type_t { Normal, Device, StronglyOrdered };
-    enum attr_t { Non_cacheable = 0b00, Write_Through = 0b10, Write_Back = 0b11 /* 0b01: RESERVED */ };
-    enum hint_t { No_Allocate = 0b00, Write_Allocate = 0b01, Read_Allocate = 0b10, RW_Allocate = 0b11 };
+    enum type_t { StronglyOrdered = 0b00, Device = 0b01, Normal = 0b10 };
+    enum attr_t { NonCacheable = 0b00, WriteThrough = 0b10, WriteBack = 0b11 /* 0b01: RESERVED */ };
+    enum hint_t { NoAllocate = 0b00, WriteAllocate = 0b01, ReadAllocate = 0b10, RWAllocate = 0b11 };
     
     typedef RegisterField< 0,2> type;
     typedef RegisterField< 2,2> innerattrs;
-    typedef RegisterField< 4,2> outerattrs;
-    typedef RegisterField< 6,2> innerhints;
+    typedef RegisterField< 4,2> innerhints;
+    typedef RegisterField< 2,4> innerattrshints;
+    typedef RegisterField< 6,2> outerattrs;
     typedef RegisterField< 8,2> outerhints;
+    typedef RegisterField< 6,4> outerattrshints;
     typedef RegisterField<10,1> innertransient;
     typedef RegisterField<11,1> outertransient;
     typedef RegisterField<12,1> shareable;
     typedef RegisterField<13,1> outershareable;
-  };
+
+    struct Inner { typedef innerattrs attrs; typedef innerhints hints; typedef innertransient transient; typedef MemAttrs::shareable shareable;  };
+    struct Outer { typedef outerattrs attrs; typedef outerhints hints; typedef outertransient transient; typedef outershareable shareable; };
+    
+    template <typename T, typename S>
+    static void
+    ConvAttrsHints( S const&, T& props, unsigned rgn )
+    {
+      struct AttrsHints { MemAttrs::attr_t attrs; MemAttrs::hint_t hints; } const attrshints[] = {
+        {MemAttrs::NonCacheable, MemAttrs::NoAllocate},
+        {MemAttrs::WriteBack,    MemAttrs::RWAllocate},
+        {MemAttrs::WriteThrough, MemAttrs::ReadAllocate},
+        {MemAttrs::WriteBack,    MemAttrs::ReadAllocate}
+      };
+      
+      AttrsHints const& ah = attrshints[rgn&3];
+      typename S::attrs().Set( props, ah.attrs );
+      typename S::hints().Set( props, ah.hints );
+    }
+};
   
 } // end of namespace arm
 } // end of namespace processor

@@ -151,8 +151,8 @@ private:
   void         BusSynchronize();
 
   // Intrusive memory accesses
-  virtual bool  PhysicalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size, uint32_t attrs );
-  virtual bool PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size, uint32_t attrs );
+  virtual bool  PhysicalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size );
+  virtual bool PhysicalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size );
   // Non-itrusive memory accesses
   virtual bool  ExternalReadMemory( uint64_t addr, uint8_t*       buffer, unsigned size );
   virtual bool ExternalWriteMemory( uint64_t addr, uint8_t const* buffer, unsigned size );

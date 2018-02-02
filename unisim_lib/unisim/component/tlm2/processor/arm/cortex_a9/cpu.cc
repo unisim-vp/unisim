@@ -356,8 +356,8 @@ CPU::Run()
       }
       if (not nIRQm or not nFIQm) {
         uint32_t exceptions = 0;
-        unisim::component::cxx::processor::arm::I.Set( exceptions, not nIRQm );
-        unisim::component::cxx::processor::arm::F.Set( exceptions, not nFIQm );
+        unisim::component::cxx::processor::arm::I.Set( exceptions, nIRQm ? 0u : 1u );
+        unisim::component::cxx::processor::arm::F.Set( exceptions, nFIQm ? 0u : 1u );
         
         bool exception_taken = this->HandleAsynchronousException( exceptions ) != 0;
         if (exception_taken) {

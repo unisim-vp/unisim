@@ -37,6 +37,7 @@
 #include <unisim/component/cxx/processor/arm/cpu.tcc>
 #include <unisim/component/cxx/processor/arm/execute.hh>
 #include <unisim/component/cxx/processor/arm/isa/decode.hh>
+#include <unisim/component/cxx/processor/arm/memattrs.hh>
 #include <unisim/util/backtrace/backtrace.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
@@ -212,8 +213,9 @@ CPU::CPU(const char *name, Object *parent)
       uint32_t addr = strtoul(args,0,0);
         
       try {
-        uint32_t phys_addr = cpu.TranslateAddress<DebugAccess>( addr, true, mat_read, 1 );
-        cpu.logger << DebugInfo << "V[0x" << std::hex << addr << "] : P[0x" << std::hex << phys_addr << "]";
+        AddressDescriptor loc( addr );
+        cpu.TranslateAddress<DebugAccess>( loc, true, mat_read, 1 );
+        cpu.logger << DebugInfo << "V[0x" << std::hex << addr << "] : P[0x" << std::hex << loc.address << "]";
       } catch (DataAbortException const&)
         { cpu.logger << DebugInfo << "V[0x" << std::hex << addr << "] : unmapped"; }
       cpu.logger << EndDebugInfo;
@@ -457,14 +459,13 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
           //cout << "\033[37m";
         }
     }
+
+  AddressDescriptor loc( addr & ~lo_mask );
+  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != USER_MODE, mat_write, size );
   
-  uint32_t write_addr = TranslateAddress<PlainAccess>( addr & ~lo_mask, cpsr.Get(M) != USER_MODE, mat_write, size );
-  
-  // There is no data cache or data should not be cached.
-  // Just send the request to the memory interface
-  if (not PhysicalWriteMemory( write_addr, data, size, 0 )) {
-    // TODO: domain assigned with a regular value ?
-    DataAbort(addr, write_addr, 0, 0, mat_write, DAbort_SyncExternal, false, false, true, false, false);
+  // Send the request to the memory interface
+  if (not PhysicalWriteMemory( loc.address, data, size, loc.attributes )) {
+    DataAbort(addr, loc.address, 0, 0, mat_write, DAbort_SyncExternal, false, false, true, false, false);
   }
   
   /* report read memory access if necessary */
@@ -519,14 +520,16 @@ CPU::PerformReadAccess(	uint32_t addr, uint32_t size )
       DataAbort( addr, 0, 0, 0, mat_read, DAbort_Alignment, cpsr.Get(M) == HYPERVISOR_MODE, false, false, false, false );
     }
   }
+
+  AddressDescriptor loc( addr & ~lo_mask );
   
-  uint32_t read_addr = TranslateAddress<PlainAccess>( addr & ~lo_mask, cpsr.Get(M) != USER_MODE, mat_read, size );
+  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != USER_MODE, mat_read, size );
   
   uint8_t data[4];
 
   // just read the data from the memory system
-  if (not PhysicalReadMemory(read_addr, &data[0], size, 0)) {
-    DataAbort(addr, read_addr, 0, 0, mat_read, DAbort_SyncExternal, false, false, true, false, false);
+  if (not PhysicalReadMemory(loc.address, &data[0], size, loc.attributes)) {
+    DataAbort(addr, loc.address, 0, 0, mat_read, DAbort_SyncExternal, false, false, true, false, false);
   }
 
   /* report read memory access if necessary */
@@ -755,8 +758,9 @@ CPU::ReadMemory( uint32_t addr, void* buffer, uint32_t size )
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       try {
-        uint32_t ef_addr = TranslateAddress<QuietAccess>( addr + index, true, mat_read, 1 );
-        if (not ExternalReadMemory( ef_addr, &rbuffer[index], 1 ))
+	AddressDescriptor loc(addr + index);
+        TranslateAddress<QuietAccess>( loc, true, mat_read, 1 );
+        if (not ExternalReadMemory( loc.address, &rbuffer[index], 1 ))
           return false;
       }
       catch (DataAbortException const& x)
@@ -787,8 +791,9 @@ CPU::WriteMemory( uint32_t addr, void const* buffer, uint32_t size )
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       try {
-        uint32_t ef_addr = TranslateAddress<QuietAccess>( addr + index, true, mat_write, 1 );
-        if (not ExternalWriteMemory( ef_addr, &wbuffer[index], 1 ))
+	AddressDescriptor loc(addr + index);
+        TranslateAddress<QuietAccess>( loc, true, mat_write, 1 );
+        if (not ExternalWriteMemory( loc.address, &wbuffer[index], 1 ))
           return false;
       } catch (DataAbortException const& x)
         { return false; }
@@ -902,24 +907,23 @@ CPU::PerformExit(int ret)
  * system, that is, it tries to read from the pertinent caches and if
  * failed from the external memory system.
  * 
- * @param base_address the (physical) address of the required
- *     instruction that the prefetch instruction buffer should
- *     encompass, once the refill is complete.
+ * @param mva      the modified virtual address of the fetched instruction
+ * @param line_loc the physical address descriptor used to refill the cache line
  */
 void 
-CPU::RefillInsnPrefetchBuffer(uint32_t mva, uint32_t base_address)
+CPU::RefillInsnPrefetchBuffer(uint32_t mva, AddressDescriptor const& line_loc)
 {
-  this->ipb_base_address = base_address;
+  this->ipb_base_address = line_loc.address;
   
   // No instruction cache present, just request the insn to the
   // memory system.
-  if (not PhysicalReadMemory(base_address, &this->ipb_bytes[0], IPB_LINE_SIZE, 0)) {
-    DataAbort(mva, base_address, 0, 0, mat_exec, DAbort_SyncExternal, false, false, true, false, false);
+  if (not PhysicalReadMemory(line_loc.address, &this->ipb_bytes[0], IPB_LINE_SIZE, line_loc.attributes)) {
+    DataAbort(mva, line_loc.address, 0, 0, mat_exec, DAbort_SyncExternal, false, false, true, false, false);
   }
   
   if (unlikely(requires_memory_access_reporting and memory_access_reporting_import))
     memory_access_reporting_import->
-      ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, base_address, IPB_LINE_SIZE);
+      ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, line_loc.address, IPB_LINE_SIZE);
 }
 
 /** Reads ARM32 instructions from the memory system
@@ -933,12 +937,13 @@ CPU::RefillInsnPrefetchBuffer(uint32_t mva, uint32_t base_address)
 void 
 CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm32::CodeType& insn)
 {
-  uint32_t base_address = TranslateAddress<PlainAccess>( address & -(IPB_LINE_SIZE), cpsr.Get(M) != USER_MODE, mat_exec, IPB_LINE_SIZE );
+  AddressDescriptor loc(address & -(IPB_LINE_SIZE));
+  TranslateAddress<PlainAccess>( loc, cpsr.Get(M) != USER_MODE, mat_exec, IPB_LINE_SIZE );
   uint32_t buffer_index = address % (IPB_LINE_SIZE);
   
-  if (unlikely(ipb_base_address != base_address))
+  if (unlikely(ipb_base_address != loc.address))
     {
-      RefillInsnPrefetchBuffer( address, base_address );
+      RefillInsnPrefetchBuffer( address, loc );
     }
   
   uint32_t word;
@@ -958,19 +963,23 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
 void
 CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thumb2::CodeType& insn)
 {
-  uint32_t base_address = TranslateAddress<PlainAccess>( address & -(IPB_LINE_SIZE), cpsr.Get(M) != USER_MODE, mat_exec, IPB_LINE_SIZE );
+  AddressDescriptor loc(address & -(IPB_LINE_SIZE));
+  bool ispriv = cpsr.Get(M) != USER_MODE;
+  TranslateAddress<PlainAccess>( loc, ispriv, mat_exec, IPB_LINE_SIZE );
   intptr_t buffer_index = address % (IPB_LINE_SIZE);
     
-  if (unlikely(ipb_base_address != base_address))
+  if (unlikely(ipb_base_address != loc.address))
     {
-      RefillInsnPrefetchBuffer( address, base_address );
+      RefillInsnPrefetchBuffer( address, loc );
     }
   
   // In ARMv7, instruction fetch ignores "Endianness execution state bit"
   insn.str[0] = ipb_bytes[buffer_index+0];
   insn.str[1] = ipb_bytes[buffer_index+1];
   if (unlikely((buffer_index+2) >= IPB_LINE_SIZE)) {
-    RefillInsnPrefetchBuffer( address+2, base_address + IPB_LINE_SIZE );
+    address = loc.address = address + 2;
+    TranslateAddress<PlainAccess>( loc, ispriv, mat_exec, IPB_LINE_SIZE );
+    RefillInsnPrefetchBuffer( address, loc );
     buffer_index = intptr_t(-2);
   }
   insn.str[2] = ipb_bytes[buffer_index+2];
@@ -1173,7 +1182,79 @@ CPU::DataAbort(uint32_t va, uint64_t ipa,
     throw DataAbortException();
 }
 
-
+void
+CPU::MMU::refresh_attr_cache(bool tre)
+{  
+  for (unsigned idx = 0; idx < 64; ++idx)
+    {
+      uint32_t attributes = 0;
+      unsigned S = idx >> 5;
+      
+      if (tre)
+        {
+          unsigned n = idx & 7; /*TEX[0],C,B*/
+          MemAttrs::type_t type = MemAttrs::type_t( (prrr >> 2*n) & 3 );
+          MemAttrs::type().Set(attributes, type);
+          MemAttrs::ConvAttrsHints( MemAttrs::Inner(), attributes, nmrr >> (2*n+ 0) );
+          MemAttrs::ConvAttrsHints( MemAttrs::Outer(), attributes, nmrr >> (2*n+16) );
+          unsigned shareable = (type == MemAttrs::Normal) ? ((prrr >> (18+S)) & 1) : (type == MemAttrs::Device) ? ((prrr >> (16+S)) & 1) : 1;
+          unsigned outershareable = (((prrr >> (n+24)) & 1) or not shareable) ? 0 : 1;
+          MemAttrs::shareable().Set(attributes,shareable);
+          MemAttrs::outershareable().Set(attributes,outershareable);
+        }
+      else
+        {
+          if ((idx >> 4)&1) /*TEX[2]*/
+            {
+              MemAttrs::type().Set(attributes,MemAttrs::Normal);
+              MemAttrs::ConvAttrsHints( MemAttrs::Inner(), attributes, idx >> 0 );
+              MemAttrs::ConvAttrsHints( MemAttrs::Outer(), attributes, idx >> 2 );
+            }
+          else
+            {
+              switch (idx & 0xf) /*TEX[1:0],C,B*/
+                {
+                case 0b0000:
+                  MemAttrs::type().Set(attributes,MemAttrs::StronglyOrdered);
+                  break;
+                case 0b0001:
+                case 0b1000:
+                  MemAttrs::type().Set(attributes,MemAttrs::Device);
+                  S = idx & 1;
+                  break;
+                case 0b0010:
+                  MemAttrs::type().Set(attributes,MemAttrs::Normal);
+                  MemAttrs::ConvAttrsHints( MemAttrs::Inner(), attributes, 2 ); /* WriteThrough, ReadAllocate */
+                  MemAttrs::ConvAttrsHints( MemAttrs::Outer(), attributes, 2 ); /* WriteThrough, ReadAllocate */
+                  break;
+                case 0b0011:
+                  MemAttrs::type().Set(attributes,MemAttrs::Normal);
+                  MemAttrs::ConvAttrsHints( MemAttrs::Inner(), attributes, 3 ); /* WriteBack, ReadAllocate */
+                  MemAttrs::ConvAttrsHints( MemAttrs::Outer(), attributes, 3 ); /* WriteBack, ReadAllocate */
+                  break;
+                case 0b0100:
+                  MemAttrs::type().Set(attributes,MemAttrs::Normal);
+                  MemAttrs::ConvAttrsHints( MemAttrs::Inner(), attributes, 0 ); /* NonCacheable */
+                  MemAttrs::ConvAttrsHints( MemAttrs::Outer(), attributes, 0 ); /* NonCacheable */
+                  break;
+                case 0b0111: break;
+                  MemAttrs::type().Set(attributes,MemAttrs::Normal);
+                  MemAttrs::ConvAttrsHints( MemAttrs::Inner(), attributes, 1 ); /* WriteBack, MemAttrs::RWAllocate */
+                  MemAttrs::ConvAttrsHints( MemAttrs::Outer(), attributes, 1 ); /* WriteBack, MemAttrs::RWAllocate */
+                  break;
+                default:
+                  MemAttrs::type().Set(attributes,3/*error*/);
+                  break;
+                }
+            }
+          MemAttrs::shareable().Set(attributes,S);
+          MemAttrs::outershareable().Set(attributes,S);
+        }
+      
+      attr_cache[idx] = attributes;
+    }
+}
+  
 CPU::TLB::TLB()
  : entry_count(0)
 {
@@ -1185,11 +1266,11 @@ CPU::TLB::TLB()
 
 template <class POLICY>
 bool
-CPU::TLB::GetTranslation( TransAddrDesc& tad, uint32_t mva, uint32_t asid )
+CPU::TLB::GetTranslation( CPU::TLB::Entry& tlbe, uint32_t mva, uint32_t asid )
 {
   unsigned lsb = 0, hit;
   uint32_t key = 0;
-  TransAddrDesc* matching_tad = 0;
+  Entry*   matching_tlbe = 0;
   
   for (hit = 0; hit < entry_count; ++hit)
     {
@@ -1197,8 +1278,8 @@ CPU::TLB::GetTranslation( TransAddrDesc& tad, uint32_t mva, uint32_t asid )
       lsb = key & 31;
       if ((mva ^ key) >> lsb)
         continue;
-      matching_tad = &vals[(key >> 5) & 127];
-      if (not matching_tad->nG or matching_tad->asid == asid)
+      matching_tlbe = &vals[(key >> 5) & 127];
+      if (not matching_tlbe->nG or matching_tlbe->asid == asid)
         break;
     }
   if (hit >= entry_count)
@@ -1213,9 +1294,9 @@ CPU::TLB::GetTranslation( TransAddrDesc& tad, uint32_t mva, uint32_t asid )
   }
   
   // Address translation and attributes
-  tad = *matching_tad;
+  tlbe = *matching_tlbe;
   uint32_t himask = uint32_t(-1) << lsb;
-  tad.pa = (tad.pa & himask) | (mva & ~himask);
+  tlbe.pa = (tlbe.pa & himask) | (mva & ~himask);
   return true;
 }
 
@@ -1264,13 +1345,13 @@ CPU::TLB::Iterator::MatchASID( uint32_t asid ) const
 }
 
 void
-CPU::TLB::AddTranslation( uint32_t mva, TransAddrDesc const& tad )
+CPU::TLB::AddTranslation( uint32_t mva, CPU::TLB::Entry const& tlbe )
 {
   if (entry_count >= ENTRY_CAPACITY)
     entry_count = ENTRY_CAPACITY - 1; // Erase LRU
   
   // Generate new key
-  unsigned lsb = tad.lsb;
+  unsigned lsb = tlbe.lsb;
   uint32_t key = ((mva >> lsb) << lsb) | (keys[entry_count] & 0xfe0) | (lsb & 31);
   
   // MRU sort
@@ -1280,12 +1361,12 @@ CPU::TLB::AddTranslation( uint32_t mva, TransAddrDesc const& tad )
 
   entry_count += 1;
   
-  vals[(key >> 5) & 127] = tad;
+  vals[(key >> 5) & 127] = tlbe;
 }
 
 template <class POLICY>
 void
-CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat, unsigned size )
+CPU::TranslationTableWalk( CPU::TLB::Entry& tlbe, uint32_t mva, mem_acc_type_t mat, unsigned size )
 {
   //  // this is only called when the MMU is enabled
   //  TLBRecord result;
@@ -1332,6 +1413,9 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
   uint32_t l1descaddr = (((ttbr >> (14-n)) << (14-n)) | ((mva << n) >> (n+18))) & -4;
   {
     bool success;
+    uint32_t attrs=0;
+    MemAttrs::type().Set(attrs,MemAttrs::Normal);
+    
     if (POLICY::DEBUG) success = ExternalReadMemory( l1descaddr, erd.data(), 4 );
     else               success = PhysicalReadMemory( l1descaddr, erd.data(), 4, 0 );
     if (not success)
@@ -1346,10 +1430,11 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
     
   case 1: {
     // Large page or Small page
-    tad.domain = RegisterField<5,4>().Get( l1desc );
-    tad.level = 2;
-    tad.pxn = RegisterField<2,1>().Get( l1desc );
-    //tad.NS = RegisterField<3,1>().Get( l1desc );
+    tlbe.domain = RegisterField<5,4>().Get( l1desc );
+    // level = 2;
+    tlbe.pxn = RegisterField<2,1>().Get( l1desc );
+    tlbe.NS = RegisterField<3,1>().Get( l1desc );
+    
     // Obtain Second level descriptor.
     uint32_t l2descaddr = ((l1desc & 0xfffffc00) | ((mva << 12) >> 22)) & -4;
     {
@@ -1357,67 +1442,71 @@ CPU::TranslationTableWalk( TransAddrDesc& tad, uint32_t mva, mem_acc_type_t mat,
       if (POLICY::DEBUG) success = ExternalReadMemory( l2descaddr, erd.data(), 4 );
       else               success = PhysicalReadMemory( l2descaddr, erd.data(), 4, 0 );
       if (not success)
-        DataAbort(l2descaddr, 0, tad.domain, 0, mat_read, DAbort_SyncExternalonWalk, false,false,false,false,false);
+        DataAbort(l2descaddr, 0, tlbe.domain, 0, mat_read, DAbort_SyncExternalonWalk, false,false,false,false,false);
     }
     uint32_t l2desc = erd.Get();
     // Process Second level descriptor.
-    if ((l2desc&3) == 0) {
-      DataAbort(mva, 0, tad.domain, 2, mat, DAbort_Translation, false, false, false, false, false);
-    }
-    //tad.S = RegisterField<10,1>().Get( l1desc );
-    tad.ap = (RegisterField<9,1>().Get( l2desc ) << 2) | RegisterField<4,2>().Get( l2desc );
-    tad.nG = RegisterField<11,1>().Get( l2desc );
-    if (l2desc & 2) {
-      // Small page (4kB)
-      // tad.texcb = (RegisterField<12,3>().Get( l1desc ) << 2) | (RegisterField<3,1>().Get( l1desc ) << 1) | RegisterField<2,1>().Get( l1desc );
-      tad.xn = RegisterField<0,1>().Get( l2desc );
-      tad.lsb = 12;
-      tad.pa = (l2desc & 0xfffff000) | (mva & 0x00000fff);
-    }
-    else {
-      // Large page (64kB)
-      // tad.texcb = (RegisterField<6,3>().Get( l1desc ) << 2) | (RegisterField<3,1>().Get( l1desc ) << 1) | RegisterField<2,1>().Get( l1desc );
-      tad.xn = RegisterField<15,1>().Get( l2desc );
-      tad.lsb = 16;
-      tad.pa = (l2desc & 0xffff0000) | (mva & 0x0000ffff);
-    }
+    if (RegisterField<0,2>().Get(l2desc) == 0)
+      {
+        DataAbort(mva, 0, tlbe.domain, 2, mat, DAbort_Translation, false, false, false, false, false);
+      }
+    tlbe.memattrs = (RegisterField<10,1>().Get( l2desc ) << 5) | RegisterField<2,2>().Get( l2desc ); /* S[1] : ?[3] : CB[2]*/
+    tlbe.ap = (RegisterField<9,1>().Get( l2desc ) << 2) | RegisterField<4,2>().Get( l2desc );
+    tlbe.nG = RegisterField<11,1>().Get( l2desc );
+    if (RegisterField<1,1>().Get(l2desc))
+      {
+        // Small page (4kB)
+        tlbe.memattrs |= (RegisterField<12,3>().Get( l2desc ) << 2); /* ?[1] : TEX[3] : ?[2] */
+        tlbe.xn = RegisterField<0,1>().Get( l2desc );
+        tlbe.lsb = 12;
+        tlbe.pa = (l2desc & 0xfffff000) | (mva & 0x00000fff);
+      }
+    else
+      {
+        // Large page (64kB)
+        tlbe.memattrs |= (RegisterField<6,3>().Get( l2desc ) << 2); /* ?[1] : TEX[3] : ?[2] */
+        tlbe.xn = RegisterField<15,1>().Get( l2desc );
+        tlbe.lsb = 16;
+        tlbe.pa = (l2desc & 0xffff0000) | (mva & 0x0000ffff);
+      }
   } break;
     
   case 2: case 3: {
     // Section or Supersection
-    // tad.texcb = (RegisterField<12,3>().Get( l1desc ) << 2) | (RegisterField<3,1>().Get( l1desc ) << 1) | RegisterField<2,1>().Get( l1desc );
-    // tad.S = RegisterField<16,1>().Get( l1desc )
-    tad.ap = (RegisterField<15,1>().Get( l1desc ) << 2) | RegisterField<10,2>().Get( l1desc );
-    tad.xn = RegisterField<4,1>().Get( l1desc );
-    tad.pxn = RegisterField<0,1>().Get( l1desc );
-    tad.nG = RegisterField<17,1>().Get( l1desc );
-    tad.level = 1;
-    // tad.NS = RegisterField<19,1>().Get( l1desc )
+    tlbe.memattrs = (RegisterField<16,1>().Get( l1desc ) << 5) | (RegisterField<12,3>().Get( l1desc ) << 2) | RegisterField<2,2>().Get( l1desc ); /* S[1] : TEX[3] : CB[2]*/
+    tlbe.ap = (RegisterField<15,1>().Get( l1desc ) << 2) | RegisterField<10,2>().Get( l1desc );
+    tlbe.xn = RegisterField<4,1>().Get( l1desc );
+    tlbe.pxn = RegisterField<0,1>().Get( l1desc );
+    tlbe.nG = RegisterField<17,1>().Get( l1desc );
+    // level = 1;
+    tlbe.NS = RegisterField<19,1>().Get( l1desc );
     
-    if ((l1desc >> 18) & 1) {
-      // Supersection (16MB)
-      tad.domain = 0b0000;
-      tad.lsb = 24;
-      if (RegisterField<20,4>().Get( l1desc ) or RegisterField<5,4>().Get( l1desc ))
-        throw std::logic_error("LPAE not implemented"); /* Large 40-bit extended address */
-      tad.pa = (l1desc & 0xff000000) | (mva & 0x00ffffff);
-    }
-    else {
-      // Section (1MB)
-      tad.domain = RegisterField<5,4>().Get( l1desc );
-      tad.lsb = 20;
-      tad.pa = (l1desc & 0xfff00000) | (mva & 0x000fffff);
-    }
+    if (RegisterField<18,1>().Get(l1desc))
+      {
+        // Supersection (16MB)
+        tlbe.domain = 0b0000;
+        tlbe.lsb = 24;
+        if (RegisterField<20,4>().Get( l1desc ) or RegisterField<5,4>().Get( l1desc ))
+          throw std::logic_error("LPAE not implemented"); /* Large 40-bit extended address */
+        tlbe.pa = (l1desc & 0xff000000) | (mva & 0x00ffffff);
+      }
+    else
+      {
+        // Section (1MB)
+        tlbe.domain = RegisterField<5,4>().Get( l1desc );
+        tlbe.lsb = 20;
+        tlbe.pa = (l1desc & 0xfff00000) | (mva & 0x000fffff);
+      }
   } break;
     
   }
   
-  if (tad.nG) // Non Global entries refer to the current ASID
-    tad.asid = GetASID();
+  if (tlbe.nG) // Non Global entries refer to the current ASID
+    tlbe.asid = GetASID();
   
   // Try to add entry to TLB
   if (not POLICY::DEBUG)
-    tlb.AddTranslation( mva, tad );
+    tlb.AddTranslation( mva, tlbe );
 }
 
 namespace {
@@ -1442,39 +1531,39 @@ namespace {
 }
 
 template <class POLICY>
-uint32_t
-CPU::TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned size )
+void
+CPU::TranslateAddress( AddressDescriptor& loc, bool ispriv, mem_acc_type_t mat, unsigned size )
 {
-  uint32_t mva = va; /* No FCSE translation in this model*/
+  uint32_t mva = loc.address; /* No FCSE translation in this model*/
   
   // FirstStageTranslation
   
   if (arm::sctlr::M.Get( this->SCTLR )) {
     bool ishyp = cpsr.Get(M) == HYPERVISOR_MODE;
-    TransAddrDesc tad;
+    TLB::Entry tlbe;
     
     // Stage 1 MMU enabled
-    if (unlikely(not tlb.GetTranslation<POLICY>( tad, mva, GetASID() )))
-      TranslationTableWalk<POLICY>( tad, mva, mat, size );
+    if (unlikely(not tlb.GetTranslation<POLICY>( tlbe, mva, GetASID() )))
+      TranslationTableWalk<POLICY>( tlbe, mva, mat, size );
     // else {
     //   // Check if hit is coherent
-    //   TransAddrDesc tad_chk;
-    //   TranslationTableWalk<QuietAccess>( tad_chk, mva, mat, size );
-    //   if (tad_chk.pa != tad.pa)
+    //   TLB::Entry tlbe_chk;
+    //   TranslationTableWalk<QuietAccess>( tlbe_chk, mva, mat, size );
+    //   if (tlbe_chk.pa != tlbe.pa)
     //     trap_reporting_import->ReportTrap( *this, "Incoherent TLB access" );
     // }
     
     /* Permission Check */
-    unsigned dac = (mmu.dacr >> (tad.domain*2)) & 3;
+    unsigned dac = (mmu.dacr >> (tlbe.domain*2)) & 3;
     
     if (POLICY::DEBUG) {
       if (POLICY::VERBOSE) {
         logger << DebugInfo;
-      
-        logger << "Translation size: 0x" << std::hex << (1 << tad.lsb) << std::dec << std::endl;
+        
+        logger << "Translation size: 0x" << std::hex << (1 << tlbe.lsb) << std::dec << std::endl;
       
         logger << "Address Space: ";
-        if (tad.nG) logger << "asid=" << tad.asid;
+        if (tlbe.nG) logger << "asid=" << tlbe.asid;
         else        logger << "global";
         logger << std::endl;
       
@@ -1485,8 +1574,8 @@ CPU::TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned si
         case 1: logger << "permission checking enabled"; break;
         case 3: logger << "permission checking disabled"; break;
         }
-        logger << std::endl << "Access permissions: " << tad.ap << ", ";
-        switch (tad.ap) {
+        logger << std::endl << "Access permissions: " << tlbe.ap << ", ";
+        switch (tlbe.ap) {
         case 0b001: logger << "access only at PL1 or higher"; break;
         case 0b011: logger << "full access"; break;
         case 0b101: logger << "read-only, only at PL1 or higher"; break;
@@ -1497,13 +1586,13 @@ CPU::TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned si
         case 0b110: logger << "read-only at any privilege level (deprecated)"; break;
         }
         logger << std::endl << "Execution permissions"
-               << ": XN=" << (tad.xn ? "true" : "false")
-               << ", PXN=" << (tad.pxn ? "true" : "false")
+               << ": XN=" << (tlbe.xn ? "true" : "false")
+               << ", PXN=" << (tlbe.pxn ? "true" : "false")
                << EndDebugInfo;
       }
     } else {
       if (unlikely((dac & 1) == 0))
-        DataAbort( mva, 0, tad.domain, tad.level, mat, DAbort_Domain, false, false, false, false, false );
+        DataAbort( mva, 0, tlbe.domain, (tlbe.lsb <= 16 ? 2 : 1), mat, DAbort_Domain, false, false, false, false, false );
     
       unisim::util::truth_table::InBit<uint32_t,1> const P;
       unisim::util::truth_table::InBit<uint32_t,0> const W;
@@ -1516,7 +1605,7 @@ CPU::TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned si
       Case<0b110> const AP110;
       Case<0b111> const AP111;
 
-      unsigned sel = (tad.ap << 2) | (unsigned(ispriv) << 1) | (unsigned(mat == mat_write) << 0);
+      unsigned sel = (tlbe.ap << 2) | (unsigned(ispriv) << 1) | (unsigned(mat == mat_write) << 0);
     
       uint32_t const perm_table =
         ((AP000) or
@@ -1530,17 +1619,56 @@ CPU::TranslateAddress( uint32_t va, bool ispriv, mem_acc_type_t mat, unsigned si
     
       uint32_t abort = uint32_t( (dac & 2) == 0 ) & (perm_table >> sel);
       /* TODO: check that ispriv is correct for pxn (only PL1 is concerned ?) */
-      uint32_t xabort = uint32_t(mat == mat_exec) & (tad.xn | (tad.pxn & ispriv));
+      uint32_t xabort = uint32_t(mat == mat_exec) & (tlbe.xn | (tlbe.pxn & ispriv));
     
       /* TODO: Long descriptor format + (Hardware flags ? really deprecated ? at least sw AFE ?) */
       if (unlikely((abort | xabort) & 1))
-        DataAbort( mva, 0, tad.domain, tad.level, mat, DAbort_Permission, ishyp, false, false, false, false );
+        DataAbort( mva, 0, tlbe.domain, (tlbe.lsb <= 16 ? 2 : 1), mat, DAbort_Permission, ishyp, false, false, false, false );
+    }
+
+    loc.address = tlbe.pa;
+    loc.attributes = mmu.attr_cache[tlbe.memattrs];
+    
+    return;
+  }
+
+  // Address unchanged
+  static struct AttrCache
+  {
+    uint16_t table[2][2];
+    AttrCache()
+      : table()
+    {
+      for (int isfetch = 0; isfetch <= 1; ++isfetch)
+        {
+          for (int icenable = 0; icenable <= 1; ++icenable)
+            {
+              uint32_t attributes = 0;
+              if (isfetch)
+                {
+                  MemAttrs::type().Set( attributes, MemAttrs::Normal);
+                  if (icenable)
+                    {
+                      MemAttrs::innerattrs().Set( attributes, MemAttrs::WriteThrough );
+                      MemAttrs::innerhints().Set( attributes, MemAttrs::ReadAllocate );
+                      MemAttrs::outerattrs().Set( attributes, MemAttrs::WriteThrough );
+                      MemAttrs::outerhints().Set( attributes, MemAttrs::ReadAllocate );
+                    }
+                }
+              else
+                {
+                  MemAttrs::type().Set( attributes, MemAttrs::StronglyOrdered );
+                  MemAttrs::shareable().Set( attributes, 1 );
+                  MemAttrs::outershareable().Set( attributes, 1 );
+                }
+              table[isfetch][icenable] = attributes;
+            }
+        }
     }
     
-    return tad.pa;
-  }
+  } attrcache;
   
-  return mva;
+  loc.attributes = attrcache.table[(mat != mat_exec)][(arm::sctlr::I.Get(SCTLR) != 0)];
 }
 
 
@@ -1638,11 +1766,19 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
           uint32_t Read( CP15CPU& cpu ) { return static_cast<CPU&>( cpu ).SCTLR; }
           void Write( CP15CPU& _cpu, uint32_t value ) {
             CPU& cpu( static_cast<CPU&>( _cpu ) );
+            /* Checking bits values */
+            
+            sctlr::HA.Set( value, 0 ); // No Hardware Access flag management
+            if (sctlr::AFE.Get( value ))
+              cpu.Stop(-1); // Software Access Flag management not supported
+
+            uint32_t diff = cpu.SCTLR ^ value;
+            
             cpu.SCTLR = value;
-            if      (sctlr::HA.Get( value ))
-              cpu.Stop(-1);
-            else if (sctlr::AFE.Get( value ))
-              cpu.Stop(-1);
+
+            // Side effects
+            if (sctlr::TRE.Get(diff))
+              cpu.mmu.refresh_attr_cache(sctlr::TRE.Get(value));
           }
         } x;
         return x;
@@ -1915,7 +2051,12 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "PRRR, Primary Region Remap Register"; }
-          void Write( CP15CPU& _cpu, uint32_t value ) { static_cast<CPU&>( _cpu ).mmu.prrr = value; }
+          void Write( CP15CPU& _cpu, uint32_t value )
+          {
+            CPU& cpu( static_cast<CPU&>( _cpu ) );
+            cpu.mmu.prrr = value;
+            cpu.mmu.refresh_attr_cache(sctlr::TRE.Get(cpu.SCTLR));
+          }
           uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).mmu.prrr; }
         } x;
         return x;
@@ -1926,7 +2067,12 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "NMRR, Normal Memory Remap Register"; }
-          void Write( CP15CPU& _cpu, uint32_t value ) { static_cast<CPU&>( _cpu ).mmu.nmrr = value; }
+          void Write( CP15CPU& _cpu, uint32_t value )
+          {
+            CPU& cpu( static_cast<CPU&>( _cpu ) );
+            cpu.mmu.nmrr = value;
+            cpu.mmu.refresh_attr_cache(sctlr::TRE.Get(cpu.SCTLR));
+          }
           uint32_t Read( CP15CPU& _cpu ) { return static_cast<CPU&>( _cpu ).mmu.nmrr; }
         } x;
         return x;

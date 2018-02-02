@@ -71,19 +71,24 @@ namespace arm {
     {
       return reg & getmask<T>();
     }
-    template <typename T>
-    void Set( T& reg, T const& value ) const
+    template <typename T, typename R>
+    void Set( T& reg, R const& value ) const
     {
       T const mask = getmask<T>();
-      reg = (reg & ~mask) | ((value << int(pos)) & mask);
+      reg = (reg & ~mask) | ((T(value) << int(pos)) & mask);
     }
+    // template <typename T>
+    // T Set( T const& value ) const
+    // {
+    //   T const mask = getmask<T>();
+    //   return (value << int(pos)) & mask;
+    // }
     // template <typename T>
     // T Insert( T const& reg, T const& value ) const
     // {
     //   T const mask = getmask<T>();
     //   return (reg & ~mask) | ((value << int(pos)) & mask);
     // }
-    template <typename T> void Set( T& reg, bool ones ) const { this->Set( reg, ones ? ~T( 0 ) : T( 0 )); }
     template <typename T>
     T Swap( T& reg, T const& value ) const
     {

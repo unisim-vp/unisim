@@ -523,7 +523,7 @@ CPU<CONFIG>::RefillInsnPrefetchBuffer(uint64_t base_address)
   
   // No instruction cache present, just request the insn to the
   // memory system.
-  if (not PhysicalReadMemory(base_address, &this->ipb_bytes[0], IPB_LINE_SIZE, 0))
+  if (not PhysicalReadMemory(base_address, &this->ipb_bytes[0], IPB_LINE_SIZE))
     return false;
   
   if (unlikely(requires_memory_access_reporting and memory_access_reporting_import))
