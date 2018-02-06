@@ -1991,6 +1991,32 @@ void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::MapRegisterFile(ADDRESS addr, A
 }
 
 template <typename ADDRESS, typename CUSTOM_RW_ARG>
+void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Unmap(ADDRESS addr, unsigned int byte_size)
+{
+	if(byte_size)
+	{
+		unsigned int byte_idx;
+
+		optimized = false;
+		optimizable = true;
+		
+		for(byte_idx = 0; byte_idx < byte_size; byte_idx++)
+		{
+			ADDRESS byte_addr = addr + byte_idx;
+			
+			typename std::map<ADDRESS, AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *>::const_iterator it = reg_addr_map.find(byte_addr);
+			
+			if(it != reg_addr_map.end())
+			{
+				AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *arh = (*it).second;
+				arh->Release();
+				reg_addr_map.erase(it);
+			}
+		}
+	}
+}
+
+template <typename ADDRESS, typename CUSTOM_RW_ARG>
 void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Optimize() const
 {
 	opt_reg_addr_map.clear();

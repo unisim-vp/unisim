@@ -3543,6 +3543,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.XBAR_1_M1_CONCENTRATOR.cycle_time", "10 ns");
 	simulator->SetVariable("HARDWARE.XBAR_1_M1_CONCENTRATOR.mapping_0", "range_start=\"0x0\" range_end=\"0xffffffff\" output_port=\"0\" translation=\"0x0\"");
 	
+#if 0
 	// - Loader
 	simulator->SetVariable("loader.filename", "baf.bin,soft/app/Z4_2/boot.elf,soft/app/Z7_0/boot.elf,soft/app/Z7_1/boot.elf");
 	simulator->SetVariable("loader.file0.base-addr", 0x00404000UL); // base address of BAF
@@ -3554,6 +3555,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("inline-debugger0.search-path", "app/Z7_0;libsys");
 	simulator->SetVariable("inline-debugger1.search-path", "app/Z7_1;libsys");
 	simulator->SetVariable("inline-debugger2.search-path", "app/Z4_2;libsys");
+#endif
 	
 	// - Loader memory router
 	simulator->SetVariable("loader.memory-mapper.mapping",
