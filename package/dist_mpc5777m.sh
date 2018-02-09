@@ -837,6 +837,7 @@ unisim/component/tlm2/com/serial_terminal/serial_terminal.hh \
 unisim/component/tlm2/dma/freescale/mpc57xx/dmamux/dmamux.hh \
 unisim/component/tlm2/dma/freescale/mpc57xx/edma/edma.hh \
 unisim/component/tlm2/operators/associative_operator.hh \
+unisim/component/tlm2/com/freescale/mpc57xx/dspi/dspi.hh \
 "
 
 UNISIM_LIB_SIMULATOR_TEMPLATE_FILES="\
@@ -916,6 +917,7 @@ unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.tcc \
 unisim/component/tlm2/com/freescale/mpc57xx/linflexd/linflexd.tcc \
 unisim/component/tlm2/dma/freescale/mpc57xx/dmamux/dmamux.tcc \
 unisim/component/tlm2/dma/freescale/mpc57xx/edma/edma.tcc \
+unisim/component/tlm2/com/freescale/mpc57xx/dspi/dspi.tcc \
 "
 
 UNISIM_LIB_SIMULATOR_M4_FILES="\
@@ -1020,6 +1022,14 @@ dmamux_8.cc \
 dmamux_9.cc \
 edma_0.cc \
 edma_1.cc \
+dspi_0.cc \
+dspi_1.cc \
+dspi_2.cc \
+dspi_3.cc \
+dspi_4.cc \
+dspi_5.cc \
+dspi_6.cc \
+dspi_12.cc \
 "
 UNISIM_SIMULATOR_HEADER_FILES="\
 simulator.hh \

@@ -205,6 +205,7 @@ private:
 		void Clear()
 		{
 			key.Clear();
+			prc_num = 0;
 			if(release_payload)
 			{
 				if(payload && payload->has_mm()) payload->release();

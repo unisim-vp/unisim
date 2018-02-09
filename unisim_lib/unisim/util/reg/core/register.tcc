@@ -1914,17 +1914,7 @@ RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::RegisterAddressMap()
 template <typename ADDRESS, typename CUSTOM_RW_ARG>
 RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::~RegisterAddressMap()
 {
-	typename std::map<ADDRESS, AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *>::const_iterator it;
-
-	for(it = reg_addr_map.begin(); it != reg_addr_map.end(); it++)
-	{
-		AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *arh = (*it).second;
-		
-		if(arh)
-		{
-			arh->Release();
-		}
-	}
+	Clear();
 }
 
 template <typename ADDRESS, typename CUSTOM_RW_ARG>
@@ -2014,6 +2004,25 @@ void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Unmap(ADDRESS addr, unsigned in
 			}
 		}
 	}
+}
+
+template <typename ADDRESS, typename CUSTOM_RW_ARG>
+void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Clear()
+{
+	typename std::map<ADDRESS, AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *>::const_iterator it;
+
+	for(it = reg_addr_map.begin(); it != reg_addr_map.end(); it++)
+	{
+		AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *arh = (*it).second;
+		
+		if(arh)
+		{
+			arh->Release();
+		}
+	}
+	reg_addr_map.clear();
+	optimized = false;
+	optimizable = true;
 }
 
 template <typename ADDRESS, typename CUSTOM_RW_ARG>

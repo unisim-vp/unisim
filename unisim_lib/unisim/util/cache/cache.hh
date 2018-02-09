@@ -2026,7 +2026,7 @@ inline bool Cache<TYPES, CONFIG, CACHE>::__MSS_IsEnabled__() const
 template <typename TYPES, typename CONFIG, typename CACHE>
 inline bool Cache<TYPES, CONFIG, CACHE>::__MSS_IsWriteAllocate__() const
 {
-	return static_cast<const CACHE *>(this)->IsWriteAllocate();
+	return CACHE::IsStaticWriteAllocate() || static_cast<const CACHE *>(this)->IsWriteAllocate();
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
@@ -3002,7 +3002,7 @@ inline bool MemorySubSystem<TYPES, MSS>::StoreInCacheHierarchy(typename TYPES::P
 				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Line miss at @0x" << std::hex << access.phys_addr << std::dec << std::endl;
 			}
 
-			if(CACHE::IsStaticWriteAllocate() || cache->__MSS_IsWriteAllocate__())
+			if(cache->__MSS_IsWriteAllocate__())
 			{
 				// write-allocate: evict before fill
 				if(likely(cache->__MSS_ChooseLineToEvict__(access)))
@@ -3034,7 +3034,7 @@ inline bool MemorySubSystem<TYPES, MSS>::StoreInCacheHierarchy(typename TYPES::P
 					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Block miss at @0x" << std::hex << access.phys_addr << std::dec << std::endl;
 				}
 				
-				if(CACHE::IsStaticWriteAllocate() || cache->__MSS_IsWriteAllocate__())
+				if(cache->__MSS_IsWriteAllocate__())
 				{
 					// write-allocate: fill if missing block
 					typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
@@ -3051,7 +3051,7 @@ inline bool MemorySubSystem<TYPES, MSS>::StoreInCacheHierarchy(typename TYPES::P
 				}
 			}
 
-			if(CACHE::IsStaticWriteAllocate() || cache->__MSS_IsWriteAllocate__() || access.block)
+			if(cache->__MSS_IsWriteAllocate__() || access.block)
 			{
 				// write-allocate or cache hit
 				assert(size <= access.size_to_block_boundary);

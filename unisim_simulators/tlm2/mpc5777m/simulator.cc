@@ -80,11 +80,64 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, serial_terminal14(0)
 	, serial_terminal15(0)
 	, serial_terminal16(0)
+	, dmamux_0(0)
+	, dmamux_1(0)
+	, dmamux_2(0)
+	, dmamux_3(0)
+	, dmamux_4(0)
+	, dmamux_5(0)
+	, dmamux_6(0)
+	, dmamux_7(0)
+	, dmamux_8(0)
+	, dmamux_9(0)
+	, edma_0(0)
+	, edma_1(0)
+	, dspi_0(0)
+	, dspi_1(0)
+	, dspi_2(0)
+	, dspi_3(0)
+	, dspi_4(0)
+	, dspi_5(0)
+	, dspi_6(0)
+	, dspi_12(0)
+	, dspi_0_sout(0)
+	, dspi_0_sin(0)
+	, dspi_1_sout(0)
+	, dspi_1_sin(0)
+	, dspi_2_sout(0)
+	, dspi_2_sin(0)
+	, dspi_3_sout(0)
+	, dspi_3_sin(0)
+	, dspi_4_sout(0)
+	, dspi_4_sin(0)
+	, dspi_5_sout(0)
+	, dspi_5_sin(0)
+	, dspi_6_sout(0)
+	, dspi_6_sin(0)
+	, dspi_12_sout(0)
+	, dspi_12_sin(0)
 	, ebi_stub(0)
 	, flash_port1_stub(0)
 	, xbar_0_s6_stub(0)
 	, xbar_1_m2_stub(0)
 	, dma_err_irq_combinator(0)
+	, DSPI0_0(0)
+	, DSPI1_0(0)
+	, DSPI2_0(0)
+	, DSPI3_0(0)
+	, DSPI4_0(0)
+	, DSPI4_5(0)
+	, DSPI4_6(0)
+	, DSPI4_7(0)
+	, DSPI5_0(0)
+	, DSPI5_5(0)
+	, DSPI5_6(0)
+	, DSPI5_7(0)
+	, DSPI6_0(0)
+	, DSPI6_5(0)
+	, DSPI6_6(0)
+	, DSPI6_7(0)
+	, DSPI12_0(0)
 	, loader(0)
 	, debugger(0)
 	, gdb_server()
@@ -138,6 +191,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	unsigned int dma_always_num;
 	unsigned int dma_trigger_num;
 	unsigned int dma_channel_num;
+	unsigned int i;
 
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -228,6 +282,34 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	edma_0 = new EDMA_0("eDMA_0", this);
 	edma_1 = new EDMA_1("eDMA_1", this);
 	
+	//  - DSPI
+	dspi_0 = new DSPI_0("DSPI_0", this);
+	dspi_1 = new DSPI_1("DSPI_1", this);
+	dspi_2 = new DSPI_2("DSPI_2", this);
+	dspi_3 = new DSPI_3("DSPI_3", this);
+	dspi_4 = new DSPI_4("DSPI_4", this);
+	dspi_5 = new DSPI_5("DSPI_5", this);
+	dspi_6 = new DSPI_6("DSPI_6", this);
+	dspi_12 = new DSPI_12("DSPI_12", this);
+	
+	//  - DSPI serial buses
+	dspi_0_sout  = new DSPI_0_SOUT ("DSPI_0_SOUT");
+	dspi_0_sin   = new DSPI_0_SIN  ("DSPI_0_SIN");
+	dspi_1_sout  = new DSPI_1_SOUT ("DSPI_1_SOUT");
+	dspi_1_sin   = new DSPI_1_SIN  ("DSPI_1_SIN");
+	dspi_2_sout  = new DSPI_2_SOUT ("DSPI_2_SOUT");
+	dspi_2_sin   = new DSPI_2_SIN  ("DSPI_2_SIN");
+	dspi_3_sout  = new DSPI_3_SOUT ("DSPI_3_SOUT");
+	dspi_3_sin   = new DSPI_3_SIN  ("DSPI_3_SIN");
+	dspi_4_sout  = new DSPI_4_SOUT ("DSPI_4_SOUT");
+	dspi_4_sin   = new DSPI_4_SIN  ("DSPI_4_SIN");
+	dspi_5_sout  = new DSPI_5_SOUT ("DSPI_5_SOUT");
+	dspi_5_sin   = new DSPI_5_SIN  ("DSPI_5_SIN");
+	dspi_6_sout  = new DSPI_6_SOUT ("DSPI_6_SOUT");
+	dspi_6_sin   = new DSPI_6_SIN  ("DSPI_6_SIN");
+	dspi_12_sout = new DSPI_12_SOUT("DSPI_12_SOUT");
+	dspi_12_sin  = new DSPI_12_SIN ("DSPI_12_SIN");
+	
 	//  - Stubs
 	ebi_stub = new EBI_STUB("EBI", this);
 	flash_port1_stub = new FLASH_PORT1_STUB("FLASH_PORT1", this);
@@ -235,6 +317,24 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	xbar_1_m2_stub = new XBAR_1_M2_STUB("XBAR_1_M2", this);
 
 	dma_err_irq_combinator = new unisim::component::tlm2::operators::LogicalOrOperator<bool, NUM_DMA_CHANNELS>("DMA_ERR_IRQ_COMBINATOR");
+
+	DSPI0_0 = new unisim::component::tlm2::operators::LogicalOrOperator<bool, 3>("DSPI0_0");
+	DSPI1_0 = new unisim::component::tlm2::operators::LogicalOrOperator<bool, 3>("DSPI1_0");
+	DSPI2_0 = new unisim::component::tlm2::operators::LogicalOrOperator<bool, 3>("DSPI2_0");
+	DSPI3_0 = new unisim::component::tlm2::operators::LogicalOrOperator<bool, 3>("DSPI3_0");
+	DSPI4_0 = new unisim::component::tlm2::operators::LogicalOrOperator<bool, 3>("DSPI4_0");
+	DSPI4_5 = new unisim::component::tlm2::operators::LogicalOrOperator<bool, 2>("DSPI4_5");
+	DSPI4_6 = new unisim::component::tlm2::operators::LogicalOrOperator<bool, 2>("DSPI4_6");
+	DSPI4_7 = new unisim::component::tlm2::operators::LogicalOrOperator<bool, 2>("DSPI4_7");
+	DSPI5_0 = new unisim::component::tlm2::operators::LogicalOrOperator<bool, 3>("DSPI5_0");
+	DSPI5_5 = new unisim::component::tlm2::operators::LogicalOrOperator<bool, 2>("DSPI5_5");
+	DSPI5_6 = new unisim::component::tlm2::operators::LogicalOrOperator<bool, 2>("DSPI5_6");
+	DSPI5_7 = new unisim::component::tlm2::operators::LogicalOrOperator<bool, 2>("DSPI5_7");
+	DSPI6_0 = new unisim::component::tlm2::operators::LogicalOrOperator<bool, 3>("DSPI6_0");
+	DSPI6_5 = new unisim::component::tlm2::operators::LogicalOrOperator<bool, 2>("DSPI6_5");
+	DSPI6_6 = new unisim::component::tlm2::operators::LogicalOrOperator<bool, 2>("DSPI6_6");
+	DSPI6_7 = new unisim::component::tlm2::operators::LogicalOrOperator<bool, 2>("DSPI6_7");
+	DSPI12_0 = new unisim::component::tlm2::operators::LogicalOrOperator<bool, 3>("DSPI12_0");
 	
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -767,11 +867,318 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		RegisterPort(*edma_1->err_irq[dma_channel_num]);
 	}
 	
+	// - DSPI_0
+	RegisterPort(dspi_0->m_clk);
+	RegisterPort(dspi_0->dspi_clk);
+	RegisterPort(dspi_0->reset_b);
+	RegisterPort(dspi_0->debug);
+	RegisterPort(dspi_0->HT);
+	RegisterPort(dspi_0->INT_EOQF);
+	RegisterPort(dspi_0->INT_TFFF);
+	RegisterPort(dspi_0->INT_CMDFFF);
+	RegisterPort(dspi_0->INT_TFIWF);
+	RegisterPort(dspi_0->INT_TCF);
+	RegisterPort(dspi_0->INT_CMDTCF);
+	RegisterPort(dspi_0->INT_SPITCF);
+	RegisterPort(dspi_0->INT_DSITCF);
+	RegisterPort(dspi_0->INT_TFUF);
+	RegisterPort(dspi_0->INT_RFDF);
+	RegisterPort(dspi_0->INT_RFOF);
+	RegisterPort(dspi_0->INT_SPEF);
+	RegisterPort(dspi_0->INT_DPEF);
+	RegisterPort(dspi_0->INT_DDIF);
+	RegisterPort(dspi_0->DMA_RX);
+	RegisterPort(dspi_0->DMA_TX);
+	RegisterPort(dspi_0->DMA_CMD);
+	
+	for(i = 0; i < DSPI_0::NUM_DSI_INPUTS; i++)
+	{
+		RegisterPort(dspi_0->DSI_INPUT[i]);
+	}
+	for(i = 0; i < DSPI_0::NUM_DSI_OUTPUTS; i++)
+	{
+		RegisterPort(dspi_0->DSI_OUTPUT[i]);
+	}
+
+	// - DSPI_1
+	RegisterPort(dspi_1->m_clk);
+	RegisterPort(dspi_1->dspi_clk);
+	RegisterPort(dspi_1->reset_b);
+	RegisterPort(dspi_1->debug);
+	RegisterPort(dspi_1->HT);
+	RegisterPort(dspi_1->INT_EOQF);
+	RegisterPort(dspi_1->INT_TFFF);
+	RegisterPort(dspi_1->INT_CMDFFF);
+	RegisterPort(dspi_1->INT_TFIWF);
+	RegisterPort(dspi_1->INT_TCF);
+	RegisterPort(dspi_1->INT_CMDTCF);
+	RegisterPort(dspi_1->INT_SPITCF);
+	RegisterPort(dspi_1->INT_DSITCF);
+	RegisterPort(dspi_1->INT_TFUF);
+	RegisterPort(dspi_1->INT_RFDF);
+	RegisterPort(dspi_1->INT_RFOF);
+	RegisterPort(dspi_1->INT_SPEF);
+	RegisterPort(dspi_1->INT_DPEF);
+	RegisterPort(dspi_1->INT_DDIF);
+	RegisterPort(dspi_1->DMA_RX);
+	RegisterPort(dspi_1->DMA_TX);
+	RegisterPort(dspi_1->DMA_CMD);
+	
+	for(i = 0; i < DSPI_1::NUM_DSI_INPUTS; i++)
+	{
+		RegisterPort(dspi_1->DSI_INPUT[i]);
+	}
+	for(i = 0; i < DSPI_1::NUM_DSI_OUTPUTS; i++)
+	{
+		RegisterPort(dspi_1->DSI_OUTPUT[i]);
+	}
+	
+	// - DSPI_2
+	RegisterPort(dspi_2->m_clk);
+	RegisterPort(dspi_2->dspi_clk);
+	RegisterPort(dspi_2->reset_b);
+	RegisterPort(dspi_2->debug);
+	RegisterPort(dspi_2->HT);
+	RegisterPort(dspi_2->INT_EOQF);
+	RegisterPort(dspi_2->INT_TFFF);
+	RegisterPort(dspi_2->INT_CMDFFF);
+	RegisterPort(dspi_2->INT_TFIWF);
+	RegisterPort(dspi_2->INT_TCF);
+	RegisterPort(dspi_2->INT_CMDTCF);
+	RegisterPort(dspi_2->INT_SPITCF);
+	RegisterPort(dspi_2->INT_DSITCF);
+	RegisterPort(dspi_2->INT_TFUF);
+	RegisterPort(dspi_2->INT_RFDF);
+	RegisterPort(dspi_2->INT_RFOF);
+	RegisterPort(dspi_2->INT_SPEF);
+	RegisterPort(dspi_2->INT_DPEF);
+	RegisterPort(dspi_2->INT_DDIF);
+	RegisterPort(dspi_2->DMA_RX);
+	RegisterPort(dspi_2->DMA_TX);
+	RegisterPort(dspi_2->DMA_CMD);
+	
+	for(i = 0; i < DSPI_2::NUM_DSI_INPUTS; i++)
+	{
+		RegisterPort(dspi_2->DSI_INPUT[i]);
+	}
+	for(i = 0; i < DSPI_2::NUM_DSI_OUTPUTS; i++)
+	{
+		RegisterPort(dspi_2->DSI_OUTPUT[i]);
+	}
+
+	// - DSPI_3
+	RegisterPort(dspi_3->m_clk);
+	RegisterPort(dspi_3->dspi_clk);
+	RegisterPort(dspi_3->reset_b);
+	RegisterPort(dspi_3->debug);
+	RegisterPort(dspi_3->HT);
+	RegisterPort(dspi_3->INT_EOQF);
+	RegisterPort(dspi_3->INT_TFFF);
+	RegisterPort(dspi_3->INT_CMDFFF);
+	RegisterPort(dspi_3->INT_TFIWF);
+	RegisterPort(dspi_3->INT_TCF);
+	RegisterPort(dspi_3->INT_CMDTCF);
+	RegisterPort(dspi_3->INT_SPITCF);
+	RegisterPort(dspi_3->INT_DSITCF);
+	RegisterPort(dspi_3->INT_TFUF);
+	RegisterPort(dspi_3->INT_RFDF);
+	RegisterPort(dspi_3->INT_RFOF);
+	RegisterPort(dspi_3->INT_SPEF);
+	RegisterPort(dspi_3->INT_DPEF);
+	RegisterPort(dspi_3->INT_DDIF);
+	RegisterPort(dspi_3->DMA_RX);
+	RegisterPort(dspi_3->DMA_TX);
+	RegisterPort(dspi_3->DMA_CMD);
+	
+	for(i = 0; i < DSPI_3::NUM_DSI_INPUTS; i++)
+	{
+		RegisterPort(dspi_3->DSI_INPUT[i]);
+	}
+	for(i = 0; i < DSPI_3::NUM_DSI_OUTPUTS; i++)
+	{
+		RegisterPort(dspi_3->DSI_OUTPUT[i]);
+	}
+
+	// - DSPI_4
+	RegisterPort(dspi_4->m_clk);
+	RegisterPort(dspi_4->dspi_clk);
+	RegisterPort(dspi_4->reset_b);
+	RegisterPort(dspi_4->debug);
+	RegisterPort(dspi_4->HT);
+	RegisterPort(dspi_4->INT_EOQF);
+	RegisterPort(dspi_4->INT_TFFF);
+	RegisterPort(dspi_4->INT_CMDFFF);
+	RegisterPort(dspi_4->INT_TFIWF);
+	RegisterPort(dspi_4->INT_TCF);
+	RegisterPort(dspi_4->INT_CMDTCF);
+	RegisterPort(dspi_4->INT_SPITCF);
+	RegisterPort(dspi_4->INT_DSITCF);
+	RegisterPort(dspi_4->INT_TFUF);
+	RegisterPort(dspi_4->INT_RFDF);
+	RegisterPort(dspi_4->INT_RFOF);
+	RegisterPort(dspi_4->INT_SPEF);
+	RegisterPort(dspi_4->INT_DPEF);
+	RegisterPort(dspi_4->INT_DDIF);
+	RegisterPort(dspi_4->DMA_RX);
+	RegisterPort(dspi_4->DMA_TX);
+	RegisterPort(dspi_4->DMA_CMD);
+	
+	for(i = 0; i < DSPI_4::NUM_DSI_INPUTS; i++)
+	{
+		RegisterPort(dspi_4->DSI_INPUT[i]);
+	}
+	for(i = 0; i < DSPI_4::NUM_DSI_OUTPUTS; i++)
+	{
+		RegisterPort(dspi_4->DSI_OUTPUT[i]);
+	}
+	
+	// - DSPI_5
+	RegisterPort(dspi_5->m_clk);
+	RegisterPort(dspi_5->dspi_clk);
+	RegisterPort(dspi_5->reset_b);
+	RegisterPort(dspi_5->debug);
+	RegisterPort(dspi_5->HT);
+	RegisterPort(dspi_5->INT_EOQF);
+	RegisterPort(dspi_5->INT_TFFF);
+	RegisterPort(dspi_5->INT_CMDFFF);
+	RegisterPort(dspi_5->INT_TFIWF);
+	RegisterPort(dspi_5->INT_TCF);
+	RegisterPort(dspi_5->INT_CMDTCF);
+	RegisterPort(dspi_5->INT_SPITCF);
+	RegisterPort(dspi_5->INT_DSITCF);
+	RegisterPort(dspi_5->INT_TFUF);
+	RegisterPort(dspi_5->INT_RFDF);
+	RegisterPort(dspi_5->INT_RFOF);
+	RegisterPort(dspi_5->INT_SPEF);
+	RegisterPort(dspi_5->INT_DPEF);
+	RegisterPort(dspi_5->INT_DDIF);
+	RegisterPort(dspi_5->DMA_RX);
+	RegisterPort(dspi_5->DMA_TX);
+	RegisterPort(dspi_5->DMA_CMD);
+	
+	for(i = 0; i < DSPI_5::NUM_DSI_INPUTS; i++)
+	{
+		RegisterPort(dspi_5->DSI_INPUT[i]);
+	}
+	for(i = 0; i < DSPI_5::NUM_DSI_OUTPUTS; i++)
+	{
+		RegisterPort(dspi_5->DSI_OUTPUT[i]);
+	}
+
+	// - DSPI_6
+	RegisterPort(dspi_6->m_clk);
+	RegisterPort(dspi_6->dspi_clk);
+	RegisterPort(dspi_6->reset_b);
+	RegisterPort(dspi_6->debug);
+	RegisterPort(dspi_6->HT);
+	RegisterPort(dspi_6->INT_EOQF);
+	RegisterPort(dspi_6->INT_TFFF);
+	RegisterPort(dspi_6->INT_CMDFFF);
+	RegisterPort(dspi_6->INT_TFIWF);
+	RegisterPort(dspi_6->INT_TCF);
+	RegisterPort(dspi_6->INT_CMDTCF);
+	RegisterPort(dspi_6->INT_SPITCF);
+	RegisterPort(dspi_6->INT_DSITCF);
+	RegisterPort(dspi_6->INT_TFUF);
+	RegisterPort(dspi_6->INT_RFDF);
+	RegisterPort(dspi_6->INT_RFOF);
+	RegisterPort(dspi_6->INT_SPEF);
+	RegisterPort(dspi_6->INT_DPEF);
+	RegisterPort(dspi_6->INT_DDIF);
+	RegisterPort(dspi_6->DMA_RX);
+	RegisterPort(dspi_6->DMA_TX);
+	RegisterPort(dspi_6->DMA_CMD);
+	
+	for(i = 0; i < DSPI_6::NUM_DSI_INPUTS; i++)
+	{
+		RegisterPort(dspi_6->DSI_INPUT[i]);
+	}
+	for(i = 0; i < DSPI_6::NUM_DSI_OUTPUTS; i++)
+	{
+		RegisterPort(dspi_6->DSI_OUTPUT[i]);
+	}
+
+	// - DSPI_12
+	RegisterPort(dspi_12->m_clk);
+	RegisterPort(dspi_12->dspi_clk);
+	RegisterPort(dspi_12->reset_b);
+	RegisterPort(dspi_12->debug);
+	RegisterPort(dspi_12->HT);
+	RegisterPort(dspi_12->INT_EOQF);
+	RegisterPort(dspi_12->INT_TFFF);
+	RegisterPort(dspi_12->INT_CMDFFF);
+	RegisterPort(dspi_12->INT_TFIWF);
+	RegisterPort(dspi_12->INT_TCF);
+	RegisterPort(dspi_12->INT_CMDTCF);
+	RegisterPort(dspi_12->INT_SPITCF);
+	RegisterPort(dspi_12->INT_DSITCF);
+	RegisterPort(dspi_12->INT_TFUF);
+	RegisterPort(dspi_12->INT_RFDF);
+	RegisterPort(dspi_12->INT_RFOF);
+	RegisterPort(dspi_12->INT_SPEF);
+	RegisterPort(dspi_12->INT_DPEF);
+	RegisterPort(dspi_12->INT_DDIF);
+	RegisterPort(dspi_12->DMA_RX);
+	RegisterPort(dspi_12->DMA_TX);
+	RegisterPort(dspi_12->DMA_CMD);
+	
+	for(i = 0; i < DSPI_12::NUM_DSI_INPUTS; i++)
+	{
+		RegisterPort(dspi_12->DSI_INPUT[i]);
+	}
+	for(i = 0; i < DSPI_12::NUM_DSI_OUTPUTS; i++)
+	{
+		RegisterPort(dspi_12->DSI_OUTPUT[i]);
+	}
+
 	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
 	{
 		RegisterPort(dma_err_irq_combinator->in[dma_channel_num]);
 	}
 	RegisterPort(dma_err_irq_combinator->out);
+	
+	for(i = 0; i < 3; i++)
+	{
+		RegisterPort(DSPI0_0->in[i]);
+		RegisterPort(DSPI1_0->in[i]);
+		RegisterPort(DSPI2_0->in[i]);
+		RegisterPort(DSPI3_0->in[i]);
+		RegisterPort(DSPI4_0->in[i]);
+		RegisterPort(DSPI5_0->in[i]);
+		RegisterPort(DSPI6_0->in[i]);
+		RegisterPort(DSPI12_0->in[i]);
+	}
+	
+	for(i = 0; i < 2; i++)
+	{
+		RegisterPort(DSPI4_5->in[i]);
+		RegisterPort(DSPI4_6->in[i]);
+		RegisterPort(DSPI4_7->in[i]);
+		RegisterPort(DSPI5_5->in[i]);
+		RegisterPort(DSPI5_6->in[i]);
+		RegisterPort(DSPI5_7->in[i]);
+		RegisterPort(DSPI6_5->in[i]);
+		RegisterPort(DSPI6_6->in[i]);
+		RegisterPort(DSPI6_7->in[i]);
+	}
+	
+	RegisterPort(DSPI0_0->out);
+	RegisterPort(DSPI1_0->out);
+	RegisterPort(DSPI2_0->out);
+	RegisterPort(DSPI3_0->out);
+	RegisterPort(DSPI4_0->out);
+	RegisterPort(DSPI4_5->out);
+	RegisterPort(DSPI4_6->out);
+	RegisterPort(DSPI4_7->out);
+	RegisterPort(DSPI5_0->out);
+	RegisterPort(DSPI5_5->out);
+	RegisterPort(DSPI5_6->out);
+	RegisterPort(DSPI5_7->out);
+	RegisterPort(DSPI6_0->out);
+	RegisterPort(DSPI6_5->out);
+	RegisterPort(DSPI6_6->out);
+	RegisterPort(DSPI6_7->out);
+	RegisterPort(DSPI12_0->out);
 	
 	//=========================================================================
 	//===                           Signal creation                         ===
@@ -792,6 +1199,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateClock("SERIAL_TERMINAL14_CLK");
 	CreateClock("SERIAL_TERMINAL15_CLK");
 	CreateClock("SERIAL_TERMINAL16_CLK");
+	CreateClock("DSPI_CLK0");
+	CreateClock("DSPI_CLK1");
 	
 	CreateSignal("m_por", false);
 	CreateSignal("stop", false);
@@ -830,24 +1239,79 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateSignalArray(LINFlexD_16::NUM_DMA_RX_CHANNELS, "LINFlexD_16_DMA_RX", false);
 	CreateSignalArray(LINFlexD_16::NUM_DMA_TX_CHANNELS, "LINFlexD_16_DMA_TX", false);
 
-// 	CreateSignalArray( DMAMUX_0::NUM_DMA_SOURCES,  "DMAMUX_0_DMA_SOURCE", false);
-// 	CreateSignalArray( DMAMUX_1::NUM_DMA_SOURCES,  "DMAMUX_1_DMA_SOURCE", false);
-// 	CreateSignalArray( DMAMUX_2::NUM_DMA_SOURCES,  "DMAMUX_2_DMA_SOURCE", false);
-// 	CreateSignalArray( DMAMUX_3::NUM_DMA_SOURCES,  "DMAMUX_3_DMA_SOURCE", false);
-// 	CreateSignalArray( DMAMUX_4::NUM_DMA_SOURCES,  "DMAMUX_4_DMA_SOURCE", false);
-// 	CreateSignalArray( DMAMUX_5::NUM_DMA_SOURCES,  "DMAMUX_5_DMA_SOURCE", false);
-// 	CreateSignalArray( DMAMUX_6::NUM_DMA_SOURCES,  "DMAMUX_6_DMA_SOURCE", false);
-// 	CreateSignalArray( DMAMUX_7::NUM_DMA_SOURCES,  "DMAMUX_7_DMA_SOURCE", false);
-// 	CreateSignalArray( DMAMUX_8::NUM_DMA_SOURCES,  "DMAMUX_8_DMA_SOURCE", false);
-// 	CreateSignalArray( DMAMUX_9::NUM_DMA_SOURCES,  "DMAMUX_9_DMA_SOURCE", false);
-	
 	CreateSignalArray(NUM_DMA_CHANNELS, "DMA_CHANNEL", false);
 	
 	CreateSignalArray(NUM_DMA_ALWAYS_ON, "DMA_ALWAYS_ON", true);
 	
 	CreateSignalArray(NUM_DMA_CHANNELS, "DMA_ERR_IRQ", false);
 	
+	CreateSignal("DSPI_0_DMA_RX", false);
+	CreateSignal("DSPI_0_DMA_TX", false);
+	CreateSignal("DSPI_0_DMA_CMD", false);
+	CreateSignal("DSPI_1_DMA_RX", false);
+	CreateSignal("DSPI_1_DMA_TX", false);
+	CreateSignal("DSPI_1_DMA_CMD", false);
+	CreateSignal("DSPI_2_DMA_RX", false);
+	CreateSignal("DSPI_2_DMA_TX", false);
+	CreateSignal("DSPI_2_DMA_CMD", false);
+	CreateSignal("DSPI_3_DMA_RX", false);
+	CreateSignal("DSPI_3_DMA_TX", false);
+	CreateSignal("DSPI_3_DMA_CMD", false);
+	CreateSignal("DSPI_4_DMA_RX", false);
+	CreateSignal("DSPI_4_DMA_TX", false);
+	CreateSignal("DSPI_4_DMA_CMD", false);
+	CreateSignal("DSPI_5_DMA_RX", false);
+	CreateSignal("DSPI_5_DMA_TX", false);
+	CreateSignal("DSPI_5_DMA_CMD", false);
+	CreateSignal("DSPI_6_DMA_RX", false);
+	CreateSignal("DSPI_6_DMA_TX", false);
+	CreateSignal("DSPI_6_DMA_CMD", false);
+	CreateSignal("DSPI_12_DMA_RX", false);
+	CreateSignal("DSPI_12_DMA_TX", false);
+	CreateSignal("DSPI_12_DMA_CMD", false);
 	
+	CreateSignal("DSPI_0_INT_TFUF", false);
+	CreateSignal("DSPI_0_INT_RFOF", false);
+	CreateSignal("DSPI_0_INT_TFIWF", false);
+	CreateSignal("DSPI_1_INT_TFUF", false);
+	CreateSignal("DSPI_1_INT_RFOF", false);
+	CreateSignal("DSPI_1_INT_TFIWF", false);
+	CreateSignal("DSPI_2_INT_TFUF", false);
+	CreateSignal("DSPI_2_INT_RFOF", false);
+	CreateSignal("DSPI_2_INT_TFIWF", false);
+	CreateSignal("DSPI_3_INT_TFUF", false);
+	CreateSignal("DSPI_3_INT_RFOF", false);
+	CreateSignal("DSPI_3_INT_TFIWF", false);
+	CreateSignal("DSPI_4_INT_TFUF", false);
+	CreateSignal("DSPI_4_INT_RFOF", false);
+	CreateSignal("DSPI_4_INT_TFIWF", false);
+	CreateSignal("DSPI_4_INT_SPITCF", false);
+	CreateSignal("DSPI_4_INT_CMDTCF", false);
+	CreateSignal("DSPI_4_INT_DSITCF", false);
+	CreateSignal("DSPI_4_INT_CMDFFF", false);
+	CreateSignal("DSPI_4_INT_SPEF", false);
+	CreateSignal("DSPI_4_INT_DPEF", false);
+	CreateSignal("DSPI_5_INT_TFUF", false);
+	CreateSignal("DSPI_5_INT_RFOF", false);
+	CreateSignal("DSPI_5_INT_TFIWF", false);
+	CreateSignal("DSPI_5_INT_SPITCF", false);
+	CreateSignal("DSPI_5_INT_CMDTCF", false);
+	CreateSignal("DSPI_5_INT_DSITCF", false);
+	CreateSignal("DSPI_5_INT_CMDFFF", false);
+	CreateSignal("DSPI_5_INT_SPEF", false);
+	CreateSignal("DSPI_5_INT_DPEF", false);
+	CreateSignal("DSPI_6_INT_TFUF", false);
+	CreateSignal("DSPI_6_INT_RFOF", false);
+	CreateSignal("DSPI_6_INT_TFIWF", false);
+	CreateSignal("DSPI_6_INT_SPITCF", false);
+	CreateSignal("DSPI_6_INT_CMDTCF", false);
+	CreateSignal("DSPI_6_INT_DSITCF", false);
+	CreateSignal("DSPI_6_INT_CMDFFF", false);
+	CreateSignal("DSPI_6_INT_SPEF", false);
+	CreateSignal("DSPI_6_INT_DPEF", false);
+	CreateSignal("DSPI_12_INT_TFUF", false);
+	CreateSignal("DSPI_12_INT_RFOF", false);
+	CreateSignal("DSPI_12_INT_TFIWF", false);
 	
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -903,9 +1367,17 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*pbridge_a->init_socket[23])(dmamux_9->peripheral_slave_if);       // PBRIDGE_A <-> DMAMUX_9
 	(*pbridge_a->init_socket[24])(edma_0->peripheral_slave_if);         // PBRIDGE_A <-> EDMA_0
 	(*pbridge_a->init_socket[25])(edma_1->peripheral_slave_if);         // PBRIDGE_A <-> EDMA_1
+	(*pbridge_a->init_socket[26])(dspi_0->peripheral_slave_if);         // PBRIDGE_A <-> DSPI_0
+	(*pbridge_a->init_socket[27])(dspi_1->peripheral_slave_if);         // PBRIDGE_A <-> DSPI_1
+	(*pbridge_a->init_socket[28])(dspi_4->peripheral_slave_if);         // PBRIDGE_A <-> DSPI_4
+	(*pbridge_a->init_socket[29])(dspi_6->peripheral_slave_if);         // PBRIDGE_A <-> DSPI_6
+	(*pbridge_a->init_socket[30])(dspi_12->peripheral_slave_if);        // PBRIDGE_A <-> DSPI_12
 	
 	(*pbridge_b->init_socket[0])(linflexd_2->peripheral_slave_if);      // PBRIDGE_B <-> LINFlexD_2
 	(*pbridge_b->init_socket[1])(linflexd_15->peripheral_slave_if);     // PBRIDGE_B <-> LINFlexD_15
+	(*pbridge_b->init_socket[2])(dspi_2->peripheral_slave_if);          // PBRIDGE_B <-> DSPI_2
+	(*pbridge_b->init_socket[3])(dspi_3->peripheral_slave_if);          // PBRIDGE_B <-> DSPI_3
+	(*pbridge_b->init_socket[4])(dspi_5->peripheral_slave_if);          // PBRIDGE_B <-> DSPI_5
 
 	edma_0->master_if(*xbar_1_m1_concentrator->targ_socket[0]);         // EDMA_0 <-> XBAR_1 M1 Concentrator
 	edma_1->master_if(*xbar_1_m1_concentrator->targ_socket[1]);         // EDMA_1 <-> XBAR_1 M1 Concentrator
@@ -953,6 +1425,23 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 		serial_terminal16->RX(linflexd_16_tx->serial_socket);
 		serial_terminal16->TX(linflexd_16_rx->serial_socket);
 	}
+	
+	dspi_0->SOUT(dspi_0_sout->serial_socket);                     //  DSPI_0 SOUT  <->  DSPI_0 SOUT serial bus
+	dspi_0->SIN (dspi_0_sin->serial_socket);                      //  DSPI_0 SIN   <->  DSPI_0 SIN serial bus
+	dspi_1->SOUT(dspi_1_sout->serial_socket);                     //  DSPI_1 SOUT  <->  DSPI_1 SOUT serial bus
+	dspi_1->SIN (dspi_1_sin->serial_socket);                      //  DSPI_1 SIN   <->  DSPI_1 SIN serial bus
+	dspi_2->SOUT(dspi_2_sout->serial_socket);                     //  DSPI_2 SOUT  <->  DSPI_2 SOUT serial bus
+	dspi_2->SIN (dspi_2_sin->serial_socket);                      //  DSPI_2 SIN   <->  DSPI_2 SIN serial bus
+	dspi_3->SOUT(dspi_3_sout->serial_socket);                     //  DSPI_3 SOUT  <->  DSPI_3 SOUT serial bus
+	dspi_3->SIN (dspi_3_sin->serial_socket);                      //  DSPI_3 SIN   <->  DSPI_3 SIN serial bus
+	dspi_4->SOUT(dspi_4_sout->serial_socket);                     //  DSPI_4 SOUT  <->  DSPI_4 SOUT serial bus
+	dspi_4->SIN (dspi_4_sin->serial_socket);                      //  DSPI_4 SIN   <->  DSPI_4 SIN serial bus
+	dspi_5->SOUT(dspi_5_sout->serial_socket);                     //  DSPI_5 SOUT  <->  DSPI_5 SOUT serial bus
+	dspi_5->SIN (dspi_5_sin->serial_socket);                      //  DSPI_5 SIN   <->  DSPI_5 SIN serial bus
+	dspi_6->SOUT(dspi_6_sout->serial_socket);                     //  DSPI_6 SOUT  <->  DSPI_6 SOUT serial bus
+	dspi_6->SIN (dspi_6_sin->serial_socket);                      //  DSPI_6 SIN   <->  DSPI_6 SIN serial bus
+	dspi_12->SOUT(dspi_12_sout->serial_socket);                   //  DSPI_12 SOUT <->  DSPI_12 SOUT serial bus
+	dspi_12->SIN (dspi_12_sin->serial_socket);                    //  DSPI_12 SIN  <->  DSPI_12 SIN serial bus
 	
 	Bind("HARDWARE.Main_Core_0.m_clk"           , "HARDWARE.COMP_CLK");
 	Bind("HARDWARE.Main_Core_0.m_por"           , "HARDWARE.m_por");
@@ -1193,10 +1682,206 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DMAMUX_8.m_clk", "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.DMAMUX_9.m_clk", "HARDWARE.PBRIDGEA_CLK");
 	
+	Bind("HARDWARE.DSPI_0.m_clk"    , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.DSPI_0.dspi_clk" , "HARDWARE.DSPI_CLK1");
+	Bind("HARDWARE.DSPI_0.reset_b"  , "HARDWARE.reset_b");
+	Bind("HARDWARE.DSPI_0.debug"    , "HARDWARE.debug");
+	Bind("HARDWARE.DSPI_0.HT"       , "HARDWARE.pull_down");
+	Bind("HARDWARE.DSPI_0.INT_TFUF" , "HARDWARE.DSPI_0_INT_TFUF");
+	Bind("HARDWARE.DSPI_0.INT_RFOF" , "HARDWARE.DSPI_0_INT_RFOF");
+	Bind("HARDWARE.DSPI_0.INT_TFIWF", "HARDWARE.DSPI_0_INT_TFIWF");
+	Bind("HARDWARE.DSPI_0.INT_DDIF" , "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_0.INT_DPEF" , "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_0.INT_SPITCF", "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_0.INT_DSITCF", "HARDWARE.unused");
+	BindArray(DSPI_0::NUM_DSI_INPUTS, "HARDWARE.DSPI_0.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
+	BindArray(DSPI_0::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_0.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
+	Bind("HARDWARE.DSPI_0.DMA_RX"   , "HARDWARE.DSPI_0_DMA_RX");
+	Bind("HARDWARE.DSPI_0.DMA_TX"   , "HARDWARE.DSPI_0_DMA_TX");
+	Bind("HARDWARE.DSPI_0.DMA_CMD"  , "HARDWARE.DSPI_0_DMA_CMD");
+	
+	Bind("HARDWARE.DSPI_1.m_clk"    , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.DSPI_1.dspi_clk" , "HARDWARE.DSPI_CLK1");
+	Bind("HARDWARE.DSPI_1.reset_b"  , "HARDWARE.reset_b");
+	Bind("HARDWARE.DSPI_1.debug"    , "HARDWARE.debug");
+	Bind("HARDWARE.DSPI_1.HT"       , "HARDWARE.pull_down");
+	Bind("HARDWARE.DSPI_1.INT_TFUF" , "HARDWARE.DSPI_1_INT_TFUF");
+	Bind("HARDWARE.DSPI_1.INT_RFOF" , "HARDWARE.DSPI_1_INT_RFOF");
+	Bind("HARDWARE.DSPI_1.INT_TFIWF", "HARDWARE.DSPI_1_INT_TFIWF");
+	Bind("HARDWARE.DSPI_1.INT_DDIF" , "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_1.INT_DPEF" , "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_1.INT_SPITCF", "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_1.INT_DSITCF", "HARDWARE.unused");
+	BindArray(DSPI_1::NUM_DSI_INPUTS, "HARDWARE.DSPI_1.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
+	BindArray(DSPI_1::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_1.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
+	Bind("HARDWARE.DSPI_1.DMA_RX"   , "HARDWARE.DSPI_1_DMA_RX");
+	Bind("HARDWARE.DSPI_1.DMA_TX"   , "HARDWARE.DSPI_1_DMA_TX");
+	Bind("HARDWARE.DSPI_1.DMA_CMD"  , "HARDWARE.DSPI_1_DMA_CMD");
+	
+	Bind("HARDWARE.DSPI_2.m_clk"    , "HARDWARE.PBRIDGEB_CLK");
+	Bind("HARDWARE.DSPI_2.dspi_clk" , "HARDWARE.DSPI_CLK1");
+	Bind("HARDWARE.DSPI_2.reset_b"  , "HARDWARE.reset_b");
+	Bind("HARDWARE.DSPI_2.debug"    , "HARDWARE.debug");
+	Bind("HARDWARE.DSPI_2.HT"       , "HARDWARE.pull_down");
+	Bind("HARDWARE.DSPI_2.INT_TFUF" , "HARDWARE.DSPI_2_INT_TFUF");
+	Bind("HARDWARE.DSPI_2.INT_RFOF" , "HARDWARE.DSPI_2_INT_RFOF");
+	Bind("HARDWARE.DSPI_2.INT_TFIWF", "HARDWARE.DSPI_2_INT_TFIWF");
+	Bind("HARDWARE.DSPI_2.INT_DDIF" , "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_2.INT_DPEF" , "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_2.INT_SPITCF", "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_2.INT_DSITCF", "HARDWARE.unused");
+	BindArray(DSPI_2::NUM_DSI_INPUTS, "HARDWARE.DSPI_2.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
+	BindArray(DSPI_2::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_2.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
+	Bind("HARDWARE.DSPI_2.DMA_RX"   , "HARDWARE.DSPI_2_DMA_RX");
+	Bind("HARDWARE.DSPI_2.DMA_TX"   , "HARDWARE.DSPI_2_DMA_TX");
+	Bind("HARDWARE.DSPI_2.DMA_CMD"  , "HARDWARE.DSPI_2_DMA_CMD");
+	
+	Bind("HARDWARE.DSPI_3.m_clk"    , "HARDWARE.PBRIDGEB_CLK");
+	Bind("HARDWARE.DSPI_3.dspi_clk" , "HARDWARE.DSPI_CLK1");
+	Bind("HARDWARE.DSPI_3.reset_b"  , "HARDWARE.reset_b");
+	Bind("HARDWARE.DSPI_3.debug"    , "HARDWARE.debug");
+	Bind("HARDWARE.DSPI_3.HT"       , "HARDWARE.pull_down");
+	Bind("HARDWARE.DSPI_3.INT_TFUF" , "HARDWARE.DSPI_3_INT_TFUF");
+	Bind("HARDWARE.DSPI_3.INT_RFOF" , "HARDWARE.DSPI_3_INT_RFOF");
+	Bind("HARDWARE.DSPI_3.INT_TFIWF", "HARDWARE.DSPI_3_INT_TFIWF");
+	Bind("HARDWARE.DSPI_3.INT_DDIF" , "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_3.INT_DPEF" , "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_3.INT_SPITCF", "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_3.INT_DSITCF", "HARDWARE.unused");
+	BindArray(DSPI_3::NUM_DSI_INPUTS, "HARDWARE.DSPI_3.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
+	BindArray(DSPI_3::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_3.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
+	Bind("HARDWARE.DSPI_3.DMA_RX"   , "HARDWARE.DSPI_3_DMA_RX");
+	Bind("HARDWARE.DSPI_3.DMA_TX"   , "HARDWARE.DSPI_3_DMA_TX");
+	Bind("HARDWARE.DSPI_3.DMA_CMD"  , "HARDWARE.DSPI_3_DMA_CMD");
+	
+	Bind("HARDWARE.DSPI_4.m_clk"     , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.DSPI_4.dspi_clk"  , "HARDWARE.DSPI_CLK0");
+	Bind("HARDWARE.DSPI_4.reset_b"   , "HARDWARE.reset_b");
+	Bind("HARDWARE.DSPI_4.debug"     , "HARDWARE.debug");
+	Bind("HARDWARE.DSPI_4.HT"        , "HARDWARE.pull_down");
+	Bind("HARDWARE.DSPI_4.INT_TFUF"  , "HARDWARE.DSPI_4_INT_TFUF");
+	Bind("HARDWARE.DSPI_4.INT_RFOF"  , "HARDWARE.DSPI_4_INT_RFOF");
+	Bind("HARDWARE.DSPI_4.INT_TFIWF" , "HARDWARE.DSPI_4_INT_TFIWF");
+	Bind("HARDWARE.DSPI_4.INT_SPITCF", "HARDWARE.DSPI_4_INT_SPITCF");
+	Bind("HARDWARE.DSPI_4.INT_TCF"   , "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_4.INT_DSITCF", "HARDWARE.DSPI_4_INT_DSITCF");
+	Bind("HARDWARE.DSPI_4.INT_CMDTCF", "HARDWARE.DSPI_4_INT_CMDTCF");
+	Bind("HARDWARE.DSPI_4.INT_CMDFFF", "HARDWARE.DSPI_4_INT_CMDFFF");
+	Bind("HARDWARE.DSPI_4.INT_SPEF"  , "HARDWARE.DSPI_4_INT_SPEF");
+	Bind("HARDWARE.DSPI_4.INT_DPEF"  , "HARDWARE.DSPI_4_INT_DPEF");
+	BindArray(DSPI_4::NUM_DSI_INPUTS, "HARDWARE.DSPI_4.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
+	BindArray(DSPI_4::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_4.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
+	Bind("HARDWARE.DSPI_4.DMA_RX"   , "HARDWARE.DSPI_4_DMA_RX");
+	Bind("HARDWARE.DSPI_4.DMA_TX"   , "HARDWARE.DSPI_4_DMA_TX");
+	Bind("HARDWARE.DSPI_4.DMA_CMD"  , "HARDWARE.DSPI_4_DMA_CMD");
+	
+	Bind("HARDWARE.DSPI_5.m_clk"     , "HARDWARE.PBRIDGEB_CLK");
+	Bind("HARDWARE.DSPI_5.dspi_clk"  , "HARDWARE.DSPI_CLK0");
+	Bind("HARDWARE.DSPI_5.reset_b"   , "HARDWARE.reset_b");
+	Bind("HARDWARE.DSPI_5.debug"     , "HARDWARE.debug");
+	Bind("HARDWARE.DSPI_5.HT"        , "HARDWARE.pull_down");
+	Bind("HARDWARE.DSPI_5.INT_TFUF"  , "HARDWARE.DSPI_5_INT_TFUF");
+	Bind("HARDWARE.DSPI_5.INT_RFOF"  , "HARDWARE.DSPI_5_INT_RFOF");
+	Bind("HARDWARE.DSPI_5.INT_TFIWF" , "HARDWARE.DSPI_5_INT_TFIWF");
+	Bind("HARDWARE.DSPI_5.INT_SPITCF", "HARDWARE.DSPI_5_INT_SPITCF");
+	Bind("HARDWARE.DSPI_5.INT_TCF"   , "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_5.INT_DSITCF", "HARDWARE.DSPI_5_INT_DSITCF");
+	Bind("HARDWARE.DSPI_5.INT_CMDTCF", "HARDWARE.DSPI_5_INT_CMDTCF");
+	Bind("HARDWARE.DSPI_5.INT_CMDFFF", "HARDWARE.DSPI_5_INT_CMDFFF");
+	Bind("HARDWARE.DSPI_5.INT_SPEF"  , "HARDWARE.DSPI_5_INT_SPEF");
+	Bind("HARDWARE.DSPI_5.INT_DPEF"  , "HARDWARE.DSPI_5_INT_DPEF");
+	BindArray(DSPI_5::NUM_DSI_INPUTS, "HARDWARE.DSPI_5.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
+	BindArray(DSPI_5::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_5.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
+	Bind("HARDWARE.DSPI_5.DMA_RX"    , "HARDWARE.DSPI_5_DMA_RX");
+	Bind("HARDWARE.DSPI_5.DMA_TX"    , "HARDWARE.DSPI_5_DMA_TX");
+	Bind("HARDWARE.DSPI_5.DMA_CMD"   , "HARDWARE.DSPI_5_DMA_CMD");
+	
+	Bind("HARDWARE.DSPI_6.m_clk"     , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.DSPI_6.dspi_clk"  , "HARDWARE.DSPI_CLK0");
+	Bind("HARDWARE.DSPI_6.reset_b"   , "HARDWARE.reset_b");
+	Bind("HARDWARE.DSPI_6.debug"     , "HARDWARE.debug");
+	Bind("HARDWARE.DSPI_6.HT"        , "HARDWARE.pull_down");
+	Bind("HARDWARE.DSPI_6.INT_TFUF"  , "HARDWARE.DSPI_6_INT_TFUF");
+	Bind("HARDWARE.DSPI_6.INT_RFOF"  , "HARDWARE.DSPI_6_INT_RFOF");
+	Bind("HARDWARE.DSPI_6.INT_TFIWF" , "HARDWARE.DSPI_6_INT_TFIWF");
+	Bind("HARDWARE.DSPI_6.INT_SPITCF", "HARDWARE.DSPI_6_INT_SPITCF");
+	Bind("HARDWARE.DSPI_6.INT_TCF"   , "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_6.INT_DSITCF", "HARDWARE.DSPI_6_INT_DSITCF");
+	Bind("HARDWARE.DSPI_6.INT_CMDTCF", "HARDWARE.DSPI_6_INT_CMDTCF");
+	Bind("HARDWARE.DSPI_6.INT_CMDFFF", "HARDWARE.DSPI_6_INT_CMDFFF");
+	Bind("HARDWARE.DSPI_6.INT_SPEF"  , "HARDWARE.DSPI_6_INT_SPEF");
+	Bind("HARDWARE.DSPI_6.INT_DPEF"  , "HARDWARE.DSPI_6_INT_DPEF");
+	BindArray(DSPI_6::NUM_DSI_INPUTS, "HARDWARE.DSPI_6.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
+	BindArray(DSPI_6::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_6.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
+	Bind("HARDWARE.DSPI_6.DMA_RX"    , "HARDWARE.DSPI_6_DMA_RX");
+	Bind("HARDWARE.DSPI_6.DMA_TX"    , "HARDWARE.DSPI_6_DMA_TX");
+	Bind("HARDWARE.DSPI_6.DMA_CMD"   , "HARDWARE.DSPI_6_DMA_CMD");
+	
+	Bind("HARDWARE.DSPI_12.m_clk"    , "HARDWARE.PBRIDGEA_CLK");
+	Bind("HARDWARE.DSPI_12.dspi_clk" , "HARDWARE.DSPI_CLK1");
+	Bind("HARDWARE.DSPI_12.reset_b"  , "HARDWARE.reset_b");
+	Bind("HARDWARE.DSPI_12.debug"    , "HARDWARE.debug");
+	Bind("HARDWARE.DSPI_12.HT"       , "HARDWARE.pull_down");
+	Bind("HARDWARE.DSPI_12.INT_TFUF" , "HARDWARE.DSPI_12_INT_TFUF");
+	Bind("HARDWARE.DSPI_12.INT_RFOF" , "HARDWARE.DSPI_12_INT_RFOF");
+	Bind("HARDWARE.DSPI_12.INT_TFIWF", "HARDWARE.DSPI_12_INT_TFIWF");
+	Bind("HARDWARE.DSPI_12.INT_DDIF" , "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_12.INT_DPEF" , "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_12.INT_SPITCF", "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_12.INT_DSITCF", "HARDWARE.unused");
+	BindArray(DSPI_12::NUM_DSI_INPUTS, "HARDWARE.DSPI_12.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
+	BindArray(DSPI_12::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_12.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
+	Bind("HARDWARE.DSPI_12.DMA_RX"   , "HARDWARE.DSPI_12_DMA_RX");
+	Bind("HARDWARE.DSPI_12.DMA_TX"   , "HARDWARE.DSPI_12_DMA_TX");
+	Bind("HARDWARE.DSPI_12.DMA_CMD"  , "HARDWARE.DSPI_12_DMA_CMD");
+	
 	BindArray(EDMA_0::NUM_DMA_CHANNELS, "HARDWARE.eDMA_0.err_irq", 0, "HARDWARE.DMA_ERR_IRQ", 0);
 	BindArray(EDMA_1::NUM_DMA_CHANNELS, "HARDWARE.eDMA_1.err_irq", 0, "HARDWARE.DMA_ERR_IRQ", 64);
 	BindArray(NUM_DMA_CHANNELS, "HARDWARE.DMA_ERR_IRQ_COMBINATOR.in", "HARDWARE.DMA_ERR_IRQ");
 
+	Bind("HARDWARE.DSPI0_0.in_0" , "HARDWARE.DSPI_0_INT_TFUF");
+	Bind("HARDWARE.DSPI0_0.in_1" , "HARDWARE.DSPI_0_INT_RFOF");
+	Bind("HARDWARE.DSPI0_0.in_2" , "HARDWARE.DSPI_0_INT_TFIWF");
+	Bind("HARDWARE.DSPI1_0.in_0" , "HARDWARE.DSPI_1_INT_TFUF");
+	Bind("HARDWARE.DSPI1_0.in_1" , "HARDWARE.DSPI_1_INT_RFOF");
+	Bind("HARDWARE.DSPI1_0.in_2" , "HARDWARE.DSPI_1_INT_TFIWF");
+	Bind("HARDWARE.DSPI2_0.in_0" , "HARDWARE.DSPI_2_INT_TFUF");
+	Bind("HARDWARE.DSPI2_0.in_1" , "HARDWARE.DSPI_2_INT_RFOF");
+	Bind("HARDWARE.DSPI2_0.in_2" , "HARDWARE.DSPI_2_INT_TFIWF");
+	Bind("HARDWARE.DSPI3_0.in_0" , "HARDWARE.DSPI_3_INT_TFUF");
+	Bind("HARDWARE.DSPI3_0.in_1" , "HARDWARE.DSPI_3_INT_RFOF");
+	Bind("HARDWARE.DSPI3_0.in_2" , "HARDWARE.DSPI_3_INT_TFIWF");
+	Bind("HARDWARE.DSPI4_0.in_0" , "HARDWARE.DSPI_4_INT_TFUF");
+	Bind("HARDWARE.DSPI4_0.in_1" , "HARDWARE.DSPI_4_INT_RFOF");
+	Bind("HARDWARE.DSPI4_0.in_2" , "HARDWARE.DSPI_4_INT_TFIWF");
+	Bind("HARDWARE.DSPI4_5.in_0" , "HARDWARE.DSPI_4_INT_SPITCF");
+	Bind("HARDWARE.DSPI4_5.in_1" , "HARDWARE.DSPI_4_INT_CMDTCF");
+	Bind("HARDWARE.DSPI4_6.in_0" , "HARDWARE.DSPI_4_INT_DSITCF");
+	Bind("HARDWARE.DSPI4_6.in_1" , "HARDWARE.DSPI_4_INT_CMDFFF");
+	Bind("HARDWARE.DSPI4_7.in_0" , "HARDWARE.DSPI_4_INT_SPEF");
+	Bind("HARDWARE.DSPI4_7.in_1" , "HARDWARE.DSPI_4_INT_DPEF");
+	Bind("HARDWARE.DSPI5_0.in_0" , "HARDWARE.DSPI_5_INT_TFUF");
+	Bind("HARDWARE.DSPI5_0.in_1" , "HARDWARE.DSPI_5_INT_RFOF");
+	Bind("HARDWARE.DSPI5_0.in_2" , "HARDWARE.DSPI_5_INT_TFIWF");
+	Bind("HARDWARE.DSPI5_5.in_0" , "HARDWARE.DSPI_5_INT_SPITCF");
+	Bind("HARDWARE.DSPI5_5.in_1" , "HARDWARE.DSPI_5_INT_CMDTCF");
+	Bind("HARDWARE.DSPI5_6.in_0" , "HARDWARE.DSPI_5_INT_DSITCF");
+	Bind("HARDWARE.DSPI5_6.in_1" , "HARDWARE.DSPI_5_INT_CMDFFF");
+	Bind("HARDWARE.DSPI5_7.in_0" , "HARDWARE.DSPI_5_INT_SPEF");
+	Bind("HARDWARE.DSPI5_7.in_1" , "HARDWARE.DSPI_5_INT_DPEF");
+	Bind("HARDWARE.DSPI6_0.in_0" , "HARDWARE.DSPI_6_INT_TFUF");
+	Bind("HARDWARE.DSPI6_0.in_1" , "HARDWARE.DSPI_6_INT_RFOF");
+	Bind("HARDWARE.DSPI6_0.in_2" , "HARDWARE.DSPI_6_INT_TFIWF");
+	Bind("HARDWARE.DSPI6_5.in_0" , "HARDWARE.DSPI_6_INT_SPITCF");
+	Bind("HARDWARE.DSPI6_5.in_1" , "HARDWARE.DSPI_6_INT_CMDTCF");
+	Bind("HARDWARE.DSPI6_6.in_0" , "HARDWARE.DSPI_6_INT_DSITCF");
+	Bind("HARDWARE.DSPI6_6.in_1" , "HARDWARE.DSPI_6_INT_CMDFFF");
+	Bind("HARDWARE.DSPI6_7.in_0" , "HARDWARE.DSPI_6_INT_SPEF");
+	Bind("HARDWARE.DSPI6_7.in_1" , "HARDWARE.DSPI_6_INT_DPEF");
+	Bind("HARDWARE.DSPI12_0.in_0", "HARDWARE.DSPI_12_INT_TFUF");
+	Bind("HARDWARE.DSPI12_0.in_1", "HARDWARE.DSPI_12_INT_RFOF");
+	Bind("HARDWARE.DSPI12_0.in_2", "HARDWARE.DSPI_12_INT_TFIWF");
+	
 	// Interrupt sources
 	
 	// IRQ # ---- Source name ------------ Description ------------------------- Note --------------
@@ -1600,7 +2285,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 
 	// 242          TODO
 	//  ..          TODO	
-	// 964          TODO
+	// 258          TODO
 
 	InterruptSource(242);
 	InterruptSource(243);
@@ -1619,69 +2304,157 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	InterruptSource(256);
 	InterruptSource(257);
 	InterruptSource(258);
-	InterruptSource(259);
-	InterruptSource(260);
-	InterruptSource(261);
-	InterruptSource(262);
-	InterruptSource(263);
-	InterruptSource(264);
-	InterruptSource(265);
-	InterruptSource(266);
+	
+	// 259       DSPI_0_SR[TFUF] | DSPI_0_SR[RFOF] | DSPI_0_SR[TFIWF]
+	// 260       DSPI_0_SR[EOQF]
+	// 261       DSPI_0_SR[TFFF]
+	// 262       DSPI_0_SR[TCF]
+	// 263       DDSPI_0_SR[RFDF]
+	// 264       DSPI_0_SR[CMDTCF]
+	// 265       DSPI_0_SR[CMDFFF]
+	// 266       DSPI_0_SR[SPEF]
+
+	InterruptSource(259, "HARDWARE.DSPI0_0.out");
+	InterruptSource(260, "HARDWARE.DSPI_0.INT_EOQF");
+	InterruptSource(261, "HARDWARE.DSPI_0.INT_TFFF");
+	InterruptSource(262, "HARDWARE.DSPI_0.INT_TCF");
+	InterruptSource(263, "HARDWARE.DSPI_0.INT_RFDF");
+	InterruptSource(264, "HARDWARE.DSPI_0.INT_CMDTCF");
+	InterruptSource(265, "HARDWARE.DSPI_0.INT_CMDFFF");
+	InterruptSource(266, "HARDWARE.DSPI_0.INT_SPEF");
+	
+	// 267       unused
 	InterruptSource(267);
-	InterruptSource(268);
-	InterruptSource(269);
-	InterruptSource(270);
-	InterruptSource(271);
-	InterruptSource(272);
-	InterruptSource(273);
-	InterruptSource(274);
-	InterruptSource(275);
+	
+	// 268       DSPI_1_SR[TFUF] | DSPI_1_SR[RFOF] | DSPI_1_SR[TFIWF]
+	// 269       DSPI_1_SR[EOQF]
+	// 270       DSPI_1_SR[TFFF]
+	// 271       DSPI_1_SR[TCF]
+	// 272       DDSPI_1_SR[RFDF]
+	// 273       DSPI_1_SR[CMDTCF]
+	// 274       DSPI_1_SR[CMDFFF]
+	// 275       DSPI_1_SR[SPEF]
+
+	InterruptSource(268, "HARDWARE.DSPI1_0.out");
+	InterruptSource(269, "HARDWARE.DSPI_1.INT_EOQF");
+	InterruptSource(270, "HARDWARE.DSPI_1.INT_TFFF");
+	InterruptSource(271, "HARDWARE.DSPI_1.INT_TCF");
+	InterruptSource(272, "HARDWARE.DSPI_1.INT_RFDF");
+	InterruptSource(273, "HARDWARE.DSPI_1.INT_CMDTCF");
+	InterruptSource(274, "HARDWARE.DSPI_1.INT_CMDFFF");
+	InterruptSource(275, "HARDWARE.DSPI_1.INT_SPEF");
+
+	// 276       unused
 	InterruptSource(276);
-	InterruptSource(277);
-	InterruptSource(278);
-	InterruptSource(279);
-	InterruptSource(280);
-	InterruptSource(281);
-	InterruptSource(282);
-	InterruptSource(283);
-	InterruptSource(284);
+	
+	// 277       DSPI_2_SR[TFUF] | DSPI_2_SR[RFOF] | DSPI_2_SR[TFIWF]
+	// 278       DSPI_2_SR[EOQF]
+	// 279       DSPI_2_SR[TFFF]
+	// 280       DSPI_2_SR[TCF]
+	// 281       DDSPI_2_SR[RFDF]
+	// 282       DSPI_2_SR[CMDTCF]
+	// 283       DSPI_2_SR[CMDFFF]
+	// 284       DSPI_2_SR[SPEF]
+
+	InterruptSource(277, "HARDWARE.DSPI2_0.out");
+	InterruptSource(278, "HARDWARE.DSPI_2.INT_EOQF");
+	InterruptSource(279, "HARDWARE.DSPI_2.INT_TFFF");
+	InterruptSource(280, "HARDWARE.DSPI_2.INT_TCF");
+	InterruptSource(281, "HARDWARE.DSPI_2.INT_RFDF");
+	InterruptSource(282, "HARDWARE.DSPI_2.INT_CMDTCF");
+	InterruptSource(283, "HARDWARE.DSPI_2.INT_CMDFFF");
+	InterruptSource(284, "HARDWARE.DSPI_2.INT_SPEF");
+	
+	// 285       unused
+	
 	InterruptSource(285);
-	InterruptSource(286);
-	InterruptSource(287);
-	InterruptSource(288);
-	InterruptSource(289);
-	InterruptSource(290);
-	InterruptSource(291);
-	InterruptSource(292);
-	InterruptSource(293);
+	
+	// 286       DSPI_3_SR[TFUF] | DSPI_3_SR[RFOF] | DSPI_3_SR[TFIWF]
+	// 287       DSPI_3_SR[EOQF]
+	// 288       DSPI_3_SR[TFFF]
+	// 289       DSPI_3_SR[TCF]
+	// 290       DDSPI_3_SR[RFDF]
+	// 291       DSPI_3_SR[CMDTCF]
+	// 292       DSPI_3_SR[CMDFFF]
+	// 293       DSPI_3_SR[SPEF]
+
+	InterruptSource(286, "HARDWARE.DSPI3_0.out");
+	InterruptSource(287, "HARDWARE.DSPI_3.INT_EOQF");
+	InterruptSource(288, "HARDWARE.DSPI_3.INT_TFFF");
+	InterruptSource(289, "HARDWARE.DSPI_3.INT_TCF");
+	InterruptSource(290, "HARDWARE.DSPI_3.INT_RFDF");
+	InterruptSource(291, "HARDWARE.DSPI_3.INT_CMDTCF");
+	InterruptSource(292, "HARDWARE.DSPI_3.INT_CMDFFF");
+	InterruptSource(293, "HARDWARE.DSPI_3.INT_SPEF");
+
+	// 294       unused
+	
 	InterruptSource(294);
-	InterruptSource(295);
-	InterruptSource(296);
-	InterruptSource(297);
-	InterruptSource(298);
-	InterruptSource(299);
-	InterruptSource(300);
-	InterruptSource(301);
-	InterruptSource(302);
-	InterruptSource(303);
-	InterruptSource(304);
-	InterruptSource(305);
-	InterruptSource(306);
-	InterruptSource(307);
-	InterruptSource(308);
-	InterruptSource(309);
-	InterruptSource(310);
-	InterruptSource(311);
-	InterruptSource(312);
-	InterruptSource(313);
-	InterruptSource(314);
-	InterruptSource(315);
-	InterruptSource(316);
-	InterruptSource(317);
-	InterruptSource(318);
-	InterruptSource(319);
-	InterruptSource(320);
-	InterruptSource(321);
+	
+	// 295       DSPI_4_SR[TFUF] | DSPI_4_SR[RFOF] | DSPI_4_SR[TFIWF]
+	// 296       DSPI_4_SR[EOQF]
+	// 297       DSPI_4_SR[TFFF]
+	// 298       DSPI_4_SR[TCF]
+	// 299       DSPI_4_SR[RFDF]
+	// 300       DSPI_4_SR[SPITCF] | DSPI_4_SR[CMDTCF]
+	// 301       DSPI_4_SR[DSITCF] | DSPI_4_SR[CMDFFF]
+	// 302       DSPI_4_SR[SPEF] | DSPI_4_SR[DPEF]
+	// 303       DSPI_4_SR[DDIF]
+
+	InterruptSource(295, "HARDWARE.DSPI4_0.out");
+	InterruptSource(296, "HARDWARE.DSPI_4.INT_EOQF");
+	InterruptSource(297, "HARDWARE.DSPI_4.INT_TFFF");
+	InterruptSource(298, "HARDWARE.DSPI_4.INT_TCF");
+	InterruptSource(299, "HARDWARE.DSPI_4.INT_RFDF");
+	InterruptSource(300, "HARDWARE.DSPI4_5.out");
+	InterruptSource(301, "HARDWARE.DSPI4_6.out");
+	InterruptSource(302, "HARDWARE.DSPI4_7.out");
+	InterruptSource(303, "HARDWARE.DSPI_4.INT_DDIF");
+
+	// 304       DSPI_5_SR[TFUF] | DSPI_5_SR[RFOF] |DSPI_5_SR[TFIWF]
+	// 305       DSPI_5_SR[EOQF]
+	// 306       DSPI_5_SR[TFFF]
+	// 307       DSPI_5_SR[TCF]
+	// 308       DSPI_5_SR[RFDF]
+	// 309       DSPI_5_SR[SPITCF] | DSPI_5_SR[CMDTCF]
+	// 310       DSPI_5_SR[DSITCF] | DSPI_5_SR[CMDFFF]
+	// 311       DSPI_5_SR[SPEF] | DSPI_5_SR[DPEF]
+	// 312       DSPI_5_SR[DDIF]
+
+	InterruptSource(304, "HARDWARE.DSPI5_0.out");
+	InterruptSource(305, "HARDWARE.DSPI_5.INT_EOQF");
+	InterruptSource(306, "HARDWARE.DSPI_5.INT_TFFF");
+	InterruptSource(307, "HARDWARE.DSPI_5.INT_TCF");
+	InterruptSource(308, "HARDWARE.DSPI_5.INT_RFDF");
+	InterruptSource(309, "HARDWARE.DSPI5_5.out");
+	InterruptSource(310, "HARDWARE.DSPI5_6.out");
+	InterruptSource(311, "HARDWARE.DSPI5_7.out");
+	InterruptSource(312, "HARDWARE.DSPI_5.INT_DDIF");
+	
+	// 313       DSPI_6_SR[TFUF] | DSPI_6_SR[RFOF] | DSPI_6_SR[TFIWF]
+	// 314       DSPI_6_SR[EOQF]
+	// 315       DSPI_6_SR[TFFF]
+	// 316       DSPI_6_SR[TCF]
+	// 317       DSPI_6_SR[RFDF]
+	// 318       DSPI_6_SR[SPITCF] | DSPI_6_SR[CMDTCF]
+	// 319       DSPI_6_SR[DSITCF] | DSPI_6_SR[CMDFFF]
+	// 320       DSPI_6_SR[SPEF] | DSPI_6_SR[DPEF]
+	// 321       DSPI_6_SR[DDIF]
+
+	InterruptSource(313, "HARDWARE.DSPI6_0.out");
+	InterruptSource(314, "HARDWARE.DSPI_6.INT_EOQF");
+	InterruptSource(315, "HARDWARE.DSPI_6.INT_TFFF");
+	InterruptSource(316, "HARDWARE.DSPI_6.INT_TCF");
+	InterruptSource(317, "HARDWARE.DSPI_6.INT_RFDF");
+	InterruptSource(318, "HARDWARE.DSPI6_5.out");
+	InterruptSource(319, "HARDWARE.DSPI6_6.out");
+	InterruptSource(320, "HARDWARE.DSPI6_7.out");
+	InterruptSource(321, "HARDWARE.DSPI_6.INT_DDIF");
+
+	// 322       unused
+	// ...
+	// 366       unused
+	
 	InterruptSource(322);
 	InterruptSource(323);
 	InterruptSource(324);
@@ -1727,14 +2500,27 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	InterruptSource(364);
 	InterruptSource(365);
 	InterruptSource(366);
-	InterruptSource(367);
-	InterruptSource(368);
-	InterruptSource(369);
-	InterruptSource(370);
-	InterruptSource(371);
-	InterruptSource(372);
-	InterruptSource(373);
-	InterruptSource(374);
+	
+	// 367       DSPI_12_SR[TFUF] | DSPI_12_SR[RFOF] | DSPI_12_SR[TFIWF]
+	// 368       DSPI_12_SR[EOQF]
+	// 369       DSPI_12_SR[TFFF]
+	// 370       DSPI_12_SR[TCF]
+	// 371       DDSPI_12_SR[RFDF]
+	// 372       DSPI_12_SR[CMDTCF]
+	// 373       DSPI_12_SR[CMDFFF]
+	// 374       DSPI_12_SR[SPEF]
+
+	InterruptSource(367, "HARDWARE.DSPI12_0.out");
+	InterruptSource(368, "HARDWARE.DSPI_12.INT_EOQF");
+	InterruptSource(369, "HARDWARE.DSPI_12.INT_TFFF");
+	InterruptSource(370, "HARDWARE.DSPI_12.INT_TCF");
+	InterruptSource(371, "HARDWARE.DSPI_12.INT_RFDF");
+	InterruptSource(372, "HARDWARE.DSPI_12.INT_CMDTCF");
+	InterruptSource(373, "HARDWARE.DSPI_12.INT_CMDFFF");
+	InterruptSource(374, "HARDWARE.DSPI_12.INT_SPEF");
+
+	// 375      unused
+	
 	InterruptSource(375);
 	
 	// 376      LINFlexD_0 RXI
@@ -2388,10 +3174,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(0, 2);
 	DMASource(0, 3);
 	DMASource(0, 4);
-	DMASource(0, 5);
-	DMASource(0, 6);
-	DMASource(0, 7);
-	DMASource(0, 8);
+	DMASource(0, 5, "HARDWARE.DSPI_0_DMA_RX");
+	DMASource(0, 6, "HARDWARE.DSPI_0_DMA_TX");
+	DMASource(0, 7, "HARDWARE.DSPI_4_DMA_RX");
+	DMASource(0, 8, "HARDWARE.DSPI_4_DMA_TX");
 	DMASource(0, 9);
 	DMASource(0, 10);
 	DMASource(0, 11);
@@ -2402,8 +3188,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(0, 16, "HARDWARE.LINFlexD_0_DMA_RX_0");
 	DMASource(0, 17, "HARDWARE.LINFlexD_0_DMA_TX_0");
 	DMASource(0, 18, "HARDWARE.LINFlexD_14_DMA_RX_0");
-	DMASource(0, 19);
-	DMASource(0, 20);
+	DMASource(0, 19, "HARDWARE.DSPI_0_DMA_CMD");
+	DMASource(0, 20, "HARDWARE.DSPI_4_DMA_CMD");
 	DMASource(0, 21);
 	DMASource(0, 22);
 	DMASource(0, 23);
@@ -2450,14 +3236,14 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	
 	// DMAMUX_1
 	DMASource(1, 0);                                                                                                                                                                                        
-	DMASource(1, 1);                                                                                                                                                                                        
-	DMASource(1, 2);                                                                                                                                                                                        
-	DMASource(1,  3, "HARDWARE.LINFlexD_0_DMA_RX_0");
-	DMASource(1,  4, "HARDWARE.LINFlexD_0_DMA_TX_0");
-	DMASource(1,  5, "HARDWARE.LINFlexD_1_DMA_RX_0");
-	DMASource(1,  6, "HARDWARE.LINFlexD_1_DMA_TX_0");
-	DMASource(1,  7, "HARDWARE.LINFlexD_14_DMA_RX_0");
-	DMASource(1,  8, "HARDWARE.LINFlexD_14_DMA_TX_0");
+	DMASource(1, 1, "HARDWARE.DSPI_12_DMA_RX");
+	DMASource(1, 2, "HARDWARE.DSPI_12_DMA_TX");                                                                                                                                                                                        
+	DMASource(1, 3, "HARDWARE.LINFlexD_0_DMA_RX_0");
+	DMASource(1, 4, "HARDWARE.LINFlexD_0_DMA_TX_0");
+	DMASource(1, 5, "HARDWARE.LINFlexD_1_DMA_RX_0");
+	DMASource(1, 6, "HARDWARE.LINFlexD_1_DMA_TX_0");
+	DMASource(1, 7, "HARDWARE.LINFlexD_14_DMA_RX_0");
+	DMASource(1, 8, "HARDWARE.LINFlexD_14_DMA_TX_0");
 	DMASource(1, 9);
 	DMASource(1, 10);
 	DMASource(1, 11);
@@ -2496,14 +3282,14 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(1, 44);
 	DMASource(1, 45, "HARDWARE.LINFlexD_15_DMA_RX_0");
 	DMASource(1, 46, "HARDWARE.LINFlexD_15_DMA_TX_0");
-	DMASource(1, 47);
-	DMASource(1, 48);
-	DMASource(1, 49);
+	DMASource(1, 47, "HARDWARE.DSPI_5_DMA_RX");
+	DMASource(1, 48, "HARDWARE.DSPI_5_DMA_TX");
+	DMASource(1, 49, "HARDWARE.DSPI_5_DMA_CMD");
 	DMASource(1, 50);
 	DMASource(1, 51);
 	DMASource(1, 52);
-	DMASource(1, 53);
-	DMASource(1, 54);
+	DMASource(1, 53, "HARDWARE.DSPI_0_DMA_RX");
+	DMASource(1, 54, "HARDWARE.DSPI_0_DMA_TX");
 	DMASource(1, 55);
 	DMASource(1, 56);
 	DMASource(1, 57);
@@ -2518,8 +3304,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(2, 0);
 	DMASource(2, 1);
 	DMASource(2, 2);
-	DMASource(2, 3);
-	DMASource(2, 4);
+	DMASource(2, 3, "HARDWARE.DSPI_1_DMA_RX");
+	DMASource(2, 4, "HARDWARE.DSPI_1_DMA_TX");
 	DMASource(2, 5);
 	DMASource(2, 6);
 	DMASource(2, 7);
@@ -2557,9 +3343,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(2, 39);
 	DMASource(2, 40);
 	DMASource(2, 41);
-	DMASource(2, 42);
-	DMASource(2, 43);
-	DMASource(2, 44);
+	DMASource(2, 42, "HARDWARE.DSPI_1_DMA_CMD");
+	DMASource(2, 43, "HARDWARE.DSPI_2_DMA_RX");
+	DMASource(2, 44, "HARDWARE.DSPI_2_DMA_TX");
 	DMASource(2, 45, "HARDWARE.LINFlexD_2_DMA_RX_0");
 	DMASource(2, 46, "HARDWARE.LINFlexD_2_DMA_TX_0");
 	DMASource(2, 47);
@@ -2583,10 +3369,10 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	// DMAMUX_3
 	DMASource(3, 0);
 	DMASource(3, 1);
-	DMASource(3, 2);
-	DMASource(3, 3);
-	DMASource(3,  4, "HARDWARE.LINFlexD_2_DMA_RX_0");
-	DMASource(3,  5, "HARDWARE.LINFlexD_2_DMA_TX_0");
+	DMASource(3, 2, "HARDWARE.DSPI_2_DMA_RX");
+	DMASource(3, 3, "HARDWARE.DSPI_2_DMA_TX");
+	DMASource(3, 4, "HARDWARE.LINFlexD_2_DMA_RX_0");
+	DMASource(3, 5, "HARDWARE.LINFlexD_2_DMA_TX_0");
 	DMASource(3, 6);
 	DMASource(3, 7);
 	DMASource(3, 8);
@@ -2626,9 +3412,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(3, 42);
 	DMASource(3, 43);
 	DMASource(3, 44);
-	DMASource(3, 45);
-	DMASource(3, 46);
-	DMASource(3, 47);
+	DMASource(3, 45, "HARDWARE.DSPI_2_DMA_CMD");
+	DMASource(3, 46, "HARDWARE.DSPI_1_DMA_RX");
+	DMASource(3, 47, "HARDWARE.DSPI_1_DMA_TX");
 	DMASource(3, 48);
 	DMASource(3, 49);
 	DMASource(3, 50);
@@ -2681,14 +3467,14 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(4, 31);
 	DMASource(4, 32);
 	DMASource(4, 33);
-	DMASource(4, 34);
+	DMASource(4, 34, "HARDWARE.DSPI_1_DMA_CMD");
 	DMASource(4, 35);
 	DMASource(4, 36);
 	DMASource(4, 37);
 	DMASource(4, 38);
-	DMASource(4, 39);
-	DMASource(4, 40);
-	DMASource(4, 41);
+	DMASource(4, 39, "HARDWARE.DSPI_0_DMA_CMD");
+	DMASource(4, 40, "HARDWARE.DSPI_0_DMA_RX");
+	DMASource(4, 41, "HARDWARE.DSPI_0_DMA_TX");
 	DMASource(4, 42);
 	DMASource(4, 43);
 	DMASource(4, 44);
@@ -2746,11 +3532,11 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(5, 30);
 	DMASource(5, 31);
 	DMASource(5, 32);
-	DMASource(5, 33);
+	DMASource(5, 33, "HARDWARE.DSPI_5_DMA_CMD");
 	DMASource(5, 34);
 	DMASource(5, 35);
-	DMASource(5, 36);
-	DMASource(5, 37);
+	DMASource(5, 36, "HARDWARE.DSPI_3_DMA_RX");
+	DMASource(5, 37, "HARDWARE.DSPI_3_DMA_TX");
 	DMASource(5, 38);
 	DMASource(5, 39, "HARDWARE.LINFlexD_2_DMA_RX_0");
 	DMASource(5, 40, "HARDWARE.LINFlexD_2_DMA_TX_0");
@@ -2803,12 +3589,12 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(6, 21);
 	DMASource(6, 22);
 	DMASource(6, 23);
-	DMASource(6, 24);
-	DMASource(6, 25);
-	DMASource(6, 26);
-	DMASource(6, 27);
-	DMASource(6, 28);
-	DMASource(6, 29);
+	DMASource(6, 24, "HARDWARE.DSPI_1_DMA_CMD");
+	DMASource(6, 25, "HARDWARE.DSPI_1_DMA_RX");
+	DMASource(6, 26, "HARDWARE.DSPI_1_DMA_TX");
+	DMASource(6, 27, "HARDWARE.DSPI_12_DMA_CMD");
+	DMASource(6, 28, "HARDWARE.DSPI_12_DMA_RX");
+	DMASource(6, 29, "HARDWARE.DSPI_12_DMA_TX");
 	DMASource(6, 30);
 	DMASource(6, 31);
 	DMASource(6, 32);
@@ -2890,12 +3676,12 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(7, 42);
 	DMASource(7, 43);
 	DMASource(7, 44);
-	DMASource(7, 45);
-	DMASource(7, 46);
-	DMASource(7, 47);
-	DMASource(7, 48);
-	DMASource(7, 49);
-	DMASource(7, 50);
+	DMASource(7, 45, "HARDWARE.DSPI_3_DMA_CMD");
+	DMASource(7, 46, "HARDWARE.DSPI_3_DMA_RX");
+	DMASource(7, 47, "HARDWARE.DSPI_3_DMA_TX");
+	DMASource(7, 48, "HARDWARE.DSPI_5_DMA_CMD");
+	DMASource(7, 49, "HARDWARE.DSPI_5_DMA_RX");
+	DMASource(7, 50, "HARDWARE.DSPI_5_DMA_TX");
 	DMASource(7, 51);
 	DMASource(7, 52);
 	DMASource(7, 53);
@@ -2954,9 +3740,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(8, 40);
 	DMASource(8, 41);
 	DMASource(8, 42);
-	DMASource(8, 43);
-	DMASource(8, 44);
-	DMASource(8, 45);
+	DMASource(8, 43, "HARDWARE.DSPI_4_DMA_CMD");
+	DMASource(8, 44, "HARDWARE.DSPI_4_DMA_RX");
+	DMASource(8, 45, "HARDWARE.DSPI_4_DMA_TX");
 	DMASource(8, 46);
 	DMASource(8, 47);
 	DMASource(8, 48);
@@ -3018,9 +3804,9 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	DMASource(9, 38);
 	DMASource(9, 39);
 	DMASource(9, 40);
-	DMASource(9, 41);
-	DMASource(9, 42);
-	DMASource(9, 43);
+	DMASource(9, 41, "HARDWARE.DSPI_2_DMA_CMD");
+	DMASource(9, 42, "HARDWARE.DSPI_2_DMA_RX");
+	DMASource(9, 43, "HARDWARE.DSPI_2_DMA_TX");
 	DMASource(9, 44);
 	DMASource(9, 45);
 	DMASource(9, 46);
@@ -3265,11 +4051,52 @@ Simulator::~Simulator()
 	if(dmamux_9) delete dmamux_9;
 	if(edma_0) delete edma_0;
 	if(edma_1) delete edma_1;
+	if(dspi_0) delete dspi_0;
+	if(dspi_1) delete dspi_1;
+	if(dspi_2) delete dspi_2;
+	if(dspi_3) delete dspi_3;
+	if(dspi_4) delete dspi_4;
+	if(dspi_5) delete dspi_5;
+	if(dspi_6) delete dspi_6;
+	if(dspi_12) delete dspi_12;
+	if(dspi_0_sout ) delete dspi_0_sout; 
+	if(dspi_0_sin  ) delete dspi_0_sin; 
+	if(dspi_1_sout ) delete dspi_1_sout; 
+	if(dspi_1_sin  ) delete dspi_1_sin; 
+	if(dspi_2_sout ) delete dspi_2_sout; 
+	if(dspi_2_sin  ) delete dspi_2_sin; 
+	if(dspi_3_sout ) delete dspi_3_sout; 
+	if(dspi_3_sin  ) delete dspi_3_sin; 
+	if(dspi_4_sout ) delete dspi_4_sout; 
+	if(dspi_4_sin  ) delete dspi_4_sin; 
+	if(dspi_5_sout ) delete dspi_5_sout; 
+	if(dspi_5_sin  ) delete dspi_5_sin; 
+	if(dspi_6_sout ) delete dspi_6_sout; 
+	if(dspi_6_sin  ) delete dspi_6_sin; 
+	if(dspi_12_sout) delete dspi_12_sout; 
+	if(dspi_12_sin ) delete dspi_12_sin; 
 	if(ebi_stub) delete ebi_stub;
 	if(flash_port1_stub) delete flash_port1_stub;
 	if(xbar_0_s6_stub) delete xbar_0_s6_stub;
 	if(xbar_1_m2_stub) delete xbar_1_m2_stub;
 	if(dma_err_irq_combinator) delete dma_err_irq_combinator;
+	if(DSPI0_0) delete DSPI0_0;
+	if(DSPI1_0) delete DSPI1_0;
+	if(DSPI2_0) delete DSPI2_0;
+	if(DSPI3_0) delete DSPI3_0;
+	if(DSPI4_0) delete DSPI4_0;
+	if(DSPI4_5) delete DSPI4_5;
+	if(DSPI4_6) delete DSPI4_6;
+	if(DSPI4_7) delete DSPI4_7;
+	if(DSPI5_0) delete DSPI5_0;
+	if(DSPI5_5) delete DSPI5_5;
+	if(DSPI5_6) delete DSPI5_6;
+	if(DSPI5_7) delete DSPI5_7;
+	if(DSPI6_0) delete DSPI6_0;
+	if(DSPI6_5) delete DSPI6_5;
+	if(DSPI6_6) delete DSPI6_6;
+	if(DSPI6_7) delete DSPI6_7;
+	if(DSPI12_0) delete DSPI12_0;
 	if(gdb_server[0]) delete gdb_server[0];
 	if(gdb_server[1]) delete gdb_server[1];
 	if(gdb_server[2]) delete gdb_server[2];
@@ -3400,6 +4227,10 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL15_CLK.clock-period", "4340278 ps"); // SERIAL_TERMINAL15_CLK: 230400 baud
 	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL16_CLK.lazy-clock", "true");
 	simulator->SetVariable("HARDWARE.SERIAL_TERMINAL16_CLK.clock-period", "4340278 ps"); // SERIAL_TERMINAL16_CLK: 230400 baud
+	simulator->SetVariable("HARDWARE.DSPI_CLK0.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.DSPI_CLK0.clock-period", "12500 ps");               // DSPI_CLK0: 80 Mhz
+	simulator->SetVariable("HARDWARE.DSPI_CLK1.lazy-clock", "true");
+	simulator->SetVariable("HARDWARE.DSPI_CLK1.clock-period", "12500 ps");               // DSPI_CLK1: 80 Mhz
 	
 	//  - e200 PowerPC cores
 
@@ -3533,11 +4364,19 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_23", "range_start=\"0xfff6d200\" range_end=\"0xfff6d3ff\" output_port=\"23\" translation=\"0x0\""); // DMAMUX_9    -> DMAMUX_9 (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_24", "range_start=\"0xfc0a0000\" range_end=\"0xfc0a3fff\" output_port=\"24\" translation=\"0x0\""); // EDMA_0      -> EDMA_0   (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_25", "range_start=\"0xfc0a4000\" range_end=\"0xfc0a7fff\" output_port=\"25\" translation=\"0x0\""); // EDMA_1      -> EDMA_1   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_26", "range_start=\"0xffe70000\" range_end=\"0xffe73fff\" output_port=\"26\" translation=\"0x0\""); // DSPI_0      -> DSPI_0   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_27", "range_start=\"0xffe74000\" range_end=\"0xffe77fff\" output_port=\"27\" translation=\"0x0\""); // DSPI_1      -> DSPI_1   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_28", "range_start=\"0xffe78000\" range_end=\"0xffe7bfff\" output_port=\"28\" translation=\"0x0\""); // DSPI_4      -> DSPI_4   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_29", "range_start=\"0xffe7c000\" range_end=\"0xffe7ffff\" output_port=\"29\" translation=\"0x0\""); // DSPI_6      -> DSPI_6   (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_30", "range_start=\"0xffe88000\" range_end=\"0xffe8bfff\" output_port=\"30\" translation=\"0x0\""); // DSPI_12     -> DSPI_12  (rel address)
 
 	//  - PBRIDGE_B
 	simulator->SetVariable("HARDWARE.PBRIDGE_B.cycle_time", "20 ns");
-	simulator->SetVariable("HARDWARE.PBRIDGE_B.mapping_0",  "range_start=\"0xfbe8c000\" range_end=\"0xfbe8ffff\" output_port=\"0\" translation=\"0x0\""); //  LINFlexD_2 -> LINFlexD_2 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_B.mapping_0",  "range_start=\"0xfbe8c000\" range_end=\"0xfbe8ffff\" output_port=\"0\" translation=\"0x0\""); // LINFlexD_2  -> LINFlexD_2 (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_B.mapping_1",  "range_start=\"0xfbea8000\" range_end=\"0xfbeabfff\" output_port=\"1\" translation=\"0x0\""); // LINFlexD_15 -> LINFlexD_15 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_B.mapping_2",  "range_start=\"0xfbe70000\" range_end=\"0xfbe73fff\" output_port=\"2\" translation=\"0x0\""); // DSPI_2      -> DSPI_2 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_B.mapping_3",  "range_start=\"0xfbe74000\" range_end=\"0xfbe77fff\" output_port=\"3\" translation=\"0x0\""); // DSPI_3      -> DSPI_3 (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_B.mapping_4",  "range_start=\"0xfbe78000\" range_end=\"0xfbe7bfff\" output_port=\"4\" translation=\"0x0\""); // DSPI_5      -> DSPI_5 (rel address)
 	
 	//  - XBAR_1_M1_CONCENTRATOR
 	simulator->SetVariable("HARDWARE.XBAR_1_M1_CONCENTRATOR.cycle_time", "10 ns");
