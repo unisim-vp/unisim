@@ -1,10 +1,10 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2010-2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met:
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
  *
  *   - Redistributions of source code must retain the above copyright notice, this
  *     list of conditions and the following disclaimer.
@@ -14,8 +14,8 @@
  *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *     endorse or promote products derived from this software without specific prior
- *     written permission.
+ *     endorse or promote products derived from this software without specific
+ *     prior written permission.
  *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 #ifndef SIMULATOR_HH_
@@ -38,6 +38,7 @@
 #include <unisim/component/tlm2/processor/arm/cortex_a9/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
+#include <unisim/component/cxx/processor/arm/memattrs.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
@@ -70,14 +71,13 @@
 
 struct MSSConfig
 {
-  enum STORAGE_ATTR
-    {
-      SA_DEFAULT = 0,           // not cache inhibited and not guarded                                                                                                              
-      SA_I       = 1,           // cache inhibited                                                                                                                                  
-      SA_G       = 2,           // guarded                                                                                                                                          
-      SA_IG      = SA_I | SA_G, // cache inhibited and guarded                                                                                                                      
-    };
-
+  struct STORAGE_ATTR
+  {
+    STORAGE_ATTR() : attributes(0) {}
+    STORAGE_ATTR( uint32_t _attributes ) : attributes(_attributes) {}
+    uint32_t attributes;
+  };
+  
   typedef uint32_t ADDRESS;
   typedef uint32_t PHYSICAL_ADDRESS;
 };
@@ -91,6 +91,8 @@ struct CPU
   CPU(const sc_core::sc_module_name& name, Object* parent = 0)
     : unisim::kernel::service::Object(name, parent)
     , TLMCPU(name, parent)
+    , l1d(*this)
+    , l1i(*this)
   {}
   
   struct ACCESS_CONTROLLER
@@ -102,119 +104,190 @@ struct CPU
   ACCESS_CONTROLLER* GetAccessController() { return &access_controller; }
   
   typedef CPU CACHE_CPU;
+
+  template <class ACTUAL_CACHE>
+  struct CacheCommons : unisim::kernel::service::Object
+  {
+    ACTUAL_CACHE* as_actual() { return static_cast<ACTUAL_CACHE*>(this); };
+    CacheCommons( char const* name, CPU& _cpu, uint64_t& _num_accesses, uint64_t& _num_misses )
+      : unisim::kernel::service::Object(name, &_cpu)
+      , cpu(_cpu)
+      , stat_num_accesses("num-accesses", as_actual(), _num_accesses, "number of cache accesses")
+      , stat_num_misses("num-misses", as_actual(), _num_misses, "number of cache misses")
+      , formula_miss_rate("miss-rate", as_actual(), "/", &stat_num_misses, &stat_num_accesses, "cache miss rate")
+    {}
+    
+    CPU& cpu;
+    unisim::kernel::service::Statistic<uint64_t> stat_num_accesses;
+    unisim::kernel::service::Statistic<uint64_t> stat_num_misses;
+    unisim::kernel::service::Formula<double> formula_miss_rate;
+  };
   
   struct L1D_CONFIG
   {
-    typedef CACHE_CPU CPU;
     static const unsigned int SIZE                                      = 4096;
     static const unisim::util::cache::CacheWritingPolicy WRITING_POLICY = unisim::util::cache::CACHE_WRITE_THROUGH_AND_NO_WRITE_ALLOCATE_POLICY;
     static const unisim::util::cache::CacheType TYPE                    = unisim::util::cache::DATA_CACHE;
     static const unsigned int ASSOCIATIVITY                             = 4;
     static const unsigned int BLOCK_SIZE                                = 32;
     static const unsigned int BLOCKS_PER_LINE                           = 1;
-
-    struct SET_STATUS : unisim::util::cache::CacheSetStatus
-    {
-      SET_STATUS() : victim_way(0), lockout(0) {}
-
-      unsigned victim_way, lockout;
-    };
-
+    
+    typedef CACHE_CPU CPU;
     struct LINE_STATUS : unisim::util::cache::CacheLineStatus {};
-
     struct BLOCK_STATUS : unisim::util::cache::CacheBlockStatus {};
+    struct SET_STATUS : unisim::util::cache::CacheSetStatus { unisim::util::cache::LRU_ReplacementPolicy<ASSOCIATIVITY> lru; };
   };
   
-  struct L1D : public unisim::util::cache::Cache<MSSConfig, L1D_CONFIG, L1D>
+  struct L1D
+    : public CacheCommons<L1D>
+    , public unisim::util::cache::Cache<MSSConfig, L1D_CONFIG, L1D>
   {
+    L1D( CPU& _cpu )
+      : CacheCommons<L1D>("L1D", _cpu, num_accesses, num_misses)
+      , unisim::util::cache::Cache<MSSConfig, L1D_CONFIG, L1D>()
+    {}
     static const char *GetCacheName() { return "L1D"; }
+    
+    bool IsEnabled() const { return true; }
+
+    bool ChooseLineToEvict(unisim::util::cache::CacheAccess<MSSConfig, L1D>& access)
+    {
+      access.way = access.set->Status().lru.Select();
+      return true;
+    }
+    
+    void UpdateReplacementPolicyOnAccess(unisim::util::cache::CacheAccess<MSSConfig, L1D>& access)
+    {
+      access.set->Status().lru.UpdateOnAccess(access.way);
+    }
   } l1d;
+  
   L1D* GetCache(const L1D* ) ALWAYS_INLINE { return &l1d; }
   
   struct L1I_CONFIG
   {
-    typedef CACHE_CPU CPU;
     static const unsigned int SIZE                                      = 4096;
     static const unisim::util::cache::CacheWritingPolicy WRITING_POLICY = unisim::util::cache::CACHE_WRITE_THROUGH_AND_NO_WRITE_ALLOCATE_POLICY;
     static const unisim::util::cache::CacheType TYPE                    = unisim::util::cache::DATA_CACHE;
     static const unsigned int ASSOCIATIVITY                             = 4;
     static const unsigned int BLOCK_SIZE                                = 32;
     static const unsigned int BLOCKS_PER_LINE                           = 1;
-
-    struct SET_STATUS : unisim::util::cache::CacheSetStatus
-    {
-      SET_STATUS() : victim_way(0), lockout(0) {}
-
-      unsigned victim_way, lockout;
-    };
-
+    
+    typedef CACHE_CPU CPU;
     struct LINE_STATUS : unisim::util::cache::CacheLineStatus {};
-
     struct BLOCK_STATUS : unisim::util::cache::CacheBlockStatus {};
+    struct SET_STATUS : unisim::util::cache::CacheSetStatus { unisim::util::cache::LRU_ReplacementPolicy<ASSOCIATIVITY> lru; };
   };
   
-  struct L1I : public unisim::util::cache::Cache<MSSConfig, L1I_CONFIG, L1I>
+  
+  struct L1I
+    : public CacheCommons<L1I>
+    , public unisim::util::cache::Cache<MSSConfig, L1I_CONFIG, L1I>
   {
+    L1I( CPU& _cpu )
+      : CacheCommons<L1I>("L1I", _cpu, num_accesses, num_misses)
+      , unisim::util::cache::Cache<MSSConfig, L1I_CONFIG, L1I>()
+    {}
+    
     static const char *GetCacheName() { return "L1I"; }
-  } l1i;
-  L1I* GetCache(const L1I* ) ALWAYS_INLINE { return &l1i; }
+    
+    bool IsEnabled() const { return true; }
 
+    bool ChooseLineToEvict(unisim::util::cache::CacheAccess<MSSConfig, L1I>& access)
+    {
+      access.way = access.set->Status().lru.Select();
+      return true;
+    }
+    
+    void UpdateReplacementPolicyOnAccess(unisim::util::cache::CacheAccess<MSSConfig, L1I>& access)
+    {
+      access.set->Status().lru.UpdateOnAccess(access.way);
+    }
+  } l1i;
+  
+  L1I* GetCache(const L1I* ) ALWAYS_INLINE { return &l1i; }
   
   typedef unisim::util::cache::LocalMemorySet<MSSConfig> DATA_LOCAL_MEMORIES;
   typedef unisim::util::cache::LocalMemorySet<MSSConfig> INSTRUCTION_LOCAL_MEMORIES;
   typedef unisim::util::cache::CacheHierarchy<MSSConfig, L1D> DATA_CACHE_HIERARCHY;
   typedef unisim::util::cache::CacheHierarchy<MSSConfig, L1I> INSTRUCTION_CACHE_HIERARCHY;
+  typedef MSSConfig::STORAGE_ATTR STORAGE_ATTR;
+  
+  bool IsStorageCacheable(STORAGE_ATTR storage_attr) const
+  {
+    using unisim::component::cxx::processor::arm::MemAttrs;
+    return not MemAttrs::Is( MemAttrs::Inner(), MemAttrs::NonCacheable, storage_attr.attributes );
+  }
 
-  std::set<uint32_t> attrset;
+  bool IsDataStoreAccessWriteThrough(STORAGE_ATTR storage_attr) const
+  {
+    using unisim::component::cxx::processor::arm::MemAttrs;
+    return MemAttrs::Is( MemAttrs::Inner(), MemAttrs::WriteThrough, storage_attr.attributes );
+  }
+
 
   virtual bool PhysicalWriteMemory(uint32_t addr, const uint8_t* buffer, uint32_t size, uint32_t attrs)
   {
-    attrset.insert(attrs);
-    return TLMCPU::PhysicalWriteMemory(addr, buffer, size, attrs);
-    // return DataStore(addr, buffer, size);
+    if (unlikely(IsVerboseDataStore()))
+      Trace("Storing Data", addr, buffer, size);
+
+    STORAGE_ATTR storage_attr( attrs );
+    if (not StoreInMSS<DATA_LOCAL_MEMORIES, DATA_CACHE_HIERARCHY, DATA_LOCAL_MEMORIES::LOC_MEM1, DATA_CACHE_HIERARCHY::L1CACHE>(addr, buffer, size, storage_attr))
+      return false;
+	
+    num_data_store_accesses++;
+    num_data_store_xfered_bytes += size;
+	
+    return true;
+  }
+
+  bool DataBusWrite(uint32_t phys_addr, void const* buffer, unsigned int size, STORAGE_ATTR storage_attr)
+  {
+    return TLMCPU::PhysicalWriteMemory(phys_addr, (uint8_t const*)buffer, size, storage_attr.attributes);
   }
   
-  virtual bool PhysicalReadMemory(uint32_t addr, uint8_t* buffer, uint32_t size, uint32_t attrs)
+  bool PhysicalReadMemory(uint32_t addr, uint8_t* buffer, uint32_t size, uint32_t attrs)
   {
-    attrset.insert(attrs);
-    return TLMCPU::PhysicalReadMemory(addr, buffer, size, attrs);
-    // return DataLoad(addr, buffer, size);
+    if (unlikely(IsVerboseDataLoad()))
+      Trace("Loading Data", addr, buffer, size);
+	
+    STORAGE_ATTR storage_attr( attrs );
+    if (not LoadFromMSS<DATA_LOCAL_MEMORIES, DATA_CACHE_HIERARCHY, DATA_LOCAL_MEMORIES::LOC_MEM1, DATA_CACHE_HIERARCHY::L1CACHE>(addr, buffer, size, storage_attr))
+      return false;
+    
+    num_data_load_accesses++;
+    num_data_load_xfered_bytes += size;
+	
+    return true;
   }
 	
+  bool DataBusRead(uint32_t phys_addr, void* buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm)
+  {
+    return TLMCPU::PhysicalReadMemory(phys_addr, (uint8_t*)buffer, size, storage_attr.attributes);
+  }
+
+  bool PhysicalFetchMemory(uint32_t addr, uint8_t* buffer, uint32_t size, uint32_t attrs)
+  {
+    if (unlikely(IsVerboseInstructionFetch()))
+      Trace("Fetching Instruction", addr, buffer, size);
+
+    STORAGE_ATTR storage_attr( attrs );
+    if (not LoadFromMSS<INSTRUCTION_LOCAL_MEMORIES, INSTRUCTION_CACHE_HIERARCHY, INSTRUCTION_LOCAL_MEMORIES::LOC_MEM1, INSTRUCTION_CACHE_HIERARCHY::L1CACHE>(addr, buffer, size, storage_attr))
+      return false;
+    
+    num_instruction_fetch_accesses++;
+    num_instruction_fetch_xfered_bytes += size;
+
+    return true;
+  }
+
+  bool InstructionBusRead(uint32_t phys_addr, void* buffer, unsigned int size, STORAGE_ATTR storage_attr)
+  {
+    return TLMCPU::PhysicalReadMemory(phys_addr, (uint8_t*)buffer, size, storage_attr.attributes);
+  }
+  
   // virtual bool ExternalReadMemory(uint32_t addr, void* buffer, uint32_t size) { return DebugDataLoad(addr, buffer, size); }
   // virtual bool ExternalWriteMemory(uint32_t addr, void const* buffer, uint32_t size) { return DebugDataStore(addr, buffer, size); }
-  
-  // {
-  //   typename TYPES::ADDRESS cur_addr = addr;
-  //   unsigned int rem_size = size;
-	
-  //   do
-  //     {
-  //       // Access control
-  //       AccessControl<TYPES> access_control;
-  //       access_control.addr = cur_addr;
-  //       access_control.mem_access_type = MAT_READ;
-		
-  //       typename MSS::ACCESS_CONTROLLER *access_controller = __MSS_GetAccessController__<typename MSS::ACCESS_CONTROLLER>();
-		
-  //       if(!access_controller->template ControlAccess</* debug */ false>(access_control)) return false;
-		
-  //       unsigned int cur_size = access_control.size_to_protection_boundary ? std::min(rem_size, access_control.size_to_protection_boundary) : rem_size;
-
-  //       if(!LoadFromMSS<typename MSS::DATA_LOCAL_MEMORIES, typename MSS::DATA_CACHE_HIERARCHY, typename MSS::DATA_LOCAL_MEMORIES::LOC_MEM1, typename MSS::DATA_CACHE_HIERARCHY::L1CACHE>(access_control.phys_addr, buffer, cur_size, access_control.storage_attr)) return false;
-	
-  //       cur_addr += cur_size;
-  //       rem_size -= cur_size;
-  //     }
-  //   while(unlikely(rem_size));
-	
-  //   if(unlikely(__MSS_IsVerboseDataLoad__())) Trace("Loading Data", addr, buffer, size);
-	
-  //   num_data_load_accesses++;
-  //   num_data_load_xfered_bytes += size;
-	
-  //   return true;
-  // }
 };
 
 struct ZynqRouterConfig
@@ -442,8 +515,6 @@ struct Simulator : public unisim::kernel::service::Simulator
   virtual void Stop(unisim::kernel::service::Object *object, int exit_status, bool asynchronous = false);
   int GetExitStatus() const;
   void UpdateClocks();
-
-  std::set<uint32_t> const& GetAttrSet() const { return cpu.attrset; }
 
  private:
   static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);

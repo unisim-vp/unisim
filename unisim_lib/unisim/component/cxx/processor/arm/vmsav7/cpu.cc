@@ -917,7 +917,7 @@ CPU::RefillInsnPrefetchBuffer(uint32_t mva, AddressDescriptor const& line_loc)
   
   // No instruction cache present, just request the insn to the
   // memory system.
-  if (not PhysicalReadMemory(line_loc.address, &this->ipb_bytes[0], IPB_LINE_SIZE, line_loc.attributes)) {
+  if (not PhysicalFetchMemory(line_loc.address, &this->ipb_bytes[0], IPB_LINE_SIZE, line_loc.attributes)) {
     DataAbort(mva, line_loc.address, 0, 0, mat_exec, DAbort_SyncExternal, false, false, true, false, false);
   }
   

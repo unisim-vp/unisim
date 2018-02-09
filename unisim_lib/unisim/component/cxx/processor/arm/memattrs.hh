@@ -81,6 +81,12 @@ namespace arm {
       typename S::attrs().Set( props, ah.attrs );
       typename S::hints().Set( props, ah.hints );
     }
+
+    template <typename T, typename S>
+    static bool Is( S const&, attr_t chk, T const& value )
+    {
+      return attr_t( typename S::attrs().Get( value ) ) == chk;
+    }
 };
   
 } // end of namespace arm

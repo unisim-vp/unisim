@@ -1,20 +1,21 @@
 /*
- *  Copyright (c) 2010, Commissariat a l'Energie Atomique (CEA) All rights
- *  reserved.
+ *  Copyright (c) 2010-2018,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice,
- *   this list of conditions and the following disclaimer.
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
- *   and/or other materials provided with the distribution.
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *   endorse or promote products derived from this software without specific
- *   prior written permission.
+ *     endorse or promote products derived from this software without specific
+ *     prior written permission.
  *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -28,7 +29,7 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 #include <simulator.hh>
@@ -966,15 +967,15 @@ Simulator::Run()
   double spent_time = time_stop - time_start;
   simulation_spent_time += spent_time;
 
-  // cerr << "Simulation run-time parameters:" << endl;
-  // DumpParameters(cerr);
-  // cerr << endl;
-  // cerr << "Simulation formulas:" << endl;
-  // DumpFormulas(cerr);
-  // cerr << endl;
-  // cerr << "Simulation statistics:" << endl;
-  // DumpStatistics(cerr);
-  // cerr << endl;
+  std::cerr << "Simulation run-time parameters:" << std::endl;
+  DumpParameters(std::cerr);
+  std::cerr << std::endl;
+  std::cerr << "Simulation formulas:" << std::endl;
+  DumpFormulas(std::cerr);
+  std::cerr << std::endl;
+  std::cerr << "Simulation statistics:" << std::endl;
+  DumpStatistics(std::cerr);
+  std::cerr << std::endl;
 
   std::cerr << "simulation time: " << simulation_spent_time << " seconds" << std::endl;
   std::cerr << "simulated time: " << sc_core::sc_time_stamp().to_seconds() << " seconds (exactly " << sc_core::sc_time_stamp() << ")" << std::endl;

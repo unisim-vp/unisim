@@ -1281,7 +1281,7 @@ private:
 	inline bool __MSS_DebugInstructionBusRead__(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr) ALWAYS_INLINE;
 
 	///////////////////////////////////////////////////////////////////////////
-	
+protected:	
 	void Trace(const char *type, typename TYPES::ADDRESS addr, const void *buffer, unsigned int size);
 };
 

@@ -80,9 +80,6 @@ sc_main(int argc, char *argv[])
     case unisim::kernel::service::Simulator::ST_OK_TO_START:
       cerr << "Starting simulation." << endl;
       ret = simulator.Run();
-      std::cout << "Attributes:\n";
-      for (std::set<uint32_t>::const_iterator itr = simulator.GetAttrSet().begin(), end = simulator.GetAttrSet().end(); itr != end; ++itr)
-        std::cout << std::hex << "  " << *itr << std::endl;
       break;
     }
 

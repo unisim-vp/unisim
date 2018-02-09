@@ -186,6 +186,7 @@ struct CPU
 	
   virtual bool PhysicalWriteMemory( uint32_t addr, uint8_t const* buffer, uint32_t size, uint32_t attrs ) = 0;
   virtual bool PhysicalReadMemory( uint32_t addr, uint8_t* buffer, uint32_t size, uint32_t attrs ) = 0;
+  virtual bool PhysicalFetchMemory( uint32_t addr, uint8_t* buffer, uint32_t size, uint32_t attrs ) = 0;
   
   uint32_t MemURead32( uint32_t address ) { return PerformUReadAccess( address, 4 ); }
   uint32_t MemRead32( uint32_t address ) { return PerformReadAccess( address, 4 ); }
