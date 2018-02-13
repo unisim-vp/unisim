@@ -37,7 +37,6 @@
 
 #include <systemc>
 #include "unisim/kernel/service/service.hh"
-#include "unisim/kernel/logger/logger.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
 #include <unisim/component/cxx/memory/ram/memory.hh>
 #include <inttypes.h>
@@ -53,7 +52,6 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
-using unisim::kernel::logger::Logger;
 
 typedef uint64_t DEFAULT_ADDRESS;
 const unsigned int DEFAULT_BUSWIDTH = 32; // 32-bit bus
@@ -110,10 +108,7 @@ protected:
 	/**
 	 * Check the verbosity
 	 */
-	inline bool IsVerbose() { return (DEBUG && verbose); }
-
-	/** Logger */
-	Logger logger;
+	inline bool IsVerbose() { return (DEBUG && this->verbose); }
 
 	uint64_t read_counter;
 	uint64_t write_counter;
@@ -122,8 +117,6 @@ protected:
 private:
 	void UpdateTime(unsigned int data_length, const sc_core::sc_time& latency, sc_core::sc_time& t);
 
-	/** Verbosity */
-	bool verbose;
 	/** The cycle time */
 	sc_core::sc_time cycle_time;
 	/** Latencies */
@@ -136,8 +129,6 @@ private:
 	/** The parameters to set the latencies */
 	Parameter<sc_core::sc_time> param_read_latency;
 	Parameter<sc_core::sc_time> param_write_latency;
-	/** The parameter to set the verbosity */
-	Parameter<bool> param_verbose;
 	/** The parameter to set read-only */
 	Parameter<bool> param_read_only;
 

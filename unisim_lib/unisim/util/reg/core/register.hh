@@ -696,6 +696,8 @@ public:
 	void SetEndian(unisim::util::endian::endian_type endian);
 	void MapRegister(ADDRESS addr, AddressableRegisterBase<CUSTOM_RW_ARG> *reg, unsigned int reg_byte_size = 0 /* in bytes (with padding) */);
 	void MapRegisterFile(ADDRESS addr, AddressableRegisterFileBase<CUSTOM_RW_ARG> *regfile, unsigned int reg_byte_size = 0 /* in bytes (with padding) */, unsigned int stride = 0 /* in bytes */);
+	void Unmap(ADDRESS addr, unsigned int byte_size);
+	void Clear();
 	AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *FindAddressableRegister(ADDRESS addr) const;
 	
 	ReadWriteStatus Write(ADDRESS addr, const unsigned char *data_ptr, unsigned int data_length);

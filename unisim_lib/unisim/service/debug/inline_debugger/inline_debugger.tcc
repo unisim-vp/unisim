@@ -117,6 +117,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, param_program_counter_name("program-counter-name", this, program_counter_name, "name of program counter")
 	, program_counter(0)
 	, listening_fetch(false)
+	, listening_trap(false)
 	, trap(false)
 	, running_mode(INLINE_DEBUGGER_MODE_WAITING_USER)
 	, cia(0)
@@ -130,11 +131,15 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, std_error_stream(&std::cerr)
 	, tracked_data_objects()
 	, fetch_insn_event(0)
+	, trap_event(0)
 {
 	param_memory_atom_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
 	fetch_insn_event = new unisim::util::debug::FetchInsnEvent<ADDRESS>();
 	fetch_insn_event->Catch();
+	
+	trap_event = new unisim::util::debug::TrapEvent<ADDRESS>();
+	trap_event->Catch();
 }
 
 template <class ADDRESS>
@@ -153,6 +158,23 @@ InlineDebugger<ADDRESS>::~InlineDebugger()
 	}
 	
 	fetch_insn_event->Release();
+	
+	if(listening_trap)
+	{
+		if(debug_event_trigger_import)
+		{
+			if(debug_event_trigger_import->Unlisten(trap_event))
+			{
+				listening_trap = false;
+			}
+			else
+			{
+				(*std_output_stream) << "Can't unlisten trap events" << std::endl;
+			}
+		}
+	}
+	
+	trap_event->Release();
 }
 
 template<class ADDRESS>
@@ -205,6 +227,17 @@ bool InlineDebugger<ADDRESS>::EndSetup()
 		std::cerr << Object::GetName() << "ERROR! can't access program counter" << std::endl;
 		return false;
 	}
+	
+	if(debug_event_trigger_import)
+	{
+		if(!debug_event_trigger_import->Listen(trap_event))
+		{
+			(*std_output_stream) << "Can't listen trap events" << std::endl;
+			return false;
+		}
+		listening_trap = true;
+	}
+	
 	
 	return true;
 }

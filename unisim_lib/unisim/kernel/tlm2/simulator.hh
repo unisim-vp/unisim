@@ -226,7 +226,11 @@ public:
 	sc_core::sc_time input_time_stamp;
 	sc_core::sc_event next_input_instrumentation_event;
 	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& pull_down_signal;
+	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& pull_down_0_signal;
 	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& pull_up_signal;
+	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& pull_up_0_signal;
+	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& unused_signal;
+	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& unused_0_signal;
 
 	template <typename T> sc_core::sc_signal<T>& GetSignal(const std::string& signal_name);
 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& GetSignal(const std::string& signal_name);

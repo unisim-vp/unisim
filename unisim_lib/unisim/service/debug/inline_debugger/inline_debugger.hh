@@ -164,6 +164,7 @@ private:
 
 	unisim::service::interfaces::Register *program_counter;
 	bool listening_fetch;
+	bool listening_trap;
 	bool trap;
 	InlineDebuggerRunningMode running_mode;
 
@@ -185,6 +186,7 @@ private:
 	std::list<unisim::util::debug::DataObject<ADDRESS> *> tracked_data_objects;
 	
 	unisim::util::debug::FetchInsnEvent<ADDRESS> *fetch_insn_event;
+	unisim::util::debug::TrapEvent<ADDRESS> *trap_event;
 	
 	class VisitedInstructionPage
 	{

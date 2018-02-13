@@ -555,7 +555,7 @@ protected:
 	class ExceptionDispatcherBase
 	{
 	public:
-		virtual void InstallInterrupt(unsigned int priority, InterruptBase *interrupt) = 0;
+		virtual void InstallInterrupt(unsigned int priority, InterruptBase *interrupt, bool *trap_control_flag) = 0;
 	};
 
 	//////////////////////////////// Exception<> ///////////////////////////////////////
@@ -569,7 +569,7 @@ protected:
 		
 		template <typename T> static T GetMask() { return T(1) << _PRIORITY; }
 		
-		static void InstallInterrupt(ExceptionDispatcherBase *exception_dispatcher, InterruptBase *interrupt) { exception_dispatcher->InstallInterrupt(_PRIORITY, interrupt); }
+		static void InstallInterrupt(ExceptionDispatcherBase *exception_dispatcher, InterruptBase *interrupt, bool *trap_control_flag) { exception_dispatcher->InstallInterrupt(_PRIORITY, interrupt, trap_control_flag); }
 		
 		static const char *GetName()
 		{
@@ -594,10 +594,10 @@ protected:
 		
 		template <typename T> static T GetMask() { return INTERRUPT::ALL::template GetMask<T>(); }
 		
-		static void InstallInterrupt(ExceptionDispatcherBase *exception_dispatcher)
+		static void InstallInterrupt(ExceptionDispatcherBase *exception_dispatcher, bool *trap_control_flag)
 		{
 			static INTERRUPT interrupt;
-			INTERRUPT::ALL::InstallInterrupt(exception_dispatcher, &interrupt);
+			INTERRUPT::ALL::InstallInterrupt(exception_dispatcher, &interrupt, trap_control_flag);
 		}
 		
 		virtual void ProcessInterrupt(typename CONFIG::CPU *cpu) { cpu->ProcessInterrupt(static_cast<INTERRUPT *>(this)); }
@@ -629,7 +629,7 @@ protected:
 	struct NullException
 	{
 		template <typename T> static T GetMask() { return 0; }
-		static void InstallInterrupt(ExceptionDispatcherBase *exception_dispatcher, InterruptBase *interrupt) {}
+		static void InstallInterrupt(ExceptionDispatcherBase *exception_dispatcher, InterruptBase *interrupt, bool *trap_control_flag) {}
 	};
 	
 	///////////////////////// ExceptionSet<> ///////////////////////////
@@ -673,72 +673,72 @@ protected:
 			     | FE60::template GetMask<T>() | FE61::template GetMask<T>() | FE62::template GetMask<T>() | FE63::template GetMask<T>();
 		}
 		
-		static void InstallInterrupt(ExceptionDispatcherBase *exception_dispatcher, InterruptBase *interrupt)
+		static void InstallInterrupt(ExceptionDispatcherBase *exception_dispatcher, InterruptBase *interrupt, bool *trap_control_flag)
 		{
-			if(typeid(FE0) == typeid(NullException)) return; FE0::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE1) == typeid(NullException)) return; FE1::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE2) == typeid(NullException)) return; FE2::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE3) == typeid(NullException)) return; FE3::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE4) == typeid(NullException)) return; FE4::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE5) == typeid(NullException)) return; FE5::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE6) == typeid(NullException)) return; FE6::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE7) == typeid(NullException)) return; FE7::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE8) == typeid(NullException)) return; FE8::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE9) == typeid(NullException)) return; FE9::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE10) == typeid(NullException)) return; FE10::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE11) == typeid(NullException)) return; FE11::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE12) == typeid(NullException)) return; FE12::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE13) == typeid(NullException)) return; FE13::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE14) == typeid(NullException)) return; FE14::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE15) == typeid(NullException)) return; FE15::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE16) == typeid(NullException)) return; FE16::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE17) == typeid(NullException)) return; FE17::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE18) == typeid(NullException)) return; FE18::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE19) == typeid(NullException)) return; FE19::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE20) == typeid(NullException)) return; FE20::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE21) == typeid(NullException)) return; FE21::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE22) == typeid(NullException)) return; FE22::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE23) == typeid(NullException)) return; FE23::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE24) == typeid(NullException)) return; FE24::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE25) == typeid(NullException)) return; FE25::InstallInterrupt(exception_dispatcher, interrupt);                                                                                            
-			if(typeid(FE26) == typeid(NullException)) return; FE26::InstallInterrupt(exception_dispatcher, interrupt);                                                                                            
-			if(typeid(FE27) == typeid(NullException)) return; FE27::InstallInterrupt(exception_dispatcher, interrupt);                                                                                            
-			if(typeid(FE28) == typeid(NullException)) return; FE28::InstallInterrupt(exception_dispatcher, interrupt);                                                                                            
-			if(typeid(FE29) == typeid(NullException)) return; FE29::InstallInterrupt(exception_dispatcher, interrupt);                                                                                            
-			if(typeid(FE30) == typeid(NullException)) return; FE30::InstallInterrupt(exception_dispatcher, interrupt);                                                                                            
-			if(typeid(FE31) == typeid(NullException)) return; FE31::InstallInterrupt(exception_dispatcher, interrupt);                                                                                            
-			if(typeid(FE32) == typeid(NullException)) return; FE32::InstallInterrupt(exception_dispatcher, interrupt);                                                                                            
-			if(typeid(FE33) == typeid(NullException)) return; FE33::InstallInterrupt(exception_dispatcher, interrupt);                                                                                            
-			if(typeid(FE34) == typeid(NullException)) return; FE34::InstallInterrupt(exception_dispatcher, interrupt);                                                                                            
-			if(typeid(FE35) == typeid(NullException)) return; FE35::InstallInterrupt(exception_dispatcher, interrupt);                                                                                            
-			if(typeid(FE36) == typeid(NullException)) return; FE36::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE37) == typeid(NullException)) return; FE37::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE38) == typeid(NullException)) return; FE38::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE39) == typeid(NullException)) return; FE39::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE40) == typeid(NullException)) return; FE40::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE41) == typeid(NullException)) return; FE41::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE42) == typeid(NullException)) return; FE42::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE43) == typeid(NullException)) return; FE43::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE44) == typeid(NullException)) return; FE44::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE45) == typeid(NullException)) return; FE45::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE46) == typeid(NullException)) return; FE46::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE47) == typeid(NullException)) return; FE47::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE48) == typeid(NullException)) return; FE48::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE49) == typeid(NullException)) return; FE49::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE50) == typeid(NullException)) return; FE50::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE51) == typeid(NullException)) return; FE51::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE52) == typeid(NullException)) return; FE52::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE53) == typeid(NullException)) return; FE53::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE54) == typeid(NullException)) return; FE54::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE55) == typeid(NullException)) return; FE55::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE56) == typeid(NullException)) return; FE56::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE57) == typeid(NullException)) return; FE57::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE58) == typeid(NullException)) return; FE58::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE59) == typeid(NullException)) return; FE59::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE60) == typeid(NullException)) return; FE60::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE61) == typeid(NullException)) return; FE61::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE62) == typeid(NullException)) return; FE62::InstallInterrupt(exception_dispatcher, interrupt);
-			if(typeid(FE63) == typeid(NullException)) return; FE63::InstallInterrupt(exception_dispatcher, interrupt);
+			if(typeid(FE0) == typeid(NullException)) return; FE0::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE1) == typeid(NullException)) return; FE1::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE2) == typeid(NullException)) return; FE2::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE3) == typeid(NullException)) return; FE3::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE4) == typeid(NullException)) return; FE4::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE5) == typeid(NullException)) return; FE5::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE6) == typeid(NullException)) return; FE6::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE7) == typeid(NullException)) return; FE7::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE8) == typeid(NullException)) return; FE8::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE9) == typeid(NullException)) return; FE9::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE10) == typeid(NullException)) return; FE10::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE11) == typeid(NullException)) return; FE11::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE12) == typeid(NullException)) return; FE12::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE13) == typeid(NullException)) return; FE13::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE14) == typeid(NullException)) return; FE14::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE15) == typeid(NullException)) return; FE15::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE16) == typeid(NullException)) return; FE16::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE17) == typeid(NullException)) return; FE17::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE18) == typeid(NullException)) return; FE18::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE19) == typeid(NullException)) return; FE19::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE20) == typeid(NullException)) return; FE20::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE21) == typeid(NullException)) return; FE21::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE22) == typeid(NullException)) return; FE22::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE23) == typeid(NullException)) return; FE23::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE24) == typeid(NullException)) return; FE24::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE25) == typeid(NullException)) return; FE25::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
+			if(typeid(FE26) == typeid(NullException)) return; FE26::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
+			if(typeid(FE27) == typeid(NullException)) return; FE27::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
+			if(typeid(FE28) == typeid(NullException)) return; FE28::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
+			if(typeid(FE29) == typeid(NullException)) return; FE29::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
+			if(typeid(FE30) == typeid(NullException)) return; FE30::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
+			if(typeid(FE31) == typeid(NullException)) return; FE31::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
+			if(typeid(FE32) == typeid(NullException)) return; FE32::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
+			if(typeid(FE33) == typeid(NullException)) return; FE33::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
+			if(typeid(FE34) == typeid(NullException)) return; FE34::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
+			if(typeid(FE35) == typeid(NullException)) return; FE35::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);                                                                                            
+			if(typeid(FE36) == typeid(NullException)) return; FE36::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE37) == typeid(NullException)) return; FE37::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE38) == typeid(NullException)) return; FE38::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE39) == typeid(NullException)) return; FE39::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE40) == typeid(NullException)) return; FE40::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE41) == typeid(NullException)) return; FE41::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE42) == typeid(NullException)) return; FE42::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE43) == typeid(NullException)) return; FE43::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE44) == typeid(NullException)) return; FE44::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE45) == typeid(NullException)) return; FE45::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE46) == typeid(NullException)) return; FE46::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE47) == typeid(NullException)) return; FE47::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE48) == typeid(NullException)) return; FE48::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE49) == typeid(NullException)) return; FE49::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE50) == typeid(NullException)) return; FE50::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE51) == typeid(NullException)) return; FE51::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE52) == typeid(NullException)) return; FE52::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE53) == typeid(NullException)) return; FE53::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE54) == typeid(NullException)) return; FE54::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE55) == typeid(NullException)) return; FE55::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE56) == typeid(NullException)) return; FE56::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE57) == typeid(NullException)) return; FE57::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE58) == typeid(NullException)) return; FE58::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE59) == typeid(NullException)) return; FE59::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE60) == typeid(NullException)) return; FE60::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE61) == typeid(NullException)) return; FE61::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE62) == typeid(NullException)) return; FE62::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
+			if(typeid(FE63) == typeid(NullException)) return; FE63::InstallInterrupt(exception_dispatcher, interrupt, trap_control_flag);
 		}
 	};
 
@@ -750,30 +750,35 @@ protected:
 	public:
 		ExceptionDispatcher(typename CONFIG::CPU *cpu);
 		~ExceptionDispatcher();
-		virtual void InstallInterrupt(unsigned int priority, InterruptBase *interrupt);
+		virtual void InstallInterrupt(unsigned int priority, InterruptBase *interrupt, bool *trap_control_flag);
 		template <typename EXCEPTION> typename EXCEPTION::INTERRUPT& ThrowException();
 		template <typename INTERRUPT> void AckInterrupt();
 		template <typename INTERRUPT> void EnableInterrupt();
 		template <typename INTERRUPT> void DisableInterrupt();
 		template <typename EXCEPTION> bool RecognizedException() const;
 		inline void ProcessExceptions() ALWAYS_INLINE;
+		inline bool HasPendingInterrupts() const ALWAYS_INLINE;
 	private:
 		typedef typename TypeForBitSize<NUM_EXCEPTIONS>::TYPE TYPE;
 		
 		typename CONFIG::CPU *cpu;
 		TYPE exc_flags;                            // Exception flags (bits are ordered according to exception priority): 1=thrown 0=not thrown
 		TYPE exc_mask;                             // Exception mask (bits are ordered according to exception priority): 1=enabled, 0=disabled
-		InterruptBase *interrupts[NUM_EXCEPTIONS]; // Installed interrupts by priority
+		InterruptBase *interrupts[NUM_EXCEPTIONS]; // Installed interrupts (sorted by interrupt priority)
+		bool *trap_control_flags[NUM_EXCEPTIONS];  // flags to control trap of interrupts (sorted by interrupt priority)
+		bool trapped[NUM_EXCEPTIONS];              // whether interrupts was trapped (sorted by interrupt priority)
 	};
 	
 public:
-	template <typename INTERRUPT> void InstallInterrupt() { INTERRUPT::InstallInterrupt(&exception_dispatcher); }
+	template <typename INTERRUPT> void InstallInterrupt() { INTERRUPT::InstallInterrupt(&exception_dispatcher, 0); }
+	template <typename INTERRUPT> void InstallInterrupt(bool& trap_control_flag) { INTERRUPT::InstallInterrupt(&exception_dispatcher, &trap_control_flag); }
 	template <typename EXCEPTION> typename EXCEPTION::INTERRUPT& ThrowException() { return exception_dispatcher.template ThrowException<EXCEPTION>(); }
 	template <typename INTERRUPT> void AckInterrupt() { exception_dispatcher.template AckInterrupt<INTERRUPT>(); }
 	template <typename INTERRUPT> void EnableInterrupt() { exception_dispatcher.template EnableInterrupt<INTERRUPT>(); }
 	template <typename INTERRUPT> void DisableInterrupt() { exception_dispatcher.template DisableInterrupt<INTERRUPT>(); }
 	template <typename EXCEPTION> bool RecognizedException() const { return exception_dispatcher.template RecognizedException<EXCEPTION>(); }
 	inline void ProcessExceptions() ALWAYS_INLINE { exception_dispatcher.ProcessExceptions(); }
+	inline bool HasPendingInterrupts() const ALWAYS_INLINE { return exception_dispatcher.HasPendingInterrupts(); }
 protected:
 	
 	////////////////////// System Level Register Modeling /////////////////////

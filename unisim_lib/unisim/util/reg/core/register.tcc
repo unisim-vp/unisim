@@ -1272,9 +1272,9 @@ ReadWriteStatus Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::Write(const T
 
 	ReadWriteStatus rws(RWS_OK);
 	const TYPE write_mask = bit_enable & GetWriteMask();
-	const TYPE unwritable_mask = bit_enable & ~GetWriteMask();
 	const TYPE write_one_clear_mask = bit_enable & GetWriteOneClearMask();
 	const TYPE copy_mask = bit_enable & write_mask & ~write_one_clear_mask;
+	const TYPE unwritable_mask = bit_enable & ~write_mask & ~write_one_clear_mask;
 	
 	if((_value & bit_enable & TYPE_MASK) != (_value & bit_enable))
 	{
@@ -1327,9 +1327,9 @@ ReadWriteStatus Register<REGISTER, _SIZE, _ACCESS, REGISTER_BASE>::WritePreserve
 
 	ReadWriteStatus rws(RWS_OK);
 	const TYPE write_mask = bit_enable & GetWriteMask() & ~PRESERVED_FIELD::template GetMask<TYPE>();
-	const TYPE unwritable_mask = bit_enable & (~GetWriteMask() | PRESERVED_FIELD::template GetMask<TYPE>());
-	const TYPE write_one_clear_mask = bit_enable & (GetWriteOneClearMask() & ~PRESERVED_FIELD::template GetMask<TYPE>());
+	const TYPE write_one_clear_mask = bit_enable & GetWriteOneClearMask() & ~PRESERVED_FIELD::template GetMask<TYPE>();
 	const TYPE copy_mask = bit_enable & write_mask & ~write_one_clear_mask;
+	const TYPE unwritable_mask = bit_enable & ~write_mask & ~write_one_clear_mask;
 	
 	if((_value & bit_enable & TYPE_MASK) != (_value & bit_enable))
 	{
@@ -1914,17 +1914,7 @@ RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::RegisterAddressMap()
 template <typename ADDRESS, typename CUSTOM_RW_ARG>
 RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::~RegisterAddressMap()
 {
-	typename std::map<ADDRESS, AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *>::const_iterator it;
-
-	for(it = reg_addr_map.begin(); it != reg_addr_map.end(); it++)
-	{
-		AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *arh = (*it).second;
-		
-		if(arh)
-		{
-			arh->Release();
-		}
-	}
+	Clear();
 }
 
 template <typename ADDRESS, typename CUSTOM_RW_ARG>
@@ -1988,6 +1978,51 @@ void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::MapRegisterFile(ADDRESS addr, A
 		MapRegister(reg_addr, arb, _reg_byte_size);
 		reg_addr += stride ? stride : _reg_byte_size;
 	}
+}
+
+template <typename ADDRESS, typename CUSTOM_RW_ARG>
+void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Unmap(ADDRESS addr, unsigned int byte_size)
+{
+	if(byte_size)
+	{
+		unsigned int byte_idx;
+
+		optimized = false;
+		optimizable = true;
+		
+		for(byte_idx = 0; byte_idx < byte_size; byte_idx++)
+		{
+			ADDRESS byte_addr = addr + byte_idx;
+			
+			typename std::map<ADDRESS, AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *>::const_iterator it = reg_addr_map.find(byte_addr);
+			
+			if(it != reg_addr_map.end())
+			{
+				AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *arh = (*it).second;
+				arh->Release();
+				reg_addr_map.erase(it);
+			}
+		}
+	}
+}
+
+template <typename ADDRESS, typename CUSTOM_RW_ARG>
+void RegisterAddressMap<ADDRESS, CUSTOM_RW_ARG>::Clear()
+{
+	typename std::map<ADDRESS, AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *>::const_iterator it;
+
+	for(it = reg_addr_map.begin(); it != reg_addr_map.end(); it++)
+	{
+		AddressableRegisterHandle<ADDRESS, CUSTOM_RW_ARG> *arh = (*it).second;
+		
+		if(arh)
+		{
+			arh->Release();
+		}
+	}
+	reg_addr_map.clear();
+	optimized = false;
+	optimizable = true;
 }
 
 template <typename ADDRESS, typename CUSTOM_RW_ARG>

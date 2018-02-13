@@ -1095,13 +1095,17 @@ void LINFlexD<CONFIG>::UpdateLINClock()
 			
 			if((osr != 4) && (osr != 5) && (osr != 6) && (osr != 8))
 			{
-				logger << DebugWarning << "over sampling rate allowed values are: 4, 5, 6 and 8" << EndDebugWarning;
+				logger << DebugWarning << "over sampling rate allowed values are: 4, 5, 6 and 8; got " << osr << EndDebugWarning;
 			}
 		}
 		
 		unsigned int period_multiplicator_x16 = ((16 * ibr) + (rose ? 0 : fbr)) * (rose ? osr : 16);
 		baud_period = lin_clock_period;
 		baud_period *= (double) period_multiplicator_x16 / 16.0;
+		if(verbose)
+		{
+			logger << DebugInfo << "using period of " << baud_period << EndDebugInfo;
+		}
 		sc_core::sc_time baud_period_tolerance = baud_period * (baud_tolerance / 100.0);
 		baud_period_lower_bound = baud_period;
 		baud_period_lower_bound -= baud_period_tolerance;
@@ -1111,6 +1115,10 @@ void LINFlexD<CONFIG>::UpdateLINClock()
 	else
 	{
 		// LIN clock disabled
+		if(verbose)
+		{
+			logger << DebugInfo << "LIN clock is disabled: using a period of " << sc_core::SC_ZERO_TIME << EndDebugInfo;
+		}
 		baud_period = sc_core::SC_ZERO_TIME;
 		baud_period_lower_bound = sc_core::SC_ZERO_TIME;
 		baud_period_upper_bound = sc_core::SC_ZERO_TIME;

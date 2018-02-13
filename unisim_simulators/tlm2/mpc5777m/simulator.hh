@@ -54,6 +54,7 @@
 #include <unisim/component/tlm2/dma/freescale/mpc57xx/dmamux/dmamux.hh>
 #include <unisim/component/tlm2/dma/freescale/mpc57xx/edma/edma.hh>
 #include <unisim/component/tlm2/operators/associative_operator.hh>
+#include <unisim/component/tlm2/com/freescale/mpc57xx/dspi/dspi.hh>
 
 // Class definition of kernel, services and interfaces
 #include <unisim/kernel/service/service.hh>
@@ -142,7 +143,7 @@ private:
 		typedef FSB_ADDRESS_TYPE ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 6;
 		static const unsigned int OUTPUT_SOCKETS = 8;
-		static const unsigned int MAX_NUM_MAPPINGS = 11;
+		static const unsigned int MAX_NUM_MAPPINGS = 12;
 		static const unsigned int BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;
 	};
@@ -152,7 +153,7 @@ private:
 		typedef FSB_ADDRESS_TYPE ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 4;
 		static const unsigned int OUTPUT_SOCKETS = 4;
-		static const unsigned int MAX_NUM_MAPPINGS = 12;
+		static const unsigned int MAX_NUM_MAPPINGS = 13;
 		static const unsigned int BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;
 	};
@@ -161,8 +162,8 @@ private:
 	{
 		typedef FSB_ADDRESS_TYPE ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 26;
-		static const unsigned int MAX_NUM_MAPPINGS = 26;
+		static const unsigned int OUTPUT_SOCKETS = 31;
+		static const unsigned int MAX_NUM_MAPPINGS = 31;
 		static const unsigned int BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;
 	};
@@ -171,8 +172,8 @@ private:
 	{
 		typedef FSB_ADDRESS_TYPE ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 2;
-		static const unsigned int MAX_NUM_MAPPINGS = 2;
+		static const unsigned int OUTPUT_SOCKETS = 5;
+		static const unsigned int MAX_NUM_MAPPINGS = 5;
 		static const unsigned int BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;
 	};
@@ -430,6 +431,102 @@ private:
 		static const unsigned int NUM_DMA_CHANNELS = 64;
 		static const unsigned int BUSWIDTH         = 64; // FIXME: EDMA will be on PBRIDGE which is 32-bit width
 	};
+	
+	struct DSPI_0_CONFIG
+	{
+		static const unsigned int BUSWIDTH               = 64; // FIXME: DSPI will be on PBRIDGE which is 32-bit width
+		static const unsigned int NUM_CTARS              = 8;
+		static const unsigned int TX_FIFO_DEPTH          = 4;
+		static const unsigned int RX_FIFO_DEPTH          = 4;
+		static const unsigned int CMD_FIFO_DEPTH         = 4;
+		static const bool HAS_DATA_SERIALIZATION_SUPPORT = false;
+		static const unsigned int NUM_DSI_INPUTS         = 0;
+		static const unsigned int NUM_DSI_OUTPUTS        = 0;
+	};
+
+	struct DSPI_1_CONFIG
+	{
+		static const unsigned int BUSWIDTH               = 64; // FIXME: DSPI will be on PBRIDGE which is 32-bit width
+		static const unsigned int NUM_CTARS              = 8;
+		static const unsigned int TX_FIFO_DEPTH          = 4;
+		static const unsigned int RX_FIFO_DEPTH          = 4;
+		static const unsigned int CMD_FIFO_DEPTH         = 4;
+		static const bool HAS_DATA_SERIALIZATION_SUPPORT = false;
+		static const unsigned int NUM_DSI_INPUTS         = 0;
+		static const unsigned int NUM_DSI_OUTPUTS        = 0;
+	};
+
+	struct DSPI_2_CONFIG
+	{
+		static const unsigned int BUSWIDTH               = 64; // FIXME: DSPI will be on PBRIDGE which is 32-bit width
+		static const unsigned int NUM_CTARS              = 8;
+		static const unsigned int TX_FIFO_DEPTH          = 4;
+		static const unsigned int RX_FIFO_DEPTH          = 4;
+		static const unsigned int CMD_FIFO_DEPTH         = 4;
+		static const bool HAS_DATA_SERIALIZATION_SUPPORT = false;
+		static const unsigned int NUM_DSI_INPUTS         = 0;
+		static const unsigned int NUM_DSI_OUTPUTS        = 0;
+	};
+
+	struct DSPI_3_CONFIG
+	{
+		static const unsigned int BUSWIDTH               = 64; // FIXME: DSPI will be on PBRIDGE which is 32-bit width
+		static const unsigned int NUM_CTARS              = 8;
+		static const unsigned int TX_FIFO_DEPTH          = 4;
+		static const unsigned int RX_FIFO_DEPTH          = 4;
+		static const unsigned int CMD_FIFO_DEPTH         = 4;
+		static const bool HAS_DATA_SERIALIZATION_SUPPORT = false;
+		static const unsigned int NUM_DSI_INPUTS         = 0;
+		static const unsigned int NUM_DSI_OUTPUTS        = 0;
+	};
+
+	struct DSPI_4_CONFIG
+	{
+		static const unsigned int BUSWIDTH               = 64; // FIXME: DSPI will be on PBRIDGE which is 32-bit width
+		static const unsigned int NUM_CTARS              = 8;
+		static const unsigned int TX_FIFO_DEPTH          = 4;
+		static const unsigned int RX_FIFO_DEPTH          = 4;
+		static const unsigned int CMD_FIFO_DEPTH         = 4;
+		static const bool HAS_DATA_SERIALIZATION_SUPPORT = true;
+		static const unsigned int NUM_DSI_INPUTS         = 32;
+		static const unsigned int NUM_DSI_OUTPUTS        = 32;
+	};
+
+	struct DSPI_5_CONFIG
+	{
+		static const unsigned int BUSWIDTH               = 64; // FIXME: DSPI will be on PBRIDGE which is 32-bit width
+		static const unsigned int NUM_CTARS              = 8;
+		static const unsigned int TX_FIFO_DEPTH          = 4;
+		static const unsigned int RX_FIFO_DEPTH          = 4;
+		static const unsigned int CMD_FIFO_DEPTH         = 4;
+		static const bool HAS_DATA_SERIALIZATION_SUPPORT = true;
+		static const unsigned int NUM_DSI_INPUTS         = 32;
+		static const unsigned int NUM_DSI_OUTPUTS        = 32;
+	};
+
+	struct DSPI_6_CONFIG
+	{
+		static const unsigned int BUSWIDTH               = 64; // FIXME: DSPI will be on PBRIDGE which is 32-bit width
+		static const unsigned int NUM_CTARS              = 8;
+		static const unsigned int TX_FIFO_DEPTH          = 4;
+		static const unsigned int RX_FIFO_DEPTH          = 4;
+		static const unsigned int CMD_FIFO_DEPTH         = 4;
+		static const bool HAS_DATA_SERIALIZATION_SUPPORT = true;
+		static const unsigned int NUM_DSI_INPUTS         = 32;
+		static const unsigned int NUM_DSI_OUTPUTS        = 32;
+	};
+
+	struct DSPI_12_CONFIG
+	{
+		static const unsigned int BUSWIDTH               = 64; // FIXME: DSPI will be on PBRIDGE which is 32-bit width
+		static const unsigned int NUM_CTARS              = 8;
+		static const unsigned int TX_FIFO_DEPTH          = 4;
+		static const unsigned int RX_FIFO_DEPTH          = 4;
+		static const unsigned int CMD_FIFO_DEPTH         = 4;
+		static const bool HAS_DATA_SERIALIZATION_SUPPORT = false;
+		static const unsigned int NUM_DSI_INPUTS         = 0;
+		static const unsigned int NUM_DSI_OUTPUTS        = 0;
+	};
 
 	//=========================================================================
 	//===                     Aliases for components classes                ===
@@ -474,6 +571,14 @@ private:
 	typedef unisim::component::tlm2::dma::freescale::mpc57xx::dmamux::DMAMUX<DMAMUX_9_CONFIG> DMAMUX_9;
 	typedef unisim::component::tlm2::dma::freescale::mpc57xx::edma::EDMA<EDMA_0_CONFIG> EDMA_0;
 	typedef unisim::component::tlm2::dma::freescale::mpc57xx::edma::EDMA<EDMA_1_CONFIG> EDMA_1;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::dspi::DSPI<DSPI_0_CONFIG> DSPI_0;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::dspi::DSPI<DSPI_1_CONFIG> DSPI_1;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::dspi::DSPI<DSPI_2_CONFIG> DSPI_2;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::dspi::DSPI<DSPI_3_CONFIG> DSPI_3;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::dspi::DSPI<DSPI_4_CONFIG> DSPI_4;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::dspi::DSPI<DSPI_5_CONFIG> DSPI_5;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::dspi::DSPI<DSPI_6_CONFIG> DSPI_6;
+	typedef unisim::component::tlm2::com::freescale::mpc57xx::dspi::DSPI<DSPI_12_CONFIG> DSPI_12;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_0_TX;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_0_RX;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_1_TX;
@@ -486,7 +591,24 @@ private:
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_15_RX;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_16_TX;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_16_RX;
-	typedef unisim::kernel::tlm2::TargetStub<64> EBI_STUB;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_0_SOUT;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_0_SIN;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_1_SOUT;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_1_SIN;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_2_SOUT;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_2_SIN;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_3_SOUT;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_3_SIN;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_4_SOUT;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_4_SIN;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_5_SOUT;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_5_SIN;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_6_SOUT;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_6_SIN;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_SOUT;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_SIN;
+	//typedef unisim::kernel::tlm2::TargetStub<64> EBI_STUB;
+	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<64> FLASH_PORT1_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<64> XBAR_0_S6_STUB;
 	typedef unisim::kernel::tlm2::InitiatorStub<64> XBAR_1_M2_STUB;
@@ -576,6 +698,33 @@ private:
 	//  - EDMA
 	EDMA_0 *edma_0;
 	EDMA_1 *edma_1;
+	//  - DSPI
+	DSPI_0 *dspi_0;
+	DSPI_1 *dspi_1;
+	DSPI_2 *dspi_2;
+	DSPI_3 *dspi_3;
+	DSPI_4 *dspi_4;
+	DSPI_5 *dspi_5;
+	DSPI_6 *dspi_6;
+	DSPI_12 *dspi_12;
+	//  - DSPI serial buses
+	DSPI_0_SOUT  *dspi_0_sout;
+	DSPI_0_SIN   *dspi_0_sin;
+	DSPI_1_SOUT  *dspi_1_sout;
+	DSPI_1_SIN   *dspi_1_sin;
+	DSPI_2_SOUT  *dspi_2_sout;
+	DSPI_2_SIN   *dspi_2_sin;
+	DSPI_3_SOUT  *dspi_3_sout;
+	DSPI_3_SIN   *dspi_3_sin;
+	DSPI_4_SOUT  *dspi_4_sout;
+	DSPI_4_SIN   *dspi_4_sin;
+	DSPI_5_SOUT  *dspi_5_sout;
+	DSPI_5_SIN   *dspi_5_sin;
+	DSPI_6_SOUT  *dspi_6_sout;
+	DSPI_6_SIN   *dspi_6_sin;
+	DSPI_12_SOUT *dspi_12_sout;
+	DSPI_12_SIN  *dspi_12_sin;
+	
 	//  - Stubs
 	EBI_STUB *ebi_stub;
 	FLASH_PORT1_STUB *flash_port1_stub;
@@ -583,6 +732,23 @@ private:
 	XBAR_1_M2_STUB *xbar_1_m2_stub;
 	
 	unisim::component::tlm2::operators::LogicalOrOperator<bool, NUM_DMA_CHANNELS> *dma_err_irq_combinator;
+	unisim::component::tlm2::operators::LogicalOrOperator<bool, 3> *DSPI0_0;
+	unisim::component::tlm2::operators::LogicalOrOperator<bool, 3> *DSPI1_0;
+	unisim::component::tlm2::operators::LogicalOrOperator<bool, 3> *DSPI2_0;
+	unisim::component::tlm2::operators::LogicalOrOperator<bool, 3> *DSPI3_0;
+	unisim::component::tlm2::operators::LogicalOrOperator<bool, 3> *DSPI4_0;
+	unisim::component::tlm2::operators::LogicalOrOperator<bool, 2> *DSPI4_5;
+	unisim::component::tlm2::operators::LogicalOrOperator<bool, 2> *DSPI4_6;
+	unisim::component::tlm2::operators::LogicalOrOperator<bool, 2> *DSPI4_7;
+	unisim::component::tlm2::operators::LogicalOrOperator<bool, 3> *DSPI5_0;
+	unisim::component::tlm2::operators::LogicalOrOperator<bool, 2> *DSPI5_5;
+	unisim::component::tlm2::operators::LogicalOrOperator<bool, 2> *DSPI5_6;
+	unisim::component::tlm2::operators::LogicalOrOperator<bool, 2> *DSPI5_7;
+	unisim::component::tlm2::operators::LogicalOrOperator<bool, 3> *DSPI6_0;
+	unisim::component::tlm2::operators::LogicalOrOperator<bool, 2> *DSPI6_5;
+	unisim::component::tlm2::operators::LogicalOrOperator<bool, 2> *DSPI6_6;
+	unisim::component::tlm2::operators::LogicalOrOperator<bool, 2> *DSPI6_7;
+	unisim::component::tlm2::operators::LogicalOrOperator<bool, 3> *DSPI12_0;
 	
 	//=========================================================================
 	//===                            Services                               ===

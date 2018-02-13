@@ -197,13 +197,13 @@ void CPU<TYPES, CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core:
 		if(!data_ptr)
 		{
 			this->logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			this->Stop(-1);
 			return;
 		}
 		else if(!data_length)
 		{
 			this->logger << DebugError << "data length range for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-			unisim::kernel::service::Object::Stop(-1);
+			this->Stop(-1);
 			return;
 		}
 		else if(byte_enable_ptr)
@@ -300,13 +300,13 @@ unsigned int CPU<TYPES, CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload
 	if(!data_ptr)
 	{
 		this->logger << DebugError << "data pointer for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-		unisim::kernel::service::Object::Stop(-1);
+		this->Stop(-1);
 		return 0;
 	}
 	else if(!data_length)
 	{
 		this->logger << DebugError << "data length range for TLM-2.0 GP READ/WRITE command is invalid" << EndDebugError;
-		unisim::kernel::service::Object::Stop(-1);
+		this->Stop(-1);
 		return 0;
 	}
 	else
@@ -381,26 +381,37 @@ void CPU<TYPES, CONFIG>::Idle()
 	// First synchronize with other threads
 	Synchronize();
 	
-	// wait for an external event
-	sc_core::sc_time old_time_stamp(sc_core::sc_time_stamp());
-	wait(external_event);
-	sc_core::sc_time new_time_stamp(sc_core::sc_time_stamp());
-	
-	// compute the time spent by the SystemC wait
-	sc_core::sc_time delta_time(new_time_stamp);
-	delta_time -= old_time_stamp;
-	
-	if(enable_host_idle)
+	if(!this->HasPendingInterrupts()) // Is there some pending interrupts?
 	{
-		usleep(delta_time.to_seconds() * 1.0e6); // leave host CPU when target CPU is idle
+		// no: wait for an external event
+		sc_core::sc_time old_time_stamp(sc_core::sc_time_stamp());
+		wait(external_event);
+		sc_core::sc_time new_time_stamp(sc_core::sc_time_stamp());
+		
+		// compute the time spent by the SystemC wait
+		sc_core::sc_time delta_time(new_time_stamp);
+		delta_time -= old_time_stamp;
+		
+		if(enable_host_idle)
+		{
+			usleep(delta_time.to_seconds() * 1.0e6); // leave host CPU when target CPU is idle
+		}
+		
+		idle_time += delta_time;
+		
+		// update overall run time
+		run_time = new_time_stamp;
+		
+		SampleInputs();
 	}
-	
-	idle_time += delta_time;
-	
-	// update overall run time
-	run_time = new_time_stamp;
-	
-	SampleInputs();
+}
+
+template <typename TYPES, typename CONFIG>
+void CPU<TYPES, CONFIG>::Halt()
+{
+	this->Synchronize();
+	wait(sc_core::sc_time(10.0, sc_core::SC_MS));
+	this->Stop(0);
 }
 
 template <typename TYPES, typename CONFIG>

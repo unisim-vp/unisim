@@ -2031,8 +2031,8 @@ private:
 	void TX_Process();
 };
 
-} // end of namespace intc
 } // end of namespace linflexd
+} // end of namespace mpc57xx
 } // end of namespace freescale
 } // end of namespace com
 } // end of namespace tlm2

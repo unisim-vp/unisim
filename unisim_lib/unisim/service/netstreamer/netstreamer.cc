@@ -100,9 +100,9 @@ std::ostream& operator << (std::ostream& os, const NetStreamerProtocol& nsp)
 	return os;
 }
 
-NetStreamer::NetStreamer(const char *name, Object *parent)
+NetStreamer::NetStreamer(const char *name, unisim::kernel::service::Object *parent)
 	: Object(name, parent, "This service provides character I/O over TCP/IP")
-	, Service<CharIO>(name, parent)
+	, unisim::kernel::service::Service<CharIO>(name, parent)
 	, char_io_export("char-io-export", this)
 	, logger(*this)
 	, verbose(false)
@@ -112,6 +112,10 @@ NetStreamer::NetStreamer(const char *name, Object *parent)
 	, protocol(NETSTREAMER_PROTOCOL_RAW)
 	, filter_null_character(false)
 	, filter_line_feed(false)
+	, enable_telnet_binary(true)
+	, enable_telnet_echo(true)
+	, enable_telnet_suppress_go_ahead(true)
+	, enable_telnet_linemode(false)
 	, tcp_port(0)
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	, sock(INVALID_SOCKET)
@@ -139,6 +143,10 @@ NetStreamer::NetStreamer(const char *name, Object *parent)
 	, param_protocol("protocol", this, protocol, "network protocol (raw or telnet)")
 	, param_filter_null_character("filter-null-character", this, filter_null_character, "Whether to filter null character")
 	, param_filter_line_feed("filter-line-feed", this, filter_line_feed, "Whether to filter line feed")
+	, param_enable_telnet_binary("enable-telnet-binary", this, enable_telnet_binary, "enable/disable telnet binary option")
+	, param_enable_telnet_echo("enable-telnet-echo", this, enable_telnet_echo, "enable/disable telnet echo option")
+	, param_enable_telnet_suppress_go_ahead("enable-telnet-suppress-go-ahead", this, enable_telnet_suppress_go_ahead, "enable/disable telnet suppress go ahead option")
+	, param_enable_telnet_linemode("enable-telnet-linemode", this, enable_telnet_linemode, "enable/disable telnet linemode option")
 	, input_buffer_size(0)
 	, input_buffer_index(0)
 	, input_buffer()
@@ -729,19 +737,19 @@ bool NetStreamer::Connect()
 	if(protocol == NETSTREAMER_PROTOCOL_TELNET)
 	{
 		EarlyPut(TELNET_OPT_LINEMODE);
-		EarlyPut(TELNET_CMD_WONT);
+		EarlyPut(enable_telnet_linemode ? TELNET_CMD_WILL : TELNET_CMD_WONT);
 		EarlyPut(TELNET_CMD_IAC);
 
 		EarlyPut(TELNET_OPT_SUPPRESS_GO_AHEAD);
-		EarlyPut(TELNET_CMD_WILL);
+		EarlyPut(enable_telnet_suppress_go_ahead ? TELNET_CMD_WILL : TELNET_CMD_WONT);
 		EarlyPut(TELNET_CMD_IAC);
 
 		EarlyPut(TELNET_OPT_ECHO);
-		EarlyPut(TELNET_CMD_WILL);
+		EarlyPut(enable_telnet_echo ? TELNET_CMD_WILL : TELNET_CMD_WONT);
 		EarlyPut(TELNET_CMD_IAC);
 
 		EarlyPut(TELNET_OPT_BINARY);
-		EarlyPut(TELNET_CMD_WILL);
+		EarlyPut(enable_telnet_binary ? TELNET_CMD_WILL : TELNET_CMD_WONT);
 		EarlyPut(TELNET_CMD_IAC);
 		
 		FlushOutput();

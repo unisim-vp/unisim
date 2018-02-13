@@ -205,6 +205,7 @@ private:
 		void Clear()
 		{
 			key.Clear();
+			prc_num = 0;
 			if(release_payload)
 			{
 				if(payload && payload->has_mm()) payload->release();
@@ -848,7 +849,7 @@ private:
 	sc_core::sc_time sw_irq_source_to_processor_irq_latency;   // latency between software IRQ source to processor IRQ
 	
 	void Reset();
-	void UpdateIRQSelect(unsigned int prc_num);
+	void UpdateIRQSelect(unsigned int prc_num, const sc_core::sc_time& delay = sc_core::SC_ZERO_TIME);
 	void SetIRQOutput(unsigned int prc_num, bool value, IRQ_Type irq_type = ANY_IRQ);
 	void SetIRQInputStatus(unsigned int irq_num, bool value);
 	bool GetIRQInputStatus(unsigned int irq_num) const;
@@ -878,6 +879,7 @@ private:
 	void UpdateSpeed();
 	void ClockPropertiesChangedProcess();
 	void RESET_B_Process();
+	void DumpPriorityTree(unsigned int prc_num);
 };
 
 } // end of namespace intc

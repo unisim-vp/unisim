@@ -115,6 +115,7 @@ SerialTerminal::SerialTerminal(const sc_core::sc_module_name& name, unisim::kern
 
 SerialTerminal::~SerialTerminal()
 {
+	ProcessOutput();
 }
 
 bool SerialTerminal::EndSetup()
@@ -213,66 +214,67 @@ void SerialTerminal::TX_Process()
 	{
 		wait();
 		
-		assert(sc_core::sc_time_stamp() >= tx_ready_time);
-		
-		tx_ready_time = sc_core::sc_time_stamp();
-		
-		if(!tx_fifo.empty())
+		if(sc_core::sc_time_stamp() >= tx_ready_time)
 		{
-			unisim::kernel::tlm2::tlm_serial_payload payload;
-			std::vector<bool>& data = payload.get_data();
-
-			payload.set_period(clock_period);
+			tx_ready_time = sc_core::sc_time_stamp();
 			
-			do
+			if(!tx_fifo.empty())
 			{
-				data.push_back(0); // start bit
-				tx_ready_time += clock_period;
+				unisim::kernel::tlm2::tlm_serial_payload payload;
+				std::vector<bool>& data = payload.get_data();
 
-				uint8_t value = tx_fifo.front();
-				tx_fifo.pop();
-
-				bool parity = (parity_type == PARITY_TYPE_EVEN) ? false : true;
-				unsigned int i;
-				for(i = 0; i < num_data_bits; i++)
+				payload.set_period(clock_period);
+				
+				do
 				{
-					bool bit_value = (bit_order == MSB) ? ((value >> (num_data_bits - 1 - i)) & 1) : ((value >> i) & 1);
-					data.push_back(bit_value);
+					data.push_back(0); // start bit
 					tx_ready_time += clock_period;
-					parity ^= bit_value;
+
+					uint8_t value = tx_fifo.front();
+					tx_fifo.pop();
+
+					bool parity = (parity_type == PARITY_TYPE_EVEN) ? false : true;
+					unsigned int i;
+					for(i = 0; i < num_data_bits; i++)
+					{
+						bool bit_value = (bit_order == MSB) ? ((value >> (num_data_bits - 1 - i)) & 1) : ((value >> i) & 1);
+						data.push_back(bit_value);
+						tx_ready_time += clock_period;
+						parity ^= bit_value;
+					}
+					
+					if(parity_type != PARITY_TYPE_NONE)
+					{
+						data.push_back(parity); // parity bit
+					}
+					
+					for(i = 0; i < num_stop_bits; i++)
+					{
+						data.push_back(1); // stop bit
+						tx_ready_time += clock_period;
+					}
+				}
+				while(!tx_fifo.empty());
+				
+				if(verbose)
+				{
+					logger << DebugInfo << sc_core::sc_time_stamp() << ": transmitting [";
+					std::vector<bool>::size_type data_length = data.size();
+					std::vector<bool>::size_type i;
+					for(i = 0; i < data_length; i++)
+					{
+						if(i != 0) logger << " ";
+						logger << data[i];
+					}
+					logger << "] over TX with a period of " << clock_period << EndDebugInfo;
 				}
 				
-				if(parity_type != PARITY_TYPE_NONE)
-				{
-					data.push_back(parity); // parity bit
-				}
+				TX->b_send(payload);
 				
-				for(i = 0; i < num_stop_bits; i++)
+				if(sc_core::sc_time_stamp() > tx_ready_time)
 				{
-					data.push_back(1); // stop bit
-					tx_ready_time += clock_period;
+					tx_ready_time = sc_core::sc_time_stamp();
 				}
-			}
-			while(!tx_fifo.empty());
-			
-			if(verbose)
-			{
-				logger << DebugInfo << sc_core::sc_time_stamp() << ": transmitting [";
-				std::vector<bool>::size_type data_length = data.size();
-				std::vector<bool>::size_type i;
-				for(i = 0; i < data_length; i++)
-				{
-					if(i != 0) logger << " ";
-					logger << data[i];
-				}
-				logger << "] over TX with a period of " << clock_period << EndDebugInfo;
-			}
-			
-			TX->b_send(payload);
-			
-			if(sc_core::sc_time_stamp() > tx_ready_time)
-			{
-				tx_ready_time = sc_core::sc_time_stamp();
 			}
 		}
 	}
