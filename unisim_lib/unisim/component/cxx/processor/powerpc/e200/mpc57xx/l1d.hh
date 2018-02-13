@@ -105,7 +105,7 @@ struct L1D
 
 	inline bool IsVerbose() const ALWAYS_INLINE { return verbose; }
 	inline bool IsEnabled() const ALWAYS_INLINE { return cpu->l1csr0.template Get<typename L1CSR0::DCE>(); }
-	inline bool IsWriteAllocate() const ALWAYS_INLINE { return cpu->l1csr0.template Get<typename L1CSR0::DCWA>(); }
+	inline bool IsWriteAllocate(typename TYPES::STORAGE_ATTR storage_attr) const ALWAYS_INLINE { return cpu->l1csr0.template Get<typename L1CSR0::DCWA>(); }
 	inline bool ChooseLineToEvict(unisim::util::cache::CacheAccess<TYPES, L1D>& access) ALWAYS_INLINE
 	{
 		if(cpu->l1csr0.template Get<typename L1CSR0::WDD>() == ((1 << L1D::ASSOCIATIVITY) - 1)) return false; // all data cache ways are locked

@@ -534,7 +534,7 @@ struct Cache
 
 	inline bool IsVerbose() const ALWAYS_INLINE;
 	inline bool IsEnabled() const ALWAYS_INLINE;
-	inline bool IsWriteAllocate() const ALWAYS_INLINE;
+	inline bool IsWriteAllocate(typename TYPES::STORAGE_ATTR storage_attr) const ALWAYS_INLINE;
 	inline bool ChooseLineToEvict(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
 	inline void UpdateReplacementPolicyOnAccess(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
 	inline void UpdateReplacementPolicyOnFill(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
@@ -554,7 +554,7 @@ private:
 	static inline const char *__MSS_GetCacheName__() ALWAYS_INLINE;
 	inline bool __MSS_IsVerbose__() const ALWAYS_INLINE;
 	inline bool __MSS_IsEnabled__() const ALWAYS_INLINE;
-	inline bool __MSS_IsWriteAllocate__() const  ALWAYS_INLINE;
+	inline bool __MSS_IsWriteAllocate__(typename TYPES::STORAGE_ATTR storage_attr) const  ALWAYS_INLINE;
 	inline bool __MSS_ChooseLineToEvict__(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
 	inline void __MSS_UpdateReplacementPolicyOnAccess__(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
 	inline void __MSS_UpdateReplacementPolicyOnFill__(CacheAccess<TYPES, CACHE>& access) ALWAYS_INLINE;
@@ -1004,7 +1004,7 @@ protected:
 	
 	/* Test whether storage attribute allow store are dynamically write-through (even with write back caches) */
 	inline bool IsDataStoreAccessWriteThrough(typename TYPES::STORAGE_ATTR storage_attr) const ALWAYS_INLINE;
-
+	
 	/**** output interface */
 	/* Data Bus Read */
 	bool DataBusRead(typename TYPES::PHYSICAL_ADDRESS phys_addr, void *buffer, unsigned int size, typename TYPES::STORAGE_ATTR storage_attr, bool rwitm);
@@ -1979,7 +1979,7 @@ inline bool Cache<TYPES, CONFIG, CACHE>::IsEnabled() const
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
-inline bool Cache<TYPES, CONFIG, CACHE>::IsWriteAllocate() const
+inline bool Cache<TYPES, CONFIG, CACHE>::IsWriteAllocate(typename TYPES::STORAGE_ATTR storage_attr) const
 {
 	return false;
 }
@@ -2024,9 +2024,9 @@ inline bool Cache<TYPES, CONFIG, CACHE>::__MSS_IsEnabled__() const
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
-inline bool Cache<TYPES, CONFIG, CACHE>::__MSS_IsWriteAllocate__() const
+inline bool Cache<TYPES, CONFIG, CACHE>::__MSS_IsWriteAllocate__(typename TYPES::STORAGE_ATTR storage_attr) const
 {
-	return CACHE::IsStaticWriteAllocate() || static_cast<const CACHE *>(this)->IsWriteAllocate();
+	return CACHE::IsStaticWriteAllocate() || static_cast<const CACHE *>(this)->IsWriteAllocate(storage_attr);
 }
 
 template <typename TYPES, typename CONFIG, typename CACHE>
@@ -3002,7 +3002,7 @@ inline bool MemorySubSystem<TYPES, MSS>::StoreInCacheHierarchy(typename TYPES::P
 				__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Line miss at @0x" << std::hex << access.phys_addr << std::dec << std::endl;
 			}
 
-			if(cache->__MSS_IsWriteAllocate__())
+			if(cache->__MSS_IsWriteAllocate__(storage_attr))
 			{
 				// write-allocate: evict before fill
 				if(likely(cache->__MSS_ChooseLineToEvict__(access)))
@@ -3034,7 +3034,7 @@ inline bool MemorySubSystem<TYPES, MSS>::StoreInCacheHierarchy(typename TYPES::P
 					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Block miss at @0x" << std::hex << access.phys_addr << std::dec << std::endl;
 				}
 				
-				if(cache->__MSS_IsWriteAllocate__())
+				if(cache->__MSS_IsWriteAllocate__(storage_attr))
 				{
 					// write-allocate: fill if missing block
 					typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
@@ -3050,13 +3050,15 @@ inline bool MemorySubSystem<TYPES, MSS>::StoreInCacheHierarchy(typename TYPES::P
 					__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << " Block hit at @0x" << std::hex << access.phys_addr << std::dec << std::endl;
 				}
 			}
-
-			if(cache->__MSS_IsWriteAllocate__() || access.block)
+			
+			bool is_access_write_through = CACHE::IsStaticWriteThroughCache() || __MSS_IsDataStoreAccessWriteThrough__(storage_attr);
+			
+			if(access.block)
 			{
 				// write-allocate or cache hit
 				assert(size <= access.size_to_block_boundary);
 				memcpy(&access.block->GetByteByOffset(access.offset), buffer, size);
-				if(CACHE::IsStaticWriteBackCache())
+				if(!is_access_write_through)
 				{
 					// write-back
 					access.block->SetDirty();
@@ -3064,7 +3066,7 @@ inline bool MemorySubSystem<TYPES, MSS>::StoreInCacheHierarchy(typename TYPES::P
 				cache->__MSS_UpdateReplacementPolicyOnAccess__(access);
 			}
 			
-			if(CACHE::IsStaticWriteThroughCache() || __MSS_IsDataStoreAccessWriteThrough__(storage_attr))
+			if(!access.block || is_access_write_through)
 			{
 				typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
 				
@@ -3437,22 +3439,18 @@ bool MemorySubSystem<TYPES, MSS>::WriteBackLine(CacheAccess<TYPES, CACHE>& acces
 		{
 			__MSS_GetDebugInfoStream__() << CACHE::__MSS_GetCacheName__() << ": Writing back Line at @0x" << std::hex << access.line_to_write_back_evict->GetBaseAddress() << std::dec << std::endl;
 		}
-		if(CACHE::IsStaticWriteBackCache())
+		unsigned int sector;
+		
+		for(sector = 0; sector < CACHE::BLOCKS_PER_LINE; sector++)
 		{
-			// write-back cache
-			unsigned int sector;
-		
-			for(sector = 0; sector < CACHE::BLOCKS_PER_LINE; sector++)
+			CacheBlock<TYPES, typename CACHE::CACHE_CONFIG>& block_to_evict = access.line_to_write_back_evict->GetBlockBySector(sector);
+			
+			if(block_to_evict.IsValid() && block_to_evict.IsDirty())
 			{
-				CacheBlock<TYPES, typename CACHE::CACHE_CONFIG>& block_to_evict = access.line_to_write_back_evict->GetBlockBySector(sector);
-		
-				if(block_to_evict.IsValid() && block_to_evict.IsDirty())
-				{
-					// write back dirty block
-					typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
-					
-					if(!WriteBackDirtyBlock<CACHE_HIERARCHY, CACHE, NLC, INVALIDATE>(access, sector)) return false;
-				}
+				// write back dirty block
+				typedef typename CACHE_HIERARCHY::template NextLevel<CACHE>::CACHE NLC;
+				
+				if(!WriteBackDirtyBlock<CACHE_HIERARCHY, CACHE, NLC, INVALIDATE>(access, sector)) return false;
 			}
 		}
 		
@@ -3480,7 +3478,7 @@ template <typename TYPES, typename MSS>
 template <typename CACHE_HIERARCHY, typename CACHE>
 bool MemorySubSystem<TYPES, MSS>::EvictLine(CacheAccess<TYPES, CACHE>& access)
 {
-	if(CACHE::IsDataCache() && CACHE::IsStaticWriteBackCache())
+	if(CACHE::IsDataCache())
 	{
 		WriteBackLine<CACHE_HIERARCHY, CACHE, /* invalidate */ true >(access);
 	}

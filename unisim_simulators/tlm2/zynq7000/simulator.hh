@@ -86,11 +86,13 @@ struct CPU
   : public unisim::component::tlm2::processor::arm::cortex_a9::CPU
   , public unisim::util::cache::MemorySubSystem<MSSConfig, CPU>
 {
-  typedef unisim::component::tlm2::processor::arm::cortex_a9::CPU TLMCPU;
+  typedef unisim::component::tlm2::processor::arm::cortex_a9::CPU PCPU;
+  typedef PCPU::CP15CPU CP15CPU;
+  typedef PCPU::CP15Reg CP15Reg;
   
   CPU(const sc_core::sc_module_name& name, Object* parent = 0)
     : unisim::kernel::service::Object(name, parent)
-    , TLMCPU(name, parent)
+    , PCPU(name, parent)
     , l1d(*this)
     , l1i(*this)
   {}
@@ -126,7 +128,7 @@ struct CPU
   struct L1D_CONFIG
   {
     static const unsigned int SIZE                                      = 4096;
-    static const unisim::util::cache::CacheWritingPolicy WRITING_POLICY = unisim::util::cache::CACHE_WRITE_THROUGH_AND_NO_WRITE_ALLOCATE_POLICY;
+    static const unisim::util::cache::CacheWritingPolicy WRITING_POLICY = unisim::util::cache::CACHE_WRITE_BACK_AND_NO_WRITE_ALLOCATE_POLICY;
     static const unisim::util::cache::CacheType TYPE                    = unisim::util::cache::DATA_CACHE;
     static const unsigned int ASSOCIATIVITY                             = 4;
     static const unsigned int BLOCK_SIZE                                = 32;
@@ -148,8 +150,14 @@ struct CPU
     {}
     static const char *GetCacheName() { return "L1D"; }
     
-    bool IsEnabled() const { return true; }
+    bool IsEnabled() const { return unisim::component::cxx::processor::arm::sctlr::C.Get( cpu.SCTLR ); }
 
+    bool IsWriteAllocate(MSSConfig::STORAGE_ATTR storage_attr) const ALWAYS_INLINE
+    {
+      using unisim::component::cxx::processor::arm::MemAttrs;
+      return MemAttrs::Flagged( MemAttrs::Inner(), MemAttrs::WriteAllocate, storage_attr.attributes );
+    }
+    
     bool ChooseLineToEvict(unisim::util::cache::CacheAccess<MSSConfig, L1D>& access)
     {
       access.way = access.set->Status().lru.Select();
@@ -168,7 +176,7 @@ struct CPU
   {
     static const unsigned int SIZE                                      = 4096;
     static const unisim::util::cache::CacheWritingPolicy WRITING_POLICY = unisim::util::cache::CACHE_WRITE_THROUGH_AND_NO_WRITE_ALLOCATE_POLICY;
-    static const unisim::util::cache::CacheType TYPE                    = unisim::util::cache::DATA_CACHE;
+    static const unisim::util::cache::CacheType TYPE                    = unisim::util::cache::INSTRUCTION_CACHE;
     static const unsigned int ASSOCIATIVITY                             = 4;
     static const unsigned int BLOCK_SIZE                                = 32;
     static const unsigned int BLOCKS_PER_LINE                           = 1;
@@ -191,7 +199,7 @@ struct CPU
     
     static const char *GetCacheName() { return "L1I"; }
     
-    bool IsEnabled() const { return true; }
+    bool IsEnabled() const { return unisim::component::cxx::processor::arm::sctlr::I.Get( cpu.SCTLR ); }
 
     bool ChooseLineToEvict(unisim::util::cache::CacheAccess<MSSConfig, L1I>& access)
     {
@@ -218,13 +226,18 @@ struct CPU
     using unisim::component::cxx::processor::arm::MemAttrs;
     return not MemAttrs::Is( MemAttrs::Inner(), MemAttrs::NonCacheable, storage_attr.attributes );
   }
+  
+  mutable std::map<bool,uint64_t> wt_stats;
 
   bool IsDataStoreAccessWriteThrough(STORAGE_ATTR storage_attr) const
   {
     using unisim::component::cxx::processor::arm::MemAttrs;
-    return MemAttrs::Is( MemAttrs::Inner(), MemAttrs::WriteThrough, storage_attr.attributes );
+    bool is_write_through = MemAttrs::Is( MemAttrs::Inner(), MemAttrs::WriteThrough, storage_attr.attributes );
+    wt_stats[is_write_through] += 1;
+    return is_write_through;
   }
 
+  uint64_t get_cwp_stats( bool wt ) const { return wt_stats[wt]; }
 
   virtual bool PhysicalWriteMemory(uint32_t addr, const uint8_t* buffer, uint32_t size, uint32_t attrs)
   {
@@ -243,7 +256,7 @@ struct CPU
 
   bool DataBusWrite(uint32_t phys_addr, void const* buffer, unsigned int size, STORAGE_ATTR storage_attr)
   {
-    return TLMCPU::PhysicalWriteMemory(phys_addr, (uint8_t const*)buffer, size, storage_attr.attributes);
+    return PCPU::PhysicalWriteMemory(phys_addr, (uint8_t const*)buffer, size, storage_attr.attributes);
   }
   
   bool PhysicalReadMemory(uint32_t addr, uint8_t* buffer, uint32_t size, uint32_t attrs)
@@ -263,7 +276,7 @@ struct CPU
 	
   bool DataBusRead(uint32_t phys_addr, void* buffer, unsigned int size, STORAGE_ATTR storage_attr, bool rwitm)
   {
-    return TLMCPU::PhysicalReadMemory(phys_addr, (uint8_t*)buffer, size, storage_attr.attributes);
+    return PCPU::PhysicalReadMemory(phys_addr, (uint8_t*)buffer, size, storage_attr.attributes);
   }
 
   bool PhysicalFetchMemory(uint32_t addr, uint8_t* buffer, uint32_t size, uint32_t attrs)
@@ -283,11 +296,22 @@ struct CPU
 
   bool InstructionBusRead(uint32_t phys_addr, void* buffer, unsigned int size, STORAGE_ATTR storage_attr)
   {
-    return TLMCPU::PhysicalReadMemory(phys_addr, (uint8_t*)buffer, size, storage_attr.attributes);
+    return PCPU::PhysicalReadMemory(phys_addr, (uint8_t*)buffer, size, storage_attr.attributes);
   }
   
   // virtual bool ExternalReadMemory(uint32_t addr, void* buffer, uint32_t size) { return DebugDataLoad(addr, buffer, size); }
   // virtual bool ExternalWriteMemory(uint32_t addr, void const* buffer, uint32_t size) { return DebugDataStore(addr, buffer, size); }
+
+  /**************************/
+  /* CP15 Interface   START */
+  /**************************/
+  
+protected:
+  virtual CP15Reg& CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 );
+  
+  /**************************/
+  /* CP15 Interface    END  */
+  /**************************/
 };
 
 struct ZynqRouterConfig
@@ -507,7 +531,6 @@ struct Simulator : public unisim::kernel::service::Simulator
   virtual ~Simulator();
   
   int Run();
-  int Run(double time, sc_core::sc_time_unit unit);
   bool IsRunning() const;
   bool SimulationStarted() const;
   bool SimulationFinished() const;

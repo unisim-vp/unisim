@@ -87,6 +87,12 @@ namespace arm {
     {
       return attr_t( typename S::attrs().Get( value ) ) == chk;
     }
+
+    template <typename T, typename S>
+    static bool Flagged( S const&, hint_t chk, T const& value )
+    {
+      return (typename S::hints().Get( value ) & T(chk)) != T(0);
+    }
 };
   
 } // end of namespace arm

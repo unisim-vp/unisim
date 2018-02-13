@@ -983,38 +983,11 @@ Simulator::Run()
   std::cerr << "host simulation speed: " << ((double) cpu["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << std::endl;
   std::cerr << "time dilatation: " << spent_time / sc_core::sc_time_stamp().to_seconds() << " times slower than target machine" << std::endl;
   
+  std::cerr << "WB counts: " << cpu.get_cwp_stats(false) << std::endl;
+  std::cerr << "WT counts: " << cpu.get_cwp_stats(true) << std::endl;
+  
   if (profiler) profiler->Output();
   
-  return exit_status;
-}
-
-int
-Simulator::Run(double time, sc_core::sc_time_unit unit)
-{
-  if ( unlikely(SimulationFinished()) ) return 0;
-
-  double time_start = host_time.GetTime();
-
-  sc_core::sc_report_handler::set_actions(sc_core::SC_INFO, sc_core::SC_DO_NOTHING); // disable SystemC messages
-
-  try
-    {
-      sc_core::sc_start(time, unit);
-    }
-  catch(std::runtime_error& e)
-    {
-      std::cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << std::endl;
-      std::cerr << e.what() << std::endl;
-    }
-
-  double time_stop = host_time.GetTime();
-  double spent_time = time_stop - time_start;
-  simulation_spent_time += spent_time;
-
-  std::cerr << "Simulation statistics:" << std::endl;
-  DumpStatistics(std::cerr);
-  std::cerr << std::endl;
-
   return exit_status;
 }
 
@@ -1211,3 +1184,28 @@ void Simulator::SigInt()
     }
 }
 
+CPU::CP15Reg&
+CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2 )
+{
+  switch (CP15ENCODE( crn, opcode1, crm, opcode2 ))
+    {
+    case CP15ENCODE( 0, 0, 0, 1 ):
+      {
+        static struct : public CP15Reg
+        {
+          char const* Describe() { return "CTR, Cache Type Register"; }
+          uint32_t Read( CP15CPU& _cpu )
+          {
+            /*        FORMAT          CWG         ERG      DminLine        L1Ip       IminLine */
+            /*         ARMv7        8 words     8 words     8 words        PIPT        8 words */
+            return (0b100 << 29) | (3 << 24) | (3 << 20) | (3 << 16) | (0b11 << 14) | (3 <<  0);
+          }
+        } x;
+        return x;
+      } break;
+      
+    }
+  
+  // Fall back to parent cpu CP15 registers
+  return this->PCPU::CP15GetRegister( crn, opcode1, crm, opcode2 );
+}

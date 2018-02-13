@@ -133,7 +133,7 @@ struct L1I
 
 	inline bool IsVerbose() const ALWAYS_INLINE { return verbose; }
 	inline bool IsEnabled() const ALWAYS_INLINE { return l1csr1.template Get<typename L1CSR1::ICE>(); }
-	inline bool IsWriteAllocate() const ALWAYS_INLINE { return false; }
+	inline bool IsWriteAllocate(typename TYPES::STORAGE_ATTR storage_attr) const ALWAYS_INLINE { return false; }
 	inline bool ChooseLineToEvict(unisim::util::cache::CacheAccess<TYPES, L1I>& access) ALWAYS_INLINE
 	{
 		if(cpu->l1csr0.template Get<typename L1CSR0::WID>() == ((1 << L1I::ASSOCIATIVITY) - 1)) return false; // all instruction cache ways are locked

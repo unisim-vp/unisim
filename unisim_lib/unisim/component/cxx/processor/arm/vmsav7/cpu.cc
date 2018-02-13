@@ -1690,7 +1690,12 @@ CPU::CP15GetRegister( uint8_t crn, uint8_t opcode1, uint8_t crm, uint8_t opcode2
         static struct : public CP15Reg
         {
           char const* Describe() { return "CTR, Cache Type Register"; }
-          uint32_t Read( CP15CPU& _cpu ) { return 0x8403c003; }
+          uint32_t Read( CP15CPU& _cpu )
+          {
+            /*        FORMAT          CWG         ERG      DminLine        L1Ip       IminLine */
+            /*         ARMv7        8 words     8 words     8 words        PIPT        8 words */
+            return (0b100 << 29) | (3 << 24) | (3 << 20) | (3 << 16) | (0b11 << 14) | (3 <<  0);
+          }
         } x;
         return x;
       } break;
