@@ -467,7 +467,9 @@ CONFIGURE_AC="${DEST_DIR}/configure.ac"
 MAKEFILE_AM="${DEST_DIR}/Makefile.am"
 CONFIGURE_CROSS="${DEST_DIR}/configure.cross"
 
-if has_to_build "${CONFIGURE_AC}" "$0" || has_to_build "${MAKEFILE_AM}" "$0"; then
+has_to_build_configure=no
+
+if has_to_build "${CONFIGURE_AC}" "$0"; then
 	echo "Generating configure.ac"
 	cat <<EOF > "${CONFIGURE_AC}"
 AC_INIT([UNISIM FPV e5500 Floating-Point verification package], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}])
@@ -484,13 +486,19 @@ AC_CONFIG_SUBDIRS([${SIMPKG}])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 EOF
+	has_to_build_configure=yes
+fi
 
+if has_to_build "${MAKEFILE_AM}" "$0"; then
 	echo "Generating Makefile.am"
 	cat <<EOF > "${MAKEFILE_AM}"
 SUBDIRS=genisslib ${SIMPKG}
 EXTRA_DIST = configure.cross
 EOF
+	has_to_build_configure=yes
+fi
 
+if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "Building configure"
 	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
 fi

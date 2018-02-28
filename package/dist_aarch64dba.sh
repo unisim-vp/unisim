@@ -278,18 +278,16 @@ mkdir -p ${DEST_DIR}/${SIMPKG}/m4
 mkdir -p ${DEST_DIR}/genisslib/config
 mkdir -p ${DEST_DIR}/genisslib/m4
 
+# Some imported files (m4 macros) impact configure generation
 has_to_build_genisslib_configure=no
+has_to_build_simulator_configure=no
+
 for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
-	if dist_copy "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}"; then
-		has_to_build_genisslib_configure=yes
-	fi
+	dist_copy "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}" && has_to_build_genisslib_configure=yes
 done
 
-has_to_build_simulator_configure=no
 for file in ${UNISIM_LIB_SIMULATOR_M4_FILES}; do
-	if dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"; then
-		has_to_build_simulator_configure=yes
-	fi
+	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}" && has_to_build_simulator_configure=yes
 done
 
 # Top level
@@ -334,7 +332,8 @@ CONFIGURE_AC="${DEST_DIR}/configure.ac"
 MAKEFILE_AM="${DEST_DIR}/Makefile.am"
 CONFIGURE_CROSS="${DEST_DIR}/configure.cross"
 
-if has_to_build "${CONFIGURE_AC}" "$0" || has_to_build "${MAKEFILE_AM}" "$0"; then
+has_to_build_configure=no
+if has_to_build "${CONFIGURE_AC}" "$0"; then
 	echo "Generating configure.ac"
 	cat <<EOF > "${CONFIGURE_AC}"
 AC_INIT([UNISIM Aarch64dba ARMv8 to BINSEC-DBA translator package], [${SIMULATOR_VERSION}], [Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Réda Nouacer <reda.nouacer@cea.fr>], [unisim-${SIMPKG}])
@@ -351,13 +350,19 @@ AC_CONFIG_SUBDIRS([${SIMPKG}])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 EOF
+	has_to_build_configure=yes
+fi
 
+if has_to_build "${MAKEFILE_AM}" "$0"; then
 	echo "Generating Makefile.am"
 	cat <<EOF > "${MAKEFILE_AM}"
 SUBDIRS=genisslib ${SIMPKG}
 EXTRA_DIST = configure.cross
 EOF
+	has_to_build_configure=yes
+fi
 
+if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "Building configure"
 	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
 fi
@@ -476,11 +481,7 @@ fi  # has to build configure cross
 GENISSLIB_CONFIGURE_AC="${DEST_DIR}/genisslib/configure.ac"
 GENISSLIB_MAKEFILE_AM="${DEST_DIR}/genisslib/Makefile.am"
 
-if has_to_build "${GENISSLIB_CONFIGURE_AC}" "$0" || has_to_build "${GENISSLIB_MAKEFILE_AM}" "$0"; then
-	has_to_build_genisslib_configure=yes
-fi
-
-if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
+if has_to_build "${GENISSLIB_CONFIGURE_AC}" "$0"; then
 	echo "Generating GENISSLIB configure.ac"
 	cat <<EOF > "${GENISSLIB_CONFIGURE_AC}"
 AC_INIT([UNISIM GENISSLIB], [${GENISSLIB_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves  Lhuillier <yves.lhuillier@cea.fr>], [genisslib])
@@ -502,7 +503,10 @@ UNISIM_CHECK_PARSER_GENERATOR
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 EOF
+	has_to_build_genisslib_configure=yes
+fi
 
+if has_to_build "${GENISSLIB_MAKEFILE_AM}" "$0"; then
 	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
 	echo "Generating GENISSLIB Makefile.am"
 	cat <<EOF > "${GENISSLIB_MAKEFILE_AM}"
@@ -529,7 +533,10 @@ EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}
 # The following line disable some C++ flags that prevent the flex generated file to compile properly
 \$(top_builddir)/genisslib-scanner.o: CXXFLAGS += -O1 -Wno-error
 EOF
+	has_to_build_genisslib_configure=yes
+fi
 
+if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "Building GENISSLIB configure"
 	${SHELL} -c "cd ${DEST_DIR}/genisslib && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
 fi
@@ -539,11 +546,7 @@ fi
 SIMULATOR_CONFIGURE_AC="${DEST_DIR}/${SIMPKG}/configure.ac"
 SIMULATOR_MAKEFILE_AM="${DEST_DIR}/${SIMPKG}/Makefile.am"
 
-if has_to_build "${SIMULATOR_CONFIGURE_AC}" "$0" || has_to_build "${SIMULATOR_MAKEFILE_AM}" "$0"; then
-	has_to_build_simulator_configure=yes
-fi
-
-if [ "${has_to_build_simulator_configure}" = "yes" ]; then
+if has_to_build "${SIMULATOR_CONFIGURE_AC}" "$0"; then
 	echo "Generating ${SIMPKG} configure.ac"
 	cat <<EOF > "${SIMULATOR_CONFIGURE_AC}"
 AC_INIT([UNISIM Aarch64dba ARMv8 to BINSEC-DBA translator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}-core])
@@ -576,7 +579,10 @@ AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VER
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 EOF
+	has_to_build_simulator_configure=yes
+fi
 
+if has_to_build "${SIMULATOR_MAKEFILE_AM}" "$0"; then
 	AM_SIMULATOR_VERSION=$(printf ${SIMULATOR_VERSION} | sed -e 's/\./_/g')
 	echo "Generating ${SIMPKG} Makefile.am"
 	cat <<EOF > "${SIMULATOR_MAKEFILE_AM}"
@@ -615,7 +621,10 @@ CLEANFILES=\
 	\$(GENISSLIB_PATH) -o \$(top_builddir)/aarch64dec -w 8 -I \$(top_srcdir) \$(top_srcdir)/aarch64dec.isa
 	 
 EOF
+	has_to_build_simulator_configure=yes
+fi
 
+if [ "${has_to_build_simulator_configure}" = "yes" ]; then
 	echo "Building ${SIMPKG} configure"
 	${SHELL} -c "cd ${DEST_DIR}/${SIMPKG} && aclocal -I m4 && libtoolize --force && autoconf --force && autoheader && automake -ac"
 fi
