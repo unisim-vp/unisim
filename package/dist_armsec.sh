@@ -248,7 +248,7 @@ NEWS \
 ChangeLog \
 "
 
-UNISIM_SIMULATOR_TESTBENCH_FILES=" \
+UNISIM_SIMULATOR_TESTBENCH_FILES="\
 "
 
 function Usage
@@ -345,9 +345,7 @@ done
 # Top level
 
 cat << EOF > "${DEST_DIR}/AUTHORS"
-Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>
-Gilles Mouchard <gilles.mouchard@cea.fr>
-Réda Nouacer <reda.nouacer@cea.fr>
+Yves Lhuillier <yves.lhuillier@cea.fr>
 EOF
 
 cat << EOF > "${DEST_DIR}/README"
@@ -387,7 +385,7 @@ CONFIGURE_CROSS="${DEST_DIR}/configure.cross"
 if has_to_build "${CONFIGURE_AC}" "$0" || has_to_build "${MAKEFILE_AM}" "$0"; then
 	echo "Generating configure.ac"
 	cat <<EOF > "${CONFIGURE_AC}"
-AC_INIT([UNISIM ArmSec ARMv7 to BINSEC-DBA translator package], [${SIMULATOR_VERSION}], [Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Réda Nouacer <reda.nouacer@cea.fr>], [unisim-${SIMPKG}])
+AC_INIT([UNISIM ArmSec ARMv7 to BINSEC-DBA translator package], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}])
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST

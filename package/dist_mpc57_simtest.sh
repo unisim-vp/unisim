@@ -1,30 +1,6 @@
 #!/bin/bash
-function Usage
-{
-	echo "Usage:"
-	echo "  $0 <destination directory>"
-}
 
-if [ -z "$1" ]; then
-	Usage
-	exit -1
-fi
-
-MY_DIR=$(cd $(dirname $0); pwd)
-DEST_DIR=$1
-mkdir -p ${DEST_DIR}
-DEST_DIR=$(cd $DEST_DIR; pwd)
-UNISIM_DIR=$(cd ${MY_DIR}/..; pwd)
-UNISIM_TOOLS_DIR=${UNISIM_DIR}/unisim_tools
-UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
-UNISIM_SIMULATOR_DIR=${UNISIM_DIR}/unisim_simulators/cxx/mpc57_simtest
-
-MPC57_SIMTEST_VERSION=$(cat ${UNISIM_SIMULATOR_DIR}/VERSION)
-GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-mpc57_simtest-${MPC57_SIMTEST_VERSION}
-
-if test -z "${DISTCOPY}"; then
-    DISTCOPY=cp
-fi
+SIMPKG=mpc57_simtest
 
 UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
 action.hh \
@@ -55,7 +31,8 @@ subdecoder.hh \
 UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES="\
 scanner.cc \
 parser.cc \
-parser_tokens.hh"
+parser_tokens.hh \
+"
 
 UNISIM_TOOLS_GENISSLIB_SOURCE_FILES="\
 parser.yy \
@@ -78,13 +55,15 @@ riscgenerator.cc \
 ciscgenerator.cc \
 subdecoder.cc \
 specialization.cc \
-errtools.cc"
+errtools.cc \
+"
 
 UNISIM_TOOLS_GENISSLIB_DATA_FILES="COPYING INSTALL NEWS README AUTHORS ChangeLog"
 
 UNISIM_TOOLS_GENISSLIB_M4_FILES="\
 m4/lexer.m4 \
-m4/parser_gen.m4"
+m4/parser_gen.m4 \
+"
 
 GENISSLIB_EXTERNAL_HEADERS="\
 cassert \
@@ -103,14 +82,15 @@ map \
 memory \
 ostream \
 unistd.h \
-vector"
+vector \
+"
 
-UNISIM_LIB_MPC57_SIMTEST_SOURCE_FILES="\
+UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
 unisim/util/symbolic/symbolic.cc \
 unisim/util/random/random.cc \
 "
 
-UNISIM_LIB_MPC57_SIMTEST_ISA_FILES="\
+UNISIM_LIB_SIMULATOR_ISA_FILES="\
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/add.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addc.isa \
@@ -580,8 +560,8 @@ unisim/component/cxx/processor/powerpc/isa/mpu/mpusync.isa \
 unisim/component/cxx/processor/powerpc/isa/mpu/mpuwe.isa \
 "
 
-UNISIM_LIB_MPC57_SIMTEST_HEADER_FILES="\
-${UNISIM_LIB_MPC57_SIMTEST_ISA_FILES} \
+UNISIM_LIB_SIMULATOR_HEADER_FILES="\
+${UNISIM_LIB_SIMULATOR_ISA_FILES} \
 unisim/util/truth_table/truth_table.hh \
 unisim/util/endian/endian.hh \
 unisim/util/inlining/inlining.hh \
@@ -592,16 +572,16 @@ unisim/util/symbolic/identifier.hh \
 unisim/util/random/random.hh \
 "
 
-UNISIM_LIB_MPC57_SIMTEST_TEMPLATE_FILES="\
+UNISIM_LIB_SIMULATOR_TEMPLATE_FILES="\
 "
 
-UNISIM_LIB_MPC57_SIMTEST_M4_FILES="\
+UNISIM_LIB_SIMULATOR_M4_FILES="\
 "
 
-UNISIM_LIB_MPC57_SIMTEST_DATA_FILES="\
+UNISIM_LIB_SIMULATOR_DATA_FILES="\
 "
 
-MPC57_SIMTEST_EXTERNAL_HEADERS="\
+SIMULATOR_EXTERNAL_HEADERS="\
 assert.h \
 ctype.h \
 cxxabi.h \
@@ -638,147 +618,138 @@ map \
 ostream \
 queue \
 vector \
-string"
+string \
+"
 
-UNISIM_SIMULATOR_MPC57_SIMTEST_ISA_FILES="\
+UNISIM_SIMULATOR_ISA_FILES="\
 top_mpc57.isa \
 "
 
-UNISIM_SIMULATOR_MPC57_SIMTEST_SOURCE_FILES="\
+UNISIM_SIMULATOR_ISA_FILES="${UNISIM_LIB_SIMULATOR_ISA_FILES} ${UNISIM_SIMULATOR_ISA_FILES}"
+
+UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
 arch.cc \
 "
-UNISIM_SIMULATOR_MPC57_SIMTEST_HEADER_FILES="\
-${UNISIM_SIMULATOR_MPC57_SIMTEST_ISA_FILES} \
+
+UNISIM_SIMULATOR_HEADER_FILES="\
+${UNISIM_SIMULATOR_ISA_FILES} \
 arch.hh \
 testutils.hh \
 "
 
-UNISIM_SIMULATOR_MPC57_SIMTEST_EXTRA_FILES="\
+UNISIM_SIMULATOR_EXTRA_FILES="\
 "
 
-UNISIM_SIMULATOR_MPC57_SIMTEST_TEMPLATE_FILES=
-UNISIM_SIMULATOR_MPC57_SIMTEST_DATA_FILES="\
+UNISIM_SIMULATOR_TEMPLATE_FILES="\
+"
+
+UNISIM_SIMULATOR_TOP_DATA_FILES="\
 COPYING \
 NEWS \
 ChangeLog \
 "
 
-UNISIM_SIMULATOR_MPC57_SIMTEST_TESTBENCH_FILES=""
+UNISIM_SIMULATOR_DATA_FILES="\
+COPYING \
+README \
+INSTALL \
+AUTHORS \
+NEWS \
+ChangeLog \
+"
 
-UNISIM_MPC57_SIMTEST_ISA_FILES="${UNISIM_LIB_MPC57_SIMTEST_ISA_FILES} ${UNISIM_SIMULATOR_MPC57_SIMTEST_ISA_FILES}"
+UNISIM_SIMULATOR_TESTBENCH_FILES="\
+"
 
-has_to_build_configure=no
-has_to_build_genisslib_configure=no
-has_to_build_mpc57_simtest_configure=no
+function Usage
+{
+	echo "Usage:"
+	echo "  $0 <destination directory>"
+}
+
+if [ -z "$1" ]; then
+	Usage
+	exit -1
+fi
+
+UNISIM_DIR=$(cd $(dirname $(dirname $0)); pwd)
+DEST_DIR=$(cd $1; pwd)
+mkdir -p ${DEST_DIR}
+UNISIM_TOOLS_DIR=${UNISIM_DIR}/unisim_tools
+UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
+UNISIM_SIMULATOR_DIR=${UNISIM_DIR}/unisim_simulators/cxx/${SIMPKG}
+
+SIMULATOR_VERSION=$(cat ${UNISIM_SIMULATOR_DIR}/VERSION)
+GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-${SIMPKG}-${SIMULATOR_VERSION}
+
+if [ -z "${DISTCOPY}" ]; then
+	DISTCOPY=cp
+fi
+
+has_to_build() {
+	[ ! -e "$1" -o "$2" -nt "$1" ]
+}
+
+dist_copy() {
+	if has_to_build "$2" "$1"; then
+		echo "$1 ==> $2"
+		mkdir -p "$(dirname $2)"
+		${DISTCOPY} -f "$1" "$2" || exit
+		true
+	fi
+	false
+}
 
 mkdir -p ${DEST_DIR}/genisslib
-mkdir -p ${DEST_DIR}/mpc57_simtest
+mkdir -p ${DEST_DIR}/${SIMPKG}
 
 UNISIM_TOOLS_GENISSLIB_FILES="${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES} ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES} ${UNISIM_TOOLS_GENISSLIB_DATA_FILES}"
 
 for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
-	mkdir -p "${DEST_DIR}/$(dirname ${file})"
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/genisslib/${file}" ]; then
-		if [ "${UNISIM_TOOLS_DIR}/genisslib/${file}" -nt "${DEST_DIR}/genisslib/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_TOOLS_DIR}/genisslib/${file} ==> ${DEST_DIR}/genisslib/${file}"
-		${DISTCOPY} -f "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}" || exit
-	fi
+	dist_copy "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}"
 done
 
-UNISIM_LIB_MPC57_SIMTEST_FILES="${UNISIM_LIB_MPC57_SIMTEST_SOURCE_FILES} ${UNISIM_LIB_MPC57_SIMTEST_HEADER_FILES} ${UNISIM_LIB_MPC57_SIMTEST_TEMPLATE_FILES} ${UNISIM_LIB_MPC57_SIMTEST_DATA_FILES}"
+UNISIM_LIB_SIMULATOR_FILES="${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_TEMPLATE_FILES} ${UNISIM_LIB_SIMULATOR_DATA_FILES}"
 
-for file in ${UNISIM_LIB_MPC57_SIMTEST_FILES}; do
-	mkdir -p "${DEST_DIR}/mpc57_simtest/$(dirname ${file})"
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/mpc57_simtest/${file}" ]; then
-		if [ "${UNISIM_LIB_DIR}/${file}" -nt "${DEST_DIR}/mpc57_simtest/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/mpc57_simtest/${file}"
-		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/mpc57_simtest/${file}" || exit
-	fi
+for file in ${UNISIM_LIB_SIMULATOR_FILES}; do
+	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
 done
 
-UNISIM_SIMULATOR_MPC57_SIMTEST_FILES="${UNISIM_SIMULATOR_MPC57_SIMTEST_SOURCE_FILES} ${UNISIM_SIMULATOR_MPC57_SIMTEST_HEADER_FILES} ${UNISIM_SIMULATOR_MPC57_SIMTEST_EXTRA_FILES} ${UNISIM_SIMULATOR_MPC57_SIMTEST_TEMPLATE_FILES} ${UNISIM_SIMULATOR_MPC57_SIMTEST_DATA_FILES} ${UNISIM_SIMULATOR_MPC57_SIMTEST_TESTBENCH_FILES}"
+UNISIM_SIMULATOR_FILES="\
+${UNISIM_SIMULATOR_SOURCE_FILES} \
+${UNISIM_SIMULATOR_HEADER_FILES} \
+${UNISIM_SIMULATOR_EXTRA_FILES} \
+${UNISIM_SIMULATOR_TEMPLATE_FILES} \
+${UNISIM_SIMULATOR_DATA_FILES} \
+${UNISIM_SIMULATOR_TESTBENCH_FILES} \
+"
 
-for file in ${UNISIM_SIMULATOR_MPC57_SIMTEST_FILES}; do
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/mpc57_simtest/${file}" ]; then
-		if [ "${UNISIM_SIMULATOR_DIR}/${file}" -nt "${DEST_DIR}/mpc57_simtest/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_SIMULATOR_DIR}/${file} ==> ${DEST_DIR}/mpc57_simtest/${file}"
-		${DISTCOPY} -f "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/mpc57_simtest/${file}" || exit
-	fi
+for file in ${UNISIM_SIMULATOR_FILES}; do
+	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
 done
 
-for file in ${UNISIM_SIMULATOR_MPC57_SIMTEST_DATA_FILES}; do
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/${file}" ]; then
-		if [ "${UNISIM_SIMULATOR_DIR}/${file}" -nt "${DEST_DIR}/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_SIMULATOR_DIR}/${file} ==> ${DEST_DIR}/${file}"
-		${DISTCOPY} -f "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}" || exit
-	fi
+for file in ${UNISIM_SIMULATOR_TOP_DATA_FILES}; do
+	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${file}"
 done
-
 
 mkdir -p ${DEST_DIR}/config
-mkdir -p ${DEST_DIR}/mpc57_simtest/config
-mkdir -p ${DEST_DIR}/mpc57_simtest/m4
+mkdir -p ${DEST_DIR}/${SIMPKG}/config
+mkdir -p ${DEST_DIR}/${SIMPKG}/m4
 mkdir -p ${DEST_DIR}/genisslib/config
 mkdir -p ${DEST_DIR}/genisslib/m4
 
+has_to_build_genisslib_configure=no
 for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/genisslib/${file}" ]; then
-		if [ "${UNISIM_TOOLS_DIR}/${file}" -nt  "${DEST_DIR}/genisslib/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_TOOLS_DIR}/${file} ==> ${DEST_DIR}/genisslib/${file}"
-		${DISTCOPY} -f "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}" || exit
+	if dist_copy "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}"; then
 		has_to_build_genisslib_configure=yes
 	fi
 done
 
-for file in ${UNISIM_LIB_MPC57_SIMTEST_M4_FILES}; do
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/mpc57_simtest/${file}" ]; then
-		if [ "${UNISIM_LIB_DIR}/${file}" -nt  "${DEST_DIR}/mpc57_simtest/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/mpc57_simtest/${file}"
-		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/mpc57_simtest/${file}" || exit
-		has_to_build_mpc57_simtest_configure=yes
+has_to_build_simulator_configure=no
+for file in ${UNISIM_LIB_SIMULATOR_M4_FILES}; do
+	if dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"; then
+		has_to_build_simulator_configure=yes
 	fi
 done
 
@@ -822,55 +793,35 @@ CONFIGURE_AC="${DEST_DIR}/configure.ac"
 MAKEFILE_AM="${DEST_DIR}/Makefile.am"
 CONFIGURE_CROSS="${DEST_DIR}/configure.cross"
 
-if [ ! -e "${CONFIGURE_AC}" ]; then
-	has_to_build_configure=yes
-else
-	if [ "$0" -nt "${CONFIGURE_AC}" ]; then
-		has_to_build_configure=yes
-	fi
-fi
-
-if [ ! -e "${MAKEFILE_AM}" ]; then
-	has_to_build_configure=yes
-else
-	if [ "$0" -nt "${MAKEFILE_AM}" ]; then
-		has_to_build_configure=yes
-	fi
-fi
-
-if [ ! -e "${CONFIGURE_CROSS}" ]; then
-	has_to_build_configure_cross=yes
-else
-	if [ "$0" -nt "${CONFIGURE_CROSS}" ]; then
-		has_to_build_configure_cross=yes
-	fi
-fi
-
-if [ "${has_to_build_configure}" = "yes" ]; then
+if has_to_build "${CONFIGURE_AC}" "$0" || has_to_build "${MAKEFILE_AM}" "$0"; then
 	echo "Generating configure.ac"
-	echo "AC_INIT([UNISIM Mpc57_Simtest Standalone simulator], [${MPC57_SIMTEST_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-mpc57_simtest])" > "${DEST_DIR}/configure.ac"
-	echo "AC_CONFIG_AUX_DIR(config)" >> "${CONFIGURE_AC}"
-	echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
-	echo "AC_CANONICAL_HOST" >> "${CONFIGURE_AC}"
-	echo "AC_CANONICAL_TARGET" >> "${CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${CONFIGURE_AC}"
-	echo "AC_PATH_PROGS(SH, sh)" >> "${CONFIGURE_AC}"
-	echo "AC_PROG_INSTALL" >> "${CONFIGURE_AC}"
-	echo "AC_PROG_LN_S" >> "${CONFIGURE_AC}"
-	echo "AC_CONFIG_SUBDIRS([genisslib])"  >> "${CONFIGURE_AC}" 
-	echo "AC_CONFIG_SUBDIRS([mpc57_simtest])"  >> "${CONFIGURE_AC}" 
-	echo "AC_CONFIG_FILES([Makefile])" >> "${CONFIGURE_AC}"
-	echo "AC_OUTPUT" >> "${CONFIGURE_AC}"
+	cat <<EOF > "${CONFIGURE_AC}"
+AC_INIT([UNISIM ArmSec ARMv7 to BINSEC-DBA translator package], [${SIMULATOR_VERSION}], [Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>, Réda Nouacer <reda.nouacer@cea.fr>], [unisim-${SIMPKG}])
+AC_CONFIG_AUX_DIR(config)
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
+AM_INIT_AUTOMAKE([subdir-objects tar-pax])
+AC_PATH_PROGS(SH, sh)
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_CONFIG_SUBDIRS([genisslib]) 
+AC_CONFIG_SUBDIRS([${SIMPKG}]) 
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
+EOF
 
 	echo "Generating Makefile.am"
-	echo "SUBDIRS=genisslib mpc57_simtest" > "${MAKEFILE_AM}"
-	echo "EXTRA_DIST = configure.cross" >> "${MAKEFILE_AM}"
+	cat <<EOF > "${MAKEFILE_AM}"
+SUBDIRS=genisslib ${SIMPKG}
+EXTRA_DIST = configure.cross
+EOF
 
 	echo "Building configure"
 	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
 fi
 
-if [ "${has_to_build_configure_cross}" = "yes" ]; then
+if has_to_build "${CONFIGURE_CROSS}" "$0"; then
 	echo "Building configure.cross"
 	cat << EOF_CONFIGURE_CROSS > "${CONFIGURE_CROSS}"
 #!/bin/bash
@@ -918,7 +869,7 @@ if test ! -d \${HERE}/genisslib; then
 	mkdir "\${HERE}/genisslib"
 fi
 cd "\${HERE}/genisslib"
-\${MY_DIR}/genisslib/configure "\${args[@]}"
+\${MY_DIR}/genisslib/configure --disable-option-checking "\${args[@]}"
 STATUS="\$?"
 cd "\${HERE}"
 if test \${STATUS} -ne 0; then
@@ -926,17 +877,17 @@ if test \${STATUS} -ne 0; then
 fi
 
 if test "\${help}" = "yes"; then
-	echo "=== configure help for mpc57_simtest"
+	echo "=== configure help for ${SIMPKG}"
 else
-	echo "=== configuring in mpc57_simtest (\${HERE}/mpc57_simtest) for \${host} host system type"
-	echo "\$(basename \$0): running \${MY_DIR}/mpc57_simtest/configure \$@"
+	echo "=== configuring in ${SIMPKG} (\${HERE}/${SIMPKG}) for \${host} host system type"
+	echo "\$(basename \$0): running \${MY_DIR}/${SIMPKG}/configure \$@"
 fi
 
-if test ! -d \${HERE}/mpc57_simtest; then
-	mkdir \${HERE}/mpc57_simtest
+if test ! -d \${HERE}/${SIMPKG}; then
+	mkdir \${HERE}/${SIMPKG}
 fi
-cd \${HERE}/mpc57_simtest
-\${MY_DIR}/mpc57_simtest/configure "\$@"
+cd \${HERE}/${SIMPKG}
+\${MY_DIR}/${SIMPKG}/configure "\$@"
 STATUS="\$?"
 cd "\${HERE}"
 if test \${STATUS} -ne 0; then
@@ -950,26 +901,26 @@ fi
 echo "\$(basename \$0): creating Makefile.cross"
 cat << EOF_MAKEFILE_CROSS > Makefile.cross
 #!/usr/bin/make -f
-all: mpc57_simtest-all
-clean: genisslib-clean mpc57_simtest-clean
-distclean: genisslib-distclean mpc57_simtest-distclean
+all: ${SIMPKG}-all
+clean: genisslib-clean ${SIMPKG}-clean
+distclean: genisslib-distclean ${SIMPKG}-distclean
 	rm -f \${HERE}/Makefile.cross
-install: mpc57_simtest-install
+install: ${SIMPKG}-install
 
 genisslib-all:
 	@\\\$(MAKE) -C \${HERE}/genisslib all
-mpc57_simtest-all: genisslib-all
-	@\\\$(MAKE) -C \${HERE}/mpc57_simtest all
+${SIMPKG}-all: genisslib-all
+	@\\\$(MAKE) -C \${HERE}/${SIMPKG} all
 genisslib-clean:
 	@\\\$(MAKE) -C \${HERE}/genisslib clean
-mpc57_simtest-clean:
-	@\\\$(MAKE) -C \${HERE}/mpc57_simtest clean
+${SIMPKG}-clean:
+	@\\\$(MAKE) -C \${HERE}/${SIMPKG} clean
 genisslib-distclean:
 	@\\\$(MAKE) -C \${HERE}/genisslib distclean
-mpc57_simtest-distclean:
-	@\\\$(MAKE) -C \${HERE}/mpc57_simtest distclean
-mpc57_simtest-install:
-	@\\\$(MAKE) -C \${HERE}/mpc57_simtest install
+${SIMPKG}-distclean:
+	@\\\$(MAKE) -C \${HERE}/${SIMPKG} distclean
+${SIMPKG}-install:
+	@\\\$(MAKE) -C \${HERE}/${SIMPKG} install
 EOF_MAKEFILE_CROSS
 
 chmod +x Makefile.cross
@@ -977,211 +928,163 @@ chmod +x Makefile.cross
 echo "\$(basename \$0): run 'make -f \${HERE}/Makefile.cross' or '\${HERE}/Makefile.cross' to build for \${host} host system type"
 EOF_CONFIGURE_CROSS
 	chmod +x "${CONFIGURE_CROSS}"
-fi  # has_to_build_configure_cross = "yes"
+fi  # has to build configure cross
 
 # GENISSLIB
 
 GENISSLIB_CONFIGURE_AC="${DEST_DIR}/genisslib/configure.ac"
 GENISSLIB_MAKEFILE_AM="${DEST_DIR}/genisslib/Makefile.am"
 
-
-if [ ! -e "${GENISSLIB_CONFIGURE_AC}" ]; then
+if has_to_build "${GENISSLIB_CONFIGURE_AC}" "$0" || has_to_build "${GENISSLIB_MAKEFILE_AM}" "$0"; then
 	has_to_build_genisslib_configure=yes
-else
-	if [ "$0" -nt "${GENISSLIB_CONFIGURE_AC}" ]; then
-		has_to_build_genisslib_configure=yes
-	fi
-fi
-
-if [ ! -e "${GENISSLIB_MAKEFILE_AM}" ]; then
-	has_to_build_genisslib_configure=yes
-else
-	if [ "$0" -nt "${GENISSLIB_MAKEFILE_AM}" ]; then
-		has_to_build_genisslib_configure=yes
-	fi
 fi
 
 if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "Generating GENISSLIB configure.ac"
-	echo "AC_INIT([UNISIM GENISSLIB], [${GENISSLIB_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>, Yves  Lhuillier <yves.lhuillier@cea.fr>], [genisslib])" > "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CONFIG_AUX_DIR(config)" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CONFIG_HEADERS([config.h])" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CANONICAL_BUILD" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CANONICAL_HOST" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CANONICAL_TARGET" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_PATH_PROGS(SH, sh)" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_PROG_CXX" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_PROG_INSTALL" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_PROG_LN_S" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_LANG([C++])" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CHECK_HEADERS([${GENISSLIB_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LEXER_GENERATOR" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_PARSER_GENERATOR" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_CONFIG_FILES([Makefile])" >> "${GENISSLIB_CONFIGURE_AC}"
-	echo "AC_OUTPUT" >> "${GENISSLIB_CONFIGURE_AC}"
+	cat <<EOF > "${GENISSLIB_CONFIGURE_AC}"
+AC_INIT([UNISIM GENISSLIB], [${GENISSLIB_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves  Lhuillier <yves.lhuillier@cea.fr>], [genisslib])
+AC_CONFIG_MACRO_DIR([m4])
+AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
+AM_INIT_AUTOMAKE([subdir-objects tar-pax])
+AC_PATH_PROGS(SH, sh)
+AC_PROG_CXX
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_LANG([C++])
+AC_CHECK_HEADERS([${GENISSLIB_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))
+UNISIM_CHECK_LEXER_GENERATOR
+UNISIM_CHECK_PARSER_GENERATOR
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
+EOF
 
 	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
 	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I m4" > "${GENISSLIB_MAKEFILE_AM}"
-	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "AM_LFLAGS = -l" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "noinst_PROGRAMS = genisslib" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\\\"${GENISSLIB_VERSION}\\\"" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
+	cat <<EOF > "${GENISSLIB_MAKEFILE_AM}"
+ACLOCAL_AMFLAGS=-I m4
+BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}
+CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}
+AM_YFLAGS = -d -p yy
+AM_LFLAGS = -l
+AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)
+noinst_PROGRAMS = genisslib
+genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}
+genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\"${GENISSLIB_VERSION}\"
+noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}
+EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}
 # The following lines are a workaround caused by a bugFix in AUTOMAKE 1.12
 # Note that parser_tokens.hh has been added to BUILT_SOURCES above
 # assumption: parser.cc and either parser.h or parser.hh are generated at the same time
-    echo "\$(top_builddir)/parser_tokens.hh: \$(top_builddir)/parser.cc" >> "${GENISSLIB_MAKEFILE_AM}"
-    printf "\tif test -f \"\$(top_builddir)/parser.h\"; then \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
-    printf "\t\tcp -f \"\$(top_builddir)/parser.h\" \"\$(top_builddir)/parser_tokens.hh\"; \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
-    printf "\telif test -f \"\$(top_builddir)/parser.hh\"; then \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
-    printf "\t\tcp -f \"\$(top_builddir)/parser.hh\" \"\$(top_builddir)/parser_tokens.hh\"; \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
-    printf "\tfi\n" >> "${GENISSLIB_MAKEFILE_AM}"
+\$(top_builddir)/parser_tokens.hh: \$(top_builddir)/parser.cc
+	if test -f "\$(top_builddir)/parser.h"; then\
+		cp -f "\$(top_builddir)/parser.h" "\$(top_builddir)/parser_tokens.hh";\
+	elif test -f "\$(top_builddir)/parser.hh"; then\
+		cp -f "\$(top_builddir)/parser.hh" "\$(top_builddir)/parser_tokens.hh";\
+	fi
+# The following line disable some C++ flags that prevent the flex generated file to compile properly
+\$(top_builddir)/genisslib-scanner.o: CXXFLAGS += -O1 -Wno-error
+EOF
 
 	echo "Building GENISSLIB configure"
 	${SHELL} -c "cd ${DEST_DIR}/genisslib && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
 fi
 
+# Simulator
 
-# mpc57_simtest
+SIMULATOR_CONFIGURE_AC="${DEST_DIR}/${SIMPKG}/configure.ac"
+SIMULATOR_MAKEFILE_AM="${DEST_DIR}/${SIMPKG}/Makefile.am"
 
-MPC57_SIMTEST_CONFIGURE_AC="${DEST_DIR}/mpc57_simtest/configure.ac"
-MPC57_SIMTEST_MAKEFILE_AM="${DEST_DIR}/mpc57_simtest/Makefile.am"
-
-
-if [ ! -e "${MPC57_SIMTEST_CONFIGURE_AC}" ]; then
-	has_to_build_mpc57_simtest_configure=yes
-else
-	if [ "$0" -nt "${MPC57_SIMTEST_CONFIGURE_AC}" ]; then
-		has_to_build_mpc57_simtest_configure=yes
-	fi
+if has_to_build "${SIMULATOR_CONFIGURE_AC}" "$0" || has_to_build "${SIMULATOR_MAKEFILE_AM}" "$0"; then
+	has_to_build_simulator_configure=yes
 fi
 
-if [ ! -e "${MPC57_SIMTEST_MAKEFILE_AM}" ]; then
-	has_to_build_mpc57_simtest_configure=yes
-else
-	if [ "$0" -nt "${MPC57_SIMTEST_MAKEFILE_AM}" ]; then
-		has_to_build_mpc57_simtest_configure=yes
-	fi
-fi
+if [ "${has_to_build_simulator_configure}" = "yes" ]; then
+	echo "Generating ${SIMPKG} configure.ac"
+	cat <<EOF > "${SIMULATOR_CONFIGURE_AC}"
+AC_INIT([UNISIM ArmSec ARMv7 to BINSEC-DBA translator], [${SIMULATOR_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-${SIMPKG}-core])
+AC_CONFIG_MACRO_DIR([m4])
+AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
+AM_INIT_AUTOMAKE([subdir-objects tar-pax])
+AC_PATH_PROGS(SH, sh)
+AC_PROG_CXX
+AC_PROG_INSTALL
+LT_INIT
+AC_SUBST(LIBTOOL_DEPS)
+AC_PROG_LN_S
+AC_LANG([C++])
+AM_PROG_CC_C_O
+AC_CHECK_HEADERS([${SIMULATOR_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))
+case "\${host}" in
+	*mingw*)
+		CPPFLAGS="-U__STRICT_ANSI__ \${CPPFLAGS}"
+		;;
+	*)
+		;;
+esac
+GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
+AC_SUBST(GENISSLIB_PATH)
+AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
+EOF
 
-if [ "${has_to_build_mpc57_simtest_configure}" = "yes" ]; then
-	echo "Generating mpc57_simtest configure.ac"
-	echo "AC_INIT([UNISIM Mpc57_Simtest C++ simulator], [${MPC57_SIMTEST_VERSION}], [Yves Lhuillier <yves.lhuillier@cea.fr>], [unisim-mpc57_simtest-core])" > "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_CONFIG_AUX_DIR(config)" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_CONFIG_HEADERS([config.h])" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_CANONICAL_BUILD" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_CANONICAL_HOST" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_CANONICAL_TARGET" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_PATH_PROGS(SH, sh)" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-        echo "CXXFLAGS=\"\$CXXFLAGS -std=c++11\"" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_PROG_CXX" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_PROG_RANLIB" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_PROG_INSTALL" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_PROG_LN_S" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_LANG([C++])" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AM_PROG_CC_C_O" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_CHECK_HEADERS([${MPC57_SIMTEST_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_SUBST(GENISSLIB_PATH)" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-mpc57_simtest-${MPC57_SIMTEST_VERSION}\"], [path of shared data relative to bin directory])" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	SIM_VERSION_MAJOR=$(printf "${MPC57_SIMTEST_VERSION}" | cut -f 1 -d .)
-	SIM_VERSION_MINOR=$(printf "${MPC57_SIMTEST_VERSION}" | cut -f 2 -d .)
-	SIM_VERSION_PATCH=$(printf "${MPC57_SIMTEST_VERSION}" | cut -f 3 -d .)
-	SIM_VERSION="${MPC57_SIMTEST_VERSION}"
-	SIM_VERSION_CODENAME="Triumphalis Tarraco"
-	SIM_AUTHOR="Yves Lhuillier (yves.lhuillier@cea.fr)"
-	SIM_PROGRAM_NAME="UNISIM Mpc57_Simtest"
-	SIM_LICENSE="BSD (See file COPYING)"
-	SIM_COPYRIGHT="Copyright (C) 2007-2017, Commissariat a l'Energie Atomique"
-	SIM_DESCRIPTION="UNISIM MPC57 SELF SIMULATOR TEST GENERATION"
-	SIM_SCHEMATIC="mpc57_simtest/fig_schematic.pdf"
-	echo "AC_DEFINE([SIM_VERSION_MAJOR], [${SIM_VERSION_MAJOR}], [Version major number])" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_VERSION_MINOR], [${SIM_VERSION_MINOR}], [Version minor number])" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_VERSION_PATCH], [${SIM_VERSION_PATCH}], [Version patch number])" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_VERSION], [\"${SIM_VERSION}\"], [Version])" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_VERSION_CODENAME], [\"${SIM_VERSION_CODENAME}\"], [Version code name])" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_AUTHOR], [\"${SIM_AUTHOR}\"], [Author])" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_PROGRAM_NAME], [\"${SIM_PROGRAM_NAME}\"], [Program name])" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_COPYRIGHT], [\"${SIM_COPYRIGHT}\"], [Copyright])" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_LICENSE], [\"${SIM_LICENSE}\"], [License])" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_DESCRIPTION], [\"${SIM_DESCRIPTION}\"], [Description])" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_DEFINE([SIM_SCHEMATIC], [\"${SIM_SCHEMATIC}\"], [Schematic])" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_CONFIG_FILES([Makefile])" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
-	echo "AC_OUTPUT" >> "${MPC57_SIMTEST_CONFIGURE_AC}"
+	AM_SIMULATOR_VERSION=$(printf ${SIMULATOR_VERSION} | sed -e 's/\./_/g')
+	echo "Generating ${SIMPKG} Makefile.am"
+	cat <<EOF > "${SIMULATOR_MAKEFILE_AM}"
+ACLOCAL_AMFLAGS=-I m4
+AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)
+LIBTOOL_DEPS = @LIBTOOL_DEPS@
+libtool: \$(LIBTOOL_DEPS)
+	\$(SHELL) ./config.status libtool
 
-	AM_MPC57_SIMTEST_VERSION=$(printf ${MPC57_SIMTEST_VERSION} | sed -e 's/\./_/g')
-	echo "Generating mpc57_simtest Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I m4" > "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo "noinst_LIBRARIES = libmpc57_simtest-${MPC57_SIMTEST_VERSION}.a" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo "libmpc57_simtest_${AM_MPC57_SIMTEST_VERSION}_a_SOURCES = ${UNISIM_LIB_MPC57_SIMTEST_SOURCE_FILES}" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo "bin_PROGRAMS = unisim-mpc57_simtest-${MPC57_SIMTEST_VERSION}" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo "unisim_mpc57_simtest_${AM_MPC57_SIMTEST_VERSION}_SOURCES = ${UNISIM_SIMULATOR_MPC57_SIMTEST_SOURCE_FILES} top_mpc57.cc" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo "unisim_mpc57_simtest_${AM_MPC57_SIMTEST_VERSION}_LDADD = libmpc57_simtest-${MPC57_SIMTEST_VERSION}.a" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
+# Program
+bin_PROGRAMS = unisim-${SIMPKG}-${SIMULATOR_VERSION}
+unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_SOURCES = ${UNISIM_SIMULATOR_SOURCE_FILES}
+unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDFLAGS = -static-libtool-libs
+unisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_LDADD = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
 
-	echo "noinst_HEADERS = ${UNISIM_LIB_MPC57_SIMTEST_HEADER_FILES} ${UNISIM_LIB_MPC57_SIMTEST_TEMPLATE_FILES} ${UNISIM_SIMULATOR_MPC57_SIMTEST_HEADER_FILES} ${UNISIM_SIMULATOR_MPC57_SIMTEST_TEMPLATE_FILES}" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo "EXTRA_DIST = ${UNISIM_LIB_MPC57_SIMTEST_M4_FILES}" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo "sharedir = \$(prefix)/share/unisim-mpc57_simtest-${MPC57_SIMTEST_VERSION}" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo "dist_share_DATA = ${UNISIM_LIB_MPC57_SIMTEST_DATA_FILES} ${UNISIM_SIMULATOR_MPC57_SIMTEST_DATA_FILES}" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
+# Static Library
+noinst_LTLIBRARIES = libunisim-${SIMPKG}-${SIMULATOR_VERSION}.la
+libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_SOURCES = ${UNISIM_LIB_SIMULATOR_SOURCE_FILES}
+libunisim_${SIMPKG}_${AM_SIMULATOR_VERSION}_la_LDFLAGS = -static
 
-	echo -n "BUILT_SOURCES=" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo -n "top_mpc57.hh " >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo -n "top_mpc57.cc " >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	
-	echo -n "CLEANFILES=" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo -n "top_mpc57.hh " >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo -n "top_mpc57.cc " >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	
-	echo "\$(top_builddir)/top_mpc57.cc: \$(top_builddir)/top_mpc57.hh" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo "\$(top_builddir)/top_mpc57.hh: ${UNISIM_MPC57_SIMTEST_ISA_FILES}" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	printf "\t" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/top_mpc57 -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_mpc57.isa" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	printf "\t" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo "\$(top_srcdir)/gilfix.py \$(top_builddir)/top_mpc57.cc" >> "${MPC57_SIMTEST_MAKEFILE_AM}" 
+noinst_HEADERS = ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_TEMPLATE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_TEMPLATE_FILES}
+EXTRA_DIST = ${UNISIM_LIB_SIMULATOR_M4_FILES}
+sharedir = \$(prefix)/share/unisim-${SIMPKG}-${SIMULATOR_VERSION}
+dist_share_DATA = ${UNISIM_LIB_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_DATA_FILES}
 
-	echo "all-local: all-local-bin all-local-share" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo "clean-local: clean-local-bin clean-local-share" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo "all-local-bin: \$(bin_PROGRAMS)" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	printf "\t@PROGRAMS='\$(bin_PROGRAMS)'; \\\\\n" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	printf "\trm -f \"\$(top_builddir)/bin/\$\$(basename \$\${PROGRAM})\"; \\\\\n" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	printf "\tcp -f \"\$(top_builddir)/\$\${PROGRAM}\" \$(top_builddir)/bin/\$\$(basename \"\$\${PROGRAM}\"); \\\\\n" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	printf "\tdone\n" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo "clean-local-bin:" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	printf "\trm -rf '\$(top_builddir)/bin'; \\\\\n" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	printf "\tfi\n" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo "all-local-share: \$(dist_share_DATA)" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	printf "\t@SHARED_DATAS='\$(dist_share_DATA)'; \\\\\n" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	printf "\trm -f \"\$(top_builddir)/share/unisim-mpc57_simtest-${MPC57_SIMTEST_VERSION}/\$\$(basename \$\${SHARED_DATA})\"; \\\\\n" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(top_builddir)/share/unisim-mpc57_simtest-${MPC57_SIMTEST_VERSION}'; \\\\\n" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	printf "\tcp -f \"\$(top_srcdir)/\$\${SHARED_DATA}\" \$(top_builddir)/share/unisim-mpc57_simtest-${MPC57_SIMTEST_VERSION}/\$\$(basename \"\$\${SHARED_DATA}\"); \\\\\n" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	printf "\tdone\n" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	echo "clean-local-share:" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	printf "\trm -rf '\$(top_builddir)/share'; \\\\\n" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
-	printf "\tfi\n" >> "${MPC57_SIMTEST_MAKEFILE_AM}"
+BUILT_SOURCES=\
+	\$(top_builddir)/top_arm32.hh\
+	\$(top_builddir)/top_arm32.tcc\
+	\$(top_builddir)/top_thumb.hh\
+	\$(top_builddir)/top_thumb.tcc\
 
-	${DISTCOPY} ${DEST_DIR}/INSTALL ${DEST_DIR}/mpc57_simtest
-	${DISTCOPY} ${DEST_DIR}/README ${DEST_DIR}/mpc57_simtest
-	${DISTCOPY} ${DEST_DIR}/AUTHORS ${DEST_DIR}/mpc57_simtest
-	
-	echo "Building mpc57_simtest configure"
-	${SHELL} -c "cd ${DEST_DIR}/mpc57_simtest && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
+CLEANFILES=\
+	\$(top_builddir)/top_arm32.hh\
+	\$(top_builddir)/top_arm32.tcc\
+	\$(top_builddir)/top_thumb.hh\
+	\$(top_builddir)/top_thumb.tcc\
+
+\$(top_builddir)/top_arm32.tcc: \$(top_builddir)/top_arm32.hh
+\$(top_builddir)/top_arm32.hh: ${UNISIM_SIMULATOR_ISA_ARM32_FILES}
+	\$(GENISSLIB_PATH) -o \$(top_builddir)/top_arm32 -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_arm32.isa
+
+\$(top_builddir)/top_thumb.tcc: \$(top_builddir)/top_thumb.hh
+\$(top_builddir)/top_thumb.hh: ${UNISIM_SIMULATOR_ISA_THUMB_FILES}
+	\$(GENISSLIB_PATH) -o \$(top_builddir)/top_thumb -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_thumb.isa
+	 
+EOF
+
+	echo "Building ${SIMPKG} configure"
+	${SHELL} -c "cd ${DEST_DIR}/${SIMPKG} && aclocal -I m4 && libtoolize --force && autoconf --force && autoheader && automake -ac"
 fi
 
 echo "Distribution is up-to-date"
