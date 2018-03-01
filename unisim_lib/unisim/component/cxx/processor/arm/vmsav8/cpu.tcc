@@ -333,7 +333,7 @@ CPU<CONFIG>::InjectReadMemory( uint64_t addr, void* buffer, uint32_t size )
   for (uint32_t index = 0; size != 0; ++index, --size)
     {
       uint32_t ef_addr = addr + index;
-      if (not PhysicalReadMemory(ef_addr, &rbuffer[index], 1, 0))
+      if (not PhysicalReadMemory(ef_addr, &rbuffer[index], 1))
         return false;
     }
 
@@ -565,7 +565,7 @@ void
 CPU<CONFIG>::MemRead( uint8_t* buffer, uint64_t addr, unsigned size )
 {
   // Over-simplistic read from memory system
-  if (not PhysicalReadMemory(addr, buffer, size, 0))
+  if (not PhysicalReadMemory(addr, buffer, size))
     {
       throw 0;
     }
@@ -585,7 +585,7 @@ void
 CPU<CONFIG>::MemWrite( uint64_t addr, uint8_t const* buffer, unsigned size )
 {
   // Over-simplistic read from memory system
-  if (not PhysicalWriteMemory( addr, buffer, size, 0 ))
+  if (not PhysicalWriteMemory( addr, buffer, size ))
     {
       throw 0;
     }

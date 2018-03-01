@@ -258,8 +258,8 @@ UNISIM_SIMULATOR_TESTBENCH_FILES="\
 "
 
 UNISIM_DIR=$(cd $(dirname $(dirname $0)); pwd)
-DEST_DIR=$(cd $1; pwd)
 mkdir -p ${DEST_DIR}
+DEST_DIR=$(cd $1; pwd)
 UNISIM_TOOLS_DIR=${UNISIM_DIR}/unisim_tools
 UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
 UNISIM_SIMULATOR_DIR=${UNISIM_DIR}/unisim_simulators/cxx/${SIMPKG}
@@ -360,7 +360,7 @@ AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([subdir-objects tar-pax])
 AC_PATH_PROGS(SH, sh)
-CXXFLAGS=\"\$CXXFLAGS -std=c++11\"
+CXXFLAGS="\$CXXFLAGS -std=c++11"
 AC_PROG_CXX
 AC_PROG_INSTALL
 LT_INIT
@@ -400,7 +400,7 @@ fi
 if has_to_build "${SIMULATOR_MAKEFILE_AM}" "$0"; then
 	AM_SIMULATOR_VERSION=$(printf ${SIMULATOR_VERSION} | sed -e 's/\./_/g')
 	echo "Generating ${SIMPKG} Makefile.am"
-cat <<EOF "${SIMULATOR_MAKEFILE_AM}"
+cat <<EOF > "${SIMULATOR_MAKEFILE_AM}"
 ACLOCAL_AMFLAGS=-I m4
 AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)
 LIBTOOL_DEPS = @LIBTOOL_DEPS@
@@ -430,7 +430,7 @@ fi
 
 if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "Building ${SIMPKG} configure"
-	${SHELL} -c "cd ${DEST_DIR}/${SIMPKG} && aclocal -I m4 && libtoolize --force && autoconf --force && autoheader && automake -ac"
+	${SHELL} -c "cd ${DEST_DIR} && aclocal -I m4 && libtoolize --force && autoconf --force && autoheader && automake -ac"
 fi
 
 echo "Distribution is up-to-date"
