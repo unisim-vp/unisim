@@ -62,18 +62,18 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
     , linflexd_14(0)
     , linflexd_15(0)
     , linflexd_16(0)
-	, linflexd_0_tx(0)
-	, linflexd_0_rx(0)
-	, linflexd_1_tx(0)
-	, linflexd_1_rx(0)
-	, linflexd_2_tx(0)
-	, linflexd_2_rx(0)
-	, linflexd_14_tx(0)
-	, linflexd_14_rx(0)
-	, linflexd_15_tx(0)
-	, linflexd_15_rx(0)
-	, linflexd_16_tx(0)
-	, linflexd_16_rx(0)
+	, linflexd_0_tx_serial_bus(0)
+	, linflexd_0_rx_serial_bus(0)
+	, linflexd_1_tx_serial_bus(0)
+	, linflexd_1_rx_serial_bus(0)
+	, linflexd_2_tx_serial_bus(0)
+	, linflexd_2_rx_serial_bus(0)
+	, linflexd_14_tx_serial_bus(0)
+	, linflexd_14_rx_serial_bus(0)
+	, linflexd_15_tx_serial_bus(0)
+	, linflexd_15_rx_serial_bus(0)
+	, linflexd_16_tx_serial_bus(0)
+	, linflexd_16_rx_serial_bus(0)
 	, serial_terminal0(0)
 	, serial_terminal1(0)
 	, serial_terminal2(0)
@@ -100,22 +100,38 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, dspi_5(0)
 	, dspi_6(0)
 	, dspi_12(0)
-	, dspi_0_sout(0)
-	, dspi_0_sin(0)
-	, dspi_1_sout(0)
-	, dspi_1_sin(0)
-	, dspi_2_sout(0)
-	, dspi_2_sin(0)
-	, dspi_3_sout(0)
-	, dspi_3_sin(0)
-	, dspi_4_sout(0)
-	, dspi_4_sin(0)
-	, dspi_5_sout(0)
-	, dspi_5_sin(0)
-	, dspi_6_sout(0)
-	, dspi_6_sin(0)
-	, dspi_12_sout(0)
-	, dspi_12_sin(0)
+	, dspi_0_sout_serial_bus(0)
+	, dspi_0_sin_serial_bus(0)
+	, dspi_0_pcs_serial_bus()
+	, dspi_0_ss_serial_bus(0)
+	, dspi_1_sout_serial_bus(0)
+	, dspi_1_sin_serial_bus(0)
+	, dspi_1_pcs_serial_bus()
+	, dspi_1_ss_serial_bus(0)
+	, dspi_2_sout_serial_bus(0)
+	, dspi_2_sin_serial_bus(0)
+	, dspi_2_pcs_serial_bus()
+	, dspi_2_ss_serial_bus(0)
+	, dspi_3_sout_serial_bus(0)
+	, dspi_3_sin_serial_bus(0)
+	, dspi_3_pcs_serial_bus()
+	, dspi_3_ss_serial_bus(0)
+	, dspi_4_sout_serial_bus(0)
+	, dspi_4_sin_serial_bus(0)
+	, dspi_4_pcs_serial_bus()
+	, dspi_4_ss_serial_bus(0)
+	, dspi_5_sout_serial_bus(0)
+	, dspi_5_sin_serial_bus(0)
+	, dspi_5_pcs_serial_bus()
+	, dspi_5_ss_serial_bus(0)
+	, dspi_6_sout_serial_bus(0)
+	, dspi_6_sin_serial_bus(0)
+	, dspi_6_pcs_serial_bus()
+	, dspi_6_ss_serial_bus(0)
+	, dspi_12_sout_serial_bus(0)
+	, dspi_12_sin_serial_bus(0)
+	, dspi_12_pcs_serial_bus()
+	, dspi_12_ss_serial_bus(0)
 	, ebi_stub(0)
 	, flash_port1_stub(0)
 	, xbar_0_s6_stub(0)
@@ -244,20 +260,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	linflexd_15 = new LINFlexD_15("LINFlexD_15", this);
 	linflexd_16 = new LINFlexD_16("LINFlexD_16", this);
 	
-	//  - LIN Serial Buses
-	linflexd_0_tx = new LINFlexD_0_TX("LINFlexD_0_tx");
-	linflexd_0_rx = new LINFlexD_0_RX("LINFlexD_0_rx");
-	linflexd_1_tx = new LINFlexD_1_TX("LINFlexD_1_tx");
-	linflexd_1_rx = new LINFlexD_1_RX("LINFlexD_1_rx");
-	linflexd_2_tx = new LINFlexD_2_TX("LINFlexD_2_tx");
-	linflexd_2_rx = new LINFlexD_2_RX("LINFlexD_2_rx");
-	linflexd_14_tx = new LINFlexD_14_TX("LINFlexD_14_tx");
-	linflexd_14_rx = new LINFlexD_14_RX("LINFlexD_14_rx");
-	linflexd_15_tx = new LINFlexD_15_TX("LINFlexD_15_tx");
-	linflexd_15_rx = new LINFlexD_15_RX("LINFlexD_15_rx");
-	linflexd_16_tx = new LINFlexD_16_TX("LINFlexD_16_tx");
-	linflexd_16_rx = new LINFlexD_16_RX("LINFlexD_16_rx");
-	
 	//  - Serial Terminal
 	serial_terminal0 = enable_serial_terminal0 ? new SERIAL_TERMINAL("SERIAL_TERMINAL0", this) : 0;
 	serial_terminal1 = enable_serial_terminal1 ? new SERIAL_TERMINAL("SERIAL_TERMINAL1", this) : 0;
@@ -291,24 +293,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	dspi_5 = new DSPI_5("DSPI_5", this);
 	dspi_6 = new DSPI_6("DSPI_6", this);
 	dspi_12 = new DSPI_12("DSPI_12", this);
-	
-	//  - DSPI serial buses
-	dspi_0_sout  = new DSPI_0_SOUT ("DSPI_0_SOUT");
-	dspi_0_sin   = new DSPI_0_SIN  ("DSPI_0_SIN");
-	dspi_1_sout  = new DSPI_1_SOUT ("DSPI_1_SOUT");
-	dspi_1_sin   = new DSPI_1_SIN  ("DSPI_1_SIN");
-	dspi_2_sout  = new DSPI_2_SOUT ("DSPI_2_SOUT");
-	dspi_2_sin   = new DSPI_2_SIN  ("DSPI_2_SIN");
-	dspi_3_sout  = new DSPI_3_SOUT ("DSPI_3_SOUT");
-	dspi_3_sin   = new DSPI_3_SIN  ("DSPI_3_SIN");
-	dspi_4_sout  = new DSPI_4_SOUT ("DSPI_4_SOUT");
-	dspi_4_sin   = new DSPI_4_SIN  ("DSPI_4_SIN");
-	dspi_5_sout  = new DSPI_5_SOUT ("DSPI_5_SOUT");
-	dspi_5_sin   = new DSPI_5_SIN  ("DSPI_5_SIN");
-	dspi_6_sout  = new DSPI_6_SOUT ("DSPI_6_SOUT");
-	dspi_6_sin   = new DSPI_6_SIN  ("DSPI_6_SIN");
-	dspi_12_sout = new DSPI_12_SOUT("DSPI_12_SOUT");
-	dspi_12_sin  = new DSPI_12_SIN ("DSPI_12_SIN");
 	
 	//  - Stubs
 	ebi_stub = new EBI_STUB("EBI", this);
@@ -1181,7 +1165,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	RegisterPort(DSPI12_0->out);
 	
 	//=========================================================================
-	//===                           Signal creation                         ===
+	//===                         Channels creation                         ===
 	//=========================================================================
 	
 	CreateClock("IOP_CLK");
@@ -1238,6 +1222,50 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateSignalArray(LINFlexD_15::NUM_DMA_TX_CHANNELS, "LINFlexD_15_DMA_TX", false);
 	CreateSignalArray(LINFlexD_16::NUM_DMA_RX_CHANNELS, "LINFlexD_16_DMA_RX", false);
 	CreateSignalArray(LINFlexD_16::NUM_DMA_TX_CHANNELS, "LINFlexD_16_DMA_TX", false);
+
+	CreateSignal("DSPI_0_INT_DDIF", false);
+	CreateSignal("DSPI_0_INT_DPEF", false);
+	CreateSignal("DSPI_0_INT_SPITCF", false);
+	CreateSignal("DSPI_0_INT_DSITCF", false);
+	CreateSignal("DSPI_0_SS_b", false);
+	CreateSignalArray(DSPI_0::NUM_CTARS, "DSPI_0_PCS", false);
+	
+	CreateSignal("DSPI_1_INT_DDIF", false);
+	CreateSignal("DSPI_1_INT_DPEF", false);
+	CreateSignal("DSPI_1_INT_SPITCF", false);
+	CreateSignal("DSPI_1_INT_DSITCF", false);
+	CreateSignal("DSPI_1_SS_b", false);
+	CreateSignalArray(DSPI_1::NUM_CTARS, "DSPI_1_PCS", false);
+
+	CreateSignal("DSPI_2_INT_DDIF", false);
+	CreateSignal("DSPI_2_INT_DPEF", false);
+	CreateSignal("DSPI_2_INT_SPITCF", false);
+	CreateSignal("DSPI_2_INT_DSITCF", false);
+	CreateSignal("DSPI_2_SS_b", false);
+	CreateSignalArray(DSPI_2::NUM_CTARS, "DSPI_2_PCS", false);
+
+	CreateSignal("DSPI_3_INT_DDIF", false);
+	CreateSignal("DSPI_3_INT_DPEF", false);
+	CreateSignal("DSPI_3_INT_SPITCF", false);
+	CreateSignal("DSPI_3_INT_DSITCF", false);
+	CreateSignal("DSPI_3_SS_b", false);
+	CreateSignalArray(DSPI_3::NUM_CTARS, "DSPI_3_PCS", false);
+	
+	CreateSignal("DSPI_4_SS_b", false);
+	CreateSignalArray(DSPI_4::NUM_CTARS, "DSPI_4_PCS", false);
+	
+	CreateSignal("DSPI_5_SS_b", false);
+	CreateSignalArray(DSPI_5::NUM_CTARS, "DSPI_5_PCS", false);
+
+	CreateSignal("DSPI_6_SS_b", false);
+	CreateSignalArray(DSPI_6::NUM_CTARS, "DSPI_6_PCS", false);
+
+	CreateSignal("DSPI_12_INT_DDIF", false);
+	CreateSignal("DSPI_12_INT_DPEF", false);
+	CreateSignal("DSPI_12_INT_SPITCF", false);
+	CreateSignal("DSPI_12_INT_DSITCF", false);
+	CreateSignal("DSPI_12_SS_b", false);
+	CreateSignalArray(DSPI_12::NUM_CTARS, "DSPI_12_PCS", false);
 
 	CreateSignalArray(NUM_DMA_CHANNELS, "DMA_CHANNEL", false);
 	
@@ -1313,10 +1341,122 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	CreateSignal("DSPI_12_INT_RFOF", false);
 	CreateSignal("DSPI_12_INT_TFIWF", false);
 	
+	//  - LIN Serial Buses
+	linflexd_0_tx_serial_bus = new LINFlexD_0_TX_SERIAL_BUS("LINFlexD_0_TX_SERIAL_BUS", CreateSignal("LINFlexD_0_TX", true), this);
+	linflexd_0_rx_serial_bus = new LINFlexD_0_RX_SERIAL_BUS("LINFlexD_0_RX_SERIAL_BUS", CreateSignal("LINFlexD_0_RX", true), this);
+	linflexd_1_tx_serial_bus = new LINFlexD_1_TX_SERIAL_BUS("LINFlexD_1_TX_SERIAL_BUS", CreateSignal("LINFlexD_1_TX", true), this);
+	linflexd_1_rx_serial_bus = new LINFlexD_1_RX_SERIAL_BUS("LINFlexD_1_RX_SERIAL_BUS", CreateSignal("LINFlexD_1_RX", true), this);
+	linflexd_2_tx_serial_bus = new LINFlexD_2_TX_SERIAL_BUS("LINFlexD_2_TX_SERIAL_BUS", CreateSignal("LINFlexD_2_TX", true), this);
+	linflexd_2_rx_serial_bus = new LINFlexD_2_RX_SERIAL_BUS("LINFlexD_2_RX_SERIAL_BUS", CreateSignal("LINFlexD_2_RX", true), this);
+	linflexd_14_tx_serial_bus = new LINFlexD_14_TX_SERIAL_BUS("LINFlexD_14_TX_SERIAL_BUS", CreateSignal("LINFlexD_14_TX", true), this);
+	linflexd_14_rx_serial_bus = new LINFlexD_14_RX_SERIAL_BUS("LINFlexD_14_RX_SERIAL_BUS", CreateSignal("LINFlexD_14_RX", true), this);
+	linflexd_15_tx_serial_bus = new LINFlexD_15_TX_SERIAL_BUS("LINFlexD_15_TX_SERIAL_BUS", CreateSignal("LINFlexD_15_TX", true), this);
+	linflexd_15_rx_serial_bus = new LINFlexD_15_RX_SERIAL_BUS("LINFlexD_15_RX_SERIAL_BUS", CreateSignal("LINFlexD_15_RX", true), this);
+	linflexd_16_tx_serial_bus = new LINFlexD_16_TX_SERIAL_BUS("LINFlexD_16_TX_SERIAL_BUS", CreateSignal("LINFlexD_16_TX", true), this);
+	linflexd_16_rx_serial_bus = new LINFlexD_16_RX_SERIAL_BUS("LINFlexD_16_RX_SERIAL_BUS", CreateSignal("LINFlexD_16_RX", true), this);
+
+	//  - DSPI serial buses
+	dspi_0_sout_serial_bus  = new DSPI_0_SOUT_SERIAL_BUS ("DSPI_0_SOUT_SERIAL_BUS" , CreateSignal("DSPI_0_SOUT" , true), this);
+	dspi_0_sin_serial_bus   = new DSPI_0_SIN_SERIAL_BUS  ("DSPI_0_SIN_SERIAL_BUS"  , CreateSignal("DSPI_0_SIN"  , true), this);
+	for(i = 0; i < DSPI_0::NUM_CTARS; i++)
+	{
+		std::stringstream dspi_0_pcs_serial_bus_name_sstr;
+		dspi_0_pcs_serial_bus_name_sstr << "DSPI_0_PCS_SERIAL_BUS_" << i;
+		std::stringstream dspi_0_pcs_name_sstr;
+		dspi_0_pcs_name_sstr << "DSPI_0_PCS_" << i;
+		dspi_0_pcs_serial_bus[i] = new DSPI_0_PCS_SERIAL_BUS(dspi_0_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_0_pcs_name_sstr.str(), true), this);
+	}
+	dspi_0_ss_serial_bus = new DSPI_0_SS_SERIAL_BUS("DSPI_0_SS_SERIAL_BUS", CreateSignal("DSPI_0_SS", true), this);
+	
+	dspi_1_sout_serial_bus  = new DSPI_1_SOUT_SERIAL_BUS ("DSPI_1_SOUT_SERIAL_BUS" , CreateSignal("DSPI_1_SOUT" , true), this);
+	dspi_1_sin_serial_bus   = new DSPI_1_SIN_SERIAL_BUS  ("DSPI_1_SIN_SERIAL_BUS"  , CreateSignal("DSPI_1_SIN"  , true), this);
+	for(i = 0; i < DSPI_1::NUM_CTARS; i++)
+	{
+		std::stringstream dspi_1_pcs_serial_bus_name_sstr;
+		dspi_1_pcs_serial_bus_name_sstr << "DSPI_1_PCS_SERIAL_BUS_" << i;
+		std::stringstream dspi_1_pcs_name_sstr;
+		dspi_1_pcs_name_sstr << "DSPI_1_PCS_" << i;
+		dspi_1_pcs_serial_bus[i] = new DSPI_1_PCS_SERIAL_BUS(dspi_1_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_1_pcs_name_sstr.str(), true), this);
+	}
+	dspi_1_ss_serial_bus = new DSPI_1_SS_SERIAL_BUS("DSPI_1_SS_SERIAL_BUS", CreateSignal("DSPI_1_SS", true), this);
+	
+	dspi_2_sout_serial_bus  = new DSPI_2_SOUT_SERIAL_BUS ("DSPI_2_SOUT_SERIAL_BUS" , CreateSignal("DSPI_2_SOUT" , true), this);
+	dspi_2_sin_serial_bus   = new DSPI_2_SIN_SERIAL_BUS  ("DSPI_2_SIN_SERIAL_BUS"  , CreateSignal("DSPI_2_SIN"  , true), this);
+	for(i = 0; i < DSPI_2::NUM_CTARS; i++)
+	{
+		std::stringstream dspi_2_pcs_serial_bus_name_sstr;
+		dspi_2_pcs_serial_bus_name_sstr << "DSPI_2_PCS_SERIAL_BUS_" << i;
+		std::stringstream dspi_2_pcs_name_sstr;
+		dspi_2_pcs_name_sstr << "DSPI_2_PCS_" << i;
+		dspi_2_pcs_serial_bus[i] = new DSPI_2_PCS_SERIAL_BUS(dspi_2_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_2_pcs_name_sstr.str(), true), this);
+	}
+	dspi_2_ss_serial_bus = new DSPI_2_SS_SERIAL_BUS("DSPI_2_SS_SERIAL_BUS", CreateSignal("DSPI_2_SS", true), this);
+	
+	dspi_3_sout_serial_bus  = new DSPI_3_SOUT_SERIAL_BUS ("DSPI_3_SOUT_SERIAL_BUS" , CreateSignal("DSPI_3_SOUT" , true), this);
+	dspi_3_sin_serial_bus   = new DSPI_3_SIN_SERIAL_BUS  ("DSPI_3_SIN_SERIAL_BUS"  , CreateSignal("DSPI_3_SIN"  , true), this);
+	for(i = 0; i < DSPI_3::NUM_CTARS; i++)
+	{
+		std::stringstream dspi_3_pcs_serial_bus_name_sstr;
+		dspi_3_pcs_serial_bus_name_sstr << "DSPI_3_PCS_SERIAL_BUS_" << i;
+		std::stringstream dspi_3_pcs_name_sstr;
+		dspi_3_pcs_name_sstr << "DSPI_3_PCS_" << i;
+		dspi_3_pcs_serial_bus[i] = new DSPI_3_PCS_SERIAL_BUS(dspi_3_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_3_pcs_name_sstr.str(), true), this);
+	}
+	dspi_3_ss_serial_bus = new DSPI_3_SS_SERIAL_BUS("DSPI_3_SS_SERIAL_BUS", CreateSignal("DSPI_3_SS", true), this);
+	
+	dspi_4_sout_serial_bus  = new DSPI_4_SOUT_SERIAL_BUS ("DSPI_4_SOUT_SERIAL_BUS" , CreateSignal("DSPI_4_SOUT" , true), this);
+	dspi_4_sin_serial_bus   = new DSPI_4_SIN_SERIAL_BUS  ("DSPI_4_SIN_SERIAL_BUS"  , CreateSignal("DSPI_4_SIN"  , true), this);
+	for(i = 0; i < DSPI_4::NUM_CTARS; i++)
+	{
+		std::stringstream dspi_4_pcs_serial_bus_name_sstr;
+		dspi_4_pcs_serial_bus_name_sstr << "DSPI_4_PCS_SERIAL_BUS_" << i;
+		std::stringstream dspi_4_pcs_name_sstr;
+		dspi_4_pcs_name_sstr << "DSPI_4_PCS_" << i;
+		dspi_4_pcs_serial_bus[i] = new DSPI_4_PCS_SERIAL_BUS(dspi_4_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_4_pcs_name_sstr.str(), true), this);
+	}
+	dspi_4_ss_serial_bus = new DSPI_4_SS_SERIAL_BUS("DSPI_4_SS_SERIAL_BUS", CreateSignal("DSPI_4_SS", true), this);
+	
+	dspi_5_sout_serial_bus  = new DSPI_5_SOUT_SERIAL_BUS ("DSPI_5_SOUT_SERIAL_BUS" , CreateSignal("DSPI_5_SOUT" , true), this);
+	dspi_5_sin_serial_bus   = new DSPI_5_SIN_SERIAL_BUS  ("DSPI_5_SIN_SERIAL_BUS"  , CreateSignal("DSPI_5_SIN"  , true), this);
+	for(i = 0; i < DSPI_5::NUM_CTARS; i++)
+	{
+		std::stringstream dspi_5_pcs_serial_bus_name_sstr;
+		dspi_5_pcs_serial_bus_name_sstr << "DSPI_5_PCS_SERIAL_BUS_" << i;
+		std::stringstream dspi_5_pcs_name_sstr;
+		dspi_5_pcs_name_sstr << "DSPI_5_PCS_" << i;
+		dspi_5_pcs_serial_bus[i] = new DSPI_5_PCS_SERIAL_BUS(dspi_5_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_5_pcs_name_sstr.str(), true), this);
+	}
+	dspi_5_ss_serial_bus = new DSPI_5_SS_SERIAL_BUS("DSPI_5_SS_SERIAL_BUS", CreateSignal("DSPI_5_SS", true), this);
+	
+	dspi_6_sout_serial_bus  = new DSPI_6_SOUT_SERIAL_BUS ("DSPI_6_SOUT_SERIAL_BUS" , CreateSignal("DSPI_6_SOUT" , true), this);
+	dspi_6_sin_serial_bus   = new DSPI_6_SIN_SERIAL_BUS  ("DSPI_6_SIN_SERIAL_BUS"  , CreateSignal("DSPI_6_SIN"  , true), this);
+	for(i = 0; i < DSPI_6::NUM_CTARS; i++)
+	{
+		std::stringstream dspi_6_pcs_serial_bus_name_sstr;
+		dspi_6_pcs_serial_bus_name_sstr << "DSPI_6_PCS_SERIAL_BUS_" << i;
+		std::stringstream dspi_6_pcs_name_sstr;
+		dspi_6_pcs_name_sstr << "DSPI_6_PCS_" << i;
+		dspi_6_pcs_serial_bus[i] = new DSPI_6_PCS_SERIAL_BUS(dspi_6_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_6_pcs_name_sstr.str(), true), this);
+	}
+	dspi_6_ss_serial_bus = new DSPI_6_SS_SERIAL_BUS("DSPI_6_SS_SERIAL_BUS", CreateSignal("DSPI_6_SS", true), this);
+	
+	dspi_12_sout_serial_bus = new DSPI_12_SOUT_SERIAL_BUS("DSPI_12_SOUT_SERIAL_BUS", CreateSignal("DSPI_12_SOUT", true), this);
+	dspi_12_sin_serial_bus  = new DSPI_12_SIN_SERIAL_BUS ("DSPI_12_SIN_SERIAL_BUS" , CreateSignal("DSPI_12_SIN" , true), this);
+	for(i = 0; i < DSPI_12::NUM_CTARS; i++)
+	{
+		std::stringstream dspi_12_pcs_serial_bus_name_sstr;
+		dspi_12_pcs_serial_bus_name_sstr << "DSPI_12_PCS_SERIAL_BUS_" << i;
+		std::stringstream dspi_12_pcs_name_sstr;
+		dspi_12_pcs_name_sstr << "DSPI_12_PCS_" << i;
+		dspi_12_pcs_serial_bus[i] = new DSPI_12_PCS_SERIAL_BUS(dspi_12_pcs_serial_bus_name_sstr.str().c_str(), CreateSignal(dspi_12_pcs_name_sstr.str(), true), this);
+	}
+	dspi_12_ss_serial_bus = new DSPI_12_SS_SERIAL_BUS("DSPI_12_SS_SERIAL_BUS", CreateSignal("DSPI_12_SS", true), this);
+
 	//=========================================================================
 	//===                        Components connection                      ===
 	//=========================================================================
 
+	// TLM sockets
 	main_core_0->i_ahb_if(*xbar_0->targ_socket[0]);                     //       Main_Core_0>I_AHB_IF <-> XBAR_0 M0
 	main_core_0->d_ahb_if(*xbar_0->targ_socket[1]);                     //       Main_Core_0>D_AHB_IF <-> XBAR_0 M1
 	main_core_1->i_ahb_if(*xbar_0->targ_socket[2]);                     //       Main_Core_1>I_AHB_IF <-> XBAR_0 M2
@@ -1382,67 +1522,84 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	edma_0->master_if(*xbar_1_m1_concentrator->targ_socket[0]);         // EDMA_0 <-> XBAR_1 M1 Concentrator
 	edma_1->master_if(*xbar_1_m1_concentrator->targ_socket[1]);         // EDMA_1 <-> XBAR_1 M1 Concentrator
 	
-	linflexd_0->LINTX(linflexd_0_tx->serial_socket);                    //  LINFlexD_0 TX <->  LINFlexD_0 TX serial bus
-	linflexd_0->LINRX(linflexd_0_rx->serial_socket);                    //  LINFlexD_0 RX <->  LINFlexD_0 RX serial bus
-	linflexd_1->LINTX(linflexd_1_tx->serial_socket);                    //  LINFlexD_1 TX <->  LINFlexD_1 TX serial bus
-	linflexd_1->LINRX(linflexd_1_rx->serial_socket);                    //  LINFlexD_1 RX <->  LINFlexD_1 RX serial bus
-	linflexd_2->LINTX(linflexd_2_tx->serial_socket);                    //  LINFlexD_2 TX <->  LINFlexD_2 TX serial bus
-	linflexd_2->LINRX(linflexd_2_rx->serial_socket);                    //  LINFlexD_2 RX <->  LINFlexD_2 RX serial bus
-	linflexd_14->LINTX(linflexd_14_tx->serial_socket);                  // LINFlexD_14 TX <-> LINFlexD_14 TX serial bus
-	linflexd_14->LINRX(linflexd_14_rx->serial_socket);                  // LINFlexD_14 RX <-> LINFlexD_14 RX serial bus
-	linflexd_15->LINTX(linflexd_15_tx->serial_socket);                  // LINFlexD_15 TX <-> LINFlexD_15 TX serial bus
-	linflexd_15->LINRX(linflexd_15_rx->serial_socket);                  // LINFlexD_15 RX <-> LINFlexD_15 RX serial bus
-	linflexd_16->LINTX(linflexd_16_tx->serial_socket);                  // LINFlexD_16 TX <-> LINFlexD_16 TX serial bus
-	linflexd_16->LINRX(linflexd_16_rx->serial_socket);                  // LINFlexD_16 RX <-> LINFlexD_16 RX serial bus
+	linflexd_0->LINTX(linflexd_0_tx_serial_bus->serial_socket);         //  LINFlexD_0 TX <->  LINFlexD_0 TX serial bus
+	linflexd_0->LINRX(linflexd_0_rx_serial_bus->serial_socket);         //  LINFlexD_0 RX <->  LINFlexD_0 RX serial bus
+	linflexd_1->LINTX(linflexd_1_tx_serial_bus->serial_socket);         //  LINFlexD_1 TX <->  LINFlexD_1 TX serial bus
+	linflexd_1->LINRX(linflexd_1_rx_serial_bus->serial_socket);         //  LINFlexD_1 RX <->  LINFlexD_1 RX serial bus
+	linflexd_2->LINTX(linflexd_2_tx_serial_bus->serial_socket);         //  LINFlexD_2 TX <->  LINFlexD_2 TX serial bus
+	linflexd_2->LINRX(linflexd_2_rx_serial_bus->serial_socket);         //  LINFlexD_2 RX <->  LINFlexD_2 RX serial bus
+	linflexd_14->LINTX(linflexd_14_tx_serial_bus->serial_socket);       // LINFlexD_14 TX <-> LINFlexD_14 TX serial bus
+	linflexd_14->LINRX(linflexd_14_rx_serial_bus->serial_socket);       // LINFlexD_14 RX <-> LINFlexD_14 RX serial bus
+	linflexd_15->LINTX(linflexd_15_tx_serial_bus->serial_socket);       // LINFlexD_15 TX <-> LINFlexD_15 TX serial bus
+	linflexd_15->LINRX(linflexd_15_rx_serial_bus->serial_socket);       // LINFlexD_15 RX <-> LINFlexD_15 RX serial bus
+	linflexd_16->LINTX(linflexd_16_tx_serial_bus->serial_socket);       // LINFlexD_16 TX <-> LINFlexD_16 TX serial bus
+	linflexd_16->LINRX(linflexd_16_rx_serial_bus->serial_socket);       // LINFlexD_16 RX <-> LINFlexD_16 RX serial bus
 	
 	if(serial_terminal0)
 	{
-		serial_terminal0->RX(linflexd_0_tx->serial_socket);
-		serial_terminal0->TX(linflexd_0_rx->serial_socket);
+		serial_terminal0->RX(linflexd_0_tx_serial_bus->serial_socket);
+		serial_terminal0->TX(linflexd_0_rx_serial_bus->serial_socket);
 	}
 	if(serial_terminal1)
 	{
-		serial_terminal1->RX(linflexd_1_tx->serial_socket);
-		serial_terminal1->TX(linflexd_1_rx->serial_socket);
+		serial_terminal1->RX(linflexd_1_tx_serial_bus->serial_socket);
+		serial_terminal1->TX(linflexd_1_rx_serial_bus->serial_socket);
 	}
 	if(serial_terminal2)
 	{
-		serial_terminal2->RX(linflexd_2_tx->serial_socket);
-		serial_terminal2->TX(linflexd_2_rx->serial_socket);
+		serial_terminal2->RX(linflexd_2_tx_serial_bus->serial_socket);
+		serial_terminal2->TX(linflexd_2_rx_serial_bus->serial_socket);
 	}
 	if(serial_terminal14)
 	{
-		serial_terminal14->RX(linflexd_14_tx->serial_socket);
-		serial_terminal14->TX(linflexd_14_rx->serial_socket);
+		serial_terminal14->RX(linflexd_14_tx_serial_bus->serial_socket);
+		serial_terminal14->TX(linflexd_14_rx_serial_bus->serial_socket);
 	}
 	if(serial_terminal15)
 	{
-		serial_terminal15->RX(linflexd_15_tx->serial_socket);
-		serial_terminal15->TX(linflexd_15_rx->serial_socket);
+		serial_terminal15->RX(linflexd_15_tx_serial_bus->serial_socket);
+		serial_terminal15->TX(linflexd_15_rx_serial_bus->serial_socket);
 	}
 	if(serial_terminal16)
 	{
-		serial_terminal16->RX(linflexd_16_tx->serial_socket);
-		serial_terminal16->TX(linflexd_16_rx->serial_socket);
+		serial_terminal16->RX(linflexd_16_tx_serial_bus->serial_socket);
+		serial_terminal16->TX(linflexd_16_rx_serial_bus->serial_socket);
 	}
 	
-	dspi_0->SOUT(dspi_0_sout->serial_socket);                     //  DSPI_0 SOUT  <->  DSPI_0 SOUT serial bus
-	dspi_0->SIN (dspi_0_sin->serial_socket);                      //  DSPI_0 SIN   <->  DSPI_0 SIN serial bus
-	dspi_1->SOUT(dspi_1_sout->serial_socket);                     //  DSPI_1 SOUT  <->  DSPI_1 SOUT serial bus
-	dspi_1->SIN (dspi_1_sin->serial_socket);                      //  DSPI_1 SIN   <->  DSPI_1 SIN serial bus
-	dspi_2->SOUT(dspi_2_sout->serial_socket);                     //  DSPI_2 SOUT  <->  DSPI_2 SOUT serial bus
-	dspi_2->SIN (dspi_2_sin->serial_socket);                      //  DSPI_2 SIN   <->  DSPI_2 SIN serial bus
-	dspi_3->SOUT(dspi_3_sout->serial_socket);                     //  DSPI_3 SOUT  <->  DSPI_3 SOUT serial bus
-	dspi_3->SIN (dspi_3_sin->serial_socket);                      //  DSPI_3 SIN   <->  DSPI_3 SIN serial bus
-	dspi_4->SOUT(dspi_4_sout->serial_socket);                     //  DSPI_4 SOUT  <->  DSPI_4 SOUT serial bus
-	dspi_4->SIN (dspi_4_sin->serial_socket);                      //  DSPI_4 SIN   <->  DSPI_4 SIN serial bus
-	dspi_5->SOUT(dspi_5_sout->serial_socket);                     //  DSPI_5 SOUT  <->  DSPI_5 SOUT serial bus
-	dspi_5->SIN (dspi_5_sin->serial_socket);                      //  DSPI_5 SIN   <->  DSPI_5 SIN serial bus
-	dspi_6->SOUT(dspi_6_sout->serial_socket);                     //  DSPI_6 SOUT  <->  DSPI_6 SOUT serial bus
-	dspi_6->SIN (dspi_6_sin->serial_socket);                      //  DSPI_6 SIN   <->  DSPI_6 SIN serial bus
-	dspi_12->SOUT(dspi_12_sout->serial_socket);                   //  DSPI_12 SOUT <->  DSPI_12 SOUT serial bus
-	dspi_12->SIN (dspi_12_sin->serial_socket);                    //  DSPI_12 SIN  <->  DSPI_12 SIN serial bus
+	dspi_0->SOUT(dspi_0_sout_serial_bus->serial_socket);                                               //  DSPI_0 SOUT  <->  DSPI_0 SOUT serial bus
+	dspi_0->SIN (dspi_0_sin_serial_bus->serial_socket);                                                //  DSPI_0 SIN   <->  DSPI_0 SIN serial bus
+	for(i = 0; i < DSPI_0::NUM_CTARS; i++) dspi_0->PCS[i](dspi_0_pcs_serial_bus[i]->serial_socket);    //  DSPI_0_PCS   <->  DSPI_0 PCS serial bus
+	dspi_0->SS_b(dspi_0_ss_serial_bus->serial_socket);                                                 //  DSPI_0_SS#   <->  DSPI_0 SS serial bus
+	dspi_1->SOUT(dspi_1_sout_serial_bus->serial_socket);                                               //  DSPI_1 SOUT  <->  DSPI_1 SOUT serial bus
+	dspi_1->SIN (dspi_1_sin_serial_bus->serial_socket);                                                //  DSPI_1 SIN   <->  DSPI_1 SIN serial bus
+	for(i = 0; i < DSPI_1::NUM_CTARS; i++) dspi_1->PCS[i](dspi_1_pcs_serial_bus[i]->serial_socket);    //  DSPI_1_PCS   <->  DSPI_1 PCS serial bus
+	dspi_1->SS_b(dspi_1_ss_serial_bus->serial_socket);                                                 //  DSPI_1_SS#   <->  DSPI_1 SS serial bus
+	dspi_2->SOUT(dspi_2_sout_serial_bus->serial_socket);                                               //  DSPI_2 SOUT  <->  DSPI_2 SOUT serial bus
+	dspi_2->SIN (dspi_2_sin_serial_bus->serial_socket);                                                //  DSPI_2 SIN   <->  DSPI_2 SIN serial bus
+	for(i = 0; i < DSPI_2::NUM_CTARS; i++) dspi_2->PCS[i](dspi_2_pcs_serial_bus[i]->serial_socket);    //  DSPI_2_PCS   <->  DSPI_2 PCS serial bus
+	dspi_2->SS_b(dspi_2_ss_serial_bus->serial_socket);                                                 //  DSPI_2_SS#   <->  DSPI_2 SS serial bus
+	dspi_3->SOUT(dspi_3_sout_serial_bus->serial_socket);                                               //  DSPI_3 SOUT  <->  DSPI_3 SOUT serial bus
+	dspi_3->SIN (dspi_3_sin_serial_bus->serial_socket);                                                //  DSPI_3 SIN   <->  DSPI_3 SIN serial bus
+	for(i = 0; i < DSPI_3::NUM_CTARS; i++) dspi_3->PCS[i](dspi_3_pcs_serial_bus[i]->serial_socket);    //  DSPI_3_PCS   <->  DSPI_3 PCS serial bus
+	dspi_3->SS_b(dspi_3_ss_serial_bus->serial_socket);                                                 //  DSPI_3_SS#   <->  DSPI_3 SS serial bus
+	dspi_4->SOUT(dspi_4_sout_serial_bus->serial_socket);                                               //  DSPI_4 SOUT  <->  DSPI_4 SOUT serial bus
+	dspi_4->SIN (dspi_4_sin_serial_bus->serial_socket);                                                //  DSPI_4 SIN   <->  DSPI_4 SIN serial bus
+	for(i = 0; i < DSPI_4::NUM_CTARS; i++) dspi_4->PCS[i](dspi_4_pcs_serial_bus[i]->serial_socket);    //  DSPI_4_PCS   <->  DSPI_4 PCS serial bus
+	dspi_4->SS_b(dspi_4_ss_serial_bus->serial_socket);                                                 //  DSPI_4_SS#   <->  DSPI_4 SS serial bus
+	dspi_5->SOUT(dspi_5_sout_serial_bus->serial_socket);                                               //  DSPI_5 SOUT  <->  DSPI_5 SOUT serial bus
+	dspi_5->SIN (dspi_5_sin_serial_bus->serial_socket);                                                //  DSPI_5 SIN   <->  DSPI_5 SIN serial bus
+	for(i = 0; i < DSPI_5::NUM_CTARS; i++) dspi_5->PCS[i](dspi_5_pcs_serial_bus[i]->serial_socket);    //  DSPI_5_PCS   <->  DSPI_5 PCS serial bus
+	dspi_5->SS_b(dspi_5_ss_serial_bus->serial_socket);                                                 //  DSPI_5_SS#   <->  DSPI_5 SS serial bus
+	dspi_6->SOUT(dspi_6_sout_serial_bus->serial_socket);                                               //  DSPI_6 SOUT  <->  DSPI_6 SOUT serial bus
+	dspi_6->SIN (dspi_6_sin_serial_bus->serial_socket);                                                //  DSPI_6 SIN   <->  DSPI_6 SIN serial bus
+	for(i = 0; i < DSPI_6::NUM_CTARS; i++) dspi_6->PCS[i](dspi_6_pcs_serial_bus[i]->serial_socket);    //  DSPI_6_PCS   <->  DSPI_6 PCS serial bus
+	dspi_6->SS_b(dspi_6_ss_serial_bus->serial_socket);                                                 //  DSPI_6_SS#   <->  DSPI_6 SS serial bus
+	dspi_12->SOUT(dspi_12_sout_serial_bus->serial_socket);                                             //  DSPI_12 SOUT <->  DSPI_12 SOUT serial bus
+	dspi_12->SIN (dspi_12_sin_serial_bus->serial_socket);                                              //  DSPI_12 SIN  <->  DSPI_12 SIN serial bus
+	for(i = 0; i < DSPI_12::NUM_CTARS; i++) dspi_12->PCS[i](dspi_12_pcs_serial_bus[i]->serial_socket); //  DSPI_12_PCS  <->  DSPI_12 PCS serial bus
+	dspi_12->SS_b(dspi_12_ss_serial_bus->serial_socket);                                               //  DSPI_12_SS#  <->  DSPI_12 SS serial bus
 	
+	// RTL ports
 	Bind("HARDWARE.Main_Core_0.m_clk"           , "HARDWARE.COMP_CLK");
 	Bind("HARDWARE.Main_Core_0.m_por"           , "HARDWARE.m_por");
 	Bind("HARDWARE.Main_Core_0.p_reset_b"       , "HARDWARE.p_reset_b_0");
@@ -1690,15 +1847,17 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DSPI_0.INT_TFUF" , "HARDWARE.DSPI_0_INT_TFUF");
 	Bind("HARDWARE.DSPI_0.INT_RFOF" , "HARDWARE.DSPI_0_INT_RFOF");
 	Bind("HARDWARE.DSPI_0.INT_TFIWF", "HARDWARE.DSPI_0_INT_TFIWF");
-	Bind("HARDWARE.DSPI_0.INT_DDIF" , "HARDWARE.unused");
-	Bind("HARDWARE.DSPI_0.INT_DPEF" , "HARDWARE.unused");
-	Bind("HARDWARE.DSPI_0.INT_SPITCF", "HARDWARE.unused");
-	Bind("HARDWARE.DSPI_0.INT_DSITCF", "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_0.INT_DDIF" , "HARDWARE.DSPI_0_INT_DDIF");
+	Bind("HARDWARE.DSPI_0.INT_DPEF" , "HARDWARE.DSPI_0_INT_DPEF");
+	Bind("HARDWARE.DSPI_0.INT_SPITCF", "HARDWARE.DSPI_0_INT_SPITCF");
+	Bind("HARDWARE.DSPI_0.INT_DSITCF", "HARDWARE.DSPI_0_INT_DSITCF");
 	BindArray(DSPI_0::NUM_DSI_INPUTS, "HARDWARE.DSPI_0.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
 	BindArray(DSPI_0::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_0.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
 	Bind("HARDWARE.DSPI_0.DMA_RX"   , "HARDWARE.DSPI_0_DMA_RX");
 	Bind("HARDWARE.DSPI_0.DMA_TX"   , "HARDWARE.DSPI_0_DMA_TX");
 	Bind("HARDWARE.DSPI_0.DMA_CMD"  , "HARDWARE.DSPI_0_DMA_CMD");
+	Bind("HARDWARE.DSPI_0.SS_b"      , "HARDWARE.DSPI_0_SS_b");
+	BindArray(DSPI_0::NUM_CTARS, "HARDWARE.DSPI_0.PCS", "HARDWARE.DSPI_0_PCS");
 	
 	Bind("HARDWARE.DSPI_1.m_clk"    , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.DSPI_1.dspi_clk" , "HARDWARE.DSPI_CLK1");
@@ -1708,15 +1867,17 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DSPI_1.INT_TFUF" , "HARDWARE.DSPI_1_INT_TFUF");
 	Bind("HARDWARE.DSPI_1.INT_RFOF" , "HARDWARE.DSPI_1_INT_RFOF");
 	Bind("HARDWARE.DSPI_1.INT_TFIWF", "HARDWARE.DSPI_1_INT_TFIWF");
-	Bind("HARDWARE.DSPI_1.INT_DDIF" , "HARDWARE.unused");
-	Bind("HARDWARE.DSPI_1.INT_DPEF" , "HARDWARE.unused");
-	Bind("HARDWARE.DSPI_1.INT_SPITCF", "HARDWARE.unused");
-	Bind("HARDWARE.DSPI_1.INT_DSITCF", "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_1.INT_DDIF" , "HARDWARE.DSPI_1_INT_DDIF");
+	Bind("HARDWARE.DSPI_1.INT_DPEF" , "HARDWARE.DSPI_1_INT_DPEF");
+	Bind("HARDWARE.DSPI_1.INT_SPITCF","HARDWARE.DSPI_1_INT_SPITCF");
+	Bind("HARDWARE.DSPI_1.INT_DSITCF","HARDWARE.DSPI_1_INT_DSITCF");
 	BindArray(DSPI_1::NUM_DSI_INPUTS, "HARDWARE.DSPI_1.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
 	BindArray(DSPI_1::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_1.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
 	Bind("HARDWARE.DSPI_1.DMA_RX"   , "HARDWARE.DSPI_1_DMA_RX");
 	Bind("HARDWARE.DSPI_1.DMA_TX"   , "HARDWARE.DSPI_1_DMA_TX");
 	Bind("HARDWARE.DSPI_1.DMA_CMD"  , "HARDWARE.DSPI_1_DMA_CMD");
+	Bind("HARDWARE.DSPI_1.SS_b"       , "HARDWARE.DSPI_1_SS_b");
+	BindArray(DSPI_1::NUM_CTARS, "HARDWARE.DSPI_1.PCS", "HARDWARE.DSPI_1_PCS");
 	
 	Bind("HARDWARE.DSPI_2.m_clk"    , "HARDWARE.PBRIDGEB_CLK");
 	Bind("HARDWARE.DSPI_2.dspi_clk" , "HARDWARE.DSPI_CLK1");
@@ -1726,15 +1887,17 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DSPI_2.INT_TFUF" , "HARDWARE.DSPI_2_INT_TFUF");
 	Bind("HARDWARE.DSPI_2.INT_RFOF" , "HARDWARE.DSPI_2_INT_RFOF");
 	Bind("HARDWARE.DSPI_2.INT_TFIWF", "HARDWARE.DSPI_2_INT_TFIWF");
-	Bind("HARDWARE.DSPI_2.INT_DDIF" , "HARDWARE.unused");
-	Bind("HARDWARE.DSPI_2.INT_DPEF" , "HARDWARE.unused");
-	Bind("HARDWARE.DSPI_2.INT_SPITCF", "HARDWARE.unused");
-	Bind("HARDWARE.DSPI_2.INT_DSITCF", "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_2.INT_DDIF" , "HARDWARE.DSPI_2_INT_DDIF");
+	Bind("HARDWARE.DSPI_2.INT_DPEF" , "HARDWARE.DSPI_2_INT_DPEF");
+	Bind("HARDWARE.DSPI_2.INT_SPITCF", "HARDWARE.DSPI_2_INT_SPITCF");
+	Bind("HARDWARE.DSPI_2.INT_DSITCF", "HARDWARE.DSPI_2_INT_DSITCF");
 	BindArray(DSPI_2::NUM_DSI_INPUTS, "HARDWARE.DSPI_2.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
 	BindArray(DSPI_2::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_2.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
 	Bind("HARDWARE.DSPI_2.DMA_RX"   , "HARDWARE.DSPI_2_DMA_RX");
 	Bind("HARDWARE.DSPI_2.DMA_TX"   , "HARDWARE.DSPI_2_DMA_TX");
 	Bind("HARDWARE.DSPI_2.DMA_CMD"  , "HARDWARE.DSPI_2_DMA_CMD");
+	Bind("HARDWARE.DSPI_2.SS_b"       , "HARDWARE.DSPI_2_SS_b");
+	BindArray(DSPI_2::NUM_CTARS, "HARDWARE.DSPI_2.PCS", "HARDWARE.DSPI_2_PCS");
 	
 	Bind("HARDWARE.DSPI_3.m_clk"    , "HARDWARE.PBRIDGEB_CLK");
 	Bind("HARDWARE.DSPI_3.dspi_clk" , "HARDWARE.DSPI_CLK1");
@@ -1744,15 +1907,17 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DSPI_3.INT_TFUF" , "HARDWARE.DSPI_3_INT_TFUF");
 	Bind("HARDWARE.DSPI_3.INT_RFOF" , "HARDWARE.DSPI_3_INT_RFOF");
 	Bind("HARDWARE.DSPI_3.INT_TFIWF", "HARDWARE.DSPI_3_INT_TFIWF");
-	Bind("HARDWARE.DSPI_3.INT_DDIF" , "HARDWARE.unused");
-	Bind("HARDWARE.DSPI_3.INT_DPEF" , "HARDWARE.unused");
-	Bind("HARDWARE.DSPI_3.INT_SPITCF", "HARDWARE.unused");
-	Bind("HARDWARE.DSPI_3.INT_DSITCF", "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_3.INT_DDIF" , "HARDWARE.DSPI_3_INT_DDIF");
+	Bind("HARDWARE.DSPI_3.INT_DPEF" , "HARDWARE.DSPI_3_INT_DPEF");
+	Bind("HARDWARE.DSPI_3.INT_SPITCF", "HARDWARE.DSPI_3_INT_SPITCF");
+	Bind("HARDWARE.DSPI_3.INT_DSITCF", "HARDWARE.DSPI_3_INT_DSITCF");
 	BindArray(DSPI_3::NUM_DSI_INPUTS, "HARDWARE.DSPI_3.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
 	BindArray(DSPI_3::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_3.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
 	Bind("HARDWARE.DSPI_3.DMA_RX"   , "HARDWARE.DSPI_3_DMA_RX");
 	Bind("HARDWARE.DSPI_3.DMA_TX"   , "HARDWARE.DSPI_3_DMA_TX");
 	Bind("HARDWARE.DSPI_3.DMA_CMD"  , "HARDWARE.DSPI_3_DMA_CMD");
+	Bind("HARDWARE.DSPI_3.SS_b"       , "HARDWARE.DSPI_3_SS_b");
+	BindArray(DSPI_3::NUM_CTARS, "HARDWARE.DSPI_3.PCS", "HARDWARE.DSPI_3_PCS");
 	
 	Bind("HARDWARE.DSPI_4.m_clk"     , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.DSPI_4.dspi_clk"  , "HARDWARE.DSPI_CLK0");
@@ -1763,7 +1928,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DSPI_4.INT_RFOF"  , "HARDWARE.DSPI_4_INT_RFOF");
 	Bind("HARDWARE.DSPI_4.INT_TFIWF" , "HARDWARE.DSPI_4_INT_TFIWF");
 	Bind("HARDWARE.DSPI_4.INT_SPITCF", "HARDWARE.DSPI_4_INT_SPITCF");
-	Bind("HARDWARE.DSPI_4.INT_TCF"   , "HARDWARE.unused");
 	Bind("HARDWARE.DSPI_4.INT_DSITCF", "HARDWARE.DSPI_4_INT_DSITCF");
 	Bind("HARDWARE.DSPI_4.INT_CMDTCF", "HARDWARE.DSPI_4_INT_CMDTCF");
 	Bind("HARDWARE.DSPI_4.INT_CMDFFF", "HARDWARE.DSPI_4_INT_CMDFFF");
@@ -1774,6 +1938,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DSPI_4.DMA_RX"   , "HARDWARE.DSPI_4_DMA_RX");
 	Bind("HARDWARE.DSPI_4.DMA_TX"   , "HARDWARE.DSPI_4_DMA_TX");
 	Bind("HARDWARE.DSPI_4.DMA_CMD"  , "HARDWARE.DSPI_4_DMA_CMD");
+	Bind("HARDWARE.DSPI_4.SS_b"       , "HARDWARE.DSPI_4_SS_b");
+	BindArray(DSPI_4::NUM_CTARS, "HARDWARE.DSPI_4.PCS", "HARDWARE.DSPI_4_PCS");
 	
 	Bind("HARDWARE.DSPI_5.m_clk"     , "HARDWARE.PBRIDGEB_CLK");
 	Bind("HARDWARE.DSPI_5.dspi_clk"  , "HARDWARE.DSPI_CLK0");
@@ -1784,7 +1950,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DSPI_5.INT_RFOF"  , "HARDWARE.DSPI_5_INT_RFOF");
 	Bind("HARDWARE.DSPI_5.INT_TFIWF" , "HARDWARE.DSPI_5_INT_TFIWF");
 	Bind("HARDWARE.DSPI_5.INT_SPITCF", "HARDWARE.DSPI_5_INT_SPITCF");
-	Bind("HARDWARE.DSPI_5.INT_TCF"   , "HARDWARE.unused");
 	Bind("HARDWARE.DSPI_5.INT_DSITCF", "HARDWARE.DSPI_5_INT_DSITCF");
 	Bind("HARDWARE.DSPI_5.INT_CMDTCF", "HARDWARE.DSPI_5_INT_CMDTCF");
 	Bind("HARDWARE.DSPI_5.INT_CMDFFF", "HARDWARE.DSPI_5_INT_CMDFFF");
@@ -1795,6 +1960,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DSPI_5.DMA_RX"    , "HARDWARE.DSPI_5_DMA_RX");
 	Bind("HARDWARE.DSPI_5.DMA_TX"    , "HARDWARE.DSPI_5_DMA_TX");
 	Bind("HARDWARE.DSPI_5.DMA_CMD"   , "HARDWARE.DSPI_5_DMA_CMD");
+	Bind("HARDWARE.DSPI_5.SS_b"       , "HARDWARE.DSPI_5_SS_b");
+	BindArray(DSPI_5::NUM_CTARS, "HARDWARE.DSPI_5.PCS", "HARDWARE.DSPI_5_PCS");
 	
 	Bind("HARDWARE.DSPI_6.m_clk"     , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.DSPI_6.dspi_clk"  , "HARDWARE.DSPI_CLK0");
@@ -1805,7 +1972,6 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DSPI_6.INT_RFOF"  , "HARDWARE.DSPI_6_INT_RFOF");
 	Bind("HARDWARE.DSPI_6.INT_TFIWF" , "HARDWARE.DSPI_6_INT_TFIWF");
 	Bind("HARDWARE.DSPI_6.INT_SPITCF", "HARDWARE.DSPI_6_INT_SPITCF");
-	Bind("HARDWARE.DSPI_6.INT_TCF"   , "HARDWARE.unused");
 	Bind("HARDWARE.DSPI_6.INT_DSITCF", "HARDWARE.DSPI_6_INT_DSITCF");
 	Bind("HARDWARE.DSPI_6.INT_CMDTCF", "HARDWARE.DSPI_6_INT_CMDTCF");
 	Bind("HARDWARE.DSPI_6.INT_CMDFFF", "HARDWARE.DSPI_6_INT_CMDFFF");
@@ -1816,6 +1982,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DSPI_6.DMA_RX"    , "HARDWARE.DSPI_6_DMA_RX");
 	Bind("HARDWARE.DSPI_6.DMA_TX"    , "HARDWARE.DSPI_6_DMA_TX");
 	Bind("HARDWARE.DSPI_6.DMA_CMD"   , "HARDWARE.DSPI_6_DMA_CMD");
+	Bind("HARDWARE.DSPI_6.SS_b"       , "HARDWARE.DSPI_6_SS_b");
+	BindArray(DSPI_6::NUM_CTARS, "HARDWARE.DSPI_6.PCS", "HARDWARE.DSPI_6_PCS");
 	
 	Bind("HARDWARE.DSPI_12.m_clk"    , "HARDWARE.PBRIDGEA_CLK");
 	Bind("HARDWARE.DSPI_12.dspi_clk" , "HARDWARE.DSPI_CLK1");
@@ -1825,15 +1993,17 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	Bind("HARDWARE.DSPI_12.INT_TFUF" , "HARDWARE.DSPI_12_INT_TFUF");
 	Bind("HARDWARE.DSPI_12.INT_RFOF" , "HARDWARE.DSPI_12_INT_RFOF");
 	Bind("HARDWARE.DSPI_12.INT_TFIWF", "HARDWARE.DSPI_12_INT_TFIWF");
-	Bind("HARDWARE.DSPI_12.INT_DDIF" , "HARDWARE.unused");
-	Bind("HARDWARE.DSPI_12.INT_DPEF" , "HARDWARE.unused");
-	Bind("HARDWARE.DSPI_12.INT_SPITCF", "HARDWARE.unused");
-	Bind("HARDWARE.DSPI_12.INT_DSITCF", "HARDWARE.unused");
+	Bind("HARDWARE.DSPI_12.INT_DDIF" , "HARDWARE.DSPI_12_INT_DDIF");
+	Bind("HARDWARE.DSPI_12.INT_DPEF" , "HARDWARE.DSPI_12_INT_DPEF");
+	Bind("HARDWARE.DSPI_12.INT_SPITCF", "HARDWARE.DSPI_12_INT_SPITCF");
+	Bind("HARDWARE.DSPI_12.INT_DSITCF", "HARDWARE.DSPI_12_INT_DSITCF");
 	BindArray(DSPI_12::NUM_DSI_INPUTS, "HARDWARE.DSPI_12.DSI_INPUT", 0, 1, "HARDWARE.pull_down", 0, 0);
 	BindArray(DSPI_12::NUM_DSI_OUTPUTS, "HARDWARE.DSPI_12.DSI_OUTPUT", 0, 1, "HARDWARE.unused", 0, 0);
 	Bind("HARDWARE.DSPI_12.DMA_RX"   , "HARDWARE.DSPI_12_DMA_RX");
 	Bind("HARDWARE.DSPI_12.DMA_TX"   , "HARDWARE.DSPI_12_DMA_TX");
 	Bind("HARDWARE.DSPI_12.DMA_CMD"  , "HARDWARE.DSPI_12_DMA_CMD");
+	Bind("HARDWARE.DSPI_12.SS_b"       , "HARDWARE.DSPI_12_SS_b");
+	BindArray(DSPI_12::NUM_CTARS, "HARDWARE.DSPI_12.PCS", "HARDWARE.DSPI_12_PCS");
 	
 	BindArray(EDMA_0::NUM_DMA_CHANNELS, "HARDWARE.eDMA_0.err_irq", 0, "HARDWARE.DMA_ERR_IRQ", 0);
 	BindArray(EDMA_1::NUM_DMA_CHANNELS, "HARDWARE.eDMA_1.err_irq", 0, "HARDWARE.DMA_ERR_IRQ", 64);
@@ -3995,6 +4165,8 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 
 Simulator::~Simulator()
 {
+	unsigned int i;
+	
 	if(main_core_0) delete main_core_0;
 	if(main_core_1) delete main_core_1;
 	if(peripheral_core_2) delete peripheral_core_2;
@@ -4021,18 +4193,18 @@ Simulator::~Simulator()
 	if(linflexd_14) delete linflexd_14;
 	if(linflexd_15) delete linflexd_15;
 	if(linflexd_16) delete linflexd_16;
-	if(linflexd_0_tx) delete linflexd_0_tx;
-	if(linflexd_0_rx) delete linflexd_0_rx;
-	if(linflexd_1_tx) delete linflexd_1_tx;
-	if(linflexd_1_rx) delete linflexd_1_rx;
-	if(linflexd_2_tx) delete linflexd_2_tx;
-	if(linflexd_2_rx) delete linflexd_2_rx;
-	if(linflexd_14_tx) delete linflexd_14_tx;
-	if(linflexd_14_rx) delete linflexd_14_rx;
-	if(linflexd_15_tx) delete linflexd_15_tx;
-	if(linflexd_15_rx) delete linflexd_15_rx;
-	if(linflexd_16_tx) delete linflexd_16_tx;
-	if(linflexd_16_rx) delete linflexd_16_rx;
+	if(linflexd_0_tx_serial_bus) delete linflexd_0_tx_serial_bus;
+	if(linflexd_0_rx_serial_bus) delete linflexd_0_rx_serial_bus;
+	if(linflexd_1_tx_serial_bus) delete linflexd_1_tx_serial_bus;
+	if(linflexd_1_rx_serial_bus) delete linflexd_1_rx_serial_bus;
+	if(linflexd_2_tx_serial_bus) delete linflexd_2_tx_serial_bus;
+	if(linflexd_2_rx_serial_bus) delete linflexd_2_rx_serial_bus;
+	if(linflexd_14_tx_serial_bus) delete linflexd_14_tx_serial_bus;
+	if(linflexd_14_rx_serial_bus) delete linflexd_14_rx_serial_bus;
+	if(linflexd_15_tx_serial_bus) delete linflexd_15_tx_serial_bus;
+	if(linflexd_15_rx_serial_bus) delete linflexd_15_rx_serial_bus;
+	if(linflexd_16_tx_serial_bus) delete linflexd_16_tx_serial_bus;
+	if(linflexd_16_rx_serial_bus) delete linflexd_16_rx_serial_bus;
 	if(serial_terminal0) delete serial_terminal0;
 	if(serial_terminal1) delete serial_terminal1;
 	if(serial_terminal2) delete serial_terminal2;
@@ -4059,22 +4231,38 @@ Simulator::~Simulator()
 	if(dspi_5) delete dspi_5;
 	if(dspi_6) delete dspi_6;
 	if(dspi_12) delete dspi_12;
-	if(dspi_0_sout ) delete dspi_0_sout; 
-	if(dspi_0_sin  ) delete dspi_0_sin; 
-	if(dspi_1_sout ) delete dspi_1_sout; 
-	if(dspi_1_sin  ) delete dspi_1_sin; 
-	if(dspi_2_sout ) delete dspi_2_sout; 
-	if(dspi_2_sin  ) delete dspi_2_sin; 
-	if(dspi_3_sout ) delete dspi_3_sout; 
-	if(dspi_3_sin  ) delete dspi_3_sin; 
-	if(dspi_4_sout ) delete dspi_4_sout; 
-	if(dspi_4_sin  ) delete dspi_4_sin; 
-	if(dspi_5_sout ) delete dspi_5_sout; 
-	if(dspi_5_sin  ) delete dspi_5_sin; 
-	if(dspi_6_sout ) delete dspi_6_sout; 
-	if(dspi_6_sin  ) delete dspi_6_sin; 
-	if(dspi_12_sout) delete dspi_12_sout; 
-	if(dspi_12_sin ) delete dspi_12_sin; 
+	if(dspi_0_sout_serial_bus) delete dspi_0_sout_serial_bus; 
+	if(dspi_0_sin_serial_bus) delete dspi_0_sin_serial_bus; 
+	for(i = 0; i < DSPI_0::NUM_CTARS; i++) if(dspi_0_pcs_serial_bus[i])  delete dspi_0_pcs_serial_bus[i];
+	if(dspi_0_ss_serial_bus) delete dspi_0_ss_serial_bus;
+	if(dspi_1_sout_serial_bus) delete dspi_1_sout_serial_bus; 
+	if(dspi_1_sin_serial_bus) delete dspi_1_sin_serial_bus; 
+	for(i = 0; i < DSPI_1::NUM_CTARS; i++) if(dspi_1_pcs_serial_bus[i])  delete dspi_1_pcs_serial_bus[i];
+	if(dspi_1_ss_serial_bus) delete dspi_1_ss_serial_bus;
+	if(dspi_2_sout_serial_bus) delete dspi_2_sout_serial_bus; 
+	if(dspi_2_sin_serial_bus) delete dspi_2_sin_serial_bus; 
+	for(i = 0; i < DSPI_2::NUM_CTARS; i++) if(dspi_2_pcs_serial_bus[i])  delete dspi_2_pcs_serial_bus[i];
+	if(dspi_2_ss_serial_bus) delete dspi_2_ss_serial_bus;
+	if(dspi_3_sout_serial_bus) delete dspi_3_sout_serial_bus; 
+	if(dspi_3_sin_serial_bus) delete dspi_3_sin_serial_bus; 
+	for(i = 0; i < DSPI_3::NUM_CTARS; i++) if(dspi_3_pcs_serial_bus[i])  delete dspi_3_pcs_serial_bus[i];
+	if(dspi_3_ss_serial_bus) delete dspi_3_ss_serial_bus;
+	if(dspi_4_sout_serial_bus) delete dspi_4_sout_serial_bus; 
+	if(dspi_4_sin_serial_bus) delete dspi_4_sin_serial_bus; 
+	for(i = 0; i < DSPI_4::NUM_CTARS; i++) if(dspi_4_pcs_serial_bus[i])  delete dspi_4_pcs_serial_bus[i];
+	if(dspi_4_ss_serial_bus) delete dspi_4_ss_serial_bus;
+	if(dspi_5_sout_serial_bus) delete dspi_5_sout_serial_bus; 
+	if(dspi_5_sin_serial_bus) delete dspi_5_sin_serial_bus; 
+	for(i = 0; i < DSPI_5::NUM_CTARS; i++) if(dspi_5_pcs_serial_bus[i])  delete dspi_5_pcs_serial_bus[i];
+	if(dspi_5_ss_serial_bus) delete dspi_5_ss_serial_bus;
+	if(dspi_6_sout_serial_bus) delete dspi_6_sout_serial_bus; 
+	if(dspi_6_sin_serial_bus) delete dspi_6_sin_serial_bus; 
+	for(i = 0; i < DSPI_6::NUM_CTARS; i++) if(dspi_6_pcs_serial_bus[i])  delete dspi_6_pcs_serial_bus[i];
+	if(dspi_6_ss_serial_bus) delete dspi_6_ss_serial_bus;
+	if(dspi_12_sout_serial_bus) delete dspi_12_sout_serial_bus; 
+	if(dspi_12_sin_serial_bus) delete dspi_12_sin_serial_bus; 
+	for(i = 0; i < DSPI_12::NUM_CTARS; i++) if(dspi_12_pcs_serial_bus[i]) delete dspi_12_pcs_serial_bus[i];
+	if(dspi_12_ss_serial_bus) delete dspi_12_ss_serial_bus;
 	if(ebi_stub) delete ebi_stub;
 	if(flash_port1_stub) delete flash_port1_stub;
 	if(xbar_0_s6_stub) delete xbar_0_s6_stub;

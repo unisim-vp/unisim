@@ -47,7 +47,7 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
-using unisim::kernel::tlm2::TLM_BITSTREAM_NEED_SYNC;
+using unisim::kernel::tlm2::TLM_INPUT_BITSTREAM_NEED_SYNC;
 
 SerialTerminal::SerialTerminal(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent)
@@ -179,24 +179,16 @@ void SerialTerminal::ClockPropertiesChangedProcess()
 	baud_period_upper_bound += baud_period_tolerance;
 }
 
-void SerialTerminal::nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload& payload)
+void SerialTerminal::nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload& payload, const sc_core::sc_time& t)
 {
 	if(id == RX_IF)
 	{
-		const std::vector<bool>& data = payload.get_data();
+		const unisim::kernel::tlm2::tlm_serial_payload::data_type& data = payload.get_data();
 		const sc_core::sc_time& period = payload.get_period();
 		
 		if(verbose)
 		{
-			logger << DebugInfo << sc_core::sc_time_stamp() << ": receiving [";
-			std::vector<bool>::size_type data_length = data.size();
-			std::vector<bool>::size_type i;
-			for(i = 0; i < data_length; i++)
-			{
-				if(i != 0) logger << " ";
-				logger << data[i];
-			}
-			logger << "] over RX with a period of " << period << EndDebugInfo;
+			logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ": receiving [" << data << "] over RX with a period of " << period << EndDebugInfo;
 		}
 
 		if((period < baud_period_lower_bound) || (period >= baud_period_upper_bound))
@@ -204,7 +196,7 @@ void SerialTerminal::nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload
 			logger << DebugWarning << "Receiving over " << RX.name() << " with a period " << period << " instead of " << baud_period << " with a tolerance of " << baud_tolerance << " %" << EndDebugWarning;
 		}
 		
-		rx_input.fill(payload);
+		rx_input.fill(payload, t);
 	}
 }
 
@@ -221,7 +213,7 @@ void SerialTerminal::TX_Process()
 			if(!tx_fifo.empty())
 			{
 				unisim::kernel::tlm2::tlm_serial_payload payload;
-				std::vector<bool>& data = payload.get_data();
+				unisim::kernel::tlm2::tlm_serial_payload::data_type& data = payload.get_data();
 
 				payload.set_period(clock_period);
 				
@@ -258,23 +250,17 @@ void SerialTerminal::TX_Process()
 				
 				if(verbose)
 				{
-					logger << DebugInfo << sc_core::sc_time_stamp() << ": transmitting [";
-					std::vector<bool>::size_type data_length = data.size();
-					std::vector<bool>::size_type i;
-					for(i = 0; i < data_length; i++)
-					{
-						if(i != 0) logger << " ";
-						logger << data[i];
-					}
-					logger << "] over TX with a period of " << clock_period << EndDebugInfo;
+					logger << DebugInfo << sc_core::sc_time_stamp() << ": transmitting [" << data << "] over TX with a period of " << clock_period << EndDebugInfo;
 				}
 				
-				TX->b_send(payload);
+				TX->nb_send(payload);
 				
+#if 0
 				if(sc_core::sc_time_stamp() > tx_ready_time)
 				{
 					tx_ready_time = sc_core::sc_time_stamp();
 				}
+#endif
 			}
 		}
 	}
@@ -308,6 +294,7 @@ void SerialTerminal::IncrementRxTime()
 void SerialTerminal::RX_Process()
 {
 	wait();
+	rx_input.latch();
 	
 	rx_time = sc_core::SC_ZERO_TIME;
 	
@@ -336,9 +323,10 @@ void SerialTerminal::RX_Process()
 			bool parity = (parity_type == PARITY_TYPE_EVEN) ? false : true;
 			for(i = 0; i < num_data_bits; i++)
 			{
-				if(rx_input.seek(rx_time) == TLM_BITSTREAM_NEED_SYNC)
+				if(rx_input.seek(rx_time) == TLM_INPUT_BITSTREAM_NEED_SYNC)
 				{
 					wait(rx_time);
+					rx_input.latch();
 					rx_time = sc_core::SC_ZERO_TIME;
 				}
 				
@@ -375,9 +363,10 @@ void SerialTerminal::RX_Process()
 					logger << DebugInfo << rx_input.get_time_stamp() << ": expecting parity bit" << EndDebugInfo;
 				}
 				
-				if(rx_input.seek(rx_time) == TLM_BITSTREAM_NEED_SYNC)
+				if(rx_input.seek(rx_time) == TLM_INPUT_BITSTREAM_NEED_SYNC)
 				{
 					wait(rx_time);
+					rx_input.latch();
 					rx_time = sc_core::SC_ZERO_TIME;
 				}
 				bit_value = RX_InputStatus();
@@ -396,9 +385,10 @@ void SerialTerminal::RX_Process()
 			unsigned int rec_stop_bits;
 			for(rec_stop_bits = 0; rec_stop_bits < num_stop_bits; rec_stop_bits++)
 			{
-				if(rx_input.seek(rx_time) == TLM_BITSTREAM_NEED_SYNC)
+				if(rx_input.seek(rx_time) == TLM_INPUT_BITSTREAM_NEED_SYNC)
 				{
 					wait(rx_time);
+					rx_input.latch();
 					rx_time = sc_core::SC_ZERO_TIME;
 				}
 				bit_value = RX_InputStatus();
@@ -428,9 +418,10 @@ void SerialTerminal::RX_Process()
 			}
 		}
 		
-		if(rx_input.next() == TLM_BITSTREAM_NEED_SYNC)
+		if(rx_input.next() == TLM_INPUT_BITSTREAM_NEED_SYNC)
 		{
 			wait();
+			rx_input.latch();
 			rx_time = sc_core::SC_ZERO_TIME;
 		}
 	}

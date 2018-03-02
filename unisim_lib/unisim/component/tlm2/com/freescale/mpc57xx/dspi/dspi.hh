@@ -83,6 +83,46 @@ struct Field : unisim::util::reg::core::Field<FIELD
 {
 };
 
+enum DSPI_Configuration
+{
+	DCONF_SPI = 0,
+	DCONF_DSI = 1,
+	DCONF_CSI = 2,
+	DCONF_RES = 3
+};
+
+inline std::ostream& operator << (std::ostream& os, const DSPI_Configuration& dconf)
+{
+	switch(dconf)
+	{
+		case DCONF_SPI: os << "SPI configuration"; break;
+		case DCONF_DSI: os << "DSI configuration"; break;
+		case DCONF_CSI: os << "CSI configuration"; break;
+		case DCONF_RES: os << "reserved configuration"; break;
+		default: os << "unknown configuration"; break;
+	}
+	
+	return os;
+}
+
+enum DSPI_State
+{
+	DSPI_STOPPED = 0,
+	DSPI_RUNNING = 1
+};
+
+inline std::ostream& operator << (std::ostream& os, const DSPI_State& state)
+{
+	switch(state)
+	{
+		case DSPI_STOPPED: os << "stopped state"; break;
+		case DSPI_RUNNING: os << "running state"; break;
+		default: os << "unknown state"; break;
+	}
+	
+	return os;
+}
+
 template <typename CONFIG>
 class DSPI
 	: unisim::kernel::service::Object
@@ -106,25 +146,33 @@ public:
 	static const unsigned int DSI_CTAR_SLAVE_NUM       = 1;
 	static const bool threaded_model                   = false;
 	
-	enum SerialInterface
+	enum SerialInputInterface
 	{
-		SOUT_IF,
-		SIN_IF
+		SIN_IF, // Slave input interface
+		SS_IF   // Slave select interface
 	};
 	
-	typedef tlm::tlm_target_socket<BUSWIDTH>                     peripheral_slave_if_type;
+	// TLM socket types
+	typedef tlm::tlm_target_socket<BUSWIDTH>                                         peripheral_slave_if_type;
 	typedef unisim::kernel::tlm2::tlm_serial_peripheral_socket_tagged<DSPI<CONFIG> > SOUT_type;
 	typedef unisim::kernel::tlm2::tlm_serial_peripheral_socket_tagged<DSPI<CONFIG> > SIN_type;
+	typedef unisim::kernel::tlm2::tlm_serial_peripheral_socket_tagged<DSPI<CONFIG> > SS_type;
+	typedef unisim::kernel::tlm2::tlm_serial_peripheral_socket_tagged<DSPI<CONFIG> > PCS_type;
 	
+	// inputs
 	peripheral_slave_if_type                         peripheral_slave_if;         // Peripheral slave interface
 	SOUT_type                                        SOUT;                        // Tx Serial interface
 	SIN_type                                         SIN;                         // Rx Serial interface
+	SS_type                                          SS_b;                        // Slave select (active low)
 	sc_core::sc_in<bool>                             m_clk;                       // clock port
 	sc_core::sc_in<bool>                             dspi_clk;                    // DSPI Clock port
 	sc_core::sc_in<bool>                             reset_b;                     // reset
 	sc_core::sc_in<bool>                             debug;                       // debug
 	sc_core::sc_in<bool>                             HT;                          // Hardware trigger
 	sc_core::sc_vector<sc_core::sc_in<bool> >        DSI_INPUT;                   // Deserial/Serial Interface parallel input signals
+	
+	// outputs
+	sc_core::sc_vector<PCS_type>                     PCS;                         // Peripheral Chip Select
 	sc_core::sc_vector<sc_core::sc_out<bool> >       DSI_OUTPUT;                  // Deserial/Serial Interface parallel output signals
 	sc_core::sc_out<bool>                            INT_EOQF;                    // Interrupt request DSPI_SR[EOQF]
 	sc_core::sc_out<bool>                            INT_TFFF;                    // Interrupt request DSPI_SR[TFFF]
@@ -152,7 +200,7 @@ public:
 	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& payload);
 	virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
 
-	void nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload& payload);
+	void nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload& payload, const sc_core::sc_time& t);
 	
 private:
 	virtual void end_of_elaboration();
@@ -317,8 +365,8 @@ private:
 		
 		typedef FieldSet<MSTR, CONT_SCKE, DCONF, FRZ, MTFE, PCSSE, ROOE, PCSIS, MDIS, DIS_TXF, DIS_RXF, CLR_TXF, CLR_RXF, SMPL_PT, XSPI, FCPCS, PES, HALT> ALL;
 		
-		DSPI_MCR(DSPI<CONFIG> *_dspi) : Super(_dspi) { Init(); }
-		DSPI_MCR(DSPI<CONFIG> *_dspi, uint32_t value) : Super(_dspi, value) { Init(); }
+		DSPI_MCR(DSPI<CONFIG> *_dspi) : Super(_dspi), dspi_clock_period(), sample_point() { Init(); }
+		DSPI_MCR(DSPI<CONFIG> *_dspi, uint32_t value) : Super(_dspi, value), dspi_clock_period(), sample_point() { Init(); }
 		
 		void Init()
 		{
@@ -347,25 +395,76 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x00004001);
+			Update();
 		}
 		
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
 			bool old_mstr = this->template Get<MSTR>();
+			bool old_dis_txf = this->template Get<DIS_TXF>();
 			ReadWriteStatus rws = Super::Write(value, bit_enable);
-			bool new_mstr = this->template Get<MSTR>();
 			
 			if(!IsReadWriteError(rws))
 			{
-				if(old_mstr != new_mstr)
+				bool new_mstr = this->template Get<MSTR>();
+				bool new_dis_txf = this->template Get<DIS_TXF>();
+				
+				bool mstr_value_changed = new_mstr ^ old_mstr;
+				bool dis_txf_value_changed = new_dis_txf ^ old_dis_txf;
+				
+				if(mstr_value_changed && !this->template Get<HALT>() && (!this->dspi->TX_FIFO_Empty() || !this->dspi->CMD_FIFO_Empty() || !this->dspi->RX_FIFO_Empty()))
+				{
+					this->dspi->logger << DebugWarning << sc_core::sc_time_stamp() << ": when switching between master and slave modes, to garantee proper operation, " << this->GetName() << " should be set to 1, and both the transmit and the receive FIFOs should be cleared" << EndDebugWarning;
+				}
+				
+				if(mstr_value_changed || dis_txf_value_changed)
 				{
 					this->dspi->MapRegisters();
 				}
+				
+				if(this->template Get<CLR_TXF>())
+				{
+					this->dspi->TX_FIFO_Clear();
+					this->template Set<CLR_TXF>(0);
+				}
+				
+				if(this->template Get<CLR_RXF>())
+				{
+					this->dspi->RX_FIFO_Clear();
+					this->template Set<CLR_RXF>(0);
+				}
+				
+				Update();
 			}
 			return rws;
 		}
 		
+		const sc_core::sc_time& GetSamplePoint() const
+		{
+			Update();
+			
+			return sample_point;
+		}
+		
 		using Super::operator =;
+		
+	private:
+		mutable sc_core::sc_time dspi_clock_period;
+		mutable sc_core::sc_time sample_point;
+		
+		void Update() const
+		{
+			if(unlikely(dspi_clock_period != this->dspi->dspi_clock_period))
+			{
+				// protocol clock: 1 / f_P
+				dspi_clock_period = this->dspi->dspi_clock_period;
+
+				// sample point = (1 / f_P) * SMPL_PT
+				sample_point = dspi_clock_period;
+				sample_point *= (double) this->template Get<SMPL_PT>();
+			}
+			
+		}
 	};
 	
 	// DSPI Transfer Count Register (DSPI_TCR)
@@ -420,9 +519,9 @@ private:
 		
 		typedef FieldSet<DBR, FMSZ, CPOL, CPHA, LSBFE, PCSSCK, PASC, PDT, PBR, CSSCK, ASC, DT, BR> ALL;
 		
-		DSPI_CTAR() : Super(0), reg_num(0) {}
-		DSPI_CTAR(DSPI<CONFIG> *_dspi) : Super(_dspi), reg_num(0) {}
-		DSPI_CTAR(DSPI<CONFIG> *_dspi, uint32_t value) : Super(_dspi, value), reg_num(0) {}
+		DSPI_CTAR() : Super(0), reg_num(0), dspi_clock_period(), dconf(DCONF_SPI), tsbc(false), scke(false), sck_period(), sck_half_period(), t_CSC(), t_ASC(), t_DT() {}
+		DSPI_CTAR(DSPI<CONFIG> *_dspi) : Super(_dspi), reg_num(0), dspi_clock_period(), dconf(DCONF_SPI), tsbc(false), scke(false), sck_period(), sck_half_period(), t_CSC(), t_ASC(), t_DT() {}
+		DSPI_CTAR(DSPI<CONFIG> *_dspi, uint32_t value) : Super(_dspi, value), reg_num(0), dspi_clock_period(), dconf(DCONF_SPI), tsbc(false), scke(false), sck_period(), sck_half_period(), t_CSC(), t_ASC(), t_DT() {}
 		
 		void WithinRegisterFileCtor(unsigned int _reg_num, DSPI<CONFIG> *_dspi)
 		{
@@ -467,6 +566,8 @@ private:
 						this->dspi->dspi_ctar_slave[reg_num].template Set<typename DSPI_CTAR_SLAVE::CPHA>(this->template Get<CPHA>());
 						break;
 				}
+				
+				Update();
 			}
 			return rws;
 		}
@@ -474,11 +575,105 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x78000000);
+			Update();
 		}
 		
+		const sc_core::sc_time GetSCKPeriod() const
+		{
+			Update();
+			
+			return sck_period;
+		}
+		
+		const sc_core::sc_time GetSCKHalfPeriod() const
+		{
+			Update();
+			
+			return sck_half_period;
+		}
+
+		const sc_core::sc_time GetPCS2SCKDelay() const
+		{
+			Update();
+
+			return t_CSC;
+		}
+		
+		const sc_core::sc_time GetAfterSCKDelay() const
+		{
+			Update();
+
+			return t_ASC;
+		}
+		
+		const sc_core::sc_time GetDelayAfterTransfer() const
+		{
+			Update();
+			
+			return t_DT;
+		}
+
 		using Super::operator =;
 	private:
 		unsigned int reg_num;
+		mutable sc_core::sc_time dspi_clock_period;
+		mutable DSPI_Configuration dconf;
+		mutable bool tsbc;
+		mutable bool scke;
+		mutable sc_core::sc_time sck_period;
+		mutable sc_core::sc_time sck_half_period;
+		mutable sc_core::sc_time t_CSC;
+		mutable sc_core::sc_time t_ASC;
+		mutable sc_core::sc_time t_DT;
+		
+		void Update() const
+		{
+			if(unlikely((dspi_clock_period != this->dspi->dspi_clock_period) ||
+			            (dconf != this->dspi->Configuration()) ||
+			            (tsbc != this->dspi->dspi_dsicr0.template Get<typename DSPI_DSICR0::TSBC>()) ||
+			            (scke != this->dspi->dspi_mcr.template Get<typename DSPI_MCR::CONT_SCKE>())))
+			{
+				// protocol clock: 1 / f_P
+				dspi_clock_period = this->dspi->dspi_clock_period;
+				
+				dconf = this->dspi->Configuration();
+				tsbc = this->dspi->dspi_dsicr0.template Get<typename DSPI_DSICR0::TSBC>();
+				scke = this->dspi->dspi_mcr.template Get<typename DSPI_MCR::CONT_SCKE>();
+				
+				// baud rate: 1 / f_SCK = (1 / f_P) * PBR * (1 + DBR) / BR
+				sck_period = dspi_clock_period;
+				sck_period *= (double) (this->template Get<PBR>() * (1 + this->template Get<DBR>())) / this->template Get<BR>();
+				sck_half_period = sck_period;
+				sck_half_period *= 0.5;
+				
+				// PCS to SCK delay: t_CSC = (1 / f_P) * PCSSCK * CSSCK
+				t_CSC = dspi_clock_period;
+				t_CSC *= (double) (this->template Get<PCSSCK>() * this->template Get<CSSCK>());
+				
+				// After SCK delay: t_ASC = (1 / f_P) * PASC * ASC
+				t_ASC = dspi_clock_period;
+				t_ASC *= (double) (this->template Get<PASC>() * this->template Get<ASC>());
+				
+				if((dconf == DCONF_CSI) && tsbc)
+				{
+					// TSB mode
+					// Delay after transfer: t_DT = (1 / f_P) * (concat(PDT, BT) + 1)
+					t_DT = dspi_clock_period;
+					t_DT *= (double) (((this->template Get<PDT>() << DT::BITWIDTH) | this->template Get<DT>()) + 1);
+				}
+				else if(scke)
+				{
+					// Continuous Serial Communications Clock
+					// Delay after transfer: t_DT = (1 / f_P)
+					t_DT = dspi_clock_period;
+				}
+				else
+				{
+					// Delay after transfer: t_DT = (1 / f_P) * PDT * DT
+					t_DT *= (double) (this->template Get<PDT>() * this->template Get<DT>());
+				}
+			}
+		}
 	};
 	
 	// DSPI Clock and Transfer Attributes Register (In Slave Mode) (DSPI_CTAR_SLAVE)
@@ -550,26 +745,26 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0x2c;
 		
-		struct TCF       : Field<DSPI_SR, TCF      , 0     , SW_R_W1C> {}; // Transfer Complete Flag
-		struct TXRXS     : Field<DSPI_SR, TXRXS    , 1     , SW_R_W1C> {}; // TX and RX Status
-		struct SPITCF    : Field<DSPI_SR, SPITCF   , 2     , SW_R_W1C> {}; // SPI Frame Transfer Complete Flag
-		struct EOQF      : Field<DSPI_SR, EOQF     , 3     , SW_R_W1C> {}; // End of Queue Flag
-		struct TFUF      : Field<DSPI_SR, TFUF     , 4     , SW_R_W1C> {}; // Transmit FIFO Underflow Flag
-		struct DSITCF    : Field<DSPI_SR, DSITCF   , 5     , SW_R_W1C> {}; // DSI Frame Transfer Complete Flag
-		struct TFFF      : Field<DSPI_SR, TFFF     , 6     , SW_R_W1C> {}; // Transmit FIFO Fill Flag
-		struct BSYF      : Field<DSPI_SR, BSYF     , 7     , SW_R  > {}; // Busy Flag
-		struct CMDTCF    : Field<DSPI_SR, CMDTCF   , 8     , SW_R_W1C> {}; // Command Transfer Complete Flag
-		struct DPEF      : Field<DSPI_SR, DPEF     , 9     , SW_R_W1C> {}; // DSI Parity Error Flag
-		struct SPEF      : Field<DSPI_SR, SPEF     , 10    , SW_R_W1C> {}; // SPI Parity Error Flag
-		struct DDIF      : Field<DSPI_SR, DDIF     , 11    , SW_R_W1C> {}; // DSI Data Received with Active Bits
-		struct RFOF      : Field<DSPI_SR, RFOF     , 12    , SW_R_W1C> {}; // Receive FIFO Overflow Flag
-		struct TFIWF     : Field<DSPI_SR, TFIWF    , 13    , SW_R_W1C> {}; // Transmit FIFO Invalid Write Flag
-		struct RFDF      : Field<DSPI_SR, RFDF     , 14    , SW_R_W1C> {}; // Receive FIFO Drain Flag
-		struct CMDFFF    : Field<DSPI_SR, CMDFFF   , 15    , SW_R_W1C> {}; // Command FIFO Fill Flag
-		struct TXCTR     : Field<DSPI_SR, TXCTR    , 16, 19, SW_R  > {}; // TX FIFO Counter
-		struct TXNXTPTR  : Field<DSPI_SR, TXNXTPTR , 20, 23, SW_R  > {}; // Transmit Next Pointer
-		struct RXCTR     : Field<DSPI_SR, RXCTR    , 24, 27, SW_R  > {}; // RX FIFO Counter
-		struct POPNXTPTR : Field<DSPI_SR, POPNXTPTR, 28, 31, SW_R  > {}; // Pop Next Pointer
+		struct TCF       : Field<DSPI_SR, TCF      , 0 , 0 , SW_R_W1C> {}; // Transfer Complete Flag
+		struct TXRXS     : Field<DSPI_SR, TXRXS    , 1 , 1 , SW_R_W1C> {}; // TX and RX Status
+		struct SPITCF    : Field<DSPI_SR, SPITCF   , 2 , 2 , SW_R_W1C> {}; // SPI Frame Transfer Complete Flag
+		struct EOQF      : Field<DSPI_SR, EOQF     , 3 , 3 , SW_R_W1C> {}; // End of Queue Flag
+		struct TFUF      : Field<DSPI_SR, TFUF     , 4 , 4 , SW_R_W1C> {}; // Transmit FIFO Underflow Flag
+		struct DSITCF    : Field<DSPI_SR, DSITCF   , 5 , 5 , SW_R_W1C> {}; // DSI Frame Transfer Complete Flag
+		struct TFFF      : Field<DSPI_SR, TFFF     , 6 , 6 , SW_R_W1C> {}; // Transmit FIFO Fill Flag
+		struct BSYF      : Field<DSPI_SR, BSYF     , 7 , 7 , SW_R    > {}; // Busy Flag
+		struct CMDTCF    : Field<DSPI_SR, CMDTCF   , 8 , 8 , SW_R_W1C> {}; // Command Transfer Complete Flag
+		struct DPEF      : Field<DSPI_SR, DPEF     , 9 , 9 , SW_R_W1C> {}; // DSI Parity Error Flag
+		struct SPEF      : Field<DSPI_SR, SPEF     , 10, 10, SW_R_W1C> {}; // SPI Parity Error Flag
+		struct DDIF      : Field<DSPI_SR, DDIF     , 11, 11, SW_R_W1C> {}; // DSI Data Received with Active Bits
+		struct RFOF      : Field<DSPI_SR, RFOF     , 12, 12, SW_R_W1C> {}; // Receive FIFO Overflow Flag
+		struct TFIWF     : Field<DSPI_SR, TFIWF    , 13, 13, SW_R_W1C> {}; // Transmit FIFO Invalid Write Flag
+		struct RFDF      : Field<DSPI_SR, RFDF     , 14, 14, SW_R_W1C> {}; // Receive FIFO Drain Flag
+		struct CMDFFF    : Field<DSPI_SR, CMDFFF   , 15, 15, SW_R_W1C> {}; // Command FIFO Fill Flag
+		struct TXCTR     : Field<DSPI_SR, TXCTR    , 16, 19, SW_R    > {}; // TX FIFO Counter
+		struct TXNXTPTR  : Field<DSPI_SR, TXNXTPTR , 20, 23, SW_R    > {}; // Transmit Next Pointer
+		struct RXCTR     : Field<DSPI_SR, RXCTR    , 24, 27, SW_R    > {}; // RX FIFO Counter
+		struct POPNXTPTR : Field<DSPI_SR, POPNXTPTR, 28, 31, SW_R    > {}; // Pop Next Pointer
 		
 		typedef FieldSet<TCF, TXRXS, SPITCF, EOQF, TFUF, DSITCF, TFFF, BSYF, CMDTCF, DPEF, SPEF, DDIF, RFOF, TFIWF, RFDF, CMDFFF, TXCTR, TXNXTPTR, RXCTR, POPNXTPTR> ALL;
 		
@@ -604,6 +799,56 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x02010000);
+			this->dspi->UpdateINT_EOQF();
+			this->dspi->UpdateINT_TFFF();  
+			this->dspi->UpdateINT_CMDFFF();
+			this->dspi->UpdateINT_TFIWF();
+			this->dspi->UpdateINT_TCF();   
+			this->dspi->UpdateINT_CMDTCF();
+			this->dspi->UpdateINT_SPITCF();
+			this->dspi->UpdateINT_DSITCF();
+			this->dspi->UpdateINT_TFUF();
+			this->dspi->UpdateINT_RFDF();
+			this->dspi->UpdateINT_RFOF();
+			this->dspi->UpdateINT_SPEF();
+			this->dspi->UpdateINT_DPEF();
+			this->dspi->UpdateINT_DDIF();
+			this->dspi->UpdateDMA_RX();
+			this->dspi->UpdateDMA_TX();
+			this->dspi->UpdateDMA_CMD();   
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			uint32_t old_value = this->template Get<ALL>();
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				uint32_t new_value = this->template Get<ALL>();
+				
+				uint32_t value_changed = new_value ^ old_value;
+				
+				if(EOQF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_EOQF();
+				if(TFFF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_TFFF();  
+				if(CMDFFF::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_CMDFFF();
+				if(TFIWF ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_TFIWF();
+				if(TCF   ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_TCF();   
+				if(CMDTCF::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_CMDTCF();
+				if(SPITCF::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_SPITCF();
+				if(DSITCF::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_DSITCF();
+				if(TFUF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_TFUF();
+				if(RFDF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_RFDF();
+				if(RFOF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_RFOF();
+				if(SPEF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_SPEF();
+				if(DPEF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_DPEF();
+				if(DDIF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_DDIF();
+				if(RFDF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateDMA_RX();
+				if(TFFF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateDMA_TX();
+				if(CMDFFF::template Get<uint32_t>(value_changed)) this->dspi->UpdateDMA_CMD();   
+			}
+			
+			return rws;
 		}
 		
 		using Super::operator =;
@@ -668,6 +913,56 @@ private:
 			this->Initialize(0x0);
 		}
 		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			uint32_t old_value = this->template Get<ALL>();
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				uint32_t new_value = this->template Get<ALL>();
+				
+				uint32_t value_changed = new_value ^ old_value;
+				
+				if(TCF_RE   ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_TCF();
+				
+				if(CMDFFF_RE  ::template Get<uint32_t>(value_changed) ||
+				   CMDFFF_DIRS::template Get<uint32_t>(value_changed))
+				{
+					this->dspi->UpdateINT_CMDFFF();
+					this->dspi->UpdateDMA_CMD();
+				}
+
+				if(SPITCF_RE::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_SPITCF();
+				if(EOQF_RE  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_EOQF();
+				if(TFUF_RE  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_TFUF();   
+				if(DSITCF_RE::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_DSITCF();
+				
+				if(TFFF_RE  ::template Get<uint32_t>(value_changed) ||
+				   TFFF_DIRS::template Get<uint32_t>(value_changed))
+				{
+					this->dspi->UpdateINT_TFFF();
+					this->dspi->UpdateDMA_TX();
+				}
+				
+				if(CMDTCF_RE::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_CMDTCF();
+				if(DPEF_RE  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_DPEF();
+				if(SPEF_RE  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_SPEF();
+				if(DDIF_RE  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_DDIF();
+				if(RFOF_RE  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_RFOF();
+				if(TFIWF_RE ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_TFIWF();
+				
+				if(RFDF_RE  ::template Get<uint32_t>(value_changed) ||
+				   RFDF_DIRS::template Get<uint32_t>(value_changed))
+				{
+					this->dspi->UpdateINT_RFDF();
+					this->dspi->UpdateDMA_RX();
+				}
+			}
+			
+			return rws;
+		}
+
 		using Super::operator =;
 	};
 	
@@ -685,6 +980,7 @@ private:
 		struct PE_MASC : Field<DSPI_PUSHR, PE_MASC, 6     > {}; // Parity Enable or Mask tASC delay in the current frame
 		struct PP_MCSC : Field<DSPI_PUSHR, PP_MCSC, 7     > {}; // Parity Polarity or Mask tCSC delay in the next frame
 		struct PCS     : Field<DSPI_PUSHR, PCS    , 8, 15 > {}; // Select which PCS signals are to be asserted for the transfer
+		struct CMD     : Field<DSPI_PUSHR, CMD    , 0, 15 > {}; // Command
 		struct TXDATA  : Field<DSPI_PUSHR, TXDATA , 16, 31> {}; // Transmit Data
 		
 		typedef FieldSet<CONT, CTAS, EOQ, CTCNT, PE_MASC, PP_MCSC, PCS, TXDATA> ALL;
@@ -714,6 +1010,23 @@ private:
 			{
 				// mirror TXDATA in DSPI_PUSHR_SLAVE
 				this->dspi->dspi_pushr_slave.template Set<typename DSPI_PUSHR_SLAVE::TXDATA>(this->template Get<TXDATA>());
+				
+				if(this->dspi->ExtendedMode())
+				{
+					if(bit_enable & FieldSet<CMD>::template GetMask<uint32_t>())
+					{
+						this->dspi->XSPI_Master_CMD_FIFO_Push(this->template Get<CMD>());
+					}
+					
+					if(bit_enable & FieldSet<TXDATA>::template GetMask<uint32_t>())
+					{
+						this->dspi->XSPI_Master_TX_FIFO_Push(this->template Get<TXDATA>());
+					}
+				}
+				else
+				{
+					this->dspi->SPI_Master_TX_FIFO_Push(this->template Get<CMD>(), this->template Get<TXDATA>());
+				}
 			}
 			return rws;
 		}
@@ -754,6 +1067,8 @@ private:
 			{
 				// mirror TXDATA in DSPI_PUSHR
 				this->dspi->dspi_pushr_slave.template Set<typename DSPI_PUSHR::TXDATA>(this->template Get<TXDATA>());
+				
+				this->dspi->SPI_Slave_TX_FIFO_Push(this->template Get<TXDATA>());
 			}
 			return rws;
 		}
@@ -791,6 +1106,27 @@ private:
 			this->Initialize(0x0);
 		}
 		
+		virtual ReadWriteStatus Read(uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Read(value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				if(this->dspi->RX_FIFO_Empty())
+				{
+					this->dspi->logger << DebugWarning << sc_core::sc_time_stamp() << ": Attempts to pop data from an empty RX FIFO are ignored and the RX FIFO Counter remains unchanged; The data read from the empty RX FIFO is undetermined" << EndDebugWarning;
+					value = (value & ~bit_enable) | (0xdeadbeef & bit_enable);
+				}
+				else
+				{
+					uint32_t rxdata = this->dspi->SPI_RX_FIFO_Front();
+					this->dspi->SPI_RX_FIFO_Pop();
+					value = (value & ~bit_enable) | (rxdata & bit_enable);
+				}
+			}
+			return rws;
+		}
+
 		using Super::operator =;
 	};
 	
@@ -884,26 +1220,26 @@ private:
 		
 		static const sc_dt::uint64 ADDRESS_OFFSET = 0xbc;
 		
-		struct Reserved1 : Field<DSPI_DSICR0, Reserved1, 0         > {}; // This field is reserved
-		struct FMSZ4     : Field<DSPI_DSICR0, FMSZ4    , 1         > {}; // MSB of the frame size in master mode when DSI is used in 32-bit mode
-		struct Reserved2 : Field<DSPI_DSICR0, Reserved2, 2, 7      > {}; // This field is reserved
-		struct Reserved3 : Field<DSPI_DSICR0, Reserved3, 8, 8, SW_R> {}; // This field is reserved
-		struct Reserved4 : Field<DSPI_DSICR0, Reserved4, 9         > {}; // This field is reserved
-		struct ITSB      : Field<DSPI_DSICR0, ITSB     , 10        > {}; // Interleaved TSB mode
-		struct TSBC      : Field<DSPI_DSICR0, TSBC     , 11        > {}; // Timed Serial Bus Configuration
-		struct TXSS      : Field<DSPI_DSICR0, TXSS     , 12        > {}; // Transmit Data Source Select
-		struct TPOL      : Field<DSPI_DSICR0, TPOL     , 13        > {}; // Trigger Polarity
-		struct Reserved5 : Field<DSPI_DSICR0, Reserved5, 14        > {}; // This field is reserved
-		struct CID       : Field<DSPI_DSICR0, CID      , 15        > {}; // Change In Data Transfer Enable
-		struct DCONT     : Field<DSPI_DSICR0, DCONT    , 16        > {}; // DSI Continuous Peripheral Chip Select Enable
-		struct DSICTAS   : Field<DSPI_DSICR0, DSICTAS  , 17, 19    > {}; // DSI Clock and Transfer Attributes Select (DSI Master mode only)
-		struct DMS       : Field<DSPI_DSICR0, DMS      , 20        > {}; // Data Match Stop
-		struct PES       : Field<DSPI_DSICR0, PES      , 21        > {}; // Parity Error Stop
-		struct PE        : Field<DSPI_DSICR0, PE       , 22        > {}; // Parity Enable
-		struct PP        : Field<DSPI_DSICR0, PP       , 23        > {}; // Parity Polarity
-		struct DPCSx     : Field<DSPI_DSICR0, DPCSx    , 24, 31    > {}; // DSI Peripheral Chip Select 0-7
+		struct Reserved1 : Field<DSPI_DSICR0, Reserved1, 0           > {}; // This field is reserved
+		struct FMSZ4     : Field<DSPI_DSICR0, FMSZ4    , 1           > {}; // MSB of the frame size in master mode when DSI is used in 32-bit mode
+		struct Reserved2 : Field<DSPI_DSICR0, Reserved2, 2, 7        > {}; // This field is reserved
+		struct Reserved3 : Field<DSPI_DSICR0, Reserved3, 8, 8, SW_R  > {}; // This field is reserved
+		struct Reserved4 : Field<DSPI_DSICR0, Reserved4, 9           > {}; // This field is reserved
+		struct ITSB      : Field<DSPI_DSICR0, ITSB     , 10          > {}; // Interleaved TSB mode
+		struct TSBC      : Field<DSPI_DSICR0, TSBC     , 11          > {}; // Timed Serial Bus Configuration
+		struct TXSS      : Field<DSPI_DSICR0, TXSS     , 12          > {}; // Transmit Data Source Select
+		struct TPOL      : Field<DSPI_DSICR0, TPOL     , 13          > {}; // Trigger Polarity
+		struct TRRE      : Field<DSPI_DSICR0, TRRE     , 14, 14, SW_R> {}; // Trigger Reception Enable
+		struct CID       : Field<DSPI_DSICR0, CID      , 15          > {}; // Change In Data Transfer Enable
+		struct DCONT     : Field<DSPI_DSICR0, DCONT    , 16          > {}; // DSI Continuous Peripheral Chip Select Enable
+		struct DSICTAS   : Field<DSPI_DSICR0, DSICTAS  , 17, 19      > {}; // DSI Clock and Transfer Attributes Select (DSI Master mode only)
+		struct DMS       : Field<DSPI_DSICR0, DMS      , 20          > {}; // Data Match Stop
+		struct PES       : Field<DSPI_DSICR0, PES      , 21          > {}; // Parity Error Stop
+		struct PE        : Field<DSPI_DSICR0, PE       , 22          > {}; // Parity Enable
+		struct PP        : Field<DSPI_DSICR0, PP       , 23          > {}; // Parity Polarity
+		struct DPCSx     : Field<DSPI_DSICR0, DPCSx    , 24, 31      > {}; // DSI Peripheral Chip Select 0-7
 		
-		typedef FieldSet<Reserved1, FMSZ4, Reserved2, Reserved3, Reserved4, ITSB, TSBC, TXSS, TPOL, Reserved5, CID, DCONT, DSICTAS, DMS, PES, PE, PP, DPCSx> ALL;
+		typedef FieldSet<Reserved1, FMSZ4, Reserved2, Reserved3, Reserved4, ITSB, TSBC, TXSS, TPOL, TRRE, CID, DCONT, DSICTAS, DMS, PES, PE, PP, DPCSx> ALL;
 		
 		DSPI_DSICR0(DSPI<CONFIG> *_dspi) : Super(_dspi) { Init(); }
 		DSPI_DSICR0(DSPI<CONFIG> *_dspi, uint32_t value) : Super(_dspi, value) { Init(); }
@@ -921,7 +1257,7 @@ private:
 			TSBC     ::SetName("TSBC");     TSBC     ::SetDescription("Timed Serial Bus Configuration");
 			TXSS     ::SetName("TXSS");     TXSS     ::SetDescription("Transmit Data Source Select");
 			TPOL     ::SetName("TPOL");     TPOL     ::SetDescription("Trigger Polarity");
-			Reserved5::SetName("Reserved"); Reserved5::SetDescription("This field is reserved");
+			TRRE     ::SetName("TRRE");     TRRE     ::SetDescription("Trigger Reception Enable");
 			CID      ::SetName("CID");      CID      ::SetDescription("Change In Data Transfer Enable");
 			DCONT    ::SetName("DCONT");    DCONT    ::SetDescription("DSI Continuous Peripheral Chip Select Enable");
 			DSICTAS  ::SetName("DSICTAS");  DSICTAS  ::SetDescription("DSI Clock and Transfer Attributes Select (DSI Master mode only)");
@@ -991,6 +1327,18 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x0);
+		}
+		
+		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
+		{
+			ReadWriteStatus rws = Super::Write(value, bit_enable);
+			
+			if(!IsReadWriteError(rws))
+			{
+				this->dspi->CheckChangeInData();
+			}
+			
+			return rws;
 		}
 		
 		using Super::operator =;
@@ -1238,12 +1586,59 @@ private:
 			CMDNXTPTR::SetName("CMDNXTPTR"); CMDNXTPTR::SetDescription("Command Next Pointer");
 		}
 		
+		virtual ReadWriteStatus Read(uint32_t& value, const uint32_t& bit_enable)
+		{
+			if(this->dspi->ExtendedMode())
+			{
+				return Super::Read(value, bit_enable);
+			}
+			else
+			{
+				// When not in extended mode, SREX[CMDCTR]=SR[TXCTR] and SREX[CMDNXTPTR]=SR[TXNXTPTR]
+				uint32_t _value = 0;
+				CMDCTR::Set(_value, this->dspi->dspi_sr.template Get<typename DSPI_SR::TXCTR>());
+				CMDNXTPTR::Set(_value, this->dspi->dspi_sr.template Get<typename DSPI_SR::TXNXTPTR>());
+				value = (value & ~bit_enable) || (_value & bit_enable);
+				
+				return RWS_OK;
+			}
+		}
+		
+		virtual void DebugRead(uint32_t& value, const uint32_t& bit_enable)
+		{
+			if(this->dspi->ExtendedMode())
+			{
+				Super::DebugRead(value, bit_enable);
+			}
+			else
+			{
+				// When not in extended mode, SREX[CMDCTR]=SR[TXCTR] and SREX[CMDNXTPTR]=SR[TXNXTPTR]
+				uint32_t _value = 0;
+				CMDCTR::Set(_value, this->dspi->dspi_sr.template Get<typename DSPI_SR::TXCTR>());
+				CMDNXTPTR::Set(_value, this->dspi->dspi_sr.template Get<typename DSPI_SR::TXNXTPTR>());
+				value = (value & ~bit_enable) || (_value & bit_enable);
+			}
+		}
+
 		void Reset()
 		{
 			this->Initialize(0x0);
 		}
 		
 		using Super::operator =;
+	};
+	
+	struct TransferControl
+	{
+		bool cont;               // continuous peripheral chip select    (Master only)
+		bool masc;               // mask tASC delay in the current frame (Master only)
+		bool mcsc;               // mask tCSC delay in the current frame (Master only)
+		unsigned int pcs;        // peripheral chip select               (Master only)
+		unsigned int ctas;       // clock and transfer attribute select  (Master/Slave)
+		bool pe;                 // parity enable                        (Master/Slave)
+		bool pp;                 // parity polarity                      (Master/Slave)
+		bool cpha;               // clock phase                          (Master/Slave)
+		unsigned int frame_size; // frame size                           (Master/Slave)
 	};
 	
 	unisim::kernel::tlm2::ClockPropertiesProxy m_clk_prop_proxy;    // proxy to get clock properties from master clock port
@@ -1259,8 +1654,8 @@ private:
 	DSPI_PUSHR                                                                        dspi_pushr;
 	DSPI_PUSHR_SLAVE                                                                  dspi_pushr_slave;
 	DSPI_POPR                                                                         dspi_popr;
-	DSPI_TXFR                                                                         dspi_txfr;
-	DSPI_RXFR                                                                         dspi_rxfr;
+	AddressableRegisterFile<DSPI_TXFR, TX_FIFO_DEPTH, DSPI<CONFIG> >                  dspi_txfr;
+	AddressableRegisterFile<DSPI_RXFR, RX_FIFO_DEPTH, DSPI<CONFIG> >                  dspi_rxfr;
 	DSPI_DSICR0                                                                       dspi_dsicr0;
 	DSPI_SDR0                                                                         dspi_sdr0;
 	DSPI_ASDR0                                                                        dspi_asdr0;
@@ -1272,6 +1667,42 @@ private:
 	DSPI_DPIR0                                                                        dspi_dpir0;
 	AddressableRegisterFile<DSPI_CTARE, NUM_CTARS, DSPI<CONFIG> >                     dspi_ctare;
 	DSPI_SREX                                                                         dspi_srex;
+	
+	unsigned int txbackptr;   // TX FIFO back pointer
+	unsigned int rxbackptr;   // RX FIFO back pointer
+	unsigned int cmdbackptr;  // CMD FIFO back pointer
+	unsigned int rxpart;      // part of RX data for slave (0=LSB or 1=MSB)
+	DSPI_Configuration prev_dconf;
+	DSPI_Configuration curr_dconf;
+	uint16_t prev_cmd;
+	uint16_t cmd;
+	unsigned int cmd_cycling_cnt;
+	bool trigger_spi;
+	bool trigger_dsi;
+	bool pcs_sigs[NUM_CTARS];
+	
+	unisim::kernel::tlm2::tlm_input_bitstream sin_bitstream; // Rx timed input bit stream
+	unisim::kernel::tlm2::tlm_input_bitstream ss_bitstream;
+	sc_core::sc_event trigger_event;
+	sc_core::sc_time transfer_ready_time;
+	
+	sc_core::sc_event gen_int_eoqf_event;
+	sc_core::sc_event gen_int_tfff_event;
+	sc_core::sc_event gen_int_cmdfff_event;
+	sc_core::sc_event gen_int_tfiwf_event;
+	sc_core::sc_event gen_int_tcf_event;
+	sc_core::sc_event gen_int_cmdtcf_event;
+	sc_core::sc_event gen_int_spitcf_event;
+	sc_core::sc_event gen_int_dsitcf_event;
+	sc_core::sc_event gen_int_tfuf_event;
+	sc_core::sc_event gen_int_rfdf_event;
+	sc_core::sc_event gen_int_rfof_event;
+	sc_core::sc_event gen_int_spef_event;
+	sc_core::sc_event gen_int_dpef_event;
+	sc_core::sc_event gen_int_ddif_event;
+	sc_core::sc_event gen_dma_rx_event;
+	sc_core::sc_event gen_dma_tx_event;
+	sc_core::sc_event gen_dma_cmd_event;
 	
 	// DSPI registers address map
 	RegisterAddressMap<sc_dt::uint64> reg_addr_map;
@@ -1297,10 +1728,96 @@ private:
 	void MapRegisters();
 	bool MasterMode() const;
 	bool SlaveMode() const;
+	bool ExtendedMode() const;
+	DSPI_Configuration Configuration() const;
+	unsigned int FrameSize(DSPI_Configuration dconf, unsigned int ctar_num) const;
+
+	unsigned int TX_FIFO_Depth() const;
+	unsigned int CMD_FIFO_Depth() const;
+	unsigned int RX_FIFO_Depth() const;
+	
+	// TX FIFO
+	void SPI_Master_TX_FIFO_Push(uint16_t txcmd, uint16_t txdata);
+	void XSPI_Master_TX_FIFO_Push(uint16_t txdata);
+	void XSPI_Master_CMD_FIFO_Push(uint16_t txcmd);
+	void SPI_Slave_TX_FIFO_Push(uint16_t txdata);
+	void TX_FIFO_Clear();
+	unsigned int TX_FIFO_Size() const;
+	bool TX_FIFO_Empty() const;
+	bool CMD_FIFO_Empty() const;
+	bool TX_FIFO_Full() const;
+	bool CMD_FIFO_Full() const;
+	uint16_t SPI_Master_TX_FIFO_Front() const;
+	uint16_t SPI_Master_CMD_FIFO_Front() const;
+	uint32_t SPI_Slave_TX_FIFO_Front() const;
+	void SPI_Master_TX_FIFO_Pop();
+	void XSPI_Master_CMD_FIFO_Pop();
+	void SPI_Slave_TX_FIFO_Pop();
+	
+	// RX FIFO
+	void RX_FIFO_Clear();
+	bool RX_FIFO_Empty() const;
+	bool RX_FIFO_Full() const;
+	void SPI_RX_FIFO_Push(uint32_t rxdata);
+	uint32_t SPI_RX_FIFO_Front();
+	void SPI_RX_FIFO_Pop();
+
+	void UpdateINT_EOQF();
+	void UpdateINT_TFFF();  
+	void UpdateINT_CMDFFF();
+	void UpdateINT_TFIWF();
+	void UpdateINT_TCF();   
+	void UpdateINT_CMDTCF();
+	void UpdateINT_SPITCF();
+	void UpdateINT_DSITCF();
+	void UpdateINT_TFUF();
+	void UpdateINT_RFDF();
+	void UpdateINT_RFOF();
+	void UpdateINT_SPEF();
+	void UpdateINT_DPEF();
+	void UpdateINT_DDIF();
+	void UpdateDMA_RX();
+	void UpdateDMA_TX();
+	void UpdateDMA_CMD();
+	
+	void UpdateMasterClock();
+	void UpdateDSPIClock();
 	
 	void ProcessEvent(Event *event);
 	void ProcessEvents();
 	void Process();
+	void INT_EOQF_Process();  
+	void INT_TFFF_Process();  
+	void INT_CMDFFF_Process();
+	void INT_TFIWF_Process(); 
+	void INT_TCF_Process();
+	void INT_CMDTCF_Process();
+	void INT_SPITCF_Process();
+	void INT_DSITCF_Process();
+	void INT_TFUF_Process();  
+	void INT_RFDF_Process();
+	void INT_RFOF_Process();
+	void INT_SPEF_Process();
+	void INT_DPEF_Process();
+	void INT_DDIF_Process();
+	void DMA_RX_Process();
+	void DMA_TX_Process();
+	void DMA_CMD_Process();
+	void TriggerSPI();
+	void TriggerDSI();
+	void Trigger();
+	void CheckChangeInData();
+	void HT_Process();
+	void LatchDSI_INPUT();
+	void MasterTransfer(uint32_t& shift_reg, const TransferControl& ctrl);
+	DSPI_Configuration SelectConfiguration();
+	void SPI_MasterTransfer();
+	void DSI_MasterTransfer();
+	void SlaveTransfer(uint32_t& shift_reg, const TransferControl& ctrl);
+	void SPI_SlaveTransfer();
+	void DSI_SlaveTransfer();
+	void TransferProcess();
+	void SetPCS(unsigned int slave_num, const sc_core::sc_time& t, bool value);
 };
 
 } // end of namespace dspi

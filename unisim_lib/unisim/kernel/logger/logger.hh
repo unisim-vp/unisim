@@ -100,6 +100,26 @@ struct Logger
 		return *this;
 	}
 
+#if 0
+	template <typename T>
+	Logger& operator << (const std::vector<T>& bv)
+	{
+		typename std::vector<T>::size_type length = bv.size();
+		typename std::vector<T>::size_type i;
+		
+		for(i = 0; i < length; i++)
+		{
+			if(i) buffer << " ";
+			
+			const T& v = bv[i];
+			
+			buffer << v;
+		}
+		
+		return *this;
+	}
+#endif
+
 	void DebugInfo();
 	void EndDebugInfo();
 	void DebugWarning();

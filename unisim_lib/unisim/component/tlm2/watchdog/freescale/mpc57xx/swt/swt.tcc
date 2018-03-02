@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_TLM2_WATCHDOG_FREESCALE_MPC57XX_SWT_SWT_TCC__
 
 #include <unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.hh>
+#include <unisim/util/reg/core/register.tcc>
 #include <unisim/kernel/tlm2/master_id.hh>
 
 namespace unisim {

@@ -35,11 +35,12 @@
 #ifndef __UNISIM_SERVICE_DEBUG_DEBUGGER_DEBUGGER_TCC__
 #define __UNISIM_SERVICE_DEBUG_DEBUGGER_DEBUGGER_TCC__
 
-#include <stdexcept>
-#include <fstream>
+#include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/util/debug/breakpoint_registry.tcc>
 #include <unisim/util/debug/watchpoint_registry.tcc>
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <stdexcept>
+#include <fstream>
 
 namespace unisim {
 namespace service {

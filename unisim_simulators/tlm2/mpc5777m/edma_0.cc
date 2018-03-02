@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <simulator.hh>
+#include <config.hh>
 #include <unisim/component/tlm2/dma/freescale/mpc57xx/edma/edma.tcc>
 
-template class unisim::component::tlm2::dma::freescale::mpc57xx::edma::EDMA<Simulator::EDMA_0_CONFIG>;
+template class unisim::component::tlm2::dma::freescale::mpc57xx::edma::EDMA<Config::EDMA_0_CONFIG>;

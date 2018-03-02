@@ -200,7 +200,7 @@ public:
 	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& payload);
 	virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
 
-	void nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload& payload);
+	void nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload& payload, const sc_core::sc_time& t);
 	
 private:
 	virtual bool EndSetup();
@@ -1923,7 +1923,7 @@ private:
 	LINFlexD_DMARXE                                                                                  linflexd_dmarxe;   // LINFlexD_DMARXE
 	LINFlexD_PTD                                                                                     linflexd_ptd;      // LINFlexD_PTD
 	
-	unisim::kernel::tlm2::tlm_bitstream rx_input; // Rx timed input bit stream
+	unisim::kernel::tlm2::tlm_input_bitstream rx_input; // Rx timed input bit stream
 	bool rx_prev_input_status;                    // Previous status of Rx pin
 	bool rx_input_status;                         // Current status of Rx pin
 	unsigned int rx_dominant_bits_cnt;            // number of consecutive dominant bits (i.e zero bits) received

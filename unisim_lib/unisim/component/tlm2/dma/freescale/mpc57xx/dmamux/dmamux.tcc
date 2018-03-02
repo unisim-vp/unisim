@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_TLM2_DMA_FREESCALE_MPC57XX_DMAMUX_DMAMUX_TCC__
 
 #include <unisim/component/tlm2/dma/freescale/mpc57xx/dmamux/dmamux.hh>
+#include <unisim/util/reg/core/register.tcc>
 #include <unisim/util/likely/likely.hh>
 
 namespace unisim {

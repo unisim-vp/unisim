@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <simulator.hh>
+#include <config.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
 
-template class unisim::component::tlm2::interconnect::generic_router::Router<Simulator::XBAR_1_CONFIG>;
+template class unisim::component::tlm2::interconnect::generic_router::Router<Config::XBAR_1_CONFIG>;
