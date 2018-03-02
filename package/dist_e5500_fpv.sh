@@ -232,6 +232,8 @@ unisim/util/os/linux_os/i386.hh \
 unisim/util/parser/parser.hh \
 unisim/util/parser/parser.tcc \
 unisim/util/xml/xml.hh \
+unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh \
+unisim/component/cxx/processor/powerpc/isa/powerpc64/mfspr.isa \
 "
 
 UNISIM_LIB_SIMULATOR_M4_FILES="\
@@ -310,8 +312,6 @@ main.cc \
 
 UNISIM_SIMULATOR_HEADER_FILES="\
 ${UNISIM_SIMULATOR_ISA_FILES} \
-arch.hh \
-testutils.hh \
 "
 
 UNISIM_SIMULATOR_EXTRA_FILES="\
@@ -453,6 +453,7 @@ Requirements:
   - GNU automake
   - GNU flex
   - GNU bison
+  - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
 
 
 Building instructions:
@@ -655,7 +656,7 @@ AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)
 noinst_PROGRAMS = genisslib
 genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}
 genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\"${GENISSLIB_VERSION}\"
-[1;5Fgenisslib_CXXFLAGS = -O1 -Wno-error
+genisslib_CXXFLAGS = -O1 -Wno-error
 noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}
 EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}
 # The following lines are a workaround caused by a bugFix in AUTOMAKE 1.12
@@ -710,6 +711,7 @@ case "\${host}" in
 	*)
 		;;
 esac
+UNISIM_CHECK_LIBXML2(main)
 GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
 AC_SUBST(GENISSLIB_PATH)
 AC_DEFINE([BIN_TO_SHARED_DATA_PATH], ["../share/unisim-${SIMPKG}-${SIMULATOR_VERSION}"], [path of shared data relative to bin directory])
