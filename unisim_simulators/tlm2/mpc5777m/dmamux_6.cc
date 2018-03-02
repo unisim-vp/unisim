@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <simulator.hh>
+#include <config.hh>
 #include <unisim/component/tlm2/dma/freescale/mpc57xx/dmamux/dmamux.tcc>
 
-template class unisim::component::tlm2::dma::freescale::mpc57xx::dmamux::DMAMUX<Simulator::DMAMUX_6_CONFIG>;
+template class unisim::component::tlm2::dma::freescale::mpc57xx::dmamux::DMAMUX<Config::DMAMUX_6_CONFIG>;

@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <simulator.hh>
+#include <config.hh>
 #include <unisim/component/tlm2/watchdog/freescale/mpc57xx/swt/swt.tcc>
 
-template class unisim::component::tlm2::watchdog::freescale::mpc57xx::swt::SWT<Simulator::SWT_3_CONFIG>;
+template class unisim::component::tlm2::watchdog::freescale::mpc57xx::swt::SWT<Config::SWT_3_CONFIG>;

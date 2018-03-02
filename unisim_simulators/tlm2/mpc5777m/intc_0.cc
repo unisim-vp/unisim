@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <simulator.hh>
+#include <config.hh>
 #include <unisim/component/tlm2/interrupt/freescale/mpc57xx/intc/intc.tcc>
 
-template class unisim::component::tlm2::interrupt::freescale::mpc57xx::intc::INTC<Simulator::INTC_0_CONFIG>;
+template class unisim::component::tlm2::interrupt::freescale::mpc57xx::intc::INTC<Config::INTC_0_CONFIG>;

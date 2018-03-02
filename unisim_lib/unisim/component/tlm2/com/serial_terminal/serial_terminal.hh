@@ -88,7 +88,7 @@ public:
 	
 	virtual void end_of_elaboration();
 	
-	void nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload& payload);
+	void nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload& payload, const sc_core::sc_time& t);
 
 	void PollingProcess();
 private:
@@ -98,7 +98,7 @@ private:
 	sc_core::sc_time clock_start_time;             // Master clock start time
 	bool clock_posedge_first;                      // Master clock posedge first ?
 	double clock_duty_cycle;                       // Master clock duty cycle
-	unisim::kernel::tlm2::tlm_bitstream rx_input; // Rx timed input bit stream
+	unisim::kernel::tlm2::tlm_input_bitstream rx_input; // Rx timed input bit stream
 	sc_core::sc_time rx_time;
 	sc_core::sc_time baud_period_lower_bound;
 	sc_core::sc_time baud_period;

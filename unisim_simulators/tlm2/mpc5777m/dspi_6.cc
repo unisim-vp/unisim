@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017,
+ *  Copyright (c) 2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -33,6 +33,6 @@
  */
 
 #include <config.hh>
-#include <unisim/component/tlm2/com/freescale/mpc57xx/linflexd/linflexd.tcc>
+#include <unisim/component/tlm2/com/freescale/mpc57xx/dspi/dspi.tcc>
 
-template class unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<Config::LINFlexD_1_CONFIG>;
+template class unisim::component::tlm2::com::freescale::mpc57xx::dspi::DSPI<Config::DSPI_6_CONFIG>;

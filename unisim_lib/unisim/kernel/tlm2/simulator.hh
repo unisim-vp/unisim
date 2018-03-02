@@ -763,6 +763,7 @@ bool Instrumenter::TryTraceSignal(const std::string& signal_name)
 template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
 void Instrumenter::RegisterSignal(sc_core::sc_signal<T, WRITER_POLICY> *signal)
 {
+	if(!signal) return;
 #if DEBUG_INSTRUMENTER >= 1
 	std::cout << "Registering Signal \"" << signal->name() << "\"" << std::endl;
 #endif

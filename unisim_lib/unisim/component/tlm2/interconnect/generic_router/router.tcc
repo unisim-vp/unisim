@@ -36,6 +36,7 @@
 #ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_TCC__
 #define __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_TCC__
 
+#include "unisim/component/tlm2/interconnect/generic_router/router.hh"
 #include "unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc"
 #include <cmath>
 #include <sstream>

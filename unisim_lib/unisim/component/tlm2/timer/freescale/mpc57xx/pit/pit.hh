@@ -38,6 +38,7 @@
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
+#include <unisim/kernel/tlm2/clock.hh>
 #include <unisim/util/reg/core/register.hh>
 #include <tlm_utils/passthrough_target_socket.h>
 #include <stack>

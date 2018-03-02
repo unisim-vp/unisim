@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <simulator.hh>
+#include <config.hh>
 #include <unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.tcc>
 
-template class unisim::component::tlm2::timer::freescale::mpc57xx::pit::PIT<Simulator::PIT_1_CONFIG>;
+template class unisim::component::tlm2::timer::freescale::mpc57xx::pit::PIT<Config::PIT_1_CONFIG>;

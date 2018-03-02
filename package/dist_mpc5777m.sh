@@ -1033,6 +1033,7 @@ dspi_12.cc \
 "
 UNISIM_SIMULATOR_HEADER_FILES="\
 simulator.hh \
+config.hh \
 "
 
 UNISIM_SIMULATOR_TEMPLATE_FILES="\

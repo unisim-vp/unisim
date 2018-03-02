@@ -72,6 +72,9 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 
+// Compile time configuration
+#include <config.hh>
+
 // Host machine standard headers
 #include <iostream>
 #include <stdexcept>
@@ -98,7 +101,7 @@ enum SerialTerminalProtocol
 	SERIAL_TERMINAL_PROTOCOL_NETCAT
 };
 
-class Simulator : public unisim::kernel::tlm2::Simulator
+class Simulator : public unisim::kernel::tlm2::Simulator, Config
 {
 public:
 	Simulator(const sc_core::sc_module_name& name, int argc, char **argv);
@@ -110,6 +113,7 @@ public:
 protected:
 private:
 	
+#if 0
 	//=========================================================================
 	//===                       Constants definitions                       ===
 	//=========================================================================
@@ -527,7 +531,7 @@ private:
 		static const unsigned int NUM_DSI_INPUTS         = 0;
 		static const unsigned int NUM_DSI_OUTPUTS        = 0;
 	};
-
+#endif
 	//=========================================================================
 	//===                     Aliases for components classes                ===
 	//=========================================================================
@@ -579,34 +583,50 @@ private:
 	typedef unisim::component::tlm2::com::freescale::mpc57xx::dspi::DSPI<DSPI_5_CONFIG> DSPI_5;
 	typedef unisim::component::tlm2::com::freescale::mpc57xx::dspi::DSPI<DSPI_6_CONFIG> DSPI_6;
 	typedef unisim::component::tlm2::com::freescale::mpc57xx::dspi::DSPI<DSPI_12_CONFIG> DSPI_12;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_0_TX;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_0_RX;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_1_TX;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_1_RX;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_2_TX;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_2_RX;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_14_TX;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_14_RX;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_15_TX;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_15_RX;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_16_TX;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_16_RX;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_0_SOUT;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_0_SIN;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_1_SOUT;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_1_SIN;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_2_SOUT;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_2_SIN;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_3_SOUT;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_3_SIN;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_4_SOUT;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_4_SIN;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_5_SOUT;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_5_SIN;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_6_SOUT;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_6_SIN;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_SOUT;
-	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_SIN;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_0_TX_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_0_RX_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_1_TX_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_1_RX_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_2_TX_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_2_RX_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_14_TX_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_14_RX_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_15_TX_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_15_RX_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_16_TX_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus LINFlexD_16_RX_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_0_SOUT_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_0_SIN_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_0_PCS_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_0_SS_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_1_SOUT_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_1_SIN_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_1_PCS_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_1_SS_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_2_SOUT_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_2_SIN_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_2_PCS_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_2_SS_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_3_SOUT_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_3_SIN_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_3_PCS_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_3_SS_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_4_SOUT_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_4_SIN_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_4_PCS_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_4_SS_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_5_SOUT_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_5_SIN_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_5_PCS_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_5_SS_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_6_SOUT_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_6_SIN_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_6_PCS_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_6_SS_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_SOUT_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_SIN_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_PCS_SERIAL_BUS;
+	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_SS_SERIAL_BUS;
 	//typedef unisim::kernel::tlm2::TargetStub<64> EBI_STUB;
 	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<64> FLASH_PORT1_STUB;
@@ -665,18 +685,18 @@ private:
 	LINFlexD_15 *linflexd_15;
 	LINFlexD_16 *linflexd_16;
 	//  - LINFlexD serial buses
-	LINFlexD_0_TX *linflexd_0_tx;
-	LINFlexD_0_RX *linflexd_0_rx;
-	LINFlexD_1_TX *linflexd_1_tx;
-	LINFlexD_1_RX *linflexd_1_rx;
-	LINFlexD_2_TX *linflexd_2_tx;
-	LINFlexD_2_RX *linflexd_2_rx;
-	LINFlexD_14_TX *linflexd_14_tx;
-	LINFlexD_14_RX *linflexd_14_rx;
-	LINFlexD_15_TX *linflexd_15_tx;
-	LINFlexD_15_RX *linflexd_15_rx;
-	LINFlexD_16_TX *linflexd_16_tx;
-	LINFlexD_16_RX *linflexd_16_rx;
+	LINFlexD_0_TX_SERIAL_BUS *linflexd_0_tx_serial_bus;
+	LINFlexD_0_RX_SERIAL_BUS *linflexd_0_rx_serial_bus;
+	LINFlexD_1_TX_SERIAL_BUS *linflexd_1_tx_serial_bus;
+	LINFlexD_1_RX_SERIAL_BUS *linflexd_1_rx_serial_bus;
+	LINFlexD_2_TX_SERIAL_BUS *linflexd_2_tx_serial_bus;
+	LINFlexD_2_RX_SERIAL_BUS *linflexd_2_rx_serial_bus;
+	LINFlexD_14_TX_SERIAL_BUS *linflexd_14_tx_serial_bus;
+	LINFlexD_14_RX_SERIAL_BUS *linflexd_14_rx_serial_bus;
+	LINFlexD_15_TX_SERIAL_BUS *linflexd_15_tx_serial_bus;
+	LINFlexD_15_RX_SERIAL_BUS *linflexd_15_rx_serial_bus;
+	LINFlexD_16_TX_SERIAL_BUS *linflexd_16_tx_serial_bus;
+	LINFlexD_16_RX_SERIAL_BUS *linflexd_16_rx_serial_bus;
 	//  - Serial Terminal
 	SERIAL_TERMINAL *serial_terminal0;
 	SERIAL_TERMINAL *serial_terminal1;
@@ -708,22 +728,38 @@ private:
 	DSPI_6 *dspi_6;
 	DSPI_12 *dspi_12;
 	//  - DSPI serial buses
-	DSPI_0_SOUT  *dspi_0_sout;
-	DSPI_0_SIN   *dspi_0_sin;
-	DSPI_1_SOUT  *dspi_1_sout;
-	DSPI_1_SIN   *dspi_1_sin;
-	DSPI_2_SOUT  *dspi_2_sout;
-	DSPI_2_SIN   *dspi_2_sin;
-	DSPI_3_SOUT  *dspi_3_sout;
-	DSPI_3_SIN   *dspi_3_sin;
-	DSPI_4_SOUT  *dspi_4_sout;
-	DSPI_4_SIN   *dspi_4_sin;
-	DSPI_5_SOUT  *dspi_5_sout;
-	DSPI_5_SIN   *dspi_5_sin;
-	DSPI_6_SOUT  *dspi_6_sout;
-	DSPI_6_SIN   *dspi_6_sin;
-	DSPI_12_SOUT *dspi_12_sout;
-	DSPI_12_SIN  *dspi_12_sin;
+	DSPI_0_SOUT_SERIAL_BUS  *dspi_0_sout_serial_bus;
+	DSPI_0_SIN_SERIAL_BUS   *dspi_0_sin_serial_bus;
+	DSPI_0_PCS_SERIAL_BUS   *dspi_0_pcs_serial_bus[DSPI_0::NUM_CTARS];
+	DSPI_0_SS_SERIAL_BUS    *dspi_0_ss_serial_bus;
+	DSPI_1_SOUT_SERIAL_BUS  *dspi_1_sout_serial_bus;
+	DSPI_1_SIN_SERIAL_BUS   *dspi_1_sin_serial_bus;
+	DSPI_1_PCS_SERIAL_BUS   *dspi_1_pcs_serial_bus[DSPI_1::NUM_CTARS];
+	DSPI_1_SS_SERIAL_BUS    *dspi_1_ss_serial_bus;
+	DSPI_2_SOUT_SERIAL_BUS  *dspi_2_sout_serial_bus;
+	DSPI_2_SIN_SERIAL_BUS   *dspi_2_sin_serial_bus;
+	DSPI_2_PCS_SERIAL_BUS   *dspi_2_pcs_serial_bus[DSPI_2::NUM_CTARS];
+	DSPI_2_SS_SERIAL_BUS    *dspi_2_ss_serial_bus;
+	DSPI_3_SOUT_SERIAL_BUS  *dspi_3_sout_serial_bus;
+	DSPI_3_SIN_SERIAL_BUS   *dspi_3_sin_serial_bus;
+	DSPI_3_PCS_SERIAL_BUS   *dspi_3_pcs_serial_bus[DSPI_3::NUM_CTARS];
+	DSPI_3_SS_SERIAL_BUS    *dspi_3_ss_serial_bus;
+	DSPI_4_SOUT_SERIAL_BUS  *dspi_4_sout_serial_bus;
+	DSPI_4_SIN_SERIAL_BUS   *dspi_4_sin_serial_bus;
+	DSPI_4_PCS_SERIAL_BUS   *dspi_4_pcs_serial_bus[DSPI_4::NUM_CTARS];
+	DSPI_4_SS_SERIAL_BUS    *dspi_4_ss_serial_bus;
+	DSPI_5_SOUT_SERIAL_BUS  *dspi_5_sout_serial_bus;
+	DSPI_5_SIN_SERIAL_BUS   *dspi_5_sin_serial_bus;
+	DSPI_5_PCS_SERIAL_BUS   *dspi_5_pcs_serial_bus[DSPI_5::NUM_CTARS];
+	DSPI_5_SS_SERIAL_BUS    *dspi_5_ss_serial_bus;
+	DSPI_6_SOUT_SERIAL_BUS  *dspi_6_sout_serial_bus;
+	DSPI_6_SIN_SERIAL_BUS   *dspi_6_sin_serial_bus;
+	DSPI_6_PCS_SERIAL_BUS   *dspi_6_pcs_serial_bus[DSPI_6::NUM_CTARS];
+	DSPI_6_SS_SERIAL_BUS    *dspi_6_ss_serial_bus;
+	DSPI_12_SOUT_SERIAL_BUS *dspi_12_sout_serial_bus;
+	DSPI_12_SIN_SERIAL_BUS  *dspi_12_sin_serial_bus;
+	DSPI_12_PCS_SERIAL_BUS  *dspi_12_pcs_serial_bus[DSPI_12::NUM_CTARS];
+	DSPI_12_SS_SERIAL_BUS   *dspi_12_ss_serial_bus;
 	
 	//  - Stubs
 	EBI_STUB *ebi_stub;

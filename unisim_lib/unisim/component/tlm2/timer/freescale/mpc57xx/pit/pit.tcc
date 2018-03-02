@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_TLM2_TIMER_FREESCALE_MPC57XX_PIT_PIT_TCC__
 
 #include <unisim/component/tlm2/timer/freescale/mpc57xx/pit/pit.hh>
+#include <unisim/util/reg/core/register.tcc>
 #include <unisim/util/likely/likely.hh>
 
 namespace unisim {

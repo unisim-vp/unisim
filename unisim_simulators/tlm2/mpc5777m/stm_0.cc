@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <simulator.hh>
+#include <config.hh>
 #include <unisim/component/tlm2/timer/freescale/mpc57xx/stm/stm.tcc>
 
-template class unisim::component::tlm2::timer::freescale::mpc57xx::stm::STM<Simulator::STM_0_CONFIG>;
+template class unisim::component::tlm2::timer::freescale::mpc57xx::stm::STM<Config::STM_0_CONFIG>;

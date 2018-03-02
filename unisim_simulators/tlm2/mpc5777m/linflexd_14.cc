@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <simulator.hh>
+#include <config.hh>
 #include <unisim/component/tlm2/com/freescale/mpc57xx/linflexd/linflexd.tcc>
 
-template class unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<Simulator::LINFlexD_14_CONFIG>;
+template class unisim::component::tlm2::com::freescale::mpc57xx::linflexd::LINFlexD<Config::LINFlexD_14_CONFIG>;

@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <simulator.hh>
+#include <config.hh>
 #include <unisim/service/debug/debugger/debugger.tcc>
 
-template class unisim::service::debug::debugger::Debugger<Simulator::DEBUGGER_CONFIG>;
+template class unisim::service::debug::debugger::Debugger<Config::DEBUGGER_CONFIG>;

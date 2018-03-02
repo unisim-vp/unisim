@@ -46,9 +46,9 @@ namespace freescale {
 namespace mpc57xx {
 namespace linflexd {
 
-using unisim::kernel::tlm2::tlm_bitstream_sync_status;
-using unisim::kernel::tlm2::TLM_BITSTREAM_SYNC_OK;
-using unisim::kernel::tlm2::TLM_BITSTREAM_NEED_SYNC;
+using unisim::kernel::tlm2::tlm_input_bitstream_sync_status;
+using unisim::kernel::tlm2::TLM_INPUT_BITSTREAM_SYNC_OK;
+using unisim::kernel::tlm2::TLM_INPUT_BITSTREAM_NEED_SYNC;
 
 template <typename CONFIG>
 const unsigned int LINFlexD<CONFIG>::TLM2_IP_VERSION_MAJOR;
@@ -310,11 +310,6 @@ void LINFlexD<CONFIG>::end_of_elaboration()
 	sc_core::sc_spawn(sc_bind(&LINFlexD<CONFIG>::Process, this), "Process", &process_spawn_options);
 
 	Reset();
-	
-// 	unisim::kernel::tlm2::tlm_serial_payload p;
-// 	sc_dt::sc_bv_base v = sc_dt::sc_bv_base(1);
-// 	p.set_data_ptr(&v);
-// 	tx_if->b_send(p);
 }
 
 template <typename CONFIG>
@@ -405,27 +400,19 @@ tlm::tlm_sync_enum LINFlexD<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& p
 }
 
 template <typename CONFIG>
-void LINFlexD<CONFIG>::nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload& payload)
+void LINFlexD<CONFIG>::nb_receive(int id, unisim::kernel::tlm2::tlm_serial_payload& payload, const sc_core::sc_time& t)
 {
 	if(((id == LINRX_IF) && !linflexd_lincr1.template Get<typename LINFlexD_LINCR1::LBKM>()) || // from LINRX (loop back mode disabled)
 	   ((id == LINTX_IF) && linflexd_lincr1.template Get<typename LINFlexD_LINCR1::LBKM>())) // from LINTX (loop back mode enabled)
 	{
 		if(linflexd_uartcr.template Get<typename LINFlexD_UARTCR::RxEn>()) // receiver enable ?
 		{
-			const std::vector<bool>& data = payload.get_data();
+			const unisim::kernel::tlm2::tlm_serial_payload::data_type& data = payload.get_data();
 			const sc_core::sc_time& period = payload.get_period();
 			
 			if(verbose)
 			{
-				logger << DebugInfo << sc_core::sc_time_stamp() << ": receiving [";
-				std::vector<bool>::size_type data_length = data.size();
-				std::vector<bool>::size_type i;
-				for(i = 0; i < data_length; i++)
-				{
-					if(i != 0) logger << " ";
-					logger << data[i];
-				}
-				logger << "] over LINRX with a period of " << period << EndDebugInfo;
+				logger << DebugInfo << (sc_core::sc_time_stamp() + t) << ": receiving [" << data << "] over LINRX with a period of " << period << EndDebugInfo;
 			}
 
 			if(LIN_ClockEnabled())
@@ -440,7 +427,7 @@ void LINFlexD<CONFIG>::nb_receive(int id, unisim::kernel::tlm2::tlm_serial_paylo
 				logger << DebugWarning << "Receiving over " << LINRX.name() << " with a period " << period << " while LIN clock is disabled" << EndDebugWarning;
 			}
 			
-			rx_input.fill(payload);
+			rx_input.fill(payload, t);
 		}
 	}
 }
@@ -1377,6 +1364,7 @@ template <typename CONFIG>
 void LINFlexD<CONFIG>::RX_Process()
 {
 	wait(); // wait for RX input
+	rx_input.latch();
 	
 	rx_time = sc_core::SC_ZERO_TIME;  // Rx time offset relative to current simulation time
 
@@ -1569,9 +1557,10 @@ void LINFlexD<CONFIG>::RX_Process()
 								
 								if(i < rx_frame_word_length)
 								{
-									if(rx_input.seek(rx_time) == TLM_BITSTREAM_NEED_SYNC)
+									if(rx_input.seek(rx_time) == TLM_INPUT_BITSTREAM_NEED_SYNC)
 									{
 										wait(rx_time);
+										rx_input.latch();
 										rx_time = sc_core::SC_ZERO_TIME;
 									}
 									bool bit_value = RX_InputStatus(); // read bitstream
@@ -1598,9 +1587,10 @@ void LINFlexD<CONFIG>::RX_Process()
 								
 							if(receive_parity) // looking for a parity bit ?
 							{
-								if(rx_input.seek(rx_time) == TLM_BITSTREAM_NEED_SYNC)
+								if(rx_input.seek(rx_time) == TLM_INPUT_BITSTREAM_NEED_SYNC)
 								{
 									wait(rx_time);
+									rx_input.latch();
 									rx_time = sc_core::SC_ZERO_TIME;
 								}
 								bool bit_value = RX_InputStatus();
@@ -1637,9 +1627,10 @@ void LINFlexD<CONFIG>::RX_Process()
 							// sample all stop bits
 							while(!end_of_frame && !framing_error)
 							{
-								if(rx_input.seek(rx_time) == TLM_BITSTREAM_NEED_SYNC)
+								if(rx_input.seek(rx_time) == TLM_INPUT_BITSTREAM_NEED_SYNC)
 								{
 									wait(rx_time);
+									rx_input.latch();
 									rx_time = sc_core::SC_ZERO_TIME;
 								}
 								bool bit_value = RX_InputStatus();
@@ -1687,6 +1678,7 @@ void LINFlexD<CONFIG>::RX_Process()
 											if(rx_time != sc_core::SC_ZERO_TIME)
 											{
 												wait(rx_time);
+												rx_input.latch();
 												rx_time = sc_core::SC_ZERO_TIME;
 											}
 											
@@ -1864,9 +1856,10 @@ void LINFlexD<CONFIG>::RX_Process()
 			}
 		}
 		
-		if(rx_input.next() == TLM_BITSTREAM_NEED_SYNC)
+		if(rx_input.next() == TLM_INPUT_BITSTREAM_NEED_SYNC)
 		{
 			wait();
+			rx_input.latch();
 			rx_time = sc_core::SC_ZERO_TIME;
 		}
 	}
@@ -2034,7 +2027,7 @@ void LINFlexD<CONFIG>::TX_Process()
 							sc_core::sc_time tx_time = sc_core::SC_ZERO_TIME;
 							
 							unisim::kernel::tlm2::tlm_serial_payload payload;
-							std::vector<bool>& data = payload.get_data();
+							unisim::kernel::tlm2::tlm_serial_payload::data_type& data = payload.get_data();
 
 							payload.set_period(baud_period);
 										
@@ -2225,21 +2218,16 @@ void LINFlexD<CONFIG>::TX_Process()
 							
 							if(verbose)
 							{
-								logger << DebugInfo << sc_core::sc_time_stamp() << ": transmitting [";
-								std::vector<bool>::size_type data_length = data.size();
-								std::vector<bool>::size_type i;
-								for(i = 0; i < data_length; i++)
-								{
-									if(i != 0) logger << " ";
-									logger << data[i];
-								}
-								logger << "] over LINTX with a period of " << baud_period << EndDebugInfo;
+								logger << DebugInfo << sc_core::sc_time_stamp() << ": transmitting [" << data << "] over LINTX with a period of " << baud_period << EndDebugInfo;
 							}
 							
+#if 0
 							sc_core::sc_time send_start_time(sc_core::sc_time_stamp());
+#endif
 							
-							LINTX->b_send(payload);
+							LINTX->nb_send(payload);
 							
+#if 0
 							sc_core::sc_time send_time(sc_core::sc_time_stamp());
 							send_time -= send_start_time;
 							
@@ -2253,6 +2241,8 @@ void LINFlexD<CONFIG>::TX_Process()
 								rem_time -= send_time; 
 								wait(rem_time);
 							}
+#endif
+							wait(tx_time);
 
 							if(verbose)
 							{
