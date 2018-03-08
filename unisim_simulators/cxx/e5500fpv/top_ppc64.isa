@@ -90,7 +90,7 @@ action {void} disasm({std::ostream&} {os}) { os << "???"; }
 // include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/adde.isa"
 // include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addic_.isa"
 // include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addic.isa"
-// include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addi.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addi.isa"
 // include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/add.isa"
 // include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addis.isa"
 // include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addme.isa"
