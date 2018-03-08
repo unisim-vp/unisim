@@ -29,45 +29,39 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
-op mfspr(31[6]:rd[5]:spr[10]:339[10]:?[1])
-mfspr.execute = {
-	unsigned n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
-	UINT result;
-	switch(n)
-	{
-		case 0x001:
-			result = cpu->GetXER();
-			break;
-		case 0x008:
-			result = cpu->GetLR();
-			break;
-		case 0x009:
-			result = cpu->GetCTR();
-			break;
-		default:
-			if(unlikely(!cpu->MoveFromSPR(n, result))) return false;
-			break;
-	}
+
+op rldicl(30[6]:rs[5]:ra[5]:sh1[5]:mb1[5]:mb0[1]:0[3]:sh0[1]:rc[1]);
+
+rldicl.var n : {unsigned} = {sh0<<5 | sh1}, m : {uint64_t} = {uint64_t(-1) >> (mb0<<5 | mb1)};
+
+rldicl.execute = {
+	// Read the input operands
+	U64 s = cpu->GetGPR(rs);
 	
-	cpu->SetGPR(rd, result);
+	// Compute the result
+	U64 result = RotateLeft(s, n) & U64(m);
+	
+	// Write back the result
+	cpu->SetGPR(ra, result);
+	
+	if (unlikely(rc))
+	{
+		XER& xer = cpu->GetXER();
+		CR& cr = cpu->GetCR();
+		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
+		cr.Set<CR::CR0::LT>(S64(result) < S64(0));
+		cr.Set<CR::CR0::GT>(S64(result) > S64(0));
+		cr.Set<CR::CR0::EQ>(result == U64( 0));
+	}
 	
 	return true;
-}
-mfspr.disasm = {
-	unsigned n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
-	switch(n)
-	{
-		case 1: os << "mfxer r" << (unsigned int) rd; return;
-		case 8: os << "mflr r" << (unsigned int) rd; return;
-		case 9: os << "mfctr r" << (unsigned int) rd; return;
-	}
+};
 
-	os << "mfspr r" << (unsigned int) rd << ", " << n;
-}
+rldicl.disasm = {
+	os << "rldicl" << (rc ? "." : "") << ' ' << GPRPrint(ra) << ',' << GPRPrint(rs) << ',' << int(n) << ',' << int(mb0<<5 | mb1);
+};
 
-specialize mfspr(spr=0x20)
-specialize mfspr(spr=0x100)
-specialize mfspr(spr=0x120)
+specialize rldicl(rc=0)
+specialize rldicl(rc=1)

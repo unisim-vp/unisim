@@ -39,7 +39,6 @@
 /*** Convenience disassembly methods ***/
 /***************************************/
 
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 #include <iostream>
 
 namespace unisim {
@@ -61,6 +60,12 @@ struct DASMPrint
 struct GPRPrint : public DASMPrint
 {
 	GPRPrint(unsigned _reg) : reg(_reg) {} unsigned reg;
+	void Print( std::ostream& sink ) const { sink << "r" << std::dec << reg; }
+};
+
+struct FPRPrint : public DASMPrint
+{
+	FPRPrint(unsigned _reg) : reg(_reg) {} unsigned reg;
 	void Print( std::ostream& sink ) const { sink << "r" << std::dec << reg; }
 };
 

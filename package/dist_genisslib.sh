@@ -52,12 +52,14 @@ generator.hh \
 operation.hh \
 referencecounting.hh \
 sourcecode.hh \
-subdecoder.hh"
+subdecoder.hh \
+"
 
 UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES="\
 scanner.cc \
 parser.cc \
-parser_tokens.hh"
+parser_tokens.hh \
+"
 
 UNISIM_TOOLS_GENISSLIB_SOURCE_FILES="\
 parser.yy \
@@ -80,13 +82,15 @@ riscgenerator.cc \
 ciscgenerator.cc \
 subdecoder.cc \
 specialization.cc \
-errtools.cc"
+errtools.cc \
+"
 
 UNISIM_TOOLS_GENISSLIB_DATA_FILES="COPYING INSTALL NEWS README AUTHORS ChangeLog"
 
 UNISIM_TOOLS_GENISSLIB_M4_FILES="\
 m4/lexer.m4 \
-m4/parser_gen.m4"
+m4/parser_gen.m4 \
+"
 
 GENISSLIB_EXTERNAL_HEADERS="\
 cassert \
@@ -105,7 +109,8 @@ map \
 memory \
 ostream \
 unistd.h \
-vector"
+vector \
+"
 
 has_to_build_configure=no
 has_to_build_genisslib_configure=no

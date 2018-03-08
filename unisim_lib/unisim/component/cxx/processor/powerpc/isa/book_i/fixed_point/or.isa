@@ -39,11 +39,11 @@ impl {
 op or(31[6]:rs[5]:ra[5]:rb[5]:444[10]:rc[1])
 or.execute = {
 	// Read the input operands
-	uint32_t s = cpu->GetGPR(rs);
-	uint32_t b = cpu->GetGPR(rb);
+	UINT s = cpu->GetGPR(rs);
+	UINT b = cpu->GetGPR(rb);
 	
 	// Compute the result
-	uint32_t result = s | b;
+	UINT result = s | b;
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);
@@ -54,9 +54,9 @@ or.execute = {
 		XER& xer = cpu->GetXER();
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(int32_t( result) < int32_t( 0));
-		cr.Set<CR::CR0::GT>(int32_t( result) > int32_t( 0));
-		cr.Set<CR::CR0::EQ>(result == uint32_t( 0));
+		cr.Set<CR::CR0::LT>(SINT(result) < SINT(0));
+		cr.Set<CR::CR0::GT>(SINT(result) > SINT(0));
+		cr.Set<CR::CR0::EQ>(result == UINT( 0));
 	}
 	
 	return true;

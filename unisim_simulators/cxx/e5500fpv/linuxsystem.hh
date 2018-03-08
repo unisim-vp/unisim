@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,45 +29,35 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
- 
-op mfspr(31[6]:rd[5]:spr[10]:339[10]:?[1])
-mfspr.execute = {
-	unsigned n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
-	UINT result;
-	switch(n)
-	{
-		case 0x001:
-			result = cpu->GetXER();
-			break;
-		case 0x008:
-			result = cpu->GetLR();
-			break;
-		case 0x009:
-			result = cpu->GetCTR();
-			break;
-		default:
-			if(unlikely(!cpu->MoveFromSPR(n, result))) return false;
-			break;
-	}
-	
-	cpu->SetGPR(rd, result);
-	
-	return true;
-}
-mfspr.disasm = {
-	unsigned n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
-	switch(n)
-	{
-		case 1: os << "mfxer r" << (unsigned int) rd; return;
-		case 8: os << "mflr r" << (unsigned int) rd; return;
-		case 9: os << "mfctr r" << (unsigned int) rd; return;
-	}
 
-	os << "mfspr r" << (unsigned int) rd << ", " << n;
-}
+#ifndef __E5500FPV_LINUX_SYSTEM_HH__
+#define __E5500FPV_LINUX_SYSTEM_HH__
 
-specialize mfspr(spr=0x20)
-specialize mfspr(spr=0x100)
-specialize mfspr(spr=0x120)
+#include <unisim/util/os/linux_os/linux.hh>
+#include <unisim/util/os/linux_os/powerpc64.hh>
+#include <unisim/service/interfaces/linux_os.hh>
+#include <unisim/service/interfaces/memory_injection.hh>
+#include <unisim/service/interfaces/memory.hh>
+#include <unisim/service/interfaces/registers.hh>
+#include <inttypes.h>
+
+struct LinuxOS
+  : public unisim::service::interfaces::LinuxOS
+{
+  LinuxOS( std::ostream& log,
+           unisim::service::interfaces::Registers* regs_if,
+           unisim::service::interfaces::Memory<uint64_t>* mem_if,
+           unisim::service::interfaces::MemoryInjection<uint64_t>* mem_inject_if );
+  
+  void Setup( std::vector<std::string> const& simargs, std::vector<std::string> const& envs );
+  
+  void ExecuteSystemCall( int id );
+
+  unisim::util::os::linux_os::Linux<uint64_t, uint64_t> linux_impl;
+  bool exited;
+  int app_ret_status;
+};
+
+#endif // __E5500FPV_LINUX_SYSTEM_HH__

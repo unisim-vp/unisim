@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_ARCH_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_ARCH_HH__
 
-#include <unisim/component/cxx/processor/intel/memory.hh>
+#include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <unisim/component/cxx/processor/intel/segments.hh>
 #include <unisim/component/cxx/processor/intel/modrm.hh>
 #include <unisim/component/cxx/processor/intel/vectorbank.hh>
@@ -245,7 +245,7 @@ namespace intel {
         for (uintptr_t idx = 0; idx < size; ++idx) base[idx] = 0;
       }
     };
-    typedef typename intel::Memory<12,12,ClearMemSet> Memory;
+    typedef typename component::cxx::memory::sparse::Memory<uint32_t,12,12,ClearMemSet> Memory;
     Memory                      m_mem;
     // static uint32_t const       s_bits = 12;
     // Page*                       m_pages[1<<s_bits];

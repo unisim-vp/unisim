@@ -11,9 +11,8 @@ if [ -z "$1" ]; then
 fi
 
 MY_DIR=$(cd $(dirname $0); pwd)
-DEST_DIR=$1
-mkdir -p ${DEST_DIR}
-DEST_DIR=$(cd $DEST_DIR; pwd)
+mkdir -p "$1"
+DEST_DIR=$(cd "$1"; pwd)
 UNISIM_DIR=$(cd ${MY_DIR}/..; pwd)
 UNISIM_TOOLS_DIR=${UNISIM_DIR}/unisim_tools
 UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib

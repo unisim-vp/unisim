@@ -32,184 +32,86 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#include <unisim/util/debug/simple_register.hh>
-#include <unisim/service/interfaces/memory_injection.hh>
-#include <unisim/service/interfaces/memory.hh>
-#include <unisim/service/interfaces/registers.hh>
+#include <arch.hh>
+#include <linuxsystem.hh>
 #include <iostream>
+#include <iomanip>
 
-struct Arch
-  : public unisim::service::interfaces::MemoryInjection<uint32_t>
-  , public unisim::service::interfaces::Memory<uint32_t>
-  , public unisim::service::interfaces::Registers
+struct Disasm
 {
-  // typedef unisim::component::cxx::processor::intel::Arch::f64_t f64_t;
-  // typedef unisim::component::cxx::processor::intel::Arch BaseArch;
-  // typedef unisim::component::cxx::processor::intel::Operation<BaseArch> Operation;
-  
-  // Arch()
-  //   : unisim::component::cxx::processor::intel::Arch()
-  //   , unisim::service::interfaces::MemoryInjection<uint32_t>()
-  //   , unisim::service::interfaces::Memory<uint32_t>()
-  //   , unisim::service::interfaces::Registers()
-  //   , linux_os(0)
-  // {
-  //   for (int idx = 0; idx < 8; ++idx) {
-  //     std::ostringstream regname;
-  //     regname << unisim::component::cxx::processor::intel::DisasmRd(idx);
-  //     regmap[regname.str()] = new unisim::util::debug::SimpleRegister<uint32_t>(regname.str(), &m_regs[idx]);
-  //   }
-  // e  regmap["%eip"] = new unisim::util::debug::SimpleRegister<uint64_t>("%eip", &m_EIP);
-    
-  //   for (int idx = 0; idx < 6; ++idx) {
-  //     std::ostringstream regname;
-  //     regname << unisim::component::cxx::processor::intel::DisasmS(idx);
-  //     regmap[regname.str()] = new SegmentRegister(*this, regname.str(), idx);
-  //   }
-    
-  //   for (int idx = 0; idx < 4; ++idx) {
-  //     std::ostringstream regname;
-  //     regname << "@gdt[" << idx<< "].base";
-  //     regmap[regname.str()] = new unisim::util::debug::SimpleRegister<uint32_t>(regname.str(), &m_gdt_bases[idx]);
-  //   }
-    
-  //   struct X87Register : public unisim::service::interfaces::Register
-  //   {
-  //     X87Register( std::string _name, Arch& _arch, unsigned _idx ) : name(_name), arch(_arch), idx(_idx) {}
-  //     char const* GetName() const { return name.c_str(); }
-  //     void GetValue(void *buffer) const { *((f64_t*)buffer) = arch.fread( idx ); }
-  //     void SetValue(const void *buffer) { arch.fwrite( idx, *((f64_t*)buffer) ); }
-  //     int GetSize() const { return 8; }
-  //     std::string name;
-  //     Arch& arch;
-  //     unsigned idx;
-  //   };
-  //   for (int idx = 0; idx < 8; ++idx) {
-  //     std::ostringstream regname;
-  //     regname << unisim::component::cxx::processor::intel::DisasmFPR(idx);
-  //     regmap[regname.str()] = new X87Register( regname.str(), *this, idx );
-  //   }
-  // }
-  // ~Arch()
-  // {
-  //   for (auto reg : regmap)
-  //     delete reg.second;
-  // }
-  
-  // void SetLinuxOS( unisim::service::interfaces::LinuxOS* _linux_os ) { linux_os = _linux_os; }
-  // // unisim::service::interfaces::LinuxOS* GetLinuxOS() { return linux_os; }
-  
-  // unisim::service::interfaces::LinuxOS* linux_os;
-  // std::map<std::string,unisim::service::interfaces::Register*> regmap;
-  
-  // using unisim::component::cxx::processor::intel::Arch::m_mem;
-  // // unisim::service::interfaces::Memory<uint32_t>
-  // void Reset() {}
-  // bool ReadMemory(uint32_t addr, void* buffer, uint32_t size ) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
-  // bool WriteMemory(uint32_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
-  // // unisim::service::interfaces::Registers
-  // unisim::service::interfaces::Register* GetRegister(char const* name)
-  // {
-  //   auto reg = regmap.find( name );
-  //   return (reg == regmap.end()) ? 0 : reg->second;
-  // }
-  // void ScanRegisters(unisim::service::interfaces::RegisterScanner& scanner)
-  // {
-  //   // General purpose registers
-  //   scanner.Append( GetRegister( "%eax" ) );
-  //   scanner.Append( GetRegister( "%ecx" ) );
-  //   scanner.Append( GetRegister( "%edx" ) );
-  //   scanner.Append( GetRegister( "%ebx" ) );
-  //   scanner.Append( GetRegister( "%esp" ) );
-  //   scanner.Append( GetRegister( "%ebp" ) );
-  //   scanner.Append( GetRegister( "%esi" ) );
-  //   scanner.Append( GetRegister( "%edi" ) );
-  //   // Program counter
-  //   scanner.Append( GetRegister( "%eip" ) );
-  //   // Segments
-  //   scanner.Append( GetRegister( "%es" ) );
-  //   scanner.Append( GetRegister( "%cs" ) );
-  //   scanner.Append( GetRegister( "%ss" ) );
-  //   scanner.Append( GetRegister( "%ds" ) );
-  //   scanner.Append( GetRegister( "%fs" ) );
-  //   scanner.Append( GetRegister( "%gs" ) );
-  //   // FP registers
-  //   scanner.Append( GetRegister( "%st" ) );
-  //   scanner.Append( GetRegister( "%st(1)" ) );
-  //   scanner.Append( GetRegister( "%st(2)" ) );
-  //   scanner.Append( GetRegister( "%st(3)" ) );
-  //   scanner.Append( GetRegister( "%st(4)" ) );
-  //   scanner.Append( GetRegister( "%st(5)" ) );
-  //   scanner.Append( GetRegister( "%st(6)" ) );
-  //   scanner.Append( GetRegister( "%st(7)" ) );
-  // }
-  // // unisim::service::interfaces::MemoryInjection<ADDRESS>
-  // bool InjectReadMemory(uint32_t addr, void *buffer, uint32_t size) { m_mem.read( (uint8_t*)buffer, addr, size ); return true; }
-  // bool InjectWriteMemory(uint32_t addr, void const* buffer, uint32_t size) { m_mem.write( addr, (uint8_t*)buffer, size ); return true; }
-  // // Implementation of ExecuteSystemCall
-  
-  // virtual void ExecuteSystemCall( unsigned id )
-  // {
-  //   if (not linux_os)
-  //     { throw std::logic_error( "No linux OS emulation connected" ); }
-  //   linux_os->ExecuteSystemCall( id );
-  // }
-  
+  Disasm( Arch::Operation* _op ) : op(*_op) {}
+  Arch::Operation& op;
+  friend std::ostream& operator << (std::ostream& sink, Disasm const& d) { d.op.disasm( sink ); return sink; }
 };
 
-
 int
-main( int argc, char *argv[] )
+main( int argc, char* argv[] )
 {
   uintptr_t simargs_idx = 1;
   std::vector<std::string> simargs(&argv[simargs_idx], &argv[argc]);
   
   {
     std::cerr << "arguments:\n";
-    
-    for (unsigned idx = 0; idx < simargs.size(); ++idx)
+
+    unsigned idx = 0;
+    for (auto && arg : simargs)
       {
-        std::cerr << "  args[" << idx << "]: " << simargs[idx] << '\n';
+        std::cerr << "  args[" << idx++ << "]: " << arg << '\n';
       }
   }
   
-  if (simargs.size() == 0) {
-    std::cerr << "Simulation command line empty." << std::endl;
-    return 1;
-  }
+  if (simargs.size() == 0)
+    {
+      std::cerr << "Simulation command line empty." << std::endl;
+      return 1;
+    }
 
   std::vector<std::string> envs;
   envs.push_back( "LANG=C" );
   
-  // Arch cpu;
-  // LinuxOS linux32( std::cerr, &cpu, &cpu, &cpu );
-  // cpu.SetLinuxOS( &linux32 );
+  Arch cpu;
   
-  // linux32.Setup( simargs, envs );
+  LinuxOS linux32( std::cerr, &cpu, &cpu, &cpu );
+  cpu.SetLinuxOS( &linux32 );
   
-  // cpu.m_disasm = false;
+  linux32.Setup( simargs, envs );
   
-  // // Loading image
-  // std::cerr << "*** Loading elf image: " << simargs[0] << " ***" << std::endl;
+  //  cpu.disasm = false;
   
-  // std::cerr << "\n*** Run ***" << std::endl;
+  // Loading image
+  std::cerr << "*** Loading elf image: " << simargs[0] << " ***" << std::endl;
   
-  // while (not linux32.exited)
-  //   {
-  //     Arch::Operation* op = cpu.fetch();
-  //     // op->disasm( std::cerr );
-  //     // std::cerr << std::endl;
-  //     asm volatile ("operation_execute:");
-  //     op->execute( cpu );
-  //     //{ uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread32( idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
+  std::cerr << "\n*** Run ***" << std::endl;
+  
+  try
+    {
+      do
+        {
+          Arch::Operation* op = cpu.fetch();
+          std::cerr << Disasm( op ) << std::endl;
+          asm volatile ("operation_execute:");
+          op->execute( &cpu );
+
+          cpu.commit();
+          //{ uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread32( idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
       
-  //     // if ((cpu.m_instcount % 0x1000000) == 0)
-  //     //   { std::cerr << "Executed instructions: " << std::dec << cpu.m_instcount << " (" << std::hex << op->address << std::dec << ")"<< std::endl; }
-  //   }
+          // if ((cpu.m_instcount % 0x1000000) == 0)
+          //   { std::cerr << "Executed instructions: " << std::dec << cpu.m_instcount << " (" << std::hex << op->address << std::dec << ")"<< std::endl; }
+        }
+      while (not linux32.exited);      
+    }
+  catch (MisInsn& insn)
+    {
+      std::cerr << std::hex << insn.addr << ":	";
+      for (int idx = 4; --idx >= 0;)
+        std::cerr << std::hex << std::setw(2) << std::setfill('0') << ((insn.code >> idx*8) & 0xff) << ' ';
+      std::cerr << std::endl;
+    }
   
-  // std::cerr << "Program exited with status:" << linux32.app_ret_status << std::endl;
-  //  dtlib::osprintf( std::cerr, "Executed instructions: %lld\n", cpu.m_instcount );
+  std::cerr << "Program exited with status:" << std::dec << linux32.app_ret_status << std::endl;
+  std::cerr << "Executed instructions: " << cpu.instcount << std::endl;
   
-  
+    
   return 0;
 }
+

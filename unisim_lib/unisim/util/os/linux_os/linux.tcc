@@ -356,9 +356,18 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetDebugRegister( char const* regname )
   return reg;
 }
 
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>:: TargetSystem::ReadMemory( Linux& lin, ADDRESS_TYPE addr, PARAMETER_TYPE* value )
+{
+  if (not lin.mem_if_->ReadMemory(addr, (uint8_t *)value, sizeof(PARAMETER_TYPE)) )
+    return false;
+  
+  *value = Target2Host(lin.GetEndianness(), *value);
+  return true;
+}
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::TargetSystem::GetRegister( Linux& lin, char const* regname, PARAMETER_TYPE * const value )
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::TargetSystem::GetRegister( Linux& lin, char const* regname, PARAMETER_TYPE* value )
 {
   if (unisim::service::interfaces::Register* reg = lin.GetDebugRegister(regname)) {
     if (reg->GetSize() != sizeof(PARAMETER_TYPE)) {

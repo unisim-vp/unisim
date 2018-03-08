@@ -674,8 +674,8 @@ if [ -z "$1" ]; then
 fi
 
 UNISIM_DIR=$(cd $(dirname $(dirname $0)); pwd)
-DEST_DIR=$(cd $1; pwd)
-mkdir -p ${DEST_DIR}
+mkdir -p "$1"
+DEST_DIR=$(cd "$1"; pwd)
 UNISIM_TOOLS_DIR=${UNISIM_DIR}/unisim_tools
 UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
 UNISIM_SIMULATOR_DIR=${UNISIM_DIR}/unisim_simulators/cxx/${SIMPKG}

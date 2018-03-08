@@ -148,9 +148,9 @@ unisim/util/os/linux_os/i386.hh \
 unisim/util/parser/parser.hh \
 unisim/util/parser/parser.tcc \
 unisim/util/xml/xml.hh \
+unisim/component/cxx/memory/sparse/memory.hh \
 unisim/component/cxx/processor/intel/execute.hh \
 unisim/component/cxx/processor/intel/modrm.hh \
-unisim/component/cxx/processor/intel/memory.hh \
 unisim/component/cxx/processor/intel/arch.hh \
 unisim/component/cxx/processor/intel/segments.hh \
 unisim/component/cxx/processor/intel/vectorbank.hh \
@@ -258,8 +258,8 @@ UNISIM_SIMULATOR_TESTBENCH_FILES="\
 "
 
 UNISIM_DIR=$(cd $(dirname $(dirname $0)); pwd)
-mkdir -p ${DEST_DIR}
-DEST_DIR=$(cd $1; pwd)
+mkdir -p "$1"
+DEST_DIR=$(cd "$1"; pwd)
 UNISIM_TOOLS_DIR=${UNISIM_DIR}/unisim_tools
 UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
 UNISIM_SIMULATOR_DIR=${UNISIM_DIR}/unisim_simulators/cxx/${SIMPKG}

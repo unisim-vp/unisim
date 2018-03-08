@@ -147,9 +147,10 @@ namespace linux_os {
       unisim::service::interfaces::Memory<ADDRESS_TYPE>& MemIF() const { return *lin.mem_if_; }
       std::string GetHWCAP() const { return lin.hwcap_; }
       SysCall* GetSysCall( std::string name ) const { return lin.GetSysCall( name ); }
-      static bool GetRegister( Linux& lin, char const* regname, PARAMETER_TYPE * const value );
+      static bool GetRegister( Linux& lin, char const* regname, PARAMETER_TYPE* value );
       static bool SetRegister( Linux& lin, char const* regname, PARAMETER_TYPE value );
       static bool ClearRegister( Linux& lin, char const* regname );
+      static bool ReadMemory( Linux& lin, ADDRESS_TYPE addr, PARAMETER_TYPE* value );
       std::string name;
       Linux& lin;
     };
@@ -354,8 +355,6 @@ namespace linux_os {
     // Maps the registers depending on the system
     // Returns true on success
     unisim::service::interfaces::Register* GetDebugRegister( char const* regname );
-    // bool GetRegister( char const* regname, PARAMETER_TYPE * const value );
-    // bool SetRegister( char const* regname, PARAMETER_TYPE value );
 	
     // Load the files set by the user into the given blob. Returns true on sucess,
     // false otherwise.

@@ -32,8 +32,8 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_MEMORY_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_MEMORY_HH__
+#ifndef __UNISIM_COMPONENT_CXX_MEMORY_SPARSE_MEMORY_HH__
+#define __UNISIM_COMPONENT_CXX_MEMORY_SPARSE_MEMORY_HH__
 
 #include <algorithm>
 #include <cstring>
@@ -42,14 +42,16 @@
 namespace unisim {
 namespace component {
 namespace cxx {
-namespace processor {
-namespace intel {
+namespace memory {
+namespace sparse {
 
   struct NoMemSet { void operator() ( uint8_t* base, uintptr_t size ) const {} };
   
-  template <uint32_t LoTagSizeT, uint32_t HiTagSizeT, typename _MemSet = NoMemSet>
+  template <typename addrT, addrT LoTagSizeT, addrT HiTagSizeT, typename _MemSet = NoMemSet>
   struct Memory
   {
+    typedef addrT address_t;
+    
     _MemSet _memset;
     
     Memory()
@@ -76,28 +78,29 @@ namespace intel {
     }
     
     // Paginated content
-    struct Page {
-      static uint32_t const     s_bits = LoTagSizeT;
-
+    struct Page
+    {
+      static address_t const    s_bits = LoTagSizeT;
+      
       Page*                     m_next;
-      uint32_t                  m_address;
+      address_t                 m_address;
       uint8_t                   m_storage[1<<s_bits];
 
-      Page( Page* _next, uint32_t _address, _MemSet const& _memset )
-        : m_next( _next ), m_address( _address & uint32_t(-1 << s_bits) )
+      Page( Page* _next, address_t _address, _MemSet const& _memset )
+        : m_next( _next ), m_address( _address & (address_t(-1) << s_bits) )
       { _memset( &m_storage[0], 1<<s_bits ); }
       ~Page() { delete m_next; }
     };
 
-    static uint32_t const       s_bits = HiTagSizeT;
-    Page*                       m_pages[1<<s_bits];
+    static address_t const      s_bits = HiTagSizeT;
+    Page*                       m_pages[1 << s_bits];
     
     // Memory access functions
     Page*
-    getpage( uint32_t _addr )
+    getpage( address_t _addr )
     {
-      uint32_t pageidx = _addr >> Page::s_bits;
-      uint32_t pageaddr = pageidx << Page::s_bits;
+      address_t pageidx = _addr >> Page::s_bits;
+      address_t pageaddr = pageidx << Page::s_bits;
       pageidx = pageidx % (1 << s_bits);
 
       Page* match = m_pages[pageidx];
@@ -106,10 +109,10 @@ namespace intel {
     }
 
     Page*
-    getpage_cache( uint32_t _addr )
+    getpage_cache( address_t _addr )
     {
-      uint32_t pageidx = _addr >> Page::s_bits;
-      uint32_t pageaddr = pageidx << Page::s_bits;
+      address_t pageidx = _addr >> Page::s_bits;
+      address_t pageaddr = pageidx << Page::s_bits;
       pageidx = pageidx % (1 << s_bits);
       
       Page* match = m_pages[pageidx];
@@ -126,12 +129,12 @@ namespace intel {
     }
 
     void
-    read( uint8_t* _buffer, uint32_t _addr, uint32_t _size )
+    read( uint8_t* _buffer, address_t _addr, address_t _size )
     {
       {
-        uint32_t offset = _addr % (1 << Page::s_bits);
+        address_t offset = _addr % (1 << Page::s_bits);
         if (offset) {
-          uint32_t size = (1 << Page::s_bits) - offset;
+          address_t size = (1 << Page::s_bits) - offset;
           size = std::min( size, _size );
           std::memcpy( (void*)_buffer, (void const*)(getpage( _addr )->m_storage + offset), size );
           _size -= size;
@@ -141,7 +144,7 @@ namespace intel {
       }
 
       for (Page* cur; _size > 0 and (cur = getpage( _addr ));) {
-        uint32_t size = (1 << Page::s_bits);
+        address_t size = (1 << Page::s_bits);
         size = std::min( size, _size );
         std::memcpy( (void*)_buffer, (void const*)(cur->m_storage), size );
         _size -= size;
@@ -151,12 +154,12 @@ namespace intel {
     }
   
     void
-    write( uint32_t _addr, uint8_t const* _buffer, uint32_t _size )
+    write( address_t _addr, uint8_t const* _buffer, address_t _size )
     {
       {
-        uint32_t offset = _addr % (1 << Page::s_bits);
+        address_t offset = _addr % (1 << Page::s_bits);
         if (offset) {
-          uint32_t size = (1 << Page::s_bits) - offset;
+          address_t size = (1 << Page::s_bits) - offset;
           size = std::min( size, _size );
           std::memcpy( (void*)(getpage( _addr )->m_storage + offset), (void const*)_buffer, size );
           _size -= size;
@@ -166,7 +169,7 @@ namespace intel {
       }
 
       for (Page* cur; _size > 0 and (cur = getpage( _addr ));) {
-        uint32_t size = (1 << Page::s_bits);
+        address_t size = (1 << Page::s_bits);
         size = std::min( size, _size );
         std::memcpy( (void*)(cur->m_storage), (void const*)_buffer, size );
         _size -= size;
@@ -176,12 +179,12 @@ namespace intel {
     }
 
     void
-    clear( uint32_t _addr, uint32_t _size )
+    clear( address_t _addr, address_t _size )
     {
       {
-        uint32_t offset = _addr % (1 << Page::s_bits);
+        address_t offset = _addr % (1 << Page::s_bits);
         if( offset ) {
-          uint32_t size = (1 << Page::s_bits) - offset;
+          address_t size = (1 << Page::s_bits) - offset;
           size = std::min( size, _size );
           std::memset( (void*)(getpage( _addr )->m_storage + offset), 0, size );
           _size -= size;
@@ -190,7 +193,7 @@ namespace intel {
       }
 
       for (Page* cur; _size > 0 and (cur = getpage( _addr ));) {
-        uint32_t size = (1 << Page::s_bits);
+        address_t size = (1 << Page::s_bits);
         size = std::min( size, _size );
         std::memset( (void*)(cur->m_storage), 0, size );
         _size -= size;
@@ -199,10 +202,10 @@ namespace intel {
     }
   };
 
-} // end of namespace intel
-} // end of namespace processor
+} // end of namespace sparse
+} // end of namespace memory
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_INTEL_MEMORY_HH__
+#endif // __UNISIM_COMPONENT_CXX_MEMORY_SPARSE_MEMORY_HH__
