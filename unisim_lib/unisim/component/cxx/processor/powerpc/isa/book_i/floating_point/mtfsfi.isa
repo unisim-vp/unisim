@@ -38,14 +38,14 @@ impl {
 
 op mtfsfi(63[6]:crfD[3]:?[7]:imm[4]:?[1]:134[10]:rc[1])
 mtfsfi.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -61,7 +61,7 @@ mtfsfi.execute = {
 	return true;
 }
 mtfsfi.disasm = {
-	os << "mtfsfi" << (rc ? "." : "") << " cr" << (unsigned int) crfD << ", " << (unsigned int) imm;
+	os << "mtfsfi" << (rc ? "." : "") << " " << CRPrint(crfD) << ", " << (unsigned int) imm;
 }
 
 specialize mtfsfi(rc=0)

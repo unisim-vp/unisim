@@ -40,14 +40,14 @@
 
 op fres(59[6]:fd[5]:?[5]:fb[5]:?[5]:24[5]:rc[1])
 fres.execute = {
-	if(!CONFIG::HAS_FPU || !CONFIG::HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS)
+	if(not CONFIG::HAS_FPU || !CONFIG::HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -64,7 +64,7 @@ fres.execute = {
 	if(unlikely(b.isSNaN()))
 	{
 		// b = SNaN
-		if(!(fpscr & CONFIG::FPSCR_VE_MASK))
+		if(not (fpscr & CONFIG::FPSCR_VE_MASK))
 		{
 			// Write back result
 			SoftFloat result(b.queryValue() | 0x400000UL);// QNaN (b with high order bit of mantissa set)
@@ -88,7 +88,7 @@ fres.execute = {
 		// Generate ZX
 		fpscr = fpscr | CONFIG::FPSCR_ZX_MASK;
 
-		if(!(fpscr & CONFIG::FPSCR_ZE_MASK))
+		if(not (fpscr & CONFIG::FPSCR_ZE_MASK))
 		{
 			if(b.isNegative())
 			{
@@ -171,14 +171,14 @@ fres.disasm = {
 
 op frsqrte(63[6]:fd[5]:?[5]:fb[5]:?[5]:26[5]:rc[1])
 frsqrte.execute = {
-	if(!CONFIG::HAS_FPU || !CONFIG::HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS)
+	if(not CONFIG::HAS_FPU || !CONFIG::HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -194,7 +194,7 @@ frsqrte.execute = {
 	if(unlikely(b.isSNaN()))
 	{
 		// b = SNaN
-		if(!(fpscr & CONFIG::FPSCR_VE_MASK))
+		if(not (fpscr & CONFIG::FPSCR_VE_MASK))
 		{
 			// Generate FPRF
 			fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_QNAN << CONFIG::FPSCR_FPRF_OFFSET);
@@ -217,7 +217,7 @@ frsqrte.execute = {
 		// Generate ZX
 		fpscr = fpscr | CONFIG::FPSCR_ZX_MASK;
 
-		if(!(fpscr & CONFIG::FPSCR_ZE_MASK))
+		if(not (fpscr & CONFIG::FPSCR_ZE_MASK))
 		{
 			if(b.isNegative())
 			{
@@ -240,7 +240,7 @@ frsqrte.execute = {
 	else if(unlikely(b.isNegative()))
 	{
 		// -infinity <= b < 0
-		if(!(fpscr & CONFIG::FPSCR_VE_MASK))
+		if(not (fpscr & CONFIG::FPSCR_VE_MASK))
 		{
 			// Write back result
 			cpu->SetFPR(fd, SoftDouble(0x7ff8000000000000ULL)); // Positive QNaN
@@ -330,14 +330,14 @@ frsqrte.disasm = {
 
 op fsel(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:23[5]:rc[1])
 fsel.execute = {
-	if(!CONFIG::HAS_FPU || !CONFIG::HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS)
+	if(not CONFIG::HAS_FPU || !CONFIG::HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -363,14 +363,14 @@ fsel.disasm = {
 
 op fsqrt(63[6]:fd[5]:?[5]:fb[5]:?[5]:22[5]:rc[1])
 fsqrt.execute = {
-	if(!CONFIG::HAS_FPU || !CONFIG::HAS_FLOATING_POINT_SQRT)
+	if(not CONFIG::HAS_FPU || !CONFIG::HAS_FLOATING_POINT_SQRT)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -386,7 +386,7 @@ fsqrt.execute = {
 	if(unlikely(b.isSNaN()))
 	{
 		// b = SNaN
-		if(!(fpscr & CONFIG::FPSCR_VE_MASK))
+		if(not (fpscr & CONFIG::FPSCR_VE_MASK))
 		{
 			// Generate FPRF
 			fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_QNAN << CONFIG::FPSCR_FPRF_OFFSET);
@@ -422,7 +422,7 @@ fsqrt.execute = {
 	else if(unlikely(b.isNegative()))
 	{
 		// -infinity <= b < 0
-		if(!(fpscr & CONFIG::FPSCR_VE_MASK))
+		if(not (fpscr & CONFIG::FPSCR_VE_MASK))
 		{
 			// Write back result
 			cpu->SetFPR(fd, SoftDouble(0x7ff8000000000000ULL)); // Positive QNaN
@@ -515,14 +515,14 @@ fsqrt.disasm = {
 
 op fsqrts(59[6]:fd[5]:?[5]:fb[5]:?[5]:22[5]:rc[1])
 fsqrts.execute = {
-	if(!CONFIG::HAS_FPU || !CONFIG::HAS_FLOATING_POINT_SQRT)
+	if(not CONFIG::HAS_FPU || !CONFIG::HAS_FLOATING_POINT_SQRT)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -539,7 +539,7 @@ fsqrts.execute = {
 	if(unlikely(b.isSNaN()))
 	{
 		// b = SNaN
-		if(!(fpscr & CONFIG::FPSCR_VE_MASK))
+		if(not (fpscr & CONFIG::FPSCR_VE_MASK))
 		{
 			// Generate FPRF
 			fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_QNAN << CONFIG::FPSCR_FPRF_OFFSET);
@@ -575,7 +575,7 @@ fsqrts.execute = {
 	else if(unlikely(b.isNegative()))
 	{
 		// -infinity <= b < 0
-		if(!(fpscr & CONFIG::FPSCR_VE_MASK))
+		if(not (fpscr & CONFIG::FPSCR_VE_MASK))
 		{
 			// Write back result
 			cpu->SetFPR(fd, SoftDouble(SoftFloat(0x7fc00000UL), flags)); // Positive QNaN

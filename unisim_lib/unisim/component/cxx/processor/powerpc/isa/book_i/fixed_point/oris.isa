@@ -50,5 +50,5 @@ oris.execute = {
 	return true;
 }
 oris.disasm = {
-	os << "oris r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << (uimm >> 16);
+	os << "oris " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << (uimm >> 16);
 }

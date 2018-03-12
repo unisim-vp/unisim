@@ -44,5 +44,5 @@ crorc.execute = {
 	return true;
 }
 crorc.disasm = {
-	os << "crorc cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+	os << "crorc " << CRPrint(crbD) << ", " << CRPrint(crbA) << ", " << CRPrint(crbB);
 }

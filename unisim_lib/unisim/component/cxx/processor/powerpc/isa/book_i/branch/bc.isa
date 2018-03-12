@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,29 +32,31 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op bc(16[6]: bo[5]: bi[5]:shl<2> sext<32> bd[14]: aa[1]: lk[1])
+/* Branch Conditional */
+op bc(16[6]: bo[5]: bi[5]:shl<2> sext bd14[14]: aa[1]: lk[1]);
+
 bc.execute = {
-	uint32_t ctr_ok, cond_ok, ok;
+	BOOL ctr_ok = BOOL(true), cond_ok = BOOL(true);
 	
-	if(((bo & 16) == 0)) {
+	if (((bo & 16) == 0))
+	{
 		/* Conditional branch */
+		UINT const msb = ~(UINT(-1)>>1);
 		if(bo & 8) {
 			/* Branch if condition is true */
-			cond_ok = ((cpu->GetCR() << bi) & 0x80000000) != 0;
+			cond_ok = ((cpu->GetCR() << bi) & msb) != 0;
 		}
 		else {
 			/* Branch if condition is false */
-			cond_ok = ((cpu->GetCR() << bi) & 0x80000000) == 0;
+			cond_ok = ((cpu->GetCR() << bi) & msb) == 0;
 		}
 	}
-	else {
-		cond_ok = 1;
-	}
 	
-	if((bo & 4) == 0)
+	if ((bo & 4) == 0)
 	{
 		/* Decrement CTR */
-		cpu->SetCTR(cpu->GetCTR() - 1);
+		CTR& ctr = cpu->GetCTR();
+		ctr = UINT(ctr) - UINT(1);
 		/* Test whether to branch if CTR is zero or not */
 		if(bo & 2) {
 			ctr_ok = cpu->GetCTR() == 0;
@@ -63,175 +65,164 @@ bc.execute = {
 			ctr_ok = cpu->GetCTR() != 0;
 		}
 	}
-	else {
-		ctr_ok = 1;
-	}
 	
-	ok = ctr_ok && cond_ok; 
-
-	if(ok) {
-		typename CONFIG::address_t target_addr = aa ? bd : cpu->GetCIA() + bd;
+	if (ctr_ok and cond_ok) {
+		UINT bd = UINT(bd14);
+		ADDRESS target_addr = aa ? bd : cpu->GetCIA() + bd;
 		cpu->Branch(target_addr);
 	}
-	if(lk) cpu->SetLR(cpu->GetCIA() + 4);
+	
+	if (lk) cpu->GetLR() = (cpu->GetCIA() + 4);
 	
 	return true;
-}
+};
 
 bc.disasm = {
-	typename CONFIG::address_t target_addr = aa ? bd : Operation<CONFIG>::GetAddr() + bd;
+	bool bc = false;
 	switch(bo)
 	{
-		case 0: os << "bdnzf"; break;
-		case 2: os << "bdzf"; break;
-		case 4: os << "bf"; break;
-		case 8: os << "bdnzt"; break;
-		case 10: os << "bdzt"; break;
-		case 12: os << "bt"; break;
-		case 16: os << "bdnz"; break;
-		case 18: os << "bdz"; break;
-		default: os << "bc";
+	case 0: case 1:                     os << "bdnzf"; break;
+	case 2: case 3:                     os << "bdzf"; break;
+	case 4: case 5: case 6: case 7:     os << "bf"; break;
+	case 8: case 9:                     os << "bdnzt"; break;
+	case 10: case 11:                   os << "bdzt"; break;
+	case 12: case 13: case 14: case 15: os << "bt"; break;
+	case 16: case 17: case 24: case 25: os << "bdnz"; break;
+	case 18: case 19: case 26: case 27: os << "bdz"; break;
+	default: os << "bc"; bc = true;
 	}
-	if(lk) os << "l";
-	if(aa) os << "a";
-	os << " ";
-	switch(bo)
-	{
-		case 0: case 2: case 4: case 8: case 10: case 12: case 16: case 18: os << (unsigned int) bi; break;
-		default: os << (unsigned int) bo << ", " << (unsigned int) bi;
-	}
-	os << ", 0x" << std::hex << target_addr << std::dec;
-	if(cpu)
-	{
-		os << " <" << cpu->GetFunctionFriendlyName(target_addr) << ">";
-	}
-}
+	if (lk) os << "l ";
+	if (aa) os << "a ";
+        if (bc) os << unsigned(bo) << ", ";
+        os << unsigned(bi) << ", 0x" << std::hex << (aa ? bd14 : GetAddr() + bd14) << std::dec;
+};
 
-specialize bc(bo=0,aa=0,lk=0)
-specialize bc(bo=0,aa=0,lk=1)
-specialize bc(bo=0,aa=1,lk=0)
-specialize bc(bo=0,aa=1,lk=1)
-specialize bc(bo=1,aa=0,lk=0)
-specialize bc(bo=1,aa=0,lk=1)
-specialize bc(bo=1,aa=1,lk=0)
-specialize bc(bo=1,aa=1,lk=1)
-specialize bc(bo=2,aa=0,lk=0)
-specialize bc(bo=2,aa=0,lk=1)
-specialize bc(bo=2,aa=1,lk=0)
-specialize bc(bo=2,aa=1,lk=1)
-specialize bc(bo=3,aa=0,lk=0)
-specialize bc(bo=3,aa=0,lk=1)
-specialize bc(bo=3,aa=1,lk=0)
-specialize bc(bo=3,aa=1,lk=1)
-specialize bc(bo=4,aa=0,lk=0)
-specialize bc(bo=4,aa=0,lk=1)
-specialize bc(bo=4,aa=1,lk=0)
-specialize bc(bo=4,aa=1,lk=1)
-specialize bc(bo=5,aa=0,lk=0)
-specialize bc(bo=5,aa=0,lk=1)
-specialize bc(bo=5,aa=1,lk=0)
-specialize bc(bo=5,aa=1,lk=1)
-specialize bc(bo=6,aa=0,lk=0)
-specialize bc(bo=6,aa=0,lk=1)
-specialize bc(bo=6,aa=1,lk=0)
-specialize bc(bo=6,aa=1,lk=1)
-specialize bc(bo=7,aa=0,lk=0)
-specialize bc(bo=7,aa=0,lk=1)
-specialize bc(bo=7,aa=1,lk=0)
-specialize bc(bo=7,aa=1,lk=1)
-specialize bc(bo=8,aa=0,lk=0)
-specialize bc(bo=8,aa=0,lk=1)
-specialize bc(bo=8,aa=1,lk=0)
-specialize bc(bo=8,aa=1,lk=1)
-specialize bc(bo=9,aa=0,lk=0)
-specialize bc(bo=9,aa=0,lk=1)
-specialize bc(bo=9,aa=1,lk=0)
-specialize bc(bo=9,aa=1,lk=1)
-specialize bc(bo=10,aa=0,lk=0)
-specialize bc(bo=10,aa=0,lk=1)
-specialize bc(bo=10,aa=1,lk=0)
-specialize bc(bo=10,aa=1,lk=1)
-specialize bc(bo=11,aa=0,lk=0)
-specialize bc(bo=11,aa=0,lk=1)
-specialize bc(bo=11,aa=1,lk=0)
-specialize bc(bo=11,aa=1,lk=1)
-specialize bc(bo=12,aa=0,lk=0)
-specialize bc(bo=12,aa=0,lk=1)
-specialize bc(bo=12,aa=1,lk=0)
-specialize bc(bo=12,aa=1,lk=1)
-specialize bc(bo=13,aa=0,lk=0)
-specialize bc(bo=13,aa=0,lk=1)
-specialize bc(bo=13,aa=1,lk=0)
-specialize bc(bo=13,aa=1,lk=1)
-specialize bc(bo=14,aa=0,lk=0)
-specialize bc(bo=14,aa=0,lk=1)
-specialize bc(bo=14,aa=1,lk=0)
-specialize bc(bo=14,aa=1,lk=1)
-specialize bc(bo=15,aa=0,lk=0)
-specialize bc(bo=15,aa=0,lk=1)
-specialize bc(bo=15,aa=1,lk=0)
-specialize bc(bo=15,aa=1,lk=1)
-specialize bc(bo=16,aa=0,lk=0)
-specialize bc(bo=16,aa=0,lk=1)
-specialize bc(bo=16,aa=1,lk=0)
-specialize bc(bo=16,aa=1,lk=1)
-specialize bc(bo=17,aa=0,lk=0)
-specialize bc(bo=17,aa=0,lk=1)
-specialize bc(bo=17,aa=1,lk=0)
-specialize bc(bo=17,aa=1,lk=1)
-specialize bc(bo=18,aa=0,lk=0)
-specialize bc(bo=18,aa=0,lk=1)
-specialize bc(bo=18,aa=1,lk=0)
-specialize bc(bo=18,aa=1,lk=1)
-specialize bc(bo=19,aa=0,lk=0)
-specialize bc(bo=19,aa=0,lk=1)
-specialize bc(bo=19,aa=1,lk=0)
-specialize bc(bo=19,aa=1,lk=1)
-specialize bc(bo=20,aa=0,lk=0)
-specialize bc(bo=20,aa=0,lk=1)
-specialize bc(bo=20,aa=1,lk=0)
-specialize bc(bo=20,aa=1,lk=1)
-specialize bc(bo=21,aa=0,lk=0)
-specialize bc(bo=21,aa=0,lk=1)
-specialize bc(bo=21,aa=1,lk=0)
-specialize bc(bo=21,aa=1,lk=1)
-specialize bc(bo=22,aa=0,lk=0)
-specialize bc(bo=22,aa=0,lk=1)
-specialize bc(bo=22,aa=1,lk=0)
-specialize bc(bo=22,aa=1,lk=1)
-specialize bc(bo=23,aa=0,lk=0)
-specialize bc(bo=23,aa=0,lk=1)
-specialize bc(bo=23,aa=1,lk=0)
-specialize bc(bo=23,aa=1,lk=1)
-specialize bc(bo=24,aa=0,lk=0)
-specialize bc(bo=24,aa=0,lk=1)
-specialize bc(bo=24,aa=1,lk=0)
-specialize bc(bo=24,aa=1,lk=1)
-specialize bc(bo=25,aa=0,lk=0)
-specialize bc(bo=25,aa=0,lk=1)
-specialize bc(bo=25,aa=1,lk=0)
-specialize bc(bo=25,aa=1,lk=1)
-specialize bc(bo=26,aa=0,lk=0)
-specialize bc(bo=26,aa=0,lk=1)
-specialize bc(bo=26,aa=1,lk=0)
-specialize bc(bo=26,aa=1,lk=1)
-specialize bc(bo=27,aa=0,lk=0)
-specialize bc(bo=27,aa=0,lk=1)
-specialize bc(bo=27,aa=1,lk=0)
-specialize bc(bo=27,aa=1,lk=1)
-specialize bc(bo=28,aa=0,lk=0)
-specialize bc(bo=28,aa=0,lk=1)
-specialize bc(bo=28,aa=1,lk=0)
-specialize bc(bo=28,aa=1,lk=1)
-specialize bc(bo=29,aa=0,lk=0)
-specialize bc(bo=29,aa=0,lk=1)
-specialize bc(bo=29,aa=1,lk=0)
-specialize bc(bo=29,aa=1,lk=1)
-specialize bc(bo=30,aa=0,lk=0)
-specialize bc(bo=30,aa=0,lk=1)
-specialize bc(bo=30,aa=1,lk=0)
-specialize bc(bo=30,aa=1,lk=1)
-specialize bc(bo=31,aa=0,lk=0)
-specialize bc(bo=31,aa=0,lk=1)
-specialize bc(bo=31,aa=1,lk=0)
-specialize bc(bo=31,aa=1,lk=1)
+specialize bc(bo=0,aa=0,lk=0);
+specialize bc(bo=0,aa=0,lk=1);
+specialize bc(bo=0,aa=1,lk=0);
+specialize bc(bo=0,aa=1,lk=1);
+specialize bc(bo=1,aa=0,lk=0);
+specialize bc(bo=1,aa=0,lk=1);
+specialize bc(bo=1,aa=1,lk=0);
+specialize bc(bo=1,aa=1,lk=1);
+specialize bc(bo=2,aa=0,lk=0);
+specialize bc(bo=2,aa=0,lk=1);
+specialize bc(bo=2,aa=1,lk=0);
+specialize bc(bo=2,aa=1,lk=1);
+specialize bc(bo=3,aa=0,lk=0);
+specialize bc(bo=3,aa=0,lk=1);
+specialize bc(bo=3,aa=1,lk=0);
+specialize bc(bo=3,aa=1,lk=1);
+specialize bc(bo=4,aa=0,lk=0);
+specialize bc(bo=4,aa=0,lk=1);
+specialize bc(bo=4,aa=1,lk=0);
+specialize bc(bo=4,aa=1,lk=1);
+specialize bc(bo=5,aa=0,lk=0);
+specialize bc(bo=5,aa=0,lk=1);
+specialize bc(bo=5,aa=1,lk=0);
+specialize bc(bo=5,aa=1,lk=1);
+specialize bc(bo=6,aa=0,lk=0);
+specialize bc(bo=6,aa=0,lk=1);
+specialize bc(bo=6,aa=1,lk=0);
+specialize bc(bo=6,aa=1,lk=1);
+specialize bc(bo=7,aa=0,lk=0);
+specialize bc(bo=7,aa=0,lk=1);
+specialize bc(bo=7,aa=1,lk=0);
+specialize bc(bo=7,aa=1,lk=1);
+specialize bc(bo=8,aa=0,lk=0);
+specialize bc(bo=8,aa=0,lk=1);
+specialize bc(bo=8,aa=1,lk=0);
+specialize bc(bo=8,aa=1,lk=1);
+specialize bc(bo=9,aa=0,lk=0);
+specialize bc(bo=9,aa=0,lk=1);
+specialize bc(bo=9,aa=1,lk=0);
+specialize bc(bo=9,aa=1,lk=1);
+specialize bc(bo=10,aa=0,lk=0);
+specialize bc(bo=10,aa=0,lk=1);
+specialize bc(bo=10,aa=1,lk=0);
+specialize bc(bo=10,aa=1,lk=1);
+specialize bc(bo=11,aa=0,lk=0);
+specialize bc(bo=11,aa=0,lk=1);
+specialize bc(bo=11,aa=1,lk=0);
+specialize bc(bo=11,aa=1,lk=1);
+specialize bc(bo=12,aa=0,lk=0);
+specialize bc(bo=12,aa=0,lk=1);
+specialize bc(bo=12,aa=1,lk=0);
+specialize bc(bo=12,aa=1,lk=1);
+specialize bc(bo=13,aa=0,lk=0);
+specialize bc(bo=13,aa=0,lk=1);
+specialize bc(bo=13,aa=1,lk=0);
+specialize bc(bo=13,aa=1,lk=1);
+specialize bc(bo=14,aa=0,lk=0);
+specialize bc(bo=14,aa=0,lk=1);
+specialize bc(bo=14,aa=1,lk=0);
+specialize bc(bo=14,aa=1,lk=1);
+specialize bc(bo=15,aa=0,lk=0);
+specialize bc(bo=15,aa=0,lk=1);
+specialize bc(bo=15,aa=1,lk=0);
+specialize bc(bo=15,aa=1,lk=1);
+specialize bc(bo=16,aa=0,lk=0);
+specialize bc(bo=16,aa=0,lk=1);
+specialize bc(bo=16,aa=1,lk=0);
+specialize bc(bo=16,aa=1,lk=1);
+specialize bc(bo=17,aa=0,lk=0);
+specialize bc(bo=17,aa=0,lk=1);
+specialize bc(bo=17,aa=1,lk=0);
+specialize bc(bo=17,aa=1,lk=1);
+specialize bc(bo=18,aa=0,lk=0);
+specialize bc(bo=18,aa=0,lk=1);
+specialize bc(bo=18,aa=1,lk=0);
+specialize bc(bo=18,aa=1,lk=1);
+specialize bc(bo=19,aa=0,lk=0);
+specialize bc(bo=19,aa=0,lk=1);
+specialize bc(bo=19,aa=1,lk=0);
+specialize bc(bo=19,aa=1,lk=1);
+specialize bc(bo=20,aa=0,lk=0);
+specialize bc(bo=20,aa=0,lk=1);
+specialize bc(bo=20,aa=1,lk=0);
+specialize bc(bo=20,aa=1,lk=1);
+specialize bc(bo=21,aa=0,lk=0);
+specialize bc(bo=21,aa=0,lk=1);
+specialize bc(bo=21,aa=1,lk=0);
+specialize bc(bo=21,aa=1,lk=1);
+specialize bc(bo=22,aa=0,lk=0);
+specialize bc(bo=22,aa=0,lk=1);
+specialize bc(bo=22,aa=1,lk=0);
+specialize bc(bo=22,aa=1,lk=1);
+specialize bc(bo=23,aa=0,lk=0);
+specialize bc(bo=23,aa=0,lk=1);
+specialize bc(bo=23,aa=1,lk=0);
+specialize bc(bo=23,aa=1,lk=1);
+specialize bc(bo=24,aa=0,lk=0);
+specialize bc(bo=24,aa=0,lk=1);
+specialize bc(bo=24,aa=1,lk=0);
+specialize bc(bo=24,aa=1,lk=1);
+specialize bc(bo=25,aa=0,lk=0);
+specialize bc(bo=25,aa=0,lk=1);
+specialize bc(bo=25,aa=1,lk=0);
+specialize bc(bo=25,aa=1,lk=1);
+specialize bc(bo=26,aa=0,lk=0);
+specialize bc(bo=26,aa=0,lk=1);
+specialize bc(bo=26,aa=1,lk=0);
+specialize bc(bo=26,aa=1,lk=1);
+specialize bc(bo=27,aa=0,lk=0);
+specialize bc(bo=27,aa=0,lk=1);
+specialize bc(bo=27,aa=1,lk=0);
+specialize bc(bo=27,aa=1,lk=1);
+specialize bc(bo=28,aa=0,lk=0);
+specialize bc(bo=28,aa=0,lk=1);
+specialize bc(bo=28,aa=1,lk=0);
+specialize bc(bo=28,aa=1,lk=1);
+specialize bc(bo=29,aa=0,lk=0);
+specialize bc(bo=29,aa=0,lk=1);
+specialize bc(bo=29,aa=1,lk=0);
+specialize bc(bo=29,aa=1,lk=1);
+specialize bc(bo=30,aa=0,lk=0);
+specialize bc(bo=30,aa=0,lk=1);
+specialize bc(bo=30,aa=1,lk=0);
+specialize bc(bo=30,aa=1,lk=1);
+specialize bc(bo=31,aa=0,lk=0);
+specialize bc(bo=31,aa=0,lk=1);
+specialize bc(bo=31,aa=1,lk=0);
+specialize bc(bo=31,aa=1,lk=1);
+

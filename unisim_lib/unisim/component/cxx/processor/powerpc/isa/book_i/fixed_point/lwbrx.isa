@@ -40,5 +40,5 @@ lwbrx.execute = {
 	return cpu->Int32LoadByteReverse(rd, ea); // 32-bit load/byte reverse/no signe extend
 }
 lwbrx.disasm = {
-	os << "lwbrx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "lwbrx " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

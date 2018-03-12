@@ -32,9 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op stfdu(55[6]:fs[5]:ra[5]:sext<32>d[16])
+op stfdu(55[6]:fs[5]:ra[5]:sext d[16])
 stfdu.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
@@ -44,7 +44,7 @@ stfdu.execute = {
 		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
 		return false;
 	}
-	if(unlikely(!cpu->GetMSR_FP()))
+	if(unlikely(not cpu->GetMSR_FP()))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -53,14 +53,14 @@ stfdu.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 
-	if(unlikely(!cpu->Fp64Store(fs, ea))) return false;
+	if(unlikely(not cpu->Fp64Store(fs, ea))) return false;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 	
 	return true;
 }
 stfdu.disasm = {
-	os << "stfdu f" << (unsigned int) fs << ", " << d << "(r" << (unsigned int) ra << ")";
+	os << "stfdu f" << (unsigned int) fs << ", " << d << "(" << GPRPrint(ra) << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);

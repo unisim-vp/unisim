@@ -32,13 +32,17 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op stwx(31[6]:rs[5]:ra[5]:rb[5]:151[10]:?[1])
+/* Store Word Indexed */
+op stwx(31[6]:rs[5]:ra[5]:rb[5]:151[10]:?[1]);
+
 stwx.execute = {
 	// compute the effective address
 	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 	// do the memory access
 	return cpu->Int32Store(rs, ea);
-}
+};
+
 stwx.disasm = {
-	os << "stwx r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-}
+	os << "stwx " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
+};
+

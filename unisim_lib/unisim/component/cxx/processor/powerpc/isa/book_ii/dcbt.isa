@@ -38,5 +38,5 @@ dcbt.execute = {
 	return true;
 }
 dcbt.disasm = {
-	os << "dcbt r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "dcbt " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

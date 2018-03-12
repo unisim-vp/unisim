@@ -39,5 +39,5 @@ zvsplatih.execute = {
 	return false;
 }
 zvsplatih.disasm = {
-	os << " r" << (unsigned int) rd << ", " << simm;
+	os << " " << GPRPrint(rd) << ", " << simm;
 }

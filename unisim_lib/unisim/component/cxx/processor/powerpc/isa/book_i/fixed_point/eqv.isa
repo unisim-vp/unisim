@@ -64,7 +64,7 @@ eqv.execute = {
 	return true;
 }
 eqv.disasm = {
-	os << "eqv" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "eqv" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 
 specialize eqv(rc=0)

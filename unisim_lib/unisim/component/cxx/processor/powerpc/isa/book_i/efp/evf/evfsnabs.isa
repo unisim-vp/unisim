@@ -38,5 +38,5 @@ evfsnabs.execute = {
 	return false;
 }
 evfsnabs.disasm = {
-	os << "evfsnabs r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "evfsnabs " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }

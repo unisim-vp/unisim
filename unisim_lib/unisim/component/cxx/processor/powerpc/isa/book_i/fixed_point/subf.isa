@@ -44,7 +44,7 @@ subf.execute = {
 	uint32_t a = cpu->GetGPR(ra);
 	uint32_t b = cpu->GetGPR(rb);
 	
-	if(likely(!rc && !oe))
+	if(likely(not rc && !oe))
 	{
 		result = b - a;
 	}
@@ -81,7 +81,7 @@ subf.execute = {
 	return true;
 }
 subf.disasm = {
-	os << "subf" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "subf" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize subf(rc=0,oe=0)

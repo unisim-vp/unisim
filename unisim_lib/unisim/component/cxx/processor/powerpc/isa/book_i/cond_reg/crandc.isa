@@ -44,5 +44,5 @@ crandc.execute = {
 	return true;
 }
 crandc.disasm = {
-	os << "crandc cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+	os << "crandc " << CRPrint(crbD) << ", " << CRPrint(crbA) << ", " << CRPrint(crbB);
 }

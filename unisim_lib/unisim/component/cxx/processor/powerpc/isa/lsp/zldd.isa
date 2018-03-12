@@ -52,7 +52,7 @@ zldd.execute = {
 	return false;
 }
 zldd.disasm = {
-	os << "zldd" << (u ? "u" : "") << " r" << (unsigned int) rd << ", " << displacement << "(r" << (unsigned int) ra << ")";
+	os << "zldd" << (u ? "u" : "") << " " << GPRPrint(rd) << ", " << displacement << "(" << GPRPrint(ra) << ")";
 }
 
 specialize zldd(u=0)

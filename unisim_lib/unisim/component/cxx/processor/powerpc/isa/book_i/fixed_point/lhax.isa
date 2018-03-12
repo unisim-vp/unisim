@@ -32,13 +32,17 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op lhax(31[6]:rd[5]:ra[5]:rb[5]:343[10]:?[1])
+/* Load Halfword Algebraic Indexed  */
+op lhax(31[6]:rd[5]:ra[5]:rb[5]:343[10]:?[1]);
+
 lhax.execute = {
 	// compute the effective address
 	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 	// do the memory access
 	return cpu->SInt16Load(rd, ea); // 16-bit load/no byte reverse/sign extend
-}
+};
+
 lhax.disasm = {
-	os << "lhax r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-}
+	os << "lhax " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
+};
+

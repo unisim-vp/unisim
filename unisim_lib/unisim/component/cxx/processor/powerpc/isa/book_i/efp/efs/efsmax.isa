@@ -61,5 +61,5 @@ efsmax.execute = {
 }
 
 efsmax.disasm = {
-	os << "efsmax r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "efsmax " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

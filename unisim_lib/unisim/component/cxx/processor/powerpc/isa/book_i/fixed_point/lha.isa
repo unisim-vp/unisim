@@ -32,18 +32,18 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op lha(42[6]:rd[5]:ra[5]:sext<32>d[16])
+/* Load Halfword Algebraic */
+op lha(42[6]:rd[5]:ra[5]:sext d[16]);
+
 lha.execute = {
 	// compute the effective address
-	ADDRESS ea = (ra ? cpu->GetGPR(ra) + d : d);
+	UINT disp = UINT(SINT(d));
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + disp : disp);
 	// do the memory access
 	return cpu->SInt16Load(rd, ea); // 16-bit load/no byte reverse/sign extend
-}
+};
+
 lha.disasm = {
-	os << "lha r" << (unsigned int) rd << ", " << d << "(r" << (unsigned int) ra << ")";
-	if(cpu && (cpu->GetCIA() == this->GetAddr()))
-	{
-		ADDRESS ea = (ra ? cpu->GetGPR(ra) + d : d);
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+	os << "lha " << GPRPrint(rd) << ", " << d << "(" << GPRPrint(ra) << ")";
+};
+

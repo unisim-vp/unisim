@@ -42,7 +42,7 @@ zstddx.execute = {
 	return false;
 }
 zstddx.disasm = {
-	os << "zstdd" << (m ? "m" : "") << "x r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zstdd" << (m ? "m" : "") << "x " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize zstddx(m=0)

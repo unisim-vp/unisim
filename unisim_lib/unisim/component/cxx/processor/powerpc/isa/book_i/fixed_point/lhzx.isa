@@ -32,13 +32,17 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op lhzx(31[6]:rd[5]:ra[5]:rb[5]:279[10]:?[1])
+/* Load Halfword and Zero Indexed */
+op lhzx(31[6]:rd[5]:ra[5]:rb[5]:279[10]:?[1]);
+
 lhzx.execute = {
 	// compute the effective address
 	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 	// do the memory access
 	return cpu->Int16Load(rd, ea); // 16-bit load/no byte reverse/no sign extend
-}
+};
+
 lhzx.disasm = {
-	os << "lhzx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-}
+	os << "lhzx " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
+};
+

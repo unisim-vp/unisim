@@ -40,5 +40,5 @@ mfcr.execute = {
 	return true;
 }
 mfcr.disasm = {
-	os << "mfcr r" << (unsigned int) rd;
+	os << "mfcr " << GPRPrint(rd);
 }

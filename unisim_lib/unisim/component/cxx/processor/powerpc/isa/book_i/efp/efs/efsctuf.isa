@@ -75,5 +75,5 @@ efsctuf.execute = {
 }
 
 efsctuf.disasm = {
-	os << "efsctuf r" << (unsigned int) rd << ", r" << (unsigned int) rb;
+	os << "efsctuf " << GPRPrint(rd) << ", " << GPRPrint(rb);
 }

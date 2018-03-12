@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2018,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,128 +32,122 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op bcctr(19[6]: bo[5]: bi[5]:?[5]:528[10]:lk[1])
+/* Branch Conditional to Count Register */
+op bcctr(19[6]: bo[5]: bi[5]:?[5]:528[10]:lk[1]);
+
 bcctr.execute = {
-	if(unlikely(!(bo & 4)))
+	if(unlikely(not (bo & 4)))
 	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
+		cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
 		return false;
 	}
-	int cond_ok ;
-	if(((bo & 16) == 0)) {
+	
+	BOOL cond_ok = BOOL(true);
+	
+	if (((bo & 16) == 0)) {
 		/* Conditional branch */
+		UINT const msb = ~(UINT(-1)>>1);
 		if(bo & 8) {
 			/* Branch if condition is true */
-			cond_ok = ((cpu->GetCR() << bi) & 0x80000000) != 0;
+			cond_ok = ((cpu->GetCR() << bi) & msb) != 0;
 		}
 		else {
 			/* Branch if condition is false */
-			cond_ok = ((cpu->GetCR() << bi) & 0x80000000) == 0;
+			cond_ok = ((cpu->GetCR() << bi) & msb) == 0;
 		}
 	}
-	else {
-		cond_ok = 1;
-	}
-	if(cond_ok) {
-		typename CONFIG::address_t target_addr = cpu->GetCTR() & 0xfffffffc;
+	
+	if (cond_ok) {
+		ADDRESS target_addr = cpu->GetCTR() & UINT(-4);
 		cpu->Branch(target_addr);
 	}
-	if(lk) cpu->SetLR(cpu->GetCIA() + 4);
+	
+	if (lk) cpu->GetLR() = (cpu->GetCIA() + 4);
 	
 	return true;
-}
+};
 
 bcctr.disasm = {
 	switch(bo)
 	{
-		case 4: os << "bfctr"; break;
-		case 12: os << "btctr"; break;
-		case 20:
-			if(bi == 0)
-			{
-				os << "bctr";
-				break;
-			}
-			// no break if bi != 0
-		default:
-			os << "bcctr"; break;
+	case 4: case 5: case 6: case 7:     os << "bfctr"; break;
+	case 12: case 13: case 14: case 15: os << "btctr"; break;
+	case 20: if (bi == 0)             { os << "bctr";  break; }
+	default:                            os << "bcctr"; break;
 	}
-	if(lk) os << "l";
+	
+	if (lk) os << "l";
+	
 	switch(bo)
 	{
-		case 4: case 12: os << " " << (unsigned int) bi; break;
-		case 20: if(bi == 0) break;
-		// no break if bi != 0
-		default: os << " " << (unsigned int) bo << ", " << (unsigned int) bi;
+	case 4: case 5: case 6: case 7:
+	case 12: case 13: case 14: case 15: os << " " << unsigned(bi); break;
+	case 20: if (bi == 0) break;
+	default: os << " " << unsigned(bo) << ", " << unsigned(bi); break;
 	}
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
-	{
-		typename CONFIG::address_t target_addr = cpu->GetCTR() & 0xfffffffc;
-		os << " <" << cpu->GetFunctionFriendlyName(target_addr) << ">";
-	}
-}
+};
 
-specialize bcctr(bo=0,aa=2,lk=0)
-specialize bcctr(bo=0,aa=2,lk=1)
-specialize bcctr(bo=1,aa=2,lk=0)
-specialize bcctr(bo=1,aa=2,lk=1)
-specialize bcctr(bo=2,aa=2,lk=0)
-specialize bcctr(bo=2,aa=2,lk=1)
-specialize bcctr(bo=3,aa=2,lk=0)
-specialize bcctr(bo=3,aa=2,lk=1)
-specialize bcctr(bo=4,aa=2,lk=0)
-specialize bcctr(bo=4,aa=2,lk=1)
-specialize bcctr(bo=5,aa=2,lk=0)
-specialize bcctr(bo=5,aa=2,lk=1)
-specialize bcctr(bo=6,aa=2,lk=0)
-specialize bcctr(bo=6,aa=2,lk=1)
-specialize bcctr(bo=7,aa=2,lk=0)
-specialize bcctr(bo=7,aa=2,lk=1)
-specialize bcctr(bo=8,aa=2,lk=0)
-specialize bcctr(bo=8,aa=2,lk=1)
-specialize bcctr(bo=9,aa=2,lk=0)
-specialize bcctr(bo=9,aa=2,lk=1)
-specialize bcctr(bo=10,aa=2,lk=0)
-specialize bcctr(bo=10,aa=2,lk=1)
-specialize bcctr(bo=11,aa=2,lk=0)
-specialize bcctr(bo=11,aa=2,lk=1)
-specialize bcctr(bo=12,aa=2,lk=0)
-specialize bcctr(bo=12,aa=2,lk=1)
-specialize bcctr(bo=13,aa=2,lk=0)
-specialize bcctr(bo=13,aa=2,lk=1)
-specialize bcctr(bo=14,aa=2,lk=0)
-specialize bcctr(bo=14,aa=2,lk=1)
-specialize bcctr(bo=15,aa=2,lk=0)
-specialize bcctr(bo=15,aa=2,lk=1)
-specialize bcctr(bo=16,aa=2,lk=0)
-specialize bcctr(bo=16,aa=2,lk=1)
-specialize bcctr(bo=17,aa=2,lk=0)
-specialize bcctr(bo=17,aa=2,lk=1)
-specialize bcctr(bo=18,aa=2,lk=0)
-specialize bcctr(bo=18,aa=2,lk=1)
-specialize bcctr(bo=19,aa=2,lk=0)
-specialize bcctr(bo=19,aa=2,lk=1)
-specialize bcctr(bo=20,aa=2,lk=0)
-specialize bcctr(bo=20,aa=2,lk=1)
-specialize bcctr(bo=21,aa=2,lk=0)
-specialize bcctr(bo=21,aa=2,lk=1)
-specialize bcctr(bo=22,aa=2,lk=0)
-specialize bcctr(bo=22,aa=2,lk=1)
-specialize bcctr(bo=23,aa=2,lk=0)
-specialize bcctr(bo=23,aa=2,lk=1)
-specialize bcctr(bo=24,aa=2,lk=0)
-specialize bcctr(bo=24,aa=2,lk=1)
-specialize bcctr(bo=25,aa=2,lk=0)
-specialize bcctr(bo=25,aa=2,lk=1)
-specialize bcctr(bo=26,aa=2,lk=0)
-specialize bcctr(bo=26,aa=2,lk=1)
-specialize bcctr(bo=27,aa=2,lk=0)
-specialize bcctr(bo=27,aa=2,lk=1)
-specialize bcctr(bo=28,aa=2,lk=0)
-specialize bcctr(bo=28,aa=2,lk=1)
-specialize bcctr(bo=29,aa=2,lk=0)
-specialize bcctr(bo=29,aa=2,lk=1)
-specialize bcctr(bo=30,aa=2,lk=0)
-specialize bcctr(bo=30,aa=2,lk=1)
-specialize bcctr(bo=31,aa=2,lk=0)
-specialize bcctr(bo=31,aa=2,lk=1)
+specialize bcctr(bo=0,aa=2,lk=0);
+specialize bcctr(bo=0,aa=2,lk=1);
+specialize bcctr(bo=1,aa=2,lk=0);
+specialize bcctr(bo=1,aa=2,lk=1);
+specialize bcctr(bo=2,aa=2,lk=0);
+specialize bcctr(bo=2,aa=2,lk=1);
+specialize bcctr(bo=3,aa=2,lk=0);
+specialize bcctr(bo=3,aa=2,lk=1);
+specialize bcctr(bo=4,aa=2,lk=0);
+specialize bcctr(bo=4,aa=2,lk=1);
+specialize bcctr(bo=5,aa=2,lk=0);
+specialize bcctr(bo=5,aa=2,lk=1);
+specialize bcctr(bo=6,aa=2,lk=0);
+specialize bcctr(bo=6,aa=2,lk=1);
+specialize bcctr(bo=7,aa=2,lk=0);
+specialize bcctr(bo=7,aa=2,lk=1);
+specialize bcctr(bo=8,aa=2,lk=0);
+specialize bcctr(bo=8,aa=2,lk=1);
+specialize bcctr(bo=9,aa=2,lk=0);
+specialize bcctr(bo=9,aa=2,lk=1);
+specialize bcctr(bo=10,aa=2,lk=0);
+specialize bcctr(bo=10,aa=2,lk=1);
+specialize bcctr(bo=11,aa=2,lk=0);
+specialize bcctr(bo=11,aa=2,lk=1);
+specialize bcctr(bo=12,aa=2,lk=0);
+specialize bcctr(bo=12,aa=2,lk=1);
+specialize bcctr(bo=13,aa=2,lk=0);
+specialize bcctr(bo=13,aa=2,lk=1);
+specialize bcctr(bo=14,aa=2,lk=0);
+specialize bcctr(bo=14,aa=2,lk=1);
+specialize bcctr(bo=15,aa=2,lk=0);
+specialize bcctr(bo=15,aa=2,lk=1);
+specialize bcctr(bo=16,aa=2,lk=0);
+specialize bcctr(bo=16,aa=2,lk=1);
+specialize bcctr(bo=17,aa=2,lk=0);
+specialize bcctr(bo=17,aa=2,lk=1);
+specialize bcctr(bo=18,aa=2,lk=0);
+specialize bcctr(bo=18,aa=2,lk=1);
+specialize bcctr(bo=19,aa=2,lk=0);
+specialize bcctr(bo=19,aa=2,lk=1);
+specialize bcctr(bo=20,aa=2,lk=0);
+specialize bcctr(bo=20,aa=2,lk=1);
+specialize bcctr(bo=21,aa=2,lk=0);
+specialize bcctr(bo=21,aa=2,lk=1);
+specialize bcctr(bo=22,aa=2,lk=0);
+specialize bcctr(bo=22,aa=2,lk=1);
+specialize bcctr(bo=23,aa=2,lk=0);
+specialize bcctr(bo=23,aa=2,lk=1);
+specialize bcctr(bo=24,aa=2,lk=0);
+specialize bcctr(bo=24,aa=2,lk=1);
+specialize bcctr(bo=25,aa=2,lk=0);
+specialize bcctr(bo=25,aa=2,lk=1);
+specialize bcctr(bo=26,aa=2,lk=0);
+specialize bcctr(bo=26,aa=2,lk=1);
+specialize bcctr(bo=27,aa=2,lk=0);
+specialize bcctr(bo=27,aa=2,lk=1);
+specialize bcctr(bo=28,aa=2,lk=0);
+specialize bcctr(bo=28,aa=2,lk=1);
+specialize bcctr(bo=29,aa=2,lk=0);
+specialize bcctr(bo=29,aa=2,lk=1);
+specialize bcctr(bo=30,aa=2,lk=0);
+specialize bcctr(bo=30,aa=2,lk=1);
+specialize bcctr(bo=31,aa=2,lk=0);
+specialize bcctr(bo=31,aa=2,lk=1);

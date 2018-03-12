@@ -34,12 +34,12 @@
 
 op lfdx(31[6]:fd[5]:ra[5]:rb[5]:599[10]:?[1])
 lfdx.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
-	if(unlikely(!cpu->GetMSR_FP()))
+	if(unlikely(not cpu->GetMSR_FP()))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -52,7 +52,7 @@ lfdx.execute = {
 	return cpu->Fp64Load(fd, ea);
 }
 lfdx.disasm = {
-	os << "lfdx f" << (unsigned int) fd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "lfdx f" << (unsigned int) fd << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));

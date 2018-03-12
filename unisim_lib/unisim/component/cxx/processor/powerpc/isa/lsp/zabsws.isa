@@ -39,5 +39,5 @@ zabsws.execute = {
 	return false;
 }
 zabsws.disasm = {
-os << "zabsws r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+os << "zabsws " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }

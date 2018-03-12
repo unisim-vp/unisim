@@ -39,5 +39,5 @@ lbarx.execute = {
 	return cpu->Lbarx(rd, ea);
 }
 lbarx.disasm = {
-	os << "lbarx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb << ", " << (unsigned int) eh;
+	os << "lbarx " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb) << ", " << (unsigned int) eh;
 }

@@ -54,7 +54,7 @@ zvmhllgwsmf.execute = {
 	return false;
 }
 zvmhllgwsmf.disasm = {
-	os << "zvmhllgwsmf" << (r ? "r" : "") << LSP_ACC(acc) << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zvmhllgwsmf" << (r ? "r" : "") << LSP_ACC(acc) << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize zvmhllgwsmf(acc=0,r=0)

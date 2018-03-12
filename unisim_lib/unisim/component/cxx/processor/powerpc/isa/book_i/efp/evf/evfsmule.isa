@@ -38,5 +38,5 @@ evfsmule.execute = {
 	return false;
 }
 evfsmule.disasm = {
-	os << "evfsmule r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "evfsmule " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

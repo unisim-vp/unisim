@@ -34,14 +34,14 @@
 
 op fres(59[6]:fd[5]:?[5]:fb[5]:?[5]:24[5]:rc[1])
 fres.execute = {
-	if(!CONFIG::HAS_FPU || !CONFIG::HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS)
+	if(not CONFIG::HAS_FPU || !CONFIG::HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -58,7 +58,7 @@ fres.execute = {
 	if(unlikely(b.isSNaN()))
 	{
 		// b = SNaN
-		if(!(fpscr & CONFIG::FPSCR_VE_MASK))
+		if(not (fpscr & CONFIG::FPSCR_VE_MASK))
 		{
 			// Write back result
 			SoftFloat result(b.queryValue() | 0x400000UL);// QNaN (b with high order bit of mantissa set)
@@ -82,7 +82,7 @@ fres.execute = {
 		// Generate ZX
 		fpscr = fpscr | CONFIG::FPSCR_ZX_MASK;
 
-		if(!(fpscr & CONFIG::FPSCR_ZE_MASK))
+		if(not (fpscr & CONFIG::FPSCR_ZE_MASK))
 		{
 			if(b.isNegative())
 			{

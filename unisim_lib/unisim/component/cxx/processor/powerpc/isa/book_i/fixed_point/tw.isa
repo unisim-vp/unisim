@@ -51,5 +51,5 @@ tw.execute = {
 	return true;
 }
 tw.disasm = {
-	os << "tw " << (unsigned int) to << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "tw " << (unsigned int) to << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

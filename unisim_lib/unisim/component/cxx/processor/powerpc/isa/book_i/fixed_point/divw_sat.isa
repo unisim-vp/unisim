@@ -86,7 +86,7 @@ divw.execute = {
 }
 
 divw.disasm = {
-	os << "divw" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "divw" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize divw(rc=0,oe=0)

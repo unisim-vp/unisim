@@ -51,7 +51,7 @@ addis.execute = {
 }
 addis.disasm = {
 	if(ra == 0)
-		os << "lis r" << (unsigned int) rd << ", " << (simm >> 16);
+		os << "lis " << GPRPrint(rd) << ", " << (simm >> 16);
 	else
-		os << "addis r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << (simm >> 16);
+		os << "addis " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << (simm >> 16);
 }

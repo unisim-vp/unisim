@@ -44,5 +44,5 @@ crnor.execute = {
 	return true;
 }
 crnor.disasm = {
-	os << "crnor cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+	os << "crnor " << CRPrint(crbD) << ", " << CRPrint(crbA) << ", " << CRPrint(crbB);
 }

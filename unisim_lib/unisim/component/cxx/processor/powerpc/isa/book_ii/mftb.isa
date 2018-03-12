@@ -48,7 +48,7 @@ mftb.execute = {
 }
 mftb.disasm = {
 	uint32_t d = ((tbr & 0x1f) << 5) + ((tbr >> 5) & 0x1f);
-	os << "mftb r" << (unsigned int) rd << ", " << (unsigned int) d;
+	os << "mftb " << GPRPrint(rd) << ", " << (unsigned int) d;
 }
 
 specialize mftb(tbr=0x188)

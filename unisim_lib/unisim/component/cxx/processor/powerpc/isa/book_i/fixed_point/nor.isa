@@ -63,9 +63,9 @@ nor.execute = {
 }
 nor.disasm = {
 	if(rs == rb)
-		os << "not" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs;
+		os << "not" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs);
 	else
-		os << "nor" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+		os << "nor" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 
 specialize nor(rc=0)

@@ -38,5 +38,5 @@ mcrf.execute = {
 	return true;
 }
 mcrf.disasm = {
-	os << "mcrf cr" << (unsigned int) crfD << ", cr" << (unsigned int) crfS;
+	os << "mcrf " << CRPrint(crfD) << ", " << CRPrint(crfS);
 }

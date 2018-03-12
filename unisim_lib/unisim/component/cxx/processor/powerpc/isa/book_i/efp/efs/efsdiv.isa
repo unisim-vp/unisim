@@ -75,5 +75,5 @@ efsdiv.execute = {
 }
 
 efsdiv.disasm = {
-	os << "efsdiv r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "efsdiv " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

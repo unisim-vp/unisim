@@ -39,5 +39,5 @@ zadddus.execute = {
 	return false;
 }
 zadddus.disasm = {
-	os << "zadddus r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zadddus " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

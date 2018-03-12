@@ -89,5 +89,5 @@ efststlt.execute = {
 }
 
 efststlt.disasm = {
-	os << "efststlt " << (unsigned int) bf << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "efststlt " << (unsigned int) bf << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

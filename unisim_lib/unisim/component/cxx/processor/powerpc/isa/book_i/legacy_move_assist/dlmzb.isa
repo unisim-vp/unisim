@@ -43,7 +43,7 @@ dlmzb.execute = {
 	while(!found && (x < 4))
 	{
 		x++;
-		if(!(s & 0xff000000UL))
+		if(not (s & 0xff000000UL))
 		{
 			found = true;
 		}
@@ -55,7 +55,7 @@ dlmzb.execute = {
 	while(!found && (x < 8))
 	{
 		x++;
-		if(!(b & 0xff000000UL))
+		if(not (b & 0xff000000UL))
 		{
 			found = true;
 		}
@@ -87,5 +87,5 @@ dlmzb.execute = {
 }
 
 dlmzb.disasm = {
-	os << "dlmzb" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "dlmzb" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }

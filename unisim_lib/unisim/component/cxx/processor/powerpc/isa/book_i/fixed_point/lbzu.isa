@@ -32,7 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op lbzu(35[6]:rd[5]:ra[5]:sext<32>d[16])
+/* Load Byte and Zero with Update */
+op lbzu(35[6]:rd[5]:ra[5]:sext d[16]);
+
 lbzu.execute = {
 	if(unlikely(ra == 0 || ra == rd))
 	{
@@ -40,19 +42,16 @@ lbzu.execute = {
 		return false;
 	}
 	// compute the effective address
-	ADDRESS ea = (cpu->GetGPR(ra) + d);
+	ADDRESS ea = (cpu->GetGPR(ra) + UINT(SINT(d)));
 	// do the memory access
-	if(unlikely(!cpu->Int8Load(rd, ea))) return false;
+	if(unlikely(not cpu->Int8Load(rd, ea))) return false;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 	
 	return true;
-}
+};
+
 lbzu.disasm = {
-	os << "lbzu r" << (unsigned int) rd << ", " << d << "(r" << (unsigned int) ra << ")";
-	if(cpu && (cpu->GetCIA() == this->GetAddr()))
-	{
-		ADDRESS ea = (cpu->GetGPR(ra) + d);
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+	os << "lbzu " << GPRPrint(rd) << ", " << d << "(" << GPRPrint(ra) << ")";
+};
+

@@ -44,7 +44,7 @@ add.execute = {
 	uint32_t a = cpu->GetGPR(ra);
 	uint32_t b = cpu->GetGPR(rb);
 
-	if(likely(!oe && !rc))
+	if(likely(not oe && !rc))
 	{
 		result = a + b;
 	}
@@ -84,7 +84,7 @@ add.execute = {
 	return true;
 }
 add.disasm = {
-	os << "add" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "add" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize add(rc=0,oe=0)

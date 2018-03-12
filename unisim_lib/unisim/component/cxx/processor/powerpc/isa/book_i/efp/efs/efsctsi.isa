@@ -75,5 +75,5 @@ efsctsi.execute = {
 }
 
 efsctsi.disasm = {
-	os << "efsctsi r" << (unsigned int) rd << ", r" << (unsigned int) rb;
+	os << "efsctsi " << GPRPrint(rd) << ", " << GPRPrint(rb);
 }

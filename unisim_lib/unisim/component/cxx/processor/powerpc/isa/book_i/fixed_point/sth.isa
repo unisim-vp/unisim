@@ -32,18 +32,18 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op sth(44[6]:rs[5]:ra[5]:sext<32>d[16])
+/* Store Halfword */
+op sth(44[6]:rs[5]:ra[5]:sext d[16]);
+
 sth.execute = {
 	// compute the effective address
-	ADDRESS ea = (ra ? cpu->GetGPR(ra) + d : d);
+	UINT disp = UINT(SINT(d));
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + disp : disp);
 	// do the memory access
 	return cpu->Int16Store(rs, ea);
-}
+};
+
 sth.disasm = {
-	os << "sth r" << (unsigned int) rs << ", " << d << "(r" << (unsigned int) ra << ")";
-	if(cpu && (cpu->GetCIA() == this->GetAddr()))
-	{
-		ADDRESS ea = (ra ? cpu->GetGPR(ra) + d : d);
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+	os << "sth " << GPRPrint(rs) << ", " << d << "(" << GPRPrint(ra) << ")";
+};
+

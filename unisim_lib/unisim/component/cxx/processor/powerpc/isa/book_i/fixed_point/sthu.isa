@@ -32,7 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op sthu(45[6]:rs[5]:ra[5]:sext<32>d[16])
+/* Store Halfword with Update */
+op sthu(45[6]:rs[5]:ra[5]:sext d[16]);
+
 sthu.execute = {
 	if(unlikely(ra == 0))
 	{
@@ -42,17 +44,14 @@ sthu.execute = {
 	// compute the effective address
 	ADDRESS ea = (cpu->GetGPR(ra) + d);
 	// do the memory access
-	if(unlikely(!cpu->Int16Store(rs, ea))) return false;
+	if(unlikely(not cpu->Int16Store(rs, ea))) return false;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 	
 	return true;
-}
+};
+
 sthu.disasm = {
-	os << "sthu r" << (unsigned int) rs << ", " << d << "(r" << (unsigned int) ra << ")";
-	if(cpu && (cpu->GetCIA() == this->GetAddr()))
-	{
-		ADDRESS ea = (cpu->GetGPR(ra) + d);
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+	os << "sthu " << GPRPrint(rs) << ", " << d << "(" << GPRPrint(ra) << ")";
+};
+

@@ -38,5 +38,5 @@ efdcmpeq.execute = {
 	return false;
 }
 efdcmpeq.disasm = {
-	os << "efdcmpeq " << (unsigned int) bf << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "efdcmpeq " << (unsigned int) bf << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

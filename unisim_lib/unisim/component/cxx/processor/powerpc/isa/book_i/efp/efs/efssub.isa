@@ -60,5 +60,5 @@ efssub.execute = {
 }
 
 efssub.disasm = {
-	os << "efssub r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "efssub " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

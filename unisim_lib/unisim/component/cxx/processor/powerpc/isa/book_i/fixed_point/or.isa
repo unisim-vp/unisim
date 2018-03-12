@@ -63,9 +63,9 @@ or.execute = {
 }
 or.disasm = {
 	if(rs == rb)
-		os << "mr" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs;
+		os << "mr" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs);
 	else
-		os << "or" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+		os << "or" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 
 specialize or(rc=0)

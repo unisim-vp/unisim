@@ -39,5 +39,5 @@ tlbre.execute = {
 	return cpu->Tlbre(rd, way, ws);
 }
 tlbre.disasm = {
-	os << "tlbre r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << (unsigned int) ws;
+	os << "tlbre " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << (unsigned int) ws;
 }

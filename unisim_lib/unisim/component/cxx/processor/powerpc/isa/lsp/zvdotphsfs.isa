@@ -66,7 +66,7 @@ zvdotphsfs.execute = {
 	return false;
 }
 zvdotphsfs.disasm = {
-	os << "zvdotph" << (exchange ? "x" : "") << (substract ? "s" : "a") << "sf" << LSP_ACC(acc) << "s r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zvdotph" << (exchange ? "x" : "") << (substract ? "s" : "a") << "sf" << LSP_ACC(acc) << "s " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize zvdotphsfs(substract=0,exchange=0,acc=0)

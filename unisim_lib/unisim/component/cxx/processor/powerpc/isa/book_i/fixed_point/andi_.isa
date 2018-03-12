@@ -58,5 +58,5 @@ andi_.execute = {
 	return true;
 }
 andi_.disasm = {
-	os << "andi. r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << uimm;
+	os << "andi. " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << uimm;
 }

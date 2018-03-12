@@ -62,5 +62,5 @@ efscfui.execute = {
 	return status;
 }
 efscfui.disasm = {
-	os << "efscfui r" << (unsigned int) rd << ", r" << (unsigned int) rb;
+	os << "efscfui " << GPRPrint(rd) << ", " << GPRPrint(rb);
 }

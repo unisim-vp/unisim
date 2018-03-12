@@ -38,5 +38,5 @@ efdtstlt.execute = {
 	return false;
 }
 efdtstlt.disasm = {
-	os << "efdtstlt " << (unsigned int) bf << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "efdtstlt " << (unsigned int) bf << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

@@ -62,7 +62,7 @@ rlwimi.execute = {
 	return true;
 }
 rlwimi.disasm = {
-	os << "rlwimi" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << (unsigned int) sh << ", " << (unsigned int) mb << ", " << (unsigned int) me;
+	os << "rlwimi" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << (unsigned int) sh << ", " << (unsigned int) mb << ", " << (unsigned int) me;
 }
 
 specialize rlwimi(rc=0)

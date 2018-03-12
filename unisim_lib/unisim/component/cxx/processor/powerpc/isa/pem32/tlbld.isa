@@ -38,7 +38,7 @@ tlbld.execute = {
 	return cpu->Tlbld(ea);
 }
 tlbld.disasm = {
-	os << "tlbld r" << (unsigned int) rb;
+	os << "tlbld " << GPRPrint(rb);
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = cpu->GetGPR(rb);

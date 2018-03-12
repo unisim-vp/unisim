@@ -38,14 +38,14 @@ impl {
 
 op fnmsub(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:30[5]:rc[1])
 fnmsub.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -65,7 +65,7 @@ fnmsub.execute = {
 
 	GenFPSCR_FR<CONFIG, SoftDouble>(fpscr, result, flags);
 
-	if(likely(!result.isQNaN())) result.opposite();
+	if(likely(not result.isQNaN())) result.opposite();
 
 	// Generate OX, UX, VXSNAN, VXISI, VXIMZ, FR, FI, FPRF, XX, FX, VX, FEX
 	GenFPSCR_OX<CONFIG>(fpscr, flags);

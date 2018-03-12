@@ -13,67 +13,67 @@ dssall.disasm = {
 {CONFIG::HAS_ALTIVEC}:op dst(31[6]:0[1]:0[2]:strm[2]:ra[5]:rb[5]:342[10]:0[1])
 
 dst.disasm = {
-	os << "dst r" << (unsigned int) ra << ", r" << (unsigned int) rb << ", " << (unsigned int) strm;
+	os << "dst " << GPRPrint(ra) << ", " << GPRPrint(rb) << ", " << (unsigned int) strm;
 }
 
 {CONFIG::HAS_ALTIVEC}:op dstst(31[6]:0[1]:0[2]:strm[2]:ra[5]:rb[5]:374[10]:0[1])
 
 dstst.disasm = {
-	os << "dstst r" << (unsigned int) ra << ", r" << (unsigned int) rb << ", " << (unsigned int) strm;
+	os << "dstst " << GPRPrint(ra) << ", " << GPRPrint(rb) << ", " << (unsigned int) strm;
 }
 
 {CONFIG::HAS_ALTIVEC}:op dststt(31[6]:1[1]:0[2]:strm[2]:ra[5]:rb[5]:374[10]:0[1])
 
 dststt.disasm = {
-	os << "dstt r" << (unsigned int) ra << ", r" << (unsigned int) rb << ", " << (unsigned int) strm;
+	os << "dstt " << GPRPrint(ra) << ", " << GPRPrint(rb) << ", " << (unsigned int) strm;
 }
 
 {CONFIG::HAS_ALTIVEC}:op dstt(31[6]:1[1]:0[2]:strm[2]:ra[5]:rb[5]:342[10]:0[1])
 
 dstt.disasm = {
-	os << "dstt r" << (unsigned int) ra << ", r" << (unsigned int) rb << ", " << (unsigned int) strm;
+	os << "dstt " << GPRPrint(ra) << ", " << GPRPrint(rb) << ", " << (unsigned int) strm;
 }
 
 {CONFIG::HAS_ALTIVEC}:op lvebx(31[6]:vd[5]:ra[5]:rb[5]:7[10]:0[1])
 
 lvebx.disasm = {
-	os << "lvebx v" << (unsigned int) vd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "lvebx v" << (unsigned int) vd << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 {CONFIG::HAS_ALTIVEC}:op lvehx(31[6]:vd[5]:ra[5]:rb[5]:39[10]:0[1])
 
 lvehx.disasm = {
-	os << "lvehx v" << (unsigned int) vd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "lvehx v" << (unsigned int) vd << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 {CONFIG::HAS_ALTIVEC}:op lvewx(31[6]:vd[5]:ra[5]:rb[5]:71[10]:0[1])
 
 lvewx.disasm = {
-	os << "lvewx v" << (unsigned int) vd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "lvewx v" << (unsigned int) vd << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 {CONFIG::HAS_ALTIVEC}:op lvsl(31[6]:vd[5]:ra[5]:rb[5]:6[10]:0[1])
 
 lvsl.disasm = {
-	os << "lvsl v" << (unsigned int) vd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "lvsl v" << (unsigned int) vd << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 {CONFIG::HAS_ALTIVEC}:op lvsr(31[6]:vd[5]:ra[5]:rb[5]:38[10]:0[1])
 
 lvsr.disasm = {
-	os << "lvsr v" << (unsigned int) vd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "lvsr v" << (unsigned int) vd << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 {CONFIG::HAS_ALTIVEC}:op lvx(31[6]:vd[5]:ra[5]:rb[5]:103[10]:0[1])
 
 lvx.disasm = {
-	os << "lvx v" << (unsigned int) vd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "lvx v" << (unsigned int) vd << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 {CONFIG::HAS_ALTIVEC}:op lvxl(31[6]:vd[5]:ra[5]:rb[5]:359[10]:0[1])
 
 lvxl.disasm = {
-	os << "lvxl v" << (unsigned int) vd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "lvxl v" << (unsigned int) vd << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 {CONFIG::HAS_ALTIVEC}:op mfvscr(4[6]:vd[5]:0[5]:0[5]:1540[11])
@@ -91,31 +91,31 @@ mtvscr.disasm = {
 {CONFIG::HAS_ALTIVEC}:op stvebx(31[6]:vs[5]:ra[5]:rb[5]:135[10]:0[1])
 
 stvebx.disasm = {
-	os << "stvebx v" << (unsigned int) vs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "stvebx v" << (unsigned int) vs << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 {CONFIG::HAS_ALTIVEC}:op stvehx(31[6]:vs[5]:ra[5]:rb[5]:167[10]:0[1])
 
 stvehx.disasm = {
-	os << "stvehx v" << (unsigned int) vs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "stvehx v" << (unsigned int) vs << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 {CONFIG::HAS_ALTIVEC}:op stvewx(31[6]:vs[5]:ra[5]:rb[5]:199[10]:0[1])
 
 stvewx.disasm = {
-	os << "stvewx v" << (unsigned int) vs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "stvewx v" << (unsigned int) vs << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 {CONFIG::HAS_ALTIVEC}:op stvx(31[6]:vs[5]:ra[5]:rb[5]:231[10]:0[1])
 
 stvx.disasm = {
-	os << "stvx v" << (unsigned int) vs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "stvx v" << (unsigned int) vs << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 {CONFIG::HAS_ALTIVEC}:op stvxl(31[6]:vs[5]:ra[5]:rb[5]:487[10]:0[1])
 
 stvxl.disasm = {
-	os << "stvxl v" << (unsigned int) vs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "stvxl v" << (unsigned int) vs << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 {CONFIG::HAS_ALTIVEC}:op vaddcuw(4[6]:vd[5]:va[5]:vb[5]:384[11])

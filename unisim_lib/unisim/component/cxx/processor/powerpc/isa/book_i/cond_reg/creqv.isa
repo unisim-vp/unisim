@@ -44,5 +44,5 @@ creqv.execute = {
 	return true;
 }
 creqv.disasm = {
-	os << "creqv cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+	os << "creqv " << CRPrint(crbD) << ", " << CRPrint(crbA) << ", " << CRPrint(crbB);
 }

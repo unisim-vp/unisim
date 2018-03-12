@@ -51,5 +51,5 @@ mulli.execute = {
 	return true;
 }
 mulli.disasm = {
-	os << "mulli r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << simm;
+	os << "mulli " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << simm;
 }

@@ -75,5 +75,5 @@ efsctsiz.execute = {
 }
 
 efsctsiz.disasm = {
-	os << "efsctsiz r" << (unsigned int) rd << ", r" << (unsigned int) rb;
+	os << "efsctsiz " << GPRPrint(rd) << ", " << GPRPrint(rb);
 }

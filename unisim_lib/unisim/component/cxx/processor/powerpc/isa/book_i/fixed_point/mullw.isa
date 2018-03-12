@@ -77,7 +77,7 @@ mullw.execute = {
 }
 
 mullw.disasm = {
-	os << "mullw" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "mullw" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize mullw(rc=0,oe=0)

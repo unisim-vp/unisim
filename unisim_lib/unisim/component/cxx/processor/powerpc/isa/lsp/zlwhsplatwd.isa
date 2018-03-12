@@ -53,7 +53,7 @@ zlwhsplatwd.execute = {
 	return false;
 }
 zlwhsplatwd.disasm = {
-	os << "zlwhsplatwd" << (u ? "u" : "") << " r" << (unsigned int) rd << ", " << displacement << "(r" << (unsigned int) ra << ")";
+	os << "zlwhsplatwd" << (u ? "u" : "") << " " << GPRPrint(rd) << ", " << displacement << "(" << GPRPrint(ra) << ")";
 }
 
 specialize zlwhsplatwd(u=0)

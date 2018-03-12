@@ -40,5 +40,5 @@ sthcx_.execute = {
 }
 
 sthcx_.disasm = {
-	os << "sthcx. r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "sthcx. " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

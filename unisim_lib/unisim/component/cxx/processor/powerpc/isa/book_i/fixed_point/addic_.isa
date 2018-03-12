@@ -73,5 +73,5 @@ addic_.execute = {
 	return true;
 }
 addic_.disasm = {
-	os << "addic. r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << simm;
+	os << "addic. " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << simm;
 }

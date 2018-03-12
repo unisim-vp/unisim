@@ -98,5 +98,5 @@ efscmplt.execute = {
 }
 
 efscmplt.disasm = {
-	os << "efscmplt " << (unsigned int) bf << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "efscmplt " << (unsigned int) bf << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

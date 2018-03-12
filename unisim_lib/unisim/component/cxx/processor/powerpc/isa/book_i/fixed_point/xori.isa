@@ -50,5 +50,5 @@ xori.execute = {
 	return true;
 }
 xori.disasm = {
-	os << "xori r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << uimm;
+	os << "xori " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << uimm;
 }

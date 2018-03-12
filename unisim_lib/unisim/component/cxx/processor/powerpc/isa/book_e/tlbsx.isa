@@ -39,7 +39,7 @@ tlbsx.execute = {
 	return cpu->Tlbsx(rd, ea, rc);
 }
 tlbsx.disasm = {
-	os << "tlbsx" << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "tlbsx" << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));

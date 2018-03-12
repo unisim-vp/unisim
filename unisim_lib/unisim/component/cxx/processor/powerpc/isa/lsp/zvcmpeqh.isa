@@ -39,5 +39,5 @@ zvcmpeqh.execute = {
 	return false;
 }
 zvcmpeqh.disasm = {
-	os << "zvcmpeqh cr" << (unsigned int) crd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zvcmpeqh " << CRPrint(crd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

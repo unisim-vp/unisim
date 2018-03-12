@@ -87,5 +87,5 @@ efststeq.execute = {
 }
 
 efststeq.disasm = {
-	os << "efststeq " << (unsigned int) bf << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "efststeq " << (unsigned int) bf << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

@@ -60,5 +60,5 @@ cmpli.execute = {
 	return true;
 }
 cmpli.disasm = {
-	os << "cmpli cr" << (unsigned int) crfD << ", " << (unsigned int) l << ", r" << (unsigned int) ra << ", " << uimm;
+	os << "cmpli " << CRPrint(crfD) << ", " << (unsigned int) l << ", " << GPRPrint(ra) << ", " << uimm;
 }

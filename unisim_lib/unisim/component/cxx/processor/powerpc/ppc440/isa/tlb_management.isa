@@ -45,7 +45,7 @@ tlbre.execute = {
 	return cpu->Tlbre(rd, way, ws);
 }
 tlbre.disasm = {
-	os << "tlbre r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << (unsigned int) ws;
+	os << "tlbre " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << (unsigned int) ws;
 }
 
 op tlbsx(31[6]:rd[5]:ra[5]:rb[5]:914[10]:rc[1])
@@ -55,7 +55,7 @@ tlbsx.execute = {
 	return cpu->Tlbsx(rd, ea, rc);
 }
 tlbsx.disasm = {
-	os << "tlbsx" << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "tlbsx" << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -72,5 +72,5 @@ tlbwe.execute = {
 	return cpu->Tlbwe(s, a, ws);
 }
 tlbwe.disasm = {
-	os << "tlbwe r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", " << (unsigned int) ws;
+	os << "tlbwe " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << (unsigned int) ws;
 }

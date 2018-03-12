@@ -71,5 +71,5 @@ efssqrt.execute = {
 }
 
 efssqrt.disasm = {
-	os << "efssqrt r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "efssqrt " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }

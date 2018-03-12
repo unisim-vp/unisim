@@ -60,6 +60,6 @@ efsabs.execute = {
 }
 
 efsabs.disasm = {
-	os << "efsabs r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "efsabs " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }
 

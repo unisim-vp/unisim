@@ -81,5 +81,5 @@ nmaclhw.execute = {
 }
 
 nmaclhw.disasm = {
-	os << "nmaclhw" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "nmaclhw" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

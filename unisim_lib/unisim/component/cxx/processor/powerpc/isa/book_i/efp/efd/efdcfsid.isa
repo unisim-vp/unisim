@@ -38,5 +38,5 @@ efdcfsid.execute = {
 	return false;
 }
 efdcfsid.disasm = {
-	os << "efdcfsid r" << (unsigned int) rd << ", r" << (unsigned int) rb;
+	os << "efdcfsid " << GPRPrint(rd) << ", " << GPRPrint(rb);
 }

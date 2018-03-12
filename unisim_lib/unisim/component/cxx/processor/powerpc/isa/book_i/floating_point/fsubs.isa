@@ -38,14 +38,14 @@ impl {
 
 op fsubs(59[6]:fd[5]:fa[5]:fb[5]:?[5]:20[5]:rc[1])
 fsubs.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;

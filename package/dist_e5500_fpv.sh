@@ -145,7 +145,9 @@ unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/subfic.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/subfme.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/subfze.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmp.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmpL.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmpi.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmpiL.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmpl.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmpli.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/and.isa \
@@ -239,6 +241,13 @@ unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwz.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwzu.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwzux.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwzx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwa.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwaux.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwax.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/ld.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/ldu.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/ldux.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/ldx.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stb.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stbu.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stbux.isa \
@@ -251,6 +260,10 @@ unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stw.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stwu.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stwux.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stwx.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/std.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stdu.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stdux.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/stdx.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lhbrx.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/lwbrx.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/sthbrx.isa \

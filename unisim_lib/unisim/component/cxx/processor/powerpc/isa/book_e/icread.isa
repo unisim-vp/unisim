@@ -40,5 +40,5 @@ icread.execute = {
 	return cpu->Icread(ea);
 }
 icread.disasm = {
-	os << "icread r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "icread " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

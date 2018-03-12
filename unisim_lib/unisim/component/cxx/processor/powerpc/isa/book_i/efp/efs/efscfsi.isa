@@ -63,5 +63,5 @@ efscfsi.execute = {
 }
 
 efscfsi.disasm = {
-	os << "efscfsi r" << (unsigned int) rd << ", r" << (unsigned int) rb;
+	os << "efscfsi " << GPRPrint(rd) << ", " << GPRPrint(rb);
 }

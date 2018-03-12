@@ -32,15 +32,15 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op lfd(50[6]:fd[5]:ra[5]:sext<32>d[16])
+op lfd(50[6]:fd[5]:ra[5]:sext d[16])
 lfd.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// check if FPU is available
-	if(unlikely(!cpu->GetMSR_FP()))
+	if(unlikely(not cpu->GetMSR_FP()))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -53,7 +53,7 @@ lfd.execute = {
 	return cpu->Fp64Load(fd, ea);
 }
 lfd.disasm = {
-	os << "lfd f" << (unsigned int) fd << ", " << d << "(r" << (unsigned int) ra << ")";
+	os << "lfd f" << (unsigned int) fd << ", " << d << "(" << GPRPrint(ra) << ")";
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);

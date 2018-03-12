@@ -43,13 +43,13 @@ op e_stmvgprw(0b000110[6]:0b00000[5]:ra[5]:0b00010001[8]:sext d8[8])
 e_stmvgprw.execute = {
 	ADDRESS ea = (ra ? (cpu->GetGPR(ra) + d8) : d8);
 
-	if(unlikely(!cpu->Int32Store(0, ea))) return false;
+	if(unlikely(not cpu->Int32Store(0, ea))) return false;
 	ea = ea + 4;
 	
 	unsigned int r;
 	for(r = 3; r <= 12; r++)
 	{
-		if(unlikely(!cpu->Int32Store(r, ea))) return false;
+		if(unlikely(not cpu->Int32Store(r, ea))) return false;
 		ea = ea + 4;
 	}
 	

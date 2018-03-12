@@ -61,7 +61,7 @@ slw.execute = {
 	return true;
 }
 slw.disasm = {
-	os << "slw" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "slw" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 
 specialize slw(rc=0)

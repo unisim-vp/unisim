@@ -32,13 +32,17 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op stbx(31[6]:rs[5]:ra[5]:rb[5]:215[10]:?[1])
+/* Store Byte Indexed */
+op stbx(31[6]:rs[5]:ra[5]:rb[5]:215[10]:?[1]);
+
 stbx.execute = {
 	// compute the effective address
 	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 	// do the memory access
 	return cpu->Int8Store(rs, ea);
-}
+};
+
 stbx.disasm = {
-	os << "stbx r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-}
+	os << "stbx " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
+};
+

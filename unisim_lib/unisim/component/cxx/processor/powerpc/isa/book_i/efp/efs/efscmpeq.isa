@@ -96,5 +96,5 @@ efscmpeq.execute = {
 }
 
 efscmpeq.disasm = {
-	os << "efscmpeq " << (unsigned int) bf << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "efscmpeq " << (unsigned int) bf << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

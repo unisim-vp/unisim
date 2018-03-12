@@ -75,7 +75,7 @@ add.execute = {
 	uint32_t a = cpu->GetGPR(ra);
 	uint32_t b = cpu->GetGPR(rb);
 
-	if(likely(!oe && !rc))
+	if(likely(not oe && !rc))
 	{
 		result = a + b;
 	}
@@ -118,7 +118,7 @@ add.execute = {
 	return true;
 }
 add.disasm = {
-	os << "add" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "add" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op addc(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:10[9]:rc[1])
@@ -168,7 +168,7 @@ addc.execute = {
 	return true;
 }
 addc.disasm = {
-	os << "addc" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "addc" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op adde(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:138[9]:rc[1])
@@ -219,7 +219,7 @@ adde.execute = {
 	return true;
 }
 adde.disasm = {
-	os << "adde" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "adde" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op addi(14[6]:rd[5]:ra[5]:sext<32> simm[16])
@@ -237,9 +237,9 @@ addi.execute = {
 }
 addi.disasm = {
 	if(ra == 0)
-		os << "li r" << (unsigned int) rd << ", " << simm;
+		os << "li " << GPRPrint(rd) << ", " << simm;
 	else
-		os << "addi r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << simm;
+		os << "addi " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << simm;
 }
 
 op addic(12[6]:rd[5]:ra[5]:sext<32> simm[16])
@@ -268,7 +268,7 @@ addic.execute = {
 	return true;
 }
 addic.disasm = {
-	os << "addic r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << simm;
+	os << "addic " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << simm;
 }
 
 op addic_(13[6]:rd[5]:ra[5]:sext<32> simm[16])
@@ -308,7 +308,7 @@ addic_.execute = {
 	return true;
 }
 addic_.disasm = {
-	os << "addic. r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << simm;
+	os << "addic. " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << simm;
 }
 
 op addis(15[6]:rd[5]:ra[5]:shl<16> sext<32> simm[16])
@@ -326,9 +326,9 @@ addis.execute = {
 }
 addis.disasm = {
 	if(ra == 0)
-		os << "lis r" << (unsigned int) rd << ", " << (simm >> 16);
+		os << "lis " << GPRPrint(rd) << ", " << (simm >> 16);
 	else
-		os << "addis r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << (simm >> 16);
+		os << "addis " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << (simm >> 16);
 }
 
 op addme(31[6]:rd[5]:ra[5]:?[5]:oe[1]:234[9]:rc[1])
@@ -378,7 +378,7 @@ addme.execute = {
 	return true;
 }
 addme.disasm = {
-	os << "addme" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "addme" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }
 
 op addze(31[6]:rd[5]:ra[5]:?[5]:oe[1]:202[9]:rc[1])
@@ -428,7 +428,7 @@ addze.execute = {
 	return true;
 }
 addze.disasm = {
-	os << "addze" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "addze" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }
 
 
@@ -513,7 +513,7 @@ divw.execute = {
 	return true;
 }
 divw.disasm = {
-	os << "divw" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "divw" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op divwu(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:459[9]:rc[1])
@@ -595,7 +595,7 @@ divwu.execute = {
 	return true;
 }
 divwu.disasm = {
-	os << "divwu" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "divwu" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 
@@ -632,7 +632,7 @@ mulhw.execute = {
 	return true;
 }
 mulhw.disasm = {
-	os << "mulhw" << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "mulhw" << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op mulhwu(31[6]:rd[5]:ra[5]:rb[5]:?[1]:11[9]:rc[1])
@@ -668,7 +668,7 @@ mulhwu.execute = {
 	return true;
 }
 mulhwu.disasm = {
-	os << "mulhwu" << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "mulhwu" << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op mulli(07[6]:rd[5]:ra[5]: sext<32> simm[16])
@@ -686,7 +686,7 @@ mulli.execute = {
 	return true;
 }
 mulli.disasm = {
-	os << "mulli r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << simm;
+	os << "mulli " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << simm;
 }
 
 op mullw(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:235[9]:rc[1])
@@ -733,7 +733,7 @@ mullw.execute = {
 	return true;
 }
 mullw.disasm = {
-	os << "mullw r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "mullw " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op neg(31[6]:rd[5]:ra[5]:?[5]:oe[1]:104[9]:rc[1])
@@ -812,7 +812,7 @@ neg.execute = {
 	return true;
 }
 neg.disasm = {
-	os << "neg" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "neg" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }
 
 op subf(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:40[9]:rc[1])
@@ -823,7 +823,7 @@ subf.execute = {
 	uint32_t a = cpu->GetGPR(ra);
 	uint32_t b = cpu->GetGPR(rb);
 	
-	if(likely(!rc && !oe))
+	if(likely(not rc && !oe))
 	{
 		result = b - a;
 	}
@@ -866,7 +866,7 @@ subf.execute = {
 	return true;
 }
 subf.disasm = {
-	os << "subf" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "subf" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op subfc(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:8[9]:rc[1])
@@ -915,7 +915,7 @@ subfc.execute = {
 	return true;
 }
 subfc.disasm = {
-	os << "subfc" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "subfc" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op subfe(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:136[9]:rc[1])
@@ -966,7 +966,7 @@ subfe.execute = {
 	return true;
 }
 subfe.disasm = {
-	os << "subfe" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "subfe" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op subfic(08[6]:rd[5]:ra[5]:sext<32> simm[16])
@@ -996,7 +996,7 @@ subfic.execute = {
 	return true;
 }
 subfic.disasm = {
-	os << "subfic r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << simm;
+	os << "subfic " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << simm;
 }
 
 op subfme(31[6]:rd[5]:ra[5]:?[5]:oe[1]:232[9]:rc[1])
@@ -1046,7 +1046,7 @@ subfme.execute = {
 	return true;
 }
 subfme.disasm = {
-	os << "subfme" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "subfme" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }
 
 op subfze(31[6]:rd[5]:ra[5]:?[5]:oe[1]:200[9]:rc[1])
@@ -1096,7 +1096,7 @@ subfze.execute = {
 	return true;
 }
 subfze.disasm = {
-	os << "subfze" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "subfze" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }
 
 /****************************************************
@@ -1123,7 +1123,7 @@ cmp.execute = {
 	return true;
 }
 cmp.disasm = {
-	os << "cmp cr" << (unsigned int) crfD << ", " << (unsigned int) l << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "cmp " << CRPrint(crfD) << ", " << (unsigned int) l << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op cmpi(11[6]:crfD[3]:?[1]:l[1]:ra[5]:sext<32> simm[16])
@@ -1150,7 +1150,7 @@ cmpi.execute = {
 	return true;
 }
 cmpi.disasm = {
-	os << "cmpi cr" << (unsigned int) crfD << ", " << (unsigned int) l << ", r" << (unsigned int) ra << ", " << simm;
+	os << "cmpi " << CRPrint(crfD) << ", " << (unsigned int) l << ", " << GPRPrint(ra) << ", " << simm;
 }
 
 op cmpl(31[6]:crfD[3]:?[1]:l[1]:ra[5]:rb[5]:32[10]:?[1])
@@ -1178,7 +1178,7 @@ cmpl.execute = {
 	return true;
 }
 cmpl.disasm = {
-	os << "cmpl cr" << (unsigned int) crfD << ", " << (unsigned int) l << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "cmpl " << CRPrint(crfD) << ", " << (unsigned int) l << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op cmpli(10[6]:crfD[3]:?[1]:l[1]:ra[5]:uimm[16])
@@ -1205,7 +1205,7 @@ cmpli.execute = {
 	return true;
 }
 cmpli.disasm = {
-	os << "cmpli cr" << (unsigned int) crfD << ", " << (unsigned int) l << ", r" << (unsigned int) ra << ", " << uimm;
+	os << "cmpli " << CRPrint(crfD) << ", " << (unsigned int) l << ", " << GPRPrint(ra) << ", " << uimm;
 }
 
 /****************************************************
@@ -1246,7 +1246,7 @@ and.execute = {
 	return true;
 }
 and.disasm = {
-	os << "and" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "and" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 
 op andc(31[6]: rs[5]: ra[5]: rb[5]: 60[10]: rc[1])
@@ -1281,7 +1281,7 @@ andc.execute = {
 	return true;
 }
 andc.disasm = {
-	os << "andc" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "andc" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 
 op andi_(28[6]:rs[5]:ra[5]:uimm[16])
@@ -1310,7 +1310,7 @@ andi_.execute = {
 	return true;
 }
 andi_.disasm = {
-	os << "andi. r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << uimm;
+	os << "andi. " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << uimm;
 }
 
 op andis_(29[6]:rs[5]:ra[5]: shl<16> <32> uimm[16])
@@ -1339,7 +1339,7 @@ andis_.execute = {
 	return true;
 }
 andis_.disasm = {
-	os << "andis. r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << (uimm >> 16);
+	os << "andis. " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << (uimm >> 16);
 }
 
 op cntlzw(31[6]:rs[5]:ra[5]:?[5]:26[10]:rc[1])
@@ -1372,7 +1372,7 @@ cntlzw.execute = {
 	return true;
 }
 cntlzw.disasm = {
-	os << "cntlzw" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs;
+	os << "cntlzw" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs);
 }
 
 op eqv(31[6]:rs[5]:ra[5]:rb[5]:284[10]:rc[1])
@@ -1407,7 +1407,7 @@ eqv.execute = {
 	return true;
 }
 eqv.disasm = {
-	os << "eqv" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "eqv" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 
 op extsb(31[6]:rs[5]:ra[5]:?[5]:954[10]:rc[1])
@@ -1441,7 +1441,7 @@ extsb.execute = {
 	return true;
 }
 extsb.disasm = {
-	os << "extsb" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs;
+	os << "extsb" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs);
 }
 
 op extsh(31[6]:rs[5]:ra[5]:?[5]:922[10]:rc[1])
@@ -1475,7 +1475,7 @@ extsh.execute = {
 	return true;
 }
 extsh.disasm = {
-	os << "extsh" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs;
+	os << "extsh" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs);
 }
 
 op nand(31[6]:rs[5]:ra[5]:rb[5]:476[10]:rc[1])
@@ -1510,7 +1510,7 @@ nand.execute = {
 	return true;
 }
 nand.disasm = {
-	os << "nand" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "nand" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 
 op nor(31[6]:rs[5]:ra[5]:rb[5]:124[10]:rc[1])
@@ -1546,9 +1546,9 @@ nor.execute = {
 }
 nor.disasm = {
 	if(rs == rb)
-		os << "not" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs;
+		os << "not" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs);
 	else
-		os << "nor" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+		os << "nor" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 
 op or(31[6]:rs[5]:ra[5]:rb[5]:444[10]:rc[1])
@@ -1584,9 +1584,9 @@ or.execute = {
 }
 or.disasm = {
 	if(rs == rb)
-		os << "mr" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs;
+		os << "mr" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs);
 	else
-		os << "or" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+		os << "or" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 
 op orc(31[6]:rs[5]:ra[5]:rb[5]:412[10]:rc[1])
@@ -1621,7 +1621,7 @@ orc.execute = {
 	return true;
 }
 orc.disasm = {
-	os << "orc" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "orc" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 
 op ori(24[6]:rs[5]:ra[5]:uimm[16])
@@ -1641,7 +1641,7 @@ ori.disasm = {
 	if(rs == 0 && ra == 0 && uimm == 0)
 		os << "nop";
 	else
-		os << "ori r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << uimm;	
+		os << "ori " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << uimm;	
 }
 
 op oris(25[6]:rs[5]:ra[5]:shl<16> <32> uimm[16])
@@ -1658,7 +1658,7 @@ oris.execute = {
 	return true;
 }
 oris.disasm = {
-	os << "oris r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << (uimm >> 16);
+	os << "oris " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << (uimm >> 16);
 }
 
 op xor(31[6]:rs[5]:ra[5]:rb[5]:316[10]:rc[1])
@@ -1693,7 +1693,7 @@ xor.execute = {
 	return true;
 }
 xor.disasm = {
-	os << "xor" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "xor" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 
 op xori(26[6]:rs[5]:ra[5]:uimm[16])
@@ -1710,7 +1710,7 @@ xori.execute = {
 	return true;
 }
 xori.disasm = {
-	os << "xori r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << uimm;
+	os << "xori " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << uimm;
 }
 
 op xoris(27[6]:rs[5]:ra[5]:shl<16> <32> uimm[16])
@@ -1727,7 +1727,7 @@ xoris.execute = {
 	return true;
 }
 xoris.disasm = {
-	os << "xoris r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << (uimm >> 16);
+	os << "xoris " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << (uimm >> 16);
 }
 
 /****************************************************
@@ -1770,7 +1770,7 @@ rlwimi.execute = {
 	return true;
 }
 rlwimi.disasm = {
-	os << "rlwimi" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << (unsigned int) sh << ", " << (unsigned int) mb << ", " << (unsigned int) me;
+	os << "rlwimi" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << (unsigned int) sh << ", " << (unsigned int) mb << ", " << (unsigned int) me;
 }
 
 op rlwinm(21[6]:rs[5]:ra[5]:sh[5]:mb[5]:me[5]:rc[1])
@@ -1806,7 +1806,7 @@ rlwinm.execute = {
 	return true;
 }
 rlwinm.disasm = {
-	os << "rlwinm" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << (unsigned int) sh << ", " << (unsigned int) mb << ", " << (unsigned int) me;
+	os << "rlwinm" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << (unsigned int) sh << ", " << (unsigned int) mb << ", " << (unsigned int) me;
 }
 
 op rlwnm(23[6]:rs[5]:ra[5]:rb[5]:mb[5]:me[5]:rc[1])
@@ -1843,7 +1843,7 @@ rlwnm.execute = {
 	return true;
 }
 rlwnm.disasm = {
-	os << "rlwnm" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb << ", " << (unsigned int) mb << ", " << (unsigned int) me;
+	os << "rlwnm" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb) << ", " << (unsigned int) mb << ", " << (unsigned int) me;
 }
 
 /****************************************************
@@ -1884,7 +1884,7 @@ slw.execute = {
 	return true;
 }
 slw.disasm = {
-	os << "slw" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "slw" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 
 op sraw(31[6]:rs[5]:ra[5]:rb[5]:792[10]:rc[1])
@@ -1948,7 +1948,7 @@ sraw.execute = {
 	return true;
 }
 sraw.disasm = {
-	os << "sraw" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "sraw" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 
 op srawi(31[6]:rs[5]:ra[5]:sh[5]:824[10]:rc[1])
@@ -1996,7 +1996,7 @@ srawi.execute = {
 	return true;
 }
 srawi.disasm = {
-	os << "srawi" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << (unsigned int) sh;
+	os << "srawi" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << (unsigned int) sh;
 }
 
 op srw(31[6]:rs[5]:ra[5]:rb[5]:536[10]:rc[1])
@@ -2032,6 +2032,6 @@ srw.execute = {
 	return true;
 }
 srw.disasm = {
-	os << "srw" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "srw" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 

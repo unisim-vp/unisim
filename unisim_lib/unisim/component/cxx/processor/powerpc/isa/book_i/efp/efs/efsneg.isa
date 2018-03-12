@@ -60,5 +60,5 @@ efsneg.execute = {
 }
 
 efsneg.disasm = {
-	os << "efsneg r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "efsneg " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }

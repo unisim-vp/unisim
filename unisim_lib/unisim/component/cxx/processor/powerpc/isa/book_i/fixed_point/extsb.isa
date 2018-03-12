@@ -63,7 +63,7 @@ extsb.execute = {
 	return true;
 }
 extsb.disasm = {
-	os << "extsb" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs;
+	os << "extsb" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs);
 }
 
 specialize extsb(rc=0)

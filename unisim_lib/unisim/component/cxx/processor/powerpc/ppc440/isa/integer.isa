@@ -80,7 +80,7 @@ isel.execute = {
 }
 
 isel.disasm = {
-	os << "isel r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb << ", " << (unsigned int) crb;
+	os << "isel " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb) << ", " << (unsigned int) crb;
 }
 
 op dlmzb(31[6]:rs[5]:ra[5]:rb[5]:78[10]:rc[1])
@@ -138,7 +138,7 @@ dlmzb.execute = {
 }
 
 dlmzb.disasm = {
-	os << "dlmzb" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "dlmzb" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 
 op macchw(4[6]:rd[5]:ra[5]:rb[5]:oe[1]:172[9]:rc[1])
@@ -190,7 +190,7 @@ macchw.execute = {
 }
 
 macchw.disasm = {
-	os << "macchw" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "macchw" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op macchws(4[6]:rd[5]:ra[5]:rb[5]:oe[1]:236[9]:rc[1])
@@ -242,7 +242,7 @@ macchws.execute = {
 }
 
 macchws.disasm = {
-	os << "macchws" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "macchws" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op macchwsu(4[6]:rd[5]:ra[5]:rb[5]:oe[1]:204[9]:rc[1])
@@ -294,7 +294,7 @@ macchwsu.execute = {
 }
 
 macchwsu.disasm = {
-	os << "macchwsu" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "macchwsu" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op macchwu(4[6]:rd[5]:ra[5]:rb[5]:oe[1]:140[9]:rc[1])
@@ -346,7 +346,7 @@ macchwu.execute = {
 }
 
 macchwu.disasm = {
-	os << "macchwu" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "macchwu" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op machhw(4[6]:rd[5]:ra[5]:rb[5]:oe[1]:44[9]:rc[1])
@@ -398,7 +398,7 @@ machhw.execute = {
 }
 
 machhw.disasm = {
-	os << "machhw" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "machhw" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op machhws(4[6]:rd[5]:ra[5]:rb[5]:oe[1]:108[9]:rc[1])
@@ -450,7 +450,7 @@ machhws.execute = {
 }
 
 machhws.disasm = {
-	os << "machhws" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "machhws" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op machhwsu(4[6]:rd[5]:ra[5]:rb[5]:oe[1]:76[9]:rc[1])
@@ -502,7 +502,7 @@ machhwsu.execute = {
 }
 
 machhwsu.disasm = {
-	os << "machhwsu" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "machhwsu" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op machhwu(4[6]:rd[5]:ra[5]:rb[5]:oe[1]:12[9]:rc[1])
@@ -554,7 +554,7 @@ machhwu.execute = {
 }
 
 machhwu.disasm = {
-	os << "machhwu" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "machhwu" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op maclhw(4[6]:rd[5]:ra[5]:rb[5]:oe[1]:428[9]:rc[1])
@@ -606,7 +606,7 @@ maclhw.execute = {
 }
 
 maclhw.disasm = {
-	os << "maclhw" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "maclhw" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op maclhws(4[6]:rd[5]:ra[5]:rb[5]:oe[1]:492[9]:rc[1])
@@ -658,7 +658,7 @@ maclhws.execute = {
 }
 
 maclhws.disasm = {
-	os << "maclhws" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "maclhws" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op maclhwsu(4[6]:rd[5]:ra[5]:rb[5]:oe[1]:460[9]:rc[1])
@@ -710,7 +710,7 @@ maclhwsu.execute = {
 }
 
 maclhwsu.disasm = {
-	os << "maclhwsu" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "maclhwsu" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 
@@ -763,7 +763,7 @@ maclhwu.execute = {
 }
 
 maclhwu.disasm = {
-	os << "maclhwu" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "maclhwu" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op mulchw(4[6]:rd[5]:ra[5]:rb[5]:168[10]:rc[1])
@@ -800,7 +800,7 @@ mulchw.execute = {
 }
 
 mulchw.disasm = {
-	os << "mulchw" << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "mulchw" << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op mulchwu(4[6]:rd[5]:ra[5]:rb[5]:136[10]:rc[1])
@@ -837,7 +837,7 @@ mulchwu.execute = {
 }
 
 mulchwu.disasm = {
-	os << "mulchwu" << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "mulchwu" << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op mulhhw(4[6]:rd[5]:ra[5]:rb[5]:40[10]:rc[1])
@@ -874,7 +874,7 @@ mulhhw.execute = {
 }
 
 mulhhw.disasm = {
-	os << "mulhhw" << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "mulhhw" << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op mulhhwu(4[6]:rd[5]:ra[5]:rb[5]:8[10]:rc[1])
@@ -911,7 +911,7 @@ mulhhwu.execute = {
 }
 
 mulhhwu.disasm = {
-	os << "mulhhwu" << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "mulhhwu" << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 op mullhw(4[6]:rd[5]:ra[5]:rb[5]:424[10]:rc[1])
 
@@ -947,7 +947,7 @@ mullhw.execute = {
 }
 
 mullhw.disasm = {
-	os << "mullhw" << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "mullhw" << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op mullhwu(4[6]:rd[5]:ra[5]:rb[5]:392[10]:rc[1])
@@ -984,7 +984,7 @@ mullhwu.execute = {
 }
 
 mullhwu.disasm = {
-	os << "mullhwu" << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "mullhwu" << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 
@@ -1037,7 +1037,7 @@ nmacchw.execute = {
 }
 
 nmacchw.disasm = {
-	os << "nmacchw" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "nmacchw" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op nmacchws(4[6]:rd[5]:ra[5]:rb[5]:oe[1]:238[9]:rc[1])
@@ -1089,7 +1089,7 @@ nmacchws.execute = {
 }
 
 nmacchws.disasm = {
-	os << "nmacchws" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "nmacchws" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op nmachhw(4[6]:rd[5]:ra[5]:rb[5]:oe[1]:46[9]:rc[1])
@@ -1141,7 +1141,7 @@ nmachhw.execute = {
 }
 
 nmachhw.disasm = {
-	os << "nmachhw" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "nmachhw" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op nmachhws(4[6]:rd[5]:ra[5]:rb[5]:oe[1]:110[9]:rc[1])
@@ -1193,7 +1193,7 @@ nmachhws.execute = {
 }
 
 nmachhws.disasm = {
-	os << "nmachhws" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "nmachhws" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op nmaclhw(4[6]:rd[5]:ra[5]:rb[5]:oe[1]:430[9]:rc[1])
@@ -1245,7 +1245,7 @@ nmaclhw.execute = {
 }
 
 nmaclhw.disasm = {
-	os << "nmaclhw" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "nmaclhw" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op nmaclhws(4[6]:rd[5]:ra[5]:rb[5]:oe[1]:494[9]:rc[1])
@@ -1297,5 +1297,5 @@ nmaclhws.execute = {
 }
 
 nmaclhws.disasm = {
-	os << "nmaclhws" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "nmaclhws" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

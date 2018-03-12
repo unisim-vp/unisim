@@ -61,5 +61,5 @@ efsmin.execute = {
 }
 
 efsmin.disasm = {
-	os << "efsmin r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "efsmin " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

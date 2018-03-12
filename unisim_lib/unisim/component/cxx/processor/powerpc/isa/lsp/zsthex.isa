@@ -51,7 +51,7 @@ zsthex.execute = {
 	return false;
 }
 zsthex.disasm = {
-	os << "zsthe" << (m ? "m" : "") << "x r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zsthe" << (m ? "m" : "") << "x " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize zsthex(m=0)

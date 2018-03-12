@@ -40,5 +40,5 @@ dcread.execute = {
 	return cpu->Dcread(ea, rd);
 }
 dcread.disasm = {
-	os << "dcci r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "dcci " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

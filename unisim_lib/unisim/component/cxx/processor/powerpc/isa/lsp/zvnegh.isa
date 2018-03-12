@@ -39,5 +39,5 @@ zvnegh.execute = {
 	return false;
 }
 zvnegh.disasm = {
-	os << "zvnegh r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "zvnegh " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }

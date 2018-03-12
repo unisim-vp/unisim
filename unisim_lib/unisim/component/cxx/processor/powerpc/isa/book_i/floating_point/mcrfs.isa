@@ -38,14 +38,14 @@ impl {
 
 op mcrfs(63[6]:crfD[3]:?[2]:crfS[3]:?[7]:64[10]:?[1])
 mcrfs.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -66,5 +66,5 @@ mcrfs.execute = {
 	return true;
 }
 mcrfs.disasm = {
-	os << "mcrfs cr" << (unsigned int) crfD << ", cr" << (unsigned int) crfS;
+	os << "mcrfs " << CRPrint(crfD) << ", " << CRPrint(crfS);
 }

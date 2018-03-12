@@ -171,3 +171,19 @@ Arch::commit()
 {
   cia = nia;
 }
+
+
+bool Arch::Int8Store(unsigned id, U64 addr) { return false; }
+bool Arch::Int16Store(unsigned id, U64 addr) { return false; }
+bool Arch::Int32Store(unsigned id, U64 addr) { return false; }
+bool Arch::Int64Store(unsigned id, U64 addr) { return false; }
+
+bool Arch::Int8Load(unsigned id, U64 addr) { return false; }
+bool Arch::Int16Load(unsigned id, U64 addr) { return false; }
+bool Arch::Int32Load(unsigned id, U64 addr) { return false; }
+bool Arch::Int64Load(unsigned id, U64 addr) { return false; }
+
+bool Arch::SInt8Load(unsigned id, U64 addr) { return false; }
+bool Arch::SInt16Load(unsigned id, U64 addr) { return false; }
+bool Arch::SInt32Load(unsigned id, U64 addr) { return false; }
+bool Arch::SInt64Load(unsigned id, U64 addr) { return false; }

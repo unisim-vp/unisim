@@ -62,7 +62,7 @@ andc.execute = {
 	return true;
 }
 andc.disasm = {
-	os << "andc" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "andc" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 
 specialize andc(rc=0)

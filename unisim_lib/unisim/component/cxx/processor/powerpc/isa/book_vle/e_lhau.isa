@@ -49,7 +49,7 @@ e_lhau.execute = {
 	// compute the effective address
 	ADDRESS ea = cpu->GetGPR(ra) + uint32_t( d);
 	// do the memory access
-	if(unlikely(!cpu->SInt16Load(rd, ea))) return false; // 16-bit load/no byte reverse/sign extend
+	if(unlikely(not cpu->SInt16Load(rd, ea))) return false; // 16-bit load/no byte reverse/sign extend
 	// update the address register
 	cpu->SetGPR(ra, ea);
 	

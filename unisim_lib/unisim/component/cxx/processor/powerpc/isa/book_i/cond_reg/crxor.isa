@@ -44,5 +44,5 @@ crxor.execute = {
 	return true;
 }
 crxor.disasm = {
-	os << "crxor cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+	os << "crxor " << CRPrint(crbD) << ", " << CRPrint(crbA) << ", " << CRPrint(crbB);
 }

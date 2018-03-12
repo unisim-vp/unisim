@@ -38,5 +38,5 @@ evfssubadd.execute = {
 	return false;
 }
 evfssubadd.disasm = {
-	os << "evfssubadd r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "evfssubadd " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

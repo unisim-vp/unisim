@@ -46,5 +46,5 @@ mfdcr.execute = {
 }
 
 mfdcr.disasm = {
-	os << "mfdcr r" << (unsigned int) rd << ", " << dcrn;
+	os << "mfdcr " << GPRPrint(rd) << ", " << dcrn;
 }

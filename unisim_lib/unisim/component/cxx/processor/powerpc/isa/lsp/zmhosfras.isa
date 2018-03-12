@@ -57,7 +57,7 @@ zmhosfras.execute = {
 	return false;
 }
 zmhosfras.disasm = {
-	os << "zmhosfr" << LSP_ACC(acc) << "s r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zmhosfr" << LSP_ACC(acc) << "s " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize zmhosfras(acc=1)

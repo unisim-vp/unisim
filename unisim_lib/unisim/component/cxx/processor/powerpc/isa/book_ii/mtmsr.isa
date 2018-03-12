@@ -46,5 +46,5 @@ mtmsr.execute = {
 	return true;
 }
 mtmsr.disasm = {
-	os << "mtmsr r" << (unsigned int) rs;
+	os << "mtmsr " << GPRPrint(rs);
 }

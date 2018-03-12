@@ -12,7 +12,7 @@ lhbrx.execute = {
 	return cpu->Int16LoadByteReverse(rd, ea); // 16-bit load/byte reverse/no signe extend
 }
 lhbrx.disasm = {
-	os << "lhbrx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "lhbrx " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -28,7 +28,7 @@ lwbrx.execute = {
 	return cpu->Int32LoadByteReverse(rd, ea); // 32-bit load/byte reverse/no signe extend
 }
 lwbrx.disasm = {
-	os << "lwbrx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "lwbrx " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -44,7 +44,7 @@ sthbrx.execute = {
 	return cpu->Int16StoreByteReverse(rs, ea); // 16-bit load/byte reverse
 }
 sthbrx.disasm = {
-	os << "sthbrx r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "sthbrx " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
@@ -60,7 +60,7 @@ stwbrx.execute = {
 	return cpu->Int32StoreByteReverse(rs, ea); // 32-bit load/byte reverse
 }
 stwbrx.disasm = {
-	os << "stwbrx r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "stwbrx " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));

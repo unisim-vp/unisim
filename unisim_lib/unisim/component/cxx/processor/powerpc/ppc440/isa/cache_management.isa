@@ -46,7 +46,7 @@ dccci.execute = {
 	return cpu->Dccci(ea);
 }
 dccci.disasm = {
-	os << "dccci r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "dccci " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op dcread(31[6]:rd[5]:ra[5]:rb[5]:486[10]:?[1])
@@ -57,7 +57,7 @@ dcread.execute = {
 	return cpu->Dcread(ea, rd);
 }
 dcread.disasm = {
-	os << "dcci r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "dcci " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op legacy_icbt(31[6]:?[5]:ra[5]:rb[5]:262[10]:?[1]) /* icbt on earlier PowerPC 400 series implementations */
@@ -69,7 +69,7 @@ icbt.execute = {
 	return cpu->Icbt(ea);
 }
 icbt.disasm = {
-	os << "icbt r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "icbt " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op iccci(31[6]:?[5]:ra[5]:rb[5]:966[10]:?[1])
@@ -80,7 +80,7 @@ iccci.execute = {
 	return cpu->Iccci(ea);
 }
 iccci.disasm = {
-	os << "iccci r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "iccci " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op icread(31[6]:?[5]:ra[5]:rb[5]:998[10]:?[1])
@@ -91,5 +91,5 @@ icread.execute = {
 	return cpu->Icread(ea);
 }
 icread.disasm = {
-	os << "icread r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "icread " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

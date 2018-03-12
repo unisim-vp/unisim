@@ -63,5 +63,5 @@ efsnmadd.execute = {
 }
 
 efsnmadd.disasm = {
-	os << "efsnmadd r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "efsnmadd " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

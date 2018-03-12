@@ -44,11 +44,11 @@ e_stmvsprw.execute = {
 	// compute the effective address
 	ADDRESS ea = (ra ? cpu->GetGPR(ra) : uint32_t(0)) + uint32_t(d8);
 	// do the memory accesses
-	if(!cpu->SpecialStore(cpu->GetCR(), ea)) return false;
+	if(not cpu->SpecialStore(cpu->GetCR(), ea)) return false;
 	ea = ea + 4;
-	if(!cpu->SpecialStore(cpu->GetLR(), ea)) return false;
+	if(not cpu->SpecialStore(cpu->GetLR(), ea)) return false;
 	ea = ea + 4;
-	if(!cpu->SpecialStore(cpu->GetCTR(), ea)) return false;
+	if(not cpu->SpecialStore(cpu->GetCTR(), ea)) return false;
 	ea = ea + 4;
 	return cpu->SpecialStore(cpu->GetXER(), ea);
 }

@@ -77,7 +77,7 @@ subfme.execute = {
 	return true;
 }
 subfme.disasm = {
-	os << "subfme" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "subfme" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }
 
 specialize subfme(rc=0,oe=0)

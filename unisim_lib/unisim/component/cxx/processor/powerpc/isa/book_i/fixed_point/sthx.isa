@@ -32,13 +32,17 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op sthx(31[6]:rs[5]:ra[5]:rb[5]:407[10]:?[1])
+/* Store Halfword Indexed */
+op sthx(31[6]:rs[5]:ra[5]:rb[5]:407[10]:?[1]);
+
 sthx.execute = {
 	// compute the effective address
 	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 	// do the memory access
 	return cpu->Int16Store(rs, ea);
-}
+};
+
 sthx.disasm = {
-	os << "sthx r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-}
+	os << "sthx " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
+};
+

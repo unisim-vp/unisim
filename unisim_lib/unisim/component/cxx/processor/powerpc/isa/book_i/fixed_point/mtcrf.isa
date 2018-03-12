@@ -50,7 +50,7 @@ mtcrf.execute = {
 
 mtcrf.disasm = {
 	if(crm == 0xff)
-		os << "mtcr r" << (unsigned int) rs;
+		os << "mtcr " << GPRPrint(rs);
 	else
-		os << "mtcrf " << (unsigned int) crm << ", r" << (unsigned int) rs;
+		os << "mtcrf " << (unsigned int) crm << ", " << GPRPrint(rs);
 }

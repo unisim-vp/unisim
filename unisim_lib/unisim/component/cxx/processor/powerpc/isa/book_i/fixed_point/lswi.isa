@@ -42,7 +42,7 @@ lswi.execute = {
 	while(n > 0)
 	{
 		uint32_t sz = (n > 4) ? 4 : n;
-		if(unlikely(!cpu->IntLoadMSBFirst(r, ea, sz))) return false;
+		if(unlikely(not cpu->IntLoadMSBFirst(r, ea, sz))) return false;
 		r = (r + 1) & 31;
 		ea += sz;
 		n -= sz;
@@ -51,7 +51,7 @@ lswi.execute = {
 	return true;
 }
 lswi.disasm = {
-	os << "lswi r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << (unsigned int) nb;
+	os << "lswi " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << (unsigned int) nb;
 	if(cpu && (cpu->GetCIA() == this->GetAddr()))
 	{
 		ADDRESS ea = ra ? cpu->GetGPR(ra) : 0;

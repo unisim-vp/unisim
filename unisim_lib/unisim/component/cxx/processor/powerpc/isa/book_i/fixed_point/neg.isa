@@ -99,7 +99,7 @@ neg.execute = {
 	return true;
 }
 neg.disasm = {
-	os << "neg" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "neg" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }
 
 specialize neg(rc=0,oe=0)

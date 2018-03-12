@@ -49,7 +49,7 @@ e_lbzu.execute = {
 	// compute the effective address
 	ADDRESS ea = cpu->GetGPR(ra) + uint32_t( d);
 	// do the memory access
-	if(unlikely(!cpu->Int8Load(rd, ea))) return false;
+	if(unlikely(not cpu->Int8Load(rd, ea))) return false;
 	// update the address register
 	cpu->SetGPR(ra, ea);
 	

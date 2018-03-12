@@ -53,5 +53,5 @@ ori.disasm = {
 	if(rs == 0 && ra == 0 && uimm == 0)
 		os << "nop";
 	else
-		os << "ori r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << uimm;	
+		os << "ori " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << uimm;	
 }

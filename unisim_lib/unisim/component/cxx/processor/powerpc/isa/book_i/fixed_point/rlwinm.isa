@@ -69,7 +69,7 @@ rlwinm.execute = {
 	return true;
 }
 rlwinm.disasm = {
-	os << "rlwinm" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", " << (unsigned int) sh << ", " << (unsigned int) mb << ", " << (unsigned int) me;
+	os << "rlwinm" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << (unsigned int) sh << ", " << (unsigned int) mb << ", " << (unsigned int) me;
 }
 
 specialize rlwinm(rc=0)

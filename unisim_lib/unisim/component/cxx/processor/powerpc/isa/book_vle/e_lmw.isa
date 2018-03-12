@@ -58,7 +58,7 @@ e_lmw.execute = {
 	unsigned int r;
 	for(r = rd; r < 32; r++)
 	{
-		if(unlikely(!cpu->Int32Load(r, ea))) return false;
+		if(unlikely(not cpu->Int32Load(r, ea))) return false;
 		ea = ea + uint32_t( 4);
 	}
 	

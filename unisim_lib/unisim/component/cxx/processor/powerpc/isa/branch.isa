@@ -148,7 +148,7 @@ bc.disasm = {
 
 op bcctr(19[6]: bo[5]: bi[5]:?[5]:528[10]:lk[1])
 bcctr.execute = {
-	if(unlikely(!(bo & 4)))
+	if(unlikely(not (bo & 4)))
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_ILLEGAL_INSTRUCTION);
 		return false;

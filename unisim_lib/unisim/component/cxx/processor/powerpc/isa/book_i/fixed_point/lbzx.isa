@@ -32,13 +32,17 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op lbzx(31[6]:rd[5]:ra[5]:rb[5]:87[10]:?[1])
+/* Load Byte and Zero Indexed */
+op lbzx(31[6]:rd[5]:ra[5]:rb[5]:87[10]:?[1]);
+
 lbzx.execute = {
 	// compute the effective address
 	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 	// do the memory access
 	return cpu->Int8Load(rd, ea);
-}
+};
+
 lbzx.disasm = {
-	os << "lbzx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
-}
+	os << "lbzx " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
+};
+

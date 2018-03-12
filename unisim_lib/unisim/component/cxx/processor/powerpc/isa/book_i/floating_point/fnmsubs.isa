@@ -38,14 +38,14 @@ impl {
 
 op fnmsubs(59[6]:fd[5]:fa[5]:fb[5]:fc[5]:30[5]:rc[1])
 fnmsubs.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -69,7 +69,7 @@ fnmsubs.execute = {
     flags_conv.clearKeepSignalingConversion();
 	flags_conv.setUpApproximateInfty();
 	SoftFloat result(intermediate_result, flags_conv);
-	if(!flags_conv.isApproximate())
+	if(not flags_conv.isApproximate())
 	{
 		if(flags.isUpApproximate())
 		{
@@ -86,7 +86,7 @@ fnmsubs.execute = {
 	GenFPSCR_FR<CONFIG, SoftFloat>(fpscr, result, flags_conv);
 
 	// Compute the final result
-	if(likely(!result.isQNaN())) result.opposite();
+	if(likely(not result.isQNaN())) result.opposite();
 	
 	// Generate OX, UX, VXSNAN, VXISI, VXIMZ, FI, FPRF, XX, FX, VX, FEX
 	GenFPSCR_OX<CONFIG>(fpscr, flags_conv);

@@ -40,5 +40,5 @@ stbcx_.execute = {
 }
 
 stbcx_.disasm = {
-	os << "stbcx. r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "stbcx. " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

@@ -38,5 +38,5 @@ evfsneg.execute = {
 	return false;
 }
 evfsneg.disasm = {
-	os << "evfsneg r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "evfsneg " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }

@@ -38,5 +38,5 @@ efdneg.execute = {
 	return false;
 }
 efdneg.disasm = {
-	os << "efdneg r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "efdneg " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }

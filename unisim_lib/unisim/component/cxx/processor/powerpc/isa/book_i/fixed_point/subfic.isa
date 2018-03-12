@@ -63,5 +63,5 @@ subfic.execute = {
 	return true;
 }
 subfic.disasm = {
-	os << "subfic r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", " << simm;
+	os << "subfic " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << simm;
 }

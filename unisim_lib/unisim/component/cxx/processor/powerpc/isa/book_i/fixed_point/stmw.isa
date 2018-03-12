@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op stmw(47[6]:rs[5]:ra[5]:sext<32>d[16])
+op stmw(47[6]:rs[5]:ra[5]:sext d[16])
 stmw.execute = {
 	ADDRESS ea = (ra ? cpu->GetGPR(ra) + d : d);
 
@@ -40,14 +40,14 @@ stmw.execute = {
 
 	for(r = rs; r < 32; r++)
 	{
-		if(unlikely(!cpu->Int32Store(r, ea))) return false;
+		if(unlikely(not cpu->Int32Store(r, ea))) return false;
 		ea = ea + 4;
 	}
 	
 	return true;
 }
 stmw.disasm = {
-	os << "stmw r" << (unsigned int) rs << ", " << d << "(r" << (unsigned int) ra << ")";
+	os << "stmw " << GPRPrint(rs) << ", " << d << "(" << GPRPrint(ra) << ")";
 	if(cpu && (cpu->GetCIA() == this->GetAddr()))
 	{
 		ADDRESS ea = (ra ? cpu->GetGPR(ra) + d : d);

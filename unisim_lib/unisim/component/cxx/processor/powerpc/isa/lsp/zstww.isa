@@ -53,7 +53,7 @@ zstww.execute = {
 	return false;
 }
 zstww.disasm = {
-	os << "zstww" << (u ? "u" : "") << " r" << (unsigned int) rs << ", " << displacement << "(r" << (unsigned int) ra << ")";
+	os << "zstww" << (u ? "u" : "") << " " << GPRPrint(rs) << ", " << displacement << "(" << GPRPrint(ra) << ")";
 }
 
 specialize zstww(u=0)

@@ -67,5 +67,5 @@ efsmul.execute = {
 }
 
 efsmul.disasm = {
-	os << "efsmul r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "efsmul " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

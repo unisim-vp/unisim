@@ -61,7 +61,7 @@ cntlzw.execute = {
 	return true;
 }
 cntlzw.disasm = {
-	os << "cntlzw" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs;
+	os << "cntlzw" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs);
 }
 
 specialize cntlzw(rc=0)

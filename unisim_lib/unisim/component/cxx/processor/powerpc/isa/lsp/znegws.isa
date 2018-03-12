@@ -39,5 +39,5 @@ znegws.execute = {
 	return false;
 }
 znegws.disasm = {
-	os << "znegws r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "znegws " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }

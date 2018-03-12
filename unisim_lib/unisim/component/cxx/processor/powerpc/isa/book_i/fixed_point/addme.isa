@@ -77,7 +77,7 @@ addme.execute = {
 	return true;
 }
 addme.disasm = {
-	os << "addme" << (oe ? "o" : "") << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "addme" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }
 
 specialize addme(rc=0,oe=0)

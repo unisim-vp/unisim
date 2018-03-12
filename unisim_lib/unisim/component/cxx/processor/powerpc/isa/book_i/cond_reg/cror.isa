@@ -44,5 +44,5 @@ cror.execute = {
 	return true;
 }
 cror.disasm = {
-	os << "cror cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+	os << "cror " << CRPrint(crbD) << ", " << CRPrint(crbA) << ", " << CRPrint(crbB);
 }

@@ -53,9 +53,11 @@ typedef  int8_t  S8;
 typedef  int16_t S16;
 typedef  int32_t S32;
 typedef  int64_t S64;
+typedef  bool    BOOL;
 
 typedef uint64_t UINT;
 typedef int64_t  SINT;
+typedef uint64_t ADDRESS;
 
 struct MisInsn
 {
@@ -117,6 +119,12 @@ struct CR : Register<CR>
   CR(UINT _value) : Super(_value) {}
 };
 
+// Link Register
+typedef U64 LR;
+
+// Count Register
+typedef U64 CTR;
+  
 struct Arch
   : public unisim::service::interfaces::MemoryInjection<uint64_t>
   , public unisim::service::interfaces::Memory<uint64_t>
@@ -129,6 +137,11 @@ struct Arch
   
   struct ClearMemSet { void operator() ( uint8_t* base, uintptr_t size ) const { for (uintptr_t idx = 0; idx < size; ++idx) base[idx] = 0; } };
   typedef typename unisim::component::cxx::memory::sparse::Memory<uint64_t,12,12,ClearMemSet>   Memory;
+
+  struct ProgramInterrupt
+  {
+    struct IllegalInstruction {};
+  };
   
   Arch();
   ~Arch();
@@ -157,12 +170,34 @@ struct Arch
   virtual void ExecuteSystemCall( unsigned id );
 
   CR&  GetCR() { return cr; }
-  U64  GetCTR() { return ctr; }
-  U64  GetLR() { return lr; }
+  U64& GetLR() { return lr; }
+  U64& GetCTR() { return ctr; }
+  U64  GetCIA() { return cia; }
+  void Branch( U64 addr ) { nia = addr; }
+  
   XER& GetXER() { return xer; }
   U64  GetGPR( unsigned id ) { return gprs[id]; }
   bool MoveFromSPR( unsigned  id, U64& value ) { return false; }
+  bool MoveToSPR( unsigned  id, U64 value ) { return false; }
   void SetGPR( unsigned id, U64 value ) { gprs[id] = value; }
+
+  bool Int8Store(unsigned id, U64 addr);
+  bool Int16Store(unsigned id, U64 addr);
+  bool Int32Store(unsigned id, U64 addr);
+  bool Int64Store(unsigned id, U64 addr);
+
+  bool Int8Load(unsigned id, U64 addr);
+  bool Int16Load(unsigned id, U64 addr);
+  bool Int32Load(unsigned id, U64 addr);
+  bool Int64Load(unsigned id, U64 addr);
+
+  bool SInt8Load(unsigned id, U64 addr);
+  bool SInt16Load(unsigned id, U64 addr);
+  bool SInt32Load(unsigned id, U64 addr);
+  bool SInt64Load(unsigned id, U64 addr);
+
+  template <class EXC>
+  void ThrowException() {}
 
   bool InstructionFetch(uint64_t addr, uint32_t& insn);
   Operation* fetch();
@@ -179,5 +214,7 @@ struct Arch
   double          fprs[32];
   uintptr_t       instcount;
 };
+
+typedef Arch CPU;
 
 #endif // __E5500FPV_ARCH_HH__

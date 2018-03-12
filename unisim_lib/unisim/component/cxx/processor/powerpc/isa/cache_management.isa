@@ -45,7 +45,7 @@ dcba.execute = {
 	return cpu->Dcba(ea);
 }
 dcba.disasm = {
-	os << "dcba r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "dcba " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 
@@ -56,7 +56,7 @@ dcbf.execute = {
 	return cpu->Dcbf(ea);
 }
 dcbf.disasm = {
-	os << "dcbf r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "dcbf " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op dcbi(31[6]:?[5]:ra[5]:rb[5]:470[10]:?[1])
@@ -65,7 +65,7 @@ dcbi.execute = {
 	return cpu->Dcbi(ea);
 }
 dcbi.disasm = {
-	os << "dcbi r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "dcbi " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op dcbst(31[6]:?[5]:ra[5]:rb[5]:54[10]:?[1])
@@ -75,7 +75,7 @@ dcbst.execute = {
 	return cpu->Dcbst(ea);
 }
 dcbst.disasm = {
-	os << "dcbst r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "dcbst " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op dcbt(31[6]:?[5]:ra[5]:rb[5]:278[10]:?[1])
@@ -84,7 +84,7 @@ dcbt.execute = {
 	return true;
 }
 dcbt.disasm = {
-	os << "dcbt r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "dcbt " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op dcbtst(31[6]:?[5]:ra[5]:rb[5]:246[10]:?[1])
@@ -93,7 +93,7 @@ dcbtst.execute = {
 	return true;
 }
 dcbtst.disasm = {
-	os << "dcbtst r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "dcbtst " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op dcbz(31[6]:?[5]:ra[5]:rb[5]:1014[10]:?[1])
@@ -104,7 +104,7 @@ dcbz.execute = {
 	return cpu->Dcbz(ea);
 }
 dcbz.disasm = {
-	os << "dcbz r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "dcbz " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 op icbi(31[6]:?[5]:ra[5]:rb[5]:982[10]:?[1])
@@ -114,5 +114,5 @@ icbi.execute = {
 	return cpu->Icbi(ea);
 }
 icbi.disasm = {
-	os << "icbi r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "icbi " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

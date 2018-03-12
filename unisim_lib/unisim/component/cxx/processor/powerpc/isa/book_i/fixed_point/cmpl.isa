@@ -107,7 +107,7 @@ cmpl.execute = {
 	return true;
 }
 cmpl.disasm = {
-	os << "cmpl cr" << (unsigned int) crfD << ", " << (unsigned int) l << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "cmpl " << CRPrint(crfD) << ", " << (unsigned int) l << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }
 
 specialize cmpl(crfD=0)

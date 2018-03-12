@@ -253,14 +253,14 @@ inline void GenFPSCR_FEX(uint32_t& fpscr)
 
 op fadd(63[6]:fd[5]:fa[5]:fb[5]:?[5]:21[5]:rc[1])
 fadd.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -317,14 +317,14 @@ fadd.disasm = {
 
 op fadds(59[6]:fd[5]:fa[5]:fb[5]:?[5]:21[5]:rc[1])
 fadds.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -383,14 +383,14 @@ fadds.disasm = {
 
 op fdiv(63[6]:fd[5]:fa[5]:fb[5]:?[5]:18[5]:rc[1])
 fdiv.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -449,13 +449,13 @@ fdiv.disasm = {
 
 op fdivs(59[6]:fd[5]:fa[5]:fb[5]:?[5]:18[5]:rc[1])
 fdivs.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -516,14 +516,14 @@ fdivs.disasm = {
 
 op fmul(63[6]:fd[5]:fa[5]:?[5]:fc[5]:25[5]:rc[1])
 fmul.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -580,14 +580,14 @@ fmul.disasm = {
 
 op fmuls(59[6]:fd[5]:fa[5]:?[5]:fc[5]:25[5]:rc[1])
 fmuls.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -646,14 +646,14 @@ fmuls.disasm = {
 
 op fsub(63[6]:fd[5]:fa[5]:fb[5]:?[5]:20[5]:rc[1])
 fsub.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -710,14 +710,14 @@ fsub.disasm = {
 
 op fsubs(59[6]:fd[5]:fa[5]:fb[5]:?[5]:20[5]:rc[1])
 fsubs.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -782,14 +782,14 @@ fsubs.disasm = {
 
 op fmadd(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:29[5]:rc[1])
 fmadd.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -848,14 +848,14 @@ fmadd.disasm = {
 
 op fmadds(59[6]:fd[5]:fa[5]:fb[5]:fc[5]:29[5]:rc[1])
 fmadds.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -879,7 +879,7 @@ fmadds.execute = {
     flags_conv.clearKeepSignalingConversion();
 	flags_conv.setUpApproximateInfty();
 	SoftFloat result(intermediate_result, flags_conv);
-	if(!flags_conv.isApproximate())
+	if(not flags_conv.isApproximate())
 	{
 		if(flags.isUpApproximate())
 		{
@@ -935,14 +935,14 @@ fmadds.disasm = {
 
 op fmsub(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:28[5]:rc[1])
 fmsub.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -1001,14 +1001,14 @@ fmsub.disasm = {
 
 op fmsubs(59[6]:fd[5]:fa[5]:fb[5]:fc[5]:28[5]:rc[1])
 fmsubs.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -1032,7 +1032,7 @@ fmsubs.execute = {
     flags_conv.clearKeepSignalingConversion();
 	flags_conv.setUpApproximateInfty();
 	SoftFloat result(intermediate_result, flags_conv);
-	if(!flags_conv.isApproximate())
+	if(not flags_conv.isApproximate())
 	{
 		if(flags.isUpApproximate())
 		{
@@ -1088,14 +1088,14 @@ fmsubs.disasm = {
 
 op fnmadd(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:31[5]:rc[1])
 fnmadd.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -1115,7 +1115,7 @@ fnmadd.execute = {
 
 	GenFPSCR_FR<CONFIG, SoftDouble>(fpscr, result, flags);
 
-	if(likely(!result.isQNaN())) result.opposite();
+	if(likely(not result.isQNaN())) result.opposite();
 
 	// Generate OX, UX, VXSNAN, VXISI, VXIMZ, FR, FI, FPRF, XX, FX, VX, FEX
 	GenFPSCR_OX<CONFIG>(fpscr, flags);
@@ -1157,14 +1157,14 @@ fnmadd.disasm = {
 
 op fnmadds(59[6]:fd[5]:fa[5]:fb[5]:fc[5]:31[5]:rc[1])
 fnmadds.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -1188,7 +1188,7 @@ fnmadds.execute = {
     flags_conv.clearKeepSignalingConversion();
 	flags_conv.setUpApproximateInfty();
 	SoftFloat result(intermediate_result, flags_conv);
-	if(!flags_conv.isApproximate())
+	if(not flags_conv.isApproximate())
 	{
 		if(flags.isUpApproximate())
 		{
@@ -1205,7 +1205,7 @@ fnmadds.execute = {
 	GenFPSCR_FR<CONFIG, SoftFloat>(fpscr, result, flags_conv);
 
 	// Compute the final result
-	if(likely(!result.isQNaN())) result.opposite();
+	if(likely(not result.isQNaN())) result.opposite();
 	
 	// Generate OX, UX, VXSNAN, VXISI, VXIMZ, FI, FPRF, XX, FX, VX, FEX
 	GenFPSCR_OX<CONFIG>(fpscr, flags_conv);
@@ -1247,14 +1247,14 @@ fnmadds.disasm = {
 
 op fnmsub(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:30[5]:rc[1])
 fnmsub.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -1274,7 +1274,7 @@ fnmsub.execute = {
 
 	GenFPSCR_FR<CONFIG, SoftDouble>(fpscr, result, flags);
 
-	if(likely(!result.isQNaN())) result.opposite();
+	if(likely(not result.isQNaN())) result.opposite();
 
 	// Generate OX, UX, VXSNAN, VXISI, VXIMZ, FR, FI, FPRF, XX, FX, VX, FEX
 	GenFPSCR_OX<CONFIG>(fpscr, flags);
@@ -1316,14 +1316,14 @@ fnmsub.disasm = {
 
 op fnmsubs(59[6]:fd[5]:fa[5]:fb[5]:fc[5]:30[5]:rc[1])
 fnmsubs.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -1347,7 +1347,7 @@ fnmsubs.execute = {
     flags_conv.clearKeepSignalingConversion();
 	flags_conv.setUpApproximateInfty();
 	SoftFloat result(intermediate_result, flags_conv);
-	if(!flags_conv.isApproximate())
+	if(not flags_conv.isApproximate())
 	{
 		if(flags.isUpApproximate())
 		{
@@ -1364,7 +1364,7 @@ fnmsubs.execute = {
 	GenFPSCR_FR<CONFIG, SoftFloat>(fpscr, result, flags_conv);
 
 	// Compute the final result
-	if(likely(!result.isQNaN())) result.opposite();
+	if(likely(not result.isQNaN())) result.opposite();
 	
 	// Generate OX, UX, VXSNAN, VXISI, VXIMZ, FI, FPRF, XX, FX, VX, FEX
 	GenFPSCR_OX<CONFIG>(fpscr, flags_conv);
@@ -1412,14 +1412,14 @@ fnmsubs.disasm = {
 
 op fcmpo(63[6]:crfD[3]:?[2]:fa[5]:fb[5]:32[10]:?[1])
 fcmpo.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -1450,7 +1450,7 @@ fcmpo.execute = {
 	if(unlikely(a.isSNaN() || b.isSNaN()))
 	{
 		fpscr = fpscr | CONFIG::FPSCR_VXSNAN_MASK;
-		if(!(fpscr & CONFIG::FPSCR_VE_MASK))
+		if(not (fpscr & CONFIG::FPSCR_VE_MASK))
 		{
 			fpscr = fpscr | CONFIG::FPSCR_VXVC_MASK;
 		}
@@ -1484,19 +1484,19 @@ fcmpo.execute = {
 	return true;
 }
 fcmpo.disasm = {
-	os << "fcmpo cr" << (unsigned int) crfD << ", f" << (unsigned int) fa << ", f" << (unsigned int) fb;
+	os << "fcmpo " << CRPrint(crfD) << ", f" << (unsigned int) fa << ", f" << (unsigned int) fb;
 }
 
 op fcmpu(63[6]:crfD[3]:?[2]:fa[5]:fb[5]:0[10]:?[1])
 fcmpu.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -1553,7 +1553,7 @@ fcmpu.execute = {
 	return true;
 }
 fcmpu.disasm = {
-	os << "fcmpu cr" << (unsigned int) crfD << ", f" << (unsigned int) fa << ", f" << (unsigned int) fb;
+	os << "fcmpu " << CRPrint(crfD) << ", f" << (unsigned int) fa << ", f" << (unsigned int) fb;
 }
 
 /**************************************************
@@ -1564,14 +1564,14 @@ fcmpu.disasm = {
 
 op fctiw(63[6]:fd[5]:?[5]:fb[5]:14[10]:rc[1])
 fctiw.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -1602,7 +1602,7 @@ fctiw.execute = {
 	GenFPSCR_VXSNAN<CONFIG>(fpscr, flags);
 	GenFPSCR_VXCVI<CONFIG>(fpscr, flags);
 	GenFPSCR_FR<CONFIG, SoftDouble>(fpscr, b, flags);
-	if(!flags.isOverflow()) GenFPSCR_FI<CONFIG>(fpscr, flags);
+	if(not flags.isOverflow()) GenFPSCR_FI<CONFIG>(fpscr, flags);
 	GenFPSCR_XX<CONFIG>(fpscr);
 	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);
 	GenFPSCR_VX<CONFIG>(fpscr);
@@ -1645,14 +1645,14 @@ fctiw.disasm = {
 
 op fctiwz(63[6]:fd[5]:?[5]:fb[5]:15[10]:rc[1])
 fctiwz.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -1684,7 +1684,7 @@ fctiwz.execute = {
 	GenFPSCR_VXSNAN<CONFIG>(fpscr, flags);
 	GenFPSCR_VXCVI<CONFIG>(fpscr, flags);
 	GenFPSCR_FR<CONFIG, SoftDouble>(fpscr, b, flags);
-	if(!flags.isOverflow()) GenFPSCR_FI<CONFIG>(fpscr, flags);
+	if(not flags.isOverflow()) GenFPSCR_FI<CONFIG>(fpscr, flags);
 	GenFPSCR_XX<CONFIG>(fpscr);
 	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);
 	GenFPSCR_VX<CONFIG>(fpscr);
@@ -1726,14 +1726,14 @@ fctiwz.disasm = {
 
 op frsp(63[6]:fd[5]:?[5]:fb[5]:12[10]:rc[1])
 frsp.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -1798,14 +1798,14 @@ frsp.disasm = {
 
 op fabs(63[6]:fd[5]:?[5]:fb[5]:264[10]:rc[1])
 fabs.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -1837,14 +1837,14 @@ fabs.disasm = {
 
 op fmr(63[6]:fd[5]:?[5]:fb[5]:72[10]:rc[1])
 fmr.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -1865,14 +1865,14 @@ fmr.disasm = {
 
 op fnabs(63[6]:fd[5]:?[5]:fb[5]:136[10]:rc[1])
 fnabs.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -1904,14 +1904,14 @@ fnabs.disasm = {
 
 op fneg(63[6]:fd[5]:?[5]:fb[5]:40[10]:rc[1])
 fneg.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -1944,14 +1944,14 @@ fneg.disasm = {
 
 op mcrfs(63[6]:crfD[3]:?[2]:crfS[3]:?[7]:64[10]:?[1])
 mcrfs.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -1972,19 +1972,19 @@ mcrfs.execute = {
 	return true;
 }
 mcrfs.disasm = {
-	os << "mcrfs cr" << (unsigned int) crfD << ", cr" << (unsigned int) crfS;
+	os << "mcrfs " << CRPrint(crfD) << ", " << CRPrint(crfS);
 }
 
 op mffs(63[6]:fd[5]:?[10]:583[10]:rc[1])
 mffs.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -2007,14 +2007,14 @@ mffs.disasm = {
 
 op mtfsb0(63[6]:crbD[5]:?[10]:70[10]:rc[1])
 mtfsb0.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -2045,14 +2045,14 @@ mtfsb0.disasm = {
 
 op mtfsb1(63[6]:crbD[5]:?[10]:38[10]:rc[1])
 mtfsb1.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -2071,19 +2071,19 @@ mtfsb1.execute = {
 	return true;
 }
 mtfsb1.disasm = {
-	os << "mtfsb1" << (rc ? "." : "") << " cr" << (unsigned int) crbD;
+	os << "mtfsb1" << (rc ? "." : "") << " " << CRPrint(crbD);
 }
 
 op mtfsf(63[6]:?[1]:fm[8]:?[1]:fb[5]:711[10]:rc[1])
 mtfsf.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -2125,14 +2125,14 @@ mtfsf.disasm = {
 
 op mtfsfi(63[6]:crfD[3]:?[7]:imm[4]:?[1]:134[10]:rc[1])
 mtfsfi.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -2148,5 +2148,5 @@ mtfsfi.execute = {
 	return true;
 }
 mtfsfi.disasm = {
-	os << "mtfsfi" << (rc ? "." : "") << " cr" << (unsigned int) crfD << ", " << (unsigned int) imm;
+	os << "mtfsfi" << (rc ? "." : "") << " " << CRPrint(crfD) << ", " << (unsigned int) imm;
 }

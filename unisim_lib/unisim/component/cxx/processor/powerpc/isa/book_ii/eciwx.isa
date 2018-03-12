@@ -38,5 +38,5 @@ eciwx.execute = {
 	return false;
 }
 eciwx.disasm = {
-	os << "eciwx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "eciwx " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

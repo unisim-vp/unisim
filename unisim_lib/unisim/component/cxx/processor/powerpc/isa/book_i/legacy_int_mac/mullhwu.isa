@@ -66,5 +66,5 @@ mullhwu.execute = {
 }
 
 mullhwu.disasm = {
-	os << "mullhwu" << (rc ? "." : "") << " r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "mullhwu" << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

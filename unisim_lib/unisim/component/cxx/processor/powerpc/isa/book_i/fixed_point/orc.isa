@@ -62,7 +62,7 @@ orc.execute = {
 	return true;
 }
 orc.disasm = {
-	os << "orc" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "orc" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 
 specialize orc(rc=0)

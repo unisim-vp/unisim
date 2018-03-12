@@ -39,5 +39,5 @@ lwarx.execute = {
 	return cpu->Lwarx(rd, ea);
 }
 lwarx.disasm = {
-	os << "lwarx r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "lwarx " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

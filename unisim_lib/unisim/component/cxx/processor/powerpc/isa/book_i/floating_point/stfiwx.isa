@@ -34,12 +34,12 @@
 
 op stfiwx(31[6]:fs[5]:ra[5]:rb[5]:983[10]:?[1])
 stfiwx.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
-	if(unlikely(!cpu->GetMSR_FP()))
+	if(unlikely(not cpu->GetMSR_FP()))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -50,7 +50,7 @@ stfiwx.execute = {
 	return cpu->FpStoreLSW(fs, ea);
 }
 stfiwx.disasm = {
-	os << "stfiwx f" << (unsigned int) fs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "stfiwx f" << (unsigned int) fs << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));

@@ -63,7 +63,7 @@ extsh.execute = {
 	return true;
 }
 extsh.disasm = {
-	os << "extsh" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs;
+	os << "extsh" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs);
 }
 
 specialize extsh(rc=0)

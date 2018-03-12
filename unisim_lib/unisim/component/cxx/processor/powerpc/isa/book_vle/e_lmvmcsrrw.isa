@@ -44,7 +44,7 @@ e_lmvmcsrrw.execute = {
 	// compute the effective address
 	ADDRESS ea = (ra ? cpu->GetGPR(ra) : uint32_t(0)) + uint32_t(d8);
 	// do the memory accesses
-	if(!cpu->SpecialLoad(cpu->GetMCSRR0(), ea)) return false;
+	if(not cpu->SpecialLoad(cpu->GetMCSRR0(), ea)) return false;
 	ea = ea + 4;
 	return cpu->SpecialLoad(cpu->GetMCSRR1(), ea);
 }

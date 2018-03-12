@@ -63,7 +63,7 @@ mfdcr.execute = {
 
 mfdcr.disasm = {
 	uint32_t dcrn = ((dcrf & 0x1f) << 5) | ((dcrf >> 5) & 0x1f);
-	os << "mfdcr r" << (unsigned int) rd << ", " << dcrn;
+	os << "mfdcr " << GPRPrint(rd) << ", " << dcrn;
 }
 
 op mfdcrx(31[6]:rd[5]:ra[5]:?[5]:259[10]:?[1])
@@ -74,7 +74,7 @@ mfdcrx.execute = {
 }
 
 mfdcrx.disasm = {
-	os << "mfdcrx r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "mfdcrx " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }
 
 op mfdcrux(31[6]:rd[5]:ra[5]:?[5]:291[10]:?[1])
@@ -85,7 +85,7 @@ mfdcrux.execute = {
 }
 
 mfdcrux.disasm = {
-	os << "mfdcrux r" << (unsigned int) rd << ", r" << (unsigned int) ra;
+	os << "mfdcrux " << GPRPrint(rd) << ", " << GPRPrint(ra);
 }
 
 op mtdcr(31[6]:rs[5]:dcrf[10]:451[10]:?[1])
@@ -99,7 +99,7 @@ mtdcr.execute = {
 
 mtdcr.disasm = {
 	uint32_t dcrn = ((dcrf & 0x1f) << 5) | ((dcrf >> 5) & 0x1f);
-	os << "mtdcr " << dcrn << ", r" << (unsigned int) rs;
+	os << "mtdcr " << dcrn << ", " << GPRPrint(rs);
 }
 
 op mtdcrx(31[6]:rs[5]:ra[5]:?[5]:387[10]:?[1])
@@ -110,7 +110,7 @@ mtdcrx.execute = {
 }
 
 mtdcrx.disasm = {
-	os << "mtdcrx " << (unsigned int) ra << ", r" << (unsigned int) rs;
+	os << "mtdcrx " << (unsigned int) ra << ", " << GPRPrint(rs);
 }
 
 op mtdcrux(31[6]:rs[5]:ra[5]:?[5]:419[10]:?[1])
@@ -121,7 +121,7 @@ mtdcrux.execute = {
 }
 
 mtdcrux.disasm = {
-	os << "mtdcrux r" << (unsigned int) ra << ", r" << (unsigned int) rs;
+	os << "mtdcrux " << GPRPrint(ra) << ", " << GPRPrint(rs);
 }
 
 op wrtee(31[6]:rs[5]:?[10]:131[10]:?[1])
@@ -146,7 +146,7 @@ wrtee.execute = {
 }
 
 wrtee.disasm = {
-	os << "wrtee r" << (unsigned int) rs;
+	os << "wrtee " << GPRPrint(rs);
 }
 
 op wrteei(31[6]:?[10]:e[1]:0[4]:163[10]:?[1])

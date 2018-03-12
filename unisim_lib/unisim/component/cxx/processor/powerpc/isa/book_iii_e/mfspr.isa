@@ -48,7 +48,7 @@ mfspr.execute = {
 			result = cpu->GetCTR();
 			break;
 		default:
-			if(unlikely(!cpu->MoveFromSPR(n, result))) return false;
+			if(unlikely(not cpu->MoveFromSPR(n, result))) return false;
 			break;
 	}
 	
@@ -60,12 +60,12 @@ mfspr.disasm = {
 	unsigned n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
 	switch(n)
 	{
-		case 1: os << "mfxer r" << (unsigned int) rd; return;
-		case 8: os << "mflr r" << (unsigned int) rd; return;
-		case 9: os << "mfctr r" << (unsigned int) rd; return;
+		case 1: os << "mfxer " << GPRPrint(rd); return;
+		case 8: os << "mflr " << GPRPrint(rd); return;
+		case 9: os << "mfctr " << GPRPrint(rd); return;
 	}
 
-	os << "mfspr r" << (unsigned int) rd << ", " << n;
+	os << "mfspr " << GPRPrint(rd) << ", " << n;
 }
 
 specialize mfspr(spr=0x20)

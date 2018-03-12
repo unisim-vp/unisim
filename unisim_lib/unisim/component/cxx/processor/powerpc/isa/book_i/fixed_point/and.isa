@@ -62,7 +62,7 @@ and.execute = {
 	return true;
 }
 and.disasm = {
-	os << "and" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "and" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 
 specialize and(rc=0)

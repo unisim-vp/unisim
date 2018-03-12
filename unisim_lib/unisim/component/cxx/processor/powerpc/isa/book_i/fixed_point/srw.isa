@@ -62,7 +62,7 @@ srw.execute = {
 }
 
 srw.disasm = {
-	os << "srw" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "srw" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 
 specialize srw(rc=0)

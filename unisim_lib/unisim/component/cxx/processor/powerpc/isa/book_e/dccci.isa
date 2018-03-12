@@ -40,5 +40,5 @@ dccci.execute = {
 	return cpu->Dccci(ea);
 }
 dccci.disasm = {
-	os << "dccci r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "dccci " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

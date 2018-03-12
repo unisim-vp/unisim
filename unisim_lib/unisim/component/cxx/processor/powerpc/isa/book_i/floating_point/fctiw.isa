@@ -38,14 +38,14 @@ impl {
 
 op fctiw(63[6]:fd[5]:?[5]:fb[5]:14[10]:rc[1])
 fctiw.execute = {
-	if(!CONFIG::HAS_FPU)
+	if(not CONFIG::HAS_FPU)
 	{
 		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
 		return false;
 	}
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
 	{
 		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
 		return false;
@@ -76,7 +76,7 @@ fctiw.execute = {
 	GenFPSCR_VXSNAN<CONFIG>(fpscr, flags);
 	GenFPSCR_VXCVI<CONFIG>(fpscr, flags);
 	GenFPSCR_FR<CONFIG, SoftDouble>(fpscr, b, flags);
-	if(!flags.isOverflow()) GenFPSCR_FI<CONFIG>(fpscr, flags);
+	if(not flags.isOverflow()) GenFPSCR_FI<CONFIG>(fpscr, flags);
 	GenFPSCR_XX<CONFIG>(fpscr);
 	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);
 	GenFPSCR_VX<CONFIG>(fpscr);

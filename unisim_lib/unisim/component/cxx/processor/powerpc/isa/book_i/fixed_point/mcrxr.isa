@@ -56,7 +56,7 @@ mcrxr.execute = {
 	return true;
 }
 mcrxr.disasm = {
-	os << "mcrxr cr" << (unsigned int) crfD;
+	os << "mcrxr " << CRPrint(crfD);
 }
 
 specialize mcrxr(crfD=0)

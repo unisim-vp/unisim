@@ -75,5 +75,5 @@ efsctui.execute = {
 }
 
 efsctui.disasm = {
-	os << "efsctui r" << (unsigned int) rd << ", r" << (unsigned int) rb;
+	os << "efsctui " << GPRPrint(rd) << ", " << GPRPrint(rb);
 }

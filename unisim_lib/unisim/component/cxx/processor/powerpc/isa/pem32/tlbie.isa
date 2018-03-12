@@ -38,7 +38,7 @@ tlbie.execute = {
 	return cpu->Tlbie(ea);
 }
 tlbie.disasm = {
-	os << "tlbie r" << (unsigned int) rb;
+	os << "tlbie " << GPRPrint(rb);
 	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
 	{
 		typename CONFIG::address_t ea = cpu->GetGPR(rb);

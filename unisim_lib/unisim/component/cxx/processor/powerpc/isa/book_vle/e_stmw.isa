@@ -53,7 +53,7 @@ e_stmw.execute = {
 
 	for(r = rs; r < 32; r++)
 	{
-		if(unlikely(!cpu->Int32Store(r, ea))) return false;
+		if(unlikely(not cpu->Int32Store(r, ea))) return false;
 		ea = ea + uint32_t( 4);
 	}
 	

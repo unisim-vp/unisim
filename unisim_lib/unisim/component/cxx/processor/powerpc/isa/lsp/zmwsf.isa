@@ -43,5 +43,5 @@ zmwsf.execute = {
 	return false;
 }
 zmwsf.disasm = {
-	os << "zmwsf r" << (unsigned int) rd << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "zmwsf " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

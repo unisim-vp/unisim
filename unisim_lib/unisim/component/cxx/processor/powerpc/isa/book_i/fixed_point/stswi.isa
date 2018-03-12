@@ -41,7 +41,7 @@ stswi.execute = {
 	while(n > 0)
 	{
 		uint32_t sz = (n > 4) ? 4 : n;
-		if(unlikely(!cpu->IntStoreMSBFirst(r, ea, sz))) return false;
+		if(unlikely(not cpu->IntStoreMSBFirst(r, ea, sz))) return false;
 		r = (r + 1) & 31;
 		ea += sz;
 		n -= sz;
@@ -50,7 +50,7 @@ stswi.execute = {
 	return true;
 }
 stswi.disasm = {
-	os << "stswi r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", " << (unsigned int) nb;
+	os << "stswi " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << (unsigned int) nb;
 	if(cpu && (cpu->GetCIA() == this->GetAddr()))
 	{
 		ADDRESS ea = ra ? cpu->GetGPR(ra) : 0;

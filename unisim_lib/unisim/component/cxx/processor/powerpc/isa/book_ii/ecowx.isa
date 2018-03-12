@@ -38,5 +38,5 @@ ecowx.execute = {
 	return false;
 }
 ecowx.disasm = {
-	os << "ecowx r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", r" << (unsigned int) rb;
+	os << "ecowx " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 }

@@ -44,7 +44,7 @@ crand.execute = {
 	return true;
 }
 crand.disasm = {
-	os << "crand cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+	os << "crand " << CRPrint(crbD) << ", " << CRPrint(crbA) << ", " << CRPrint(crbB);
 }
 
 op crandc(19[6]:crbD[5]:crbA[5]:crbB[5]:129[10]:?[1])
@@ -59,7 +59,7 @@ crandc.execute = {
 	return true;
 }
 crandc.disasm = {
-	os << "crandc cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+	os << "crandc " << CRPrint(crbD) << ", " << CRPrint(crbA) << ", " << CRPrint(crbB);
 }
 
 op creqv(19[6]:crbD[5]:crbA[5]:crbB[5]:289[10]:?[1])
@@ -74,7 +74,7 @@ creqv.execute = {
 	return true;
 }
 creqv.disasm = {
-	os << "creqv cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+	os << "creqv " << CRPrint(crbD) << ", " << CRPrint(crbA) << ", " << CRPrint(crbB);
 }
 
 op crnand(19[6]:crbD[5]:crbA[5]:crbB[5]:225[10]:?[1])
@@ -89,7 +89,7 @@ crnand.execute = {
 	return true;
 }
 crnand.disasm = {
-	os << "crnand cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+	os << "crnand " << CRPrint(crbD) << ", " << CRPrint(crbA) << ", " << CRPrint(crbB);
 }
 
 op crnor(19[6]:crbD[5]:crbA[5]:crbB[5]:33[10]:?[1])
@@ -104,7 +104,7 @@ crnor.execute = {
 	return true;
 }
 crnor.disasm = {
-	os << "crnor cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+	os << "crnor " << CRPrint(crbD) << ", " << CRPrint(crbA) << ", " << CRPrint(crbB);
 }
 
 op cror(19[6]:crbD[5]:crbA[5]:crbB[5]:449[10]:?[1])
@@ -119,7 +119,7 @@ cror.execute = {
 	return true;
 }
 cror.disasm = {
-	os << "cror cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+	os << "cror " << CRPrint(crbD) << ", " << CRPrint(crbA) << ", " << CRPrint(crbB);
 }
 
 op crorc(19[6]:crbD[5]:crbA[5]:crbB[5]:417[10]:?[1])
@@ -134,7 +134,7 @@ crorc.execute = {
 	return true;
 }
 crorc.disasm = {
-	os << "crorc cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+	os << "crorc " << CRPrint(crbD) << ", " << CRPrint(crbA) << ", " << CRPrint(crbB);
 }
 
 op crxor(19[6]:crbD[5]:crbA[5]:crbB[5]:193[10]:?[1])
@@ -149,7 +149,7 @@ crxor.execute = {
 	return true;
 }
 crxor.disasm = {
-	os << "crxor cr" << (unsigned int) crbD << ", cr" << (unsigned int) crbA << ", cr" << (unsigned int) crbB;
+	os << "crxor " << CRPrint(crbD) << ", " << CRPrint(crbA) << ", " << CRPrint(crbB);
 }
 
 op mcrf(19[6]:crfD[3]:?[2]:crfS[3]:?[7]:0[10]:?[1])
@@ -158,5 +158,5 @@ mcrf.execute = {
 	return true;
 }
 mcrf.disasm = {
-	os << "mcrf cr" << (unsigned int) crfD << ", cr" << (unsigned int) crfS;
+	os << "mcrf " << CRPrint(crfD) << ", " << CRPrint(crfS);
 }

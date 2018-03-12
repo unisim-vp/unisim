@@ -62,7 +62,7 @@ nand.execute = {
 	return true;
 }
 nand.disasm = {
-	os << "nand" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "nand" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 }
 
 specialize nand(rc=0)
