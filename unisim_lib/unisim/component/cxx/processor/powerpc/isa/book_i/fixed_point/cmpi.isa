@@ -41,7 +41,7 @@ op cmpi(11[6]:crfD[3]:?[1]:0[1]:ra[5]:sext simm[16]);
 
 cmpi.execute = {
 	// Read the input operands
-	S32 a = cpu->GetGPR(ra), b = S32(simm);
+	S32 a = S32(cpu->GetGPR(ra)), b = S32(simm);
 	
 	// Generate CR[crfD] bit field
 	CR& cr = cpu->GetCR();

@@ -36,12 +36,12 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 }
 
-/* Compare (64-bits operands) */
-op cmpL(31[6]:crfD[3]:?[1]:1[1]:ra[5]:rb[5]:0[10]:?[1]);
+/* Compare Logical (64-bits operands) */
+op cmplL(31[6]:crfD[3]:?[1]:1[1]:ra[5]:rb[5]:32[10]:?[1]);
 
-cmpL.execute = {
+cmplL.execute = {
 	// Read the input operands
-	S64 a = S64(cpu->GetGPR(ra)), b = S64(cpu->GetGPR(rb));
+	U64 a = U64(cpu->GetGPR(ra)), b = U64(cpu->GetGPR(rb));
 	
 	// Generate CR[crfD] bit field
 	CR& cr = cpu->GetCR();
@@ -101,15 +101,15 @@ cmpL.execute = {
 	return true;
 };
 
-cmpL.disasm = {
-	os << "cmp " << CRPrint(crfD) << ", 1, " << GPRPrint(ra) << ", " << GPRPrint(rb);
+cmplL.disasm = {
+	os << "cmpl " << CRPrint(crfD) << ", 1, " << GPRPrint(ra) << ", " << GPRPrint(rb);
 };
 
-specialize cmpL(crfD=0);
-specialize cmpL(crfD=1);
-specialize cmpL(crfD=2);
-specialize cmpL(crfD=3);
-specialize cmpL(crfD=4);
-specialize cmpL(crfD=5);
-specialize cmpL(crfD=6);
-specialize cmpL(crfD=7);
+specialize cmplL(crfD=0);
+specialize cmplL(crfD=1);
+specialize cmplL(crfD=2);
+specialize cmplL(crfD=3);
+specialize cmplL(crfD=4);
+specialize cmplL(crfD=5);
+specialize cmplL(crfD=6);
+specialize cmplL(crfD=7);

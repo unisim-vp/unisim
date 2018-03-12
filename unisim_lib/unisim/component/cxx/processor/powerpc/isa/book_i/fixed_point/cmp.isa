@@ -36,7 +36,9 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 }
 
-op cmp(31[6]:crfD[3]:?[1]:0[1]:ra[5]:rb[5]:0[10]:?[1])
+/* Compare (32-bits operands) */
+op cmp(31[6]:crfD[3]:?[1]:0[1]:ra[5]:rb[5]:0[10]:?[1]);
+
 cmp.execute = {
 	// Read the input operands
 	S32 a = S32(cpu->GetGPR(ra)), b = S32(cpu->GetGPR(rb));
