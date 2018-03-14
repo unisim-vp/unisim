@@ -36,14 +36,15 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 }
 
+/* Add Immediate */
 op addi(14[6]:rd[5]:ra[5]:sext simm[16]);
 
 addi.execute = {
 	// Read the input operands
-	UINT a = ra ? cpu->GetGPR(ra) : U64(0);
+	UINT b = UINT(SINT(simm));
 	
 	// Compute the result
-	UINT result = a + UINT(SINT(simm));
+	UINT result = ra ? cpu->GetGPR(ra) + b : b;
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);

@@ -36,14 +36,15 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 }
 
-op orc(31[6]:rs[5]:ra[5]:rb[5]:412[10]:rc[1])
+/*  OR with Complement */
+op orc(31[6]:rs[5]:ra[5]:rb[5]:412[10]:rc[1]);
+
 orc.execute = {
 	// Read the input operands
-	uint32_t s = cpu->GetGPR(rs);
-	uint32_t b = cpu->GetGPR(rb);
+	UINT s = cpu->GetGPR(rs), b = cpu->GetGPR(rb);
 	
 	// Compute the result
-	uint32_t result = s | ~b;
+	UINT result = s | ~b;
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);
@@ -54,16 +55,18 @@ orc.execute = {
 		XER& xer = cpu->GetXER();
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(int32_t( result) < int32_t( 0));
-		cr.Set<CR::CR0::GT>(int32_t( result) > int32_t( 0));
-		cr.Set<CR::CR0::EQ>(result == uint32_t( 0));
+		cr.Set<CR::CR0::LT>(SINT(result) < SINT(0));
+		cr.Set<CR::CR0::GT>(SINT(result) > SINT(0));
+		cr.Set<CR::CR0::EQ>(result == UINT(0));
 	}
 	
 	return true;
-}
+};
+
 orc.disasm = {
 	os << "orc" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
-}
+};
 
-specialize orc(rc=0)
-specialize orc(rc=1)
+
+specialize orc(rc=0);
+specialize orc(rc=1);

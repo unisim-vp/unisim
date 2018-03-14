@@ -36,22 +36,26 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 }
 
-op addis(15[6]:rd[5]:ra[5]:shl<16> sext<32> simm[16])
+/* Add Immediate Shifted */
+op addis(15[6]:rd[5]:ra[5]:shl<16> sext simm[16]);
+
 addis.execute = {
 	// Read the input operands
-	uint32_t a = cpu->GetGPR(ra);
+	UINT b = UINT(SINT(simm));
 	
 	// Compute the result
-	uint32_t result = ra != 0 ? a + simm : simm;
+	UINT result = ra ? cpu->GetGPR(ra) + b : b;
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
 	
 	return true;
-}
+};
+
 addis.disasm = {
 	if(ra == 0)
 		os << "lis " << GPRPrint(rd) << ", " << (simm >> 16);
 	else
 		os << "addis " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << (simm >> 16);
-}
+};
+

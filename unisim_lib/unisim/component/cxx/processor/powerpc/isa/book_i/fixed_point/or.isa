@@ -36,11 +36,12 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 }
 
-op or(31[6]:rs[5]:ra[5]:rb[5]:444[10]:rc[1])
+/* OR */
+op or(31[6]:rs[5]:ra[5]:rb[5]:444[10]:rc[1]);
+
 or.execute = {
 	// Read the input operands
-	UINT s = cpu->GetGPR(rs);
-	UINT b = cpu->GetGPR(rb);
+	UINT s = cpu->GetGPR(rs), b = cpu->GetGPR(rb);
 	
 	// Compute the result
 	UINT result = s | b;
@@ -56,17 +57,18 @@ or.execute = {
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
 		cr.Set<CR::CR0::LT>(SINT(result) < SINT(0));
 		cr.Set<CR::CR0::GT>(SINT(result) > SINT(0));
-		cr.Set<CR::CR0::EQ>(result == UINT( 0));
+		cr.Set<CR::CR0::EQ>(result == UINT(0));
 	}
 	
 	return true;
-}
+};
+
 or.disasm = {
 	if(rs == rb)
 		os << "mr" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs);
 	else
 		os << "or" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
-}
+};
 
-specialize or(rc=0)
-specialize or(rc=1)
+specialize or(rc=0);
+specialize or(rc=1);

@@ -36,49 +36,50 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 }
 
-op subfme(31[6]:rd[5]:ra[5]:?[5]:oe[1]:232[9]:rc[1])
+/*  Subtract From Minus One Extended */
+op subfme(31[6]:rd[5]:ra[5]:?[5]:oe[1]:232[9]:rc[1]);
+
 subfme.execute = {
-	uint8_t carry; // carry out
-	uint8_t overflow; // overflow
-	uint8_t sign; // sign
-	uint32_t result;
-	
 	// Read the input operands
-	uint32_t a = cpu->GetGPR(ra);
 	XER& xer = cpu->GetXER();
-	uint8_t carry_in = uint8_t(xer.Get<XER::CA>());
+	bool borrow = not bool(xer.Get<XER::CA>());
+	SINT a = SINT(cpu->GetGPR(ra)), b = SINT(-1);
 	
 	// Compute the result
-	SignedAdd32(result, carry, overflow, sign, ~a, uint32_t( 0xFFFFFFFF), carry_in);
-	
-	// Write back the result
-	cpu->SetGPR(rd, result);
+	SINT result = b - a - SINT(borrow);
 	
 	// Generate XER[CA]
-	xer.Set<XER::CA>(carry);
-	
+	xer.Set<XER::CA>(borrow ? UINT(b) > UINT(a) : UINT(b) >= UINT(a));
+        
 	if(unlikely(oe))
 	{
+		// Overflow: expected result sign and actual result sign differs
+		UINT overflow = UINT((borrow ? b <= a : b < a) xor (SINT(result) < SINT(0)));
+		
 		// Generate XER[OV] and XER[SO]
 		xer.Set<XER::OV>(overflow);
-		xer.Set<XER::SO>(xer.Get<XER::SO>() | uint32_t( overflow));
+		xer.Set<XER::SO>(xer.Get<XER::SO>() | overflow);
 	}
 	
 	if(unlikely(rc))
 	{
 		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 		CR& cr = cpu->GetCR();
-		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(int32_t( result) < int32_t( 0));
-		cr.Set<CR::CR0::GT>(int32_t( result) > int32_t( 0));
-		cr.Set<CR::CR0::EQ>(result == uint32_t( 0));
+		cr.Set<CR::CR0::SO>(cpu->GetXER().Get<XER::SO>());
+		cr.Set<CR::CR0::LT>(result < SINT(0));
+		cr.Set<CR::CR0::GT>(result > SINT(0));
+		cr.Set<CR::CR0::EQ>((UINT(result) == UINT(0)));
 	}
 	
+	// Write back the result
+	cpu->SetGPR(rd, UINT(result));
+	
 	return true;
-}
+};
+
 subfme.disasm = {
 	os << "subfme" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra);
-}
+};
 
 specialize subfme(rc=0,oe=0)
 specialize subfme(rc=0,oe=1)

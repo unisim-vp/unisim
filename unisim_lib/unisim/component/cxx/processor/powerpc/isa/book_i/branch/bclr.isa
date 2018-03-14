@@ -41,14 +41,13 @@ bclr.execute = {
 	if (((bo & 16) == 0))
 	{
 		/* Conditional branch */
-		UINT const msb = ~(UINT(-1)>>1);
 		if(bo & 8) {
 			/* Branch if condition is true */
-			cond_ok = ((cpu->GetCR() << bi) & msb) != 0;
+			cond_ok = ((cpu->GetCR() << bi) & U32(0x80000000)) != 0;
 		}
 		else {
 			/* Branch if condition is false */
-			cond_ok = ((cpu->GetCR() << bi) & msb) == 0;
+			cond_ok = ((cpu->GetCR() << bi) & U32(0x80000000)) == 0;
 		}
 	}
 	
@@ -76,22 +75,15 @@ bclr.execute = {
 };
 
 bclr.disasm = {
-	bool bc = false;
-	switch(bo)
-	{
-	case 0: case 1:                     os << "bdnzflr"; break;
-	case 2: case 3:                     os << "bdzflr"; break;
-	case 4: case 5: case 6: case 7:     os << "bflr"; break;
-	case 8: case 9:                     os << "bdnztlr"; break;
-	case 10: case 11:                   os << "bdztlr"; break;
-	case 12: case 13: case 14: case 15: os << "btlr"; break;
-	case 16: case 17: case 24: case 25: os << "bdnzlr"; break;
-	case 18: case 19: case 26: case 27: os << "bdzlr"; break;
-	default: os << "bclr"; bc = true;
-	}
+	bool cr = (bo & 16) == 0, dc = (bo & 4) == 0;
+	os << "b";
+	if (dc) os << ((bo & 2) ? "dz" : "dnz");
+	if (cr) os << CondPrint(bi & 3,bo & 8);
 	if (lk) os << "l";
-        if (bc) os << unsigned(bo) << ", ";
-        os << unsigned(bi);
+	os << "lr ";
+	if      (cr) { if (unsigned crn = bi >> 2) os << CRPrint(crn); }
+	else if (dc) { os << unsigned(bi); }
+	else         { os << unsigned(bo) << ", " << unsigned(bi); }
 };
 
 specialize bclr(bo=0,aa=2,lk=0)

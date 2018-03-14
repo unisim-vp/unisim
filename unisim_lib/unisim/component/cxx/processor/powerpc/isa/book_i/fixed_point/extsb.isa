@@ -36,16 +36,18 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 }
 
-op extsb(31[6]:rs[5]:ra[5]:?[5]:954[10]:rc[1])
+/* Extend Sign Byte */
+op extsb(31[6]:rs[5]:ra[5]:?[5]:954[10]:rc[1]);
+
 extsb.execute = {
 	// Read the input operands
-	uint32_t s = cpu->GetGPR(rs);
+	S8 s = S8(cpu->GetGPR(rs));
 	
 	// Compute the result
-	int32_t result = int32_t( int8_t(s));
+	SINT result = SINT(s);
 	
 	// Write back the result
-	cpu->SetGPR(ra, result);
+	cpu->SetGPR(ra, UINT(result));
 	
 	if(unlikely(rc))
 	{
@@ -55,16 +57,17 @@ extsb.execute = {
 		
 		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(result < int32_t( 0));
-		cr.Set<CR::CR0::GT>(result > int32_t( 0));
-		cr.Set<CR::CR0::EQ>(result == int32_t( 0));
+		cr.Set<CR::CR0::LT>(result < SINT(0));
+		cr.Set<CR::CR0::GT>(result > SINT(0));
+		cr.Set<CR::CR0::EQ>(result == SINT(0));
 	}
 	
 	return true;
-}
+};
+
 extsb.disasm = {
 	os << "extsb" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs);
-}
+};
 
 specialize extsb(rc=0)
 specialize extsb(rc=1)

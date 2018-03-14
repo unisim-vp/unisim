@@ -36,22 +36,26 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 }
 
-op ori(24[6]:rs[5]:ra[5]:uimm[16])
+/* OR Immediate */
+op ori(24[6]:rs[5]:ra[5]:uimm[16]);
+
 ori.execute = {
 	// Read the input operands
-	uint32_t s = cpu->GetGPR(rs);
+	UINT s = cpu->GetGPR(rs), b = UINT(uimm);
 	
 	// Compute the result
-	uint32_t result = s | uimm;
+	UINT result = s | b;
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);
 	
 	return true;
-}
+};
+
 ori.disasm = {
-	if(rs == 0 && ra == 0 && uimm == 0)
+	if(rs == 0 and ra == 0 and uimm == 0)
 		os << "nop";
 	else
 		os << "ori " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << uimm;	
-}
+};
+

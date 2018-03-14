@@ -126,14 +126,14 @@ Arch::InjectWriteMemory(uint64_t addr, void const* buffer, unsigned size)
   memory.write( addr, (uint8_t*)buffer, size );
   return true;
 }
-  
+
 // Implementation of ExecuteSystemCall
 void
-Arch::ExecuteSystemCall( unsigned id )
+Arch::ThrowException( SystemCallInterrupt::SystemCall const& )
 {
   if (not linux_os)
     { throw std::logic_error( "No linux OS emulation connected" ); }
-  linux_os->ExecuteSystemCall( id );
+  linux_os->ExecuteSystemCall( gprs[0] );
 }
 
 bool
@@ -172,18 +172,3 @@ Arch::commit()
   cia = nia;
 }
 
-
-bool Arch::Int8Store(unsigned id, U64 addr) { return false; }
-bool Arch::Int16Store(unsigned id, U64 addr) { return false; }
-bool Arch::Int32Store(unsigned id, U64 addr) { return false; }
-bool Arch::Int64Store(unsigned id, U64 addr) { return false; }
-
-bool Arch::Int8Load(unsigned id, U64 addr) { return false; }
-bool Arch::Int16Load(unsigned id, U64 addr) { return false; }
-bool Arch::Int32Load(unsigned id, U64 addr) { return false; }
-bool Arch::Int64Load(unsigned id, U64 addr) { return false; }
-
-bool Arch::SInt8Load(unsigned id, U64 addr) { return false; }
-bool Arch::SInt16Load(unsigned id, U64 addr) { return false; }
-bool Arch::SInt32Load(unsigned id, U64 addr) { return false; }
-bool Arch::SInt64Load(unsigned id, U64 addr) { return false; }

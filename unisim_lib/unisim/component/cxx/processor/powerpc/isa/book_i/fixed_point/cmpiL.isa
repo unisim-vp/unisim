@@ -102,6 +102,6 @@ cmpiL.execute = {
 };
 
 cmpiL.disasm = {
-	os << "cmpi " << CRPrint(crfD) << ", 1, " << GPRPrint(ra) << ", " << simm;
+	os << "cmpdi " << CRPrint(crfD) << ", " << GPRPrint(ra) << ", " << simm;
 };
 

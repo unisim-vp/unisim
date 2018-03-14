@@ -49,7 +49,7 @@ se_srawi.execute = {
 	int32_t result = s >> ui5;
 
 	XER& xer = cpu->GetXER();
-	xer.Set<XER::CA>((s < int32_t( 0)) and ((s & ((int32_t( 1) << ui5) - int32_t( 1))) != int32_t( 0)));
+	xer.Set<XER::CA>((s < int32_t(0)) and ((s & ((int32_t( 1) << ui5) - int32_t( 1))) != int32_t(0)));
 	
 	// Write back the result
 	cpu->SetGPR(rx, result);

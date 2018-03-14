@@ -47,7 +47,7 @@ se_srw.execute = {
 	uint32_t y = cpu->GetGPR(ry) & uint32_t( 0x3f);
 	
 	// Compute the result
-	uint32_t result = (y > uint32_t( 0x1f)) ? uint32_t( 0) : (s >> y);
+	uint32_t result = (y > uint32_t( 0x1f)) ? uint32_t(0) : (s >> y);
 	
 	// Write back the result
 	cpu->SetGPR(rx, result);

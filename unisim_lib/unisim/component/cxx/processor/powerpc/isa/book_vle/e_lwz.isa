@@ -42,7 +42,7 @@ op e_lwz(20[6]:rd[5]:ra[5]:sext d[16]);
 
 e_lwz.execute = {
 	// compute the effective address
-	ADDRESS ea = (ra ? cpu->GetGPR(ra) : uint32_t( 0)) + uint32_t( d);
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) : uint32_t(0)) + uint32_t( d);
 	// do the memory access
 	return cpu->Int32Load(rd, ea); // 32-bit load/no byte reverse/no sign extend
 }

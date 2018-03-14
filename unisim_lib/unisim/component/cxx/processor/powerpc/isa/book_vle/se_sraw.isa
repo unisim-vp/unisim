@@ -60,7 +60,7 @@ se_sraw.execute = {
 		shifted_out = ((int32_t( 1) << y) - int32_t( 1));
 	}
 	
-	xer.Set<XER::CA>((x < int32_t( 0)) and ((x & shifted_out) != int32_t( 0)));
+	xer.Set<XER::CA>((x < int32_t(0)) and ((x & shifted_out) != int32_t(0)));
 	
 	// Write back the result
 	cpu->SetGPR(rx, result);

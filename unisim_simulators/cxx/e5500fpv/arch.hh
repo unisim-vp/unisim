@@ -140,7 +140,14 @@ struct Arch
 
   struct ProgramInterrupt
   {
-    struct IllegalInstruction {};
+    struct IllegalInstruction { typedef ProgramInterrupt Interrupt; };
+  };
+  
+  struct SystemCallInterrupt
+  {
+    struct SystemCall { typedef SystemCallInterrupt Interrupt; };
+    SystemCallInterrupt() {}
+    void SetELEV(unsigned _elev) { if (_elev != 0) throw *this; /* Hypervisor interrupt ? */ }
   };
   
   Arch();
@@ -166,8 +173,12 @@ struct Arch
   
   bool InjectWriteMemory(uint64_t addr, void const* buffer, unsigned size);
   
-  // Implementation of ExecuteSystemCall
-  virtual void ExecuteSystemCall( unsigned id );
+  template <class EXC> void ThrowException( EXC const& ) {}
+  
+  template <class EXC>
+  typename EXC::Interrupt ThrowException() { ThrowException( EXC() ); return typename EXC::Interrupt(); }
+
+  void ThrowException( SystemCallInterrupt::SystemCall const& );
 
   CR&  GetCR() { return cr; }
   U64& GetLR() { return lr; }
@@ -181,23 +192,47 @@ struct Arch
   bool MoveToSPR( unsigned  id, U64 value ) { return false; }
   void SetGPR( unsigned id, U64 value ) { gprs[id] = value; }
 
-  bool Int8Store(unsigned id, U64 addr);
-  bool Int16Store(unsigned id, U64 addr);
-  bool Int32Store(unsigned id, U64 addr);
-  bool Int64Store(unsigned id, U64 addr);
+  template <typename T>
+  void
+  IntStore( U64 addr, T value )
+  {
+    int const size = sizeof (T);
+    uint8_t buf[size];
+    for (int idx = size; --idx>=0;)
+      {
+        buf[idx] = value;
+        value >>= 8;
+      }
+    memory.write( addr, &buf[0], size );
+  }
 
-  bool Int8Load(unsigned id, U64 addr);
-  bool Int16Load(unsigned id, U64 addr);
-  bool Int32Load(unsigned id, U64 addr);
-  bool Int64Load(unsigned id, U64 addr);
+  template <typename T>
+  T
+  IntLoad( U64 addr )
+  {
+    int const size = sizeof (T);
+    uint8_t buf[size];
+    memory.read( &buf[0], addr, size );
+    T value = 0;
+    for (int idx = 0; idx < size; ++idx)
+      value = (value << 8) | T(buf[idx]);
+    return value;
+  }
 
-  bool SInt8Load(unsigned id, U64 addr);
-  bool SInt16Load(unsigned id, U64 addr);
-  bool SInt32Load(unsigned id, U64 addr);
-  bool SInt64Load(unsigned id, U64 addr);
+  bool Int8Store(unsigned id, U64 addr) { IntStore( addr, U8(gprs[id]) ); return true; }
+  bool Int16Store(unsigned id, U64 addr) { IntStore( addr, U16(gprs[id]) ); return true; }
+  bool Int32Store(unsigned id, U64 addr) { IntStore( addr, U32(gprs[id]) ); return true; }
+  bool Int64Store(unsigned id, U64 addr) { IntStore( addr, U64(gprs[id]) ); return true; }
 
-  template <class EXC>
-  void ThrowException() {}
+  bool Int8Load(unsigned id, U64 addr) { gprs[id] = IntLoad<U8>( addr ); return true; }
+  bool Int16Load(unsigned id, U64 addr) { gprs[id] = IntLoad<U16>( addr );return true; }
+  bool Int32Load(unsigned id, U64 addr) { gprs[id] = IntLoad<U32>( addr );return true; }
+  bool Int64Load(unsigned id, U64 addr) { gprs[id] = IntLoad<U64>( addr );return true; }
+
+  bool SInt8Load(unsigned id, U64 addr) { gprs[id] = IntLoad<S8>( addr ); return true; }
+  bool SInt16Load(unsigned id, U64 addr) { gprs[id] = IntLoad<S16>( addr ); return true; }
+  bool SInt32Load(unsigned id, U64 addr) { gprs[id] = IntLoad<S32>( addr ); return true; }
+  bool SInt64Load(unsigned id, U64 addr) { gprs[id] = IntLoad<S64>( addr ); return true; }
 
   bool InstructionFetch(uint64_t addr, uint32_t& insn);
   Operation* fetch();

@@ -43,7 +43,7 @@ slw.execute = {
 	uint32_t b = cpu->GetGPR(rb) & uint32_t( 0x3f);
 	
 	// Compute the result
-	uint32_t result = (b > uint32_t( 0x1f)) ? uint32_t( 0) : (s << b);
+	uint32_t result = (b > uint32_t( 0x1f)) ? uint32_t(0) : (s << b);
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);
@@ -53,9 +53,9 @@ slw.execute = {
 		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(cpu->GetXER().Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(int32_t( result) < int32_t( 0));
-		cr.Set<CR::CR0::GT>(int32_t( result) > int32_t( 0));
-		cr.Set<CR::CR0::EQ>(result == uint32_t( 0));
+		cr.Set<CR::CR0::LT>(int32_t( result) < int32_t(0));
+		cr.Set<CR::CR0::GT>(int32_t( result) > int32_t(0));
+		cr.Set<CR::CR0::EQ>(result == uint32_t(0));
 	}
 	
 	return true;

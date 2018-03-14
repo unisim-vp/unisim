@@ -66,7 +66,7 @@ struct GPRPrint : public DASMPrint
 struct FPRPrint : public DASMPrint
 {
 	FPRPrint(unsigned _reg) : reg(_reg) {} unsigned reg;
-	void Print( std::ostream& sink ) const { sink << "r" << std::dec << reg; }
+	void Print( std::ostream& sink ) const { sink << "f" << std::dec << reg; }
 };
 
 struct HexPrint : public DASMPrint

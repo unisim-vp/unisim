@@ -36,31 +36,27 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 }
 
-op addic(12[6]:rd[5]:ra[5]:sext<32> simm[16])
-addic.execute = {
-	uint8_t carry; // carry out
-	uint8_t overflow; // overflow
-	uint8_t sign; // sign
-	uint32_t result;
-	
-	// Read the input operands
-	uint32_t a = cpu->GetGPR(ra);
-	uint32_t xer = cpu->GetXER();
+/* Add Immediate Carrying */
+op addic(12[6]:rd[5]:ra[5]:sext<32> simm[16]);
 
+addic.execute = {
+	// Read the input operands
+	SINT a = SINT(cpu->GetGPR(ra)), b = SINT(simm);
+	
 	// Compute the result
-	SignedAdd32(result, carry, overflow, sign, a, simm, 0);
+	SINT result = a + b;
+	
+	// Generate XER[CA]
+	XER& xer = cpu->GetXER();
+	xer.Set<XER::CA>(UINT(a) > ~UINT(b));
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);
 	
-	// Generate XER[CA]
-	xer = carry ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
-	
-	// Update XER
-	cpu->SetXER(xer);
-	
 	return true;
-}
+};
+
 addic.disasm = {
 	os << "addic " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << simm;
-}
+};
+

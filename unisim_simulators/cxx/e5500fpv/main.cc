@@ -90,7 +90,9 @@ main( int argc, char* argv[] )
           Arch::Operation* op = cpu.fetch();
           std::cerr << std::hex << op->GetAddr() << std::dec << ": " << Disasm( op ) << std::endl;
           asm volatile ("operation_execute:");
-          op->execute( &cpu );
+          bool success = op->execute( &cpu );
+          if (not success)
+            throw 0;
 
           cpu.commit();
           //{ uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread32( idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }

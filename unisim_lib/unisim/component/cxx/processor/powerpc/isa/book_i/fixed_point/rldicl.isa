@@ -53,7 +53,7 @@ rldicl.execute = {
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
 		cr.Set<CR::CR0::LT>(S64(result) < S64(0));
 		cr.Set<CR::CR0::GT>(S64(result) > S64(0));
-		cr.Set<CR::CR0::EQ>(result == U64( 0));
+		cr.Set<CR::CR0::EQ>(result == U64(0));
 	}
 	
 	return true;

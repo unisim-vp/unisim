@@ -102,7 +102,7 @@ cmpL.execute = {
 };
 
 cmpL.disasm = {
-	os << "cmp " << CRPrint(crfD) << ", 1, " << GPRPrint(ra) << ", " << GPRPrint(rb);
+	os << "cmpd " << CRPrint(crfD) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 };
 
 specialize cmpL(crfD=0);

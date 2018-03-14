@@ -36,7 +36,7 @@
 op bcctr(19[6]: bo[5]: bi[5]:?[5]:528[10]:lk[1]);
 
 bcctr.execute = {
-	if(unlikely(not (bo & 4)))
+	if(unlikely((bo & 4) == 0))
 	{
 		cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
 		return false;
@@ -46,14 +46,13 @@ bcctr.execute = {
 	
 	if (((bo & 16) == 0)) {
 		/* Conditional branch */
-		UINT const msb = ~(UINT(-1)>>1);
 		if(bo & 8) {
 			/* Branch if condition is true */
-			cond_ok = ((cpu->GetCR() << bi) & msb) != 0;
+			cond_ok = ((cpu->GetCR() << bi) & U32(0x80000000)) != 0;
 		}
 		else {
 			/* Branch if condition is false */
-			cond_ok = ((cpu->GetCR() << bi) & msb) == 0;
+			cond_ok = ((cpu->GetCR() << bi) & U32(0x80000000)) == 0;
 		}
 	}
 	
@@ -68,23 +67,14 @@ bcctr.execute = {
 };
 
 bcctr.disasm = {
-	switch(bo)
-	{
-	case 4: case 5: case 6: case 7:     os << "bfctr"; break;
-	case 12: case 13: case 14: case 15: os << "btctr"; break;
-	case 20: if (bi == 0)             { os << "bctr";  break; }
-	default:                            os << "bcctr"; break;
-	}
-	
+	bool cr = (bo & 16) == 0, dc = (bo & 4) == 0;
+	os << "b";
+	if (dc) os << "<illegal>";
+	if (cr) os << CondPrint(bi & 3,bo & 8);
 	if (lk) os << "l";
-	
-	switch(bo)
-	{
-	case 4: case 5: case 6: case 7:
-	case 12: case 13: case 14: case 15: os << " " << unsigned(bi); break;
-	case 20: if (bi == 0) break;
-	default: os << " " << unsigned(bo) << ", " << unsigned(bi); break;
-	}
+	os << "ctr ";
+	if      (cr) { if (unsigned crn = bi >> 2) os << CRPrint(crn); }
+	else         { os << unsigned(bo) << ", " << unsigned(bi); }
 };
 
 specialize bcctr(bo=0,aa=2,lk=0);

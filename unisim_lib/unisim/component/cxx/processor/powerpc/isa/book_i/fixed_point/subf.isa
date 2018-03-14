@@ -36,55 +36,48 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 }
 
-op subf(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:40[9]:rc[1])
-subf.execute = {
-	uint32_t result;
-	
-	// Read the input operands
-	uint32_t a = cpu->GetGPR(ra);
-	uint32_t b = cpu->GetGPR(rb);
-	
-	if(likely(not rc && !oe))
-	{
-		result = b - a;
-	}
-	else
-	{
-		uint8_t carry; // carry out
-		uint8_t sign; // sign
-		uint8_t overflow; // overflow
+/*  Subtract From */
+op subf(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:40[9]:rc[1]);
 
-		// Compute the result
-		SignedAdd32(result, carry, overflow, sign, ~a, b, 1);
+subf.execute = {
+	// Read the input operands
+	SINT a = SINT(cpu->GetGPR(ra)), b = SINT(cpu->GetGPR(rb));
+	
+	// Compute the result
+	SINT result = b - a;
+	
+	if(unlikely(oe))
+	{
+		// Overflow: expected result sign and actual result sign differs
+		UINT overflow = UINT((b < a) xor (SINT(result) < SINT(0)));
 		
+		// Generate XER[OV] and XER[SO]
 		XER& xer = cpu->GetXER();
-		if(unlikely(oe))
-		{
-			// Generate XER[OV] and XER[SO]
-			xer.Set<XER::OV>(overflow);
-			xer.Set<XER::SO>(xer.Get<XER::SO>() | uint32_t( overflow));
-		}
-		if(unlikely(rc))
-		{
-			// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
-			CR& cr = cpu->GetCR();
-			cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-			cr.Set<CR::CR0::LT>(int32_t( result) < int32_t( 0));
-			cr.Set<CR::CR0::GT>(int32_t( result) > int32_t( 0));
-			cr.Set<CR::CR0::EQ>(result == uint32_t( 0));
-		}
+		xer.Set<XER::OV>(overflow);
+		xer.Set<XER::SO>(xer.Get<XER::SO>() | overflow);
+	}
+	
+	if(unlikely(rc))
+	{
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		CR& cr = cpu->GetCR();
+		cr.Set<CR::CR0::SO>(cpu->GetXER().Get<XER::SO>());
+		cr.Set<CR::CR0::LT>(result < SINT(0));
+		cr.Set<CR::CR0::GT>(result > SINT(0));
+		cr.Set<CR::CR0::EQ>((UINT(result) == UINT(0)));
 	}
 	
 	// Write back the result
-	cpu->SetGPR(rd, result);
+	cpu->SetGPR(rd, UINT(result));
 	
 	return true;
-}
+};
+
 subf.disasm = {
 	os << "subf" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
-}
+};
 
-specialize subf(rc=0,oe=0)
-specialize subf(rc=0,oe=1)
-specialize subf(rc=1,oe=0)
-specialize subf(rc=1,oe=1)
+specialize subf(rc=0,oe=0);
+specialize subf(rc=0,oe=1);
+specialize subf(rc=1,oe=0);
+specialize subf(rc=1,oe=1);

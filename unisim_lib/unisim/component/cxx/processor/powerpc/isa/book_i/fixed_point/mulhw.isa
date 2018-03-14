@@ -55,9 +55,9 @@ mulhw.execute = {
 		XER& xer = cpu->GetXER();
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(result < int32_t( 0));
-		cr.Set<CR::CR0::GT>(result > int32_t( 0));
-		cr.Set<CR::CR0::EQ>(result == int32_t( 0));
+		cr.Set<CR::CR0::LT>(result < int32_t(0));
+		cr.Set<CR::CR0::GT>(result > int32_t(0));
+		cr.Set<CR::CR0::EQ>(result == int32_t(0));
 	}
 	
 	return true;

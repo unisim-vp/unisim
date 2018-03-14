@@ -36,19 +36,23 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 }
 
-op xori(26[6]:rs[5]:ra[5]:uimm[16])
+/* XOR Immediate */
+op xori(26[6]:rs[5]:ra[5]:uimm[16]);
+
 xori.execute = {
 	// Read the input operands
-	uint32_t s = cpu->GetGPR(rs);
+	UINT s = cpu->GetGPR(rs), b = UINT(uimm);
 	
 	// Compute the result
-	uint32_t result = s ^ uimm;
+	UINT result = s ^ b;
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);
 	
 	return true;
-}
+};
+
 xori.disasm = {
 	os << "xori " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << uimm;
-}
+};
+
