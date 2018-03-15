@@ -29,25 +29,53 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op rldicl(30[6]:rs[5]:ra[5]:sh1[5]:mb1[5]:shl<5>mb0[1]:0[3]:shl<5>sh0[1]:rc[1]);
-rldicl.var n : {unsigned} = {sh0|sh1}, m : {uint64_t} = {uint64_t(-1) >> (mb0|mb1)};
+impl {
+#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
+}
 
-rldicl.execute = {
+/* Divide Doubleword Unsigned */
+op divdu(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:457[9]:rc[1]);
+
+divdu.execute = {
 	// Read the input operands
-	U64 s = cpu->GetGPR(rs);
+	U64 a( cpu->GetGPR(ra) );
+	U64 b( cpu->GetGPR(rb) );
+	XER& xer = cpu->GetXER();
+	U64 result;
 	
-	// Compute the result
-	U64 result = RotateLeft(s, n) & U64(m);
+	if(unlikely(b == U64(0)))
+	{
+		// Compute the result (-1)
+		result = U64(-1);
+			
+		if(unlikely(oe))
+		{
+			// Generate XER[OV] and XER[SO]: XER[OV]=1 XER[SO]=1
+			xer.Set<XER::OV>(UINT(1));
+			xer.Set<XER::SO>(UINT(1));
+		}
+	}
+	else
+	{
+		// Compute the result
+		result = a / b ;
+			
+		if(unlikely(oe))
+		{
+			// Generate XER[OV]: XER[OV]=0
+			xer.Set<XER::OV>(UINT(0));
+		}
+	}
 	
 	// Write back the result
-	cpu->SetGPR(ra, result);
-	
-	if (unlikely(rc))
+	cpu->SetGPR(rd, result);
+		
+	if(unlikely(rc))
 	{
-		XER& xer = cpu->GetXER();
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
 		cr.Set<CR::CR0::LT>(S64(result) < S64(0));
@@ -58,9 +86,11 @@ rldicl.execute = {
 	return true;
 };
 
-rldicl.disasm = {
-	os << "rldicl" << (rc ? "." : "") << ' ' << GPRPrint(ra) << ',' << GPRPrint(rs) << ',' << int(n) << ',' << int(mb0|mb1);
+divdu.disasm = {
+	os << "divdu" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 };
 
-specialize rldicl(rc=0)
-specialize rldicl(rc=1)
+specialize divdu(rc=0,oe=0);
+specialize divdu(rc=0,oe=1);
+specialize divdu(rc=1,oe=0);
+specialize divdu(rc=1,oe=1);

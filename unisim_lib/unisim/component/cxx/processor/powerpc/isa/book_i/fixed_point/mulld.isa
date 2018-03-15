@@ -29,38 +29,50 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op rldicl(30[6]:rs[5]:ra[5]:sh1[5]:mb1[5]:shl<5>mb0[1]:0[3]:shl<5>sh0[1]:rc[1]);
-rldicl.var n : {unsigned} = {sh0|sh1}, m : {uint64_t} = {uint64_t(-1) >> (mb0|mb1)};
+impl {
+#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
+}
 
-rldicl.execute = {
+/* Multiply Low Doubleword */
+op mulld(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:233[9]:rc[1]);
+
+mulld.execute = {
 	// Read the input operands
-	U64 s = cpu->GetGPR(rs);
+	S64 a = S64(cpu->GetGPR(ra)), b = S64(cpu->GetGPR(rb));
 	
 	// Compute the result
-	U64 result = RotateLeft(s, n) & U64(m);
+	S64 result = a*b;
 	
 	// Write back the result
-	cpu->SetGPR(ra, result);
+	cpu->SetGPR(rd, UINT(result));
 	
-	if (unlikely(rc))
+	if(oe)
 	{
-		XER& xer = cpu->GetXER();
-		CR& cr = cpu->GetCR();
-		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(S64(result) < S64(0));
-		cr.Set<CR::CR0::GT>(S64(result) > S64(0));
-		cr.Set<CR::CR0::EQ>(result == U64(0));
+		cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
+		return false;
 	}
 	
+	if(unlikely(rc))
+	{
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		CR& cr = cpu->GetCR();
+		cr.Set<CR::CR0::SO>(cpu->GetXER().Get<XER::SO>());
+		cr.Set<CR::CR0::LT>(result < int64_t(0));
+		cr.Set<CR::CR0::GT>(result > int64_t(0));
+		cr.Set<CR::CR0::EQ>(result == int64_t(0));
+	}
+
 	return true;
 };
 
-rldicl.disasm = {
-	os << "rldicl" << (rc ? "." : "") << ' ' << GPRPrint(ra) << ',' << GPRPrint(rs) << ',' << int(n) << ',' << int(mb0|mb1);
+mulld.disasm = {
+	os << "mulld" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
 };
 
-specialize rldicl(rc=0)
-specialize rldicl(rc=1)
+specialize mulld(rc=0,oe=0);
+specialize mulld(rc=0,oe=1);
+specialize mulld(rc=1,oe=0);
+specialize mulld(rc=1,oe=1);

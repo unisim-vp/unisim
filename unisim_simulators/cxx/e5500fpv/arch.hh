@@ -252,4 +252,15 @@ struct Arch
 
 typedef Arch CPU;
 
+// U64
+// UnsignedMultiplyHigh64( typename ARCH::U64 opl, typename ARCH::U64 opr )
+// {
+//   typedef typename ARCH::U32 U32;
+//   typedef typename ARCH::U64 U64;
+
+//   U64 lhi = U64(opl >> 32), llo = U64(U32(opl)), rhi = U64(opr >> 32), rlo = U64(U32(opr));
+//   U64 hihi( lhi*rhi ), hilo( lhi*rlo), lohi( llo*rhi ), lolo( llo*rlo );
+//   return (((lolo >> 32) + U64(U32(hilo)) + U64(U32(lohi))) >> 32) + (hilo >> 32) + (lohi >> 32) + hihi;
+// }
+
 #endif // __E5500FPV_ARCH_HH__

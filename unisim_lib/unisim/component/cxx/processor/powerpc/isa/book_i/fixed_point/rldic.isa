@@ -32,10 +32,11 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-op rldicl(30[6]:rs[5]:ra[5]:sh1[5]:mb1[5]:shl<5>mb0[1]:0[3]:shl<5>sh0[1]:rc[1]);
-rldicl.var n : {unsigned} = {sh0|sh1}, m : {uint64_t} = {uint64_t(-1) >> (mb0|mb1)};
+/* Rotate Left Doubleword Immediate then Clear */
+op rldic(30[6]:rs[5]:ra[5]:sh1[5]:mb1[5]:shl<5>mb0[1]:2[3]:shl<5>sh0[1]:rc[1]);
+rldic.var n : {unsigned} = {sh0|sh1}, m : {uint64_t} = {Mask64(mb0|mb1,n^63) };
 
-rldicl.execute = {
+rldic.execute = {
 	// Read the input operands
 	U64 s = cpu->GetGPR(rs);
 	
@@ -58,9 +59,9 @@ rldicl.execute = {
 	return true;
 };
 
-rldicl.disasm = {
-	os << "rldicl" << (rc ? "." : "") << ' ' << GPRPrint(ra) << ',' << GPRPrint(rs) << ',' << int(n) << ',' << int(mb0|mb1);
+rldic.disasm = {
+	os << "rldic" << (rc ? "." : "") << ' ' << GPRPrint(ra) << ',' << GPRPrint(rs) << ',' << int(n) << ',' << int(mb0|mb1);
 };
 
-specialize rldicl(rc=0)
-specialize rldicl(rc=1)
+specialize rldic(rc=0);
+specialize rldic(rc=1);

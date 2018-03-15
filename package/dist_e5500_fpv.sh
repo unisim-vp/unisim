@@ -133,10 +133,15 @@ unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addme.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/addze.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divw.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divwu.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divd.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divdu.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mulli.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mulhw.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mulhwu.isa \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mulli.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mullw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mulhd.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mulhdu.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/mulld.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/neg.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/subf.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/subfc.isa \
@@ -175,6 +180,10 @@ unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/rlwinm.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/rlwnm.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/rldicl.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/rldicr.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/rldic.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/rldcl.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/rldcr.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/rldimi.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/slw.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/sraw.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/srawi.isa \
