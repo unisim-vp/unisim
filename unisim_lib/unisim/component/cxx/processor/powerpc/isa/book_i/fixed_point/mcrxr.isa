@@ -32,13 +32,14 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-op mcrxr(31[6]:crfD[3]:?[12]:512[10]:?[1])
+/* Move to Condition Register from XER */
+op mcrxr(31[6]:crfD[3]:?[12]:512[10]:?[1]);
+
 mcrxr.execute = {
 	XER& xer = cpu->GetXER();
 	
-	CR& cr = cpu->GetCR();
-	
 	// Generate CR[crfD]: CR[crfD]=XER[0-3]
+	CR& cr = cpu->GetCR();
 	switch(crfD)
 	{
 		case 0: cr.Set<CR::CR0>(xer.Get<XER::_0_3>()); break;
@@ -54,16 +55,17 @@ mcrxr.execute = {
 	xer.Set<XER::_0_3>(0);
 	
 	return true;
-}
+};
+
 mcrxr.disasm = {
 	os << "mcrxr " << CRPrint(crfD);
-}
+};
 
-specialize mcrxr(crfD=0)
-specialize mcrxr(crfD=1)
-specialize mcrxr(crfD=2)
-specialize mcrxr(crfD=3)
-specialize mcrxr(crfD=4)
-specialize mcrxr(crfD=5)
-specialize mcrxr(crfD=6)
-specialize mcrxr(crfD=7)
+specialize mcrxr(crfD=0);
+specialize mcrxr(crfD=1);
+specialize mcrxr(crfD=2);
+specialize mcrxr(crfD=3);
+specialize mcrxr(crfD=4);
+specialize mcrxr(crfD=5);
+specialize mcrxr(crfD=6);
+specialize mcrxr(crfD=7);

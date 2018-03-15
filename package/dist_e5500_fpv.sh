@@ -179,6 +179,10 @@ unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/slw.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/sraw.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/srawi.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/srw.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/sld.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/srad.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/sradi.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/srd.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fadd.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fadds.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fdiv.isa \

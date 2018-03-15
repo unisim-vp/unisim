@@ -32,17 +32,24 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-op crandc(19[6]:crbD[5]:crbA[5]:crbB[5]:129[10]:?[1])
+/* Condition Register AND with Complement*/
+op crandc(19[6]:bt[5]:ba[5]:bb[5]:129[10]:?[1]);
+
 crandc.execute = {
-	uint32_t _a, _b, _c, _d, _m;
-	_c = cpu->GetCR();
-	_a = (0x1)  & (_c >> (31- crbA));
-	_b = (0x1)  & (_c >> (31- crbB));
-	_d = (_a & (!_b))<<(31-crbD);
-	_m = ~(1<<(31-crbD));
-	cpu->SetCR((_c & _m) | _d );
+	// Read the input operands
+	CR& cr = cpu->GetCR();
+	UINT const mask(0x80000000 >> bt), source(cr);
+
+	// Compute the result
+	UINT result = (source & ~mask) | (mask & (((source << ba) & ~(source << bb)) >> bt));
+	
+	// Write back the result
+	cr = result;
+	
 	return true;
-}
+};
+
 crandc.disasm = {
-	os << "crandc " << CRPrint(crbD) << ", " << CRPrint(crbA) << ", " << CRPrint(crbB);
-}
+	os << "crandc " << CRPrint(bt) << ", " << CRPrint(ba) << ", " << CRPrint(bb);
+};
+

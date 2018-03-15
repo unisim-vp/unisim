@@ -32,13 +32,16 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-op mfcr(31[6]:rd[5]:?[10]:19[10]:?[1])
+/* Move From Condition Register */
+op mfcr(31[6]:rd[5]:?[10]:19[10]:?[1]);
+
 mfcr.execute = {
 	// Move CR to destination GPR
-	cpu->SetGPR(rd, cpu->GetCR());
+	cpu->SetGPR(rd, UINT(U32(cpu->GetCR())));
 	
 	return true;
-}
+};
+
 mfcr.disasm = {
 	os << "mfcr " << GPRPrint(rd);
-}
+};

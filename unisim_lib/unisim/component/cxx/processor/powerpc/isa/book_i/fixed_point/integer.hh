@@ -46,6 +46,7 @@ namespace powerpc {
 using unisim::util::arithmetic::SignedAdd32;
 using unisim::util::arithmetic::UnsignedAdd32;
 using unisim::util::arithmetic::RotateLeft;
+using unisim::util::arithmetic::RotateRight;
 using unisim::util::arithmetic::CountLeadingZeros;
 using unisim::util::arithmetic::BitScanReverse;
 using unisim::util::arithmetic::SignExtend;
@@ -60,6 +61,11 @@ inline uint32_t Mask(uint32_t mb, uint32_t me)
 inline uint32_t Mask(uint32_t n)
 {
 	return (n < 32) ? (n ? (1 << (32 - n)) - 1 : 0xffffffffUL) : 0;
+}
+
+inline uint64_t Mask64(unsigned mb, unsigned me)
+{
+	return RotateRight(uint64_t(-1) << (~(me-mb) & 63), mb);
 }
 
 } // end of namespace powerpc

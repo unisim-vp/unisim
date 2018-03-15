@@ -36,41 +36,36 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 }
 
-op rlwinm(21[6]:rs[5]:ra[5]:sh[5]:mb[5]:me[5]:rc[1])
+/* Rotate Left Word then AND with Mask */
+op rlwinm(21[6]:rs[5]:ra[5]:sh[5]:mb[5]:me[5]:rc[1]);
+
 rlwinm.execute = {
 	// Read the input operands
-	uint32_t s = cpu->GetGPR(rs);
+	U32 s = cpu->GetGPR(rs);
+	UINT const m = UINT(Mask64(mb+32, me+32));
 	
 	// Compute the result
-	uint32_t r = RotateLeft(s, sh);
-	uint32_t mask = Mask(mb, me);
-	uint32_t result = r & mask;
+	UINT r = UINT(RotateLeft(s, sh));
+	UINT result = r & m;
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);
 	
 	if(unlikely(rc))
 	{
-		// read XER
-		uint32_t xer = cpu->GetXER();
-		
-		// Read CR
-		uint32_t cr = cpu->GetCR();
-		
-		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
-		cr = (cr & ~CONFIG::CR0_MASK) |
-			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
-			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
-				
-		// Update CR
-		cpu->SetCR(cr);
+		CR& cr = cpu->GetCR();
+		cr.Set<CR::CR0::SO>(cpu->GetXER().Get<XER::SO>());
+		cr.Set<CR::CR0::LT>(SINT(result) < SINT(0));
+		cr.Set<CR::CR0::GT>(SINT(result) > SINT(0));
+		cr.Set<CR::CR0::EQ>(result == UINT(0));
 	}
 	
 	return true;
-}
+};
+
 rlwinm.disasm = {
 	os << "rlwinm" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << (unsigned int) sh << ", " << (unsigned int) mb << ", " << (unsigned int) me;
-}
+};
 
-specialize rlwinm(rc=0)
-specialize rlwinm(rc=1)
+specialize rlwinm(rc=0);
+specialize rlwinm(rc=1);

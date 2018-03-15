@@ -36,20 +36,23 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 }
 
-op mulli(07[6]:rd[5]:ra[5]: sext<32> simm[16])
+/* Multiply Low Immediate */
+op mulli(07[6]:rd[5]:ra[5]:sext simm[16]);
+
 mulli.execute = {
 	// Read the input operands
-	uint32_t a = cpu->GetGPR(ra);
+	S64 a = S64(cpu->GetGPR(ra)), b = S64(simm);
 	
 	// Compute the result
-	int64_t result64 = (int64_t) a * (int64_t) simm;
-	uint32_t result = (uint32_t) result64;
+	S64 result = a * b;
 	
 	// Write back the result
-	cpu->SetGPR(rd, result);
+	cpu->SetGPR(rd, UINT(result));
 	
 	return true;
-}
+};
+
 mulli.disasm = {
 	os << "mulli " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << simm;
-}
+};
+

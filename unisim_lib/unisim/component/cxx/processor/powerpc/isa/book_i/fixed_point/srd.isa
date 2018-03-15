@@ -31,25 +31,40 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-/* Condition Register XOR */
-op crxor(19[6]:bt[5]:ba[5]:bb[5]:193[10]:?[1]);
 
-crxor.execute = {
+impl {
+#include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
+}
+
+/* Shift Right Doubleword */
+op srd(31[6]:rs[5]:ra[5]:rb[5]:539[10]:rc[1]);
+
+srd.execute = {
 	// Read the input operands
-	CR& cr = cpu->GetCR();
-	UINT const mask(0x80000000 >> bt), source(cr);
-
+	U64 s = U64(cpu->GetGPR(rs));
+	U8  b = U8(cpu->GetGPR(rb)) & U8(0x7f);
+	
 	// Compute the result
-	UINT result = (source & ~mask) | (mask & (((source << ba) ^ (source << bb)) >> bt));
+	U64 result = (b > U8(0x3f)) ? U64(0) : (s >> b);
 	
 	// Write back the result
-	cr = result;
+	cpu->SetGPR(ra, UINT(result));
+	
+	if(unlikely(rc))
+	{
+		CR& cr = cpu->GetCR();
+		cr.Set<CR::CR0::SO>(cpu->GetXER().Get<XER::SO>());
+		cr.Set<CR::CR0::LT>(S64(result) < S64(0));
+		cr.Set<CR::CR0::GT>(S64(result) > S64(0));
+		cr.Set<CR::CR0::EQ>(result == U64(0));
+	}
 	
 	return true;
 };
 
-crxor.disasm = {
-	os << "crxor " << CRPrint(bt) << ", " << CRPrint(ba) << ", " << CRPrint(bb);
+srd.disasm = {
+	os << "srd" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << GPRPrint(rb);
 };
 
+specialize srd(rc=0);
+specialize srd(rc=1);

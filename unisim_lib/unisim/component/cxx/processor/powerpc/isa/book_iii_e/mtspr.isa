@@ -37,7 +37,8 @@ op mtspr(31[6]:rs[5]:spr1[5]:spr0[5]:467[10]:?[1]);
 mtspr.var n : {unsigned} = {spr0<<5 | spr1};
 
 mtspr.execute = {
-	uint32_t value = cpu->GetGPR(rs);
+	UINT value = cpu->GetGPR(rs);
+	
 	switch(n)
 	{
 		case 0x001:
