@@ -36,35 +36,35 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 }
 
-/* Multiply High Doubleword Unsigned */
-op mulhdu(31[6]:rd[5]:ra[5]:rb[5]:?[1]:9[9]:rc[1]);
+/* Count Leading Zeros Doubleword */
+op cntlzd(31[6]:rs[5]:ra[5]:?[5]:58[10]:rc[1]);
 
-mulhdu.execute = {
-	// Read the input operands
-	U64 a = U64(U64(cpu->GetGPR(ra))), b = U64(U64(cpu->GetGPR(rb)));
+cntlzd.execute = {
+	// read the input operands
+	U64 s = U64(cpu->GetGPR(rs));
 	
 	// Compute the result
-	U64 result = UnsignedMultiplyHigh(a, b);
+	UINT result = (s != UINT(0)) ? UINT(63) - BitScanReverse(s) : UINT(64);
 	
 	// Write back the result
-	cpu->SetGPR(rd, UINT(result));
+	cpu->SetGPR(ra, result);
 	
 	if(unlikely(rc))
 	{
 		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(cpu->GetXER().Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(S64(result) < S64(0));
-		cr.Set<CR::CR0::GT>(S64(result) > S64(0));
-		cr.Set<CR::CR0::EQ>(result == U64(0));
+		cr.Set<CR::CR0::LT>(SINT(result) < SINT(0));
+		cr.Set<CR::CR0::GT>(SINT(result) > SINT(0));
+		cr.Set<CR::CR0::EQ>(result == UINT(0));
 	}
 	
 	return true;
 };
 
-mulhdu.disasm = {
-	os << "mulhdu" << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
+cntlzd.disasm = {
+	os << "cntlzd" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs);
 };
 
-specialize mulhdu(rc=0);
-specialize mulhdu(rc=1);
+specialize cntlzd(rc=0);
+specialize cntlzd(rc=1);

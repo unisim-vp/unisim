@@ -31,14 +31,16 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-op sthcx_(31[6]:rs[5]:ra[5]:rb[5]:726[10]:1[1])
+
+/* Store Halfword Conditional Indexed */
+op sthcx_(31[6]:rs[5]:ra[5]:rb[5]:726[10]:1[1]);
+
 sthcx_.execute = {
 	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
 	return cpu->Stbcx(rs, ea);
-}
+};
 
 sthcx_.disasm = {
 	os << "sthcx. " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
-}
+};

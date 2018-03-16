@@ -32,12 +32,16 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-op lwarx(31[6]:rd[5]:ra[5]:rb[5]:20[10]:?[1])
+/* Load Word And Reserve Indexed */
+op lwarx(31[6]:rd[5]:ra[5]:rb[5]:20[10]:?[1]);
+
 lwarx.execute = {
 	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
 	return cpu->Lwarx(rd, ea);
-}
+};
+
 lwarx.disasm = {
 	os << "lwarx " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
-}
+};
+

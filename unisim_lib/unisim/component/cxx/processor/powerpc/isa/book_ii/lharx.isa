@@ -32,12 +32,16 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-op lharx(31[6]:rd[5]:ra[5]:rb[5]:116[10]:eh[1])
+/* Load Halfword And Reserve Indexed */
+op lharx(31[6]:rd[5]:ra[5]:rb[5]:116[10]:eh[1]);
+
 lharx.execute = {
 	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
 	return cpu->Lharx(rd, ea);
-}
+};
+
 lharx.disasm = {
-	os << "lharx " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb) << ", " << (unsigned int) eh;
-}
+  os << "lharx " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb) << ", " << unsigned(eh);
+};
+

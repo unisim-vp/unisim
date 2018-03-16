@@ -108,6 +108,7 @@ include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmplL.isa
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmpli.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cmpliL.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cntlzw.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/cntlzd.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divw.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divwu.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/divd.isa"
@@ -271,16 +272,19 @@ include "unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/xoris.isa
 include "unisim/component/cxx/processor/powerpc/isa/book_i/syscall/sc.isa"
 
 // /* Book II: Power ISA Virtual Environment Architecture */
-// include "unisim/component/cxx/processor/powerpc/isa/book_ii/lbarx.isa"
-// include "unisim/component/cxx/processor/powerpc/isa/book_ii/lharx.isa"
-// include "unisim/component/cxx/processor/powerpc/isa/book_ii/lwarx.isa"
-// //include "unisim/component/cxx/processor/powerpc/isa/book_ii/mbar.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_ii/lbarx.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_ii/lharx.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_ii/lwarx.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_ii/ldarx.isa"
 // include "unisim/component/cxx/processor/powerpc/isa/book_ii/mtmsr.isa"
-// include "unisim/component/cxx/processor/powerpc/isa/book_ii/stbcx_.isa"
-// include "unisim/component/cxx/processor/powerpc/isa/book_ii/sthcx_.isa"
-// include "unisim/component/cxx/processor/powerpc/isa/book_ii/stwcx_.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_ii/stbcx_.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_ii/sthcx_.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_ii/stwcx_.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_ii/stdcx_.isa"
 // include "unisim/component/cxx/processor/powerpc/isa/book_ii/wait.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_ii/dcbtst.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_ii/dcbt.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_ii/isync.isa"
 
 // /* Book III-E: Power ISA Operating Environment Architecture - Embedded Environment */
 // include "unisim/component/cxx/processor/powerpc/isa/book_iii_e/dcbi.isa"
@@ -338,4 +342,3 @@ sync.disasm = {
     case 2: os << "ptesync"; break;
     }
 };
-

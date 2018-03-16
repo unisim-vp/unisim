@@ -40,29 +40,26 @@ impl {
 op mulhd(31[6]:rd[5]:ra[5]:rb[5]:?[1]:73[9]:rc[1]);
 
 mulhd.execute = {
-	cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
-	return false;
+	// Read the input operands
+	U64 a = U64(U64(cpu->GetGPR(ra))), b = U64(U64(cpu->GetGPR(rb)));
 	
-	// // Read the input operands
-	// S64 a = S64(S64(cpu->GetGPR(ra))), b = S64(S64(cpu->GetGPR(rb)));
+	// Compute the result
+	U64 result = SignedMultiplyHigh(a, b);
 	
-	// // Compute the result
-	// S64 result = a*b >> 64;
+	// Write back the result
+	cpu->SetGPR(rd, UINT(result));
 	
-	// // Write back the result
-	// cpu->SetGPR(rd, UINT(result));
+	if(unlikely(rc))
+	{
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		CR& cr = cpu->GetCR();
+		cr.Set<CR::CR0::SO>(cpu->GetXER().Get<XER::SO>());
+		cr.Set<CR::CR0::LT>(S64(result) < S64(0));
+		cr.Set<CR::CR0::GT>(S64(result) > S64(0));
+		cr.Set<CR::CR0::EQ>(result == U64(0));
+	}
 	
-	// if(unlikely(rc))
-	// {
-	// 	// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
-	// 	CR& cr = cpu->GetCR();
-	// 	cr.Set<CR::CR0::SO>(cpu->GetXER().Get<XER::SO>());
-	// 	cr.Set<CR::CR0::LT>(S64(result) < S64(0));
-	// 	cr.Set<CR::CR0::GT>(S64(result) > S64(0));
-	// 	cr.Set<CR::CR0::EQ>(result == S64(0));
-	// }
-	
-	// return true;
+	return true;
 };
 
 mulhd.disasm = {

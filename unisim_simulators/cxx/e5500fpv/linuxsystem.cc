@@ -51,7 +51,7 @@ void
 LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string> const& envs )
 {
   // Set up the different linuxlib parameters
-  linux_impl.SetVerbose(false);
+  linux_impl.SetVerbose(true);
   
   if (not linux_impl.SetCommandLine(simargs))
     throw 0;
@@ -69,7 +69,7 @@ LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string
   // binary)
   auto powerpc64system = new unisim::util::os::linux_os::PowerPC64System<unisim::util::os::linux_os::Linux<uint64_t,uint64_t> >( linux_impl );
   linux_impl.SetTargetSystem(powerpc64system);
-    
+
   linux_impl.SetEndianness( unisim::util::endian::E_BIG_ENDIAN );
   linux_impl.SetStackBase( 0x40000000UL );
   linux_impl.SetMemoryPageSize( 0x1000UL );

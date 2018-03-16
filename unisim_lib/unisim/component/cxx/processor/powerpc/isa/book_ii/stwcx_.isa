@@ -31,14 +31,17 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-op stwcx_(31[6]:rs[5]:ra[5]:rb[5]:150[10]:1[1])
+
+/* Store Word Conditional Indexed */
+op stwcx_(31[6]:rs[5]:ra[5]:rb[5]:150[10]:1[1]);
+
 stwcx_.execute = {
 	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
 	return cpu->Stwcx(rs, ea);
-}
+};
 
 stwcx_.disasm = {
 	os << "stwcx. " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
-}
+};
+

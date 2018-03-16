@@ -188,7 +188,7 @@ struct Arch
   
   XER& GetXER() { return xer; }
   U64  GetGPR( unsigned id ) { return gprs[id]; }
-  bool MoveFromSPR( unsigned  id, U64& value ) { return false; }
+  bool MoveFromSPR( unsigned  id, U64& value );
   bool MoveToSPR( unsigned  id, U64 value ) { return false; }
   void SetGPR( unsigned id, U64 value ) { gprs[id] = value; }
 
@@ -219,21 +219,34 @@ struct Arch
     return value;
   }
 
-  bool Int8Store(unsigned id, U64 addr) { IntStore( addr, U8(gprs[id]) ); return true; }
+  bool Int8Store (unsigned id, U64 addr) { IntStore( addr, U8 (gprs[id]) ); return true; }
   bool Int16Store(unsigned id, U64 addr) { IntStore( addr, U16(gprs[id]) ); return true; }
   bool Int32Store(unsigned id, U64 addr) { IntStore( addr, U32(gprs[id]) ); return true; }
   bool Int64Store(unsigned id, U64 addr) { IntStore( addr, U64(gprs[id]) ); return true; }
 
-  bool Int8Load(unsigned id, U64 addr) { gprs[id] = IntLoad<U8>( addr ); return true; }
-  bool Int16Load(unsigned id, U64 addr) { gprs[id] = IntLoad<U16>( addr );return true; }
-  bool Int32Load(unsigned id, U64 addr) { gprs[id] = IntLoad<U32>( addr );return true; }
-  bool Int64Load(unsigned id, U64 addr) { gprs[id] = IntLoad<U64>( addr );return true; }
+  bool Int8Load (unsigned id, U64 addr) { gprs[id] = IntLoad<U8> ( addr ); return true; }
+  bool Int16Load(unsigned id, U64 addr) { gprs[id] = IntLoad<U16>( addr ); return true; }
+  bool Int32Load(unsigned id, U64 addr) { gprs[id] = IntLoad<U32>( addr ); return true; }
+  bool Int64Load(unsigned id, U64 addr) { gprs[id] = IntLoad<U64>( addr ); return true; }
 
-  bool SInt8Load(unsigned id, U64 addr) { gprs[id] = IntLoad<S8>( addr ); return true; }
+  bool SInt8Load (unsigned id, U64 addr) { gprs[id] = IntLoad<S8> ( addr ); return true; }
   bool SInt16Load(unsigned id, U64 addr) { gprs[id] = IntLoad<S16>( addr ); return true; }
   bool SInt32Load(unsigned id, U64 addr) { gprs[id] = IntLoad<S32>( addr ); return true; }
   bool SInt64Load(unsigned id, U64 addr) { gprs[id] = IntLoad<S64>( addr ); return true; }
 
+  bool Lbarx(unsigned id, U64 addr) { return Int8Load ( id, addr ); }
+  bool Lharx(unsigned id, U64 addr) { return Int16Load( id, addr ); }
+  bool Lwarx(unsigned id, U64 addr) { return Int32Load( id, addr ); }
+  bool Ldarx(unsigned id, U64 addr) { return Int64Load( id, addr ); }
+
+
+  bool Stbcx(unsigned id, U64 addr) { cr.Set<CR::CR0>(0b0010 | xer.Get<XER::SO>()); return Int8Store ( id, addr ); }
+  bool Sthcx(unsigned id, U64 addr) { cr.Set<CR::CR0>(0b0010 | xer.Get<XER::SO>()); return Int16Store( id, addr ); }
+  bool Stwcx(unsigned id, U64 addr) { cr.Set<CR::CR0>(0b0010 | xer.Get<XER::SO>()); return Int32Store( id, addr ); }
+  bool Stdcx(unsigned id, U64 addr) { cr.Set<CR::CR0>(0b0010 | xer.Get<XER::SO>()); return Int64Store( id, addr ); }
+
+  void Isync() {}
+  
   bool InstructionFetch(uint64_t addr, uint32_t& insn);
   Operation* fetch();
   void commit();
@@ -248,19 +261,12 @@ struct Arch
   CR              cr;
   double          fprs[32];
   uintptr_t       instcount;
+  U64             time_base;
 };
 
 typedef Arch CPU;
 
-// U64
-// UnsignedMultiplyHigh64( typename ARCH::U64 opl, typename ARCH::U64 opr )
-// {
-//   typedef typename ARCH::U32 U32;
-//   typedef typename ARCH::U64 U64;
-
-//   U64 lhi = U64(opl >> 32), llo = U64(U32(opl)), rhi = U64(opr >> 32), rlo = U64(U32(opr));
-//   U64 hihi( lhi*rhi ), hilo( lhi*rlo), lohi( llo*rhi ), lolo( llo*rlo );
-//   return (((lolo >> 32) + U64(U32(hilo)) + U64(U32(lohi))) >> 32) + (hilo >> 32) + (lohi >> 32) + hihi;
-// }
+U64 UnsignedMultiplyHigh( U64 lop, U64 rop );
+S64 SignedMultiplyHigh( S64 lop, S64 rop );
 
 #endif // __E5500FPV_ARCH_HH__
