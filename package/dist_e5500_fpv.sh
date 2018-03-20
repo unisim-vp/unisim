@@ -498,11 +498,16 @@ unisim/util/parser/parser.hh \
 unisim/util/parser/parser.tcc \
 unisim/util/reg/core/register.hh \
 unisim/util/reg/core/register.tcc \
+unisim/util/simfloat/floating.hh \
+unisim/util/simfloat/floating.tcc \
+unisim/util/simfloat/integer.hh \
+unisim/util/simfloat/integer.tcc \
 unisim/util/xml/xml.hh \
 unisim/component/cxx/memory/sparse/memory.hh \
 unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh \
+unisim/component/cxx/processor/powerpc/floating.hh \
 "
 
 UNISIM_LIB_SIMULATOR_M4_FILES="\

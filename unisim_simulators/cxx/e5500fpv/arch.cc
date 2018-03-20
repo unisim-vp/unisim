@@ -208,3 +208,4 @@ SignedMultiplyHigh( S64 lop, S64 rop )
   
   return S64( (lsign xor rsign) ? (ulo == 0) ? -uhi : ~uhi : uhi );
 }
+

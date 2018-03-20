@@ -40,14 +40,12 @@ op fmadd(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:29[5]:rc[1])
 fmadd.execute = {
 	if(not CONFIG::HAS_FPU)
 	{
-		cpu->SetException(CONFIG::EXC_PROGRAM_UNIMPLEMENTED_INSTRUCTION);
+		cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 		return false;
 	}
-	// Check if FPU is enabled
-	uint32_t msr = cpu->GetMSR();
-	if(unlikely(not (msr & CONFIG::MSR_FP_MASK)))
+	if(unlikely(not cpu->GetMSR_FP()))
 	{
-		cpu->SetException(CONFIG::EXC_FLOATING_POINT_UNAVAILABLE);
+		cpu->ThrowException<CPU::FloatingPointUnavailableInterrupt::FloatingPointUnavailable>();
 		return false;
 	}
 
@@ -55,7 +53,7 @@ fmadd.execute = {
 	uint32_t fpscr = cpu->GetFPSCR();
 	uint32_t old_fpscr = fpscr;
 	Flags flags;
-	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
+	flags.setRoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>());
 	SoftDouble result = cpu->GetFPR(fa);
 	const SoftDouble& b = cpu->GetFPR(fb);
 	const SoftDouble& c = cpu->GetFPR(fc);
@@ -81,12 +79,10 @@ fmadd.execute = {
 	cpu->SetFPSCR(fpscr);
 
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
-	            (msr & CONFIG::MSR_FE1_MASK)) &&
-	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
+	if(unlikely((cpu->GetMSR().Get<MSR::FE0>() or cpu->GetMSR().Get<MSR::FE1>()) and (cpu->GetFPSCR().Get<FPSCR::FEX>())))
 	{
 		// Raise a floating point exception
-		cpu->SetException(CONFIG::EXC_PROGRAM_FLOATING_POINT);
+		cpu->ThrowException<CPU::ProgramInterrupt::FloatingPoint>();
 		return false;
 	}
 
@@ -94,7 +90,7 @@ fmadd.execute = {
 	cpu->SetFPR(fd, result);
 
 	// Copy FX, FEX, VX, OX to CR1
-	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
+	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
 	
 	return true;
 }
