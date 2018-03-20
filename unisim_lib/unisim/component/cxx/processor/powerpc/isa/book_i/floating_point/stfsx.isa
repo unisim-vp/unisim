@@ -32,7 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op stfsx(31[6]:fs[5]:ra[5]:rb[5]:663[10]:?[1])
+/* Store Floating-Point Single Indexed */
+op stfsx(31[6]:fs[5]:ra[5]:rb[5]:663[10]:?[1]);
+
 stfsx.execute = {
 	if(not CONFIG::HAS_FPU)
 	{
@@ -46,15 +48,12 @@ stfsx.execute = {
 	}
 
 	// compute the effective address
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+	ADDRESS ea = ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb);
 
 	return cpu->Fp32Store(fs, ea);
-}
+};
+
 stfsx.disasm = {
-	os << "stfsx f" << (unsigned int) fs << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
-	{
-		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+	os << "stfsx " << FPRPrint(fs) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
+};
+

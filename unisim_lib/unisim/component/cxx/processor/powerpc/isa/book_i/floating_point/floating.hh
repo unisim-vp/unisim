@@ -35,207 +35,206 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_ISA_BOOK_I_FLOATING_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_ISA_BOOK_I_FLOATING_HH__
 
-#include <unisim/component/cxx/processor/powerpc/floating.hh>
-
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace powerpc {
 
-template <class CONFIG, class FLOAT>
-inline void GenFPSCR_FPRF(uint32_t& fpscr, const FLOAT& result)
+template <class FPSCR, class FLOAT>
+inline void GenFPSCR_FPRF(typename FPSCR::TYPE& fpscr, const FLOAT& result)
 {
-	fpscr = fpscr & ~CONFIG::FPSCR_FPRF_MASK;
-	
 	if(unlikely(result.isQNaN()))
 	{
-		fpscr = fpscr | (CONFIG::FPRF_FOR_QNAN << CONFIG::FPSCR_FPRF_OFFSET);
+		FPSCR::FPRF::Set(fpscr,FPSCR::FPRF::QNAN());
 	}
 	else if(unlikely(result.isInfty()))
 	{
 		if(result.isNegative())
-			fpscr = fpscr | (CONFIG::FPRF_FOR_NEGATIVE_INFINITY << CONFIG::FPSCR_FPRF_OFFSET);
+			FPSCR::FPRF::Set(fpscr,FPSCR::FPRF::NEGATIVE_INFINITY());
 		else
-			fpscr = fpscr | (CONFIG::FPRF_FOR_POSITIVE_INFINITY << CONFIG::FPSCR_FPRF_OFFSET);
+			FPSCR::FPRF::Set(fpscr,FPSCR::FPRF::POSITIVE_INFINITY());
 	}
 	else if(unlikely(result.isDenormalized()))
 	{
 		if(result.isNegative())
-			fpscr = fpscr | (CONFIG::FPRF_FOR_NEGATIVE_DENORMAL << CONFIG::FPSCR_FPRF_OFFSET);
+			FPSCR::FPRF::Set(fpscr,FPSCR::FPRF::NEGATIVE_DENORMAL());
 		else
-			fpscr = fpscr | (CONFIG::FPRF_FOR_POSITIVE_DENORMAL << CONFIG::FPSCR_FPRF_OFFSET);
+			FPSCR::FPRF::Set(fpscr,FPSCR::FPRF::POSITIVE_DENORMAL());
 	}
 	else if(unlikely(result.isZero()))
 	{
 		if(result.isNegative())
-			fpscr = fpscr | (CONFIG::FPRF_FOR_NEGATIVE_ZERO << CONFIG::FPSCR_FPRF_OFFSET);
+			FPSCR::FPRF::Set(fpscr,FPSCR::FPRF::NEGATIVE_ZERO());
 		else
-			fpscr = fpscr | (CONFIG::FPRF_FOR_POSITIVE_ZERO << CONFIG::FPSCR_FPRF_OFFSET);
+			FPSCR::FPRF::Set(fpscr,FPSCR::FPRF::POSITIVE_ZERO());
 	}
 	else
 	{
 		if(result.isNegative())
-			fpscr = fpscr | (CONFIG::FPRF_FOR_NEGATIVE_NORMAL << CONFIG::FPSCR_FPRF_OFFSET);
+			FPSCR::FPRF::Set(fpscr,FPSCR::FPRF::NEGATIVE_NORMAL());
 		else
-			fpscr = fpscr | (CONFIG::FPRF_FOR_POSITIVE_NORMAL << CONFIG::FPSCR_FPRF_OFFSET);
+			FPSCR::FPRF::Set(fpscr,FPSCR::FPRF::POSITIVE_NORMAL());
 	}
 }
 
-template <class CONFIG, class FLOAT>
-inline void GenFPSCR_FR(uint32_t& fpscr, const FLOAT& result, const Flags& flags)
+template <class FPSCR, class FLOAT>
+inline void GenFPSCR_FR(typename FPSCR::TYPE& fpscr, const FLOAT& result, const Flags& flags)
 {
-	if(flags.hasIncrementFraction(result.isNegative()))
-		fpscr = fpscr | CONFIG::FPSCR_FR_MASK;
-	else
-		fpscr = fpscr & ~CONFIG::FPSCR_FR_MASK;
+	FPSCR::FR::Set(fpscr, typename FPSCR::TYPE(flags.hasIncrementFraction(result.isNegative())));
 }
 
-template <class CONFIG>
-inline void GenFPSCR_FI(uint32_t& fpscr, const Flags& flags)
+template <class FPSCR>
+inline void GenFPSCR_FI(typename FPSCR::TYPE& fpscr, const Flags& flags)
 {
-	if(flags.isApproximate())
-		fpscr = fpscr | CONFIG::FPSCR_FI_MASK;
-	else
-		fpscr = fpscr & ~CONFIG::FPSCR_FI_MASK;
+	typedef typename FPSCR::TYPE TYPE;
+	FPSCR::FI::Set(fpscr, TYPE(flags.isApproximate()));
 }
 
-template <class CONFIG>
-inline void GenFPSCR_OX(uint32_t& fpscr, const Flags& flags)
+template <class FPSCR>
+inline void GenFPSCR_OX(typename FPSCR::TYPE& fpscr, const Flags& flags)
 {
-	if(unlikely(flags.hasFlowException() && flags.isApproximate()))
+	if(unlikely(flags.hasFlowException() and flags.isApproximate() and flags.isOverflow()))
 	{
-		if(flags.isOverflow())
-		{
-			fpscr = fpscr | CONFIG::FPSCR_OX_MASK;
-		}
+		FPSCR::OX::Set(fpscr, typename FPSCR::TYPE(1));
 	}
 }
 
-template <class CONFIG>
-inline void GenFPSCR_UX(uint32_t& fpscr, const Flags& flags)
+template <class FPSCR>
+inline void GenFPSCR_UX(typename FPSCR::TYPE& fpscr, const Flags& flags)
 {
 	if(unlikely(flags.hasFlowException() && flags.isApproximate()))
 	{
 		if(flags.isUnderflow())
 		{
-			fpscr = fpscr | CONFIG::FPSCR_UX_MASK;
+			FPSCR::UX::Set(fpscr, typename FPSCR::TYPE(1));
 		}
 	}
 }
 
-template <class CONFIG>
-inline void GenFPSCR_ZX(uint32_t& fpscr, const Flags& flags)
+template <class FPSCR>
+inline void GenFPSCR_ZX(typename FPSCR::TYPE& fpscr, const Flags& flags)
 {
 	if(unlikely(flags.isDivisionByZero()))
 	{
-		fpscr = fpscr | CONFIG::FPSCR_ZX_MASK;
+		FPSCR::ZX::Set(fpscr, typename FPSCR::TYPE(1));
 	}
 }
 
-template <class CONFIG>
-inline void GenFPSCR_VXSNAN(uint32_t& fpscr, const Flags& flags)
+template <class FPSCR>
+inline void GenFPSCR_VXSNAN(typename FPSCR::TYPE& fpscr, const Flags& flags)
 {
 	if(unlikely(flags.hasSNaNOperand()))
 	{
-		fpscr = fpscr | CONFIG::FPSCR_VXSNAN_MASK;
+		FPSCR::VXSNAN::Set(fpscr, typename FPSCR::TYPE(1));
 	}
 }
 
-template <class CONFIG>
-inline void GenFPSCR_VXISI(uint32_t& fpscr, const Flags& flags)
+template <class FPSCR>
+inline void GenFPSCR_VXISI(typename FPSCR::TYPE& fpscr, const Flags& flags)
 {
 	if(unlikely(flags.isInftyMinusInfty()))
 	{
-		fpscr = fpscr | CONFIG::FPSCR_VXISI_MASK;
+		FPSCR::VXISI::Set(fpscr, typename FPSCR::TYPE(1));
 	}
 }
 
-template <class CONFIG>
-inline void GenFPSCR_VXIDI(uint32_t& fpscr, const Flags& flags)
+template <class FPSCR>
+inline void GenFPSCR_VXIDI(typename FPSCR::TYPE& fpscr, const Flags& flags)
 {
 	if(unlikely(flags.isInftyOnInfty()))
 	{
-		fpscr = fpscr | CONFIG::FPSCR_VXIDI_MASK;
+		FPSCR::VXIDI::Set(fpscr, typename FPSCR::TYPE(1));
 	}
 }
 
-template <class CONFIG>
-inline void GenFPSCR_VXZDZ(uint32_t& fpscr, const Flags& flags)
+template <class FPSCR>
+inline void GenFPSCR_VXZDZ(typename FPSCR::TYPE& fpscr, const Flags& flags)
 {
 	if(unlikely(flags.isZeroOnZero()))
 	{
-		fpscr = fpscr | CONFIG::FPSCR_VXZDZ_MASK;
+		FPSCR::VXZDZ::Set(fpscr, typename FPSCR::TYPE(1));
 	}
 }
 
-template <class CONFIG>
-inline void GenFPSCR_VXIMZ(uint32_t& fpscr, const Flags& flags)
+template <class FPSCR>
+inline void GenFPSCR_VXIMZ(typename FPSCR::TYPE& fpscr, const Flags& flags)
 {
 	if(unlikely(flags.isInftyMultZero()))
 	{
-		fpscr = fpscr | CONFIG::FPSCR_VXIMZ_MASK;
+		FPSCR::VXIMZ::Set(fpscr, typename FPSCR::TYPE(1));
 	}
 }
 
-template <class CONFIG>
-inline void GenFPSCR_VXCVI(uint32_t& fpscr, const Flags& flags)
+template <class FPSCR>
+inline void GenFPSCR_VXCVI(typename FPSCR::TYPE& fpscr, const Flags& flags)
 {
 	if(unlikely(flags.isOverflow()))
 	{
-		fpscr = fpscr | CONFIG::FPSCR_VXCVI_MASK;
+		FPSCR::VXCVI::Set(fpscr, typename FPSCR::TYPE(1));
 	}
 }
 
-template <class CONFIG>
-inline void GenFPSCR_XX(uint32_t& fpscr)
+template <class FPSCR>
+inline void GenFPSCR_XX(typename FPSCR::TYPE& fpscr)
 {
-	fpscr = fpscr | ((fpscr & CONFIG::FPSCR_FI_MASK) ? CONFIG::FPSCR_XX_MASK : 0);
+	if(likely(FPSCR::FI::Get(fpscr)))
+	{
+		FPSCR::XX::Set(fpscr,typename FPSCR::TYPE(1));
+	}
 }
 
-template <class CONFIG>
-inline void GenFPSCR_FX(uint32_t& fpscr, uint32_t old_fpscr)
+template <class FPSCR>
+inline void GenFPSCR_FX(typename FPSCR::TYPE& fpscr, typename FPSCR::TYPE old_fpscr)
 {
-	fpscr = fpscr |
-	       (((~old_fpscr & fpscr & CONFIG::FPSCR_OX_MASK) |
-	         (~old_fpscr & fpscr & CONFIG::FPSCR_UX_MASK) |
-	         (~old_fpscr & fpscr & CONFIG::FPSCR_ZX_MASK) |
-	         (~old_fpscr & fpscr & CONFIG::FPSCR_XX_MASK) |
-	         (~old_fpscr & fpscr & CONFIG::FPSCR_VXSNAN_MASK) |
-	         (~old_fpscr & fpscr & CONFIG::FPSCR_VXISI_MASK) |
-	         (~old_fpscr & fpscr & CONFIG::FPSCR_VXIDI_MASK) |
-	         (~old_fpscr & fpscr & CONFIG::FPSCR_VXZDZ_MASK) |
-	         (~old_fpscr & fpscr & CONFIG::FPSCR_VXIMZ_MASK) |
-	         (~old_fpscr & fpscr & CONFIG::FPSCR_VXVC_MASK) |
-	         (~old_fpscr & fpscr & CONFIG::FPSCR_VXSOFT_MASK) |
-	         (~old_fpscr & fpscr & CONFIG::FPSCR_VXSQRT_MASK) |
-	         (~old_fpscr & fpscr & CONFIG::FPSCR_VXCVI_MASK)) ? CONFIG::FPSCR_FX_MASK : 0);
+	typename FPSCR::TYPE posedges = ~old_fpscr & fpscr;
+
+	if (unlikely(FPSCR::OX::Get(posedges) or
+	             FPSCR::UX::Get(posedges) or
+	             FPSCR::ZX::Get(posedges) or
+	             FPSCR::XX::Get(posedges) or
+	             FPSCR::VXSNAN::Get(posedges) or
+	             FPSCR::VXISI::Get(posedges) or
+	             FPSCR::VXIDI::Get(posedges) or
+	             FPSCR::VXZDZ::Get(posedges) or
+	             FPSCR::VXIMZ::Get(posedges) or
+	             FPSCR::VXVC::Get(posedges) or
+	             FPSCR::VXSOFT::Get(posedges) or
+	             FPSCR::VXSQRT::Get(posedges) or
+	             FPSCR::VXCVI::Get(posedges)))
+	{
+		FPSCR::FX::Set(fpscr,UINT(1));
+	}
 }
 
-template <class CONFIG>
-inline void GenFPSCR_VX(uint32_t& fpscr)
+template <class FPSCR>
+inline void GenFPSCR_VX(typename FPSCR::TYPE& fpscr)
 {
-	fpscr = (fpscr & ~CONFIG::FPSCR_VX_MASK) |
-	         (((fpscr & CONFIG::FPSCR_VXSNAN_MASK) |
-	           (fpscr & CONFIG::FPSCR_VXISI_MASK) |
-	           (fpscr & CONFIG::FPSCR_VXIDI_MASK) |
-	           (fpscr & CONFIG::FPSCR_VXZDZ_MASK) |
-	           (fpscr & CONFIG::FPSCR_VXIMZ_MASK) |
-	           (fpscr & CONFIG::FPSCR_VXVC_MASK) |
-	           (fpscr & CONFIG::FPSCR_VXSOFT_MASK) |
-	           (fpscr & CONFIG::FPSCR_VXSQRT_MASK) |
-	           (fpscr & CONFIG::FPSCR_VXCVI_MASK)) ? CONFIG::FPSCR_VX_MASK : 0);
+	if (unlikely(FPSCR::VXSNAN::Get(fpscr) or
+	             FPSCR::VXISI::Get(fpscr) or
+	             FPSCR::VXIDI::Get(fpscr) or
+	             FPSCR::VXZDZ::Get(fpscr) or
+	             FPSCR::VXIMZ::Get(fpscr) or
+	             FPSCR::VXVC::Get(fpscr) or
+	             FPSCR::VXSOFT::Get(fpscr) or
+	             FPSCR::VXSQRT::Get(fpscr) or
+	             FPSCR::VXCVI::Get(fpscr)))
+	{
+		FPSCR::VX::Set(fpscr,UINT(1));
+	}
 }
 
-template <class CONFIG>
-inline void GenFPSCR_FEX(uint32_t& fpscr)
+template <class FPSCR>
+inline void GenFPSCR_FEX(typename FPSCR::TYPE& fpscr)
 {
-	fpscr = (fpscr & ~CONFIG::FPSCR_FEX_MASK) |
-	         ((((fpscr & CONFIG::FPSCR_VX_MASK) && (fpscr & CONFIG::FPSCR_VE_MASK)) ||
-	           ((fpscr & CONFIG::FPSCR_OX_MASK) && (fpscr & CONFIG::FPSCR_OE_MASK)) ||
-	           ((fpscr & CONFIG::FPSCR_UX_MASK) && (fpscr & CONFIG::FPSCR_UE_MASK)) ||
-	           ((fpscr & CONFIG::FPSCR_ZX_MASK) && (fpscr & CONFIG::FPSCR_ZE_MASK)) ||
-	           ((fpscr & CONFIG::FPSCR_XX_MASK) && (fpscr & CONFIG::FPSCR_XE_MASK))) ? CONFIG::FPSCR_FEX_MASK : 0);
+	if (unlikely((FPSCR::VX::Get(fpscr) and FPSCR::VE::Get(fpscr)) or
+	             (FPSCR::OX::Get(fpscr) and FPSCR::OE::Get(fpscr)) or
+	             (FPSCR::UX::Get(fpscr) and FPSCR::UE::Get(fpscr)) or
+	             (FPSCR::ZX::Get(fpscr) and FPSCR::ZE::Get(fpscr)) or
+	             (FPSCR::XX::Get(fpscr) and FPSCR::XE::Get(fpscr))))
+	{
+		FPSCR::FEX::Set(fpscr,UINT(1));
+	}
 }
 
 } // end of namespace powerpc

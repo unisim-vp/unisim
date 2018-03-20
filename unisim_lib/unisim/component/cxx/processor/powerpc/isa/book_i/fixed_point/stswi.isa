@@ -50,7 +50,7 @@ stswi.execute = {
 	return true;
 }
 stswi.disasm = {
-	os << "stswi " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << (unsigned int) nb;
+	os << "stswi " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << unsigned(nb);
 	if(cpu && (cpu->GetCIA() == this->GetAddr()))
 	{
 		ADDRESS ea = ra ? cpu->GetGPR(ra) : 0;

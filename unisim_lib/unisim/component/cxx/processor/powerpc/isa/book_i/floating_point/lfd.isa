@@ -32,7 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op lfd(50[6]:fd[5]:ra[5]:sext d[16])
+/* Load Floating-Point Double */
+op lfd(50[6]:fd[5]:ra[5]:sext d[16]);
+
 lfd.execute = {
 	if(not CONFIG::HAS_FPU)
 	{
@@ -46,16 +48,14 @@ lfd.execute = {
 	}
 
 	// compute the effective address
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
+	UINT disp = UINT(SINT(d));
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + disp : disp);
 
 	// do the memory access
 	return cpu->Fp64Load(fd, ea);
-}
+};
+
 lfd.disasm = {
-	os << "lfd f" << (unsigned int) fd << ", " << d << "(" << GPRPrint(ra) << ")";
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
-	{
-		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+	os << "lfd " << FPRPrint(fd) << ", " << d << "(" << GPRPrint(ra) << ")";
+};
+

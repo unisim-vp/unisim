@@ -68,7 +68,7 @@ srawi.execute = {
 };
 
 srawi.disasm = {
-	os << "srawi" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << (unsigned int) sh;
+	os << "srawi" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << unsigned(sh);
 };
 
 specialize srawi(rc=0);

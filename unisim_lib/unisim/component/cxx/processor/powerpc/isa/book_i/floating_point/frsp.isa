@@ -50,8 +50,8 @@ frsp.execute = {
 	}
 
 	// Read the input operands
-	uint32_t fpscr = cpu->GetFPSCR();
-	uint32_t old_fpscr = fpscr;
+	UINT fpscr = cpu->GetFPSCR();
+	UINT old_fpscr = fpscr;
 	Flags flags;
 	flags.setRoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>());
 	const SoftDouble& b = cpu->GetFPR(fb);
@@ -64,16 +64,16 @@ frsp.execute = {
     flags.setKeepSignalingConversion();
 
 	// Generate OX, UX, VXSNAN, FR, FI, FPRF, XX, FX, VX, FEX
-	GenFPSCR_OX<CONFIG>(fpscr, flags);
-	GenFPSCR_UX<CONFIG>(fpscr, flags);
-	GenFPSCR_VXSNAN<CONFIG>(fpscr, flags);
-	GenFPSCR_FR<CONFIG, SoftFloat>(fpscr, result, flags);
-	GenFPSCR_FI<CONFIG>(fpscr, flags);
-	GenFPSCR_FPRF<CONFIG, SoftFloat>(fpscr, result);
-	GenFPSCR_XX<CONFIG>(fpscr);
-	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);
-	GenFPSCR_VX<CONFIG>(fpscr);
-	GenFPSCR_FEX<CONFIG>(fpscr);
+	GenFPSCR_OX<FPSCR>(fpscr, flags);
+	GenFPSCR_UX<FPSCR>(fpscr, flags);
+	GenFPSCR_VXSNAN<FPSCR>(fpscr, flags);
+	GenFPSCR_FR<FPSCR, SoftFloat>(fpscr, result, flags);
+	GenFPSCR_FI<FPSCR>(fpscr, flags);
+	GenFPSCR_FPRF<FPSCR, SoftFloat>(fpscr, result);
+	GenFPSCR_XX<FPSCR>(fpscr);
+	GenFPSCR_FX<FPSCR>(fpscr, old_fpscr);
+	GenFPSCR_VX<FPSCR>(fpscr);
+	GenFPSCR_FEX<FPSCR>(fpscr);
 
 	// Update FPSCR
 	cpu->SetFPSCR(fpscr);
@@ -95,7 +95,7 @@ frsp.execute = {
 	return true;
 }
 frsp.disasm = {
-	os << "frsp" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
+	os << "frsp" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fb);
 }
 
 specialize frsp(rc=0)

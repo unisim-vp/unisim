@@ -32,7 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op lfsx(31[6]:fd[5]:ra[5]:rb[5]:535[10]:?[1])
+/* Load Floating-Point Single Indexed */
+op lfsx(31[6]:fd[5]:ra[5]:rb[5]:535[10]:?[1]);
+
 lfsx.execute = {
 	if(not CONFIG::HAS_FPU)
 	{
@@ -46,16 +48,13 @@ lfsx.execute = {
 	}
 
 	// compute the effective address
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
 	// do the memory access
 	return cpu->Fp32Load(fd, ea);
-}
+};
+
 lfsx.disasm = {
-	os << "lfsx f" << (unsigned int) fd << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
-	{
-		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+	os << "lfsx " << FPRPrint(fd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
+};
+

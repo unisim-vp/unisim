@@ -40,5 +40,5 @@ mtdcrx.execute = {
 }
 
 mtdcrx.disasm = {
-	os << "mtdcrx " << (unsigned int) ra << ", " << GPRPrint(rs);
+	os << "mtdcrx " << unsigned(ra) << ", " << GPRPrint(rs);
 }

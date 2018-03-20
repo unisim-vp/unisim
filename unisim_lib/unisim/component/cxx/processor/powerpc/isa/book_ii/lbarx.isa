@@ -42,6 +42,6 @@ lbarx.execute = {
 };
 
 lbarx.disasm = {
-	os << "lbarx " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb) << ", " << (unsigned int) eh;
+	os << "lbarx " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb) << ", " << unsigned(eh);
 };
 

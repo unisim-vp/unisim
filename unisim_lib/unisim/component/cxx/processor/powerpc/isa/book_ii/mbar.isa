@@ -35,5 +35,5 @@
 op mbar(31[6]:mo[5]:?[5]:?[5]:854[10]:?[1])
 mbar.execute = { return true; /* order is always enforced in functional simulation */ }
 mbar.disasm = {
-	os << "mbar " << (unsigned int) mo;
+	os << "mbar " << unsigned(mo);
 }

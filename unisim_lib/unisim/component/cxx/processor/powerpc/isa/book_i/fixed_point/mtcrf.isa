@@ -54,5 +54,5 @@ mtcrf.disasm = {
 	if(crm == 0xff)
 		os << "mtcr " << GPRPrint(rs);
 	else
-		os << "mtcrf " << (unsigned int) crm << ", " << GPRPrint(rs);
+		os << "mtcrf " << unsigned(crm) << ", " << GPRPrint(rs);
 };

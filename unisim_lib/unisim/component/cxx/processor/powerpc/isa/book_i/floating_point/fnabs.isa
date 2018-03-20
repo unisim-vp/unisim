@@ -50,7 +50,6 @@ fnabs.execute = {
 	}
 
 	// Read the input operands
-	uint32_t fpscr = cpu->GetFPSCR();
 	SoftDouble result = cpu->GetFPR(fd);
 	const SoftDouble& b = cpu->GetFPR(fb);
 
@@ -70,7 +69,7 @@ fnabs.execute = {
 	return true;
 }
 fnabs.disasm = {
-	os << "fnabs" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
+	os << "fnabs" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fb);
 }
 
 specialize fnabs(rc=0)

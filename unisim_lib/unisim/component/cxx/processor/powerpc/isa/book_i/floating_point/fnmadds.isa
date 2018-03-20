@@ -50,8 +50,8 @@ fnmadds.execute = {
 	}
 
 	// Read the input operands
-	uint32_t fpscr = cpu->GetFPSCR();
-	uint32_t old_fpscr = fpscr;
+	UINT fpscr = cpu->GetFPSCR();
+	UINT old_fpscr = fpscr;
 	Flags flags;
 	flags.setRoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>());
 	SoftDouble intermediate_result = cpu->GetFPR(fa);
@@ -81,23 +81,23 @@ fnmadds.execute = {
 	flags_conv.mergeException(flags);
 
 	// Generate FR
-	GenFPSCR_FR<CONFIG, SoftFloat>(fpscr, result, flags_conv);
+	GenFPSCR_FR<FPSCR, SoftFloat>(fpscr, result, flags_conv);
 
 	// Compute the final result
 	if(likely(not result.isQNaN())) result.opposite();
 	
 	// Generate OX, UX, VXSNAN, VXISI, VXIMZ, FI, FPRF, XX, FX, VX, FEX
-	GenFPSCR_OX<CONFIG>(fpscr, flags_conv);
-	GenFPSCR_UX<CONFIG>(fpscr, flags_conv);
-	GenFPSCR_VXSNAN<CONFIG>(fpscr, flags);
-	GenFPSCR_VXISI<CONFIG>(fpscr, flags);
-	GenFPSCR_VXIMZ<CONFIG>(fpscr, flags);
-	GenFPSCR_FI<CONFIG>(fpscr, flags_conv);
-	GenFPSCR_FPRF<CONFIG, SoftFloat>(fpscr, result);
-	GenFPSCR_XX<CONFIG>(fpscr);
-	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);
-	GenFPSCR_VX<CONFIG>(fpscr);
-	GenFPSCR_FEX<CONFIG>(fpscr);
+	GenFPSCR_OX<FPSCR>(fpscr, flags_conv);
+	GenFPSCR_UX<FPSCR>(fpscr, flags_conv);
+	GenFPSCR_VXSNAN<FPSCR>(fpscr, flags);
+	GenFPSCR_VXISI<FPSCR>(fpscr, flags);
+	GenFPSCR_VXIMZ<FPSCR>(fpscr, flags);
+	GenFPSCR_FI<FPSCR>(fpscr, flags_conv);
+	GenFPSCR_FPRF<FPSCR, SoftFloat>(fpscr, result);
+	GenFPSCR_XX<FPSCR>(fpscr);
+	GenFPSCR_FX<FPSCR>(fpscr, old_fpscr);
+	GenFPSCR_VX<FPSCR>(fpscr);
+	GenFPSCR_FEX<FPSCR>(fpscr);
 
 	// Update FPSCR
 	cpu->SetFPSCR(fpscr);
@@ -119,7 +119,7 @@ fnmadds.execute = {
 	return true;
 }
 fnmadds.disasm = {
-	os << "fnmadds" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fc << ", f" << (unsigned int) fb;
+	os << "fnmadds" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fa) << ", " << FPRPrint(fc) << ", " << FPRPrint(fb);
 }
 
 specialize fnmadds(rc=0)

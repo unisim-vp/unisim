@@ -49,7 +49,7 @@ mtfsb1.execute = {
 		return false;
 	}
 
-	uint32_t fpscr = cpu->GetFPSCR();
+	UINT fpscr = cpu->GetFPSCR();
 
 	if(likely(crbD != 1 && crbD != 2))
 	{

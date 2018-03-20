@@ -36,7 +36,9 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
 }
 
-op mcrfs(63[6]:crfD[3]:?[2]:crfS[3]:?[7]:64[10]:?[1])
+/* Move to Condition Register from FPSCR */
+op mcrfs(63[6]:crfD[3]:?[2]:crfS[3]:?[7]:64[10]:?[1]);
+
 mcrfs.execute = {
 	if(not CONFIG::HAS_FPU)
 	{
@@ -50,19 +52,57 @@ mcrfs.execute = {
 	}
 
 	// Read the input operands
-	uint32_t fpscr = cpu->GetFPSCR();
+	UINT fpscr = cpu->GetFPSCR();
 
 	// Extract FPSCR source 4-bit field
-	uint32_t c = (fpscr >> (4 * (7 - crfS))) & 0xf;
+	UINT c = (fpscr >> 4*crfS) & 0xf;
+	
+	// Clear copied bits if they are exception bits or FX
+	switch(crfS)
+	{
+	case 0:
+		FPSCR::FX::Set(fpscr,UINT(0));
+		FPSCR::OX::Set(fpscr,UINT(0));
+		break;
+	case 1:
+		FPSCR::UX::Set(fpscr,UINT(0));
+		FPSCR::ZX::Set(fpscr,UINT(0));
+		FPSCR::XX::Set(fpscr,UINT(0));
+		FPSCR::VXSNAN::Set(fpscr,UINT(0));
+	case 2:
+		FPSCR::VXISI::Set(fpscr,UINT(0));
+		FPSCR::VXIDI::Set(fpscr,UINT(0));
+		FPSCR::VXZDZ::Set(fpscr,UINT(0));
+		FPSCR::VXIMZ::Set(fpscr,UINT(0));
+		break;
+	case 3:
+		FPSCR::VXVC::Set(fpscr,UINT(0));
+		break;
+	case 5:
+		FPSCR::VXSOFT::Set(fpscr,UINT(0));
+		FPSCR::VXSQRT::Set(fpscr,UINT(0));
+		FPSCR::VXCVI::Set(fpscr,UINT(0));
+		break;
+	}
+	
 	// Copy it into CR 4-bit destination field
-	cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> (4 * crfD))) | (c << (4 * (7 - crfS))));
-	if(unlikely(crfS == 0))
-		cpu->SetFPSCR(fpscr & 0x9fffffffUL); // Don't clear FEX and VX bits
-	else
-		cpu->SetFPSCR(fpscr & ~(0xffUL << (4 * (7 - crfS)))); // clear bit field
+	CR& cr = cpu->GetCR();
+	switch(crfD)
+	{
+	case 0: cr.Set<CR::CR0>(c); break;
+	case 1: cr.Set<CR::CR1>(c); break;
+	case 2: cr.Set<CR::CR2>(c); break;
+	case 3: cr.Set<CR::CR3>(c); break;
+	case 4: cr.Set<CR::CR4>(c); break;
+	case 5: cr.Set<CR::CR5>(c); break;
+	case 6: cr.Set<CR::CR6>(c); break;
+	case 7: cr.Set<CR::CR7>(c); break;
+	}
 	
 	return true;
-}
+};
+
 mcrfs.disasm = {
 	os << "mcrfs " << CRPrint(crfD) << ", " << CRPrint(crfS);
-}
+};
+

@@ -49,5 +49,5 @@ isel.execute = {
 };
 
 isel.disasm = {
-	os << "isel " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb) << ", " << (unsigned int) bc;
+	os << "isel " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb) << ", " << unsigned(bc);
 };

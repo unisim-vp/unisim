@@ -35,7 +35,7 @@
 op icread(31[6]:?[5]:ra[5]:rb[5]:998[10]:?[1])
 icread.execute = {
 	// compute the effective address
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
 	return cpu->Icread(ea);
 }

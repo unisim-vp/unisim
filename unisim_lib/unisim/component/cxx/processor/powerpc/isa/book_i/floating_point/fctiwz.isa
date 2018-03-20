@@ -50,8 +50,8 @@ fctiwz.execute = {
 	}
 
 	// Read the input operands
-	uint32_t fpscr = cpu->GetFPSCR();
-	uint32_t old_fpscr = fpscr;
+	UINT fpscr = cpu->GetFPSCR();
+	UINT old_fpscr = fpscr;
 	Flags flags;
 	SoftDouble b = cpu->GetFPR(fb);
 	
@@ -59,7 +59,7 @@ fctiwz.execute = {
 	SoftDouble::IntConversion icResult;
 	uint32_t result32;
 	uint64_t result64;
-	flags.setRoundingMode(RN_ZERO);	
+	flags.setZeroRound();
     flags.clearKeepSignalingConversion();
 	b.retrieveInteger(icResult.setSigned(), flags);
 	flags.setRoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>());
@@ -69,17 +69,17 @@ fctiwz.execute = {
 	if(result32 == 0 && b.isNegative())
 		result64 |= 0x0000000100000000ULL;
 	
-	SoftDouble result(result64);
+	SoftDouble result(SoftDouble::FromRawBits, result64);
 	
 	// Generate VXSNAN, VXCVI, FR, FI, XX, FX, VX, FEX
-	GenFPSCR_VXSNAN<CONFIG>(fpscr, flags);
-	GenFPSCR_VXCVI<CONFIG>(fpscr, flags);
-	GenFPSCR_FR<CONFIG, SoftDouble>(fpscr, b, flags);
-	if(not flags.isOverflow()) GenFPSCR_FI<CONFIG>(fpscr, flags);
-	GenFPSCR_XX<CONFIG>(fpscr);
-	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);
-	GenFPSCR_VX<CONFIG>(fpscr);
-	GenFPSCR_FEX<CONFIG>(fpscr);
+	GenFPSCR_VXSNAN<FPSCR>(fpscr, flags);
+	GenFPSCR_VXCVI<FPSCR>(fpscr, flags);
+	GenFPSCR_FR<FPSCR, SoftDouble>(fpscr, b, flags);
+	if(not flags.isOverflow()) GenFPSCR_FI<FPSCR>(fpscr, flags);
+	GenFPSCR_XX<FPSCR>(fpscr);
+	GenFPSCR_FX<FPSCR>(fpscr, old_fpscr);
+	GenFPSCR_VX<FPSCR>(fpscr);
+	GenFPSCR_FEX<FPSCR>(fpscr);
 
 	// Update FPSCR
 	cpu->SetFPSCR(fpscr);
@@ -108,7 +108,7 @@ fctiwz.execute = {
 	return true;
 }
 fctiwz.disasm = {
-	os << "fctiwz" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
+	os << "fctiwz" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fb);
 }
 
 specialize fctiwz(rc=0)

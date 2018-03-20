@@ -88,7 +88,7 @@ main( int argc, char* argv[] )
       do
         {
           Arch::Operation* op = cpu.fetch();
-          std::cerr << std::hex << op->GetAddr() << std::dec << ": " << Disasm( op ) << std::endl;
+          //std::cerr << std::hex << op->GetAddr() << std::dec << ": " << Disasm( op ) << std::endl;
           asm volatile ("operation_execute:");
           bool success = op->execute( &cpu );
           if (not success)

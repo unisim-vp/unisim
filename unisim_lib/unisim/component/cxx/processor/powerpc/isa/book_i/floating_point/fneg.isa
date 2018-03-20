@@ -50,7 +50,6 @@ fneg.execute = {
 	}
 
 	// Read the input operands
-	uint32_t fpscr = cpu->GetFPSCR();
 	SoftDouble result = cpu->GetFPR(fb);
 
 	// Compute the result
@@ -65,7 +64,7 @@ fneg.execute = {
 	return true;
 }
 fneg.disasm = {
-	os << "fneg" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
+	os << "fneg" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fb);
 }
 
 specialize fneg(rc=0)

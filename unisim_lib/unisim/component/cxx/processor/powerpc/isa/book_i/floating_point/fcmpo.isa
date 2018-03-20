@@ -36,7 +36,9 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
 }
 
-op fcmpo(63[6]:crfD[3]:?[2]:fa[5]:fb[5]:32[10]:?[1])
+/* Floating Compare Ordered  */
+op fcmpo(63[6]:crfD[3]:?[2]:fa[5]:fb[5]:32[10]:?[1]);
+
 fcmpo.execute = {
 	if(not CONFIG::HAS_FPU)
 	{
@@ -56,7 +58,7 @@ fcmpo.execute = {
 	const SoftDouble& b = cpu->GetFPR(fb);
 	
 	// Do the floating point comparison
-	uint32_t c;
+	unsigned c;
 	switch(a.compare(b))
 	{
 		case SoftDouble::CRNaN: c = 1; break;
@@ -68,26 +70,26 @@ fcmpo.execute = {
 	}
 
 	// Generate FPCC
-	FPSCR::FPCC::Set(fpscr, c);
+	FPSCR::FPCC::Set(fpscr, UINT(c));
 	
 	// Generate VXSNAN and VXVC
 	if(unlikely(a.isSNaN() || b.isSNaN()))
 	{
-		fpscr = fpscr | CONFIG::FPSCR_VXSNAN_MASK;
-		if(not (fpscr & CONFIG::FPSCR_VE_MASK))
+		FPSCR::VXSNAN::Set(fpscr, UINT(1));
+		if(not bool(FPSCR::VE::Get(fpscr)))
 		{
-			fpscr = fpscr | CONFIG::FPSCR_VXVC_MASK;
+			FPSCR::VXVC::Set(fpscr, UINT(1));
 		}
 	}
 	if(unlikely(a.isQNaN() || b.isQNaN()))
 	{
-		fpscr = fpscr | CONFIG::FPSCR_VXVC_MASK;
+		FPSCR::VXVC::Set(fpscr, UINT(1));
 	}
 
 	// Generate FX, VX, FEX
-	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);
-	GenFPSCR_VX<CONFIG>(fpscr);
-	GenFPSCR_FEX<CONFIG>(fpscr);
+	GenFPSCR_FX<FPSCR>(fpscr, old_fpscr);
+	GenFPSCR_VX<FPSCR>(fpscr);
+	GenFPSCR_FEX<FPSCR>(fpscr);
 
 	// Update FPSCR
 	cpu->SetFPSCR(fpscr);
@@ -101,10 +103,23 @@ fcmpo.execute = {
 	}
 
 	// CR[crfD] <- c
-	cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> (4 * crfD))) | (c << ((7 - crfD) * 4)));
+	CR& cr = cpu->GetCR();
+	switch(crfD)
+	{
+	case 0: cr.Set<CR::CR0>(c); break;
+	case 1: cr.Set<CR::CR1>(c); break;
+	case 2: cr.Set<CR::CR2>(c); break;
+	case 3: cr.Set<CR::CR3>(c); break;
+	case 4: cr.Set<CR::CR4>(c); break;
+	case 5: cr.Set<CR::CR5>(c); break;
+	case 6: cr.Set<CR::CR6>(c); break;
+	case 7: cr.Set<CR::CR7>(c); break;
+	}
 	
 	return true;
-}
+};
+
 fcmpo.disasm = {
-	os << "fcmpo " << CRPrint(crfD) << ", f" << (unsigned int) fa << ", f" << (unsigned int) fb;
-}
+	os << "fcmpo " << CRPrint(crfD) << ", " << FPRPrint(fa) << ", " << FPRPrint(fb);
+};
+

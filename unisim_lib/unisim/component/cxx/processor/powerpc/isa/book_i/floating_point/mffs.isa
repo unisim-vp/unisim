@@ -50,10 +50,10 @@ mffs.execute = {
 	}
 
 	// Move FPSCR into destination FPR
-	uint32_t fpscr = cpu->GetFPSCR();
+	UINT fpscr = cpu->GetFPSCR();
 	uint64_t _f;
 	_f = (uint64_t) fpscr | 0xfff8000000000000ULL;
-	cpu->SetFPR(fd, SoftDouble(_f));
+	cpu->SetFPR(fd, SoftDouble(SoftDouble::FromRawBits,_f));
 
 	// Copy FX, FEX, VX, OX to CR1
 	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
@@ -61,7 +61,7 @@ mffs.execute = {
 	return true;
 }
 mffs.disasm = {
-	os << "mffs" << (rc ? "." : "") << " f" << (unsigned int) fd;
+	os << "mffs" << (rc ? "." : "") << " " << FPRPrint(fd);
 }
 
 specialize mffs(rc=0)

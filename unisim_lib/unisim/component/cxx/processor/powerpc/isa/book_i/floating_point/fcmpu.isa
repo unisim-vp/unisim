@@ -36,7 +36,9 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
 }
 
-op fcmpu(63[6]:crfD[3]:?[2]:fa[5]:fb[5]:0[10]:?[1])
+/* Floating Compare Unordered */
+op fcmpu(63[6]:crfD[3]:?[2]:fa[5]:fb[5]:0[10]:?[1]);
+
 fcmpu.execute = {
 	if(not CONFIG::HAS_FPU)
 	{
@@ -50,8 +52,8 @@ fcmpu.execute = {
 	}
 
 	// Read the input operands
-	uint32_t fpscr = cpu->GetFPSCR();
-	uint32_t old_fpscr = fpscr;
+	UINT fpscr = cpu->GetFPSCR();
+	UINT old_fpscr = fpscr;
 	const SoftDouble& a = cpu->GetFPR(fa);
 	const SoftDouble& b = cpu->GetFPR(fb);
 	
@@ -68,18 +70,18 @@ fcmpu.execute = {
 	}
 
 	// Generate FPCC
-	fpscr = (fpscr & ~CONFIG::FPSCR_FPCC_MASK) | ((c << CONFIG::FPSCR_FPCC_OFFSET) & CONFIG::FPSCR_FPCC_MASK);
+	FPSCR::FPCC::Set(fpscr, UINT(c));
 
 	// Generate VXSNAN
 	if(unlikely(a.isSNaN() || b.isSNaN()))
 	{
-		fpscr = fpscr | CONFIG::FPSCR_VXSNAN_MASK;
+		FPSCR::VXSNAN::Set(fpscr, UINT(1));
 	}
 
 	// Generate FX, VX, FEX
-	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);
-	GenFPSCR_VX<CONFIG>(fpscr);
-	GenFPSCR_FEX<CONFIG>(fpscr);
+	GenFPSCR_FX<FPSCR>(fpscr, old_fpscr);
+	GenFPSCR_VX<FPSCR>(fpscr);
+	GenFPSCR_FEX<FPSCR>(fpscr);
 
 	// Update FPSCR
 	cpu->SetFPSCR(fpscr);
@@ -93,10 +95,23 @@ fcmpu.execute = {
 	}
 	
 	// CR[crfD] <- c
-	cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> (4 * crfD))) | (c << ((7 - crfD) * 4)));
+	CR& cr = cpu->GetCR();
+	switch(crfD)
+	{
+	case 0: cr.Set<CR::CR0>(c); break;
+	case 1: cr.Set<CR::CR1>(c); break;
+	case 2: cr.Set<CR::CR2>(c); break;
+	case 3: cr.Set<CR::CR3>(c); break;
+	case 4: cr.Set<CR::CR4>(c); break;
+	case 5: cr.Set<CR::CR5>(c); break;
+	case 6: cr.Set<CR::CR6>(c); break;
+	case 7: cr.Set<CR::CR7>(c); break;
+	}
 	
 	return true;
-}
+};
+
 fcmpu.disasm = {
-	os << "fcmpu " << CRPrint(crfD) << ", f" << (unsigned int) fa << ", f" << (unsigned int) fb;
-}
+	os << "fcmpu " << CRPrint(crfD) << ", " << FPRPrint(fa) << ", " << FPRPrint(fb);
+};
+

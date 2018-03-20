@@ -32,7 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op stfiwx(31[6]:fs[5]:ra[5]:rb[5]:983[10]:?[1])
+/* Store Floating-Point as Integer Word Indexed */
+op stfiwx(31[6]:fs[5]:ra[5]:rb[5]:983[10]:?[1]);
+
 stfiwx.execute = {
 	if(not CONFIG::HAS_FPU)
 	{
@@ -45,15 +47,12 @@ stfiwx.execute = {
 		return false;
 	}
 	// compute the effective address
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
 	return cpu->FpStoreLSW(fs, ea);
-}
+};
+
 stfiwx.disasm = {
-	os << "stfiwx f" << (unsigned int) fs << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
-	{
-		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+	os << "stfiwx " << FPRPrint(fs) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
+};
+

@@ -72,7 +72,7 @@ fabs.execute = {
 };
 
 fabs.disasm = {
-	os << "fabs" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
+	os << "fabs" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fb);
 };
 
 specialize fabs(rc=0);

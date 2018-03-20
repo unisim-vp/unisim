@@ -32,7 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op stfd(54[6]:fs[5]:ra[5]:sext d[16])
+/* Store Floating-Point Double */
+op stfd(54[6]:fs[5]:ra[5]:sext d[16]);
+
 stfd.execute = {
 	if(not CONFIG::HAS_FPU)
 	{
@@ -46,15 +48,12 @@ stfd.execute = {
 	}
 
 	// compute the effective address
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
+	UINT disp = UINT(SINT(d));
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + disp : disp);
 
 	return cpu->Fp64Store(fs, ea);
-}
+};
+
 stfd.disasm = {
-	os << "stfd f" << (unsigned int) fs << ", " << d << "(" << GPRPrint(ra) << ")";
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
-	{
-		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+	os << "stfd " << FPRPrint(fs) << ", " << d << "(" << GPRPrint(ra) << ")";
+};

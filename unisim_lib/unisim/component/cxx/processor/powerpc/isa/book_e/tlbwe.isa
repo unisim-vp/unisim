@@ -41,5 +41,5 @@ tlbwe.execute = {
 	return cpu->Tlbwe(s, a, ws);
 }
 tlbwe.disasm = {
-	os << "tlbwe " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << (unsigned int) ws;
+	os << "tlbwe " << GPRPrint(rs) << ", " << GPRPrint(ra) << ", " << unsigned(ws);
 }

@@ -50,7 +50,7 @@ mtfsfi.execute = {
 	}
 
 	uint32_t mask = crfD ? 0xf : 0x9;
-	uint32_t fpscr = cpu->GetFPSCR();
+	UINT fpscr = cpu->GetFPSCR();
 	fpscr = (fpscr & (~(0xf << (4 * (7 - crfD))))) | ((imm & mask) << (4 * (7 - crfD)));
 	cpu->SetFPSCR(fpscr);
 	// Copy FX, FEX, VX, OX to CR1
@@ -59,7 +59,7 @@ mtfsfi.execute = {
 	return true;
 }
 mtfsfi.disasm = {
-	os << "mtfsfi" << (rc ? "." : "") << " " << CRPrint(crfD) << ", " << (unsigned int) imm;
+	os << "mtfsfi" << (rc ? "." : "") << " " << CRPrint(crfD) << ", " << unsigned(imm);
 }
 
 specialize mtfsfi(rc=0)

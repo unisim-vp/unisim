@@ -32,7 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op lfs(48[6]:fd[5]:ra[5]:sext d[16])
+/* Load Floating-Point Single  */
+op lfs(48[6]:fd[5]:ra[5]:sext d[16]);
+
 lfs.execute = {
 	if(not CONFIG::HAS_FPU)
 	{
@@ -46,16 +48,14 @@ lfs.execute = {
 	}
 
 	// compute the effective address
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
+	UINT disp = UINT(SINT(d));
+	ADDRESS ea = (ra ? cpu->GetGPR(ra) + disp : disp);
 
 	// do the memory access
 	return cpu->Fp32Load(fd, ea);
-}
+};
+
 lfs.disasm = {
-	os << "lfs f" << (unsigned int) fd << ", " << d << "(" << GPRPrint(ra) << ")";
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
-	{
-		typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+	os << "lfs " << FPRPrint(fd) << ", " << d << "(" << GPRPrint(ra) << ")";
+};
+

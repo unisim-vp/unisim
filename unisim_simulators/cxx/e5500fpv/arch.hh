@@ -36,7 +36,7 @@
 #define __E5500FPV_ARCH_HH__
 
 #include <top_ppc64.hh>
-#include <unisim/component/cxx/processor/powerpc/floating.hh>
+#include <simfloat.hh>
 #include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
 #include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <unisim/util/reg/core/register.hh>
@@ -60,9 +60,6 @@ typedef uint64_t UINT;
 typedef int64_t  SINT;
 typedef uint64_t ADDRESS;
 
-typedef unisim::component::cxx::processor::powerpc::SoftDouble SoftDouble;
-typedef unisim::component::cxx::processor::powerpc::SoftFloat SoftFloat;
-
 struct MisInsn
 {
   MisInsn( uint64_t _addr, uint32_t _code )
@@ -82,13 +79,15 @@ struct Field : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 
 template <typename REGISTER>
 struct Register
 {
-  Register(UINT _value) : value(_value) {}
+  typedef UINT TYPE;
   
-  template <typename FIELD> void Set( UINT field_value ) {  FIELD::Set(value, field_value); }
-  template <typename FIELD> UINT Get() const { return FIELD::Get(value); }
-  operator UINT () const { return value; }
+  Register(TYPE _value) : value(_value) {}
   
-  UINT value;
+  template <typename FIELD> void Set( TYPE field_value ) {  FIELD::Set(value, field_value); }
+  template <typename FIELD> TYPE Get() const { return FIELD::Get(value); }
+  operator TYPE () const { return value; }
+  
+  TYPE value;
 };
 
 // Floating-Point Status and Control Register
@@ -112,7 +111,18 @@ struct FPSCR : Register<FPSCR>
   struct VXVC   : Field<VXVC,   44> {};     // Floating-Point Invalid Operation Exception (Invalid Compare)
   struct FR     : Field<FR,     45> {};     // Floating-Point Fraction Rounded
   struct FI     : Field<FI,     46> {};     // Floating-Point Fraction Inexact
-  struct FPRF   : Field<FPRF,   47, 51> {}; // Floating-Point Result Flags
+  struct FPRF   : Field<FPRF,   47, 51>     // Floating-Point Result Flags
+  {
+    static uint64_t          QNAN    () { return 0x11; }
+    static uint64_t NEGATIVE_INFINITY() { return 0x9; }
+    static uint64_t NEGATIVE_NORMAL  () { return 0x8; }
+    static uint64_t NEGATIVE_DENORMAL() { return 0x18; }
+    static uint64_t NEGATIVE_ZERO    () { return 0x12; }
+    static uint64_t POSITIVE_ZERO    () { return 0x2; }
+    static uint64_t POSITIVE_DENORMAL() { return 0x14; }
+    static uint64_t POSITIVE_NORMAL  () { return 0x4; }
+    static uint64_t POSITIVE_INFINITY() { return 0x5; }
+  };
   struct C      : Field<C,      47> {};     // Floating-Point Result Class Descriptor
   struct FPCC   : Field<FPCC,   48, 51> {}; // Floating-Point Condition Code
   struct FL     : Field<FL,     48> {};     // Floating-Point Less Than or Negative
@@ -328,6 +338,12 @@ struct Arch
   void        SetFPR(unsigned id, SoftDouble const& value ) { fprs[id] = value; }
   FPSCR&      GetFPSCR() { return fpscr; }
   void        SetFPSCR(UINT value) { fpscr = value; }
+
+  bool Fp64Load(unsigned id, U64 addr) { fprs[id].fromRawBitsAssign(IntLoad<U64>( addr )); return true; }
+  bool Fp64Store(unsigned id, U64 addr) { IntStore( addr, U64(fprs[id].queryValue()) ); return true; }
+  bool Fp32Load(unsigned id, U64 addr);
+  bool Fp32Store(unsigned id, U64 addr);
+  bool FpStoreLSW(unsigned id, U64 addr) { return false; }
   
   void Isync() {}
   
@@ -353,6 +369,9 @@ struct Arch
   U64             time_base;
 
   static bool const HAS_FPU = true;
+  static bool const HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS = true;
+  static bool const HAS_FLOATING_POINT_SQRT = true;
+  
 };
 
 typedef Arch CPU;

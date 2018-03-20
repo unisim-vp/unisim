@@ -507,7 +507,6 @@ unisim/component/cxx/memory/sparse/memory.hh \
 unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh \
 unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh \
-unisim/component/cxx/processor/powerpc/floating.hh \
 "
 
 UNISIM_LIB_SIMULATOR_M4_FILES="\
@@ -581,12 +580,14 @@ UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
 linuxsystem.cc \
 arch.cc \
+simfloat.cc \
 "
 
 UNISIM_SIMULATOR_HEADER_FILES="\
 ${UNISIM_SIMULATOR_ISA_FILES} \
 linuxsystem.hh \
 arch.hh \
+simfloat.hh
 "
 
 UNISIM_SIMULATOR_EXTRA_FILES="\

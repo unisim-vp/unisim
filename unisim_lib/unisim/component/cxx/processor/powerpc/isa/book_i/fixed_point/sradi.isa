@@ -68,7 +68,7 @@ sradi.execute = {
 };
 
 sradi.disasm = {
-	os << "sradi" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << (unsigned int) sh;
+	os << "sradi" << (rc ? "." : "") << " " << GPRPrint(ra) << ", " << GPRPrint(rs) << ", " << unsigned(sh);
 };
 
 specialize sradi(rc=0);

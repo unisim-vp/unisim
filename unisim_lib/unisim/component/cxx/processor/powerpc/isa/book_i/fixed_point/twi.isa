@@ -50,5 +50,5 @@ twi.execute = {
 	return true;
 }
 twi.disasm = {
-	os << "twi " << (unsigned int) to << ", " << GPRPrint(ra) << ", " << simm;
+	os << "twi " << unsigned(to) << ", " << GPRPrint(ra) << ", " << simm;
 }

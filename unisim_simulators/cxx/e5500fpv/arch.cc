@@ -42,6 +42,8 @@ Arch::Arch()
   , unisim::service::interfaces::Registers()
   , xer(0)
   , cr(0)
+  , msr(0)
+  , fpscr(0)
   , time_base(0)
     // , linux_os(0)
 {
@@ -59,13 +61,6 @@ Arch::Arch()
 
   for (int idx = sizeof(dedicated_registers)/sizeof(dedicated_registers[0]); --idx >= 0;)
     regmap[dedicated_registers[idx].name] = new unisim::util::debug::SimpleRegister<uint64_t>(dedicated_registers[idx].name, dedicated_registers[idx].reg);
-  
-  for (int idx = 0; idx < 32; ++idx)
-    {
-      std::ostringstream regname;
-      regname << unisim::component::cxx::processor::powerpc::FPRPrint(idx);
-      regmap[regname.str()] = new unisim::util::debug::SimpleRegister<double>(regname.str(), &fprs[idx]);
-    }
 }
   
 Arch::~Arch()
@@ -184,6 +179,24 @@ Arch::MoveFromSPR( unsigned id, U64& value )
     case 268: val = time_base; break;
     }
   gprs[id] = val;
+  return true;
+}
+
+bool
+Arch::Fp32Load(unsigned id, U64 addr)
+{
+  Flags flags;
+  flags.setRoundingMode(fpscr.Get<FPSCR::RN>());
+  fprs[id].convertAssign(SoftFloat(SoftFloat::FromRawBits,IntLoad<U32>( addr )), flags);
+  return true;
+}
+
+bool
+Arch::Fp32Store(unsigned id, U64 addr)
+{
+  Flags flags;
+  flags.setZeroRound();
+  IntStore( addr, U64(SoftFloat(fprs[id], flags).queryValue()) );
   return true;
 }
 

@@ -46,7 +46,6 @@ fsel.execute = {
 	}
 
 	// Read the input operands
-	uint32_t fpscr = cpu->GetFPSCR();
 	const SoftDouble& a = cpu->GetFPR(fa);
 	const SoftDouble& b = cpu->GetFPR(fb);
 	const SoftDouble& c = cpu->GetFPR(fc);
@@ -60,7 +59,7 @@ fsel.execute = {
 	return true;
 }
 fsel.disasm = {
-	os << "fsel" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fc << ", f" << (unsigned int) fb;
+	os << "fsel" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fa) << ", " << FPRPrint(fc) << ", " << FPRPrint(fb);
 }
 
 specialize fsel(rc=0)

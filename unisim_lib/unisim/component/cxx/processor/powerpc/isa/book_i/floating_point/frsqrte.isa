@@ -46,77 +46,77 @@ frsqrte.execute = {
 	}
 
 	// Read the input operands
-	uint32_t fpscr = cpu->GetFPSCR();
-	uint32_t old_fpscr = fpscr;
+	UINT fpscr = cpu->GetFPSCR();
+	UINT old_fpscr = fpscr;
 	Flags flags;
-	flags.setRoundingMode(RN_NEAREST);
+	flags.setNearestRound();
 	const SoftDouble& b = cpu->GetFPR(fb);
 
 	if(unlikely(b.isSNaN()))
 	{
 		// b = SNaN
-		if(not (fpscr & CONFIG::FPSCR_VE_MASK))
+		if(not bool(FPSCR::VE::Get(fpscr)))
 		{
 			// Generate FPRF
-			fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_QNAN << CONFIG::FPSCR_FPRF_OFFSET);
+			FPSCR::FPRF::Set(fpscr,FPSCR::FPRF::QNAN());
 			// Write back result
-			cpu->SetFPR(fd, SoftDouble(b.queryValue() | 0x0008000000000000ULL)); // QNaN (b with high order bit of mantissa set)
+			cpu->SetFPR(fd, SoftDouble(SoftDouble::FromRawBits,b.queryValue() | 0x0008000000000000ULL)); // QNaN (b with high order bit of mantissa set)
 		}
 		// Generate VXSNAN
-		fpscr = fpscr | CONFIG::FPSCR_VXSNAN_MASK;
+		FPSCR::VXSNAN::Set(fpscr, UINT(1));
 	}
 	else if(unlikely(b.isQNaN()))
 	{
 		// b = QNaN
 		// Generate FPRF
-		fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_QNAN << CONFIG::FPSCR_FPRF_OFFSET);
+		FPSCR::FPRF::Set(fpscr,FPSCR::FPRF::QNAN());
 		// Write back result
 		cpu->SetFPR(fd, b); // QNaN (b)
 	}
 	else if(unlikely(b.isZero()))
 	{
 		// Generate ZX
-		fpscr = fpscr | CONFIG::FPSCR_ZX_MASK;
+		FPSCR::ZX::Set(fpscr, UINT(1));
 
-		if(not (fpscr & CONFIG::FPSCR_ZE_MASK))
+		if(not FPSCR::ZE::Get(fpscr))
 		{
 			if(b.isNegative())
 			{
 				// b = -0
 				// Write back result
-				cpu->SetFPR(fd, SoftDouble(0xfff0000000000000ULL)); // -infinity
+				cpu->SetFPR(fd, SoftDouble(SoftDouble::FromRawBits,0xfff0000000000000ULL)); // -infinity
 				// Generate FPRF
-				fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_NEGATIVE_INFINITY << CONFIG::FPSCR_FPRF_OFFSET);
+				FPSCR::FPRF::Set(fpscr, UINT(FPSCR::FPRF::NEGATIVE_INFINITY()));
 			}
 			else
 			{
 				// b = +0
 				// Write back result
-				cpu->SetFPR(fd, SoftDouble(0x7ff0000000000000ULL)); // +infinity
+				cpu->SetFPR(fd, SoftDouble(SoftDouble::FromRawBits,0x7ff0000000000000ULL)); // +infinity
 				// Generate FPRF
-				fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_POSITIVE_INFINITY << CONFIG::FPSCR_FPRF_OFFSET);
+				FPSCR::FPRF::Set(fpscr, UINT(FPSCR::FPRF::POSITIVE_INFINITY()));
 			}
 		}
 	}
 	else if(unlikely(b.isNegative()))
 	{
 		// -infinity <= b < 0
-		if(not (fpscr & CONFIG::FPSCR_VE_MASK))
+		if(not bool(FPSCR::VE::Get(fpscr)))
 		{
 			// Write back result
-			cpu->SetFPR(fd, SoftDouble(0x7ff8000000000000ULL)); // Positive QNaN
+			cpu->SetFPR(fd, SoftDouble(SoftDouble::FromRawBits,0x7ff8000000000000ULL)); // Positive QNaN
 			// Generate FPRF
-			fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_QNAN << CONFIG::FPSCR_FPRF_OFFSET);
+			FPSCR::FPRF::Set(fpscr,FPSCR::FPRF::QNAN());
 		}
 		// Generate VXSQRT
-		fpscr = fpscr | CONFIG::FPSCR_VXSQRT_MASK;
+		FPSCR::VXSQRT::Set(fpscr, UINT(1));
 	}
 	else if(unlikely(b.isInfty()))
 	{
 		// b = +infinity
-		cpu->SetFPR(fd, SoftDouble(0x0000000000000000ULL)); // +0
+		cpu->SetFPR(fd, SoftDouble(SoftDouble::FromRawBits,0x0000000000000000ULL)); // +0
 		// Generate FPRF
-		fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_POSITIVE_ZERO << CONFIG::FPSCR_FPRF_OFFSET);
+		FPSCR::FPRF::Set(fpscr, UINT(FPSCR::FPRF::POSITIVE_ZERO()));
 	}
 	else
 	{
@@ -126,11 +126,11 @@ frsqrte.execute = {
 		// see http://www.mceniry.net/papers/Fast%20Inverse%20Square%20Root.pdf
 		// mirror: http://www.daxia.com/bibis/upload/406Fast_Inverse_Square_Root.pdf
 		// see also: http://www.azillionmonkeys.com/qed/sqroot.html
-		SoftDouble u((0xbfcdd6a18f6a6f55ULL - b.queryValue()) >> 1);
+		SoftDouble u(SoftDouble::FromRawBits,(0xbfcdd6a18f6a6f55ULL - b.queryValue()) >> 1);
 
 		// Newton-Raphson method:  u = u * (3 - b * u²) / 2
-		SoftDouble half(0x3fe0000000000000ULL); // 0.5
-		SoftDouble one_and_half(0x3ff8000000000000ULL); // 1.5
+		SoftDouble half(SoftDouble::FromRawBits,0x3fe0000000000000ULL); // 0.5
+		SoftDouble one_and_half(SoftDouble::FromRawBits,0x3ff8000000000000ULL); // 1.5
 
 		SoftDouble v(b);
 		v.multAssign(half, flags); // v = b / 2 => u = (3 * u / 2) - u² * u * v
@@ -156,16 +156,16 @@ frsqrte.execute = {
 		cpu->SetFPR(fd, u);
 
 		// Generate ZX, VXSNAN, FR, FI, FPRF
-		GenFPSCR_ZX<CONFIG>(fpscr, flags);
-		GenFPSCR_VXSNAN<CONFIG>(fpscr, flags);
-		GenFPSCR_FPRF<CONFIG, SoftDouble>(fpscr, u);
+		GenFPSCR_ZX<FPSCR>(fpscr, flags);
+		GenFPSCR_VXSNAN<FPSCR>(fpscr, flags);
+		GenFPSCR_FPRF<FPSCR, SoftDouble>(fpscr, u);
 	}
 
 	// Generate XX, FX, VX, FEX
-	GenFPSCR_XX<CONFIG>(fpscr);
-	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);
-	GenFPSCR_VX<CONFIG>(fpscr);
-	GenFPSCR_FEX<CONFIG>(fpscr);
+	GenFPSCR_XX<FPSCR>(fpscr);
+	GenFPSCR_FX<FPSCR>(fpscr, old_fpscr);
+	GenFPSCR_VX<FPSCR>(fpscr);
+	GenFPSCR_FEX<FPSCR>(fpscr);
 
 	// Update FPSCR
 	cpu->SetFPSCR(fpscr);
@@ -184,7 +184,7 @@ frsqrte.execute = {
 	return true;
 }
 frsqrte.disasm = {
-	os << "frsqrte" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
+	os << "frsqrte" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fb);
 }
 
 specialize frsqrte(rc=0)

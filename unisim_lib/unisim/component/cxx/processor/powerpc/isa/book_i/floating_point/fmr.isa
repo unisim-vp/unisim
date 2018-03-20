@@ -36,7 +36,9 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
 }
 
-op fmr(63[6]:fd[5]:?[5]:fb[5]:72[10]:rc[1])
+/* Floating Move Register */
+op fmr(63[6]:fd[5]:?[5]:fb[5]:72[10]:rc[1]);
+
 fmr.execute = {
 	if(not CONFIG::HAS_FPU)
 	{
@@ -49,18 +51,17 @@ fmr.execute = {
 		return false;
 	}
 
-	uint32_t fpscr = cpu->GetFPSCR();
-
 	cpu->SetFPR(fd, cpu->GetFPR(fb));
 
 	// Copy FX, FEX, VX, OX to CR1
 	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
 	
 	return true;
-}
-fmr.disasm = {
-	os << "fmr" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
-}
+};
 
-specialize fmr(rc=0)
-specialize fmr(rc=1)
+fmr.disasm = {
+	os << "fmr" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fb);
+};
+
+specialize fmr(rc=0);
+specialize fmr(rc=1);

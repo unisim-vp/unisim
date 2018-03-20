@@ -51,7 +51,7 @@ lswi.execute = {
 	return true;
 }
 lswi.disasm = {
-	os << "lswi " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << (unsigned int) nb;
+	os << "lswi " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << unsigned(nb);
 	if(cpu && (cpu->GetCIA() == this->GetAddr()))
 	{
 		ADDRESS ea = ra ? cpu->GetGPR(ra) : 0;

@@ -80,7 +80,7 @@ mtfsf.execute = {
 	return true;
 }
 mtfsf.disasm = {
-	os << "mtfsf" << (rc ? "." : "") << " " << (unsigned int) fm << ", f" << (unsigned int) fb;
+	os << "mtfsf" << (rc ? "." : "") << " " << unsigned(fm) << ", " << FPRPrint(fb);
 }
 
 specialize mtfsf(rc=0)

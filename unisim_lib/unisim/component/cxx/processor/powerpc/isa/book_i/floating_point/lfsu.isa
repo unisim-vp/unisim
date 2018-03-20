@@ -32,7 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op lfsu(49[6]:fd[5]:ra[5]:sext d[16])
+/* Load Floating-Point Single with Update */
+op lfsu(49[6]:fd[5]:ra[5]:sext d[16]);
+
 lfsu.execute = {
 	if(not CONFIG::HAS_FPU)
 	{
@@ -51,7 +53,7 @@ lfsu.execute = {
 	}
 
 	// compute the effective address
-	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
+	ADDRESS ea = cpu->GetGPR(ra) + UINT(SINT(d));
 
 	// do the memory access
 	if(unlikely(not cpu->Fp32Load(fd, ea))) return false;
@@ -59,12 +61,9 @@ lfsu.execute = {
 	cpu->SetGPR(ra, ea);
 	
 	return true;
-}
+};
+
 lfsu.disasm = {
-	os << "lfsu f" << (unsigned int) fd << ", " << d << "(" << GPRPrint(ra) << ")";
-	if(cpu && cpu->GetCIA() == Operation<CONFIG>::GetAddr())
-	{
-		typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
-		os << " <" << cpu->GetObjectFriendlyName(ea) << ">";
-	}
-}
+	os << "lfsu " << FPRPrint(fd) << ", " << d << "(" << GPRPrint(ra) << ")";
+};
+
