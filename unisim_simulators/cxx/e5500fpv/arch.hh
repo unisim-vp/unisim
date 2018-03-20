@@ -74,9 +74,9 @@ struct MisInsn
 };
 
 template <typename FIELD, int OFFSET1, int OFFSET2 = -1, unisim::util::reg::core::Access ACCESS = unisim::util::reg::core::SW_RW>
-struct Field : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, ACCESS>
+struct Field : unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (63 - OFFSET2) : (63 - OFFSET1)) : (63 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, ACCESS>
 {
-  typedef unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (31 - OFFSET2) : (31 - OFFSET1)) : (31 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, ACCESS> Super;
+  typedef unisim::util::reg::core::Field<FIELD, (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (63 - OFFSET2) : (63 - OFFSET1)) : (63 - OFFSET1), (OFFSET2 >= 0) ? ((OFFSET1 < OFFSET2) ? (OFFSET2 - OFFSET1 + 1) : (OFFSET1 - OFFSET2 + 1)) : 1, ACCESS> Super;
 };
 
 template <typename REGISTER>
@@ -96,39 +96,39 @@ struct FPSCR : Register<FPSCR>
 {
   typedef Register<FPSCR> Super;
 
-  struct _0_3   : Field<_0_3,    0, 3> {};  // FX, FEX, VX, OX bunch
-  struct FX     : Field<FX,      0> {};     // Floating-Point Exception Summary
-  struct FEX    : Field<FEX,     1> {};     // Floating-Point Enabled Exception Summary
-  struct VX     : Field<VX,      2> {};     // Floating-Point Invalid Operation Exception Summary
-  struct OX     : Field<OX,      3> {};     // Floating-Point Overflow Exception
-  struct UX     : Field<UX,      4> {};     // Floating-Point Underflow Exception
-  struct ZX     : Field<ZX,      5> {};     // Floating-Point Zero Divide Exception
-  struct XX     : Field<XX,      6> {};     // Floating-Point Inexact Exception
-  struct VXSNAN : Field<VXSNAN,  7> {};     // Floating-Point Invalid Operation Exception (SNaN)
-  struct VXISI  : Field<VXISI,   8> {};     // Floating-Point Invalid Operation Exception (inf - inf)
-  struct VXIDI  : Field<VXIDI,   9> {};     // Floating-Point Invalid Operation Exception (inf / inf)
-  struct VXZDZ  : Field<VXZDZ,  10> {};     // Floating-Point Invalid Operation Exception (0 / 0)
-  struct VXIMZ  : Field<VXIMZ,  11> {};     // Floating-Point Invalid Operation Exception (inf * 0)
-  struct VXVC   : Field<VXVC,   12> {};     // Floating-Point Invalid Operation Exception (Invalid Compare)
-  struct FR     : Field<FR,     13> {};     // Floating-Point Fraction Rounded
-  struct FI     : Field<FI,     14> {};     // Floating-Point Fraction Inexact
-  struct FPRF   : Field<FPRF,   15, 19> {}; // Floating-Point Result Flags
-  struct C      : Field<C,      15> {};     // Floating-Point Result Class Descriptor
-  struct FPCC   : Field<FPCC,   16, 19> {}; // Floating-Point Condition Code
-  struct FL     : Field<FL,     16> {};     // Floating-Point Less Than or Negative
-  struct FG     : Field<FG,     17> {};     // Floating-Point Greater Than or Positive
-  struct FE     : Field<FE,     18> {};     // Floating-Point Equal or Zero
-  struct FU     : Field<FU,     19> {};     // Floating-Point Unordered or NaN
-  struct VXSOFT : Field<VXSOFT, 21> {};     // Floating-Point Invalid Operation Exception (Software-Defined Condition) 
-  struct VXSQRT : Field<VXSQRT, 22> {};     // Floating-Point Invalid Operation Exception (Invalid Square Root)
-  struct VXCVI  : Field<VXCVI,  23> {};     // Floating-Point Invalid Operation Exception (Invalid Integer Convert)
-  struct VE     : Field<VE,     24> {};     // Floating-Point Invalid Operation Exception Enable
-  struct OE     : Field<OE,     25> {};     // Floating-Point Overflow Exception Enable 
-  struct UE     : Field<UE,     26> {};     // Floating-Point Underflow Exception Enable 
-  struct ZE     : Field<ZE,     27> {};     // Floating-Point Zero Divide Exception  Enable
-  struct XE     : Field<XE,     28> {};     // Floating-Point Inexact Exception Enable 
-  struct NI     : Field<NI,     29> {};     // Floating-Point Non-IEEE Mode
-  struct RN     : Field<RN,     30, 31> {}; // Floating-Point Rounding Control
+  struct _0_3   : Field<_0_3,   32,35> {};  // FX, FEX, VX, OX bunch
+  struct FX     : Field<FX,     32> {};     // Floating-Point Exception Summary
+  struct FEX    : Field<FEX,    33> {};     // Floating-Point Enabled Exception Summary
+  struct VX     : Field<VX,     34> {};     // Floating-Point Invalid Operation Exception Summary
+  struct OX     : Field<OX,     35> {};     // Floating-Point Overflow Exception
+  struct UX     : Field<UX,     36> {};     // Floating-Point Underflow Exception
+  struct ZX     : Field<ZX,     37> {};     // Floating-Point Zero Divide Exception
+  struct XX     : Field<XX,     38> {};     // Floating-Point Inexact Exception
+  struct VXSNAN : Field<VXSNAN, 39> {};     // Floating-Point Invalid Operation Exception (SNaN)
+  struct VXISI  : Field<VXISI,  40> {};     // Floating-Point Invalid Operation Exception (inf - inf)
+  struct VXIDI  : Field<VXIDI,  41> {};     // Floating-Point Invalid Operation Exception (inf / inf)
+  struct VXZDZ  : Field<VXZDZ,  42> {};     // Floating-Point Invalid Operation Exception (0 / 0)
+  struct VXIMZ  : Field<VXIMZ,  43> {};     // Floating-Point Invalid Operation Exception (inf * 0)
+  struct VXVC   : Field<VXVC,   44> {};     // Floating-Point Invalid Operation Exception (Invalid Compare)
+  struct FR     : Field<FR,     45> {};     // Floating-Point Fraction Rounded
+  struct FI     : Field<FI,     46> {};     // Floating-Point Fraction Inexact
+  struct FPRF   : Field<FPRF,   47, 51> {}; // Floating-Point Result Flags
+  struct C      : Field<C,      47> {};     // Floating-Point Result Class Descriptor
+  struct FPCC   : Field<FPCC,   48, 51> {}; // Floating-Point Condition Code
+  struct FL     : Field<FL,     48> {};     // Floating-Point Less Than or Negative
+  struct FG     : Field<FG,     49> {};     // Floating-Point Greater Than or Positive
+  struct FE     : Field<FE,     50> {};     // Floating-Point Equal or Zero
+  struct FU     : Field<FU,     51> {};     // Floating-Point Unordered or NaN
+  struct VXSOFT : Field<VXSOFT, 53> {};     // Floating-Point Invalid Operation Exception (Software-Defined Condition)
+  struct VXSQRT : Field<VXSQRT, 54> {};     // Floating-Point Invalid Operation Exception (Invalid Square Root)
+  struct VXCVI  : Field<VXCVI,  55> {};     // Floating-Point Invalid Operation Exception (Invalid Integer Convert)
+  struct VE     : Field<VE,     56> {};     // Floating-Point Invalid Operation Exception Enable
+  struct OE     : Field<OE,     57> {};     // Floating-Point Overflow Exception Enable
+  struct UE     : Field<UE,     58> {};     // Floating-Point Underflow Exception Enable
+  struct ZE     : Field<ZE,     59> {};     // Floating-Point Zero Divide Exception  Enable
+  struct XE     : Field<XE,     60> {};     // Floating-Point Inexact Exception Enable
+  struct NI     : Field<NI,     61> {};     // Floating-Point Non-IEEE Mode
+  struct RN     : Field<RN,     62, 63> {}; // Floating-Point Rounding Control
   
   FPSCR(UINT _value) : Super(_value) {}
 };
@@ -138,20 +138,20 @@ struct MSR : Register<MSR>
 {
   typedef Register<MSR> Super;
 		
-  struct SPV : Field<SPV,6>  {}; // SP/Embedded FP/Vector available
-  struct WE  : Field<WE ,13> {}; // Wait state (Power management) enable
-  struct CE  : Field<CE ,14> {}; // Critical Interrupt Enable
-  struct EE  : Field<EE ,16> {}; // External Interrupt Enable
-  struct PR  : Field<PR ,17> {}; // Problem State
-  struct FP  : Field<FP ,18> {}; // Floating-Point Available
-  struct ME  : Field<ME ,19> {}; // Machine Check Enable
-  struct FE0 : Field<FE0,20> {}; // Floating-point exception mode 0 (not used)
-  struct DE  : Field<DE ,22> {}; // Debug Interrupt Enable
-  struct FE1 : Field<FE1,23> {}; // Floating-point exception mode 1 (not used)
-  struct IS  : Field<IS ,26> {}; // Instruction Address Space
-  struct DS  : Field<DS ,27> {}; // Data Address Space
-  struct PMM : Field<PMM,29> {}; // PMM Performance monitor mark bit
-  struct RI  : Field<RI ,30> {}; // Recoverable Interrupt
+  struct SPV : Field<SPV,38>  {}; // SP/Embedded FP/Vector available
+  struct WE  : Field<WE ,45> {}; // Wait state (Power management) enable
+  struct CE  : Field<CE ,46> {}; // Critical Interrupt Enable
+  struct EE  : Field<EE ,48> {}; // External Interrupt Enable
+  struct PR  : Field<PR ,49> {}; // Problem State
+  struct FP  : Field<FP ,50> {}; // Floating-Point Available
+  struct ME  : Field<ME ,51> {}; // Machine Check Enable
+  struct FE0 : Field<FE0,52> {}; // Floating-point exception mode 0 (not used)
+  struct DE  : Field<DE ,54> {}; // Debug Interrupt Enable
+  struct FE1 : Field<FE1,55> {}; // Floating-point exception mode 1 (not used)
+  struct IS  : Field<IS ,58> {}; // Instruction Address Space
+  struct DS  : Field<DS ,59> {}; // Data Address Space
+  struct PMM : Field<PMM,61> {}; // PMM Performance monitor mark bit
+  struct RI  : Field<RI ,62> {}; // Recoverable Interrupt
 		
   MSR(UINT _value) : Super(_value) {}
 };
@@ -161,12 +161,12 @@ struct XER : Register<XER>
 {
   typedef Register<XER> Super;
 	
-  struct SO         : Field<SO        ,0> {};      // Summary Overflow
-  struct OV         : Field<OV        ,1> {};      // Overflow
-  struct CA         : Field<CA        ,2> {};      // Carry
-  struct BYTE_COUNT : Field<BYTE_COUNT,25, 31> {}; // Byte count
+  struct SO         : Field<SO        ,32> {};      // Summary Overflow
+  struct OV         : Field<OV        ,33> {};      // Overflow
+  struct CA         : Field<CA        ,34> {};      // Carry
+  struct BYTE_COUNT : Field<BYTE_COUNT,57, 63> {}; // Byte count
    
-  struct _0_3       : Field<_0_3, 0, 3> {}; // XER[0-3]
+  struct _0_3       : Field<_0_3,32,35> {}; // XER[0-3]
 	
   XER(UINT _value) : Super(_value) {}
 };
@@ -176,14 +176,14 @@ struct CR : Register<CR>
 {
   typedef Register<CR> Super;
 	
-  struct CR0 : Field<CR0, 0, 3> { struct LT : Field<LT, 0> {}; struct GT : Field<GT, 1> {}; struct EQ : Field<EQ, 2> {}; struct SO : Field<SO, 3> {}; };
-  struct CR1 : Field<CR1, 4, 7> { struct LT : Field<LT, 4> {}; struct GT : Field<GT, 5> {}; struct EQ : Field<EQ, 6> {}; struct SO : Field<SO, 7> {}; };
-  struct CR2 : Field<CR2, 8,11> { struct LT : Field<LT, 8> {}; struct GT : Field<GT, 9> {}; struct EQ : Field<EQ,10> {}; struct SO : Field<SO,11> {}; };
-  struct CR3 : Field<CR3,12,15> { struct LT : Field<LT,12> {}; struct GT : Field<GT,13> {}; struct EQ : Field<EQ,14> {}; struct SO : Field<SO,15> {}; };
-  struct CR4 : Field<CR4,16,19> { struct LT : Field<LT,16> {}; struct GT : Field<GT,17> {}; struct EQ : Field<EQ,18> {}; struct SO : Field<SO,19> {}; };
-  struct CR5 : Field<CR5,20,23> { struct LT : Field<LT,20> {}; struct GT : Field<GT,21> {}; struct EQ : Field<EQ,22> {}; struct SO : Field<SO,23> {}; };
-  struct CR6 : Field<CR6,24,27> { struct LT : Field<LT,24> {}; struct GT : Field<GT,25> {}; struct EQ : Field<EQ,26> {}; struct SO : Field<SO,27> {}; };
-  struct CR7 : Field<CR7,28,31> { struct LT : Field<LT,28> {}; struct GT : Field<GT,29> {}; struct EQ : Field<EQ,30> {}; struct SO : Field<SO,31> {}; };
+  struct CR0 : Field<CR0,32,35> { struct LT : Field<LT,32> {}; struct GT : Field<GT,33> {}; struct EQ : Field<EQ,34> {}; struct SO : Field<SO,35> {}; };
+  struct CR1 : Field<CR1,36,39> { struct LT : Field<LT,36> {}; struct GT : Field<GT,37> {}; struct EQ : Field<EQ,38> {}; struct SO : Field<SO,39> {}; };
+  struct CR2 : Field<CR2,40,43> { struct LT : Field<LT,40> {}; struct GT : Field<GT,41> {}; struct EQ : Field<EQ,42> {}; struct SO : Field<SO,43> {}; };
+  struct CR3 : Field<CR3,44,47> { struct LT : Field<LT,44> {}; struct GT : Field<GT,45> {}; struct EQ : Field<EQ,46> {}; struct SO : Field<SO,47> {}; };
+  struct CR4 : Field<CR4,48,51> { struct LT : Field<LT,48> {}; struct GT : Field<GT,49> {}; struct EQ : Field<EQ,50> {}; struct SO : Field<SO,51> {}; };
+  struct CR5 : Field<CR5,52,55> { struct LT : Field<LT,52> {}; struct GT : Field<GT,53> {}; struct EQ : Field<EQ,54> {}; struct SO : Field<SO,55> {}; };
+  struct CR6 : Field<CR6,56,59> { struct LT : Field<LT,56> {}; struct GT : Field<GT,57> {}; struct EQ : Field<EQ,58> {}; struct SO : Field<SO,59> {}; };
+  struct CR7 : Field<CR7,60,63> { struct LT : Field<LT,60> {}; struct GT : Field<GT,61> {}; struct EQ : Field<EQ,62> {}; struct SO : Field<SO,63> {}; };
 	
   CR(UINT _value) : Super(_value) {}
 };
