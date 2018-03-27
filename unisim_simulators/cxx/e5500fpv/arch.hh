@@ -365,7 +365,7 @@ struct Arch
   SoftDouble      fprs[32];
   FPSCR           fpscr;
   
-  uintptr_t       instcount;
+  uintptr_t       insn_count;
   U64             time_base;
 
   static bool const HAS_FPU = true;

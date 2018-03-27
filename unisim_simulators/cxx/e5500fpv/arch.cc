@@ -44,6 +44,7 @@ Arch::Arch()
   , cr(0)
   , msr(0)
   , fpscr(0)
+  , insn_count(0)
   , time_base(0)
     // , linux_os(0)
 {
@@ -166,6 +167,7 @@ void
 Arch::commit()
 {
   cia = nia;
+  insn_count += 1;
   time_base += 2;
 }
 

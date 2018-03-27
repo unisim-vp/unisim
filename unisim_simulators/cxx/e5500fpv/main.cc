@@ -111,8 +111,7 @@ main( int argc, char* argv[] )
     }
   
   std::cerr << "Program exited with status:" << std::dec << linux32.app_ret_status << std::endl;
-  std::cerr << "Executed instructions: " << cpu.instcount << std::endl;
-  
+  std::cerr << "Executed instructions: " << cpu.insn_count << std::endl;
     
   return 0;
 }
