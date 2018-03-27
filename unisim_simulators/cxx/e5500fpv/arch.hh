@@ -37,6 +37,7 @@
 
 #include <top_ppc64.hh>
 #include <simfloat.hh>
+#include <types.hh>
 #include <unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh>
 #include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <unisim/util/reg/core/register.hh>
@@ -148,7 +149,7 @@ struct MSR : Register<MSR>
 {
   typedef Register<MSR> Super;
 		
-  struct SPV : Field<SPV,38>  {}; // SP/Embedded FP/Vector available
+  struct SPV : Field<SPV,38> {}; // SP/Embedded FP/Vector available
   struct WE  : Field<WE ,45> {}; // Wait state (Power management) enable
   struct CE  : Field<CE ,46> {}; // Critical Interrupt Enable
   struct EE  : Field<EE ,48> {}; // External Interrupt Enable
@@ -326,8 +327,7 @@ struct Arch
   bool Lharx(unsigned id, U64 addr) { return Int16Load( id, addr ); }
   bool Lwarx(unsigned id, U64 addr) { return Int32Load( id, addr ); }
   bool Ldarx(unsigned id, U64 addr) { return Int64Load( id, addr ); }
-
-
+  
   bool Stbcx(unsigned id, U64 addr) { cr.Set<CR::CR0>(0b0010 | xer.Get<XER::SO>()); return Int8Store ( id, addr ); }
   bool Sthcx(unsigned id, U64 addr) { cr.Set<CR::CR0>(0b0010 | xer.Get<XER::SO>()); return Int16Store( id, addr ); }
   bool Stwcx(unsigned id, U64 addr) { cr.Set<CR::CR0>(0b0010 | xer.Get<XER::SO>()); return Int32Store( id, addr ); }

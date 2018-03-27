@@ -221,6 +221,7 @@ include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fcmpo.
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fcmpu.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fctiw.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fctiwz.isa"
+include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fcfid.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fdiv.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fdivs.isa"
 include "unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fmadd.isa"

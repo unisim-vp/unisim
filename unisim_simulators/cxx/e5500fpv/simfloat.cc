@@ -33,11 +33,89 @@
  */
 
 #include <simfloat.hh>
+#include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/simfloat/integer.hh>
 #include <unisim/util/simfloat/integer.tcc>
 #include <unisim/util/simfloat/floating.hh>
 #include <unisim/util/simfloat/floating.tcc>
 #include <unisim/util/likely/likely.hh>
+
+SoftDouble::SoftDouble(int64_t src, Flags& flags)
+  : impl()
+{
+  if (src == 0)
+    return;
+  
+  bool neg = src < 0;
+  impl.setNegative(neg);
+  uint64_t mantissa = neg ? -src : src;
+
+  unsigned exponent = unisim::util::arithmetic::BitScanReverse(mantissa), mantissa_bitcount = exponent;
+  
+  {
+    // Stripping right zeroes
+    unsigned lso = unisim::util::arithmetic::BitScanForward(mantissa);
+    mantissa >>= lso;
+    mantissa_bitcount -= lso;
+  }
+
+  unsigned const bitSizeMantissa = impl.bitSizeMantissa();
+  if (bitSizeMantissa >= mantissa_bitcount)
+    {
+      mantissa <<= (bitSizeMantissa - mantissa_bitcount);
+    }
+  else
+    {
+      int const out = mantissa_bitcount - bitSizeMantissa;
+      
+      struct NearestRound
+      {
+        bool increment;
+        NearestRound( Flags& flags, uint64_t mantissa, int const out )
+          : increment(false)
+        {
+          int const tail = out - 1;
+          uint64_t const _1 = int64_t(1);
+          if (not flags.isNearestRound()) 
+            return;
+          flags.clearEffectiveRoundToEven();
+          if (not ((mantissa >> tail) & _1)) // close to zero ?
+            return;
+          if ((increment = bool(mantissa & ((_1 << tail) - _1)))) // close to one ?
+            return;
+          flags.setEffectiveRoundToEven(); // Half way...
+          increment = bool((mantissa >> out) & _1);
+        }
+      };
+        
+      if ((flags.isHighestRound() and not neg) or
+          (flags.isLowestRound()  and     neg) or
+          NearestRound(flags, mantissa, out).increment)
+        {
+          mantissa = (mantissa >> out) + 1;
+          if (bool(mantissa >> (bitSizeMantissa+1)))
+            { mantissa >>= 1; exponent += 1; }
+          flags.setApproximate(neg ? Flags::Down : Flags::Up);
+        }
+      else
+        {
+          mantissa = mantissa >> out;
+          flags.setApproximate(neg ? Flags::Up : Flags::Down);
+        }
+    }
+          
+ 
+  // Build exponent
+  BuiltDoubleTraits::Exponent& impl_exponent = impl.querySBasicExponent();
+  impl_exponent = impl.getZeroExponent(); // TypeTraits::getZeroExponent(biExponent);
+  impl_exponent.add(exponent);
+  
+  // Build mantissa
+  mantissa &= ((1ull << bitSizeMantissa) - 1ull); // normalizing
+  for (unsigned idx = 0, wsz = (8*sizeof(unsigned int)), end = (bitSizeMantissa-1)/wsz; idx < end; ++idx)
+    impl.querySMantissa()[idx] = mantissa >> idx*wsz;
+}
+        
 
 SoftFloat&
 SoftFloat::fromRawBitsAssign(uint32_t raw_bits)

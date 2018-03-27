@@ -35,6 +35,7 @@
 #ifndef __E5500FPV_FLOATING_HH__
 #define __E5500FPV_FLOATING_HH__
 
+#include <types.hh>
 #include <unisim/util/simfloat/floating.hh>
 #include <inttypes.h>
 
@@ -289,6 +290,7 @@ struct SoftDouble
   SoftDouble(const SoftFloat& op1, Flags& flags) { convertAssign(op1, flags); }
   enum __FromRawBits__ { FromRawBits };
   SoftDouble(__FromRawBits__, uint64_t source) { fromRawBitsAssign( source ); }
+  SoftDouble(int64_t, Flags& flags);
   
   SoftDouble& convertAssign(const SoftFloat& op1, Flags& flags);
   SoftDouble& fromRawBitsAssign(uint64_t source);

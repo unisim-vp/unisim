@@ -51,7 +51,7 @@ void
 LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string> const& envs )
 {
   // Set up the different linuxlib parameters
-  linux_impl.SetVerbose(true);
+  linux_impl.SetVerbose(false);
   
   if (not linux_impl.SetCommandLine(simargs))
     throw 0;
