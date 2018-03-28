@@ -51,7 +51,7 @@ mtfsf.execute = {
 
 	uint32_t _m, fpscr, _fm, _rb,_c;
 	int _i;
-	_rb = cpu->GetFPR(fb).queryValue();
+	_rb = cpu->GetFPR(fb).queryRawBits();
 	fpscr = cpu->GetFPSCR();
 	_fm = fm;
 

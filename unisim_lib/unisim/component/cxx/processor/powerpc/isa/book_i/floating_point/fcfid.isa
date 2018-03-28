@@ -52,7 +52,7 @@ fcfid.execute = {
 	}
 
 	// Read the input operands
-	S64 b = S64(cpu->GetFPR(frb).queryValue());
+	S64 b = S64(cpu->GetFPR(frb).queryRawBits());
 	
 	// Compute the result
 	Flags flags;

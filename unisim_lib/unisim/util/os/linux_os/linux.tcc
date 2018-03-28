@@ -612,6 +612,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LogSystemCall(int id)
     debug_info_stream << ", " << "unstranslated id=" << id;
 
   debug_info_stream << "): " << sc->TraceCall( *this ) << std::endl;
+  sc->Release();
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>

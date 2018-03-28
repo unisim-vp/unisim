@@ -60,7 +60,7 @@ frsqrte.execute = {
 			// Generate FPRF
 			FPSCR::FPRF::Set(fpscr,FPSCR::FPRF::QNAN());
 			// Write back result
-			cpu->SetFPR(fd, SoftDouble(SoftDouble::FromRawBits,b.queryValue() | 0x0008000000000000ULL)); // QNaN (b with high order bit of mantissa set)
+			cpu->SetFPR(fd, SoftDouble(SoftDouble::FromRawBits,b.queryRawBits() | 0x0008000000000000ULL)); // QNaN (b with high order bit of mantissa set)
 		}
 		// Generate VXSNAN
 		FPSCR::VXSNAN::Set(fpscr, UINT(1));
@@ -126,7 +126,7 @@ frsqrte.execute = {
 		// see http://www.mceniry.net/papers/Fast%20Inverse%20Square%20Root.pdf
 		// mirror: http://www.daxia.com/bibis/upload/406Fast_Inverse_Square_Root.pdf
 		// see also: http://www.azillionmonkeys.com/qed/sqroot.html
-		SoftDouble u(SoftDouble::FromRawBits,(0xbfcdd6a18f6a6f55ULL - b.queryValue()) >> 1);
+		SoftDouble u(SoftDouble::FromRawBits,(0xbfcdd6a18f6a6f55ULL - b.queryRawBits()) >> 1);
 
 		// Newton-Raphson method:  u = u * (3 - b * u²) / 2
 		SoftDouble half(SoftDouble::FromRawBits,0x3fe0000000000000ULL); // 0.5

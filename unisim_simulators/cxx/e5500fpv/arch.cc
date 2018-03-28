@@ -198,7 +198,7 @@ Arch::Fp32Store(unsigned id, U64 addr)
 {
   Flags flags;
   flags.setZeroRound();
-  IntStore( addr, U64(SoftFloat(fprs[id], flags).queryValue()) );
+  IntStore( addr, U32(SoftFloat(fprs[id], flags).queryRawBits()) );
   return true;
 }
 

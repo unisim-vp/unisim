@@ -234,7 +234,6 @@ struct BuiltFloatTraits : public unisim::util::simfloat::Numerics::Double::Built
 struct SoftFloat
 {
   typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltFloatTraits> impl_type;
-  typedef impl_type::IntConversion IntConversion;
 
   enum ComparisonResult { CRNaN=impl_type::CRNaN, CRLess=impl_type::CRLess, CREqual=impl_type::CREqual, CRGreater=impl_type::CRGreater };
   
@@ -247,7 +246,7 @@ struct SoftFloat
   SoftFloat& fromRawBitsAssign(uint32_t source);
   SoftFloat& operator=(const SoftFloat& source);
   SoftFloat& assign(const SoftFloat& source);
-  uint32_t queryValue() const;
+  U32  queryRawBits() const;
   BOOL isNegative() const;
   BOOL isPositive() const;
   BOOL isZero() const;
@@ -265,7 +264,6 @@ struct SoftFloat
   BOOL isNaN() const;
   void setQuiet();
   BOOL isDenormalized() const;
-  void retrieveInteger(IntConversion& icResult, Flags& scfFlags) const;
   
   impl_type impl;
 };
@@ -282,7 +280,6 @@ struct BuiltDoubleTraits : public unisim::util::simfloat::Numerics::Double::Buil
 struct SoftDouble
 {
   typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltDoubleTraits> impl_type;
-  typedef impl_type::IntConversion IntConversion;
 
   enum ComparisonResult { CRNaN=impl_type::CRNaN, CRLess=impl_type::CRLess, CREqual=impl_type::CREqual, CRGreater=impl_type::CRGreater };
   
@@ -296,7 +293,9 @@ struct SoftDouble
   SoftDouble& fromRawBitsAssign(uint64_t source);
   SoftDouble& operator=(const SoftDouble& source);
   SoftDouble& assign(const SoftDouble& source);
-  uint64_t queryValue() const;
+  U64  queryRawBits() const;
+  S32  queryS32( Flags& flags );
+  S64  queryS64( Flags& flags );
   BOOL isNegative() const;
   BOOL isPositive() const;
   BOOL isZero() const;
@@ -314,7 +313,6 @@ struct SoftDouble
   BOOL isNaN() const;
   void setQuiet();
   BOOL isDenormalized() const;
-  void retrieveInteger(IntConversion& icResult, Flags& scfFlags) const;
 
   impl_type impl;
 };

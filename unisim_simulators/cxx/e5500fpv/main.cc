@@ -82,6 +82,14 @@ main( int argc, char* argv[] )
   std::cerr << "*** Loading elf image: " << simargs[0] << " ***" << std::endl;
   
   std::cerr << "\n*** Run ***" << std::endl;
+
+  uintptr_t const tail_trace_size = 32;
+  uint64_t lastaddrs[tail_trace_size];
+  uint64_t stop_address = 0;
+  if (char const* stop_addr_env = getenv("YVES_STOP_ADDRESS"))
+  {
+    stop_address = strtoull(stop_addr_env, 0, 16);
+  }
   
   try
     {
@@ -89,12 +97,19 @@ main( int argc, char* argv[] )
         {
           Arch::Operation* op = cpu.fetch();
           //std::cerr << std::hex << op->GetAddr() << std::dec << ": " << Disasm( op ) << std::endl;
+          uint64_t current_address = lastaddrs[cpu.insn_count%tail_trace_size] = op->GetAddr();
+          if (current_address == stop_address)
+            {
+              std::cerr << "Address-Stop requested.\n";
+              break;
+            }
           asm volatile ("operation_execute:");
           bool success = op->execute( &cpu );
           if (not success)
             throw 0;
 
           cpu.commit();
+          
           //{ uint64_t chksum = 0; for (unsigned idx = 0; idx < 8; ++idx) chksum ^= cpu.regread32( idx ); std::cerr << '[' << std::hex << chksum << std::dec << ']'; }
       
           // if ((cpu.m_instcount % 0x1000000) == 0)
@@ -109,10 +124,15 @@ main( int argc, char* argv[] )
         std::cerr << std::hex << std::setw(2) << std::setfill('0') << ((insn.code >> idx*8) & 0xff) << ' ';
       std::cerr << std::endl;
     }
-  
+
   std::cerr << "Program exited with status:" << std::dec << linux32.app_ret_status << std::endl;
   std::cerr << "Executed instructions: " << cpu.insn_count << std::endl;
-    
+
+  // for (unsigned idx = 1; idx <= tail_trace_size; ++idx )
+  //   {
+  //     std::cout << std::hex << lastaddrs[(cpu.insn_count + idx) % tail_trace_size] << std::endl;
+  //   }
+
   return 0;
 }
 

@@ -112,7 +112,7 @@ SoftDouble::SoftDouble(int64_t src, Flags& flags)
   
   // Build mantissa
   mantissa &= ((1ull << bitSizeMantissa) - 1ull); // normalizing
-  for (unsigned idx = 0, wsz = (8*sizeof(unsigned int)), end = (bitSizeMantissa-1)/wsz; idx < end; ++idx)
+  for (unsigned idx = 0, wsz = (8*sizeof(unsigned int)), last = (bitSizeMantissa-1)/wsz; idx <= last; ++idx)
     impl.querySMantissa()[idx] = mantissa >> idx*wsz;
 }
         
@@ -171,7 +171,7 @@ SoftFloat&  SoftFloat:: assign(const SoftFloat& sfSource) { impl = sfSource.impl
 SoftDouble& SoftDouble::assign(const SoftDouble& sdSource) { impl = sdSource.impl; return *this; }
 
 uint32_t
-SoftFloat::queryValue() const
+SoftFloat::queryRawBits() const
 {
   uint32_t uResult;
   impl.fillChunk(&uResult, unisim::util::endian::IsHostLittleEndian());
@@ -180,7 +180,7 @@ SoftFloat::queryValue() const
 }
 
 uint64_t
-SoftDouble::queryValue() const
+SoftDouble::queryRawBits() const
 {
   uint64_t uResult;
   impl.fillChunk( &uResult, unisim::util::endian::IsHostLittleEndian() );
@@ -227,9 +227,82 @@ bool SoftDouble::isNaN() const { return impl.isNaN(); }
 bool SoftFloat::isDenormalized() const { return impl.isDenormalized(); }
 bool SoftDouble::isDenormalized() const { return impl.isDenormalized(); }
 
-void SoftFloat::retrieveInteger(IntConversion& result, Flags& flags) const { impl.retrieveInteger(result, flags); }
-void SoftDouble::retrieveInteger(IntConversion& result, Flags& flags) const { impl.retrieveInteger(result, flags); }
-
-
 void SoftFloat::setQuiet() { impl.querySMantissa().setBitArray(impl.bitSizeMantissa()-1,1); }
 void SoftDouble::setQuiet() { impl.querySMantissa().setBitArray(impl.bitSizeMantissa()-1,1); }
+
+S32 SoftDouble::queryS32( Flags& flags )
+{
+  impl_type::IntConversion icResult;
+  impl.retrieveInteger(icResult.setSigned(), flags);
+  return (int32_t) icResult.queryInt();
+}
+
+S64 SoftDouble::queryS64( Flags& flags )
+{
+  if (impl.isNaN())
+    {
+      if (impl.isSNaN())
+        flags.setSNaNOperand();
+      return S64(1ll << 63);
+    }
+  else if (impl.isZero())
+    {
+      return S64(0);
+    }
+
+  bool neg = impl.isNegative();
+  
+  int bitSizeMantissa = impl.bitSizeMantissa();
+  
+  S64 src(0), msb(1ll << bitSizeMantissa);
+  for (int ubsz = (sizeof(unsigned int)*8), idx = (bitSizeMantissa-1)/ubsz; idx >= 0; --idx)
+    src = (src << ubsz) | impl.queryMantissa()[idx];
+  src = (src & (msb-1)) | msb;
+  
+  int exponent = impl.queryExponentValue()-bitSizeMantissa;
+
+  if (exponent >= 0)
+    {
+      if (neg) src = -src;
+      S64 result = src << exponent;
+      if (exponent < 64 and (result >> exponent) == src)
+        return result; // S64 is enough to encode result
+      flags.setOverflow();
+      flags.setApproximate(neg ? Flags::Up : Flags::Down);
+      result = S64(1ll << 63);
+      return neg ? result : ~result;
+    }
+
+  S64 const halfbit( 1ll << (-1-exponent) );
+  bool half = src & halfbit;
+  bool tail = ((-exponent > 64) ? src : src & (halfbit-1)) != S64(0);
+  S64  result = (-exponent >= 64) ? S64(0) : src >> -exponent;
+  
+  if (half or tail)
+    {
+      struct NearestRound
+      {
+        bool increment;
+        NearestRound( Flags& flags, bool odd, bool half, bool tail )
+          : increment(false)
+        {
+          if (not flags.isNearestRound()) 
+            return;
+          flags.clearEffectiveRoundToEven();
+          if (not half) // close to zero ?
+            return;
+          if ((increment = tail)) // close to one ?
+            return;
+           // Half way...
+          flags.setEffectiveRoundToEven();
+          increment = odd;
+        }
+      };
+      if ((flags.isHighestRound() and not neg) or
+          (flags.isLowestRound()  and     neg) or
+          NearestRound(flags, result & 1, half, tail).increment)
+        result += 1;
+    }
+
+  return neg ? -result : result;
+}

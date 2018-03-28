@@ -497,28 +497,13 @@ PARAMETER_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::GetParam(Linux& lin
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::ReadMem( Linux& lin, ADDRESS_TYPE addr, uint8_t * buffer, uint32_t size )
 {
-  if (lin.mem_inject_if_ == NULL) return false;
-       
-  if (lin.mem_inject_if_->InjectReadMemory(addr, buffer, size))
+  if (lin.mem_inject_if_ == NULL)
     {
-      if (unlikely(lin.verbose_))
-        {
-          lin.debug_info_stream
-            << "OS read memory:" << std::endl
-            << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
-            << "\tsize = " << size << std::endl
-            << "\tdata =0x" << std::hex;
-                               
-          for (unsigned int i = 0; i < size; i++)
-            {
-              lin.debug_info_stream << " " << (unsigned int)buffer[i];
-            }
-                       
-          lin.debug_info_stream << std::dec << std::endl;
-        }
-      return true;
+      lin.debug_warning_stream << "LinuxOS has no memory connection." << std::endl;
+      return false;
     }
-  else
+       
+  if (not lin.mem_inject_if_->InjectReadMemory(addr, buffer, size))
     {
       lin.debug_warning_stream
         << "failed OS read memory:" << std::endl
@@ -527,6 +512,24 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::ReadMem( Linux& lin, ADDRESS_
         << std::endl;
       return false;
     }
+  
+  if (unlikely(lin.verbose_))
+    {
+      lin.debug_info_stream
+        << "OS read memory:" << std::endl
+        << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
+        << "\tsize = " << size << std::endl
+        << "\tdata =0x" << std::hex;
+                               
+      for (unsigned int i = 0; i < size; i++)
+        {
+          lin.debug_info_stream << " " << (unsigned int)buffer[i];
+        }
+                       
+      lin.debug_info_stream << std::dec << std::endl;
+    }
+      
+  return true;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -564,7 +567,11 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SysCall::ReadMemString(Linux& lin, ADD
         return false;
       }
       uint8_t buffer;
-      if (not ReadMem(lin, tail, &buffer, 1)) return false;
+      if (not ReadMem(lin, tail, &buffer, 1))
+        {
+          lin.debug_error_stream << "Can't read memory at 0x" << std::hex << tail << std::endl;
+          return false;
+        }
       if (buffer == '\0') break;
     }
   
@@ -582,6 +589,65 @@ namespace {
       if (ref[idx] != str[idx]) return false;
     return (str[N-1] == '\0') or (str[N-1] == '/');
   }
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+int
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::OpenAt( int dfd, std::string const& filename, int flags, unsigned short mode )
+{
+  if (SubPathOf(filename, "/dev") or SubPathOf(filename, "/proc") or
+      SubPathOf(filename, "/sys") or SubPathOf(filename, "/var"))
+    {
+      // deny access to /dev, /proc, /sys, /var
+      debug_warning_stream << "No guest access to host " << filename << std::endl;
+      SetSystemCallStatus(-LINUX_EACCES,true);
+      return -1;
+    }
+  
+  if ((filename[0] != '/') and (dfd != LINUX_AT_FDCWD))
+    {
+      debug_warning_stream << "Directory-descriptor-relative openat not (yet) supported." << std::endl;
+      SetSystemCallStatus(-LINUX_EACCES,true);
+      return -1;
+    }
+    
+  int host_flags = 0, host_mode = 0;
+        
+#if defined(linux) || defined(__linux) || defined(__linux__)
+  host_flags = flags;
+  host_mode = mode;
+#else
+  // non-Linux open flags encoding may differ from a true Linux guest
+  host_flags = 0;
+  if((flags & LINUX_O_ACCMODE) == LINUX_O_RDONLY) host_flags = (host_flags & ~O_ACCMODE) | O_RDONLY;
+  if((flags & LINUX_O_ACCMODE) == LINUX_O_WRONLY) host_flags = (host_flags & ~O_ACCMODE) | O_WRONLY;
+  if((flags & LINUX_O_ACCMODE) == LINUX_O_RDWR) host_flags = (host_flags & ~O_ACCMODE) | O_RDWR;
+  if(flags & LINUX_O_CREAT) host_flags |= O_CREAT;
+  if(flags & LINUX_O_EXCL) host_flags |= O_EXCL;
+  if(flags & LINUX_O_TRUNC) host_flags |= O_TRUNC;
+  if(flags & LINUX_O_APPEND) host_flags |= O_APPEND;
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
+  host_flags |= O_BINARY; // Linux opens file as binary files
+  host_mode = mode & S_IRWXU; // Windows doesn't have bits for group and others
+#else
+  host_mode = mode; // other UNIX systems should have the same bit encoding for protection
+#endif
+#endif
+  
+  int host_fd = open(filename.c_str(), host_flags, host_mode);
+	
+  if (host_fd == -1)
+    {
+      SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno),true);
+      return -1;
+    }
+    
+  int target_fd = AllocateFileDescriptor();
+  // keep relation between the target file descriptor and the host file descriptor
+  MapTargetToHostFileDescriptor(target_fd, host_fd);
+    
+  SetSystemCallStatus(target_fd, false);
+  return target_fd;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -717,79 +783,81 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
   }
 
   {
-    static struct : public SysCall {
-      char const* GetName() const { return "open"; }
-      void Describe( Linux& lin, std::ostream& sink ) const
+    static struct : public SysCall
+    {
+      char const* GetName() const { return "openat"; }
+      // long sys_openat(int dfd, const char __user *filename, int flags, umode_t mode);
+      struct Args
       {
-        address_type addr = SysCall::GetParam(lin, 0);
-        int flags = SysCall::GetParam(lin, 1);
-        uint32_t mode = SysCall::GetParam(lin, 2);
-        sink << "(const char *pathname=0x" << std::hex << addr
-             << ", int flags=0x" << std::hex << flags
-             << ", mode_t mode=0x" << std::hex << mode
-             << ")" << std::dec;
-      }
+        Args(Linux& lin)
+          : dfd(SysCall::GetParam(lin, 0)), filename(SysCall::GetParam(lin, 1)), flags(SysCall::GetParam(lin, 2)), mode(SysCall::GetParam(lin, 3))
+          , filename_string(), filename_valid(SysCall::ReadMemString(lin, filename, filename_string))
+        {};
+        int dfd; address_type filename; int flags; unsigned short mode; std::string filename_string; bool filename_valid;
+        void Describe( std::ostream& sink ) const
+        {
+          sink << "( int dfd=" << dfd
+               << ", const char *filename=0x" << std::hex << filename << " \"" << filename_string << "\""
+               << ", int flags=0x" << std::hex << unsigned(flags)
+               << ", umode_t mode=0x" << std::hex << unsigned(mode)
+               << " )" << std::dec;
+        }
+      };
+      void Describe( Linux& lin, std::ostream& sink ) const { Args(lin).Describe(sink); }
       void Execute( Linux& lin, int syscall_id ) const
       {
-        address_type addr = SysCall::GetParam(lin, 0);
-        int flags = SysCall::GetParam(lin, 1);
-        mode_t mode = SysCall::GetParam(lin, 2);
+        Args args(lin);
         
-        std::string pathname;
-        if (not SysCall::ReadMemString(lin, addr, pathname))
+        if (not args.filename_valid)
           {
-            lin.debug_warning_stream << "Out of memory" << std::endl;
             lin.SetSystemCallStatus(-LINUX_ENOMEM, true);
             return;
           }
+
+        int fd = lin.OpenAt( args.dfd, args.filename_string, args.flags, args.mode );
         
-        if (SubPathOf(pathname, "/dev") or SubPathOf(pathname, "/proc") or
-            SubPathOf(pathname, "/sys") or SubPathOf(pathname, "/var"))
+        if (unlikely(lin.verbose_))
+          lin.debug_info_stream << GetName() << SysCall::argsPrint(args) << " => " << fd;
+      }
+    } sc;
+    if (_name.compare( sc.GetName() ) == 0) return &sc;
+  }
+  
+  {
+    static struct : public SysCall
+    {
+      char const* GetName() const { return "open"; }
+      // long sys_open(const char __user *filename, int flags, umode_t mode);
+      struct Args
+      {
+        Args(Linux& lin)
+          : filename(SysCall::GetParam(lin, 0)), flags(SysCall::GetParam(lin, 1)), mode(SysCall::GetParam(lin, 2))
+          , filename_string(), filename_valid(SysCall::ReadMemString(lin, filename, filename_string))
+        {};
+        address_type filename; int flags; unsigned short mode; std::string filename_string; bool filename_valid;
+        void Describe(std::ostream& sink ) const
+        {
+          sink << "( const char *filename=0x" << std::hex << filename << " \"" << filename_string << "\""
+               << ", int flags=0x" << std::hex << unsigned(flags)
+               << ", umode_t mode=0x" << std::hex << unsigned(mode)
+               << " )" << std::dec;
+        }
+      };
+      void Describe( Linux& lin, std::ostream& sink ) const { Args(lin).Describe(sink); }
+      void Execute( Linux& lin, int syscall_id ) const
+      {
+        Args args(lin);
+        
+        if (not args.filename_valid)
           {
-            // deny access to /dev, /proc, /sys, /var
-            lin.debug_warning_stream << "No guest access to host " << pathname << std::endl;
-            lin.SetSystemCallStatus(-LINUX_EACCES,true);
+            lin.SetSystemCallStatus(-LINUX_ENOMEM, true);
             return;
           }
-        
-#if defined(linux) || defined(__linux) || defined(__linux__)
-        int ret = open(pathname.c_str(), flags, mode);
-#else
-        int host_flags = 0;
-        int host_mode = 0;
-        // non-Linux open flags encoding may differ from a true Linux host
-        if((flags & LINUX_O_ACCMODE) == LINUX_O_RDONLY) host_flags = (host_flags & ~O_ACCMODE) | O_RDONLY;
-        if((flags & LINUX_O_ACCMODE) == LINUX_O_WRONLY) host_flags = (host_flags & ~O_ACCMODE) | O_WRONLY;
-        if((flags & LINUX_O_ACCMODE) == LINUX_O_RDWR) host_flags = (host_flags & ~O_ACCMODE) | O_RDWR;
-        if(flags & LINUX_O_CREAT) host_flags |= O_CREAT;
-        if(flags & LINUX_O_EXCL) host_flags |= O_EXCL;
-        if(flags & LINUX_O_TRUNC) host_flags |= O_TRUNC;
-        if(flags & LINUX_O_APPEND) host_flags |= O_APPEND;
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
-        host_flags |= O_BINARY; // Linux opens file as binary files
-        host_mode = mode & S_IRWXU; // Windows doesn't have bits for group and others
-#else
-        host_mode = mode; // other UNIX systems should have the same bit encoding for protection
-#endif
-        int ret = open(pathname.c_str(), host_flags, host_mode);
-#endif
-        if(ret == -1) {
-          lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno),true);
-          return;
-        }
-    
-        int host_fd = ret;
-        int target_fd = lin.AllocateFileDescriptor();
-        // keep relation between the target file descriptor and the host file descriptor
-        lin.MapTargetToHostFileDescriptor(target_fd, host_fd);
-    
-        if(unlikely(lin.verbose_))
-          {
-            lin.debug_info_stream << this->TraceCall(lin) << std::endl
-                        << "*pathname=\"" << pathname << "\"" << std::endl;
-          }
 
-        lin.SetSystemCallStatus(target_fd, false);
+        int fd = lin.OpenAt( LINUX_AT_FDCWD, args.filename_string, args.flags, args.mode );
+        
+        if (unlikely(lin.verbose_))
+          lin.debug_info_stream << GetName() << SysCall::argsPrint(args) << " => " << fd;
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;
@@ -805,7 +873,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
       void Execute( Linux& lin, int syscall_id ) const
       {
         int target_fd = SysCall::GetParam(lin, 0);
-  
+
         int host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
   
         if (host_fd == -1)
@@ -973,8 +1041,10 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
           }
 
         if (unlikely(lin.verbose_))
-          lin.debug_info_stream << this->TraceCall(lin) << std::endl
-                      << "pathname=\"" << pathname << "\"" << std::endl;
+          {
+            lin.debug_info_stream << this->TraceCall(lin) << std::endl
+                                  << "pathname=\"" << pathname << "\"" << std::endl;
+          }
             
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
         int win_mode = 0;
@@ -1517,6 +1587,44 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
 
   {
     static struct : public SysCall {
+      char const* GetName() const { return "getcwd"; }
+      void Describe( Linux& lin, std::ostream& sink ) const
+      {
+        sink << "(const char *path=" << std::hex << (SysCall::GetParam(lin, 0)) << ")";
+      }
+      void Execute( Linux& lin, int syscall_id ) const
+      {
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) | defined(_WIN64)
+        lin.SetSystemCallStatus(-LINUX_ENOSYS, true);
+        return;
+#endif
+        // char *getcwd(char *buf, size_t size);
+        ADDRESS_TYPE buf_addr = (ADDRESS_TYPE) SysCall::GetParam(lin, 0);
+        ADDRESS_TYPE buf_size = (ADDRESS_TYPE) SysCall::GetParam(lin, 1);
+
+        assert( buf_size < 0x10000 );
+        char buffer[buf_size];
+
+        char* ret = ::getcwd( &buffer[0], buf_size );
+
+        if (not ret)
+          {
+            lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno), true);
+            return;
+          }
+
+        uint32_t len = strlen( ret ) + 1;
+        SysCall::WriteMem(lin, buf_addr, (uint8_t *)&buffer[0], len);
+        
+        lin.SetSystemCallStatus(len, false);
+      }
+      
+    } sc;
+    if (_name.compare( sc.GetName() ) == 0) return &sc;
+  }
+
+  {
+    static struct : public SysCall {
       char const* GetName() const { return "ugetrlimit"; }
       void Describe( Linux& lin, std::ostream& sink ) const
       {
@@ -1606,7 +1714,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSysCall( std::string _name )
           return;
         }
         
-        lin.SetSystemCallStatus(ret, true);
+        lin.SetSystemCallStatus(ret, false);
       }
     } sc;
     if (_name.compare( sc.GetName() ) == 0) return &sc;

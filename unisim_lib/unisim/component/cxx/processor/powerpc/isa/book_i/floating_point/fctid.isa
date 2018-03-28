@@ -36,10 +36,10 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
 }
 
-/* Floating Convert To Integer Word with round toward Zero */
-op fctiwz(63[6]:fd[5]:?[5]:fb[5]:15[10]:rc[1]);
+/* Floating Convert To Integer Doubleword */
+op fctid(63[6]:fd[5]:?[5]:fb[5]:814[10]:rc[1]);
 
-fctiwz.execute = {
+fctid.execute = {
 	if(not CONFIG::HAS_FPU)
 	{
 		cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
@@ -53,15 +53,13 @@ fctiwz.execute = {
 
 	// Read the input operands
 	SoftDouble b = cpu->GetFPR(fb);
-	
+
 	// Compute the result
 	Flags flags;
-	flags.setZeroRound();
-	S32 res32 = b.queryS32( flags );
+	flags.setRoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>());
+	S64 res64 = b.queryS64( flags );
 	
-        U64 undef_high = (U64(0xfff80000) | U64(res32 == S32(0) and b.isNegative())) << 32;
-        
-	SoftDouble result(SoftDouble::FromRawBits, undef_high | U64(U32(res32)));
+	SoftDouble result(SoftDouble::FromRawBits, U64(U32(res64)));
 	
 	// Generate VXSNAN, VXCVI, FR, FI, XX, FX, VX, FEX
 	UINT fpscr = cpu->GetFPSCR(), old_fpscr = fpscr;
@@ -101,9 +99,9 @@ fctiwz.execute = {
 	return true;
 };
 
-fctiwz.disasm = {
-	os << "fctiwz" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fb);
+fctid.disasm = {
+	os << "fctid" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fb);
 };
 
-specialize fctiwz(rc=0);
-specialize fctiwz(rc=1);
+specialize fctid(rc=0);
+specialize fctid(rc=1);

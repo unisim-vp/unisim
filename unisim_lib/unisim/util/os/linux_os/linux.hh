@@ -108,12 +108,22 @@ namespace linux_os {
       virtual char const* GetName() const = 0;
       virtual void Release() {}
       std::string TraceCall( Linux& lin ) const;
+      
+      static int HostToLinuxErrno(int host_errno); //< Errno conversion
+  
+      template <class ARGS>
+      struct ArgsPrint
+      {
+        ArgsPrint( ARGS const& _args ) : args(_args) {} ARGS const& args;
+        friend std::ostream& operator << (std::ostream& sink, ArgsPrint const& ap) { ap.args.Describe(sink); return sink; }
+      };
+      template <class ARGS> static ArgsPrint<ARGS> argsPrint( ARGS const& args ) { return ArgsPrint<ARGS>(args); }
+      
     protected:
       // SysCall Friend accessing methods
       static bool ReadMem(Linux& lin, ADDRESS_TYPE addr, uint8_t * const buffer, uint32_t size);
       static bool WriteMem(Linux& lin, ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size);
       static bool ReadMemString(Linux& lin, ADDRESS_TYPE addr, std::string& str);
-      static int HostToLinuxErrno(int host_errno); //< Errno conversion
       static int Target2HostFileDescriptor( Linux& lin, int32_t fd );
       static PARAMETER_TYPE GetParam(Linux& lin, int id); // <getting system call status
     };
@@ -383,7 +393,10 @@ namespace linux_os {
     // Set the contents of an aux table entry
     ADDRESS_TYPE SetAuxTableEntry(uint8_t * stack_data, ADDRESS_TYPE sp,
                                   ADDRESS_TYPE entry, ADDRESS_TYPE value) const;
-	
+    
+    // File management
+    int OpenAt( int dfd, std::string const& filename, int flags, unsigned short mode );
+    
     // File descriptors mapping
     int32_t AllocateFileDescriptor();
     void FreeFileDescriptor(int32_t fd);

@@ -118,7 +118,7 @@ fsqrts.execute = {
 		// see http://www.mceniry.net/papers/Fast%20Inverse%20Square%20Root.pdf
 		// mirror: http://www.daxia.com/bibis/upload/406Fast_Inverse_Square_Root.pdf
 		// see also: http://www.azillionmonkeys.com/qed/sqroot.html
-		SoftFloat u(SoftFloat::FromRawBits,(0xbe6eb50cUL - b.queryValue()) >> 1);
+		SoftFloat u(SoftFloat::FromRawBits,(0xbe6eb50cUL - b.queryRawBits()) >> 1);
 
 		// Newton-Raphson method:  u = u * (3 - b * u²) / 2
 		SoftFloat half(SoftFloat::FromRawBits,0x3f000000UL); // 0.5

@@ -340,7 +340,7 @@ struct Arch
   void        SetFPSCR(UINT value) { fpscr = value; }
 
   bool Fp64Load(unsigned id, U64 addr) { fprs[id].fromRawBitsAssign(IntLoad<U64>( addr )); return true; }
-  bool Fp64Store(unsigned id, U64 addr) { IntStore( addr, U64(fprs[id].queryValue()) ); return true; }
+  bool Fp64Store(unsigned id, U64 addr) { IntStore( addr, U64(fprs[id].queryRawBits()) ); return true; }
   bool Fp32Load(unsigned id, U64 addr);
   bool Fp32Store(unsigned id, U64 addr);
   bool FpStoreLSW(unsigned id, U64 addr) { return false; }

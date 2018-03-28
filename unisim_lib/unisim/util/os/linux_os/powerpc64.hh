@@ -76,49 +76,63 @@ namespace linux_os {
     
     // PowerPC64 linux structs
     struct powerpc64_timespec {
-      int32_t tv_sec;  /* Seconds.     (__time_t) */
-      int32_t tv_nsec; /* Nanoseconds. (long int) */
+      int64_t tv_sec;   /* Seconds.     */
+      uint64_t tv_nsec; /* Nanoseconds. */
     };
-
+    
+    /* st_dev: 0, 64, unsigned, __dev_t, Device.
+     * st_ino: 8, 64, unsigned, __ino64_t, File serial number.
+     * st_nlink: 16, 64, unsigned, __nlink_t, Link count.
+     * st_mode: 24, 32, unsigned, __mode_t, File mode.
+     * st_uid: 28, 32, unsigned, __uid_t, User ID of the file's owner.
+     * st_gid: 32, 32, unsigned, __gid_t, Group ID of the file's group.
+     * __pad2: 36, 32, signed, int, Padding.
+     * st_rdev: 40, 64, unsigned, __dev_t, Device number, if device.
+     * st_size: 48, 64, signed, __off64_t, Size of file, in bytes.
+     * st_blksize: 56, 64, signed, __blksize_t, Optimal block size for I/O.
+     * st_blocks: 64, 64, signed, __blkcnt64_t, Number 512-byte blocks allocated.
+     * st_atim: 72, 128, unsigned, struct timespec, Time of last access.
+     * st_mtim: 88, 128, unsigned, struct timespec, Time of last modification.
+     * st_ctim: 104, 128, unsigned, struct timespec, Time of last status change.
+     */
     struct powerpc64_stat64
     {
-      uint64_t st_dev;                    /* Device.                           (__dev_t) */
-      uint64_t st_ino;                    /* File serial number.               (__ino64_t) */
-      uint32_t st_mode;                   /* File mode.                        (__mode_t) */
-      uint32_t st_nlink;                  /* Link count.                       (__nlink_t) */
-      uint32_t st_uid;                    /* User ID of the file's owner.      (__uid_t) */
-      uint32_t st_gid;                    /* Group ID of the file's group.     (__gid_t) */
-      uint64_t st_rdev;                   /* Device number, if device.         (__dev_t) */
-      uint64_t __pad2;
-      int64_t st_size;                    /* Size of file, in bytes.           (__off64_t) */
-      int32_t st_blksize;                 /* Optimal block size for I/O.       (__blksize_t) */
-      uint32_t __pad3;
-      int64_t st_blocks;                  /* Number 512-byte blocks allocated. (__blkcnt64_t) */
-      struct powerpc64_timespec st_atim;    /* Time of last access.              (struct timespec) */
-      struct powerpc64_timespec st_mtim;    /* Time of last modification.        (struct timespec) */
-      struct powerpc64_timespec st_ctim;    /* Time of last status change.       (struct timespec) */
+      uint64_t st_dev;                    /* Device.                            0 (__dev_t) */
+      uint64_t st_ino;                    /* File serial number.                8 (__ino64_t) */
+      uint64_t st_nlink;                  /* Link count.                       16 (__nlink_t) */
+      uint32_t st_mode;                   /* File mode.                        24 (__mode_t) */
+      uint32_t st_uid;                    /* User ID of the file's owner.      28 (__uid_t) */
+      uint32_t st_gid;                    /* Group ID of the file's group.     32 (__gid_t) */
+      int32_t  __pad2;                    /*                                   36 (int) */
+      uint64_t st_rdev;                   /* Device number, if device.         40 (__dev_t) */
+      int64_t  st_size;                   /* Size of file, in bytes.           48 (__off64_t) */
+      int64_t  st_blksize;                /* Optimal block size for I/O.       56 (__blksize_t) */
+      int64_t  st_blocks;                 /* Number 512-byte blocks allocated. 64 (__blkcnt64_t) */
+      struct powerpc64_timespec st_atim;  /* Time of last access.              72 (struct timespec) */
+      struct powerpc64_timespec st_mtim;  /* Time of last modification.        88 (struct timespec) */
+      struct powerpc64_timespec st_ctim;  /* Time of last status change.      104 (struct timespec) */
     };
 
-    struct powerpc64_stat
-    {
-      int64_t st_dev;
-      uint32_t __pad1;
-      uint32_t st_ino;
-      uint32_t st_mode;
-      uint32_t st_nlink;
-      uint32_t st_uid;
-      uint32_t st_gid;
-      int64_t st_rdev;
-      uint32_t __pad2;
-      int32_t st_size;
-      int32_t st_blksize;
-      int32_t st_blocks;
-      struct powerpc64_timespec st_atim;
-      struct powerpc64_timespec st_mtim;
-      struct powerpc64_timespec st_ctim;
-      uint32_t __unused4;
-      uint32_t __unused5;
-    };
+    // struct powerpc64_stat
+    // {
+    //   int64_t st_dev;
+    //   uint32_t __pad1;
+    //   uint32_t st_ino;
+    //   uint32_t st_mode;
+    //   uint32_t st_nlink;
+    //   uint32_t st_uid;
+    //   uint32_t st_gid;
+    //   int64_t st_rdev;
+    //   uint32_t __pad2;
+    //   int32_t st_size;
+    //   int32_t st_blksize;
+    //   int32_t st_blocks;
+    //   struct powerpc64_timespec st_atim;
+    //   struct powerpc64_timespec st_mtim;
+    //   struct powerpc64_timespec st_ctim;
+    //   uint32_t __unused4;
+    //   uint32_t __unused5;
+    // };
 
     struct powerpc64_tms {
       int32_t tms_utime;      /* User CPU time.                    (clock_t) */
@@ -201,96 +215,96 @@ namespace linux_os {
       return true;
     }
 
-    static int Stat(int fd, struct powerpc64_stat *target_stat, unisim::util::endian::endian_type endianness)
-    {
-      int ret;
-      struct stat host_stat;
-      ret = fstat(fd, &host_stat);
-      if(ret < 0) return ret;
+    // static int Fstat(int fd, struct powerpc64_stat *target_stat, unisim::util::endian::endian_type endianness)
+//     {
+//       int ret;
+//       struct stat host_stat;
+//       ret = fstat(fd, &host_stat);
+//       if(ret < 0) return ret;
 
-      memset(target_stat, 0, sizeof(struct powerpc64_stat));
+//       memset(target_stat, 0, sizeof(struct powerpc64_stat));
       
-#if defined(__x86_64) || defined(__amd64) || defined(__LP64__) || defined(_LP64) || defined(__amd64__)
-      // 64-bit host
-      target_stat->st_dev = Host2Target(endianness, (uint64_t) host_stat.st_dev);
-      target_stat->st_ino = Host2Target(endianness, (uint64_t) host_stat.st_ino);
-      target_stat->st_mode = Host2Target(endianness, (uint32_t) host_stat.st_mode);
-      target_stat->st_nlink = Host2Target(endianness, (uint64_t) host_stat.st_nlink);
-      target_stat->st_uid = Host2Target(endianness, (uint32_t) host_stat.st_uid);
-      target_stat->st_gid = Host2Target(endianness, (uint32_t) host_stat.st_gid);
-      target_stat->st_rdev = Host2Target(endianness, (int64_t) host_stat.st_rdev);
-      target_stat->st_size = Host2Target(endianness, (int64_t) host_stat.st_size);
-#if defined(WIN64) || defined(_WIN64) // Windows x64
-      target_stat->st_blksize = Host2Target(endianness, (int32_t) 512);
-      target_stat->st_blocks = Host2Target(endianness, (int64_t)((host_stat.st_size + 511) / 512));
-      target_stat->st_atim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_atime);
-      target_stat->st_atim.tv_nsec = 0;
-      target_stat->st_mtim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_mtime);
-      target_stat->st_mtim.tv_nsec = 0;
-      target_stat->st_ctim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_ctime);
-      target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux x64
-      target_stat->st_blksize = Host2Target(endianness, (int64_t) host_stat.st_blksize);
-      target_stat->st_blocks = Host2Target(endianness, (int64_t) host_stat.st_blocks);
-      target_stat->st_atim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_atim.tv_sec);
-      target_stat->st_atim.tv_nsec = Host2Target(endianness, (int64_t) host_stat.st_atim.tv_nsec);
-      target_stat->st_mtim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_mtim.tv_sec);
-      target_stat->st_mtim.tv_nsec = Host2Target(endianness, (int64_t) host_stat.st_mtim.tv_nsec);
-      target_stat->st_ctim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_ctim.tv_sec);
-      target_stat->st_ctim.tv_nsec = Host2Target(endianness, (int64_t) host_stat.st_ctim.tv_nsec);
-#elif defined(__APPLE_CC__) // darwin POWERPC6464/x86_64
-      target_stat->st_blksize = Host2Target(endianness, (int64_t) host_stat.st_blksize);
-      target_stat->st_blocks = Host2Target(endianness, (int64_t) host_stat.st_blocks);
-      target_stat->st_atim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_atimespec.tv_sec);
-      target_stat->st_atim.tv_nsec = Host2Target(endianness, (int64_t) host_stat.st_atimespec.tv_nsec);
-      target_stat->st_mtim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_mtimespec.tv_sec);
-      target_stat->st_mtim.tv_nsec = Host2Target(endianness, (int64_t) host_stat.st_mtimespec.tv_nsec);
-      target_stat->st_ctim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_ctimespec.tv_sec);
-      target_stat->st_ctim.tv_nsec = Host2Target(endianness, (int64_t) host_stat.st_ctimespec.tv_nsec);
-#endif
+// #if defined(__x86_64) || defined(__amd64) || defined(__LP64__) || defined(_LP64) || defined(__amd64__)
+//       // 64-bit host
+//       target_stat->st_dev = Host2Target(endianness, (uint64_t) host_stat.st_dev);
+//       target_stat->st_ino = Host2Target(endianness, (uint64_t) host_stat.st_ino);
+//       target_stat->st_mode = Host2Target(endianness, (uint32_t) host_stat.st_mode);
+//       target_stat->st_nlink = Host2Target(endianness, (uint64_t) host_stat.st_nlink);
+//       target_stat->st_uid = Host2Target(endianness, (uint32_t) host_stat.st_uid);
+//       target_stat->st_gid = Host2Target(endianness, (uint32_t) host_stat.st_gid);
+//       target_stat->st_rdev = Host2Target(endianness, (int64_t) host_stat.st_rdev);
+//       target_stat->st_size = Host2Target(endianness, (int64_t) host_stat.st_size);
+// #if defined(WIN64) || defined(_WIN64) // Windows x64
+//       target_stat->st_blksize = Host2Target(endianness, (int32_t) 512);
+//       target_stat->st_blocks = Host2Target(endianness, (int64_t)((host_stat.st_size + 511) / 512));
+//       target_stat->st_atim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_atime);
+//       target_stat->st_atim.tv_nsec = 0;
+//       target_stat->st_mtim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_mtime);
+//       target_stat->st_mtim.tv_nsec = 0;
+//       target_stat->st_ctim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_ctime);
+//       target_stat->st_ctim.tv_nsec = 0;
+// #elif defined(linux) || defined(__linux) || defined(__linux__) // Linux x64
+//       target_stat->st_blksize = Host2Target(endianness, (int64_t) host_stat.st_blksize);
+//       target_stat->st_blocks = Host2Target(endianness, (int64_t) host_stat.st_blocks);
+//       target_stat->st_atim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_atim.tv_sec);
+//       target_stat->st_atim.tv_nsec = Host2Target(endianness, (int64_t) host_stat.st_atim.tv_nsec);
+//       target_stat->st_mtim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_mtim.tv_sec);
+//       target_stat->st_mtim.tv_nsec = Host2Target(endianness, (int64_t) host_stat.st_mtim.tv_nsec);
+//       target_stat->st_ctim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_ctim.tv_sec);
+//       target_stat->st_ctim.tv_nsec = Host2Target(endianness, (int64_t) host_stat.st_ctim.tv_nsec);
+// #elif defined(__APPLE_CC__) // darwin POWERPC6464/x86_64
+//       target_stat->st_blksize = Host2Target(endianness, (int64_t) host_stat.st_blksize);
+//       target_stat->st_blocks = Host2Target(endianness, (int64_t) host_stat.st_blocks);
+//       target_stat->st_atim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_atimespec.tv_sec);
+//       target_stat->st_atim.tv_nsec = Host2Target(endianness, (int64_t) host_stat.st_atimespec.tv_nsec);
+//       target_stat->st_mtim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_mtimespec.tv_sec);
+//       target_stat->st_mtim.tv_nsec = Host2Target(endianness, (int64_t) host_stat.st_mtimespec.tv_nsec);
+//       target_stat->st_ctim.tv_sec = Host2Target(endianness, (int64_t) host_stat.st_ctimespec.tv_sec);
+//       target_stat->st_ctim.tv_nsec = Host2Target(endianness, (int64_t) host_stat.st_ctimespec.tv_nsec);
+// #endif
 
-#else
-      // 32-bit host
-      target_stat->st_dev = Host2Target(endianness, (uint64_t) host_stat.st_dev);
-      target_stat->st_ino = Host2Target(endianness, (uint32_t) host_stat.st_ino);
-      target_stat->st_mode = Host2Target(endianness, (uint32_t) host_stat.st_mode);
-      target_stat->st_nlink = Host2Target(endianness, (uint32_t) host_stat.st_nlink);
-      target_stat->st_uid = Host2Target(endianness, (uint32_t) host_stat.st_uid);
-      target_stat->st_gid = Host2Target(endianness, (uint32_t) host_stat.st_gid);
-      target_stat->st_rdev = Host2Target(endianness, (int64_t) host_stat.st_rdev);
-      target_stat->st_size = Host2Target(endianness, (int64_t) host_stat.st_size);
-#if defined(WIN32) || defined(_WIN32) // Windows 32
-      target_stat->st_blksize = Host2Target(endianness, (int32_t) 512);
-      target_stat->st_blocks = Host2Target(endianness, (int64_t)((host_stat.st_size + 511) / 512));
-      target_stat->st_atim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_atime);
-      target_stat->st_atim.tv_nsec = 0;
-      target_stat->st_mtim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_mtime);
-      target_stat->st_mtim.tv_nsec = 0;
-      target_stat->st_ctim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_ctime);
-      target_stat->st_ctim.tv_nsec = 0;
-#elif defined(linux) || defined(__linux) || defined(__linux__) // Linux 32
-      target_stat->st_blksize = Host2Target(endianness, (int32_t) host_stat.st_blksize);
-      target_stat->st_blocks = Host2Target(endianness, (int64_t) host_stat.st_blocks);
-      target_stat->st_atim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_atim.tv_sec);
-      target_stat->st_atim.tv_nsec = Host2Target(endianness, (int32_t) host_stat.st_atim.tv_nsec);
-      target_stat->st_mtim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_mtim.tv_sec);
-      target_stat->st_mtim.tv_nsec = Host2Target(endianness, (int32_t) host_stat.st_mtim.tv_nsec);
-      target_stat->st_ctim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_ctim.tv_sec);
-      target_stat->st_ctim.tv_nsec = Host2Target(endianness, (int32_t) host_stat.st_ctim.tv_nsec);
-#elif defined(__APPLE_CC__) // Darwin POWERPC6432/x86
-      target_stat->st_blksize = Host2Target(endianness, (int32_t) host_stat.st_blksize);
-      target_stat->st_blocks = Host2Target(endianness, (int64_t) host_stat.st_blocks);
-      target_stat->st_atim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_atimespec.tv_sec);
-      target_stat->st_atim.tv_nsec = Host2Target(endianness, (int32_t) host_stat.st_atimespec.tv_nsec);
-      target_stat->st_mtim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_mtimespec.tv_sec);
-      target_stat->st_mtim.tv_nsec = Host2Target(endianness, (int32_t) host_stat.st_mtimespec.tv_nsec);
-      target_stat->st_ctim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_ctimespec.tv_sec);
-      target_stat->st_ctim.tv_nsec = Host2Target(endianness, (int32_t) host_stat.st_ctimespec.tv_nsec);
-#endif
+// #else
+//       // 32-bit host
+//       target_stat->st_dev = Host2Target(endianness, (uint64_t) host_stat.st_dev);
+//       target_stat->st_ino = Host2Target(endianness, (uint32_t) host_stat.st_ino);
+//       target_stat->st_mode = Host2Target(endianness, (uint32_t) host_stat.st_mode);
+//       target_stat->st_nlink = Host2Target(endianness, (uint32_t) host_stat.st_nlink);
+//       target_stat->st_uid = Host2Target(endianness, (uint32_t) host_stat.st_uid);
+//       target_stat->st_gid = Host2Target(endianness, (uint32_t) host_stat.st_gid);
+//       target_stat->st_rdev = Host2Target(endianness, (int64_t) host_stat.st_rdev);
+//       target_stat->st_size = Host2Target(endianness, (int64_t) host_stat.st_size);
+// #if defined(WIN32) || defined(_WIN32) // Windows 32
+//       target_stat->st_blksize = Host2Target(endianness, (int32_t) 512);
+//       target_stat->st_blocks = Host2Target(endianness, (int64_t)((host_stat.st_size + 511) / 512));
+//       target_stat->st_atim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_atime);
+//       target_stat->st_atim.tv_nsec = 0;
+//       target_stat->st_mtim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_mtime);
+//       target_stat->st_mtim.tv_nsec = 0;
+//       target_stat->st_ctim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_ctime);
+//       target_stat->st_ctim.tv_nsec = 0;
+// #elif defined(linux) || defined(__linux) || defined(__linux__) // Linux 32
+//       target_stat->st_blksize = Host2Target(endianness, (int32_t) host_stat.st_blksize);
+//       target_stat->st_blocks = Host2Target(endianness, (int64_t) host_stat.st_blocks);
+//       target_stat->st_atim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_atim.tv_sec);
+//       target_stat->st_atim.tv_nsec = Host2Target(endianness, (int32_t) host_stat.st_atim.tv_nsec);
+//       target_stat->st_mtim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_mtim.tv_sec);
+//       target_stat->st_mtim.tv_nsec = Host2Target(endianness, (int32_t) host_stat.st_mtim.tv_nsec);
+//       target_stat->st_ctim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_ctim.tv_sec);
+//       target_stat->st_ctim.tv_nsec = Host2Target(endianness, (int32_t) host_stat.st_ctim.tv_nsec);
+// #elif defined(__APPLE_CC__) // Darwin POWERPC6432/x86
+//       target_stat->st_blksize = Host2Target(endianness, (int32_t) host_stat.st_blksize);
+//       target_stat->st_blocks = Host2Target(endianness, (int64_t) host_stat.st_blocks);
+//       target_stat->st_atim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_atimespec.tv_sec);
+//       target_stat->st_atim.tv_nsec = Host2Target(endianness, (int32_t) host_stat.st_atimespec.tv_nsec);
+//       target_stat->st_mtim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_mtimespec.tv_sec);
+//       target_stat->st_mtim.tv_nsec = Host2Target(endianness, (int32_t) host_stat.st_mtimespec.tv_nsec);
+//       target_stat->st_ctim.tv_sec = Host2Target(endianness, (int32_t) host_stat.st_ctimespec.tv_sec);
+//       target_stat->st_ctim.tv_nsec = Host2Target(endianness, (int32_t) host_stat.st_ctimespec.tv_nsec);
+// #endif
 
-#endif
-      return ret;
-    }
+// #endif
+//       return ret;
+//     }
 
     static int Fstat64(int fd, struct powerpc64_stat64 *target_stat, unisim::util::endian::endian_type endianness)
     {
@@ -711,7 +725,7 @@ namespace linux_os {
       case 103: return this->GetSysCall("syslog");
       case 104: return this->GetSysCall("setitimer");
       case 105: return this->GetSysCall("getitimer");
-      case 106: return this->GetSysCall("stat");
+        // case stat (see powerpc64 specific)
       case 107: return this->GetSysCall("lstat");
         // 108: fstat (see powerpc64 specific)
       case 109: return this->GetSysCall("olduname");
@@ -1043,51 +1057,110 @@ namespace linux_os {
           return &sc;
         } break;
 
-      case 108: /* PowerPC64 specific fstat syscall */
+      case 106: /* PowerPC64 specific stat syscall */
         {
-          static struct : public SysCall {
-            char const* GetName() const { return "fstat"; }
-            void Describe( LINUX& lin, std::ostream& sink ) const
+          static struct : public SysCall
+          {
+            char const* GetName() const { return "stat"; }
+            // long sys_stat64(const char *filename, struct stat *statbuf);
+            struct Args
             {
-              int32_t fd = GetSystemCallParam(lin, 0);
-              address_type buf = GetSystemCallParam(lin, 1);
-              sink << "(int fd=" << std::dec << fd << ", struct stat *buf=" << std::hex << buf << ")";
-            }
+              Args(LINUX& lin)
+                : filename(SysCall::GetParam(lin, 0)), statbuf(SysCall::GetParam(lin, 1))
+                , filename_string(), filename_valid(SysCall::ReadMemString(lin, filename, filename_string))
+              {};
+              address_type filename; address_type statbuf; std::string filename_string; bool filename_valid;
+              void Describe( std::ostream& sink ) const
+              {
+                sink << "( const char *filename=0x" << std::hex << filename << " \"" << filename_string << "\""
+                     << ", struct stat *statbuf=0x" << std::hex << statbuf
+                     << " )" << std::dec;
+              }
+            };
+            void Describe( LINUX& lin, std::ostream& sink ) const { Args(lin).Describe(sink); }
             void Execute( LINUX& lin, int syscall_id ) const
             {
-              int ret;
-              int32_t target_fd;
-              int host_fd;
-              address_type buf_address;
-              int32_t target_errno = 0;
-
-              target_fd = GetSystemCallParam(lin, 0);
-              buf_address = GetSystemCallParam(lin, 1);
-  
-              host_fd = SysCall::Target2HostFileDescriptor(lin, target_fd);
-
-              if(host_fd == -1)
+              Args args(lin);
+        
+              if (not args.filename_valid)
                 {
-                  target_errno = LINUX_EBADF;
-                  ret = -1;
-                }
-              else
-                {
-                  struct powerpc64_stat target_stat;
-                  ret = Stat(host_fd, &target_stat, lin.GetEndianness());
-                  if(ret == -1) target_errno = SysCall::HostToLinuxErrno(errno);
-                  if(ret >= 0) this->WriteMem( lin, buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+                  lin.SetSystemCallStatus(-LINUX_ENOMEM, true);
+                  return;
                 }
 
-              if(unlikely(lin.GetVerbose()))
+              struct powerpc64_stat64 target_stat;
+              long status = Stat64(args.filename_string.c_str(), &target_stat, lin.GetEndianness());
+              
+              if (status != 0)
                 {
-                  lin.DebugInfoStream()
-                              << "fstat(fd=" << target_fd
-                              << ", buf_addr=0x" << std::hex << buf_address << std::dec
-                              << ")" << std::endl;
+                  lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno), true);
+                  return;
                 }
-  
-              SetPOWERPC64SystemCallStatus(lin, (ret == -1) ? -target_errno : ret, (ret == -1));
+              
+              if (not this->WriteMem( lin, args.statbuf, (uint8_t *)&target_stat, sizeof(target_stat)))
+                {
+                  lin.SetSystemCallStatus(-LINUX_ENOMEM, true);
+                  return;
+                }
+
+              if (unlikely(lin.GetVerbose()))
+                lin.DebugInfoStream() << GetName() << SysCall::argsPrint(args) << std::endl;
+
+              lin.SetSystemCallStatus(0, false);
+            }
+          } sc;
+          return &sc;
+        } break;
+
+      case 108: /* PowerPC64 specific fstat syscall */
+        {
+          static struct : public SysCall
+          {
+            char const* GetName() const { return "fstat"; }
+            //long sys_fstat64(unsigned long fd, struct stat64 __user *statbuf);
+            struct Args
+            {
+              Args(LINUX& lin) : fd(SysCall::GetParam(lin, 0)), statbuf(SysCall::GetParam(lin, 1)) {};
+              parameter_type fd; address_type statbuf;
+              void Describe( std::ostream& sink ) const
+              {
+                sink << "( unsigned long fd=" << std::dec << fd
+                     << ", struct stat *statbuf=0x" << std::hex << statbuf
+                     << " )" << std::dec;
+              }
+            };
+            void Describe( LINUX& lin, std::ostream& sink ) const { Args(lin).Describe(sink); }
+            void Execute( LINUX& lin, int syscall_id ) const
+            {
+              Args args(lin);
+        
+              int host_fd = SysCall::Target2HostFileDescriptor(lin, args.fd);
+
+              if (host_fd == -1)
+                {
+                  lin.SetSystemCallStatus(-LINUX_EBADF, true);
+                  return;
+                }
+              
+              struct powerpc64_stat64 target_stat;
+              long status = Fstat64(host_fd, &target_stat, lin.GetEndianness());
+              
+              if (status != 0)
+                {
+                  lin.SetSystemCallStatus(-SysCall::HostToLinuxErrno(errno), true);
+                  return;
+                }
+              
+              if (not this->WriteMem( lin, args.statbuf, (uint8_t *)&target_stat, sizeof(target_stat)))
+                {
+                  lin.SetSystemCallStatus(-LINUX_ENOMEM, true);
+                  return;
+                }
+
+              if (unlikely(lin.GetVerbose()))
+                lin.DebugInfoStream() << GetName() << SysCall::argsPrint(args) << std::endl;
+
+              lin.SetSystemCallStatus(0, false);
             }
           } sc;
           return &sc;
@@ -1125,50 +1198,51 @@ namespace linux_os {
           } sc;
           return &sc;
         } break;
+        
+        // case 195: /* PowerPC64 specific stat64 syscall */
+        // {
+        //   static struct : public SysCall {
+        //     char const* GetName() const { return "stat64"; }
+        //     void Describe( LINUX& lin, std::ostream& sink ) const
+        //     {
+        //       uint32_t path = GetSystemCallParam(lin, 0);
+        //       address_type buf = GetSystemCallParam(lin, 1);
+        //       sink << "(const char *pathname=" << std::hex << path
+        //            << ", struct stat *buf=" << std::hex << buf << ")";
+        //     }
+        //     void Execute( LINUX& lin, int syscall_id ) const
+        //     {
+        //       int ret;
+        //       address_type pathnameaddr = GetSystemCallParam(lin, 0);
+        //       address_type buf_address = GetSystemCallParam(lin, 1);
+        //       int32_t target_errno = 0;
 
-      case 195: /* PowerPC64 specific stat64 syscall */
-        {
-          static struct : public SysCall {
-            char const* GetName() const { return "stat64"; }
-            void Describe( LINUX& lin, std::ostream& sink ) const
-            {
-              uint32_t path = GetSystemCallParam(lin, 0);
-              address_type buf = GetSystemCallParam(lin, 1);
-              sink << "(const char *pathname=" << std::hex << path
-                   << ", struct stat *buf=" << std::hex << buf << ")";
-            }
-            void Execute( LINUX& lin, int syscall_id ) const
-            {
-              int ret;
-              address_type pathnameaddr = GetSystemCallParam(lin, 0);
-              address_type buf_address = GetSystemCallParam(lin, 1);
-              int32_t target_errno = 0;
-
-              std::string pathname;
-              if (this->ReadMemString(lin, pathnameaddr, pathname))
-                {
-                  struct powerpc64_stat64 target_stat;
-                  ret = Stat64(pathname.c_str(), &target_stat, lin.GetEndianness());
-                  this->WriteMem( lin, buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
+        //       std::string pathname;
+        //       if (this->ReadMemString(lin, pathnameaddr, pathname))
+        //         {
+        //           struct powerpc64_stat64 target_stat;
+        //           ret = Stat64(pathname.c_str(), &target_stat, lin.GetEndianness());
+        //           this->WriteMem( lin, buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
     
-                  if(unlikely(lin.GetVerbose()))
-                    {
-                      lin.DebugInfoStream()
-                                  << "pathname = \"" << pathname << "\", buf_address = 0x" << std::hex << buf_address << std::dec
-                                  << std::endl;
-                    }
-                }
-              else
-                {
-                  ret = -1;
-                  target_errno = LINUX_ENOMEM;
-                }
+        //           if(unlikely(lin.GetVerbose()))
+        //             {
+        //               lin.DebugInfoStream()
+        //                           << "pathname = \"" << pathname << "\", buf_address = 0x" << std::hex << buf_address << std::dec
+        //                           << std::endl;
+        //             }
+        //         }
+        //       else
+        //         {
+        //           ret = -1;
+        //           target_errno = LINUX_ENOMEM;
+        //         }
   
-              SetPOWERPC64SystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
-            }
-          } sc;
-          return &sc;
-        } break;
+        //       SetPOWERPC64SystemCallStatus(lin, (parameter_type) (ret == -1) ? -target_errno : ret, (ret == -1));
+        //     }
+        //   } sc;
+        //   return &sc;
+        // }
+        break;
 
       case 197: /* PowerPC64 specific fstat64 syscall */
         {

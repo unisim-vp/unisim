@@ -36,7 +36,9 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
 }
 
-op fctiw(63[6]:fd[5]:?[5]:fb[5]:14[10]:rc[1])
+/* Floating Convert To Integer Word */
+op fctiw(63[6]:fd[5]:?[5]:fb[5]:14[10]:rc[1]);
+
 fctiw.execute = {
 	if(not CONFIG::HAS_FPU)
 	{
@@ -50,27 +52,19 @@ fctiw.execute = {
 	}
 
 	// Read the input operands
-	UINT fpscr = cpu->GetFPSCR();
-	UINT old_fpscr = fpscr;
-	Flags flags;
-	flags.setRoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>());
 	SoftDouble b = cpu->GetFPR(fb);
 
 	// Compute the result
-	SoftDouble::IntConversion icResult;
-	uint32_t result32;
-	uint64_t result64;
-	flags.clearKeepSignalingConversion();
-	b.retrieveInteger(icResult.setSigned(), flags);
-	flags.setKeepSignalingConversion();
-	result32 = (uint32_t) icResult.queryInt();
-	result64 = 0xfff8000000000000ULL | result32;
-	if(result32 == 0 && b.isNegative())
-		result64 |= 0x0000000100000000ULL;
+	Flags flags;
+	flags.setRoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>());
+	S32 res32 = b.queryS32( flags );
 	
-	SoftDouble result(SoftDouble::FromRawBits, result64);
+        U64 undef_high = (U64(0xfff80000) | U64(res32 == S32(0) and b.isNegative())) << 32;
+	
+	SoftDouble result(SoftDouble::FromRawBits, undef_high | U64(U32(res32)));
 	
 	// Generate VXSNAN, VXCVI, FR, FI, XX, FX, VX, FEX
+	UINT fpscr = cpu->GetFPSCR(), old_fpscr = fpscr;
 	GenFPSCR_VXSNAN<FPSCR>(fpscr, flags);
 	GenFPSCR_VXCVI<FPSCR>(fpscr, flags);
 	GenFPSCR_FR<FPSCR, SoftDouble>(fpscr, b, flags);
@@ -105,10 +99,11 @@ fctiw.execute = {
 	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
 	
 	return true;
-}
+};
+
 fctiw.disasm = {
 	os << "fctiw" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fb);
-}
+};
 
-specialize fctiw(rc=0)
-specialize fctiw(rc=1)
+specialize fctiw(rc=0);
+specialize fctiw(rc=1);

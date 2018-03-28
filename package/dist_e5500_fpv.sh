@@ -268,6 +268,8 @@ unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fcmpo.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fcmpu.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fctiw.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fctiwz.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fctid.isa \
+unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fctidz.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fcfid.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fdiv.isa \
 unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/fdivs.isa \
