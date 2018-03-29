@@ -180,7 +180,7 @@ Arch::MoveFromSPR( unsigned id, U64& value )
     default: return false;
     case 268: val = time_base; break;
     }
-  gprs[id] = val;
+  value = val;
   return true;
 }
 
@@ -199,6 +199,13 @@ Arch::Fp32Store(unsigned id, U64 addr)
   Flags flags;
   flags.setZeroRound();
   IntStore( addr, U32(SoftFloat(fprs[id], flags).queryRawBits()) );
+  return true;
+}
+
+bool
+Arch::FpStoreLSW(unsigned id, U64 addr)
+{
+  IntStore( addr, U32(fprs[id].queryRawBits()) );
   return true;
 }
 

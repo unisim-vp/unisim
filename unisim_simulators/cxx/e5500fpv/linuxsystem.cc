@@ -47,6 +47,11 @@ LinuxOS::LinuxOS( std::ostream& log,
   , app_ret_status( -1 )
 {}
   
+LinuxOS::~LinuxOS()
+{
+  delete linux_impl.GetTargetSystem();
+}
+
 void
 LinuxOS::Setup( std::vector<std::string> const& simargs, std::vector<std::string> const& envs )
 {

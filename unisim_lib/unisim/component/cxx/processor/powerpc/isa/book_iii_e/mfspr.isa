@@ -32,9 +32,11 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-op mfspr(31[6]:rd[5]:spr[10]:339[10]:?[1])
+/* Move From Special Purpose Register */
+op mfspr(31[6]:rd[5]:spr1[5]:spr0[5]:339[10]:?[1]);
+mfspr.var n : {unsigned} = {spr0<<5 | spr1};
+
 mfspr.execute = {
-	unsigned n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
 	UINT result;
 	switch(n)
 	{
@@ -55,9 +57,9 @@ mfspr.execute = {
 	cpu->SetGPR(rd, result);
 	
 	return true;
-}
+};
+
 mfspr.disasm = {
-	unsigned n =((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
 	switch(n)
 	{
 		case 1: os << "mfxer " << GPRPrint(rd); return;
@@ -66,8 +68,8 @@ mfspr.disasm = {
 	}
 
 	os << "mfspr " << GPRPrint(rd) << ", " << n;
-}
+};
 
-specialize mfspr(spr=0x20)
-specialize mfspr(spr=0x100)
-specialize mfspr(spr=0x120)
+specialize mfspr(spr0=0,spr1=0x1);
+specialize mfspr(spr0=0,spr1=0x8);
+specialize mfspr(spr0=0,spr1=0x9);

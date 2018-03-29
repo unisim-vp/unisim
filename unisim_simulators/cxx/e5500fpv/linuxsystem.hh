@@ -50,6 +50,7 @@ struct LinuxOS
            unisim::service::interfaces::Registers* regs_if,
            unisim::service::interfaces::Memory<uint64_t>* mem_if,
            unisim::service::interfaces::MemoryInjection<uint64_t>* mem_inject_if );
+  ~LinuxOS();
   
   void Setup( std::vector<std::string> const& simargs, std::vector<std::string> const& envs );
   
