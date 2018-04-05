@@ -109,7 +109,6 @@ unisim/kernel/tlm/tlm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/util/backtrace/backtrace.cc \
-unisim/kernel/api/api.cc \
 unisim/util/xml/xml.cc \
 unisim/util/debug/profile_32.cc \
 unisim/util/debug/profile_64.cc \
@@ -429,7 +428,6 @@ unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/tlm/tlm.hh \
 unisim/util/backtrace/backtrace.hh \
-unisim/kernel/api/api.hh \
 unisim/util/likely/likely.hh \
 unisim/util/inlining/inlining.hh \
 unisim/util/arithmetic/arithmetic.hh \

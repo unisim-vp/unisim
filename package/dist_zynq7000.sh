@@ -89,12 +89,10 @@ UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
 unisim/util/backtrace/backtrace.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
-unisim/kernel/api/api.cc \
 unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_helper.cc \
 unisim/kernel/service/endian.cc \
 unisim/kernel/tlm2/tlm.cc \
-unisim/api/debug/debug_api.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/inline_debugger/inline_debugger_64.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
@@ -242,12 +240,10 @@ unisim/util/backtrace/backtrace.hh \
 unisim/util/cache/cache.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
-unisim/kernel/api/api.hh \
 unisim/kernel/tlm/tlm.hh \
 unisim/kernel/service/service.hh \
 unisim/kernel/service/xml_helper.hh \
 unisim/kernel/tlm2/tlm.hh \
-unisim/api/debug/debug_api.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \

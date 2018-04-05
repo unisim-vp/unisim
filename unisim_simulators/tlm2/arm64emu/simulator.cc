@@ -232,23 +232,20 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
     }
 	
   // Build the Linux OS arguments from the command line arguments
-	
-  unisim::kernel::service::VariableBase *cmd_args = FindVariable("cmd-args");
-  unsigned int cmd_args_length = cmd_args->GetLength();
-  if (cmd_args_length > 0)
+  std::vector<std::string> const& simargs = GetCmdArgs();
+  if (not simargs.empty())
     {
-      SetVariable("linux-os.binary", ((std::string)(*cmd_args)[0]).c_str());
-      SetVariable("linux-os.argc", cmd_args_length);
-		
-      unsigned int i;
-      for(i = 0; i < cmd_args_length; i++)
+      SetVariable("linux-os.binary", simargs[0].c_str());
+      SetVariable("linux-os.argc", simargs.size());
+
+      for (unsigned i = 0; i < simargs.size(); i++)
         {
           std::stringstream sstr;
           sstr << "linux-os.argv[" << i << "]";
-          SetVariable(sstr.str().c_str(), ((std::string)(*cmd_args)[i]).c_str());
+          SetVariable(sstr.str().c_str(), simargs[i].c_str());
         }
     }
-
+  
   unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
 	
   return setup_status;

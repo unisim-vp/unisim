@@ -32,39 +32,33 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-#ifndef __E5500FPV_LINUX_SYSTEM_HH__
-#define __E5500FPV_LINUX_SYSTEM_HH__
-
-#include <unisim/util/os/linux_os/linux.hh>
-#include <unisim/util/os/linux_os/powerpc64.hh>
-#include <unisim/service/interfaces/linux_os.hh>
-#include <unisim/service/interfaces/memory_injection.hh>
-#include <unisim/service/interfaces/memory.hh>
-#include <unisim/service/interfaces/registers.hh>
-#include <unisim/service/interfaces/blob.hh>
+#ifndef __E5500FPV_DEBUGGER_HH__
+#define __E5500FPV_DEBUGGER_HH__
+#include <unisim/service/debug/debugger/debugger.hh>
+#include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <inttypes.h>
 
-struct LinuxOS
-  : public unisim::service::interfaces::LinuxOS
-  , public unisim::kernel::service::Service<unisim::service::interfaces::Blob<uint64_t> >
+struct Arch;
+struct LinuxOS;
+
+struct Debugger
 {
-  LinuxOS( std::ostream& log,
-           unisim::service::interfaces::Registers* regs_if,
-           unisim::service::interfaces::Memory<uint64_t>* mem_if,
-           unisim::service::interfaces::MemoryInjection<uint64_t>* mem_inject_if );
-  ~LinuxOS();
+  struct DEBUGGER_CONFIG
+  {
+    typedef uint64_t ADDRESS;
+    static const unsigned int NUM_PROCESSORS = 1;
+    /* gdb_server, inline_debugger and/or monitor */
+    static const unsigned int MAX_FRONT_ENDS = 1;
+  };
   
-  void Setup( std::vector<std::string> const& simargs, std::vector<std::string> const& envs );
+  typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DebuggerRouter;
+  typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> InlineDebugger;
   
-  void ExecuteSystemCall( int id );
+  DebuggerRouter debugger_router;
+  InlineDebugger inline_debugger;
 
-  // unisim::service::interfaces::Blob<uint64_t>
-  virtual unisim::util::blob::Blob<uint64_t> const* GetBlob() const { return linux_impl.GetBlob(); }
-  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Blob<uint64_t> > blob_export;
-
-  unisim::util::os::linux_os::Linux<uint64_t, uint64_t> linux_impl;
-  bool exited;
-  int app_ret_status;
+  Debugger(Arch&, LinuxOS&);
+  ~Debugger();
 };
 
-#endif // __E5500FPV_LINUX_SYSTEM_HH__
+#endif // __E5500FPV_LINUX_DEBUGGER_HH__

@@ -36,7 +36,9 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
 }
 
-op fadd(63[6]:fd[5]:fa[5]:fb[5]:?[5]:21[5]:rc[1])
+/* Floating Add */
+op fadd(63[6]:fd[5]:fa[5]:fb[5]:?[5]:21[5]:rc[1]);
+
 fadd.execute = {
 	if(not CONFIG::HAS_FPU)
 	{
@@ -91,10 +93,11 @@ fadd.execute = {
 	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
 	
 	return true;
-}
+};
+
 fadd.disasm = {
 	os << "fadd" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fa) << ", " << FPRPrint(fb);
-}
+};
 
 specialize fadd(rc=0)
 specialize fadd(rc=1)

@@ -37,9 +37,26 @@
 #include <unisim/util/likely/likely.hh>
 
 Arch::Arch()
-  : unisim::service::interfaces::MemoryInjection<uint64_t>()
-  , unisim::service::interfaces::Memory<uint64_t>()
-  , unisim::service::interfaces::Registers()
+  : unisim::kernel::service::Object("e5500", 0)
+  , unisim::kernel::service::Service< unisim::service::interfaces::Registers >("e5500", 0)
+  , unisim::kernel::service::Service< unisim::service::interfaces::MemoryInjection<uint64_t> >("e5500", 0)
+  , unisim::kernel::service::Service< unisim::service::interfaces::Memory<uint64_t> >("e5500", 0)
+  , unisim::kernel::service::Service< unisim::service::interfaces::Disassembly<uint64_t> >("e5500", 0)
+  , unisim::kernel::service::Service< unisim::service::interfaces::MemoryAccessReportingControl >("e5500", 0)
+  , unisim::kernel::service::Client< unisim::service::interfaces::DebugYielding >("e5500", 0)
+  , unisim::kernel::service::Client< unisim::service::interfaces::TrapReporting >("e5500", 0)
+  , unisim::kernel::service::Client< unisim::service::interfaces::MemoryAccessReporting<uint64_t> >("e5500", 0)
+  , registers_export("registers-export", this)
+  , memory_injection_export("memory-injection-export", this)
+  , memory_export("memory-export", this)
+  , disasm_export("disasm-export", this)
+  , memory_access_reporting_control_export("memory-access-reporting-control-export", this)
+  , requires_memory_access_reporting(false)
+  , requires_fetch_instruction_reporting(false)
+  , requires_commit_instruction_reporting(false)
+  , debug_yielding_import("debug-yielding-import", this)
+  , trap_reporting_import("trap-reporting-import", this)
+  , memory_access_reporting_import("memory-access-reporting-import", this)
   , xer(0)
   , cr(0)
   , msr(0)
@@ -58,6 +75,7 @@ Arch::Arch()
   struct { char const* name; uint64_t* reg; } dedicated_registers[] = {
     { "cr", &cr.value },
     { "cia", &cia },
+    { "pc", &cia },
   };
 
   for (int idx = sizeof(dedicated_registers)/sizeof(dedicated_registers[0]); --idx >= 0;)
@@ -69,7 +87,17 @@ Arch::~Arch()
   for (auto && reg : regmap)
     delete reg.second;
 }
-  
+
+void
+Arch::RequiresMemoryAccessReporting( unisim::service::interfaces::MemoryAccessReportingType type, bool report )
+{
+  switch (type) {
+  case unisim::service::interfaces::REPORT_MEM_ACCESS:  requires_memory_access_reporting = report; break;
+  case unisim::service::interfaces::REPORT_FETCH_INSN:  requires_fetch_instruction_reporting = report; break;
+  case unisim::service::interfaces::REPORT_COMMIT_INSN: requires_commit_instruction_reporting = report; break;
+  default: throw 0;
+  }
+}
 
 bool
 Arch::ReadMemory(uint64_t addr, void* buffer, unsigned size )
@@ -149,12 +177,15 @@ Arch::fetch()
 {
   U64 addr = this->cia;
   
+  if (unlikely(requires_fetch_instruction_reporting and memory_access_reporting_import))
+    memory_access_reporting_import->ReportFetchInstruction( addr );
+
+  if (debug_yielding_import)
+    debug_yielding_import->DebugYield();
+
   uint32_t insn = 0;
-  
-  if(unlikely(not InstructionFetch(addr, insn)))
-    {
-      throw 0;
-    }
+  if (unlikely(not InstructionFetch(addr, insn)))
+    throw 0;
   
   Operation* operation = decoder.Decode(addr, insn);
 
@@ -163,9 +194,26 @@ Arch::fetch()
   return operation;
 }
 
+std::string
+Arch::Disasm(ADDRESS addr, ADDRESS& next_addr)
+{
+  uint32_t insn = 0;
+  if (unlikely(not InstructionFetch(addr, insn)))
+    throw 0;
+  
+  std::ostringstream buf;
+  decoder.Decode(addr, insn)->disasm( buf );
+  next_addr = addr + 4;
+  
+  return buf.str();
+}
+
 void
 Arch::commit()
 {
+  if (unlikely(requires_commit_instruction_reporting and memory_access_reporting_import))
+    memory_access_reporting_import->ReportCommitInstruction(cia, 4);
+
   cia = nia;
   insn_count += 1;
   time_base += 2;

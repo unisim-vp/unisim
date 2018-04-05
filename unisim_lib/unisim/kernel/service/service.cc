@@ -1,4 +1,4 @@
- /*
+/*
  *  Copyright (c) 2007,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
@@ -2042,15 +2042,15 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, warn_get_bin_path(false)
 	, warn_get_share_path(false)
 	, enable_press_enter_at_exit(false)
-    , bin_dir()
+	, bin_dir()
 	, program_binary()
 	, program_name()
 	, authors()
 	, copyright()
 	, description()
 	, version()
-    , license()
-    , schematic()
+	, license()
+	, schematic()
 	, var_program_name(0)
 	, var_authors(0)
 	, var_copyright(0)
@@ -2064,7 +2064,6 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, imports()
 	, exports()
 	, variables()
-	, apis()
 	, cmd_args(0)
 	, param_cmd_args(0)
 {
@@ -2147,124 +2146,102 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	param_enable_press_enter_at_exit = new Parameter<bool>("enable-press-enter-at-exit", 0, enable_press_enter_at_exit, "Enable/Disable pressing key enter at exit");
 	
 	// parse command line arguments (first pass)
+	char **arg_end = argv + argc;
+	
 	int state = 0;
-	int arg_num;
-	char **arg;
-	for(arg = argv + 1, arg_num = 1; (arg_num < argc) && state != -1;)
+	for(char **arg = argv + 1; arg < arg_end; arg++)
 	{
 		switch(state)
 		{
 			case 0:
+				// Unless there's an acceptable option entry assume options parsing ends here
+				state = -1;
+				
+				// "--" unconditionally ends option parsing afterwards
+				if (strcmp(*arg, "--") == 0)
 				{
-					std::vector<CommandLineOption>::const_iterator cmd_opt_iter;
-					bool match = false;
-					for(cmd_opt_iter = command_line_options.begin(); !match && cmd_opt_iter != command_line_options.end(); cmd_opt_iter++)
+					arg++;
+					break;
+				}
+				
+				for (std::vector<CommandLineOption>::const_iterator cmd_opt_itr = command_line_options.begin(),
+				                                                    cmd_opt_end = command_line_options.end();
+				     cmd_opt_itr != cmd_opt_end; ++cmd_opt_itr)
+				{
+					if(*cmd_opt_itr == *arg)
 					{
-						if(strcmp(*arg, "--") == 0)
+						switch(cmd_opt_itr->GetShortName())
 						{
-							arg++;
-							arg_num++;
+							case 's':
+								state = 1;
+								break;
+							case 'c':
+								state = 2;
+								break;
+							case 'g':
+								state = 3;
+								break;
+							case 'l':
+								list_parms = true;
+								state = 0;
+								break;
+							case 'v':
+								enable_version = true;
+								state = 0;
+								break;
+							case 'h':
+								enable_help = true;
+								state = 0;
+								break;
+							case 'w':
+								enable_warning = true;
+								state = 0;
+								break;
+							case 'd':
+								state = 4;
+								break;
+							case 'p':
+								has_share_data_dir_hint = true;
+								state = 5;
+								break;
+							default:
+								break;
 						}
-						else if(*cmd_opt_iter == *arg)
-						{
-							// match
-							match=true;
-							switch(cmd_opt_iter->GetShortName())
-							{
-								case 's':
-									arg++;
-									arg_num++;
-									state = 1;
-									break;
-								case 'c':
-									arg++;
-									arg_num++;
-									state = 2;
-									break;
-								case 'g':
-									arg++;
-									arg_num++;
-									state = 3;
-									break;
-								case 'l':
-									arg++;
-									arg_num++;
-									list_parms = true;
-									break;
-								case 'v':
-									arg++;
-									arg_num++;
-									enable_version = true;
-									break;
-								case 'h':
-									arg++;
-									arg_num++;
-									enable_help = true;
-									break;
-								case 'w':
-									arg++;
-									arg_num++;
-									enable_warning = true;
-									break;
-								case 'd':
-									arg++;
-									arg_num++;
-									state = 4;
-									break;
-								case 'p':
-									has_share_data_dir_hint = true;
-									arg++;
-									arg_num++;
-									state = 5;
-									break;
-								default:
-									state = -1;
-									break;
-							}
-						}
-					}
-					if(!match)
-					{
-						state = -1;
+						break;
 					}
 				}
 				break;
+			
 			case 1:
 				// skipping set variable
-				arg++;
-				arg_num++;
 				state = 0;
 				break;
 			case 2:
 				// skipping loading variables
-				arg++;
-				arg_num++;
 				state = 0;
 				break;
 			case 3:
 				// skipping get config
-				arg++;
-				arg_num++;
 				state = 0;
 				break;
 			case 4:
 				// skipping generate doc
-				arg++;
-				arg_num++;
 				state = 0;
 				break;
 			case 5:
 				// getting the share data path
 				shared_data_dir_hint = *arg;
-				arg++;
-				arg_num++;
 				state = 0;
 				break;
 			default:
-				cerr << "Internal error while parsing command line arguments" << endl;
+				std::cerr << "Internal error while parsing command line arguments" << endl;
 				state = -1;
 				break;
 		}
+		if (state == -1)
+                {
+			arg_end = arg;
+                }
 	}
 
 	if ( !has_share_data_dir_hint )
@@ -2307,99 +2284,82 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 
 	// parse command line arguments (second pass)
 	state = 0;
-	
-	for(arg = argv + 1, arg_num = 1; (arg_num < argc) && state != -1;)
+	for(char **arg = argv + 1; arg < arg_end; arg++)
 	{
 		switch(state)
 		{
 			case 0:
+				// Unless there's an acceptable option entry assume options parsing ends here
+				state = -1;
+				
+				// "--" unconditionally ends option parsing afterwards
+				if (strcmp(*arg, "--") == 0)
 				{
-					std::vector<CommandLineOption>::const_iterator cmd_opt_iter;
-					bool match = false;
-					for(cmd_opt_iter = command_line_options.begin(); !match && cmd_opt_iter != command_line_options.end(); cmd_opt_iter++)
+					arg++;
+					break;
+				}
+				
+				for (std::vector<CommandLineOption>::const_iterator cmd_opt_itr = command_line_options.begin(),
+				                                                    cmd_opt_end = command_line_options.end();
+				     cmd_opt_itr != cmd_opt_end; ++cmd_opt_itr)
+				{
+					if(*cmd_opt_itr == *arg)
 					{
-						if(strcmp(*arg, "--") == 0)
+						switch(cmd_opt_itr->GetShortName())
 						{
-							arg++;
-							arg_num++;
+							case 's':
+								state = 1;
+								break;
+							case 'c':
+								state = 2;
+								break;
+							case 'g':
+								state = 3;
+								break;
+							case 'l':
+								list_parms = true;
+								state = 0;
+								break;
+							case 'v':
+								enable_version = true;
+								state = 0;
+								break;
+							case 'h':
+								enable_help = true;
+								state = 0;
+								break;
+							case 'w':
+								enable_warning = true;
+								if(!LoadBuiltInConfig)
+								{
+									cerr << "WARNING! No built-in parameters set loaded" << endl;
+								}
+								if(warn_get_bin_path)
+								{
+									cerr << "WARNING! Can't determine binary directory" << endl;
+								}
+								if(warn_get_share_path)
+								{
+									cerr << "WARNING! Can't determine share directory" << endl;
+									cerr << "         Program binary is '" << program_binary << "'" << endl;
+									cerr << "         Binary dir is     '" << bin_dir << "'" << endl;
+								}
+								state = 0;
+								break;
+							case 'd':
+								state = 4;
+								break;
+							case 'p':
+								state = 5;
+								break;
+							default:
+								state = -1;
+								break;
 						}
-						else if(*cmd_opt_iter == *arg)
-						{
-							// match
-							match=true;
-							switch(cmd_opt_iter->GetShortName())
-							{
-								case 's':
-									arg++;
-									arg_num++;
-									state = 1;
-									break;
-								case 'c':
-									arg++;
-									arg_num++;
-									state = 2;
-									break;
-								case 'g':
-									arg++;
-									arg_num++;
-									state = 3;
-									break;
-								case 'l':
-									arg++;
-									arg_num++;
-									list_parms = true;
-									break;
-								case 'v':
-									arg++;
-									arg_num++;
-									enable_version = true;
-									break;
-								case 'h':
-									arg++;
-									arg_num++;
-									enable_help = true;
-									break;
-								case 'w':
-									arg++;
-									arg_num++;
-									enable_warning = true;
-									if(!LoadBuiltInConfig)
-									{
-										cerr << "WARNING! No built-in parameters set loaded" << endl;
-									}
-									if(warn_get_bin_path)
-									{
-										cerr << "WARNING! Can't determine binary directory" << endl;
-									}
-									if(warn_get_share_path)
-									{
-										cerr << "WARNING! Can't determine share directory" << endl;
-										cerr << "         Program binary is '" << program_binary << "'" << endl;
-										cerr << "         Binary dir is     '" << bin_dir << "'" << endl;
-									}
-									break;
-								case 'd':
-									arg++;
-									arg_num++;
-									state = 4;
-									break;
-								case 'p':
-									arg++;
-									arg_num++;
-									state = 5;
-									break;
-								default:
-									state = -1;
-									break;
-							}
-						}
-					}
-					if(!match)
-					{
-						state = -1;
 					}
 				}
 				break;
+			
 			case 1:
 				{
 					string variable_name;
@@ -2420,8 +2380,6 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 						cerr << "WARNING! Ignoring " << *arg << endl;
 					}
 				}
-				arg++;
-				arg_num++;
 				state = 0;
 				break;
 			case 2:
@@ -2433,27 +2391,19 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 				{
 					cerr << "WARNING! Loading parameters set from file \"" << (*arg) << "\" failed" << endl;
 				}
-				arg++;
-				arg_num++;
 				state = 0;
 				break;
 			case 3:
 				get_config = true;
 				get_config_filename = *arg;
-				arg++;
-				arg_num++;
 				state = 0;
 				break;
 			case 4:
 				generate_doc = true;
 				generate_doc_filename = *arg;
-				arg++;
-				arg_num++;
 				state = 0;
 				break;
 			case 5:
-				arg++;
-				arg_num++;
 				state = 0;
 				break;
 			default:
@@ -2461,23 +2411,19 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 				state = -1;
 				break;
 		}
+		if (state == -1)
+                {
+			arg_end = arg;
+                }
 	}
 	
 	// create on the fly parameters cmd-args[*] that are the remaining parameters
-	int cmd_args_dim = argc - (arg - argv);
-	if(cmd_args_dim > 0)
+	int cmd_args_dim = argv + argc - arg_end;
+        cmd_args.resize(cmd_args_dim);
+	param_cmd_args = new ParameterArray<string>("cmd-args", 0, &cmd_args[0], cmd_args_dim, "command line arguments");
+	for(int i = 0; i < cmd_args_dim; i++)
 	{
-		cmd_args = new string[cmd_args_dim];
-		param_cmd_args = new ParameterArray<string>("cmd-args", 0, cmd_args, cmd_args_dim, "command line arguments");
-		int i;
-		for(i = 0; i < cmd_args_dim; arg++, i++)
-		{
-			(*param_cmd_args)[i] = *arg;
-		}
-	}
-	else
-	{
-		param_cmd_args = new ParameterArray<string>("cmd-args", 0, 0, 0, "command line arguments");
+		(*param_cmd_args)[i] = arg_end[i];
 	}
 	param_cmd_args->SetVisible(false);
 	param_cmd_args->SetMutable(false);
@@ -2545,11 +2491,6 @@ Simulator::~Simulator()
 	{
 		delete param_enable_press_enter_at_exit;
 	}
-	
-	if(cmd_args)
-	{
-		delete[] cmd_args;
-	}
 
 #if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 	if(sig_pipe_handler)
@@ -2582,23 +2523,23 @@ void Simulator::Help(ostream& os) const
 	os << "Usage: " << program_binary << " [<options>] [...]" << endl << endl;
 	os << "Options:" << endl;
 
-	std::vector<CommandLineOption>::const_iterator cmd_opt_iter;
-	for(cmd_opt_iter = command_line_options.begin(); cmd_opt_iter != command_line_options.end(); cmd_opt_iter++)
+	std::vector<CommandLineOption>::const_iterator cmd_opt_itr;
+	for(cmd_opt_itr = command_line_options.begin(); cmd_opt_itr != command_line_options.end(); cmd_opt_itr++)
 	{
 		os << std::endl;
-		os << " --" << cmd_opt_iter->GetLongName();
-		if(cmd_opt_iter->HasArgument())
+		os << " --" << cmd_opt_itr->GetLongName();
+		if(cmd_opt_itr->HasArgument())
 		{
-			os << " <" << cmd_opt_iter->GetArgumentDescription() << ">";
+			os << " <" << cmd_opt_itr->GetArgumentDescription() << ">";
 		}
 		os << std::endl;
-		os << " -" << cmd_opt_iter->GetShortName();
-		if(cmd_opt_iter->HasArgument())
+		os << " -" << cmd_opt_itr->GetShortName();
+		if(cmd_opt_itr->HasArgument())
 		{
-			os << " <" << cmd_opt_iter->GetArgumentDescription() << ">";
+			os << " <" << cmd_opt_itr->GetArgumentDescription() << ">";
 		}
 		os << std::endl;
-		os << "            " << cmd_opt_iter->GetOptionDescription();
+		os << "            " << cmd_opt_itr->GetOptionDescription();
 		os << std::endl;
 	}
 }
@@ -2694,39 +2635,6 @@ void Simulator::Unregister(ServiceExportBase *srv_export)
 	map<const char *, ServiceExportBase *, ltstr>::iterator export_iter;
 	export_iter = exports.find(srv_export->GetName());
 	if(export_iter != exports.end()) exports.erase(export_iter);
-}
-
-void Simulator::Register(unisim::kernel::api::APIBase *api)
-{
-	if ( apis.find(api->GetName()) != apis.end() )
-	{
-		cerr << "ERROR! API \"" << api->GetName() << "\" already exists" << endl;
-		exit(1);
-	}
-
-	apis[api->GetName()] = api;
-}
-
-void Simulator::Unregister(unisim::kernel::api::APIBase *api)
-{
-	map<const char *, unisim::kernel::api::APIBase *, ltstr>::iterator api_iter;
-	api_iter = apis.find(api->GetName());
-	if ( api_iter != apis.end() )
-	{
-		apis.erase(api_iter);
-	}
-}
-
-void Simulator::GetAPIs(list<unisim::kernel::api::APIBase *> &api_list) const
-{
-	map<const char *, unisim::kernel::api::APIBase *, ltstr>::const_iterator api_iter;
-
-	for ( api_iter = apis.begin();
-			api_iter != apis.end();
-			api_iter++ )
-	{
-		api_list.push_back(api_iter->second);
-	}
 }
 
 void Simulator::Dump(ostream& os)
@@ -3457,6 +3365,12 @@ string Simulator::SearchSharedDataFile(const char *filename) const
 	return string(filename);
 }
 
+std::vector<std::string> const&
+Simulator::GetCmdArgs() const
+{
+	return cmd_args;
+}
+
 template <typename T>
 T Simulator::GetVariable(const char *variable_name, const T *t) const
 {
@@ -3624,21 +3538,21 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	os << "\\noindent Options:" << endl;
 	os << "\\begin{itemize}" << endl;
 
-	std::vector<CommandLineOption>::const_iterator cmd_opt_iter;
-	for(cmd_opt_iter = command_line_options.begin(); cmd_opt_iter != command_line_options.end(); cmd_opt_iter++)
+	std::vector<CommandLineOption>::const_iterator cmd_opt_itr;
+	for(cmd_opt_itr = command_line_options.begin(); cmd_opt_itr != command_line_options.end(); cmd_opt_itr++)
 	{
 		os << "\\item \\texttt{";
-		os << "--" << string_to_latex(cmd_opt_iter->GetLongName());
-		if(cmd_opt_iter->HasArgument())
+		os << "--" << string_to_latex(cmd_opt_itr->GetLongName());
+		if(cmd_opt_itr->HasArgument())
 		{
-			os << " $<$" << string_to_latex(cmd_opt_iter->GetArgumentDescription()) << "$>$";
+			os << " $<$" << string_to_latex(cmd_opt_itr->GetArgumentDescription()) << "$>$";
 		}
-		os << " or -" << cmd_opt_iter->GetShortName();
-		if(cmd_opt_iter->HasArgument())
+		os << " or -" << cmd_opt_itr->GetShortName();
+		if(cmd_opt_itr->HasArgument())
 		{
-			os << " $<$" << string_to_latex(cmd_opt_iter->GetArgumentDescription()) << "$>$";
+			os << " $<$" << string_to_latex(cmd_opt_itr->GetArgumentDescription()) << "$>$";
 		}
-		os << "}: " << string_to_latex(cmd_opt_iter->GetOptionDescription());
+		os << "}: " << string_to_latex(cmd_opt_itr->GetOptionDescription());
 		os << "" << std::endl;
 	}
 	os << "\\end{itemize}" << endl;
@@ -3774,13 +3688,6 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 bool Simulator::IsWarningEnabled() const
 {
 	return enable_warning;
-}
-
-unisim::kernel::api::APIBase *
-Simulator::
-GetAPIs()
-{
-	return 0;
 }
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)

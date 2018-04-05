@@ -1008,7 +1008,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(unisim::util::blob::Blob<A
     }
     // and finally we put argc into the stack
     ADDRESS_TYPE argc_top = sp;
-    ADDRESS_TYPE argc_value = Host2Target(endianness_, argc_);
+    ADDRESS_TYPE argc_value = Host2Target(endianness_, ADDRESS_TYPE(argc_));
     sp -= sizeof(argc_value);
     if(pass == 2) memcpy(stack_data + sp, &argc_value, sizeof(argc_value));
     ADDRESS_TYPE argc_bottom = sp;

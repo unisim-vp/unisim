@@ -104,7 +104,6 @@ unistd.h \
 vector"
 
 UNISIM_LIB_STAR12X_SOURCE_FILES="\
-unisim/kernel/api/api.cc \
 unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
@@ -247,7 +246,6 @@ unisim/component/cxx/processor/hcs12x/s12xgate.isa \
 "
 
 UNISIM_LIB_STAR12X_HEADER_FILES="${UNISIM_LIB_STAR12X_ISA_FILES} ${UNISIM_LIB_XB_ISA_FILES} ${UNISIM_LIB_S12XGATE_ISA_FILES} \
-unisim/kernel/api/api.hh \
 unisim/kernel/service/service.hh \
 unisim/kernel/service/xml_helper.hh \
 unisim/kernel/logger/logger.hh \

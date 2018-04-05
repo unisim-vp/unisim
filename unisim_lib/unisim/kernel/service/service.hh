@@ -67,15 +67,8 @@ struct Logger;
 
 }
 
-namespace api {
-
-class APIBase;
-
 }
 }
-}
-
-#include "unisim/kernel/api/api.hh"
 
 #ifdef DEBUG_MEMORY_ALLOCATION
 void *operator new(std::size_t size);
@@ -299,6 +292,7 @@ public:
 	bool GetBinPath(const char *argv0, std::string& out_bin_dir, std::string& out_bin_program) const;
 	bool GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const;
 	string SearchSharedDataFile(const char *filename) const;
+	std::vector<std::string> const& GetCmdArgs() const;
 
 	void GenerateLatexDocumentation(ostream& os) const;
 	
@@ -312,8 +306,6 @@ public:
 
 	bool IsWarningEnabled() const;
 
-	unisim::kernel::api::APIBase *GetAPIs();
-
 private:
 	friend class Object;
 	friend class VariableBase;
@@ -321,7 +313,6 @@ private:
 	friend class XMLHelper;
 	friend class ServiceImportBase;
 	friend class ServiceExportBase;
-	friend class unisim::kernel::api::APIBase;
 
 	string shared_data_dir;
 	std::map<string, string> set_vars;
@@ -367,9 +358,6 @@ private:
 	void Unregister(ServiceExportBase *srv_export);
 	void Unregister(VariableBase *variable);
 
-	void Register(unisim::kernel::api::APIBase *api);
-	void Unregister(unisim::kernel::api::APIBase *api);
-	
 	void Initialize(VariableBase *variable);
 
 	bool XmlfyParameters(const char *filename);
@@ -387,13 +375,7 @@ private:
 	bool XmlfyVariables(const char *filename);
 	bool LoadXmlVariables(const char *filename);
 
-public:
-	// TOCHECK: this method was previously declared as private,
-	//   and should probably become again private unless we consider
-	//   it part of the simulator API in which case it should
-	//   become public
 	void GetRootObjects(list<Object *>& lst) const;
-	void GetAPIs(list<unisim::kernel::api::APIBase *> &api_list) const;
 
 private:
 	class CommandLineOption
@@ -427,9 +409,8 @@ private:
 	map<const char *, ServiceImportBase *, ltstr> imports;
 	map<const char *, ServiceExportBase *, ltstr> exports;
 	map<const char *, VariableBase *, ltstr> variables;
-	map<const char *, unisim::kernel::api::APIBase *, ltstr> apis;
 	
-	string *cmd_args;
+	std::vector<std::string> cmd_args;
 	ParameterArray<string> *param_cmd_args;
 	
 public:

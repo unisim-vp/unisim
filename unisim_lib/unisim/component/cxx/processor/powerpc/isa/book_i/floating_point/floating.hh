@@ -203,7 +203,7 @@ inline void GenFPSCR_FX(typename FPSCR::TYPE& fpscr, typename FPSCR::TYPE old_fp
 	             FPSCR::VXSQRT::Get(posedges) or
 	             FPSCR::VXCVI::Get(posedges)))
 	{
-		FPSCR::FX::Set(fpscr,UINT(1));
+		FPSCR::FX::Set(fpscr,typename FPSCR::TYPE(1));
 	}
 }
 
@@ -220,7 +220,7 @@ inline void GenFPSCR_VX(typename FPSCR::TYPE& fpscr)
 	             FPSCR::VXSQRT::Get(fpscr) or
 	             FPSCR::VXCVI::Get(fpscr)))
 	{
-		FPSCR::VX::Set(fpscr,UINT(1));
+		FPSCR::VX::Set(fpscr,typename FPSCR::TYPE(1));
 	}
 }
 
@@ -233,7 +233,7 @@ inline void GenFPSCR_FEX(typename FPSCR::TYPE& fpscr)
 	             (FPSCR::ZX::Get(fpscr) and FPSCR::ZE::Get(fpscr)) or
 	             (FPSCR::XX::Get(fpscr) and FPSCR::XE::Get(fpscr))))
 	{
-		FPSCR::FEX::Set(fpscr,UINT(1));
+		FPSCR::FEX::Set(fpscr,typename FPSCR::TYPE(1));
 	}
 }
 

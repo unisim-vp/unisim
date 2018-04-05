@@ -34,8 +34,55 @@
 
 #include <arch.hh>
 #include <linuxsystem.hh>
+#include <debugger.hh>
 #include <iostream>
 #include <iomanip>
+#include <stdexcept>
+
+struct Simulator
+  : public unisim::kernel::service::Simulator
+{
+  typedef unisim::kernel::service::Simulator BaseSimulator;
+  
+  Simulator(char* self)
+    : BaseSimulator(1, &self, Simulator::DefaultConfiguration)
+    , exit_status(-1)
+  {}
+
+  //  virtual ~Simulator();
+  //  int Run();
+  //  int Run(double time, sc_core::sc_time_unit unit);
+  //  bool IsRunning() const;
+  //  bool SimulationStarted() const;
+  //  bool SimulationFinished() const;
+  virtual BaseSimulator::SetupStatus Setup()
+  {
+    // if (enable_inline_debugger or enable_monitor)
+    //   {
+    //     SetVariable("debugger.parse-dwarf", true);
+    //   }
+
+    if (BaseSimulator::Setup() != unisim::kernel::service::Simulator::ST_OK_TO_START)
+      {
+        std::cerr << "Something wrong happened" << std::endl;
+        throw std::runtime_error("stop");
+      }
+    return unisim::kernel::service::Simulator::ST_OK_TO_START;
+  }
+  
+  virtual void Stop(unisim::kernel::service::Object *object, int exit_status, bool asynchronous = false)
+  {
+    throw std::runtime_error("stop");
+  }
+  
+  int GetExitStatus() const { return exit_status; }
+
+  static void DefaultConfiguration(unisim::kernel::service::Simulator* sim)
+  {
+  }
+  
+  int exit_status;
+};
 
 struct Disasm
 {
@@ -47,40 +94,45 @@ struct Disasm
 int
 main( int argc, char* argv[] )
 {
+  Simulator simulator(argv[0]);
+
   uintptr_t simargs_idx = 1;
   std::vector<std::string> simargs(&argv[simargs_idx], &argv[argc]);
-  
-  {
-    std::cerr << "arguments:\n";
-
-    unsigned idx = 0;
-    for (auto && arg : simargs)
-      {
-        std::cerr << "  args[" << idx++ << "]: " << arg << '\n';
-      }
-  }
   
   if (simargs.size() == 0)
     {
       std::cerr << "Simulation command line empty." << std::endl;
       return 1;
     }
+  else
+    {
+      std::cerr << "arguments:\n";
+
+      for (int idx = simargs.size(); --idx >= 0;)
+        {
+          std::cerr << "  args[" << idx << "]: " << simargs[idx] << '\n';
+        }
+    }
+  
 
   std::vector<std::string> envs;
   envs.push_back( "LANG=C" );
   
   Arch cpu;
   
-  LinuxOS linux32( std::cerr, &cpu, &cpu, &cpu );
-  cpu.SetLinuxOS( &linux32 );
-  
-  linux32.Setup( simargs, envs );
-  
-  //  cpu.disasm = false;
-  
   // Loading image
   std::cerr << "*** Loading elf image: " << simargs[0] << " ***" << std::endl;
   
+  LinuxOS linux64( std::cerr, &cpu, &cpu, &cpu );
+  cpu.SetLinuxOS( &linux64 );
+  
+  linux64.Setup( simargs, envs );
+
+  //Debugger debugger( cpu, linux64 );
+
+  simulator.Setup();
+  
+  //  cpu.disasm = false;
   std::cerr << "\n*** Run ***" << std::endl;
 
   uintptr_t const tail_trace_size = 32;
@@ -115,7 +167,7 @@ main( int argc, char* argv[] )
           // if ((cpu.m_instcount % 0x1000000) == 0)
           //   { std::cerr << "Executed instructions: " << std::dec << cpu.m_instcount << " (" << std::hex << op->address << std::dec << ")"<< std::endl; }
         }
-      while (not linux32.exited);      
+      while (not linux64.exited);      
     }
   catch (MisInsn& insn)
     {
@@ -125,7 +177,7 @@ main( int argc, char* argv[] )
       std::cerr << std::endl;
     }
 
-  std::cerr << "Program exited with status:" << std::dec << linux32.app_ret_status << std::endl;
+  std::cerr << "Program exited with status:" << std::dec << linux64.app_ret_status << std::endl;
   std::cerr << "Executed instructions: " << cpu.insn_count << std::endl;
 
   // for (unsigned idx = 1; idx <= tail_trace_size; ++idx )

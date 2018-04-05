@@ -40,7 +40,6 @@ unisim/component/cxx/processor/intel/math.cc \
 "
 
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
-unisim/kernel/api/api.hh \
 unisim/util/backtrace/backtrace.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \

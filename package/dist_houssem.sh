@@ -118,7 +118,6 @@ unistd.h \
 vector"
 
 UNISIM_LIB_RISC16_SOURCE_FILES="\
-unisim/kernel/api/api.cc \
 unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
@@ -210,7 +209,6 @@ UNISIM_LIB_S12XGATE_ISA_FILES="\
 "
 
 UNISIM_LIB_RISC16_HEADER_FILES="${UNISIM_LIB_RISC16_ISA_FILES} ${UNISIM_LIB_XB_ISA_FILES} ${UNISIM_LIB_S12XGATE_ISA_FILES} \
-unisim/kernel/api/api.hh \
 unisim/kernel/service/service.hh \
 unisim/kernel/service/xml_helper.hh \
 unisim/kernel/logger/logger.hh \

@@ -2,92 +2,12 @@
 
 SIMPKG=e5500fpv
 
-UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
-action.hh \
-cli.hh \
-errtools.hh \
-isa.hh \
-parser_defs.hh \
-riscgenerator.hh \
-specialization.hh \
-variable.hh \
-bitfield.hh \
-comment.hh \
-fwd.hh \
-main.hh \
-product.hh \
-scanner.hh \
-strtools.hh \
-vect.hh \
-ciscgenerator.hh \
-conststr.hh \
-generator.hh \
-operation.hh \
-referencecounting.hh \
-sourcecode.hh \
-subdecoder.hh \
-"
-
-UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES="\
-scanner.cc \
-parser.cc \
-parser_tokens.hh \
-"
-
-UNISIM_TOOLS_GENISSLIB_SOURCE_FILES="\
-parser.yy \
-scanner.ll \
-action.cc \
-bitfield.cc \
-cli.cc \
-comment.cc \
-conststr.cc \
-isa.cc \
-main.cc \
-operation.cc \
-product.cc \
-referencecounting.cc \
-sourcecode.cc \
-strtools.cc \
-variable.cc \
-generator.cc \
-riscgenerator.cc \
-ciscgenerator.cc \
-subdecoder.cc \
-specialization.cc \
-errtools.cc \
-"
-
-UNISIM_TOOLS_GENISSLIB_DATA_FILES="COPYING INSTALL NEWS README AUTHORS ChangeLog"
-
-UNISIM_TOOLS_GENISSLIB_M4_FILES="\
-m4/lexer.m4 \
-m4/parser_gen.m4 \
-"
-
-GENISSLIB_EXTERNAL_HEADERS="\
-cassert \
-cctype \
-cerrno \
-cstdarg \
-cstdio \
-cstdlib \
-cstring \
-fstream \
-inttypes.h \
-iosfwd \
-iostream \
-limits \
-map \
-memory \
-ostream \
-unistd.h \
-vector \
-"
-
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
+unisim/kernel/service/service.cc \
+unisim/kernel/service/xml_helper.cc \
+unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/util/debug/symbol_table_64.cc \
 unisim/util/debug/symbol_table_32.cc \
 unisim/util/debug/dwarf/class.cc \
@@ -392,31 +312,61 @@ unisim/component/cxx/processor/powerpc/isa/book_e/tlbwe.isa \
 
 UNISIM_LIB_SIMULATOR_HEADER_FILES="\
 ${UNISIM_LIB_SIMULATOR_ISA_FILES} \
-unisim/kernel/api/api.hh \
-unisim/util/backtrace/backtrace.hh \
+unisim/component/cxx/memory/sparse/memory.hh \
+unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh \
+unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh \
+unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/service/service.hh \
+unisim/kernel/service/xml_helper.hh \
+unisim/service/debug/debugger/debugger.hh \
+unisim/service/debug/debugger/debugger.tcc \
+unisim/service/debug/inline_debugger/inline_debugger.hh \
+unisim/service/debug/inline_debugger/inline_debugger.tcc \
+unisim/service/interfaces/backtrace.hh \
+unisim/service/interfaces/blob.hh \
 unisim/service/interfaces/data_object_lookup.hh \
+unisim/service/interfaces/debug_event.hh \
+unisim/service/interfaces/debug_info_loading.hh \
+unisim/service/interfaces/debug_selecting.hh \
+unisim/service/interfaces/debug_yielding.hh \
+unisim/service/interfaces/disassembly.hh \
 unisim/service/interfaces/linux_os.hh \
+unisim/service/interfaces/loader.hh \
 unisim/service/interfaces/memory.hh \
+unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/memory_injection.hh \
-unisim/service/interfaces/registers.hh \
+unisim/service/interfaces/profiling.hh \
 unisim/service/interfaces/register.hh \
+unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/stmt_lookup.hh \
+unisim/service/interfaces/subprogram_lookup.hh \
+unisim/service/interfaces/symbol_table_lookup.hh \
+unisim/service/interfaces/trap_reporting.hh \
 unisim/util/arithmetic/arithmetic.hh \
+unisim/util/backtrace/backtrace.hh \
 unisim/util/blob/blob.hh \
 unisim/util/blob/blob.tcc \
 unisim/util/blob/section.hh \
 unisim/util/blob/section.tcc \
 unisim/util/blob/segment.hh \
 unisim/util/blob/segment.tcc \
+unisim/util/debug/breakpoint.hh \
+unisim/util/debug/breakpoint_registry.hh \
+unisim/util/debug/breakpoint_registry.tcc \
+unisim/util/debug/coff_symtab/coff_symtab.hh \
+unisim/util/debug/coff_symtab/coff_symtab.tcc \
+unisim/util/debug/commit_insn_event.hh \
 unisim/util/debug/data_object.hh \
+unisim/util/debug/data_object_initializer.hh \
+unisim/util/debug/data_object_initializer.tcc \
 unisim/util/debug/dwarf/abbrev.hh \
 unisim/util/debug/dwarf/addr_range.hh \
 unisim/util/debug/dwarf/addr_range.tcc \
 unisim/util/debug/dwarf/attr.hh \
 unisim/util/debug/dwarf/attr.tcc \
+unisim/util/debug/dwarf/c_loc_expr_parser.hh \
 unisim/util/debug/dwarf/call_frame_prog.hh \
 unisim/util/debug/dwarf/call_frame_prog.tcc \
 unisim/util/debug/dwarf/call_frame_vm.hh \
@@ -425,7 +375,6 @@ unisim/util/debug/dwarf/cfa.hh \
 unisim/util/debug/dwarf/cie.hh \
 unisim/util/debug/dwarf/cie.tcc \
 unisim/util/debug/dwarf/class.hh \
-unisim/util/debug/dwarf/c_loc_expr_parser.hh \
 unisim/util/debug/dwarf/cu.hh \
 unisim/util/debug/dwarf/cu.tcc \
 unisim/util/debug/dwarf/data_object.hh \
@@ -466,6 +415,11 @@ unisim/util/debug/dwarf/util.hh \
 unisim/util/debug/dwarf/version.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/debug/elf_symtab/elf_symtab.tcc \
+unisim/util/debug/event.hh \
+unisim/util/debug/fetch_insn_event.hh \
+unisim/util/debug/memory_access_type.hh \
+unisim/util/debug/profile.hh \
+unisim/util/debug/profile.tcc \
 unisim/util/debug/simple_register.hh \
 unisim/util/debug/stmt.hh \
 unisim/util/debug/stmt.tcc \
@@ -474,14 +428,24 @@ unisim/util/debug/symbol.hh \
 unisim/util/debug/symbol.tcc \
 unisim/util/debug/symbol_table.hh \
 unisim/util/debug/symbol_table.tcc \
+unisim/util/debug/trap_event.hh \
 unisim/util/debug/type.hh \
+unisim/util/debug/watchpoint.hh \
+unisim/util/debug/watchpoint_registry.hh \
+unisim/util/debug/watchpoint_registry.tcc \
 unisim/util/dictionary/dictionary.hh \
 unisim/util/dictionary/dictionary.tcc \
 unisim/util/endian/endian.hh \
+unisim/util/hash_table/hash_table.hh \
+unisim/util/ieee754/ieee754.hh \
 unisim/util/inlining/inlining.hh \
 unisim/util/lexer/lexer.hh \
 unisim/util/lexer/lexer.tcc \
 unisim/util/likely/likely.hh \
+unisim/util/loader/coff_loader/coff_loader.hh \
+unisim/util/loader/coff_loader/coff_loader.tcc \
+unisim/util/loader/coff_loader/ti/ti.hh \
+unisim/util/loader/coff_loader/ti/ti.tcc \
 unisim/util/loader/elf_loader/elf32.h \
 unisim/util/loader/elf_loader/elf32_loader.hh \
 unisim/util/loader/elf_loader/elf64.h \
@@ -506,10 +470,6 @@ unisim/util/simfloat/floating.tcc \
 unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/integer.tcc \
 unisim/util/xml/xml.hh \
-unisim/component/cxx/memory/sparse/memory.hh \
-unisim/component/cxx/processor/powerpc/isa/book_vle/vle.hh \
-unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh \
-unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh \
 "
 
 UNISIM_LIB_SIMULATOR_M4_FILES="\
@@ -528,6 +488,9 @@ m4/check_lib.m4 \
 m4/get_exec_path.m4 \
 m4/real_path.m4 \
 m4/pthread.m4 \
+"
+
+UNISIM_LIB_SIMULATOR_DATA_FILES="\
 "
 
 SIMULATOR_EXTERNAL_HEADERS="\
@@ -570,18 +533,14 @@ vector \
 string \
 "
 
-UNISIM_LIB_SIMULATOR_DATA_FILES="\
-"
-
 UNISIM_SIMULATOR_ISA_FILES="\
 top_ppc64.isa \
 "
 
-UNISIM_SIMULATOR_ISA_FILES="${UNISIM_LIB_SIMULATOR_ISA_FILES} ${UNISIM_SIMULATOR_ISA_FILES}"
-
 UNISIM_SIMULATOR_SOURCE_FILES="\
 main.cc \
 linuxsystem.cc \
+debugger.cc \
 arch.cc \
 simfloat.cc \
 "
@@ -589,12 +548,10 @@ simfloat.cc \
 UNISIM_SIMULATOR_HEADER_FILES="\
 ${UNISIM_SIMULATOR_ISA_FILES} \
 linuxsystem.hh \
+debugger.hh \
 arch.hh \
 simfloat.hh \
 types.hh \
-"
-
-UNISIM_SIMULATOR_EXTRA_FILES="\
 "
 
 UNISIM_SIMULATOR_TOP_DATA_FILES="\
@@ -605,17 +562,17 @@ ChangeLog \
 
 UNISIM_SIMULATOR_DATA_FILES="\
 COPYING \
-README \
 INSTALL \
-AUTHORS \
 NEWS \
+README \
+AUTHORS \
 ChangeLog \
 "
 
 UNISIM_SIMULATOR_TESTBENCH_FILES="\
 "
 
-function Usage
+Usage()
 {
 	echo "Usage:"
 	echo "  $0 <destination directory>"
@@ -629,12 +586,11 @@ fi
 UNISIM_DIR=$(cd $(dirname $(dirname $0)); pwd)
 mkdir -p "$1"
 DEST_DIR=$(cd "$1"; pwd)
-UNISIM_TOOLS_DIR=${UNISIM_DIR}/unisim_tools
+
 UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
 UNISIM_SIMULATOR_DIR=${UNISIM_DIR}/unisim_simulators/cxx/${SIMPKG}
 
 SIMULATOR_VERSION=$(cat ${UNISIM_SIMULATOR_DIR}/VERSION)
-GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-${SIMPKG}-${SIMULATOR_VERSION}
 
 if [ -z "${DISTCOPY}" ]; then
 	DISTCOPY=cp
@@ -654,14 +610,9 @@ dist_copy() {
 	false
 }
 
-mkdir -p ${DEST_DIR}/genisslib
+GILINSTALL=noinst ${UNISIM_DIR}/package/dist_genisslib.sh ${DEST_DIR}/genisslib
+
 mkdir -p ${DEST_DIR}/${SIMPKG}
-
-UNISIM_TOOLS_GENISSLIB_FILES="${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES} ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES} ${UNISIM_TOOLS_GENISSLIB_DATA_FILES}"
-
-for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
-	dist_copy "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}"
-done
 
 UNISIM_LIB_SIMULATOR_FILES="${UNISIM_LIB_SIMULATOR_SOURCE_FILES} ${UNISIM_LIB_SIMULATOR_HEADER_FILES} ${UNISIM_LIB_SIMULATOR_DATA_FILES}"
 
@@ -669,13 +620,7 @@ for file in ${UNISIM_LIB_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
 done
 
-UNISIM_SIMULATOR_FILES="\
-${UNISIM_SIMULATOR_SOURCE_FILES} \
-${UNISIM_SIMULATOR_HEADER_FILES} \
-${UNISIM_SIMULATOR_EXTRA_FILES} \
-${UNISIM_SIMULATOR_DATA_FILES} \
-${UNISIM_SIMULATOR_TESTBENCH_FILES} \
-"
+UNISIM_SIMULATOR_FILES="${UNISIM_SIMULATOR_SOURCE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_TESTBENCH_FILES}"
 
 for file in ${UNISIM_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
@@ -688,16 +633,9 @@ done
 mkdir -p ${DEST_DIR}/config
 mkdir -p ${DEST_DIR}/${SIMPKG}/config
 mkdir -p ${DEST_DIR}/${SIMPKG}/m4
-mkdir -p ${DEST_DIR}/genisslib/config
-mkdir -p ${DEST_DIR}/genisslib/m4
 
 # Some imported files (m4 macros) impact configure generation
-has_to_build_genisslib_configure=no
 has_to_build_simulator_configure=no
-
-for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
-	dist_copy "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}" && has_to_build_genisslib_configure=yes
-done
 
 for file in ${UNISIM_LIB_SIMULATOR_M4_FILES}; do
 	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}" && has_to_build_simulator_configure=yes
@@ -711,8 +649,9 @@ EOF
 
 cat << EOF > "${DEST_DIR}/README"
 This package contains:
-  - mpc57_simtest: an MPC57 V5 user level simulator
-  - GenISSLib (will not be installed): an instruction set simulator generator
+  - e5500_fpv: a QorIQ e5500 (PowerPC64) simulator with floating point instrumentation
+  - UNISIM GenISSLib (will not be installed): an instruction set simulator generator
+
 See INSTALL for installation instructions.
 EOF
 
@@ -887,73 +826,7 @@ chmod +x Makefile.cross
 echo "\$(basename \$0): run 'make -f \${HERE}/Makefile.cross' or '\${HERE}/Makefile.cross' to build for \${host} host system type"
 EOF_CONFIGURE_CROSS
 	chmod +x "${CONFIGURE_CROSS}"
-fi  # has to build configure cross
-
-# GENISSLIB
-
-GENISSLIB_CONFIGURE_AC="${DEST_DIR}/genisslib/configure.ac"
-GENISSLIB_MAKEFILE_AM="${DEST_DIR}/genisslib/Makefile.am"
-
-if has_to_build "${GENISSLIB_CONFIGURE_AC}" "$0"; then
-	echo "Generating GENISSLIB configure.ac"
-	cat <<EOF > "${GENISSLIB_CONFIGURE_AC}"
-AC_INIT([UNISIM GENISSLIB], [${GENISSLIB_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Yves  Lhuillier <yves.lhuillier@cea.fr>], [genisslib])
-AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_AUX_DIR(config)
-AC_CONFIG_HEADERS([config.h])
-AC_CANONICAL_BUILD
-AC_CANONICAL_HOST
-AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([subdir-objects tar-pax])
-AC_PATH_PROGS(SH, sh)
-AC_PROG_CXX
-AC_PROG_INSTALL
-AC_PROG_LN_S
-AC_LANG([C++])
-AC_CHECK_HEADERS([${GENISSLIB_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))
-UNISIM_CHECK_LEXER_GENERATOR
-UNISIM_CHECK_PARSER_GENERATOR
-AC_CONFIG_FILES([Makefile])
-AC_OUTPUT
-EOF
-	has_to_build_genisslib_configure=yes
-fi
-
-if has_to_build "${GENISSLIB_MAKEFILE_AM}" "$0"; then
-	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
-	echo "Generating GENISSLIB Makefile.am"
-	cat <<EOF > "${GENISSLIB_MAKEFILE_AM}"
-ACLOCAL_AMFLAGS=-I m4
-BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}
-CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}
-AM_YFLAGS = -d -p yy
-AM_LFLAGS = -l
-AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)
-noinst_PROGRAMS = genisslib
-genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}
-genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\"${GENISSLIB_VERSION}\"
-genisslib_CXXFLAGS = -O1 -Wno-error
-noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}
-EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}
-# The following lines are a workaround caused by a bugFix in AUTOMAKE 1.12
-# Note that parser_tokens.hh has been added to BUILT_SOURCES above
-# assumption: parser.cc and either parser.h or parser.hh are generated at the same time
-\$(top_builddir)/parser_tokens.hh: \$(top_builddir)/parser.cc
-	if test -f "\$(top_builddir)/parser.h"; then\
-		cp -f "\$(top_builddir)/parser.h" "\$(top_builddir)/parser_tokens.hh";\
-	elif test -f "\$(top_builddir)/parser.hh"; then\
-		cp -f "\$(top_builddir)/parser.hh" "\$(top_builddir)/parser_tokens.hh";\
-	fi
-# The following line disable some C++ flags that prevent the flex generated file to compile properly
-\$(top_builddir)/genisslib-scanner.o: CXXFLAGS += -O1 -Wno-error
-EOF
-	has_to_build_genisslib_configure=yes
-fi
-
-if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
-	echo "Building GENISSLIB configure"
-	${SHELL} -c "cd ${DEST_DIR}/genisslib && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
-fi
+fi  # has to build configure.cross
 
 # Simulator
 
@@ -1034,7 +907,7 @@ CLEANFILES=\
 	\$(top_builddir)/top_ppc64.cc\
 
 \$(top_builddir)/top_ppc64.cc: \$(top_builddir)/top_ppc64.hh
-\$(top_builddir)/top_ppc64.hh: ${UNISIM_SIMULATOR_ISA_FILES}
+\$(top_builddir)/top_ppc64.hh: ${UNISIM_SIMULATOR_ISA_FILES} ${UNISIM_LIB_SIMULATOR_ISA_FILES}
 	\$(GENISSLIB_PATH) -o \$(top_builddir)/top_ppc64 -w 8 -I \$(top_srcdir) \$(top_srcdir)/top_ppc64.isa
 
 EOF

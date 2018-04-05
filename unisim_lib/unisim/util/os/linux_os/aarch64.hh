@@ -68,8 +68,6 @@ namespace linux_os {
   static char const* const kAARCH64_x4  = "x4"; /* syscall arg#5 */
   static char const* const kAARCH64_x5  = "x5"; /* syscall arg#6 */
   static char const* const kAARCH64_x8  = "x8"; /* syscall NR */
-  static char const* const kAARCH64_sp  = "sp"; /* stack pointer */
-  static char const* const kAARCH64_pc  = "pc"; /* programm counter */
 
   template <class LINUX>
   struct AARCH64TS : public LINUX::TargetSystem

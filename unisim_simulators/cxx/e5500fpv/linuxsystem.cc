@@ -41,7 +41,10 @@ LinuxOS::LinuxOS( std::ostream& log,
          unisim::service::interfaces::Memory<uint64_t> *mem_if,
          unisim::service::interfaces::MemoryInjection<uint64_t> *mem_inject_if
          )
-  : unisim::service::interfaces::LinuxOS()
+  : unisim::kernel::service::Object("ppc64linux", 0)
+  , unisim::service::interfaces::LinuxOS()
+  , unisim::kernel::service::Service<unisim::service::interfaces::Blob<uint64_t> >("ppc64linux", 0)
+  , blob_export("blob-export", this)
   , linux_impl( log, log, log, regs_if, mem_if, mem_inject_if )
   , exited( false )
   , app_ret_status( -1 )
