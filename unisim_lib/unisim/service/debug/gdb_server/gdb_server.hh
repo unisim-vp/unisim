@@ -124,7 +124,7 @@ public:
 	template <typename T> bool GetValue(unsigned int prc_num, T& v) const { unisim::service::interfaces::Register *reg = (prc_num < arch_regs.size()) ? arch_regs[prc_num] : 0; if(reg) reg->GetValue(v); return reg != 0; }
 	template <typename T> bool SetValue(unsigned int prc_num, const T& v) { unisim::service::interfaces::Register *reg = (prc_num < arch_regs.size()) ? arch_regs[prc_num] : 0; if(reg) reg->SetValue(v); return reg != 0; }
 	inline int GetHexLength() const { return bitsize / 4; }
-	inline unisim::service::interfaces::Register *GetRegisterInterface(unsigned int prc_num) { unisim::service::interfaces::Register *reg = (prc_num < arch_regs.size()) ? arch_regs[prc_num] : 0; return reg; }
+	inline unisim::service::interfaces::Register *GetRegisterInterface(unsigned int prc_num) const { return (prc_num < arch_regs.size()) ? arch_regs[prc_num] : 0; }
 	void SetRegisterInterface(unsigned int prc_num, unisim::service::interfaces::Register *reg);
 	inline GDBEndian GetEndian() const { return endian; }
 	unsigned int GetRegNum() const { return reg_num; }

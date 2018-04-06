@@ -40,7 +40,7 @@
 		<register name="ctr" bitsize="32" type="uint32"/>
 		<register name="xer" bitsize="32" type="uint32"/>
 	</feature>
-	<feature name="">
+	<feature name="org.gnu.gdb.power.fpu">
 		<register name="f0" bitsize="64" type="ieee_double" regnum="32"/>
 		<register name="f1" bitsize="64" type="ieee_double"/>
 		<register name="f2" bitsize="64" type="ieee_double"/>

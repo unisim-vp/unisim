@@ -72,14 +72,59 @@ Arch::Arch()
       regmap[regname.str()] = new unisim::util::debug::SimpleRegister<uint64_t>(regname.str(), &gprs[idx]);
     }
 
-  struct { char const* name; uint64_t* reg; } dedicated_registers[] = {
-    { "cr", &cr.value },
+  typedef unisim::util::debug::SimpleRegister<uint64_t> Spec64Register;
+  
+  struct { char const* name; uint64_t* reg; } spec64_registers[] = {
+    { "lr", &lr },
+    { "ctr", &lr },
     { "cia", &cia },
     { "pc", &cia },
+    { "msr", &msr.value },
+  };
+  
+  for (int idx = sizeof(spec64_registers)/sizeof(spec64_registers[0]); --idx >= 0;)
+    regmap[spec64_registers[idx].name] = new Spec64Register(spec64_registers[idx].name, spec64_registers[idx].reg);
+
+  struct Spec32Register : public unisim::service::interfaces::Register
+  {
+    Spec32Register( std::string _name, uint64_t* _reg ) : name(_name), reg(_reg) {} std::string name; uint64_t* reg;
+    virtual const char *GetName() const { return name.c_str(); };
+    virtual void GetValue( void* buffer ) const { uint32_t downsized = uint32_t(*reg); memcpy( buffer, &downsized, 4 ); }
+    virtual void SetValue( void const* buffer ) { uint32_t downsized; memcpy( &downsized, buffer, 4 ); *reg = uint64_t(downsized); }
+    virtual int  GetSize() const { return 4; }
+  };
+  
+  struct { char const* name; uint64_t* reg; } spec32_registers[] = {
+    { "cr", &cr.value },
+    { "xer", &xer.value },
+    { "fpscr", &fpscr.value },
   };
 
-  for (int idx = sizeof(dedicated_registers)/sizeof(dedicated_registers[0]); --idx >= 0;)
-    regmap[dedicated_registers[idx].name] = new unisim::util::debug::SimpleRegister<uint64_t>(dedicated_registers[idx].name, dedicated_registers[idx].reg);
+  for (int idx = sizeof(spec32_registers)/sizeof(spec32_registers[0]); --idx >= 0;)
+    {
+      std::string name64 = spec32_registers[idx].name;
+      std::string name32 = name64 + "32";
+      regmap[name32] = new Spec32Register(name32, spec32_registers[idx].reg);
+      regmap[name64] = new Spec64Register(name64, spec32_registers[idx].reg);
+      
+    }
+
+  // Advanced SIMD and VFP register
+  struct FPRegister : public unisim::service::interfaces::Register
+  {
+    FPRegister( Arch& _cpu, std::string _name, unsigned _reg ) : cpu(_cpu), name(_name), reg(_reg) {} Arch& cpu; std::string name; unsigned reg;
+    virtual const char *GetName() const { return name.c_str(); };
+    virtual void GetValue( void* buffer ) const { cpu.GetFPR(reg).impl.fillChunk( buffer, unisim::util::endian::IsHostLittleEndian() ); }
+    virtual void SetValue( void const* buffer ) { cpu.GetFPR(reg).impl.setChunk( buffer, unisim::util::endian::IsHostLittleEndian() ); }
+    virtual int  GetSize() const { return 8; }
+  };
+
+  for (unsigned idx = 0; idx < 32; ++idx)
+    {
+      std::ostringstream regname; regname << unisim::component::cxx::processor::powerpc::FPRPrint(idx);
+      regmap[regname.str()] = new FPRegister( *this, regname.str(), idx );
+    }
+
 }
   
 Arch::~Arch()

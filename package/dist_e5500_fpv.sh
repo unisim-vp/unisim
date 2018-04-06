@@ -8,6 +8,7 @@ unisim/kernel/logger/logger_server.cc \
 unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_helper.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
+unisim/service/debug/gdb_server/gdb_server.cc \
 unisim/util/debug/symbol_table_64.cc \
 unisim/util/debug/symbol_table_32.cc \
 unisim/util/debug/dwarf/class.cc \
@@ -324,6 +325,8 @@ unisim/service/debug/debugger/debugger.hh \
 unisim/service/debug/debugger/debugger.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
+unisim/service/debug/gdb_server/gdb_server.hh \
+unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/blob.hh \
 unisim/service/interfaces/data_object_lookup.hh \
@@ -491,6 +494,8 @@ m4/pthread.m4 \
 "
 
 UNISIM_LIB_SIMULATOR_DATA_FILES="\
+unisim/service/debug/gdb_server/gdb_power64.xml \
+unisim/util/debug/dwarf/power64_dwarf_register_number_mapping.xml \
 "
 
 SIMULATOR_EXTERNAL_HEADERS="\
@@ -861,6 +866,7 @@ case "\${host}" in
 	*)
 		;;
 esac
+UNISIM_CHECK_PTHREAD(main)
 UNISIM_CHECK_LIBXML2(main)
 GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib
 AC_SUBST(GENISSLIB_PATH)

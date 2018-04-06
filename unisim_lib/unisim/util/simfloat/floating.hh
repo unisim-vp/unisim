@@ -375,7 +375,7 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
    static const int UBitSizeExponent = BitSizeExponent;
    typedef unsigned char CharChunk[BitSizeMantissa+BitSizeExponent+1];
    void setChunkSize(int uChunkSize) const { assert(uChunkSize == (BitSizeMantissa+BitSizeExponent+1+7)/8); }
-   void copyChunk(CharChunk& ccChunk, void* pChunk, int uChunkSize) const
+   void copyChunk(CharChunk& ccChunk, void const* pChunk, int uChunkSize) const
       {  assert(uChunkSize == (BitSizeMantissa+BitSizeExponent+1+7)/8);
          memcpy((unsigned char*) ccChunk, pChunk, uChunkSize);
       }
@@ -685,9 +685,9 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
          return *this;
       }
 
-   void setChunk(void* pChunk) { setChunk(pChunk, !Details::DTDoubleElement::Access::isBigEndian()); }
+   void setChunk(void const* pChunk) { setChunk(pChunk, !Details::DTDoubleElement::Access::isBigEndian()); }
    void fillChunk(void* pChunk) const { fillChunk(pChunk, !Details::DTDoubleElement::Access::isBigEndian()); }
-   void setChunk(void* pChunk, bool fLittleEndian); // size(pChunk) = UByteSizeImplantation
+   void setChunk(void const* pChunk, bool fLittleEndian); // size(pChunk) = UByteSizeImplantation
    void fillChunk(void* pChunk, bool fLittleEndian) const;
 
    void setFloat(const FloatConversion& fcValue, StatusAndControlFlags& scfFlags);

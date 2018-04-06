@@ -36,6 +36,7 @@
 #define __E5500FPV_DEBUGGER_HH__
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
+#include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <inttypes.h>
 
 struct Arch;
@@ -51,11 +52,12 @@ struct Debugger
     static const unsigned int MAX_FRONT_ENDS = 1;
   };
   
-  typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DebuggerRouter;
-  typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> InlineDebugger;
+  typedef unisim::service::debug::debugger::Debugger<DEBUGGER_CONFIG> DebugHub;
+  //typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> InlineDebugger;
+  typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDBServer;
   
-  DebuggerRouter debugger_router;
-  InlineDebugger inline_debugger;
+  DebugHub debug_hub;
+  GDBServer gdb_server;
 
   Debugger(Arch&, LinuxOS&);
   ~Debugger();
