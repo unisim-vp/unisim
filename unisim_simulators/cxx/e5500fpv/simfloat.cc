@@ -76,20 +76,20 @@ SoftDouble::SoftDouble(int64_t src, Flags& flags)
         {
           int const tail = out - 1;
           uint64_t const _1 = int64_t(1);
-          if (not flags.isNearestRound()) 
+          if (not flags.impl.isNearestRound()) 
             return;
-          flags.clearEffectiveRoundToEven();
+          flags.impl.clearEffectiveRoundToEven();
           if (not ((mantissa >> tail) & _1)) // close to zero ?
             return;
           if ((increment = bool(mantissa & ((_1 << tail) - _1)))) // close to one ?
             return;
-          flags.setEffectiveRoundToEven(); // Half way...
+          flags.impl.setEffectiveRoundToEven(); // Half way...
           increment = bool((mantissa >> out) & _1);
         }
       };
         
-      if ((flags.isHighestRound() and not neg) or
-          (flags.isLowestRound()  and     neg) or
+      if ((flags.impl.isHighestRound() and not neg) or
+          (flags.impl.isLowestRound()  and     neg) or
           NearestRound(flags, mantissa, out).increment)
         {
           mantissa = (mantissa >> out) + 1;
@@ -144,7 +144,7 @@ SoftFloat::convertAssign(const SoftDouble& op1, Flags& flags)
   fcConversion.mantissa()[0] = op1.impl.queryMantissa()[0];
   fcConversion.mantissa()[1] = op1.impl.queryMantissa()[1];
 
-  impl = impl_type(fcConversion, flags);
+  impl = impl_type(fcConversion, flags.impl);
 
   return *this;
 }
@@ -159,7 +159,7 @@ SoftDouble::convertAssign(const SoftFloat& op1, Flags& flags)
   fcConversion.exponent()[0] = op1.impl.queryBasicExponent()[0];
   fcConversion.mantissa()[0] = op1.impl.queryMantissa()[0];
    
-  impl = impl_type(fcConversion, flags);
+  impl = impl_type(fcConversion, flags.impl);
    
   return *this;
 }
@@ -200,20 +200,20 @@ bool SoftDouble::isInfty() const { return impl.isInfty(); }
 void SoftFloat::opposite() { impl.opposite(); }
 void SoftDouble::opposite() { impl.opposite(); }
 
-void SoftFloat::plusAssign(const SoftFloat& op1, Flags& flags) { impl.plusAssign(op1.impl,flags); }
-void SoftDouble::plusAssign(const SoftDouble& op1, Flags& flags) { impl.plusAssign(op1.impl,flags); }
-void SoftFloat::minusAssign(const SoftFloat& op1, Flags& flags) { impl.minusAssign(op1.impl,flags); }
-void SoftDouble::minusAssign(const SoftDouble& op1, Flags& flags) { impl.minusAssign(op1.impl,flags); }
-void SoftFloat::multAssign(const SoftFloat& op1, Flags& flags) { impl.multAssign(op1.impl,flags); }
-void SoftDouble::multAssign(const SoftDouble& op1, Flags& flags) { impl.multAssign(op1.impl,flags); }
-void SoftFloat::divAssign(const SoftFloat& op1, Flags& flags) { impl.divAssign(op1.impl,flags); }
-void SoftDouble::divAssign(const SoftDouble& op1, Flags& flags) { impl.divAssign(op1.impl,flags); }
+void SoftFloat::plusAssign(const SoftFloat& op1, Flags& flags) { impl.plusAssign(op1.impl,flags.impl); }
+void SoftDouble::plusAssign(const SoftDouble& op1, Flags& flags) { impl.plusAssign(op1.impl,flags.impl); }
+void SoftFloat::minusAssign(const SoftFloat& op1, Flags& flags) { impl.minusAssign(op1.impl,flags.impl); }
+void SoftDouble::minusAssign(const SoftDouble& op1, Flags& flags) { impl.minusAssign(op1.impl,flags.impl); }
+void SoftFloat::multAssign(const SoftFloat& op1, Flags& flags) { impl.multAssign(op1.impl,flags.impl); }
+void SoftDouble::multAssign(const SoftDouble& op1, Flags& flags) { impl.multAssign(op1.impl,flags.impl); }
+void SoftFloat::divAssign(const SoftFloat& op1, Flags& flags) { impl.divAssign(op1.impl,flags.impl); }
+void SoftDouble::divAssign(const SoftDouble& op1, Flags& flags) { impl.divAssign(op1.impl,flags.impl); }
 
-void SoftFloat::multAndAddAssign(const SoftFloat& a, const SoftFloat& b, Flags& flags) { impl.multAndAddAssign(a.impl, b.impl, flags); }
-void SoftDouble::multAndAddAssign(const SoftDouble& a, const SoftDouble& b, Flags& flags) { impl.multAndAddAssign(a.impl, b.impl, flags); }
+void SoftFloat::multAndAddAssign(const SoftFloat& a, const SoftFloat& b, Flags& flags) { impl.multAndAddAssign(a.impl, b.impl, flags.impl); }
+void SoftDouble::multAndAddAssign(const SoftDouble& a, const SoftDouble& b, Flags& flags) { impl.multAndAddAssign(a.impl, b.impl, flags.impl); }
 
-void SoftFloat::multAndSubAssign(const SoftFloat& a, const SoftFloat& b, Flags& flags) { impl.multAndSubAssign(a.impl, b.impl, flags); }
-void SoftDouble::multAndSubAssign(const SoftDouble& a, const SoftDouble& b, Flags& flags) { impl.multAndSubAssign(a.impl, b.impl, flags); }
+void SoftFloat::multAndSubAssign(const SoftFloat& a, const SoftFloat& b, Flags& flags) { impl.multAndSubAssign(a.impl, b.impl, flags.impl); }
+void SoftDouble::multAndSubAssign(const SoftDouble& a, const SoftDouble& b, Flags& flags) { impl.multAndSubAssign(a.impl, b.impl, flags.impl); }
 
 SoftFloat::ComparisonResult SoftFloat::compare( SoftFloat const& op1 ) const { return (SoftFloat::ComparisonResult)impl.compare( op1.impl ); }
 SoftDouble::ComparisonResult SoftDouble::compare( SoftDouble const& op1 ) const { return (SoftDouble::ComparisonResult)impl.compare( op1.impl ); }
@@ -233,7 +233,7 @@ void SoftDouble::setQuiet() { impl.querySMantissa().setBitArray(impl.bitSizeMant
 S32 SoftDouble::queryS32( Flags& flags )
 {
   impl_type::IntConversion icResult;
-  impl.retrieveInteger(icResult.setSigned(), flags);
+  impl.retrieveInteger(icResult.setSigned(), flags.impl);
   return (int32_t) icResult.queryInt();
 }
 
@@ -242,7 +242,7 @@ S64 SoftDouble::queryS64( Flags& flags )
   if (impl.isNaN())
     {
       if (impl.isSNaN())
-        flags.setSNaNOperand();
+        flags.impl.setSNaNOperand();
       return S64(1ll << 63);
     }
   else if (impl.isZero())
@@ -267,7 +267,7 @@ S64 SoftDouble::queryS64( Flags& flags )
       S64 result = src << exponent;
       if (exponent < 64 and (result >> exponent) == src)
         return result; // S64 is enough to encode result
-      flags.setOverflow();
+      flags.impl.setOverflow();
       flags.setApproximate(neg ? Flags::Up : Flags::Down);
       result = S64(1ll << 63);
       return neg ? result : ~result;
@@ -286,20 +286,20 @@ S64 SoftDouble::queryS64( Flags& flags )
         NearestRound( Flags& flags, bool odd, bool half, bool tail )
           : increment(false)
         {
-          if (not flags.isNearestRound()) 
+          if (not flags.impl.isNearestRound()) 
             return;
-          flags.clearEffectiveRoundToEven();
+          flags.impl.clearEffectiveRoundToEven();
           if (not half) // close to zero ?
             return;
           if ((increment = tail)) // close to one ?
             return;
            // Half way...
-          flags.setEffectiveRoundToEven();
+          flags.impl.setEffectiveRoundToEven();
           increment = odd;
         }
       };
-      if ((flags.isHighestRound() and not neg) or
-          (flags.isLowestRound()  and     neg) or
+      if ((flags.impl.isHighestRound() and not neg) or
+          (flags.impl.isLowestRound()  and     neg) or
           NearestRound(flags, result & 1, half, tail).increment)
         result += 1;
     }

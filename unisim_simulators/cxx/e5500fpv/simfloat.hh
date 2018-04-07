@@ -41,181 +41,209 @@
 
 struct Flags
 {
-  Flags()
-    : fAvoidAllInfty(false), fAvoidDenormalized(false), fRoundToEven(true)
-    , fUpApproximateInfty(false), rmRound(RMNearest)
-    , fKeepSignalingConversion(true), aApproximation(AExact), rrReadResult(RRTotal)
-    , fEffectiveRoundToEven(false), fSNaNOperand(false), qnrQNaNResult(QNNRUndefined)
-    , feExcept(FENoException), fDivisionByZero(false)
-  {}
-  
-  Flags(const Flags& rpSource)
-    : fAvoidAllInfty(rpSource.fAvoidAllInfty), fAvoidDenormalized(rpSource.fAvoidDenormalized)
-    , fRoundToEven(rpSource.fRoundToEven), fUpApproximateInfty(rpSource.fUpApproximateInfty)
-    , rmRound(rpSource.rmRound), fKeepSignalingConversion(rpSource.fKeepSignalingConversion)
-    , aApproximation(rpSource.aApproximation), rrReadResult(rpSource.rrReadResult)
-    , fEffectiveRoundToEven(rpSource.fEffectiveRoundToEven), fSNaNOperand(rpSource.fSNaNOperand), qnrQNaNResult(rpSource.qnrQNaNResult)
-    , feExcept(rpSource.feExcept), fDivisionByZero(rpSource.fDivisionByZero)
-  {}
-
-  Flags& operator=(const Flags& rpSource)
+  struct Impl
   {
-    aApproximation = rpSource.aApproximation;
-    rrReadResult = rpSource.rrReadResult;
-    fEffectiveRoundToEven = rpSource.fEffectiveRoundToEven;
-    fSNaNOperand = rpSource.fSNaNOperand;
-    qnrQNaNResult = rpSource.qnrQNaNResult;
-    feExcept = rpSource.feExcept;
-    fDivisionByZero = rpSource.fDivisionByZero;
+    Impl()
+      : fAvoidAllInfty(false), fAvoidDenormalized(false), fRoundToEven(true)
+      , fUpApproximateInfty(false), rmRound(RMNearest)
+      , fKeepSignalingConversion(true), aApproximation(AExact), rrReadResult(RRTotal)
+      , fEffectiveRoundToEven(false), fSNaNOperand(false), qnrQNaNResult(QNNRUndefined)
+      , feExcept(FENoException), fDivisionByZero(false)
+    {}
+
+    Impl(const Impl& rpSource)
+      : fAvoidAllInfty(rpSource.fAvoidAllInfty), fAvoidDenormalized(rpSource.fAvoidDenormalized)
+      , fRoundToEven(rpSource.fRoundToEven), fUpApproximateInfty(rpSource.fUpApproximateInfty)
+      , rmRound(rpSource.rmRound), fKeepSignalingConversion(rpSource.fKeepSignalingConversion)
+      , aApproximation(rpSource.aApproximation), rrReadResult(rpSource.rrReadResult)
+      , fEffectiveRoundToEven(rpSource.fEffectiveRoundToEven), fSNaNOperand(rpSource.fSNaNOperand), qnrQNaNResult(rpSource.qnrQNaNResult)
+      , feExcept(rpSource.feExcept), fDivisionByZero(rpSource.fDivisionByZero)
+    {}
+
+    Impl& operator=(const Impl& rpSource)
+    {
+      aApproximation = rpSource.aApproximation;
+      rrReadResult = rpSource.rrReadResult;
+      fEffectiveRoundToEven = rpSource.fEffectiveRoundToEven;
+      fSNaNOperand = rpSource.fSNaNOperand;
+      qnrQNaNResult = rpSource.qnrQNaNResult;
+      feExcept = rpSource.feExcept;
+      fDivisionByZero = rpSource.fDivisionByZero;
     
-    return *this;
-  }
+      return *this;
+    }
   
-  bool isRoundToEven() const { return fRoundToEven && isNearestRound(); }
-  bool isPositiveZeroMAdd() { return true; }
-  bool isInftyAvoided() const { return true; }
-  bool isAllInftyAvoided() const { return fAvoidAllInfty; }
-  bool doesAvoidInfty(bool fNegative) const
-  {  return fAvoidAllInfty || (fNegative ? (rmRound >= RMHighest) : (rmRound & RMLowest)); }
-  bool isDenormalizedAvoided() const { return fAvoidDenormalized; }
-  bool keepNaNSign() const { return true; }
-  bool produceMultNaNPositive() const { return true; }
-  bool produceDivNaNPositive() const { return true; }
-  bool produceAddNaNPositive() const { return true; }
-  bool produceSubNaNPositive() const { return true; }
-  bool upApproximateInfty() const { return fUpApproximateInfty; }
-  bool upApproximateInversionForNear() const { return true; }
-  bool chooseNaNAddBeforeMult() const { return true; }
-  bool isConvertNaNNegative() const { return true; }
-  bool acceptMinusZero() const { return true; }
+    bool isRoundToEven() const { return fRoundToEven && isNearestRound(); }
+    bool isPositiveZeroMAdd() { return true; }
+    bool isInftyAvoided() const { return true; }
+    bool isAllInftyAvoided() const { return fAvoidAllInfty; }
+    bool doesAvoidInfty(bool fNegative) const
+    {  return fAvoidAllInfty || (fNegative ? (rmRound >= RMHighest) : (rmRound & RMLowest)); }
+    bool isDenormalizedAvoided() const { return fAvoidDenormalized; }
+    bool keepNaNSign() const { return true; }
+    bool produceMultNaNPositive() const { return true; }
+    bool produceDivNaNPositive() const { return true; }
+    bool produceAddNaNPositive() const { return true; }
+    bool produceSubNaNPositive() const { return true; }
+    bool upApproximateInfty() const { return fUpApproximateInfty; }
+    bool upApproximateInversionForNear() const { return true; }
+    bool chooseNaNAddBeforeMult() const { return true; }
+    bool isConvertNaNNegative() const { return true; }
+    bool acceptMinusZero() const { return true; }
 
-  void setAvoidAllInfty()   { fAvoidAllInfty = true; }
-  void clearAvoidAllInfty() { fAvoidAllInfty = false; }
-  void setAvoidDenormalized() { fAvoidDenormalized = true; }
-  void clearAvoidDenormalized() { fAvoidDenormalized = false; }
-  void setRoundToEven() { fRoundToEven = true; }
-  void clearRoundToEven() { fRoundToEven = false; }
-  void setUpApproximateInfty() { fUpApproximateInfty = true; }
-  void clearUpApproximateInfty() { fUpApproximateInfty = false; }
+    void setAvoidAllInfty()   { fAvoidAllInfty = true; }
+    void clearAvoidAllInfty() { fAvoidAllInfty = false; }
+    void setAvoidDenormalized() { fAvoidDenormalized = true; }
+    void clearAvoidDenormalized() { fAvoidDenormalized = false; }
+    void setRoundToEven() { fRoundToEven = true; }
+    void clearRoundToEven() { fRoundToEven = false; }
+    void setUpApproximateInfty() { fUpApproximateInfty = true; }
+    void clearUpApproximateInfty() { fUpApproximateInfty = false; }
 
-  // dynamic read parameters
-  Flags& setNearestRound()   { rmRound = RMNearest; return *this; }
-  Flags& setHighestRound()   { rmRound = RMHighest; return *this; }
-  Flags& setLowestRound()    { rmRound = RMLowest; return *this; }
-  Flags& setZeroRound()      { rmRound = RMZero; return *this; }
+    // dynamic read parameters
+    Impl& setNearestRound()   { rmRound = RMNearest; return *this; }
+    Impl& setHighestRound()   { rmRound = RMHighest; return *this; }
+    Impl& setLowestRound()    { rmRound = RMLowest; return *this; }
+    Impl& setZeroRound()      { rmRound = RMZero; return *this; }
 
-  bool isLowestRound() const { return rmRound == RMLowest; }
-  bool isNearestRound() const { return rmRound == RMNearest; }
-  bool isHighestRound() const { return rmRound == RMHighest; }
-  bool isZeroRound() const { return rmRound == RMZero; }
+    bool isLowestRound() const { return rmRound == RMLowest; }
+    bool isNearestRound() const { return rmRound == RMNearest; }
+    bool isHighestRound() const { return rmRound == RMHighest; }
+    bool isZeroRound() const { return rmRound == RMZero; }
 
-  Flags& setKeepSignalingConversion() { fKeepSignalingConversion = true; return *this; }
-  Flags& clearKeepSignalingConversion() { fKeepSignalingConversion = false; return *this; }
-  bool keepSignalingConversion() const { return fKeepSignalingConversion; }
+    Impl& setKeepSignalingConversion() { fKeepSignalingConversion = true; return *this; }
+    Impl& clearKeepSignalingConversion() { fKeepSignalingConversion = false; return *this; }
+    bool keepSignalingConversion() const { return fKeepSignalingConversion; }
 
-  // dynamic write parameters
-  bool isApproximate() const { return aApproximation != AExact; }
-  bool isDownApproximate() const { return aApproximation == ADownApproximate; }
-  bool isUpApproximate() const { return aApproximation == AUpApproximate; }
-  void setDownApproximate() { aApproximation = ADownApproximate; }
-  void setUpApproximate() { aApproximation = AUpApproximate; }
-  void clearApproximate() { aApproximation = AExact; }
-  enum Direction { Down, Up };
-  void setApproximate(Direction dDirection)
-  {  aApproximation = ((dDirection == Down) ? ADownApproximate : AUpApproximate); }
-  bool isApproximate(Direction dDirection) const
-  {  return aApproximation == ((dDirection == Down) ? ADownApproximate : AUpApproximate); }
-  bool hasSameApproximation(const Flags& rpSource) const
-  {  return aApproximation == rpSource.aApproximation; }
-  bool hasIncrementFraction(bool fNegative) const
-  {  return fNegative ? isDownApproximate() : isUpApproximate(); }
+    // dynamic write parameters
+    bool isApproximate() const { return aApproximation != AExact; }
+    bool isDownApproximate() const { return aApproximation == ADownApproximate; }
+    bool isUpApproximate() const { return aApproximation == AUpApproximate; }
+    void setDownApproximate() { aApproximation = ADownApproximate; }
+    void setUpApproximate() { aApproximation = AUpApproximate; }
+    void clearApproximate() { aApproximation = AExact; }
+    enum Direction { Down = 0, Up };
+    void setApproximate(Direction dDirection)
+    {  aApproximation = ((dDirection == Down) ? ADownApproximate : AUpApproximate); }
+    bool isApproximate(Direction dDirection) const
+    {  return aApproximation == ((dDirection == Down) ? ADownApproximate : AUpApproximate); }
+    bool hasSameApproximation(const Impl& rpSource) const
+    {  return aApproximation == rpSource.aApproximation; }
+    bool hasIncrementFraction(bool fNegative) const
+    {  return fNegative ? isDownApproximate() : isUpApproximate(); }
 
-  void setEffectiveRoundToEven() { fEffectiveRoundToEven = true; }
-  void clearEffectiveRoundToEven() { fEffectiveRoundToEven = false; }
-  bool hasEffectiveRoundToEven() { return fEffectiveRoundToEven; }
+    void setEffectiveRoundToEven() { fEffectiveRoundToEven = true; }
+    void clearEffectiveRoundToEven() { fEffectiveRoundToEven = false; }
+    bool hasEffectiveRoundToEven() { return fEffectiveRoundToEven; }
 
-  void setPartialRead() { rrReadResult = RRPartial; }
-  void setTotalRead() { rrReadResult = RRTotal; }
-  bool isPartialRead() const { return rrReadResult == RRPartial; }
-  bool isTotalRead() const { return rrReadResult == RRTotal; }
-  bool hasPartialRead() const { return rrReadResult != RRTotal; }
+    void setPartialRead() { rrReadResult = RRPartial; }
+    void setTotalRead() { rrReadResult = RRTotal; }
+    bool isPartialRead() const { return rrReadResult == RRPartial; }
+    bool isTotalRead() const { return rrReadResult == RRTotal; }
+    bool hasPartialRead() const { return rrReadResult != RRTotal; }
 
-  void setSNaNOperand() { fSNaNOperand = true; }
-  bool hasSNaNOperand() const { return fSNaNOperand; }
+    void setSNaNOperand() { fSNaNOperand = true; }
+    bool hasSNaNOperand() const { return fSNaNOperand; }
       
-  void setInftyMinusInfty() { assert(!qnrQNaNResult); qnrQNaNResult = QNNRInftyMinusInfty; }
-  void setInftyOnInfty() { assert(!qnrQNaNResult); qnrQNaNResult = QNNRInftyOnInfty; }
-  void setZeroOnZero() { assert(!qnrQNaNResult); qnrQNaNResult = QNNRZeroOnZero; }
-  void setInftyMultZero() { assert(!qnrQNaNResult); qnrQNaNResult = QNNRInftyMultZero; }
-  bool hasQNaNResult() const { return qnrQNaNResult; }
-  bool isInftyMinusInfty() const { return qnrQNaNResult == QNNRInftyMinusInfty; }
-  bool isInftyOnInfty() const { return qnrQNaNResult == QNNRInftyOnInfty; }
-  bool isZeroOnZero() const { return qnrQNaNResult == QNNRZeroOnZero; }
-  bool isInftyMultZero() const { return qnrQNaNResult == QNNRInftyMultZero; }
+    void setInftyMinusInfty() { assert(!qnrQNaNResult); qnrQNaNResult = QNNRInftyMinusInfty; }
+    void setInftyOnInfty() { assert(!qnrQNaNResult); qnrQNaNResult = QNNRInftyOnInfty; }
+    void setZeroOnZero() { assert(!qnrQNaNResult); qnrQNaNResult = QNNRZeroOnZero; }
+    void setInftyMultZero() { assert(!qnrQNaNResult); qnrQNaNResult = QNNRInftyMultZero; }
+    bool hasQNaNResult() const { return qnrQNaNResult; }
+    bool isInftyMinusInfty() const { return qnrQNaNResult == QNNRInftyMinusInfty; }
+    bool isInftyOnInfty() const { return qnrQNaNResult == QNNRInftyOnInfty; }
+    bool isZeroOnZero() const { return qnrQNaNResult == QNNRZeroOnZero; }
+    bool isInftyMultZero() const { return qnrQNaNResult == QNNRInftyMultZero; }
 
-  void clear()
-  {  aApproximation = AExact;
-    rrReadResult = RRTotal;
-    fEffectiveRoundToEven = false;
-    fSNaNOperand = false;
-    qnrQNaNResult = QNNRUndefined;
-    feExcept = FENoException;
-    fDivisionByZero = false;
-  }
+    void clear()
+    {  aApproximation = AExact;
+      rrReadResult = RRTotal;
+      fEffectiveRoundToEven = false;
+      fSNaNOperand = false;
+      qnrQNaNResult = QNNRUndefined;
+      feExcept = FENoException;
+      fDivisionByZero = false;
+    }
 
-  bool isDivisionByZero() const { return fDivisionByZero; }
-  void setDivisionByZero() { fDivisionByZero = true; }
-  bool hasFlowException() const { return feExcept != FENoException; }
-  void clearFlowException() { feExcept = FENoException; }
-  void setOverflow() { feExcept = FEOverflow; }
-  void setUnderflow() { feExcept = FEUnderflow; }
-  bool isOverflow() const { return feExcept == FEOverflow; }
-  bool isUnderflow() const { return feExcept == FEUnderflow; }
-  void clearUnderflow() { feExcept = FENoException; }
-  void mergeException(const Flags& source) { if (feExcept == FENoException) feExcept = source.feExcept; }
+    bool isDivisionByZero() const { return fDivisionByZero; }
+    void setDivisionByZero() { fDivisionByZero = true; }
+    bool hasFlowException() const { return feExcept != FENoException; }
+    void clearFlowException() { feExcept = FENoException; }
+    void setOverflow() { feExcept = FEOverflow; }
+    void setUnderflow() { feExcept = FEUnderflow; }
+    bool isOverflow() const { return feExcept == FEOverflow; }
+    bool isUnderflow() const { return feExcept == FEUnderflow; }
+    void clearUnderflow() { feExcept = FENoException; }
+    void mergeException(const Impl& source) { if (feExcept == FENoException) feExcept = source.feExcept; }
       
-  void setRoundingMode(unsigned int rn_mode)
-  {
-    switch(rn_mode)
-      {
-      case PPC_NEAREST:  setNearestRound();  break;
-      case PPC_ZERO:     setZeroRound();     break;
-      case PPC_UP:       setHighestRound();  break;
-      case PPC_DOWN:     setLowestRound();   break;
-      }
-  }
+    void setRoundingMode(unsigned int rn_mode)
+    {
+      switch(rn_mode)
+        {
+        case PPC_NEAREST:  setNearestRound();  break;
+        case PPC_ZERO:     setZeroRound();     break;
+        case PPC_UP:       setHighestRound();  break;
+        case PPC_DOWN:     setLowestRound();   break;
+        }
+    }
   
-  static const unsigned int PPC_NEAREST = 0;
-  static const unsigned int PPC_ZERO = 1;
-  static const unsigned int PPC_UP = 2;
-  static const unsigned int PPC_DOWN = 3;
+    static const unsigned int PPC_NEAREST = 0;
+    static const unsigned int PPC_ZERO = 1;
+    static const unsigned int PPC_UP = 2;
+    static const unsigned int PPC_DOWN = 3;
 
-protected:
-  enum RoundMode { RMNearest, RMLowest, RMHighest, RMZero };
-  enum Approximation { AExact, ADownApproximate, AUpApproximate };
-  enum ReadResult { RRTotal, RRPartial };
-  enum QNaNResult
-    {  QNNRUndefined, QNNRInftyMinusInfty, QNNRInftyOnInfty, QNNRZeroOnZero,
-       QNNRInftyMultZero
-    };
-  enum FlowException { FENoException, FEOverflow, FEUnderflow, FEEnd };
+  protected:
+    enum RoundMode { RMNearest, RMLowest, RMHighest, RMZero };
+    enum Approximation { AExact, ADownApproximate, AUpApproximate };
+    enum ReadResult { RRTotal, RRPartial };
+    enum QNaNResult
+      {  QNNRUndefined, QNNRInftyMinusInfty, QNNRInftyOnInfty, QNNRZeroOnZero,
+         QNNRInftyMultZero
+      };
+    enum FlowException { FENoException, FEOverflow, FEUnderflow, FEEnd };
       
-private:
-  bool fAvoidAllInfty;
-  bool fAvoidDenormalized;
-  bool fRoundToEven;
-  bool fUpApproximateInfty;
+  private:
+    bool fAvoidAllInfty;
+    bool fAvoidDenormalized;
+    bool fRoundToEven;
+    bool fUpApproximateInfty;
       
-  RoundMode rmRound;
-  bool fKeepSignalingConversion;
+    RoundMode rmRound;
+    bool fKeepSignalingConversion;
 
-  Approximation aApproximation;
-  ReadResult rrReadResult;
-  bool fEffectiveRoundToEven;
-  bool fSNaNOperand;
-  QNaNResult qnrQNaNResult;
-  FlowException feExcept;
-  bool fDivisionByZero;
+    Approximation aApproximation;
+    ReadResult rrReadResult;
+    bool fEffectiveRoundToEven;
+    bool fSNaNOperand;
+    QNaNResult qnrQNaNResult;
+    FlowException feExcept;
+    bool fDivisionByZero;
+  } impl;
+
+  bool hasIncrementFraction(bool neg) const { return impl.hasIncrementFraction(neg); }
+  bool hasFlowException() const { return impl.hasFlowException(); }
+  bool isOverflow() const { return impl.isOverflow(); }
+  bool isUnderflow() const { return impl.isUnderflow(); }
+  bool isDivisionByZero() const { return impl.isDivisionByZero(); }
+  bool hasSNaNOperand() const { return impl.hasSNaNOperand(); }
+  bool isInftyMinusInfty() const { return impl.isInftyMinusInfty(); }
+  bool isInftyOnInfty() const { return impl.isInftyOnInfty(); }
+  bool isZeroOnZero() const { return impl.isZeroOnZero(); }
+  bool isInftyMultZero() const { return impl.isInftyMultZero(); }
+  void setRoundingMode(unsigned int rn_mode) { impl.setRoundingMode(rn_mode); }
+  void clear() { return impl.clear(); }
+  void setZeroRound() { impl.setZeroRound(); }
+  void setNearestRound() { impl.setNearestRound(); }
+  void clearKeepSignalingConversion() { impl.clearKeepSignalingConversion(); }
+  void setKeepSignalingConversion() { impl.setKeepSignalingConversion(); }
+  void setUpApproximateInfty() { impl.setUpApproximateInfty(); }
+  void clearUpApproximateInfty() { impl.clearUpApproximateInfty(); }
+  bool isApproximate() const { return impl.isApproximate(); }
+  bool isDownApproximate() const { return impl.isDownApproximate(); }
+  bool isUpApproximate() const { return impl.isUpApproximate(); }
+  enum Direction { Down = Impl::Down, Up = Impl::Up };
+  void setApproximate(Direction dDirection) { impl.setApproximate(Impl::Direction(dDirection)); }
+  void mergeException(Flags const& source) { return impl.mergeException(source.impl); }
 };
 
 class SoftFloat;
@@ -223,11 +251,11 @@ class SoftDouble;
 
 struct BuiltFloatTraits : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<23, 8>
 {
-  typedef Flags StatusAndControlFlags;
+  typedef Flags::Impl StatusAndControlFlags;
   
   struct MultExtension : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<23, 8>::MultExtension
   {
-    typedef Flags StatusAndControlFlags;
+    typedef Flags::Impl StatusAndControlFlags;
   };
 };
 
@@ -270,10 +298,10 @@ struct SoftFloat
 
 struct BuiltDoubleTraits : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11>
 {
-  typedef Flags StatusAndControlFlags;
+  typedef Flags::Impl StatusAndControlFlags;
   struct MultExtension : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11>::MultExtension
   {
-    typedef Flags StatusAndControlFlags;
+    typedef Flags::Impl StatusAndControlFlags;
   };
 };
 

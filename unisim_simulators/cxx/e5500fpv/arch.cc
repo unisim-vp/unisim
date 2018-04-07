@@ -106,7 +106,6 @@ Arch::Arch()
       std::string name32 = name64 + "32";
       regmap[name32] = new Spec32Register(name32, spec32_registers[idx].reg);
       regmap[name64] = new Spec64Register(name64, spec32_registers[idx].reg);
-      
     }
 
   // Advanced SIMD and VFP register
