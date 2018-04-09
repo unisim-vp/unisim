@@ -36,7 +36,9 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
 }
 
-op fadds(59[6]:fd[5]:fa[5]:fb[5]:?[5]:21[5]:rc[1])
+/* Floating Add Single */
+op fadds(59[6]:fd[5]:fa[5]:fb[5]:?[5]:21[5]:rc[1]);
+
 fadds.execute = {
 	if(not CONFIG::HAS_FPU)
 	{
@@ -48,19 +50,16 @@ fadds.execute = {
 		cpu->ThrowException<CPU::FloatingPointUnavailableInterrupt::FloatingPointUnavailable>();
 		return false;
 	}
-	
+
 	// Read the input operands
-	UINT fpscr = cpu->GetFPSCR();
-	UINT old_fpscr = fpscr;
-	Flags flags;
-	flags.setRoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>());
-	SoftFloat result(cpu->GetFPR(fa), flags);
-	flags.clear();
-	SoftFloat b(cpu->GetFPR(fb), flags);
-	flags.clear();
+	UINT fpscr = cpu->GetFPSCR(), old_fpscr = fpscr;
+	SoftDouble a(cpu->GetFPR(fa));
+	SoftDouble const& b(cpu->GetFPR(fb));
 	
 	// Compute the result
-	result.plusAssign(b, flags);
+	Flags flags( Flags::RoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>()) );
+	a.plusAssign(b, flags);
+	SoftFloat result(a, flags);
 
 	// Generate OX, UX, VXSNAN, VXISI, FR, FI, FPRF, XX, FX, VX, FEX
 	GenFPSCR_OX<FPSCR>(fpscr, flags);
@@ -74,7 +73,7 @@ fadds.execute = {
 	GenFPSCR_FX<FPSCR>(fpscr, old_fpscr);
 	GenFPSCR_VX<FPSCR>(fpscr);
 	GenFPSCR_FEX<FPSCR>(fpscr);
-	
+
 	// Update FPSCR
 	cpu->SetFPSCR(fpscr);
 
@@ -93,10 +92,11 @@ fadds.execute = {
 	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
 	
 	return true;
-}
+};
+
 fadds.disasm = {
 	os << "fadds" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fa) << ", " << FPRPrint(fb);
-}
+};
 
-specialize fadds(rc=0)
-specialize fadds(rc=1)
+specialize fadds(rc=0);
+specialize fadds(rc=1);

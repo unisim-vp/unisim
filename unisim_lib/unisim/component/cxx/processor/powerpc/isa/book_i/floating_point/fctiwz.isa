@@ -55,8 +55,7 @@ fctiwz.execute = {
 	SoftDouble b = cpu->GetFPR(fb);
 	
 	// Compute the result
-	Flags flags;
-	flags.setZeroRound();
+	Flags flags( Flags::RoundingMode(1) ); // ZeroRounding
 	S32 res32 = b.queryS32( flags );
 	
         U64 undef_high = (U64(0xfff80000) | U64(res32 == S32(0) and b.isNegative())) << 32;

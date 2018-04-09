@@ -32,7 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-op frsqrte(63[6]:fd[5]:?[5]:fb[5]:?[5]:26[5]:rc[1])
+/* Floating Reciprocal Square Root Estimate */
+op frsqrte(63[6]:fd[5]:?[5]:fb[5]:?[5]:26[5]:rc[1]);
+
 frsqrte.execute = {
 	if(not CONFIG::HAS_FPU or not CONFIG::HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS)
 	{
@@ -46,10 +48,8 @@ frsqrte.execute = {
 	}
 
 	// Read the input operands
-	UINT fpscr = cpu->GetFPSCR();
-	UINT old_fpscr = fpscr;
-	Flags flags;
-	flags.setNearestRound();
+	UINT fpscr = cpu->GetFPSCR(), old_fpscr = fpscr;
+	Flags flags( Flags::RoundingMode(0) );
 	const SoftDouble& b = cpu->GetFPR(fb);
 
 	if(unlikely(b.isSNaN()))
@@ -155,8 +155,7 @@ frsqrte.execute = {
 		// Write back result
 		cpu->SetFPR(fd, u);
 
-		// Generate ZX, VXSNAN, FR, FI, FPRF
-		GenFPSCR_ZX<FPSCR>(fpscr, flags);
+		// Generate VXSNAN, FR, FI, FPRF
 		GenFPSCR_VXSNAN<FPSCR>(fpscr, flags);
 		GenFPSCR_FPRF<FPSCR, SoftDouble>(fpscr, u);
 	}
@@ -182,10 +181,11 @@ frsqrte.execute = {
 	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
 	
 	return true;
-}
+};
+
 frsqrte.disasm = {
 	os << "frsqrte" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fb);
-}
+};
 
-specialize frsqrte(rc=0)
-specialize frsqrte(rc=1)
+specialize frsqrte(rc=0);
+specialize frsqrte(rc=1);

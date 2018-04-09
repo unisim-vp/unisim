@@ -279,8 +279,7 @@ Arch::MoveFromSPR( unsigned id, U64& value )
 bool
 Arch::Fp32Load(unsigned id, U64 addr)
 {
-  Flags flags;
-  flags.setRoundingMode(fpscr.Get<FPSCR::RN>());
+  Flags flags( Flags::RoundingMode(fpscr.Get<FPSCR::RN>()) );
   fprs[id].convertAssign(SoftFloat(SoftFloat::FromRawBits,IntLoad<U32>( addr )), flags);
   return true;
 }
@@ -288,8 +287,7 @@ Arch::Fp32Load(unsigned id, U64 addr)
 bool
 Arch::Fp32Store(unsigned id, U64 addr)
 {
-  Flags flags;
-  flags.setZeroRound();
+  Flags flags( Flags::RoundingMode(1) ); // Zero Rounding
   IntStore( addr, U32(SoftFloat(fprs[id], flags).queryRawBits()) );
   return true;
 }

@@ -94,7 +94,7 @@ inline void GenFPSCR_FI(typename FPSCR::TYPE& fpscr, const Flags& flags)
 template <class FPSCR>
 inline void GenFPSCR_OX(typename FPSCR::TYPE& fpscr, const Flags& flags)
 {
-	if(unlikely(flags.hasFlowException() and flags.isApproximate() and flags.isOverflow()))
+	if(unlikely(flags.isOverflow() and flags.isApproximate()))
 	{
 		FPSCR::OX::Set(fpscr, typename FPSCR::TYPE(1));
 	}
@@ -103,12 +103,9 @@ inline void GenFPSCR_OX(typename FPSCR::TYPE& fpscr, const Flags& flags)
 template <class FPSCR>
 inline void GenFPSCR_UX(typename FPSCR::TYPE& fpscr, const Flags& flags)
 {
-	if(unlikely(flags.hasFlowException() && flags.isApproximate()))
+	if(unlikely(flags.isUnderflow() and flags.isApproximate()))
 	{
-		if(flags.isUnderflow())
-		{
-			FPSCR::UX::Set(fpscr, typename FPSCR::TYPE(1));
-		}
+		FPSCR::UX::Set(fpscr, typename FPSCR::TYPE(1));
 	}
 }
 

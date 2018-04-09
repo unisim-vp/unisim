@@ -258,13 +258,11 @@ class Access : public Integer::Details::Access {
 
       bool isDivisionByZero() const { return fDivisionByZero; }
       void setDivisionByZero() { fDivisionByZero = true; }
-      bool hasFlowException() const { return feExcept != FENoException; }
       void clearFlowException() { feExcept = FENoException; }
       void setOverflow() { feExcept = FEOverflow; }
       void setUnderflow() { feExcept = FEUnderflow; }
       bool isOverflow() const { return feExcept == FEOverflow; }
       bool isUnderflow() const { return feExcept == FEUnderflow; }
-      void clearUnderflow() { feExcept = FENoException; }
    };
    class WriteParameters {
      private:

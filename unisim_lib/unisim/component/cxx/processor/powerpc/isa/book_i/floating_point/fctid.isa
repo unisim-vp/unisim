@@ -55,8 +55,7 @@ fctid.execute = {
 	SoftDouble b = cpu->GetFPR(fb);
 
 	// Compute the result
-	Flags flags;
-	flags.setRoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>());
+	Flags flags( Flags::RoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>()) );
 	S64 res64 = b.queryS64( flags );
 	
 	SoftDouble result(SoftDouble::FromRawBits, U64(U32(res64)));

@@ -67,40 +67,41 @@ SoftDouble::SoftDouble(int64_t src, Flags& flags)
   else
     {
       int const out = mantissa_bitcount - bitSizeMantissa;
-      
+      typedef Flags::Impl IFlags;
+      IFlags& iflags = flags.impl;
       struct NearestRound
       {
         bool increment;
-        NearestRound( Flags& flags, uint64_t mantissa, int const out )
+        NearestRound( IFlags& iflags, uint64_t mantissa, int const out )
           : increment(false)
         {
           int const tail = out - 1;
           uint64_t const _1 = int64_t(1);
-          if (not flags.impl.isNearestRound()) 
+          if (not iflags.isNearestRound()) 
             return;
-          flags.impl.clearEffectiveRoundToEven();
+          iflags.clearEffectiveRoundToEven();
           if (not ((mantissa >> tail) & _1)) // close to zero ?
             return;
           if ((increment = bool(mantissa & ((_1 << tail) - _1)))) // close to one ?
             return;
-          flags.impl.setEffectiveRoundToEven(); // Half way...
+          iflags.setEffectiveRoundToEven(); // Half way...
           increment = bool((mantissa >> out) & _1);
         }
       };
         
-      if ((flags.impl.isHighestRound() and not neg) or
-          (flags.impl.isLowestRound()  and     neg) or
-          NearestRound(flags, mantissa, out).increment)
+      if ((iflags.isHighestRound() and not neg) or
+          (iflags.isLowestRound()  and     neg) or
+          NearestRound(iflags, mantissa, out).increment)
         {
           mantissa = (mantissa >> out) + 1;
           if (bool(mantissa >> (bitSizeMantissa+1)))
             { mantissa >>= 1; exponent += 1; }
-          flags.setApproximate(neg ? Flags::Down : Flags::Up);
+          iflags.setApproximate(neg ? IFlags::Down : IFlags::Up);
         }
       else
         {
           mantissa = mantissa >> out;
-          flags.setApproximate(neg ? Flags::Up : Flags::Down);
+          iflags.setApproximate(neg ? IFlags::Up : IFlags::Down);
         }
     }
           
@@ -136,6 +137,8 @@ SoftDouble::fromRawBitsAssign(uint64_t raw_bits)
 SoftFloat&
 SoftFloat::convertAssign(const SoftDouble& op1, Flags& flags)
 {
+  Flags::Impl::Approximation source_approximation = flags.impl.getApproximation();
+  
   impl_type::FloatConversion fcConversion;
   
   fcConversion.setSizeMantissa(52).setSizeExponent(11);
@@ -146,6 +149,16 @@ SoftFloat::convertAssign(const SoftDouble& op1, Flags& flags)
 
   impl = impl_type(fcConversion, flags.impl);
 
+  if (not flags.impl.isApproximate())
+    {
+      switch (source_approximation)
+        {
+        default: break;
+        case Flags::Impl::ADownApproximate: flags.impl.setApproximate(Flags::Impl::Down);          break;
+        case Flags::Impl::AUpApproximate:   flags.impl.setApproximate(Flags::Impl::Up);            break;
+        }
+    }
+  
   return *this;
 }
 
@@ -153,14 +166,14 @@ SoftDouble&
 SoftDouble::convertAssign(const SoftFloat& op1, Flags& flags)
 {
   impl_type::FloatConversion fcConversion;
-  
+
   fcConversion.setSizeMantissa(23).setSizeExponent(8);
   fcConversion.setNegative(op1.isNegative());
   fcConversion.exponent()[0] = op1.impl.queryBasicExponent()[0];
   fcConversion.mantissa()[0] = op1.impl.queryMantissa()[0];
    
   impl = impl_type(fcConversion, flags.impl);
-   
+  
   return *this;
 }
 
@@ -239,10 +252,13 @@ S32 SoftDouble::queryS32( Flags& flags )
 
 S64 SoftDouble::queryS64( Flags& flags )
 {
+  typedef Flags::Impl IFlags;
+  IFlags& iflags = flags.impl;
+  
   if (impl.isNaN())
     {
       if (impl.isSNaN())
-        flags.impl.setSNaNOperand();
+        iflags.setSNaNOperand();
       return S64(1ll << 63);
     }
   else if (impl.isZero())
@@ -267,8 +283,8 @@ S64 SoftDouble::queryS64( Flags& flags )
       S64 result = src << exponent;
       if (exponent < 64 and (result >> exponent) == src)
         return result; // S64 is enough to encode result
-      flags.impl.setOverflow();
-      flags.setApproximate(neg ? Flags::Up : Flags::Down);
+      iflags.setOverflow();
+      iflags.setApproximate(neg ? IFlags::Up : IFlags::Down);
       result = S64(1ll << 63);
       return neg ? result : ~result;
     }
@@ -283,24 +299,24 @@ S64 SoftDouble::queryS64( Flags& flags )
       struct NearestRound
       {
         bool increment;
-        NearestRound( Flags& flags, bool odd, bool half, bool tail )
+        NearestRound( IFlags& iflags, bool odd, bool half, bool tail )
           : increment(false)
         {
-          if (not flags.impl.isNearestRound()) 
+          if (not iflags.isNearestRound()) 
             return;
-          flags.impl.clearEffectiveRoundToEven();
+          iflags.clearEffectiveRoundToEven();
           if (not half) // close to zero ?
             return;
           if ((increment = tail)) // close to one ?
             return;
            // Half way...
-          flags.impl.setEffectiveRoundToEven();
+          iflags.setEffectiveRoundToEven();
           increment = odd;
         }
       };
-      if ((flags.impl.isHighestRound() and not neg) or
-          (flags.impl.isLowestRound()  and     neg) or
-          NearestRound(flags, result & 1, half, tail).increment)
+      if ((iflags.isHighestRound() and not neg) or
+          (iflags.isLowestRound()  and     neg) or
+          NearestRound(iflags, result & 1, half, tail).increment)
         result += 1;
     }
 

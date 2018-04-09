@@ -36,7 +36,9 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
 }
 
-op fnmadds(59[6]:fd[5]:fa[5]:fb[5]:fc[5]:31[5]:rc[1])
+/* Floating Negative Multiply-Add Single */
+op fnmadds(59[6]:fd[5]:fa[5]:fb[5]:fc[5]:31[5]:rc[1]);
+
 fnmadds.execute = {
 	if(not CONFIG::HAS_FPU)
 	{
@@ -50,49 +52,31 @@ fnmadds.execute = {
 	}
 
 	// Read the input operands
-	UINT fpscr = cpu->GetFPSCR();
-	UINT old_fpscr = fpscr;
-	Flags flags;
-	flags.setRoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>());
-	SoftDouble intermediate_result = cpu->GetFPR(fa);
+	UINT fpscr = cpu->GetFPSCR(), old_fpscr = fpscr;
+	SoftDouble a = cpu->GetFPR(fa);
 	const SoftDouble& b = cpu->GetFPR(fb);
 	const SoftDouble& c = cpu->GetFPR(fc);
 
 	// Compute the intermediate result before rounding and opposite
-	intermediate_result.multAndAddAssign(c, b, flags);
+	Flags flags( Flags::RoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>()) );
+	a.multAndAddAssign(c, b, flags);
 	
 	// Round the result
-	Flags flags_conv;
-	flags_conv.setRoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>());
-    flags_conv.clearKeepSignalingConversion();
-	flags_conv.setUpApproximateInfty();
-	SoftFloat result(intermediate_result, flags_conv);
-	if(not flags_conv.isApproximate())
-	{
-		if(flags.isUpApproximate())
-		{
-			flags_conv.setApproximate(Flags::Up);
-		}
-		if(flags.isDownApproximate())
-		{
-			flags_conv.setApproximate(Flags::Down);
-		}
-	}
-	flags_conv.mergeException(flags);
+	SoftFloat result(a, flags);
 
 	// Generate FR
-	GenFPSCR_FR<FPSCR, SoftFloat>(fpscr, result, flags_conv);
+	GenFPSCR_FR<FPSCR, SoftFloat>(fpscr, result, flags);
 
 	// Compute the final result
 	if(likely(not result.isQNaN())) result.opposite();
 	
 	// Generate OX, UX, VXSNAN, VXISI, VXIMZ, FI, FPRF, XX, FX, VX, FEX
-	GenFPSCR_OX<FPSCR>(fpscr, flags_conv);
-	GenFPSCR_UX<FPSCR>(fpscr, flags_conv);
+	GenFPSCR_OX<FPSCR>(fpscr, flags);
+	GenFPSCR_UX<FPSCR>(fpscr, flags);
 	GenFPSCR_VXSNAN<FPSCR>(fpscr, flags);
 	GenFPSCR_VXISI<FPSCR>(fpscr, flags);
 	GenFPSCR_VXIMZ<FPSCR>(fpscr, flags);
-	GenFPSCR_FI<FPSCR>(fpscr, flags_conv);
+	GenFPSCR_FI<FPSCR>(fpscr, flags);
 	GenFPSCR_FPRF<FPSCR, SoftFloat>(fpscr, result);
 	GenFPSCR_XX<FPSCR>(fpscr);
 	GenFPSCR_FX<FPSCR>(fpscr, old_fpscr);
@@ -117,10 +101,11 @@ fnmadds.execute = {
 	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
 	
 	return true;
-}
+};
+
 fnmadds.disasm = {
 	os << "fnmadds" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fa) << ", " << FPRPrint(fc) << ", " << FPRPrint(fb);
-}
+};
 
-specialize fnmadds(rc=0)
-specialize fnmadds(rc=1)
+specialize fnmadds(rc=0);
+specialize fnmadds(rc=1);

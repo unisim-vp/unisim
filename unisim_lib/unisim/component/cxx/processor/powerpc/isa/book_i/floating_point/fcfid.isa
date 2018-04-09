@@ -55,8 +55,7 @@ fcfid.execute = {
 	S64 b = S64(cpu->GetFPR(frb).queryRawBits());
 	
 	// Compute the result
-	Flags flags;
-	flags.setRoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>());
+	Flags flags( Flags::RoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>()) );
 	SoftDouble result(b, flags);
 
 	// Write back the result

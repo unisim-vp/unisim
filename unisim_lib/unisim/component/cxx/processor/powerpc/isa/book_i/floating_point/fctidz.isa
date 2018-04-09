@@ -55,8 +55,7 @@ fctidz.execute = {
 	SoftDouble b = cpu->GetFPR(fb);
 	
 	// Compute the result
-	Flags flags;
-	flags.setZeroRound();
+	Flags flags( Flags::RoundingMode(1) ); // ZeroRounding
 	S64 res64 = b.queryS64( flags );
 	
 	SoftDouble result(SoftDouble::FromRawBits, U64(res64));

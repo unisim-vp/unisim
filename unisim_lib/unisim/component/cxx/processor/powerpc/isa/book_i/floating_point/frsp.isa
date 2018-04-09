@@ -36,7 +36,9 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
 }
 
-op frsp(63[6]:fd[5]:?[5]:fb[5]:12[10]:rc[1])
+/* Floating Round to Single-Precision */
+op frsp(63[6]:fd[5]:?[5]:fb[5]:12[10]:rc[1]);
+
 frsp.execute = {
 	if(not CONFIG::HAS_FPU)
 	{
@@ -50,18 +52,12 @@ frsp.execute = {
 	}
 
 	// Read the input operands
-	UINT fpscr = cpu->GetFPSCR();
-	UINT old_fpscr = fpscr;
-	Flags flags;
-	flags.setRoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>());
+	UINT fpscr = cpu->GetFPSCR(), old_fpscr = fpscr;
 	const SoftDouble& b = cpu->GetFPR(fb);
 
 	// Compute the result
-    flags.clearKeepSignalingConversion();
-	flags.setUpApproximateInfty();
+	Flags flags( Flags::RoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>()) );
 	SoftFloat result(b, flags);
-	flags.clearUpApproximateInfty();
-    flags.setKeepSignalingConversion();
 
 	// Generate OX, UX, VXSNAN, FR, FI, FPRF, XX, FX, VX, FEX
 	GenFPSCR_OX<FPSCR>(fpscr, flags);
@@ -93,10 +89,11 @@ frsp.execute = {
 	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
 	
 	return true;
-}
+};
+
 frsp.disasm = {
 	os << "frsp" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fb);
-}
+};
 
-specialize frsp(rc=0)
-specialize frsp(rc=1)
+specialize frsp(rc=0);
+specialize frsp(rc=1);

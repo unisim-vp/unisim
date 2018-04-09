@@ -55,8 +55,7 @@ fctiw.execute = {
 	SoftDouble b = cpu->GetFPR(fb);
 
 	// Compute the result
-	Flags flags;
-	flags.setRoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>());
+	Flags flags( Flags::RoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>()) );
 	S32 res32 = b.queryS32( flags );
 	
         U64 undef_high = (U64(0xfff80000) | U64(res32 == S32(0) and b.isNegative())) << 32;

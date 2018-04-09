@@ -31,16 +31,12 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-impl {
-#include <unisim/component/cxx/processor/powerpc/isa/book_i/floating_point/floating.hh>
-}
 
-/* Floating Multiply Single */
-op fmuls(59[6]:fd[5]:fa[5]:?[5]:fc[5]:25[5]:rc[1]);
+/* Floating Reciprocal Estimate */
+op fre(63[6]:fd[5]:?[5]:fb[5]:?[5]:24[5]:rc[1]);
 
-fmuls.execute = {
-	if(not CONFIG::HAS_FPU)
+fre.execute = {
+	if(not CONFIG::HAS_FPU or not CONFIG::HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS)
 	{
 		cpu->ThrowException<CPU::ProgramInterrupt::UnimplementedInstruction>();
 		return false;
@@ -53,22 +49,59 @@ fmuls.execute = {
 
 	// Read the input operands
 	UINT fpscr = cpu->GetFPSCR(), old_fpscr = fpscr;
-	SoftDouble a(cpu->GetFPR(fa));
-	SoftDouble const& c(cpu->GetFPR(fc));
+	SoftDouble const& b(cpu->GetFPR(fb));
 
-	// Compute the result
-	Flags flags( Flags::RoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>()) );
-	a.multAssign(c, flags);
-	SoftFloat result(a, flags);
-	
-	// Generate OX, UX, VXSNAN, VXIMZ, FR, FI, FPRF, XX, FX, VX, FEX
-	GenFPSCR_OX<FPSCR>(fpscr, flags);
-	GenFPSCR_UX<FPSCR>(fpscr, flags);
-	GenFPSCR_VXSNAN<FPSCR>(fpscr, flags);
-	GenFPSCR_VXIMZ<FPSCR>(fpscr, flags);
-	GenFPSCR_FR<FPSCR, SoftFloat>(fpscr, result, flags);
-	GenFPSCR_FI<FPSCR>(fpscr, flags);
-	GenFPSCR_FPRF<FPSCR, SoftFloat>(fpscr, result);
+        // Compute the result
+        Flags flags( Flags::RoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>()) );
+        SoftDouble result;
+        
+	if (unlikely(b.isNaN()))
+          {
+            if (unlikely(b.isSNaN()))
+              {
+		// Generate VXSNAN
+		FPSCR::VXSNAN::Set(fpscr, UINT(1));
+                if(bool(FPSCR::VE::Get(fpscr)))
+                  {
+                    // TODO: Check behavior of SNaN exception
+                    cpu->ThrowException<CPU::ProgramInterrupt::FloatingPoint>();
+                    return false;
+                  }
+              }
+
+            result = a;
+            result.quiet();
+            
+            // Generate FPRF
+            FPSCR::FPRF::Set(fpscr,FPSCR::FPRF::QNAN());
+          }
+	else if(unlikely(b.isZero()))
+          {
+            // Generate ZX
+            FPSCR::ZX::Set(fpscr, UINT(1));
+
+            bool neg( b.negative() ); // -infinity or +infinity
+            result.fromRawBitsAssign( neg ? 0xfff0000000000000ULL : 0x7ff0000000000000ULL );
+            FPSCR::FPRF::Set( fpscr, UINT( neg ? FPSCR::FPRF::NEGATIVE_INFINITY() : FPSCR::FPRF::POSITIVE_INFINITY() ) );
+          }
+	else if(unlikely(b.isInfty()))
+          {
+            bool neg( b.negative() ); // -0 or +0
+            result.fromRawBitsAssign( neg ? 0x8000000000000000ULL : 0x0000000000000000ULL );
+            FPSCR::FPRF::Set( fpscr, UINT( neg ? FPSCR::FPRF::NEGATIVE_ZERO() : FPSCR::FPRF::POSITIVE_ZERO()));
+          }
+	else
+          {
+            result.fromRawBitsAssign( 0x3ff0000000000000ULL ); // 1.0
+            result.divAssign(b, flags);
+
+            // Generate OX, UX, ZX, VXSNAN, FR, FI, FPRF
+            GenFPSCR_OX<FPSCR>(fpscr, flags);
+            GenFPSCR_UX<FPSCR>(fpscr, flags);
+            GenFPSCR_FPRF<FPSCR, SoftDouble>(fpscr, result);
+          }
+
+	// Generate XX, FX, VX, FEX
 	GenFPSCR_XX<FPSCR>(fpscr);
 	GenFPSCR_FX<FPSCR>(fpscr, old_fpscr);
 	GenFPSCR_VX<FPSCR>(fpscr);
@@ -77,6 +110,9 @@ fmuls.execute = {
 	// Update FPSCR
 	cpu->SetFPSCR(fpscr);
 
+	// Write back the result
+	cpu->SetFPR(fd, result);
+	
 	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
 	if(unlikely((cpu->GetMSR().Get<MSR::FE0>() or cpu->GetMSR().Get<MSR::FE1>()) and (cpu->GetFPSCR().Get<FPSCR::FEX>())))
 	{
@@ -85,18 +121,15 @@ fmuls.execute = {
 		return false;
 	}
 
-	// Write back the result
-	cpu->SetFPR(fd, SoftDouble(result, flags));
-
 	// Copy FX, FEX, VX, OX to CR1
 	if(unlikely(rc)) { cpu->GetCR().Set<CR::CR1>( cpu->GetFPSCR().Get<FPSCR::_0_3>() ); }
 	
 	return true;
 };
 
-fmuls.disasm = {
-	os << "fmuls" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fa) << ", " << FPRPrint(fc);
+fre.disasm = {
+	os << "fre" << (rc ? "." : "") << " " << FPRPrint(fd) << ", " << FPRPrint(fb);
 };
 
-specialize fmuls(rc=0);
-specialize fmuls(rc=1);
+specialize fre(rc=0);
+specialize fre(rc=1);

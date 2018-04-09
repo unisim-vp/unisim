@@ -52,10 +52,8 @@ fadd.execute = {
 	}
 
 	// Read the input operands
-	UINT fpscr = UINT(cpu->GetFPSCR());
-	UINT old_fpscr = fpscr;
-	Flags flags;
-	flags.setRoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>());
+	UINT fpscr = UINT(cpu->GetFPSCR()), old_fpscr = fpscr;
+	Flags flags( Flags::RoundingMode(cpu->GetFPSCR().Get<FPSCR::RN>()) );
 	SoftDouble result = cpu->GetFPR(fa);
 	const SoftDouble& b = cpu->GetFPR(fb);
 	
