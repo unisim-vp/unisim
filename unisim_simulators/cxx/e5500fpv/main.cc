@@ -115,13 +115,46 @@ main( int argc, char* argv[] )
           std::cerr << "  args[" << idx << "]: " << simargs[idx] << '\n';
         }
     }
-  
 
   std::vector<std::string> envs;
   envs.push_back( "LANG=C" );
   
   Arch cpu;
   
+  if (char* fpsat = getenv("FP_SHUFFLING_AT"))
+    {
+      char* range = fpsat;
+      cpu.fp_shuffler.addr_range.first  = strtoull(range, &range, 0);
+      if (*range++ != ':')
+        { std::cerr << "error: expected FP_SCRABLING_AT=<start address>:<end address>, got: " << fpsat << std::endl; return 1; }
+      cpu.fp_shuffler.addr_range.second = strtoull(range, &range, 0);
+      if (*range)
+        { std::cerr << "error: expected FP_SCRABLING_AT=<start address>:<end address>, got: " << fpsat << std::endl; return 1; }
+      std::cerr << "FP_SHUFFLING_AT=" << std::hex << cpu.fp_shuffler.addr_range.first << ":" << cpu.fp_shuffler.addr_range.second << std::dec << std::endl;
+    }
+  
+  if (char* fpsof = getenv("FP_SHUFFLING_OF"))
+    {
+      int32_t seeds[4];
+      char* seed = const_cast<char*>("");
+      for (int i = 0; i < 4; ++i)
+        {
+          seed = (*seed == ':') ? seed+1 : fpsof;
+          seeds[i] = strtol(seed,&seed,0);
+        }
+      if (*seed)
+        { std::cerr << "error: expected FP_SCRABLING_OF=<seed0>:<seed1>:<seed2>:<seed3>, got: " << fpsof << std::endl; return 1; }
+      cpu.fp_shuffler.random.Seed(seeds[0],seeds[1],seeds[2],seeds[3]);
+      std::cerr << "FP_SHUFFLING_OF" << std::hex;
+      char const* sep = "=";
+      for (int i = 0; i < 4; ++i)
+        {
+          std::cerr << sep << seeds[i];
+          sep = ":";
+        }
+      std::cerr << std::dec << std::endl;
+    }
+      
   // Loading image
   std::cerr << "*** Loading elf image: " << simargs[0] << " ***" << std::endl;
   
@@ -130,7 +163,7 @@ main( int argc, char* argv[] )
   
   linux64.Setup( simargs, envs );
 
-  Debugger debugger( cpu, linux64 );
+  // Debugger debugger( cpu, linux64 );
 
   simulator.Setup();
   

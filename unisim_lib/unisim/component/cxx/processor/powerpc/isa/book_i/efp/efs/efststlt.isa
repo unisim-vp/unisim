@@ -40,7 +40,7 @@ efststlt.execute = {
 
 	// Read the input operands
 	uint32_t ua( cpu->GetGPR(ra) ), ub( cpu->GetGPR(rb) );
-	SoftFloat a( ua ), b( ub );
+	SoftFloat a( SoftFloat::FromRawBits, ua ), b( SoftFloat::FromRawBits, ub );
 	
 	// Compute the result
 	bool result = unlikely(a.hasInftyExponent() or a.isDenormalized() or b.hasInftyExponent() or b.isDenormalized()) ?
@@ -86,8 +86,8 @@ efststlt.execute = {
 	}
 
 	return true;
-}
+};
 
 efststlt.disasm = {
 	os << "efststlt " << (unsigned int) bf << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
-}
+};

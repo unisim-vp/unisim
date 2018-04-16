@@ -82,6 +82,18 @@ impl {
 
 namespace mpc57
 {
+  typedef ut::BOOL  BOOL;
+  typedef ut::U8    U8;
+  typedef ut::U16   U16;
+  typedef ut::U32   U32;
+  typedef ut::U64   U64;
+  typedef ut::S8    S8;
+  typedef ut::S16   S16;
+  typedef ut::S32   S32;
+  typedef ut::S64   S64;
+
+  typedef ut::ADDRESS ADDRESS;
+  
   using ut::CPU;
   using ut::SignedAdd32;
   using ut::XER;

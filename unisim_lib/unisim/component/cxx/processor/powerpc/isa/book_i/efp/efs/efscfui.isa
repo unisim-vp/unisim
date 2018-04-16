@@ -32,6 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr), Franck Vedrine (franck.vedrine@cea.fr)
  */
 
+/* Convert Floating-Point Single-Precision from Unsigned Integer */
 op efscfui(4[6]:rd[5]:?[5]:rb[5]:720[11]);
 
 efscfui.execute = {
@@ -39,19 +40,15 @@ efscfui.execute = {
 		return false;
 
 	// Read the input operands
-	uint32_t src( cpu->GetGPR(rb) );
+	U32 src( cpu->GetGPR(rb) );
 	
 	// Check for Invalid Operation/Input errors
 	if (not cpu->EFPProcessInput().proceed())
 		return false; // Should not occur
 	
 	// Compute the result
-	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-	Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
-
-	SoftFloat::IntConversion conversion;
-	conversion.setUnsigned().assignUnsigned(src);
-	SoftFloat result(conversion, flags);
+	Flags flags( Flags::RoundingMode(cpu->GetSPEFSCR().Get<CPU::SPEFSCR::FRMC>()) );
+	SoftFloat result( src, flags );
 
 	// Handle EFP Specific Signaling/Rounding
 	bool status = cpu->EFPProcessOutput( result, flags );
@@ -60,7 +57,9 @@ efscfui.execute = {
 	cpu->SetGPR(rd, result.queryValue());
 
 	return status;
-}
+};
+
 efscfui.disasm = {
 	os << "efscfui " << GPRPrint(rd) << ", " << GPRPrint(rb);
-}
+};
+

@@ -39,7 +39,7 @@ efsmax.execute = {
 		return false;
 
 	// Read the input operands
-	SoftFloat a(cpu->GetGPR(ra)), b(cpu->GetGPR(rb));
+	SoftFloat a( SoftFloat::FromRawBits, cpu->GetGPR(ra) ), b( SoftFloat::FromRawBits, cpu->GetGPR(rb) );
 
 	// Check for Invalid Operation/Input errors
 	if (not cpu->EFPProcessInput().set(a).set(b).proceed())

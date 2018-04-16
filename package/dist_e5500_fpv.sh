@@ -38,6 +38,7 @@ unisim/util/debug/type.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/util/os/linux_os/environment.cc \
+unisim/util/random/random.cc \
 unisim/util/lexer/lexer.cc \
 unisim/util/xml/xml.cc \
 "
@@ -468,6 +469,7 @@ unisim/util/parser/parser.hh \
 unisim/util/parser/parser.tcc \
 unisim/util/reg/core/register.hh \
 unisim/util/reg/core/register.tcc \
+unisim/util/random/random.hh \
 unisim/util/simfloat/floating.hh \
 unisim/util/simfloat/floating.tcc \
 unisim/util/simfloat/integer.hh \
@@ -574,9 +576,6 @@ AUTHORS \
 ChangeLog \
 "
 
-UNISIM_SIMULATOR_TESTBENCH_FILES="\
-"
-
 Usage()
 {
 	echo "Usage:"
@@ -625,7 +624,7 @@ for file in ${UNISIM_LIB_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"
 done
 
-UNISIM_SIMULATOR_FILES="${UNISIM_SIMULATOR_SOURCE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_DATA_FILES} ${UNISIM_SIMULATOR_TESTBENCH_FILES}"
+UNISIM_SIMULATOR_FILES="${UNISIM_SIMULATOR_SOURCE_FILES} ${UNISIM_SIMULATOR_HEADER_FILES} ${UNISIM_SIMULATOR_DATA_FILES}"
 
 for file in ${UNISIM_SIMULATOR_FILES}; do
 	dist_copy "${UNISIM_SIMULATOR_DIR}/${file}" "${DEST_DIR}/${SIMPKG}/${file}"

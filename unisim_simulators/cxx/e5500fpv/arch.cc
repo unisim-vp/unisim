@@ -60,7 +60,7 @@ Arch::Arch()
   , xer(0)
   , cr(0)
   , msr(0)
-  , fpscr(0)
+  , fpscr(0,*this)
   , insn_count(0)
   , time_base(0)
     // , linux_os(0)
@@ -113,8 +113,17 @@ Arch::Arch()
   {
     FPRegister( Arch& _cpu, std::string _name, unsigned _reg ) : cpu(_cpu), name(_name), reg(_reg) {} Arch& cpu; std::string name; unsigned reg;
     virtual const char *GetName() const { return name.c_str(); };
-    virtual void GetValue( void* buffer ) const { cpu.GetFPR(reg).impl.fillChunk( buffer, unisim::util::endian::IsHostLittleEndian() ); }
-    virtual void SetValue( void const* buffer ) { cpu.GetFPR(reg).impl.setChunk( buffer, unisim::util::endian::IsHostLittleEndian() ); }
+    virtual void GetValue( void* buffer ) const
+    {
+      uint64_t value = cpu.GetFPR(reg).queryRawBits();
+      memcpy(buffer, &value, 8);
+    }
+    virtual void SetValue( void const* buffer )
+    {
+      uint64_t value;
+      memcpy(&value, buffer, 8);
+      cpu.GetFPR(reg).fromRawBitsAssign(value);
+    }
     virtual int  GetSize() const { return 8; }
   };
 
@@ -321,3 +330,8 @@ SignedMultiplyHigh( S64 lop, S64 rop )
   return S64( (lsign xor rsign) ? (ulo == 0) ? -uhi : ~uhi : uhi );
 }
 
+UINT
+FPSCR::GetDispatch( FPSCR::RN const& rn ) const
+{
+  return arch.fp_shuffler.GetRN( arch.cia, FPSCR::RN::Get(value) );
+}

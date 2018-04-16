@@ -39,7 +39,7 @@ efsneg.execute = {
 		return false;
 
 	// Read the input operands
-	SoftFloat a(cpu->GetGPR(ra)), result(a);
+	SoftFloat a( SoftFloat::FromRawBits, cpu->GetGPR(ra) ), result( a );
 
 	// Check for Invalid Operation/Input errors
 	if (not cpu->EFPProcessInput().set(a).proceed())

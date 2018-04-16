@@ -75,7 +75,7 @@ void FloatingPointRegisterInterface::GetValue(void *buffer) const
 
 void FloatingPointRegisterInterface::SetValue(const void *buffer)
 {
-	*value = SoftDouble(*(uint64_t *) buffer);
+	*value = SoftDouble(SoftDouble::FromRawBits, *(uint64_t*)buffer);
 }
 
 int FloatingPointRegisterInterface::GetSize() const
@@ -132,7 +132,7 @@ unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (bo
 {
 	if(IsMutable())
 	{
-		storage = SoftDouble((uint64_t) value);
+		storage = SoftDouble(SoftDouble::FromRawBits, (uint64_t)value);
 		NotifyListeners();
 	}
 	return *this;
@@ -142,7 +142,7 @@ unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (lo
 {
 	if(IsMutable())
 	{
-		storage = SoftDouble((int64_t) value);
+		storage = SoftDouble(SoftDouble::FromRawBits, (uint64_t)value);
 		NotifyListeners();
 	}
 	return *this;
@@ -152,7 +152,7 @@ unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (un
 {
 	if(IsMutable())
 	{
-		storage = SoftDouble((uint64_t) value);
+		storage = SoftDouble(SoftDouble::FromRawBits, (uint64_t)value);
 		NotifyListeners();
 	}
 	return *this;
@@ -162,7 +162,7 @@ unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (do
 {
 	if(IsMutable())
 	{
-		storage = SoftDouble((int64_t) value);
+		storage = SoftDouble(SoftDouble::FromRawBits, (uint64_t)value);
 		NotifyListeners();
 	}
 	return *this;
@@ -172,7 +172,8 @@ unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (co
 {
 	if(IsMutable())
 	{
-		storage = SoftDouble((uint64_t) (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0)));
+		uint64_t source = (strcmp(value, "true") == 0) ? 1 : (strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0);
+		storage = SoftDouble(SoftDouble::FromRawBits, (uint64_t)source);
 		NotifyListeners();
 	}
 	return *this;

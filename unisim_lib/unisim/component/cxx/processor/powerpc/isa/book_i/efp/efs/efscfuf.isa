@@ -34,30 +34,21 @@
 
 op efscfuf(4[6]:rd[5]:?[5]:rb[5]:722[11]);
 
+/* Convert Floating-Point Single-Precision from Unsigned Fraction */
 efscfuf.execute = {
 	if (!cpu->CheckSPV())
 		return false;
 
 	// Read the input operands
-	uint32_t src( cpu->GetGPR(rb) );
+	U32 src( cpu->GetGPR(rb) );
 	
 	// Check for Invalid Operation/Input errors
 	if (not cpu->EFPProcessInput().proceed())
 		return false; // Should not occur
 	
 	// Compute the result
-	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-	Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
-
-	SoftFloat::IntConversion conversion;
-	conversion.setUnsigned().assignUnsigned(src);
-	SoftFloat result(conversion, flags);
-	bool isZero = result.querySBasicExponent().sub(32).hasCarry() or result.queryBasicExponent().isZero();
-	if (unlikely(isZero and not result.isZero())) // should not occur
-	{
-		flags.setUnderflow();
-		result.clear();
-	}
+	Flags flags( Flags::RoundingMode(cpu->GetSPEFSCR().Get<CPU::SPEFSCR::FRMC>()) );
+	SoftFloat result( SoftFloat::FromFraction, src, flags );
 
 	// Handle EFP Specific Signaling/Rounding
 	bool status = cpu->EFPProcessOutput( result, flags );
@@ -66,8 +57,8 @@ efscfuf.execute = {
 	cpu->SetGPR(rd, result.queryValue());
 
 	return status;
-}
+};
 
 efscfuf.disasm = {
 	os << "efscfuf " << GPRPrint(rd) << ", " << GPRPrint(rb);
-}
+};

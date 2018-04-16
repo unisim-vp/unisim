@@ -42,6 +42,7 @@
 #include <unisim/component/cxx/memory/sparse/memory.hh>
 #include <unisim/util/reg/core/register.hh>
 #include <unisim/util/reg/core/register.tcc>
+#include <unisim/util/random/random.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/registers.hh>
@@ -145,7 +146,15 @@ struct FPSCR : Register<FPSCR>
   struct NI     : Field<NI,     61> {};     // Floating-Point Non-IEEE Mode
   struct RN     : Field<RN,     62, 63> {}; // Floating-Point Rounding Control
   
-  FPSCR(UINT _value) : Super(_value) {}
+  FPSCR(UINT _value, Arch& _arch) : Super(_value), arch(_arch) {} Arch& arch;
+
+  template <class FIELD>
+  UINT Get() const { return GetDispatch( FIELD() ); }
+
+  template <class FIELD>
+  UINT GetDispatch( FIELD const& field ) const { return Register<FPSCR>::Get<FIELD>(); }
+
+  UINT GetDispatch( RN const& rn ) const;
 };
 
 // Machine State Register
@@ -365,7 +374,7 @@ struct Arch
   SoftDouble& GetFPR(unsigned id) { return fprs[id]; }
   void        SetFPR(unsigned id, SoftDouble const& value ) { fprs[id] = value; }
   FPSCR&      GetFPSCR() { return fpscr; }
-  void        SetFPSCR(UINT value) { fpscr = value; }
+  void        SetFPSCR(UINT value) { fpscr.value = value; }
 
   bool Fp64Load(unsigned id, U64 addr) { fprs[id].fromRawBitsAssign(IntLoad<U64>( addr )); return true; }
   bool Fp64Store(unsigned id, U64 addr) { IntStore( addr, U64(fprs[id].queryRawBits()) ); return true; }
@@ -395,6 +404,14 @@ struct Arch
   
   uintptr_t       insn_count;
   U64             time_base;
+  
+  struct FPShuffler
+  {
+    FPShuffler() : random(), addr_range() {}
+    UINT GetRN( UINT cia, UINT normal_value ) { return (cia >= addr_range.first and cia < addr_range.second) ? UINT(random.Generate() & 3) : normal_value; }
+    unisim::util::random::Random random;
+    std::pair<U64,U64> addr_range;
+  } fp_shuffler;
 
   static bool const HAS_FPU = true;
   static bool const HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS = true;
@@ -402,7 +419,6 @@ struct Arch
 
   // unisim::kernel::service::ServiceImport<unisim::service::interfaces::SymbolTableLookup<uint64_t> > symbol_table_lookup_import;
   // unisim::kernel::service::ServiceImport<unisim::service::interfaces::LinuxOS> linux_os_import;
-
 };
 
 typedef Arch CPU;

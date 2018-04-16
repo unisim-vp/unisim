@@ -314,6 +314,7 @@ namespace ut
     struct FRMC {};
     struct FINVE {};
     struct FINV {};
+    struct FINVS {};
     
     typedef unisim::util::symbolic::Expr Expr;
     typedef unisim::util::symbolic::ExprNode ExprNode;
@@ -331,6 +332,13 @@ namespace ut
       virtual unsigned SubCount() const { return 0; };
       virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
     };
+    
+    bool SetInvalid( bool inv, bool invh=false )
+    {
+      this->template Set<FINV>( U32(inv) );
+      //this->template Set<FINVH>( U32(invh) );
+      return true;
+    }
     
     SPEFSCR() : spefscr_value( new SPEFSCRNode ) {}
     
@@ -514,19 +522,113 @@ namespace ut
     bool MoveToSPR(unsigned dcrn, U32 const& result) { donttest_system(); return false; }
     
     bool CheckSPV() { return true; }
+
+    struct __EFPProcessInput__
+    {
+      __EFPProcessInput__( CPU& _cpu ) : cpu(_cpu), finv(false) {};
+      template <class FLOAT>
+      __EFPProcessInput__& set( FLOAT& input ) { finv |= not check_input( input ) ; return *this; }
+      template <class FLOAT>
+      static bool check_input( FLOAT& input )
+      {
+        // if (unlikely(input.isDenormalized()))
+        //   {
+        //     input.setZero(input.isNegative());
+        //     return false;
+        //   }
+			
+        // if (unlikely(input.hasInftyExponent()))
+        //   return false;
+			
+        return true;
+      }
+      bool proceed()
+      {
+        // cpu.GetSPEFSCR().Set<typename SPEFSCR::FINV>(finv);
+        // if (finv)
+        //   {
+        //     cpu.GetSPEFSCR().Set<typename SPEFSCR::FINVS>(true);
+        //     if (cpu.GetSPEFSCR().Get<typename SPEFSCR::FINVE>())
+        //       {
+        //         cpu.ThrowException<typename ProgramInterrupt::UnimplementedInstruction>();
+        //         return false;
+        //       }
+        //   }
+        return true;
+      }
+		
+      CPU& cpu;
+      bool finv;
+    };
+	
+    __EFPProcessInput__
+    EFPProcessInput()
+    {
+      // GetSPEFSCR().Set<typename SPEFSCR::FG>(false);
+      // GetSPEFSCR().Set<typename SPEFSCR::FX>(false);
+      // GetSPEFSCR().Set<typename SPEFSCR::FGH>(false);
+      // GetSPEFSCR().Set<typename SPEFSCR::FXH>(false);
+      // GetSPEFSCR().Set<typename SPEFSCR::FDBZ>(false);
+      // GetSPEFSCR().Set<typename SPEFSCR::FDBZH>(false);
+      // GetSPEFSCR().SetDivideByZero( false );
+      return __EFPProcessInput__( *this );
+    }
+	
+    template <class FLOAT, class FLAGS>
+    bool
+    EFPProcessOutput( FLOAT& output, FLAGS const& flags )
+    {
+      // if (output.hasInftyExponent())
+      //   {
+      //     bool neg = output.isNegative();
+      //     output.setInfty();
+      //     output.setToPrevious();
+      //     output.setNegative(neg);
+      //   }
+      // bool inexact = flags.isApproximate() and not spefscr.template Get<typename CPU::SPEFSCR::FINV>();
+      // bool overflow = inexact and flags.isOverflow();
+      // if (not GetSPEFSCR().SetOverflow( overflow ))
+      //   return false;
+      // bool underflow = inexact and flags.isUnderflow();
+      // if (output.isDenormalized())
+      //   {
+      //     output.setZero(output.isNegative());
+      //     inexact = true, underflow = true;
+      //   }
+      // if (not GetSPEFSCR().SetUnderflow( underflow ))
+      //   return false;
+
+      // if (inexact)
+      //   {
+      //     // Compute inexact flags (FG, FX)
+      //     GetSPEFSCR().Set<typename SPEFSCR::FINXS>(true);
+      //     if (spefscr.template Get<typename SPEFSCR::FINXE>())
+      //       {
+      //         this->template ThrowException<typename ProgramInterrupt::UnimplementedInstruction>();
+      //         return false;
+      //       }
+      //   }
+
+      return true;
+    }
+	
     
   };
   
   struct Flags
   {
+    struct RoundingMode { RoundingMode(U32 const& rm) {} };
+    Flags( RoundingMode const& rm ) {}
     void setRoundingMode(U32 const&) {}
     void setRoundingMode(unsigned) {}
     void setUnderflow() {}
     void setOverflow() {}
     void setDownApproximate() {}
     void setUpApproximate() {}
+    void clearFlowException() {}
     BOOL isUpApproximate() { return make_unknown<BOOL>(); }
     BOOL isDownApproximate() { return make_unknown<BOOL>(); }
+    BOOL isOverflow() { return make_unknown<BOOL>(); }
   };
   
   struct BigInt
@@ -542,49 +644,43 @@ namespace ut
   
   struct SoftFloat
   {
-    struct IntConversion
-    {
-      void assignSigned( S32 const& ) {}
-      void assignUnsigned( U32 const& ) {}
-      IntConversion& setSigned() { return *this; }
-      IntConversion& setUnsigned() { return *this; }
-      IntConversion& setSize(int) { return *this; }
-      S32 asInt32() { return make_unknown<S32>(); }
-      U32 asUInt32() { return make_unknown<U32>(); }
-    };
+    enum __FromRawBits__ { FromRawBits };
+    SoftFloat( __FromRawBits__, U32 const& source ) { fromRawBitsAssign( source ); }
     
-    SoftFloat( IntConversion const&, Flags const& ) {}
     SoftFloat( U32 const& ) {}
     SoftFloat( SoftHalfFloat const&, Flags const& ) {}
+
+    SoftFloat& convertAssign( SoftHalfFloat const&, Flags& );
+    SoftFloat& fromRawBitsAssign( U32 const& );
     
-    U32 queryValue() { return make_unknown<U32>(); }
-    BOOL isNaN() { return make_unknown<BOOL>(); }
-    BOOL operator == (SoftFloat const&) { return make_unknown<BOOL>(); }
-    BOOL operator < (SoftFloat const&) { return make_unknown<BOOL>(); }
-    BOOL operator > (SoftFloat const&) { return make_unknown<BOOL>(); }
-    void retrieveInteger(IntConversion const&, Flags const&) {}
-    BOOL isPositive() { return make_unknown<BOOL>(); }
-    BOOL isNegative() { return make_unknown<BOOL>(); }
-    void setNegative(bool=false) {}
-    void setNegative(BOOL) {}
-    void plusAssign(SoftFloat const&, Flags const& flags) {}
-    void divAssign(SoftFloat const&, Flags const& flags) {}
-    void multAssign(SoftFloat const&, Flags const& flags) {}
-    void minusAssign(SoftFloat const&, Flags const& flags) {}
-    void sqrtAssign() {}
-    void squareAssign(Flags const& flags) {}
-    void multAndAddAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
-    void multAndSubAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
-    void multNegativeAndAddAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
-    void multNegativeAndSubAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
+    U32 queryRawBits() { return make_unknown<U32>(); }
+    // BOOL isNaN() { return make_unknown<BOOL>(); }
+    // BOOL operator == (SoftFloat const&) { return make_unknown<BOOL>(); }
+    // BOOL operator < (SoftFloat const&) { return make_unknown<BOOL>(); }
+    // BOOL operator > (SoftFloat const&) { return make_unknown<BOOL>(); }
+    // void retrieveInteger(IntConversion const&, Flags const&) {}
+    // BOOL isPositive() { return make_unknown<BOOL>(); }
+    // BOOL isNegative() { return make_unknown<BOOL>(); }
+    // void setNegative(bool=false) {}
+    // void setNegative(BOOL) {}
+    // void plusAssign(SoftFloat const&, Flags const& flags) {}
+    // void divAssign(SoftFloat const&, Flags const& flags) {}
+    // void multAssign(SoftFloat const&, Flags const& flags) {}
+    // void minusAssign(SoftFloat const&, Flags const& flags) {}
+    // void sqrtAssign() {}
+    // void squareAssign(Flags const& flags) {}
+    // void multAndAddAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
+    // void multAndSubAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
+    // void multNegativeAndAddAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
+    // void multNegativeAndSubAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
     
-    BigInt querySBasicExponent() { return BigInt(); }
-    BigInt queryBasicExponent() { return BigInt(); }
-    BOOL isZero() { return make_unknown<BOOL>(); }
-    void clear() {}
+    // BigInt querySBasicExponent() { return BigInt(); }
+    // BigInt queryBasicExponent() { return BigInt(); }
+    // BOOL isZero() { return make_unknown<BOOL>(); }
+    // void clear() {}
     
-    BOOL hasInftyExponent() { return make_unknown<BOOL>(); }
-    BOOL isDenormalized() { return make_unknown<BOOL>(); }
+    // BOOL hasInftyExponent() { return make_unknown<BOOL>(); }
+    // BOOL isDenormalized() { return make_unknown<BOOL>(); }
   };
 
   struct SoftHalfFloat

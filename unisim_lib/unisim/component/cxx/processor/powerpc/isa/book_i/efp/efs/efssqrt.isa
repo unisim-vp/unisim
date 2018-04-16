@@ -39,7 +39,7 @@ efssqrt.execute = {
 		return false;
 
 	// Read the input operands
-	SoftFloat result(cpu->GetGPR(ra));
+	SoftFloat result( SoftFloat::FromRawBits, cpu->GetGPR(ra) );
 				
 	// Check for Invalid Operation/Input errors
 	if (not cpu->EFPProcessInput().set(result).proceed())

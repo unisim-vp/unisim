@@ -39,7 +39,7 @@ efsctsf.execute = {
 		return false;
 
 	// Read the input operands
-	SoftFloat b(cpu->GetGPR(rb));
+	SoftFloat b( SoftFloat::FromRawBits, cpu->GetGPR(rb) );
 	
 	// Check for Invalid Operation/Input errors
 	if (not cpu->EFPProcessInput().set(b).proceed())
