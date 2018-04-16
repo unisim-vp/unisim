@@ -5202,6 +5202,7 @@ Simulator::~Simulator()
 	if(xbar_1_stub) delete xbar_1_stub;
 	if(pbridge_a_stub) delete pbridge_a_stub;
 	if(pbridge_b_stub) delete pbridge_b_stub;
+	if(siul2_stub) delete siul2_stub;
 	if(dma_err_irq_combinator) delete dma_err_irq_combinator;
 	if(DSPI0_0) delete DSPI0_0;
 	if(DSPI1_0) delete DSPI1_0;
