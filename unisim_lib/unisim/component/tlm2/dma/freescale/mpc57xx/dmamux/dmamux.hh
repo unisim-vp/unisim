@@ -119,8 +119,10 @@ public:
 	sc_core::sc_in<bool>      reset_b;                          // reset
 	sc_core::sc_in<bool>     *dma_source[NUM_DMA_SOURCES];      // DMA sources
 	sc_core::sc_in<bool>     *dma_always_on[NUM_DMA_ALWAYS_ON]; // DMA always on
+	sc_core::sc_in<bool>    *dma_channel_ack[NUM_DMA_CHANNELS];// DMA channel acknownledgements
 	sc_core::sc_in<bool>     *dma_trigger[NUM_DMA_TRIGGERS];    // DMA triggers
 	sc_core::sc_out<bool>    *dma_channel[NUM_DMA_CHANNELS];    // DMA channels
+	sc_core::sc_out<bool>    *dma_source_ack[NUM_DMA_SOURCES];  // DMA source acknownledgements
 	
 	DMAMUX(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
 	virtual ~DMAMUX();
@@ -334,6 +336,7 @@ private:
 	sc_core::sc_event *dma_source_routing_change_event[NUM_DMA_SOURCES]; // configuration change event per DMA channel
 	sc_core::sc_event *dma_chcfg_event[NUM_DMA_CHANNELS];
 	sc_core::sc_event *dma_source_event[NUM_DMA_CHANNELS];            // source change event per DMA channel
+	sc_core::sc_event *dma_source_ack_event[NUM_DMA_SOURCES];
 	
 	bool conf_chk;
 	bool conf_ok;
@@ -357,6 +360,8 @@ private:
 	void RESET_B_Process();
 	void DMA_SOURCE_Process(unsigned int dma_source_num);
 	void DMA_CHANNEL_Process(unsigned int dma_channel_num);
+	void DMA_CHANNEL_ACK_Process(unsigned int dma_channel_num);
+	void DMA_SOURCE_ACK_Process(unsigned int dma_source_num);
 	void MasterClockPropertiesChangedProcess();
 	void UpdateMasterClock();
 	void UpdateChannel(unsigned int dma_channel_num);

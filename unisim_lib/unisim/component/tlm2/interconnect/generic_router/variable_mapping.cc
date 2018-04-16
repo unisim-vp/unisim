@@ -52,7 +52,7 @@ template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapp
 template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator long long () const { return 0; }
 template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator unsigned long long () const { return 0; }
 template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator double () const { return 0; }
-template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator string () const { 
+template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator std::string () const { 
 	std::stringstream buf;
 	buf << "range_start=\"0x" << std::hex << storage->range_start << std::dec
 		<< "\" range_end=\"0x" << std::hex << storage->range_end << std::dec
@@ -89,7 +89,7 @@ template <> VariableBase& Variable<unisim::component::tlm2::interconnect::generi
 			{
 				str_rest = str.substr(pos + 1);
 				str = str.substr(0, pos);
-				stringstream range_start_str;
+				std::stringstream range_start_str;
 				range_start_str << str;
 				range_start_str >> std::hex >> range_start >> std::dec;
 				str = str_rest;
@@ -104,7 +104,7 @@ template <> VariableBase& Variable<unisim::component::tlm2::interconnect::generi
 					{
 						str_rest = str.substr(pos + 1);
 						str = str.substr(0, pos);
-						stringstream range_end_str;
+						std::stringstream range_end_str;
 						range_end_str << str;
 						range_end_str >> std::hex >> range_end >> std::dec;
 						str = str_rest;
@@ -119,23 +119,23 @@ template <> VariableBase& Variable<unisim::component::tlm2::interconnect::generi
 							{
 								str_rest = str.substr(pos + 1);
 								str = str.substr(0, pos);
-								stringstream output_port_str;
+								std::stringstream output_port_str;
 								output_port_str << str;
 								output_port_str >> output_port;
 								str = str_rest;
 								pos = str.find('"');
 								if(pos == std::string::npos) pos = str.find('\'');
-								if (pos != string::npos)
+								if (pos != std::string::npos)
 								{
 									// translation available
-									stringstream translation_str;
+									std::stringstream translation_str;
 									str = str.substr(pos + 1);
 									pos = str.find('"');
 									if(pos == std::string::npos) pos = str.find('\'');
 									if(pos != std::string::npos)
 									{
 										str = str.substr(0, pos);
-										stringstream translation_st;
+										std::stringstream translation_st;
 										translation_str << str;
 										translation_str >> std::hex >> translation >> std::dec;
 									}

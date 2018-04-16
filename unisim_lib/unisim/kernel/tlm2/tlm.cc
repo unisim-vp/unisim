@@ -84,7 +84,7 @@ Variable<sc_core::sc_time>::operator double () const
 }
 
 template <> 
-Variable<sc_core::sc_time>::operator string () const
+Variable<sc_core::sc_time>::operator std::string () const
 {
 	return Get().to_string();
 }

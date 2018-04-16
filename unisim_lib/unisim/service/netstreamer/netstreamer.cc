@@ -154,6 +154,16 @@ NetStreamer::NetStreamer(const char *name, unisim::kernel::service::Object *pare
 {
 	param_tcp_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
+#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
+	// Loads the winsock2 dll
+	WORD wVersionRequested = MAKEWORD( 2, 2 );
+	WSADATA wsaData;
+	if(WSAStartup(wVersionRequested, &wsaData) != 0)
+	{
+		throw std::runtime_error("WSAStartup failed: Windows sockets not available");
+	}
+#endif
+
 	pthread_mutex_init(&thrd_conn_create_mutex, NULL);
 	pthread_mutex_init(&thrd_conn_close_mutex, NULL);
 	pthread_mutex_init(&mutex, NULL);
@@ -174,6 +184,11 @@ NetStreamer::~NetStreamer()
 	{
 		logger << DebugError << "Simulation thread: Can't join thread that handle connection" << EndDebugError;
 	}
+
+#if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
+	//releases the winsock2 resources
+	WSACleanup();
+#endif
 
 	pthread_mutex_destroy(&thrd_conn_create_mutex);
 	pthread_mutex_destroy(&thrd_conn_close_mutex);
@@ -1182,7 +1197,7 @@ template <> Variable<NetStreamerProtocol>::operator bool () const { return *stor
 template <> Variable<NetStreamerProtocol>::operator long long () const { return *storage; }
 template <> Variable<NetStreamerProtocol>::operator unsigned long long () const { return *storage; }
 template <> Variable<NetStreamerProtocol>::operator double () const { return (double)(*storage); }
-template <> Variable<NetStreamerProtocol>::operator string () const
+template <> Variable<NetStreamerProtocol>::operator std::string () const
 {
 	switch(*storage)
 	{

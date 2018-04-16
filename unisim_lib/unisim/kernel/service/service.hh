@@ -88,20 +88,8 @@ namespace unisim {
 namespace kernel {
 namespace service {
 
-using std::cout;
-using std::endl;
-using std::map;
-using std::string;
-using std::list;
-using std::queue;
-using std::cerr;
-using std::endl;
-using std::stringstream;
-using std::ostream;
-using std::vector;
-
-class EmptyClientInterface {};
 class VariableBase;
+class Simulator;
 template <class TYPE> class Variable;
 template <class TYPE> class Parameter;
 template <class TYPE> class VariableArray;
@@ -169,7 +157,7 @@ public:
 	virtual const char *GetDataTypeName() const;
 	bool HasEnumeratedValues() const;
 	bool HasEnumeratedValue(const char *value) const;
-	void GetEnumeratedValues(vector<string> &values) const;
+	void GetEnumeratedValues(std::vector<std::string> &values) const;
 	bool AddEnumeratedValue(const char *value);
 	bool RemoveEnumeratedValue(const char *value);
 	void SetDescription(const char *description);
@@ -189,7 +177,7 @@ public:
 	virtual operator unsigned long long () const;
 	operator float () const;
 	virtual operator double () const;
-	virtual operator string () const;
+	virtual operator std::string () const;
 	virtual VariableBase& operator = (bool value);
 	VariableBase& operator = (char value);
 	VariableBase& operator = (short value);
@@ -228,12 +216,12 @@ public:
 	void NotifyListeners();
 
 private:
-	string name;
-	string var_name;
+	std::string name;
+	std::string var_name;
 	Object *owner;
 	VariableBase *container;
-	string description;
-	vector<string> enumerated_values;
+	std::string description;
+	std::vector<std::string> enumerated_values;
 	Type type;
 	Format fmt;
 	bool is_mutable;
@@ -241,6 +229,19 @@ private:
 	bool is_serializable;
 	bool is_modified;
 	std::set<VariableBaseListener*> listener_set;
+};
+
+//=============================================================================
+//=                           ConfigFileHelper                                =
+//=============================================================================
+
+class ConfigFileHelper
+{
+public:
+	virtual ~ConfigFileHelper() {}
+	virtual const char *GetName() const = 0;
+	virtual bool SaveVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID) = 0;
+	virtual bool LoadVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID) = 0;
 };
 
 //=============================================================================
@@ -280,27 +281,27 @@ public:
 	const VariableBase *FindFormula(const char *name) const;
 	VariableBase *FindFormula(const char *name);
 
-	void GetVariables(list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID);
-	void GetArrays(list<VariableBase *>& lst);
-	void GetParameters(list<VariableBase *>& lst);
-	void GetRegisters(list<VariableBase *>& lst);
-	void GetSignals(list<VariableBase *>& lst);
-	void GetStatistics(list<VariableBase *>& lst);
-	void GetFormulas(list<VariableBase *>& lst);
+	void GetVariables(std::list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID);
+	void GetArrays(std::list<VariableBase *>& lst);
+	void GetParameters(std::list<VariableBase *>& lst);
+	void GetRegisters(std::list<VariableBase *>& lst);
+	void GetSignals(std::list<VariableBase *>& lst);
+	void GetStatistics(std::list<VariableBase *>& lst);
+	void GetFormulas(std::list<VariableBase *>& lst);
 
-	void Dump(ostream& os);
-	void DumpVariables(ostream& os, VariableBase::Type filter_type = VariableBase::VAR_VOID);
-	void DumpStatistics(ostream& os);
-	void DumpParameters(ostream& os);
-	void DumpRegisters(ostream& os);
-	void DumpFormulas(ostream& os);
+	void Dump(std::ostream& os);
+	void DumpVariables(std::ostream& os, VariableBase::Type filter_type = VariableBase::VAR_VOID);
+	void DumpStatistics(std::ostream& os);
+	void DumpParameters(std::ostream& os);
+	void DumpRegisters(std::ostream& os);
+	void DumpFormulas(std::ostream& os);
 
 	bool GetExecutablePath(const char *argv0, std::string& out_execute_path) const;
 	bool GetBinPath(const char *argv0, std::string& out_bin_dir, std::string& out_bin_program) const;
 	bool GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const;
-	string SearchSharedDataFile(const char *filename) const;
+	std::string SearchSharedDataFile(const char *filename) const;
 
-	void GenerateLatexDocumentation(ostream& os) const;
+	void GenerateLatexDocumentation(std::ostream& os) const;
 	
 	virtual double GetSimTime()	{ return (0);	}
 	virtual double GetHostTime()	{ return (0);	}
@@ -314,48 +315,50 @@ public:
 
 	unisim::kernel::api::APIBase *GetAPIs();
 
+	void Register(ConfigFileHelper *config_file_helper);
 private:
 	friend class Object;
 	friend class VariableBase;
 	template <class TYPE> friend class Variable;
-	friend class XMLHelper;
 	friend class ServiceImportBase;
 	friend class ServiceExportBase;
 	friend class unisim::kernel::api::APIBase;
 
-	string shared_data_dir;
-	std::map<string, string> set_vars;
-	string get_config_filename;
+	std::string shared_data_dir;
+	std::map<std::string, std::string> set_vars;
+	std::string get_config_filename;
+	std::string input_config_file_format;
+	std::string output_config_file_format;
 	bool list_parms;
 	bool get_config;
 	bool generate_doc;
-	string generate_doc_filename;
+	std::string generate_doc_filename;
 	bool enable_warning;
 	bool enable_version;
 	bool enable_help;
 	bool warn_get_bin_path;
 	bool warn_get_share_path;
 	bool enable_press_enter_at_exit;
-	string bin_dir;
-	string program_binary;
-	string program_name;
-	string authors;
-	string copyright;
-	string description;
-	string version;
-	string license;
-	string schematic;
-	Parameter<string> *var_program_name;
-	Parameter<string> *var_authors;
-	Parameter<string> *var_copyright;
-	Parameter<string> *var_description;
-	Parameter<string> *var_version;
-	Parameter<string> *var_license;
-	Parameter<string> *var_schematic;
+	std::string bin_dir;
+	std::string program_binary;
+	std::string program_name;
+	std::string authors;
+	std::string copyright;
+	std::string description;
+	std::string version;
+	std::string license;
+	std::string schematic;
+	Parameter<std::string> *var_program_name;
+	Parameter<std::string> *var_authors;
+	Parameter<std::string> *var_copyright;
+	Parameter<std::string> *var_description;
+	Parameter<std::string> *var_version;
+	Parameter<std::string> *var_license;
+	Parameter<std::string> *var_schematic;
 	Parameter<bool> *param_enable_press_enter_at_exit;
 	
-	void Version(ostream& os) const;
-	void Help(ostream& os) const;
+	void Version(std::ostream& os) const;
+	void Help(std::ostream& os) const;
 	
 	void Register(Object *object);
 	void Register(ServiceImportBase *srv_import);
@@ -372,28 +375,18 @@ private:
 	
 	void Initialize(VariableBase *variable);
 
-	bool XmlfyParameters(const char *filename);
-	bool XmlfyStatistics(const char *filename);
-	bool XmlfyRegisters(const char *filename);
-	bool XmlfyFormulas(const char *filename);
-
 public:
-	bool LoadXmlParameters(const char *filename);
-private:
-	bool LoadXmlStatistics(const char *filename);
-	bool LoadXmlRegisters(const char *filename);
-	bool LoadXmlFormulas(const char *filename);
-
-	bool XmlfyVariables(const char *filename);
-	bool LoadXmlVariables(const char *filename);
+	bool LoadVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID);
+	bool SaveVariables(const char *filename, VariableBase::Type type = VariableBase::VAR_VOID);
 
 public:
 	// TOCHECK: this method was previously declared as private,
 	//   and should probably become again private unless we consider
 	//   it part of the simulator API in which case it should
 	//   become public
-	void GetRootObjects(list<Object *>& lst) const;
-	void GetAPIs(list<unisim::kernel::api::APIBase *> &api_list) const;
+	void GetObjects(std::list<Object *>& lst) const;
+	void GetRootObjects(std::list<Object *>& lst) const;
+	void GetAPIs(std::list<unisim::kernel::api::APIBase *> &api_list) const;
 
 private:
 	class CommandLineOption
@@ -415,22 +408,15 @@ private:
 
 	std::vector<CommandLineOption> command_line_options;
 	
-	struct ltstr
-	{
-		bool operator() (const char *s1, const char *s2) const
-		{
-			return (strcmp(s1, s2) < 0);
-		}
-	};
-
-	map<const char *, Object *, ltstr> objects;
-	map<const char *, ServiceImportBase *, ltstr> imports;
-	map<const char *, ServiceExportBase *, ltstr> exports;
-	map<const char *, VariableBase *, ltstr> variables;
-	map<const char *, unisim::kernel::api::APIBase *, ltstr> apis;
+	std::map<std::string, Object *> objects;
+	std::map<std::string, ServiceImportBase *> imports;
+	std::map<std::string, ServiceExportBase *> exports;
+	std::map<std::string, VariableBase *> variables;
+	std::map<std::string, unisim::kernel::api::APIBase *> apis;
+	std::map<std::string, ConfigFileHelper *> config_file_helpers;
 	
-	string *cmd_args;
-	ParameterArray<string> *param_cmd_args;
+	std::string *cmd_args;
+	ParameterArray<std::string> *param_cmd_args;
 	
 public:
 	template <typename T> T GetVariable(const char *variable_name, const T *t = 0) const;
@@ -484,7 +470,7 @@ public:
 	virtual operator long long () const;
 	virtual operator unsigned long long () const;
 	virtual operator double () const;
-	virtual operator string () const;
+	virtual operator std::string () const;
 	virtual VariableBase& operator = (bool value);
 	virtual VariableBase& operator = (long long value);
 	virtual VariableBase& operator = (unsigned long long value);
@@ -678,7 +664,7 @@ public:
 	virtual operator long long () const;
 	virtual operator unsigned long long () const;
 	virtual operator double () const;
-	virtual operator string () const;
+	virtual operator std::string () const;
 	virtual VariableBase& operator = (bool value);
 	virtual VariableBase& operator = (long long value);
 	virtual VariableBase& operator = (unsigned long long value);
@@ -718,7 +704,7 @@ public:
 	virtual void SetModified(bool is_modified);
 
 private:
-	vector<VariableBase *> variables;
+	std::vector<VariableBase *> variables;
 };
 
 template <class TYPE>
@@ -729,7 +715,7 @@ VariableArray<TYPE>::VariableArray(const char *_name, Object *_owner, TYPE *_var
 	unsigned int i;
 	for(i = 0; i < dim; i++)
 	{
-		stringstream sstr;
+		std::stringstream sstr;
 		
 		sstr << _name << "[" << i << "]";
 		variables.push_back(new Variable<TYPE>(sstr.str().c_str(), _owner, *(_variables + i), type, _description));
@@ -740,7 +726,7 @@ VariableArray<TYPE>::VariableArray(const char *_name, Object *_owner, TYPE *_var
 template <class TYPE>
 VariableArray<TYPE>::~VariableArray()
 {
-	typename vector<VariableBase *>::iterator variable_iter;
+	typename std::vector<VariableBase *>::iterator variable_iter;
 	
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
@@ -753,7 +739,7 @@ VariableBase& VariableArray<TYPE>::operator [] (unsigned int index)
 {
 	if(index >= variables.size())
 	{
-		cerr << "Subscript out of range" << endl;
+		std::cerr << "Subscript out of range" << std::endl;
 		return (*Simulator::simulator->void_variable);
 	}
 	return (*variables[index]);
@@ -764,7 +750,7 @@ const VariableBase& VariableArray<TYPE>::operator [] (unsigned int index) const
 {
 	if(index >= variables.size())
 	{
-		cerr << "Subscript out of range" << endl;
+		std::cerr << "Subscript out of range" << std::endl;
 		return (*Simulator::simulator->void_variable);
 	}
 	return (*variables[index]);
@@ -791,7 +777,7 @@ VariableBase& VariableArray<TYPE>::operator = (const VariableBase& variable)
 template <class TYPE>
 void VariableArray<TYPE>::SetFormat(Format fmt)
 {
-	typename vector<VariableBase *>::iterator variable_iter;
+	typename std::vector<VariableBase *>::iterator variable_iter;
 	
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
@@ -809,7 +795,7 @@ template <class TYPE>
 void VariableArray<TYPE>::SetMutable(bool _is_mutable)
 {
 	VariableBase::SetMutable(_is_mutable);
-	typename vector<VariableBase *>::iterator variable_iter;
+	typename std::vector<VariableBase *>::iterator variable_iter;
 	
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
@@ -821,7 +807,7 @@ template <class TYPE>
 void VariableArray<TYPE>::SetVisible(bool _is_visible)
 {
 	VariableBase::SetVisible(_is_visible);
-	typename vector<VariableBase *>::iterator variable_iter;
+	typename std::vector<VariableBase *>::iterator variable_iter;
 	
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
@@ -833,7 +819,7 @@ template <class TYPE>
 void VariableArray<TYPE>::SetSerializable(bool _is_serializable)
 {
 	VariableBase::SetSerializable(_is_serializable);
-	typename vector<VariableBase *>::iterator variable_iter;
+	typename std::vector<VariableBase *>::iterator variable_iter;
 	
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
@@ -905,27 +891,27 @@ public:
 	void Remove(Object& object);
 	void Add(VariableBase& var);
 	void Remove(VariableBase& var);
-	const list<ServiceImportBase *>& GetServiceImports() const;
-	const list<ServiceExportBase *>& GetServiceExports() const;
-	const list<Object *>& GetLeafs() const;
-	void GetVariables(list<VariableBase *>& lst) const;
+	const std::list<ServiceImportBase *>& GetServiceImports() const;
+	const std::list<ServiceExportBase *>& GetServiceExports() const;
+	const std::list<Object *>& GetLeafs() const;
+	void GetVariables(std::list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID) const;
 	Object *GetParent() const;
 	void Disconnect();
 	VariableBase& operator [] (const char *name);
 	Simulator *GetSimulator() const;
-	void GenerateLatexDocumentation(ostream& os, VariableBase::Type variable_type) const;
+	void GenerateLatexDocumentation(std::ostream& os, VariableBase::Type variable_type) const;
 	const char *GetDescription() const;
 	virtual void Stop(int exit_status);
 	void SetDescription(const char *description);
 private:
-	string name;
-	string object_name;
-	string description;
+	std::string name;
+	std::string object_name;
+	std::string description;
 	Object *parent;
-	list<VariableBase *> variables;
-	list<ServiceImportBase *> srv_imports;
-	list<ServiceExportBase *> srv_exports;
-	list<Object *> leaf_objects;
+	std::list<VariableBase *> variables;
+	std::list<ServiceImportBase *> srv_imports;
+	std::list<ServiceExportBase *> srv_exports;
+	std::list<Object *> leaf_objects;
 };
 
 //=============================================================================
@@ -990,11 +976,11 @@ public:
 	const char *GetName() const;
 	virtual void Disconnect() = 0;
 	virtual void DisconnectService() = 0;
-	virtual void Dump(ostream& os) const = 0;
+	virtual void Dump(std::ostream& os) const = 0;
 	virtual Object *GetService() const = 0;
 	virtual ServiceExportBase *GetServiceExport() = 0;
 protected:
-	string name;
+	std::string name;
 	Object *owner;
 };
 
@@ -1010,18 +996,18 @@ public:
 	const char *GetName() const;
 	virtual void Disconnect() = 0;
 	virtual void DisconnectClient() = 0;
-	virtual void Dump(ostream& os) const = 0;
+	virtual void Dump(std::ostream& os) const = 0;
 	virtual Object *GetClient() const = 0;
 	virtual Object *GetService() const = 0;
 	void SetupDependsOn(ServiceImportBase& srv_import);
-	list<ServiceImportBase *>& GetSetupDependencies();
+	std::list<ServiceImportBase *>& GetSetupDependencies();
 
 	friend void operator >> (ServiceExportBase& lhs, ServiceImportBase& rhs);
 	friend void operator << (ServiceImportBase& lhs, ServiceExportBase& rhs);
 protected:
-	string name;
+	std::string name;
 	Object *owner;
-	list<ServiceImportBase *> setup_dependencies;
+	std::list<ServiceImportBase *> setup_dependencies;
 };
 
 //=============================================================================
@@ -1068,7 +1054,7 @@ __attribute__((always_inline))
 
 	void Unbind(ServiceExport<SERVICE_IF>& srv_export);
 
-	virtual void Dump(ostream& os) const;
+	virtual void Dump(std::ostream& os) const;
 
 	virtual Object *GetService() const;
 
@@ -1078,7 +1064,7 @@ private:
 	Service<SERVICE_IF> *service;
 	ServiceExport<SERVICE_IF> *srv_export;
 	ServiceImport<SERVICE_IF> *alias_import;
-	list<ServiceImport<SERVICE_IF> *> actual_imports;
+	std::list<ServiceImport<SERVICE_IF> *> actual_imports;
 	Client<SERVICE_IF> *client;
 
 	Service<SERVICE_IF> *ResolveService(Client<SERVICE_IF> *client);
@@ -1099,7 +1085,7 @@ ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Client<SERVICE_IF> *
 	client(_client)
 {
 #ifdef DEBUG_SERVICE
-	cerr << GetName() << ".ServiceImport(" << _name << ", client " << _client->GetName() << ")" << endl;
+	std::cerr << GetName() << ".ServiceImport(" << _name << ", client " << _client->GetName() << ")" << std::endl;
 #endif
 }
 
@@ -1113,7 +1099,7 @@ ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Object *_owner) :
 	client(0)
 {
 #ifdef DEBUG_SERVICE
-	cerr << GetName() << ".ServiceImport(" << _name << ", object " << (_owner ? _owner->GetName() : "?") << ")" << endl;
+	std::cerr << GetName() << ".ServiceImport(" << _name << ", object " << (_owner ? _owner->GetName() : "?") << ")" << std::endl;
 #endif
 }
 
@@ -1121,7 +1107,7 @@ template <class SERVICE_IF>
 ServiceImport<SERVICE_IF>::~ServiceImport()
 {
 #ifdef DEBUG_SERVICE
-	cerr << GetName() << ".~ServiceImport()" << endl;
+	std::cerr << GetName() << ".~ServiceImport()" << std::endl;
 #endif
 	//ServiceImport<SERVICE_IF>::DisconnectService();
 	ServiceImport<SERVICE_IF>::Disconnect();
@@ -1139,7 +1125,7 @@ inline SERVICE_IF *ServiceImport<SERVICE_IF>::operator -> () const
 #ifdef DEBUG_SERVICE
 	if(!service)
 	{
-		cerr << "ERROR! " << GetName() << " interface can't be used because it is not bound to a service." << endl;
+		std::cerr << "ERROR! " << GetName() << " interface can't be used because it is not bound to a service." << std::endl;
 		owner->Object::Stop(-1);
 	}
 #endif
@@ -1151,18 +1137,18 @@ void ServiceImport<SERVICE_IF>::Bind(ServiceExport<SERVICE_IF>& srv_export)
 {
 	if(this->alias_import)
 	{
-		cerr << "WARNING! Can't connect " << GetName() << " to " << srv_export.GetName() << " because it is already connected to " << this->alias_import->GetName() << endl;
+		std::cerr << "WARNING! Can't connect " << GetName() << " to " << srv_export.GetName() << " because it is already connected to " << this->alias_import->GetName() << std::endl;
 		return;
 	}
 
 	if(this->srv_export)
 	{
-		cerr << "WARNING! Can't connect " << GetName() << " to " << srv_export.GetName() << " because it is already connected to " << this->srv_export->GetName() << endl;
+		std::cerr << "WARNING! Can't connect " << GetName() << " to " << srv_export.GetName() << " because it is already connected to " << this->srv_export->GetName() << std::endl;
 		return;
 	}
 
 #ifdef DEBUG_SERVICE
-	cerr << GetName() << " -> " << srv_export.GetName() << endl;
+	std::cerr << GetName() << " -> " << srv_export.GetName() << std::endl;
 #endif
 	this->srv_export = &srv_export;
 }
@@ -1172,18 +1158,18 @@ void ServiceImport<SERVICE_IF>::Bind(ServiceImport<SERVICE_IF>& alias_import)
 {
 	if(srv_export)
 	{
-		cerr << "WARNING! Can't connect " << GetName() << " to " << alias_import.GetName() << " because it is already connected to " << srv_export->GetName() << endl;
+		std::cerr << "WARNING! Can't connect " << GetName() << " to " << alias_import.GetName() << " because it is already connected to " << srv_export->GetName() << std::endl;
 		return;
 	}
 
 	if(this->alias_import)
 	{
-		cerr << "WARNING! Can't connect " << GetName() << " to " << alias_import.GetName() << " because it is already connected to " << this->alias_import->GetName() << endl;
+		std::cerr << "WARNING! Can't connect " << GetName() << " to " << alias_import.GetName() << " because it is already connected to " << this->alias_import->GetName() << std::endl;
 		return;
 	}
 
 #ifdef DEBUG_SERVICE
-	cerr << GetName() << " -> " << alias_import.GetName() << endl;
+	std::cerr << GetName() << " -> " << alias_import.GetName() << std::endl;
 #endif
 	this->alias_import = &alias_import;
 	alias_import.actual_imports.push_back(this);
@@ -1193,12 +1179,12 @@ template <class SERVICE_IF>
 void ServiceImport<SERVICE_IF>::Unbind(ServiceExport<SERVICE_IF>& srv_export)
 {
 #ifdef DEBUG_SERVICE
-	cerr << GetName() << ".Unbind(" << srv_export.GetName() << ")" << endl;
+	std::cerr << GetName() << ".Unbind(" << srv_export.GetName() << ")" << std::endl;
 #endif
 
 	if(this->srv_export != &srv_export)
 	{
-		cerr << "ERROR! Can't disconnect " << GetName() << " from " << srv_export.GetName() << " because connection does not exist" << endl;
+		std::cerr << "ERROR! Can't disconnect " << GetName() << " from " << srv_export.GetName() << " because connection does not exist" << std::endl;
 		return;
 	}
 
@@ -1216,7 +1202,7 @@ Service<SERVICE_IF> *ServiceImport<SERVICE_IF>::ResolveService(Client<SERVICE_IF
 		if(srv_export) return (srv_export->ResolveService(_client));
 
 #ifdef DEBUG_SERVICE
-	cerr << GetName() << ".ResolveService(" << _client->GetName() << ") failed" << endl;
+	std::cerr << GetName() << ".ResolveService(" << _client->GetName() << ") failed" << std::endl;
 #endif
 	return (0);
 }
@@ -1250,7 +1236,7 @@ void ServiceImport<SERVICE_IF>::ResolveClient()
 	}
 	else
 	{
-		typename list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
+		typename std::list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
 	
 		for(import_iter = actual_imports.begin(); import_iter != actual_imports.end(); import_iter++)
 		{
@@ -1263,7 +1249,7 @@ template <class SERVICE_IF>
 void ServiceImport<SERVICE_IF>::UnresolveService()
 {
 #ifdef DEBUG_SERVICE
-	cerr << GetName() << ".UnresolveService()" << endl;
+	std::cerr << GetName() << ".UnresolveService()" << std::endl;
 #endif
 
 	if(actual_imports.empty())
@@ -1272,13 +1258,13 @@ void ServiceImport<SERVICE_IF>::UnresolveService()
 		{
 			//service->OnDisconnect(); // Gilles: That's dangerous
 #ifdef DEBUG_SERVICE
-			cerr << GetName() << ": Unresolving service " << service->GetName() << endl;
+			std::cerr << GetName() << ": Unresolving service " << service->GetName() << std::endl;
 #endif
 		}
 	}
 	else
 	{
-		typename list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
+		typename std::list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
 	
 		for(import_iter = actual_imports.begin(); import_iter != actual_imports.end(); import_iter++)
 		{
@@ -1292,14 +1278,14 @@ template <class SERVICE_IF>
 void ServiceImport<SERVICE_IF>::Disconnect()
 {
 #ifdef DEBUG_SERVICE
-	cerr << GetName() << ".Disconnect()" << endl;
+	std::cerr << GetName() << ".Disconnect()" << std::endl;
 #endif
 
 	DisconnectService();
 
 	if(alias_import)
 	{
-		typename list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
+		typename std::list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
 	
 		for(import_iter = alias_import->actual_imports.begin(); import_iter != alias_import->actual_imports.end(); import_iter++)
 		{
@@ -1314,7 +1300,7 @@ void ServiceImport<SERVICE_IF>::Disconnect()
 
 	if(!actual_imports.empty())
 	{
-		typename list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
+		typename std::list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
 	
 		for(import_iter = actual_imports.begin(); import_iter != actual_imports.end(); import_iter++)
 		{
@@ -1337,7 +1323,7 @@ template <class SERVICE_IF>
 void ServiceImport<SERVICE_IF>::DisconnectService()
 {
 #ifdef DEBUG_SERVICE
-	cerr << GetName() << ".DisconnectService()" << endl;
+	std::cerr << GetName() << ".DisconnectService()" << std::endl;
 #endif
 
 	if(alias_import)
@@ -1354,23 +1340,23 @@ void ServiceImport<SERVICE_IF>::DisconnectService()
 }
 
 template <class SERVICE_IF>
-void ServiceImport<SERVICE_IF>::Dump(ostream& os) const
+void ServiceImport<SERVICE_IF>::Dump(std::ostream& os) const
 {
 	if(alias_import)
 	{
-		os << GetName() << " -> " << alias_import->GetName() << endl;
+		os << GetName() << " -> " << alias_import->GetName() << std::endl;
 	}
 
-	typename list<ServiceImport<SERVICE_IF> *>::const_iterator import_iter;
+	typename std::list<ServiceImport<SERVICE_IF> *>::const_iterator import_iter;
 
 	for(import_iter = actual_imports.begin(); import_iter != actual_imports.end(); import_iter++)
 	{
-		os << "# " << (*import_iter)->GetName() << " -> " << GetName() << endl;
+		os << "# " << (*import_iter)->GetName() << " -> " << GetName() << std::endl;
 	}
 
 	if(srv_export)
 	{
-		os << GetName() << " -> " << srv_export->GetName() << endl;
+		os << GetName() << " -> " << srv_export->GetName() << std::endl;
 	}
 }
 
@@ -1418,16 +1404,16 @@ __attribute__((always_inline))
 	Service<SERVICE_IF> *ResolveService(Client<SERVICE_IF> *client);
 	ServiceExport<SERVICE_IF> *ResolveServiceExport();
 
-	virtual void Dump(ostream& os) const;
+	virtual void Dump(std::ostream& os) const;
 
 	virtual Object *GetClient() const;
 	virtual Object *GetService() const;
 
 private:
-	list<ServiceExport<SERVICE_IF> *> alias_exports;
+	std::list<ServiceExport<SERVICE_IF> *> alias_exports;
 	ServiceExport<SERVICE_IF> *actual_export;
 	Service<SERVICE_IF> *service;
-	list<ServiceImport<SERVICE_IF> *> srv_imports;
+	std::list<ServiceImport<SERVICE_IF> *> srv_imports;
 	Client<SERVICE_IF> *client;
 
 	void UnresolveClient();
@@ -1462,7 +1448,7 @@ template <class SERVICE_IF>
 ServiceExport<SERVICE_IF>::~ServiceExport()
 {
 #ifdef DEBUG_SERVICE
-	cerr << GetName() << ".~ServiceExport()" << endl;
+	std::cerr << GetName() << ".~ServiceExport()" << std::endl;
 #endif
 	//ServiceExport<SERVICE_IF>::DisconnectClient();
 	ServiceExport<SERVICE_IF>::Disconnect();
@@ -1477,13 +1463,13 @@ inline bool ServiceExport<SERVICE_IF>::IsConnected() const
 template <class SERVICE_IF>
 void ServiceExport<SERVICE_IF>::Bind(ServiceImport<SERVICE_IF>& srv_import)
 {
-	typename list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
+	typename std::list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
 
 	for(import_iter = srv_imports.begin(); import_iter != srv_imports.end(); import_iter++)
 	{
 		if(*import_iter == &srv_import)
 		{
-			cerr << "WARNING! Can't connect again " << GetName() << " to " << srv_import.GetName() << " because it is already connected" << endl;
+			std::cerr << "WARNING! Can't connect again " << GetName() << " to " << srv_import.GetName() << " because it is already connected" << std::endl;
 			return;
 		}
 	}
@@ -1494,20 +1480,20 @@ void ServiceExport<SERVICE_IF>::Bind(ServiceImport<SERVICE_IF>& srv_import)
 template <class SERVICE_IF>
 void ServiceExport<SERVICE_IF>::Bind(ServiceExport<SERVICE_IF>& alias_export)
 {
-	typename list<ServiceExport<SERVICE_IF> *>::iterator export_iter;
+	typename std::list<ServiceExport<SERVICE_IF> *>::iterator export_iter;
 
 	for(export_iter = alias_exports.begin(); export_iter != alias_exports.end(); export_iter++)
 	{
 		if(*export_iter == &alias_export)
 		{
-			cerr << "WARNING! Can't connect again " << GetName() << " to " << alias_export.GetName() << " because it is already" << endl;
+			std::cerr << "WARNING! Can't connect again " << GetName() << " to " << alias_export.GetName() << " because it is already" << std::endl;
 			return;
 		}
 	}
 
 	if(alias_export.actual_export)
 	{
-		cerr << "WARNING! Can't connect " << GetName() << " to " << alias_export.GetName() << " because " << alias_export.GetName() << " is already connected to " << alias_export.actual_export->GetName() << endl;
+		std::cerr << "WARNING! Can't connect " << GetName() << " to " << alias_export.GetName() << " because " << alias_export.GetName() << " is already connected to " << alias_export.actual_export->GetName() << std::endl;
 		return;
 	}
 
@@ -1519,10 +1505,10 @@ template <class SERVICE_IF>
 void ServiceExport<SERVICE_IF>::Unbind(ServiceImport<SERVICE_IF>& srv_import)
 {
 #ifdef DEBUG_SERVICE
-	cerr << GetName() << ".Unbind(" << srv_import.GetName() << ")" << endl;
+	std::cerr << GetName() << ".Unbind(" << srv_import.GetName() << ")" << std::endl;
 #endif
 
-	typename list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
+	typename std::list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
 
 	for(import_iter = srv_imports.begin(); import_iter != srv_imports.end(); import_iter++)
 	{
@@ -1534,24 +1520,24 @@ void ServiceExport<SERVICE_IF>::Unbind(ServiceImport<SERVICE_IF>& srv_import)
 		}
 	}
 
-	cerr << "WARNING! Unable to disconnect " << GetName() << " and " << srv_import.GetName() << " because connection does not exist" << endl;
+	std::cerr << "WARNING! Unable to disconnect " << GetName() << " and " << srv_import.GetName() << " because connection does not exist" << std::endl;
 }
 
 template <class SERVICE_IF>
 void ServiceExport<SERVICE_IF>::DisconnectClient()
 {
 #ifdef DEBUG_SERVICE
-	cerr << GetName() << ".DisconnectClient()" << endl;
+	std::cerr << GetName() << ".DisconnectClient()" << std::endl;
 #endif
 
-	typename list<ServiceExport<SERVICE_IF> *>::iterator export_iter;
+	typename std::list<ServiceExport<SERVICE_IF> *>::iterator export_iter;
 
 	for(export_iter = alias_exports.begin(); export_iter != alias_exports.end(); export_iter++)
 	{
 		(*export_iter)->DisconnectClient();
 	}
 
-	typename list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
+	typename std::list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
 
 	if(!srv_imports.empty())
 	{
@@ -1570,14 +1556,14 @@ template <class SERVICE_IF>
 void ServiceExport<SERVICE_IF>::Disconnect()
 {
 #ifdef DEBUG_SERVICE
-	cerr << GetName() << ".Disconnect()" << endl;
+	std::cerr << GetName() << ".Disconnect()" << std::endl;
 #endif
 
 	DisconnectClient();
 	
 	if(actual_export)
 	{
-		typename list<ServiceExport<SERVICE_IF> *>::iterator export_iter;
+		typename std::list<ServiceExport<SERVICE_IF> *>::iterator export_iter;
 	
 		for(export_iter = actual_export->alias_exports.begin(); export_iter != actual_export->alias_exports.end(); export_iter++)
 		{
@@ -1590,7 +1576,7 @@ void ServiceExport<SERVICE_IF>::Disconnect()
 		actual_export = 0;
 	}
 
-	typename list<ServiceExport<SERVICE_IF> *>::iterator export_iter;
+	typename std::list<ServiceExport<SERVICE_IF> *>::iterator export_iter;
 
 	for(export_iter = alias_exports.begin(); export_iter != alias_exports.end(); export_iter++)
 	{
@@ -1603,14 +1589,14 @@ void ServiceExport<SERVICE_IF>::Disconnect()
 template <class SERVICE_IF>
 void ServiceExport<SERVICE_IF>::ResolveClient()
 {
-	typename list<ServiceExport<SERVICE_IF> *>::iterator export_iter;
+	typename std::list<ServiceExport<SERVICE_IF> *>::iterator export_iter;
 
 	for(export_iter = alias_exports.begin(); export_iter != alias_exports.end(); export_iter++)
 	{
 		(*export_iter)->ResolveClient();
 	}
 
-	typename list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
+	typename std::list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
 
 	for(import_iter = srv_imports.begin(); import_iter != srv_imports.end(); import_iter++)
 	{
@@ -1649,7 +1635,7 @@ template <class SERVICE_IF>
 void ServiceExport<SERVICE_IF>::UnresolveClient()
 {
 #ifdef DEBUG_SERVICE
-	cerr << GetName() << ".UnresolveClient()" << endl;
+	std::cerr << GetName() << ".UnresolveClient()" << std::endl;
 #endif
 
 	if(actual_export)
@@ -1662,25 +1648,25 @@ void ServiceExport<SERVICE_IF>::UnresolveClient()
 	{
 		//client->OnDisconnect(); // Gilles: that's dangerous
 #ifdef DEBUG_SERVICE
-		cerr << GetName() << ": Unresolving client " << client->GetName() << endl;
+		std::cerr << GetName() << ": Unresolving client " << client->GetName() << std::endl;
 #endif
 		client = 0;
 	}
 }
 
 template <class SERVICE_IF>
-void ServiceExport<SERVICE_IF>::Dump(ostream& os) const
+void ServiceExport<SERVICE_IF>::Dump(std::ostream& os) const
 {
 	if(actual_export)
 	{
-		cerr << GetName() << " -> " << actual_export->GetName() << endl;
+		std::cerr << GetName() << " -> " << actual_export->GetName() << std::endl;
 	}
 
-	typename list<ServiceExport<SERVICE_IF> *>::const_iterator export_iter;
+	typename std::list<ServiceExport<SERVICE_IF> *>::const_iterator export_iter;
 
 	for(export_iter = alias_exports.begin(); export_iter != alias_exports.end(); export_iter++)
 	{
-		os << "# " << (*export_iter)->GetName() << " -> " << GetName() << endl;
+		os << "# " << (*export_iter)->GetName() << " -> " << GetName() << std::endl;
 	}
 }
 

@@ -40,6 +40,11 @@ namespace tlm2 {
 
 Instrumenter::Instrumenter(const char *name, unisim::kernel::service::Object *parent)
 	: unisim::kernel::service::Object(name, parent)
+	, logger(*this)
+	, verbose(false)
+	, debug(false)
+	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
+	, param_debug("debug", this, verbose, "Enable/Disable debugging (intended for developper)")
 	, enable_output_instrumentation(false)
 	, param_enable_output_instrumentation("enable-output-instrumentation", this, enable_output_instrumentation, "Enable/Disable output instrumentation of signals")
 	, instrumentation_output_filename()
@@ -177,7 +182,10 @@ Clock& Instrumenter::CreateClock(const std::string& clock_name)
 	}
 
 	Clock *clock = new Clock(clock_name.c_str(), GetParent());
-	std::cout << "Creating " << (clock->IsClockLazy() ? "lazy (fast) " : "toggling (painfully slow) ") << "Clock \"" << clock->sc_core::sc_object::name() << "\" with a period of " << clock->GetClockPeriod() << ", a duty cycle of " << clock->GetClockDutyCycle() << ", starting with " << (clock->GetClockPosEdgeFirst() ? "rising" : "falling") << " edge at " << clock->GetClockStartTime() << std::endl;
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << "Creating " << (clock->IsClockLazy() ? "lazy (fast) " : "toggling (painfully slow) ") << "Clock \"" << clock->sc_core::sc_object::name() << "\" with a period of " << clock->GetClockPeriod() << ", a duty cycle of " << clock->GetClockDutyCycle() << ", starting with " << (clock->GetClockPosEdgeFirst() ? "rising" : "falling") << " edge at " << clock->GetClockStartTime() << EndDebugInfo;
+	}
 	
 	signal_pool[clock->sc_core::sc_object::name()] = clock;
 	
@@ -192,7 +200,7 @@ void Instrumenter::GenerateGTKWaveInitScript(const std::string& filename, int zo
 	
 	if(of.fail())
 	{
-		std::cerr << "WARNING! Can't open output \"" << filename << "\"" << std::endl;
+		logger << DebugWarning << "Can't open output \"" << filename << "\"" << EndDebugWarning;
 		return;
 	}
 	
@@ -219,7 +227,10 @@ void Instrumenter::GenerateGTKWaveInitScript(const std::string& filename, int zo
 
 void Instrumenter::RegisterPort(sc_core::sc_port_base& port)
 {
-	std::cout << "Registering Port \"" << port.name() << "\"" << std::endl;
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << "Registering Port \"" << port.name() << "\"" << EndDebugInfo;
+	}
 	std::map<std::string, sc_core::sc_port_base *>::iterator port_pool_it;
 	for(port_pool_it = port_pool.begin(); port_pool_it != port_pool.end(); port_pool_it++)
 	{
@@ -264,7 +275,7 @@ void Instrumenter::TraceSignalPattern(const std::string& signal_name_pattern)
 	
 	if(!traced)
 	{
-		std::cerr << "WARNING! Can't trace Signal \"" << signal_name_pattern << "\"" << std::endl;
+		logger << DebugWarning << "Can't trace Signal \"" << signal_name_pattern << "\"" << EndDebugWarning;
 	}
 }
 
@@ -272,7 +283,7 @@ void Instrumenter::Bind(const std::string& port_name, const std::string& signal_
 {
 	if(netlist.find(port_name) != netlist.end())
 	{
-		std::cerr << "WARNING! port \"" << port_name << "\" is already bound" << std::endl;
+		logger << DebugWarning << "port \"" << port_name << "\" is already bound" << EndDebugWarning;
 		return;
 	}
 	
@@ -401,16 +412,22 @@ void Instrumenter::StartBinding()
 			
 			if(typer->TryBind(port_name, signal_name))
 			{
-				std::cout << "Connecting Port \"" << port_name << "\" to Signal \"" << signal_name << "\"" << std::endl;
+				if(unlikely(verbose))
+				{
+					logger << DebugInfo << "Connecting Port \"" << port_name << "\" to Signal \"" << signal_name << "\"" << EndDebugInfo;
+				}
 				continue;
 			}
 		}
 		else
 		{
-			std::cout << "Port \"" << port_name << "\" does not exist" << std::endl;
+			if(unlikely(verbose))
+			{
+				logger << DebugInfo << "Port \"" << port_name << "\" does not exist" << EndDebugInfo;
+			}
 		}
 		
-		std::cerr << "WARNING! Can't connect Port \"" << port_name << "\" to Signal \"" << signal_name << "\"" << std::endl;
+		logger << DebugWarning << "Can't connect Port \"" << port_name << "\" to Signal \"" << signal_name << "\"" << EndDebugWarning;
 	}
 }
 
@@ -629,19 +646,19 @@ bool Instrumenter::ParseCSVHeaderAndInstrumentInput()
 						else if(time_unit.compare("fs") == 0) input_time_resolution = sc_core::sc_time(time_value, sc_core::SC_FS);
 						else
 						{
-							std::cerr << "WARNING! In input CSV file, first line, first column, malformed time_unit ('" << time_unit << "'): expecting 's', 'ms', 'us', 'ns', 'ps', or 'fs'." << std::endl;
+							logger << DebugWarning << "In input CSV file, first line, first column, malformed time_unit ('" << time_unit << "'): expecting 's', 'ms', 'us', 'ns', 'ps', or 'fs'." << EndDebugWarning;
 							return false;
 						}
 					}
 					else
 					{
-						std::cerr << "WARNING! expecting a time resolution in first line, first column (e.g. 1 ps) of input CSV file" << std::endl;
+						logger << DebugWarning << "expecting a time resolution in first line, first column (e.g. 1 ps) of input CSV file" << EndDebugWarning;
 						return false;
 					}
 					
 					if(!value_sstr.eof())
 					{
-						std::cerr << "WARNING! ignoring extra characters after time resolution in first line, first column of input CSV file" << std::endl;
+						logger << DebugWarning << "ignoring extra characters after time resolution in first line, first column of input CSV file" << EndDebugWarning;
 					}
 				}
 				
@@ -772,7 +789,7 @@ void Instrumenter::InstrumentOutputSignal(const std::string& signal_name)
 			return;
 		}
 	}
-	std::cerr << "WARNING! Can't instrument Signal \"" << signal_name << "\" for output" << std::endl;	
+	logger << DebugWarning << "Can't instrument Signal \"" << signal_name << "\" for output" << EndDebugWarning;	
 }
 
 bool Instrumenter::InstrumentInputSignal(const std::string& signal_name)
@@ -790,7 +807,7 @@ bool Instrumenter::InstrumentInputSignal(const std::string& signal_name)
 			return true;
 		}
 	}
-	std::cerr << "WARNING! Can't instrument Signal \"" << signal_name << "\" for input" << std::endl;	
+	logger << DebugWarning << "Can't instrument Signal \"" << signal_name << "\" for input" << EndDebugWarning;
 	return false;
 }
 

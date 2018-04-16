@@ -6,9 +6,9 @@ shift
 COMMAND="$1"
 shift
 
-INSTALL_PREFIX=$(cd $(dirname $0); pwd)/../..
-CROSS_TOOLS=${S32DS}/../Cross_Tools/powerpc-eabivle-4_9
-CROSS_COMPILE=${CROSS_TOOLS}/bin/powerpc-eabivle-
+INSTALL_PREFIX=$(cd $(dirname $0)/../..; pwd)
+CROSS_TOOLS=$(cd "${S32DS}/../Cross_Tools/powerpc-eabivle-4_9"; pwd)
+CROSS_COMPILE="${CROSS_TOOLS}/bin/powerpc-eabivle-"
 #CC=${INSTALL_PREFIX}/bin/common/tester
 CC="${CROSS_COMPILE}gcc"
 LD="${CROSS_COMPILE}ld"

@@ -261,7 +261,7 @@ template <> Variable<OutputFormat>::operator bool () const { return *storage != 
 template <> Variable<OutputFormat>::operator long long () const { return *storage; }
 template <> Variable<OutputFormat>::operator unsigned long long () const { return *storage; }
 template <> Variable<OutputFormat>::operator double () const { return (double)(*storage); }
-template <> Variable<OutputFormat>::operator string () const
+template <> Variable<OutputFormat>::operator std::string () const
 {
 	switch(*storage)
 	{

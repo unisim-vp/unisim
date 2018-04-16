@@ -380,7 +380,7 @@ template <> Variable<GDBWaitConnectionMode>::operator bool () const { return *st
 template <> Variable<GDBWaitConnectionMode>::operator long long () const { return *storage; }
 template <> Variable<GDBWaitConnectionMode>::operator unsigned long long () const { return *storage; }
 template <> Variable<GDBWaitConnectionMode>::operator double () const { return (double)(*storage); }
-template <> Variable<GDBWaitConnectionMode>::operator string () const
+template <> Variable<GDBWaitConnectionMode>::operator std::string () const
 {
 	switch(*storage)
 	{
@@ -513,7 +513,7 @@ template <> Variable<GDBMode>::operator bool () const { return *storage != GDB_M
 template <> Variable<GDBMode>::operator long long () const { return *storage; }
 template <> Variable<GDBMode>::operator unsigned long long () const { return *storage; }
 template <> Variable<GDBMode>::operator double () const { return (double)(*storage); }
-template <> Variable<GDBMode>::operator string () const
+template <> Variable<GDBMode>::operator std::string () const
 {
 	switch(*storage)
 	{

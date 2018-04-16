@@ -538,7 +538,7 @@ template <> Variable<ParityType>::operator bool () const { return *storage != PA
 template <> Variable<ParityType>::operator long long () const { return *storage; }
 template <> Variable<ParityType>::operator unsigned long long () const { return *storage; }
 template <> Variable<ParityType>::operator double () const { return (double)(*storage); }
-template <> Variable<ParityType>::operator string () const
+template <> Variable<ParityType>::operator std::string () const
 {
 	switch(*storage)
 	{
@@ -669,7 +669,7 @@ template <> Variable<BitOrder>::operator bool () const { return *storage != LSB;
 template <> Variable<BitOrder>::operator long long () const { return *storage; }
 template <> Variable<BitOrder>::operator unsigned long long () const { return *storage; }
 template <> Variable<BitOrder>::operator double () const { return (double)(*storage); }
-template <> Variable<BitOrder>::operator string () const
+template <> Variable<BitOrder>::operator std::string () const
 {
 	switch(*storage)
 	{

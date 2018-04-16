@@ -7,7 +7,7 @@ RM            = rm -f
 CP            = cp
 
 OPTFLAGS ?= -Og
-CFLAGS    = -std=c99 -gdwarf-4 -gstrict-dwarf -g3 $(OPTFLAGS) -Wall #-fdebug-prefix-map=$(PWD)=../../../
+CFLAGS    = -std=c99 -gdwarf-4 -gstrict-dwarf -g3 $(OPTFLAGS) -Wall -fdebug-prefix-map=$(shell readlink -f $$PWD/../libsys)=libsys
 
 LIBSYS_SRCS    = \
 src/core/cache.c \
@@ -19,6 +19,7 @@ src/drv/pit.c \
 src/drv/linflexd.c \
 src/drv/dmamux.c \
 src/drv/edma.c \
+src/drv/dspi.c \
 src/drv/console.c \
 src/drv/ramdisk.c \
 src/fs/lfs.c \
@@ -41,7 +42,7 @@ OBJS        =
 DEPS        =
 
 LIBSYS_COMPILER_ARGS= \
--Iinclude \
+-I"$(PWD)/include" \
 -I"$(CROSS_TOOLS)/include" \
 -DMPC5777M \
 -fmessage-length=0 \
@@ -58,7 +59,7 @@ LIBSYS_COMPILER_ARGS= \
 --sysroot="$(CROSS_TOOLS)/powerpc-eabivle/newlib"
 
 LIBSYS_ASSEMBLER_ARGS= \
--Iinclude \
+-I"$(PWD)/include" \
 -I"$(CROSS_TOOLS)/include" \
 -DMPC5777M \
 -DHW_INIT \

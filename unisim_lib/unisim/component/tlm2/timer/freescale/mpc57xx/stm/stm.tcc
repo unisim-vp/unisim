@@ -592,7 +592,7 @@ sc_dt::uint64 STM<CONFIG>::TicksToNextCounterRun()
 				uint32_t cmp = stm_cmp[channel_num].template Get<typename STM_CMP::CMP>();
 				
 				sc_dt::int64 ticks_to_interrupt = (cnt < cmp) ? sc_dt::uint64(cmp - cnt)
-				                                              : roll_over_ticks;   // roll over
+				                                              : roll_over_ticks - cnt + cmp;   // roll over
 				
 				if(ticks_to_interrupt && (!ticks_to_next_counter_run || (ticks_to_interrupt < ticks_to_next_counter_run))) ticks_to_next_counter_run = ticks_to_interrupt;
 			}

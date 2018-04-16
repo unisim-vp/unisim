@@ -92,7 +92,8 @@ unisim/kernel/logger/logger_server.cc \
 unisim/kernel/api/api.cc \
 unisim/kernel/service/endian.cc \
 unisim/kernel/service/service.cc \
-unisim/kernel/service/xml_helper.cc \
+unisim/kernel/service/xml_config_file_helper.cc \
+unisim/kernel/service/ini_config_file_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/api/debug/debug_api.cc \
 unisim/service/debug/inline_debugger/inline_debugger_64.cc \
@@ -175,7 +176,8 @@ unisim/kernel/logger/logger_server.hh \
 unisim/kernel/api/api.hh \
 unisim/kernel/tlm/tlm.hh \
 unisim/kernel/service/service.hh \
-unisim/kernel/service/xml_helper.hh \
+unisim/kernel/service/xml_config_file_helper.hh \
+unisim/kernel/service/ini_config_file_helper.hh \
 unisim/kernel/tlm2/tlm.hh \
 unisim/api/debug/debug_api.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \

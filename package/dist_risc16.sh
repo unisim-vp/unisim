@@ -120,7 +120,8 @@ vector"
 UNISIM_LIB_RISC16_SOURCE_FILES="\
 unisim/kernel/api/api.cc \
 unisim/kernel/service/service.cc \
-unisim/kernel/service/xml_helper.cc \
+unisim/kernel/service/xml_config_file_helper.cc \
+unisim/kernel/service/ini_config_file_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
@@ -200,7 +201,8 @@ UNISIM_LIB_S12XGATE_ISA_FILES="\
 UNISIM_LIB_RISC16_HEADER_FILES="${UNISIM_LIB_RISC16_ISA_FILES} ${UNISIM_LIB_XB_ISA_FILES} ${UNISIM_LIB_S12XGATE_ISA_FILES} \
 unisim/kernel/api/api.hh \
 unisim/kernel/service/service.hh \
-unisim/kernel/service/xml_helper.hh \
+unisim/kernel/service/xml_config_file_helper.hh \
+unisim/kernel/service/ini_config_file_helper.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/util/backtrace/backtrace.hh \

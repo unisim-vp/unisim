@@ -2,6 +2,26 @@
 <variables>
 	<object name="HARDWARE">
 		<object name="HARDWARE.instrumenter">
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="debug">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable debugging (intended for developper)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
 			<variable name="enable-output-instrumentation">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
@@ -1482,6 +1502,16 @@
 					<item>false</item>
 				</enumeration>
 			</variable>
+			<variable name="enable-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
 		</object>
 		<object name="HARDWARE.FLASH">
 			<variable name="org">
@@ -1547,6 +1577,16 @@
 				<data_type>boolean</data_type>
 				<value>true</value>
 				<description>enable/disable read-only protection</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -2050,6 +2090,84 @@
 				<value>range_start=&quot;0xfc0a4000&quot; range_end=&quot;0xfc0a7fff&quot; output_port=&quot;25&quot; translation=&quot;0x0&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 			</variable>
+			<variable name="mapping_26">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xffe70000&quot; range_end=&quot;0xffe73fff&quot; output_port=&quot;26&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_27">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xffe74000&quot; range_end=&quot;0xffe77fff&quot; output_port=&quot;27&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_28">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xffe78000&quot; range_end=&quot;0xffe7bfff&quot; output_port=&quot;28&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_29">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xffe7c000&quot; range_end=&quot;0xffe7ffff&quot; output_port=&quot;29&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_30">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xffe88000&quot; range_end=&quot;0xffe8bfff&quot; output_port=&quot;30&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_31">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc028000&quot; range_end=&quot;0xfc02bfff&quot; output_port=&quot;31&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_32">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc030000&quot; range_end=&quot;0xfc033fff&quot; output_port=&quot;32&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_33">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfffb8000&quot; range_end=&quot;0xfffbbfff&quot; output_port=&quot;33&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_34">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfffb0000&quot; range_end=&quot;0xfffb3fff&quot; output_port=&quot;34&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_35">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc004000&quot; range_end=&quot;0xfc007fff&quot; output_port=&quot;35&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_36">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc008000&quot; range_end=&quot;0xfc00bfff&quot; output_port=&quot;36&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_37">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfc000000&quot; range_end=&quot;0xfc003fff&quot; output_port=&quot;37&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_38">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfffc0000&quot; range_end=&quot;0xfffc3fff&quot; output_port=&quot;38&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
 		</object>
 		<object name="HARDWARE.PBRIDGE_B">
 			<variable name="cycle_time">
@@ -2124,6 +2242,30 @@
 				<type>parameter</type>
 				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
 				<value>range_start=&quot;0xfbea8000&quot; range_end=&quot;0xfbeabfff&quot; output_port=&quot;1&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_2">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfbe70000&quot; range_end=&quot;0xfbe73fff&quot; output_port=&quot;2&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_3">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfbe74000&quot; range_end=&quot;0xfbe77fff&quot; output_port=&quot;3&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_4">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xfbe78000&quot; range_end=&quot;0xfbe7bfff&quot; output_port=&quot;4&quot; translation=&quot;0x0&quot;</value>
+				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+			</variable>
+			<variable name="mapping_5">
+				<type>parameter</type>
+				<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+				<value>range_start=&quot;0xf8000000&quot; range_end=&quot;0xf8003fff&quot; output_port=&quot;5&quot; translation=&quot;0x0&quot;</value>
 				<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 			</variable>
 		</object>
@@ -9534,6 +9676,182 @@
 				<description>master ID</description>
 			</variable>
 		</object>
+		<object name="HARDWARE.DSPI_0">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.DSPI_1">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.DSPI_2">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.DSPI_3">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.DSPI_4">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.DSPI_5">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.DSPI_6">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.DSPI_12">
+			<variable name="endian">
+				<type>parameter</type>
+				<data_type>endianess</data_type>
+				<value>big-endian</value>
+				<description>endian</description>
+				<enumeration>
+					<item>little-endian</item>
+					<item>big-endian</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
 		<object name="HARDWARE.EBI">
 			<variable name="org">
 				<type>parameter</type>
@@ -9603,6 +9921,16 @@
 					<item>false</item>
 				</enumeration>
 			</variable>
+			<variable name="enable-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
 		</object>
 		<object name="HARDWARE.FLASH_PORT1">
 			<variable name="enable">
@@ -9664,6 +9992,726 @@
 				<data_type>boolean</data_type>
 				<value>false</value>
 				<description>Enable/Disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.PCM">
+			<variable name="org">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>memory origin/base address</description>
+			</variable>
+			<variable name="bytesize">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>16384</value>
+				<description>memory size in bytes</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="initial-byte-value">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x00</value>
+				<description>initial value for all bytes of memory</description>
+			</variable>
+			<variable name="input-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Input filename</description>
+			</variable>
+			<variable name="output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>output filename</description>
+			</variable>
+			<variable name="cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory cycle time</description>
+			</variable>
+			<variable name="read-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory read latency</description>
+			</variable>
+			<variable name="write-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory write latency</description>
+			</variable>
+			<variable name="read-only">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable read-only protection</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.PFLASH">
+			<variable name="org">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>memory origin/base address</description>
+			</variable>
+			<variable name="bytesize">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>16384</value>
+				<description>memory size in bytes</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="initial-byte-value">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x00</value>
+				<description>initial value for all bytes of memory</description>
+			</variable>
+			<variable name="input-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Input filename</description>
+			</variable>
+			<variable name="output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>output filename</description>
+			</variable>
+			<variable name="cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory cycle time</description>
+			</variable>
+			<variable name="read-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory read latency</description>
+			</variable>
+			<variable name="write-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory write latency</description>
+			</variable>
+			<variable name="read-only">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable read-only protection</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.MC_ME">
+			<variable name="org">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>memory origin/base address</description>
+			</variable>
+			<variable name="bytesize">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>16384</value>
+				<description>memory size in bytes</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="initial-byte-value">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x00</value>
+				<description>initial value for all bytes of memory</description>
+			</variable>
+			<variable name="input-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Input filename</description>
+			</variable>
+			<variable name="output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>output filename</description>
+			</variable>
+			<variable name="cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory cycle time</description>
+			</variable>
+			<variable name="read-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory read latency</description>
+			</variable>
+			<variable name="write-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory write latency</description>
+			</variable>
+			<variable name="read-only">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable read-only protection</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.MC_CGM">
+			<variable name="org">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>memory origin/base address</description>
+			</variable>
+			<variable name="bytesize">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>16384</value>
+				<description>memory size in bytes</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="initial-byte-value">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x00</value>
+				<description>initial value for all bytes of memory</description>
+			</variable>
+			<variable name="input-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Input filename</description>
+			</variable>
+			<variable name="output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>output filename</description>
+			</variable>
+			<variable name="cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory cycle time</description>
+			</variable>
+			<variable name="read-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory read latency</description>
+			</variable>
+			<variable name="write-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory write latency</description>
+			</variable>
+			<variable name="read-only">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable read-only protection</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.XBAR_0_STUB">
+			<variable name="org">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>memory origin/base address</description>
+			</variable>
+			<variable name="bytesize">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>16384</value>
+				<description>memory size in bytes</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="initial-byte-value">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x00</value>
+				<description>initial value for all bytes of memory</description>
+			</variable>
+			<variable name="input-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Input filename</description>
+			</variable>
+			<variable name="output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>output filename</description>
+			</variable>
+			<variable name="cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory cycle time</description>
+			</variable>
+			<variable name="read-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory read latency</description>
+			</variable>
+			<variable name="write-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory write latency</description>
+			</variable>
+			<variable name="read-only">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable read-only protection</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.XBAR_1_STUB">
+			<variable name="org">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>memory origin/base address</description>
+			</variable>
+			<variable name="bytesize">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>16384</value>
+				<description>memory size in bytes</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="initial-byte-value">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x00</value>
+				<description>initial value for all bytes of memory</description>
+			</variable>
+			<variable name="input-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Input filename</description>
+			</variable>
+			<variable name="output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>output filename</description>
+			</variable>
+			<variable name="cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory cycle time</description>
+			</variable>
+			<variable name="read-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory read latency</description>
+			</variable>
+			<variable name="write-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory write latency</description>
+			</variable>
+			<variable name="read-only">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable read-only protection</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.PBRIDGE_A_STUB">
+			<variable name="org">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>memory origin/base address</description>
+			</variable>
+			<variable name="bytesize">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>16384</value>
+				<description>memory size in bytes</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="initial-byte-value">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x00</value>
+				<description>initial value for all bytes of memory</description>
+			</variable>
+			<variable name="input-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Input filename</description>
+			</variable>
+			<variable name="output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>output filename</description>
+			</variable>
+			<variable name="cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory cycle time</description>
+			</variable>
+			<variable name="read-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory read latency</description>
+			</variable>
+			<variable name="write-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory write latency</description>
+			</variable>
+			<variable name="read-only">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable read-only protection</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.PBRIDGE_B_STUB">
+			<variable name="org">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>memory origin/base address</description>
+			</variable>
+			<variable name="bytesize">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>16384</value>
+				<description>memory size in bytes</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="initial-byte-value">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x00</value>
+				<description>initial value for all bytes of memory</description>
+			</variable>
+			<variable name="input-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Input filename</description>
+			</variable>
+			<variable name="output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>output filename</description>
+			</variable>
+			<variable name="cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory cycle time</description>
+			</variable>
+			<variable name="read-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory read latency</description>
+			</variable>
+			<variable name="write-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory write latency</description>
+			</variable>
+			<variable name="read-only">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable read-only protection</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.SIUL2">
+			<variable name="org">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>0x00000000</value>
+				<description>memory origin/base address</description>
+			</variable>
+			<variable name="bytesize">
+				<type>parameter</type>
+				<data_type>unsigned 32-bit integer</data_type>
+				<value>16384</value>
+				<description>memory size in bytes</description>
+			</variable>
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="initial-byte-value">
+				<type>parameter</type>
+				<data_type>unsigned 8-bit integer</data_type>
+				<value>0x00</value>
+				<description>initial value for all bytes of memory</description>
+			</variable>
+			<variable name="input-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>Input filename</description>
+			</variable>
+			<variable name="output-filename">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value></value>
+				<description>output filename</description>
+			</variable>
+			<variable name="cycle-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory cycle time</description>
+			</variable>
+			<variable name="read-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory read latency</description>
+			</variable>
+			<variable name="write-latency">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>20 ns</value>
+				<description>memory write latency</description>
+			</variable>
+			<variable name="read-only">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>enable/disable read-only protection</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="enable-dmi">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation</description>
 				<enumeration>
 					<item>true</item>
 					<item>false</item>
@@ -10270,6 +11318,86 @@
 				</enumeration>
 			</variable>
 		</object>
+		<object name="HARDWARE.DSPI_CLK0">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>12500 ps</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
+		<object name="HARDWARE.DSPI_CLK1">
+			<variable name="lazy-clock">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clock is lazy (fast) or really toggles (painfully slow)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="clock-period">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>12500 ps</value>
+				<description>clock period</description>
+			</variable>
+			<variable name="clock-duty-cycle">
+				<type>parameter</type>
+				<data_type>double precision floating-point</data_type>
+				<value>0.5</value>
+				<description>clock duty cycle (between 0.0 and 1.0 exclusive)</description>
+			</variable>
+			<variable name="clock-start-time">
+				<type>parameter</type>
+				<data_type>sc_time</data_type>
+				<value>0 s</value>
+				<description>clock start time</description>
+			</variable>
+			<variable name="clock-posedge-first">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>true</value>
+				<description>whether clocks starts with posedge (rising edge) or falling edge (negedge)</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+		</object>
 		<variable name="enable-core0-reset">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
@@ -10835,7 +11963,7 @@
 			<variable name="mapping">
 				<type>parameter</type>
 				<data_type>string</data_type>
-				<value>HARDWARE.SYSTEM-SRAM:0x40000000-0x401fffff:+0x0,HARDWARE.FLASH:0x00400000-0x00407fff:+0x0,HARDWARE.FLASH:0x0060c000-0x0062ffff:+0x8000,HARDWARE.FLASH:0x00680000-0x00687fff:+0x2c000,HARDWARE.FLASH:0x00800000-0x0087ffff:+0x34000,HARDWARE.FLASH:0x00fc0000-0x00ffffff:+0xb4000,HARDWARE.FLASH:0x01000000-0x0177ffff:+0xf4000,HARDWARE.Main_Core_0:0x50000000-0x50ffffff:+0x0,HARDWARE.Main_Core_1:0x51000000-0x51ffffff:+0x0,HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x0,HARDWARE.EBI:0x20000000-0x2fffffff:+0x0</value>
+				<value>HARDWARE.SYSTEM-SRAM:0x40000000-0x401fffff:+0x0,HARDWARE.FLASH:0x00400000-0x00407fff:+0x0,HARDWARE.FLASH:0x0060c000-0x0062ffff:+0x8000,HARDWARE.FLASH:0x00680000-0x00687fff:+0x2c000,HARDWARE.FLASH:0x00800000-0x0087ffff:+0x34000,HARDWARE.FLASH:0x00fc0000-0x00ffffff:+0xb4000,HARDWARE.FLASH:0x01000000-0x0177ffff:+0xf4000,HARDWARE.Main_Core_0:0x50000000-0x50ffffff:+0x50000000,HARDWARE.Main_Core_1:0x51000000-0x51ffffff:+0x51000000,HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x52000000,HARDWARE.EBI:0x20000000-0x2fffffff:+0x0</value>
 				<description>Memory mapping. Syntax: [memory=]&lt;memory1&gt;[:[range=]&lt;low1-high1&gt;][:[translation=]+&lt;translation1&gt;][,... (e.g. ram:0x0-0x00ffff,rom:0xff0000-0xffffff:+0xff0000)</description>
 			</variable>
 		</object>
@@ -10901,7 +12029,7 @@
 			<variable name="initialize-extra-segment-bytes">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
-				<value>false</value>
+				<value>true</value>
 				<description>whether to initialize extra bytes in segments (p_filesz &lt; p_memsz) to zero (true for standard ELF files)</description>
 				<enumeration>
 					<item>true</item>
@@ -11003,7 +12131,7 @@
 			<variable name="initialize-extra-segment-bytes">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
-				<value>false</value>
+				<value>true</value>
 				<description>whether to initialize extra bytes in segments (p_filesz &lt; p_memsz) to zero (true for standard ELF files)</description>
 				<enumeration>
 					<item>true</item>
@@ -11105,7 +12233,7 @@
 			<variable name="initialize-extra-segment-bytes">
 				<type>parameter</type>
 				<data_type>boolean</data_type>
-				<value>false</value>
+				<value>true</value>
 				<description>whether to initialize extra bytes in segments (p_filesz &lt; p_memsz) to zero (true for standard ELF files)</description>
 				<enumeration>
 					<item>true</item>
@@ -11634,7 +12762,7 @@
 		<variable name="filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value>soft/app/Z7_0/boot.elf</value>
+			<value>app/Z7_0/boot.elf</value>
 			<description>List of (binary) files (preferably ELF) to profile (separated by ',')</description>
 		</variable>
 		<variable name="sampled-variables">
@@ -11676,7 +12804,7 @@
 		<variable name="filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value>soft/app/Z7_1/boot.elf</value>
+			<value>app/Z7_0/boot.elf</value>
 			<description>List of (binary) files (preferably ELF) to profile (separated by ',')</description>
 		</variable>
 		<variable name="sampled-variables">
@@ -11718,7 +12846,7 @@
 		<variable name="filename">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value>soft/app/Z4_2/boot.elf</value>
+			<value>app/Z7_0/boot.elf</value>
 			<description>List of (binary) files (preferably ELF) to profile (separated by ',')</description>
 		</variable>
 		<variable name="sampled-variables">
@@ -11730,7 +12858,7 @@
 		<variable name="output-directory">
 			<type>parameter</type>
 			<data_type>string</data_type>
-			<value>profile_Z4_2</value>
+			<value>profile_Z7_2</value>
 			<description>Output directory where to generate profiling report</description>
 		</variable>
 		<variable name="output-format">
@@ -11750,6 +12878,182 @@
 			<description>CSV delimiter</description>
 		</variable>
 	</object>
+	<variable name="dspi_0-is-slave">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>true</value>
+		<description>Whether to wire DSPI_0 as a slave</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="dspi_0-master">
+		<type>parameter</type>
+		<data_type>unsigned 32-bit integer</data_type>
+		<value>0x00000002</value>
+		<description>Master number of DSPI_0 when DSPI_0 is wired as a slave</description>
+	</variable>
+	<variable name="dspi_0-slave">
+		<type>parameter</type>
+		<data_type>unsigned 32-bit integer</data_type>
+		<value>0x00000000</value>
+		<description>Assigned slave number (in master) of DSPI_0 when DSPI_0 is wired as a slave</description>
+	</variable>
+	<variable name="dspi_1-is-slave">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Whether to wire DSPI_1 as a slave</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="dspi_1-master">
+		<type>parameter</type>
+		<data_type>unsigned 32-bit integer</data_type>
+		<value>0x00000000</value>
+		<description>Master number of DSPI_1 when DSPI_1 is wired as a slave</description>
+	</variable>
+	<variable name="dspi_1-slave">
+		<type>parameter</type>
+		<data_type>unsigned 32-bit integer</data_type>
+		<value>0x00000000</value>
+		<description>Assigned slave number (in master) of DSPI_1 when DSPI_1 is wired as a slave</description>
+	</variable>
+	<variable name="dspi_12-is-slave">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Whether to wire DSPI_12 as a slave</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="dspi_12-master">
+		<type>parameter</type>
+		<data_type>unsigned 32-bit integer</data_type>
+		<value>0x00000000</value>
+		<description>Master number of DSPI_12 when DSPI_12 is wired as a slave</description>
+	</variable>
+	<variable name="dspi_12-slave">
+		<type>parameter</type>
+		<data_type>unsigned 32-bit integer</data_type>
+		<value>0x00000000</value>
+		<description>Assigned slave number (in master) of DSPI_12 when DSPI_12 is wired as a slave</description>
+	</variable>
+	<variable name="dspi_2-is-slave">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Whether to wire DSPI_2 as a slave</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="dspi_2-master">
+		<type>parameter</type>
+		<data_type>unsigned 32-bit integer</data_type>
+		<value>0x00000000</value>
+		<description>Master number of DSPI_2 when DSPI_2 is wired as a slave</description>
+	</variable>
+	<variable name="dspi_2-slave">
+		<type>parameter</type>
+		<data_type>unsigned 32-bit integer</data_type>
+		<value>0x00000000</value>
+		<description>Assigned slave number (in master) of DSPI_2 when DSPI_2 is wired as a slave</description>
+	</variable>
+	<variable name="dspi_3-is-slave">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Whether to wire DSPI_3 as a slave</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="dspi_3-master">
+		<type>parameter</type>
+		<data_type>unsigned 32-bit integer</data_type>
+		<value>0x00000000</value>
+		<description>Master number of DSPI_3 when DSPI_3 is wired as a slave</description>
+	</variable>
+	<variable name="dspi_3-slave">
+		<type>parameter</type>
+		<data_type>unsigned 32-bit integer</data_type>
+		<value>0x00000000</value>
+		<description>Assigned slave number (in master) of DSPI_3 when DSPI_3 is wired as a slave</description>
+	</variable>
+	<variable name="dspi_4-is-slave">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Whether to wire DSPI_4 as a slave</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="dspi_4-master">
+		<type>parameter</type>
+		<data_type>unsigned 32-bit integer</data_type>
+		<value>0x00000000</value>
+		<description>Master number of DSPI_4 when DSPI_4 is wired as a slave</description>
+	</variable>
+	<variable name="dspi_4-slave">
+		<type>parameter</type>
+		<data_type>unsigned 32-bit integer</data_type>
+		<value>0x00000000</value>
+		<description>Assigned slave number (in master) of DSPI_4 when DSPI_4 is wired as a slave</description>
+	</variable>
+	<variable name="dspi_5-is-slave">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Whether to wire DSPI_5 as a slave</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="dspi_5-master">
+		<type>parameter</type>
+		<data_type>unsigned 32-bit integer</data_type>
+		<value>0x00000000</value>
+		<description>Master number of DSPI_5 when DSPI_5 is wired as a slave</description>
+	</variable>
+	<variable name="dspi_5-slave">
+		<type>parameter</type>
+		<data_type>unsigned 32-bit integer</data_type>
+		<value>0x00000000</value>
+		<description>Assigned slave number (in master) of DSPI_5 when DSPI_5 is wired as a slave</description>
+	</variable>
+	<variable name="dspi_6-is-slave">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Whether to wire DSPI_6 as a slave</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="dspi_6-master">
+		<type>parameter</type>
+		<data_type>unsigned 32-bit integer</data_type>
+		<value>0x00000000</value>
+		<description>Master number of DSPI_6 when DSPI_6 is wired as a slave</description>
+	</variable>
+	<variable name="dspi_6-slave">
+		<type>parameter</type>
+		<data_type>unsigned 32-bit integer</data_type>
+		<value>0x00000000</value>
+		<description>Assigned slave number (in master) of DSPI_6 when DSPI_6 is wired as a slave</description>
+	</variable>
 	<variable name="enable-gdb-server">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
@@ -11845,6 +13149,16 @@
 		<data_type>boolean</data_type>
 		<value>true</value>
 		<description>Enable/Disable serial terminal over LINFlexD_2 UART serial interface</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-tlm-serial-bus-observer">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable TLM serial bus observer</description>
 		<enumeration>
 			<item>true</item>
 			<item>false</item>
