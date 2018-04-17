@@ -302,7 +302,7 @@ VariableBase(const char *_name, Object *_owner, Type _type, const char *_descrip
 	{
 		_owner->Add(*this);
 	}
-	Simulator::simulator->Register(this);
+	Simulator::Instance()->Register(this);
 }
 
 VariableBase::
@@ -321,7 +321,7 @@ VariableBase(const char *_name, VariableBase *_container, Type _type, const char
 	, is_modified(false)
 	, listener_set()
 {
-	Simulator::simulator->Register(this);
+	Simulator::Instance()->Register(this);
 }
 
 VariableBase::
@@ -343,7 +343,7 @@ VariableBase()
 VariableBase::~VariableBase()
 {
 	if(owner) owner->Remove(*this);
-	Simulator::simulator->Unregister(this);
+	Simulator::Instance()->Unregister(this);
 }
 
 Object *VariableBase::GetOwner() const
@@ -452,7 +452,7 @@ void VariableBase::SetFormat(Format _fmt)
 
 bool VariableBase::IsVoid() const
 {
-	return this == Simulator::simulator->void_variable;
+	return this == Simulator::Instance()->void_variable;
 }
 
 bool VariableBase::IsMutable() const
@@ -552,7 +552,7 @@ VariableBase& VariableBase::operator [] (unsigned int index)
 	if(index >= 0)
 	{
 		std::cerr << "Subscript out of range" << std::endl;
-		return *Simulator::simulator->void_variable;
+		return *Simulator::Instance()->void_variable;
 	}
 	return *this;
 }
@@ -562,7 +562,7 @@ const VariableBase& VariableBase::operator [] (unsigned int index) const
 	if(index >= 0)
 	{
 		std::cerr << "Subscript out of range" << std::endl;
-		return *Simulator::simulator->void_variable;
+		return *Simulator::Instance()->void_variable;
 	}
 	return *this;
 }
@@ -644,7 +644,7 @@ template <class TYPE>
 Variable<TYPE>::Variable(const char *_name, Object *_owner, TYPE& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <class TYPE>
@@ -777,7 +777,7 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, FormulaOperator _formu
 	childs[0] = child1;
 	childs[1] = child2;
 	childs[2] = child3;
-	if(!IsValid() && Simulator::simulator->IsWarningEnabled())
+	if(!IsValid() && Simulator::Instance()->IsWarningEnabled())
 	{
 		std::cerr << "WARNING! " << VariableBase::GetName() << " is an invalid formula" << std::endl;
 	}
@@ -792,7 +792,7 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, FormulaOperator _formu
 	childs[0] = child1;
 	childs[1] = child2;
 	childs[2] = 0;
-	if(!IsValid() && Simulator::simulator->IsWarningEnabled())
+	if(!IsValid() && Simulator::Instance()->IsWarningEnabled())
 	{
 		std::cerr << "WARNING! " << VariableBase::GetName() << " is an invalid formula" << std::endl;
 	}
@@ -807,7 +807,7 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, FormulaOperator _formu
 	childs[0] = child;
 	childs[1] = 0;
 	childs[2] = 0;
-	if(!IsValid() && Simulator::simulator->IsWarningEnabled())
+	if(!IsValid() && Simulator::Instance()->IsWarningEnabled())
 	{
 		std::cerr << "WARNING! " << VariableBase::GetName() << " is an invalid formula" << std::endl;
 	}
@@ -1145,7 +1145,7 @@ Variable<bool>::Variable(const char *_name, Object *_owner, bool& _storage, Type
 {
 	AddEnumeratedValue("true");
 	AddEnumeratedValue("false");
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1158,7 +1158,7 @@ template <>
 Variable<signed char>::Variable(const char *_name, Object *_owner, signed char& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1171,7 +1171,7 @@ template <>
 Variable<short>::Variable(const char *_name, Object *_owner, short& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1184,7 +1184,7 @@ template <>
 Variable<int>::Variable(const char *_name, Object *_owner, int& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1197,7 +1197,7 @@ template <>
 Variable<long>::Variable(const char *_name, Object *_owner, long& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1210,7 +1210,7 @@ template <>
 Variable<long long>::Variable(const char *_name, Object *_owner, long long& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1224,7 +1224,7 @@ template <>
 Variable<unsigned char>::Variable(const char *_name, Object *_owner, unsigned char& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1237,7 +1237,7 @@ template <>
 Variable<unsigned short>::Variable(const char *_name, Object *_owner, unsigned short& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1250,7 +1250,7 @@ template <>
 Variable<unsigned int>::Variable(const char *_name, Object *_owner, unsigned int& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1263,7 +1263,7 @@ template <>
 Variable<unsigned long>::Variable(const char *_name, Object *_owner, unsigned long& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1276,7 +1276,7 @@ template <>
 Variable<unsigned long long>::Variable(const char *_name, Object *_owner, unsigned long long& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1289,7 +1289,7 @@ template <>
 Variable<double>::Variable(const char *_name, Object *_owner, double& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1310,7 +1310,7 @@ template <>
 Variable<float>::Variable(const char *_name, Object *_owner, float& _storage, Type type, const char *_description)
   : VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1331,7 +1331,7 @@ template <>
 Variable<std::string>::Variable(const char *_name, Object *_owner, std::string& _storage, Type type, const char *_description)
   : VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1675,13 +1675,13 @@ Object::Object(const char *_name, Object *_parent, const char *_description)
 	, leaf_objects()
 {
 	if(_parent) _parent->Add(*this);
-	Simulator::simulator->Register(this);
+	Simulator::Instance()->Register(this);
 }
 
 Object::~Object()
 {
 	if(parent) parent->Remove(*this);
-	Simulator::simulator->Unregister(this);
+	Simulator::Instance()->Unregister(this);
 }
 
 const char *Object::GetName() const
@@ -1856,13 +1856,13 @@ void Object::OnDisconnect()
 VariableBase& Object::operator [] (const char *name)
 {
 	std::string fullname = GetName() + std::string(".") + std::string(name);
-	VariableBase *variable = Simulator::simulator->FindVariable(fullname.c_str());
+	VariableBase *variable = Simulator::Instance()->FindVariable(fullname.c_str());
 	return *variable;
 }
 
 Simulator *Object::GetSimulator() const
 {
-	return Simulator::simulator;
+	return Simulator::Instance();
 }
 
 const char *Object::GetDescription() const
@@ -1896,7 +1896,7 @@ void Object::GenerateLatexDocumentation(std::ostream& os, VariableBase::Type var
 
 void Object::Stop(int exit_status)
 {
-	Simulator::simulator->Stop(this, exit_status);
+	Simulator::Instance()->Stop(this, exit_status);
 }
 
 void Object::SetDescription(const char *_description)
@@ -1913,13 +1913,13 @@ ServiceImportBase::ServiceImportBase(const char *_name, Object *_owner) :
 	owner(_owner)
 {
 	_owner->Add(*this);
-	Simulator::simulator->Register(this);
+	Simulator::Instance()->Register(this);
 }
 
 ServiceImportBase::~ServiceImportBase()
 {
 	if(owner) owner->Remove(*this);
-	Simulator::simulator->Unregister(this);
+	Simulator::Instance()->Unregister(this);
 }
 
 const char *ServiceImportBase::GetName() const
@@ -1937,13 +1937,13 @@ ServiceExportBase::ServiceExportBase(const char *_name, Object *_owner) :
 	setup_dependencies()
 {
 	_owner->Add(*this);
-	Simulator::simulator->Register(this);
+	Simulator::Instance()->Register(this);
 }
 
 ServiceExportBase::~ServiceExportBase()
 {
 	if(owner) owner->Remove(*this);
-	Simulator::simulator->Unregister(this);
+	Simulator::Instance()->Unregister(this);
 }
 
 const char *ServiceExportBase::GetName() const

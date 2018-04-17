@@ -58,7 +58,7 @@ typedef unisim::service::loader::multiformat_loader::AddressRange<uint32_t> Addr
 template <> Variable<AddressRange32 >::Variable(const char *_name, Object *_object, AddressRange32 & _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>

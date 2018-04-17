@@ -516,7 +516,7 @@ using unisim::component::tlm2::com::serial_terminal::PARITY_TYPE_ODD;
 template <> Variable<ParityType>::Variable(const char *_name, Object *_object, ParityType& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 	AddEnumeratedValue("none");
 	AddEnumeratedValue("even");
 	AddEnumeratedValue("odd");
@@ -648,7 +648,7 @@ using unisim::component::tlm2::com::serial_terminal::MSB;
 template <> Variable<BitOrder>::Variable(const char *_name, Object *_object, BitOrder& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 	AddEnumeratedValue("lsb");
 	AddEnumeratedValue("msb");
 }

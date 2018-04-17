@@ -208,8 +208,7 @@ private:
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_SIN_SERIAL_BUS;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_PCS_SERIAL_BUS;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_SS_SERIAL_BUS;
-	//typedef unisim::kernel::tlm2::TargetStub<64> EBI_STUB;
-	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_STUB;
+	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_SPACE_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<64> FLASH_PORT1_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<64> XBAR_0_S6_STUB;
 	typedef unisim::kernel::tlm2::InitiatorStub<64> XBAR_1_M2_STUB;
@@ -223,6 +222,7 @@ private:
 	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> PBRIDGE_A_STUB;
 	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> PBRIDGE_B_STUB;
 	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> SIUL2_STUB;
+	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_STUB;
 
 	//=========================================================================
 	//===                      Aliases for services classes                 ===
@@ -353,6 +353,7 @@ private:
 	DSPI_12_SS_SERIAL_BUS   *dspi_12_ss_serial_bus;
 	
 	//  - Stubs
+	EBI_SPACE_STUB *ebi_space_stub;
 	EBI_STUB *ebi_stub;
 	FLASH_PORT1_STUB *flash_port1_stub;
 	XBAR_0_S6_STUB *xbar_0_s6_stub;

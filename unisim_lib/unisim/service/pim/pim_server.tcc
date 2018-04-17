@@ -238,7 +238,7 @@ bool PIMServer<ADDRESS>::EndSetup() {
 	bool has_program_counter = false;
 	string program_counter_name;
 
-	VariableBase* architecture_name = Simulator::simulator->FindParameter("program-name");
+	VariableBase* architecture_name = Simulator::Instance()->FindParameter("program-name");
 	has_architecture_name = (architecture_name != NULL);
 	if(!has_architecture_name)
 	{
@@ -246,7 +246,7 @@ bool PIMServer<ADDRESS>::EndSetup() {
 		return (false);
 	}
 
-	VariableBase* architecture_endian = Simulator::simulator->FindParameter("endian");
+	VariableBase* architecture_endian = Simulator::Instance()->FindParameter("endian");
 	if (architecture_endian != NULL) {
 		string endianstr = *architecture_endian;
 		if(endianstr == "little")
@@ -266,10 +266,10 @@ bool PIMServer<ADDRESS>::EndSetup() {
 		logger << DebugWarning << "assuming target architecture endian is 'big endian'" << std::endl << EndDebugWarning;
 	}
 
-	VariableBase* param_program_counter_name = Simulator::simulator->FindParameter("program-counter-name");
+	VariableBase* param_program_counter_name = Simulator::Instance()->FindParameter("program-counter-name");
 
 	if (param_program_counter_name != NULL) {
-		pc_reg = (VariableBase *) Simulator::simulator->FindRegister(((string) *param_program_counter_name).c_str());
+		pc_reg = (VariableBase *) Simulator::Instance()->FindRegister(((string) *param_program_counter_name).c_str());
 		if (pc_reg != NULL) {
 			has_program_counter = true;
 		} else {
@@ -281,7 +281,7 @@ bool PIMServer<ADDRESS>::EndSetup() {
 
 	std::list<VariableBase *> lst;
 
-	Simulator::simulator->GetRegisters(lst);
+	Simulator::Instance()->GetRegisters(lst);
 
 	uint32_t index = 0;
 	for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
@@ -1191,7 +1191,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 
 	std::list<VariableBase *> lst;
 
-	Simulator::simulator->GetSignals(lst);
+	Simulator::Instance()->GetSignals(lst);
 
 	for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
 
@@ -1357,7 +1357,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 			string name = request->getAttribute(DBGData::NAME_ATTR);
 			string value = request->getAttribute(DBGData::VALUE_ATTR);
 
-			VariableBase* parameter = Simulator::simulator->FindParameter(name.c_str());
+			VariableBase* parameter = Simulator::Instance()->FindParameter(name.c_str());
 			if (parameter) {
 				if (value.empty()) // read parameter request
 				{
@@ -1568,7 +1568,7 @@ bool PIMServer<ADDRESS>::HandleQRcmd(DBGData *request) {
 
 			std::list<VariableBase *> lst;
 
-			Simulator::simulator->GetRegisters(lst);
+			Simulator::Instance()->GetRegisters(lst);
 
 			for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
 

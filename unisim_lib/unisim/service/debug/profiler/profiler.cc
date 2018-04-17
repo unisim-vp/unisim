@@ -240,7 +240,7 @@ using unisim::service::debug::profiler::O_FMT_CSV;
 template <> Variable<OutputFormat>::Variable(const char *_name, Object *_object, OutputFormat& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 	AddEnumeratedValue("text");
 	AddEnumeratedValue("html");
 }

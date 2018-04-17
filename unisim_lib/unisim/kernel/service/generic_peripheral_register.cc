@@ -60,7 +60,7 @@ Variable(const char *_name,
 		const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -191,7 +191,7 @@ Variable(const char *_name,
 		const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -322,7 +322,7 @@ Variable(const char *_name,
 		const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -453,7 +453,7 @@ Variable(const char *_name,
 		const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>

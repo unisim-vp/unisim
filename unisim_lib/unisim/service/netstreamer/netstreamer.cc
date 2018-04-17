@@ -1176,7 +1176,7 @@ using unisim::service::netstreamer::NETSTREAMER_PROTOCOL_TELNET;
 template <> Variable<NetStreamerProtocol>::Variable(const char *_name, Object *_object, NetStreamerProtocol& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 	AddEnumeratedValue("raw");
 	AddEnumeratedValue("telnet");
 }

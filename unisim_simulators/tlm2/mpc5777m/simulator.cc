@@ -132,6 +132,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	, dspi_12_sin_serial_bus(0)
 	, dspi_12_pcs_serial_bus()
 	, dspi_12_ss_serial_bus(0)
+	, ebi_space_stub(0)
 	, ebi_stub(0)
 	, flash_port1_stub(0)
 	, xbar_0_s6_stub(0)
@@ -369,6 +370,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	dspi_12 = new DSPI_12("DSPI_12", this);
 	
 	//  - Stubs
+	ebi_space_stub = new EBI_SPACE_STUB("EBI_SPACE", this);
 	ebi_stub = new EBI_STUB("EBI", this);
 	flash_port1_stub = new FLASH_PORT1_STUB("FLASH_PORT1", this);
 	xbar_0_s6_stub = new XBAR_0_S6_STUB("XBAR_0_S6", this);
@@ -1629,7 +1631,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*xbar_0->init_socket[2])(main_core_0->s_ahb_if);                   //       XBAR_0 S2 <-> S_AHB_IF<Main_Core_0
 	(*xbar_0->init_socket[3])(main_core_1->s_ahb_if);                   //       XBAR_0 S3 <-> S_AHB_IF<Main_Core_1
 	(*xbar_0->init_socket[4])(system_sram->slave_sock);                 //       XBAR_0 S4 <-> System SRAM
-	(*xbar_0->init_socket[5])(ebi_stub->slave_sock);                    // TODO: XBAR_0 S5 <-> EBI
+	(*xbar_0->init_socket[5])(ebi_space_stub->slave_sock);              // TODO: XBAR_0 S5 <-> EBI
 	(*xbar_0->init_socket[6])(xbar_0_s6_stub->slave_sock);              //       XBAR_0 S6 <-> unused
 	(*xbar_0->init_socket[7])(*xbar_1->targ_socket[3]);                 //       XBAR_0 S7 <-> XBAR_1 M3
                                                                      
@@ -1677,6 +1679,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*pbridge_a->init_socket[36])(xbar_1_stub->slave_sock);             // PBRIDGE_A <-> XBAR_1
 	(*pbridge_a->init_socket[37])(pbridge_a_stub->slave_sock);          // PBRIDGE_A <-> PBRIDGE_A
 	(*pbridge_a->init_socket[38])(siul2_stub->slave_sock);              // PBRIDGE_A <-> SIUL2
+	(*pbridge_a->init_socket[39])(ebi_stub->slave_sock);                // PBRIDGE_A <-> EBI
 	
 	(*pbridge_b->init_socket[0])(linflexd_2->peripheral_slave_if);      // PBRIDGE_B <-> LINFlexD_2
 	(*pbridge_b->init_socket[1])(linflexd_15->peripheral_slave_if);     // PBRIDGE_B <-> LINFlexD_15
@@ -5052,7 +5055,7 @@ Simulator::Simulator(const sc_core::sc_module_name& name, int argc, char **argv)
 	(*loader->memory_import[2]) >> main_core_0->memory_export;
 	(*loader->memory_import[3]) >> main_core_1->memory_export;
 	(*loader->memory_import[4]) >> peripheral_core_2->memory_export;
-	(*loader->memory_import[5]) >> ebi_stub->memory_export;
+	(*loader->memory_import[5]) >> ebi_space_stub->memory_export;
 	loader->registers_import >> peripheral_core_2->registers_export;
 	main_core_0->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 	main_core_1->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
@@ -5190,6 +5193,7 @@ Simulator::~Simulator()
 	if(dspi_12_sin_serial_bus) delete dspi_12_sin_serial_bus; 
 	for(i = 0; i < DSPI_12::NUM_CTARS; i++) if(dspi_12_pcs_serial_bus[i]) delete dspi_12_pcs_serial_bus[i];
 	if(dspi_12_ss_serial_bus) delete dspi_12_ss_serial_bus;
+	if(ebi_space_stub) delete ebi_space_stub;
 	if(ebi_stub) delete ebi_stub;
 	if(flash_port1_stub) delete flash_port1_stub;
 	if(xbar_0_s6_stub) delete xbar_0_s6_stub;
@@ -5646,6 +5650,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_36", "range_start=\"0xfc008000\" range_end=\"0xfc00bfff\" output_port=\"36\" translation=\"0x0\""); // XBAR_1      -> XBAR_1   (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_37", "range_start=\"0xfc000000\" range_end=\"0xfc003fff\" output_port=\"37\" translation=\"0x0\""); // PBRIDGE_A   -> PBRIDGE_A (rel address)
 	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_38", "range_start=\"0xfffc0000\" range_end=\"0xfffc3fff\" output_port=\"38\" translation=\"0x0\""); // SIUL2       -> SIUL2    (rel address)
+	simulator->SetVariable("HARDWARE.PBRIDGE_A.mapping_39", "range_start=\"0xffff0000\" range_end=\"0xffff3fff\" output_port=\"39\" translation=\"0x0\""); // EBI         -> EBI      (rel address)
 
 	//  - PBRIDGE_B
 	simulator->SetVariable("HARDWARE.PBRIDGE_B.cycle_time", "20 ns");
@@ -5672,7 +5677,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	                       ",HARDWARE.Main_Core_0:0x50000000-0x50ffffff:+0x50000000"       // Main_Core_0 Local Memory                -> Main_Core_0       (rel address)
 	                       ",HARDWARE.Main_Core_1:0x51000000-0x51ffffff:+0x51000000"       // Main_Core_1 Local Memory                -> Main_Core_1       (rel address)
 	                       ",HARDWARE.Peripheral_Core_2:0x52000000-0x5fffffff:+0x52000000" // Peripheral_Core_2 Local Memory          -> Peripheral_Core_2 (rel address)
-	                       ",HARDWARE.EBI:0x20000000-0x2fffffff:+0x0"               // EBI                                     -> EBI               (rel address)
+	                       ",HARDWARE.EBI_SPACE:0x20000000-0x2fffffff:+0x0"               // EBI                                     -> EBI               (rel address)
 	                      );
 
 	//  - System SRAM
@@ -5925,13 +5930,20 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//  - eDMA_1
 	simulator->SetVariable("HARDWARE.eDMA_1.master-id", 11);
 	
+	//  - EBI_SPACE_STUB
+	simulator->SetVariable("HARDWARE.EBI_SPACE.cycle-time", "10 ns");
+	simulator->SetVariable("HARDWARE.EBI_SPACE.read-latency", "10 ns");
+	simulator->SetVariable("HARDWARE.EBI_SPACE.write-latency", "10 ns");
+	simulator->SetVariable("HARDWARE.EBI_SPACE.org", 0x0);
+	simulator->SetVariable("HARDWARE.EBI_SPACE.bytesize", 256 * 1024 * 1024);
+	
 	//  - EBI_STUB
 	simulator->SetVariable("HARDWARE.EBI.cycle-time", "10 ns");
 	simulator->SetVariable("HARDWARE.EBI.read-latency", "10 ns");
 	simulator->SetVariable("HARDWARE.EBI.write-latency", "10 ns");
 	simulator->SetVariable("HARDWARE.EBI.org", 0x0);
-	simulator->SetVariable("HARDWARE.EBI.bytesize", 256 * 1024 * 1024);
-	
+	simulator->SetVariable("HARDWARE.EBI.bytesize", 16 * 1024);
+
 	//  - PCM_STUB
 	simulator->SetVariable("HARDWARE.PCM.cycle-time", "20 ns");
 	simulator->SetVariable("HARDWARE.PCM.read-latency", "20 ns");
@@ -6144,6 +6156,6 @@ void Simulator::SigInt()
 {
 	if(!enable_inline_debugger)
 	{
-		unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
+		unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
 	}
 }

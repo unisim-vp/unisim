@@ -78,7 +78,7 @@ using unisim::kernel::service::VariableBase;
 template <> Variable<unisim::service::power::CacheDynamicPower>::Variable(const char *_name, Object *_object, unisim::service::power::CacheDynamicPower& _storage, Type type, const char *_description) :
 VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>

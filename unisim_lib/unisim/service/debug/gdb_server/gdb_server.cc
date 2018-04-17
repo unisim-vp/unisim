@@ -358,7 +358,7 @@ using unisim::service::debug::gdb_server::GDB_WAIT_CONNECTION_ALWAYS;
 template <> Variable<GDBWaitConnectionMode>::Variable(const char *_name, Object *_object, GDBWaitConnectionMode& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 	AddEnumeratedValue("never");
 	AddEnumeratedValue("startup-only");
 	AddEnumeratedValue("always");
@@ -492,7 +492,7 @@ using unisim::service::debug::gdb_server::GDB_MODE_MULTI_THREAD;
 template <> Variable<GDBMode>::Variable(const char *_name, Object *_object, GDBMode& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 	AddEnumeratedValue("single-thread");
 	AddEnumeratedValue("multi-thread");
 }

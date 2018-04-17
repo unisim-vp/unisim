@@ -25,7 +25,7 @@ void SigIntHandler(int signum)
 {
 	std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
 //	sc_stop();
-	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
+	unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
 }
 
 Simulator::Simulator(int argc, char **argv)

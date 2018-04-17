@@ -291,7 +291,7 @@ bus_target_nb_transport_fw(transaction_type &trans,
 		phase_type &phase,
 		sc_core::sc_time &time)
 {
-	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -407,7 +407,7 @@ bus_target_b_transport(transaction_type &trans,
 			logger << std::dec;
 		}
 		logger << EndDebugError;
-		unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+		unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
 	}
 
 	// everything went fine, update the status of the tlm response

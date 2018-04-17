@@ -1132,7 +1132,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::arm
   //  << " - va = 0x" << std::hex << va << std::dec << std::endl
   //  << " - instruction counter = " << instruction_counter
   //  << EndDebugError;
-  //       unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+  //       unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
   //     }
 
 
@@ -1263,7 +1263,7 @@ CPU::ReadInsn(uint32_t address, unisim::component::cxx::processor::arm::isa::thu
   //  << " - va = 0x" << std::hex << va << std::dec << std::endl
   //  << " - instruction counter = " << instruction_counter
   //  << EndDebugError;
-  //       unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+  //       unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
   //     }
 
 
@@ -2241,7 +2241,7 @@ CPU::PerformWriteAccess( uint32_t addr, uint32_t size, uint32_t value )
 				<< " - pc = 0x" << std::hex << cur_instruction_address << std::dec << std::endl
 				<< " - instruction counter = " << instruction_counter
 				<< EndDebugError;
-			unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+			unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
 		}
 
 	if ( unlikely(verbose & 0x02) )
@@ -2476,7 +2476,7 @@ CPU::PerformReadAccess( uint32_t addr, uint32_t size, bool _signed )
 				<< " - pc = 0x" << std::hex << cur_instruction_address << std::dec << std::endl
 				<< " - instruction counter = " << instruction_counter
 				<< EndDebugError;
-			unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+			unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
 		}
 
 	if ( unlikely(verbose & 0x02) )

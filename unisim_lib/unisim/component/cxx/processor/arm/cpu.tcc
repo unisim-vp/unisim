@@ -518,7 +518,7 @@ CPU<CONFIG>::HandleAsynchronousException( uint32_t exceptions )
     {
       logger << DebugError << "Exception not handled (Asynchronous Abort)" << EndDebugError;
       
-      unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+      unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
       
       return A.Mask( exceptions );
     }

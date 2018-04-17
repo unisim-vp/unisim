@@ -219,7 +219,7 @@ bus_target_b_transport(transaction_type &trans,
 			logger << std::dec;
 		}
 		logger << EndDebugError;
-		unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+		unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
 	}
 
 	// everything went fine, set the ok status response

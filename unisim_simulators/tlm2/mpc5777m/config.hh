@@ -95,8 +95,8 @@ struct Config
 	{
 		typedef FSB_ADDRESS_TYPE ADDRESS;
 		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 39;
-		static const unsigned int MAX_NUM_MAPPINGS = 39;
+		static const unsigned int OUTPUT_SOCKETS = 40;
+		static const unsigned int MAX_NUM_MAPPINGS = 40;
 		static const unsigned int BUSWIDTH = 64;
 		static const bool VERBOSE = DEBUG_ENABLE;
 	};

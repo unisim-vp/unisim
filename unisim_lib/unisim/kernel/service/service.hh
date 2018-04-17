@@ -52,6 +52,8 @@
 #include <windef.h>
 #endif
 
+#include <unisim/util/inlining/inlining.hh>
+
 namespace unisim {
 namespace kernel {
 namespace service {
@@ -259,9 +261,8 @@ public:
 		ST_ERROR
 	} SetupStatus;
 	
-	static Simulator *simulator;
-	VariableBase *void_variable;
-
+	static inline Simulator *Instance() { return simulator; }
+	
 	Simulator(int argc, char **argv,
 			void (*LoadBuiltInConfig)(Simulator *simulator) = 0);
 	virtual ~Simulator();
@@ -320,10 +321,13 @@ private:
 	friend class Object;
 	friend class VariableBase;
 	template <class TYPE> friend class Variable;
+	template <class TYPE> friend class VariableArray;
 	friend class ServiceImportBase;
 	friend class ServiceExportBase;
 	friend class unisim::kernel::api::APIBase;
 
+	static Simulator *simulator;
+	VariableBase *void_variable;
 	std::string shared_data_dir;
 	std::map<std::string, std::string> set_vars;
 	std::string get_config_filename;
@@ -740,7 +744,7 @@ VariableBase& VariableArray<TYPE>::operator [] (unsigned int index)
 	if(index >= variables.size())
 	{
 		std::cerr << "Subscript out of range" << std::endl;
-		return (*Simulator::simulator->void_variable);
+		return (*Simulator::Instance()->void_variable);
 	}
 	return (*variables[index]);
 }
@@ -751,7 +755,7 @@ const VariableBase& VariableArray<TYPE>::operator [] (unsigned int index) const
 	if(index >= variables.size())
 	{
 		std::cerr << "Subscript out of range" << std::endl;
-		return (*Simulator::simulator->void_variable);
+		return (*Simulator::Instance()->void_variable);
 	}
 	return (*variables[index]);
 }
@@ -1022,17 +1026,9 @@ public:
 	ServiceImport(const char *name, Object *owner);
 	virtual ~ServiceImport();
 
- 	inline operator SERVICE_IF * () const
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+ 	inline operator SERVICE_IF * () const ALWAYS_INLINE;
 
-	inline SERVICE_IF *operator -> () const
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+	inline SERVICE_IF *operator -> () const ALWAYS_INLINE;
 
 	// (import -> export) ==> export
 	friend ServiceExport<SERVICE_IF>& operator >> <SERVICE_IF>(ServiceImport<SERVICE_IF>& lhs, ServiceExport<SERVICE_IF>& rhs);
@@ -1378,11 +1374,7 @@ public:
 	ServiceExport(const char *name, Object *owner);
 	virtual ~ServiceExport();
 
-	inline bool IsConnected() const
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+	inline bool IsConnected() const ALWAYS_INLINE;
 
 	// (import -> export) ==> export
 	friend ServiceExport<SERVICE_IF>& operator >> <SERVICE_IF>(ServiceImport<SERVICE_IF>& lhs, ServiceExport<SERVICE_IF>& rhs);

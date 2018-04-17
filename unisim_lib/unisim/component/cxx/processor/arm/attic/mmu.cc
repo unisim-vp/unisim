@@ -966,7 +966,7 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
                << " - pc = 0x" << std::hex << cur_instruction_address << std::dec << std::endl
                << " - instruction counter = " << instruction_counter
                << EndDebugError;
-        unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+        unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
       }
 
   if ( unlikely(verbose & 0x02) )
@@ -1208,7 +1208,7 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
                << " - pc = 0x" << std::hex << cur_instruction_address << std::dec << std::endl
                << " - instruction counter = " << instruction_counter
                << EndDebugError;
-        unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+        unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
       }
 
   if ( unlikely(verbose & 0x02) )

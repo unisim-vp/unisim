@@ -130,6 +130,8 @@ LINFlexD<CONFIG>::LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::
 	, rx_time(sc_core::SC_ZERO_TIME)
 	, data_reception_in_progress(false)
 	, data_transmission_in_progress(false)
+	, dma_rx()
+	, dma_tx()
 	, reg_addr_map()
 	, schedule()
 	, endian(unisim::util::endian::E_BIG_ENDIAN)
@@ -795,6 +797,8 @@ template <typename CONFIG>
 void LINFlexD<CONFIG>::Reset()
 {
 	unsigned int ident_num;
+	unsigned int dma_rx_num;
+	unsigned int dma_tx_num;
 	
 	rx_prev_input_status = true;
 	rx_input_status = true;
@@ -805,6 +809,16 @@ void LINFlexD<CONFIG>::Reset()
 	lins_int_rx_mask = false;
 	data_reception_in_progress = false;
 	data_transmission_in_progress = false;
+	
+	for(dma_rx_num = 0; dma_rx_num < NUM_DMA_RX_CHANNELS; dma_rx_num++)
+	{
+		dma_rx[dma_rx_num] = false;
+	}
+	
+	for(dma_tx_num = 0; dma_tx_num < NUM_DMA_TX_CHANNELS; dma_tx_num++)
+	{
+		dma_tx[dma_tx_num] = false;
+	}
 	
 	schedule.Clear();
 
@@ -855,6 +869,7 @@ void LINFlexD<CONFIG>::Reset()
 	UpdateMasterClock();
 	UpdateLINClock();
 	
+	UpdateDMA_RX();
 	RequestDMA_TX();
 }
 
@@ -1425,7 +1440,7 @@ void LINFlexD<CONFIG>::RX_FIFO_Pop()
 			linflexd_uartsr.template Set<typename LINFlexD_UARTSR::RFNE>(rx_fifo_cnt != 0); // Receive FIFO Not Empty
 			
 			// Request DMA RX
-			RequestDMA_RX();
+			if(rx_fifo_cnt != 0) RequestDMA_RX();
 		}
 	}
 }
@@ -1936,8 +1951,8 @@ void LINFlexD<CONFIG>::RX_Process()
 													
 													linflexd_uartsr.template Set<typename LINFlexD_UARTSR::RFNE>(1); // Receive FIFO Not Empty
 
-													// update DMA signals
-													UpdateDMA_RX();
+													// Request DMA RX
+													RequestDMA_RX();
 												}
 												
 												// shift parity bit register

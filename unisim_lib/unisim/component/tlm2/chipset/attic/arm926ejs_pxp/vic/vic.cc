@@ -688,7 +688,7 @@ bus_target_nb_transport_fw(transaction_type &trans,
 		phase_type &phase,
 		sc_core::sc_time &time)
 {
-	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -860,7 +860,7 @@ bus_target_b_transport(transaction_type &trans, sc_core::sc_time &delay)
 						logger << DebugError
 							<< "TODO: handle activation of test mode"
 							<< EndDebugError;
-						unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+						unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
 					}
 					SetRegister(VICITCRAddr, vicitcr & 0x01UL);
 					handled = true;
@@ -888,7 +888,7 @@ bus_target_b_transport(transaction_type &trans, sc_core::sc_time &delay)
 			logger << std::dec;
 		}
 		logger << EndDebugError;
-		unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+		unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
 	}
 
 	// everything went fine, update the status of the tlm response
@@ -917,7 +917,7 @@ VIC ::
 bus_target_get_direct_mem_ptr(transaction_type &trans, 
 		tlm::tlm_dmi &dmi_data)
 {
-	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
 	return false;
 }
 
@@ -925,7 +925,7 @@ unsigned int
 VIC ::
 bus_target_transport_dbg(transaction_type &trans)
 {
-	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+	unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
 	return 0;
 }
 
