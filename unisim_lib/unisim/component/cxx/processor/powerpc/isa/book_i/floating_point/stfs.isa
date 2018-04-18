@@ -54,6 +54,6 @@ stfs.execute = {
 };
 
 stfs.disasm = {
-	os << "stfs " << FPRPrint(fs) << ", " << d << "(" << GPRPrint(ra) << ")";
+	os << "stfs " << FPRPrint(fs) << ", " << EAPrint(d,ra);
 };
 

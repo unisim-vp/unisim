@@ -39,14 +39,14 @@ impl {
 
 /* AND Scaled Immediate */
 op e_andi(6[6]:rs[5]:ra[5]:12[4]:rc[1]:s11[11]);
-e_andi.var sci8 : {uint32_t} = {scaled_immediate(s11)};
+e_andi.var sci8 : {int} = {scaled_immediate(s11)};
 
 e_andi.execute = {
 	// Read the input operands
-	uint32_t s = cpu->GetGPR(rs);
+	UINT s = cpu->GetGPR(rs);
 	
 	// Compute the result
-	uint32_t result = s & uint32_t( int32_t( sci8));
+	UINT result = s & UINT(sci8);
 	
 	if(rc)
 	{
@@ -54,9 +54,9 @@ e_andi.execute = {
 		XER& xer = cpu->GetXER();
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(int32_t( result) < int32_t(0));
-		cr.Set<CR::CR0::GT>(int32_t( result) > int32_t(0));
-		cr.Set<CR::CR0::EQ>(result == uint32_t(0));
+		cr.Set<CR::CR0::LT>(SINT(result) < SINT(0));
+		cr.Set<CR::CR0::GT>(SINT(result) > SINT(0));
+		cr.Set<CR::CR0::EQ>(result == UINT(0));
 	}
 
 	// Write back the result

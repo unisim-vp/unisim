@@ -41,17 +41,19 @@ impl {
 op se_bctr(3[15]:lk[1]);
 
 se_bctr.execute = {
-	ADDRESS target_addr = uint32_t( cpu->GetCTR()) & uint32_t( 0xfffffffeUL);
+	ADDRESS target_addr( ADDRESS(cpu->GetCTR()) & ADDRESS(-2) );
 	cpu->Branch(target_addr);
+	
 	if(lk)
 	{
 		LR& lr = cpu->GetLR();
-		lr = cpu->GetCIA() + uint32_t(2);
+		lr = ADDRESS(cpu->GetCIA()) + ADDRESS(2);
 	}
 	
 	return true;
-}
+};
 
 se_bctr.disasm = {
 	os << "se_bctr" << (lk?"l":"");
-}
+};
+

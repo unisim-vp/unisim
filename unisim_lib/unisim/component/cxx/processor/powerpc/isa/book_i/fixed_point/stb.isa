@@ -38,13 +38,13 @@ op stb(38[6]:rs[5]:ra[5]:sext d[16]);
 stb.execute = {
 	// compute the effective address
 	UINT disp = UINT(SINT(d));
-	ADDRESS ea = (ra ? cpu->GetGPR(ra) + disp : disp);
+	ADDRESS ea( ra ? cpu->GetGPR(ra) + disp : disp );
 	
 	// do the memory access
 	return cpu->Int8Store(rs, ea);
 };
 
 stb.disasm = {
-	os << "stb " << GPRPrint(rs) << ", " << d << "(" << GPRPrint(ra) << ")";
+	os << "stb " << GPRPrint(rs) << ", " << EAPrint(d,ra);
 };
 

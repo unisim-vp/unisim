@@ -32,11 +32,15 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-op wait(31[6]:?[3]:wc[2]:?[5]:?[5]:62[10]:?[1])
+/* Wait */
+op wait(31[6]:?[3]:wc[2]:?[5]:?[5]:62[10]:?[1]);
+
 wait.disasm = {
 	os << "wait";
 	if(wc) os << " " << (unsigned int) wc;
-}
+};
+
 wait.execute = {
 	return cpu->Wait();
-}
+};
+

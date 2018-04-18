@@ -38,20 +38,22 @@ impl {
 }
 
 /* Branch [and Link] */
-op e_b(30[6]:0[1]:shl<1> sext <32> bd[24]:lk[1]);
+op e_b(30[6]:0[1]:shl<1> sext bd[24]:lk[1]);
 
 e_b.execute = {
-	ADDRESS target_addr = cpu->GetCIA() + uint32_t( bd);
+	ADDRESS target_addr = ADDRESS( cpu->GetCIA() ) + ADDRESS( bd );
 	cpu->Branch(target_addr);
+	
 	if(lk)
 	{
 		LR& lr = cpu->GetLR();
-		lr = cpu->GetCIA() + uint32_t(4);
+		lr = ADDRESS( cpu->GetCIA() ) + ADDRESS(4);
 	}
 
 	return true;
-}
+};
 
 e_b.disasm = {
 	os << "e_b" << (lk?"l ":" ") << HexPrint(this->GetAddr()+bd);
-}
+};
+

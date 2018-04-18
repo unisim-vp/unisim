@@ -38,24 +38,25 @@ impl {
 }
 
 /* Move CR Field */
-op e_mcrf(31[6]:crd[3]:?[2]:crs[3]:?[7]:16[10]:0[1]);
+op e_mcrf(31[6]:shl<2> bft[3]:?[2]:shl<2> bfa[3]:?[7]:16[10]:0[1]);
 
 e_mcrf.execute = {
+	// Read the input operands
 	CR& cr = cpu->GetCR();
-	uint32_t c =cr;
+	UINT const mask(0xf0000000 >> bft), source(cr);
 
-	unsigned int crbd = 4 * crd;
-	unsigned int crbs = 4 * crs;
-	uint32_t s = (c << crbs) >> crbd;
-	uint32_t m = uint32_t( 0xf0000000UL >> crbd);
+	// Compute the result
+	UINT result = (source & ~mask) | (mask & ((source << bfa) >> bft));
 	
-	cr = (c & ~m) | (s & m);
+	// Write back the result
+	cr = result;
+	
 	return true;
 }
 
 e_mcrf.disasm = {
-	if (crs!=0)
-		os << "e_mcrf " << CRPrint(crd) << ',' << CRPrint(crs);
+	if (bfa)
+		os << "e_mcrf " << CRPrint(bft/2) << ',' << CRPrint(bfa/2);
 	else
-		os << "e_mcrf " << CRPrint(crd);
+		os << "e_mcrf " << CRPrint(bft/2);
 }

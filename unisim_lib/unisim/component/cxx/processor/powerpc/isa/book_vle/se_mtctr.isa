@@ -42,12 +42,17 @@ op se_mtctr(0[6]:11[6]:sext srx[4]);
 se_mtctr.var rx : {uint8_t} = {srx & 31};
 
 se_mtctr.execute = {
-	uint32_t result = cpu->GetGPR(rx);
+	// Compute the result
+	UINT result( cpu->GetGPR(rx) );
+	
+	// Write back the result
 	CTR& ctr = cpu->GetCTR();
 	ctr = result;
+	
 	return true;
-}
+};
 
 se_mtctr.disasm = {
 	os << "se_mtctr " << GPRPrint(rx);
-}
+};
+

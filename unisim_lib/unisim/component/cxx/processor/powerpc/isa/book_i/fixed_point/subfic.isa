@@ -41,7 +41,7 @@ op subfic(08[6]:rd[5]:ra[5]:sext simm[16]);
 
 subfic.execute = {
 	// Read the input operands
-	SINT a = SINT(cpu->GetGPR(ra)), b = SINT(simm);
+	SINT a( cpu->GetGPR(ra) ), b( sci8 );
 	
 	// Compute the result
 	SINT result = b - a;

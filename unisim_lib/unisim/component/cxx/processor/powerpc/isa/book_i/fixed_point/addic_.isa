@@ -41,7 +41,7 @@ op addic_(13[6]:rd[5]:ra[5]:sext simm[16]);
 
 addic_.execute = {
 	// Read the input operands
-	SINT a = SINT(cpu->GetGPR(ra)), b = SINT(simm);
+	SINT a( cpu->GetGPR(ra) ), b( simm );
 	
 	// Compute the result
 	SINT result = a + b;
@@ -55,10 +55,10 @@ addic_.execute = {
 	cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
 	cr.Set<CR::CR0::LT>(result < SINT(0));
 	cr.Set<CR::CR0::GT>(result > SINT(0));
-	cr.Set<CR::CR0::EQ>((UINT(result) == UINT(0)));
+	cr.Set<CR::CR0::EQ>(result == SINT(0));
 	
 	// Write back the result
-	cpu->SetGPR(rd, result);
+	cpu->SetGPR(rd, UINT(result));
 	
 	return true;
 };

@@ -43,10 +43,10 @@ e_or2i.var ui : {uint16_t} = { ui_h | ui_l }
 
 e_or2i.execute = {
 	// Read the input operands
-	uint32_t d = cpu->GetGPR(rd);
+	UINT d = cpu->GetGPR(rd);
 	
 	// Compute the result
-	uint32_t result = d | uint32_t( ui);
+	UINT result = d | UINT(ui);
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);

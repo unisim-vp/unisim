@@ -39,14 +39,14 @@ impl {
 
 /* Add Scaled Immediate */
 op e_addi(6[6]:rd[5]:ra[5]:8[4]:rc[1]:s11[11]);
-e_addi.var sci8 : {int32_t} = {scaled_immediate(s11)};
+e_addi.var sci8 : {int} = {scaled_immediate(s11)};
 
 e_addi.execute = {
 	// Read the input operands
-	int32_t a = int32_t(  cpu->GetGPR(ra) );
+	SINT a = SINT( cpu->GetGPR(ra) );
 	
 	// Compute the result
-	int32_t result = a + int32_t( sci8);
+	SINT result = a + SINT(sci8);
 	
 	if(rc)
 	{
@@ -54,20 +54,20 @@ e_addi.execute = {
 		XER& xer = cpu->GetXER();
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(result < int32_t(0));
-		cr.Set<CR::CR0::GT>(result > int32_t(0));
-		cr.Set<CR::CR0::EQ>(result == int32_t(0));
+		cr.Set<CR::CR0::LT>(result < SINT(0));
+		cr.Set<CR::CR0::GT>(result > SINT(0));
+		cr.Set<CR::CR0::EQ>(result == SINT(0));
 	}
 
 	// Write back the result
-	cpu->SetGPR(rd, result);
+	cpu->SetGPR(rd, UINT(result));
 	
 	return true;
-}
+};
 
 e_addi.disasm = {
 	os << "e_addi" << (rc?". ":" ") << GPRPrint(rd) << ',' << GPRPrint(ra) << ',' << sci8;
-}
+};
 
-specialize e_addi(rc=0)
-specialize e_addi(rc=1)
+specialize e_addi(rc=0);
+specialize e_addi(rc=1);

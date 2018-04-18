@@ -52,7 +52,7 @@ srawi.execute = {
 	//xer.Set<XER::CA>((s < S32(0)) and (s != (result << sh)));
 	
 	// Write back the result
-	cpu->SetGPR(ra, result);
+	cpu->SetGPR(ra, UINT(result));
 	
 	if(unlikely(rc))
 	{

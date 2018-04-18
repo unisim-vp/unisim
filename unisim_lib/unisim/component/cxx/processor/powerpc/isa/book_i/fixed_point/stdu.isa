@@ -52,7 +52,7 @@ stdu.execute = {
 };
 
 stdu.disasm = {
-	os << "stdu " << GPRPrint(rs) << ", " << d << "(" << GPRPrint(ra) << ")";
+	os << "stdu " << GPRPrint(rs) << ", " << EAPrint(d,ra);
 };
 
 

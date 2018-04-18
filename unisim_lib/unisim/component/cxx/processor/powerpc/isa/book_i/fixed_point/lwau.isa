@@ -52,6 +52,6 @@ lwau.execute = {
 };
 
 lwau.disasm = {
-	os << "lwau " << GPRPrint(rd) << ", " << d << "(" << GPRPrint(ra) << ")";
+	os << "lwau " << GPRPrint(rd) << ", " << EAPrint(d,ra);
 };
 

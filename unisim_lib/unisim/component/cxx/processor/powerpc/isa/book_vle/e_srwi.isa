@@ -42,10 +42,10 @@ op e_srwi(31[6]:rs[5]:ra[5]:sh[5]:568[10]:rc[1]);
 
 e_srwi.execute = {
 	// Read the input operands
-	uint32_t s = cpu->GetGPR(rs);
+	U32 s( cpu->GetGPR(rs) );
 	
 	// Compute the result
-	uint32_t result = s >> sh;
+	U32 result = s >> sh;
 
 	// Write back the result
 	cpu->SetGPR(ra, result);
@@ -56,9 +56,9 @@ e_srwi.execute = {
 		XER& xer = cpu->GetXER();
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(int32_t( result) < int32_t(0));
-		cr.Set<CR::CR0::GT>(int32_t( result) > int32_t(0));
-		cr.Set<CR::CR0::EQ>(result == uint32_t(0));
+		cr.Set<CR::CR0::LT>(S32(result) < S32(0));
+		cr.Set<CR::CR0::GT>(S32(result) > S32(0));
+		cr.Set<CR::CR0::EQ>(result == U32(0));
 	}
 	
 	return true;

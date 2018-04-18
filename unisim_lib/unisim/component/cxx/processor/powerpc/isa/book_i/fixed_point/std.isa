@@ -44,6 +44,6 @@ std.execute = {
 };
 
 std.disasm = {
-	os << "std " << GPRPrint(rs) << ", " << d << "(" << GPRPrint(ra) << ")";
+	os << "std " << GPRPrint(rs) << ", " << EAPrint(d,ra);
 };
 

@@ -38,12 +38,12 @@ op sth(44[6]:rs[5]:ra[5]:sext d[16]);
 sth.execute = {
 	// compute the effective address
 	UINT disp = UINT(SINT(d));
-	ADDRESS ea = (ra ? cpu->GetGPR(ra) + disp : disp);
+	ADDRESS ea( ra ? cpu->GetGPR(ra) + disp : disp );
 	// do the memory access
 	return cpu->Int16Store(rs, ea);
 };
 
 sth.disasm = {
-	os << "sth " << GPRPrint(rs) << ", " << d << "(" << GPRPrint(ra) << ")";
+	os << "sth " << GPRPrint(rs) << ", " << EAPrint(d,ra);
 };
 

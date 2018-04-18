@@ -46,7 +46,7 @@ sraw.execute = {
 	
 	// Compute the result
 	S32 result, shifted_out;
-	if (b > U8(0x1f))
+	if (unlikely(b > U8(0x1f)))
 	{
 		result = s >> 31;
 		shifted_out = S32(-1);
@@ -61,7 +61,7 @@ sraw.execute = {
 	xer.Set<XER::CA>((s < S32(0)) and ((s & shifted_out) != S32(0)));
 	
 	// Write back the result
-	cpu->SetGPR(ra, result);
+	cpu->SetGPR(ra, UINT(result));
 	
 	if(unlikely(rc))
 	{

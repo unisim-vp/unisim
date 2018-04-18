@@ -41,7 +41,7 @@ op addic(12[6]:rd[5]:ra[5]:sext<32> simm[16]);
 
 addic.execute = {
 	// Read the input operands
-	SINT a = SINT(cpu->GetGPR(ra)), b = SINT(simm);
+	SINT a( cpu->GetGPR(ra) ), b( simm );
 	
 	// Compute the result
 	SINT result = a + b;
@@ -51,7 +51,7 @@ addic.execute = {
 	xer.Set<XER::CA>(UINT(a) > ~UINT(b));
 	
 	// Write back the result
-	cpu->SetGPR(rd, result);
+	cpu->SetGPR(rd, UINT(result));
 	
 	return true;
 };

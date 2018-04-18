@@ -47,19 +47,20 @@ e_lmw.execute = {
 		return false;
 	}
 	
-	ADDRESS ea = (ra ? cpu->GetGPR(ra) : uint32_t(0)) + uint32_t( d);
+	// compute the effective address
+	UINT disp( d );
+	ADDRESS ea( ra ? cpu->GetGPR(ra) + disp : disp );
 	
-	if(unlikely((ea & uint32_t( 3)) != uint32_t(0)))
+	if(unlikely(ea & ADDRESS(3)))
 	{
 		cpu->ThrowException<CPU::AlignmentInterrupt::UnalignedLoadStoreMultiple>();
 		return false;
 	}
 
-	unsigned int r;
-	for(r = rd; r < 32; r++)
+	for(unsigned r = rd; r < 32; r++)
 	{
 		if(unlikely(not cpu->Int32Load(r, ea))) return false;
-		ea = ea + uint32_t( 4);
+		ea = ea + ADDRESS(4);
 	}
 	
 	return true;

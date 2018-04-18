@@ -36,25 +36,26 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/isa/book_i/fixed_point/integer.hh>
 }
 
+/* Divide Word Unsigned */
 op divwu(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:459[9]:rc[1]);
 
 divwu.execute = {
 	// Read the input operands
-	uint32_t a( cpu->GetGPR(ra) );
-	uint32_t b( cpu->GetGPR(rb) );
+	U32 a( cpu->GetGPR(ra) );
+	U32 b( cpu->GetGPR(rb) );
 	XER& xer = cpu->GetXER();
-	uint32_t result;
+	U32 result;
 	
-	if(unlikely(b == uint32_t(0)))
+	if(unlikely(b == U32(0)))
 	{
 		// Compute the saturated result
-		result = uint32_t( -1);
+		result = U32(-1);
 			
 		if(unlikely(oe))
 		{
 			// Generate XER[OV] and XER[SO]: XER[OV]=1 XER[SO]=1
-			xer.Set<XER::OV>(1);
-			xer.Set<XER::SO>(1);
+			xer.Set<XER::OV>(UINT(1));
+			xer.Set<XER::SO>(UINT(1));
 		}
 	}
 	else
@@ -65,7 +66,7 @@ divwu.execute = {
 		if(unlikely(oe))
 		{
 			// Generate XER[OV]: XER[OV]=0
-			xer.Set<XER::OV>(0);
+			xer.Set<XER::OV>(UINT(0));
 		}
 	}
 	
@@ -77,19 +78,20 @@ divwu.execute = {
 		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(int32_t( result) < int32_t(0));
-		cr.Set<CR::CR0::GT>(int32_t( result) > int32_t(0));
-		cr.Set<CR::CR0::EQ>(result == uint32_t(0));
+		cr.Set<CR::CR0::LT>(S32(result) < S32(0));
+		cr.Set<CR::CR0::GT>(S32(result) > S32(0));
+		cr.Set<CR::CR0::EQ>(result == U32(0));
 	}
 	
 	return true;
-}
+};
 
 divwu.disasm = {
 	os << "divwu" << (oe ? "o" : "") << (rc ? "." : "") << " " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
-}
+};
 
-specialize divwu(rc=0,oe=0)
-specialize divwu(rc=0,oe=1)
-specialize divwu(rc=1,oe=0)
-specialize divwu(rc=1,oe=1)
+specialize divwu(rc=0,oe=0);
+specialize divwu(rc=0,oe=1);
+specialize divwu(rc=1,oe=0);
+specialize divwu(rc=1,oe=1);
+

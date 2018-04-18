@@ -52,6 +52,6 @@ ldu.execute = {
 };
 
 ldu.disasm = {
-	os << "ldu " << GPRPrint(rd) << ", " << d << "(" << GPRPrint(ra) << ")";
+	os << "ldu " << GPRPrint(rd) << ", " << EAPrint(d,ra);
 };
 

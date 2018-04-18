@@ -36,13 +36,13 @@
 op lhzu(41[6]:rd[5]:ra[5]:sext d[16]);
 
 lhzu.execute = {
-	if(unlikely(ra == 0 || ra == rd))
+	if (unlikely((ra == 0) or (ra == rd)))
 	{
 		cpu->ThrowException<CPU::ProgramInterrupt::IllegalInstruction>();
 		return false;
 	}
 	// compute the effective address
-	ADDRESS ea = (cpu->GetGPR(ra) + UINT(SINT(d)));
+	ADDRESS ea( cpu->GetGPR(ra) + UINT(d) );
 	// do the memory access
 	if(unlikely(not cpu->Int16Load(rd, ea))) return false; // 16-bit load/no byte reverse/no sign extend
 	// update the address register
@@ -52,6 +52,6 @@ lhzu.execute = {
 };
 
 lhzu.disasm = {
-	os << "lhzu " << GPRPrint(rd) << ", " << d << "(" << GPRPrint(ra) << ")";
+	os << "lhzu " << GPRPrint(rd) << ',' << EAPrint(d,ra);
 };
 

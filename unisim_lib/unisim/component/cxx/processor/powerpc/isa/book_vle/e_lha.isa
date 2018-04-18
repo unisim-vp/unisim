@@ -42,11 +42,13 @@ op e_lha(14[6]:rd[5]:ra[5]:sext<32> d[16]);
 
 e_lha.execute = {
 	// compute the effective address
-	ADDRESS ea = (ra ? cpu->GetGPR(ra) : uint32_t(0)) + uint32_t( d);
+	UINT disp = UINT(SINT(d));
+	ADDRESS ea(ra ? cpu->GetGPR(ra) + disp : disp);
 	// do the memory access
 	return cpu->SInt16Load(rd, ea); // 16-bit load/no byte reverse/sign extend
-}
+};
 
 e_lha.disasm = {
 	os << "e_lha " << GPRPrint(rd) << ',' << EAPrint(d,ra);
-}
+};
+

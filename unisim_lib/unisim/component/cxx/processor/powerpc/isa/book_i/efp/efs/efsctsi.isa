@@ -39,7 +39,7 @@ efsctsi.execute = {
 		return false;
 
 	// Read the input operands
-	SoftFloat b(SoftFloat::FromRawBits, cpu->GetGPR(rb));
+	SoftFloat b(SoftFloat::FromRawBits, U32(cpu->GetGPR(rb)));
 	
 	// Check for Invalid Operation/Input errors
 	if (not cpu->EFPProcessInput().set(b).proceed())
@@ -48,28 +48,15 @@ efsctsi.execute = {
 	// Compute the result
 	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
 	Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
-	S32 result;
-	if (unlikely(b.isNaN()))
-		result = S32(0);
-	else {
-		SoftFloat::IntConversion conversion;
-		conversion.setSigned().setSize(32);
-		b.retrieveInteger(conversion, flags);
-		result = conversion.asInt32();
-	};
+	S32 result( unlikely(b.isNaN()) ? S32(0) : b.queryS32(flags) );
 	
-	// Update flags
-	if (unlikely(flags.isOverflow()))
-	{
-		// Overflow is invalid
-		if (not spefscr.SetInvalid( true ))
-			return false;
-		flags.clearFlowException();
-	}
+	// Update flags (Overflow is invalid)
+	if (unlikely(flags.takeOverflow() and not spefscr.SetInvalid( true )))
+		return false;
 	cpu->EFPProcessOutput(b, flags);
 
 	// Write back the result
-	cpu->SetGPR(rd, result);
+	cpu->SetGPR(rd, U32(result));
 
 	return true;
 }

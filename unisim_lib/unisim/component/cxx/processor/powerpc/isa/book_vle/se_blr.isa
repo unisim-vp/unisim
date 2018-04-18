@@ -41,17 +41,19 @@ impl {
 op se_blr(2[15]:lk[1]);
 
 se_blr.execute = {
-	ADDRESS target_addr = uint32_t( cpu->GetLR()) & uint32_t( 0xfffffffeUL);
+	ADDRESS target_addr( ADDRESS(cpu->GetLR()) & ADDRESS(-2));
 	cpu->Branch(target_addr);
+	
 	if(lk)
 	{
 		LR& lr = cpu->GetLR();
-		lr = cpu->GetCIA() + uint32_t(2);
+		lr = ADDRESS(cpu->GetCIA()) + ADDRESS(2);
 	}
 	
 	return true;
-}
+};
 
 se_blr.disasm = {
 	os << "se_blr" << (lk?"l":"");
-}
+};
+

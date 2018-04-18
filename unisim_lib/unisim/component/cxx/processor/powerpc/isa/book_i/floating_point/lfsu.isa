@@ -64,6 +64,6 @@ lfsu.execute = {
 };
 
 lfsu.disasm = {
-	os << "lfsu " << FPRPrint(fd) << ", " << d << "(" << GPRPrint(ra) << ")";
+	os << "lfsu " << FPRPrint(fd) << ", " << EAPrint(d,ra);
 };
 

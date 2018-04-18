@@ -63,6 +63,6 @@ stfdu.execute = {
 };
 
 stfdu.disasm = {
-	os << "stfdu " << FPRPrint(fs) << ", " << d << "(" << GPRPrint(ra) << ")";
+	os << "stfdu " << FPRPrint(fs) << ", " << EAPrint(d,ra);
 };
 

@@ -59,6 +59,8 @@ namespace ut
   typedef SmartValue<int64_t>  S64;
 
   typedef SmartValue<uint32_t> ADDRESS;
+  typedef SmartValue<uint32_t> UINT;
+  typedef SmartValue<int32_t>  SINT;
   
   template <unsigned BITS> struct TypeFor {};
   template <> struct TypeFor<8> { typedef U8 U; typedef S8 S; };
@@ -333,12 +335,15 @@ namespace ut
       virtual intptr_t cmp( ExprNode const& brhs ) const { return 0; }
     };
     
-    bool SetInvalid( bool inv, bool invh=false )
+    BOOL SetInvalid( bool inv, bool invh=false )
     {
       this->template Set<FINV>( U32(inv) );
       //this->template Set<FINVH>( U32(invh) );
-      return true;
+      return make_unknown<BOOL>();
     }
+    BOOL SetUnderflow( bool uf ) { return make_unknown<BOOL>(); }
+    BOOL SetOverflow( bool uf ) { return make_unknown<BOOL>(); }
+    BOOL SetDivideByZero( bool uf ) { return make_unknown<BOOL>(); }
     
     SPEFSCR() : spefscr_value( new SPEFSCRNode ) {}
     
@@ -357,6 +362,11 @@ namespace ut
     typedef ut::S16  S16;
     typedef ut::S32  S32;
     typedef ut::S64  S64;
+
+    typedef ut::UINT UINT;
+    typedef ut::SINT SINT;
+    typedef ut::ADDRESS ADDRESS;
+    
     
     typedef unisim::util::symbolic::Expr Expr;
     typedef unisim::util::symbolic::ExprNode ExprNode;
@@ -439,7 +449,6 @@ namespace ut
     bool EqualCIA(uint32_t pc) { return false; };
     U32 GetGPR(unsigned n) { gpr_append(n,false); return reg_values[n]; };
     void SetGPR(unsigned n, U32 value) { gpr_append(n,true); reg_values[n] = value; }
-    void SetGPR(unsigned n, S32 value) { gpr_append(n,true); reg_values[n] = U32(value); }
     
     static void LoadRepr( std::ostream& sink, Expr const& _addr, unsigned bits );
     
@@ -469,8 +478,8 @@ namespace ut
     bool Int16Load(unsigned n, U32 const& address) { SetGPR(n, CPU::U32(CPU::U16(MemRead<16>(address)))); return true; }
     bool Int32Load(unsigned n, U32 const& address) { SetGPR(n, CPU::U32(MemRead<32>(address))); return true; }
     
-    bool SInt8Load(unsigned n, U32 const& address) { SetGPR(n, CPU::S32(CPU::S8(MemRead<8>(address)))); return true; }
-    bool SInt16Load(unsigned n, U32 const& address) { SetGPR(n, CPU::S32(CPU::S16(MemRead<16>(address)))); return true; }
+    bool SInt8Load(unsigned n, U32 const& address) { SetGPR(n, CPU::U32(CPU::S8(MemRead<8>(address)))); return true; }
+    bool SInt16Load(unsigned n, U32 const& address) { SetGPR(n, CPU::U32(CPU::S16(MemRead<16>(address)))); return true; }
 
     bool Int16LoadByteReverse(unsigned n, U32 const& address) { SetGPR(n, ByteSwap(CPU::U32(CPU::U16(MemRead<16>(address))))); return true; }
     bool Int32LoadByteReverse(unsigned n, U32 const& address) { SetGPR(n, ByteSwap(CPU::U32(MemRead<32>(address)))); return true; }
@@ -522,6 +531,7 @@ namespace ut
     bool MoveToSPR(unsigned dcrn, U32 const& result) { donttest_system(); return false; }
     
     bool CheckSPV() { return true; }
+    bool Wait() { return false; }
 
     struct __EFPProcessInput__
     {
@@ -617,8 +627,9 @@ namespace ut
   
   struct Flags
   {
-    struct RoundingMode { RoundingMode(U32 const& rm) {} };
+    struct RoundingMode { RoundingMode(U32 const& rm) {} RoundingMode(unsigned rm) {} };
     Flags( RoundingMode const& rm ) {}
+    Flags() {}
     void setRoundingMode(U32 const&) {}
     void setRoundingMode(unsigned) {}
     void setUnderflow() {}
@@ -629,6 +640,7 @@ namespace ut
     BOOL isUpApproximate() { return make_unknown<BOOL>(); }
     BOOL isDownApproximate() { return make_unknown<BOOL>(); }
     BOOL isOverflow() { return make_unknown<BOOL>(); }
+    BOOL takeOverflow() { return make_unknown<BOOL>(); }
   };
   
   struct BigInt
@@ -645,38 +657,48 @@ namespace ut
   struct SoftFloat
   {
     enum __FromRawBits__ { FromRawBits };
-    SoftFloat( __FromRawBits__, U32 const& source ) { fromRawBitsAssign( source ); }
+    SoftFloat( __FromRawBits__, U32 const& source ) {}
     
-    SoftFloat( U32 const& ) {}
+    SoftFloat( U32 const&, Flags& ) {}
+    SoftFloat( S32 const&, Flags& ) {}
+    enum __FromFraction__ { FromFraction };
+    SoftFloat( __FromFraction__, U32 const&, Flags& ) {}
+    SoftFloat( __FromFraction__, S32 const&, Flags& ) {}
     SoftFloat( SoftHalfFloat const&, Flags const& ) {}
 
-    SoftFloat& convertAssign( SoftHalfFloat const&, Flags& );
-    SoftFloat& fromRawBitsAssign( U32 const& );
+    U32 queryU32( Flags& flags, unsigned fbits=0 ) { return make_unknown<U32>(); }
+    S32 queryS32( Flags& flags, unsigned fbits=0 ) { return make_unknown<S32>(); }
+
+    // SoftFloat& convertAssign( SoftHalfFloat const&, Flags& );
+    // SoftFloat& fromRawBitsAssign( U32 const& );
     
     U32 queryRawBits() { return make_unknown<U32>(); }
-    // BOOL isNaN() { return make_unknown<BOOL>(); }
-    // BOOL operator == (SoftFloat const&) { return make_unknown<BOOL>(); }
-    // BOOL operator < (SoftFloat const&) { return make_unknown<BOOL>(); }
-    // BOOL operator > (SoftFloat const&) { return make_unknown<BOOL>(); }
+    BOOL isNaN() { return make_unknown<BOOL>(); }
+    BOOL operator == (SoftFloat const&) { return make_unknown<BOOL>(); }
+    BOOL operator < (SoftFloat const&) { return make_unknown<BOOL>(); }
+    BOOL operator > (SoftFloat const&) { return make_unknown<BOOL>(); }
     // void retrieveInteger(IntConversion const&, Flags const&) {}
     // BOOL isPositive() { return make_unknown<BOOL>(); }
-    // BOOL isNegative() { return make_unknown<BOOL>(); }
-    // void setNegative(bool=false) {}
-    // void setNegative(BOOL) {}
-    // void plusAssign(SoftFloat const&, Flags const& flags) {}
-    // void divAssign(SoftFloat const&, Flags const& flags) {}
-    // void multAssign(SoftFloat const&, Flags const& flags) {}
-    // void minusAssign(SoftFloat const&, Flags const& flags) {}
-    // void sqrtAssign() {}
+    BOOL isNegative() { return make_unknown<BOOL>(); }
+    void setNegative(bool=false) {}
+    void setNegative(BOOL) {}
+    void plusAssign(SoftFloat const&, Flags const& flags) {}
+    void divAssign(SoftFloat const&, Flags const& flags) {}
+    void multAssign(SoftFloat const&, Flags const& flags) {}
+    void minusAssign(SoftFloat const&, Flags const& flags) {}
+    void sqrtAssign(Flags const& flags) {}
     // void squareAssign(Flags const& flags) {}
-    // void multAndAddAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
-    // void multAndSubAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
+    void multAndAddAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
+    void multAndSubAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
     // void multNegativeAndAddAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
     // void multNegativeAndSubAssign(SoftFloat const&, SoftFloat const&, Flags const& flags) {}
+    void maxAssign(SoftFloat const&) {}
+    void minAssign(SoftFloat const&) {}
     
     // BigInt querySBasicExponent() { return BigInt(); }
     // BigInt queryBasicExponent() { return BigInt(); }
-    // BOOL isZero() { return make_unknown<BOOL>(); }
+    BOOL isZero() { return make_unknown<BOOL>(); }
+    BOOL isNormalized() { return make_unknown<BOOL>(); }
     // void clear() {}
     
     // BOOL hasInftyExponent() { return make_unknown<BOOL>(); }
@@ -685,9 +707,10 @@ namespace ut
 
   struct SoftHalfFloat
   {
-    SoftHalfFloat( U16 const& ) {}
+    enum __FromRawBits__ { FromRawBits };
+    SoftHalfFloat( __FromRawBits__, U16 const& ) {}
     SoftHalfFloat( SoftFloat const&, Flags const& ) {}
-    U32 queryValue() { return make_unknown<U32>(); }
+    U16 queryRawBits() { return make_unknown<U16>(); }
   };
   
   static const unsigned int RN_NEAREST = 0;

@@ -45,7 +45,7 @@ slw.execute = {
 	U8 b = U8(cpu->GetGPR(rb)) & U8(0x3f);
 	
 	// Compute the result
-	U32 result = (b > U8(0x1f)) ? U32(0) : (s << b);
+	U32 result = unlikely(b > U8(0x1f)) ? U32(0) : (s << b);
 	
 	// Write back the result
 	cpu->SetGPR(ra, UINT(result));

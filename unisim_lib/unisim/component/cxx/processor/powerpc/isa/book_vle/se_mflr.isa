@@ -42,12 +42,16 @@ op se_mflr(0[6]:8[6]:sext srx[4]);
 se_mflr.var rx : {uint8_t} = {srx & 31};
 
 se_mflr.execute = {
-	uint32_t result = cpu->GetLR();
+	// Compute the result
+	UINT result( cpu->GetLR() );
+
+	// Write back the result
 	cpu->SetGPR(rx, result);
 	
 	return true;
-}
+};
 
 se_mflr.disasm = {
 	os << "se_mflr " << GPRPrint(rx);
-}
+};
+

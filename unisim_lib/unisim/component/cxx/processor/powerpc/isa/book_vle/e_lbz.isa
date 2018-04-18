@@ -38,15 +38,17 @@ impl {
 }
 
 /* Load Byte and Zero */
-op e_lbz(12[6]:rd[5]:ra[5]:sext<32> d[16]);
+op e_lbz(12[6]:rd[5]:ra[5]:sext d[16]);
 
 e_lbz.execute = {
 	// compute the effective address
-	ADDRESS ea = (ra ? cpu->GetGPR(ra) : uint32_t(0)) + uint32_t(d);
+	UINT disp = UINT(SINT(d));
+	ADDRESS ea(ra ? cpu->GetGPR(ra) + disp : disp);
 	// do the memory access
 	return cpu->Int8Load(rd, ea);
-}
+};
 
 e_lbz.disasm = {
 	os << "e_lbz " << GPRPrint(rd) << ',' << EAPrint(d,ra);
-}
+};
+

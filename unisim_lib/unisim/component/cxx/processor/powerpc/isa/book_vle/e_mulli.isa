@@ -43,14 +43,14 @@ e_mulli.var sci8 : {int32_t} = {scaled_immediate(s11)};
 
 e_mulli.execute = {
 	// Read the input operands
-	int32_t a = int32_t(  cpu->GetGPR(ra) );
-	int32_t b = int32_t(  sci8 );
+	S64 a( cpu->GetGPR(ra) );
+	S64 b( sci8 );
 	
 	// Compute the result
-	int32_t result = a*b;
+	S64 result = a*b;
 	
 	// Write back the result
-	cpu->SetGPR(rd, result);
+	cpu->SetGPR(rd, UINT(result));
 	
 	return true;
 }

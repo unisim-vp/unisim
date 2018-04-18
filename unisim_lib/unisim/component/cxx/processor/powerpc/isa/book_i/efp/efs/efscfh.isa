@@ -39,7 +39,7 @@ efscfh.execute = {
 		return false;
 
 	// Read the input operands
-	SoftHalfFloat b(uint16_t(cpu->GetGPR(rb)));
+	SoftHalfFloat b(SoftHalfFloat::FromRawBits, U16(cpu->GetGPR(rb)));
 	
 	// Check for Invalid Operation/Input errors
 	if (not cpu->EFPProcessInput().set(b).proceed())
@@ -54,7 +54,7 @@ efscfh.execute = {
 	bool status = cpu->EFPProcessOutput( result, flags );
 	
 	// Write back the result
-	cpu->SetGPR(rd, result.queryValue());
+	cpu->SetGPR(rd, result.queryRawBits());
 
 	return status;
 }

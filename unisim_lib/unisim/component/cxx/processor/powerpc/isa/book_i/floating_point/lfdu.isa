@@ -64,6 +64,6 @@ lfdu.execute = {
 };
 
 lfdu.disasm = {
-	os << "lfdu " << FPRPrint(fd) << ", " << d << "(" << GPRPrint(ra) << ")";
+	os << "lfdu " << FPRPrint(fd) << ", " << EAPrint(d,ra);
 };
 

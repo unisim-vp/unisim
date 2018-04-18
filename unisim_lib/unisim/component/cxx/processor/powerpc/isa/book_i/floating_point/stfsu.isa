@@ -63,6 +63,6 @@ stfsu.execute = {
 };
 
 stfsu.disasm = {
-	os << "stfsu " << FPRPrint(fs) << ", " << d << "(" << GPRPrint(ra) << ")";
+	os << "stfsu " << FPRPrint(fs) << ", " << EAPrint(d,ra);
 };
 

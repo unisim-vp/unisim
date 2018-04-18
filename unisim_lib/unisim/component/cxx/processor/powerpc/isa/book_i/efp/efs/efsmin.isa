@@ -46,16 +46,13 @@ efsmin.execute = {
 		return false;
 	
 	// Compute the result
-	if      (unlikely(a.isZero() and b.isZero()))
-		a.setZero(a.isNegative() or b.isNegative());
-	else if ((b < a) or unlikely(a.isNaN() and (not b.isNaN() or (b.isNegative() and not a.isNegative()))))
-		a = b;
-
+	a.minAssign(b);
+	
 	// Update the flags
 	cpu->EFPProcessOutput(a, Flags());
 
 	// Write back the result
-	cpu->SetGPR(rd, a.queryValue());
+	cpu->SetGPR(rd, a.queryRawBits());
 
 	return true;
 }

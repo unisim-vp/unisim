@@ -32,8 +32,14 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr), Franck Vedrine (franck.vedrine@cea.fr)
  */
 
+/* Floating-Point Single-Precision Absolute Value */
 op efsabs(4[6]:rd[5]:ra[5]:?[5]:708[11]);
 
+/* Note: this is the NXP version where this instruction follows the
+ * the classic FP path (exception and flags generation). The standard
+ * IBM version would be pure integer with no FP side effect (neither
+ * exception generation nor flags affected).
+ */
 efsabs.execute = {
 	if (!cpu->CheckSPV())
 		return false;
@@ -54,12 +60,12 @@ efsabs.execute = {
 	spefscr.SetUnderflow( false );
 	
 	// Write back the result
-	cpu->SetGPR(rd, result.queryValue());
+	cpu->SetGPR(rd, result.queryRawBits());
 	
 	return true;
-}
+};
 
 efsabs.disasm = {
 	os << "efsabs " << GPRPrint(rd) << ", " << GPRPrint(ra);
-}
+};
 

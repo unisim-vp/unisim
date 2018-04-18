@@ -56,6 +56,6 @@ lfs.execute = {
 };
 
 lfs.disasm = {
-	os << "lfs " << FPRPrint(fd) << ", " << d << "(" << GPRPrint(ra) << ")";
+	os << "lfs " << FPRPrint(fd) << ", " << EAPrint(d,ra);
 };
 

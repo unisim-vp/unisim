@@ -32,8 +32,14 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+/* Floating-Point Single-Precision Negate */
 op efsneg(4[6]:rd[5]:ra[5]:?[5]:710[11]);
 
+/* Note: this is the NXP version where this instruction follows the
+ * the classic FP path (exception and flags generation). The standard
+ * IBM version would be pure integer with no FP side effect (neither
+ * exception generation nor flags affected).
+ */
 efsneg.execute = {
 	if (!cpu->CheckSPV())
 		return false;
@@ -54,11 +60,12 @@ efsneg.execute = {
 	spefscr.SetUnderflow( false );
 	
 	// Write back the result
-	cpu->SetGPR(rd, result.queryValue());
+	cpu->SetGPR(rd, result.queryRawBits());
 				
 	return true;
-}
+};
 
 efsneg.disasm = {
 	os << "efsneg " << GPRPrint(rd) << ", " << GPRPrint(ra);
-}
+};
+

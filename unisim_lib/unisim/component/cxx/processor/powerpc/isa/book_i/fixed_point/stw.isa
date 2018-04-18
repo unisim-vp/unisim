@@ -37,13 +37,13 @@ op stw(36[6]:rs[5]:ra[5]:sext d[16]);
 
 stw.execute = {
 	// compute the effective address
-	UINT disp = UINT(SINT(d));
-	ADDRESS ea = (ra ? cpu->GetGPR(ra) + disp : disp);
+	UINT disp( d );
+	ADDRESS ea( ra ? cpu->GetGPR(ra) + disp : disp );
 	// do the memory access
 	return cpu->Int32Store(rs, ea);
 };
 
 stw.disasm = {
-	os << "stw " << GPRPrint(rs) << ", " << d << "(" << GPRPrint(ra) << ")";
+	os << "stw " << GPRPrint(rs) << ", " << EAPrint(d,ra);
 };
 

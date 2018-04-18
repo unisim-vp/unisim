@@ -94,3 +94,4 @@ specialize divwu(rc=0,oe=0);
 specialize divwu(rc=0,oe=1);
 specialize divwu(rc=1,oe=0);
 specialize divwu(rc=1,oe=1);
+

@@ -44,6 +44,6 @@ ld.execute = {
 };
 
 ld.disasm = {
-	os << "ld " << GPRPrint(rd) << ", " << d << "(" << GPRPrint(ra) << ")";
+	os << "ld " << GPRPrint(rd) << ", " << EAPrint(d,ra);
 };
 

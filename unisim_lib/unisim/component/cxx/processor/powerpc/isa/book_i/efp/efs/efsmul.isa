@@ -46,22 +46,14 @@ efsmul.execute = {
 		return false;
 	
 	// Compute the result
-	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-	Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
-	if (not result.isZero() and not b.isZero())
-	{
-		result.multAssign(b, flags);
-	}
-	else
-	{
-		result.setZero(result.isNegative() ^ b.isNegative());
-	}
+	Flags flags( Flags::RoundingMode(cpu->GetSPEFSCR().Get<CPU::SPEFSCR::FRMC>()) );
+	result.multAssign(b, flags);
 	
 	// Handle EFP Specific Signaling/Rounding
 	bool status = cpu->EFPProcessOutput( result, flags );
 	
 	// Write back the result
-	cpu->SetGPR(rd, result.queryValue());
+	cpu->SetGPR(rd, result.queryRawBits());
 
 	return status;
 }

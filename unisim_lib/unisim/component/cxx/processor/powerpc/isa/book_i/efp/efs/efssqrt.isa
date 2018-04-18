@@ -39,37 +39,29 @@ efssqrt.execute = {
 		return false;
 
 	// Read the input operands
+	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
 	SoftFloat result( SoftFloat::FromRawBits, cpu->GetGPR(ra) );
 				
 	// Check for Invalid Operation/Input errors
 	if (not cpu->EFPProcessInput().set(result).proceed())
 		return false;
+	if (unlikely(result.isNegative() and not result.isZero() and not spefscr.SetInvalid(true)))
+		return false;
 	
 	// Compute the result
-	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
 	Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
-	if (unlikely(result.isNegative())) {
-		if (likely(not result.isZero()))
-			spefscr.SetInvalid(true);
-		result.clear();
-		result.setNegative();
-	}
-	else {
-		Flags tmpFlags;
-		SoftDouble tmp( result, tmpFlags );
-		tmp.sqrtAssign();
-		result.assign( tmp, flags );
-	}
+	result.sqrtAssign( flags );
 
 	// Handle EFP Specific Signaling/Rounding
 	bool status = cpu->EFPProcessOutput( result, flags );
 	
 	// Write back the result
-	cpu->SetGPR(rd, result.queryValue());
+	cpu->SetGPR(rd, result.queryRawBits());
 
 	return status;
-}
+};
 
 efssqrt.disasm = {
 	os << "efssqrt " << GPRPrint(rd) << ", " << GPRPrint(ra);
-}
+};
+

@@ -36,8 +36,9 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_FLOATING_HH__
 
 #include <unisim/kernel/service/service.hh>
-#include <unisim/util/simfloat/floating.hh>
 #include <unisim/service/interfaces/register.hh>
+#include <unisim/util/simfloat/floating.hh>
+#include <unisim/util/likely/likely.hh>
 
 #include <inttypes.h>
 #include <string>
@@ -212,6 +213,7 @@ public:
   void setUnderflow() { feExcept = FEUnderflow; }
   bool isOverflow() const { return feExcept == FEOverflow; }
   bool isUnderflow() const { return feExcept == FEUnderflow; }
+  bool takeOverflow() { bool ov = isOverflow(); feExcept = FENoException; return ov; }
       
   void setRoundingMode(unsigned int rn_mode)
   {  switch(rn_mode)
@@ -232,23 +234,10 @@ public:
   }
 };
 
-class IntConversion
+struct IntConversion
 {
-public:
   typedef unisim::util::simfloat::Numerics::Integer::TBigCellInt<unisim::util::simfloat::Numerics::Integer::Details::TCellIntegerTraits<(64 + 1)/(8*sizeof(unsigned))> > BigInt;
 
-private:
-  BigInt biResult;
-  int uSize;
-  bool fUnsigned;
-
-  void normalize()
-  {  if ((uSize % (8*sizeof(unsigned))) > 0)
-      biResult.array((uSize+1)/(8*sizeof(unsigned)))
-        &= ~(~0U << (uSize % (8*sizeof(unsigned))));
-  }
-
-public:
   IntConversion() : uSize(32), fUnsigned(true) {}
   IntConversion(const IntConversion& source)
     :  biResult(source.biResult), uSize(source.uSize), fUnsigned(source.fUnsigned) {}
@@ -346,6 +335,17 @@ public:
   }
   unsigned int& operator[](int index) { return biResult[index]; }
   unsigned int operator[](int index) const { return biResult[index]; }
+
+private:
+  BigInt biResult;
+  int uSize;
+  bool fUnsigned;
+
+  void normalize()
+  {  if ((uSize % (8*sizeof(unsigned))) > 0)
+      biResult.array((uSize+1)/(8*sizeof(unsigned)))
+        &= ~(~0U << (uSize % (8*sizeof(unsigned))));
+  }
 };
 
 class BuiltDoubleTraits : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11>
@@ -364,12 +364,13 @@ class SoftFloat;
 
 class SoftDouble : public unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltDoubleTraits>
 {
-private:
+  friend class SoftFloat;
+  friend class SoftHalfFloat;
   typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltDoubleTraits> inherited;
 
 public:
   SoftDouble() : inherited() {}
-  SoftDouble(const SoftFloat& sfFloat, Flags& rpParams);
+  SoftDouble(const SoftFloat& sfFloat, Flags& flags);
   SoftDouble(const SoftDouble& source) : inherited(source) {}
   enum __FromRawBits__ { FromRawBits };
   SoftDouble(__FromRawBits__, uint64_t const& source) { setChunk((void *) &source, unisim::util::endian::IsHostLittleEndian()); }
@@ -377,7 +378,7 @@ public:
   { return (SoftDouble&) inherited::operator=(sdSource); }
   SoftDouble& assign(const SoftDouble& sdSource)
   { return (SoftDouble&) inherited::operator=(sdSource); }
-  SoftDouble& assign(const SoftFloat& sfFloat, Flags& rpParams);
+  SoftDouble& assign(const SoftFloat& sfFloat, Flags& flags);
 
   uint64_t queryValue() const
   { uint64_t uResult; fillChunk(&uResult, unisim::util::endian::IsHostLittleEndian()); return uResult; }
@@ -393,15 +394,13 @@ class BuiltFloatTraits : public unisim::util::simfloat::Numerics::Double::BuiltD
    typedef mpc57xx::IntConversion IntConversion;
 };
 
-class SoftFloat : public unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltFloatTraits>
+struct SoftFloat : private unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltFloatTraits>
 {
-private:
   typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltFloatTraits> inherited;
 
-public:
   SoftFloat() : inherited() {}
-  SoftFloat(const SoftHalfFloat& sdDouble, Flags& rpParams);
-  SoftFloat(const SoftDouble& sdDouble, Flags& rpParams);
+  SoftFloat(const SoftHalfFloat& source, Flags& flags);
+  SoftFloat(const SoftDouble& source, Flags& flags);
   enum __FromFraction__ { FromFraction };
   SoftFloat(__FromFraction__,  int32_t source, Flags& flags);
   SoftFloat(__FromFraction__, uint32_t source, Flags& flags);
@@ -411,14 +410,43 @@ public:
   enum __FromRawBits__ { FromRawBits };
   SoftFloat(__FromRawBits__, uint32_t const& source) { setChunk((void *) &source, unisim::util::endian::IsHostLittleEndian()); }
 
+  inherited& GetImpl() { return *this; }
+  inherited const& GetImpl() const { return *this; }
+
   SoftFloat& operator=(const SoftFloat& sfSource)
   {  return (SoftFloat&) inherited::operator=(sfSource); }
   SoftFloat& assign(const SoftFloat& sfSource)
   {  return (SoftFloat&) inherited::operator=(sfSource); }
-  SoftFloat& assign(const SoftDouble& sdDouble, Flags& rpParams);
-  SoftFloat& assign(const SoftHalfFloat& sdDouble, Flags& rpParams);
-  uint32_t queryValue() const
+  SoftFloat& assign(const SoftDouble& source, Flags& flags);
+  SoftFloat& assign(const SoftHalfFloat& source, Flags& flags);
+  uint32_t queryRawBits() const
   {  uint32_t uResult; fillChunk(&uResult, unisim::util::endian::IsHostLittleEndian()); return uResult; }
+
+  bool isNegative() const { return inherited::isNegative(); }
+  bool isNormalized() const { return inherited::isNormalized(); }
+  //  bool isPositive() const { return inherited::isPositive(); }
+  void setNegative( bool _neg ) { inherited::setNegative(_neg); }
+  bool isNaN() const { return inherited::isNaN(); }
+  bool isZero() const { return inherited::isZero(); }
+  int32_t  queryS32( Flags& flags, unsigned fbits = 0 ) const;
+  uint32_t queryU32( Flags& flags, unsigned fbits = 0 ) const;
+
+  void  plusAssign( SoftFloat const& rhs, Flags& flags ) { inherited::plusAssign( rhs, flags ); }
+  void  minusAssign( SoftFloat const& rhs, Flags& flags ) { inherited::minusAssign( rhs, flags ); }
+  void  divAssign( SoftFloat const& rhs, Flags& flags );
+  void  multAssign( SoftFloat const& rhs, Flags& flags );
+  void  multAndAddAssign( SoftFloat const& op1, SoftFloat const& op2, Flags& flags );
+  void  multAndSubAssign( SoftFloat const& _op1, SoftFloat const& op2, Flags& flags );
+  void  sqrtAssign( Flags& flags );
+  void  maxAssign( SoftFloat const& rhs );
+  void  minAssign( SoftFloat const& rhs );
+  
+  bool operator == ( SoftFloat const& rhs ) const { return inherited::compare( rhs ) == inherited::CREqual; }
+  bool operator  < ( SoftFloat const& rhs ) const { return inherited::compare( rhs ) == CRLess; }
+  bool operator  > ( SoftFloat const& rhs ) const { return inherited::compare( rhs ) == CRGreater; }
+
+  friend class SoftDouble;
+  friend class SoftHalfFloat;
 };
 
 class BuiltHalfFloatTraits : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<10, 5>
@@ -432,44 +460,44 @@ class BuiltHalfFloatTraits : public unisim::util::simfloat::Numerics::Double::Bu
    typedef mpc57xx::IntConversion IntConversion;
 };
 
-class SoftHalfFloat : public unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltHalfFloatTraits>
+struct SoftHalfFloat : private unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltHalfFloatTraits>
 {
-private:
   typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltHalfFloatTraits> inherited;
-
-public:
+  
   SoftHalfFloat() : inherited() {}
-  SoftHalfFloat(const IntConversion& intConversion, Flags& params) : inherited(intConversion, params) {}
   SoftHalfFloat(const SoftHalfFloat& source) : inherited(source) {}
-  SoftHalfFloat(const SoftFloat& sdDouble, Flags& rpParams);
-  SoftHalfFloat(const SoftDouble& sdDouble, Flags& rpParams);
-  SoftHalfFloat(const uint16_t& uHalfFloat) { setChunk((void *) &uHalfFloat, unisim::util::endian::IsHostLittleEndian()); }
+  SoftHalfFloat(const SoftFloat& source, Flags& flags);
+  enum __FromRawBits__ { FromRawBits };
+  SoftHalfFloat(__FromRawBits__, const uint16_t& uHalfFloat) { setChunk((void *) &uHalfFloat, unisim::util::endian::IsHostLittleEndian()); }
 
-  SoftHalfFloat& operator=(const SoftHalfFloat& sfSource)
-  { return (SoftHalfFloat&) inherited::operator=(sfSource); }
-  SoftHalfFloat& assign(const SoftHalfFloat& sfSource)
-  { return (SoftHalfFloat&) inherited::operator=(sfSource); }
-  SoftHalfFloat& assign(const SoftFloat& sdDouble, Flags& rpParams);
-  uint16_t queryValue() const
-  { uint16_t uResult; fillChunk(&uResult, unisim::util::endian::IsHostLittleEndian()); return uResult; }
+  inherited& GetImpl() { return *this; }
+  inherited const& GetImpl() const { return *this; }
+  
+  uint16_t queryRawBits() const
+  {  uint16_t uResult; fillChunk(&uResult, unisim::util::endian::IsHostLittleEndian()); return uResult; }
+
+  SoftHalfFloat& assign(const SoftFloat& source, Flags& flags);
+
+  friend class SoftDouble;
+  friend class SoftFloat;
 };
 
 inline SoftDouble&
-SoftDouble::assign(const SoftFloat& sfFloat, Flags& rpParams)
+SoftDouble::assign(const SoftFloat& sfFloat, Flags& flags)
 {
    FloatConversion fcConversion;
    fcConversion.setSizeMantissa(23).setSizeExponent(8);
    fcConversion.setNegative(sfFloat.isNegative());
    fcConversion.exponent()[0] = sfFloat.queryBasicExponent()[0];
    fcConversion.mantissa()[0] = sfFloat.queryMantissa()[0];
-   inherited source(fcConversion, rpParams);
+   inherited source(fcConversion, flags);
    return (SoftDouble&) inherited::operator=(source);
 }
 
 inline
-SoftDouble::SoftDouble(const SoftFloat& sfFloat, Flags& rpParams)
+SoftDouble::SoftDouble(const SoftFloat& sfFloat, Flags& flags)
 {
-  assign(sfFloat, rpParams);
+  assign(sfFloat, flags);
 }
 
 inline
@@ -508,51 +536,168 @@ SoftFloat::SoftFloat(__FromFraction__, uint32_t source, Flags& flags)
 }
 
 inline SoftFloat&
-SoftFloat::assign(const SoftDouble& sdDouble, Flags& rpParams)
+SoftFloat::assign(const SoftDouble& source, Flags& flags)
 {
   FloatConversion fcConversion;
   fcConversion.setSizeMantissa(52).setSizeExponent(11);
-  fcConversion.setNegative(sdDouble.isNegative());
-  fcConversion.exponent()[0] = sdDouble.queryBasicExponent()[0];
-  fcConversion.mantissa()[0] = sdDouble.queryMantissa()[0];
-  fcConversion.mantissa()[1] = sdDouble.queryMantissa()[1];
-  return (SoftFloat&) inherited::operator=(inherited(fcConversion, rpParams));
+  fcConversion.setNegative(source.isNegative());
+  fcConversion.exponent()[0] = source.queryBasicExponent()[0];
+  fcConversion.mantissa()[0] = source.queryMantissa()[0];
+  fcConversion.mantissa()[1] = source.queryMantissa()[1];
+  return (SoftFloat&) inherited::operator=(inherited(fcConversion, flags));
 }
 
 inline SoftFloat&
-SoftFloat::assign(const SoftHalfFloat& sdDouble, Flags& rpParams)
+SoftFloat::assign(const SoftHalfFloat& source, Flags& flags)
 {
   FloatConversion fcConversion;
   fcConversion.setSizeMantissa(10).setSizeExponent(5);
-  fcConversion.setNegative(sdDouble.isNegative());
-  fcConversion.exponent()[0] = sdDouble.queryBasicExponent()[0];
-  fcConversion.mantissa()[0] = sdDouble.queryMantissa()[0];
-  return (SoftFloat&) inherited::operator=(inherited(fcConversion, rpParams));
+  fcConversion.setNegative(source.isNegative());
+  fcConversion.exponent()[0] = source.queryBasicExponent()[0];
+  fcConversion.mantissa()[0] = source.queryMantissa()[0];
+  return (SoftFloat&) inherited::operator=(inherited(fcConversion, flags));
 }
 
 inline
-SoftFloat::SoftFloat(const SoftDouble& sdDouble, Flags& rpParams)
-   { assign(sdDouble, rpParams); }
+SoftFloat::SoftFloat(const SoftDouble& source, Flags& flags)
+{
+  assign(source, flags);
+}
 
 inline
-SoftFloat::SoftFloat(const SoftHalfFloat& sdDouble, Flags& rpParams)
-   { assign(sdDouble, rpParams); }
+SoftFloat::SoftFloat(const SoftHalfFloat& source, Flags& flags)
+{
+  assign(source, flags);
+}
+
+inline int32_t
+SoftFloat::queryS32( Flags& flags, unsigned fbits ) const
+{
+  SoftFloat::IntConversion conversion;
+  conversion.setSigned().setSize(32);
+  retrieveInteger(conversion, flags, fbits);
+  return conversion.asInt32();
+}
+
+inline uint32_t
+SoftFloat::queryU32( Flags& flags, unsigned fbits ) const
+{
+  SoftFloat::IntConversion conversion;
+  conversion.setUnsigned().setSize(32);
+  retrieveInteger(conversion, flags, fbits);
+  return conversion.asUInt32();
+}
+
+inline void
+SoftFloat::divAssign( SoftFloat const& rhs, Flags& flags )
+{
+  if (likely(not rhs.hasInftyExponent()))
+    {
+      inherited::divAssign(rhs, flags);
+      if (unlikely(rhs.isZero()))
+        flags.clear();
+    }
+  else
+    {
+      inherited::setZero(inherited::isNegative() ^ rhs.isNegative());
+    }
+}
+
+inline void
+SoftFloat::multAssign( SoftFloat const& rhs, Flags& flags )
+{
+  if (not inherited::isZero() and not rhs.isZero())
+    {
+      inherited::multAssign(rhs, flags);
+    }
+  else
+    {
+      inherited::setZero(inherited::isNegative() ^ rhs.isNegative());
+    }
+}
+
+inline void
+SoftFloat::sqrtAssign( Flags& flags )
+{
+  if (inherited::isNegative())
+    {
+      inherited::clear();
+      inherited::setNegative();
+      return;
+    }
+  
+  SoftDouble tmp( *this, flags );
+  tmp.sqrtAssign();
+  assign( tmp, flags );
+}
+
+inline void
+SoftFloat::multAndAddAssign( SoftFloat const& op1, SoftFloat const& op2, Flags& flags )
+{
+  if (inherited::isZero() and op1.isNaN())
+    {
+      SoftFloat op1_ze(op1);
+      op1_ze.querySBasicExponent().clear();
+      inherited::multAndAddAssign(op1_ze, op2, flags);
+      return;
+    }
+  
+  if (op1.isZero() and inherited::isNaN())
+    querySBasicExponent().clear();
+
+  inherited::multAndAddAssign(op1, op2, flags);
+}
+
+inline void
+SoftFloat::multAndSubAssign( SoftFloat const& op1, SoftFloat const& op2, Flags& flags )
+{
+  if (inherited::isZero() and op1.isNaN())
+    {
+      SoftFloat op1_ze(op1);
+      op1_ze.querySBasicExponent().clear();
+      inherited::multAndSubAssign(op1_ze, op2, flags);
+      return;
+    }
+  
+  if (op1.isZero() and inherited::isNaN())
+    querySBasicExponent().clear();
+  
+  inherited::multAndSubAssign(op1, op2, flags);
+}
+
+inline void
+SoftFloat::maxAssign( SoftFloat const& rhs )
+{
+  if      (unlikely(inherited::isZero() and rhs.isZero()))
+    inherited::setZero(inherited::isNegative() and rhs.isNegative());
+  else if ((rhs > *this) or unlikely(inherited::isNaN() and (not rhs.isNaN() or (inherited::isNegative() and not rhs.isNegative()))))
+    inherited::operator = ( rhs );
+}
+
+inline void
+SoftFloat::minAssign( SoftFloat const& rhs )
+{
+  if      (unlikely(inherited::isZero() and rhs.isZero()))
+    inherited::setZero(inherited::isNegative() or rhs.isNegative());
+  else if ((rhs < *this) or unlikely(inherited::isNaN() and (not rhs.isNaN() or (rhs.isNegative() and not inherited::isNegative()))))
+    inherited::operator = ( rhs );
+}
 
 inline SoftHalfFloat&
-SoftHalfFloat::assign(const SoftFloat& sdDouble, Flags& rpParams)
+SoftHalfFloat::assign(const SoftFloat& source, Flags& flags)
 {
   FloatConversion fcConversion;
   fcConversion.setSizeMantissa(23).setSizeExponent(8);
-  fcConversion.setNegative(sdDouble.isNegative());
-  fcConversion.exponent()[0] = sdDouble.queryBasicExponent()[0];
-  fcConversion.mantissa()[0] = sdDouble.queryMantissa()[0];
-  return (SoftHalfFloat&) inherited::operator=(inherited(fcConversion, rpParams));
+  fcConversion.setNegative(source.isNegative());
+  fcConversion.exponent()[0] = source.queryBasicExponent()[0];
+  fcConversion.mantissa()[0] = source.queryMantissa()[0];
+  return (SoftHalfFloat&) inherited::operator=(inherited(fcConversion, flags));
 }
 
 inline
-SoftHalfFloat::SoftHalfFloat(const SoftFloat& sdDouble, Flags& rpParams)
+SoftHalfFloat::SoftHalfFloat(const SoftFloat& source, Flags& flags)
 {
-  assign(sdDouble, rpParams);
+  assign(source, flags);
 }
 
 class FloatingPointRegisterInterface : public unisim::service::interfaces::Register

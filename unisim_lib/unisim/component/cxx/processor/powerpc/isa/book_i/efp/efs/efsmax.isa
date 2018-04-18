@@ -46,16 +46,13 @@ efsmax.execute = {
 		return false;
 	
 	// Compute the result
-	if      (unlikely(a.isZero() and b.isZero()))
-		a.setZero(a.isNegative() and b.isNegative());
-	else if ((b > a) or unlikely(a.isNaN() and (not b.isNaN() or (a.isNegative() and not b.isNegative()))))
-		a = b;
+	a.maxAssign(b);
 
 	// Update the flags
 	cpu->EFPProcessOutput(a, Flags());
 
 	// Write back the result
-	cpu->SetGPR(rd, a.queryValue());
+	cpu->SetGPR(rd, a.queryRawBits());
 
 	return true;
 }

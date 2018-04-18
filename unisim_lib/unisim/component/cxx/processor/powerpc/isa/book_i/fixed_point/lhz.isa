@@ -44,6 +44,6 @@ lhz.execute = {
 };
 
 lhz.disasm = {
-	os << "lhz " << GPRPrint(rd) << ", " << d << "(" << GPRPrint(ra) << ")";
+	os << "lhz " << GPRPrint(rd) << ',' << EAPrint(d,ra);
 };
 

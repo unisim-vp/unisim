@@ -48,24 +48,11 @@ efsctuf.execute = {
 	// Compute the result
 	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
 	Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
-	uint32_t result;
-	if (unlikely(b.isNegative() or b.isZero() or b.isNaN()))
-		result = uint32_t(0);
-	else {
-		SoftFloat::IntConversion conversion;
-		conversion.setUnsigned().setSize(32);
-		b.retrieveInteger(conversion, flags, 32);
-		result = conversion.asUInt32();
-	}
+	U32 result( unlikely(b.isNegative() or b.isZero() or b.isNaN()) ? U32(0) : b.queryU32(flags, 32) );
 
-	// Update flags
-	if (flags.isOverflow())
-	{
-		// Overflow is invalid
-		if (not spefscr.SetInvalid( true ))
-			return false;
-		flags.clearFlowException();
-	}
+	// Update flags (Overflow is invalid)
+	if (unlikely(flags.takeOverflow() and not spefscr.SetInvalid( true )))
+		return false;
 	cpu->EFPProcessOutput(b, flags);
 				
 	// Write back the result

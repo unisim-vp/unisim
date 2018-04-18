@@ -33,14 +33,14 @@
  */
 
 /* Integer Select */
-op isel(31[6]:rd[5]:ra[5]:rb[5]:bc[5]:15[5]:?[1])
+op isel(31[6]:rd[5]:ra[5]:rb[5]:bc[5]:15[5]:?[1]);
 
 isel.execute = {
 	// Read the input operands
 	UINT a = ra ? cpu->GetGPR(ra) : UINT(0), b = cpu->GetGPR(rb);
 	
 	// Compute the result
-	UINT result = bool((U32(cpu->GetCR()) << bc) >> 31) ? a : b;
+	UINT result = evenly((U32(cpu->GetCR()) << bc) >> 31) ? a : b;
 	
 	// Write back the result
 	cpu->SetGPR(rd, result);

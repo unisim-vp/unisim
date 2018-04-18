@@ -71,7 +71,7 @@ subfc.execute = {
 	}
 	
 	// Write back the result
-	cpu->SetGPR(rd, result);
+	cpu->SetGPR(rd, UINT(result));
 	
 	return true;
 };

@@ -43,18 +43,17 @@ se_bclri.var rx : {uint8_t} = {srx & 31};
 
 se_bclri.execute = {
 	// Read the input operands
-	uint32_t x = cpu->GetGPR(rx);
+	UINT x = cpu->GetGPR(rx);
 	
 	// Compute the result
-	uint32_t m =uint32_t( ~(0x80000000UL >> ui5));
-	uint32_t result = x & m;
+	UINT result = x & ~UINT(0x80000000 >> ui5);
 	
 	// Write back the result
 	cpu->SetGPR(rx, result);
 	
 	return true;
-}
+};
 
 se_bclri.disasm = {
 	os << "se_bclri " << GPRPrint(rx) << ',' << unsigned(ui5);
-}
+};

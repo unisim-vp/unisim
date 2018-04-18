@@ -42,7 +42,7 @@ op adde(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:138[9]:rc[1]);
 adde.execute = {
 	// Read the input operands
 	XER& xer = cpu->GetXER();
-	bool carry = bool(xer.Get<XER::CA>());
+	bool carry = evenly(xer.Get<XER::CA>());
 	SINT a = SINT(cpu->GetGPR(ra)), b = SINT(cpu->GetGPR(rb));
 	
 	// Compute the result

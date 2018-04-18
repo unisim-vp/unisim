@@ -43,13 +43,13 @@ se_extsb.var rx : {uint8_t} = {srx & 31};
 
 se_extsb.execute = {
 	// Read the input operands
-	int8_t s = int8_t(cpu->GetGPR(rx));
+	S8 s( cpu->GetGPR(rx) );
 	
 	// Compute the result
-	int32_t result = int32_t( s);
+	SINT result = SINT( s );
 	
 	// Write back the result
-	cpu->SetGPR(rx, result);
+	cpu->SetGPR(rx, UINT(result));
 	
 	return true;
 }

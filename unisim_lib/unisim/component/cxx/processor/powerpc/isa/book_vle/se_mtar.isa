@@ -42,7 +42,10 @@ op se_mtar(0[6]:2[2]:sext sry[4]:arx[4]);
 se_mtar.var rx : {uint8_t} = {arx + 8}, ry : {uint8_t} = {sry & 31};
 
 se_mtar.execute = {
-	uint32_t result = cpu->GetGPR(ry);
+	// Copmpute the result
+	UINT result( cpu->GetGPR(ry) );
+	
+	// Write back the result
 	cpu->SetGPR(rx, result);
 	
 	return true;

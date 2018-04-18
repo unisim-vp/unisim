@@ -42,7 +42,7 @@ op subfme(31[6]:rd[5]:ra[5]:?[5]:oe[1]:232[9]:rc[1]);
 subfme.execute = {
 	// Read the input operands
 	XER& xer = cpu->GetXER();
-	bool borrow = not bool(xer.Get<XER::CA>());
+	bool borrow = not evenly(xer.Get<XER::CA>());
 	SINT a = SINT(cpu->GetGPR(ra)), b = SINT(-1);
 	
 	// Compute the result

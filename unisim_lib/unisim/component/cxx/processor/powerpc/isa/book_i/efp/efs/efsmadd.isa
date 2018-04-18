@@ -44,23 +44,21 @@ efsmadd.execute = {
 	// Check for Invalid Operation/Input errors
 	if (not cpu->EFPProcessInput().set(result).set(b).set(d).proceed())
 		return false;
-	if      (result.isZero() and b.isNaN()) b.querySBasicExponent().clear();
-	else if (b.isZero() and result.isNaN()) result.querySBasicExponent().clear();
 	
 	// Compute the result
-	CPU::SPEFSCR& spefscr = cpu->GetSPEFSCR();
-	Flags flags( Flags::RoundingMode(spefscr.Get<CPU::SPEFSCR::FRMC>()) );
+	Flags flags( Flags::RoundingMode(cpu->GetSPEFSCR().Get<CPU::SPEFSCR::FRMC>()) );
 	result.multAndAddAssign(b, d, flags);
 	
 	// Handle EFP Specific Signaling/Rounding
 	bool status = cpu->EFPProcessOutput( result, flags );
 	
 	// Write back the result
-	cpu->SetGPR(rd, result.queryValue());
+	cpu->SetGPR(rd, result.queryRawBits());
 	
 	return status;
-}
+};
 
 efsmadd.disasm = {
 	os << "efsmadd " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << GPRPrint(rb);
-}
+};
+

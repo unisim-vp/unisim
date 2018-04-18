@@ -42,13 +42,11 @@ op e_cmph(31[6]:crd[3]:0[2]:ra[5]:rb[5]:14[10]:0[1]);
 
 e_cmph.execute = {
 	// Read the input signed halfword operands
-	int16_t a = int16_t(  cpu->GetGPR(ra) );
-	int16_t b = int16_t(  cpu->GetGPR(rb) );
+	S16 a( cpu->GetGPR(ra) ), b( cpu->GetGPR(rb) );
 
+	// Generate CR[crd] bit field
 	CR& cr = cpu->GetCR();
 	XER& xer = cpu->GetXER();
-	
-	// Generate CR[crd] bit field
 	switch(crd)
 	{
 		case 0:
@@ -102,17 +100,18 @@ e_cmph.execute = {
 	}
 
 	return true;
-}
+};
 
 e_cmph.disasm = {
 	os << "e_cmph " << CRPrint(crd) << ',' << GPRPrint(ra) << ',' << GPRPrint(rb);
-}
+};
 
-specialize e_cmph(crd=0)
-specialize e_cmph(crd=1)
-specialize e_cmph(crd=2)
-specialize e_cmph(crd=3)
-specialize e_cmph(crd=4)
-specialize e_cmph(crd=5)
-specialize e_cmph(crd=6)
-specialize e_cmph(crd=7)
+specialize e_cmph(crd=0);
+specialize e_cmph(crd=1);
+specialize e_cmph(crd=2);
+specialize e_cmph(crd=3);
+specialize e_cmph(crd=4);
+specialize e_cmph(crd=5);
+specialize e_cmph(crd=6);
+specialize e_cmph(crd=7);
+

@@ -43,23 +43,23 @@ se_btsti.var rx : {uint8_t} = {srx & 31};
 
 se_btsti.execute = {
 	// Read the input operands
-	uint32_t x = cpu->GetGPR(rx);
+	UINT x = cpu->GetGPR(rx);
 	
 	// Compute the result
-	uint32_t m = uint32_t( 0x80000000UL >> ui5);
-	uint32_t result = x & m;
+	UINT result = x & UINT(0x80000000 >> ui5);
 	
 	// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(0) CR0[GT]=(result!=0) CR0[EQ]=(result==0)
 	XER& xer = cpu->GetXER();
 	CR& cr = cpu->GetCR();
 	cr.Set<CR::CR0::SO>(xer.Get<XER::SO>());
 	cr.Set<CR::CR0::LT>(0);
-	cr.Set<CR::CR0::GT>(result != uint32_t(0));
-	cr.Set<CR::CR0::EQ>(result == uint32_t(0));
+	cr.Set<CR::CR0::GT>(UINT(result != UINT(0)));
+	cr.Set<CR::CR0::EQ>(UINT(result == UINT(0)));
 	
 	return true;
-}
+};
 
 se_btsti.disasm = {
 	os << "se_btsti " << GPRPrint(rx) << ',' << unsigned(ui5);
-}
+};
+

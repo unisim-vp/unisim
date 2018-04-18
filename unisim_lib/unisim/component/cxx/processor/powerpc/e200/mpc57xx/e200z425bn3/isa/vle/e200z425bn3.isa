@@ -66,6 +66,8 @@ impl {
 #include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/cpu.tcc>
 #include <unisim/component/cxx/processor/powerpc/e200/mpc57xx/genfflags.hh>
 
+#define evenly(x) (x)
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -85,6 +87,8 @@ typedef  int8_t  S8;
 typedef  int16_t S16;
 typedef  int32_t S32;
 typedef  int64_t S64;
+
+typedef     bool BOOL;
 
 typedef uint32_t UINT;
 typedef int32_t  SINT;

@@ -43,31 +43,32 @@ se_sraw.var rx : {uint8_t} = {srx & 31}, ry : {uint8_t} = {sry & 31};
 
 se_sraw.execute = {
 	// Read the input operands
-	int32_t x = int32_t( cpu->GetGPR(rx));
-	uint32_t y = cpu->GetGPR(ry) & uint32_t( 0x3f);
+	S32 x( cpu->GetGPR(rx) );
+	U8 y = U8(cpu->GetGPR(ry)) & U8(0x3f);
 	XER& xer = cpu->GetXER();
-	int32_t result, shifted_out;
+	S32 result, shifted_out;
 	
 	// Compute the result
-	if (y > uint32_t(0x1f))
+	if (unlikely(y > U8(0x1f)))
 	{
 		result = x >> 31;
-		shifted_out = int32_t( -1);
+		shifted_out = S32(-1);
 	}
 	else
 	{
 		result = x >> y;
-		shifted_out = ((int32_t( 1) << y) - int32_t( 1));
+		shifted_out = (S32(1) << y) - S32(1);
 	}
 	
-	xer.Set<XER::CA>((x < int32_t(0)) and ((x & shifted_out) != int32_t(0)));
+	xer.Set<XER::CA>((x < S32(0)) and ((x & shifted_out) != S32(0)));
 	
 	// Write back the result
-	cpu->SetGPR(rx, result);
+	cpu->SetGPR(rx, UINT(result));
 	
 	return true;
-}
+};
 
 se_sraw.disasm = {
 	os << "se_sraw " << GPRPrint(rx) << ',' << GPRPrint(ry);
-}
+};
+

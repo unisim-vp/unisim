@@ -641,13 +641,13 @@ namespace symbolic {
   
   template <typename UTP>
   UTP RotateRight( UTP const& value, uint8_t sh ) { return UTP( new BONode( "Ror", value.expr, make_const<uint8_t>(sh) ) ); }
-  template <typename UTP>
-  UTP RotateRight( UTP const& value, UTP const& sh ) { return UTP( new BONode( "Ror", value.expr, SmartValue<uint8_t>(sh).expr ) ); }
+  template <typename UTP, typename STP>
+  UTP RotateRight( UTP const& value, STP const& sh ) { return UTP( new BONode( "Ror", value.expr, SmartValue<uint8_t>(sh).expr ) ); }
   
   template <typename UTP>
   UTP RotateLeft( UTP const& value, uint8_t sh ) { return UTP( new BONode( "Rol", value.expr, make_const<uint8_t>(sh) ) ); }
-  template <typename UTP>
-  UTP RotateLeft( UTP const& value, UTP const& sh ) { return UTP( new BONode( "Rol", value.expr, SmartValue<uint8_t>(sh).expr ) ); }
+  template <typename UTP, typename STP>
+  UTP RotateLeft( UTP const& value, STP const& sh ) { return UTP( new BONode( "Rol", value.expr, SmartValue<uint8_t>(sh).expr ) ); }
   
   template <typename UTP>
   UTP BitScanReverse( UTP const& value ) { return UTP( new UONode( "BSR", value.expr ) ); }
