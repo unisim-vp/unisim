@@ -37,7 +37,7 @@ op lha(42[6]:rd[5]:ra[5]:sext d[16]);
 
 lha.execute = {
 	// compute the effective address
-	UINT disp = UINT(SINT(d));
+	UINT disp( d );
 	ADDRESS ea(ra ? cpu->GetGPR(ra) + disp : disp);
 	// do the memory access
 	return cpu->SInt16Load(rd, ea); // 16-bit load/no byte reverse/sign extend

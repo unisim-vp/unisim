@@ -54,6 +54,7 @@ impl {
 #include <unisim/util/likely/likely.hh>
 #include <iostream>
 
+#define evenly(x) (x)
 }
 
 action {bool} execute({Arch*} {cpu}) {

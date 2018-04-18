@@ -37,7 +37,7 @@ impl {
 }
 
 /* Add Immediate Carrying */
-op addic(12[6]:rd[5]:ra[5]:sext<32> simm[16]);
+op addic(12[6]:rd[5]:ra[5]:sext simm[16]);
 
 addic.execute = {
 	// Read the input operands
@@ -57,6 +57,6 @@ addic.execute = {
 };
 
 addic.disasm = {
-	os << "addic " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << simm;
+	os << "addic " << GPRPrint(rd) << ", " << GPRPrint(ra) << ", " << int(simm);
 };
 
