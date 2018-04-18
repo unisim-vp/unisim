@@ -91,7 +91,7 @@ template <>
 Variable<unisim::service::power::CacheDynamicEnergy>::Variable(const char *_name, Object *_object, unisim::service::power::CacheDynamicEnergy& _storage, Type type, const char *_description) :
 VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>

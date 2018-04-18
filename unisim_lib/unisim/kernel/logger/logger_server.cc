@@ -87,6 +87,12 @@ LoggerServer::Close()
   if (clients.size()) {
     std::cerr << "Error(LoggerServer::close): "
               << "client loggers still connected" << std::endl;
+    std::set<Logger const*>::iterator client_iter;
+    for(client_iter = clients.begin(); client_iter != clients.end(); client_iter++)
+    {
+      Logger const* client = *client_iter;
+      std::cerr << "Error(LoggerServer::close): client \"" << client->GetName() << "\" still connected" << std::endl;
+    }
   }
   
   if (xml_writer_ != NULL) {

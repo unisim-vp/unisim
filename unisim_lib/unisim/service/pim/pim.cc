@@ -79,7 +79,7 @@ void PIM::generatePimFile() {
 
 	std::list<VariableBase *> lst;
 
-	Simulator::simulator->GetSignals(lst);
+	Simulator::Instance()->GetSignals(lst);
 
 	for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
 
@@ -386,7 +386,7 @@ void parseComponent (xmlDocPtr doc, xmlNodePtr componentNode, component_t *compo
 
 	std::list<VariableBase *> lst;
 
-	Simulator::simulator->GetRegisters(lst);
+	Simulator::Instance()->GetRegisters(lst);
 
 	component->name = string((char*) xmlGetProp(componentNode, (const xmlChar *)"name"));
 

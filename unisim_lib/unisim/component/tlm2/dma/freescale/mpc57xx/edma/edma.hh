@@ -135,6 +135,7 @@ public:
 	sc_core::sc_in<bool>      m_clk;                            // Clock port
 	sc_core::sc_in<bool>      reset_b;                          // reset
 	sc_core::sc_in<bool>     *dma_channel[NUM_DMA_CHANNELS];    // DMA channels (peripheral requests)
+	sc_core::sc_out<bool>    *dma_channel_ack[NUM_DMA_CHANNELS];// DMA channel acknowledgements (toward peripheral)
 	sc_core::sc_out<bool>    *irq[NUM_DMA_CHANNELS];            // Interrupt requests
 	sc_core::sc_out<bool>    *err_irq[NUM_DMA_CHANNELS];        // Error Interrupt requests
 	
@@ -2867,6 +2868,9 @@ private:
 	sc_core::sc_event dma_engine_event;
 	sc_core::sc_event *gen_irq_event[NUM_DMA_CHANNELS];
 	sc_core::sc_event *gen_err_event[NUM_DMA_CHANNELS];
+	sc_core::sc_event *gen_dma_channel_ack_event[NUM_DMA_CHANNELS];
+	
+	bool ack[NUM_DMA_CHANNELS];
 	
 	bool grp_per_prio_error;
 	bool ch_per_prio_error[NUM_GROUPS];
@@ -2910,6 +2914,8 @@ private:
 	void UpdateInterruptRequest(unsigned int dma_channel_num);
 	void UpdateErrors();
 	void UpdateError(unsigned int dma_channel_num);
+	void UpdateAcknowledge(unsigned int dma_channel_num, const sc_core::sc_time& delay = sc_core::SC_ZERO_TIME);
+	void Acknowledge(unsigned int dma_channel_num);
 	void NotifyEngine();
 	void UpdateVLD();
 	void UpdateChannelPriority(unsigned int dma_channel_num);
@@ -2923,6 +2929,7 @@ private:
 	void DMA_CHANNEL_Process(unsigned int dma_channel_num);
 	void IRQ_Process(unsigned int dma_channel_num);
 	void ERR_IRQ_Process(unsigned int dma_channel_num);
+	void DMA_CHANNEL_ACK_Process(unsigned int dma_channel_num);
 	void SetMasterID(unsigned int dma_channel_num, MasterID mid);
 	MasterID GetMasterID(unsigned int dma_channel_num);
 	bool Transfer(tlm::tlm_command cmd, int mid, uint32_t& addr, uint8_t *data_ptr, unsigned int size, unsigned int tsize, int32_t addr_signed_offset, uint32_t addr_mask, sc_core::sc_time& t);

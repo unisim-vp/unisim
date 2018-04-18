@@ -4,7 +4,8 @@ SIMPKG=ppcemu
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
 unisim/kernel/service/service.cc \
-unisim/kernel/service/xml_helper.cc \
+unisim/kernel/service/xml_config_file_helper.cc \
+unisim/kernel/service/ini_config_file_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
@@ -291,15 +292,15 @@ unisim/component/cxx/memory/ram/memory.tcc \
 unisim/component/cxx/processor/powerpc/config.hh \
 unisim/component/cxx/processor/powerpc/floating.hh \
 unisim/component/cxx/processor/powerpc/mpc7447a/config.hh \
-unisim/component/cxx/processor/powerpc/mpc7447a/cpu.hh \
-unisim/component/cxx/processor/powerpc/mpc7447a/cpu.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_cache.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debugging.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_exception_handling.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_fetch.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu.hh \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_load_store.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_mmu.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_perf_model.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu.tcc \
 unisim/component/cxx/tlb/tlb.hh \
 unisim/component/cxx/tlb/tlb.tcc \
 unisim/component/tlm2/interrupt/types.hh \
@@ -309,8 +310,9 @@ unisim/component/tlm2/processor/powerpc/mpc7447a/cpu.hh \
 unisim/component/tlm2/processor/powerpc/mpc7447a/cpu.tcc \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
+unisim/kernel/service/ini_config_file_helper.hh \
 unisim/kernel/service/service.hh \
-unisim/kernel/service/xml_helper.hh \
+unisim/kernel/service/xml_config_file_helper.hh \
 unisim/kernel/tlm2/tlm.hh \
 unisim/service/debug/debugger/debugger.hh \
 unisim/service/debug/debugger/debugger.tcc \
@@ -322,15 +324,15 @@ unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/blob.hh \
 unisim/service/interfaces/cache_power_estimator.hh \
 unisim/service/interfaces/data_object_lookup.hh \
-unisim/service/interfaces/debug_selecting.hh \
-unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
+unisim/service/interfaces/debug_selecting.hh \
+unisim/service/interfaces/debug_yielding.hh \
 unisim/service/interfaces/disassembly.hh \
 unisim/service/interfaces/linux_os.hh \
 unisim/service/interfaces/loader.hh \
-unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
+unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/os.hh \
 unisim/service/interfaces/power_mode.hh \
@@ -374,6 +376,7 @@ unisim/util/debug/breakpoint_registry.hh \
 unisim/util/debug/breakpoint_registry.tcc \
 unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/debug/coff_symtab/coff_symtab.tcc \
+unisim/util/debug/commit_insn_event.hh \
 unisim/util/debug/data_object.hh \
 unisim/util/debug/data_object_initializer.hh \
 unisim/util/debug/data_object_initializer.tcc \
@@ -382,7 +385,6 @@ unisim/util/debug/dwarf/addr_range.hh \
 unisim/util/debug/dwarf/addr_range.tcc \
 unisim/util/debug/dwarf/attr.hh \
 unisim/util/debug/dwarf/attr.tcc \
-unisim/util/debug/dwarf/c_loc_expr_parser.hh \
 unisim/util/debug/dwarf/call_frame_prog.hh \
 unisim/util/debug/dwarf/call_frame_prog.tcc \
 unisim/util/debug/dwarf/call_frame_vm.hh \
@@ -391,6 +393,7 @@ unisim/util/debug/dwarf/cfa.hh \
 unisim/util/debug/dwarf/cie.hh \
 unisim/util/debug/dwarf/cie.tcc \
 unisim/util/debug/dwarf/class.hh \
+unisim/util/debug/dwarf/c_loc_expr_parser.hh \
 unisim/util/debug/dwarf/cu.hh \
 unisim/util/debug/dwarf/cu.tcc \
 unisim/util/debug/dwarf/data_object.hh \
@@ -432,6 +435,7 @@ unisim/util/debug/dwarf/version.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/debug/elf_symtab/elf_symtab.tcc \
 unisim/util/debug/event.hh \
+unisim/util/debug/fetch_insn_event.hh \
 unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/profile.hh \
 unisim/util/debug/profile.tcc \
@@ -440,13 +444,11 @@ unisim/util/debug/stmt.hh \
 unisim/util/debug/stmt.tcc \
 unisim/util/debug/subprogram.hh \
 unisim/util/debug/symbol.hh \
-unisim/util/debug/symbol.tcc \
 unisim/util/debug/symbol_table.hh \
 unisim/util/debug/symbol_table.tcc \
-unisim/util/debug/type.hh \
-unisim/util/debug/fetch_insn_event.hh \
-unisim/util/debug/commit_insn_event.hh \
+unisim/util/debug/symbol.tcc \
 unisim/util/debug/trap_event.hh \
+unisim/util/debug/type.hh \
 unisim/util/debug/watchpoint.hh \
 unisim/util/debug/watchpoint_registry.hh \
 unisim/util/debug/watchpoint_registry.tcc \

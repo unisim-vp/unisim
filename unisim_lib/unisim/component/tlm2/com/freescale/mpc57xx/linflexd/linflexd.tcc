@@ -121,8 +121,8 @@ LINFlexD<CONFIG>::LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::
 	, gen_int_rx_event("gen_int_rx_event")
 	, gen_int_tx_event("gen_int_tx_event")
 	, gen_int_err_event("gen_int_err_event")
-	, gen_dma_rx_event("gen_dma_rx_event")
-	, gen_dma_tx_event("gen_dma_tx_event")
+	, gen_dma_rx_event()
+	, gen_dma_tx_event()
 	, tx_event("tx_event")
 	, pending_tx_request(false)
 	, lins_int_rx_mask(false)
@@ -130,6 +130,8 @@ LINFlexD<CONFIG>::LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::
 	, rx_time(sc_core::SC_ZERO_TIME)
 	, data_reception_in_progress(false)
 	, data_transmission_in_progress(false)
+	, dma_rx()
+	, dma_tx()
 	, reg_addr_map()
 	, schedule()
 	, endian(unisim::util::endian::E_BIG_ENDIAN)
@@ -187,12 +189,40 @@ LINFlexD<CONFIG>::LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::
 		DMA_TX[dma_tx_num] = new sc_core::sc_out<bool>(DMA_TX_name_sstr.str().c_str());
 	}
 	
+	for(dma_tx_num = 0; dma_tx_num < NUM_DMA_TX_CHANNELS; dma_tx_num++)
+	{
+		std::stringstream DMA_ACK_TX_name_sstr;
+		DMA_ACK_TX_name_sstr << "DMA_ACK_TX_" << dma_tx_num;
+		DMA_ACK_TX[dma_tx_num] = new sc_core::sc_in<bool>(DMA_ACK_TX_name_sstr.str().c_str());
+	}
+
 	unsigned int dma_rx_num;
 	for(dma_rx_num = 0; dma_rx_num < NUM_DMA_RX_CHANNELS; dma_rx_num++)
 	{
 		std::stringstream DMA_RX_name_sstr;
 		DMA_RX_name_sstr << "DMA_RX_" << dma_rx_num;
 		DMA_RX[dma_rx_num] = new sc_core::sc_out<bool>(DMA_RX_name_sstr.str().c_str());
+	}
+
+	for(dma_rx_num = 0; dma_rx_num < NUM_DMA_RX_CHANNELS; dma_rx_num++)
+	{
+		std::stringstream DMA_ACK_RX_name_sstr;
+		DMA_ACK_RX_name_sstr << "DMA_ACK_RX_" << dma_rx_num;
+		DMA_ACK_RX[dma_rx_num] = new sc_core::sc_in<bool>(DMA_ACK_RX_name_sstr.str().c_str());
+	}
+	
+	for(dma_rx_num = 0; dma_rx_num < NUM_DMA_RX_CHANNELS; dma_rx_num++)
+	{
+		std::stringstream gen_dma_rx_event_name_sstr;
+		gen_dma_rx_event_name_sstr << "gen_dma_rx_event_" << dma_rx_num;
+		gen_dma_rx_event[dma_rx_num] = new sc_core::sc_event(gen_dma_rx_event_name_sstr.str().c_str());
+	}
+
+	for(dma_tx_num = 0; dma_tx_num < NUM_DMA_TX_CHANNELS; dma_tx_num++)
+	{
+		std::stringstream gen_dma_tx_event_name_sstr;
+		gen_dma_tx_event_name_sstr << "gen_dma_tx_event_" << dma_tx_num;
+		gen_dma_tx_event[dma_tx_num] = new sc_core::sc_event(gen_dma_tx_event_name_sstr.str().c_str());
 	}
 
 	SC_HAS_PROCESS(LINFlexD);
@@ -242,17 +272,59 @@ LINFlexD<CONFIG>::LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::
 	SC_METHOD(INT_ERR_Process);
 	sensitive << gen_int_err_event;
 	
-	SC_METHOD(DMA_RX_Process);
-	sensitive << gen_dma_rx_event;
-
-	SC_METHOD(DMA_TX_Process);
-	sensitive << gen_dma_tx_event;
-
 	SC_THREAD(TX_Process);
 	sensitive << tx_event;
 	
 	SC_THREAD(RX_Process);
 	sensitive << rx_input.event();
+	
+	// Spawn an DMA_RX_Process for each DMA RX channel
+	for(dma_rx_num = 0; dma_rx_num < NUM_DMA_RX_CHANNELS; dma_rx_num++)
+	{
+		sc_core::sc_spawn_options dma_rx_process_spawn_options;
+		dma_rx_process_spawn_options.spawn_method();
+		dma_rx_process_spawn_options.set_sensitivity(gen_dma_rx_event[dma_rx_num]);
+		
+		std::stringstream dma_rx_process_name_sstr;
+		dma_rx_process_name_sstr << "DMA_RX_Process_" << dma_rx_num;
+		sc_core::sc_spawn(sc_bind(&LINFlexD<CONFIG>::DMA_RX_Process, this, dma_rx_num), dma_rx_process_name_sstr.str().c_str(), &dma_rx_process_spawn_options);
+	}
+
+	// Spawn an DMA_TX_Process for each DMA TX channel
+	for(dma_tx_num = 0; dma_tx_num < NUM_DMA_TX_CHANNELS; dma_tx_num++)
+	{
+		sc_core::sc_spawn_options dma_tx_process_spawn_options;
+		dma_tx_process_spawn_options.spawn_method();
+		dma_tx_process_spawn_options.set_sensitivity(gen_dma_tx_event[dma_tx_num]);
+		
+		std::stringstream dma_tx_process_name_sstr;
+		dma_tx_process_name_sstr << "DMA_TX_Process_" << dma_tx_num;
+		sc_core::sc_spawn(sc_bind(&LINFlexD<CONFIG>::DMA_TX_Process, this, dma_tx_num), dma_tx_process_name_sstr.str().c_str(), &dma_tx_process_spawn_options);
+	}
+
+	// Spawn an DMA_ACK_RX_Process for each DMA RX channel
+	for(dma_rx_num = 0; dma_rx_num < NUM_DMA_RX_CHANNELS; dma_rx_num++)
+	{
+		sc_core::sc_spawn_options dma_ack_rx_process_spawn_options;
+		dma_ack_rx_process_spawn_options.spawn_method();
+		dma_ack_rx_process_spawn_options.set_sensitivity(DMA_ACK_RX[dma_rx_num]);
+		
+		std::stringstream dma_ack_rx_process_name_sstr;
+		dma_ack_rx_process_name_sstr << "DMA_ACK_RX_Process_" << dma_rx_num;
+		sc_core::sc_spawn(sc_bind(&LINFlexD<CONFIG>::DMA_ACK_RX_Process, this, dma_rx_num), dma_ack_rx_process_name_sstr.str().c_str(), &dma_ack_rx_process_spawn_options);
+	}
+
+	// Spawn an DMA_ACK_TX_Process for each DMA TX channel
+	for(dma_tx_num = 0; dma_tx_num < NUM_DMA_TX_CHANNELS; dma_tx_num++)
+	{
+		sc_core::sc_spawn_options dma_ack_tx_process_spawn_options;
+		dma_ack_tx_process_spawn_options.spawn_method();
+		dma_ack_tx_process_spawn_options.set_sensitivity(DMA_ACK_TX[dma_tx_num]);
+		
+		std::stringstream dma_ack_tx_process_name_sstr;
+		dma_ack_tx_process_name_sstr << "DMA_ACK_TX_Process_" << dma_tx_num;
+		sc_core::sc_spawn(sc_bind(&LINFlexD<CONFIG>::DMA_ACK_TX_Process, this, dma_tx_num), dma_ack_tx_process_name_sstr.str().c_str(), &dma_ack_tx_process_spawn_options);
+	}
 }
 
 template <typename CONFIG>
@@ -264,10 +336,30 @@ LINFlexD<CONFIG>::~LINFlexD()
 		delete DMA_TX[dma_tx_num];
 	}
 	
+	for(dma_tx_num = 0; dma_tx_num < NUM_DMA_TX_CHANNELS; dma_tx_num++)
+	{
+		delete DMA_ACK_TX[dma_tx_num];
+	}
+
 	unsigned int dma_rx_num;
 	for(dma_rx_num = 0; dma_rx_num < NUM_DMA_RX_CHANNELS; dma_rx_num++)
 	{
 		delete DMA_RX[dma_rx_num];
+	}
+	
+	for(dma_rx_num = 0; dma_rx_num < NUM_DMA_RX_CHANNELS; dma_rx_num++)
+	{
+		delete DMA_ACK_RX[dma_rx_num];
+	}
+	
+	for(dma_rx_num = 0; dma_rx_num < NUM_DMA_RX_CHANNELS; dma_rx_num++)
+	{
+		delete gen_dma_rx_event[dma_rx_num];
+	}
+
+	for(dma_tx_num = 0; dma_tx_num < NUM_DMA_TX_CHANNELS; dma_tx_num++)
+	{
+		delete gen_dma_tx_event[dma_tx_num];
 	}
 }
 
@@ -705,6 +797,8 @@ template <typename CONFIG>
 void LINFlexD<CONFIG>::Reset()
 {
 	unsigned int ident_num;
+	unsigned int dma_rx_num;
+	unsigned int dma_tx_num;
 	
 	rx_prev_input_status = true;
 	rx_input_status = true;
@@ -715,6 +809,16 @@ void LINFlexD<CONFIG>::Reset()
 	lins_int_rx_mask = false;
 	data_reception_in_progress = false;
 	data_transmission_in_progress = false;
+	
+	for(dma_rx_num = 0; dma_rx_num < NUM_DMA_RX_CHANNELS; dma_rx_num++)
+	{
+		dma_rx[dma_rx_num] = false;
+	}
+	
+	for(dma_tx_num = 0; dma_tx_num < NUM_DMA_TX_CHANNELS; dma_tx_num++)
+	{
+		dma_tx[dma_tx_num] = false;
+	}
 	
 	schedule.Clear();
 
@@ -764,6 +868,9 @@ void LINFlexD<CONFIG>::Reset()
 
 	UpdateMasterClock();
 	UpdateLINClock();
+	
+	UpdateDMA_RX();
+	RequestDMA_TX();
 }
 
 template <typename CONFIG>
@@ -1037,15 +1144,57 @@ void LINFlexD<CONFIG>::UpdateINT_ERR()
 }
 
 template <typename CONFIG>
-void LINFlexD<CONFIG>::UpdateDMA_RX()
+void LINFlexD<CONFIG>::UpdateDMA_RX(unsigned int dma_rx_num, const sc_core::sc_time& delay)
 {
-	gen_dma_rx_event.notify(sc_core::SC_ZERO_TIME);
+	gen_dma_rx_event[dma_rx_num]->notify(delay);
 }
 
 template <typename CONFIG>
-void LINFlexD<CONFIG>::UpdateDMA_TX()
+void LINFlexD<CONFIG>::UpdateDMA_TX(unsigned int dma_tx_num, const sc_core::sc_time& delay)
 {
-	gen_dma_tx_event.notify(sc_core::SC_ZERO_TIME);
+	gen_dma_tx_event[dma_tx_num]->notify(delay);
+}
+
+template <typename CONFIG>
+void LINFlexD<CONFIG>::UpdateDMA_RX(const sc_core::sc_time& delay)
+{
+	unsigned int dma_rx_num;
+	for(dma_rx_num = 0; dma_rx_num < NUM_DMA_RX_CHANNELS; dma_rx_num++)
+	{
+		UpdateDMA_RX(dma_rx_num, delay);
+	}
+}
+
+template <typename CONFIG>
+void LINFlexD<CONFIG>::UpdateDMA_TX(const sc_core::sc_time& delay)
+{
+	unsigned int dma_tx_num;
+	for(dma_tx_num = 0; dma_tx_num < NUM_DMA_TX_CHANNELS; dma_tx_num++)
+	{
+		UpdateDMA_TX(dma_tx_num, delay);
+	}
+}
+
+template <typename CONFIG>
+void LINFlexD<CONFIG>::RequestDMA_RX()
+{
+	unsigned int dma_rx_num;
+	for(dma_rx_num = 0; dma_rx_num < NUM_DMA_RX_CHANNELS; dma_rx_num++)
+	{
+		dma_rx[dma_rx_num] = true;
+		UpdateDMA_RX(dma_rx_num);
+	}
+}
+
+template <typename CONFIG>
+void LINFlexD<CONFIG>::RequestDMA_TX()
+{
+	unsigned int dma_tx_num;
+	for(dma_tx_num = 0; dma_tx_num < NUM_DMA_TX_CHANNELS; dma_tx_num++)
+	{
+		dma_tx[dma_tx_num] = true;
+		UpdateDMA_TX(dma_tx_num);
+	}
 }
 
 template <typename CONFIG>
@@ -1195,50 +1344,54 @@ void LINFlexD<CONFIG>::INT_ERR_Process()
 }
 
 template <typename CONFIG>
-void LINFlexD<CONFIG>::DMA_RX_Process()
+void LINFlexD<CONFIG>::DMA_RX_Process(unsigned int dma_rx_num)
 {
-	// A DMA request is triggered by FIFO and not by empty (Rx) status signals
-
-	unsigned int dre = linflexd_dmarxe.template Get<typename LINFlexD_DMARXE::DRE>(); // DMA Tx channel Y enable
+	unsigned int dre = linflexd_dmarxe.template Get<typename LINFlexD_DMARXE::DRE>(); // DMA Rx channel Y enable
+	bool dma_rx_enable = ((dre >> dma_rx_num) & 1) != 0;
 	
-	unsigned int rfne = linflexd_uartsr.template Get<typename LINFlexD_UARTSR::RFNE>(); // Receive FIFO Not Empty
-	
-	unsigned int dma_rx_num;
-	for(dma_rx_num = 0; dma_rx_num < NUM_DMA_RX_CHANNELS; dma_rx_num++)
+	bool dma_rx_value = dma_rx[dma_rx_num] && dma_rx_enable;
+		
+	if(verbose)
 	{
-		bool dma_rx_enable = ((dre >> dma_rx_num) & 1) != 0;
-		bool dma_rx = rfne && dma_rx_enable;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": " << DMA_RX[dma_rx_num]->name() << " <- " << dma_rx_value << EndDebugInfo;
+	}
+	
+	DMA_RX[dma_rx_num]->write(dma_rx_value);
+}
+
+template <typename CONFIG>
+void LINFlexD<CONFIG>::DMA_TX_Process(unsigned int dma_tx_num)
+{
+	unsigned int dte = linflexd_dmatxe.template Get<typename LINFlexD_DMATXE::DTE>(); // DMA Tx channel Y enable
+	bool dma_tx_enable = ((dte >> dma_tx_num) & 1) != 0;
+	
+	bool dma_tx_value = dma_tx[dma_tx_num] && dma_tx_enable;
 		
-		if(verbose)
-		{
-			logger << DebugInfo << sc_core::sc_time_stamp() << ": " << DMA_RX[dma_rx_num]->name() << " <- " << dma_rx << EndDebugInfo;
-		}
-		
-		DMA_RX[dma_rx_num]->write(dma_rx);
+	if(verbose)
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": " << DMA_TX[dma_tx_num]->name() << " <- " << dma_tx_value << EndDebugInfo;
+	}
+	
+	DMA_TX[dma_tx_num]->write(dma_tx_value);
+}
+
+template <typename CONFIG>
+void LINFlexD<CONFIG>::DMA_ACK_RX_Process(unsigned int dma_rx_num)
+{
+	if(DMA_ACK_RX[dma_rx_num]->posedge())
+	{
+		dma_rx[dma_rx_num] = false;
+		UpdateDMA_RX(dma_rx_num, master_clock_period);
 	}
 }
 
 template <typename CONFIG>
-void LINFlexD<CONFIG>::DMA_TX_Process()
+void LINFlexD<CONFIG>::DMA_ACK_TX_Process(unsigned int dma_tx_num)
 {
-	// A DMA request is triggered by FIFO-not-full (TX) status signals
-	
-	unsigned int dte = linflexd_dmatxe.template Get<typename LINFlexD_DMATXE::DTE>(); // DMA Tx channel Y enable
-	
-	unsigned int tff = linflexd_uartsr.template Get<typename LINFlexD_UARTSR::TFF>(); // Tx FIFO full
-	
-	unsigned int dma_tx_num;
-	for(dma_tx_num = 0; dma_tx_num < NUM_DMA_RX_CHANNELS; dma_tx_num++)
+	if(DMA_ACK_TX[dma_tx_num]->posedge())
 	{
-		bool dma_tx_enable = ((dte >> dma_tx_num) & 1) != 0;
-		bool dma_tx = !tff && dma_tx_enable;
-		
-		if(verbose)
-		{
-			logger << DebugInfo << sc_core::sc_time_stamp() << ": " << DMA_TX[dma_tx_num]->name() << " <- " << dma_tx << EndDebugInfo;
-		}
-		
-		DMA_TX[dma_tx_num]->write(dma_tx);
+		dma_tx[dma_tx_num] = false;
+		UpdateDMA_TX(dma_tx_num, master_clock_period);
 	}
 }
 
@@ -1286,8 +1439,8 @@ void LINFlexD<CONFIG>::RX_FIFO_Pop()
 
 			linflexd_uartsr.template Set<typename LINFlexD_UARTSR::RFNE>(rx_fifo_cnt != 0); // Receive FIFO Not Empty
 			
-			// update DMA signals
-			UpdateDMA_RX();
+			// Request DMA RX
+			if(rx_fifo_cnt != 0) RequestDMA_RX();
 		}
 	}
 }
@@ -1798,8 +1951,8 @@ void LINFlexD<CONFIG>::RX_Process()
 													
 													linflexd_uartsr.template Set<typename LINFlexD_UARTSR::RFNE>(1); // Receive FIFO Not Empty
 
-													// update DMA signals
-													UpdateDMA_RX();
+													// Request DMA RX
+													RequestDMA_RX();
 												}
 												
 												// shift parity bit register
@@ -1907,9 +2060,6 @@ void LINFlexD<CONFIG>::TX_FIFO_Push()
 			
 			// update interrupt signals
 			UpdateINT_TX();
-			
-			// update dma signals
-			UpdateDMA_TX();
 		}
 	}
 }
@@ -2150,8 +2300,8 @@ void LINFlexD<CONFIG>::TX_Process()
 								// update interrupt signals
 								UpdateINT_TX();
 								
-								// update DMA signals
-								UpdateDMA_TX();
+								// request DMA TX
+								RequestDMA_TX();
 							}
 							
 							tx_shift_reg = tdfbm ? unisim::util::endian::ByteSwap(tx_msg) : tx_msg; // latch message into transmitter shift register

@@ -113,425 +113,6 @@ public:
 protected:
 private:
 	
-#if 0
-	//=========================================================================
-	//===                       Constants definitions                       ===
-	//=========================================================================
-
-	static const unsigned int NUM_PROCESSORS = 3;
-	static const unsigned int MAX_FRONT_ENDS = NUM_PROCESSORS // for gdb-server
-	                                         + NUM_PROCESSORS // for inline-debugger
-	                                         + NUM_PROCESSORS // for profiler
-	                                         ;
-
-	static const unsigned int NUM_DMA_CHANNELS  = 128;
-	static const unsigned int NUM_DMA_TRIGGERS  = 8;
-	static const unsigned int NUM_DMA_ALWAYS_ON = 64;
-	
-	// Front Side Bus template parameters
-	static const unsigned int FSB_WIDTH = 8;
-	static const unsigned int FSB_BURST_SIZE = 32;
-	typedef uint32_t CPU_ADDRESS_TYPE;
-	typedef uint32_t FSB_ADDRESS_TYPE;
-	typedef uint32_t CPU_REG_TYPE;
-	
-	struct DEBUGGER_CONFIG
-	{
-		typedef CPU_ADDRESS_TYPE ADDRESS;
-		static const unsigned int NUM_PROCESSORS = Simulator::NUM_PROCESSORS;
-		static const unsigned int MAX_FRONT_ENDS = Simulator::MAX_FRONT_ENDS;
-	};
-
-	struct XBAR_0_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
-	{
-		typedef FSB_ADDRESS_TYPE ADDRESS;
-		static const unsigned int INPUT_SOCKETS = 6;
-		static const unsigned int OUTPUT_SOCKETS = 8;
-		static const unsigned int MAX_NUM_MAPPINGS = 12;
-		static const unsigned int BUSWIDTH = 64;
-		static const bool VERBOSE = DEBUG_ENABLE;
-	};
-	
-	struct XBAR_1_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
-	{
-		typedef FSB_ADDRESS_TYPE ADDRESS;
-		static const unsigned int INPUT_SOCKETS = 4;
-		static const unsigned int OUTPUT_SOCKETS = 4;
-		static const unsigned int MAX_NUM_MAPPINGS = 13;
-		static const unsigned int BUSWIDTH = 64;
-		static const bool VERBOSE = DEBUG_ENABLE;
-	};
-	
-	struct PBRIDGE_A_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
-	{
-		typedef FSB_ADDRESS_TYPE ADDRESS;
-		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 31;
-		static const unsigned int MAX_NUM_MAPPINGS = 31;
-		static const unsigned int BUSWIDTH = 64;
-		static const bool VERBOSE = DEBUG_ENABLE;
-	};
-	
-	struct PBRIDGE_B_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
-	{
-		typedef FSB_ADDRESS_TYPE ADDRESS;
-		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 5;
-		static const unsigned int MAX_NUM_MAPPINGS = 5;
-		static const unsigned int BUSWIDTH = 64;
-		static const bool VERBOSE = DEBUG_ENABLE;
-	};
-	
-	struct XBAR_1_M1_CONCENTRATOR_CONFIG : unisim::component::tlm2::interconnect::generic_router::Config
-	{
-		typedef FSB_ADDRESS_TYPE ADDRESS;
-		static const unsigned int INPUT_SOCKETS = 2;
-		static const unsigned int OUTPUT_SOCKETS = 1;
-		static const unsigned int MAX_NUM_MAPPINGS = 1;
-		static const unsigned int BUSWIDTH = 64;
-		static const bool VERBOSE = DEBUG_ENABLE;
-	};
-	
-	struct INTC_0_CONFIG
-	{
-		static const unsigned int NUM_PROCESSORS = 3;
-		static const unsigned int NUM_HW_IRQS = 965 - 32;
-		static const unsigned int BUSWIDTH = 64; // FIXME: INTC will be on PBRIDGE which is 32-bit width
-		static const unsigned int VOFFSET_WIDTH = 14;
-	};
-	
-	struct STM_0_CONFIG
-	{
-		static const unsigned int NUM_CHANNELS = 4;
-		static const unsigned int BUSWIDTH = 64; // FIXME: INTC will be on PBRIDGE which is 32-bit width
-	};
-
-	struct STM_1_CONFIG
-	{
-		static const unsigned int NUM_CHANNELS = 4;
-		static const unsigned int BUSWIDTH = 64; // FIXME: INTC will be on PBRIDGE which is 32-bit width
-	};
-
-	struct STM_2_CONFIG
-	{
-		static const unsigned int NUM_CHANNELS = 4;
-		static const unsigned int BUSWIDTH = 64; // FIXME: INTC will be on PBRIDGE which is 32-bit width
-	};
-
-	struct SWT_0_CONFIG
-	{
-		static const unsigned int NUM_MASTERS = 8; // FIXME: probably 4
-		static const unsigned int BUSWIDTH = 64; // FIXME: SWT will be on PBRIDGE which is 32-bit width
-	};
-
-	struct SWT_1_CONFIG
-	{
-		static const unsigned int NUM_MASTERS = 8; // FIXME: probably 4
-		static const unsigned int BUSWIDTH = 64; // FIXME: SWT will be on PBRIDGE which is 32-bit width
-	};
-
-	struct SWT_2_CONFIG
-	{
-		static const unsigned int NUM_MASTERS = 8; // FIXME: probably 4
-		static const unsigned int BUSWIDTH = 64; // FIXME: SWT will be on PBRIDGE which is 32-bit width
-	};
-	
-	struct SWT_3_CONFIG
-	{
-		static const unsigned int NUM_MASTERS = 8; // FIXME: probably 4
-		static const unsigned int BUSWIDTH = 64; // FIXME: SWT will be on PBRIDGE which is 32-bit width
-	};
-	
-	struct PIT_0_CONFIG
-	{
-		static const unsigned int MAX_CHANNELS = 8;
-		static const unsigned int NUM_CHANNELS = 8;
-		static const bool HAS_RTI_SUPPORT = true;
-		static const bool HAS_DMA_SUPPORT = true;
-		static const bool HAS_64_BIT_TIMER_SUPPORT = false;
-		static const unsigned int BUSWIDTH = 64; // FIXME: PIT will be on PBRIDGE which is 32-bit width
-	};
-
-	struct PIT_1_CONFIG
-	{
-		static const unsigned int MAX_CHANNELS = 8;
-		static const unsigned int NUM_CHANNELS = 2;
-		static const bool HAS_RTI_SUPPORT = false;
-		static const bool HAS_DMA_SUPPORT = false;
-		static const bool HAS_64_BIT_TIMER_SUPPORT = true;
-		static const unsigned int BUSWIDTH = 64; // FIXME: PIT will be on PBRIDGE which is 32-bit width
-	};
-	
-	struct LINFlexD_0_CONFIG
-	{
-		static const unsigned int NUM_IRQS = 3;
-		static const unsigned int TX_CH_NUM = 0;
-		static const unsigned int RX_CH_NUM = 0;
-		static const unsigned int NUM_FILTERS = 16;
-		static const bool GENERIC_SLAVE = true;
-		static const bool GENERIC_PSI5 = false;
-		static const bool HAS_AUTO_SYNCHRONIZATION_SUPPORT = true;
-		static const unsigned int BUSWIDTH = 64; // FIXME: LINFlexD will be on PBRIDGE which is 32-bit width
-	};
-
-	struct LINFlexD_1_CONFIG
-	{
-		static const unsigned int NUM_IRQS = 3;
-		static const unsigned int TX_CH_NUM = 0;
-		static const unsigned int RX_CH_NUM = 0;
-		static const unsigned int NUM_FILTERS = 0;
-		static const bool GENERIC_SLAVE = false;
-		static const bool GENERIC_PSI5 = false;
-		static const bool HAS_AUTO_SYNCHRONIZATION_SUPPORT = false;
-		static const unsigned int BUSWIDTH = 64; // FIXME: LINFlexD will be on PBRIDGE which is 32-bit width
-	};
-
-	struct LINFlexD_2_CONFIG
-	{
-		static const unsigned int NUM_IRQS = 3;
-		static const unsigned int TX_CH_NUM = 0;
-		static const unsigned int RX_CH_NUM = 0;
-		static const unsigned int NUM_FILTERS = 0;
-		static const bool GENERIC_SLAVE = false;
-		static const bool GENERIC_PSI5 = false;
-		static const bool HAS_AUTO_SYNCHRONIZATION_SUPPORT = false;
-		static const unsigned int BUSWIDTH = 64; // FIXME: LINFlexD will be on PBRIDGE which is 32-bit width
-	};
-
-	struct LINFlexD_14_CONFIG
-	{
-		static const unsigned int NUM_IRQS = 3;
-		static const unsigned int TX_CH_NUM = 0;
-		static const unsigned int RX_CH_NUM = 0;
-		static const unsigned int NUM_FILTERS = 0;
-		static const bool GENERIC_SLAVE = false;
-		static const bool GENERIC_PSI5 = false;
-		static const bool HAS_AUTO_SYNCHRONIZATION_SUPPORT = false;
-		static const unsigned int BUSWIDTH = 64; // FIXME: LINFlexD will be on PBRIDGE which is 32-bit width
-	};
-
-	struct LINFlexD_15_CONFIG
-	{
-		static const unsigned int NUM_IRQS = 3;
-		static const unsigned int TX_CH_NUM = 0;
-		static const unsigned int RX_CH_NUM = 0;
-		static const unsigned int NUM_FILTERS = 0;
-		static const bool GENERIC_SLAVE = false;
-		static const bool GENERIC_PSI5 = false;
-		static const bool HAS_AUTO_SYNCHRONIZATION_SUPPORT = false;
-		static const unsigned int BUSWIDTH = 64; // FIXME: LINFlexD will be on PBRIDGE which is 32-bit width
-	};
-
-	struct LINFlexD_16_CONFIG
-	{
-		static const unsigned int NUM_IRQS = 3;
-		static const unsigned int TX_CH_NUM = 0;
-		static const unsigned int RX_CH_NUM = 0;
-		static const unsigned int NUM_FILTERS = 0;
-		static const bool GENERIC_SLAVE = false;
-		static const bool GENERIC_PSI5 = false;
-		static const bool HAS_AUTO_SYNCHRONIZATION_SUPPORT = false;
-		static const unsigned int BUSWIDTH = 64; // FIXME: LINFlexD will be on PBRIDGE which is 32-bit width
-	};
-
-	struct DMAMUX_0_CONFIG
-	{
-		static const unsigned int NUM_DMA_CHANNELS  = 8;  // DMA Channels 0 - 7
-		static const unsigned int NUM_DMA_SOURCES   = 64; // Sources 1 - 20
-		static const unsigned int NUM_DMA_ALWAYS_ON = 1;  // Always 63
-		static const unsigned int NUM_DMA_TRIGGERS  = 0;  // No trigger
-		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
-	};
-	
-	struct DMAMUX_1_CONFIG
-	{
-		static const unsigned int NUM_DMA_CHANNELS  = 8;  // DMA Channels 8 - 15
-		static const unsigned int NUM_DMA_SOURCES   = 64; // Sources 1 - 57
-		static const unsigned int NUM_DMA_ALWAYS_ON = 5;  // Always 59 - 63
-		static const unsigned int NUM_DMA_TRIGGERS  = 5;  // PIT_0 Triggers 0 - 4
-		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
-	};
-
-	struct DMAMUX_2_CONFIG
-	{
-		static const unsigned int NUM_DMA_CHANNELS  = 8;  // DMA Channels 16 - 23
-		static const unsigned int NUM_DMA_SOURCES   = 64; // Sources 1 - 48
-		static const unsigned int NUM_DMA_ALWAYS_ON = 1;  // Always 63
-		static const unsigned int NUM_DMA_TRIGGERS  = 1;  // PIT_0 Trigger 5
-		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
-	};
-
-	struct DMAMUX_3_CONFIG
-	{
-		static const unsigned int NUM_DMA_CHANNELS  = 8;  // DMA Channels 24 - 31
-		static const unsigned int NUM_DMA_SOURCES   = 64; // Sources 1 - 49
-		static const unsigned int NUM_DMA_ALWAYS_ON = 1;  // Always 63
-		static const unsigned int NUM_DMA_TRIGGERS  = 0;  // No trigger
-		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
-	};
-	
-	struct DMAMUX_4_CONFIG
-	{
-		static const unsigned int NUM_DMA_CHANNELS  = 16; // DMA Channels 32 - 47
-		static const unsigned int NUM_DMA_SOURCES   = 64; // Sources 1 - 41
-		static const unsigned int NUM_DMA_ALWAYS_ON = 1;  // Always 63
-		static const unsigned int NUM_DMA_TRIGGERS  = 1;  // PIT_0 Trigger 6
-		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
-	};
-
-	struct DMAMUX_5_CONFIG
-	{
-		static const unsigned int NUM_DMA_CHANNELS  = 16; // DMA Channels 48 - 63
-		static const unsigned int NUM_DMA_SOURCES   = 64; // Sources 1 - 41
-		static const unsigned int NUM_DMA_ALWAYS_ON = 1;  // Always 63
-		static const unsigned int NUM_DMA_TRIGGERS  = 1;  // PIT_0 Trigger 7
-		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
-	};
-
-	struct DMAMUX_6_CONFIG
-	{
-		static const unsigned int NUM_DMA_CHANNELS  = 16; // DMA Channels 64 - 79
-		static const unsigned int NUM_DMA_SOURCES   = 64; // Sources 1 - 47
-		static const unsigned int NUM_DMA_ALWAYS_ON = 1;  // Always 63
-		static const unsigned int NUM_DMA_TRIGGERS  = 0;  // No trigger
-		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
-	};
-
-	struct DMAMUX_7_CONFIG
-	{
-		static const unsigned int NUM_DMA_CHANNELS  = 16; // DMA Channels 80 - 95
-		static const unsigned int NUM_DMA_SOURCES   = 64; // Sources 1 - 50
-		static const unsigned int NUM_DMA_ALWAYS_ON = 1;  // Always 63
-		static const unsigned int NUM_DMA_TRIGGERS  = 0;  // No trigger
-		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
-	};
-	
-	struct DMAMUX_8_CONFIG
-	{
-		static const unsigned int NUM_DMA_CHANNELS  = 16; // DMA Channels 96 - 111
-		static const unsigned int NUM_DMA_SOURCES   = 64; // Sources 1 - 45
-		static const unsigned int NUM_DMA_ALWAYS_ON = 1;  // Always 63
-		static const unsigned int NUM_DMA_TRIGGERS  = 0;  // No trigger
-		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
-	};
-	
-	struct DMAMUX_9_CONFIG
-	{
-		static const unsigned int NUM_DMA_CHANNELS  = 16; // DMA Channels 112 - 127
-		static const unsigned int NUM_DMA_SOURCES   = 64; // Sources 1 - 43
-		static const unsigned int NUM_DMA_ALWAYS_ON = 1;  // Always 63
-		static const unsigned int NUM_DMA_TRIGGERS  = 0;  // No trigger
-		static const unsigned int BUSWIDTH          = 64; // FIXME: DMAMUX will be on PBRIDGE which is 32-bit width
-	};
-	
-	struct EDMA_0_CONFIG
-	{
-		static const unsigned int NUM_DMA_CHANNELS = 64;
-		static const unsigned int BUSWIDTH         = 64; // FIXME: EDMA will be on PBRIDGE which is 32-bit width
-	};
-
-	struct EDMA_1_CONFIG
-	{
-		static const unsigned int NUM_DMA_CHANNELS = 64;
-		static const unsigned int BUSWIDTH         = 64; // FIXME: EDMA will be on PBRIDGE which is 32-bit width
-	};
-	
-	struct DSPI_0_CONFIG
-	{
-		static const unsigned int BUSWIDTH               = 64; // FIXME: DSPI will be on PBRIDGE which is 32-bit width
-		static const unsigned int NUM_CTARS              = 8;
-		static const unsigned int TX_FIFO_DEPTH          = 4;
-		static const unsigned int RX_FIFO_DEPTH          = 4;
-		static const unsigned int CMD_FIFO_DEPTH         = 4;
-		static const bool HAS_DATA_SERIALIZATION_SUPPORT = false;
-		static const unsigned int NUM_DSI_INPUTS         = 0;
-		static const unsigned int NUM_DSI_OUTPUTS        = 0;
-	};
-
-	struct DSPI_1_CONFIG
-	{
-		static const unsigned int BUSWIDTH               = 64; // FIXME: DSPI will be on PBRIDGE which is 32-bit width
-		static const unsigned int NUM_CTARS              = 8;
-		static const unsigned int TX_FIFO_DEPTH          = 4;
-		static const unsigned int RX_FIFO_DEPTH          = 4;
-		static const unsigned int CMD_FIFO_DEPTH         = 4;
-		static const bool HAS_DATA_SERIALIZATION_SUPPORT = false;
-		static const unsigned int NUM_DSI_INPUTS         = 0;
-		static const unsigned int NUM_DSI_OUTPUTS        = 0;
-	};
-
-	struct DSPI_2_CONFIG
-	{
-		static const unsigned int BUSWIDTH               = 64; // FIXME: DSPI will be on PBRIDGE which is 32-bit width
-		static const unsigned int NUM_CTARS              = 8;
-		static const unsigned int TX_FIFO_DEPTH          = 4;
-		static const unsigned int RX_FIFO_DEPTH          = 4;
-		static const unsigned int CMD_FIFO_DEPTH         = 4;
-		static const bool HAS_DATA_SERIALIZATION_SUPPORT = false;
-		static const unsigned int NUM_DSI_INPUTS         = 0;
-		static const unsigned int NUM_DSI_OUTPUTS        = 0;
-	};
-
-	struct DSPI_3_CONFIG
-	{
-		static const unsigned int BUSWIDTH               = 64; // FIXME: DSPI will be on PBRIDGE which is 32-bit width
-		static const unsigned int NUM_CTARS              = 8;
-		static const unsigned int TX_FIFO_DEPTH          = 4;
-		static const unsigned int RX_FIFO_DEPTH          = 4;
-		static const unsigned int CMD_FIFO_DEPTH         = 4;
-		static const bool HAS_DATA_SERIALIZATION_SUPPORT = false;
-		static const unsigned int NUM_DSI_INPUTS         = 0;
-		static const unsigned int NUM_DSI_OUTPUTS        = 0;
-	};
-
-	struct DSPI_4_CONFIG
-	{
-		static const unsigned int BUSWIDTH               = 64; // FIXME: DSPI will be on PBRIDGE which is 32-bit width
-		static const unsigned int NUM_CTARS              = 8;
-		static const unsigned int TX_FIFO_DEPTH          = 4;
-		static const unsigned int RX_FIFO_DEPTH          = 4;
-		static const unsigned int CMD_FIFO_DEPTH         = 4;
-		static const bool HAS_DATA_SERIALIZATION_SUPPORT = true;
-		static const unsigned int NUM_DSI_INPUTS         = 32;
-		static const unsigned int NUM_DSI_OUTPUTS        = 32;
-	};
-
-	struct DSPI_5_CONFIG
-	{
-		static const unsigned int BUSWIDTH               = 64; // FIXME: DSPI will be on PBRIDGE which is 32-bit width
-		static const unsigned int NUM_CTARS              = 8;
-		static const unsigned int TX_FIFO_DEPTH          = 4;
-		static const unsigned int RX_FIFO_DEPTH          = 4;
-		static const unsigned int CMD_FIFO_DEPTH         = 4;
-		static const bool HAS_DATA_SERIALIZATION_SUPPORT = true;
-		static const unsigned int NUM_DSI_INPUTS         = 32;
-		static const unsigned int NUM_DSI_OUTPUTS        = 32;
-	};
-
-	struct DSPI_6_CONFIG
-	{
-		static const unsigned int BUSWIDTH               = 64; // FIXME: DSPI will be on PBRIDGE which is 32-bit width
-		static const unsigned int NUM_CTARS              = 8;
-		static const unsigned int TX_FIFO_DEPTH          = 4;
-		static const unsigned int RX_FIFO_DEPTH          = 4;
-		static const unsigned int CMD_FIFO_DEPTH         = 4;
-		static const bool HAS_DATA_SERIALIZATION_SUPPORT = true;
-		static const unsigned int NUM_DSI_INPUTS         = 32;
-		static const unsigned int NUM_DSI_OUTPUTS        = 32;
-	};
-
-	struct DSPI_12_CONFIG
-	{
-		static const unsigned int BUSWIDTH               = 64; // FIXME: DSPI will be on PBRIDGE which is 32-bit width
-		static const unsigned int NUM_CTARS              = 8;
-		static const unsigned int TX_FIFO_DEPTH          = 4;
-		static const unsigned int RX_FIFO_DEPTH          = 4;
-		static const unsigned int CMD_FIFO_DEPTH         = 4;
-		static const bool HAS_DATA_SERIALIZATION_SUPPORT = false;
-		static const unsigned int NUM_DSI_INPUTS         = 0;
-		static const unsigned int NUM_DSI_OUTPUTS        = 0;
-	};
-#endif
 	//=========================================================================
 	//===                     Aliases for components classes                ===
 	//=========================================================================
@@ -627,11 +208,21 @@ private:
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_SIN_SERIAL_BUS;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_PCS_SERIAL_BUS;
 	typedef unisim::kernel::tlm2::tlm_simple_serial_bus DSPI_12_SS_SERIAL_BUS;
-	//typedef unisim::kernel::tlm2::TargetStub<64> EBI_STUB;
-	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_STUB;
+	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_SPACE_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<64> FLASH_PORT1_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<64> XBAR_0_S6_STUB;
 	typedef unisim::kernel::tlm2::InitiatorStub<64> XBAR_1_M2_STUB;
+	
+	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> PCM_STUB;
+	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> PFLASH_STUB;
+	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> MC_ME_STUB;
+	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> MC_CGM_STUB;
+	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> XBAR_0_STUB;
+	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> XBAR_1_STUB;
+	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> PBRIDGE_A_STUB;
+	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> PBRIDGE_B_STUB;
+	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> SIUL2_STUB;
+	typedef unisim::component::tlm2::memory::ram::Memory<FSB_WIDTH * 8, FSB_ADDRESS_TYPE, FSB_BURST_SIZE / FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_ENABLE> EBI_STUB;
 
 	//=========================================================================
 	//===                      Aliases for services classes                 ===
@@ -762,10 +353,20 @@ private:
 	DSPI_12_SS_SERIAL_BUS   *dspi_12_ss_serial_bus;
 	
 	//  - Stubs
+	EBI_SPACE_STUB *ebi_space_stub;
 	EBI_STUB *ebi_stub;
 	FLASH_PORT1_STUB *flash_port1_stub;
 	XBAR_0_S6_STUB *xbar_0_s6_stub;
 	XBAR_1_M2_STUB *xbar_1_m2_stub;
+	PCM_STUB *pcm_stub;
+	PFLASH_STUB *pflash_stub;
+	MC_ME_STUB *mc_me_stub;
+	MC_CGM_STUB *mc_cgm_stub;
+	XBAR_0_STUB *xbar_0_stub;
+	XBAR_1_STUB *xbar_1_stub;
+	PBRIDGE_A_STUB *pbridge_a_stub;
+	PBRIDGE_B_STUB *pbridge_b_stub;
+	SIUL2_STUB *siul2_stub;
 	
 	unisim::component::tlm2::operators::LogicalOrOperator<bool, NUM_DMA_CHANNELS> *dma_err_irq_combinator;
 	unisim::component::tlm2::operators::LogicalOrOperator<bool, 3> *DSPI0_0;
@@ -827,6 +428,31 @@ private:
 	bool enable_serial_terminal15;
 	bool enable_serial_terminal16;
 	
+	bool dspi_0_is_slave;
+	bool dspi_1_is_slave;
+	bool dspi_2_is_slave;
+	bool dspi_3_is_slave;
+	bool dspi_4_is_slave;
+	bool dspi_5_is_slave;
+	bool dspi_6_is_slave;
+	bool dspi_12_is_slave;
+	unsigned int dspi_0_master;
+	unsigned int dspi_1_master;
+	unsigned int dspi_2_master;
+	unsigned int dspi_3_master;
+	unsigned int dspi_4_master;
+	unsigned int dspi_5_master;
+	unsigned int dspi_6_master;
+	unsigned int dspi_12_master;
+	unsigned int dspi_0_slave;
+	unsigned int dspi_1_slave;
+	unsigned int dspi_2_slave;
+	unsigned int dspi_3_slave;
+	unsigned int dspi_4_slave;
+	unsigned int dspi_5_slave;
+	unsigned int dspi_6_slave;
+	unsigned int dspi_12_slave;
+	
 	unisim::kernel::service::Parameter<bool> param_enable_core0_reset;
 	unisim::kernel::service::Parameter<bool> param_enable_core1_reset;
 	unisim::kernel::service::Parameter<bool> param_enable_core2_reset;
@@ -843,6 +469,31 @@ private:
 	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal15;
 	unisim::kernel::service::Parameter<bool> param_enable_serial_terminal16;
 
+	unisim::kernel::service::Parameter<bool> param_dspi_0_is_slave;
+	unisim::kernel::service::Parameter<bool> param_dspi_1_is_slave;
+	unisim::kernel::service::Parameter<bool> param_dspi_2_is_slave;
+	unisim::kernel::service::Parameter<bool> param_dspi_3_is_slave;
+	unisim::kernel::service::Parameter<bool> param_dspi_4_is_slave;
+	unisim::kernel::service::Parameter<bool> param_dspi_5_is_slave;
+	unisim::kernel::service::Parameter<bool> param_dspi_6_is_slave;
+	unisim::kernel::service::Parameter<bool> param_dspi_12_is_slave;
+	unisim::kernel::service::Parameter<unsigned int> param_dspi_0_master;
+	unisim::kernel::service::Parameter<unsigned int> param_dspi_1_master;
+	unisim::kernel::service::Parameter<unsigned int> param_dspi_2_master;
+	unisim::kernel::service::Parameter<unsigned int> param_dspi_3_master;
+	unisim::kernel::service::Parameter<unsigned int> param_dspi_4_master;
+	unisim::kernel::service::Parameter<unsigned int> param_dspi_5_master;
+	unisim::kernel::service::Parameter<unsigned int> param_dspi_6_master;
+	unisim::kernel::service::Parameter<unsigned int> param_dspi_12_master;
+	unisim::kernel::service::Parameter<unsigned int> param_dspi_0_slave;
+	unisim::kernel::service::Parameter<unsigned int> param_dspi_1_slave;
+	unisim::kernel::service::Parameter<unsigned int> param_dspi_2_slave;
+	unisim::kernel::service::Parameter<unsigned int> param_dspi_3_slave;
+	unisim::kernel::service::Parameter<unsigned int> param_dspi_4_slave;
+	unisim::kernel::service::Parameter<unsigned int> param_dspi_5_slave;
+	unisim::kernel::service::Parameter<unsigned int> param_dspi_6_slave;
+	unisim::kernel::service::Parameter<unsigned int> param_dspi_12_slave;
+
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
 	
@@ -851,7 +502,13 @@ private:
 	void Core2ResetProcess();
 	
 	void InterruptSource(unsigned int irq_num, const std::string& source = std::string());
-	void DMASource(unsigned int dmamux_num, unsigned int dma_source_num, const std::string& source = std::string());
+	//void DMASource(unsigned int dmamux_num, unsigned int dma_source_num, const std::string& source_req = std::string(), const std::string& source_ack = std::string());
+	void LogicalOr2(sc_core::sc_signal<bool>& in0, sc_core::sc_signal<bool>& in1, sc_core::sc_signal<bool>& out);
+	void LogicalOr3(sc_core::sc_signal<bool>& in0, sc_core::sc_signal<bool>& in1, sc_core::sc_signal<bool>& in2, sc_core::sc_signal<bool>& out);
+	void DMASource(unsigned int dmamux_num, unsigned int dma_source_num);
+	void DMASource(const std::string& source_req, const std::string& source_ack, unsigned int dmamux_num, unsigned int dma_source_num);
+	void DMASource(const std::string& source_req, const std::string& source_ack, unsigned int dmamux_num0, unsigned int dma_source_num0, unsigned int dmamux_num1, unsigned int dma_source_num1);
+	void DMASource(const std::string& source_req, const std::string& source_ack, unsigned int dmamux_num0, unsigned int dma_source_num0, unsigned int dmamux_num1, unsigned int dma_source_num1, unsigned int dmamux_num2, unsigned int dma_source_num2);
 	
 	virtual void SigInt();
 };

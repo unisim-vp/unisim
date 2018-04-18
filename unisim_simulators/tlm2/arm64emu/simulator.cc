@@ -393,7 +393,7 @@ BOOL WINAPI Simulator::ConsoleCtrlHandler(DWORD dwCtrlType)
 void Simulator::SigIntHandler(int signum)
 {
   std::cerr << "Interrupted by Ctrl-C or SIGINT signal" << std::endl;
-  unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
+  unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
 }
 #endif
 

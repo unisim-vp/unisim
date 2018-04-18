@@ -815,7 +815,7 @@ bus_target_b_transport(transaction_type &trans,
 			<< "Stopping simulation because of unhandled behavior"
 			<< EndDebugError;
 		// stop simulation
-		unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+		unisim::kernel::service::Simulator::Instance()->Stop(this, __LINE__);
 	}
 
 	// everything went fine, update the status of the tlm response

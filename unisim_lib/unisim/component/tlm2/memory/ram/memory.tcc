@@ -65,10 +65,12 @@ Memory(const sc_core::sc_module_name& name, Object *parent)
 	, read_latency(cycle_time)
 	, write_latency(sc_core::SC_ZERO_TIME)
 	, read_only(false)
+	, enable_dmi(true)
 	, param_cycle_time("cycle-time", this, cycle_time, "memory cycle time")
 	, param_read_latency("read-latency", this, read_latency, "memory read latency")
 	, param_write_latency("write-latency", this, write_latency, "memory write latency")
 	, param_read_only("read-only", this, read_only, "enable/disable read-only protection")
+	, param_enable_dmi("enable-dmi", this, enable_dmi, "Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation")
 	, stat_read_counter("read-counter", this, read_counter, "read access counter (not accurate when using SystemC TLM 2.0 DMI)")
 	, stat_write_counter("write-counter", this, write_counter, "write access counter (not accurate when using SystemC TLM 2.0 DMI)")
 	, burst_latency_lut()
@@ -142,27 +144,37 @@ UpdateTime(unsigned int data_length, const sc_core::sc_time& latency, sc_core::s
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 bool Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
 {
-	// tlm::tlm_command cmd = payload.get_command();
-	ADDRESS addr = payload.get_address();
-	ADDRESS dmi_start_addr = addr;
-	ADDRESS dmi_end_addr = addr;
-
-	unsigned char *dmi_ptr = (unsigned char *) inherited::GetDirectAccess(addr, dmi_start_addr, dmi_end_addr);
-
-	dmi_data.set_start_address(dmi_start_addr);
-	dmi_data.set_end_address(dmi_end_addr);
-	dmi_data.set_granted_access(read_only ? tlm::tlm_dmi::DMI_ACCESS_READ : tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
-
-	if(dmi_ptr)
+	if(enable_dmi)
 	{
-		//std::cerr << sc_module::name() << ": grant 0x" << std::hex << dmi_start_addr << "-0x" << dmi_end_addr << std::dec << std::endl;
-		dmi_data.set_dmi_ptr(dmi_ptr);
-		// set latency per byte (with a typical burst of BURST_LENGTH * BUSWIDTH bits)
-		sc_core::sc_time read_burst_time = (BURST_LENGTH * cycle_time) + read_latency;
-		sc_core::sc_time write_burst_time = (BURST_LENGTH * cycle_time) + write_latency;
-		dmi_data.set_read_latency(read_burst_time / ((BURST_LENGTH * BUSWIDTH) / 8));
-		dmi_data.set_write_latency(write_burst_time / ((BURST_LENGTH * BUSWIDTH) / 8));
-		return true;
+		// tlm::tlm_command cmd = payload.get_command();
+		ADDRESS addr = payload.get_address();
+		ADDRESS dmi_start_addr = addr;
+		ADDRESS dmi_end_addr = addr;
+
+		unsigned char *dmi_ptr = (unsigned char *) inherited::GetDirectAccess(addr, dmi_start_addr, dmi_end_addr);
+
+		dmi_data.set_start_address(dmi_start_addr);
+		dmi_data.set_end_address(dmi_end_addr);
+		dmi_data.set_granted_access(read_only ? tlm::tlm_dmi::DMI_ACCESS_READ : tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+
+		if(dmi_ptr)
+		{
+			//std::cerr << sc_module::name() << ": grant 0x" << std::hex << dmi_start_addr << "-0x" << dmi_end_addr << std::dec << std::endl;
+			dmi_data.set_dmi_ptr(dmi_ptr);
+			// set latency per byte (with a typical burst of BURST_LENGTH * BUSWIDTH bits)
+			sc_core::sc_time read_burst_time = (BURST_LENGTH * cycle_time) + read_latency;
+			sc_core::sc_time write_burst_time = (BURST_LENGTH * cycle_time) + write_latency;
+			dmi_data.set_read_latency(read_burst_time / ((BURST_LENGTH * BUSWIDTH) / 8));
+			dmi_data.set_write_latency(write_burst_time / ((BURST_LENGTH * BUSWIDTH) / 8));
+			return true;
+		}
+	}
+	else
+	{
+		// Deny direct memory interface access
+		dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+		dmi_data.set_start_address(0);
+		dmi_data.set_end_address(sc_dt::uint64(-1));
 	}
 
 	return false;
@@ -191,7 +203,7 @@ unsigned int Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transpor
 					<< ":" << sc_core::sc_time_stamp().to_string()
 					<< ": received a TLM_READ_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
-					<< " of " << data_length << " bytes in length" << std::endl
+					<< " of " << data_length << " bytes in length"
 					<< EndDebugInfo;
 			}
 
@@ -208,7 +220,7 @@ unsigned int Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transpor
 					<< ":" << sc_core::sc_time_stamp().to_string()
 					<< ": received a TLM_WRITE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
-					<< " of " << data_length << " bytes in length" << std::endl
+					<< " of " << data_length << " bytes in length"
 					<< EndDebugInfo;
 			}
 			if(byte_enable_length ||(streaming_width && (streaming_width != data_length)) )
@@ -223,7 +235,7 @@ unsigned int Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transpor
 					<< ":" << sc_core::sc_time_stamp().to_string() 
 					<< " : received an unexpected TLM_IGNORE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
-					<< " of " << data_length << " bytes in length" << std::endl
+					<< " of " << data_length << " bytes in length"
 					<< EndDebugWarning;
 			Object::Stop(-1);
 			break;
@@ -269,7 +281,7 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb
 					<< ":" << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": received a TLM_READ_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
-					<< " of " << data_length << " bytes in length" << std::endl
+					<< " of " << data_length << " bytes in length"
 					<< EndDebugInfo;
 			}
 
@@ -291,7 +303,7 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb
 					<< ":" << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": received a TLM_WRITE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
-					<< " of " << data_length << " bytes in length" << std::endl
+					<< " of " << data_length << " bytes in length"
 					<< EndDebugInfo;
 			}
 			
@@ -323,7 +335,7 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb
 					<< ":" << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": received a TLM_IGNORE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
-					<< " of " << data_length << " bytes in length" << std::endl
+					<< " of " << data_length << " bytes in length"
 					<< EndDebugInfo;
 			}
 			status = true;
@@ -385,7 +397,7 @@ b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 					<< ": raw data read (0x" << std::hex << addr << std::dec
 					<< ", " << data_length << ") = 0x";
 				for (unsigned int i = 0; i < data_length; i++)
-					this->logger << (unsigned int)(uint8_t)data_ptr[i] << " ";
+					this->logger << "0x" << std::hex << (unsigned int)(uint8_t)data_ptr[i] << " " << std::dec;
 				this->logger << EndDebugInfo;
 			}
 			UpdateTime(data_length, read_latency, t);
@@ -397,7 +409,7 @@ b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 					<< ":" << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": received a TLM_WRITE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
-					<< " of " << data_length << " bytes in length" << std::endl
+					<< " of " << data_length << " bytes in length"
 					<< EndDebugInfo;
 			}
 
@@ -410,6 +422,15 @@ b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 			}
 			else
 			{
+				if (IsVerbose())
+				{
+					this->logger << DebugInfo << LOCATION
+						<< ": raw data written (0x" << std::hex << addr << std::dec
+						<< ", " << data_length << ") = 0x";
+					for (unsigned int i = 0; i < data_length; i++)
+						this->logger << "0x" << std::hex << (unsigned int)(uint8_t)data_ptr[i] << " " << std::dec;
+					this->logger << EndDebugInfo;
+				}
 				if(byte_enable_length ||(streaming_width && (streaming_width != data_length)) )
 					status = inherited::WriteMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
 				else
@@ -429,7 +450,7 @@ b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 					<< ":" << (sc_core::sc_time_stamp() + t).to_string()
 					<< ": received a TLM_IGNORE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
-					<< " of " << data_length << " bytes in length" << std::endl
+					<< " of " << data_length << " bytes in length"
 					<< EndDebugInfo;
 			}
 			status = true;

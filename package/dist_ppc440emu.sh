@@ -105,7 +105,8 @@ vector"
 
 UNISIM_LIB_PPC440EMU_SOURCE_FILES="\
 unisim/kernel/service/service.cc \
-unisim/kernel/service/xml_helper.cc \
+unisim/kernel/service/xml_config_file_helper.cc \
+unisim/kernel/service/ini_config_file_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
@@ -196,7 +197,8 @@ unisim/component/cxx/processor/powerpc/ppc440/isa/esr.isa"
 
 UNISIM_LIB_PPC440EMU_HEADER_FILES="${UNISIM_LIB_PPC440EMU_ISA_FILES} \
 unisim/kernel/service/service.hh \
-unisim/kernel/service/xml_helper.hh \
+unisim/kernel/service/xml_config_file_helper.hh \
+unisim/kernel/service/ini_config_file_helper.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/tlm2/tlm.hh \

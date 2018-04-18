@@ -354,7 +354,7 @@ using unisim::service::debug::gdb_server::GDB_WAIT_CONNECTION_ALWAYS;
 template <> Variable<GDBWaitConnectionMode>::Variable(const char *_name, Object *_object, GDBWaitConnectionMode& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 	AddEnumeratedValue("never");
 	AddEnumeratedValue("startup-only");
 	AddEnumeratedValue("always");
@@ -376,7 +376,7 @@ template <> Variable<GDBWaitConnectionMode>::operator bool () const { return *st
 template <> Variable<GDBWaitConnectionMode>::operator long long () const { return *storage; }
 template <> Variable<GDBWaitConnectionMode>::operator unsigned long long () const { return *storage; }
 template <> Variable<GDBWaitConnectionMode>::operator double () const { return (double)(*storage); }
-template <> Variable<GDBWaitConnectionMode>::operator string () const
+template <> Variable<GDBWaitConnectionMode>::operator std::string () const
 {
 	switch(*storage)
 	{
@@ -488,7 +488,7 @@ using unisim::service::debug::gdb_server::GDB_MODE_MULTI_THREAD;
 template <> Variable<GDBMode>::Variable(const char *_name, Object *_object, GDBMode& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 	AddEnumeratedValue("single-thread");
 	AddEnumeratedValue("multi-thread");
 }
@@ -509,7 +509,7 @@ template <> Variable<GDBMode>::operator bool () const { return *storage != GDB_M
 template <> Variable<GDBMode>::operator long long () const { return *storage; }
 template <> Variable<GDBMode>::operator unsigned long long () const { return *storage; }
 template <> Variable<GDBMode>::operator double () const { return (double)(*storage); }
-template <> Variable<GDBMode>::operator string () const
+template <> Variable<GDBMode>::operator std::string () const
 {
 	switch(*storage)
 	{

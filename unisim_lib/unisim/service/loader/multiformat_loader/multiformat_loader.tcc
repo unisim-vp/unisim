@@ -260,7 +260,7 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 			sstr_loader_param_filename_name << Object::GetName() << "." << loader_name << ".filename";
 			std::string loader_param_filename_name(sstr_loader_param_filename_name.str());
 			
-			unisim::kernel::service::Simulator::simulator->SetVariable(loader_param_filename_name.c_str(), filename_to_load.c_str());
+			unisim::kernel::service::Simulator::Instance()->SetVariable(loader_param_filename_name.c_str(), filename_to_load.c_str());
 			
 			// the real stuff of instantiating a loader is there
 			switch(file_fmt)

@@ -63,7 +63,7 @@
 void SigIntHandler(int signum)
 {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
+	unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
 }
 
 using namespace std;

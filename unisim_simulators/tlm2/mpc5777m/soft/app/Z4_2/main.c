@@ -13,6 +13,7 @@
 #include "dmamux.h"
 #include "edma.h"
 #include "console.h"
+#include "dspi.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,11 +21,7 @@
 #include <sys/stat.h>
 #include <sys/times.h>
 
-#define KEY_VALUE1 0x5AF0ul
-#define KEY_VALUE2 0xA50Ful
-
-#define UART_FIFO_MODE 1
-#define UART_RX_FIFO_DMA_MODE 1
+#define DSPI_INT_MODE 1
 
 void periodic_task(unsigned int stm_id, unsigned int chan)
 {
@@ -38,33 +35,34 @@ void periodic_task2(unsigned int pit_id, unsigned int chan)
 	pit_clear_timer_interrupt_flag(pit_id, chan); // clear PIT_0 interrupt flag
 }
 
-void linflexd_0_int_rx(unsigned int linflexd_id, enum LINFlexD_INT linflexd_int)
+#if DSPI_INT_MODE
+void dspi_2_tfff_rfdf(unsigned int dspi_id, enum DSPI_REQ dspi_req)
 {
-	if(linflexd_get_uart_data_received_interrupt_flag(linflexd_id))
+	static int x = 0;
+	while(dspi_get_interrupt_request_flag(dspi_id, DSPI_REQ_RFDF))
 	{
-		linflexd_clear_uart_data_received_interrupt_flag(linflexd_id); // LINFlexD_0 (Normal mode): clear data received interrupt flag
+		dspi_clear_interrupt_request_flag(dspi_id, DSPI_REQ_RFDF);
+		volatile uint16_t v = dspi_spi_rx_fifo_pop_half_word(dspi_id);
+	}
+	while(dspi_get_interrupt_request_flag(dspi_id, DSPI_REQ_TFFF))
+	{
+		dspi_clear_interrupt_request_flag(dspi_id, DSPI_REQ_TFFF);
 		
-		char ch = 0;
-		linflexd_uart_rx_buffer_read_byte(linflexd_id, (uint8_t *) &ch, 0);        // LINFlexD_0 (Normal mode): receive character
-			
-		linflexd_release_uart_rx_buffer(linflexd_id);                  // LINFlexD_0 (Normal mode): release message buffer
-		
-		linflexd_uart_tx_buffer_write_byte(linflexd_id, (uint8_t *) &ch, 0);       // LINFlexD_0 (Normal mode): send character
+		struct DSPI_MASTER_SPI_COMMAND spi_cmd;
+		spi_cmd.cont = 1;
+		spi_cmd.ctas = 0;
+		spi_cmd.eoq = 0;
+		spi_cmd.ctcnt = 0;
+		spi_cmd.pe_masc = 0;
+		spi_cmd.pp_mcsc = 0;
+		spi_cmd.pcs = 1 << (7 - 0);
+
+		uint16_t v = x ? 0xcafe : 0xbabe;
+		dspi_master_spi_tx_fifo_push(dspi_id, &spi_cmd, v);
+		x ^= 1;
 	}
 }
-
-void linflexd_0_int_tx(unsigned int linflexd_id, enum LINFlexD_INT linflexd_int)
-{
-	if(linflexd_get_uart_data_transmitted_interrupt_flag(linflexd_id))
-	{
-		linflexd_clear_uart_data_transmitted_interrupt_flag(linflexd_id);       // LINFlexD_0 (Normal mode): clear transmission complete flag
-	}
-}
-
-void linflexd_0_int_err(unsigned int linflexd_id, enum LINFlexD_INT linflexd_int)
-{
-	while(1);
-}
+#endif
 
 int main(void)
 {
@@ -85,6 +83,68 @@ int main(void)
 	pit_enable_timer(0, 0);                                // PIT_0: enable timer #0
 	pit_enable_timer_interrupt(0, 0);                      // PIT_0: enable interrupts for timer #0
 	pit_enable_timers_clock(0);                            // PIT_0: enable PIT_0 timers clock
+	
+	dspi_init(2);
+	dspi_set_mode(2, DSPI_MASTER_MODE);
+	dspi_set_peripheral_chip_select_inactive_states(2, 0xff); // inactive high, active low
+	
+	struct DSPI_CLOCK_AND_TRANSFER_ATTRIBUTES cta0;
+	cta0.double_baud_rate               = 0;
+	cta0.frame_size                     = 16;
+	cta0.clock_polarity                 = DSPI_CLOCK_INACTIVE_LOW;
+	cta0.clock_phase                    = DSPI_CLOCK_CAPTURED_LEADING_EDGE;
+	cta0.lsb_first                      = 0;
+	cta0.pcs_to_sck_delay_prescaler     = 0;
+	cta0.after_sck_delay_prescaler      = 0;
+	cta0.delay_after_transfer_prescaler = 0;
+	cta0.baud_rate_prescaler            = 2;
+	cta0.pcs_to_sck_delay_scaler        = 0;
+	cta0.after_sck_delay_scaler         = 0;
+	cta0.delay_after_transfer_scaler    = 0;
+	cta0.baud_rate_scaler               = 4;
+	cta0.parity_enable                  = 0;
+	cta0.parity_polarity                = 0;
+
+	dspi_set_spi_clock_and_transfer_attributes(2, 0, &cta0);
+	
+	dspi_enable_module(2);
+	dspi_start_transfers(2);
+	
+#if DSPI_INT_MODE
+	dspi_set_interrupt_handler(2, DSPI_REQ_TFFF, dspi_2_tfff_rfdf);
+	dspi_set_interrupt_handler(2, DSPI_REQ_RFDF, dspi_2_tfff_rfdf);
+	dspi_enable_request(2, DSPI_REQ_TFFF);
+	dspi_enable_request(2, DSPI_REQ_RFDF);
+#else
+	struct DSPI_MASTER_SPI_COMMAND spi_cmd;
+	spi_cmd.cont = 0;
+	spi_cmd.ctas = 0;
+	spi_cmd.eoq = 0;
+	spi_cmd.ctcnt = 0;
+	spi_cmd.pe_masc = 0;
+	spi_cmd.pp_mcsc = 0;
+	spi_cmd.pcs = 1 << (7 - 0);
+	
+	int x = 0;
+	
+	do
+	{
+		if(dspi_get_interrupt_request_flag(2, DSPI_REQ_TFFF))
+		{
+			dspi_clear_interrupt_request_flag(2, DSPI_REQ_TFFF);
+			uint16_t v = x ? 0xcafe : 0xbabe;
+			dspi_master_spi_tx_fifo_push(2, &spi_cmd, v);
+			//printf("push 0x%x\n", v);
+			x ^= 1;
+		}
+		if(dspi_get_interrupt_request_flag(2, DSPI_REQ_RFDF))
+		{
+			dspi_clear_interrupt_request_flag(2, DSPI_REQ_RFDF);
+			uint16_t v = dspi_spi_rx_fifo_pop_half_word(2);
+			//printf("pop 0x%x\n", v);
+		}
+	} while(1);
+#endif
 	
 	const char boot_msg[] = "HAL 9000...booting..............................\r\n"
 						"I'm ready to control Discovery One spacecraft.\r\n\r\n"

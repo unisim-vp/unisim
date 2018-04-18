@@ -430,11 +430,11 @@ private:
 		// From Front-end
 		
 		// unisim::service::interfaces::DebugYieldingRequest
-		virtual void DebugYieldRequest() { dbg.Lock(); dbg.DebugYieldRequest(id); dbg.Unlock(); }
+		virtual void DebugYieldRequest() { /*dbg.Lock(); */dbg.DebugYieldRequest(id); /*dbg.Unlock();*/ }
 
 		// unisim::service::interfaces::DebugSelecting
-		virtual bool DebugSelect(unsigned int prc_num) { dbg.Lock(); bool ret = dbg.DebugSelect(id, prc_num); dbg.Unlock(); return ret; }
-		virtual unsigned int DebugGetSelected() const { dbg.Lock(); unsigned int ret = dbg.DebugGetSelected(id); dbg.Unlock(); return ret; }
+		virtual bool DebugSelect(unsigned int prc_num) { /*dbg.Lock();*/ bool ret = dbg.DebugSelect(id, prc_num); /*dbg.Unlock();*/ return ret; }
+		virtual unsigned int DebugGetSelected() const { /*dbg.Lock();*/ unsigned int ret = dbg.DebugGetSelected(id); /*dbg.Unlock();*/ return ret; }
 		
 		// unisim::service::interfaces::DebugEventTrigger<ADDRESS>
 		virtual bool Listen(unisim::util::debug::Event<ADDRESS> *event) { dbg.Lock(); bool ret = dbg.Listen(id, event); dbg.Unlock(); return ret; }

@@ -516,7 +516,7 @@ using unisim::component::tlm2::com::serial_terminal::PARITY_TYPE_ODD;
 template <> Variable<ParityType>::Variable(const char *_name, Object *_object, ParityType& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 	AddEnumeratedValue("none");
 	AddEnumeratedValue("even");
 	AddEnumeratedValue("odd");
@@ -538,7 +538,7 @@ template <> Variable<ParityType>::operator bool () const { return *storage != PA
 template <> Variable<ParityType>::operator long long () const { return *storage; }
 template <> Variable<ParityType>::operator unsigned long long () const { return *storage; }
 template <> Variable<ParityType>::operator double () const { return (double)(*storage); }
-template <> Variable<ParityType>::operator string () const
+template <> Variable<ParityType>::operator std::string () const
 {
 	switch(*storage)
 	{
@@ -648,7 +648,7 @@ using unisim::component::tlm2::com::serial_terminal::MSB;
 template <> Variable<BitOrder>::Variable(const char *_name, Object *_object, BitOrder& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 	AddEnumeratedValue("lsb");
 	AddEnumeratedValue("msb");
 }
@@ -669,7 +669,7 @@ template <> Variable<BitOrder>::operator bool () const { return *storage != LSB;
 template <> Variable<BitOrder>::operator long long () const { return *storage; }
 template <> Variable<BitOrder>::operator unsigned long long () const { return *storage; }
 template <> Variable<BitOrder>::operator double () const { return (double)(*storage); }
-template <> Variable<BitOrder>::operator string () const
+template <> Variable<BitOrder>::operator std::string () const
 {
 	switch(*storage)
 	{

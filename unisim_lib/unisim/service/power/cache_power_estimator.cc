@@ -66,7 +66,7 @@ VariableBase(_name, _object, type, _description), storage(&_storage)
 	AddEnumeratedValue("normal");
 	AddEnumeratedValue("sequential");
 	AddEnumeratedValue("fast");
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>

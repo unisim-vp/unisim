@@ -1192,14 +1192,14 @@ BOOL WINAPI Simulator::ConsoleCtrlHandler(DWORD dwCtrlType)
 			stop = true;
 			break;
 	}
-	if(stop) unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
+	if(stop) unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
 	return stop ? TRUE : FALSE;
 }
 #else
 void Simulator::SigIntHandler(int signum)
 {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
+	unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
 }
 #endif
 

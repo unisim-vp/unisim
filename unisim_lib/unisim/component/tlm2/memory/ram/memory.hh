@@ -124,6 +124,8 @@ private:
 	sc_core::sc_time write_latency;
 	/** read-only flag */
 	bool read_only;
+	/** enable-dmi flag */
+	bool enable_dmi;
 	/** The parameter to set frequency */
 	Parameter<sc_core::sc_time> param_cycle_time;
 	/** The parameters to set the latencies */
@@ -131,6 +133,8 @@ private:
 	Parameter<sc_core::sc_time> param_write_latency;
 	/** The parameter to set read-only */
 	Parameter<bool> param_read_only;
+	/** The parameter to set enable-dmi */
+	Parameter<bool> param_enable_dmi;
 
 	Statistic<uint64_t> stat_read_counter;
 	Statistic<uint64_t> stat_write_counter;

@@ -42,6 +42,11 @@
 #include <unisim/kernel/tlm2/clock.hh>
 #include <unisim/util/reg/core/register.hh>
 #include <unisim/util/likely/likely.hh>
+#include <math.h>
+
+#define SWITCH_ENUM_TRAIT(ENUM_TYPE, CLASS_NAME) template <ENUM_TYPE, bool __SWITCH_TRAIT_DUMMY__ = true> struct CLASS_NAME {}
+#define CASE_ENUM_TRAIT(ENUM_VALUE, CLASS_NAME) template <bool __SWITCH_TRAIT_DUMMY__> struct CLASS_NAME<ENUM_VALUE, __SWITCH_TRAIT_DUMMY__>
+#define ENUM_TRAIT(ENUM_VALUE, CLASS_NAME) CLASS_NAME<ENUM_VALUE>
 
 namespace unisim {
 namespace component {
@@ -163,13 +168,17 @@ public:
 	peripheral_slave_if_type                         peripheral_slave_if;         // Peripheral slave interface
 	SOUT_type                                        SOUT;                        // Tx Serial interface
 	SIN_type                                         SIN;                         // Rx Serial interface
-	SS_type                                          SS_b;                        // Slave select (active low)
+	SS_type                                          SS;                          // Slave select
 	sc_core::sc_in<bool>                             m_clk;                       // clock port
 	sc_core::sc_in<bool>                             dspi_clk;                    // DSPI Clock port
 	sc_core::sc_in<bool>                             reset_b;                     // reset
 	sc_core::sc_in<bool>                             debug;                       // debug
 	sc_core::sc_in<bool>                             HT;                          // Hardware trigger
 	sc_core::sc_vector<sc_core::sc_in<bool> >        DSI_INPUT;                   // Deserial/Serial Interface parallel input signals
+	sc_core::sc_in<bool>                             DMA_ACK_RX;                  // Rx DMA Acknowledgement
+	sc_core::sc_in<bool>                             DMA_ACK_TX;                  // Tx DMA Acknowledgement
+	sc_core::sc_in<bool>                             DMA_ACK_CMD;                 // CMD DMA Acknowledgement
+	sc_core::sc_in<bool>                             DMA_ACK_DD;                  // Deserialized Data Match DMA Acknowledgement
 	
 	// outputs
 	sc_core::sc_vector<PCS_type>                     PCS;                         // Peripheral Chip Select
@@ -191,6 +200,7 @@ public:
 	sc_core::sc_out<bool>                            DMA_RX;                      // Rx DMA request
 	sc_core::sc_out<bool>                            DMA_TX;                      // Tx DMA request
 	sc_core::sc_out<bool>                            DMA_CMD;                     // CMD DMA request
+	sc_core::sc_out<bool>                            DMA_DD;                      // Deserialized Data Match DMA request
 	
 	DSPI(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
 	virtual ~DSPI();
@@ -395,19 +405,26 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x00004001);
+			this->dspi->UpdateState();
 			Update();
 		}
 		
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
 		{
 			bool old_mstr = this->template Get<MSTR>();
+			bool old_mdis = this->template Get<MDIS>();
 			bool old_dis_txf = this->template Get<DIS_TXF>();
+			bool old_pes = this->template Get<PES>();
 			ReadWriteStatus rws = Super::Write(value, bit_enable);
 			
 			if(!IsReadWriteError(rws))
 			{
+				this->dspi->UpdateState();
+				
 				bool new_mstr = this->template Get<MSTR>();
+				bool new_mdis = this->template Get<MDIS>();
 				bool new_dis_txf = this->template Get<DIS_TXF>();
+				bool new_pes = this->template Get<PES>();
 				
 				bool mstr_value_changed = new_mstr ^ old_mstr;
 				bool dis_txf_value_changed = new_dis_txf ^ old_dis_txf;
@@ -415,6 +432,8 @@ private:
 				if(mstr_value_changed && !this->template Get<HALT>() && (!this->dspi->TX_FIFO_Empty() || !this->dspi->CMD_FIFO_Empty() || !this->dspi->RX_FIFO_Empty()))
 				{
 					this->dspi->logger << DebugWarning << sc_core::sc_time_stamp() << ": when switching between master and slave modes, to garantee proper operation, " << this->GetName() << " should be set to 1, and both the transmit and the receive FIFOs should be cleared" << EndDebugWarning;
+					
+					this->dspi->ModeSwitch();
 				}
 				
 				if(mstr_value_changed || dis_txf_value_changed)
@@ -434,7 +453,23 @@ private:
 					this->template Set<CLR_RXF>(0);
 				}
 				
+				if(!old_mdis && new_mdis) // enabling module?
+				{
+					this->dspi->ScheduleTransfer();
+				}
+				
+				if(!new_mstr && new_mdis)
+				{
+					this->dspi->logger << DebugWarning << sc_core::sc_time_stamp() << ": MDIS should be set to '0' in Slave Mode as a slave doesn't control master transactions" << EndDebugWarning;
+				}
+				
 				Update();
+				
+				// if PES is set to zero, it may allow restarting SPI/DSI operation/transmission if stopped because of parity error
+				if(old_pes && !new_pes)
+				{
+					this->dspi->ScheduleTransfer();
+				}
 			}
 			return rws;
 		}
@@ -519,9 +554,9 @@ private:
 		
 		typedef FieldSet<DBR, FMSZ, CPOL, CPHA, LSBFE, PCSSCK, PASC, PDT, PBR, CSSCK, ASC, DT, BR> ALL;
 		
-		DSPI_CTAR() : Super(0), reg_num(0), dspi_clock_period(), dconf(DCONF_SPI), tsbc(false), scke(false), sck_period(), sck_half_period(), t_CSC(), t_ASC(), t_DT() {}
-		DSPI_CTAR(DSPI<CONFIG> *_dspi) : Super(_dspi), reg_num(0), dspi_clock_period(), dconf(DCONF_SPI), tsbc(false), scke(false), sck_period(), sck_half_period(), t_CSC(), t_ASC(), t_DT() {}
-		DSPI_CTAR(DSPI<CONFIG> *_dspi, uint32_t value) : Super(_dspi, value), reg_num(0), dspi_clock_period(), dconf(DCONF_SPI), tsbc(false), scke(false), sck_period(), sck_half_period(), t_CSC(), t_ASC(), t_DT() {}
+		DSPI_CTAR() : Super(0), reg_num(0), master_clock_period(), dspi_clock_period(), dconf(DCONF_SPI), tsbc(false), scke(false), sck_period(), sck_half_period(), t_CSC(), t_ASC(), t_DT(), min_frame_size(0) {}
+		DSPI_CTAR(DSPI<CONFIG> *_dspi) : Super(_dspi), reg_num(0), master_clock_period(), dspi_clock_period(), dconf(DCONF_SPI), tsbc(false), scke(false), sck_period(), sck_half_period(), t_CSC(), t_ASC(), t_DT(), min_frame_size(0) {}
+		DSPI_CTAR(DSPI<CONFIG> *_dspi, uint32_t value) : Super(_dspi, value), reg_num(0), master_clock_period(), dspi_clock_period(), dconf(DCONF_SPI), tsbc(false), scke(false), sck_period(), sck_half_period(), t_CSC(), t_ASC(), t_DT(), min_frame_size(0) {}
 		
 		void WithinRegisterFileCtor(unsigned int _reg_num, DSPI<CONFIG> *_dspi)
 		{
@@ -612,10 +647,18 @@ private:
 			
 			return t_DT;
 		}
+		
+		unsigned int GetMinFrameSize() const
+		{
+			Update();
+			
+			return min_frame_size;
+		}
 
 		using Super::operator =;
 	private:
 		unsigned int reg_num;
+		mutable sc_core::sc_time master_clock_period;
 		mutable sc_core::sc_time dspi_clock_period;
 		mutable DSPI_Configuration dconf;
 		mutable bool tsbc;
@@ -625,14 +668,19 @@ private:
 		mutable sc_core::sc_time t_CSC;
 		mutable sc_core::sc_time t_ASC;
 		mutable sc_core::sc_time t_DT;
+		mutable unsigned int min_frame_size;
 		
 		void Update() const
 		{
-			if(unlikely((dspi_clock_period != this->dspi->dspi_clock_period) ||
+			if(unlikely((master_clock_period != this->dspi->master_clock_period) ||
+			            (dspi_clock_period != this->dspi->dspi_clock_period) ||
 			            (dconf != this->dspi->Configuration()) ||
 			            (tsbc != this->dspi->dspi_dsicr0.template Get<typename DSPI_DSICR0::TSBC>()) ||
 			            (scke != this->dspi->dspi_mcr.template Get<typename DSPI_MCR::CONT_SCKE>())))
 			{
+				// register read/write clock: 1 / f_r
+				master_clock_period = this->dspi->master_clock_period;
+				
 				// protocol clock: 1 / f_P
 				dspi_clock_period = this->dspi->dspi_clock_period;
 				
@@ -640,38 +688,53 @@ private:
 				tsbc = this->dspi->dspi_dsicr0.template Get<typename DSPI_DSICR0::TSBC>();
 				scke = this->dspi->dspi_mcr.template Get<typename DSPI_MCR::CONT_SCKE>();
 				
-				// baud rate: 1 / f_SCK = (1 / f_P) * PBR * (1 + DBR) / BR
+				// baud rate: 1 / f_SCK = (1 / f_P) * (PBR * BR) / (1 + DBR)
+				unsigned int pbr = (2 * this->template Get<PBR>()) + 1;
+				unsigned int dbr = this->template Get<DBR>();
+				unsigned int br = 1 << this->template Get<BR>();
+				double n = (double)(pbr * br) / (1 + dbr);
 				sck_period = dspi_clock_period;
-				sck_period *= (double) (this->template Get<PBR>() * (1 + this->template Get<DBR>())) / this->template Get<BR>();
+				sck_period *= n;
 				sck_half_period = sck_period;
 				sck_half_period *= 0.5;
 				
 				// PCS to SCK delay: t_CSC = (1 / f_P) * PCSSCK * CSSCK
+				unsigned int pcssck = (2 * this->template Get<PCSSCK>()) + 1;
+				unsigned int cssck = 1 << (this->template Get<CSSCK>() + 1);
 				t_CSC = dspi_clock_period;
-				t_CSC *= (double) (this->template Get<PCSSCK>() * this->template Get<CSSCK>());
+				t_CSC *= (double) (pcssck * cssck);
 				
 				// After SCK delay: t_ASC = (1 / f_P) * PASC * ASC
+				unsigned int pasc = (2 * this->template Get<PASC>()) + 1;
+				unsigned int asc = 1 << (this->template Get<ASC>() + 1);
 				t_ASC = dspi_clock_period;
-				t_ASC *= (double) (this->template Get<PASC>() * this->template Get<ASC>());
+				t_ASC *= (double) (pasc * asc);
 				
+				t_DT = dspi_clock_period;
 				if((dconf == DCONF_CSI) && tsbc)
 				{
 					// TSB mode
 					// Delay after transfer: t_DT = (1 / f_P) * (concat(PDT, BT) + 1)
-					t_DT = dspi_clock_period;
-					t_DT *= (double) (((this->template Get<PDT>() << DT::BITWIDTH) | this->template Get<DT>()) + 1);
+					unsigned int pdt = this->template Get<PDT>();
+					unsigned int dt = this->template Get<DT>();
+					t_DT *= (double)((1 << (((pdt << DT::BITWIDTH) | dt) + 1)) + 1);
 				}
 				else if(scke)
 				{
 					// Continuous Serial Communications Clock
 					// Delay after transfer: t_DT = (1 / f_P)
-					t_DT = dspi_clock_period;
 				}
 				else
 				{
+					unsigned int pdt = (2 * this->template Get<PDT>()) + 1;
+					unsigned int dt = 1 << (this->template Get<DT>() + 1);
 					// Delay after transfer: t_DT = (1 / f_P) * PDT * DT
-					t_DT *= (double) (this->template Get<PDT>() * this->template Get<DT>());
+					t_DT *= (double) (pdt * dt);
 				}
+				
+				double _min_frame_size = (((master_clock_period * 4.0) / dspi_clock_period) + 3.0) / n;
+				min_frame_size = ceil(_min_frame_size);
+				if(min_frame_size < 4) min_frame_size = 4;
 			}
 		}
 	};
@@ -766,7 +829,10 @@ private:
 		struct RXCTR     : Field<DSPI_SR, RXCTR    , 24, 27, SW_R    > {}; // RX FIFO Counter
 		struct POPNXTPTR : Field<DSPI_SR, POPNXTPTR, 28, 31, SW_R    > {}; // Pop Next Pointer
 		
-		typedef FieldSet<TCF, TXRXS, SPITCF, EOQF, TFUF, DSITCF, TFFF, BSYF, CMDTCF, DPEF, SPEF, DDIF, RFOF, TFIWF, RFDF, CMDFFF, TXCTR, TXNXTPTR, RXCTR, POPNXTPTR> ALL;
+		SWITCH_ENUM_TRAIT(bool, _);
+		CASE_ENUM_TRAIT(false, _) { typedef FieldSet<TCF, TXRXS, SPITCF, EOQF, TFUF, TFFF, BSYF, CMDTCF, SPEF, RFOF, TFIWF, RFDF, CMDFFF, TXCTR, TXNXTPTR, RXCTR, POPNXTPTR> ALL; };
+		CASE_ENUM_TRAIT(true, _) { typedef FieldSet<TCF, TXRXS, SPITCF, EOQF, TFUF, DSITCF, TFFF, BSYF, CMDTCF, DPEF, SPEF, DDIF, RFOF, TFIWF, RFDF, CMDFFF, TXCTR, TXNXTPTR, RXCTR, POPNXTPTR> ALL; };
+		typedef typename ENUM_TRAIT(HAS_DATA_SERIALIZATION_SUPPORT, _)::ALL ALL;
 		
 		DSPI_SR(DSPI<CONFIG> *_dspi) : Super(_dspi) { Init(); }
 		DSPI_SR(DSPI<CONFIG> *_dspi, uint32_t value) : Super(_dspi, value) { Init(); }
@@ -779,13 +845,13 @@ private:
 			SPITCF   ::SetName("SPITCF");    SPITCF   ::SetDescription("SPI Frame Transfer Complete Flag");
 			EOQF     ::SetName("EOQF");      EOQF     ::SetDescription("End of Queue Flag");
 			TFUF     ::SetName("TFUF");      TFUF     ::SetDescription("Transmit FIFO Underflow Flag");
-			DSITCF   ::SetName("DSITCF");    DSITCF   ::SetDescription("DSI Frame Transfer Complete Flag");
+			if(HAS_DATA_SERIALIZATION_SUPPORT) { DSITCF   ::SetName("DSITCF");    DSITCF   ::SetDescription("DSI Frame Transfer Complete Flag"); }
 			TFFF     ::SetName("TFFF");      TFFF     ::SetDescription("Transmit FIFO Fill Flag");
 			BSYF     ::SetName("BSYF");      BSYF     ::SetDescription("Busy Flag");
 			CMDTCF   ::SetName("CMDTCF");    CMDTCF   ::SetDescription("Command Transfer Complete Flag");
-			DPEF     ::SetName("DPEF");      DPEF     ::SetDescription("DSI Parity Error Flag");
+			if(HAS_DATA_SERIALIZATION_SUPPORT) { DPEF     ::SetName("DPEF");      DPEF     ::SetDescription("DSI Parity Error Flag"); }
 			SPEF     ::SetName("SPEF");      SPEF     ::SetDescription("SPI Parity Error Flag");
-			DDIF     ::SetName("DDIF");      DDIF     ::SetDescription("DSI Data Received with Active Bits");
+			if(HAS_DATA_SERIALIZATION_SUPPORT) { DDIF     ::SetName("DDIF");      DDIF     ::SetDescription("DSI Data Received with Active Bits"); }
 			RFOF     ::SetName("RFOF");      RFOF     ::SetDescription("Receive FIFO Overflow Flag");
 			TFIWF    ::SetName("TFIWF");     TFIWF    ::SetDescription("Transmit FIFO Invalid Write Flag");
 			RFDF     ::SetName("RFDF");      RFDF     ::SetDescription("Receive FIFO Drain Flag");
@@ -799,6 +865,7 @@ private:
 		void Reset()
 		{
 			this->Initialize(0x02010000);
+			this->dspi->UpdateState();
 			this->dspi->UpdateINT_EOQF();
 			this->dspi->UpdateINT_TFFF();  
 			this->dspi->UpdateINT_CMDFFF();
@@ -811,11 +878,12 @@ private:
 			this->dspi->UpdateINT_RFDF();
 			this->dspi->UpdateINT_RFOF();
 			this->dspi->UpdateINT_SPEF();
-			this->dspi->UpdateINT_DPEF();
-			this->dspi->UpdateINT_DDIF();
+			if(HAS_DATA_SERIALIZATION_SUPPORT) this->dspi->UpdateINT_DPEF();
+			if(HAS_DATA_SERIALIZATION_SUPPORT) this->dspi->UpdateINT_DDIF();
 			this->dspi->UpdateDMA_RX();
 			this->dspi->UpdateDMA_TX();
-			this->dspi->UpdateDMA_CMD();   
+			this->dspi->UpdateDMA_CMD();
+			if(HAS_DATA_SERIALIZATION_SUPPORT) this->dspi->UpdateDMA_DD();
 		}
 		
 		virtual ReadWriteStatus Write(const uint32_t& value, const uint32_t& bit_enable)
@@ -825,27 +893,59 @@ private:
 			
 			if(!IsReadWriteError(rws))
 			{
+				this->dspi->UpdateState();
+				
 				uint32_t new_value = this->template Get<ALL>();
 				
 				uint32_t value_changed = new_value ^ old_value;
 				
-				if(EOQF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_EOQF();
-				if(TFFF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_TFFF();  
-				if(CMDFFF::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_CMDFFF();
-				if(TFIWF ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_TFIWF();
-				if(TCF   ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_TCF();   
-				if(CMDTCF::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_CMDTCF();
+				if(TCF   ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_TCF();
+				
 				if(SPITCF::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_SPITCF();
-				if(DSITCF::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_DSITCF();
+				
+				if(EOQF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_EOQF();
+				
 				if(TFUF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_TFUF();
-				if(RFDF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_RFDF();
-				if(RFOF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_RFOF();
+				
+				if(HAS_DATA_SERIALIZATION_SUPPORT && DSITCF::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_DSITCF();
+				
+				if(TFFF  ::template Get<uint32_t>(value_changed))
+				{
+					this->dspi->UpdateINT_TFFF();
+					this->dspi->UpdateDMA_TX();
+				}
+				
+				if(CMDTCF::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_CMDTCF();
+				
+				if(HAS_DATA_SERIALIZATION_SUPPORT && DPEF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_DPEF();
+				
 				if(SPEF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_SPEF();
-				if(DPEF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_DPEF();
-				if(DDIF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_DDIF();
-				if(RFDF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateDMA_RX();
-				if(TFFF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateDMA_TX();
-				if(CMDFFF::template Get<uint32_t>(value_changed)) this->dspi->UpdateDMA_CMD();   
+				
+				if(HAS_DATA_SERIALIZATION_SUPPORT && DDIF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateDMA_DD();
+				
+				if(RFOF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_RFOF();
+				
+				if(TFIWF ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_TFIWF();
+				
+				if(RFDF  ::template Get<uint32_t>(value_changed))
+				{
+					this->dspi->UpdateINT_RFDF();
+					this->dspi->UpdateDMA_RX();
+				}
+				
+				if(CMDFFF::template Get<uint32_t>(value_changed))
+				{
+					this->dspi->UpdateINT_CMDFFF();
+					this->dspi->UpdateDMA_CMD();
+				}
+				
+				if(HAS_DATA_SERIALIZATION_SUPPORT && DDIF  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_DDIF();
+				
+				// if DSPI_MCR[PES] is 1 and a SPEF or DPEF are set, clearing of SPEF or DPEF may allow restarting SPI/DSI operation/transmission
+				if(SPEF::template Get<uint32_t>(value_changed) || (HAS_DATA_SERIALIZATION_SUPPORT && DPEF::template Get<uint32_t>(value_changed)))
+				{
+					this->dspi->ScheduleTransfer();
+				}
 			}
 			
 			return rws;
@@ -880,7 +980,10 @@ private:
 		struct CMDFFF_DIRS : Field<DSPI_RSER, CMDFFF_DIRS, 16> {}; // Command FIFO FIll DMA or Interrupt Request Select
 		struct DDIF_DIRS   : Field<DSPI_RSER, DDIF_DIRS  , 17> {}; // DSI data received with active bits - DMA or Interrupt Request Select
 		
-		typedef FieldSet<TCF_RE, CMDFFF_RE, SPITCF_RE, EOQF_RE, TFUF_RE, DSITCF_RE, TFFF_RE, TFFF_DIRS, CMDTCF_RE, DPEF_RE, SPEF_RE, DDIF_RE, RFOF_RE, TFIWF_RE, RFDF_RE, RFDF_DIRS, CMDFFF_DIRS, DDIF_DIRS> ALL;
+		SWITCH_ENUM_TRAIT(bool, _);
+		CASE_ENUM_TRAIT(false, _) { typedef FieldSet<TCF_RE, CMDFFF_RE, SPITCF_RE, EOQF_RE, TFUF_RE, TFFF_RE, TFFF_DIRS, CMDTCF_RE, SPEF_RE, RFOF_RE, TFIWF_RE, RFDF_RE, RFDF_DIRS, CMDFFF_DIRS> ALL; };
+		CASE_ENUM_TRAIT(true, _) { typedef FieldSet<TCF_RE, CMDFFF_RE, SPITCF_RE, EOQF_RE, TFUF_RE, DSITCF_RE, TFFF_RE, TFFF_DIRS, CMDTCF_RE, DPEF_RE, SPEF_RE, DDIF_RE, RFOF_RE, TFIWF_RE, RFDF_RE, RFDF_DIRS, CMDFFF_DIRS, DDIF_DIRS> ALL; };
+		typedef typename ENUM_TRAIT(HAS_DATA_SERIALIZATION_SUPPORT, _)::ALL ALL;
 		
 		DSPI_RSER(DSPI<CONFIG> *_dspi) : Super(_dspi) { Init(); }
 		DSPI_RSER(DSPI<CONFIG> *_dspi, uint32_t value) : Super(_dspi, value) { Init(); }
@@ -893,19 +996,19 @@ private:
 			SPITCF_RE  ::SetName("SPITCF_RE");   SPITCF_RE  ::SetDescription("SPI Frame Transmission Complete Request Enable");
 			EOQF_RE    ::SetName("EOQF_RE");     EOQF_RE    ::SetDescription("DSPI Finished Request Enable");
 			TFUF_RE    ::SetName("TFUF_RE");     TFUF_RE    ::SetDescription("Transmit FIFO Underflow Request Enable");
-			DSITCF_RE  ::SetName("DSITCF_RE");   DSITCF_RE  ::SetDescription("DSI Frame Transmission Complete Request Enable");
+			if(HAS_DATA_SERIALIZATION_SUPPORT) { DSITCF_RE  ::SetName("DSITCF_RE");   DSITCF_RE  ::SetDescription("DSI Frame Transmission Complete Request Enable"); }
 			TFFF_RE    ::SetName("TFFF_RE");     TFFF_RE    ::SetDescription("Transmit FIFO Fill Request Enable");
 			TFFF_DIRS  ::SetName("TFFF_DIRS");   TFFF_DIRS  ::SetDescription("Transmit FIFO Fill DMA or Interrupt Request Select");
 			CMDTCF_RE  ::SetName("CMDTCF_RE");   CMDTCF_RE  ::SetDescription("Command Transmission Complete Request Enable");
-			DPEF_RE    ::SetName("DPEF_RE");     DPEF_RE    ::SetDescription("DSI Parity Error Request Enable");
+			if(HAS_DATA_SERIALIZATION_SUPPORT) { DPEF_RE    ::SetName("DPEF_RE");     DPEF_RE    ::SetDescription("DSI Parity Error Request Enable"); }
 			SPEF_RE    ::SetName("SPEF_RE");     SPEF_RE    ::SetDescription("SPI Parity Error Request Enable");
-			DDIF_RE    ::SetName("DDIF_RE");     DDIF_RE    ::SetDescription("DSI data received with active bits Request Enable");
+			if(HAS_DATA_SERIALIZATION_SUPPORT) { DDIF_RE    ::SetName("DDIF_RE");     DDIF_RE    ::SetDescription("DSI data received with active bits Request Enable"); }
 			RFOF_RE    ::SetName("RFOF_RE");     RFOF_RE    ::SetDescription("Receive FIFO Overflow Request Enable");
 			TFIWF_RE   ::SetName("TFIWF_RE");    TFIWF_RE   ::SetDescription("Transmit FIFO Invalid Write Request Enable");
 			RFDF_RE    ::SetName("RFDF_RE");     RFDF_RE    ::SetDescription("Receive FIFO Drain Request Enable");
 			RFDF_DIRS  ::SetName("RFDF_DIRS");   RFDF_DIRS  ::SetDescription("Receive FIFO Drain DMA or Interrupt Request Select");
 			CMDFFF_DIRS::SetName("CMDFFF_DIRS"); CMDFFF_DIRS::SetDescription("Command FIFO FIll DMA or Interrupt Request Select");
-			DDIF_DIRS  ::SetName("DDIF_DIRS");   DDIF_DIRS  ::SetDescription("DSI data received with active bits - DMA or Interrupt Request Select");
+			if(HAS_DATA_SERIALIZATION_SUPPORT) { DDIF_DIRS  ::SetName("DDIF_DIRS");   DDIF_DIRS  ::SetDescription("DSI data received with active bits - DMA or Interrupt Request Select"); }
 		}
 		
 		void Reset()
@@ -936,7 +1039,7 @@ private:
 				if(SPITCF_RE::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_SPITCF();
 				if(EOQF_RE  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_EOQF();
 				if(TFUF_RE  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_TFUF();   
-				if(DSITCF_RE::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_DSITCF();
+				if(HAS_DATA_SERIALIZATION_SUPPORT && DSITCF_RE::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_DSITCF();
 				
 				if(TFFF_RE  ::template Get<uint32_t>(value_changed) ||
 				   TFFF_DIRS::template Get<uint32_t>(value_changed))
@@ -946,9 +1049,17 @@ private:
 				}
 				
 				if(CMDTCF_RE::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_CMDTCF();
-				if(DPEF_RE  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_DPEF();
+				if(HAS_DATA_SERIALIZATION_SUPPORT && DPEF_RE  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_DPEF();
 				if(SPEF_RE  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_SPEF();
-				if(DDIF_RE  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_DDIF();
+				
+				if(HAS_DATA_SERIALIZATION_SUPPORT &&
+				   (DDIF_RE  ::template Get<uint32_t>(value_changed) ||
+				    DDIF_DIRS::template Get<uint32_t>(value_changed)))
+				{
+					this->dspi->UpdateINT_DDIF();
+					this->dspi->UpdateDMA_DD();
+				}
+				
 				if(RFOF_RE  ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_RFOF();
 				if(TFIWF_RE ::template Get<uint32_t>(value_changed)) this->dspi->UpdateINT_TFIWF();
 				
@@ -1027,6 +1138,8 @@ private:
 				{
 					this->dspi->SPI_Master_TX_FIFO_Push(this->template Get<CMD>(), this->template Get<TXDATA>());
 				}
+				
+//				Reset();
 			}
 			return rws;
 		}
@@ -1066,9 +1179,11 @@ private:
 			if(!IsReadWriteError(rws))
 			{
 				// mirror TXDATA in DSPI_PUSHR
-				this->dspi->dspi_pushr_slave.template Set<typename DSPI_PUSHR::TXDATA>(this->template Get<TXDATA>());
+				this->dspi->dspi_pushr.template Set<typename DSPI_PUSHR::TXDATA>(this->template Get<TXDATA>());
 				
 				this->dspi->SPI_Slave_TX_FIFO_Push(this->template Get<TXDATA>());
+				
+				//Reset();
 			}
 			return rws;
 		}
@@ -1119,8 +1234,12 @@ private:
 				}
 				else
 				{
-					uint32_t rxdata = this->dspi->SPI_RX_FIFO_Front();
-					this->dspi->SPI_RX_FIFO_Pop();
+					uint32_t rxdata = this->dspi->RX_FIFO_Front();
+					if(this->dspi->verbose)
+					{
+						this->dspi->logger << DebugInfo << sc_core::sc_time_stamp() << ":RX FIFO:Front() = 0x" << std::hex << rxdata << std::dec << EndDebugInfo;
+					}
+					this->dspi->RX_FIFO_Pop();
 					value = (value & ~bit_enable) | (rxdata & bit_enable);
 				}
 			}
@@ -1335,7 +1454,7 @@ private:
 			
 			if(!IsReadWriteError(rws))
 			{
-				this->dspi->CheckChangeInData();
+				this->dspi->ScheduleLatchSerializedData();
 			}
 			
 			return rws;
@@ -1635,8 +1754,8 @@ private:
 		bool mcsc;               // mask tCSC delay in the current frame (Master only)
 		unsigned int pcs;        // peripheral chip select               (Master only)
 		unsigned int ctas;       // clock and transfer attribute select  (Master/Slave)
+		bool lsbfe;              // LSB First                            (Master/Slave)
 		bool pe;                 // parity enable                        (Master/Slave)
-		bool pp;                 // parity polarity                      (Master/Slave)
 		bool cpha;               // clock phase                          (Master/Slave)
 		unsigned int frame_size; // frame size                           (Master/Slave)
 	};
@@ -1668,22 +1787,24 @@ private:
 	AddressableRegisterFile<DSPI_CTARE, NUM_CTARS, DSPI<CONFIG> >                     dspi_ctare;
 	DSPI_SREX                                                                         dspi_srex;
 	
-	unsigned int txbackptr;   // TX FIFO back pointer
-	unsigned int rxbackptr;   // RX FIFO back pointer
-	unsigned int cmdbackptr;  // CMD FIFO back pointer
+// 	unsigned int txbackptr;   // TX FIFO back pointer
+// 	unsigned int rxbackptr;   // RX FIFO back pointer
+// 	unsigned int cmdbackptr;  // CMD FIFO back pointer
 	unsigned int rxpart;      // part of RX data for slave (0=LSB or 1=MSB)
 	DSPI_Configuration prev_dconf;
 	DSPI_Configuration curr_dconf;
 	uint16_t prev_cmd;
 	uint16_t cmd;
 	unsigned int cmd_cycling_cnt;
-	bool trigger_spi;
-	bool trigger_dsi;
-	bool pcs_sigs[NUM_CTARS];
+	bool tx_parity_bit;
+	bool rx_parity_bit;
+	uint32_t serialized_data;
+	//bool trigger_spi_transfer;
+	bool trigger_dsi_transfer;
 	
 	unisim::kernel::tlm2::tlm_input_bitstream sin_bitstream; // Rx timed input bit stream
 	unisim::kernel::tlm2::tlm_input_bitstream ss_bitstream;
-	sc_core::sc_event trigger_event;
+	sc_core::sc_event transfer_event;
 	sc_core::sc_time transfer_ready_time;
 	
 	sc_core::sc_event gen_int_eoqf_event;
@@ -1703,6 +1824,10 @@ private:
 	sc_core::sc_event gen_dma_rx_event;
 	sc_core::sc_event gen_dma_tx_event;
 	sc_core::sc_event gen_dma_cmd_event;
+	sc_core::sc_event gen_dma_dd_event;
+	
+	sc_core::sc_vector<sc_core::sc_event> dsi_input_sample_event;
+	sc_core::sc_event latch_serialized_data_event;
 	
 	// DSPI registers address map
 	RegisterAddressMap<sc_dt::uint64> reg_addr_map;
@@ -1725,12 +1850,21 @@ private:
 	double dspi_clock_duty_cycle;                          // DSPI clock duty cycle
 	
 	void Reset();
+	void ModeSwitch();
 	void MapRegisters();
+	bool Running() const;
+	bool Stopped() const;
+	void UpdateState();
+	bool ModuleDisabled() const;
 	bool MasterMode() const;
 	bool SlaveMode() const;
 	bool ExtendedMode() const;
+	bool SPI_FrameTransmissionsStopped() const;
+	bool DSI_OperationsStopped() const;
+	bool DSI_FrameTransmissionsStopped() const;
 	DSPI_Configuration Configuration() const;
-	unsigned int FrameSize(DSPI_Configuration dconf, unsigned int ctar_num) const;
+	unsigned int MasterFrameSize(DSPI_Configuration dconf, unsigned int ctar_num) const;
+	unsigned int SlaveFrameSize(DSPI_Configuration dconf, unsigned int ctar_num) const;
 
 	unsigned int TX_FIFO_Depth() const;
 	unsigned int CMD_FIFO_Depth() const;
@@ -1753,15 +1887,23 @@ private:
 	void SPI_Master_TX_FIFO_Pop();
 	void XSPI_Master_CMD_FIFO_Pop();
 	void SPI_Slave_TX_FIFO_Pop();
+	void TX_FIFO_Dump();
+	void CMD_FIFO_Dump();
 	
 	// RX FIFO
 	void RX_FIFO_Clear();
 	bool RX_FIFO_Empty() const;
 	bool RX_FIFO_Full() const;
-	void SPI_RX_FIFO_Push(uint32_t rxdata);
-	uint32_t SPI_RX_FIFO_Front();
-	void SPI_RX_FIFO_Pop();
+	void RX_FIFO_Push(uint32_t rxdata);
+	uint32_t RX_FIFO_Front();
+	void RX_FIFO_Pop();
+	void RX_FIFO_Dump();
 
+	
+	void UpdateTFFF();
+	void UpdateCMDFFF();
+	void UpdateRFDF();
+	
 	void UpdateINT_EOQF();
 	void UpdateINT_TFFF();  
 	void UpdateINT_CMDFFF();
@@ -1776,12 +1918,17 @@ private:
 	void UpdateINT_SPEF();
 	void UpdateINT_DPEF();
 	void UpdateINT_DDIF();
-	void UpdateDMA_RX();
-	void UpdateDMA_TX();
-	void UpdateDMA_CMD();
+	void UpdateDMA_RX(const sc_core::sc_time& delay = sc_core::SC_ZERO_TIME);
+	void UpdateDMA_TX(const sc_core::sc_time& delay = sc_core::SC_ZERO_TIME);
+	void UpdateDMA_CMD(const sc_core::sc_time& delay = sc_core::SC_ZERO_TIME);
+	void UpdateDMA_DD(const sc_core::sc_time& delay = sc_core::SC_ZERO_TIME);
+	
+	void UpdateBSYF();
 	
 	void UpdateMasterClock();
 	void UpdateDSPIClock();
+	void MasterClockPropertiesChangedProcess();
+	void DSPIClockPropertiesChangedProcess();
 	
 	void ProcessEvent(Event *event);
 	void ProcessEvents();
@@ -1803,21 +1950,34 @@ private:
 	void DMA_RX_Process();
 	void DMA_TX_Process();
 	void DMA_CMD_Process();
-	void TriggerSPI();
-	void TriggerDSI();
-	void Trigger();
-	void CheckChangeInData();
+	void DMA_DD_Process();
+	void DMA_ACK_RX_Process();
+	void DMA_ACK_TX_Process();
+	void DMA_ACK_CMD_Process();
+	void DMA_ACK_DD_Process();
 	void HT_Process();
+	void DEBUG_Process();
+	void SetPCS(unsigned int slave_num, const sc_core::sc_time& t, const sc_core::sc_time& duration, bool value);
+	bool SPI_TransferTriggered() const;
+	void DSI_TriggerTransfer();
+	void ScheduleTransfer();
+	void LatchSerializedData();
+	void CheckChangeInData();
+	void CheckDeserializedData();
 	void LatchDSI_INPUT();
-	void MasterTransfer(uint32_t& shift_reg, const TransferControl& ctrl);
-	DSPI_Configuration SelectConfiguration();
+	void MasterTransfer(uint32_t& rxdata, const uint32_t& txdata, bool& parity_error, const TransferControl& ctrl);
+	bool SelectConfiguration(DSPI_Configuration& sel_dconf) const;
 	void SPI_MasterTransfer();
 	void DSI_MasterTransfer();
-	void SlaveTransfer(uint32_t& shift_reg, const TransferControl& ctrl);
+	void SlaveTransfer(uint32_t& rxdata, const uint32_t& txdata, bool& parity_error, const TransferControl& ctrl);
 	void SPI_SlaveTransfer();
 	void DSI_SlaveTransfer();
-	void TransferProcess();
-	void SetPCS(unsigned int slave_num, const sc_core::sc_time& t, bool value);
+	void MasterTransferProcess();
+	void SlaveTransferProcess();
+	void DSI_INPUT_Process(unsigned int i);
+	void DSI_INPUT_SamplingProcess(unsigned int i);
+	void ScheduleLatchSerializedData();
+	void LatchSerializedDataProcess();
 };
 
 } // end of namespace dspi

@@ -957,7 +957,7 @@ protected:
 			}
 			else if(cpu->verbose_move_to_slr)
 			{
-				cpu->GetDebugWarningStream() << "Moving 0x" << std::hex << value << std::dec << " to " << this->GetName() << std::endl;
+				cpu->GetDebugInfoStream() << "Moving 0x" << std::hex << value << std::dec << " to " << this->GetName() << std::endl;
 			}
 			
 			return !unisim::util::reg::core::IsReadWriteError(rws);
@@ -976,7 +976,7 @@ protected:
 			}
 			else if(cpu->verbose_move_to_slr)
 			{
-				cpu->GetDebugWarningStream() << "Moving 0x" << std::hex << value << std::dec << " from " << this->GetName() << std::endl;
+				cpu->GetDebugInfoStream() << "Moving 0x" << std::hex << value << std::dec << " from " << this->GetName() << std::endl;
 			}
 			
 			return !unisim::util::reg::core::IsReadWriteError(rws);

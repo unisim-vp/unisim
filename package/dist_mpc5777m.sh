@@ -87,7 +87,8 @@ vector \
 
 UNISIM_LIB_SIMULATOR_SOURCE_FILES="\
 unisim/kernel/service/service.cc \
-unisim/kernel/service/xml_helper.cc \
+unisim/kernel/service/xml_config_file_helper.cc \
+unisim/kernel/service/ini_config_file_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/tlm2/simulator.cc \
 unisim/kernel/tlm2/clock.cc \
@@ -662,7 +663,8 @@ unisim/component/cxx/processor/powerpc/isa/mpu/mpuwe.isa \
 
 UNISIM_LIB_SIMULATOR_HEADER_FILES="${UNISIM_LIB_SIMULATOR_ISA_FILES} \
 unisim/kernel/service/service.hh \
-unisim/kernel/service/xml_helper.hh \
+unisim/kernel/service/xml_config_file_helper.hh \
+unisim/kernel/service/ini_config_file_helper.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/tlm2/tlm.hh \
@@ -1101,6 +1103,7 @@ soft/libsys/include/pit.h \
 soft/libsys/include/linflexd.h \
 soft/libsys/include/dmamux.h \
 soft/libsys/include/edma.h \
+soft/libsys/include/dspi.h \
 soft/libsys/include/console.h \
 soft/libsys/include/ramdisk.h \
 soft/libsys/include/lfs.h \
@@ -1118,6 +1121,7 @@ soft/libsys/src/drv/pit.c \
 soft/libsys/src/drv/linflexd.c \
 soft/libsys/src/drv/dmamux.c \
 soft/libsys/src/drv/edma.c \
+soft/libsys/src/drv/dspi.c \
 soft/libsys/src/drv/console.c \
 soft/libsys/src/drv/ramdisk.c \
 soft/libsys/src/fs/lfs.c \

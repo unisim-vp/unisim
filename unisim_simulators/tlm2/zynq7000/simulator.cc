@@ -1180,7 +1180,7 @@ void Simulator::SigInt()
 {
   if(!enable_inline_debugger)
     {
-      unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
+      unisim::kernel::service::Simulator::Instance()->Stop(0, 0, true);
     }
 }
 

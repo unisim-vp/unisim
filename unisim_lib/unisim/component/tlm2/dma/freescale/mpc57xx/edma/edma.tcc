@@ -82,6 +82,7 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, m_clk("m_clk")
 	, reset_b("reset_b")
 	, dma_channel()
+	, dma_channel_ack()
 	, irq()
 	, err_irq()
 	, logger(*this)
@@ -126,6 +127,8 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 	, dma_engine_event("dma_engine_event")
 	, gen_irq_event()
 	, gen_err_event()
+	, gen_dma_channel_ack_event()
+	, ack()
 	, grp_per_prio_error(true)
 	, ch_per_prio_error()
 	, sel_grp(0)
@@ -164,6 +167,13 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 
 	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
 	{
+		std::stringstream dma_channel_ack_name_sstr;
+		dma_channel_ack_name_sstr << "dma_channel_ack_" << dma_channel_num;
+		dma_channel_ack[dma_channel_num] = new sc_core::sc_out<bool>(dma_channel_ack_name_sstr.str().c_str()); 
+	}
+
+	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+	{
 		std::stringstream irq_name_sstr;
 		irq_name_sstr << "irq_" << dma_channel_num;
 		irq[dma_channel_num] = new sc_core::sc_out<bool>(irq_name_sstr.str().c_str()); 
@@ -188,6 +198,13 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 		std::stringstream gen_err_event_name_sstr;
 		gen_err_event_name_sstr << "gen_err_event_" << dma_channel_num;
 		gen_err_event[dma_channel_num] = new sc_core::sc_event(gen_err_event_name_sstr.str().c_str());
+	}
+
+	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		std::stringstream gen_dma_channel_ack_event_name_sstr;
+		gen_dma_channel_ack_event_name_sstr << "gen_dma_channel_ack_event_" << dma_channel_num;
+		gen_dma_channel_ack_event[dma_channel_num] = new sc_core::sc_event(gen_dma_channel_ack_event_name_sstr.str().c_str());
 	}
 
 	// Map EDMA registers regarding there address offsets
@@ -285,6 +302,17 @@ EDMA<CONFIG>::EDMA(const sc_core::sc_module_name& name, unisim::kernel::service:
 		sc_core::sc_spawn(sc_bind(&EDMA<CONFIG>::ERR_IRQ_Process, this, dma_channel_num), err_irq_process_name_sstr.str().c_str(), &err_irq_process_spawn_options);
 	}
 
+	// Spawn an DMA_CHANNEL_ACK_Process for each DMA channel
+	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		sc_core::sc_spawn_options dma_channel_ack_process_spawn_options;
+		dma_channel_ack_process_spawn_options.spawn_method();
+		dma_channel_ack_process_spawn_options.set_sensitivity(gen_dma_channel_ack_event[dma_channel_num]);
+		
+		std::stringstream dma_channel_ack_process_name_sstr;
+		dma_channel_ack_process_name_sstr << "DMA_CHANNEL_ACK_Process_" << dma_channel_num;
+		sc_core::sc_spawn(sc_bind(&EDMA<CONFIG>::DMA_CHANNEL_ACK_Process, this, dma_channel_num), dma_channel_ack_process_name_sstr.str().c_str(), &dma_channel_ack_process_spawn_options);
+	}
 }
 
 template <typename CONFIG>
@@ -295,6 +323,11 @@ EDMA<CONFIG>::~EDMA()
 	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
 	{
 		delete dma_channel[dma_channel_num];
+	}
+
+	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		delete dma_channel_ack[dma_channel_num];
 	}
 
 	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
@@ -315,6 +348,11 @@ EDMA<CONFIG>::~EDMA()
 	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
 	{
 		delete gen_err_event[dma_channel_num];
+	}
+	
+	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		delete gen_dma_channel_ack_event[dma_channel_num];
 	}
 }
 
@@ -631,6 +669,9 @@ void EDMA<CONFIG>::Reset()
 	{
 		edma_dchpri      [dma_channel_num].Reset();
 		edma_dchmid      [dma_channel_num].Reset();
+		
+		ack[dma_channel_num] = false;
+		UpdateAcknowledge(dma_channel_num);
 	}
 
 	edma_tcd_file.Reset();
@@ -1064,6 +1105,24 @@ void EDMA<CONFIG>::UpdateError(unsigned int dma_channel_num)
 }
 
 template <typename CONFIG>
+void EDMA<CONFIG>::UpdateAcknowledge(unsigned int dma_channel_num, const sc_core::sc_time& delay)
+{
+	gen_dma_channel_ack_event[dma_channel_num]->notify(delay);
+}
+
+template <typename CONFIG>
+void EDMA<CONFIG>::Acknowledge(unsigned int dma_channel_num)
+{
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ":channel #" << dma_channel_num << ": acknowledging" << EndDebugInfo;
+	}
+	
+	ack[dma_channel_num] = true;
+	UpdateAcknowledge(dma_channel_num);
+}
+
+template <typename CONFIG>
 void EDMA<CONFIG>::NotifyEngine()
 {
 	if(verbose)
@@ -1219,6 +1278,12 @@ template <typename CONFIG>
 void EDMA<CONFIG>::DMA_CHANNEL_Process(unsigned int dma_channel_num)
 {
 	UpdateHardwareRequestStatus(dma_channel_num);
+	
+	if(dma_channel[dma_channel_num]->negedge())
+	{
+		ack[dma_channel_num] = false;
+		UpdateAcknowledge(dma_channel_num, master_clock_period);
+	}
 }
 
 template <typename CONFIG>
@@ -1228,7 +1293,7 @@ void EDMA<CONFIG>::IRQ_Process(unsigned int dma_channel_num)
 	
 	if(verbose)
 	{
-		logger << sc_core::sc_time_stamp() << ": " << irq[dma_channel_num]->name() << " <- " << irq_value << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": " << irq[dma_channel_num]->name() << " <- " << irq_value << EndDebugInfo;
 	}
 	
 	irq[dma_channel_num]->write(irq_value);
@@ -1241,11 +1306,25 @@ void EDMA<CONFIG>::ERR_IRQ_Process(unsigned int dma_channel_num)
 	
 	if(verbose)
 	{
-		logger << sc_core::sc_time_stamp() << ": " << err_irq[dma_channel_num]->name() << " <- " << err_status << EndDebugInfo;
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": " << err_irq[dma_channel_num]->name() << " <- " << err_status << EndDebugInfo;
 	}
 	
 	err_irq[dma_channel_num]->write(err_status);
 }
+
+template <typename CONFIG>
+void EDMA<CONFIG>::DMA_CHANNEL_ACK_Process(unsigned int dma_channel_num)
+{
+	bool dma_channel_ack_value = ack[dma_channel_num];
+	
+	if(verbose)
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": " << dma_channel_ack[dma_channel_num]->name() << " <- " << dma_channel_ack_value << EndDebugInfo;
+	}
+	
+	dma_channel_ack[dma_channel_num]->write(dma_channel_ack_value);
+}
+
 
 template <typename CONFIG>
 void EDMA<CONFIG>::SetMasterID(unsigned int dma_channel_num, MasterID mid)
@@ -1877,6 +1956,9 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 										logger << DebugInfo << sc_core::sc_time_stamp() << ":channel #" << channel_tcd->dma_channel_num << ": channel #" << dma_channel_num << " preempts" << EndDebugInfo;
 									}
 									
+									Acknowledge(dma_channel_num);
+									wait(sc_core::SC_ZERO_TIME);
+									
 									// preempt channel x
 									
 									// check TCD
@@ -1934,6 +2016,12 @@ void EDMA<CONFIG>::DMA_Engine_Process()
 						if(verbose)
 						{
 							logger << DebugInfo << sc_core::sc_time_stamp() << ":channel #" << dma_channel_num << ": beginning" << EndDebugInfo;
+						}
+						
+						if(!edma_tcd_file[dma_channel_num].edma_tcd_csr.template Get<typename EDMA_TCD_CSR::START>())
+						{
+							Acknowledge(dma_channel_num);
+							wait(sc_core::SC_ZERO_TIME);
 						}
 						
 						// START=0

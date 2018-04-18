@@ -83,8 +83,10 @@ DMAMUX<CONFIG>::DMAMUX(const sc_core::sc_module_name& name, unisim::kernel::serv
 	, reset_b("reset_b")
 	, dma_source()
 	, dma_always_on()
+	, dma_channel_ack()
 	, dma_trigger()
 	, dma_channel()
+	, dma_source_ack()
 	, logger(*this)
 	, m_clk_prop_proxy(m_clk)
 	, dmamux_chcfg(this)
@@ -94,6 +96,7 @@ DMAMUX<CONFIG>::DMAMUX(const sc_core::sc_module_name& name, unisim::kernel::serv
 	, dma_source_routing_change_event()
 	, dma_chcfg_event()
 	, dma_source_event()
+	, dma_source_ack_event()
 	, conf_chk(false)
 	, conf_ok(false)
 	, routing_table()
@@ -144,6 +147,13 @@ DMAMUX<CONFIG>::DMAMUX(const sc_core::sc_module_name& name, unisim::kernel::serv
 		dma_always_on[dma_always_on_num] = new sc_core::sc_in<bool>(dma_always_on_name_sstr.str().c_str()); 
 	}
 	
+	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		std::stringstream dma_channel_ack_name_sstr;
+		dma_channel_ack_name_sstr << "dma_channel_ack_" << dma_channel_num;
+		dma_channel_ack[dma_channel_num] = new sc_core::sc_in<bool>(dma_channel_ack_name_sstr.str().c_str()); 
+	}
+
 	for(dma_trigger_num = 0; dma_trigger_num < NUM_DMA_TRIGGERS; dma_trigger_num++)
 	{
 		std::stringstream dma_trigger_name_sstr;
@@ -156,6 +166,13 @@ DMAMUX<CONFIG>::DMAMUX(const sc_core::sc_module_name& name, unisim::kernel::serv
 		std::stringstream dma_channel_name_sstr;
 		dma_channel_name_sstr << "dma_channel_" << dma_channel_num;
 		dma_channel[dma_channel_num] = new sc_core::sc_out<bool>(dma_channel_name_sstr.str().c_str()); 
+	}
+
+	for(dma_source_num = 0; dma_source_num < NUM_DMA_SOURCES; dma_source_num++)
+	{
+		std::stringstream dma_source_ack_name_sstr;
+		dma_source_ack_name_sstr << "dma_source_ack_" << dma_source_num;
+		dma_source_ack[dma_source_num] = new sc_core::sc_out<bool>(dma_source_ack_name_sstr.str().c_str()); 
 	}
 
 	for(dma_source_num = 0; dma_source_num < NUM_DMA_SOURCES; dma_source_num++)
@@ -179,6 +196,13 @@ DMAMUX<CONFIG>::DMAMUX(const sc_core::sc_module_name& name, unisim::kernel::serv
 		dma_source_event[dma_channel_num] = new sc_core::sc_event(dma_source_event_name_sstr.str().c_str());
 	}
 	
+	for(dma_source_num = 0; dma_source_num < NUM_DMA_SOURCES; dma_source_num++)
+	{
+		std::stringstream dma_source_ack_event_name_sstr;
+		dma_source_ack_event_name_sstr << "dma_source_ack_event_" << dma_source_num;
+		dma_source_ack_event[dma_source_num] = new sc_core::sc_event(dma_source_ack_event_name_sstr.str().c_str()); 
+	}
+
 	// Map DMAMUX registers regarding there address offsets
 	reg_addr_map.SetWarningStream(logger.DebugWarningStream());
 	reg_addr_map.SetEndian(endian);
@@ -217,6 +241,11 @@ DMAMUX<CONFIG>::~DMAMUX<CONFIG>()
 		delete dma_always_on[dma_always_on_num];
 	}
 	
+	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		delete dma_channel_ack[dma_channel_num];
+	}
+
 	for(dma_trigger_num = 0; dma_trigger_num < NUM_DMA_TRIGGERS; dma_trigger_num++)
 	{
 		delete dma_trigger[dma_trigger_num];
@@ -227,6 +256,11 @@ DMAMUX<CONFIG>::~DMAMUX<CONFIG>()
 		delete dma_channel[dma_channel_num];
 	}
 
+	for(dma_source_num = 0; dma_source_num < NUM_DMA_SOURCES; dma_source_num++)
+	{
+		delete dma_source_ack[dma_source_num]; 
+	}
+
 	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_SOURCES; dma_channel_num++)
 	{
 		delete dma_source_routing_change_event[dma_channel_num];
@@ -235,6 +269,11 @@ DMAMUX<CONFIG>::~DMAMUX<CONFIG>()
 	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
 	{
 		delete dma_source_event[dma_channel_num];
+	}
+	
+	for(dma_source_num = 0; dma_source_num < NUM_DMA_SOURCES; dma_source_num++)
+	{
+		delete dma_source_ack_event[dma_source_num]; 
 	}
 }
 
@@ -274,6 +313,30 @@ void DMAMUX<CONFIG>::end_of_elaboration()
 		std::stringstream dma_channel_process_name_sstr;
 		dma_channel_process_name_sstr << "DMA_CHANNEL_Process_" << dma_channel_num;
 		sc_core::sc_spawn(sc_bind(&DMAMUX<CONFIG>::DMA_CHANNEL_Process, this, dma_channel_num), dma_channel_process_name_sstr.str().c_str(), &dma_channel_process_spawn_options);
+	}
+
+	// Spawn a DMA_CHANNEL_ACK_Process for each DMA channel
+	for(dma_channel_num = 0; dma_channel_num < NUM_DMA_CHANNELS; dma_channel_num++)
+	{
+		sc_core::sc_spawn_options dma_channel_ack_process_spawn_options;
+		dma_channel_ack_process_spawn_options.spawn_method();
+		dma_channel_ack_process_spawn_options.set_sensitivity(dma_channel_ack[dma_channel_num]);
+		
+		std::stringstream dma_channel_ack_process_name_sstr;
+		dma_channel_ack_process_name_sstr << "DMA_CHANNEL_ACK_Process_" << dma_channel_num;
+		sc_core::sc_spawn(sc_bind(&DMAMUX<CONFIG>::DMA_CHANNEL_ACK_Process, this, dma_channel_num), dma_channel_ack_process_name_sstr.str().c_str(), &dma_channel_ack_process_spawn_options);
+	}
+
+	// Spawn a DMA_SOURCE_ACK_Process for each DMA source
+	for(dma_source_num = 0; dma_source_num < NUM_DMA_SOURCES; dma_source_num++)
+	{
+		sc_core::sc_spawn_options dma_source_ack_process_spawn_options;
+		dma_source_ack_process_spawn_options.spawn_method();
+		dma_source_ack_process_spawn_options.set_sensitivity(dma_source_ack_event[dma_source_num]);
+		
+		std::stringstream dma_source_ack_process_name_sstr;
+		dma_source_ack_process_name_sstr << "DMA_SOURCE_ACK_Process_" << dma_source_num;
+		sc_core::sc_spawn(sc_bind(&DMAMUX<CONFIG>::DMA_SOURCE_ACK_Process, this, dma_source_num), dma_source_ack_process_name_sstr.str().c_str(), &dma_source_ack_process_spawn_options);
 	}
 
 	// Spawn MasterClockPropertiesChangedProcess Process that monitor clock properties modifications
@@ -606,6 +669,30 @@ void DMAMUX<CONFIG>::DMA_CHANNEL_Process(unsigned int dma_channel_num)
 	}
 	
 	dma_channel[dma_channel_num]->write(dma_channel_value);
+}
+
+template <typename CONFIG>
+void DMAMUX<CONFIG>::DMA_CHANNEL_ACK_Process(unsigned int dma_channel_num)
+{
+	const DMAMUX_CHCFG& chcfg = dmamux_chcfg[dma_channel_num];
+	unsigned int dma_source_num = chcfg.template Get<typename DMAMUX_CHCFG::SOURCE>();
+	
+	dma_source_ack_event[dma_source_num]->notify(/*sc_core::SC_ZERO_TIME*/);
+}
+
+template <typename CONFIG>
+void DMAMUX<CONFIG>::DMA_SOURCE_ACK_Process(unsigned int dma_source_num)
+{
+	unsigned int dma_channel_num = routing_table[dma_source_num];
+	
+	bool dma_channel_ack_value = dma_channel_ack[dma_channel_num]->read();
+	
+	if(verbose)
+	{
+		logger << DebugInfo << sc_core::sc_time_stamp() << ": " << dma_source_ack[dma_source_num]->name() << " <- " << dma_channel_ack_value << EndDebugInfo;
+	}
+	
+	dma_source_ack[dma_source_num]->write(dma_channel_ack_value);
 }
 
 template <typename CONFIG>

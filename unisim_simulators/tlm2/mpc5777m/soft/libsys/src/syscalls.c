@@ -43,6 +43,7 @@
 #include "linflexd.h"
 #include "dmamux.h"
 #include "edma.h"
+#include "dspi.h"
 #include "console.h"
 #include "ramdisk.h"
 #include "lfs.h"
@@ -269,6 +270,7 @@ void sys_init()
 	swt_drv_init();
 	pit_drv_init();
 	linflexd_drv_init();
+	dspi_drv_init();
 	
 	intc_init();      // initialize interrupt controller
 	edma_init(0);     // initialize eDMA_0
@@ -294,6 +296,156 @@ void sys_init()
 			pit_set_timer_irq_priority(0, 0, 62);            // PIT_0: set PIT_0 timer #0 IRQ priority level to 62
 			pit_select_timer_irq_for_processor(0, 0, 2);    // PIT_0: select PIT_0 timer #0 IRQ for Processor #2
 			
+			dspi_set_irq_priority(0, DSPI_REQ_EOQF, 61);
+			dspi_set_irq_priority(0, DSPI_REQ_TFFF, 61);
+			dspi_set_irq_priority(0, DSPI_REQ_CMDFFF, 61);
+			dspi_set_irq_priority(0, DSPI_REQ_TCF, 61);
+			dspi_set_irq_priority(0, DSPI_REQ_CMDTCF, 61);
+			dspi_set_irq_priority(0, DSPI_REQ_RFDF, 61);
+			dspi_set_irq_priority(0, DSPI_REQ_SPEF, 61);
+			dspi_set_irq_priority(0, DSPI_REQ_TFUF_RFOF_TFIWF, 61);
+			
+			dspi_set_irq_priority(1, DSPI_REQ_EOQF, 61);
+			dspi_set_irq_priority(1, DSPI_REQ_TFFF, 61);
+			dspi_set_irq_priority(1, DSPI_REQ_CMDFFF, 61);
+			dspi_set_irq_priority(1, DSPI_REQ_TCF, 61);
+			dspi_set_irq_priority(1, DSPI_REQ_CMDTCF, 61);
+			dspi_set_irq_priority(1, DSPI_REQ_RFDF, 61);
+			dspi_set_irq_priority(1, DSPI_REQ_SPEF, 61);
+			dspi_set_irq_priority(1, DSPI_REQ_TFUF_RFOF_TFIWF, 61);
+
+			dspi_set_irq_priority(2, DSPI_REQ_EOQF, 61);
+			dspi_set_irq_priority(2, DSPI_REQ_TFFF, 61);
+			dspi_set_irq_priority(2, DSPI_REQ_CMDFFF, 61);
+			dspi_set_irq_priority(2, DSPI_REQ_TCF, 61);
+			dspi_set_irq_priority(2, DSPI_REQ_CMDTCF, 61);
+			dspi_set_irq_priority(2, DSPI_REQ_RFDF, 61);
+			dspi_set_irq_priority(2, DSPI_REQ_SPEF, 61);
+			dspi_set_irq_priority(2, DSPI_REQ_TFUF_RFOF_TFIWF, 61);
+
+			dspi_set_irq_priority(3, DSPI_REQ_EOQF, 61);
+			dspi_set_irq_priority(3, DSPI_REQ_TFFF, 61);
+			dspi_set_irq_priority(3, DSPI_REQ_CMDFFF, 61);
+			dspi_set_irq_priority(3, DSPI_REQ_TCF, 61);
+			dspi_set_irq_priority(3, DSPI_REQ_CMDTCF, 61);
+			dspi_set_irq_priority(3, DSPI_REQ_RFDF, 61);
+			dspi_set_irq_priority(3, DSPI_REQ_SPEF, 61);
+			dspi_set_irq_priority(3, DSPI_REQ_TFUF_RFOF_TFIWF, 61);
+
+			dspi_set_irq_priority(4, DSPI_REQ_EOQF, 61);
+			dspi_set_irq_priority(4, DSPI_REQ_TFFF, 61);
+			dspi_set_irq_priority(4, DSPI_REQ_TCF, 61);
+			dspi_set_irq_priority(4, DSPI_REQ_RFDF, 61);
+			dspi_set_irq_priority(4, DSPI_REQ_DDIF, 61);
+			dspi_set_irq_priority(4, DSPI_REQ_TFUF_RFOF_TFIWF, 61);
+			dspi_set_irq_priority(4, DSPI_REQ_SPITCF_CMDTCF, 61);
+			dspi_set_irq_priority(4, DSPI_REQ_DSITCF_CMDFFF, 61);
+			dspi_set_irq_priority(4, DSPI_REQ_SPEF_DPEF, 61);
+
+			dspi_set_irq_priority(5, DSPI_REQ_EOQF, 61);
+			dspi_set_irq_priority(5, DSPI_REQ_TFFF, 61);
+			dspi_set_irq_priority(5, DSPI_REQ_TCF, 61);
+			dspi_set_irq_priority(5, DSPI_REQ_RFDF, 61);
+			dspi_set_irq_priority(5, DSPI_REQ_DDIF, 61);
+			dspi_set_irq_priority(5, DSPI_REQ_TFUF_RFOF_TFIWF, 61);
+			dspi_set_irq_priority(5, DSPI_REQ_SPITCF_CMDTCF, 61);
+			dspi_set_irq_priority(5, DSPI_REQ_DSITCF_CMDFFF, 61);
+			dspi_set_irq_priority(5, DSPI_REQ_SPEF_DPEF, 61);
+
+			dspi_set_irq_priority(6, DSPI_REQ_EOQF, 61);
+			dspi_set_irq_priority(6, DSPI_REQ_TFFF, 61);
+			dspi_set_irq_priority(6, DSPI_REQ_TCF, 61);
+			dspi_set_irq_priority(6, DSPI_REQ_RFDF, 61);
+			dspi_set_irq_priority(6, DSPI_REQ_DDIF, 61);
+			dspi_set_irq_priority(6, DSPI_REQ_TFUF_RFOF_TFIWF, 61);
+			dspi_set_irq_priority(6, DSPI_REQ_SPITCF_CMDTCF, 61);
+			dspi_set_irq_priority(6, DSPI_REQ_DSITCF_CMDFFF, 61);
+			dspi_set_irq_priority(6, DSPI_REQ_SPEF_DPEF, 61);
+
+			dspi_set_irq_priority(12, DSPI_REQ_EOQF, 61);
+			dspi_set_irq_priority(12, DSPI_REQ_TFFF, 61);
+			dspi_set_irq_priority(12, DSPI_REQ_CMDFFF, 61);
+			dspi_set_irq_priority(12, DSPI_REQ_TCF, 61);
+			dspi_set_irq_priority(12, DSPI_REQ_CMDTCF, 61);
+			dspi_set_irq_priority(12, DSPI_REQ_RFDF, 61);
+			dspi_set_irq_priority(12, DSPI_REQ_SPEF, 61);
+			dspi_set_irq_priority(12, DSPI_REQ_TFUF_RFOF_TFIWF, 61);
+
+			dspi_select_irq_for_processor(0, DSPI_REQ_EOQF, 0);
+			dspi_select_irq_for_processor(0, DSPI_REQ_TFFF, 0);
+			dspi_select_irq_for_processor(0, DSPI_REQ_CMDFFF, 0);
+			dspi_select_irq_for_processor(0, DSPI_REQ_TCF, 0);
+			dspi_select_irq_for_processor(0, DSPI_REQ_CMDTCF, 0);
+			dspi_select_irq_for_processor(0, DSPI_REQ_RFDF, 0);
+			dspi_select_irq_for_processor(0, DSPI_REQ_SPEF, 0);
+			dspi_select_irq_for_processor(0, DSPI_REQ_TFUF_RFOF_TFIWF, 0);
+			
+			dspi_select_irq_for_processor(1, DSPI_REQ_EOQF, 1);
+			dspi_select_irq_for_processor(1, DSPI_REQ_TFFF, 1);
+			dspi_select_irq_for_processor(1, DSPI_REQ_CMDFFF, 1);
+			dspi_select_irq_for_processor(1, DSPI_REQ_TCF, 1);
+			dspi_select_irq_for_processor(1, DSPI_REQ_CMDTCF, 1);
+			dspi_select_irq_for_processor(1, DSPI_REQ_RFDF, 1);
+			dspi_select_irq_for_processor(1, DSPI_REQ_SPEF, 1);
+			dspi_select_irq_for_processor(1, DSPI_REQ_TFUF_RFOF_TFIWF, 1);
+
+			dspi_select_irq_for_processor(2, DSPI_REQ_EOQF, 2);
+			dspi_select_irq_for_processor(2, DSPI_REQ_TFFF, 2);
+			dspi_select_irq_for_processor(2, DSPI_REQ_CMDFFF, 2);
+			dspi_select_irq_for_processor(2, DSPI_REQ_TCF, 2);
+			dspi_select_irq_for_processor(2, DSPI_REQ_CMDTCF, 2);
+			dspi_select_irq_for_processor(2, DSPI_REQ_RFDF, 2);
+			dspi_select_irq_for_processor(2, DSPI_REQ_SPEF, 2);
+			dspi_select_irq_for_processor(2, DSPI_REQ_TFUF_RFOF_TFIWF, 2);
+
+			dspi_select_irq_for_processor(3, DSPI_REQ_EOQF, 2);
+			dspi_select_irq_for_processor(3, DSPI_REQ_TFFF, 2);
+			dspi_select_irq_for_processor(3, DSPI_REQ_CMDFFF, 2);
+			dspi_select_irq_for_processor(3, DSPI_REQ_TCF, 2);
+			dspi_select_irq_for_processor(3, DSPI_REQ_CMDTCF, 2);
+			dspi_select_irq_for_processor(3, DSPI_REQ_RFDF, 2);
+			dspi_select_irq_for_processor(3, DSPI_REQ_SPEF, 2);
+			dspi_select_irq_for_processor(3, DSPI_REQ_TFUF_RFOF_TFIWF, 2);
+
+			dspi_select_irq_for_processor(4, DSPI_REQ_EOQF, 2);
+			dspi_select_irq_for_processor(4, DSPI_REQ_TFFF, 2);
+			dspi_select_irq_for_processor(4, DSPI_REQ_TCF, 2);
+			dspi_select_irq_for_processor(4, DSPI_REQ_RFDF, 2);
+			dspi_select_irq_for_processor(4, DSPI_REQ_DDIF, 2);
+			dspi_select_irq_for_processor(4, DSPI_REQ_TFUF_RFOF_TFIWF, 2);
+			dspi_select_irq_for_processor(4, DSPI_REQ_SPITCF_CMDTCF, 2);
+			dspi_select_irq_for_processor(4, DSPI_REQ_DSITCF_CMDFFF, 2);
+			dspi_select_irq_for_processor(4, DSPI_REQ_SPEF_DPEF, 2);
+
+			dspi_select_irq_for_processor(5, DSPI_REQ_EOQF, 2);
+			dspi_select_irq_for_processor(5, DSPI_REQ_TFFF, 2);
+			dspi_select_irq_for_processor(5, DSPI_REQ_TCF, 2);
+			dspi_select_irq_for_processor(5, DSPI_REQ_RFDF, 2);
+			dspi_select_irq_for_processor(5, DSPI_REQ_DDIF, 2);
+			dspi_select_irq_for_processor(5, DSPI_REQ_TFUF_RFOF_TFIWF, 2);
+			dspi_select_irq_for_processor(5, DSPI_REQ_SPITCF_CMDTCF, 2);
+			dspi_select_irq_for_processor(5, DSPI_REQ_DSITCF_CMDFFF, 2);
+			dspi_select_irq_for_processor(5, DSPI_REQ_SPEF_DPEF, 2);
+
+			dspi_select_irq_for_processor(6, DSPI_REQ_EOQF, 2);
+			dspi_select_irq_for_processor(6, DSPI_REQ_TFFF, 2);
+			dspi_select_irq_for_processor(6, DSPI_REQ_TCF, 2);
+			dspi_select_irq_for_processor(6, DSPI_REQ_RFDF, 2);
+			dspi_select_irq_for_processor(6, DSPI_REQ_DDIF, 2);
+			dspi_select_irq_for_processor(6, DSPI_REQ_TFUF_RFOF_TFIWF, 2);
+			dspi_select_irq_for_processor(6, DSPI_REQ_SPITCF_CMDTCF, 2);
+			dspi_select_irq_for_processor(6, DSPI_REQ_DSITCF_CMDFFF, 2);
+			dspi_select_irq_for_processor(6, DSPI_REQ_SPEF_DPEF, 2);
+
+			dspi_select_irq_for_processor(12, DSPI_REQ_EOQF, 2);
+			dspi_select_irq_for_processor(12, DSPI_REQ_TFFF, 2);
+			dspi_select_irq_for_processor(12, DSPI_REQ_CMDFFF, 2);
+			dspi_select_irq_for_processor(12, DSPI_REQ_TCF, 2);
+			dspi_select_irq_for_processor(12, DSPI_REQ_CMDTCF, 2);
+			dspi_select_irq_for_processor(12, DSPI_REQ_RFDF, 2);
+			dspi_select_irq_for_processor(12, DSPI_REQ_SPEF, 2);
+			dspi_select_irq_for_processor(12, DSPI_REQ_TFUF_RFOF_TFIWF, 2);
+
 			unsigned int chan;
 			for(chan = 0; chan < 64; chan++)
 			{

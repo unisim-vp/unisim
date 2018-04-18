@@ -38,6 +38,7 @@
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/clock.hh>
+#include <unisim/util/likely/likely.hh>
 #include <systemc>
 #include <stdexcept>
 #include <string>
@@ -53,6 +54,13 @@
 namespace unisim {
 namespace kernel {
 namespace tlm2 {
+
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
 enum INSTRUMENTATION_TYPE
 {
@@ -163,6 +171,11 @@ public:
 	template <typename T> void RegisterPort(sc_core::sc_port_b<sc_core::sc_signal_in_if<T> >& in_port);
 	template <typename T> void RegisterPort(sc_core::sc_port_b<sc_core::sc_signal_inout_if<T> >& out_port);
 
+	template <typename T> sc_core::sc_signal<T>& GetSignal(const std::string& signal_name);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& GetSignal(const std::string& signal_name);
+	template <typename T> sc_core::sc_signal<T>& GetSignal(const std::string& signal_array_name, unsigned int idx);
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& GetSignal(const std::string& signal_array_name, unsigned int idx);
+
 	void TraceSignalPattern(const std::string& signal_name_pattern);
 	void Bind(const std::string& port_name, const std::string& signal_name);
 	void BindArray(unsigned int dim, const std::string& port_array_name, const std::string& signal_array_name);
@@ -171,6 +184,17 @@ public:
 	
 	void StartBinding();
 	void StartInstrumentation();
+
+protected:
+	mutable unisim::kernel::logger::Logger logger;
+	
+	bool verbose;
+	bool debug;
+private:
+	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> friend class Typer;
+	
+	unisim::kernel::service::Parameter<bool> param_verbose;
+	unisim::kernel::service::Parameter<bool> param_debug;
 	
 	bool enable_output_instrumentation;
 	unisim::kernel::service::Parameter<bool> param_enable_output_instrumentation;
@@ -232,10 +256,6 @@ public:
 	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& unused_signal;
 	sc_core::sc_signal<bool, sc_core::SC_MANY_WRITERS>& unused_0_signal;
 
-	template <typename T> sc_core::sc_signal<T>& GetSignal(const std::string& signal_name);
-	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& GetSignal(const std::string& signal_name);
-	template <typename T> sc_core::sc_signal<T>& GetSignal(const std::string& signal_array_name, unsigned int idx);
-	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY>& GetSignal(const std::string& signal_array_name, unsigned int idx);
 	template <typename T> sc_core::sc_signal<T> *TryGetSignal(const std::string& signal_name);
 	template <typename T, sc_core::sc_writer_policy WRITER_POLICY> sc_core::sc_signal<T, WRITER_POLICY> *TryGetSignal(const std::string& signal_name);
 	template <typename T> sc_core::sc_signal<T> *TryGetSignal(const std::string& signal_array_name, unsigned int idx);
@@ -415,7 +435,7 @@ void InputInstrument<T, WRITER_POLICY>::Inject()
 {
 	if(value_changed)
 	{
-#if DEBUG_INSTRUMENTER >= 2
+#if 0
 		std::cout << "InputInstrument<T, WRITER_POLICY>::Inject(): At " << sc_core::sc_time_stamp() << ", " << signal->name() << " <- '" << value << "'" << std::endl;
 #endif
 		signal->write(value);
@@ -504,9 +524,10 @@ template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
 sc_core::sc_signal<T, WRITER_POLICY>& Instrumenter::CreateSignal(const T& init_value)
 {
 	sc_core::sc_signal<T, WRITER_POLICY> *signal = new sc_core::sc_signal<T, WRITER_POLICY>();
-#if DEBUG_INSTRUMENTER >= 1
-	std::cout << "Creating Signal \"" << signal->name() << "\" <- '" << init_value << "'" << std::endl;
-#endif
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << "Creating Signal \"" << signal->name() << "\" <- '" << init_value << "'" << EndDebugInfo;
+	}
 	signal_pool[signal->name()] = signal;
 	*signal = init_value;
 	
@@ -527,14 +548,15 @@ sc_core::sc_signal<T, WRITER_POLICY>& Instrumenter::CreateSignal(const std::stri
 	std::map<std::string, sc_core::sc_interface *>::iterator signal_pool_it = signal_pool.find(signal_name);
 	if(signal_pool_it != signal_pool.end())
 	{
-		std::cerr << "ERROR! Signal \"" << signal_name << "\" already exists" << std::endl;
+		logger << DebugError << "Signal \"" << signal_name << "\" already exists" << EndDebugError;
 		throw std::runtime_error("Internal error!");
 	}
 	
 	sc_core::sc_signal<T, WRITER_POLICY> *signal = new sc_core::sc_signal<T, WRITER_POLICY>(signal_name.c_str());
-#if DEBUG_INSTRUMENTER >= 1
-	std::cout << "Creating Signal \"" << signal->name() << "\" <- '" << init_value << "'" << std::endl;
-#endif
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << "Creating Signal \"" << signal->name() << "\" <- '" << init_value << "'" << EndDebugInfo;
+	}
 	signal_pool[signal->name()] = signal;
 	*signal = init_value;
 	
@@ -604,12 +626,12 @@ sc_core::sc_signal<T, WRITER_POLICY>& Instrumenter::GetSignal(const std::string&
 			
 			if(signal) return *signal;
 			
-			std::cerr << "ERROR! Signal \"" << signal_name << "\" has an unexpected type" << std::endl;
+			logger << DebugError << "ERROR! Signal \"" << signal_name << "\" has an unexpected type" << EndDebugError;
 			throw std::runtime_error("Internal error!");
 		}
 	}
 	
-	std::cerr << "ERROR! Signal \"" << signal_name << "\" not found" << std::endl;
+	logger << DebugError << "Signal \"" << signal_name << "\" not found" << EndDebugError;
 	throw std::runtime_error("Internal error!");
 	static sc_core::sc_signal<T, WRITER_POLICY> dummy_signal;
 	return dummy_signal;
@@ -748,9 +770,10 @@ bool Instrumenter::TryTraceSignal(const std::string& signal_name)
 			
 			if(signal)
 			{
-#if DEBUG_INSTRUMENTER >= 1
-				std::cout << "Tracing Signal \"" << signal->name() << "\"" << std::endl;
-#endif
+				if(unlikely(verbose))
+				{
+					logger << DebugInfo << "Tracing Signal \"" << signal->name() << "\"" << EndDebugInfo;
+				}
 				sc_trace(trace_file, *signal, signal->name());
 				return true;
 			}
@@ -764,9 +787,10 @@ template <typename T, sc_core::sc_writer_policy WRITER_POLICY>
 void Instrumenter::RegisterSignal(sc_core::sc_signal<T, WRITER_POLICY> *signal)
 {
 	if(!signal) return;
-#if DEBUG_INSTRUMENTER >= 1
-	std::cout << "Registering Signal \"" << signal->name() << "\"" << std::endl;
-#endif
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << "Registering Signal \"" << signal->name() << "\"" << EndDebugInfo;
+	}
 	signal_pool[signal->name()] = signal;
 	typers[signal->name()] = new Typer<T, WRITER_POLICY>(this);
 }
@@ -799,23 +823,26 @@ bool Instrumenter::TryBind(const std::string& port_name, const std::string& sign
 		
 		in_port = dynamic_cast<sc_core::sc_port_b<sc_core::sc_signal_in_if<T> > *>(port_base);
 		
-#if DEBUG_INSTRUMENTER >= 2
-		std::cout << "TryBind(\"" << port_name << ",\"" << signal_name << "): in_port=" << in_port << std::endl;
-#endif
+		if(unlikely(debug))
+		{
+			logger << DebugInfo << "TryBind(\"" << port_name << ",\"" << signal_name << "): in_port=" << in_port << EndDebugInfo;
+		}
 
 		if(!in_port)
 		{
 			out_port = dynamic_cast<sc_core::sc_port_b<sc_core::sc_signal_inout_if<T> > *>(port_base);
-#if DEBUG_INSTRUMENTER >= 2
-			std::cerr << "TryBind(\"" << port_name << ",\"" << signal_name << "): out_port=" << out_port << std::endl;
-#endif
+			if(unlikely(debug))
+			{
+				logger << DebugInfo << "TryBind(\"" << port_name << ",\"" << signal_name << "): out_port=" << out_port << EndDebugInfo;
+			}
 		}
 	}
 	else
 	{
-#if DEBUG_INSTRUMENTER >= 1
-	std::cout << "WARNING! While binding, port \"" << port_name << "\" does not exist" << std::endl;
-#endif
+		if(unlikely(debug))
+		{
+			logger << DebugInfo << "While binding, port \"" << port_name << "\" does not exist" << EndDebugInfo;
+		}
 	}
 	
 	if(in_port || out_port)
@@ -830,16 +857,18 @@ bool Instrumenter::TryBind(const std::string& port_name, const std::string& sign
 			{
 				sc_core::sc_signal_in_if<T> *signal_in_if = dynamic_cast<sc_core::sc_signal_in_if<T> *>(signal_if);
 				
-#if DEBUG_INSTRUMENTER >= 2
-				std::cout << "TryBind(\"" << port_name << ",\"" << signal_name << "): signal_in_if=" << signal_in_if << std::endl;
-#endif
+				if(unlikely(debug))
+				{
+					logger << DebugInfo << "TryBind(\"" << port_name << ",\"" << signal_name << "): signal_in_if=" << signal_in_if << EndDebugInfo;
+				}
 				
 				if(signal_in_if)
 				{
 					(*in_port)(*signal_in_if);
-#if DEBUG_INSTRUMENTER >= 2
-					std::cout << "TryBind(\"" << port_name << ",\"" << signal_name << "): success (in port <- signal_in_if)" << std::endl;
-#endif
+					if(unlikely(debug))
+					{
+						logger << DebugInfo << "TryBind(\"" << port_name << ",\"" << signal_name << "): success (in port <- signal_in_if)" << EndDebugInfo;
+					}
 					return true;
 				}
 			}
@@ -847,9 +876,10 @@ bool Instrumenter::TryBind(const std::string& port_name, const std::string& sign
 			{
 				sc_core::sc_signal_inout_if<T> *signal_inout_if = dynamic_cast<sc_core::sc_signal_inout_if<T> *>(signal_if);
 
-#if DEBUG_INSTRUMENTER >= 2
-				std::cout << "TryBind(\"" << port_name << ",\"" << signal_name << "): signal_inout_if=" << signal_inout_if << std::endl;
-#endif
+				if(unlikely(debug))
+				{
+					logger << DebugInfo << "TryBind(\"" << port_name << ",\"" << signal_name << "): signal_inout_if=" << signal_inout_if << EndDebugInfo;
+				}
 
 				if(signal_inout_if)
 				{
@@ -863,43 +893,40 @@ bool Instrumenter::TryBind(const std::string& port_name, const std::string& sign
 							sc_core::sc_signal_inout_if<T> *original_signal_inout_if = dynamic_cast<sc_core::sc_signal_inout_if<T> *>(original_signal_if);
 							if(!original_signal_inout_if) throw std::runtime_error("Internal error! can't retrieve interface of original signal");
 							(*out_port)(*original_signal_inout_if);
-#if DEBUG_INSTRUMENTER >= 2
-							std::cout << "TryBind(\"" << port_name << ",\"" << signal_name << "): success (out_port -> original_signal_inout_if)" << std::endl;
-#endif
+							if(unlikely(debug))
+							{
+								logger << DebugInfo << "TryBind(\"" << port_name << ",\"" << signal_name << "): success (out_port -> original_signal_inout_if)" << EndDebugInfo;
+							}
 							return true;
 						}
 						throw std::runtime_error("Internal error! can't find original signal");
 					}
 					(*out_port)(*signal_inout_if);
-#if DEBUG_INSTRUMENTER >= 2
-					std::cout << "TryBind(\"" << port_name << ",\"" << signal_name << "): success (output -> signal_inout_if)" << std::endl;
-#endif
+					if(unlikely(debug))
+					{
+						logger << DebugInfo << "TryBind(\"" << port_name << ",\"" << signal_name << "): success (output -> signal_inout_if)" << EndDebugInfo;
+					}
 					return true;
 				}
 				else
 				{
-#if DEBUG_INSTRUMENTER >= 1
-					std::cout << "WARNING! While binding, signal \"" << signal_name << "\" either does not exist or data type is incompatible" << std::endl;
-#endif
+					logger << DebugWarning << "While binding, signal \"" << signal_name << "\" either does not exist or data type is incompatible" << EndDebugWarning;
 				}
 			}
 		}
 		else
 		{
-#if DEBUG_INSTRUMENTER >= 1
-			std::cout << "WARNING! While binding, signal \"" << signal_name << "\" does not exist" << std::endl;
-#endif
+			logger << DebugWarning << "While binding, signal \"" << signal_name << "\" does not exist" << EndDebugWarning;
 		}
 	}
 	else
 	{
-#if DEBUG_INSTRUMENTER >= 1
-	std::cout << "WARNING! While binding, port \"" << port_name << "\" either does not exist or data type is incompatible" << std::endl;
-#endif
+		logger << DebugWarning << "While binding, port \"" << port_name << "\" either does not exist or data type is incompatible" << EndDebugWarning;
 	}
-#if DEBUG_INSTRUMENTER >= 2
-	std::cout << "TryBind(\"" << port_name << ",\"" << signal_name << "): failed" << std::endl;
-#endif
+	if(unlikely(debug))
+	{
+		logger << DebugInfo << "TryBind(\"" << port_name << ",\"" << signal_name << "): failed" << EndDebugInfo;
+	}
 	return false;
 }
 
@@ -920,9 +947,10 @@ bool Instrumenter::TryInstrumentInputSignal(const std::string& signal_name)
 		sc_core::sc_signal<T, WRITER_POLICY> *injected_signal = TryGetSignal<T, WRITER_POLICY>((signal_name + "_injected").c_str());
 		if(!original_signal || !injected_signal) throw std::runtime_error("Internal error! can't get either original or injected signal");
 		
-#if DEBUG_INSTRUMENTER >= 1
-		std::cout << "Instrumenting Signal \"" << signal->name() << "\" for input" << std::endl;
-#endif
+		if(unlikely(verbose))
+		{
+			logger << DebugInfo << "Instrumenting Signal \"" << signal->name() << "\" for input" << EndDebugInfo;
+		}
 		InputInstrument<T, WRITER_POLICY> *instrument = new InputInstrument<T, WRITER_POLICY>(signal_name, injected_signal);
 		input_instruments.push_back(instrument);
 		
@@ -955,9 +983,10 @@ bool Instrumenter::TryInstrumentOutputSignal(const std::string& signal_name)
 	{
 		
 		sc_core::sc_signal<T, WRITER_POLICY> *matched_signal = *sv_it;
-#if DEBUG_INSTRUMENTER >= 1
-		std::cout << "Instrumenting Signal \"" << matched_signal->name() << "\" for output" << std::endl;
-#endif
+		if(unlikely(verbose))
+		{
+			logger << DebugInfo << "Instrumenting Signal \"" << matched_signal->name() << "\" for output" << EndDebugInfo;
+		}
 		std::string matched_signal_name(matched_signal->name());
 		OutputInstrument<T, WRITER_POLICY> *instrument = new OutputInstrument<T, WRITER_POLICY>(matched_signal_name, matched_signal);
 		output_instruments.push_back(instrument);
@@ -983,16 +1012,18 @@ void Instrumenter::SignalTeeProcess(sc_core::sc_signal<T, WRITER_POLICY> *origin
 	
 	if((time_stamp >= input_instrumentation_start_time) && (time_stamp <= input_instrumentation_end_time))
 	{
-#if DEBUG_INSTRUMENTER >= 2
-		std::cout << time_stamp << ": Inject: " << signal->name() << " <- '" << (*injected_signal) << "'" << std::endl;
-#endif
+		if(unlikely(debug))
+		{
+			logger << DebugInfo << time_stamp << ": Inject: " << signal->name() << " <- '" << (*injected_signal) << "'" << EndDebugInfo;
+		}
 		value = *injected_signal;
 	}
 	else
 	{
-#if DEBUG_INSTRUMENTER >= 2
-		std::cout << time_stamp << ": Passthrough: " << signal->name() << " <- '" << (*original_signal) << "'" << std::endl;
-#endif
+		if(unlikely(debug))
+		{
+			logger << DebugInfo << time_stamp << ": Passthrough: " << signal->name() << " <- '" << (*original_signal) << "'" << EndDebugInfo;
+		}
 		value = *original_signal;
 	}
 	

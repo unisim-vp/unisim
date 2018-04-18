@@ -207,7 +207,7 @@ bool InlineDebugger<ADDRESS>::EndSetup()
 	   memory_atom_size != 8 &&
 	   memory_atom_size != 16)
 	{
-		std::cerr << Object::GetName() << "ERROR! memory-atom-size must be either 1, 2, 4, 8 or 16" << std::endl;
+		std::cerr << this->GetName() << "ERROR! memory-atom-size must be either 1, 2, 4, 8 or 16" << std::endl;
 		return false;
 	}
 	
@@ -224,7 +224,7 @@ bool InlineDebugger<ADDRESS>::EndSetup()
 	
 	if(!program_counter)
 	{
-		std::cerr << Object::GetName() << "ERROR! can't access program counter" << std::endl;
+		std::cerr << this->GetName() << "ERROR! can't access program counter" << std::endl;
 		return false;
 	}
 	
@@ -394,7 +394,7 @@ void InlineDebugger<ADDRESS>::DebugYield()
 		//(*std_output_stream) << "> ";
 		if(!GetLine(prompt.c_str(), line, interactive))
 		{
-			Object::Stop(0);
+			this->Stop(0);
 			return;
 		}
 
@@ -451,7 +451,7 @@ void InlineDebugger<ADDRESS>::DebugYield()
 				if(IsQuitCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					Object::Stop(0);
+					this->Stop(0);
 					return;
 				}
 
@@ -706,7 +706,7 @@ void InlineDebugger<ADDRESS>::DebugYield()
 				if(IsLoadConfigCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					Object::GetSimulator()->LoadXmlParameters(parm[1].c_str());
+					this->GetSimulator()->LoadVariables(parm[1].c_str(), unisim::kernel::service::VariableBase::VAR_PARAMETER);
 					break;
 				}
 				
@@ -1107,7 +1107,7 @@ void InlineDebugger<ADDRESS>::DebugYield()
 		
 		if(interactive) last_line = line;
 	}
-	Object::Stop(0);
+	this->Stop(0);
 }
 
 template <class ADDRESS>

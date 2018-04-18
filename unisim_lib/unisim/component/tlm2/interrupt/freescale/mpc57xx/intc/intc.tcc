@@ -953,7 +953,7 @@ void INTC<CONFIG>::SetIRQInputStatus(unsigned int irq_num, bool value)
 	}
 	
 	uint64_t& s = irqs[irq_num / 64];
-	uint64_t m = 1 << (irq_num % 64);
+	uint64_t m = uint64_t(1) << (irq_num % 64);
 	
 	if(value)
 	{
@@ -977,7 +977,7 @@ bool INTC<CONFIG>::GetIRQInputStatus(unsigned int irq_num) const
 {
 	// Get latch value of IRQ input status
 	uint64_t s = irqs[irq_num / 64];
-	uint64_t m = 1 << (irq_num % 64);
+	uint64_t m = uint64_t(1) << (irq_num % 64);
 	
 	return (s & m) != 0;
 }
@@ -1173,7 +1173,7 @@ void INTC<CONFIG>::DumpPriorityTree(unsigned int prc_num)
 		unsigned int priority = irq_priority.GetPriority();
 		unsigned int irq_num = irq_priority.GetIRQ();
 		
-		logger << DebugInfo << "PRI #" << priority << ": IRQ #" << irq_num << EndDebugInfo;
+		logger << DebugInfo << "PRI #" << priority << ": IRQ #" << irq_num << " = " << GetIRQInputStatus(irq_num) << EndDebugInfo;
 	}
 }
 

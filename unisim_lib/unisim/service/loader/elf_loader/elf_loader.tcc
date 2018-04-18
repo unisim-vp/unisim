@@ -75,7 +75,7 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, base_addr(0)
 	, force_base_addr(false)
 	, force_use_virtual_address(false)
-	, initialize_extra_segment_bytes(false)
+	, initialize_extra_segment_bytes(true)
 	, dump_headers(false)
 	, logger(*this)
 	, verbose(false)

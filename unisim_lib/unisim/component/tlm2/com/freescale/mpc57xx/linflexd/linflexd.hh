@@ -186,11 +186,13 @@ public:
 	sc_core::sc_in<bool>                             m_clk;                       // clock port
 	sc_core::sc_in<bool>                             lin_clk;                     // LIN Clock port
 	sc_core::sc_in<bool>                             reset_b;                     // reset
+	sc_core::sc_in<bool>                            *DMA_ACK_RX[NUM_DMA_RX_CHANNELS]; // Rx DMA acknowledgement (unused)
+	sc_core::sc_in<bool>                            *DMA_ACK_TX[NUM_DMA_TX_CHANNELS]; // Tx DMA acknowledgement (unused)
 	sc_core::sc_out<bool>                            INT_RX;                      // Interrupt Request
 	sc_core::sc_out<bool>                            INT_TX;                      // Interrupt Request
 	sc_core::sc_out<bool>                            INT_ERR;                     // Interrupt Request
-	sc_core::sc_out<bool>                           *DMA_RX[NUM_DMA_TX_CHANNELS]; // Rx DMA request
-	sc_core::sc_out<bool>                           *DMA_TX[NUM_DMA_RX_CHANNELS]; // Tx DMA request
+	sc_core::sc_out<bool>                           *DMA_RX[NUM_DMA_RX_CHANNELS]; // Rx DMA request
+	sc_core::sc_out<bool>                           *DMA_TX[NUM_DMA_TX_CHANNELS]; // Tx DMA request
 	
 	LINFlexD(const sc_core::sc_module_name& name, unisim::kernel::service::Object *parent);
 	virtual ~LINFlexD();
@@ -1932,8 +1934,8 @@ private:
 	sc_core::sc_event gen_int_rx_event;           // INT_RX event
 	sc_core::sc_event gen_int_tx_event;           // INT_TX event
 	sc_core::sc_event gen_int_err_event;          // INT_ERR event
-	sc_core::sc_event gen_dma_rx_event;           // DMA_RX event
-	sc_core::sc_event gen_dma_tx_event;           // DMA_TX event
+	sc_core::sc_event *gen_dma_rx_event[NUM_DMA_RX_CHANNELS]; // DMA_RX event
+	sc_core::sc_event *gen_dma_tx_event[NUM_DMA_TX_CHANNELS]; // DMA_TX event
 	sc_core::sc_event tx_event;                   // Tx event
 	bool pending_tx_request;                      // whether there's a pending transmission request
 	bool lins_int_rx_mask;                        // whether to mask INT_RX due to LINS
@@ -1941,6 +1943,9 @@ private:
 	sc_core::sc_time rx_time;                     // Rx time offset relative to current simulation time
 	bool data_reception_in_progress;
 	bool data_transmission_in_progress;
+	
+	bool dma_rx[NUM_DMA_RX_CHANNELS];
+	bool dma_tx[NUM_DMA_TX_CHANNELS];
 	
 	// LINFlexD registers address map
 	RegisterAddressMap<sc_dt::uint64> reg_addr_map;
@@ -1998,8 +2003,13 @@ private:
 	void UpdateINT_RX();
 	void UpdateINT_TX();
 	void UpdateINT_ERR();
-	void UpdateDMA_RX();
-	void UpdateDMA_TX();
+	void UpdateDMA_RX(unsigned int dma_rx_num, const sc_core::sc_time& delay = sc_core::SC_ZERO_TIME);
+	void UpdateDMA_TX(unsigned int dma_tx_num, const sc_core::sc_time& delay = sc_core::SC_ZERO_TIME);
+	void UpdateDMA_RX(const sc_core::sc_time& delay = sc_core::SC_ZERO_TIME);
+	void UpdateDMA_TX(const sc_core::sc_time& delay = sc_core::SC_ZERO_TIME);
+	
+	void RequestDMA_RX();
+	void RequestDMA_TX();
 	
 	void Timeout();
 	void IncrementTimeoutCounter(sc_dt::uint64 delta);
@@ -2019,8 +2029,10 @@ private:
 	void INT_RX_Process();
 	void INT_TX_Process();
 	void INT_ERR_Process();
-	void DMA_RX_Process();
-	void DMA_TX_Process();
+	void DMA_RX_Process(unsigned int dma_rx_num);
+	void DMA_TX_Process(unsigned int dma_tx_num);
+	void DMA_ACK_RX_Process(unsigned int dma_rx_num);
+	void DMA_ACK_TX_Process(unsigned int dma_rx_num);
 	void RX_FIFO_Pop();
 	void IncrementRxTime();
 	bool RX_InputStatus();

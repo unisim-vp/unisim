@@ -1,6 +1,6 @@
 CC=$(PWD)/../../libsys/bin/Z4_2/bin/powerpc-eabivle-gcc
 LDFLAGS=-static
-CFLAGS=-Og -g -Wall
+CFLAGS=-Og -g -Wall -fdebug-prefix-map=$(shell readlink -f $$PWD/../../app)=app -fdebug-prefix-map=$(shell readlink -f $$PWD/../../libsys)=libsys
 RM=rm -f
 
 OUTPUT=boot.elf

@@ -3004,6 +3004,7 @@ void GDBServer<ADDRESS>::TriggerDebugYield()
 template <class ADDRESS>
 void GDBServer<ADDRESS>::Barrier()
 {
+	return; // FIXME: Currently disabled as it introduces more problems than it solves
 	// In rare condition, at startup, server is interacting with GDB client, and simulation is still running.
 	// before sending commands to simulation, we should ask for simulation to yield and make it gracefully wait command processing
 	if(!process_cmd_cond)

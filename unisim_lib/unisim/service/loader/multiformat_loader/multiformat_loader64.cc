@@ -57,7 +57,7 @@ typedef unisim::service::loader::multiformat_loader::AddressRange<uint64_t> Addr
 template <> Variable<AddressRange64 >::Variable(const char *_name, Object *_object, AddressRange64 & _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -92,7 +92,7 @@ template <> Variable<AddressRange64 >::operator double () const
 	return (double) storage->GetAmplitude();
 }
 
-template <> Variable<AddressRange64 >::operator string () const
+template <> Variable<AddressRange64 >::operator std::string () const
 {
 	return storage->ToString();
 }
@@ -199,11 +199,11 @@ template <> VariableBase& Variable<AddressRange64 >::operator = (const char *val
 			std::string str_rest = str.substr(pos + 1);
 			str = str.substr(0, pos);
 			
-			stringstream range_low_str;
+			std::stringstream range_low_str;
 			range_low_str << str;
 			range_low_str >> std::hex >> tmp.low >> std::dec;
 			
-			stringstream range_high_str;
+			std::stringstream range_high_str;
 			range_high_str << str_rest;
 			range_high_str >> std::hex >> tmp.high >> std::dec;
 		}

@@ -77,9 +77,11 @@
 #include <boost/graph/visitors.hpp>
 #include <boost/graph/graphviz.hpp>
 
-#include "unisim/kernel/service/xml_helper.hh"
+#include "unisim/kernel/service/xml_config_file_helper.hh"
 #include "unisim/util/backtrace/backtrace.hh"
 #include "unisim/util/likely/likely.hh"
+
+#include <unisim/kernel/service/ini_config_file_helper.hh>
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include <fcntl.h>
@@ -120,13 +122,6 @@ void operator delete[](void *storage, std::size_t size)
 namespace unisim {
 namespace kernel {
 namespace service {
-
-using std::hex;
-using std::dec;
-using std::cerr;
-using std::endl;
-using std::ofstream;
-using namespace boost;
 
 typedef struct
 {
@@ -289,11 +284,11 @@ bool ResolvePath(const std::string& prefix_dir,
 	
 VariableBase::
 VariableBase(const char *_name, Object *_owner, Type _type, const char *_description)
-	: name(_owner ? string(_owner->GetName()) + string(".") + string(_name) : string(_name) )
-	, var_name(string(_name))
+	: name(_owner ? std::string(_owner->GetName()) + std::string(".") + std::string(_name) : std::string(_name) )
+	, var_name(std::string(_name))
 	, owner(_owner)
 	, container(0)
-	, description(_description ? string(_description) : string(""))
+	, description(_description ? std::string(_description) : std::string(""))
 	, enumerated_values()
 	, type(_type)
 	, fmt(FMT_DEFAULT)
@@ -307,16 +302,16 @@ VariableBase(const char *_name, Object *_owner, Type _type, const char *_descrip
 	{
 		_owner->Add(*this);
 	}
-	Simulator::simulator->Register(this);
+	Simulator::Instance()->Register(this);
 }
 
 VariableBase::
 VariableBase(const char *_name, VariableBase *_container, Type _type, const char *_description)
-	: name(_container ? string(_container->GetName()) + string(".") + string(_name) : string(_name))
-	, var_name(_container ? string(_container->GetVarName()) + string(".") + string(_name) : string(_name))
+	: name(_container ? std::string(_container->GetName()) + std::string(".") + std::string(_name) : std::string(_name))
+	, var_name(_container ? std::string(_container->GetVarName()) + std::string(".") + std::string(_name) : std::string(_name))
 	, owner(0)
 	, container(_container)
-	, description(_description ? string(_description) : string(""))
+	, description(_description ? std::string(_description) : std::string(""))
 	, enumerated_values()
 	, type(_type)
 	, fmt(FMT_DEFAULT)
@@ -326,7 +321,7 @@ VariableBase(const char *_name, VariableBase *_container, Type _type, const char
 	, is_modified(false)
 	, listener_set()
 {
-	Simulator::simulator->Register(this);
+	Simulator::Instance()->Register(this);
 }
 
 VariableBase::
@@ -348,7 +343,7 @@ VariableBase()
 VariableBase::~VariableBase()
 {
 	if(owner) owner->Remove(*this);
-	Simulator::simulator->Unregister(this);
+	Simulator::Instance()->Unregister(this);
 }
 
 Object *VariableBase::GetOwner() const
@@ -411,7 +406,7 @@ bool VariableBase::HasEnumeratedValues() const {
 }
 
 bool VariableBase::HasEnumeratedValue(const char * value) const {
-	vector<string>::const_iterator iter;
+	std::vector<std::string>::const_iterator iter;
 
 	for(iter = enumerated_values.begin(); iter != enumerated_values.end(); iter++) {
 		if(iter->compare(value) == 0) {
@@ -421,7 +416,7 @@ bool VariableBase::HasEnumeratedValue(const char * value) const {
 	return false;
 }
 
-void VariableBase::GetEnumeratedValues(vector<string> &values) const {
+void VariableBase::GetEnumeratedValues(std::vector<std::string> &values) const {
 	if(!HasEnumeratedValues()) return;
 	for(unsigned int i = 0; i < enumerated_values.size(); i++) {
 		values.push_back(enumerated_values[i]);
@@ -430,12 +425,12 @@ void VariableBase::GetEnumeratedValues(vector<string> &values) const {
 
 bool VariableBase::AddEnumeratedValue(const char *value) {
 	if(HasEnumeratedValue(value)) return false;
-	enumerated_values.push_back(string(value));
+	enumerated_values.push_back(std::string(value));
 	return true;
 }
 
 bool VariableBase::RemoveEnumeratedValue(const char *value) {
-	vector<string>::iterator it;
+	std::vector<std::string>::iterator it;
 	for(it = enumerated_values.begin(); it != enumerated_values.end(); it++) {
 		if(it->compare(value) == 0) {
 			enumerated_values.erase(it);
@@ -457,7 +452,7 @@ void VariableBase::SetFormat(Format _fmt)
 
 bool VariableBase::IsVoid() const
 {
-	return this == Simulator::simulator->void_variable;
+	return this == Simulator::Instance()->void_variable;
 }
 
 bool VariableBase::IsMutable() const
@@ -535,7 +530,7 @@ VariableBase::operator unsigned long () const { return (unsigned long long) *thi
 VariableBase::operator unsigned long long () const { return 0ULL; }
 VariableBase::operator float () const { return (double) *this; }
 VariableBase::operator double () const { return 0.0; }
-VariableBase::operator string () const { return string(); }
+VariableBase::operator std::string () const { return std::string(); }
 
 VariableBase& VariableBase::operator = (bool value) { NotifyListeners(); return *this; }
 VariableBase& VariableBase::operator = (char value) { *this = (long long) value; return *this; }
@@ -556,8 +551,8 @@ VariableBase& VariableBase::operator [] (unsigned int index)
 {
 	if(index >= 0)
 	{
-		cerr << "Subscript out of range" << endl;
-		return *Simulator::simulator->void_variable;
+		std::cerr << "Subscript out of range" << std::endl;
+		return *Simulator::Instance()->void_variable;
 	}
 	return *this;
 }
@@ -566,8 +561,8 @@ const VariableBase& VariableBase::operator [] (unsigned int index) const
 {
 	if(index >= 0)
 	{
-		cerr << "Subscript out of range" << endl;
-		return *Simulator::simulator->void_variable;
+		std::cerr << "Subscript out of range" << std::endl;
+		return *Simulator::Instance()->void_variable;
 	}
 	return *this;
 }
@@ -581,13 +576,13 @@ unsigned int VariableBase::GetBitSize() const { return 0; }
 
 VariableBase& VariableBase::operator = (const VariableBase& variable)
 {
-	string variable_value = (string) variable;
+	std::string variable_value = (std::string) variable;
 	return *this = variable_value.c_str();
 }
 
 std::string VariableBase::GetSymbolicValue() const
 {
-	return IsVisible() ? name : (string) *this;
+	return IsVisible() ? name : (std::string) *this;
 }
 
 void VariableBase::GenerateLatexDocumentation(std::ostream& os) const
@@ -608,7 +603,7 @@ void VariableBase::GenerateLatexDocumentation(std::ostream& os) const
 	{
 		// print variable current value
 		os << "\\multicolumn{1}{|p{7.5cm}}{\\textbf{Default:} ";
-		os << string_to_latex(((string) *this).c_str(), 24, "texttt");
+		os << string_to_latex(((std::string) *this).c_str(), 24, "texttt");
 	}
 	os << "} & \\multicolumn{1}{p{7.5cm}|}{\\textbf{Data type:} " << string_to_latex(GetDataTypeName(), 36, "texttt") << "}\\\\" << std::endl;
 	
@@ -616,7 +611,7 @@ void VariableBase::GenerateLatexDocumentation(std::ostream& os) const
 	{
 		os << "\\multicolumn{2}{|p{15cm}|}{\\textbf{Valid:} ";
 		
-		std::vector<string>::const_iterator enumerated_values_iter;
+		std::vector<std::string>::const_iterator enumerated_values_iter;
 		for(enumerated_values_iter = enumerated_values.begin(); enumerated_values_iter != enumerated_values.end(); enumerated_values_iter++)
 		{
 			if(enumerated_values_iter != enumerated_values.begin())
@@ -649,7 +644,7 @@ template <class TYPE>
 Variable<TYPE>::Variable(const char *_name, Object *_owner, TYPE& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <class TYPE>
@@ -675,7 +670,7 @@ template <class TYPE> Variable<TYPE>::operator double () const
 	return double( Get() );
 }
 
-template <class TYPE> Variable<TYPE>::operator string () const
+template <class TYPE> Variable<TYPE>::operator std::string () const
 {
 	TYPE value = Get();
 
@@ -684,13 +679,13 @@ template <class TYPE> Variable<TYPE>::operator string () const
 	{
 		case FMT_DEFAULT:
 		case FMT_HEX:
-			sstr << "0x" << hex;
+			sstr << "0x" << std::hex;
 			sstr.fill('0');
 			sstr.width(2 * sizeof(TYPE));
 			sstr << (unsigned long long)( value );
 			break;
 		case FMT_DEC:
-			sstr << dec;
+			sstr << std::dec;
 			if(std::numeric_limits<TYPE>::is_signed)
 				sstr << (long long)( value );
 			else
@@ -782,7 +777,7 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, FormulaOperator _formu
 	childs[0] = child1;
 	childs[1] = child2;
 	childs[2] = child3;
-	if(!IsValid() && Simulator::simulator->IsWarningEnabled())
+	if(!IsValid() && Simulator::Instance()->IsWarningEnabled())
 	{
 		std::cerr << "WARNING! " << VariableBase::GetName() << " is an invalid formula" << std::endl;
 	}
@@ -797,7 +792,7 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, FormulaOperator _formu
 	childs[0] = child1;
 	childs[1] = child2;
 	childs[2] = 0;
-	if(!IsValid() && Simulator::simulator->IsWarningEnabled())
+	if(!IsValid() && Simulator::Instance()->IsWarningEnabled())
 	{
 		std::cerr << "WARNING! " << VariableBase::GetName() << " is an invalid formula" << std::endl;
 	}
@@ -812,7 +807,7 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, FormulaOperator _formu
 	childs[0] = child;
 	childs[1] = 0;
 	childs[2] = 0;
-	if(!IsValid() && Simulator::simulator->IsWarningEnabled())
+	if(!IsValid() && Simulator::Instance()->IsWarningEnabled())
 	{
 		std::cerr << "WARNING! " << VariableBase::GetName() << " is an invalid formula" << std::endl;
 	}
@@ -854,17 +849,17 @@ template <class TYPE> Formula<TYPE>::operator bool () const { return Compute() ?
 template <class TYPE> Formula<TYPE>::operator long long () const { return (long long) Compute(); }
 template <class TYPE> Formula<TYPE>::operator unsigned long long () const { return (unsigned long long) Compute(); }
 template <class TYPE> Formula<TYPE>::operator double () const { return (double) Compute(); }
-template <class TYPE> Formula<TYPE>::operator string () const
+template <class TYPE> Formula<TYPE>::operator std::string () const
 {
 	std::stringstream sstr;
 	switch(GetFormat())
 	{
 		case FMT_DEFAULT:
 		case FMT_HEX:
-			sstr << "0x" << hex << (unsigned long long) Compute();
+			sstr << "0x" << std::hex << (unsigned long long) Compute();
 			break;
 		case FMT_DEC:
-			sstr << dec << (unsigned long long) Compute();
+			sstr << std::dec << (unsigned long long) Compute();
 			break;
 	}
 	return sstr.str();
@@ -1150,7 +1145,7 @@ Variable<bool>::Variable(const char *_name, Object *_owner, bool& _storage, Type
 {
 	AddEnumeratedValue("true");
 	AddEnumeratedValue("false");
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1163,7 +1158,7 @@ template <>
 Variable<signed char>::Variable(const char *_name, Object *_owner, signed char& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1176,7 +1171,7 @@ template <>
 Variable<short>::Variable(const char *_name, Object *_owner, short& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1189,7 +1184,7 @@ template <>
 Variable<int>::Variable(const char *_name, Object *_owner, int& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1202,7 +1197,7 @@ template <>
 Variable<long>::Variable(const char *_name, Object *_owner, long& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1215,7 +1210,7 @@ template <>
 Variable<long long>::Variable(const char *_name, Object *_owner, long long& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1229,7 +1224,7 @@ template <>
 Variable<unsigned char>::Variable(const char *_name, Object *_owner, unsigned char& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1242,7 +1237,7 @@ template <>
 Variable<unsigned short>::Variable(const char *_name, Object *_owner, unsigned short& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1255,7 +1250,7 @@ template <>
 Variable<unsigned int>::Variable(const char *_name, Object *_owner, unsigned int& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1268,7 +1263,7 @@ template <>
 Variable<unsigned long>::Variable(const char *_name, Object *_owner, unsigned long& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1281,7 +1276,7 @@ template <>
 Variable<unsigned long long>::Variable(const char *_name, Object *_owner, unsigned long long& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1294,7 +1289,7 @@ template <>
 Variable<double>::Variable(const char *_name, Object *_owner, double& _storage, Type type, const char *_description) :
 	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1304,7 +1299,7 @@ const char *Variable<double>::GetDataTypeName() const
 }
 
 template <>
-Variable<double>::operator string () const
+Variable<double>::operator std::string () const
 {
 	std::stringstream sstr;
 	sstr << Get();
@@ -1315,7 +1310,7 @@ template <>
 Variable<float>::Variable(const char *_name, Object *_owner, float& _storage, Type type, const char *_description)
   : VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
@@ -1325,7 +1320,7 @@ const char *Variable<float>::GetDataTypeName() const
 }
 
 template <>
-Variable<float>::operator string () const
+Variable<float>::operator std::string () const
 {
 	std::stringstream sstr;
 	sstr << Get();
@@ -1333,19 +1328,19 @@ Variable<float>::operator string () const
 }
 
 template <> 
-Variable<string>::Variable(const char *_name, Object *_owner, string& _storage, Type type, const char *_description)
+Variable<std::string>::Variable(const char *_name, Object *_owner, std::string& _storage, Type type, const char *_description)
   : VariableBase(_name, _owner, type, _description), storage(&_storage)
 {
-	Simulator::simulator->Initialize(this);
+	Simulator::Instance()->Initialize(this);
 }
 
 template <>
-const char *Variable<string>::GetDataTypeName() const
+const char *Variable<std::string>::GetDataTypeName() const
 {
 	return "string";
 }
 
-template <> Variable<bool>::operator string () const
+template <> Variable<bool>::operator std::string () const
 {
 	bool value = Get();
 	std::stringstream sstr;
@@ -1473,53 +1468,53 @@ template <> VariableBase& Variable<double>::operator = (const char *value)
 	return *this;
 }
 
-template <> Variable<string>::operator bool () const { return ParseSigned(storage->c_str()); }
-template <> Variable<string>::operator long long () const { return ParseSigned(storage->c_str()); }
-template <> Variable<string>::operator unsigned long long () const { return ParseSigned(storage->c_str()); }
-template <> Variable<string>::operator double () const { return ParseDouble(storage->c_str()); }
-template <> Variable<string>::operator string () const { return *storage; }
+template <> Variable<std::string>::operator bool () const { return ParseSigned(storage->c_str()); }
+template <> Variable<std::string>::operator long long () const { return ParseSigned(storage->c_str()); }
+template <> Variable<std::string>::operator unsigned long long () const { return ParseSigned(storage->c_str()); }
+template <> Variable<std::string>::operator double () const { return ParseDouble(storage->c_str()); }
+template <> Variable<std::string>::operator std::string () const { return *storage; }
 
-template <> VariableBase& Variable<string>::operator = (bool value)
+template <> VariableBase& Variable<std::string>::operator = (bool value)
 {
 	if (IsMutable()) {
 		Set( value ? "true" : "false" );
 	}
 	return *this;
 }
-template <> VariableBase& Variable<string>::operator = (long long value)
+template <> VariableBase& Variable<std::string>::operator = (long long value)
 {
 	if(IsMutable())
 	{
 		std::stringstream sstr;
 		sstr << "0x" << std::hex << value;
-		string tmp = sstr.str();
+		std::string tmp = sstr.str();
 		Set( tmp );
 	}
 	return *this;
 }
-template <> VariableBase& Variable<string>::operator = (unsigned long long value)
+template <> VariableBase& Variable<std::string>::operator = (unsigned long long value)
 {
 	if (IsMutable())
 	{
 		std::stringstream sstr;
-		sstr << "0x" << hex << value;
-		string tmp = sstr.str();
+		sstr << "0x" << std::hex << value;
+		std::string tmp = sstr.str();
 		Set( tmp );
 	}
 	return *this;
 }
-template <> VariableBase& Variable<string>::operator = (double value)
+template <> VariableBase& Variable<std::string>::operator = (double value)
 {
 	if (IsMutable())
 	{
 		std::stringstream sstr;
 		sstr << value;
-		string tmp = sstr.str();
+		std::string tmp = sstr.str();
 		Set( tmp );
 	}
 	return *this;
 }
-template <> VariableBase& Variable<string>::operator = (const char *value)
+template <> VariableBase& Variable<std::string>::operator = (const char *value)
 {
 	if (IsMutable())
 	{
@@ -1533,7 +1528,7 @@ template <> VariableBase& Variable<string>::operator = (const char *value)
 //=============================================================================
 
 template <>
-Formula<double>::operator string () const
+Formula<double>::operator std::string () const
 {
 	std::stringstream sstr;
 	sstr << Compute();
@@ -1635,7 +1630,7 @@ template class Variable<unsigned long>;
 template class Variable<unsigned long long>;
 template class Variable<float>;
 template class Variable<double>;
-template class Variable<string>;
+template class Variable<std::string>;
 
 template class VariableArray<bool>;
 template class VariableArray<signed char>;
@@ -1650,7 +1645,7 @@ template class VariableArray<unsigned long>;
 template class VariableArray<unsigned long long>;
 template class VariableArray<float>;
 template class VariableArray<double>;
-template class VariableArray<string>;
+template class VariableArray<std::string>;
 
 template class Formula<bool>;
 template class Formula<signed char>;
@@ -1671,22 +1666,22 @@ template class Formula<double>;
 //=============================================================================
 
 Object::Object(const char *_name, Object *_parent, const char *_description)
-	: name(_parent ? (string(_parent->GetName()) + string(".") + string(_name)) : string(_name))
-	, object_name(string(_name))
-	, description(_description ? string(_description) : string(""))
+	: name(_parent ? (std::string(_parent->GetName()) + std::string(".") + std::string(_name)) : std::string(_name))
+	, object_name(std::string(_name))
+	, description(_description ? std::string(_description) : std::string(""))
 	, parent(_parent)
 	, srv_imports()
 	, srv_exports()
 	, leaf_objects()
 {
 	if(_parent) _parent->Add(*this);
-	Simulator::simulator->Register(this);
+	Simulator::Instance()->Register(this);
 }
 
 Object::~Object()
 {
 	if(parent) parent->Remove(*this);
-	Simulator::simulator->Unregister(this);
+	Simulator::Instance()->Unregister(this);
 }
 
 const char *Object::GetName() const
@@ -1704,7 +1699,7 @@ Object *Object::GetParent() const
 	return parent;
 }
 
-const list<ServiceExportBase *>& Object::GetServiceExports() const
+const std::list<ServiceExportBase *>& Object::GetServiceExports() const
 {
 	return srv_exports;
 }
@@ -1716,7 +1711,7 @@ void Object::Add(ServiceExportBase& srv_export)
 
 void Object::Remove(ServiceExportBase& srv_export)
 {
-	list<ServiceExportBase *>::iterator export_iter;
+	std::list<ServiceExportBase *>::iterator export_iter;
 
 	for(export_iter = srv_exports.begin(); export_iter != srv_exports.end(); export_iter++)
 	{
@@ -1728,7 +1723,7 @@ void Object::Remove(ServiceExportBase& srv_export)
 	}
 }
 
-const list<ServiceImportBase *>& Object::GetServiceImports() const
+const std::list<ServiceImportBase *>& Object::GetServiceImports() const
 {
 	return srv_imports;
 }
@@ -1740,7 +1735,7 @@ void Object::Add(ServiceImportBase& srv_import)
 
 void Object::Remove(ServiceImportBase& srv_import)
 {
-	list<ServiceImportBase *>::iterator import_iter;
+	std::list<ServiceImportBase *>::iterator import_iter;
 
 	for(import_iter = srv_imports.begin(); import_iter != srv_imports.end(); import_iter++)
 	{
@@ -1759,7 +1754,7 @@ void Object::Add(Object& object)
 
 void Object::Remove(Object& object)
 {
-	list<Object *>::iterator object_iter;
+	std::list<Object *>::iterator object_iter;
 
 	for(object_iter = leaf_objects.begin(); object_iter != leaf_objects.end(); object_iter++)
 	{
@@ -1778,7 +1773,7 @@ void Object::Add(VariableBase& var)
 
 void Object::Remove(VariableBase& var)
 {
-	list<VariableBase *>::iterator var_iter;
+	std::list<VariableBase *>::iterator var_iter;
 
 	for(var_iter = variables.begin(); var_iter != variables.end(); var_iter++)
 	{
@@ -1790,44 +1785,45 @@ void Object::Remove(VariableBase& var)
 	}
 }
 
-void Object::GetVariables(list<VariableBase *>& lst) const
+void Object::GetVariables(std::list<VariableBase *>& lst, VariableBase::Type type) const
 {
-	list<VariableBase *>::const_iterator variable_iter;
+	std::list<VariableBase *>::const_iterator variable_iter;
 
 	lst.clear();
 	
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
-		if((*variable_iter)->IsVisible())
+		VariableBase *variable = *variable_iter;
+		if(((type == VariableBase::VAR_VOID) || (variable->GetType() == type)) && variable->IsVisible())
 		{
 			lst.push_back(*variable_iter);
 		}
 	}
 }
 
-const list<Object *>& Object::GetLeafs() const
+const std::list<Object *>& Object::GetLeafs() const
 {
 	return leaf_objects;
 }
 
 void Object::Disconnect()
 {
-	list<ServiceImportBase *>::iterator import_iter;
+	std::list<ServiceImportBase *>::iterator import_iter;
 
 	for(import_iter = srv_imports.begin(); import_iter != srv_imports.end(); import_iter++)
 	{
 #ifdef DEBUG_SERVICE
-		cerr << (*import_iter)->GetName() << "->DisconnectService()" << endl;
+		cerr << (*import_iter)->GetName() << "->DisconnectService()" << std::endl;
 #endif
 		(*import_iter)->DisconnectService();
 	}
 
-	list<ServiceExportBase *>::iterator export_iter;
+	std::list<ServiceExportBase *>::iterator export_iter;
 
 	for(export_iter = srv_exports.begin(); export_iter != srv_exports.end(); export_iter++)
 	{
 #ifdef DEBUG_SERVICE
-		cerr << (*export_iter)->GetName() << "->DisconnectClient()" << endl;
+		cerr << (*export_iter)->GetName() << "->DisconnectClient()" << std::endl;
 #endif
 		(*export_iter)->DisconnectClient();
 	}
@@ -1854,19 +1850,19 @@ void Object::SigInt()
 
 void Object::OnDisconnect()
 {
-//	cerr << "WARNING! Using default OnDisconnect for " << GetName() << endl;
+//	cerr << "WARNING! Using default OnDisconnect for " << GetName() << std::endl;
 }
 
 VariableBase& Object::operator [] (const char *name)
 {
-	string fullname = GetName() + string(".") + string(name);
-	VariableBase *variable = Simulator::simulator->FindVariable(fullname.c_str());
+	std::string fullname = GetName() + std::string(".") + std::string(name);
+	VariableBase *variable = Simulator::Instance()->FindVariable(fullname.c_str());
 	return *variable;
 }
 
 Simulator *Object::GetSimulator() const
 {
-	return Simulator::simulator;
+	return Simulator::Instance();
 }
 
 const char *Object::GetDescription() const
@@ -1874,11 +1870,11 @@ const char *Object::GetDescription() const
 	return description.c_str();
 }
 
-void Object::GenerateLatexDocumentation(ostream& os, VariableBase::Type variable_type) const
+void Object::GenerateLatexDocumentation(std::ostream& os, VariableBase::Type variable_type) const
 {
 	bool header_printed = false;
 	
-	list<VariableBase *>::const_iterator variable_iter;
+	std::list<VariableBase *>::const_iterator variable_iter;
 	
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
@@ -1900,7 +1896,7 @@ void Object::GenerateLatexDocumentation(ostream& os, VariableBase::Type variable
 
 void Object::Stop(int exit_status)
 {
-	Simulator::simulator->Stop(this, exit_status);
+	Simulator::Instance()->Stop(this, exit_status);
 }
 
 void Object::SetDescription(const char *_description)
@@ -1913,17 +1909,17 @@ void Object::SetDescription(const char *_description)
 //=============================================================================
 
 ServiceImportBase::ServiceImportBase(const char *_name, Object *_owner) :
-	name(string(_owner->GetName()) + string(".") + string(_name)),
+	name(std::string(_owner->GetName()) + std::string(".") + std::string(_name)),
 	owner(_owner)
 {
 	_owner->Add(*this);
-	Simulator::simulator->Register(this);
+	Simulator::Instance()->Register(this);
 }
 
 ServiceImportBase::~ServiceImportBase()
 {
 	if(owner) owner->Remove(*this);
-	Simulator::simulator->Unregister(this);
+	Simulator::Instance()->Unregister(this);
 }
 
 const char *ServiceImportBase::GetName() const
@@ -1936,18 +1932,18 @@ const char *ServiceImportBase::GetName() const
 //=============================================================================
 
 ServiceExportBase::ServiceExportBase(const char *_name, Object *_owner) :
-	name(string(_owner->GetName()) + string(".") + string(_name)),
+	name(std::string(_owner->GetName()) + std::string(".") + std::string(_name)),
 	owner(_owner),
 	setup_dependencies()
 {
 	_owner->Add(*this);
-	Simulator::simulator->Register(this);
+	Simulator::Instance()->Register(this);
 }
 
 ServiceExportBase::~ServiceExportBase()
 {
 	if(owner) owner->Remove(*this);
-	Simulator::simulator->Unregister(this);
+	Simulator::Instance()->Unregister(this);
 }
 
 const char *ServiceExportBase::GetName() const
@@ -1960,7 +1956,7 @@ void ServiceExportBase::SetupDependsOn(ServiceImportBase& srv_import)
 	setup_dependencies.push_back(&srv_import);
 }
 
-list<ServiceImportBase *>& ServiceExportBase::GetSetupDependencies()
+std::list<ServiceImportBase *>& ServiceExportBase::GetSetupDependencies()
 {
 	return setup_dependencies;
 }
@@ -2032,6 +2028,8 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, shared_data_dir()
 	, set_vars()
 	, get_config_filename()
+	, input_config_file_format("XML")
+	, output_config_file_format("XML")
 	, list_parms(false)
 	, get_config(false)
 	, generate_doc(false)
@@ -2067,6 +2065,9 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, cmd_args(0)
 	, param_cmd_args(0)
 {
+	new XMLConfigFileHelper(this);
+	new INIConfigFileHelper(this);
+	
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
 #else
@@ -2080,11 +2081,13 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 #endif
 
 	bool has_share_data_dir_hint = false;
-	string shared_data_dir_hint;
+	std::string shared_data_dir_hint;
 
 	command_line_options.push_back(CommandLineOption('s', "set", "set value of parameter 'param' to 'value'", "param=value"));
-	command_line_options.push_back(CommandLineOption('c', "config", "configures the simulator with the given XML configuration file", "XML file"));
-	command_line_options.push_back(CommandLineOption('g', "get-config", "get the simulator configuration XML file (you can use it to create your own configuration. This option can be combined with -c to get a new configuration file with existing variables from another file", "XML file"));
+	command_line_options.push_back(CommandLineOption('c', "config", "configures the simulator with the given configuration file", "file"));
+	command_line_options.push_back(CommandLineOption('g', "get-config", "get the simulator configuration file (you can use it to create your own configuration. This option can be combined with -c to get a new configuration file with existing variables from another file", "file"));
+	command_line_options.push_back(CommandLineOption('f', "input-config-file-format", "set the simulator input configuration file format", "XML | INI"));
+	command_line_options.push_back(CommandLineOption('F', "output-config-file-format", "set the simulator output configuration file format", "XML | INI"));
 	command_line_options.push_back(CommandLineOption('l', "list", "lists all available parameters, their type, and their current value"));
 	command_line_options.push_back(CommandLineOption('w', "warn", "enable printing of kernel warnings"));
 	command_line_options.push_back(CommandLineOption('d', "doc", "enable printing a latex documentation", "Latex file"));
@@ -2108,37 +2111,37 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	void_variable->SetVisible(false);
 	void_variable->SetSerializable(false);
 
-	var_authors = new Parameter<string>("authors", 0, authors, "Authors");
+	var_authors = new Parameter<std::string>("authors", 0, authors, "Authors");
 	var_authors->SetMutable(false);
 	var_authors->SetVisible(false);
 	var_authors->SetSerializable(false);
 
-	var_program_name = new Parameter<string>("program-name", 0, program_name, "Program name");
+	var_program_name = new Parameter<std::string>("program-name", 0, program_name, "Program name");
 	var_program_name->SetMutable(false);
 	var_program_name->SetVisible(false);
 	var_program_name->SetSerializable(false);
 
-	var_copyright = new Parameter<string>("copyright", 0, copyright, "Copyright");
+	var_copyright = new Parameter<std::string>("copyright", 0, copyright, "Copyright");
 	var_copyright->SetMutable(false);
 	var_copyright->SetVisible(false);
 	var_copyright->SetSerializable(false);
 
-	var_version = new Parameter<string>("version", 0, version, "Version");
+	var_version = new Parameter<std::string>("version", 0, version, "Version");
 	var_version->SetMutable(false);
 	var_version->SetVisible(false);
 	var_version->SetSerializable(false);
 
-	var_description = new Parameter<string>("description", 0, description, "Description");
+	var_description = new Parameter<std::string>("description", 0, description, "Description");
 	var_description->SetMutable(false);
 	var_description->SetVisible(false);
 	var_description->SetSerializable(false);
 
-	var_license = new Parameter<string>("license", 0, license, "License");
+	var_license = new Parameter<std::string>("license", 0, license, "License");
 	var_license->SetMutable(false);
 	var_license->SetVisible(false);
 	var_license->SetSerializable(false);
 
-	var_schematic = new Parameter<string>("schematic", 0, schematic, "path to simulator schematic");
+	var_schematic = new Parameter<std::string>("schematic", 0, schematic, "path to simulator schematic");
 	var_schematic->SetMutable(false);
 	var_schematic->SetVisible(false);
 	var_schematic->SetSerializable(false);
@@ -2177,6 +2180,12 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 								break;
 							case 'c':
 								state = 2;
+								break;
+							case 'f':
+								state = 6;
+								break;
+							case 'F':
+								state = 7;
 								break;
 							case 'g':
 								state = 3;
@@ -2233,8 +2242,18 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 				shared_data_dir_hint = *arg;
 				state = 0;
 				break;
+			case 6:
+				// getting the input config file format
+				input_config_file_format = *arg;
+				state = 0;
+				break;
+			case 7:
+				// getting the output config file format
+				output_config_file_format = *arg;
+				state = 0;
+				break;
 			default:
-				std::cerr << "Internal error while parsing command line arguments" << endl;
+				std::cerr << "Internal error while parsing command line arguments" << std::endl;
 				state = -1;
 				break;
 		}
@@ -2270,7 +2289,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	}
 	else
 	{
-		if ( !ResolvePath(shared_data_dir_hint, string(), shared_data_dir) )
+		if ( !ResolvePath(shared_data_dir_hint, std::string(), shared_data_dir) )
 		{
 // 			std::cerr << "Could not resolve share data dir path" << std::endl;
 			warn_get_share_path = true;
@@ -2313,6 +2332,12 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 							case 'c':
 								state = 2;
 								break;
+							case 'f':
+								state = 6;
+								break;
+							case 'F':
+								state = 7;
+								break;
 							case 'g':
 								state = 3;
 								break;
@@ -2332,17 +2357,17 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 								enable_warning = true;
 								if(!LoadBuiltInConfig)
 								{
-									cerr << "WARNING! No built-in parameters set loaded" << endl;
+									std::cerr << "WARNING! No built-in parameters set loaded" << std::endl;
 								}
 								if(warn_get_bin_path)
 								{
-									cerr << "WARNING! Can't determine binary directory" << endl;
+									std::cerr << "WARNING! Can't determine binary directory" << std::endl;
 								}
 								if(warn_get_share_path)
 								{
-									cerr << "WARNING! Can't determine share directory" << endl;
-									cerr << "         Program binary is '" << program_binary << "'" << endl;
-									cerr << "         Binary dir is     '" << bin_dir << "'" << endl;
+									std::cerr << "WARNING! Can't determine share directory" << std::endl;
+									std::cerr << "         Program binary is '" << program_binary << "'" << std::endl;
+									std::cerr << "         Binary dir is     '" << bin_dir << "'" << std::endl;
 								}
 								state = 0;
 								break;
@@ -2362,7 +2387,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 			
 			case 1:
 				{
-					string variable_name;
+					std::string variable_name;
 					
 					char *p;
 					for(p = *arg; *p != 0 && *p != '='; p++)
@@ -2377,20 +2402,28 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					}
 					else if(enable_warning)
 					{
-						cerr << "WARNING! Ignoring " << *arg << endl;
+						std::cerr << "WARNING! Ignoring " << *arg << std::endl;
 					}
 				}
 				state = 0;
 				break;
 			case 2:
-				if(LoadXmlParameters(*arg))
+				if(LoadVariables(*arg, VariableBase::VAR_PARAMETER))
 				{
-					cerr << "Parameters set using file \"" << (*arg) << "\"" << endl;
+					std::cerr << "Parameters set using file \"" << (*arg) << "\"" << std::endl;
 				}
 				else if(enable_warning)
 				{
-					cerr << "WARNING! Loading parameters set from file \"" << (*arg) << "\" failed" << endl;
+					std::cerr << "WARNING! Loading parameters set from file \"" << (*arg) << "\" failed" << std::endl;
 				}
+// 				if(LoadXmlParameters(*arg))
+// 				{
+// 					std::cerr << "Parameters set using file \"" << (*arg) << "\"" << std::endl;
+// 				}
+// 				else if(enable_warning)
+// 				{
+// 					std::cerr << "WARNING! Loading parameters set from file \"" << (*arg) << "\" failed" << std::endl;
+// 				}
 				state = 0;
 				break;
 			case 3:
@@ -2406,8 +2439,14 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 			case 5:
 				state = 0;
 				break;
+			case 6:
+				state = 0;
+				break;
+			case 7:
+				state = 0;
+				break;
 			default:
-				cerr << "Internal error while parsing command line arguments" << endl;
+				std::cerr << "Internal error while parsing command line arguments" << std::endl;
 				state = -1;
 				break;
 		}
@@ -2420,7 +2459,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	// create on the fly parameters cmd-args[*] that are the remaining parameters
 	int cmd_args_dim = argv + argc - arg_end;
         cmd_args.resize(cmd_args_dim);
-	param_cmd_args = new ParameterArray<string>("cmd-args", 0, &cmd_args[0], cmd_args_dim, "command line arguments");
+	param_cmd_args = new ParameterArray<std::string>("cmd-args", 0, &cmd_args[0], cmd_args_dim, "command line arguments");
 	for(int i = 0; i < cmd_args_dim; i++)
 	{
 		(*param_cmd_args)[i] = arg_end[i];
@@ -2492,6 +2531,13 @@ Simulator::~Simulator()
 		delete param_enable_press_enter_at_exit;
 	}
 
+	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_iter;
+	for(config_file_helper_iter = config_file_helpers.begin(); config_file_helper_iter != config_file_helpers.end(); config_file_helper_iter++)
+	{
+		ConfigFileHelper *config_file_helper = (*config_file_helper_iter).second;
+		delete config_file_helper;
+	}
+	
 #if !defined(WIN32) && !defined(_WIN32) && !defined(WIN64) && !defined(_WIN64)
 	if(sig_pipe_handler)
 	{
@@ -2509,19 +2555,19 @@ Simulator::~Simulator()
 	unisim::kernel::logger::Logger::ReleaseStaticServiceInstance();
 }
 
-void Simulator::Version(ostream& os) const
+void Simulator::Version(std::ostream& os) const
 {
-	os << program_name << " " << version << endl;
-	os << copyright << endl;
-	os << "License: " << license << endl;
-	os << "Authors: " << authors << endl;
+	os << program_name << " " << version << std::endl;
+	os << copyright << std::endl;
+	os << "License: " << license << std::endl;
+	os << "Authors: " << authors << std::endl;
 }
 
-void Simulator::Help(ostream& os) const
+void Simulator::Help(std::ostream& os) const
 {
-	os << description << endl << endl;
-	os << "Usage: " << program_binary << " [<options>] [...]" << endl << endl;
-	os << "Options:" << endl;
+	os << description << std::endl << std::endl;
+	os << "Usage: " << program_binary << " [<options>] [...]" << std::endl << std::endl;
+	os << "Options:" << std::endl;
 
 	std::vector<CommandLineOption>::const_iterator cmd_opt_itr;
 	for(cmd_opt_itr = command_line_options.begin(); cmd_opt_itr != command_line_options.end(); cmd_opt_itr++)
@@ -2548,8 +2594,8 @@ void Simulator::Register(Object *object)
 {
 	if(objects.find(object->GetName()) != objects.end())
 	{
-		cerr << "ERROR! Object \"" << object->GetName() << "\" already exists" << endl;
-		Dump(cerr);
+		std::cerr << "ERROR! Object \"" << object->GetName() << "\" already exists" << std::endl;
+		Dump(std::cerr);
 		exit(1);
 	}
 	
@@ -2560,7 +2606,7 @@ void Simulator::Register(VariableBase *variable)
 {
 	if(variables.find(variable->GetName()) != variables.end())
 	{
-		cerr << "ERROR! Variable \"" << variable->GetName() << "\" already exists" << endl;
+		std::cerr << "ERROR! Variable \"" << variable->GetName() << "\" already exists" << std::endl;
 		exit(1);
 	}
 
@@ -2570,7 +2616,7 @@ void Simulator::Register(VariableBase *variable)
 void Simulator::Initialize(VariableBase *variable)
 {
 	// initialize variable from command line
-	std::map<string, string>::iterator set_var_iter = set_vars.find(variable->GetName());
+	std::map<std::string, std::string>::iterator set_var_iter = set_vars.find(variable->GetName());
 	
 	if(set_var_iter != set_vars.end())
 	{
@@ -2588,7 +2634,7 @@ void Simulator::Register(ServiceImportBase *srv_import)
 {
 	if(imports.find(srv_import->GetName()) != imports.end())
 	{
-		cerr << "ERROR! Import \"" << srv_import->GetName() << "\" already exists" << endl;
+		std::cerr << "ERROR! Import \"" << srv_import->GetName() << "\" already exists" << std::endl;
 		exit(1);
 	}
 
@@ -2599,16 +2645,27 @@ void Simulator::Register(ServiceExportBase *srv_export)
 {
 	if(exports.find(srv_export->GetName()) != exports.end())
 	{
-		cerr << "ERROR! Export \"" << srv_export->GetName() << "\" already exists" << endl;
+		std::cerr << "ERROR! Export \"" << srv_export->GetName() << "\" already exists" << std::endl;
 		exit(1);
 	}
 
 	exports[srv_export->GetName()] = srv_export;
 }
 
+void Simulator::Register(ConfigFileHelper *config_file_helper)
+{
+	if(config_file_helpers.find(config_file_helper->GetName()) != config_file_helpers.end())
+	{
+		std::cerr << "ERROR! Configuration file helper \"" << config_file_helper->GetName() << "\" already exists" << std::endl;
+		exit(1);
+	}
+
+	config_file_helpers[config_file_helper->GetName()] = config_file_helper;
+}
+
 void Simulator::Unregister(Object *object)
 {
-	map<const char *, Object *, ltstr>::iterator object_iter;
+	std::map<std::string, Object *>::iterator object_iter;
 	object_iter = objects.find(object->GetName());
 	if(object_iter != objects.end())
 	{
@@ -2618,73 +2675,73 @@ void Simulator::Unregister(Object *object)
 
 void Simulator::Unregister(VariableBase *variable)
 {
-	map<const char *, VariableBase *, ltstr>::iterator variable_iter;
+	std::map<std::string, VariableBase *>::iterator variable_iter;
 	variable_iter = variables.find(variable->GetName());
 	if(variable_iter != variables.end()) variables.erase(variable_iter);
 }
 
 void Simulator::Unregister(ServiceImportBase *srv_import)
 {
-	map<const char *, ServiceImportBase *, ltstr>::iterator import_iter;
+	std::map<std::string, ServiceImportBase *>::iterator import_iter;
 	import_iter = imports.find(srv_import->GetName());
 	if(import_iter != imports.end()) imports.erase(import_iter);
 }
 
 void Simulator::Unregister(ServiceExportBase *srv_export)
 {
-	map<const char *, ServiceExportBase *, ltstr>::iterator export_iter;
+	std::map<std::string, ServiceExportBase *>::iterator export_iter;
 	export_iter = exports.find(srv_export->GetName());
 	if(export_iter != exports.end()) exports.erase(export_iter);
 }
 
-void Simulator::Dump(ostream& os)
+void Simulator::Dump(std::ostream& os)
 {
-	os << "OBJECTS:" << endl;
+	os << "OBJECTS:" << std::endl;
 
-	map<const char *, Object *, ltstr>::iterator object_iter;
+	std::map<std::string, Object *>::iterator object_iter;
 
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{
-		os << (*object_iter).second->GetName() << endl;
+		os << (*object_iter).second->GetName() << std::endl;
 	}
-	os << endl;
+	os << std::endl;
 
-	os << "PARAMETERS:" << endl;
-	map<const char *, VariableBase *, ltstr>::iterator variable_iter;
+	os << "PARAMETERS:" << std::endl;
+	std::map<std::string, VariableBase *>::iterator variable_iter;
 	
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
-		os << (*variable_iter).second->GetName() << " = \"" << ((string) *(*variable_iter).second) << "\"" << endl;
+		os << (*variable_iter).second->GetName() << " = \"" << ((std::string) *(*variable_iter).second) << "\"" << std::endl;
 	}
-	os << endl;
+	os << std::endl;
 
-	os << "IMPORTS:" << endl;
+	os << "IMPORTS:" << std::endl;
 
-	map<const char *, ServiceImportBase *, ltstr>::iterator import_iter;
+	std::map<std::string, ServiceImportBase *>::iterator import_iter;
 
 	for(import_iter = imports.begin(); import_iter != imports.end(); import_iter++)
 	{
 		Object *service = (*import_iter).second->GetService();
 		os << (*import_iter).second->GetName();
 		if(service) os << " (to " << service->GetName() << ")";
-		os << endl;
+		os << std::endl;
 	}
-	os << endl;
+	os << std::endl;
 
-	cerr << "EXPORTS:" << endl;
+	std::cerr << "EXPORTS:" << std::endl;
 
-	map<const char *, ServiceExportBase *, ltstr>::iterator export_iter;
+	std::map<std::string, ServiceExportBase *>::iterator export_iter;
 
 	for(export_iter = exports.begin(); export_iter != exports.end(); export_iter++)
 	{
 		Object *client = (*export_iter).second->GetClient();
 		os << (*export_iter).second->GetName();
 		if(client) os << " (from " << client->GetName() << ")";
-		os << endl;
+		os << std::endl;
 	}
-	os << endl;
+	os << std::endl;
 
-	cerr << "CONNECTIONS:" << endl;
+	std::cerr << "CONNECTIONS:" << std::endl;
 	for(import_iter = imports.begin(); import_iter != imports.end(); import_iter++)
 	{
 		(*import_iter).second->Dump(os);
@@ -2695,23 +2752,23 @@ void Simulator::Dump(ostream& os)
 	}
 }
 
-void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
+void Simulator::DumpVariables(std::ostream &os, VariableBase::Type filter_type) {
 /*	switch(filter_type)
 	{
 		case VariableBase::VAR_VOID:
-			os << "Variables:" << endl;
+			os << "Variables:" << std::endl;
 			break;
 		case VariableBase::VAR_ARRAY:
-			os << "Arrays of variables:" << endl;
+			os << "Arrays of variables:" << std::endl;
 			break;
 		case VariableBase::VAR_PARAMETER:
-			os << "Parameters:" << endl;
+			os << "Parameters:" << std::endl;
 			break;
 		case VariableBase::VAR_STATISTIC:
-			os << "Statistics:" << endl;
+			os << "Statistics:" << std::endl;
 			break;
 		case VariableBase::VAR_REGISTER:
-			os << "Registers:" << endl;
+			os << "Registers:" << std::endl;
 			break;
 	}*/
 	
@@ -2720,7 +2777,7 @@ void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
 	unsigned int max_variable_name_length = 0;
 	unsigned int max_variable_value_length = 0;
 	
-	map<const char *, VariableBase *, ltstr>::iterator variable_iter;
+	std::map<std::string, VariableBase *>::iterator variable_iter;
 
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
@@ -2729,7 +2786,7 @@ void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
 		if(var->IsVisible() && (filter_type == VariableBase::VAR_VOID || var_type == filter_type))
 		{
 			const char *name = var->GetName();
-			string value = (string) *var;
+			std::string value = (std::string) *var;
 			
 			unsigned int variable_name_length = strlen(name);
 			unsigned int variable_value_length = value.length();
@@ -2751,7 +2808,7 @@ void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
 			std::stringstream sstr_name;
 			std::stringstream sstr_value;
 			const char *name = var->GetName();
-			string value = (string) *var;
+			std::string value = (std::string) *var;
 //			const char *dt = var->GetDataTypeName();
 			const char *desc = (*variable_iter).second->GetDescription();
 			
@@ -2777,99 +2834,57 @@ void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
 // 				os << dt;
 // 			}
 			
-			os << endl;
+			os << std::endl;
 		}
 	}
 }
 
-void Simulator::DumpStatistics(ostream &os)
+void Simulator::DumpStatistics(std::ostream &os)
 {
 	DumpVariables(os, VariableBase::VAR_STATISTIC);
 }
 
-void Simulator::DumpParameters(ostream &os)
+void Simulator::DumpParameters(std::ostream &os)
 {
 	DumpVariables(os, VariableBase::VAR_PARAMETER);
 }
 
-void Simulator::DumpRegisters(ostream &os)
+void Simulator::DumpRegisters(std::ostream &os)
 {
 	DumpVariables(os, VariableBase::VAR_REGISTER);
 }
 
-void Simulator::DumpFormulas(ostream &os)
+void Simulator::DumpFormulas(std::ostream &os)
 {
 	DumpVariables(os, VariableBase::VAR_FORMULA);
 }
 
-bool Simulator::XmlfyVariables(const char *filename)
+bool Simulator::LoadVariables(const char *filename, VariableBase::Type type)
 {
-	XMLHelper xml_helper(this);
+	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_it = config_file_helpers.find(input_config_file_format);
 	
-	return xml_helper.XmlfyVariables(filename);
+	if(config_file_helper_it != config_file_helpers.end())
+	{
+		 ConfigFileHelper *config_file_helper = (*config_file_helper_it).second;
+		 
+		 return config_file_helper->LoadVariables(filename, type);
+	}
+	
+	return false;
 }
 
-bool Simulator::LoadXmlVariables(const char *filename)
+bool Simulator::SaveVariables(const char *filename, VariableBase::Type type)
 {
-	XMLHelper xml_helper(this);
+	std::map<std::string, ConfigFileHelper *>::iterator config_file_helper_it = config_file_helpers.find(output_config_file_format);
 	
-	return xml_helper.LoadXmlVariables(filename);
-}
-
-bool Simulator::XmlfyParameters(const char *filename)
-{
-	XMLHelper xml_helper(this);
+	if(config_file_helper_it != config_file_helpers.end())
+	{
+		 ConfigFileHelper *config_file_helper = (*config_file_helper_it).second;
+		 
+		 return config_file_helper->SaveVariables(filename, type);
+	}
 	
-	return xml_helper.XmlfyVariables(filename, VariableBase::VAR_PARAMETER);
-}
-
-bool Simulator::LoadXmlParameters(const char *filename)
-{
-	XMLHelper xml_helper(this);
-	
-	return xml_helper.LoadXmlVariables(filename, VariableBase::VAR_PARAMETER);
-}
-
-bool Simulator::XmlfyStatistics(const char *filename)
-{
-	XMLHelper xml_helper(this);
-	
-	return xml_helper.XmlfyVariables(filename, VariableBase::VAR_STATISTIC);
-}
-
-bool Simulator::LoadXmlStatistics(const char *filename)
-{
-	XMLHelper xml_helper(this);
-	
-	return xml_helper.LoadXmlVariables(filename, VariableBase::VAR_STATISTIC);
-}
-
-bool Simulator::XmlfyRegisters(const char *filename)
-{
-	XMLHelper xml_helper(this);
-	
-	return xml_helper.XmlfyVariables(filename, VariableBase::VAR_REGISTER);
-}
-
-bool Simulator::LoadXmlRegisters(const char *filename)
-{
-	XMLHelper xml_helper(this);
-	
-	return xml_helper.LoadXmlVariables(filename, VariableBase::VAR_REGISTER);
-}
-
-bool Simulator::XmlfyFormulas(const char *filename)
-{
-	XMLHelper xml_helper(this);
-	
-	return xml_helper.XmlfyVariables(filename, VariableBase::VAR_FORMULA);
-}
-
-bool Simulator::LoadXmlFormulas(const char *filename)
-{
-	XMLHelper xml_helper(this);
-	
-	return xml_helper.LoadXmlVariables(filename, VariableBase::VAR_FORMULA);
+	return false;
 }
 
 struct MyVertexProperty
@@ -2877,10 +2892,10 @@ struct MyVertexProperty
 	ServiceExportBase *srv_export;
 };
 
-typedef adjacency_list<vecS, vecS, directedS, MyVertexProperty> DependencyGraph;
-typedef graph_traits<DependencyGraph>::vertex_descriptor Vertex;
+typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, MyVertexProperty> DependencyGraph;
+typedef boost::graph_traits<DependencyGraph>::vertex_descriptor Vertex;
 
-struct CycleDetector : public dfs_visitor<>
+struct CycleDetector : public boost::dfs_visitor<>
 {
 	CycleDetector(bool& _has_cycle) : has_cycle(_has_cycle)
 	{
@@ -2905,40 +2920,46 @@ Simulator::SetupStatus Simulator::Setup()
 		}
 		else
 		{
-			cerr << "Latex documentation generation using file \"" << generate_doc_filename << "\"" << endl;
-			ofstream stream(generate_doc_filename.c_str(), std::ofstream::out);
+			std::cerr << "Latex documentation generation using file \"" << generate_doc_filename << "\"" << std::endl;
+			std::ofstream stream(generate_doc_filename.c_str(), std::ofstream::out);
 			GenerateLatexDocumentation(stream);
 		}
 		return ST_OK_DONT_START;
 	}
 	if(enable_version)
 	{
-		Version(cerr);
+		Version(std::cerr);
 		return ST_OK_DONT_START;
 	}
 	if(enable_help)
 	{
-		Help(cerr);
+		Help(std::cerr);
 		return ST_OK_DONT_START;
 	}
 	
 	if(list_parms)
 	{
-		cerr << "Listing parameters..." << endl;
-		DumpVariables(cerr, unisim::kernel::service::VariableBase::VAR_PARAMETER);
-		cerr << "Aborting simulation" << endl;
+		std::cerr << "Listing parameters..." << std::endl;
+		DumpVariables(std::cerr, unisim::kernel::service::VariableBase::VAR_PARAMETER);
+		std::cerr << "Aborting simulation" << std::endl;
 		return ST_OK_DONT_START;
 	}
 
 	if(!get_config_filename.empty())
 	{
-		XmlfyParameters(get_config_filename.c_str());
-		cerr << "Parameters saved on file \"" << get_config_filename << "\"" << endl;
-		cerr << "Aborting simulation" << endl;
+		if(SaveVariables(get_config_filename.c_str(), VariableBase::VAR_PARAMETER))
+		{
+			std::cerr << "Parameters saved on file \"" << get_config_filename << "\"" << std::endl;
+		}
+		else
+		{
+			std::cerr << "WARNING! Saving parameters set to file \"" << get_config_filename << "\" failed" << std::endl;
+		}
+		std::cerr << "Aborting simulation" << std::endl;
 		return ST_OK_DONT_START;
 	}
 
-	map<const char *, ServiceExportBase *, ltstr>::iterator export_iter;
+	std::map<std::string, ServiceExportBase *>::iterator export_iter;
 	if(enable_warning)
 	{
 		for(export_iter = exports.begin(); export_iter != exports.end(); export_iter++)
@@ -2946,20 +2967,20 @@ Simulator::SetupStatus Simulator::Setup()
 			ServiceExportBase *srv_export = (*export_iter).second;
 			if(!srv_export->GetClient())
 			{
-				cerr << "WARNING! " << srv_export->GetName() << " is unused" << endl;
+				std::cerr << "WARNING! " << srv_export->GetName() << " is unused" << std::endl;
 			}
 		}
 	}
 
 	// Build a dependency graph of exports
-	map<ServiceExportBase *, unsigned int> id_lookup;
+	std::map<ServiceExportBase *, unsigned int> id_lookup;
 	DependencyGraph dependency_graph(exports.size());
 	
 	unsigned int id = 0;
 
 	for(export_iter = exports.begin(); export_iter != exports.end(); export_iter++, id++)
 	{
-//		cerr << "Export: " << (*export_iter).second->GetName() << endl;
+//		std::cerr << "Export: " << (*export_iter).second->GetName() << std::endl;
 		dependency_graph[id].srv_export = (*export_iter).second;
 		id_lookup[(*export_iter).second] = id;
 	}
@@ -2967,8 +2988,8 @@ Simulator::SetupStatus Simulator::Setup()
 	for(export_iter = exports.begin(); export_iter != exports.end(); export_iter++, id++)
 	{
 		ServiceExportBase *srv_export = (*export_iter).second;
-		list<ServiceImportBase *>& setup_dependencies = srv_export->GetSetupDependencies();
-		list<ServiceImportBase *>::iterator import_iter;
+		std::list<ServiceImportBase *>& setup_dependencies = srv_export->GetSetupDependencies();
+		std::list<ServiceImportBase *>::iterator import_iter;
 
 		for(import_iter = setup_dependencies.begin(); import_iter != setup_dependencies.end(); import_iter++)
 		{
@@ -2976,8 +2997,8 @@ Simulator::SetupStatus Simulator::Setup()
 			if(peer_export)
 			{
 				add_edge(id_lookup[peer_export], id_lookup[(*export_iter).second], dependency_graph);
-//				cerr << peer_export->GetID() << ":" << peer_export->GetName() << "->" 
-//					<< (*export_iter).second->GetID() << ":" << (*export_iter).second->GetName() << endl;
+//				std::cerr << peer_export->GetID() << ":" << peer_export->GetName() << "->" 
+//					<< (*export_iter).second->GetID() << ":" << (*export_iter).second->GetName() << std::endl;
 			}
 		}
 	}
@@ -2992,25 +3013,25 @@ Simulator::SetupStatus Simulator::Setup()
 
 	if(has_cycle)
 	{
-		cerr << "Simulator: ERROR! cyclic setup dependency graph" << endl;
+		std::cerr << "Simulator: ERROR! cyclic setup dependency graph" << std::endl;
 		return ST_ERROR;
 	}
 
 	// Compute a topological order of methods "Setup"
-	typedef list<Vertex> SetupOrder;
+	typedef std::list<Vertex> SetupOrder;
 	SetupOrder setup_order;
 	topological_sort(dependency_graph, std::front_inserter(setup_order));
 
 	SetupStatus status = ST_OK_TO_START;
 	
 	// Call all methods "BeginSetup()"
-	map<const char *, Object *, ltstr>::iterator object_iter;
+	std::map<std::string, Object *>::iterator object_iter;
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{
 		Object *object = (*object_iter).second;
 		if(!object->BeginSetup())
 		{
-			cerr << "Simulator: " << object->GetName() << " beginning of setup failed" << endl;
+			std::cerr << "Simulator: " << object->GetName() << " beginning of setup failed" << std::endl;
 			status = ST_ERROR;
 			break;
 		}
@@ -3019,7 +3040,7 @@ Simulator::SetupStatus Simulator::Setup()
 	if(status != ST_ERROR)
 	{
 		// Call methods "Setup(export)" in a topological order
-		list<Vertex>::iterator vertex_iter;
+		std::list<Vertex>::iterator vertex_iter;
 		for(vertex_iter = setup_order.begin(); vertex_iter != setup_order.end(); vertex_iter++)
 		{
 			ServiceExportBase *srv_export = dependency_graph[*vertex_iter].srv_export;
@@ -3027,10 +3048,10 @@ Simulator::SetupStatus Simulator::Setup()
 
 			if(object)
 			{
-//				cerr << "Simulator:" << object->GetName() << "::Setup(" << srv_export->GetName() << ")" << endl;
+//				std::cerr << "Simulator:" << object->GetName() << "::Setup(" << srv_export->GetName() << ")" << std::endl;
 				if(!object->Setup(srv_export))
 				{
-					cerr << "Simulator: " << srv_export->GetName() << " setup failed" << endl;
+					std::cerr << "Simulator: " << srv_export->GetName() << " setup failed" << std::endl;
 					status = ST_ERROR;
 					break;
 				}
@@ -3046,7 +3067,7 @@ Simulator::SetupStatus Simulator::Setup()
 			Object *object = (*object_iter).second;
 			if(!object->EndSetup())
 			{
-				cerr << "Simulator: " << object->GetName() << " end of setup failed" << endl;
+				std::cerr << "Simulator: " << object->GetName() << " end of setup failed" << std::endl;
 				status = ST_ERROR;
 				break;
 			}
@@ -3056,11 +3077,11 @@ Simulator::SetupStatus Simulator::Setup()
 	if(enable_warning)
 	{
 		// display a warning if some variable values are unused
-		std::map<string, string>::iterator set_var_iter;
+		std::map<std::string, std::string>::iterator set_var_iter;
 		
 		for(set_var_iter = set_vars.begin(); set_var_iter != set_vars.end(); set_var_iter++)
 		{
-			cerr << "WARNING! value \"" << (*set_var_iter).second << "\" for variable \"" << (*set_var_iter).first << "\" is unused." << endl;
+			std::cerr << "WARNING! value \"" << (*set_var_iter).second << "\" for variable \"" << (*set_var_iter).first << "\" is unused." << std::endl;
 		}
 	}
 
@@ -3069,13 +3090,13 @@ Simulator::SetupStatus Simulator::Setup()
 
 void Simulator::Stop(Object *object, int exit_status, bool asynchronous)
 {
-	cerr << "WARNING! Stop is not cleanly implemented" << endl;
+	std::cerr << "WARNING! Stop is not cleanly implemented" << std::endl;
 	exit(exit_status);
 }
 
 const VariableBase *Simulator::FindVariable(const char *name, VariableBase::Type type) const
 {
-	map<const char *, VariableBase *, ltstr>::const_iterator variable_iter;
+	std::map<std::string, VariableBase *>::const_iterator variable_iter;
 	
 	variable_iter = variables.find(name);
 	
@@ -3086,7 +3107,7 @@ const VariableBase *Simulator::FindVariable(const char *name, VariableBase::Type
 
 VariableBase *Simulator::FindVariable(const char *name, VariableBase::Type type)
 {
-	map<const char *, VariableBase *, ltstr>::iterator variable_iter;
+	std::map<std::string, VariableBase *>::iterator variable_iter;
 	
 	variable_iter = variables.find(name);
 	
@@ -3145,9 +3166,9 @@ VariableBase *Simulator::FindFormula(const char *name)
 	return FindVariable(name, VariableBase::VAR_FORMULA);
 }
 
-void Simulator::GetVariables(list<VariableBase *>& lst, VariableBase::Type type)
+void Simulator::GetVariables(std::list<VariableBase *>& lst, VariableBase::Type type)
 {
-	map<const char *, VariableBase *, ltstr>::iterator variable_iter;
+	std::map<std::string, VariableBase *>::iterator variable_iter;
 
 	lst.clear();
 	
@@ -3160,39 +3181,52 @@ void Simulator::GetVariables(list<VariableBase *>& lst, VariableBase::Type type)
 	}
 }
 
-void Simulator::GetArrays(list<VariableBase *>& lst)
+void Simulator::GetArrays(std::list<VariableBase *>& lst)
 {
 	GetVariables(lst, VariableBase::VAR_ARRAY);
 }
 
-void Simulator::GetParameters(list<VariableBase *>& lst)
+void Simulator::GetParameters(std::list<VariableBase *>& lst)
 {
 	GetVariables(lst, VariableBase::VAR_PARAMETER);
 }
 
-void Simulator::GetRegisters(list<VariableBase *>& lst)
+void Simulator::GetRegisters(std::list<VariableBase *>& lst)
 {
 	GetVariables(lst, VariableBase::VAR_REGISTER);
 }
 
-void Simulator::GetSignals(list<VariableBase *>& lst)
+void Simulator::GetSignals(std::list<VariableBase *>& lst)
 {
 	GetVariables(lst, VariableBase::VAR_SIGNAL);
 }
 
-void Simulator::GetStatistics(list<VariableBase *>& lst)
+void Simulator::GetStatistics(std::list<VariableBase *>& lst)
 {
 	GetVariables(lst, VariableBase::VAR_STATISTIC);
 }
 
-void Simulator::GetFormulas(list<VariableBase *>& lst)
+void Simulator::GetFormulas(std::list<VariableBase *>& lst)
 {
 	GetVariables(lst, VariableBase::VAR_FORMULA);
 }
 
-void Simulator::GetRootObjects(list<Object *>& lst) const
+void Simulator::GetObjects(std::list<Object *>& lst) const
 {
-	map<const char *, Object *, ltstr>::const_iterator object_iter;
+	std::map<std::string, Object *>::const_iterator object_iter;
+
+	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
+	{
+		if((*object_iter).second)
+		{
+			lst.push_back((*object_iter).second);
+		}
+	}
+}
+
+void Simulator::GetRootObjects(std::list<Object *>& lst) const
+{
+	std::map<std::string, Object *>::const_iterator object_iter;
 
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{
@@ -3200,7 +3234,7 @@ void Simulator::GetRootObjects(list<Object *>& lst) const
 		{
 			if(!(*object_iter).second->GetParent())
 			{
-				// cerr << "root: " << (*object_iter).second->GetName() << endl;
+				// std::cerr << "root: " << (*object_iter).second->GetName() << std::endl;
 				lst.push_back((*object_iter).second);
 			}
 		}
@@ -3322,12 +3356,12 @@ bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::str
 
 bool Simulator::GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const
 {
-	return ResolvePath(bin_dir, string(BIN_TO_SHARED_DATA_PATH), out_share_dir);
+	return ResolvePath(bin_dir, std::string(BIN_TO_SHARED_DATA_PATH), out_share_dir);
 }
 
-string Simulator::SearchSharedDataFile(const char *filename) const
+std::string Simulator::SearchSharedDataFile(const char *filename) const
 {
-	string s(filename);
+	std::string s(filename);
 	if(!s.empty())
 	{
 #ifdef DEBUG_SEARCH_SHARED_DATA_FILE
@@ -3362,7 +3396,7 @@ string Simulator::SearchSharedDataFile(const char *filename) const
 		std::cerr << "...not found" << std::endl;
 #endif
 	}
-	return string(filename);
+	return std::string(filename);
 }
 
 std::vector<std::string> const&
@@ -3389,20 +3423,20 @@ template unsigned int Simulator::GetVariable(const char *, const unsigned int *)
 template unsigned long Simulator::GetVariable(const char *, const unsigned long *) const;
 template float Simulator::GetVariable(const char *, const float *) const;
 template double Simulator::GetVariable(const char *, const double *) const;
-template string Simulator::GetVariable(const char *, const string *) const;
+template std::string Simulator::GetVariable(const char *, const std::string *) const;
 
 void Simulator::SetVariable(const char *variable_name, const char *variable_value)
 {
 	VariableBase *variable = FindVariable(variable_name);
 	if(variable == void_variable)
 	{
-		std::map<string, string>::iterator set_vars_it = set_vars.find(string(variable_name));
+		std::map<std::string, std::string>::iterator set_vars_it = set_vars.find(std::string(variable_name));
 		
 		if(set_vars_it != set_vars.end())
 		{
 			set_vars.erase(set_vars_it);
 		}
-		set_vars.insert(std::pair<string, string>(string(variable_name), string(variable_value)));
+		set_vars.insert(std::pair<std::string, std::string>(std::string(variable_name), std::string(variable_value)));
 	}
 	else
 	{
@@ -3481,43 +3515,43 @@ void Simulator::SetVariable(const char *variable_name, double variable_value)
 	SetVariable(variable_name, sstr.str().c_str());
 }
 
-void Simulator::GenerateLatexDocumentation(ostream& os) const
+void Simulator::GenerateLatexDocumentation(std::ostream& os) const
 {
-	map<const char *, Object *, ltstr>::const_iterator object_iter;
+	std::map<std::string, Object *>::const_iterator object_iter;
 	
 	os << "This documentation has been automatically generated from the simulator \\texttt{" << string_to_latex(program_name.c_str()) << "} version " << string_to_latex(version.c_str()) << " on " << string_to_latex(__DATE__) << "." << std::endl;
 
-	os << "\\subsection{Introduction}" << endl;
-	os << string_to_latex(description.c_str()) << ".\\\\" << endl;
-	os << "Section \\ref{" << program_name << "_licensing} gives licensing informations about the simulator." << endl;
-	os << "Section \\ref{" << program_name << "_simulated_configuration} shows the set of modules and services that compose the simulator." << endl;
-	os << "Section \\ref{" << program_name << "_using} shows how to invoke the simulator at the command line prompt." << endl;
-	os << "Section \\ref{" << program_name << "_configuration} gives the simulator parameters." << endl;
-	os << "Section \\ref{" << program_name << "_statistics} gives the simulator statistic counters." << endl;
-	os << "Section \\ref{" << program_name << "_formulas} gives the simulator statistic formulas." << endl;
+	os << "\\subsection{Introduction}" << std::endl;
+	os << string_to_latex(description.c_str()) << ".\\\\" << std::endl;
+	os << "Section \\ref{" << program_name << "_licensing} gives licensing informations about the simulator." << std::endl;
+	os << "Section \\ref{" << program_name << "_simulated_configuration} shows the set of modules and services that compose the simulator." << std::endl;
+	os << "Section \\ref{" << program_name << "_using} shows how to invoke the simulator at the command line prompt." << std::endl;
+	os << "Section \\ref{" << program_name << "_configuration} gives the simulator parameters." << std::endl;
+	os << "Section \\ref{" << program_name << "_statistics} gives the simulator statistic counters." << std::endl;
+	os << "Section \\ref{" << program_name << "_formulas} gives the simulator statistic formulas." << std::endl;
 
-	os << "\\subsection{Licensing}" << endl;
-	os << "\\label{" << program_name << "_licensing}" << endl;
-	os << string_to_latex(program_name.c_str()) << " " << string_to_latex(version.c_str()) << "\\\\" << endl;
-	os << string_to_latex(copyright.c_str()) << "\\\\" << endl;
-	os << "License: " << string_to_latex(license.c_str()) << "\\\\" << endl;
-	os << "Authors: " << string_to_latex(authors.c_str()) << "\\\\" << endl;
+	os << "\\subsection{Licensing}" << std::endl;
+	os << "\\label{" << program_name << "_licensing}" << std::endl;
+	os << string_to_latex(program_name.c_str()) << " " << string_to_latex(version.c_str()) << "\\\\" << std::endl;
+	os << string_to_latex(copyright.c_str()) << "\\\\" << std::endl;
+	os << "License: " << string_to_latex(license.c_str()) << "\\\\" << std::endl;
+	os << "Authors: " << string_to_latex(authors.c_str()) << "\\\\" << std::endl;
 	
-	os << "\\subsection{Simulated configuration}" << endl;
-	os << "\\label{" << program_name << "_simulated_configuration}" << endl;
+	os << "\\subsection{Simulated configuration}" << std::endl;
+	os << "\\label{" << program_name << "_simulated_configuration}" << std::endl;
 	
 	if(!schematic.empty())
 	{
-		os << "\\begin{figure}[!ht]" << endl;
-		os << "\t\\begin{center}" << endl;
-		os << "\t\t\\includegraphics[width=\\textwidth]{" << schematic << "}" << endl;
-		os << "\t\\end{center}" << endl;
-		os << "\t\\caption{" << program_name << " simulator schematic.}" << endl;
-		os << "\\end{figure}" << endl;
+		os << "\\begin{figure}[!ht]" << std::endl;
+		os << "\t\\begin{center}" << std::endl;
+		os << "\t\t\\includegraphics[width=\\textwidth]{" << schematic << "}" << std::endl;
+		os << "\t\\end{center}" << std::endl;
+		os << "\t\\caption{" << program_name << " simulator schematic.}" << std::endl;
+		os << "\\end{figure}" << std::endl;
 	}
 	
-	os << "\\noindent The " << string_to_latex(program_name.c_str()) << " simulator is composed of the following modules and services:" << endl;
-	os << "\\begin{itemize}\\addtolength{\\itemsep}{-0.40\\baselineskip}" << endl;
+	os << "\\noindent The " << string_to_latex(program_name.c_str()) << " simulator is composed of the following modules and services:" << std::endl;
+	os << "\\begin{itemize}\\addtolength{\\itemsep}{-0.40\\baselineskip}" << std::endl;
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{
 		const char *obj_description = (*object_iter).second->GetDescription();
@@ -3528,15 +3562,15 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 		}
 		os << std::endl;
 	}
-	os << "\\end{itemize}" << endl;
+	os << "\\end{itemize}" << std::endl;
 
-	os << "\\subsection{Using the " << string_to_latex(program_name.c_str()) << " simulator}" << endl;
-	os << "\\label{" << program_name << "_using}" << endl;
+	os << "\\subsection{Using the " << string_to_latex(program_name.c_str()) << " simulator}" << std::endl;
+	os << "\\label{" << program_name << "_using}" << std::endl;
 	os << "The " << string_to_latex(program_name.c_str()) << " simulator has the following command line options:\\\\" << std::endl;
 	os << "~\\\\" << std::endl;
-	os << "\\noindent Usage: \\texttt{" << program_binary << " [<options>] [...]}" << endl << endl;
-	os << "\\noindent Options:" << endl;
-	os << "\\begin{itemize}" << endl;
+	os << "\\noindent Usage: \\texttt{" << program_binary << " [<options>] [...]}" << std::endl << std::endl;
+	os << "\\noindent Options:" << std::endl;
+	os << "\\begin{itemize}" << std::endl;
 
 	std::vector<CommandLineOption>::const_iterator cmd_opt_itr;
 	for(cmd_opt_itr = command_line_options.begin(); cmd_opt_itr != command_line_options.end(); cmd_opt_itr++)
@@ -3555,7 +3589,7 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 		os << "}: " << string_to_latex(cmd_opt_itr->GetOptionDescription());
 		os << "" << std::endl;
 	}
-	os << "\\end{itemize}" << endl;
+	os << "\\end{itemize}" << std::endl;
 
 	
 	// 	std::stringstream sstr_version;
@@ -3568,12 +3602,12 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 // 	os << "\\subsection{Usage}" << std::endl;
 // 	os << string_to_latex(sstr_help.str().c_str(), 80, "texttt") << std::endl;
 
-	std::map<const char *, VariableBase *, ltstr>::const_iterator variable_iter;
+	std::map<std::string, VariableBase *>::const_iterator variable_iter;
 	bool header_printed = false;
 	
 	//----------------------- Configuration -----------------------
 	os << "\\subsection{Configuration}" << std::endl;
-	os << "\\label{" << program_name << "_configuration}" << endl;
+	os << "\\label{" << program_name << "_configuration}" << std::endl;
 	os << "Simulator configuration (see below) can be modified using command line Options \\texttt{--set $<$param=value$>$} or \\texttt{--config $<$config file$>$}.\\\\" << std::endl;
 	os << "~\\\\" << std::endl;
 	
@@ -3610,7 +3644,7 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 
 	//----------------------- Statistics -----------------------
 	os << "\\subsection{Statistics}" << std::endl;
-	os << "\\label{" << program_name << "_statistics}" << endl;
+	os << "\\label{" << program_name << "_statistics}" << std::endl;
 	os << "Simulation statistic counters are listed below:\\\\" << std::endl;
 	os << "~\\\\" << std::endl;
 	os << "\\tablehead{\\hline}" << std::endl;
@@ -3648,7 +3682,7 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 
 	//----------------------- Formulas -----------------------
 	os << "\\subsection{Formulas}" << std::endl;
-	os << "\\label{" << program_name << "_formulas}" << endl;
+	os << "\\label{" << program_name << "_formulas}" << std::endl;
 	os << "Simulation statistic formulas are listed below:\\\\" << std::endl;
 	os << "~\\\\" << std::endl;
 	os << "\\tablehead{\\hline}" << std::endl;
@@ -3742,7 +3776,7 @@ void Simulator::SigPipeHandler(int signum)
 
 void Simulator::BroadcastSigInt()
 {
-	std::map<const char *, Object *, ltstr>::iterator object_iter;
+	std::map<std::string, Object *>::iterator object_iter;
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{
 		Object *object = (*object_iter).second;
