@@ -47,7 +47,7 @@
 #include <iosfwd>
 #include <limits.h>
 #include <float.h>
-#include <math.h>
+#include <cmath>
 #include <cstdio>
 #include <cassert>
 #if !defined(__GNUC__) || !defined(__SUN__)

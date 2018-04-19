@@ -700,40 +700,6 @@ SoftHalfFloat::SoftHalfFloat(const SoftFloat& source, Flags& flags)
   assign(source, flags);
 }
 
-class FloatingPointRegisterInterface : public unisim::service::interfaces::Register
-{
-public:
-  FloatingPointRegisterInterface(const char *name, SoftDouble *value);
-  virtual ~FloatingPointRegisterInterface();
-  virtual const char *GetName() const;
-  virtual void GetValue(void *buffer) const;
-  virtual void SetValue(const void *buffer);
-  virtual int GetSize() const;
-private:
-  std::string name;
-  SoftDouble *value;
-};
-
-class FloatingPointRegisterView : public unisim::kernel::service::VariableBase
-{
-public:
-  FloatingPointRegisterView(const char *name, unisim::kernel::service::Object *owner, SoftDouble& storage, const char *description);
-  virtual ~FloatingPointRegisterView();
-  virtual const char *GetDataTypeName() const;
-  virtual operator bool () const;
-  virtual operator long long () const;
-  virtual operator unsigned long long () const;
-  virtual operator double () const;
-  virtual operator std::string () const;
-  virtual unisim::kernel::service::VariableBase& operator = (bool value);
-  virtual unisim::kernel::service::VariableBase& operator = (long long value);
-  virtual unisim::kernel::service::VariableBase& operator = (unsigned long long value);
-  virtual unisim::kernel::service::VariableBase& operator = (double value);
-  virtual unisim::kernel::service::VariableBase& operator = (const char * value);
-private:
-  SoftDouble& storage;
-};
-
 } // end of namespace mpc57xx
 } // end of namespace e200
 } // end of namespace powerpc

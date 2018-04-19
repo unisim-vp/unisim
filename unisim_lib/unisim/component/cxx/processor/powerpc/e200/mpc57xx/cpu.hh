@@ -688,7 +688,7 @@ public:
 		spefscr.template Set<typename SPEFSCR::FXH>(false);
 		spefscr.template Set<typename SPEFSCR::FDBZ>(false);
 		spefscr.template Set<typename SPEFSCR::FDBZH>(false);
-		spefscr.template SetDivideByZero( false );
+		spefscr.SetDivideByZero( false );
 		return __EFPProcessInput__( *this );
 	}
 	
@@ -706,7 +706,7 @@ public:
 		}
 		bool inexact = flags.isApproximate() and not spefscr.template Get<typename CPU::SPEFSCR::FINV>();
 		bool overflow = inexact and flags.isOverflow();
-		if (not spefscr.template SetOverflow( overflow ))
+		if (not spefscr.SetOverflow( overflow ))
 			return false;
 		bool underflow = inexact and flags.isUnderflow();
 		if (oimpl.isDenormalized())
@@ -714,7 +714,7 @@ public:
 			oimpl.setZero(oimpl.isNegative());
 			inexact = true, underflow = true;
 		}
-		if (not spefscr.template SetUnderflow( underflow ))
+		if (not spefscr.SetUnderflow( underflow ))
 			return false;
 
 		if (inexact)
