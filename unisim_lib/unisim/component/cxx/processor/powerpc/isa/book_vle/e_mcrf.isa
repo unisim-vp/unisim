@@ -38,15 +38,16 @@ impl {
 }
 
 /* Move CR Field */
-op e_mcrf(31[6]:shl<2> bft[3]:?[2]:shl<2> bfa[3]:?[7]:16[10]:0[1]);
+op e_mcrf(31[6]:bft[3]:?[2]:bfa[3]:?[7]:16[10]:0[1]);
 
 e_mcrf.execute = {
 	// Read the input operands
+        unsigned tsh = 4*bft, ash = 4*bfa;
 	CR& cr = cpu->GetCR();
-	UINT const mask(0xf0000000 >> bft), source(cr);
+	UINT const mask(0xf0000000 >> tsh), source(cr);
 
 	// Compute the result
-	UINT result = (source & ~mask) | (mask & ((source << bfa) >> bft));
+	UINT result = (source & ~mask) | (mask & ((source << ash) >> tsh));
 	
 	// Write back the result
 	cr = result;
@@ -55,8 +56,7 @@ e_mcrf.execute = {
 }
 
 e_mcrf.disasm = {
+	os << "e_mcrf " << CRPrint(bft);
 	if (bfa)
-		os << "e_mcrf " << CRPrint(bft/2) << ',' << CRPrint(bfa/2);
-	else
-		os << "e_mcrf " << CRPrint(bft/2);
+		os << ',' << CRPrint(bfa);
 }

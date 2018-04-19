@@ -66,5 +66,5 @@ e_andi.execute = {
 }
 
 e_andi.disasm = {
-	os << "e_andi" << (rc?". ":" ") << GPRPrint(ra) << ',' << GPRPrint(rs) << ',' << sci8;
+	os << "e_andi" << (rc?". ":" ") << GPRPrint(ra) << ',' << GPRPrint(rs) << ',' << unsigned(sci8);
 }

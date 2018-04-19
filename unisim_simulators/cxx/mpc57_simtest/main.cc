@@ -297,7 +297,7 @@ struct Checker
     std::string name;
     unsigned    line;
     
-    FileLoc( std::string const& _name ) : name( _name ) {}
+    FileLoc( std::string const& _name ) : name( _name ), line(0) {}
     void newline() { line += 1; }
     friend std::ostream& operator << (std::ostream& sink, FileLoc const& fl) { sink << fl.name << ':' << fl.line << ": "; return sink; }
   };
@@ -325,7 +325,7 @@ struct Checker
         code = ISA::cleancode( *codeop );
         
         if (name != codeop->GetName()) {
-          std::cerr << "Operation '" << std::hex << rawcode << std::dec << "' "
+          std::cerr << fl << " operation '" << std::hex << rawcode << std::dec << "' "
                     << "is said to be: '" << name << "' "
                     << "whereas it is: '" << codeop->GetName() << "'\n";
           throw 0;
