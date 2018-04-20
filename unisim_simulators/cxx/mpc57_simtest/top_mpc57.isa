@@ -709,20 +709,26 @@ include "unisim/component/cxx/processor/powerpc/isa/mpu/mpuwe.isa"
 
 group esr_st(stbux, stbx, sthbrx, sthux, sthx, stwbrx, stwux, stwx, stbcx_, \
              sthcx_, stwcx_, e_stb, e_stbu, e_sth, e_sthu, e_stmw, e_stw, \
-             e_stwu, se_stb, se_sth, se_stw)
+             e_stwu, se_stb, se_sth, se_stw);
 
 esr_st.update_esr_st = {
 	// CPU::ESR& esr = cpu->GetESR();
 	// esr.Set<CPU::ESR::ST>(1);
-}
+};
 
 group esr_spv(efsabs,efsadd, efscfh, efscfsf, efscfsi, efscfuf, efscfui, \
              efscmpeq, efscmpgt, efscmplt, efscth, efsctsf, efsctsi, \
              efsctsiz, efsctuf, efsctui, efsctuiz, efsdiv, efsmadd, \
              efsmsub, efsmax, efsmin, efsmul, efsnabs, efsneg, efsnmadd, \
-             efsnmsub, efssqrt, efssub, efststeq, efststgt, efststlt)
+             efsnmsub, efssqrt, efssub, efststeq, efststgt, efststlt);
 
 esr_spv.update_esr_spv = {
 	// CPU::ESR& esr = cpu->GetESR();
 	// esr.Set<CPU::ESR::SPV>(1);
-}
+};
+
+efsmadd.donttest = { return true; };
+efsmsub.donttest = { return true; };
+efsnmadd.donttest = { return true; };
+efsnmsub.donttest = { return true; };
+efssqrt.donttest = { return true; };

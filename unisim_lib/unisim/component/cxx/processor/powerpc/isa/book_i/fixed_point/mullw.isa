@@ -44,15 +44,17 @@ mullw.execute = {
 	S64 a = S64(S32(cpu->GetGPR(ra))), b = S64(S32(cpu->GetGPR(rb)));
 	
 	// Compute the result
-	S64 result = a*b;
+	S64 result64 = a*b;
+        SINT result( result64 );
 	
 	// Write back the result
 	cpu->SetGPR(rd, UINT(result));
 	
 	if(oe)
 	{
-		/* Overflow if the product cannot be represented in 32 bits. */
-		UINT overflow = UINT(result != S64(S32(result)));
+		/* Overflow if the signed 64-bits product cannot be
+                 * represented as a signed 32-bits result. */
+		UINT overflow = UINT(result64 != S64(S32(result64)));
 		// Generate XER[OV] and XER[SO]: XER[OV]=overflow XER[SO]=1
 		XER& xer = cpu->GetXER();
 		xer.Set<XER::OV>(overflow);
@@ -64,9 +66,9 @@ mullw.execute = {
 		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
 		CR& cr = cpu->GetCR();
 		cr.Set<CR::CR0::SO>(cpu->GetXER().Get<XER::SO>());
-		cr.Set<CR::CR0::LT>(result < S64(0));
-		cr.Set<CR::CR0::GT>(result > S64(0));
-		cr.Set<CR::CR0::EQ>(result == S64(0));
+		cr.Set<CR::CR0::LT>(result < SINT(0));
+		cr.Set<CR::CR0::GT>(result > SINT(0));
+		cr.Set<CR::CR0::EQ>(result == SINT(0));
 	}
 
 	return true;

@@ -42,7 +42,7 @@ op e_cmphl(31[6]:crd[3]:0[2]:ra[5]:rb[5]:46[10]:0[1]);
 
 e_cmphl.execute = {
 	// Read the input unsigned halfword operands
-	S16 a( cpu->GetGPR(ra) ), b( cpu->GetGPR(rb) );
+	U16 a( cpu->GetGPR(ra) ), b( cpu->GetGPR(rb) );
 
 	// Generate CR[crd] bit field
 	CR& cr = cpu->GetCR();
